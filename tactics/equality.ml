@@ -1795,6 +1795,7 @@ let rewrite_assumption_cond cond_eq_term cl =
 	end
   in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
+    let gl = Proofview.Goal.lift gl Sigma.Unsafe.le in
     let hyps = Proofview.Goal.hyps gl in
     arec hyps gl
   end }

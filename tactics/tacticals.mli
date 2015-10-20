@@ -223,7 +223,7 @@ module New : sig
   val tclTIMEOUT : int -> unit tactic -> unit tactic
   val tclTIME : string option -> 'a tactic -> 'a tactic
 
-  val nLastDecls  : [ `NF ] Proofview.Goal.t -> int -> named_context
+  val nLastDecls  : ([ `NF ], 'r) Proofview.Goal.t -> int -> named_context
 
   val ifOnHyp     : (identifier * types -> bool) ->
     (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
@@ -234,7 +234,7 @@ module New : sig
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
   val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
 
-  val onHyps      : ([ `NF ] Proofview.Goal.t -> named_context) ->
+  val onHyps      : ([ `NF ], named_context) Proofview.Goal.enter ->
                     (named_context -> unit tactic) -> unit tactic
   val afterHyp    : Id.t -> (named_context -> unit tactic) -> unit tactic
 
@@ -242,9 +242,9 @@ module New : sig
   val tryAllHypsAndConcl  : (identifier option -> unit tactic) -> unit tactic
   val onClause   : (identifier option -> unit tactic) -> clause -> unit tactic
 
-  val elimination_sort_of_goal : 'a Proofview.Goal.t -> sorts_family
-  val elimination_sort_of_hyp  : Id.t -> 'a Proofview.Goal.t -> sorts_family
-  val elimination_sort_of_clause : Id.t option -> 'a Proofview.Goal.t -> sorts_family
+  val elimination_sort_of_goal : ('a, 'r) Proofview.Goal.t -> sorts_family
+  val elimination_sort_of_hyp  : Id.t -> ('a, 'r) Proofview.Goal.t -> sorts_family
+  val elimination_sort_of_clause : Id.t option -> ('a, 'r) Proofview.Goal.t -> sorts_family
 
   val elimination_then :
     (branch_args -> unit Proofview.tactic) ->

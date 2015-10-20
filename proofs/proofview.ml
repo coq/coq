@@ -908,17 +908,17 @@ let catchable_exception = function
 
 module Goal = struct
 
-  type 'a t = {
+  type ('a, 'r) t = {
     env : Environ.env;
     sigma : Evd.evar_map;
     concl : Term.constr ;
     self : Evar.t ; (* for compatibility with old-style definitions *)
   }
 
-  type 'a enter =
-    { enter : 'a t -> unit tactic }
+  type ('a, 'b) enter =
+    { enter : 'r. ('a, 'r) t -> 'b }
 
-  let assume (gl : 'a t) = (gl :> [ `NF ] t)
+  let assume (gl : ('a, 'r) t) = (gl :> ([ `NF ], 'r) t)
 
   let env { env=env } = env
   let sigma { sigma=sigma } = sigma
@@ -977,8 +977,8 @@ module Goal = struct
     end
     end
 
-  type 'a s_enter =
-    { s_enter : 'r. 'a t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+  type ('a, 'b) s_enter =
+    { s_enter : 'r. ('a, 'r) t -> 'r Sigma.t -> ('b, 'r) Sigma.sigma }
 
   let s_enter f =
     InfoL.tag (Info.Dispatch) begin
@@ -1032,6 +1032,8 @@ module Goal = struct
 
   (* compatibility *)
   let goal { self=self } = self
+
+  let lift (gl : ('a, 'r) t) _ = (gl :> ('a, 's) t)
 
 end
 
@@ -1257,8 +1259,8 @@ module Notations = struct
   let (>>=) = tclBIND
   let (<*>) = tclTHEN
   let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
-  type 'a enter = 'a Goal.enter =
-    { enter : 'a Goal.t -> unit tactic }
-  type 'a s_enter = 'a Goal.s_enter =
-    { s_enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+  type ('a, 'b) enter = ('a, 'b) Goal.enter =
+    { enter : 'r. ('a, 'r) Goal.t -> 'b }
+  type ('a, 'b) s_enter = ('a, 'b) Goal.s_enter =
+    { s_enter : 'r. ('a, 'r) Goal.t -> 'r Sigma.t -> ('b, 'r) Sigma.sigma }
 end

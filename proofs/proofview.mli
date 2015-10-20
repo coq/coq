@@ -418,61 +418,71 @@ end
 
 module Goal : sig
 
-  (** The type of goals. The parameter type is a phantom argument indicating
-      whether the data contained in the goal has been normalized w.r.t. the
-      current sigma. If it is the case, it is flagged [ `NF ]. You may still
-      access the un-normalized data using {!assume} if you known you do not rely
-      on the assumption of being normalized, at your own risk. *)
-  type 'a t
+  (** Type of goals.
+
+      The first parameter type is a phantom argument indicating whether the data
+      contained in the goal has been normalized w.r.t. the current sigma. If it
+      is the case, it is flagged [ `NF ]. You may still access the un-normalized
+      data using {!assume} if you known you do not rely on the assumption of
+      being normalized, at your own risk.
+
+      The second parameter is a stage indicating where the goal belongs. See
+      module {!Sigma}.
+  *)
+  type ('a, 'r) t
 
   (** Assume that you do not need the goal to be normalized. *)
-  val assume : 'a t -> [ `NF ] t
+  val assume : ('a, 'r) t -> ([ `NF ], 'r) t
 
   (** Normalises the argument goal. *)
-  val normalize : 'a t -> [ `NF ] t tactic
+  val normalize : ('a, 'r) t -> ([ `NF ], 'r) t tactic
 
   (** [concl], [hyps], [env] and [sigma] given a goal [gl] return
       respectively the conclusion of [gl], the hypotheses of [gl], the
       environment of [gl] (i.e. the global environment and the
       hypotheses) and the current evar map. *)
-  val concl : [ `NF ] t -> Term.constr
-  val hyps : [ `NF ] t -> Context.named_context
-  val env : 'a t -> Environ.env
-  val sigma : 'a t -> Evd.evar_map
-  val extra : 'a t -> Evd.Store.t
+  val concl : ([ `NF ], 'r) t -> Term.constr
+  val hyps : ([ `NF ], 'r) t -> Context.named_context
+  val env : ('a, 'r) t -> Environ.env
+  val sigma : ('a, 'r) t -> Evd.evar_map
+  val extra : ('a, 'r) t -> Evd.Store.t
 
   (** Returns the goal's conclusion even if the goal is not
       normalised. *)
-  val raw_concl : 'a t -> Term.constr
+  val raw_concl : ('a, 'r) t -> Term.constr
 
-  type 'a enter =
-    { enter : 'a t -> unit tactic }
+  type ('a, 'b) enter =
+    { enter : 'r. ('a, 'r) t -> 'b }
 
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal
       independently, in the manner of {!tclINDEPENDENT} except that
       the current goal is also given as an argument to [t]. The goal
       is normalised with respect to evars. *)
-  val nf_enter : [ `NF ] enter -> unit tactic
+  val nf_enter : ([ `NF ], unit tactic) enter -> unit tactic
 
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
-  val enter : [ `LZ ] enter -> unit tactic
+  val enter : ([ `LZ ], unit tactic) enter -> unit tactic
 
-  type 'a s_enter =
-    { s_enter : 'r. 'a t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+  type ('a, 'b) s_enter =
+    { s_enter : 'r. ('a, 'r) t -> 'r Sigma.t -> ('b, 'r) Sigma.sigma }
 
   (** A variant of {!enter} allows to work with a monotonic state. The evarmap
       returned by the argument is put back into the current state before firing
       the returned tactic. *)
-  val s_enter : [ `LZ ] s_enter -> unit tactic
+  val s_enter : ([ `LZ ], unit tactic) s_enter -> unit tactic
 
   (** Like {!s_enter}, but normalizes the goal beforehand. *)
-  val nf_s_enter : [ `NF ] s_enter -> unit tactic
+  val nf_s_enter : ([ `NF ], unit tactic) s_enter -> unit tactic
 
-  (** Recover the list of current goals under focus, without evar-normalization *)
-  val goals : [ `LZ ] t tactic list tactic
+  (** Recover the list of current goals under focus, without evar-normalization.
+      FIXME: encapsulate the level in an existential type. *)
+  val goals : ([ `LZ ], 'r) t tactic list tactic
 
   (** Compatibility: avoid if possible *)
-  val goal : [ `NF ] t -> Evar.t
+  val goal : ([ `NF ], 'r) t -> Evar.t
+
+  (** Every goal is valid at a later stage. FIXME: take a later evarmap *)
+  val lift : ('a, 'r) t -> ('r, 's) Sigma.le -> ('a, 's) t
 
 end
 
@@ -595,8 +605,8 @@ module Notations : sig
   (** {!tclOR}: [t1+t2] = [tclOR t1 (fun _ -> t2)]. *)
   val (<+>) : 'a tactic -> 'a tactic -> 'a tactic
 
-  type 'a enter = 'a Goal.enter =
-    { enter : 'a Goal.t -> unit tactic }
-  type 'a s_enter = 'a Goal.s_enter =
-    { s_enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+  type ('a, 'b) enter = ('a, 'b) Goal.enter =
+    { enter : 'r. ('a, 'r) Goal.t -> 'b }
+  type ('a, 'b) s_enter = ('a, 'b) Goal.s_enter =
+    { s_enter : 'r. ('a, 'r) Goal.t -> 'r Sigma.t -> ('b, 'r) Sigma.sigma }
 end

@@ -212,7 +212,7 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     List.hd hyps
 
-  let pf_nf_concl (gl : [ `LZ ] Proofview.Goal.t) =
+  let pf_nf_concl (gl : ([ `LZ ], 'r) Proofview.Goal.t) =
     (** We normalize the conclusion just after *)
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in

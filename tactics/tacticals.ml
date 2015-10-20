@@ -560,7 +560,7 @@ module New = struct
       tac2 id
     end }
 
-  let onHyps find tac = Proofview.Goal.nf_enter { enter = begin fun gl -> tac (find gl) end }
+  let onHyps find tac = Proofview.Goal.nf_enter { enter = begin fun gl -> tac (find.enter gl) end }
 
   let afterHyp id tac =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
