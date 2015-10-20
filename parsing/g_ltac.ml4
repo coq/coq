@@ -61,11 +61,11 @@ GEXTEND Gram
       [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, ta1)
       | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0,ta1)
       | ta0 = tactic_expr; ";"; l = tactic_then_locality; (first,tail) = tactic_then_gen; "]" ->
-	  match l , tail with
+          match l , tail with
           | false , Some (t,last) -> TacThen (ta0,TacExtendTac (Array.of_list first, t, last))
-	  | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
+          | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
           | false , None -> TacThen (ta0,TacDispatch first)
-	  | true  , None -> TacThens (ta0,first) ]
+          | true  , None -> TacThens (ta0,first) ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta
       | IDENT "do"; n = int_or_var; ta = tactic_expr -> TacDo (n,ta)
@@ -95,15 +95,15 @@ GEXTEND Gram
       | b = match_key; IDENT "reverse"; IDENT "goal"; "with";
         mrl = match_context_list; "end" ->
           TacMatchGoal (b,true,mrl)
-      |	b = match_key; c = tactic_expr; "with"; mrl = match_list; "end" ->
+      |        b = match_key; c = tactic_expr; "with"; mrl = match_list; "end" ->
           TacMatch (b,c,mrl)
       | IDENT "first" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
-	  TacFirst l
+          TacFirst l
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
-	  TacSolve l
+          TacSolve l
       | IDENT "idtac"; l = LIST0 message_token -> TacId l
       | g=failkw; n = [ n = int_or_var -> n | -> fail_default_value ];
-	  l = LIST0 message_token -> TacFail (g,n,l)
+          l = LIST0 message_token -> TacFail (g,n,l)
       | st = simple_tactic -> st
       | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(!@loc,ConstrMayEval(ConstrTerm c))
@@ -158,7 +158,7 @@ GEXTEND Gram
      verbose most of the time. *)
   fresh_id:
     [ [ s = STRING -> ArgArg s (*| id = ident -> ArgVar (!@loc,id)*)
-	| qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (!@loc,id) ] ]
+        | qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (!@loc,id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
@@ -208,13 +208,13 @@ GEXTEND Gram
     [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp)
       | na = name; ":="; "["; mpv = match_pattern; "]"; ":"; mpt = match_pattern -> Def (na, mpv, mpt)
       | na = name; ":="; mpv = match_pattern ->
-	  let t, ty =
-	    match mpv with
-	    | Term t -> (match t with
-	      | CCast (loc, t, (CastConv ty | CastVM ty | CastNative ty)) -> Term t, Some (Term ty)
-	      | _ -> mpv, None)
-	    | _ -> mpv, None
-	  in Def (na, t, Option.default (Term (CHole (Loc.ghost, None, IntroAnonymous, None))) ty)
+          let t, ty =
+            match mpv with
+            | Term t -> (match t with
+              | CCast (loc, t, (CastConv ty | CastVM ty | CastNative ty)) -> Term t, Some (Term ty)
+              | _ -> mpv, None)
+            | _ -> mpv, None
+          in Def (na, t, Option.default (Term (CHole (Loc.ghost, None, IntroAnonymous, None))) ty)
     ] ]
   ;
   match_context_rule:
@@ -250,9 +250,9 @@ GEXTEND Gram
   (* Definitions for tactics *)
   tacdef_body:
     [ [ name = Constr.global; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
-	  (name, redef, TacFun (it, body))
+          (name, redef, TacFun (it, body))
       | name = Constr.global; redef = ltac_def_kind; body = tactic_expr ->
-	  (name, redef, body) ] ]
+          (name, redef, body) ] ]
   ;
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
