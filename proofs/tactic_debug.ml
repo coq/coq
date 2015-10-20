@@ -12,6 +12,7 @@ open Pp
 open Tacexpr
 open Termops
 open Nameops
+open Proofview.Notations
 
 let (prtac, tactic_printer) = Hook.make ()
 let (prmatchpatt, match_pattern_printer) = Hook.make ()
@@ -47,10 +48,10 @@ let db_pr_goal gl =
                    str" "  ++ pc) ++ fnl ()
 
 let db_pr_goal =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let pg = db_pr_goal gl in
   Proofview.tclLIFT (msg_tac_notice (str "Goal:" ++ fnl () ++ pg))
-  end
+  end }
 
 
 (* Prints the commands *)

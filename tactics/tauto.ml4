@@ -18,6 +18,7 @@ open Tacinterp
 open Tactics
 open Errors
 open Util
+open Proofview.Notations
 
 DECLARE PLUGIN "tauto"
 
@@ -305,13 +306,13 @@ let reduction_not_iff _ist =
 let t_reduction_not_iff = tacticIn reduction_not_iff
 
 let intuition_gen ist flags tac =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let tac = Value.of_closure ist tac in
   let env = Proofview.Goal.env gl in
   let vars, ist, intuition = tauto_intuit flags t_reduction_not_iff tac in
   let glb_intuition = Tacintern.glob_tactic_env vars env intuition in
   eval_tactic_ist ist glb_intuition
-  end
+  end }
 
 let tauto_intuitionistic flags =
   Proofview.tclORELSE

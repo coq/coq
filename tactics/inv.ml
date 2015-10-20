@@ -270,14 +270,14 @@ Nota: with Inversion_clear, only four useless hypotheses
 
 let generalizeRewriteIntros as_mode tac depids id =
   Proofview.tclENV >>= fun env ->
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let dids = dependent_hyps env id depids gl in
   let reintros = if as_mode then intros_replacing else intros_possibly_replacing in
   (tclTHENLIST
     [bring_hyps dids; tac;
      (* may actually fail to replace if dependent in a previous eq *)
      reintros (ids_of_named_context dids)])
-  end
+  end }
 
 let error_too_many_names pats =
   let loc = Loc.join_loc (fst (List.hd pats)) (fst (List.last pats)) in
@@ -339,7 +339,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
     let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in
@@ -347,7 +347,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
     | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
     | _ -> tac id
-    end
+    end }
   in
   let deq_trailer id clear_flag _ neqns =
     assert (clear_flag == None);
@@ -374,7 +374,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     id
 
 let nLastDecls i tac =
-  Proofview.Goal.nf_enter (fun gl -> tac (nLastDecls gl i))
+  Proofview.Goal.nf_enter { enter = begin fun gl -> tac (nLastDecls gl i) end }
 
 (* Introduction of the equations on arguments
    othin: discriminates Simple Inversion, Inversion and Inversion_clear
@@ -382,7 +382,7 @@ let nLastDecls i tac =
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
 let rewrite_equations as_mode othin neqns names ba =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let first_eq = ref MoveLast in
   let avoid = if as_mode then List.map pi1 nodepids else [] in
@@ -415,7 +415,7 @@ let rewrite_equations as_mode othin neqns names ba =
              [tclDO neqns intro;
               bring_hyps nodepids;
               clear (ids_of_named_context nodepids)])
-  end
+  end }
 
 let interp_inversion_kind = function
   | SimpleInversion -> None
@@ -514,12 +514,12 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
  * back to their places in the hyp-list. *)
 
 let invIn k names ids id =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let concl = Proofview.Goal.concl gl in
     let nb_prod_init = nb_prod concl in
     let intros_replace_ids =
-      Proofview.Goal.enter begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
         let concl = pf_nf_concl gl in
         let nb_of_new_hyp =
           nb_prod concl - (List.length hyps + nb_prod_init)
@@ -528,7 +528,7 @@ let invIn k names ids id =
           intros_replacing ids
         else
           tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids)
-      end
+      end }
     in
     Proofview.tclORELSE
       (tclTHENLIST
@@ -536,7 +536,7 @@ let invIn k names ids id =
           inversion k NoDep names id;
           intros_replace_ids])
       (wrap_inv_error id)
-  end
+  end }
 
 let invIn_gen k names idl = try_intros_until (invIn k names idl)
 

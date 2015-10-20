@@ -140,17 +140,17 @@ let rec eq_constr_mod_evars x y =
   | _, _ -> compare_constr eq_constr_mod_evars x y
 
 let progress_evars t =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let check =
-      Proofview.Goal.nf_enter begin fun gl' ->
+      Proofview.Goal.nf_enter { enter = begin fun gl' ->
         let newconcl = Proofview.Goal.concl gl' in
         if eq_constr_mod_evars concl newconcl
         then Tacticals.New.tclFAIL 0 (str"No progress made (modulo evars)")
         else Proofview.tclUNIT ()
-      end
+      end }
     in t <*> check
-  end
+  end }
 
 
 let e_give_exact flags poly (c,clenv) gl =
@@ -188,10 +188,11 @@ let clenv_of_prods poly nprods (c, clenv) gl =
       else None
 
 let with_prods nprods poly (c, clenv) f =
-  Proofview.Goal.nf_enter (fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   match clenv_of_prods poly nprods (c, clenv) gl with
   | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
-  | Some clenv' -> f (c, clenv') gl)
+  | Some clenv' -> f (c, clenv') gl
+  end }
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 
@@ -901,5 +902,5 @@ let autoapply c i gl =
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
-  let tac = unify_e_resolve false flags ((c,cty,Univ.ContextSet.empty),ce) in
+  let tac = { enter = fun gl -> unify_e_resolve false flags ((c,cty,Univ.ContextSet.empty),ce) gl } in
   Proofview.V82.of_tactic (Proofview.Goal.nf_enter tac) gl

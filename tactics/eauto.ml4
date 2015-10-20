@@ -28,26 +28,27 @@ open Misctypes
 open Locus
 open Locusops
 open Hints
+open Proofview.Notations
 
 DECLARE PLUGIN "eauto"
 
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t2 = Tacmach.New.pf_concl gl in
   if occur_existential t1 || occur_existential t2 then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (Proofview.V82.tactic (exact_no_check c))
   else exact_check c
-  end
+  end }
 
 let assumption id = e_give_exact (mkVar id)
 
 let e_assumption =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     Tacticals.New.tclFIRST (List.map assumption (Tacmach.New.pf_ids_of_hyps gl))
-  end
+  end }
 
 TACTIC EXTEND eassumption
 | [ "eassumption" ] -> [ e_assumption ]
@@ -58,10 +59,10 @@ TACTIC EXTEND eexact
 END
 
 let registered_e_assumption =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
               (Tacmach.New.pf_ids_of_hyps gl))
-  end
+  end }
 
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
@@ -126,15 +127,14 @@ open Unification
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 			  
 let unify_e_resolve poly flags (c,clenv) =
-  Proofview.Goal.nf_enter begin
-      fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
       let clenv', c = connect_hint_clenv poly c clenv gl in
       Proofview.V82.tactic
 	(fun gls ->
 	 let clenv' = clenv_unique_resolver ~flags clenv' gls in
 	 tclTHEN (Refiner.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
 		 (Proofview.V82.of_tactic (Tactics.Simple.eapply c)) gls)
-    end
+    end }
 
 let hintmap_of hdc concl =
   match hdc with
@@ -152,19 +152,19 @@ let e_exact poly flags (c,clenv) =
   in e_give_exact (* ~flags *) (Vars.subst_univs_level_constr subst c)
 
 let rec e_trivial_fail_db db_list local_db =
-  let next = Proofview.Goal.nf_enter begin fun gl ->
+  let next = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let d = Tacmach.New.pf_last_hyp gl in
     let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) d in
     e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) hintl local_db)
-  end in
-  Proofview.Goal.enter begin fun gl ->
+  end } in
+  Proofview.Goal.enter { enter = begin fun gl ->
   let tacl =
     registered_e_assumption ::
     (Tacticals.New.tclTHEN Tactics.intro next) ::
     (List.map fst (e_trivial_resolve db_list local_db (Tacmach.New.pf_nf_concl gl)))
   in
   Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
-  end
+  end }
 
 and e_my_find_search db_list local_db hdc concl =
   let hint_of_db = hintmap_of hdc concl in
@@ -567,7 +567,7 @@ let unfold_head env (ids, csts) c =
   in aux c
 
 let autounfold_one db cl =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let st =
@@ -586,7 +586,7 @@ let autounfold_one db cl =
       | Some hyp -> change_in_hyp None (make_change_arg c') hyp
       | None -> convert_concl_no_check c' DEFAULTcast
     else Tacticals.New.tclFAIL 0 (str "Nothing to unfold")
-  end
+  end }
 
 (* 	  Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts *)
 (* 	    (Id.Set.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db) *)

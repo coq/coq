@@ -915,6 +915,9 @@ module Goal = struct
     self : Evar.t ; (* for compatibility with old-style definitions *)
   }
 
+  type 'a enter =
+    { enter : 'a t -> unit tactic }
+
   let assume (gl : 'a t) = (gl :> [ `NF ] t)
 
   let env { env=env } = env
@@ -944,7 +947,7 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try
         let (gl, sigma) = nf_gmake env sigma goal in
-        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
+        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f.enter gl))
       with e when catchable_exception e ->
         let (e, info) = Errors.push e in
         tclZERO ~info e
@@ -962,7 +965,7 @@ module Goal = struct
     gmake_with info env sigma goal
 
   let enter f =
-    let f gl = InfoL.tag (Info.DBranch) (f gl) in
+    let f gl = InfoL.tag (Info.DBranch) (f.enter gl) in
     InfoL.tag (Info.Dispatch) begin
     iter_goal begin fun goal ->
       Env.get >>= fun env ->
@@ -1054,7 +1057,7 @@ struct
   let (pr_constrv,pr_constr) =
     Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
 
-  let refine ?(unsafe = true) f = Goal.enter begin fun gl ->
+  let refine ?(unsafe = true) f = Goal.enter { Goal.enter = begin fun gl ->
     let sigma = Goal.sigma gl in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
@@ -1091,7 +1094,7 @@ struct
     let open Proof in
     InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"refine"++spc()++ Hook.get pr_constrv env sigma c)))) >>
     Pv.set { solution = sigma; comb; }
-  end
+  end }
 
   (** Useful definitions *)
 
@@ -1103,7 +1106,7 @@ struct
     in
     evd , j'.Environ.uj_val
 
-  let refine_casted ?unsafe f = Goal.enter begin fun gl ->
+  let refine_casted ?unsafe f = Goal.enter { Goal.enter = begin fun gl ->
     let concl = Goal.concl gl in
     let env = Goal.env gl in
     let f = { run = fun h ->
@@ -1112,7 +1115,7 @@ struct
       Sigma (c, Sigma.Unsafe.of_evar_map sigma, p)
     } in
     refine ?unsafe f
-  end
+  end }
 end
 
 
@@ -1254,6 +1257,8 @@ module Notations = struct
   let (>>=) = tclBIND
   let (<*>) = tclTHEN
   let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
+  type 'a enter = 'a Goal.enter =
+    { enter : 'a Goal.t -> unit tactic }
   type 'a s_enter = 'a Goal.s_enter =
     { s_enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
 end

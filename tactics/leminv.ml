@@ -27,6 +27,7 @@ open Declare
 open Tacticals.New
 open Tactics
 open Decl_kinds
+open Proofview.Notations
 
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
@@ -268,7 +269,7 @@ let lemInv id c gls =
 let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv id c)) id
 
 let lemInvIn id c ids =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
@@ -280,7 +281,7 @@ let lemInvIn id c ids =
     in
     ((tclTHEN (tclTHEN (bring_hyps hyps) (Proofview.V82.tactic (lemInv id c)))
         (intros_replace_ids)))
-  end
+  end }
 
 let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id
 

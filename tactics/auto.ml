@@ -96,11 +96,11 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
   in clenv, c
 		     
 let unify_resolve poly flags ((c : raw_hint), clenv) =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let clenv, c = connect_hint_clenv poly c clenv gl in
   let clenv = Tacmach.New.of_old (fun gl -> clenv_unique_resolver ~flags clenv gl) gl in
   Clenvtac.clenv_refine false clenv
-  end
+  end }
 
 let unify_resolve_nodelta poly h = unify_resolve poly auto_unif_flags h
 
@@ -151,11 +151,12 @@ let conclPattern concl pat tac =
 	with Constr_matching.PatternMatchingFailure ->
           Tacticals.New.tclZEROMSG (str "conclPattern")
   in
-   Proofview.Goal.enter (fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
      let env = Proofview.Goal.env gl in
      let sigma = Proofview.Goal.sigma gl in
        constr_bindings env sigma >>= fun constr_bindings ->
-     Hook.get forward_interp_tactic constr_bindings tac)
+     Hook.get forward_interp_tactic constr_bindings tac
+  end }
 
 (***********************************************************)
 (** A debugging / verbosity framework for trivial and auto *)
@@ -320,7 +321,7 @@ let dbg_assumption dbg = tclLOG dbg (fun () -> str "assumption") assumption
 let rec trivial_fail_db dbg mod_delta db_list local_db =
   let intro_tac =
     Tacticals.New.tclTHEN (dbg_intro dbg)
-      ( Proofview.Goal.enter begin fun gl ->
+      ( Proofview.Goal.enter { enter = begin fun gl ->
           let sigma = Proofview.Goal.sigma gl in
           let env = Proofview.Goal.env gl in
           let nf c = Evarutil.nf_evar sigma c in
@@ -329,15 +330,15 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
 	  let hintl = make_resolve_hyp env sigma hyp
 	  in trivial_fail_db dbg mod_delta db_list
 	       (Hint_db.add_list env sigma hintl local_db)
-      end)
+      end })
   in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Tacmach.New.pf_nf_concl gl in
     Tacticals.New.tclFIRST
       ((dbg_assumption dbg)::intro_tac::
           (List.map Tacticals.New.tclCOMPLETE
              (trivial_resolve dbg mod_delta db_list local_db concl)))
-  end
+  end }
 
 and my_find_search_nodelta db_list local_db hdc concl =
   List.map (fun hint -> (None,hint))
@@ -414,7 +415,7 @@ and trivial_resolve dbg mod_delta db_list local_db cl =
     "nocore" amongst the databases. *)
 
 let trivial ?(debug=Off) lems dbnames =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let db_list = make_db_list dbnames in
@@ -422,10 +423,10 @@ let trivial ?(debug=Off) lems dbnames =
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
     (trivial_fail_db d false db_list hints)
-  end
+  end }
 
 let full_trivial ?(debug=Off) lems =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let db_list = current_pure_db () in
@@ -433,7 +434,7 @@ let full_trivial ?(debug=Off) lems =
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
     (trivial_fail_db d false db_list hints)
-  end
+  end }
 
 let gen_trivial ?(debug=Off) lems = function
   | None -> full_trivial ~debug lems
@@ -466,10 +467,10 @@ let extend_local_db decl db gl =
 
 let intro_register dbg kont db =
   Tacticals.New.tclTHEN (dbg_intro dbg)
-    (Proofview.Goal.enter begin fun gl ->
+    (Proofview.Goal.enter { enter = begin fun gl ->
       let extend_local_db decl db = extend_local_db decl db gl in
       Tacticals.New.onLastDecl (fun decl -> kont (extend_local_db decl db))
-    end)
+    end })
 
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
@@ -482,14 +483,14 @@ let search d n mod_delta db_list local_db =
       if Int.equal n 0 then Tacticals.New.tclZEROMSG (str"BOUND 2") else
         Tacticals.New.tclORELSE0 (dbg_assumption d)
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
-	     ( Proofview.Goal.enter begin fun gl ->
+	     ( Proofview.Goal.enter { enter = begin fun gl ->
                let concl = Tacmach.New.pf_nf_concl gl in
 	       let d' = incr_dbg d in
 	       Tacticals.New.tclFIRST
 	         (List.map
 		    (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
 		    (possible_resolve d mod_delta db_list local_db concl))
-             end))
+             end }))
     end []
   in
   search d n local_db
@@ -497,7 +498,7 @@ let search d n mod_delta db_list local_db =
 let default_search_depth = ref 5
 
 let delta_auto debug mod_delta n lems dbnames =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let db_list = make_db_list dbnames in
@@ -505,7 +506,7 @@ let delta_auto debug mod_delta n lems dbnames =
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
     (search d n mod_delta db_list hints)
-  end
+  end }
 
 let delta_auto = 
   if Flags.profile then
@@ -520,7 +521,7 @@ let new_auto ?(debug=Off) n = delta_auto debug true n
 let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) mod_delta n lems =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let db_list = current_pure_db () in
@@ -528,7 +529,7 @@ let delta_full_auto ?(debug=Off) mod_delta n lems =
   let hints = make_local_hint_db env sigma false lems in
   tclTRY_dbg d
     (search d n mod_delta db_list hints)
-  end
+  end }
 
 let full_auto ?(debug=Off) n = delta_full_auto ~debug false n
 let new_full_auto ?(debug=Off) n = delta_full_auto ~debug true n

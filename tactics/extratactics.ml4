@@ -22,6 +22,7 @@ open Evd
 open Equality
 open Misctypes
 open Sigma.Notations
+open Proofview.Notations
 
 DECLARE PLUGIN "extratactics"
 
@@ -346,7 +347,7 @@ END
 (* Refine                                                             *)
 
 let refine_tac {Glob_term.closure=closure;term=term} =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags = Pretyping.all_no_fail_flags in
@@ -362,7 +363,7 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Sigma.Unsafe.of_pair (c, sigma)
     end } in
     Tactics.New.refine ~unsafe:false update
-  end
+  end }
 
 TACTIC EXTEND refine
   [ "refine" uconstr(c) ] -> [  refine_tac c ]
@@ -662,7 +663,7 @@ END
 *)
 
 let hget_evar n =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
   let evl = evar_list concl in
@@ -672,7 +673,7 @@ let hget_evar n =
   let ev = List.nth evl (n-1) in
   let ev_type = existential_type sigma ev in
   change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))
-  end
+  end }
 
 TACTIC EXTEND hget_evar
 | [ "hget_evar" int_or_var(n) ] -> [ hget_evar (out_arg n) ]
@@ -691,12 +692,12 @@ END
 exception Found of unit Proofview.tactic
 
 let rewrite_except h =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
       Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
     hyps
-  end
+  end }
 
 
 let refl_equal = 
@@ -710,27 +711,27 @@ let refl_equal =
   should be replaced by a call to the tactic but I don't know how to
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g a) gl in
        Tacticals.New.tclTHENLIST
          [Proofview.V82.tactic (Tactics.Simple.generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
-          Proofview.Goal.nf_enter begin fun gl ->
+          Proofview.Goal.nf_enter { enter = begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
 	    change_concl
 	      (snd (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl))
-          end;
+          end };
 	  simplest_case a]
-  end
+  end }
 
 
 let case_eq_intros_rewrite x =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let n = nb_prod (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let hyps = Tacmach.New.pf_ids_of_hyps gl in
       let n' = nb_prod concl in
@@ -739,9 +740,9 @@ let case_eq_intros_rewrite x =
                     Tacticals.New.tclDO (n'-n-1) intro;
 		    introduction h;
 		    rewrite_except h]
-    end
+    end }
   ]
-  end
+  end }
 
 let rec find_a_destructable_match t =
   match kind_of_term t with
@@ -761,15 +762,15 @@ let destauto t =
   with Found tac -> tac
 
 let destauto_in id = 
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let ctype = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g (mkVar id)) gl in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype
-  end
+  end }
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Proofview.Goal.nf_enter (fun gl -> destauto (Proofview.Goal.concl gl)) ]
+| [ "destauto" ] -> [ Proofview.Goal.nf_enter { enter = begin fun gl -> destauto (Proofview.Goal.concl gl) end } ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 
@@ -777,10 +778,11 @@ END
 (* ********************************************************************* *)
 
 let eq_constr x y = 
-  Proofview.Goal.enter (fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let evd = Proofview.Goal.sigma gl in
       if Evarutil.eq_constr_univs_test evd evd x y then Proofview.tclUNIT () 
-      else Tacticals.New.tclFAIL 0 (str "Not equal"))
+      else Tacticals.New.tclFAIL 0 (str "Not equal")
+  end }
 
 TACTIC EXTEND constr_eq
 | [ "constr_eq" constr(x) constr(y) ] -> [ eq_constr x y ]
@@ -981,14 +983,14 @@ TACTIC EXTEND guard
 END
 
 let decompose l c =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let to_ind c =
       if isInd c then Univ.out_punivs (destInd c)
       else error "not an inductive type"
     in
     let l = List.map to_ind l in
     Elim.h_decompose l c
-  end
+  end }
 
 TACTIC EXTEND decompose
 | [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]

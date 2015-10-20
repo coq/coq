@@ -538,66 +538,65 @@ module New = struct
     mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
-    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end
+    Proofview.Goal.enter { enter = begin fun gl -> tac (nthHypId m gl) end }
   let onNthHyp m tac =
-    Proofview.Goal.enter begin fun gl -> tac (nthHyp m gl) end
+    Proofview.Goal.enter { enter = begin fun gl -> tac (nthHyp m gl) end }
 
   let onLastHypId = onNthHypId 1
   let onLastHyp   = onNthHyp 1
 
   let onNthDecl m tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       Proofview.tclUNIT (nthDecl m gl) >>= tac
-    end
+    end }
   let onLastDecl  = onNthDecl 1
 
   let ifOnHyp pred tac1 tac2 id =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let typ = Tacmach.New.pf_get_hyp_typ id gl in
     if pred (id,typ) then
       tac1 id
     else
       tac2 id
-    end
+    end }
 
-  let onHyps find tac = Proofview.Goal.nf_enter (fun gl -> tac (find gl))
+  let onHyps find tac = Proofview.Goal.nf_enter { enter = begin fun gl -> tac (find gl) end }
 
   let afterHyp id tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
     let rem, _ = List.split_when (fun (hyp,_,_) -> Id.equal hyp id) hyps in
     tac rem
-    end
+    end }
 
   let fullGoal gl =
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
     None :: List.map Option.make hyps
 
   let tryAllHyps tac =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
     tclFIRST_PROGRESS_ON tac hyps
-    end
+    end }
   let tryAllHypsAndConcl tac =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
       tclFIRST_PROGRESS_ON tac (fullGoal gl)
-    end
+    end }
 
   let onClause tac cl =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
     tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
-    end
+    end }
 
   (* Find the right elimination suffix corresponding to the sort of the goal *)
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate ind (c, t) =
-    Proofview.Goal.nf_enter
-    begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Proofview.Goal.nf_enter begin fun gl ->
+    (Proofview.Goal.nf_enter { enter = begin fun gl ->
     let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
     (* applying elimination_scheme just a little modified *)
     let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_unsafe_type_of gl elim)) gl in
@@ -649,10 +648,10 @@ module New = struct
     Proofview.tclTHEN
       (Clenvtac.clenv_refine false clenv')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
-    end) end
+    end }) end }
 
   let elimination_then tac c =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
@@ -660,7 +659,7 @@ module New = struct
       | Some _ -> false,gl_make_case_dep
     in
     general_elim_then_using mkelim isrec None tac None ind (c, t)
-    end
+    end }
 
   let case_then_using =
     general_elim_then_using gl_make_case_dep false
@@ -669,16 +668,16 @@ module New = struct
     general_elim_then_using gl_make_case_nodep false
 
   let elim_on_ba tac ba =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let branches = Tacmach.New.of_old (make_elim_branch_assumptions ba) gl in
     tac branches
-    end
+    end }
 
   let case_on_ba tac ba = 
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let branches = Tacmach.New.of_old (make_case_branch_assumptions ba) gl in
     tac branches
-    end
+    end }
 
   let elimination_sort_of_goal gl =
     (** Retyping will expand evars anyway. *)
@@ -695,11 +694,11 @@ module New = struct
   | Some id -> elimination_sort_of_hyp id gl
 
   let pf_constr_of_global ref tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
       let (sigma, c) = Evd.fresh_global env sigma ref in
       Proofview.Unsafe.tclEVARS sigma <*> (tac c)
-    end
+    end }
 
 end

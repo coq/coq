@@ -1,3 +1,4 @@
+open Proofview.Notations
 
 let contrib_name = "btauto"
 
@@ -216,7 +217,7 @@ module Btauto = struct
     Tacticals.tclFAIL 0 msg gl
 
   let try_unification env =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let eq = Lazy.force eq in
       let t = decomp_term concl in
@@ -228,10 +229,10 @@ module Btauto = struct
       | _ ->
           let msg = str "Btauto: Internal error" in
           Tacticals.New.tclFAIL 0 msg
-    end
+    end }
 
   let tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let eq = Lazy.force eq in
       let bool = Lazy.force Bool.typ in
@@ -255,6 +256,6 @@ module Btauto = struct
       | _ ->
           let msg = str "Cannot recognize a boolean equality" in
           Tacticals.New.tclFAIL 0 msg
-    end
+    end }
 
 end

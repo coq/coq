@@ -27,6 +27,7 @@ open Globnames
 open Nametab
 open Contradiction
 open Misctypes
+open Proofview.Notations
 
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -34,9 +35,9 @@ open OmegaSolver
 (* Added by JCF, 09/03/98 *)
 
 let elim_id id =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     simplest_elim (Tacmach.New.pf_global id gl)
-  end
+  end }
 let resolve_id id gl = Proofview.V82.of_tactic (apply (pf_global gl id)) gl
 
 let timing timer_name f arg = f arg
@@ -1416,7 +1417,7 @@ let reintroduce id =
 open Proofview.Notations
 
 let coq_omega =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   let destructure_omega = Tacmach.New.of_old destructure_omega gl in
@@ -1464,12 +1465,12 @@ let coq_omega =
       Tacticals.New.tclTHEN prelude (replay_history tactic_normalisation path)
     with NO_CONTRADICTION -> Tacticals.New.tclZEROMSG (Pp.str"Omega can't solve this system")
   end
-  end
+  end }
 
 let coq_omega = coq_omega
 
 let nat_inject =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let is_conv = Tacmach.New.pf_apply Reductionops.is_conv gl in
   let rec explore p t : unit Proofview.tactic =
     try match destructurate_term t with
@@ -1603,7 +1604,7 @@ let nat_inject =
   in
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   loop (List.rev hyps_types)
-  end
+  end }
 
 let dec_binop = function
   | Zne -> coq_dec_Zne
@@ -1673,22 +1674,22 @@ let onClearedName id tac =
   (* so renaming may be necessary *)
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (tclTRY (clear [id])))
-    (Proofview.Goal.nf_enter begin fun gl ->
+    (Proofview.Goal.nf_enter { enter = begin fun gl ->
      let id = Tacmach.New.of_old (fresh_id [] id) gl in
      Tacticals.New.tclTHEN (introduction id) (tac id)
-    end)
+    end })
 
 let onClearedName2 id tac =
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (tclTRY (clear [id])))
-    (Proofview.Goal.nf_enter begin fun gl ->
+    (Proofview.Goal.nf_enter { enter = begin fun gl ->
      let id1 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_left")) gl in
      let id2 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_right")) gl in
       Tacticals.New.tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
-    end)
+    end })
 
 let destructure_hyps =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let type_of = Tacmach.New.pf_unsafe_type_of gl in
   let decidability = Tacmach.New.of_old decidability gl in
   let pf_nf = Tacmach.New.of_old pf_nf gl in
@@ -1828,10 +1829,10 @@ let destructure_hyps =
     in
     let hyps = Proofview.Goal.hyps gl in
     loop hyps
-  end
+  end }
 
 let destructure_goal =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let decidability = Tacmach.New.of_old decidability gl in
     let rec loop t =
@@ -1855,7 +1856,7 @@ let destructure_goal =
 	  Tacticals.New.tclTHEN goal_tac destructure_hyps
     in
     (loop concl)
-  end
+  end }
 
 let destructure_goal = destructure_goal
 

@@ -35,6 +35,7 @@ open Environ
 open Termops
 open Libnames
 open Sigma.Notations
+open Proofview.Notations
 
 (** Typeclass-based generalized rewriting. *)
 
@@ -1501,7 +1502,7 @@ let rec insert_dependent env decl accu hyps = match hyps with
     insert_dependent env decl (ndecl :: accu) rem
 
 let assert_replacing id newt tac = 
-  let prf = Proofview.Goal.nf_enter begin fun gl ->
+  let prf = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let ctx = Environ.named_context env in
@@ -1518,7 +1519,7 @@ let assert_replacing id newt tac =
       let (e, _) = destEvar ev in
       Sigma (mkEvar (e, Array.map_of_list map nc), sigma, p +> q)
     end }
-  end in
+  end } in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
 
 let newfail n s = 
@@ -1544,14 +1545,14 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
             convert_hyp_no_check (id, None, newt)
 	| None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
-            Proofview.Goal.enter begin fun gl ->
+            Proofview.Goal.enter { enter = begin fun gl ->
             let env = Proofview.Goal.env gl in
             let make = { run = begin fun sigma ->
               let Sigma (ev, sigma, q) = Evarutil.new_evar env sigma newt in
               Sigma (mkApp (p, [| ev |]), sigma, q)
             end } in
             Proofview.Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
-            end
+            end }
 	| None, None ->
             Proofview.Unsafe.tclEVARS undef <*>
             convert_concl_no_check newt DEFAULTcast
@@ -1562,7 +1563,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
   | None -> Proofview.tclUNIT ()
   | Some id -> Proofview.V82.tactic (Tactics.reduct_in_hyp beta_red (id, InHyp))
   in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
@@ -1590,7 +1591,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
       raise (RewriteFailure (Himsg.explain_pretype_error env evd e))
-  end
+  end }
 
 let tactic_init_setoid () = 
   try init_setoid (); tclIDTAC
@@ -2037,7 +2038,7 @@ let not_declared env ty rel =
 		str ty ++ str" relation. Maybe you need to require the Setoid library")
 
 let setoid_proof ty fn fallback =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let concl = Proofview.Goal.concl gl in
@@ -2066,7 +2067,7 @@ let setoid_proof ty fn fallback =
                 | e' -> Proofview.tclZERO ~info e'
               end
       end
-  end
+  end }
 
 let tac_open ((evm,_), c) tac = 
   Proofview.V82.tactic 

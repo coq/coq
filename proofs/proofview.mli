@@ -445,14 +445,17 @@ module Goal : sig
       normalised. *)
   val raw_concl : 'a t -> Term.constr
 
+  type 'a enter =
+    { enter : 'a t -> unit tactic }
+
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal
       independently, in the manner of {!tclINDEPENDENT} except that
       the current goal is also given as an argument to [t]. The goal
       is normalised with respect to evars. *)
-  val nf_enter : ([ `NF ] t -> unit tactic) -> unit tactic
+  val nf_enter : [ `NF ] enter -> unit tactic
 
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
-  val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
+  val enter : [ `LZ ] enter -> unit tactic
 
   type 'a s_enter =
     { s_enter : 'r. 'a t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
@@ -592,6 +595,8 @@ module Notations : sig
   (** {!tclOR}: [t1+t2] = [tclOR t1 (fun _ -> t2)]. *)
   val (<+>) : 'a tactic -> 'a tactic -> 'a tactic
 
+  type 'a enter = 'a Goal.enter =
+    { enter : 'a Goal.t -> unit tactic }
   type 'a s_enter = 'a Goal.s_enter =
     { s_enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
 end
