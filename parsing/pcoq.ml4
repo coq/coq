@@ -20,37 +20,11 @@ open Tok (* necessary for camlp4 *)
 
 module G = GrammarMake (Lexer)
 
-(* TODO: this is a workaround, since there isn't such
-   [warning_verbose] in new camlp4. In camlp5, this ref
-   gets hidden by [Gramext.warning_verbose] *)
-let warning_verbose = ref true
+let warning_verbose = Compat.warning_verbose
 
-IFDEF CAMLP5 THEN
-open Gramext
-ELSE
-open PcamlSig.Grammar
-open G
-END
+module Symbols = GramextMake(G)
 
-(** Compatibility with Camlp5 6.x *)
-
-IFDEF CAMLP5_6_00 THEN
-let slist0sep x y = Slist0sep (x, y, false)
-let slist1sep x y = Slist1sep (x, y, false)
-ELSE
-let slist0sep x y = Slist0sep (x, y)
-let slist1sep x y = Slist1sep (x, y)
-END
-
-let gram_token_of_token tok =
-IFDEF CAMLP5 THEN
- Stoken (Tok.to_pattern tok)
-ELSE
- match tok with
-  | KEYWORD s -> Skeyword s
-  | tok -> Stoken ((=) tok, to_string tok)
-END
-
+let gram_token_of_token = Symbols.stoken
 let gram_token_of_string s = gram_token_of_token (Lexer.terminal s)
 
 let camlp4_verbosity silent f x =
@@ -158,7 +132,10 @@ let grammar_delete e reinit (pos,rls) =
     (List.rev rls);
   match reinit with
   | Some (a,ext) ->
-    let lev = match pos with Some (Level n) -> n | _ -> assert false in
+    let lev = match Option.map Compat.to_coq_position pos with
+    | Some (Level n) -> n
+    | _ -> assert false
+    in
     maybe_uncurry (G.extend e) (Some ext, [Some lev,Some a,[]])
   | None -> ()
 
@@ -679,56 +656,56 @@ let make_sep_rules tkl =
 let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
   if is_binder_level from typ then
     if forpat then
-      Snterml (Gram.Entry.obj Constr.pattern,"200")
+      Symbols.snterml (Gram.Entry.obj Constr.pattern,"200")
     else
-      Snterml (Gram.Entry.obj Constr.operconstr,"200")
+      Symbols.snterml (Gram.Entry.obj Constr.operconstr,"200")
   else if is_self from typ then
-      Sself
+      Symbols.sself
   else
     match typ with
     | ETConstrList (typ',[]) ->
-        Slist1 (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
+        Symbols.slist1 (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
     | ETConstrList (typ',tkl) ->
-        slist1sep
-          (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
-          (make_sep_rules tkl)
+        Symbols.slist1sep
+          (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'),
+          make_sep_rules tkl)
     | ETBinderList (false,[]) ->
-        Slist1
+        Symbols.slist1
 	  (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false))
     | ETBinderList (false,tkl) ->
-        slist1sep
-          (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false))
-          (make_sep_rules tkl)
+        Symbols.slist1sep
+          (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false),
+          make_sep_rules tkl)
 
     | _ ->
     match interp_constr_prod_entry_key assoc from forpat typ with
-      | (eobj,None,_) -> Snterm (Gram.Entry.obj eobj)
-      | (eobj,Some None,_) -> Snext
+      | (eobj,None,_) -> Symbols.snterm (Gram.Entry.obj eobj)
+      | (eobj,Some None,_) -> Symbols.snext
       | (eobj,Some (Some (lev,cur)),_) ->
-          Snterml (Gram.Entry.obj eobj,constr_level lev)
+          Symbols.snterml (Gram.Entry.obj eobj,constr_level lev)
 
 (** Binding general entry keys to symbol *)
 
 let rec symbol_of_prod_entry_key = function
-  | Alist1 s -> Slist1 (symbol_of_prod_entry_key s)
+  | Alist1 s -> Symbols.slist1 (symbol_of_prod_entry_key s)
   | Alist1sep (s,sep) ->
-      slist1sep (symbol_of_prod_entry_key s) (gram_token_of_string sep)
-  | Alist0 s -> Slist0 (symbol_of_prod_entry_key s)
+      Symbols.slist1sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
+  | Alist0 s -> Symbols.slist0 (symbol_of_prod_entry_key s)
   | Alist0sep (s,sep) ->
-      slist0sep (symbol_of_prod_entry_key s) (gram_token_of_string sep)
-  | Aopt s -> Sopt (symbol_of_prod_entry_key s)
+      Symbols.slist0sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
+  | Aopt s -> Symbols.sopt (symbol_of_prod_entry_key s)
   | Amodifiers s ->
        Gram.srules'
         [([], Gram.action (fun _loc -> []));
          ([gram_token_of_string "(";
-           slist1sep (symbol_of_prod_entry_key s) (gram_token_of_string ",");
+           Symbols.slist1sep (symbol_of_prod_entry_key s, gram_token_of_string ",");
            gram_token_of_string ")"],
 	   Gram.action (fun _ l _ _loc -> l))]
-  | Aself -> Sself
-  | Anext -> Snext
-  | Atactic 5 -> Snterm (Gram.Entry.obj Tactic.binder_tactic)
+  | Aself -> Symbols.sself
+  | Anext -> Symbols.snext
+  | Atactic 5 -> Symbols.snterm (Gram.Entry.obj Tactic.binder_tactic)
   | Atactic n ->
-      Snterml (Gram.Entry.obj Tactic.tactic_expr, string_of_int n)
+      Symbols.snterml (Gram.Entry.obj Tactic.tactic_expr, string_of_int n)
   | Agram s ->
     let e =
       try
@@ -742,14 +719,12 @@ let rec symbol_of_prod_entry_key = function
       with Not_found ->
         Errors.anomaly (str "Unregistered grammar entry: " ++ str s)
     in
-    Snterm (Gram.Entry.obj (object_of_typed_entry e))
+    Symbols.snterm (Gram.Entry.obj (object_of_typed_entry e))
   | Aentry (u,s) ->
     let e = get_entry (get_univ u) s in
-    Snterm (Gram.Entry.obj (object_of_typed_entry e))
+    Symbols.snterm (Gram.Entry.obj (object_of_typed_entry e))
 
-let level_of_snterml = function
-  | Snterml (_,l) -> int_of_string l
-  | _ -> failwith "level_of_snterml"
+let level_of_snterml e = int_of_string (Symbols.snterml_level e)
 
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
