@@ -1036,12 +1036,17 @@ module Make
 
         (* Commands *)
         | VernacDeclareTacticDefinition l ->
-          let pr_tac_body (id, redef, body) =
+          let pr_tac_body tacdef_body =
+            let id, redef, body =
+              match tacdef_body with
+              | TacticDefinition ((_,id), body) -> str (Id.to_string id), false, body
+              | TacticRedefinition (id, body) -> pr_ltac_ref id, true, body
+            in
             let idl, body =
               match body with
                 | Tacexpr.TacFun (idl,b) -> idl,b
                 | _ -> [], body in
-            pr_ltac_ref id ++
+            id ++
               prlist (function None -> str " _"
                 | Some id -> spc () ++ pr_id id) idl
             ++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++

@@ -936,40 +936,37 @@ type tacdef_kind =
 let is_defined_tac kn =
   try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
 
-let make_absolute_name ident repl =
-  let loc = loc_of_reference ident in
-  if repl then
-    let kn =
-      try Nametab.locate_tactic (snd (qualid_of_reference ident))
-      with Not_found ->
-        Errors.user_err_loc (loc, "",
-                    str "There is no Ltac named " ++ pr_reference ident ++ str ".")
-    in
-    UpdateTac kn
-  else
-    let id = Constrexpr_ops.coerce_reference_to_id ident in
-    let kn = Lib.make_kn id in
-    let () = if is_defined_tac kn then
-      Errors.user_err_loc (loc, "",
-        str "There is already an Ltac named " ++ pr_reference ident ++ str".")
-    in
-    let is_primitive =
-      try
-        match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
-        | Tacexpr.TacArg _ -> false
-        | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
-      with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
-    in
-    let () = if is_primitive then
-      msg_warning (str "The Ltac name " ++ pr_reference ident ++
-        str " may be unusable because of a conflict with a notation.")
-    in
-    NewTac id
-
 let register_ltac local tacl =
-  let map (ident, repl, body) =
-    let name = make_absolute_name ident repl in
-    (name, body)
+  let map tactic_body =
+    match tactic_body with
+    | TacticDefinition ((loc,id), body) ->
+        let kn = Lib.make_kn id in
+        let id_pp = str (Id.to_string id) in
+        let () = if is_defined_tac kn then
+          Errors.user_err_loc (loc, "",
+            str "There is already an Ltac named " ++ id_pp ++ str".")
+        in
+        let is_primitive =
+          try
+            match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
+            | Tacexpr.TacArg _ -> false
+            | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
+          with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
+        in
+        let () = if is_primitive then
+          msg_warning (str "The Ltac name " ++ id_pp ++
+            str " may be unusable because of a conflict with a notation.")
+        in
+        NewTac id, body
+    | TacticRedefinition (ident, body) ->
+        let loc = loc_of_reference ident in
+        let kn =
+          try Nametab.locate_tactic (snd (qualid_of_reference ident))
+          with Not_found ->
+            Errors.user_err_loc (loc, "",
+                        str "There is no Ltac named " ++ pr_reference ident ++ str ".")
+        in
+        UpdateTac kn, body
   in
   let rfun = List.map map tacl in
   let recvars =

@@ -455,7 +455,7 @@ type vernac_expr =
   | VernacBackTo of int                                                        (* BackTo ... *)
 
   (* Commands *)
-  | VernacDeclareTacticDefinition of (reference * bool * raw_tactic_expr) list (* Ltac ... *)
+  | VernacDeclareTacticDefinition of tacdef_body list                          (* Ltac ... *)
   | VernacCreateHintDb of string * bool                                        (* Create HintDb ... *)
   | VernacRemoveHints of string list * reference list                          (* Remove Hints ... *)
   | VernacHints of obsolete_locality * string list * hints_expr                (* Hint ... *)
@@ -531,6 +531,10 @@ type vernac_expr =
   | VernacPolymorphic of bool * vernac_expr                                    (* Polymorphic ... *)
   | VernacLocal of bool * vernac_expr                                          (* Local ... *)
                                                                                (* Global ... *)
+
+and tacdef_body =
+  | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
+  | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
 
 and vernac_list = located_vernac_expr list
 
