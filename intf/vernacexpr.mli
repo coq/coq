@@ -455,8 +455,7 @@ type vernac_expr =
   | VernacBackTo of int                                                        (* BackTo ... *)
 
   (* Commands *)
-  | VernacDeclareTacticDefinition of                                           (* Ltac ... *)
-      (rec_flag * (reference * bool * raw_tactic_expr) list)
+  | VernacDeclareTacticDefinition of (reference * bool * raw_tactic_expr) list (* Ltac ... *)
   | VernacCreateHintDb of string * bool                                        (* Create HintDb ... *)
   | VernacRemoveHints of string list * reference list                          (* Remove Hints ... *)
   | VernacHints of obsolete_locality * string list * hints_expr                (* Hint ... *)

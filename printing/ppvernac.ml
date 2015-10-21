@@ -1035,7 +1035,7 @@ module Make
           return (keyword "Cd" ++ pr_opt qs s)
 
         (* Commands *)
-        | VernacDeclareTacticDefinition (rc,l) ->
+        | VernacDeclareTacticDefinition l ->
           let pr_tac_body (id, redef, body) =
             let idl, body =
               match body with
