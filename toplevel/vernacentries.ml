@@ -1955,7 +1955,6 @@ let interp ?proof ~loc locality poly c =
   | VernacLocate l -> vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r
   | VernacComments l -> if_verbose msg_info (str "Comments ok\n")
-  | VernacNop -> ()
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
   | VernacAbort id -> msg_warning (str "VernacAbort not handled by Stm")

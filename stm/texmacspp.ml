@@ -722,7 +722,6 @@ let rec tmpp v loc =
   | VernacRegister _ as x -> xmlTODO loc x
   | VernacComments (cl) ->
       xmlComment loc (List.flatten (List.map pp_comment cl))
-  | VernacNop as x -> xmlTODO loc x
 
   (* Stm backdoor *)
   | VernacStm _ as x -> xmlTODO loc x

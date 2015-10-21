@@ -497,7 +497,6 @@ type vernac_expr =
 
   | VernacRegister of lident * register_kind                                   (* Register ... *)
   | VernacComments of comment list                                             (* Comments ... *)
-  | VernacNop
 
   (* Stm backdoor *)
   | VernacStm of vernac_expr stm_vernac                                        (* Stm ... *)

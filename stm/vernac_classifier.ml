@@ -207,7 +207,6 @@ let rec classify_vernac e =
     | VernacResetName _ | VernacResetInitial
     | VernacBacktrack _ | VernacBackTo _ | VernacRestart -> !undo_classifier e
     (* What are these? *)
-    | VernacNop
     | VernacToplevelControl _
     | VernacRestoreState _
     | VernacWriteState _ -> VtUnknown, VtNow

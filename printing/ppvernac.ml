@@ -1229,8 +1229,6 @@ module Make
               (keyword "Comments" ++ spc()
                ++ prlist_with_sep sep (pr_comment pr_constr) l)
           )
-        | VernacNop ->
-          mt()
 
         (* Toplevel control *)
         | VernacToplevelControl exn ->
