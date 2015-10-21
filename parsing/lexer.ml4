@@ -8,7 +8,6 @@
 
 open Pp
 open Util
-open Compat
 open Tok
 
 (* Dictionaries: trees annotated with string options, each node being a map
@@ -565,7 +564,7 @@ let loct_add loct i loc = Hashtbl.add loct i loc
 
 let current_location_table = ref (loct_create ())
 
-type location_table = (int, CompatLoc.t) Hashtbl.t
+type location_table = (int, Compat.CompatLoc.t) Hashtbl.t
 let location_table () = !current_location_table
 let restore_location_table t = current_location_table := t
 
@@ -602,7 +601,7 @@ let func cs =
     Stream.from
       (fun i ->
          let (tok, loc) = next_token cs in
-         loct_add loct i (make_loc loc); Some tok)
+         loct_add loct i (Compat.make_loc loc); Some tok)
   in
   current_location_table := loct;
   (ts, loct_func loct)
@@ -622,10 +621,10 @@ ELSE (* official camlp4 for ocaml >= 3.10 *)
 
 module M_ = Camlp4.ErrorHandler.Register (Error)
 
-module Loc = CompatLoc
+module Loc = Compat.CompatLoc
 module Token = struct
   include Tok (* Cf. tok.ml *)
-  module Loc = CompatLoc
+  module Loc = Compat.CompatLoc
   module Error = Camlp4.Struct.EmptyError
   module Filter = struct
     type token_filter = (Tok.t * Loc.t) Stream.t -> (Tok.t * Loc.t) Stream.t
@@ -643,7 +642,7 @@ let mk () _init_loc(*FIXME*) cs =
   let rec self =
     parser i
        [< (tok, loc) = next_token; s >] ->
-          let loc = make_loc loc in
+          let loc = Compat.make_loc loc in
             loct_add loct i loc;
             [< '(tok, loc); self s >]
       | [< >] -> [< >]

@@ -14,13 +14,12 @@ open Genarg
 open Constrexpr
 open Tacexpr
 open Libnames
-open Compat
 open Misctypes
 open Genredexpr
 
 (** The parser of Coq *)
 
-module Gram : GrammarSig
+module Gram : Compat.GrammarSig
 
 (** The parser of Coq is built from three kinds of rule declarations:
 
