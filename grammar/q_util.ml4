@@ -49,7 +49,7 @@ let mlexpr_of_option f = function
   | None -> <:expr< None >>
   | Some e -> <:expr< Some $f e$ >>
 
-let rec mlexpr_of_prod_entry_key = function
+let rec mlexpr_of_prod_entry_key : type s a. (s, a) Pcoq.entry_key -> _ = function
   | Pcoq.Alist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key s$ >>
   | Pcoq.Alist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
   | Pcoq.Alist0 s -> <:expr< Pcoq.Alist0 $mlexpr_of_prod_entry_key s$ >>

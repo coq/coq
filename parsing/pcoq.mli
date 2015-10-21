@@ -264,28 +264,30 @@ val symbol_of_constr_prod_entry_key : gram_assoc option ->
    dynamically interpreted as entries for the Coq level extensions
 *)
 
-type prod_entry_key =
-  | Alist1 of prod_entry_key
-  | Alist1sep of prod_entry_key * string
-  | Alist0 of prod_entry_key
-  | Alist0sep of prod_entry_key * string
-  | Aopt of prod_entry_key
-  | Amodifiers of prod_entry_key
-  | Aself
-  | Anext
-  | Atactic of int
-  | Agram of string
-  | Aentry of string * string
+type ('self, _) entry_key =
+| Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
+| Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Alist0sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
+| Aopt : ('self, 'a) entry_key -> ('self, 'a option) entry_key
+| Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Aself : ('self, 'self) entry_key
+| Anext : ('self, 'self) entry_key
+| Atactic : int -> ('self, raw_tactic_expr) entry_key
+| Agram : string -> ('self, 'a) entry_key
+| Aentry : string * string -> ('self, 'a) entry_key
 
 (** Binding general entry keys to symbols *)
 
 val symbol_of_prod_entry_key :
-  prod_entry_key -> Gram.symbol
+  ('self, 'a) entry_key -> Gram.symbol
+
+type entry_name = EntryName : entry_type * ('self, 'a) entry_key -> entry_name
 
 (** Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
 val interp_entry_name : bool (** true to fail on unknown entry *) ->
-  int option -> string -> string -> entry_type * prod_entry_key
+  int option -> string -> string -> entry_name
 
 (** Recover the list of all known tactic notation entries. *)
 val list_entry_names : unit -> (string * entry_type) list

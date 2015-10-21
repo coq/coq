@@ -30,4 +30,4 @@ val mlexpr_of_string : string -> MLast.expr
 
 val mlexpr_of_option : ('a -> MLast.expr) -> 'a option -> MLast.expr
 
-val mlexpr_of_prod_entry_key : Pcoq.prod_entry_key -> MLast.expr
+val mlexpr_of_prod_entry_key : ('self, 'a) Pcoq.entry_key -> MLast.expr

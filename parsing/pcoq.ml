@@ -36,26 +36,6 @@ let camlp4_verbosity silent f x =
 let camlp4_verbose f x = camlp4_verbosity (Flags.is_verbose ()) f x
 
 
-(** General entry keys *)
-
-(** This intermediate abstract representation of entries can
-   both be reified into mlexpr for the ML extensions and
-   dynamically interpreted as entries for the Coq level extensions
-*)
-
-type prod_entry_key =
-  | Alist1 of prod_entry_key
-  | Alist1sep of prod_entry_key * string
-  | Alist0 of prod_entry_key
-  | Alist0sep of prod_entry_key * string
-  | Aopt of prod_entry_key
-  | Amodifiers of prod_entry_key
-  | Aself
-  | Anext
-  | Atactic of int
-  | Agram of string
-  | Aentry of string * string
-
 (** [grammar_object] is the superclass of all grammar entries *)
 
 module type Gramobj =
@@ -79,6 +59,28 @@ let in_typed_entry t e = (t,Gramobj.weaken_entry e)
 let type_of_typed_entry (t,e) = t
 let object_of_typed_entry (t,e) = e
 let weaken_entry x = Gramobj.weaken_entry x
+
+(** General entry keys *)
+
+(** This intermediate abstract representation of entries can
+   both be reified into mlexpr for the ML extensions and
+   dynamically interpreted as entries for the Coq level extensions
+*)
+
+type ('self, _) entry_key =
+| Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
+| Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Alist0sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
+| Aopt : ('self, 'a) entry_key -> ('self, 'a option) entry_key
+| Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Aself : ('self, 'self) entry_key
+| Anext : ('self, 'self) entry_key
+| Atactic : int -> ('self, Tacexpr.raw_tactic_expr) entry_key
+| Agram : string -> ('self, 'a) entry_key
+| Aentry : string * string -> ('self, 'a) entry_key
+
+type entry_name = EntryName : entry_type * ('self, 'a) entry_key -> entry_name
 
 module type Gramtypes =
 sig
@@ -689,7 +691,7 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
 
 (** Binding general entry keys to symbol *)
 
-let rec symbol_of_prod_entry_key = function
+let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
   | Alist1 s -> Symbols.slist1 (symbol_of_prod_entry_key s)
   | Alist1sep (s,sep) ->
       Symbols.slist1sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
@@ -756,24 +758,24 @@ let type_of_entry u s =
 let rec interp_entry_name static up_level s sep =
   let l = String.length s in
   if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
-    let t, g = interp_entry_name static up_level (String.sub s 3 (l-8)) "" in
-    ListArgType t, Alist1 g
+    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 3 (l-8)) "" in
+    EntryName (ListArgType t, Alist1 g)
   else if l > 12 && coincide s "ne_" 0 &&
                    coincide s "_list_sep" (l-9) then
-    let t, g = interp_entry_name static up_level (String.sub s 3 (l-12)) "" in
-    ListArgType t, Alist1sep (g,sep)
+    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 3 (l-12)) "" in
+    EntryName (ListArgType t, Alist1sep (g,sep))
   else if l > 5 && coincide s "_list" (l-5) then
-    let t, g = interp_entry_name static up_level (String.sub s 0 (l-5)) "" in
-    ListArgType t, Alist0 g
+    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-5)) "" in
+    EntryName (ListArgType t, Alist0 g)
   else if l > 9 && coincide s "_list_sep" (l-9) then
-    let t, g = interp_entry_name static up_level (String.sub s 0 (l-9)) "" in
-    ListArgType t, Alist0sep (g,sep)
+    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-9)) "" in
+    EntryName (ListArgType t, Alist0sep (g,sep))
   else if l > 4 && coincide s "_opt" (l-4) then
-    let t, g = interp_entry_name static up_level (String.sub s 0 (l-4)) "" in
-    OptArgType t, Aopt g
+    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-4)) "" in
+    EntryName (OptArgType t, Aopt g)
   else if l > 5 && coincide s "_mods" (l-5) then
-    let t, g = interp_entry_name static up_level (String.sub s 0 (l-1)) "" in
-    ListArgType t, Amodifiers g
+    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-1)) "" in
+    EntryName (ListArgType t, Amodifiers g)
   else
     let s = match s with "hyp" -> "var" | _ -> s in
     let check_lvl n = match up_level with
@@ -805,7 +807,7 @@ let rec interp_entry_name static up_level s sep =
       match t with
 	| Some t -> t
 	| None -> ExtraArgType s in
-    t, se
+    EntryName (t, se)
 
 let list_entry_names () =
   let add_entry key (entry, _) accu = (key, entry) :: accu in

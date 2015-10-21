@@ -181,10 +181,10 @@ EXTEND
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = interp_entry_name false None e "" in
+        let EntryName (t, g) = interp_entry_name false None e "" in
         GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let t, g = interp_entry_name false None e sep in
+        let EntryName (t, g) = interp_entry_name false None e sep in
         GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
         GramTerminal s

@@ -54,15 +54,22 @@ let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 let has_extraarg =
   List.exists (function GramNonTerminal(_,ExtraArgType _,_,_) -> true | _ -> false)
 
-let rec is_possibly_empty = function
-| Aopt _ | Alist0 _ | Alist0sep _ | Amodifiers _ -> true
-| Alist1 t | Alist1sep (t, _) -> is_possibly_empty t
+let rec is_possibly_empty : type s a. (s, a) entry_key -> bool = function
+| Aopt _ -> true
+| Alist0 _ -> true
+| Alist0sep _ -> true
+| Amodifiers _ -> true
+| Alist1 t -> is_possibly_empty t
+| Alist1sep (t, _) -> is_possibly_empty t
 | _ -> false
 
-let rec get_empty_entry = function
+let rec get_empty_entry : type s a. (s, a) entry_key -> _ = function
 | Aopt _ -> <:expr< None >>
-| Alist0 _ | Alist0sep _ | Amodifiers _ -> <:expr< [] >>
-| Alist1 t | Alist1sep (t, _) -> <:expr< [$get_empty_entry t$] >>
+| Alist0 _ -> <:expr< [] >>
+| Alist0sep _ -> <:expr< [] >>
+| Amodifiers _ -> <:expr< [] >>
+| Alist1 t -> <:expr< [$get_empty_entry t$] >>
+| Alist1sep (t, _) -> <:expr< [$get_empty_entry t$] >>
 | _ -> assert false
 
 let statically_known_possibly_empty s (prods,_) =
@@ -272,7 +279,9 @@ EXTEND
       [ e = argtype; LIDENT "list" -> ListArgType e
       | e = argtype; LIDENT "option" -> OptArgType e ]
     | "0"
-      [ e = LIDENT -> fst (interp_entry_name false None e "")
+      [ e = LIDENT ->
+        let EntryName (t, _) = interp_entry_name false None e "" in
+        t
       | "("; e = argtype; ")" -> e ] ]
   ;
   argrule:
@@ -280,10 +289,10 @@ EXTEND
   ;
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = interp_entry_name false None e "" in
+        let EntryName (t, g) = interp_entry_name false None e "" in
 	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let t, g = interp_entry_name false None e sep in
+        let EntryName (t, g) = interp_entry_name false None e sep in
 	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then

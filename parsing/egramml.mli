@@ -13,8 +13,8 @@
 
 type grammar_prod_item =
   | GramTerminal of string
-  | GramNonTerminal of Loc.t * Genarg.argument_type *
-      Pcoq.prod_entry_key * Names.Id.t option
+  | GramNonTerminal : Loc.t * Genarg.argument_type *
+      ('s, 'a) Pcoq.entry_key * Names.Id.t option -> grammar_prod_item
 
 val extend_vernac_command_grammar :
   Vernacexpr.extend_name -> Vernacexpr.vernac_expr Pcoq.Gram.entry option ->

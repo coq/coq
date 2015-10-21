@@ -30,8 +30,8 @@ let make_generic_action
 
 type grammar_prod_item =
   | GramTerminal of string
-  | GramNonTerminal of
-      Loc.t * argument_type * prod_entry_key * Id.t option
+  | GramNonTerminal :
+      Loc.t * argument_type * ('s, 'a) entry_key * Id.t option -> grammar_prod_item
 
 let make_prod_item = function
   | GramTerminal s -> (gram_token_of_string s, None)
