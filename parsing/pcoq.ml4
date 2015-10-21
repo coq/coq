@@ -192,22 +192,22 @@ let rec remove_grammars n =
            redo();
            camlp4_state := ByEXTEND (undo,redo) :: !camlp4_state)
 
+let make_rule r = [None, None, r]
+
 (** An entry that checks we reached the end of the input. *)
 
 let eoi_entry en =
   let e = Gram.entry_create ((Gram.Entry.name en) ^ "_eoi") in
-  GEXTEND Gram
-    e: [ [ x = en; EOI -> x ] ]
-    ;
-  END;
+  let symbs = [Symbols.snterm (Gram.Entry.obj en); Symbols.stoken Tok.EOI] in
+  let act = Gram.action (fun _ x loc -> x) in
+  maybe_uncurry (Gram.extend e) (None, make_rule [symbs, act]);
   e
 
 let map_entry f en =
   let e = Gram.entry_create ((Gram.Entry.name en) ^ "_map") in
-  GEXTEND Gram
-    e: [ [ x = en -> f x ] ]
-    ;
-  END;
+  let symbs = [Symbols.snterm (Gram.Entry.obj en)] in
+  let act = Gram.action (fun x loc -> f x) in
+  maybe_uncurry (Gram.extend e) (None, make_rule [symbs, act]);
   e
 
 (* Parse a string, does NOT check if the entire string was read
@@ -397,11 +397,14 @@ module Vernac_ =
     (* Main vernac entry *)
     let main_entry = Gram.entry_create "vernac"
 
-    GEXTEND Gram
-    main_entry:
-      [ [ a = vernac -> Some (!@loc, a) | EOI -> None ] ]
-    ;
-    END
+    let () =
+      let act_vernac = Gram.action (fun v loc -> Some (!@loc, v)) in
+      let act_eoi = Gram.action (fun _ loc -> None) in
+      let rule = [
+        ([ Symbols.stoken Tok.EOI ], act_eoi);
+        ([ Symbols.snterm (Gram.Entry.obj vernac) ], act_vernac );
+      ] in
+      maybe_uncurry (Gram.extend main_entry) (None, make_rule rule)
 
   end
 
