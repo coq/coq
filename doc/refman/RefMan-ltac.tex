@@ -183,8 +183,8 @@ is understood as
 \letclause & ::= & {\ident} \sequence{\name}{} {\tt :=} {\tacexpr}\\
 \\
 \contextrule & ::= &
-  \nelist{\contexthyp}{\tt ,} {\tt |-}{\cpattern} {\tt =>} {\tacexpr}\\
-& $|$ & {\tt |-} {\cpattern} {\tt =>} {\tacexpr}\\
+  {\tt [}\nelist{\contexthyp}{\tt ,} {\tt |-} {\cpattern} {\tt ]} {\tt =>} {\tacexpr}\\
+& $|$ & {\tt [} {\tt |-} {\cpattern} {\tt ]} {\tt =>} {\tacexpr}\\
 & $|$ & {\tt \_ =>} {\tacexpr}\\
 \\
 \contexthyp & ::= & {\name} {\tt :} {\cpattern}\\
