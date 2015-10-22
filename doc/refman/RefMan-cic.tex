@@ -184,20 +184,20 @@ More precisely the language of the {\em Calculus of Inductive
   {\em dependent product}. If $x$ does not occur in $U$ then
   $\forall~x:T,U$ reads as {\it ``if T then U''}. A non dependent
   product can be written: $T \rightarrow U$.
-\item if $x$ is a variable and $T$, $U$ are terms then $\lb x:T \mto U$
-  ($\kw{fun}~x:T~ {\tt =>}~ U$ in \Coq{} concrete syntax) is a term. This is a
+\item if $x$ is a variable and $T$, $u$ are terms then $\lb x:T \mto u$
+  ($\kw{fun}~x:T~ {\tt =>}~ u$ in \Coq{} concrete syntax) is a term. This is a
   notation for the $\lambda$-abstraction of
   $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
-  \cite{Bar81}. The term $\lb x:T \mto U$ is a function which maps
-  elements of $T$ to the expression $U$.
-\item if $T$ and $U$ are terms then $(T\ U)$ is a term  
- ($T~U$ in \Coq{} concrete syntax).  The term $(T\ 
-  U)$ reads as {\it ``T applied to U''}.
-\item if $x$ is a variable, and $T$, $U$ are terms then
-  $\kw{let}~x:=T~\kw{in}~U$ is a
-  term which denotes the term $U$ where the variable $x$ is locally
-  bound to $T$. This stands for the common ``let-in'' construction of
-  functional programs such as ML or Scheme.
+  \cite{Bar81}. The term $\lb x:T \mto u$ is a function which maps
+  elements of $T$ to the expression $u$.
+\item if $t$ and $u$ are terms then $(t\ u)$ is a term  
+ ($t~u$ in \Coq{} concrete syntax).  The term $(t\ 
+  u)$ reads as {\it ``t applied to u''}.
+\item if $x$ is a variable, and $t$, $T$ and $u$ are terms then
+  $\kw{let}~x:=t:T~\kw{in}~u$ is a
+  term which denotes the term $u$ where the variable $x$ is locally
+  bound to $t$ of type $T$. This stands for the common ``let-in''
+  construction of functional programs such as ML or Scheme.
 %\item case ...
 %\item fixpoint ...
 %\item cofixpoint ...
@@ -208,9 +208,9 @@ $(t\;t_1\;t_2\ldots t_n)$ represents $(\ldots ((t\;t_1)\;t_2)\ldots t_n)$. The
 products and arrows associate to the right such that $\forall~x:A,B\ra C\ra
 D$ represents $\forall~x:A,(B\ra (C\ra D))$.  One uses sometimes
 $\forall~x~y:A,B$ or
-$\lb x~y:A\mto B$ to denote the abstraction or product of several variables
+$\lb x~y:A\mto t$ to denote the abstraction or product of several variables
 of the same type. The equivalent formulation is $\forall~x:A, \forall y:A,B$ or
-$\lb x:A \mto \lb y:A \mto B$
+$\lb x:A \mto \lb y:A \mto t$
 
 \paragraph{Free variables.}
 The notion of free variables is defined as usual.  In the expressions
@@ -379,7 +379,7 @@ be derived from the following rules.
         {\WTEG{\letin{x}{t:T}{u}}{\subst{U}{x}{t}}}}
 \end{description}
     
-\Rem We may have $\kw{let}~x:=t~\kw{in}~u$
+\Rem We may have $\kw{let}~x:=t:T~\kw{in}~u$
 well-typed without having $((\lb x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
 may be used in a conversion rule (see Section~\ref{conv-rules}).
