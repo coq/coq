@@ -353,9 +353,9 @@ be derived from the following rules.
  \item[Assum] \inference{\frac{\WTE{}{T}{s}~~~~s \in \Sort~~~~c \notin E}
                       {\WF{E;c:T}{}}}
 \item[Ax] \index{Typing rules!Ax}
-\inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(p)}}~~~~~
-\frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(q)}}}
-\inference{\frac{\WFE{\Gamma}~~~~i<j}{\WTEG{\Type(i)}{\Type(j)}}}
+\inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(1)}}~~~~~
+\frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(1)}}}
+\inference{\frac{\WFE{\Gamma}}{\WTEG{\Type(i)}{\Type(i+1)}}}
 \item[Var]\index{Typing rules!Var}
  \inference{\frac{ \WFE{\Gamma}~~~~~(x:T) \in \Gamma~~\mbox{or}~~(x:=t:T) \in \Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
 \item[Const]  \index{Typing rules!Const}
@@ -481,11 +481,13 @@ The convertibility relation allows introducing a new typing rule
 which says that two convertible well-formed types have the same
 inhabitants.
 
+\section[Subtyping rules]{Subtyping rules\index{Subtyping rules}
+\label{subtyping-rules}}
+
 At the moment, we did not take into account one rule between universes
 which says that any term in a universe of index $i$ is also a term in
 the universe of index $i+1$ (this is the {\em cumulativity} rule of
-{\CIC}). This property is included into the
-conversion rule by extending the equivalence relation of
+{\CIC}). This property extends the equivalence relation of
 convertibility into a {\em subtyping} relation inductively defined by:
 \begin{enumerate}
 \item if $\WTEGCONV{t}{u}$ then $\WTEGLECONV{t}{u}$,
@@ -496,7 +498,7 @@ convertibility into a {\em subtyping} relation inductively defined by:
 \item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{\forall~x:T, T'}{\forall~x:U, U'}$.
 \end{enumerate}
 
-The conversion rule is now exactly:
+The conversion rule up to subtyping is now exactly:
 
 \begin{description}\label{Conv}
 \item[Conv]\index{Typing rules!Conv}
