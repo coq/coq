@@ -67,39 +67,18 @@ type instance_expr = Misctypes.glob_level list
 
 (** AST representation of a term. *)
 
-(* Reference manual defines the grammar for Vernacular commands in Chapter 6
+(* These values are part of the abstract syntax tree.
+ * The concrete syntax is described in Section 1.2 of the Reference manual.
+ * The concrete syntax is defined by 'lconstr' non-terminal in 'parsing/g_constr.ml4'.
+ * These values are returned by 'Pcoq.parse_string Pcoq.Constr.lconstr' function.
  *
- * ------------------------------------------------------------
+ * So e.g.:
  *
- * These files:
+ *   Pcoq.parse_string Pcoq.Constr.lconstr "foo"
  *
- *   parsing/*.ml4
+ * returns
  *
- * define mapping of concrete syntax into "constr_expr" values.
- *
- * ------------------------------------------------------------
- *
- * One can explore this mapping in the following way:
- *
- *   $ make -j4 bin/coqtop.byte
- *   $ rlwrap bin/coqtop.byte
- *
- *   Coq < Drop.
- *
- *   # #use "dev/include";;
- *   open Constrexpr;;
- *
- *   # Pcoq.Gram.entry_parse Pcoq.Constr.lconstr Coqloop.top_buffer.tokens;;
- *
- *   Coq < 42.
- *
- *     - : Constrexpr.constr_expr = CPrim _ (Numeral 42)
- *
- *   Coq < foo + 42.
- *
- *     - : Constrexpr.constr_expr =
- *           CNotation (20,28) "_ + _"
- *           ([CRef (Ident (_, foo)) None; CPrim _ (Numeral 42)], [], [])
+ *   CRef (Ident ((0,3), foo)) None
  *)
 type constr_expr =
   | CRef of reference * instance_expr option                      (** qualified or unqualified identifiers *)

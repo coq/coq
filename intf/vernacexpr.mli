@@ -305,28 +305,9 @@ type module_binder = bool option * lident list * module_ast_inl
  *   # #use "dev/include";;
  *   open Vernacexpr;;
  *
- *   # Pcoq.Gram.entry_parse Pcoq.main_entry Coqloop.top_buffer.tokens;;
- *
- *   Coq < Time Load "foo".
- *     - : option (Loc.t * Vernacexpr.vernac_expr) =
- *     Some (_, VernacTime (_, VernacLoad False "foo"))
- *
- *   # Pcoq.Gram.entry_parse Pcoq.main_entry Coqloop.top_buffer.tokens;;
- *
- *   Coq < Definition foo := fun x => x = 3.
- *     - : option (Loc.t * Vernacexpr.vernac_expr) =
- *     Some
- *      (_,
- *      VernacDefinition (None, Decl_kinds.Definition) ((_, foo), None)
- *       (DefineBody [] None
- *         (CLambdaN _
- *           [([(_, Names.Name.Name x)], Default Decl_kinds.Explicit,
- *            CHole _ (Some (Evar_kinds.BinderType (Names.Name.Name x)))
- *             Misctypes.IntroAnonymous None)]
- *           (CNotation _ "_ = _"
- *             ([CRef (Ident (_, x)) None; CPrim _ (Numeral 3)], 
- *             [], [])))
- *         None))
+ *   Pcoq.parse_string Pcoq.Vernac_.vernac "Check 42.";;
+ *   Pcoq.parse_string Pcoq.Vernac_.vernac "Check 42 : nat.";;
+ *   ...
  *)
 
 (** Representation of Vernacular commands. *)
@@ -532,6 +513,19 @@ type vernac_expr =
   | VernacLocal of bool * vernac_expr                                          (* Local ... *)
                                                                                (* Global ... *)
 
+(* These values are part of the abstract syntax tree.
+ * The concrete syntax is described in Section 9.1 of the Reference Manual ('ltac_def' non-terminal).
+ * The concrete syntax is defined by 'tacdef_body' non-terminal in 'parsing/g_ltac.ml4'.
+ * These values are returned by 'Pcoq.parse_string Pcoq.Tactic.tacdef_body' function.
+ *
+ * So e.g.:
+ *
+ *   Pcoq.parse_string Pcoq.Tactic.tacdef_body "foo:=bar";;
+ *
+ * returns
+ *
+ *   TacticDefinition ((0,8), foo) (TacArg ((5,8), TacCall (5,8) (Ident ((5,8), bar)) []))
+ *)
 and tacdef_body =
   | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
   | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)

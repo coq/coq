@@ -84,12 +84,19 @@ type 'a match_pattern =
   | Term of 'a
   | Subterm of bool * Id.t option * 'a
 
-(* Type of hypotheses for a Match Context rule *)
+(* These values are part of the abstract syntax tree.
+ * They represent 'context_hyp' non-terminals
+ * as described by the Reference Manual in Section 9.1.
+ *)
 type 'a match_context_hyps =
   | Hyp of Name.t located * 'a match_pattern
   | Def of Name.t located * 'a match_pattern * 'a match_pattern
 
-(* Type of a Match rule for Match Context and Match *)
+(* These values are part of the abstract syntax tree.
+ * They represent 'context_rule' and 'match_rule' non-terminals
+ * (i.e. branches of the match-tactic)
+ * as described by the Referece Manual in Section 9.1.
+ *)
 type ('a,'t) match_rule =
   | Pat of 'a match_context_hyps list * 'a match_pattern * 't
   | All of 't
@@ -239,38 +246,18 @@ constraint 'a = <
     't : terms, 'p : patterns, 'c : constants, 'i : inductive,
     'r : ltac refs, 'n : idents, 'l : levels *)
 
-(* This files:
+(* These values are part of the abstract syntax tree.
+ * The concrete syntax is described in Section 9.1 of the Reference Manual.
+ * The concrete syntax is defined by 'tactic_expr' non-terminal in 'parsing/g_ltac.ml4'.
+ * These values are returned by 'Pcoq.parse_string Pcoq.Tactic.tactic' function.
  *
- *   parsing/g_ltac.ml4
- *   parsing/g_tactic.ml4
+ * So e.g.:
  *
- * defines mapping of concrete syntax into "'a gen_tactic_expr" values.
+ *   Pcoq.parse_string Pcoq.Tactic.tactic "auto";;
  *
- * ------------------------------------------------------------
+ * returns
  *
- * One can explore this mapping in the following way:
- *
- *   $ make -j4 bin/coqtop.byte
- *   $ rlwrap bin/coqtop.byte
- *
- *   Coq < Drop.
- *
- *   # #use "dev/include";;
- *   open Tacexpr;;
- *
- *   # Pcoq.Gram.entry_parse Pcoq.Tactic.tactic Coqloop.top_buffer.tokens;;
- *
- *   Coq < foo; bar; baz.
- *     - : Tacexpr.raw_tactic_expr =
- *     Tacexpr.TacThen
- *      (Tacexpr.TacThen
- *        (Tacexpr.TacArg (_, Tacexpr.TacCall _ (Ident (_, foo)) []))
- *        (Tacexpr.TacArg (_, Tacexpr.TacCall _ (Ident (_, bar)) [])))
- *)
-
-(** This corresponds to "expr" non-terminal described in Chapter 9 of the reference manual.
- *  Variant "TacAtom" represens a tactic.
- *  All the other variants represent tacticals.
+ *   TacAtom (0,4) (TacAuto Off None [] (Some []))
  *)
 and 'a gen_tactic_expr =
   | TacAtom of Loc.t * 'a gen_atomic_tactic_expr  (* non-tactical *)
