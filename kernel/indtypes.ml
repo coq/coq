@@ -390,7 +390,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
     | _::hyps ->
         match kind_of_term (whd_betadeltaiota env lpar.(k)) with
 	  | Rel w when Int.equal w index -> check (k-1) (index+1) hyps
-	  | _ -> raise (IllFormedInd (LocalNonPar (k+1, index, l)))
+	  | _ -> raise (IllFormedInd (LocalNonPar (k+1, index-n+nhyps+1, l)))
   in check (nparams-1) (n-nhyps) hyps;
   if not (Array.for_all (noccur_between n ntypes) largs') then
     failwith_non_pos_vect n ntypes largs'
