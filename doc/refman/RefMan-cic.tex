@@ -339,19 +339,17 @@ A term $t$ is well typed in a global environment $E$ iff there exists a
 local context $\Gamma$ and a term $T$ such that the judgment \WTEG{t}{T} can
 be derived from the following rules.
 \begin{description}
-\item[W-E] \inference{\WF{[]}{[]}}
-\item[W-S]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
-\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~x \not\in
-      \Gamma           % \cup E
-      }
-      {\WFE{\Gamma::(x:T)}}~~~~~
-    \frac{\WTEG{t}{T}~~~~x \not\in
-      \Gamma           % \cup E
+\item[W-Empty] \inference{\WF{[]}{}}
+\item[W-Local-Assum]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
+\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~x \not\in \Gamma % \cup E
+      }{\WFE{\Gamma::(x:T)}}}
+\item[W-Local-Def]
+\inference{\frac{\WTEG{t}{T}~~~~x \not\in \Gamma % \cup E
      }{\WFE{\Gamma::(x:=t:T)}}}
-\item[Def] \inference{\frac{\WTE{}{t}{T}~~~c \notin E}
-                      {\WF{E;c:=t:T}{}}}
- \item[Assum] \inference{\frac{\WTE{}{T}{s}~~~~s \in \Sort~~~~c \notin E}
+\item[W-Global-Assum] \inference{\frac{\WTE{}{T}{s}~~~~s \in \Sort~~~~c \notin E}
                       {\WF{E;c:T}{}}}
+\item[W-Global-Def] \inference{\frac{\WTE{}{t}{T}~~~c \notin E}
+                      {\WF{E;c:=t:T}{}}}
 \item[Ax] \index{Typing rules!Ax}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(1)}}~~~~~
 \frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(1)}}}
