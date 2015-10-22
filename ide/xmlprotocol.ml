@@ -221,22 +221,31 @@ module ReifType : sig
 
 end = struct
 
-  type value_type =
-    | Unit | String | Int | Bool | Xml
+  type _ val_t =
+    | Unit : unit val_t
+    | String : string val_t
+    | Int : int val_t
+    | Bool : bool val_t
+    | Xml : Xml_datatype.xml val_t
 
-    | Option of value_type
-    | List of value_type
-    | Pair of value_type * value_type
-    | Union of value_type * value_type
+    | Option : 'a val_t -> 'a option val_t
+    | List : 'a val_t -> 'a list val_t
+    | Pair : 'a val_t * 'b val_t -> ('a * 'b) val_t
+    | Union : 'a val_t * 'b val_t -> ('a, 'b) union val_t
 
-    | Goals | Evar | State | Option_state | Option_value | Coq_info
-    | Coq_object of value_type
-    | State_id
-    | Search_cst
+    | Goals : goals val_t
+    | Evar : evar val_t
+    | State : status val_t
+    | Option_state : option_state val_t
+    | Option_value : option_value val_t
+    | Coq_info : coq_info val_t
+    | Coq_object : 'a val_t -> 'a coq_object val_t
+    | State_id : state_id val_t
+    | Search_cst : search_constraint val_t
 
-  type 'a val_t = value_type
+  type value_type = Value_type : 'a val_t -> value_type
 
-  let erase (x : 'a val_t) : value_type = x
+  let erase (x : 'a val_t) = Value_type x
 
   let unit_t         = Unit
   let string_t       = String
@@ -260,48 +269,48 @@ end = struct
   let search_cst_t   = Search_cst
 
   let of_value_type (ty : 'a val_t) : 'a -> xml =
-    let rec convert ty : 'a -> xml = match ty with
-      | Unit          -> Obj.magic of_unit
-      | Bool          -> Obj.magic of_bool
-      | Xml           -> Obj.magic (fun x -> x)
-      | String        -> Obj.magic of_string
-      | Int           -> Obj.magic of_int
-      | State         -> Obj.magic of_status
-      | Option_state  -> Obj.magic of_option_state
-      | Option_value  -> Obj.magic of_option_value
-      | Coq_info      -> Obj.magic of_coq_info
-      | Goals         -> Obj.magic of_goals
-      | Evar          -> Obj.magic of_evar
-      | List t        -> Obj.magic (of_list (convert t))
-      | Option t      -> Obj.magic (of_option (convert t))
-      | Coq_object t  -> Obj.magic (of_coq_object (convert t))
-      | Pair (t1,t2)  -> Obj.magic (of_pair (convert t1) (convert t2))
-      | Union (t1,t2) -> Obj.magic (of_union (convert t1) (convert t2))
-      | State_id      -> Obj.magic Stateid.to_xml
-      | Search_cst    -> Obj.magic of_search_cst
+    let rec convert : type a. a val_t -> a -> xml = function
+      | Unit          -> of_unit
+      | Bool          -> of_bool
+      | Xml           -> (fun x -> x)
+      | String        -> of_string
+      | Int           -> of_int
+      | State         -> of_status
+      | Option_state  -> of_option_state
+      | Option_value  -> of_option_value
+      | Coq_info      -> of_coq_info
+      | Goals         -> of_goals
+      | Evar          -> of_evar
+      | List t        -> (of_list (convert t))
+      | Option t      -> (of_option (convert t))
+      | Coq_object t  -> (of_coq_object (convert t))
+      | Pair (t1,t2)  -> (of_pair (convert t1) (convert t2))
+      | Union (t1,t2) -> (of_union (convert t1) (convert t2))
+      | State_id      -> Stateid.to_xml
+      | Search_cst    -> of_search_cst
     in
       convert ty
 
   let to_value_type (ty : 'a val_t) : xml -> 'a =
-    let rec convert ty : xml -> 'a = match ty with
-      | Unit          -> Obj.magic to_unit
-      | Bool          -> Obj.magic to_bool
-      | Xml           -> Obj.magic (fun x -> x)
-      | String        -> Obj.magic to_string
-      | Int           -> Obj.magic to_int
-      | State         -> Obj.magic to_status
-      | Option_state  -> Obj.magic to_option_state
-      | Option_value  -> Obj.magic to_option_value
-      | Coq_info      -> Obj.magic to_coq_info
-      | Goals         -> Obj.magic to_goals
-      | Evar          -> Obj.magic to_evar
-      | List t        -> Obj.magic (to_list (convert t))
-      | Option t      -> Obj.magic (to_option (convert t))
-      | Coq_object t  -> Obj.magic (to_coq_object (convert t))
-      | Pair (t1,t2)  -> Obj.magic (to_pair (convert t1) (convert t2))
-      | Union (t1,t2) -> Obj.magic (to_union (convert t1) (convert t2))
-      | State_id      -> Obj.magic Stateid.of_xml
-      | Search_cst    -> Obj.magic to_search_cst
+    let rec convert : type a. a val_t -> xml -> a = function
+      | Unit          -> to_unit
+      | Bool          -> to_bool
+      | Xml           -> (fun x -> x)
+      | String        -> to_string
+      | Int           -> to_int
+      | State         -> to_status
+      | Option_state  -> to_option_state
+      | Option_value  -> to_option_value
+      | Coq_info      -> to_coq_info
+      | Goals         -> to_goals
+      | Evar          -> to_evar
+      | List t        -> (to_list (convert t))
+      | Option t      -> (to_option (convert t))
+      | Coq_object t  -> (to_coq_object (convert t))
+      | Pair (t1,t2)  -> (to_pair (convert t1) (convert t2))
+      | Union (t1,t2) -> (to_union (convert t1) (convert t2))
+      | State_id      -> Stateid.of_xml
+      | Search_cst    -> to_search_cst
     in
       convert ty
 
@@ -350,6 +359,7 @@ end = struct
   let pr_coq_object (o : 'a coq_object) = "FIXME"
   let pr_pair pr1 pr2 (a,b) = "("^pr1 a^","^pr2 b^")"
   let pr_union pr1 pr2 = function Inl x -> "Inl "^pr1 x | Inr x -> "Inr "^pr2 x
+  let pr_state_id = Stateid.to_string
 
   let pr_search_cst = function
     | Name_Pattern s -> "Name_Pattern " ^ s
@@ -358,30 +368,30 @@ end = struct
     | In_Module s -> "In_Module " ^ String.concat "." s
     | Include_Blacklist -> "Include_Blacklist"
 
-  let rec print = function
-  | Unit          -> Obj.magic pr_unit
-  | Bool          -> Obj.magic pr_bool
-  | String        -> Obj.magic pr_string
-  | Xml           -> Obj.magic Xml_printer.to_string_fmt
-  | Int           -> Obj.magic pr_int
-  | State         -> Obj.magic pr_status
-  | Option_state  -> Obj.magic pr_option_state
-  | Option_value  -> Obj.magic pr_option_value
-  | Search_cst    -> Obj.magic pr_search_cst
-  | Coq_info      -> Obj.magic pr_coq_info
-  | Goals         -> Obj.magic pr_goal
-  | Evar          -> Obj.magic pr_evar
-  | List t        -> Obj.magic (pr_list (print t))
-  | Option t      -> Obj.magic (pr_option (print t))
-  | Coq_object t  -> Obj.magic pr_coq_object
-  | Pair (t1,t2)  -> Obj.magic (pr_pair (print t1) (print t2))
-  | Union (t1,t2) -> Obj.magic (pr_union (print t1) (print t2))
-  | State_id      -> Obj.magic pr_int
+  let rec print : type a. a val_t -> a -> string = function
+  | Unit          -> pr_unit
+  | Bool          -> pr_bool
+  | String        -> pr_string
+  | Xml           -> Xml_printer.to_string_fmt
+  | Int           -> pr_int
+  | State         -> pr_status
+  | Option_state  -> pr_option_state
+  | Option_value  -> pr_option_value
+  | Search_cst    -> pr_search_cst
+  | Coq_info      -> pr_coq_info
+  | Goals         -> pr_goal
+  | Evar          -> pr_evar
+  | List t        -> (pr_list (print t))
+  | Option t      -> (pr_option (print t))
+  | Coq_object t  -> pr_coq_object
+  | Pair (t1,t2)  -> (pr_pair (print t1) (print t2))
+  | Union (t1,t2) -> (pr_union (print t1) (print t2))
+  | State_id      -> pr_state_id
 
   (* This is to break if a rename/refactoring makes the strings below outdated *)
   type 'a exists = bool
 
-  let rec print_type = function
+  let rec print_val_t : type a. a val_t -> string = function
   | Unit          -> "unit"
   | Bool          -> "bool"
   | String        -> "string"
@@ -394,33 +404,35 @@ end = struct
   | Coq_info      -> assert(true : coq_info exists); "Interface.coq_info"
   | Goals         -> assert(true : goals exists); "Interface.goals"
   | Evar          -> assert(true : evar exists); "Interface.evar"
-  | List t        -> Printf.sprintf "(%s list)" (print_type t)
-  | Option t      -> Printf.sprintf "(%s option)" (print_type t)
+  | List t        -> Printf.sprintf "(%s list)" (print_val_t t)
+  | Option t      -> Printf.sprintf "(%s option)" (print_val_t t)
   | Coq_object t  -> assert(true : 'a coq_object exists);
-                     Printf.sprintf "(%s Interface.coq_object)" (print_type t)
-  | Pair (t1,t2)  -> Printf.sprintf "(%s * %s)" (print_type t1) (print_type t2)
+                     Printf.sprintf "(%s Interface.coq_object)" (print_val_t t)
+  | Pair (t1,t2)  -> Printf.sprintf "(%s * %s)" (print_val_t t1) (print_val_t t2)
   | Union (t1,t2) -> assert(true : ('a,'b) CSig.union exists);
-                     Printf.sprintf "((%s, %s) CSig.union)" (print_type t1) (print_type t2)
+                     Printf.sprintf "((%s, %s) CSig.union)" (print_val_t t1) (print_val_t t2)
   | State_id      -> assert(true : Stateid.t exists); "Stateid.t"
+
+  let print_type = function Value_type ty -> print_val_t ty
 
   let document_type_encoding pr_xml =
     Printf.printf "\n=== Data encoding by examples ===\n\n";
-    Printf.printf "%s:\n\n%s\n\n" (print_type Unit) (pr_xml (of_unit ()));
-    Printf.printf "%s:\n\n%s\n%s\n\n" (print_type Bool)
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t Unit) (pr_xml (of_unit ()));
+    Printf.printf "%s:\n\n%s\n%s\n\n" (print_val_t Bool)
       (pr_xml (of_bool true)) (pr_xml (of_bool false));
-    Printf.printf "%s:\n\n%s\n\n" (print_type String) (pr_xml (of_string "hello"));
-    Printf.printf "%s:\n\n%s\n\n" (print_type Int) (pr_xml (of_int 256));
-    Printf.printf "%s:\n\n%s\n\n" (print_type State_id) (pr_xml (Stateid.to_xml Stateid.initial));
-    Printf.printf "%s:\n\n%s\n\n" (print_type (List Int)) (pr_xml (of_list of_int [3;4;5]));
-    Printf.printf "%s:\n\n%s\n%s\n\n" (print_type (Option Int))
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t String) (pr_xml (of_string "hello"));
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t Int) (pr_xml (of_int 256));
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t State_id) (pr_xml (Stateid.to_xml Stateid.initial));
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t (List Int)) (pr_xml (of_list of_int [3;4;5]));
+    Printf.printf "%s:\n\n%s\n%s\n\n" (print_val_t (Option Int))
       (pr_xml (of_option of_int (Some 3))) (pr_xml (of_option of_int None));
-    Printf.printf "%s:\n\n%s\n\n" (print_type (Pair (Bool,Int)))
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t (Pair (Bool,Int)))
       (pr_xml (of_pair of_bool of_int (false,3)));
-    Printf.printf "%s:\n\n%s\n\n" (print_type (Union (Bool,Int)))
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t (Union (Bool,Int)))
       (pr_xml (of_union of_bool of_int (Inl false)));
     print_endline ("All other types are records represented by a node named like the OCaml\n"^
                    "type which contains a flattened n-tuple.  We provide one example.\n");
-    Printf.printf "%s:\n\n%s\n\n" (print_type Option_state)
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t Option_state)
       (pr_xml (of_option_state { opt_sync = true; opt_depr = false;
         opt_name = "name1"; opt_value = IntValue (Some 37) }));
 
@@ -496,27 +508,27 @@ let calls = [|
 |]
 
 type 'a call =
-  | Add        of add_sty
-  | Edit_at    of edit_at_sty
-  | Query      of query_sty
-  | Goal       of goals_sty
-  | Evars      of evars_sty
-  | Hints      of hints_sty
-  | Status     of status_sty
-  | Search     of search_sty
-  | GetOptions of get_options_sty
-  | SetOptions of set_options_sty
-  | MkCases    of mkcases_sty
-  | Quit       of quit_sty
-  | About      of about_sty
-  | Init       of init_sty
-  | StopWorker of stop_worker_sty
+  | Add        : add_sty -> add_rty call
+  | Edit_at    : edit_at_sty -> edit_at_rty call
+  | Query      : query_sty -> query_rty call
+  | Goal       : goals_sty -> goals_rty call
+  | Evars      : evars_sty -> evars_rty call
+  | Hints      : hints_sty -> hints_rty call
+  | Status     : status_sty -> status_rty call
+  | Search     : search_sty -> search_rty call
+  | GetOptions : get_options_sty -> get_options_rty call
+  | SetOptions : set_options_sty -> set_options_rty call
+  | MkCases    : mkcases_sty -> mkcases_rty call
+  | Quit       : quit_sty -> quit_rty call
+  | About      : about_sty -> about_rty call
+  | Init       : init_sty -> init_rty call
+  | StopWorker : stop_worker_sty -> stop_worker_rty call
   (* retrocompatibility *)
-  | Interp     of interp_sty
-  | PrintAst   of print_ast_sty
-  | Annotate   of annotate_sty
+  | Interp     : interp_sty -> interp_rty call
+  | PrintAst   : print_ast_sty -> print_ast_rty call
+  | Annotate   : annotate_sty -> annotate_rty call
 
-let id_of_call = function
+let id_of_call : type a. a call -> int = function
   | Add _        -> 0
   | Edit_at _    -> 1
   | Query _      -> 2
@@ -538,7 +550,7 @@ let id_of_call = function
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
-type unknown
+type unknown_call = Unknown : 'a call -> unknown_call
 
 (** We use phantom types and GADT to protect ourselves against wild casts *)
 let add x         : add_rty call         = Add x
@@ -559,8 +571,8 @@ let stop_worker x : stop_worker_rty call = StopWorker x
 let print_ast   x : print_ast_rty call   = PrintAst x
 let annotate   x : annotate_rty call    = Annotate x
 
-let abstract_eval_call handler (c : 'a call) : 'a value =
-  let mkGood x : 'a value = Good (Obj.magic x) in
+let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
+  let mkGood : type a. a -> a value = fun x -> Good x in
   try
     match c with
     | Add x        -> mkGood (handler.add x)
@@ -586,47 +598,47 @@ let abstract_eval_call handler (c : 'a call) : 'a value =
     Fail (handler.handle_exn any)
 
 (** brain dead code, edit if protocol messages are added/removed *)
-let of_answer (q : 'a call) (v : 'a value) : xml = match q with
-  | Add _        -> of_value (of_value_type add_rty_t        ) (Obj.magic v)
-  | Edit_at _    -> of_value (of_value_type edit_at_rty_t    ) (Obj.magic v)
-  | Query _      -> of_value (of_value_type query_rty_t      ) (Obj.magic v)
-  | Goal _       -> of_value (of_value_type goals_rty_t      ) (Obj.magic v)
-  | Evars _      -> of_value (of_value_type evars_rty_t      ) (Obj.magic v)
-  | Hints _      -> of_value (of_value_type hints_rty_t      ) (Obj.magic v)
-  | Status _     -> of_value (of_value_type status_rty_t     ) (Obj.magic v)
-  | Search _     -> of_value (of_value_type search_rty_t     ) (Obj.magic v)
-  | GetOptions _ -> of_value (of_value_type get_options_rty_t) (Obj.magic v)
-  | SetOptions _ -> of_value (of_value_type set_options_rty_t) (Obj.magic v)
-  | MkCases _    -> of_value (of_value_type mkcases_rty_t    ) (Obj.magic v)
-  | Quit _       -> of_value (of_value_type quit_rty_t       ) (Obj.magic v)
-  | About _      -> of_value (of_value_type about_rty_t      ) (Obj.magic v)
-  | Init _       -> of_value (of_value_type init_rty_t       ) (Obj.magic v)
-  | Interp _     -> of_value (of_value_type interp_rty_t     ) (Obj.magic v)
-  | StopWorker _ -> of_value (of_value_type stop_worker_rty_t) (Obj.magic v)
-  | PrintAst _   -> of_value (of_value_type print_ast_rty_t  ) (Obj.magic v)
-  | Annotate _   -> of_value (of_value_type annotate_rty_t   ) (Obj.magic v)
+let of_answer : type a. a call -> a value -> xml = function
+  | Add _        -> of_value (of_value_type add_rty_t        )
+  | Edit_at _    -> of_value (of_value_type edit_at_rty_t    )
+  | Query _      -> of_value (of_value_type query_rty_t      )
+  | Goal _       -> of_value (of_value_type goals_rty_t      )
+  | Evars _      -> of_value (of_value_type evars_rty_t      )
+  | Hints _      -> of_value (of_value_type hints_rty_t      )
+  | Status _     -> of_value (of_value_type status_rty_t     )
+  | Search _     -> of_value (of_value_type search_rty_t     )
+  | GetOptions _ -> of_value (of_value_type get_options_rty_t)
+  | SetOptions _ -> of_value (of_value_type set_options_rty_t)
+  | MkCases _    -> of_value (of_value_type mkcases_rty_t    )
+  | Quit _       -> of_value (of_value_type quit_rty_t       )
+  | About _      -> of_value (of_value_type about_rty_t      )
+  | Init _       -> of_value (of_value_type init_rty_t       )
+  | Interp _     -> of_value (of_value_type interp_rty_t     )
+  | StopWorker _ -> of_value (of_value_type stop_worker_rty_t)
+  | PrintAst _   -> of_value (of_value_type print_ast_rty_t  )
+  | Annotate _   -> of_value (of_value_type annotate_rty_t   )
 
-let to_answer (q : 'a call) (x : xml) : 'a value = match q with
-  | Add _        -> Obj.magic (to_value (to_value_type add_rty_t        ) x)
-  | Edit_at _    -> Obj.magic (to_value (to_value_type edit_at_rty_t    ) x)
-  | Query _      -> Obj.magic (to_value (to_value_type query_rty_t      ) x)
-  | Goal _       -> Obj.magic (to_value (to_value_type goals_rty_t      ) x)
-  | Evars _      -> Obj.magic (to_value (to_value_type evars_rty_t      ) x)
-  | Hints _      -> Obj.magic (to_value (to_value_type hints_rty_t      ) x)
-  | Status _     -> Obj.magic (to_value (to_value_type status_rty_t     ) x)
-  | Search _     -> Obj.magic (to_value (to_value_type search_rty_t     ) x)
-  | GetOptions _ -> Obj.magic (to_value (to_value_type get_options_rty_t) x)
-  | SetOptions _ -> Obj.magic (to_value (to_value_type set_options_rty_t) x)
-  | MkCases _    -> Obj.magic (to_value (to_value_type mkcases_rty_t    ) x)
-  | Quit _       -> Obj.magic (to_value (to_value_type quit_rty_t       ) x)
-  | About _      -> Obj.magic (to_value (to_value_type about_rty_t      ) x)
-  | Init _       -> Obj.magic (to_value (to_value_type init_rty_t       ) x)
-  | Interp _     -> Obj.magic (to_value (to_value_type interp_rty_t     ) x)
-  | StopWorker _ -> Obj.magic (to_value (to_value_type stop_worker_rty_t) x)
-  | PrintAst _   -> Obj.magic (to_value (to_value_type print_ast_rty_t  ) x)
-  | Annotate _   -> Obj.magic (to_value (to_value_type annotate_rty_t   ) x)
+let to_answer : type a. a call -> xml -> a value = function
+  | Add _        -> to_value (to_value_type add_rty_t        )
+  | Edit_at _    -> to_value (to_value_type edit_at_rty_t    )
+  | Query _      -> to_value (to_value_type query_rty_t      )
+  | Goal _       -> to_value (to_value_type goals_rty_t      )
+  | Evars _      -> to_value (to_value_type evars_rty_t      )
+  | Hints _      -> to_value (to_value_type hints_rty_t      )
+  | Status _     -> to_value (to_value_type status_rty_t     )
+  | Search _     -> to_value (to_value_type search_rty_t     )
+  | GetOptions _ -> to_value (to_value_type get_options_rty_t)
+  | SetOptions _ -> to_value (to_value_type set_options_rty_t)
+  | MkCases _    -> to_value (to_value_type mkcases_rty_t    )
+  | Quit _       -> to_value (to_value_type quit_rty_t       )
+  | About _      -> to_value (to_value_type about_rty_t      )
+  | Init _       -> to_value (to_value_type init_rty_t       )
+  | Interp _     -> to_value (to_value_type interp_rty_t     )
+  | StopWorker _ -> to_value (to_value_type stop_worker_rty_t)
+  | PrintAst _   -> to_value (to_value_type print_ast_rty_t  )
+  | Annotate _   -> to_value (to_value_type annotate_rty_t   )
 
-let of_call (q : 'a call) : xml =
+let of_call : type a. a call -> xml = fun q ->
   let mkCall x = constructor "call" (str_of_call q) [x] in
   match q with
   | Add x        -> mkCall (of_value_type add_sty_t         x)
@@ -648,28 +660,28 @@ let of_call (q : 'a call) : xml =
   | PrintAst x   -> mkCall (of_value_type print_ast_sty_t   x)
   | Annotate x   -> mkCall (of_value_type annotate_sty_t    x)
 
-let to_call : xml -> unknown call =
+let to_call : xml -> unknown_call =
   do_match "call" (fun s a ->
     let mkCallArg vt a = to_value_type vt (singleton a) in
     match s with
-    | "Add"        -> Add        (mkCallArg add_sty_t         a)
-    | "Edit_at"    -> Edit_at    (mkCallArg edit_at_sty_t     a)
-    | "Query"      -> Query      (mkCallArg query_sty_t       a)
-    | "Goal"       -> Goal       (mkCallArg goals_sty_t       a)
-    | "Evars"      -> Evars      (mkCallArg evars_sty_t       a)
-    | "Hints"      -> Hints      (mkCallArg hints_sty_t       a)
-    | "Status"     -> Status     (mkCallArg status_sty_t      a)
-    | "Search"     -> Search     (mkCallArg search_sty_t      a)
-    | "GetOptions" -> GetOptions (mkCallArg get_options_sty_t a)
-    | "SetOptions" -> SetOptions (mkCallArg set_options_sty_t a)
-    | "MkCases"    -> MkCases    (mkCallArg mkcases_sty_t     a)
-    | "Quit"       -> Quit       (mkCallArg quit_sty_t        a)
-    | "About"      -> About      (mkCallArg about_sty_t       a)
-    | "Init"       -> Init       (mkCallArg init_sty_t        a)
-    | "Interp"     -> Interp     (mkCallArg interp_sty_t      a)
-    | "StopWorker" -> StopWorker (mkCallArg stop_worker_sty_t a)
-    | "PrintAst"   -> PrintAst   (mkCallArg print_ast_sty_t   a)
-    | "Annotate"   -> Annotate   (mkCallArg annotate_sty_t    a)
+    | "Add"        -> Unknown (Add        (mkCallArg add_sty_t         a))
+    | "Edit_at"    -> Unknown (Edit_at    (mkCallArg edit_at_sty_t     a))
+    | "Query"      -> Unknown (Query      (mkCallArg query_sty_t       a))
+    | "Goal"       -> Unknown (Goal       (mkCallArg goals_sty_t       a))
+    | "Evars"      -> Unknown (Evars      (mkCallArg evars_sty_t       a))
+    | "Hints"      -> Unknown (Hints      (mkCallArg hints_sty_t       a))
+    | "Status"     -> Unknown (Status     (mkCallArg status_sty_t      a))
+    | "Search"     -> Unknown (Search     (mkCallArg search_sty_t      a))
+    | "GetOptions" -> Unknown (GetOptions (mkCallArg get_options_sty_t a))
+    | "SetOptions" -> Unknown (SetOptions (mkCallArg set_options_sty_t a))
+    | "MkCases"    -> Unknown (MkCases    (mkCallArg mkcases_sty_t     a))
+    | "Quit"       -> Unknown (Quit       (mkCallArg quit_sty_t        a))
+    | "About"      -> Unknown (About      (mkCallArg about_sty_t       a))
+    | "Init"       -> Unknown (Init       (mkCallArg init_sty_t        a))
+    | "Interp"     -> Unknown (Interp     (mkCallArg interp_sty_t      a))
+    | "StopWorker" -> Unknown (StopWorker (mkCallArg stop_worker_sty_t a))
+    | "PrintAst"   -> Unknown (PrintAst   (mkCallArg print_ast_sty_t   a))
+    | "Annotate"   -> Unknown (Annotate   (mkCallArg annotate_sty_t    a))
     | _ -> raise Marshal_error)
 
 (** Debug printing *)
@@ -681,26 +693,26 @@ let pr_value_gen pr = function
       "FAIL "^Stateid.to_string id^
         " ("^string_of_int i^","^string_of_int j^")["^Richpp.raw_print str^"]"
 let pr_value v = pr_value_gen (fun _ -> "FIXME") v
-let pr_full_value call value = match call with
-  | Add _        -> pr_value_gen (print add_rty_t        ) (Obj.magic value)
-  | Edit_at _    -> pr_value_gen (print edit_at_rty_t    ) (Obj.magic value)
-  | Query _      -> pr_value_gen (print query_rty_t      ) (Obj.magic value)
-  | Goal _       -> pr_value_gen (print goals_rty_t      ) (Obj.magic value)
-  | Evars _      -> pr_value_gen (print evars_rty_t      ) (Obj.magic value)
-  | Hints _      -> pr_value_gen (print hints_rty_t      ) (Obj.magic value)
-  | Status _     -> pr_value_gen (print status_rty_t     ) (Obj.magic value)
-  | Search _     -> pr_value_gen (print search_rty_t     ) (Obj.magic value)
-  | GetOptions _ -> pr_value_gen (print get_options_rty_t) (Obj.magic value)
-  | SetOptions _ -> pr_value_gen (print set_options_rty_t) (Obj.magic value)
-  | MkCases _    -> pr_value_gen (print mkcases_rty_t    ) (Obj.magic value)
-  | Quit _       -> pr_value_gen (print quit_rty_t       ) (Obj.magic value)
-  | About _      -> pr_value_gen (print about_rty_t      ) (Obj.magic value)
-  | Init _       -> pr_value_gen (print init_rty_t       ) (Obj.magic value)
-  | Interp _     -> pr_value_gen (print interp_rty_t     ) (Obj.magic value)
-  | StopWorker _ -> pr_value_gen (print stop_worker_rty_t) (Obj.magic value)
-  | PrintAst _   -> pr_value_gen (print print_ast_rty_t  ) (Obj.magic value)
-  | Annotate _   -> pr_value_gen (print annotate_rty_t   ) (Obj.magic value)
-let pr_call call =
+let pr_full_value : type a. a call -> a value -> string = fun call value -> match call with
+  | Add _        -> pr_value_gen (print add_rty_t        ) value
+  | Edit_at _    -> pr_value_gen (print edit_at_rty_t    ) value
+  | Query _      -> pr_value_gen (print query_rty_t      ) value
+  | Goal _       -> pr_value_gen (print goals_rty_t      ) value
+  | Evars _      -> pr_value_gen (print evars_rty_t      ) value
+  | Hints _      -> pr_value_gen (print hints_rty_t      ) value
+  | Status _     -> pr_value_gen (print status_rty_t     ) value
+  | Search _     -> pr_value_gen (print search_rty_t     ) value
+  | GetOptions _ -> pr_value_gen (print get_options_rty_t) value
+  | SetOptions _ -> pr_value_gen (print set_options_rty_t) value
+  | MkCases _    -> pr_value_gen (print mkcases_rty_t    ) value
+  | Quit _       -> pr_value_gen (print quit_rty_t       ) value
+  | About _      -> pr_value_gen (print about_rty_t      ) value
+  | Init _       -> pr_value_gen (print init_rty_t       ) value
+  | Interp _     -> pr_value_gen (print interp_rty_t     ) value
+  | StopWorker _ -> pr_value_gen (print stop_worker_rty_t) value
+  | PrintAst _   -> pr_value_gen (print print_ast_rty_t  ) value
+  | Annotate _   -> pr_value_gen (print annotate_rty_t   ) value
+let pr_call : type a. a call -> string = fun call ->
   let return what x = str_of_call call ^ " " ^ print what x in
   match call with
     | Add x        -> return add_sty_t x
