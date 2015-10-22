@@ -29,22 +29,6 @@ had an impredicative sort {\Set}. Since {\Coq} version 8.0, the sort
 {\Set} is predicative by default, with an option to make it
 impredicative (see Section~\ref{impredicativity}).
 
-In \CIC\, all objects have a {\em type}. There are types for functions (or
-programs), there are atomic types (especially datatypes)... but also
-types for proofs and types for the types themselves.
-Especially, any object handled in the formalism must belong to a
-type.  For instance, the statement {\it ``for all x, P''} is not
-allowed in type theory; you must say instead: {\it ``for all x
-of type T, P''}. The expression {\it ``x of type T''} is
-written {\it ``x:T''}. Informally, {\it ``x:T''} can be thought as
-{\it ``x belongs to T''}.
-The terms of {\CIC} are detailed in Section~\ref{Terms}.
-
-In \CIC, there is an internal reduction mechanism. In particular, it
-can decide if two programs are {\em intentionally} equal (one
-says {\em convertible}). Convertibility is presented in section 
-\ref{convertibility}.
-
 The reader seeking a background on the Calculus of Inductive
 Constructions may read several papers. In addition to the references given above, Giménez and Castéran~\cite{GimCas05}
 provide
@@ -60,20 +44,26 @@ theory.
 
 \section[The terms]{The terms\label{Terms}}
 
-In most type theories, one usually makes a syntactic distinction
-between types and terms. This is not the case for \CIC\ which defines
-both types and terms in the same syntactical structure. This is
-because the type-theory itself forces terms and types to be defined in
-a mutual recursive way and also because similar constructions can be
-applied to both terms and types and consequently can share the same
-syntactic structure.
+The expressions of the {\CIC} are {\em terms} and all terms have a {\em type}.
+There are types for functions (or
+programs), there are atomic types (especially datatypes)... but also
+types for proofs and types for the types themselves.
+Especially, any object handled in the formalism must belong to a
+type.  For instance, universal quantification is relative to a type and
+takes the form {\it ``for all x
+of type T, P''}. The expression {\it ``x of type T''} is
+written {\it ``x:T''}. Informally, {\it ``x:T''} can be thought as
+{\it ``x belongs to T''}.
+
+The types of types are {\em sorts}. Types and sorts are themselves
+terms so that terms, types and sorts are all components of a common
+syntactic language of terms which is described in
+Section~\label{cic:terms} but, first, we describe sorts.
 
 \subsection[Sorts]{Sorts\label{Sorts}
 \index{Sorts}}
-When manipulated as terms, types have themselves a type which is called a sort.
-
-There is an infinite well-founded typing hierarchy of sorts whose base
-sorts are {\Prop} and {\Set}.
+All sorts have a type and there is an infinite well-founded
+typing hierarchy of sorts whose base sorts are {\Prop} and {\Set}.
 
 The sort {\Prop} intends to be the type of logical propositions. If
 $M$ is a logical proposition then it denotes the class of terms
@@ -167,6 +157,7 @@ inconsistency} error (see also Section~\ref{PrintingUniverses}).
 %% in a theory where inductive objects are represented by terms.
 
 \subsection{Terms}
+\label{cic:terms}
 
 Terms are built from sorts, variables, constant,
 %constructors, inductive types,
@@ -175,23 +166,22 @@ abstraction, application, local definitions,
 and products.
 
 From a syntactic point of view, types cannot be distinguished from terms,
-except that they cannot start by an abstraction, and that if a term is
-a sort or a product, it should be a type.
+except that they cannot start by an abstraction or a constructor.
 
 More precisely the language of the {\em Calculus of Inductive
-  Constructions} is built from the following rules:
+  Constructions} is built from the following rules.
 
 \begin{enumerate}
 \item the sorts {\Set}, {\Prop}, ${\Type(i)}$ are terms.
-\item variables are terms
-\item constants are terms.
-%\item constructors are terms.
-%\item inductive types are terms.
+\item variables, hereafter ranged over by letters $x$, $y$, etc., are terms
+\item constants, hereafter ranged over by letters $c$, $d$, etc.,  are terms.
+%\item constructors, hereafter ranged over by letter $C$, are terms.
+%\item inductive types, hereafter ranged over by letter $I$, are terms.
 \item if $x$ is a variable and $T$, $U$ are terms then $\forall~x:T,U$
   ($\kw{forall}~x:T,~U$ in \Coq{} concrete syntax) is a term. If $x$
   occurs in $U$, $\forall~x:T,U$ reads as {\it ``for all x of type T,
     U''}. As $U$ depends on $x$, one says that $\forall~x:T,U$ is a
-  {\em dependent product}. If $x$ doesn't occurs in $U$ then
+  {\em dependent product}. If $x$ does not occur in $U$ then
   $\forall~x:T,U$ reads as {\it ``if T then U''}. A non dependent
   product can be written: $T \rightarrow U$.
 \item if $x$ is a variable and $T$, $U$ are terms then $\lb x:T \mto U$
@@ -199,7 +189,7 @@ More precisely the language of the {\em Calculus of Inductive
   notation for the $\lambda$-abstraction of
   $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
   \cite{Bar81}. The term $\lb x:T \mto U$ is a function which maps
-  elements of $T$ to $U$.
+  elements of $T$ to the expression $U$.
 \item if $T$ and $U$ are terms then $(T\ U)$ is a term  
  ($T~U$ in \Coq{} concrete syntax).  The term $(T\ 
   U)$ reads as {\it ``T applied to U''}.
@@ -399,6 +389,10 @@ may be used in a conversion rule (see Section~\ref{conv-rules}).
 \section[Conversion rules]{Conversion rules\index{Conversion rules}
 \label{conv-rules}}
 \paragraph[$\beta$-reduction.]{$\beta$-reduction.\label{beta}\index{beta-reduction@$\beta$-reduction}}
+
+In \CIC, there is an internal reduction mechanism. In particular, it
+can decide if two programs are {\em intentionally} equal (one
+says {\em convertible}). Convertibility is described in this section.
 
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
