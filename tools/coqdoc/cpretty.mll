@@ -320,6 +320,7 @@ let def_token =
   | "Instance"
   | "Declare" space+ "Instance"
   | "Global" space+ "Instance"
+  | "Functional" space+ "Scheme"
 
 let decl_token =
   "Hypothesis"
