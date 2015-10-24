@@ -95,7 +95,8 @@ val intern_context : bool -> env -> internalization_env -> local_binder list -> 
 
 (** {6 Composing internalization with type inference (pretyping) } *)
 
-(** Main interpretation functions expecting evars to be all resolved *)
+(** Main interpretation functions, using type class inference,
+    expecting evars and pending problems to be all resolved *)
 
 val interp_constr : env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> constr Evd.in_evar_universe_context
@@ -106,9 +107,10 @@ val interp_casted_constr : env -> evar_map -> ?impls:internalization_env ->
 val interp_type : env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> types Evd.in_evar_universe_context
 
-(** Main interpretation function expecting evars to be all resolved *)
+(** Main interpretation function expecting all postponed problems to
+    be resolved, but possibly leaving evars. *)
 
-val interp_open_constr   : env -> evar_map -> constr_expr -> evar_map * constr
+val interp_open_constr : env -> evar_map -> constr_expr -> evar_map * constr
 
 (** Accepting unresolved evars *)
 
