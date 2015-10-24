@@ -1918,8 +1918,17 @@ let keep hyps =
    and [a1..an:A1..An(a1..an-1)] such that the goal is [G(a1..an)],
    this generalizes [hyps |- goal] into [hyps |- T] *)
 
-let apply_type hdcty argl gl =
-  refine (applist (mkCast (Evarutil.mk_new_meta(),DEFAULTcast, hdcty),argl)) gl
+let apply_type newcl args =
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let store = Proofview.Goal.extra gl in
+    Proofview.Refine.refine { run = begin fun sigma ->
+      let newcl = nf_betaiota (Sigma.to_evar_map sigma) newcl (* As in former Logic.refine *) in
+      let Sigma (ev, sigma, p) =
+        Evarutil.new_evar env sigma ~principal:true ~store newcl in
+      Sigma (applist (ev, args), sigma, p)
+    end }
+  end }
 
 (* Given a context [hyps] with domain [x1..xn], possibly with let-ins,
    and well-typed in the current goal, [bring_hyps hyps] generalizes
@@ -2582,7 +2591,7 @@ let generalize_dep ?(with_let=false) c gl =
   let args = instance_from_named_context to_quantify_rev in
   tclTHENLIST
     [tclEVARS evd;
-     apply_type cl'' (if Option.is_empty body then c::args else args);
+     Proofview.V82.of_tactic (apply_type cl'' (if Option.is_empty body then c::args else args));
      thin (List.rev tothin')]
     gl
 
@@ -2592,9 +2601,9 @@ let generalize_gen_let lconstr gl =
     List.fold_right_i (generalize_goal gl) 0 lconstr
       (Tacmach.pf_concl gl,Tacmach.project gl)
   in
-  tclTHEN (tclEVARS evd)
+  Proofview.V82.of_tactic (Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd)
     (apply_type newcl (List.map_filter (fun ((_,c,b),_) ->
-      if Option.is_empty b then Some c else None) lconstr)) gl
+      if Option.is_empty b then Some c else None) lconstr))) gl
 
 let new_generalize_gen_let lconstr =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
@@ -3864,7 +3873,7 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
     (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
       (Tacticals.New.tclTHENLIST [
         (* Generalize dependent hyps (but not args) *)
-        if deps = [] then Proofview.tclUNIT () else Proofview.V82.tactic (apply_type tmpcl deps_cstr);
+        if deps = [] then Proofview.tclUNIT () else apply_type tmpcl deps_cstr;
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
         induct_tac elim;
         Proofview.V82.tactic (tclMAP expand_hyp toclear)
