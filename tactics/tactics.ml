@@ -2480,11 +2480,13 @@ let bring_hyps hyps =
   else
     Proofview.Goal.enter begin fun gl ->
       let env = Proofview.Goal.env gl in
+      let store = Proofview.Goal.extra gl in
       let concl = Tacmach.New.pf_nf_concl gl in
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
       let args = Array.of_list (instance_from_named_context hyps) in
       Proofview.Refine.refine begin fun sigma ->
-        let (sigma, ev) = Evarutil.new_evar env sigma newcl in
+        let (sigma, ev) =
+          Evarutil.new_evar env sigma ~principal:true ~store newcl in
         (sigma, (mkApp (ev, args)))
       end
     end
