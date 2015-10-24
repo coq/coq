@@ -77,8 +77,7 @@ type ('self, _) entry_key =
 | Aself : ('self, 'self) entry_key
 | Anext : ('self, 'self) entry_key
 | Atactic : int -> ('self, Tacexpr.raw_tactic_expr) entry_key
-| Agram : string -> ('self, 'a) entry_key
-| Aentry : string * string -> ('self, 'a) entry_key
+| Aentry : (string * string) -> ('self, 'a) entry_key
 
 type entry_name = EntryName : entry_type * ('self, 'a) entry_key -> entry_name
 
@@ -711,20 +710,6 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
   | Atactic 5 -> Symbols.snterm (Gram.Entry.obj Tactic.binder_tactic)
   | Atactic n ->
       Symbols.snterml (Gram.Entry.obj Tactic.tactic_expr, string_of_int n)
-  | Agram s ->
-    let e =
-      try
-      (** ppedrot: we should always generate Agram entries which have already
-          been registered, so this should not fail. *)
-        let (u, s) = match String.split ':' s with
-        | u :: s :: [] -> (u, s)
-        | _ -> raise Not_found
-        in
-        get_entry (get_univ u) s
-      with Not_found ->
-        Errors.anomaly (str "Unregistered grammar entry: " ++ str s)
-    in
-    Symbols.snterm (Gram.Entry.obj (object_of_typed_entry e))
   | Aentry (u,s) ->
     let e = get_entry (get_univ u) s in
     Symbols.snterm (Gram.Entry.obj (object_of_typed_entry e))
@@ -808,6 +793,10 @@ let rec interp_entry_name static up_level s sep =
 	| Some t -> t
 	| None -> ExtraArgType s in
     EntryName (t, se)
+
+let name_of_entry e = match String.split ':' (Gram.Entry.name e) with
+| u :: s :: [] -> (u, s)
+| _ -> assert false
 
 let list_entry_names () =
   let add_entry key (entry, _) accu = (key, entry) :: accu in
