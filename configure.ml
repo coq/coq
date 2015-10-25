@@ -513,7 +513,12 @@ let caml_version_nums =
 
 let check_caml_version () =
   if caml_version_nums >= [3;12;1] then
-    printf "You have OCaml %s. Good!\n" caml_version
+    if caml_version_nums = [4;2;0] && not !Prefs.force_caml_version then
+      die ("Your version of OCaml is 4.02.0 which suffers from a bug inducing\n" ^
+        "very slow compilation times. If you still want to use it, use \n" ^
+        "option -force-caml-version.\n")
+    else
+      printf "You have OCaml %s. Good!\n" caml_version
   else
     let () = printf "Your version of OCaml is %s.\n" caml_version in
     if !Prefs.force_caml_version then
