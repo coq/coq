@@ -51,6 +51,7 @@ Constrexpr_ops
 Compat
 Tok
 Lexer
+Entry
 Pcoq
 G_prim
 G_tactic

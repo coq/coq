@@ -76,8 +76,8 @@ type ('self, _) entry_key =
 | Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
 | Aself : ('self, 'self) entry_key
 | Anext : ('self, 'self) entry_key
-| Aentry : (string * string) -> ('self, 'a) entry_key
-| Aentryl : (string * string) * int -> ('self, 'a) entry_key
+| Aentry : 'a Entry.t -> ('self, 'a) entry_key
+| Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
 
 type entry_name = EntryName : entry_type * ('self, 'a) entry_key -> entry_name
 
@@ -217,45 +217,58 @@ let map_entry f en =
 let parse_string f x =
   let strm = Stream.of_string x in Gram.entry_parse f (Gram.parsable strm)
 
-type gram_universe = string * (string, typed_entry) Hashtbl.t
+type gram_universe = Entry.universe
 
 let trace = ref false
 
-(* The univ_tab is not part of the state. It contains all the grammars that
-   exist or have existed before in the session. *)
+let uprim   = Entry.uprim
+let uconstr = Entry.uconstr
+let utactic = Entry.utactic
+let uvernac = Entry.uvernac
+let get_univ = Entry.get_univ
 
-let univ_tab = (Hashtbl.create 7 : (string, gram_universe) Hashtbl.t)
+let utables : (string, (string, typed_entry) Hashtbl.t) Hashtbl.t =
+  Hashtbl.create 97
 
-let create_univ s =
-  let u = s, Hashtbl.create 29 in Hashtbl.add univ_tab s u; u
-
-let uprim   = create_univ "prim"
-let uconstr = create_univ "constr"
-let utactic = create_univ "tactic"
-let uvernac = create_univ "vernac"
-
-let get_univ s =
-  try
-    Hashtbl.find univ_tab s
+let get_utable u =
+  let u = Entry.univ_name u in
+  try Hashtbl.find utables u
   with Not_found ->
-    anomaly (Pp.str ("Unknown grammar universe: "^s))
+    let table = Hashtbl.create 97 in
+    Hashtbl.add utables u table;
+    table
 
-let get_entry (u, utab) s = Hashtbl.find utab s
+let get_entry u s =
+  let utab = get_utable u in
+  Hashtbl.find utab s
 
-let new_entry etyp (u, utab) s =
-  if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr);
-  let ename = u ^ ":" ^ s in
+let get_typed_entry e =
+  let (u, s) = match Entry.repr e with
+  | Entry.Dynamic _ -> assert false
+  | Entry.Static (u, s) -> (u, s)
+  in
+  let u = Entry.get_univ u in
+  get_entry u s
+
+let new_entry etyp u s =
+  let utab = get_utable u in
+  let uname = Entry.univ_name u in
+  if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" uname s; flush stderr);
+  let _ = Entry.create u s in
+  let ename = uname ^ ":" ^ s in
   let e = in_typed_entry etyp (Gram.entry_create ename) in
   Hashtbl.add utab s e; e
 
-let create_entry (u, utab) s etyp =
+let create_entry u s etyp =
+  let utab = get_utable u in
   try
     let e = Hashtbl.find utab s in
+    let u = Entry.univ_name u in
     if not (argument_type_eq (type_of_typed_entry e) etyp) then
       failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
     e
   with Not_found ->
-    new_entry etyp (u, utab) s
+    new_entry etyp u s
 
 let create_constr_entry s =
   outGramObj (rawwit wit_constr) (create_entry uconstr s ConstrArgType)
@@ -266,8 +279,11 @@ let create_generic_entry s wit =
 (* [make_gen_entry] builds entries extensible by giving its name (a string) *)
 (* For entries extensible only via the ML name, Gram.entry_create is enough *)
 
-let make_gen_entry (u,univ) rawwit s =
-  let e = Gram.entry_create (u ^ ":" ^ s) in
+let make_gen_entry u rawwit s =
+  let univ = get_utable u in
+  let uname = Entry.univ_name u in
+  let e = Gram.entry_create (uname ^ ":" ^ s) in
+  let _ = Entry.create u s in
   Hashtbl.add univ s (inGramObj rawwit e); e
 
 (* Initial grammar entries *)
@@ -355,7 +371,7 @@ module Tactic =
       make_gen_entry utactic (rawwit wit_bindings) "bindings"
     let hypident = Gram.entry_create "hypident"
     let constr_may_eval = make_gen_entry utactic (rawwit wit_constr_may_eval) "constr_may_eval"
-    let constr_eval = make_gen_entry utactic (rawwit wit_constr_may_eval) "constr_may_eval"
+    let constr_eval = make_gen_entry utactic (rawwit wit_constr_may_eval) "constr_eval"
     let uconstr =
       make_gen_entry utactic (rawwit wit_uconstr) "uconstr"
     let quantified_hypothesis =
@@ -707,11 +723,11 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
 	   Gram.action (fun _ l _ _loc -> l))]
   | Aself -> Symbols.sself
   | Anext -> Symbols.snext
-  | Aentry (u,s) ->
-    let e = get_entry (get_univ u) s in
+  | Aentry e ->
+    let e = get_typed_entry e in
     Symbols.snterm (Gram.Entry.obj (object_of_typed_entry e))
-  | Aentryl ((u, s), n) ->
-    let e = get_entry (get_univ u) s in
+  | Aentryl (e, n) ->
+    let e = get_typed_entry e in
     Symbols.snterml (Gram.Entry.obj (object_of_typed_entry e), string_of_int n)
 
 let level_of_snterml e = int_of_string (Symbols.snterml_level e)
@@ -741,12 +757,17 @@ let type_of_entry u s =
   type_of_typed_entry (get_entry u s)
 
 let name_of_entry e = match String.split ':' (Gram.Entry.name e) with
-| u :: s :: [] -> (u, s)
+| u :: s :: [] -> Entry.unsafe_of_name (u, s)
 | _ -> assert false
 
 let atactic n =
   if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
   else Aentryl (name_of_entry Tactic.tactic_expr, n)
+
+let try_get_entry u s =
+  (** Order the effects: type_of_entry can raise Not_found *)
+  let typ = type_of_entry u s in
+  Some typ, Aentry (Entry.unsafe_of_name (Entry.univ_name u, s))
 
 let rec interp_entry_name static up_level s sep =
   let l = String.length s in
@@ -789,13 +810,13 @@ let rec interp_entry_name static up_level s sep =
         in
         (Some t, se)
       | None ->
-      try Some (type_of_entry uprim s), Aentry ("prim",s) with Not_found ->
-      try Some (type_of_entry uconstr s), Aentry ("constr",s) with Not_found ->
-      try Some (type_of_entry utactic s), Aentry ("tactic",s) with Not_found ->
+      try try_get_entry uprim s with Not_found ->
+      try try_get_entry uconstr s with Not_found ->
+      try try_get_entry utactic s with Not_found ->
 	if static then
 	  error ("Unknown entry "^s^".")
 	else
-	  None, Aentry ("",s) in
+	  None, Aentry (Entry.dynamic s) in
     let t =
       match t with
 	| Some t -> t
@@ -804,6 +825,6 @@ let rec interp_entry_name static up_level s sep =
 
 let list_entry_names () =
   let add_entry key (entry, _) accu = (key, entry) :: accu in
-  let ans = Hashtbl.fold add_entry (snd uprim) [] in
-  let ans = Hashtbl.fold add_entry (snd uconstr) ans in
-  Hashtbl.fold add_entry (snd utactic) ans
+  let ans = Hashtbl.fold add_entry (get_utable uprim) [] in
+  let ans = Hashtbl.fold add_entry (get_utable uconstr) ans in
+  Hashtbl.fold add_entry (get_utable utactic) ans

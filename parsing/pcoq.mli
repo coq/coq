@@ -137,11 +137,7 @@ val parse_string : 'a Gram.entry -> string -> 'a
 val eoi_entry : 'a Gram.entry -> 'a Gram.entry
 val map_entry : ('a -> 'b) -> 'a Gram.entry -> 'b Gram.entry
 
-(** Table of Coq statically defined grammar entries *)
-
-type gram_universe
-
-(** There are four predefined universes: "prim", "constr", "tactic", "vernac" *)
+type gram_universe = Entry.universe
 
 val get_univ : string -> gram_universe
 
@@ -273,10 +269,10 @@ type ('self, _) entry_key =
 | Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
 | Aself : ('self, 'self) entry_key
 | Anext : ('self, 'self) entry_key
-| Aentry : (string * string) -> ('self, 'a) entry_key
-| Aentryl : (string * string) * int -> ('self, 'a) entry_key
+| Aentry : 'a Entry.t -> ('self, 'a) entry_key
+| Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
 
-val name_of_entry : 'a Gram.entry -> string * string
+val name_of_entry : 'a Gram.entry -> 'a Entry.t
 
 (** Binding general entry keys to symbols *)
 

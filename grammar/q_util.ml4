@@ -58,6 +58,13 @@ let rec mlexpr_of_prod_entry_key : type s a. (s, a) Pcoq.entry_key -> _ = functi
   | Pcoq.Amodifiers s -> <:expr< Pcoq.Amodifiers $mlexpr_of_prod_entry_key s$ >>
   | Pcoq.Aself -> <:expr< Pcoq.Aself >>
   | Pcoq.Anext -> <:expr< Pcoq.Anext >>
-  | Pcoq.Aentry ("",s) -> <:expr< Pcoq.Aentry (Pcoq.name_of_entry $lid:s$) >>
-  | Pcoq.Aentry (u,s) -> <:expr< Pcoq.Aentry ($str:u$, $str:s$) >>
-  | Pcoq.Aentryl ((u,s), l) -> <:expr< Pcoq.Aentryl ($str:u$, $str:s$) $mlexpr_of_int l$ >>
+  | Pcoq.Aentry e ->
+    begin match Entry.repr e with
+    | Entry.Dynamic s -> <:expr< Pcoq.Aentry (Pcoq.name_of_entry $lid:s$) >>
+    | Entry.Static (u, s) -> <:expr< Pcoq.Aentry (Entry.unsafe_of_name ($str:u$, $str:s$)) >>
+    end
+  | Pcoq.Aentryl (e, l) ->
+    begin match Entry.repr e with
+    | Entry.Dynamic s -> <:expr< Pcoq.Aentryl (Pcoq.name_of_entry $lid:s$) >>
+    | Entry.Static (u, s) -> <:expr< Pcoq.Aentryl (Entry.unsafe_of_name ($str:u$, $str:s$)) $mlexpr_of_int l$ >>
+    end

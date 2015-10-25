@@ -162,7 +162,11 @@ let is_constr_gram = function
 | GramTerminal _ -> false
 | GramNonTerminal (_, _, e, _) ->
   match e with
-  | Aentry ("constr", "constr") -> true
+  | Aentry e ->
+    begin match Entry.repr e with
+    | Entry.Static ("constr", "constr") -> true
+    | _ -> false
+    end
   | _ -> false
 
 let make_var = function
