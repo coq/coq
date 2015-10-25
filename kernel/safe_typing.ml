@@ -706,16 +706,12 @@ let add_include me is_module inl senv =
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
       compute_sign (Modops.subst_signature subst str) mb resolver senv
-    | str -> resolver,str,senv
+    | NoFunctor str -> resolver,str,senv
   in
-  let resolver,sign,senv =
+  let resolver,str,senv =
     let struc = NoFunctor (List.rev senv.revstruct) in
     let mtb = build_mtb mp_sup struc Univ.ContextSet.empty senv.modresolver in
     compute_sign sign mtb resolver senv
-  in
-  let str = match sign with
-    | NoFunctor struc -> struc
-    | MoreFunctor _ -> Modops.error_higher_order_include ()
   in
   let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv
   in

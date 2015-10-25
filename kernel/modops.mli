@@ -126,7 +126,6 @@ type module_typing_error =
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
-  | HigherOrderInclude
 
 exception ModuleTypingError of module_typing_error
 
@@ -153,5 +152,3 @@ val error_incorrect_with_constraint : Label.t -> 'a
 val error_generative_module_expected : Label.t -> 'a
 
 val error_no_such_label_sub : Label.t->string->'a
-
-val error_higher_order_include : unit -> 'a

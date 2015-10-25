@@ -36,6 +36,9 @@ val translate_mse :
   env -> module_path option -> inline -> module_struct_entry ->
     module_alg_expr translation
 
+(** [translate_mse_incl] translate the mse of a real module (no
+    module type here) given to an Include *)
+
 val translate_mse_incl :
   env -> module_path -> inline -> module_struct_entry ->
     module_alg_expr translation

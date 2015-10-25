@@ -359,4 +359,4 @@ let rec translate_mse_incl env mp inl = function
   |MEapply (fe,arg) ->
     let ftrans = translate_mse_incl env mp inl fe in
     translate_apply env inl ftrans arg (fun _ _ -> None)
-  |_ -> Modops.error_higher_order_include ()
+  |MEwith _ -> assert false (* No 'with' syntax for modules *)

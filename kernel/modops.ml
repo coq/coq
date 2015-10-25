@@ -67,7 +67,6 @@ type module_typing_error =
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
-  | HigherOrderInclude
 
 exception ModuleTypingError of module_typing_error
 
@@ -112,9 +111,6 @@ let error_generative_module_expected l =
 
 let error_no_such_label_sub l l1 =
   raise (ModuleTypingError (LabelMissing (l,l1)))
-
-let error_higher_order_include () =
-  raise (ModuleTypingError HigherOrderInclude)
 
 (** {6 Operations on functors } *)
 
