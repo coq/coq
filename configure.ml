@@ -476,7 +476,10 @@ let camlbin, caml_version, camllib =
     rebase_camlexec dir camlexec;
     Filename.dirname camlexec.byte, camlexec.byte
   | None ->
-    try let camlc = which camlexec.byte in Filename.dirname camlc, camlc
+    try let camlc = which camlexec.byte in
+        let dir = Filename.dirname camlc in
+        rebase_camlexec dir camlexec;
+        dir, camlc
     with Not_found ->
       die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.byte ^
            "Please adjust your path or use the -camldir option of ./configure")
