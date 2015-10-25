@@ -332,11 +332,11 @@ let args_options = Arg.align [
   "-makecmd", Arg.Set_string Prefs.makecmd,
     "<command> Name of GNU Make command";
   "-native-compiler", arg_bool Prefs.nativecompiler,
-    " (yes|no) Compilation to native code for conversion and normalization";
+    "(yes|no) Compilation to native code for conversion and normalization";
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
     " URL of the coq website";
-  "-force-caml-version", arg_bool Prefs.force_caml_version,
-    " Force OCaml version";
+  "-force-caml-version", Arg.Set Prefs.force_caml_version,
+    "Force OCaml version";
 ]
 
 let parse_args () =
