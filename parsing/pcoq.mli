@@ -273,8 +273,8 @@ type ('self, _) entry_key =
 | Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
 | Aself : ('self, 'self) entry_key
 | Anext : ('self, 'self) entry_key
-| Atactic : int -> ('self, raw_tactic_expr) entry_key
 | Aentry : (string * string) -> ('self, 'a) entry_key
+| Aentryl : (string * string) * int -> ('self, 'a) entry_key
 
 val name_of_entry : 'a Gram.entry -> string * string
 

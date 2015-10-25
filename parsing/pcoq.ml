@@ -76,8 +76,8 @@ type ('self, _) entry_key =
 | Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
 | Aself : ('self, 'self) entry_key
 | Anext : ('self, 'self) entry_key
-| Atactic : int -> ('self, Tacexpr.raw_tactic_expr) entry_key
 | Aentry : (string * string) -> ('self, 'a) entry_key
+| Aentryl : (string * string) * int -> ('self, 'a) entry_key
 
 type entry_name = EntryName : entry_type * ('self, 'a) entry_key -> entry_name
 
@@ -370,8 +370,8 @@ module Tactic =
 
     (* Main entries for ltac *)
     let tactic_arg = Gram.entry_create "tactic:tactic_arg"
-    let tactic_expr = Gram.entry_create "tactic:tactic_expr"
-    let binder_tactic = Gram.entry_create "tactic:binder_tactic"
+    let tactic_expr = make_gen_entry utactic (rawwit wit_tactic)  "tactic_expr"
+    let binder_tactic = make_gen_entry utactic (rawwit wit_tactic) "binder_tactic"
 
     let tactic = make_gen_entry utactic (rawwit wit_tactic) "tactic"
 
@@ -707,12 +707,12 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
 	   Gram.action (fun _ l _ _loc -> l))]
   | Aself -> Symbols.sself
   | Anext -> Symbols.snext
-  | Atactic 5 -> Symbols.snterm (Gram.Entry.obj Tactic.binder_tactic)
-  | Atactic n ->
-      Symbols.snterml (Gram.Entry.obj Tactic.tactic_expr, string_of_int n)
   | Aentry (u,s) ->
     let e = get_entry (get_univ u) s in
     Symbols.snterm (Gram.Entry.obj (object_of_typed_entry e))
+  | Aentryl ((u, s), n) ->
+    let e = get_entry (get_univ u) s in
+    Symbols.snterml (Gram.Entry.obj (object_of_typed_entry e), string_of_int n)
 
 let level_of_snterml e = int_of_string (Symbols.snterml_level e)
 
@@ -739,6 +739,14 @@ let tactic_level s =
 
 let type_of_entry u s =
   type_of_typed_entry (get_entry u s)
+
+let name_of_entry e = match String.split ':' (Gram.Entry.name e) with
+| u :: s :: [] -> (u, s)
+| _ -> assert false
+
+let atactic n =
+  if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
+  else Aentryl (name_of_entry Tactic.tactic_expr, n)
 
 let rec interp_entry_name static up_level s sep =
   let l = String.length s in
@@ -777,7 +785,7 @@ let rec interp_entry_name static up_level s sep =
         let se =
           if check_lvl n then Aself
           else if check_lvl (n + 1) then Anext
-          else Atactic n
+          else atactic n
         in
         (Some t, se)
       | None ->
@@ -793,10 +801,6 @@ let rec interp_entry_name static up_level s sep =
 	| Some t -> t
 	| None -> ExtraArgType s in
     EntryName (t, se)
-
-let name_of_entry e = match String.split ':' (Gram.Entry.name e) with
-| u :: s :: [] -> (u, s)
-| _ -> assert false
 
 let list_entry_names () =
   let add_entry key (entry, _) accu = (key, entry) :: accu in
