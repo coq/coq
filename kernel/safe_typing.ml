@@ -682,13 +682,8 @@ let end_modtype l senv =
 let add_include me is_module inl senv =
   let open Mod_typing in
   let mp_sup = senv.modpath in
-  let sign,cst,resolver =
-    if is_module then
-      let sign,_,reso,cst = translate_mse_incl senv.env mp_sup inl me in
-      sign,cst,reso
-    else
-      let mtb = translate_modtype senv.env mp_sup inl ([],me) in
-      mtb.mod_type,mtb.mod_constraints,mtb.mod_delta
+  let sign,_,resolver,cst =
+    translate_mse_incl is_module senv.env mp_sup inl me
   in
   let senv = add_constraints (Now (false, cst)) senv in
   (* Include Self support  *)
