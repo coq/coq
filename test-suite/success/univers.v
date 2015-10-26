@@ -60,3 +60,11 @@ Qed.
 (* Submitted by Danko Ilik (bug report #1507); related to LetIn *)
 
 Record U : Type := { A:=Type; a:A }.
+
+(** Submitted by Jason Gross; check that [Lift] actually lifts universes. *)
+Check 1 : nat.
+Check 1 : Lift nat.
+Check lift 1 : nat.
+Check lift 1 : Lift nat.
+Check nat : Set.
+Fail Check Lift nat : Set.
