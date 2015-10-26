@@ -40,6 +40,9 @@ Program
 solved by the automatic tactic.
 - Importing Program no longer overrides the "exists" tactic (potential source
   of incompatibilities).
+- Hints costs are now correctly taken into account (potential source of
+  incompatibilities).
+
 
 API
 

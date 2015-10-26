@@ -186,10 +186,15 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
       (str"Tactic generated a subgoal identical to the original goal.")
   else rslt
 
-(* Execute tac and show the names of hypothesis create by tac in
-   the "as" format. The resulting goals are printed *after* the
-   as-expression, which forces pg to some gymnastic. TODO: Have
-   something similar (better?) in the xml protocol. *)
+(* Execute tac, show the names of new hypothesis names created by tac
+   in the "as" format and then forget everything. From the logical
+   point of view [tclSHOWHYPS tac] is therefore equivalent to idtac,
+   except that it takes the time and memory of tac and prints "as"
+   information). The resulting (unchanged) goals are printed *after*
+   the as-expression, which forces pg to some gymnastic.
+   TODO: Have something similar (better?) in the xml protocol.
+   NOTE: some tactics delete hypothesis and reuse names (induction,
+   destruct), this is not detected by this tactical. *)
 let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
     :Proof_type.goal list Evd.sigma =
   let oldhyps:Context.named_context = pf_hyps goal in
@@ -197,9 +202,10 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
   let { it = gls; sigma = sigma; } = rslt in
   let hyps:Context.named_context list =
     List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; }) gls in
+  let cmp (i1, c1, t1) (i2, c2, t2) = Names.Id.equal i1 i2 in
   let newhyps =
     List.map
-      (fun hypl -> List.subtract Context.eq_named_declaration hypl oldhyps)
+      (fun hypl -> List.subtract cmp hypl oldhyps)
       hyps
   in
   let emacs_str s =
@@ -215,7 +221,7 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
   pp (str (emacs_str "<infoH>")
       ++  (hov 0 (str s))
       ++  (str (emacs_str "</infoH>")) ++ fnl());
-  rslt;;
+  tclIDTAC goal;;
 
 
 let catch_failerror (e, info) =

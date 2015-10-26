@@ -558,7 +558,9 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
         ltac_vars = constr_context;
         ltac_bound = Id.Map.domain ist.lfun;
       } in
-      intern_gen kind ~allow_patvar ~ltacvars env c
+      let kind_for_intern =
+        match kind with OfType _ -> WithoutTypeConstraint | _ -> kind in
+      intern_gen kind_for_intern ~allow_patvar ~ltacvars env c
   in
   let trace =
     push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist in

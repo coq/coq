@@ -351,12 +351,20 @@ let translate_module env mp inl = function
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
     finalize_module env mp t restype
 
-let rec translate_mse_incl env mp inl = function
+let rec translate_mse_inclmod env mp inl = function
   |MEident mp1 ->
     let mb = strengthen_and_subst_mb (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr mb.mod_type in
     sign,None,mb.mod_delta,Univ.ContextSet.empty
   |MEapply (fe,arg) ->
-    let ftrans = translate_mse_incl env mp inl fe in
+    let ftrans = translate_mse_inclmod env mp inl fe in
     translate_apply env inl ftrans arg (fun _ _ -> None)
-  |_ -> Modops.error_higher_order_include ()
+  |MEwith _ -> assert false (* No 'with' syntax for modules *)
+
+let translate_mse_incl is_mod env mp inl me =
+  if is_mod then
+    translate_mse_inclmod env mp inl me
+  else
+    let mtb = translate_modtype env mp inl ([],me) in
+    let sign = clean_bounded_mod_expr mtb.mod_type in
+    sign,None,mtb.mod_delta,mtb.mod_constraints

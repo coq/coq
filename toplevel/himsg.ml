@@ -924,9 +924,6 @@ let explain_label_missing l s =
   str "The field " ++ str (Label.to_string l) ++ str " is missing in "
   ++ str s ++ str "."
 
-let explain_higher_order_include () =
-  str "You cannot Include a higher-order structure."
-
 let explain_module_error = function
   | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
   | LabelAlreadyDeclared l -> explain_label_already_declared l
@@ -943,7 +940,6 @@ let explain_module_error = function
   | IncorrectWithConstraint l -> explain_incorrect_label_constraint l
   | GenerativeModuleExpected l -> explain_generative_module_expected l
   | LabelMissing (l,s) -> explain_label_missing l s
-  | HigherOrderInclude -> explain_higher_order_include ()
 
 (* Module internalization errors *)
 
