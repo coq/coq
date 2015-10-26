@@ -49,7 +49,20 @@ let mlexpr_of_option f = function
   | None -> <:expr< None >>
   | Some e -> <:expr< Some $f e$ >>
 
+let mlexpr_of_token = function
+| Tok.KEYWORD s -> <:expr< Tok.KEYWORD $mlexpr_of_string s$ >>
+| Tok.METAIDENT s -> <:expr< Tok.METAIDENT $mlexpr_of_string s$ >>
+| Tok.PATTERNIDENT s -> <:expr< Tok.PATTERNIDENT $mlexpr_of_string s$ >>
+| Tok.IDENT s -> <:expr< Tok.IDENT $mlexpr_of_string s$ >>
+| Tok.FIELD s -> <:expr< Tok.FIELD $mlexpr_of_string s$ >>
+| Tok.INT s -> <:expr< Tok.INT $mlexpr_of_string s$ >>
+| Tok.STRING s -> <:expr< Tok.STRING $mlexpr_of_string s$ >>
+| Tok.LEFTQMARK -> <:expr< Tok.LEFTQMARK >>
+| Tok.BULLET s -> <:expr< Tok.BULLET $mlexpr_of_string s$ >>
+| Tok.EOI -> <:expr< Tok.EOI >>
+
 let rec mlexpr_of_prod_entry_key : type s a. (s, a) Pcoq.entry_key -> _ = function
+  | Pcoq.Atoken t -> <:expr< Pcoq.Atoken $mlexpr_of_token t$ >>
   | Pcoq.Alist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key s$ >>
   | Pcoq.Alist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
   | Pcoq.Alist0 s -> <:expr< Pcoq.Alist0 $mlexpr_of_prod_entry_key s$ >>

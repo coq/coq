@@ -105,11 +105,36 @@ type grammar_object
 (** Type of reinitialization data *)
 type gram_reinit = gram_assoc * gram_position
 
+(** General entry keys *)
+
+(** This intermediate abstract representation of entries can
+   both be reified into mlexpr for the ML extensions and
+   dynamically interpreted as entries for the Coq level extensions
+*)
+
+type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
+| Atoken : Tok.t -> ('self, Tok.t) entry_key
+| Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
+| Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Alist0sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
+| Aopt : ('self, 'a) entry_key -> ('self, 'a option) entry_key
+| Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
+| Aself : ('self, 'self) entry_key
+| Anext : ('self, 'self) entry_key
+| Aentry : 'a Entry.t -> ('self, 'a) entry_key
+| Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
+
 (** Add one extension at some camlp4 position of some camlp4 entry *)
-val grammar_extend :
+val unsafe_grammar_extend :
   grammar_object Gram.entry ->
   gram_reinit option (** for reinitialization if ever needed *) ->
   Gram.extend_statment -> unit
+
+val grammar_extend :
+  'a Gram.entry ->
+  gram_reinit option (** for reinitialization if ever needed *) ->
+  'a Extend.extend_statment -> unit
 
 (** Remove the last n extensions *)
 val remove_grammars : int -> unit
@@ -252,25 +277,6 @@ val interp_constr_entry_key : bool (** true for cases_pattern *) ->
 val symbol_of_constr_prod_entry_key : gram_assoc option ->
   constr_entry_key -> bool -> constr_prod_entry_key ->
     Gram.symbol
-
-(** General entry keys *)
-
-(** This intermediate abstract representation of entries can
-   both be reified into mlexpr for the ML extensions and
-   dynamically interpreted as entries for the Coq level extensions
-*)
-
-type ('self, _) entry_key =
-| Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
-| Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Alist0sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
-| Aopt : ('self, 'a) entry_key -> ('self, 'a option) entry_key
-| Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Aself : ('self, 'self) entry_key
-| Anext : ('self, 'self) entry_key
-| Aentry : 'a Entry.t -> ('self, 'a) entry_key
-| Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
 
 val name_of_entry : 'a Gram.entry -> 'a Entry.t
 

@@ -67,7 +67,8 @@ let weaken_entry x = Gramobj.weaken_entry x
    dynamically interpreted as entries for the Coq level extensions
 *)
 
-type ('self, _) entry_key =
+type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
+| Atoken : Tok.t -> ('self, Tok.t) entry_key
 | Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
 | Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
 | Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
@@ -168,7 +169,7 @@ module Gram =
 
 (** This extension command is used by the Grammar constr *)
 
-let grammar_extend e reinit ext =
+let unsafe_grammar_extend e reinit ext =
   camlp4_state := ByGrammar (weaken_entry e,reinit,ext) :: !camlp4_state;
   camlp4_verbose (maybe_uncurry (G.extend e)) ext
 
@@ -707,6 +708,7 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
 (** Binding general entry keys to symbol *)
 
 let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
+  | Atoken t -> Symbols.stoken t
   | Alist1 s -> Symbols.slist1 (symbol_of_prod_entry_key s)
   | Alist1sep (s,sep) ->
       Symbols.slist1sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
@@ -731,6 +733,29 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
     Symbols.snterml (Gram.Entry.obj (object_of_typed_entry e), string_of_int n)
 
 let level_of_snterml e = int_of_string (Symbols.snterml_level e)
+
+let rec of_coq_rule : type self a r. (self, a, r) Extend.rule -> _ = function
+| Stop -> fun accu -> accu
+| Next (r, tok) -> fun accu ->
+  let symb = symbol_of_prod_entry_key tok in
+  of_coq_rule r (symb :: accu)
+
+let rec of_coq_action : type a r. (r, a, Loc.t -> r) Extend.rule -> a -> Gram.action = function
+| Stop -> fun f -> Gram.action (fun loc -> f (to_coqloc loc))
+| Next (r, _) -> fun f -> Gram.action (fun x -> of_coq_action r (f x))
+
+let of_coq_production_rule : type a. a Extend.production_rule -> _ = function
+| Rule (toks, act) -> (of_coq_rule toks [], of_coq_action toks act)
+
+let of_coq_single_extend_statement (lvl, assoc, rule) =
+  (lvl, Option.map of_coq_assoc assoc, List.map of_coq_production_rule rule)
+
+let of_coq_extend_statement (pos, st) =
+  (Option.map of_coq_position pos, List.map of_coq_single_extend_statement st)
+
+let grammar_extend e reinit ext =
+  let ext = of_coq_extend_statement ext in
+  unsafe_grammar_extend e reinit ext
 
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
