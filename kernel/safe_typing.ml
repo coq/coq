@@ -469,7 +469,8 @@ let end_module l restype senv =
        let mtb = 
 	 translate_module_type senv.env 
 	   senv.modinfo.modpath inl me in
-       mtb.typ_expr,mtb.typ_constraints,mtb.typ_delta
+       let sign = Modops.clean_bounded_mod_expr mtb.typ_expr in
+       sign,mtb.typ_constraints,mtb.typ_delta
    in
    let senv = add_constraints cst senv in
    let mp_sup = senv.modinfo.modpath in
