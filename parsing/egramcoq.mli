@@ -38,7 +38,7 @@ type notation_grammar = {
 
 type tactic_grammar = {
   tacgram_level : int;
-  tacgram_prods : grammar_prod_item list;
+  tacgram_prods : Tacexpr.raw_tactic_expr grammar_prod_item list;
 }
 
 (** {5 Adding notations} *)
@@ -50,7 +50,7 @@ val extend_tactic_grammar : KerName.t -> tactic_grammar -> unit
 (** Add a tactic notation rule to the parsing system. This produces a TacAlias
     tactic with the provided kernel name. *)
 
-val extend_ml_tactic_grammar : Tacexpr.ml_tactic_name -> grammar_prod_item list list -> unit
+val extend_ml_tactic_grammar : Tacexpr.ml_tactic_name -> Tacexpr.raw_tactic_expr grammar_prod_item list list -> unit
 (** Add a ML tactic notation rule to the parsing system. This produces a
     TacML tactic with the provided string as name. *)
 

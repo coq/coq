@@ -22,7 +22,7 @@ open Compat
 type rule = {
   r_head : string option;
   (** The first terminal grammar token *)
-  r_patt : grammar_prod_item list;
+  r_patt : Vernacexpr.vernac_expr grammar_prod_item list;
   (** The remaining tokens of the parsing rule *)
   r_class : MLast.expr option;
   (** An optional classifier for the STM *)

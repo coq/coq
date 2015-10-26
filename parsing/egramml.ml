@@ -28,10 +28,10 @@ let make_generic_action
 
 (** Grammar extensions declared at ML level *)
 
-type grammar_prod_item =
+type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal :
-      Loc.t * argument_type * ('s, 'a) entry_key * Id.t option -> grammar_prod_item
+      Loc.t * argument_type * ('s, 'a) entry_key * Id.t option -> 's grammar_prod_item
 
 let make_prod_item = function
   | GramTerminal s -> (gram_token_of_string s, None)

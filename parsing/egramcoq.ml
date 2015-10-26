@@ -246,13 +246,13 @@ let get_tactic_entry n =
 
 type tactic_grammar = {
   tacgram_level : int;
-  tacgram_prods : grammar_prod_item list;
+  tacgram_prods : Tacexpr.raw_tactic_expr grammar_prod_item list;
 }
 
 type all_grammar_command =
   | Notation of Notation.level * notation_grammar
   | TacticGrammar of KerName.t * tactic_grammar
-  | MLTacticGrammar of ml_tactic_name * grammar_prod_item list list
+  | MLTacticGrammar of ml_tactic_name * Tacexpr.raw_tactic_expr grammar_prod_item list list
 
 (** ML Tactic grammar extensions *)
 

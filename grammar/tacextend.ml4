@@ -100,8 +100,8 @@ let make_prod_item = function
       <:expr< Egramml.GramNonTerminal $default_loc$ $mlexpr_of_argtype loc nt$
       $mlexpr_of_prod_entry_key g$ $mlexpr_of_option mlexpr_of_ident sopt$ >>
 
-let mlexpr_of_clause =
-  mlexpr_of_list (fun (a,_,b) -> mlexpr_of_list make_prod_item a)
+let mlexpr_of_clause cl =
+  mlexpr_of_list (fun (a,_,b) -> mlexpr_of_list make_prod_item a) cl
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
@@ -120,7 +120,7 @@ let make_one_printing_rule (pt,_,e) =
   <:expr< { Pptactic.pptac_args = $make_tags loc pt$;
             pptac_prods = ($level$, $prods$) } >>
 
-let make_printing_rule = mlexpr_of_list make_one_printing_rule
+let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
 
 let make_empty_check = function
 | GramNonTerminal(_, t, e, _)->

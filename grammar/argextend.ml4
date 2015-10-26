@@ -51,8 +51,8 @@ let make_rawwit loc arg = <:expr< Genarg.rawwit $make_wit loc arg$ >>
 let make_globwit loc arg = <:expr< Genarg.glbwit $make_wit loc arg$ >>
 let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 
-let has_extraarg =
-  List.exists (function GramNonTerminal(_,ExtraArgType _,_,_) -> true | _ -> false)
+let has_extraarg l =
+  List.exists (function GramNonTerminal(_,ExtraArgType _,_,_) -> true | _ -> false) l
 
 let rec is_possibly_empty : type s a. (s, a) entry_key -> bool = function
 | Aopt _ -> true

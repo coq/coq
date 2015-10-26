@@ -24,7 +24,7 @@ val add_tactic_notation :
 type atomic_entry = string * Genarg.glob_generic_argument list option
 
 val add_ml_tactic_notation : ml_tactic_name ->
-  Egramml.grammar_prod_item list list -> atomic_entry list -> unit
+  Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list list -> atomic_entry list -> unit
 
 (** Adding a (constr) notation in the environment*)
 

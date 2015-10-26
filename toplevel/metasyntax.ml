@@ -160,7 +160,7 @@ type atomic_entry = string * Genarg.glob_generic_argument list option
 type ml_tactic_grammar_obj = {
   mltacobj_name : Tacexpr.ml_tactic_name;
   (** ML-side unique name *)
-  mltacobj_prod : grammar_prod_item list list;
+  mltacobj_prod : Tacexpr.raw_tactic_expr grammar_prod_item list list;
   (** Grammar rules generating the ML tactic. *)
 }
 

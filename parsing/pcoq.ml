@@ -80,7 +80,7 @@ type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
 | Aentry : 'a Entry.t -> ('self, 'a) entry_key
 | Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
 
-type entry_name = EntryName : entry_type * ('self, 'a) entry_key -> entry_name
+type 's entry_name = EntryName : entry_type * ('s, 'a) entry_key -> 's entry_name
 
 module type Gramtypes =
 sig
