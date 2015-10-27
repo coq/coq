@@ -478,7 +478,7 @@ let camlbin, caml_version, camllib =
   | None ->
     try let camlc = which camlexec.byte in
         let dir = Filename.dirname camlc in
-        rebase_camlexec dir camlexec;
+        if not arch_win32 then rebase_camlexec dir camlexec; (* win32: TOCHECK *)
         dir, camlc
     with Not_found ->
       die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.byte ^
