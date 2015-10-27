@@ -38,8 +38,8 @@ open Indschemes
 open Misctypes
 open Vernacexpr
 
-let do_universe l = Declare.do_universe l  
-let do_constraint l = Declare.do_constraint l
+let do_universe poly l = Declare.do_universe poly l
+let do_constraint poly l = Declare.do_constraint poly l
 
 let rec under_binders env sigma f n c =
   if Int.equal n 0 then snd (f env sigma c) else

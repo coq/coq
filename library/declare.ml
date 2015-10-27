@@ -27,7 +27,7 @@ open Decls
 open Decl_kinds
 
 (** flag for internal message display *)
-type internal_flag = 
+type internal_flag =
   | UserAutomaticRequest (* kernel action, a message is displayed *)
   | InternalTacticRequest  (* kernel action, no message is displayed *)
   | UserIndividualRequest   (* user action, a message is displayed *)
@@ -63,7 +63,7 @@ let cache_variable ((sp,_),o) =
   add_variable_data id (p,opaq,ctx,poly,mk)
 
 let discharge_variable (_,o) = match o with
-  | Inr (id,_) -> 
+  | Inr (id,_) ->
     if variable_polymorphic id then None
     else Some (Inl (variable_context id))
   | Inl _ -> Some o
@@ -156,7 +156,7 @@ let discharge_constant ((sp, kn), obj) =
   Some { obj with cst_hyps = new_hyps; cst_decl = new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant_entry = 
+let dummy_constant_entry =
   ConstantEntry (ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None))
 
 let dummy_constant cst = {
@@ -185,7 +185,7 @@ let declare_constant_common id cst =
   Notation.declare_ref_arguments_scope (ConstRef c);
   c
 
-let definition_entry ?(opaque=false) ?(inline=false) ?types 
+let definition_entry ?(opaque=false) ?(inline=false) ?types
     ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Declareops.no_seff) body =
   { const_entry_body = Future.from_val ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
@@ -212,11 +212,11 @@ let declare_sideff env fix_exn se =
   in
   let ty_of cb =
     match cb.Declarations.const_type with
-    | Declarations.RegularArity t -> Some t 
+    | Declarations.RegularArity t -> Some t
     | Declarations.TemplateArity _ -> None in
   let cst_of cb pt =
     let pt, opaque = pt_opaque_of cb pt in
-    let univs, subst = 
+    let univs, subst =
       if cb.const_polymorphic then
 	let univs = Univ.instantiate_univ_context cb.const_universes in
 	  univs, Vars.subst_instance_constr (Univ.UContext.instance univs)
@@ -240,7 +240,7 @@ let declare_sideff env fix_exn se =
   } in
   let exists c =
     try ignore(Environ.lookup_constant c env); true
-    with Not_found -> false in 
+    with Not_found -> false in
   let knl =
     CList.map_filter (fun (c,cb,pt) ->
       if exists c then None
@@ -287,7 +287,7 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
 let declare_definition ?(internal=UserIndividualRequest)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
   ?(poly=false) id ?types (body,ctx) =
-  let cb = 
+  let cb =
     definition_entry ?types ~poly ~univs:(Univ.ContextSet.to_context ctx) ~opaque body
   in
     declare_constant ~internal ~local id
@@ -383,12 +383,12 @@ let inInductive : inductive_obj -> obj =
 let declare_projections mind =
   let spec,_ = Inductive.lookup_mind_specif (Global.env ()) (mind,0) in
     match spec.mind_record with
-    | Some (Some (_, kns, pjs)) -> 
-      Array.iteri (fun i kn -> 
+    | Some (Some (_, kns, pjs)) ->
+      Array.iteri (fun i kn ->
 	let id = Label.to_id (Constant.label kn) in
 	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
 	let kn' = declare_constant id (ProjectionEntry entry,
-				       IsDefinition StructureComponent) 
+				       IsDefinition StructureComponent)
 	in
 	  assert(eq_constant kn kn')) kns; true
     | Some None | None -> false
@@ -442,52 +442,69 @@ let assumption_message id =
 
 (** Global universe names, in a different summary *)
 
-type universe_names = 
+type universe_names =
     (Univ.universe_level Idmap.t * Id.t Univ.LMap.t)
 
-let input_universes : universe_names -> Libobject.obj =
-  let open Libobject in 
-    declare_object
-    { (default_object "Global universe name state") with
-      cache_function = (fun (na, pi) -> Universes.set_global_universe_names pi);
-      load_function = (fun _ (_, pi) -> Universes.set_global_universe_names pi);
-      discharge_function = (fun (_, a) -> Some a);
-      classify_function = (fun a -> Keep a) }
+(* Discharged or not *)
+type universe_decl = polymorphic * (Id.t * Univ.universe_level) list
 
-let do_universe l =
+let cache_universes (p, l) =
   let glob = Universes.global_universe_names () in
-  let glob', ctx = 
-    List.fold_left (fun ((idl,lid),ctx) (l, id) ->
-      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
-        ((Idmap.add id lev idl, Univ.LMap.add lev id lid),
-	 Univ.ContextSet.add_universe lev ctx))
+  let glob', ctx =
+    List.fold_left (fun ((idl,lid),ctx) (id, lev) ->
+		    ((Idmap.add id lev idl, Univ.LMap.add lev id lid),
+		     Univ.ContextSet.add_universe lev ctx))
       (glob, Univ.ContextSet.empty) l
   in
     Global.push_context_set false ctx;
-    Lib.add_anonymous_leaf (input_universes glob')
+    if p then Lib.add_section_context ctx;
+    Universes.set_global_universe_names glob'
 
-
-let input_constraints : Univ.constraints -> Libobject.obj =
-  let open Libobject in 
-    declare_object
-    { (default_object "Global universe constraints") with
-      cache_function = (fun (na, c) -> Global.add_constraints c);
-      load_function = (fun _ (_, c) -> Global.add_constraints c);
-      discharge_function = (fun (_, a) -> Some a);
+let input_universes : universe_decl -> Libobject.obj =
+  declare_object
+    { (default_object "Global universe name state") with
+      cache_function = (fun (na, pi) -> cache_universes pi);
+      load_function = (fun _ (_, pi) -> cache_universes pi);
+      discharge_function = (fun (_, (p, _ as x)) -> if p then None else Some x);
       classify_function = (fun a -> Keep a) }
 
-let do_constraint l = 
-  let u_of_id = 
+let do_universe poly l =
+  let l =
+    List.map (fun (l, id) ->
+	      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
+	      (id, lev)) l
+  in
+    Lib.add_anonymous_leaf (input_universes (poly, l))
+
+type constraint_decl = polymorphic * Univ.constraints
+
+let cache_constraints (na, (p, c)) =
+  Global.add_constraints c;
+  if p then Lib.add_section_context (Univ.ContextSet.add_constraints c Univ.ContextSet.empty)
+
+let discharge_constraints (_, (p, c as a)) =
+  if p then None else Some a
+
+let input_constraints : constraint_decl -> Libobject.obj =
+  let open Libobject in
+    declare_object
+    { (default_object "Global universe constraints") with
+      cache_function = cache_constraints;
+      load_function = (fun _ -> cache_constraints);
+      discharge_function = discharge_constraints;
+      classify_function = (fun a -> Keep a) }
+
+let do_constraint poly l =
+  let u_of_id =
     let names, _ = Universes.global_universe_names () in
-      fun (loc, id) -> 
+      fun (loc, id) ->
 	try Idmap.find id names
 	with Not_found ->
-	  user_err_loc (loc, "Constraint", str "Undeclared universe " ++ pr_id id)	    
+	  user_err_loc (loc, "Constraint", str "Undeclared universe " ++ pr_id id)
   in
   let constraints = List.fold_left (fun acc (l, d, r) ->
     let lu = u_of_id l and ru = u_of_id r in
       Univ.Constraint.add (lu, d, ru) acc)
     Univ.Constraint.empty l
   in
-    Lib.add_anonymous_leaf (input_constraints constraints)
-  
+    Lib.add_anonymous_leaf (input_constraints (poly, constraints))

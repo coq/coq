@@ -172,7 +172,7 @@ val section_instance : Globnames.global_reference -> Univ.universe_instance * Na
 val is_in_section : Globnames.global_reference -> bool
 
 val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.universe_context_set -> unit
-
+val add_section_context : Univ.universe_context_set -> unit
 val add_section_constant : bool (* is_projection *) -> 
   Names.constant -> Context.named_context -> unit
 val add_section_kn : Names.mutual_inductive -> Context.named_context -> unit

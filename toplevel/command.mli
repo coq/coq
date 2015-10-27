@@ -20,8 +20,9 @@ open Pfedit
 (** This file is about the interpretation of raw commands into typed
     ones and top-level declaration of the main Gallina objects *)
 
-val do_universe : Id.t Loc.located list -> unit
-val do_constraint : (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit
+val do_universe : polymorphic -> Id.t Loc.located list -> unit
+val do_constraint : polymorphic ->
+  (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit
 
 (** {6 Hooks for Pcoq} *)
 

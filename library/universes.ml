@@ -16,7 +16,8 @@ open Univ
 type universe_names = 
     Univ.universe_level Idmap.t * Id.t Univ.LMap.t
 
-let global_universes = Summary.ref ~name:"Global universe names" 
+let global_universes =
+  Summary.ref ~name:"Global universe names"
   ((Idmap.empty, Univ.LMap.empty) : universe_names)
 
 let global_universe_names () = !global_universes

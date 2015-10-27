@@ -392,10 +392,13 @@ type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 		  
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
+type secentry =
+  | Variable of (Names.Id.t * Decl_kinds.binding_kind *
+		   Decl_kinds.polymorphic * Univ.universe_context_set)
+  | Context of Univ.universe_context_set
+
 let sectab =
-  Summary.ref ([] : ((Names.Id.t * Decl_kinds.binding_kind * 
-		Decl_kinds.polymorphic * Univ.universe_context_set) list *
-		        Opaqueproof.work_list * abstr_list) list)
+  Summary.ref ([] : (secentry list * Opaqueproof.work_list * abstr_list) list)
     ~name:"section-context"
 
 let add_section () =
@@ -406,21 +409,29 @@ let add_section_variable id impl poly ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-	sectab := ((id,impl,poly,ctx)::vars,repl,abs)::sl
+	sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
+
+let add_section_context ctx =
+  match !sectab with
+    | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
+    | (vars,repl,abs)::sl ->
+	sectab := (Context ctx :: vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
   let rec aux = function
-    | ((id,impl,poly,ctx)::idl,(id',b,t)::hyps) when Names.Id.equal id id' ->
+    | (Variable (id,impl,poly,ctx)::idl,(id',b,t)::hyps) when Names.Id.equal id id' ->
       let l, r = aux (idl,hyps) in 
 	(id',impl,b,t) :: l, if poly then Univ.ContextSet.union r ctx else r
-    | ((_,_,poly,ctx)::idl,hyps) -> 
+    | (Variable (_,_,poly,ctx)::idl,hyps) ->
         let l, r = aux (idl,hyps) in
           l, if poly then Univ.ContextSet.union r ctx else r
+    | (Context ctx :: idl, hyps) ->
+       let l, r = aux (idl, hyps) in
+       l, Univ.ContextSet.union r ctx
     | [], _ -> [],Univ.ContextSet.empty
   in aux (secs,ohyps)
 
 let instance_from_variable_context sign =
-
   let rec inst_rec = function
     | (id,b,None,_) :: sign -> id :: inst_rec sign
     | _ :: sign -> inst_rec sign
@@ -437,7 +448,8 @@ let add_section_replacement f g hyps =
     let ctx = Univ.ContextSet.to_context ctx in
     let subst, ctx = Univ.abstract_universes true ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
-    sectab := (vars,f (Univ.UContext.instance ctx,args) exps,g (sechyps,subst,ctx) abs)::sl
+    sectab := (vars,f (Univ.UContext.instance ctx,args) exps,
+	      g (sechyps,subst,ctx) abs)::sl
 
 let add_section_kn kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
@@ -457,10 +469,13 @@ let section_segment_of_mutual_inductive kn =
 
 let section_instance = function
   | VarRef id ->
-      if List.exists (fun (id',_,_,_) -> Names.id_eq id id') 
-	(pi1 (List.hd !sectab))
-      then Univ.Instance.empty, [||]
-      else raise Not_found
+     let eq = function
+       | Variable (id',_,_,_) -> Names.id_eq id id'
+       | Context _ -> false
+     in
+     if List.exists eq (pi1 (List.hd !sectab))
+     then Univ.Instance.empty, [||]
+     else raise Not_found
   | ConstRef con ->
       Names.Cmap.find con (fst (pi2 (List.hd !sectab)))
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
