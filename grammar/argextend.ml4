@@ -52,7 +52,15 @@ let make_globwit loc arg = <:expr< Genarg.glbwit $make_wit loc arg$ >>
 let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 
 let has_extraarg l =
-  List.exists (function GramNonTerminal(_,ExtraArgType _,_,_) -> true | _ -> false) l
+  let check = function
+  | GramNonTerminal(_, t, _, _) ->
+    begin match Genarg.unquote t with
+    | ExtraArgType _ -> true
+    | _ -> false
+    end
+  | _ -> false
+  in
+  List.exists check l
 
 let rec is_possibly_empty : type s a. (s, a) entry_key -> bool = function
 | Aopt _ -> true
@@ -74,12 +82,15 @@ let rec get_empty_entry : type s a. (s, a) entry_key -> _ = function
 
 let statically_known_possibly_empty s (prods,_) =
   List.for_all (function
-    | GramNonTerminal(_,ExtraArgType s',_,_) ->
+    | GramNonTerminal(_,t,e,_) ->
+      begin match Genarg.unquote t with
+      | ExtraArgType s' ->
         (* For ExtraArg we don't know (we'll have to test dynamically) *)
         (* unless it is a recursive call *)
         s <> s'
-    | GramNonTerminal(_,_,e,_) ->
+      | _ ->
         is_possibly_empty e
+      end
     | GramTerminal _ ->
         (* This consumes a token for sure *) false)
       prods
@@ -93,7 +104,11 @@ let possibly_empty_subentries loc (prods,act) =
     | [] -> <:expr< let loc = $default_loc$ in let _ = loc in $act$ >>
     | GramNonTerminal(_,_,e,p) :: tl when is_possibly_empty e ->
         bind_name p (get_empty_entry e) (aux tl)
-    | GramNonTerminal(_,(ExtraArgType _ as t),_,p) :: tl ->
+    | GramNonTerminal(_,t,_,p) :: tl ->
+        let t = match Genarg.unquote t with
+        | ExtraArgType _ as t -> t
+        | _ -> assert false
+        in
         (* We check at runtime if extraarg s parses "epsilon" *)
         let s = match p with None -> "_" | Some id -> Names.Id.to_string id in
         <:expr< let $lid:s$ = match Genarg.default_empty_value $make_wit loc t$ with
@@ -129,6 +144,7 @@ let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< Pcoq.Gram.action (fun loc -> ($act$ : 'a)) >>
     | GramNonTerminal (_,t,_,Some p) :: tl ->
+        let t = Genarg.unquote t in
 	let p = Names.Id.to_string p in
 	<:expr<
           Pcoq.Gram.action
@@ -290,10 +306,10 @@ EXTEND
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let EntryName (t, g) = interp_entry_name false TgAny e "" in
-	GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
+	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let EntryName (t, g) = interp_entry_name false TgAny e sep in
-	GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
+	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
 	    Lexer.add_keyword s;

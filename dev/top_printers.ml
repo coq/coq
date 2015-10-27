@@ -519,7 +519,7 @@ let _ =
   extend_vernac_command_grammar ("PrintConstr", 0) None
     [GramTerminal "PrintConstr";
       GramNonTerminal
-        (Loc.ghost,ConstrArgType,Aentry (Entry.unsafe_of_name ("constr","constr")),
+        (Loc.ghost,rawwit wit_constr,Aentry (Entry.unsafe_of_name ("constr","constr")),
 	 Some (Names.Id.of_string "c"))]
 
 let _ =
@@ -536,7 +536,7 @@ let _ =
   extend_vernac_command_grammar ("PrintPureConstr", 0) None
     [GramTerminal "PrintPureConstr";
       GramNonTerminal
-        (Loc.ghost,ConstrArgType,Aentry (Entry.unsafe_of_name ("constr","constr")),
+        (Loc.ghost,rawwit wit_constr,Aentry (Entry.unsafe_of_name ("constr","constr")),
 	 Some (Names.Id.of_string "c"))]
 
 (* Setting printer of unbound global reference *)

@@ -50,7 +50,7 @@ let interp_prod_item lev = function
   | TacNonTerm (loc, nt, po) ->
       let sep = match po with Some (_,sep) -> sep | _ -> "" in
       let EntryName (etyp, e) = interp_entry_name true (TgTactic lev) nt sep in
-      GramNonTerminal (loc, Genarg.unquote etyp, e, Option.map fst po)
+      GramNonTerminal (loc, etyp, e, Option.map fst po)
 
 let make_terminal_status = function
   | GramTerminal s -> Some s
@@ -58,7 +58,7 @@ let make_terminal_status = function
 
 let rec make_tags = function
   | GramTerminal s :: l -> make_tags l
-  | GramNonTerminal (loc, etyp, _, po) :: l -> etyp :: make_tags l
+  | GramNonTerminal (loc, etyp, _, po) :: l -> Genarg.unquote etyp :: make_tags l
   | [] -> []
 
 let make_fresh_key =

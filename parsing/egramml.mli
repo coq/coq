@@ -15,7 +15,7 @@ open Vernacexpr
 
 type 's grammar_prod_item =
   | GramTerminal of string
-  | GramNonTerminal : Loc.t * Genarg.argument_type *
+  | GramNonTerminal : Loc.t * 'a Genarg.raw_abstract_argument_type *
       ('s, 'a) Pcoq.entry_key * Names.Id.t option -> 's grammar_prod_item
 
 val extend_vernac_command_grammar :

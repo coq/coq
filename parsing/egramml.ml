@@ -18,7 +18,7 @@ open Vernacexpr
 type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal :
-      Loc.t * argument_type * ('s, 'a) entry_key * Id.t option -> 's grammar_prod_item
+      Loc.t * 'a raw_abstract_argument_type * ('s, 'a) entry_key * Id.t option -> 's grammar_prod_item
 
 type 'a ty_arg = Id.t * ('a -> raw_generic_argument)
 
@@ -41,9 +41,7 @@ let rec ty_rule_of_gram = function
   let AnyTyRule rem = ty_rule_of_gram rem in
   let inj = match idopt with
   | None -> None
-  | Some id ->
-    (** FIXME *)
-    Some (id, fun obj -> Genarg.Unsafe.inj t (Obj.repr obj))
+  | Some id -> Some (id, fun obj -> Genarg.in_gen t obj)
   in
   let r = TyNext (rem, tok, inj) in
   AnyTyRule r

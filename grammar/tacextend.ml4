@@ -39,13 +39,14 @@ let rec make_when loc = function
       let p = Names.Id.to_string p in
       let l = make_when loc l in
       let loc = CompatLoc.merge loc' loc in
-      let t = mlexpr_of_argtype loc' t in
+      let t = mlexpr_of_argtype loc' (Genarg.unquote t) in
       <:expr< Genarg.argument_type_eq (Genarg.genarg_tag $lid:p$) $t$ && $l$ >>
   | _::l -> make_when loc l
 
 let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
   | GramNonTerminal(loc,t,_,Some p)::l ->
+      let t = Genarg.unquote t in
       let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
       let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
@@ -58,7 +59,7 @@ let rec make_let raw e = function
 
 let rec extract_signature = function
   | [] -> []
-  | GramNonTerminal (_,t,_,_) :: l -> t :: extract_signature l
+  | GramNonTerminal (_,t,_,_) :: l -> Genarg.unquote t :: extract_signature l
   | _::l -> extract_signature l
 
 
@@ -83,6 +84,7 @@ let make_fun_clauses loc s l =
 let rec make_args = function
   | [] -> <:expr< [] >>
   | GramNonTerminal(loc,t,_,Some p)::l ->
+      let t = Genarg.unquote t in
       let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
       <:expr< [ Genarg.in_gen $make_topwit loc t$ $lid:p$ :: $make_args l$ ] >>
@@ -97,7 +99,8 @@ let make_prod_item = function
   | GramTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
   | GramNonTerminal (loc,nt,g,sopt) ->
       let loc = of_coqloc loc in
-      <:expr< Egramml.GramNonTerminal $default_loc$ $mlexpr_of_argtype loc nt$
+      let nt = Genarg.unquote nt in
+      <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
       $mlexpr_of_prod_entry_key g$ $mlexpr_of_option mlexpr_of_ident sopt$ >>
 
 let mlexpr_of_clause cl =
@@ -109,6 +112,7 @@ let rec make_tags loc = function
       let loc' = of_coqloc loc' in
       let l = make_tags loc l in
       let loc = CompatLoc.merge loc' loc in
+      let t = Genarg.unquote t in
       let t = mlexpr_of_argtype loc' t in
       <:expr< [ $t$ :: $l$ ] >>
   | _::l -> make_tags loc l
@@ -124,6 +128,7 @@ let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
 
 let make_empty_check = function
 | GramNonTerminal(_, t, e, _)->
+  let t = Genarg.unquote t in
   let is_extra = match t with ExtraArgType _ -> true | _ -> false in
   if is_possibly_empty e || is_extra then
     (* This possibly parses epsilon *)
@@ -262,10 +267,10 @@ EXTEND
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let EntryName (t, g) = interp_entry_name false TgAny e "" in
-        GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let EntryName (t, g) = interp_entry_name false TgAny e sep in
-        GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
 	if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
         GramTerminal s

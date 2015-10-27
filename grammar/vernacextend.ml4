@@ -35,6 +35,7 @@ type rule = {
 let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
+      let t = Genarg.unquote t in
       let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
       let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
@@ -182,10 +183,10 @@ EXTEND
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let EntryName (t, g) = interp_entry_name false TgAny e "" in
-        GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let EntryName (t, g) = interp_entry_name false TgAny e sep in
-        GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
         GramTerminal s
     ] ]
