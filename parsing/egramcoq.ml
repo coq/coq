@@ -167,10 +167,9 @@ let rec make_constr_prod_item assoc from forpat = function
       []
 
 let prepare_empty_levels forpat (pos,p4assoc,name,reinit) =
-  let entry =
-    if forpat then weaken_entry Constr.pattern
-    else weaken_entry Constr.operconstr in
-  unsafe_grammar_extend entry reinit (pos,[(name, p4assoc, [])])
+  let empty = (pos, [(name, p4assoc, [])]) in
+  if forpat then grammar_extend Constr.pattern reinit empty
+  else grammar_extend Constr.operconstr reinit empty
 
 let pure_sublevels level symbs =
   let filter s =
@@ -189,9 +188,6 @@ let extend_constr (entry,level) (n,assoc) mkact forpat rules =
   let symbs = make_constr_prod_item assoc n forpat pt in
   let pure_sublevels = pure_sublevels level symbs in
   let needed_levels = register_empty_levels forpat pure_sublevels in
-  let map_level (pos, ass1, name, ass2) =
-    (Option.map of_coq_position pos, Option.map of_coq_assoc ass1, name, ass2) in
-  let needed_levels = List.map map_level needed_levels in
   let pos,p4assoc,name,reinit = find_position forpat assoc level in
   let nb_decls = List.length needed_levels + 1 in
   List.iter (prepare_empty_levels forpat) needed_levels;
@@ -233,11 +229,11 @@ let extend_constr_notation ng =
 
 let get_tactic_entry n =
   if Int.equal n 0 then
-    weaken_entry Tactic.simple_tactic, None
+    Tactic.simple_tactic, None
   else if Int.equal n 5 then
-    weaken_entry Tactic.binder_tactic, None
+    Tactic.binder_tactic, None
   else if 1<=n && n<5 then
-    weaken_entry Tactic.tactic_expr, Some (Extend.Level (string_of_int n))
+    Tactic.tactic_expr, Some (Extend.Level (string_of_int n))
   else
     error ("Invalid Tactic Notation level: "^(string_of_int n)^".")
 
@@ -257,7 +253,7 @@ type all_grammar_command =
 (** ML Tactic grammar extensions *)
 
 let add_ml_tactic_entry name prods =
-  let entry = weaken_entry Tactic.simple_tactic in
+  let entry = Tactic.simple_tactic in
   let mkact i loc l : raw_tactic_expr =
     let open Tacexpr in
     let entry = { mltac_name = name; mltac_index = i } in
@@ -265,7 +261,7 @@ let add_ml_tactic_entry name prods =
   in
   let rules = List.map_i (fun i p -> make_rule (mkact i) p) 0 prods in
   synchronize_level_positions ();
-  unsafe_grammar_extend entry None (None ,[(None, None, List.rev rules)]);
+  grammar_extend entry None (None, [(None, None, List.rev rules)]);
   1
 
 (* Declaration of the tactic grammar rule *)
@@ -285,7 +281,7 @@ let add_tactic_entry kn tg =
   in
   let rules = make_rule mkact tg.tacgram_prods in
   synchronize_level_positions ();
-  unsafe_grammar_extend entry None (Option.map of_coq_position pos,[(None, None, List.rev [rules])]);
+  grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
   1
 
 let (grammar_state : (int * all_grammar_command) list ref) = ref []

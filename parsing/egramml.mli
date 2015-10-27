@@ -27,5 +27,5 @@ val get_extend_vernac_rule : Vernacexpr.extend_name -> vernac_expr grammar_prod_
 (** Utility function reused in Egramcoq : *)
 
 val make_rule :
-  (Loc.t -> (Names.Id.t * Genarg.raw_generic_argument) list -> 'b) ->
-  's grammar_prod_item list -> Pcoq.Gram.symbol list * Pcoq.Gram.action
+  (Loc.t -> (Names.Id.t * Genarg.raw_generic_argument) list -> 'a) ->
+  'a grammar_prod_item list -> 'a Extend.production_rule
