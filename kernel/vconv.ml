@@ -99,17 +99,15 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
 	  let ulen = Univ.UContext.size mib.Declarations.mind_universes in
           match stk1 , stk2 with
 	  | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->
-	    assert (ulen <= nargs args1) ;
-            assert (ulen <= nargs args2) ;
-            for i = 0 to ulen - 1 do
-              let a1 = uni_lvl_val (arg args1 i) in
-              let a2 = uni_lvl_val (arg args2 i) in
-              let result = Univ.Level.equal a1 a2 in
-              if not result
-              then raise NotConvertible
-            done ;
-            conv_arguments env ~from:ulen k args1 args2
-              (conv_stack env k stk1' stk2' cu)
+	     assert (ulen <= nargs args1);
+             assert (ulen <= nargs args2);
+	     let u1 = Array.init ulen (fun i -> uni_lvl_val (arg args1 i)) in
+	     let u2 = Array.init ulen (fun i -> uni_lvl_val (arg args2 i)) in
+	     let u1 = Univ.Instance.of_array u1 in
+	     let u2 = Univ.Instance.of_array u2 in
+	     let cu = convert_instances ~flex:false u1 u2 cu in
+             conv_arguments env ~from:ulen k args1 args2
+			    (conv_stack env k stk1' stk2' cu)
 	  | _ -> raise NotConvertible
         else
 	  conv_stack env k stk1 stk2 cu
@@ -118,13 +116,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
       if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
-  | Atype u1 , Atype u2 ->
-    let u1 = Vm.instantiate_universe u1 stk1 in
-    let u2 = Vm.instantiate_universe u2 stk2 in
-    sort_cmp_universes env pb (Type u1) (Type u2) cu
-  | Atype _ , Aid _
-  | Atype _ , Aind _
-  | Aid _ , Atype _
+  | Atype _ , _ | _, Atype _ -> assert false
   | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env ?from:(from=0) k stk1 stk2 cu =
@@ -189,13 +181,6 @@ and conv_arguments env ?from:(from=0) k args1 args2 cu =
       done;
       !rcu
     else raise NotConvertible
-
-let rec eq_puniverses f (x,l1) (y,l2) cu =
-  if f x y then conv_universes l1 l2 cu
-  else raise NotConvertible
-
-and conv_universes l1 l2 cu =
-  if Univ.Instance.equal l1 l2 then cu else raise NotConvertible
 
 let vm_conv_gen cv_pb env univs t1 t2 =
   try 

@@ -173,7 +173,7 @@ let is_cumul = function CUMUL -> true | CONV -> false
 type 'a universe_compare = 
   { (* Might raise NotConvertible *)
     compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
-    compare_instances: bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+    compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
   } 
 
 type 'a universe_state = 'a * 'a universe_compare
@@ -185,8 +185,10 @@ type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.co
 let sort_cmp_universes env pb s0 s1 (u, check) =
   (check.compare env pb s0 s1 u, check)
 
-let convert_instances flex u u' (s, check) =
-  (check.compare_instances flex u u' s, check)
+(* [flex] should be true for constants, false for inductive types and
+   constructors. *)
+let convert_instances ~flex u u' (s, check) =
+  (check.compare_instances ~flex u u' s, check)
 
 let conv_table_key infos k1 k2 cuniv =
   if k1 == k2 then cuniv else
@@ -196,7 +198,7 @@ let conv_table_key infos k1 k2 cuniv =
     else 
       let flex = evaluable_constant cst (info_env infos) 
 	&& RedFlags.red_set (info_flags infos) (RedFlags.fCONST cst)
-      in convert_instances flex u u' cuniv
+      in convert_instances ~flex u u' cuniv
   | VarKey id, VarKey id' when Id.equal id id' -> cuniv
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
@@ -590,7 +592,7 @@ let check_sort_cmp_universes env pb s0 s1 univs =
 let checked_sort_cmp_universes env pb s0 s1 univs =
   check_sort_cmp_universes env pb s0 s1 univs; univs
 
-let check_convert_instances _flex u u' univs =
+let check_convert_instances ~flex u u' univs =
   if Univ.Instance.check_eq univs u u' then univs
   else raise NotConvertible
 
@@ -630,7 +632,7 @@ let infer_cmp_universes env pb s0 s1 univs =
 	| CONV -> infer_eq univs u1 u2)
         else univs
 
-let infer_convert_instances flex u u' (univs,cstrs) =
+let infer_convert_instances ~flex u u' (univs,cstrs) =
   (univs, Univ.enforce_eq_instances u u' cstrs)
 
 let inferred_universes : (Univ.universes * Univ.Constraint.t) universe_compare =
