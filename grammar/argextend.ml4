@@ -280,8 +280,8 @@ EXTEND
       | e = argtype; LIDENT "option" -> OptArgType e ]
     | "0"
       [ e = LIDENT ->
-        let EntryName (t, _) = interp_entry_name false None e "" in
-        t
+        let EntryName (t, _) = interp_entry_name false TgAny e "" in
+        Genarg.unquote t
       | "("; e = argtype; ")" -> e ] ]
   ;
   argrule:
@@ -289,11 +289,11 @@ EXTEND
   ;
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let EntryName (t, g) = interp_entry_name false None e "" in
-	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let EntryName (t, g) = interp_entry_name false TgAny e "" in
+	GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let EntryName (t, g) = interp_entry_name false None e sep in
-	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let EntryName (t, g) = interp_entry_name false TgAny e sep in
+	GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
 	    Lexer.add_keyword s;

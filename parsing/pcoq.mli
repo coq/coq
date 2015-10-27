@@ -285,12 +285,15 @@ val name_of_entry : 'a Gram.entry -> 'a Entry.t
 val symbol_of_prod_entry_key :
   ('self, 'a) entry_key -> Gram.symbol
 
-type 's entry_name = EntryName : entry_type * ('s, 'a) entry_key -> 's entry_name
+type 's entry_name = EntryName :
+  'a raw_abstract_argument_type * ('s, 'a) entry_key -> 's entry_name
 
 (** Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
+type _ target = TgAny : 's target | TgTactic : int -> raw_tactic_expr target
+
 val interp_entry_name : bool (** true to fail on unknown entry *) ->
-  int option -> string -> string -> 's entry_name
+  's target -> string -> string -> 's entry_name
 
 (** Recover the list of all known tactic notation entries. *)
 val list_entry_names : unit -> (string * entry_type) list

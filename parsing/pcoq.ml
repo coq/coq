@@ -80,7 +80,8 @@ type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
 | Aentry : 'a Entry.t -> ('self, 'a) entry_key
 | Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
 
-type 's entry_name = EntryName : entry_type * ('s, 'a) entry_key -> 's entry_name
+type 's entry_name = EntryName :
+  'a raw_abstract_argument_type * ('s, 'a) entry_key -> 's entry_name
 
 module type Gramtypes =
 sig
@@ -789,51 +790,64 @@ let atactic n =
   if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
   else Aentryl (name_of_entry Tactic.tactic_expr, n)
 
+let unsafe_of_genarg : argument_type -> 'a raw_abstract_argument_type =
+  (** FIXME *)
+  Obj.magic
+
 let try_get_entry u s =
   (** Order the effects: type_of_entry can raise Not_found *)
   let typ = type_of_entry u s in
-  Some typ, Aentry (Entry.unsafe_of_name (Entry.univ_name u, s))
+  let typ = unsafe_of_genarg typ in
+  EntryName (typ, Aentry (Entry.unsafe_of_name (Entry.univ_name u, s)))
+
+let wit_list : 'a raw_abstract_argument_type -> 'a list raw_abstract_argument_type =
+  fun t -> unsafe_of_genarg (ListArgType (unquote t))
+
+let wit_opt : 'a raw_abstract_argument_type -> 'a option raw_abstract_argument_type =
+  fun t -> unsafe_of_genarg (OptArgType (unquote t))
+
+type _ target =
+| TgAny : 's target
+| TgTactic : int -> Tacexpr.raw_tactic_expr target
+
+(** Quite ad-hoc *)
+let get_tacentry (type s) (n : int) (t : s target) : s entry_name = match t with
+| TgAny -> EntryName (rawwit wit_tactic, atactic n)
+| TgTactic m ->
+  let check_lvl n =
+    Int.equal m n
+    && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
+    && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
+  in
+  if check_lvl n then EntryName (rawwit wit_tactic, Aself)
+  else if check_lvl (n + 1) then EntryName (rawwit wit_tactic, Anext)
+  else EntryName (rawwit wit_tactic, atactic n)
 
 let rec interp_entry_name static up_level s sep =
   let l = String.length s in
   if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
     let EntryName (t, g) = interp_entry_name static up_level (String.sub s 3 (l-8)) "" in
-    EntryName (ListArgType t, Alist1 g)
+    EntryName (wit_list t, Alist1 g)
   else if l > 12 && coincide s "ne_" 0 &&
                    coincide s "_list_sep" (l-9) then
     let EntryName (t, g) = interp_entry_name static up_level (String.sub s 3 (l-12)) "" in
-    EntryName (ListArgType t, Alist1sep (g,sep))
+    EntryName (wit_list t, Alist1sep (g,sep))
   else if l > 5 && coincide s "_list" (l-5) then
     let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-5)) "" in
-    EntryName (ListArgType t, Alist0 g)
+    EntryName (wit_list t, Alist0 g)
   else if l > 9 && coincide s "_list_sep" (l-9) then
     let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-9)) "" in
-    EntryName (ListArgType t, Alist0sep (g,sep))
+    EntryName (wit_list t, Alist0sep (g,sep))
   else if l > 4 && coincide s "_opt" (l-4) then
     let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-4)) "" in
-    EntryName (OptArgType t, Aopt g)
+    EntryName (wit_opt t, Aopt g)
   else if l > 5 && coincide s "_mods" (l-5) then
     let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-1)) "" in
-    EntryName (ListArgType t, Amodifiers g)
+    EntryName (wit_list t, Amodifiers g)
   else
     let s = match s with "hyp" -> "var" | _ -> s in
-    let check_lvl n = match up_level with
-    | None -> false
-    | Some m -> Int.equal m n
-                && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
-                && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
-    in
-    let t, se =
       match tactic_level s with
-      | Some n ->
-        (** Quite ad-hoc *)
-        let t = unquote (rawwit wit_tactic) in
-        let se =
-          if check_lvl n then Aself
-          else if check_lvl (n + 1) then Anext
-          else atactic n
-        in
-        (Some t, se)
+      | Some n -> get_tacentry n up_level
       | None ->
       try try_get_entry uprim s with Not_found ->
       try try_get_entry uconstr s with Not_found ->
@@ -841,12 +855,7 @@ let rec interp_entry_name static up_level s sep =
 	if static then
 	  error ("Unknown entry "^s^".")
 	else
-	  None, Aentry (Entry.dynamic s) in
-    let t =
-      match t with
-	| Some t -> t
-	| None -> ExtraArgType s in
-    EntryName (t, se)
+	  EntryName (unsafe_of_genarg (ExtraArgType s), Aentry (Entry.dynamic s))
 
 let list_entry_names () =
   let add_entry key (entry, _) accu = (key, entry) :: accu in

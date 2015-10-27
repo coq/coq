@@ -261,11 +261,11 @@ EXTEND
   ;
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let EntryName (t, g) = interp_entry_name false None e "" in
-        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let EntryName (t, g) = interp_entry_name false TgAny e "" in
+        GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let EntryName (t, g) = interp_entry_name false None e sep in
-        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let EntryName (t, g) = interp_entry_name false TgAny e sep in
+        GramNonTerminal (!@loc, Genarg.unquote t, g, Some (Names.Id.of_string s))
       | s = STRING ->
 	if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
         GramTerminal s
