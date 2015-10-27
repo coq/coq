@@ -139,19 +139,6 @@ val grammar_extend :
 (** Remove the last n extensions *)
 val remove_grammars : int -> unit
 
-
-
-
-(** The type of typed grammar objects *)
-type typed_entry
-
-(** The possible types for extensible grammars *)
-type entry_type = argument_type
-
-val type_of_typed_entry : typed_entry -> entry_type
-val object_of_typed_entry : typed_entry -> grammar_object Gram.entry
-val weaken_entry : 'a Gram.entry -> grammar_object Gram.entry
-
 (** Temporary activate camlp4 verbosity *)
 
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
@@ -171,7 +158,6 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
-val create_entry : gram_universe -> string -> entry_type -> typed_entry
 val create_generic_entry : string -> ('a, rlevel) abstract_argument_type ->
   'a Gram.entry
 
@@ -296,7 +282,7 @@ val interp_entry_name : bool (** true to fail on unknown entry *) ->
   's target -> string -> string -> 's entry_name
 
 (** Recover the list of all known tactic notation entries. *)
-val list_entry_names : unit -> (string * entry_type) list
+val list_entry_names : unit -> (string * argument_type) list
 
 (** Registering/resetting the level of a constr entry *)
 

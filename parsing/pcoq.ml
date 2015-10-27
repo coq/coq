@@ -52,7 +52,6 @@ end
 
 (** Grammar entries with associated types *)
 
-type entry_type = argument_type
 type grammar_object = Gramobj.grammar_object
 type typed_entry = argument_type * grammar_object G.entry
 let in_typed_entry t e = (t,Gramobj.weaken_entry e)
