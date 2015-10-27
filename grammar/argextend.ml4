@@ -142,26 +142,28 @@ let make_possibly_empty_subentries loc s cl =
 
 let make_act loc act pil =
   let rec make = function
-    | [] -> <:expr< Pcoq.Gram.action (fun loc -> ($act$ : 'a)) >>
+    | [] -> <:expr< (fun loc -> $act$) >>
     | GramNonTerminal (_,t,_,Some p) :: tl ->
         let t = Genarg.unquote t in
 	let p = Names.Id.to_string p in
 	<:expr<
-          Pcoq.Gram.action
             (fun $lid:p$ ->
                let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
         >>
     | (GramTerminal _ | GramNonTerminal (_,_,_,None)) :: tl ->
-	<:expr< Pcoq.Gram.action (fun _ -> $make tl$) >> in
+	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function
-  | GramTerminal s -> <:expr< Pcoq.gram_token_of_string $str:s$ >>
-  | GramNonTerminal (_,_,g,_) ->
-      <:expr< Pcoq.symbol_of_prod_entry_key $mlexpr_of_prod_entry_key g$ >>
+  | GramTerminal s -> <:expr< Pcoq.Atoken (Lexer.terminal $mlexpr_of_string s$) >>
+  | GramNonTerminal (_,_,g,_) -> mlexpr_of_prod_entry_key g
+
+let rec make_prod = function
+| [] -> <:expr< Extend.Stop >>
+| item :: prods -> <:expr< Extend.Next $make_prod prods$ $make_prod_item item$ >>
 
 let make_rule loc (prods,act) =
-  <:expr< ($mlexpr_of_list make_prod_item prods$,$make_act loc act prods$) >>
+  <:expr< Extend.Rule $make_prod (List.rev prods)$ $make_act loc act prods$ >>
 
 let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let rawtyp, rawpr, globtyp, globpr = match typ with
@@ -224,8 +226,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
      <:str_item<
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
      <:str_item< do {
-      Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
-	(None, [(None, None, $rules$)]);
+      Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule
         $wit$ $lid:rawpr$ $lid:globpr$ $lid:pr$ }
      >> ]
@@ -245,8 +246,7 @@ let declare_vernac_argument loc s pr cl =
      <:str_item<
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
     <:str_item< do {
-      Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
-	(None, [(None, None, $rules$)]);
+      Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule $wit$
         $pr_rules$
         (fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not globwit printer"))
