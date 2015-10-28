@@ -1806,9 +1806,9 @@ let declare_projection n instance_id r =
     in it_mkProd_or_LetIn ccl ctx
   in
   let typ = it_mkProd_or_LetIn typ ctx in
+  let pl, ctx = Evd.universe_context sigma in
   let cst = 
-    Declare.definition_entry ~types:typ ~poly
-      ~univs:(Evd.universe_context sigma) term
+    Declare.definition_entry ~types:typ ~poly ~univs:ctx term
   in
     ignore(Declare.declare_constant n 
 	   (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))

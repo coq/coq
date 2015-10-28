@@ -487,6 +487,9 @@ val union_evar_universe_context : evar_universe_context -> evar_universe_context
   evar_universe_context
 val evar_universe_context_subst : evar_universe_context -> Universes.universe_opt_subst
 
+val evar_universe_context_of_binders :
+  Universes.universe_binders -> evar_universe_context
+							    
 val make_evar_universe_context : env -> (Id.t located) list option -> evar_universe_context
 val restrict_universe_context : evar_map -> Univ.universe_set -> evar_map							   
 (** Raises Not_found if not a name for a universe in this map. *)
@@ -534,7 +537,8 @@ val check_leq : evar_map -> Univ.universe -> Univ.universe -> bool
 
 val evar_universe_context : evar_map -> evar_universe_context
 val universe_context_set : evar_map -> Univ.universe_context_set
-val universe_context : ?names:(Id.t located) list -> evar_map -> Univ.universe_context
+val universe_context : ?names:(Id.t located) list -> evar_map ->
+		       (Id.t * Univ.Level.t) list * Univ.universe_context
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> Univ.universes
 

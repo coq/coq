@@ -208,10 +208,10 @@ let safe_pr_constr t =
   let (sigma, env) = get_current_context () in
   safe_pr_constr_env env sigma t
 
-let pr_universe_ctx c =
+let pr_universe_ctx sigma c =
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
     fnl()++pr_in_comment (fun c -> v 0 
-      (Univ.pr_universe_context Universes.pr_with_global_universes c)) c
+      (Univ.pr_universe_context (Evd.pr_evd_level sigma) c)) c
   else
     mt()
 
@@ -825,7 +825,7 @@ let pr_polymorphic b =
     if b then str"Polymorphic " else str"Monomorphic "
   else mt ()
 
-let pr_universe_instance ctx =
+let pr_universe_instance evd ctx =
   let inst = Univ.UContext.instance ctx in
-    str"@{" ++ Univ.Instance.pr Univ.Level.pr inst ++ str"}"
+    str"@{" ++ Univ.Instance.pr (Evd.pr_evd_level evd) inst ++ str"}"
 

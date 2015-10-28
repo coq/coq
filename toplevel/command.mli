@@ -33,10 +33,11 @@ val get_declare_definition_hook : unit -> (Safe_typing.private_constants definit
 
 val interp_definition :
   lident list option -> local_binder list -> polymorphic -> red_expr option -> constr_expr ->
-  constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * Impargs.manual_implicits
+  constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * 
+      Universes.universe_binders * Impargs.manual_implicits
 
 val declare_definition : Id.t -> definition_kind ->
-  Safe_typing.private_constants definition_entry -> Impargs.manual_implicits ->
+  Safe_typing.private_constants definition_entry -> Universes.universe_binders -> Impargs.manual_implicits ->
     Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
 
 val do_definition : Id.t -> definition_kind -> lident list option ->
@@ -53,7 +54,7 @@ val do_definition : Id.t -> definition_kind -> lident list option ->
     nor in a module type and meant to be instantiated. *)
 val declare_assumption : coercion_flag -> assumption_kind -> 
   types Univ.in_universe_context_set ->
-  Impargs.manual_implicits ->
+  Universes.universe_binders -> Impargs.manual_implicits ->
   bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located ->
   global_reference * Univ.Instance.t * bool
 
@@ -92,13 +93,13 @@ type one_inductive_impls =
 val interp_mutual_inductive :
   structured_inductive_expr -> decl_notation list -> polymorphic ->
     private_flag -> Decl_kinds.recursivity_kind ->
-    mutual_inductive_entry * one_inductive_impls list
+    mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
 
 (** Registering a mutual inductive definition together with its
    associated schemes *)
 
 val declare_mutual_inductive_with_eliminations :
-  mutual_inductive_entry -> one_inductive_impls list ->
+  mutual_inductive_entry -> Universes.universe_binders -> one_inductive_impls list ->
   mutual_inductive
 
 (** Entry points for the vernacular commands Inductive and CoInductive *)
@@ -169,5 +170,5 @@ val do_cofixpoint :
 
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
-val declare_fix : ?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
+val declare_fix : ?opaque:bool -> definition_kind -> Universes.universe_binders -> Univ.universe_context -> Id.t ->
   Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

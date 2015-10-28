@@ -12,7 +12,9 @@ open Names
 open Term
 open Environ
 open Univ
+open Globnames
 
+(** Global universe names *)
 type universe_names = 
     Univ.universe_level Idmap.t * Id.t Univ.LMap.t
 
@@ -27,6 +29,20 @@ let pr_with_global_universes l =
   try Nameops.pr_id (LMap.find l (snd !global_universes))
   with Not_found -> Level.pr l
 
+(** Local universe names of polymorphic references *)
+
+type universe_binders = (Id.t * Univ.universe_level) list
+
+let universe_binders_table = Summary.ref Refmap.empty ~name:"universe binders"
+
+let universe_binders_of_global ref =
+  try
+    let l = Refmap.find ref !universe_binders_table in l
+  with Not_found -> []
+
+let register_universe_binders ref l =
+  universe_binders_table := Refmap.add ref l !universe_binders_table
+		     
 (* To disallow minimization to Set *)
 
 let set_minimization = ref true

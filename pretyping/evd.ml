@@ -356,6 +356,16 @@ let evar_context_universe_context ctx = Univ.ContextSet.to_context ctx.uctx_loca
 let evar_universe_context_of ctx = { empty_evar_universe_context with uctx_local = ctx }
 let evar_universe_context_subst ctx = ctx.uctx_univ_variables
 
+let add_uctx_names s l (names, names_rev) =
+  (UNameMap.add s l names, Univ.LMap.add l s names_rev)
+
+let evar_universe_context_of_binders b =
+  let ctx = empty_evar_universe_context in
+  let names =
+    List.fold_left (fun acc (id, l) -> add_uctx_names (Id.to_string id) l acc)
+		   ctx.uctx_names b
+  in { ctx with uctx_names = names }
+					
 let instantiate_variable l b v =
   v := Univ.LMap.add l (Some b) !v
 
@@ -965,19 +975,19 @@ let pr_uctx_level uctx =
 
 let universe_context ?names evd =
   match names with
-  | None -> Univ.ContextSet.to_context evd.universes.uctx_local
+  | None -> [], Univ.ContextSet.to_context evd.universes.uctx_local
   | Some pl ->
      let levels = Univ.ContextSet.levels evd.universes.uctx_local in
-     let newinst, left =
+     let newinst, map, left =
        List.fold_right
-         (fun (loc,id) (newinst, acc) ->
+         (fun (loc,id) (newinst, map, acc) ->
 	  let l =
 	    try UNameMap.find (Id.to_string id) (fst evd.universes.uctx_names)
 	    with Not_found ->
 	      user_err_loc (loc, "universe_context",
 			    str"Universe " ++ pr_id id ++ str" is not bound anymore.")
-	  in (l :: newinst, Univ.LSet.remove l acc))
-	 pl ([], levels)
+	  in (l :: newinst, (id, l) :: map, Univ.LSet.remove l acc))
+	 pl ([], [], levels)
      in
        if not (Univ.LSet.is_empty left) then
          let n = Univ.LSet.cardinal left in
@@ -985,8 +995,11 @@ let universe_context ?names evd =
 			(str(CString.plural n "Universe") ++ spc () ++
 			     Univ.LSet.pr (pr_uctx_level evd.universes) left ++
 			     spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound.")
-       else Univ.UContext.make (Univ.Instance.of_array (Array.of_list newinst),
-				Univ.ContextSet.constraints evd.universes.uctx_local)
+       else
+	 let inst = Univ.Instance.of_array (Array.of_list newinst) in
+	 let ctx = Univ.UContext.make (inst,
+           Univ.ContextSet.constraints evd.universes.uctx_local)
+	 in map, ctx
 
 let restrict_universe_context evd vars =
   let uctx = evd.universes in
@@ -1044,9 +1057,6 @@ let emit_universe_side_effects eff u =
   let uctxs = Safe_typing.universes_of_private eff in
   List.fold_left (merge_uctx true univ_rigid) u uctxs
         
-let add_uctx_names s l (names, names_rev) =
-    (UNameMap.add s l names, Univ.LMap.add l s names_rev)
-
 let uctx_new_univ_variable rigid name predicative
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = Universes.new_univ_level (Global.current_dirpath ()) in
