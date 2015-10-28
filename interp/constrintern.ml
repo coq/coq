@@ -1774,7 +1774,7 @@ let intern_gen kind env
                c =
   let tmp_scope = scope_of_type_kind kind in
   internalize env {ids = extract_ids env; unb = false;
-        	         tmp_scope = tmp_scope; scopes = [];
+        	         tmp_scope; scopes = [];
         		 impls = impls}
     allow_patvar (ltacvars, Id.Map.empty) c
 
