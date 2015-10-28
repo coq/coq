@@ -1037,7 +1037,17 @@ let interp_recursive isfix fixl notations =
   let fixnames = List.map (fun fix -> fix.fix_name) fixl in
 
   (* Interp arities allowing for unresolved types *)
-  let evdref = ref (Evd.from_env env) in
+  let all_universes =
+    List.fold_right (fun sfe acc ->
+        match sfe.fix_univs , acc with
+        | None , acc -> acc
+        | x , None -> x
+        | Some ls , Some us ->
+	   if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) ls us) then
+	     error "(co)-recursive definitions should all have the same universe binders";
+	   Some (ls @ us)) fixl None in
+  let ctx = Evd.make_evar_universe_context env all_universes in
+  let evdref = ref (Evd.from_ctx ctx) in
   let fixctxs, fiximppairs, fixannots =
     List.split3 (List.map (interp_fix_context env evdref isfix) fixl) in
   let fixctximpenvs, fixctximps = List.split fiximppairs in
@@ -1084,7 +1094,7 @@ let interp_recursive isfix fixl notations =
   let fixctxnames = List.map (fun (_,ctx) -> List.map pi1 ctx) fixctxs in
 
   (* Build the fix declaration block *)
-  (env,rec_sign,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
+  (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
   check_evars_are_solved env evd (Evd.empty,evd);
@@ -1094,16 +1104,16 @@ let check_recursive isfix env evd (fixnames,fixdefs,_) =
   end
 
 let interp_fixpoint l ntns =
-  let (env,_,evd),fix,info = interp_recursive true l ntns in
+  let (env,_,pl,evd),fix,info = interp_recursive true l ntns in
   check_recursive true env evd fix;
-  (fix,Evd.evar_universe_context evd,info)
+  (fix,pl,Evd.evar_universe_context evd,info)
 
 let interp_cofixpoint l ntns =
-  let (env,_,evd),fix,info = interp_recursive false l ntns in
+  let (env,_,pl,evd),fix,info = interp_recursive false l ntns in
   check_recursive false  env evd fix;
-  fix,Evd.evar_universe_context evd,info
+  (fix,pl,Evd.evar_universe_context evd,info)
     
-let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexes ntns =
+let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -1127,10 +1137,10 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
     let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
-    let ctx = Evd.evar_universe_context_set Univ.UContext.empty ctx in
-    let ctx = Universes.restrict_universe_context ctx vars in
+    let evd = Evd.from_ctx ctx in
+    let evd = Evd.restrict_universe_context evd vars in
     let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
-    let ctx = Univ.ContextSet.to_context ctx in
+    let ctx = Evd.universe_context ?names:pl evd in
     ignore (List.map4 (declare_fix (local, poly, Fixpoint) ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
@@ -1139,7 +1149,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
   (* Declare notations *)
   List.iter Metasyntax.add_notation_interpretation ntns
 
-let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns =
+let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -1158,10 +1168,12 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
+    let vars = Universes.universes_of_constr (List.hd fixdecls) in
     let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
-    let ctx = Evd.evar_universe_context_set Univ.UContext.empty ctx in
-    let ctx = Univ.ContextSet.to_context ctx in
+    let evd = Evd.from_ctx ctx in
+    let evd = Evd.restrict_universe_context evd vars in
+    let ctx = Evd.universe_context ?names:pl evd in
     ignore (List.map4 (declare_fix (local, poly, CoFixpoint) ctx) 
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
@@ -1197,7 +1209,7 @@ let out_def = function
 
 let do_program_recursive local p fixkind fixl ntns =
   let isfix = fixkind != Obligations.IsCoFixpoint in
-  let (env, rec_sign, evd), fix, info = 
+  let (env, rec_sign, pl, evd), fix, info = 
     interp_recursive isfix fixl ntns 
   in
     (* Program-specific code *)
@@ -1267,9 +1279,9 @@ let do_fixpoint local poly l =
   if Flags.is_program_mode () then do_program_fixpoint local poly l
   else
     let fixl, ntns = extract_fixpoint_components true l in
-    let fix = interp_fixpoint fixl ntns in
+    let (_, _, _, info as fix) = interp_fixpoint fixl ntns in
     let possible_indexes =
-      List.map compute_possible_guardness_evidences (pi3 fix) in
+      List.map compute_possible_guardness_evidences info in
     declare_fixpoint local poly fix possible_indexes ntns
 
 let do_cofixpoint local poly l =
