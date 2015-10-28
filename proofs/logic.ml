@@ -289,7 +289,15 @@ let collect_meta_variables c =
   let rec collrec deep acc c = match kind c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
-    | (App _| Case _) -> Constr.fold (collrec deep) acc c
+    | Case(ci,p,c,br) ->
+        (* Hack assuming only two situations: the legacy one that branches,
+           if with Metas, are Meta, and the new one with eta-let-expanded
+           branches *)
+        let br = Array.map2 (fun n b -> try snd (Term.decompose_lam_n_decls n b) with UserError _ -> b) ci.ci_cstr_ndecls br in
+        Array.fold_left (collrec deep)
+          (Constr.fold (collrec deep) (Constr.fold (collrec deep) acc p) c)
+          br
+    | App _ -> Constr.fold (collrec deep) acc c
     | Proj (_, c) -> collrec deep acc c
     | _ -> Constr.fold (collrec true) acc c
   in
@@ -387,12 +395,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
       | Case (ci,p,c,lf) ->
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
 	let sigma = check_conv_leq_goal env sigma trm conclty' conclty in
-	let (acc'',sigma, rbranches) =
-	  Array.fold_left2
-            (fun (lacc,sigma,bacc) ty fi ->
-	       let (r,_,s,b') = mk_refgoals sigma goal lacc ty fi in r,s,(b'::bacc))
-            (acc',sigma,[]) lbrty lf
-	in
+        let (acc'',sigma,rbranches) = treat_case sigma goal ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
@@ -440,12 +443,7 @@ and mk_hdgoals sigma goal goalacc trm =
 
     | Case (ci,p,c,lf) ->
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
-	let (acc'',sigma,rbranches) =
-	  Array.fold_left2
-            (fun (lacc,sigma,bacc) ty fi ->
-	       let (r,_,s,b') = mk_refgoals sigma goal lacc ty fi in r,s,(b'::bacc))
-            (acc',sigma,[]) lbrty lf
-	in
+        let (acc'',sigma,rbranches) = treat_case sigma goal ci lbrty lf acc' in
 	let lf' = Array.rev_of_list rbranches in
 	let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
@@ -497,6 +495,50 @@ and mk_casegoals sigma goal goalacc p c =
   let (lbrty,conclty) = type_case_branches_with_names env sigma indspec p c in
   (acc'',lbrty,conclty,sigma,p',c')
 
+and treat_case sigma goal ci lbrty lf acc' =
+  let rec strip_outer_cast c = match kind c with
+  | Cast (c,_,_) -> strip_outer_cast c
+  | _ -> c in
+  let decompose_app_vect c = match kind c with
+  | App (f,cl) -> (f, cl)
+  | _ -> (c,[||]) in
+  let env = Goal.V82.env sigma goal in
+  Array.fold_left3
+    (fun (lacc,sigma,bacc) ty fi l ->
+        if isMeta (strip_outer_cast fi) then
+          (* Support for non-eta-let-expanded Meta as found in *)
+          (* destruct/case with an non eta-let expanded elimination scheme *)
+          let (r,_,s,fi') = mk_refgoals sigma goal lacc ty fi in
+          r,s,(fi'::bacc)
+        else
+        (* Deal with a branch in expanded form of the form
+           Case(ci,p,c,[|eta-let-exp(Meta);...;eta-let-exp(Meta)|]) as
+           if it were not so, so as to preserve compatibility with when
+           destruct/case generated schemes of the form
+           Case(ci,p,c,[|Meta;...;Meta|];
+           CAUTION: it does not deal with the general case of eta-zeta
+           reduced branches having a form different from Meta, as it
+           would be theoretically the case with third-party code *)
+        let n = List.length l in
+        let ctx, body = Term.decompose_lam_n_decls n fi in
+        let head, args = decompose_app_vect body in
+        (* Strip cast because clenv_cast_meta adds a cast when the branch is
+           eta-expanded but when not when the branch has the single-meta
+           form [Meta] *)
+        let head = strip_outer_cast head in
+        if isMeta head then begin
+          assert (args = Context.Rel.to_extended_vect mkRel 0 ctx);
+          let head' = lift (-n) head in
+          let (r,_,s,head'') = mk_refgoals sigma goal lacc ty head' in
+          let fi' = it_mkLambda_or_LetIn (mkApp (head'',args)) ctx in
+          (r,s,fi'::bacc)
+        end
+        else
+          (* Supposed to be meta-free *)
+          let sigma, t'ty = goal_type_of env sigma fi in
+          let sigma = check_conv_leq_goal env sigma fi t'ty ty in
+          (lacc,sigma,fi::bacc))
+    (acc',sigma,[]) lbrty lf ci.ci_pp_info.cstr_tags
 
 let convert_hyp check sign sigma d =
   let id = NamedDecl.get_id d in
