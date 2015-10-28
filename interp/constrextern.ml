@@ -680,7 +680,7 @@ let rec extern inctx scopes vars r =
 				 | head :: tail -> ip q locs' tail
 				     ((extern_reference loc Id.Set.empty (ConstRef c), head) :: acc)
 		   in
-		 CRecord (loc, None, List.rev (ip projs locals args []))
+		 CRecord (loc, List.rev (ip projs locals args []))
 	       with
 		 | Not_found | No_match | Exit ->
 		     extern_app loc inctx

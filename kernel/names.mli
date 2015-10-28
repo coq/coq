@@ -95,7 +95,7 @@ module ModIdmap : Map.ExtS with type key = module_ident and module Set := ModIds
 
 module DirPath :
 sig
-  type t
+  type t = module_ident list
   (** Type of directory paths. Essentially a list of module identifiers. The
       order is reversed to improve sharing. E.g. A.B.C is ["C";"B";"A"] *)
 

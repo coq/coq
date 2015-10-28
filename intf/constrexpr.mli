@@ -149,9 +149,26 @@ type constr_expr =
           * (proj_flag * constr_expr)
           * (constr_expr * explicitation located option) list
 
-  | CRecord of Loc.t * constr_expr option * (reference * constr_expr) list
-  | CCases of Loc.t * case_style * constr_expr option *
-      case_expr list * branch_expr list
+  (* term := {| <ident_1> := <constr_1> ; ... ; <ident_N> := <constr_N> |} *)
+  | CRecord of Loc.t
+             * (reference     (* <ident_I> *)
+               * constr_expr  (* <constr_I> *)
+               ) list
+
+  (* term := match <case_expr_1>, ..., <case_expr_N> [return <constr_R>] with
+   *         <branch_expr_1>
+   *         ...
+   *         <branch_expr_M>
+   *         end
+   *
+   *       | ...
+   *)
+  | CCases of Loc.t                (* location of the "match" keyword *)
+            * case_style           (* RegularStyle *)
+            * constr_expr option   (* None | Some <constr_R> *)
+            * case_expr list       (* [<case_expr_1>; ... ; <case_expr_N>] *)
+            * branch_expr list     (* [<branch_expr_1>; ...; <branch_expr_M>] *)
+
   | CLetTuple of Loc.t * Name.t located list * (Name.t located option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of Loc.t * constr_expr * (Name.t located option * constr_expr option)

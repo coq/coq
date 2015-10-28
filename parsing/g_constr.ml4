@@ -224,10 +224,7 @@ GEXTEND Gram
       ] ]
   ;
   record_declaration:
-    [ [ fs = record_fields -> CRecord (!@loc, None, fs)
-(*       | c = lconstr; "with"; fs = LIST1 record_field_declaration SEP ";" -> *)
-(* 	  CRecord (!@loc, Some c, fs) *)
-    ] ]
+    [ [ fs = record_fields -> CRecord (!@loc, fs) ] ]
   ;
 
   record_fields:

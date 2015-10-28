@@ -116,7 +116,7 @@ let fold_constr_expr_with_binders g f n acc = function
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
-  | CRecord (loc,_,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
+  | CRecord (loc,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
   | CCases (loc,sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (List.fold_right g ids n)) acc rtnpo in
@@ -218,7 +218,7 @@ let map_constr_expr_with_binders g f e = function
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _
   | CPrim _ | CRef _ as x -> x
-  | CRecord (loc,p,l) -> CRecord (loc,p,List.map (fun (id, c) -> (id, f e c)) l)
+  | CRecord (loc,l) -> CRecord (loc,List.map (fun (id, c) -> (id, f e c)) l)
   | CCases (loc,sty,rtnpo,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in

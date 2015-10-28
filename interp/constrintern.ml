@@ -1492,7 +1492,7 @@ let internalize globalenv env allow_patvar lvar c =
           apply_impargs c env impargs args_scopes 
             (merge_impargs l args) loc
 
-    | CRecord (loc, _, fs) ->
+    | CRecord (loc, fs) ->
         let cargs =
           sort_fields true loc fs
             (fun k l -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true)), Misctypes.IntroAnonymous, None) :: l)

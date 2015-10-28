@@ -460,7 +460,7 @@ and pp_expr ?(attr=[]) e =
           (return @
            [Element ("scrutinees", [], List.map pp_case_expr cel)] @
            [pp_branch_expr_list bel]))
-  | CRecord (_, _, _) -> assert false
+  | CRecord (_, _) -> assert false
   | CLetIn (loc, (varloc, var), value, body) ->
       xmlApply loc
         (xmlOperator "let" loc ::
