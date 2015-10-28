@@ -54,7 +54,7 @@ type simple_constr_prod_entry_key =
 (** {5 Type-safe grammar extension} *)
 
 type ('self, 'a) symbol =
-| Atoken : Tok.t -> ('self, Tok.t) symbol
+| Atoken : Tok.t -> ('self, string) symbol
 | Alist1 : ('self, 'a) symbol -> ('self, 'a list) symbol
 | Alist1sep : ('self, 'a) symbol * string -> ('self, 'a list) symbol
 | Alist0 : ('self, 'a) symbol -> ('self, 'a list) symbol

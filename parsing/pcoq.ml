@@ -67,7 +67,7 @@ let weaken_entry x = Gramobj.weaken_entry x
 *)
 
 type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
-| Atoken : Tok.t -> ('self, Tok.t) entry_key
+| Atoken : Tok.t -> ('self, string) entry_key
 | Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
 | Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
 | Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
