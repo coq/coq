@@ -27,7 +27,6 @@ let choose_dest_or_ind scheme_info =
   Tactics.induction_destruct (is_rec_info scheme_info) false
 
 let functional_induction with_clean c princl pat =
-  Dumpglob.pause ();
   let res =
     let f,args = decompose_app c in
     fun g ->
@@ -123,9 +122,7 @@ let functional_induction with_clean c princl pat =
 	 (args_as_induction_constr,princ')))
       subst_and_reduce
       g'
-  in
-    Dumpglob.continue ();
-    res
+  in res
 
 let rec abstract_glob_constr c = function
   | [] -> c
@@ -831,7 +828,6 @@ let make_graph (f_ref:global_reference) =
 	  end
       | _ -> raise (UserError ("", str "Not a function reference") )
   in
-  Dumpglob.pause ();
   (match Global.body_of_constant_body c_body with
      | None -> error "Cannot build a graph over an axiom !"
      | Some body ->
@@ -883,8 +879,7 @@ let make_graph (f_ref:global_reference) =
 	 (* We register the infos *)
 	 List.iter
 	   (fun ((((_,id),_),_,_,_,_),_) -> add_Function false (make_con mp dp (Label.of_id id)))
-	   expr_list);
-  Dumpglob.continue ()
+	   expr_list)
 
 let do_generate_principle = do_generate_principle [] warning_error true
 

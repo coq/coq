@@ -594,9 +594,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Entries.definition_entr
     in
     const::other_result
 
-	   
 let build_scheme fas =
-  Dumpglob.pause ();
   let evd = (ref (Evd.from_env (Global.env ()))) in
   let pconstants = (List.map
 	 (fun (_,f,sort) ->
@@ -626,10 +624,7 @@ let build_scheme fas =
        Declare.definition_message princ_id
     )
     fas
-    bodies_types;
-    Dumpglob.continue ()
-
-
+    bodies_types
 
 let build_case_scheme fa =
   let env = Global.env ()
