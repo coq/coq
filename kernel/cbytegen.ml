@@ -91,6 +91,7 @@ open Pre_env
 (* In Cfxe_t accumulators, we need to store [fcofixi] for testing         *)
 (* conversion of cofixpoints (which is intentional).                      *)
 
+type argument = ArgConstr of Constr.t | ArgUniv of Univ.Level.t
 
 let empty_fv = { size= 0;  fv_rev = [] }
 
@@ -217,21 +218,6 @@ let pos_rel i r sz =
 	let pos = env.size in
 	r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
 	Kenvacc(r.offset + pos)
-
-(*
-let pos_poly_inst idu r =
-  let env = !(r.in_env) in
-  let f = function
-    | FVpoly_inst i -> Univ.eq_puniverses Names.Constant.equal idu i
-    | _ -> false
-  in
-  try  Kenvacc (r.offset + env.size - (find_at f env.fv_rev))
-  with Not_found ->
-    let pos = env.size in
-    let db = FVpoly_inst idu in
-    r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
-    Kenvacc(r.offset + pos)
-*)
 
 let pos_universe_var i r sz =
   if i < r.nb_uni_stack then
@@ -494,9 +480,9 @@ let rec str_const c =
               end
 	| _ -> Bconstr c
       end
-  | Ind (ind,_) ->
+  | Ind (ind,u) when Univ.Instance.is_empty u ->
     Bstrconst (Const_ind ind)
-  | Construct (((kn,j),i),u) ->  
+  | Construct (((kn,j),i),_) ->
       begin
       (* spiwack: tries first to apply the run-time compilation
            behavior of the constructor, as in 2/ above *)
@@ -571,10 +557,6 @@ let rec get_alias env kn =
 	| BCalias kn' -> get_alias env kn'
 	| _ -> kn)
 
-(* Compiling expressions *)
-
-type ('a,'b) sum = Inl of 'a | Inr of 'b
-
 (* sz is the size of the local stack *)
 let rec compile_constr reloc c sz cont =
   match kind_of_term c with
@@ -592,39 +574,43 @@ let rec compile_constr reloc c sz cont =
   | Rel i -> pos_rel i reloc sz :: cont
   | Var id -> pos_named id reloc :: cont
   | Const (kn,u) -> compile_const reloc kn u [||] sz cont
-  | Ind (i,u) ->
+  | Ind (ind,u) ->
+     let bcst = Bstrconst (Const_ind ind) in
     if Univ.Instance.is_empty u then
-      compile_str_cst reloc (str_const c) sz cont
+      compile_str_cst reloc bcst sz cont
     else
       comp_app compile_str_cst compile_universe reloc
-	   (str_const c)
+	   bcst
 	   (Univ.Instance.to_array u)
 	   sz
 	   cont
   | Sort (Prop _) | Construct _ ->
       compile_str_cst reloc (str_const c) sz cont
   | Sort (Type u) ->
-    begin
-      let levels = Univ.Universe.levels u in
-      if Univ.LSet.exists (fun x -> Univ.Level.var_index x <> None) levels
-      then
-        (** TODO(gmalecha): Fix this **)
-        (** NOTE: This relies on the order of iteration to be consistent
-         **)
-	let level_vars =
-	  List.map_filter (fun x -> Univ.Level.var_index x)
-	    (Univ.LSet.elements levels)
-	in
-        let compile_get_univ reloc idx sz cont =
+     (* We separate global and local universes in [u]. The former will be part
+        of the structured constant, while the later (if any) will be applied as
+        arguments. *)
+     let open Univ in begin
+      let levels = Universe.levels u in
+      let global_levels =
+	LSet.filter (fun x -> Level.var_index x = None) levels
+      in
+      let local_levels =
+	List.map_filter (fun x -> Level.var_index x)
+	  (LSet.elements levels)
+      in
+      (* We assume that [Universe.type0m] is a neutral element for [Universe.sup] *)
+      let uglob =
+	LSet.fold (fun lvl u -> Universe.sup u (Universe.make lvl)) global_levels Universe.type0m
+      in
+      if local_levels = [] then
+	compile_str_cst reloc (Bstrconst (Const_sorts (Type uglob))) sz cont
+      else
+	let compile_get_univ reloc idx sz cont =
 	  compile_fv_elem reloc (FVuniv_var idx) sz cont
 	in
         comp_app compile_str_cst compile_get_univ reloc
-	   (Bstrconst (Const_type u))
-	   (Array.of_list level_vars)
-	   sz
-	   cont
-      else
-	compile_str_cst reloc (str_const c) sz cont
+	  (Bstrconst (Const_type u)) (Array.of_list local_levels) sz cont
     end
   | LetIn(_,xb,_,body) ->
       compile_constr reloc xb sz
@@ -831,8 +817,7 @@ and compile_universe reloc uni sz cont =
   | None -> Kconst (Const_univ_level uni) :: cont
   | Some idx -> pos_universe_var idx reloc sz :: cont
 
-and compile_const =
-  fun reloc-> fun  kn u -> fun args -> fun sz -> fun cont ->
+and compile_const reloc kn u args sz cont =
   let nargs = Array.length args in
   (* spiwack: checks if there is a specific way to compile the constant
               if there is not, Not_found is raised, and the function
@@ -850,18 +835,19 @@ and compile_const =
             compile_get_global reloc (kn,u) sz cont)
           compile_constr reloc () args sz cont
       else
-        let compile_either reloc constr_or_uni sz cont =
+        let compile_arg reloc constr_or_uni sz cont =
           match constr_or_uni with
-          | Inl cst -> compile_constr reloc cst sz cont
-          | Inr uni -> compile_universe reloc uni sz cont
+          | ArgConstr cst -> compile_constr reloc cst sz cont
+          | ArgUniv uni -> compile_universe reloc uni sz cont
         in
-        (** TODO(gmalecha): This can be more efficient **)
-        let all =
-          Array.of_list (List.map (fun x -> Inr x) (Array.to_list (Univ.Instance.to_array u)) @
-                         List.map (fun x -> Inl x) (Array.to_list args))
-        in
+	let u = Univ.Instance.to_array u in
+	let lu = Array.length u in
+	let all =
+	  Array.init (lu + Array.length args) 
+	    (fun i -> if i < lu then ArgUniv u.(i) else ArgConstr args.(i-lu))
+	in
         comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
-          compile_either reloc () all sz cont
+          compile_arg reloc () all sz cont
 
 let is_univ_copy max u =
   let u = Univ.Instance.to_array u in

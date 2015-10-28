@@ -162,9 +162,79 @@ type whd =
   | Vatom_stk of atom * stack
   | Vuniv_level of Univ.universe_level
 
+(************************************************)
+(* Abstract machine *****************************)
+(************************************************)
+
+(* gestion de la pile *)
+external push_ra : tcode -> unit = "coq_push_ra"
+external push_val : values -> unit = "coq_push_val"
+external push_arguments : arguments -> unit = "coq_push_arguments"
+external push_vstack : vstack -> unit = "coq_push_vstack"
+
+
+(* interpreteur *)
+external interprete : tcode -> values -> vm_env -> int -> values =
+  "coq_interprete_ml"
+
+
+
+(* Functions over arguments *)
+let nargs : arguments -> int = fun args -> (Obj.size (Obj.repr args)) - 2
+let arg args i =
+  if  0 <= i && i < (nargs args) then
+    val_of_obj (Obj.field (Obj.repr args) (i+2))
+  else invalid_arg
+		("Vm.arg size = "^(string_of_int (nargs args))^
+		 " acces "^(string_of_int i))
+
+(* Apply a value to arguments contained in [vargs] *)
+let apply_arguments vf vargs =
+  let n = nargs vargs in
+  if Int.equal n 0 then vf
+  else
+   begin
+     push_ra stop;
+     push_arguments vargs;
+     interprete (fun_code vf) vf (Obj.magic vf) (n - 1)
+   end
+
+(* Apply value [vf] to an array of argument values [varray] *)
+let apply_varray vf varray =
+  let n = Array.length varray in
+  if Int.equal n 0 then vf
+  else
+    begin
+      push_ra stop;
+      push_vstack varray;
+      interprete (fun_code vf) vf (Obj.magic vf) (n - 1)
+    end
+
 (*************************************************)
 (* Destructors ***********************************)
 (*************************************************)
+
+let uni_lvl_val (v : values) : Univ.universe_level =
+    let whd = Obj.magic v in
+    match whd with
+    | Vuniv_level lvl -> lvl
+    | _ ->
+      let pr =
+        let open Pp in
+        match whd with
+        | Vsort _ -> str "Vsort"
+        | Vprod _ -> str "Vprod"
+        | Vfun _ -> str "Vfun"
+        | Vfix _ -> str "Vfix"
+        | Vcofix _ -> str "Vcofix"
+        | Vconstr_const i -> str "Vconstr_const"
+        | Vconstr_block b -> str "Vconstr_block"
+        | Vatom_stk (a,stk) -> str "Vatom_stk"
+        | _ -> assert false
+      in
+      Errors.anomaly
+        Pp.(   strbrk "Parsing virtual machine value expected universe level, got "
+            ++ pr)
 
 let rec whd_accu a stk =
   let stk =
@@ -172,6 +242,16 @@ let rec whd_accu a stk =
     else Zapp (Obj.obj a) :: stk in
   let at = Obj.field a 1 in
   match Obj.tag at with
+  | i when Int.equal i type_atom_tag ->
+     begin match stk with
+     | [Zapp args] ->
+	let u = ref (Obj.obj (Obj.field at 0)) in
+	for i = 0 to nargs args - 1 do
+	  u := Univ.Universe.sup !u (Univ.Universe.make (uni_lvl_val (arg args i)))
+	done;
+	Vsort (Type !u)
+     | _ -> assert false
+     end
   | i when i <= max_atom_tag ->
       Vatom_stk(Obj.magic at, stk)
   | i when Int.equal i proj_tag ->
@@ -229,77 +309,6 @@ let whd_val : values -> whd =
 	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
 	else
            Vconstr_block(Obj.obj o)
-
-let uni_lvl_val : values -> Univ.universe_level =
-  fun v ->
-    let whd = Obj.magic v in
-    match whd with
-    | Vuniv_level lvl -> lvl
-    | _ ->
-      let pr =
-        let open Pp in
-        match whd with
-        | Vsort _ -> str "Vsort"
-        | Vprod _ -> str "Vprod"
-        | Vfun _ -> str "Vfun"
-        | Vfix _ -> str "Vfix"
-        | Vcofix _ -> str "Vcofix"
-        | Vconstr_const i -> str "Vconstr_const"
-        | Vconstr_block b -> str "Vconstr_block"
-        | Vatom_stk (a,stk) -> str "Vatom_stk"
-        | _ -> assert false
-      in
-      Errors.anomaly
-        Pp.(   strbrk "Parsing virtual machine value expected universe level, got "
-            ++ pr)
-
-(************************************************)
-(* Abstract machine *****************************)
-(************************************************)
-
-(* gestion de la pile *)
-external push_ra : tcode -> unit = "coq_push_ra"
-external push_val : values -> unit = "coq_push_val"
-external push_arguments : arguments -> unit = "coq_push_arguments"
-external push_vstack : vstack -> unit = "coq_push_vstack"
-
-
-(* interpreteur *)
-external interprete : tcode -> values -> vm_env -> int -> values =
-  "coq_interprete_ml"
-
-
-
-(* Functions over arguments *)
-let nargs : arguments -> int = fun args -> (Obj.size (Obj.repr args)) - 2
-let arg args i =
-  if  0 <= i && i < (nargs args) then
-    val_of_obj (Obj.field (Obj.repr args) (i+2))
-  else invalid_arg
-		("Vm.arg size = "^(string_of_int (nargs args))^
-		 " acces "^(string_of_int i))
-
-(* Apply a value to arguments contained in [vargs] *)
-let apply_arguments vf vargs =
-  let n = nargs vargs in
-  if Int.equal n 0 then vf
-  else
-   begin
-     push_ra stop;
-     push_arguments vargs;
-     interprete (fun_code vf) vf (Obj.magic vf) (n - 1)
-   end
-
-(* Apply value [vf] to an array of argument values [varray] *)
-let apply_varray vf varray =
-  let n = Array.length varray in
-  if Int.equal n 0 then vf
-  else
-    begin
-      push_ra stop;
-      push_vstack varray;
-      interprete (fun_code vf) vf (Obj.magic vf) (n - 1)
-    end
 
 (**********************************************)
 (* Constructors *******************************)
@@ -636,22 +645,6 @@ let apply_whd k whd =
   | Vatom_stk(a,stk) ->
       apply_stack (val_of_atom a) stk v 
   | Vuniv_level lvl -> assert false
-
-let instantiate_universe (u : Univ.universe) (stk : stack) : Univ.universe =
-  match stk with
-  | [] -> u
-  | [Zapp args] ->
-    assert (Univ.LSet.cardinal (Univ.Universe.levels u) = nargs args) ;
-    let _,mp = Univ.LSet.fold (fun key (i,mp) ->
-	let u = uni_lvl_val (arg args i) in
-        (i+1, Univ.LMap.add key (Univ.Universe.make u) mp))
-	(Univ.Universe.levels u)
-        (0,Univ.LMap.empty) in
-    let subst = Univ.make_subst mp in
-    Univ.subst_univs_universe subst u
-  | _ ->
-    Errors.anomaly Pp.(str "ill-formed universe")
-
 
 let rec pr_atom a =
   Pp.(match a with

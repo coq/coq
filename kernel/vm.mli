@@ -64,7 +64,6 @@ external val_of_annot_switch : annot_switch -> values = "%identity"
 
 val whd_val : values -> whd
 val uni_lvl_val : values -> Univ.universe_level
-val instantiate_universe : Univ.universe -> stack -> Univ.universe
 
 (** Arguments *)
 

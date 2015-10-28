@@ -155,7 +155,6 @@ and nf_whd env whd typ =
     construct_of_constr_const env n typ
   | Vconstr_block b ->
       let tag = btag b in
-      let x = tag in
       let (tag,ofs) =
         if tag = Cbytecodes.last_variant_tag then
 	  match whd_val (bfield b 0) with
@@ -166,62 +165,54 @@ and nf_whd env whd typ =
       let args = nf_bargs env b ofs ctyp in
       mkApp(capp,args)
   | Vatom_stk(Aid idkey, stk) ->
-      constr_type_of_idkey env idkey stk nf_stk
-(*let c,typ = constr_type_of_idkey env idkey in
-      nf_stk env c typ stk *)
+      constr_type_of_idkey env idkey stk
   | Vatom_stk(Aind ((mi,i) as ind), stk) ->
-      if Environ.polymorphic_ind ind env then
-	let mib = Environ.lookup_mind mi env in
-	let ulen = Univ.UContext.size mib.mind_universes in
-	match stk with
-	| Zapp args :: stk' ->
-	  assert (ulen <= nargs args) ;
-	  let inst =
-	    Array.init ulen (fun i -> Vm.uni_lvl_val (arg args i))
-	  in
-	  let pind = (ind, Univ.Instance.of_array inst) in
-	  nf_stk ~from:ulen env (mkIndU pind) (type_of_ind env pind) stk
-	| _ -> assert false
-      else
-	let pind = (ind, Univ.Instance.empty) in
-	nf_stk env (mkIndU pind) (type_of_ind env pind) stk
-  | Vatom_stk(Atype u, stk) ->
-    mkSort (Type (Vm.instantiate_universe u stk))
+     let mib = Environ.lookup_mind mi env in
+     let nb_univs =
+       if mib.mind_polymorphic then Univ.UContext.size mib.mind_universes
+       else 0
+     in
+     let mk u =
+       let pind = (ind, u) in (mkIndU pind, type_of_ind env pind)
+     in
+     nf_univ_args ~nb_univs mk env stk
+  | Vatom_stk(Atype u, stk) -> assert false
   | Vuniv_level lvl ->
     assert false
 
-and constr_type_of_idkey env (idkey : Vars.id_key) stk cont =
+and nf_univ_args ~nb_univs mk env stk =
+  let u =
+    if Int.equal nb_univs 0 then Univ.Instance.empty
+    else match stk with
+    | Zapp args :: _ ->
+       let inst =
+	 Array.init nb_univs (fun i -> Vm.uni_lvl_val (arg args i))
+       in
+       Univ.Instance.of_array inst
+    | _ -> assert false
+  in
+  let (t,ty) = mk u in
+  nf_stk ~from:nb_univs env t ty stk
+
+and constr_type_of_idkey env (idkey : Vars.id_key) stk =
   match idkey with
   | ConstKey cst ->
-    if Environ.polymorphic_constant cst env then
-      let cbody = Environ.lookup_constant cst env in
-      match stk with
-      | Zapp vargs :: stk' ->
-        let uargs = Univ.UContext.size cbody.const_universes in
-        assert (Vm.nargs vargs >= uargs) ;
-        let uary = Array.init uargs (fun i -> Vm.uni_lvl_val (Vm.arg vargs i)) in
-        let ui = Univ.Instance.of_array uary in
-	let ucst = (cst, ui) in
-	let const_type = Typeops.type_of_constant_in env ucst in
-        if uargs < Vm.nargs vargs then
-	  let t, args = nf_args env vargs ~from:uargs const_type in
-          cont env (mkApp (mkConstU ucst, args)) t stk'
-        else
-          cont env (mkConstU ucst) const_type stk'
-      | _ -> assert false
-    else
-      begin
-	let ucst = (cst, Univ.Instance.empty) in
-	let const_type = Typeops.type_of_constant_in env ucst in
-        cont env (mkConstU ucst) const_type stk
-      end
-  | VarKey id ->
+     let cbody = Environ.lookup_constant cst env in
+     let nb_univs =
+       if cbody.const_polymorphic then Univ.UContext.size cbody.const_universes
+       else 0
+     in
+     let mk u =
+       let pcst = (cst, u) in (mkConstU pcst, Typeops.type_of_constant_in env pcst)
+     in
+     nf_univ_args ~nb_univs mk env stk
+   | VarKey id ->
       let (_,_,ty) = lookup_named id env in
-      cont env (mkVar id) ty stk
+      nf_stk env (mkVar id) ty stk
   | RelKey i ->
       let n = (nb_rel env - i) in
       let (_,_,ty) = lookup_rel n env in
-      cont env (mkRel n) (lift n ty) stk
+      nf_stk env (mkRel n) (lift n ty) stk
 
 and nf_stk ?from:(from=0) env c t stk  =
   match stk with
