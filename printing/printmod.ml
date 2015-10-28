@@ -94,8 +94,12 @@ let print_one_inductive env mib ((_,i) as ind) =
   let cstrtypes = Inductive.type_of_constructors (ind,u) (mib,mip) in
   let cstrtypes = Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
   let envpar = push_rel_context params env in
+  let inst =
+    if mib.mind_polymorphic then Printer.pr_universe_instance mib.mind_universes
+    else mt ()
+  in
   hov 0 (
-    pr_id mip.mind_typename ++ brk(1,4) ++ print_params env Evd.empty params ++
+    pr_id mip.mind_typename ++ inst ++ brk(1,4) ++ print_params env Evd.empty params ++
     str ": " ++ Printer.pr_lconstr_env envpar Evd.empty arity ++ str " :=") ++
   brk(0,2) ++ print_constructors envpar mip.mind_consnames cstrtypes
 

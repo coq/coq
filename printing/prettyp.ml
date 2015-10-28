@@ -73,7 +73,11 @@ let print_ref reduce ref =
       in it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
-  hov 0 (pr_global ref ++ str " :" ++ spc () ++ pr_ltype typ ++ 
+  let inst =
+    if Global.is_polymorphic ref then Printer.pr_universe_instance univs
+    else mt ()
+  in
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype typ ++ 
   	   Printer.pr_universe_ctx univs)
 
 (********************************)
@@ -473,6 +477,10 @@ let print_typed_body (val_0,typ) =
 let ungeneralized_type_of_constant_type t = 
   Typeops.type_of_constant_type (Global.env ()) t
 
+let print_instance cb =
+  if cb.const_polymorphic then pr_universe_instance cb.const_universes
+  else mt()
+				
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
@@ -485,11 +493,11 @@ let print_constant with_values sep sp =
     match val_0 with
     | None ->
 	str"*** [ " ++
-	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++
+	print_basename sp ++ print_instance cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
 	Printer.pr_universe_ctx univs
     | _ ->
-	print_basename sp ++ str sep ++ cut () ++
+	print_basename sp ++ print_instance cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ)++
         Printer.pr_universe_ctx univs)
 

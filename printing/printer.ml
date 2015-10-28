@@ -825,3 +825,7 @@ let pr_polymorphic b =
     if b then str"Polymorphic " else str"Monomorphic "
   else mt ()
 
+let pr_universe_instance ctx =
+  let inst = Univ.UContext.instance ctx in
+    str"@{" ++ Univ.Instance.pr Univ.Level.pr inst ++ str"}"
+
