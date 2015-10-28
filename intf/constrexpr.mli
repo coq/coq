@@ -44,19 +44,34 @@ type raw_cases_pattern_expr =
   | RCPatAtom of Loc.t * Id.t option
   | RCPatOr of Loc.t * raw_cases_pattern_expr list
 
+(* cases_pattern_expr ::= ... *)
 type cases_pattern_expr =
+
   | CPatAlias of Loc.t * cases_pattern_expr * Id.t
-  | CPatCstr of Loc.t * reference
-    * cases_pattern_expr list * cases_pattern_expr list
+  (* <pattern> as <ident> *)
+               
+  | CPatCstr of Loc.t * reference * cases_pattern_expr list * cases_pattern_expr list
   (** [CPatCstr (_, Inl c, l1, l2)] represents (@c l1) l2 *)
+
+  (* <ident> *)
   | CPatAtom of Loc.t * reference option
+
+  (* ( <pattern> | ... | <pattern> ) *)
   | CPatOr of Loc.t * cases_pattern_expr list
+
   | CPatNotation of Loc.t * notation * cases_pattern_notation_substitution
-    * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
+    * cases_pattern_expr list
+      (** CPatNotation (_, n, l1 ,l2) represents
 				  (notation n applied with substitution l1)
 				  applied to arguments l2 *)
+
+  (* pattern-matching for literals *)
   | CPatPrim of Loc.t * prim_token
+
+  (* {| ... |} *)
   | CPatRecord of Loc.t * (reference * cases_pattern_expr) list
+
+  (* <pattern> % <scope_delimiter> *)
   | CPatDelimiters of Loc.t * string * cases_pattern_expr
 
 and cases_pattern_notation_substitution =
@@ -95,38 +110,38 @@ type constr_expr =
                                     * "Some _" ... when dealing with universe polymorphism.
                                     *)
 
-  (* term ::= fix <fix_expr>
-   *        | fix <fix_expr_1> with <fix_expr_2> ... with <fix_expr_N> for <ident_I>
+  (* <constr_expr> ::= fix <fix_expr>
+   *                 | fix <fix_expr_1> with <fix_expr_2> ... with <fix_expr_N> for <ident_I>
    *)
   | CFix of Loc.t          (* position of the "fix" keyword *)
           * Id.t located   (* <ident_I> *)
           * fix_expr list  (* [<fix_expr_1>; <fix_expr_2>; ... ; <fix_expr_N>] *)
 
-  (* term ::= cofix <cofix_expr>
-   *        | cofix <cofix_expr_1> with <cofix_expr_2> ... with <cofix_expr_N> for <ident_I>
+  (* <constr_expr> ::= cofix <cofix_expr>
+   *                 | cofix <cofix_expr_1> with <cofix_expr_2> ... with <cofix_expr_N> for <ident_I>
    *)
   | CCoFix of Loc.t            (* position of the "cofix" keyword *)
             * Id.t located     (* <ident_I> *)
             * cofix_expr list  (* [<cofix_expr_1>; <cofix_expr_2>; ... ; <cofix_expr_N>] *)
 
-  (* term ::= forall <binders>, <constr> *)
+  (* <constr_expr> ::= forall <binders>, <constr> *)
   | CProdN of Loc.t             (* position of the "forall" keyword *)
             * binder_expr list  (* <binders> *)
             * constr_expr       (* <constr> *)
 
-  (* term ::= fun <binders> => <constr> *)
+  (* <constr_expr> ::= fun <binders> => <constr> *)
   | CLambdaN of Loc.t             (* position of the "fun" keyword *)
               * binder_expr list  (* <binders> *)
               * constr_expr       (* <constr> *)
 
-  (* term ::= let <ident> := <constr_A> in <constr_B> *)
+  (* <constr_expr> ::= let <ident> := <constr_A> in <constr_B> *)
   | CLetIn of Loc.t            (* position of the "let" keyword *)
             * Name.t located   (* <ident> *)
             * constr_expr      (* <constr_A> *)
             * constr_expr      (* <constr_B> *)
 
-  (* term ::= @ <ident> <constr_1> ... <constr_N>
-   *        | ...
+  (* <constr_expr> ::= @ <ident> <constr_1> ... <constr_N>
+   *                 | ...
    *)
   | CAppExpl of Loc.t                   (* position of <ident> *)
               * (proj_flag              (* None *)
@@ -135,27 +150,27 @@ type constr_expr =
                 )
               * constr_expr list        (* [<constr_1>; ...; <constr_N>] *)
 
-  (* term ::= <constr_0> <constr_1> ... <constr_N>
-   *             (* CApp (_, (None, <constr_0>), [<constr_1>, None; ...; <constr_N>, None]) *)
-   *
-   *        | <constr_0> (<ident_1> := <constr_1>) ... (<ident_N> := <constr_N>)
-   *             (* CApp (_, (None, <constr_0), [<constr_1>, Some (ByName <ident_1>);
-   *                                             ...
-   *                                             <constr_N>, Some (ByName <ident_N>)]) *)
-   *
-   *        | ...
+  (* <constr_expr> ::= <constr_0> <constr_1> ... <constr_N>
+   *                      (* CApp (_, (None, <constr_0>), [<constr_1>, None; ...; <constr_N>, None]) *)
+   *                
+   *                 | <constr_0> (<ident_1> := <constr_1>) ... (<ident_N> := <constr_N>)
+   *                      (* CApp (_, (None, <constr_0), [<constr_1>, Some (ByName <ident_1>);
+   *                                                      ...
+   *                                                      <constr_N>, Some (ByName <ident_N>)]) *)
+   *                
+   *                 | ...
    *)
   | CApp of Loc.t
           * (proj_flag * constr_expr)
           * (constr_expr * explicitation located option) list
 
-  (* term := {| <ident_1> := <constr_1> ; ... ; <ident_N> := <constr_N> |} *)
+  (* <constr_expr> ::= {| <ident_1> := <constr_1> ; ... ; <ident_N> := <constr_N> |} *)
   | CRecord of Loc.t
              * (reference     (* <ident_I> *)
                * constr_expr  (* <constr_I> *)
                ) list
 
-  (* term := match <case_expr_1>, ..., <case_expr_N> [return <constr_R>] with
+  (* <constr_expr> ::= match <case_expr_1>, ..., <case_expr_N> [return <constr_R>] with
    *         <branch_expr_1>
    *         ...
    *         <branch_expr_M>
@@ -169,19 +184,57 @@ type constr_expr =
             * case_expr list       (* [<case_expr_1>; ... ; <case_expr_N>] *)
             * branch_expr list     (* [<branch_expr_1>; ...; <branch_expr_M>] *)
 
-  | CLetTuple of Loc.t * Name.t located list * (Name.t located option * constr_expr option) *
-      constr_expr * constr_expr
-  | CIf of Loc.t * constr_expr * (Name.t located option * constr_expr option)
-      * constr_expr * constr_expr 
+  (* <constr_expr> ::= let (<ident_1>, ... , <ident_N>) [[as <ident_A>] return <constr_1>] := <constr_2> in <constr_3> *)
+  | CLetTuple of Loc.t
+               * Name.t located list     (* [<ident_1> ; ... ; <ident_N>] *)
+               * (Name.t located option  (* None | Some <ident_A> *)
+                 * constr_expr option    (* None | Some <constr_1> *)
+                 )
+               * constr_expr             (* <constr_2> *)
+               * constr_expr             (* <constr_3> *)
 
-  (* Representation of '_' characters that appear in the original terms.
-   * Those '_' characters either represent terms that user expects Coq will infer during pre-typing phase,
-   * or they represent wildcards in patterns.
-   *)
+  (* <constr_expr> ::= if <constr_1> [[as <ident_A>] return <constr_2>] then <constr_3> else <constr_4> *)
+  | CIf of Loc.t
+         * constr_expr             (* <constr_1> *)
+         * (Name.t located option  (* None | Some <ident_A> *)
+           * constr_expr option    (* None | Some <constr_2> *)
+           )
+         * constr_expr             (* <constr_3> *)
+         * constr_expr             (* <constr_4> *)
+
+  (* <constr_expr> ::= _ *)
   | CHole of Loc.t * Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
 
+  (* <constr_expr> ::= @?<ident>
+   *
+   * E.g. as in:
+   *
+   *   @?a b c  --->  CApp <abstr> (None, CPatVar <abstr> "a")
+   *                   [(CRef (Ident (<abstr>, "b")) None, None);
+   *                    (CRef (Ident (<abstr>, "c")) None, None)]
+   *)
   | CPatVar of Loc.t * patvar
-  | CEvar of Loc.t * Glob_term.existential_name * (Id.t * constr_expr) list   (* existential variables *)
+
+  (* <constr_expr> ::= ?<ident>
+   *
+   * E.g. as in:
+   *
+   *   ?foo@{bar:=Set; baz:=Prop}  --->  CEvar <abstr> "foo"
+   *                                      [("bar", CSort <abstr> Misctypes.GSet);
+   *                                          ("baz", CSort <abstr> Misctypes.GProp)]
+   *)
+  | CEvar of Loc.t * Glob_term.existential_name * (Id.t * constr_expr) list
+
+  (* constr_expr> ::= Prop
+   *                | Set
+   *                | Type [@{ <universe> }]
+   *
+   * E.g. as in:
+   *
+   *   Type  --->  CSort _ (Misctypes.GType [])
+   *   Type@{foo}  --->  CSort _ (Misctypes.GType [(_, "foo")])
+   *   Type@{max(foo,bar,bak)  --->  CSort <abstr> (GType [(_, "foo"); (_, "bar"); (_, "bak")])
+   *)
   | CSort of Loc.t * glob_sort   (* representation of sorts (i.e. 'Prop', 'Set', and 'Type' *)
 
   (* (<constr_expr> : constr_expr cast_type) *)
@@ -211,11 +264,19 @@ type constr_expr =
    *)
   | CDelimiters of Loc.t * string * constr_expr
 
-and case_expr =
-  constr_expr * (Name.t located option * cases_pattern_expr option)
+(* case_expr ::= <constr> [as <ident>] [in <pattern>] *)
+and case_expr = constr_expr                  (* <constr> *)
+              * (Name.t located option       (* None | Some <ident> *)
+                * cases_pattern_expr option  (* None | Some <pattern> *)
+                )
 
-and branch_expr =
-  Loc.t * cases_pattern_expr list located list * constr_expr
+(* branch_expr ::= <p_1_1>, ... , <p_1_N1> | ... | <p_M_1>, ... , <p_M_NM> => <constr> *)
+and branch_expr = Loc.t
+                * cases_pattern_expr list located list  (* [[<p_1_1>; ... ; <p_1_N1>];
+                                                         *  ...
+                                                         *  [<p_M_N1>; ... ; <p_M_NM>]]
+                                                         *)
+                * constr_expr                           (* <constr> *)
 
 (* representation of bindings (of products and lambda-expressions) *)
 and binder_expr = Name.t located list  (* names of bound variables *)
