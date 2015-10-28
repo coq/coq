@@ -84,12 +84,12 @@ let lpar_id_coloneq =
       match get_tok (stream_nth 0 strm) with
         | KEYWORD "(" ->
             (match get_tok (stream_nth 1 strm) with
-	      | IDENT s ->
+              | IDENT s ->
                   (match get_tok (stream_nth 2 strm) with
                     | KEYWORD ":=" ->
                         stream_njunk 3 strm;
                         Names.Id.of_string s
-	            | _ -> err ())
+                    | _ -> err ())
               | _ -> err ())
         | _ -> err ())
 
@@ -97,26 +97,26 @@ let impl_ident_head =
   Gram.Entry.of_parser "impl_ident_head"
     (fun strm ->
       match get_tok (stream_nth 0 strm) with
-	| KEYWORD "{" ->
-	    (match get_tok (stream_nth 1 strm) with
-	      | IDENT ("wf"|"struct"|"measure") -> err ()
-	      | IDENT s ->
-		  stream_njunk 2 strm;
-		  Names.Id.of_string s
-	      | _ -> err ())
-	| _ -> err ())
+        | KEYWORD "{" ->
+            (match get_tok (stream_nth 1 strm) with
+              | IDENT ("wf"|"struct"|"measure") -> err ()
+              | IDENT s ->
+                  stream_njunk 2 strm;
+                  Names.Id.of_string s
+              | _ -> err ())
+        | _ -> err ())
 
 let name_colon =
   Gram.Entry.of_parser "name_colon"
     (fun strm ->
       match get_tok (stream_nth 0 strm) with
-	| IDENT s ->
+        | IDENT s ->
             (match get_tok (stream_nth 1 strm) with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
                   Name (Names.Id.of_string s)
               | _ -> err ())
-	| KEYWORD "_" ->
+        | KEYWORD "_" ->
           (match get_tok (stream_nth 1 strm) with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
@@ -200,7 +200,7 @@ GEXTEND Gram
     | "8" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
-	CApp(!@loc,(Some (List.length args+1),CRef (f,None)),args@[c,None])
+        CApp(!@loc,(Some (List.length args+1),CRef (f,None)),args@[c,None])
       | c=operconstr; ".("; "@"; f=global;
         args=LIST0 (operconstr LEVEL "9"); ")" ->
         CAppExpl(!@loc,(Some (List.length args+1),f,None),args@[c])
@@ -215,9 +215,9 @@ GEXTEND Gram
             | _ -> c)
       | "{|"; c = record_declaration; "|}" -> c
       | "`{"; c = operconstr LEVEL "200"; "}" ->
-	  CGeneralization (!@loc, Implicit, None, c)
+          CGeneralization (!@loc, Implicit, None, c)
       | "`("; c = operconstr LEVEL "200"; ")" ->
-	  CGeneralization (!@loc, Explicit, None, c)
+          CGeneralization (!@loc, Explicit, None, c)
       | "$("; tac = Tactic.tactic; ")$" ->
           let arg = Genarg.in_gen (Genarg.rawwit Constrarg.wit_tactic) tac in
           CHole (!@loc, None, IntroAnonymous, Some arg)
@@ -247,8 +247,8 @@ GEXTEND Gram
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
           let loc1 =
-	    Loc.merge (local_binders_loc bl) (constr_loc c1)
-	  in
+            Loc.merge (local_binders_loc bl) (constr_loc c1)
+          in
           CLetIn(!@loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           let fixp = mk_single_fix fx in
@@ -258,29 +258,29 @@ GEXTEND Gram
             | _ -> assert false in
           CLetIn(!@loc,(li,Name id),fixp,c)
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> l | "()" -> []];
-	  po = return_type;
-	  ":="; c1 = operconstr LEVEL "200"; "in";
+          po = return_type;
+          ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
           CLetTuple (!@loc,lb,po,c1,c2)
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, None, [(c1,(None,None))], [(!@loc, [(!@loc,[p])], c2)])
+            CCases (!@loc, LetPatternStyle, None, [(c1,(None,None))], [(!@loc, [(!@loc,[p])], c2)])
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
-	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, None))], [(!@loc, [(!@loc, [p])], c2)])
+          rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
+            CCases (!@loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, None))], [(!@loc, [(!@loc, [p])], c2)])
       | "let"; "'"; p=pattern; "in"; t = pattern LEVEL "200";
-	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
+          ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, Some t))], [(!@loc, [(!@loc, [p])], c2)])
+            CCases (!@loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, Some t))], [(!@loc, [(!@loc, [p])], c2)])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
-	"then"; b1=operconstr LEVEL "200";
+        "then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
           CIf (!@loc, c, po, b1, b2)
       | c=fix_constr -> c ] ]
   ;
   appl_arg:
     [ [ id = lpar_id_coloneq; c=lconstr; ")" ->
-	  (c,Some (!@loc,ExplByName id))
+          (c,Some (!@loc,ExplByName id))
       | c=operconstr LEVEL "9" -> (c,None) ] ]
   ;
   atomic_constr:
@@ -379,13 +379,13 @@ GEXTEND Gram
     | "99" RIGHTA [ ]
     | "11" LEFTA
       [ p = pattern; "as"; id = ident ->
-	  CPatAlias (!@loc, p, id) ]
+          CPatAlias (!@loc, p, id) ]
     | "10" RIGHTA
       [ p = pattern; lp = LIST1 NEXT ->
         (match p with
-	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, [], lp)
-	  | CPatCstr (_, r, l1, l2) -> CPatCstr (!@loc, r, l1 , l2@lp)
-	  | CPatNotation (_, n, s, l) -> CPatNotation (!@loc, n , s, l@lp)
+          | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, [], lp)
+          | CPatCstr (_, r, l1, l2) -> CPatCstr (!@loc, r, l1 , l2@lp)
+          | CPatNotation (_, n, s, l) -> CPatNotation (!@loc, n , s, l@lp)
           | _ -> Errors.user_err_loc
               (cases_pattern_expr_loc p, "compound_pattern",
                Pp.str "Such pattern cannot have arguments."))
@@ -412,14 +412,14 @@ GEXTEND Gram
     | nal=LIST1 name; "}" ->
         (fun na -> LocalRawAssum (na::nal,Default Implicit,CHole (Loc.join_loc (fst na) !@loc, Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None)))
     | ":"; c=lconstr; "}" ->
-	(fun na -> LocalRawAssum ([na],Default Implicit,c))
+        (fun na -> LocalRawAssum ([na],Default Implicit,c))
     ] ]
   ;
   fixannot:
     [ [ "{"; IDENT "struct"; id=identref; "}" -> (Some id, CStructRec)
     | "{"; IDENT "wf"; rel=constr; id=OPT identref; "}" -> (id, CWfRec rel)
     | "{"; IDENT "measure"; m=constr; id=OPT identref;
-	rel=OPT constr; "}" -> (id, CMeasureRec (m,rel))
+        rel=OPT constr; "}" -> (id, CMeasureRec (m,rel))
     ] ]
   ;
   impl_name_head:
@@ -439,14 +439,14 @@ GEXTEND Gram
     [ [ (* open binder *)
         id = name; idl = LIST0 name; ":"; c = lconstr ->
           [LocalRawAssum (id::idl,Default Explicit,c)]
-	(* binders factorized with open binder *)
+        (* binders factorized with open binder *)
       | id = name; idl = LIST0 name; bl = binders ->
           binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
           [LocalRawAssum ([id1;(!@loc,Name ldots_var);id2],
-	                  Default Explicit,CHole (!@loc, None, IntroAnonymous, None))]
+                          Default Explicit,CHole (!@loc, None, IntroAnonymous, None))]
       | bl = closed_binder; bl' = binders ->
-	  bl@bl'
+          bl@bl'
     ] ]
   ;
   binders:
@@ -474,19 +474,19 @@ GEXTEND Gram
       | "{"; id=name; idl=LIST1 name; "}" ->
           List.map (fun id -> LocalRawAssum ([id],Default Implicit,CHole (!@loc, None, IntroAnonymous, None))) (id::idl)
       | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
-	  List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
+          List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->
-	  List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
+          List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
     ] ]
   ;
   typeclass_constraint:
     [ [ "!" ; c = operconstr LEVEL "200" -> (!@loc, Anonymous), true, c
       | "{"; id = name; "}"; ":" ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
-	  id, expl, c
+          id, expl, c
       | iid=name_colon ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
-	  (!@loc, iid), expl, c
+          (!@loc, iid), expl, c
       | c = operconstr LEVEL "200" ->
-	  (!@loc, Anonymous), false, c
+          (!@loc, Anonymous), false, c
     ] ]
   ;
 
