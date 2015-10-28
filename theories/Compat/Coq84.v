@@ -15,6 +15,9 @@ Ltac omega := Coq.omega.Omega.omega.
 (** The number of arguments given in [match] statements has changed from 8.4 to 8.5. *)
 Global Set Asymmetric Patterns.
 
+(** The automatic elimination schemes for records were dropped by default in 8.5.  This restores the default behavior of Coq 8.4. *)
+Global Set Nonrecursive Elimination Schemes.
+
 (** See bug 3545 *)
 Global Set Universal Lemma Under Conjunction.
 
