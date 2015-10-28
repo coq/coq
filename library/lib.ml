@@ -198,6 +198,9 @@ let split_lib_at_opening sp =
 let add_entry sp node =
   lib_stk := (sp,node) :: !lib_stk
 
+let pull_to_head oname =
+  lib_stk := (oname,List.assoc oname !lib_stk) :: List.remove_assoc oname !lib_stk
+
 let anonymous_id =
   let n = ref 0 in
   fun () -> incr n; Names.Id.of_string ("_" ^ (string_of_int !n))
