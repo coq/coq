@@ -21,6 +21,6 @@ Inductive bla@{l k} : Type@{k} := blaI : Type@{l} -> bla.
 Inductive blacopy@{k l} : Type@{k} := blacopyI : Type@{l} -> blacopy.
 
 
-Universe g.
+Monomorphic Universe g.
 
 Inductive blacopy'@{l} : Type@{g} := blacopy'I : Type@{l} -> blacopy'.
