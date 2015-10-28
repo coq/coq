@@ -261,10 +261,10 @@ val dependent_evar_ident : existential_key -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
 
-val emit_side_effects : Declareops.side_effects -> evar_map -> evar_map
+val emit_side_effects : Safe_typing.private_constants -> evar_map -> evar_map
 (** Push a side-effect into the evar map. *)
 
-val eval_side_effects : evar_map -> Declareops.side_effects
+val eval_side_effects : evar_map -> Safe_typing.private_constants
 (** Return the effects contained in the evar map. *)
 
 val drop_side_effects : evar_map -> evar_map

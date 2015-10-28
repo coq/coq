@@ -25,7 +25,7 @@ val rew_r2l_scheme_kind : individual scheme_kind
 val build_r2l_rew_scheme : bool -> env -> inductive -> sorts_family -> 
   constr Evd.in_evar_universe_context
 val build_l2r_rew_scheme : bool -> env -> inductive -> sorts_family -> 
-  constr Evd.in_evar_universe_context * Declareops.side_effects
+  constr Evd.in_evar_universe_context * Safe_typing.private_constants
 val build_r2l_forward_rew_scheme :
   bool -> env -> inductive -> sorts_family -> constr Evd.in_evar_universe_context
 val build_l2r_forward_rew_scheme :
@@ -37,7 +37,7 @@ val build_sym_scheme : env -> inductive -> constr Evd.in_evar_universe_context
 val sym_scheme_kind : individual scheme_kind
 
 val build_sym_involutive_scheme : env -> inductive -> 
-  constr Evd.in_evar_universe_context * Declareops.side_effects
+  constr Evd.in_evar_universe_context * Safe_typing.private_constants
 val sym_involutive_scheme_kind : individual scheme_kind
 
 (** Builds a congruence scheme for an equality type *)

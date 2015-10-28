@@ -336,7 +336,7 @@ val tclENV : Environ.env tactic
 (** {7 Put-like primitives} *)
 
 (** [tclEFFECTS eff] add the effects [eff] to the current state. *)
-val tclEFFECTS : Declareops.side_effects -> unit tactic
+val tclEFFECTS : Safe_typing.private_constants -> unit tactic
 
 (** [mark_as_unsafe] declares the current tactic is unsafe. *)
 val mark_as_unsafe : unit tactic

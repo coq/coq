@@ -70,11 +70,12 @@ let adjust_guardness_conditions const = function
                   try ignore(Environ.lookup_constant c e); true
                   with Not_found -> false in 
                 if exists c e then e else Environ.add_constant c cb e in
-              let env = Declareops.fold_side_effects (fun env -> function
+              let env = List.fold_left (fun env { eff } ->
+                match eff with
                 | SEsubproof (c, cb,_) -> add c cb env
                 | SEscheme (l,_) ->
                     List.fold_left (fun e (_,c,cb,_) -> add c cb e) env l)
-                env (Declareops.uniquize_side_effects eff) in
+                env (Safe_typing.side_effects_of_private_constants eff) in
               let indexes =
 	        search_guard Loc.ghost env
                   possible_indexes fixdecls in

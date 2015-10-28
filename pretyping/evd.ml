@@ -579,7 +579,7 @@ type evar_map = {
   (** Metas *)
   metas      : clbinding Metamap.t;
   (** Interactive proofs *)
-  effects    : Declareops.side_effects;
+  effects    : Safe_typing.private_constants;
   future_goals : Evar.t list; (** list of newly created evars, to be
                                   eventually turned into goals if not solved.*)
   principal_future_goal : Evar.t option; (** if [Some e], [e] must be
@@ -768,7 +768,7 @@ let empty = {
   conv_pbs   = [];
   last_mods  = Evar.Set.empty;
   metas      = Metamap.empty;
-  effects    = Declareops.no_seff;
+  effects    = Safe_typing.empty_private_constants;
   evar_names = (EvMap.empty,Idmap.empty); (* id<->key for undefined evars *)
   future_goals = [];
   principal_future_goal = None;
@@ -1041,22 +1041,8 @@ let with_context_set rigid d (a, ctx) =
   (merge_context_set rigid d ctx, a)
 
 let emit_universe_side_effects eff u =
-  Declareops.fold_side_effects
-    (fun acc eff ->
-     match eff with
-     | Declarations.SEscheme (l,s) ->
-	List.fold_left
-	  (fun acc (_,_,cb,c) ->
-	   let acc = match c with
-	     | `Nothing -> acc
-	     | `Opaque (s, ctx) -> merge_uctx true univ_rigid acc ctx
-	   in if cb.Declarations.const_polymorphic then acc
-	      else
-		merge_uctx true univ_rigid acc
-			   (Univ.ContextSet.of_context cb.Declarations.const_universes))
-	  acc l
-     | Declarations.SEsubproof _ -> acc)
-    u eff
+  let uctxs = Safe_typing.universes_of_private eff in
+  List.fold_left (merge_uctx true univ_rigid) u uctxs
         
 let add_uctx_names s l (names, names_rev) =
     (UNameMap.add s l names, Univ.LMap.add l s names_rev)
@@ -1399,11 +1385,11 @@ let e_eq_constr_univs evdref t u =
 (* Side effects *)
 
 let emit_side_effects eff evd =
-  { evd with effects = Declareops.union_side_effects eff evd.effects;
+  { evd with effects = Safe_typing.concat_private eff evd.effects;
 	     universes = emit_universe_side_effects eff evd.universes }
 
 let drop_side_effects evd =
-  { evd with effects = Declareops.no_seff; }
+  { evd with effects = Safe_typing.empty_private_constants; }
 
 let eval_side_effects evd = evd.effects
 

@@ -43,7 +43,10 @@ let set_indirect_univ_accessor f = (get_univ := f)
 let create cu = Direct ([],cu)
 
 let turn_indirect dp o (prfs,odp) = match o with
-  | Indirect _ -> Errors.anomaly (Pp.str "Already an indirect opaque")
+  | Indirect (_,_,i) ->
+      if not (Int.Map.mem i prfs)
+      then Errors.anomaly (Pp.str "Indirect in a different table")
+      else Errors.anomaly (Pp.str "Already an indirect opaque")
   | Direct (d,cu) ->
       let cu = Future.chain ~pure:true cu (fun (c, u) -> hcons_constr c, u) in
       let id = Int.Map.cardinal prfs in

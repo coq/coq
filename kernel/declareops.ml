@@ -304,17 +304,7 @@ let hcons_mind mib =
 
 (** {6 Stm machinery } *)
 
-let string_of_side_effect = function
-  | SEsubproof (c,_,_) -> Names.string_of_con c
-  | SEscheme (cl,_) ->
-      String.concat ", " (List.map (fun (_,c,_,_) -> Names.string_of_con c) cl)
-type side_effects = side_effect list
-let no_seff = ([] : side_effects)
-let iter_side_effects f l = List.iter f (List.rev l)
-let fold_side_effects f a l = List.fold_left f a l
-let uniquize_side_effects l = List.rev (CList.uniquize (List.rev l))
-let union_side_effects l1 l2 = l1 @ l2
-let flatten_side_effects l = List.flatten l
-let side_effects_of_list l = l
-let cons_side_effects x l = x :: l
-let side_effects_is_empty = List.is_empty
+let string_of_side_effect { Entries.eff } = match eff with
+  | Entries.SEsubproof (c,_,_) -> "P(" ^ Names.string_of_con c ^ ")"
+  | Entries.SEscheme (cl,_) ->
+      "S(" ^ String.concat ", " (List.map (fun (_,c,_,_) -> Names.string_of_con c) cl) ^ ")"

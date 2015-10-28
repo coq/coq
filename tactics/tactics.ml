@@ -4455,9 +4455,9 @@ let abstract_subproof id gk tac =
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
   let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
   let evd = Evd.set_universe_context evd ectx in
-  let open Declareops in
-  let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
-  let effs = cons_side_effects eff
+  let open Safe_typing in
+  let eff = private_con_of_con (Global.safe_env ()) cst in
+  let effs = add_private eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let args = List.rev (instance_from_named_context sign) in
   let solve =

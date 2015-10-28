@@ -317,7 +317,7 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
 	assert false
     in
       let sigma, elim = Evd.fresh_global (Global.env ()) (Proofview.Goal.sigma gl) (ConstRef c) in
-	sigma, elim, Declareops.no_seff
+	sigma, elim, Safe_typing.empty_private_constants
   else
   let scheme_name = match dep, lft2rgt, inccl with
     (* Non dependent case *)

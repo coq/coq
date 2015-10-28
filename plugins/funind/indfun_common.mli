@@ -46,7 +46,7 @@ val const_of_id: Id.t ->  Globnames.global_reference(* constantyes *)
 val jmeq : unit -> Term.constr
 val jmeq_refl : unit -> Term.constr
 
-val save : bool -> Id.t -> Entries.definition_entry  -> Decl_kinds.goal_kind ->
+val save : bool -> Id.t -> Safe_typing.private_constants Entries.definition_entry  -> Decl_kinds.goal_kind ->
   unit Lemmas.declaration_hook Ephemeron.key -> unit
 
 (* [get_proof_clean do_reduce] : returns the proof name, definition, kind and hook and
@@ -54,7 +54,7 @@ val save : bool -> Id.t -> Entries.definition_entry  -> Decl_kinds.goal_kind ->
 *)
 val get_proof_clean : bool ->
   Names.Id.t *
-    (Entries.definition_entry * Decl_kinds.goal_kind)
+    (Safe_typing.private_constants Entries.definition_entry * Decl_kinds.goal_kind)
 
 
 

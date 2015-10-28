@@ -149,7 +149,7 @@ let get_locality = function
 | Global -> false
 
 let save with_clean id const (locality,_,kind) hook =
-  let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
+  let fix_exn = Future.fix_exn_of const.const_entry_body in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
         let k = Kindops.logical_kind_of_goal_kind kind in

@@ -20,9 +20,9 @@ type individual
 type 'a scheme_kind
 
 type mutual_scheme_object_function =
-  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Declareops.side_effects
+  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
 type individual_scheme_object_function =
-  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Declareops.side_effects
+  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
 
 (** Main functions to register a scheme builder *)
 
@@ -37,13 +37,13 @@ val declare_individual_scheme_object : string -> ?aux:string ->
 
 val define_individual_scheme : individual scheme_kind -> 
   internal_flag (** internal *) ->
-  Id.t option -> inductive -> constant * Declareops.side_effects
+  Id.t option -> inductive -> constant * Safe_typing.private_constants
 
 val define_mutual_scheme : mutual scheme_kind -> internal_flag (** internal *) ->
-  (int * Id.t) list -> mutual_inductive -> constant array * Declareops.side_effects
+  (int * Id.t) list -> mutual_inductive -> constant array * Safe_typing.private_constants
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
-val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> constant * Declareops.side_effects
+val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> constant * Safe_typing.private_constants
 
 val check_scheme : 'a scheme_kind -> inductive -> bool
 

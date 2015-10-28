@@ -179,12 +179,12 @@ let build_beq_scheme mode kn =
       let rec aux c =
 	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
 	match kind_of_term c with
-        | Rel x -> mkRel (x-nlist+ndx), Declareops.no_seff
-        | Var x -> mkVar (id_of_string ("eq_"^(string_of_id x))), Declareops.no_seff
+        | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
+        | Var x -> mkVar (id_of_string ("eq_"^(string_of_id x))), Safe_typing.empty_private_constants
         | Cast (x,_,_) -> aux (applist (x,a))
         | App _ -> assert false
         | Ind ((kn',i as ind'),u) (*FIXME: universes *) -> 
-            if eq_mind kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Declareops.no_seff
+            if eq_mind kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Safe_typing.empty_private_constants
             else begin
               try
                 let eq, eff =
@@ -193,9 +193,8 @@ let build_beq_scheme mode kn =
                 let eqa, eff =
                   let eqa, effs = List.split (List.map aux a) in
                   Array.of_list eqa,
-                  Declareops.union_side_effects
-                    (Declareops.flatten_side_effects (List.rev effs))
-                    eff in
+                  List.fold_left Safe_typing.concat_private eff (List.rev effs)
+                  in
                 let args =
                   Array.append 
                     (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
@@ -238,7 +237,7 @@ let build_beq_scheme mode kn =
     let constrsi = constrs (3+nparrec) in
     let n = Array.length constrsi in
     let ar = Array.make n (Lazy.force ff) in
-    let eff = ref Declareops.no_seff in
+    let eff = ref Safe_typing.empty_private_constants in
 	for i=0 to n-1 do
 	  let nb_cstr_args = List.length constrsi.(i).cs_args in
 	  let ar2 = Array.make n (Lazy.force ff) in
@@ -256,7 +255,7 @@ let build_beq_scheme mode kn =
                                           (nb_cstr_args+ndx+1)
                                           cc
                           in
-                          eff := Declareops.union_side_effects eff' !eff;
+                          eff := Safe_typing.concat_private eff' !eff;
                           Array.set eqs ndx
                               (mkApp (eqA,
                                 [|mkRel (ndx+1+nb_cstr_args);mkRel (ndx+1)|]
@@ -288,7 +287,7 @@ let build_beq_scheme mode kn =
     let names = Array.make nb_ind Anonymous and
         types = Array.make nb_ind mkSet and
         cores = Array.make nb_ind mkSet in
-    let eff = ref Declareops.no_seff in
+    let eff = ref Safe_typing.empty_private_constants in
     let u = Univ.Instance.empty in
     for i=0 to (nb_ind-1) do
         names.(i) <- Name (Id.of_string (rec_name i));
@@ -296,7 +295,7 @@ let build_beq_scheme mode kn =
                      (mkArrow (mkFullInd ((kn,i),u) 1) (Lazy.force bb));
         let c, eff' = make_one_eq i in
         cores.(i) <- c;
-        eff := Declareops.union_side_effects eff' !eff
+        eff := Safe_typing.concat_private eff' !eff
     done;
       (Array.init nb_ind (fun i ->
       let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
@@ -875,7 +874,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
     Not_found ->
       Tacticals.New.tclZEROMSG (str "Error during the decidability part, leibniz to boolean equality is required.")
   end >>= fun (lbI,eff'') ->
-  let eff = (Declareops.union_side_effects eff'' (Declareops.union_side_effects eff' eff)) in
+  let eff = (Safe_typing.concat_private eff'' (Safe_typing.concat_private eff' eff)) in
   Tacticals.New.tclTHENLIST [
         Proofview.tclEFFECTS eff;
         intros_using fresh_first_intros;
@@ -942,7 +941,7 @@ let make_eq_decidability mode mind =
     (compute_dec_goal (ind,u) lnamesparrec nparrec)
     (compute_dec_tact ind lnamesparrec nparrec)
   in
-  ([|ans|], ctx), Declareops.no_seff
+  ([|ans|], ctx), Safe_typing.empty_private_constants
 
 let eq_dec_scheme_kind =
   declare_mutual_scheme_object "_eq_dec" make_eq_decidability

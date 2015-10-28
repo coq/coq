@@ -29,9 +29,9 @@ open Pp
 (* Registering schemes in the environment *)
 
 type mutual_scheme_object_function =
-  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Declareops.side_effects
+  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
 type individual_scheme_object_function =
-  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Declareops.side_effects
+  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
 
 type 'a scheme_kind = string
 
@@ -124,7 +124,9 @@ let define internal id c p univs =
   let c = Vars.subst_univs_fn_constr 
     (Universes.make_opt_subst (Evd.evar_universe_context_subst ctx)) c in
   let entry = {
-    const_entry_body = Future.from_val ((c,Univ.ContextSet.empty), Declareops.no_seff);
+    const_entry_body =
+      Future.from_val ((c,Univ.ContextSet.empty),
+                       Safe_typing.empty_private_constants);
     const_entry_secctx = None;
     const_entry_type = None;
     const_entry_polymorphic = p;
@@ -148,8 +150,8 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let const = define mode id c mib.mind_polymorphic ctx in
   declare_scheme kind [|ind,const|];
-  const, Declareops.cons_side_effects
-     (Safe_typing.sideff_of_scheme kind (Global.safe_env()) [ind,const]) eff
+  const, Safe_typing.add_private
+     (Safe_typing.private_con_of_scheme kind (Global.safe_env()) [ind,const]) eff
 
 let define_individual_scheme kind mode names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
@@ -168,8 +170,8 @@ let define_mutual_scheme_base kind suff f mode names mind =
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
   consts,
-  Declareops.cons_side_effects 
-    (Safe_typing.sideff_of_scheme
+  Safe_typing.add_private 
+    (Safe_typing.private_con_of_scheme
       kind (Global.safe_env()) (Array.to_list schemes))
     eff 
 
@@ -181,10 +183,10 @@ let define_mutual_scheme kind mode names mind =
 
 let find_scheme_on_env_too kind ind =
   let s = String.Map.find kind (Indmap.find ind !scheme_map) in
-  s, Declareops.cons_side_effects
-      (Safe_typing.sideff_of_scheme
+  s, Safe_typing.add_private
+      (Safe_typing.private_con_of_scheme
             kind (Global.safe_env()) [ind, s])
-      Declareops.no_seff 
+      Safe_typing.empty_private_constants
 
 let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
   try find_scheme_on_env_too kind ind

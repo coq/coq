@@ -160,8 +160,8 @@ let degenerate_decl (na,b,t) =
     | Name id -> id
     | Anonymous -> anomaly (Pp.str "Unnamed record variable") in
   match b with
-    | None -> (id, Entries.LocalAssum t)
-    | Some b -> (id, Entries.LocalDef b)
+    | None -> (id, LocalAssum t)
+    | Some b -> (id, LocalDef b)
 
 type record_error =
   | MissingProj of Id.t * Id.t list
@@ -297,7 +297,7 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 	        try
 		  let entry = {
 		    const_entry_body =
-		      Future.from_val (Term_typing.mk_pure_proof proj);
+		      Future.from_val (Safe_typing.mk_pure_proof proj);
 		    const_entry_secctx = None;
 		    const_entry_type = Some projtyp;
 		    const_entry_polymorphic = poly;

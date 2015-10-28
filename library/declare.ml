@@ -35,7 +35,7 @@ type internal_flag =
 (** Declaration of section variables and local definitions *)
 
 type section_variable_entry =
-  | SectionLocalDef of definition_entry
+  | SectionLocalDef of Safe_typing.private_constants definition_entry
   | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
@@ -93,9 +93,13 @@ type constant_obj = {
   cst_hyps : Dischargedhypsmap.discharged_hyps;
   cst_kind : logical_kind;
   cst_locl : bool;
+  mutable cst_exported : Safe_typing.exported_private_constant list;
+  (* mutable: to avoid change the libobject API, since cache_function
+   * does not return an updated object *)
+  mutable cst_was_seff : bool
 }
 
-type constant_declaration = constant_entry * logical_kind
+type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
@@ -131,8 +135,17 @@ let check_exists sp =
 let cache_constant ((sp,kn), obj) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
-  let () = check_exists sp in
-  let kn' = Global.add_constant dir id obj.cst_decl in
+  let kn' =
+    if obj.cst_was_seff then begin
+      obj.cst_was_seff <- false;  
+      if Global.exists_objlabel (Label.of_id (basename sp))
+      then constant_of_kn kn
+      else Errors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp))
+    end else
+      let () = check_exists sp in
+      let kn', exported = Global.add_constant dir id obj.cst_decl in
+      obj.cst_exported <- exported;
+      kn' in
   assert (eq_constant kn' (constant_of_kn kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
   let cst = Global.lookup_constant kn' in
@@ -156,20 +169,23 @@ let discharge_constant ((sp, kn), obj) =
   Some { obj with cst_hyps = new_hyps; cst_decl = new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant_entry =
-  ConstantEntry (ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None))
+let dummy_constant_entry = 
+  ConstantEntry
+    (false, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None))
 
 let dummy_constant cst = {
   cst_decl = dummy_constant_entry;
   cst_hyps = [];
   cst_kind = cst.cst_kind;
   cst_locl = cst.cst_locl;
+  cst_exported = [];
+  cst_was_seff = cst.cst_was_seff;
 }
 
 let classify_constant cst = Substitute (dummy_constant cst)
 
-let inConstant : constant_obj -> obj =
-  declare_object { (default_object "CONSTANT") with
+let (inConstant, outConstant : (constant_obj -> obj) * (obj -> constant_obj)) =
+  declare_object_full { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
     open_function = open_constant;
@@ -177,16 +193,40 @@ let inConstant : constant_obj -> obj =
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
 
+let declare_scheme = ref (fun _ _ -> assert false)
+let set_declare_scheme f = declare_scheme := f
+
 let declare_constant_common id cst =
-  let (sp,kn) = add_leaf id (inConstant cst) in
+  let update_tables c =
+(*  Printf.eprintf "tables: %s\n%!" (Names.Constant.to_string c); *)
+    declare_constant_implicits c;
+    Heads.declare_head (EvalConstRef c);
+    Notation.declare_ref_arguments_scope (ConstRef c) in
+  let o = inConstant cst in
+  let _, kn as oname = add_leaf id o in
+  List.iter (fun (c,ce,role) ->
+      (* handling of private_constants just exported *)
+      let o = inConstant {
+        cst_decl = ConstantEntry (false, ce);
+        cst_hyps = [] ;
+        cst_kind = IsProof Theorem;
+        cst_locl = false;
+        cst_exported = [];
+        cst_was_seff = true; } in
+      let id = Label.to_id (pi3 (Constant.repr3 c)) in
+      ignore(add_leaf id o);
+      update_tables c;
+      match role with
+      | Safe_typing.Subproof -> ()
+      | Safe_typing.Schema (ind, kind) -> !declare_scheme kind [|ind,c|])
+    (outConstant o).cst_exported;
+  pull_to_head oname;
   let c = Global.constant_of_delta_kn kn in
-  declare_constant_implicits c;
-  Heads.declare_head (EvalConstRef c);
-  Notation.declare_ref_arguments_scope (ConstRef c);
+  update_tables c;
   c
 
 let definition_entry ?(opaque=false) ?(inline=false) ?types
-    ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Declareops.no_seff) body =
+    ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Safe_typing.empty_private_constants) body =
   { const_entry_body = Future.from_val ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
@@ -196,90 +236,25 @@ let definition_entry ?(opaque=false) ?(inline=false) ?types
     const_entry_feedback = None;
     const_entry_inline_code = inline}
 
-let declare_scheme = ref (fun _ _ -> assert false)
-let set_declare_scheme f = declare_scheme := f
-let declare_sideff env fix_exn se =
-  let cbl, scheme = match se with
-    | SEsubproof (c, cb, pt) -> [c, cb, pt], None
-    | SEscheme (cbl, k) ->
-        List.map (fun (_,c,cb,pt) -> c,cb,pt) cbl, Some (cbl,k) in
-  let id_of c = Names.Label.to_id (Names.Constant.label c) in
-  let pt_opaque_of cb pt =
-    match cb, pt with
-    | { const_body = Def sc }, _ -> (Mod_subst.force_constr sc, Univ.ContextSet.empty), false
-    | { const_body = OpaqueDef _ }, `Opaque(pt,univ) -> (pt, univ), true
-    | _ -> assert false
-  in
-  let ty_of cb =
-    match cb.Declarations.const_type with
-    | Declarations.RegularArity t -> Some t
-    | Declarations.TemplateArity _ -> None in
-  let cst_of cb pt =
-    let pt, opaque = pt_opaque_of cb pt in
-    let univs, subst =
-      if cb.const_polymorphic then
-	let univs = Univ.instantiate_univ_context cb.const_universes in
-	  univs, Vars.subst_instance_constr (Univ.UContext.instance univs)
-      else cb.const_universes, fun x -> x
-    in
-    let pt = (subst (fst pt), snd pt) in
-    let ty = Option.map subst (ty_of cb) in
-    { cst_decl = ConstantEntry (DefinitionEntry {
-        const_entry_body = Future.from_here ~fix_exn (pt, Declareops.no_seff);
-        const_entry_secctx = Some cb.Declarations.const_hyps;
-        const_entry_type = ty;
-        const_entry_opaque = opaque;
-        const_entry_inline_code = false;
-        const_entry_feedback = None;
-	const_entry_polymorphic = cb.const_polymorphic;
-	const_entry_universes = univs;
-    });
-    cst_hyps = [] ;
-    cst_kind =  Decl_kinds.IsDefinition Decl_kinds.Definition;
-    cst_locl = true;
-  } in
-  let exists c =
-    try ignore(Environ.lookup_constant c env); true
-    with Not_found -> false in
-  let knl =
-    CList.map_filter (fun (c,cb,pt) ->
-      if exists c then None
-      else Some (c,declare_constant_common (id_of c) (cst_of cb pt))) cbl in
-  match scheme with
-  | None -> ()
-  | Some (inds_consts,kind) ->
-      !declare_scheme kind (Array.of_list
-         (List.map (fun (c,kn) ->
-             CList.find_map (fun (x,c',_,_) ->
-               if Constant.equal c c' then Some (x,kn) else None) inds_consts)
-           knl))
-
 let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
-  let cd = (* We deal with side effects *)
+  let export = (* We deal with side effects *)
     match cd with
-    | Entries.DefinitionEntry de ->
-        if export_seff ||
-           not de.const_entry_opaque ||
-           de.const_entry_polymorphic then
+    | DefinitionEntry de when
+        export_seff ||
+        not de.const_entry_opaque ||
+        de.const_entry_polymorphic ->
           let bo = de.const_entry_body in
           let _, seff = Future.force bo in
-          if Declareops.side_effects_is_empty seff then cd
-          else begin
-            let seff = Declareops.uniquize_side_effects seff in
-            Declareops.iter_side_effects
-              (declare_sideff (Global.env ()) (Future.fix_exn_of bo)) seff;
-            Entries.DefinitionEntry { de with
-              const_entry_body = Future.chain ~pure:true bo (fun (pt, _) ->
-                pt, Declareops.no_seff) }
-        end
-        else cd
-    | _ -> cd
+          Safe_typing.empty_private_constants <> seff
+    | _ -> false
   in
   let cst = {
-    cst_decl = ConstantEntry cd;
+    cst_decl = ConstantEntry (export,cd);
     cst_hyps = [] ;
     cst_kind = kind;
     cst_locl = local;
+    cst_exported = [];
+    cst_was_seff = false;
   } in
   let kn = declare_constant_common id cst in
   kn

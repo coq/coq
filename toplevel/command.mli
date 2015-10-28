@@ -26,17 +26,17 @@ val do_constraint : polymorphic ->
 
 (** {6 Hooks for Pcoq} *)
 
-val set_declare_definition_hook : (definition_entry -> unit) -> unit
-val get_declare_definition_hook : unit -> (definition_entry -> unit)
+val set_declare_definition_hook : (Safe_typing.private_constants definition_entry -> unit) -> unit
+val get_declare_definition_hook : unit -> (Safe_typing.private_constants definition_entry -> unit)
 
 (** {6 Definitions/Let} *)
 
 val interp_definition :
   lident list option -> local_binder list -> polymorphic -> red_expr option -> constr_expr ->
-  constr_expr option -> definition_entry * Evd.evar_map * Impargs.manual_implicits
+  constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * Impargs.manual_implicits
 
 val declare_definition : Id.t -> definition_kind ->
-  definition_entry -> Impargs.manual_implicits ->
+  Safe_typing.private_constants definition_entry -> Impargs.manual_implicits ->
     Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
 
 val do_definition : Id.t -> definition_kind -> lident list option ->
@@ -170,4 +170,4 @@ val do_cofixpoint :
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
 val declare_fix : ?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
-  Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference
+  Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

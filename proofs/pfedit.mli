@@ -69,11 +69,11 @@ val start_proof :
 val cook_this_proof :
     Proof_global.proof_object ->
   (Id.t *
-    (Entries.definition_entry * Proof_global.proof_universes * goal_kind))
+    (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * goal_kind))
 
 val cook_proof : unit ->
   (Id.t *
-    (Entries.definition_entry * Proof_global.proof_universes * goal_kind))
+    (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * goal_kind))
 
 (** {6 ... } *)
 (** [get_pftreestate ()] returns the current focused pending proof.
@@ -152,7 +152,7 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 val build_constant_by_tactic :
   Id.t -> Evd.evar_universe_context -> named_context_val -> ?goal_kind:goal_kind ->
   types -> unit Proofview.tactic -> 
-  Entries.definition_entry * bool * Evd.evar_universe_context
+  Safe_typing.private_constants Entries.definition_entry * bool * Evd.evar_universe_context
 
 val build_by_tactic : ?side_eff:bool -> env -> Evd.evar_universe_context -> ?poly:polymorphic ->
   types -> unit Proofview.tactic -> 

@@ -187,7 +187,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	let ctx = Evd.universe_context !evars in
 	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
-	  (Entries.ParameterEntry 
+	  (ParameterEntry 
             (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in instance_hook k None global imps ?hook (ConstRef cst); id
       end

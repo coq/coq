@@ -150,10 +150,14 @@ let build_by_tactic ?(side_eff=true) env ctx ?(poly=false) typ tac =
   let sign = val_of_named_context (named_context env) in
   let gk = Global, poly, Proof Theorem in
   let ce, status, univs = build_constant_by_tactic id ctx sign ~goal_kind:gk typ tac in
-  let ce = if side_eff then Term_typing.handle_entry_side_effects env ce else { ce with const_entry_body = Future.chain ~pure:true ce.const_entry_body (fun (pt, _) -> pt, Declareops.no_seff) } in
+  let ce =
+    if side_eff then Safe_typing.inline_private_constants_in_definition_entry env ce
+    else { ce with
+      const_entry_body = Future.chain ~pure:true ce.const_entry_body
+        (fun (pt, _) -> pt, Safe_typing.empty_private_constants) } in
   let (cb, ctx), se = Future.force ce.const_entry_body in
   let univs' = Evd.merge_context_set Evd.univ_rigid (Evd.from_ctx univs) ctx in
-  assert(Declareops.side_effects_is_empty se);
+  assert(Safe_typing.empty_private_constants = se);
   cb, status, Evd.evar_universe_context univs'
 
 let refine_by_tactic env sigma ty tac =
@@ -188,7 +192,7 @@ let refine_by_tactic env sigma ty tac =
       other goals that were already present during its invocation, so that
       those goals rely on effects that are not present anymore. Hopefully,
       this hack will work in most cases. *)
-  let ans = Term_typing.handle_side_effects env ans neff in
+  let ans = Safe_typing.inline_private_constants_in_constr env ans neff in
   ans, sigma
 
 (**********************************************************************)

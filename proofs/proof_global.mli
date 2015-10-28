@@ -58,7 +58,7 @@ type lemma_possible_guards = int list list
 type proof_universes = Evd.evar_universe_context
 type proof_object = {
   id : Names.Id.t;
-  entries : Entries.definition_entry list;
+  entries : Safe_typing.private_constants Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: proof_universes;
   (* constraints : Univ.constraints; *)
@@ -97,7 +97,7 @@ val close_proof : keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof
  * Both access the current proof state. The former is supposed to be
  * chained with a computation that completed the proof *)
 
-type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
+type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
 
 (* If allow_partial is set (default no) then an incomplete proof
  * is allowed (no error), and a warn is given if the proof is complete. *)
