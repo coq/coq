@@ -10,7 +10,11 @@
 
 type locality = Discharge | Local | Global
 
-type binding_kind = Explicit | Implicit
+(* These values, attached to the representation of bound variables,
+ * tell us whether given bound variable is "explicit" or "implicit".
+ *)
+type binding_kind = Explicit
+                  | Implicit
 
 type polymorphic = bool
 
