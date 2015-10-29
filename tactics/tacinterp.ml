@@ -2147,16 +2147,20 @@ and interp_atomic ist tac : unit Proofview.tactic =
           | AllOccurrences | NoOccurrences -> true
           | _ -> false
         in
-        let c_interp patvars sigma =
+        let c_interp patvars = { Sigma.run = begin fun sigma ->
 	  let lfun' = Id.Map.fold (fun id c lfun ->
 	    Id.Map.add id (Value.of_constr c) lfun) 
 	    patvars ist.lfun
 	  in
+	  let sigma = Sigma.to_evar_map sigma in
 	  let ist = { ist with lfun = lfun' } in
-	  if is_onhyps && is_onconcl
-	  then interp_type ist (pf_env gl) sigma c
-	  else interp_constr ist (pf_env gl) sigma c
-        in
+	  let (sigma, c) =
+            if is_onhyps && is_onconcl
+            then interp_type ist (pf_env gl) sigma c
+            else interp_constr ist (pf_env gl) sigma c
+          in
+          Sigma.Unsafe.of_pair (c, sigma)
+        end } in
 	  (Tactics.change None c_interp (interp_clause ist (pf_env gl) (project gl) cl))
           gl
       end
@@ -2171,16 +2175,19 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Proofview.V82.tactic begin fun gl -> 
           let (sigma,sign,op) = interp_typed_pattern ist env sigma op in
           let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
-          let c_interp patvars sigma =
+          let c_interp patvars = { Sigma.run = begin fun sigma ->
 	    let lfun' = Id.Map.fold (fun id c lfun ->
 	      Id.Map.add id (Value.of_constr c) lfun) 
 	      patvars ist.lfun
 	    in
 	    let ist = { ist with lfun = lfun' } in
-	      try interp_constr ist env sigma c
+	      try
+                let sigma = Sigma.to_evar_map sigma in
+                let (sigma, c) = interp_constr ist env sigma c in
+                Sigma.Unsafe.of_pair (c, sigma)
 	      with e when to_catch e (* Hack *) ->
 		errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
-          in
+          end } in
 	    (Tactics.change (Some op) c_interp (interp_clause ist env sigma cl))
 	      { gl with sigma = sigma }
         end

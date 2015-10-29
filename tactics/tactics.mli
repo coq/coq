@@ -125,7 +125,7 @@ val exact_proof      : Constrexpr.constr_expr -> tactic
 
 type tactic_reduction = env -> evar_map -> constr -> constr
 
-type change_arg = patvar_map -> evar_map -> evar_map * constr
+type change_arg = patvar_map -> constr Sigma.run
 
 val make_change_arg   : constr -> change_arg
 val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> tactic

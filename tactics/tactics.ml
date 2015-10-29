@@ -642,10 +642,10 @@ let e_change_in_hyp redfun (id,where) =
     Sigma.Unsafe.of_pair (convert_hyp c, sigma)
   end }
 
-type change_arg = Pattern.patvar_map -> evar_map -> evar_map * constr
+type change_arg = Pattern.patvar_map -> constr Sigma.run
 
-let make_change_arg c =
-  fun pats sigma -> (sigma, replace_vars (Id.Map.bindings pats) c)
+let make_change_arg c pats =
+  { run = fun sigma -> Sigma.here (replace_vars (Id.Map.bindings pats) c) sigma }
 
 let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
@@ -667,7 +667,9 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
-  let sigma, t' = t sigma in
+  let sigma = Sigma.Unsafe.of_evar_map sigma in
+  let Sigma (t', sigma, p) = t.run sigma in
+  let sigma = Sigma.to_evar_map sigma in
   check_types env sigma mayneedglobalcheck deep t' c;
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
   if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
