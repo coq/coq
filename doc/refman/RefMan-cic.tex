@@ -228,9 +228,9 @@ a global environment and a local context.
 
 \paragraph{Local context.\index{Local context}}
 A {\em local context} is an ordered list of
-local declarations of names which we call {\em variables}.
+{\em local declarations\index{declaration!local}} of names which we call {\em variables\index{variable}}.
 The declaration of some variable $x$ is
-either a local assumption, written $x:T$ ($T$ is a type) or a local definition,
+either a {\em local assumption\index{assumption!local}}, written $x:T$ ($T$ is a type) or a {\em local definition\index{definition!local}},
 written $x:=t:T$.  We use brackets to write local contexts. A
 typical example is $[x:T;y:=u:U;z:V]$.  Notice that the variables
 declared in a local context must be distinct. If $\Gamma$ declares some $x$,
@@ -262,9 +262,9 @@ declaration $y:T$ such that $x$ is free in $T$.
 %Because we are manipulating global declarations (global constants and global
 %assumptions), we also need to consider a global environment $E$.
 
-A {\em global environment} is an ordered list of global declarations.
-Global declarations are either global assumptions or global
-definitions, but also declarations of inductive objects. Inductive objects themselves declares both inductive or coinductive types and constructors
+A {\em global environment} is an ordered list of {\em global declarations\index{declaration!global}}.
+Global declarations are either {\em global assumptions\index{assumption!global}} or {\em global
+definitions\index{definition!global}}, but also declarations of inductive objects. Inductive objects themselves declares both inductive or coinductive types and constructors
 (see Section~\ref{Cic-inductive-definitions}).
 
 A global assumption will be represented in the global environment as
