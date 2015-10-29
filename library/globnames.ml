@@ -112,12 +112,12 @@ let global_ord_gen ord_cst ord_ind ord_cons x y =
   | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
   | VarRef v1, VarRef v2 -> Id.compare v1 v2
 
-  | VarRef _, (ConstRef _ | IndRef _ | ConstructRef _) -> -1
-  | ConstRef _, VarRef _ -> 1
-  | ConstRef _, (IndRef _ | ConstructRef _) -> -1
-  | IndRef _, (VarRef _ | ConstRef _) -> 1
-  | IndRef _, ConstructRef _ -> -1
-  | ConstructRef _, (VarRef _ | ConstRef _ | IndRef _) -> 1
+  | VarRef _, _ -> -1
+  | _, VarRef _ -> 1
+  | ConstRef _, _ -> -1
+  | _, ConstRef _ -> 1
+  | IndRef _, _ -> -1
+  | _ , IndRef _ -> -1
 
 let global_hash_gen hash_cst hash_ind hash_cons gr =
   let open Hashset.Combine in

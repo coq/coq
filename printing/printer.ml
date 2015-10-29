@@ -724,18 +724,17 @@ module OrderedContextObject =
 struct
   type t = context_object
   let compare x y =
-      match x , y with
-      | Variable i1 , Variable i2 -> Id.compare i1 i2
-      | Axiom (k1,_) , Axiom (k2, _) -> con_ord k1 k2
-      | Opaque k1 , Opaque k2 -> con_ord k1 k2
-      | Transparent k1 , Transparent k2 -> con_ord k1 k2
-      | Axiom _ , Variable _ -> 1
-      | Opaque _ , Variable _
-      | Opaque _ , Axiom _ -> 1
-      | Transparent _ , Variable _
-      | Transparent _ , Axiom _
-      | Transparent _ , Opaque _ -> 1
-      | _ , _ -> -1
+    match x , y with
+    | Variable i1 , Variable i2 -> Id.compare i1 i2
+    | Variable _ , _ -> -1
+    | _ , Variable _ -> 1
+    | Axiom (k1,_) , Axiom (k2, _) -> con_ord k1 k2
+    | Axiom _ , _ -> -1
+    | _ , Axiom _ -> 1
+    | Opaque k1 , Opaque k2 -> con_ord k1 k2
+    | Opaque _ , _ -> -1
+    | _ , Opaque _ -> 1
+    | Transparent k1 , Transparent k2 -> con_ord k1 k2
 end
 
 module ContextObjectSet = Set.Make (OrderedContextObject)
