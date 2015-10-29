@@ -985,10 +985,10 @@ let interp_induction_arg ist gl arg =
       let try_cast_id id' =
         if Tactics.is_quantified_hypothesis id' gl
         then keep,ElimOnIdent (loc,id')
-        else
-          (try keep,ElimOnConstr (fun env sigma -> sigma,(constr_of_id env id',NoBindings))
+        else keep, ElimOnConstr (fun env sigma ->
+          try sigma, (constr_of_id env id', NoBindings)
           with Not_found ->
-            user_err_loc (loc,"",
+            user_err_loc (loc, "interp_induction_arg",
             pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
       in
       try
