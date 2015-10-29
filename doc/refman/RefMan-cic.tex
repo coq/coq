@@ -313,6 +313,10 @@ be derived from the following rules.
 \item[W-Global-Def] \inference{\frac{\WTE{}{t}{T}~~~c \notin E}
                       {\WF{E;c:=t:T}{}}}
 % QUESTION: Why, in case of W-Local-Assum and W-Global-Assum we need s ∈ S hypothesis.
+% QUESTION: At the moment, enrichment of a local context is denoted with ∷
+%           whereas enrichment of the global environment is denoted with ;
+%           Is it necessary to use two different notations?
+%           Couldn't we use ∷ also for enrichment of the global context?
 \item[Ax] \index{Typing rules!Ax}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(1)}}~~~~~
 \frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(1)}}}
