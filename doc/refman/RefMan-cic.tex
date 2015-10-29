@@ -78,8 +78,9 @@ We shall make precise in the typing rules the constraints between the
 indexes. 
 
 \paragraph{Implementation issues}
-In practice, the {\Type} hierarchy is implemented using algebraic
-universes. An algebraic universe $u$ is either a variable (a qualified
+In practice, the {\Type} hierarchy is implemented using
+{\em algebraic universes}\index{algebraic universe}.
+An algebraic universe $u$ is either a variable (a qualified
 identifier with a number) or a successor of an algebraic universe (an
 expression $u+1$), or an upper bound of algebraic universes (an
 expression $max(u_1,...,u_n)$), or the base universe (the expression
