@@ -452,16 +452,6 @@ GEXTEND Gram
     [ [ "using"; l = LIST1 constr SEP "," -> l
       | -> [] ] ]
   ;
-  trivial:
-    [ [ IDENT "trivial" -> Off
-      | IDENT "info_trivial" -> Info
-      | IDENT "debug"; IDENT "trivial" -> Debug ] ]
-  ;
-  auto:
-    [ [ IDENT "auto" -> Off
-      | IDENT "info_auto" -> Info
-      | IDENT "debug"; IDENT "auto" -> Debug ] ]
-  ;
   eliminator:
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
@@ -627,9 +617,18 @@ GEXTEND Gram
 	  TacAtom (!@loc, TacInductionDestruct(false,true,icl))
 
       (* Automation tactic *)
-      | d = trivial; lems = auto_using; db = hintbases -> TacAtom (!@loc, TacTrivial (d,lems,db))
-      | d = auto; n = OPT int_or_var; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacAuto (d,n,lems,db))
+      | IDENT "trivial"; lems = auto_using; db = hintbases ->
+          TacAtom (!@loc, TacTrivial (Off, lems, db))
+      | IDENT "info_trivial"; lems = auto_using; db = hintbases ->
+          TacAtom (!@loc, TacTrivial (Info, lems, db))
+      | IDENT "debug"; IDENT "trivial"; lems = auto_using; db = hintbases ->
+          TacAtom (!@loc, TacTrivial (Debug, lems, db))
+      | IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
+          TacAtom (!@loc, TacAuto (Off, n, lems, db))
+      | IDENT "info_auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
+          TacAtom (!@loc, TacAuto (Info, n, lems, db))
+      | IDENT "debug"; IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
+          TacAtom (!@loc, TacAuto (Debug, n, lems, db))
 
       (* Context management *)
       | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacClear (true, l))
