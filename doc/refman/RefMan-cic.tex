@@ -60,16 +60,7 @@ Formally, we call {\Sort} the set of sorts which is defined by:
 \index{Type@{\Type}}
 \index{Prop@{\Prop}}
 \index{Set@{\Set}}
-
-The sorts enjoy the following properties%\footnote{In the Reference
-  %% Manual of versions of {\Coq} prior to 8.4, the level of {\Type} typing
-  %% {\Prop} and {\Set} was numbered $0$. From {\Coq} 8.4, it started to be
-  %% numbered $1$ so as to be able to leave room for re-interpreting
-  %% {\Set} in the hierarchy as {\Type$(0)$}. This change also put the
-  %% reference manual in accordance with the internal conventions adopted
-  %% in the implementation.}
-: {\Prop:\Type$(1)$}, {\Set:\Type$(1)$} and
-{\Type$(i)$:\Type$(i+1)$}.
+Their properties are defined in Section~\ref{subtyping-rules}.
 
 The user does not have to mention explicitly the index $i$ when referring to
 the universe \Type$(i)$. One only writes \Type. The
