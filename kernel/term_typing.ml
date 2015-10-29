@@ -60,11 +60,11 @@ let rec uniq_seff = function
   | [] -> []
   | x :: xs -> x :: uniq_seff (List.filter (fun y -> not (equal_eff x y)) xs)
 (* The list of side effects is in reverse order (most recent first).
- * To keep the "tological" order between effects we have to uniqize from the
- * tail *)
+ * To keep the "topological" order between effects we have to uniq-ize from
+ * the tail *)
 let uniq_seff l = List.rev (uniq_seff (List.rev l))
 
-let handle_side_effects env body ctx side_eff =
+let inline_side_effects env body ctx side_eff =
   let handle_sideff (t,ctx,sl) { eff = se; from_env = mb } =
     let cbl = match se with
       | SEsubproof (c,cb,b) -> [c,cb,b]
@@ -118,6 +118,8 @@ let handle_side_effects env body ctx side_eff =
   (* CAVEAT: we assure a proper order *)
   List.fold_left handle_sideff (body,ctx,[]) (uniq_seff side_eff)
 
+(* Given the list of signatures of side effects, checks if they match.
+ * I.e. if they are ordered descendants of the current revstruct *)
 let check_signatures curmb sl =
   let is_direct_ancestor (sl, curmb) (mb, how_many) =
     match curmb with
@@ -135,7 +137,7 @@ let check_signatures curmb sl =
   let sl, _ = List.fold_left is_direct_ancestor (Some 0,Some curmb) sl in
   sl
 
-let trust_seff sl b e =
+let skip_trusted_seff sl b e =
   let rec aux sl b e acc =
     match sl, kind_of_term b with
     | (None|Some 0), _ -> b, e, acc
@@ -185,21 +187,21 @@ let infer_declaration ~trust env kn dcl =
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
-        Future.chain ~greedy:true ~pure:true body (fun ((body, ctx),side_eff) ->
-          let body, ctx, signatures =
-            handle_side_effects env body ctx side_eff in
-          let trusted_signatures = check_signatures trust signatures in
-	  let env' = push_context_set ctx env in
+        Future.chain ~greedy:true ~pure:true body (fun ((body,uctx),side_eff) ->
+          let body, uctx, signatures =
+            inline_side_effects env body uctx side_eff in
+          let valid_signatures = check_signatures trust signatures in
+	  let env' = push_context_set uctx env in
           let j =
-            let body, env', zip_ctx = trust_seff trusted_signatures body env' in
+            let body,env',ectx = skip_trusted_seff valid_signatures body env' in
             let j = infer env' body in
-            unzip zip_ctx j in
+            unzip ectx j in
           let j = hcons_j j in
 	  let subst = Univ.LMap.empty in
           let _typ = constrain_type env' j c.const_entry_polymorphic subst
 	    (`SomeWJ (typ,tyj)) in
           feedback_completion_typecheck feedback_id;
-          j.uj_val, ctx) in
+          j.uj_val, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
       def, RegularArity typ, None, c.const_entry_polymorphic, 
 	c.const_entry_universes,
@@ -210,7 +212,7 @@ let infer_declaration ~trust env kn dcl =
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let (body, ctx), side_eff = Future.join body in
       let univsctx = Univ.ContextSet.of_context c.const_entry_universes in
-      let body, ctx, _ = handle_side_effects env body
+      let body, ctx, _ = inline_side_effects env body
         (Univ.ContextSet.union univsctx ctx) side_eff in
       let env = push_context_set ~strict:(not c.const_entry_polymorphic) ctx env in
       let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
@@ -396,9 +398,9 @@ type side_effect_role =
   | Schema of inductive * string
 
 type exported_side_effect = 
-  constant * constant_body * side_effects Entries.constant_entry * side_effect_role
+  constant * constant_body * side_effects constant_entry * side_effect_role
 
-let validate_side_effects_for_export mb env ce =
+let export_side_effects mb env ce =
   match ce with
   | ParameterEntry _ | ProjectionEntry _ -> [], ce
   | DefinitionEntry c ->
@@ -481,12 +483,12 @@ let translate_local_def mb env id centry =
 
 let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 
-let handle_entry_side_effects env ce = { ce with
+let inline_entry_side_effects env ce = { ce with
   const_entry_body = Future.chain ~greedy:true ~pure:true
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
-      let body, ctx',_ = handle_side_effects env body ctx side_eff in
+      let body, ctx',_ = inline_side_effects env body ctx side_eff in
       (body, ctx'), []);
 }
 
-let handle_side_effects env body side_eff =
-  pi1 (handle_side_effects env body Univ.ContextSet.empty side_eff)
+let inline_side_effects env body side_eff =
+  pi1 (inline_side_effects env body Univ.ContextSet.empty side_eff)

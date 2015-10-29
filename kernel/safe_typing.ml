@@ -218,8 +218,8 @@ let empty_private_constants = []
 let add_private x xs = x :: xs
 let concat_private xs ys = xs @ ys
 let mk_pure_proof = Term_typing.mk_pure_proof
-let inline_private_constants_in_constr = Term_typing.handle_side_effects
-let inline_private_constants_in_definition_entry = Term_typing.handle_entry_side_effects
+let inline_private_constants_in_constr = Term_typing.inline_side_effects
+let inline_private_constants_in_definition_entry = Term_typing.inline_entry_side_effects
 let side_effects_of_private_constants x = Term_typing.uniq_seff (List.rev x)
 
 let constant_entry_of_private_constant = function
@@ -517,8 +517,7 @@ let add_constant dir l decl senv =
     match decl with
     | ConstantEntry (true, ce) ->
         let exports, ce =
-          Term_typing.validate_side_effects_for_export
-            senv.revstruct senv.env ce in
+          Term_typing.export_side_effects senv.revstruct senv.env ce in
         exports, ConstantEntry (false, ce)
     | _ -> [], decl
   in
