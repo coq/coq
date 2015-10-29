@@ -317,21 +317,25 @@ be derived from the following rules.
 %           whereas enrichment of the global environment is denoted with ;
 %           Is it necessary to use two different notations?
 %           Couldn't we use ∷ also for enrichment of the global context?
-\item[Ax] \index{Typing rules!Ax}
-\inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(1)}}~~~~~
-\frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(1)}}}
+\item[Ax-Prop] \index{Typing rules!Ax-Prop}
+\inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(1)}}}
+\item[Ax-Set] \index{Typing rules!Ax-Set}
+\inference{\frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(1)}}}
+\item[Ax-Type] \index{Typing rules!Ax-Type}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Type(i)}{\Type(i+1)}}}
 \item[Var]\index{Typing rules!Var}
  \inference{\frac{ \WFE{\Gamma}~~~~~(x:T) \in \Gamma~~\mbox{or}~~(x:=t:T) \in \Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
 \item[Const]  \index{Typing rules!Const}
 \inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E~~\mbox{or}~~(c:=t:T) \in E~\mbox{for some $t$} }{\WTEG{c}{T}}}
-\item[Prod]  \index{Typing rules!Prod}
+\item[Prod-Prop]  \index{Typing rules!Prod-Prop}
 \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~
     \WTE{\Gamma::(x:T)}{U}{\Prop}}
       { \WTEG{\forall~x:T,U}{\Prop}}} 
+\item[Prod-Set]  \index{Typing rules!Prod-Set}
 \inference{\frac{\WTEG{T}{s}~~~~s \in\{\Prop, \Set\}~~~~~~
     \WTE{\Gamma::(x:T)}{U}{\Set}}
       { \WTEG{\forall~x:T,U}{\Set}}} 
+\item[Prod-Type]  \index{Typing rules!Prod-Type}
 \inference{\frac{\WTEG{T}{\Type(i)}~~~~
     \WTE{\Gamma::(x:T)}{U}{\Type(i)}}
     {\WTEG{\forall~x:T,U}{\Type(i)}}}
