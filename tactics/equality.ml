@@ -347,7 +347,7 @@ let type_of_clause cls gl = match cls with
   | Some id -> pf_get_hyp_typ id gl
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl sigma ->
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let isatomic = isProd (whd_zeta hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
@@ -1483,7 +1483,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
 (* on for further iterated sigma-tuples                                   *)
 
 let cutSubstInConcl l2r eqn =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl sigma ->
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
   let typ = pf_concl gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in

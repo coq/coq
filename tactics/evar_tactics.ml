@@ -70,7 +70,8 @@ let instantiate_tac_by_name id c =
 
 let let_evar name typ =
   let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-  Proofview.Goal.s_enter { s_enter = begin fun gl sigma ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let id = match name with
     | Names.Anonymous -> 

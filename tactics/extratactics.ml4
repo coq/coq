@@ -618,7 +618,8 @@ let out_arg = function
   | ArgArg x -> x
 
 let hResolve id c occ t =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl sigma ->
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
   let sigma = Sigma.to_evar_map sigma in
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
   let concl = Proofview.Goal.concl gl in

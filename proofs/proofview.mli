@@ -464,7 +464,7 @@ module Goal : sig
   val enter : ([ `LZ ], unit tactic) enter -> unit tactic
 
   type ('a, 'b) s_enter =
-    { s_enter : 'r. ('a, 'r) t -> 'r Sigma.t -> ('b, 'r) Sigma.sigma }
+    { s_enter : 'r. ('a, 'r) t -> ('b, 'r) Sigma.sigma }
 
   (** A variant of {!enter} allows to work with a monotonic state. The evarmap
       returned by the argument is put back into the current state before firing
@@ -608,5 +608,5 @@ module Notations : sig
   type ('a, 'b) enter = ('a, 'b) Goal.enter =
     { enter : 'r. ('a, 'r) Goal.t -> 'b }
   type ('a, 'b) s_enter = ('a, 'b) Goal.s_enter =
-    { s_enter : 'r. ('a, 'r) Goal.t -> 'r Sigma.t -> ('b, 'r) Sigma.sigma }
+    { s_enter : 'r. ('a, 'r) Goal.t -> ('b, 'r) Sigma.sigma }
 end

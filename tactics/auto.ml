@@ -119,7 +119,8 @@ let exact poly (c,clenv) =
       let ctx = Evd.evar_universe_context clenv.evd in
 	ctx, c
   in
-  Proofview.Goal.s_enter { s_enter = begin fun gl sigma ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
     let sigma = Sigma.to_evar_map sigma in
     let sigma = Evd.merge_universe_context sigma ctx in
     Sigma.Unsafe.of_pair (exact_check c', sigma)

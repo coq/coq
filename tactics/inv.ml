@@ -432,7 +432,8 @@ let rewrite_equations_tac as_mode othin id neqns names ba =
     tac
 
 let raw_inversion inv_kind id status names =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl sigma ->
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
     let sigma = Sigma.to_evar_map sigma in
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
