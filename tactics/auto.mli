@@ -29,8 +29,6 @@ val connect_hint_clenv : polymorphic -> raw_hint -> clausenv ->
 			 ([ `NF ], 'r) Proofview.Goal.t -> clausenv * constr
 						
 (** Try unification with the precompiled clause, then use registered Apply *)
-val unify_resolve_nodelta : polymorphic -> (raw_hint * clausenv) -> unit Proofview.tactic
-
 val unify_resolve : polymorphic -> Unification.unify_flags -> (raw_hint * clausenv) -> unit Proofview.tactic
 
 (** [ConclPattern concl pat tacast]:
