@@ -148,6 +148,7 @@ open Tactic_debug
 open Decl_proof_instr
 open Decl_mode
 
+open Hints
 open Auto
 open Autorewrite
 open Contradiction

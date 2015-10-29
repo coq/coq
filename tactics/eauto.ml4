@@ -204,7 +204,8 @@ type search_state = {
   last_tactic : std_ppcmds Lazy.t;
   dblist : hint_db list;
   localdb :  hint_db list;
-  prev : prev_search_state
+  prev : prev_search_state;
+  local_lemmas : Evd.open_constr list;
 }
 
 and prev_search_state = (* for info eauto *)
@@ -263,7 +264,7 @@ module SearchProblem = struct
 	List.map (fun (res, cost, pp) -> { depth = s.depth; priority = cost; tacres = res;
 				    last_tactic = pp; dblist = s.dblist;
 				    localdb = List.tl s.localdb;
-				    prev = ps}) l
+				    prev = ps; local_lemmas = s.local_lemmas}) l
       in
       let intro_tac =
         let l = filter_tactics s.tacres [Proofview.V82.of_tactic Tactics.intro, (-1), lazy (str "intro")] in
@@ -277,7 +278,8 @@ module SearchProblem = struct
 		  hintl (List.hd s.localdb) in
 	     { depth = s.depth; priority = cost; tacres = lgls;
 	       last_tactic = pp; dblist = s.dblist;
-	       localdb = ldb :: List.tl s.localdb; prev = ps })
+	       localdb = ldb :: List.tl s.localdb; prev = ps;
+               local_lemmas = s.local_lemmas})
 	  l
       in
       let rec_tacs =
@@ -289,7 +291,8 @@ module SearchProblem = struct
 	     let nbgl' = List.length (sig_it lgls) in
 	     if nbgl' < nbgl then
 	       { depth = s.depth; priority = cost; tacres = lgls; last_tactic = pp;
-                  prev = ps; dblist = s.dblist; localdb = List.tl s.localdb }
+                  prev = ps; dblist = s.dblist; localdb = List.tl s.localdb;
+                  local_lemmas = s.local_lemmas }
 	     else
 	       let newlocal = 
 		 let hyps = pf_hyps g in
@@ -297,12 +300,13 @@ module SearchProblem = struct
 		     let gls = {Evd.it = gl; sigma = lgls.Evd.sigma } in
 		     let hyps' = pf_hyps gls in
 		       if hyps' == hyps then List.hd s.localdb
-		       else make_local_hint_db (pf_env gls) (project gls) ~ts:full_transparent_state true [])
+		       else make_local_hint_db (pf_env gls) (project gls) ~ts:full_transparent_state true s.local_lemmas)
 		     (List.firstn ((nbgl'-nbgl) + 1) (sig_it lgls))
 	       in
 		 { depth = pred s.depth; priority = cost; tacres = lgls;
 		   dblist = s.dblist; last_tactic = pp; prev = ps;
-		   localdb = newlocal @ List.tl s.localdb })
+		   localdb = newlocal @ List.tl s.localdb;
+                   local_lemmas = s.local_lemmas })
 	  l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
@@ -367,7 +371,7 @@ let pr_info dbg s =
 
 (** Eauto main code *)
 
-let make_initial_state dbg n gl dblist localdb =
+let make_initial_state dbg n gl dblist localdb lems =
   { depth = n;
     priority = 0;
     tacres = tclIDTAC gl;
@@ -375,6 +379,7 @@ let make_initial_state dbg n gl dblist localdb =
     dblist = dblist;
     localdb = [localdb];
     prev = if dbg == Info then Init else Unknown;
+    local_lemmas = lems;
   }
 
 let e_search_auto debug (in_depth,p) lems db_list gl =
@@ -388,7 +393,7 @@ let e_search_auto debug (in_depth,p) lems db_list gl =
   in
   try
     pr_dbg_header d;
-    let s = tac (make_initial_state d p gl db_list local_db) in
+    let s = tac (make_initial_state d p gl db_list local_db lems) in
     pr_info d s;
     s.tacres
   with Not_found ->
