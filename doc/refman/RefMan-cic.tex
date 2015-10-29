@@ -312,6 +312,7 @@ be derived from the following rules.
                       {\WF{E;c:T}{}}}
 \item[W-Global-Def] \inference{\frac{\WTE{}{t}{T}~~~c \notin E}
                       {\WF{E;c:=t:T}{}}}
+% QUESTION: Why, in case of W-Local-Assum and W-Global-Assum we need s ∈ S hypothesis.
 \item[Ax] \index{Typing rules!Ax}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(1)}}~~~~~
 \frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(1)}}}
