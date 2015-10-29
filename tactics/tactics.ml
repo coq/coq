@@ -1249,12 +1249,11 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
 let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl sigma ->
   let env = Proofview.Goal.env gl in
-  let sigma = Sigma.to_evar_map sigma in
   let concl = Proofview.Goal.concl gl in
-  let t = Retyping.get_type_of env sigma c in
-  let (mind,_) = reduce_to_quantified_ind env sigma t in
+  let t = Retyping.get_type_of env (Sigma.to_evar_map sigma) c in
+  let (mind,_) = reduce_to_quantified_ind env (Sigma.to_evar_map sigma) t in
   let sort = Tacticals.New.elimination_sort_of_goal gl in
-  let sigma, elim =
+  let Sigma (elim, sigma, p) =
     if occur_term c concl then
       build_case_analysis_scheme env sigma mind true sort
     else
@@ -1264,7 +1263,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
    {elimindex = None; elimbody = (elim,NoBindings);
     elimrename = Some (false, constructors_nrealdecls (fst mind))})
   in
-  Sigma.Unsafe.of_pair (tac, sigma)
+  Sigma (tac, sigma, p)
   end }
 
 let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
@@ -1444,8 +1443,9 @@ let descend_in_conjunctions avoid tac (err, info) c =
 	let elim =
 	  try DefinedRecord (Recordops.lookup_projections ind)
 	  with Not_found ->
-	    let elim = build_case_analysis_scheme env sigma (ind,u) false sort in
-	    NotADefinedRecordUseScheme (snd elim) in
+            let sigma = Sigma.Unsafe.of_evar_map sigma in
+	    let Sigma (elim, _, _) = build_case_analysis_scheme env sigma (ind,u) false sort in
+	    NotADefinedRecordUseScheme elim in
 	Tacticals.New.tclFIRST
 	  (List.init n (fun i ->
             Proofview.Goal.enter { enter = begin fun gl ->
@@ -3668,11 +3668,16 @@ let guess_elim isrec dep s hyp0 gl =
   let evd, elimc =
     if isrec && not (is_nonrec (fst mind)) then find_ind_eliminator (fst mind) s gl
     else
+      let env = Tacmach.New.pf_env gl in
+      let sigma = Sigma.Unsafe.of_evar_map (Tacmach.New.project gl) in
       if use_dependent_propositions_elimination () && dep
       then
-	Tacmach.New.pf_apply build_case_analysis_scheme gl mind true s
+        let Sigma (ind, sigma, _) = build_case_analysis_scheme env sigma mind true s in
+        (Sigma.to_evar_map sigma, ind)
       else
-	Tacmach.New.pf_apply build_case_analysis_scheme_default gl mind s in
+        let Sigma (ind, sigma, _) = build_case_analysis_scheme_default env sigma mind s in
+        (Sigma.to_evar_map sigma, ind)
+  in
   let elimt = Tacmach.New.pf_unsafe_type_of gl elimc in
     evd, ((elimc, NoBindings), elimt), mkIndU mind
 
@@ -4025,10 +4030,9 @@ let induction_gen clear_flag isrec with_evars elim
   | _ -> [] in
   Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
+  let sigma = Proofview.Goal.sigma gl in
   let ccl = Proofview.Goal.raw_concl gl in
   let cls = Option.default allHypsAndConcl cls in
-  let sigma = Sigma.Unsafe.of_evar_map sigma in
   let t = typ_of env sigma c in
   let is_arg_pure_hyp =
     isVar c && not (mem_named_context (destVar c) (Global.named_context()))
@@ -4251,11 +4255,11 @@ let elim_type t =
 
 let case_type t =
   Proofview.Goal.s_enter { s_enter = begin fun gl sigma ->
-  let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
-  let evd, elimc =
-    Tacmach.New.pf_apply build_case_analysis_scheme_default gl ind (Tacticals.New.elimination_sort_of_goal gl)
-  in
-  Sigma.Unsafe.of_pair (elim_scheme_type elimc t, evd)
+  let env = Tacmach.New.pf_env gl in
+  let (ind,t) = reduce_to_atomic_ind env (Sigma.to_evar_map sigma) t in
+  let s = Tacticals.New.elimination_sort_of_goal gl in
+  let Sigma (elimc, evd, p) = build_case_analysis_scheme_default env sigma ind s in
+  Sigma (elim_scheme_type elimc t, evd, p)
   end }
 
 

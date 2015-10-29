@@ -12,6 +12,7 @@ open Tactics
 open Indfun_common
 open Functional_principles_proofs
 open Misctypes
+open Sigma.Notations
 
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
@@ -648,12 +649,15 @@ let build_case_scheme fa =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     List.assoc_f Constant.equal (fst (destConst funs)) this_block_funs_indexes
   in
-  let ind_fun =
+  let (ind, sf) =
 	 let ind = first_fun_kn,funs_indexes in
 	   (ind,Univ.Instance.empty)(*FIXME*),prop_sort
   in
-  let sigma, scheme = 
-    (fun (ind,sf) -> Indrec.build_case_analysis_scheme_default env sigma ind sf)  ind_fun in
+  let sigma = Sigma.Unsafe.of_evar_map sigma in
+  let Sigma (scheme, sigma, _) = 
+      Indrec.build_case_analysis_scheme_default env sigma ind sf
+  in
+  let sigma = Sigma.to_evar_map sigma in
   let scheme_type =  (Typing.unsafe_type_of env sigma ) scheme in
   let sorts =
     (fun (_,_,x) ->

@@ -66,6 +66,12 @@ val define : 'r evar -> Constr.t -> 'r t -> (unit, 'r) sigma
 
 (** Polymorphic universes *)
 
+val fresh_sort_in_family : ?rigid:Evd.rigid -> Environ.env ->
+  'r t -> Term.sorts_family -> (Term.sorts, 'r) sigma
+val fresh_constant_instance :
+  Environ.env -> 'r t -> constant -> (pconstant, 'r) sigma
+val fresh_inductive_instance :
+  Environ.env -> 'r t -> inductive -> (pinductive, 'r) sigma
 val fresh_constructor_instance : Environ.env -> 'r t -> constructor ->
   (pconstructor, 'r) sigma
 

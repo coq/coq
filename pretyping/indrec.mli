@@ -25,13 +25,13 @@ type dep_flag = bool
 
 (** Build a case analysis elimination scheme in some sort family *)
 
-val build_case_analysis_scheme : env -> evar_map -> pinductive ->
-      dep_flag -> sorts_family -> evar_map * constr
+val build_case_analysis_scheme : env -> 'r Sigma.t -> pinductive ->
+      dep_flag -> sorts_family -> (constr, 'r) Sigma.sigma
 
 (** Build a dependent case elimination predicate unless type is in Prop *)
 
-val build_case_analysis_scheme_default : env -> evar_map -> pinductive ->
-      sorts_family -> evar_map * constr
+val build_case_analysis_scheme_default : env -> 'r Sigma.t -> pinductive ->
+      sorts_family -> (constr, 'r) Sigma.sigma
 
 (** Builds a recursive induction scheme (Peano-induction style) in the same
    sort family as the inductive family; it is dependent if not in Prop *)

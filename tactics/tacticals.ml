@@ -16,6 +16,7 @@ open Context
 open Declarations
 open Tacmach
 open Clenv
+open Sigma.Notations
 
 (************************************************************************)
 (* Tacticals re-exported from the Refiner module                        *)
@@ -225,12 +226,18 @@ let gl_make_elim ind gl =
     pf_apply Evd.fresh_global gl gr
 
 let gl_make_case_dep ind gl =
-  pf_apply Indrec.build_case_analysis_scheme gl ind true
+  let sigma = Sigma.Unsafe.of_evar_map (Tacmach.project gl) in
+  let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind true
     (elimination_sort_of_goal gl)
+  in
+  (Sigma.to_evar_map sigma, r)
 
 let gl_make_case_nodep ind gl =
-  pf_apply Indrec.build_case_analysis_scheme gl ind false
+  let sigma = Sigma.Unsafe.of_evar_map (Tacmach.project gl) in
+  let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind false
     (elimination_sort_of_goal gl)
+  in
+  (Sigma.to_evar_map sigma, r)
 
 let make_elim_branch_assumptions ba gl =
   let rec makerec (assums,cargs,constargs,recargs,indargs) lb lc =

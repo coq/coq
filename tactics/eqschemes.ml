@@ -58,6 +58,7 @@ open Namegen
 open Inductiveops
 open Ind_tables
 open Indrec
+open Sigma.Notations
 
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
@@ -630,9 +631,10 @@ let fix_r2l_forward_rew_scheme (c, ctx') =
 (**********************************************************************)
  
 let build_r2l_rew_scheme dep env ind k =
-  let sigma, indu = Evd.fresh_inductive_instance env (Evd.from_env env) ind in
-  let sigma', c = build_case_analysis_scheme env sigma indu dep k in
-    c, Evd.evar_universe_context sigma'
+  let sigma = Sigma.Unsafe.of_evar_map (Evd.from_env env) in
+  let Sigma (indu, sigma, _) = Sigma.fresh_inductive_instance env sigma ind in
+  let Sigma (c, sigma, _) = build_case_analysis_scheme env sigma indu dep k in
+    c, Evd.evar_universe_context (Sigma.to_evar_map sigma)
 
 let build_l2r_rew_scheme = build_l2r_rew_scheme
 let build_l2r_forward_rew_scheme = build_l2r_forward_rew_scheme
