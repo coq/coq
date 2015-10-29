@@ -264,14 +264,14 @@ Global declarations are either {\em global assumptions\index{assumption!global}}
 definitions\index{definition!global}}, but also declarations of inductive objects. Inductive objects themselves declare both inductive or coinductive types and constructors
 (see Section~\ref{Cic-inductive-definitions}).
 
-A global assumption will be represented in the global environment as
+A {\em global assumption} will be represented in the global environment as
 $(c:T)$ which assumes the name $c$ to be of some type $T$.
-A global definition will
+A {\em global definition} will
 be represented in the global environment as $c:=t:T$ which defines
 the name $c$ to have value $t$ and type $T$.
 We shall call such names {\em constants}.
 
-The rules for inductive definitions (see section
+The rules for inductive definitions (see Section
 \ref{Cic-inductive-definitions}) have to be considered as assumption
 rules to which the following definitions apply: if the name $c$ is
 declared in $E$, we write $c \in E$ and if $c:T$ or $c:=t:T$ is
