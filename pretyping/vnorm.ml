@@ -93,19 +93,6 @@ let construct_of_constr_const env tag typ =
 
 let construct_of_constr_block = construct_of_constr false
 
-let constr_type_of_idkey env idkey =
-  match idkey with
-  | ConstKey cst ->
-    let const_type = Typeops.type_of_constant_in env cst in
-      mkConstU cst, const_type
-  | VarKey id ->
-      let (_,_,ty) = lookup_named id env in
-      mkVar id, ty
-  | RelKey i ->
-      let n = (nb_rel env - i) in
-      let (_,_,ty) = lookup_rel n env in
-      mkRel n, lift n ty
-
 let type_of_ind env (ind, u) =
   type_of_inductive env (Inductive.lookup_mind_specif env ind, u)
 
@@ -164,7 +151,8 @@ and nf_whd env whd typ =
       let t = ta.(i) in
       let _, args = nf_args env vargs t in
       mkApp(cfd,args)
-  | Vconstr_const n -> construct_of_constr_const env n typ
+  | Vconstr_const n ->
+    construct_of_constr_const env n typ
   | Vconstr_block b ->
       let tag = btag b in
       let (tag,ofs) =
@@ -177,22 +165,72 @@ and nf_whd env whd typ =
       let args = nf_bargs env b ofs ctyp in
       mkApp(capp,args)
   | Vatom_stk(Aid idkey, stk) ->
-      let c,typ = constr_type_of_idkey env idkey in
-      nf_stk env c typ stk
-  | Vatom_stk(Aind ind, stk) ->
-      nf_stk env (mkIndU ind) (type_of_ind env ind) stk
+      constr_type_of_idkey env idkey stk
+  | Vatom_stk(Aind ((mi,i) as ind), stk) ->
+     let mib = Environ.lookup_mind mi env in
+     let nb_univs =
+       if mib.mind_polymorphic then Univ.UContext.size mib.mind_universes
+       else 0
+     in
+     let mk u =
+       let pind = (ind, u) in (mkIndU pind, type_of_ind env pind)
+     in
+     nf_univ_args ~nb_univs mk env stk
+  | Vatom_stk(Atype u, stk) -> assert false
+  | Vuniv_level lvl ->
+    assert false
 
-and nf_stk env c t stk  =
+and nf_univ_args ~nb_univs mk env stk =
+  let u =
+    if Int.equal nb_univs 0 then Univ.Instance.empty
+    else match stk with
+    | Zapp args :: _ ->
+       let inst =
+	 Array.init nb_univs (fun i -> Vm.uni_lvl_val (arg args i))
+       in
+       Univ.Instance.of_array inst
+    | _ -> assert false
+  in
+  let (t,ty) = mk u in
+  nf_stk ~from:nb_univs env t ty stk
+
+and constr_type_of_idkey env (idkey : Vars.id_key) stk =
+  match idkey with
+  | ConstKey cst ->
+     let cbody = Environ.lookup_constant cst env in
+     let nb_univs =
+       if cbody.const_polymorphic then Univ.UContext.size cbody.const_universes
+       else 0
+     in
+     let mk u =
+       let pcst = (cst, u) in (mkConstU pcst, Typeops.type_of_constant_in env pcst)
+     in
+     nf_univ_args ~nb_univs mk env stk
+   | VarKey id ->
+      let (_,_,ty) = lookup_named id env in
+      nf_stk env (mkVar id) ty stk
+  | RelKey i ->
+      let n = (nb_rel env - i) in
+      let (_,_,ty) = lookup_rel n env in
+      nf_stk env (mkRel n) (lift n ty) stk
+
+and nf_stk ?from:(from=0) env c t stk  =
   match stk with
   | [] -> c
   | Zapp vargs :: stk ->
-      let t, args = nf_args env vargs t in
-      nf_stk env (mkApp(c,args)) t stk
+      if nargs vargs >= from then
+	let t, args = nf_args ~from:from env vargs t in
+	nf_stk env (mkApp(c,args)) t stk
+      else
+	let rest = from - nargs vargs in
+	nf_stk ~from:rest env c t stk
   | Zfix (f,vargs) :: stk ->
+      assert (from = 0) ;
       let fa, typ = nf_fix_app env f vargs in
       let _,_,codom = decompose_prod env typ in
       nf_stk env (mkApp(fa,[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk ->
+      assert (from = 0) ;
       let ((mind,_ as ind), u), allargs = find_rectype_a env t in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
@@ -215,6 +253,7 @@ and nf_stk env c t stk  =
       let ci = case_info sw in
       nf_stk env (mkCase(ci, p, c, branchs)) tcase stk
   | Zproj p :: stk ->
+     assert (from = 0) ;
      let p' = Projection.make p true in
      let ty = Inductiveops.type_of_projection_knowing_arg env Evd.empty p' c t in
      nf_stk env (mkProj(p',c)) ty stk
@@ -240,14 +279,14 @@ and nf_predicate env ind mip params v pT =
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_val env v crazy_type
 
-and nf_args env vargs t =
+and nf_args env vargs ?from:(f=0) t =
   let t = ref t in
-  let len = nargs vargs in
+  let len = nargs vargs - f in
   let args =
     Array.init len
       (fun i ->
 	let _,dom,codom = decompose_prod env !t in
-	let c = nf_val env (arg vargs i) dom in
+	let c = nf_val env (arg vargs (f+i)) dom in
 	t := subst1 c codom; c) in
   !t,args
 

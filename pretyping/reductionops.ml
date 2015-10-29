@@ -1282,7 +1282,7 @@ let sigma_compare_sorts env pb s0 s1 sigma =
   | Reduction.CONV -> Evd.set_eq_sort env sigma s0 s1
   | Reduction.CUMUL -> Evd.set_leq_sort env sigma s0 s1
     
-let sigma_compare_instances flex i0 i1 sigma =
+let sigma_compare_instances ~flex i0 i1 sigma =
   try Evd.set_eq_instances ~flex sigma i0 i1
   with Evd.UniversesDiffer
      | Univ.UniverseInconsistency _ ->

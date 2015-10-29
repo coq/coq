@@ -9,6 +9,7 @@
 open Declarations
 open Mod_subst
 open Univ
+open Entries
 
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
@@ -48,17 +49,6 @@ val is_opaque : constant_body -> bool
 (** Side effects *)
 
 val string_of_side_effect : side_effect -> string
-
-type side_effects
-val no_seff : side_effects
-val iter_side_effects : (side_effect -> unit) -> side_effects -> unit
-val fold_side_effects : ('a -> side_effect -> 'a) -> 'a -> side_effects -> 'a
-val uniquize_side_effects : side_effects -> side_effects
-val union_side_effects : side_effects -> side_effects -> side_effects
-val flatten_side_effects : side_effects list -> side_effects
-val side_effects_of_list : side_effect list -> side_effects
-val cons_side_effects : side_effect -> side_effects -> side_effects
-val side_effects_is_empty : side_effects -> bool
 
 (** {6 Inductive types} *)
 

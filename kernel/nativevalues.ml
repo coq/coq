@@ -10,7 +10,7 @@ open Names
 open Errors
 open Util
 
-(** This modules defines the representation of values internally used by
+(** This module defines the representation of values internally used by
 the native compiler *)
 
 type t = t -> t

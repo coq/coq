@@ -317,29 +317,3 @@ let T := constr:(fun a b : nat => a) in
   end.
 exact (eq_refl n).
 Qed.
-
-(* Check that matching "match" does not look into the invisible
-   canonically generated binders of the return clause and of the branches *)
-
-Goal forall n, match n with 0 => true | S _ => false end = true.
-intros. unfold nat_rect.
-Fail match goal with |- context [nat] => idtac end.
-Abort.
-
-(* Check that branches of automatically generated elimination
-   principle are correctly eta-expanded and hence matchable as seen
-   from the user point of view *)
-
-Goal forall a f n, nat_rect (fun _ => nat) a f n = 0.
-intros. unfold nat_rect.
-match goal with |- context [f _] => idtac end.
-Abort.
-
-(* Check that branches of automatically generated elimination
-   principle are in correct form also in the presence of let-ins *)
-
-Inductive a (b:=0) : let b':=1 in Type := c : let d:=0 in a.
-Goal forall x, match x with c => 0 end = 1.
-intros.
-match goal with |- context [0] => idtac end.
-Abort.

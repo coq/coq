@@ -28,6 +28,8 @@ val union : t -> t -> t
 
 val of_context_set : Univ.universe_context_set -> t
 
+val of_binders : Universes.universe_binders -> t
+
 (** {5 Projections} *)
 
 val context_set : t -> Univ.universe_context_set
@@ -84,7 +86,7 @@ val univ_flexible_alg : rigid
 
 val merge : bool -> rigid -> t -> Univ.universe_context_set -> t
 val merge_subst : t -> Universes.universe_opt_subst -> t
-val emit_side_effects : Declareops.side_effects -> t -> t
+val emit_side_effects : Safe_typing.private_constants -> t -> t
 
 val new_univ_variable : rigid -> string option -> t -> t * Univ.Level.t
 val add_global_univ : t -> Univ.Level.t -> t
@@ -106,7 +108,7 @@ val normalize : t -> t
 
 (** {5 TODO: Document me} *)
 
-val universe_context : ?names:(Id.t Loc.located) list -> t -> Univ.universe_context
+val universe_context : ?names:(Id.t Loc.located) list -> t -> (Id.t * Univ.Level.t) list * Univ.universe_context
 
 (** {5 Pretty-printing} *)
 

@@ -332,11 +332,11 @@ let args_options = Arg.align [
   "-makecmd", Arg.Set_string Prefs.makecmd,
     "<command> Name of GNU Make command";
   "-native-compiler", arg_bool Prefs.nativecompiler,
-    " (yes|no) Compilation to native code for conversion and normalization";
+    "(yes|no) Compilation to native code for conversion and normalization";
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
     " URL of the coq website";
-  "-force-caml-version", arg_bool Prefs.force_caml_version,
-    " Force OCaml version";
+  "-force-caml-version", Arg.Set Prefs.force_caml_version,
+    "Force OCaml version";
 ]
 
 let parse_args () =
@@ -488,7 +488,12 @@ let caml_version_nums =
 
 let check_caml_version () =
   if caml_version_nums >= [3;12;1] then
-    printf "You have OCaml %s. Good!\n" caml_version
+    if caml_version_nums = [4;2;0] && not !Prefs.force_caml_version then
+      die ("Your version of OCaml is 4.02.0 which suffers from a bug inducing\n" ^
+        "very slow compilation times. If you still want to use it, use \n" ^
+        "option -force-caml-version.\n")
+    else
+      printf "You have OCaml %s. Good!\n" caml_version
   else
     let () = printf "Your version of OCaml is %s.\n" caml_version in
     if !Prefs.force_caml_version then

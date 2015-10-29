@@ -211,7 +211,7 @@ let exec_tactic env evd n f args =
   let gl = dummy_goal env evd in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
-    Array.map (fun x -> nf (constr_of x)) !res, Evd.universe_context evd
+    Array.map (fun x -> nf (constr_of x)) !res, snd (Evd.universe_context evd)
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];

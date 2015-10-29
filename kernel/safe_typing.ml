@@ -207,15 +207,55 @@ let get_opaque_body env cbo =
         (Opaqueproof.force_proof (Environ.opaque_tables env) opaque,
          Opaqueproof.force_constraints (Environ.opaque_tables env) opaque)
 
-let sideff_of_con env c =
+type private_constant = Entries.side_effect
+type private_constants = private_constant list
+
+type private_constant_role = Term_typing.side_effect_role =
+  | Subproof
+  | Schema of inductive * string
+
+let empty_private_constants = []
+let add_private x xs = x :: xs
+let concat_private xs ys = xs @ ys
+let mk_pure_proof = Term_typing.mk_pure_proof
+let inline_private_constants_in_constr = Term_typing.handle_side_effects
+let inline_private_constants_in_definition_entry = Term_typing.handle_entry_side_effects
+let side_effects_of_private_constants x = Term_typing.uniq_seff (List.rev x)
+
+let constant_entry_of_private_constant = function
+  | { Entries.eff = Entries.SEsubproof (kn, cb, eff_env) } ->
+      [ kn, Term_typing.constant_entry_of_side_effect cb eff_env ]
+  | { Entries.eff = Entries.SEscheme (l,_) } ->
+      List.map (fun (_,kn,cb,eff_env) ->
+        kn, Term_typing.constant_entry_of_side_effect cb eff_env) l
+
+let private_con_of_con env c =
   let cbo = Environ.lookup_constant c env.env in
-  SEsubproof (c, cbo, get_opaque_body env.env cbo)
-let sideff_of_scheme kind env cl =
-  SEscheme(
-    List.map (fun (i,c) ->
-      let cbo = Environ.lookup_constant c env.env in
-      i, c, cbo, get_opaque_body env.env cbo) cl,
-    kind)
+  { Entries.from_env = Ephemeron.create env.revstruct;
+    Entries.eff      = Entries.SEsubproof (c,cbo,get_opaque_body env.env cbo) }
+
+let private_con_of_scheme ~kind env cl =
+  { Entries.from_env = Ephemeron.create env.revstruct;
+    Entries.eff      = Entries.SEscheme(
+      List.map (fun (i,c) ->
+        let cbo = Environ.lookup_constant c env.env in
+        i, c, cbo, get_opaque_body env.env cbo) cl,
+      kind) }
+
+let universes_of_private eff =
+  let open Declarations in
+  List.fold_left (fun acc { Entries.eff } ->
+     match eff with
+     | Entries.SEscheme (l,s) ->
+        List.fold_left (fun acc (_,_,cb,c) ->
+          let acc = match c with
+            | `Nothing -> acc
+            | `Opaque (_, ctx) -> ctx :: acc in
+          if cb.const_polymorphic then acc
+          else (Univ.ContextSet.of_context cb.const_universes) :: acc)
+        acc l
+     | Entries.SEsubproof _ -> acc)
+   [] eff
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
@@ -337,7 +377,7 @@ let safe_push_named (id,_,_ as d) env =
 
 
 let push_named_def (id,de) senv =
-  let c,typ,univs = Term_typing.translate_local_def senv.env id de in
+  let c,typ,univs = Term_typing.translate_local_def senv.revstruct senv.env id de in
   let poly = de.Entries.const_entry_polymorphic in
   let univs = Univ.ContextSet.of_context univs in
   let c, univs = match c with
@@ -442,19 +482,16 @@ let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 (** Insertion of constants and parameters in environment *)
 type global_declaration =
-  | ConstantEntry of Entries.constant_entry
+  | ConstantEntry of bool * private_constants Entries.constant_entry
   | GlobalRecipe of Cooking.recipe
 
-let add_constant dir l decl senv =
-  let kn = make_con senv.modpath dir l in
-  let cb = match decl with
-    | ConstantEntry ce -> Term_typing.translate_constant senv.env kn ce
-    | GlobalRecipe r ->
-      let cb = Term_typing.translate_recipe senv.env kn r in
-      if DirPath.is_empty dir then Declareops.hcons_const_body cb else cb
-  in
+type exported_private_constant = 
+  constant * private_constants Entries.constant_entry * private_constant_role
+
+let add_constant_aux no_section senv (kn, cb) =
+  let l = pi3 (Constant.repr3 kn) in
   let cb, otab = match cb.const_body with
-    | OpaqueDef lc when DirPath.is_empty dir ->
+    | OpaqueDef lc when no_section ->
       (* In coqc, opaque constants outside sections will be stored
          indirectly in a specific table *)
       let od, otab =
@@ -471,7 +508,33 @@ let add_constant dir l decl senv =
         (Mod_subst.add_inline_delta_resolver (user_con kn) (lev,None)) senv'
     | _ -> senv'
   in
-  kn, senv''
+  senv''
+
+let add_constant dir l decl senv =
+  let kn = make_con senv.modpath dir l in
+  let no_section = DirPath.is_empty dir in
+  let seff_to_export, decl =
+    match decl with
+    | ConstantEntry (true, ce) ->
+        let exports, ce =
+          Term_typing.validate_side_effects_for_export
+            senv.revstruct senv.env ce in
+        exports, ConstantEntry (false, ce)
+    | _ -> [], decl
+  in
+  let senv =
+    List.fold_left (add_constant_aux no_section) senv
+      (List.map (fun (kn,cb,_,_) -> kn, cb) seff_to_export) in
+  let senv =
+    let cb = 
+      match decl with
+      | ConstantEntry (export_seff,ce) ->
+        Term_typing.translate_constant senv.revstruct senv.env kn ce
+      | GlobalRecipe r ->
+        let cb = Term_typing.translate_recipe senv.env kn r in
+        if no_section then Declareops.hcons_const_body cb else cb in
+    add_constant_aux no_section senv (kn, cb) in
+  (kn, List.map (fun (kn,_,ce,r) -> kn, ce, r) seff_to_export), senv
 
 (** Insertion of inductive types *)
 

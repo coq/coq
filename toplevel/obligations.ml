@@ -541,7 +541,7 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	List.map_i (fun i _ -> i) 0 ctx
 
-let mk_proof c = ((c, Univ.ContextSet.empty), Declareops.no_seff)
+let mk_proof c = ((c, Univ.ContextSet.empty), Safe_typing.empty_private_constants)
 
 let declare_mutual_definition l =
   let len = List.length l in
@@ -621,7 +621,7 @@ let declare_obligation prg obl body ty uctx =
 	  shrink_body body else [], body, [||] 
       in
       let ce = 
-        { const_entry_body = Future.from_val((body,Univ.ContextSet.empty),Declareops.no_seff);
+        { const_entry_body = Future.from_val((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants);
           const_entry_secctx = None;
 	  const_entry_type = if List.is_empty ctx then ty else None;
 	  const_entry_polymorphic = poly;
@@ -798,12 +798,12 @@ let solve_by_tac name evi t poly ctx =
   let (entry,_,ctx') = Pfedit.build_constant_by_tactic 
     id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
-  let entry = Term_typing.handle_entry_side_effects env entry in
-  let body, eff = Future.force entry.Entries.const_entry_body in
-  assert(Declareops.side_effects_is_empty eff);
+  let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
+  let body, eff = Future.force entry.const_entry_body in
+  assert(Safe_typing.empty_private_constants = eff);
   let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
   Inductiveops.control_only_guard (Global.env ()) (fst body);
-  (fst body), entry.Entries.const_entry_type, Evd.evar_universe_context ctx'
+  (fst body), entry.const_entry_type, Evd.evar_universe_context ctx'
 
 let obligation_terminator name num guard hook pf =
   let open Proof_global in
@@ -815,10 +815,10 @@ let obligation_terminator name num guard hook pf =
     else
       let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
       let env = Global.env () in
-      let entry = Term_typing.handle_entry_side_effects env entry in
+      let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
       let ty = entry.Entries.const_entry_type  in
       let (body, cstr), eff = Future.force entry.Entries.const_entry_body in
-      assert(Declareops.side_effects_is_empty eff);
+      assert(Safe_typing.empty_private_constants = eff);
       assert(Univ.ContextSet.is_empty cstr);
       Inductiveops.control_only_guard (Global.env ()) body;
       (** Declare the obligation ourselves and drop the hook *)

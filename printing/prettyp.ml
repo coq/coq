@@ -73,8 +73,15 @@ let print_ref reduce ref =
       in it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
-  hov 0 (pr_global ref ++ str " :" ++ spc () ++ pr_ltype typ ++ 
-  	   Printer.pr_universe_ctx univs)
+  let env = Global.env () in
+  let bl = Universes.universe_binders_of_global ref in
+  let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
+  let inst =
+    if Global.is_polymorphic ref then Printer.pr_universe_instance sigma univs
+    else mt ()
+  in
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype_env env sigma typ ++ 
+  	   Printer.pr_universe_ctx sigma univs)
 
 (********************************)
 (** Printing implicit arguments *)
@@ -463,16 +470,21 @@ let gallina_print_section_variable id =
   print_named_decl id ++
   with_line_skip (print_name_infos (VarRef id))
 
-let print_body = function
-  | Some c  -> pr_lconstr c
+let print_body env evd = function
+  | Some c  -> pr_lconstr_env env evd c
   | None -> (str"<no body>")
 
-let print_typed_body (val_0,typ) =
-  (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ)
+let print_typed_body env evd (val_0,typ) =
+  (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd typ)
 
 let ungeneralized_type_of_constant_type t = 
   Typeops.type_of_constant_type (Global.env ()) t
 
+let print_instance sigma cb =
+  if cb.const_polymorphic then
+    pr_universe_instance sigma cb.const_universes
+  else mt()
+				
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
@@ -481,17 +493,23 @@ let print_constant with_values sep sp =
   let univs = Univ.instantiate_univ_context 
     (Global.universes_of_constant_body cb)
   in
+  let ctx =
+    Evd.evar_universe_context_of_binders
+      (Universes.universe_binders_of_global (ConstRef sp))
+  in
+  let env = Global.env () and sigma = Evd.from_ctx ctx in
+  let pr_ltype = pr_ltype_env env sigma in
   hov 0 (pr_polymorphic cb.const_polymorphic ++
     match val_0 with
     | None ->
 	str"*** [ " ++
-	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++
+	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-	Printer.pr_universe_ctx univs
+	Printer.pr_universe_ctx sigma univs
     | _ ->
-	print_basename sp ++ str sep ++ cut () ++
-	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ)++
-        Printer.pr_universe_ctx univs)
+	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
+	(if with_values then print_typed_body env sigma (val_0,typ) else pr_ltype typ)++
+        Printer.pr_universe_ctx sigma univs)
 
 let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++

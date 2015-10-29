@@ -273,6 +273,7 @@ let evar_universe_context_subst = UState.subst
 let add_constraints_context = UState.add_constraints
 let add_universe_constraints_context = UState.add_universe_constraints
 let constrain_variables = UState.constrain_variables 
+let evar_universe_context_of_binders = UState.of_binders
 
 (* let addunivconstrkey = Profile.declare_profile "add_universe_constraints_context";; *)
 (* let add_universe_constraints_context =  *)
@@ -378,7 +379,7 @@ type evar_map = {
   (** Metas *)
   metas      : clbinding Metamap.t;
   (** Interactive proofs *)
-  effects    : Declareops.side_effects;
+  effects    : Safe_typing.private_constants;
   future_goals : Evar.t list; (** list of newly created evars, to be
                                   eventually turned into goals if not solved.*)
   principal_future_goal : Evar.t option; (** if [Some e], [e] must be
@@ -579,7 +580,7 @@ let empty = {
   conv_pbs   = [];
   last_mods  = Evar.Set.empty;
   metas      = Metamap.empty;
-  effects    = Declareops.no_seff;
+  effects    = Safe_typing.empty_private_constants;
   evar_names = (EvMap.empty,Idmap.empty); (* id<->key for undefined evars *)
   future_goals = [];
   principal_future_goal = None;
@@ -978,11 +979,11 @@ let e_eq_constr_univs evdref t u =
 (* Side effects *)
 
 let emit_side_effects eff evd =
-  { evd with effects = Declareops.union_side_effects eff evd.effects;
+  { evd with effects = Safe_typing.concat_private eff evd.effects;
 	     universes = UState.emit_side_effects eff evd.universes }
 
 let drop_side_effects evd =
-  { evd with effects = Declareops.no_seff; }
+  { evd with effects = Safe_typing.empty_private_constants; }
 
 let eval_side_effects evd = evd.effects
 

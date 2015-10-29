@@ -259,10 +259,10 @@ val dependent_evar_ident : existential_key -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
 
-val emit_side_effects : Declareops.side_effects -> evar_map -> evar_map
+val emit_side_effects : Safe_typing.private_constants -> evar_map -> evar_map
 (** Push a side-effect into the evar map. *)
 
-val eval_side_effects : evar_map -> Declareops.side_effects
+val eval_side_effects : evar_map -> Safe_typing.private_constants
 (** Return the effects contained in the evar map. *)
 
 val drop_side_effects : evar_map -> evar_map
@@ -485,6 +485,9 @@ val evar_universe_context_subst : evar_universe_context -> Universes.universe_op
 val constrain_variables : Univ.LSet.t -> evar_universe_context -> Univ.constraints
 
 
+val evar_universe_context_of_binders :
+  Universes.universe_binders -> evar_universe_context
+							    
 val make_evar_universe_context : env -> (Id.t located) list option -> evar_universe_context
 val restrict_universe_context : evar_map -> Univ.universe_set -> evar_map							   
 (** Raises Not_found if not a name for a universe in this map. *)
@@ -532,7 +535,8 @@ val check_leq : evar_map -> Univ.universe -> Univ.universe -> bool
 
 val evar_universe_context : evar_map -> evar_universe_context
 val universe_context_set : evar_map -> Univ.universe_context_set
-val universe_context : ?names:(Id.t located) list -> evar_map -> Univ.universe_context
+val universe_context : ?names:(Id.t located) list -> evar_map ->
+		       (Id.t * Univ.Level.t) list * Univ.universe_context
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> UGraph.t
 

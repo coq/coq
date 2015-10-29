@@ -68,7 +68,10 @@ let kind_of_head env t =
         | None -> NotImmediatelyComputableHead)
   | Const (cst,_) ->
       (try on_subterm k l b (constant_head cst)
-       with Not_found -> assert false)
+       with Not_found ->
+         Errors.anomaly
+           Pp.(str "constant not found in kind_of_head: " ++
+               str (Names.Constant.to_string cst)))
   | Construct _ | CoFix _ ->
       if b then NotImmediatelyComputableHead else ConstructorHead
   | Sort _ | Ind _ | Prod _ -> RigidHead RigidType

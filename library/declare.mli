@@ -22,7 +22,7 @@ open Decl_kinds
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
 type section_variable_entry =
-  | SectionLocalDef of definition_entry
+  | SectionLocalDef of Safe_typing.private_constants definition_entry
   | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
@@ -32,7 +32,7 @@ val declare_variable : variable -> variable_declaration -> object_name
 (** Declaration of global constructions 
    i.e. Definition/Theorem/Axiom/Parameter/... *)
 
-type constant_declaration = constant_entry * logical_kind
+type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
@@ -49,8 +49,8 @@ type internal_flag =
 
 (* Defaut definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?opaque:bool -> ?inline:bool -> ?types:types -> 
-  ?poly:polymorphic -> ?univs:Univ.universe_context -> ?eff:Declareops.side_effects ->
-  constr -> definition_entry
+  ?poly:polymorphic -> ?univs:Univ.universe_context ->
+  ?eff:Safe_typing.private_constants -> constr -> Safe_typing.private_constants definition_entry
 
 val declare_constant :
  ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> constant
@@ -60,7 +60,7 @@ val declare_definition :
   ?local:bool -> ?poly:polymorphic -> Id.t -> ?types:constr -> 
   constr Univ.in_universe_context_set -> constant
 
-(** Since transparent constant's side effects are globally declared, we
+(** Since transparent constants' side effects are globally declared, we
  *  need that *)
 val set_declare_scheme :
   (string -> (inductive * constant) array -> unit) -> unit
@@ -85,5 +85,5 @@ val exists_name : Id.t -> bool
 
 (** Global universe names and constraints *)
 
-val do_universe : Id.t Loc.located list -> unit
-val do_constraint : (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit
+val do_universe : polymorphic -> Id.t Loc.located list -> unit
+val do_constraint : polymorphic -> (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit

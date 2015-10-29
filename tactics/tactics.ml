@@ -2514,11 +2514,13 @@ let bring_hyps hyps =
   else
     Proofview.Goal.enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
+      let store = Proofview.Goal.extra gl in
       let concl = Tacmach.New.pf_nf_concl gl in
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
       let args = Array.of_list (instance_from_named_context hyps) in
       Proofview.Refine.refine { run = begin fun sigma ->
-        let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma newcl in
+        let Sigma (ev, sigma, p) =
+          Evarutil.new_evar env sigma ~principal:true ~store newcl in
         Sigma (mkApp (ev, args), sigma, p)
       end }
     end }
@@ -4555,9 +4557,9 @@ let abstract_subproof id gk tac =
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
   let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
   let evd = Evd.set_universe_context evd ectx in
-  let open Declareops in
-  let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
-  let effs = cons_side_effects eff
+  let open Safe_typing in
+  let eff = private_con_of_con (Global.safe_env ()) cst in
+  let effs = add_private eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
     Proofview.tclEFFECTS effs <*>

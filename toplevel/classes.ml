@@ -186,9 +186,9 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	    nf t
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
-	let ctx = Evd.universe_context !evars in
+	let pl, ctx = Evd.universe_context !evars in
 	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
-	  (Entries.ParameterEntry 
+	  (ParameterEntry 
             (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in instance_hook k None global imps ?hook (ConstRef cst); id
       end
@@ -382,7 +382,7 @@ let context poly l =
       let impl = List.exists test impls in
       let decl = (Discharge, poly, Definitional) in
       let nstatus =
-        pi3 (Command.declare_assumption false decl (t, !uctx) [] impl
+        pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
           Vernacexpr.NoInline (Loc.ghost, id))
       in
       let () = uctx := Univ.ContextSet.empty in

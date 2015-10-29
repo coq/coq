@@ -14,9 +14,10 @@ open Univ
 
 val set_minimization : bool ref
 val is_set_minimization : unit -> bool
-       
+
 (** Universes *)
 
+(** Global universe name <-> level mapping *)
 type universe_names = 
   Univ.universe_level Idmap.t * Id.t Univ.LMap.t
 
@@ -24,6 +25,13 @@ val global_universe_names : unit -> universe_names
 val set_global_universe_names : universe_names -> unit
 
 val pr_with_global_universes : Level.t -> Pp.std_ppcmds
+
+(** Local universe name <-> level mapping *)
+
+type universe_binders = (Id.t * Univ.universe_level) list
+					   
+val register_universe_binders : Globnames.global_reference -> universe_binders -> unit
+val universe_binders_of_global : Globnames.global_reference -> universe_binders
 
 (** The global universe counter *)
 val set_remote_new_univ_level : universe_level RemoteCounter.installer

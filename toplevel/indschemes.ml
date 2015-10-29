@@ -129,7 +129,7 @@ let define id internal ctx c t =
         const_entry_secctx = None;
         const_entry_type = t;
 	const_entry_polymorphic = true;
-	const_entry_universes = Evd.universe_context ctx;
+	const_entry_universes = snd (Evd.universe_context ctx);
         const_entry_opaque = false;
         const_entry_inline_code = false;
         const_entry_feedback = None;
@@ -371,7 +371,7 @@ let do_mutual_induction_scheme lnamedepindsort =
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma decl in
     (* let decltype = refresh_universes decltype in *)
-    let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Declareops.no_seff) in
+    let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
     let cst = define fi UserIndividualRequest sigma proof_output (Some decltype) in
     ConstRef cst :: lrecref
   in
@@ -469,7 +469,7 @@ let do_combined_scheme name schemes =
       schemes
   in
   let body,typ = build_combined_scheme (Global.env ()) csts in
-  let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Declareops.no_seff) in
+  let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
   ignore (define (snd name) UserIndividualRequest Evd.empty proof_output (Some typ));
   fixpoint_message None [snd name]
 

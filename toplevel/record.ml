@@ -153,15 +153,15 @@ let typecheck_params_and_fields def id pl t ps nots fs =
   let ce t = Evarutil.check_evars env0 Evd.empty evars t in
     List.iter (fun (n, b, t) -> Option.iter ce b; ce t) (List.rev newps);
     List.iter (fun (n, b, t) -> Option.iter ce b; ce t) (List.rev newfs);
-    Evd.universe_context evars, nf arity, template, imps, newps, impls, newfs
+    Evd.universe_context ?names:pl evars, nf arity, template, imps, newps, impls, newfs
 
 let degenerate_decl (na,b,t) =
   let id = match na with
     | Name id -> id
     | Anonymous -> anomaly (Pp.str "Unnamed record variable") in
   match b with
-    | None -> (id, Entries.LocalAssum t)
-    | Some b -> (id, Entries.LocalDef b)
+    | None -> (id, LocalAssum t)
+    | Some b -> (id, LocalDef b)
 
 type record_error =
   | MissingProj of Id.t * Id.t list
@@ -297,7 +297,7 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 	        try
 		  let entry = {
 		    const_entry_body =
-		      Future.from_val (Term_typing.mk_pure_proof proj);
+		      Future.from_val (Safe_typing.mk_pure_proof proj);
 		    const_entry_secctx = None;
 		    const_entry_type = Some projtyp;
 		    const_entry_polymorphic = poly;
@@ -376,7 +376,7 @@ let declare_structure finite poly ctx id idbuild paramimpls params arity templat
       mind_entry_polymorphic = poly;
       mind_entry_private = None;
       mind_entry_universes = ctx } in
-  let kn = Command.declare_mutual_inductive_with_eliminations mie [(paramimpls,[])] in
+  let kn = Command.declare_mutual_inductive_with_eliminations mie [] [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ~kind binder_name coers fieldimpls fields in
@@ -532,11 +532,11 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
   if isnot_class && List.exists (fun opt -> not (Option.is_empty opt)) priorities then
     error "Priorities only allowed for type class substructures";
   (* Now, younger decl in params and fields is on top *)
-  let ctx, arity, template, implpars, params, implfs, fields =
+  let (pl, ctx), arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->
       typecheck_params_and_fields (kind = Class true) idstruc pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in
-    match kind with
+  let gr = match kind with
     | Class def ->
 	let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
 	  implpars params arity template implfs fields is_coe coers priorities sign in
@@ -549,3 +549,6 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
 	  idbuild implpars params arity template implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind
+  in
+  Universes.register_universe_binders gr pl;
+  gr

@@ -63,10 +63,12 @@ and conv_atom env pb lvl a1 a2 cu =
     | Ameta _, _ | _, Ameta _ | Aevar _, _ | _, Aevar _ -> assert false
     | Arel i1, Arel i2 -> 
 	if Int.equal i1 i2 then cu else raise NotConvertible
-    | Aind ind1, Aind ind2 ->
-	if eq_puniverses eq_ind ind1 ind2 then cu else raise NotConvertible
-    | Aconstant c1, Aconstant c2 ->
-	if eq_puniverses eq_constant c1 c2 then cu else raise NotConvertible
+    | Aind (ind1,u1), Aind (ind2,u2) ->
+       if eq_ind ind1 ind2 then convert_instances ~flex:false u1 u2 cu
+       else raise NotConvertible
+    | Aconstant (c1,u1), Aconstant (c2,u2) ->
+       if Constant.equal c1 c2 then convert_instances ~flex:true u1 u2 cu
+       else raise NotConvertible
     | Asort s1, Asort s2 -> 
         sort_cmp_universes env pb s1 s2 cu
     | Avar id1, Avar id2 ->

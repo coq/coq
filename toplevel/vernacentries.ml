@@ -552,12 +552,12 @@ let vernac_inductive poly lo finite indl =
       Errors.error "The Variant keyword cannot be used to define a record type. Use Record instead."
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record (match b with Class true -> Class false | _ -> b)
-	poly finite id bl c oc fs
+       poly finite id bl c oc fs
   | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
 	let coe' = if coe then Some true else None in
-	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
+  	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
       in vernac_record (Class true) poly finite id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
       Errors.error "Definitional classes must have a single method"
@@ -602,8 +602,19 @@ let vernac_combined_scheme lid l =
      List.iter (fun lid -> dump_global (Misctypes.AN (Ident lid))) l);
  Indschemes.do_combined_scheme lid l
 
-let vernac_universe l = do_universe l
-let vernac_constraint l = do_constraint l
+let vernac_universe loc poly l =
+  if poly && not (Lib.sections_are_opened ()) then
+    user_err_loc (loc, "vernac_universe",
+		  str"Polymorphic universes can only be declared inside sections, " ++
+		  str "use Monomorphic Universe instead");
+  do_universe poly l
+
+let vernac_constraint loc poly l =
+  if poly && not (Lib.sections_are_opened ()) then
+    user_err_loc (loc, "vernac_constraint",
+		  str"Polymorphic universe constraints can only be declared"
+		  ++ str " inside sections, use Monomorphic Constraint instead");
+  do_constraint poly l
 
 (**********************)
 (* Modules            *)
@@ -1516,7 +1527,7 @@ let vernac_check_may_eval redexp glopt rc =
   let sigma' = Evarconv.consider_remaining_unif_problems env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
-  let uctx = Evd.universe_context sigma' in
+  let pl, uctx = Evd.universe_context sigma' in
   let env = Environ.push_context uctx (Evarutil.nf_env_evar sigma' env) in
   let c = nf c in
   let j =
@@ -1531,7 +1542,7 @@ let vernac_check_may_eval redexp glopt rc =
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
 	msg_notice (print_judgment env sigma' j ++
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
-                    Printer.pr_universe_ctx uctx)
+                    Printer.pr_universe_ctx sigma uctx)
     | Some r ->
         Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
@@ -1870,8 +1881,8 @@ let interp ?proof ~loc locality poly c =
   | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
-  | VernacUniverse l -> vernac_universe l
-  | VernacConstraint l -> vernac_constraint l
+  | VernacUniverse l -> vernac_universe loc poly l
+  | VernacConstraint l -> vernac_constraint loc poly l
 
   (* Modules *)
   | VernacDeclareModule (export,lid,bl,mtyo) ->
@@ -2034,7 +2045,7 @@ let check_vernac_supports_polymorphism c p =
     | VernacCoercion _ | VernacIdentityCoercion _
     | VernacInstance _ | VernacDeclareInstances _
     | VernacHints _ | VernacContext _
-    | VernacExtend _ ) -> ()
+    | VernacExtend _ | VernacUniverse _ | VernacConstraint _) -> ()
   | Some _, _ -> Errors.error "This command does not support Polymorphism"
 
 let enforce_polymorphism = function
