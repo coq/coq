@@ -560,6 +560,8 @@ val refresh_undefined_universes : evar_map -> evar_map * Univ.universe_level_sub
 
 val nf_constraints : evar_map -> evar_map
 
+val update_sigma_env : evar_map -> env -> evar_map
+
 (** Polymorphic universes *)
 
 val fresh_sort_in_family : ?rigid:rigid -> env -> evar_map -> sorts_family -> evar_map * sorts

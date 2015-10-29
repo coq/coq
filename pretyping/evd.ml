@@ -1358,6 +1358,15 @@ let add_universe_name evd s l =
 
 let universes evd = evd.universes.uctx_universes
 
+let update_sigma_env evd env =
+  let univs = Environ.universes env in
+  let eunivs =
+    { evd.universes with uctx_initial_universes = univs;
+			 uctx_universes = univs }
+  in
+  let eunivs = merge_uctx true univ_rigid eunivs eunivs.uctx_local in
+  { evd with universes = eunivs }
+
 (* Conversion w.r.t. an evar map and its local universes. *)
 
 let conversion_gen env evd pb t u =
