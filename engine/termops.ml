@@ -715,10 +715,26 @@ let map_constr_with_binders_left_to_right sigma g f l c =
 	then c
 	else mkCoFix (ln,(lna,tl',bl'))
 
-(* strong *)
-let map_constr_with_full_binders sigma g f l cstr =
+let map_under_context_with_full_binders sigma g f l n d =
   let open EConstr in
-  let open RelDecl in
+  let f l c = Unsafe.to_constr (f l (of_constr c)) in
+  let g d l = g (of_rel_decl d) l in
+  let d = EConstr.Unsafe.to_constr (EConstr.whd_evar sigma d) in
+  EConstr.of_constr (Constr.map_under_context_with_full_binders g f l n d)
+
+let map_branches_with_full_binders sigma g f l ci bl =
+  let tags = Array.map List.length ci.ci_pp_info.cstr_tags in
+  let bl' = Array.map2 (map_under_context_with_full_binders sigma g f l) tags bl in
+  if Array.for_all2 (==) bl' bl then bl else bl'
+
+let map_return_predicate_with_full_binders sigma g f l ci p =
+  let n = List.length ci.ci_pp_info.ind_tags in
+  let p' = map_under_context_with_full_binders sigma g f l n p in
+  if p' == p then p else p'
+
+(* strong *)
+let map_constr_with_full_binders_gen userview sigma g f l cstr =
+  let open EConstr in
   match EConstr.kind sigma cstr with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> cstr
@@ -728,16 +744,16 @@ let map_constr_with_full_binders sigma g f l cstr =
       if c==c' && t==t' then cstr else mkCast (c', k, t')
   | Prod (na,t,c) ->
       let t' = f l t in
-      let c' = f (g (LocalAssum (na, t)) l) c in
+      let c' = f (g (RelDecl.LocalAssum (na, t)) l) c in
       if t==t' && c==c' then cstr else mkProd (na, t', c')
   | Lambda (na,t,c) ->
       let t' = f l t in
-      let c' = f (g (LocalAssum (na, t)) l) c in
+      let c' = f (g (RelDecl.LocalAssum (na, t)) l) c in
       if t==t' && c==c' then cstr else  mkLambda (na, t', c')
   | LetIn (na,b,t,c) ->
       let b' = f l b in
       let t' = f l t in
-      let c' = f (g (LocalDef (na, b, t)) l) c in
+      let c' = f (g (RelDecl.LocalDef (na, b, t)) l) c in
       if b==b' && t==t' && c==c' then cstr else mkLetIn (na, b', t', c')
   | App (c,al) ->
       let c' = f l c in
@@ -749,6 +765,12 @@ let map_constr_with_full_binders sigma g f l cstr =
   | Evar (e,al) ->
       let al' = Array.map (f l) al in
       if Array.for_all2 (==) al al' then cstr else mkEvar (e, al')
+  | Case (ci,p,c,bl) when userview ->
+      let p' = map_return_predicate_with_full_binders sigma g f l ci p in
+      let c' = f l c in
+      let bl' = map_branches_with_full_binders sigma g f l ci bl in
+      if p==p' && c==c' && bl'==bl then cstr else
+        mkCase (ci, p', c', bl')
   | Case (ci,p,c,bl) ->
       let p' = f l p in
       let c' = f l c in
@@ -758,7 +780,7 @@ let map_constr_with_full_binders sigma g f l cstr =
   | Fix (ln,(lna,tl,bl)) ->
       let tl' = Array.map (f l) tl in
       let l' =
-        Array.fold_left2 (fun l na t -> g (LocalAssum (na, t)) l) l lna tl in
+        Array.fold_left2 (fun l na t -> g (RelDecl.LocalAssum (na, t)) l) l lna tl in
       let bl' = Array.map (f l') bl in
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
@@ -766,11 +788,17 @@ let map_constr_with_full_binders sigma g f l cstr =
   | CoFix(ln,(lna,tl,bl)) ->
       let tl' = Array.map (f l) tl in
       let l' =
-        Array.fold_left2 (fun l na t -> g (LocalAssum (na, t)) l) l lna tl in
+        Array.fold_left2 (fun l na t -> g (RelDecl.LocalAssum (na, t)) l) l lna tl in
       let bl' = Array.map (f l') bl in
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
       else mkCoFix (ln,(lna,tl',bl'))
+
+let map_constr_with_full_binders sigma g f =
+  map_constr_with_full_binders_gen false sigma g f
+
+let map_constr_with_full_binders_user_view sigma g f =
+  map_constr_with_full_binders_gen true sigma g f
 
 (* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to

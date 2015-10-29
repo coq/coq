@@ -259,7 +259,17 @@ let decompose_prod_n_assum sigma n c =
 
 let existential_type = Evd.existential_type
 
-let map sigma f c = match kind sigma c with
+let map_under_context f n c =
+  let f c = unsafe_to_constr (f (of_constr c)) in
+  of_constr (Constr.map_under_context f n (unsafe_to_constr c))
+let map_branches f ci br =
+  let f c = unsafe_to_constr (f (of_constr c)) in
+  of_constr_array (Constr.map_branches f ci (unsafe_to_constr_array br))
+let map_return_predicate f ci p =
+  let f c = unsafe_to_constr (f (of_constr c)) in
+  of_constr (Constr.map_return_predicate f ci (unsafe_to_constr p))
+
+let map_gen userview sigma f c = match kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
   | Cast (b,k,t) ->
@@ -296,6 +306,12 @@ let map sigma f c = match kind sigma c with
       let l' = Array.Smart.map f l in
       if l'==l then c
       else mkEvar (e, l')
+  | Case (ci,p,b,bl) when userview ->
+      let b' = f b in
+      let p' = map_return_predicate f ci p in
+      let bl' = map_branches f ci bl in
+      if b'==b && p'==p && bl'==bl then c
+      else mkCase (ci, p', b', bl')
   | Case (ci,p,b,bl) ->
       let b' = f b in
       let p' = f p in
@@ -312,6 +328,9 @@ let map sigma f c = match kind sigma c with
       let bl' = Array.Smart.map f bl in
       if tl'==tl && bl'==bl then c
       else mkCoFix (ln,(lna,tl',bl'))
+
+let map_user_view = map_gen true
+let map = map_gen false
 
 let map_with_binders sigma g f l c0 = match kind sigma c0 with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -794,6 +813,7 @@ struct
 let to_sorts = ESorts.unsafe_to_sorts
 let to_instance = EInstance.unsafe_to_instance
 let to_constr = unsafe_to_constr
+let to_constr_array = unsafe_to_constr_array
 let to_rel_decl = unsafe_to_rel_decl
 let to_named_decl = unsafe_to_named_decl
 let to_named_context =

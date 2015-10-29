@@ -224,7 +224,11 @@ val compare_constr : Evd.evar_map -> (t -> t -> bool) -> t -> t -> bool
 (** {6 Iterators} *)
 
 val map : Evd.evar_map -> (t -> t) -> t -> t
+val map_user_view : Evd.evar_map -> (t -> t) -> t -> t
 val map_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> t) -> 'a -> t -> t
+val map_under_context : (t -> t) -> int -> t -> t
+val map_branches : (t -> t) -> case_info -> t array -> t array
+val map_return_predicate : (t -> t) -> case_info -> t -> t
 val iter : Evd.evar_map -> (t -> unit) -> t -> unit
 val iter_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
 val iter_with_full_binders : Evd.evar_map -> (rel_declaration -> 'a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
@@ -313,6 +317,9 @@ val to_rel_decl : Evd.evar_map -> (t, types) Context.Rel.Declaration.pt -> (Cons
 module Unsafe :
 sig
   val to_constr : t -> Constr.t
+  (** Physical identity. Does not care for defined evars. *)
+
+  val to_constr_array : t array -> Constr.t array
   (** Physical identity. Does not care for defined evars. *)
 
   val to_rel_decl : (t, types) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt

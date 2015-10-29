@@ -1267,7 +1267,9 @@ module MiniEConstr = struct
   let kind_of_type sigma c = Term.kind_of_type (whd_evar sigma c)
   let of_kind = Constr.of_kind
   let of_constr c = c
+  let of_constr_array v = v
   let unsafe_to_constr c = c
+  let unsafe_to_constr_array v = v
   let unsafe_eq = Refl
 
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
