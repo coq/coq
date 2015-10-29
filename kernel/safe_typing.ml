@@ -254,7 +254,9 @@ let universes_of_private eff =
           if cb.const_polymorphic then acc
           else (Univ.ContextSet.of_context cb.const_universes) :: acc)
         acc l
-     | Entries.SEsubproof _ -> acc)
+     | Entries.SEsubproof (c, cb, e) ->
+	if cb.const_polymorphic then acc
+	else Univ.ContextSet.of_context cb.const_universes :: acc)
    [] eff
 
 let env_of_safe_env senv = senv.env
