@@ -110,6 +110,8 @@ val normalize : t -> t
 
 val universe_context : ?names:(Id.t Loc.located) list -> t -> (Id.t * Univ.Level.t) list * Univ.universe_context
 
+val update_sigma_env : t -> Environ.env -> t
+
 (** {5 Pretty-printing} *)
 
 val pr_uctx_level : t -> Univ.Level.t -> Pp.std_ppcmds

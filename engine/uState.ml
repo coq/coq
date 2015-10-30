@@ -465,3 +465,11 @@ let universe_of_name uctx s =
 let add_universe_name uctx s l =
   let names' = add_uctx_names s l uctx.uctx_names in
   { uctx with uctx_names = names' }
+
+let update_sigma_env uctx env =
+  let univs = Environ.universes env in
+  let eunivs =
+    { uctx with uctx_initial_universes = univs;
+                         uctx_universes = univs }
+  in
+  merge true univ_rigid eunivs eunivs.uctx_local

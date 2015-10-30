@@ -48,7 +48,8 @@ type internal_flag =
   | UserIndividualRequest
 
 (* Defaut definition entries, transparent with no secctx or proj information *)
-val definition_entry : ?opaque:bool -> ?inline:bool -> ?types:types -> 
+val definition_entry : ?fix_exn:Future.fix_exn ->
+  ?opaque:bool -> ?inline:bool -> ?types:types ->
   ?poly:polymorphic -> ?univs:Univ.universe_context ->
   ?eff:Safe_typing.private_constants -> constr -> Safe_typing.private_constants definition_entry
 

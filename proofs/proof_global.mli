@@ -92,6 +92,11 @@ val start_dependent_proof :
   Names.Id.t -> Decl_kinds.goal_kind -> Proofview.telescope  ->
     proof_terminator -> unit
 
+(** Update the proofs global environment after a side-effecting command
+  (e.g. a sublemma definition) has been run inside it. Assumes
+  there_are_pending_proofs. *)
+val update_global_env : unit -> unit
+
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
 val close_proof : keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof

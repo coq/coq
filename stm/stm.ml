@@ -123,6 +123,10 @@ let pr_open_cur_subgoals () =
   try Printer.pr_open_subgoals ()
   with Proof_global.NoCurrentProof -> str""
 
+let update_global_env () =
+  if Proof_global.there_are_pending_proofs () then
+    Proof_global.update_global_env ()
+
 module Vcs_ = Vcs.Make(Stateid)
 type future_proof = Proof_global.closed_proof_output Future.computation
 type proof_mode = string
@@ -135,6 +139,7 @@ type branch_type =
       proof_mode * Stateid.t * Stateid.t  * vernac_qed_type * Vcs_.Branch.t ]
 type cmd_t = {
   ctac : bool; (* is a tactic, needed by the 8.4 semantics of Undo *)
+  ceff : bool; (* is a side-effecting command *)
   cast : ast;
   cids : Id.t list;
   cqueue : [ `MainQueue | `TacQueue of cancel_switch | `QueryQueue of cancel_switch ] }
@@ -591,6 +596,7 @@ module State : sig
     ?safe_id:Stateid.t ->
     ?redefine:bool -> ?cache:Summary.marshallable ->
     ?feedback_processed:bool -> (unit -> unit) -> Stateid.t -> unit
+  val fix_exn_ref : (iexn -> iexn) ref
 
   val install_cached : Stateid.t -> unit
   val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
@@ -614,6 +620,7 @@ end = struct (* {{{ *)
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
   let cur_id = ref Stateid.dummy
+  let fix_exn_ref = ref (fun x -> x)
 
   (* helpers *)
   let freeze_global_state marshallable =
@@ -721,7 +728,10 @@ end = struct (* {{{ *)
     try
       prerr_endline("defining "^str_id^" (cache="^
         if cache = `Yes then "Y)" else if cache = `Shallow then "S)" else "N)");
+      let good_id = match safe_id with None -> !cur_id | Some id -> id in
+      fix_exn_ref := exn_on id ~valid:good_id;
       f ();
+      fix_exn_ref := (fun x -> x);
       if cache = `Yes then freeze `No id
       else if cache = `Shallow then freeze `Shallow id;
       prerr_endline ("setting cur id to "^str_id);
@@ -730,7 +740,7 @@ end = struct (* {{{ *)
         Hooks.(call state_computed id ~in_cache:false);
       VCS.reached id true;
       if Proof_global.there_are_pending_proofs () then
-        VCS.goals id (Proof_global.get_open_goals ());
+        VCS.goals id (Proof_global.get_open_goals ())
     with e ->
       let (e, info) = Errors.push e in
       let good_id = !cur_id in
@@ -1753,8 +1763,9 @@ let known_state ?(redefine_qed=false) ~cache id =
   let cherry_pick_non_pstate () =
     Summary.freeze_summary ~marshallable:`No ~complement:true pstate,
     Lib.freeze ~marshallable:`No in
-  let inject_non_pstate (s,l) = Summary.unfreeze_summary s; Lib.unfreeze l in
-
+  let inject_non_pstate (s,l) =
+    Summary.unfreeze_summary s; Lib.unfreeze l; update_global_env ()
+  in
   let rec pure_cherry_pick_non_pstate id = Future.purify (fun id ->
     prerr_endline ("cherry-pick non pstate " ^ Stateid.to_string id);
     reach id;
@@ -1784,9 +1795,9 @@ let known_state ?(redefine_qed=false) ~cache id =
             reach view.next;
             Query.vernac_interp cancel view.next id x
           ), cache, false
-      | `Cmd { cast = x } -> (fun () ->
-            reach view.next; vernac_interp id x
-          ), cache, true
+      | `Cmd { cast = x; ceff = eff } -> (fun () ->
+            reach view.next; vernac_interp id x;
+	    if eff then update_global_env ()), cache, true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             reach view.next; vernac_interp id x;
             wall_clock_last_fork := Unix.gettimeofday ()
@@ -1885,7 +1896,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
       | `Sideff (`Ast (x,_)) -> (fun () ->
-            reach view.next; vernac_interp id x;
+            reach view.next; vernac_interp id x; update_global_env ()
           ), cache, true
       | `Sideff (`Id origin) -> (fun () ->
             reach view.next;
@@ -2135,7 +2146,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           let queue =
             if !Flags.async_proofs_full then `QueryQueue (ref false)
             else `MainQueue in
-          VCS.commit id (Cmd {ctac=false;cast = x; cids = []; cqueue = queue });
+          VCS.commit id (Cmd {ctac=false;ceff=false;cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
@@ -2158,7 +2169,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           anomaly(str"VtProofMode must be executed VtNow")
       | VtProofMode mode, VtNow ->
           let id = VCS.new_node ~id:newtip () in
-          VCS.commit id (Cmd {ctac=false;cast = x;cids=[];cqueue = `MainQueue});
+          VCS.commit id (Cmd {ctac=false;ceff=false;cast = x;cids=[];cqueue = `MainQueue});
           List.iter
             (fun bn -> match VCS.get_branch bn with
             | { VCS.root; kind = `Master; pos } -> ()
@@ -2176,7 +2187,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtProofStep paral, w ->
           let id = VCS.new_node ~id:newtip () in
           let queue = if paral then `TacQueue (ref false) else `MainQueue in
-          VCS.commit id (Cmd {ctac = true;cast = x;cids = [];cqueue = queue });
+          VCS.commit id (Cmd {ctac = true;ceff = false;cast = x;cids = [];cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
           let valid = if tty then Some(VCS.get_branch_pos head) else None in
@@ -2192,7 +2203,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtSideff l, w ->
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
-          VCS.commit id (Cmd {ctac=false;cast=x;cids=l;cqueue=`MainQueue});
+          VCS.commit id (Cmd {ctac=false;ceff=true;cast=x;cids=l;cqueue=`MainQueue});
           VCS.propagate_sideff (Some x);
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish (); `Ok
@@ -2216,7 +2227,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
               VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode "Classic";
             end else begin
-              VCS.commit id (Cmd {ctac=false; cast = x; cids = []; cqueue = `MainQueue});
+	      VCS.commit id (Cmd {ctac = false; ceff = true;
+				    cast = x; cids = []; cqueue = `MainQueue});
               VCS.propagate_sideff (Some x);
               VCS.checkout_shallowest_proof_branch ();
             end in
@@ -2551,5 +2563,5 @@ let process_error_hook = Hooks.process_error_hook
 let interp_hook = Hooks.interp_hook
 let with_fail_hook = Hooks.with_fail_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
-
+let get_fix_exn () = !State.fix_exn_ref
 (* vim:set foldmethod=marker: *)

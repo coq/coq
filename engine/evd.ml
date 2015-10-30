@@ -940,6 +940,9 @@ let add_universe_name evd s l =
 
 let universes evd = UState.ugraph evd.universes
 
+let update_sigma_env evd env =
+  { evd with universes = UState.update_sigma_env evd.universes env }
+
 (* Conversion w.r.t. an evar map and its local universes. *)
 
 let conversion_gen env evd pb t u =

@@ -508,16 +508,17 @@ let declare_definition prg =
   let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
+  let fix_exn = Stm.get_fix_exn () in
   let ce =
-    definition_entry ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
-      ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
+    definition_entry ~fix_exn
+     ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
+     ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
   in
     progmap_remove prg;
     !declare_definition_ref prg.prg_name 
       prg.prg_kind ce prg.prg_implicits
-      (Lemmas.mk_hook (fun l r ->
-         Lemmas.call_hook (fun exn -> exn) prg.prg_hook l r; r))
-
+      (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r; r))
+      
 open Pp
 
 let rec lam_index n t acc =
@@ -620,8 +621,9 @@ let declare_obligation prg obl body ty uctx =
 	if get_shrink_obligations () && not poly then
 	  shrink_body body else [], body, [||] 
       in
+      let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
       let ce = 
-        { const_entry_body = Future.from_val((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants);
+        { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
 	  const_entry_type = if List.is_empty ctx then ty else None;
 	  const_entry_polymorphic = poly;

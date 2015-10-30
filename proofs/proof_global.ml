@@ -703,3 +703,9 @@ let copy_terminators ~src ~tgt =
   assert(List.length src = List.length tgt);
   List.map2 (fun op p -> { p with terminator = op.terminator }) src tgt
 
+let update_global_env () =
+  with_current_proof (fun _ p ->
+     Proof.in_proof p (fun sigma ->
+       let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
+       let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in
+         (p, ())))

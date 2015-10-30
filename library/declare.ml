@@ -225,9 +225,9 @@ let declare_constant_common id cst =
   update_tables c;
   c
 
-let definition_entry ?(opaque=false) ?(inline=false) ?types
+let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Safe_typing.empty_private_constants) body =
-  { const_entry_body = Future.from_val ((body,Univ.ContextSet.empty), eff);
+  { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
     const_entry_polymorphic = poly;

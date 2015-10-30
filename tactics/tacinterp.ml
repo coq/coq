@@ -999,10 +999,12 @@ let interp_induction_arg ist gl arg =
         if Tactics.is_quantified_hypothesis id' gl
         then keep,ElimOnIdent (loc,id')
         else
-          (try keep,ElimOnConstr { delayed = fun env sigma -> Sigma ((constr_of_id env id',NoBindings), sigma, Sigma.refl) }
+          (keep, ElimOnConstr { delayed = begin fun env sigma ->
+          try Sigma.here (constr_of_id env id', NoBindings) sigma
           with Not_found ->
-            user_err_loc (loc,"",
-            pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
+            user_err_loc (loc, "interp_induction_arg",
+            pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis.")
+          end })
       in
       try
         (** FIXME: should be moved to taccoerce *)

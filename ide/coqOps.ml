@@ -564,7 +564,7 @@ object(self)
         if Queue.is_empty queue then conclude topstack else
         match Queue.pop queue, topstack with
         | `Skip(start,stop), [] ->
-            logger Pp.Error (Richpp.richpp_of_string "You muse close the proof with Qed or Admitted");
+            logger Pp.Error (Richpp.richpp_of_string "You must close the proof with Qed or Admitted");
             self#discard_command_queue queue;
             conclude [] 
         | `Skip(start,stop), (_,s) :: topstack ->
