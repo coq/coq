@@ -596,6 +596,7 @@ module State : sig
     ?safe_id:Stateid.t ->
     ?redefine:bool -> ?cache:Summary.marshallable ->
     ?feedback_processed:bool -> (unit -> unit) -> Stateid.t -> unit
+  val fix_exn_ref : (iexn -> iexn) ref
 
   val install_cached : Stateid.t -> unit
   val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
@@ -619,6 +620,7 @@ end = struct (* {{{ *)
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
   let cur_id = ref Stateid.dummy
+  let fix_exn_ref = ref (fun x -> x)
 
   (* helpers *)
   let freeze_global_state marshallable =
@@ -726,8 +728,10 @@ end = struct (* {{{ *)
     try
       prerr_endline("defining "^str_id^" (cache="^
         if cache = `Yes then "Y)" else if cache = `Shallow then "S)" else "N)");
-      (* set id and good id *)
+      let good_id = match safe_id with None -> !cur_id | Some id -> id in
+      fix_exn_ref := exn_on id ~valid:good_id;
       f ();
+      fix_exn_ref := (fun x -> x);
       if cache = `Yes then freeze `No id
       else if cache = `Shallow then freeze `Shallow id;
       prerr_endline ("setting cur id to "^str_id);
@@ -2559,5 +2563,5 @@ let process_error_hook = Hooks.process_error_hook
 let interp_hook = Hooks.interp_hook
 let with_fail_hook = Hooks.with_fail_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
-
+let get_fix_exn () = !State.fix_exn_ref
 (* vim:set foldmethod=marker: *)

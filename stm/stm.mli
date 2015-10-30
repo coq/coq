@@ -136,3 +136,4 @@ val process_error_hook : Future.fix_exn Hook.t
 val interp_hook : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
   Loc.t * Vernacexpr.vernac_expr -> unit) Hook.t
 val with_fail_hook : (bool -> (unit -> unit) -> unit) Hook.t
+val get_fix_exn : unit -> (Exninfo.iexn -> Exninfo.iexn)
