@@ -349,7 +349,14 @@ be derived from the following rules.
 \inference{\frac{\WTEG{t}{T}~~~~ \WTE{\Gamma::(x:=t:T)}{u}{U}}
         {\WTEG{\letin{x}{t:T}{u}}{\subst{U}{x}{t}}}}
 \end{description}
-    
+
+\Rem Prod$_1$ and Prod$_2$ typing-rules make sense if we consider the semantic
+difference between {\Prop} and {\Set}:
+\begin{itemize}
+  \item All values of a type that has a sort {\Set} are extractable.
+  \item No values of a type that has a sort {\Prop} are extractable.
+\end{itemize}
+
 \Rem We may have $\kw{let}~x:=t:T~\kw{in}~u$
 well-typed without having $((\lb x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
