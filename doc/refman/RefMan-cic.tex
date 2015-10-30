@@ -411,24 +411,28 @@ called $\zeta$-reduction and shows as follows.
 
 $$\WTEGRED{\kw{let}~x:=u~\kw{in}~t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
 
-\paragraph{$\eta$-conversion.%
-\label{eta}
-\index{eta-conversion@$\eta$-conversion}
+\paragraph{$\eta$-expansion.%
+\label{eta}%
+\index{eta-expansion@$\eta$-expansion}%
 %\index{eta-reduction@$\eta$-reduction}
-}
-Another important concept is $\eta$-conversion. It is to identify any
+}%
+Another important concept is $\eta$-expansion. It is legal to identify any
 term $t$ of functional type $\forall x:T, U$ with its so-called
 $\eta$-expansion $\lb x:T\mto (t\ x)$ for $x$ an arbitrary variable
 name fresh in $t$.
 
-The notion of $\eta$-reduction ${\lb x:T\mto (t\ x)}{\;\triangleright\;}{t}$
-(for $x$ not occurring in $t$) is not type-sound because of subtyping
-(think about $\lb x:\Type(1)\mto (f x)$ of type $\forall
-x:\Type(1), \Type(1)$ for $f$ of type $\forall x:\Type(2),
-\Type(1)$). On the other side, $\eta$-expansion requires to know $T$
-and hence requires types. Hence, neither $\eta$-expansion nor
-$\eta$-reduction can be type-safely considered on terms we do not know
-the type. However, $\eta$ can be used as a conversion rule.
+\Rem We deliberately do not define $\eta$-reduction:
+\def\noeta{\hskip-.1em\not\triangleright_\eta}
+$$\lb x:T\mto (t\ x)\hskip.1em\noeta\hskip.3em t$$
+This is because, in general, the type of $t$ need not to be convertible to the type of $\lb x:T\mto (t\ x)$.
+E.g., if we take $f$ such that:
+$$f\hskip.5em:\hskip.5em\forall x:Type(2),Type(1)$$
+then
+$$\lb x:Type(1),(f\, x)\hskip.5em:\hskip.5em\forall x:Type(1),Type(1)$$
+We could not allow
+$$\lb x:Type(1),(f\,x)\hskip.5em\noeta\hskip.6em f$$
+because the type of the reduced term $\forall x:Type(2),Type(1)$
+would not be convertible to the type of the original term $\forall x:Type(1),Type(1)$.
 
 \paragraph[Convertibility.]{Convertibility.\label{convertibility}
 \index{beta-reduction@$\beta$-reduction}\index{iota-reduction@$\iota$-reduction}\index{delta-reduction@$\delta$-reduction}\index{zeta-reduction@$\zeta$-reduction}}
