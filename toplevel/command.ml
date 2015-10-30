@@ -154,6 +154,7 @@ let set_declare_definition_hook = (:=) declare_definition_hook
 let get_declare_definition_hook () = !declare_definition_hook
 
 let declare_definition ident (local, p, k) ce pl imps hook =
+  let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let () = !declare_definition_hook ce in
   let r = match local with
   | Discharge when Lib.sections_are_opened () ->
@@ -170,7 +171,7 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     gr
   | Discharge | Local | Global ->
     declare_global_definition ident ce local k pl imps in
-  Lemmas.call_hook (Future.fix_exn_of ce.const_entry_body) hook local r
+  Lemmas.call_hook fix_exn hook local r
 
 let _ = Obligations.declare_definition_ref :=
        (fun i k c imps hook -> declare_definition i k c [] imps hook)
