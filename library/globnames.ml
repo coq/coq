@@ -107,17 +107,16 @@ let global_eq_gen eq_cst eq_ind eq_cons x y =
 let global_ord_gen ord_cst ord_ind ord_cons x y =
   if x == y then 0
   else match x, y with
-  | ConstRef cx, ConstRef cy -> ord_cst cx cy
-  | IndRef indx, IndRef indy -> ord_ind indx indy
-  | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
   | VarRef v1, VarRef v2 -> Id.compare v1 v2
-
   | VarRef _, _ -> -1
   | _, VarRef _ -> 1
+  | ConstRef cx, ConstRef cy -> ord_cst cx cy
   | ConstRef _, _ -> -1
   | _, ConstRef _ -> 1
+  | IndRef indx, IndRef indy -> ord_ind indx indy
   | IndRef _, _ -> -1
   | _ , IndRef _ -> -1
+  | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
 
 let global_hash_gen hash_cst hash_ind hash_cons gr =
   let open Hashset.Combine in
