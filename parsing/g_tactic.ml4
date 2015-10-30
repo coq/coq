@@ -339,21 +339,6 @@ GEXTEND Gram
       | d = delta_flag -> all_with d
     ] ]
   ;
-  red_tactic:
-    [ [ IDENT "red" -> Red false
-      | IDENT "hnf" -> Hnf
-      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> Simpl (all_with d,po)
-      | IDENT "cbv"; s = strategy_flag -> Cbv s
-      | IDENT "cbn"; s = strategy_flag -> Cbn s
-      | IDENT "lazy"; s = strategy_flag -> Lazy s
-      | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
-      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> CbvVm po
-      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> CbvNative po
-      | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
-      | IDENT "fold"; cl = LIST1 constr -> Fold cl
-      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> Pattern pl ] ]
-  ;
-  (* This is [red_tactic] including possible extensions *)
   red_expr:
     [ [ IDENT "red" -> Red false
       | IDENT "hnf" -> Hnf
@@ -676,7 +661,31 @@ GEXTEND Gram
 	    TacAtom (!@loc, TacInversion (InversionUsing (c,cl), hyp))
 
       (* Conversion *)
-      | r = red_tactic; cl = clause_dft_concl -> TacAtom (!@loc, TacReduce (r, cl))
+      | IDENT "red"; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Red false, cl))
+      | IDENT "hnf"; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Hnf, cl))
+      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Simpl (all_with d, po), cl))
+      | IDENT "cbv"; s = strategy_flag; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Cbv s, cl))
+      | IDENT "cbn"; s = strategy_flag; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Cbn s, cl))
+      | IDENT "lazy"; s = strategy_flag; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Lazy s, cl))
+      | IDENT "compute"; delta = delta_flag; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Cbv (all_with delta), cl))
+      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (CbvVm po, cl))
+      | IDENT "native_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (CbvNative po, cl))
+      | IDENT "unfold"; ul = LIST1 unfold_occ SEP ","; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Unfold ul, cl))
+      | IDENT "fold"; l = LIST1 constr; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Fold l, cl))
+      | IDENT "pattern"; pl = LIST1 pattern_occ SEP","; cl = clause_dft_concl ->
+          TacAtom (!@loc, TacReduce (Pattern pl, cl))
+
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
       | IDENT "change"; (oc,c) = conversion; cl = clause_dft_concl ->
 	  let p,cl = merge_occurrences (!@loc) cl oc in
