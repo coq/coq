@@ -73,8 +73,10 @@ GEXTEND Gram
       | IDENT "Unfocused" -> VernacUnfocused
       | IDENT "Show" -> VernacShow (ShowGoal OpenSubgoals)
       | IDENT "Show"; n = natural -> VernacShow (ShowGoal (NthGoal n))
+      | IDENT "Show"; id = ident -> VernacShow (ShowGoal (GoalId id))
+      | IDENT "Show"; IDENT "Goal" -> VernacShow (ShowGoal (GoalId (Names.Id.of_string "Goal")))
       | IDENT "Show"; IDENT "Goal"; n = string ->
-          VernacShow (ShowGoal (GoalId n))
+          VernacShow (ShowGoal (GoalUid n))
       | IDENT "Show"; IDENT "Implicit"; IDENT "Arguments"; n = OPT natural ->
 	  VernacShow (ShowGoalImplicitly n)
       | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode

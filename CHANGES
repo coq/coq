@@ -8,6 +8,7 @@ Vernacular commands
 - New option "Strict Universe Declaration", set by default. It enforces the
   declaration of all polymorphic universes appearing in a definition when
   introducing it.
+- New command "Show id" to show goal named id.
 
 Tactics
 
@@ -35,7 +36,6 @@ Tactics
   of incompatibilities).
 - Hints costs are now correctly taken into account (potential source of
   incompatibilities).
-
 
 API
 

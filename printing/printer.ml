@@ -455,14 +455,17 @@ let pr_ne_evar_set hd tl sigma l =
   else
     mt ()
 
+let pr_selected_subgoal name sigma g =
+  let pg = default_pr_goal { sigma=sigma ; it=g; } in
+  v 0 (str "subgoal " ++ name ++ pr_goal_tag g ++ pr_goal_name sigma g
+       ++ str " is:" ++ cut () ++ pg)
+
 let default_pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> error "No such goal."
     | g::rest ->
 	if Int.equal p 1 then
-          let pg = default_pr_goal { sigma=sigma ; it=g; } in
-          v 0 (str "subgoal " ++ int n ++ pr_goal_tag g ++ pr_goal_name sigma g 
-	       ++ str " is:" ++ cut () ++ pg)
+          pr_selected_subgoal (int n) sigma g
 	else
 	  prrec (p-1) rest
   in
@@ -652,9 +655,17 @@ let pr_nth_open_subgoal n =
 
 let pr_goal_by_id id =
   let p = Proof_global.give_me_the_proof () in
-  let g = Goal.get_by_uid id in
+  try
+    Proof.in_proof p (fun sigma ->
+      let g = Evd.evar_key id sigma in
+      pr_selected_subgoal (pr_id id) sigma g)
+  with Not_found -> error "No such goal."
+
+let pr_goal_by_uid uid =
+  let p = Proof_global.give_me_the_proof () in
+  let g = Goal.get_by_uid uid in
   let pr gs =
-    v 0 (str "goal / evar " ++ str id ++ str " is:" ++ cut ()
+    v 0 (str "goal / evar " ++ str uid ++ str " is:" ++ cut ()
 	 ++ pr_goal gs)
   in
   try

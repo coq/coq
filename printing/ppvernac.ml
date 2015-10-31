@@ -594,7 +594,8 @@ module Make
           let pr_goal_reference = function
             | OpenSubgoals -> mt ()
             | NthGoal n -> spc () ++ int n
-            | GoalId n -> spc () ++ str n in
+            | GoalId id -> spc () ++ pr_id id
+            | GoalUid n -> spc () ++ str n in
           let pr_showable = function
             | ShowGoal n -> keyword "Show" ++ pr_goal_reference n
             | ShowGoalImplicitly n -> keyword "Show Implicit Arguments" ++ pr_opt int n
