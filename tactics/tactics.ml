@@ -164,7 +164,7 @@ let unsafe_intro env store (id, c, t) b =
     let inst = List.map (fun (id, _, _) -> mkVar id) (named_context env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar id) b in
-    let sigma, ev = new_evar_instance nctx sigma nb ~store ninst in
+    let sigma, ev = new_evar_instance nctx sigma nb ~principal:true ~store ninst in
     sigma, mkNamedLambda_or_LetIn (id, c, t) ev
   end
 
@@ -1834,7 +1834,7 @@ let clear_body ids =
     in
     check_hyps <*> check_concl <*>
     Proofview.Refine.refine ~unsafe:true begin fun sigma ->
-      Evarutil.new_evar env sigma concl
+      Evarutil.new_evar env sigma ~principal:true concl
     end
   end
 
@@ -2599,7 +2599,7 @@ let new_generalize_gen_let lconstr =
     in
       Proofview.Unsafe.tclEVARS sigma <*>
 	Proofview.Refine.refine begin fun sigma ->
-          let (sigma, ev) = Evarutil.new_evar env sigma newcl in
+          let (sigma, ev) = Evarutil.new_evar env sigma ~principal:true newcl in
             (sigma, (applist (ev, args)))
 	end
   end
