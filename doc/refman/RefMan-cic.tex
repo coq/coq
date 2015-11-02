@@ -716,12 +716,9 @@ contains an inductive declaration.
 
 \begin{description}
 \item[Ind]  \index{Typing rules!Ind}
-\inference{\frac{\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E}{(I_j:A_j) \in E}}
-\inference{\frac{\WFE{\Gamma}~~~~\NInd{}{\Gamma_I}{\Gamma_C} \in E}{\WTEG{I_j}{A_j}}}
+  \inference{\frac{\WFE{\Gamma}\hskip2em\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\hskip2em(a:A)\in\Gamma_I}{\WTEG{a}{A}}}
 \item[Constr]  \index{Typing rules!Constr}
-
-\inference{\frac{\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E}{(c_i:C_i) \in E}}
-\inference{\frac{\WFE{\Gamma}~~~~\NInd{}{\Gamma_I}{\Gamma_C} \in E}{\WTEG{c_i}{C_i}}}
+  \inference{\frac{\WFE{\Gamma}\hskip2em\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\hskip2em(c:C)\in\Gamma_C}{\WTEG{c}{C}}}
 \end{description}
 
 \paragraph{Example.}
