@@ -2317,12 +2317,17 @@ let edit_at id =
       | { step = `Fork _ } -> false
       | { next } -> aux next in
     aux (VCS.get_branch_pos (VCS.current_branch ())) in
-  let rec is_pure id =
+  let rec is_pure_aux id =
     let view = VCS.visit id in
     match view.step with
-    | `Cmd _ -> is_pure view.next
+    | `Cmd _ -> is_pure_aux view.next
     | `Fork _ -> true
     | _ -> false in
+  let is_pure id =
+    match (VCS.visit id).step with
+    | `Qed (_,last_step) -> is_pure_aux last_step
+    | _ -> assert false
+  in
   let is_ancestor_of_cur_branch id =
     Vcs_.NodeSet.mem id
       (VCS.reachable (VCS.get_branch_pos (VCS.current_branch ()))) in
@@ -2385,7 +2390,7 @@ let edit_at id =
       | _, Some _, None -> assert false
       | false, Some (qed_id,start), Some(mode,bn) ->
           let tip = VCS.cur_tip () in
-          if has_failed qed_id && is_pure (VCS.visit qed_id).next && not !Flags.async_proofs_never_reopen_branch
+          if has_failed qed_id && is_pure qed_id && not !Flags.async_proofs_never_reopen_branch
           then reopen_branch start id mode qed_id tip bn
           else backto id (Some bn)
       | true, Some (qed_id,_), Some(mode,bn) ->
