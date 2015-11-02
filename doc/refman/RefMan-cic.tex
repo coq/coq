@@ -158,7 +158,7 @@ More precisely the language of the {\em Calculus of Inductive
     U''}. As $U$ depends on $x$, one says that $\forall~x:T,U$ is a
   {\em dependent product}. If $x$ does not occur in $U$ then
   $\forall~x:T,U$ reads as {\it ``if T then U''}. A {\em non dependent
-  product} can be written: $T \rightarrow U$.
+  product} can be written: $T \ra U$.
 \item if $x$ is a variable and $T$, $u$ are terms then $\lb x:T \mto u$
   ($\kw{fun}~x:T~ {\tt =>}~ u$ in \Coq{} concrete syntax) is a term. This is a
   notation for the $\lambda$-abstraction of
@@ -587,7 +587,7 @@ then:
             \right]}
 \def\GammaC{\left[\begin{array}{r \colon l}
                     \nO & \nat\\
-                    \nS & \nat\rightarrow\nat
+                    \nS & \nat\ra\nat
                   \end{array}
             \right]}
 \begin{itemize}
@@ -615,12 +615,12 @@ Inductive list (A : Type) : Type :=
 \end{coq_example*}
 then:
 \def\GammaI{\left[\begin{array}{r \colon l}
-                    \List & \Type\rightarrow\Type
+                    \List & \Type\ra\Type
                   \end{array}
             \right]}
 \def\GammaC{\left[\begin{array}{r \colon l}
                     \Nil & \forall~A\!:\!\Type,~\List~A\\
-                    \cons & \forall~A\!:\!\Type,~A\rightarrow\List~A\rightarrow\List~A
+                    \cons & \forall~A\!:\!\Type,~A\ra\List~A\ra\List~A
                   \end{array}
             \right]}
 \begin{itemize}
@@ -649,13 +649,13 @@ Inductive Length (A : Type) : list A -> nat -> Prop :=
 \end{coq_example*}
 then:
 \def\GammaI{\left[\begin{array}{r \colon l}
-                    \Length & \forall~A\!:\!\Type,~\List~A\rightarrow\nat\rightarrow\Prop
+                    \Length & \forall~A\!:\!\Type,~\List~A\ra\nat\ra\Prop
                   \end{array}
             \right]}
 \def\GammaC{\left[\begin{array}{r c l}
                     \LNil & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\Length~A~(\Nil~A)~\nO\\
                     \LCons & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
-                           & & \Length~A~l~n\rightarrow \Length~A~(\cons~A~a~l)~(\nS~n)
+                           & & \Length~A~l~n\ra \Length~A~(\cons~A~a~l)~(\nS~n)
                   \end{array}
             \right]}
 \begin{itemize}
@@ -690,9 +690,9 @@ then:
                   \end{array}
             \right]}
 \def\GammaC{\left[\begin{array}{r \colon l}
-                    \node & \forest\rightarrow\tree\\
+                    \node & \forest\ra\tree\\
                     \emptyf & \forest\\
-                    \consf & \tree\rightarrow\forest\rightarrow\forest
+                    \consf & \tree\ra\forest\ra\forest
                   \end{array}
             \right]}
 \begin{itemize}
@@ -733,14 +733,14 @@ $\begin{array}{@{} l}
    \prefix\nat : \Set\\
    \prefix\nO : \nat\\
    \prefix\nS : \nat\ra\nat\\
-   \prefix\List : \Type\rightarrow\Type\\
+   \prefix\List : \Type\ra\Type\\
    \prefix\Nil : \forall~A\!:\!\Type,~\List~A\\
-   \prefix\cons : \forall~A\!:\!\Type,~A\rightarrow\List~A\rightarrow\List~A\\
-   \prefix\Length : \forall~A\!:\!\Type,~\List~A\rightarrow\nat\rightarrow\Prop\\
+   \prefix\cons : \forall~A\!:\!\Type,~A\ra\List~A\ra\List~A\\
+   \prefix\Length : \forall~A\!:\!\Type,~\List~A\ra\nat\ra\Prop\\
    \prefix\LNil : \forall~A\!:\!\Type,~\Length~A~(\Nil~A)~\nO\\
    \begin{array}{l l}
    \hskip-.5em\prefix\LCons :\hskip-.5em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
-                            & \Length~A~l~n\rightarrow \Length~A~(\cons~A~a~l)~(\nS~n)
+                            & \Length~A~l~n\ra \Length~A~(\cons~A~a~l)~(\nS~n)
    \end{array}
  \end{array}$
 
