@@ -573,14 +573,11 @@ val fresh_global : ?rigid:rigid -> ?names:Univ.Instance.t -> env -> evar_map ->
   Globnames.global_reference -> evar_map * constr
 
 (********************************************************************
-  Conversion w.r.t. an evar map: might generate universe unifications 
-  that are kept in the evarmap.
-  Raises [NotConvertible]. *)
-
-val conversion : env -> evar_map -> conv_pb -> constr -> constr -> evar_map
+  Conversion w.r.t. an evar map, not unifying universes. See 
+  [Reductionops.infer_conv] for conversion up-to universes. *)
 
 val test_conversion : env -> evar_map -> conv_pb -> constr -> constr -> bool
-(** This one forgets about the assignemts of universes. *)
+(** WARNING: This does not allow unification of universes *)
 
 val eq_constr_univs : evar_map -> constr -> constr -> evar_map * bool
 (** Syntactic equality up to universes, recording the associated constraints *)

@@ -33,7 +33,8 @@ DECLARE PLUGIN "eauto"
 
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
-let e_give_exact ?(flags=eauto_unif_flags) c gl = let t1 = (pf_unsafe_type_of gl c) and t2 = pf_concl gl in
+let e_give_exact ?(flags=eauto_unif_flags) c gl =
+  let t1 = (pf_unsafe_type_of gl c) and t2 = pf_concl gl in
   if occur_existential t1 || occur_existential t2 then
      tclTHEN (Proofview.V82.of_tactic (Clenvtac.unify ~flags t1)) (exact_no_check c) gl
   else Proofview.V82.of_tactic (exact_check c) gl

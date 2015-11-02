@@ -223,8 +223,9 @@ let convert_hyp_no_check = convert_hyp ~check:false
 let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
     try
-      let sigma = Tacmach.New.pf_apply Evd.conversion gl pb x y in
-      Proofview.Unsafe.tclEVARS sigma
+      let sigma, b = Tacmach.New.pf_apply (Reductionops.infer_conv ~pb) gl x y in
+      if b then Proofview.Unsafe.tclEVARS sigma
+      else Tacticals.New.tclFAIL 0 (str "Not convertible")
     with (* Reduction.NotConvertible *) _ ->
       (** FIXME: Sometimes an anomaly is raised from conversion *)
       Tacticals.New.tclFAIL 0 (str "Not convertible")

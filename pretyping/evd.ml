@@ -1369,7 +1369,7 @@ let update_sigma_env evd env =
 
 (* Conversion w.r.t. an evar map and its local universes. *)
 
-let conversion_gen env evd pb t u =
+let test_conversion_gen env evd pb t u =
   match pb with 
   | Reduction.CONV -> 
     Reduction.trans_conv_universes 
@@ -1379,14 +1379,8 @@ let conversion_gen env evd pb t u =
      full_transparent_state ~evars:(existential_opt_value evd) env 
     evd.universes.uctx_universes t u
 
-(* let conversion_gen_key = Profile.declare_profile "conversion_gen" *)
-(* let conversion_gen = Profile.profile5 conversion_gen_key conversion_gen *)
-
-let conversion env d pb t u =
-  conversion_gen env d pb t u; d
-
 let test_conversion env d pb t u =
-  try conversion_gen env d pb t u; true
+  try test_conversion_gen env d pb t u; true
   with _ -> false
 
 let eq_constr_univs evd t u =
