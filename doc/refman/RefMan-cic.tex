@@ -535,11 +535,11 @@ $\forall\Gamma_P, T^\prime$.
 \subsection*{Examples}
 
 If we take the following inductive definition (denoted in concrete syntax):
-\begin{coq_example}
+\begin{coq_example*}
 Inductive bool : Set :=
   | true : bool
   | false : bool.
-\end{coq_example}
+\end{coq_example*}
 then:
 \def\colon{@{\hskip.5em:\hskip.5em}}
 \def\GammaI{\left[\begin{array}{r \colon l}
@@ -575,11 +575,11 @@ and thus it enriches the global environment with the following entry:
 \vskip1em\hrule\vskip1em
 
 \noindent If we take the followig inductive definition:
-\begin{coq_example}
+\begin{coq_example*}
 Inductive nat : Set :=
   | O : nat
   | S : nat -> nat.
-\end{coq_example}
+\end{coq_example*}
 then:
 \def\GammaI{\left[\begin{array}{r \colon l}
                     \nat & \Set
@@ -608,11 +608,11 @@ and thus it enriches the global environment with the following entry:
 \vskip1em\hrule\vskip1em
 
 \noindent If we take the following inductive definition:
-\begin{coq_example}
+\begin{coq_example*}
 Inductive list (A : Type) : Type :=
   | nil : list A
   | cons : A -> list A -> list A.
-\end{coq_example}
+\end{coq_example*}
 then:
 \def\GammaI{\left[\begin{array}{r \colon l}
                     \List & \Type\rightarrow\Type
@@ -641,12 +641,12 @@ and thus it enriches the global environment with the following entry:
 \vskip1em\hrule\vskip1em
 
 \noindent If we take the following inductive definition:
-\begin{coq_example}
+\begin{coq_example*}
 Inductive Length (A : Type) : list A -> nat -> Prop :=
   | Lnil : Length A (nil A) O
   | Lcons : forall (a:A) (l:list A) (n:nat),
               Length A l n -> Length A (cons A a l) (S n).
-\end{coq_example}
+\end{coq_example*}
 then:
 \def\GammaI{\left[\begin{array}{r \colon l}
                     \Length & \forall~A\!:\!\Type,~\List~A\rightarrow\nat\rightarrow\Prop
@@ -676,13 +676,13 @@ and thus it enriches the global environment with the following entry:
 \vskip1em\hrule\vskip1em
 
 \noindent If we take the following inductive definition:
-\begin{coq_example}
+\begin{coq_example*}
 Inductive tree : Set :=
   | node : forest -> tree
 with forest : Set :=
   | emptyf : forest
   | consf : tree -> forest -> forest.
-\end{coq_example}
+\end{coq_example*}
 then:
 \def\GammaI{\left[\begin{array}{r \colon l}
                     \tree & \Set\\
