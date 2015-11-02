@@ -782,15 +782,17 @@ such that $T$ is an arity of sort $s$.
 \paragraph[Examples]{Examples}
 $A\ra \Set$ and $\forall~A:\Prop,A\ra \Prop$ are arities.
 
-\paragraph[Definition]{Definition\index{Positivity}\label{Positivity}}
-\noindent A {\em type
-  of constructor of $I$}\index{Type of constructor} is either a term
+\paragraph[Definition]{Definition\index{type of constructor}}
+A {\em type of constructor of $I$}\index{Type of constructor} is either a term
 $(I~t_1\ldots ~t_n)$ or $\fa x:T,C$ with $C$ recursively 
 a {\em type of constructor of $I$}.
 
-\smallskip
+\paragraph[Examples]{Examples}
+$\nat$ and $\nat\ra\nat$ are types of constructors of $\nat$.\\
+$\forall A:\Type,\List~A$ and $\forall A:\Type,A\ra\List~A\ra\List~A$ are constructors of $\List$.
 
-\noindent The type of constructor $T$ will be said to {\em satisfy the positivity
+\paragraph[Definition]{Definition\index{Positivity}\label{Positivity}}
+The type of constructor $T$ will be said to {\em satisfy the positivity
 condition} for a constant $X$ in the following cases:
 
 \begin{itemize}
