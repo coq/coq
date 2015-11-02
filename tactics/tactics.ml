@@ -3253,7 +3253,7 @@ let is_defined_variable env id = match lookup_named id env with
 | (_, Some _, _) -> true
 
 let abstract_args gl generalize_vars dep id defined f args =
-  let sigma = project gl in
+  let sigma = ref (project gl) in
   let env = pf_env gl in
   let concl = pf_concl gl in
   let dep = dep || dependent (mkVar id) concl in
@@ -3270,11 +3270,12 @@ let abstract_args gl generalize_vars dep id defined f args =
     *)
   let aux (prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars, env) arg =
     let (name, _, ty), arity =
-      let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
+      let rel, c = Reductionops.splay_prod_n env !sigma 1 prod in
 	List.hd rel, c
     in
     let argty = pf_unsafe_type_of gl arg in
-    let ty = (* refresh_universes_strict *) ty in
+    let sigma', ty = Evarsolve.refresh_universes (Some true) env !sigma ty in
+    let () = sigma := sigma' in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
     let leq = constr_cmp Reduction.CUMUL liftargty ty in
@@ -3313,8 +3314,9 @@ let abstract_args gl generalize_vars dep id defined f args =
 	      true, mkApp (f', before), after
   in
     if dogen then
+      let tyf' = pf_unsafe_type_of gl f' in
       let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env =
-	Array.fold_left aux (pf_unsafe_type_of gl f',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
+	Array.fold_left aux (tyf',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars =
@@ -3323,9 +3325,12 @@ let abstract_args gl generalize_vars dep id defined f args =
 	    hyps_of_vars (pf_env gl) (pf_hyps gl) nogen vars
 	else []
       in
-      let body, c' = if defined then Some c', typ_of ctxenv Evd.empty c' else None, c' in
-	Some (make_abstract_generalize gl id concl dep ctx body c' eqs args refls,
-	     dep, succ (List.length ctx), vars)
+      let body, c' =
+	if defined then Some c', typ_of ctxenv !sigma c'
+	else None, c'
+      in
+      let term = make_abstract_generalize gl id concl dep ctx body c' eqs args refls in
+	Some (term, !sigma, dep, succ (List.length ctx), vars)
     else None
 
 let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
@@ -3347,20 +3352,26 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
     let newc = Tacmach.New.of_old (fun gl -> abstract_args gl generalize_vars force_dep id def f args) gl in
       match newc with
       | None -> Proofview.tclUNIT ()
-      | Some (newc, dep, n, vars) ->
+      | Some (newc, sigma, dep, n, vars) ->
 	  let tac =
 	    if dep then
-	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
-			   Proofview.V82.tactic (generalize_dep ~with_let:true (mkVar oldid))]
-	    else
-	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); Proofview.V82.tactic (clear [id]); Tacticals.New.tclDO n intro]
+	      Tacticals.New.tclTHENLIST
+		[Proofview.Unsafe.tclEVARS sigma;
+		 Proofview.V82.tactic (refine newc);
+		 rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
+		 Proofview.V82.tactic (generalize_dep ~with_let:true (mkVar oldid))]
+	    else Tacticals.New.tclTHENLIST
+		   [Proofview.Unsafe.tclEVARS sigma;
+		    Proofview.V82.tactic (refine newc);
+		    Proofview.V82.tactic (clear [id]);
+		    Tacticals.New.tclDO n intro]
 	  in
 	    if List.is_empty vars then tac
 	    else Tacticals.New.tclTHEN tac
               (Tacticals.New.tclFIRST
                 [revert vars ;
 		 Proofview.V82.tactic (fun gl -> tclMAP (fun id ->
-				     tclTRY (generalize_dep ~with_let:true (mkVar id))) vars gl)])
+		      tclTRY (generalize_dep ~with_let:true (mkVar id))) vars gl)])
   end
 
 let rec compare_upto_variables x y =
