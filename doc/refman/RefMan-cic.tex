@@ -514,213 +514,201 @@ $u_i$ can be reducible.
 Similar notions of head-normal forms involving $\delta$, $\iota$ and $\zeta$
 reductions or any combination of those can also be defined.
 
-\section[Inductive Definitions]{Inductive Definitions\label{Cic-inductive-definitions}}
+\section[Inductive definitions]{Inductive Definitions\label{Cic-inductive-definitions}}
 
-A (possibly mutual) inductive definition is specified by giving the
-names and types of the inductive types to be
-defined and the names and types of the constructors of the inductive types.
-An {\em inductive declaration\index{declaration!inductive}} in the global environment can
-consequently be represented with two local contexts, one for the types
-one for the constructors.
+% Here we assume that the reader knows what is an inductive definition.
 
-Stating the rules for inductive definitions in their general form
-needs quite tedious definitions. We shall try to give a concrete
-understanding of the rules by illustrating them on running examples.  We
-take as examples the type of natural numbers, the type of
-parameterized lists over a type $A$, the relation which states that
-a list has some given length and the mutual inductive definition of trees and
-forests. 
+Formally, we can represent any {\em inductive definition\index{definition!inductive}} as \Ind{}{p}{\Gamma_I}{\Gamma_C} where:
+\begin{itemize}
+  \item $\Gamma_I$ determines the names and types of inductive types;
+  \item $\Gamma_C$ determines the names and types of constructors of these inductive types;
+  \item $p$ determines the number of parameters of these inductive types.
+\end{itemize}
+These inductive definitions, together with global assumptions and global definitions, then form the global environment.
+\vskip.5em
+\noindent Additionally, for any $p$ there always exists $\Gamma_P=[a_1:A_1;\dots;a_p:A_p]$
+such that each $(t:T)\in\Gamma_I\cup\Gamma_C$ can be written as:
+$\forall\Gamma_P, T^\prime$.
+\vskip.5em
+\noindent $\Gamma_P$ is called {\em context of parameters\index{context of parameters}}.
 
-\subsection{Representing an inductive definition}
-\subsubsection{Inductive definitions without parameters}
-As for constants, inductive definitions must be defined in a non-empty
-local context. \\
-We write \NInd{}{\Gamma_I}{\Gamma_C} for an inductive
-definition with a
-context of type definitions $\Gamma_I$ and a context of constructors
-$\Gamma_C$.
-\paragraph{Examples.}
-The inductive declaration for the type of natural numbers will be:
-\[\NInd{}{\nat:\Set}{\nO:\nat,\nS:\nat\ra\nat}\]
-In a context with assumption $A:\Set$, the lists of elements in $A$ are
-represented by:
-\[\NInd{}{\List:\Set}{\Nil:\List,\cons : A \ra \List \ra
-  \List}\]
-%%  Assuming 
-%%   $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
-%%   $[c_1:C_1;\ldots;c_n:C_n]$, the general typing rules are, 
-%%   for $1\leq j\leq k$ and $1\leq i\leq n$:
+\subsection*{Examples}
 
-%% \bigskip
+If we take the following inductive definition (denoted in concrete syntax):
+\begin{coq_example}
+Inductive bool : Set :=
+  | true : bool
+  | false : bool.
+\end{coq_example}
+then:
+\def\colon{@{\hskip.5em:\hskip.5em}}
+\def\GammaI{\left[\begin{array}{r \colon l}
+                    \bool & \Set
+                  \end{array}
+            \right]}
+\def\GammaC{\left[\begin{array}{r \colon l}
+                    \true & \bool\\
+                    \false & \bool
+                  \end{array}
+            \right]}
+\newcommand\ind[3]{$\mathsf{Ind}~[#1]\left(\hskip-.4em
+                                           \begin{array}{r @{\mathrm{~:=~}} l}
+                                              #2 & #3 \\
+                                           \end{array}
+                                           \hskip-.4em
+                                     \right)$}
+\begin{itemize}
+  \item $p = 0$
+  \item $\Gamma_I = \GammaI$
+  \item $\Gamma_C = \GammaC$
+\end{itemize}
+and thus it enriches the global environment with the following entry:
+\vskip.5em
+\ind{p}{\Gamma_I}{\Gamma_C}
+\vskip.5em
+\noindent that is:
+\vskip.5em
+\ind{0}{\GammaI}{\GammaC}
+\vskip.5em
+\noindent In this case, $\Gamma_P=[\,]$.
 
-%% \item[Ind]  \index{Typing rules!Ind}
-%% \inference{\frac{\NInd{}{\Gamma_I}{\Gamma_C} \in E}{(I_j:A_j) \in E}}
-%% \item[Constr]  \index{Typing rules!Constr}
+\vskip1em\hrule\vskip1em
 
-%% \inference{\frac{\NInd{}{\Gamma_I}{\Gamma_C} \in E}{(c_i:C_i) \in E}}
-
-\subsubsection{Inductive definitions with parameters}
-
-We have refine the representation above in order to handle parameters. 
-Let us explain that on the example of \List. With the above definition,
-the type \List\ can only be used in a global environment where we
-have a variable $A:\Set$. Generally one wants to consider lists of
-elements in different types. For constants this is easily done by abstracting
-the value over the parameter. In the case of inductive definitions we
-have to handle the abstraction over several objects.
-
-One possible way to do that would be to define the type \List\
-inductively as being an inductive type of type $\Set\ra\Set$:
-\[\NInd{}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set,\List~A),
-  \cons : (\forall A:\Set, A \ra \List~A \ra \List~A)}\]
-There are drawbacks to this point of view. The
-information which says that for any $A$, $(\List~A)$ is an inductively defined
-\Set\ has been lost.
-So we introduce two important definitions.
-
-\paragraph{Inductive parameters, real arguments.}
-An inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
-$r$ inductive parameters if each type of constructors $(c:C)$ in
-$\Gamma_C$ is such that 
-\[C\equiv \forall
-p_1:P_1,\ldots,\forall p_r:P_r,\forall a_1:A_1, \ldots \forall a_n:A_n,
-(I~p_1~\ldots p_r~t_1\ldots t_q)\]
-with $I$ one of the inductive definitions in $\Gamma_I$. 
-We say that $q$ is the number of real arguments of the constructor
-$c$. 
-\paragraph{Context of parameters.}
-If an inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
-$r$ inductive parameters, then there exists a local context $\Gamma_P$ of
-size $r$, such that $\Gamma_P=[p_1:P_1;\ldots;p_r:P_r]$ and 
-if $(t:A) \in \Gamma_I,\Gamma_C$ then $A$ can be written as 
-$\forall p_1:P_1,\ldots \forall p_r:P_r,A'$. 
-We call $\Gamma_P$ the local context of parameters of the inductive
-definition and use the notation $\forall \Gamma_P,A'$ for the term $A$.
-\paragraph{Remark.}
-If we have a term $t$ in an instance of an
-inductive definition $I$ which starts with a constructor $c$, then the
-$r$ first arguments of $c$ (the parameters) can be deduced from the
-type $T$ of $t$: these are exactly the $r$ first arguments of $I$ in
-the head normal form of $T$.
-\paragraph{Examples.}
-The \List{} definition has $1$ parameter:
-\[\NInd{}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set, \List~A),
-  \cons : (\forall A:\Set, A \ra \List~A \ra \List~A)}\]
-This is also the case for this more complex definition where there is
-a recursive argument on a different instance of \List: 
-\[\NInd{}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set, \List~A),
-  \cons : (\forall A:\Set, A \ra \List~(A \ra A) \ra \List~A)}\]
-But the following definition has $0$ parameters:
-\[\NInd{}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set, \List~A),
-  \cons : (\forall A:\Set, A \ra \List~A \ra \List~(A*A))}\]
-
-%\footnote{
-%The interested reader may compare the above definition with the two 
-%following ones which have very different logical meaning:\\
-%$\NInd{}{\List:\Set}{\Nil:\List,\cons : (A:\Set)A
-%  \ra \List \ra \List}$ \\
-%$\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
-%  \ra (\List~A\ra A) \ra (\List~A)}$.}
-\paragraph{Concrete syntax.}
-In the {\Coq} system, the local context of parameters is given explicitly
-after the name of the inductive definitions and is shared between the
-arities and the type of constructors.
-% The vernacular declaration of polymorphic trees and forests will be:\\
-% \begin{coq_example*}
-% Inductive Tree (A:Set) : Set := 
-%    Node : A -> Forest A -> Tree A
-% with Forest (A : Set) : Set := 
-%    Empty : Forest A
-%  | Cons  : Tree A -> Forest A -> Forest A
-% \end{coq_example*}
-% will correspond in our formalism to:
-% \[\NInd{}{{\tt Tree}:\Set\ra\Set;{\tt Forest}:\Set\ra \Set}
-%   {{\tt Node} : \forall A:\Set, A \ra {\tt Forest}~A \ra {\tt Tree}~A,
-%    {\tt Empty} : \forall A:\Set, {\tt Forest}~A,
-%    {\tt Cons} : \forall A:\Set, {\tt Tree}~A \ra {\tt Forest}~A \ra
-%    {\tt Forest}~A}\]
-We keep track in the syntax of the number of
-parameters. 
-
-Formally the representation of an inductive declaration
-will be 
-\Ind{}{p}{\Gamma_I}{\Gamma_C} for an inductive
-definition with $p$ parameters, a
-context of definitions $\Gamma_I$ and a context of constructors
-$\Gamma_C$.
-
-The definition \Ind{}{p}{\Gamma_I}{\Gamma_C} will be
-well-formed exactly when \NInd{}{\Gamma_I}{\Gamma_C} is and 
-when $p$ is (less or equal than) the number of parameters in
-\NInd{}{\Gamma_I}{\Gamma_C}. 
-
-\paragraph{Examples}
-The declaration for parameterized lists is:
-\[\Ind{}{1}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set,\List~A),\cons :
-  (\forall A:\Set, A \ra \List~A \ra   \List~A)}\]
-
-The declaration for an inductive type specifying the length of lists is:
-\[\Ind{}{1}{\Length:\forall A:\Set, (\List~A)\ra \nat\ra\Prop}
-      {\LNil:\forall A:\Set, \Length~A~(\Nil~A)~\nO,\\ 
-     \LCons :\forall A:\Set,\forall a:A, \forall l:(\List~A),\forall n:\nat, (\Length~A~l~n)\ra (\Length~A~(\cons~A~a~l)~(\nS~n))}\]
-
-The declaration for a mutual inductive definition of forests and trees is:
-\[\NInd{}{\tree:\Set,\forest:\Set}
-      {\\~~\node:\forest \ra \tree,
-       \emptyf:\forest,\consf:\tree \ra \forest \ra \forest\-}\]
-  
-These representations are the ones obtained as the result of the \Coq\ 
-declarations:
-\begin{coq_example*}
+\noindent If we take the followig inductive definition:
+\begin{coq_example}
 Inductive nat : Set :=
   | O : nat
   | S : nat -> nat.
-Inductive list (A:Set) : Set :=
+\end{coq_example}
+then:
+\def\GammaI{\left[\begin{array}{r \colon l}
+                    \nat & \Set
+                  \end{array}
+            \right]}
+\def\GammaC{\left[\begin{array}{r \colon l}
+                    \nO & \nat\\
+                    \nS & \nat\rightarrow\nat
+                  \end{array}
+            \right]}
+\begin{itemize}
+  \item $p = 0$
+  \item $\Gamma_I = \GammaI$
+  \item $\Gamma_C = \GammaC$
+\end{itemize}
+and thus it enriches the global environment with the following entry:
+\vskip.5em
+\ind{p}{\Gamma_I}{\Gamma_C}
+\vskip.5em
+\noindent that is:
+\vskip.5em
+\ind{0}{\GammaI}{\GammaC}
+\vskip.5em
+\noindent In this case, $\Gamma_P=[\,]$.
+
+\vskip1em\hrule\vskip1em
+
+\noindent If we take the following inductive definition:
+\begin{coq_example}
+Inductive list (A : Type) : Type :=
   | nil : list A
   | cons : A -> list A -> list A.
-\end{coq_example*}
-\begin{coq_example*}
-Inductive Length (A:Set) : list A -> nat -> Prop :=
+\end{coq_example}
+then:
+\def\GammaI{\left[\begin{array}{r \colon l}
+                    \List & \Type\rightarrow\Type
+                  \end{array}
+            \right]}
+\def\GammaC{\left[\begin{array}{r \colon l}
+                    \Nil & \forall~A\!:\!\Type,~\List~A\\
+                    \cons & \forall~A\!:\!\Type,~A\rightarrow\List~A\rightarrow\List~A
+                  \end{array}
+            \right]}
+\begin{itemize}
+  \item $p = 1$
+  \item $\Gamma_I = \GammaI$
+  \item $\Gamma_C = \GammaC$
+\end{itemize}
+and thus it enriches the global environment with the following entry:
+\vskip.5em
+\ind{p}{\Gamma_I}{\Gamma_C}
+\vskip.5em
+\noindent that is:
+\vskip.5em
+\ind{1}{\GammaI}{\GammaC}
+\vskip.5em
+\noindent In this case, $\Gamma_P=[A:\Type]$.
+
+\vskip1em\hrule\vskip1em
+
+\noindent If we take the following inductive definition:
+\begin{coq_example}
+Inductive Length (A : Type) : list A -> nat -> Prop :=
   | Lnil : Length A (nil A) O
-  | Lcons :
-      forall (a:A) (l:list A) (n:nat),
-        Length A l n -> Length A (cons A a l) (S n).
+  | Lcons : forall (a:A) (l:list A) (n:nat),
+              Length A l n -> Length A (cons A a l) (S n).
+\end{coq_example}
+then:
+\def\GammaI{\left[\begin{array}{r \colon l}
+                    \Length & \forall~A\!:\!\Type,~\List~A\rightarrow\nat\rightarrow\Prop
+                  \end{array}
+            \right]}
+\def\GammaC{\left[\begin{array}{r c l}
+                    \LNil & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\Length~A~(\Nil~A)~\nO\\
+                    \LCons & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
+                           & & \Length~A~l~n\rightarrow \Length~A~(\cons~A~a~l)~(\nS~n)
+                  \end{array}
+            \right]}
+\begin{itemize}
+  \item $p = 1$
+  \item $\Gamma_I = \GammaI$
+  \item $\Gamma_C = \GammaC$
+\end{itemize}
+and thus it enriches the global environment with the following entry:
+\vskip.5em
+\ind{p}{\Gamma_I}{\Gamma_C}
+%\vskip.5em
+%\noindent that is:
+%\vskip.5em
+%\ind{1}{\GammaI}{\GammaC}
+\vskip.5em
+\noindent In this case, $\Gamma_P=[A:\Type]$.
+
+\vskip1em\hrule\vskip1em
+
+\noindent If we take the following inductive definition:
+\begin{coq_example}
 Inductive tree : Set :=
-    node : forest -> tree
+  | node : forest -> tree
 with forest : Set :=
   | emptyf : forest
   | consf : tree -> forest -> forest.
-\end{coq_example*}
-% The inductive declaration in \Coq\ is slightly different from the one
-% we described theoretically. The difference is that in the type of
-% constructors the inductive definition is explicitly applied to the
-% parameters variables.
-The \Coq\ type-checker verifies that all
-parameters are applied in the correct manner in the conclusion of the
-type of each constructors:
-
-In particular, the following definition will not be accepted because 
-there is an occurrence of \List\ which is not applied to the parameter
-variable in the conclusion of the type of {\tt cons'}:
-\begin{coq_eval}
-Set Printing Depth 50.
-\end{coq_eval}
-% (********** The following is not correct and should produce **********)
-% (********* Error: The 1st argument of list' must be A in ... *********)
-\begin{coq_example}
-Fail Inductive list' (A:Set) : Set :=
-  | nil' : list' A
-  | cons' : A -> list' A -> list' (A*A).
 \end{coq_example}
-Since \Coq{} version 8.1, there is no restriction about parameters in
-the types of arguments of constructors. The following definition is
-valid:
-\begin{coq_example}
-Inductive list' (A:Set) : Set :=
-  | nil' : list' A
-  | cons' : A -> list' (A->A) -> list' A.
-\end{coq_example}
-
+then:
+\def\GammaI{\left[\begin{array}{r \colon l}
+                    \tree & \Set\\
+                    \forest & \Set
+                  \end{array}
+            \right]}
+\def\GammaC{\left[\begin{array}{r \colon l}
+                    \node & \forest\rightarrow\tree\\
+                    \emptyf & \forest\\
+                    \consf & \tree\rightarrow\forest\rightarrow\forest
+                  \end{array}
+            \right]}
+\begin{itemize}
+  \item $p = 0$
+  \item $\Gamma_I = \GammaI$
+  \item $\Gamma_C = \GammaC$
+\end{itemize}
+and thus it enriches the global environment with the following entry:
+\vskip.5em
+\ind{p}{\Gamma_I}{\Gamma_C}
+\vskip.5em
+\noindent that is:
+\vskip.5em
+\ind{0}{\GammaI}{\GammaC}
+\vskip.5em
+\noindent In this case, $\Gamma_P=[\,]$.
 
 \subsection{Types of inductive objects}
 We have to give the type of constants in a global environment $E$ which
