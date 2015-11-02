@@ -1,4 +1,4 @@
-Notation bar := $(exact I)$.
+Notation bar := ltac:(exact I).
 Notation foo := bar (only parsing).
 Class baz := { x : False }.
 Instance: baz.

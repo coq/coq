@@ -1,9 +1,9 @@
 Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Definition Lift
-: $(let U1 := constr:(Type) in
+: ltac:(let U1 := constr:(Type) in
     let U0 := constr:(Type : U1) in
-    exact (U0 -> U1))$
+    exact (U0 -> U1))
   := fun T => T.
 
 Fail Check nat:Prop. (* The command has indeed failed with message:

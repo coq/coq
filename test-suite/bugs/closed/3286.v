@@ -6,20 +6,20 @@ Ltac make_apply_under_binders_in lem H :=
     | forall x : ?T, @?P x
       => let ret := constr:(fun x' : T =>
                               let Hx := H x' in
-                              $(let ret' := tac lem Hx in
-                                exact ret')$) in
+                              ltac:(let ret' := tac lem Hx in
+                                exact ret')) in
          match eval cbv zeta in ret with
            | fun x => Some (@?P x) => let P' := (eval cbv zeta in P) in
                                       constr:(Some P')
          end
-    | _ => let ret := constr:($(match goal with
+    | _ => let ret := constr:(ltac:(match goal with
                                   | _ => (let H' := fresh in
                                           pose H as H';
                                           apply lem in H';
                                           exact (Some H'))
                                   | _ => exact (@None nat)
                                 end
-                               )$) in
+                               )) in
            let ret' := (eval cbv beta zeta in ret) in
            constr:(ret')
     | _ => constr:(@None nat)

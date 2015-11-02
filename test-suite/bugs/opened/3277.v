@@ -4,4 +4,4 @@ Goal True.
   evarr _.
 Admitted.
 Goal True.
-  Fail exact $(evarr _)$. (* Error: Cannot infer this placeholder. *)
+  Fail exact ltac:(evarr _). (* Error: Cannot infer this placeholder. *)
