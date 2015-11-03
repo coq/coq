@@ -876,16 +876,68 @@ any $u_i$
 the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
 
-\paragraph{Example}
-
-$X$ occurs strictly positively in $A\ra X$ or $X*A$ or $({\tt list}~
-X)$ but not in $X \ra A$ or $(X \ra A)\ra A$ nor $({\tt neg}~X)$
-assuming the notion of product and lists were already defined and {\tt
-  neg} is an inductive definition with declaration \Ind{}{A:\Set}{{\tt
-    neg}:\Set}{{\tt neg}:(A\ra{\tt False}) \ra {\tt neg}}.  Assuming
-$X$ has arity ${\tt nat \ra Prop}$ and {\tt ex} is the inductively
-defined existential quantifier, the occurrence of $X$ in ${\tt (ex~
-  nat~ \lb n:nat\mto (X~ n))}$ is also strictly positive.
+\newcommand\vv{\textSFxi}    % │
+\newcommand\hh{\textSFx}     %   ─
+\newcommand\vh{\textSFviii}  % ├
+\newcommand\hv{\textSFii}    %   └
+\newlength\framecharacterwidth
+\settowidth\framecharacterwidth{\hh}
+\newcommand\ws{\hbox{}\hskip\the\framecharacterwidth}
+\newcommand\ruleref[1]{\hskip.25em\dots\hskip.2em{\em (bullet #1)}}
+\paragraph{Example}~\\
+\vskip-.5em
+\noindent$X$ occurs strictly positively in $A\ra X$\ruleref5\\
+\vv\\
+\vh\hh\ws $X$does not occur in $A$\ruleref3\\
+\vv\\
+\hv\hh\ws $X$ occurs strictly positively in $X$\ruleref4
+\paragraph{Example}~\\
+\vskip-.5em
+\noindent $X$ occurs strictly positively in $X*A$\\
+\vv\\
+\hv\hh $X$ occurs strictly positively in $(\Prod~X~A)$\ruleref6\\
+\ws\ws\vv\\
+\ws\ws\vv\ws\verb|Inductive prod (A B : Type) : Type :=|\\
+\ws\ws\vv\ws\verb|  pair : A -> B -> prod A B.|\\
+\ws\ws\vv\\
+\ws\ws\vh\hh $X$ does not occur in any (real) arguments of $\Prod$ in the original term $(\Prod~X~A)$\\
+\ws\ws\vv\\
+\ws\ws\hv\ws the (instantiated) type $\Prod~X~A$ of constructor $\Pair$,\\
+\ws\ws\ws\ws satisfies the nested positivity condition for $X$\ruleref7\\
+\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\hv\ws $X$ does not occur in any (real) arguments of $(\Prod~X~A)$
+\paragraph{Example}~\\
+\vskip-.5em
+\noindent $X$ occurs strictly positively in $\ListA$\ruleref6\\
+\vv\\
+\vv\ws\verb|Inductive list (A:Type) : Type :=|\\
+\vv\ws\verb$  | nil : list A$\\
+\vv\ws\verb$  | cons : A -> list A -> list A$\\
+\vv\\
+\vh\hh $X$ does not occur in any arguments of $\List$\\
+\vv\\
+\hv\hh\ws Every instantiated constructor of $\ListA$ satisfies the nested positivity condition for $X$\\
+\ws\ws\ws\vv\\
+\ws\ws\ws\vh\hh\ws concerning type $\ListA$ of constructor $\Nil$:\\
+\ws\ws\ws\vv\ws\ws Type $\ListA$ of constructor $\Nil$ satisfies the nested positivity condition for $X$\\
+\ws\ws\ws\vv\ws\ws because $X$ does not appear in any (real) arguments of the type of that constructor\\
+\ws\ws\ws\vv\ws\ws (primarily because $\List$ does not have any (real) arguments)\ruleref7\\
+\ws\ws\ws\vv\\
+\ws\ws\ws\hv\hh\ws concerning type $\forall~A\ra\ListA\ra\ListA$ of constructor $\cons$:\\
+\ws\ws\ws\ws\ws\ws Type $\forall~A:\Type,A\ra\ListA\ra\ListA$ of constructor $\cons$\\
+\ws\ws\ws\ws\ws\ws satisfies the nested positivity condition for $X$\ruleref8\\
+\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\vh\hh\ws $X$ occurs only strictly positively in $\Type$\ruleref3\\
+\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\hv\hh\ws $X$ satisfies the nested positivity condition for $A\ra\ListA\ra\ListA$\ruleref8\\
+\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $X$ occurs only strictly positively in $A$\ruleref3\\
+\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\ws\ws\hv\hh\ws $X$ satisfies the nested positivity condition for $\ListA\ra\ListA$\ruleref8\\
+\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\vh\ws $X$ occurs only strictly positively in $\ListA$\ruleref3\\
+\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\hv\ws $X$ satisfies the nested positivity condition for $\ListA$\ruleref7
 
 \paragraph{Correctness rules.}
 We shall now describe the rules allowing the introduction of a new
