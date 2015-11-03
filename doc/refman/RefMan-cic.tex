@@ -763,21 +763,11 @@ these two inference rules above enable us to conclude that:
 \vskip.5em
 \def\prefix{E[\Gamma]\vdash\hskip.25em}
 $\begin{array}{@{} l}
-   \prefix\bool : \Set\\
-   \prefix\true : \bool\\
-   \prefix\false : \bool\\
-   \prefix\nat : \Set\\
-   \prefix\nO : \nat\\
-   \prefix\nS : \nat\ra\nat\\
-   \prefix\List : \Type\ra\Type\\
-   \prefix\Nil : \forall~A\!:\!\Type,~\List~A\\
-   \prefix\cons : \forall~A\!:\!\Type,~A\ra\List~A\ra\List~A\\
-   \prefix\haslength : \forall~A\!:\!\Type,~\List~A\ra\nat\ra\Prop\\
-   \prefix\nilhl : \forall~A\!:\!\Type,~\haslength~A~(\Nil~A)~\nO\\
-   \begin{array}{l l}
-   \hskip-.5em\prefix\conshl :\hskip-.5em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
-                            & \haslength~A~l~n\ra \haslength~A~(\cons~A~a~l)~(\nS~n)
-   \end{array}
+   \prefix\even : \nat\ra\Prop\\
+   \prefix\odd : \nat\ra\Prop\\
+   \prefix\evenO : \even~\nO\\
+   \prefix\evenS : \forall~n:\nat, \odd~n \ra \even~(\nS~n)\\
+   \prefix\oddS : \forall~n:\nat, \even~n \ra \odd~(\nS~n)
  \end{array}$
 
 %\paragraph{Parameters.}
