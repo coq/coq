@@ -3329,7 +3329,7 @@ let abstract_args gl generalize_vars dep id defined f args =
 	if defined then Some c', typ_of ctxenv !sigma c'
 	else None, c'
       in
-      let term = make_abstract_generalize gl id concl dep ctx body c' eqs args refls in
+      let term = make_abstract_generalize {gl with sigma = !sigma} id concl dep ctx body c' eqs args refls in
 	Some (term, !sigma, dep, succ (List.length ctx), vars)
     else None
 
