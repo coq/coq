@@ -642,20 +642,20 @@ and thus it enriches the global environment with the following entry:
 
 \noindent If we take the following inductive definition:
 \begin{coq_example*}
-Inductive Length (A : Type) : list A -> nat -> Prop :=
-  | Lnil : Length A (nil A) O
-  | Lcons : forall (a:A) (l:list A) (n:nat),
-              Length A l n -> Length A (cons A a l) (S n).
+Inductive has_length (A : Type) : list A -> nat -> Prop :=
+  | nil_hl : has_length A (nil A) O
+  | cons_hl : forall (a:A) (l:list A) (n:nat),
+              has_length A l n -> has_length A (cons A a l) (S n).
 \end{coq_example*}
 then:
 \def\GammaI{\left[\begin{array}{r \colon l}
-                    \Length & \forall~A\!:\!\Type,~\List~A\ra\nat\ra\Prop
+                    \haslength & \forall~A\!:\!\Type,~\List~A\ra\nat\ra\Prop
                   \end{array}
             \right]}
 \def\GammaC{\left[\begin{array}{r c l}
-                    \LNil & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\Length~A~(\Nil~A)~\nO\\
-                    \LCons & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
-                           & & \Length~A~l~n\ra \Length~A~(\cons~A~a~l)~(\nS~n)
+                    \nilhl & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\haslength~A~(\Nil~A)~\nO\\
+                    \conshl & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
+                           & & \haslength~A~l~n\ra \haslength~A~(\cons~A~a~l)~(\nS~n)
                   \end{array}
             \right]}
 \begin{itemize}
@@ -736,11 +736,11 @@ $\begin{array}{@{} l}
    \prefix\List : \Type\ra\Type\\
    \prefix\Nil : \forall~A\!:\!\Type,~\List~A\\
    \prefix\cons : \forall~A\!:\!\Type,~A\ra\List~A\ra\List~A\\
-   \prefix\Length : \forall~A\!:\!\Type,~\List~A\ra\nat\ra\Prop\\
-   \prefix\LNil : \forall~A\!:\!\Type,~\Length~A~(\Nil~A)~\nO\\
+   \prefix\haslength : \forall~A\!:\!\Type,~\List~A\ra\nat\ra\Prop\\
+   \prefix\nilhl : \forall~A\!:\!\Type,~\haslength~A~(\Nil~A)~\nO\\
    \begin{array}{l l}
-   \hskip-.5em\prefix\LCons :\hskip-.5em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
-                            & \Length~A~l~n\ra \Length~A~(\cons~A~a~l)~(\nS~n)
+   \hskip-.5em\prefix\conshl :\hskip-.5em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
+                            & \haslength~A~l~n\ra \haslength~A~(\cons~A~a~l)~(\nS~n)
    \end{array}
  \end{array}$
 
@@ -752,10 +752,10 @@ $\begin{array}{@{} l}
 %%typing rules where the inductive objects are seen as objects
 %%abstracted with respect to the parameters.
 
-%In the definition of \List\ or \Length\, $A$ is a parameter because
-%what is effectively inductively defined is $\ListA$ or $\LengthA$ for
+%In the definition of \List\ or \haslength\, $A$ is a parameter because
+%what is effectively inductively defined is $\ListA$ or $\haslengthA$ for
 %a given $A$ which is constant in the type of constructors.  But when
-%we define $(\LengthA~l~n)$, $l$ and $n$ are not parameters because the
+%we define $(\haslengthA~l~n)$, $l$ and $n$ are not parameters because the
 %constructors manipulate different instances of this family.
 
 \subsection{Well-formed inductive definitions}
@@ -1099,21 +1099,21 @@ fixed point of this recursive equation.  This says that we are only
 manipulating finite objects. This analysis provides induction
 principles.
 
-For instance, in order to prove $\forall l:\ListA,(\LengthA~l~(\length~l))$
+For instance, in order to prove $\forall l:\ListA,(\haslengthA~l~(\length~l))$
 it is enough to prove:
 
-\noindent $(\LengthA~(\Nil~A)~(\length~(\Nil~A)))$ and
+\noindent $(\haslengthA~(\Nil~A)~(\length~(\Nil~A)))$ and
 
 \smallskip
-$\forall a:A, \forall l:\ListA, (\LengthA~l~(\length~l)) \ra
-(\LengthA~(\cons~A~a~l)~(\length~(\cons~A~a~l)))$.
+$\forall a:A, \forall l:\ListA, (\haslengthA~l~(\length~l)) \ra
+(\haslengthA~(\cons~A~a~l)~(\length~(\cons~A~a~l)))$.
 \smallskip
 
 \noindent which given the conversion equalities satisfied by \length\ is the
 same as proving:
-$(\LengthA~(\Nil~A)~\nO)$ and $\forall a:A, \forall l:\ListA, 
-(\LengthA~l~(\length~l)) \ra
-(\LengthA~(\cons~A~a~l)~(\nS~(\length~l)))$.
+$(\haslengthA~(\Nil~A)~\nO)$ and $\forall a:A, \forall l:\ListA, 
+(\haslengthA~l~(\length~l)) \ra
+(\haslengthA~(\cons~A~a~l)~(\nS~(\length~l)))$.
 
 One conceptually simple way to do that, following the basic scheme
 proposed by Martin-L\"of in his Intuitionistic Type Theory, is to
@@ -1370,15 +1370,15 @@ For $\ListA$ the type of $P$ will be $\ListA\ra s$ for $s \in \Sort$. \\
 $ \CI{(\cons~A)}{P} \equiv
 \forall a:A, \forall l:\ListA,(P~(\cons~A~a~l))$.
 
-For $\LengthA$, the type of $P$ will be
-$\forall l:\ListA,\forall n:\nat, (\LengthA~l~n)\ra \Prop$ and the expression
-\CI{(\LCons~A)}{P} is defined as:\\ 
+For $\haslengthA$, the type of $P$ will be
+$\forall l:\ListA,\forall n:\nat, (\haslengthA~l~n)\ra \Prop$ and the expression
+\CI{(\conshl~A)}{P} is defined as:\\ 
 $\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
-h:(\LengthA~l~n), (P~(\cons~A~a~l)~(\nS~n)~(\LCons~A~a~l~n~l))$.\\ 
+h:(\haslengthA~l~n), (P~(\cons~A~a~l)~(\nS~n)~(\conshl~A~a~l~n~l))$.\\ 
 If $P$ does not depend on its third argument, we find the more natural
 expression:\\ 
 $\forall a:A, \forall l:\ListA, \forall n:\nat,
-(\LengthA~l~n)\ra(P~(\cons~A~a~l)~(\nS~n))$.
+(\haslengthA~l~n)\ra(P~(\cons~A~a~l)~(\nS~n))$.
 
 \paragraph{Typing rule.}
 
@@ -1411,7 +1411,7 @@ only constructors of $I$.
 \end{description}
 
 \paragraph{Example.}
-For \List\ and \Length\ the typing rules for the {\tt match} expression
+For \List\ and \haslength\ the typing rules for the {\tt match} expression
 are (writing just $t:M$ instead of \WTEG{t}{M}, the global environment and
 local context being the same in all the judgments).
 
@@ -1421,11 +1421,11 @@ local context being the same in all the judgments).
 
 \[\frac{
      \begin{array}[b]{@{}c@{}} 
-H:(\LengthA~L~N) \\ P:\forall l:\ListA, \forall n:\nat, (\LengthA~l~n)\ra
+H:(\haslengthA~L~N) \\ P:\forall l:\ListA, \forall n:\nat, (\haslengthA~l~n)\ra
   \Prop\\
- f_1:(P~(\Nil~A)~\nO~\LNil) \\
+ f_1:(P~(\Nil~A)~\nO~\nilhl) \\
    f_2:\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
-  h:(\LengthA~l~n), (P~(\cons~A~a~n)~(\nS~n)~(\LCons~A~a~l~n~h)) 
+  h:(\haslengthA~l~n), (P~(\cons~A~a~n)~(\nS~n)~(\conshl~A~a~l~n~h)) 
       \end{array}}
     {\Case{P}{H}{f_1~|~f_2}:(P~L~N~H)}\]
 
