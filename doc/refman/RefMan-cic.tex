@@ -305,6 +305,7 @@ local context $\Gamma$ and a term $T$ such that the judgment \WTEG{t}{T} can
 be derived from the following rules.
 \begin{description}
 \item[W-Empty] \inference{\WF{[]}{}}
+% QUESTION: Why in W-Local-Assum and W-Local-Def we do not need x ∉ E hypothesis?
 \item[W-Local-Assum]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
 \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~x \not\in \Gamma % \cup E
       }{\WFE{\Gamma::(x:T)}}}
