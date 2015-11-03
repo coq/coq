@@ -312,6 +312,7 @@ be derived from the following rules.
 \item[W-Local-Def]
 \inference{\frac{\WTEG{t}{T}~~~~x \not\in \Gamma % \cup E
      }{\WFE{\Gamma::(x:=t:T)}}}
+% QUESTION: Why in W-Global-Assum and W-Global-Def we do not need x ∉ Γ hypothesis?
 \item[W-Global-Assum] \inference{\frac{\WTE{}{T}{s}~~~~s \in \Sort~~~~c \notin E}
                       {\WF{E;c:T}{}}}
 \item[W-Global-Def] \inference{\frac{\WTE{}{t}{T}~~~c \notin E}
