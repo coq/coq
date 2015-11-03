@@ -642,6 +642,42 @@ and thus it enriches the global environment with the following entry:
 
 \noindent If we take the following inductive definition:
 \begin{coq_example*}
+Inductive even : nat -> Prop :=
+  | even_O : even 0
+  | even_S : forall n, odd n -> even (S n)
+with odd : nat -> Prop :=
+  | odd_S : forall n, even n -> odd (S n).
+\end{coq_example*}
+then:
+\def\GammaI{\left[\begin{array}{r \colon l}
+                    \even & \nat\ra\Prop \\
+                    \odd & \nat\ra\Prop
+                  \end{array}
+            \right]}
+\def\GammaC{\left[\begin{array}{r \colon l}
+                    \evenO & \even~\nO \\
+                    \evenS & \forall n : \nat, \odd~n \ra \even~(\nS~n)
+                  \end{array}
+            \right]}
+\begin{itemize}
+  \item $p = 1$
+  \item $\Gamma_I = \GammaI$
+  \item $\Gamma_C = \GammaC$
+\end{itemize}
+and thus it enriches the global environment with the following entry:
+\vskip.5em
+\ind{p}{\Gamma_I}{\Gamma_C}
+\vskip.5em
+\noindent that is:
+\vskip.5em
+\ind{1}{\GammaI}{\GammaC}
+\vskip.5em
+\noindent In this case, $\Gamma_P=[A:\Type]$.
+
+\vskip1em\hrule\vskip1em
+
+\noindent If we take the following inductive definition:
+\begin{coq_example*}
 Inductive has_length (A : Type) : list A -> nat -> Prop :=
   | nil_hl : has_length A (nil A) O
   | cons_hl : forall (a:A) (l:list A) (n:nat),
