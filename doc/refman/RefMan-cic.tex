@@ -1910,7 +1910,36 @@ impredicative system for sort \Set{} become:
          {\compat{I:\Set}{I\ra s}}}
 \end{description}
      
+% QUESTION: Why, when I add this definition:
+%
+%   Inductive foo : Type := .
+%
+% Coq claims that the type of 'foo' is 'Prop'?
 
+% QUESTION: If I add this definition:
+%
+%   Inductive bar (A:Type) : Type := .
+%
+% then Coq claims that 'bar' has type 'Type → Prop' where I would expect 'Type → Type' with appropriate constraint.
+
+% QUESTION: If I add this definition:
+%
+%   Inductive foo (A:Type) : Type :=
+%   | foo1 : foo A
+%   | foo2 : foo A.
+%
+% then Coq claims that 'foo' has type 'Type → Set'.
+% Why?
+
+% NOTE: If I add this definition:
+%
+%   Inductive foo (A:Type) : Type :=
+%   | foo1 : foo A
+%   | foo2 : A → foo A.
+%
+% then Coq claims, as expected, that:
+%
+%   foo : Type → Type.
 
 %%% Local Variables: 
 %%% mode: latex
