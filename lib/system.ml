@@ -79,12 +79,20 @@ let make_dir_table dir =
   Unix.closedir a; !b
 
 let exists_in_dir_respecting_case dir bf =
-  let contents =
-    try StrMap.find dir !dirmap with Not_found ->
+  let contents, cached =
+    try StrMap.find dir !dirmap, true with Not_found ->
     let contents = make_dir_table dir in
     dirmap := StrMap.add dir contents !dirmap;
-    contents in
-  StrSet.mem bf contents
+    contents, false in
+  StrSet.mem bf contents ||
+    if cached then begin
+      (* rescan, there is a new file we don't know about *)
+      let contents = make_dir_table dir in
+      dirmap := StrMap.add dir contents !dirmap;
+      StrSet.mem bf contents
+    end
+    else
+      false
 
 let file_exists_respecting_case path f =
   (* This function ensures that a file with expected lowercase/uppercase
