@@ -434,15 +434,34 @@ $\eta$-expansion $\lb x:T\mto (t\ x)$ for $x$ an arbitrary variable
 name fresh in $t$.
 
 \Rem We deliberately do not define $\eta$-reduction:
-\def\noeta{\hskip-.1em\not\triangleright_\eta}
-$$\lb x:T\mto (t\ x)\hskip.1em\noeta\hskip.3em t$$
+\begin{latexonly}
+  $$\lb x:T\mto (t\ x)\not\triangleright_\eta\hskip.3em t$$
+\end{latexonly}
+\begin{htmlonly}
+  $$\lb x:T\mto (t\ x)~\not\triangleright_\eta~t$$
+\end{htmlonly}
 This is because, in general, the type of $t$ need not to be convertible to the type of $\lb x:T\mto (t\ x)$.
 E.g., if we take $f$ such that:
-$$f\hskip.5em:\hskip.5em\forall x:Type(2),Type(1)$$
+\begin{latexonly}
+  $$f\hskip.5em:\hskip.5em\forall x:Type(2),Type(1)$$
+\end{latexonly}
+\begin{htmlonly}
+  $$f~:~\forall x:Type(2),Type(1)$$
+\end{htmlonly}
 then
-$$\lb x:Type(1),(f\, x)\hskip.5em:\hskip.5em\forall x:Type(1),Type(1)$$
+\begin{latexonly}
+  $$\lb x:Type(1),(f\, x)\hskip.5em:\hskip.5em\forall x:Type(1),Type(1)$$
+\end{latexonly}
+\begin{htmlonly}
+  $$\lb x:Type(1),(f\, x)~:~\forall x:Type(1),Type(1)$$
+\end{htmlonly}
 We could not allow
-$$\lb x:Type(1),(f\,x)\hskip.5em\noeta\hskip.6em f$$
+\begin{latexonly}
+  $$\lb x:Type(1),(f\,x)\hskip.4em\not\triangleright_\eta\hskip.6em f$$
+\end{latexonly}
+\begin{htmlonly}
+  $$\lb x:Type(1),(f\,x)~\not\triangleright_\eta~f$$
+\end{htmlonly}
 because the type of the reduced term $\forall x:Type(2),Type(1)$
 would not be convertible to the type of the original term $\forall x:Type(1),Type(1)$.
 
@@ -530,13 +549,14 @@ Formally, we can represent any {\em inductive definition\index{definition!induct
   \item $p$ determines the number of parameters of these inductive types.
 \end{itemize}
 These inductive definitions, together with global assumptions and global definitions, then form the global environment.
-\vskip.5em
+
 \noindent Additionally, for any $p$ there always exists $\Gamma_P=[a_1:A_1;\dots;a_p:A_p]$
 such that each $(t:T)\in\Gamma_I\cup\Gamma_C$ can be written as:
 $\forall\Gamma_P, T^\prime$.
-\vskip.5em
+
 \noindent $\Gamma_P$ is called {\em context of parameters\index{context of parameters}}.
 
+\begin{latexonly}
 \subsection*{Examples}
 
 If we take the following inductive definition (denoted in concrete syntax):
@@ -547,35 +567,35 @@ Inductive bool : Set :=
 \end{coq_example*}
 then:
 \def\colon{@{\hskip.5em:\hskip.5em}}
-\def\GammaI{\left[\begin{array}{r \colon l}
-                    \bool & \Set
-                  \end{array}
-            \right]}
-\def\GammaC{\left[\begin{array}{r \colon l}
-                    \true & \bool\\
-                    \false & \bool
-                  \end{array}
-            \right]}
 \newcommand\ind[3]{$\mathsf{Ind}~[#1]\left(\hskip-.4em
                                            \begin{array}{r @{\mathrm{~:=~}} l}
                                               #2 & #3 \\
                                            \end{array}
                                            \hskip-.4em
                                      \right)$}
-\begin{itemize}
-  \item $p = 0$
-  \item $\Gamma_I = \GammaI$
-  \item $\Gamma_C = \GammaC$
-\end{itemize}
-and thus it enriches the global environment with the following entry:
-\vskip.5em
-\ind{p}{\Gamma_I}{\Gamma_C}
-\vskip.5em
-\noindent that is:
-\vskip.5em
-\ind{0}{\GammaI}{\GammaC}
-\vskip.5em
-\noindent In this case, $\Gamma_P=[\,]$.
+  \def\GammaI{\left[\begin{array}{r \colon l}
+                      \bool & \Set
+                    \end{array}
+              \right]}
+  \def\GammaC{\left[\begin{array}{r \colon l}
+                      \true & \bool\\
+                      \false & \bool
+                    \end{array}
+              \right]}
+  \begin{itemize}
+    \item $p = 0$
+    \item $\Gamma_I = \GammaI$
+    \item $\Gamma_C = \GammaC$
+  \end{itemize}
+  and thus it enriches the global environment with the following entry:
+  \vskip.5em
+  \ind{p}{\Gamma_I}{\Gamma_C}
+  \vskip.5em
+  \noindent that is:
+  \vskip.5em
+  \ind{0}{\GammaI}{\GammaC}
+  \vskip.5em
+  \noindent In this case, $\Gamma_P=[\,]$.
 
 \vskip1em\hrule\vskip1em
 
@@ -608,7 +628,7 @@ and thus it enriches the global environment with the following entry:
 \vskip.5em
 \ind{0}{\GammaI}{\GammaC}
 \vskip.5em
-\noindent In this case, $\Gamma_P=[\,]$.
+\noindent In this case, $\Gamma_P=[~]$.
 
 \vskip1em\hrule\vskip1em
 
@@ -750,6 +770,7 @@ and thus it enriches the global environment with the following entry:
 \ind{0}{\GammaI}{\GammaC}
 \vskip.5em
 \noindent In this case, $\Gamma_P=[\,]$.
+\end{latexonly}
 
 \subsection{Types of inductive objects}
 We have to give the type of constants in a global environment $E$ which
@@ -762,6 +783,7 @@ contains an inductive declaration.
   \inference{\frac{\WFE{\Gamma}\hskip2em\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\hskip2em(c:C)\in\Gamma_C}{\WTEG{c}{C}}}
 \end{description}
 
+\begin{latexonly}
 \paragraph{Example.}
 Provided that our environment $E$ contains inductive definitions we showed before,
 these two inference rules above enable us to conclude that:
@@ -774,6 +796,7 @@ $\begin{array}{@{} l}
    \prefix\evenS : \forall~n:\nat, \odd~n \ra \even~(\nS~n)\\
    \prefix\oddS : \forall~n:\nat, \even~n \ra \odd~(\nS~n)
  \end{array}$
+\end{latexonly}
 
 %\paragraph{Parameters.}
 %%The parameters introduce a distortion between the inside specification
@@ -880,6 +903,7 @@ any $u_i$
 the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
 
+\begin{latexonly}
 \newcommand\vv{\textSFxi}    % │
 \newcommand\hh{\textSFx}     %   ─
 \newcommand\vh{\textSFviii}  % ├
@@ -942,6 +966,7 @@ the type $V$ satisfies the nested positivity condition for $X$
 \ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\vh\ws $X$ occurs only strictly positively in $\ListA$\ruleref3\\
 \ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
 \ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\hv\ws $X$ satisfies the nested positivity condition for $\ListA$\ruleref7
+\end{latexonly}
 
 \paragraph{Correctness rules.}
 We shall now describe the rules allowing the introduction of a new
