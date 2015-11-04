@@ -835,6 +835,7 @@ condition} for a constant $X$ in the following cases:
 
 \begin{itemize}
 \item $T=(X~t_1\ldots ~t_n)$ and $X$ does not occur free in
+% QUESTIONS: What is the meaning of 'n' above?
 any $t_i$
 \item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
 the type $V$ satisfies the positivity condition for $X$
@@ -846,10 +847,12 @@ following cases:
 \begin{itemize}
 \item $X$ does not occur in $T$
 \item $T$ converts to $(X~t_1 \ldots ~t_n)$ and $X$ does not occur in
+% QUESTIONS: What is the meaning of 'n' above?
   any of $t_i$
 \item $T$ converts to $\forall~x:U,V$ and $X$ does not occur in
   type $U$ but occurs strictly positively in type $V$
 \item $T$ converts to $(I~a_1 \ldots ~a_m ~ t_1 \ldots ~t_p)$ where
+% QUESTIONS: What is the meaning of 'p' above?
   $I$ is the name of an inductive declaration of the form
   $\Ind{\Gamma}{m}{I:A}{c_1:\forall p_1:P_1,\ldots \forall
     p_m:P_m,C_1;\ldots;c_n:\forall p_1:P_1,\ldots \forall
@@ -872,6 +875,7 @@ cases:
 \item $T=(I~b_1\ldots b_m~u_1\ldots ~u_{p})$, $I$ is an inductive
   definition with $m$ parameters and $X$ does not occur in
 any $u_i$
+% QUESTIONS: What is the meaning of 'p' above?
 \item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
 the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
