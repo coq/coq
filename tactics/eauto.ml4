@@ -632,12 +632,7 @@ TACTIC EXTEND convert_concl_no_check
 | ["convert_concl_no_check" constr(x) ] -> [ convert_concl_no_check x DEFAULTcast ]
 END
 
-
-let pr_hints_path_atom prc _ _ a =
-  match a with
-  | PathAny -> str"."
-  | PathHints grs ->
-    pr_sequence Printer.pr_global grs
+let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom
 
 ARGUMENT EXTEND hints_path_atom
   TYPED AS hints_path_atom
@@ -646,15 +641,7 @@ ARGUMENT EXTEND hints_path_atom
 | [ "*" ] -> [ PathAny ]
 END
 
-let pr_hints_path prc prx pry c =
-  let rec aux = function
-  | PathAtom a -> pr_hints_path_atom prc prx pry a
-  | PathStar p -> str"(" ++ aux p ++ str")*"
-  | PathSeq (p, p') -> aux p ++ spc () ++ aux p'
-  | PathOr (p, p') -> str "(" ++ aux p ++ str"|" ++ aux p' ++ str")"
-  | PathEmpty -> str"ø"
-  | PathEpsilon -> str"ε"
-  in aux c
+let pr_hints_path prc prx pry c = Hints.pp_hints_path c
 
 ARGUMENT EXTEND hints_path
   TYPED AS hints_path

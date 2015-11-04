@@ -36,6 +36,8 @@ Tactics
   of incompatibilities).
 - Hints costs are now correctly taken into account (potential source of
   incompatibilities).
+- Documented the Hint Cut command that allows control of the
+  proof-search during typeclass resolution (see reference manual).
 
 API
 

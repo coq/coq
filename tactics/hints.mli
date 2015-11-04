@@ -70,6 +70,7 @@ type hints_path =
 val normalize_path : hints_path -> hints_path
 val path_matches : hints_path -> hints_path_atom list -> bool
 val path_derivate : hints_path -> hints_path_atom -> hints_path
+val pp_hints_path_atom : hints_path_atom -> Pp.std_ppcmds
 val pp_hints_path : hints_path -> Pp.std_ppcmds
 
 module Hint_db :
