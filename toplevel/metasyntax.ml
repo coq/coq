@@ -718,22 +718,56 @@ let is_not_small_constr = function
   | ETOther("constr","binder_constr") -> true
   | _ -> false
 
-let rec define_keywords_aux = function
-  | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
-      when is_not_small_constr e ->
-      Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
-      Lexer.add_keyword k;
-      n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
-  | n :: l -> n :: define_keywords_aux l
-  | [] -> []
+let is_not_a_keyword k =
+  let rec aux acc = function
+    | [] -> None
+    | (k', x)::xs when String.equal k k' -> Some (List.rev acc @ (k', true) :: xs)
+    | x::xs -> aux (x :: acc) xs
+  in
+  aux []
+
+let check_non_keywords =
+  let aux = function
+    | (k, false) ->
+        errorlabstrm
+          "Metasyntax.check_non_keywords"
+          (str "Identifier " ++ qs k ++ str " is not used but tagged as not a keyword")
+    | (_, true) -> ()
+  in
+  List.iter aux
+
+let rec define_keywords_aux ~non_keywords = function
+  | GramConstrNonTerminal(e,Some _) as n1 :: (GramConstrTerminal(IDENT k) as n2) :: l
+    when is_not_small_constr e ->
+      begin match is_not_a_keyword k non_keywords with
+      | None ->
+          Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
+          Lexer.add_keyword k;
+          n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux ~non_keywords l
+      | Some non_keywords ->
+          n1 :: n2 :: define_keywords_aux ~non_keywords l
+      end
+  | n :: l -> n :: define_keywords_aux ~non_keywords l
+  | [] ->
+      check_non_keywords non_keywords;
+      []
 
   (* Ensure that IDENT articulation terminal symbols are keywords *)
-let define_keywords = function
-  | GramConstrTerminal(IDENT k)::l ->
-      Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
-      Lexer.add_keyword k;
-      GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
-  | l -> define_keywords_aux l
+let define_keywords ~non_keywords = function
+  | GramConstrTerminal(IDENT k) as n :: l ->
+      begin match is_not_a_keyword k non_keywords with
+      | None ->
+          Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
+          Lexer.add_keyword k;
+          GramConstrTerminal(KEYWORD k) :: define_keywords_aux ~non_keywords l
+      | Some non_keywords ->
+          n :: define_keywords_aux ~non_keywords l
+      end
+  | l -> define_keywords_aux ~non_keywords l
+
+let define_keywords ~non_keywords l =
+  let non_keywords = List.map (fun x -> (x, false)) non_keywords in
+  define_keywords ~non_keywords l
 
 let distribute a ll = List.map (fun l -> a @ l) ll
 
@@ -752,7 +786,7 @@ let rec expand_list_rule typ tkl x n i hds ll =
     distribute (GramConstrListMark (i+1,false) :: hds @ [main]) ll @
       expand_list_rule typ tkl x n (i+1) (main :: tks @ hds) ll
 
-let make_production etyps symbols =
+let make_production ~non_keywords etyps symbols =
   let prod =
     List.fold_right
       (fun t ll -> match t with
@@ -776,7 +810,7 @@ let make_production etyps symbols =
             | _ ->
                 error "Components of recursive patterns in notation must be terms or binders.")
       symbols [[]] in
-  List.map define_keywords prod
+  List.map (define_keywords ~non_keywords) prod
 
 let rec find_symbols c_current c_next c_last = function
   | [] -> []
@@ -876,42 +910,46 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
 
 let interp_modifiers modl =
   let onlyparsing = ref false in
-  let rec interp assoc level etyps format extra = function
+  let rec interp assoc level etyps format extra non_keywords = function
     | [] ->
-	(assoc,level,etyps,!onlyparsing,format,extra)
+	(assoc,level,etyps,!onlyparsing,format,extra,non_keywords)
     | SetEntryType (s,typ) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
 	  errorlabstrm "Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
-	interp assoc level ((id,typ)::etyps) format extra l
+	interp assoc level ((id,typ)::etyps) format extra non_keywords l
     | SetItemLevel ([],n) :: l ->
-	interp assoc level etyps format extra l
+	interp assoc level etyps format extra non_keywords l
     | SetItemLevel (s::idl,n) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
 	  errorlabstrm "Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
 	let typ = ETConstr (n,()) in
-	interp assoc level ((id,typ)::etyps) format extra (SetItemLevel (idl,n)::l)
+	interp assoc level ((id,typ)::etyps) format extra non_keywords (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
 	if not (Option.is_empty level) then error "A level is given more than once.";
-	interp assoc (Some n) etyps format extra l
+	interp assoc (Some n) etyps format extra non_keywords l
     | SetAssoc a :: l ->
 	if not (Option.is_empty assoc) then error"An associativity is given more than once.";
-	interp (Some a) level etyps format extra l
+	interp (Some a) level etyps format extra non_keywords l
     | SetOnlyParsing _ :: l ->
 	onlyparsing := true;
-	interp assoc level etyps format extra l
+	interp assoc level etyps format extra non_keywords l
     | SetFormat ("text",s) :: l ->
 	if not (Option.is_empty format) then error "A format is given more than once.";
-	interp assoc level etyps (Some s) extra l
+	interp assoc level etyps (Some s) extra non_keywords l
     | SetFormat (k,(_,s)) :: l ->
-	interp assoc level etyps format ((k,s) :: extra) l
-  in interp None None [] None [] modl
+	interp assoc level etyps format ((k,s) :: extra) non_keywords l
+    | SetNotAKeyword str :: l ->
+        if String.List.mem str non_keywords then
+          error "the 'not a keyword' modifier is present more than once for the same item";
+        interp assoc level etyps format extra (str :: non_keywords) l
+  in interp None None [] None [] [] modl
 
 let check_infix_modifiers modifiers =
-  let (assoc,level,t,b,fmt,extra) = interp_modifiers modifiers in
+  let (assoc,level,t,b,fmt,extra,non_keywords) = interp_modifiers modifiers in
   if not (List.is_empty t) then
     error "Explicit entry level or type unexpected in infix notation."
 
@@ -1083,7 +1121,7 @@ let remove_curly_brackets l =
   in aux true l
 
 let compute_syntax_data df modifiers =
-  let (assoc,n,etyps,onlyparse,fmt,extra) = interp_modifiers modifiers in
+  let (assoc,n,etyps,onlyparse,fmt,extra,non_keywords) = interp_modifiers modifiers in
   let assoc = match assoc with None -> (* default *) Some NonA | a -> a in
   let toks = split_notation_string df in
   let (recvars,mainvars,symbols) = analyze_notation_tokens toks in
@@ -1111,16 +1149,16 @@ let compute_syntax_data df modifiers =
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
   let i_data = (onlyparse,recvars,mainvars,(ntn_for_interp,df')) in
   (* Return relevant data for interpretation and for parsing/printing *)
-  (msgs,i_data,i_typs,sy_fulldata,extra)
+  (msgs,i_data,i_typs,sy_fulldata,extra,non_keywords)
 
 let compute_pure_syntax_data df mods =
-  let (msgs,(onlyparse,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
+  let (msgs,(onlyparse,_,_,_),_,sy_data,extra,non_keywords) = compute_syntax_data df mods in
   let msgs =
     if onlyparse then
       (msg_warning,
       strbrk "The only parsing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
-  msgs, sy_data, extra
+  msgs, sy_data, extra, non_keywords
 
 (**********************************************************************)
 (* Registration of notations interpretation                            *)
@@ -1227,9 +1265,9 @@ let recover_notation_syntax rawntn =
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
 
-let make_pa_rule i_typs (n,typs,symbols,_) ntn =
+let make_pa_rule ~non_keywords i_typs (n,typs,symbols,_) ntn =
   let assoc = recompute_assoc typs in
-  let prod = make_production typs symbols in
+  let prod = make_production ~non_keywords typs symbols in
   { notgram_level = n;
     notgram_assoc = assoc;
     notgram_notation = ntn;
@@ -1241,8 +1279,8 @@ let make_pp_rule (n,typs,symbols,fmt) =
   | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
   | Some fmt -> hunks_of_format (n, List.split typs) (symbols, parse_format fmt)
 
-let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) extra =
-  let pa_rule = make_pa_rule i_typs sy_data ntn in
+let make_syntax_rules ~non_keywords (i_typs,ntn,prec,need_squash,sy_data) extra =
+  let pa_rule = make_pa_rule ~non_keywords i_typs sy_data ntn in
   let pp_rule = make_pp_rule sy_data in
   let sy = {
     synext_level = prec;
@@ -1264,9 +1302,9 @@ let to_map l =
   List.fold_left fold Id.Map.empty l
 
 let add_notation_in_scope local df c mods scope =
-  let (msgs,i_data,i_typs,sy_data,extra) = compute_syntax_data df mods in
+  let (msgs,i_data,i_typs,sy_data,extra,non_keywords) = compute_syntax_data df mods in
   (* Prepare the parsing and printing rules *)
-  let sy_rules = make_syntax_rules sy_data extra in
+  let sy_rules = make_syntax_rules ~non_keywords sy_data extra in
   (* Prepare the interpretation *)
   let (onlyparse, recvars,mainvars, df') = i_data in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
@@ -1328,8 +1366,8 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
 (* Notations without interpretation (Reserved Notation) *)
 
 let add_syntax_extension local ((loc,df),mods) =
-  let msgs, sy_data, extra = compute_pure_syntax_data df mods in
-  let sy_rules = make_syntax_rules sy_data extra in
+  let msgs, sy_data, extra, non_keywords = compute_pure_syntax_data df mods in
+  let sy_rules = make_syntax_rules ~non_keywords sy_data extra in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 

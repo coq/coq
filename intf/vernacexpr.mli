@@ -215,6 +215,7 @@ type syntax_modifier =
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing of Flags.compat_version
   | SetFormat of string * string located
+  | SetNotAKeyword of string
 
 type proof_end =
   | Admitted

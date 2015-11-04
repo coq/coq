@@ -195,6 +195,8 @@ match sm with
   | SetFormat (system, (loc, s)) ->
       let start, stop = unlock loc in
       ["format-"^system, s; "begin", start; "end", stop]
+  | SetNotAKeyword str ->
+      ["not-a-keyword", str]
 
 let string_of_assumption_kind l a many =
   match l, a, many with
