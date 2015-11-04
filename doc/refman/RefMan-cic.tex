@@ -1024,6 +1024,7 @@ The same definition on \Set{} is not allowed and fails:
 Fail Inductive exSet (P:Set->Prop) : Set
   := exS_intro : forall X:Set, P X -> exSet P.
 \end{coq_example}
+% TODO: add the description of the 'Fail' command to the reference manual
 It is possible to declare the same inductive definition in the
 universe \Type. 
 The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
