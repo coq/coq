@@ -280,9 +280,8 @@ type evar_universe_context =
    uctx_univ_variables : Universes.universe_opt_subst;
    (** The local universes that are unification variables *)
    uctx_univ_algebraic : Univ.universe_set; 
-   (** The subset of unification variables that
-	can be instantiated with algebraic universes as they appear in types 
-	and universe instances only. *)
+   (** The subset of unification variables that can be instantiated with
+	algebraic universes as they appear in inferred types only. *)
    uctx_universes : Univ.universes; (** The current graph extended with the local constraints *)
    uctx_initial_universes : Univ.universes; (** The graph at the creation of the evar_map *)
  }
