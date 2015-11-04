@@ -42,10 +42,6 @@ let get_polymorphic_positions f =
         templ.template_param_levels)
   | _ -> assert false
 
-let default_universe_status u =
-  if Flags.version_less_or_equal Flags.V8_4 then univ_rigid
-  else u
-
 let refresh_level evd s =
   match Evd.is_sort_variable evd s with
   | None -> true
@@ -60,8 +56,7 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
       (match Univ.universe_level u with
       | None -> true
       | Some l -> not onlyalg && refresh_level evd s) ->
-    let status = if inferred then Evd.univ_flexible_alg else Evd.univ_flexible in
-    let s' = evd_comb0 (new_sort_variable (default_universe_status status)) evdref in
+    let s' = evd_comb0 (new_sort_variable univ_rigid) evdref in
     let evd = 
       if dir then set_leq_sort env !evdref s' s
       else set_leq_sort env !evdref s s'
