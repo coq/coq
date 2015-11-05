@@ -1098,6 +1098,8 @@ we have $(\WTE{\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{q_i}})_{i=1\ldots  n}$;
 \end{itemize}
 \end{description}
 
+% QUESTION: Do we need the following paragraph?
+% (I find it confusing.)
 Notice that if $I_j\,q_1\,\ldots\,q_r$ is typable using the rules {\bf
 Ind-Const} and {\bf App}, then it is typable using the rule {\bf
 Ind-Family}. Conversely, the extended theory is not stronger than the
@@ -1206,6 +1208,8 @@ Because we need to keep a consistent theory and also we prefer to keep
 a strongly normalizing reduction, we cannot accept any sort of
 recursion (even terminating). So the basic idea is to restrict
 ourselves to primitive recursive functions and functionals.
+% TODO: it may be worthwhile to show the consequences of lifting
+%       those restrictions.
 
 For instance, assuming a parameter $A:\Set$ exists in the local context, we
 want to build a function \length\ of type $\ListA\ra \nat$ which
@@ -1924,6 +1928,14 @@ impredicative system for sort \Set{} become:
 %   Inductive bar (A:Type) : Type := .
 %
 % then Coq claims that 'bar' has type 'Type → Prop' where I would expect 'Type → Type' with appropriate constraint.
+
+% QUESTION: If I add this definition:
+%
+%   Inductive foo (A:Type) : Type :=
+%   | foo1 : foo A
+%
+% then Coq claims that 'foo' has type 'Type → Prop'.
+% Why?
 
 % QUESTION: If I add this definition:
 %
