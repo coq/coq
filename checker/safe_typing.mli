@@ -15,6 +15,6 @@ val get_env : unit -> env
 
 val set_engagement : engagement -> unit
 val import         :
-  CUnix.physical_path -> compiled_library -> Univ.constraints -> Cic.vodigest -> unit
+  CUnix.physical_path -> compiled_library -> Univ.ContextSet.t -> Cic.vodigest -> unit
 val unsafe_import  :
-  CUnix.physical_path -> compiled_library -> Univ.constraints -> Cic.vodigest -> unit
+  CUnix.physical_path -> compiled_library -> Univ.ContextSet.t -> Cic.vodigest -> unit
