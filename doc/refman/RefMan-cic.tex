@@ -1295,7 +1295,7 @@ one corresponds to object $m$. \Coq{} can sometimes infer this
 predicate but sometimes not. The concrete syntax for describing this
 predicate uses the \kw{as\ldots in\ldots return} construction. For
 instance, let us assume that $I$ is an unary predicate with one
-parameter. The predicate is made explicit using the syntax:
+parameter and one argument. The predicate is made explicit using the syntax:
 \[\kw{match}~m~\kw{as}~ x~ \kw{in}~ I~\verb!_!~a~ \kw{return}~ P
  ~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
   (c_n~x_{n1}~...~x_{np_n}) \Ra f_n \kw{end}\]
