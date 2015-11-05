@@ -1373,6 +1373,9 @@ We define now a relation \compat{I:A}{B} between an inductive
 definition $I$ of type $A$ and an arity $B$. This relation states that
 an object in the inductive definition $I$ can be eliminated for
 proving a property $\lb a x \mto P$ of type $B$.
+% QUESTION: Is it necessary to explain the meaning of [I:A|B] in such a complicated way?
+% Couldn't we just say that: "relation [I:A|B] defines which types can we choose as 'result types'
+% with respect to the type of the matched object".
 
 The case of inductive definitions in sorts \Set\ or \Type{} is simple.
 There is no restriction on the sort of the predicate to be
