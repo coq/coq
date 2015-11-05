@@ -2077,8 +2077,10 @@ let poly_proof getp gett env evm car rel =
 let setoid_reflexivity =
   setoid_proof "reflexive"
     (fun env evm car rel -> 
-      tac_open (poly_proof PropGlobal.get_reflexive_proof TypeGlobal.get_reflexive_proof
-		  env evm car rel) (fun c -> Proofview.V82.of_tactic (apply c)))
+     tac_open (poly_proof PropGlobal.get_reflexive_proof
+			  TypeGlobal.get_reflexive_proof
+			  env evm car rel)
+	      (fun c -> tclCOMPLETE (Proofview.V82.of_tactic (apply c))))
     (reflexivity_red true)
 
 let setoid_symmetry =
