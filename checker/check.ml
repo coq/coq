@@ -46,7 +46,7 @@ type library_t = {
   library_opaques : Cic.opaque_table;
   library_deps : Cic.library_deps;
   library_digest : Cic.vodigest;
-  library_extra_univs : Univ.constraints }
+  library_extra_univs : Univ.ContextSet.t }
 
 module LibraryOrdered =
   struct
@@ -97,7 +97,7 @@ let access_opaque_univ_table dp i =
     let t = LibraryMap.find dp !opaque_univ_tables in
     assert (i < Array.length t);
     Future.force t.(i)
-  with Not_found -> Univ.empty_constraint
+  with Not_found -> Univ.ContextSet.empty
 
 
 let _ = Declarations.indirect_opaque_access := access_opaque_table
@@ -347,9 +347,8 @@ let intern_from_file (dir, f) =
       LibraryMap.add sd.md_name opaque_csts !opaque_univ_tables)
     opaque_csts;
   let extra_cst =
-    Option.default Univ.empty_constraint
-      (Option.map (fun (_,cs,_) ->
-         Univ.ContextSet.constraints cs) opaque_csts) in
+    Option.default Univ.ContextSet.empty
+      (Option.map (fun (_,cs,_) -> cs) opaque_csts) in
   mk_library sd md f table digest extra_cst
 
 let get_deps (dir, f) =

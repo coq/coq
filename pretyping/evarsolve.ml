@@ -42,21 +42,20 @@ let get_polymorphic_positions f =
         templ.template_param_levels)
   | _ -> assert false
 
-(**
-   forall A (l : list A) -> typeof A = Type i <= Datatypes.j -> i not refreshed
-   hd ?A (l : list t) -> A = t
+let refresh_level evd s =
+  match Evd.is_sort_variable evd s with
+  | None -> true
+  | Some l -> not (Evd.is_flexible_level evd l)
 
-*)
 let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
   let evdref = ref evd in
   let modified = ref false in
-  let rec refresh dir t = 
+  let rec refresh status dir t = 
     match kind_of_term t with
     | Sort (Type u as s) when
       (match Univ.universe_level u with
-      | None -> true 
-      | Some l -> not onlyalg && Option.is_empty (Evd.is_sort_variable evd s)) ->
-    let status = if inferred then Evd.univ_flexible_alg else Evd.univ_flexible in
+      | None -> true
+      | Some l -> not onlyalg && refresh_level evd s) ->
     let s' = evd_comb0 (new_sort_variable status) evdref in
     let evd = 
       if dir then set_leq_sort env !evdref s' s
@@ -64,11 +63,11 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
     in
       modified := true; evdref := evd; mkSort s'
     | Prod (na,u,v) -> 
-      mkProd (na,u,refresh dir v)
+      mkProd (na,u,refresh status dir v)
     | _ -> t
   (** Refresh the types of evars under template polymorphic references *)
   and refresh_term_evars onevars top t =
-    match kind_of_term t with
+    match kind_of_term (whd_evar !evdref t) with
     | App (f, args) when is_template_polymorphic env f ->
       let pos = get_polymorphic_positions f in
 	refresh_polymorphic_positions args pos
@@ -77,7 +76,7 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
       Array.iter (refresh_term_evars onevars false) args
     | Evar (ev, a) when onevars ->
       let evi = Evd.find !evdref ev in
-      let ty' = refresh true evi.evar_concl in
+      let ty' = refresh univ_flexible true evi.evar_concl in
 	if !modified then 
 	  evdref := Evd.add !evdref ev {evi with evar_concl = ty'}
 	else ()
@@ -99,7 +98,7 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
     if isArity t then
       (match pbty with
       | None -> t
-      | Some dir -> refresh dir t)
+      | Some dir -> refresh univ_rigid dir t)
     else (refresh_term_evars false true t; t)
   in
     if !modified then !evdref, t' else !evdref, t
@@ -1275,7 +1274,10 @@ let solve_candidates conv_algo env evd (evk,argsv) rhs =
       | [c,evd] ->
           (* solve_candidates might have been called recursively in the mean *)
           (* time and the evar been solved by the filtering process *)
-          if Evd.is_undefined evd evk then Evd.define evk c evd else evd
+         if Evd.is_undefined evd evk then
+	   let evd' = Evd.define evk c evd in
+	     check_evar_instance evd' evk c conv_algo
+	 else evd
       | l when List.length l < List.length l' ->
           let candidates = List.map fst l in
           restrict_evar evd evk None (UpdateWith candidates)

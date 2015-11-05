@@ -28,7 +28,7 @@ let set_engagement c =
 let full_add_module dp mb univs digest =
   let env = !genv in
   let env = push_context_set ~strict:true mb.mod_constraints env in
-  let env = add_constraints univs env in
+  let env = push_context_set ~strict:true univs env in
   let env = Modops.add_module mb env in
   genv := add_digest env dp digest
 
@@ -83,7 +83,7 @@ let import file clib univs digest =
   check_engagement env clib.comp_enga;
   let mb = clib.comp_mod in
   Mod_checking.check_module
-    (add_constraints univs
+    (push_context_set ~strict:true univs
       (push_context_set ~strict:true mb.mod_constraints env)) mb.mod_mp mb;
   stamp_library file digest;
   full_add_module clib.comp_name mb univs digest

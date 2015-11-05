@@ -3788,11 +3788,46 @@ Hint Extern 5   ({?X1 = ?X2} + {?X1 <> ?X2}) =>
  generalize X1, X2; decide equality : eqdec.
 Goal
 forall a b:list (nat * nat), {a = b} + {a <> b}.
-info_auto with eqdec.
+Info 1 auto with eqdec.
 \end{coq_example}
 \begin{coq_eval}
 Abort.
 \end{coq_eval}
+
+\item \texttt{Cut} {\textit{regexp}}
+\label{HintCut}
+\comindex{Hint Cut}
+
+  \textit{Warning:} these hints currently only apply to typeclass proof search and
+  the \texttt{typeclasses eauto} tactic.
+
+  This command can be used to cut the proof-search tree according to a
+  regular expression matching paths to be cut. The grammar for regular
+  expressions is the following:
+\[\begin{array}{lcll}
+  e & ::= & \ident & \text{ hint or instance identifier } \\
+  & & \texttt{*} & \text{ any hint } \\
+  & & e | e' & \text{ disjunction } \\
+  & & e ; e' & \text{ sequence } \\
+  & & ! e & \text{ Kleene star } \\
+  & & \texttt{emp} & \text{ empty } \\
+  & & \texttt{eps} & \text{ epsilon } \\
+  & & \texttt{(} e \texttt{)} & 
+\end{array}\]
+
+The \texttt{emp} regexp does not match any search path while
+\texttt{eps} matches the empty path. During proof search, the path of
+successive successful hints on a search branch is recorded, as a list of
+identifiers for the hints (note \texttt{Hint Extern}'s do not have an
+associated identitier). Before applying any hint $\ident$ the current
+path $p$ extended with $\ident$ is matched against the current cut
+expression $c$ associated to the hint database. If matching succeeds,
+the hint is \emph{not} applied. The semantics of \texttt{Hint Cut} $e$
+is to set the cut expression to $c | e$, the initial cut expression
+being \texttt{emp}.
+
+
+
 
 \end{itemize}
 

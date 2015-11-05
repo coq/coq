@@ -382,15 +382,19 @@ let rec normalize_path h =
 
 let path_derivate hp hint = normalize_path (path_derivate hp hint)
 
+let pp_hints_path_atom a =
+  match a with
+  | PathAny -> str"*"
+  | PathHints grs -> pr_sequence pr_global grs
+					   
 let rec pp_hints_path = function
-  | PathAtom (PathAny) -> str"."
-  | PathAtom (PathHints grs) -> pr_sequence pr_global grs
-  | PathStar p -> str "(" ++ pp_hints_path p ++ str")*"
+  | PathAtom pa -> pp_hints_path_atom pa
+  | PathStar p -> str "!(" ++ pp_hints_path p ++ str")"
   | PathSeq (p, p') -> pp_hints_path p ++ str" ; " ++ pp_hints_path p'
   | PathOr (p, p') -> 
     str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ spc () ++ pp_hints_path p' ++ str ")"
-  | PathEmpty -> str"Ø"
-  | PathEpsilon -> str"ε"
+  | PathEmpty -> str"emp"
+  | PathEpsilon -> str"eps"
 
 let subst_path_atom subst p =
   match p with

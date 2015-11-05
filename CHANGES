@@ -1,4 +1,4 @@
-Changes from V8.5beta2 to ...
+Changes from V8.5beta2 to V8.5beta3
 ===================================
 
 Vernacular commands
@@ -8,6 +8,7 @@ Vernacular commands
 - New option "Strict Universe Declaration", set by default. It enforces the
   declaration of all polymorphic universes appearing in a definition when
   introducing it.
+- New command "Show id" to show goal named id.
 
 Tactics
 
@@ -42,7 +43,8 @@ solved by the automatic tactic.
   of incompatibilities).
 - Hints costs are now correctly taken into account (potential source of
   incompatibilities).
-
+- Documented the Hint Cut command that allows control of the
+  proof-search during typeclass resolution (see reference manual).
 
 API
 

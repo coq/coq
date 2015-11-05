@@ -387,20 +387,23 @@ let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
 let tclFOCUSID id t =
   let open Proof in
   Pv.get >>= fun initial ->
-  let rec aux n = function
-    | [] -> tclZERO (NoSuchGoals 1)
-    | g::l ->
-        if Names.Id.equal (Evd.evar_ident g initial.solution) id then
-          let (focused,context) = focus n n initial in
-          Pv.set focused >>
-          t >>= fun result ->
-          Pv.modify (fun next -> unfocus context next) >>
-          return result
-        else
-          aux (n+1) l in
-  aux 1 initial.comb
-
-
+  try
+    let ev = Evd.evar_key id initial.solution in
+    try
+      let n = CList.index Evar.equal ev initial.comb in
+      (* goal is already under focus *)
+      let (focused,context) = focus n n initial in
+      Pv.set focused >>
+        t >>= fun result ->
+      Pv.modify (fun next -> unfocus context next) >>
+        return result
+    with Not_found ->
+      (* otherwise, save current focus and work purely on the shelve *)
+      Comb.set [ev] >>
+        t >>= fun result ->
+      Comb.set initial.comb  >>
+        return result
+  with Not_found -> tclZERO (NoSuchGoals 1)
 
 (** {7 Dispatching on goals} *)
 

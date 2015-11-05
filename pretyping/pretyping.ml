@@ -118,7 +118,7 @@ let _ =
 	  { optsync  = true;
             optdepr  = false;
 	    optname  = "minimization to Set";
-	    optkey   = ["Universe";"set";"Minimization"];
+	    optkey   = ["Universe";"Minimization";"ToSet"];
 	    optread  = Universes.is_set_minimization;
 	    optwrite = (:=) Universes.set_minimization })
 						  

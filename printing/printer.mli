@@ -176,7 +176,8 @@ module ContextObjectMap : CMap.ExtS
 val pr_assumptionset :
   env -> Term.types ContextObjectMap.t -> std_ppcmds
 
-val pr_goal_by_id : string -> std_ppcmds
+val pr_goal_by_id : Id.t -> std_ppcmds
+val pr_goal_by_uid : string -> std_ppcmds
 
 type printer_pr = {
  pr_subgoals            : ?pr_first:bool -> std_ppcmds option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> std_ppcmds;

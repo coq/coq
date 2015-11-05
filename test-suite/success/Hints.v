@@ -62,3 +62,47 @@ Axiom cast_coalesce :
   ((e :? pf1) :? pf2) = (e :? trans_eq pf1 pf2).
 
 Hint Rewrite cast_coalesce : ltamer.
+
+Require Import Program.
+Module HintCut.
+Class A (f : nat -> nat) := a : True.
+Class B (f : nat -> nat) := b : True.
+Class C (f : nat -> nat) := c : True.
+Class D (f : nat -> nat) := d : True.
+Class E (f : nat -> nat) := e : True.
+
+Instance a_is_b f : A f -> B f.
+Proof. easy. Qed.
+Instance b_is_c f : B f -> C f.
+Proof. easy. Qed.
+Instance c_is_d f : C f -> D f.
+Proof. easy. Qed.
+Instance d_is_e f : D f -> E f.
+Proof. easy. Qed.
+
+Instance a_compose f g : A f -> A g -> A (compose f g).
+Proof. easy. Qed.
+Instance b_compose f g : B f -> B g -> B (compose f g).
+Proof. easy. Qed.
+Instance c_compose f g : C f -> C g -> C (compose f g).
+Proof. easy. Qed.
+Instance d_compose f g : D f -> D g -> D (compose f g).
+Proof. easy. Qed.
+Instance e_compose f g : E f -> E g -> E (compose f g).
+Proof. easy. Qed.
+
+Instance a_id : A id.
+Proof. easy. Qed.
+
+Instance foo f :
+  E (id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘
+     id ∘ id ∘ id ∘ id ∘ id ∘ f ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id).
+Proof.
+  Fail Timeout 1 apply _. (* 3.7s *)
+  
+Hint Cut [!*; (a_is_b | b_is_c | c_is_d | d_is_e) ;
+  (a_compose | b_compose | c_compose | d_compose | e_compose)] : typeclass_instances.
+
+  Timeout 1 Fail apply _. (* 0.06s *)
+Abort.
+End HintCut.

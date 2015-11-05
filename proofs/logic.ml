@@ -356,9 +356,11 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
       | App (f,l) ->
 	let (acc',hdty,sigma,applicand) =
 	  if is_template_polymorphic env f then
-	    let sigma, ty = 
+	    let ty = 
 	      (* Template sort-polymorphism of definition and inductive types *)
-	      type_of_global_reference_knowing_conclusion env sigma f conclty
+	      let firstmeta = Array.findi (fun i x -> occur_meta x) l in
+	      let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
+	        type_of_global_reference_knowing_parameters env sigma f args
 	    in
 	      goalacc, ty, sigma, f
 	  else

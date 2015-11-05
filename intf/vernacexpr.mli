@@ -40,7 +40,8 @@ type scope_name = string
 type goal_reference =
   | OpenSubgoals
   | NthGoal of int
-  | GoalId of goal_identifier
+  | GoalId of Id.t
+  | GoalUid of goal_identifier
 
 type printable =
   | PrintTables
