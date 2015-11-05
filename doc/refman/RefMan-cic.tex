@@ -1306,7 +1306,23 @@ The \kw{in} part can be
 omitted if the result type does not depend on the arguments of
 $I$. Note that the arguments of $I$ corresponding to parameters
 \emph{must} be \verb!_!, because the result type is not generalized to
-all possible values of the parameters. The other arguments of $I$
+all possible values of the parameters.
+% QUESTION: The last sentence above does not seem to be accurate.
+%
+% Imagine:
+%
+%   Definition foo (A:Type) (a:A) (l : list A) :=
+%     match l return A with
+%       | nil => a
+%       | cons _ _ _ => a
+%     end.
+%
+% There, the term in the return-clause happily refer to the parameter of 'l'
+% and Coq does not protest.
+%
+% So I am not sure if I really understand why parameters cannot be bound
+% in as-clause.
+The other arguments of $I$
 (sometimes called indices in the litterature) have to be variables
 ($a$ above) and these variables can occur in $P$ and bound in it.
 The expression after \kw{in}
