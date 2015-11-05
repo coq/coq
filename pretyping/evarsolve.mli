@@ -34,7 +34,8 @@ type conv_fun_bool =
 val evar_define : conv_fun -> ?choose:bool -> env -> evar_map -> 
   bool option -> existential -> constr -> evar_map
 
-val refresh_universes : ?inferred:bool -> ?onlyalg:bool (* Only algebraic universes *) ->
+val refresh_universes : ?status:Evd.rigid ->
+			?onlyalg:bool (* Only algebraic universes *) ->
   bool option (* direction: true for levels lower than the existing levels *) ->
   env -> evar_map -> types -> evar_map * types
 

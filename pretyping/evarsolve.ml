@@ -47,7 +47,7 @@ let refresh_level evd s =
   | None -> true
   | Some l -> not (Evd.is_flexible_level evd l)
 
-let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
+let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) pbty env evd t =
   let evdref = ref evd in
   let modified = ref false in
   let rec refresh status dir t = 
@@ -98,7 +98,7 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
     if isArity t then
       (match pbty with
       | None -> t
-      | Some dir -> refresh univ_rigid dir t)
+      | Some dir -> refresh status dir t)
     else (refresh_term_evars false true t; t)
   in
     if !modified then !evdref, t' else !evdref, t
@@ -609,7 +609,8 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       let id = next_name_away na avoid in
       let evd,t_in_sign =
         let s = Retyping.get_sort_of env evd t_in_env in
-        let evd,ty_t_in_sign = refresh_universes ~inferred:true (Some false) env evd (mkSort s) in
+        let evd,ty_t_in_sign = refresh_universes
+	 ~status:univ_flexible (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd src t_in_env
           ty_t_in_sign sign filter inst_in_env in
       let evd,b_in_sign = match b with
@@ -627,7 +628,8 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   in
   let evd,ev2ty_in_sign =
     let s = Retyping.get_sort_of env evd ty_in_env in
-    let evd,ty_t_in_sign = refresh_universes ~inferred:true (Some false) env evd (mkSort s) in
+    let evd,ty_t_in_sign = refresh_universes
+     ~status:univ_flexible (Some false) env evd (mkSort s) in
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let evd,ev2_in_sign =
