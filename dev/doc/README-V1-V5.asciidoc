@@ -1,12 +1,20 @@
+Notes on the prehistory of Coq
+==============================
+:author:  Thierry Coquand, Gérard Huet & Christine Paulin-Mohring
+:revdate: September 2015
+:toc:
+:toc-placement: preamble
+:toclevels: 1
+:showtitle:
 
-                 Notes on the prehistory of Coq
 
 This archive contains the sources of the CONSTR ancestor of the Coq proof
 assistant. CONSTR, then Coq, was designed and implemented in the Formel team,
-joint between the INRIA Rocquencourt laboratory and the Ecole Normale Supérieure
+joint between the INRIA Rocquencourt laboratory and the École Normale Supérieure
 of Paris, from 1984 onwards.
 
 Version 1
+---------
 
 This software is a prototype type-checker for a higher-order logical formalism
 known as the Theory of Constructions, presented in his PhD thesis by
@@ -29,28 +37,29 @@ Software developments of this prototype occurred from late 1983 to early 1985.
 Version 1.10 was frozen on December 22nd 1984. It is the version used for the
 examples in Thierry Coquand's thesis, defended on January 31st 1985.
 There was a unique binding operator, used both for universal quantification
-(dependent product) at the level of types and functional abstraction (lambda)
+(dependent product) at the level of types and functional abstraction (λ)
 at the level of terms/proofs, in the manner of Automath. Substitution
-(lambda reduction) was implemented using de Bruijn's indexes.
+(λ-reduction) was implemented using de Bruijn's indexes.
 
 Version 1.11 was frozen on February 19th, 1985. It is the version used for the
 examples in the paper:
-Th. Coquand, G. Huet. Constructions: A Higher Order Proof System for Mechanizing
-Mathematics. Invited paper, EUROCAL85, April 1985, Linz, Austria. Springer Verlag
+Th. Coquand, G. Huet. _Constructions: A Higher Order Proof System for Mechanizing
+Mathematics_. Invited paper, EUROCAL85, April 1985, Linz, Austria. Springer Verlag
 LNCS 203, pp. 151-184.
 
 Christine Paulin joined the team at this point, for her DEA research internship.
-In her DEA memoir (August 1985) she presents developments for the lambo function
-computing the minimal m such that f(m) is greater than n, for f an increasing
+In her DEA memoir (August 1985) she presents developments for the _lambo_ function
+computing the minimal _m_ such that _f(m)_ is greater than _n_, for _f_ an increasing
 integer function, a challenge for constructive mathematics. She also encoded
 the majority voting algorithm of Boyer and Moore.
 
 Version 2
+---------
 
-The formal system, now renamed as the "Calculus of Constructions", was presented
+The formal system, now renamed as the _Calculus of Constructions_, was presented
 with a proof of consistency and comparisons with proof systems of Per
 Martin Löf, Girard, and the Automath family of N. de Bruijn, in the paper:
-T. Coquand and G. Huet. The Calculus of Constructions.
+T. Coquand and G. Huet. _The Calculus of Constructions_.
 Submitted on June 30th 1985, accepted on December 5th, 1985,
 Information and Computation. Preprint as Rapport de Recherche Inria n°530,
 Mai 1986. Final version in Information and Computation 76,2/3, Feb. 88.
@@ -58,7 +67,7 @@ Mai 1986. Final version in Information and Computation 76,2/3, Feb. 88.
 An abstraction of the software design, in the form of an abstract machine
 for proof checking, and a fuller sequence of mathematical developments was
 presented in:
-Th. Coquand, G. Huet. Concepts Mathématiques et Informatiques Formalisés dans le Calcul des Constructions. Invited paper, European Logic Colloquium, Orsay,
+Th. Coquand, G. Huet. _Concepts Mathématiques et Informatiques Formalisés dans le Calcul des Constructions_. Invited paper, European Logic Colloquium, Orsay,
 July 1985. Preprint as Rapport de recherche INRIA n°463, Dec. 85.
 Published in Logic Colloquium 1985, North-Holland, 1987.
 
@@ -70,36 +79,37 @@ universes. Universe levels were initially explicit natural numbers.
 Another improvement was the possibility of automatic synthesis of implicit
 type arguments, relieving the user of tedious redundant declarations.
 
-Christine Paulin wrote an article "Algorithm development in the Calculus of
-Constructions", preprint as Rapport de recherche INRIA n°497, March 86.
+Christine Paulin wrote an article _Algorithm development in the Calculus of
+Constructions_, preprint as Rapport de recherche INRIA n°497, March 86.
 Final version in Proceedings Symposium on Logic in Computer Science, Cambridge,
-MA, 1986 (IEEE Computer Society Press). Besides lambo and majority,
+MA, 1986 (IEEE Computer Society Press). Besides _lambo_ and _majority_,
 she presents quicksort and a text formatting algorithm.
 
-Version 2.13 of the calculus of constructions with universes was frozen
+Version 2.13 of the Calculus of Constructions with universes was frozen
 on June 25th, 1986.
 
 A synthetic presentation of type theory along constructive lines with ML
 algorithms was given by Gérard Huet in his May 1986 CMU course notes
-"Formal Structures for Computation and Deduction". Its chapter
-"Induction and Recursion in the Theory of Constructions" was presented
+_Formal Structures for Computation and Deduction_. Its chapter
+_Induction and Recursion in the Theory of Constructions_ was presented
 as an invited paper at the Joint Conference on Theory and Practice of Software
 Development TAPSOFT’87 at Pise in March 1987, and published as
-"Induction Principles Formalized in the Calculus of Constructions" in
+_Induction Principles Formalized in the Calculus of Constructions_ in
 Programming of Future Generation Computers, Ed. K. Fuchi and M. Nivat,
 North-Holland, 1988.
 
 Version 3
+---------
 
 This version saw the beginning of proof automation, with a search algorithm
 inspired from PROLOG and the applicative logic programming programs
-of the course notes "Formal structures for computation and deduction".
+of the course notes _Formal structures for computation and deduction_.
 The search algorithm was implemented in ML by Thierry Coquand.
 The proof system could thus be used in two modes: proof verification and
-proof synthesis, with tactics such as "AUTO".
+proof synthesis, with tactics such as `AUTO`.
 
-The implementation language was now called CAML, for "categorical abstract
-machine language". It used as backend the LLM3 virtual machine of Le Lisp
+The implementation language was now called CAML, for Categorical Abstract
+Machine Language. It used as backend the LLM3 virtual machine of Le Lisp
 by Jérôme Chailloux. The main developers of CAML were Michel Mauny,
 Ascander Suarez and Pierre Weis.
 
@@ -111,16 +121,17 @@ where he developed a variant implementation in SML, with which he wrote
 some developments on fixpoints in Scott's domains.
 
 Version 4
+---------
 
 This version saw the beginning of program extraction from proofs, with
-two varieties of the type Prop of propositions, indicating constructive intent.
+two varieties of the type `Prop` of propositions, indicating constructive intent.
 The proof extraction algorithms were implemented by Christine Paulin-Mohring.
 
 V4.1 was frozen on July 24th, 1987. It had a first identified library of
 mathematical developments (directory exemples), with libraries Logic
 (containing impredicative encodings of intuitionistic logic and algebraic
-primitives for booleans, natural numbers and list), Peano developing second-order
-Peano arithmetic, Arith defining addition, multiplication, euclidean division
+primitives for booleans, natural numbers and list), `Peano` developing second-order
+Peano arithmetic, `Arith` defining addition, multiplication, euclidean division
 and factorial. Typical developments were the Knaster-Tarski theorem
 and Newman's lemma from rewriting theory.
 
@@ -133,7 +144,7 @@ V4.3 saw the first top-level of the system. Instead of evaluating explicit
 quotations, the user could develop his mathematics in a high-level language
 called the mathematical vernacular (following Automath terminology).
 The user could develop files in the vernacular notation (with .v extension)
-which were now separate from the ml sources of the implementation.
+which were now separate from the `ml` sources of the implementation.
 Gilles Dowek joined the team to develop the vernacular language as his
 DEA internship research.
 
@@ -144,25 +155,28 @@ of global mathematical environment with local sections.
 Another significant practical change was that the system, originally developped
 on the VAX central computer of our lab, was transferred on SUN personal
 workstations, allowing a level of distributed development.
-The extraction algorithm was modified, with three annotations Pos, Null and
-Typ decorating the sorts Prop and Type.
+The extraction algorithm was modified, with three annotations `Pos`, `Null` and
+`Typ` decorating the sorts `Prop` and `Type`.
 
 Version 4.3 was frozen at the end of November 1987, and was distributed to an
 early community of users (among those were Hugo Herbelin and Loic Colson).
 
 V4.4 saw the first version of (encoded) inductive types.
 Now natural numbers could be defined as:
+
+[source, coq]
 Inductive NAT : Prop = O : NAT | Succ : NAT->NAT.
+
 These inductive types were encoded impredicatively in the calculus,
-using a subsystem "rec" due to Christine Paulin.
+using a subsystem _rec_ due to Christine Paulin.
 V4.4 was frozen on March 6th 1988.
 
 Version 4.5 was the first one to support inductive types and program extraction.
-Its banner was "Calcul des Constructions avec Realisations et Synthese".
+Its banner was _Calcul des Constructions avec Réalisations et Synthèse_.
 The vernacular language was enriched to accommodate extraction commands.
 
 The verification engine design was presented as:
-G. Huet. The Constructive Engine. Version 4.5. Invited Conference, 2nd European
+G. Huet. _The Constructive Engine_. Version 4.5. Invited Conference, 2nd European
 Symposium on Programming, Nancy, March 88.
 The final paper, describing the V4.9 implementation, appeared in:
 A perspective in Theoretical Computer Science, Commemorative Volume in memory
@@ -196,20 +210,20 @@ it was entirely re-checked by the engine. Thus there was no need to certify
 the tactics, and the system took advantage of this fact by having tactics ignore
 the universe levels, universe consistency check being relegated to the final
 type-checking pass. This induced a certain puzzlement of early users who saw
-their successful proof search ended with QED, followed by silence, followed by
-a failure message of universe inconsistency rejection...
+their successful proof search ended with `QED`, followed by silence, followed by
+a failure message of universe inconsistency rejection…
 
 The set of examples comprise set theory experiments by Hugo Herbelin,
 and notably the Schroeder-Bernstein theorem.
 
 Version 4.8, started on October 8th, 1988, saw a major re-implementation of the
-abstract syntax type constr, separating variables of the formalism and
+abstract syntax type `constr`, separating variables of the formalism and
 metavariables denoting incomplete terms managed by the search mechanism.
-A notion of level (with three values TYPE, OBJECT and PROOF) is made explicit
+A notion of level (with three values `TYPE`, `OBJECT` and `PROOF`) is made explicit
 and a type judgement clarifies the constructions, whose implementation is now
 fully explicit. Structural equality is speeded up by using pointer equality,
 yielding spectacular improvements. Thierry Coquand adapts the proof synthesis
-to the new representation, and simplifies pattern matching to 1st order
+to the new representation, and simplifies pattern matching to first-order
 predicate calculus matching, with important performance gain.
 
 A new representation of the universe hierarchy is then defined by G. Huet.
@@ -217,27 +231,30 @@ Universe levels are now implemented implicitly, through a hidden graph
 of abstract levels constrained with an order relation.
 Checking acyclicity of the graph insures well-foundedness of the ordering,
 and thus consistency. This was documented in a memo
-"Adding Type:Type to the Calculus of Constructions" which was never published.
+_Adding Type:Type to the Calculus of Constructions_ which was never published.
 
 The development version is released as a stable 4.8 at the end of 1988.
 
-Version 4.9 is released on March 1st 1989, with the new "elastic"
+Version 4.9 is released on March 1st 1989, with the new ``elastic''
 universe hierarchy.
 
 The spring 89 saw the first attempt at documenting the system usage,
 with a number of papers describing the formalism:
-- Metamathematical Investigations of a Calculus of Constructions, by
+
+- _Metamathematical Investigations of a Calculus of Constructions_, by
 Thierry Coquand (INRIA Research Report N°1088, Sept. 1989, published in
 Logic and Computer Science, ed. P.G. Odifreddi, Academic Press, 1990)
-- Inductive definitions in the Calculus of Constructions, by
+- _Inductive definitions in the Calculus of Constructions_, by
 Christine Paulin-Mohring,
-- Extracting Fomega's programs from proofs in the Calculus of Constructions, by
+- _Extracting Fω's programs from proofs in the Calculus of Constructions_, by
 Christine Paulin-Mohring (published in POPL'89)
-- The Constructive Engine, by Gérard Huet
+- _The Constructive Engine_, by Gérard Huet
+
 as well as a number of user guides:
-- A short user's guide for the Constructions Version 4.10, by Gérard Huet
-- A Vernacular Syllabus, by Gilles Dowek.
-- The Tactics Theorem Prover, User's guide, Version 4.10, by Thierry Coquand.
+
+- _A short user's guide for the Constructions_ Version 4.10, by Gérard Huet
+- _A Vernacular Syllabus_, by Gilles Dowek.
+- _The Tactics Theorem Prover, User's guide_, Version 4.10, by Thierry Coquand.
 
 Stable V4.10, released on May 1st, 1989, was then a mature system,
 distributed with CAML V2.6.
@@ -246,19 +263,19 @@ In the mean time, Thierry Coquand and Christine Paulin-Mohring
 had been investigating how to add native inductive types to the
 Calculus of Constructions, in the manner of Per Martin-Löf's Intuitionistic
 Type Theory. The impredicative encoding had already been presented in:
-F. Pfenning and C. Paulin-Mohring. Inductively defined types in the Calculus
-of Constructions. Preprint technical report CMU-CS-89-209, final version in
+F. Pfenning and C. Paulin-Mohring. _Inductively defined types in the Calculus
+of Constructions_. Preprint technical report CMU-CS-89-209, final version in
 Proceedings of Mathematical Foundations of Programming Semantics,
 volume 442, Lecture Notes in Computer Science. Springer-Verlag, 1990.
 An extension of the calculus with primitive inductive types appeared in:
-Th. Coquand and C. Paulin-Mohring. Inductively defined types.
+Th. Coquand and C. Paulin-Mohring. _Inductively defined types_.
 In P. Martin-Löf and G. Mints, editors, Proceedings of Colog'88, volume 417,
 Lecture Notes in Computer Science. Springer-Verlag, 1990.
 
 This lead to the Calculus of Inductive Constructions, logical formalism
 implemented in Versions 5 upward of the system, and documented in:
-C. Paulin-Mohring. Inductive Definitions in the System Coq - Rules and
-Properties. In M. Bezem and J.-F. Groote, editors, Proceedings of the conference
+C. Paulin-Mohring. _Inductive Definitions in the System Coq - Rules and
+Properties_. In M. Bezem and J.-F. Groote, editors, Proceedings of the conference
 Typed Lambda Calculi and Applications, volume 664, Lecture Notes in Computer
 Science, 1993.
 
@@ -272,7 +289,7 @@ stand-alone implementation of ML called Caml-light.
 
 In 1990 many changes occurred. Thierry Coquand left for Chalmers University
 in Göteborg. Christine Paulin-Mohring took a CNRS researcher position
-at the LIP laboratory of Ecole Normale Supérieure de Lyon. Project Formel
+at the LIP laboratory of École Normale Supérieure de Lyon. Project Formel
 was terminated, and gave rise to two teams: Cristal at INRIA-Roquencourt,
 that continued developments in functional programming with Caml-light then
 Ocaml, and Coq, continuing the type theory research, with a joint team
@@ -289,5 +306,7 @@ precise tracking of the software developments.
 Developments from Version 6 upwards are documented in the credits section of
 Coq's Reference Manual.
 
-September 2015
+====
+September 2015 +
 Thierry Coquand, Gérard Huet and Christine Paulin-Mohring.
+====
