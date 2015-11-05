@@ -1277,12 +1277,6 @@ $m$ in an inductive type $I$ and we want to prove a property
 which possibly depends on $m$. For this, it is enough to prove the
 property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
 
-
-The basic idea of this operator is that we have an object
-$m$ in an inductive type $I$ and we want to prove a property
-which possibly depends on $m$. For this, it is enough to prove the
-property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
-
 The \Coq{} term for this proof will be written:
 \[\kw{match}~m~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
   (c_n~x_{n1}~...~x_{np_n}) \Ra f_n~ \kw{end}\]
