@@ -41,8 +41,8 @@ let hash f = function
 
 exception IsNone
 
-(** [get x] returns [y] where [x] is [Some y]. It raises IsNone
-    if [x] equals [None]. *)
+(** [get x] returns [y] where [x] is [Some y].
+    @raise [IsNone] if [x] equals [None]. *)
 let get = function
   | Some y -> y
   | _ -> raise IsNone
@@ -56,13 +56,6 @@ let init b x =
     Some x
   else
     None
-
-
-(** [flatten x] is [Some y] if [x] is [Some (Some y)] and [None] otherwise. *)
-let flatten = function
-  | Some (Some y) -> Some y
-  | _ -> None
-
 
 (** [append x y] is the first element of the concatenation of [x] and
     [y] seen as lists. *)
@@ -88,7 +81,7 @@ exception Heterogeneous
     [Heterogeneous] otherwise. *)
 let iter2 f x y =
   match x,y with
-  | Some z, Some w -> f z w
+  | Some x, Some y -> f x y
   | None,None -> ()
   | _,_ -> raise Heterogeneous
 
@@ -181,11 +174,4 @@ module List =
   let rec flatten = function
     | x::l -> cons x (flatten l)
     | [] -> []
-
-  let rec find f = function
-    |[] -> None
-    |h :: t -> match f h with
-	 |None -> find f t
-	 |x -> x
-
 end

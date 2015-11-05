@@ -84,12 +84,19 @@ type 'a match_pattern =
   | Term of 'a
   | Subterm of bool * Id.t option * 'a
 
-(* Type of hypotheses for a Match Context rule *)
+(* These values are part of the abstract syntax tree.
+ * They represent 'context_hyp' non-terminals
+ * as described by the Reference Manual in Section 9.1.
+ *)
 type 'a match_context_hyps =
   | Hyp of Name.t located * 'a match_pattern
   | Def of Name.t located * 'a match_pattern * 'a match_pattern
 
-(* Type of a Match rule for Match Context and Match *)
+(* These values are part of the abstract syntax tree.
+ * They represent 'context_rule' and 'match_rule' non-terminals
+ * (i.e. branches of the match-tactic)
+ * as described by the Referece Manual in Section 9.1.
+ *)
 type ('a,'t) match_rule =
   | Pat of 'a match_context_hyps list * 'a match_pattern * 't
   | All of 't
@@ -130,53 +137,58 @@ type intro_pattern_naming = intro_pattern_naming_expr located
 
 (** Generic expressions for atomic tactics *)
 
+(* NOTE: See the definition of "'a gen_tactic_expr" for hints how to explore the relationship
+ *       between concrete syntax and the abstract syntax tree.
+ *)
 type 'a gen_atomic_tactic_expr =
   (* Basic tactics *)
-  | TacIntroPattern of 'dtrm intro_pattern_expr located list
-  | TacIntroMove of Id.t option * 'nam move_location
-  | TacExact of 'trm
-  | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
+  | TacIntroPattern of 'dtrm intro_pattern_expr located list                    (* "intros" tactic *)
+  | TacIntroMove of Id.t option * 'nam move_location                            (* "intro" tactic *)
+  | TacExact of 'trm                                                            (* "exact" tactic *)
+  | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *      (* "apply" tactic *)
       (clear_flag * 'nam * 'dtrm intro_pattern_expr located option) option
-  | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
-  | TacCase of evars_flag * 'trm with_bindings_arg
-  | TacFix of Id.t option * int
-  | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
-  | TacCofix of Id.t option
-  | TacMutualCofix of Id.t * (Id.t * 'trm) list
-  | TacAssert of
+  | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option  (* "elim" tactic *)
+  | TacCase of evars_flag * 'trm with_bindings_arg                 (* "case" tactic *)
+  | TacFix of Id.t option * int                                    (* "fix" tactic *)
+  | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list          (* "fix ... with ..." tactic *)
+  | TacCofix of Id.t option                                        (* "cofix" tactic *)
+  | TacMutualCofix of Id.t * (Id.t * 'trm) list                    (* "cofix ... with ..." tactic *)
+  | TacAssert of                                                   (* "assert" tactic *)
       bool * 'tacexpr option *
       'dtrm intro_pattern_expr located option * 'trm
-  | TacGeneralize of ('trm with_occurrences * Name.t) list
-  | TacGeneralizeDep of 'trm
-  | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *
+  | TacGeneralize of ('trm with_occurrences * Name.t) list         (* "generalize" tactic *)
+  | TacGeneralizeDep of 'trm                                       (* "generalize dependent" tactic *)
+  | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *   (* "pose", "set", and "remember" tactics *)
       intro_pattern_naming_expr located option
 
   (* Derived basic tactics *)
-  | TacInductionDestruct of
+  | TacInductionDestruct of                                                (* "induction" tactic *)
       rec_flag * evars_flag * ('trm,'dtrm,'nam) induction_clause_list
-  | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
+  | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis    (* "double induction" tactic *)
 
   (* Automation tactics *)
-  | TacTrivial of debug * 'trm list * string list option
-  | TacAuto of debug * int or_var option * 'trm list * string list option
+  | TacTrivial of debug * 'trm list * string list option                   (* "trivial" tactic *)
+  | TacAuto of debug * int or_var option * 'trm list * string list option  (* "auto" tactic *)
 
   (* Context management *)
-  | TacClear of bool * 'nam list
-  | TacClearBody of 'nam list
-  | TacMove of 'nam * 'nam move_location
-  | TacRename of ('nam *'nam) list
+  | TacClear of bool * 'nam list          (* "clear" tactic *)
+  | TacClearBody of 'nam list             (* "clearbody" tactic *)
+  | TacMove of 'nam * 'nam move_location  (* "move" tactic *)
+  | TacRename of ('nam *'nam) list        (* "rename" tactic *)
 
   (* Trmuctors *)
-  | TacSplit of evars_flag * 'trm bindings list
+  | TacSplit of evars_flag * 'trm bindings list  (* "exists" and "eexists" tactics *)
 
   (* Conversion *)
-  | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
-  | TacChange of 'pat option * 'dtrm * 'nam clause_expr
+  | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr  (* "red", "hnf", "simpl", "cbv", "cbn", "lazy", "compute", "vm_compute", "native_compute", "unfold", "fold", "pattern" tactics *)
+  | TacChange of 'pat option * 'dtrm * 'nam clause_expr            (* "change" tactic *)
 
   (* Equivalence relations *)
   | TacSymmetry of 'nam clause_expr
 
   (* Equality and inversion *)
+
+  (* "rewrite" tactic *)
   | TacRewrite of evars_flag *
       (bool * multi * 'dtrm with_bindings_arg) list * 'nam clause_expr *
       (* spiwack: using ['dtrm] here is a small hack, may not be
@@ -186,6 +198,8 @@ type 'a gen_atomic_tactic_expr =
          uninterpreted, it works fine here too, and avoid more
          disruption of this file. *)
       'tacexpr option
+
+  (* "inversion" tactic *)
   | TacInversion of ('trm,'dtrm,'nam) inversion_strength * quantified_hypothesis
 
 constraint 'a = <
@@ -232,64 +246,77 @@ constraint 'a = <
     't : terms, 'p : patterns, 'c : constants, 'i : inductive,
     'r : ltac refs, 'n : idents, 'l : levels *)
 
+(* These values are part of the abstract syntax tree.
+ * The concrete syntax is described in Section 9.1 of the Reference Manual.
+ * The concrete syntax is defined by 'tactic_expr' non-terminal in 'parsing/g_ltac.ml4'.
+ * These values are returned by 'Pcoq.parse_string Pcoq.Tactic.tactic' function.
+ *
+ * So e.g.:
+ *
+ *   Pcoq.parse_string Pcoq.Tactic.tactic "auto";;
+ *
+ * returns
+ *
+ *   TacAtom (0,4) (TacAuto Off None [] (Some []))
+ *)
 and 'a gen_tactic_expr =
-  | TacAtom of Loc.t * 'a gen_atomic_tactic_expr
-  | TacThen of
+  | TacAtom of Loc.t * 'a gen_atomic_tactic_expr  (* non-tactical *)
+  | TacThen of                            (* <tactic> ; <tactic> *)
       'a gen_tactic_expr *
       'a gen_tactic_expr
-  | TacDispatch of
+  | TacDispatch of                        (* [> foo] *)
       'a gen_tactic_expr list
   | TacExtendTac of
       'a gen_tactic_expr array *
       'a gen_tactic_expr *
       'a gen_tactic_expr array
-  | TacThens of
+  | TacThens of                           (* <tactic>; [...] *)
       'a gen_tactic_expr *
       'a gen_tactic_expr list
-  | TacThens3parts of
+  | TacThens3parts of                     (* <tactic>; [<tactic> | .. | <tactic>] *)
       'a gen_tactic_expr *
       'a gen_tactic_expr array *
       'a gen_tactic_expr *
       'a gen_tactic_expr array
-  | TacFirst of 'a gen_tactic_expr list
-  | TacComplete of 'a gen_tactic_expr
-  | TacSolve of 'a gen_tactic_expr list
-  | TacTry of 'a gen_tactic_expr
-  | TacOr of
+  | TacFirst of 'a gen_tactic_expr list   (* first [...] *)
+  | TacComplete of 'a gen_tactic_expr     (* assert <form> by <tactic> *)
+  | TacSolve of 'a gen_tactic_expr list   (* solve [...] *)
+  | TacTry of 'a gen_tactic_expr          (* try ... *)
+  | TacOr of                              (* ... + ... *)
       'a gen_tactic_expr *
       'a gen_tactic_expr
-  | TacOnce of
+  | TacOnce of                            (* once ... *)
       'a gen_tactic_expr
-  | TacExactlyOnce of
+  | TacExactlyOnce of                     (* exactly_once ... *)
       'a gen_tactic_expr
-  | TacIfThenCatch of
+  | TacIfThenCatch of                     (* tryif ... then ... else ... *)
       'a gen_tactic_expr *
       'a gen_tactic_expr *
       'a gen_tactic_expr
-  | TacOrelse of
+  | TacOrelse of                          (* [ ... || ... ] *)
       'a gen_tactic_expr *
       'a gen_tactic_expr
-  | TacDo of int or_var * 'a gen_tactic_expr
-  | TacTimeout of int or_var * 'a gen_tactic_expr
-  | TacTime of string option * 'a gen_tactic_expr
-  | TacRepeat of 'a gen_tactic_expr
-  | TacProgress of 'a gen_tactic_expr
-  | TacShowHyps of 'a gen_tactic_expr
-  | TacAbstract of
+  | TacDo of int or_var * 'a gen_tactic_expr       (* do <num> ... *)
+  | TacTimeout of int or_var * 'a gen_tactic_expr  (* timeout <num> ... *)
+  | TacTime of string option * 'a gen_tactic_expr  (* time ... *)
+  | TacRepeat of 'a gen_tactic_expr                (* repeat <num> ... *)
+  | TacProgress of 'a gen_tactic_expr              (* progress ... *)
+  | TacShowHyps of 'a gen_tactic_expr              (* infoH <ident> *)
+  | TacAbstract of                                 (* abstract ... *)
       'a gen_tactic_expr * Id.t option
-  | TacId of 'n message_token list
-  | TacFail of global_flag * int or_var * 'n message_token list
-  | TacInfo of 'a gen_tactic_expr
-  | TacLetIn of rec_flag *
+  | TacId of 'n message_token list                               (* idtac *)
+  | TacFail of global_flag * int or_var * 'n message_token list  (* fail *)
+  | TacInfo of 'a gen_tactic_expr                                (* info <ident> *)
+  | TacLetIn of rec_flag *                                       (* let <ident> := <expr> in <expr> *)
       (Id.t located * 'a gen_tactic_arg) list *
       'a gen_tactic_expr
-  | TacMatch of lazy_flag *
+  | TacMatch of lazy_flag *                        (* match ... with ... *)
       'a gen_tactic_expr *
       ('p,'a gen_tactic_expr) match_rule list
-  | TacMatchGoal of lazy_flag * direction_flag *
+  | TacMatchGoal of lazy_flag * direction_flag *   (* match goal with ... *)
       ('p,'a gen_tactic_expr) match_rule list
-  | TacFun of 'a gen_tactic_fun_ast
-  | TacArg of 'a gen_tactic_arg located
+  | TacFun of 'a gen_tactic_fun_ast                (* fun ... => ... *)
+  | TacArg of 'a gen_tactic_arg located            (* e.g. "foo" *)
   (* For ML extensions *)
   | TacML of Loc.t * ml_tactic_name * 'l generic_argument list
   (* For syntax extensions *)

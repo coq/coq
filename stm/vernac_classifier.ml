@@ -85,8 +85,7 @@ let rec classify_vernac e =
       if b || Flags.is_universe_polymorphism () (* Ok or not? *) then
 	make_polymorphic (classify_vernac e)
       else classify_vernac e
-    | VernacTimeout (_,e) -> classify_vernac e
-    | VernacTime e | VernacRedirect (_, e) -> classify_vernac_list e
+    | VernacTimeout (_,e) | VernacTime (_,e) | VernacRedirect (_,(_,e)) -> classify_vernac e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
@@ -175,11 +174,13 @@ let rec classify_vernac e =
     | VernacRegister _
     | VernacNameSectionHypSet _
     | VernacComments _ -> VtSideff [], VtLater
-    | VernacDeclareTacticDefinition (_,l) ->
+    | VernacDeclareTacticDefinition l ->
         let open Libnames in
+        let open Vernacexpr in
         VtSideff (List.map (function
-          | (Ident (_,r),_,_) -> r
-          | (Qualid (_,q),_,_) -> snd(repr_qualid q)) l), VtLater
+          | TacticDefinition ((_,r),_) -> r
+          | TacticRedefinition (Ident (_,r),_) -> r
+          | TacticRedefinition (Qualid (_,q),_) -> snd(repr_qualid q)) l), VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow
     (* (Local) Notations have to disappear *)
@@ -208,7 +209,6 @@ let rec classify_vernac e =
     | VernacResetName _ | VernacResetInitial
     | VernacBacktrack _ | VernacBackTo _ | VernacRestart -> !undo_classifier e
     (* What are these? *)
-    | VernacNop
     | VernacToplevelControl _
     | VernacRestoreState _
     | VernacWriteState _ -> VtUnknown, VtNow
@@ -217,13 +217,6 @@ let rec classify_vernac e =
     | VernacExtend (s,l) ->
         try List.assoc s !classifiers l ()
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s))
-  and classify_vernac_list = function
-    (* spiwack: It would be better to define a monoid on classifiers.
-       So that the classifier of the list would be the composition of
-       the classifier of the individual commands. Currently: special
-       case for singleton lists.*)
-    | [_,c] -> static_classifier c
-    | l -> VtUnknown,VtNow
   in
   let res = static_classifier e in
     if Flags.is_universe_polymorphism () then

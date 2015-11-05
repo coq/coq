@@ -44,9 +44,6 @@ val make : 'a -> 'a option
 (** [init b x] returns [Some x] if [b] is [true] and [None] otherwise. *)
 val init : bool -> 'a -> 'a option
 
-(** [flatten x] is [Some y] if [x] is [Some (Some y)] and [None] otherwise. *)
-val flatten : 'a option option -> 'a option
-
 (** [append x y] is the first element of the concatenation of [x] and
     [y] seen as lists.  In other words, [append (Some a) y] is [Some
     a], [append None (Some b)] is [Some b], and [append None None] is
@@ -121,6 +118,4 @@ module List : sig
   (** [List.flatten l] is the list of all the [y]s such that [l] contains
       [Some y] (in the same order). *)
   val flatten : 'a option list -> 'a list
-
-  val find : ('a -> 'b option) -> 'a list -> 'b option
 end

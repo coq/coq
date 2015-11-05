@@ -29,9 +29,14 @@ type cases_pattern =
   | PatCstr of Loc.t * constructor * cases_pattern list * Name.t
       (** [PatCstr(p,C,l,x)] = "|'C' 'l' as 'x'" *)
 
+(** Internalized representation of a term. *)
 type glob_constr =
   | GRef of (Loc.t * global_reference * glob_level list option)
+      (** An identifier that represents a reference to an object defined
+          either in the (global) environment or in the (local) context. *)
   | GVar of (Loc.t * Id.t)
+      (** An identifier that cannot be regarded as "GRef".
+          Bound variables are typically represented this way. *)
   | GEvar of Loc.t * existential_name * (Id.t * glob_constr) list
   | GPatVar of Loc.t * (bool * patvar) (** Used for patterns only *)
   | GApp of Loc.t * glob_constr * glob_constr list
@@ -39,8 +44,7 @@ type glob_constr =
   | GProd of Loc.t * Name.t * binding_kind * glob_constr * glob_constr
   | GLetIn of Loc.t * Name.t * glob_constr * glob_constr
   | GCases of Loc.t * case_style * glob_constr option * tomatch_tuples * cases_clauses
-      (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in
-	  [MatchStyle]) *)
+      (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
   | GLetTuple of Loc.t * Name.t list * (Name.t * glob_constr option) *
       glob_constr * glob_constr
   | GIf of Loc.t * glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr

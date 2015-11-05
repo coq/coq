@@ -43,7 +43,10 @@ type 'id move_location =
 
 (** Sorts *)
 
-type 'a glob_sort_gen = GProp | GSet | GType of 'a
+type 'a glob_sort_gen =
+  | GProp (** AST representation of [Prop] literals that appear in Coq scripts.  *)
+  | GSet  (** AST representation of [Set] literals that appear in Coq scripts.  *)
+  | GType of 'a (** AST representation of [Type] literals that appear in Coq scripots. *)
 type sort_info = string Loc.located list
 type level_info = string Loc.located option
 

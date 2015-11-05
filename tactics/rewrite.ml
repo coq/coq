@@ -1706,7 +1706,7 @@ let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
   new_instance (Flags.is_universe_polymorphism ()) 
-    binders instance (Some (true, CRecord (Loc.ghost,None,fields)))
+    binders instance (Some (true, CRecord (Loc.ghost,fields)))
     ~global ~generalize:false None
 
 let declare_instance_refl global binders a aeq n lemma =
@@ -1921,7 +1921,7 @@ let add_morphism glob binders m s n =
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
     ignore(new_instance ~global:glob poly binders instance 
-	     (Some (true, CRecord (Loc.ghost,None,[])))
+	     (Some (true, CRecord (Loc.ghost,[])))
 	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
 
 (** Bind to "rewrite" too *)

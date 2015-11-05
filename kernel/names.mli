@@ -13,27 +13,32 @@ open Util
 module Id :
 sig
   type t
-  (** Type of identifiers *)
+  (** Values of this type represent (Coq) identifiers. *)
 
   val equal : t -> t -> bool
-  (** Equality over identifiers *)
+  (** Equality over identifiers. *)
 
   val compare : t -> t -> int
-  (** Comparison over identifiers *)
+  (** Comparison over identifiers. *)
 
   val hash : t -> int
-  (** Hash over identifiers *)
+  (** Hash over identifiers. *)
 
   val is_valid : string -> bool
-  (** Check that a string may be converted to an identifier. *)
+  (** Check that a string may be converted to an identifier.
+  @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val of_string : string -> t
-  (** Converts a string into an identifier. May raise [UserError _] if the
-      string is not valid, or echo a warning if it contains invalid identifier
-      characters. *)
+  (** Converts a string into an identifier.
+
+      @raise UserError if the string is not valid, or echo a warning if it contains invalid identifier characters.
+
+      @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val of_string_soft : string -> t
-  (** Same as {!of_string} except that no warning is ever issued. *)
+  (** Same as {!of_string} except that no warning is ever issued.
+
+      @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val to_string : t -> string
   (** Converts a identifier into an string. *)
@@ -90,7 +95,7 @@ module ModIdmap : Map.ExtS with type key = module_ident and module Set := ModIds
 
 module DirPath :
 sig
-  type t
+  type t = module_ident list
   (** Type of directory paths. Essentially a list of module identifiers. The
       order is reversed to improve sharing. E.g. A.B.C is ["C";"B";"A"] *)
 

@@ -947,40 +947,37 @@ type tacdef_kind =
 let is_defined_tac kn =
   try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
 
-let make_absolute_name ident repl =
-  let loc = loc_of_reference ident in
-  if repl then
-    let kn =
-      try Nametab.locate_tactic (snd (qualid_of_reference ident))
-      with Not_found ->
-        Errors.user_err_loc (loc, "",
-                    str "There is no Ltac named " ++ pr_reference ident ++ str ".")
-    in
-    UpdateTac kn
-  else
-    let id = Constrexpr_ops.coerce_reference_to_id ident in
-    let kn = Lib.make_kn id in
-    let () = if is_defined_tac kn then
-      Errors.user_err_loc (loc, "",
-        str "There is already an Ltac named " ++ pr_reference ident ++ str".")
-    in
-    let is_primitive =
-      try
-        match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
-        | Tacexpr.TacArg _ -> false
-        | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
-      with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
-    in
-    let () = if is_primitive then
-      msg_warning (str "The Ltac name " ++ pr_reference ident ++
-        str " may be unusable because of a conflict with a notation.")
-    in
-    NewTac id
-
-let register_ltac local isrec tacl =
-  let map (ident, repl, body) =
-    let name = make_absolute_name ident repl in
-    (name, body)
+let register_ltac local tacl =
+  let map tactic_body =
+    match tactic_body with
+    | TacticDefinition ((loc,id), body) ->
+        let kn = Lib.make_kn id in
+        let id_pp = str (Id.to_string id) in
+        let () = if is_defined_tac kn then
+          Errors.user_err_loc (loc, "",
+            str "There is already an Ltac named " ++ id_pp ++ str".")
+        in
+        let is_primitive =
+          try
+            match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
+            | Tacexpr.TacArg _ -> false
+            | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
+          with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
+        in
+        let () = if is_primitive then
+          msg_warning (str "The Ltac name " ++ id_pp ++
+            str " may be unusable because of a conflict with a notation.")
+        in
+        NewTac id, body
+    | TacticRedefinition (ident, body) ->
+        let loc = loc_of_reference ident in
+        let kn =
+          try Nametab.locate_tactic (snd (qualid_of_reference ident))
+          with Not_found ->
+            Errors.user_err_loc (loc, "",
+                        str "There is no Ltac named " ++ pr_reference ident ++ str ".")
+        in
+        UpdateTac kn, body
   in
   let rfun = List.map map tacl in
   let recvars =
@@ -988,8 +985,7 @@ let register_ltac local isrec tacl =
     | UpdateTac _ -> accu
     | NewTac id -> (Lib.make_path id, Lib.make_kn id) :: accu
     in
-    if isrec then List.fold_left fold [] rfun
-    else []
+    List.fold_left fold [] rfun
   in
   let ist = Tacintern.make_empty_glob_sign () in
   let map (name, body) =
@@ -1015,9 +1011,9 @@ let register_ltac local isrec tacl =
   in
   List.iter iter defs
 
-let vernac_declare_tactic_definition locality (x,def) =
+let vernac_declare_tactic_definition locality def =
   let local = make_module_locality locality in
-  register_ltac local x def
+  register_ltac local def
 
 let vernac_create_hintdb locality id b =
   let local = make_module_locality locality in
@@ -1967,7 +1963,6 @@ let interp ?proof ~loc locality poly c =
   | VernacLocate l -> vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r
   | VernacComments l -> if_verbose msg_info (str "Comments ok\n")
-  | VernacNop -> ()
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
   | VernacAbort id -> msg_warning (str "VernacAbort not handled by Stm")
@@ -2135,11 +2130,10 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacTimeout (n,v) ->
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
-    | VernacRedirect (s, v) ->
-         Pp.with_output_to_file s (aux_list ?locality ?polymorphism isprogcmd) v;
-    | VernacTime v ->
-        System.with_time !Flags.time
-          (aux_list ?locality ?polymorphism isprogcmd) v;
+    | VernacRedirect (s, (_,v)) ->
+         Pp.with_output_to_file s (aux ?locality ?polymorphism isprogcmd) v;
+    | VernacTime (_,c) ->
+        System.with_time !Flags.time (aux false) c
     | VernacLoad (_,fname) -> vernac_load (aux false) fname
     | c -> 
         check_vernac_supports_locality c locality;
@@ -2165,8 +2159,6 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             let () = restore_timeout () in
             Flags.program_mode := orig_program_mode;
             iraise e
-  and aux_list ?locality ?polymorphism isprogcmd l =
-    List.iter (aux false) (List.map snd l)
   in
     if verbosely then Flags.verbosely (aux false) c
     else aux false c

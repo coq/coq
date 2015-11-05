@@ -175,7 +175,7 @@ struct
       | Prop, Prop -> true
       | Set, Set -> true
       | Level (n,d), Level (n',d') ->
-        Int.equal n n' && DirPath.equal d d'
+          Int.equal n n' && DirPath.equal d d'
       | Var n, Var n' -> Int.equal n n'
       | _ -> false
 
@@ -188,9 +188,9 @@ struct
     | Set, _ -> -1
     | _, Set -> 1
     | Level (i1, dp1), Level (i2, dp2) ->
-      if i1 < i2 then -1
-      else if i1 > i2 then 1
-      else DirPath.compare dp1 dp2
+        if i1 < i2 then -1
+        else if i1 > i2 then 1
+        else DirPath.compare dp1 dp2
     | Level _, _ -> -1
     | _, Level _ -> 1
     | Var n, Var m -> Int.compare n m
@@ -201,7 +201,7 @@ struct
       | Prop, Prop -> true
       | Set, Set -> true
       | Level (n,d), Level (n',d') ->
-        n == n' && d == d'
+          n == n' && d == d'
       | Var n, Var n' -> n == n'
       | _ -> false
 
@@ -209,7 +209,7 @@ struct
     | Prop as x -> x
     | Set as x -> x
     | Level (n,d) as x -> 
-      let d' = Names.DirPath.hcons d in
+        let d' = Names.DirPath.hcons d in
         if d' == d then x else Level (n,d')
     | Var n as x -> x
 
@@ -243,8 +243,6 @@ module Level = struct
 
   let hash x = x.hash
 
-  let data x = x.data
-
   (** Hashcons on levels + their hash *)
 
   module Self = struct
@@ -268,19 +266,19 @@ module Level = struct
   let prop = make Prop
 
   let is_small x = 
-    match data x with
+    match x.data with
     | Level _ -> false
     | Var _ -> false
     | Prop -> true
     | Set -> true
  
   let is_prop x =
-    match data x with
+    match x.data with
     | Prop -> true
     | _ -> false
 
   let is_set x =
-    match data x with
+    match x.data with
     | Set -> true
     | _ -> false
 
@@ -288,24 +286,24 @@ module Level = struct
     if u == v then 0
     else
       let c = Int.compare (hash u) (hash v) in
-	if c == 0 then RawLevel.compare (data u) (data v)
-	else c
+      if c == 0 then RawLevel.compare u.data v.data
+      else c
 
   let natural_compare u v =
     if u == v then 0
-    else RawLevel.compare (data u) (data v)
+    else RawLevel.compare u.data v.data
 	    
   let to_string x = 
-    match data x with
+    match x.data with
     | Prop -> "Prop"
     | Set -> "Set"
-    | Level (n,d) -> Names.DirPath.to_string d^"."^string_of_int n
+    | Level (n,d) -> Names.DirPath.to_string d ^ "." ^ string_of_int n
     | Var n -> "Var(" ^ string_of_int n ^ ")"
 
   let pr u = str (to_string u)
 
   let apart u v =
-    match data u, data v with
+    match u.data, v.data with
     | Prop, Set | Set, Prop -> true
     | _ -> false
 
@@ -315,7 +313,7 @@ module Level = struct
     if n < 20 then vars.(n) else make (Var n)
 
   let var_index u =
-    match data u with
+    match u.data with
     | Var n -> Some n | _ -> None
 
   let make m n = make (Level (n, Names.DirPath.hcons m))

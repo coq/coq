@@ -33,15 +33,16 @@ struct
 
   let hash = String.hash
 
-  let check_soft ?(warn = true) x =
-    let iter (fatal, x) =
-      if fatal then Errors.error x else if warn then Pp.msg_warning (str x)
+  let check_soft ?(warn = true) s =
+    let iter (fatal, s) =
+      if fatal then Errors.error s else if warn then Pp.msg_warning (str s)
     in
-    Option.iter iter (Unicode.ident_refutation x)
+    Option.iter iter (Unicode.ident_refutation s)
 
-  let is_valid s = match Unicode.ident_refutation s with
-  | None -> true
-  | Some _ -> false
+  let is_valid s =
+    match Unicode.ident_refutation s with
+    | None -> true
+    | Some _ -> false
 
   let of_string s =
     let () = check_soft s in
@@ -143,14 +144,14 @@ struct
 
   let rec compare (p1 : t) (p2 : t) =
     if p1 == p2 then 0
-    else begin match p1, p2 with
-    | [], [] -> 0
-    | [], _ -> -1
-    | _, [] -> 1
-    | id1 :: p1, id2 :: p2 ->
-      let c = Id.compare id1 id2 in
-      if Int.equal c 0 then compare p1 p2 else c
-    end
+    else
+      match p1, p2 with
+      | [], [] -> 0
+      | [], _ -> -1
+      | _, [] -> 1
+      | id1 :: p1, id2 :: p2 ->
+        let c = Id.compare id1 id2 in
+        if Int.equal c 0 then compare p1 p2 else c
 
   let rec equal p1 p2 = p1 == p2 || match p1, p2 with
   | [], [] -> true

@@ -460,7 +460,7 @@ and pp_expr ?(attr=[]) e =
           (return @
            [Element ("scrutinees", [], List.map pp_case_expr cel)] @
            [pp_branch_expr_list bel]))
-  | CRecord (_, _, _) -> assert false
+  | CRecord (_, _) -> assert false
   | CLetIn (loc, (varloc, var), value, body) ->
       xmlApply loc
         (xmlOperator "let" loc ::
@@ -487,12 +487,10 @@ let rec tmpp v loc =
   (* Control *)
   | VernacLoad (verbose,f) ->
       xmlWithLoc loc "load" ["verbose",string_of_bool verbose;"file",f] []
-  | VernacTime l ->
-      xmlApply loc (Element("time",[],[]) ::
-                    List.map (fun(loc,e) ->tmpp e loc) l)
-  | VernacRedirect (s, l) ->
-      xmlApply loc (Element("redirect",["path", s],[]) ::
-                      List.map (fun(loc,e) ->tmpp e loc) l)
+  | VernacTime (loc,e) ->
+      xmlApply loc (Element("time",[],[]) :: [tmpp e loc])
+  | VernacRedirect (s, (loc,e)) ->
+      xmlApply loc (Element("redirect",["path", s],[]) :: [tmpp e loc])
   | VernacTimeout (s,e) ->
       xmlApply loc (Element("timeout",["val",string_of_int s],[]) ::
                     [tmpp e loc])
@@ -724,7 +722,6 @@ let rec tmpp v loc =
   | VernacRegister _ as x -> xmlTODO loc x
   | VernacComments (cl) ->
       xmlComment loc (List.flatten (List.map pp_comment cl))
-  | VernacNop as x -> xmlTODO loc x
 
   (* Stm backdoor *)
   | VernacStm _ as x -> xmlTODO loc x

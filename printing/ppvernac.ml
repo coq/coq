@@ -641,10 +641,10 @@ module Make
               else
                 spc() ++ qs s
           )
-        | VernacTime v ->
-          return (keyword "Time" ++ spc() ++ pr_vernac_list v)
-        | VernacRedirect (s, v) ->
-          return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_list v)
+        | VernacTime (_,v) ->
+          return (keyword "Time" ++ spc() ++ pr_vernac v)
+        | VernacRedirect (s, (_,v)) ->
+          return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac v)
         | VernacTimeout(n,v) ->
           return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac v)
         | VernacFail v ->
@@ -1036,13 +1036,18 @@ module Make
           return (keyword "Cd" ++ pr_opt qs s)
 
         (* Commands *)
-        | VernacDeclareTacticDefinition (rc,l) ->
-          let pr_tac_body (id, redef, body) =
+        | VernacDeclareTacticDefinition l ->
+          let pr_tac_body tacdef_body =
+            let id, redef, body =
+              match tacdef_body with
+              | TacticDefinition ((_,id), body) -> str (Id.to_string id), false, body
+              | TacticRedefinition (id, body) -> pr_ltac_ref id, true, body
+            in
             let idl, body =
               match body with
                 | Tacexpr.TacFun (idl,b) -> idl,b
                 | _ -> [], body in
-            pr_ltac_ref id ++
+            id ++
               prlist (function None -> str " _"
                 | Some id -> spc () ++ pr_id id) idl
             ++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
@@ -1230,8 +1235,6 @@ module Make
               (keyword "Comments" ++ spc()
                ++ prlist_with_sep sep (pr_comment pr_constr) l)
           )
-        | VernacNop ->
-          mt()
 
         (* Toplevel control *)
         | VernacToplevelControl exn ->
@@ -1267,11 +1270,6 @@ module Make
           return (keyword "BeginSubproof" ++ spc () ++ int i)
         | VernacEndSubproof ->
           return (str "}")
-
-    and pr_vernac_list l =
-      hov 2 (str"[" ++ spc() ++
-               prlist (fun v -> pr_located pr_vernac v ++ sep_end (snd v) ++ fnl()) l
-             ++ spc() ++ str"]")
 
     and pr_extend s cl =
       let pr_arg a =

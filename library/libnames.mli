@@ -43,7 +43,9 @@ module Dirset : Set.S with type elt = DirPath.t
 module Dirmap : Map.ExtS with type key = DirPath.t and module Set := Dirset
 
 (** {6 Full paths are {e absolute} paths of declarations } *)
-type full_path
+type full_path = {
+  dirpath : DirPath.t ;
+  basename : Id.t }
 
 val eq_full_path : full_path -> full_path -> bool
 
@@ -70,7 +72,7 @@ val restrict_path : int -> full_path -> full_path
     qualifications of absolute names, including single identifiers.
     The [qualid] are used to access the name table. *)
 
-type qualid
+type qualid = full_path
 
 val make_qualid : DirPath.t -> Id.t -> qualid
 val repr_qualid : qualid -> DirPath.t * Id.t

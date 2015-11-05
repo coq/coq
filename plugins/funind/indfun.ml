@@ -751,10 +751,8 @@ let rec add_args id new_args b =
   | CCast(loc,b1,b2)  ->
       CCast(loc,add_args id new_args b1,
 	    Miscops.map_cast_type (add_args id new_args) b2)
-  | CRecord (loc, w, pars) ->
-      CRecord (loc,
-	       (match w with Some w -> Some (add_args id new_args w) | _ -> None),
-	       List.map (fun (e,o) -> e, add_args id new_args o) pars)
+  | CRecord (loc, pars) ->
+      CRecord (loc, List.map (fun (e,o) -> e, add_args id new_args o) pars)
   | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation")
   | CGeneralization _ -> anomaly ~label:"add_args " (Pp.str "CGeneralization")
   | CPrim _ -> b

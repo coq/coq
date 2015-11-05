@@ -284,84 +284,134 @@ type module_binder = bool option * lident list * module_ast_inl
 
 (** {6 The type of vernacular expressions} *)
 
+(* Reference manual defines the grammar for Vernacular commands in Chapter 6
+ *
+ * ------------------------------------------------------------
+ *
+ * These files:
+ *
+ *   parsing/*.ml4
+ *
+ * define mapping of concrete syntax into "vernac_expr" values.
+ *
+ * ------------------------------------------------------------
+ *
+ * One can explore this mapping in the following way:
+ *
+ *   $ make -j4 bin/coqtop.byte
+ *   $ rlwrap bin/coqtop.byte
+ *
+ *   Coq < Drop.
+ *
+ *   # #use "dev/include";;
+ *   open Vernacexpr;;
+ *
+ *   Pcoq.parse_string Pcoq.Vernac_.vernac "Check 42.";;
+ *   Pcoq.parse_string Pcoq.Vernac_.vernac "Check 42 : nat.";;
+ *   ...
+ *)
+
+(** Representation of Vernacular commands. *)
 type vernac_expr =
   (* Control *)
-  | VernacLoad of verbose_flag * string
-  | VernacTime of vernac_list
-  | VernacRedirect of string * vernac_list
-  | VernacTimeout of int * vernac_expr
-  | VernacFail of vernac_expr
+  | VernacLoad of verbose_flag * string               (* Load ... *)
+  | VernacTime of located_vernac_expr                 (* Time ... *)
+  | VernacRedirect of string * located_vernac_expr    (* Redirect ... *)
+  | VernacTimeout of int * vernac_expr                (* Timeout ... *)
+  | VernacFail of vernac_expr                         (* Fail ... *)
   | VernacError of exn (* always fails *)
 
   (* Syntax *)
-  | VernacTacticNotation of
+  | VernacTacticNotation of                                                    (* Tactic Notation ... *)
       int * grammar_tactic_prod_item_expr list * raw_tactic_expr
-  | VernacSyntaxExtension of
+  | VernacSyntaxExtension of                                                   (* Reserved ... *)
       obsolete_locality * (lstring * syntax_modifier list)
-  | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
-  | VernacDelimiters of scope_name * string option
-  | VernacBindScope of scope_name * reference or_by_notation list
-  | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *
+  | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)            (* Open Scope ... *)
+                                                                               (* Close Scope ... *)
+  | VernacDelimiters of scope_name * string option                             (* Delimit ... *)
+  | VernacBindScope of scope_name * reference or_by_notation list              (* Bind Scope ... *)
+  | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *      (* Infix ... *)
       constr_expr * scope_name option
-  | VernacNotation of
+  | VernacNotation of                                                          (* Notation ... *)
       obsolete_locality * constr_expr * (lstring * syntax_modifier list) *
       scope_name option
-  | VernacNotationAddFormat of string * string * string
+  | VernacNotationAddFormat of string * string * string                        (* Format ... *)
 
   (* Gallina *)
-  | VernacDefinition of
+  | VernacDefinition of                                                        (* Definition ... *)
       (locality option * definition_object_kind) * plident * definition_expr
-  | VernacStartTheoremProof of theorem_kind * proof_expr list * bool
-  | VernacEndProof of proof_end
-  | VernacExactProof of constr_expr
-  | VernacAssumption of (locality option * assumption_object_kind) *
-      inline * (plident list * constr_expr) with_coercion list
-  | VernacInductive of private_flag * inductive_flag * (inductive_expr * decl_notation list) list
-  | VernacFixpoint of
+  | VernacStartTheoremProof of theorem_kind * proof_expr list * bool           (* Theorem ... *)
+                                                                               (* Lemma ... *)
+                                                                               (* Fact ... *)
+                                                                               (* Remark ... *)
+                                                                               (* Property ... *)
+                                                                               (* Proposition ... *)
+                                                                               (* Corollary ... *)
+  | VernacEndProof of proof_end                                                (* Admitted ... *)
+                                                                               (* Qed ... *)
+                                                                               (* Save ... *)
+                                                                               (* Defined ... *)
+  | VernacExactProof of constr_expr                                            (* Proof <term>. *)
+  | VernacAssumption of (locality option * assumption_object_kind) *           (* Hypothesis ... *)
+      inline * (plident list * constr_expr) with_coercion list                 (* Hypotheses ... *)
+                                                                               (* Variable ... *)
+                                                                               (* Variables ... *)
+                                                                               (* Axiom ... *)
+                                                                               (* Axioms ... *)
+                                                                               (* Parameter ... *)
+                                                                               (* Parameters ... *)
+  | VernacInductive of private_flag * inductive_flag * (inductive_expr * decl_notation list) list   (* ... Inductive ... *)
+                                                                                                    (* ... CoInductive ... *)
+                                                                                                    (* ... Variant ... *)
+                                                                                                    (* ... Record ... *)
+                                                                                                    (* ... Structure ... *)
+                                                                                                    (* ... Class ... *)
+  | VernacFixpoint of                                                          (* Fixpoint ... *)
       locality option * (fixpoint_expr * decl_notation list) list
-  | VernacCoFixpoint of
+  | VernacCoFixpoint of                                                        (* CoFixpoint ... *)
       locality option * (cofixpoint_expr * decl_notation list) list
-  | VernacScheme of (lident option * scheme) list
-  | VernacCombinedScheme of lident * lident list
-  | VernacUniverse of lident list
-  | VernacConstraint of (lident * Univ.constraint_type * lident) list
+  | VernacScheme of (lident option * scheme) list                              (* Scheme ... *)
+  | VernacCombinedScheme of lident * lident list                               (* Combined Scheme ... *)
+  | VernacUniverse of lident list                                              (* Universe ... *)
+  | VernacConstraint of (lident * Univ.constraint_type * lident) list          (* Constraint ... *)
 
   (* Gallina extensions *)
-  | VernacBeginSection of lident
-  | VernacEndSegment of lident
-  | VernacRequire of
+  | VernacBeginSection of lident                                               (* Section *)
+                                                                               (* Chapter *)
+  | VernacEndSegment of lident                                                 (* End <ident>. *)
+  | VernacRequire of                                                           (* Require ... *)
       lreference option * export_flag option * lreference list
-  | VernacImport of export_flag * lreference list
-  | VernacCanonical of reference or_by_notation
-  | VernacCoercion of obsolete_locality * reference or_by_notation *
+  | VernacImport of export_flag * lreference list                              (* Import ... *)
+  | VernacCanonical of reference or_by_notation                                (* Canonical Structure ... *)
+  | VernacCoercion of obsolete_locality * reference or_by_notation *           (* Coercion ... *)
       class_rawexpr * class_rawexpr
-  | VernacIdentityCoercion of obsolete_locality * lident *
+  | VernacIdentityCoercion of obsolete_locality * lident *                     (* Identity Coercion ... *)
       class_rawexpr * class_rawexpr
-  | VernacNameSectionHypSet of lident * section_subset_expr 
+  | VernacNameSectionHypSet of lident * section_subset_expr                    (* Collection ... *)
 
   (* Type classes *)
-  | VernacInstance of
+  | VernacInstance of                                                          (* Instance ... *)
       bool * (* abstract instance *)
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	(bool * constr_expr) option * (* props *)
 	int option (* Priority *)
 
-  | VernacContext of local_binder list
+  | VernacContext of local_binder list                                         (* Context *)
 
-  | VernacDeclareInstances of
+  | VernacDeclareInstances of                                                  (* Existing Instance ... *)
     reference list * int option (* instance names, priority *)
 
-  | VernacDeclareClass of reference (* inductive or definition name *)
+  | VernacDeclareClass of reference (* inductive or definition name *)         (* Existing Class ... *)
 
   (* Modules and Module Types *)
-  | VernacDeclareModule of bool option * lident *
+  | VernacDeclareModule of bool option * lident *                              (* Declare Module  [Import | Export | ] <ident> ... *)
       module_binder list * module_ast_inl
-  | VernacDefineModule of bool option * lident * module_binder list *
+  | VernacDefineModule of bool option * lident * module_binder list *          (* Module [Import | Export | ] <ident> ... *)
       module_ast_inl module_signature * module_ast_inl list
-  | VernacDeclareModuleType of lident *
+  | VernacDeclareModuleType of lident *                                        (* Module Type <ident> ... *)
       module_binder list * module_ast_inl list * module_ast_inl list
-  | VernacInclude of module_ast_inl list
+  | VernacInclude of module_ast_inl list                                       (* Include ... *)
 
   (* Solving *)
 
@@ -369,91 +419,117 @@ type vernac_expr =
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
-  | VernacAddLoadPath of rec_flag * string * DirPath.t option
-  | VernacRemoveLoadPath of string
-  | VernacAddMLPath of rec_flag * string
-  | VernacDeclareMLModule of string list
-  | VernacChdir of string option
+  | VernacAddLoadPath of rec_flag * string * DirPath.t option                  (* Add LoadPath ... *)
+  | VernacRemoveLoadPath of string                                             (* Remove LoadPath ... *)
+  | VernacAddMLPath of rec_flag * string                                       (* Add ML Path ... *)
+  | VernacDeclareMLModule of string list                                       (* Declare Module ... *)
+  | VernacChdir of string option                                               (* Pwd. *)
+                                                                               (* Cd ... *)
 
   (* State management *)
-  | VernacWriteState of string
-  | VernacRestoreState of string
+  | VernacWriteState of string                                                 (* Write State ... *)
+  | VernacRestoreState of string                                               (* Restore State ... *)
 
   (* Resetting *)
-  | VernacResetName of lident
-  | VernacResetInitial
-  | VernacBack of int
-  | VernacBackTo of int
+  | VernacResetName of lident                                                  (* Reset <ident>. *)
+  | VernacResetInitial                                                         (* Reset Initial. *)
+  | VernacBack of int                                                          (* Back ... *)
+  | VernacBackTo of int                                                        (* BackTo ... *)
 
   (* Commands *)
-  | VernacDeclareTacticDefinition of
-      (rec_flag * (reference * bool * raw_tactic_expr) list)
-  | VernacCreateHintDb of string * bool
-  | VernacRemoveHints of string list * reference list
-  | VernacHints of obsolete_locality * string list * hints_expr
-  | VernacSyntacticDefinition of Id.t located * (Id.t list * constr_expr) *
+  | VernacDeclareTacticDefinition of tacdef_body list                          (* Ltac ... *)
+  | VernacCreateHintDb of string * bool                                        (* Create HintDb ... *)
+  | VernacRemoveHints of string list * reference list                          (* Remove Hints ... *)
+  | VernacHints of obsolete_locality * string list * hints_expr                (* Hint ... *)
+  | VernacSyntacticDefinition of Id.t located * (Id.t list * constr_expr) *    (* Notation ... *)
       obsolete_locality * onlyparsing_flag
-  | VernacDeclareImplicits of reference or_by_notation *
+  | VernacDeclareImplicits of reference or_by_notation *                       (* Implicit Arguments ... *)
       (explicitation * bool * bool) list list
-  | VernacArguments of reference or_by_notation *
+  | VernacArguments of reference or_by_notation *                              (* Arguments ... *)
       ((Name.t * bool * (Loc.t * string) option * bool * bool) list) list *
       int * [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
               `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
               `DefaultImplicits ] list
-  | VernacArgumentsScope of reference or_by_notation *
+  | VernacArgumentsScope of reference or_by_notation *                         (* Arguments Scope ... *)
       scope_name option list
-  | VernacReserve of simple_binder list
+  | VernacReserve of simple_binder list                                        (* Implicit ... *)
   | VernacGeneralizable of (lident list) option
-  | VernacSetOpacity of (Conv_oracle.level * reference or_by_notation list)
-  | VernacSetStrategy of
+  | VernacSetOpacity of (Conv_oracle.level * reference or_by_notation list)    (* Opaque ... *)
+  | VernacSetStrategy of                                                       (* Strategy ... *)
       (Conv_oracle.level * reference or_by_notation list) list
-  | VernacUnsetOption of Goptions.option_name
-  | VernacSetOption of Goptions.option_name * option_value
-  | VernacAddOption of Goptions.option_name * option_ref_value list
-  | VernacRemoveOption of Goptions.option_name * option_ref_value list
-  | VernacMemOption of Goptions.option_name * option_ref_value list
-  | VernacPrintOption of Goptions.option_name
-  | VernacCheckMayEval of raw_red_expr option * int option * constr_expr
-  | VernacGlobalCheck of constr_expr
-  | VernacDeclareReduction of string * raw_red_expr
-  | VernacPrint of printable
-  | VernacSearch of searchable * int option * search_restriction
-  | VernacLocate of locatable
-  | VernacRegister of lident * register_kind
-  | VernacComments of comment list
-  | VernacNop
+  | VernacUnsetOption of Goptions.option_name                                  (* Unset ... *)
+  | VernacSetOption of Goptions.option_name * option_value                     (* Set ... *)
+                                                                               (* Debug ... *)
+  | VernacAddOption of Goptions.option_name * option_ref_value list            (* Add ... *)
+  | VernacRemoveOption of Goptions.option_name * option_ref_value list         (* Remove ... *)
+  | VernacMemOption of Goptions.option_name * option_ref_value list            (* Test ... for ... *)
+  | VernacPrintOption of Goptions.option_name                                  (* Print Table ... *)
+                                                                               (* Test ... *)
+  | VernacCheckMayEval of raw_red_expr option * int option * constr_expr       (* Check ... *)
+  | VernacGlobalCheck of constr_expr                                           (* Type ... *)
+  | VernacDeclareReduction of string * raw_red_expr                            (* Declare Reduction ... *)
+  | VernacPrint of printable                                                   (* Print ... *)
+  | VernacSearch of searchable * int option * search_restriction               (* SearchHead ... *)
+                                                                               (* SearchPattern ... *)
+                                                                               (* SearchRewrite ... *)
+                                                                               (* Search ... *)
+                                                                               (* SearchAbout ... *)
+  | VernacLocate of locatable                                                  (* Locate ... *)
+
+  | VernacRegister of lident * register_kind                                   (* Register ... *)
+  | VernacComments of comment list                                             (* Comments ... *)
 
   (* Stm backdoor *)
-  | VernacStm of vernac_expr stm_vernac
+  | VernacStm of vernac_expr stm_vernac                                        (* Stm ... *)
 
   (* Proof management *)
-  | VernacGoal of constr_expr
-  | VernacAbort of lident option
-  | VernacAbortAll
-  | VernacRestart
-  | VernacUndo of int
-  | VernacUndoTo of int
-  | VernacBacktrack of int*int*int
-  | VernacFocus of int option
-  | VernacUnfocus
-  | VernacUnfocused
-  | VernacBullet of bullet
-  | VernacSubproof of int option
-  | VernacEndSubproof
-  | VernacShow of showable
-  | VernacCheckGuard
-  | VernacProof of raw_tactic_expr option * section_subset_expr option
-  | VernacProofMode of string
+  | VernacGoal of constr_expr                                                  (* Goal ... *)
+  | VernacAbort of lident option                                               (* Abort. *)
+  | VernacAbortAll                                                             (* Abort All. *)
+  | VernacRestart                                                              (* Restart. *)
+  | VernacUndo of int                                                          (* Undo. *)
+  | VernacUndoTo of int                                                        (* Undo ... To ... *)
+  | VernacBacktrack of int*int*int                                             (* Backtrack ... *)
+  | VernacFocus of int option                                                  (* Focus ... *)
+  | VernacUnfocus                                                              (* Unfocus ... *)
+  | VernacUnfocused                                                            (* Unfocused ... *)
+  | VernacBullet of bullet                                                     (* [ * | + | - ] *)
+  | VernacSubproof of int option                                               (* { *)
+  | VernacEndSubproof                                                          (* } *)
+  | VernacShow of showable                                                     (* Show ... *)
+  | VernacCheckGuard                                                           (* Guarded. *)
+  | VernacProof of raw_tactic_expr option * section_subset_expr option         (* Proof. *)
+                                                                               (* Proof using ... *)
+  | VernacProofMode of string                                                  (* Proof with ... *)
   (* Toplevel control *)
-  | VernacToplevelControl of exn
+  | VernacToplevelControl of exn                                               (* Drop. *)
+                                                                               (* Quit. *)
 
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
   (* Flags *)
-  | VernacProgram of vernac_expr
-  | VernacPolymorphic of bool * vernac_expr
-  | VernacLocal of bool * vernac_expr
+  | VernacProgram of vernac_expr                                               (* Program ... *)
+  | VernacPolymorphic of bool * vernac_expr                                    (* Polymorphic ... *)
+  | VernacLocal of bool * vernac_expr                                          (* Local ... *)
+                                                                               (* Global ... *)
+
+(* These values are part of the abstract syntax tree.
+ * The concrete syntax is described in Section 9.1 of the Reference Manual ('ltac_def' non-terminal).
+ * The concrete syntax is defined by 'tacdef_body' non-terminal in 'parsing/g_ltac.ml4'.
+ * These values are returned by 'Pcoq.parse_string Pcoq.Tactic.tacdef_body' function.
+ *
+ * So e.g.:
+ *
+ *   Pcoq.parse_string Pcoq.Tactic.tacdef_body "foo:=bar";;
+ *
+ * returns
+ *
+ *   TacticDefinition ((0,8), foo) (TacArg ((5,8), TacCall (5,8) (Ident ((5,8), bar)) []))
+ *)
+and tacdef_body =
+  | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
+  | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
 
 and vernac_list = located_vernac_expr list
 

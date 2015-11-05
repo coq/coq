@@ -32,7 +32,9 @@ type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
-type prim_token = Numeral of Bigint.bigint | String of string
+type prim_token =
+  | Numeral of Bigint.bigint (** AST representation of integer literals that appear in Coq scripts. *)
+  | String of string
 
 type raw_cases_pattern_expr =
   | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
@@ -42,19 +44,34 @@ type raw_cases_pattern_expr =
   | RCPatAtom of Loc.t * Id.t option
   | RCPatOr of Loc.t * raw_cases_pattern_expr list
 
+(* cases_pattern_expr ::= ... *)
 type cases_pattern_expr =
+
   | CPatAlias of Loc.t * cases_pattern_expr * Id.t
-  | CPatCstr of Loc.t * reference
-    * cases_pattern_expr list * cases_pattern_expr list
+  (* <pattern> as <ident> *)
+               
+  | CPatCstr of Loc.t * reference * cases_pattern_expr list * cases_pattern_expr list
   (** [CPatCstr (_, Inl c, l1, l2)] represents (@c l1) l2 *)
+
+  (* <ident> *)
   | CPatAtom of Loc.t * reference option
+
+  (* ( <pattern> | ... | <pattern> ) *)
   | CPatOr of Loc.t * cases_pattern_expr list
+
   | CPatNotation of Loc.t * notation * cases_pattern_notation_substitution
-    * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
+    * cases_pattern_expr list
+      (** CPatNotation (_, n, l1 ,l2) represents
 				  (notation n applied with substitution l1)
 				  applied to arguments l2 *)
+
+  (* pattern-matching for literals *)
   | CPatPrim of Loc.t * prim_token
+
+  (* {| ... |} *)
   | CPatRecord of Loc.t * (reference * cases_pattern_expr) list
+
+  (* <pattern> % <scope_delimiter> *)
   | CPatDelimiters of Loc.t * string * cases_pattern_expr
 
 and cases_pattern_notation_substitution =
@@ -63,55 +80,246 @@ and cases_pattern_notation_substitution =
 
 type instance_expr = Misctypes.glob_level list
 
+(** AST representation of a term. *)
+
+(* These values are part of the abstract syntax tree.
+ * The concrete syntax is described in Section 1.2 of the Reference manual.
+ * The concrete syntax is defined by 'lconstr' non-terminal in 'parsing/g_constr.ml4'.
+ * These values are returned by 'Pcoq.parse_string Pcoq.Constr.lconstr' function.
+ *
+ * So e.g.:
+ *
+ *   Pcoq.parse_string Pcoq.Constr.lconstr "foo"
+ *
+ * returns
+ *
+ *   CRef (Ident ((0,3), foo)) None
+ *)
 type constr_expr =
-  | CRef of reference * instance_expr option
-  | CFix of Loc.t * Id.t located * fix_expr list
-  | CCoFix of Loc.t * Id.t located * cofix_expr list
-  | CProdN of Loc.t * binder_expr list * constr_expr
-  | CLambdaN of Loc.t * binder_expr list * constr_expr
-  | CLetIn of Loc.t * Name.t located * constr_expr * constr_expr
-  | CAppExpl of Loc.t * (proj_flag * reference * instance_expr option) * constr_expr list
-  | CApp of Loc.t * (proj_flag * constr_expr) *
-      (constr_expr * explicitation located option) list
-  | CRecord of Loc.t * constr_expr option * (reference * constr_expr) list
-  | CCases of Loc.t * case_style * constr_expr option *
-      case_expr list * branch_expr list
-  | CLetTuple of Loc.t * Name.t located list * (Name.t located option * constr_expr option) *
-      constr_expr * constr_expr
-  | CIf of Loc.t * constr_expr * (Name.t located option * constr_expr option)
-      * constr_expr * constr_expr
+
+  (* Qualified/unqualified identifiers.
+   *
+   * Examples:
+   *
+   *    O
+   *    Datatypes.O
+   *    Coq.Init.Datatypes.O
+   *)
+  | CRef of reference              (* Identifier itself. *)
+          * instance_expr option   (* "None" ... under normal circumstances.
+                                    * "Some _" ... when dealing with universe polymorphism.
+                                    *)
+
+  (* <constr_expr> ::= fix <fix_expr>
+   *                 | fix <fix_expr_1> with <fix_expr_2> ... with <fix_expr_N> for <ident_I>
+   *)
+  | CFix of Loc.t          (* position of the "fix" keyword *)
+          * Id.t located   (* <ident_I> *)
+          * fix_expr list  (* [<fix_expr_1>; <fix_expr_2>; ... ; <fix_expr_N>] *)
+
+  (* <constr_expr> ::= cofix <cofix_expr>
+   *                 | cofix <cofix_expr_1> with <cofix_expr_2> ... with <cofix_expr_N> for <ident_I>
+   *)
+  | CCoFix of Loc.t            (* position of the "cofix" keyword *)
+            * Id.t located     (* <ident_I> *)
+            * cofix_expr list  (* [<cofix_expr_1>; <cofix_expr_2>; ... ; <cofix_expr_N>] *)
+
+  (* <constr_expr> ::= forall <binders>, <constr> *)
+  | CProdN of Loc.t             (* position of the "forall" keyword *)
+            * binder_expr list  (* <binders> *)
+            * constr_expr       (* <constr> *)
+
+  (* <constr_expr> ::= fun <binders> => <constr> *)
+  | CLambdaN of Loc.t             (* position of the "fun" keyword *)
+              * binder_expr list  (* <binders> *)
+              * constr_expr       (* <constr> *)
+
+  (* <constr_expr> ::= let <ident> := <constr_A> in <constr_B> *)
+  | CLetIn of Loc.t            (* position of the "let" keyword *)
+            * Name.t located   (* <ident> *)
+            * constr_expr      (* <constr_A> *)
+            * constr_expr      (* <constr_B> *)
+
+  (* <constr_expr> ::= @ <ident> <constr_1> ... <constr_N>
+   *                 | ...
+   *)
+  | CAppExpl of Loc.t                   (* position of <ident> *)
+              * (proj_flag              (* None *)
+                * reference             (* <ident> *)
+                * instance_expr option  (* None *)
+                )
+              * constr_expr list        (* [<constr_1>; ...; <constr_N>] *)
+
+  (* <constr_expr> ::= <constr_0> <constr_1> ... <constr_N>
+   *                      (* CApp (_, (None, <constr_0>), [<constr_1>, None; ...; <constr_N>, None]) *)
+   *                
+   *                 | <constr_0> (<ident_1> := <constr_1>) ... (<ident_N> := <constr_N>)
+   *                      (* CApp (_, (None, <constr_0), [<constr_1>, Some (ByName <ident_1>);
+   *                                                      ...
+   *                                                      <constr_N>, Some (ByName <ident_N>)]) *)
+   *                
+   *                 | ...
+   *)
+  | CApp of Loc.t
+          * (proj_flag * constr_expr)
+          * (constr_expr * explicitation located option) list
+
+  (* <constr_expr> ::= {| <ident_1> := <constr_1> ; ... ; <ident_N> := <constr_N> |} *)
+  | CRecord of Loc.t
+             * (reference     (* <ident_I> *)
+               * constr_expr  (* <constr_I> *)
+               ) list
+
+  (* <constr_expr> ::= match <case_expr_1>, ..., <case_expr_N> [return <constr_R>] with
+   *         <branch_expr_1>
+   *         ...
+   *         <branch_expr_M>
+   *         end
+   *
+   *       | ...
+   *)
+  | CCases of Loc.t                (* location of the "match" keyword *)
+            * case_style           (* RegularStyle *)
+            * constr_expr option   (* None | Some <constr_R> *)
+            * case_expr list       (* [<case_expr_1>; ... ; <case_expr_N>] *)
+            * branch_expr list     (* [<branch_expr_1>; ...; <branch_expr_M>] *)
+
+  (* <constr_expr> ::= let (<ident_1>, ... , <ident_N>) [[as <ident_A>] return <constr_1>] := <constr_2> in <constr_3> *)
+  | CLetTuple of Loc.t
+               * Name.t located list     (* [<ident_1> ; ... ; <ident_N>] *)
+               * (Name.t located option  (* None | Some <ident_A> *)
+                 * constr_expr option    (* None | Some <constr_1> *)
+                 )
+               * constr_expr             (* <constr_2> *)
+               * constr_expr             (* <constr_3> *)
+
+  (* <constr_expr> ::= if <constr_1> [[as <ident_A>] return <constr_2>] then <constr_3> else <constr_4> *)
+  | CIf of Loc.t
+         * constr_expr             (* <constr_1> *)
+         * (Name.t located option  (* None | Some <ident_A> *)
+           * constr_expr option    (* None | Some <constr_2> *)
+           )
+         * constr_expr             (* <constr_3> *)
+         * constr_expr             (* <constr_4> *)
+
+  (* <constr_expr> ::= _ *)
   | CHole of Loc.t * Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
+
+  (* <constr_expr> ::= @?<ident>
+   *
+   * E.g. as in:
+   *
+   *   @?a b c  --->  CApp <abstr> (None, CPatVar <abstr> "a")
+   *                   [(CRef (Ident (<abstr>, "b")) None, None);
+   *                    (CRef (Ident (<abstr>, "c")) None, None)]
+   *)
   | CPatVar of Loc.t * patvar
+
+  (* <constr_expr> ::= ?<ident>
+   *
+   * E.g. as in:
+   *
+   *   ?foo@{bar:=Set; baz:=Prop}  --->  CEvar <abstr> "foo"
+   *                                      [("bar", CSort <abstr> Misctypes.GSet);
+   *                                          ("baz", CSort <abstr> Misctypes.GProp)]
+   *)
   | CEvar of Loc.t * Glob_term.existential_name * (Id.t * constr_expr) list
-  | CSort of Loc.t * glob_sort
+
+  (* constr_expr> ::= Prop
+   *                | Set
+   *                | Type [@{ <universe> }]
+   *
+   * E.g. as in:
+   *
+   *   Type  --->  CSort _ (Misctypes.GType [])
+   *   Type@{foo}  --->  CSort _ (Misctypes.GType [(_, "foo")])
+   *   Type@{max(foo,bar,bak)  --->  CSort <abstr> (GType [(_, "foo"); (_, "bar"); (_, "bak")])
+   *)
+  | CSort of Loc.t * glob_sort   (* representation of sorts (i.e. 'Prop', 'Set', and 'Type' *)
+
+  (* (<constr_expr> : constr_expr cast_type) *)
   | CCast of Loc.t * constr_expr * constr_expr cast_type
+
+  (* Representation of terms that take advantage of user-defined 'notations'. E.g.:
+   *
+   *  2+3  --->  CNotation loc "_ + _" ([CPrim _ (Numeral 2); CPrim _ (Numeral 3)],
+   *                                    [],
+   *                                    []))
+   *)
   | CNotation of Loc.t * notation * constr_notation_substitution
+
   | CGeneralization of Loc.t * binding_kind * abstraction_kind option * constr_expr
+
+  (* Representation of 'primitive tokens' (in other words 'literals'). E.g.:
+   *
+   *   42     --->  CPrim _ (Numeral 42)
+   *   "foo"  --->  CPrim (280,285) (String "foo")
+   *)
   | CPrim of Loc.t * prim_token
+
+  (* Representation of 'interpretation scope'. E.g.:
+   *
+   *   0%nat  --->  CDelimiters _ "nat" (CPrim _ (Numeral 0))
+   *   0%Z    --->  CDelimiters _ "Z" (CPrim _ (Numeral 0))
+   *)
   | CDelimiters of Loc.t * string * constr_expr
 
-and case_expr =
-  constr_expr * (Name.t located option * cases_pattern_expr option)
+(* case_expr ::= <constr> [as <ident>] [in <pattern>] *)
+and case_expr = constr_expr                  (* <constr> *)
+              * (Name.t located option       (* None | Some <ident> *)
+                * cases_pattern_expr option  (* None | Some <pattern> *)
+                )
 
-and branch_expr =
-  Loc.t * cases_pattern_expr list located list * constr_expr
+(* branch_expr ::= <p_1_1>, ... , <p_1_N1> | ... | <p_M_1>, ... , <p_M_NM> => <constr> *)
+and branch_expr = Loc.t
+                * cases_pattern_expr list located list  (* [[<p_1_1>; ... ; <p_1_N1>];
+                                                         *  ...
+                                                         *  [<p_M_N1>; ... ; <p_M_NM>]]
+                                                         *)
+                * constr_expr                           (* <constr> *)
 
-and binder_expr =
-  Name.t located list * binder_kind * constr_expr
+(* representation of bindings (of products and lambda-expressions) *)
+and binder_expr = Name.t located list  (* names of bound variables *)
+                * binder_kind          (* implicit bindings / explicit bindings *)
+                * constr_expr          (* type of bound variables *)
 
-and fix_expr =
-    Id.t located * (Id.t located option * recursion_order_expr) *
-      local_binder list * constr_expr * constr_expr
+(* <fix_expr> ::= <ident> <binders> [<annotation>] [: <termA>] := <termB> *)
+and fix_expr = Id.t located       (* <ident> *)
+             * fix_annotation     (* <annotation> *)
+             * local_binder list  (* <binders> *)
+             * constr_expr        (* <termA> *)
+             * constr_expr        (* <termB> *)
 
-and cofix_expr =
-    Id.t located * local_binder list * constr_expr * constr_expr
+(* <cofix_expr> ::= <ident> [: <termA>] := <termB> *)
+and cofix_expr = Id.t located       (* <ident> *)
+               * local_binder list  (* <binders> *)
+               * constr_expr        (* <termA> *)
+               * constr_expr        (* <termB> *)
+
+(* fix_annotation ::=                                          (* None, CStructRec *)
+ *                  | { struct <ident> }                       (* Some <ident>, CStructRec *)
+ *                  | { wf <constr> }                          (* None, CWfRec <constr> *)
+ *                  | { wf <constr> <ident> }                  (* Some <ident>, CWfRec <constr> *)
+ *                  | { measure <constr>}                      (* None, CMeasureRec (<constr>, None) *)
+ *                  | { measure <constr> <ident> }             (* Some <ident>, CMeasureRec (<constr>, None) *)
+ *                  | { measure <constrA> <ident> <constrB> }  (* Some <ident>, CMeasureRec (<constrA>, Some <constrB>) *)
+ *)
+and fix_annotation = Id.t located option
+                   * recursion_order_expr
 
 and recursion_order_expr =
   | CStructRec
   | CWfRec of constr_expr
   | CMeasureRec of constr_expr * constr_expr option (** measure, relation *)
 
-(** Anonymous defs allowed ?? *)
+(* <local_binder> ::= <ident>                                   (* LocalRawAssum ([<ident>], Default Explicit, CHole _) *)
+ *                  | ( <ident_1> ... <ident_N> : <constr> )    (* LocalRawAssum ([<ident_1>; ...; <ident_N>], Default Explicit, <constr>) *)
+ *                  | ( <ident> := <constr> )                   (* LocalRawDef (<ident>, <constr>) *)
+ *                  | ( <ident_1> : <constr_A> := <constr_B> )  (* LocalRawDef (<ident>, CCast(_, <constr_B>, CastConv <constr_A>)) *)
+ *                  | { <ident_1> ... <ident_N> }               (* LocalRawAssum ([<ident_1>; ...; <ident_N>], Default Implicit, CHole _) *)
+ *                  | { <ident_1> ... <ident_N> : <constr> }    (* LocalRawAssum ([<ident_1>; ...; <ident_N>], Default Implicit, <constr>) *)
+ *                  | ...
+ *)
 and local_binder =
   | LocalRawDef of Name.t located * constr_expr
   | LocalRawAssum of Name.t located list * binder_kind * constr_expr

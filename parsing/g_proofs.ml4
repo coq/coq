@@ -50,19 +50,19 @@ GEXTEND Gram
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
       | IDENT "Abort"; id = identref -> VernacAbort (Some id)
       | IDENT "Existential"; n = natural; c = constr_body ->
-	  VernacSolveExistential (n,c)
+          VernacSolveExistential (n,c)
       | IDENT "Admitted" -> VernacEndProof Admitted
       | IDENT "Qed" -> VernacEndProof (Proved (Opaque None,None))
       | IDENT "Qed"; IDENT "exporting"; l = LIST0 identref SEP "," ->
           VernacEndProof (Proved (Opaque (Some l),None))
       | IDENT "Save" -> VernacEndProof (Proved (Opaque None,None))
       | IDENT "Save"; tok = thm_token; id = identref ->
-	  VernacEndProof (Proved (Opaque None,Some (id,Some tok)))
+          VernacEndProof (Proved (Opaque None,Some (id,Some tok)))
       | IDENT "Save"; id = identref ->
-	  VernacEndProof (Proved (Opaque None,Some (id,None)))
+          VernacEndProof (Proved (Opaque None,Some (id,None)))
       | IDENT "Defined" -> VernacEndProof (Proved (Transparent,None))
-      |	IDENT "Defined"; id=identref ->
-	  VernacEndProof (Proved (Transparent,Some (id,None)))
+      |        IDENT "Defined"; id=identref ->
+          VernacEndProof (Proved (Transparent,Some (id,None)))
       | IDENT "Restart" -> VernacRestart
       | IDENT "Undo" -> VernacUndo 1
       | IDENT "Undo"; n = natural -> VernacUndo n
@@ -78,7 +78,7 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Goal"; n = string ->
           VernacShow (ShowGoal (GoalUid n))
       | IDENT "Show"; IDENT "Implicit"; IDENT "Arguments"; n = OPT natural ->
-	  VernacShow (ShowGoalImplicitly n)
+          VernacShow (ShowGoalImplicitly n)
       | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode
       | IDENT "Show"; IDENT "Script" -> VernacShow ShowScript
       | IDENT "Show"; IDENT "Existentials" -> VernacShow ShowExistentials
@@ -93,20 +93,20 @@ GEXTEND Gram
       | IDENT "Guarded" -> VernacCheckGuard
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
-	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
-	    VernacCreateHintDb (id, b)
+          id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
+            VernacCreateHintDb (id, b)
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
-	  VernacRemoveHints (dbnames, ids)
+          VernacRemoveHints (dbnames, ids)
       | IDENT "Hint"; local = obsolete_locality; h = hint;
-	  dbnames = opt_hintbases ->
-	  VernacHints (local,dbnames, h)
+          dbnames = opt_hintbases ->
+          VernacHints (local,dbnames, h)
       (* Declare "Resolve" explicitly so as to be able to later extend with
          "Resolve ->" and "Resolve <-" *)
       | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 reference_or_constr; 
-	  pri = OPT [ "|"; i = natural -> i ];
-	  dbnames = opt_hintbases ->
-	  VernacHints (false,dbnames,
-	    HintsResolve (List.map (fun x -> (pri, true, x)) lc))
+          pri = OPT [ "|"; i = natural -> i ];
+          dbnames = opt_hintbases ->
+          VernacHints (false,dbnames,
+            HintsResolve (List.map (fun x -> (pri, true, x)) lc))
       ] ];
   obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]
@@ -117,7 +117,7 @@ GEXTEND Gram
   ;
   hint:
     [ [ IDENT "Resolve"; lc = LIST1 reference_or_constr; 
-	pri = OPT [ "|"; i = natural -> i ] ->
+        pri = OPT [ "|"; i = natural -> i ] ->
           HintsResolve (List.map (fun x -> (pri, true, x)) lc)
       | IDENT "Immediate"; lc = LIST1 reference_or_constr -> HintsImmediate lc
       | IDENT "Transparent"; lc = LIST1 global -> HintsTransparency (lc, true)
@@ -127,7 +127,7 @@ GEXTEND Gram
       | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
       | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
           tac = tactic ->
-	  HintsExtern (n,c,tac) ] ]
+          HintsExtern (n,c,tac) ] ]
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c
