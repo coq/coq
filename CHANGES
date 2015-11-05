@@ -397,6 +397,9 @@ Program
 - "Solve Obligations using" changed to "Solve Obligations with",
   consistent with "Proof with".
 - Program Lemma, Definition now respect automatic introduction.
+- Program Lemma, Definition, etc.. now interpret "->" like Lemma and
+  Definition as a non-dependent arrow (potential source of
+  incompatibility).
 - Add/document "Set Hide Obligations" (to hide obligations in the final
   term inside an implicit argument) and "Set Shrink Obligations" (to
   minimize dependencies of obligations defined by tactics).
