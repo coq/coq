@@ -1075,7 +1075,7 @@ The following typing rule is added to the theory.
 {\left\{\begin{array}{l}
 \Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\\
 (E[] \vdash q_l : P'_l)_{l=1\ldots r}\\
-(\WTEGLECONV{P'_l}{\subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}})_{l=1\ldots r}\\
+(\WTELECONV{}{P'_l}{\subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}})_{l=1\ldots r}\\
 1 \leq j \leq k
 \end{array}
 \right.}
@@ -1087,7 +1087,7 @@ provided that the following side conditions hold:
 \begin{itemize}
 \item $\Gamma_{P'}$ is the context obtained from $\Gamma_P$ by
 replacing each $P_l$ that is an arity with $P'_l$ for $1\leq l \leq r$ (notice that
-$P_l$ arity implies $P'_l$ arity since $\WTEGLECONV{P'_l}{ \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}}$);
+$P_l$ arity implies $P'_l$ arity since $\WTELECONV{}{P'_l}{ \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}}$);
 \item there are sorts $s_i$, for $1 \leq i \leq k$ such that, for
  $\Gamma_{I'} = [I_1:\forall
     \Gamma_{P'},(A_1)_{/s_1};\ldots;I_k:\forall \Gamma_{P'},(A_k)_{/s_k}]$
