@@ -1514,6 +1514,59 @@ Extraction eq_rec.
 An empty definition has no constructors, in that case also,
 elimination on any sort is allowed.
 
+% QUESTION:
+%
+% In Coq, this works:
+% 
+%   Check match 42 as x return match x with
+%                              | O => nat
+%                              | _ => bool
+%                              end
+%         with
+%         | O => 42
+%         | _ => true
+%         end.
+% 
+% Also this works:
+% 
+%   Check let foo := 42 in
+%         match foo return match foo with
+%                          | O => nat
+%                          | _ => bool
+%                          end
+%         with
+%         | O => 42
+%         | _ => true
+%         end.
+% 
+% But here:
+% 
+%   Definition foo := 42.
+%   Check match foo return match foo with
+%                          | O => nat
+%                          | _ => bool
+%                          end
+%         with
+%         | O => 42
+%         | _ => true
+%         end.
+% 
+% Coq complains:
+% 
+%   Error:
+%   The term "42" has type "nat" while it is expected to have type
+%    "match foo with
+%     | 0 => nat
+%     | S _ => bool
+%     end".
+% 
+% However, the Reference Manual says that:
+% 
+%   "Remark that when the term being matched is a variable, the as clause can
+% be omitted and the term being matched can serve itself as binding name in the return type."
+% 
+% so I do not understand why, in this case, Coq produces a given error message.
+
 \paragraph{Type of branches.}
 Let $c$ be a term of type $C$, we assume $C$ is a type of constructor
 for an inductive definition $I$. Let $P$ be a term that represents the
