@@ -337,7 +337,7 @@ let typecheck_inductive env mie =
 type ill_formed_ind =
   | LocalNonPos of int
   | LocalNotEnoughArgs of int
-  | LocalNotConstructor
+  | LocalNotConstructor of rel_context * constr list
   | LocalNonPar of int * int * int
 
 exception IllFormedInd of ill_formed_ind
@@ -348,7 +348,7 @@ exception IllFormedInd of ill_formed_ind
 
 let mind_extract_params = decompose_prod_n_assum
 
-let explain_ind_err id ntyp env nbpar c nargs err =
+let explain_ind_err id ntyp env nbpar c err =
   let (lpar,c') = mind_extract_params nbpar c in
   match err with
     | LocalNonPos kt ->
@@ -356,9 +356,11 @@ let explain_ind_err id ntyp env nbpar c nargs err =
     | LocalNotEnoughArgs kt ->
 	raise (InductiveError
 		 (NotEnoughArgs (env,c',mkRel (kt+nbpar))))
-    | LocalNotConstructor ->
+    | LocalNotConstructor (paramsctxt,args)->
+        let nparams = rel_context_nhyps paramsctxt in
 	raise (InductiveError
-		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nbpar,nargs)))
+		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nparams,
+                                  List.length args - nparams)))
     | LocalNonPar (n,i,l) ->
 	raise (InductiveError
 		 (NonPar (env,c',n,mkRel i, mkRel (l+nbpar))))
@@ -547,7 +549,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
                 begin match hd with
                 | Rel j when Int.equal j (n + ntypes - i - 1) ->
                   check_correct_par ienv hyps (ntypes - i) largs
-                | _ -> raise (IllFormedInd LocalNotConstructor)
+                | _ -> raise (IllFormedInd (LocalNotConstructor(hyps,largs)))
                 end
               else
                 if not (List.for_all (noccur_between n ntypes) largs)
@@ -563,7 +565,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
           try
 	    check_constructors ienv true nmr rawc
           with IllFormedInd err ->
-	    explain_ind_err id (ntypes-i) env lparams c nargs err)
+	    explain_ind_err id (ntypes-i) env lparams c err)
       (Array.of_list lcnames) indlc
   in
   let irecargs = Array.map snd irecargs_nmr
