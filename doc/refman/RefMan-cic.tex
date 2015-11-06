@@ -1584,9 +1584,12 @@ branch corresponding to the $c:C$ constructor.
 We write \CI{c}{P} for \CI{c:C}{P} with $C$ the type of $c$.
 
 \paragraph{Examples.}
-For $\List \nat$ the type of $P$ will be $\ListA\ra s$ for $s \in \Sort$. \\ 
-$ \CI{(\cons~A)}{P} \equiv
-\forall a:A, \forall l:\ListA,(P~(\cons~A~a~l))$.
+For $\List~\nat$ the type of $P$ will be $\List~\nat\ra s$ for $s \in \Sort$. \\ 
+$ \CI{(\cons~\nat)}{P}
+  \equiv\CI{(\cons~\nat) : (\nat\ra\List~\nat\ra\List~\nat)}{P} \equiv\\
+  \equiv\forall n:\nat, \CI{(\cons~\nat~n) : \List~\nat\ra\List~\nat)}{P} \equiv\\
+  \equiv\forall n:\nat, \forall l:\List~\nat, \CI{(\cons~\nat~n~l) : \List~\nat)}{P} \equiv\\
+\equiv\forall n:\nat, \forall l:\List~\nat,(P~(\cons~\nat~n~l))$.
 
 For $\haslengthA$, the type of $P$ will be
 $\forall l:\ListA,\forall n:\nat, (\haslengthA~l~n)\ra \Prop$ and the expression
