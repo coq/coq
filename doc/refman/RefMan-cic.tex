@@ -1583,13 +1583,42 @@ branch corresponding to the $c:C$ constructor.
 \]
 We write \CI{c}{P} for \CI{c:C}{P} with $C$ the type of $c$.
 
-\paragraph{Examples.}
-For $\List~\nat$ the type of $P$ will be $\List~\nat\ra s$ for $s \in \Sort$. \\ 
+\paragraph{Example.}
+The following term in concrete syntax:
+\begin{verbatim}
+match t as l return P' with
+| nil _ => t1
+| cons _ hd tl => t2
+end
+\end{verbatim}
+can be represented in abstract syntax as $$\Case{P}{t}{f_1\,|\,f_2}$$
+where
+\begin{eqnarray*}
+  P & = & \lambda~l~.~P^\prime\\
+  f_1 & = & t_1\\
+  f_2 & = & \lambda~(hd:\nat)~.~\lambda~(tl:\List~\nat)~.~t_2
+\end{eqnarray*}
+According to the definition:
+\begin{latexonly}\vskip.5em\noindent\end{latexonly}%
+\begin{htmlonly}
+
+\end{htmlonly}
+$ \CI{(\Nil~\nat)}{P} \equiv \CI{(\Nil~\nat) : (\List~\nat)}{P} \equiv (P~(\Nil~\nat))$
+\begin{latexonly}\vskip.5em\noindent\end{latexonly}%
+\begin{htmlonly}
+
+\end{htmlonly}
 $ \CI{(\cons~\nat)}{P}
   \equiv\CI{(\cons~\nat) : (\nat\ra\List~\nat\ra\List~\nat)}{P} \equiv\\
   \equiv\forall n:\nat, \CI{(\cons~\nat~n) : \List~\nat\ra\List~\nat)}{P} \equiv\\
   \equiv\forall n:\nat, \forall l:\List~\nat, \CI{(\cons~\nat~n~l) : \List~\nat)}{P} \equiv\\
 \equiv\forall n:\nat, \forall l:\List~\nat,(P~(\cons~\nat~n~l))$.
+\begin{latexonly}\vskip.5em\noindent\end{latexonly}%
+\begin{htmlonly}
+
+\end{htmlonly}
+Given some $P$, then \CI{(\Nil~\nat)}{P} represents the expected type of $f_1$, and
+\CI{(\cons~\nat)}{P} represents the expected type of $f_2$.
 
 \paragraph{Typing rule.}
 
