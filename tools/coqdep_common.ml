@@ -220,6 +220,18 @@ let absolute_file_name basename odir =
   let dir = match odir with Some dir -> dir | None -> "." in
   absolute_dir dir // basename
 
+(** [find_dir_logpath dir] Return the logical path of directory [dir]
+    if it has been given one. Raise [Not_found] otherwise. In
+    particular we can check if "." has been attributed a logical path
+    after processing all options and silently give the default one if
+    it hasn't. We may also use this to warn if ap hysical path is met
+    twice.*)
+let register_dir_logpath,find_dir_logpath =
+  let tbl: (string, string list) Hashtbl.t = Hashtbl.create 19 in
+  let reg physdir logpath = Hashtbl.add tbl (absolute_dir physdir) logpath in
+  let fnd physdir = Hashtbl.find tbl (absolute_dir physdir) in
+  reg,fnd
+
 let file_name s = function
   | None     -> s
   | Some "." -> s
@@ -339,7 +351,8 @@ let escape =
     Buffer.contents s'
 
 let compare_file f1 f2 =
-  absolute_dir (Filename.dirname f1) = absolute_dir (Filename.dirname f2)
+  absolute_file_name (Filename.basename f1) (Some (Filename.dirname f1))
+  = absolute_file_name (Filename.basename f2) (Some (Filename.dirname f2))
 
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
@@ -514,11 +527,13 @@ let add_known recur phys_dir log_dir f =
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
-(* Visits all the directories under [dir], including [dir],
-   or just [dir] if [recur=false] *)
-
+(** Visit directory [phys_dir] (recursively unless [recur=false]) and
+    apply function add_file to each regular file encountered.
+    [log_dir] is the logical name of the [phys_dir].
+    [add_file] takes both directory names and the file. *)
 let rec add_directory recur add_file phys_dir log_dir =
   let dirh = opendir phys_dir in
+  register_dir_logpath phys_dir log_dir;
   try
     while true do
       let f = readdir dirh in
@@ -531,19 +546,24 @@ let rec add_directory recur add_file phys_dir log_dir =
               if StrSet.mem f !norec_dirnames then ()
               else
 	        if StrSet.mem phys_f !norec_dirs then ()
-	        else
+	        else (* TODO: warn if already seen this physycal dir? *)
 		  add_directory recur add_file phys_f (log_dir@[f])
 	  | S_REG -> add_file phys_dir log_dir f
 	  | _ -> ()
     done
   with End_of_file -> closedir dirh
 
+(** Simply add this directory and imports it, no subdirs. This is used
+    by the implicit adding of the current path (which is not recursive). *)
+let add_norec_dir_import add_file phys_dir log_dir =
+  try add_directory false (add_file true) phys_dir log_dir with Unix_error _ -> ()
+
 (** -Q semantic: go in subdirs but only full logical paths are known. *)
-let add_dir add_file phys_dir log_dir =
+let add_rec_dir_no_import add_file phys_dir log_dir =
   try add_directory true (add_file false) phys_dir log_dir with Unix_error _ -> ()
 
 (** -R semantic: go in subdirs and suffixes of logical paths are known. *)
-let add_rec_dir add_file phys_dir log_dir =
+let add_rec_dir_import add_file phys_dir log_dir =
   handle_unix_error (add_directory true (add_file true) phys_dir) log_dir
 
 (** -I semantic: do not go in subdirs. *)

@@ -426,8 +426,9 @@ let coq_dependencies_dump chan dumpboxes =
 end
 
 let usage () =
-  eprintf " usage: coqdep [-w] [-c] [-D] [-I dir] [-R dir coqdir] <filename>+\n";
+  eprintf " usage: coqdep [-w] [-c] [-D] [-I dir] [-Q dir coqdir] [-R dir coqdir] <filename>+\n";
   eprintf " extra options:\n";
+  eprintf "  -sort : output the file names ordered by dependencies\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -exclude-dir f : skip subdirectories named 'f' during -R search\n";
   eprintf "  -dumpgraph f : print a dot dependency graph in file 'f'\n";
@@ -442,16 +443,17 @@ let rec parse = function
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
   | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
-  | "-I" :: r :: "-as" :: ln :: ll -> add_dir add_known r [];
-    add_dir add_known r (split_period ln);
-    parse ll
+  | "-I" :: r :: "-as" :: ln :: ll ->
+     add_rec_dir_no_import add_known r [];
+     add_rec_dir_no_import add_known r (split_period ln);
+     parse ll
   | "-I" :: r :: "-as" :: [] -> usage ()
   | "-I" :: r :: ll -> add_caml_dir r; parse ll
   | "-I" :: [] -> usage ()
-  | "-R" :: r :: "-as" :: ln :: ll -> add_rec_dir add_known r (split_period ln); parse ll
+  | "-R" :: r :: "-as" :: ln :: ll -> add_rec_dir_import add_known r (split_period ln); parse ll
   | "-R" :: r :: "-as" :: [] -> usage ()
-  | "-R" :: r :: ln :: ll -> add_rec_dir add_known r (split_period ln); parse ll
-  | "-Q" :: r :: ln :: ll -> add_dir add_known r (split_period ln); parse ll
+  | "-R" :: r :: ln :: ll -> add_rec_dir_import add_known r (split_period ln); parse ll
+  | "-Q" :: r :: ln :: ll -> add_rec_dir_no_import add_known r (split_period ln); parse ll
   | "-R" :: ([] | [_]) -> usage ()
   | "-dumpgraph" :: f :: ll -> option_dump := Some (false, f); parse ll
   | "-dumpgraphbox" :: f :: ll -> option_dump := Some (true, f); parse ll
@@ -471,23 +473,26 @@ let rec parse = function
 let coqdep () =
   if Array.length Sys.argv < 2 then usage ();
   parse (List.tl (Array.to_list Sys.argv));
+  (* Add current dir with empty logical path if not set by options above. *)
+  (try ignore (Coqdep_common.find_dir_logpath (Sys.getcwd()))
+   with Not_found -> add_norec_dir_import add_known "." []);
   if not Coq_config.has_natdynlink then option_natdynlk := false;
   (* NOTE: These directories are searched from last to first *)
   if !option_boot then begin
-    add_rec_dir add_known "theories" ["Coq"];
-    add_rec_dir add_known "plugins" ["Coq"];
-    add_rec_dir (fun _ -> add_caml_known) "theories" ["Coq"];
-    add_rec_dir (fun _ -> add_caml_known) "plugins" ["Coq"];
+    add_rec_dir_import add_known "theories" ["Coq"];
+    add_rec_dir_import add_known "plugins" ["Coq"];
+    add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
+    add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
   end else begin
     Envars.set_coqlib ~fail:Errors.error;
     let coqlib = Envars.coqlib () in
-    add_rec_dir add_coqlib_known (coqlib//"theories") ["Coq"];
-    add_rec_dir add_coqlib_known (coqlib//"plugins") ["Coq"];
+    add_rec_dir_import add_coqlib_known (coqlib//"theories") ["Coq"];
+    add_rec_dir_import add_coqlib_known (coqlib//"plugins") ["Coq"];
     let user = coqlib//"user-contrib" in
-    if Sys.file_exists user then add_dir add_coqlib_known user [];
-    List.iter (fun s -> add_dir add_coqlib_known s [])
+    if Sys.file_exists user then add_rec_dir_no_import add_coqlib_known user [];
+    List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s [])
       (Envars.xdg_dirs (fun x -> Pp.msg_warning (Pp.str x)));
-    List.iter (fun s -> add_dir add_coqlib_known s []) Envars.coqpath;
+    List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s []) Envars.coqpath;
   end;
   List.iter (fun (f,d) -> add_mli_known f d ".mli") !mliAccu;
   List.iter (fun (f,d) -> add_mllib_known f d ".mllib") !mllibAccu;
