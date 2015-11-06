@@ -1651,13 +1651,17 @@ only constructors of $I$.
 \end{description}
 
 \paragraph{Example.}
-For \List\ and \haslength\ the typing rules for the {\tt match} expression
-are (writing just $t:M$ instead of \WTEG{t}{M}, the global environment and
-local context being the same in all the judgments).
 
-\[\frac{l:\ListA~~P:\ListA\ra s~~~f_1:(P~(\Nil~A))~~
-      f_2:\forall a:A, \forall l:\ListA, (P~(\cons~A~a~l))}
-    {\Case{P}{l}{f_1~|~f_2}:(P~l)}\]
+Below is a typing rule for the term shown in the previous example:
+\inference{
+  \frac{%
+    \WTEG{t}{(\List~\nat)}~~~~%
+    \WTEG{P}{B}~~~~%
+    \compat{(\List~\nat)}{B}~~~~%
+    \WTEG{f_1}{\CI{(\Nil~\nat)}{P}}~~~~%
+    \WTEG{f_2}{\CI{(\cons~\nat)}{P}}%
+  }
+{\WTEG{\Case{P}{t}{f_1|f_2}}{(P~t)}}}
 
 \[\frac{
      \begin{array}[b]{@{}c@{}} 
