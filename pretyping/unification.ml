@@ -904,8 +904,18 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
       match subst_defined_metas_evars subst cN with
       | None -> (* some undefined Metas in cN *) None
       | Some n1 ->
-          (* No subterm restriction there, too much incompatibilities *)
-	  let sigma, b = infer_conv ~pb ~ts:convflags curenv sigma m1 n1 in
+         (* No subterm restriction there, too much incompatibilities *)
+	 let sigma =
+	   if opt.with_types then
+	     try (* Ensure we call conversion on terms of the same type *)
+	       let tyM = get_type_of curenv ~lax:true sigma m1 in
+	       let tyN = get_type_of curenv ~lax:true sigma n1 in
+	       check_compatibility curenv CUMUL flags substn tyM tyN
+	     with RetypeError _ ->
+	       (* Renounce, maybe metas/evars prevents typing *) sigma
+	   else sigma
+	 in 
+	 let sigma, b = infer_conv ~pb ~ts:convflags curenv sigma m1 n1 in
 	    if b then Some (sigma, metasubst, evarsubst)
 	    else 
 	      if is_ground_term sigma m1 && is_ground_term sigma n1 then
