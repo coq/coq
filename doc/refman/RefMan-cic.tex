@@ -1663,16 +1663,6 @@ Below is a typing rule for the term shown in the previous example:
   }
 {\WTEG{\Case{P}{t}{f_1|f_2}}{(P~t)}}}
 
-\[\frac{
-     \begin{array}[b]{@{}c@{}} 
-H:(\haslengthA~L~N) \\ P:\forall l:\ListA, \forall n:\nat, (\haslengthA~l~n)\ra
-  \Prop\\
- f_1:(P~(\Nil~A)~\nO~\nilhl) \\
-   f_2:\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
-  h:(\haslengthA~l~n), (P~(\cons~A~a~n)~(\nS~n)~(\conshl~A~a~l~n~h)) 
-      \end{array}}
-    {\Case{P}{H}{f_1~|~f_2}:(P~L~N~H)}\]
-
 \paragraph[Definition of $\iota$-reduction.]{Definition of $\iota$-reduction.\label{iotared}
 \index{iota-reduction@$\iota$-reduction}}
 We still have to define the $\iota$-reduction in the general case.
