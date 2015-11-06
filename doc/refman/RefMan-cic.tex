@@ -1571,7 +1571,7 @@ elimination on any sort is allowed.
 Let $c$ be a term of type $C$, we assume $C$ is a type of constructor
 for an inductive type $I$. Let $P$ be a term that represents the
 property to be proved.
-We assume $r$ is the number of parameters.
+We assume $r$ is the number of parameters and $p$ is the number of arguments.
 
 We define a new type \CI{c:C}{P} which represents the type of the
 branch corresponding to the $c:C$ constructor.
@@ -1584,7 +1584,7 @@ branch corresponding to the $c:C$ constructor.
 We write \CI{c}{P} for \CI{c:C}{P} with $C$ the type of $c$.
 
 \paragraph{Examples.}
-For $\ListA$ the type of $P$ will be $\ListA\ra s$ for $s \in \Sort$. \\ 
+For $\List \nat$ the type of $P$ will be $\ListA\ra s$ for $s \in \Sort$. \\ 
 $ \CI{(\cons~A)}{P} \equiv
 \forall a:A, \forall l:\ListA,(P~(\cons~A~a~l))$.
 
