@@ -1591,16 +1591,6 @@ $ \CI{(\cons~\nat)}{P}
   \equiv\forall n:\nat, \forall l:\List~\nat, \CI{(\cons~\nat~n~l) : \List~\nat)}{P} \equiv\\
 \equiv\forall n:\nat, \forall l:\List~\nat,(P~(\cons~\nat~n~l))$.
 
-For $\haslengthA$, the type of $P$ will be
-$\forall l:\ListA,\forall n:\nat, (\haslengthA~l~n)\ra \Prop$ and the expression
-\CI{(\conshl~A)}{P} is defined as:\\ 
-$\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
-h:(\haslengthA~l~n), (P~(\cons~A~a~l)~(\nS~n)~(\conshl~A~a~l~n~l))$.\\ 
-If $P$ does not depend on its third argument, we find the more natural
-expression:\\ 
-$\forall a:A, \forall l:\ListA, \forall n:\nat,
-(\haslengthA~l~n)\ra(P~(\cons~A~a~l)~(\nS~n))$.
-
 \paragraph{Typing rule.}
 
 Our very general destructor for inductive definition enjoys the
