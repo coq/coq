@@ -194,7 +194,7 @@ Its source code was communicated to Randy Pollack on September 2nd 1988.
 It evolved progressively into LEGO, proof system for Luo's formalism
 of Extended Calculus of Constructions.
 
-The discharge tactic was modified by G. Huet to allow for inter-dependencies
+The discharge tactic was modified by Gérard Huet to allow for inter-dependencies
 in discharged lemmas. Christine Paulin improved the inductive definition scheme
 in order to accommodate predicates of any arity.
 
@@ -227,7 +227,7 @@ yielding spectacular improvements. Thierry Coquand adapts the proof synthesis
 to the new representation, and simplifies pattern matching to first-order
 predicate calculus matching, with important performance gain.
 
-A new representation of the universe hierarchy is then defined by G. Huet.
+A new representation of the universe hierarchy is then defined by Gérard Huet.
 Universe levels are now implemented implicitly, through a hidden graph
 of abstract levels constrained with an order relation.
 Checking acyclicity of the graph insures well-foundedness of the ordering,
