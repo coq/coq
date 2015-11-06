@@ -25,10 +25,10 @@ Most of the mathematical examples verified with the software are due
 to Thierry Coquand.
 
 The programming language of the CONSTR software (as it was called at the time)
-is a version of ML issued from the Edinburgh LCF system and running on
-a LISP backend. The main improvements from the original LCF ML are that ML
-is compiled rather than interpreted (Gérard Huet building on the original
-translator by Lockwood Morris), and that it is enriched by recursively
+was a version of ML adapted from the Edinburgh LCF system and running on
+a LISP backend. The main improvements from the original LCF ML were that ML
+was compiled rather than interpreted (Gérard Huet building on the original
+translator by Lockwood Morris), and that it was enriched by recursively
 defined types (work of Guy Cousineau). This ancestor of CAML was used
 and improved by Larry Paulson for his implementation of Cambridge LCF.
 
@@ -47,10 +47,11 @@ Th. Coquand, G. Huet. _Constructions: A Higher Order Proof System for Mechanizin
 Mathematics_. Invited paper, EUROCAL85, April 1985, Linz, Austria. Springer Verlag
 LNCS 203, pp. 151-184.
 
-Christine Paulin joined the team at this point, for her DEA research internship.
-In her DEA memoir (August 1985) she presents developments for the _lambo_ function
-computing the minimal _m_ such that _f(m)_ is greater than _n_, for _f_ an increasing
-integer function, a challenge for constructive mathematics. She also encoded
+Christine Paulin joined the team at this point, for her DEA research
+internship.  In her DEA memoir (August 1985) she presents developments
+for the _lambo_ function – _lambo(f)(n)_ computes the minimal _m_ such
+that _f(m)_ is greater than _n_, for _f_ an increasing integer
+function, a challenge for constructive mathematics. She also encoded
 the majority voting algorithm of Boyer and Moore.
 
 Version 2
@@ -185,7 +186,7 @@ of Gift Siromoney, Ed. R. Narasimhan, World Scientific Publishing, 1989.
 Version 4.5 was demonstrated in June 1988 at the YoP Institute on Logical
 Foundations of Functional Programming organized by Gérard Huet at Austin, Texas.
 
-Version 4.6 was started during summer 1988. Its main improvement was the
+Version 4.6 was started during the summer of 1988. Its main improvement was the
 complete rehaul of the proof synthesis engine by Thierry Coquand, with
 a tree structure of goals.
 
@@ -209,9 +210,9 @@ generator. Once a complete proof term was synthesized with the help of tactics,
 it was entirely re-checked by the engine. Thus there was no need to certify
 the tactics, and the system took advantage of this fact by having tactics ignore
 the universe levels, universe consistency check being relegated to the final
-type-checking pass. This induced a certain puzzlement of early users who saw
-their successful proof search ended with `QED`, followed by silence, followed by
-a failure message of universe inconsistency rejection…
+type-checking pass. This induced a certain puzzlement in early users who saw,
+after a successful proof search, their `QED` followed by silence, followed by
+a failure message due to a universe inconsistency…
 
 The set of examples comprise set theory experiments by Hugo Herbelin,
 and notably the Schroeder-Bernstein theorem.
@@ -238,7 +239,7 @@ The development version is released as a stable 4.8 at the end of 1988.
 Version 4.9 is released on March 1st 1989, with the new ``elastic''
 universe hierarchy.
 
-The spring 89 saw the first attempt at documenting the system usage,
+The spring of 1989 saw the first attempt at documenting the system usage,
 with a number of papers describing the formalism:
 
 - _Metamathematical Investigations of a Calculus of Constructions_, by
@@ -272,7 +273,7 @@ Th. Coquand and C. Paulin-Mohring. _Inductively defined types_.
 In P. Martin-Löf and G. Mints, editors, Proceedings of Colog'88, volume 417,
 Lecture Notes in Computer Science. Springer-Verlag, 1990.
 
-This lead to the Calculus of Inductive Constructions, logical formalism
+This led to the Calculus of Inductive Constructions, logical formalism
 implemented in Versions 5 upward of the system, and documented in:
 C. Paulin-Mohring. _Inductive Definitions in the System Coq - Rules and
 Properties_. In M. Bezem and J.-F. Groote, editors, Proceedings of the conference
@@ -280,7 +281,7 @@ Typed Lambda Calculi and Applications, volume 664, Lecture Notes in Computer
 Science, 1993.
 
 The last version of CONSTR is Version 4.11, which was last distributed
-in Spring 1990. It was demonstrated at the first workshop of the European
+in the spring of 1990. It was demonstrated at the first workshop of the European
 Basic Research Action Logical Frameworks In Sophia Antipolis in May 1990.
 
 At the end of 1989, Version 5.1 was started, and renamed as the system Coq
