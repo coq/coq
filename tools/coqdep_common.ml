@@ -548,7 +548,7 @@ let add_rec_dir add_file phys_dir log_dir =
 
 (** -I semantic: do not go in subdirs. *)
 let add_caml_dir phys_dir =
-  handle_unix_error (add_directory true add_caml_known phys_dir) []
+  handle_unix_error (add_directory false add_caml_known phys_dir) []
 
 
 let rec treat_file old_dirname old_name =
