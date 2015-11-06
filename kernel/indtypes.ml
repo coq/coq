@@ -112,18 +112,18 @@ let is_unit constrsinfos =
    | [] -> (* type without constructors *) true
    | _ -> false
 
-let infos_and_sort env ctx t =
-  let rec aux env ctx t max =
+let infos_and_sort env t =
+  let rec aux env t max =
     let t = whd_betadeltaiota env t in
       match kind_of_term t with
       | Prod (name,c1,c2) ->
         let varj = infer_type env c1 in
 	let env1 = Environ.push_rel (name,None,varj.utj_val) env in
 	let max = Universe.sup max (univ_of_sort varj.utj_type) in
-	  aux env1 ctx c2 max
+	  aux env1 c2 max
     | _ when is_constructor_head t -> max
     | _ -> (* don't fail if not positive, it is tested later *) max
-  in aux env ctx t Universe.type0m
+  in aux env t Universe.type0m
 
 (* Computing the levels of polymorphic inductive types
 
@@ -148,14 +148,14 @@ let infos_and_sort env ctx t =
 (* This (re)computes informations relevant to extraction and the sort of an
    arity or type constructor; we do not to recompute universes constraints *)
 
-let infer_constructor_packet env_ar_par ctx params lc =
+let infer_constructor_packet env_ar_par params lc =
   (* type-check the constructors *)
   let jlc = List.map (infer_type env_ar_par) lc in
   let jlc = Array.of_list jlc in
   (* generalize the constructor over the parameters *)
   let lc'' = Array.map (fun j -> it_mkProd_or_LetIn j.utj_val params) jlc in
   (* compute the max of the sorts of the products of the constructors types *)
-  let levels = List.map (infos_and_sort env_ar_par ctx) lc in
+  let levels = List.map (infos_and_sort env_ar_par) lc in
   let isunit = is_unit levels in
   let min = if Array.length jlc > 1 then Universe.type0 else Universe.type0m in
   let level = List.fold_left (fun max l -> Universe.sup max l) min levels in
@@ -261,8 +261,7 @@ let typecheck_inductive env mie =
     List.fold_right2
       (fun ind arity_data inds ->
 	 let (lc',cstrs_univ) =
-	   infer_constructor_packet env_ar_par ContextSet.empty
-	     params ind.mind_entry_lc in
+	   infer_constructor_packet env_ar_par params ind.mind_entry_lc in
 	 let consnames = ind.mind_entry_consnames in
 	 let ind' = (arity_data,consnames,lc',cstrs_univ) in
 	   ind'::inds)
