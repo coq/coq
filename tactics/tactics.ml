@@ -1031,6 +1031,8 @@ let map_induction_arg f = function
 (* tactic "cut" (actually modus ponens) *)
 (****************************************)
 
+let normalize_cut = false
+
 let cut c =
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1049,7 +1051,7 @@ let cut c =
     if is_sort then
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
-      let c = local_strong whd_betaiota sigma c in
+      let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
       Proofview.Refine.refine ~unsafe:true { run = begin fun h ->
         let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
         let Sigma (x, h, q) = Evarutil.new_evar env h c in
