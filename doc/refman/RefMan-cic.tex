@@ -1828,6 +1828,7 @@ The reduction for fixpoints is:
 \[ (\Fix{f_i}{F}~a_1\ldots
 a_{k_i}) \triangleright_{\iota} \substs{t_i}{f_k}{\Fix{f_k}{F}}{k=1\ldots n}
 ~a_1\ldots a_{k_i}\]
+% QUESTION: Is it wise to use \iota for twice with two different meanings?
 when $a_{k_i}$ starts with a constructor.
 This last restriction is needed in order to keep strong normalization
 and corresponds to the reduction for primitive recursive operators.
