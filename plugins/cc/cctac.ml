@@ -501,9 +501,9 @@ let f_equal =
     let concl = Proofview.Goal.concl gl in
     let cut_eq c1 c2 =
       try (* type_of can raise an exception *)
-        Tacticals.New.tclTHEN
+        Tacticals.New.tclTHENS
 	  (mk_eq _eq c1 c2 Tactics.cut)
-	  (Tacticals.New.tclTRY ((new_app_global _refl_equal [||]) apply))
+	  [Proofview.tclUNIT ();Tacticals.New.tclTRY ((new_app_global _refl_equal [||]) apply)]
       with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
     in
     Proofview.tclORELSE

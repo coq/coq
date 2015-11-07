@@ -22,8 +22,8 @@ To produce all the documents, the following tools are needed:
   - dvips
   - bibtex
   - makeindex
-  - fig2dev
-  - convert
+  - fig2dev (transfig)
+  - convert (ImageMagick)
   - hevea
   - hacha
 

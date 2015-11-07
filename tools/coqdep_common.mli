@@ -8,6 +8,14 @@
 
 module StrSet : Set.S with type elt = string
 
+(** [find_dir_logpath dir] Return the logical path of directory [dir]
+    if it has been given one. Raise [Not_found] otherwise. In
+    particular we can check if "." has been attributed a logical path
+    after processing all options and silently give the default one if
+    it hasn't. We may also use this to warn if ap hysical path is met
+    twice.*)
+val find_dir_logpath: string -> string list
+
 val option_c : bool ref
 val option_noglob : bool ref
 val option_boot : bool ref
@@ -42,11 +50,22 @@ val add_known : bool -> string -> string list -> string -> unit
 val add_coqlib_known : bool -> string -> string list -> string -> unit
 val add_caml_known : string -> string list -> string -> unit
 val add_caml_dir : string -> unit
-val add_dir :
+
+(** Simply add this directory and imports it, no subdirs. This is used
+    by the implicit adding of the current path. *)
+val add_norec_dir_import :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
-val add_rec_dir :
+
+(** -Q semantic: go in subdirs but only full logical paths are known. *)
+val add_rec_dir_no_import :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
+
+(** -R semantic: go in subdirs and suffixes of logical paths are known. *)
+val add_rec_dir_import :
+  (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
+
 val add_rec_uppercase_subdirs :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
+
 val treat_file : dir -> string -> unit
 val error_cannot_parse : string -> int * int -> 'a

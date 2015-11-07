@@ -2873,6 +2873,15 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
      s'embêter à regarder si un letin_tac ne fait pas des
      substitutions aussi sur l'argument voisin *)
 
+let expand_projections env sigma c =
+  let sigma = Sigma.to_evar_map sigma in
+  let rec aux env c =
+    match kind_of_term c with
+    | Proj (p, c) -> Retyping.expand_projection env sigma p (aux env c) []
+    | _ -> map_constr_with_full_binders push_rel aux env c
+  in aux env c
+			       
+	   
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
 let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
@@ -2881,11 +2890,14 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
   let reduce_to_quantified_ref = Tacmach.New.pf_apply reduce_to_quantified_ref gl in
   let typ0 = reduce_to_quantified_ref indref tmptyp0 in
-  let prods, indtyp = decompose_prod typ0 in
+  let prods, indtyp = decompose_prod_assum typ0 in
   let hd,argl = decompose_app indtyp in
+  let env' = push_rel_context prods env in
+  let sigma = Proofview.Goal.sigma gl in
   let params = List.firstn nparams argl in
+  let params' = List.map (expand_projections env' sigma) params in
   (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one i args avoid =
+  let rec atomize_one i args args' avoid =
     if Int.equal i nparams then
       let t = applist (hd, params@args) in
       Tacticals.New.tclTHEN
@@ -2894,22 +2906,23 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
     else
       let c = List.nth argl (i-1) in
       match kind_of_term c with
-	| Var id when not (List.exists (occur_var env id) args) &&
-                      not (List.exists (occur_var env id) params) ->
+	| Var id when not (List.exists (occur_var env id) args') &&
+                      not (List.exists (occur_var env id) params') ->
             (* Based on the knowledge given by the user, all
                constraints on the variable are generalizable in the
                current environment so that it is clearable after destruction *)
-	    atomize_one (i-1) (c::args) (id::avoid)
+	    atomize_one (i-1) (c::args) (c::args') (id::avoid)
 	| _ ->
-            if List.exists (dependent c) params ||
-               List.exists (dependent c) args
+	   let c' = expand_projections env' sigma c in
+            if List.exists (dependent c) params' ||
+               List.exists (dependent c) args'
             then
               (* This is a case where the argument is constrained in a
                  way which would require some kind of inversion; we
                  follow the (old) discipline of not generalizing over
                  this term, since we don't try to invert the
                  constraint anyway. *)
-	      atomize_one (i-1) (c::args) avoid
+	      atomize_one (i-1) (c::args) (c'::args') avoid
             else
             (* We reason blindly on the term and do as if it were
                generalizable, ignoring the constraints coming from
@@ -2922,9 +2935,9 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             let x = fresh_id_in_env avoid id env in
 	    Tacticals.New.tclTHEN
 	      (letin_tac None (Name x) c None allHypsAndConcl)
-	      (atomize_one (i-1) (mkVar x::args) (x::avoid))
+	      (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (x::avoid))
   in
-  atomize_one (List.length argl) [] []
+  atomize_one (List.length argl) [] [] []
   end }
 
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
