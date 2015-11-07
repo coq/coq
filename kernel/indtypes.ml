@@ -654,13 +654,12 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
       matching with a parameter context. *)
   let indty, paramsletsubst =
     let subst, inst = 
-      List.fold_right
-	(fun (na, b, t) (subst, inst) ->
+      List.fold_right_i
+	(fun i (na, b, t) (subst, inst) ->
 	 match b with
-	 | None -> (mkRel 1 :: List.map (lift 1) subst,
-		   mkRel 1 :: List.map (lift 1) inst)
-	 | Some b -> (substl subst b) :: subst, List.map (lift 1) inst)
-	paramslet ([], [])
+	 | None -> (mkRel i :: subst, mkRel i :: inst)
+	 | Some b -> (substl subst b) :: subst, inst)
+	1 paramslet ([], [])
     in
     let subst = (* For the record parameter: *)
       mkRel 1 :: List.map (lift 1) subst
@@ -690,8 +689,10 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
   in
   let projections (na, b, t) (i, j, kns, pbs, subst, letsubst) =
     match b with
-    | Some c -> (i, j+1, kns, pbs, substl subst c :: subst,
-		substl letsubst c :: subst)
+    | Some c ->
+        let c = liftn 1 j c in
+        (i, j+1, kns, pbs, substl subst c :: subst,
+         substl letsubst c :: letsubst)
     | None ->
       match na with
       | Name id ->

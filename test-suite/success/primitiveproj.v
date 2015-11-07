@@ -195,3 +195,16 @@ Definition term (x : wrap nat) := x.(unwrap).
 Definition term' (x : wrap nat) := let f := (@unwrap2 nat) in f x.
 Recursive Extraction term term'.
 (*Unset Printing Primitive Projection Parameters.*)
+
+(* Primitive projections in the presence of let-ins (was not failing in beta3)*)
+
+Set Primitive Projections.
+Record s (x:nat) (y:=S x) := {c:=x; d:x=c}.
+Lemma f : 0=1.
+Proof.
+Fail apply d.
+(*
+split.
+reflexivity.
+Qed.
+*)
