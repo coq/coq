@@ -690,15 +690,36 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
   let projections (na, b, t) (i, j, kns, pbs, subst, letsubst) =
     match b with
     | Some c ->
+        (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
+           to [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)] *)
         let c = liftn 1 j c in
-        (i, j+1, kns, pbs, substl subst c :: subst,
-         substl letsubst c :: letsubst)
+        (* From [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)]
+           to [params, x:I |- c(params,proj1 x,..,projj x)] *)
+        let c1 = substl subst c in
+        (* From [params, x:I |- subst:field1,..,fieldj]
+           to [params, x:I |- subst:field1,..,fieldj+1] where [subst]
+           is represented with instance of field1 last *)
+        let subst = c1 :: subst in
+        (* From [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)]
+           to [params-wo-let, x:I |- c(params,proj1 x,..,projj x)] *)
+        let c2 = substl letsubst c in
+        (* From [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj)]
+           to [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj+1)] *)
+        let letsubst = c2 :: letsubst in
+        (i, j+1, kns, pbs, subst, letsubst)
     | None ->
       match na with
       | Name id ->
 	let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
-	let projty = substl letsubst (liftn 1 j t) in
-	let ty = substl subst (liftn 1 j t) in
+        (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
+           to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
+        let t = liftn 1 j t in
+        (* from [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj)]
+           to [params-wo-let, x:I |- t(params,proj1 x,..,projj x)] *)
+	let projty = substl letsubst t in
+        (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
+           to [params, x:I |- t(proj1 x,..,projj x)] *)
+	let ty = substl subst t in
 	let term = mkProj (Projection.make kn true, mkRel 1) in
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
 	let compat = compat_body ty (j - 1) in
