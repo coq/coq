@@ -532,7 +532,7 @@ let prim_refiner r sigma goal =
 	     push_named_context_val (id,None,t) sign,t,cl,sigma) in
         let (sg2,ev2,sigma) = 
 	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
-	let oterm = Term.mkApp (mkNamedLambda id t ev2 , [| ev1 |]) in
+	let oterm = Term.mkNamedLetIn id ev1 t ev2 in
 	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 

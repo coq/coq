@@ -1062,8 +1062,8 @@ let cut c =
       Proofview.Refine.refine ~unsafe:true { run = begin fun h ->
         let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
         let Sigma (x, h, q) = Evarutil.new_evar env h c in
-        let f = mkLambda (Name id, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
-        Sigma (mkApp (f, [|x|]), h, p +> q)
+        let f = mkLetIn (Name id, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
+        Sigma (f, h, p +> q)
       end }
     else
       Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
