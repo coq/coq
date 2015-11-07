@@ -661,7 +661,13 @@ and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
   match bk with
   | BProd -> GProd (dl, na',Explicit,detype (lax,false) avoid env sigma ty, r)
   | BLambda -> GLambda (dl, na',Explicit,detype (lax,false) avoid env sigma ty, r)
-  | BLetIn -> GLetIn (dl, na',detype (lax,false) avoid env sigma (Option.get body), r)
+  | BLetIn ->
+      let c = detype (lax,false) avoid env sigma (Option.get body) in
+      (* Heuristic: we display the type if in Prop *)
+      let s = Retyping.get_sort_family_of (snd env) sigma ty in
+      let c = if s != InProp then c else
+          GCast (dl, c, CastConv (detype (lax,false) avoid env sigma ty)) in
+      GLetIn (dl, na', c, r)
 
 let detype_rel_context ?(lax=false) where avoid env sigma sign =
   let where = Option.map (fun c -> it_mkLambda_or_LetIn c sign) where in
