@@ -82,10 +82,10 @@ let _ =
    optread = (fun () -> !lia_enum);
    optwrite = (fun x -> lia_enum := x)
   } in
- ignore (declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth)) ;
- ignore (declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth)) ;
- ignore (declare_bool_option lia_enum_opt)
-
+ let _ = declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth) in
+ let _ = declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth) in 
+ let _ = declare_bool_option lia_enum_opt in
+ ()
  
 (**
   * Initialize a tag type to the Tag module declaration (see Mutils).
