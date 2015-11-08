@@ -19,6 +19,7 @@ open Tactics
 open Indfun_common
 open Tacmach
 open Misctypes
+open Termops
 
 (* Some pretty printing function for debugging purpose *)
 

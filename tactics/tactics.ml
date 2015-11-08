@@ -45,15 +45,6 @@ open Misctypes
 open Proofview.Notations
 open Sigma.Notations
 
-let nb_prod x =
-  let rec count n c =
-    match kind_of_term c with
-        Prod(_,_,t) -> count (n+1) t
-      | LetIn(_,a,_,t) -> count n (subst1 a t)
-      | Cast(c,_,_) -> count n c
-      | _ -> n
-  in count 0 x
-
 let inj_with_occurrences e = (AllOccurrences,e)
 
 let dloc = Loc.ghost
@@ -1511,7 +1502,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
-  let concl_nprod = nb_prod concl in
+  let concl_nprod = nb_prod_modulo_zeta concl in
   let rec try_main_apply with_destruct c =
     Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1520,7 +1511,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
     let thm_ty0 = nf_betaiota sigma (Retyping.get_type_of env sigma c) in
     let try_apply thm_ty nprod =
       try
-        let n = nb_prod thm_ty - nprod in
+        let n = nb_prod_modulo_zeta thm_ty - nprod in
         if n<0 then error "Applied theorem has not enough premisses.";
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
         Clenvtac.res_pf clause ~with_evars ~flags

@@ -29,6 +29,7 @@ open Proof_type
 open Pfedit
 open Glob_term
 open Pretyping
+open Termops
 open Constrintern
 open Misctypes
 open Genredexpr

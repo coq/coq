@@ -616,25 +616,6 @@ let decompose_lam_n_decls n =
   in
   lamdec_rec empty_rel_context n
 
-(* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
- * gives n (casts are ignored) *)
-let nb_lam =
-  let rec nbrec n c = match kind_of_term c with
-    | Lambda (_,_,c) -> nbrec (n+1) c
-    | Cast (c,_,_) -> nbrec n c
-    | _ -> n
-  in
-  nbrec 0
-
-(* similar to nb_lam, but gives the number of products instead *)
-let nb_prod =
-  let rec nbrec n c = match kind_of_term c with
-    | Prod (_,_,c) -> nbrec (n+1) c
-    | Cast (c,_,_) -> nbrec n c
-    | _ -> n
-  in
-  nbrec 0
-
 let prod_assum t = fst (decompose_prod_assum t)
 let prod_n_assum n t = fst (decompose_prod_n_assum n t)
 let strip_prod_assum t = snd (decompose_prod_assum t)

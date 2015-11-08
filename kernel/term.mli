@@ -308,13 +308,6 @@ val decompose_lam_n_assum : int -> constr -> rel_context * constr
 (** Idem, counting let-ins *)
 val decompose_lam_n_decls : int -> constr -> rel_context * constr
 
-(** [nb_lam] {% $ %}[x_1:T_1]...[x_n:T_n]c{% $ %} where {% $ %}c{% $ %} is not an abstraction
-   gives {% $ %}n{% $ %} (casts are ignored) *)
-val nb_lam : constr -> int
-
-(** Similar to [nb_lam], but gives the number of products instead *)
-val nb_prod : constr -> int
-
 (** Return the premisses/parameters of a type/term (let-in included) *)
 val prod_assum : types -> rel_context
 val lam_assum : constr -> rel_context

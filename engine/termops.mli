@@ -174,6 +174,16 @@ val filtering : rel_context -> Reduction.conv_pb -> constr -> constr -> subst
 val decompose_prod_letin : constr -> int * rel_context * constr
 val align_prod_letin : constr -> constr -> rel_context * constr
 
+(** [nb_lam] {% $ %}[x_1:T_1]...[x_n:T_n]c{% $ %} where {% $ %}c{% $ %} is not an abstraction
+   gives {% $ %}n{% $ %} (casts are ignored) *)
+val nb_lam : constr -> int
+
+(** Similar to [nb_lam], but gives the number of products instead *)
+val nb_prod : constr -> int
+
+(** Similar to [nb_prod], but zeta-contracts let-in on the way *)
+val nb_prod_modulo_zeta : constr -> int
+
 (** Get the last arg of a constr intended to be an application *)
 val last_arg : constr -> constr
 

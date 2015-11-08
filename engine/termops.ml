@@ -846,6 +846,34 @@ let decompose_prod_letin : constr -> int * rel_context * constr =
     | _               -> i,l,c in
   prodec_rec 0 []
 
+(* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
+ * gives n (casts are ignored) *)
+let nb_lam =
+  let rec nbrec n c = match kind_of_term c with
+    | Lambda (_,_,c) -> nbrec (n+1) c
+    | Cast (c,_,_) -> nbrec n c
+    | _ -> n
+  in
+  nbrec 0
+
+(* similar to nb_lam, but gives the number of products instead *)
+let nb_prod =
+  let rec nbrec n c = match kind_of_term c with
+    | Prod (_,_,c) -> nbrec (n+1) c
+    | Cast (c,_,_) -> nbrec n c
+    | _ -> n
+  in
+  nbrec 0
+
+let nb_prod_modulo_zeta x =
+  let rec count n c =
+    match kind_of_term c with
+        Prod(_,_,t) -> count (n+1) t
+      | LetIn(_,a,_,t) -> count n (subst1 a t)
+      | Cast(c,_,_) -> count n c
+      | _ -> n
+  in count 0 x
+
 let align_prod_letin c a : rel_context * constr =
   let (lc,_,_) = decompose_prod_letin c in
   let (la,l,a) = decompose_prod_letin a in

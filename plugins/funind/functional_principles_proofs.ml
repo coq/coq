@@ -9,6 +9,7 @@ open Names
 open Declarations
 open Pp
 open Tacmach
+open Termops
 open Proof_type
 open Tacticals
 open Tactics

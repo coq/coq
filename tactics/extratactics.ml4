@@ -19,6 +19,7 @@ open Tactics
 open Errors
 open Util
 open Evd
+open Termops
 open Equality
 open Misctypes
 open Sigma.Notations
