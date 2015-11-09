@@ -1251,13 +1251,18 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
+let report_anomaly _ =
+  let e = UserError ("", Pp.str "Conversion test raised an anomaly") in
+  let e = Errors.push e in
+  iraise e
+
 let test_trans_conversion (f: ?l2r:bool-> ?evars:'a->'b) reds env sigma x y =
   try
     let evars ev = safe_evar_value sigma ev in
     let _ = f ~evars reds env (Evd.universes sigma) x y in
     true
   with Reduction.NotConvertible -> false
-    | e when is_anomaly e -> error "Conversion test raised an anomaly"
+    | e when is_anomaly e -> report_anomaly e
 
 let is_trans_conv reds env sigma = test_trans_conversion Reduction.trans_conv_universes reds env sigma
 let is_trans_conv_leq reds env sigma = test_trans_conversion Reduction.trans_conv_leq_universes reds env sigma
@@ -1275,7 +1280,7 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y 
     try f ~evars:(safe_evar_value sigma) ts env (Evd.universes sigma) x y; true
     with Reduction.NotConvertible -> false
     | Univ.UniverseInconsistency _ -> false
-    | e when is_anomaly e -> error "Conversion test raised an anomaly"
+    | e when is_anomaly e -> report_anomaly e
 
 let sigma_compare_sorts env pb s0 s1 sigma =
   match pb with
@@ -1316,7 +1321,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
   with
   | Reduction.NotConvertible -> sigma, false
   | Univ.UniverseInconsistency _ when catch_incon -> sigma, false
-  | e when is_anomaly e -> error "Conversion test raised an anomaly"
+  | e when is_anomaly e -> report_anomaly e
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
       Reduction.generic_conv pb ~l2r (safe_evar_value sigma))
