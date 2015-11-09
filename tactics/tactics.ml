@@ -2345,7 +2345,12 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-    let t = match ty with Some t -> t | _ -> typ_of env sigma c in
+    let (sigma, t) = match ty with
+    | Some t -> (sigma, t)
+    | None ->
+      let t = typ_of env sigma c in
+      Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t
+    in
     let eq_tac gl = match with_eq with
       | Some (lr,(loc,ido)) ->
           let heq = match ido with
