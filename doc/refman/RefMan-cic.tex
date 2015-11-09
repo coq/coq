@@ -1688,33 +1688,14 @@ when $a_{k_i}$ starts with a constructor.
 This last restriction is needed in order to keep strong normalization
 and corresponds to the reduction for primitive recursive operators.
 
-We can illustrate this behavior on examples.
-\begin{coq_example}
-Goal forall n m:nat, plus (S n) m = S (plus n m).
-reflexivity.
-Abort.
-Goal forall f:forest, sizet (node f) = S (sizef f).
-reflexivity.
-Abort.
-\end{coq_example}
-But assuming the definition of a son function from \tree\ to \forest:
-\begin{coq_example}
-Definition sont (t:tree) : forest 
-   := let (f) := t in f.
-\end{coq_example}
-The following is not a conversion but can be proved after a case analysis.
-% (******************************************************************)
-% (** Error: Impossible to unify ....                              **)
-\begin{coq_example}
-Goal forall t:tree, sizet t = S (sizef (sont t)).
-Fail reflexivity.
-destruct t.
-reflexivity.
-\end{coq_example}
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
-% QUESTION: What are we trying to say with the above examples?
+The following reductions are now possible:
+\def\plus{\mathsf{plus}}
+\def\tri{\triangleright_\iota}
+\begin{eqnarray*}
+  \plus~(\nS~(\nS~\nO))~(\nS~\nO) & \tri & \nS~(\plus~(\nS~\nO)~(\nS~\nO))\\
+                                  & \tri & \nS~(\nS~(\plus~\nO~(\nS~\nO)))\\
+                                  & \tri & \nS~(\nS~(\nS~\nO))\\
+\end{eqnarray*}
 
 % La disparition de Program devrait rendre la construction Match obsolete
 % \subsubsection{The {\tt Match \ldots with \ldots end} expression}
