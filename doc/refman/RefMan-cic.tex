@@ -63,11 +63,6 @@ Their properties, such as:
 {\Prop:\Type$(1)$}, {\Set:\Type$(1)$}, and {\Type$(i)$:\Type$(i+1)$},
 are defined in Section~\ref{subtyping-rules}.
 
-% TODO: Somewhere in the document we should explain:
-% - what concrete actions (in *.v files) cause creation of new universes
-% - different kinds of relationships between universes (i.e. "max" and "succ")
-% - what are all the actions (in *.v files) from which those relationships arise
-
 The user does not have to mention explicitly the index $i$ when referring to
 the universe \Type$(i)$. One only writes \Type. The
 system itself generates for each instance of \Type\ a new
@@ -93,17 +88,6 @@ of a mapping of the universes to the positive integers, the graph of
 constraints must remain acyclic.  Typing expressions that violate the
 acyclicity of the graph of constraints results in a \errindex{Universe
 inconsistency} error (see also Section~\ref{PrintingUniverses}).
-
-% TODO: The concept of 'universe inconsistency' deserves more attention.
-% Somewhere in the document we should:
-% - give concrete examples when universe inconsistency arises
-% - explain why it arised
-% - how can a user identify the "vicious cycle".
-
-% QUESTION: Is the presentation of universes as totally ordered a necessary or advantageous step?
-
-% QUESTION: Shouldn't the explanation of universes in this chapter
-% be consolidatd with Chapter 29: Polymorphic Universes?
 
 %% HH: This looks to me more like source of confusion than helpful
 
@@ -184,7 +168,6 @@ More precisely the language of the {\em Calculus of Inductive
 The notion of free variables is defined as usual.  In the expressions
 $\lb x:T\mto U$ and $\forall x:T, U$ the occurrences of $x$ in $U$
 are bound.
-% TODO: what is the best play to say that "terms are considered equal up to α-conversion"?
 
 \paragraph[Substitution.]{Substitution.\index{Substitution}}
 The notion of substituting a term $t$ to free occurrences of a
@@ -241,10 +224,11 @@ we write $x \in \Gamma$. By writing $(x:T) \in \Gamma$ we mean that
 either $x:T$ is an assumption in $\Gamma$ or that there exists some $t$ such
 that $x:=t:T$ is a definition in $\Gamma$. If $\Gamma$ defines some
 $x:=t:T$, we also write $(x:=t:T) \in \Gamma$.
-For the rest of the chapter, the
-notation $\Gamma::(y:T)$ (resp.\ $\Gamma::(y:=t:T)$) denotes the local context
-$\Gamma$ enriched with the declaration $y:T$ (resp. $y:=t:T$). The
-notation $[]$ denotes the empty local context.
+For the rest of the chapter, the $\Gamma::(y:T)$ denotes the local context
+$\Gamma$ enriched with the local assumption $y:T$.
+Similarly, $\Gamma::(y:=t:T)$ denotes the local context
+$\Gamma$ enriched with the local definition $(y:=t:T)$.
+The notation $[]$ denotes the empty local context.
 
 % Does not seem to be used further...
 % Si dans l'explication WF(E)[Gamma] concernant les constantes
@@ -305,23 +289,16 @@ local context $\Gamma$ and a term $T$ such that the judgment \WTEG{t}{T} can
 be derived from the following rules.
 \begin{description}
 \item[W-Empty] \inference{\WF{[]}{}}
-% QUESTION: Why in W-Local-Assum and W-Local-Def we do not need x ∉ E hypothesis?
 \item[W-Local-Assum]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
 \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~x \not\in \Gamma % \cup E
       }{\WFE{\Gamma::(x:T)}}}
 \item[W-Local-Def]
 \inference{\frac{\WTEG{t}{T}~~~~x \not\in \Gamma % \cup E
      }{\WFE{\Gamma::(x:=t:T)}}}
-% QUESTION: Why in W-Global-Assum and W-Global-Def we do not need x ∉ Γ hypothesis?
 \item[W-Global-Assum] \inference{\frac{\WTE{}{T}{s}~~~~s \in \Sort~~~~c \notin E}
                       {\WF{E;c:T}{}}}
 \item[W-Global-Def] \inference{\frac{\WTE{}{t}{T}~~~c \notin E}
                       {\WF{E;c:=t:T}{}}}
-% QUESTION: Why, in case of W-Local-Assum and W-Global-Assum we need s ∈ S hypothesis.
-% QUESTION: At the moment, enrichment of a local context is denoted with ∷
-%           whereas enrichment of the global environment is denoted with ;
-%           Is it necessary to use two different notations?
-%           Couldn't we use ∷ also for enrichment of the global context?
 \item[Ax-Prop] \index{Typing rules!Ax-Prop}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(1)}}}
 \item[Ax-Set] \index{Typing rules!Ax-Set}
@@ -366,7 +343,6 @@ difference between {\Prop} and {\Set}:
 well-typed without having $((\lb x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
 may be used in a conversion rule (see Section~\ref{conv-rules}).
-% QUESTION: I do not understand. How would that be possible?
 
 \section[Conversion rules]{Conversion rules\index{Conversion rules}
 \label{conv-rules}}
@@ -815,7 +791,6 @@ $\begin{array}{@{} l}
 \subsection{Well-formed inductive definitions}
 We cannot accept any inductive declaration because some of them lead
 to inconsistent systems.
-% TODO: The statement above deserves explanation.
 We restrict ourselves to definitions which
 satisfy a syntactic criterion of positivity. Before giving the formal
 rules, we need a few definitions:
@@ -843,9 +818,6 @@ in one of the following two cases:
   \item $T$ is $(I~t_1\ldots ~t_n)$
   \item $T$ is $\forall x:U,T^\prime$ where $T^\prime$ is also a type of constructor of $I$
 \end{itemize}
-% QUESTION: Are we above sufficiently precise?
-%           Shouldn't we say also what is "n"?
-%           "n" couldn't be "0", could it?
 
 \paragraph[Examples]{Examples}
 $\nat$ and $\nat\ra\nat$ are types of constructors of $\nat$.\\
@@ -854,11 +826,9 @@ $\forall A:\Type,\List~A$ and $\forall A:\Type,A\ra\List~A\ra\List~A$ are constr
 \paragraph[Definition]{Definition\index{Positivity}\label{Positivity}}
 The type of constructor $T$ will be said to {\em satisfy the positivity
 condition} for a constant $X$ in the following cases:
-% QUESTION: Why is this property called "positivity"?
 
 \begin{itemize}
 \item $T=(X~t_1\ldots ~t_n)$ and $X$ does not occur free in
-% QUESTIONS: What is the meaning of 'n' above?
 any $t_i$
 \item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
 the type $V$ satisfies the positivity condition for $X$
@@ -870,12 +840,10 @@ following cases:
 \begin{itemize}
 \item $X$ does not occur in $T$
 \item $T$ converts to $(X~t_1 \ldots ~t_n)$ and $X$ does not occur in
-% QUESTIONS: What is the meaning of 'n' above?
   any of $t_i$
 \item $T$ converts to $\forall~x:U,V$ and $X$ does not occur in
   type $U$ but occurs strictly positively in type $V$
 \item $T$ converts to $(I~a_1 \ldots ~a_m ~ t_1 \ldots ~t_p)$ where
-% QUESTIONS: What is the meaning of 'p' above?
   $I$ is the name of an inductive declaration of the form
   $\Ind{\Gamma}{m}{I:A}{c_1:\forall p_1:P_1,\ldots \forall
     p_m:P_m,C_1;\ldots;c_n:\forall p_1:P_1,\ldots \forall
@@ -898,7 +866,6 @@ cases:
 \item $T=(I~b_1\ldots b_m~u_1\ldots ~u_{p})$, $I$ is an inductive
   definition with $m$ parameters and $X$ does not occur in
 any $u_i$
-% QUESTIONS: What is the meaning of 'p' above?
 \item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
 the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
@@ -969,10 +936,6 @@ the type $V$ satisfies the nested positivity condition for $X$
 \end{latexonly}
 
 \paragraph{Correctness rules.}
-% QUESTION: For a related problem, in case of global definitions
-% and global assumptions, we used the term "well-formedness".
-% Couldn't we continue to use the term also here?
-% Does it make sense to use a different name, i.e. "correctness" in this case?
 We shall now describe the rules allowing the introduction of a new
 inductive definition.
 
@@ -999,7 +962,6 @@ provided that the following side conditions hold:
   $I_{q_i}$ which satisfies the positivity condition for $I_1 \ldots  I_k$
   and $c_i \notin \Gamma \cup E$.
 \end{itemize}
-% TODO: justify the above constraints
 \end{description}
 One can remark that there is a constraint between the sort of the
 arity of the inductive type and the sort of the type of its
@@ -1007,7 +969,6 @@ constructors which will always be satisfied for the impredicative sort
 {\Prop} but may fail to define inductive definition 
 on sort \Set{} and generate constraints between universes for
 inductive definitions in the {\Type} hierarchy.
-% QUESTION: which 'constraint' are we above referring to?
 
 \paragraph{Examples.}
 It is well known that existential quantifier can be encoded as an
@@ -1025,7 +986,6 @@ The same definition on \Set{} is not allowed and fails:
 Fail Inductive exSet (P:Set->Prop) : Set
   := exS_intro : forall X:Set, P X -> exSet P.
 \end{coq_example}
-% TODO: add the description of the 'Fail' command to the reference manual
 It is possible to declare the same inductive definition in the
 universe \Type. 
 The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
@@ -1044,7 +1004,6 @@ Inductive exType (P:Type->Prop) : Type
 
 Inductive types declared in {\Type} are
 polymorphic over their arguments in {\Type}.
-% QUESTION: Just arguments? Not also over the parameters?
 
 If $A$ is an arity of some sort and $s$ is a sort, we write $A_{/s}$ for the arity
 obtained from $A$ by replacing its sort with $s$. Especially, if $A$
@@ -1093,13 +1052,10 @@ $P_l$ arity implies $P'_l$ arity since $\WTELECONV{}{P'_l}{ \subst{P_l}{p_u}{q_u
     \Gamma_{P'},(A_1)_{/s_1};\ldots;I_k:\forall \Gamma_{P'},(A_k)_{/s_k}]$
 we have $(\WTE{\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{q_i}})_{i=1\ldots  n}$;
 \item the sorts are such that all eliminations, to {\Prop}, {\Set} and
-  $\Type(j)$, are allowed (see section~\ref{elimdep}).
-% QUESTION: How should I interpret the above side-condition, when I am trying to show that 'list nat : Set'?
+  $\Type(j)$, are allowed (see Section~\ref{allowedeleminationofsorts}).
 \end{itemize}
 \end{description}
 
-% QUESTION: Do we need the following paragraph?
-% (I find it confusing.)
 Notice that if $I_j\,q_1\,\ldots\,q_r$ is typable using the rules {\bf
 Ind-Const} and {\bf App}, then it is typable using the rule {\bf
 Ind-Family}. Conversely, the extended theory is not stronger than the
@@ -1142,7 +1098,6 @@ singleton -- see paragraph~\ref{singleton}) is set in
 {\Prop}, a small non-singleton inductive type is set in {\Set} (even
 in case {\Set} is impredicative -- see Section~\ref{impredicativity}),
 and otherwise in the {\Type} hierarchy.
-% TODO: clarify the case of a partial application ??
 
 Note that the side-condition about allowed elimination sorts in the
 rule~{\bf Ind-Family} is just to avoid to recompute the allowed
@@ -1208,8 +1163,6 @@ Because we need to keep a consistent theory and also we prefer to keep
 a strongly normalizing reduction, we cannot accept any sort of
 recursion (even terminating). So the basic idea is to restrict
 ourselves to primitive recursive functions and functionals.
-% TODO: it may be worthwhile to show the consequences of lifting
-%       those restrictions.
 
 For instance, assuming a parameter $A:\Set$ exists in the local context, we
 want to build a function \length\ of type $\ListA\ra \nat$ which
@@ -1246,11 +1199,6 @@ same as proving:
 $(\haslengthA~(\Nil~A)~\nO)$ and $\forall a:A, \forall l:\ListA, 
 (\haslengthA~l~(\length~l)) \ra
 (\haslengthA~(\cons~A~a~l)~(\nS~(\length~l)))$.
-% QUESTION: Wouldn't something like:
-%
-%             http://matej-kosik.github.io/www/doc/coq/notes/25__has_length.html
-%
-%           be more comprehensible?
 
 One conceptually simple way to do that, following the basic scheme
 proposed by Martin-L\"of in his Intuitionistic Type Theory, is to
@@ -1263,11 +1211,6 @@ But this operator is rather tedious to implement and use. We choose in
 this version of {\Coq} to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th. Coquand
 in~\cite{Coq92}.  One is the definition by pattern-matching. The second one is a definition by guarded fixpoints. 
-% QUESTION: Shouldn't we, instead, include a more straightforward argument:
-%
-%             http://matej-kosik.github.io/www/doc/coq/notes/24__match_and_fix.html
-%
-%           ?
 
 \subsubsection[The {\tt match\ldots with \ldots end} construction.]{The {\tt match\ldots with \ldots end} construction.\label{Caseexpr}
 \index{match@{\tt match\ldots with\ldots end}}}
@@ -1307,24 +1250,9 @@ omitted if the result type does not depend on the arguments of
 $I$. Note that the arguments of $I$ corresponding to parameters
 \emph{must} be \verb!_!, because the result type is not generalized to
 all possible values of the parameters.
-% QUESTION: The last sentence above does not seem to be accurate.
-%
-% Imagine:
-%
-%   Definition foo (A:Type) (a:A) (l : list A) :=
-%     match l return A with
-%       | nil => a
-%       | cons _ _ _ => a
-%     end.
-%
-% There, the term in the return-clause happily refer to the parameter of 'l'
-% and Coq does not protest.
-%
-% So I am not sure if I really understand why parameters cannot be bound
-% in as-clause.
 The other arguments of $I$
 (sometimes called indices in the literature)
-% QUESTION: in which literature?
+% NOTE: e.g. http://www.qatar.cmu.edu/~sacchini/papers/types08.pdf
 have to be variables
 ($a$ above) and these variables can occur in $P$.
 The expression after \kw{in}
@@ -1364,6 +1292,7 @@ compact notation:
 %  \mbox{\tt =>}~ \false}
 
 \paragraph[Allowed elimination sorts.]{Allowed elimination sorts.\index{Elimination sorts}}
+\label{allowedeleminationofsorts}
 
 An important question for building the typing rule for \kw{match} is
 what can be the type of $\lb a x \mto P$ with respect to the type of the inductive
@@ -1373,14 +1302,9 @@ We define now a relation \compat{I:A}{B} between an inductive
 definition $I$ of type $A$ and an arity $B$. This relation states that
 an object in the inductive definition $I$ can be eliminated for
 proving a property $\lb a x \mto P$ of arity $B$.
-% QUESTION: Is it necessary to explain the meaning of [I:A|B] in such a complicated way?
-% Couldn't we just say that: "relation [I:A|B] defines which types can we choose as 'result types'
-% with respect to the type of the matched object".
+% TODO: The meaning of [I:A|B] relation is not trivial,
+%       but I do not think that we must explain it in as complicated way as we do above.
 We use this concept to formulate the hypothesis of the typing rule for the match-construct.
-
-The case of inductive definitions in sorts \Set\ or \Type{} is simple.
-There is no restriction on the sort of the predicate to be
-eliminated. 
 
 \paragraph{Notations.}
 The \compat{I:A}{B} is defined as the smallest relation satisfying the
@@ -1388,19 +1312,16 @@ following rules:
 We write \compat{I}{B} for \compat{I:A}{B} where $A$ is the type of
 $I$.
 
+The case of inductive definitions in sorts \Set\ or \Type{} is simple.
+There is no restriction on the sort of the predicate to be
+eliminated. 
+
 \begin{description}
 \item[Prod] \inference{\frac{\compat{(I~x):A'}{B'}}
                       {\compat{I:\forall x:A, A'}{\forall x:A, B'}}}
 \item[{\Set} \& \Type] \inference{\frac{
     s_1 \in \{\Set,\Type(j)\}~~~~~~~~s_2 \in \Sort}{\compat{I:s_1}{I\ra s_2}}}
 \end{description}
-% QUESTION: What kind of value is represented by "x" in the "numerator"?
-%           There, "x" is unbound. Isn't it?
-%           The rule does not fully justify the following (plausible) argument:
-%
-%              http://matej-kosik.github.io/www/doc/coq/notes/26__allowed_elimination_sorts.html
-%
-% NOTE: Above, "Set" is subsumed in "Type(0)" so, strictly speaking, we wouldn't need to mention in explicitely.
 
 The case of Inductive definitions of sort \Prop{} is a bit more
 complicated, because of our interpretation of this sort. The only
@@ -1468,7 +1389,6 @@ predicate $P$ of type $I\ra \Type$ leads to a paradox when applied to
 impredicative inductive definition like the second-order existential
 quantifier \texttt{exProp} defined above, because it give access to
 the two projections on this type.
-% QUESTION: I did not get the point of the paragraph above.
 
 %\paragraph{Warning: strong elimination}
 %\index{Elimination!Strong elimination}
@@ -1513,59 +1433,6 @@ Extraction eq_rec.
 \end{coq_example}
 An empty definition has no constructors, in that case also,
 elimination on any sort is allowed.
-
-% QUESTION:
-%
-% In Coq, this works:
-% 
-%   Check match 42 as x return match x with
-%                              | O => nat
-%                              | _ => bool
-%                              end
-%         with
-%         | O => 42
-%         | _ => true
-%         end.
-% 
-% Also this works:
-% 
-%   Check let foo := 42 in
-%         match foo return match foo with
-%                          | O => nat
-%                          | _ => bool
-%                          end
-%         with
-%         | O => 42
-%         | _ => true
-%         end.
-% 
-% But here:
-% 
-%   Definition foo := 42.
-%   Check match foo return match foo with
-%                          | O => nat
-%                          | _ => bool
-%                          end
-%         with
-%         | O => 42
-%         | _ => true
-%         end.
-% 
-% Coq complains:
-% 
-%   Error:
-%   The term "42" has type "nat" while it is expected to have type
-%    "match foo with
-%     | 0 => nat
-%     | S _ => bool
-%     end".
-% 
-% However, the Reference Manual says that:
-% 
-%   "Remark that when the term being matched is a variable, the as clause can
-% be omitted and the term being matched can serve itself as binding name in the return type."
-% 
-% so I do not understand why, in this case, Coq produces a given error message.
 
 \paragraph{Type of branches.}
 Let $c$ be a term of type $C$, we assume $C$ is a type of constructor
@@ -1741,14 +1608,10 @@ definition.
 For doing this, the syntax of fixpoints is extended and becomes 
  \[\Fix{f_i}{f_1/k_1:A_1:=t_1 \ldots f_n/k_n:A_n:=t_n}\]
 where $k_i$ are positive integers.
+Each $k_i$ represents the index of pararameter of $f_i$, on which $f_i$ is decreasing.
 Each $A_i$ should be a type (reducible to a term) starting with at least
 $k_i$ products $\forall y_1:B_1,\ldots \forall y_{k_i}:B_{k_i}, A'_i$ 
-and $B_{k_i}$
-being an instance of an inductive definition.
-% TODO: We should probably define somewhere explicitely, what we mean by
-%       "x is an instance of an inductive type I".
-%
-% QUESTION: So, $k_i$ is the index of the argument on which $f_i$ is decreasing?
+and $B_{k_i}$ an is unductive type.
 
 Now in the definition $t_i$, if $f_j$ occurs then it should be applied
 to at least $k_j$ arguments and the $k_j$-th argument should be
@@ -1764,9 +1627,6 @@ $\forall p_1:P_1,\ldots \forall p_r:P_r,
 \forall x_1:T_1, \ldots \forall x_r:T_r, (I_j~p_1\ldots 
 p_r~t_1\ldots  t_s)$ the recursive arguments will correspond to $T_i$ in
 which one of the $I_l$ occurs.
-% QUESTION: The last sentence above really fully make sense.
-%           Isn't some word missing?
-%           Maybe "if"?
 
 The main rules for being structurally smaller are the following:\\
 Given a variable $y$ of type an inductive
@@ -1782,7 +1642,6 @@ The terms structurally smaller than $y$ are:
   If $c$ is $y$ or is structurally smaller than $y$, its type is an inductive
   definition $I_p$ part of the inductive
   declaration corresponding to $y$. 
-  % QUESTION: What does the above sentence mean?
   Each $f_i$ corresponds to a type of constructor $C_q \equiv
   \forall p_1:P_1,\ldots,\forall p_r:P_r, \forall y_1:B_1, \ldots \forall y_k:B_k, (I~a_1\ldots a_k)$ 
   and can consequently be
@@ -1792,9 +1651,6 @@ The terms structurally smaller than $y$ are:
   in $g_i$ corresponding to recursive arguments $B_i$ (the ones in
   which one of the $I_l$ occurs) are structurally smaller than $y$.
 \end{itemize}
-% QUESTION: How could one show, that some of the functions defined below are "guarded"
-%           in a sense of the definition given above.
-%           E.g., how could I show that "p" in "plus" below is structurally smaller than "n"?
 The following definitions are correct, we enter them using the
 {\tt Fixpoint} command as described in Section~\ref{Fixpoint} and show
 the internal representation.
@@ -1828,7 +1684,6 @@ The reduction for fixpoints is:
 \[ (\Fix{f_i}{F}~a_1\ldots
 a_{k_i}) \triangleright_{\iota} \substs{t_i}{f_k}{\Fix{f_k}{F}}{k=1\ldots n}
 ~a_1\ldots a_{k_i}\]
-% QUESTION: Is it wise to use \iota for twice with two different meanings?
 when $a_{k_i}$ starts with a constructor.
 This last restriction is needed in order to keep strong normalization
 and corresponds to the reduction for primitive recursive operators.
@@ -2030,45 +1885,6 @@ impredicative system for sort \Set{} become:
       \{\Type(i)\}}
          {\compat{I:\Set}{I\ra s}}}
 \end{description}
-     
-% QUESTION: Why, when I add this definition:
-%
-%   Inductive foo : Type := .
-%
-% Coq claims that the type of 'foo' is 'Prop'?
-
-% QUESTION: If I add this definition:
-%
-%   Inductive bar (A:Type) : Type := .
-%
-% then Coq claims that 'bar' has type 'Type → Prop' where I would expect 'Type → Type' with appropriate constraint.
-
-% QUESTION: If I add this definition:
-%
-%   Inductive foo (A:Type) : Type :=
-%   | foo1 : foo A
-%
-% then Coq claims that 'foo' has type 'Type → Prop'.
-% Why?
-
-% QUESTION: If I add this definition:
-%
-%   Inductive foo (A:Type) : Type :=
-%   | foo1 : foo A
-%   | foo2 : foo A.
-%
-% then Coq claims that 'foo' has type 'Type → Set'.
-% Why?
-
-% NOTE: If I add this definition:
-%
-%   Inductive foo (A:Type) : Type :=
-%   | foo1 : foo A
-%   | foo2 : A → foo A.
-%
-% then Coq claims, as expected, that:
-%
-%   foo : Type → Type.
 
 %%% Local Variables: 
 %%% mode: latex
