@@ -97,6 +97,7 @@ Abort.
 
 Goal exists x, S x = S 0.
 eexists.
+Show x.  (* Incidentally test Show on a named goal *)
 destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
 change (0 = S 0).
 Abort.
@@ -105,6 +106,7 @@ Goal exists x, S 0 = S x.
 eexists.
 destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
 change (0 = S ?x).
+[x]: exact 0. (* Incidentally test applying a tactic to a goal on the shelve *)
 Abort.
 
 Goal exists n p:nat, (S n,S n) = (S p,S p) /\ p = n.

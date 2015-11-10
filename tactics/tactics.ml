@@ -179,7 +179,7 @@ let unsafe_intro env store (id, c, t) b =
     let inst = List.map (fun (id, _, _) -> mkVar id) (named_context env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar id) b in
-    let sigma, ev = new_evar_instance nctx sigma nb ~store ninst in
+    let sigma, ev = new_evar_instance nctx sigma nb ~principal:true ~store ninst in
     Sigma.Unsafe.of_pair (mkNamedLambda_or_LetIn (id, c, t) ev, sigma)
   end }
 
@@ -1868,7 +1868,7 @@ let clear_body ids =
     in
     check_hyps <*> check_concl <*>
     Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Evarutil.new_evar env sigma concl
+      Evarutil.new_evar env sigma ~principal:true concl
     end }
   end }
 
@@ -2383,8 +2383,14 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    let t = match ty with Some t -> t | _ -> typ_of env sigma c in
-    let Sigma ((newcl, eq_tac), sigma, p) = match with_eq with
+    let Sigma (t, sigma, p) = match ty with
+    | Some t -> Sigma.here t sigma
+    | None ->
+      let t = typ_of env sigma c in
+      let sigma, c = Evarsolve.refresh_universes ~onlyalg:true (Some false) env (Sigma.to_evar_map sigma) t in
+      Sigma.Unsafe.of_pair (c, sigma)
+    in
+    let Sigma ((newcl, eq_tac), sigma, q) = match with_eq with
       | Some (lr,(loc,ido)) ->
           let heq = match ido with
             | IntroAnonymous -> new_fresh_id [id] (add_prefix "Heq" id) gl
@@ -2415,7 +2421,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
         Tacticals.New.tclMAP convert_hyp_no_check depdecls;
         eq_tac ]
     in
-    Sigma (tac, sigma, p)
+    Sigma (tac, sigma, p +> q)
   end }
 
 let insert_before decls lasthyp env =
@@ -2645,7 +2651,7 @@ let new_generalize_gen_let lconstr =
     in
     let tac =
 	Proofview.Refine.refine { run = begin fun sigma ->
-          let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma newcl in
+          let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma ~principal:true newcl in
           Sigma ((applist (ev, args)), sigma, p)
 	end }
     in

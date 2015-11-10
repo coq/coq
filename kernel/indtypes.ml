@@ -117,18 +117,18 @@ let is_unit constrsinfos =
    | [] -> (* type without constructors *) true
    | _ -> false
 
-let infos_and_sort env ctx t =
-  let rec aux env ctx t max =
+let infos_and_sort env t =
+  let rec aux env t max =
     let t = whd_betadeltaiota env t in
       match kind_of_term t with
       | Prod (name,c1,c2) ->
         let varj = infer_type env c1 in
 	let env1 = Environ.push_rel (name,None,varj.utj_val) env in
 	let max = Universe.sup max (univ_of_sort varj.utj_type) in
-	  aux env1 ctx c2 max
+	  aux env1 c2 max
     | _ when is_constructor_head t -> max
     | _ -> (* don't fail if not positive, it is tested later *) max
-  in aux env ctx t Universe.type0m
+  in aux env t Universe.type0m
 
 (* Computing the levels of polymorphic inductive types
 
@@ -153,14 +153,14 @@ let infos_and_sort env ctx t =
 (* This (re)computes informations relevant to extraction and the sort of an
    arity or type constructor; we do not to recompute universes constraints *)
 
-let infer_constructor_packet env_ar_par ctx params lc =
+let infer_constructor_packet env_ar_par params lc =
   (* type-check the constructors *)
   let jlc = List.map (infer_type env_ar_par) lc in
   let jlc = Array.of_list jlc in
   (* generalize the constructor over the parameters *)
   let lc'' = Array.map (fun j -> it_mkProd_or_LetIn j.utj_val params) jlc in
   (* compute the max of the sorts of the products of the constructors types *)
-  let levels = List.map (infos_and_sort env_ar_par ctx) lc in
+  let levels = List.map (infos_and_sort env_ar_par) lc in
   let isunit = is_unit levels in
   let min = if Array.length jlc > 1 then Universe.type0 else Universe.type0m in
   let level = List.fold_left (fun max l -> Universe.sup max l) min levels in
@@ -266,8 +266,7 @@ let typecheck_inductive env mie =
     List.fold_right2
       (fun ind arity_data inds ->
 	 let (lc',cstrs_univ) =
-	   infer_constructor_packet env_ar_par ContextSet.empty
-	     params ind.mind_entry_lc in
+	   infer_constructor_packet env_ar_par params ind.mind_entry_lc in
 	 let consnames = ind.mind_entry_consnames in
 	 let ind' = (arity_data,consnames,lc',cstrs_univ) in
 	   ind'::inds)
@@ -342,7 +341,7 @@ let typecheck_inductive env mie =
 type ill_formed_ind =
   | LocalNonPos of int
   | LocalNotEnoughArgs of int
-  | LocalNotConstructor
+  | LocalNotConstructor of rel_context * constr list
   | LocalNonPar of int * int * int
 
 exception IllFormedInd of ill_formed_ind
@@ -353,7 +352,7 @@ exception IllFormedInd of ill_formed_ind
 
 let mind_extract_params = decompose_prod_n_assum
 
-let explain_ind_err id ntyp env nbpar c nargs err =
+let explain_ind_err id ntyp env nbpar c err =
   let (lpar,c') = mind_extract_params nbpar c in
   match err with
     | LocalNonPos kt ->
@@ -361,9 +360,11 @@ let explain_ind_err id ntyp env nbpar c nargs err =
     | LocalNotEnoughArgs kt ->
 	raise (InductiveError
 		 (NotEnoughArgs (env,c',mkRel (kt+nbpar))))
-    | LocalNotConstructor ->
+    | LocalNotConstructor (paramsctxt,args)->
+        let nparams = rel_context_nhyps paramsctxt in
 	raise (InductiveError
-		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nbpar,nargs)))
+		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nparams,
+                                  List.length args - nparams)))
     | LocalNonPar (n,i,l) ->
 	raise (InductiveError
 		 (NonPar (env,c',n,mkRel i, mkRel (l+nbpar))))
@@ -587,7 +588,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
                 begin match hd with
                 | Rel j when Int.equal j (n + ntypes - i - 1) ->
                   check_correct_par ienv hyps (ntypes - i) largs
-                | _ -> raise (IllFormedInd LocalNotConstructor)
+                | _ -> raise (IllFormedInd (LocalNotConstructor(hyps,largs)))
                 end
               else
                 if not (List.for_all (noccur_between n ntypes) largs)
@@ -603,7 +604,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
           try
 	    check_constructors ienv true nmr rawc
           with IllFormedInd err ->
-	    explain_ind_err id (ntypes-i) env lparams c nargs err)
+	    explain_ind_err id (ntypes-i) env lparams c err)
       (Array.of_list lcnames) indlc
   in
   let irecargs = Array.map snd irecargs_nmr
