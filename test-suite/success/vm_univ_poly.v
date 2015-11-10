@@ -37,32 +37,30 @@ Definition _4 : sumbool_copy x = x :=
   @eq_refl _ x <: sumbool_copy x = x.
 
 (* Polymorphic Inductive Types *)
-Polymorphic Inductive poption (T : Type@{i}) : Type@{i} :=
+Polymorphic Inductive poption@{i} (T : Type@{i}) : Type@{i} :=
 | PSome : T -> poption@{i} T
 | PNone : poption@{i} T.
 
-Polymorphic Definition poption_default {T : Type@{i}} (p : poption@{i} T) (x : T) : T :=
+Polymorphic Definition poption_default@{i} {T : Type@{i}} (p : poption@{i} T) (x : T) : T :=
   match p with
   | @PSome _ y => y
   | @PNone _ => x
   end.
 
-Polymorphic Inductive plist (T : Type@{i}) : Type@{i} :=
+Polymorphic Inductive plist@{i} (T : Type@{i}) : Type@{i} :=
 | pnil
 | pcons : T -> plist@{i} T -> plist@{i} T.
 
 Arguments pnil {_}.
 Arguments pcons {_} _ _.
 
-Section pmap.
-  Context {T : Type@{i}} {U : Type@{j}} (f : T -> U).
-
-  Polymorphic Fixpoint pmap (ls : plist@{i} T) : plist@{j} U :=
+Polymorphic Definition pmap@{i j}
+            {T : Type@{i}} {U : Type@{j}} (f : T -> U) :=
+  fix pmap (ls : plist@{i} T) : plist@{j} U :=
     match ls with
     | @pnil _ => @pnil _
     | @pcons _ l ls => @pcons@{j} U (f l) (pmap@{i j} ls)
     end.
-End pmap.
 
 Universe Ubool.
 Inductive tbool : Type@{Ubool} := ttrue | tfalse.
@@ -75,59 +73,57 @@ Eval vm_compute in pmap (fun x => match x with
                                   end) (pcons pnil (pcons (pcons false pnil) pnil)).
 Eval vm_compute in pmap (fun x => x -> Type) (pcons tbool (pcons (plist tbool) pnil)).
 
-Polymorphic Inductive Tree (T : Type@{i}) : Type@{i} :=
+Polymorphic Inductive Tree@{i} (T : Type@{i}) : Type@{i} :=
 | Empty
 | Branch : plist@{i} (Tree@{i} T) -> Tree@{i} T.
 
-Section pfold.
-  Context {T : Type@{i}} {U : Type@{u}} (f : T -> U -> U).
-
-  Polymorphic Fixpoint pfold (acc : U) (ls : plist@{i} T) : U :=
+Polymorphic Definition pfold@{i u}
+            {T : Type@{i}} {U : Type@{u}} (f : T -> U -> U) :=
+  fix pfold (acc : U) (ls : plist@{i} T) : U :=
     match ls with
     | pnil => acc
     | pcons a b => pfold (f a acc) b
     end.
-End pfold.
 
-Polymorphic Inductive nat : Type@{i} :=
+Polymorphic Inductive nat@{i} : Type@{i} :=
 | O
 | S : nat -> nat.
 
-Fixpoint nat_max (a b : nat) : nat :=
+Polymorphic Fixpoint nat_max@{i} (a b : nat@{i}) : nat@{i} :=
   match a , b with
   | O , b => b
   | a , O => a
   | S a , S b => S (nat_max a b)
   end.
 
-Polymorphic Fixpoint height {T : Type@{i}} (t : Tree@{i} T) : nat :=
-  match t with
+Polymorphic Fixpoint height@{i} {T : Type@{i}} (t : Tree@{i} T) : nat@{i} :=
+  match t return nat@{i} with
   | Empty _ => O
-  | Branch _ ls => S (pfold nat_max O (pmap height ls))
+  | Branch _ ls => S@{i} (pfold@{i i} nat_max O (pmap height ls))
   end.
 
-Polymorphic Fixpoint repeat {T : Type@{i}} (n : nat) (v : T) : plist@{i} T :=
-  match n with
+Polymorphic Fixpoint repeat@{i} {T : Type@{i}} (n : nat@{i}) (v : T) : plist@{i} T :=
+  match n return plist@{i} T with
   | O => pnil
-  | S n => pcons v (repeat n v)
+  | S n => pcons@{i} v (repeat n v)
   end.
 
-Polymorphic Fixpoint big_tree (n : nat) : Tree@{i} nat :=
+Polymorphic Fixpoint big_tree@{i} (n : nat@{i}) : Tree@{i} nat@{i} :=
   match n with
-  | O => @Empty nat
-  | S n' => Branch _ (repeat n' (big_tree n'))
+  | O => @Empty nat@{i}
+  | S n' => Branch@{i} nat@{i} (repeat@{i} n' (big_tree@{i} n'))
   end.
 
 Eval compute in height (big_tree (S (S (S O)))).
 
 Let big := S (S (S (S (S O)))).
-Polymorphic Definition really_big := (S@{i} (S (S (S (S (S (S (S (S (S O)))))))))).
+Polymorphic Definition really_big@{i} := (S@{i} (S (S (S (S (S (S (S (S (S O)))))))))).
 
 Time Definition _5 : height (@Empty nat) = O :=
   @eq_refl nat O <: height (@Empty nat) = O.
 
 Time Definition _6 : height@{Set} (@Branch nat pnil) = S O :=
-  @eq_refl nat@{Set} (S@{Set} O@{Set}) <: height@{Set} (@Branch nat pnil) = S O.
+  @eq_refl nat@{Set} (S@{Set} O@{Set}) <: @eq nat@{Set} (height@{Set} (@Branch@{Set} nat@{Set} (@pnil@{Set} (Tree@{Set} nat@{Set})))) (S@{Set} O@{Set}).
 
 Time Definition _7 : height (big_tree big) = big :=
   @eq_refl nat big <: height (big_tree big) = big.
