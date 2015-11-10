@@ -7,3 +7,10 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.5 *)
+
+(* In 8.5, "intros [|]", taken e.g. on a goal "A\/B->C", does not
+   behave as "intros [H|H]" but leave instead hypotheses quantified in
+   the goal, here producing subgoals A->C and B->C. *)
+
+Unset Bracketing Last Introduction Pattern.
+
