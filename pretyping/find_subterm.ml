@@ -14,8 +14,6 @@ open Locus
 open Term
 open Nameops
 open Termops
-open Environ
-open Inductiveops
 open Pretype_errors
 
 (** Processing occurrences *)
@@ -75,17 +73,6 @@ let map_named_declaration_with_hyploc f hyploc acc (id,bodyopt,typ) =
       let acc,typ = f acc typ in
       acc,(id,Some body,typ)
 
-let rec process_under_binders f envk sign p =
-  let rec aux (env,k) sign p =
-    match (sign,kind_of_term p) with
-    | [], _ -> f (env,k) p
-    | (_,None,t as d)::sign, Lambda (na,_,p) ->
-      mkLambda (na,t,aux (push_rel d env,k+1) sign p)
-    | (_,(Some c),t as d)::sign, LetIn (na,_,_,p) ->
-      mkLetIn (na,c,t,aux (push_rel d env,k+1) sign p)
-    | _ -> assert false
-  in aux envk (List.rev sign) p
-
 (** Finding a subterm up to some testing function *)
 
 exception SubtermUnificationError of subterm_unification_error
@@ -95,7 +82,6 @@ exception NotUnifiable of (constr * constr * unification_error) option
 type 'a testing_function = {
   match_fun : 'a -> constr -> 'a;
   merge_fun : 'a -> 'a -> 'a;
-  get_evars : 'a -> Evd.evar_map;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
 }
@@ -105,7 +91,7 @@ type 'a testing_function = {
    (b,l), b=true means no occurrence except the ones in l and b=false,
    means all occurrences except the ones in l *)
 
-let replace_term_occ_gen_modulo occs like_first test bywhat env cl occ t =
+let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
@@ -117,9 +103,9 @@ let replace_term_occ_gen_modulo occs like_first test bywhat env cl occ t =
     with NotUnifiable e when not like_first ->
       let lastpos = Option.get test.last_found in
      raise (SubtermUnificationError (!nested,((cl,!pos),t),lastpos,e)) in
-  let rec substrec (env,k) t =
+  let rec substrec k t =
     if nowhere_except_in && !pos > maxocc then t else
-    if not (Vars.closed0 t) then subst_below (env,k) t else
+    if not (Vars.closed0 t) then subst_below k t else
     try
       let subst = test.match_fun test.testing_state t in
       if Locusops.is_selected !pos occs then
@@ -132,51 +118,31 @@ let replace_term_occ_gen_modulo occs like_first test bywhat env cl occ t =
          add_subst t subst; incr pos;
          (* Check nested matching subterms *)
          if occs != Locus.AllOccurrences && occs != Locus.NoOccurrences then
-           begin nested := true; ignore (subst_below (env,k) t); nested := false end;
+           begin nested := true; ignore (subst_below k t); nested := false end;
          (* Do the effective substitution *)
          Vars.lift k (bywhat ()))
       else
-        (incr pos; subst_below (env,k) t)
+        (incr pos; subst_below k t)
     with NotUnifiable _ ->
-      subst_below (env,k) t
-  and subst_below (env,k) t =
-    match kind_of_term t with
-    | Case (ci,p,c,br) ->
-      let c = substrec (env,k) c in
-      let sigma = test.get_evars test.testing_state in
-      let t = Retyping.get_type_of env sigma c in
-      let IndType (indf,_) = find_rectype env sigma t in
-      let p = subst_cases_predicate (env,k) indf p in
-      let cstrs = get_constructors env indf in
-      let br = Array.map2 (subst_cases_branch (env,k) indf) br cstrs in
-      mkCase (ci,p,c,br)
-    | _ ->
-      map_constr_with_binders_left_to_right (fun d (env,k) -> (push_rel d env,k+1))
-        substrec (env,k) t
-  and subst_cases_predicate (env,k) indf p =
-    let arsign,_ = get_arity env indf in
-    let nrealargs = List.length arsign in
-    let (ind,params) = dest_ind_family indf in
-    let mind = applist (mkIndU ind,
-       (List.map (Vars.lift nrealargs) params)@(extended_rel_list 0 arsign)) in
-    process_under_binders substrec (env,k) ((Anonymous,None,mind)::arsign) p
-  and subst_cases_branch (env,k) indf b cstr =
-    process_under_binders substrec (env,k) cstr.cs_args b in
-  let t' = substrec (env,0) t in
+      subst_below k t
+  and subst_below k t =
+    map_constr_with_binders_left_to_right (fun d k -> k+1) substrec k t
+  in
+  let t' = substrec 0 t in
   (!pos, t')
 
-let replace_term_occ_modulo occs test bywhat env t =
+let replace_term_occ_modulo occs test bywhat t =
   let occs',like_first =
     match occs with AtOccs occs -> occs,false | LikeFirst -> AllOccurrences,true in
   proceed_with_occurrences
-    (replace_term_occ_gen_modulo occs' like_first test bywhat env None) occs' t
+    (replace_term_occ_gen_modulo occs' like_first test bywhat None) occs' t
 
-let replace_term_occ_decl_modulo occs test bywhat env d =
+let replace_term_occ_decl_modulo occs test bywhat d =
   let (plocs,hyploc),like_first =
     match occs with AtOccs occs -> occs,false | LikeFirst -> (AllOccurrences,InHyp),true in
   proceed_with_occurrences
     (map_named_declaration_with_hyploc
-       (replace_term_occ_gen_modulo plocs like_first test bywhat env)
+       (replace_term_occ_gen_modulo plocs like_first test bywhat)
        hyploc)
     plocs d
 
@@ -190,30 +156,23 @@ let make_eq_univs_test env evd c =
 	with Evd.UniversesDiffer -> raise (NotUnifiable None)
       else raise (NotUnifiable None));
   merge_fun = (fun evd _ -> evd);
-  get_evars = (fun evd -> evd);
   testing_state = evd;
   last_found = None
 } 
 
-let subst_closed_term_occ env sigma occs c t =
-  let test = make_eq_univs_test env sigma c in
+let subst_closed_term_occ env evd occs c t =
+  let test = make_eq_univs_test env evd c in
   let bywhat () = mkRel 1 in
-  let typ = Retyping.get_type_of env sigma c in
-  assert (rel_context env == []);
-  let env = push_rel (Anonymous,Some c,typ) env in
-  let t' = replace_term_occ_modulo occs test bywhat env t in
+  let t' = replace_term_occ_modulo occs test bywhat t in
     t', test.testing_state
 
-let subst_closed_term_occ_decl env sigma occs c d =
-  let test = make_eq_univs_test env sigma c in
+let subst_closed_term_occ_decl env evd occs c d =
+  let test = make_eq_univs_test env evd c in
   let (plocs,hyploc),like_first =
     match occs with AtOccs occs -> occs,false | LikeFirst -> (AllOccurrences,InHyp),true in
   let bywhat () = mkRel 1 in
-  let typ = Retyping.get_type_of env sigma c in
-  assert (rel_context env == []);
-  let env = push_rel (Anonymous,Some c,typ) env in
   proceed_with_occurrences
     (map_named_declaration_with_hyploc
-       (fun _ -> replace_term_occ_gen_modulo plocs like_first test bywhat env None)
+       (fun _ -> replace_term_occ_gen_modulo plocs like_first test bywhat None)
        hyploc) plocs d,
   test.testing_state
