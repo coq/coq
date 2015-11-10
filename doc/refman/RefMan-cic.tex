@@ -1299,16 +1299,12 @@ compact notation:
 \label{allowedeleminationofsorts}
 
 An important question for building the typing rule for \kw{match} is
-what can be the type of $\lb a x \mto P$ with respect to the type of the inductive
-definitions.
-
-We define now a relation \compat{I:A}{B} between an inductive
-definition $I$ of type $A$ and an arity $B$. This relation states that
-an object in the inductive definition $I$ can be eliminated for
-proving a property $\lb a x \mto P$ of arity $B$.
-% TODO: The meaning of [I:A|B] relation is not trivial,
-%       but I do not think that we must explain it in as complicated way as we do above.
-We use this concept to formulate the hypothesis of the typing rule for the match-construct.
+what can be the type of $\lb a x \mto P$ with respect to the type of $m$. If
+$m:I$ and
+$I:A$ and
+$\lb a x \mto P : B$
+then by \compat{I:A}{B} we mean that one can use $\lb a x \mto P$ with $m$ in the above
+match-construct.
 
 \paragraph{Notations.}
 The \compat{I:A}{B} is defined as the smallest relation satisfying the
