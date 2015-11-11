@@ -317,7 +317,7 @@ let rec it_mkGLambda loc2 env body =
 let build_impls = function
   |Implicit -> (function
 		  |Name id ->  Some (id, Impargs.Manual, (true,true))
-		  |Anonymous -> anomaly (Pp.str "Anonymous implicit argument"))
+		  |Anonymous -> Some (Id.of_string "_", Impargs.Manual, (true,true)))
   |Explicit -> fun _ -> None
 
 let impls_type_list ?(args = []) =
