@@ -69,7 +69,6 @@ system itself generates for each instance of \Type\ a new
 index for the universe and checks that the constraints between these
 indexes can be solved. From the user point of view we consequently
 have {\Type}:{\Type}.
-
 We shall make precise in the typing rules the constraints between the
 indexes. 
 
@@ -125,13 +124,11 @@ Terms are built from sorts, variables, constants,
 abstractions, applications, local definitions,
 %case analysis, fixpoints, cofixpoints
 and products.
-
 From a syntactic point of view, types cannot be distinguished from terms,
 except that they cannot start by an abstraction or a constructor.
-
 More precisely the language of the {\em Calculus of Inductive
   Constructions} is built from the following rules.
-
+%
 \begin{enumerate}
 \item the sorts {\Set}, {\Prop}, ${\Type(i)}$ are terms.
 \item variables, hereafter ranged over by letters $x$, $y$, etc., are terms
@@ -414,31 +411,31 @@ $\eta$-expansion $\lb x:T\mto (t\ x)$ for $x$ an arbitrary variable
 name fresh in $t$.
 
 \Rem We deliberately do not define $\eta$-reduction:
-\begin{latexonly}
+\begin{latexonly}%
   $$\lb x:T\mto (t\ x)\not\triangleright_\eta\hskip.3em t$$
-\end{latexonly}
+\end{latexonly}%
 \begin{htmlonly}
   $$\lb x:T\mto (t\ x)~\not\triangleright_\eta~t$$
 \end{htmlonly}
 This is because, in general, the type of $t$ need not to be convertible to the type of $\lb x:T\mto (t\ x)$.
 E.g., if we take $f$ such that:
-\begin{latexonly}
+\begin{latexonly}%
   $$f\hskip.5em:\hskip.5em\forall x:Type(2),Type(1)$$
-\end{latexonly}
+\end{latexonly}%
 \begin{htmlonly}
   $$f~:~\forall x:Type(2),Type(1)$$
 \end{htmlonly}
 then
-\begin{latexonly}
+\begin{latexonly}%
   $$\lb x:Type(1),(f\, x)\hskip.5em:\hskip.5em\forall x:Type(1),Type(1)$$
-\end{latexonly}
+\end{latexonly}%
 \begin{htmlonly}
   $$\lb x:Type(1),(f\, x)~:~\forall x:Type(1),Type(1)$$
 \end{htmlonly}
 We could not allow
-\begin{latexonly}
+\begin{latexonly}%
   $$\lb x:Type(1),(f\,x)\hskip.4em\not\triangleright_\eta\hskip.6em f$$
-\end{latexonly}
+\end{latexonly}%
 \begin{htmlonly}
   $$\lb x:Type(1),(f\,x)~\not\triangleright_\eta~f$$
 \end{htmlonly}
@@ -514,7 +511,7 @@ term is no more an abstraction leads to the {\em $\beta$-head normal
 where $v$ is not an abstraction (nor an application).  Note that the
 head normal form must not be confused with the normal form since some
 $u_i$ can be reducible.
-
+%
 Similar notions of head-normal forms involving $\delta$, $\iota$ and $\zeta$
 reductions or any combination of those can also be defined.
 
@@ -529,14 +526,12 @@ Formally, we can represent any {\em inductive definition\index{definition!induct
   \item $p$ determines the number of parameters of these inductive types.
 \end{itemize}
 These inductive definitions, together with global assumptions and global definitions, then form the global environment.
-
-\noindent Additionally, for any $p$ there always exists $\Gamma_P=[a_1:A_1;\dots;a_p:A_p]$
+%
+Additionally, for any $p$ there always exists $\Gamma_P=[a_1:A_1;\dots;a_p:A_p]$
 such that each $(t:T)\in\Gamma_I\cup\Gamma_C$ can be written as:
-$\forall\Gamma_P, T^\prime$.
+$\forall\Gamma_P, T^\prime$ where $\Gamma_P$ is called the {\em context of parameters\index{context of parameters}}.
 
-\noindent $\Gamma_P$ is called {\em context of parameters\index{context of parameters}}.
-
-\begin{latexonly}
+\begin{latexonly}%
 \subsection*{Examples}
 
 If we take the following inductive definition (denoted in concrete syntax):
@@ -750,7 +745,7 @@ and thus it enriches the global environment with the following entry:
 \ind{0}{\GammaI}{\GammaC}
 \vskip.5em
 \noindent In this case, $\Gamma_P=[\,]$.
-\end{latexonly}
+\end{latexonly}%
 
 \subsection{Types of inductive objects}
 We have to give the type of constants in a global environment $E$ which
@@ -763,7 +758,7 @@ contains an inductive declaration.
   \inference{\frac{\WFE{\Gamma}\hskip2em\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\hskip2em(c:C)\in\Gamma_C}{\WTEG{c}{C}}}
 \end{description}
 
-\begin{latexonly}
+\begin{latexonly}%
 \paragraph{Example.}
 Provided that our environment $E$ contains inductive definitions we showed before,
 these two inference rules above enable us to conclude that:
@@ -776,7 +771,7 @@ $\begin{array}{@{} l}
    \prefix\evenS : \forall~n:\nat, \odd~n \ra \even~(\nS~n)\\
    \prefix\oddS : \forall~n:\nat, \even~n \ra \odd~(\nS~n)
  \end{array}$
-\end{latexonly}
+\end{latexonly}%
 
 %\paragraph{Parameters.}
 %%The parameters introduce a distortion between the inside specification
@@ -837,10 +832,10 @@ any $t_i$
 \item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
 the type $V$ satisfies the positivity condition for $X$
 \end{itemize}
-
+%
 The constant $X$ {\em occurs strictly positively} in $T$ in the
 following cases:
-
+%
 \begin{itemize}
 \item $X$ does not occur in $T$
 \item $T$ converts to $(X~t_1 \ldots ~t_n)$ and $X$ does not occur in
@@ -861,7 +856,7 @@ following cases:
 %positively in $T[x:U]u$ if $X$ does not occur in $U$ but occurs
 %strictly positively in $u$
 \end{itemize}
-
+%
 The type of constructor $T$ of $I$ {\em satisfies the nested
 positivity condition} for a constant $X$ in the following
 cases:
@@ -874,7 +869,7 @@ any $u_i$
 the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
 
-\begin{latexonly}
+\begin{latexonly}%
 \newcommand\vv{\textSFxi}    % │
 \newcommand\hh{\textSFx}     %   ─
 \newcommand\vh{\textSFviii}  % ├
@@ -937,7 +932,7 @@ the type $V$ satisfies the nested positivity condition for $X$
 \ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $X$ occurs only strictly positively in $\ListA$\ruleref3\\
 \ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
 \ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\hv\hh\ws $X$ satisfies the nested positivity condition for $\ListA$\ruleref7
-\end{latexonly}
+\end{latexonly}%
 
 \paragraph{Correctness rules.}
 We shall now describe the rules allowing the introduction of a new
@@ -1008,7 +1003,6 @@ Inductive exType (P:Type->Prop) : Type
 
 Inductive types declared in {\Type} are
 polymorphic over their arguments in {\Type}.
-
 If $A$ is an arity of some sort and $s$ is a sort, we write $A_{/s}$ for the arity
 obtained from $A$ by replacing its sort with $s$. Especially, if $A$
 is well-typed in some global environment and local context, then $A_{/s}$ is typable
@@ -1059,7 +1053,7 @@ we have $(\WTE{\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{q_i}})_{i=1\ldots  n}$;
   $\Type(j)$, are allowed (see Section~\ref{allowedeleminationofsorts}).
 \end{itemize}
 \end{description}
-
+%
 Notice that if $I_j\,q_1\,\ldots\,q_r$ is typable using the rules {\bf
 Ind-Const} and {\bf App}, then it is typable using the rule {\bf
 Ind-Family}. Conversely, the extended theory is not stronger than the
@@ -1106,15 +1100,14 @@ and otherwise in the {\Type} hierarchy.
 Note that the side-condition about allowed elimination sorts in the
 rule~{\bf Ind-Family} is just to avoid to recompute the allowed
 elimination sorts at each instance of a pattern-matching (see
-section~\ref{elimdep}).
-
+section~\ref{elimdep}).  
 As an example, let us consider the following definition:
 \begin{coq_example*}
 Inductive option (A:Type) : Type := 
 | None : option A 
 | Some : A -> option A.
 \end{coq_example*}
-
+%
 As the definition is set in the {\Type} hierarchy, it is used
 polymorphically over its parameters whose types are arities of a sort
 in the {\Type} hierarchy. Here, the parameter $A$ has this property,
@@ -1129,13 +1122,13 @@ section~\ref{singleton}) and it would lose the elimination to {\Set} and
 Check (fun A:Set => option A).
 Check (fun A:Prop => option A).
 \end{coq_example}
-
+%
 Here is another example.
-
+%
 \begin{coq_example*}
 Inductive prod (A B:Type) : Type := pair : A -> B -> prod A B.
 \end{coq_example*}
-
+%
 As \texttt{prod} is a singleton type, it will be in {\Prop} if applied
 twice to propositions, in {\Set} if applied twice to at least one type
 in {\Set} and none in {\Type}, and in {\Type} otherwise. In all cases,
@@ -1186,24 +1179,25 @@ In case the inductive definition is effectively a recursive one, we
 want to capture the extra property that we have built the smallest
 fixed point of this recursive equation.  This says that we are only
 manipulating finite objects. This analysis provides induction
-principles.
-
+principles.  
 For instance, in order to prove $\forall l:\ListA,(\haslengthA~l~(\length~l))$
 it is enough to prove:
-
-\noindent $(\haslengthA~(\Nil~A)~(\length~(\Nil~A)))$ and
-
-\smallskip
-$\forall a:A, \forall l:\ListA, (\haslengthA~l~(\length~l)) \ra
-(\haslengthA~(\cons~A~a~l)~(\length~(\cons~A~a~l)))$.
-\smallskip
-
-\noindent which given the conversion equalities satisfied by \length\ is the
+%
+\begin{itemize}
+  \item $(\haslengthA~(\Nil~A)~(\length~(\Nil~A)))$
+  \item $\forall a:A, \forall l:\ListA, (\haslengthA~l~(\length~l)) \ra\\
+        \ra (\haslengthA~(\cons~A~a~l)~(\length~(\cons~A~a~l)))$
+\end{itemize}
+%
+which given the conversion equalities satisfied by \length\ is the
 same as proving:
-$(\haslengthA~(\Nil~A)~\nO)$ and $\forall a:A, \forall l:\ListA, 
-(\haslengthA~l~(\length~l)) \ra
-(\haslengthA~(\cons~A~a~l)~(\nS~(\length~l)))$.
-
+%
+\begin{itemize}
+  \item $(\haslengthA~(\Nil~A)~\nO)$
+  \item $\forall a:A, \forall l:\ListA, (\haslengthA~l~(\length~l)) \ra\\
+        \ra (\haslengthA~(\cons~A~a~l)~(\nS~(\length~l)))$
+\end{itemize}
+%
 One conceptually simple way to do that, following the basic scheme
 proposed by Martin-L\"of in his Intuitionistic Type Theory, is to
 introduce for each inductive definition an elimination operator. At
@@ -1223,7 +1217,6 @@ The basic idea of this operator is that we have an object
 $m$ in an inductive type $I$ and we want to prove a property
 which possibly depends on $m$. For this, it is enough to prove the
 property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
-
 The \Coq{} term for this proof will be written:
 \[\kw{match}~m~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
   (c_n~x_{n1}~...~x_{np_n}) \Ra f_n~ \kw{end}\]
@@ -1262,7 +1255,7 @@ have to be variables
 The expression after \kw{in}
 must be seen as an \emph{inductive type pattern}. Notice that
 expansion of implicit arguments and notations apply to this pattern.
-
+%
 For the purpose of presenting the inference rules, we use a more
 compact notation:
 \[ \Case{(\lb a x \mto P)}{m}{ \lb x_{11}~...~x_{1p_1} \mto f_1 ~|~\ldots~|~
@@ -1315,14 +1308,14 @@ $I$.
 The case of inductive definitions in sorts \Set\ or \Type{} is simple.
 There is no restriction on the sort of the predicate to be
 eliminated. 
-
+%
 \begin{description}
 \item[Prod] \inference{\frac{\compat{(I~x):A'}{B'}}
                       {\compat{I:\forall x:A, A'}{\forall x:A, B'}}}
 \item[{\Set} \& \Type] \inference{\frac{
     s_1 \in \{\Set,\Type(j)\}~~~~~~~~s_2 \in \Sort}{\compat{I:s_1}{I\ra s_2}}}
 \end{description}
-
+%
 The case of Inductive definitions of sort \Prop{} is a bit more
 complicated, because of our interpretation of this sort. The only
 harmless allowed elimination, is the one when predicate $P$ is also of
@@ -1413,10 +1406,10 @@ eliminations are allowed.
        definition}~~~s \in \Sort}{\compat{I:\Prop}{I\ra s}}
 }
 \end{description}
-
+%
 % A {\em singleton definition} has always an informative content,
 % even if it is a proposition.
-
+%
 A {\em singleton
 definition} has only one constructor and all the arguments of this
 constructor have type \Prop. In that case, there is a canonical
@@ -1573,17 +1566,17 @@ The typing rule is the expected one for a fixpoint.
             (\WTE{\Gamma,f_1:A_1,\ldots,f_n:A_n}{t_i}{A_i})_{i=1\ldots n}}
          {\WTEG{\Fix{f_i}{f_1:A_1:=t_1 \ldots f_n:A_n:=t_n}}{A_i}}}
 \end{description}
-
+%
 Any fixpoint definition cannot be accepted because non-normalizing terms
 allow proofs of absurdity.
-
+%
 The basic scheme of recursion that should be allowed is the one needed for 
 defining primitive
 recursive functionals. In that case the fixpoint enjoys a special
 syntactic restriction, namely one of the arguments belongs to an
 inductive type, the function starts with a case analysis and recursive
 calls are done on variables coming from patterns and representing subterms.
-
+%
 For instance in the case of natural numbers, a proof of the induction
 principle of type 
 \[\forall P:\nat\ra\Prop, (P~\nO)\ra(\forall n:\nat, (P~n)\ra(P~(\nS~n)))\ra
@@ -1596,15 +1589,15 @@ can be represented by the term:
     p:\nat\mto (g~p~(h~p))}}
 \end{array}
 \]
-
+%
 Before accepting a fixpoint definition as being correctly typed, we
 check that the definition is ``guarded''. A precise analysis of this
 notion can be found in~\cite{Gim94}.
-
+%
 The first stage is to precise on which argument the fixpoint will be
 decreasing. The type of this argument should be an inductive
 definition.
-
+%
 For doing this, the syntax of fixpoints is extended and becomes 
  \[\Fix{f_i}{f_1/k_1:A_1:=t_1 \ldots f_n/k_n:A_n:=t_n}\]
 where $k_i$ are positive integers.
@@ -1687,7 +1680,7 @@ a_{k_i}) \triangleright_{\iota} \substs{t_i}{f_k}{\Fix{f_k}{F}}{k=1\ldots n}
 when $a_{k_i}$ starts with a constructor.
 This last restriction is needed in order to keep strong normalization
 and corresponds to the reduction for primitive recursive operators.
-
+%
 The following reductions are now possible:
 \def\plus{\mathsf{plus}}
 \def\tri{\triangleright_\iota}
@@ -1785,7 +1778,7 @@ $\subst{\subst{E}{y_1}{(y_1~c)}\ldots}{y_n}{(y_n~c)}$.
 
  \inference{\frac{\WF{E;c:U;E';\Ind{}{p}{\Gamma_I}{\Gamma_C};E''}{\Gamma}}
                  {\WFTWOLINES{E;c:U;E';\Ind{}{p+1}{\forall x:U,\subst{\Gamma_I}{c}{x}}{\forall x:U,\subst{\Gamma_C}{c}{x}};\subst{E''}{|\Gamma_I,\Gamma_C|}{|\Gamma_I,\Gamma_C|~c}}{\subst{\Gamma}{|\Gamma_I,\Gamma_C|}{|\Gamma_I,\Gamma_C|~c}}}}
-
+%
 One can similarly modify a global declaration by generalizing it over
 a previously defined constant~$c'$.  Below, if $\Gamma$ is a context
 of the form $[y_1:A_1;\ldots;y_n:A_n]$, we write $
@@ -1830,7 +1823,7 @@ in~\cite{Gimenez95b,Gim98,GimCas05}.
 \Coq{} can be used as a type-checker for the
 Calculus of Inductive Constructions with an impredicative sort \Set{}
 by using the compiler option \texttt{-impredicative-set}.
-
+%
 For example, using the ordinary \texttt{coqtop} command, the following
 is rejected.
 % (** This example should fail *******************************
