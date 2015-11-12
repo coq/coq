@@ -67,6 +67,13 @@ Tools
 - The -require and -load-vernac-object command-line options now take a logical
   path of a given library rather than a physical path, thus they behave like
   Require [Import] path.
+  
+Standard Library
+
+ - There is now a Coq.Compat.Coq84 library, which sets the various compatibility
+   options and does a few redefinitions to make Coq behave more like Coq v8.4.
+   The standard way of putting Coq in v8.4 compatibility mode is to pass the command
+   line flags "-require Coq.Compat.Coq84 -compat 8.4".
 
 Changes from V8.5beta1 to V8.5beta2
 ===================================
