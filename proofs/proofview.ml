@@ -1010,10 +1010,34 @@ end
 module Refine =
 struct
 
+  let extract_prefix env info =
+    let ctx1 = List.rev (Environ.named_context env) in
+    let ctx2 = List.rev (Evd.evar_context info) in
+    let rec share l1 l2 accu = match l1, l2 with
+    | d1 :: l1, d2 :: l2 ->
+      if d1 == d2 then share l1 l2 (d1 :: accu)
+      else (accu, d2 :: l2)
+    | _ -> (accu, l2)
+    in
+    share ctx1 ctx2 []
+
   let typecheck_evar ev env sigma =
     let info = Evd.find sigma ev in
+    (** Typecheck the hypotheses. *)
+    let type_hyp (sigma, env) (na, body, t as decl) =
+      let evdref = ref sigma in
+      let _ = Typing.sort_of env evdref t in
+      let () = match body with
+      | None -> ()
+      | Some body -> Typing.check env evdref body t
+      in
+      (!evdref, Environ.push_named decl env)
+    in
+    let (common, changed) = extract_prefix env info in
+    let env = Environ.reset_with_named_context (Environ.val_of_named_context common) env in
+    let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
+    (** Typecheck the conclusion *)
     let evdref = ref sigma in
-    let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
     let _ = Typing.sort_of env evdref (Evd.evar_concl info) in
     !evdref
 
