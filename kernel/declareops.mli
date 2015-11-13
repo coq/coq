@@ -77,3 +77,4 @@ val inductive_context : mutual_inductive_body -> universe_context
 
 val hcons_const_body : constant_body -> constant_body
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
+val hcons_module_body : module_body -> module_body

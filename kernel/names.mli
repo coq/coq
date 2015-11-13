@@ -160,6 +160,8 @@ sig
   module Set : Set.S with type elt = t
   module Map : Map.ExtS with type key = t and module Set := Set
 
+  val hcons : t -> t
+
 end
 
 (** {6 Unique names for bound modules} *)
