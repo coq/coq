@@ -1505,7 +1505,7 @@ let assert_replacing id newt tac =
     let after, before = List.split_when (fun (n, b, t) -> Id.equal n id) ctx in
     let nc = match before with
     | [] -> assert false
-    | (id, b, _) :: rem -> insert_dependent env (id, b, newt) [] after @ rem
+    | (id, b, _) :: rem -> insert_dependent env (id, None, newt) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Proofview.Refine.refine ~unsafe:false begin fun sigma ->
