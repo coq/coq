@@ -25,7 +25,7 @@ make OLDROOT=$OUTDIR COQINSTALLPREFIX=$APP/Contents/Resources/ install-coq insta
 codesign -f -s - $APP
 
 # Create the dmg bundle
-mkdir $DMGDIR
+mkdir -p $DMGDIR
 ln -s /Applications $DMGDIR
 cp -r $APP $DMGDIR
 hdiutil create -imagekey zlib-level=9 -volname CoqIDE_$VERSION -srcfolder $DMGDIR -ov -format UDZO CoqIDE_$VERSION.dmg
