@@ -308,3 +308,88 @@ let string_of_side_effect { Entries.eff } = match eff with
   | Entries.SEsubproof (c,_,_) -> "P(" ^ Names.string_of_con c ^ ")"
   | Entries.SEscheme (cl,_) ->
       "S(" ^ String.concat ", " (List.map (fun (_,c,_,_) -> Names.string_of_con c) cl) ^ ")"
+
+(** Hashconsing of modules *)
+
+let hcons_functorize hty he hself f = match f with
+| NoFunctor e ->
+  let e' = he e in
+  if e == e' then f else NoFunctor e'
+| MoreFunctor (mid, ty, nf) ->
+  (** FIXME *)
+  let mid' = mid in
+  let ty' = hty ty in
+  let nf' = hself nf in
+  if mid == mid' && ty == ty' && nf == nf' then f
+  else MoreFunctor (mid, ty', nf')
+
+let hcons_module_alg_expr me = me
+
+let rec hcons_structure_field_body sb = match sb with
+| SFBconst cb ->
+  let cb' = hcons_const_body cb in
+  if cb == cb' then sb else SFBconst cb'
+| SFBmind mib ->
+  let mib' = hcons_mind mib in
+  if mib == mib' then sb else SFBmind mib'
+| SFBmodule mb ->
+  let mb' = hcons_module_body mb in
+  if mb == mb' then sb else SFBmodule mb'
+| SFBmodtype mb ->
+  let mb' = hcons_module_body mb in
+  if mb == mb' then sb else SFBmodtype mb'
+
+and hcons_structure_body sb =
+  (** FIXME *)
+  let map (l, sfb as fb) =
+    let l' = Names.Label.hcons l in
+    let sfb' = hcons_structure_field_body sfb in
+    if l == l' && sfb == sfb' then fb else (l', sfb')
+  in
+  List.smartmap map sb
+
+and hcons_module_signature ms =
+  hcons_functorize hcons_module_body hcons_structure_body hcons_module_signature ms
+
+and hcons_module_expression me =
+  hcons_functorize hcons_module_body hcons_module_alg_expr hcons_module_expression me
+
+and hcons_module_implementation mip = match mip with
+| Abstract -> Abstract
+| Algebraic me ->
+  let me' = hcons_module_expression me in
+  if me == me' then mip else Algebraic me'
+| Struct ms ->
+  let ms' = hcons_module_signature ms in
+  if ms == ms' then mip else Struct ms
+| FullStruct -> FullStruct
+
+and hcons_module_body mb =
+  let mp' = mb.mod_mp in
+  let expr' = hcons_module_implementation mb.mod_expr in
+  let type' = hcons_module_signature mb.mod_type in
+  let type_alg' = mb.mod_type_alg in
+  let constraints' = Univ.hcons_universe_context_set mb.mod_constraints in
+  let delta' = mb.mod_delta in
+  let retroknowledge' = mb.mod_retroknowledge in
+
+  if
+    mb.mod_mp == mp' &&
+    mb.mod_expr == expr' &&
+    mb.mod_type == type' &&
+    mb.mod_type_alg == type_alg' &&
+    mb.mod_constraints == constraints' &&
+    mb.mod_delta == delta' &&
+    mb.mod_retroknowledge == retroknowledge'
+  then mb
+  else {
+    mod_mp = mp';
+    mod_expr = expr';
+    mod_type = type';
+    mod_type_alg = type_alg';
+    mod_constraints = constraints';
+    mod_delta = delta';
+    mod_retroknowledge = retroknowledge';
+  }
+
+and hcons_module_type_body mtb = hcons_module_body mtb

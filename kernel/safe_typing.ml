@@ -561,6 +561,7 @@ let add_mind dir l mie senv =
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mtb = Mod_typing.translate_modtype senv.env mp inl params_mte  in
+  let mtb = Declareops.hcons_module_body mtb in
   let senv' = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv'
 
@@ -581,6 +582,7 @@ let full_add_module_type mp mt senv =
 let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mb = Mod_typing.translate_module senv.env mp inl me in
+  let mb = Declareops.hcons_module_body mb in
   let senv' = add_field (l,SFBmodule mb) M senv in
   let senv'' =
     if Modops.is_functor mb.mod_type then senv'
