@@ -343,7 +343,7 @@ let coerce_itf loc env evd v t c1 =
 
 let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
-    ~filter:Typeclasses.no_goals ~split:false ~fail:false env evd
+    ~filter:Typeclasses.no_goals ~split:true ~fail:false env evd
 
 (* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =

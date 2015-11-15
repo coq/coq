@@ -1509,7 +1509,7 @@ let assert_replacing id newt tac =
     let after, before = List.split_when (fun (n, b, t) -> Id.equal n id) ctx in
     let nc = match before with
     | [] -> assert false
-    | (id, b, _) :: rem -> insert_dependent env (id, b, newt) [] after @ rem
+    | (id, b, _) :: rem -> insert_dependent env (id, None, newt) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Proofview.Refine.refine ~unsafe:false { run = begin fun sigma ->
@@ -2081,8 +2081,10 @@ let poly_proof getp gett env evm car rel =
 let setoid_reflexivity =
   setoid_proof "reflexive"
     (fun env evm car rel -> 
-      tac_open (poly_proof PropGlobal.get_reflexive_proof TypeGlobal.get_reflexive_proof
-		  env evm car rel) (fun c -> Proofview.V82.of_tactic (apply c)))
+     tac_open (poly_proof PropGlobal.get_reflexive_proof
+			  TypeGlobal.get_reflexive_proof
+			  env evm car rel)
+	      (fun c -> tclCOMPLETE (Proofview.V82.of_tactic (apply c))))
     (reflexivity_red true)
 
 let setoid_symmetry =

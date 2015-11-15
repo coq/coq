@@ -739,7 +739,9 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	  pretype (mk_tycon tj.utj_val) env evdref lvar c
       | _ -> pretype empty_tycon env evdref lvar c1
     in
-    let t = j.uj_type in
+    let t = evd_comb1 (Evarsolve.refresh_universes
+      ~onlyalg:true ~status:Evd.univ_flexible (Some false) env)
+      evdref j.uj_type in
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
        looked up in the rel context. *)
