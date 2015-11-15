@@ -1,10 +1,13 @@
 
                  Notes on the prehistory of Coq
 
-This archive contains the sources of the CONSTR ancestor of the Coq proof
-assistant. CONSTR, then Coq, was designed and implemented in the Formel team,
-joint between the INRIA Rocquencourt laboratory and the Ecole Normale Supérieure
-of Paris, from 1984 onwards.
+This document is a copy within the Coq archive of a document written
+in September 2015 by Gérard Huet, Thierry Coquand and Christine Paulin
+to accompany their public release of the archive of versions 1.10 to 6.2
+of Coq and of its CONSTR ancestor. CONSTR, then Coq, was designed and
+implemented in the Formel team, joint between the INRIA Rocquencourt
+laboratory and the Ecole Normale Supérieure of Paris, from 1984
+onwards.
 
 Version 1
 
