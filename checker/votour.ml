@@ -22,6 +22,7 @@ sig
   val input : in_channel -> obj
   val repr : obj -> obj repr
   val size : obj -> int
+  val oid : obj -> int option
 end
 
 module ReprObj : S =
@@ -45,6 +46,7 @@ struct
     else INT (Obj.magic obj)
 
   let size (_, p) = CObj.shared_size_of_pos p
+  let oid _ = None
 end
 
 module ReprMem : S =
@@ -97,6 +99,9 @@ struct
     let _ = init_size seen obj in
     obj
 
+  let oid = function
+  | Int _ | Atm _ | Fun _ -> None
+  | Ptr p -> Some p
 end
 
 module Visit (Repr : S) :
@@ -149,9 +154,13 @@ let rec get_details v o = match v, Repr.repr o with
   |Annot (s,v), _ -> get_details v o
   |_ -> ""
 
+let get_oid obj = match Repr.oid obj with
+| None -> ""
+| Some id -> Printf.sprintf " [0x%08x]" id
+
 let node_info (v,o,p) =
   get_name ~extra:true v ^ get_details v o ^
-    " (size "^ string_of_int (Repr.size o)^"w)"
+    " (size "^ string_of_int (Repr.size o)^"w)" ^ get_oid o
 
 (** Children of a block : type, object, position.
     For lists, we collect all elements of the list at once *)
