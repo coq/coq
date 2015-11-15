@@ -47,10 +47,10 @@ foo' = if A 0 then true else false
 f = 
 fun H : B =>
 match H with
-| AC x =>
-    (let b0 := b in
-     if b0 as b return (P b -> True)
+| AC H0 =>
+    let b0 := b in
+    (if b0 as b return (P b -> True)
      then fun _ : P true => Logic.I
-     else fun _ : P false => Logic.I) x
+     else fun _ : P false => Logic.I) H0
 end
      : B -> True
