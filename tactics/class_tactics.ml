@@ -158,9 +158,9 @@ let e_give_exact flags poly (c,clenv) gl =
   let c, gl =
     if poly then
       let clenv', subst = Clenv.refresh_undefined_univs clenv in
-      let clenv' = connect_clenv gl clenv' in
+      let evd = evars_reset_evd ~with_conv_pbs:true gl.sigma clenv'.evd in
       let c = Vars.subst_univs_level_constr subst c in
-	c, {gl with sigma = clenv'.evd}
+	c, {gl with sigma = evd}
     else c, gl
   in
   let t1 = pf_unsafe_type_of gl c in
