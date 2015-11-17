@@ -1605,7 +1605,7 @@ let progress_with_clause flags innerclause clause =
   let ordered_metas = List.rev (clenv_independent clause) in
   if List.is_empty ordered_metas then error "Statement without assumptions.";
   let f mv =
-    try Some (find_matching_clause (clenv_fchain mv ~flags clause) innerclause)
+    try Some (find_matching_clause (clenv_fchain ~with_univs:false mv ~flags clause) innerclause)
     with Failure _ -> None
   in
   try List.find_map f ordered_metas
@@ -3756,7 +3756,7 @@ let recolle_clenv i params args elimclause gl =
          trying to unify (which would lead to trying to apply it to
          evars if y is a product). *)
       let indclause  = mk_clenv_from_n gl (Some 0) (x,y) in
-      let elimclause' = clenv_fchain i acc indclause in
+      let elimclause' = clenv_fchain ~with_univs:false i acc indclause in
       elimclause')
     (List.rev clauses)
     elimclause

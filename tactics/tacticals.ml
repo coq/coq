@@ -620,7 +620,7 @@ module New = struct
 	  errorlabstrm "Tacticals.general_elim_then_using"
             (str "The elimination combinator " ++ str name_elim ++ str " is unknown.")
     in
-    let elimclause' = clenv_fchain indmv elimclause indclause in
+    let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
     let branchsigns = compute_construtor_signatures isrec ind in
     let brnames = compute_induction_names (Array.length branchsigns) allnames in
     let flags = Unification.elim_flags () in
