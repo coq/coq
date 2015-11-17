@@ -451,7 +451,7 @@ val meta_reassign  : metavariable -> constr * instance_status -> evar_map -> eva
 val clear_metas : evar_map -> evar_map
 
 (** [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
-val meta_merge : evar_map -> evar_map -> evar_map
+val meta_merge : ?with_univs:bool -> evar_map -> evar_map -> evar_map
 
 val undefined_metas : evar_map -> metavariable list
 val map_metas_fvalue : (constr -> constr) -> evar_map -> evar_map

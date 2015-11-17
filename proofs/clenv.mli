@@ -51,7 +51,7 @@ val refresh_undefined_univs : clausenv -> clausenv * Univ.universe_level_subst
 
 val connect_clenv : Goal.goal sigma -> clausenv -> clausenv
 val clenv_fchain :
-  ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
+  ?with_univs:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
 
 (** {6 Unification with clenvs } *)
 

@@ -1319,7 +1319,9 @@ let simplest_elim c = default_elim false None (c,NoBindings)
 *)
 
 let clenv_fchain_in id ?(flags=elim_flags ()) mv elimclause hypclause =
-  try clenv_fchain ~flags mv elimclause hypclause
+  (** The evarmap of elimclause is assumed to be an extension of hypclause, so
+      we do not need to merge the universes coming from hypclause. *)
+  try clenv_fchain ~with_univs:false ~flags mv elimclause hypclause
   with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
     (* Set the hypothesis name in the message *)
     raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
