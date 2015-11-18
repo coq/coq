@@ -989,7 +989,7 @@ let interp_induction_arg ist gl arg =
           try sigma, (constr_of_id env id', NoBindings)
           with Not_found ->
             user_err_loc (loc, "interp_induction_arg",
-            pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
+            pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared nor a quantified hypothesis."))
       in
       try
         (** FIXME: should be moved to taccoerce *)
