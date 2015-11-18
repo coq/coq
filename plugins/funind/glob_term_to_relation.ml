@@ -681,7 +681,7 @@ and build_entry_lc_from_case env funname make_discr
 	let case_resl =
 	    List.fold_right
 	      (fun (case_arg,_) ctxt_argsl ->
-		let arg_res = build_entry_lc env funname avoid case_arg  in
+		let arg_res = build_entry_lc env funname ctxt_argsl.to_avoid case_arg in
 		combine_results combine_args arg_res ctxt_argsl
 	      )
 	      el
