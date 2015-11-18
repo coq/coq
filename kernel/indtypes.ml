@@ -653,13 +653,13 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)
   let indty, paramsletsubst =
-    let subst, inst = 
-      List.fold_right_i
-	(fun i (na, b, t) (subst, inst) ->
+    let _, _, subst, inst =
+      List.fold_right
+	(fun (na, b, t) (i, j, subst, inst) ->
 	 match b with
-	 | None -> (mkRel i :: subst, mkRel i :: inst)
-	 | Some b -> (substl subst b) :: subst, inst)
-	1 paramslet ([], [])
+	 | None -> (i-1, j-1, mkRel i :: subst, mkRel j :: inst)
+	 | Some b -> (i, j-1, substl subst b :: subst, inst))
+	paramslet (nparamargs, List.length paramslet, [], [])
     in
     let subst = (* For the record parameter: *)
       mkRel 1 :: List.map (lift 1) subst
