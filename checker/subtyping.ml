@@ -139,8 +139,8 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     let (ctx2,s2) = dest_arity env t2 in
     let s1,s2 =
       match s1, s2 with
-      | Type _, Type _ -> (* shortcut here *) Prop Null, Prop Null
-      | (Prop _, Type _) | (Type _,Prop _) -> error ()
+      | Type _, Type _ -> (* shortcut here *) Prop, Prop
+      | ((Prop|Set), Type _) | (Type _,(Prop|Set)) -> error ()
       | _ -> (s1, s2) in
     check_conv conv_leq env
       (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
@@ -254,13 +254,13 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
             | Type u when not (Univ.is_univ_variable u) ->
               (* Both types are inferred, no need to recheck them. We
                  cheat and collapse the types to Prop *)
-                mkArity (ctx1,Prop Null), mkArity (ctx2,Prop Null)
-            | Prop _ ->
+                mkArity (ctx1,Prop), mkArity (ctx2,Prop)
+            | (Prop|Set) ->
               (* The type in the interface is inferred, it may be the case
                  that the type in the implementation is smaller because
                  the body is more reduced. We safely collapse the upper
                  type to Prop *)
-                mkArity (ctx1,Prop Null), mkArity (ctx2,Prop Null)
+                mkArity (ctx1,Prop), mkArity (ctx2,Prop)
             | Type _ ->
               (* The type in the interface is inferred and the type in the
                  implementation is not inferred or is inferred but from a

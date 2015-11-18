@@ -61,8 +61,6 @@ let assumption_of_judgment env t ty =
 
 let judge_of_prop = mkSort type1_sort
 
-let judge_of_prop_contents _ = judge_of_prop
-
 (* Type of Type(i). *)
 
 let judge_of_type u =
@@ -177,23 +175,23 @@ let judge_of_apply env func funt argsv argstv =
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
     (* Product rule (s,Prop,Prop) *)
-    | (_,       Prop Null)  -> rangsort
+    | _         , Prop -> rangsort
     (* Product rule (Prop/Set,Set,Set) *)
-    | (Prop _,  Prop Pos) -> rangsort
+    | (Prop|Set), Set -> rangsort
     (* Product rule (Type,Set,?) *)
-    | (Type u1, Prop Pos) ->
+    | Type u1   , Set ->
         if is_impredicative_set env then
           (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
           rangsort
         else
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
           Type (Universe.sup Universe.type0 u1)
+    (* Product rule (Set,Type_i,Type_i) *)
+    | Set       , Type u2  -> Type (Universe.sup Universe.type0 u2)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (Universe.sup Universe.type0 u2)
-    (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Null, Type _)  -> rangsort
+    | Prop      , Type _  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *)
-    | (Type u1, Type u2) -> Type (Universe.sup u1 u2)
+    | Type u1, Type u2 -> Type (Universe.sup u1 u2)
 
 (* [judge_of_product env name (typ1,s1) (typ2,s2)] implements the rule
 
@@ -327,8 +325,8 @@ let type_fixpoint env lna lar vdef vdeft =
 let rec execute env cstr =
   match kind_of_term cstr with
     (* Atomic terms *)
-    | Sort (Prop c) ->
-      judge_of_prop_contents c
+    | Sort (Prop|Set) ->
+        judge_of_prop
 	
     | Sort (Type u) ->
       judge_of_type u

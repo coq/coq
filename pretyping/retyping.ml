@@ -137,17 +137,17 @@ let retype ?(polyprop=true) sigma =
   and sort_of env t =
     match kind_of_term t with
     | Cast (c,_, s) when isSort s -> destSort s
-    | Sort (Prop c) -> type1_sort
+    | Sort (Prop|Set) -> type1_sort
     | Sort (Type u) -> Type (Univ.super u)
     | Prod (name,t,c2) ->
         (match (sort_of env t, sort_of (push_rel (name,None,t) env) c2) with
-	  | _, (Prop Null as s) -> s
-          | Prop _, (Prop Pos as s) -> s
-          | Type _, (Prop Pos as s) when is_impredicative_set env -> s
-          | Type u1, Prop Pos -> Type (Univ.sup u1 Univ.type0_univ)
-	  | Prop Pos, (Type u2) -> Type (Univ.sup Univ.type0_univ u2)
-	  | Prop Null, (Type _ as s) -> s
-	  | Type u1, Type u2 -> Type (Univ.sup u1 u2))
+          | _, Prop -> Prop
+          | (Prop|Set), Set -> Set
+          | Type _, Set when is_impredicative_set env -> Set
+          | Type u1, Set -> Type (Univ.sup u1 Univ.type0_univ)
+          | Set, (Type u2) -> Type (Univ.sup Univ.type0_univ u2)
+          | Prop, (Type _ as s) -> s
+          | Type u1, Type u2 -> Type (Univ.sup u1 u2))
     | App(f,args) when is_template_polymorphic env f ->
       let t = type_of_global_reference_knowing_parameters env f args in
         sort_of_atomic_type env sigma t args
@@ -158,7 +158,7 @@ let retype ?(polyprop=true) sigma =
   and sort_family_of env t =
     match kind_of_term t with
     | Cast (c,_, s) when isSort s -> family_of_sort (destSort s)
-    | Sort (Prop c) -> InType
+    | Sort (Prop|Set) -> InType
     | Sort (Type u) -> InType
     | Prod (name,t,c2) ->
 	let s2 = sort_family_of (push_rel (name,None,t) env) c2 in

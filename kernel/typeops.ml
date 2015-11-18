@@ -64,10 +64,6 @@ let judge_of_set =
   { uj_val = mkSet;
     uj_type = mkSort type1_sort }
 
-let judge_of_prop_contents = function
-  | Null -> judge_of_prop
-  | Pos -> judge_of_set
-
 (* Type of Type(i). *)
 
 let judge_of_type u =
@@ -253,11 +249,11 @@ let judge_of_apply env funj argjv =
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
     (* Product rule (s,Prop,Prop) *)
-    | (_,       Prop Null)  -> rangsort
+    | _         ,  Prop  -> rangsort
     (* Product rule (Prop/Set,Set,Set) *)
-    | (Prop _,  Prop Pos) -> rangsort
+    | (Prop|Set),  Set -> rangsort
     (* Product rule (Type,Set,?) *)
-    | (Type u1, Prop Pos) ->
+    | Type u1   ,  Set ->
         if is_impredicative_set env then
           (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
           rangsort
@@ -265,11 +261,11 @@ let sort_of_product env domsort rangsort =
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
           Type (Universe.sup Universe.type0 u1)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (Universe.sup Universe.type0 u2)
+    | Set       ,  Type u2  -> Type (Universe.sup Universe.type0 u2)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Null, Type _)  -> rangsort
+    | Prop      ,  Type _  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *)
-    | (Type u1, Type u2) -> Type (Universe.sup u1 u2)
+    | Type u1   ,  Type u2 -> Type (Universe.sup u1 u2)
 
 (* [judge_of_product env name (typ1,s1) (typ2,s2)] implements the rule
 
@@ -419,8 +415,11 @@ let type_fixpoint env lna lar vdefj =
 let rec execute env cstr =
   match kind_of_term cstr with
     (* Atomic terms *)
-    | Sort (Prop c) ->
-      judge_of_prop_contents c
+    | Sort Prop ->
+        judge_of_prop
+
+    | Sort Set ->
+        judge_of_set
 	
     | Sort (Type u) ->
       judge_of_type u

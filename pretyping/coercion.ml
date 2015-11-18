@@ -197,8 +197,9 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
       match (kind_of_term x, kind_of_term y) with
       | Sort s, Sort s' ->
         (match s, s' with
-	| Prop x, Prop y when x == y -> None
-	| Prop _, Type _ -> None
+  | Prop, Prop
+  | Set, Set -> None
+	| (Prop|Set), Type _ -> None
 	| Type x, Type y when Univ.Universe.equal x y -> None (* false *)
 	| _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->

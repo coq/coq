@@ -22,7 +22,7 @@ let refresh_arity ar =
       let u' = Univ.Universe.make ul in
       let cst = Univ.enforce_leq u u' Univ.empty_constraint in
       let ctx = Univ.ContextSet.make (Univ.LSet.singleton ul) cst in
-        mkArity (ctxt,Prop Null), ctx
+        mkArity (ctxt,Prop), ctx
     | _ -> ar, Univ.ContextSet.empty
 
 let check_constant_declaration env kn cb =
