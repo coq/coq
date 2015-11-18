@@ -410,7 +410,7 @@ let make_conclusion_flexible evdref ty poly =
   else () 
 	
 let is_impredicative env u = 
-  u = Prop Null || (is_impredicative_set env && u = Prop Pos)
+  u = Prop || (is_impredicative_set env && u = Set)
 
 let interp_ind_arity env evdref ind =
   let c = intern_gen IsType env ind.ind_arity in
@@ -459,7 +459,7 @@ let is_flexible_sort evd u =
 let inductive_levels env evdref poly arities inds =
   let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
   let levels = List.map (fun (x,(ctx,a)) -> 
-    if a = Prop Null then None
+    if a = Prop then None
     else Some (univ_of_sort a)) destarities
   in
   let cstrs_levels, min_levels, sizes = 
@@ -512,7 +512,7 @@ let inductive_levels env evdref poly arities inds =
 	   (** "Polymorphic" type constraint and more than one constructor, 
 	       should not land in Prop. Add constraint only if it would
 	       land in Prop directly (no informative arguments as well). *)
-	    Evd.set_leq_sort env evd (Prop Pos) du
+	    Evd.set_leq_sort env evd Set du
 	  else evd
 	in
 	let duu = Sorts.univ_of_sort du in
@@ -521,7 +521,7 @@ let inductive_levels env evdref poly arities inds =
 	    if is_flexible_sort evd duu then
 	      if Evd.check_leq evd Univ.type0_univ duu then
 	      	evd
-	      else Evd.set_eq_sort env evd (Prop Null) du
+	      else Evd.set_eq_sort env evd Prop du
 	    else evd
 	  else Evd.set_eq_sort env evd (Type cu) du
 	in
@@ -931,7 +931,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
       try
 	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
 	  match ctx, kind_of_term ar with
-	  | [(_, None, t); (_, None, u)], Sort (Prop Null)
+	  | [(_, None, t); (_, None, u)], Sort Prop
 	      when Reductionops.is_conv env !evdref t u -> t
 	  | _, _ -> error ()
       with e when Errors.noncritical e -> error ()
