@@ -1299,18 +1299,21 @@ let sigma_univ_state =
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =
-  try 
+  try
+    let fold cstr sigma =
+      try Some (Evd.add_universe_constraints sigma cstr)
+      with Univ.UniverseInconsistency _ | Evd.UniversesDiffer -> None
+    in
     let b, sigma = 
-      let b, cstrs = 
+      let ans =
 	if pb == Reduction.CUMUL then 
-	  Universes.leq_constr_univs_infer (Evd.universes sigma) x y 
+	  Universes.leq_constr_univs_infer (Evd.universes sigma) fold x y sigma
 	else
-	  Universes.eq_constr_univs_infer (Evd.universes sigma) x y 
+	  Universes.eq_constr_univs_infer (Evd.universes sigma) fold x y sigma
       in
-	if b then 
-	  try true, Evd.add_universe_constraints sigma cstrs
-	  with Univ.UniverseInconsistency _ | Evd.UniversesDiffer -> false, sigma
-	else false, sigma
+      match ans with
+      | None -> false, sigma
+      | Some sigma -> true, sigma
     in
       if b then sigma, true
       else

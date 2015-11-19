@@ -962,11 +962,13 @@ let test_conversion env d pb t u =
 exception UniversesDiffer = UState.UniversesDiffer
 
 let eq_constr_univs evd t u =
-  let b, c = Universes.eq_constr_univs_infer (UState.ugraph evd.universes) t u in
-    if b then 
-      try let evd' = add_universe_constraints evd c in evd', b
-      with Univ.UniverseInconsistency _ | UniversesDiffer -> evd, false
-    else evd, b
+  let fold cstr sigma =
+    try Some (add_universe_constraints sigma cstr)
+    with Univ.UniverseInconsistency _ | UniversesDiffer -> None
+  in
+  match Universes.eq_constr_univs_infer (UState.ugraph evd.universes) fold t u evd with
+  | None -> evd, false
+  | Some evd -> evd, true
 
 let e_eq_constr_univs evdref t u =
   let evd, b = eq_constr_univs !evdref t u in

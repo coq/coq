@@ -860,13 +860,14 @@ let kind_of_term_upto sigma t =
 let eq_constr_univs_test sigma1 sigma2 t u =
   (* spiwack: mild code duplication with {!Evd.eq_constr_univs}. *)
   let open Evd in
-  let b, c =
+  let fold cstr sigma =
+    try Some (add_universe_constraints sigma cstr)
+    with Univ.UniverseInconsistency _ | UniversesDiffer -> None
+  in
+  let ans =
     Universes.eq_constr_univs_infer_with
       (fun t -> kind_of_term_upto sigma1 t)
       (fun u -> kind_of_term_upto sigma2 u)
-      (universes sigma2) t u
+      (universes sigma2) fold t u sigma2
   in
-  if b then
-    try let _ = add_universe_constraints sigma2 c in true
-    with Univ.UniverseInconsistency _ | UniversesDiffer -> false
-  else false
+  match ans with None -> false | Some _ -> true

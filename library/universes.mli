@@ -63,6 +63,7 @@ module Constraints : sig
 end
 
 type universe_constraints = Constraints.t
+type 'a constraint_accumulator = universe_constraints -> 'a -> 'a option
 type 'a universe_constrained = 'a * universe_constraints
 type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
 
@@ -75,7 +76,8 @@ val to_constraints : UGraph.t -> universe_constraints -> constraints
 
 (** [eq_constr_univs_infer u a b] is [true, c] if [a] equals [b] modulo alpha, casts,
    application grouping, the universe constraints in [u] and additional constraints [c]. *)
-val eq_constr_univs_infer : UGraph.t -> constr -> constr -> bool universe_constrained
+val eq_constr_univs_infer : UGraph.t -> 'a constraint_accumulator ->
+  constr -> constr -> 'a -> 'a option
 
 (** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
     {!eq_constr_univs_infer} taking kind-of-term functions, to expose
@@ -83,12 +85,13 @@ val eq_constr_univs_infer : UGraph.t -> constr -> constr -> bool universe_constr
 val eq_constr_univs_infer_with :
   (constr -> (constr,types) kind_of_term) ->
   (constr -> (constr,types) kind_of_term) ->
-  UGraph.t -> constr -> constr -> bool universe_constrained
+  UGraph.t -> 'a constraint_accumulator -> constr -> constr -> 'a -> 'a option
 
 (** [leq_constr_univs u a b] is [true, c] if [a] is convertible to [b]
     modulo alpha, casts, application grouping, the universe constraints
     in [u] and additional constraints [c]. *)
-val leq_constr_univs_infer : UGraph.t -> constr -> constr -> bool universe_constrained
+val leq_constr_univs_infer : UGraph.t -> 'a constraint_accumulator ->
+  constr -> constr -> 'a -> 'a option
 
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
     application grouping and the universe constraints in [c]. *)
