@@ -953,16 +953,6 @@ let smash_rel_context sign =
       aux (List.rev (substl_rel_context [b] (List.rev acc))) l
   in List.rev (aux [] sign)
 
-let adjust_subst_to_rel_context sign l =
-  let rec aux subst sign l =
-    match sign, l with
-    | (_,None,_)::sign', a::args' -> aux (a::subst) sign' args'
-    | (_,Some c,_)::sign', args' ->
-	aux (substl subst c :: subst) sign' args'
-    | [], [] -> List.rev subst
-    | _ -> anomaly (Pp.str "Instance and signature do not match")
-  in aux [] (List.rev sign) l
-
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
 let rec mem_named_context id = function

@@ -837,10 +837,10 @@ let regeneralize_index_predicate n = map_predicate (relocate_index n 1) 0
 let substnl_predicate sigma = map_predicate (substnl sigma)
 
 (* This is parallel bindings *)
-let subst_predicate (args,copt) ccl tms =
+let subst_predicate (subst,copt) ccl tms =
   let sigma = match copt with
-    | None -> List.rev args
-    | Some c -> c::(List.rev args) in
+    | None -> subst
+    | Some c -> c::subst in
   substnl_predicate sigma 0 ccl tms
 
 let specialize_predicate_var (cur,typ,dep) tms ccl =
@@ -1018,7 +1018,7 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
   (* We prepare the substitution of X and x:I(X) *)
   let realargsi =
     if not (Int.equal nrealargs 0) then
-      adjust_subst_to_rel_context arsign (Array.to_list cs.cs_concl_realargs)
+      subst_of_rel_context_instance arsign (Array.to_list cs.cs_concl_realargs)
     else
       [] in
   let copti = match depna with

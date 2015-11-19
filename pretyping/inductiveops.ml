@@ -354,14 +354,6 @@ let substnl_rel_context subst n sign =
 
 let substl_rel_context subst = substnl_rel_context subst 0
 
-let instantiate_context sign args =
-  let rec aux subst = function
-  | (_,None,_)::sign, a::args -> aux (a::subst) (sign,args)
-  | (_,Some b,_)::sign, args -> aux (substl subst b::subst) (sign,args)
-  | [], [] -> subst
-  | _ -> anomaly (Pp.str "Signature/instance mismatch in inductive family")
-  in aux [] (List.rev sign,args)
-
 let get_arity env ((ind,u),params) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let parsign =
@@ -379,7 +371,7 @@ let get_arity env ((ind,u),params) =
   let parsign = Vars.subst_instance_context u parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
-  let subst = instantiate_context parsign params in
+  let subst = subst_of_rel_context_instance parsign params in
   let arsign = Vars.subst_instance_context u arsign in
   (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
 

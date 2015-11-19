@@ -57,7 +57,7 @@ let type_constructor mind mib u typ params =
   if Int.equal ndecls 0 then ctyp
   else
     let _,ctyp = decompose_prod_n_assum ndecls ctyp in
-    substl (List.rev (Termops.adjust_subst_to_rel_context mib.mind_params_ctxt (Array.to_list params)))
+    substl (List.rev (adjust_subst_to_rel_context mib.mind_params_ctxt (Array.to_list params)))
       ctyp
 
 

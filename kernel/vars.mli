@@ -56,6 +56,24 @@ val lift : int -> constr -> constr
 
 type substl = constr list
 
+(** Let [Γ] be a context interleaving declarations [x₁:T₁..xn:Tn]
+   and definitions [y₁:=c₁..yp:=cp] in some context [Γ₀]. Let
+   [u₁..un] be an {e instance} of [Γ], i.e. an instance in [Γ₀]
+   of the [xi]. Then, [subst_of_rel_context_instance Γ u₁..un]
+   returns the corresponding {e substitution} of [Γ], i.e. the
+   appropriate interleaving [σ] of the [u₁..un] with the [c₁..cp],
+   all of them in [Γ₀], so that a derivation [Γ₀, Γ, Γ₁|- t:T]
+   can be instantiated into a derivation [Γ₀, Γ₁ |- t[σ]:T[σ]] using
+   [substnl σ |Γ₁| t].
+   Note that the instance [u₁..un] is represented starting with [u₁],
+   as if usable in [applist] while the substitution is
+   represented the other way round, i.e. ending with either [u₁] or
+   [c₁], as if usable for [substl]. *)
+val subst_of_rel_context_instance : rel_context -> constr list -> substl
+
+(** For compatibility: returns the substitution reversed *)
+val adjust_subst_to_rel_context : rel_context -> constr list -> constr list
+
 (** [substnl [a₁;...;an] k c] substitutes in parallel [a₁],...,[an]
     for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
     accordingly indexes in [an],...,[a1] and [c]. In terms of typing, if

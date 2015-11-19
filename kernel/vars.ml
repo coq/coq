@@ -164,6 +164,21 @@ let substnl_decl laml k r = map_rel_declaration (fun c -> substnl laml k c) r
 let substl_decl laml r = map_rel_declaration (fun c -> substnl laml 0 c) r
 let subst1_decl lam r = map_rel_declaration (fun c -> subst1 lam c) r
 
+(* Build a substitution from an instance, inserting missing let-ins *)
+
+let subst_of_rel_context_instance sign l =
+  let rec aux subst sign l =
+    match sign, l with
+    | (_,None,_)::sign', a::args' -> aux (a::subst) sign' args'
+    | (_,Some c,_)::sign', args' ->
+	aux (substl subst c :: subst) sign' args'
+    | [], [] -> subst
+    | _ -> Errors.anomaly (Pp.str "Instance and signature do not match")
+  in aux [] (List.rev sign) l
+
+let adjust_subst_to_rel_context sign l =
+  List.rev (subst_of_rel_context_instance sign l)
+
 (* (thin_val sigma) removes identity substitutions from sigma *)
 
 let rec thin_val = function
