@@ -72,7 +72,7 @@ Inductive B : Prop := AC : P b -> B.
 Definition f : B -> True.
 
 Proof.
-intros [].
+intros [x].
 destruct b as [|] ; exact Logic.I.
 Defined.
 
