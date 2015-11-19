@@ -122,9 +122,6 @@ let head_of_constr_reference c = match kind_of_term c with
   | _ -> anomaly (Pp.str "Not a rigid reference")
 
 let pattern_of_constr env sigma t =
-  let ctx = ref [] in
-  let keep = ref Evar.Set.empty in
-  let remove = ref Evar.Set.empty in
   let rec pattern_of_constr env t =
   match kind_of_term t with
     | Rel n  -> PRel n
@@ -143,14 +140,9 @@ let pattern_of_constr env sigma t =
     | App (f,a) ->
         (match
           match kind_of_term f with
-          | Evar (evk,args as ev) ->
+          | Evar (evk,args) ->
             (match snd (Evd.evar_source evk sigma) with
-              Evar_kinds.MatchingVar (true,id) ->
-		let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
-                  ctx := (id,None,ty)::!ctx;
-		  keep := Evar.Set.union (evars_of_term ty) !keep;
-		  remove := Evar.Set.add evk !remove;
-                  Some id
+              Evar_kinds.MatchingVar (true,id) -> Some id
             | _ -> None)
           | _ -> None
          with
@@ -162,13 +154,11 @@ let pattern_of_constr env sigma t =
     | Proj (p, c) -> 
       pattern_of_constr env (Retyping.expand_projection env sigma p c [])
     | Evar (evk,ctxt as ev) ->
-      remove := Evar.Set.add evk !remove;
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (b,id) ->
 	let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
-          ctx := (id,None,ty)::!ctx;
-	  let () = ignore (pattern_of_constr env ty) in
-          assert (not b); PMeta (Some id)
+	let () = ignore (pattern_of_constr env ty) in
+        assert (not b); PMeta (Some id)
       | Evar_kinds.GoalEvar -> 
 	PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | _ -> 
@@ -189,12 +179,7 @@ let pattern_of_constr env sigma t =
 	       Array.to_list (Array.mapi branch_of_constr br))
     | Fix f -> PFix f
     | CoFix f -> PCoFix f in
-  let p = pattern_of_constr env t in
-  let remove = Evar.Set.diff !remove !keep in
-  let sigma = Evar.Set.fold (fun ev acc -> Evd.remove acc ev) remove sigma in
-  (* side-effect *)
-  (* Warning: the order of dependencies in ctx is not ensured *)
-  (sigma,!ctx,p)
+  pattern_of_constr env t
 
 (* To process patterns, we need a translation without typing at all. *)
 
@@ -234,7 +219,7 @@ let instantiate_pattern env sigma lvar c =
               ctx
           in
 	  let c = substl inst c in
-	  pi3 (pattern_of_constr env sigma c)
+	  pattern_of_constr env sigma c
 	with Not_found (* List.index failed *) ->
 	  let vars =
 	    List.map_filter (function Name id -> Some id | _ -> None) vars in
@@ -259,7 +244,7 @@ let rec subst_pattern subst pat =
   | PRef ref ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then pat else
-	 pi3 (pattern_of_constr (Global.env()) Evd.empty t)
+	 pattern_of_constr (Global.env()) Evd.empty t
   | PVar _
   | PEvar _
   | PRel _ -> pat
