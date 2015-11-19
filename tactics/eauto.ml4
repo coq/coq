@@ -166,6 +166,10 @@ and e_my_find_search db_list local_db hdc concl =
   in
   let tac_of_hint =
     fun (st, {pri = b; pat = p; code = t; poly = poly}) ->
+      let b = match Hints.repr_hint t with
+      | Unfold_nth _ -> 1
+      | _ -> b
+      in
       (b,
         let tac = function
         | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
@@ -245,8 +249,8 @@ module SearchProblem = struct
     let d = s'.depth - s.depth in
     let d' = Int.compare s.priority s'.priority in
     let nbgoals s = List.length (sig_it s.tacres) in
-    if not (Int.equal d' 0) then d'
-    else if not (Int.equal d 0) then d
+    if not (Int.equal d 0) then d
+    else if not (Int.equal d' 0) then d'
     else Int.compare (nbgoals s) (nbgoals s')
 
   let branching s =
