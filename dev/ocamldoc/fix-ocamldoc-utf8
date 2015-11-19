@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# This reverts automatic translation of latin1 accentuated letters by ocamldoc
+# Usage: fix-ocamldoc-utf8 file
+
+sed -i -e 's/\\`a/\d224/g' -e "s/\\\^a/\d226/g" -e "s/\\\'e/\d233/g" -e 's/\\`e/\d232/g' -e "s/\\\^e/\d234/g" -e 's/\\\"e/\d235/g' -e "s/\\\^o/\d244/g" -e 's/\\\"o/\d246/g' -e "s/\\\^i/\d238/g" -e 's/\\\"i/\d239/g' -e 's/\\`u/\d249/g' -e "s/\\\^u/\d251/g" -e "s/\\\c{c}/\d231/g" $1

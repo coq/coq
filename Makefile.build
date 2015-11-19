@@ -828,8 +828,11 @@ source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
 
 $(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
 	$(OCAMLFIND) ocamldoc -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
-	$(DOCMLIS) -t "Coq mlis documentation" \
-	-intro $(OCAMLDOCDIR)/docintro -o $@
+	$(DOCMLIS) -noheader -t "Coq mlis documentation" \
+	-intro $(OCAMLDOCDIR)/docintro -o $@.tmp
+	$(OCAMLDOCDIR)/fix-ocamldoc-utf8 $@.tmp
+	cat $(OCAMLDOCDIR)/header.tex $@.tmp > $@
+#	rm $@.tmp
 
 mli-doc: $(DOCMLIS:.mli=.cmi)
 	$(OCAMLFIND) ocamldoc -html -rectypes -I +threads -I $(MYCAMLP4LIB) $(MLINCLUDES) \
