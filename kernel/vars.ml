@@ -151,6 +151,11 @@ let make_subst = function
   done;
   subst
 
+(* The type of substitutions, with term substituting most recent
+    binder at the head *)
+
+type substl = Constr.t list
+
 let substnl laml n c = substn_many (make_subst laml) n c
 let substl laml c = substn_many (make_subst laml) 0 c
 let subst1 lam c = substn_many [|make_substituend lam|] 0 c
@@ -158,13 +163,6 @@ let subst1 lam c = substn_many [|make_substituend lam|] 0 c
 let substnl_decl laml k r = map_rel_declaration (fun c -> substnl laml k c) r
 let substl_decl laml r = map_rel_declaration (fun c -> substnl laml 0 c) r
 let subst1_decl lam r = map_rel_declaration (fun c -> subst1 lam c) r
-
-let substnl_named_decl laml k d =
-  map_named_declaration (fun c -> substnl laml k c) d
-let substl_named_decl laml d =
-  map_named_declaration (fun c -> substnl laml 0 c) d
-let subst1_named_decl lam d =
-  map_named_declaration (fun c -> subst1 lam c) d
 
 (* (thin_val sigma) removes identity substitutions from sigma *)
 
@@ -197,15 +195,10 @@ let replace_vars var_alist x =
     in
     substrec 0 x
 
-(*
-let repvarkey = Profile.declare_profile "replace_vars";;
-let replace_vars vl c = Profile.profile2 repvarkey replace_vars vl c ;;
-*)
-
-(* (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
+(* (subst_var str t) substitute (Var str) by (Rel 1) in t *)
 let subst_var str t = replace_vars [(str, Constr.mkRel 1)] t
 
-(* (subst_vars [id1;...;idn] t) substitute (VAR idj) by (Rel j) in t *)
+(* (subst_vars [id1;...;idn] t) substitute (Var idj) by (Rel j) in t *)
 let substn_vars p vars c =
   let _,subst =
     List.fold_left (fun (n,l) var -> ((n+1),(var,Constr.mkRel n)::l)) (p,[]) vars
