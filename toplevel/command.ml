@@ -192,6 +192,7 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 	Obligations.eterm_obligations env ident evd 0 c typ
       in
       let ctx = Evd.evar_universe_context evd in
+      let hook = Lemmas.mk_hook (fun l r _ -> Lemmas.call_hook (fun exn -> exn) hook l r) in
 	ignore(Obligations.add_definition
           ident ~term:c cty ctx ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
@@ -1010,7 +1011,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let hook, recname, typ = 
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
-      let hook l gr = 
+      let hook l gr _ = 
 	let body = it_mkLambda_or_LetIn (mkApp (Universes.constr_of_global gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
 	let pl, univs = Evd.universe_context !evdref in
@@ -1026,7 +1027,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	hook, name, typ
     else 
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
-      let hook l gr = 
+      let hook l gr _ = 
 	if Impargs.is_implicit_args () || not (List.is_empty impls) then
 	  Impargs.declare_manual_implicits false gr [impls]
       in hook, recname, typ

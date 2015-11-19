@@ -318,7 +318,7 @@ type program_info_aux = {
   prg_notations : notations ;
   prg_kind : definition_kind;
   prg_reduce : constr -> constr;
-  prg_hook : unit Lemmas.declaration_hook;
+  prg_hook : (Evd.evar_universe_context -> unit) Lemmas.declaration_hook;
   prg_opaque : bool;
 }
 
@@ -517,7 +517,7 @@ let declare_definition prg =
     progmap_remove prg;
     !declare_definition_ref prg.prg_name 
       prg.prg_kind ce prg.prg_implicits
-      (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r; r))
+      (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
       
 open Pp
 
@@ -582,6 +582,7 @@ let declare_mutual_definition l =
   in
   (* Declare the recursive definitions *)
   let ctx = Evd.evar_context_universe_context first.prg_ctx in
+  let fix_exn = Stm.get_fix_exn () in
   let kns = List.map4 (!declare_fix_ref ~opaque (local, poly, kind) ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
@@ -589,8 +590,8 @@ let declare_mutual_definition l =
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
-      Lemmas.call_hook (fun exn -> exn) first.prg_hook local gr;
-      List.iter progmap_remove l; kn
+    Lemmas.call_hook fix_exn first.prg_hook local gr first.prg_ctx;
+    List.iter progmap_remove l; kn
 
 let shrink_body c = 
   let ctx, b = decompose_lam c in
@@ -987,7 +988,7 @@ let show_term n =
 	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
 
 let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
-    ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ -> ())) ?(opaque = false) obls =
+    ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
   let info = str (Id.to_string n) ++ str " has type-checked" in
   let prg = init_prog_info ~opaque n term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
@@ -1005,7 +1006,7 @@ let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition)
 	| _ -> res)
 
 let add_mutual_definitions l ctx ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
-    ?(hook=Lemmas.mk_hook (fun _ _ -> ())) ?(opaque = false) notations fixkind =
+    ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
