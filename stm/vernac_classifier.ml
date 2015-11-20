@@ -175,7 +175,7 @@ let rec classify_vernac e =
     | VernacRegister _
     | VernacNameSectionHypSet _
     | VernacComments _ -> VtSideff [], VtLater
-    | VernacDeclareTacticDefinition (_,l) ->
+    | VernacDeclareTacticDefinition l ->
         let open Libnames in
         VtSideff (List.map (function
           | (Ident (_,r),_,_) -> r
