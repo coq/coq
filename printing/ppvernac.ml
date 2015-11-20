@@ -641,10 +641,10 @@ module Make
               else
                 spc() ++ qs s
           )
-        | VernacTime v ->
-          return (keyword "Time" ++ spc() ++ pr_vernac_list v)
-        | VernacRedirect (s, v) ->
-          return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_list v)
+        | VernacTime (_,v) ->
+          return (keyword "Time" ++ spc() ++ pr_vernac v)
+        | VernacRedirect (s, (_,v)) ->
+          return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac v)
         | VernacTimeout(n,v) ->
           return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac v)
         | VernacFail v ->
@@ -1267,11 +1267,6 @@ module Make
           return (keyword "BeginSubproof" ++ spc () ++ int i)
         | VernacEndSubproof ->
           return (str "}")
-
-    and pr_vernac_list l =
-      hov 2 (str"[" ++ spc() ++
-               prlist (fun v -> pr_located pr_vernac v ++ sep_end (snd v) ++ fnl()) l
-             ++ spc() ++ str"]")
 
     and pr_extend s cl =
       let pr_arg a =

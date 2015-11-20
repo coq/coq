@@ -86,7 +86,7 @@ let rec classify_vernac e =
 	make_polymorphic (classify_vernac e)
       else classify_vernac e
     | VernacTimeout (_,e) -> classify_vernac e
-    | VernacTime e | VernacRedirect (_, e) -> classify_vernac_list e
+    | VernacTime (_,e) | VernacRedirect (_, (_,e)) -> classify_vernac e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
@@ -217,13 +217,6 @@ let rec classify_vernac e =
     | VernacExtend (s,l) ->
         try List.assoc s !classifiers l ()
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s))
-  and classify_vernac_list = function
-    (* spiwack: It would be better to define a monoid on classifiers.
-       So that the classifier of the list would be the composition of
-       the classifier of the individual commands. Currently: special
-       case for singleton lists.*)
-    | [_,c] -> static_classifier c
-    | l -> VtUnknown,VtNow
   in
   let res = static_classifier e in
     if Flags.is_universe_polymorphism () then

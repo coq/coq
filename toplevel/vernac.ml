@@ -27,9 +27,9 @@ let rec is_navigation_vernac = function
   | VernacBacktrack _
   | VernacBackTo _
   | VernacBack _ -> true
-  | VernacRedirect (_, l) | VernacTime l ->
-    List.exists
-      (fun (_,c) -> is_navigation_vernac c) l (* Time Back* is harmless *)
+  | VernacRedirect (_, (_,c))
+  | VernacTime (_,c) ->
+      is_navigation_vernac c (* Time Back* is harmless *)
   | c -> is_deep_navigation_vernac c
 
 and is_deep_navigation_vernac = function
@@ -229,7 +229,7 @@ let rec vernac_com verbose checknav (loc,com) =
       checknav loc com;
       if do_beautify () then pr_new_syntax loc (Some com);
       if !Flags.time then display_cmd_header loc com;
-      let com = if !Flags.time then VernacTime [loc,com] else com in
+      let com = if !Flags.time then VernacTime (loc,com) else com in
       interp com
     with reraise ->
       let (reraise, info) = Errors.push reraise in

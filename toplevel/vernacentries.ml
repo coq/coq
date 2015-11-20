@@ -2132,11 +2132,11 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacTimeout (n,v) ->
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
-    | VernacRedirect (s, v) ->
-         Pp.with_output_to_file s (aux_list ?locality ?polymorphism isprogcmd) v;
-    | VernacTime v ->
+    | VernacRedirect (s, (_,v)) ->
+         Pp.with_output_to_file s (aux false) v
+    | VernacTime (_,v) ->
         System.with_time !Flags.time
-          (aux_list ?locality ?polymorphism isprogcmd) v;
+          (aux ?locality ?polymorphism isprogcmd) v;
     | VernacLoad (_,fname) -> vernac_load (aux false) fname
     | c -> 
         check_vernac_supports_locality c locality;
@@ -2162,8 +2162,6 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             let () = restore_timeout () in
             Flags.program_mode := orig_program_mode;
             iraise e
-  and aux_list ?locality ?polymorphism isprogcmd l =
-    List.iter (aux false) (List.map snd l)
   in
     if verbosely then Flags.verbosely (aux false) c
     else aux false c
