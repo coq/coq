@@ -1347,7 +1347,9 @@ let simplest_elim c = default_elim false None (c,NoBindings)
 *)
 
 let clenv_fchain_in id ?(flags=elim_flags ()) mv elimclause hypclause =
-  try clenv_fchain ~flags mv elimclause hypclause
+  (** The evarmap of elimclause is assumed to be an extension of hypclause, so
+      we do not need to merge the universes coming from hypclause. *)
+  try clenv_fchain ~with_univs:false ~flags mv elimclause hypclause
   with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
     (* Set the hypothesis name in the message *)
     raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
@@ -1634,7 +1636,7 @@ let progress_with_clause flags innerclause clause =
   let ordered_metas = List.rev (clenv_independent clause) in
   if List.is_empty ordered_metas then error "Statement without assumptions.";
   let f mv =
-    try Some (find_matching_clause (clenv_fchain mv ~flags clause) innerclause)
+    try Some (find_matching_clause (clenv_fchain ~with_univs:false mv ~flags clause) innerclause)
     with Failure _ -> None
   in
   try List.find_map f ordered_metas
@@ -3809,7 +3811,7 @@ let recolle_clenv i params args elimclause gl =
          trying to unify (which would lead to trying to apply it to
          evars if y is a product). *)
       let indclause  = mk_clenv_from_n gl (Some 0) (x,y) in
-      let elimclause' = clenv_fchain i acc indclause in
+      let elimclause' = clenv_fchain ~with_univs:false i acc indclause in
       elimclause')
     (List.rev clauses)
     elimclause

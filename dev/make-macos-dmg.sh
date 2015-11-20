@@ -26,6 +26,6 @@ codesign -f -s - $APP
 
 # Create the dmg bundle
 mkdir -p $DMGDIR
-ln -s /Applications $DMGDIR
+ln -sf /Applications $DMGDIR/Applications
 cp -r $APP $DMGDIR
 hdiutil create -imagekey zlib-level=9 -volname CoqIDE_$VERSION -srcfolder $DMGDIR -ov -format UDZO CoqIDE_$VERSION.dmg

@@ -68,7 +68,7 @@ val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:unit Proofview.tactic ->
   ?reduce:(Term.constr -> Term.constr) ->
-  ?hook:unit Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
+  ?hook:(Evd.evar_universe_context -> unit) Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
 
 type notations =
     (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
@@ -84,7 +84,7 @@ val add_mutual_definitions :
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(Term.constr -> Term.constr) ->
-  ?hook:unit Lemmas.declaration_hook -> ?opaque:bool ->
+  ?hook:(Evd.evar_universe_context -> unit) Lemmas.declaration_hook -> ?opaque:bool ->
   notations ->
   fixpoint_kind -> unit
 

@@ -1096,9 +1096,12 @@ let meta_name evd mv =
 
 let clear_metas evd = {evd with metas = Metamap.empty}
 
-let meta_merge evd1 evd2 =
+let meta_merge ?(with_univs = true) evd1 evd2 =
   let metas = Metamap.fold Metamap.add evd1.metas evd2.metas in
-  let universes = union_evar_universe_context evd2.universes evd1.universes in
+  let universes =
+    if with_univs then union_evar_universe_context evd2.universes evd1.universes
+    else evd2.universes
+  in
   {evd2 with universes; metas; }
 
 type metabinding = metavariable * constr * instance_status

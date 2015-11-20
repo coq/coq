@@ -128,8 +128,6 @@ API
 
 - The interface of [change] has changed to take a [change_arg], which
   can be built from a [constr] using [make_change_arg].
-- [pattern_of_constr] now returns a triplet including the cleaned-up
-  [evar_map], removing the evars that were turned into metas.
 
 Changes from V8.4 to V8.5beta1
 ==============================

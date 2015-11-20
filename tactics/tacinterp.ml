@@ -689,12 +689,12 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
       try Inl (coerce_to_evaluable_ref env x)
       with CannotCoerceTo _ ->
         let c = coerce_to_closed_constr env x in
-        Inr (pi3 (pattern_of_constr env sigma c)) in
+        Inr (pattern_of_constr env sigma c) in
     (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (env,sigma)) (loc,id)
      with Not_found ->
        error_global_not_found_loc loc (qualid_of_ident id))
   | Inl (ArgArg _ as b) -> Inl (interp_evaluable ist env sigma b)
-  | Inr c -> Inr (pi3 (interp_typed_pattern ist env sigma c)) in
+  | Inr c -> Inr (interp_typed_pattern ist env sigma c) in
   interp_occurrences ist occs, p
 
 let interp_constr_with_occurrences_and_name_as_list =
@@ -1003,7 +1003,7 @@ let interp_induction_arg ist gl arg =
           try Sigma.here (constr_of_id env id', NoBindings) sigma
           with Not_found ->
             user_err_loc (loc, "interp_induction_arg",
-            pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis.")
+            pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared nor a quantified hypothesis.")
           end })
       in
       try
@@ -1060,7 +1060,7 @@ let use_types = false
 let eval_pattern lfun ist env sigma ((glob,_),pat as c) =
   let bound_names = bound_glob_vars glob in
   if use_types then
-    (bound_names,pi3 (interp_typed_pattern ist env sigma c))
+    (bound_names,interp_typed_pattern ist env sigma c)
   else
     (bound_names,instantiate_pattern env sigma lfun pat)
 
@@ -2175,7 +2175,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Tacmach.New.project gl in
         Proofview.V82.tactic begin fun gl -> 
-          let (sigma,sign,op) = interp_typed_pattern ist env sigma op in
+          let op = interp_typed_pattern ist env sigma op in
           let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
           let c_interp patvars = { Sigma.run = begin fun sigma ->
 	    let lfun' = Id.Map.fold (fun id c lfun ->
@@ -2191,7 +2191,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
 		errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
           end } in
 	    (Tactics.change (Some op) c_interp (interp_clause ist env sigma cl))
-	      { gl with sigma = sigma }
+	      gl
         end
       end }
       end
