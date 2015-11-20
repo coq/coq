@@ -1651,7 +1651,7 @@ let betazetaevar_applist sigma n c l =
     if Int.equal n 0 then applist (substl env t, stack) else
     match kind_of_term t, stack with
     | Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
-    | LetIn(_,b,_,c), _ -> stacklam (n-1) (b::env) c stack
+    | LetIn(_,b,_,c), _ -> stacklam (n-1) (substl env b::env) c stack
     | Evar ev, _ ->
       (match safe_evar_value sigma ev with
       | Some body -> stacklam n env body stack
