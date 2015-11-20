@@ -972,7 +972,7 @@ let make_absolute_name ident repl =
     in
     NewTac id
 
-let register_ltac local isrec tacl =
+let register_ltac local tacl =
   let map (ident, repl, body) =
     let name = make_absolute_name ident repl in
     (name, body)
@@ -983,8 +983,7 @@ let register_ltac local isrec tacl =
     | UpdateTac _ -> accu
     | NewTac id -> (Lib.make_path id, Lib.make_kn id) :: accu
     in
-    if isrec then List.fold_left fold [] rfun
-    else []
+    List.fold_left fold [] rfun
   in
   let ist = Tacintern.make_empty_glob_sign () in
   let map (name, body) =
@@ -1010,9 +1009,9 @@ let register_ltac local isrec tacl =
   in
   List.iter iter defs
 
-let vernac_declare_tactic_definition locality (x,def) =
+let vernac_declare_tactic_definition locality def =
   let local = make_module_locality locality in
-  register_ltac local x def
+  register_ltac local def
 
 let vernac_create_hintdb locality id b =
   let local = make_module_locality locality in

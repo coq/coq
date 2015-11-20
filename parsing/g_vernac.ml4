@@ -803,7 +803,7 @@ GEXTEND Gram
   command:
     [ [ IDENT "Ltac";
         l = LIST1 tacdef_body SEP "with" ->
-          VernacDeclareTacticDefinition (true, l)
+          VernacDeclareTacticDefinition l
 
       | IDENT "Comments"; l = LIST0 comment -> VernacComments l
 
