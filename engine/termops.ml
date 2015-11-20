@@ -158,19 +158,6 @@ let rel_list n m =
   in
   reln [] 1
 
-(* Same as [rel_list] but takes a context as argument and skips let-ins *)
-let extended_rel_list n hyps =
-  let rec reln l p = function
-    | (_,None,_) :: hyps -> reln (mkRel (n+p) :: l) (p+1) hyps
-    | (_,Some _,_) :: hyps -> reln l (p+1) hyps
-    | [] -> l
-  in
-  reln [] 1 hyps
-
-let extended_rel_vect n hyps = Array.of_list (extended_rel_list n hyps)
-
-
-
 let push_rel_assum (x,t) env = push_rel (x,None,t) env
 
 let push_rels_assum assums =

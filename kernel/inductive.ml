@@ -292,14 +292,6 @@ let is_primitive_record (mib,_) =
   | Some (Some _) -> true
   | _ -> false
 
-let extended_rel_list n hyps =
-  let rec reln l p = function
-    | (_,None,_) :: hyps -> reln (mkRel (n+p) :: l) (p+1) hyps
-    | (_,Some _,_) :: hyps -> reln l (p+1) hyps
-    | [] -> l
-  in
-  reln [] 1 hyps
-
 let build_dependent_inductive ind (_,mip) params =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   applist

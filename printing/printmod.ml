@@ -65,6 +65,7 @@ let get_new_id locals id =
 
 (** Inductive declarations *)
 
+open Context
 open Termops
 open Reduction
 

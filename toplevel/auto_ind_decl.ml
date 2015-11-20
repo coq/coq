@@ -15,6 +15,7 @@ open Util
 open Pp
 open Term
 open Vars
+open Context
 open Termops
 open Declarations
 open Names

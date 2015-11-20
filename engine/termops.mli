@@ -37,13 +37,9 @@ val lookup_rel_id : Id.t -> rel_context -> int * constr option * types
 
 (** Functions that build argument lists matching a block of binders or a context.
     [rel_vect n m] builds [|Rel (n+m);...;Rel(n+1)|]
-    [extended_rel_vect n ctx] extends the [ctx] context of length [m]
-    with [n] elements.
 *)
 val rel_vect : int -> int -> constr array
 val rel_list : int -> int -> constr list
-val extended_rel_list : int -> rel_context -> constr list
-val extended_rel_vect : int -> rel_context -> constr array
 
 (** iterators/destructors on terms *)
 val mkProd_or_LetIn : rel_declaration -> types -> types

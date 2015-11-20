@@ -111,6 +111,20 @@ let instance_from_named_context sign =
   in
   List.map_filter filter sign
 
+(** [extended_rel_list n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
+   with n = |Δ| and with the local definitions of [Γ] skipped in
+   [args]. Example: for [x:T,y:=c,z:U] and [n]=2, it gives [Rel 5, Rel 3]. *)
+
+let extended_rel_list n hyps =
+  let rec reln l p = function
+  | (_, None, _) :: hyps -> reln (Constr.mkRel (n+p) :: l) (p+1) hyps
+  | (_, Some _, _) :: hyps -> reln l (p+1) hyps
+  | [] -> l
+  in
+  reln [] 1 hyps
+
+let extended_rel_vect n hyps = Array.of_list (extended_rel_list n hyps)
+
 let fold_named_context f l ~init = List.fold_right f l init
 let fold_named_list_context f l ~init = List.fold_right f l init
 let fold_named_context_reverse f ~init l = List.fold_left f init l

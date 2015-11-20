@@ -12,6 +12,7 @@ open Pp
 open Names
 open Term
 open Vars
+open Context
 open Termops
 open Entries
 open Environ

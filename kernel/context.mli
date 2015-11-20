@@ -82,7 +82,20 @@ val fold_named_context_reverse :
   ('a -> named_declaration -> 'a) -> init:'a -> named_context -> 'a
 
 (** {6 Section-related auxiliary functions } *)
+
+(** [instance_from_named_context Ω] builds an instance [args] such
+    that [Ω ⊢ args:Ω] where [Ω] is a named context and with the local
+    definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
+    gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
 val instance_from_named_context : named_context -> Constr.t list
+
+(** [extended_rel_list n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
+   with n = |Δ| and with the local definitions of [Γ] skipped in
+   [args]. Example: for [x:T,y:=c,z:U] and [n]=2, it gives [Rel 5, Rel 3]. *)
+val extended_rel_list : int -> rel_context -> Constr.t list
+
+(** [extended_rel_vect n Γ] does the same, returning instead an array. *)
+val extended_rel_vect : int -> rel_context -> Constr.t array
 
 (** {6 ... } *)
 (** Signatures of ordered optionally named variables, intended to be
@@ -120,3 +133,4 @@ val rel_context_length : rel_context -> int
 val rel_context_nhyps : rel_context -> int
 (** Indicates whether a LetIn or a Lambda, starting from oldest declaration *)
 val rel_context_tags : rel_context -> bool list
+
