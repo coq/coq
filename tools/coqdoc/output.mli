@@ -9,13 +9,17 @@
 open Cdglobals
 open Index
 
-val initialize : unit -> unit
-
-val add_printing_token : string -> string option * string option -> unit
+(* Common primitives *)
+val add_printing_token    : string -> string option * string option -> unit
 val remove_printing_token : string -> unit
 
-val set_module : coq_module -> string option -> unit
 val get_module : bool -> string
+val set_module : coq_module -> string option -> unit
+
+(* Backend printer *)
+module type S = sig
+
+val initialize : unit -> unit
 
 val header : unit -> unit
 val trailer : unit -> unit
@@ -104,3 +108,8 @@ val inf_rule :  (int * string) list
 val make_multi_index : unit -> unit
 val make_index : unit -> unit
 val make_toc : unit -> unit
+
+end
+
+(*s Create an output backend *)
+val output_factory : target_language -> (module S)

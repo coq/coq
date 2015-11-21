@@ -181,17 +181,123 @@ let add_toc_entry e = Queue.add e toc_q
 
 let new_label = let r = ref 0 in fun () -> incr r; "lab" ^ string_of_int !r
 
+module type S = sig
+
+val initialize : unit -> unit
+
+val header : unit -> unit
+val trailer : unit -> unit
+
+val push_in_preamble : string -> unit
+
+val start_module : unit -> unit
+
+val start_doc : unit -> unit
+val end_doc : unit -> unit
+
+val start_emph : unit -> unit
+val stop_emph : unit -> unit
+
+val start_comment : unit -> unit
+val end_comment : unit -> unit
+
+val start_coq : unit -> unit
+val end_coq : unit -> unit
+
+val start_code : unit -> unit
+val end_code : unit -> unit
+
+val start_inline_coq : unit -> unit
+val end_inline_coq : unit -> unit
+
+val start_inline_coq_block : unit -> unit
+val end_inline_coq_block : unit -> unit
+
+val indentation : int -> unit
+val line_break : unit -> unit
+val paragraph : unit -> unit
+val empty_line_of_code : unit -> unit
+
+val section : int -> (unit -> unit) -> unit
+
+val item : int -> unit
+val stop_item : unit -> unit
+val reach_item_level : int -> unit
+
+val rule : unit -> unit
+
+val nbsp : unit -> unit
+val char : char -> unit
+val keyword : string -> loc -> unit
+val ident : string -> loc option -> unit
+val sublexer : char -> loc -> unit
+val sublexer_in_doc : char -> unit
+val initialize : unit -> unit
+
+val proofbox : unit -> unit
+
+val latex_char : char -> unit
+val latex_string : string -> unit
+val html_char : char -> unit
+val html_string : string -> unit
+val verbatim_char : bool -> char -> unit
+val hard_verbatim_char : char -> unit
+
+val start_latex_math : unit -> unit
+val stop_latex_math : unit -> unit
+val start_verbatim : bool -> unit
+val stop_verbatim : bool -> unit
+val start_quote : unit -> unit
+val stop_quote : unit -> unit
+
+val url : string -> string option -> unit
+
+(* this outputs an inference rule in one go.  You pass it the list of
+   assumptions, then the middle line info, then the conclusion (which
+   is allowed to span multiple lines).
+
+   In each case, the int is the number of spaces before the start of
+   the line's text and the string is the text of the line with the
+   leading trailing space trimmed.  For the middle rule, you can
+   also optionally provide a name.
+
+   We need the space info so that in modes where we aren't doing
+   something smart we can just format the rule verbatim like the user did
+*)
+val inf_rule :  (int * string) list
+             -> (int * string * (string option)) 
+             -> (int * string) list
+             -> unit
+
+val make_multi_index : unit -> unit
+val make_index : unit -> unit
+val make_toc : unit -> unit
+
+end
+
+let inf_rule_dumb start_verbatim stop_verbatim char assumptions (midsp,midln,midnm) conclusions = 
+  start_verbatim false;
+  let dumb_line = 
+       function (sp,ln) -> (String.iter char ((String.make sp ' ') ^ ln);
+                            char '\n')
+  in 
+    (List.iter dumb_line assumptions;
+     dumb_line (midsp, midln ^ (match midnm with 
+                                | Some s -> " " ^ s 
+                                | None -> ""));
+     List.iter dumb_line conclusions);
+  stop_verbatim false
+
+
 (*s LaTeX output *)
 
-module Latex = struct
+module Latex : S = struct
 
   let in_title = ref false
 
   (*s Latex preamble *)
 
   let (preamble : string Queue.t) = Queue.create ()
-
-  let push_in_preamble s = Queue.add s preamble
 
   let utf8x_extra_support () =
     printf "\n";
@@ -236,6 +342,8 @@ module Latex = struct
       printf "\\end{document}\n"
     end
 
+  let push_in_preamble s = Queue.add s preamble
+
   (*s Latex low-level translation *)
 
   let nbsp () = output_char '~'
@@ -249,6 +357,9 @@ module Latex = struct
 	output_char '\\'; output_char c; printf "{}"
     | _ ->
 	output_char c
+
+  let verbatim_char inline = if inline then char else output_char
+  let hard_verbatim_char = output_char
 
   let label_char c = match c with
     | '_' -> output_char ' '
@@ -317,6 +428,8 @@ module Latex = struct
   let stop_verbatim inline =
     if inline then printf "}"
     else printf "\\end{verbatim}\n"
+
+  let inf_rule = inf_rule_dumb start_verbatim stop_verbatim char
 
   let url addr name = 
     printf "%s\\footnote{\\url{%s}}"
@@ -521,7 +634,7 @@ end
 
 (*s HTML output *)
 
-module Html = struct
+module Html : S = struct
 
   let header () =
     if !header_trailer then
@@ -563,6 +676,8 @@ module Html = struct
 	printf "</div>\n\n</div>\n\n</body>\n</html>"
       end
 
+  let push_in_preamble _ = ()
+
   let start_module () =
     let ln = !lib_name in
     if not !short then begin
@@ -573,6 +688,8 @@ module Html = struct
         else
           printf "<h1 class=\"libtitle\">%s %s</h1>\n\n" ln (get_module true)
     end
+
+  let hard_verbatim_char = output_char
 
   let indentation n = for _i = 1 to n do printf "&nbsp;" done
 
@@ -588,6 +705,8 @@ module Html = struct
     | '>' -> printf "&gt;"
     | '&' -> printf "&amp;"
     | c -> output_char c
+
+  let verbatim_char inline = char
 
   let escaped =
     let buff = Buffer.create 5 in
@@ -949,7 +1068,7 @@ end
 
 (*s TeXmacs-aware output *)
 
-module TeXmacs = struct
+module TeXmacs : S = struct
 
   (*s Latex preamble *)
 
@@ -964,6 +1083,8 @@ module TeXmacs = struct
 
   let trailer () = ()
 
+  let push_in_preamble _ = ()
+
   let nbsp () = output_char ' '
 
   let char_true c = match c with
@@ -974,6 +1095,8 @@ module TeXmacs = struct
     | _ -> output_char c
 
   let char c = if !in_doc then char_true c else output_char c
+  let verbatim_char inline = char
+  let hard_verbatim_char = output_char
 
   let latex_char = char_true
   let latex_string = String.iter latex_char
@@ -1097,20 +1220,26 @@ module TeXmacs = struct
 
   let make_toc () = ()
 
+  let inf_rule = inf_rule_dumb start_verbatim stop_verbatim char
+
 end
 
 
 (*s Raw output *)
 
-module Raw = struct
+module Raw : S = struct
 
   let header () = ()
 
   let trailer () = ()
 
+  let push_in_preamble _ = ()
+
   let nbsp () = output_char ' '
 
   let char = output_char
+  let verbatim_char inline = char
+  let hard_verbatim_char = output_char
 
   let latex_char = output_char
   let latex_string = output_string
@@ -1129,6 +1258,8 @@ module Raw = struct
 
   let start_verbatim inline = ()
   let stop_verbatim inline = ()
+
+  let inf_rule = inf_rule_dumb start_verbatim stop_verbatim char
 
   let url addr name = 
     match name with
@@ -1204,114 +1335,10 @@ module Raw = struct
 
 end
 
-
-
 (*s Generic output *)
 
-let select f1 f2 f3 f4 x =
-  match !target_language with LaTeX -> f1 x | HTML -> f2 x | TeXmacs -> f3 x | Raw -> f4 x
-
-let push_in_preamble = Latex.push_in_preamble
-
-let header = select Latex.header Html.header TeXmacs.header Raw.header
-let trailer = select Latex.trailer Html.trailer TeXmacs.trailer Raw.trailer
-
-let start_module =
-  select Latex.start_module Html.start_module TeXmacs.start_module Raw.start_module
-
-let start_doc = select Latex.start_doc Html.start_doc TeXmacs.start_doc Raw.start_doc
-let end_doc = select Latex.end_doc Html.end_doc TeXmacs.end_doc Raw.end_doc
-
-let start_comment = select Latex.start_comment Html.start_comment TeXmacs.start_comment Raw.start_comment
-let end_comment = select Latex.end_comment Html.end_comment TeXmacs.end_comment Raw.end_comment
-
-let start_coq = select Latex.start_coq Html.start_coq TeXmacs.start_coq Raw.start_coq
-let end_coq = select Latex.end_coq Html.end_coq TeXmacs.end_coq Raw.end_coq
-
-let start_code = select Latex.start_code Html.start_code TeXmacs.start_code Raw.start_code
-let end_code = select Latex.end_code Html.end_code TeXmacs.end_code Raw.end_code
-
-let start_inline_coq =
-  select Latex.start_inline_coq Html.start_inline_coq TeXmacs.start_inline_coq Raw.start_inline_coq
-let end_inline_coq =
-  select Latex.end_inline_coq Html.end_inline_coq TeXmacs.end_inline_coq Raw.end_inline_coq
-
-let start_inline_coq_block =
-  select Latex.start_inline_coq_block Html.start_inline_coq_block
-    TeXmacs.start_inline_coq_block Raw.start_inline_coq_block
-let end_inline_coq_block =
-  select Latex.end_inline_coq_block Html.end_inline_coq_block TeXmacs.end_inline_coq_block Raw.end_inline_coq_block
-
-let indentation = select Latex.indentation Html.indentation TeXmacs.indentation Raw.indentation
-let paragraph = select Latex.paragraph Html.paragraph TeXmacs.paragraph Raw.paragraph
-let line_break = select Latex.line_break Html.line_break TeXmacs.line_break Raw.line_break
-let empty_line_of_code = select
-  Latex.empty_line_of_code Html.empty_line_of_code TeXmacs.empty_line_of_code Raw.empty_line_of_code
-
-let section = select Latex.section Html.section TeXmacs.section Raw.section
-let item = select Latex.item Html.item TeXmacs.item Raw.item
-let stop_item = select Latex.stop_item Html.stop_item TeXmacs.stop_item Raw.stop_item
-let reach_item_level = select Latex.reach_item_level Html.reach_item_level TeXmacs.reach_item_level Raw.reach_item_level
-let rule = select Latex.rule Html.rule TeXmacs.rule Raw.rule
-
-let nbsp = select Latex.nbsp Html.nbsp TeXmacs.nbsp Raw.nbsp
-let char = select Latex.char Html.char TeXmacs.char Raw.char
-let keyword = select Latex.keyword Html.keyword TeXmacs.keyword Raw.keyword
-let ident = select Latex.ident Html.ident TeXmacs.ident Raw.ident
-let sublexer = select Latex.sublexer Html.sublexer TeXmacs.sublexer Raw.sublexer
-let sublexer_in_doc = select Latex.sublexer_in_doc Html.sublexer_in_doc TeXmacs.sublexer_in_doc Raw.sublexer_in_doc
-let initialize = select Latex.initialize Html.initialize TeXmacs.initialize Raw.initialize
-
-let proofbox = select Latex.proofbox Html.proofbox TeXmacs.proofbox Raw.proofbox
-
-let latex_char = select Latex.latex_char Html.latex_char TeXmacs.latex_char Raw.latex_char
-let latex_string =
-  select Latex.latex_string Html.latex_string TeXmacs.latex_string Raw.latex_string
-let html_char = select Latex.html_char Html.html_char TeXmacs.html_char Raw.html_char
-let html_string =
-  select Latex.html_string Html.html_string TeXmacs.html_string Raw.html_string
-
-let start_emph =
-  select Latex.start_emph Html.start_emph TeXmacs.start_emph Raw.start_emph
-let stop_emph =
-  select Latex.stop_emph Html.stop_emph TeXmacs.stop_emph Raw.stop_emph
-
-let start_latex_math =
-  select Latex.start_latex_math Html.start_latex_math TeXmacs.start_latex_math Raw.start_latex_math
-let stop_latex_math =
-  select Latex.stop_latex_math Html.stop_latex_math TeXmacs.stop_latex_math Raw.stop_latex_math
-
-let start_verbatim =
-  select Latex.start_verbatim Html.start_verbatim TeXmacs.start_verbatim Raw.start_verbatim
-let stop_verbatim =
-  select Latex.stop_verbatim Html.stop_verbatim TeXmacs.stop_verbatim Raw.stop_verbatim
-let verbatim_char inline =
-  select (if inline then Latex.char else output_char) Html.char TeXmacs.char Raw.char
-let hard_verbatim_char = output_char
-
-let url = 
-  select Latex.url Html.url TeXmacs.url Raw.url
-
-let start_quote =
-  select Latex.start_quote Html.start_quote TeXmacs.start_quote Raw.start_quote
-let stop_quote =
-  select Latex.stop_quote Html.stop_quote TeXmacs.stop_quote Raw.stop_quote
-
-let inf_rule_dumb assumptions (midsp,midln,midnm) conclusions = 
-  start_verbatim false;
-  let dumb_line = 
-       function (sp,ln) -> (String.iter char ((String.make sp ' ') ^ ln);
-                            char '\n')
-  in 
-    (List.iter dumb_line assumptions;
-     dumb_line (midsp, midln ^ (match midnm with 
-                                | Some s -> " " ^ s 
-                                | None -> ""));
-     List.iter dumb_line conclusions);
-  stop_verbatim false
-
-let inf_rule = select inf_rule_dumb Html.inf_rule inf_rule_dumb inf_rule_dumb
-
-let make_multi_index = select Latex.make_multi_index Html.make_multi_index TeXmacs.make_multi_index Raw.make_multi_index
-let make_index = select Latex.make_index Html.make_index TeXmacs.make_index Raw.make_index
-let make_toc = select Latex.make_toc Html.make_toc TeXmacs.make_toc Raw.make_toc
+let output_factory tl = match tl with
+  | LaTeX   -> (module Latex   : S)
+  | HTML    -> (module Html    : S)
+  | TeXmacs -> (module TeXmacs : S)
+  | Raw     -> (module Raw     : S)
