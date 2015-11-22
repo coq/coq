@@ -97,14 +97,19 @@ val default_conv_leq : ?l2r:bool -> types conversion_function
 (************************************************************************)
 
 (** Builds an application node, reducing beta redexes it may produce. *)
+val beta_applist : constr -> constr list -> constr
+
+(** Builds an application node, reducing beta redexes it may produce. *)
 val beta_appvect : constr -> constr array -> constr
 
-(** Builds an application node, reducing the [n] first beta-zeta redexes. *)
-val betazeta_appvect : int -> constr -> constr array -> constr
+(** Builds an application node, reducing beta redexe it may produce. *)
+val beta_app : constr -> constr -> constr
 
 (** Pseudo-reduction rule  Prod(x,A,B) a --> B[x\a] *)
 val hnf_prod_applist : env -> types -> constr list -> types
 
+(** Compatibility alias for Term.lambda_appvect_assum *)
+val betazeta_appvect : int -> constr -> constr array -> constr
 
 (***********************************************************************
   s Recognizing products and arities modulo reduction *)

@@ -471,6 +471,36 @@ let rec to_prod n lam =
       | Cast (c,_,_) -> to_prod n c
       | _   -> errorlabstrm "to_prod" (mt ())
 
+let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
+let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
+
+(* Application with expected on-the-fly reduction *)
+
+let lambda_applist c l =
+  let rec app subst c l =
+    match kind_of_term c, l with
+    | Lambda(_,_,c), arg::l -> app (arg::subst) c l
+    | _, [] -> substl subst c
+    | _ -> anomaly (Pp.str "Not enough lambda's") in
+  app [] c l
+
+let lambda_appvect c v = lambda_applist c (Array.to_list v)
+
+let lambda_app c a = lambda_applist c [a]
+
+let lambda_applist_assum n c l =
+  let rec app n subst t l =
+    if Int.equal n 0 then
+      if l == [] then substl subst t
+      else anomaly (Pp.str "Not enough arguments")
+    else match kind_of_term t, l with
+    | Lambda(_,_,c), arg::l -> app (n-1) (arg::subst) c l
+    | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
+    | _ -> anomaly (Pp.str "Not enough lambda/let's") in
+  app n [] c l
+
+let lambda_appvect_assum n c v = lambda_applist_assum n c (Array.to_list v)
+
 (* pseudo-reduction rule:
  * [prod_app  s (Prod(_,B)) N --> B[N]
  * with an strip_outer_cast on the first argument to produce a product *)
@@ -478,19 +508,32 @@ let rec to_prod n lam =
 let prod_app t n =
   match kind_of_term (strip_outer_cast t) with
     | Prod (_,_,b) -> subst1 n b
-    | _ ->
-        errorlabstrm "prod_app"
-          (str"Needed a product, but didn't find one" ++ fnl ())
-
-
-(* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
-let prod_appvect t nL = Array.fold_left prod_app t nL
+    | _ -> anomaly (str"Needed a product, but didn't find one")
 
 (* prod_applist T [ a1 ; ... ; an ] -> (T a1 ... an) *)
-let prod_applist t nL = List.fold_left prod_app t nL
+let prod_applist c l =
+  let rec app subst c l =
+    match kind_of_term c, l with
+    | Prod(_,_,c), arg::l -> app (arg::subst) c l
+    | _, [] -> substl subst c
+    | _ -> anomaly (Pp.str "Not enough prod's") in
+  app [] c l
 
-let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
-let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
+(* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
+let prod_appvect c v = prod_applist c (Array.to_list v)
+
+let prod_applist_assum n c l =
+  let rec app n subst t l =
+    if Int.equal n 0 then
+      if l == [] then substl subst t
+      else anomaly (Pp.str "Not enough arguments")
+    else match kind_of_term t, l with
+    | Prod(_,_,c), arg::l -> app (n-1) (arg::subst) c l
+    | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
+    | _ -> anomaly (Pp.str "Not enough prod/let's") in
+  app n [] c l
+
+let prod_appvect_assum n c v = prod_applist_assum n c (Array.to_list v)
 
 (*********************************)
 (* Other term destructors        *)

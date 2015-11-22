@@ -518,7 +518,7 @@ let type_case_branches_with_names env indspec p c =
   let (params,realargs) = List.chop nparams args in
   let lbrty = Inductive.build_branches_type ind specif params p in
   (* Build case type *)
-  let conclty = Reduction.betazeta_appvect (mip.mind_nrealdecls+1) p (Array.of_list (realargs@[c])) in
+  let conclty = lambda_appvect_assum (mip.mind_nrealdecls+1) p (Array.of_list (realargs@[c])) in
   (* Adjust names *)
   if is_elim_predicate_explicitly_dependent env p (ind,params) then
     (set_pattern_names env (fst ind) lbrty, conclty)

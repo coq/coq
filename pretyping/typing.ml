@@ -112,8 +112,7 @@ let e_type_case_branches env evdref (ind,largs) pj c =
   let univ = e_is_correct_arity env evdref c pj ind specif params in
   let lc = build_branches_type ind specif params p in
   let n = (snd specif).Declarations.mind_nrealargs in
-  let ty =
-    whd_betaiota !evdref (Reduction.betazeta_appvect (n+1) p (Array.of_list (realargs@[c]))) in
+  let ty = whd_betaiota !evdref (lambda_applist_assum (n+1) p (realargs@[c])) in
   (lc, ty, univ)
 
 let e_judge_of_case env evdref ci pj cj lfj =

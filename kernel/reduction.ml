@@ -120,24 +120,6 @@ let whd_betadeltaiota_nolet env t =
        Prod _|Lambda _|Fix _|CoFix _|LetIn _) -> t
     | _ -> whd_val (create_clos_infos betadeltaiotanolet env) (inject t)
 
-(* Beta *)
-
-let beta_appvect c v =
-  let rec stacklam env t stack =
-    match kind_of_term t, stack with
-        Lambda(_,_,c), arg::stacktl -> stacklam (arg::env) c stacktl
-      | _ -> applist (substl env t, stack) in
-  stacklam [] c (Array.to_list v)
-    
-let betazeta_appvect n c v =
-  let rec stacklam n env t stack =
-    if Int.equal n 0 then applist (substl env t, stack) else
-    match kind_of_term t, stack with
-        Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
-      | LetIn(_,b,_,c), _ -> stacklam (n-1) (substl env b::env) c stack
-      | _ -> anomaly (Pp.str "Not enough lambda/let's") in
-  stacklam n [] c (Array.to_list v)
-
 (********************************************************************)
 (*                         Conversion                               *)
 (********************************************************************)
@@ -733,12 +715,28 @@ let conv env t1 t2 =
   Profile.profile4 convleqkey conv env t1 t2;;
 *)
 
+(* Application with on-the-fly reduction *)
+
+let beta_applist c l =
+  let rec app subst c l =
+    match kind_of_term c, l with
+    | Lambda(_,_,c), arg::l -> app (arg::subst) c l
+    | _ -> applist (substl subst c, l) in
+  app [] c l
+
+let beta_appvect c v = beta_applist c (Array.to_list v)
+
+let beta_app c a = beta_applist c [a]
+
+(* Compatibility *)
+let betazeta_appvect = lambda_appvect_assum
+
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
 (* pseudo-reduction rule:
- * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
+ * [hnf_prod_app env (Prod(_,B)) N --> B[N]
  * with an HNF on the first argument to produce a product.
  * if this does not work, then we use the string S as part of our
  * error message. *)

@@ -262,14 +262,34 @@ val to_lambda : int -> constr -> constr
    where [l] is [fun (x_1:T_1)...(x_n:T_n) => T] *)
 val to_prod : int -> constr -> constr
 
+val it_mkLambda_or_LetIn : constr -> rel_context -> constr
+val it_mkProd_or_LetIn : types -> rel_context -> types
+
+(** In [lambda_applist c args], [c] is supposed to have the form
+    [λΓ.c] with [Γ] without let-in; it returns [c] with the variables
+    of [Γ] instantiated by [args]. *)
+val lambda_applist : constr -> constr list -> constr
+val lambda_appvect : constr -> constr array -> constr
+
+(** In [lambda_applist_assum n c args], [c] is supposed to have the
+    form [λΓ.c] with [Γ] of length [m] and possibly with let-ins; it
+    returns [c] with the assumptions of [Γ] instantiated by [args] and
+    the local definitions of [Γ] expanded. *)
+val lambda_applist_assum : int -> constr -> constr list -> constr
+val lambda_appvect_assum : int -> constr -> constr array -> constr
+
 (** pseudo-reduction rule *)
 
 (** [prod_appvect] [forall (x1:B1;...;xn:Bn), B] [a1...an] @return [B[a1...an]] *)
 val prod_appvect : constr -> constr array -> constr
 val prod_applist : constr -> constr list -> constr
 
-val it_mkLambda_or_LetIn : constr -> rel_context -> constr
-val it_mkProd_or_LetIn : types -> rel_context -> types
+(** In [prod_appvect_assum n c args], [c] is supposed to have the
+    form [∀Γ.c] with [Γ] of length [m] and possibly with let-ins; it
+    returns [c] with the assumptions of [Γ] instantiated by [args] and
+    the local definitions of [Γ] expanded. *)
+val prod_appvect_assum : int -> constr -> constr array -> constr
+val prod_applist_assum : int -> constr -> constr list -> constr
 
 (** {5 Other term destructors. } *)
 

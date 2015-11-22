@@ -357,14 +357,14 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
       let cstr = ith_constructor_of_inductive ind (i+1) in
       let dep_cstr = applist (mkConstructU (cstr,u),lparams@(extended_rel_list 0 cstrsign)) in
       vargs @ [dep_cstr] in
-    let base = betazeta_appvect (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
+    let base = lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
     it_mkProd_or_LetIn base cstrsign in
   Array.mapi build_one_branch mip.mind_nf_lc
 
 (* [p] is the predicate, [c] is the match object, [realargs] is the
    list of real args of the inductive type *)
 let build_case_type env n p c realargs =
-  whd_betaiota env (betazeta_appvect (n+1) p (Array.of_list (realargs@[c])))
+  whd_betaiota env (lambda_appvect_assum (n+1) p (Array.of_list (realargs@[c])))
 
 let type_case_branches env (pind,largs) pj c =
   let specif = lookup_mind_specif env (fst pind) in
