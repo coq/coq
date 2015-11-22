@@ -303,21 +303,15 @@ let lift_constructor n cs = {
   cs_args = lift_rel_context n cs.cs_args;
   cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
 }
-(* Accept less parameters than in the signature *)
 
-let instantiate_params t args sign =
-  let rec inst s t = function
-    | ((_,None,_)::ctxt,a::args) ->
-	(match kind_of_term t with
-	   | Prod(_,_,t) -> inst (a::s) t (ctxt,args)
-	   | _ -> anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch"))
-    | ((_,(Some b),_)::ctxt,args) ->
-	(match kind_of_term t with
-	   | LetIn(_,_,_,t) -> inst ((substl s b)::s) t (ctxt,args)
-	   | _ -> anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch"))
-    | _, [] -> substl s t
-    | _ -> anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch")
-  in inst [] t (List.rev sign,args)
+(* Accept either all parameters or only recursively uniform ones *)
+let instantiate_params t params sign =
+  let nnonrecpar = rel_context_nhyps sign - List.length params in
+  (* Adjust the signature if recursively non-uniform parameters are not here *)
+  let _,sign = List.chop nnonrecpar sign in
+  let _,t = decompose_prod_n_assum (rel_context_length sign) t in
+  let subst = subst_of_rel_context_instance sign params in
+  substl subst t
 
 let get_constructor ((ind,u as indu),mib,mip,params) j =
   assert (j <= Array.length mip.mind_consnames);
