@@ -159,6 +159,7 @@ val build_branch_type : env -> bool -> constr -> constructor_summary -> types
 (** Raise [Not_found] if not given a valid inductive type *)
 val extract_mrectype : constr -> pinductive * constr list
 val find_mrectype    : env -> evar_map -> types -> pinductive * constr list
+val find_mrectype_vect : env -> evar_map -> types -> pinductive * constr array
 val find_rectype     : env -> evar_map -> types -> inductive_type
 val find_inductive   : env -> evar_map -> types -> pinductive * constr list
 val find_coinductive : env -> evar_map -> types -> pinductive * constr list

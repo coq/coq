@@ -45,13 +45,7 @@ let invert_tag cst tag reloc_tbl =
   with Find_at j -> (j+1)
              (* Argggg, ces constructeurs de ... qui commencent a 1*)
 
-let find_rectype_a env c =
-  let (t, l) =
-    let t = whd_betadeltaiota env c in
-    try destApp t with DestKO -> (t,[||]) in
-  match kind_of_term t with
-  | Ind ind -> (ind, l)
-  | _ -> raise Not_found
+let find_rectype_a env c = Inductiveops.find_mrectype_vect env Evd.empty c
 
 (* Instantiate inductives and parameters in constructor type *)
 

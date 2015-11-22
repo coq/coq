@@ -430,11 +430,14 @@ let extract_mrectype t =
     | Ind ind -> (ind, l)
     | _ -> raise Not_found
 
-let find_mrectype env sigma c =
-  let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
+let find_mrectype_vect env sigma c =
+  let (t, l) = decompose_appvect (whd_betadeltaiota env sigma c) in
   match kind_of_term t with
     | Ind ind -> (ind, l)
     | _ -> raise Not_found
+
+let find_mrectype env sigma c =
+  let (ind, v) = find_mrectype_vect env sigma c in (ind, Array.to_list v)
 
 let find_rectype env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
