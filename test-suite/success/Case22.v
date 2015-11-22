@@ -53,3 +53,11 @@ Check fun x:Ind bool nat =>
   match x in Ind _ X Y Z return Z with
   | Constr _ => (true,0)
   end.
+
+(* A vm_compute bug (the type of constructors was not supposed to
+   contain local definitions before proper parameters) *)
+
+Inductive Ind2 (b:=1) (c:nat) : Type :=
+  Constr2 : Ind2 c.
+
+Eval vm_compute in Constr2 2.
