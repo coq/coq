@@ -30,14 +30,26 @@ Check fun x:I2 nat nat => match x in I2 _ X Y Z return X*Y*Z with
 (* This used to succeed in 8.3, 8.4 and 8.5beta1 *)
 
 Inductive IND : forall X:Type, let Y:=X in Type :=
-  C : IND True.
+  CONSTR : IND True.
 
 Definition F (x:IND True) (A:Type) :=
   (* This failed in 8.5beta2 though it should have been accepted *)
-  match x in IND Y Z return Z with
-  C => I
+  match x in IND X Y return Y with
+  CONSTR => Logic.I
   end.
 
 Theorem paradox : False.
   (* This succeeded in 8.3, 8.4 and 8.5beta1 because F had wrong type *)
 Fail Proof (F C False).
+
+(* Another bug found in November 2015 (a substitution was wrongly
+   reversed at pretyping level) *)
+
+Inductive Ind (A:Type) :
+  let X:=A in forall Y:Type, let Z:=(X*Y)%type in Type :=
+  Constr : Ind A nat.
+
+Check fun x:Ind bool nat =>
+  match x in Ind _ X Y Z return Z with
+  | Constr _ => (true,0)
+  end.
