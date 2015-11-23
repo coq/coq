@@ -3249,19 +3249,19 @@ let decompose_indapp f args =
   | _ -> f, args
 
 let mk_term_eq env sigma ty t ty' t' =
+  let sigma = Sigma.to_evar_map sigma in
   if Reductionops.is_conv env sigma ty ty' then
     mkEq ty t t', mkRefl ty' t'
   else
     mkHEq ty t ty' t', mkHRefl ty' t'
 
-let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
-  let meta = Evarutil.new_meta() in
+let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
+  Proofview.Refine.refine { run = begin fun sigma ->
   let eqslen = List.length eqs in
-  let term, typ = mkVar id, Tacmach.pf_get_hyp_typ gl id in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
   let abshypeq, abshypt =
     if dep then
-      let eq, refl = mk_term_eq (push_rel_context ctx (Tacmach.pf_env gl)) (Tacmach.project gl) (lift 1 c) (mkRel 1) typ term in
+      let eq, refl = mk_term_eq (push_rel_context ctx env) sigma (lift 1 c) (mkRel 1) typ (mkVar id) in
 	mkProd (Anonymous, eq, lift 1 concl), [| refl |]
     else concl, [||]
   in
@@ -3273,7 +3273,7 @@ let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
     (* Abstract by the extension of the context *)
   let genctyp = it_mkProd_or_LetIn genarg ctx in
     (* The goal will become this product. *)
-  let genc = mkCast (mkMeta meta, DEFAULTcast, genctyp) in
+  let Sigma (genc, sigma, p) = Evarutil.new_evar env sigma ~principal:true genctyp in
     (* Apply the old arguments giving the proper instantiation of the hyp *)
   let instc = mkApp (genc, Array.of_list args) in
     (* Then apply to the original instanciated hyp. *)
@@ -3281,7 +3281,8 @@ let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
     (* Apply the reflexivity proofs on the indices. *)
   let appeqs = mkApp (instc, Array.of_list refls) in
     (* Finaly, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
-    mkApp (appeqs, abshypt)
+  Sigma (mkApp (appeqs, abshypt), sigma, p)
+  end }
 
 let hyps_of_vars env sign nogen hyps =
   if Id.Set.is_empty hyps then []
@@ -3398,8 +3399,10 @@ let abstract_args gl generalize_vars dep id defined f args =
 	if defined then Some c', Retyping.get_type_of ctxenv !sigma c'
 	else None, c'
       in
-      let term = make_abstract_generalize {gl with sigma = !sigma} id concl dep ctx body c' eqs args refls in
-	Some (term, !sigma, dep, succ (List.length ctx), vars)
+      let typ = Tacmach.pf_get_hyp_typ gl id in
+      let tac = make_abstract_generalize (pf_env gl) id typ concl dep ctx body c' eqs args refls in
+      let tac = Proofview.Unsafe.tclEVARS !sigma <*> tac in
+	Some (tac, dep, succ (List.length ctx), vars)
     else None
 
 let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
@@ -3421,17 +3424,15 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
     let newc = Tacmach.New.of_old (fun gl -> abstract_args gl generalize_vars force_dep id def f args) gl in
       match newc with
       | None -> Proofview.tclUNIT ()
-      | Some (newc, sigma, dep, n, vars) ->
+      | Some (tac, dep, n, vars) ->
 	  let tac =
 	    if dep then
-	      Tacticals.New.tclTHENLIST
-		[Proofview.Unsafe.tclEVARS sigma;
-		 Proofview.V82.tactic (refine newc);
+              Tacticals.New.tclTHENLIST [
+                tac;
 		 rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
 		 Proofview.V82.tactic (generalize_dep ~with_let:true (mkVar oldid))]
-	    else Tacticals.New.tclTHENLIST
-		   [Proofview.Unsafe.tclEVARS sigma;
-		    Proofview.V82.tactic (refine newc);
+            else Tacticals.New.tclTHENLIST [
+                    tac;
 		    Proofview.V82.tactic (clear [id]);
 		    Tacticals.New.tclDO n intro]
 	  in
