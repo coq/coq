@@ -532,10 +532,8 @@ These inductive definitions, together with global assumptions and global definit
 Additionally, for any $p$ there always exists $\Gamma_P=[a_1:A_1;\dots;a_p:A_p]$
 such that each $(t:T)\in\Gamma_I\cup\Gamma_C$ can be written as:
 $\forall\Gamma_P, T^\prime$ where $\Gamma_P$ is called the {\em context of parameters\index{context of parameters}}.
-Figures~\ref{fig:bool}--\ref{fig:tree:forest} show formal representation of several inductive definitions.
 
 \begin{latexonly}%
-  \newpage
   \def\captionstrut{\vbox to 1.5em{}}
   \newcommand\ind[3]{$\mathsf{Ind}~[#1]\left(\hskip-.4em
     \begin{array}{r @{\mathrm{~:=~}} l}
@@ -545,104 +543,6 @@ Figures~\ref{fig:bool}--\ref{fig:tree:forest} show formal representation of seve
     \right)$}
 
   \def\colon{@{\hskip.5em:\hskip.5em}}
-
-  \begin{figure}[H]
-    \strut If we take the following inductive definition (denoted in concrete syntax):
-\begin{verbatim}
-Inductive bool : Set :=
-  | true : bool
-  | false : bool.
-\end{verbatim}
-    then:
-    \def\GammaI{\left[\begin{array}{r \colon l}
-                        \bool & \Set
-                      \end{array}
-                \right]}
-    \def\GammaC{\left[\begin{array}{r \colon l}
-                        \true & \bool\\
-                        \false & \bool
-                      \end{array}
-                \right]}
-    \begin{itemize}
-    \item $p = 0$
-    \item $\Gamma_I = \GammaI$
-    \item $\Gamma_C = \GammaC$
-    \item $\Gamma_P=[\,]$.
-    \end{itemize}
-    and thus it enriches the global environment with the following entry:
-    \vskip.5em
-    \ind{p}{\Gamma_I}{\Gamma_C}
-    \vskip.5em
-    \noindent that is:
-    \vskip.5em
-    \ind{0}{\GammaI}{\GammaC}
-    \caption{\captionstrut Formal representation of the {\bool} inductive type.}
-    \label{fig:bool}
-  \end{figure}
-
-  \begin{figure}[H]
-    \strut If we take the followig inductive definition:
-\begin{verbatim}
-Inductive nat : Set :=
-  | O : nat
-  | S : nat -> nat.
-\end{verbatim}
-    then:
-    \def\GammaI{\left[\begin{array}{r \colon l}
-                        \nat & \Set
-                      \end{array}
-                \right]}
-    \def\GammaC{\left[\begin{array}{r \colon l}
-                        \nO & \nat\\
-                        \nS & \nat\ra\nat
-                      \end{array}
-                \right]}
-    \begin{itemize}
-      \item $p = 0$
-      \item $\Gamma_I = \GammaI$
-      \item $\Gamma_C = \GammaC$
-      \item $\Gamma_P=[\,]$.
-    \end{itemize}
-    and thus it enriches the global environment with the following entry:
-    \vskip.5em
-    \ind{p}{\Gamma_I}{\Gamma_C}
-    \vskip.5em
-    \noindent that is:
-    \vskip.5em
-    \ind{0}{\GammaI}{\GammaC}
-    \caption{\captionstrut Formal representation of the {\nat} inductive type.}
-    \label{fig:nat}
-  \end{figure}
-
-  \begin{figure}[H]
-    \strut If we take the following inductive definition:
-\begin{verbatim}
-Inductive list (A : Type) : Type :=
-  | nil : list A
-  | cons : A -> list A -> list A.
-\end{verbatim}
-    then:
-    \def\GammaI{\left[\begin{array}{r \colon l}
-                        \List & \Type\ra\Type
-                      \end{array}
-                \right]}
-    \def\GammaC{\left[\begin{array}{r \colon l}
-                        \Nil & \forall~A\!:\!\Type,~\List~A\\
-                        \cons & \forall~A\!:\!\Type,~A\ra\List~A\ra\List~A
-                      \end{array}
-                \right]}
-    \begin{itemize}
-      \item $p = 1$
-      \item $\Gamma_I = \GammaI$
-      \item $\Gamma_C = \GammaC$
-      \item $\Gamma_P=[A:\Type]$
-    \end{itemize}
-    and thus it enriches the global environment with the following entry:
-    \vskip.5em
-    \ind{1}{\GammaI}{\GammaC}
-    \caption{\captionstrut Formal representation of the {\List} inductive type.}
-    \label{fig:list}
-  \end{figure}
 
   \begin{figure}[H]
     \strut If we take the following inductive definition:
@@ -677,76 +577,6 @@ with odd : nat -> Prop :=
     \caption{\captionstrut Formal representation of the {\even} and {\odd} inductive types.}
     \label{fig:even:odd}
   \end{figure}
-
-  \begin{figure}[H]
-    \strut If we take the following inductive definition:
-\begin{verbatim}
-Inductive has_length (A : Type) : list A -> nat -> Prop :=
-  | nil_hl : has_length A (nil A) O
-  | cons_hl : forall (a:A) (l:list A) (n:nat),
-              has_length A l n -> has_length A (cons A a l) (S n).
-\end{verbatim}
-    then:
-    \def\GammaI{\left[\begin{array}{r \colon l}
-                        \haslength & \forall~A\!:\!\Type,~\List~A\ra\nat\ra\Prop
-                      \end{array}
-                \right]}
-    \def\GammaC{\left[\begin{array}{r c l}
-                        \nilhl & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\haslength~A~(\Nil~A)~\nO\\
-                        \conshl & \hskip.1em:\hskip.1em & \forall~A\!:\!\Type,~\forall~a\!:\!A,~\forall~l\!:\!\List~A,~\forall~n\!:\!\nat,\\
-                               & & \haslength~A~l~n\ra \haslength~A~(\cons~A~a~l)~(\nS~n)
-                      \end{array}
-                \right]}
-    \begin{itemize}
-      \item $p = 1$
-      \item $\Gamma_I = \GammaI$
-      \item $\Gamma_C = \GammaC$
-      \item $\Gamma_P=[A:\Type]$.
-    \end{itemize}
-    and thus it enriches the global environment with the following entry:
-    \vskip.5em
-    \ind{p}{\Gamma_I}{\Gamma_C}
-    %\vskip.5em
-    %\noindent that is:
-    %\vskip.5em
-    %\ind{1}{\GammaI}{\GammaC}
-    \caption{\captionstrut Formal representation of the {\haslength} inductive type.}
-    \label{fig:haslength}
-  \end{figure}
-
-  \begin{figure}[H]
-    \strut If we take the following inductive definition:
-\begin{verbatim}
-Inductive tree : Set :=
-  | node : forest -> tree
-with forest : Set :=
-  | emptyf : forest
-  | consf : tree -> forest -> forest.
-\end{verbatim}
-    then:
-    \def\GammaI{\left[\begin{array}{r \colon l}
-                        \tree & \Set\\
-                        \forest & \Set
-                      \end{array}
-                \right]}
-    \def\GammaC{\left[\begin{array}{r \colon l}
-                        \node & \forest\ra\tree\\
-                        \emptyf & \forest\\
-                        \consf & \tree\ra\forest\ra\forest
-                      \end{array}
-                \right]}
-    \begin{itemize}
-      \item $p = 0$
-      \item $\Gamma_I = \GammaI$
-      \item $\Gamma_C = \GammaC$
-    \end{itemize}
-    and thus it enriches the global environment with the following entry:
-    \vskip.5em
-    \ind{0}{\GammaI}{\GammaC}
-    \caption{\captionstrut Formal representation of the {\tree} and {\forest} inductive types.}
-    \label{fig:tree:forest}
-  \end{figure}%
-  \newpage
 \end{latexonly}%
 
 \subsection{Types of inductive objects}
@@ -872,7 +702,6 @@ the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
 
 \begin{latexonly}%
-  \newpage
   \newcommand\vv{\textSFxi}    % │
   \newcommand\hh{\textSFx}     %   ─
   \newcommand\vh{\textSFviii}  % ├
@@ -882,32 +711,6 @@ the type $V$ satisfies the nested positivity condition for $X$
   \newcommand\ws{\hbox{}\hskip\the\framecharacterwidth}
   \newcommand\ruleref[1]{\hskip.25em\dots\hskip.2em{\em (bullet #1)}}
   \def\captionstrut{\vbox to 1.5em{}}
-
-  \begin{figure}[H]
-    \ws\strut $X$ occurs strictly positively in $A\ra X$\ruleref5\\
-    \ws\vv\\
-    \ws\vh\hh\ws $X$does not occur in $A$\\
-    \ws\vv\\
-    \ws\hv\hh\ws $X$ occurs strictly positively in $X$\ruleref4
-    \caption{\captionstrut A proof that $X$ occurs strictly positively in $A\ra X$.}
-  \end{figure}
-
-%  \begin{figure}[H]
-%    \strut $X$ occurs strictly positively in $X*A$\\
-%    \vv\\
-%    \hv\hh $X$ occurs strictly positively in $(\Prod~X~A)$\ruleref6\\
-%    \ws\ws\vv\\
-%    \ws\ws\vv\ws\verb|Inductive prod (A B : Type) : Type :=|\\
-%    \ws\ws\vv\ws\verb|  pair : A -> B -> prod A B.|\\
-%    \ws\ws\vv\\
-%    \ws\ws\vh\hh $X$ does not occur in any (real) arguments of $\Prod$ in the original term $(\Prod~X~A)$\\
-%    \ws\ws\vv\\
-%    \ws\ws\hv\hh\ws the (instantiated) type $\Prod~X~A$ of constructor $\Pair$,\\
-%    \ws\ws\ws\ws\ws satisfies the nested positivity condition for $X$\ruleref7\\
-%    \ws\ws\ws\ws\ws\vv\\
-%    \ws\ws\ws\ws\ws\hv\hh\ws $X$ does not occur in any (real) arguments of $(\Prod~X~A)$
-%    \caption{\captionstrut A proof that $X$ occurs strictly positively in $X*A$}
-%  \end{figure}
 
   \begin{figure}[H]
     \ws\strut $X$ occurs strictly positively in $\ListA$\ruleref6\\
@@ -942,7 +745,6 @@ the type $V$ satisfies the nested positivity condition for $X$
     \ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\ws\hv\hh\ws $X$ satisfies the nested positivity condition for $\ListA$\ruleref7
     \caption{\captionstrut A proof that $X$ occurs strictly positively in $\ListA$}
   \end{figure}
-  \newpage
 \end{latexonly}%
 
 \paragraph{Correctness rules.}
