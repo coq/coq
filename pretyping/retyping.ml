@@ -158,7 +158,8 @@ let retype ?(polyprop=true) sigma =
   and sort_family_of env t =
     match kind_of_term t with
     | Cast (c,_, s) when isSort s -> family_of_sort (destSort s)
-    | Sort s -> family_of_sort s
+    | Sort (Prop c) -> InType
+    | Sort (Type u) -> InType
     | Prod (name,t,c2) ->
 	let s2 = sort_family_of (push_rel (name,None,t) env) c2 in
 	if not (is_impredicative_set env) &&
