@@ -765,9 +765,18 @@ let get_lablgtkdir () =
 
 let check_lablgtk_version src dir = match src with
 | Manual | Stdlib ->
-  let test = sprintf "grep -q -w convert_with_fallback %S/glib.mli" dir in
-  let ans = Sys.command test = 0 in
-  printf "Warning: could not check the version of lablgtk2.\n";
+  let test accu f =
+    if accu then
+      let test = sprintf "grep -q -w %s %S/glib.mli" f dir in
+      Sys.command test = 0
+    else false
+  in
+  let heuristics = [
+    "convert_with_fallback";
+    "wrap_poll_func"; (** Introduced in lablgtk 2.16 *)
+  ] in
+  let ans = List.fold_left test true heuristics in
+  if ans then printf "Warning: could not check the version of lablgtk2.\n";
   (ans, "an unknown version")
 | OCamlFind ->
   let v, _ = tryrun "ocamlfind" ["query"; "-format"; "%v"; "lablgtk2"] in
@@ -798,8 +807,8 @@ let check_coqide () =
   if !Prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
   let dir, via = get_lablgtkdir () in
   if dir = "" then set_ide No "LablGtk2 not found";
-  let found = sprintf "LablGtk2 found (%s)" (get_source via) in
   let (ok, version) = check_lablgtk_version via dir in
+  let found = sprintf "LablGtk2 found (%s, %s)" (get_source via) version in
   if not ok then set_ide No (found^", but too old (required >= 2.16, found " ^ version ^ ")");
   (* We're now sure to produce at least one kind of coqide *)
   lablgtkdir := shorten_camllib dir;
