@@ -129,7 +129,7 @@ let type_of_prop = mkSort type1_sort
 
 let type_of_sort s = 
   match s with
-  | Prop _ -> type_of_prop
+  | Prop | Set -> type_of_prop
   | Type u -> mkType (Univ.super u)
 
 let type_of_var env id = 
@@ -140,23 +140,23 @@ let type_of_var env id =
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
     (* Product rule (s,Prop,Prop) *)
-    | (_,       Prop Null)  -> rangsort
+    | _         ,  Prop -> rangsort
     (* Product rule (Prop/Set,Set,Set) *)
-    | (Prop _,  Prop Pos) -> rangsort
+    | (Prop|Set),  Set -> rangsort
     (* Product rule (Type,Set,?) *)
-    | (Type u1, Prop Pos) ->
+    | Type u1   ,  Set->
         if is_impredicative_set env then
           (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
           rangsort
         else
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
           Type (sup u1 type0_univ)
+    (* Product rule (Set,Type_i,Type_i) *)
+    | Set       ,  Type u2  -> Type (sup type0_univ u2)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
-    (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Null, Type _)  -> rangsort
+    | Prop      ,  Type _  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *)
-    | (Type u1, Type u2) -> Type (sup u1 u2)
+    | Type u1, Type u2 -> Type (sup u1 u2)
 
 (* normalisation of values *)
 

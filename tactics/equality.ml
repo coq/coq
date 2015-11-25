@@ -837,7 +837,7 @@ let construct_discriminator env sigma dirn c sort =
   let (indp,_) = dest_ind_family indf in
   let ind, _ = check_privacy env indp in
   let (mib,mip) = lookup_mind_specif env ind in
-  let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop Null in
+  let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop in
   let deparsign = make_arity_signature env true indf in
   let p = it_mkLambda_or_LetIn (mkSort sort_0) deparsign in
   let cstrs = get_constructors env indf in
@@ -855,7 +855,7 @@ let rec build_discriminator env sigma dirn c sort = function
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
       let subval = build_discriminator cnum_env sigma dirn newc sort l  in
-      kont subval (build_coq_False (),mkSort (Prop Null))
+      kont subval (build_coq_False (),mkSort Prop)
 
 (* Note: discrimination could be more clever: if some elimination is
    not allowed because of a large impredicative constructor in the

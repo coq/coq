@@ -8,22 +8,21 @@
 
 open Univ
 
-type contents = Pos | Null
-
 type family = InProp | InSet | InType
 
 type t =
-  | Prop of contents                      (* proposition types *)
-  | Type of universe
+  | Prop                   (** [Prop] *)
+  | Set                    (** [Set] *)
+  | Type of Univ.universe  (** [Type] *)
 
-let prop = Prop Null
-let set = Prop Pos
+let prop = Prop
+let set = Set
 let type1 = Type type1_univ
 
 let univ_of_sort = function
   | Type u -> u
-  | Prop Pos -> Universe.type0
-  | Prop Null -> Universe.type0m
+  | Set -> Universe.type0
+  | Prop -> Universe.type0m
 
 let sort_of_univ u =
   if is_type0m_univ u then prop
@@ -32,54 +31,51 @@ let sort_of_univ u =
 
 let compare s1 s2 =
   if s1 == s2 then 0 else
-  match s1, s2 with
-  | Prop c1, Prop c2 ->
-    begin match c1, c2 with
-    | Pos, Pos | Null, Null -> 0
-    | Pos, Null -> -1
-    | Null, Pos -> 1
-    end
-  | Type u1, Type u2 -> Universe.compare u1 u2
-  | Prop _, Type _ -> -1
-  | Type _, Prop _ -> 1
+    match s1, s2 with
+    | Set, Prop -> -1
+    | Set, Type _ -> -1
+    | Prop, Type _ -> -1
+    | Set, Set -> 0
+    | Prop, Prop -> 0
+    | Type _, Prop -> 1
+    | Type _, Set -> 1
+    | Prop, Set -> 1
+    | Type u1, Type u2 -> Universe.compare u1 u2
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
 let is_prop = function
-  | Prop Null -> true
-  | Type u when Universe.equal Universe.type0m u -> true
-  | _ -> false
+  | Prop -> true
+  | Set -> false
+  | Type u -> Universe.equal Universe.type0m u
 
 let is_set = function
-  | Prop Pos -> true
-  | Type u when Universe.equal Universe.type0 u -> true
-  | _ -> false
+  | Prop -> false
+  | Set -> true
+  | Type u -> Universe.equal Universe.type0 u
 
 let is_small = function
-  | Prop _ -> true
+  | Prop | Set -> true
   | Type u -> is_small_univ u
 
 let family = function
-  | Prop Null -> InProp
-  | Prop Pos -> InSet
-  | Type u when is_type0m_univ u -> InProp
-  | Type u when is_type0_univ u -> InSet
-  | Type _ -> InType
+  | Prop -> InProp
+  | Set -> InSet
+  | Type u ->
+      if is_type0m_univ u then InProp
+      else if is_type0_univ u then InSet
+      else InType
 
 let family_equal = (==)
 
 open Hashset.Combine
 
 let hash = function
-| Prop p ->
-  let h = match p with
-  | Pos -> 0
-  | Null -> 1
-  in
-  combinesmall 1 h
-| Type u ->
- let h = Univ.Universe.hash u in
-  combinesmall 2 h
+  | Prop -> combinesmall 1 1
+  | Set -> combinesmall 1 0
+  | Type u ->
+      let h = Univ.Universe.hash u in
+      combinesmall 2 h
 
 module List = struct
   let mem = List.memq
@@ -99,8 +95,9 @@ module Hsorts =
 	    if u' == u then c else Type u'
         | s -> s
       let equal s1 s2 = match (s1,s2) with
-        | (Prop c1, Prop c2) -> c1 == c2
-        | (Type u1, Type u2) -> u1 == u2
+        | Prop, Prop -> true
+        | Set, Set -> true
+        | Type u1, Type u2 -> u1 == u2
         |_ -> false
 
       let hash = hash

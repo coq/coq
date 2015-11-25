@@ -115,8 +115,8 @@ let mkProp   = Sort Sorts.prop
 let mkSet    = Sort Sorts.set
 let mkType u = Sort (Sorts.Type u)
 let mkSort   = function
-  | Sorts.Prop Sorts.Null -> mkProp (* Easy sharing *)
-  | Sorts.Prop Sorts.Pos -> mkSet
+  | Sorts.Prop -> mkProp (* Easy sharing *)
+  | Sorts.Set -> mkSet
   | s -> Sort s
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
@@ -970,16 +970,18 @@ module Hsorts =
       type t = Sorts.t
       type u = universe -> universe
       let hashcons huniv = function
-          Prop c -> Prop c
+        | Prop -> Prop
+        | Set -> Set
         | Type u -> Type (huniv u)
       let equal s1 s2 =
         s1 == s2 ||
 	  match (s1,s2) with
-            (Prop c1, Prop c2) -> c1 == c2
+          | Prop, Prop -> true
+          | Set, Set -> true
           | (Type u1, Type u2) -> u1 == u2
           |_ -> false
       let hash = function
-	| Prop Null -> 0 | Prop Pos -> 1
+	| Prop -> 0 | Set -> 1
 	| Type u -> 2 + Universe.hash u
     end)
 

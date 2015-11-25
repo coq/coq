@@ -19,8 +19,8 @@ open Environ
 (* Sorts and sort family *)
 
 let print_sort = function
-  | Prop Pos -> (str "Set")
-  | Prop Null -> (str "Prop")
+  | Set -> (str "Set")
+  | Prop -> (str "Prop")
   | Type u -> (str "Type(" ++ Univ.Universe.pr u ++ str ")")
 
 let pr_sort_family = function
@@ -773,9 +773,12 @@ let is_template_polymorphic env f =
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
-    | (Prop c1, Prop c2) -> c1 == Null || c2 == Pos  (* Prop <= Set *)
-    | (Prop c1, Type u)  -> pb == Reduction.CUMUL
-    | (Type u1, Type u2) -> true
+    | Prop, Prop
+    | Prop, Set
+    | Set, Set ->
+        true
+    | (Prop|Set), Type u  -> pb == Reduction.CUMUL
+    | Type u1, Type u2 -> true
     | _ -> false
 
 (* eq_constr extended with universe erasure *)

@@ -195,9 +195,9 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 
       | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
 
-      | PSort GProp, Sort (Prop Null) -> subst
+      | PSort GProp, Sort Prop -> subst
 
-      | PSort GSet, Sort (Prop Pos) -> subst
+      | PSort GSet, Sort Set -> subst
 
       | PSort (GType _), Sort (Type _) -> subst
 
