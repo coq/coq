@@ -115,12 +115,14 @@ let of_binders b =
   in { ctx with uctx_names = names }
 
 let instantiate_variable l b v =
-  v := Univ.LMap.add l (Some b) !v
+  try v := Univ.LMap.update l (Some b) !v
+  with Not_found -> assert false
 
 exception UniversesDiffer
 
-let process_universe_constraints univs vars alg cstrs =
-  let vars = ref vars in
+let process_universe_constraints ctx cstrs =
+  let univs = ctx.uctx_universes in
+  let vars = ref ctx.uctx_univ_variables in
   let normalize = Universes.normalize_universe_opt_subst vars in
   let rec unify_universes fo l d r local =
     let l = normalize l and r = normalize r in
@@ -129,7 +131,7 @@ let process_universe_constraints univs vars alg cstrs =
         let varinfo x = 
           match Univ.Universe.level x with
           | None -> Inl x
-          | Some l -> Inr (l, Univ.LMap.mem l !vars, Univ.LSet.mem l alg)
+          | Some l -> Inr (l, Univ.LMap.mem l !vars, Univ.LSet.mem l ctx.uctx_univ_algebraic)
         in
           if d == Universes.ULe then
             if UGraph.check_leq univs l r then
@@ -210,11 +212,7 @@ let add_constraints ctx cstrs =
     in Universes.Constraints.add cstr' acc)
     cstrs Universes.Constraints.empty
   in
-  let vars, local' =
-    process_universe_constraints ctx.uctx_universes
-      ctx.uctx_univ_variables ctx.uctx_univ_algebraic
-      cstrs'
-  in
+  let vars, local' = process_universe_constraints ctx cstrs' in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
       uctx_univ_variables = vars;
       uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes }
@@ -224,11 +222,7 @@ let add_constraints ctx cstrs =
 
 let add_universe_constraints ctx cstrs =
   let univs, local = ctx.uctx_local in
-  let vars, local' = 
-    process_universe_constraints ctx.uctx_universes 
-      ctx.uctx_univ_variables ctx.uctx_univ_algebraic 
-      cstrs 
-  in
+  let vars, local' = process_universe_constraints ctx cstrs in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
       uctx_univ_variables = vars;
       uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes }

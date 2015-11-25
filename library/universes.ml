@@ -650,14 +650,14 @@ let normalize_univ_variable_opt_subst ectx =
   in
   let update l b =
     assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
-    ectx := Univ.LMap.add l (Some b) !ectx; b
+    try ectx := Univ.LMap.add l (Some b) !ectx; b with Not_found -> assert false
   in normalize_univ_variable ~find ~update
 
 let normalize_univ_variable_subst subst =
   let find l = Univ.LMap.find l !subst in
   let update l b =
     assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
-    subst := Univ.LMap.add l b !subst; b in
+    try subst := Univ.LMap.update l b !subst; b with Not_found -> assert false in
     normalize_univ_variable ~find ~update
 
 let normalize_universe_opt_subst subst =
