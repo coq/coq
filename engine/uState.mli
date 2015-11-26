@@ -44,7 +44,7 @@ val ugraph : t -> UGraph.t
 
 val algebraics : t -> Univ.LSet.t
 (** The subset of unification variables that can be instantiated with algebraic
-    universes as they appear in types and universe instances only. *)
+    universes as they appear in inferred types only. *)
 
 val constraints : t -> Univ.constraints
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)

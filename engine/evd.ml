@@ -275,9 +275,6 @@ let add_universe_constraints_context = UState.add_universe_constraints
 let constrain_variables = UState.constrain_variables 
 let evar_universe_context_of_binders = UState.of_binders
 
-(* let addunivconstrkey = Profile.declare_profile "add_universe_constraints_context";; *)
-(* let add_universe_constraints_context =  *)
-(*   Profile.profile2 addunivconstrkey add_universe_constraints_context;; *)
 (*******************************************************************)
 (* Metamaps *)
 
@@ -860,12 +857,9 @@ let set_eq_sort env d s1 s2 =
       d
 
 let has_lub evd u1 u2 =
-  (* let normalize = Universes.normalize_universe_opt_subst (ref univs.uctx_univ_variables) in *)
-  (* (\* let dref, norm = memo_normalize_universe d in *\) *)
-  (* let u1 = normalize u1 and u2 = normalize u2 in *)
-    if Univ.Universe.equal u1 u2 then evd
-    else add_universe_constraints evd
-      (Universes.Constraints.singleton (u1,Universes.ULub,u2))
+  if Univ.Universe.equal u1 u2 then evd
+  else add_universe_constraints evd
+    (Universes.Constraints.singleton (u1,Universes.ULub,u2))
 
 let set_eq_level d u1 u2 =
   add_constraints d (Univ.enforce_eq_level u1 u2 Univ.Constraint.empty)
@@ -883,15 +877,9 @@ let set_leq_sort env evd s1 s2 =
   match is_eq_sort s1 s2 with
   | None -> evd
   | Some (u1, u2) ->
-    (* if Univ.is_type0_univ u2 then *)
-    (*   if Univ.is_small_univ u1 then evd *)
-    (*   else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])) *)
-    (* else if Univ.is_type0m_univ u2 then  *)
-    (*   raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])) *)
-    (* else  *)
-      if not (type_in_type env) then
-      add_universe_constraints evd (Universes.Constraints.singleton (u1,Universes.ULe,u2))
-      else evd
+     if not (type_in_type env) then
+       add_universe_constraints evd (Universes.Constraints.singleton (u1,Universes.ULe,u2))
+     else evd
 	    
 let check_eq evd s s' =
   UGraph.check_eq (UState.ugraph evd.universes) s s'
@@ -901,10 +889,6 @@ let check_leq evd s s' =
 
 let normalize_evar_universe_context_variables = UState.normalize_variables
 
-(* let normvarsconstrkey = Profile.declare_profile "normalize_evar_universe_context_variables";; *)
-(* let normalize_evar_universe_context_variables = *)
-(*   Profile.profile1 normvarsconstrkey normalize_evar_universe_context_variables;; *)
-    
 let abstract_undefined_variables = UState.abstract_undefined_variables
 
 let fix_undefined_variables evd =
@@ -926,12 +910,6 @@ let nf_constraints evd =
   let subst, uctx' = normalize_evar_universe_context_variables evd.universes in
   let uctx' = normalize_evar_universe_context uctx' in
     {evd with universes = uctx'}
-
-let nf_constraints = 
-  if Flags.profile then
-    let nfconstrkey = Profile.declare_profile "nf_constraints" in
-      Profile.profile1 nfconstrkey nf_constraints
-  else nf_constraints
 
 let universe_of_name evd s = UState.universe_of_name evd.universes s
 

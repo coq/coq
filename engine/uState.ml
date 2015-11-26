@@ -434,23 +434,21 @@ let refresh_undefined_univ_variables uctx =
     uctx', subst
 
 let normalize uctx = 
-  let rec fixpoint uctx = 
-    let ((vars',algs'), us') = 
-      Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
-        uctx.uctx_univ_algebraic
+  let ((vars',algs'), us') = 
+    Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
+				    uctx.uctx_univ_algebraic
+  in
+  if Univ.ContextSet.equal us' uctx.uctx_local then uctx
+  else
+    let us', universes =
+      Universes.refresh_constraints uctx.uctx_initial_universes us'
     in
-      if Univ.ContextSet.equal us' uctx.uctx_local then uctx
-      else
-        let us', universes = Universes.refresh_constraints uctx.uctx_initial_universes us' in
-        let uctx' = 
-          { uctx_names = uctx.uctx_names;
-            uctx_local = us'; 
-            uctx_univ_variables = vars'; 
-            uctx_univ_algebraic = algs';
-            uctx_universes = universes;
-            uctx_initial_universes = uctx.uctx_initial_universes }
-        in fixpoint uctx'
-  in fixpoint uctx
+      { uctx_names = uctx.uctx_names;
+        uctx_local = us'; 
+        uctx_univ_variables = vars'; 
+        uctx_univ_algebraic = algs';
+        uctx_universes = universes;
+        uctx_initial_universes = uctx.uctx_initial_universes }
 
 let universe_of_name uctx s = 
   UNameMap.find s (fst uctx.uctx_names)
