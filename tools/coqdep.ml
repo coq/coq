@@ -426,12 +426,25 @@ let coq_dependencies_dump chan dumpboxes =
 end
 
 let usage () =
-  eprintf " usage: coqdep [-w] [-c] [-D] [-I dir] [-Q dir coqdir] [-R dir coqdir] <filename>+\n";
-  eprintf " extra options:\n";
-  eprintf "  -sort : output the file names ordered by dependencies\n";
-  eprintf "  -coqlib dir : set the coq standard library directory\n";
-  eprintf "  -exclude-dir f : skip subdirectories named 'f' during -R search\n";
+  eprintf " usage: coqdep [options] <filename>+\n";
+  eprintf " options:\n";
+  eprintf "  -c : \n";
+  eprintf "  -D : \n";
+  eprintf "  -w : \n";
+  eprintf "  -boot : \n";
+  eprintf "  -sort : output the given file name ordered by dependencies\n";
+  eprintf "  -noglob | -no-glob : \n";
+  eprintf "  -I dir -as logname : adds (non recursively) dir to coq load path under logical name logname\n"; 
+  eprintf "  -I dir : adds (non recursively) dir to ocaml path\n";
+  eprintf "  -R dir -as logname : add and import dir recursively to coq load path under logical name logname\n"; (* deprecate? *)
+  eprintf "  -R dir logname : add and import dir recursively to coq load path under logical name logname\n";
+  eprintf "  -Q dir logname : add (recusively) and open (non recursively) dir to coq load path under logical name logname\n";
   eprintf "  -dumpgraph f : print a dot dependency graph in file 'f'\n";
+  eprintf "  -dumpgraphbox f : print a dot dependency graph box in file 'f'\n";
+  eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R search\n";
+  eprintf "  -coqlib dir : set the coq standard library directory\n";
+  eprintf "  -suffix s : \n";
+  eprintf "  -slash : deprecated, no effect\n";
   exit 1
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
