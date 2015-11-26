@@ -179,10 +179,10 @@ val nf_evar_map : evar_map -> evar_map
 val nf_evar_map_undefined : evar_map -> evar_map
 
 val env_nf_evar : evar_map -> env -> env
-val env_nf_betaiotaevar : evar_map -> env -> env
+val env_nf_betaiotarecevar : evar_map -> env -> env
 
-val j_nf_betaiotaevar : evar_map -> unsafe_judgment -> unsafe_judgment
-val jv_nf_betaiotaevar :
+val j_nf_betaiotarecevar : evar_map -> unsafe_judgment -> unsafe_judgment
+val jv_nf_betaiotarecevar :
   evar_map -> unsafe_judgment array -> unsafe_judgment array
 (** Presenting terms without solved evars *)
 

@@ -73,7 +73,7 @@ type flag = info * scheme
   Really important function. *)
 
 let rec flag_of_type env t : flag =
-  let t = whd_betadeltaiota env none t in
+  let t = whd_all env none t in
   match kind_of_term t with
     | Prod (x,t,c) -> flag_of_type (push_rel (x,None,t) env) c
     | Sort s when Sorts.is_prop s -> (Logic,TypeScheme)
@@ -101,14 +101,14 @@ let is_info_scheme env t = match flag_of_type env t with
 (*s [type_sign] gernerates a signature aimed at treating a type application. *)
 
 let rec type_sign env c =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	(if is_info_scheme env t then Keep else Kill Kother)
 	:: (type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
 let rec type_scheme_nb_args env c =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	let n = type_scheme_nb_args (push_rel_assum (n,t) env) d in
 	if is_info_scheme env t then n+1 else n
@@ -134,7 +134,7 @@ let make_typvar n vl =
   next_ident_away id' vl
 
 let rec type_sign_vl env c =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in
 	if not (is_info_scheme env t) then Kill Kother::s, vl
@@ -142,7 +142,7 @@ let rec type_sign_vl env c =
     | _ -> [],[]
 
 let rec nb_default_params env c =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	let n = nb_default_params (push_rel_assum (n,t) env) d in
 	if is_default env t then n+1 else n
@@ -256,7 +256,7 @@ let mib_equal m1 m2 =
 
 
 let rec extract_type env db j c args =
-  match kind_of_term (whd_betaiotazeta Evd.empty c) with
+  match kind_of_term (whd_all_nodelta Evd.empty c) with
     | App (d, args') ->
 	(* We just accumulate the arguments. *)
 	extract_type env db j d (Array.to_list args' @ args)
@@ -358,7 +358,7 @@ and extract_type_app env db (r,s) args =
 and extract_type_scheme env db c p =
   if Int.equal p 0 then extract_type env db 0 c []
   else
-    let c = whd_betaiotazeta Evd.empty c in
+    let c = whd_all_nodelta Evd.empty c in
     match kind_of_term c with
       | Lambda (n,t,d) ->
           extract_type_scheme (push_rel_assum (n,t) env) db d (p-1)
@@ -525,7 +525,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 *)
 
 and extract_type_cons env db dbmap c i =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	let env' = push_rel_assum (n,t) env in
 	let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in

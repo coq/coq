@@ -436,7 +436,7 @@ let sign_level env evd sign =
       match b with
       | Some _ -> (lev, push_rel d env)
       | None ->
-	let s = destSort (Reduction.whd_betadeltaiota env 
+	let s = destSort (Reduction.whd_all env 
 			    (nf_evar evd (Retyping.get_type_of env evd t)))
 	in
 	let u = univ_of_sort s in

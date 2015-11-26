@@ -140,7 +140,7 @@ let recheck_applications conv_algo env evdref t =
        let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
        let rec aux i ty =
 	 if i < Array.length argsty then
-	 match kind_of_term (whd_betadeltaiota env !evdref ty) with
+	 match kind_of_term (whd_all env !evdref ty) with
 	 | Prod (na, dom, codom) ->
 	    (match conv_algo env !evdref Reduction.CUMUL argsty.(i) dom with
 	     | Success evd -> evdref := evd;
@@ -779,7 +779,7 @@ let rec do_projection_effects define_fun env ty evd = function
       let evd = Evd.define evk (mkVar id) evd in
       (* TODO: simplify constraints involving evk *)
       let evd = do_projection_effects define_fun env ty evd p in
-      let ty = whd_betadeltaiota env evd (Lazy.force ty) in
+      let ty = whd_all env evd (Lazy.force ty) in
       if not (isSort ty) then
         (* Don't try to instantiate if a sort because if evar_concl is an
            evar it may commit to a univ level which is not the right
@@ -1536,7 +1536,7 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
         raise e
     | OccurCheckIn (evd,rhs) ->
         (* last chance: rhs actually reduces to ev *)
-        let c = whd_betadeltaiota env evd rhs in
+        let c = whd_all env evd rhs in
         match kind_of_term c with
         | Evar (evk',argsv2) when Evar.equal evk evk' ->
 	    solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma c c')
@@ -1595,7 +1595,7 @@ let reconsider_conv_pbs conv_algo evd =
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1),t2) =
   try
-    let t2 = whd_betaiota evd t2 in (* includes whd_evar *)
+    let t2 = whd_betaiotarec evd t2 in (* includes whd_evar *)
     let evd = evar_define conv_algo ~choose env evd pbty ev1 t2 in
       reconsider_conv_pbs conv_algo evd
   with

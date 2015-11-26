@@ -567,7 +567,7 @@ let scope_class_compare sc1 sc2 = match sc1, sc2 with
 let scope_class_of_reference x = ScopeRef x
 
 let compute_scope_class t =
-  let t', _ = decompose_appvect (Reductionops.whd_betaiotazeta Evd.empty t) in
+  let t', _ = decompose_appvect (Reductionops.whd_all_nodelta Evd.empty t) in
   match kind_of_term t' with
   | Var _ | Const _ | Ind _ -> ScopeRef (global_of_constr t')
   | Proj (p, c) -> ScopeRef (ConstRef (Projection.constant p))
@@ -601,7 +601,7 @@ let find_scope_class_opt = function
 (* Special scopes associated to arguments of a global reference *)
 
 let rec compute_arguments_classes t =
-  match kind_of_term (Reductionops.whd_betaiotazeta Evd.empty t) with
+  match kind_of_term (Reductionops.whd_all_nodelta Evd.empty t) with
     | Prod (_,t,u) ->
 	let cl = try Some (compute_scope_class t) with Not_found -> None in
 	cl :: compute_arguments_classes u

@@ -177,7 +177,7 @@ let build_beq_scheme mode kn =
     let compute_A_equality rel_list nlist eqA ndx t =
       let lifti = ndx in
       let rec aux c =
-	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
+	let (c,a) = Reductionops.whd_betaiotarec_stack Evd.empty c in
 	match kind_of_term c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
         | Var x -> mkVar (id_of_string ("eq_"^(string_of_id x))), Safe_typing.empty_private_constants

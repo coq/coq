@@ -655,15 +655,15 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
     let sigma, t2 = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t2 in
     if not (snd (infer_conv ~pb:Reduction.CUMUL env sigma t1 t2)) then
       if
-        isSort (whd_betadeltaiota env sigma t1) &&
-        isSort (whd_betadeltaiota env sigma t2)
+        isSort (whd_all env sigma t1) &&
+        isSort (whd_all env sigma t2)
       then
         mayneedglobalcheck := true
       else
         errorlabstrm "convert-check-hyp" (str "Types are incompatible.")
   end
   else
-    if not (isSort (whd_betadeltaiota env sigma t1)) then
+    if not (isSort (whd_all env sigma t1)) then
       errorlabstrm "convert-check-hyp" (str "Not a type.")
 
 (* Now we introduce different instances of the previous tacticals *)
@@ -1049,7 +1049,7 @@ let cut c =
       try
         (** Backward compat: ensure that [c] is well-typed. *)
         let typ = Typing.unsafe_type_of env sigma c in
-        let typ = whd_betadeltaiota env sigma typ in
+        let typ = whd_all env sigma typ in
         match kind_of_term typ with
         | Sort _ -> true
         | _ -> false
@@ -1058,7 +1058,7 @@ let cut c =
     if is_sort then
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
-      let c = local_strong whd_betaiota sigma c in
+      let c = local_strong whd_betaiotarec sigma c in
       Proofview.Refine.refine ~unsafe:true { run = begin fun h ->
         let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
         let Sigma (x, h, q) = Evarutil.new_evar env h c in
@@ -1406,7 +1406,7 @@ let make_projection env sigma params cstr sign elim i n c u =
 	noccur_between 1 (n-i-1) t
 	(* to avoid surprising unifications, excludes flexible
 	projection types or lambda which will be instantiated by Meta/Evar *)
-	&& not (isEvar (fst (whd_betaiota_stack sigma t)))
+	&& not (isEvar (fst (whd_betaiotarec_stack sigma t)))
 	&& (accept_universal_lemma_under_conjunctions () || not (isRel t))
       then
         let t = lift (i+1-n) t in
@@ -1517,7 +1517,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
 
-    let thm_ty0 = nf_betaiota sigma (Retyping.get_type_of env sigma c) in
+    let thm_ty0 = nf_betaiotarec sigma (Retyping.get_type_of env sigma c) in
     let try_apply thm_ty nprod =
       try
         let n = nb_prod thm_ty - nprod in
@@ -1643,7 +1643,7 @@ let progress_with_clause flags innerclause clause =
   with Not_found -> error "Unable to unify."
 
 let apply_in_once_main flags innerclause env sigma (d,lbind) =
-  let thm = nf_betaiota sigma (Retyping.get_type_of env sigma d) in
+  let thm = nf_betaiotarec sigma (Retyping.get_type_of env sigma d) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when Errors.noncritical e ->
@@ -2099,8 +2099,8 @@ let rewrite_hyp assert_style l2r id =
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
-    let whd_betadeltaiota = Tacmach.New.pf_apply whd_betadeltaiota gl in
-    let t = whd_betadeltaiota (type_of (mkVar id)) in
+    let whd_all = Tacmach.New.pf_apply whd_all gl in
+    let t = whd_all (type_of (mkVar id)) in
     match match_with_equality_type t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar lhs && not (occur_var env (destVar lhs) rhs) then
@@ -3993,7 +3993,7 @@ let check_enough_applied env sigma elim =
   | None ->
       (* No eliminator given *)
       fun u ->
-      let t,_ = decompose_app (whd_betadeltaiota env sigma u) in isInd t
+      let t,_ = decompose_app (whd_all env sigma u) in isInd t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (fst elimc) in
       let scheme = compute_elim_sig ~elimc elimt in
@@ -4326,7 +4326,7 @@ let maybe_betadeltaiota_concl allowred gl =
   if not allowred then concl
   else
     let env = Proofview.Goal.env gl in
-    whd_betadeltaiota env sigma concl
+    whd_all env sigma concl
 
 let reflexivity_red allowred =
   Proofview.Goal.enter { enter = begin fun gl ->

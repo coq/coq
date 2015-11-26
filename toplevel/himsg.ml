@@ -240,7 +240,7 @@ let explain_number_branches env sigma cj expn =
   str "expects " ++  int expn ++ str " branches."
 
 let explain_ill_formed_branch env sigma c ci actty expty =
-  let simp t = Reduction.nf_betaiota env (Evarutil.nf_evar sigma t) in
+  let simp t = Reduction.nf_betaiotarec env (Evarutil.nf_evar sigma t) in
   let c = Evarutil.nf_evar sigma c in
   let env = make_all_name_different env in
   let pc = pr_lconstr_env env sigma c in
@@ -318,8 +318,8 @@ let rec explain_unification_error env sigma p1 p2 = function
 
 let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env in
-  let j = Evarutil.j_nf_betaiotaevar sigma j in
-  let t = Reductionops.nf_betaiota sigma t in
+  let j = Evarutil.j_nf_betaiotarecevar sigma j in
+  let t = Reductionops.nf_betaiotarec sigma t in
   (** Actually print *)
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc = pr_lconstr_env env sigma (Environ.j_val j) in
@@ -333,9 +333,9 @@ let explain_actual_type env sigma j t reason =
   ppreason ++ str ".")
 
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
-  let randl = Evarutil.jv_nf_betaiotaevar sigma randl in
+  let randl = Evarutil.jv_nf_betaiotarecevar sigma randl in
   let exptyp = Evarutil.nf_evar sigma exptyp in
-  let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
+  let actualtyp = Reductionops.nf_betaiotarec sigma actualtyp in
   let rator = Evarutil.j_nf_evar sigma rator in
   let env = make_all_name_different env in
   let actualtyp, exptyp = pr_explicit env sigma actualtyp exptyp in
@@ -775,7 +775,7 @@ let explain_unsatisfiable_constraints env sigma constr comp =
     explain_typeclass_resolution env sigma info k ++ fnl () ++ cstr
 
 let explain_pretype_error env sigma err =
-  let env = Evarutil.env_nf_betaiotaevar sigma env in
+  let env = Evarutil.env_nf_betaiotarecevar sigma env in
   let env = make_all_name_different env in
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c

@@ -114,7 +114,7 @@ let max_prefix_sign lid sign =
     | id::l -> snd (max_rec (id, sign_prefix id sign) l)
 *)
 let rec add_prods_sign env sigma t =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
+  match kind_of_term (whd_all env sigma t) with
     | Prod (na,c1,b) ->
 	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
@@ -166,7 +166,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let goal = mkArrow i (applist(mkVar p, List.rev revargs)) in
       (pty,goal)
   in
-  let npty = nf_betadeltaiota env sigma pty in
+  let npty = nf_all env sigma pty in
   let extenv = push_named (p,None,npty) env in
   extenv, goal
 

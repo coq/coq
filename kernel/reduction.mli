@@ -13,12 +13,12 @@ open Environ
 (***********************************************************************
   s Reduction functions *)
 
-val whd_betaiotazeta        : env -> constr -> constr
-val whd_betadeltaiota       : env -> constr -> constr
-val whd_betadeltaiota_nolet : env -> constr -> constr
+val whd_all_nodelta        : env -> constr -> constr
+val whd_all       : env -> constr -> constr
+val whd_all_nolet : env -> constr -> constr
 
-val whd_betaiota     : env -> constr -> constr
-val nf_betaiota      : env -> constr -> constr
+val whd_betaiotarec     : env -> constr -> constr
+val nf_betaiotarec      : env -> constr -> constr
 
 (***********************************************************************
   s conversion functions *)

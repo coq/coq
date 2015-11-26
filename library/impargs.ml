@@ -188,7 +188,7 @@ let is_reversible_pattern bound depth f l =
 (* Precondition: rels in env are for inductive types only *)
 let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
   let rec frec rig (env,depth as ed) c =
-    let hd = if strict then whd_betadeltaiota env c else c in
+    let hd = if strict then whd_all env c else c in
     let c = if strongly_strict then hd else c in
     match kind_of_term hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->
@@ -235,7 +235,7 @@ let find_displayed_name_in all avoid na (_,b as envnames_b) =
 let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   let rigid = ref true in
   let rec aux env avoid n names t =
-    let t = whd_betadeltaiota env t in
+    let t = whd_all env t in
     match kind_of_term t with
       | Prod (na,a,b) ->
 	  let na',avoid' = find_displayed_name_in all avoid na (names,b) in
@@ -249,7 +249,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual all env t =
 	    add_free_rels_until strict strongly_strict revpat n env t Conclusion v
 	  else v
   in
-  match kind_of_term (whd_betadeltaiota env t) with
+  match kind_of_term (whd_all env t) with
     | Prod (na,a,b) ->
 	let na',avoid = find_displayed_name_in all [] na ([],b) in
 	let v = aux (push_rel (na',None,a) env) avoid 1 [na'] b in

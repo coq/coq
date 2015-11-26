@@ -208,12 +208,12 @@ end) = struct
       | Some (x, Some rel) -> evars, rel
     in
     let rec aux env evars ty l =
-      let t = Reductionops.whd_betadeltaiota env (goalevars evars) ty in
+      let t = Reductionops.whd_all env (goalevars evars) ty in
 	match kind_of_term t, l with
 	| Prod (na, ty, b), obj :: cstrs ->
-          let b = Reductionops.nf_betaiota (goalevars evars) b in
+          let b = Reductionops.nf_betaiotarec (goalevars evars) b in
 	  if noccurn 1 b (* non-dependent product *) then
-	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
+	    let ty = Reductionops.nf_betaiotarec (goalevars evars) ty in
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let evars, relty = mk_relty evars env ty obj in
 	    let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
@@ -222,7 +222,7 @@ end) = struct
 	    let (evars, b, arg, cstrs) = 
 	      aux (Environ.push_rel (na, None, ty) env) evars b cstrs 
 	    in
-	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
+	    let ty = Reductionops.nf_betaiotarec (goalevars evars) ty in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
@@ -232,7 +232,7 @@ end) = struct
 	| _, [] ->
 	  (match finalcstr with
 	  | None | Some (_, None) ->
-	    let t = Reductionops.nf_betaiota (fst evars) ty in
+	    let t = Reductionops.nf_betaiotarec (fst evars) ty in
 	    let evars, rel = mk_relty evars env t None in
 	      evars, t, rel, [t, Some rel]
 	  | Some (t, Some rel) -> evars, t, rel, [t, Some rel])
@@ -311,7 +311,7 @@ end) = struct
     let rec aux evars env prod n = 
       if Int.equal n 0 then start evars env prod
       else
-	match kind_of_term (Reduction.whd_betadeltaiota env prod) with
+	match kind_of_term (Reduction.whd_all env prod) with
 	| Prod (na, ty, b) ->
 	  if noccurn 1 b then
 	    let b' = lift (-1) b in
@@ -329,7 +329,7 @@ end) = struct
 	try let evars, found = aux evars env ty (succ (List.length args)) in
 	      Some (evars, found, c, ty, arg :: args)
 	with Not_found ->
-	  let ty = whd_betadeltaiota env ty in
+	  let ty = whd_all env ty in
 	  find env (mkApp (c, [| arg |])) (prod_applist ty [arg]) args
     in find env c ty args
 
@@ -452,7 +452,7 @@ let get_symmetric_proof b =
 
 let rec decompose_app_rel env evd t = 
   (** Head normalize for compatibility with the old meta mechanism *)
-  let t = Reductionops.whd_betaiota evd t in
+  let t = Reductionops.whd_betaiotarec evd t in
   match kind_of_term t with
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
@@ -1557,7 +1557,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
             Proofview.Unsafe.tclEVARS undef <*>
             convert_concl_no_check newt DEFAULTcast
   in
-  let beta_red _ sigma c = Reductionops.nf_betaiota sigma c in
+  let beta_red _ sigma c = Reductionops.nf_betaiotarec sigma c in
   let beta = Proofview.V82.tactic (Tactics.reduct_in_concl (beta_red, DEFAULTcast)) in
   let opt_beta = match clause with
   | None -> Proofview.tclUNIT ()

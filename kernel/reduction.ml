@@ -96,29 +96,29 @@ let pure_stack lfts stk =
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
 
-let whd_betaiota env t =
-  whd_val (create_clos_infos betaiota env) (inject t)
+let whd_betaiotarec env t =
+  whd_val (create_clos_infos betaiotarec env) (inject t)
 
-let nf_betaiota env t =
-  norm_val (create_clos_infos betaiota env) (inject t)
+let nf_betaiotarec env t =
+  norm_val (create_clos_infos betaiotarec env) (inject t)
 
-let whd_betaiotazeta env x =
+let whd_all_nodelta env x =
   match kind_of_term x with
     | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> x
-    | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
+    | _ -> whd_val (create_clos_infos all_nodelta env) (inject x)
 
-let whd_betadeltaiota env t =
+let whd_all env t =
   match kind_of_term t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> t
-    | _ -> whd_val (create_clos_infos betadeltaiota env) (inject t)
+    | _ -> whd_val (create_clos_infos all env) (inject t)
 
-let whd_betadeltaiota_nolet env t =
+let whd_all_nolet env t =
   match kind_of_term t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _|LetIn _) -> t
-    | _ -> whd_val (create_clos_infos betadeltaiotanolet env) (inject t)
+    | _ -> whd_val (create_clos_infos allnolet env) (inject t)
 
 (* Beta *)
 
@@ -287,7 +287,7 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
   Control.check_for_interrupt ();
   (* First head reduce both terms *)
-  let whd = whd_stack (infos_with_reds infos betaiotazeta) in
+  let whd = whd_stack (infos_with_reds infos all_nodelta) in
   let rec whd_both (t1,stk1) (t2,stk2) =
     let st1' = whd t1 stk1 in
     let st2' = whd t2 stk2 in
@@ -552,7 +552,7 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
   else raise NotConvertible
 
 let clos_fconv trans cv_pb l2r evars env univs t1 t2 =
-  let reds = Closure.RedFlags.red_add_transparent betaiotazeta trans in
+  let reds = Closure.RedFlags.red_add_transparent all_nodelta trans in
   let infos = create_clos_infos ~evars reds env in
   ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
 
@@ -744,7 +744,7 @@ let conv env t1 t2 =
  * error message. *)
 
 let hnf_prod_app env t n =
-  match kind_of_term (whd_betadeltaiota env t) with
+  match kind_of_term (whd_all env t) with
     | Prod (_,_,b) -> subst1 n b
     | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product")
 
@@ -755,7 +755,7 @@ let hnf_prod_applist env t nl =
 
 let dest_prod env =
   let rec decrec env m c =
-    let t = whd_betadeltaiota env c in
+    let t = whd_all env c in
     match kind_of_term t with
       | Prod (n,a,c0) ->
           let d = (n,None,a) in
@@ -767,7 +767,7 @@ let dest_prod env =
 (* The same but preserving lets in the context, not internal ones. *)
 let dest_prod_assum env =
   let rec prodec_rec env l ty =
-    let rty = whd_betadeltaiota_nolet env ty in
+    let rty = whd_all_nolet env ty in
     match kind_of_term rty with
     | Prod (x,t,c)  ->
         let d = (x,None,t) in
@@ -777,7 +777,7 @@ let dest_prod_assum env =
 	prodec_rec (push_rel d env) (add_rel_decl d l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
-      let rty' = whd_betadeltaiota env rty in
+      let rty' = whd_all env rty in
 	if Term.eq_constr rty' rty then l, rty
 	else prodec_rec env l rty'
   in
@@ -785,7 +785,7 @@ let dest_prod_assum env =
 
 let dest_lam_assum env =
   let rec lamec_rec env l ty =
-    let rty = whd_betadeltaiota_nolet env ty in
+    let rty = whd_all_nolet env ty in
     match kind_of_term rty with
     | Lambda (x,t,c)  ->
         let d = (x,None,t) in

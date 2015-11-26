@@ -56,7 +56,7 @@ let variable_head id  = Evalrefmap.find (EvalVarRef id) !head_map
 let constant_head cst = Evalrefmap.find (EvalConstRef cst) !head_map
 
 let kind_of_head env t =
-  let rec aux k l t b = match kind_of_term (Reduction.whd_betaiotazeta env t) with
+  let rec aux k l t b = match kind_of_term (Reduction.whd_all_nodelta env t) with
   | Rel n when n > k -> NotImmediatelyComputableHead
   | Rel n -> FlexibleHead (k,k+1-n,List.length l,b)
   | Var id ->

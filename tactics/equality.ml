@@ -387,7 +387,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
       let sigma = Tacmach.New.project gl in
       let env = Proofview.Goal.env gl in
     let ctype = get_type_of env sigma c in
-    let rels, t = decompose_prod_assum (whd_betaiotazeta sigma ctype) in
+    let rels, t = decompose_prod_assum (whd_all_nodelta sigma ctype) in
       match match_with_equality_type t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
@@ -668,8 +668,8 @@ let find_positions env sigma t1 t2 =
     then [(List.rev posn,t1,t2)] else []
   in
   let rec findrec sorts posn t1 t2 =
-    let hd1,args1 = whd_betadeltaiota_stack env sigma t1 in
-    let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
+    let hd1,args1 = whd_all_stack env sigma t1 in
+    let hd2,args2 = whd_all_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
       | Construct (sp1,_), Construct (sp2,_)
           when Int.equal (List.length args1) (constructor_nallargs_env env sp1)
@@ -1229,7 +1229,7 @@ let build_injector env sigma dflt c cpath =
 
 (*
 let try_delta_expand env sigma t =
-  let whdt = whd_betadeltaiota env sigma t  in
+  let whdt = whd_all env sigma t  in
   let rec hd_rec c  =
     match kind_of_term c with
       | Construct _ -> whdt
@@ -1472,7 +1472,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let body = mkApp (lambda_create env (typ,pred_body),[|dep_pair1|]) in
   let expected_goal = beta_applist (abst_B,List.map fst e2_list) in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
-  let expected_goal = nf_betaiota sigma expected_goal in
+  let expected_goal = nf_betaiotarec sigma expected_goal in
   (* Retype to get universes right *)
   let sigma, expected_goal_ty = Typing.type_of env sigma expected_goal in
   let sigma, _ = Typing.type_of env sigma body in
