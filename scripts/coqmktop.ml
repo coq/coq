@@ -55,6 +55,8 @@ let src_dirs () =
   [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ] @
   if !coqide then [[ "ide" ]] else []
 
+let is_ocaml4 = String.sub Coq_config.caml_version 0 2 = "4."
+
 let includes () = 
   let coqlib = Envars.coqlib () in
   let camlp4lib = Envars.camlp4lib () in
@@ -63,7 +65,9 @@ let includes () =
       (src_dirs ())
       (["-I"; "\"" ^ camlp4lib ^ "\""] @ 
 	 ["-I"; "\"" ^ coqlib ^ "\""] @
-	 (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
+	 (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []) @
+         (if is_ocaml4 then ["-I"; "+compiler-libs"] else []))
+
 
 (* Transform bytecode object file names in native object file names *)
 let native_suffix f =
@@ -266,7 +270,9 @@ let main () =
         ocamloptexec^" -linkall"
     end else
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
-      let ocamlmktoplib = " toplevellib.cma" in
+      let ocamlmktoplib = if is_ocaml4
+	then " ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma"
+	else " toplevellib.cma" in
       let ocamlcexec = Filename.concat camlbin "ocamlc" in
       let ocamlccustom = Printf.sprintf "%s %s -linkall "
         ocamlcexec Coq_config.coqrunbyteflags in

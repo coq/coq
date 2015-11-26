@@ -460,7 +460,7 @@ esac
 
 if [ "$coq_debug_flag" = "-g" ]; then
     case $CAMLTAG in
-        OCAML31*)
+        OCAML31*|OCAML4*)
             # Compilation debug flag
             coq_debug_flag_opt="-g"
             ;;
