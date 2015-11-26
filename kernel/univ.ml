@@ -173,7 +173,7 @@ let reprgeq g arcu =
 
 
 (* between : universe -> canonical_arc -> canonical_arc list *)
-(* between u v = {w|u>=w>=v, w canonical}          *)     
+(* between u v = {w:u<=w<=v, w canonical}          *)     
 (* between is the most costly operation *)
 
 let between g u arcv = 
