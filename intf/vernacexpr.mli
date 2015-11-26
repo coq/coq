@@ -287,8 +287,8 @@ type module_binder = bool option * lident list * module_ast_inl
 type vernac_expr =
   (* Control *)
   | VernacLoad of verbose_flag * string
-  | VernacTime of vernac_list
-  | VernacRedirect of string * vernac_list
+  | VernacTime of located_vernac_expr
+  | VernacRedirect of string * located_vernac_expr
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
   | VernacError of exn (* always fails *)
@@ -386,8 +386,7 @@ type vernac_expr =
   | VernacBackTo of int
 
   (* Commands *)
-  | VernacDeclareTacticDefinition of
-      (rec_flag * (reference * bool * raw_tactic_expr) list)
+  | VernacDeclareTacticDefinition of (reference * bool * raw_tactic_expr) list
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * reference list
   | VernacHints of obsolete_locality * string list * hints_expr
@@ -454,8 +453,6 @@ type vernac_expr =
   | VernacProgram of vernac_expr
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
-
-and vernac_list = located_vernac_expr list
 
 and located_vernac_expr = Loc.t * vernac_expr
 
