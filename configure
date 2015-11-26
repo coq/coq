@@ -924,6 +924,8 @@ BROWSER=`escape_string "$BROWSER"`
 # Under Windows, we now escape the backslashes that will ends in
 # ocaml strings (coq_config.ml) or in Makefile variables.
 
+ESCAPEDLABLGTKINCLUDES=`escape_string "$LABLGTKINCLUDES"`
+
 case $ARCH in
     win32)
 	COQSRC=`mk_win_path "$COQSRC"`
@@ -983,7 +985,7 @@ let camlp4o = "$camlp4oexec"
 let camlp4bin = "$CAMLP4BIN"
 let camlp4lib = "$CAMLP4LIB"
 let camlp4compat = "$CAMLP4COMPAT"
-let coqideincl = "$LABLGTKINCLUDES"
+let coqideincl = "$ESCAPEDLABLGTKINCLUDES"
 let cflags = "$cflags"
 let best = "$best_compiler"
 let arch = "$ARCH"
