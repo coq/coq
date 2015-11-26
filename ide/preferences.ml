@@ -30,7 +30,11 @@ let mod_to_str (m:Gdk.Tags.modifier) =
     | `BUTTON5 -> "BUTTON5"
     | `CONTROL -> "CONTROL"
     | `LOCK -> "LOCK"
-    | `SHIFT -> "SHIFT"
+    | `SHIFT -> "MOD5"
+    | `SUPER -> "MOD5"
+    | `HYPER -> "MOD5"
+    | `META -> "MOD5"
+    | `RELEASE -> "MOD5"
 
 let (str_to_mod:string -> Gdk.Tags.modifier) =
   function
@@ -46,8 +50,7 @@ let (str_to_mod:string -> Gdk.Tags.modifier) =
     | "BUTTON5" -> `BUTTON5 
     | "CONTROL" -> `CONTROL 
     | "LOCK" -> `LOCK 
-    | "SHIFT" -> `SHIFT 
-    | s -> `MOD1
+    | s -> `MOD5 (* Collapsing modifiers not in lablgtk 2.14 to MOD5 *)
 
 type pref =
     {
