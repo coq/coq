@@ -59,11 +59,12 @@ let type_constructor mind mib u typ params =
   let s = ind_subst mind mib u in
   let ctyp = substl s typ in
   let ctyp = subst_instance_constr u ctyp in
-  let nparams = Array.length params in
-  if Int.equal nparams 0 then ctyp
+  let ndecls = Context.rel_context_length mib.mind_params_ctxt in
+  if Int.equal ndecls 0 then ctyp
   else
-    let _,ctyp = decompose_prod_n nparams ctyp in
-    substl (Array.rev_to_list params) ctyp
+    let _,ctyp = decompose_prod_n_assum ndecls ctyp in
+    substl (List.rev (Termops.adjust_subst_to_rel_context mib.mind_params_ctxt (Array.to_list params)))
+      ctyp
 
 
 

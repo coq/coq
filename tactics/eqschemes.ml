@@ -177,7 +177,7 @@ let build_sym_scheme env ind =
     name_context env ((Name varH,None,applied_ind)::realsign) in
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let c = 
-  (my_it_mkLambda_or_LetIn mib.mind_params_ctxt
+  (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign_ind
   (mkCase (ci,
      my_it_mkLambda_or_LetIn_name
@@ -396,7 +396,7 @@ let build_l2r_rew_scheme dep env ind kind =
       applied_sym_C 3,
       [|mkVar varHC|]) in
   let c = 
-  (my_it_mkLambda_or_LetIn mib.mind_params_ctxt
+  (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign
   (mkNamedLambda varP
     (my_it_mkProd_or_LetIn (if dep then realsign_ind_P else realsign_P) s)
@@ -486,7 +486,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     mkApp (mkVar varP,Array.append (rel_vect 3 nrealargs)
            (if dep then [|cstr (3*nrealargs+4) 3|] else [||])) in
   let c = 
-  (my_it_mkLambda_or_LetIn mib.mind_params_ctxt
+  (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign
   (mkNamedLambda varH applied_ind
   (mkCase (ci,
@@ -784,5 +784,6 @@ let build_congr env (eq,refl,ctx) ind =
 
 let congr_scheme_kind = declare_individual_scheme_object "_congr"
   (fun _ ind ->
-    (* May fail if equality is not defined *)
-    build_congr (Global.env()) (get_coq_eq Univ.ContextSet.empty) ind, Safe_typing.empty_private_constants)
+     (* May fail if equality is not defined *)
+   build_congr (Global.env()) (get_coq_eq Univ.ContextSet.empty) ind,
+   Safe_typing.empty_private_constants)

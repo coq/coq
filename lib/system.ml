@@ -94,6 +94,57 @@ let all_subdirs ~unix_path:root =
   else msg_warning (str ("Cannot open " ^ root));
   List.rev !l
 
+(* Caching directory contents for efficient syntactic equality of file
+   names even on case-preserving but case-insensitive file systems *)
+
+module StrMod = struct
+  type t = string
+  let compare = compare
+end
+
+module StrMap = Map.Make(StrMod)
+module StrSet = Set.Make(StrMod)
+
+let dirmap = ref StrMap.empty
+
+let make_dir_table dir =
+  let b = ref StrSet.empty in
+  let a = Unix.opendir dir in
+  (try
+    while true do
+      let s = Unix.readdir a in
+      if s.[0] != '.' then b := StrSet.add s !b
+    done
+  with
+  | End_of_file -> ());
+  Unix.closedir a; !b
+
+let exists_in_dir_respecting_case dir bf =
+  let contents, cached =
+    try StrMap.find dir !dirmap, true with Not_found ->
+    let contents = make_dir_table dir in
+    dirmap := StrMap.add dir contents !dirmap;
+    contents, false in
+  StrSet.mem bf contents ||
+    if cached then begin
+      (* rescan, there is a new file we don't know about *)
+      let contents = make_dir_table dir in
+      dirmap := StrMap.add dir contents !dirmap;
+      StrSet.mem bf contents
+    end
+    else
+      false
+
+let file_exists_respecting_case path f =
+  (* This function ensures that a file with expected lowercase/uppercase
+     is the correct one, even on case-insensitive file systems *)
+  let rec aux f =
+    let bf = Filename.basename f in
+    let df = Filename.dirname f in
+    (String.equal df "." || aux df)
+    && exists_in_dir_respecting_case (Filename.concat path df) bf
+  in Sys.file_exists (Filename.concat path f) && aux f
+
 let rec search paths test =
   match paths with
   | [] -> []
@@ -118,7 +169,7 @@ let where_in_path ?(warn=true) path filename =
   in
   check_and_warn (search path (fun lpe ->
     let f = Filename.concat lpe filename in
-    if Sys.file_exists f then [lpe,f] else []))
+    if file_exists_respecting_case lpe filename then [lpe,f] else []))
 
 let where_in_path_rex path rex =
   search path (fun lpe ->
@@ -134,6 +185,8 @@ let where_in_path_rex path rex =
 
 let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then
+    (* the name is considered to be a physical name and we use the file
+       system rules (e.g. possible case-insensitivity) to find it *)
     if Sys.file_exists filename then
       let root = Filename.dirname filename in
       root, filename
@@ -141,6 +194,9 @@ let find_file_in_path ?(warn=true) paths filename =
       errorlabstrm "System.find_file_in_path"
 	(hov 0 (str "Can't find file" ++ spc () ++ str filename))
   else
+    (* the name is considered to be the transcription as a relative
+       physical name of a logical name, so we deal with it as a name
+       to be locate respecting case *)
     try where_in_path ~warn paths filename
     with Not_found ->
       errorlabstrm "System.find_file_in_path"

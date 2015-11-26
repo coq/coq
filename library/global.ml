@@ -198,13 +198,13 @@ let type_of_global_in_context env r =
   | IndRef ind ->
      let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
      let univs = 
-       if mib.mind_polymorphic then mib.mind_universes 
+       if mib.mind_polymorphic then Univ.instantiate_univ_context mib.mind_universes 
        else Univ.UContext.empty
      in Inductive.type_of_inductive env (specif, Univ.UContext.instance univs), univs
   | ConstructRef cstr ->
      let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
      let univs = 
-       if mib.mind_polymorphic then mib.mind_universes 
+       if mib.mind_polymorphic then Univ.instantiate_univ_context mib.mind_universes 
        else Univ.UContext.empty
      in
      let inst = Univ.UContext.instance univs in

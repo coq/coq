@@ -128,7 +128,7 @@ let define id internal ctx c t =
       { const_entry_body = c;
         const_entry_secctx = None;
         const_entry_type = t;
-	const_entry_polymorphic = true;
+	const_entry_polymorphic = Flags.is_universe_polymorphism ();
 	const_entry_universes = snd (Evd.universe_context ctx);
         const_entry_opaque = false;
         const_entry_inline_code = false;
@@ -360,12 +360,21 @@ requested
 let do_mutual_induction_scheme lnamedepindsort =
   let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
   and env0 = Global.env() in
-  let sigma, lrecspec =
+  let sigma, lrecspec, _ =
     List.fold_right
-      (fun (_,dep,ind,sort) (evd, l) -> 
-        let evd, indu = Evd.fresh_inductive_instance env0 evd ind in
-          (evd, (indu,dep,interp_elimination_sort sort) :: l))
-    lnamedepindsort (Evd.from_env env0,[])
+      (fun (_,dep,ind,sort) (evd, l, inst) -> 
+       let evd, indu, inst =
+	 match inst with
+	 | None ->
+	    let _, ctx = Global.type_of_global_in_context env0 (IndRef ind) in
+	    let ctxs = Univ.ContextSet.of_context ctx in
+	    let evd = Evd.from_ctx (Evd.evar_universe_context_of ctxs) in
+	    let u = Univ.UContext.instance ctx in
+	      evd, (ind,u), Some u
+	 | Some ui -> evd, (ind, ui), inst
+       in
+          (evd, (indu,dep,interp_elimination_sort sort) :: l, inst))
+    lnamedepindsort (Evd.from_env env0,[],None)
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in
   let declare decl fi lrecref =

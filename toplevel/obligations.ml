@@ -855,7 +855,9 @@ let obligation_hook prg obl num auto ctx' _ gr =
     if not (pi2 prg.prg_kind) (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
-      Evd.evar_universe_context (Evd.from_env (Global.env ()))
+      let evd = Evd.from_env (Global.env ()) in
+      let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
+        Evd.evar_universe_context ctx'
     else ctx'
   in
   let prg = { prg with prg_ctx = ctx' } in
@@ -932,8 +934,10 @@ and solve_obligation_by_tac prg obls i tac =
 	    let def, obl' = declare_obligation !prg obl t ty uctx in
 	      obls.(i) <- obl';
 	      if def && not (pi2 !prg.prg_kind) then (
-		(* Declare the term constraints with the first obligation only *)
-		let ctx' = Evd.evar_universe_context (Evd.from_env (Global.env ())) in
+	        (* Declare the term constraints with the first obligation only *)
+	        let evd = Evd.from_env (Global.env ()) in
+	        let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
+		let ctx' = Evd.evar_universe_context evd in
 		  prg := {!prg with prg_ctx = ctx'});
 	      true
 	  else false
