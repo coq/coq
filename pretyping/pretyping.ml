@@ -394,18 +394,22 @@ let pretype_global loc rigid env evd gr us =
     match us with
     | None -> evd, None
     | Some l -> 
-      let _, ctx = Universes.unsafe_constr_of_global gr in
-      let arr = Univ.Instance.to_array (Univ.UContext.instance ctx) in
-      let len = Array.length arr in
-	if len != List.length l then
-	  user_err_loc (loc, "pretype", 
-			str "Universe instance should have length " ++ int len)
-	else
-	  let evd, l' = List.fold_left (fun (evd, univs) l -> 
+       let _, ctx = Universes.unsafe_constr_of_global gr in
+       let arr = Univ.Instance.to_array (Univ.UContext.instance ctx) in
+       let len = Array.length arr in
+       if len != List.length l then
+	 user_err_loc (loc, "pretype", 
+		       str "Universe instance should have length " ++ int len)
+       else
+	 let evd, l' = List.fold_left (fun (evd, univs) l -> 
 	    let evd, l = interp_universe_level_name evd l in
 	      (evd, l :: univs)) (evd, []) l
-      in 
-	evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
+	 in
+	 if List.exists (fun l -> Univ.Level.is_prop l) l' then
+	   user_err_loc (loc, "pretype",
+		 str "Universe instances cannot contain Prop, polymorphic" ++
+		   str " universe instances must be greater or equal to Set.");
+	 evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
   in
     Evd.fresh_global ~rigid ?names:instance env evd gr
 
@@ -440,13 +444,15 @@ let pretype_sort evdref = function
 
 let new_type_evar env evdref loc =
   let e, s = 
-    evd_comb0 (fun evd -> Evarutil.new_type_evar env evd univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)) evdref
+    evd_comb0 (fun evd -> Evarutil.new_type_evar env evd
+      univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)) evdref
   in e
 
 let get_projection env cst =
   let cb = lookup_constant cst env in
     match cb.Declarations.const_proj with
-    | Some {Declarations.proj_ind = mind; proj_npars = n; proj_arg = m; proj_type = ty} -> 
+    | Some {Declarations.proj_ind = mind; proj_npars = n;
+	    proj_arg = m; proj_type = ty} -> 
       (cst,mind,n,m,ty)
     | None -> raise Not_found
 

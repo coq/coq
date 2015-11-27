@@ -820,7 +820,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	    let cstrs' = List.fold_left (fun cstrs (d, r) -> 
 	      if d == Univ.Le then
 		enforce_leq inst (Universe.make r) cstrs
-	      else 
+	      else
 		try let lev = Option.get (Universe.level inst) in
 		      Constraint.add (lev, d, r) cstrs
 		with Option.IsNone -> failwith "")

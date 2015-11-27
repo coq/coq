@@ -118,8 +118,6 @@ Definition setle (B : Type@{i}) :=
   let foo (A : Type@{j}) := A in foo B.
 
 Fail Check @setlt@{j Prop}.
-Check @setlt@{Prop j}.
-Check @setle@{Prop j}.
-
 Fail Definition foo := @setle@{j Prop}.
-Definition foo := @setle@{Prop j}.
+Check setlt@{Set i}.
+Check setlt@{Set j}.

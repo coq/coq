@@ -431,7 +431,7 @@ let cache_universes (p, l) =
 		     Univ.ContextSet.add_universe lev ctx))
       (glob, Univ.ContextSet.empty) l
   in
-    Global.push_context_set false ctx;
+    Global.push_context_set p ctx;
     if p then Lib.add_section_context ctx;
     Universes.set_global_universe_names glob'
 
