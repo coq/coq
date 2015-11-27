@@ -854,7 +854,7 @@ let normalize_context_set ctx us algs =
     Constraint.fold (fun (l,d,r as cstr) (smallles, noneqs) ->
         if d == Le then
 	  if Univ.Level.is_small l then
-	    if is_set_minimization () then
+	    if is_set_minimization () && LSet.mem r ctx then
 	      (Constraint.add cstr smallles, noneqs)
 	    else (smallles, noneqs)
 	  else if Level.is_small r then
