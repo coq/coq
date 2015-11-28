@@ -20,14 +20,15 @@ let get_current_proof_name = Proof_global.get_current_proof_name
 let get_all_proof_names = Proof_global.get_all_proof_names
 
 type lemma_possible_guards = Proof_global.lemma_possible_guards
+type universe_binders = Proof_global.universe_binders
 
 let delete_proof = Proof_global.discard
 let delete_current_proof = Proof_global.discard_current
 let delete_all_proofs = Proof_global.discard_all
 
-let start_proof (id : Id.t) str sigma hyps c ?init_tac terminator =
+let start_proof (id : Id.t) ?pl str sigma hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof sigma id str goals terminator;
+  Proof_global.start_proof sigma id ?pl str goals terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
@@ -53,6 +54,9 @@ let set_used_variables l =
   Proof_global.set_used_variables l
 let get_used_variables () =
   Proof_global.get_used_variables ()
+
+let get_universe_binders () =
+  Proof_global.get_universe_binders ()
 
 exception NoSuchGoal
 let _ = Errors.register_handler begin function
@@ -139,7 +143,7 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in
     delete_current_proof ();
-    const, status, univs
+    const, status, fst univs
   with reraise ->
     let reraise = Errors.push reraise in
     delete_current_proof ();

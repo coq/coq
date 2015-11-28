@@ -14,7 +14,6 @@ open Vernacexpr
 open Pfedit
 
 type 'a declaration_hook
-
 val mk_hook :
   (Decl_kinds.locality -> Globnames.global_reference -> 'a) -> 'a declaration_hook
 
@@ -24,20 +23,24 @@ val call_hook :
 (** A hook start_proof calls on the type of the definition being started *)
 val set_start_hook : (types -> unit) -> unit
 
-val start_proof : Id.t -> goal_kind -> Evd.evar_map -> ?sign:Environ.named_context_val -> types ->
+val start_proof : Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_map ->
+  ?sign:Environ.named_context_val -> types ->
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
    unit declaration_hook -> unit
 
-val start_proof_univs : Id.t -> goal_kind -> Evd.evar_map -> ?sign:Environ.named_context_val -> types ->
+val start_proof_univs : Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_map ->
+  ?sign:Environ.named_context_val -> types ->
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
-  (Proof_global.proof_universes option -> unit declaration_hook) -> unit
+  (Evd.evar_universe_context option -> unit declaration_hook) -> unit
 
 val start_proof_com : goal_kind -> Vernacexpr.proof_expr list ->
   unit declaration_hook -> unit
 
 val start_proof_with_initialization : 
-  goal_kind -> Evd.evar_map -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option ->
-  (Id.t * (types * (Name.t list * Impargs.manual_explicitation list))) list
+  goal_kind -> Evd.evar_map ->
+  (bool * lemma_possible_guards * unit Proofview.tactic list option) option ->
+  ((Id.t * universe_binders option) *
+     (types * (Name.t list * Impargs.manual_explicitation list))) list
   -> int list option -> unit declaration_hook -> unit
 
 val standard_proof_terminator :

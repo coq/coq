@@ -55,8 +55,10 @@ val delete_all_proofs : unit -> unit
 
 type lemma_possible_guards = Proof_global.lemma_possible_guards
 
+type universe_binders = Id.t Loc.located list
+
 val start_proof :
-  Id.t -> goal_kind -> Evd.evar_map -> named_context_val -> constr ->
+  Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_map -> named_context_val -> constr ->
   ?init_tac:unit Proofview.tactic ->
   Proof_global.proof_terminator -> unit
 
@@ -120,6 +122,9 @@ val set_end_tac : Tacexpr.raw_tactic_expr -> unit
 val set_used_variables :
   Id.t list -> Context.section_context * (Loc.t * Names.Id.t) list
 val get_used_variables : unit -> Context.section_context option
+
+(** {6 Universe binders } *)
+val get_universe_binders : unit -> universe_binders option
 
 (** {6 ... } *)
 (** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
