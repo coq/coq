@@ -1,5 +1,30 @@
-Changes from V8.2 to forthcoming V8.2pl1
-========================================
+Changes from V8.2pl3
+====================
+
+- Compatibility of compilation at least up to ocaml 4.02.3, camlp5 6.14,
+  lablgtk 2.18.
+- Critical vm bug with inductive types with more than 245 constructors fixed.
+- Critical vm bug with 31 bit arithmetic (ADDMULDIVINT31).
+- Critical index bug in checking arity of inductive types.
+- Critical index bug in nested cofixpoints.
+- Many other bug fixes (see history of Coq sources).
+
+Changes from V8.2pl2 to V8.3pl3
+===============================
+
+- Critical aliasing bug in sort polymorphism of inductive types fixed.
+- Critical discharge bug in sort polymorphism of inductive types fixed (#2504)
+- Compatibility of compilation with camlp5 6.02.0 and 6.02.1.
+- Many other bug fixes (see history of Coq sources).
+
+Changes from V8.2pl1 to V8.3pl2
+===============================
+
+- Compatibility of compilation with ocaml 3.12.
+- Many other bug fixes (see history of Coq sources).
+
+Changes from V8.2 to V8.2pl1
+============================
 
 Language and commands
 
