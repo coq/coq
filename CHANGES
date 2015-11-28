@@ -1,3 +1,14 @@
+Changes from V8.1pl3
+====================
+
+Bug fixes
+
+- Compatibility of compilation at least up to ocaml 4.02.3, camlp5 6.14,
+  lablgtk 2.18.
+- Critical vm bug with inductive types with more than 245 constructors fixed.
+- Critical index bug in checking arity of inductive types.
+- Critical index bug in nested cofixpoints.
+
 Changes from V8.1pl2 to V8.1pl3
 ===============================
 
