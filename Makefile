@@ -1770,8 +1770,8 @@ depend: dependp4 ml4filesml $(BEFOREDEPEND)
 	  deps=`$(CAMLP4DEPS) $$f`; \
 	  if [ -n "$${deps}" ]; then \
 	    /bin/mv -f .depend .depend.tmp; \
-	    sed -e "\|^$${bn}.cmo|s|^$${bn}.cmo: \(.*\)$$|$${bn}.cmo: $${deps} \1|" \
-	        -e "\|^$${bn}.cmx|s|^$${bn}.cmx: \(.*\)$$|$${bn}.cmx: $${deps} \1|" \
+	    sed -e "\|^$${bn}.cmo|s|^$${bn}.cmo *: \(.*\)$$|$${bn}.cmo: $${deps} \1|" \
+	        -e "\|^$${bn}.cmx|s|^$${bn}.cmx *: \(.*\)$$|$${bn}.cmx: $${deps} \1|" \
 	        .depend.tmp > .depend; \
 	    /bin/rm -f .depend.tmp; \
 	  fi; \
