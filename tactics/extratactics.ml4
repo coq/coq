@@ -266,7 +266,7 @@ TACTIC EXTEND rewrite_star
 let add_rewrite_hint bases ort t lcsr =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let poly = Flags.is_universe_polymorphism () in 
+  let poly = Flags.use_polymorphic_flag () in
   let f ce = 
     let c, ctx = Constrintern.interp_constr env sigma ce in
     let ctx =

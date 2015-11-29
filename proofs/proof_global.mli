@@ -55,18 +55,18 @@ val compact_the_proof : unit -> unit
     (i.e. an proof ending command) and registers the appropriate
     values. *)
 type lemma_possible_guards = int list list
-type proof_universes = Evd.evar_universe_context
+type proof_universes = Evd.evar_universe_context * Universes.universe_binders option
+type universe_binders = Names.Id.t Loc.located list
 type proof_object = {
   id : Names.Id.t;
   entries : Safe_typing.private_constants Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: proof_universes;
-  (* constraints : Univ.constraints; *)
-  (** guards : lemma_possible_guards; *)
 }
 
 type proof_ending =
-  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * proof_universes
+  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
+		  proof_universes
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
@@ -83,14 +83,15 @@ val apply_terminator : proof_terminator -> proof_ending -> unit
     closing commands and the xml plugin); [terminator] is used at the
     end of the proof to close the proof. *)
 val start_proof :
-  Evd.evar_map -> Names.Id.t -> Decl_kinds.goal_kind -> (Environ.env * Term.types) list  ->
+  Evd.evar_map -> Names.Id.t -> ?pl:universe_binders ->
+  Decl_kinds.goal_kind -> (Environ.env * Term.types) list  ->
     proof_terminator -> unit
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
 val start_dependent_proof :
-  Names.Id.t -> Decl_kinds.goal_kind -> Proofview.telescope  ->
-    proof_terminator -> unit
+  Names.Id.t -> ?pl:universe_binders -> Decl_kinds.goal_kind ->
+  Proofview.telescope -> proof_terminator -> unit
 
 (** Update the proofs global environment after a side-effecting command
   (e.g. a sublemma definition) has been run inside it. Assumes
@@ -142,6 +143,8 @@ val set_interp_tac :
 val set_used_variables :
   Names.Id.t list -> Context.section_context * (Loc.t * Names.Id.t) list
 val get_used_variables : unit -> Context.section_context option
+
+val get_universe_binders : unit -> universe_binders option
 
 (**********************************************************)
 (*                                                        *)

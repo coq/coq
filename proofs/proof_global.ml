@@ -63,14 +63,14 @@ let _ =
 
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
-type proof_universes = Evd.evar_universe_context
+type proof_universes = Evd.evar_universe_context * Universes.universe_binders option
+type universe_binders = Id.t Loc.located list
 
 type proof_object = {
   id : Names.Id.t;
   entries : Safe_typing.private_constants Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: proof_universes;
-  (* constraints : Univ.constraints; *)
 }
 
 type proof_ending =
@@ -89,6 +89,7 @@ type pstate = {
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
   mode : proof_mode Ephemeron.key;
+  universe_binders: universe_binders option;
 }
 
 let make_terminator f = f
@@ -229,7 +230,7 @@ let disactivate_proof_mode mode =
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints). *)
-let start_proof sigma id str goals terminator =
+let start_proof sigma id ?pl str goals terminator =
   let initial_state = {
     pid = id;
     terminator = Ephemeron.create terminator;
@@ -237,10 +238,11 @@ let start_proof sigma id str goals terminator =
     endline_tactic = None;
     section_vars = None;
     strength = str;
-    mode = find_proof_mode "No" } in
+    mode = find_proof_mode "No";
+    universe_binders = pl } in
   push initial_state pstates
 
-let start_dependent_proof id str goals terminator =
+let start_dependent_proof id ?pl str goals terminator =
   let initial_state = {
     pid = id;
     terminator = Ephemeron.create terminator;
@@ -248,10 +250,12 @@ let start_dependent_proof id str goals terminator =
     endline_tactic = None;
     section_vars = None;
     strength = str;
-    mode = find_proof_mode "No" } in
+    mode = find_proof_mode "No";
+    universe_binders = pl } in
   push initial_state pstates
 
 let get_used_variables () = (cur_pstate ()).section_vars
+let get_universe_binders () = (cur_pstate ()).universe_binders
 
 let proof_using_auto_clear = ref true
 let _ = Goptions.declare_bool_option
@@ -304,7 +308,8 @@ let constrain_variables init uctx =
   Univ.ContextSet.add_constraints cstrs (UState.context_set uctx)
 
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
-  let { pid; section_vars; strength; proof; terminator } = cur_pstate () in
+  let { pid; section_vars; strength; proof; terminator; universe_binders } =
+    cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let initial_euctx = Proof.initial_euctx proof in
@@ -370,8 +375,13 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
 	  const_entry_opaque = true;
 	  const_entry_universes = univs;
 	  const_entry_polymorphic = poly})
-      fpl initial_goals in
-  { id = pid; entries = entries; persistence = strength; universes = universes },
+		fpl initial_goals in
+  let binders =
+    Option.map (fun names -> fst (Evd.universe_context ~names (Evd.from_ctx universes)))
+	       universe_binders
+  in
+  { id = pid; entries = entries; persistence = strength;
+    universes = (universes, binders) },
   fun pr_ending -> Ephemeron.get terminator pr_ending
 
 type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context

@@ -21,6 +21,7 @@ type t =
   | EOI
 
 let equal t1 t2 = match t1, t2 with
+| IDENT s1, KEYWORD s2 -> CString.equal s1 s2
 | KEYWORD s1, KEYWORD s2 -> CString.equal s1 s2
 | METAIDENT s1, METAIDENT s2 -> CString.equal s1 s2
 | PATTERNIDENT s1, PATTERNIDENT s2 -> CString.equal s1 s2

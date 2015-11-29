@@ -658,4 +658,3 @@ Proof.
     exists x; intro; exact Hx.
     exists x0; exact Hnot.
 Qed.
-

@@ -2048,7 +2048,7 @@ let check_vernac_supports_polymorphism c p =
 
 let enforce_polymorphism = function
   | None -> Flags.is_universe_polymorphism ()
-  | Some b -> b
+  | Some b -> Flags.make_polymorphic_flag b; b
 
 (** A global default timeout, controled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
@@ -2149,7 +2149,8 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             then Flags.verbosely (interp ?proof ~loc locality poly) c
             else Flags.silently  (interp ?proof ~loc locality poly) c;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
-            Flags.program_mode := orig_program_mode
+            Flags.program_mode := orig_program_mode;
+	  ignore (Flags.use_polymorphic_flag ())
           end
         with
         | reraise when
@@ -2161,6 +2162,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             let e = locate_if_not_already loc e in
             let () = restore_timeout () in
             Flags.program_mode := orig_program_mode;
+	    ignore (Flags.use_polymorphic_flag ());
             iraise e
   and aux_list ?locality ?polymorphism isprogcmd l =
     List.iter (aux false) (List.map snd l)

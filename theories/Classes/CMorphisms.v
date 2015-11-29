@@ -269,16 +269,6 @@ Section GenericInstances.
   Unset Strict Universe Declaration.
   
   (** The complement of a crelation conserves its proper elements. *)
-  Program Definition complement_proper (A : Type@{k}) (RA : crelation A)
-          `(mR : Proper (A -> A -> Prop) (RA ==> RA ==> iff) R) :
-    Proper (RA ==> RA ==> iff) (complement@{i j Prop} R) := _.
-  
-  Next Obligation.
-  Proof.
-    unfold complement.
-    pose (mR x y X x0 y0 X0).
-    intuition.
-  Qed.
  
   (** The [flip] too, actually the [flip] instance is a bit more general. *)
   Program Definition flip_proper
@@ -521,8 +511,8 @@ Ltac proper_reflexive :=
 Hint Extern 1 (subrelation (flip _) _) => class_apply @flip1 : typeclass_instances.
 Hint Extern 1 (subrelation _ (flip _)) => class_apply @flip2 : typeclass_instances.
 
-Hint Extern 1 (Proper _ (complement _)) => apply @complement_proper 
-  : typeclass_instances.
+(* Hint Extern 1 (Proper _ (complement _)) => apply @complement_proper  *)
+(*   : typeclass_instances. *)
 Hint Extern 1 (Proper _ (flip _)) => apply @flip_proper 
   : typeclass_instances.
 Hint Extern 2 (@Proper _ (flip _) _) => class_apply @proper_flip_proper 

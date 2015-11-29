@@ -101,3 +101,9 @@ Fail Check fun x => match x with S (FORALL x, _) => 0 end.
 
 Parameter traverse : (nat -> unit) -> (nat -> unit).
 Notation traverse_var f l := (traverse (fun l => f l) l).
+
+(* Check that when an ident become a keyword, it does not break
+   previous rules relying on the string to be classified as an ident *)
+
+Notation "'intros' x" := (S x) (at level 0).
+Goal True -> True. intros H. exact H. Qed.

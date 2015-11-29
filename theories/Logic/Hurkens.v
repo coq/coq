@@ -344,53 +344,6 @@ End Paradox.
 
 End NoRetractToImpredicativeUniverse.
 
-(** * Prop is not a retract *)
-
-(** The existence in the pure Calculus of Constructions of a retract
-    from [Prop] into a small type of [Prop] is inconsistent. This is a
-    special case of the previous result. *)
-
-Module NoRetractFromSmallPropositionToProp.
-
-Section Paradox.
-
-(** ** Retract of [Prop] in a small type *)
-
-(** The retract is axiomatized using logical equivalence as the
-    equality on propositions. *)
-
-Variable bool : Prop.
-Variable p2b : Prop -> bool.
-Variable b2p : bool -> Prop.
-Hypothesis p2p1 : forall A:Prop, b2p (p2b A) -> A.
-Hypothesis p2p2 : forall A:Prop, A -> b2p (p2b A).
-
-(** ** Paradox *)
-
-Theorem paradox : forall B:Prop, B.
-Proof.
-  intros B.
-  pose proof
-      (NoRetractToImpredicativeUniverse.paradox@{Type Prop}) as P.
-  refine (P _ _ _ _ _ _ _ _ _ _);clear P.
-  + exact bool.
-  + exact (fun x => forall P:Prop, (x->P)->P).
-  + cbn. exact (fun _ x P k => k x).
-  + cbn. intros F P x.
-    apply P.
-    intros f.
-    exact (f x).
-  + cbn. easy.
-  + exact b2p.
-  + exact p2b.
-  + exact p2p2.
-  + exact p2p1.
-Qed.
-
-End Paradox.
-
-End NoRetractFromSmallPropositionToProp.
-
 (** * Modal fragments of [Prop] are not retracts *)
 
 (** In presence of a a monadic modality on [Prop], we can define a
@@ -533,6 +486,80 @@ Qed.
 End Paradox.
 
 End NoRetractToNegativeProp.
+
+(** * Prop is not a retract *)
+
+(** The existence in the pure Calculus of Constructions of a retract
+    from [Prop] into a small type of [Prop] is inconsistent. This is a
+    special case of the previous result. *)
+
+Module NoRetractFromSmallPropositionToProp.
+
+(** ** The universe of propositions. *)
+
+Definition NProp := { P:Prop | P -> P}.
+Definition El : NProp -> Prop := @proj1_sig _ _.
+
+Section MParadox.
+
+(** ** Retract of [Prop] in a small type, using the identity modality. *)
+
+Variable bool : NProp.
+Variable p2b : NProp -> El bool.
+Variable b2p : El bool -> NProp.
+Hypothesis p2p1 : forall A:NProp, El (b2p (p2b A)) -> El A.
+Hypothesis p2p2 : forall A:NProp, El A -> El (b2p (p2b A)).
+
+(** ** Paradox *)
+
+Theorem mparadox : forall B:NProp, El B.
+Proof.
+  intros B.
+  refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _));cycle 1.
+  + exact (fun P => P).
+  + cbn. auto.
+  + cbn. auto.
+  + cbn. auto.
+  + exact bool.
+  + exact p2b.
+  + exact b2p.
+  + auto.
+  + auto.
+  + exact B.
+  + exact h.
+Qed.
+
+End MParadox.
+
+Section Paradox.
+
+(** ** Retract of [Prop] in a small type *)
+
+(** The retract is axiomatized using logical equivalence as the
+    equality on propositions. *)
+Variable bool : Prop.
+Variable p2b : Prop -> bool.
+Variable b2p : bool -> Prop.
+Hypothesis p2p1 : forall A:Prop, b2p (p2b A) -> A.
+Hypothesis p2p2 : forall A:Prop, A -> b2p (p2b A).
+
+(** ** Paradox *)
+
+Theorem paradox : forall B:Prop, B.
+Proof.
+  intros B.
+  refine (mparadox (exist _ bool (fun x => x)) _ _ _ _
+                   (exist _ B (fun x => x))).
+  + intros p. red. red. exact (p2b (El p)).
+  + cbn. intros b. red. exists (b2p b). exact (fun x => x).
+  + cbn. intros [A H]. cbn. apply p2p1.
+  + cbn. intros [A H]. cbn. apply p2p2.
+Qed.
+
+End Paradox.
+
+End NoRetractFromSmallPropositionToProp.
+
 
 (** * Large universes are no retracts of [Prop]. *)
 

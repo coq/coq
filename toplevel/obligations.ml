@@ -826,10 +826,10 @@ let obligation_terminator name num guard hook pf =
       Inductiveops.control_only_guard (Global.env ()) body;
       (** Declare the obligation ourselves and drop the hook *)
       let prg = get_info (ProgMap.find name !from_prg) in
-      let prg = { prg with prg_ctx = uctx } in
+      let prg = { prg with prg_ctx = fst uctx } in
       let obls, rem = prg.prg_obligations in
       let obl = obls.(num) in
-      let ctx = Evd.evar_context_universe_context uctx in
+      let ctx = Evd.evar_context_universe_context (fst uctx) in
       let (_, obl) = declare_obligation prg obl body ty ctx in
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in
