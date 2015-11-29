@@ -748,7 +748,9 @@ and compile_const =
       comp_app (fun _ _ _ cont -> 
                    Kgetglobal (get_allias !global_env kn) :: cont)
         compile_constr reloc () args sz cont
-      
+     
+open Pp
+ 
 let compile fail_on_error env c =
   set_global_env env;
   init_fun_code ();
@@ -762,7 +764,7 @@ let compile fail_on_error env c =
     let fn = 
       (* if fail_on_error then Errors.errorlabstrm "compile" else *) 
       Pp.msg_warning in
-    (Pp.(fn
+    ((fn
 	   (str "Cannot compile code for virtual machine as it uses inductive " ++
 	      (str (Names.string_of_id tname) ++ str str_max_constructors)));
        None)
