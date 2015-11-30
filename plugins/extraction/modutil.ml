@@ -404,12 +404,16 @@ let optimize_struct to_appear struc =
     List.map (fun (mp,lse) -> (mp, optim_se true (fst to_appear) subst lse))
       struc
   in
-  ignore (struct_ast_search check_implicits opt_struc);
-  if library () then
-    List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
-  else begin
-    reset_needed ();
-    List.iter add_needed (fst to_appear);
-    List.iter add_needed_mp (snd to_appear);
-    depcheck_struct opt_struc
-  end
+  let mini_struc =
+    if library () then
+      List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
+    else
+      begin
+        reset_needed ();
+        List.iter add_needed (fst to_appear);
+        List.iter add_needed_mp (snd to_appear);
+        depcheck_struct opt_struc
+      end
+  in
+  ignore (struct_ast_search check_implicits mini_struc);
+  mini_struc
