@@ -43,7 +43,7 @@ let schedule_vio_checking j fs =
   let rec filter_argv b = function
     | [] -> []
     | "-schedule-vio-checking" :: rest -> filter_argv true rest
-    | s :: rest when s.[0] = '-' && b -> filter_argv false (s :: rest)
+    | s :: rest when String.length s > 0 && s.[0] = '-' && b -> filter_argv false (s :: rest)
     | _ :: rest when b -> filter_argv b rest
     | s :: rest -> s :: filter_argv b rest in
   let pack = function
