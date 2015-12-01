@@ -64,8 +64,10 @@ type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
 let find_global dir s =
   let gr = lazy (try_find_global_reference dir s) in
-    fun (evd,cstrs) -> 
-      let evd, c = Evarutil.new_global evd (Lazy.force gr) in
+    fun (evd,cstrs) ->
+      let sigma = Sigma.Unsafe.of_evar_map evd in
+      let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force gr) in
+      let evd = Sigma.to_evar_map sigma in
 	(evd, cstrs), c
 
 (** Utility for dealing with polymorphic applications *)
@@ -172,13 +174,17 @@ end) = struct
   let proper_type = 
     let l = lazy (Lazy.force proper_class).cl_impl in
       fun (evd,cstrs) -> 
-	let evd, c = Evarutil.new_global evd (Lazy.force l) in
+        let sigma = Sigma.Unsafe.of_evar_map evd in
+        let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
+        let evd = Sigma.to_evar_map sigma in
 	  (evd, cstrs), c
 	
   let proper_proxy_type = 
     let l = lazy (Lazy.force proper_proxy_class).cl_impl in
       fun (evd,cstrs) -> 
-	let evd, c = Evarutil.new_global evd (Lazy.force l) in
+        let sigma = Sigma.Unsafe.of_evar_map evd in
+        let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
+        let evd = Sigma.to_evar_map sigma in
 	  (evd, cstrs), c
 
   let proper_proof env evars carrier relation x =
@@ -347,7 +353,9 @@ end) = struct
 	  (try
 	   let params, args = Array.chop (Array.length args - 2) args in
 	   let env' = Environ.push_rel_context rels env in
-	   let evars, (evar, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
+	   let sigma = Sigma.Unsafe.of_evar_map sigma in
+	   let Sigma ((evar, _), evars, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
+	   let evars = Sigma.to_evar_map sigma in
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
@@ -407,7 +415,9 @@ module TypeGlobal = struct
 
 
   let inverse env (evd,cstrs) car rel = 
-    let evd, sort = Evarutil.new_Type ~rigid:Evd.univ_flexible env evd in
+    let sigma = Sigma.Unsafe.of_evar_map evd in
+    let Sigma (sort, sigma, _) = Evarutil.new_Type ~rigid:Evd.univ_flexible env sigma in
+    let evd = Sigma.to_evar_map sigma in
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end

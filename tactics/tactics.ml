@@ -163,14 +163,13 @@ let _ =
     does not check anything. *)
 let unsafe_intro env store (id, c, t) b =
   Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
-    let sigma = Sigma.to_evar_map sigma in
     let ctx = named_context_val env in
     let nctx = push_named_context_val (id, c, t) ctx in
     let inst = List.map (fun (id, _, _) -> mkVar id) (named_context env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar id) b in
-    let sigma, ev = new_evar_instance nctx sigma nb ~principal:true ~store ninst in
-    Sigma.Unsafe.of_pair (mkNamedLambda_or_LetIn (id, c, t) ev, sigma)
+    let Sigma (ev, sigma, p) = new_evar_instance nctx sigma nb ~principal:true ~store ninst in
+    Sigma (mkNamedLambda_or_LetIn (id, c, t) ev, sigma, p)
   end }
 
 let introduction ?(check=true) id =
@@ -344,9 +343,7 @@ let rename_hyp repl =
       let nctx = Environ.val_of_named_context nhyps in
       let instance = List.map (fun (id, _, _) -> mkVar id) hyps in
       Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
-        let sigma = Sigma.to_evar_map sigma in
-        let (sigma, c) = Evarutil.new_evar_instance nctx sigma nconcl ~store instance in
-        Sigma.Unsafe.of_pair (c, sigma)
+        Evarutil.new_evar_instance nctx sigma nconcl ~store instance
       end }
     end }
 

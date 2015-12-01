@@ -9,6 +9,7 @@
 open Util
 open Pp
 open Term
+open Sigma.Notations
 
 (* This module implements the abstract interface to goals *)
 (* A general invariant of the module, is that a goal whose associated
@@ -70,7 +71,9 @@ module V82 = struct
 		Evd.evar_extra = extra }
     in
     let evi = Typeclasses.mark_unresolvable evi in
-    let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
+    let evars = Sigma.Unsafe.of_evar_map evars in
+    let Sigma (evk, evars, _) = Evarutil.new_pure_evar_full evars evi in
+    let evars = Sigma.to_evar_map evars in
     let evars = Evd.restore_future_goals evars prev_future_goals prev_principal_goal in
     let ctxt = Environ.named_context_of_val hyps in
     let inst = Array.map_of_list (fun (id, _, _) -> mkVar id) ctxt in
@@ -126,8 +129,10 @@ module V82 = struct
     let new_evi =
       { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in
-    let (new_sigma, evk) = Evarutil.new_pure_evar_full Evd.empty new_evi in
-    { Evd.it = evk ; sigma = new_sigma; }
+    let sigma = Sigma.Unsafe.of_evar_map Evd.empty in
+    let Sigma (evk, sigma, _) = Evarutil.new_pure_evar_full sigma new_evi in
+    let sigma = Sigma.to_evar_map sigma in
+    { Evd.it = evk ; sigma = sigma; }
 
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =

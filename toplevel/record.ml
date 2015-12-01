@@ -24,6 +24,7 @@ open Type_errors
 open Constrexpr
 open Constrexpr_ops
 open Goptions
+open Sigma.Notations
 
 (********** definition d'un record (structure) **************)
 
@@ -336,11 +337,15 @@ let structure_signature ctx =
     match l with [] -> Evd.empty
       | [(_,_,typ)] ->
         let env = Environ.empty_named_context_val in
-        let (evm, _) = Evarutil.new_pure_evar env evm typ in
+        let evm = Sigma.Unsafe.of_evar_map evm in
+        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm typ in
+        let evm = Sigma.to_evar_map evm in
         evm
       | (_,_,typ)::tl ->
           let env = Environ.empty_named_context_val in
-          let (evm, ev) = Evarutil.new_pure_evar env evm typ in
+          let evm = Sigma.Unsafe.of_evar_map evm in
+          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm typ in
+          let evm = Sigma.to_evar_map evm in
 	  let new_tl = Util.List.map_i
 	    (fun pos (n,c,t) -> n,c,
 	       Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) 1 tl in

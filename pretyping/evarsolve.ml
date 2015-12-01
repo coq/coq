@@ -19,6 +19,7 @@ open Retyping
 open Reductionops
 open Evarutil
 open Pretype_errors
+open Sigma.Notations
 
 let normalize_evar evd ev =
   match kind_of_term (whd_evar evd (mkEvar ev)) with
@@ -180,7 +181,9 @@ let restrict_evar_key evd evk filter candidates =
       let candidates = match candidates with
       | NoUpdate -> evi.evar_candidates
       | UpdateWith c -> Some c in
-      restrict_evar evd evk filter candidates
+      let sigma = Sigma.Unsafe.of_evar_map evd in
+      let Sigma (evk, sigma, _) = restrict_evar sigma evk filter candidates in
+      (Sigma.to_evar_map sigma, evk)
     end
 
 (* Restrict an applied evar and returns its restriction in the same context *)
@@ -570,7 +573,9 @@ let make_projectable_subst aliases sigma evi args =
  *)
 
 let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
-  let evd,evar_in_env = new_evar_instance sign evd ty_t_in_sign ~filter ~src inst_in_env in
+  let evd = Sigma.Unsafe.of_evar_map evd in
+  let Sigma (evar_in_env, evd, _) = new_evar_instance sign evd ty_t_in_sign ~filter ~src inst_in_env in
+  let evd = Sigma.to_evar_map evd in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd None (destEvar evar_in_env) t_in_env in
   let ctxt = named_context_of_val sign in
@@ -631,8 +636,10 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
      ~status:univ_flexible (Some false) env evd (mkSort s) in
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
-  let evd,ev2_in_sign =
+  let evd = Sigma.Unsafe.of_evar_map evd in
+  let Sigma (ev2_in_sign, evd, _) =
     new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 ~src inst2_in_sign in
+  let evd = Sigma.to_evar_map evd in
   let ev2_in_env = (fst (destEvar ev2_in_sign), Array.of_list inst2_in_env) in
   (evd, ev2_in_sign, ev2_in_env)
 

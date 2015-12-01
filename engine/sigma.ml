@@ -36,6 +36,18 @@ let new_evar sigma ?naming info =
 let define evk c sigma =
   Sigma ((), Evd.define evk c sigma, ())
 
+let new_univ_level_variable ?name ?predicative rigid sigma =
+  let (sigma, u) = Evd.new_univ_level_variable ?name ?predicative rigid sigma in
+  Sigma (u, sigma, ())
+
+let new_univ_variable ?name ?predicative rigid sigma =
+  let (sigma, u) = Evd.new_univ_variable ?name ?predicative rigid sigma in
+  Sigma (u, sigma, ())
+
+let new_sort_variable ?name ?predicative rigid sigma =
+  let (sigma, u) = Evd.new_sort_variable ?name ?predicative rigid sigma in
+  Sigma (u, sigma, ())
+
 let fresh_sort_in_family ?rigid env sigma s =
   let (sigma, s) = Evd.fresh_sort_in_family ?rigid env sigma s in
   Sigma (s, sigma, ())

@@ -23,6 +23,7 @@ open Reductionops
 open Cbv
 open Patternops
 open Locus
+open Sigma.Notations
 
 (* Errors *)
 
@@ -385,7 +386,9 @@ let substl_with_function subst sigma constr =
     if i <= k + Array.length v then
       match v.(i-k-1) with
       | (fx, Some (min, ref)) ->
-        let (sigma, evk) = Evarutil.new_pure_evar venv !evd dummy in
+        let sigma = Sigma.Unsafe.of_evar_map !evd in
+        let Sigma (evk, sigma, _) = Evarutil.new_pure_evar venv sigma dummy in
+        let sigma = Sigma.to_evar_map sigma in
         evd := sigma;
         minargs := Evar.Map.add evk min !minargs;
         lift k (mkEvar (evk, [|fx;ref|]))

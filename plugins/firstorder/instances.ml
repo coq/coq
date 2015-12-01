@@ -22,6 +22,7 @@ open Formula
 open Sequent
 open Names
 open Misctypes
+open Sigma.Notations
 
 let compare_instance inst1 inst2=
 	match inst1,inst2 with
@@ -116,7 +117,9 @@ let mk_open_instance id idc gl m t=
   let rec aux n avoid env evmap decls =
     if Int.equal n 0 then evmap, decls else
       let nid=(fresh_id avoid var_id gl) in
-      let evmap, (c, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
+      let evmap = Sigma.Unsafe.of_evar_map evmap in
+      let Sigma ((c, _), evmap, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
+      let evmap = Sigma.to_evar_map evmap in
       let decl = (Name nid,None,c) in
 	aux (n-1) (nid::avoid) (Environ.push_rel decl env) evmap (decl::decls) in
   let evmap, decls = aux m [] env evmap [] in
