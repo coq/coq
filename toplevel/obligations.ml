@@ -52,9 +52,6 @@ type oblinfo =
     ev_tac: unit Proofview.tactic option;
     ev_deps: Int.Set.t }
 
-(* spiwack: Store field for internalizing ev_tac in evar_infos' evar_extra. *)
-let evar_tactic = Store.field ()
-
 (** Substitute evar references in t using De Bruijn indices,
   where n binders were passed through. *)
 
@@ -229,17 +226,9 @@ let eterm_obligations env name evm fs ?status t ty =
 	   | Some s -> s, None
 	   | None -> Evar_kinds.Define true, None
 	 in
-	 let tac = match Store.get ev.evar_extra evar_tactic with
-	   | Some t ->
-	       if Dyn.has_tag t "tactic" then
-		 Some (Tacinterp.interp 
-			  (Tacinterp.globTacticIn (Tacinterp.tactic_out t)))
-	       else None
-	   | None -> None
-	 in
 	 let info = { ev_name = (n, nstr);
 		      ev_hyps = hyps; ev_status = status; ev_chop = chop;
-		      ev_src = loc, k; ev_typ = evtyp ; ev_deps = deps; ev_tac = tac }
+		      ev_src = loc, k; ev_typ = evtyp ; ev_deps = deps; ev_tac = None }
 	 in (id, info) :: l)
       evn []
   in
