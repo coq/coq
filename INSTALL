@@ -41,7 +41,7 @@ WHAT DO YOU NEED ?
 
    Should you need or prefer to compile Coq V8.2 yourself, you need:
 
-     - Objective Caml version 3.07 or later
+     - Objective Caml version 3.07 or later, avoiding 3.08.3
        (available at http://caml.inria.fr/)
 
        For Ocaml version >= 3.10.0, you also need to install camlp5
