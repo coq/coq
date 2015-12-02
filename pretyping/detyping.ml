@@ -166,6 +166,18 @@ let _ = declare_bool_option
 	    optread  = print_primproj_params;
 	    optwrite = (:=) print_primproj_params_value }
 
+let print_primproj_compatibility_value = ref true
+let print_primproj_compatibility () = !print_primproj_compatibility_value
+
+let _ = declare_bool_option
+	  { optsync  = true;
+            optdepr  = false;
+	    optname  = "backwards-compatible printing of primitive projections";
+	    optkey   = ["Printing";"Primitive";"Projection";"Compatibility"];
+	    optread  = print_primproj_compatibility;
+	    optwrite = (:=) print_primproj_compatibility_value }
+
+	  
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
 
@@ -476,7 +488,7 @@ let rec detype flags avoid env sigma t =
 	  GApp (dl, GRef (dl, ConstRef (Projection.constant p), None), 
 		[detype flags avoid env sigma c])
       else 
-	if Projection.unfolded p then
+	if print_primproj_compatibility () && Projection.unfolded p then
 	  (** Print the compatibility match version *)
 	  let c' = 
 	    try 
