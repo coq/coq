@@ -73,7 +73,7 @@ let includes () =
     (fun d l -> "-I" :: List.fold_left Filename.concat !src_coqtop d :: l)
     (src_dirs ())
     (["-I"; "\"" ^ camlp4lib ^ "\""] @ 
-     (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []) @
+     (if !coqide then ["-thread"; "-I"; Coq_config.lablgtklib] else []) @
      (if is_ocaml4 then ["-I"; "+compiler-libs"] else []))
 
 
