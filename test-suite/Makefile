@@ -154,6 +154,9 @@ summary.log:
 	$(SHOW) SUMMARY
 	$(HIDE)$(MAKE) --quiet summary > "$@"
 
+report: summary.log
+	$(HIDE)if grep -F 'Error!' summary.log ; then false; fi
+
 #######################################################################
 # Regression (and progression) tests
 #######################################################################

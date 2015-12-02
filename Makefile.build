@@ -494,7 +494,7 @@ check: validate test-suite
 test-suite: world $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
-	$(HIDE)if grep -F 'Error!' test-suite/summary.log ; then false; fi
+	$(MAKE) $(MAKE_TSOPTS) report
 
 ##################################################################
 # partial targets: 1) core ML parts
