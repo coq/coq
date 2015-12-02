@@ -52,6 +52,13 @@ type tauto_flags = {
   strict_unit : bool;
 }
 
+let wit_tauto_flags : tauto_flags uniform_genarg_type =
+  Genarg.create_arg None "tauto_flags"
+
+let assoc_flags ist =
+  let v = Id.Map.find (Names.Id.of_string "tauto_flags") ist.lfun in
+  try Genarg.out_gen (topwit wit_tauto_flags) v with _ -> assert false
+
 (* Whether inner not are unfolded *)
 let negation_unfolding = ref true
 
@@ -85,20 +92,37 @@ let make_lfun l =
   let fold accu (id, v) = Id.Map.add (Id.of_string id) v accu in
   List.fold_left fold Id.Map.empty l
 
+let tacticIn tac name =
+  let open Tacexpr in
+  let name = { mltac_plugin = "tauto"; mltac_tactic = name; } in
+  let entry = { mltac_name = name; mltac_index = 0 } in
+  let tac _ ist =
+    let avoid = Option.default [] (TacStore.get ist.extra f_avoid_ids) in
+    let debug = Option.default Tactic_debug.DebugOff (TacStore.get ist.extra f_debug) in
+    interp_tac_gen ist.lfun avoid debug (tac ist)
+  in
+  Tacenv.register_ml_tactic name [| tac |];
+  TacML (Loc.ghost, entry, [])
+
 let is_empty ist =
   if is_empty_type (assoc_var "X1" ist) then
     <:tactic<idtac>>
   else
     <:tactic<fail>>
 
+let t_is_empty = tacticIn is_empty "is_empty"
+
 (* Strictly speaking, this exceeds the propositional fragment as it
    matches also equality types (and solves them if a reflexivity) *)
-let is_unit_or_eq flags ist =
+let is_unit_or_eq ist =
+  let flags = assoc_flags ist in
   let test = if flags.strict_unit then is_unit_type else is_unit_or_eq_type in
   if test (assoc_var "X1" ist) then
     <:tactic<idtac>>
   else
     <:tactic<fail>>
+
+let t_is_unit_or_eq = tacticIn is_unit_or_eq "is_unit_or_eq"
 
 let is_record t =
   let (hdapp,args) = decompose_app t in
@@ -122,7 +146,8 @@ let iter_tac tacl =
 
 (** Dealing with conjunction *)
 
-let is_conj flags ist =
+let is_conj ist =
+  let flags = assoc_flags ist in
   let ind = assoc_var "X1" ist in
     if (not flags.binary_mode_bugged_detection || bugged_is_binary ind) &&
        is_conjunction
@@ -133,7 +158,10 @@ let is_conj flags ist =
     else
       <:tactic<fail>>
 
-let flatten_contravariant_conj flags ist =
+let t_is_conj = tacticIn is_conj "is_conj"
+
+let flatten_contravariant_conj ist =
+  let flags = assoc_flags ist in
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
   let hyp = assoc_var "id" ist in
@@ -156,6 +184,9 @@ let flatten_contravariant_conj flags ist =
   | _ ->
       <:tactic<fail>>
 
+let t_flatten_contravariant_conj =
+  tacticIn flatten_contravariant_conj "flatten_contravariant_conj"
+
 (** Dealing with disjunction *)
 
 let constructor i =
@@ -165,7 +196,8 @@ let constructor i =
   let i = in_gen (rawwit Constrarg.wit_int_or_var) (Misctypes.ArgArg i) in
   Tacexpr.TacML (Loc.ghost, name, [i])
 
-let is_disj flags ist =
+let is_disj ist =
+  let flags = assoc_flags ist in
   let t = assoc_var "X1" ist in
   if (not flags.binary_mode_bugged_detection || bugged_is_binary t) &&
      is_disjunction
@@ -176,7 +208,10 @@ let is_disj flags ist =
   else
     <:tactic<fail>>
 
-let flatten_contravariant_disj flags ist =
+let t_is_disj = tacticIn is_disj "is_disj"
+
+let flatten_contravariant_disj ist =
+  let flags = assoc_flags ist in
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
   let hyp = assoc_var "id" ist in
@@ -197,6 +232,8 @@ let flatten_contravariant_disj flags ist =
   | _ ->
       <:tactic<fail>>
 
+let t_flatten_contravariant_disj =
+  tacticIn flatten_contravariant_disj "flatten_contravariant_disj"
 
 (** Main tactic *)
 
@@ -207,9 +244,9 @@ let not_dep_intros ist =
   | |- (Coq.Init.Logic.not _) => unfold Coq.Init.Logic.not at 1; intro
   end >>
 
-let axioms flags ist =
-  let t_is_unit_or_eq = tacticIn (is_unit_or_eq flags)
-  and t_is_empty = tacticIn is_empty in
+let t_not_dep_intros = tacticIn not_dep_intros "not_dep_intros"
+
+let axioms ist =
   let c1 = constructor 1 in
     <:tactic<
     match reverse goal with
@@ -218,14 +255,9 @@ let axioms flags ist =
       | _:?X1 |- ?X1 => assumption
     end >>
 
+let t_axioms = tacticIn axioms "axioms"
 
-let simplif flags ist =
-  let t_is_unit_or_eq = tacticIn (is_unit_or_eq flags)
-  and t_is_conj = tacticIn (is_conj flags)
-  and t_flatten_contravariant_conj = tacticIn (flatten_contravariant_conj flags)
-  and t_flatten_contravariant_disj = tacticIn (flatten_contravariant_disj flags)
-  and t_is_disj = tacticIn (is_disj flags)
-  and t_not_dep_intros = tacticIn not_dep_intros in
+let simplif ist =
   let c1 = constructor 1 in
   <:tactic<
     $t_not_dep_intros;
@@ -262,11 +294,11 @@ let simplif flags ist =
         end;
         $t_not_dep_intros) >>
 
-let rec tauto_intuit flags t_reduce solver =
-  let t_axioms = tacticIn (axioms flags)
-  and t_simplif = tacticIn (simplif flags)
-  and t_is_disj = tacticIn (is_disj flags) in
-  let lfun = make_lfun [("t_solver", solver)] in
+let t_simplif = tacticIn simplif "simplif"
+
+let tauto_intuit flags t_reduce solver =
+  let flags = Genarg.in_gen (topwit wit_tauto_flags) flags in
+  let lfun = make_lfun [("t_solver", solver); ("tauto_flags", flags)] in
   let ist = { default_ist () with lfun = lfun; } in
   let vars = [Id.of_string "t_solver"] in
   (vars, ist, <:tactic<
@@ -303,7 +335,7 @@ let reduction_not_iff _ist =
     | false, true -> <:tactic< unfold Coq.Init.Logic.iff in * >>
     | false, false -> <:tactic< idtac >>
 
-let t_reduction_not_iff = tacticIn reduction_not_iff
+let t_reduction_not_iff = tacticIn reduction_not_iff "reduction_not_iff"
 
 let intuition_gen ist flags tac =
   Proofview.Goal.enter { enter = begin fun gl ->

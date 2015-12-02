@@ -46,8 +46,6 @@ val extract_ltac_constr_values : interp_sign -> Environ.env ->
     a [constr]. *)
 
 (** To embed several objects in Coqast.t *)
-val tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t
-
 val tacticIn : (interp_sign -> raw_tactic_expr) -> raw_tactic_expr
 val globTacticIn : (interp_sign -> glob_tactic_expr) -> raw_tactic_expr
 val valueIn : value -> raw_tactic_arg
