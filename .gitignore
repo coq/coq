@@ -1,0 +1,10 @@
+*.v8
+bin
+ide/config_lexer.ml
+ide/config_parser.ml
+ide/config_parser.mli
+ide/find_phrase.ml
+ide/highlight.ml
+ide/utf8_convert.ml
+states7/barestate.coq
+states7/initial.coq
