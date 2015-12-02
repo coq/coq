@@ -892,6 +892,7 @@ case $ARCH in
    	ESCCOQDOCDIR=`echo $COQDOCDIR |sed -e 's|\\\|\\\\\\\|g'`
    	ESCCAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLP4LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
+        ESCLABLGTKLIB=`echo $LABLGTKLIB |sed -e 's|\\\|\\\\\\\|g'`
 	ESCLABLGTKINCLUDES=`echo $LABLGTKINCLUDES |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCOQRUNBYTEFLAGS=`echo $COQRUNBYTEFLAGS |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCOQTOOLSBYTEFLAGS=`echo $COQTOOLSBYTEFLAGS |sed -e 's|\\\|\\\\\\\|g'`
@@ -910,6 +911,7 @@ case $ARCH in
    	ESCCOQDOCDIR="$COQDOCDIR"
    	ESCCAMLP4BIN="$CAMLP4BIN"
    	ESCCAMLP4LIB="$CAMLP4LIB"
+        ESCLABLGTKLIB="$LABLGTKLIB"
 	ESCLABLGTKINCLUDES="$LABLGTKINCLUDES"
 	ESCCOQRUNBYTEFLAGS="$COQRUNBYTEFLAGS"
 	ESCCOQTOOLSBYTEFLAGS="$COQTOOLSBYTEFLAGS"
@@ -930,6 +932,7 @@ let camllib = "$ESCCAMLLIB"
 let camlp4 = "$CAMLP4"
 let camlp4bin = "$ESCCAMLP4BIN"
 let camlp4lib = "$ESCCAMLP4LIB"
+let lablgtklib = "$ESCLABLGTKLIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
 let has_natdynlink = $HASNATDYNLINK
