@@ -69,3 +69,12 @@ intros H (H1,?)/H.
 change (1=1) in H0.
 exact H1.
 Qed.
+
+(* Checking iterated pat/c1.../cn introduction patterns and side conditions *)
+
+Goal forall A B C D:Prop, (A -> B -> C) -> (C -> D) -> B -> A -> D.
+intros * H H0 H1.
+intros H2/H/H0.
+- exact H2.
+- exact H1.
+Qed.

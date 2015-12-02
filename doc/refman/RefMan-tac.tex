@@ -828,7 +828,9 @@ either:
     \item a pattern for decomposing an equality: {\tt [= $p_1$ \dots\ $p_n$]}
     \item the rewriting orientations: {\tt ->} or {\tt <-}
     \end{itemize}
-  \item the on-the-fly application of a lemma: $p${\tt /{\term}}
+  \item the on-the-fly application of lemmas: $p${\tt /{\term$_1$}}
+    \ldots {\tt /{\term$_n$}} where $p$ itself is not an on-the-fly
+    application of lemmas pattern
   \end{itemize}
 \item the wildcard: {\tt \_}
 \end{itemize}
@@ -896,9 +898,10 @@ introduction pattern~$p$:
   itself is erased; if the term to substitute is a variable, it is
   substituted also in the context of goal and the variable is removed
   too;
-\item introduction over a pattern $p${\tt /{\term}} first applies
-  {\term} on the hypothesis to be introduced (as in {\tt apply
-  }{\term} {\tt in}), prior to the application of the introduction
+\item introduction over a pattern $p${\tt /{\term$_1$}} \ldots {\tt
+  /{\term$_n$}} first applies {\term$_1$},\ldots, {\term$_n$} on the
+  hypothesis to be introduced (as in {\tt apply }{\term}$_1$, \ldots,
+  {\term}$_n$ {\tt in}), prior to the application of the introduction
   pattern $p$;
 \item introduction on the wildcard depends on whether the product is
   dependent or not: in the non-dependent case, it erases the
