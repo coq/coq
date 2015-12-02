@@ -399,7 +399,7 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   in_hyp_as:
-    [ [ "in"; id = id_or_meta; ipat = as_ipat -> Some (None,id,ipat)
+    [ [ "in"; id = id_or_meta; ipat = as_ipat -> Some (id,ipat)
       | -> None ] ]
   ;
   orient:
