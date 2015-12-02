@@ -857,6 +857,7 @@ let rec solve_obligation prg num tac =
   let obl = subst_deps_obl obls obl in
   let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
   let evd = Evd.from_ctx prg.prg_ctx in
+  let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
   let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd obl.obl_type hook in
@@ -893,9 +894,11 @@ and solve_obligation_by_tac prg obls i tac =
 		  | Some t -> t
 		  | None -> snd (get_default_tactic ())
 	    in
+	    let evd = Evd.from_ctx !prg.prg_ctx in
+	    let evd = Evd.update_sigma_env evd (Global.env ()) in
 	    let t, ty, ctx = 
 	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac 
-	        (pi2 !prg.prg_kind) !prg.prg_ctx
+	        (pi2 !prg.prg_kind) (Evd.evar_universe_context evd)
 	    in
 	    let uctx = Evd.evar_context_universe_context ctx in
 	    let () = prg := {!prg with prg_ctx = ctx} in
