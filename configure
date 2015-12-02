@@ -592,6 +592,7 @@ case $ARCH in
 	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLP4LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
+        ESCLABLGTKLIB=`echo $lablgtkdir |sed -e 's|\\\|\\\\\\\|g'`
 	;;
     *)
         ESCCOQTOP="$COQTOP"
@@ -599,6 +600,7 @@ case $ARCH in
 	ESCLIBDIR="$LIBDIR"
 	ESCCAMLLIB="$CAMLLIB"
    	ESCCAMLP4LIB="$CAMLP4LIB"
+        ESCLABLGTKLIB="$lablgtkdir"
 	;;
 esac
 
@@ -615,6 +617,7 @@ let coqtop = "$ESCCOQTOP"
 let camllib = "$ESCCAMLLIB"
 let camlp4 = "$CAMLP4"
 let camlp4lib = "$ESCCAMLP4LIB"
+let lablgtklib = "$ESCLABLGTKLIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
 let osdeplibs = "$OSDEPLIBS"
