@@ -179,15 +179,19 @@ let ltac_lcall tac args =
 let ltac_letin (x, e1) e2 =
   TacLetIn(false,[(Loc.ghost,Id.of_string x),e1],e2)
 
-let ltac_apply (f:glob_tactic_expr) (args:glob_tactic_arg list) =
-  Tacinterp.eval_tactic
+let ltac_apply (f:glob_tactic_expr) (args: Tacinterp.Value.t list) =
+  let fold arg (i, vars, lfun) =
+    let id = Id.of_string ("x" ^ string_of_int i) in
+    let x = Reference (ArgVar (Loc.ghost, id)) in
+    (succ i, x :: vars, Id.Map.add id arg lfun)
+  in
+  let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
+  let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun = lfun; } in
+  Tacinterp.eval_tactic_ist ist
     (ltac_letin ("F", Tacexp f) (ltac_lcall "F" args))
 
 let ltac_record flds =
   TacFun([Some(Id.of_string"proj")], ltac_lcall "proj" flds)
-
-
-let carg c = TacDynamic(Loc.ghost,Pretyping.constr_in c)
 
 let dummy_goal env sigma =
   let (gl,_,sigma) = 
@@ -214,13 +218,21 @@ let get_res =
   entry
 
 let exec_tactic env evd n f args =
-  let args = List.map carg args in
+  let fold arg (i, vars, lfun) =
+    let id = Id.of_string ("x" ^ string_of_int i) in
+    let x = Reference (ArgVar (Loc.ghost, id)) in
+    (succ i, x :: vars, Id.Map.add id (Value.of_constr arg) lfun)
+  in
+  let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
+  let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun = lfun; } in
+  (** Build the getter *)
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
   let get_res = TacML (Loc.ghost, get_res, [n]) in
   let getter = Tacexp (TacFun (List.map (fun id -> Some id) lid, get_res)) in
+  (** Evaluate the whole result *)
   let gl = dummy_goal env evd in
-  let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter]))) gl in
+  let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
     Array.map (fun x -> nf (constr_of x)) !tactic_res, snd (Evd.universe_context evd)
 
@@ -743,18 +755,22 @@ let make_term_list env evd carrier rl =
     (plapp evd coq_nil [|carrier|])
   in Typing.solve_evars env evd l
 
+let carg = Tacinterp.Value.of_constr
+let tacarg expr =
+  Tacinterp.Value.of_closure (Tacinterp.default_ist ()) expr
+
 let ltac_ring_structure e =
   let req = carg e.ring_req in
   let sth = carg e.ring_setoid in
   let ext = carg e.ring_ext in
   let morph = carg e.ring_morph in
   let th = carg e.ring_th in
-  let cst_tac = Tacexp e.ring_cst_tac in
-  let pow_tac = Tacexp e.ring_pow_tac in
+  let cst_tac = tacarg e.ring_cst_tac in
+  let pow_tac = tacarg e.ring_pow_tac in
   let lemma1 = carg e.ring_lemma1 in
   let lemma2 = carg e.ring_lemma2 in
-  let pretac = Tacexp(TacFun([None],e.ring_pre_tac)) in
-  let posttac = Tacexp(TacFun([None],e.ring_post_tac)) in
+  let pretac = tacarg (TacFun([None],e.ring_pre_tac)) in
+  let posttac = tacarg (TacFun([None],e.ring_post_tac)) in
   [req;sth;ext;morph;th;cst_tac;pow_tac;
    lemma1;lemma2;pretac;posttac]
 
@@ -1018,15 +1034,15 @@ let process_field_mods l =
 
 let ltac_field_structure e =
   let req = carg e.field_req in
-  let cst_tac = Tacexp e.field_cst_tac in
-  let pow_tac = Tacexp e.field_pow_tac in
+  let cst_tac = tacarg e.field_cst_tac in
+  let pow_tac = tacarg e.field_pow_tac in
   let field_ok = carg e.field_ok in
   let field_simpl_ok = carg e.field_simpl_ok in
   let field_simpl_eq_ok = carg e.field_simpl_eq_ok in
   let field_simpl_eq_in_ok = carg e.field_simpl_eq_in_ok in
   let cond_ok = carg e.field_cond in
-  let pretac = Tacexp(TacFun([None],e.field_pre_tac)) in
-  let posttac = Tacexp(TacFun([None],e.field_post_tac)) in
+  let pretac = tacarg (TacFun([None],e.field_pre_tac)) in
+  let posttac = tacarg (TacFun([None],e.field_post_tac)) in
   [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
    field_simpl_eq_in_ok;cond_ok;pretac;posttac]
 
