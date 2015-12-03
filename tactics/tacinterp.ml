@@ -1457,8 +1457,6 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
       let tg = (Dyn.tag t) in
       if String.equal tg "value" then
         Ftactic.return (value_out t)
-      else if String.equal tg "constr" then
-        Ftactic.return (Value.of_constr (constr_out t))
       else
         Errors.anomaly ~loc:dloc ~label:"Tacinterp.val_interp"
 	  (str "Unknown dynamic: <" ++ str (Dyn.tag t) ++ str ">")

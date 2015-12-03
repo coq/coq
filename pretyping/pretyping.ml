@@ -95,10 +95,6 @@ let search_guard loc env possible_indexes fixdefs =
 	 user_err_loc (loc,"search_guard", Pp.str errmsg)
      with Found indexes -> indexes)
 
-(* To embed constr in glob_constr *)
-let ((constr_in : constr -> Dyn.t),
-     (constr_out : Dyn.t -> constr)) = Dyn.create "constr"
-
 (* To force universe name declaration before use *)
 
 let strict_universe_declarations = ref true

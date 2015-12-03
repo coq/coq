@@ -711,8 +711,6 @@ and intern_tacarg strict onlytac ist = function
     TacGeneric arg
   | TacDynamic(loc,t) as x ->
     if Dyn.has_tag t "value" then x
-    else if Dyn.has_tag t "constr" then
-      if onlytac then error_tactic_expected loc else x
     else
       let tag = Dyn.tag t in
       anomaly ~loc (str "Unknown dynamic: <" ++ str tag ++ str ">")

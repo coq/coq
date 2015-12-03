@@ -148,9 +148,6 @@ val ise_pretype_gen :
 
 (** To embed constr in glob_constr *)
 
-val constr_in : constr -> Dyn.t
-val constr_out : Dyn.t -> constr
-
 val interp_sort : evar_map -> glob_sort -> evar_map * sorts
 val interp_elimination_sort : glob_sort -> sorts_family
 
