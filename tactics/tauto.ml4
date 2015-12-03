@@ -14,6 +14,7 @@ open Names
 open Pp
 open Genarg
 open Stdarg
+open Tacexpr
 open Tacinterp
 open Tactics
 open Errors
@@ -93,7 +94,6 @@ let make_lfun l =
   List.fold_left fold Id.Map.empty l
 
 let tacticIn tac name =
-  let open Tacexpr in
   let name = { mltac_plugin = "tauto"; mltac_tactic = name; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let tac _ ist =
