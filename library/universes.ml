@@ -205,7 +205,7 @@ let leq_constr_univs_infer univs m n =
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
 	  if UGraph.check_leq univs u1 u2 then
-	    ((if Univ.is_small_univ u1 then
+	    ((if Univ.is_type0_univ u1 then
 		cstrs := Constraints.add (u1, ULe, u2) !cstrs);
 	     true)
 	  else
