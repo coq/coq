@@ -2254,19 +2254,12 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
           Proofview.tclUNIT () (* apply_in_once do a replacement *)
         else
           Proofview.V82.tactic (clear [id]) in
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let sigma = Tacmach.New.project gl in
-        let env = Proofview.Goal.env gl in
-        let (c, sigma) = run_delayed env sigma f in
-        Tacticals.New.tclWITHHOLES false
-          (Tacticals.New.tclTHENFIRST
-             (* Skip the side conditions of the apply *)
-             (apply_in_once false true true true naming id
-                (None,(sigma,(c,NoBindings)))
-                (fun id -> Tacticals.New.tclTHEN doclear (tac_ipat id)))
-             (tac thin None []))
-          sigma
-      end }
+      let f = { delayed = fun env sigma ->
+        let Sigma (c, sigma, p) = f.delayed env sigma in
+        Sigma ((c, NoBindings), sigma, p)
+      } in
+      apply_in_delayed_once false true true true naming id (None,(loc,f))
+        (fun id -> Tacticals.New.tclTHENLIST [doclear; tac_ipat id; tac thin None []])
 
 and prepare_intros_loc loc dft destopt = function
   | IntroNaming ipat ->
@@ -2325,7 +2318,7 @@ let assert_as first hd ipat t =
 (* apply in as *)
 
 let general_apply_in sidecond_first with_delta with_destruct with_evars
-    with_clear id lemmas ipat =
+    id lemmas ipat =
   let tac (naming,lemma) tac id =
     apply_in_delayed_once sidecond_first with_delta with_destruct with_evars
       naming id lemma tac in
@@ -2350,12 +2343,12 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
     Tacticals.New.tclTHENFIRST (tclMAPFIRST tac lemmas_target) (ipat_tac id)
 *)
 
-let apply_in simple with_evars clear_flag id lemmas ipat =
+let apply_in simple with_evars id lemmas ipat =
   let lemmas = List.map (fun (k,(loc,l)) -> k, (loc, { delayed = fun _ sigma -> Sigma.here l sigma })) lemmas in
-  general_apply_in false simple simple with_evars clear_flag id lemmas ipat
+  general_apply_in false simple simple with_evars id lemmas ipat
 
-let apply_delayed_in simple with_evars clear_flag id lemmas ipat =
-  general_apply_in false simple simple with_evars clear_flag id lemmas ipat
+let apply_delayed_in simple with_evars id lemmas ipat =
+  general_apply_in false simple simple with_evars id lemmas ipat
 
 (*****************************)
 (* Tactics abstracting terms *)
@@ -4680,7 +4673,7 @@ module Simple = struct
   let case   c = general_case_analysis false None (c,NoBindings)
 
   let apply_in id c =
-    apply_in false false None id [None,(Loc.ghost, (c, NoBindings))] None
+    apply_in false false id [None,(Loc.ghost, (c, NoBindings))] None
 
 end
 

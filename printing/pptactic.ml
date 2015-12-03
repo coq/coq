@@ -586,8 +586,7 @@ module Make
 
   let pr_in_hyp_as prc pr_id = function
     | None -> mt ()
-    | Some (clear,id,ipat) ->
-      pr_in (spc () ++ pr_clear_flag clear pr_id id) ++ pr_as_ipat prc ipat
+    | Some (id,ipat) -> pr_in (spc () ++ pr_id id) ++ pr_as_ipat prc ipat
 
   let pr_clauses default_is_concl pr_id = function
     | { onhyps=Some []; concl_occs=occs }

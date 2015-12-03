@@ -134,8 +134,8 @@ GEXTEND Gram
   ;
   (* Tactic arguments *)
   tactic_arg:
-    [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
-      | IDENT "ltac"; ":"; n = natural -> TacGeneric (genarg_of_int n)
+    [ [ "ltac:"; a = tactic_expr LEVEL "0" -> arg_of_expr a
+      | "ltac:"; n = natural -> TacGeneric (genarg_of_int n)
       | a = tactic_top_or_arg -> a
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)

@@ -7,9 +7,9 @@ Proof.
 (* This line used to fail with a Not_found up to some point, and then
    to produce an ill-typed term *)
 match goal with
-  | [ |- context G[2] ] => let y := constr:(fun x => $(let r := constr:(@eq Set x x) in
+  | [ |- context G[2] ] => let y := constr:(fun x => ltac:(let r := constr:(@eq Set x x) in
                                                        clear x;
-                                                       exact r)$) in
+                                                       exact r)) in
                            pose y
 end.
 (* Add extra test for typability (should not fail when bug closed) *)

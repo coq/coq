@@ -1998,7 +1998,7 @@ variables, use
 \end{quote}
 
 \subsection{Solving existential variables using tactics}
-\ttindex{\textdollar( \ldots )\textdollar}
+\ttindex{ltac:( \ldots )}
 
 \def\expr{\textrm{\textsl{tacexpr}}}
 
@@ -2012,7 +2012,7 @@ binding as well as those introduced by tactic binding. The expression {\expr}
 can be any tactic expression as described at section~\ref{TacticLanguage}.
 
 \begin{coq_example*}
-Definition foo (x : nat) : nat := $( exact x )$.
+Definition foo (x : nat) : nat := ltac:(exact x).
 \end{coq_example*}
 
 This construction is useful when one wants to define complicated terms using

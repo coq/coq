@@ -1,5 +1,5 @@
 Module foo.
-  Notation x := $(exact I)$.
+  Notation x := ltac:(exact I).
 End foo.
 Module bar.
   Include foo.

@@ -24,6 +24,10 @@ Vernacular commands
   introducing it.
 - New command "Show id" to show goal named id.
 
+Specification language
+
+- Syntax "$(tactic)$" changed to "ltac: tactic".
+
 Tactics
 
 - New flag "Regular Subst Tactic" which fixes "subst" in situations where
@@ -103,6 +107,10 @@ Logic
 
 - The VM now supports inductive types with up to 8388851 non-constant
   constructors and up to 8388607 constant ones.
+
+Specification language
+
+- Syntax "$(tactic)$" changed to "ltac: tactic".
 
 Tactics
 

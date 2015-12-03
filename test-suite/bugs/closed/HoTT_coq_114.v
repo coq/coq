@@ -1,1 +1,1 @@
-Inductive test : $(let U := type of Type in exact U)$ := t.
+Inductive test : ltac:(let U := type of Type in exact U) := t.

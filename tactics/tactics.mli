@@ -196,12 +196,12 @@ val eapply_with_bindings  : constr with_bindings -> unit Proofview.tactic
 val cut_and_apply         : constr -> unit Proofview.tactic
 
 val apply_in :
-  advanced_flag -> evars_flag -> clear_flag -> Id.t -> 
+  advanced_flag -> evars_flag -> Id.t -> 
     (clear_flag * constr with_bindings located) list ->
     intro_pattern option -> unit Proofview.tactic
 
 val apply_delayed_in :
-  advanced_flag -> evars_flag -> clear_flag -> Id.t -> 
+  advanced_flag -> evars_flag -> Id.t -> 
     (clear_flag * delayed_open_constr_with_bindings located) list ->
     intro_pattern option -> unit Proofview.tactic
 

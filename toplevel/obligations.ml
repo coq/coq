@@ -309,6 +309,7 @@ type program_info_aux = {
   prg_reduce : constr -> constr;
   prg_hook : (Evd.evar_universe_context -> unit) Lemmas.declaration_hook;
   prg_opaque : bool;
+  prg_sign: named_context_val;
 }
 
 type program_info = program_info_aux Ephemeron.key
@@ -634,7 +635,7 @@ let declare_obligation prg obl body ty uctx =
 	    else
 	      Some (TermObl (it_mkLambda_or_LetIn (mkApp (mkConst constant, args)) ctx)) }
 
-let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls kind reduce hook =
+let init_prog_info ?(opaque = false) sign n b t ctx deps fixkind notations obls impls kind reduce hook =
   let obls', b = 
     match b with
     | None ->
@@ -658,8 +659,8 @@ let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls
       prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
       prg_implicits = impls; prg_kind = kind; prg_reduce = reduce; 
-      prg_hook = hook;
-      prg_opaque = opaque; }
+      prg_hook = hook; prg_opaque = opaque;
+      prg_sign = sign }
 
 let map_cardinal m =
   let i = ref 0 in
@@ -877,10 +878,11 @@ let rec solve_obligation prg num tac =
   let obl = subst_deps_obl obls obl in
   let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
   let evd = Evd.from_ctx prg.prg_ctx in
+  let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let terminator guard hook = Proof_global.make_terminator (obligation_terminator prg.prg_name num guard hook) in
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
-  let () = Lemmas.start_proof_univs obl.obl_name kind evd obl.obl_type ~terminator hook in
+  let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd obl.obl_type ~terminator hook in
   let () = trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
             Printer.pr_constr_env (Global.env ()) Evd.empty obl.obl_type) in
   let _ = Pfedit.by (snd (get_default_tactic ())) in
@@ -914,9 +916,11 @@ and solve_obligation_by_tac prg obls i tac =
 		  | Some t -> t
 		  | None -> snd (get_default_tactic ())
 	    in
+	    let evd = Evd.from_ctx !prg.prg_ctx in
+	    let evd = Evd.update_sigma_env evd (Global.env ()) in
 	    let t, ty, ctx = 
 	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac 
-	        (pi2 !prg.prg_kind) !prg.prg_ctx
+	        (pi2 !prg.prg_kind) (Evd.evar_universe_context evd)
 	    in
 	    let uctx = Evd.evar_context_universe_context ctx in
 	    let () = prg := {!prg with prg_ctx = ctx} in
@@ -1015,8 +1019,9 @@ let show_term n =
 
 let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
+  let sign = Decls.initialize_named_context_for_proof () in
   let info = str (Id.to_string n) ++ str " has type-checked" in
-  let prg = init_prog_info ~opaque n term t ctx [] None [] obls implicits kind reduce hook in
+  let prg = init_prog_info sign ~opaque n term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose msg_info (info ++ str ".");
@@ -1033,10 +1038,11 @@ let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition)
 
 let add_mutual_definitions l ctx ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
     ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
+  let sign = Decls.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
-     let prg = init_prog_info ~opaque n (Some b) t ctx deps (Some fixkind)
+     let prg = init_prog_info sign ~opaque n (Some b) t ctx deps (Some fixkind)
        notations obls imps kind reduce hook 
      in progmap_add n (Ephemeron.create prg)) l;
     let _defined =

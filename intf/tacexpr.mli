@@ -142,7 +142,7 @@ type 'a gen_atomic_tactic_expr =
   | TacIntroMove of Id.t option * 'nam move_location
   | TacExact of 'trm
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
-      (clear_flag * 'nam * 'dtrm intro_pattern_expr located option) option
+      ('nam * 'dtrm intro_pattern_expr located option) option
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
   | TacCase of evars_flag * 'trm with_bindings_arg
   | TacFix of Id.t option * int

@@ -447,8 +447,8 @@ let is_projection nargs = function
   | Some r when not !Flags.in_debugger && not !Flags.raw_print && !print_projections ->
     (try
        let n = Recordops.find_projection_nparams r + 1 in
-	 if n <= nargs then None
-	 else Some n
+	 if n <= nargs then Some n
+	 else None
      with Not_found -> None)
   | _ -> None
 	

@@ -907,9 +907,9 @@ let interp_intro_pattern_option ist env sigma = function
       let sigma, ipat = interp_intro_pattern ist env sigma ipat in
       sigma, Some ipat
 
-let interp_in_hyp_as ist env sigma (clear,id,ipat) =
+let interp_in_hyp_as ist env sigma (id,ipat) =
   let sigma, ipat = interp_intro_pattern_option ist env sigma ipat in
-  sigma,(clear,interp_hyp ist env sigma id,ipat)
+  sigma,(interp_hyp ist env sigma id,ipat)
 
 let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
@@ -1852,8 +1852,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma,tac = match cl with
           | None -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
           | Some cl ->
-              let sigma,(clear,id,cl) = interp_in_hyp_as ist env sigma cl in
-              sigma, Tactics.apply_delayed_in a ev clear id l cl in
+              let sigma,(id,cl) = interp_in_hyp_as ist env sigma cl in
+              sigma, Tactics.apply_delayed_in a ev id l cl in
         Tacticals.New.tclWITHHOLES ev tac sigma
       end }
       end
