@@ -198,20 +198,31 @@ let constr_of v = match Value.to_constr v with
   | Some c -> c
   | None -> failwith "Ring.exec_tactic: anomaly"
 
+let tactic_res = ref [||]
+
+let get_res =
+  let open Tacexpr in
+  let name = { mltac_plugin = "newring_plugin"; mltac_tactic = "get_res"; } in
+  let entry = { mltac_name = name; mltac_index = 0 } in
+  let tac args ist =
+    let n = Genarg.out_gen (Genarg.topwit Stdarg.wit_int) (List.hd args) in
+    let init i = Id.Map.find (Id.of_string ("x" ^ string_of_int i)) ist.lfun in
+    tactic_res := Array.init n init;
+    Proofview.tclUNIT ()
+  in
+  Tacenv.register_ml_tactic name [| tac |];
+  entry
+
 let exec_tactic env evd n f args =
+  let args = List.map carg args in
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
-  let res = ref [||] in
-  let get_res ist =
-    let l = List.map (fun id ->  Id.Map.find id ist.lfun) lid in
-    res := Array.of_list l;
-    TacId[] in
-  let getter =
-    Tacexp(TacFun(List.map(fun id -> Some id) lid,
-                  Tacintern.glob_tactic(tacticIn get_res))) in
+  let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
+  let get_res = TacML (Loc.ghost, get_res, [n]) in
+  let getter = Tacexp (TacFun (List.map (fun id -> Some id) lid, get_res)) in
   let gl = dummy_goal env evd in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
-    Array.map (fun x -> nf (constr_of x)) !res, snd (Evd.universe_context evd)
+    Array.map (fun x -> nf (constr_of x)) !tactic_res, snd (Evd.universe_context evd)
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];
@@ -652,7 +663,7 @@ let add_theory name (sigma,rth) eqth morphth cst_tac (pre,post) power sign div =
   let rk = reflect_coeff morphth in
   let params,ctx =
     exec_tactic env !evd 5 (zltac "ring_lemmas")
-      (List.map carg[sth;ext;rth;pspec;sspec;dspec;rk]) in
+      [sth;ext;rth;pspec;sspec;dspec;rk] in
   let lemma1 = params.(3) in
   let lemma2 = params.(4) in
 
@@ -937,7 +948,7 @@ let add_field_theory name (sigma,fth) eqth morphth cst_tac inj (pre,post) power 
   let rk = reflect_coeff morphth in
   let params,ctx =
     exec_tactic env !evd 9 (field_ltac"field_lemmas")
-      (List.map carg[sth;ext;inv_m;fth;pspec;sspec;dspec;rk]) in
+      [sth;ext;inv_m;fth;pspec;sspec;dspec;rk] in
   let lemma1 = params.(3) in
   let lemma2 = params.(4) in
   let lemma3 = params.(5) in

@@ -2389,12 +2389,6 @@ let interp_redexp env sigma r =
 (* Embed tactics in raw or glob tactic expr *)
 
 let globTacticIn t = TacArg (dloc,TacDynamic (dloc,tactic_in t))
-let tacticIn t =
-  globTacticIn (fun ist ->
-    try glob_tactic (t ist)
-    with e when Errors.noncritical e -> anomaly ~label:"tacticIn"
-      (str "Incorrect tactic expression. Received exception is:" ++
-       Errors.print e))
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
