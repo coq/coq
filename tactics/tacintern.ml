@@ -710,7 +710,7 @@ and intern_tacarg strict onlytac ist = function
     let (_, arg) = Genintern.generic_intern ist arg in
     TacGeneric arg
   | TacDynamic(loc,t) as x ->
-    if Dyn.has_tag t "tactic" || Dyn.has_tag t "value" then x
+    if Dyn.has_tag t "value" then x
     else if Dyn.has_tag t "constr" then
       if onlytac then error_tactic_expected loc else x
     else

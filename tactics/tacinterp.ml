@@ -212,10 +212,6 @@ let constr_of_id env id =
 
 (* To embed tactics *)
 
-let ((tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t),
-     (tactic_out : Dyn.t -> (interp_sign -> glob_tactic_expr))) =
-  Dyn.create "tactic"
-
 let ((value_in : value -> Dyn.t),
      (value_out : Dyn.t -> value)) = Dyn.create "value"
 
@@ -1459,9 +1455,7 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
   | Tacexp t -> val_interp ist t
   | TacDynamic(_,t) ->
       let tg = (Dyn.tag t) in
-      if String.equal tg "tactic" then
-        val_interp ist (tactic_out t ist)
-      else if String.equal tg "value" then
+      if String.equal tg "value" then
         Ftactic.return (value_out t)
       else if String.equal tg "constr" then
         Ftactic.return (Value.of_constr (constr_out t))
@@ -2384,11 +2378,6 @@ let interp_redexp env sigma r =
   let ist = default_ist () in
   let gist = { fully_empty_glob_sign with genv = env; } in
   interp_red_expr ist env sigma (intern_red_expr gist r)
-
-(***************************************************************************)
-(* Embed tactics in raw or glob tactic expr *)
-
-let globTacticIn t = TacArg (dloc,TacDynamic (dloc,tactic_in t))
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)

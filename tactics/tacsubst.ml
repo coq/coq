@@ -268,7 +268,7 @@ and subst_tacarg subst = function
   | TacGeneric arg -> TacGeneric (Genintern.generic_substitute subst arg)
   | TacDynamic(the_loc,t) as x ->
       (match Dyn.tag t with
-	| "tactic" | "value" -> x
+	| "value" -> x
         | "constr" ->
           TacDynamic(the_loc, constr_in (subst_mps subst (constr_out t)))
 	| s -> Errors.anomaly ~loc:dloc ~label:"Tacinterp.val_interp"
