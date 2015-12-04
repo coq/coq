@@ -44,6 +44,20 @@ let test_lpar_id_coloneq =
 	      | _ -> err ())
 	| _ -> err ())
 
+(* Hack to recognize "(x)" *)
+let test_lpar_id_rpar =
+  Gram.Entry.of_parser "lpar_id_coloneq"
+    (fun strm ->
+      match get_tok (stream_nth 0 strm) with
+        | KEYWORD "(" ->
+            (match get_tok (stream_nth 1 strm) with
+              | IDENT _ ->
+                  (match get_tok (stream_nth 2 strm) with
+	            | KEYWORD ")" -> ()
+	            | _ -> err ())
+	      | _ -> err ())
+	| _ -> err ())
+
 (* idem for (x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
   Gram.Entry.of_parser "test_lpar_idnum_coloneq"
@@ -224,8 +238,9 @@ GEXTEND Gram
   ;
   induction_arg:
     [ [ n = natural -> (None,ElimOnAnonHyp n)
+      | test_lpar_id_rpar; c = constr_with_bindings ->
+        (Some false,induction_arg_of_constr c)
       | c = constr_with_bindings -> (None,induction_arg_of_constr c)
-      | "!"; c = constr_with_bindings -> (Some false,induction_arg_of_constr c)
     ] ]
   ;
   constr_with_bindings_arg:

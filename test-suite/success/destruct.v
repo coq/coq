@@ -389,7 +389,7 @@ Abort.
 
 Goal forall b:bool, True.
 intro b.
-destruct !b.
+destruct (b).
 clear b. (* b has to be here *)
 Abort.
 

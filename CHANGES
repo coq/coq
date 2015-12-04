@@ -5,6 +5,11 @@ Specification language
 
 - Syntax "$(tactic)$" changed to "ltac:(tactic)".
 
+Tactics
+
+- Syntax "destruct !hyp" changed to "destruct (hyp)", and similarly
+  for induction.
+
 Changes from V8.5beta2 to V8.5beta3
 ===================================
 
