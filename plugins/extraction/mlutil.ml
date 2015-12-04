@@ -299,10 +299,12 @@ let type_to_signature env t =
 
 let isKill = function Kill _ -> true | _ -> false
 
-let isDummy = function Tdummy _ -> true | _ -> false
+let isTdummy = function Tdummy _ -> true | _ -> false
+
+let isMLdummy = function MLdummy _ -> true | _ -> false
 
 let sign_of_id = function
-  | Dummy -> Kill Kother
+  | Dummy -> Kill Kprop
   | _ -> Keep
 
 (* Classification of signatures *)
@@ -310,45 +312,44 @@ let sign_of_id = function
 type sign_kind =
   | EmptySig
   | NonLogicalSig (* at least a [Keep] *)
-  | UnsafeLogicalSig (* No [Keep], at least a [Kill Kother] *)
   | SafeLogicalSig (* only [Kill Ktype] *)
+  | UnsafeLogicalSig (* No [Keep], not all [Kill Ktype] *)
 
 let rec sign_kind = function
   | [] -> EmptySig
   | Keep :: _ -> NonLogicalSig
   | Kill k :: s ->
-      match sign_kind s with
-	| NonLogicalSig -> NonLogicalSig
-	| UnsafeLogicalSig -> UnsafeLogicalSig
-	| SafeLogicalSig | EmptySig ->
-	    if k == Kother then UnsafeLogicalSig else SafeLogicalSig
+     match k, sign_kind s with
+     | _, NonLogicalSig -> NonLogicalSig
+     | Ktype, (SafeLogicalSig | EmptySig) -> SafeLogicalSig
+     | _, _ -> UnsafeLogicalSig
 
 (* Removing the final [Keep] in a signature *)
 
 let rec sign_no_final_keeps = function
   | [] -> []
   | k :: s ->
-      let s' = k :: sign_no_final_keeps s in
-      match s' with [Keep] -> [] | _ -> s'
+     match k, sign_no_final_keeps s with
+     | Keep, [] -> []
+     | k, l -> k::l
 
 (*s Removing [Tdummy] from the top level of a ML type. *)
 
 let type_expunge_from_sign env s t =
-  let rec expunge s t =
-    if List.is_empty s then t else match t with
-      | Tmeta {contents = Some t} -> expunge s t
-      | Tarr (a,b) ->
-	  let t = expunge (List.tl s) b in
-	  if List.hd s == Keep then Tarr (a, t) else t
-      | Tglob (r,l) ->
-	  (match env r with
-	     | Some mlt -> expunge s (type_subst_list l mlt)
-	     | None -> assert false)
-      | _ -> assert false
+  let rec expunge s t = match s, t with
+    | [], _ -> t
+    | Keep :: s, Tarr(a,b) -> Tarr (a, expunge s b)
+    | Kill _ :: s, Tarr(a,b) -> expunge s b
+    | _, Tmeta {contents = Some t} -> expunge s t
+    | _, Tglob (r,l) ->
+       (match env r with
+	| Some mlt -> expunge s (type_subst_list l mlt)
+	| None -> assert false)
+    | _ -> assert false
   in
   let t = expunge (sign_no_final_keeps s) t in
   if lang () != Haskell && sign_kind s == UnsafeLogicalSig then
-    Tarr (Tdummy Kother, t)
+    Tarr (Tdummy Kprop, t)
   else t
 
 let type_expunge env t =
@@ -385,7 +386,7 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
 | MLfix (i1, id1, t1), MLfix (i2, id2, t2) ->
   Int.equal i1 i2 && Array.equal Id.equal id1 id2 && Array.equal eq_ml_ast t1 t2
 | MLexn e1, MLexn e2 -> String.equal e1 e2
-| MLdummy, MLdummy -> true
+| MLdummy k1, MLdummy k2 -> k1 == k2
 | MLaxiom, MLaxiom -> true
 | MLmagic t1, MLmagic t2 -> eq_ml_ast t1 t2
 | _ -> false
@@ -420,7 +421,7 @@ let ast_iter_rel f =
     | MLapp (a,l) -> iter n a; List.iter (iter n) l
     | MLcons (_,_,l) | MLtuple l ->  List.iter (iter n) l
     | MLmagic a -> iter n a
-    | MLglob _ | MLexn _ | MLdummy | MLaxiom -> ()
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom -> ()
   in iter 0
 
 (*s Map over asts. *)
@@ -439,7 +440,7 @@ let ast_map f = function
   | MLcons (typ,c,l) -> MLcons (typ,c, List.map f l)
   | MLtuple l -> MLtuple (List.map f l)
   | MLmagic a -> MLmagic (f a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLaxiom as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom as a -> a
 
 (*s Map over asts, with binding depth as parameter. *)
 
@@ -457,7 +458,7 @@ let ast_map_lift f n = function
   | MLcons (typ,c,l) -> MLcons (typ,c, List.map (f n) l)
   | MLtuple l -> MLtuple (List.map (f n) l)
   | MLmagic a -> MLmagic (f n a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLaxiom as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom as a -> a
 
 (*s Iter over asts. *)
 
@@ -471,7 +472,7 @@ let ast_iter f = function
   | MLapp (a,l) -> f a; List.iter f l
   | MLcons (_,_,l) | MLtuple l -> List.iter f l
   | MLmagic a -> f a
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLaxiom  -> ()
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ | MLaxiom  -> ()
 
 (*S Operations concerning De Bruijn indices. *)
 
@@ -507,7 +508,7 @@ let nb_occur_match =
     | MLapp (a,l) -> List.fold_left (fun r a -> r+(nb k a)) (nb k a) l
     | MLcons (_,_,l) | MLtuple l -> List.fold_left (fun r a -> r+(nb k a)) 0 l
     | MLmagic a -> nb k a
-    | MLglob _ | MLexn _ | MLdummy | MLaxiom -> 0
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom -> 0
   in nb 1
 
 (*s Lifting on terms.
@@ -559,7 +560,7 @@ let gen_subst v d t =
 	if i' < 1 then a
 	else if i' <= Array.length v then
 	  match v.(i'-1) with
-	    | None -> MLexn ("UNBOUND " ^ string_of_int i')
+	    | None -> assert false
 	    | Some u -> ast_lift n u
 	else MLrel (i+d)
     | a -> ast_map_lift subst n a
@@ -813,8 +814,8 @@ let census_add, census_max, census_clean =
     try h := add k i !h
     with Not_found -> h := (k, Int.Set.singleton i) :: !h
   in
-  let maxf k =
-    let len = ref 0 and lst = ref Int.Set.empty and elm = ref k in
+  let maxf () =
+    let len = ref 0 and lst = ref Int.Set.empty and elm = ref MLaxiom in
     List.iter
       (fun (e, s) ->
 	 let n = Int.Set.cardinal s in
@@ -843,7 +844,7 @@ let factor_branches o typ br =
       if o.opt_case_cst then
 	(try census_add (branch_as_cst br.(i)) i with Impossible -> ());
     done;
-    let br_factor, br_set = census_max MLdummy in
+    let br_factor, br_set = census_max () in
     census_clean ();
     let n = Int.Set.cardinal br_set in
     if Int.equal n 0 then None
@@ -926,7 +927,7 @@ let iota_gen br hd =
   in iota 0 hd
 
 let is_atomic = function
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy -> true
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy _ -> true
   | _ -> false
 
 let is_imm_apply = function MLapp (MLrel 1, _) -> true | _ -> false
@@ -998,7 +999,7 @@ and simpl_app o a = function
 	     let a' = List.map (ast_lift k) a in
 	     (l, p, simpl o (MLapp (t,a')))) br
       in simpl o (MLcase (typ,e,br'))
-  | (MLdummy | MLexn _) as e -> e
+  | (MLdummy _ | MLexn _) as e -> e
 	(* We just discard arguments in those cases. *)
   | f -> MLapp (f,a)
 
@@ -1049,20 +1050,26 @@ let rec select_via_bl l args = match l,args with
 (*s [kill_some_lams] removes some head lambdas according to the signature [bl].
    This list is build on the identifier list model: outermost lambda
    is on the right.
-   [Rels] corresponding to removed lambdas are supposed not to occur, and
+   [Rels] corresponding to removed lambdas are not supposed to occur
+   (except maybe in the case of Kimplicit), and
    the other [Rels] are made correct via a [gen_subst].
    Output is not directly a [ml_ast], compose with [named_lams] if needed. *)
+
+let is_impl_kill = function Kill (Kimplicit _) -> true | _ -> false
 
 let kill_some_lams bl (ids,c) =
   let n = List.length bl in
   let n' = List.fold_left (fun n b -> if b == Keep then (n+1) else n) 0 bl in
   if Int.equal n n' then ids,c
-  else if Int.equal n' 0 then [],ast_lift (-n) c
+  else if Int.equal n' 0 && not (List.exists is_impl_kill bl)
+  then [],ast_lift (-n) c
   else begin
     let v = Array.make n None in
     let rec parse_ids i j = function
       | [] -> ()
       | Keep :: l -> v.(i) <- Some (MLrel j); parse_ids (i+1) (j+1) l
+      | Kill (Kimplicit _ as k) :: l ->
+         v.(i) <- Some (MLdummy k); parse_ids (i+1) j l
       | Kill _ :: l -> parse_ids (i+1) j l
     in parse_ids 0 1 bl;
     select_via_bl bl ids, gen_subst v (n'-n) c
@@ -1100,12 +1107,12 @@ let eta_expansion_sign s (ids,c) =
 	let a = List.rev_map (function MLrel x -> MLrel (i-x) | a -> a) rels
 	in ids, MLapp (ast_lift (i-1) c, a)
     | Keep :: l -> abs (anonymous :: ids) (MLrel i :: rels) (i+1) l
-    | Kill _ :: l -> abs (Dummy :: ids) (MLdummy :: rels) (i+1) l
+    | Kill k :: l -> abs (Dummy :: ids) (MLdummy k :: rels) (i+1) l
   in abs ids [] 1 s
 
 (*s If [s = [b1; ... ; bn]] then [case_expunge] decomposes [e]
   in [n] lambdas (with eta-expansion if needed) and removes all dummy lambdas
-  corresponding to [Del] in [s]. *)
+  corresponding to [Kill _] in [s]. *)
 
 let case_expunge s e =
   let m = List.length s in
@@ -1123,8 +1130,9 @@ let term_expunge s (ids,c) =
   if List.is_empty s then c
   else
     let ids,c = kill_some_lams (List.rev s) (ids,c) in
-    if List.is_empty ids && lang () != Haskell && List.mem (Kill Kother) s then
-      MLlam (Dummy, ast_lift 1 c)
+    if List.is_empty ids && lang () != Haskell &&
+       sign_kind s == UnsafeLogicalSig
+    then MLlam (Dummy, ast_lift 1 c)
     else named_lams ids c
 
 (*s [kill_dummy_args ids r t] looks for occurrences of [MLrel r] in [t] and
@@ -1267,7 +1275,7 @@ let rec ml_size = function
   | MLfix(_,_,f) -> ml_size_array f
   | MLletin (_,_,t) -> ml_size t
   | MLmagic t -> ml_size t
-  | MLglob _ | MLrel _ | MLexn _ | MLdummy | MLaxiom -> 0
+  | MLglob _ | MLrel _ | MLexn _ | MLdummy _ | MLaxiom -> 0
 
 and ml_size_list l = List.fold_left (fun a t -> a + ml_size t) 0 l
 

@@ -38,8 +38,8 @@ val error_MPfile_as_mod : module_path -> bool -> 'a
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
 val check_loaded_modfile : module_path -> unit
-val msg_non_implicit : global_reference -> int -> Name.t -> string
-val error_non_implicit : string -> 'a
+val msg_of_implicit : kill_reason -> string
+val err_or_warn_remaining_implicit : kill_reason -> unit
 
 val info_file : string -> unit
 
@@ -166,7 +166,7 @@ val to_keep : global_reference -> bool
 
 (*s Table for implicits arguments *)
 
-val implicits_of_global : global_reference -> int list
+val implicits_of_global : global_reference -> Int.Set.t
 
 (*s Table for user-given custom ML extractions. *)
 

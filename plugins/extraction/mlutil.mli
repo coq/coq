@@ -67,7 +67,8 @@ val type_expunge : abbrev_map -> ml_type -> ml_type
 val type_expunge_from_sign : abbrev_map -> signature -> ml_type -> ml_type
 
 val eq_ml_type : ml_type -> ml_type -> bool
-val isDummy : ml_type -> bool
+val isTdummy : ml_type -> bool
+val isMLdummy : ml_ast -> bool
 val isKill : sign -> bool
 
 val case_expunge : signature -> ml_ast -> ml_ident list * ml_ast
@@ -125,8 +126,8 @@ exception Impossible
 type sign_kind =
   | EmptySig
   | NonLogicalSig (* at least a [Keep] *)
-  | UnsafeLogicalSig (* No [Keep], at least a [Kill Kother] *)
   | SafeLogicalSig (* only [Kill Ktype] *)
+  | UnsafeLogicalSig (* No [Keep], not all [Kill Ktype] *)
 
 val sign_kind : signature -> sign_kind
 

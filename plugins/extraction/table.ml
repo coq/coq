@@ -401,16 +401,34 @@ let error_MPfile_as_mod mp b =
 	    "Monolithic Extraction cannot deal with this situation.\n"^
 	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
 
-let msg_non_implicit r n id =
-  let name = match id with
-    | Anonymous -> ""
-    | Name id -> "(" ^ Id.to_string id ^ ") "
-  in
-  "The " ^ (String.ordinal n) ^ " argument " ^ name ^ "of " ^ (string_of_global r)
+let argnames_of_global r =
+  let typ = Global.type_of_global_unsafe r in
+  let rels,_ =
+    decompose_prod (Reduction.whd_betadeltaiota (Global.env ()) typ) in
+  List.rev_map fst rels
 
-let error_non_implicit msg =
-  err (str (msg ^ " still occurs after extraction.") ++
-       fnl () ++ str "Please check the Extraction Implicit declarations.")
+let msg_of_implicit = function
+  | Kimplicit (r,i) ->
+     let name = match List.nth (argnames_of_global r) (i-1) with
+       | Anonymous -> ""
+       | Name id -> "(" ^ Id.to_string id ^ ") "
+     in
+     (String.ordinal i)^" argument "^name^"of "^(string_of_global r)
+  | Ktype | Kprop -> ""
+
+let error_remaining_implicit k =
+  let s = msg_of_implicit k in
+  err (str ("An implicit occurs after extraction : "^s^".") ++ fnl () ++
+       str "Please check your Extraction Implicit declarations." ++ fnl() ++
+       str "You might also try Unset Extraction SafeImplicits to force" ++
+       fnl() ++ str "the extraction of unsafe code and review it manually.")
+
+let warning_remaining_implicit k =
+  let s = msg_of_implicit k in
+  msg_warning
+    (str ("At least an implicit occurs after extraction : "^s^".") ++ fnl () ++
+     str "Extraction SafeImplicits is unset, extracting nonetheless," ++ fnl ()
+     ++ str "but this code is potentially unsafe, please review it manually.")
 
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp ->
@@ -635,32 +653,39 @@ let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 (*s Extraction Implicit *)
 
+let safe_implicit = my_bool_option "SafeImplicits" true
+
+let err_or_warn_remaining_implicit k =
+  if safe_implicit () then
+    error_remaining_implicit k
+  else
+    warning_remaining_implicit k
+
 type int_or_id = ArgInt of int | ArgId of Id.t
 
 let implicits_table = Summary.ref Refmap'.empty ~name:"ExtrImplicit"
 
 let implicits_of_global r =
- try Refmap'.find r !implicits_table with Not_found -> []
+ try Refmap'.find r !implicits_table with Not_found -> Int.Set.empty
 
 let add_implicits r l =
-  let typ = Global.type_of_global_unsafe r in
-  let rels,_ =
-    decompose_prod (Reduction.whd_betadeltaiota (Global.env ()) typ) in
-  let names = List.rev_map fst rels in
+  let names = argnames_of_global r in
   let n = List.length names in
-  let check = function
+  let add_arg s = function
     | ArgInt i ->
-	if 1 <= i && i <= n then i
+	if 1 <= i && i <= n then Int.Set.add i s
 	else err (int i ++ str " is not a valid argument number for " ++
 		  safe_pr_global r)
     | ArgId id ->
-	(try List.index Name.equal (Name id) names
-	 with Not_found ->
-	   err (str "No argument " ++ pr_id id ++ str " for " ++
-		safe_pr_global r))
+       try
+         let i = List.index Name.equal (Name id) names in
+         Int.Set.add i s
+       with Not_found ->
+	 err (str "No argument " ++ pr_id id ++ str " for " ++
+	      safe_pr_global r)
   in
-  let l' = List.map check l in
-  implicits_table := Refmap'.add r l' !implicits_table
+  let ints = List.fold_left add_arg Int.Set.empty l in
+  implicits_table := Refmap'.add r ints !implicits_table
 
 (* Registration of operations for rollback. *)
 

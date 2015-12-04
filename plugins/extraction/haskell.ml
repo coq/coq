@@ -200,8 +200,11 @@ let rec pp_expr par env args =
     | MLexn s ->
 	(* An [MLexn] may be applied, but I don't really care. *)
 	pp_par par (str "Prelude.error" ++ spc () ++ qs s)
-    | MLdummy ->
-	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
+    | MLdummy k ->
+        (* An [MLdummy] may be applied, but I don't really care. *)
+        (match msg_of_implicit k with
+         | "" -> str "__"
+         | s -> str "__" ++ spc () ++ pp_bracket_comment (str s))
     | MLmagic a ->
 	pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")

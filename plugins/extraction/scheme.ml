@@ -126,7 +126,7 @@ let rec pp_expr env args =
     | MLexn s ->
 	(* An [MLexn] may be applied, but I don't really care. *)
 	paren (str "error" ++ spc () ++ qs s)
-    | MLdummy ->
+    | MLdummy _ ->
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLmagic a ->
 	pp_expr env args a

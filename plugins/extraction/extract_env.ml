@@ -498,8 +498,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
   let d = descr () in
   reset_renaming_tables AllButExternal;
   let unsafe_needs = {
-    mldummy = struct_ast_search ((==) MLdummy) struc;
-    tdummy = struct_type_search Mlutil.isDummy struc;
+    mldummy = struct_ast_search Mlutil.isMLdummy struc;
+    tdummy = struct_type_search Mlutil.isTdummy struc;
     tunknown = struct_type_search ((==) Tunknown) struc;
     magic =
       if lang () != Haskell then false

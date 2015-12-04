@@ -199,8 +199,11 @@ let rec pp_expr par env args =
     | MLexn s ->
 	(* An [MLexn] may be applied, but I don't really care. *)
 	pp_par par (str "assert false" ++ spc () ++ str ("(* "^s^" *)"))
-    | MLdummy ->
-	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
+    | MLdummy k ->
+        (* An [MLdummy] may be applied, but I don't really care. *)
+        (match msg_of_implicit k with
+         | "" -> str "__"
+         | s -> str "__" ++ spc () ++ str ("(* "^s^" *)"))
     | MLmagic a ->
 	pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args)
     | MLaxiom ->
@@ -352,7 +355,7 @@ and pp_function env t =
     | MLcase(Tglob(r,_),MLrel 1,pv) when
 	not (is_coinductive r) && List.is_empty (get_record_fields r) &&
 	not (is_custom_match pv) ->
-	if not (ast_occurs 1 (MLcase(Tunknown,MLdummy,pv))) then
+	if not (ast_occurs 1 (MLcase(Tunknown,MLaxiom,pv))) then
 	  pr_binding (List.rev (List.tl bl)) ++
        	  str " = function" ++ fnl () ++
 	  v 0 (pp_pat env' pv)
