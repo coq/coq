@@ -19,6 +19,7 @@ open Tacinterp
 open Tactics
 open Errors
 open Util
+open Tacticals.New
 open Proofview.Notations
 
 DECLARE PLUGIN "tauto"
@@ -87,23 +88,48 @@ let _ =
       optread  = (fun () -> !iff_unfolding);
       optwrite = (:=) iff_unfolding }
 
+(** Base tactics *)
+
+let idtac = Proofview.tclUNIT ()
+let fail = Proofview.tclINDEPENDENT (tclFAIL 0 (Pp.mt ()))
+
+let intro = Tactics.intro
+
+let assert_ ?by c =
+  let tac = match by with
+  | None -> None
+  | Some tac -> Some (tclCOMPLETE tac)
+  in
+  Proofview.tclINDEPENDENT (Tactics.forward true tac None c)
+
+let apply c = Tactics.apply c
+
+let clear id = Proofview.V82.tactic (fun gl -> Tactics.clear [id] gl)
+
+let assumption = Tactics.assumption
+
+let split = Tactics.split_with_bindings false [Misctypes.NoBindings]
+
 (** Test *)
 
 let make_lfun l =
   let fold accu (id, v) = Id.Map.add (Id.of_string id) v accu in
   List.fold_left fold Id.Map.empty l
 
-let tacticIn_ist tac name =
+let register_tauto_tactic tac name =
   let name = { mltac_plugin = "tauto"; mltac_tactic = name; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
+  Tacenv.register_ml_tactic name [| tac |];
+  TacML (Loc.ghost, entry, [])
+
+let tacticIn_ist tac name =
   let tac _ ist =
     let avoid = Option.default [] (TacStore.get ist.extra f_avoid_ids) in
     let debug = Option.default Tactic_debug.DebugOff (TacStore.get ist.extra f_debug) in
     let (tac, ist) = tac ist in
     interp_tac_gen ist.lfun avoid debug tac
   in
-  Tacenv.register_ml_tactic name [| tac |];
-  TacML (Loc.ghost, entry, [])
+  register_tauto_tactic tac name
 
 let tacticIn tac name =
   tacticIn_ist (fun ist -> tac ist, ist) name
@@ -113,25 +139,19 @@ let push_ist ist args =
   let lfun = List.fold_left fold ist.lfun args in
   { ist with lfun }
 
-let is_empty ist =
-  if is_empty_type (assoc_var "X1" ist) then
-    <:tactic<idtac>>
-  else
-    <:tactic<fail>>
+let is_empty _ ist =
+  if is_empty_type (assoc_var "X1" ist) then idtac else fail
 
-let t_is_empty = tacticIn is_empty "is_empty"
+let t_is_empty = register_tauto_tactic is_empty "is_empty"
 
 (* Strictly speaking, this exceeds the propositional fragment as it
    matches also equality types (and solves them if a reflexivity) *)
-let is_unit_or_eq ist =
+let is_unit_or_eq _ ist =
   let flags = assoc_flags ist in
   let test = if flags.strict_unit then is_unit_type else is_unit_or_eq_type in
-  if test (assoc_var "X1" ist) then
-    <:tactic<idtac>>
-  else
-    <:tactic<fail>>
+  if test (assoc_var "X1" ist) then idtac else fail
 
-let t_is_unit_or_eq = tacticIn is_unit_or_eq "is_unit_or_eq"
+let t_is_unit_or_eq = register_tauto_tactic is_unit_or_eq "is_unit_or_eq"
 
 let is_record t =
   let (hdapp,args) = decompose_app t in
@@ -150,26 +170,21 @@ let bugged_is_binary t =
          Int.equal mib.Declarations.mind_nparams 2
     | _ -> false
 
-let iter_tac tacl =
-  List.fold_right (fun tac tacs -> <:tactic< $tac; $tacs >>) tacl
-
 (** Dealing with conjunction *)
 
-let is_conj ist =
+let is_conj _ ist =
   let flags = assoc_flags ist in
   let ind = assoc_var "X1" ist in
     if (not flags.binary_mode_bugged_detection || bugged_is_binary ind) &&
        is_conjunction
          ~strict:flags.strict_in_hyp_and_ccl
          ~onlybinary:flags.binary_mode ind
-    then
-      <:tactic<idtac>>
-    else
-      <:tactic<fail>>
+    then idtac
+    else fail
 
-let t_is_conj = tacticIn is_conj "is_conj"
+let t_is_conj = register_tauto_tactic is_conj "is_conj"
 
-let flatten_contravariant_conj ist =
+let flatten_contravariant_conj _ ist =
   let flags = assoc_flags ist in
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
@@ -179,21 +194,14 @@ let flatten_contravariant_conj ist =
           ~onlybinary:flags.binary_mode typ
   with
   | Some (_,args) ->
-      let newtyp = Value.of_constr (List.fold_right mkArrow args c) in
-      let hyp = Value.of_constr hyp in
-      let ist = push_ist ist [("newtyp", newtyp); ("hyp", hyp)] in
-      let intros =
-	iter_tac (List.map (fun _ -> <:tactic< intro >>) args)
-	<:tactic< idtac >> in
-      <:tactic<
-	assert newtyp by ($intros; apply hyp; split; assumption);
-	clear hyp
-      >>, ist
-  | _ ->
-      <:tactic<fail>>, ist
+    let newtyp = List.fold_right mkArrow args c in
+    let intros = tclMAP (fun _ -> intro) args in
+    let by = tclTHENLIST [intros; apply hyp; split; assumption] in
+    tclTHENLIST [assert_ ~by newtyp; clear (destVar hyp)]
+  | _ -> fail
 
 let t_flatten_contravariant_conj =
-  tacticIn_ist flatten_contravariant_conj "flatten_contravariant_conj"
+  register_tauto_tactic flatten_contravariant_conj "flatten_contravariant_conj"
 
 (** Dealing with disjunction *)
 
@@ -204,21 +212,19 @@ let constructor i =
   let i = in_gen (rawwit Constrarg.wit_int_or_var) (Misctypes.ArgArg i) in
   Tacexpr.TacML (Loc.ghost, name, [i])
 
-let is_disj ist =
+let is_disj _ ist =
   let flags = assoc_flags ist in
   let t = assoc_var "X1" ist in
   if (not flags.binary_mode_bugged_detection || bugged_is_binary t) &&
      is_disjunction
        ~strict:flags.strict_in_hyp_and_ccl
        ~onlybinary:flags.binary_mode t
-  then
-    <:tactic<idtac>>
-  else
-    <:tactic<fail>>
+  then idtac
+  else fail
 
-let t_is_disj = tacticIn is_disj "is_disj"
+let t_is_disj = register_tauto_tactic is_disj "is_disj"
 
-let flatten_contravariant_disj ist =
+let flatten_contravariant_disj _ ist =
   let flags = assoc_flags ist in
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
@@ -228,25 +234,19 @@ let flatten_contravariant_disj ist =
           ~onlybinary:flags.binary_mode
           typ with
   | Some (_,args) ->
-      let hyp = Value.of_constr hyp in
-      let ist = push_ist ist ["hyp", hyp] in
-      let fold arg (i, ist, tacs) =
-        let typ = Value.of_constr (mkArrow arg c) in
-        let ist = push_ist ist ["typ" ^ string_of_int i, typ] in
-        let t = Id.of_string ("typ" ^ string_of_int i) in
-        let typ = Reference (Libnames.Ident (Loc.ghost, t)) in
-        let ci = constructor i in
-        let tac = <:tactic< let typ := $typ in assert typ by (intro; apply hyp; $ci; assumption) >> in
-        (pred i, ist, <:tactic< $tac; $tacs >>)
+      let map i arg =
+        let typ = mkArrow arg c in
+        let ci = Tactics.constructor_tac false None (succ i) Misctypes.NoBindings in
+        let by = tclTHENLIST [intro; apply hyp; ci; assumption] in
+        assert_ ~by typ
       in
-      let tac0 = <:tactic< clear hyp >> in
-      let (_, ist, tac) = List.fold_right fold args (List.length args, ist, tac0) in
-      (tac, ist)
-  | _ ->
-      <:tactic<fail>>, ist
+      let tacs = List.mapi map args in
+      let tac0 = clear (destVar hyp) in
+      tclTHEN (tclTHENLIST tacs) tac0
+  | _ -> fail
 
 let t_flatten_contravariant_disj =
-  tacticIn_ist flatten_contravariant_disj "flatten_contravariant_disj"
+  register_tauto_tactic flatten_contravariant_disj "flatten_contravariant_disj"
 
 (** Main tactic *)
 
