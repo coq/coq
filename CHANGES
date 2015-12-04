@@ -1,3 +1,10 @@
+Changes from V8.5beta3
+======================
+
+Specification language
+
+- Syntax "$(tactic)$" changed to "ltac:(tactic)".
+
 Changes from V8.5beta2 to V8.5beta3
 ===================================
 
@@ -9,10 +16,6 @@ Vernacular commands
   declaration of all polymorphic universes appearing in a definition when
   introducing it.
 - New command "Show id" to show goal named id.
-
-Specification language
-
-- Syntax "$(tactic)$" changed to "ltac: tactic".
 
 Tactics
 
