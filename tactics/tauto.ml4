@@ -93,16 +93,25 @@ let make_lfun l =
   let fold accu (id, v) = Id.Map.add (Id.of_string id) v accu in
   List.fold_left fold Id.Map.empty l
 
-let tacticIn tac name =
+let tacticIn_ist tac name =
   let name = { mltac_plugin = "tauto"; mltac_tactic = name; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let tac _ ist =
     let avoid = Option.default [] (TacStore.get ist.extra f_avoid_ids) in
     let debug = Option.default Tactic_debug.DebugOff (TacStore.get ist.extra f_debug) in
-    interp_tac_gen ist.lfun avoid debug (tac ist)
+    let (tac, ist) = tac ist in
+    interp_tac_gen ist.lfun avoid debug tac
   in
   Tacenv.register_ml_tactic name [| tac |];
   TacML (Loc.ghost, entry, [])
+
+let tacticIn tac name =
+  tacticIn_ist (fun ist -> tac ist, ist) name
+
+let push_ist ist args =
+  let fold accu (id, arg) = Id.Map.add (Id.of_string id) arg accu in
+  let lfun = List.fold_left fold ist.lfun args in
+  { ist with lfun }
 
 let is_empty ist =
   if is_empty_type (assoc_var "X1" ist) then
@@ -170,22 +179,21 @@ let flatten_contravariant_conj ist =
           ~onlybinary:flags.binary_mode typ
   with
   | Some (_,args) ->
-      let newtyp = valueIn (Value.of_constr (List.fold_right mkArrow args c)) in
-      let hyp = valueIn (Value.of_constr hyp) in
+      let newtyp = Value.of_constr (List.fold_right mkArrow args c) in
+      let hyp = Value.of_constr hyp in
+      let ist = push_ist ist [("newtyp", newtyp); ("hyp", hyp)] in
       let intros =
 	iter_tac (List.map (fun _ -> <:tactic< intro >>) args)
 	<:tactic< idtac >> in
       <:tactic<
-        let newtyp := $newtyp in
-        let hyp := $hyp in
 	assert newtyp by ($intros; apply hyp; split; assumption);
 	clear hyp
-      >>
+      >>, ist
   | _ ->
-      <:tactic<fail>>
+      <:tactic<fail>>, ist
 
 let t_flatten_contravariant_conj =
-  tacticIn flatten_contravariant_conj "flatten_contravariant_conj"
+  tacticIn_ist flatten_contravariant_conj "flatten_contravariant_conj"
 
 (** Dealing with disjunction *)
 
@@ -220,20 +228,25 @@ let flatten_contravariant_disj ist =
           ~onlybinary:flags.binary_mode
           typ with
   | Some (_,args) ->
-      let hyp = valueIn (Value.of_constr hyp) in
-      iter_tac (List.map_i (fun i arg ->
-	let typ = valueIn (Value.of_constr (mkArrow arg c)) in
-	let ci = constructor i in
-	<:tactic<
-          let typ := $typ in
-          let hyp := $hyp in
-	  assert typ by (intro; apply hyp; $ci; assumption)
-	>>) 1 args) <:tactic< let hyp := $hyp in clear hyp >>
+      let hyp = Value.of_constr hyp in
+      let ist = push_ist ist ["hyp", hyp] in
+      let fold arg (i, ist, tacs) =
+        let typ = Value.of_constr (mkArrow arg c) in
+        let ist = push_ist ist ["typ" ^ string_of_int i, typ] in
+        let t = Id.of_string ("typ" ^ string_of_int i) in
+        let typ = Reference (Libnames.Ident (Loc.ghost, t)) in
+        let ci = constructor i in
+        let tac = <:tactic< let typ := $typ in assert typ by (intro; apply hyp; $ci; assumption) >> in
+        (pred i, ist, <:tactic< $tac; $tacs >>)
+      in
+      let tac0 = <:tactic< clear hyp >> in
+      let (_, ist, tac) = List.fold_right fold args (List.length args, ist, tac0) in
+      (tac, ist)
   | _ ->
-      <:tactic<fail>>
+      <:tactic<fail>>, ist
 
 let t_flatten_contravariant_disj =
-  tacticIn flatten_contravariant_disj "flatten_contravariant_disj"
+  tacticIn_ist flatten_contravariant_disj "flatten_contravariant_disj"
 
 (** Main tactic *)
 
