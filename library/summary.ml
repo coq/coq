@@ -10,6 +10,8 @@ open Pp
 open Errors
 open Util
 
+module Dyn = Dyn.Make(struct end)
+
 type marshallable = [ `Yes | `No | `Shallow ]
 type 'a summary_declaration = {
   freeze_function : marshallable -> 'a;
@@ -176,3 +178,5 @@ let ref ?(freeze=fun _ r -> r) ~name x =
       unfreeze_function = ((:=) r);
       init_function = (fun () -> r := x) };
   r
+
+let dump = Dyn.dump

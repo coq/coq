@@ -109,3 +109,7 @@ val classify_object : obj -> obj substitutivity
 val discharge_object : object_name * obj -> obj option
 val rebuild_object : obj -> obj
 val relax : bool -> unit
+
+(** {6 Debug} *)
+
+val dump : unit -> (int * string) list

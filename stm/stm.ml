@@ -631,10 +631,9 @@ end = struct (* {{{ *)
     States.unfreeze system; Proof_global.unfreeze proof
 
   (* hack to make futures functional *)
-  let in_t, out_t = Dyn.create "state4future"
   let () = Future.set_freeze
-    (fun () -> in_t (freeze_global_state `No, !cur_id))
-    (fun t -> let s,i = out_t t in unfreeze_global_state s; cur_id := i)
+    (fun () -> Obj.magic (freeze_global_state `No, !cur_id))
+    (fun t -> let s,i = Obj.magic t in unfreeze_global_state s; cur_id := i)
   
   type frozen_state = state
   type proof_part =

@@ -9,6 +9,8 @@
 open Libnames
 open Pp
 
+module Dyn = Dyn.Make(struct end)
+
 (* The relax flag is used to make it possible to load files while ignoring
    failures to incorporate some objects.  This can be useful when one
    wants to work with restricted Coq programs that have only parts of
@@ -158,3 +160,5 @@ let discharge_object ((_,lobj) as node) =
 
 let rebuild_object lobj =
   apply_dyn_fun lobj (fun d -> d.dyn_rebuild_function lobj) lobj
+
+let dump = Dyn.dump

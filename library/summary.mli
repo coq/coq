@@ -71,3 +71,7 @@ val unfreeze_summary : frozen_bits -> unit
 val surgery_summary : frozen -> frozen_bits -> frozen
 val project_summary : frozen -> ?complement:bool -> string list -> frozen_bits
 val pointer_equal : frozen_bits -> frozen_bits -> bool
+
+(** {6 Debug} *)
+
+val dump : unit -> (int * string) list

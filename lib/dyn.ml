@@ -9,6 +9,19 @@
 open Errors
 open Pp
 
+module type S =
+sig
+type t
+
+val create : string -> ('a -> t) * (t -> 'a)
+val tag : t -> string
+val has_tag : t -> string -> bool
+val pointer_equal : t -> t -> bool
+val dump : unit -> (int * string) list
+end
+
+module Make(M : CSig.EmptyS) =
+struct
 (* Dynamics, programmed with DANGER !!! *)
 
 type t = int * Obj.t
@@ -48,3 +61,5 @@ let tag (s,_) =
 let pointer_equal (t1,o1) (t2,o2) = t1 = t2 && o1 == o2
 
 let dump () = Int.Map.bindings !dyntab
+
+end
