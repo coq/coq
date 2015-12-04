@@ -67,16 +67,8 @@ module StrSet = Set.Make(StrMod)
 let dirmap = ref StrMap.empty
 
 let make_dir_table dir =
-  let b = ref StrSet.empty in
-  let a = Unix.opendir dir in
-  (try
-    while true do
-      let s = Unix.readdir a in
-      if s.[0] != '.' then b := StrSet.add s !b
-    done
-  with
-  | End_of_file -> ());
-  Unix.closedir a; !b
+  let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
+  Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
 
 let exists_in_dir_respecting_case dir bf =
   let contents, cached =
