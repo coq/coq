@@ -1263,9 +1263,6 @@ module Make
           else str"(" ++ strm ++ str")"
 
         and pr_tacarg = function
-          | TacDynamic (loc,t) ->
-            pr_with_comments loc
-              (str "<" ++ keyword "dynamic" ++ str " [" ++ str (Dyn.tag t) ++ str "]>")
           | MetaIdArg (loc,true,s) ->
             pr_with_comments loc (str "$" ++ str s)
           | MetaIdArg (loc,false,s) ->

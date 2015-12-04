@@ -266,11 +266,6 @@ and subst_tacarg subst = function
   | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (subst_tactic subst t)
   | TacGeneric arg -> TacGeneric (Genintern.generic_substitute subst arg)
-  | TacDynamic(the_loc,t) as x ->
-      (match Dyn.tag t with
-	| "value" -> x
-	| s -> Errors.anomaly ~loc:dloc ~label:"Tacinterp.val_interp"
-                 (str "Unknown dynamic: <" ++ str s ++ str ">"))
 
 (* Reads the rules of a Match Context or a Match *)
 and subst_match_rule subst = function

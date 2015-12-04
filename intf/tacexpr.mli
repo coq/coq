@@ -209,7 +209,6 @@ constraint 'a = <
 (** Possible arguments of a tactic definition *)
 
 and 'a gen_tactic_arg =
-  | TacDynamic     of Loc.t * Dyn.t
   | TacGeneric     of 'lev generic_argument
   | MetaIdArg      of Loc.t * bool * string
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval

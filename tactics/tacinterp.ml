@@ -86,7 +86,7 @@ type tacvalue =
       Id.t option list * glob_tactic_expr
   | VRec of value Id.Map.t ref * glob_tactic_expr
 
-let (wit_tacvalue : (Empty.t, Empty.t, tacvalue) Genarg.genarg_type) =
+let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
   Genarg.create_arg None "tacvalue"
 
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
@@ -209,13 +209,6 @@ let pr_inspect env expr result =
 (* Transforms an id into a constr if possible, or fails with Not_found *)
 let constr_of_id env id =
   Term.mkVar (let _ = Environ.lookup_named id env in id)
-
-(* To embed tactics *)
-
-let ((value_in : value -> Dyn.t),
-     (value_out : Dyn.t -> value)) = Dyn.create "value"
-
-let valueIn t = TacDynamic (Loc.ghost, value_in t)
 
 (** Generic arguments : table of interpretation functions *)
 
@@ -1453,13 +1446,6 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
         Proofview.tclUNIT (Value.of_int i)
       end
   | Tacexp t -> val_interp ist t
-  | TacDynamic(_,t) ->
-      let tg = (Dyn.tag t) in
-      if String.equal tg "value" then
-        Ftactic.return (value_out t)
-      else
-        Errors.anomaly ~loc:dloc ~label:"Tacinterp.val_interp"
-	  (str "Unknown dynamic: <" ++ str (Dyn.tag t) ++ str ">")
 
 (* Interprets an application node *)
 and interp_app loc ist fv largs : typed_generic_argument Ftactic.t =
@@ -2356,7 +2342,7 @@ let () =
 let () =
   let interp ist gl tac =
     let f = VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], tac) in
-    (project gl, TacArg (dloc, valueIn (of_tacvalue f)))
+    (project gl, TacArg (dloc, TacGeneric (Genarg.in_gen (glbwit wit_tacvalue) f)))
   in
   Geninterp.register_interp0 wit_tactic interp
 
@@ -2364,6 +2350,9 @@ let () =
   Geninterp.register_interp0 wit_uconstr (fun ist gl c ->
      project gl , interp_uconstr ist (pf_env gl) c
   )
+
+let () =
+  Geninterp.register_interp0 wit_tacvalue (fun ist gl c -> project gl, c)
 
 (***************************************************************************)
 (* Other entry points *)

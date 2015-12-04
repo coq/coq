@@ -672,7 +672,7 @@ and intern_tactic_seq onlytac ist = function
 and intern_tactic_as_arg loc onlytac ist a =
   match intern_tacarg !strict_check onlytac ist a with
   | TacCall _ | Reference _
-  | TacDynamic _ | TacGeneric _ as a -> TacArg (loc,a)
+  | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
   | ConstrMayEval _ | UConstr _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
       if onlytac then error_tactic_expected loc else TacArg (loc,a)
@@ -709,11 +709,6 @@ and intern_tacarg strict onlytac ist = function
   | TacGeneric arg ->
     let (_, arg) = Genintern.generic_intern ist arg in
     TacGeneric arg
-  | TacDynamic(loc,t) as x ->
-    if Dyn.has_tag t "value" then x
-    else
-      let tag = Dyn.tag t in
-      anomaly ~loc (str "Unknown dynamic: <" ++ str tag ++ str ">")
 
 (* Reads the rules of a Match Context or a Match *)
 and intern_match_rule onlytac ist = function

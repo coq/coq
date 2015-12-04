@@ -45,9 +45,6 @@ val extract_ltac_constr_values : interp_sign -> Environ.env ->
 (** Given an interpretation signature, extract all values which are coercible to
     a [constr]. *)
 
-(** To embed several objects in Coqast.t *)
-val valueIn : value -> raw_tactic_arg
-
 (** Sets the debugger mode *)
 val set_debug : debug_info -> unit
 
