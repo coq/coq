@@ -371,7 +371,7 @@ let rec replace_module_object idl mp0 objs0 mp1 objs1 =
   match idl, objs0 with
   | _,[] -> []
   | id::idl,(id',obj)::tail when Id.equal id id' ->
-    assert (object_has_tag obj "MODULE");
+    assert (String.equal (object_tag obj) "MODULE");
     let mp_id = MPdot(mp0, Label.of_id id) in
     let objs = match idl with
       | [] -> Lib.subst_objects (map_mp mp1 mp_id empty_delta_resolver) objs1

@@ -111,5 +111,7 @@ val map_union : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) union -> ('c, 'd) union
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 (** Used for browsable-until structures. *)
 
+type ('a, 'b) eq = ('a, 'b) CSig.eq = Refl : ('a, 'a) eq
+
 val open_utf8_file_in : string -> in_channel
 (** Open an utf-8 encoded file and skip the byte-order mark if any. *)

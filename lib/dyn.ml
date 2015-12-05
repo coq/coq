@@ -11,12 +11,12 @@ open Pp
 
 module type S =
 sig
-type t
+type 'a tag
+type t = Dyn : 'a tag * 'a -> t
 
-val create : string -> ('a -> t) * (t -> 'a)
-val tag : t -> string
-val has_tag : t -> string -> bool
-val pointer_equal : t -> t -> bool
+val create : string -> 'a tag
+val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
+val repr : 'a tag -> string
 val dump : unit -> (int * string) list
 end
 
@@ -24,7 +24,9 @@ module Make(M : CSig.EmptyS) =
 struct
 (* Dynamics, programmed with DANGER !!! *)
 
-type t = int * Obj.t
+type 'a tag = int
+
+type t = Dyn : 'a tag * 'a -> t
 
 let dyntab = ref (Int.Map.empty : string Int.Map.t)
 (** Instead of working with tags as strings, which are costly, we use their
@@ -41,24 +43,15 @@ let create (s : string) =
       anomaly ~label:"Dyn.create" msg
   in
   let () = dyntab := Int.Map.add hash s !dyntab in
-  let infun v = (hash, Obj.repr v) in
-  let outfun (nh, rv) =
-    if Int.equal hash nh then Obj.magic rv
-    else
-      anomaly (str "dyn_out: expected " ++ str s)
-  in
-  (infun, outfun)
+  hash
 
-let has_tag (s, _) tag =
-  let hash = Hashtbl.hash (tag : string) in
-  Int.equal s hash
+let eq : 'a 'b. 'a tag -> 'b tag -> ('a, 'b) CSig.eq option =
+  fun h1 h2 -> if Int.equal h1 h2 then Some (Obj.magic CSig.Refl) else None
 
-let tag (s,_) =
+let repr s =
   try Int.Map.find s !dyntab
   with Not_found ->
     anomaly (str "Unknown dynamic tag " ++ int s)
-
-let pointer_equal (t1,o1) (t2,o2) = t1 = t2 && o1 == o2
 
 let dump () = Int.Map.bindings !dyntab
 

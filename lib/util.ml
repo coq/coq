@@ -124,6 +124,7 @@ let delayed_force f = f ()
 
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
+type ('a, 'b) eq = ('a, 'b) CSig.eq = Refl : ('a, 'a) eq
 
 let map_union f g = function
   | Inl a -> Inl (f a)

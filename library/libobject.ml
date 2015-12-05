@@ -8,6 +8,7 @@
 
 open Libnames
 open Pp
+open Util
 
 module Dyn = Dyn.Make(struct end)
 
@@ -72,15 +73,25 @@ type dynamic_object_declaration = {
   dyn_discharge_function : object_name * obj -> obj option;
   dyn_rebuild_function : obj -> obj }
 
-let object_tag = Dyn.tag
-let object_has_tag = Dyn.has_tag
+let object_tag (Dyn.Dyn (t, _)) = Dyn.repr t
 
 let cache_tab =
   (Hashtbl.create 17 : (string,dynamic_object_declaration) Hashtbl.t)
 
+let make_dyn (type a) (tag : a Dyn.tag) =
+  let infun x = Dyn.Dyn (tag, x) in
+  let outfun : (Dyn.t -> a) = fun dyn ->
+    let Dyn.Dyn (t, x) = dyn in
+    match Dyn.eq t tag with
+    | None -> assert false
+    | Some Refl -> x
+  in
+  (infun, outfun)
+
 let declare_object_full odecl =
   let na = odecl.object_name in
-  let (infun,outfun) = Dyn.create na in
+  let tag = Dyn.create na in
+  let (infun, outfun) = make_dyn tag in
   let cacher (oname,lobj) = odecl.cache_function (oname,outfun lobj)
   and loader i (oname,lobj) = odecl.load_function i (oname,outfun lobj)
   and opener i (oname,lobj) = odecl.open_function i (oname,outfun lobj)

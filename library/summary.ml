@@ -22,8 +22,19 @@ let summaries = ref Int.Map.empty
 
 let mangle id = id ^ "-SUMMARY"
 
+let make_dyn (type a) (tag : a Dyn.tag) =
+  let infun x = Dyn.Dyn (tag, x) in
+  let outfun : (Dyn.t -> a) = fun dyn ->
+    let Dyn.Dyn (t, x) = dyn in
+    match Dyn.eq t tag with
+    | None -> assert false
+    | Some Refl -> x
+  in
+  (infun, outfun)
+
 let internal_declare_summary hash sumname sdecl =
-  let (infun, outfun) = Dyn.create (mangle sumname) in
+  let tag = Dyn.create (mangle sumname) in
+  let (infun, outfun) = make_dyn tag in
   let dyn_freeze b = infun (sdecl.freeze_function b)
   and dyn_unfreeze sum = sdecl.unfreeze_function (outfun sum)
   and dyn_init = sdecl.init_function in
@@ -166,8 +177,15 @@ let project_summary { summaries; ml_module } ?(complement=false) ids =
   List.filter (fun (id, _) -> List.mem id ids) summaries
 
 let pointer_equal l1 l2 =
+  let ptr_equal d1 d2 =
+    let Dyn.Dyn (t1, x1) = d1 in
+    let Dyn.Dyn (t2, x2) = d2 in
+    match Dyn.eq t1 t2 with
+    | None -> false
+    | Some Refl -> x1 == x2
+    in
   CList.for_all2eq
-    (fun (id1,v1) (id2,v2) -> id1 = id2 && Dyn.pointer_equal v1 v2) l1 l2
+    (fun (id1,v1) (id2,v2) -> id1 = id2 && ptr_equal v1 v2) l1 l2
 
 (** All-in-one reference declaration + registration *)
 

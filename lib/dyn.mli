@@ -10,12 +10,12 @@
 
 module type S =
 sig
-type t
+type 'a tag
+type t = Dyn : 'a tag * 'a -> t
 
-val create : string -> ('a -> t) * (t -> 'a)
-val tag : t -> string
-val has_tag : t -> string -> bool
-val pointer_equal : t -> t -> bool
+val create : string -> 'a tag
+val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
+val repr : 'a tag -> string
 val dump : unit -> (int * string) list
 end
 
