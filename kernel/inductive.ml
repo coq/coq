@@ -270,18 +270,6 @@ let type_of_constructors (ind,u) (mib,mip) =
 
 (* Type of case predicates *)
 
-let local_rels ctxt =
-  let (rels,_) =
-    Context.fold_rel_context_reverse
-      (fun (rels,n) (_,copt,_) ->
-        match copt with
-            None   -> (mkRel n :: rels, n+1)
-          | Some _ -> (rels, n+1))
-      ~init:([],1)
-      ctxt
-  in
-  rels
-
 (* Get type of inductive, with parameters instantiated *)
 
 let inductive_sort_family mip =
@@ -369,16 +357,16 @@ let is_correct_arity env c pj ind specif params =
 let build_branches_type (ind,u) (_,mip as specif) params p =
   let build_one_branch i cty =
     let typi = full_constructor_instantiate (ind,u,specif,params) cty in
-    let (args,ccl) = decompose_prod_assum typi in
-    let nargs = rel_context_length args in
+    let (cstrsign,ccl) = decompose_prod_assum typi in
+    let nargs = rel_context_length cstrsign in
     let (_,allargs) = decompose_app ccl in
     let (lparams,vargs) = List.chop (inductive_params specif) allargs in
     let cargs =
       let cstr = ith_constructor_of_inductive ind (i+1) in
-      let dep_cstr = applist (mkConstructU (cstr,u),lparams@(local_rels args)) in
+      let dep_cstr = applist (mkConstructU (cstr,u),lparams@(extended_rel_list 0 cstrsign)) in
       vargs @ [dep_cstr] in
     let base = betazeta_appvect mip.mind_nrealdecls (lift nargs p) (Array.of_list cargs) in
-    it_mkProd_or_LetIn base args in
+    it_mkProd_or_LetIn base cstrsign in
   Array.mapi build_one_branch mip.mind_nf_lc
 
 (* [p] is the predicate, [c] is the match object, [realargs] is the
