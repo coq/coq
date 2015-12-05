@@ -137,7 +137,7 @@ let tacticIn tac name =
 let push_ist ist args =
   let fold accu (id, arg) = Id.Map.add (Id.of_string id) arg accu in
   let lfun = List.fold_left fold ist.lfun args in
-  { ist with lfun }
+  { ist with lfun = lfun }
 
 let is_empty _ ist =
   if is_empty_type (assoc_var "X1" ist) then idtac else fail
