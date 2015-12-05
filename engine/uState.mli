@@ -56,12 +56,12 @@ val context : t -> Univ.universe_context
 
 val add_constraints : t -> Univ.constraints -> t
 (**
-  @raise UniversesDiffer
+  @raise UniversesDiffer when universes differ
 *)
 
 val add_universe_constraints : t -> Universes.universe_constraints -> t
 (**
-  @raise UniversesDiffer
+  @raise UniversesDiffer when universes differ
 *)
 
 (** {5 Names} *)
