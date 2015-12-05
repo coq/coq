@@ -688,7 +688,7 @@ Section Unrestricted_minimization_entails_excluded_middle.
     apply unrestricted_minimization in h as ([|[|m]] & hm & hmm).
     + intuition.
     + right.
-      intros /p₀/hmm/PeanoNat.Nat.nle_succ_0-HA. assumption.
+      intros HA. apply p₀, hmm, PeanoNat.Nat.nle_succ_0 in HA. assumption.
     + destruct hm as [([=],_) | [=] ].
   Qed.
 
