@@ -8,6 +8,7 @@ Hashcons
 CSet
 CMap
 Int
+Dyn
 HMap
 Option
 Store
@@ -36,7 +37,6 @@ Util
 Ppstyle
 Errors
 Bigint
-Dyn
 CUnix
 System
 Envars

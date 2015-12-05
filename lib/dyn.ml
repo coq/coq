@@ -6,9 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
-open Pp
-
 module type S =
 sig
 type 'a tag
@@ -39,8 +36,8 @@ let create (s : string) =
   let () =
     if Int.Map.mem hash !dyntab then
       let old = Int.Map.find hash !dyntab in
-      let msg = str "Dynamic tag collision: " ++ str s ++ str " vs. " ++ str old in
-      anomaly ~label:"Dyn.create" msg
+      let () = Printf.eprintf "Dynamic tag collision: %s vs. %s\n%!" s old in
+      assert false
   in
   let () = dyntab := Int.Map.add hash s !dyntab in
   hash
@@ -51,7 +48,8 @@ let eq : 'a 'b. 'a tag -> 'b tag -> ('a, 'b) CSig.eq option =
 let repr s =
   try Int.Map.find s !dyntab
   with Not_found ->
-    anomaly (str "Unknown dynamic tag " ++ int s)
+    let () = Printf.eprintf "Unknown dynamic tag %i\n%!" s in
+    assert false
 
 let dump () = Int.Map.bindings !dyntab
 

@@ -51,25 +51,18 @@ sig
   val prj : t -> 'a key -> 'a option
 end =
 struct
-  (** See module {Dyn} for more details. *)
 
-  type t = int * Obj.t
+module Dyn = Dyn.Make(struct end)
 
-  type 'a key = int
-
-  let dyntab = ref (Int.Map.empty : string Int.Map.t)
-
-  let create (s : string) =
-    let hash = Hashtbl.hash s in
-    let () = assert (not (Int.Map.mem hash !dyntab)) in
-    let () = dyntab := Int.Map.add hash s !dyntab in
-    hash
-
-  let inj x h = (h, Obj.repr x)
-
-  let prj (nh, rv) h =
-    if Int.equal h nh then Some (Obj.magic rv)
-    else None
+type t = Dyn.t
+type 'a key = 'a Dyn.tag
+let create = Dyn.create
+let inj x k = Dyn.Dyn (k, x)
+let prj : type a. t -> a key -> a option = fun dyn k ->
+  let Dyn.Dyn (k', x) = dyn in
+  match Dyn.eq k k' with
+  | None -> None
+  | Some CSig.Refl -> Some x
 
 end
 
