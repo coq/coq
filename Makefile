@@ -595,7 +595,13 @@ COQIDEBYTE=bin/coqide.byte$(EXE)
 COQIDEOPT=bin/coqide.opt$(EXE)
 COQIDE=bin/coqide$(EXE)
 
-COQIDECMO=ide/utils/okey.cmo ide/utils/config_file.cmo \
+ifeq ($(HASCOQIDE),no)
+  COQIDECMO=
+  COQIDECMA=
+  COQIDECMXA=
+  COQIDECMXALL=
+else
+  COQIDECMO=ide/utils/okey.cmo ide/utils/config_file.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
 	  ide/utils/configwin.cmo \
@@ -605,6 +611,10 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/config_file.cmo \
 	  ide/find_phrase.cmo \
           ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
 	  ide/coq_tactics.cmo  ide/command_windows.cmo ide/coqide.cmo
+  COQIDECMA=ide/ide.cma
+  COQIDECMXA=ide/ide.cmxa
+  COQIDECMXALL=$(COQIDECMXA) ide/ide.cma
+endif
 
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-thread $(COQIDEINCLUDES)
@@ -631,12 +641,12 @@ clean-ide:
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f ide/utf8_convert.ml
 
-$(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX) ide/ide.cmxa
+$(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX) $(COQIDECMXA)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO) ide/ide.cma
+$(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO) $(COQIDECMA)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -g -ide -top $(BYTEFLAGS) -o $@
 
@@ -674,11 +684,11 @@ clean::
 	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi)
 	rm -f $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 
-ide/ide.cma: $(COQIDECMO)
+$(COQIDECMA): $(COQIDECMO)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(COQIDECMO)
 
-ide/ide.cmxa: $(COQIDECMO:.cmo=.cmx)
+$(COQIDECMXA): $(COQIDECMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(COQIDECMO:.cmo=.cmx)
 
@@ -693,12 +703,12 @@ install-ide-no:
 install-ide-byte: 
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQIDEBYTE) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
+	(cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE))
 
 install-ide-opt:
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
+	(cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE))
 
 install-ide-files:
 	$(MKDIR) $(FULLIDELIB)
@@ -1287,9 +1297,9 @@ install-library:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	cp $(LIBCOQRUN) $(FULLCOQLIB)
-	cp --parents $(CONFIG) $(OBJECTCMI) $(LINKCMO) ide/ide.cma $(COQIDECMO:.cmo=.cmi) $(GRAMMARCMA) $(FULLCOQLIB)
+	cp --parents $(CONFIG) $(OBJECTCMI) $(LINKCMO) $(COQIDECMA) $(COQIDECMO:.cmo=.cmi) $(GRAMMARCMA) $(FULLCOQLIB)
 ifeq ($(BEST),opt)
-	cp --parents $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a) ide/ide.cmxa ide/ide.a $(FULLCOQLIB)
+	cp --parents $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a) $(COQIDECMXALL) $(FULLCOQLIB)
 endif
 
 install-library-light:
