@@ -155,7 +155,7 @@ Section ZMORPHISM.
    Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
 
-(*morphisms are extensionaly equal*)
+(*morphisms are extensionally equal*)
  Lemma same_genZ : forall x, [x] == gen_phiZ1 x.
  Proof.
   destruct x;simpl; try rewrite (same_gen ARth);rrefl.
@@ -246,7 +246,7 @@ Proof (SRth_ARth Nsth Nth).
 Lemma Neqb_ok : forall x y, N.eqb x y = true -> x = y.
 Proof. exact (fun x y => proj1 (N.eqb_eq x y)). Qed.
 
-(**Same as above : definition of two,extensionaly equal, generic morphisms *)
+(**Same as above : definition of two, extensionally equal, generic morphisms *)
 (**from N to any semi-ring*)
 Section NMORPHISM.
  Variable R : Type.
@@ -671,7 +671,7 @@ End GEN_DIV.
    end.
 
 (* A simple tactic recognizing only 0 and 1. The inv_gen_phiX above
-   are only optimisations that directly returns the reifid constant
+   are only optimisations that directly returns the reified constant
    instead of resorting to the constant propagation of the simplification
    algorithm. *)
 Ltac inv_gen_phi rO rI cO cI t :=

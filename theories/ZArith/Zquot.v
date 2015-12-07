@@ -243,7 +243,7 @@ Proof. intros. zero_or_not b. intuition. apply Z.quot_exact; auto. Qed.
 Theorem Zrem_le a b : 0 <= a -> 0 <= b -> Z.rem a b <= a.
 Proof. intros. zero_or_not b. apply Z.rem_le; auto with zarith. Qed.
 
-(** Some additionnal inequalities about Zdiv. *)
+(** Some additional inequalities about Zdiv. *)
 
 Theorem Zquot_le_upper_bound:
   forall a b q, 0 < b -> a <= q*b -> a÷b <= q.

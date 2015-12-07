@@ -641,7 +641,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
 End PositiveMap.
 
-(** Here come some additionnal facts about this implementation.
+(** Here come some additional facts about this implementation.
   Most are facts that cannot be derivable from the general interface. *)
 
 Module PositiveMapAdditionalFacts.

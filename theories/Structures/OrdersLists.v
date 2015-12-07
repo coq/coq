@@ -76,7 +76,7 @@ Module KeyOrderedType(O:OrderedType).
  Instance ltk_compat' {elt} : Proper (eqke==>eqke==>iff) (@ltk elt).
  Proof. eapply subrelation_proper; eauto with *. Qed.
 
- (* Additionnal facts *)
+ (* Additional facts *)
 
  Instance pair_compat {elt} : Proper (O.eq==>Logic.eq==>eqke) (@pair key elt).
  Proof. apply pair_compat. Qed.

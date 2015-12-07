@@ -734,7 +734,7 @@ and extract_cst_app env mle mlt kn u args =
   if la >= ls
   then
     (* Enough args, cleanup already done in [mla], we only add the
-       additionnal dummy if needed. *)
+       additional dummy if needed. *)
     put_magic_if (magic2 && not magic1) (mlapp head (optdummy @ mla))
   else
     (* Partially applied function with some logical arg missing.
@@ -748,7 +748,7 @@ and extract_cst_app env mle mlt kn u args =
 (*s Extraction of an inductive constructor applied to arguments. *)
 
 (* \begin{itemize}
-   \item In ML, contructor arguments are uncurryfied.
+   \item In ML, constructor arguments are uncurryfied.
    \item We managed to suppress logical parts inside inductive definitions,
    but they must appears outside (for partial applications for instance)
    \item We also suppressed all Coq parameters to the inductives, since

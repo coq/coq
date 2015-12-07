@@ -203,7 +203,7 @@ let (declare_f : Id.t -> logical_kind -> constr list -> global_reference -> glob
 
 
 
-(* Debuging mechanism *)
+(* Debugging mechanism *)
 let debug_queue = Stack.create ()
 
 let rec print_debug_queue b e = 
@@ -291,9 +291,9 @@ let tclUSER_if_not_mes concl_tac is_mes names_to_suppress =
 
   
 
-(* Travelling term.
+(* Traveling term.
    Both definitions of [f_terminate] and [f_equation] use the same generic 
-   travelling mechanism.
+   traveling mechanism.
 *)
 
 (* [check_not_nested forbidden e] checks that [e] does not contains any variable 
@@ -327,7 +327,7 @@ let check_not_nested forbidden e =
   with UserError(_,p) -> 
     errorlabstrm "_" (str "on expr : " ++ Printer.pr_lconstr e ++ str " " ++ p)
 
-(* ['a info] contains the local information for travelling *)
+(* ['a info] contains the local information for traveling *)
 type 'a infos = 
     { nb_arg : int; (* function number of arguments *)
       concl_tac : tactic; (* final tactic to finish proofs *)
@@ -337,7 +337,7 @@ type 'a infos =
       f_id : Id.t;  (* function name *)
       f_constr : constr;  (* function term *)
       f_terminate : constr; (* termination proof term *)
-      func : global_reference; (* functionnal reference *)
+      func : global_reference; (* functional reference *)
       info : 'a;
       is_main_branch : bool; (* on the main branch or on a matched expression *)
       is_final : bool; (* final first order term or not *)
@@ -357,7 +357,7 @@ type ('a,'b) journey_info_tac =
     'b infos -> (* argument of the tactic *)
     tactic
        
-(* journey_info : specifies the actions to do on the different term constructors during the travelling of the term
+(* journey_info : specifies the actions to do on the different term constructors during the traveling of the term
 *)
 type journey_info = 
     { letiN : ((Name.t*constr*types*constr),constr) journey_info_tac;

@@ -2143,7 +2143,7 @@ Module OrdProperties (M:S).
   Section Fold_properties.
 
   (** The following lemma has already been proved on Weak Maps,
-      but with one additionnal hypothesis (some [transpose] fact). *)
+      but with one additional hypothesis (some [transpose] fact). *)
 
   Lemma fold_Equal : forall m1 m2 (A:Type)(eqA:A->A->Prop)(st:Equivalence  eqA)
    (f:key->elt->A->A)(i:A),

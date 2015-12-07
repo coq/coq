@@ -60,7 +60,7 @@ Module KeyDecidableType(D:DecidableType).
 
  Hint Resolve eqke_1 eqke_2 eqk_1.
 
- (* Additionnal facts *)
+ (* Additional facts *)
 
  Lemma InA_eqke_eqk {elt} p (m:list (key*elt)) :
    InA eqke p m -> InA eqk p m.

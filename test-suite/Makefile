@@ -352,7 +352,7 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v
           fi; \
 	} > "$@"
 
-# Additionnal dependencies for module tests
+# Additional dependencies for module tests
 $(addsuffix .log,$(wildcard modules/*.v)): %.v.log: modules/Nat.vo modules/plik.vo
 modules/%.vo: modules/%.v
 	$(HIDE)$(coqtop) -R modules Mods -compile $<

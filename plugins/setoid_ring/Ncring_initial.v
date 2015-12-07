@@ -42,7 +42,7 @@ Defined.
 
 (*Instance ZEquality: @Equality Z:= (@eq Z).*)
 
-(** Two generic morphisms from Z to (abrbitrary) rings, *)
+(** Two generic morphisms from Z to (arbitrary) rings, *)
 (**second one is more convenient for proofs but they are ext. equal*)
 Section ZMORPHISM.
 Context {R:Type}`{Ring R}.
@@ -130,7 +130,7 @@ Ltac rsimpl := simpl.
  Qed.
 
 
-(*morphisms are extensionaly equal*)
+(*morphisms are extensionally equal*)
  Lemma same_genZ : forall x, [x] == gen_phiZ1 x.
  Proof.
   destruct x;rsimpl; try rewrite same_gen; reflexivity.

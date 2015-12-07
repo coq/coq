@@ -201,7 +201,7 @@ in their context. In this case, the obligations should be transparent
 recursive calls can be checked by the
 kernel's type-checker. There is an optimization in the generation of
 obligations which gets rid of the hypothesis corresponding to the
-functionnal when it is not necessary, so that the obligation can be
+functional when it is not necessary, so that the obligation can be
 declared opaque (e.g. using {\tt Qed}). However, as soon as it appears in the
 context, the proof of the obligation is \emph{required} to be declared transparent.
 
@@ -216,7 +216,7 @@ properties. It will generate obligations, try to solve them
 automatically and fail if some unsolved obligations remain. 
 In this case, one can first define the lemma's
 statement using {\tt Program Definition} and use it as the goal afterwards.
-Otherwise the proof will be started with the elobarted version as a goal.
+Otherwise the proof will be started with the elaborated version as a goal.
 The {\tt Program} prefix can similarly be used as a prefix for {\tt Variable}, {\tt
   Hypothesis}, {\tt Axiom} etc...
 

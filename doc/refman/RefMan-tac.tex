@@ -3555,7 +3555,7 @@ The hints for \texttt{auto} and \texttt{eauto} are stored in
 databases.  Each database maps head symbols to a list of hints. One can
 use the command \texttt{Print Hint \ident} to display the hints
 associated to the head symbol \ident{} (see \ref{PrintHint}). Each
-hint has a cost that is an nonnegative integer, and an optional pattern.
+hint has a cost that is a nonnegative integer, and an optional pattern.
 The hints with lower cost are tried first. A hint is tried by
 \texttt{auto} when the conclusion of the current goal
 matches its pattern or when it has no pattern.
@@ -3772,7 +3772,7 @@ Hint Extern 4 (~(_ = _)) => discriminate.
   with hints with a cost less than 4.
 
   One can even use some sub-patterns of the pattern in the tactic
-  script. A sub-pattern is a question mark followed by an ident, like
+  script. A sub-pattern is a question mark followed by an identifier, like
   \texttt{?X1} or \texttt{?X2}. Here is an example:
 
 % Require EqDecide.
@@ -3815,7 +3815,7 @@ The \texttt{emp} regexp does not match any search path while
 \texttt{eps} matches the empty path. During proof search, the path of
 successive successful hints on a search branch is recorded, as a list of
 identifiers for the hints (note \texttt{Hint Extern}'s do not have an
-associated identitier). Before applying any hint $\ident$ the current
+associated identifier). Before applying any hint $\ident$ the current
 path $p$ extended with $\ident$ is matched against the current cut
 expression $c$ associated to the hint database. If matching succeeds,
 the hint is \emph{not} applied. The semantics of \texttt{Hint Cut} $e$
@@ -4672,7 +4672,7 @@ Use \texttt{classical\_right} to prove the right part of the disjunction with th
 %% procedure for first-order intuitionistic logic implemented in {\em
 %%   NuPRL}\cite{Kre02}.
 
-%% Search may optionnaly be bounded by a multiplicity parameter
+%% Search may optionally be bounded by a multiplicity parameter
 %% indicating how many (at most) copies of a formula may be used in
 %% the proof process, its absence may lead to non-termination of the tactic.
 

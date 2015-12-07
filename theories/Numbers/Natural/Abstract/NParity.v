@@ -8,7 +8,7 @@
 
 Require Import Bool NSub NZParity.
 
-(** Some additionnal properties of [even], [odd]. *)
+(** Some additional properties of [even], [odd]. *)
 
 Module Type NParityProp (Import N : NAxiomsSig')(Import NP : NSubProp N).
 
