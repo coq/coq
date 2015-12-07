@@ -133,9 +133,9 @@ SYSCMA:=$(addsuffix .cma,$(SYSMOD))
 SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
 
 ifeq ($(CAMLP4),camlp5)
-P4CMA:=gramlib.cma
+P4CMA:=gramlib.cma str.cma
 else
-P4CMA:=dynlink.cma camlp4lib.cma
+P4CMA:=dynlink.cma camlp4lib.cma str.cma
 endif
 
 
@@ -882,7 +882,7 @@ dev/printers.cma: | dev/printers.mllib.d
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $^ -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $^ -linkall -a -o $@
 
 grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
