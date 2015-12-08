@@ -10,8 +10,6 @@
 (*                                                                     *)
 (************************************************************************)
 
-(* Sets over ordered types *)
-
 module type OrderedType =
   sig
     type t
@@ -43,9 +41,10 @@ module Make(Ord: OrderedType) =
   struct
     module EltSet = Set.Make(Ord)
 
-    (* when bool is false, the denoted set is the complement of
-       the given set *)
     type elt = Ord.t
+
+    (* (false, s) represents a set which is equal to the set s
+       (true, s)  represents a set which is equal to the complement of set s *)
     type t = bool * EltSet.t
 
     let elements (b,s) = (b, EltSet.elements s)
@@ -84,6 +83,7 @@ module Make(Ord: OrderedType) =
 
     let diff s1 s2 = inter s1 (complement s2)
 
+    (* assumes the set is infinite *)
     let subset s1 s2 =
       match (s1,s2) with
           ((false,p1),(false,p2)) -> EltSet.subset p1 p2
@@ -91,6 +91,7 @@ module Make(Ord: OrderedType) =
         | ((false,p1),(true,n2)) -> EltSet.is_empty (EltSet.inter p1 n2)
         | ((true,_),(false,_)) -> false
 
+    (* assumes the set is infinite *)
     let equal (b1,s1) (b2,s2) =
       b1=b2 && EltSet.equal s1 s2
 
