@@ -11,9 +11,9 @@ open Term
 open Mod_subst
 
 (** This module implements the handling of opaque proof terms.
-    Opauqe proof terms are special since:
+    Opaque proof terms are special since:
     - they can be lazily computed and substituted
-    - they are stoked in an optionally loaded segment of .vo files
+    - they are stored in an optionally loaded segment of .vo files
     An [opaque] proof terms holds the real data until fully discharged.
     In this case it is called [direct].
     When it is [turn_indirect] the data is relocated to an opaque table

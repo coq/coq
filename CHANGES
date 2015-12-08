@@ -12,6 +12,18 @@ Program
 - The "Shrink Obligations" flag now applies to all obligations, not only those
   solved by the automatic tactic.
 
+Changes from V8.5beta3
+======================
+
+Specification language
+
+- Syntax "$(tactic)$" changed to "ltac:(tactic)".
+
+Tactics
+
+- Syntax "destruct !hyp" changed to "destruct (hyp)", and similarly
+  for induction.
+
 Changes from V8.5beta2 to V8.5beta3
 ===================================
 
@@ -23,10 +35,6 @@ Vernacular commands
   declaration of all polymorphic universes appearing in a definition when
   introducing it.
 - New command "Show id" to show goal named id.
-
-Specification language
-
-- Syntax "$(tactic)$" changed to "ltac: tactic".
 
 Tactics
 

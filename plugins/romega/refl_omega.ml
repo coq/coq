@@ -46,7 +46,7 @@ let occ_step_eq s1 s2 = match s1, s2 with
    d'une liste de pas à partir de la racine de l'hypothèse *)
 type occurrence = {o_hyp : Names.Id.t; o_path : occ_path}
 
-(* \subsection{refiable formulas} *)
+(* \subsection{reifiable formulas} *)
 type oformula =
     (* integer *)
   | Oint of Bigint.bigint
@@ -55,7 +55,7 @@ type oformula =
   | Omult of oformula * oformula
   | Ominus of oformula * oformula
   | Oopp of  oformula
-    (* an atome in the environment *)
+    (* an atom in the environment *)
   | Oatom of int
     (* weird expression that cannot be translated *)
   | Oufo of oformula
@@ -75,7 +75,7 @@ type oproposition =
   | Pimp of int * oproposition * oproposition
   | Pprop of Term.constr
 
-(* Les équations ou proposiitions atomiques utiles du calcul *)
+(* Les équations ou propositions atomiques utiles du calcul *)
 and oequation = {
     e_comp: comparaison;		(* comparaison *)
     e_left: oformula;			(* formule brute gauche *)
@@ -1266,7 +1266,7 @@ let resolution env full_reified_goal systems_list =
       |	(O_right :: l) -> app coq_p_right [| loop l |] in
     let correct_index =
       let i = List.index0 Names.Id.equal e.e_origin.o_hyp l_hyps in
-      (* PL: it seems that additionnally introduced hyps are in the way during
+      (* PL: it seems that additionally introduced hyps are in the way during
              normalization, hence this index shifting... *)
       if Int.equal i 0 then 0 else Pervasives.(+) i (List.length to_introduce)
     in

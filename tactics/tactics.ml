@@ -3252,7 +3252,7 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
 	mkProd (Anonymous, eq, lift 1 concl), [| refl |]
     else concl, [||]
   in
-    (* Abstract by equalitites *)
+    (* Abstract by equalities *)
   let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
   let abseqs = it_mkProd_or_LetIn (lift eqslen abshypeq) (List.map (fun x -> (Anonymous, None, x)) eqs) in
     (* Abstract by the "generalized" hypothesis. *)
@@ -3263,11 +3263,11 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
   let Sigma (genc, sigma, p) = Evarutil.new_evar env sigma ~principal:true genctyp in
     (* Apply the old arguments giving the proper instantiation of the hyp *)
   let instc = mkApp (genc, Array.of_list args) in
-    (* Then apply to the original instanciated hyp. *)
+    (* Then apply to the original instantiated hyp. *)
   let instc = Option.cata (fun _ -> instc) (mkApp (instc, [| mkVar id |])) body in
     (* Apply the reflexivity proofs on the indices. *)
   let appeqs = mkApp (instc, Array.of_list refls) in
-    (* Finaly, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
+    (* Finally, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
   Sigma (mkApp (appeqs, abshypt), sigma, p)
   end }
 

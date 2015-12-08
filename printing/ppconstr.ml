@@ -638,13 +638,13 @@ end) = struct
       | CLetTuple (_,nal,(na,po),c,b) ->
         return (
           hv 0 (
-            keyword "let" ++ spc () ++
-              hov 0 (str "(" ++
+            hov 2 (keyword "let" ++ spc () ++
+              hov 1 (str "(" ++
                        prlist_with_sep sep_v pr_lname nal ++
                        str ")" ++
-                       pr_simple_return_type (pr mt) na po ++ str " :=" ++
-                       pr spc ltop c ++ spc ()
-                     ++ keyword "in") ++
+                       pr_simple_return_type (pr mt) na po ++ str " :=") ++
+                       pr spc ltop c
+                     ++ keyword " in") ++
               pr spc ltop b),
           lletin
         )

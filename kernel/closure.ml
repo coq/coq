@@ -762,7 +762,7 @@ let drop_parameters depth n argstk =
   (* we know that n < stack_args_size(argstk) (if well-typed term) *) 
   anomaly (Pp.str "ill-typed term: found a match on a partially applied constructor")
 
-(** [eta_expand_ind_stack env ind c s t] computes stacks correspoding 
+(** [eta_expand_ind_stack env ind c s t] computes stacks corresponding
     to the conversion of the eta expansion of t, considered as an inhabitant 
     of ind, and the Constructor c of this inductive type applied to arguments
     s.

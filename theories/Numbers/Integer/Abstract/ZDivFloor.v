@@ -436,7 +436,7 @@ rewrite <- (add_0_r (b*(a/b))) at 2.
 apply add_cancel_l.
 Qed.
 
-(** Some additionnal inequalities about div. *)
+(** Some additional inequalities about div. *)
 
 Theorem div_lt_upper_bound:
   forall a b q, 0<b -> a < b*q -> a/b < q.

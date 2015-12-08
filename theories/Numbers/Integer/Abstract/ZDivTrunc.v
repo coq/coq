@@ -404,7 +404,7 @@ Proof.
 intros. rewrite rem_eq by order. rewrite sub_move_r; nzsimpl; tauto.
 Qed.
 
-(** Some additionnal inequalities about quot. *)
+(** Some additional inequalities about quot. *)
 
 Theorem quot_lt_upper_bound:
   forall a b q, 0<=a -> 0<b -> a < b*q -> a÷b < q.

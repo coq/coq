@@ -899,22 +899,28 @@ let normalize_context_set ctx us algs =
   let noneqs = Constraint.union noneqs smallles in
   let partition = UF.partition uf in
   let flex x = LMap.mem x us in
-  let ctx, subst, eqs = List.fold_left (fun (ctx, subst, cstrs) s -> 
+  let ctx, subst, us, eqs = List.fold_left (fun (ctx, subst, us, cstrs) s -> 
     let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in
     (* Add equalities for globals which can't be merged anymore. *)
     let cstrs = LSet.fold (fun g cst -> 
       Constraint.add (canon, Univ.Eq, g) cst) global
       cstrs 
     in
+    (* Also add equalities for rigid variables *)
+    let cstrs = LSet.fold (fun g cst -> 
+      Constraint.add (canon, Univ.Eq, g) cst) rigid
+      cstrs
+    in
     let subst = LSet.fold (fun f -> LMap.add f canon) rigid subst in
-    let subst = LSet.fold (fun f -> LMap.add f canon) flexible subst in 
-      (LSet.diff (LSet.diff ctx rigid) flexible, subst, cstrs))
-    (ctx, LMap.empty, Constraint.empty) partition
+    let subst = LSet.fold (fun f -> LMap.add f canon) flexible subst in
+    let canonu = Some (Universe.make canon) in
+    let us = LSet.fold (fun f -> LMap.add f canonu) flexible us in
+      (LSet.diff ctx flexible, subst, us, cstrs))
+    (ctx, LMap.empty, us, Constraint.empty) partition
   in
   (* Noneqs is now in canonical form w.r.t. equality constraints, 
      and contains only inequality constraints. *)
   let noneqs = subst_univs_level_constraints subst noneqs in
-  let us = LMap.fold (fun u v acc -> LMap.add u (Some (Universe.make v)) acc) subst us in
   (* Compute the left and right set of flexible variables, constraints
      mentionning other variables remain in noneqs. *)
   let noneqs, ucstrsl, ucstrsr = 

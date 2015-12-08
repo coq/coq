@@ -1250,7 +1250,7 @@ possible, the correct argument will be automatically generated.
 
 \end{ErrMsgs}
 
-\subsection{Declaration of implicit arguments for a constant
+\subsection{Declaration of implicit arguments
 \comindex{Arguments}}
 \label{ImplicitArguments}
 
@@ -1263,7 +1263,7 @@ a priori and a posteriori.
 \subsubsection{Implicit Argument Binders}
 
 In the first setting, one wants to explicitly give the implicit
-arguments of a constant as part of its definition. To do this, one has
+arguments of a declared object as part of its definition. To do this, one has
 to surround the bindings of implicit arguments by curly braces:
 \begin{coq_eval}
 Reset Initial.
@@ -1300,7 +1300,7 @@ usual implicit arguments disambiguation syntax.
 
 \subsubsection{Declaring Implicit Arguments}
 
-To set implicit arguments for a constant a posteriori, one can use the
+To set implicit arguments a posteriori, one can use the
 command:
 \begin{quote}
 \tt Arguments {\qualid} \nelist{\possiblybracketedident}{}
@@ -1379,7 +1379,7 @@ Check (fun l => map length l = map (list nat) nat length l).
 \Rem To know which are the implicit arguments of an object, use the command
 {\tt Print Implicit} (see \ref{PrintImplicit}).
 
-\subsection{Automatic declaration of implicit arguments for a constant}
+\subsection{Automatic declaration of implicit arguments}
 
 {\Coq} can also automatically detect what are the implicit arguments
 of a defined object. The command is just
@@ -1582,7 +1582,7 @@ Implicit arguments names can be redefined using the following syntax:
 \end{quote}
 
 Without the {\tt rename} flag, {\tt Arguments} can be used to assert
-that a given constant has the expected number of arguments and that
+that a given object has the expected number of arguments and that
 these arguments are named as expected.
 
 \noindent {\bf Example (continued): }
