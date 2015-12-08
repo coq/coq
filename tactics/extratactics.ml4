@@ -21,6 +21,7 @@ open Util
 open Evd
 open Equality
 open Misctypes
+open Proofview.Notations
 
 DECLARE PLUGIN "extratactics"
 
@@ -862,6 +863,15 @@ END
 TACTIC EXTEND shelve_unifiable
 | [ "shelve_unifiable" ] ->
     [ Proofview.shelve_unifiable ]
+END
+
+(* Unshelves the goal shelved by the tactic. *)
+TACTIC EXTEND unshelve
+| [ "unshelve" tactic(t) ] ->
+    [
+      Proofview.with_shelf (Tacinterp.eval_tactic t) >>= fun (gls, ()) ->
+      Proofview.Unsafe.tclNEWGOALS gls
+    ]
 END
 
 (* Command to add every unshelved variables to the focus *)
