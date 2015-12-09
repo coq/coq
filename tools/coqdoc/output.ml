@@ -11,14 +11,12 @@ open Index
 
 (*s Low level output *)
 
-let output_char c = Pervasives.output_char !out_channel c
-
+let output_char   c = Pervasives.output_char !out_channel c
 let output_string s = Pervasives.output_string !out_channel s
 
 let printf s = Printf.fprintf !out_channel s
 
 let sprintf = Printf.sprintf
-
 
 (*s Coq keywords *)
 
@@ -185,10 +183,10 @@ module type S = sig
 
 val initialize : unit -> unit
 
+val push_in_preamble : string -> unit
+
 val header : unit -> unit
 val trailer : unit -> unit
-
-val push_in_preamble : string -> unit
 
 val start_module : unit -> unit
 
@@ -232,7 +230,6 @@ val keyword : string -> loc -> unit
 val ident : string -> loc option -> unit
 val sublexer : char -> loc -> unit
 val sublexer_in_doc : char -> unit
-val initialize : unit -> unit
 
 val proofbox : unit -> unit
 
@@ -1334,11 +1331,3 @@ module Raw : S = struct
   let make_toc () = ()
 
 end
-
-(*s Generic output *)
-
-let output_factory tl = match tl with
-  | LaTeX   -> (module Latex   : S)
-  | HTML    -> (module Html    : S)
-  | TeXmacs -> (module TeXmacs : S)
-  | Raw     -> (module Raw     : S)

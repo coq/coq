@@ -91,9 +91,9 @@ let banner () =
 
 let target_full_name f =
   match !Cdglobals.target_language with
-    | HTML -> f ^ ".html"
-    | Raw -> f ^ ".txt"
-    | _ -> f ^ ".tex"
+    | HTML  -> f ^ ".html"
+    | Raw   -> f ^ ".txt"
+    | _     -> f ^ ".tex"
 
 (*s \textbf{Separation of files.} Files given on the command line are
     separated according to their type, which is determined by their
@@ -105,7 +105,6 @@ let check_if_file_exists f =
     eprintf "coqdoc: %s: no such file\n" f;
     exit 1
   end
-
 
 (* [paths] maps a physical path to a name *)
 let paths = ref []
@@ -404,13 +403,20 @@ let copy src dst =
     eprintf "%s\n" e;
     exit 1
 
+(*s Backend Selection *)
+
+let output_factory tl =
+  let open Output in
+  match tl with
+  | LaTeX     -> (module Latex   : S)
+  | HTML      -> (module Html    : S)
+  | TeXmacs   -> (module TeXmacs : S)
+  | Raw       -> (module Raw     : S)
+
 (*s Functions for generating output files *)
 
-let gen_one_file l =
-  let module OutB = (val Output.output_factory !Cdglobals.target_language) in
-  let module Cpretty = Cpretty.Make(OutB)                                  in
-
-  List.iter (OutB.push_in_preamble) (List.rev !preamble);
+(** gen_one_file [l] *)
+let gen_one_file (module OutB : Output.S) (module Cpretty : Cpretty.S) (l : file list) =
 
   let file = function
     | Vernac_file (f,m) ->
@@ -425,10 +431,7 @@ let gen_one_file l =
     if !index then OutB.make_index();
     if (!header_trailer) then OutB.trailer ()
 
-let gen_mult_files l =
-
-  let module OutB = (val Output.output_factory !Cdglobals.target_language) in
-  let module Cpretty = Cpretty.Make(OutB)                                  in
+let gen_mult_files(module OutB : Output.S) (module Cpretty : Cpretty.S) (l : file list) =
 
   List.iter (OutB.push_in_preamble) (List.rev !preamble);
 
@@ -487,31 +490,36 @@ let copy_style_file file =
   if Sys.file_exists src then copy src dst
   else eprintf "Warning: file %s does not exist\n" src
 
-let produce_document l =
-  if !target_language=HTML then copy_style_file "coqdoc.css";
+(** [produce_document ] *)
+let produce_document (l : file list) =
+  (* XXX: This should be a hook in the backend. *)
+  if !target_language=HTML  then copy_style_file "coqdoc.css";
   if !target_language=LaTeX then copy_style_file "coqdoc.sty";
   (match !Cdglobals.glob_source with
     | NoGlob -> ()
     | DotGlob -> List.iter read_glob_file_of l
     | GlobFile f -> read_glob_file None f);
   List.iter index_module l;
+
+  let module OutB = (val output_factory !target_language) in
+  let module Cpretty = Cpretty.Make(OutB)                 in
   match !out_to with
     | StdOut ->
 	Cdglobals.out_channel := stdout;
-	gen_one_file l
+	gen_one_file   (module OutB) (module Cpretty) l
     | File f ->
 	open_out_file f;
-	gen_one_file l;
+	gen_one_file   (module OutB) (module Cpretty) l;
 	close_out_file()
     | MultFiles ->
-	gen_mult_files l
+	gen_mult_files (module OutB) (module Cpretty) l
 
 let produce_output fl =
   if not (!dvi || !ps || !pdf) then
     produce_document fl
   else
     begin
-      let texfile = Filename.temp_file "coqdoc" ".tex" in
+      let texfile  = Filename.temp_file "coqdoc" ".tex" in
       let basefile = Filename.chop_suffix texfile ".tex" in
       let final_out_to = !out_to in
 	out_to := File texfile;

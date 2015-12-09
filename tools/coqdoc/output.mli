@@ -9,22 +9,34 @@
 open Cdglobals
 open Index
 
-(* Common primitives *)
+(* Common primitives: should be moved to out_common? *)
 val add_printing_token    : string -> string option * string option -> unit
 val remove_printing_token : string -> unit
 
+(* This interface should be improved. *)
+val current_module : (string * string option) ref
 val get_module : bool -> string
 val set_module : coq_module -> string option -> unit
+
+type toc_entry =
+  | Toc_library of string * string option
+  | Toc_section of int * (unit -> unit) * string
+
+val add_toc_entry : toc_entry -> unit
+val toc_q : toc_entry Queue.t
+
+val is_keyword : string -> bool
+val is_tactic  : string -> bool
 
 (* Backend printer *)
 module type S = sig
 
 val initialize : unit -> unit
 
+val push_in_preamble : string -> unit
+
 val header : unit -> unit
 val trailer : unit -> unit
-
-val push_in_preamble : string -> unit
 
 val start_module : unit -> unit
 
@@ -68,7 +80,6 @@ val keyword : string -> loc -> unit
 val ident : string -> loc option -> unit
 val sublexer : char -> loc -> unit
 val sublexer_in_doc : char -> unit
-val initialize : unit -> unit
 
 val proofbox : unit -> unit
 
@@ -101,15 +112,17 @@ val url : string -> string option -> unit
    something smart we can just format the rule verbatim like the user did
 *)
 val inf_rule :  (int * string) list
-             -> (int * string * (string option)) 
+             -> (int * string * (string option))
              -> (int * string) list
              -> unit
 
 val make_multi_index : unit -> unit
 val make_index : unit -> unit
-val make_toc : unit -> unit
+val make_toc   : unit -> unit
 
 end
 
-(*s Create an output backend *)
-val output_factory : target_language -> (module S)
+module Latex   : S
+module Html    : S
+module TeXmacs : S
+module Raw     : S
