@@ -11,8 +11,8 @@
 \end{flushleft}
 
 This section describes the universe polymorphic extension of Coq.
-Universe polymorphism allows writing generic definitions making use of
-universes and reuse them at different and sometimes incompatible levels.
+Universe polymorphism makes it possible to write generic definitions making use of
+universes and reuse them at different and sometimes incompatible universe levels.
 
 A standard example of the difference between universe \emph{polymorphic} and
 \emph{monomorphic} definitions is given by the identity function:
@@ -64,10 +64,10 @@ the application it is instantiated at \texttt{Top.3} while in the
 argument position it is instantiated at \texttt{Top.4}. This definition
 is only valid as long as \texttt{Top.4} is strictly smaller than
 \texttt{Top.3}, as show by the constraints. Note that this definition is
-monomorphic (not universe polymorphic), so in turn the two universes are
-actually global levels.
+monomorphic (not universe polymorphic), so the two universes
+(in this case \texttt{Top.3} and \texttt{Top.4}) are actually global levels.
 
-Inductive types can also be declared universes polymorphic, on universes
+Inductive types can also be declared universes polymorphic on universes
 appearing in their parameters or fields. A typical example is given by
 monoids:
 
@@ -79,7 +79,7 @@ Print Monoid.
 
 The \texttt{Monoid}'s carrier universe is polymorphic, hence it is
 possible to instantiate it for example with \texttt{Monoid} itself.
-First we build the trivial unit monoid, in \texttt{Set}:
+First we build the trivial unit monoid in \texttt{Set}:
 \begin{coq_example}
 Definition unit_monoid : Monoid := 
   {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
@@ -197,7 +197,7 @@ universes and explicitly instantiate polymorphic definitions.
   \comindex{Universe}
   \label{UniverseCmd}}
 
-In the monorphic case, this command declare a new global universe named
+In the monorphic case, this command declares a new global universe named
 {\ident}. It supports the polymorphic flag only in sections, meaning the
 universe quantification will be discharged on each section definition
 independently.
@@ -206,7 +206,7 @@ independently.
   \comindex{Constraint}
   \label{ConstraintCmd}}
 
-This command declare a new constraint between named universes. 
+This command declares a new constraint between named universes. 
 The order relation can be one of $<$, $\le$ or $=$. If consistent, 
 the constraint is then enforced in the global environment. Like
 \texttt{Universe}, it can be used with the \texttt{Polymorphic} prefix
