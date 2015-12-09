@@ -185,6 +185,8 @@ val initialize : unit -> unit
 
 val push_in_preamble : string -> unit
 
+val support_files : string list
+
 val header : unit -> unit
 val trailer : unit -> unit
 
@@ -340,6 +342,8 @@ module Latex : S = struct
     end
 
   let push_in_preamble s = Queue.add s preamble
+
+  let support_files = ["coqdoc.sty"]
 
   (*s Latex low-level translation *)
 
@@ -674,6 +678,8 @@ module Html : S = struct
       end
 
   let push_in_preamble _ = ()
+
+  let support_files = ["coqdoc.css"]
 
   let start_module () =
     let ln = !lib_name in
@@ -1082,6 +1088,8 @@ module TeXmacs : S = struct
 
   let push_in_preamble _ = ()
 
+  let support_files = []
+
   let nbsp () = output_char ' '
 
   let char_true c = match c with
@@ -1231,6 +1239,8 @@ module Raw : S = struct
   let trailer () = ()
 
   let push_in_preamble _ = ()
+
+  let support_files = []
 
   let nbsp () = output_char ' '
 
