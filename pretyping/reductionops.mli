@@ -251,13 +251,9 @@ type conversion_test = constraints -> constraints
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
-val is_conv : env ->  evar_map -> constr -> constr -> bool
-val is_conv_leq : env ->  evar_map -> constr -> constr -> bool
-val is_fconv : conv_pb -> env ->  evar_map -> constr -> constr -> bool
-
-val is_trans_conv : transparent_state -> env -> evar_map -> constr -> constr -> bool
-val is_trans_conv_leq : transparent_state -> env ->  evar_map -> constr -> constr -> bool
-val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr -> constr -> bool
+val is_conv : ?reds:transparent_state -> env -> evar_map -> constr -> constr -> bool
+val is_conv_leq : ?reds:transparent_state -> env ->  evar_map -> constr -> constr -> bool
+val is_fconv : ?reds:transparent_state -> conv_pb -> env ->  evar_map -> constr -> constr -> bool
 
 (** [check_conv] Checks universe constraints only.
     pb defaults to CUMUL and ts to a full transparent state.

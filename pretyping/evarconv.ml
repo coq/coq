@@ -1099,7 +1099,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       | Some evd -> Success evd
       | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
   | Evar (evk1,args1), Evar (evk2,args2) when Evar.equal evk1 evk2 ->
-      let f env evd pbty x y = is_trans_fconv pbty ts env evd x y in
+      let f env evd pbty x y = is_fconv ~reds:ts pbty env evd x y in
       Success (solve_refl ~can_drop:true f env evd
                  (position_problem true pbty) evk1 args1 args2)
   | Evar ev1, Evar ev2 ->
