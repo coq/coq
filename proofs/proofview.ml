@@ -644,12 +644,18 @@ let unshelve l p =
 
 let with_shelf tac =
   let open Proof in
-  Shelf.get >>= fun shelf ->
-  Shelf.set [] >>
+  Pv.get >>= fun pv ->
+  let { shelf; solution } = pv in
+  Pv.set { pv with shelf = []; solution = Evd.reset_future_goals solution } >>
   tac >>= fun ans ->
-  Shelf.get >>= fun gls ->
-  Shelf.set shelf >>
-  tclUNIT (gls, ans)
+  Pv.get >>= fun npv ->
+  let { shelf = gls; solution = sigma } = npv in
+  let gls' = Evd.future_goals sigma in
+  let fgoals = Evd.future_goals solution in
+  let pgoal = Evd.principal_future_goal solution in
+  let sigma = Evd.restore_future_goals sigma fgoals pgoal in
+  Pv.set { npv with shelf; solution = sigma } >>
+  tclUNIT (CList.rev_append gls' gls, ans)
 
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
     interval [[0,m-1]].*)
