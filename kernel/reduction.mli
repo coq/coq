@@ -27,7 +27,7 @@ exception NotConvertible
 exception NotConvertibleVect of int
 
 type 'a conversion_function = env -> 'a -> 'a -> unit
-type 'a trans_conversion_function = Names.transparent_state -> 'a conversion_function
+type 'a trans_conversion_function = ?reds:Names.transparent_state -> 'a conversion_function
 type 'a universe_conversion_function = env -> UGraph.t -> 'a -> 'a -> unit
 type 'a trans_universe_conversion_function = 
   Names.transparent_state -> 'a universe_conversion_function
@@ -58,24 +58,13 @@ val convert_instances : flex:bool -> Univ.Instance.t -> Univ.Instance.t ->
 val checked_universes : UGraph.t universe_compare
 val inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare
 
-val trans_conv_cmp       : ?l2r:bool -> conv_pb -> constr trans_conversion_function
-val trans_conv           :
+val conv :
   ?l2r:bool -> ?evars:(existential->constr option) -> constr trans_conversion_function
-val trans_conv_leq       :
-  ?l2r:bool -> ?evars:(existential->constr option) -> types trans_conversion_function
 
-val trans_conv_universes     :
+val conv_universes :
   ?l2r:bool -> ?evars:(existential->constr option) -> constr trans_universe_conversion_function
-val trans_conv_leq_universes :
+val conv_leq_universes :
   ?l2r:bool -> ?evars:(existential->constr option) -> types trans_universe_conversion_function
-
-val conv_cmp       : ?l2r:bool -> conv_pb -> constr conversion_function
-val conv           :
-  ?l2r:bool -> ?evars:(existential->constr option) -> constr conversion_function
-val conv_leq       :
-  ?l2r:bool -> ?evars:(existential->constr option) -> types conversion_function
-val conv_leq_vecti :
-  ?l2r:bool -> ?evars:(existential->constr option) -> types array conversion_function
 
 (** These conversion functions are used by module subtyping, which needs to infer
     universe constraints inside the kernel *)

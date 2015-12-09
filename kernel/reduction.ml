@@ -126,7 +126,7 @@ let whd_betadeltaiota_nolet env t =
 
 (* Conversion utility functions *)
 type 'a conversion_function = env -> 'a -> 'a -> unit
-type 'a trans_conversion_function = Names.transparent_state -> 'a conversion_function
+type 'a trans_conversion_function = ?reds:Names.transparent_state -> 'a conversion_function
 type 'a universe_conversion_function = env -> UGraph.t -> 'a -> 'a -> unit
 type 'a trans_universe_conversion_function = 
   Names.transparent_state -> 'a universe_conversion_function
@@ -616,7 +616,7 @@ let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
   { compare = infer_cmp_universes;
     compare_instances = infer_convert_instances }
 
-let trans_fconv_universes reds cv_pb l2r evars env univs t1 t2 =
+let fconv_universes reds cv_pb l2r evars env univs t1 t2 =
   let b = 
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2 
     else eq_constr_univs univs t1 t2
@@ -627,38 +627,22 @@ let trans_fconv_universes reds cv_pb l2r evars env univs t1 t2 =
 	()
 
 (* Profiling *)
-let trans_fconv_universes = 
+let fconv_universes = 
   if Flags.profile then
-    let trans_fconv_universes_key = Profile.declare_profile "trans_fconv_universes" in
-      Profile.profile8 trans_fconv_universes_key trans_fconv_universes
-  else trans_fconv_universes
+    let fconv_universes_key = Profile.declare_profile "trans_fconv_universes" in
+      Profile.profile8 fconv_universes_key fconv_universes
+  else fconv_universes
 
-let trans_fconv reds cv_pb l2r evars env = 
-  trans_fconv_universes reds cv_pb l2r evars env (universes env)
+let fconv ?(reds=full_transparent_state) cv_pb l2r evars env = 
+  fconv_universes reds cv_pb l2r evars env (universes env)
 
-let trans_conv_cmp ?(l2r=false) conv reds = trans_fconv reds conv l2r (fun _->None)
-let trans_conv ?(l2r=false) ?(evars=fun _->None) reds = trans_fconv reds CONV l2r evars
-let trans_conv_leq ?(l2r=false) ?(evars=fun _->None) reds = trans_fconv reds CUMUL l2r evars
+let conv ?(l2r=false) ?(evars=fun _->None) ?(reds=full_transparent_state) =
+  fconv ~reds CONV l2r evars
 
-let trans_conv_universes ?(l2r=false) ?(evars=fun _->None) reds = 
-  trans_fconv_universes reds CONV l2r evars
-let trans_conv_leq_universes ?(l2r=false) ?(evars=fun _->None) reds = 
-  trans_fconv_universes reds CUMUL l2r evars
-
-let fconv = trans_fconv full_transparent_state
-
-let conv_cmp ?(l2r=false) cv_pb = fconv cv_pb l2r (fun _->None)
-let conv ?(l2r=false) ?(evars=fun _->None) = fconv CONV l2r evars
-let conv_leq ?(l2r=false) ?(evars=fun _->None) = fconv CUMUL l2r evars
-
-let conv_leq_vecti ?(l2r=false) ?(evars=fun _->None) env v1 v2 =
-  Array.fold_left2_i
-    (fun i _ t1 t2 ->
-      try conv_leq ~l2r ~evars env t1 t2
-      with NotConvertible -> raise (NotConvertibleVect i))
-    ()
-    v1
-    v2
+let conv_universes ?(l2r=false) ?(evars=fun _->None) reds =
+  fconv_universes reds CONV l2r evars
+let conv_leq_universes ?(l2r=false) ?(evars=fun _->None) reds = 
+  fconv_universes reds CUMUL l2r evars
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
   let (s, _) = 
