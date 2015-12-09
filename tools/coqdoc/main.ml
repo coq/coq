@@ -46,7 +46,6 @@ let usage () =
   prerr_endline "  --index <string>     set index name (default is index)";
   prerr_endline "  --toc                output a table of contents";
   prerr_endline "  --vernac <file>      consider <file> as a .v file";
-  prerr_endline "  --tex <file>         consider <file> as a .tex file";
   prerr_endline "  -p <string>          insert <string> in LaTeX preamble";
   prerr_endline "  --files-from <file>  read file names to process in <file>";
   prerr_endline "  --glob-from <file>   read globalization information from <file>";
@@ -121,7 +120,9 @@ let rec name_of_path p name dirname suffix =
     if subdir = dirname then raise Not_found
     else name_of_path p name subdir (Filename.basename dirname::suffix)
 
-let coq_module filename =
+(** [coq_module filename] Try to guess the coq module name from the
+    filename *)
+let coq_module (filename : string) : coq_module =
   let bfname = Filename.chop_extension filename in
   let dirname, fname = normalize_filename bfname in
   let rec change_prefix = function
@@ -138,10 +139,12 @@ let what_file f =
   check_if_file_exists f;
   if Filename.check_suffix f ".v" || Filename.check_suffix f ".g" then
     Vernac_file (f, coq_module f)
+  (* EG: We still don't entirely remove this snippet to help users *)
   else if Filename.check_suffix f ".tex" then
-    Latex_file f
+    (eprintf "\ncoqdoc: passing a latex file to CoqDoc used to do nothing and is not supported anymore\n";
+     exit 1)
   else
-     (eprintf "\ncoqdoc: don't know what to do with %s\n" f; exit 1)
+    (eprintf "\ncoqdoc: don't know what to do with %s\n" f; exit 1)
 
 (*s \textbf{Reading file names from a file.}
  *  File names may be given
@@ -310,7 +313,8 @@ let parse () =
     | ("-vernac-file" | "--vernac-file") :: [] ->
 	usage ()
     | ("-tex-file" | "--tex-file") :: f :: rem ->
-	add_file (Latex_file f); parse_rec rem
+      (eprintf "\ncoqdoc: passing a latex file to CoqDoc used to do nothing and is not supported anymore\n";
+       exit 1)
     | ("-tex-file" | "--tex-file") :: [] ->
 	usage ()
     | ("-files" | "--files" | "--files-from") :: f :: rem ->
@@ -419,11 +423,10 @@ let output_factory tl =
 let gen_one_file (module OutB : Output.S) (module Cpretty : Cpretty.S) (l : file list) =
 
   let file = function
-    | Vernac_file (f,m) ->
-        let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
-          Output.set_module m sub;
-          Cpretty.coq_file f m
-    | Latex_file _ -> ()
+    | Vernac_file (f, m) ->
+      let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
+      Output.set_module m sub;
+      Cpretty.coq_file f m
   in
     if (!header_trailer) then OutB.header ();
     if !toc then OutB.make_toc ();
@@ -445,7 +448,6 @@ let gen_mult_files(module OutB : Output.S) (module Cpretty : Cpretty.S) (l : fil
 	  Cpretty.coq_file f m;
 	  if (!header_trailer) then OutB.trailer ();
 	  close_out_file()
-    | Latex_file _ -> ()
   in
     List.iter file l;
     if (!index && !target_language=HTML) then begin
@@ -475,12 +477,10 @@ let read_glob_file vfile f =
 let read_glob_file_of = function
   | Vernac_file (f,_) ->
       read_glob_file (Some f) (Filename.chop_extension f ^ ".glob")
-  | Latex_file _ -> ()
 
 let index_module = function
   | Vernac_file (f,m) ->
       Index.add_module m
-  | Latex_file _ -> ()
 
 let copy_style_file file =
   let src =
@@ -490,7 +490,7 @@ let copy_style_file file =
   if Sys.file_exists src then copy src dst
   else eprintf "Warning: file %s does not exist\n" src
 
-(** [produce_document ] *)
+(** [produce_document l] *)
 let produce_document (l : file list) =
   (* XXX: This should be a hook in the backend. *)
   if !target_language=HTML  then copy_style_file "coqdoc.css";
