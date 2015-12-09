@@ -420,7 +420,10 @@ let output_factory tl =
 (*s Functions for generating output files *)
 
 (** gen_one_file [l] *)
-let gen_one_file (module OutB : Output.S) (module Cpretty : Cpretty.S) (l : file list) =
+let gen_one_file (module OutB : Output.S) (module Cpretty : Cpretty.S)
+                 (l : file list) =
+
+  List.iter (OutB.push_in_preamble) (List.rev !preamble);
 
   let file = function
     | Vernac_file (f, m) ->
@@ -434,7 +437,8 @@ let gen_one_file (module OutB : Output.S) (module Cpretty : Cpretty.S) (l : file
     if !index then OutB.make_index();
     if (!header_trailer) then OutB.trailer ()
 
-let gen_mult_files(module OutB : Output.S) (module Cpretty : Cpretty.S) (l : file list) =
+let gen_mult_files (module OutB : Output.S) (module Cpretty : Cpretty.S)
+                   (l : file list) =
 
   List.iter (OutB.push_in_preamble) (List.rev !preamble);
 
@@ -482,27 +486,28 @@ let index_module = function
   | Vernac_file (f,m) ->
       Index.add_module m
 
-let copy_style_file file =
-  let src =
-    List.fold_left
-      Filename.concat !Cdglobals.coqlib_path ["tools";"coqdoc";file] in
-  let dst = coqdoc_out file in
-  if Sys.file_exists src then copy src dst
-  else eprintf "Warning: file %s does not exist\n" src
+(** [copy_style_file files] Copy support files to output. *)
+let copy_style_files (files : string list) : unit =
+  let copy_file file =
+    let src = List.fold_left
+              Filename.concat !Cdglobals.coqlib_path ["tools"; "coqdoc"; file] in
+    let dst = coqdoc_out file                                                  in
+    if Sys.file_exists src then copy src dst
+    else eprintf "Warning: file %s does not exist\n" src
+  in List.iter copy_file files
 
 (** [produce_document l] *)
 let produce_document (l : file list) =
-  (* XXX: This should be a hook in the backend. *)
-  if !target_language=HTML  then copy_style_file "coqdoc.css";
-  if !target_language=LaTeX then copy_style_file "coqdoc.sty";
+  let module OutB    = (val output_factory !target_language) in
+  let module Cpretty = Cpretty.Make(OutB)                    in
+
+  copy_style_files OutB.support_files;
   (match !Cdglobals.glob_source with
     | NoGlob -> ()
     | DotGlob -> List.iter read_glob_file_of l
     | GlobFile f -> read_glob_file None f);
   List.iter index_module l;
 
-  let module OutB = (val output_factory !target_language) in
-  let module Cpretty = Cpretty.Make(OutB)                 in
   match !out_to with
     | StdOut ->
 	Cdglobals.out_channel := stdout;

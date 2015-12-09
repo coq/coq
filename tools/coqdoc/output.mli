@@ -35,6 +35,8 @@ val initialize : unit -> unit
 
 val push_in_preamble : string -> unit
 
+val support_files : string list
+
 val header : unit -> unit
 val trailer : unit -> unit
 

@@ -1235,7 +1235,7 @@ and inf_rules_assumptions indents assumptions = parse
                in
                  (d, Some n))
           with _ -> (dashes_and_name, None)
-            
+
         in
           inf_rules_conclusion indents (List.rev assumptions) 
                                (spaces, dashes, name) [] lexbuf }
@@ -1301,7 +1301,7 @@ and st_subtitle = parse
 {
   let coq_file f m =
     reset ();
-    let c = open_in f in
+    let c  = open_in f in
     let lb = from_channel c in
       (Index.current_library := m;
        OutB.initialize ();
