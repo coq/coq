@@ -11,12 +11,11 @@
 open Pp
 open Errors
 open Util
-open Unix
 
 (* All subdirectories, recursively *)
 
 let exists_dir dir =
-  try let _ = closedir (opendir dir) in true with Unix_error _ -> false
+  try Sys.is_directory dir with Sys_error _ -> false
 
 let skipped_dirnames = ref ["CVS"; "_darcs"]
 
@@ -31,24 +30,15 @@ let all_subdirs ~unix_path:root =
   let l = ref [] in
   let add f rel = l := (f, rel) :: !l in
   let rec traverse dir rel =
-    let dirh = opendir dir in
-    try
-      while true do
-	let f = readdir dirh in
-	if ok_dirname f then
-	  let file = Filename.concat dir f in
-	  try
-            begin match (stat file).st_kind with
-	    | S_DIR ->
-	      let newrel = rel @ [f] in
-	      add file newrel;
-	      traverse file newrel
-            | _ -> ()
-            end
-	  with Unix_error (e,s1,s2) -> ()
-      done
-    with End_of_file ->
-      closedir dirh
+    Array.iter (fun f ->
+      if ok_dirname f then
+	let file = Filename.concat dir f in
+        if Sys.is_directory file then begin
+          let newrel = rel @ [f] in
+	  add file newrel;
+	  traverse file newrel
+        end)
+      (Sys.readdir dir)
   in
   if exists_dir root then traverse root [];
   List.rev !l
