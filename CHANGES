@@ -9,6 +9,9 @@ Tactics
 
 - Syntax "destruct !hyp" changed to "destruct (hyp)", and similarly
   for induction.
+- Syntax "p/c" for on-the-fly application of a lemma c before
+  introducing along pattern p changed to p%c1..%cn. The feature and
+  syntax are in experimental stage.
 
 Changes from V8.5beta2 to V8.5beta3
 ===================================

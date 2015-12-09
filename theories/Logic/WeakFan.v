@@ -89,7 +89,7 @@ Qed.
 Theorem WeakFanTheorem : forall P, barred P -> inductively_barred P [].
 Proof.
 intros P Hbar.
-destruct Hbar with (X P) as (l,(Hd/Y_approx,HP)).
+destruct Hbar with (X P) as (l,(Hd%Y_approx,HP)).
 assert (inductively_barred P l) by (apply (now P l), HP).
 clear Hbar HP.
 induction l as [|a l].

@@ -95,7 +95,7 @@ Section Wf_Lexicographic_Exponentiation.
      intros.
     - inversion H.
       assert ([b; a] = ([] ++ [b]) ++ [a]) by auto with sets.
-      destruct (app_inj_tail (l ++ [y]) ([] ++ [b]) _ _ H0) as ((?, <-)/app_inj_tail, <-).
+      destruct (app_inj_tail (l ++ [y]) ([] ++ [b]) _ _ H0) as ((?, <-)%app_inj_tail, <-).
       inversion H1; subst; [ apply rt_step; assumption | apply rt_refl ].
     - inversion H0.
       + apply app_cons_not_nil in H3 as ().
