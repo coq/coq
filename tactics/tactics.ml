@@ -277,7 +277,8 @@ let apply_clear_request clear_flag dft c =
       error "keep/clear modifiers apply only to hypothesis names." in
   let clear = match clear_flag with
     | None -> dft && isVar c
-    | Some clear -> check_isvar c; clear in
+    | Some true -> check_isvar c; true
+    | Some false -> false in
   if clear then Proofview.V82.tactic (thin [destVar c])
   else Tacticals.New.tclIDTAC
 
