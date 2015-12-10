@@ -1356,7 +1356,7 @@ let postInjEqTac clear_flag ipats c n =
         then intro_patterns_bound_to n MoveLast ipats
         else intro_patterns_to MoveLast ipats in
       tclTHEN clear_tac intro_tac
-  | None -> tclIDTAC
+  | None -> apply_clear_request clear_flag false c
 
 let injEq clear_flag ipats =
   let l2r =
