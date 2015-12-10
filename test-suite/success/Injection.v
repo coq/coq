@@ -4,6 +4,7 @@ Require Eqdep_dec.
 
 (* Check that Injection tries Intro until *)
 
+Unset Structural Injection.
 Lemma l1 : forall x : nat, S x = S (S x) -> False.
  injection 1.
 apply n_Sn.
@@ -37,6 +38,7 @@ intros.
  injection H.
 exact (fun H => H).
 Qed.
+Set Structural Injection.
 
 (* Test injection as *)
 
@@ -65,7 +67,7 @@ Qed.
 Goal (forall x y : nat, x = y -> S x = S y) -> True.
 intros.
 einjection (H O).
-instantiate (1:=O).
+2:instantiate (1:=O).
 Abort.
 
 Goal (forall x y : nat, x = y -> S x = S y) -> True.
@@ -85,11 +87,20 @@ Qed.
 (* Basic case, using sigT *)
 
 Scheme Equality for nat.
+Unset Structural Injection.
 Goal forall n:nat, forall P:nat -> Type, forall H1 H2:P n,
   existT P n H1 = existT P n H2 -> H1 = H2.
 intros.
 injection H.
 intro H0. exact H0.
+Abort.
+Set Structural Injection.
+
+Goal forall n:nat, forall P:nat -> Type, forall H1 H2:P n,
+  existT P n H1 = existT P n H2 -> H1 = H2.
+intros.
+injection H as H0.
+exact H0.
 Abort.
 
 (* Test injection using K, knowing that an equality is decidable *)

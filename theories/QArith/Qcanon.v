@@ -84,7 +84,7 @@ Arguments Q2Qc q%Q.
 Lemma Q2Qc_eq_iff (q q' : Q) : Q2Qc q = Q2Qc q' <-> q == q'.
 Proof.
  split; intro H.
- - injection H. apply Qred_eq_iff.
+ - now injection H as H%Qred_eq_iff.
  - apply Qc_is_canon. simpl. now rewrite H.
 Qed.
 
@@ -266,7 +266,7 @@ Theorem Qcmult_integral : forall x y, x*y=0 -> x=0 \/ y=0.
 Proof.
   intros.
   destruct (Qmult_integral x y); try qc; auto.
-  injection H; clear H; intros.
+  injection H as H.
   rewrite <- (Qred_correct (x*y)).
   rewrite <- (Qred_correct 0).
   rewrite H; auto with qarith.

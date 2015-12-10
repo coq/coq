@@ -831,7 +831,7 @@ Proof.
  intro n.
  apply nat_ind with (P:= fun n => n <> S n).
  discriminate.
- red; intros n0 Hn0 eqn0Sn0;injection eqn0Sn0;trivial.
+ red; intros n0 Hn0 eqn0Sn0;injection eqn0Sn0;auto.
 Qed.
 
 Definition eq_nat_dec : forall n p:nat , {n=p}+{n <> p}.
@@ -1076,7 +1076,7 @@ Proof.
  simpl.
  destruct i; discriminate 1.
  destruct i; simpl;auto.
- injection 1; injection 2;intros; subst a; subst b; auto.
+ injection 1; injection 1; subst a; subst b; auto.
 Qed.
 
  Set Implicit Arguments.

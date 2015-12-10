@@ -144,6 +144,10 @@ TACTIC EXTEND einjection_as
 | [ "einjection" destruction_arg(c) "as" intropattern_list(ipat)] ->
     [ mytclWithHoles (injClause (Some ipat)) true c ]
 END
+TACTIC EXTEND simple_injection
+| [ "simple" "injection" ] -> [ simpleInjClause false None ]
+| [ "simple" "injection" destruction_arg(c) ] -> [ mytclWithHoles simpleInjClause false c ]
+END
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->

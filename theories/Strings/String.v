@@ -83,7 +83,7 @@ intros H; generalize (H 0); simpl; intros H1; inversion H1.
 case (Rec s).
 intros H0; rewrite H0; auto.
 intros n; exact (H (S n)).
-intros H; injection H; intros H1 H2 n; case n; auto.
+intros H; injection H as H1 H2.
 rewrite H2; trivial.
 rewrite H1; auto.
 Qed.
@@ -238,14 +238,14 @@ intros n m s1 s2; generalize n m s1; clear n m s1; elim s2; simpl;
  auto.
 intros n; case n; simpl; auto.
 intros m s1; case s1; simpl; auto.
-intros H; injection H; intros H1; rewrite <- H1; auto.
+intros H; injection H as <-; auto.
 intros; discriminate.
 intros; discriminate.
 intros b s2' Rec n m s1.
 case n; simpl; auto.
 generalize (prefix_correct s1 (String b s2'));
  case (prefix s1 (String b s2')).
-intros H0 H; injection H; intros H1; rewrite <- H1; auto.
+intros H0 H; injection H as <-; auto.
 case H0; simpl; auto.
 case m; simpl; auto.
 case (index 0 s1 s2'); intros; discriminate.
@@ -271,7 +271,7 @@ intros n m s1 s2; generalize n m s1; clear n m s1; elim s2; simpl;
  auto.
 intros n; case n; simpl; auto.
 intros m s1; case s1; simpl; auto.
-intros H; injection H; intros H1; rewrite <- H1.
+intros H; injection H as <-.
 intros p H0 H2; inversion H2.
 intros; discriminate.
 intros; discriminate.
@@ -279,7 +279,7 @@ intros b s2' Rec n m s1.
 case n; simpl; auto.
 generalize (prefix_correct s1 (String b s2'));
  case (prefix s1 (String b s2')).
-intros H0 H; injection H; intros H1; rewrite <- H1; auto.
+intros H0 H; injection H as <-; auto.
 intros p H2 H3; inversion H3.
 case m; simpl; auto.
 case (index 0 s1 s2'); intros; discriminate.

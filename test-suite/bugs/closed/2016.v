@@ -1,6 +1,8 @@
 (* Coq 8.2beta4 *)
 Require Import Classical_Prop. 
 
+Unset Structural Injection.
+
 Record coreSemantics : Type := CoreSemantics {
   core: Type;
   corestep: core ->  core -> Prop;
@@ -49,7 +51,7 @@ unfold oe_corestep; intros.
 assert (HH:= step_fun _ _ _ H H0); clear H H0.
 destruct q1; destruct q2; unfold oe2coreSem; simpl in *.
 generalize (inj_pairT1 _ _ _ _ _ _ HH); clear HH; intros.
-injection H; clear H; intros.
+injection H.
 revert in_q1  in_corestep1 in_corestep_fun1
           H.
 pattern in_core1.
