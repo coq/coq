@@ -173,6 +173,10 @@ TACTIC EXTEND einjection_as
 | [ "einjection" quantified_hypothesis(h) "as" intropattern_list(ipat) ] ->
     [ injClause (Some ipat) true (Some (induction_arg_of_quantified_hyp h)) ]
 END
+TACTIC EXTEND simple_injection
+| [ "simple" "injection" ] -> [ simpleInjClause false None ]
+| [ "simple" "injection" destruction_arg(c) ] -> [ mytclWithHoles simpleInjClause false c ]
+END
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->

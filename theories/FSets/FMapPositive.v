@@ -274,8 +274,8 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
         rewrite append_assoc_1; apply in_or_app; right; apply in_cons;
           apply IHm2; auto.
         rewrite append_assoc_0; apply in_or_app; left; apply IHm1; auto.
-        rewrite append_neutral_r; apply in_or_app; injection H;
-          intro EQ; rewrite EQ; right; apply in_eq.
+        rewrite append_neutral_r; apply in_or_app; injection H as ->;
+          right; apply in_eq.
         rewrite append_assoc_1; apply in_or_app; right; apply IHm2; auto.
         rewrite append_assoc_0; apply in_or_app; left; apply IHm1; auto.
         congruence.
@@ -315,7 +315,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
          apply in_or_app.
         left; apply IHm1; auto.
         right; destruct (in_inv H0).
-         injection H1; intros Eq1 Eq2; rewrite Eq1; rewrite Eq2; apply in_eq.
+         injection H1 as -> ->; apply in_eq.
          apply in_cons; apply IHm2; auto.
         left; apply IHm1; auto.
         right; apply IHm2; auto.
@@ -346,7 +346,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
          apply in_or_app.
         left; apply IHm1; auto.
         right; destruct (in_inv H0).
-         injection H1; intros Eq1 Eq2; rewrite Eq1; rewrite Eq2; apply in_eq.
+         injection H1 as -> ->; apply in_eq.
          apply in_cons; apply IHm2; auto.
         left; apply IHm1; auto.
         right; apply IHm2; auto.
@@ -689,7 +689,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   destruct y2; destruct y0; compute in Hy2; destruct Hy2; subst.
   red; red; simpl.
   destruct H0.
-  injection H0; clear H0; intros _ H0; subst.
+  injection H0 as H0 _; subst.
   eapply xelements_bits_lt_1; eauto.
   apply E.bits_lt_trans with p.
   eapply xelements_bits_lt_1; eauto.

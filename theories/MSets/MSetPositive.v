@@ -908,10 +908,10 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
       destruct o.
         intros x H. injection H; intros; subst. reflexivity.
         revert IHl. case choose.
-          intros p Hp x H. injection H; intros; subst; clear H. apply Hp.
+          intros p Hp x H. injection H; subst. apply Hp.
            reflexivity.
           intros _ x. revert IHr. case choose.
-            intros p Hp H. injection H; intros; subst; clear H. apply Hp.
+            intros p Hp H. injection H; subst. apply Hp.
             reflexivity.
             intros. discriminate.
   Qed.
@@ -968,11 +968,11 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
    induction s as [| l IHl o r IHr]; simpl.
      intros. discriminate.
      intros x. destruct (min_elt l); intros.
-       injection H. intros <-. apply IHl. reflexivity.
+       injection H as <-. apply IHl. reflexivity.
        destruct o; simpl.
-         injection H. intros <-. reflexivity.
+         injection H as <-. reflexivity.
          destruct (min_elt r); simpl in *.
-           injection H. intros <-. apply IHr. reflexivity.
+           injection H as <-. apply IHr. reflexivity.
            discriminate.
   Qed.
 
@@ -996,15 +996,15 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     induction s as [|l IHl o r IHr]; intros x y H H'.
       discriminate.
       simpl in H. case_eq (min_elt l).
-        intros p Hp. rewrite Hp in H. injection H; intros <-.
+        intros p Hp. rewrite Hp in H. injection H as <-.
         destruct y as [z|z|]; simpl; intro; trivial. apply (IHl p z); trivial.
         intro Hp; rewrite Hp in H. apply min_elt_spec3 in Hp.
         destruct o.
-          injection H. intros <- Hl. clear H.
+          injection H as <-. intros Hl.
           destruct y as [z|z|]; simpl; trivial. elim (Hp _ H').
 
           destruct (min_elt r).
-            injection H. intros <-. clear H.
+            injection H as <-.
             destruct y as [z|z|].
               apply (IHr e z); trivial.
               elim (Hp _ H').
@@ -1021,11 +1021,11 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
    induction s as [| l IHl o r IHr]; simpl.
      intros. discriminate.
      intros x. destruct (max_elt r); intros.
-       injection H. intros <-. apply IHr. reflexivity.
+       injection H as <-. apply IHr. reflexivity.
        destruct o; simpl.
-         injection H. intros <-. reflexivity.
+         injection H as <-. reflexivity.
          destruct (max_elt l); simpl in *.
-           injection H. intros <-. apply IHl. reflexivity.
+           injection H as <-. apply IHl. reflexivity.
            discriminate.
   Qed.
 
@@ -1049,15 +1049,15 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     induction s as [|l IHl o r IHr]; intros x y H H'.
       discriminate.
       simpl in H. case_eq (max_elt r).
-        intros p Hp. rewrite Hp in H. injection H; intros <-.
+        intros p Hp. rewrite Hp in H. injection H as <-.
         destruct y as [z|z|]; simpl; intro; trivial. apply (IHr p z); trivial.
         intro Hp; rewrite Hp in H. apply max_elt_spec3 in Hp.
         destruct o.
-          injection H. intros <- Hl. clear H.
+          injection H as <-. intros Hl.
           destruct y as [z|z|]; simpl; trivial. elim (Hp _ H').
 
           destruct (max_elt l).
-            injection H. intros <-. clear H.
+            injection H as <-.
             destruct y as [z|z|].
               elim (Hp _ H').
               apply (IHl e z); trivial.

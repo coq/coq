@@ -1986,7 +1986,7 @@ Module OrdProperties (M:S).
   simpl; intros; try discriminate.
   intros.
   destruct a; destruct l; simpl in *.
-  injection H; clear H; intros; subst.
+  injection H; subst.
   inversion_clear H1.
   red in H; simpl in *; intuition.
   elim H0; eauto.
@@ -2050,10 +2050,10 @@ Module OrdProperties (M:S).
   generalize (elements_3 m).
   destruct (elements m).
   try discriminate.
-  destruct p; injection H; intros; subst.
-  inversion_clear H1.
+  destruct p; injection H; intros H4; subst.
+  inversion_clear H1 as [? ? H2|? ? H2].
   red in H2; destruct H2; simpl in *; ME.order.
-  inversion_clear H4.
+  inversion_clear H4. rename H1 into H3.
   rewrite (@InfA_alt _ eqke) in H3; eauto with *.
   apply (H3 (y,x0)); auto.
   Qed.

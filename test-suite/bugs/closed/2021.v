@@ -1,6 +1,8 @@
 (* correct failure of injection/discriminate on types whose inductive
    status derives from the substitution of an argument *)
 
+Unset Structural Injection.
+
 Inductive t : nat -> Type :=
 | M : forall n: nat, nat -> t n.
 

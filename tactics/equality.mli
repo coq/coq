@@ -79,6 +79,8 @@ val injClause    : intro_patterns option -> evars_flag ->
   constr with_bindings induction_arg option -> unit Proofview.tactic
 val injHyp       : clear_flag -> Id.t -> unit Proofview.tactic
 val injConcl     : unit Proofview.tactic
+val simpleInjClause : evars_flag ->
+  constr with_bindings destruction_arg option -> unit Proofview.tactic
 
 val dEq : evars_flag -> constr with_bindings induction_arg option -> unit Proofview.tactic
 val dEqThen : evars_flag -> (clear_flag -> constr -> int -> unit Proofview.tactic) -> constr with_bindings induction_arg option -> unit Proofview.tactic
