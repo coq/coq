@@ -866,7 +866,7 @@ and interp_intro_pattern_action ist env sigma = function
       let sigma,l = interp_intro_pattern_list_as_list ist env sigma l in
       sigma, IntroInjection l
   | IntroApplyOn (c,ipat) ->
-      let c = fun env sigma -> interp_constr ist env sigma c in
+      let c = fun env sigma -> interp_open_constr ist env sigma c in
       let sigma,ipat = interp_intro_pattern ist env sigma ipat in
       sigma, IntroApplyOn (c,ipat)
   | IntroWildcard | IntroRewrite _ as x -> sigma, x

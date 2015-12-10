@@ -78,3 +78,9 @@ intros H2%H%H0.
 - exact H2.
 - exact H1.
 Qed.
+
+(* Bug found by Enrico *)
+
+Goal forall x : nat, True.
+intros y%(fun x => x).
+Abort.
