@@ -240,7 +240,7 @@ GEXTEND Gram
     [ [ n = natural -> (None,ElimOnAnonHyp n)
       | test_lpar_id_rpar; c = constr_with_bindings ->
         (Some false,induction_arg_of_constr c)
-      | c = constr_with_bindings -> (None,induction_arg_of_constr c)
+      | c = constr_with_bindings_arg -> on_snd induction_arg_of_constr c
     ] ]
   ;
   constr_with_bindings_arg:
@@ -499,12 +499,12 @@ GEXTEND Gram
     [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
   ;
   rewriter :
-    [ [ "!"; c = constr_with_bindings -> (RepeatPlus,(None,c))
+    [ [ "!"; c = constr_with_bindings_arg -> (RepeatPlus,c)
       | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (RepeatStar,c)
-      | n = natural; "!"; c = constr_with_bindings -> (Precisely n,(None,c))
+      | n = natural; "!"; c = constr_with_bindings_arg -> (Precisely n,c)
       |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (UpTo n,c)
       | n = natural; c = constr_with_bindings_arg -> (Precisely n,c)
-      | c = constr_with_bindings -> (Precisely 1, (None,c))
+      | c = constr_with_bindings_arg -> (Precisely 1, c)
       ] ]
   ;
   oriented_rewriter :
