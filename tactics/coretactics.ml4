@@ -42,6 +42,10 @@ TACTIC EXTEND vm_cast_no_check
   [ "vm_cast_no_check" constr(c) ] -> [ Proofview.V82.tactic (Tactics.vm_cast_no_check c) ]
 END
 
+TACTIC EXTEND native_cast_no_check
+  [ "native_cast_no_check" constr(c) ] -> [ Proofview.V82.tactic (Tactics.native_cast_no_check c) ]
+END
+
 TACTIC EXTEND casetype
   [ "casetype" constr(c) ] -> [ Tactics.case_type c ]
 END

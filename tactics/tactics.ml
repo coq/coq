@@ -1731,6 +1731,10 @@ let vm_cast_no_check c gl =
   let concl = pf_concl gl in
   refine_no_check (Term.mkCast(c,Term.VMcast,concl)) gl
 
+let native_cast_no_check c gl =
+  let concl = pf_concl gl in
+  refine_no_check (Term.mkCast(c,Term.NATIVEcast,concl)) gl
+
 
 let exact_proof c gl =
   let c,ctx = Constrintern.interp_casted_constr (pf_env gl) (project gl) c (pf_concl gl)
