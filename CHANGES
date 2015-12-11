@@ -24,6 +24,7 @@ Vernacular commands
   declaration of all polymorphic universes appearing in a definition when
   introducing it.
 - New command "Show id" to show goal named id.
+- Option "Virtual Machine" removed.
 
 Tactics
 
@@ -82,6 +83,7 @@ Tools
 - The -require and -load-vernac-object command-line options now take a logical
   path of a given library rather than a physical path, thus they behave like
   Require [Import] path.
+- The -vm command-line option has been removed.
 
 Standard Library
 
