@@ -1286,10 +1286,16 @@ let solve_candidates conv_algo env evd (evk,argsv) rhs =
       | l -> evd
 
 let occur_evar_upto_types sigma n c =
+  let seen = ref Evar.Set.empty in
   let rec occur_rec c = match kind_of_term c with
     | Evar (sp,_) when Evar.equal sp n -> raise Occur
-    | Evar e -> Option.iter occur_rec (existential_opt_value sigma e);
-		occur_rec (existential_type sigma e)
+    | Evar (sp,args as e) ->
+       if Evar.Set.mem sp !seen then
+         Array.iter occur_rec args
+       else (
+         seen := Evar.Set.add sp !seen;
+	 Option.iter occur_rec (existential_opt_value sigma e);
+	 occur_rec (existential_type sigma e))
     | _ -> iter_constr occur_rec c
   in
   try occur_rec c; false with Occur -> true
