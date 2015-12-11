@@ -157,8 +157,11 @@ end
 
 (** Type of proof views: current [evar_map] together with the list of
     focused goals. *)
-type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
-
+type proofview = {
+  solution : Evd.evar_map;
+  comb : Goal.goal list;
+  shelf : Goal.goal list;
+}
 
 (** {6 Instantiation of the logic monad} *)
 
@@ -171,10 +174,10 @@ module P = struct
   type e = bool
 
   (** Status (safe/unsafe) * shelved goals * given up *)
-  type w = bool * Evar.t list * Evar.t list
+  type w = bool * Evar.t list
 
-  let wunit = true , [] , []
-  let wprod (b1,s1,g1) (b2,s2,g2) = b1 && b2 , s1@s2 , g1@g2
+  let wunit = true , []
+  let wprod (b1, g1) (b2, g2) = b1 && b2 , g1@g2
 
   type u = Info.state
 
@@ -226,19 +229,21 @@ module Env : State with type t := Environ.env = struct
 end
 
 module Status : Writer with type t := bool = struct
-  let put s = Logical.put (s,[],[])
+  let put s = Logical.put (s, [])
 end
 
-module Shelf : Writer with type t = Evar.t list = struct
+module Shelf : State with type t = Evar.t list = struct
     (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
   type t = Evar.t list
-  let put sh = Logical.put (true,sh,[])
+  let get = Logical.map (fun {shelf} -> shelf) Pv.get
+  let set c = Pv.modify (fun pv -> { pv with shelf = c })
+  let modify f = Pv.modify (fun pv -> { pv with shelf = f pv.shelf })
 end
 
 module Giveup : Writer with type t = Evar.t list = struct
     (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
   type t = Evar.t list
-  let put gs = Logical.put (true,[],gs)
+  let put gs = Logical.put (true, gs)
 end
 
 (** Lens and utilies pertaining to the info trace *)

@@ -175,7 +175,7 @@ let comp_env_cofix ndef arity rfv =
 let push_param n sz r =
   { r with
     nb_stack = r.nb_stack + n;
-    in_stack = add_param n (sz - r.nb_uni_stack) r.in_stack }
+    in_stack = add_param n sz r.in_stack }
 
 (* [push_local sz r] add a new variable on the stack at position [sz] *)
 let push_local sz r =

@@ -40,7 +40,7 @@ Proposition is_path_from_characterization P n l :
 Proof.
 intros. split.
 - induction 1 as [|* HP _ (l'&Hl'&HPl')|* HP _ (l'&Hl'&HPl')].
-  + exists []. split. reflexivity. intros n <-/le_n_0_eq. assumption.
+  + exists []. split. reflexivity. intros n <-%le_n_0_eq. assumption.
   + exists (true :: l'). split. apply eq_S, Hl'. intros [|] H.
     * assumption.
     * simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
@@ -51,10 +51,10 @@ intros. split.
   + constructor. apply (HPl' 0). apply le_0_n.
   + eapply next_left.
     * apply (HPl' 0), le_0_n.
-    * fold (length l'). apply IHl'. intros n' H/le_n_S. apply HPl' in H. simpl in H. rewrite <- app_assoc in H. assumption.
+    * fold (length l'). apply IHl'. intros n' H%le_n_S. apply HPl' in H. simpl in H. rewrite <- app_assoc in H. assumption.
   + apply next_right.
     * apply (HPl' 0), le_0_n.
-    * fold (length l'). apply IHl'. intros n' H/le_n_S. apply HPl' in H. simpl in H. rewrite <- app_assoc in H. assumption.
+    * fold (length l'). apply IHl'. intros n' H%le_n_S. apply HPl' in H. simpl in H. rewrite <- app_assoc in H. assumption.
 Qed.
 
 (** [infinite_from P l] means that we can find arbitrary long paths

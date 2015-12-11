@@ -303,6 +303,10 @@ val guard_no_unifiable : unit tactic
     goals of p *)
 val unshelve : Goal.goal list -> proofview -> proofview
 
+(** [with_shelf tac] executes [tac] and returns its result together with the set
+    of goals shelved by [tac]. The current shelf is unchanged. *)
+val with_shelf : 'a tactic -> (Goal.goal list * 'a) tactic
+
 (** If [n] is positive, [cycle n] puts the [n] first goal last. If [n]
     is negative, then it puts the [n] last goals first.*)
 val cycle : int -> unit tactic

@@ -97,8 +97,7 @@
 \newcommand{\camlpppp}{\textsc{Camlp4}}
 \newcommand{\emacs}{\textsc{GNU Emacs}}
 \newcommand{\ProofGeneral}{\textsc{Proof General}}
-\newcommand{\CIC}{\pCIC}
-\newcommand{\pCIC}{p\textsc{Cic}}
+\newcommand{\CIC}{\textsc{Cic}}
 \newcommand{\iCIC}{\textsc{Cic}}
 \newcommand{\FW}{\ensuremath{F_{\omega}}}
 \newcommand{\Program}{\textsc{Program}}
@@ -258,13 +257,13 @@
 \newcommand{\forest}{\mbox{\textsf{forest}}}
 \newcommand{\from}{\mbox{\textsf{from}}}
 \newcommand{\hd}{\mbox{\textsf{hd}}}
-\newcommand{\Length}{\mbox{\textsf{Length}}}
+\newcommand{\haslength}{\mbox{\textsf{has\_length}}}
 \newcommand{\length}{\mbox{\textsf{length}}}
-\newcommand{\LengthA}{\mbox {\textsf{Length\_A}}}
-\newcommand{\List}{\mbox{\textsf{List}}}
-\newcommand{\ListA}{\mbox{\textsf{List\_A}}}
-\newcommand{\LNil}{\mbox{\textsf{Lnil}}}
-\newcommand{\LCons}{\mbox{\textsf{Lcons}}}
+\newcommand{\haslengthA}{\mbox {\textsf{has\_length~A}}}
+\newcommand{\List}{\mbox{\textsf{list}}}
+\newcommand{\ListA}{\mbox{\textsf{list}}~\ensuremath{A}}
+\newcommand{\nilhl}{\mbox{\textsf{nil\_hl}}}
+\newcommand{\conshl}{\mbox{\textsf{cons\_hl}}}
 \newcommand{\nat}{\mbox{\textsf{nat}}}
 \newcommand{\nO}{\mbox{\textsf{O}}}
 \newcommand{\nS}{\mbox{\textsf{S}}}
@@ -281,6 +280,13 @@
 \newcommand{\Type}{\mbox{\textsf{Type}}}
 \newcommand{\unfold}{\mbox{\textsf{unfold}}}
 \newcommand{\zeros}{\mbox{\textsf{zeros}}}
+\newcommand{\even}{\mbox{\textsf{even}}}
+\newcommand{\odd}{\mbox{\textsf{odd}}}
+\newcommand{\evenO}{\mbox{\textsf{even\_O}}}
+\newcommand{\evenS}{\mbox{\textsf{even\_S}}}
+\newcommand{\oddS}{\mbox{\textsf{odd\_S}}}
+\newcommand{\Prod}{\mbox{\textsf{prod}}}
+\newcommand{\Pair}{\mbox{\textsf{pair}}}
 
 %%%%%%%%%
 % Misc. %
@@ -364,6 +370,7 @@
 \newcommand{\myifthenelse}[3]{\kw{if} ~ #1 ~\kw{then} ~ #2 ~ \kw{else} ~ #3}
 \newcommand{\fun}[2]{\item[]{\tt {#1}}. \quad\\ #2}
 \newcommand{\WF}[2]{\ensuremath{{\cal W\!F}(#1)[#2]}}
+\newcommand{\WFTWOLINES}[2]{\ensuremath{{\cal W\!F}\begin{array}{l}(#1)\\\mbox{}[{#2}]\end{array}}}
 \newcommand{\WFE}[1]{\WF{E}{#1}}
 \newcommand{\WT}[4]{\ensuremath{#1[#2] \vdash #3 : #4}}
 \newcommand{\WTE}[3]{\WT{E}{#1}{#2}{#3}}
@@ -393,9 +400,9 @@
 \newcommand{\CIPI}[1]{\CIP{#1}{I}{P}}
 \newcommand{\CIF}[1]{\mbox{$\{#1\}_{f_1.. f_n}$}}
 %BEGIN LATEX
-\newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(\begin{array}[t]{@{}l}#2:=#3
+\newcommand{\NInd}[3]{\mbox{{\sf Ind}$(\begin{array}[t]{@{}l}#2:=#3
                                               \,)\end{array}$}}
-\newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](\begin{array}[t]{@{}l@{}}#3:=#4
+\newcommand{\Ind}[4]{\mbox{{\sf Ind}$[#2](\begin{array}[t]{@{}l@{}}#3:=#4
                                                  \,)\end{array}$}}
 %END LATEX
 %HEVEA \newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(#2:=#3\,)$}}
@@ -413,6 +420,7 @@
 \newcommand{\Fix}[2]{\mbox{\tt Fix}~#1\{#2\}}
 \newcommand{\CoFix}[2]{\mbox{\tt CoFix}~#1\{#2\}}
 \newcommand{\With}[2]{\mbox{\tt ~with~}}
+\newcommand{\letin}[3]{\kw{let}~#1:=#2~\kw{in}~#3}
 \newcommand{\subst}[3]{#1\{#2/#3\}}
 \newcommand{\substs}[4]{#1\{(#2/#3)_{#4}\}}
 \newcommand{\Sort}{\mbox{$\cal S$}}

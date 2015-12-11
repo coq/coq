@@ -311,7 +311,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 {\annotation} & ::= & {\tt \{ struct} {\ident} {\tt \}} \\ 
 &&\\
 {\caseitem} & ::= & {\term} \zeroone{{\tt as} \name}
-     \zeroone{{\tt in} \pattern} \\
+     \zeroone{{\tt in} \qualid \sequence{\pattern}{}} \\
 &&\\
 {\ifitem} & ::= & \zeroone{{\tt as} {\name}} {\returntype} \\
 &&\\
@@ -322,7 +322,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 {\multpattern} & ::= & \nelist{\pattern}{\tt ,}\\
 &&\\
 {\pattern} & ::= & {\qualid} \nelist{\pattern}{}  \\
- & $|$ & {\tt @} {\qualid} \sequence{\pattern}{} \\
+ & $|$ & {\tt @} {\qualid} \nelist{\pattern}{} \\
 
  & $|$ & {\pattern} {\tt as} {\ident}             \\
  & $|$ & {\pattern} {\tt \%} {\ident}         \\
@@ -468,8 +468,8 @@ proposition $B$ or the functional dependent product from $A$ to $B$ (a
 construction usually written $\Pi_{x:A}.B$ in set theory).
 
 Non dependent product types have a special notation: ``$A$ {\tt ->}
-$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. The non dependent
-product is used both to denote the propositional implication and
+$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. The {\em non dependent
+product} is used both to denote the propositional implication and
 function types.
 
 \subsection{Applications
@@ -609,17 +609,20 @@ the type of each branch can depend on the type dependencies specific
 to the branch and the whole pattern-matching expression has a type
 determined by the specific dependencies in the type of the term being
 matched. This dependency of the return type in the annotations of the
-inductive type is expressed using a {\tt
-``in~I~\_~$\ldots$~\_~\ident$_1$~$\ldots$~\ident$_n$}'' clause, where
+inductive type is expressed using a 
+  ``in~I~\_~$\ldots$~\_~\pattern$_1$~$\ldots$~\pattern$_n$'' clause, where
 \begin{itemize}
 \item $I$ is the inductive type of the term being matched;
 
-\item the names \ident$_i$'s correspond to the arguments of the
-inductive type that carry the annotations: the return type is dependent
-on them;
-
-\item the {\_}'s denote the family parameters of the inductive type:
+\item the {\_}'s are matching the parameters of the inductive type:
 the return type is not dependent on them.
+
+\item the \pattern$_i$'s are matching the annotations of the inductive
+  type: the return type is dependent on them
+
+\item in the basic case which we describe below, each \pattern$_i$ is a
+  name \ident$_i$; see \ref{match-in-patterns} for the general case
+
 \end{itemize}
 
 For instance, in the following example:

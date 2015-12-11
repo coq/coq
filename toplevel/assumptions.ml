@@ -158,7 +158,7 @@ let rec traverse current ctx accu t = match kind_of_term t with
 | Case (_,oty,c,[||]) ->
     (* non dependent match on an inductive with no constructors *) 
     begin match Constr.(kind oty, kind c) with
-    | Lambda(Anonymous,_,oty), Const (kn, _)
+    | Lambda(_,_,oty), Const (kn, _)
       when Vars.noccurn 1 oty &&
       not (Declareops.constant_has_body (lookup_constant kn)) ->
         let body () = Global.body_of_constant_body (lookup_constant kn) in

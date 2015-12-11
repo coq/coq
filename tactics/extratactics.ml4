@@ -874,6 +874,15 @@ TACTIC EXTEND shelve_unifiable
     [ Proofview.shelve_unifiable ]
 END
 
+(* Unshelves the goal shelved by the tactic. *)
+TACTIC EXTEND unshelve
+| [ "unshelve" tactic0(t) ] ->
+    [
+      Proofview.with_shelf (Tacinterp.eval_tactic t) >>= fun (gls, ()) ->
+      Proofview.Unsafe.tclNEWGOALS gls
+    ]
+END
+
 (* Command to add every unshelved variables to the focus *)
 VERNAC COMMAND EXTEND Unshelve
 [ "Unshelve" ]

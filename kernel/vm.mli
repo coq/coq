@@ -48,8 +48,11 @@ type whd =
   | Vatom_stk of atom * stack
   | Vuniv_level of Univ.universe_level
 
+(** For debugging purposes only *)
+
 val pr_atom : atom -> Pp.std_ppcmds
 val pr_whd : whd -> Pp.std_ppcmds
+val pr_stack : stack -> Pp.std_ppcmds
 
 (** Constructors *)
 

@@ -11,7 +11,6 @@
 open Pp
 open Errors
 open Util
-open Unix
 
 (** Dealing with directories *)
 
@@ -44,7 +43,7 @@ let ok_dirname f =
 (* Check directory can be opened *)
 
 let exists_dir dir =
-  try let _ = closedir (opendir dir) in true with Unix_error _ -> false
+  try Sys.is_directory dir with Sys_error _ -> false
 
 let check_unix_dir warn dir =
   if (Sys.os_type = "Win32" || Sys.os_type = "Cygwin") &&
@@ -59,15 +58,15 @@ let apply_subdir f path name =
   (* as well as skipped files like CVS, ... *)
   if name.[0] <> '.' && ok_dirname name then
     let path = if path = "." then name else path//name in
-    match try (stat path).st_kind with Unix_error _ -> S_BLK with
-    | S_DIR -> f (FileDir (path,name))
-    | S_REG -> f (FileRegular name)
+    match try (Unix.stat path).Unix.st_kind with Unix.Unix_error _ -> Unix.S_BLK with
+    | Unix.S_DIR -> f (FileDir (path,name))
+    | Unix.S_REG -> f (FileRegular name)
     | _ -> ()
 
 let process_directory f path =
-  let dirh = opendir path in
-  try while true do apply_subdir f path (readdir dirh) done
-  with End_of_file -> closedir dirh
+  let dirh = Unix.opendir path in
+  try while true do apply_subdir f path (Unix.readdir dirh) done
+  with End_of_file -> Unix.closedir dirh
 
 let process_subdirectories f path =
   let f = function FileDir (path,base) -> f path base | FileRegular _ -> () in
@@ -108,16 +107,8 @@ module StrSet = Set.Make(StrMod)
 let dirmap = ref StrMap.empty
 
 let make_dir_table dir =
-  let b = ref StrSet.empty in
-  let a = Unix.opendir dir in
-  (try
-    while true do
-      let s = Unix.readdir a in
-      if s.[0] != '.' then b := StrSet.add s !b
-    done
-  with
-  | End_of_file -> ());
-  Unix.closedir a; !b
+  let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
+  Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
 
 let exists_in_dir_respecting_case dir bf =
   let contents, cached =
@@ -321,7 +312,7 @@ type time = float * float * float
 
 let get_time () =
   let t = Unix.times ()  in
-  (Unix.gettimeofday(), t.tms_utime, t.tms_stime)
+  (Unix.gettimeofday(), t.Unix.tms_utime, t.Unix.tms_stime)
 
 (* Keep only 3 significant digits *)
 let round f = (floor (f *. 1e3)) *. 1e-3

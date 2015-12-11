@@ -858,7 +858,7 @@ and interp_intro_pattern_action ist env sigma = function
   | IntroApplyOn (c,ipat) ->
       let c = { delayed = fun env sigma ->
         let sigma = Sigma.to_evar_map sigma in
-        let (sigma, c) = interp_constr ist env sigma c in
+        let (sigma, c) = interp_open_constr ist env sigma c in
         Sigma.Unsafe.of_pair (c, sigma)
       } in
       let sigma,ipat = interp_intro_pattern ist env sigma ipat in

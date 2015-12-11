@@ -23,6 +23,9 @@ Tactics
 
 - Syntax "destruct !hyp" changed to "destruct (hyp)", and similarly
   for induction.
+- Syntax "p/c" for on-the-fly application of a lemma c before
+  introducing along pattern p changed to p%c1..%cn. The feature and
+  syntax are in experimental stage.
 
 Changes from V8.5beta2 to V8.5beta3
 ===================================
@@ -35,6 +38,7 @@ Vernacular commands
   declaration of all polymorphic universes appearing in a definition when
   introducing it.
 - New command "Show id" to show goal named id.
+- Option "Virtual Machine" removed.
 
 Tactics
 
@@ -100,6 +104,7 @@ Tools
 - The -require and -load-vernac-object command-line options now take a logical
   path of a given library rather than a physical path, thus they behave like
   Require [Import] path.
+- The -vm command-line option has been removed.
 
 Standard Library
 

@@ -287,7 +287,8 @@ let apply_clear_request clear_flag dft c =
       error "keep/clear modifiers apply only to hypothesis names." in
   let clear = match clear_flag with
     | None -> dft && isVar c
-    | Some clear -> check_isvar c; clear in
+    | Some true -> check_isvar c; true
+    | Some false -> false in
   if clear then Proofview.V82.tactic (thin [destVar c])
   else Tacticals.New.tclIDTAC
 
@@ -1756,6 +1757,10 @@ let exact_no_check = Tacmach.refine_no_check
 let vm_cast_no_check c gl =
   let concl = Tacmach.pf_concl gl in
   Tacmach.refine_no_check (Term.mkCast(c,Term.VMcast,concl)) gl
+
+let native_cast_no_check c gl =
+  let concl = Tacmach.pf_concl gl in
+  Tacmach.refine_no_check (Term.mkCast(c,Term.NATIVEcast,concl)) gl
 
 
 let exact_proof c gl =
