@@ -333,7 +333,8 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
           (* For vi2vo compilation proofs are computed now but we need to
            * complement the univ constraints of the typ with the ones of
            * the body.  So we keep the two sets distinct. *)
-          let ctx_body = restrict_universe_context ctx used_univs_body in
+	  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+          let ctx_body = restrict_universe_context ctx used_univs in
           (initunivs, typ), ((body, ctx_body), eff)
         else
           let initunivs = Univ.UContext.empty in
