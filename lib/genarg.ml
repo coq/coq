@@ -225,11 +225,3 @@ let register_name0 t name = match t with
 
 let get_name0 name =
   String.Map.find name !arg0_names
-
-module Unsafe =
-struct
-
-let inj tpe x = (tpe, x)
-let prj (_, x) = x
-
-end

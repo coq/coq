@@ -256,23 +256,3 @@ val register_name0 : ('a, 'b, 'c) genarg_type -> string -> unit
 
 val get_name0 : string -> string
 (** Return the absolute path of a given witness. *)
-
-(** {5 Unsafe loophole} *)
-
-module Unsafe :
-sig
-
-(** Unsafe magic functions. Not for kids. This is provided here as a loophole to
-    escape this module. Do NOT use outside of the dedicated areas. NOT. EVER. *)
-
-val inj : argument_type -> Obj.t -> 'lev generic_argument
-(** Injects an object as generic argument. !!!BEWARE!!! only do this as
-    [inj tpe x] where:
-
-    1. [tpe] is the reification of a [('a, 'b, 'c) genarg_type];
-    2. [x] has type ['a], ['b] or ['c] according to the return level ['lev]. *)
-
-val prj : 'lev generic_argument -> Obj.t
-(** Recover the contents of a generic argument. *)
-
-end
