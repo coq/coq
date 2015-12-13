@@ -392,11 +392,11 @@ let pp_Dfix (rv,c,t) =
     (fun r -> if is_inline_custom r then mt () else pp_global Term r) rv
   in
   let rec pp init i =
-    if i >= Array.length rv then
-      (if init then failwith "empty phrase" else mt ())
+    if i >= Array.length rv then mt ()
     else
       let void = is_inline_custom rv.(i) ||
-	(not (is_custom rv.(i)) && match c.(i) with MLexn "UNUSED" -> true | _ -> false)
+	(not (is_custom rv.(i)) &&
+         match c.(i) with MLexn "UNUSED" -> true | _ -> false)
       in
       if void then pp init (i+1)
       else
@@ -469,8 +469,8 @@ let pp_coind pl name =
 
 let pp_ind co kn ind =
   let prefix = if co then "__" else "" in
-  let some = ref false in
-  let init= ref (str "type ") in
+  let initkwd = str "type " in
+  let nextkwd = fnl () ++ str "and " in
   let names =
     Array.mapi (fun i p -> if p.ip_logical then mt () else
 		  pp_global Type (IndRef (kn,i)))
@@ -483,29 +483,20 @@ let pp_ind co kn ind =
 	   p.ip_types)
       ind.ind_packets
   in
-  let rec pp i =
+  let rec pp i kwd =
     if i >= Array.length ind.ind_packets then mt ()
     else
       let ip = (kn,i) in
       let ip_equiv = ind.ind_equiv, i in
       let p = ind.ind_packets.(i) in
-      if is_custom (IndRef ip) then pp (i+1)
-      else begin
-	some := true;
-	if p.ip_logical then pp_logical_ind p ++ pp (i+1)
-	else
-	  let s = !init in
-	  begin
-	    init := (fnl () ++ str "and ");
-	    s ++
-	    (if co then pp_coind p.ip_vars names.(i) else mt ()) ++
-	    pp_one_ind
-	      prefix ip_equiv p.ip_vars names.(i) cnames.(i) p.ip_types ++
-	    pp (i+1)
-	  end
-      end
+      if is_custom (IndRef ip) then pp (i+1) kwd
+      else if p.ip_logical then pp_logical_ind p ++ pp (i+1) kwd
+      else
+	kwd ++ (if co then pp_coind p.ip_vars names.(i) else mt ()) ++
+	pp_one_ind prefix ip_equiv p.ip_vars names.(i) cnames.(i) p.ip_types ++
+	pp (i+1) nextkwd
   in
-  let st = pp 0 in if !some then st else failwith "empty phrase"
+  pp 0 initkwd
 
 
 (*s Pretty-printing of a declaration. *)
@@ -518,8 +509,8 @@ let pp_mind kn i =
     | Standard -> pp_ind false kn i
 
 let pp_decl = function
-    | Dtype (r,_,_) when is_inline_custom r -> failwith "empty phrase"
-    | Dterm (r,_,_) when is_inline_custom r -> failwith "empty phrase"
+    | Dtype (r,_,_) when is_inline_custom r -> mt ()
+    | Dterm (r,_,_) when is_inline_custom r -> mt ()
     | Dind (kn,i) -> pp_mind kn i
     | Dtype (r, l, t) ->
         let name = pp_global Type r in
@@ -567,8 +558,8 @@ let pp_alias_decl ren = function
 	rv
 
 let pp_spec = function
-  | Sval (r,_) when is_inline_custom r -> failwith "empty phrase"
-  | Stype (r,_,_) when is_inline_custom r -> failwith "empty phrase"
+  | Sval (r,_) when is_inline_custom r -> mt ()
+  | Stype (r,_,_) when is_inline_custom r -> mt ()
   | Sind (kn,i) -> pp_mind kn i
   | Sval (r,t) ->
       let def = pp_type false [] t in
@@ -638,7 +629,8 @@ and pp_module_type params = function
   | MTsig (mp, sign) ->
       push_visible mp params;
       let try_pp_specif l x =
-	try pp_specif x :: l with Failure "empty phrase" -> l
+        let px = pp_specif x in
+        if Pp.is_empty px then l else px::l
       in
       (* We cannot use fold_right here due to side effects in pp_specif *)
       let l = List.fold_left try_pp_specif [] sign in
@@ -716,7 +708,8 @@ and pp_module_expr params = function
   | MEstruct (mp, sel) ->
       push_visible mp params;
       let try_pp_structure_elem l x =
-	try pp_structure_elem x :: l with Failure "empty phrase" -> l
+        let px = pp_structure_elem x in
+        if Pp.is_empty px then l else px::l
       in
       (* We cannot use fold_right here due to side effects in pp_structure_elem *)
       let l = List.fold_left try_pp_structure_elem [] sel in
@@ -726,25 +719,30 @@ and pp_module_expr params = function
       v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
       fnl () ++ str "end"
 
+let rec prlist_sep_nonempty sep f = function
+  | [] -> mt ()
+  | [h] -> f h
+  | h::t ->
+     let e = f h in
+     let r = prlist_sep_nonempty sep f t in
+     if Pp.is_empty e then r
+     else e ++ sep () ++ r
+
 let do_struct f s =
-  let pp s = try f s ++ fnl2 () with Failure "empty phrase" -> mt ()
-  in
   let ppl (mp,sel) =
     push_visible mp [];
-    let p = prlist_strict pp sel in
+    let p = prlist_sep_nonempty fnl2 f sel in
     (* for monolithic extraction, we try to simulate the unavailability
        of [MPfile] in names by artificially nesting these [MPfile] *)
     (if modular () then pop_visible ()); p
   in
-  let p = prlist_strict ppl s in
+  let p = prlist_sep_nonempty fnl2 ppl s in
   (if not (modular ()) then repeat (List.length s) pop_visible ());
-  p
+  p ++ fnl ()
 
 let pp_struct s = do_struct pp_structure_elem s
 
 let pp_signature s = do_struct pp_specif s
-
-let pp_decl d = try pp_decl d with Failure "empty phrase" -> mt ()
 
 let ocaml_descr = {
   keywords = keywords;
@@ -757,5 +755,3 @@ let ocaml_descr = {
   pp_sig = pp_signature;
   pp_decl = pp_decl;
 }
-
-

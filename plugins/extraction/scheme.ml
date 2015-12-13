@@ -183,7 +183,8 @@ let pp_decl = function
       prvecti
 	(fun i r ->
 	  let void = is_inline_custom r ||
-	    (not (is_custom r) && match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
+	    (not (is_custom r) &&
+             match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
 	  in
 	  if void then mt ()
 	  else
