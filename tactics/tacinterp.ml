@@ -1087,9 +1087,6 @@ let rec read_match_rule lfun ist env sigma = function
 
 (* misc *)
 
-let mk_constr_value ist gl c =
-  let (sigma,c_interp) = pf_interp_constr ist gl c in
-  sigma, Value.of_constr c_interp
 let mk_open_constr_value ist gl c = 
   let (sigma,c_interp) = pf_apply (interp_open_constr ist) gl c in
   sigma, Value.of_constr c_interp
@@ -1215,6 +1212,8 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       | QuantHypArgType | RedExprArgType
       | ConstrWithBindingsArgType
       | BindingsArgType
+      | ConstrArgType
+      | ListArgType ConstrArgType
       | OptArgType _ | PairArgType _ -> (** generic handler *)
         Ftactic.nf_enter begin fun gl ->
           let sigma = Tacmach.New.project gl in
@@ -1237,11 +1236,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
           | VarArgType ->
               Ftactic.return (mk_hyp_value ist env sigma (out_gen (glbwit wit_var) x))
           | GenArgType -> f (out_gen (glbwit wit_genarg) x)
-          | ConstrArgType ->
-              let (sigma,v) =
-                Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
-              in
-              Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
           | OpenConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
@@ -1252,15 +1246,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
                   (out_gen (glbwit wit_constr_may_eval) x)
               in
               Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c_interp))
-          | ListArgType ConstrArgType ->
-              let wit = glbwit (wit_list wit_constr) in
-              let (sigma,l_interp) = Tacmach.New.of_old begin fun gl ->
-                Evd.MonadR.List.map_right
-                  (fun c sigma -> mk_constr_value ist { gl with sigma=sigma } c)
-                  (out_gen wit x)
-                  (project gl)
-              end gl in
-              Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (in_gen (topwit (wit_list wit_genarg)) l_interp))
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
               Ftactic.return (
