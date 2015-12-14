@@ -1077,11 +1077,19 @@ let kill_some_lams bl (ids,c) =
 
 (*s [kill_dummy_lams] uses the last function to kill the lambdas corresponding
   to a [dummy_name]. It can raise [Impossible] if there is nothing to do, or
-  if there is no lambda left at all. *)
+  if there is no lambda left at all. In addition, it now accepts a signature
+  that may mention some implicits. *)
 
-let kill_dummy_lams c =
+let rec merge_implicits ids s = match ids, s with
+  | [],_ -> []
+  | _,[] -> List.map sign_of_id ids
+  | Dummy::ids, _::s -> Kill Kprop :: merge_implicits ids s
+  | _::ids, (Kill (Kimplicit _) as k)::s -> k :: merge_implicits ids s
+  | _::ids, _::s -> Keep :: merge_implicits ids s
+
+let kill_dummy_lams sign c =
   let ids,c = collect_lams c in
-  let bl = List.map sign_of_id ids in
+  let bl = merge_implicits ids (List.rev sign) in
   if not (List.memq Keep bl) then raise Impossible;
   let rec fst_kill n = function
     | [] -> raise Impossible
@@ -1093,7 +1101,7 @@ let kill_dummy_lams c =
   let _, bl = List.chop skip bl in
   let c = named_lams ids_skip c in
   let ids',c = kill_some_lams bl (ids,c) in
-  ids, named_lams ids' c
+  (ids,bl), named_lams ids' c
 
 (*s [eta_expansion_sign] takes a function [fun idn ... id1 -> c]
    and a signature [s] and builds a eta-long version. *)
@@ -1135,13 +1143,13 @@ let term_expunge s (ids,c) =
     then MLlam (Dummy, ast_lift 1 c)
     else named_lams ids c
 
-(*s [kill_dummy_args ids r t] looks for occurrences of [MLrel r] in [t] and
-  purge the args of [MLrel r] corresponding to a [dummy_name].
+(*s [kill_dummy_args (ids,bl) r t] looks for occurrences of [MLrel r] in [t]
+  and purge the args of [MLrel r] corresponding to a [Kill] in [bl].
   It makes eta-expansion if needed. *)
 
-let kill_dummy_args ids r t =
+let kill_dummy_args (ids,bl) r t =
   let m = List.length ids in
-  let bl = List.rev_map sign_of_id ids in
+  let sign = List.rev bl in
   let rec found n = function
     | MLrel r' when Int.equal r' (r + n) -> true
     | MLmagic e -> found n e
@@ -1152,41 +1160,46 @@ let kill_dummy_args ids r t =
 	let k = max 0 (m - (List.length a)) in
 	let a = List.map (killrec n) a in
 	let a = List.map (ast_lift k) a in
-	let a = select_via_bl bl (a @ (eta_args k)) in
+	let a = select_via_bl sign (a @ (eta_args k)) in
 	named_lams (List.firstn k ids) (MLapp (ast_lift k e, a))
     | e when found n e ->
-	let a = select_via_bl bl (eta_args m) in
+	let a = select_via_bl sign (eta_args m) in
 	named_lams ids (MLapp (ast_lift m e, a))
     | e -> ast_map_lift killrec n e
   in killrec 0 t
 
 (*s The main function for local [dummy] elimination. *)
 
+let sign_of_args a =
+ List.map (function MLdummy k -> Kill k | _ -> Keep) a
+
 let rec kill_dummy = function
   | MLfix(i,fi,c) ->
       (try
-	 let ids,c = kill_dummy_fix i c in
-	 ast_subst (MLfix (i,fi,c)) (kill_dummy_args ids 1 (MLrel 1))
+	 let k,c = kill_dummy_fix i c [] in
+	 ast_subst (MLfix (i,fi,c)) (kill_dummy_args k 1 (MLrel 1))
        with Impossible -> MLfix (i,fi,Array.map kill_dummy c))
   | MLapp (MLfix (i,fi,c),a) ->
       let a = List.map kill_dummy a in
+      (* Heuristics: if some arguments are implicit args, we try to
+         eliminate the corresponding arguments of the fixpoint *)
       (try
-	 let ids,c = kill_dummy_fix i c in
+	 let k,c = kill_dummy_fix i c (sign_of_args a) in
 	 let fake = MLapp (MLrel 1, List.map (ast_lift 1) a) in
-	 let fake' = kill_dummy_args ids 1 fake in
+	 let fake' = kill_dummy_args k 1 fake in
 	 ast_subst (MLfix (i,fi,c)) fake'
        with Impossible -> MLapp(MLfix(i,fi,Array.map kill_dummy c),a))
   | MLletin(id, MLfix (i,fi,c),e) ->
       (try
-	 let ids,c = kill_dummy_fix i c in
-	 let e = kill_dummy (kill_dummy_args ids 1 e) in
+	 let k,c = kill_dummy_fix i c [] in
+	 let e = kill_dummy (kill_dummy_args k 1 e) in
 	 MLletin(id, MLfix(i,fi,c),e)
       with Impossible ->
 	MLletin(id, MLfix(i,fi,Array.map kill_dummy c),kill_dummy e))
   | MLletin(id,c,e) ->
       (try
-	 let ids,c = kill_dummy_lams (kill_dummy_hd c) in
-	 let e = kill_dummy (kill_dummy_args ids 1 e) in
+	 let k,c = kill_dummy_lams [] (kill_dummy_hd c) in
+	 let e = kill_dummy (kill_dummy_args k 1 e) in
 	 let c = kill_dummy c in
 	 if is_atomic c then ast_subst c e else MLletin (id, c, e)
        with Impossible -> MLletin(id,kill_dummy c,kill_dummy e))
@@ -1198,21 +1211,21 @@ and kill_dummy_hd = function
   | MLlam(id,e) -> MLlam(id, kill_dummy_hd e)
   | MLletin(id,c,e) ->
       (try
-	 let ids,c = kill_dummy_lams (kill_dummy_hd c) in
-	 let e = kill_dummy_hd (kill_dummy_args ids 1 e) in
+	 let k,c = kill_dummy_lams [] (kill_dummy_hd c) in
+	 let e = kill_dummy_hd (kill_dummy_args k 1 e) in
 	 let c = kill_dummy c in
 	 if is_atomic c then ast_subst c e else MLletin (id, c, e)
        with Impossible -> MLletin(id,kill_dummy c,kill_dummy_hd e))
   | a -> a
 
-and kill_dummy_fix i c =
+and kill_dummy_fix i c s =
   let n = Array.length c in
-  let ids,ci = kill_dummy_lams (kill_dummy_hd c.(i)) in
+  let k,ci = kill_dummy_lams s (kill_dummy_hd c.(i)) in
   let c = Array.copy c in c.(i) <- ci;
   for j = 0 to (n-1) do
-    c.(j) <- kill_dummy (kill_dummy_args ids (n-i) c.(j))
+    c.(j) <- kill_dummy (kill_dummy_args k (n-i) c.(j))
   done;
-  ids,c
+  k,c
 
 (*s Putting things together. *)
 
