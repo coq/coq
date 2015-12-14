@@ -55,21 +55,26 @@ let keywords =
     "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "_" ; "__" ]
   Idset.empty
 
-let pp_open mp = str ("open "^ string_of_modfile mp ^"\n")
+(* Note: do not shorten [str "foo" ++ fnl ()] into [str "foo\n"],
+   the '\n' character interacts badly with the Format boxing mechanism *)
+
+let pp_open mp = str ("open "^ string_of_modfile mp) ++ fnl ()
 
 let preamble _ used_modules usf =
   prlist pp_open used_modules ++
   (if used_modules = [] then mt () else fnl ()) ++
-  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n" else mt()) ++
+  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t" ++ fnl ()
+   else mt()) ++
   (if usf.mldummy then
-     str "let __ = let rec f _ = Obj.repr f in Obj.repr f\n"
+     str "let __ = let rec f _ = Obj.repr f in Obj.repr f" ++ fnl ()
    else mt ()) ++
   (if usf.tdummy || usf.tunknown || usf.mldummy then fnl () else mt ())
 
 let sig_preamble _ used_modules usf =
   prlist pp_open used_modules ++
   (if used_modules = [] then mt () else fnl ()) ++
-  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n\n" else mt())
+  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t" ++ fnl2 ()
+   else mt())
 
 (*s The pretty-printer for Ocaml syntax*)
 
