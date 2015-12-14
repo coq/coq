@@ -196,6 +196,11 @@ let require () =
   let map dir = Qualid (Loc.ghost, qualid_of_string dir) in
   Vernacentries.vernac_require None (Some false) (List.rev_map map !require_list)
 
+let add_compat_require v =
+  match v with
+  | Flags.V8_4 -> add_require "Coq.Compat.Coq84"
+  | _ -> ()
+
 let compile_list = ref ([] : (bool * string) list)
 
 let glob_opt = ref false
@@ -475,7 +480,7 @@ let parse_args arglist =
     |"-async-proofs-private-flags" ->
         Flags.async_proofs_private_flags := Some (next ());
     |"-worker-id" -> set_worker_id opt (next ())
-    |"-compat" -> Flags.compat_version := get_compat_version (next ())
+    |"-compat" -> let v = get_compat_version (next ()) in Flags.compat_version := v; add_compat_require v
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())
     |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true

@@ -1,6 +1,12 @@
 Changes from V8.5beta3
 ======================
 
+Vernacular commands
+- Flag -compat 8.4 now loads Coq.Compat.Coq84. The standard way of putting Coq
+  in v8.4 compatibility mode is to pass the command line flag "-compat 8.4". It
+  can be followed by "-require Coq.Compat.AdmitAxiom" if 8.4 behavior of admit is
+  needed, in which case it uses an axiom.
+
 Specification language
 
 - Syntax "$(tactic)$" changed to "ltac:(tactic)".
