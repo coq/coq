@@ -95,6 +95,8 @@ reals=all
 arch_spec=no
 coqide_spec=no
 
+COQSRC=`pwd`
+
 # Parse command-line arguments
 
 while : ; do
@@ -107,7 +109,7 @@ while : ; do
 		    reals_opt=yes
 		    reals=all;;
     -src|--src) src_spec=yes
-                COQTOP="$2"
+                COQSRC="$2"
 	        shift;;
     -bindir|--bindir) bindir_spec=yes
                       bindir="$2"
@@ -409,7 +411,7 @@ else
 fi
 
 if [ $COQIDE != no ] ; then
-  if grep "class view " "${CAMLLIB}/lablgtk2/gText.mli" | grep -q "\[>" ; then
+  if grep "class view " "$lablgtkdir/gText.mli" | grep -q "\[>" ; then
     LABLGTKGE26=yes;
   else
     LABLGTKGE26=no
@@ -433,14 +435,8 @@ fi
 ###########################################
 # bindir, libdir, mandir, etc.
 
-canonical_pwd () {
-ocaml 2>&1 1>/dev/null <<EOF
-  prerr_endline(Sys.getcwd());;
-EOF
-}
-
 case $src_spec in
-  no) COQTOP=`canonical_pwd`
+  no) COQTOP=${COQSRC}
 esac
 
 case $ARCH in
@@ -588,19 +584,24 @@ echo ""
 # Building the $COQTOP/config/coq_config.ml file
 #####################################################
 
-# An escaped version of a variable
-escape_var () {
-ocaml 2>&1 1>/dev/null <<EOF
-  prerr_endline(String.escaped(Sys.getenv"$VAR"));;
-EOF
-}
+# damned backslashes under M$Windows
+case $ARCH in
+    win32)
+	ESCCOQTOP=`echo $COQTOP |sed -e 's|\\\|\\\\\\\|g'`
+	ESCBINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
+	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
+	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
+	ESCCAMLP4LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
+	;;
+    *)
+        ESCCOQTOP="$COQTOP"
+	ESCBINDIR="$BINDIR"
+	ESCLIBDIR="$LIBDIR"
+	ESCCAMLLIB="$CAMLLIB"
+   	ESCCAMLP4LIB="$CAMLP4LIB"
+	;;
+esac
 
-export COQTOP BINDIR LIBDIR CAMLLIB
-ESCCOQTOP="`VAR=COQTOP escape_var`"
-ESCBINDIR="`VAR=BINDIR escape_var`"
-ESCLIBDIR="`VAR=LIBDIR escape_var`"
-ESCCAMLLIB="`VAR=CAMLLIB escape_var`"
-ESCCAMLP4LIB="$ESCCAMLLIB"/camlp4
 
 mlconfig_file=$COQTOP/config/coq_config.ml
 rm -f $mlconfig_file
