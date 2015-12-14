@@ -927,6 +927,10 @@ and simpl_app o a = function
 	 | _ ->
 	     let a' = List.map (ast_lift 1) (List.tl a) in
 	     simpl o (MLletin (id, List.hd a, MLapp (t, a'))))
+  | MLmagic (MLlam (id,t)) ->
+      (* When we've at least one argument, we permute the magic
+         and the lambda, to simplify things a bit (see #2795) *)
+      simpl_app o a (MLlam (id,MLmagic t))
   | MLletin (id,e1,e2) when o.opt_let_app ->
       (* Application of a letin: we push arguments inside *)
       MLletin (id, e1, simpl o (MLapp (e2, List.map (ast_lift 1) a)))
