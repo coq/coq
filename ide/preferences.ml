@@ -711,61 +711,38 @@ let configure ?(apply=(fun () -> ())) () =
       ~f:(fun s -> current.project_file_name <- s)
       current.project_file_name
   in
-  let update_modifiers prefix mds =
-    let change ~path ~key ~modi ~changed =
-      if CString.is_sub prefix path 0 then
-        ignore (GtkData.AccelMap.change_entry ~key ~modi:mds ~replace:true path)
-    in
-    GtkData.AccelMap.foreach change
-  in
   let help_string =
     "restart to apply"
   in
   let the_valid_mod = str_to_mod_list current.modifiers_valid in
   let modifier_for_tactics =
-    let cb l =
-      current.modifier_for_tactics <- mod_list_to_str l;
-      update_modifiers "<Actions>/Tactics/" l
-    in
     modifiers
       ~allow:the_valid_mod
-      ~f:cb
+      ~f:(fun l -> current.modifier_for_tactics <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Tactics Menu"
       (str_to_mod_list current.modifier_for_tactics)
   in
   let modifier_for_templates =
-    let cb l =
-      current.modifier_for_templates <- mod_list_to_str l;
-      update_modifiers "<Actions>/Templates/" l
-    in
     modifiers
       ~allow:the_valid_mod
-      ~f:cb
+      ~f:(fun l -> current.modifier_for_templates <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Templates Menu"
       (str_to_mod_list current.modifier_for_templates)
   in
   let modifier_for_navigation =
-    let cb l =
-      current.modifier_for_navigation <- mod_list_to_str l;
-      update_modifiers "<Actions>/Navigation/" l
-    in
     modifiers
       ~allow:the_valid_mod
-      ~f:cb
+      ~f:(fun l -> current.modifier_for_navigation <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Navigation Menu"
       (str_to_mod_list current.modifier_for_navigation)
   in
   let modifier_for_display =
-    let cb l =
-      current.modifier_for_display <- mod_list_to_str l;
-      update_modifiers "<Actions>/View/" l
-    in
     modifiers
       ~allow:the_valid_mod
-      ~f:cb
+      ~f:(fun l -> current.modifier_for_display <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for View Menu"
       (str_to_mod_list current.modifier_for_display)
