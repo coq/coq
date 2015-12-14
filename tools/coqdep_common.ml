@@ -574,15 +574,12 @@ let rec treat_file old_dirname old_name =
   match try (stat complete_name).st_kind with _ -> S_BLK with
     | S_DIR ->
 	(if name.[0] <> '.' then
-	   let dir=opendir complete_name in
            let newdirname =
              match dirname with
                | None -> name
                | Some d -> d//name
 	   in
-	   try
-	     while true do treat_file (Some newdirname) (readdir dir) done
-	   with End_of_file -> closedir dir)
+           Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
     | S_REG ->
 	(match get_extension name [".v";".ml";".mli";".ml4";".mllib";".mlpack"] with
 	   | (base,".v") ->

@@ -64,9 +64,7 @@ let apply_subdir f path name =
     | _ -> ()
 
 let process_directory f path =
-  let dirh = Unix.opendir path in
-  try while true do apply_subdir f path (Unix.readdir dirh) done
-  with End_of_file -> Unix.closedir dirh
+  Array.iter (apply_subdir f path) (Sys.readdir path)
 
 let process_subdirectories f path =
   let f = function FileDir (path,base) -> f path base | FileRegular _ -> () in
