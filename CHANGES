@@ -14,7 +14,9 @@ Specification language
 Tactics
 
 - Syntax "destruct !hyp" changed to "destruct (hyp)", and similarly
-  for induction.
+  for induction (rare source of incompatibilities easily solvable by
+  removing parentheses around "hyp" when not for the purpose of keeping
+  the hypothesis).
 - Syntax "p/c" for on-the-fly application of a lemma c before
   introducing along pattern p changed to p%c1..%cn. The feature and
   syntax are in experimental stage.
