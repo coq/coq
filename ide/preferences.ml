@@ -754,6 +754,13 @@ let configure ?(apply=(fun () -> ())) () =
       "Allowed modifiers"
       the_valid_mod
   in
+  let modifier_notice =
+    let b = GPack.hbox () in
+    let _lbl =
+      GMisc.label ~markup:"You need to <b>restart CoqIDE</b> after changing these settings"
+        ~packing:b#add () in
+    custom b (fun () -> ()) true
+  in
   let cmd_editor =
     let predefined = [ "emacs %s"; "vi %s"; "NOTEPAD %s" ] in
     combo
@@ -855,7 +862,7 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_display; modifier_for_navigation]);
+	      modifier_for_templates; modifier_for_display; modifier_for_navigation; modifier_notice]);
      Section("Misc", Some `ADD,
 	     misc)]
   in
