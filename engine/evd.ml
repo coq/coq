@@ -926,12 +926,12 @@ let update_sigma_env evd env =
 let test_conversion_gen env evd pb t u =
   match pb with 
   | Reduction.CONV -> 
-    Reduction.conv_universes 
-      full_transparent_state ~evars:(existential_opt_value evd) env 
-      (UState.ugraph evd.universes) t u
-  | Reduction.CUMUL -> Reduction.conv_leq_universes
-     full_transparent_state ~evars:(existential_opt_value evd) env 
-      (UState.ugraph evd.universes) t u
+    Reduction.conv env
+      ~evars:((existential_opt_value evd), (UState.ugraph evd.universes))
+      t u
+  | Reduction.CUMUL -> Reduction.conv_leq env
+      ~evars:((existential_opt_value evd), (UState.ugraph evd.universes))
+      t u
 
 let test_conversion env d pb t u =
   try test_conversion_gen env d pb t u; true

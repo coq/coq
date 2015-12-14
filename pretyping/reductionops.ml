@@ -1256,26 +1256,26 @@ let report_anomaly _ =
   let e = Errors.push e in
   iraise e
 
-let test_trans_conversion (f: ?l2r:bool-> ?evars:'a->'b) reds env sigma x y =
+let test_trans_conversion (f: constr Reduction.extended_conversion_function) reds env sigma x y =
   try
     let evars ev = safe_evar_value sigma ev in
-    let _ = f ~evars reds env (Evd.universes sigma) x y in
+    let _ = f ~reds env ~evars:(evars, Evd.universes sigma) x y in
     true
   with Reduction.NotConvertible -> false
     | e when is_anomaly e -> report_anomaly e
 
-let is_conv ?(reds=full_transparent_state) env sigma = test_trans_conversion Reduction.conv_universes reds env sigma
-let is_conv_leq ?(reds=full_transparent_state) env sigma = test_trans_conversion Reduction.conv_leq_universes reds env sigma
+let is_conv ?(reds=full_transparent_state) env sigma = test_trans_conversion Reduction.conv reds env sigma
+let is_conv_leq ?(reds=full_transparent_state) env sigma = test_trans_conversion Reduction.conv_leq reds env sigma
 let is_fconv ?(reds=full_transparent_state) = function
   | Reduction.CONV -> is_conv ~reds
   | Reduction.CUMUL -> is_conv_leq ~reds
 
 let check_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y = 
   let f = match pb with
-    | Reduction.CONV -> Reduction.conv_universes
-    | Reduction.CUMUL -> Reduction.conv_leq_universes 
+    | Reduction.CONV -> Reduction.conv
+    | Reduction.CUMUL -> Reduction.conv_leq
   in
-    try f ~evars:(safe_evar_value sigma) ts env (Evd.universes sigma) x y; true
+    try f ~reds:ts env ~evars:(safe_evar_value sigma, Evd.universes sigma) x y; true
     with Reduction.NotConvertible -> false
     | Univ.UniverseInconsistency _ -> false
     | e when is_anomaly e -> report_anomaly e

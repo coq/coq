@@ -125,11 +125,15 @@ let whd_betadeltaiota_nolet env t =
 (********************************************************************)
 
 (* Conversion utility functions *)
-type 'a conversion_function = env -> 'a -> 'a -> unit
-type 'a trans_conversion_function = ?reds:Names.transparent_state -> 'a conversion_function
-type 'a universe_conversion_function = env -> UGraph.t -> 'a -> 'a -> unit
-type 'a trans_universe_conversion_function = 
-  Names.transparent_state -> 'a universe_conversion_function
+
+(* functions of this type are called from the kernel *)
+type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
+
+(* functions of this type can be called from outside the kernel *)
+type 'a extended_conversion_function =
+  ?l2r:bool -> ?reds:Names.transparent_state -> env ->
+  ?evars:((existential->constr option) * UGraph.t) ->
+  'a -> 'a -> unit
 
 exception NotConvertible
 exception NotConvertibleVect of int
@@ -616,7 +620,7 @@ let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
   { compare = infer_cmp_universes;
     compare_instances = infer_convert_instances }
 
-let fconv_universes reds cv_pb l2r evars env univs t1 t2 =
+let fconv cv_pb l2r reds env evars univs t1 t2 =
   let b = 
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2 
     else eq_constr_univs univs t1 t2
@@ -627,22 +631,16 @@ let fconv_universes reds cv_pb l2r evars env univs t1 t2 =
 	()
 
 (* Profiling *)
-let fconv_universes = 
+let fconv cv_pb ?(l2r=false) ?(reds=full_transparent_state) env ?(evars=(fun _->None), universes env) =
+  let evars, univs = evars in
   if Flags.profile then
     let fconv_universes_key = Profile.declare_profile "trans_fconv_universes" in
-      Profile.profile8 fconv_universes_key fconv_universes
-  else fconv_universes
+      Profile.profile8 fconv_universes_key fconv cv_pb l2r reds env evars univs
+  else fconv cv_pb l2r reds env evars univs
 
-let fconv ?(reds=full_transparent_state) cv_pb l2r evars env = 
-  fconv_universes reds cv_pb l2r evars env (universes env)
+let conv = fconv CONV
 
-let conv ?(l2r=false) ?(evars=fun _->None) ?(reds=full_transparent_state) =
-  fconv ~reds CONV l2r evars
-
-let conv_universes ?(l2r=false) ?(evars=fun _->None) reds =
-  fconv_universes reds CONV l2r evars
-let conv_leq_universes ?(l2r=false) ?(evars=fun _->None) reds = 
-  fconv_universes reds CUMUL l2r evars
+let conv_leq = fconv CUMUL
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
   let (s, _) = 
@@ -676,17 +674,19 @@ let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_sta
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
 
 (* This reference avoids always having to link C code with the kernel *)
-let vm_conv = ref (fun cv_pb -> fconv cv_pb false (fun _->None))
-let set_vm_conv f = vm_conv := f
+let vm_conv = ref (fun cv_pb env ->
+		   fconv cv_pb env ~evars:((fun _->None), universes env))
+
+let set_vm_conv (f:conv_pb -> Term.types kernel_conversion_function) = vm_conv := f
 let vm_conv cv_pb env t1 t2 =
   try
     !vm_conv cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
     Pp.msg_warning (Pp.str "Bytecode compilation failed, falling back to standard conversion");
-    fconv cv_pb false (fun _->None) env t1 t2
+    fconv cv_pb env t1 t2
 
 let default_conv cv_pb ?(l2r=false) env t1 t2 =
-    fconv cv_pb false (fun _ -> None) env t1 t2
+    fconv cv_pb env t1 t2
 
 let default_conv_leq = default_conv CUMUL
 (*

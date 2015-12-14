@@ -26,11 +26,11 @@ val nf_betaiota      : env -> constr -> constr
 exception NotConvertible
 exception NotConvertibleVect of int
 
-type 'a conversion_function = env -> 'a -> 'a -> unit
-type 'a trans_conversion_function = ?reds:Names.transparent_state -> 'a conversion_function
-type 'a universe_conversion_function = env -> UGraph.t -> 'a -> 'a -> unit
-type 'a trans_universe_conversion_function = 
-  Names.transparent_state -> 'a universe_conversion_function
+type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
+type 'a extended_conversion_function = 
+  ?l2r:bool -> ?reds:Names.transparent_state -> env ->
+  ?evars:((existential->constr option) * UGraph.t) ->
+  'a -> 'a -> unit
 
 type conv_pb = CONV | CUMUL
 
@@ -58,13 +58,9 @@ val convert_instances : flex:bool -> Univ.Instance.t -> Univ.Instance.t ->
 val checked_universes : UGraph.t universe_compare
 val inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare
 
-val conv :
-  ?l2r:bool -> ?evars:(existential->constr option) -> constr trans_conversion_function
+val conv : constr extended_conversion_function
 
-val conv_universes :
-  ?l2r:bool -> ?evars:(existential->constr option) -> constr trans_universe_conversion_function
-val conv_leq_universes :
-  ?l2r:bool -> ?evars:(existential->constr option) -> types trans_universe_conversion_function
+val conv_leq : types extended_conversion_function
 
 (** These conversion functions are used by module subtyping, which needs to infer
     universe constraints inside the kernel *)
@@ -77,11 +73,11 @@ val generic_conv : conv_pb -> l2r:bool -> (existential->constr option) ->
   Names.transparent_state -> (constr,'a) generic_conversion_function
 
 (** option for conversion *)
-val set_vm_conv : (conv_pb -> types conversion_function) -> unit
-val vm_conv : conv_pb -> types conversion_function
+val set_vm_conv : (conv_pb -> types kernel_conversion_function) -> unit
+val vm_conv : conv_pb -> types kernel_conversion_function
 
-val default_conv     : conv_pb -> ?l2r:bool -> types conversion_function
-val default_conv_leq : ?l2r:bool -> types conversion_function
+val default_conv     : conv_pb -> ?l2r:bool -> types kernel_conversion_function
+val default_conv_leq : ?l2r:bool -> types kernel_conversion_function
 
 (************************************************************************)
 
