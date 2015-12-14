@@ -64,7 +64,7 @@ Fixpoint enat_nat' n (e:enat n) : nat :=
  end.
 
 Extraction Implicit enat_nat' [n].
-Recursive Extraction enat_nat.
+Recursive Extraction enat_nat'.
 
 (** Bug #4228 *)
 
