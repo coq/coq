@@ -458,7 +458,7 @@ let print_one_decl struc mp decl =
   push_visible mp [];
   let ans = d.pp_decl decl in
   pop_visible ();
-  ans
+  v 0 ans
 
 (*s Extraction of a ml struct to a file. *)
 

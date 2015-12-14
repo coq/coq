@@ -388,9 +388,14 @@ and pp_fix par env i (ids,bl) args =
 	  fnl () ++
 	  hov 2 (str "in " ++ pp_apply (pr_id ids.(i)) false args)))
 
+(* Ad-hoc double-newline in v boxes, with enough negative whitespace
+   to avoid indenting the intermediate blank line *)
+
+let cut2 () = brk (0,-100000) ++ brk (0,0)
+
 let pp_val e typ =
   hov 4 (str "(** val " ++ e ++ str " :" ++ spc () ++ pp_type false [] typ ++
-  str " **)")  ++ fnl2 ()
+  str " **)")  ++ cut2 ()
 
 (*s Pretty-printing of [Dfix] *)
 
@@ -411,7 +416,7 @@ let pp_Dfix (rv,c,t) =
 	  if is_custom rv.(i) then str " = " ++ str (find_custom rv.(i))
 	  else pp_function (empty_env ()) c.(i)
 	in
-	(if init then mt () else fnl2 ()) ++
+	(if init then mt () else cut2 ()) ++
 	pp_val names.(i) t.(i) ++
 	str (if init then "let rec " else "and ") ++ names.(i) ++ def ++
 	pp false (i+1)
@@ -644,7 +649,7 @@ and pp_module_type params = function
       let l = List.rev l in
       pop_visible ();
       str "sig" ++ fnl () ++
-      v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
+      v 1 (str " " ++ prlist_with_sep cut2 identity l) ++
 	fnl () ++ str "end"
   | MTwith(mt,ML_With_type(idl,vl,typ)) ->
       let ids = pp_parameters (rename_tvars keywords vl) in
@@ -723,7 +728,7 @@ and pp_module_expr params = function
       let l = List.rev l in
       pop_visible ();
       str "struct" ++ fnl () ++
-      v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
+      v 1 (str " " ++ prlist_with_sep cut2 identity l) ++
       fnl () ++ str "end"
 
 let rec prlist_sep_nonempty sep f = function
@@ -738,14 +743,14 @@ let rec prlist_sep_nonempty sep f = function
 let do_struct f s =
   let ppl (mp,sel) =
     push_visible mp [];
-    let p = prlist_sep_nonempty fnl2 f sel in
+    let p = prlist_sep_nonempty cut2 f sel in
     (* for monolithic extraction, we try to simulate the unavailability
        of [MPfile] in names by artificially nesting these [MPfile] *)
     (if modular () then pop_visible ()); p
   in
-  let p = prlist_sep_nonempty fnl2 ppl s in
+  let p = prlist_sep_nonempty cut2 ppl s in
   (if not (modular ()) then repeat (List.length s) pop_visible ());
-  p ++ fnl ()
+  v 0 p ++ fnl ()
 
 let pp_struct s = do_struct pp_structure_elem s
 
