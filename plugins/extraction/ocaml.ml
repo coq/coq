@@ -55,29 +55,36 @@ let keywords =
     "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "_" ; "__" ]
   Id.Set.empty
 
-let pp_open mp = str ("open "^ string_of_modfile mp ^"\n")
+(* Note: do not shorten [str "foo" ++ fnl ()] into [str "foo\n"],
+   the '\n' character interacts badly with the Format boxing mechanism *)
+
+let pp_open mp = str ("open "^ string_of_modfile mp) ++ fnl ()
 
 let pp_comment s = str "(* " ++ hov 0 s ++ str " *)"
 
 let pp_header_comment = function
   | None -> mt ()
-  | Some com -> pp_comment com ++ fnl () ++ fnl ()
+  | Some com -> pp_comment com ++ fnl2 ()
+
+let then_nl pp = if Pp.is_empty pp then mt () else pp ++ fnl ()
+
+let pp_tdummy usf =
+  if usf.tdummy || usf.tunknown then str "type __ = Obj.t" ++ fnl () else mt ()
+
+let pp_mldummy usf =
+  if usf.mldummy then
+    str "let __ = let rec f _ = Obj.repr f in Obj.repr f" ++ fnl ()
+  else mt ()
 
 let preamble _ comment used_modules usf =
   pp_header_comment comment ++
-  prlist pp_open used_modules ++
-  (if List.is_empty used_modules then mt () else fnl ()) ++
-  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n" else mt()) ++
-  (if usf.mldummy then
-     str "let __ = let rec f _ = Obj.repr f in Obj.repr f\n"
-   else mt ()) ++
-  (if usf.tdummy || usf.tunknown || usf.mldummy then fnl () else mt ())
+  then_nl (prlist pp_open used_modules) ++
+  then_nl (pp_tdummy usf ++ pp_mldummy usf)
 
 let sig_preamble _ comment used_modules usf =
   pp_header_comment comment ++
-  prlist pp_open used_modules ++
-  (if List.is_empty used_modules then mt () else fnl ()) ++
-  (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n\n" else mt())
+  then_nl (prlist pp_open used_modules) ++
+  then_nl (pp_tdummy usf)
 
 (*s The pretty-printer for Ocaml syntax*)
 
