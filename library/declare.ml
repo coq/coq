@@ -413,7 +413,10 @@ let definition_message id =
   Flags.if_verbose msg_info (pr_id id ++ str " is defined")
 
 let assumption_message id =
-  Flags.if_verbose msg_info (pr_id id ++ str " is assumed")
+  (* Changing "assumed" to "declared", "assuming" referring more to
+  the type of the object than to the name of the object (see
+  discussion on coqdev: "Chapter 4 of the Reference Manual", 8/10/2015) *)
+  Flags.if_verbose msg_info (pr_id id ++ str " is declared")
 
 (** Global universe names, in a different summary *)
 
