@@ -867,10 +867,11 @@ END
 
 (* Unshelves the goal shelved by the tactic. *)
 TACTIC EXTEND unshelve
-| [ "unshelve" tactic0(t) ] ->
+| [ "unshelve" tactic1(t) ] ->
     [
       Proofview.with_shelf (Tacinterp.eval_tactic t) >>= fun (gls, ()) ->
-      Proofview.Unsafe.tclNEWGOALS gls
+      Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
+      Proofview.Unsafe.tclSETGOALS (gls @ ogls)
     ]
 END
 
