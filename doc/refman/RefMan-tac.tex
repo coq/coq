@@ -1249,18 +1249,9 @@ in the list of subgoals remaining to prove.
   introduction pattern (in particular, if {\intropattern} is {\ident},
   the tactic behaves like \texttt{assert ({\ident} :\ {\form})}).
 
-  If {\intropattern} is a disjunctive/conjunctive 
-  introduction pattern, the tactic behaves like \texttt{assert
-    {\form}} followed by a {\tt destruct} using this introduction pattern.
-
-  If {\intropattern} is a rewriting intropattern pattern, the tactic
-  behaves like \texttt{assert {\form}} followed by a call to {\tt
-    subst} on the resulting hypothesis, if applicable, or to {\tt
-    rewrite} otherwise.
-
-  If {\intropattern} is an injection intropattern pattern, the tactic
-  behaves like \texttt{assert {\form}} followed by {\tt injection}
-  using this introduction pattern.
+  If {\intropattern} is an action introduction pattern, the tactic
+  behaves like \texttt{assert {\form}} followed by the action done by
+  this introduction pattern.
 
 \item \texttt{assert {\form} as {\intropattern} by {\tac}}
 
