@@ -20,10 +20,7 @@ type output_t =
   | File of string
 
 let output_dir = ref ""
-
-let out_to = ref MultFiles
-
-let out_channel = ref stdout
+let out_to     = ref MultFiles
 
 let ( / ) = Filename.concat
 
@@ -36,13 +33,12 @@ let coqdoc_out f =
   else
     f
 
-let open_out_file f =
-  out_channel :=
-    try open_out (coqdoc_out f)
-    with Sys_error s -> Printf.eprintf "%s\n" s; exit 1
-
-let close_out_file () = close_out !out_channel
-
+let with_outfile file f =
+  try
+    let out = open_out (coqdoc_out file) in
+    f out;
+    close_out out
+  with | Sys_error s -> Printf.eprintf "%s\n" s; exit 1
 
 type glob_source_t =
     | NoGlob
@@ -69,6 +65,8 @@ let normalize_filename f =
   let basename = Filename.basename f in
   let dirname = Filename.dirname f in
   normalize_path dirname, basename
+
+
 
 (** A weaker analog of the function in Envars *)
 
