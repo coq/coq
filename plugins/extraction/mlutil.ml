@@ -1035,6 +1035,13 @@ let rec simpl o = function
       if ast_occurs_itvl 1 n c.(i) then
 	MLfix (i, ids, Array.map (simpl o) c)
       else simpl o (ast_lift (-n) c.(i)) (* Dummy fixpoint *)
+  | MLmagic(MLmagic _ as e) -> simpl o e
+  | MLmagic(MLapp (f,l)) -> simpl o (MLapp (MLmagic f, l))
+  | MLmagic(MLletin(id,c,e)) -> simpl o (MLletin(id,c,MLmagic e))
+  | MLmagic(MLcase(typ,e,br)) ->
+     let br' = Array.map (fun (ids,p,c) -> (ids,p,MLmagic c)) br in
+     simpl o (MLcase(typ,e,br'))
+  | MLmagic(MLexn _ as e) -> e
   | a -> ast_map (simpl o) a
 
 (* invariant : list [a] of arguments is non-empty *)
@@ -1053,8 +1060,17 @@ and simpl_app o a = function
 	     simpl o (MLletin (id, List.hd a, MLapp (t, a'))))
   | MLmagic (MLlam (id,t)) ->
       (* When we've at least one argument, we permute the magic
-         and the lambda, to simplify things a bit (see #2795) *)
-      simpl_app o a (MLlam (id,MLmagic t))
+         and the lambda, to simplify things a bit (see #2795).
+         Alas, the 1st argument must also be magic then. *)
+      let a' = match a with
+        | MLmagic _ :: _ -> a
+        | e::a' -> MLmagic e::a'
+        | [] -> assert false
+      in
+      simpl_app o a' (MLlam (id,MLmagic t))
+  | MLmagic _ as e ->
+      (* When the head is magic, no need for magic on args *)
+      MLapp (e, List.map (function MLmagic e -> e | e -> e) a)
   | MLletin (id,e1,e2) when o.opt_let_app ->
       (* Application of a letin: we push arguments inside *)
       MLletin (id, e1, simpl o (MLapp (e2, List.map (ast_lift 1) a)))
