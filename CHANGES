@@ -20,6 +20,7 @@ Tactics
 - Syntax "p/c" for on-the-fly application of a lemma c before
   introducing along pattern p changed to p%c1..%cn. The feature and
   syntax are in experimental stage.
+- "Proof using" does not clear unused section variables.
 
 Changes from V8.5beta2 to V8.5beta3
 ===================================
