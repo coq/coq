@@ -28,6 +28,7 @@ let usage () =
   prerr_endline "  --latex              produce a LaTeX document";
   prerr_endline "  --texmacs            produce a TeXmacs document";
   prerr_endline "  --raw                produce a text document";
+  prerr_endline "  --backend=jscoq      produce a jscoq document";
   prerr_endline "  --backend=debug      produce a debug document";
   prerr_endline "  --dvi                output the DVI";
   prerr_endline "  --ps                 output the PostScript";
@@ -95,6 +96,7 @@ let target_full_name f =
     | TeXmacs
     | LaTeX -> f ^ ".tex"
     | Raw   -> f ^ ".txt"
+    | JsCoq -> f ^ ".html"
     | Debug -> f ^ ".txt"
 
 (*s \textbf{Separation of files.} Files given on the command line are
@@ -256,6 +258,8 @@ let parse () =
 	Cdglobals.target_language := TeXmacs; parse_rec rem
     | ("-raw" | "--raw") :: rem ->
 	Cdglobals.target_language := Raw; parse_rec rem
+    | ("--backend=jscoq") :: rem ->
+	Cdglobals.target_language := JsCoq; parse_rec rem
     | ("--backend=debug") :: rem ->
 	Cdglobals.target_language := Debug; parse_rec rem
     | ("-charset" | "--charset") :: s :: rem ->
@@ -422,6 +426,7 @@ let output_factory tl =
   | HTML      -> (module Html    : S)
   | TeXmacs   -> (module TeXmacs : S)
   | Raw       -> (module Raw     : S)
+  | JsCoq     -> (module Out_jscoq.JsCoq : S)
   | Debug     -> (module Out_debug.Debug : S)
 
 (*s Functions for generating output files *)

@@ -262,7 +262,7 @@ DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
 COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
 
-COQDOCBACKENDS=$(addsuffix .cmo, out_debug)
+COQDOCBACKENDS=$(addsuffix .cmo, out_jscoq out_debug)
 
 COQDOCCMO:=lib/clib.cma $(addprefix tools/coqdoc/, cdglobals.cmo	\
   alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo			\
