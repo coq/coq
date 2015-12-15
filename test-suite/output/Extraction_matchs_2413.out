@@ -4,7 +4,7 @@ let test1 b =
   b
 (** val test2 : bool -> bool **)
 
-let test2 b =
+let test2 _ =
   False
 (** val wrong_id : 'a1 hole -> 'a2 hole **)
 
