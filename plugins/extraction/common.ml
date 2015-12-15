@@ -163,10 +163,7 @@ let push_vars ids (db,avoid) =
   let ids',avoid' = rename_vars avoid ids in
   ids', (ids' @ db, avoid')
 
-let get_db_name n (db,_) =
-  let id = List.nth db (pred n) in
-  if id = dummy_name then id_of_string "__" else id
-
+let get_db_name n (db,_) = List.nth db (pred n)
 
 (*S Renamings of global objects. *)
 
