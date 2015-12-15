@@ -87,9 +87,11 @@ val reach_item_level : int -> unit
 val rule : unit -> unit
 
 val nbsp : unit -> unit
-val char : char -> unit
+
+val char    : char -> unit
 val keyword : string -> loc -> unit
-val ident : string -> loc option -> unit
+val ident   : string -> loc option -> unit
+
 val sublexer : char -> loc -> unit
 val sublexer_in_doc : char -> unit
 
@@ -97,8 +99,10 @@ val proofbox : unit -> unit
 
 val latex_char : char -> unit
 val latex_string : string -> unit
+
 val html_char : char -> unit
 val html_string : string -> unit
+
 val verbatim_char : bool -> char -> unit
 val hard_verbatim_char : char -> unit
 

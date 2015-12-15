@@ -10,7 +10,7 @@
 
 (*s Output options *)
 
-type target_language = LaTeX | HTML | TeXmacs | Raw
+type target_language = LaTeX | HTML | TeXmacs | Raw | Debug
 
 let target_language = ref HTML
 

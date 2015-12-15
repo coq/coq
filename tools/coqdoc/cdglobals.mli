@@ -1,6 +1,6 @@
 (* Global CoqDoc types *)
 
-type target_language = LaTeX | HTML | TeXmacs | Raw
+type target_language = LaTeX | HTML | TeXmacs | Raw | Debug
 
 type output_t = StdOut | MultFiles | File of string
 
