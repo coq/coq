@@ -28,6 +28,7 @@ let usage () =
   prerr_endline "  --latex              produce a LaTeX document";
   prerr_endline "  --texmacs            produce a TeXmacs document";
   prerr_endline "  --raw                produce a text document";
+  prerr_endline "  --backend=debug      produce a debug document";
   prerr_endline "  --dvi                output the DVI";
   prerr_endline "  --ps                 output the PostScript";
   prerr_endline "  --pdf                output the Pdf";
@@ -91,8 +92,10 @@ let banner () =
 let target_full_name f =
   match !Cdglobals.target_language with
     | HTML  -> f ^ ".html"
+    | TeXmacs
+    | LaTeX -> f ^ ".tex"
     | Raw   -> f ^ ".txt"
-    | _     -> f ^ ".tex"
+    | Debug -> f ^ ".txt"
 
 (*s \textbf{Separation of files.} Files given on the command line are
     separated according to their type, which is determined by their
@@ -253,6 +256,8 @@ let parse () =
 	Cdglobals.target_language := TeXmacs; parse_rec rem
     | ("-raw" | "--raw") :: rem ->
 	Cdglobals.target_language := Raw; parse_rec rem
+    | ("--backend=debug") :: rem ->
+	Cdglobals.target_language := Debug; parse_rec rem
     | ("-charset" | "--charset") :: s :: rem ->
 	Cdglobals.charset := s; parse_rec rem
     | ("-charset" | "--charset") :: [] ->
@@ -417,6 +422,7 @@ let output_factory tl =
   | HTML      -> (module Html    : S)
   | TeXmacs   -> (module TeXmacs : S)
   | Raw       -> (module Raw     : S)
+  | Debug     -> (module Out_debug.Debug : S)
 
 (*s Functions for generating output files *)
 
