@@ -22,9 +22,11 @@ Tactics
   introducing along pattern p changed to p%c1..%cn. The feature and
   syntax are in experimental stage.
 - "Proof using" does not clear unused section variables.
-- "refine" has been changed back to the 8.4 behavior of shelving subgoals
-  that occur in other subgoals. The "refine" tactic of 8.5beta2 has been
+- Tactic "refine" has been changed back to the 8.4 behavior of shelving subgoals
+  that occur in other subgoals. The "refine" tactic of 8.5beta3 has been
   renamed "simple refine"; it does not shelve any subgoal.
+- New tactical "unshelve tac" which grab existential variables put on
+  the tactic shelve by the execution of "tac".
 
 Changes from V8.5beta2 to V8.5beta3
 ===================================
@@ -495,11 +497,9 @@ Interfaces
   documentation of OCaml's Str module for the supported syntax.
 - Many CoqIDE windows, including the query one, are now detachable to
   improve usability on multi screen work stations.
-
 - Coqtop/coqc outputs highlighted syntax. Colors can be configured thanks
   to the COQ_COLORS environment variable, and their current state can
   be displayed with the -list-tags command line option.
-
 - Third party user interfaces can install their main loop in $COQLIB/toploop
   and call coqtop with the -toploop flag to select it.
 
