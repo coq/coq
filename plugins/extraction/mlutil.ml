@@ -459,6 +459,75 @@ let nb_occur_match =
     | MLglob _ | MLexn _ | MLdummy | MLaxiom -> 0
   in nb 1
 
+(* Replace unused variables by _ *)
+
+let dump_unused_vars a =
+  let dump_id = function
+    | Dummy -> Dummy
+    | Id _ -> Id dummy_name
+    | Tmp _ -> Tmp dummy_name
+  in
+  let rec ren env a = match a with
+    | MLrel i ->
+       let () = (List.nth env (i-1)) := true in a
+
+    | MLlam (id,b) ->
+       let occ_id = ref false in
+       let b' = ren (occ_id::env) b in
+       if !occ_id then if b' == b then a else MLlam(id,b')
+       else MLlam(dump_id id,b')
+
+    | MLletin (id,b,c) ->
+       let occ_id = ref false in
+       let b' = ren env b in
+       let c' = ren (occ_id::env) c in
+       if !occ_id then
+         if b' == b && c' == c then a else MLletin(id,b',c')
+       else
+         (* 'let' without occurrence: shouldn't happen after simpl *)
+         MLletin(dump_id id,b',c')
+
+    | MLcase (t,e,br) ->
+       let e' = ren env e in
+       let br' = array_smartmap (ren_branch env) br in
+       if e' == e && br' == br then a else MLcase (t,e',br')
+
+    | MLfix (i,ids,v) ->
+       let env' = list_tabulate (fun _ -> ref false) (Array.length ids) @ env in
+       let v' = array_smartmap (ren env') v in
+       if v' == v then a else MLfix (i,ids,v')
+
+    | MLapp (b,l) ->
+       let b' = ren env b and l' = list_smartmap (ren env) l in
+       if b' == b && l' == l then a else MLapp (b',l')
+
+    | MLcons(t,r,l) ->
+       let l' = list_smartmap (ren env) l in
+       if l' == l then a else MLcons (t,r,l')
+
+    | MLtuple l ->
+       let l' = list_smartmap (ren env) l in
+       if l' == l then a else MLtuple l'
+
+    | MLmagic b ->
+       let b' = ren env b in
+       if b' == b then a else MLmagic b'
+
+    | MLglob _ | MLexn _ | MLdummy | MLaxiom -> a
+
+    and ren_branch env ((ids,p,b) as tr) =
+      let occs = List.map (fun _ -> ref false) ids in
+      let b' = ren (List.rev_append occs env) b in
+      let ids' =
+        List.map2
+          (fun id occ -> if !occ then id else dump_id id)
+          ids occs
+      in
+      if b' == b && ids = ids' then tr
+      else (ids',p,b')
+  in
+  ren [] a
+
 (*s Lifting on terms.
     [ast_lift k t] lifts the binding depth of [t] across [k] bindings. *)
 

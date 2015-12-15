@@ -260,10 +260,12 @@ let dfix_to_mlfix rv av i =
    order to preserve the global interface, later [depcheck_se] will get
    rid of them if possible *)
 
+let optim_ast t = dump_unused_vars (normalize t)
+
 let rec optim_se top to_appear s = function
   | [] -> []
   | (l,SEdecl (Dterm (r,a,t))) :: lse ->
-      let a = normalize (ast_glob_subst !s a) in
+      let a = optim_ast (ast_glob_subst !s a) in
       let i = inline r a in
       if i then s := Refmap'.add r a !s;
       let d = match optimize_fix a with
@@ -273,7 +275,7 @@ let rec optim_se top to_appear s = function
       in
       (l,SEdecl d) :: (optim_se top to_appear s lse)
   | (l,SEdecl (Dfix (rv,av,tv))) :: lse ->
-      let av = Array.map (fun a -> normalize (ast_glob_subst !s a)) av in
+      let av = Array.map (fun a -> optim_ast (ast_glob_subst !s a)) av in
       (* This fake body ensures that no fixpoint will be auto-inlined. *)
       let fake_body = MLfix (0,[||],[||]) in
       for i = 0 to Array.length rv - 1 do
