@@ -143,7 +143,11 @@ let rec pp_expr par env args =
   and apply2 st = pp_apply2 st par args in
   function
     | MLrel n ->
-	let id = get_db_name n env in apply (pr_id id)
+	let id = get_db_name n env in
+        (* Try to survive to the occurrence of a Dummy rel.
+           TODO: we should get rid of this hack (cf. #592) *)
+        let id = if Id.equal id dummy_name then Id.of_string "__" else id in
+        apply (pr_id id)
     | MLapp (f,args') ->
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f

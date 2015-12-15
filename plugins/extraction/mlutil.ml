@@ -514,11 +514,6 @@ let nb_occur_match =
 (* Replace unused variables by _ *)
 
 let dump_unused_vars a =
-  let dump_id = function
-    | Dummy -> Dummy
-    | Id _ -> Id dummy_name
-    | Tmp _ -> Tmp dummy_name
-  in
   let rec ren env a = match a with
     | MLrel i ->
        let () = (List.nth env (i-1)) := true in a
@@ -527,7 +522,7 @@ let dump_unused_vars a =
        let occ_id = ref false in
        let b' = ren (occ_id::env) b in
        if !occ_id then if b' == b then a else MLlam(id,b')
-       else MLlam(dump_id id,b')
+       else MLlam(Dummy,b')
 
     | MLletin (id,b,c) ->
        let occ_id = ref false in
@@ -537,7 +532,7 @@ let dump_unused_vars a =
          if b' == b && c' == c then a else MLletin(id,b',c')
        else
          (* 'let' without occurrence: shouldn't happen after simpl *)
-         MLletin(dump_id id,b',c')
+         MLletin(Dummy,b',c')
 
     | MLcase (t,e,br) ->
        let e' = ren env e in
@@ -572,7 +567,7 @@ let dump_unused_vars a =
       let b' = ren (List.rev_append occs env) b in
       let ids' =
         List.map2
-          (fun id occ -> if !occ then id else dump_id id)
+          (fun id occ -> if !occ then id else Dummy)
           ids occs
       in
       if b' == b && List.equal eq_ml_ident ids ids' then tr

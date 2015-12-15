@@ -263,29 +263,28 @@ let dfix_to_mlfix rv av i =
    order to preserve the global interface, later [depcheck_se] will get
    rid of them if possible *)
 
-let optim_ast t = dump_unused_vars (normalize t)
-
 let rec optim_se top to_appear s = function
   | [] -> []
   | (l,SEdecl (Dterm (r,a,t))) :: lse ->
-      let a = optim_ast (ast_glob_subst !s a) in
+      let a = normalize (ast_glob_subst !s a) in
       let i = inline r a in
       if i then s := Refmap'.add r a !s;
-      let d = match optimize_fix a with
+      let d = match dump_unused_vars (optimize_fix a) with
 	| MLfix (0, _, [|c|]) ->
 	  Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
 	| a -> Dterm (r, a, t)
       in
       (l,SEdecl d) :: (optim_se top to_appear s lse)
   | (l,SEdecl (Dfix (rv,av,tv))) :: lse ->
-      let av = Array.map (fun a -> optim_ast (ast_glob_subst !s a)) av in
+      let av = Array.map (fun a -> normalize (ast_glob_subst !s a)) av in
       (* This fake body ensures that no fixpoint will be auto-inlined. *)
       let fake_body = MLfix (0,[||],[||]) in
       for i = 0 to Array.length rv - 1 do
 	if inline rv.(i) fake_body
 	then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
       done;
-      (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top to_appear s lse)
+      let av' = Array.map dump_unused_vars av in
+      (l,SEdecl (Dfix (rv, av', tv))) :: (optim_se top to_appear s lse)
   | (l,SEmodule m) :: lse ->
       let m = { m with ml_mod_expr = optim_me to_appear s m.ml_mod_expr}
       in (l,SEmodule m) :: (optim_se top to_appear s lse)
