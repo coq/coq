@@ -681,6 +681,7 @@ let used_section_variables env inds =
   keep_hyps env ids
 
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
+let rel_list n m = Array.to_list (rel_vect n m)
 
 exception UndefinableExpansion
 
@@ -695,12 +696,16 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
       that typechecking projections requires just a substitution and not
       matching with a parameter context. *)
   let indty, paramsletsubst =
-    let inst = extended_rel_list 0 paramslet in
-    let subst = subst_of_rel_context_instance paramslet inst in
+    (* [ty] = [Ind inst] is typed in context [params] *)
+    let inst = extended_rel_vect 0 paramslet in
+    let ty = mkApp (mkIndU indu, inst) in
+    (* [Ind inst] is typed in context [params-wo-let] *)
+    let inst' = rel_list 0 nparamargs in
+    (* {params-wo-let |- subst:params] *)
+    let subst = subst_of_rel_context_instance paramslet inst' in
+    (* {params-wo-let, x:Ind inst' |- subst':(params,x:Ind inst)] *)
     let subst = (* For the record parameter: *)
-      mkRel 1 :: List.map (lift 1) subst
-    in
-    let ty = mkApp (mkIndU indu, Array.of_list inst) in
+      mkRel 1 :: List.map (lift 1) subst in
       ty, subst
   in
   let ci = 
