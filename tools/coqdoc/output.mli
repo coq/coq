@@ -64,9 +64,6 @@ val end_comment : unit -> unit
 val start_coq : unit -> unit
 val end_coq : unit -> unit
 
-val start_code : unit -> unit
-val end_code : unit -> unit
-
 val start_inline_coq : unit -> unit
 val end_inline_coq : unit -> unit
 

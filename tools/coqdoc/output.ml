@@ -196,9 +196,6 @@ val end_comment : unit -> unit
 val start_coq : unit -> unit
 val end_coq : unit -> unit
 
-val start_code : unit -> unit
-val end_code : unit -> unit
-
 val start_inline_coq : unit -> unit
 val end_inline_coq : unit -> unit
 
@@ -598,10 +595,6 @@ module Latex : S = struct
 
   let end_coq () = printf "\\end{coqdoccode}\n"
 
-  let start_code () = end_doc (); start_coq ()
-
-  let end_code () = end_coq (); start_doc ()
-
   let section_kind = function
     | 1 -> "\\section{"
     | 2 -> "\\subsection{"
@@ -890,10 +883,6 @@ module Html : S = struct
   let start_comment () = printf "<span class=\"comment\">(*"
 
   let end_comment () = printf "*)</span>"
-
-  let start_code () = end_doc (); start_coq ()
-
-  let end_code () = end_coq (); start_doc ()
 
   let start_inline_coq () = 
     if !inline_notmono then printf "<span class=\"inlinecodenm\">"
@@ -1236,9 +1225,6 @@ module TeXmacs : S = struct
   let start_comment () = ()
   let end_comment () = ()
 
-  let start_code () = in_doc := true; printf "<\\code>\n"
-  let end_code () = in_doc := false; printf "\n</code>"
-
   let section_kind = function
     | 1 -> "section"
     | 2 -> "subsection"
@@ -1362,9 +1348,6 @@ module Raw : S = struct
 
   let start_coq () = ()
   let end_coq () = ()
-
-  let start_code () = end_doc (); start_coq ()
-  let end_code () = end_coq (); start_doc ()
 
   let section_kind =
     function
