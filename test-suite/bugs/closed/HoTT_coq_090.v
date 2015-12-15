@@ -84,7 +84,7 @@ Arguments transport {A} P {x y} p%path_scope u : simpl nomatch.
 Instance isequiv_path {A B : Type} (p : A = B)
   : IsEquiv (transport (fun X:Type => X) p) | 0.
 Proof.
-  refine (@BuildIsEquiv _ _ _ (transport (fun X:Type => X) p^) _ _ _);
+  unshelve refine (@BuildIsEquiv _ _ _ (transport (fun X:Type => X) p^) _ _ _);
   admit.
 Defined.
 
