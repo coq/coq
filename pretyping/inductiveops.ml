@@ -308,7 +308,7 @@ let lift_constructor n cs = {
 let instantiate_params t params sign =
   let nnonrecpar = rel_context_nhyps sign - List.length params in
   (* Adjust the signature if recursively non-uniform parameters are not here *)
-  let _,sign = List.chop nnonrecpar sign in
+  let _,sign = context_chop nnonrecpar sign in
   let _,t = decompose_prod_n_assum (rel_context_length sign) t in
   let subst = subst_of_rel_context_instance sign params in
   substl subst t
