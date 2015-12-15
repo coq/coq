@@ -298,6 +298,7 @@ module Prim =
     let preident = gec_gen (rawwit wit_pre_ident) "preident"
     let ident = gec_gen (rawwit wit_ident) "ident"
     let natural = gec_gen (rawwit wit_int) "natural"
+    let index = gec_gen (rawwit wit_int) "index"
     let integer = gec_gen (rawwit wit_int) "integer"
     let bigint = Gram.entry_create "Prim.bigint"
     let string = gec_gen (rawwit wit_string) "string"

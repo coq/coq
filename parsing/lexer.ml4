@@ -262,9 +262,23 @@ let rec ident_tail len = parser
           ident_tail (nstore n len s) s
       | _ -> len
 
-let rec number len = parser
-  | [< ' ('0'..'9' as c); s >] -> number (store len c) s
-  | [< >] -> len
+let check_no_char s =
+  match Stream.npeek 3 s with
+  | [_;_;('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_')] -> false
+  | [_;_;_] -> true
+  | [_;_] -> true
+  | _ -> assert false
+
+let rec number_or_index c len = parser
+  | [< ' ('0'..'9' as c); s >] -> number_or_index c (store len c) s
+  | [< s >] ->
+      match Stream.npeek 2 s with
+      | ['s';'t'] when c = '1' && check_no_char s -> njunk 2 s; false, len
+      | ['n';'d'] when c = '2' && check_no_char s -> njunk 2 s; false, len
+      | ['r';'d'] when c = '3' && check_no_char s -> njunk 2 s; false, len
+      | ['t';'h'] when not (len=1 && c='0') && check_no_char s ->
+        njunk 2 s; false, len
+      | _ -> true, len
 
 let rec string in_comments bp len = parser
   | [< ''"'; esc=(parser [<''"' >] -> true | [< >] -> false); s >] ->
@@ -513,9 +527,9 @@ let rec next_token = parser bp
       let id = get_buff len in
       comment_stop bp;
       (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
-  | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
+  | [< ' ('0'..'9' as c); (b,len) = number_or_index c (store 0 c) >] ep ->
       comment_stop bp;
-      (INT (get_buff len), (bp, ep))
+      (if b then INT (get_buff len) else INDEX (get_buff len)), (bp, ep)
   | [< ''\"'; len = string None bp 0 >] ep ->
       comment_stop bp;
       (STRING (get_buff len), (bp, ep))

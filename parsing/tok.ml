@@ -15,6 +15,7 @@ type t =
   | IDENT of string
   | FIELD of string
   | INT of string
+  | INDEX of string
   | STRING of string
   | LEFTQMARK
   | BULLET of string
@@ -28,6 +29,7 @@ let equal t1 t2 = match t1, t2 with
 | IDENT s1, IDENT s2 -> CString.equal s1 s2
 | FIELD s1, FIELD s2 -> CString.equal s1 s2
 | INT s1, INT s2 -> CString.equal s1 s2
+| INDEX s1, INDEX s2 -> CString.equal s1 s2
 | STRING s1, STRING s2 -> CString.equal s1 s2
 | LEFTQMARK, LEFTQMARK -> true
 | BULLET s1, BULLET s2 -> CString.equal s1 s2
@@ -42,6 +44,7 @@ let extract_string = function
   | PATTERNIDENT s -> s
   | FIELD s -> s
   | INT s -> s
+  | INDEX s -> s
   | LEFTQMARK -> "?"
   | BULLET s -> s
   | EOI -> ""
@@ -53,6 +56,7 @@ let to_string = function
   | PATTERNIDENT s -> Format.sprintf "PATTERNIDENT %S" s
   | FIELD s -> Format.sprintf "FIELD %S" s
   | INT s -> Format.sprintf "INT %s" s
+  | INDEX s -> Format.sprintf "INDEX %s" s
   | STRING s -> Format.sprintf "STRING %S" s
   | LEFTQMARK -> "LEFTQMARK"
   | BULLET s -> Format.sprintf "STRING %S" s
@@ -76,6 +80,7 @@ let of_pattern = function
   | "PATTERNIDENT", s -> PATTERNIDENT s
   | "FIELD", s -> FIELD s
   | "INT", s -> INT s
+  | "INDEX", s -> INDEX s
   | "STRING", s -> STRING s
   | "LEFTQMARK", _ -> LEFTQMARK
   | "BULLET", s -> BULLET s
@@ -89,6 +94,7 @@ let to_pattern = function
   | PATTERNIDENT s -> "PATTERNIDENT", s
   | FIELD s -> "FIELD", s
   | INT s -> "INT", s
+  | INDEX s -> "INDEX", s
   | STRING s -> "STRING", s
   | LEFTQMARK -> "LEFTQMARK", ""
   | BULLET s -> "BULLET", s
@@ -103,6 +109,7 @@ let match_pattern =
     | "PATTERNIDENT", "" -> (function PATTERNIDENT s -> s | _ -> err ())
     | "FIELD", "" -> (function FIELD s -> s | _ -> err ())
     | "INT", "" -> (function INT s -> s | _ -> err ())
+    | "INDEX", "" -> (function INDEX s -> s | _ -> err ())
     | "STRING", "" -> (function STRING s -> s | _ -> err ())
     | "LEFTQMARK", "" -> (function LEFTQMARK -> ""  | _ -> err ())
     | "BULLET", "" ->  (function BULLET s -> s  | _ -> err ())
