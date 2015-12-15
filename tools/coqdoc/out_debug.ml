@@ -120,9 +120,6 @@ module Debug : S = struct
   let start_comment () = printf "#start_comment@\n"
   let end_comment   () = printf "#end_comment@\n"
 
-  let start_code () = printf "#start_code@\n"
-  let end_code   () = printf "#end_code@\n"
-
   let start_inline_coq () = printf "#start-inline-coq@\n"
   let end_inline_coq   () = printf "#end-inline-coq@\n"
 
