@@ -17,7 +17,6 @@
   module OutB : Output.S
 
   val coq_file        : string -> Cdglobals.coq_module -> unit
-  val detect_subtitle : string -> Cdglobals.coq_module -> string option
 
   end
 
@@ -205,18 +204,6 @@
           List n_spaces
         else
           Neither
-
-   (* examine a string for subtitleness *)
-  let subtitle m s =
-    match Str.split_delim (Str.regexp ":") s with
-    | [] -> false
-    | (name::_) ->
-        if (cut_head_tail_spaces name) = m then
-          true
-        else
-          false
-
-
   (* tokens pretty-print *)
 
   let token_buffer = Buffer.create 1024
@@ -673,13 +660,9 @@ and coq = parse
 and doc_bol = parse
   | space* section space+ ([^'\n' '*'] | '*'+ [^'\n' ')' '*'])* ('*'+ '\n')?
       { let eol, lex = strip_eol (lexeme lexbuf) in
-        let lev, s = sec_title lex in
-          if (!Cdglobals.lib_subtitles) &&
-             (subtitle (Output.get_module false) s) then
-            ()
-          else
-            OutB.section lev (fun () -> ignore (doc None (from_string s)));
-	    if eol then doc_bol lexbuf else doc None lexbuf }
+        let lev, s   = sec_title lex             in
+        OutB.section lev (fun () -> ignore (doc None (from_string s)));
+	if eol then doc_bol lexbuf else doc None lexbuf }
   | space_nl* '-'+
       { let buf' = lexeme lexbuf in
         let bufs = Str.split_delim (Str.regexp "['\n']") buf' in
@@ -1267,54 +1250,18 @@ and inf_rules_conclusion indents assumptions middle conclusions = parse
                                ((spaces,conc) :: conclusions) lexbuf
       }
 
-(*s A small scanner to support the chapter subtitle feature *)
-and st_start m = parse
-  | "(*" "*"+ space+ "*" space+
-      { st_modname m lexbuf }
-  | _
-      { None }
-
-and st_modname m = parse
-  | identifier space* ":" space*
-      { if subtitle m (lexeme lexbuf) then
-          st_subtitle lexbuf
-        else
-          None
-      }
-  | _
-      { None }
-
-and st_subtitle = parse
-  | [^ '\n']* '\n'
-      { let st = lexeme lexbuf in
-        let i = try Str.search_forward (Str.regexp "\\**)") st 0 with
-                   Not_found ->
-                     (eprintf "unterminated comment at beginning of file\n";
-                      exit 1)
-        in
-          Some (cut_head_tail_spaces (String.sub st 0 i))
-      }
-  | _
-      { None }
 (*s Applying the scanners to files *)
-
 {
   let coq_file f m =
     reset ();
-    let c  = open_in f in
+    let c  = open_in f      in
     let lb = from_channel c in
-      (Index.current_library := m;
-       OutB.initialize ();
-       OutB.start_module ();
-       OutB.start_coq (); coq_bol lb; OutB.end_coq ();
-       close_in c)
+    Index.current_library := m;
+    OutB.start_module m;
+    OutB.start_coq ();
+    coq_bol lb;
+    OutB.end_coq ();
+    close_in c
 
-  let detect_subtitle f m =
-    let c = open_in f in
-    let lb = from_channel c in
-    let sub = st_start m lb in
-      close_in c;
-      sub
-
-  end
+end
 }

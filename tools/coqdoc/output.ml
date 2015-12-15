@@ -9,13 +9,6 @@
 open Cdglobals
 open Index
 
-(*s Low level output *)
-
-let output_char   c = Pervasives.output_char !out_channel c
-let output_string s = Pervasives.output_string !out_channel s
-
-let printf s = Printf.fprintf !out_channel s
-
 let sprintf = Printf.sprintf
 
 (*s Coq keywords *)
@@ -84,20 +77,6 @@ let is_tactic =
       "eval"; "instantiate"; "until" ]
 
 (*s Current Coq module *)
-
-let current_module : (string * string option) ref = ref ("",None)
-
-let get_module withsub =
-  let (m,sub) = !current_module in
-  if withsub then
-    match sub with
-    | None -> m
-    | Some sub -> m ^ ": " ^ sub
-  else
-    m
-
-let set_module m sub = current_module := (m,sub);
-                       page_title := get_module true
 
 (*s Common to both LaTeX and HTML *)
 
@@ -181,17 +160,30 @@ let new_label = let r = ref 0 in fun () -> incr r; "lab" ^ string_of_int !r
 
 module type S = sig
 
-val initialize : unit -> unit
-
+(** XXX move to start_file  *)
 val push_in_preamble : string -> unit
 
-val support_files : string list
+(** [support_files] List of support files to be copied along the output. *)
+val support_files    : string list
 
-val header : unit -> unit
-val trailer : unit -> unit
+(** [appendix toc index split_index standalone] Backend-specific
+    function that outputs additional files. *)
+val appendix : toc:bool -> index:bool -> split_index:bool -> standalone:bool -> unit
 
-val start_module : unit -> unit
+(** [start_file out toc index standalone] Start a logical output file
+    to channel [out] [toc], [index], and [standalone] control whether
+    the backend will generate a TOC, index, and header/trailers for the file.
+*)
+val start_file : out_channel -> toc:bool -> index:bool ->
+                 split_index:bool -> standalone:bool -> unit
 
+(** [end_file] Ends the file *)
+val end_file : unit -> unit
+
+(** [start_module mod] Starts a coq module. *)
+val start_module : coq_module -> unit
+
+(** [start_doc] Moves the backend to "document" mode. *)
 val start_doc : unit -> unit
 val end_doc : unit -> unit
 
@@ -264,13 +256,9 @@ val url : string -> string option -> unit
    something smart we can just format the rule verbatim like the user did
 *)
 val inf_rule :  (int * string) list
-             -> (int * string * (string option)) 
+             -> (int * string * (string option))
              -> (int * string) list
              -> unit
-
-val make_multi_index : unit -> unit
-val make_index : unit -> unit
-val make_toc : unit -> unit
 
 end
 
@@ -292,7 +280,16 @@ let inf_rule_dumb start_verbatim stop_verbatim char assumptions (midsp,midln,mid
 
 module Latex : S = struct
 
+  (* Private methods and values *)
+  let oc = ref stdout
+  let output_char   c = Pervasives.output_char   !oc c
+  let output_string s = Pervasives.output_string !oc s
+
+  let printf s = Printf.fprintf !oc s
+
   let in_title = ref false
+
+  let cur_mod = ref ""
 
   (*s Latex preamble *)
 
@@ -310,7 +307,7 @@ module Latex : S = struct
     printf "\\usepackage{tipa}\n";
     printf "\n"
 
-  let header () =
+  let header ~toc =
     if !header_trailer then begin
       printf "\\documentclass[12pt]{report}\n";
       if !inputenc != "" then printf "\\usepackage[%s]{inputenc}\n" !inputenc;
@@ -334,51 +331,16 @@ module Latex : S = struct
     Array.iter (fun s -> printf "%s " s) Sys.argv;
     printf "\n";
     output_string
-      "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n"
+      "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+    if toc then printf "\\tableofcontents\n";
+    ()
 
   let trailer () =
     if !header_trailer then begin
       printf "\\end{document}\n"
     end
 
-  let push_in_preamble s = Queue.add s preamble
-
-  let support_files = ["coqdoc.sty"]
-
-  (*s Latex low-level translation *)
-
-  let nbsp () = output_char '~'
-
-  let char c = match c with
-    | '\\' ->
-	printf "\\symbol{92}"
-    | '$' | '#' | '%' | '&' | '{' | '}' | '_' ->
-	output_char '\\'; output_char c
-    | '^' | '~' ->
-	output_char '\\'; output_char c; printf "{}"
-    | _ ->
-	output_char c
-
-  let verbatim_char inline = if inline then char else output_char
-  let hard_verbatim_char = output_char
-
-  let label_char c = match c with
-    | '_' -> output_char ' '
-    | '\\' | '$' | '#' | '%' | '&' | '{' | '}'
-    | '^' | '~' -> printf "x%X" (Char.code c)
-    | _ -> if c >= '\x80' then printf "x%X" (Char.code c) else output_char c
-
-  let label_ident s =
-    for i = 0 to String.length s - 1 do label_char s.[i] done
-
-  let latex_char = output_char
-  let latex_string = output_string
-
-  let html_char _ = ()
-  let html_string _ = ()
-
   (*s Latex char escaping *)
-
   let escaped =
     let buff = Buffer.create 5 in
     fun s ->
@@ -403,48 +365,14 @@ module Latex : S = struct
       done;
       Buffer.contents buff
 
-  (*s Latex reference and symbol translation *)
+  let label_char c = match c with
+    | '_' -> output_char ' '
+    | '\\' | '$' | '#' | '%' | '&' | '{' | '}'
+    | '^' | '~' -> printf "x%X" (Char.code c)
+    | _ -> if c >= '\x80' then printf "x%X" (Char.code c) else output_char c
 
-  let start_module () =
-    let ln = !lib_name in
-      if not !short then begin
-        printf "\\coqlibrary{";
-        label_ident (get_module false);
-        printf "}{";
-        if ln <> "" then printf "%s " ln;
-        printf "}{%s}\n\n" (escaped (get_module true))
-    end
-
-  let start_latex_math () = output_char '$'
-
-  let stop_latex_math () = output_char '$'
-
-  let start_quote () = output_char '`'; output_char '`'
-  let stop_quote () = output_char '\''; output_char '\''
-    
-  let start_verbatim inline = 
-    if inline then printf "\\texttt{"
-    else printf "\\begin{verbatim}"
-
-  let stop_verbatim inline =
-    if inline then printf "}"
-    else printf "\\end{verbatim}\n"
-
-  let inf_rule = inf_rule_dumb start_verbatim stop_verbatim char
-
-  let url addr name = 
-    printf "%s\\footnote{\\url{%s}}"
-      (match name with
-       | None -> ""
-       | Some n -> n)
-      addr
-
-  let indentation n =
-    if n == 0 then
-      printf "\\coqdocnoindent\n"
-    else
-      let space = 0.5 *. (float n) in
-      printf "\\coqdocindent{%2.2fem}\n" space
+  let label_ident s =
+    for i = 0 to String.length s - 1 do label_char s.[i] done
 
   let ident_ref m fid typ s =
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
@@ -473,20 +401,105 @@ module Latex : S = struct
 
   let reference s = function
     | Def (fullid,typ) ->
-	defref (get_module false) fullid typ s
+      defref !cur_mod fullid typ s
     | Ref (m,fullid,typ) ->
 	ident_ref m fullid typ s
-
-  (*s The sublexer buffers symbol characters and attached
-       uninterpreted ident and try to apply special translation such as,
-       predefined, translation "->" to "\ensuremath{\rightarrow}" or,
-       virtually, a user-level translation from "=_h" to "\ensuremath{=_{h}}" *)
 
   let output_sublexer_string doescape issymbchar tag s =
     let s = if doescape then escaped s else s in
     match tag with
     | Some ref -> reference s ref
     | None -> if issymbchar then output_string s else printf "\\coqdocvar{%s}" s
+
+  (** Public values  *)
+
+  let push_in_preamble s = Queue.add s preamble
+  let support_files = ["coqdoc.sty"]
+
+  let appendix ~toc ~index ~split_index ~standalone = ()
+
+  (*  *)
+  let start_file out ~toc ~index ~split_index ~standalone =
+    oc := out;
+    initialize_tex_html ();
+    Tokens.token_tree := token_tree_latex;
+    Tokens.outfun     := output_sublexer_string;
+    header toc
+
+  let end_file () =
+    trailer ()
+
+  (*s Latex low-level translation *)
+
+  let nbsp () = output_char '~'
+
+  let char c = match c with
+    | '\\' ->
+	printf "\\symbol{92}"
+    | '$' | '#' | '%' | '&' | '{' | '}' | '_' ->
+	output_char '\\'; output_char c
+    | '^' | '~' ->
+	output_char '\\'; output_char c; printf "{}"
+    | _ ->
+	output_char c
+
+  let verbatim_char inline = if inline then char else output_char
+  let hard_verbatim_char = output_char
+
+  let latex_char = output_char
+  let latex_string = output_string
+
+  let html_char   _ = ()
+  let html_string _ = ()
+
+  (*s Latex reference and symbol translation *)
+  let start_module coq_mod =
+    let mod_name = coq_mod   in
+    let ln       = !lib_name in
+    cur_mod     := coq_mod;
+    if not !short then begin
+      printf "\\coqlibrary{";
+      label_ident coq_mod;
+      printf "}{";
+      if ln <> "" then printf "%s " ln;
+      printf "}{%s}\n\n" (escaped mod_name)
+    end
+
+  let start_latex_math () = output_char '$'
+
+  let stop_latex_math () = output_char '$'
+
+  let start_quote () = output_char '`'; output_char '`'
+  let stop_quote () = output_char '\''; output_char '\''
+
+  let start_verbatim inline =
+    if inline then printf "\\texttt{"
+    else printf "\\begin{verbatim}"
+
+  let stop_verbatim inline =
+    if inline then printf "}"
+    else printf "\\end{verbatim}\n"
+
+  let inf_rule = inf_rule_dumb start_verbatim stop_verbatim char
+
+  let url addr name = 
+    printf "%s\\footnote{\\url{%s}}"
+      (match name with
+       | None -> ""
+       | Some n -> n)
+      addr
+
+  let indentation n =
+    if n == 0 then
+      printf "\\coqdocnoindent\n"
+    else
+      let space = 0.5 *. (float n) in
+      printf "\\coqdocindent{%2.2fem}\n" space
+
+  (*s The sublexer buffers symbol characters and attached
+       uninterpreted ident and try to apply special translation such as,
+       predefined, translation "->" to "\ensuremath{\rightarrow}" or,
+       virtually, a user-level translation from "=_h" to "\ensuremath{=_{h}}" *)
 
   let last_was_in = ref false
 
@@ -496,7 +509,7 @@ module Latex : S = struct
       output_char '*'
     end else begin
       let tag =
-        try Some (Index.find (get_module false) loc) with Not_found -> None
+        try Some (Index.find !cur_mod loc) with Not_found -> None
       in
       Tokens.output_tagged_symbol_char tag c
     end;
@@ -509,11 +522,6 @@ module Latex : S = struct
     end else
       Tokens.output_tagged_symbol_char None c;
     last_was_in := false
-
-  let initialize () =
-    initialize_tex_html ();
-    Tokens.token_tree := token_tree_latex;
-    Tokens.outfun := output_sublexer_string
 
   (*s Interpreting ident with fallback on sublexer if unknown ident *)
 
@@ -529,7 +537,7 @@ module Latex : S = struct
       match loc with
       | None -> raise Not_found
       | Some loc ->
-          let tag = Index.find (get_module false) loc in
+          let tag = Index.find !cur_mod loc in
           reference (translate s) tag
     with Not_found ->
       if is_tactic s then
@@ -539,7 +547,7 @@ module Latex : S = struct
       else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
       then
 	try
-	  let tag = Index.find_string (get_module false) s in
+	  let tag = Index.find_string !cur_mod s in
 	  reference (translate s) tag
 	with _ -> Tokens.output_tagged_ident_string s
       else Tokens.output_tagged_ident_string s
@@ -624,12 +632,6 @@ module Latex : S = struct
 
   let end_inline_coq () = ()
 
-  let make_multi_index () = ()
-
-  let make_index () = ()
-
-  let make_toc () = printf "\\tableofcontents\n"
-
 end
 
 
@@ -637,16 +639,27 @@ end
 
 module Html : S = struct
 
+  (* Private methods and values *)
+  let finalizers : (unit -> unit) Queue.t = Queue.create ()
+
+  let oc = ref stdout
+  let output_char   c = Pervasives.output_char   !oc c
+  let output_string s = Pervasives.output_string !oc s
+
+  let printf s = Printf.fprintf !oc s
+
+  let cur_mod = ref ""
+
   let header () =
     if !header_trailer then
-      if !header_file_spec then
-	let cin = Pervasives.open_in !header_file in
-	  try
-	    while true do
-	      let s = Pervasives.input_line cin in
-		printf "%s\n" s
-	    done
-	  with End_of_file -> Pervasives.close_in cin
+    if !header_file_spec then
+      let cin = Pervasives.open_in !header_file in
+      try
+        while true do
+	  let s = Pervasives.input_line cin in
+          printf "%s\n" s
+	done
+      with End_of_file -> Pervasives.close_in cin
       else
 	begin
 	  printf "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n";
@@ -670,46 +683,12 @@ module Html : S = struct
 	  with End_of_file -> Pervasives.close_in cin
     else
       begin
-        if !index && (get_module false) <> "Index" then
+        if !index && !cur_mod <> "Index" then
           printf "</div>\n\n<div id=\"footer\">\n<hr/><a href=\"%s.html\">Index</a>" !index_name;
 	printf "<hr/>This page has been generated by ";
 	printf "<a href=\"%s\">coqdoc</a>\n" Coq_config.wwwcoq;
 	printf "</div>\n\n</div>\n\n</body>\n</html>"
       end
-
-  let push_in_preamble _ = ()
-
-  let support_files = ["coqdoc.css"]
-
-  let start_module () =
-    let ln = !lib_name in
-    if not !short then begin
-      let (m,sub) = !current_module in
-        add_toc_entry (Toc_library (m,sub));
-        if ln = ""  then
-          printf "<h1 class=\"libtitle\">%s</h1>\n\n" (get_module true)
-        else
-          printf "<h1 class=\"libtitle\">%s %s</h1>\n\n" ln (get_module true)
-    end
-
-  let hard_verbatim_char = output_char
-
-  let indentation n = for _i = 1 to n do printf "&nbsp;" done
-
-  let line_break () = printf "<br/>\n"
-
-  let empty_line_of_code () =
-    printf "\n<br/>\n"
-
-  let nbsp () = printf "&nbsp;"
-
-  let char = function
-    | '<' -> printf "&lt;"
-    | '>' -> printf "&gt;"
-    | '&' -> printf "&amp;"
-    | c -> output_char c
-
-  let verbatim_char inline = char
 
   let escaped =
     let buff = Buffer.create 5 in
@@ -736,32 +715,6 @@ module Html : S = struct
            this is probably a notation string, we simply hash it. *)
         Digest.to_hex (Digest.string s)
     in loop false (String.length s - 1)
-
-  let latex_char _ = ()
-  let latex_string _ = ()
-
-  let html_char = output_char
-  let html_string = output_string
-
-  let start_latex_math () = ()
-  let stop_latex_math () = ()
-
-  let start_quote () = char '"'
-  let stop_quote () = start_quote ()
-
-  let start_verbatim inline = 
-    if inline then printf "<tt>"
-    else printf "<pre>"
-
-  let stop_verbatim inline = 
-    if inline then printf "</tt>" 
-    else printf "</pre>\n"
-
-  let url addr name = 
-    printf "<a href=\"%s\">%s</a>" addr 
-      (match name with
-       | Some n -> n
-       | None -> addr)
 
   let ident_ref m fid typ s =
     match find_module m with
@@ -790,19 +743,88 @@ module Html : S = struct
 	if issymbchar then output_string s
 	else printf "<span class=\"id\" title=\"var\">%s</span>" s
 
+  (** Public methods  *)
+  let push_in_preamble _ = ()
+
+  let start_file out ~toc ~index ~split_index ~standalone =
+    oc := out;
+    initialize_tex_html();
+    Tokens.token_tree := token_tree_html;
+    Tokens.outfun := output_sublexer_string;
+    header ()
+
+  let end_file () =
+    (* Queue add *)
+    trailer ()
+
+  let support_files = ["coqdoc.css"]
+
+  let start_module coq_mod =
+    let mod_name = coq_mod   in
+    let ln       = !lib_name in
+    cur_mod      := coq_mod;
+    if not !short then begin
+      let (m,sub) = mod_name, None in
+      add_toc_entry (Toc_library (m,sub));
+      if ln = ""  then
+        printf "<h1 class=\"libtitle\">%s</h1>\n\n" mod_name
+      else
+        printf "<h1 class=\"libtitle\">%s %s</h1>\n\n" ln mod_name
+    end
+
+  let hard_verbatim_char = output_char
+
+  let indentation n = for _i = 1 to n do printf "&nbsp;" done
+
+  let line_break () = printf "<br/>\n"
+
+  let empty_line_of_code () =
+    printf "\n<br/>\n"
+
+  let nbsp () = printf "&nbsp;"
+
+  let char = function
+    | '<' -> printf "&lt;"
+    | '>' -> printf "&gt;"
+    | '&' -> printf "&amp;"
+    | c -> output_char c
+
+  let verbatim_char inline = char
+
+  let latex_char _ = ()
+  let latex_string _ = ()
+
+  let html_char = output_char
+  let html_string = output_string
+
+  let start_latex_math () = ()
+  let stop_latex_math () = ()
+
+  let start_quote () = char '"'
+  let stop_quote () = start_quote ()
+
+  let start_verbatim inline = 
+    if inline then printf "<tt>"
+    else printf "<pre>"
+
+  let stop_verbatim inline = 
+    if inline then printf "</tt>" 
+    else printf "</pre>\n"
+
+  let url addr name = 
+    printf "<a href=\"%s\">%s</a>" addr 
+      (match name with
+       | Some n -> n
+       | None -> addr)
+
   let sublexer c loc =
     let tag =
-      try Some (Index.find (get_module false) loc) with Not_found -> None
+      try Some (Index.find !cur_mod loc) with Not_found -> None
     in
     Tokens.output_tagged_symbol_char tag c
 
   let sublexer_in_doc c =
     Tokens.output_tagged_symbol_char None c
-
-  let initialize () =
-    initialize_tex_html();
-    Tokens.token_tree := token_tree_html;
-    Tokens.outfun := output_sublexer_string
 
   let translate s =
     match Tokens.translate s with Some s -> s | None -> escaped s
@@ -818,14 +840,14 @@ module Html : S = struct
         match loc with
         | None -> raise Not_found
         | Some loc ->
-            reference (translate s) (Index.find (get_module false) loc)
+            reference (translate s) (Index.find !cur_mod loc)
       with Not_found ->
 	if is_tactic s then
 	  printf "<span class=\"id\" title=\"tactic\">%s</span>" (translate s)
 	else
 	  if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
 	  then
-	    try reference (translate s) (Index.find_string (get_module false) s)
+	    try reference (translate s) (Index.find_string !cur_mod s)
 	    with _ -> Tokens.output_tagged_ident_string s
 	  else
 	    Tokens.output_tagged_ident_string s
@@ -930,7 +952,7 @@ module Html : S = struct
 
   let section lev f =
     let lab = new_label () in
-    let r = sprintf "%s.html#%s" (get_module false) lab in
+    let r = sprintf "%s.html#%s" !cur_mod lab in
     (match !toc_depth with
      | None -> add_toc_entry (Toc_section (lev, f, r))
      | Some n -> if lev <= n then add_toc_entry (Toc_section (lev, f, r))
@@ -942,141 +964,168 @@ module Html : S = struct
 
   let rule () = printf "<hr/>\n"
 
-  (* make a HTML index from a list of triples (name,text,link) *)
-  let index_ref i c =
-    let idxc = sprintf "%s_%c" i.idx_name c in
-    !index_name ^ (if !multi_index then "_" ^ idxc ^ ".html" else ".html#" ^ idxc)
+  module Appendix = struct
 
-  let letter_index category idx (c,l) =
-    if l <> [] then begin
-      let cat = if category && idx <> "global" then "(" ^ idx ^ ")" else "" in
-      printf "<a name=\"%s_%c\"></a><h2>%s %s</h2>\n" idx c (display_letter c) cat;
-      List.iter
-	(fun (id,(text,link,t)) ->
-	   let id' = prepare_entry id t in
-	   printf "<a href=\"%s\">%s</a> %s<br/>\n" link id' text) l;
-      printf "<br/><br/>"
-    end
+    let make_toc out =
+      oc := out;
+      let ln = !lib_name in
+      let make_toc_entry = function
+        | Toc_library (m,sub) ->
+ 	  stop_item ();
+	  let ms = match sub with | None -> m | Some s -> m ^ ": " ^ s in
+          if ln = "" then
+ 	    printf "<a href=\"%s.html\"><h2>%s</h2></a>\n" m ms
+          else
+ 	    printf "<a href=\"%s.html\"><h2>%s %s</h2></a>\n" m ln ms
+        | Toc_section (n, f, r) ->
+  	  item n;
+  	  printf "<a href=\"%s\">" r; f (); printf "</a>\n"
+      in
+      page_title := (if !title <> "" then !title else "Table of contents");
+      header ();
+      if !title <> "" then printf "<h1>%s</h1>\n" !title;
+      printf "<div id=\"toc\">\n";
+      Queue.iter make_toc_entry toc_q;
+      stop_item ();
+      printf "</div>\n";
+      trailer ()
 
-  let all_letters i = List.iter (letter_index false i.idx_name) i.idx_entries
+    (* make a HTML index from a list of triples (name,text,link) *)
+    let index_ref i c =
+      let idxc = sprintf "%s_%c" i.idx_name c in
+      !index_name ^ (if !multi_index then "_" ^ idxc ^ ".html" else ".html#" ^ idxc)
 
-  (* Construction d'une liste des index (1 index global, puis 1
-     index par catégorie) *)
-  let format_global_index =
-    Index.map
-      (fun s (m,t) ->
-	if t = Library then
-         let ln = !lib_name in
-           if ln <> "" then
+    let letter_index category idx (c,l) =
+      if l <> [] then begin
+        let cat = if category && idx <> "global" then "(" ^ idx ^ ")" else "" in
+        printf "<a name=\"%s_%c\"></a><h2>%s %s</h2>\n" idx c (display_letter c) cat;
+        List.iter
+	  (fun (id,(text,link,t)) ->
+	     let id' = prepare_entry id t in
+	     printf "<a href=\"%s\">%s</a> %s<br/>\n" link id' text) l;
+        printf "<br/><br/>"
+      end
+
+    let all_letters i = List.iter (letter_index false i.idx_name) i.idx_entries
+
+    (* Construction d'une liste des index (1 index global, puis 1
+       index par catégorie) *)
+    let format_global_index =
+      Index.map
+        (fun s (m,t) ->
+	   if t = Library then
+             let ln = !lib_name in
+             if ln <> "" then
 	       "[" ^ String.lowercase ln ^ "]", m ^ ".html", t
-           else
+             else
 	       "[library]", m ^ ".html", t
-	else
-	 sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
-	sprintf "%s.html#%s" m (sanitize_name s), t)
+	   else
+	     sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
+	     sprintf "%s.html#%s" m (sanitize_name s), t)
 
-  let format_bytype_index = function
-    | Library, idx ->
+    let format_bytype_index = function
+      | Library, idx ->
 	Index.map (fun id m -> "", m ^ ".html", Library) idx
-    | (t,idx) ->
+      | (t,idx) ->
 	Index.map
 	  (fun s m ->
 	     let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
-	       (text, sprintf "%s.html#%s" m (sanitize_name s), t)) idx
+	     (text, sprintf "%s.html#%s" m (sanitize_name s), t)) idx
 
-  (* Impression de la table d'index *)
-  let print_index_table_item i =
-    printf "<tr>\n<td>%s Index</td>\n" (String.capitalize i.idx_name);
-    List.iter
-      (fun (c,l) ->
-	 if l <> [] then
-	   printf "<td><a href=\"%s\">%s</a></td>\n" (index_ref i c)
-	     (display_letter c)
-	 else
-	   printf "<td>%s</td>\n" (display_letter c))
-      i.idx_entries;
-    let n = i.idx_size in
+    (* Impression de la table d'index *)
+    let print_index_table_item i =
+      printf "<tr>\n<td>%s Index</td>\n" (String.capitalize i.idx_name);
+      List.iter
+        (fun (c,l) ->
+	   if l <> [] then
+	     printf "<td><a href=\"%s\">%s</a></td>\n" (index_ref i c)
+	       (display_letter c)
+	   else
+	     printf "<td>%s</td>\n" (display_letter c))
+        i.idx_entries;
+      let n = i.idx_size in
       printf "<td>(%d %s)</td>\n" n (if n > 1 then "entries" else "entry");
       printf "</tr>\n"
 
-  let print_index_table idxl =
-    printf "<table>\n";
-    List.iter print_index_table_item idxl;
-    printf "</table>\n"
+    let print_index_table idxl =
+      printf "<table>\n";
+      List.iter print_index_table_item idxl;
+      printf "</table>\n"
 
-  let make_one_multi_index prt_tbl i =
-    (* Attn: make_one_multi_index crée un nouveau fichier... *)
-    let idx = i.idx_name in
-    let one_letter ((c,l) as cl) =
-      open_out_file (sprintf "%s_%s_%c.html" !index_name idx c);
-      if (!header_trailer) then header ();
-      prt_tbl (); printf "<hr/>";
-      letter_index true idx cl;
-      if List.length l > 30 then begin printf "<hr/>"; prt_tbl () end;
-      if (!header_trailer) then trailer ();
-      close_out_file ()
-    in
+    let make_one_multi_index prt_tbl i =
+      (* Attn: make_one_multi_index crée un nouveau fichier... *)
+      let idx = i.idx_name in
+      let one_letter ((c,l) as cl) =
+        with_outfile (sprintf "%s_%s_%c.html" !index_name idx c) (fun out ->
+            oc := out;
+            if (!header_trailer) then header ();
+            prt_tbl (); printf "<hr/>";
+            letter_index true idx cl;
+            if List.length l > 30 then begin printf "<hr/>"; prt_tbl () end;
+            if (!header_trailer) then trailer ()
+          )
+      in
       List.iter one_letter i.idx_entries
 
-  let make_multi_index () =
-    let all_index =
-      let glob,bt = Index.all_entries () in
+    let make_multi_index () =
+      let all_index =
+        let glob,bt = Index.all_entries () in
 	(format_global_index glob) ::
-	  (List.map format_bytype_index bt) in
-    let print_table () = print_index_table all_index in
+	(List.map format_bytype_index bt) in
+      let print_table () = print_index_table all_index in
       List.iter (make_one_multi_index print_table) all_index
 
-  let make_index () =
-    let all_index =
-      let glob,bt = Index.all_entries () in
+    let make_index out =
+      oc := out;
+      let all_index =
+        let glob,bt = Index.all_entries () in
 	(format_global_index glob) ::
-	  (List.map format_bytype_index bt) in
-    let print_table () = print_index_table all_index in
-    let print_one_index i =
-      if i.idx_size > 0 then begin
-	printf "<hr/>\n<h1>%s Index</h1>\n" (String.capitalize i.idx_name);
-	all_letters i
-      end
-    in
-      set_module "Index" None;
+	(List.map format_bytype_index bt) in
+      let print_table () = print_index_table all_index in
+      let print_one_index i =
+        if i.idx_size > 0 then begin
+	  printf "<hr/>\n<h1>%s Index</h1>\n" (String.capitalize i.idx_name);
+	  all_letters i
+        end
+      in
+      cur_mod := "Index";
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
       print_table ();
       if not (!multi_index) then
-	begin
+        begin
 	  List.iter print_one_index all_index;
-	  printf "<hr/>"; print_table ()
-	end
+          printf "<hr/>"; print_table ()
+        end
+  end
 
-    let make_toc () =
-	let ln = !lib_name in
-      let make_toc_entry = function
-        | Toc_library (m,sub) ->
- 		stop_item ();
-		let ms = match sub with | None -> m | Some s -> m ^ ": " ^ s in
-              if ln = "" then
- 	          printf "<a href=\"%s.html\"><h2>%s</h2></a>\n" m ms
-              else
- 	          printf "<a href=\"%s.html\"><h2>%s %s</h2></a>\n" m ln ms
-        | Toc_section (n, f, r) ->
-  		item n;
-  		printf "<a href=\"%s\">" r; f (); printf "</a>\n"
-      in
-        printf "<div id=\"toc\">\n";
-        Queue.iter make_toc_entry toc_q;
-        stop_item ();
-        printf "</div>\n"
-
+  let appendix ~toc ~index ~split_index ~standalone =
+    if toc         then with_outfile "toc.html"            Appendix.make_toc;
+    if index       then with_outfile (!index_name^".html") Appendix.make_index;
+    if split_index then Appendix.make_multi_index ()
 end
-
 
 (*s TeXmacs-aware output *)
 
 module TeXmacs : S = struct
 
+  (* Private methods and values *)
+  let oc = ref stdout
+  let output_char   c = Pervasives.output_char   !oc c
+  let output_string s = Pervasives.output_string !oc s
+
+  let printf s = Printf.fprintf !oc s
+
   (*s Latex preamble *)
 
   let (preamble : string Queue.t) =
     in_doc := false; Queue.create ()
+
+  let appendix ~toc ~index ~split_index ~standalone = ()
+
+  let start_file out ~toc ~index ~split_index ~standalone =
+    ()
+
+  let end_file () = ()
 
   let header () =
     output_string
@@ -1112,7 +1161,7 @@ module TeXmacs : S = struct
   let raw_ident s =
     for i = 0 to String.length s - 1 do char s.[i] done
 
-  let start_module () = ()
+  let start_module _coq_mod = ()
 
   let start_latex_math () = printf "<with|mode|math|"
 
@@ -1219,12 +1268,6 @@ module TeXmacs : S = struct
 
   let end_inline_coq_block () = end_inline_coq ()
 
-  let make_multi_index () = ()
-
-  let make_index () = ()
-
-  let make_toc () = ()
-
   let inf_rule = inf_rule_dumb start_verbatim stop_verbatim char
 
 end
@@ -1234,8 +1277,22 @@ end
 
 module Raw : S = struct
 
-  let header () = ()
+  (* Private methods and values *)
+  let oc = ref stdout
+  let output_char   c = Pervasives.output_char   !oc c
+  let output_string s = Pervasives.output_string !oc s
+  let printf        s = Printf.fprintf !oc s
 
+  let appendix ~toc ~index ~split_index ~standalone = ()
+
+  let start_file out ~toc ~index ~split_index ~standalone =
+    ()
+
+  let end_file () = ()
+
+  let start_module _coq_mod = ()
+
+  let header  () = ()
   let trailer () = ()
 
   let push_in_preamble _ = ()
@@ -1257,7 +1314,6 @@ module Raw : S = struct
   let raw_ident s =
     for i = 0 to String.length s - 1 do char s.[i] done
 
-  let start_module () = ()
   let end_module () = ()
 
   let start_latex_math () = ()
@@ -1335,9 +1391,5 @@ module Raw : S = struct
 
   let start_inline_coq_block () = line_break (); start_inline_coq ()
   let end_inline_coq_block () = end_inline_coq ()
-
-  let make_multi_index () = ()
-  let make_index () = ()
-  let make_toc () = ()
 
 end

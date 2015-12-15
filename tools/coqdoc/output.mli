@@ -14,10 +14,6 @@ val add_printing_token    : string -> string option * string option -> unit
 val remove_printing_token : string -> unit
 
 (* This interface should be improved. *)
-val current_module : (string * string option) ref
-val get_module : bool -> string
-val set_module : coq_module -> string option -> unit
-
 type toc_entry =
   | Toc_library of string * string option
   | Toc_section of int * (unit -> unit) * string
@@ -31,17 +27,31 @@ val is_tactic  : string -> bool
 (* Backend printer *)
 module type S = sig
 
-val initialize : unit -> unit
-
+(** XXX move to start_file  *)
 val push_in_preamble : string -> unit
 
-val support_files : string list
+(** [support_files] List of support files to be copied along the output. *)
+val support_files    : string list
 
-val header : unit -> unit
-val trailer : unit -> unit
+(** [appendix toc index split_index standalone] Backend-specific
+    function that outputs additional files. *)
+val appendix : toc:bool -> index:bool -> split_index:bool -> standalone:bool -> unit
 
-val start_module : unit -> unit
+(** [start_file out toc index split_index standalone] Start a logical
+    output file to channel [out] [toc], [index], and [standalone]
+    control whether the backend will generate a TOC, index, and
+    header/trailers for the file.
+*)
+val start_file : out_channel -> toc:bool -> index:bool ->
+                 split_index:bool -> standalone:bool -> unit
 
+(** [end_file] Ends the file *)
+val end_file : unit -> unit
+
+(** [start_module mod] Starts a coq module. *)
+val start_module : coq_module -> unit
+
+(** [start_doc] Moves the backend to "document" mode. *)
 val start_doc : unit -> unit
 val end_doc : unit -> unit
 
@@ -117,10 +127,6 @@ val inf_rule :  (int * string) list
              -> (int * string * (string option))
              -> (int * string) list
              -> unit
-
-val make_multi_index : unit -> unit
-val make_index : unit -> unit
-val make_toc   : unit -> unit
 
 end
 

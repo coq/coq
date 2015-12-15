@@ -183,7 +183,7 @@ let files_from_file f =
 (*s \textbf{Parsing of the command line.} *)
 
 let dvi = ref false
-let ps = ref false
+let ps  = ref false
 let pdf = ref false
 
 let preamble = ref []
@@ -394,6 +394,7 @@ let cat file =
     with End_of_file ->
       close_in c
 
+(* XXX: Uh *)
 let copy src dst =
   let cin = open_in src in
   try
@@ -421,58 +422,29 @@ let output_factory tl =
 
 (** gen_one_file [l] *)
 let gen_one_file (module OutB : Output.S) (module Cpretty : Cpretty.S)
-                 (l : file list) =
-
-  List.iter (OutB.push_in_preamble) (List.rev !preamble);
-
-  let file = function
-    | Vernac_file (f, m) ->
-      let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
-      Output.set_module m sub;
-      Cpretty.coq_file f m
+                 out (l : file list) =
+  let out_module (Vernac_file (f, m)) =
+    Cpretty.coq_file f m
   in
-    if (!header_trailer) then OutB.header ();
-    if !toc then OutB.make_toc ();
-    List.iter file l;
-    if !index then OutB.make_index();
-    if (!header_trailer) then OutB.trailer ()
+  OutB.start_file out ~toc:!toc ~index:!index ~split_index:!multi_index ~standalone:!header_trailer;
+  List.iter out_module l;
+  OutB.end_file ()
 
 let gen_mult_files (module OutB : Output.S) (module Cpretty : Cpretty.S)
                    (l : file list) =
 
-  List.iter (OutB.push_in_preamble) (List.rev !preamble);
-
-  let file = function
-    | Vernac_file (f,m) ->
-      let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
-	let hf = target_full_name m in
-        Output.set_module m sub;
-	  open_out_file hf;
-	  if (!header_trailer) then OutB.header ();
-	  Cpretty.coq_file f m;
-	  if (!header_trailer) then OutB.trailer ();
-	  close_out_file()
+  (* XXX: subtitle functionality has been removed. *)
+  let out_module (Vernac_file (f, m)) =
+    let hf  = target_full_name m                                         in
+    with_outfile hf (fun out ->
+        (* Disable index and TOC for each file *)
+        OutB.start_file out ~toc:false ~index:false ~split_index:false ~standalone:!header_trailer;
+        Cpretty.coq_file f m;
+        OutB.end_file ()
+      )
   in
-    List.iter file l;
-    if (!index && !target_language=HTML) then begin
-      if (!multi_index) then OutB.make_multi_index ();
-      open_out_file (!index_name^".html");
-      page_title := (if !title <> "" then !title else "Index");
-      if (!header_trailer) then OutB.header ();
-      OutB.make_index ();
-      if (!header_trailer) then OutB.trailer ();
-      close_out_file()
-    end;
-    if (!toc && !target_language=HTML) then begin
-      open_out_file "toc.html";
-      page_title := (if !title <> "" then !title else "Table of contents");
-      if (!header_trailer) then OutB.header ();
-      if !title <> "" then printf "<h1>%s</h1>\n" !title;
-      OutB.make_toc ();
-      if (!header_trailer) then OutB.trailer ();
-      close_out_file()
-    end
-    (* NB: for latex and texmacs, a separated toc or index is meaningless... *)
+    List.iter out_module l;
+    OutB.appendix ~toc:!toc ~index:!index ~split_index:!multi_index ~standalone:!header_trailer
 
 let read_glob_file vfile f =
   try Index.read_glob vfile f
@@ -496,28 +468,34 @@ let copy_style_files (files : string list) : unit =
     else eprintf "Warning: file %s does not exist\n" src
   in List.iter copy_file files
 
-(** [produce_document l] *)
+(** [produce_document l] produces a document from list of files [l] *)
 let produce_document (l : file list) =
+
   let module OutB    = (val output_factory !target_language) in
   let module Cpretty = Cpretty.Make(OutB)                    in
 
   copy_style_files OutB.support_files;
-  (match !Cdglobals.glob_source with
-    | NoGlob -> ()
-    | DotGlob -> List.iter read_glob_file_of l
-    | GlobFile f -> read_glob_file None f);
+
+  (* Preload index. *)
+  begin match !Cdglobals.glob_source with
+    | NoGlob     -> ()
+    | DotGlob    -> List.iter read_glob_file_of l
+    | GlobFile f -> read_glob_file None f
+  end;
   List.iter index_module l;
+
+  (* XXX: Preload the preamble. *)
+  List.iter (OutB.push_in_preamble) (List.rev !preamble);
 
   match !out_to with
     | StdOut ->
-	Cdglobals.out_channel := stdout;
-	gen_one_file   (module OutB) (module Cpretty) l
+      gen_one_file (module OutB) (module Cpretty) stdout l
     | File f ->
-	open_out_file f;
-	gen_one_file   (module OutB) (module Cpretty) l;
-	close_out_file()
+      with_outfile f (fun out ->
+          gen_one_file (module OutB) (module Cpretty) out l
+        )
     | MultFiles ->
-	gen_mult_files (module OutB) (module Cpretty) l
+      gen_mult_files (module OutB) (module Cpretty) l
 
 let produce_output fl =
   if not (!dvi || !ps || !pdf) then

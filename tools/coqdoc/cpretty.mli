@@ -11,7 +11,6 @@ module type S = sig
 module OutB : Output.S
 
 val coq_file        : string -> Cdglobals.coq_module -> unit
-val detect_subtitle : string -> Cdglobals.coq_module -> string option
 
 end
 
