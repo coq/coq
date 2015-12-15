@@ -202,7 +202,14 @@ val ids_of_named_context : named_context -> Id.t list
 val ids_of_context : env -> Id.t list
 val names_of_rel_context : env -> names_context
 
+(* [context_chop n Γ] returns (Γ₁,Γ₂) such that [Γ]=[Γ₂Γ₁], [Γ₁] has
+   [n] hypotheses, excluding local definitions, and [Γ₁], if not empty,
+   starts with an hypothesis (i.e. [Γ₁] has the form empty or [x:A;Γ₁'] *)
 val context_chop : int -> rel_context -> rel_context * rel_context
+
+(* [env_rel_context_chop n env] extracts out the [n] top declarations
+   of the rel_context part of [env], counting both local definitions and
+   hypotheses *)
 val env_rel_context_chop : int -> env -> env * rel_context
 
 (** Set of local names *)

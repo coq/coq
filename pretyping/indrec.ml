@@ -277,24 +277,13 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
   in
   process_constr env 0 f (List.rev cstr.cs_args, recargs)
 
-
-(* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k
-   variables *)
-let context_chop k ctx =
-  let rec chop_aux acc = function
-    | (0, l2) -> (List.rev acc, l2)
-    | (n, ((_,Some _,_ as h)::t)) -> chop_aux (h::acc) (n, t)
-    | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
-    | (_, []) -> failwith "context_chop"
-  in chop_aux [] (k,ctx)
-
 (* Main function *)
 let mis_make_indrec env sigma listdepkind mib u =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let evdref = ref sigma in
   let lnonparrec,lnamesparrec =
-    context_chop (nparams-nparrec) (Vars.subst_instance_context u mib.mind_params_ctxt) in
+    Termops.context_chop (nparams-nparrec) (Vars.subst_instance_context u mib.mind_params_ctxt) in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.make mib.mind_ntypes (None : (bool * constr) option) in
