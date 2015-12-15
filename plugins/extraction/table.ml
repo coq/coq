@@ -72,8 +72,6 @@ let mp_length mp =
     | _ -> 1
   in len mp
 
-let visible_con kn = at_toplevel (base_mp (con_modpath kn))
-
 let rec prefixes_mp mp = match mp with
   | MPdot (mp',_) -> MPset.add mp (prefixes_mp mp')
   | _ -> MPset.singleton mp
@@ -105,17 +103,30 @@ let labels_of_ref r =
 (* Theses tables are not registered within coq save/undo mechanism
    since we reset their contents at each run of Extraction *)
 
+(* We use [constant_body] (resp. [mutual_inductive_body]) as checksum
+   to ensure that the table contents aren't outdated. *)
+
 (*s Constants tables. *)
 
-let terms = ref (Cmap_env.empty : ml_decl Cmap_env.t)
-let init_terms () = terms := Cmap_env.empty
-let add_term kn d = terms := Cmap_env.add kn d !terms
-let lookup_term kn = Cmap_env.find kn !terms
+let typedefs = ref (Cmap_env.empty : (constant_body * ml_type) Cmap_env.t)
+let init_typedefs () = typedefs := Cmap_env.empty
+let add_typedef kn cb t =
+  typedefs := Cmap_env.add kn (cb,t) !typedefs
+let lookup_typedef kn cb =
+  try
+    let (cb0,t) = Cmap_env.find kn !typedefs in
+    if cb0 == cb then Some t else None
+  with Not_found -> None
 
-let types = ref (Cmap_env.empty : ml_schema Cmap_env.t)
-let init_types () = types := Cmap_env.empty
-let add_type kn s = types := Cmap_env.add kn s !types
-let lookup_type kn = Cmap_env.find kn !types
+let cst_types =
+  ref (Cmap_env.empty : (constant_body * ml_schema) Cmap_env.t)
+let init_cst_types () = cst_types := Cmap_env.empty
+let add_cst_type kn cb s = cst_types := Cmap_env.add kn (cb,s) !cst_types
+let lookup_cst_type kn cb =
+  try
+    let (cb0,s) = Cmap_env.find kn !cst_types in
+    if cb0 == cb then Some s else None
+  with Not_found -> None
 
 (*s Inductives table. *)
 
@@ -124,7 +135,14 @@ let inductives =
 let init_inductives () = inductives := Mindmap_env.empty
 let add_ind kn mib ml_ind =
   inductives := Mindmap_env.add kn (mib,ml_ind) !inductives
-let lookup_ind kn = Mindmap_env.find kn !inductives
+let lookup_ind kn mib =
+  try
+    let (mib0,ml_ind) = Mindmap_env.find kn !inductives in
+    if mib == mib0 then Some ml_ind
+    else None
+  with Not_found -> None
+
+let unsafe_lookup_ind kn = snd (Mindmap_env.find kn !inductives)
 
 let inductive_kinds =
   ref (Mindmap_env.empty : inductive_kind Mindmap_env.t)
@@ -244,10 +262,10 @@ let safe_basename_of_global r =
     | ConstRef kn -> Label.to_id (con_label kn)
     | IndRef (kn,0) -> Label.to_id (mind_label kn)
     | IndRef (kn,i) ->
-      (try (snd (lookup_ind kn)).ind_packets.(i).ip_typename
+      (try (unsafe_lookup_ind kn).ind_packets.(i).ip_typename
        with Not_found -> last_chance r)
     | ConstructRef ((kn,i),j) ->
-      (try (snd (lookup_ind kn)).ind_packets.(i).ip_consnames.(j-1)
+      (try (unsafe_lookup_ind kn).ind_packets.(i).ip_consnames.(j-1)
        with Not_found -> last_chance r)
     | VarRef _ -> assert false
 
@@ -876,6 +894,6 @@ let extract_inductive r s l optstr =
 (*s Tables synchronization. *)
 
 let reset_tables () =
-  init_terms (); init_types (); init_inductives ();
+  init_typedefs (); init_cst_types (); init_inductives ();
   init_inductive_kinds (); init_recursors ();
   init_projs (); init_axioms (); init_opaques (); reset_modfile ()

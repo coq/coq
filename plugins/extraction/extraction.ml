@@ -201,36 +201,6 @@ let parse_ind_args si args relmax =
 	 | _ -> parse (i+1) (j+1) s)
   in parse 1 1 si
 
-let oib_equal o1 o2 =
-  Id.equal o1.mind_typename o2.mind_typename &&
-  List.equal eq_rel_declaration o1.mind_arity_ctxt o2.mind_arity_ctxt &&
-    begin
-      match o1.mind_arity, o2.mind_arity with
-      | RegularArity {mind_user_arity=c1; mind_sort=s1}, RegularArity {mind_user_arity=c2; mind_sort=s2} ->
-	eq_constr c1 c2 && Sorts.equal s1 s2
-      | TemplateArity p1, TemplateArity p2 ->
-	let eq o1 o2 = Option.equal Univ.Level.equal o1 o2 in
-	  List.equal eq p1.template_param_levels p2.template_param_levels &&
-	    Univ.Universe.equal p1.template_level p2.template_level
-      | _, _ -> false
-    end &&
-    Array.equal Id.equal o1.mind_consnames o2.mind_consnames
-
-let eq_record x y =
-  Option.equal (Option.equal (fun (_, x, y) (_, x', y') -> Array.for_all2 eq_constant x x')) x y
-
-let mib_equal m1 m2 =
-  Array.equal oib_equal m1.mind_packets m1.mind_packets &&
-  eq_record m1.mind_record m2.mind_record &&
-  (m1.mind_finite : Decl_kinds.recursivity_kind) == m2.mind_finite &&
-  Int.equal m1.mind_ntypes m2.mind_ntypes &&
-  List.equal eq_named_declaration m1.mind_hyps m2.mind_hyps &&
-  Int.equal m1.mind_nparams m2.mind_nparams &&
-  Int.equal m1.mind_nparams_rec m2.mind_nparams_rec &&
-  List.equal eq_rel_declaration m1.mind_params_ctxt m2.mind_params_ctxt &&
-  (* Univ.UContext.eq *) m1.mind_universes == m2.mind_universes (** FIXME *)
-  (* m1.mind_universes = m2.mind_universes *)
-
 (*S Extraction of a type. *)
 
 (* [extract_type env db c args] is used to produce an ML type from the
@@ -360,14 +330,9 @@ and extract_type_scheme env db c p =
 
 and extract_ind env kn = (* kn is supposed to be in long form *)
   let mib = Environ.lookup_mind kn env in
-  try
-    (* For a same kn, we can get various bodies due to module substitutions.
-       We hence check that the mib has not changed from recording
-       time to retrieving time. Ideally we should also check the env. *)
-    let (mib0,ml_ind) = lookup_ind kn in
-    if not (mib_equal mib mib0) then raise Not_found;
-    ml_ind
-  with Not_found ->
+  match lookup_ind kn mib with
+  | Some ml_ind -> ml_ind
+  | None ->
     (* First, if this inductive is aliased via a Module,
        we process the original inductive if possible.
        When at toplevel of the monolithic case, we cannot do much
@@ -523,28 +488,25 @@ and extract_type_cons env db dbmap c i =
 (*s Recording the ML type abbreviation of a Coq type scheme constant. *)
 
 and mlt_env env r = match r with
+  | IndRef _ | ConstructRef _ | VarRef _ -> None
   | ConstRef kn ->
-      (try
-	 if not (visible_con kn) then raise Not_found;
-	 match lookup_term kn with
-	   | Dtype (_,vl,mlt) -> Some mlt
+     let cb = Environ.lookup_constant kn env in
+     match cb.const_body with
+     | Undef _ | OpaqueDef _ -> None
+     | Def l_body ->
+        match lookup_typedef kn cb with
+        | Some _ as o -> o
+        | None ->
+           let typ = Typeops.type_of_constant_type env cb.const_type
+           (* FIXME not sure if we should instantiate univs here *) in
+	   match flag_of_type env typ with
+	   | Info,TypeScheme ->
+	      let body = Mod_subst.force_constr l_body in
+	      let s = type_sign env typ in
+	      let db = db_from_sign s in
+	      let t = extract_type_scheme env db body (List.length s)
+	      in add_typedef kn cb t; Some t
 	   | _ -> None
-       with Not_found ->
-	 let cb = Environ.lookup_constant kn env in
-	 let typ = Typeops.type_of_constant_type env cb.const_type
- (* FIXME not sure if we should instantiate univs here *) in
-	 match cb.const_body with
-	   | Undef _ | OpaqueDef _ -> None
-	   | Def l_body ->
-	       (match flag_of_type env typ with
-		  | Info,TypeScheme ->
-		      let body = Mod_subst.force_constr l_body in
-		      let s,vl = type_sign_vl env typ in
-		      let db = db_from_sign s in
-		      let t = extract_type_scheme env db body (List.length s)
-		      in add_term kn (Dtype (r, vl, t)); Some t
-		  | _ -> None))
-  | _ -> None
 
 and expand env = type_expand (mlt_env env)
 and type2signature env = type_to_signature (mlt_env env)
@@ -555,16 +517,18 @@ let type_expunge_from_sign env = type_expunge_from_sign (mlt_env env)
 (*s Extraction of the type of a constant. *)
 
 let record_constant_type env kn opt_typ =
-  try
-    if not (visible_con kn) then raise Not_found;
-    lookup_type kn
-  with Not_found ->
-    let typ = match opt_typ with
-      | None -> Typeops.type_of_constant_type env (lookup_constant kn env).const_type
-      | Some typ -> typ
-    in let mlt = extract_type env [] 1 typ []
-    in let schema = (type_maxvar mlt, mlt)
-    in add_type kn schema; schema
+  let cb = lookup_constant kn env in
+  match lookup_cst_type kn cb with
+  | Some schema -> schema
+  | None ->
+     let typ = match opt_typ with
+       | None -> Typeops.type_of_constant_type env cb.const_type
+       | Some typ -> typ
+     in
+     let mlt = extract_type env [] 1 typ [] in
+     let schema = (type_maxvar mlt, mlt) in
+     let () = add_cst_type kn cb schema in
+     schema
 
 (*S Extraction of a term. *)
 

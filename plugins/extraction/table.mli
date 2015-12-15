@@ -55,7 +55,6 @@ val string_of_modfile : module_path -> string
 val file_of_modfile : module_path -> string
 val is_toplevel : module_path -> bool
 val at_toplevel : module_path -> bool
-val visible_con : constant -> bool
 val mp_length : module_path -> int
 val prefixes_mp : module_path -> MPset.t
 val common_prefix_from_list :
@@ -65,14 +64,22 @@ val labels_of_ref : global_reference -> module_path * Label.t list
 
 (*s Some table-related operations *)
 
-val add_term : constant -> ml_decl -> unit
-val lookup_term : constant -> ml_decl
+(* For avoiding repeated extraction of the same constant or inductive,
+   we use cache functions below. Indexing by constant name isn't enough,
+   due to modules we could have a same constant name but different
+   content. So we check that the [constant_body] hasn't changed from
+   recording time to retrieving time. Same for inductive : we store
+   [mutual_inductive_body] as checksum. In both case, we should ideally
+   also check the env *)
 
-val add_type : constant -> ml_schema -> unit
-val lookup_type : constant -> ml_schema
+val add_typedef : constant -> constant_body -> ml_type -> unit
+val lookup_typedef : constant -> constant_body -> ml_type option
+
+val add_cst_type : constant -> constant_body -> ml_schema -> unit
+val lookup_cst_type : constant -> constant_body -> ml_schema option
 
 val add_ind : mutual_inductive -> mutual_inductive_body -> ml_ind -> unit
-val lookup_ind : mutual_inductive -> mutual_inductive_body * ml_ind
+val lookup_ind : mutual_inductive -> mutual_inductive_body -> ml_ind option
 
 val add_inductive_kind : mutual_inductive -> inductive_kind -> unit
 val is_coinductive : global_reference -> bool
