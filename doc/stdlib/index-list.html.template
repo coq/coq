@@ -618,6 +618,7 @@ through the <tt>Require Import</tt> command.</p>
     Compatibility wrappers for previous versions of Coq
   </dt>
   <dd>
+    theories/Compat/AdmitAxiom.v
     theories/Compat/Coq84.v
     theories/Compat/Coq85.v
   </dd>

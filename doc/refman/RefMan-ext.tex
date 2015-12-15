@@ -226,6 +226,7 @@ Definition c := {| y := 3; x := 5 |}.
 This syntax can be disabled globally for printing by
 \begin{quote}
 {\tt Unset Printing Records.}
+\optindex{Printing Records}
 \end{quote}
 For a given type, one can override this using either
 \begin{quote}
@@ -284,6 +285,9 @@ To deactivate the printing of projections, use
 {\tt Unset Printing Projections}.
 
 \subsection{Primitive Projections}
+\optindex{Primitive Projections}
+\optindex{Printing Primitive Projection Parameters}
+\optindex{Printing Primitive Projection Compatibility}
 \index{Primitive projections}
 \label{prim-proj}
 
@@ -314,6 +318,12 @@ for the usual defined ones.
   % - [pattern x at n], [rewrite x at n] and in general abstraction and selection
   %   of occurrences may fail due to the disappearance of parameters.
 
+For compatibility, the parameters still appear to the user when printing terms
+even though they are absent in the actual AST manipulated by the kernel. This
+can be changed by unsetting the {\tt Printing Primitive Projection Parameters}
+flag. Further compatibility printing can be deactivated thanks to the
+{\tt Printing Primitive Projection Compatibility} option which governs the
+printing of pattern-matching over primitive records.
 
 \section{Variants and extensions of {\mbox{\tt match}}
 \label{Extensions-of-match}

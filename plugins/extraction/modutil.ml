@@ -100,7 +100,7 @@ let ast_iter_references do_term do_cons do_type a =
 	Array.iter (fun (_,p,_) -> patt_iter_references do_cons p) v
 
       | MLrel _ | MLlam _ | MLapp _ | MLletin _ | MLtuple _ | MLfix _ | MLexn _
-      | MLdummy | MLaxiom | MLmagic _ -> ()
+      | MLdummy _ | MLaxiom | MLmagic _ -> ()
   in iter a
 
 let ind_iter_references do_term do_cons do_type kn ind =
@@ -387,16 +387,15 @@ let is_prefix pre s =
   in
   is_prefix_aux 0
 
-let check_implicits = function
-  | MLexn s ->
-      if String.length s > 8 && (s.[0] == 'U' || s.[0] == 'I') then
-	begin
-	  if is_prefix "UNBOUND" s then assert false;
-	  if is_prefix "IMPLICIT" s then
-	    error_non_implicit (String.sub s 9 (String.length s - 9));
-	end;
-      false
-  | _ -> false
+exception RemainingImplicit of kill_reason
+
+let check_for_remaining_implicits struc =
+  let check = function
+    | MLdummy (Kimplicit _ as k) -> raise (RemainingImplicit k)
+    | _ -> false
+  in
+  try ignore (struct_ast_search check struc)
+  with RemainingImplicit k -> err_or_warn_remaining_implicit k
 
 let optimize_struct to_appear struc =
   let subst = ref (Refmap'.empty : ml_ast Refmap'.t) in
@@ -404,12 +403,16 @@ let optimize_struct to_appear struc =
     List.map (fun (mp,lse) -> (mp, optim_se true (fst to_appear) subst lse))
       struc
   in
-  ignore (struct_ast_search check_implicits opt_struc);
-  if library () then
-    List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
-  else begin
-    reset_needed ();
-    List.iter add_needed (fst to_appear);
-    List.iter add_needed_mp (snd to_appear);
-    depcheck_struct opt_struc
-  end
+  let mini_struc =
+    if library () then
+      List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
+    else
+      begin
+        reset_needed ();
+        List.iter add_needed (fst to_appear);
+        List.iter add_needed_mp (snd to_appear);
+        depcheck_struct opt_struc
+      end
+  in
+  let () = check_for_remaining_implicits mini_struc in
+  mini_struc

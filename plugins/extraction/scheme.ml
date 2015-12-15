@@ -126,7 +126,7 @@ let rec pp_expr env args =
     | MLexn s ->
 	(* An [MLexn] may be applied, but I don't really care. *)
 	paren (str "error" ++ spc () ++ qs s)
-    | MLdummy ->
+    | MLdummy _ ->
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLmagic a ->
 	pp_expr env args a
@@ -183,7 +183,8 @@ let pp_decl = function
       prvecti
 	(fun i r ->
 	  let void = is_inline_custom r ||
-	    (not (is_custom r) && match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
+	    (not (is_custom r) &&
+             match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
 	  in
 	  if void then mt ()
 	  else

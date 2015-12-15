@@ -78,56 +78,51 @@ module type VISIT = sig
   (* Add reference / ... in the visit lists.
      These functions silently add the mp of their arg in the mp list *)
   val add_ref : global_reference -> unit
+  val add_kn : kernel_name -> unit
   val add_decl_deps : ml_decl -> unit
   val add_spec_deps : ml_spec -> unit
 
   (* Test functions:
      is a particular object a needed dependency for the current extraction ? *)
   val needed_ind : mutual_inductive -> bool
-  val needed_con : constant -> bool
+  val needed_cst : constant -> bool
   val needed_mp : module_path -> bool
   val needed_mp_all : module_path -> bool
 end
 
 module Visit : VISIT = struct
   type must_visit =
-      { mutable ind : KNset.t; mutable con : KNset.t;
-	mutable mp : MPset.t; mutable mp_all : MPset.t }
+      { mutable kn : KNset.t;
+        mutable mp : MPset.t;
+        mutable mp_all : MPset.t }
   (* the imperative internal visit lists *)
-  let v = { ind = KNset.empty ; con = KNset.empty ;
-	    mp = MPset.empty; mp_all = MPset.empty }
+  let v = { kn = KNset.empty; mp = MPset.empty; mp_all = MPset.empty }
   (* the accessor functions *)
   let reset () =
-    v.ind <- KNset.empty;
-    v.con <- KNset.empty;
+    v.kn <- KNset.empty;
     v.mp <- MPset.empty;
     v.mp_all <- MPset.empty
-  let needed_ind i = KNset.mem (user_mind i) v.ind
-  let needed_con c = KNset.mem (user_con c) v.con
+  let needed_ind i = KNset.mem (user_mind i) v.kn
+  let needed_cst c = KNset.mem (user_con c) v.kn
   let needed_mp mp = MPset.mem mp v.mp || MPset.mem mp v.mp_all
   let needed_mp_all mp = MPset.mem mp v.mp_all
   let add_mp mp =
     check_loaded_modfile mp; v.mp <- MPset.union (prefixes_mp mp) v.mp
   let add_mp_all mp =
-    check_loaded_modfile mp; v.mp <- MPset.union (prefixes_mp mp) v.mp;
+    check_loaded_modfile mp;
+    v.mp <- MPset.union (prefixes_mp mp) v.mp;
     v.mp_all <- MPset.add mp v.mp_all
-  let add_ind i =
-    let kn = user_mind i in
-    v.ind <- KNset.add kn v.ind; add_mp (modpath kn)
-  let add_con c =
-    let kn = user_con c in
-    v.con <- KNset.add kn v.con; add_mp (modpath kn)
+  let add_kn kn = v.kn <- KNset.add kn v.kn; add_mp (modpath kn)
   let add_ref = function
-    | ConstRef c -> add_con c
-    | IndRef (ind,_) | ConstructRef ((ind,_),_) -> add_ind ind
+    | ConstRef c -> add_kn (user_con c)
+    | IndRef (ind,_) | ConstructRef ((ind,_),_) -> add_kn (user_mind ind)
     | VarRef _ -> assert false
   let add_decl_deps = decl_iter_references add_ref add_ref add_ref
   let add_spec_deps = spec_iter_references add_ref add_ref add_ref
 end
 
 let add_field_label mp = function
-  | (lab, SFBconst _) -> Visit.add_ref (ConstRef (Constant.make2 mp lab))
-  | (lab, SFBmind _) -> Visit.add_ref (IndRef (MutInd.make2 mp lab, 0))
+  | (lab, (SFBconst _|SFBmind _)) -> Visit.add_kn (KerName.make2 mp lab)
   | (lab, (SFBmodule _|SFBmodtype _)) -> Visit.add_mp_all (MPdot (mp,lab))
 
 let rec add_labels mp = function
@@ -193,36 +188,44 @@ let rec mp_of_mexpr = function
   | MEwith (seb,_) -> mp_of_mexpr seb
   | _ -> assert false
 
+let no_delta = Mod_subst.empty_delta_resolver
+
 let env_for_mtb_with_def env mp me idl =
   let struc = Modops.destr_nofunctor me in
   let l = Label.of_id (List.hd idl) in
   let spot = function (l',SFBconst _) -> Label.equal l l' | _ -> false in
   let before = fst (List.split_when spot struc) in
-  Modops.add_structure mp before empty_delta_resolver env
+  Modops.add_structure mp before no_delta env
+
+let make_cst resolver mp l =
+  Mod_subst.constant_of_delta_kn resolver (KerName.make2 mp l)
+
+let make_mind resolver mp l =
+  Mod_subst.mind_of_delta_kn resolver (KerName.make2 mp l)
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])
    to specifications. *)
 
-let rec extract_structure_spec env mp = function
+let rec extract_structure_spec env mp reso = function
   | [] -> []
   | (l,SFBconst cb) :: msig ->
-      let kn = Constant.make2 mp l in
-      let s = extract_constant_spec env kn cb in
-      let specs = extract_structure_spec env mp msig in
+      let c = make_cst reso mp l in
+      let s = extract_constant_spec env c cb in
+      let specs = extract_structure_spec env mp reso msig in
       if logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmind _) :: msig ->
-      let mind = MutInd.make2 mp l in
+      let mind = make_mind reso mp l in
       let s = Sind (mind, extract_inductive env mind) in
-      let specs = extract_structure_spec env mp msig in
+      let specs = extract_structure_spec env mp reso msig in
       if logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmodule mb) :: msig ->
-      let specs = extract_structure_spec env mp msig in
+      let specs = extract_structure_spec env mp reso msig in
       let spec = extract_mbody_spec env mb.mod_mp mb in
       (l,Smodule spec) :: specs
   | (l,SFBmodtype mtb) :: msig ->
-      let specs = extract_structure_spec env mp msig in
+      let specs = extract_structure_spec env mp reso msig in
       let spec = extract_mbody_spec env mtb.mod_mp mtb in
       (l,Smodtype spec) :: specs
 
@@ -244,7 +247,7 @@ and extract_mexpr_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MEwith(me',WithMod(idl,mp))->
       Visit.add_mp_all mp;
       MTwith(extract_mexpr_spec env mp1 (me_struct,me'), ML_With_module(idl,mp))
-  | MEapply _ -> extract_msignature_spec env mp1 me_struct
+  | MEapply _ -> extract_msignature_spec env mp1 no_delta (*TODO*) me_struct
 
 and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MoreFunctor (mbid, mtb, me_alg') ->
@@ -258,19 +261,19 @@ and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
 		extract_mexpression_spec env' mp1 (me_struct',me_alg'))
   | NoFunctor m -> extract_mexpr_spec env mp1 (me_struct,m)
 
-and extract_msignature_spec env mp1 = function
+and extract_msignature_spec env mp1 reso = function
   | NoFunctor struc ->
-      let env' = Modops.add_structure mp1 struc empty_delta_resolver env in
-      MTsig (mp1, extract_structure_spec env' mp1 struc)
+      let env' = Modops.add_structure mp1 struc reso env in
+      MTsig (mp1, extract_structure_spec env' mp1 reso struc)
   | MoreFunctor (mbid, mtb, me) ->
       let mp = MPbound mbid in
       let env' = Modops.add_module_type mp mtb env in
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
-		extract_msignature_spec env' mp1 me)
+		extract_msignature_spec env' mp1 reso me)
 
 and extract_mbody_spec env mp mb = match mb.mod_type_alg with
   | Some ty -> extract_mexpression_spec env mp (mb.mod_type,ty)
-  | None -> extract_msignature_spec env mp mb.mod_type
+  | None -> extract_msignature_spec env mp mb.mod_delta mb.mod_type
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])
    to implementations.
@@ -279,31 +282,31 @@ and extract_mbody_spec env mp mb = match mb.mod_type_alg with
    important: last to first ensures correct dependencies.
 *)
 
-let rec extract_structure env mp ~all = function
+let rec extract_structure env mp reso ~all = function
   | [] -> []
   | (l,SFBconst cb) :: struc ->
       (try
 	 let vl,recd,struc = factor_fix env l cb struc in
-	 let vc = Array.map (Constant.make2 mp) vl in
-	 let ms = extract_structure env mp ~all struc in
-	 let b = Array.exists Visit.needed_con vc in
+	 let vc = Array.map (make_cst reso mp) vl in
+	 let ms = extract_structure env mp reso ~all struc in
+	 let b = Array.exists Visit.needed_cst vc in
 	 if all || b then
 	   let d = extract_fixpoint env vc recd in
 	   if (not b) && (logical_decl d) then ms
 	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
 	 else ms
        with Impossible ->
-	 let ms = extract_structure env mp ~all struc in
-	 let c = Constant.make2 mp l in
-	 let b = Visit.needed_con c in
+	 let ms = extract_structure env mp reso ~all struc in
+	 let c = make_cst reso mp l in
+	 let b = Visit.needed_cst c in
 	 if all || b then
 	   let d = extract_constant env c cb in
 	   if (not b) && (logical_decl d) then ms
 	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
 	 else ms)
   | (l,SFBmind mib) :: struc ->
-      let ms = extract_structure env mp ~all struc in
-      let mind = MutInd.make2 mp l in
+      let ms = extract_structure env mp reso ~all struc in
+      let mind = make_mind reso mp l in
       let b = Visit.needed_ind mind in
       if all || b then
 	let d = Dind (mind, extract_inductive env mind) in
@@ -311,14 +314,14 @@ let rec extract_structure env mp ~all = function
 	else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms
   | (l,SFBmodule mb) :: struc ->
-      let ms = extract_structure env mp ~all struc in
+      let ms = extract_structure env mp reso ~all struc in
       let mp = MPdot (mp,l) in
       let all' = all || Visit.needed_mp_all mp in
       if all' || Visit.needed_mp mp then
 	(l,SEmodule (extract_module env mp ~all:all' mb)) :: ms
       else ms
   | (l,SFBmodtype mtb) :: struc ->
-      let ms = extract_structure env mp ~all struc in
+      let ms = extract_structure env mp reso ~all struc in
       let mp = MPdot (mp,l) in
       if all || Visit.needed_mp mp then
         (l,SEmodtype (extract_mbody_spec env mp mtb)) :: ms
@@ -332,7 +335,7 @@ and extract_mexpr env mp = function
       (* In Haskell/Scheme, we expand everything.
          For now, we also extract everything, dead code will be removed later
          (see [Modutil.optimize_struct]. *)
-      extract_msignature env mp ~all:true (expand_mexpr env mp me)
+      extract_msignature env mp no_delta ~all:true (expand_mexpr env mp me)
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
       Visit.add_mp_all mp; Miniml.MEident mp
@@ -350,17 +353,17 @@ and extract_mexpression env mp = function
          extract_mbody_spec env mp1 mtb,
 	 extract_mexpression env' mp me)
 
-and extract_msignature env mp ~all = function
+and extract_msignature env mp reso ~all = function
   | NoFunctor struc ->
-      let env' = Modops.add_structure mp struc empty_delta_resolver env in
-      Miniml.MEstruct (mp,extract_structure env' mp ~all struc)
+      let env' = Modops.add_structure mp struc reso env in
+      Miniml.MEstruct (mp,extract_structure env' mp reso ~all struc)
   | MoreFunctor (mbid, mtb, me) ->
       let mp1 = MPbound mbid in
       let env' = Modops.add_module_type mp1 mtb	env in
       Miniml.MEfunctor
         (mbid,
          extract_mbody_spec env mp1 mtb,
-	 extract_msignature env' mp ~all me)
+	 extract_msignature env' mp reso ~all me)
 
 and extract_module env mp ~all mb =
   (* A module has an empty [mod_expr] when :
@@ -376,8 +379,8 @@ and extract_module env mp ~all mb =
       (* This module has a signature, otherwise it would be FullStruct.
          We extract just the elements required by this signature. *)
       let () = add_labels mp mb.mod_type in
-      extract_msignature env mp ~all:false sign
-    | FullStruct -> extract_msignature env mp ~all mb.mod_type
+      extract_msignature env mp mb.mod_delta ~all:false sign
+    | FullStruct -> extract_msignature env mp mb.mod_delta ~all mb.mod_type
   in
   (* Slight optimization: for modules without explicit signatures
      ([FullStruct] case), we build the type out of the extracted
@@ -399,7 +402,7 @@ let mono_environment refs mpl =
   let l = List.rev (environment_until None) in
   List.rev_map
     (fun (mp,struc) ->
-      mp, extract_structure env mp ~all:(Visit.needed_mp_all mp) struc)
+      mp, extract_structure env mp no_delta ~all:(Visit.needed_mp_all mp) struc)
     l
 
 (**************************************)
@@ -455,7 +458,7 @@ let print_one_decl struc mp decl =
   push_visible mp [];
   let ans = d.pp_decl decl in
   pop_visible ();
-  ans
+  v 0 ans
 
 (*s Extraction of a ml struct to a file. *)
 
@@ -495,8 +498,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
   let d = descr () in
   reset_renaming_tables AllButExternal;
   let unsafe_needs = {
-    mldummy = struct_ast_search ((==) MLdummy) struc;
-    tdummy = struct_type_search Mlutil.isDummy struc;
+    mldummy = struct_ast_search Mlutil.isMLdummy struc;
+    tdummy = struct_type_search Mlutil.isTdummy struc;
     tunknown = struct_type_search ((==) Tunknown) struc;
     magic =
       if lang () != Haskell then false
@@ -650,7 +653,7 @@ let extraction_library is_rec m =
   let l = List.rev (environment_until (Some dir_m)) in
   let select l (mp,struc) =
     if Visit.needed_mp mp
-    then (mp, extract_structure env mp true struc) :: l
+    then (mp, extract_structure env mp no_delta true struc) :: l
     else l
   in
   let struc = List.fold_left select [] l in

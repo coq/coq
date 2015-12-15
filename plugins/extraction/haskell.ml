@@ -35,56 +35,59 @@ let keywords =
 let pp_comment s = str "-- " ++ s ++ fnl ()
 let pp_bracket_comment s = str"{- " ++ hov 0 s ++ str" -}"
 
+(* Note: do not shorten [str "foo" ++ fnl ()] into [str "foo\n"],
+   the '\n' character interacts badly with the Format boxing mechanism *)
+
 let preamble mod_name comment used_modules usf =
-  let pp_import mp = str ("import qualified "^ string_of_modfile mp ^"\n")
+  let pp_import mp = str ("import qualified "^ string_of_modfile mp) ++ fnl ()
   in
   (if not (usf.magic || usf.tunknown) then mt ()
    else
      str "{-# OPTIONS_GHC -cpp -XMagicHash #-}" ++ fnl () ++
-     str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}")
-  ++ fnl () ++ fnl ()
+     str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}" ++ fnl2 ())
   ++
   (match comment with
     | None -> mt ()
-    | Some com -> pp_bracket_comment com ++ fnl () ++ fnl ())
+    | Some com -> pp_bracket_comment com ++ fnl2 ())
   ++
   str "module " ++ pr_upper_id mod_name ++ str " where" ++ fnl2 () ++
   str "import qualified Prelude" ++ fnl () ++
-  prlist pp_import used_modules ++ fnl () ++
-  (if List.is_empty used_modules then mt () else fnl ()) ++
+  prlist pp_import used_modules ++ fnl ()
+  ++
   (if not (usf.magic || usf.tunknown) then mt ()
-   else str "\
-\n#ifdef __GLASGOW_HASKELL__\
-\nimport qualified GHC.Base\
-\nimport qualified GHC.Prim\
-\n#else\
-\n-- HUGS\
-\nimport qualified IOExts\
-\n#endif" ++ fnl2 ())
+   else
+     str "#ifdef __GLASGOW_HASKELL__" ++ fnl () ++
+     str "import qualified GHC.Base" ++ fnl () ++
+     str "import qualified GHC.Prim" ++ fnl () ++
+     str "#else" ++ fnl () ++
+     str "-- HUGS" ++ fnl () ++
+     str "import qualified IOExts" ++ fnl () ++
+     str "#endif" ++ fnl2 ())
   ++
   (if not usf.magic then mt ()
-   else str "\
-\n#ifdef __GLASGOW_HASKELL__\
-\nunsafeCoerce :: a -> b\
-\nunsafeCoerce = GHC.Base.unsafeCoerce#\
-\n#else\
-\n-- HUGS\
-\nunsafeCoerce :: a -> b\
-\nunsafeCoerce = IOExts.unsafeCoerce\
-\n#endif" ++ fnl2 ())
+   else
+     str "#ifdef __GLASGOW_HASKELL__" ++ fnl () ++
+     str "unsafeCoerce :: a -> b" ++ fnl () ++
+     str "unsafeCoerce = GHC.Base.unsafeCoerce#" ++ fnl () ++
+     str "#else" ++ fnl () ++
+     str "-- HUGS" ++ fnl () ++
+     str "unsafeCoerce :: a -> b" ++ fnl () ++
+     str "unsafeCoerce = IOExts.unsafeCoerce" ++ fnl () ++
+     str "#endif" ++ fnl2 ())
   ++
   (if not usf.tunknown then mt ()
-   else str "\
-\n#ifdef __GLASGOW_HASKELL__\
-\ntype Any = GHC.Prim.Any\
-\n#else\
-\n-- HUGS\
-\ntype Any = ()\
-\n#endif" ++ fnl2 ())
+   else
+     str "#ifdef __GLASGOW_HASKELL__" ++ fnl () ++
+     str "type Any = GHC.Prim.Any" ++ fnl () ++
+     str "#else" ++ fnl () ++
+     str "-- HUGS" ++ fnl () ++
+     str "type Any = ()" ++ fnl () ++
+     str "#endif" ++ fnl2 ())
   ++
   (if not usf.mldummy then mt ()
-   else str "__ :: any" ++ fnl () ++
-        str "__ = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())
+   else
+     str "__ :: any" ++ fnl () ++
+     str "__ = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())
 
 let pp_abst = function
   | [] -> (mt ())
@@ -120,7 +123,7 @@ let rec pp_type par vl t =
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
     | Tdummy _ -> str "()"
     | Tunknown -> str "Any"
-    | Taxiom -> str "() -- AXIOM TO BE REALIZED\n"
+    | Taxiom -> str "() -- AXIOM TO BE REALIZED" ++ fnl ()
  in
   hov 0 (pp_rec par t)
 
@@ -200,8 +203,11 @@ let rec pp_expr par env args =
     | MLexn s ->
 	(* An [MLexn] may be applied, but I don't really care. *)
 	pp_par par (str "Prelude.error" ++ spc () ++ qs s)
-    | MLdummy ->
-	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
+    | MLdummy k ->
+        (* An [MLdummy] may be applied, but I don't really care. *)
+        (match msg_of_implicit k with
+         | "" -> str "__"
+         | s -> str "__" ++ spc () ++ pp_bracket_comment (str s))
     | MLmagic a ->
 	pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
@@ -320,7 +326,7 @@ let pp_decl = function
 	    prlist (fun id -> str (id^" ")) ids ++ str "=" ++ spc () ++ str s
 	  with Not_found ->
 	    prlist (fun id -> pr_id id ++ str " ") l ++
-	    if t == Taxiom then str "= () -- AXIOM TO BE REALIZED\n"
+	    if t == Taxiom then str "= () -- AXIOM TO BE REALIZED" ++ fnl ()
 	    else str "=" ++ spc () ++ pp_type false l t
 	in
 	hov 2 (str "type " ++ pp_global Type r ++ spc () ++ st) ++ fnl2 ()
@@ -331,7 +337,8 @@ let pp_decl = function
       prvecti
 	(fun i r ->
 	  let void = is_inline_custom r ||
-	    (not (is_custom r) && match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
+	    (not (is_custom r) &&
+             match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
 	  in
 	  if void then mt ()
 	  else

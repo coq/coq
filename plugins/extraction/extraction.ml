@@ -91,7 +91,7 @@ exception NotDefault of kill_reason
 let check_default env t =
   match flag_of_type env t with
     | _,TypeScheme -> raise (NotDefault Ktype)
-    | Logic,_ -> raise (NotDefault Kother)
+    | Logic,_ -> raise (NotDefault Kprop)
     | _ -> ()
 
 let is_info_scheme env t = match flag_of_type env t with
@@ -103,7 +103,7 @@ let is_info_scheme env t = match flag_of_type env t with
 let rec type_sign env c =
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) ->
-	(if is_info_scheme env t then Keep else Kill Kother)
+	(if is_info_scheme env t then Keep else Kill Kprop)
 	:: (type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
@@ -137,7 +137,7 @@ let rec type_sign_vl env c =
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) ->
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in
-	if not (is_info_scheme env t) then Kill Kother::s, vl
+	if not (is_info_scheme env t) then Kill Kprop::s, vl
 	else Keep::s, (make_typvar n vl) :: vl
     | _ -> [],[]
 
@@ -154,24 +154,11 @@ let sign_with_implicits r s nb_params =
   let implicits = implicits_of_global r in
   let rec add_impl i = function
     | [] -> []
-    | sign::s ->
-	let sign' =
-	  if sign == Keep && Int.List.mem i implicits
-          then Kill Kother else sign
-	in sign' :: add_impl (succ i) s
+    | Keep::s when Int.Set.mem i implicits ->
+       Kill (Kimplicit (r,i)) :: add_impl (i+1) s
+    | sign::s -> sign :: add_impl (i+1) s
   in
   add_impl (1+nb_params) s
-
-(* Enriching a exception message *)
-
-let rec handle_exn r n fn_name = function
-  | MLexn s ->
-      (try Scanf.sscanf s "UNBOUND %d%!"
-	 (fun i ->
-	    assert ((0 < i) && (i <= n));
-	    MLexn ("IMPLICIT "^ msg_non_implicit r (n+1-i) (fn_name i)))
-       with Scanf.Scan_failure _ | End_of_file -> MLexn s)
-  | a -> ast_map (handle_exn r n fn_name) a
 
 (*S Management of type variable contexts. *)
 
@@ -285,10 +272,10 @@ let rec extract_type env db j c args =
 	       (match expand env mld with
 		  | Tdummy d -> Tdummy d
 		  | _ ->
-		      let reason = if lvl == TypeScheme then Ktype else Kother in
+		      let reason = if lvl == TypeScheme then Ktype else Kprop in
 		      Tarr (Tdummy reason, mld)))
     | Sort _ -> Tdummy Ktype (* The two logical cases. *)
-    | _ when sort_of env (applist (c, args)) == InProp -> Tdummy Kother
+    | _ when sort_of env (applist (c, args)) == InProp -> Tdummy Kprop
     | Rel n ->
 	(match lookup_rel n env with
            | (_,Some t,_) -> extract_type env db j (lift n t) args
@@ -458,7 +445,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	if p.ip_logical then raise (I Standard);
 	if not (Int.equal (Array.length p.ip_types) 1) then raise (I Standard);
 	let typ = p.ip_types.(0) in
-	let l = List.filter (fun t -> not (isDummy (expand env t))) typ in
+	let l = List.filter (fun t -> not (isTdummy (expand env t))) typ in
 	if not (keep_singleton ()) &&
 	    Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
 	then raise (I Singleton);
@@ -479,7 +466,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	let mp = MutInd.modpath kn in
 	let rec select_fields l typs = match l,typs with
 	  | [],[] -> []
-	  | _::l, typ::typs when isDummy (expand env typ) ->
+	  | _::l, typ::typs when isTdummy (expand env typ) ->
 	      select_fields l typs
 	  | Anonymous::l, typ::typs ->
 	      None :: (select_fields l typs)
@@ -655,7 +642,7 @@ and extract_maybe_term env mle mlt c =
   try check_default env (type_of env c);
     extract_term env mle mlt c []
   with NotDefault d ->
-    put_magic (mlt, Tdummy d) MLdummy
+    put_magic (mlt, Tdummy d) (MLdummy d)
 
 (*s Generic way to deal with an application. *)
 
@@ -723,11 +710,11 @@ and extract_cst_app env mle mlt kn u args =
 	else mla
       with e when Errors.noncritical e -> mla
   in
-  (* For strict languages, purely logical signatures with at least
-     one [Kill Kother] lead to a dummy lam. So a [MLdummy] is left
+  (* For strict languages, purely logical signatures lead to a dummy lam
+     (except when [Kill Ktype] everywhere). So a [MLdummy] is left
      accordingly. *)
   let optdummy = match sign_kind s_full with
-    | UnsafeLogicalSig when lang () != Haskell -> [MLdummy]
+    | UnsafeLogicalSig when lang () != Haskell -> [MLdummy Kprop]
     | _ -> []
   in
   (* Different situations depending of the number of arguments: *)
@@ -826,8 +813,8 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	(* Logical singleton case: *)
 	(* [match c with C i j k -> t] becomes [t'] *)
 	assert (Int.equal br_size 1);
-	let s = iterate (fun l -> Kill Kother :: l) ni.(0) [] in
-	let mlt = iterate (fun t -> Tarr (Tdummy Kother, t)) ni.(0) mlt in
+	let s = iterate (fun l -> Kill Kprop :: l) ni.(0) [] in
+	let mlt = iterate (fun t -> Tarr (Tdummy Kprop, t)) ni.(0) mlt in
 	let e = extract_maybe_term env mle mlt br.(0) in
 	snd (case_expunge s e)
       end
@@ -851,8 +838,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	let e = extract_maybe_term env mle (type_recomp (l,mlt)) br.(i) in
 	(* We suppress dummy arguments according to signature. *)
 	let ids,e = case_expunge s e in
-	let e' = handle_exn r (List.length s) (fun _ -> Anonymous) e in
-	(List.rev ids, Pusual r, e')
+	(List.rev ids, Pusual r, e)
       in
       if mi.ind_kind == Singleton then
 	begin
@@ -960,8 +946,6 @@ let extract_std_constant env kn body typ =
   let e = extract_term env mle t' c [] in
   (* Expunging term and type from dummy lambdas. *)
   let trm = term_expunge s (ids,e) in
-  let trm = handle_exn (ConstRef kn) n (fun i -> fst (List.nth rels (i-1))) trm
-  in
   trm, type_expunge_from_sign env s t
 
 (* Extracts the type of an axiom, honors the Extraction Implicit declaration. *)
@@ -979,8 +963,8 @@ let extract_axiom env kn typ =
 
 let extract_fixpoint env vkn (fi,ti,ci) =
   let n = Array.length vkn in
-  let types = Array.make n (Tdummy Kother)
-  and terms = Array.make n MLdummy in
+  let types = Array.make n (Tdummy Kprop)
+  and terms = Array.make n (MLdummy Kprop) in
   let kns = Array.to_list vkn in
   current_fixpoints := kns;
   (* for replacing recursive calls [Rel ..] by the corresponding [Const]: *)
@@ -1022,7 +1006,7 @@ let extract_constant env kn cb =
   in
   match flag_of_type env typ with
     | (Logic,TypeScheme) -> warn_log (); Dtype (r, [], Tdummy Ktype)
-    | (Logic,Default) -> warn_log (); Dterm (r, MLdummy, Tdummy Kother)
+    | (Logic,Default) -> warn_log (); Dterm (r, MLdummy Kprop, Tdummy Kprop)
     | (Info,TypeScheme) ->
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_typ_ax ()
@@ -1047,7 +1031,7 @@ let extract_constant_spec env kn cb =
   let typ = Typeops.type_of_constant_type env cb.const_type in
   match flag_of_type env typ with
     | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))
-    | (Logic, Default) -> Sval (r, Tdummy Kother)
+    | (Logic, Default) -> Sval (r, Tdummy Kprop)
     | (Info, TypeScheme) ->
 	let s,vl = type_sign_vl env typ in
 	(match cb.const_body with
@@ -1075,8 +1059,8 @@ let extract_constr env c =
   reset_meta_count ();
   let typ = type_of env c in
   match flag_of_type env typ with
-    | (_,TypeScheme) -> MLdummy, Tdummy Ktype
-    | (Logic,_) -> MLdummy, Tdummy Kother
+    | (_,TypeScheme) -> MLdummy Ktype, Tdummy Ktype
+    | (Logic,_) -> MLdummy Kprop, Tdummy Kprop
     | (Info,Default) ->
       let mlt = extract_type env [] 1 typ [] in
       extract_term env Mlenv.empty mlt c [], mlt
@@ -1090,7 +1074,7 @@ let extract_inductive env kn =
       | [] -> []
       | t::l ->
 	  let l' = filter (succ i) l in
-	  if isDummy (expand env t) || Int.List.mem i implicits then l'
+	  if isTdummy (expand env t) || Int.Set.mem i implicits then l'
 	  else t::l'
     in filter (1+ind.ind_nparams) l
   in
@@ -1102,11 +1086,11 @@ let extract_inductive env kn =
 (*s Is a [ml_decl] logical ? *)
 
 let logical_decl = function
-  | Dterm (_,MLdummy,Tdummy _) -> true
+  | Dterm (_,MLdummy _,Tdummy _) -> true
   | Dtype (_,[],Tdummy _) -> true
   | Dfix (_,av,tv) ->
-      (Array.for_all ((==) MLdummy) av) &&
-      (Array.for_all isDummy tv)
+      (Array.for_all isMLdummy av) &&
+      (Array.for_all isTdummy tv)
   | Dind (_,i) -> Array.for_all (fun ip -> ip.ip_logical) i.ind_packets
   | _ -> false
 

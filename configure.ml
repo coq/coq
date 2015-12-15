@@ -670,18 +670,10 @@ let operating_system, osdeplibs =
 
 (** * lablgtk2 and CoqIDE *)
 
-type source = Manual | OCamlFind | Stdlib
-
-let get_source = function
-| Manual -> "manually provided"
-| OCamlFind -> "via ocamlfind"
-| Stdlib -> "in OCaml library"
-
 (** Is some location a suitable LablGtk2 installation ? *)
 
-let check_lablgtkdir ?(fatal=false) src dir =
+let check_lablgtkdir ?(fatal=false) msg dir =
   let yell msg = if fatal then die msg else (printf "%s\n" msg; false) in
-  let msg = get_source src in
   if not (dir_exists dir) then
     yell (sprintf "No such directory '%s' (%s)." dir msg)
   else if not (Sys.file_exists (dir/"gSourceView2.cmi")) then
@@ -695,11 +687,11 @@ let check_lablgtkdir ?(fatal=false) src dir =
 let get_lablgtkdir () =
   match !Prefs.lablgtkdir with
   | Some dir ->
-    let msg = Manual in
+    let msg = "manually provided" in
     if check_lablgtkdir ~fatal:true msg dir then dir, msg
-    else "", msg
+    else "", ""
   | None ->
-    let msg = OCamlFind in
+    let msg = "via ocamlfind" in
     let d1,_ = tryrun "ocamlfind" ["query";"lablgtk2.sourceview2"] in
     if d1 <> "" && check_lablgtkdir msg d1 then d1, msg
     else
@@ -707,34 +699,10 @@ let get_lablgtkdir () =
       let d2,_ = tryrun "ocamlfind" ["query";"lablgtk2"] in
       if d2 <> "" && d2 <> d1 && check_lablgtkdir msg d2 then d2, msg
       else
-        let msg = Stdlib in
+        let msg = "in OCaml library" in
         let d3 = camllib^"/lablgtk2" in
         if check_lablgtkdir msg d3 then d3, msg
-        else "", msg
-
-(** Detect and/or verify the Lablgtk2 version *)
-
-let check_lablgtk_version src dir = match src with
-| Manual | Stdlib ->
-  let test accu f =
-    if accu then
-      let test = sprintf "grep -q -w %s %S/glib.mli" f dir in
-      Sys.command test = 0
-    else false
-  in
-  let heuristics = [
-    "convert_with_fallback";
-    "wrap_poll_func"; (** Introduced in lablgtk 2.16 *)
-  ] in
-  let ans = List.fold_left test true heuristics in
-  if ans then printf "Warning: could not check the version of lablgtk2.\n";
-  (ans, "an unknown version")
-| OCamlFind ->
-  let v, _ = tryrun "ocamlfind" ["query"; "-format"; "%v"; "lablgtk2"] in
-  try
-    let vi = List.map s2i (numeric_prefix_list v) in
-    ([2; 16] <= vi, v)
-  with _ -> (false, v)
+        else "", ""
 
 let pr_ide = function No -> "no" | Byte -> "only bytecode" | Opt -> "native"
 
@@ -758,9 +726,9 @@ let check_coqide () =
   if !Prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
   let dir, via = get_lablgtkdir () in
   if dir = "" then set_ide No "LablGtk2 not found";
-  let (ok, version) = check_lablgtk_version via dir in
-  let found = sprintf "LablGtk2 found (%s, %s)" (get_source via) version in
-  if not ok then set_ide No (found^", but too old (required >= 2.16, found " ^ version ^ ")");
+  let found = sprintf "LablGtk2 found (%s)" via in
+  let test = sprintf "grep -q -w convert_with_fallback %S/glib.mli" dir in
+  if Sys.command test <> 0 then set_ide No (found^" but too old");
   (* We're now sure to produce at least one kind of coqide *)
   lablgtkdir := shorten_camllib dir;
   if !Prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
