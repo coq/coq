@@ -758,14 +758,19 @@ the tactic {\tt intro} applies the tactic {\tt hnf} until the tactic
 
   \ErrMsg \errindex{No such hypothesis in current goal}
 
-\item {\tt intros until {\num}}  \tacindex{intros until}
+\item {\tt intros until {\coqindex}}  \tacindex{intros until}
 
-  This repeats {\tt intro} until the {\num}-th non-dependent product. For
+  Here {\coqindex} is any ordinal rank of the form {\tt 1st}, {\tt 2nd},
+  {\tt 3rd}, {\tt 4th}, ..., i.e. any strictly positive number
+  extended with suffix {\tt st}, {\tt nd}, {\tt rd} when the last
+  digit is respectively 1, 2, 3, and the suffix {\tt th} otherwise.
+
+  This repeats {\tt intro} until the {\coqindex} non-dependent product. For
   instance, on the subgoal %
-  \verb+forall x y:nat, x=y -> y=x+ the tactic \texttt{intros until 1}
+  \verb+forall x y:nat, x=y -> y=x+ the tactic \texttt{intros until 1st}
   is equivalent to \texttt{intros x y H}, as \verb+x=y -> y=x+ is the
   first non-dependent product. And on the subgoal %
-  \verb+forall x y z:nat, x=y -> y=x+ the tactic \texttt{intros until 1}
+  \verb+forall x y z:nat, x=y -> y=x+ the tactic \texttt{intros until 1st}
   is equivalent to \texttt{intros x y z} as the product on \texttt{z}
   can be rewritten as a non-dependent product: %
   \verb+forall x y:nat, nat -> x=y -> y=x+
@@ -773,7 +778,7 @@ the tactic {\tt intro} applies the tactic {\tt hnf} until the tactic
 
   \ErrMsg \errindex{No such hypothesis in current goal}
 
-  This happens when {\num} is 0 or is greater than the number of non-dependent
+  This happens when the {\coqindex} refers to an invalid index of non-dependent
   products of the goal.
 
 \item {\tt intro after \ident} \tacindex{intro after}\\
@@ -1557,15 +1562,18 @@ There are special cases:
   {\tt destruct}, it is erased (to avoid erasure, use
   parentheses, as in {\tt destruct ({\ident})}).
 
-\item If {\term} is a {\num}, then {\tt destruct {\num}} behaves as
-{\tt intros until {\num}} followed by {\tt destruct} applied to the
-last introduced hypothesis. Remark: For destruction of a numeral, use
-syntax {\tt destruct ({\num})} (not very interesting anyway).
+\item If {\term} is a {\coqindex}, then {\tt destruct {\coqindex}} behaves
+  as {\tt intros until {\coqindex}} followed by {\tt destruct} applied to
+  the last introduced hypothesis. Note: The syntax {\tt destruct
+    {\num}} is also supported but deprecated.
 
-\item In case {\term} is an hypothesis {\ident} of the context,
-  and {\ident} is not anymore dependent in the goal after
+\item In case {\term} is an hypothesis {\ident} of the context or a
+  quantified variable {\ident} of the conclusion of the goal or an
+  index {\coqindex} to a premise of the conclusion of the goal and the
+  corresponding hypothesis not anymore dependent in the goal after
   application of {\tt destruct}, it is erased (to avoid erasure, use
-  parentheses, as in {\tt destruct ({\ident})}).
+  parentheses, as in {\tt destruct ({\ident})} or {\tt destruct
+    ({\coqindex})}).
 
 \item The argument {\term} can also be a pattern of which holes are
   denoted by ``\_''. In this case, the tactic checks that all subterms
@@ -1667,12 +1675,13 @@ syntax {\tt destruct ({\num})} (not very interesting anyway).
     {\ident}; case {\tt {\ident}}} when {\ident} is a quantified
   variable of the goal.
 
-\item {\tt simple destruct {\num}}
+\item {\tt simple destruct {\coqindex}}
 
   This tactic behaves as {\tt intros until
-    {\num}; case {\tt {\ident}}} where {\ident} is the name given by
-  {\tt intros until {\num}} to the {\num}-th non-dependent premise of
-  the goal.
+    {\coqindex}; case {\tt {\ident}}} where {\ident} is the name given by
+  {\tt intros until {\coqindex}} to the {\coqindex}-th non-dependent premise of
+  the goal. Note: The syntax {\tt simple destruct {\num}} is also
+  supported but deprecated.
 
 \item{\tt case\_eq \term}\label{case_eq}\tacindex{case\_eq}
 
@@ -1714,15 +1723,18 @@ There are particular cases:
   after application of {\tt induction}, it is erased (to avoid
   erasure, use parentheses, as in {\tt induction ({\ident})}).
 
-\item If {\term} is a {\num}, then {\tt induction {\num}} behaves as
-{\tt intros until {\num}} followed by {\tt induction} applied to the
-last introduced hypothesis. Remark: For simple induction on a numeral,
-use syntax {\tt induction ({\num})} (not very interesting anyway).
+\item If {\term} is an {\coqindex}, then {\tt induction {\coqindex}} behaves
+  as {\tt intros until {\coqindex}} followed by {\tt induction} applied
+  to the last introduced hypothesis. Note: The syntax {\tt induction
+    {\num}} is also supported but deprecated.
 
-\item In case {\term} is an hypothesis {\ident} of the context,
-  and {\ident} is not anymore dependent in the goal after
+\item In case {\term} is an hypothesis {\ident} of the context or a
+  quantified variable {\ident} of the conclusion of the goal or an
+  index {\coqindex} to a premise of the conclusion of the goal and the
+  corresponding hypothesis not anymore dependent in the goal after
   application of {\tt induction}, it is erased (to avoid erasure, use
-  parentheses, as in {\tt induction ({\ident})}).
+  parentheses, as in {\tt induction ({\ident})} or {\tt induction
+    ({\coqindex})}).
 
 \item The argument {\term} can also be a pattern of which holes are
   denoted by ``\_''. In this case, the tactic checks that all subterms
@@ -2137,11 +2149,12 @@ context using \texttt{intros until \ident}.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item \texttt{discriminate \num}
+\item \texttt{discriminate \coqindex}
 
-  This does the same thing as \texttt{intros until \num} followed by
+  This does the same thing as \texttt{intros until \coqindex} followed by
   \texttt{discriminate \ident} where {\ident} is the identifier for
-  the last introduced hypothesis.
+  the last introduced hypothesis. Note: The syntax {\tt discriminate
+    {\num}} is also supported but deprecated.
 
 \item \texttt{discriminate {\term} with \bindinglist}
 
@@ -2236,11 +2249,12 @@ context using \texttt{intros until \ident}.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item \texttt{injection \num}
+\item \texttt{injection \coqindex}
 
-  This does the same thing as \texttt{intros until \num} followed by
+  This does the same thing as \texttt{intros until \coqindex} followed by
 \texttt{injection \ident} where {\ident} is the identifier for the last
-introduced hypothesis.
+introduced hypothesis.  Note: The syntax {\tt injection
+    {\num}} is also supported but deprecated.
 
 \item \texttt{injection {\term} with \bindinglist}
 
@@ -2300,11 +2314,12 @@ stock the lemmas whenever the same instance needs to be inverted
 several times. See Section~\ref{Derive-Inversion}.
 
 \begin{Variants}
-\item \texttt{inversion \num}
+\item \texttt{inversion \coqindex}
 
-  This does the same thing as \texttt{intros until \num} then
+  This does the same thing as \texttt{intros until \coqindex} then
   \texttt{inversion \ident} where {\ident} is the identifier for the
-  last introduced hypothesis.
+  last introduced hypothesis.  Note: The syntax {\tt inversion
+    {\num}} is also supported but deprecated.
 
 \item \tacindex{inversion\_clear} \texttt{inversion\_clear \ident}
 
@@ -4586,11 +4601,12 @@ tactic {\tt discriminate}), then the tactic {\tt simplify\_eq} behaves as {\tt
 context using \texttt{intros until \ident}.
 
 \begin{Variants}
-\item \texttt{simplify\_eq} \num
+\item \texttt{simplify\_eq} {\coqindex}
 
-  This does the same thing as \texttt{intros until \num} then
+  This does the same thing as \texttt{intros until \coqindex} then
 \texttt{simplify\_eq \ident} where {\ident} is the identifier for the last
-introduced hypothesis.
+introduced hypothesis.  Note: The syntax {\tt simplify\_eq
+    {\num}} is also supported but deprecated.
 
 \item \texttt{simplify\_eq} \term{} {\tt with} {\bindinglist}
 
@@ -4654,11 +4670,13 @@ defined using \texttt{Function} (see Section~\ref{Function}).
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt functional inversion \num}
+\item {\tt functional inversion \coqindex}
 
-  This does the same thing as \texttt{intros until \num} then
+  This does the same thing as \texttt{intros until \coqindex} then
   \texttt{functional inversion \ident} where {\ident} is the
-  identifier for the last introduced hypothesis.
+  identifier for the last introduced hypothesis.  Note: The syntax
+  {\tt functional inversion {\num}} is also supported but deprecated.
+
 \item {\tt functional inversion \ident\ \qualid}\\
   {\tt functional inversion \num\ \qualid}
 

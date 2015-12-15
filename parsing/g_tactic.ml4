@@ -46,12 +46,26 @@ let test_lpar_id_coloneq =
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
-  Gram.Entry.of_parser "lpar_id_coloneq"
+  Gram.Entry.of_parser "lpar_id_rpar"
     (fun strm ->
       match get_tok (stream_nth 0 strm) with
         | KEYWORD "(" ->
             (match get_tok (stream_nth 1 strm) with
               | IDENT _ ->
+                  (match get_tok (stream_nth 2 strm) with
+	            | KEYWORD ")" -> ()
+	            | _ -> err ())
+	      | _ -> err ())
+	| _ -> err ())
+
+(* Hack to recognize "(1st)" and so on *)
+let test_lpar_index_rpar =
+  Gram.Entry.of_parser "lpar_id_index_rpar"
+    (fun strm ->
+      match get_tok (stream_nth 0 strm) with
+        | KEYWORD "(" ->
+            (match get_tok (stream_nth 1 strm) with
+              | INDEX _ ->
                   (match get_tok (stream_nth 2 strm) with
 	            | KEYWORD ")" -> ()
 	            | _ -> err ())
@@ -238,6 +252,9 @@ GEXTEND Gram
   ;
   induction_arg:
     [ [ n = natural -> (None,ElimOnAnonHyp n)
+      | n = index -> (None,ElimOnAnonHyp n)
+      | test_lpar_index_rpar; "("; n = index; ")" ->
+        (Some false,ElimOnAnonHyp n)
       | test_lpar_id_rpar; c = constr_with_bindings ->
         (Some false,induction_arg_of_constr c)
       | c = constr_with_bindings_arg -> on_snd induction_arg_of_constr c
@@ -249,7 +266,8 @@ GEXTEND Gram
   ;
   quantified_hypothesis:
     [ [ id = ident -> NamedHyp id
-      | n = natural -> AnonHyp n ] ]
+      | n = natural -> AnonHyp n
+      | n = index -> AnonHyp n ] ]
   ;
   conversion:
     [ [ c = constr -> (None, c)
@@ -331,7 +349,8 @@ GEXTEND Gram
   ;
   simple_binding:
     [ [ "("; id = ident; ":="; c = lconstr; ")" -> (!@loc, NamedHyp id, c)
-      | "("; n = natural; ":="; c = lconstr; ")" -> (!@loc, AnonHyp n, c) ] ]
+      | "("; n = natural; ":="; c = lconstr; ")" -> (!@loc, AnonHyp n, c)
+      | "("; n = index; ":="; c = lconstr; ")" -> (!@loc, AnonHyp n, c) ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
