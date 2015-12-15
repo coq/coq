@@ -442,10 +442,10 @@ Section Proof_irrelevance_WEM_CC.
   Theorem wproof_irrelevance_cc : ~~(b1 = b2).
   Proof.
     intros h.
-    refine (let NB := exist (fun P=>~~P -> P) B _ in _).
+    unshelve (refine (let NB := exist (fun P=>~~P -> P) B _ in _)).
     { exact (fun _ => b1). }
     pose proof (NoRetractToNegativeProp.paradox NB p2b b2p (wp2p2 h) wp2p1) as paradox.
-    refine (let F := exist (fun P=>~~P->P) False _ in _).
+    unshelve (refine (let F := exist (fun P=>~~P->P) False _ in _)).
     { auto. }
     exact (paradox F).
   Qed.

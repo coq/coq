@@ -357,7 +357,7 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Pretyping.ltac_idents = closure.Glob_term.idents;
     } in
     let update evd = Pretyping.understand_ltac flags env evd lvar tycon term in
-    Tactics.New.refine ~unsafe:false update
+    Tactics.New.refine ~unsafe:false update <*> Proofview.shelve_unifiable
   end
 
 TACTIC EXTEND refine
