@@ -347,7 +347,7 @@ and pp_cases_pattern_expr cpe =
       xmlApply loc
         (xmlOperator "delimiter" ~attr:["name", delim] loc ::
           [pp_cases_pattern_expr cpe])
-and pp_case_expr (e, (name, pat)) =
+and pp_case_expr (e, name, pat) =
   match name, pat with
   | None, None -> xmlScrutinee [pp_expr e]
   | Some (loc, name), None ->

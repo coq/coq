@@ -721,26 +721,29 @@ let rec extern inctx scopes vars r =
 	(cases_predicate_names tml) vars in
     let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
-      let na' = match na,tm with
-        | Anonymous, GVar (_, id) ->
-            begin match rtntypopt with
-            | None -> None
-            | Some ntn ->
-              if occur_glob_constr id ntn then
-                Some (Loc.ghost, Anonymous)
-              else None
-            end
-        | Anonymous, _ -> None
-        | Name id, GVar (_,id') when Id.equal id id' -> None
-        | Name _, _ -> Some (Loc.ghost,na) in
-      (sub_extern false scopes vars tm,
-       (na',Option.map (fun (loc,ind,nal) ->
-	 let args = List.map (fun x -> PatVar (Loc.ghost, x)) nal in
-	 let fullargs =
-	   if !Flags.in_debugger then args else
-	     Notation_ops.add_patterns_for_params ind args in
-	 extern_ind_pattern_in_scope scopes vars ind fullargs
-	) x))) tml in
+                 let na' = match na,tm with
+                   | Anonymous, GVar (_, id) ->
+                      begin match rtntypopt with
+                            | None -> None
+                            | Some ntn ->
+                               if occur_glob_constr id ntn then
+                                 Some (Loc.ghost, Anonymous)
+                               else None
+                      end
+                   | Anonymous, _ -> None
+                   | Name id, GVar (_,id') when Id.equal id id' -> None
+                   | Name _, _ -> Some (Loc.ghost,na) in
+                 (sub_extern false scopes vars tm,
+                  na',
+                  Option.map (fun (loc,ind,nal) ->
+                              let args = List.map (fun x -> PatVar (Loc.ghost, x)) nal in
+                              let fullargs =
+                                if !Flags.in_debugger then args else
+                                  Notation_ops.add_patterns_for_params ind args in
+                              extern_ind_pattern_in_scope scopes vars ind fullargs
+                             ) x))
+                tml
+    in
     let eqns = List.map (extern_eqn inctx scopes vars) eqns in
     CCases (loc,sty,rtntypopt',tml,eqns)
 

@@ -728,9 +728,9 @@ let rec add_args id new_args b =
 	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
   | CCases(loc,sty,b_option,cel,cal) ->
       CCases(loc,sty,Option.map (add_args id new_args) b_option,
-	     List.map (fun (b,(na,b_option)) ->
+	     List.map (fun (b,na,b_option) ->
 			 add_args id new_args b,
-			 (na, b_option)) cel,
+			 na, b_option) cel,
 	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
 	    )
   | CLetTuple(loc,nal,(na,b_option),b1,b2) ->

@@ -93,7 +93,7 @@ type constr_expr =
   | CDelimiters of Loc.t * string * constr_expr
 
 and case_expr =
-  constr_expr * (Name.t located option * cases_pattern_expr option)
+  constr_expr * Name.t located option * cases_pattern_expr option
 
 and branch_expr =
   Loc.t * cases_pattern_expr list located list * constr_expr

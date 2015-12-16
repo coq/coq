@@ -51,7 +51,7 @@ let ids_of_cases_indtype =
 
 let ids_of_cases_tomatch tms =
   List.fold_right
-    (fun (_,(ona,indnal)) l ->
+    (fun (_,ona,indnal) l ->
       Option.fold_right (fun t -> (@) (ids_of_cases_indtype t))
       indnal (Option.fold_right (Loc.down_located name_cons) ona l))
     tms []
@@ -120,7 +120,7 @@ let fold_constr_expr_with_binders g f n acc = function
   | CCases (loc,sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (List.fold_right g ids n)) acc rtnpo in
-      let acc = List.fold_left (f n) acc (List.map fst al) in
+      let acc = List.fold_left (f n) acc (List.map (fun (fst,_,_) -> fst) al) in
       List.fold_right (fun (loc,patl,rhs) acc ->
 	let ids = ids_of_pattern_list patl in
 	f (Id.Set.fold g ids n) acc rhs) bl acc
@@ -224,7 +224,7 @@ let map_constr_expr_with_binders g f e = function
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in
       let ids = ids_of_cases_tomatch a in
       let po = Option.map (f (List.fold_right g ids e)) rtnpo in
-      CCases (loc, sty, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
+      CCases (loc, sty, po, List.map (fun (tm,x,y) -> f e tm,x,y) a,bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let e' = List.fold_right (Loc.down_located (name_fold g)) nal e in
       let e'' = Option.fold_right (Loc.down_located (name_fold g)) ona e in

@@ -457,7 +457,7 @@ end) = struct
         (pr_decl true) dl ++
         fnl() ++ keyword "for" ++ spc () ++ pr_id id
 
-  let pr_asin pr (na,indnalopt) =
+  let pr_asin pr na indnalopt =
     (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
       | Some na -> spc () ++ keyword "as" ++ spc () ++  pr_lname na
       | None -> mt ()) ++
@@ -465,8 +465,8 @@ end) = struct
         | None -> mt ()
         | Some t -> spc () ++ keyword "in" ++ spc () ++ pr_patt lsimplepatt t)
 
-  let pr_case_item pr (tm,asin) =
-    hov 0 (pr (lcast,E) tm ++ pr_asin pr asin)
+  let pr_case_item pr (tm,as_clause, in_clause) =
+    hov 0 (pr (lcast,E) tm ++ pr_asin pr as_clause in_clause)
 
   let pr_case_type pr po =
     match po with
@@ -611,12 +611,12 @@ end) = struct
                 ++ str" |}"),
           latom
         )
-      | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
+      | CCases (_,LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,[(loc,[p])],b)]) ->
         return (
           hv 0 (
             keyword "let" ++ spc () ++ str"'" ++
               hov 0 (pr_patt ltop p ++
-                       pr_asin (pr_dangling_with_for mt pr) asin ++
+                       pr_asin (pr_dangling_with_for mt pr) as_clause in_clause ++
                        str " :=" ++ pr spc ltop c ++
                        pr_case_type (pr_dangling_with_for mt pr) rtntypopt ++
                        spc () ++ keyword "in" ++ pr spc ltop b)),

@@ -178,7 +178,7 @@ and args_eq (a1,e1) (a2,e2) =
   Option.equal (eq_located explicitation_eq) e1 e2 &&
   constr_expr_eq a1 a2
 
-and case_expr_eq (e1, (n1, p1)) (e2, (n2, p2)) =
+and case_expr_eq (e1, n1, p1) (e2, n2, p2) =
   constr_expr_eq e1 e2 &&
   Option.equal (eq_located Name.equal) n1 n2 &&
   Option.equal cases_pattern_expr_eq p1 p2

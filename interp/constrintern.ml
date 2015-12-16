@@ -1506,7 +1506,7 @@ let internalize globalenv env allow_patvar lvar c =
 	  intern env app
 	end
     | CCases (loc, sty, rtnpo, tms, eqns) ->
-      let as_in_vars = List.fold_left (fun acc (_,(na,inb)) ->
+      let as_in_vars = List.fold_left (fun acc (_,na,inb) ->
 	Option.fold_left (fun x tt -> List.fold_right Id.Set.add (ids_of_cases_indtype tt) x)
 	  (Option.fold_left (fun x (_,y) -> match y with | Name y' -> Id.Set.add y' x |_ -> x) acc na)
 	  inb) Id.Set.empty tms in
@@ -1542,7 +1542,7 @@ let internalize globalenv env allow_patvar lvar c =
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
 	(* "in" is None so no match to add *)
-        let ((b',(na',_)),_,_) = intern_case_item env' Id.Set.empty (b,(na,None)) in
+        let ((b',(na',_)),_,_) = intern_case_item env' Id.Set.empty (b,na,None) in
         let p' = Option.map (fun u ->
 	  let env'' = push_name_env lvar (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env')
 	    (Loc.ghost,na') in
@@ -1551,7 +1551,7 @@ let internalize globalenv env allow_patvar lvar c =
                    intern (List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
       let env' = reset_tmp_scope env in
-      let ((c',(na',_)),_,_) = intern_case_item env' Id.Set.empty (c,(na,None)) in (* no "in" no match to ad too *)
+      let ((c',(na',_)),_,_) = intern_case_item env' Id.Set.empty (c,na,None) in (* no "in" no match to ad too *)
       let p' = Option.map (fun p ->
           let env'' = push_name_env lvar (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env)
 	    (Loc.ghost,na') in
@@ -1628,7 +1628,7 @@ let internalize globalenv env allow_patvar lvar c =
       let rhs' = intern {env with ids = env_ids} rhs in
       (loc,eqn_ids,pl,rhs')) pll
 
-  and intern_case_item env forbidden_names_for_gen (tm,(na,t)) =
+  and intern_case_item env forbidden_names_for_gen (tm,na,t) =
     (*the "match" part *)
     let tm' = intern env tm in
     (* the "as" part *)
