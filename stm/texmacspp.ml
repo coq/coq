@@ -487,12 +487,12 @@ let rec tmpp v loc =
   (* Control *)
   | VernacLoad (verbose,f) ->
       xmlWithLoc loc "load" ["verbose",string_of_bool verbose;"file",f] []
-  | VernacTime l ->
+  | VernacTime (loc,e) ->
       xmlApply loc (Element("time",[],[]) ::
-                    List.map (fun(loc,e) ->tmpp e loc) l)
-  | VernacRedirect (s, l) ->
+                    [tmpp e loc])
+  | VernacRedirect (s, (loc,e)) ->
       xmlApply loc (Element("redirect",["path", s],[]) ::
-                      List.map (fun(loc,e) ->tmpp e loc) l)
+                    [tmpp e loc])
   | VernacTimeout (s,e) ->
       xmlApply loc (Element("timeout",["val",string_of_int s],[]) ::
                     [tmpp e loc])
