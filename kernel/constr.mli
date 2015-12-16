@@ -93,8 +93,9 @@ val mkLambda : Name.t * types * constr -> constr
 (** Constructs the product [let x = t1 : t2 in t3] *)
 val mkLetIn : Name.t * constr * types * constr -> constr
 
-(** [mkApp (f,[| t_1; ...; t_n |]] constructs the application
-   {% $(f~t_1~\dots~t_n)$ %}. *)
+(** [mkApp (f, [|t1; ...; tN|]] constructs the application
+    {%html:(f t<sub>1</sub> ... t<sub>n</sub>)%}
+    {%latex:$(f~t_1\dots f_n)$%}. *)
 val mkApp : constr * constr array -> constr
 
 val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
@@ -181,10 +182,13 @@ type ('constr, 'types) kind_of_term =
   | Evar      of 'constr pexistential
   | Sort      of Sorts.t
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t * 'types * 'types
-  | Lambda    of Name.t * 'types * 'constr
-  | LetIn     of Name.t * 'constr * 'types * 'constr
-  | App       of 'constr * 'constr array
+  | Prod      of Name.t * 'types * 'types             (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
+  | Lambda    of Name.t * 'types * 'constr            (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
+  | LetIn     of Name.t * 'constr * 'types * 'constr  (** Concrete syntax ["let A:B := C in D"] is represented as [LetIn (A,B,C,D)]. *)
+  | App       of 'constr * 'constr array              (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
+                                                          The {!mkApp} constructor also enforces the following invariant:
+                                                          - [F] itself is not {!App}
+                                                          - and [[|P1;..;Pn|]] is not empty. *)
   | Const     of constant puniverses
   | Ind       of inductive puniverses
   | Construct of constructor puniverses
