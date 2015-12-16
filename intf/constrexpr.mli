@@ -76,8 +76,14 @@ type constr_expr =
   | CApp of Loc.t * (proj_flag * constr_expr) *
       (constr_expr * explicitation located option) list
   | CRecord of Loc.t * (reference * constr_expr) list
-  | CCases of Loc.t * case_style * constr_expr option *
-      case_expr list * branch_expr list
+
+  (* representation of the "let" and "match" constructs *)
+  | CCases of Loc.t                 (* position of the "match" keyword *)
+	      * case_style          (* determines whether this value represents "let" or "match" construct *)
+	      * constr_expr option  (* return-clause *)
+	      * case_expr list
+	      * branch_expr list    (* branches *)
+
   | CLetTuple of Loc.t * Name.t located list * (Name.t located option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of Loc.t * constr_expr * (Name.t located option * constr_expr option)
@@ -92,8 +98,9 @@ type constr_expr =
   | CPrim of Loc.t * prim_token
   | CDelimiters of Loc.t * string * constr_expr
 
-and case_expr =
-  constr_expr * Name.t located option * cases_pattern_expr option
+and case_expr = constr_expr                 (* expression that is being matched *)
+	      * Name.t located option       (* as-clause *)
+	      * cases_pattern_expr option   (* in-clause *)
 
 and branch_expr =
   Loc.t * cases_pattern_expr list located list * constr_expr
