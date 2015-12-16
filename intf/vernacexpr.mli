@@ -420,7 +420,6 @@ type vernac_expr =
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
-  | VernacNop
 
   (* Stm backdoor *)
   | VernacStm of vernac_expr stm_vernac
