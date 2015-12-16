@@ -345,7 +345,7 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
-let refine_tac {Glob_term.closure=closure;term=term} =
+let refine_tac simple {Glob_term.closure=closure;term=term} =
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
@@ -357,11 +357,16 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Pretyping.ltac_idents = closure.Glob_term.idents;
     } in
     let update evd = Pretyping.understand_ltac flags env evd lvar tycon term in
-    Tactics.New.refine ~unsafe:false update <*> Proofview.shelve_unifiable
+    let refine = Proofview.Refine.refine ~unsafe:false update in
+    if simple then refine
+    else refine <*>
+           Tactics.New.reduce_after_refine <*>
+           Proofview.shelve_unifiable
   end
 
 TACTIC EXTEND refine
-  [ "refine" uconstr(c) ] -> [  refine_tac c ]
+| [ "refine" uconstr(c) ] -> [ refine_tac false c ]
+| [ "simple" "refine" uconstr(c) ] -> [ refine_tac true c ]
 END
 
 (**********************************************************************)
