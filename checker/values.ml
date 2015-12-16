@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 76312d06933f47498a1981a6261c9f75 checker/cic.mli
+MD5 bc18991966454033d396fbfafcac68f1  checker/cic.mli
 
 *)
 
@@ -113,7 +113,7 @@ let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 
 (** kernel/term *)
 
-let v_sort = v_sum "sort" 0 [|[|v_enum "cnt" 2|];[|v_univ|]|]
+let v_sort = v_sum "sort" 2 [|[|v_univ|]|]
 let v_sortfam = v_enum "sorts_family" 3
 
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]

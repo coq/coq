@@ -144,7 +144,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
 	    (* We can assume that the level aritysort is not constrained
   	       and clear it. *)
 	    mkArity (ctx, Sorts.sort_of_univ univ),
-	    Evd.set_eq_sort env_ar evars (Prop Pos) aritysort
+	    Evd.set_eq_sort env_ar evars Set aritysort
 	  else arity, evars
   in
   let evars, nf = Evarutil.nf_evars_and_universes evars in

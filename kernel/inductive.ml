@@ -128,8 +128,8 @@ Remark: Set (predicative) is encoded as Type(0)
 
 let sort_as_univ = function
 | Type u -> u
-| Prop Null -> Universe.type0m
-| Prop Pos -> Universe.type0
+| Prop -> Universe.type0m
+| Set -> Universe.type0
 
 (* Template polymorphism *)
 
@@ -232,8 +232,8 @@ let type_of_inductive_knowing_parameters env ?(polyprop=true) mip args =
 (* The max of an array of universes *)
 
 let cumulate_constructor_univ u = function
-  | Prop Null -> u
-  | Prop Pos -> Universe.sup Universe.type0 u
+  | Prop -> u
+  | Set -> Universe.sup Universe.type0 u
   | Type u' -> Universe.sup u u'
 
 let max_inductive_sort =

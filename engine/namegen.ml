@@ -96,8 +96,8 @@ let lowercase_first_char id = (* First character of a constr *)
   Unicode.lowercase_first_char (Id.to_string id)
 
 let sort_hdchar = function
-  | Prop(_) -> "P"
-  | Type(_) -> "T"
+  | Prop | Set -> "P"
+  | Type _ -> "T"
 
 let hdchar env c =
   let rec hdrec k c =

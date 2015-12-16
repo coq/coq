@@ -160,8 +160,8 @@ let interp_universe_level evd = function
   | Some (loc,s) -> interp_universe_level_name evd (loc,s)
 
 let interp_sort evd = function
-  | GProp -> evd, Prop Null
-  | GSet -> evd, Prop Pos
+  | GProp -> evd, Prop
+  | GSet -> evd, Set
   | GType n -> 
     let evd, u = interp_universe evd n in
       evd, Type u

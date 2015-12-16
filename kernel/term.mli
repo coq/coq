@@ -16,11 +16,10 @@ open Context
 
 *)
 
-type contents = Sorts.contents = Pos | Null
-
 type sorts = Sorts.t =
-  | Prop of contents       (** Prop and Set *)
-  | Type of Univ.universe  (** Type *)
+  | Prop                   (** [Prop] *)
+  | Set                    (** [Set] *)
+  | Type of Univ.universe  (** [Type] *)
 
 type sorts_family = Sorts.family = InProp | InSet | InType
 

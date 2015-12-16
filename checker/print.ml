@@ -106,8 +106,8 @@ let print_pure_constr csr =
   and box_display c = open_hovbox 1; term_display c; close_box()
 
   and sort_display = function
-    | Prop(Pos) -> print_string "Set"
-    | Prop(Null) -> print_string "Prop"
+    | Prop -> print_string "Prop"
+    | Set -> print_string "Set"
     | Type u -> print_string "Type("; Pp.pp (Univ.pr_uni u); print_string ")"
 
   and name_display = function
