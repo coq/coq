@@ -382,6 +382,10 @@ module Tactic =
     let red_expr = make_gen_entry utactic (rawwit wit_red_expr) "red_expr"
     let simple_intropattern =
       make_gen_entry utactic (rawwit wit_intro_pattern) "simple_intropattern"
+    let intropatterns =
+      make_gen_entry utactic (rawwit (wit_list wit_intro_pattern)) "intropatterns"
+    let ne_intropatterns =
+      make_gen_entry utactic (rawwit (wit_list wit_intro_pattern)) "ne_intropatterns"
     let clause_dft_concl = 
       make_gen_entry utactic (rawwit wit_clause_dft_concl) "clause"
 

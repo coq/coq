@@ -35,6 +35,10 @@ let reference_to_id = function
       Errors.user_err_loc (loc, "",
         str "This expression should be a simple identifier.")
 
+let make_intropattern_loc loc pl =
+  if pl = [] then loc
+  else Loc.join_loc (fst (List.hd pl)) (fst (Util.List.last pl))
+
 (* Tactics grammar rules *)
 
 GEXTEND Gram
@@ -60,6 +64,31 @@ GEXTEND Gram
                            for [TacExtend] *)
   [ [ "[" ; l = OPT">" -> if Option.is_empty l then true else false ] ]
   ;
+  tactic_then_intropatterns_gen:
+    [ [ pl = intropatterns; "|"; (first,last) = tactic_then_intropatterns_gen ->
+          (pl::first, last)
+      | pl = intropatterns; ".."; "|"; pll = LIST0 intropatterns SEP "|" ->
+          ([], Some (pl, Array.of_list pll))
+      | pl = intropatterns; ".." ->
+          ([], Some (pl, [||]))
+      | pl = intropatterns ->
+          ([pl], None)
+    ] ]
+  ;
+  tactic_then_intropatterns:
+    [ [ "["; ">"; (first,tail) = tactic_then_intropatterns_gen; "]" ->
+        let f pl =
+          TacAtom (make_intropattern_loc !@loc pl, TacIntroPattern pl) in
+        let first = List.map f first in
+        begin match tail with
+        | Some (t,last) -> TacExtendTac (Array.of_list first, f t, Array.map f last)
+        | None -> TacDispatch first
+        end
+      | pl = ne_intropatterns ->
+        let f pl =
+          TacAtom (make_intropattern_loc !@loc pl, TacIntroPattern pl) in
+        TacExtendTac ([||],f pl,[||]) ] ]
+  ;
   tactic_expr:
     [ "5" RIGHTA
       [ te = binder_tactic -> te ]
@@ -67,11 +96,14 @@ GEXTEND Gram
       [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, ta1)
       | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0,ta1)
       | ta0 = tactic_expr; ";"; l = tactic_then_locality; (first,tail) = tactic_then_gen; "]" ->
-	  match l , tail with
+	  begin match l , tail with
           | false , Some (t,last) -> TacThen (ta0,TacExtendTac (Array.of_list first, t, last))
 	  | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
           | false , None -> TacThen (ta0,TacDispatch first)
-	  | true  , None -> TacThens (ta0,first) ]
+	  | true  , None -> TacThens (ta0,first)
+          end
+      | ta0 = tactic_expr; "==>"; tacl = LIST0 tactic_then_intropatterns ->
+        List.fold_left (fun ta0 ta1 -> TacThen (ta0,ta1)) ta0 tacl ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta
       | IDENT "do"; n = int_or_var; ta = tactic_expr -> TacDo (n,ta)
@@ -123,6 +155,9 @@ GEXTEND Gram
           | Some (t,tl) -> TacExtendTac(Array.of_list tf,t,tl)
           | None -> TacDispatch tf
           end
+      | "==>"; tacl = LIST1 tactic_then_intropatterns ->
+        let ta,tacl = match tacl with ta::tacl -> ta,tacl | _ -> assert false in
+        List.fold_left (fun ta ta1 -> TacThen (ta,ta1)) ta tacl
       | a = tactic_atom -> TacArg (!@loc,a) ] ]
   ;
   failkw:

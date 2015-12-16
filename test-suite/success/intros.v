@@ -97,4 +97,12 @@ Goal forall x, (True -> x=0) -> 0=x.
 intros x ->.
 - reflexivity.
 - exact I.
+
+(* Testing ==> *)
+
+Goal forall x, x=0 -> x=0.
+intro x.
+elim x ==> [> | * IH] H.
+- exact H.
+- exact H.
 Qed.
