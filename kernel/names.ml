@@ -23,6 +23,7 @@ open Util
 
 (** {6 Identifiers } *)
 
+(** Representation and operations on identifiers. *)
 module Id =
 struct
   type t = string
@@ -74,10 +75,12 @@ struct
 
 end
 
-
+(** Representation and operations on identifiers that are allowed to be anonymous
+    (i.e. "_" in concrete syntax). *)
 module Name =
 struct
-  type t = Name of Id.t | Anonymous
+  type t = Anonymous     (** anonymous identifier *)
+	 | Name of Id.t  (** non-anonymous identifier *)
 
   let compare n1 n2 = match n1, n2 with
     | Anonymous, Anonymous -> 0
@@ -117,8 +120,8 @@ struct
 
 end
 
-type name = Name.t = Name of Id.t | Anonymous
 (** Alias, to import constructors. *)
+type name = Name.t = Anonymous | Name of Id.t
 
 (** {6 Various types based on identifiers } *)
 
