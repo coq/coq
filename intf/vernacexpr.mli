@@ -286,8 +286,8 @@ type module_binder = bool option * lident list * module_ast_inl
 type vernac_expr =
   (* Control *)
   | VernacLoad of verbose_flag * string
-  | VernacTime of located_vernac_expr
-  | VernacRedirect of string * located_vernac_expr
+  | VernacTime of vernac_expr located
+  | VernacRedirect of string * vernac_expr located
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
   | VernacError of exn (* always fails *)
@@ -455,8 +455,6 @@ type vernac_expr =
 and tacdef_body =
   | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
   | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
-
-and located_vernac_expr = Loc.t * vernac_expr
 
 (* A vernac classifier has to tell if a command:
    vernac_when: has to be executed now (alters the parser) or later

@@ -9,6 +9,7 @@
 open Vernacexpr
 open Names
 open Feedback
+open Loc
 
 (** state-transaction-machine interface *)
 
@@ -19,7 +20,7 @@ open Feedback
    The sentence [s] is parsed in the state [ontop].
    If [newtip] is provided, then the returned state id is guaranteed to be
    [newtip] *)
-val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(located_vernac_expr -> unit) ->
+val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(vernac_expr located -> unit) ->
   bool -> edit_id -> string ->
     Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
@@ -123,7 +124,7 @@ val state_of_id : Stateid.t -> [ `Valid of state option | `Expired ]
 (* Adds a new line to the document.  It replaces the core of Vernac.interp.
    [finish] is called as the last bit of this function is the system
    is running interactively (-emacs or coqtop). *)
-val interp : bool -> located_vernac_expr -> unit
+val interp : bool -> vernac_expr located -> unit
 
 (* Queries for backward compatibility *)
 val current_proof_depth : unit -> int
