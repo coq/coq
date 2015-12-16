@@ -18,11 +18,7 @@ type argument_type =
   | GenArgType
   | ConstrArgType
   | ConstrMayEvalArgType
-  | QuantHypArgType
   | OpenConstrArgType
-  | ConstrWithBindingsArgType
-  | BindingsArgType
-  | RedExprArgType
   | ListArgType of argument_type
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type
@@ -35,11 +31,7 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | GenArgType, GenArgType -> true
 | ConstrArgType, ConstrArgType -> true
 | ConstrMayEvalArgType, ConstrMayEvalArgType -> true
-| QuantHypArgType, QuantHypArgType -> true
 | OpenConstrArgType, OpenConstrArgType -> true
-| ConstrWithBindingsArgType, ConstrWithBindingsArgType -> true
-| BindingsArgType, BindingsArgType -> true
-| RedExprArgType, RedExprArgType -> true
 | ListArgType arg1, ListArgType arg2 -> argument_type_eq arg1 arg2
 | OptArgType arg1, OptArgType arg2 -> argument_type_eq arg1 arg2
 | PairArgType (arg1l, arg1r), PairArgType (arg2l, arg2r) ->
@@ -54,11 +46,7 @@ let rec pr_argument_type = function
 | GenArgType -> str "genarg"
 | ConstrArgType -> str "constr"
 | ConstrMayEvalArgType -> str "constr_may_eval"
-| QuantHypArgType -> str "qhyp"
 | OpenConstrArgType -> str "open_constr"
-| ConstrWithBindingsArgType -> str "constr_with_bindings"
-| BindingsArgType -> str "bindings"
-| RedExprArgType -> str "redexp"
 | ListArgType t -> pr_argument_type t ++ spc () ++ str "list"
 | OptArgType t -> pr_argument_type t ++ spc () ++ str "opt"
 | PairArgType (t1, t2) ->

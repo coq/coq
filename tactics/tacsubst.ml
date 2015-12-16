@@ -289,21 +289,9 @@ and subst_genarg subst (x:glob_generic_argument) =
       in_gen (glbwit wit_constr) (subst_glob_constr subst (out_gen (glbwit wit_constr) x))
   | ConstrMayEvalArgType ->
       in_gen (glbwit wit_constr_may_eval) (subst_raw_may_eval subst (out_gen (glbwit wit_constr_may_eval) x))
-  | QuantHypArgType ->
-      in_gen (glbwit wit_quant_hyp)
-        (subst_declared_or_quantified_hypothesis subst
-          (out_gen (glbwit wit_quant_hyp) x))
-  | RedExprArgType ->
-      in_gen (glbwit wit_red_expr) (subst_redexp subst (out_gen (glbwit wit_red_expr) x))
   | OpenConstrArgType ->
       in_gen (glbwit wit_open_constr)
         ((),subst_glob_constr subst (snd (out_gen (glbwit wit_open_constr) x)))
-  | ConstrWithBindingsArgType ->
-      in_gen (glbwit wit_constr_with_bindings)
-        (subst_glob_with_bindings subst (out_gen (glbwit wit_constr_with_bindings) x))
-  | BindingsArgType ->
-      in_gen (glbwit wit_bindings)
-        (subst_bindings subst (out_gen (glbwit wit_bindings) x))
   | ListArgType _ ->
     let list_unpacker wit l =
       let map x =
@@ -340,4 +328,9 @@ let () =
   Genintern.register_subst0 wit_tactic subst_tactic;
   Genintern.register_subst0 wit_sort (fun _ v -> v);
   Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v);
-  Genintern.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c)
+  Genintern.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c);
+  Genintern.register_subst0 wit_red_expr subst_redexp;
+  Genintern.register_subst0 wit_quant_hyp subst_declared_or_quantified_hypothesis;
+  Genintern.register_subst0 wit_bindings subst_bindings;
+  Genintern.register_subst0 wit_constr_with_bindings subst_glob_with_bindings;
+  ()

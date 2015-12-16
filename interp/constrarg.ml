@@ -36,7 +36,7 @@ let wit_var = unsafe_of_type VarArgType
 
 let wit_ref = Genarg.make0 None "ref"
 
-let wit_quant_hyp = unsafe_of_type QuantHypArgType
+let wit_quant_hyp = Genarg.make0 None "quant_hyp"
 
 let wit_genarg = unsafe_of_type GenArgType
 
@@ -51,14 +51,14 @@ let wit_uconstr = Genarg.make0 None "uconstr"
 
 let wit_open_constr = unsafe_of_type OpenConstrArgType
 
-let wit_constr_with_bindings = unsafe_of_type ConstrWithBindingsArgType
+let wit_constr_with_bindings = Genarg.make0 None "constr_with_bindings"
 
-let wit_bindings = unsafe_of_type BindingsArgType
+let wit_bindings = Genarg.make0 None "bindings"
 
 let wit_hyp_location_flag : 'a Genarg.uniform_genarg_type =
   Genarg.make0 None "hyp_location_flag"
 
-let wit_red_expr = unsafe_of_type RedExprArgType
+let wit_red_expr = Genarg.make0 None "redexpr"
 
 let wit_clause_dft_concl  =
   Genarg.make0 None "clause_dft_concl"
@@ -71,4 +71,8 @@ let () =
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";
   register_name0 wit_uconstr "Constrarg.wit_uconstr";
+  register_name0 wit_red_expr "Constrarg.wit_red_expr";
   register_name0 wit_clause_dft_concl "Constrarg.wit_clause_dft_concl";
+  register_name0 wit_quant_hyp "Constrarg.wit_quant_hyp";
+  register_name0 wit_bindings "Constrarg.wit_bindings";
+  register_name0 wit_constr_with_bindings "Constrarg.wit_constr_with_bindings";

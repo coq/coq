@@ -1209,9 +1209,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacAlias (loc,s,l) ->
       let body = Tacenv.interp_alias s in
       let rec f x = match genarg_tag x with
-      | QuantHypArgType | RedExprArgType
-      | ConstrWithBindingsArgType
-      | BindingsArgType
       | ConstrArgType
       | ListArgType ConstrArgType
       | OptArgType _ | PairArgType _ -> (** generic handler *)
@@ -1630,29 +1627,12 @@ and interp_genarg ist env sigma concl gl x =
       let (sigma,c_interp) = interp_constr_may_eval ist env !evdref (out_gen (glbwit wit_constr_may_eval) x) in
       evdref := sigma;
       in_gen (topwit wit_constr_may_eval) c_interp
-    | QuantHypArgType ->
-      in_gen (topwit wit_quant_hyp)
-        (interp_declared_or_quantified_hypothesis ist env sigma
-           (out_gen (glbwit wit_quant_hyp) x))
-    | RedExprArgType ->
-      let (sigma,r_interp) =
-        interp_red_expr ist env !evdref (out_gen (glbwit wit_red_expr) x)
-      in
-      evdref := sigma;
-      in_gen (topwit wit_red_expr) r_interp
     | OpenConstrArgType ->
       let expected_type = WithoutTypeConstraint in
       in_gen (topwit wit_open_constr)
         (interp_open_constr ~expected_type
            ist env !evdref
            (snd (out_gen (glbwit wit_open_constr) x)))
-    | ConstrWithBindingsArgType ->
-      in_gen (topwit wit_constr_with_bindings)
-        (pack_sigma (interp_constr_with_bindings ist env !evdref
-		       (out_gen (glbwit wit_constr_with_bindings) x)))
-    | BindingsArgType ->
-      in_gen (topwit wit_bindings)
-        (pack_sigma (interp_bindings ist env !evdref (out_gen (glbwit wit_bindings) x)))
     | ListArgType ConstrArgType ->
         let (sigma,v) = interp_genarg_constr_list ist env !evdref x in
 	evdref := sigma;
@@ -2314,15 +2294,27 @@ let () =
 let () =
   declare_uniform wit_pre_ident
 
+let lift f = (); fun ist gl x -> (project gl, f ist (pf_env gl) (project gl) x)
+let lifts f = (); fun ist gl x -> f ist (pf_env gl) (project gl) x
+
+let interp_bindings' ist gl bl =
+  let (sigma, bl) = interp_bindings ist (pf_env gl) (project gl) bl in
+  (project gl, pack_sigma (sigma, bl))
+
+let interp_constr_with_bindings' ist gl c =
+  let (sigma, c) = interp_constr_with_bindings ist (pf_env gl) (project gl) c in
+  (project gl, pack_sigma (sigma, c))
+
 let () =
-  let interp ist gl ref = (project gl, interp_reference ist (pf_env gl) (project gl) ref) in
-  Geninterp.register_interp0 wit_ref interp;
-  let interp ist gl pat = interp_intro_pattern ist (pf_env gl) (project gl) pat in
-  Geninterp.register_interp0 wit_intro_pattern interp;
-  let interp ist gl pat = (project gl, interp_clause ist (pf_env gl) (project gl) pat) in
-  Geninterp.register_interp0 wit_clause_dft_concl interp;
-  let interp ist gl s = interp_sort (project gl) s in
-  Geninterp.register_interp0 wit_sort interp
+  Geninterp.register_interp0 wit_ref (lift interp_reference);
+  Geninterp.register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
+  Geninterp.register_interp0 wit_clause_dft_concl (lift interp_clause);
+  Geninterp.register_interp0 wit_sort (lifts (fun _ _ evd s -> interp_sort evd s));
+  Geninterp.register_interp0 wit_tacvalue (fun ist gl c -> project gl, c);
+  Geninterp.register_interp0 wit_red_expr (lifts interp_red_expr);
+  Geninterp.register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
+  Geninterp.register_interp0 wit_bindings interp_bindings';
+  Geninterp.register_interp0 wit_constr_with_bindings interp_constr_with_bindings'
 
 let () =
   let interp ist gl tac =
@@ -2335,9 +2327,6 @@ let () =
   Geninterp.register_interp0 wit_uconstr (fun ist gl c ->
      project gl , interp_uconstr ist (pf_env gl) c
   )
-
-let () =
-  Geninterp.register_interp0 wit_tacvalue (fun ist gl c -> project gl, c)
 
 (***************************************************************************)
 (* Other entry points *)

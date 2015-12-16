@@ -190,11 +190,7 @@ type argument_type =
   | GenArgType
   | ConstrArgType
   | ConstrMayEvalArgType
-  | QuantHypArgType
   | OpenConstrArgType
-  | ConstrWithBindingsArgType
-  | BindingsArgType
-  | RedExprArgType
   | ListArgType of argument_type
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type

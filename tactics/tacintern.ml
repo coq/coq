@@ -739,16 +739,8 @@ and intern_genarg ist x =
     map_raw wit_constr intern_constr ist x
   | ConstrMayEvalArgType ->
     map_raw wit_constr_may_eval intern_constr_may_eval ist x
-  | QuantHypArgType ->
-    map_raw wit_quant_hyp intern_quantified_hypothesis ist x
-  | RedExprArgType ->
-    map_raw wit_red_expr intern_red_expr ist x
   | OpenConstrArgType ->
     map_raw wit_open_constr (fun ist -> on_snd (intern_constr ist)) ist x
-  | ConstrWithBindingsArgType ->
-    map_raw wit_constr_with_bindings intern_constr_with_bindings ist x
-  | BindingsArgType ->
-    map_raw wit_bindings intern_bindings ist x
   | ListArgType _ ->
       let list_unpacker wit l =
         let map x =
@@ -848,10 +840,13 @@ let () =
 let () =
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
-  Genintern.register_intern0 wit_sort (fun ist s -> (ist, s))
-
-let () =
-  Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c))
+  Genintern.register_intern0 wit_sort (fun ist s -> (ist, s));
+  Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
+  Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c));
+  Genintern.register_intern0 wit_red_expr (lift intern_red_expr);
+  Genintern.register_intern0 wit_bindings (lift intern_bindings);
+  Genintern.register_intern0 wit_constr_with_bindings (lift intern_constr_with_bindings);
+  ()
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)

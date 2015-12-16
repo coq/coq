@@ -275,15 +275,7 @@ module Make
       | ConstrMayEvalArgType ->
         pr_may_eval prc prlc (pr_or_by_notation prref) prpat
           (out_gen (rawwit wit_constr_may_eval) x)
-      | QuantHypArgType -> pr_quantified_hypothesis (out_gen (rawwit wit_quant_hyp) x)
-      | RedExprArgType ->
-        pr_red_expr (prc,prlc,pr_or_by_notation prref,prpat)
-          (out_gen (rawwit wit_red_expr) x)
       | OpenConstrArgType -> prc (snd (out_gen (rawwit wit_open_constr) x))
-      | ConstrWithBindingsArgType ->
-        pr_with_bindings prc prlc (out_gen (rawwit wit_constr_with_bindings) x)
-      | BindingsArgType ->
-        pr_bindings_no_with prc prlc (out_gen (rawwit wit_bindings) x)
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_raw_generic prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
@@ -320,17 +312,7 @@ module Make
         pr_may_eval prc prlc
           (pr_or_var (pr_and_short_name pr_evaluable_reference)) prpat
           (out_gen (glbwit wit_constr_may_eval) x)
-      | QuantHypArgType ->
-        pr_quantified_hypothesis (out_gen (glbwit wit_quant_hyp) x)
-      | RedExprArgType ->
-        pr_red_expr
-          (prc,prlc,pr_or_var (pr_and_short_name pr_evaluable_reference),prpat)
-          (out_gen (glbwit wit_red_expr) x)
       | OpenConstrArgType -> prc (snd (out_gen (glbwit wit_open_constr) x))
-      | ConstrWithBindingsArgType ->
-        pr_with_bindings prc prlc (out_gen (glbwit wit_constr_with_bindings) x)
-      | BindingsArgType ->
-        pr_bindings_no_with prc prlc (out_gen (glbwit wit_bindings) x)
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_glb_generic prc prlc prtac prpat (in_gen (glbwit wit) x) in
@@ -363,16 +345,7 @@ module Make
       | GenArgType -> pr_top_generic prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
       | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
       | ConstrMayEvalArgType -> prc (out_gen (topwit wit_constr_may_eval) x)
-      | QuantHypArgType -> pr_quantified_hypothesis (out_gen (topwit wit_quant_hyp) x)
-      | RedExprArgType ->
-        pr_red_expr (prc,prlc,pr_evaluable_reference,prpat)
-          (out_gen (topwit wit_red_expr) x)
       | OpenConstrArgType -> prc (snd (out_gen (topwit wit_open_constr) x))
-      | ConstrWithBindingsArgType ->
-        let (c,b) = (out_gen (topwit wit_constr_with_bindings) x).Evd.it in
-        pr_with_bindings prc prlc (c,b)
-      | BindingsArgType ->
-        pr_bindings_no_with prc prlc (out_gen (topwit wit_bindings) x).Evd.it
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_top_generic prc prlc prtac prpat (in_gen (topwit wit) x) in
@@ -1461,6 +1434,19 @@ let () =
     (fun (c,_) -> Printer.pr_glob_constr c)
     Printer.pr_closed_glob
   ;
+  Genprint.register_print0 Constrarg.wit_red_expr
+    (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_reference, pr_constr_pattern_expr))
+    (pr_red_expr (pr_and_constr_expr pr_glob_constr, pr_lglob_constr, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr))
+    (pr_red_expr (pr_constr, pr_lconstr, pr_evaluable_reference, pr_constr_pattern));
+  Genprint.register_print0 Constrarg.wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
+  Genprint.register_print0 Constrarg.wit_bindings
+    (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
+    (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    (fun { Evd.it = it } -> pr_bindings_no_with pr_constr pr_lconstr it);
+  Genprint.register_print0 Constrarg.wit_constr_with_bindings
+    (pr_with_bindings pr_constr_expr pr_lconstr_expr)
+    (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    (fun { Evd.it = it } -> pr_with_bindings pr_constr pr_lconstr it);
   Genprint.register_print0 Stdarg.wit_int int int int;
   Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
   Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;

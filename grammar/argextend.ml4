@@ -33,14 +33,10 @@ let rec make_wit loc = function
   | IntOrVarArgType -> <:expr< Constrarg.wit_int_or_var >>
   | IdentArgType -> <:expr< Constrarg.wit_ident >>
   | VarArgType -> <:expr< Constrarg.wit_var >>
-  | QuantHypArgType -> <:expr< Constrarg.wit_quant_hyp >>
   | GenArgType -> <:expr< Constrarg.wit_genarg >>
   | ConstrArgType -> <:expr< Constrarg.wit_constr >>
   | ConstrMayEvalArgType -> <:expr< Constrarg.wit_constr_may_eval >>
-  | RedExprArgType -> <:expr< Constrarg.wit_red_expr >>
   | OpenConstrArgType -> <:expr< Constrarg.wit_open_constr >>
-  | ConstrWithBindingsArgType -> <:expr< Constrarg.wit_constr_with_bindings >>
-  | BindingsArgType -> <:expr< Constrarg.wit_bindings >>
   | ListArgType t -> <:expr< Genarg.wit_list $make_wit loc t$ >>
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
   | PairArgType (t1,t2) ->
