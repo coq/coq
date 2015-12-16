@@ -257,18 +257,19 @@ let set_emacs () =
 *)
 
 let init_gc () =
-  let param =
-    try ignore (Sys.getenv "OCAMLRUNPARAM"); true
-    with Not_found -> false
-  in
-  let control = Gc.get () in
-  let tweaked_control = { control with
-    Gc.minor_heap_size = 33554432; (** 4M *)
-(*     Gc.major_heap_increment = 268435456; (** 32M *) *)
-    Gc.space_overhead = 120;
-  } in
-  if param then ()
-  else Gc.set tweaked_control
+  try
+    (* OCAMLRUNPARAM environment variable is set.
+     * In that case, we let ocamlrun to use the values provided by the user.
+     *)
+    ignore (Sys.getenv "OCAMLRUNPARAM")
+
+  with Not_found ->
+    (* OCAMLRUNPARAM environment variable is not set.
+     * In this case, we put in place our preferred configuration.
+     *)
+    Gc.set { (Gc.get ()) with
+             Gc.minor_heap_size = 33554432; (** 4M *)
+             Gc.space_overhead = 120}
 
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
