@@ -19,7 +19,6 @@ open Libnames
 type lident = Id.t located
 type lname = Name.t located
 type lstring = string located
-type lreference = reference
 
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
@@ -330,8 +329,8 @@ type vernac_expr =
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
-      lreference option * export_flag option * lreference list
-  | VernacImport of export_flag * lreference list
+      reference option * export_flag option * reference list
+  | VernacImport of export_flag * reference list
   | VernacCanonical of reference or_by_notation
   | VernacCoercion of obsolete_locality * reference or_by_notation *
       class_rawexpr * class_rawexpr
