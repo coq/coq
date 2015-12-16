@@ -576,7 +576,7 @@ let parse_args arglist =
       else fatal_error (Errors.print e) false
     | any -> fatal_error (Errors.print any) (Errors.is_anomaly any)
 
-let init arglist =
+let init_toplevel arglist =
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   Lib.init();
@@ -639,8 +639,6 @@ let init arglist =
     Profile.print_profile ();
     exit 0
   end
-
-let init_toplevel = init
 
 let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in
