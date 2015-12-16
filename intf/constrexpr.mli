@@ -32,7 +32,9 @@ type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
-type prim_token = Numeral of Bigint.bigint | String of string
+type prim_token =
+  | Numeral of Bigint.bigint (** representation of integer literals that appear in Coq scripts. *)
+  | String of string
 
 type raw_cases_pattern_expr =
   | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
