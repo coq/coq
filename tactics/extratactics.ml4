@@ -366,6 +366,9 @@ let refine_tac simple {Glob_term.closure=closure;term=term} =
 
 TACTIC EXTEND refine
 | [ "refine" uconstr(c) ] -> [ refine_tac false c ]
+END
+
+TACTIC EXTEND simple_refine
 | [ "simple" "refine" uconstr(c) ] -> [ refine_tac true c ]
 END
 
