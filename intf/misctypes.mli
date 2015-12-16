@@ -43,7 +43,10 @@ type 'id move_location =
 
 (** Sorts *)
 
-type 'a glob_sort_gen = GProp | GSet | GType of 'a
+type 'a glob_sort_gen =
+  | GProp (** representation of [Prop] literal *)
+  | GSet  (** representation of [Set] literal *)
+  | GType of 'a (** representation of [Type] literal *)
 type sort_info = string Loc.located list
 type level_info = string Loc.located option
 
