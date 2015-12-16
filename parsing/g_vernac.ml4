@@ -89,8 +89,8 @@ let default_command_entry =
 GEXTEND Gram
   GLOBAL: vernac gallina_ext tactic_mode noedit_mode subprf subgoal_command;
   vernac: FIRST
-    [ [ IDENT "Time"; l = vernac_list -> VernacTime l
-      | IDENT "Redirect"; s = ne_string; l = vernac_list -> VernacRedirect (s, l)
+    [ [ IDENT "Time"; c = located_vernac -> VernacTime c
+      | IDENT "Redirect"; s = ne_string; c = located_vernac -> VernacRedirect (s, c)
       | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)
       | IDENT "Fail"; v = vernac -> VernacFail v
 
@@ -127,9 +127,6 @@ GEXTEND Gram
       | c = syntax; "." -> c
       | c = subprf -> c
     ] ]
-  ;
-  vernac_list:
-    [ [ c = located_vernac -> [c] ] ]
   ;
   vernac_aux: LAST
     [ [ prfcom = default_command_entry -> prfcom ] ]
@@ -806,7 +803,7 @@ GEXTEND Gram
   command:
     [ [ IDENT "Ltac";
         l = LIST1 tacdef_body SEP "with" ->
-          VernacDeclareTacticDefinition (true, l)
+          VernacDeclareTacticDefinition l
 
       | IDENT "Comments"; l = LIST0 comment -> VernacComments l
 
