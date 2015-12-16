@@ -14,10 +14,10 @@ open Libnames
 
 (*s Global reference is a kernel side type for all references together *)
 type global_reference =
-  | VarRef of variable
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
+  | VarRef of variable           (** A reference to the section-context. *)
+  | ConstRef of constant         (** A reference to the environment. *)
+  | IndRef of inductive          (** A reference to an inductive type. *)
+  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
 
 let isVarRef = function VarRef _ -> true | _ -> false
 let isConstRef = function ConstRef _ -> true | _ -> false
