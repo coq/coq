@@ -174,13 +174,13 @@ GEXTEND Gram
   ;
 END
 
-let test_plurial_form = function
+let test_plural_form = function
   | [(_,([_],_))] ->
       Flags.if_verbose msg_warning
    (strbrk "Keywords Variables/Hypotheses/Parameters expect more than one assumption")
   | _ -> ()
 
-let test_plurial_form_types = function
+let test_plural_form_types = function
   | [([_],_)] ->
       Flags.if_verbose msg_warning
    (strbrk "Keywords Implicit Types expect more than one type")
@@ -201,7 +201,7 @@ GEXTEND Gram
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | stre = assumptions_token; nl = inline; bl = assum_list ->
-	  test_plurial_form bl;
+	  test_plural_form bl;
 	  VernacAssumption (stre, nl, bl)
       | d = def_token; id = pidentref; b = def_body ->
           VernacDefinition (d, id, b)
@@ -733,7 +733,7 @@ GEXTEND Gram
 	   VernacReserve bl
 
       | IDENT "Implicit"; IDENT "Types"; bl = reserv_list ->
-          test_plurial_form_types bl;
+          test_plural_form_types bl;
            VernacReserve bl
 
       | IDENT "Generalizable"; 
