@@ -56,6 +56,7 @@ let mlexpr_of_token = function
 | Tok.IDENT s -> <:expr< Tok.IDENT $mlexpr_of_string s$ >>
 | Tok.FIELD s -> <:expr< Tok.FIELD $mlexpr_of_string s$ >>
 | Tok.INT s -> <:expr< Tok.INT $mlexpr_of_string s$ >>
+| Tok.INDEX s -> <:expr< Tok.INDEX $mlexpr_of_string s$ >>
 | Tok.STRING s -> <:expr< Tok.STRING $mlexpr_of_string s$ >>
 | Tok.LEFTQMARK -> <:expr< Tok.LEFTQMARK >>
 | Tok.BULLET s -> <:expr< Tok.BULLET $mlexpr_of_string s$ >>

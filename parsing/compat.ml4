@@ -266,6 +266,7 @@ IFDEF CAMLP5 THEN
     | Tok.PATTERNIDENT s -> "PATTERNIDENT", s
     | Tok.FIELD s -> "FIELD", s
     | Tok.INT s -> "INT", s
+    | Tok.INDEX s -> "INDEX", s
     | Tok.STRING s -> "STRING", s
     | Tok.LEFTQMARK -> "LEFTQMARK", ""
     | Tok.BULLET s -> "BULLET", s
