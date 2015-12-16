@@ -75,7 +75,7 @@ type constr_expr =
   | CAppExpl of Loc.t * (proj_flag * reference * instance_expr option) * constr_expr list
   | CApp of Loc.t * (proj_flag * constr_expr) *
       (constr_expr * explicitation located option) list
-  | CRecord of Loc.t * constr_expr option * (reference * constr_expr) list
+  | CRecord of Loc.t * (reference * constr_expr) list
   | CCases of Loc.t * case_style * constr_expr option *
       case_expr list * branch_expr list
   | CLetTuple of Loc.t * Name.t located list * (Name.t located option * constr_expr option) *

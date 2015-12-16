@@ -125,11 +125,10 @@ let rec constr_expr_eq e1 e2 =
       Option.equal Int.equal proj1 proj2 &&
       constr_expr_eq e1 e2 &&
       List.equal args_eq al1 al2
-  | CRecord (_, e1, l1), CRecord (_, e2, l2) ->
+  | CRecord (_, l1), CRecord (_, l2) ->
     let field_eq (r1, e1) (r2, e2) =
       eq_reference r1 r2 && constr_expr_eq e1 e2
     in
-    Option.equal constr_expr_eq e1 e2 &&
     List.equal field_eq l1 l2
   | CCases(_,_,r1,a1,brl1), CCases(_,_,r2,a2,brl2) ->
       (** Don't care about the case_style *)
@@ -238,7 +237,7 @@ let constr_loc = function
   | CLetIn (loc,_,_,_) -> loc
   | CAppExpl (loc,_,_) -> loc
   | CApp (loc,_,_) -> loc
-  | CRecord (loc,_,_) -> loc
+  | CRecord (loc,_) -> loc
   | CCases (loc,_,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
   | CIf (loc,_,_,_,_) -> loc

@@ -593,17 +593,9 @@ end) = struct
           return (p, lproj)
       | CApp (_,(None,a),l) ->
         return (pr_app (pr mt) a l, lapp)
-      | CRecord (_,w,l) ->
-        let beg =
-          match w with
-            | None ->
-              spc ()
-            | Some t ->
-              spc () ++ pr spc ltop t ++ spc ()
-              ++ keyword "with" ++ spc ()
-        in
+      | CRecord (_,l) ->
         return (
-          hv 0 (str"{|" ++ beg ++
+          hv 0 (str"{|" ++ spc () ++
                   prlist_with_sep pr_semicolon
                   (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr spc ltop c)) l
                 ++ str" |}"),
