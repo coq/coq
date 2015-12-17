@@ -620,7 +620,7 @@ let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
   { compare = infer_cmp_universes;
     compare_instances = infer_convert_instances }
 
-let fconv cv_pb l2r reds env evars univs t1 t2 =
+let gen_conv cv_pb l2r reds env evars univs t1 t2 =
   let b = 
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2 
     else eq_constr_univs univs t1 t2
@@ -631,16 +631,16 @@ let fconv cv_pb l2r reds env evars univs t1 t2 =
 	()
 
 (* Profiling *)
-let fconv cv_pb ?(l2r=false) ?(reds=full_transparent_state) env ?(evars=(fun _->None), universes env) =
+let gen_conv cv_pb ?(l2r=false) ?(reds=full_transparent_state) env ?(evars=(fun _->None), universes env) =
   let evars, univs = evars in
   if Flags.profile then
     let fconv_universes_key = Profile.declare_profile "trans_fconv_universes" in
-      Profile.profile8 fconv_universes_key fconv cv_pb l2r reds env evars univs
-  else fconv cv_pb l2r reds env evars univs
+      Profile.profile8 fconv_universes_key gen_conv cv_pb l2r reds env evars univs
+  else gen_conv cv_pb l2r reds env evars univs
 
-let conv = fconv CONV
+let conv = gen_conv CONV
 
-let conv_leq = fconv CUMUL
+let conv_leq = gen_conv CUMUL
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
   let (s, _) = 
@@ -675,7 +675,7 @@ let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_sta
 
 (* This reference avoids always having to link C code with the kernel *)
 let vm_conv = ref (fun cv_pb env ->
-		   fconv cv_pb env ~evars:((fun _->None), universes env))
+		   gen_conv cv_pb env ~evars:((fun _->None), universes env))
 
 let set_vm_conv (f:conv_pb -> Term.types kernel_conversion_function) = vm_conv := f
 let vm_conv cv_pb env t1 t2 =
@@ -683,10 +683,10 @@ let vm_conv cv_pb env t1 t2 =
     !vm_conv cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
     Pp.msg_warning (Pp.str "Bytecode compilation failed, falling back to standard conversion");
-    fconv cv_pb env t1 t2
+    gen_conv cv_pb env t1 t2
 
 let default_conv cv_pb ?(l2r=false) env t1 t2 =
-    fconv cv_pb env t1 t2
+    gen_conv cv_pb env t1 t2
 
 let default_conv_leq = default_conv CUMUL
 (*
