@@ -269,7 +269,7 @@ let rec optim_se top to_appear s = function
       let a = normalize (ast_glob_subst !s a) in
       let i = inline r a in
       if i then s := Refmap'.add r a !s;
-      let d = match optimize_fix a with
+      let d = match dump_unused_vars (optimize_fix a) with
 	| MLfix (0, _, [|c|]) ->
 	  Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
 	| a -> Dterm (r, a, t)
@@ -283,7 +283,8 @@ let rec optim_se top to_appear s = function
 	if inline rv.(i) fake_body
 	then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
       done;
-      (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top to_appear s lse)
+      let av' = Array.map dump_unused_vars av in
+      (l,SEdecl (Dfix (rv, av', tv))) :: (optim_se top to_appear s lse)
   | (l,SEmodule m) :: lse ->
       let m = { m with ml_mod_expr = optim_me to_appear s m.ml_mod_expr}
       in (l,SEmodule m) :: (optim_se top to_appear s lse)

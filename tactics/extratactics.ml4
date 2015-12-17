@@ -347,7 +347,7 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
-let refine_tac {Glob_term.closure=closure;term=term} =
+let refine_tac simple {Glob_term.closure=closure;term=term} =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
@@ -363,11 +363,19 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       let (sigma, c) = Pretyping.understand_ltac flags env sigma lvar tycon term in
       Sigma.Unsafe.of_pair (c, sigma)
     end } in
-    Tactics.New.refine ~unsafe:false update
+    let refine = Proofview.Refine.refine ~unsafe:false update in
+    if simple then refine
+    else refine <*>
+           Tactics.New.reduce_after_refine <*>
+           Proofview.shelve_unifiable
   end }
 
 TACTIC EXTEND refine
-  [ "refine" uconstr(c) ] -> [  refine_tac c ]
+| [ "refine" uconstr(c) ] -> [ refine_tac false c ]
+END
+
+TACTIC EXTEND simple_refine
+| [ "simple" "refine" uconstr(c) ] -> [ refine_tac true c ]
 END
 
 (**********************************************************************)
@@ -876,10 +884,11 @@ END
 
 (* Unshelves the goal shelved by the tactic. *)
 TACTIC EXTEND unshelve
-| [ "unshelve" tactic0(t) ] ->
+| [ "unshelve" tactic1(t) ] ->
     [
       Proofview.with_shelf (Tacinterp.eval_tactic t) >>= fun (gls, ()) ->
-      Proofview.Unsafe.tclNEWGOALS gls
+      Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
+      Proofview.Unsafe.tclSETGOALS (gls @ ogls)
     ]
 END
 

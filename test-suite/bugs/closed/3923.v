@@ -30,4 +30,4 @@ Axiom empty_fieldstore : cert_fieldstore.
 
 End MkCertRuntimeTypes.
 
-Fail Extraction MkCertRuntimeTypes.
+Extraction MkCertRuntimeTypes. (* Was leading to an uncaught Not_found *)

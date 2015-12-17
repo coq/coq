@@ -178,6 +178,7 @@ End Let.
 
 Check (test_let 3).
 
+(* Disabled
 Section Clear.
 
 Variable a: nat.
@@ -192,6 +193,6 @@ trivial.
 Qed.
 
 End Clear.
-
+*)
 
 

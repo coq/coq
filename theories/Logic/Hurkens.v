@@ -266,7 +266,7 @@ End Paradox.
 
 (** The [paradox] tactic can be called as a shortcut to use the paradox. *)
 Ltac paradox h :=
-  refine ((fun h => _) (paradox _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ));cycle 1.
+  unshelve (refine ((fun h => _) (paradox _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ))).
 
 End Generic.
 
@@ -319,25 +319,26 @@ Proof.
   + cbn. exact (fun u F => forall x:u, F x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. easy.
+
   + cbn. exact (fun F => u22u1 (forall x, F x)).
   + cbn. exact (fun _ x => u22u1_unit _ x).
   + cbn. exact (fun _ x => u22u1_counit _ x).
-  + cbn. intros **. now rewrite u22u1_coherent.
   (** Small universe *)
   + exact U0.
   (** The interpretation of the small universe is the image of
       [U0] in [U1]. *)
   + cbn. exact (fun X => u02u1 X).
   + cbn. exact (fun u F => u12u0 (forall x:(u02u1 u), u02u1 (F x))).
-  + cbn. intros * x. exact (u12u0_unit _ x).
-  + cbn. intros * x. exact (u12u0_counit _ x).
   + cbn. exact (fun u F => u12u0 (forall x:u, u02u1 (F x))).
-  + cbn. intros * x. exact (u12u0_unit _ x).
-  + cbn. intros * x. exact (u12u0_counit _ x).
   + cbn. exact (u12u0 F).
   + cbn in h.
     exact (u12u0_counit _ h).
+  + cbn. easy.
+  + cbn. intros **. now rewrite u22u1_coherent.
+  + cbn. intros * x. exact (u12u0_unit _ x).
+  + cbn. intros * x. exact (u12u0_counit _ x).
+  + cbn. intros * x. exact (u12u0_unit _ x).
+  + cbn. intros * x. exact (u12u0_counit _ x).
 Qed.
 
 End Paradox.
@@ -381,7 +382,7 @@ Qed.
 
 Definition Forall {A:Type} (P:A->MProp) : MProp.
 Proof.
-  refine (exist _ _ _).
+  unshelve (refine (exist _ _ _)).
   + exact (forall x:A, El (P x)).
   + intros h x.
     eapply strength in h.
@@ -411,27 +412,27 @@ Proof.
   + exact (fun _ => Forall).
   + cbn. exact (fun _ _ f => f).
   + cbn. exact (fun _ _ f => f).
-  + cbn. easy.
   + exact Forall.
   + cbn. exact (fun _ f => f).
   + cbn. exact (fun _ f => f).
-  + cbn. easy.
   (** Small universe *)
   + exact bool.
   + exact (fun b => El (b2p b)).
   + cbn. exact (fun _ F => p2b (Forall (fun x => b2p (F x)))).
-  + cbn. auto.
-  + cbn. intros * f.
-    apply p2p1 in f. cbn in f.
-    exact f.
   + exact (fun _ F => p2b (Forall (fun x => b2p (F x)))).
-  + cbn. auto.
-  + cbn. intros * f.
-    apply p2p1 in f. cbn in f.
-    exact f.
   + apply p2b.
     exact B.
   + cbn in h. auto.
+  + cbn. easy.
+  + cbn. easy.
+  + cbn. auto.
+  + cbn. intros * f.
+    apply p2p1 in f. cbn in f.
+    exact f.
+  + cbn. auto.
+  + cbn. intros * f.
+    apply p2p1 in f. cbn in f.
+    exact f.
 Qed.
 
 End Paradox.
@@ -469,18 +470,18 @@ Hypothesis p2p2 : forall A:NProp, El A -> El (b2p (p2b A)).
 Theorem paradox : forall B:NProp, El B.
 Proof.
   intros B.
-  refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _));cycle 1.
+  unshelve (refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _))).
   + exact (fun P => ~~P).
-  + cbn. auto.
-  + cbn. auto.
-  + cbn. auto.
   + exact bool.
   + exact p2b.
   + exact b2p.
-  + auto.
-  + auto.
   + exact B.
   + exact h.
+  + cbn. auto.
+  + cbn. auto.
+  + cbn. auto.
+  + auto.
+  + auto.
 Qed.
 
 End Paradox.
@@ -515,18 +516,18 @@ Hypothesis p2p2 : forall A:NProp, El A -> El (b2p (p2b A)).
 Theorem mparadox : forall B:NProp, El B.
 Proof.
   intros B.
-  refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _));cycle 1.
+  unshelve (refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _))).
   + exact (fun P => P).
-  + cbn. auto.
-  + cbn. auto.
-  + cbn. auto.
   + exact bool.
   + exact p2b.
   + exact b2p.
-  + auto.
-  + auto.
   + exact B.
   + exact h.
+  + cbn. auto.
+  + cbn. auto.
+  + cbn. auto.
+  + auto.
+  + auto.
 Qed.
 
 End MParadox.
@@ -548,8 +549,8 @@ Hypothesis p2p2 : forall A:Prop, A -> b2p (p2b A).
 Theorem paradox : forall B:Prop, B.
 Proof.
   intros B.
-  refine (mparadox (exist _ bool (fun x => x)) _ _ _ _
-                   (exist _ B (fun x => x))).
+  unshelve (refine (mparadox (exist _ bool (fun x => x)) _ _ _ _
+                   (exist _ B (fun x => x)))).
   + intros p. red. red. exact (p2b (El p)).
   + cbn. intros b. red. exists (b2p b). exact (fun x => x).
   + cbn. intros [A H]. cbn. apply p2p1.
@@ -596,7 +597,6 @@ Proof.
   + cbn. exact (fun u F => forall x, F x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. easy.
   + exact (fun F => forall A:Prop, F(up A)).
   + cbn. exact (fun F f A => f (up A)).
   + cbn.
@@ -604,20 +604,21 @@ Proof.
     specialize (f (down A)).
     rewrite up_down in f.
     exact f.
+  + exact Prop.
+  + cbn. exact (fun X => X).
+  + cbn. exact (fun A P => forall x:A, P x).
+  + cbn. exact (fun A P => forall x:A, P x).
+  + cbn. exact P.
+  + exact h.
+  + cbn. easy.
   + cbn.
     intros F f A.
     destruct (up_down A). cbn.
     reflexivity.
-  + exact Prop.
-  + cbn. exact (fun X => X).
-  + cbn. exact (fun A P => forall x:A, P x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. exact (fun A P => forall x:A, P x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. exact P.
-  + exact h.
 Qed.
 
 End Paradox.
@@ -664,37 +665,37 @@ Proof.
   + cbn. exact (fun X F => forall x:X, F x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. easy.
   + exact (fun F => forall x:A, F (up x)).
   + cbn. exact (fun _ f => fun x:A => f (up x)).
   + cbn. intros * f X.
     specialize (f (down X)).
     rewrite up_down in f.
     exact f.
-  + cbn. intros ? f X.
-    destruct (up_down X). cbn.
-    reflexivity.
   (** Small universe *)
   + exact A.
   (** The interpretation of [A] as a universe is [U]. *)
   + cbn. exact up.
   + cbn. exact (fun _ F => down (forall x, up (F x))).
-  + cbn. intros ? ? f.
-    rewrite up_down.
-    exact f.
-  + cbn. intros ? ? f.
-    rewrite up_down in f.
-    exact f.
   + cbn. exact (fun _ F => down (forall x, up (F x))).
-  + cbn. intros ? ? f.
-    rewrite up_down.
-    exact f.
-  + cbn. intros ? ? f.
-    rewrite up_down in f.
-    exact f.
   + cbn. exact (down False).
   + rewrite up_down in p.
     exact p.
+  + cbn. easy.
+  + cbn. intros ? f X.
+    destruct (up_down X). cbn.
+    reflexivity.
+  + cbn. intros ? ? f.
+    rewrite up_down.
+    exact f.
+  + cbn. intros ? ? f.
+    rewrite up_down in f.
+    exact f.
+  + cbn. intros ? ? f.
+    rewrite up_down.
+    exact f.
+  + cbn. intros ? ? f.
+    rewrite up_down in f.
+    exact f.
 Qed.
 
 End Paradox.
@@ -710,7 +711,7 @@ Module PropNeqType.
 Theorem paradox : Prop <> Type.
 Proof.
   intros h.
-  refine (TypeNeqSmallType.paradox _ _).
+  unshelve (refine (TypeNeqSmallType.paradox _ _)).
   + exact Prop.
   + easy.
 Qed.

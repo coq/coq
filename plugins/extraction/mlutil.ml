@@ -511,6 +511,70 @@ let nb_occur_match =
     | MLglob _ | MLexn _ | MLdummy _ | MLaxiom -> 0
   in nb 1
 
+(* Replace unused variables by _ *)
+
+let dump_unused_vars a =
+  let rec ren env a = match a with
+    | MLrel i ->
+       let () = (List.nth env (i-1)) := true in a
+
+    | MLlam (id,b) ->
+       let occ_id = ref false in
+       let b' = ren (occ_id::env) b in
+       if !occ_id then if b' == b then a else MLlam(id,b')
+       else MLlam(Dummy,b')
+
+    | MLletin (id,b,c) ->
+       let occ_id = ref false in
+       let b' = ren env b in
+       let c' = ren (occ_id::env) c in
+       if !occ_id then
+         if b' == b && c' == c then a else MLletin(id,b',c')
+       else
+         (* 'let' without occurrence: shouldn't happen after simpl *)
+         MLletin(Dummy,b',c')
+
+    | MLcase (t,e,br) ->
+       let e' = ren env e in
+       let br' = Array.smartmap (ren_branch env) br in
+       if e' == e && br' == br then a else MLcase (t,e',br')
+
+    | MLfix (i,ids,v) ->
+       let env' = List.init (Array.length ids) (fun _ -> ref false) @ env in
+       let v' = Array.smartmap (ren env') v in
+       if v' == v then a else MLfix (i,ids,v')
+
+    | MLapp (b,l) ->
+       let b' = ren env b and l' = List.smartmap (ren env) l in
+       if b' == b && l' == l then a else MLapp (b',l')
+
+    | MLcons(t,r,l) ->
+       let l' = List.smartmap (ren env) l in
+       if l' == l then a else MLcons (t,r,l')
+
+    | MLtuple l ->
+       let l' = List.smartmap (ren env) l in
+       if l' == l then a else MLtuple l'
+
+    | MLmagic b ->
+       let b' = ren env b in
+       if b' == b then a else MLmagic b'
+
+    | MLglob _ | MLexn _ | MLdummy _ | MLaxiom -> a
+
+    and ren_branch env ((ids,p,b) as tr) =
+      let occs = List.map (fun _ -> ref false) ids in
+      let b' = ren (List.rev_append occs env) b in
+      let ids' =
+        List.map2
+          (fun id occ -> if !occ then id else Dummy)
+          ids occs
+      in
+      if b' == b && List.equal eq_ml_ident ids ids' then tr
+      else (ids',p,b')
+  in
+  ren [] a
+
 (*s Lifting on terms.
     [ast_lift k t] lifts the binding depth of [t] across [k] bindings. *)
 
@@ -949,9 +1013,20 @@ let expand_linear_let o id e =
 
 (* Some beta-iota reductions + simplifications. *)
 
+let rec unmagic = function MLmagic e -> unmagic e | e -> e
+let is_magic = function MLmagic _ -> true | _ -> false
+let magic_hd a = match a with
+  | MLmagic _ :: _ -> a
+  | e :: a -> MLmagic e :: a
+  | [] -> assert false
+
 let rec simpl o = function
   | MLapp (f, []) -> simpl o f
-  | MLapp (f, a) -> simpl_app o (List.map (simpl o) a) (simpl o f)
+  | MLapp (MLapp(f,a),a') -> simpl o (MLapp(f,a@a'))
+  | MLapp (f, a) ->
+     (* When the head of the application is magic, no need for magic on args *)
+     let a = if is_magic f then List.map unmagic a else a in
+     simpl_app o (List.map (simpl o) a) (simpl o f)
   | MLcase (typ,e,br) ->
       let br = Array.map (fun (l,p,t) -> (l,p,simpl o t)) br in
       simpl_case o typ br (simpl o e)
@@ -971,12 +1046,18 @@ let rec simpl o = function
       if ast_occurs_itvl 1 n c.(i) then
 	MLfix (i, ids, Array.map (simpl o) c)
       else simpl o (ast_lift (-n) c.(i)) (* Dummy fixpoint *)
+  | MLmagic(MLmagic _ as e) -> simpl o e
+  | MLmagic(MLapp (f,l)) -> simpl o (MLapp (MLmagic f, l))
+  | MLmagic(MLletin(id,c,e)) -> simpl o (MLletin(id,c,MLmagic e))
+  | MLmagic(MLcase(typ,e,br)) ->
+     let br' = Array.map (fun (ids,p,c) -> (ids,p,MLmagic c)) br in
+     simpl o (MLcase(typ,e,br'))
+  | MLmagic(MLexn _ as e) -> e
   | a -> ast_map (simpl o) a
 
 (* invariant : list [a] of arguments is non-empty *)
 
 and simpl_app o a = function
-  | MLapp (f',a') -> simpl_app o (a'@a) f'
   | MLlam (Dummy,t) ->
       simpl o (MLapp (ast_pop t, List.tl a))
   | MLlam (id,t) -> (* Beta redex *)
@@ -989,8 +1070,9 @@ and simpl_app o a = function
 	     simpl o (MLletin (id, List.hd a, MLapp (t, a'))))
   | MLmagic (MLlam (id,t)) ->
       (* When we've at least one argument, we permute the magic
-         and the lambda, to simplify things a bit (see #2795) *)
-      simpl_app o a (MLlam (id,MLmagic t))
+         and the lambda, to simplify things a bit (see #2795).
+         Alas, the 1st argument must also be magic then. *)
+      simpl_app o (magic_hd a) (MLlam (id,MLmagic t))
   | MLletin (id,e1,e2) when o.opt_let_app ->
       (* Application of a letin: we push arguments inside *)
       MLletin (id, e1, simpl o (MLapp (e2, List.map (ast_lift 1) a)))

@@ -110,7 +110,7 @@ Class IsTrunc (n : trunc_index) (A : Type) : Type :=
   Trunc_is_trunc : IsTrunc_internal n A.
 
 Tactic Notation "transparent" "assert" "(" ident(name) ":" constr(type) ")" :=
-  refine (let __transparent_assert_hypothesis := (_ : type) in _);
+  unshelve refine (let __transparent_assert_hypothesis := (_ : type) in _);
   [
       | (
         let H := match goal with H := _ |- _ => constr:(H) end in
@@ -321,7 +321,7 @@ Section Grothendieck.
 
   Definition Gcategory : PreCategory.
   Proof.
-    refine (@Build_PreCategory
+    unshelve refine (@Build_PreCategory
               Pair
               (fun s d => Gmorphism s d)
               Gidentity
@@ -346,7 +346,7 @@ Section Grothendieck2.
   Instance iscategory_grothendieck_toset : IsCategory (Gcategory F).
   Proof.
     intros s d.
-    refine (isequiv_adjointify _ _ _ _).
+    unshelve refine (isequiv_adjointify _ _ _ _).
     {
       intro m.
       transparent assert (H' : (s.(c) = d.(c))).

@@ -39,11 +39,11 @@ Module Export PointwiseCore.
              (G : Functor D D')
   : Functor (C -> D) (C' -> D').
   Proof.
-    refine (Build_Functor
+    unshelve (refine (Build_Functor
               (C -> D) (C' -> D')
               _
               _
-              _);
+              _));
     abstract admit.
   Defined.
 End PointwiseCore.

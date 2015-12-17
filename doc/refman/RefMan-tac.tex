@@ -219,8 +219,10 @@ difference: the user can leave some holes (denoted by \texttt{\_} or
 {\tt (\_:\type)}) in the term. {\tt refine} will generate as
 many subgoals as there are holes in the term. The type of holes must be
 either synthesized by the system or declared by an
-explicit cast like \verb|(_:nat->Prop)|. This low-level
-tactic can be useful to advanced users.
+explicit cast like \verb|(_:nat->Prop)|. Any subgoal that occurs in other
+subgoals is automatically shelved, as if calling {\tt shelve\_unifiable}
+(see Section~\ref{shelve}).
+This low-level tactic can be useful to advanced users.
 
 \Example
 
@@ -255,6 +257,13 @@ Defined.
   there is a hole in the term you gave
   which type cannot be inferred. Put a cast around it.
 \end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt simple refine \term}\tacindex{simple refine}
+
+  This tactic behaves like {\tt refine}, but it does not shelve any
+  subgoal. It does not perform any beta-reduction either.
+\end{Variants}
 
 \subsection{\tt apply \term}
 \tacindex{apply}
@@ -4955,8 +4964,8 @@ back into focus with the command {\tt Unshelve} (Section~\ref{unshelve}).
 \begin{Variants}
   \item \texttt{shelve\_unifiable}\tacindex{shelve\_unifiable}
 
-    Shelves only these goals under focused which are mentioned in other goals.
-    Goals which appear in the type of other goals can be solve by unification.
+    Shelves only the goals under focus that are mentioned in other goals.
+    Goals that appear in the type of other goals can be solved by unification.
 
 \Example
 \begin{coq_example}
