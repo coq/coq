@@ -175,7 +175,7 @@ let is_alive p = p.alive
 let uid { pid; } = string_of_int pid
 let unixpid { pid; } = pid
 
-let kill ({ pid = unixpid; oob_req; cin; cout; alive; watch } as p) =
+let kill ({ pid = unixpid; oob_resp; oob_req; cin; cout; alive; watch } as p) =
   p.alive <- false;
   if not alive then prerr_endline "This process is already dead"
   else begin try
@@ -183,6 +183,8 @@ let kill ({ pid = unixpid; oob_req; cin; cout; alive; watch } as p) =
     output_death_sentence (uid p) oob_req;
     close_in_noerr cin;
     close_out_noerr cout;
+    close_in_noerr oob_resp;
+    close_out_noerr oob_req;
     if Sys.os_type = "Unix" then Unix.kill unixpid 9;
     p.watch <- None
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
@@ -247,13 +249,15 @@ let is_alive p = p.alive
 let uid { pid; } = string_of_int pid
 let unixpid { pid = pid; } = pid
 
-let kill ({ pid = unixpid; oob_req; cin; cout; alive } as p) =
+let kill ({ pid = unixpid; oob_req; oob_resp; cin; cout; alive } as p) =
   p.alive <- false;
   if not alive then prerr_endline "This process is already dead"
   else begin try
     output_death_sentence (uid p) oob_req;
     close_in_noerr cin;
     close_out_noerr cout;
+    close_in_noerr oob_resp;
+    close_out_noerr oob_req;
     if Sys.os_type = "Unix" then Unix.kill unixpid 9;
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
 
