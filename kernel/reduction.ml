@@ -537,7 +537,7 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
     fold 0 cuniv
   else raise NotConvertible
 
-let clos_fconv trans cv_pb l2r evars env univs t1 t2 =
+let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let reds = Closure.RedFlags.red_add_transparent betaiotazeta trans in
   let infos = create_clos_infos ~evars reds env in
   ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
@@ -627,7 +627,7 @@ let gen_conv cv_pb l2r reds env evars univs t1 t2 =
   in
     if b then ()
     else 
-      let _ = clos_fconv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
+      let _ = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
 	()
 
 (* Profiling *)
@@ -644,7 +644,7 @@ let conv_leq = gen_conv CUMUL
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
   let (s, _) = 
-    clos_fconv reds cv_pb l2r evars env univs t1 t2 
+    clos_gen_conv reds cv_pb l2r evars env univs t1 t2 
   in s
 
 let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
@@ -655,7 +655,7 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
     if b then cstrs
     else
       let univs = ((univs, Univ.Constraint.empty), inferred_universes) in
-      let ((_,cstrs), _) = clos_fconv reds cv_pb l2r evars env univs t1 t2 in
+      let ((_,cstrs), _) = clos_gen_conv reds cv_pb l2r evars env univs t1 t2 in
 	cstrs
 
 (* Profiling *)
