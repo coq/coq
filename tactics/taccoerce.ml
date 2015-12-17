@@ -24,15 +24,30 @@ let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
 let (wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) Genarg.genarg_type) =
   Genarg.create_arg None "constr_under_binders"
 
+let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
+  let Val.Dyn (t, _) = v in
+  match Val.eq t (val_tag wit) with
+  | None -> false
+  | Some Refl -> true
+
+let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
+  let Val.Dyn (t', x) = v in
+  match Val.eq t t' with
+  | None -> None
+  | Some Refl -> Some x
+
+let in_gen wit v = Val.Dyn (val_tag wit, v)
+let out_gen wit v = match prj (val_tag wit) v with None -> assert false | Some x -> x
+
 module Value =
 struct
 
-type t = tlevel generic_argument
+type t = Val.t
 
-let rec normalize v =
-  if has_type v (topwit wit_genarg) then
-    normalize (out_gen (topwit wit_genarg) v)
-  else v
+let rec normalize v = v (** FIXME *)
+(*   if has_type v (topwit wit_genarg) then *)
+(*     normalize (out_gen (topwit wit_genarg) v) *)
+(*   else v *)
 
 let of_constr c = in_gen (topwit wit_constr) c
 
@@ -64,9 +79,15 @@ let to_int v =
 
 let to_list v =
   let v = normalize v in
-  let list_unpacker wit l = List.map (fun v -> in_gen (topwit wit) v) (top l) in
-  try Some (list_unpack { list_unpacker } v)
-  with Failure _ -> None
+  prj list_val v
+
+let of_list v = Val.Dyn (list_val, v)
+
+let to_option v =
+  let v = normalize v in
+  prj option_val v
+
+let of_option v = Val.Dyn (option_val, v)
 
 end
 

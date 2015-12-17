@@ -194,7 +194,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
               (Tacmach.pf_env gl) (Tacmach.project gl) (Tacmach.pf_concl gl) gl.Evd.it
                (Genarg.in_gen $make_globwit loc globtyp$ x)
 	  in
-          (sigma , out_gen $make_topwit loc globtyp$ a_interp)>>
+          (sigma , Tacinterp.Value.cast $make_topwit loc globtyp$ a_interp)>>
       end
     | Some f -> <:expr< $lid:f$>> in
   let subst = match h with

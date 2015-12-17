@@ -209,7 +209,7 @@ let get_res =
   let name = { mltac_plugin = "newring_plugin"; mltac_tactic = "get_res"; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let tac args ist =
-    let n = Genarg.out_gen (Genarg.topwit Stdarg.wit_int) (List.hd args) in
+    let n = Tacinterp.Value.cast (Genarg.topwit Stdarg.wit_int) (List.hd args) in
     let init i = Id.Map.find (Id.of_string ("x" ^ string_of_int i)) ist.lfun in
     tactic_res := Array.init n init;
     Proofview.tclUNIT ()

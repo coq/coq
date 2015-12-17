@@ -43,25 +43,44 @@ open Taccoerce
 open Sigma.Notations
 open Proofview.Notations
 
+let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
+  let Val.Dyn (t, _) = v in
+  match Val.eq t (val_tag wit) with
+  | None -> false
+  | Some Refl -> true
+
+let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
+  let Val.Dyn (t', x) = v in
+  match Val.eq t t' with
+  | None -> None
+  | Some Refl -> Some x
+
+let in_gen wit v = Val.Dyn (val_tag wit, v)
+let out_gen wit v = match prj (val_tag wit) v with None -> assert false | Some x -> x
+
+let pr_argument_type arg =
+  let Val.Dyn (tag, _) = arg in
+  Pp.str (Val.repr tag)
+
 let safe_msgnl s =
   Proofview.NonLogical.catch
     (Proofview.NonLogical.print_debug (s++fnl()))
     (fun _ -> Proofview.NonLogical.print_warning (str "bug in the debugger: an exception is raised while printing debug information"++fnl()))
 
-type value = tlevel generic_argument
+type value = Val.t
 
 (** Abstract application, to print ltac functions *)
 type appl =
   | UnnamedAppl (** For generic applications: nothing is printed *)
-  | GlbAppl of (Names.kernel_name * typed_generic_argument list) list
+  | GlbAppl of (Names.kernel_name * Val.t list) list
        (** For calls to global constants, some may alias other. *)
 let push_appl appl args =
   match appl with
   | UnnamedAppl -> UnnamedAppl
   | GlbAppl l -> GlbAppl (List.map (fun (h,vs) -> (h,vs@args)) l)
-let pr_generic arg =
-  try Pptactic.pr_top_generic (Global.env ()) arg
-  with e when Errors.noncritical e -> str"<generic>"
+let pr_generic arg = (** FIXME *)
+    let Val.Dyn (tag, _) = arg in
+    str"<" ++ str (Val.repr tag) ++ str ">"
 let pr_appl h vs =
   Pptactic.pr_ltac_constant  h ++ spc () ++
   Pp.prlist_with_sep spc pr_generic vs
@@ -123,7 +142,24 @@ module Value = struct
     let closure = VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], tac) in
     of_tacvalue closure
 
+  let cast_error wit v =
+    let pr_v = mt () in (** FIXME *)
+    let Val.Dyn (tag, _) = v in
+    let tag = Val.repr tag in
+    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ str tag
+      ++ str " while type " ++ Genarg.pr_argument_type wit ++ str " was expected.")
+
+  let cast wit v =
+    try val_cast wit v with CastError (wit, v) -> cast_error wit v
+
 end
+
+let print_top_val env arg v =
+  let unpacker wit cst =
+    try val_cast (topwit wit) v; mt ()
+    with CastError _ -> mt ()
+  in
+  unpack { unpacker } arg
 
 let dloc = Loc.ghost
 
@@ -176,13 +212,13 @@ let pr_value env v =
     | Some (env,sigma) -> pr_lconstr_under_binders_env env sigma c
     | _ -> str "a term"
   else
-    str "a value of type" ++ spc () ++ pr_argument_type (genarg_tag v)
+    str "a value of type" ++ spc () ++ pr_argument_type v
 
 let pr_closure env ist body =
   let pp_body = Pptactic.pr_glob_tactic env body in
   let pr_sep () = fnl () in
   let pr_iarg (id, arg) =
-    let arg = pr_argument_type (genarg_tag arg) in
+    let arg = pr_argument_type arg in
     hov 0 (pr_id id ++ spc () ++ str ":" ++ spc () ++ arg)
   in
   let pp_iargs = v 0 (prlist_with_sep pr_sep pr_iarg (Id.Map.bindings ist)) in
@@ -199,7 +235,7 @@ let pr_inspect env expr result =
     | VRec (ist, body) ->
       str "a recursive closure" ++ fnl () ++ pr_closure env !ist body
     else
-      let pp_type = pr_argument_type (genarg_tag result) in
+      let pp_type = pr_argument_type result in
       str "an object of type" ++ spc () ++ pp_type
   in
   pp_expr ++ fnl() ++ str "this is " ++ pp_result
@@ -809,7 +845,7 @@ let rec message_of_value v =
     Ftactic.List.map message_of_value l >>= fun l ->
     Ftactic.return (prlist_with_sep spc (fun x -> x) l)
   | None ->
-    let tag = pr_argument_type (genarg_tag v) in
+    let tag = pr_argument_type v in
     Ftactic.return (str "<" ++ tag ++ str ">") (** TODO *)
 
 let interp_message_token ist = function
@@ -1095,7 +1131,7 @@ let mk_int_or_var_value ist c = in_gen (topwit wit_int) (interp_int_or_var ist c
 let pack_sigma (sigma,c) = {it=c;sigma=sigma;}
 
 (* Interprets an l-tac expression into a value *)
-let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : typed_generic_argument Ftactic.t =
+let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftactic.t =
   (* The name [appl] of applied top-level Ltac names is ignored in
      [value_interp]. It is installed in the second step by a call to
      [name_vfun], because it gives more opportunities to detect a
@@ -1224,53 +1260,48 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
           let env = Proofview.Goal.env gl in
           match tag with
           | IntOrVarArgType ->
-              Ftactic.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
+              Ftactic.return (mk_int_or_var_value ist (Genarg.out_gen (glbwit wit_int_or_var) x))
           | IdentArgType ->
               Ftactic.return (value_of_ident (interp_ident ist env sigma
-                                               (out_gen (glbwit wit_ident) x)))
+                                               (Genarg.out_gen (glbwit wit_ident) x)))
           | VarArgType ->
-              Ftactic.return (mk_hyp_value ist env sigma (out_gen (glbwit wit_var) x))
-          | GenArgType -> f (out_gen (glbwit wit_genarg) x)
+              Ftactic.return (mk_hyp_value ist env sigma (Genarg.out_gen (glbwit wit_var) x))
+          | GenArgType -> f (Genarg.out_gen (glbwit wit_genarg) x)
           | OpenConstrArgType ->
               let (sigma,v) =
-                Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
+                Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (Genarg.out_gen (glbwit wit_open_constr) x))) gl in
               Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
           | ConstrMayEvalArgType ->
               let (sigma,c_interp) =
                 interp_constr_may_eval ist env sigma
-                  (out_gen (glbwit wit_constr_may_eval) x)
+                  (Genarg.out_gen (glbwit wit_constr_may_eval) x)
               in
               Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c_interp))
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
-              Ftactic.return (
-                let ans = List.map (mk_hyp_value ist env sigma) (out_gen wit x) in
-                in_gen (topwit (wit_list wit_genarg)) ans
-              )
+              let ans = List.map (mk_hyp_value ist env sigma) (Genarg.out_gen wit x) in
+              Ftactic.return (Value.of_list ans)
           | ListArgType IntOrVarArgType ->
               let wit = glbwit (wit_list wit_int_or_var) in
-              let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
-              Ftactic.return (in_gen (topwit (wit_list wit_genarg)) ans)
+              let ans = List.map (mk_int_or_var_value ist) (Genarg.out_gen wit x) in
+              Ftactic.return (Value.of_list ans)
           | ListArgType IdentArgType ->
               let wit = glbwit (wit_list wit_ident) in
               let mk_ident x = value_of_ident (interp_ident ist env sigma x) in
-              let ans = List.map mk_ident (out_gen wit x) in
-              Ftactic.return (in_gen (topwit (wit_list wit_genarg)) ans)
+              let ans = List.map mk_ident (Genarg.out_gen wit x) in
+              Ftactic.return (Value.of_list ans)
           | ListArgType t  ->
               let open Ftactic in
               let list_unpacker wit l =
-                let map x =
-                  f (in_gen (glbwit wit) x) >>= fun v ->
-                  Ftactic.return (out_gen (topwit wit) v)
-                in
+                let map x = f (Genarg.in_gen (glbwit wit) x) in
                 Ftactic.List.map map (glb l) >>= fun l ->
-                Ftactic.return (in_gen (topwit (wit_list wit)) l)
+              Ftactic.return (Value.of_list l)
               in
               list_unpack { list_unpacker } x
           | ExtraArgType _ ->
               (** Special treatment of tactics *)
-              if has_type x (glbwit wit_tactic) then
-                let tac = out_gen (glbwit wit_tactic) x in
+              if Genarg.has_type x (glbwit wit_tactic) then
+                let tac = Genarg.out_gen (glbwit wit_tactic) x in
                 val_interp ist tac
               else
                 let goal = Proofview.Goal.goal gl in
@@ -1294,9 +1325,10 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         Ftactic.lift (tactic_of_value ist v)
       in
       let tac =
-        Ftactic.with_env interp_vars >>= fun (env,l) ->
-        let name () = Pptactic.pr_tactic env (TacAlias(loc,s,l)) in
-        Proofview.Trace.name_tactic name (tac l)
+        Ftactic.with_env interp_vars >>= fun (env, lr) ->
+        let l = List.map2 (fun (_, g) (_, t) -> print_top_val env g t) l lr in
+        let name () = Pptactic.pr_alias_gen (fun x -> x) 0 s l in
+        Proofview.Trace.name_tactic name (tac lr)
       (* spiwack: this use of name_tactic is not robust to a
          change of implementation of [Ftactic]. In such a situation,
          some more elaborate solution will have to be used. *)
@@ -1317,7 +1349,8 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let goal = Evar.unsafe_of_int (-1) in
       (* /dummy values *)
       let args = List.map (fun a -> snd(interp_genarg ist env sigma concl goal a)) l in
-      let name () = Pptactic.pr_tactic env (TacML(loc,opn,args)) in
+      let l = List.map2 (print_top_val env) l args in
+      let name () = Pptactic.pr_extend_gen (fun x -> x) 0 opn l in
       Proofview.Trace.name_tactic name
         (catch_error_tac trace (tac args ist))
   | TacML (loc,opn,l) ->
@@ -1334,12 +1367,13 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
             (fun a sigma -> interp_genarg ist env sigma concl goal a) l goal_sigma
         in
         Proofview.Unsafe.tclEVARS sigma <*>
-        let name () = Pptactic.pr_tactic env (TacML(loc,opn,args)) in
+        let l = List.map2 (print_top_val env) l args in
+        let name () = Pptactic.pr_extend_gen (fun x -> x) 0 opn l in
         Proofview.Trace.name_tactic name
           (catch_error_tac trace (tac args ist))
       end }
 
-and force_vrec ist v : typed_generic_argument Ftactic.t =
+and force_vrec ist v : Val.t Ftactic.t =
   let v = Value.normalize v in
   if has_type v (topwit wit_tacvalue) then
     let v = to_tacvalue v in
@@ -1348,7 +1382,7 @@ and force_vrec ist v : typed_generic_argument Ftactic.t =
     | v -> Ftactic.return (of_tacvalue v)
   else Ftactic.return v
 
-and interp_ltac_reference loc' mustbetac ist r : typed_generic_argument Ftactic.t =
+and interp_ltac_reference loc' mustbetac ist r : Val.t Ftactic.t =
   match r with
   | ArgVar (loc,id) ->
       let v =
@@ -1368,7 +1402,7 @@ and interp_ltac_reference loc' mustbetac ist r : typed_generic_argument Ftactic.
       let appl = GlbAppl[r,[]] in
       val_interp ~appl ist (Tacenv.interp_ltac r)
 
-and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
+and interp_tacarg ist arg : Val.t Ftactic.t =
   match arg with
   | TacGeneric arg ->
       Ftactic.nf_enter begin fun gl ->
@@ -1428,7 +1462,7 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
   | Tacexp t -> val_interp ist t
 
 (* Interprets an application node *)
-and interp_app loc ist fv largs : typed_generic_argument Ftactic.t =
+and interp_app loc ist fv largs : Val.t Ftactic.t =
   let (>>=) = Ftactic.bind in
   let fail = Tacticals.New.tclZEROMSG (str "Illegal tactic application.") in
   let fv = Value.normalize fv in
@@ -1607,22 +1641,22 @@ and interp_genarg ist env sigma concl gl x =
     match genarg_tag x with
     | IntOrVarArgType ->
       in_gen (topwit wit_int_or_var)
-        (ArgArg (interp_int_or_var ist (out_gen (glbwit wit_int_or_var) x)))
+        (ArgArg (interp_int_or_var ist (Genarg.out_gen (glbwit wit_int_or_var) x)))
     | IdentArgType ->
       in_gen (topwit wit_ident)
-        (interp_ident ist env sigma (out_gen (glbwit wit_ident) x))
+        (interp_ident ist env sigma (Genarg.out_gen (glbwit wit_ident) x))
     | VarArgType ->
-      in_gen (topwit wit_var) (interp_hyp ist env sigma (out_gen (glbwit wit_var) x))
+      in_gen (topwit wit_var) (interp_hyp ist env sigma (Genarg.out_gen (glbwit wit_var) x))
     | GenArgType ->
-      in_gen (topwit wit_genarg) (interp_genarg (out_gen (glbwit wit_genarg) x))
+      interp_genarg (Genarg.out_gen (glbwit wit_genarg) x)
     | ConstrArgType ->
       let (sigma,c_interp) =
-        interp_constr ist env !evdref (out_gen (glbwit wit_constr) x)
+        interp_constr ist env !evdref (Genarg.out_gen (glbwit wit_constr) x)
       in
       evdref := sigma;
       in_gen (topwit wit_constr) c_interp
     | ConstrMayEvalArgType ->
-      let (sigma,c_interp) = interp_constr_may_eval ist env !evdref (out_gen (glbwit wit_constr_may_eval) x) in
+      let (sigma,c_interp) = interp_constr_may_eval ist env !evdref (Genarg.out_gen (glbwit wit_constr_may_eval) x) in
       evdref := sigma;
       in_gen (topwit wit_constr_may_eval) c_interp
     | OpenConstrArgType ->
@@ -1630,7 +1664,7 @@ and interp_genarg ist env sigma concl gl x =
       in_gen (topwit wit_open_constr)
         (interp_open_constr ~expected_type
            ist env !evdref
-           (snd (out_gen (glbwit wit_open_constr) x)))
+           (snd (Genarg.out_gen (glbwit wit_open_constr) x)))
     | ListArgType ConstrArgType ->
         let (sigma,v) = interp_genarg_constr_list ist env !evdref x in
 	evdref := sigma;
@@ -1638,26 +1672,24 @@ and interp_genarg ist env sigma concl gl x =
     | ListArgType VarArgType -> interp_genarg_var_list ist env sigma x
     | ListArgType _ ->
       let list_unpacker wit l =
-        let map x =
-          out_gen (topwit wit) (interp_genarg (in_gen (glbwit wit) x))
-        in
-        in_gen (topwit (wit_list wit)) (List.map map (glb l))
+        let map x = interp_genarg (Genarg.in_gen (glbwit wit) x) in
+        Value.of_list (List.map map (glb l))
       in
       list_unpack { list_unpacker } x
     | OptArgType _ ->
       let opt_unpacker wit o = match glb o with
-      | None -> in_gen (topwit (wit_opt wit)) None
+      | None -> Value.of_option None
       | Some x ->
-        let x = out_gen (topwit wit) (interp_genarg (in_gen (glbwit wit) x)) in
-        in_gen (topwit (wit_opt wit)) (Some x)
+        let x = interp_genarg (Genarg.in_gen (glbwit wit) x) in
+        Value.of_option (Some x)
       in
       opt_unpack { opt_unpacker } x
     | PairArgType _ ->
       let pair_unpacker wit1 wit2 o =
         let (p, q) = glb o in
-        let p = out_gen (topwit wit1) (interp_genarg (in_gen (glbwit wit1) p)) in
-        let q = out_gen (topwit wit2) (interp_genarg (in_gen (glbwit wit2) q)) in
-        in_gen (topwit (wit_pair wit1 wit2)) (p, q)
+        let p = interp_genarg (Genarg.in_gen (glbwit wit1) p) in
+        let q = interp_genarg (Genarg.in_gen (glbwit wit2) q) in
+        Val.Dyn (pair_val, (p, q))
       in
       pair_unpack { pair_unpacker } x
     | ExtraArgType s ->
@@ -1682,14 +1714,16 @@ and global_genarg =
   fun x -> global_tag (genarg_tag x)
 
 and interp_genarg_constr_list ist env sigma x =
-  let lc = out_gen (glbwit (wit_list wit_constr)) x in
+  let lc = Genarg.out_gen (glbwit (wit_list wit_constr)) x in
   let (sigma,lc) = interp_constr_list ist env sigma lc in
-  sigma , in_gen (topwit (wit_list wit_constr)) lc
+  let lc = List.map Value.of_constr lc in
+  sigma , Value.of_list lc
 
 and interp_genarg_var_list ist env sigma x =
-  let lc = out_gen (glbwit (wit_list wit_var)) x in
+  let lc = Genarg.out_gen (glbwit (wit_list wit_var)) x in
   let lc = interp_hyp_list ist env sigma lc in
-  in_gen (topwit (wit_list wit_var)) lc
+  let lc = List.map (fun id -> Val.Dyn (val_tag (topwit wit_var), id)) lc in
+  Value.of_list lc
 
 (* Interprets tactic expressions : returns a "constr" *)
 and interp_ltac_constr ist e : constr Ftactic.t =
@@ -2344,8 +2378,8 @@ let interp_redexp env sigma r =
 let _ =
   let eval ty env sigma lfun arg =
     let ist = { lfun = lfun; extra = TacStore.empty; } in
-    if has_type arg (glbwit wit_tactic) then
-      let tac = out_gen (glbwit wit_tactic) arg in
+    if Genarg.has_type arg (glbwit wit_tactic) then
+      let tac = Genarg.out_gen (glbwit wit_tactic) arg in
       let tac = interp_tactic ist tac in
       Pfedit.refine_by_tactic env sigma ty tac
     else

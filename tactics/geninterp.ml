@@ -12,7 +12,7 @@ open Genarg
 module TacStore = Store.Make(struct end)
 
 type interp_sign = {
-  lfun : tlevel generic_argument Id.Map.t;
+  lfun : Val.t Id.Map.t;
   extra : TacStore.t }
 
 type ('glb, 'top) interp_fun = interp_sign ->
@@ -33,6 +33,6 @@ let register_interp0 = Interp.register0
 let generic_interp ist gl v =
   let unpacker wit v =
     let (sigma, ans) = interp wit ist gl (glb v) in
-    (sigma, in_gen (topwit wit) ans)
+    (sigma, Val.Dyn (val_tag (topwit wit), ans))
   in
   unpack { unpacker; } v

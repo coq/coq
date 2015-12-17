@@ -467,11 +467,13 @@ let pp_generic_argument arg =
   pp(str"<genarg:"++pr_argument_type(genarg_tag arg)++str">")
 
 let prgenarginfo arg =
-  let tpe = pr_argument_type (genarg_tag arg) in
-  try
-    let data = Pptactic.pr_top_generic (Global.env ()) arg in
-    str "<genarg:" ++ tpe ++ str " := [ " ++ data ++ str " ] >"
-  with _any ->
+  let Val.Dyn (tag, _) = arg in
+  let tpe = str (Val.repr tag) in
+  (** FIXME *)
+(*   try *)
+(*     let data = Pptactic.pr_top_generic (Global.env ()) arg in *)
+(*     str "<genarg:" ++ tpe ++ str " := [ " ++ data ++ str " ] >" *)
+(*   with _any -> *)
     str "<genarg:" ++ tpe ++ str ">"
 
 let ppgenarginfo arg = pp (prgenarginfo arg)

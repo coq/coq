@@ -31,7 +31,7 @@ let check_alias key = KNmap.mem key !alias_map
 (** ML tactic extensions (TacML) *)
 
 type ml_tactic =
-  typed_generic_argument list -> Geninterp.interp_sign -> unit Proofview.tactic
+  Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic
 
 module MLName =
 struct

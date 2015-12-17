@@ -29,8 +29,7 @@ exception CannotCoerceTo of string
 
 module Value :
 sig
-  type t = tlevel generic_argument
-  (** Tactics manipulate [tlevel generic_argument]. *)
+  type t = Val.t
 
   val normalize : t -> t
   (** Eliminated the leading dynamic type casts. *)
@@ -42,6 +41,9 @@ sig
   val of_int : int -> t
   val to_int : t -> int option
   val to_list : t -> t list option
+  val of_list : t list -> t
+  val to_option : t -> t option option
+  val of_option : t option -> t
 end
 
 (** {5 Coercion functions} *)

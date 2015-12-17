@@ -16,13 +16,14 @@ open Misctypes
 
 module Value :
 sig
-  type t = tlevel generic_argument
+  type t = Val.t
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_int : int -> t
   val to_int : t -> int option
   val to_list : t -> t list option
   val of_closure : Geninterp.interp_sign -> glob_tactic_expr -> t
+  val cast : 'a typed_abstract_argument_type -> Val.t -> 'a
 end
 
 (** Values for interpretation *)
@@ -56,7 +57,7 @@ val get_debug : unit -> debug_info
 (* spiwack: the [Term.constr] argument is the conclusion of the goal,
    for "casted open constr" *)
 val interp_genarg : interp_sign -> Environ.env -> Evd.evar_map -> Term.constr -> Goal.goal ->
-  glob_generic_argument -> Evd.evar_map * typed_generic_argument
+  glob_generic_argument -> Evd.evar_map * Value.t
 
 (** Interprets any expression *)
 val val_interp : interp_sign -> glob_tactic_expr -> (value -> unit Proofview.tactic) -> unit Proofview.tactic

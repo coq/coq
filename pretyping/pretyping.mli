@@ -29,7 +29,7 @@ type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
 type var_map = Pattern.constr_under_binders Id.Map.t
 type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
-type unbound_ltac_var_map = Genarg.tlevel Genarg.generic_argument Id.Map.t
+type unbound_ltac_var_map = Genarg.Val.t Id.Map.t
 
 type ltac_var_map = {
   ltac_constrs : var_map;
@@ -152,5 +152,5 @@ val interp_sort : evar_map -> glob_sort -> evar_map * sorts
 val interp_elimination_sort : glob_sort -> sorts_family
 
 val genarg_interp_hook :
-  (types -> env -> evar_map -> Genarg.typed_generic_argument Id.Map.t ->
+  (types -> env -> evar_map -> unbound_ltac_var_map ->
     Genarg.glob_generic_argument -> constr * evar_map) Hook.t

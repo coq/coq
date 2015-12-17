@@ -197,6 +197,43 @@ let val_tag = function
 | OptArgType t -> assert false
 | PairArgType (t1, t2) -> assert false
 
+exception CastError of argument_type * Val.t
+
+let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
+  let Val.Dyn (t', x) = v in
+  match Val.eq t t' with
+  | None -> None
+  | Some Refl -> Some x
+
+let try_prj wit v = match prj (val_tag wit) v with
+| None -> raise (CastError (wit, v))
+| Some x -> x
+
+let rec val_cast : type a. a typed_abstract_argument_type -> Val.t -> a =
+fun wit v -> match unquote wit with
+| IntOrVarArgType | IdentArgType
+| VarArgType | GenArgType
+| ConstrArgType | ConstrMayEvalArgType
+| OpenConstrArgType | ExtraArgType _ -> try_prj wit v
+| ListArgType t ->
+  let v = match prj list_val v with
+  | None -> raise (CastError (wit, v))
+  | Some v -> v
+  in
+  Obj.magic (List.map (fun x -> val_cast t x) v)
+| OptArgType t ->
+  let v = match prj option_val v with
+  | None -> raise (CastError (wit, v))
+  | Some v -> v
+  in
+  Obj.magic (Option.map (fun x -> val_cast t x) v)
+| PairArgType (t1, t2) ->
+  let (v1, v2) = match prj pair_val v with
+  | None -> raise (CastError (wit, v))
+  | Some v -> v
+  in
+  Obj.magic (val_cast t1 v1, val_cast t2 v2)
+
 (** Registering genarg-manipulating functions *)
 
 module type GenObj =

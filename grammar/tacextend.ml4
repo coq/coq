@@ -53,7 +53,7 @@ let rec make_let raw e = function
       let e = make_let raw e l in
       let v =
         if raw then <:expr< Genarg.out_gen $make_rawwit loc t$ $lid:p$ >>
-               else <:expr< Genarg.out_gen $make_topwit    loc t$ $lid:p$ >> in
+               else <:expr< Tacinterp.Value.cast $make_topwit    loc t$ $lid:p$ >> in
       <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let raw e l
 
@@ -73,7 +73,7 @@ let check_unicity s l =
 
 let make_clause (pt,_,e) =
   (make_patt pt,
-   vala (Some (make_when (MLast.loc_of_expr e) pt)),
+   vala None,
    make_let false e pt)
 
 let make_fun_clauses loc s l =

@@ -59,7 +59,7 @@ let wit_tauto_flags : tauto_flags uniform_genarg_type =
 
 let assoc_flags ist =
   let v = Id.Map.find (Names.Id.of_string "tauto_flags") ist.lfun in
-  try Genarg.out_gen (topwit wit_tauto_flags) v with _ -> assert false
+  try Value.cast (topwit wit_tauto_flags) v with _ -> assert false
 
 (* Whether inner not are unfolded *)
 let negation_unfolding = ref true
@@ -310,7 +310,7 @@ let simplif ist =
 let t_simplif = tacticIn simplif "simplif"
 
 let tauto_intuit flags t_reduce solver =
-  let flags = Genarg.in_gen (topwit wit_tauto_flags) flags in
+  let flags = Genarg.Val.Dyn (Genarg.val_tag (topwit wit_tauto_flags), flags) in
   let lfun = make_lfun [("t_solver", solver); ("tauto_flags", flags)] in
   let ist = { default_ist () with lfun = lfun; } in
   let vars = [Id.of_string "t_solver"] in
