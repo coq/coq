@@ -145,11 +145,11 @@ module JsCoq : S = struct
 
   let new_coq_id () = incr coq_ids; !coq_ids
 
-  let start_coq () = printf "<textarea id=%a>@\n" pp_coq_id (new_coq_id ())
-  let end_coq   () = printf "</textarea>@\n"
+  let start_coq () = printf "<div><textarea id=%a>@\n" pp_coq_id (new_coq_id ())
+  let end_coq   () = printf "</textarea></div>@\n"
 
-  let start_doc () = ()
-  let end_doc   () = ()
+  let start_doc () = printf "<div><p>@\n"
+  let end_doc   () = printf "</div>@\n"
 
   let start_emph () = printf "<em>"
   let stop_emph  () = printf "</em>"
