@@ -9,6 +9,8 @@
 open Pp
 open Util
 
+module Val = Dyn.Make(struct end)
+
 type argument_type =
   (* Basic types *)
   | IntOrVarArgType
@@ -133,13 +135,22 @@ let pair_unpack pack (t, obj) = match t with
 
 (** Creating args *)
 
-let (arg0_map : Obj.t option String.Map.t ref) = ref String.Map.empty
+type load = {
+  nil : Obj.t option;
+  dyn : Obj.t Val.tag;
+}
 
-let create_arg opt name =
+let (arg0_map : load String.Map.t ref) = ref String.Map.empty
+
+let cast_tag : 'a Val.tag -> 'b Val.tag = Obj.magic
+
+let create_arg opt ?dyn name =
   if String.Map.mem name !arg0_map then
     Errors.anomaly (str "generic argument already declared: " ++ str name)
   else
-    let () = arg0_map := String.Map.add name (Obj.magic opt) !arg0_map in
+    let dyn = match dyn with None -> Val.create name | Some dyn -> cast_tag dyn in
+    let obj = { nil = Option.map Obj.repr opt; dyn; } in
+    let () = arg0_map := String.Map.add name obj !arg0_map in
     ExtraArgType name
 
 let make0 = create_arg
@@ -153,11 +164,38 @@ let default_empty_value t =
       | Some v1, Some v2 -> Some (Obj.repr (v1, v2))
       | _ -> None)
   | ExtraArgType s ->
-    String.Map.find s !arg0_map
+    (String.Map.find s !arg0_map).nil
   | _ -> None in
   match aux t with
   | Some v -> Some (Obj.obj v)
   | None -> None
+
+(** Beware: keep in sync with the corresponding types *)
+let int_or_var_T = Val.create "int_or_var"
+let ident_T = Val.create "ident"
+let var_T = Val.create "var"
+let genarg_T = Val.create "genarg"
+let constr_T = Val.create "constr"
+let constr_may_eval_T = Val.create "constr_may_eval"
+let open_constr_T = Val.create "open_constr"
+
+let option_val = Val.create "option"
+let list_val = Val.create "list"
+let pair_val = Val.create "pair"
+
+let val_tag = function
+| IntOrVarArgType -> cast_tag int_or_var_T
+| IdentArgType -> cast_tag ident_T
+| VarArgType -> cast_tag var_T
+| GenArgType -> cast_tag genarg_T
+| ConstrArgType -> cast_tag constr_T
+| ConstrMayEvalArgType -> cast_tag constr_may_eval_T
+| OpenConstrArgType -> cast_tag open_constr_T
+| ExtraArgType s -> Obj.magic (String.Map.find s !arg0_map).dyn
+(** Recursive types have no associated dynamic tag *)
+| ListArgType t -> assert false
+| OptArgType t -> assert false
+| PairArgType (t1, t2) -> assert false
 
 (** Registering genarg-manipulating functions *)
 

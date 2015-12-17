@@ -72,14 +72,20 @@ type ('raw, 'glob, 'top) genarg_type
 (** Generic types. ['raw] is the OCaml lowest level, ['glob] is the globalized
     one, and ['top] the internalized one. *)
 
+module Val : Dyn.S
+(** Dynamic types for toplevel values. While the generic types permit to relate
+    objects at various levels of interpretation, toplevel values are wearing
+    their own type regardless of where they came from. This allows to use the
+    same runtime representation for several generic types. *)
+
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision when the three types agree. *)
 
-val make0 : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
+val make0 : 'raw option -> ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
 (** Create a new generic type of argument: force to associate
     unique ML types at each of the three levels. *)
 
-val create_arg : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
+val create_arg : 'raw option -> ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
 (** Alias for [make0]. *)
 
 (** {5 Specialized types} *)
@@ -178,6 +184,16 @@ type ('r, 'l) pair_unpacker =
     (('a1 * 'a2), ('b1 * 'b2), ('c1 * 'c2), 'l) cast -> 'r }
 
 val pair_unpack : ('r, 'l) pair_unpacker -> 'l generic_argument -> 'r
+
+(** {6 Dynamic toplevel values} *)
+
+val val_tag : 'a typed_abstract_argument_type -> 'a Val.tag
+(** Retrieve the dynamic type associated to a toplevel genarg. Only works for
+    ground generic arguments. *)
+
+val option_val : Val.t option Val.tag
+val list_val : Val.t list Val.tag
+val pair_val : (Val.t * Val.t) Val.tag
 
 (** {6 Type reification} *)
 
