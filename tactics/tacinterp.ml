@@ -1259,8 +1259,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
           let sigma = Tacmach.New.project gl in
           let env = Proofview.Goal.env gl in
           match tag with
-          | IntOrVarArgType ->
-              Ftactic.return (mk_int_or_var_value ist (Genarg.out_gen (glbwit wit_int_or_var) x))
           | IdentArgType ->
               Ftactic.return (value_of_ident (interp_ident ist env sigma
                                                (Genarg.out_gen (glbwit wit_ident) x)))
@@ -1270,19 +1268,9 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (Genarg.out_gen (glbwit wit_open_constr) x))) gl in
               Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
-          | ConstrMayEvalArgType ->
-              let (sigma,c_interp) =
-                interp_constr_may_eval ist env sigma
-                  (Genarg.out_gen (glbwit wit_constr_may_eval) x)
-              in
-              Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c_interp))
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
               let ans = List.map (mk_hyp_value ist env sigma) (Genarg.out_gen wit x) in
-              Ftactic.return (Value.of_list ans)
-          | ListArgType IntOrVarArgType ->
-              let wit = glbwit (wit_list wit_int_or_var) in
-              let ans = List.map (mk_int_or_var_value ist) (Genarg.out_gen wit x) in
               Ftactic.return (Value.of_list ans)
           | ListArgType IdentArgType ->
               let wit = glbwit (wit_list wit_ident) in
@@ -1638,9 +1626,6 @@ and interp_genarg ist env sigma concl gl x =
   let evdref = ref sigma in
   let rec interp_genarg x =
     match genarg_tag x with
-    | IntOrVarArgType ->
-      in_gen (topwit wit_int_or_var)
-        (interp_int_or_var ist (Genarg.out_gen (glbwit wit_int_or_var) x))
     | IdentArgType ->
       in_gen (topwit wit_ident)
         (interp_ident ist env sigma (Genarg.out_gen (glbwit wit_ident) x))
@@ -1652,10 +1637,6 @@ and interp_genarg ist env sigma concl gl x =
       in
       evdref := sigma;
       in_gen (topwit wit_constr) c_interp
-    | ConstrMayEvalArgType ->
-      let (sigma,c_interp) = interp_constr_may_eval ist env !evdref (Genarg.out_gen (glbwit wit_constr_may_eval) x) in
-      evdref := sigma;
-      in_gen (topwit wit_constr_may_eval) c_interp
     | OpenConstrArgType ->
       let expected_type = WithoutTypeConstraint in
       in_gen (topwit wit_open_constr)
@@ -1703,7 +1684,7 @@ and interp_genarg ist env sigma concl gl x =
 
 and global_genarg =
   let rec global_tag = function
-    | IntOrVarArgType -> true
+    | ExtraArgType "int_or_var" -> true (** FIXME *)
     | ListArgType t | OptArgType t -> global_tag t
     | PairArgType (t1,t2) -> global_tag t1 && global_tag t2
     | _ -> false
@@ -2335,6 +2316,7 @@ let interp_constr_with_bindings' ist gl c =
   (project gl, pack_sigma (sigma, c))
 
 let () =
+  Geninterp.register_interp0 wit_int_or_var (fun ist gl n -> project gl, interp_int_or_var ist n);
   Geninterp.register_interp0 wit_ref (lift interp_reference);
   Geninterp.register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
   Geninterp.register_interp0 wit_clause_dft_concl (lift interp_clause);
@@ -2343,7 +2325,9 @@ let () =
   Geninterp.register_interp0 wit_red_expr (lifts interp_red_expr);
   Geninterp.register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
   Geninterp.register_interp0 wit_bindings interp_bindings';
-  Geninterp.register_interp0 wit_constr_with_bindings interp_constr_with_bindings'
+  Geninterp.register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
+  Geninterp.register_interp0 wit_constr_may_eval (lifts interp_constr_may_eval);
+  ()
 
 let () =
   let interp ist gl tac =

@@ -267,13 +267,9 @@ module Make
 
   let rec pr_raw_generic_rec prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
     match Genarg.genarg_tag x with
-      | IntOrVarArgType -> pr_or_var int (out_gen (rawwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (rawwit wit_ident) x)
       | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
       | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
-      | ConstrMayEvalArgType ->
-        pr_may_eval prc prlc (pr_or_by_notation prref) prpat
-          (out_gen (rawwit wit_constr_may_eval) x)
       | OpenConstrArgType -> prc (snd (out_gen (rawwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
@@ -302,14 +298,9 @@ module Make
 
   let rec pr_glb_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
-      | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (glbwit wit_ident) x)
       | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
       | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
-      | ConstrMayEvalArgType ->
-        pr_may_eval prc prlc
-          (pr_or_var (pr_and_short_name pr_evaluable_reference)) prpat
-          (out_gen (glbwit wit_constr_may_eval) x)
       | OpenConstrArgType -> prc (snd (out_gen (glbwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
@@ -337,11 +328,9 @@ module Make
 
   let rec pr_top_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
-      | IntOrVarArgType -> int (out_gen (topwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (topwit wit_ident) x)
       | VarArgType -> pr_id (out_gen (topwit wit_var) x)
       | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
-      | ConstrMayEvalArgType -> prc (out_gen (topwit wit_constr_may_eval) x)
       | OpenConstrArgType -> prc (snd (out_gen (topwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
@@ -1432,6 +1421,8 @@ let () =
   let pr_bool b = if b then str "true" else str "false" in
   let pr_unit _ = str "()" in
   let pr_string s = str "\"" ++ str s ++ str "\"" in
+  Genprint.register_print0 Constrarg.wit_int_or_var
+    (pr_or_var int) (pr_or_var int) int;
   Genprint.register_print0 Constrarg.wit_ref
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
   Genprint.register_print0
@@ -1462,6 +1453,11 @@ let () =
     (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun { Evd.it = it } -> pr_bindings_no_with pr_constr pr_lconstr it);
+  Genprint.register_print0 Constrarg.wit_constr_may_eval
+    (pr_may_eval pr_constr_expr pr_lconstr_expr (pr_or_by_notation pr_reference) pr_constr_pattern_expr)
+    (pr_may_eval (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr)
+      (pr_or_var (pr_and_short_name pr_evaluable_reference)) (pr_pat_and_constr_expr pr_glob_constr))
+    pr_constr;
   Genprint.register_print0 Constrarg.wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))

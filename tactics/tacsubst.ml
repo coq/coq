@@ -280,14 +280,11 @@ and subst_match_rule subst = function
 
 and subst_genarg subst (x:glob_generic_argument) =
   match genarg_tag x with
-  | IntOrVarArgType -> in_gen (glbwit wit_int_or_var) (out_gen (glbwit wit_int_or_var) x)
   | IdentArgType ->
       in_gen (glbwit wit_ident) (out_gen (glbwit wit_ident) x)
   | VarArgType -> in_gen (glbwit wit_var) (out_gen (glbwit wit_var) x)
   | ConstrArgType ->
       in_gen (glbwit wit_constr) (subst_glob_constr subst (out_gen (glbwit wit_constr) x))
-  | ConstrMayEvalArgType ->
-      in_gen (glbwit wit_constr_may_eval) (subst_raw_may_eval subst (out_gen (glbwit wit_constr_may_eval) x))
   | OpenConstrArgType ->
       in_gen (glbwit wit_open_constr)
         ((),subst_glob_constr subst (snd (out_gen (glbwit wit_open_constr) x)))
@@ -322,6 +319,7 @@ and subst_genarg subst (x:glob_generic_argument) =
 (** Registering *)
 
 let () =
+  Genintern.register_subst0 wit_int_or_var (fun _ v -> v);
   Genintern.register_subst0 wit_ref subst_global_reference;
   Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
   Genintern.register_subst0 wit_tactic subst_tactic;
@@ -332,4 +330,5 @@ let () =
   Genintern.register_subst0 wit_quant_hyp subst_declared_or_quantified_hypothesis;
   Genintern.register_subst0 wit_bindings subst_bindings;
   Genintern.register_subst0 wit_constr_with_bindings subst_glob_with_bindings;
+  Genintern.register_subst0 wit_constr_may_eval subst_raw_may_eval;
   ()

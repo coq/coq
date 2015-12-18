@@ -13,12 +13,10 @@ module Val = Dyn.Make(struct end)
 
 type argument_type =
   (* Basic types *)
-  | IntOrVarArgType
   | IdentArgType
   | VarArgType
   (* Specific types *)
   | ConstrArgType
-  | ConstrMayEvalArgType
   | OpenConstrArgType
   | ListArgType of argument_type
   | OptArgType of argument_type
@@ -26,11 +24,9 @@ type argument_type =
   | ExtraArgType of string
 
 let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
-| IntOrVarArgType, IntOrVarArgType -> true
 | IdentArgType, IdentArgType -> true
 | VarArgType, VarArgType -> true
 | ConstrArgType, ConstrArgType -> true
-| ConstrMayEvalArgType, ConstrMayEvalArgType -> true
 | OpenConstrArgType, OpenConstrArgType -> true
 | ListArgType arg1, ListArgType arg2 -> argument_type_eq arg1 arg2
 | OptArgType arg1, OptArgType arg2 -> argument_type_eq arg1 arg2
@@ -40,11 +36,9 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | _ -> false
 
 let rec pr_argument_type = function
-| IntOrVarArgType -> str "int_or_var"
 | IdentArgType -> str "ident"
 | VarArgType -> str "var"
 | ConstrArgType -> str "constr"
-| ConstrMayEvalArgType -> str "constr_may_eval"
 | OpenConstrArgType -> str "open_constr"
 | ListArgType t -> pr_argument_type t ++ spc () ++ str "list"
 | OptArgType t -> pr_argument_type t ++ spc () ++ str "opt"
@@ -168,7 +162,6 @@ let default_empty_value t =
   | None -> None
 
 (** Beware: keep in sync with the corresponding types *)
-let int_or_var_T = Val.create "int"
 let ident_T = Val.create "ident"
 let genarg_T = Val.create "genarg"
 let constr_T = Val.create "constr"
@@ -179,13 +172,10 @@ let list_val = Val.create "list"
 let pair_val = Val.create "pair"
 
 let val_tag = function
-| IntOrVarArgType -> cast_tag int_or_var_T
 | IdentArgType -> cast_tag ident_T
 | VarArgType -> cast_tag ident_T
   (** Must ensure that toplevel types of Var and Ident agree! *)
 | ConstrArgType -> cast_tag constr_T
-| ConstrMayEvalArgType -> cast_tag constr_T
-  (** Must ensure that toplevel types of Constr and ConstrMayEval agree! *)
 | OpenConstrArgType -> cast_tag open_constr_T
 | ExtraArgType s -> Obj.magic (String.Map.find s !arg0_map).dyn
 (** Recursive types have no associated dynamic tag *)
@@ -207,9 +197,9 @@ let try_prj wit v = match prj (val_tag wit) v with
 
 let rec val_cast : type a. a typed_abstract_argument_type -> Val.t -> a =
 fun wit v -> match unquote wit with
-| IntOrVarArgType | IdentArgType
+| IdentArgType
 | VarArgType
-| ConstrArgType | ConstrMayEvalArgType
+| ConstrArgType
 | OpenConstrArgType | ExtraArgType _ -> try_prj wit v
 | ListArgType t ->
   let v = match prj list_val v with

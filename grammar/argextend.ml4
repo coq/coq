@@ -30,11 +30,9 @@ let mk_extraarg loc s =
     <:expr< $lid:"wit_"^s$ >>
 
 let rec make_wit loc = function
-  | IntOrVarArgType -> <:expr< Constrarg.wit_int_or_var >>
   | IdentArgType -> <:expr< Constrarg.wit_ident >>
   | VarArgType -> <:expr< Constrarg.wit_var >>
   | ConstrArgType -> <:expr< Constrarg.wit_constr >>
-  | ConstrMayEvalArgType -> <:expr< Constrarg.wit_constr_may_eval >>
   | OpenConstrArgType -> <:expr< Constrarg.wit_open_constr >>
   | ListArgType t -> <:expr< Genarg.wit_list $make_wit loc t$ >>
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>

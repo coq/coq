@@ -201,12 +201,10 @@ val pair_val : (Val.t * Val.t) Val.tag
 
 type argument_type =
   (** Basic types *)
-  | IntOrVarArgType
   | IdentArgType
   | VarArgType
   (** Specific types *)
   | ConstrArgType
-  | ConstrMayEvalArgType
   | OpenConstrArgType
   | ListArgType of argument_type
   | OptArgType of argument_type

@@ -22,7 +22,8 @@ let loc_of_or_by_notation f = function
 let unsafe_of_type (t : argument_type) : ('a, 'b, 'c) Genarg.genarg_type =
   Obj.magic t
 
-let wit_int_or_var = unsafe_of_type IntOrVarArgType
+let wit_int_or_var =
+  Genarg.make0 ~dyn:(val_tag (topwit Stdarg.wit_int)) None "int_or_var"
 
 let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type =
   Genarg.make0 None "intropattern"
@@ -43,7 +44,8 @@ let wit_sort : (glob_sort, glob_sort, sorts) genarg_type =
 
 let wit_constr = unsafe_of_type ConstrArgType
 
-let wit_constr_may_eval = unsafe_of_type ConstrMayEvalArgType
+let wit_constr_may_eval =
+  Genarg.make0 ~dyn:(val_tag (topwit wit_constr)) None "constr_may_eval"
 
 let wit_uconstr = Genarg.make0 None "uconstr"
 
@@ -64,11 +66,13 @@ let wit_clause_dft_concl  =
 (** Register location *)
 
 let () =
+  register_name0 wit_int_or_var "Constrarg.wit_int_or_var";
   register_name0 wit_ref "Constrarg.wit_ref";
   register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";
   register_name0 wit_uconstr "Constrarg.wit_uconstr";
+  register_name0 wit_constr_may_eval "Constrarg.wit_constr_may_eval";
   register_name0 wit_red_expr "Constrarg.wit_red_expr";
   register_name0 wit_clause_dft_concl "Constrarg.wit_clause_dft_concl";
   register_name0 wit_quant_hyp "Constrarg.wit_quant_hyp";
