@@ -168,12 +168,10 @@ let default_empty_value t =
   | None -> None
 
 (** Beware: keep in sync with the corresponding types *)
-let int_or_var_T = Val.create "int_or_var"
+let int_or_var_T = Val.create "int"
 let ident_T = Val.create "ident"
-let var_T = Val.create "var"
 let genarg_T = Val.create "genarg"
 let constr_T = Val.create "constr"
-let constr_may_eval_T = Val.create "constr_may_eval"
 let open_constr_T = Val.create "open_constr"
 
 let option_val = Val.create "option"
@@ -183,9 +181,11 @@ let pair_val = Val.create "pair"
 let val_tag = function
 | IntOrVarArgType -> cast_tag int_or_var_T
 | IdentArgType -> cast_tag ident_T
-| VarArgType -> cast_tag var_T
+| VarArgType -> cast_tag ident_T
+  (** Must ensure that toplevel types of Var and Ident agree! *)
 | ConstrArgType -> cast_tag constr_T
-| ConstrMayEvalArgType -> cast_tag constr_may_eval_T
+| ConstrMayEvalArgType -> cast_tag constr_T
+  (** Must ensure that toplevel types of Constr and ConstrMayEval agree! *)
 | OpenConstrArgType -> cast_tag open_constr_T
 | ExtraArgType s -> Obj.magic (String.Map.find s !arg0_map).dyn
 (** Recursive types have no associated dynamic tag *)

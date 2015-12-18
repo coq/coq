@@ -15,7 +15,9 @@ let wit_bool : bool uniform_genarg_type =
   make0 None "bool"
 
 let wit_int : int uniform_genarg_type =
-  make0 None "int"
+  make0 ~dyn:(val_tag (Obj.magic IntOrVarArgType)) None "int"
+(** FIXME: IntOrVarArgType is hardwired, but that definition should be the other
+    way around. *)
 
 let wit_string : string uniform_genarg_type =
   make0 None "string"
