@@ -2240,7 +2240,7 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
   | IntroInjection l' ->
       intro_decomp_eq loc l' thin tac id
   | IntroRewrite l2r ->
-      Tacticals.New.tclTHENLAST
+      Tacticals.New.tclTHENFIRST
         (* Skip the side conditions of the rewriting step *)
 	(rewrite_hyp style l2r id)
         (tac thin None [])

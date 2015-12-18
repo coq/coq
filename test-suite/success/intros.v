@@ -84,3 +84,17 @@ Qed.
 Goal forall x : nat, True.
 intros y%(fun x => x).
 Abort.
+
+(* Fixing a bug in the order of side conditions of a "->" step *)
+
+Goal (True -> 1=0) -> 1=1.
+intros ->.
+- reflexivity.
+- exact I.
+Qed.
+
+Goal forall x, (True -> x=0) -> 0=x.
+intros x ->.
+- reflexivity.
+- exact I.
+Qed.
