@@ -42,11 +42,15 @@ type case_printing =
     cstr_tags : bool list array; (* whether each pattern var of each constructor is a let-in (true) or not (false) *)
     style     : case_style }
 type case_info =
-  { ci_ind        : inductive;
-    ci_npar       : int;
-    ci_cstr_ndecls : int array; (* number of pattern vars of each constructor (with let's)*)
-    ci_cstr_nargs : int array; (* number of pattern vars of each constructor (w/o let's) *)
-    ci_pp_info    : case_printing (* not interpreted by the kernel *)
+  { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
+    ci_npar       : int;            (* number of parameters of the above inductive type *)
+    ci_cstr_ndecls : int array;     (* number of arguments of individual constructors
+                                       (numbers of parameters of the inductive type are excluded from the count)
+                                       (with let's) *)
+    ci_cstr_nargs : int array;      (* number of arguments of individual constructors
+                                       (numbers of parameters of the inductive type are excluded from the count)
+                                       (w/o let's) *)
+    ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
 (********************************************************************)
