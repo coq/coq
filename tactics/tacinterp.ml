@@ -1266,7 +1266,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
                                                (Genarg.out_gen (glbwit wit_ident) x)))
           | VarArgType ->
               Ftactic.return (mk_hyp_value ist env sigma (Genarg.out_gen (glbwit wit_var) x))
-          | GenArgType -> f (Genarg.out_gen (glbwit wit_genarg) x)
           | OpenConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (Genarg.out_gen (glbwit wit_open_constr) x))) gl in
@@ -1647,8 +1646,6 @@ and interp_genarg ist env sigma concl gl x =
         (interp_ident ist env sigma (Genarg.out_gen (glbwit wit_ident) x))
     | VarArgType ->
       in_gen (topwit wit_var) (interp_hyp ist env sigma (Genarg.out_gen (glbwit wit_var) x))
-    | GenArgType ->
-      interp_genarg (Genarg.out_gen (glbwit wit_genarg) x)
     | ConstrArgType ->
       let (sigma,c_interp) =
         interp_constr ist env !evdref (Genarg.out_gen (glbwit wit_constr) x)
@@ -1706,7 +1703,7 @@ and interp_genarg ist env sigma concl gl x =
 
 and global_genarg =
   let rec global_tag = function
-    | IntOrVarArgType | GenArgType -> true
+    | IntOrVarArgType -> true
     | ListArgType t | OptArgType t -> global_tag t
     | PairArgType (t1,t2) -> global_tag t1 && global_tag t2
     | _ -> false

@@ -44,10 +44,7 @@ struct
 
 type t = Val.t
 
-let rec normalize v = v (** FIXME *)
-(*   if has_type v (topwit wit_genarg) then *)
-(*     normalize (out_gen (topwit wit_genarg) v) *)
-(*   else v *)
+let normalize v = v
 
 let of_constr c = in_gen (topwit wit_constr) c
 

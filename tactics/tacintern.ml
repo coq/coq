@@ -733,8 +733,6 @@ and intern_genarg ist x =
     map_raw wit_ident (intern_ident lf) ist x
   | VarArgType ->
     map_raw wit_var intern_hyp ist x
-  | GenArgType ->
-    map_raw wit_genarg intern_genarg ist x
   | ConstrArgType ->
     map_raw wit_constr intern_constr ist x
   | ConstrMayEvalArgType ->

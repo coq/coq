@@ -270,7 +270,6 @@ module Make
       | IntOrVarArgType -> pr_or_var int (out_gen (rawwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (rawwit wit_ident) x)
       | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
-      | GenArgType -> pr_raw_generic_rec prc prlc prtac prpat prref (out_gen (rawwit wit_genarg) x)
       | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
       | ConstrMayEvalArgType ->
         pr_may_eval prc prlc (pr_or_by_notation prref) prpat
@@ -306,7 +305,6 @@ module Make
       | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (glbwit wit_ident) x)
       | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
-      | GenArgType -> pr_glb_generic_rec prc prlc prtac prpat (out_gen (glbwit wit_genarg) x)
       | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
       | ConstrMayEvalArgType ->
         pr_may_eval prc prlc
@@ -342,7 +340,6 @@ module Make
       | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (topwit wit_ident) x)
       | VarArgType -> pr_id (out_gen (topwit wit_var) x)
-      | GenArgType -> pr_top_generic_rec prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
       | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
       | ConstrMayEvalArgType -> prc (out_gen (topwit wit_constr_may_eval) x)
       | OpenConstrArgType -> prc (snd (out_gen (topwit wit_open_constr) x))

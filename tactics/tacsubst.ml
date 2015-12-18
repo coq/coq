@@ -284,7 +284,6 @@ and subst_genarg subst (x:glob_generic_argument) =
   | IdentArgType ->
       in_gen (glbwit wit_ident) (out_gen (glbwit wit_ident) x)
   | VarArgType -> in_gen (glbwit wit_var) (out_gen (glbwit wit_var) x)
-  | GenArgType -> in_gen (glbwit wit_genarg) (subst_genarg subst (out_gen (glbwit wit_genarg) x))
   | ConstrArgType ->
       in_gen (glbwit wit_constr) (subst_glob_constr subst (out_gen (glbwit wit_constr) x))
   | ConstrMayEvalArgType ->

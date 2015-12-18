@@ -205,7 +205,6 @@ type argument_type =
   | IdentArgType
   | VarArgType
   (** Specific types *)
-  | GenArgType
   | ConstrArgType
   | ConstrMayEvalArgType
   | OpenConstrArgType

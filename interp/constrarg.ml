@@ -38,8 +38,6 @@ let wit_ref = Genarg.make0 None "ref"
 
 let wit_quant_hyp = Genarg.make0 None "quant_hyp"
 
-let wit_genarg = unsafe_of_type GenArgType
-
 let wit_sort : (glob_sort, glob_sort, sorts) genarg_type =
   Genarg.make0 None "sort"
 

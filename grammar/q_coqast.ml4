@@ -227,7 +227,6 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.IdentArgType -> <:expr< Genarg.IdentArgType >>
   | Genarg.VarArgType -> <:expr< Genarg.VarArgType >>
   | Genarg.OpenConstrArgType -> <:expr< Genarg.OpenConstrArgType >>
-  | Genarg.GenArgType -> <:expr< Genarg.GenArgType >>
   | Genarg.ConstrArgType -> <:expr< Genarg.ConstrArgType >>
   | Genarg.ConstrMayEvalArgType -> <:expr< Genarg.ConstrMayEvalArgType >>
   | Genarg.ListArgType t -> <:expr< Genarg.ListArgType $mlexpr_of_argtype loc t$ >>

@@ -17,7 +17,6 @@ type argument_type =
   | IdentArgType
   | VarArgType
   (* Specific types *)
-  | GenArgType
   | ConstrArgType
   | ConstrMayEvalArgType
   | OpenConstrArgType
@@ -30,7 +29,6 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | IntOrVarArgType, IntOrVarArgType -> true
 | IdentArgType, IdentArgType -> true
 | VarArgType, VarArgType -> true
-| GenArgType, GenArgType -> true
 | ConstrArgType, ConstrArgType -> true
 | ConstrMayEvalArgType, ConstrMayEvalArgType -> true
 | OpenConstrArgType, OpenConstrArgType -> true
@@ -45,7 +43,6 @@ let rec pr_argument_type = function
 | IntOrVarArgType -> str "int_or_var"
 | IdentArgType -> str "ident"
 | VarArgType -> str "var"
-| GenArgType -> str "genarg"
 | ConstrArgType -> str "constr"
 | ConstrMayEvalArgType -> str "constr_may_eval"
 | OpenConstrArgType -> str "open_constr"
@@ -187,7 +184,6 @@ let val_tag = function
 | IntOrVarArgType -> cast_tag int_or_var_T
 | IdentArgType -> cast_tag ident_T
 | VarArgType -> cast_tag var_T
-| GenArgType -> cast_tag genarg_T
 | ConstrArgType -> cast_tag constr_T
 | ConstrMayEvalArgType -> cast_tag constr_may_eval_T
 | OpenConstrArgType -> cast_tag open_constr_T
@@ -212,7 +208,7 @@ let try_prj wit v = match prj (val_tag wit) v with
 let rec val_cast : type a. a typed_abstract_argument_type -> Val.t -> a =
 fun wit v -> match unquote wit with
 | IntOrVarArgType | IdentArgType
-| VarArgType | GenArgType
+| VarArgType
 | ConstrArgType | ConstrMayEvalArgType
 | OpenConstrArgType | ExtraArgType _ -> try_prj wit v
 | ListArgType t ->
