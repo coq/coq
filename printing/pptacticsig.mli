@@ -32,45 +32,20 @@ module type Pp = sig
 
   val pr_clauses :  bool option ->
     ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
-  val pr_raw_generic :
-    (constr_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) ->
-    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) ->
-    (Libnames.reference -> std_ppcmds) -> rlevel generic_argument ->
-    std_ppcmds
 
-  val pr_glb_generic :
-    (glob_constr_and_expr -> Pp.std_ppcmds) ->
-    (glob_constr_and_expr -> Pp.std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    (glob_constr_pattern_and_expr -> std_ppcmds) ->
-    glevel generic_argument -> std_ppcmds
+  val pr_raw_generic : env -> rlevel generic_argument -> std_ppcmds
 
-  val pr_top_generic :
-    (Term.constr -> std_ppcmds) ->
-    (Term.constr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    (Pattern.constr_pattern -> std_ppcmds) ->
-    tlevel generic_argument ->
-    std_ppcmds
+  val pr_glb_generic : env -> glevel generic_argument -> std_ppcmds
 
-  val pr_raw_extend:
-    (constr_expr -> std_ppcmds) -> (constr_expr -> std_ppcmds) ->
-    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) -> int ->
+  val pr_top_generic : env -> tlevel generic_argument -> std_ppcmds
+
+  val pr_raw_extend: env -> int ->
     ml_tactic_entry -> raw_generic_argument list -> std_ppcmds
 
-  val pr_glob_extend:
-    (glob_constr_and_expr -> std_ppcmds) -> (glob_constr_and_expr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    (glob_constr_pattern_and_expr -> std_ppcmds) -> int ->
+  val pr_glob_extend: env -> int ->
     ml_tactic_entry -> glob_generic_argument list -> std_ppcmds
 
-  val pr_extend :
-    (Term.constr -> std_ppcmds) -> (Term.constr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    (constr_pattern -> std_ppcmds) -> int ->
+  val pr_extend : env -> int ->
     ml_tactic_entry -> typed_generic_argument list -> std_ppcmds
 
   val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds

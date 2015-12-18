@@ -468,9 +468,8 @@ let pp_generic_argument arg =
 
 let prgenarginfo arg =
   let tpe = pr_argument_type (genarg_tag arg) in
-  let pr_gtac _ x = Pptactic.pr_glob_tactic (Global.env()) x in
   try
-    let data = Pptactic.pr_top_generic pr_constr pr_lconstr pr_gtac pr_constr_pattern arg in
+    let data = Pptactic.pr_top_generic (Global.env ()) arg in
     str "<genarg:" ++ tpe ++ str " := [ " ++ data ++ str " ] >"
   with _any ->
     str "<genarg:" ++ tpe ++ str ">"

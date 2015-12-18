@@ -60,9 +60,7 @@ let push_appl appl args =
   | UnnamedAppl -> UnnamedAppl
   | GlbAppl l -> GlbAppl (List.map (fun (h,vs) -> (h,vs@args)) l)
 let pr_generic arg =
-  let pr_gtac _ x = Pptactic.pr_glob_tactic (Global.env()) x in
-  try
-    Pptactic.pr_top_generic pr_constr pr_lconstr pr_gtac pr_constr_pattern arg
+  try Pptactic.pr_top_generic (Global.env ()) arg
   with e when Errors.noncritical e -> str"<generic>"
 let pr_appl h vs =
   Pptactic.pr_ltac_constant  h ++ spc () ++

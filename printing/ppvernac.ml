@@ -79,13 +79,7 @@ module Make
     | VernacEndSubproof -> str""
     | _ -> str"."
 
-  let pr_gen t =
-    pr_raw_generic
-      pr_constr_expr
-      pr_lconstr_expr
-      pr_raw_tactic_level
-      pr_constr_expr
-      pr_reference t
+  let pr_gen t = pr_raw_generic (Global.env ()) t
 
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()

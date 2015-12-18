@@ -265,12 +265,12 @@ module Make
   let with_evars ev s = if ev then "e" ^ s else s
 
 
-  let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
+  let rec pr_raw_generic_rec prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
     match Genarg.genarg_tag x with
       | IntOrVarArgType -> pr_or_var int (out_gen (rawwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (rawwit wit_ident) x)
       | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
-      | GenArgType -> pr_raw_generic prc prlc prtac prpat prref (out_gen (rawwit wit_genarg) x)
+      | GenArgType -> pr_raw_generic_rec prc prlc prtac prpat prref (out_gen (rawwit wit_genarg) x)
       | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
       | ConstrMayEvalArgType ->
         pr_may_eval prc prlc (pr_or_by_notation prref) prpat
@@ -278,14 +278,14 @@ module Make
       | OpenConstrArgType -> prc (snd (out_gen (rawwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
-          let map x = pr_raw_generic prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
+          let map x = pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
           pr_sequence map (raw l)
         in
         hov 0 (list_unpack { list_unpacker } x)
       | OptArgType _ ->
         let opt_unpacker wit o = match raw o with
           | None -> mt ()
-          | Some x -> pr_raw_generic prc prlc prtac prpat prref (in_gen (rawwit wit) x)
+          | Some x -> pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x)
         in
         hov 0 (opt_unpack { opt_unpacker } x)
       | PairArgType _ ->
@@ -293,7 +293,7 @@ module Make
           let p, q = raw o in
           let p = in_gen (rawwit wit1) p in
           let q = in_gen (rawwit wit2) q in
-          pr_sequence (pr_raw_generic prc prlc prtac prpat prref) [p; q]
+          pr_sequence (pr_raw_generic_rec prc prlc prtac prpat prref) [p; q]
         in
         hov 0 (pair_unpack { pair_unpacker } x)
       | ExtraArgType s ->
@@ -301,12 +301,12 @@ module Make
         with Not_found -> Genprint.generic_raw_print x
 
 
-  let rec pr_glb_generic prc prlc prtac prpat x =
+  let rec pr_glb_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
       | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (glbwit wit_ident) x)
       | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
-      | GenArgType -> pr_glb_generic prc prlc prtac prpat (out_gen (glbwit wit_genarg) x)
+      | GenArgType -> pr_glb_generic_rec prc prlc prtac prpat (out_gen (glbwit wit_genarg) x)
       | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
       | ConstrMayEvalArgType ->
         pr_may_eval prc prlc
@@ -315,14 +315,14 @@ module Make
       | OpenConstrArgType -> prc (snd (out_gen (glbwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
-          let map x = pr_glb_generic prc prlc prtac prpat (in_gen (glbwit wit) x) in
+          let map x = pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x) in
           pr_sequence map (glb l)
         in
         hov 0 (list_unpack { list_unpacker } x)
       | OptArgType _ ->
         let opt_unpacker wit o = match glb o with
           | None -> mt ()
-          | Some x -> pr_glb_generic prc prlc prtac prpat (in_gen (glbwit wit) x)
+          | Some x -> pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x)
         in
         hov 0 (opt_unpack { opt_unpacker } x)
       | PairArgType _ ->
@@ -330,32 +330,32 @@ module Make
           let p, q = glb o in
           let p = in_gen (glbwit wit1) p in
           let q = in_gen (glbwit wit2) q in
-          pr_sequence (pr_glb_generic prc prlc prtac prpat) [p; q]
+          pr_sequence (pr_glb_generic_rec prc prlc prtac prpat) [p; q]
         in
         hov 0 (pair_unpack { pair_unpacker } x)
       | ExtraArgType s ->
         try pi2 (String.Map.find s !genarg_pprule) prc prlc prtac x
         with Not_found -> Genprint.generic_glb_print x
 
-  let rec pr_top_generic prc prlc prtac prpat x =
+  let rec pr_top_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
       | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (topwit wit_ident) x)
       | VarArgType -> pr_id (out_gen (topwit wit_var) x)
-      | GenArgType -> pr_top_generic prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
+      | GenArgType -> pr_top_generic_rec prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
       | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
       | ConstrMayEvalArgType -> prc (out_gen (topwit wit_constr_may_eval) x)
       | OpenConstrArgType -> prc (snd (out_gen (topwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
-          let map x = pr_top_generic prc prlc prtac prpat (in_gen (topwit wit) x) in
+          let map x = pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x) in
           pr_sequence map (top l)
         in
         hov 0 (list_unpack { list_unpacker } x)
       | OptArgType _ ->
         let opt_unpacker wit o = match top o with
           | None -> mt ()
-          | Some x -> pr_top_generic prc prlc prtac prpat (in_gen (topwit wit) x)
+          | Some x -> pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x)
         in
         hov 0 (opt_unpack { opt_unpacker } x)
       | PairArgType _ ->
@@ -363,7 +363,7 @@ module Make
           let p, q = top o in
           let p = in_gen (topwit wit1) p in
           let q = in_gen (topwit wit2) q in
-          pr_sequence (pr_top_generic prc prlc prtac prpat) [p; q]
+          pr_sequence (pr_top_generic_rec prc prlc prtac prpat) [p; q]
         in
         hov 0 (pair_unpack { pair_unpacker } x)
       | ExtraArgType s ->
@@ -415,19 +415,19 @@ module Make
     with Not_found ->
       KerName.print key ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
 
-  let pr_raw_extend prc prlc prtac prpat =
-    pr_extend_gen (pr_raw_generic prc prlc prtac prpat pr_reference)
-  let pr_glob_extend prc prlc prtac prpat =
-    pr_extend_gen (pr_glb_generic prc prlc prtac prpat)
-  let pr_extend prc prlc prtac prpat =
-    pr_extend_gen (pr_top_generic prc prlc prtac prpat)
+  let pr_raw_extend_rec prc prlc prtac prpat =
+    pr_extend_gen (pr_raw_generic_rec prc prlc prtac prpat pr_reference)
+  let pr_glob_extend_rec prc prlc prtac prpat =
+    pr_extend_gen (pr_glb_generic_rec prc prlc prtac prpat)
+  let pr_extend_rec prc prlc prtac prpat =
+    pr_extend_gen (pr_top_generic_rec prc prlc prtac prpat)
 
   let pr_raw_alias prc prlc prtac prpat =
-    pr_alias_gen (pr_raw_generic prc prlc prtac prpat pr_reference)
+    pr_alias_gen (pr_raw_generic_rec prc prlc prtac prpat pr_reference)
   let pr_glob_alias prc prlc prtac prpat =
-    pr_alias_gen (pr_glb_generic prc prlc prtac prpat)
+    pr_alias_gen (pr_glb_generic_rec prc prlc prtac prpat)
   let pr_alias prc prlc prtac prpat =
-    pr_alias_gen (pr_top_generic prc prlc prtac prpat)
+    pr_alias_gen (pr_top_generic_rec prc prlc prtac prpat)
 
   (**********************************************************************)
   (* The tactic printer                                                 *)
@@ -1282,7 +1282,7 @@ module Make
       pr_reference = pr_reference;
       pr_name = pr_lident;
       pr_generic = Genprint.generic_raw_print;
-      pr_extend = pr_raw_extend pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
+      pr_extend = pr_raw_extend_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
       pr_alias = pr_raw_alias pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
     } in
     make_pr_tac
@@ -1313,7 +1313,7 @@ module Make
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
         pr_generic = Genprint.generic_glb_print;
-        pr_extend = pr_glob_extend
+        pr_extend = pr_glob_extend_rec
           (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
           prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
         pr_alias = pr_glob_alias
@@ -1355,7 +1355,7 @@ module Make
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
         pr_generic = Genprint.generic_top_print;
-        pr_extend = pr_extend
+        pr_extend = pr_extend_rec
           (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
           (pr_glob_tactic_level env) pr_constr_pattern;
         pr_alias = pr_alias
@@ -1369,6 +1369,28 @@ module Make
         n t
     in
     prtac n t
+
+  let pr_raw_generic env = pr_raw_generic_rec
+    pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr pr_reference
+
+  let pr_glb_generic env = pr_glb_generic_rec
+    (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
+    (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
+
+  let pr_top_generic env = pr_top_generic_rec
+    (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
+    (pr_glob_tactic_level env) pr_constr_pattern
+
+  let pr_raw_extend env = pr_raw_extend_rec
+    pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr
+
+  let pr_glob_extend env = pr_glob_extend_rec
+    (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
+    (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
+
+  let pr_extend env = pr_extend_rec
+    (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
+    (pr_glob_tactic_level env) pr_constr_pattern
 
   let pr_tactic env = pr_tactic_level env ltop
 
