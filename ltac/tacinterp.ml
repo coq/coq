@@ -1656,17 +1656,17 @@ and name_atomic ?env tacexpr tac : unit Proofview.tactic =
 and interp_atomic ist tac : unit Proofview.tactic =
   match tac with
   (* Basic tactics *)
-  | TacIntroPattern l ->
+  | TacIntroPattern (ev,l) ->
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
-        Tacticals.New.tclWITHHOLES false 
+        Tacticals.New.tclWITHHOLES ev
         (name_atomic ~env
-          (TacIntroPattern l)
+          (TacIntroPattern (ev,l))
           (* spiwack: print uninterpreted, not sure if it is the
              expected behaviour. *)
-          (Tactics.intro_patterns l')) sigma
+          (Tactics.intro_patterns ev l')) sigma
       end }
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.enter { enter = begin fun gl ->

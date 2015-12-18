@@ -112,7 +112,7 @@ GEXTEND Gram
   tactic_then_intropatterns:
     [ [ "["; ">"; (first,tail) = tactic_then_intropatterns_gen; "]" ->
         let f pl =
-          TacAtom (make_intropattern_loc !@loc pl, TacIntroPattern pl) in
+          TacAtom (make_intropattern_loc !@loc pl, TacIntroPattern (true,pl)) in
         let first = List.map f first in
         begin match tail with
         | Some (t,last) -> TacExtendTac (Array.of_list first, f t, Array.map f last)
@@ -120,7 +120,7 @@ GEXTEND Gram
         end
       | pl = ne_intropatterns ->
         let f pl =
-          TacAtom (make_intropattern_loc !@loc pl, TacIntroPattern pl) in
+          TacAtom (make_intropattern_loc !@loc pl, TacIntroPattern (true,pl)) in
         TacExtendTac ([||],f pl,[||]) ] ]
   ;
   tactic_expr:

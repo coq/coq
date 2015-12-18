@@ -1385,7 +1385,7 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
 
 let use_clear_hyp_by_default () = false
 
-let postInjEqTac clear_flag ipats c n =
+let postInjEqTac with_evars clear_flag ipats c n =
   match ipats with
   | Some ipats ->
       let clear_tac =
@@ -1394,21 +1394,21 @@ let postInjEqTac clear_flag ipats c n =
         tclTRY (apply_clear_request clear_flag dft c) in
       let intro_tac =
         if use_injection_pattern_l2r_order ()
-        then intro_patterns_bound_to n MoveLast ipats
-        else intro_patterns_to MoveLast ipats in
+        then intro_patterns_bound_to with_evars n MoveLast ipats
+        else intro_patterns_to with_evars MoveLast ipats in
       tclTHEN clear_tac intro_tac
   | None -> apply_clear_request clear_flag false c
 
-let injEq clear_flag ipats =
+let injEq with_evars clear_flag ipats =
   let l2r =
     if use_injection_pattern_l2r_order () && not (Option.is_empty ipats) then true else false
   in
-  injEqThen (fun c i -> postInjEqTac clear_flag ipats c i) l2r
+  injEqThen (fun c i -> postInjEqTac with_evars clear_flag ipats c i) l2r
 
-let inj ipats with_evars clear_flag = onEquality with_evars (injEq clear_flag ipats)
+let inj ipats with_evars clear_flag = onEquality with_evars (injEq with_evars clear_flag ipats)
 
 let injClause ipats with_evars = function
-  | None -> onNegatedEquality with_evars (injEq None ipats)
+  | None -> onNegatedEquality with_evars (injEq with_evars None ipats)
   | Some c -> onInductionArg (inj ipats with_evars) c
 
 let injConcl = injClause None false None

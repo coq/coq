@@ -482,8 +482,8 @@ let map_raw wit f ist x =
 let rec intern_atomic lf ist x =
   match (x:raw_atomic_tactic_expr) with
   (* Basic tactics *)
-  | TacIntroPattern l ->
-      TacIntroPattern (List.map (intern_intro_pattern lf ist) l)
+  | TacIntroPattern (ev,l) ->
+      TacIntroPattern (ev,List.map (intern_intro_pattern lf ist) l)
   | TacIntroMove (ido,hto) ->
       TacIntroMove (Option.map (intern_ident lf ist) ido,
                     intern_move_location ist hto)

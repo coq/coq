@@ -286,7 +286,7 @@ let initial_atomic () =
         "simpl", TacReduce(Simpl (Redops.all_flags,None),nocl);
         "compute", TacReduce(Cbv Redops.all_flags,nocl);
         "intro", TacIntroMove(None,MoveLast);
-        "intros", TacIntroPattern [];
+        "intros", TacIntroPattern (false,[]);
       ]
   in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in

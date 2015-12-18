@@ -772,7 +772,8 @@ module Make
 
       (* Printing tactics as arguments *)
       let rec pr_atom0 a = tag_atom a (match a with
-        | TacIntroPattern [] -> primitive "intros"
+        | TacIntroPattern (false,[]) -> primitive "intros"
+        | TacIntroPattern (true,[]) -> primitive "eintros"
         | TacIntroMove (None,MoveLast) -> primitive "intro"
         | t -> str "(" ++ pr_atom1 t ++ str ")"
       )
@@ -780,10 +781,10 @@ module Make
       (* Main tactic printer *)
       and pr_atom1 a = tag_atom a (match a with
         (* Basic tactics *)
-        | TacIntroPattern [] as t ->
+        | TacIntroPattern (ev,[]) as t ->
           pr_atom0 t
-        | TacIntroPattern (_::_ as p) ->
-          hov 1 (primitive "intros" ++ spc () ++
+        | TacIntroPattern (ev,(_::_ as p)) ->
+           hov 1 (primitive (if ev then "eintros" else "intros") ++ spc () ++
                     prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
         | TacIntroMove (None,MoveLast) as t ->
           pr_atom0 t
