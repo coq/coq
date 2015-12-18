@@ -102,16 +102,16 @@ val use_clear_hyp_by_default : unit -> bool
 
 (** {6 Introduction tactics with eliminations. } *)
 
-val intro_patterns : intro_patterns -> unit Proofview.tactic
-val intro_patterns_to : Id.t move_location -> intro_patterns ->
+val intro_patterns : evars_flag -> intro_patterns -> unit Proofview.tactic
+val intro_patterns_to : evars_flag -> Id.t move_location -> intro_patterns ->
   unit Proofview.tactic
-val intro_patterns_bound_to : int -> Id.t move_location -> intro_patterns ->
+val intro_patterns_bound_to : evars_flag -> int -> Id.t move_location -> intro_patterns ->
   unit Proofview.tactic
-val intro_pattern_to : Id.t move_location -> delayed_open_constr intro_pattern_expr ->
+val intro_pattern_to : evars_flag -> Id.t move_location -> delayed_open_constr intro_pattern_expr ->
   unit Proofview.tactic
 
 (** Implements user-level "intros", with [] standing for "**" *)
-val intros_patterns : intro_patterns -> unit Proofview.tactic
+val intros_patterns : evars_flag -> intro_patterns -> unit Proofview.tactic
 
 (** {6 Exact tactics. } *)
 

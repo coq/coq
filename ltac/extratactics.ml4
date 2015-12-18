@@ -130,12 +130,12 @@ let discrHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
   discr_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
 
-let injection_main c =
- elimOnConstrWithHoles (injClause None) false c
+let injection_main with_evars c =
+ elimOnConstrWithHoles (injClause None) with_evars c
 
 TACTIC EXTEND injection_main
 | [ "injection" constr_with_bindings(c) ] ->
-    [ injection_main c ]
+    [ injection_main false c ]
 END
 TACTIC EXTEND injection
 | [ "injection" ] -> [ injClause None false None ]
@@ -144,7 +144,7 @@ TACTIC EXTEND injection
 END
 TACTIC EXTEND einjection_main
 | [ "einjection" constr_with_bindings(c) ] ->
-    [ elimOnConstrWithHoles (injClause None) true c ]
+    [ injection_main true c ]
 END
 TACTIC EXTEND einjection
 | [ "einjection" ] -> [ injClause None true None ]
@@ -173,7 +173,7 @@ END
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  injection_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
+  injection_main false { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]

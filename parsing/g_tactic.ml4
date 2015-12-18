@@ -521,9 +521,11 @@ GEXTEND Gram
     [ [
       (* Basic tactics *)
         IDENT "intros"; pl = ne_intropatterns ->
-          TacAtom (!@loc, TacIntroPattern pl)
+          TacAtom (!@loc, TacIntroPattern (false,pl))
       | IDENT "intros" ->
-          TacAtom (!@loc, TacIntroPattern [!@loc,IntroForthcoming false])
+          TacAtom (!@loc, TacIntroPattern (false,[!@loc,IntroForthcoming false]))
+      | IDENT "eintros"; pl = ne_intropatterns ->
+          TacAtom (!@loc, TacIntroPattern (true,pl))
 
       | IDENT "apply"; cl = LIST1 constr_with_bindings_arg SEP ",";
           inhyp = in_hyp_as -> TacAtom (!@loc, TacApply (true,false,cl,inhyp))

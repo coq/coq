@@ -479,8 +479,8 @@ let clause_app f = function
 let rec intern_atomic lf ist x =
   match (x:raw_atomic_tactic_expr) with
   (* Basic tactics *)
-  | TacIntroPattern l ->
-      TacIntroPattern (List.map (intern_intro_pattern lf ist) l)
+  | TacIntroPattern (ev,l) ->
+      TacIntroPattern (ev,List.map (intern_intro_pattern lf ist) l)
   | TacApply (a,ev,cb,inhyp) ->
       TacApply (a,ev,List.map (intern_constr_with_bindings_arg ist) cb,
                 Option.map (intern_in_hyp_as ist lf) inhyp)
