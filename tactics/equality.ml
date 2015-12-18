@@ -1319,13 +1319,13 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
     tclZEROMSG (str "Failed to decompose the equality.")
   else
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
-    (Proofview.tclBIND
-      (Proofview.Monad.List.map
+    (Tacticals.New.tclTHENFIRST
+      (Proofview.tclIGNORE (Proofview.Monad.List.map
          (fun (pf,ty) -> tclTHENS (cut ty)
            [inject_if_homogenous_dependent_pair ty;
             Proofview.V82.tactic (refine pf)])
-         (if l2r then List.rev injectors else injectors))
-      (fun _ -> tac (List.length injectors)))
+         (if l2r then List.rev injectors else injectors)))
+      (tac (List.length injectors)))
 
 let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
