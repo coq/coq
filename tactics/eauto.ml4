@@ -104,11 +104,6 @@ let out_term = function
 
 let prolog_tac l n gl =
   let l = List.map (fun x -> out_term (pf_apply (prepare_hint false (false,true)) gl x)) l in
-  let n =
-    match n with
-      | ArgArg n -> n
-      | _ -> error "Prolog called with a non closed argument."
-  in
   try (prolog l n gl)
   with UserError ("Refiner.tclFIRST",_) ->
     errorlabstrm "Prolog.prolog" (str "Prolog failed.")
@@ -436,13 +431,11 @@ let gen_eauto ?(debug=Off) np lems = function
 
 let make_depth = function
   | None -> !default_search_depth
-  | Some (ArgArg d) -> d
-  | _ -> error "eauto called with a non closed argument."
+  | Some d -> d
 
 let make_dimension n = function
   | None -> (true,make_depth n)
-  | Some (ArgArg d) -> (false,d)
-  | _ -> error "eauto called with a non closed argument."
+  | Some d -> (false,d)
 
 open Genarg
 

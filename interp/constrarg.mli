@@ -26,7 +26,7 @@ val loc_of_or_by_notation : ('a -> Loc.t) -> 'a or_by_notation -> Loc.t
 
 (** {5 Additional generic arguments} *)
 
-val wit_int_or_var : int or_var uniform_genarg_type
+val wit_int_or_var : (int or_var, int or_var, int) genarg_type
 
 val wit_intro_pattern : (constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type
 

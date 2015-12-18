@@ -622,10 +622,6 @@ let subst_hole_with_term occ tc t =
 
 open Tacmach
 
-let out_arg = function
-  | ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
-  | ArgArg x -> x
-
 let hResolve id c occ t =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
@@ -664,7 +660,7 @@ let hResolve_auto id c t =
   resolve_auto 1
 
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve id c (out_arg occ) t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve id c occ t ]
 | [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto id c t ]
 END
 
@@ -686,7 +682,7 @@ let hget_evar n =
   end }
 
 TACTIC EXTEND hget_evar
-| [ "hget_evar" int_or_var(n) ] -> [ hget_evar (out_arg n) ]
+| [ "hget_evar" int_or_var(n) ] -> [ hget_evar n ]
 END
 
 (**********************************************************************)
@@ -909,12 +905,12 @@ END
 
 (* cycles [n] goals *)
 TACTIC EXTEND cycle
-| [ "cycle" int_or_var(n) ] -> [ Proofview.cycle (out_arg n) ]
+| [ "cycle" int_or_var(n) ] -> [ Proofview.cycle n ]
 END
 
 (* swaps goals number [i] and [j] *)
 TACTIC EXTEND swap
-| [ "swap" int_or_var(i) int_or_var(j) ] -> [ Proofview.swap (out_arg i) (out_arg j) ]
+| [ "swap" int_or_var(i) int_or_var(j) ] -> [ Proofview.swap i j ]
 END
 
 (* reverses the list of focused goals *)

@@ -337,7 +337,7 @@ module Make
 
   let rec pr_top_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
-      | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
+      | IntOrVarArgType -> int (out_gen (topwit wit_int_or_var) x)
       | IdentArgType -> pr_id (out_gen (topwit wit_ident) x)
       | VarArgType -> pr_id (out_gen (topwit wit_var) x)
       | ConstrArgType -> prc (out_gen (topwit wit_constr) x)

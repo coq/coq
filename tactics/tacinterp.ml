@@ -1640,7 +1640,7 @@ and interp_genarg ist env sigma concl gl x =
     match genarg_tag x with
     | IntOrVarArgType ->
       in_gen (topwit wit_int_or_var)
-        (ArgArg (interp_int_or_var ist (Genarg.out_gen (glbwit wit_int_or_var) x)))
+        (interp_int_or_var ist (Genarg.out_gen (glbwit wit_int_or_var) x))
     | IdentArgType ->
       in_gen (topwit wit_ident)
         (interp_ident ist env sigma (Genarg.out_gen (glbwit wit_ident) x))

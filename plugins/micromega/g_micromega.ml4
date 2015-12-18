@@ -21,12 +21,8 @@ open Misctypes
 
 DECLARE PLUGIN "micromega_plugin"
 
-let out_arg = function
-  | ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
-  | ArgArg x -> x
-
 TACTIC EXTEND PsatzZ
-| [ "psatz_Z" int_or_var(i) ] -> [  (Coq_micromega.psatz_Z (out_arg i)) ]
+| [ "psatz_Z" int_or_var(i) ] -> [  (Coq_micromega.psatz_Z i) ]
 | [ "psatz_Z" ] -> [  (Coq_micromega.psatz_Z (-1)) ]
 END
 
@@ -63,12 +59,12 @@ TACTIC EXTEND LRA_R
 END
 
 TACTIC EXTEND PsatzR
-| [ "psatz_R" int_or_var(i) ] -> [   (Coq_micromega.psatz_R (out_arg i)) ]
+| [ "psatz_R" int_or_var(i) ] -> [   (Coq_micromega.psatz_R i) ]
 | [ "psatz_R" ] -> [   (Coq_micromega.psatz_R (-1)) ]
 END
 
 TACTIC EXTEND PsatzQ
-| [ "psatz_Q" int_or_var(i) ] -> [  (Coq_micromega.psatz_Q (out_arg i)) ]
+| [ "psatz_Q" int_or_var(i) ] -> [  (Coq_micromega.psatz_Q i) ]
 | [ "psatz_Q" ] -> [  (Coq_micromega.psatz_Q (-1)) ]
 END
 
