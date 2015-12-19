@@ -95,6 +95,10 @@ val onInductionArg :
   (clear_flag -> constr with_bindings -> unit Proofview.tactic) ->
     constr with_bindings induction_arg -> unit Proofview.tactic
 
+val force_induction_arg : env -> evar_map ->
+    delayed_open_constr_with_bindings induction_arg ->
+    constr with_bindings induction_arg
+
 (** Tell if a used hypothesis should be cleared by default or not *)
 
 val use_clear_hyp_by_default : unit -> bool
