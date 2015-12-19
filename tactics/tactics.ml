@@ -1166,6 +1166,20 @@ let map_induction_arg f = function
   | clear_flag,ElimOnAnonHyp n as x -> x
   | clear_flag,ElimOnIdent id as x -> x
 
+let finish_delayed_evar_resolution env sigma f =
+  let ((c, lbind), sigma') = run_delayed env sigma f in
+  let pending = (sigma,sigma') in
+  let sigma' = Sigma.Unsafe.of_evar_map sigma' in
+  let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
+  (c, lbind)
+
+let with_no_bindings (c, lbind) =
+  if lbind != NoBindings then error "'with' clause not supported here.";
+  c
+
+let force_induction_arg env sigma c =
+  map_induction_arg (finish_delayed_evar_resolution env sigma) c
+
 (****************************************)
 (* tactic "cut" (actually modus ponens) *)
 (****************************************)
@@ -4403,19 +4417,11 @@ let induction_destruct isrec with_evars (lc,elim) =
       (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       if not (Option.is_empty cls) then error "'in' clause not supported here.";
-      let finish_evar_resolution f =
-        let ((c, lbind), sigma') = run_delayed env sigma f in
-        let pending = (sigma,sigma') in
-        let sigma' = Sigma.Unsafe.of_evar_map sigma' in
-        let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
-        (c, lbind)
-      in
-      let c = map_induction_arg finish_evar_resolution c in
+      let c = force_induction_arg env sigma c in
       onInductionArg
-	(fun _clear_flag (c,lbind) ->
-	  if lbind != NoBindings then
-	    error "'with' clause not supported here.";
-	  induction_gen_l isrec with_evars elim names [c,eqname]) c
+	(fun _clear_flag c ->
+	  induction_gen_l isrec with_evars elim names
+            [with_no_bindings c,eqname]) c
     | _ ->
       (* standard induction *)
       onOpenInductionArg env sigma
@@ -4446,23 +4452,14 @@ let induction_destruct isrec with_evars (lc,elim) =
           end }) l)
     | Some elim ->
       (* Several induction hyps with induction scheme *)
-      let finish_evar_resolution f =
-        let ((c, lbind), sigma') = run_delayed env sigma f in
-        let pending = (sigma,sigma') in
-	if lbind != NoBindings then
-	  error "'with' clause not supported here.";
-	let sigma' = Sigma.Unsafe.of_evar_map sigma' in
-        let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
-        c
-      in
-      let lc = List.map (on_pi1 (map_induction_arg finish_evar_resolution)) lc in
+      let lc = List.map (on_pi1 (force_induction_arg env sigma)) lc in
       let newlc =
         List.map (fun (x,(eqn,names),cls) ->
           if cls != None then error "'in' clause not yet supported here.";
 	  match x with (* FIXME: should we deal with ElimOnIdent? *)
           | _clear_flag,ElimOnConstr x ->
               if eqn <> None then error "'eqn' clause not supported here.";
-              (x,names)
+              (with_no_bindings x,names)
 	  | _ -> error "Don't know where to find some argument.")
 	  lc in
       (* Check that "as", if any, is given only on the last argument *)
