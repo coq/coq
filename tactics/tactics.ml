@@ -1121,6 +1121,14 @@ let run_delayed env sigma c =
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 
+let tactic_infer_flags with_evar = {
+  Pretyping.use_typeclasses = true;
+  Pretyping.use_unif_heuristics = true;
+  Pretyping.use_hook = Some solve_by_implicit_tactic;
+  Pretyping.fail_evar = not with_evar;
+  Pretyping.expand_evars = true }
+
+
 let onOpenInductionArg env sigma tac = function
   | clear_flag,ElimOnConstr f ->
       let (cbl, sigma') = run_delayed env sigma f in
@@ -1161,24 +1169,25 @@ let onInductionArg tac = function
         (try_intros_until_id_check id)
         (tac clear_flag (mkVar id,NoBindings))
 
-let map_induction_arg f = function
-  | clear_flag,ElimOnConstr g -> clear_flag,ElimOnConstr (f g)
-  | clear_flag,ElimOnAnonHyp n as x -> x
-  | clear_flag,ElimOnIdent id as x -> x
+let map_destruction_arg f sigma = function
+  | clear_flag,ElimOnConstr g -> let sigma,x = f sigma g in (sigma, (clear_flag,ElimOnConstr x))
+  | clear_flag,ElimOnAnonHyp n as x -> (sigma,x)
+  | clear_flag,ElimOnIdent id as x -> (sigma,x)
 
-let finish_delayed_evar_resolution env sigma f =
+let finish_delayed_evar_resolution with_evars env sigma f =
   let ((c, lbind), sigma') = run_delayed env sigma f in
   let pending = (sigma,sigma') in
   let sigma' = Sigma.Unsafe.of_evar_map sigma' in
-  let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
-  (c, lbind)
+  let flags = tactic_infer_flags with_evars in
+  let Sigma (c, sigma', _) = finish_evar_resolution ~flags env sigma' (pending,c) in
+  (Sigma.to_evar_map sigma', (c, lbind))
 
 let with_no_bindings (c, lbind) =
   if lbind != NoBindings then error "'with' clause not supported here.";
   c
 
-let force_induction_arg env sigma c =
-  map_induction_arg (finish_delayed_evar_resolution env sigma) c
+let force_destruction_arg with_evars env sigma c =
+  map_destruction_arg (finish_delayed_evar_resolution with_evars env) sigma c
 
 (****************************************)
 (* tactic "cut" (actually modus ponens) *)
@@ -2550,13 +2559,6 @@ let apply_delayed_in simple with_evars id lemmas ipat =
 
 (* Implementation without generalisation: abbrev will be lost in hyps in *)
 (* in the extracted proof *)
-
-let tactic_infer_flags with_evar = {
-  Pretyping.use_typeclasses = true;
-  Pretyping.use_unif_heuristics = true;
-  Pretyping.use_hook = Some solve_by_implicit_tactic;
-  Pretyping.fail_evar = not with_evar;
-  Pretyping.expand_evars = true }
 
 let decode_hyp = function
   | None -> MoveLast
@@ -4417,7 +4419,7 @@ let induction_destruct isrec with_evars (lc,elim) =
       (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       if not (Option.is_empty cls) then error "'in' clause not supported here.";
-      let c = force_induction_arg env sigma c in
+      let _,c = force_destruction_arg false env sigma c in
       onInductionArg
 	(fun _clear_flag c ->
 	  induction_gen_l isrec with_evars elim names
@@ -4452,7 +4454,7 @@ let induction_destruct isrec with_evars (lc,elim) =
           end }) l)
     | Some elim ->
       (* Several induction hyps with induction scheme *)
-      let lc = List.map (on_pi1 (force_induction_arg env sigma)) lc in
+      let lc = List.map (on_pi1 (fun c -> snd (force_destruction_arg false env sigma c))) lc in
       let newlc =
         List.map (fun (x,(eqn,names),cls) ->
           if cls != None then error "'in' clause not yet supported here.";

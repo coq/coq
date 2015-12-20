@@ -69,6 +69,11 @@ val wit_ltac : (raw_tactic_expr, glob_tactic_expr, unit) genarg_type
 
 val wit_clause_dft_concl :  (Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) genarg_type
 
+val wit_destruction_arg :
+  (constr_expr with_bindings destruction_arg,
+   glob_constr_and_expr with_bindings destruction_arg,
+   delayed_open_constr_with_bindings destruction_arg) genarg_type
+
 (** Aliases for compatibility *)
 
 val wit_reference : (reference, global_reference located or_var, global_reference) genarg_type

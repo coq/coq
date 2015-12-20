@@ -1031,7 +1031,7 @@ let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
   } in
     (loc,f)
 
-let interp_induction_arg ist gl arg =
+let interp_destruction_arg ist gl arg =
   match arg with
   | keep,ElimOnConstr c ->
       keep,ElimOnConstr { delayed = fun env sigma ->
@@ -1052,7 +1052,7 @@ let interp_induction_arg ist gl arg =
           (keep, ElimOnConstr { delayed = begin fun env sigma ->
           try Sigma.here (constr_of_id env id', NoBindings) sigma
           with Not_found ->
-            user_err_loc (loc, "interp_induction_arg",
+            user_err_loc (loc, "interp_destruction_arg",
             pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared nor a quantified hypothesis.")
           end })
       in
@@ -1799,7 +1799,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (* TODO: move sigma as a side-effect *)
              (* spiwack: the [*p] variants are for printing *)
             let cp = c in
-            let c = interp_induction_arg ist gl c in
+            let c = interp_destruction_arg ist gl c in
             let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
             let ipatsp = ipats in
             let sigma,ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
@@ -2056,6 +2056,10 @@ let interp_constr_with_bindings' ist c = Ftactic.return { delayed = fun env sigm
   Sigma.Unsafe.of_pair (c, sigma)
   }
 
+let interp_destruction_arg' ist c = Ftactic.nf_enter { enter = begin fun gl ->
+  Ftactic.return (interp_destruction_arg ist gl c)
+end }
+
 let () =
   register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
   register_interp0 wit_ref (lift interp_reference);
@@ -2070,6 +2074,7 @@ let () =
   register_interp0 wit_open_constr (lifts interp_open_constr);
   register_interp0 wit_bindings interp_bindings';
   register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
+  register_interp0 wit_destruction_arg interp_destruction_arg';
   ()
 
 let () =

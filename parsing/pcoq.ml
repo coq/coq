@@ -345,6 +345,7 @@ module Tactic =
       make_gen_entry utactic "uconstr"
     let quantified_hypothesis =
       make_gen_entry utactic "quantified_hypothesis"
+    let destruction_arg = make_gen_entry utactic "destruction_arg"
     let int_or_var = make_gen_entry utactic "int_or_var"
     let red_expr = make_gen_entry utactic "red_expr"
     let simple_intropattern =
@@ -520,4 +521,5 @@ let () =
   Grammar.register0 wit_tactic (Tactic.tactic);
   Grammar.register0 wit_ltac (Tactic.tactic);
   Grammar.register0 wit_clause_dft_concl (Tactic.clause_dft_concl);
+  Grammar.register0 wit_destruction_arg (Tactic.destruction_arg);
   ()

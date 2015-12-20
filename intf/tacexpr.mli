@@ -40,13 +40,13 @@ type goal_selector =
   | SelectId of Id.t
   | SelectAll
 
-type 'a core_induction_arg =
+type 'a core_destruction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of Id.t located
   | ElimOnAnonHyp of int
 
-type 'a induction_arg =
-  clear_flag * 'a core_induction_arg
+type 'a destruction_arg =
+  clear_flag * 'a core_destruction_arg
 
 type inversion_kind =
   | SimpleInversion
@@ -68,7 +68,7 @@ type 'id message_token =
   | MsgIdent of 'id
 
 type ('dconstr,'id) induction_clause =
-    'dconstr with_bindings induction_arg *
+    'dconstr with_bindings destruction_arg *
     (intro_pattern_naming_expr located option (* eqn:... *)
     * 'dconstr or_and_intro_pattern_expr located or_var option) (* as ... *)
     * 'id clause_expr option (* in ... *)

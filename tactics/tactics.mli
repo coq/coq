@@ -94,11 +94,11 @@ val try_intros_until :
 
 val onInductionArg :
   (clear_flag -> constr with_bindings -> unit Proofview.tactic) ->
-    constr with_bindings induction_arg -> unit Proofview.tactic
+    constr with_bindings destruction_arg -> unit Proofview.tactic
 
-val force_induction_arg : env -> evar_map ->
-    delayed_open_constr_with_bindings induction_arg ->
-    constr with_bindings induction_arg
+val force_destruction_arg : evars_flag -> env -> evar_map ->
+    delayed_open_constr_with_bindings destruction_arg ->
+    evar_map * constr with_bindings destruction_arg
 
 (** Tell if a used hypothesis should be cleared by default or not *)
 
@@ -299,7 +299,7 @@ val destruct : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option
 (** Implements user-level "destruct" and "induction" *)
 
 val induction_destruct : rec_flag -> evars_flag ->
-  (delayed_open_constr_with_bindings induction_arg
+  (delayed_open_constr_with_bindings destruction_arg
    * (intro_pattern_naming option * or_and_intro_pattern option)
    * clause option) list *
   constr with_bindings option -> unit Proofview.tactic

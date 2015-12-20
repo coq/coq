@@ -124,7 +124,7 @@ intros * [= H].
 exact H.
 Abort.
 
-(* Injection does not projects at positions in Prop... allow it?
+(* Injection does not project at positions in Prop... allow it?
 
 Inductive t (A:Prop) : Set := c : A -> t A.
 Goal forall p q : True\/True, c _ p = c _ q -> False.

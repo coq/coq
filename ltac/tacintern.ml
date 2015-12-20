@@ -269,7 +269,7 @@ let intern_intro_pattern_naming_loc lf ist (loc,pat) =
   (loc,intern_intro_pattern_naming lf ist pat)
 
   (* TODO: catch ltac vars *)
-let intern_induction_arg ist = function
+let intern_destruction_arg ist = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (intern_constr_with_bindings ist c)
   | clear,ElimOnAnonHyp n as x -> x
   | clear,ElimOnIdent (loc,id) ->
@@ -511,7 +511,7 @@ let rec intern_atomic lf ist x =
   (* Derived basic tactics *)
   | TacInductionDestruct (ev,isrec,(l,el)) ->
       TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),cls) ->
-	      (intern_induction_arg ist c,
+	      (intern_destruction_arg ist c,
                (Option.map (intern_intro_pattern_naming_loc lf ist) ipato,
                Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
                Option.map (clause_app (intern_hyp_location ist)) cls)) l,
@@ -792,6 +792,7 @@ let () =
   Genintern.register_intern0 wit_red_expr (lift intern_red_expr);
   Genintern.register_intern0 wit_bindings (lift intern_bindings);
   Genintern.register_intern0 wit_constr_with_bindings (lift intern_constr_with_bindings);
+  Genintern.register_intern0 wit_destruction_arg (lift intern_destruction_arg);
   ()
 
 (***************************************************************************)

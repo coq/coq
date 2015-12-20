@@ -63,7 +63,7 @@ and subst_intro_or_and_pattern subst = function
   | IntroOrPattern ll ->
       IntroOrPattern (List.map (List.map (subst_intro_pattern subst)) ll)
 
-let subst_induction_arg subst = function
+let subst_destruction_arg subst = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (subst_glob_with_bindings subst c)
   | clear,ElimOnAnonHyp n as x -> x
   | clear,ElimOnIdent id as x -> x
@@ -158,7 +158,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Derived basic tactics *)
   | TacInductionDestruct (isrec,ev,(l,el)) ->
       let l' = List.map (fun (c,ids,cls) ->
-        subst_induction_arg subst c, ids, cls) l in
+        subst_destruction_arg subst c, ids, cls) l in
       let el' = Option.map (subst_glob_with_bindings subst) el in
       TacInductionDestruct (isrec,ev,(l',el'))
 
@@ -303,4 +303,5 @@ let () =
   Genintern.register_subst0 wit_quant_hyp subst_declared_or_quantified_hypothesis;
   Genintern.register_subst0 wit_bindings subst_bindings;
   Genintern.register_subst0 wit_constr_with_bindings subst_glob_with_bindings;
+  Genintern.register_subst0 wit_destruction_arg subst_destruction_arg;
   ()
