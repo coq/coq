@@ -638,6 +638,7 @@ module Html : S = struct
   let oc = ref stdout
   let output_char   c = Pervasives.output_char   !oc c
   let output_string s = Pervasives.output_string !oc s
+  let page_title = ref ""
 
   let printf s = Printf.fprintf !oc s
 

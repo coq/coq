@@ -99,7 +99,6 @@ let index = ref true
 let multi_index = ref false
 let index_name = ref "index"
 let toc = ref false
-let page_title = ref ""
 let title = ref ""
 let externals = ref true
 let coqlib = ref Coq_config.wwwstdlib

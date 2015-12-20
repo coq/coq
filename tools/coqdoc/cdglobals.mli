@@ -39,9 +39,6 @@ val header_file_spec : bool ref
 val footer_file      : string ref
 val footer_file_spec : bool ref
 
-val page_title : string ref
-val title : string ref
-
 val quiet          : bool ref
 val light          : bool ref
 val gallina        : bool ref
@@ -53,7 +50,6 @@ val raw_comments   : bool ref
 val parse_comments : bool ref
 val plain_comments : bool ref
 val toc_depth      : int option ref
-val lib_name       : string ref
 val interpolate    : bool ref
 val inline_notmono : bool ref
 
@@ -65,3 +61,12 @@ val charset    : string ref
 val inputenc   : string ref
 val latin1     : bool ref
 val utf8       : bool ref
+
+(* to remove/deprecate *)
+
+(* This just sets the library name *)
+val lib_name       : string ref
+
+(*  *)
+val title : string ref
+
