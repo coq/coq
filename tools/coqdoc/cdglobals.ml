@@ -36,7 +36,7 @@ let coqdoc_out f =
 let with_outfile file f =
   try
     let out = open_out (coqdoc_out file) in
-    f out;
+    f (Format.formatter_of_out_channel out);
     close_out out
   with | Sys_error s -> Printf.eprintf "%s\n" s; exit 1
 

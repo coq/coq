@@ -17,7 +17,7 @@ val coqdoc_out  : string -> string
 
 (** [with_outfile s f] opens a file named [s] and calls [f out] where
     [out] is the file descriptor *)
-val with_outfile : string -> (out_channel -> unit) -> unit
+val with_outfile : string -> (Format.formatter -> unit) -> unit
 
 (* Global options *)
 val out_to      : output_t ref
@@ -57,6 +57,7 @@ val raw_comments   : bool ref
 val parse_comments : bool ref
 val plain_comments : bool ref
 val interpolate    : bool ref
+
 (* TO DEPRECATE *)
 val inline_notmono : bool ref
 
@@ -73,7 +74,4 @@ val utf8       : bool ref
 
 (* This just sets the library name *)
 val lib_name       : string ref
-
-(*  *)
-val title : string ref
 

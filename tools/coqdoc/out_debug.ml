@@ -43,7 +43,7 @@ module Debug : S = struct
   let support_files = []
 
   let start_file out ~toc ~index ~split_index ~standalone =
-    oc := formatter_of_out_channel out;
+    oc := out;
     Tokens.token_tree := ref Tokens.empty_ttree;
     Tokens.outfun     := output_sublexer_string;
     printf "#start_file [toc: %B|idx: %B|splt: %B|std: %B]@\n"

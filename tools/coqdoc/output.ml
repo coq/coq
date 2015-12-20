@@ -6,10 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Format
+
 open Cdglobals
 open Index
-
-let sprintf = Printf.sprintf
 
 (*s Coq keywords *)
 
@@ -174,7 +174,7 @@ val appendix : toc:bool -> index:bool -> split_index:bool -> standalone:bool -> 
     to channel [out] [toc], [index], and [standalone] control whether
     the backend will generate a TOC, index, and header/trailers for the file.
 *)
-val start_file : out_channel -> toc:bool -> index:bool ->
+val start_file : Format.formatter -> toc:bool -> index:bool ->
                  split_index:bool -> standalone:bool -> unit
 
 (** [end_file] Ends the file *)
@@ -278,11 +278,10 @@ let inf_rule_dumb start_verbatim stop_verbatim char assumptions (midsp,midln,mid
 module Latex : S = struct
 
   (* Private methods and values *)
-  let oc = ref stdout
-  let output_char   c = Pervasives.output_char   !oc c
-  let output_string s = Pervasives.output_string !oc s
-
-  let printf s = Printf.fprintf !oc s
+  let oc              = ref (formatter_of_out_channel stdout)
+  let printf        s = fprintf !oc s
+  let output_char   c = printf "%c" c
+  let output_string s = printf "%s" s
 
   let in_title = ref false
 
@@ -635,13 +634,12 @@ module Html : S = struct
   (* Private methods and values *)
   let finalizers : (unit -> unit) Queue.t = Queue.create ()
 
-  let oc = ref stdout
-  let output_char   c = Pervasives.output_char   !oc c
-  let output_string s = Pervasives.output_string !oc s
+  let oc              = ref (formatter_of_out_channel stdout)
+  let printf        s = fprintf !oc s
+  let output_char   c = printf "%c" c
+  let output_string s = printf "%s" s
+
   let page_title = ref ""
-
-  let printf s = Printf.fprintf !oc s
-
   let cur_mod = ref ""
 
   let header () =
@@ -1046,8 +1044,8 @@ module Html : S = struct
       (* Attn: make_one_multi_index crée un nouveau fichier... *)
       let idx = i.idx_name in
       let one_letter ((c,l) as cl) =
-        with_outfile (sprintf "%s_%s_%c.html" !index_name idx c) (fun out ->
-            oc := out;
+        with_outfile (sprintf "%s_%s_%c.html" !index_name idx c) (fun fmt ->
+            oc := fmt;
             if (!header_trailer) then header ();
             prt_tbl (); printf "<hr/>";
             letter_index true idx cl;

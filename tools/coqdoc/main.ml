@@ -499,10 +499,10 @@ let produce_document (l : file list) =
 
   match !out_to with
     | StdOut ->
-      gen_one_file (module OutB) (module Cpretty) stdout l
+      gen_one_file (module OutB) (module Cpretty) (Format.formatter_of_out_channel stdout) l
     | File f ->
-      with_outfile f (fun out ->
-          gen_one_file (module OutB) (module Cpretty) out l
+      with_outfile f (fun fmt ->
+          gen_one_file (module OutB) (module Cpretty) fmt l
         )
     | MultFiles ->
       gen_mult_files (module OutB) (module Cpretty) l

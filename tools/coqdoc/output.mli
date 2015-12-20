@@ -37,12 +37,12 @@ val support_files    : string list
     function that outputs additional files. *)
 val appendix : toc:bool -> index:bool -> split_index:bool -> standalone:bool -> unit
 
-(** [start_file out toc index split_index standalone] Start a logical
-    output file to channel [out] [toc], [index], and [standalone]
+(** [start_file fmt toc index split_index standalone] Start a logical
+    output file to formatter [fmt]. [toc], [index], and [standalone]
     control whether the backend will generate a TOC, index, and
     header/trailers for the file.
 *)
-val start_file : out_channel -> toc:bool -> index:bool ->
+val start_file : Format.formatter -> toc:bool -> index:bool ->
                  split_index:bool -> standalone:bool -> unit
 
 (** [end_file] Ends the file *)

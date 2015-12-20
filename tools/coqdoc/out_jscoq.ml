@@ -51,7 +51,7 @@ module JsCoq : S = struct
 
   (* Print the header *)
   let start_file out ~toc ~index ~split_index ~standalone =
-    oc := formatter_of_out_channel out;
+    oc := out;
     Tokens.token_tree := ref Tokens.empty_ttree;
     Tokens.outfun     := output_sublexer_string;
     printf "@[";
