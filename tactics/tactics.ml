@@ -1040,7 +1040,7 @@ let onInductionArg tac = function
         (try_intros_until_id_check id)
         (tac clear_flag (mkVar id,NoBindings))
 
-let map_induction_arg f = function
+let map_destruction_arg f = function
   | clear_flag,ElimOnConstr g -> clear_flag,ElimOnConstr (f g)
   | clear_flag,ElimOnAnonHyp n as x -> x
   | clear_flag,ElimOnIdent id as x -> x
@@ -1056,8 +1056,8 @@ let with_no_bindings (c, lbind) =
   if lbind != NoBindings then error "'with' clause not supported here.";
   c
 
-let force_induction_arg env sigma c =
-  map_induction_arg (finish_delayed_evar_resolution env sigma) c
+let force_destruction_arg env sigma c =
+  map_destruction_arg (finish_delayed_evar_resolution env sigma) c
 
 (****************************************)
 (* tactic "cut" (actually modus ponens) *)
@@ -4286,7 +4286,7 @@ let induction_destruct isrec with_evars (lc,elim) =
       (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       if not (Option.is_empty cls) then error "'in' clause not supported here.";
-      let c = force_induction_arg env sigma c in
+      let c = force_destruction_arg env sigma c in
       onInductionArg
 	(fun _clear_flag c ->
 	  induction_gen_l isrec with_evars elim names
@@ -4321,7 +4321,7 @@ let induction_destruct isrec with_evars (lc,elim) =
           end }) l)
     | Some elim ->
       (* Several induction hyps with induction scheme *)
-      let lc = List.map (on_pi1 (force_induction_arg env sigma)) lc in
+      let lc = List.map (on_pi1 (force_destruction_arg env sigma)) lc in
       let newlc =
         List.map (fun (x,(eqn,names),cls) ->
           if cls != None then error "'in' clause not yet supported here.";

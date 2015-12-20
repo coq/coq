@@ -155,7 +155,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
   (id,CProdN(loc,bl,ty))
 
 (* Functions overloaded by quotifier *)
-let induction_arg_of_constr (c,lbind as clbind) = match lbind with
+let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
   | NoBindings ->
     begin
       try ElimOnIdent (Constrexpr_ops.constr_loc c,snd(Constrexpr_ops.coerce_to_id c))
@@ -230,7 +230,8 @@ let merge_occurrences loc cl = function
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
   bindings red_expr int_or_var open_constr uconstr
-  simple_intropattern intropatterns ne_intropatterns clause_dft_concl hypident;
+  simple_intropattern intropatterns ne_intropatterns clause_dft_concl hypident
+  destruction_arg;
 
   int_or_var:
     [ [ n = integer  -> ArgArg n
@@ -250,14 +251,14 @@ GEXTEND Gram
   uconstr:
     [ [ c = constr -> c ] ]
   ;
-  induction_arg:
+  destruction_arg:
     [ [ n = natural -> (None,ElimOnAnonHyp n)
       | n = index -> (None,ElimOnAnonHyp n)
       | test_lpar_index_rpar; "("; n = index; ")" ->
         (Some false,ElimOnAnonHyp n)
       | test_lpar_id_rpar; c = constr_with_bindings ->
-        (Some false,induction_arg_of_constr c)
-      | c = constr_with_bindings_arg -> on_snd induction_arg_of_constr c
+        (Some false,destruction_arg_of_constr c)
+      | c = constr_with_bindings_arg -> on_snd destruction_arg_of_constr c
     ] ]
   ;
   constr_with_bindings_arg:
@@ -525,8 +526,8 @@ GEXTEND Gram
     [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ;
   induction_clause:
-    [ [ c = induction_arg; pat = as_or_and_ipat; eq = eqn_ipat; cl = opt_clause
-        -> (c,(eq,pat),cl) ] ]
+    [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
+        cl = opt_clause -> (c,(eq,pat),cl) ] ]
   ;
   induction_clause_list:
     [ [ ic = LIST1 induction_clause SEP ","; el = OPT eliminator;

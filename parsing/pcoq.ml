@@ -318,6 +318,7 @@ module Tactic =
       make_gen_entry utactic "uconstr"
     let quantified_hypothesis =
       make_gen_entry utactic "quantified_hypothesis"
+    let destruction_arg = make_gen_entry utactic destruction_arg"
     let int_or_var = make_gen_entry utactic "int_or_var"
     let red_expr = make_gen_entry utactic "red_expr"
     let simple_intropattern =

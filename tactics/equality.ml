@@ -1401,7 +1401,8 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
 let get_previous_hyp_position id gl =
   let rec aux dest = function
   | [] -> raise (RefinerError (NoSuchHyp id))
-  | (hyp,_,_) :: right ->
+  | decl :: right ->
+    let hyp = Context.Named.Declaration.get_id decl in
     if Id.equal hyp id then dest else aux (MoveAfter hyp) right
   in
   aux MoveLast (Proofview.Goal.hyps (Proofview.Goal.assume gl))

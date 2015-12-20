@@ -65,6 +65,9 @@ let wit_red_expr = Genarg.make0 "redexpr"
 let wit_clause_dft_concl  =
   Genarg.make0 "clause_dft_concl"
 
+let wit_destruction_arg =
+  Genarg.make0 "destruction_arg"
+
 (** Aliases *)
 
 let wit_reference = wit_ref
