@@ -141,8 +141,7 @@ END
 TACTIC EXTEND specialize
   [ "specialize" constr_with_bindings(c) ] -> [
     let { Evd.sigma = sigma; it = c } = c in
-    let specialize = Proofview.V82.tactic (Tactics.specialize c) in
-    Tacticals.New.tclWITHHOLES false specialize sigma
+    Tacticals.New.tclWITHHOLES false (Tactics.specialize c) sigma
   ]
 END
 

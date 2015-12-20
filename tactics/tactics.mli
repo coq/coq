@@ -170,7 +170,7 @@ val unfold_body   : Id.t -> tactic
 val keep          : Id.t list -> unit Proofview.tactic
 val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 
-val specialize    : constr with_bindings -> tactic
+val specialize    : constr with_bindings -> unit Proofview.tactic
 
 val move_hyp      : Id.t -> Id.t move_location -> tactic
 val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic

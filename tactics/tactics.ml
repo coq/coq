@@ -1894,13 +1894,16 @@ let rec intros_clearing = function
 
 (* Modifying/Adding an hypothesis  *)
 
-let specialize (c,lbind) g =
-  let tac, term =
+let specialize (c,lbind) =
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
+  let sigma, term =
     if lbind == NoBindings then
-      let evd = Typeclasses.resolve_typeclasses (pf_env g) (project g) in
-	tclEVARS evd, nf_evar evd c
+      let sigma = Typeclasses.resolve_typeclasses env sigma in
+      sigma, nf_evar sigma c
     else
-      let clause = Tacmach.pf_apply make_clenv_binding g (c,Tacmach.pf_unsafe_type_of g c) lbind in
+      let clause = make_clenv_binding env sigma (c,Retyping.get_type_of env sigma c) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
       let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
@@ -1914,18 +1917,23 @@ let specialize (c,lbind) g =
 	errorlabstrm "" (str "Cannot infer an instance for " ++
           pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
 	  str ".");
-       tclEVARS clause.evd, term
-  in
+      clause.evd, term in
+  let typ = Retyping.get_type_of env sigma term in
   match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
-       | Var id when Id.List.mem id (Tacmach.pf_ids_of_hyps g) ->
-	   tclTHEN tac
-	     (tclTHENFIRST
-	       (fun g -> Proofview.V82.of_tactic (assert_before_replacing id (Tacmach.pf_unsafe_type_of g term)) g)
-	       (exact_no_check term)) g
-       | _ -> tclTHEN tac
-	   (tclTHENLAST
-              (fun g -> Proofview.V82.of_tactic (cut (Tacmach.pf_unsafe_type_of g term)) g)
-              (exact_no_check term)) g
+  | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
+      Tacticals.New.tclTHEN
+        (Proofview.Unsafe.tclEVARS sigma)
+	(Tacticals.New.tclTHENFIRST
+	   (assert_before_replacing id typ)
+	   (new_exact_no_check term))
+  | _ ->
+      (* To deprecate in favor of generalize? *)
+      Tacticals.New.tclTHEN
+        (Proofview.Unsafe.tclEVARS sigma)
+	(Tacticals.New.tclTHENLAST
+           (cut typ)
+           (new_exact_no_check term))
+  end }
 
 (* Keeping only a few hypotheses *)
 
