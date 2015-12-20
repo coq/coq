@@ -26,11 +26,15 @@ val glob_source : glob_source_t ref
 
 val target_language : target_language ref
 
+(* Title of the document *)
+val title : string ref
+
 (* Index/Toc options *)
 val index       : bool ref
 val index_name  : string ref
 val multi_index : bool ref
 val toc         : bool ref
+val toc_depth   : int option ref
 
 (* Header/Footer *)
 val header_trailer   : bool ref
@@ -39,18 +43,21 @@ val header_file_spec : bool ref
 val footer_file      : string ref
 val footer_file_spec : bool ref
 
+(* Stdlib url/path *)
+val coqlib_url     : string ref
+val coqlib_path    : string ref
+
+(* Output options *)
 val quiet          : bool ref
 val light          : bool ref
 val gallina        : bool ref
 val short          : bool ref
 val externals      : bool ref
-val coqlib         : string ref
-val coqlib_path    : string ref
 val raw_comments   : bool ref
 val parse_comments : bool ref
 val plain_comments : bool ref
-val toc_depth      : int option ref
 val interpolate    : bool ref
+(* TO DEPRECATE *)
 val inline_notmono : bool ref
 
 (* Encoding options *)

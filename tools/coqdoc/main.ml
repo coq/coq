@@ -349,7 +349,7 @@ let parse () =
     | ("--external" | "-external") :: u :: logicalpath :: rem ->
 	Index.add_external_library logicalpath u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: u :: rem ->
-	Cdglobals.coqlib := u; parse_rec rem
+	Cdglobals.coqlib_url := u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: [] ->
 	usage ()
     | ("--boot" | "-boot") :: rem ->
