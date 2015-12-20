@@ -3,7 +3,6 @@
 type target_language = LaTeX | HTML | TeXmacs | Raw | JsCoq | Debug
 
 type output_t = StdOut | MultFiles | File of string
-
 type glob_source_t = NoGlob | DotGlob | GlobFile of string
 
 type coq_module = string
@@ -22,12 +21,12 @@ val with_outfile : string -> (out_channel -> unit) -> unit
 
 (* Global options *)
 val out_to      : output_t ref
-val output_dir  : string ref
+val output_dir  : string   ref
 val glob_source : glob_source_t ref
 
 val target_language : target_language ref
 
-(* Index options *)
+(* Index/Toc options *)
 val index       : bool ref
 val index_name  : string ref
 val multi_index : bool ref
@@ -55,7 +54,6 @@ val parse_comments : bool ref
 val plain_comments : bool ref
 val toc_depth      : int option ref
 val lib_name       : string ref
-val lib_subtitles  : bool ref
 val interpolate    : bool ref
 val inline_notmono : bool ref
 

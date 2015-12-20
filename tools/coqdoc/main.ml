@@ -72,7 +72,6 @@ let usage () =
   prerr_endline "  --toc-depth <int>    don't include TOC entries for sections below level <int>";
   prerr_endline "  --no-lib-name        don't display \"Library\" before library names in the toc";
   prerr_endline "  --lib-name <string>  call top level toc entries <string> instead of \"Library\"";
-  prerr_endline "  --lib-subtitles      first line comments of the form (** * ModuleName : text *) will be interpreted as subtitles";
   prerr_endline "  --inline-notmono     use a proportional width font for inline code (possibly with a different color)";
   prerr_endline "";
   exit 1
@@ -295,7 +294,7 @@ let parse () =
       Cdglobals.lib_name := ds;
       parse_rec rem
     | ("-lib-subtitles" | "--lib-subtitles") :: rem ->
-      Cdglobals.lib_subtitles := true;
+      eprintf "Warning: the -lib-subtitles option has been removed\n";
       parse_rec rem
     | ("-inline-notmono" | "--inline-notmono") :: rem ->
       Cdglobals.inline_notmono := true;
