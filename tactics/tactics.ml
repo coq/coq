@@ -1892,49 +1892,6 @@ let rec intros_clearing = function
       Tacticals.New.tclTHENLIST
         [ intro; Tacticals.New.onLastHypId (fun id -> Proofview.V82.tactic (clear [id])); intros_clearing tl]
 
-(* Modifying/Adding an hypothesis  *)
-
-let specialize (c,lbind) =
-  Proofview.Goal.enter { enter = begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
-  let sigma, term =
-    if lbind == NoBindings then
-      let sigma = Typeclasses.resolve_typeclasses env sigma in
-      sigma, nf_evar sigma c
-    else
-      let clause = make_clenv_binding env sigma (c,Retyping.get_type_of env sigma c) lbind in
-      let flags = { (default_unify_flags ()) with resolve_evars = true } in
-      let clause = clenv_unify_meta_types ~flags clause in
-      let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
-      let rec chk = function
-      | [] -> []
-      | t::l -> if occur_meta t then [] else t :: chk l
-      in
-      let tstack = chk tstack in
-      let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
-      if occur_meta term then
-	errorlabstrm "" (str "Cannot infer an instance for " ++
-          pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
-	  str ".");
-      clause.evd, term in
-  let typ = Retyping.get_type_of env sigma term in
-  match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
-  | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
-      Tacticals.New.tclTHEN
-        (Proofview.Unsafe.tclEVARS sigma)
-	(Tacticals.New.tclTHENFIRST
-	   (assert_before_replacing id typ)
-	   (new_exact_no_check term))
-  | _ ->
-      (* To deprecate in favor of generalize? *)
-      Tacticals.New.tclTHEN
-        (Proofview.Unsafe.tclEVARS sigma)
-	(Tacticals.New.tclTHENLAST
-           (cut typ)
-           (new_exact_no_check term))
-  end }
-
 (* Keeping only a few hypotheses *)
 
 let keep hyps =
@@ -2685,6 +2642,49 @@ let quantify lconstr =
    lconstr
    tclIDTAC
 *)
+
+(* Modifying/Adding an hypothesis  *)
+
+let specialize (c,lbind) =
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
+  let sigma, term =
+    if lbind == NoBindings then
+      let sigma = Typeclasses.resolve_typeclasses env sigma in
+      sigma, nf_evar sigma c
+    else
+      let clause = make_clenv_binding env sigma (c,Retyping.get_type_of env sigma c) lbind in
+      let flags = { (default_unify_flags ()) with resolve_evars = true } in
+      let clause = clenv_unify_meta_types ~flags clause in
+      let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
+      let rec chk = function
+      | [] -> []
+      | t::l -> if occur_meta t then [] else t :: chk l
+      in
+      let tstack = chk tstack in
+      let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
+      if occur_meta term then
+	errorlabstrm "" (str "Cannot infer an instance for " ++
+          pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
+	  str ".");
+      clause.evd, term in
+  let typ = Retyping.get_type_of env sigma term in
+  match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
+  | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
+      Tacticals.New.tclTHEN
+        (Proofview.Unsafe.tclEVARS sigma)
+	(Tacticals.New.tclTHENFIRST
+	   (assert_before_replacing id typ)
+	   (new_exact_no_check term))
+  | _ ->
+      (* To deprecate in favor of generalize? *)
+      Tacticals.New.tclTHEN
+        (Proofview.Unsafe.tclEVARS sigma)
+	(Tacticals.New.tclTHENLAST
+           (cut typ)
+           (new_exact_no_check term))
+  end }
 
 (*****************************)
 (* Ad hoc unfold             *)
