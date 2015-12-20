@@ -76,15 +76,21 @@ let to_int v =
 
 let to_list v =
   let v = normalize v in
-  prj list_val v
+  let Val.Dyn (tag, v) = v in
+  match tag with
+  | Val.List t -> Some (List.map (fun x -> Val.Dyn (t, x)) v)
+  | _ -> None
 
-let of_list v = Val.Dyn (list_val, v)
+let of_list t v = Val.Dyn (Val.List t, v)
 
 let to_option v =
   let v = normalize v in
-  prj option_val v
+  let Val.Dyn (tag, v) = v in
+  match tag with
+  | Val.Opt t -> Some (Option.map (fun x -> Val.Dyn (t, x)) v)
+  | _ -> None
 
-let of_option v = Val.Dyn (option_val, v)
+let of_option t v = Val.Dyn (Val.Opt t, v)
 
 end
 

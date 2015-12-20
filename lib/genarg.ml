@@ -9,7 +9,51 @@
 open Pp
 open Util
 
-module Val = Dyn.Make(struct end)
+module Dyn = Dyn.Make(struct end)
+
+module Val =
+struct
+
+  type 'a typ = 'a Dyn.tag
+
+  type _ tag =
+  | Base : 'a typ -> 'a tag
+  | List : 'a tag -> 'a list tag
+  | Opt : 'a tag -> 'a option tag
+  | Pair : 'a tag * 'b tag -> ('a * 'b) tag
+
+  type t = Dyn : 'a tag * 'a -> t
+
+  let rec eq : type a b. a tag -> b tag -> (a, b) CSig.eq option =
+  fun t1 t2 -> match t1, t2 with
+  | Base t1, Base t2 -> Dyn.eq t1 t2
+  | List t1, List t2 ->
+    begin match eq t1 t2 with
+    | None -> None
+    | Some Refl -> Some Refl
+    end
+  | Opt t1, Opt t2 ->
+    begin match eq t1 t2 with
+    | None -> None
+    | Some Refl -> Some Refl
+    end
+  | Pair (t1, u1), Pair (t2, u2) ->
+    begin match eq t1 t2 with
+    | None -> None
+    | Some Refl ->
+      match eq u1 u2 with
+      | None -> None
+      | Some Refl -> Some Refl
+    end
+  | _ -> None
+
+  let rec repr : type a. a tag -> std_ppcmds = function
+  | Base t -> str (Dyn.repr t)
+  | List t -> repr t ++ spc () ++ str "list"
+  | Opt t -> repr t ++ spc () ++ str "option"
+  | Pair (t1, t2) -> str "(" ++ repr t1 ++ str " * " ++ repr t2 ++ str ")"
+
+end
 
 type argument_type =
   (* Basic types *)
@@ -139,7 +183,7 @@ let create_arg opt ?dyn name =
   if String.Map.mem name !arg0_map then
     Errors.anomaly (str "generic argument already declared: " ++ str name)
   else
-    let dyn = match dyn with None -> Val.create name | Some dyn -> cast_tag dyn in
+    let dyn = match dyn with None -> Val.Base (Dyn.create name) | Some dyn -> cast_tag dyn in
     let obj = { nil = Option.map Obj.repr opt; dyn; } in
     let () = arg0_map := String.Map.add name obj !arg0_map in
     ExtraArgType name
@@ -162,26 +206,22 @@ let default_empty_value t =
   | None -> None
 
 (** Beware: keep in sync with the corresponding types *)
-let ident_T = Val.create "ident"
-let genarg_T = Val.create "genarg"
-let constr_T = Val.create "constr"
-let open_constr_T = Val.create "open_constr"
+let base_create n = Val.Base (Dyn.create n)
+let ident_T = base_create "ident"
+let genarg_T = base_create "genarg"
+let constr_T = base_create "constr"
+let open_constr_T = base_create "open_constr"
 
-let option_val = Val.create "option"
-let list_val = Val.create "list"
-let pair_val = Val.create "pair"
-
-let val_tag = function
+let rec val_tag = function
 | IdentArgType -> cast_tag ident_T
 | VarArgType -> cast_tag ident_T
   (** Must ensure that toplevel types of Var and Ident agree! *)
 | ConstrArgType -> cast_tag constr_T
 | OpenConstrArgType -> cast_tag open_constr_T
-| ExtraArgType s -> Obj.magic (String.Map.find s !arg0_map).dyn
-(** Recursive types have no associated dynamic tag *)
-| ListArgType t -> assert false
-| OptArgType t -> assert false
-| PairArgType (t1, t2) -> assert false
+| ExtraArgType s -> cast_tag (String.Map.find s !arg0_map).dyn
+| ListArgType t -> cast_tag (Val.List (val_tag t))
+| OptArgType t -> cast_tag (Val.Opt (val_tag t))
+| PairArgType (t1, t2) -> cast_tag (Val.Pair (val_tag t1, val_tag t2))
 
 exception CastError of argument_type * Val.t
 
@@ -202,23 +242,31 @@ fun wit v -> match unquote wit with
 | ConstrArgType
 | OpenConstrArgType | ExtraArgType _ -> try_prj wit v
 | ListArgType t ->
-  let v = match prj list_val v with
-  | None -> raise (CastError (wit, v))
-  | Some v -> v
-  in
-  Obj.magic (List.map (fun x -> val_cast t x) v)
+  let Val.Dyn (tag, v) = v in
+  begin match tag with
+  | Val.List tag ->
+    let map x = val_cast t (Val.Dyn (tag, x)) in
+    Obj.magic (List.map map v)
+  | _ ->  raise (CastError (wit, Val.Dyn (tag, v)))
+  end
 | OptArgType t ->
-  let v = match prj option_val v with
-  | None -> raise (CastError (wit, v))
-  | Some v -> v
-  in
-  Obj.magic (Option.map (fun x -> val_cast t x) v)
+  let Val.Dyn (tag, v) = v in
+  begin match tag with
+  | Val.Opt tag ->
+    let map x = val_cast t (Val.Dyn (tag, x)) in
+    Obj.magic (Option.map map v)
+  | _ ->  raise (CastError (wit, Val.Dyn (tag, v)))
+  end
 | PairArgType (t1, t2) ->
-  let (v1, v2) = match prj pair_val v with
-  | None -> raise (CastError (wit, v))
-  | Some v -> v
-  in
-  Obj.magic (val_cast t1 v1, val_cast t2 v2)
+  let Val.Dyn (tag, v) = v in
+  begin match tag with
+  | Val.Pair (tag1, tag2) ->
+    let (v1, v2) = v in
+    let v1 = Val.Dyn (tag1, v1) in
+    let v2 = Val.Dyn (tag2, v2) in
+    Obj.magic (val_cast t1 v1, val_cast t2 v2)
+  | _ ->  raise (CastError (wit, Val.Dyn (tag, v)))
+  end
 
 (** Registering genarg-manipulating functions *)
 

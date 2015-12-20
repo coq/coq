@@ -72,7 +72,22 @@ type ('raw, 'glob, 'top) genarg_type
 (** Generic types. ['raw] is the OCaml lowest level, ['glob] is the globalized
     one, and ['top] the internalized one. *)
 
-module Val : Dyn.S
+module Val :
+sig
+  type 'a typ
+
+  type _ tag =
+  | Base : 'a typ -> 'a tag
+  | List : 'a tag -> 'a list tag
+  | Opt : 'a tag -> 'a option tag
+  | Pair : 'a tag * 'b tag -> ('a * 'b) tag
+
+  type t = Dyn : 'a tag * 'a -> t
+
+  val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
+  val repr: 'a tag -> Pp.std_ppcmds
+
+end
 (** Dynamic types for toplevel values. While the generic types permit to relate
     objects at various levels of interpretation, toplevel values are wearing
     their own type regardless of where they came from. This allows to use the
@@ -192,10 +207,6 @@ val val_tag : 'a typed_abstract_argument_type -> 'a Val.tag
     ground generic arguments. *)
 
 val val_cast : 'a typed_abstract_argument_type -> Val.t -> 'a
-
-val option_val : Val.t option Val.tag
-val list_val : Val.t list Val.tag
-val pair_val : (Val.t * Val.t) Val.tag
 
 (** {6 Type reification} *)
 

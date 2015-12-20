@@ -58,9 +58,11 @@ let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
 let in_gen wit v = Val.Dyn (val_tag wit, v)
 let out_gen wit v = match prj (val_tag wit) v with None -> assert false | Some x -> x
 
+let val_tag wit = val_tag (topwit wit)
+
 let pr_argument_type arg =
   let Val.Dyn (tag, _) = arg in
-  Pp.str (Val.repr tag)
+  Val.repr tag
 
 let safe_msgnl s =
   Proofview.NonLogical.catch
@@ -80,7 +82,7 @@ let push_appl appl args =
   | GlbAppl l -> GlbAppl (List.map (fun (h,vs) -> (h,vs@args)) l)
 let pr_generic arg = (** FIXME *)
     let Val.Dyn (tag, _) = arg in
-    str"<" ++ str (Val.repr tag) ++ str ">"
+    str"<" ++ Val.repr tag ++ str ">"
 let pr_appl h vs =
   Pptactic.pr_ltac_constant  h ++ spc () ++
   Pp.prlist_with_sep spc pr_generic vs
@@ -146,7 +148,7 @@ module Value = struct
     let pr_v = mt () in (** FIXME *)
     let Val.Dyn (tag, _) = v in
     let tag = Val.repr tag in
-    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ str tag
+    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ tag
       ++ str " while type " ++ Genarg.pr_argument_type wit ++ str " was expected.")
 
   let cast wit v =
@@ -284,9 +286,9 @@ let coerce_to_tactic loc id v =
     | _ -> fail ()
   else fail ()
 
+let intro_pattern_of_ident id = (Loc.ghost, IntroNaming (IntroIdentifier id))
 let value_of_ident id =
-  in_gen (topwit wit_intro_pattern)
-    (Loc.ghost, IntroNaming (IntroIdentifier id))
+  in_gen (topwit wit_intro_pattern) (intro_pattern_of_ident id)
 
 let (+++) lfun1 lfun2 = Id.Map.fold Id.Map.add lfun1 lfun2
 
@@ -1125,7 +1127,7 @@ let mk_open_constr_value ist gl c =
   let (sigma,c_interp) = pf_apply (interp_open_constr ist) gl c in
   sigma, Value.of_constr c_interp
 let mk_hyp_value ist env sigma c =
-  Value.of_constr (mkVar (interp_hyp ist env sigma c))
+  (mkVar (interp_hyp ist env sigma c))
 let mk_int_or_var_value ist c = in_gen (topwit wit_int) (interp_int_or_var ist c)
 
 let pack_sigma (sigma,c) = {it=c;sigma=sigma;}
@@ -1263,7 +1265,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
               Ftactic.return (value_of_ident (interp_ident ist env sigma
                                                (Genarg.out_gen (glbwit wit_ident) x)))
           | VarArgType ->
-              Ftactic.return (mk_hyp_value ist env sigma (Genarg.out_gen (glbwit wit_var) x))
+              Ftactic.return (Value.of_constr (mk_hyp_value ist env sigma (Genarg.out_gen (glbwit wit_var) x)))
           | OpenConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (Genarg.out_gen (glbwit wit_open_constr) x))) gl in
@@ -1271,20 +1273,20 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
               let ans = List.map (mk_hyp_value ist env sigma) (Genarg.out_gen wit x) in
-              Ftactic.return (Value.of_list ans)
+              Ftactic.return (Value.of_list (val_tag wit_constr) ans)
           | ListArgType IdentArgType ->
               let wit = glbwit (wit_list wit_ident) in
-              let mk_ident x = value_of_ident (interp_ident ist env sigma x) in
+              let mk_ident x = intro_pattern_of_ident (interp_ident ist env sigma x) in
               let ans = List.map mk_ident (Genarg.out_gen wit x) in
-              Ftactic.return (Value.of_list ans)
+              Ftactic.return (Value.of_list (val_tag wit_intro_pattern) ans)
           | ListArgType t  ->
               let open Ftactic in
-              let list_unpacker wit l =
+              list_unpack { list_unpacker = fun wit l ->
                 let map x = f (Genarg.in_gen (glbwit wit) x) in
                 Ftactic.List.map map (glb l) >>= fun l ->
-              Ftactic.return (Value.of_list l)
-              in
-              list_unpack { list_unpacker } x
+                let l = CList.map (fun x -> Value.cast (topwit wit) x) l in
+                Ftactic.return (Value.of_list (val_tag wit) l)
+              } x
           | ExtraArgType _ ->
               (** Special treatment of tactics *)
               if Genarg.has_type x (glbwit wit_tactic) then
@@ -1650,16 +1652,20 @@ and interp_genarg ist env sigma concl gl x =
     | ListArgType VarArgType -> interp_genarg_var_list ist env sigma x
     | ListArgType _ ->
       let list_unpacker wit l =
-        let map x = interp_genarg (Genarg.in_gen (glbwit wit) x) in
-        Value.of_list (List.map map (glb l))
+        let map x =
+          let x = interp_genarg (Genarg.in_gen (glbwit wit) x) in
+          Value.cast (topwit wit) x
+        in
+        Value.of_list (val_tag wit) (List.map map (glb l))
       in
       list_unpack { list_unpacker } x
     | OptArgType _ ->
       let opt_unpacker wit o = match glb o with
-      | None -> Value.of_option None
+      | None -> Value.of_option (val_tag wit) None
       | Some x ->
         let x = interp_genarg (Genarg.in_gen (glbwit wit) x) in
-        Value.of_option (Some x)
+        let x = Value.cast (topwit wit) x in
+        Value.of_option (val_tag wit) (Some x)
       in
       opt_unpack { opt_unpacker } x
     | PairArgType _ ->
@@ -1667,7 +1673,9 @@ and interp_genarg ist env sigma concl gl x =
         let (p, q) = glb o in
         let p = interp_genarg (Genarg.in_gen (glbwit wit1) p) in
         let q = interp_genarg (Genarg.in_gen (glbwit wit2) q) in
-        Val.Dyn (pair_val, (p, q))
+        let p = Value.cast (topwit wit1) p in
+        let q = Value.cast (topwit wit2) q in
+        Val.Dyn (Val.Pair (val_tag wit1, val_tag wit2), (p, q))
       in
       pair_unpack { pair_unpacker } x
     | ExtraArgType s ->
@@ -1694,14 +1702,12 @@ and global_genarg =
 and interp_genarg_constr_list ist env sigma x =
   let lc = Genarg.out_gen (glbwit (wit_list wit_constr)) x in
   let (sigma,lc) = interp_constr_list ist env sigma lc in
-  let lc = List.map Value.of_constr lc in
-  sigma , Value.of_list lc
+  sigma , Value.of_list (val_tag wit_constr) lc
 
 and interp_genarg_var_list ist env sigma x =
   let lc = Genarg.out_gen (glbwit (wit_list wit_var)) x in
   let lc = interp_hyp_list ist env sigma lc in
-  let lc = List.map (fun id -> Val.Dyn (val_tag (topwit wit_var), id)) lc in
-  Value.of_list lc
+  Value.of_list (val_tag wit_var) lc
 
 (* Interprets tactic expressions : returns a "constr" *)
 and interp_ltac_constr ist e : constr Ftactic.t =
