@@ -1910,6 +1910,44 @@ let keep hyps =
   Proofview.V82.tactic (fun gl -> thin cl gl)
   end }
 
+(*********************************)
+(*  Basic generalization tactics *)
+(*********************************)
+
+(* Given a type [T] convertible to [forall x1..xn:A1..An(x1..xn-1), G(x1..xn)]
+   and [a1..an:A1..An(a1..an-1)] such that the goal is [G(a1..an)],
+   this generalizes [hyps |- goal] into [hyps |- T] *)
+
+let apply_type hdcty argl gl =
+  refine (applist (mkCast (Evarutil.mk_new_meta(),DEFAULTcast, hdcty),argl)) gl
+
+(* Given a context [hyps] with domain [x1..xn], possibly with let-ins,
+   and well-typed in the current goal, [bring_hyps hyps] generalizes
+   [ctxt |- G(x1..xn] into [ctxt |- forall hyps, G(x1..xn)] *)
+
+let bring_hyps hyps =
+  if List.is_empty hyps then Tacticals.New.tclIDTAC
+  else
+    Proofview.Goal.enter { enter = begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let store = Proofview.Goal.extra gl in
+      let concl = Tacmach.New.pf_nf_concl gl in
+      let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
+      let args = Array.of_list (instance_from_named_context hyps) in
+      Proofview.Refine.refine { run = begin fun sigma ->
+        let Sigma (ev, sigma, p) =
+          Evarutil.new_evar env sigma ~principal:true ~store newcl in
+        Sigma (mkApp (ev, args), sigma, p)
+      end }
+    end }
+
+let revert hyps = 
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
+    let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
+      (bring_hyps ctx) <*> (Proofview.V82.tactic (clear hyps))
+  end }
+
 (************************)
 (* Introduction tactics *)
 (************************)
@@ -2473,40 +2511,6 @@ let enough_by na t tac = forward false (Some tac) (ipat_of_name na) t
 (***************************)
 (*  Generalization tactics *)
 (***************************)
-
-(* Given a type [T] convertible to [forall x1..xn:A1..An(x1..xn-1), G(x1..xn)]
-   and [a1..an:A1..An(a1..an-1)] such that the goal is [G(a1..an)],
-   this generalizes [hyps |- goal] into [hyps |- T] *)
-
-let apply_type hdcty argl gl =
-  refine (applist (mkCast (Evarutil.mk_new_meta(),DEFAULTcast, hdcty),argl)) gl
-
-(* Given a context [hyps] with domain [x1..xn], possibly with let-ins,
-   and well-typed in the current goal, [bring_hyps hyps] generalizes
-   [ctxt |- G(x1..xn] into [ctxt |- forall hyps, G(x1..xn)] *)
-
-let bring_hyps hyps =
-  if List.is_empty hyps then Tacticals.New.tclIDTAC
-  else
-    Proofview.Goal.enter { enter = begin fun gl ->
-      let env = Proofview.Goal.env gl in
-      let store = Proofview.Goal.extra gl in
-      let concl = Tacmach.New.pf_nf_concl gl in
-      let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
-      let args = Array.of_list (instance_from_named_context hyps) in
-      Proofview.Refine.refine { run = begin fun sigma ->
-        let Sigma (ev, sigma, p) =
-          Evarutil.new_evar env sigma ~principal:true ~store newcl in
-        Sigma (mkApp (ev, args), sigma, p)
-      end }
-    end }
-
-let revert hyps = 
-  Proofview.Goal.enter { enter = begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
-    let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
-      (bring_hyps ctx) <*> (Proofview.V82.tactic (clear hyps))
-  end }
 
 (* Compute a name for a generalization *)
 
