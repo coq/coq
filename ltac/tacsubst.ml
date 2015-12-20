@@ -49,6 +49,7 @@ let subst_glob_with_bindings_arg subst (clear,c) =
 let rec subst_intro_pattern subst = function
   | loc,IntroAction p -> loc, IntroAction (subst_intro_pattern_action subst p)
   | loc, IntroNaming _ | loc, IntroForthcoming _ as x -> x
+  | loc, IntroApplyOnTop c -> loc, IntroApplyOnTop (subst_glob_constr subst c)
 
 and subst_intro_pattern_action subst = function
   | IntroApplyOn (t,pat) ->

@@ -330,6 +330,7 @@ GEXTEND Gram
   ;
   nonsimple_intropattern:
     [ [ l = simple_intropattern -> l
+      | "/"; c = constr -> !@loc, IntroApplyOnTop c
       | "*" -> !@loc, IntroForthcoming true
       | "**" -> !@loc, IntroForthcoming false ]]
   ;

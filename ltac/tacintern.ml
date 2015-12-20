@@ -236,6 +236,8 @@ let rec intern_intro_pattern lf ist = function
   | loc, IntroAction pat ->
       loc, IntroAction (intern_intro_pattern_action lf ist pat)
   | loc, IntroForthcoming _ as x -> x
+  | loc, IntroApplyOnTop c ->
+      loc, IntroApplyOnTop (intern_constr ist c)
 
 and intern_intro_pattern_naming lf ist = function
   | IntroIdentifier id ->

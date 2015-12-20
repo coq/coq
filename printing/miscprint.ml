@@ -14,6 +14,7 @@ open Pp
 let rec pr_intro_pattern prc (_,pat) = match pat with
   | IntroForthcoming true -> str "*"
   | IntroForthcoming false -> str "**"
+  | IntroApplyOnTop c -> str "/" ++ prc c
   | IntroNaming p -> pr_intro_pattern_naming p
   | IntroAction p -> pr_intro_pattern_action prc p
 
