@@ -411,11 +411,16 @@ module Mindset : CSig.SetS with type elt = MutInd.t
 module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
 module Mindmap_env : CSig.MapS with type key = MutInd.t
 
-(** Beware: first inductive has index 0 *)
-type inductive = MutInd.t * int
+(** Designation of a (particular) inductive type. *)
+type inductive = MutInd.t      (* the name of the inductive type *)
+               * int           (* the position of this inductive type
+                                  within the block of mutually-recursive inductive types.
+                                  BEWARE: indexing starts from 0. *)
 
-(** Beware: first constructor has index 1 *)
-type constructor = inductive * int
+(** Designation of a (particular) constructor of a (particular) inductive type. *)
+type constructor = inductive   (* designates the inductive type *)
+                 * int         (* the index of the constructor
+                                  BEWARE: indexing starts from 1. *)
 
 module Indmap : CSig.MapS with type key = inductive
 module Constrmap : CSig.MapS with type key = constructor
