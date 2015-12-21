@@ -2741,7 +2741,7 @@ let quantify lconstr =
 
 (* Modifying/Adding an hypothesis  *)
 
-let specialize (c,lbind) =
+let specialize (c,lbind) ipat =
   Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
@@ -2762,24 +2762,36 @@ let specialize (c,lbind) =
       let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
       if occur_meta term then
 	errorlabstrm "" (str "Cannot infer an instance for " ++
+
           pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
 	  str ".");
       clause.evd, term in
   let typ = Retyping.get_type_of env sigma term in
-  match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
-  | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
-      Tacticals.New.tclTHEN
-        (Proofview.Unsafe.tclEVARS sigma)
-	(Tacticals.New.tclTHENFIRST
-	   (assert_before_replacing id typ)
-	   (new_exact_no_check term))
-  | _ ->
-      (* To deprecate in favor of generalize? *)
-      Tacticals.New.tclTHEN
-        (Proofview.Unsafe.tclEVARS sigma)
-	(Tacticals.New.tclTHENLAST
-           (cut typ)
-           (new_exact_no_check term))
+  let tac =
+    match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
+    | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
+      (* Like assert (id:=id args) but with the concept of specialization *)
+      let naming,tac =
+        prepare_intros false (IntroIdentifier id) MoveLast ipat in
+      let repl = do_replace (Some id) naming in
+      Tacticals.New.tclTHENFIRST
+        (assert_before_then_gen repl naming typ tac)
+	(new_exact_no_check term)
+    | _ ->
+      match ipat with
+      | None ->
+        (* Like generalize with extra support for "with" bindings *)
+        (* even though the "with" bindings forces full application *)
+        Tacticals.New.tclTHENLAST (cut typ) (new_exact_no_check term)
+      | Some (loc,ipat) ->
+        (* Like pose proof with extra support for "with" bindings *)
+        (* even though the "with" bindings forces full application *)
+        let naming,tac = prepare_intros_loc loc false IntroAnonymous MoveLast ipat in
+        Tacticals.New.tclTHENFIRST
+          (assert_before_then_gen false naming typ tac)
+	  (new_exact_no_check term)
+  in
+  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end }
 
 (*****************************)
