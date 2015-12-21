@@ -56,7 +56,7 @@ let check_unix_dir warn dir =
 let apply_subdir f path name =
   (* we avoid all files and subdirs starting by '.' (e.g. .svn) *)
   (* as well as skipped files like CVS, ... *)
-  if name.[0] <> '.' && ok_dirname name then
+  if ok_dirname name then
     let path = if path = "." then name else path//name in
     match try (Unix.stat path).Unix.st_kind with Unix.Unix_error _ -> Unix.S_BLK with
     | Unix.S_DIR -> f (FileDir (path,name))
@@ -109,20 +109,22 @@ let make_dir_table dir =
   Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
 
 let exists_in_dir_respecting_case dir bf =
-  let contents, cached =
-    try StrMap.find dir !dirmap, true with Not_found ->
+  let cache_dir dir =
     let contents = make_dir_table dir in
     dirmap := StrMap.add dir contents !dirmap;
-    contents, false in
+    contents in
+  let contents, fresh =
+    try
+      (* in batch mode, assume the directory content is still fresh *)
+      StrMap.find dir !dirmap, !Flags.batch_mode
+    with Not_found ->
+      (* in batch mode, we are not yet sure the directory exists *)
+      if !Flags.batch_mode && not (exists_dir dir) then StrSet.empty, true
+      else cache_dir dir, true in
   StrSet.mem bf contents ||
-    if cached then begin
+    not fresh &&
       (* rescan, there is a new file we don't know about *)
-      let contents = make_dir_table dir in
-      dirmap := StrMap.add dir contents !dirmap;
-      StrSet.mem bf contents
-    end
-    else
-      false
+      StrSet.mem bf (cache_dir dir)
 
 let file_exists_respecting_case path f =
   (* This function ensures that a file with expected lowercase/uppercase
@@ -132,7 +134,7 @@ let file_exists_respecting_case path f =
     let df = Filename.dirname f in
     (String.equal df "." || aux df)
     && exists_in_dir_respecting_case (Filename.concat path df) bf
-  in Sys.file_exists (Filename.concat path f) && aux f
+  in (!Flags.batch_mode || Sys.file_exists (Filename.concat path f)) && aux f
 
 let rec search paths test =
   match paths with
