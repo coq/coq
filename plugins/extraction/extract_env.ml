@@ -177,8 +177,7 @@ let factor_fix env l cb msb =
 
 let expand_mexpr env mp me =
   let inl = Some (Flags.get_inline_level()) in
-  let sign,_,_,_ = Mod_typing.translate_mse env (Some mp) inl me in
-  sign
+  Mod_typing.translate_mse env (Some mp) inl me
 
 (** Ad-hoc update of environment, inspired by [Mod_type.check_with_aux_def].
     To check with Elie. *)
@@ -231,10 +230,9 @@ let rec extract_structure_spec env mp reso = function
 
 (* From [module_expression] to specifications *)
 
-(* Invariant: the [me] given to [extract_mexpr_spec] should either come
-   from a [mod_type] or [type_expr] field, or their [_alg] counterparts.
-   This way, any encountered [MEident] should be a true module type.
-*)
+(* Invariant: the [me_alg] given to [extract_mexpr_spec] and
+   [extract_mexpression_spec] should come from a [mod_type_alg] field.
+   This way, any encountered [MEident] should be a true module type. *)
 
 and extract_mexpr_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MEident mp -> Visit.add_mp_all mp; MTident mp
@@ -247,7 +245,9 @@ and extract_mexpr_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MEwith(me',WithMod(idl,mp))->
       Visit.add_mp_all mp;
       MTwith(extract_mexpr_spec env mp1 (me_struct,me'), ML_With_module(idl,mp))
-  | MEapply _ -> extract_msignature_spec env mp1 no_delta (*TODO*) me_struct
+  | MEapply _ ->
+     (* No higher-order module type in OCaml : we use the expanded version *)
+     extract_msignature_spec env mp1 no_delta (*TODO*) me_struct
 
 and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MoreFunctor (mbid, mtb, me_alg') ->
@@ -335,7 +335,8 @@ and extract_mexpr env mp = function
       (* In Haskell/Scheme, we expand everything.
          For now, we also extract everything, dead code will be removed later
          (see [Modutil.optimize_struct]. *)
-      extract_msignature env mp no_delta ~all:true (expand_mexpr env mp me)
+      let sign,_,delta,_ = expand_mexpr env mp me in
+      extract_msignature env mp delta ~all:true sign
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
       Visit.add_mp_all mp; Miniml.MEident mp

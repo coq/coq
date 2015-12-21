@@ -238,17 +238,26 @@ and module_body =
   { mod_mp : module_path; (** absolute path of the module *)
     mod_expr : module_implementation; (** implementation *)
     mod_type : module_signature; (** expanded type *)
-    (** algebraic type, kept if it's relevant for extraction *)
-    mod_type_alg : module_expression option;
-    (** set of all universes constraints in the module  *)
-    mod_constraints : Univ.ContextSet.t;
-    (** quotiented set of equivalent constants and inductive names *)
-    mod_delta : Mod_subst.delta_resolver;
+    mod_type_alg : module_expression option; (** algebraic type *)
+    mod_constraints : Univ.ContextSet.t; (**
+      set of all universes constraints in the module  *)
+    mod_delta : Mod_subst.delta_resolver; (**
+      quotiented set of equivalent constants and inductive names *)
     mod_retroknowledge : Retroknowledge.action list }
+
+(** For a module, there are five possible situations:
+    - [Declare Module M : T] then [mod_expr = Abstract; mod_type_alg = Some T]
+    - [Module M := E] then [mod_expr = Algebraic E; mod_type_alg = None]
+    - [Module M : T := E] then [mod_expr = Algebraic E; mod_type_alg = Some T]
+    - [Module M. ... End M] then [mod_expr = FullStruct; mod_type_alg = None]
+    - [Module M : T. ... End M] then [mod_expr = Struct; mod_type_alg = Some T]
+    And of course, all these situations may be functors or not. *)
 
 (** A [module_type_body] is just a [module_body] with no
     implementation ([mod_expr] always [Abstract]) and also
-    an empty [mod_retroknowledge] *)
+    an empty [mod_retroknowledge]. Its [mod_type_alg] contains
+    the algebraic definition of this module type, or [None]
+    if it has been built interactively. *)
 
 and module_type_body = module_body
 

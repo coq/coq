@@ -126,12 +126,11 @@ type module_typing_error =
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
+  | IncludeRestrictedFunctor of module_path
 
 exception ModuleTypingError of module_typing_error
 
 val error_existing_label : Label.t -> 'a
-
-val error_application_to_not_path : module_struct_entry -> 'a
 
 val error_incompatible_modtypes :
   module_type_body -> module_type_body -> 'a
@@ -152,3 +151,5 @@ val error_incorrect_with_constraint : Label.t -> 'a
 val error_generative_module_expected : Label.t -> 'a
 
 val error_no_such_label_sub : Label.t->string->'a
+
+val error_include_restricted_functor : module_path -> 'a
