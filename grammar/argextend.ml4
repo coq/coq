@@ -206,13 +206,26 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
             (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
       end
     | Some f -> <:expr< $lid:f$>> in
+  let dyn = match typ with
+  | `Uniform typ ->
+    let is_new = match typ with
+    | Genarg.ExtraArgType s' when CString.equal s s' -> true
+    | _ -> false
+    in
+    if is_new then <:expr< None >>
+    else <:expr< Some (Genarg.val_tag $make_topwit loc typ$) >>
+  | `Specialized _ -> <:expr< None >>
+  in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
   let rawwit = <:expr< Genarg.rawwit $wit$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   let default_value = <:expr< $make_possibly_empty_subentries loc s cl$ >> in
   declare_str_items loc
-   [ <:str_item< value ($lid:"wit_"^s$) = Genarg.make0 $default_value$ $se$ >>;
+   [ <:str_item<
+      value ($lid:"wit_"^s$) =
+        let dyn = $dyn$ in
+        Genarg.make0 ?dyn $default_value$ $se$ >>;
      <:str_item< Genintern.register_intern0 $wit$ $glob$ >>;
      <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
      <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
