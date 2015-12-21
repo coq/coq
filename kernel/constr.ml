@@ -41,15 +41,23 @@ type case_printing =
   { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
     cstr_tags : bool list array; (* whether each pattern var of each constructor is a let-in (true) or not (false) *)
     style     : case_style }
+
+(* INVARIANT:
+ * - Array.length ci_cstr_ndecls = Array.length ci_cstr_nargs
+ * - forall (i : 0 .. pred (Array.length ci_cstr_ndecls)),
+ *          ci_cstr_ndecls.(i) >= ci_cstr_nargs.(i)
+ *)
 type case_info =
   { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
     ci_npar       : int;            (* number of parameters of the above inductive type *)
-    ci_cstr_ndecls : int array;     (* number of arguments of individual constructors
-                                       (numbers of parameters of the inductive type are excluded from the count)
-                                       (with let's) *)
-    ci_cstr_nargs : int array;      (* number of arguments of individual constructors
-                                       (numbers of parameters of the inductive type are excluded from the count)
-                                       (w/o let's) *)
+    ci_cstr_ndecls : int array;     (* For each constructor, the corresponding integer determines
+                                       the number of values that can be bound in a match-construct.
+                                       NOTE: parameters of the inductive type are therefore excluded from the count *)
+    ci_cstr_nargs : int array;      (* for each constructor, the corresponding integers determines
+                                       the number of values that can be applied to the constructor,
+                                       in addition to the parameters of the related inductive type
+                                       NOTE: "lets" are therefore excluded from the count
+                                       NOTE: parameters of the inductive type are also excluded from the count *)
     ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
