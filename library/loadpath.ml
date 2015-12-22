@@ -97,18 +97,19 @@ let filter_path f =
   in
   aux !load_paths
 
-let expand_path dir =
+let expand_path ?root dir =
   let rec aux = function
   | [] -> []
-  | { path_physical = ph; path_logical = lg; path_implicit = implicit }  :: l ->
-    match implicit with
-    | true ->
-      (** The path is implicit, so that we only want match the logical suffix *)
-      if is_dirpath_suffix_of dir lg then (ph, lg) :: aux l else aux l
-    | false ->
-      (** Otherwise we must match exactly *)
-      if DirPath.equal dir lg then (ph, lg) :: aux l else aux l
-  in
+  | { path_physical = ph; path_logical = lg; path_implicit = implicit } :: l ->
+    let success =
+      match root with
+      | None ->
+        if implicit then is_dirpath_suffix_of dir lg
+        else DirPath.equal dir lg
+      | Some root ->
+        is_dirpath_prefix_of root lg &&
+          is_dirpath_suffix_of dir (drop_dirpath_prefix root lg) in
+    if success then (ph, lg) :: aux l else aux l in
   aux !load_paths
 
 let locate_file fname =

@@ -297,17 +297,7 @@ let locate_absolute_library dir =
 let locate_qualified_library ?root ?(warn = true) qid =
   (* Search library in loadpath *)
   let dir, base = repr_qualid qid in
-  let loadpath = match root with
-  | None -> Loadpath.expand_path dir
-  | Some root ->
-    let filter path =
-      if is_dirpath_prefix_of root path then
-        let path = drop_dirpath_prefix root path in
-        is_dirpath_suffix_of dir path
-      else false
-    in
-    Loadpath.filter_path filter
-  in
+  let loadpath = Loadpath.expand_path ?root dir in
   let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
   let find ext =
     try
