@@ -286,12 +286,12 @@ let locate_absolute_library dir =
     with Not_found -> [] in
   match find ".vo" @ find ".vio" with
   | [] -> raise LibNotFound
-  | [file] -> dir, file
+  | [file] -> file
   | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
        msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
          str vo ++ str " because it is more recent");
-       dir, vi
-  | [vo;vi] -> dir, vo
+       vi
+  | [vo;vi] -> vo
   | _ -> assert false
 
 let locate_qualified_library ?root ?(warn = true) qid =
@@ -459,7 +459,7 @@ let intern_from_file f =
 module DPMap = Map.Make(DirPath)
 
 let rec intern_library (needed, contents) (dir, f) from =
-  Pp.feedback(Feedback.FileDependency (from, f));
+  Pp.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
@@ -467,6 +467,7 @@ let rec intern_library (needed, contents) (dir, f) from =
   try (DPMap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
+  let f = match f with Some f -> f | None -> try_locate_absolute_library dir in
   let m = intern_from_file f in
   if not (DirPath.equal dir m.library_name) then
     errorlabstrm "load_physical_library"
@@ -481,13 +482,13 @@ and intern_library_deps libs dir m from =
   (dir :: needed, DPMap.add dir m contents )
 
 and intern_mandatory_library caller from libs (dir,d) =
-  let digest, libs = intern_library libs (try_locate_absolute_library dir) from in
+  let digest, libs = intern_library libs (dir, None) from in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     errorlabstrm "" (str "Compiled library " ++ str (DirPath.to_string caller) ++ str ".vo makes inconsistent assumptions over library " ++ str (DirPath.to_string dir));
   libs
 
-let rec_intern_library libs mref =
-  let _, libs = intern_library libs mref None in
+let rec_intern_library libs (dir, f) =
+  let _, libs = intern_library libs (dir, Some f) None in
   libs
 
 let native_name_from_filename f =
