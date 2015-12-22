@@ -602,7 +602,7 @@ let import_module export modl =
 let check_coq_overwriting p id =
   let l = DirPath.repr p in
   let is_empty = match l with [] -> true | _ -> false in
-  if not !Flags.boot && not is_empty && String.equal (Id.to_string (List.last l)) "Coq" then
+  if not !Flags.boot && not is_empty && Id.equal (List.last l) coq_root then
     errorlabstrm ""
       (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ pr_id id ++ str "." ++ spc () ++
       str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
