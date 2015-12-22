@@ -171,7 +171,7 @@ let warning_or_error coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
 	let s,have = if List.length projs > 1 then "s","were" else "","was" in
-        (str(Id.to_string fi) ++
+        (pr_id fi ++
 	   strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
            prlist_with_sep pr_comma pr_id projs ++ spc () ++ str have ++
 	   strbrk " not defined.")

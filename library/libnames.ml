@@ -13,7 +13,7 @@ open Names
 
 (**********************************************)
 
-let pr_dirpath sl = (str (DirPath.to_string sl))
+let pr_dirpath sl = str (DirPath.to_string sl)
 
 (*s Operations on dirpaths *)
 
@@ -197,7 +197,7 @@ let string_of_reference = function
 
 let pr_reference = function
   | Qualid (_,qid) -> pr_qualid qid
-  | Ident (_,id) -> str (Id.to_string id)
+  | Ident (_,id) -> Id.print id
 
 let loc_of_reference = function
   | Qualid (loc,qid) -> loc

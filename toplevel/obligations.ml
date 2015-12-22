@@ -266,7 +266,7 @@ let reduce c =
 exception NoObligations of Id.t option
 
 let explain_no_obligations = function
-    Some ident -> str "No obligations for program " ++ str (Id.to_string ident)
+    Some ident -> str "No obligations for program " ++ Id.print ident
   | None -> str "No obligations remaining"
 
 type obligation_info =
@@ -996,7 +996,7 @@ let show_obligations_of_prg ?(msg=true) prg =
 		       if !showed > 0 then (
 			 decr showed;
 			 msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
-				   str "of" ++ spc() ++ str (Id.to_string n) ++ str ":" ++ spc () ++
+				   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
 				   hov 1 (Printer.pr_constr_env (Global.env ()) Evd.empty x.obl_type ++
 					    str "." ++ fnl ())))
 		   | Some _ -> ())
@@ -1013,14 +1013,14 @@ let show_obligations ?(msg=true) n =
 let show_term n =
   let prg = get_prog_err n in
   let n = prg.prg_name in
-    (str (Id.to_string n) ++ spc () ++ str":" ++ spc () ++
+    (Id.print n ++ spc () ++ str":" ++ spc () ++
 	     Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
 
 let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
   let sign = Decls.initialize_named_context_for_proof () in
-  let info = str (Id.to_string n) ++ str " has type-checked" in
+  let info = Id.print n ++ str " has type-checked" in
   let prg = init_prog_info sign ~opaque n term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (

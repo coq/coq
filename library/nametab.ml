@@ -523,7 +523,7 @@ let shortest_qualid_of_tactic kn =
     KnTab.shortest_qualid Id.Set.empty sp !the_tactictab
 
 let pr_global_env env ref =
-  try str (string_of_qualid (shortest_qualid_of_global env ref))
+  try pr_qualid (shortest_qualid_of_global env ref)
   with Not_found as e ->
     if !Flags.debug then Pp.msg_debug (Pp.str "pr_global_env not found"); raise e
 

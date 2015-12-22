@@ -156,7 +156,7 @@ let show_match id =
 (* "Print" commands *)
 
 let print_path_entry p =
-  let dir = str (DirPath.to_string (Loadpath.logical p)) in
+  let dir = pr_dirpath (Loadpath.logical p) in
   let path = str (Loadpath.physical p) in
   (dir ++ str " " ++ tbrk (0, 0) ++ path)
 
@@ -947,7 +947,7 @@ let register_ltac local tacl =
     match tactic_body with
     | TacticDefinition ((loc,id), body) ->
         let kn = Lib.make_kn id in
-        let id_pp = str (Id.to_string id) in
+        let id_pp = pr_id id in
         let () = if is_defined_tac kn then
           Errors.user_err_loc (loc, "",
             str "There is already an Ltac named " ++ id_pp ++ str".")
@@ -1584,7 +1584,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
     let natureofid = match bdyopt with
       | None -> "Hypothesis"
       | Some bdy ->"Constant (let in)" in
-    v 0 (str (Id.to_string id) ++ str":" ++ pr_constr typ ++ fnl() ++ fnl()
+    v 0 (pr_id id ++ str":" ++ pr_constr typ ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found -> print_about ref_or_by_not

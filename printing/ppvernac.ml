@@ -1034,7 +1034,7 @@ module Make
           let pr_tac_body tacdef_body =
             let id, redef, body =
               match tacdef_body with
-              | TacticDefinition ((_,id), body) -> str (Id.to_string id), false, body
+              | TacticDefinition ((_,id), body) -> pr_id id, false, body
               | TacticRedefinition (id, body) -> pr_ltac_ref id, true, body
             in
             let idl, body =

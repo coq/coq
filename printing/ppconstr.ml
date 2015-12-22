@@ -153,11 +153,11 @@ end) = struct
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
-    let id = tag_ref (str (Id.to_string id)) in
+    let id = tag_ref (pr_id id) in
     let sl = match List.rev (DirPath.repr sl) with
     | [] -> mt ()
     | sl ->
-      let pr dir = tag_path (str (Id.to_string dir)) ++ str "." in
+      let pr dir = tag_path (pr_id dir) ++ str "." in
       prlist pr sl
     in
     sl ++ id
@@ -182,7 +182,7 @@ end) = struct
 
   let pr_reference = function
   | Qualid (_, qid) -> pr_qualid qid
-  | Ident (_, id) -> tag_var (str (Id.to_string id))
+  | Ident (_, id) -> tag_var (pr_id id)
 
   let pr_cref ref us =
     pr_reference ref ++ pr_universe_instance us

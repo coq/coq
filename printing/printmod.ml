@@ -264,7 +264,7 @@ let nametab_register_modparam mbid mtb =
       List.iter (nametab_register_body mp dir) struc
 
 let print_body is_impl env mp (l,body) =
-  let name = str (Label.to_string l) in
+  let name = pr_label l in
   hov 2 (match body with
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name

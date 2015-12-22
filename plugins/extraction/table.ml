@@ -453,7 +453,7 @@ let check_loaded_modfile mp = match base_mp mp with
       if not (Library.library_is_loaded dp) then begin
 	match base_mp (Lib.current_mp ()) with
 	  | MPfile dp' when not (DirPath.equal dp dp') ->
-	      err (str ("Please load library "^(DirPath.to_string dp^" first.")))
+	      err (str "Please load library " ++ pr_dirpath dp ++ str " first.")
 	  | _ -> ()
       end
   | _ -> ()

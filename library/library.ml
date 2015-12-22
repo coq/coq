@@ -132,7 +132,7 @@ let try_find_library dir =
   try find_library dir
   with Not_found ->
     errorlabstrm "Library.find_library"
-      (str "Unknown library " ++ str (DirPath.to_string dir))
+      (str "Unknown library " ++ pr_dirpath dir)
 
 let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
@@ -474,7 +474,7 @@ and intern_library_deps libs dir m from =
 and intern_mandatory_library caller from libs (dir,d) =
   let digest, libs = intern_library libs (dir, None) from in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    errorlabstrm "" (str "Compiled library " ++ str (DirPath.to_string caller) ++ str ".vo makes inconsistent assumptions over library " ++ str (DirPath.to_string dir));
+    errorlabstrm "" (str "Compiled library " ++ pr_dirpath caller ++ str ".vo makes inconsistent assumptions over library " ++ pr_dirpath dir);
   libs
 
 let rec_intern_library libs (dir, f) =
@@ -567,7 +567,7 @@ let safe_locate_module (loc,qid) =
   try Nametab.locate_module qid
   with Not_found ->
     user_err_loc
-      (loc,"import_library", str (string_of_qualid qid) ++ str " is not a module")
+      (loc,"import_library", pr_qualid qid ++ str " is not a module")
 
 let import_module export modl =
   (* Optimization: libraries in a raw in the list are imported
@@ -592,7 +592,7 @@ let import_module export modl =
             try Declaremods.import_module export mp; aux [] l
             with Not_found ->
               user_err_loc (loc,"import_library",
-                str (string_of_qualid dir) ++ str " is not a module"))
+                pr_qualid dir ++ str " is not a module"))
     | [] -> flush acc
   in aux [] modl
 
@@ -604,7 +604,7 @@ let check_coq_overwriting p id =
   let is_empty = match l with [] -> true | _ -> false in
   if not !Flags.boot && not is_empty && String.equal (Id.to_string (List.last l)) "Coq" then
     errorlabstrm ""
-      (str "Cannot build module " ++ str (DirPath.to_string p) ++ str "." ++ pr_id id ++ str "." ++ spc () ++
+      (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ pr_id id ++ str "." ++ spc () ++
       str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
 
 (* Verifies that a string starts by a letter and do not contain

@@ -822,7 +822,7 @@ let explain_not_match_error = function
   | ModuleTypeFieldExpected ->
     strbrk "a module type is expected"
   | NotConvertibleInductiveField id | NotConvertibleConstructorField id ->
-    str "types given to " ++ str (Id.to_string id) ++ str " differ"
+    str "types given to " ++ pr_id id ++ str " differ"
   | NotConvertibleBodyField ->
     str "the body of definitions differs"
   | NotConvertibleTypeField (env, typ1, typ2) ->
@@ -847,7 +847,7 @@ let explain_not_match_error = function
   | RecordProjectionsExpected nal ->
     (if List.length nal >= 2 then str "expected projection names are "
      else str "expected projection name is ") ++
-    pr_enum (function Name id -> str (Id.to_string id) | _ -> str "_") nal
+    pr_enum (function Name id -> pr_id id | _ -> str "_") nal
   | NotEqualInductiveAliases ->
     str "Aliases to inductive types do not match"
   | NoTypeConstraintExpected ->
@@ -896,11 +896,11 @@ let explain_not_equal_module_paths mp1 mp2 =
   str "Non equal modules."
 
 let explain_no_such_label l =
-  str "No such label " ++ str (Label.to_string l) ++ str "."
+  str "No such label " ++ pr_label l ++ str "."
 
 let explain_incompatible_labels l l' =
   str "Opening and closing labels are not the same: " ++
-  str (Label.to_string l) ++ str " <> " ++ str (Label.to_string l') ++ str "!"
+  pr_label l ++ str " <> " ++ pr_label l' ++ str "!"
 
 let explain_not_a_module s =
   quote (str s) ++ str " is not a module."
@@ -909,19 +909,19 @@ let explain_not_a_module_type s =
   quote (str s) ++ str " is not a module type."
 
 let explain_not_a_constant l =
-  quote (Label.print l) ++ str " is not a constant."
+  quote (pr_label l) ++ str " is not a constant."
 
 let explain_incorrect_label_constraint l =
   str "Incorrect constraint for label " ++
-  quote (Label.print l) ++ str "."
+  quote (pr_label l) ++ str "."
 
 let explain_generative_module_expected l =
-  str "The module " ++ str (Label.to_string l) ++ str " is not generative." ++
+  str "The module " ++ pr_label l ++ str " is not generative." ++
   strbrk " Only components of generative modules can be changed" ++
   strbrk " using the \"with\" construct."
 
 let explain_label_missing l s =
-  str "The field " ++ str (Label.to_string l) ++ str " is missing in "
+  str "The field " ++ pr_label l ++ str " is missing in "
   ++ str s ++ str "."
 
 let explain_module_error = function

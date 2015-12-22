@@ -13,6 +13,8 @@ open Cic
 open Names
 open Environ
 
+let pr_dirpath dp = str (DirPath.to_string dp)
+
 (************************************************************************)
 (*
  * Global environment
@@ -52,9 +54,9 @@ let check_engagement env (expected_impredicative_set,expected_type_in_type) =
 
 let report_clash f caller dir =
   let msg =
-    str "compiled library " ++ str(DirPath.to_string caller) ++
+    str "compiled library " ++ pr_dirpath caller ++
     spc() ++ str "makes inconsistent assumptions over library" ++ spc() ++
-    str(DirPath.to_string dir) ++ fnl() in
+    pr_dirpath dir ++ fnl() in
   f msg
 
 

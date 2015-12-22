@@ -777,7 +777,7 @@ let pr_assumptionset env s =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
-        let var = str (Id.to_string id) ++ str " : " ++ pr_ltype typ in
+        let var = pr_id id ++ str " : " ++ pr_ltype typ in
         (var :: v, a, o, tr)
       | Axiom (kn,[]) ->
         let ax = safe_pr_constant env kn ++ safe_pr_ltype typ in
@@ -786,7 +786,7 @@ let pr_assumptionset env s =
         let ax = safe_pr_constant env kn ++ safe_pr_ltype typ ++
           cut() ++
           prlist_with_sep cut (fun (lbl, ctx, ty) ->
-            str " used in " ++ str (Names.Label.to_string lbl) ++
+            str " used in " ++ pr_label lbl ++
             str " to prove:" ++ safe_pr_ltype_relctx (ctx,ty))
           l in
         (v, ax :: a, o, tr)
