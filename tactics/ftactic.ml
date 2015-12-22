@@ -84,3 +84,9 @@ module Ftac = Monad.Make(Self)
 module List = Ftac.List
 
 let debug_prompt = Tactic_debug.debug_prompt
+
+module Notations =
+struct
+  let (>>=) = bind
+  let (<*>) = fun m n -> bind m (fun () -> n)
+end

@@ -15,8 +15,7 @@ type interp_sign = {
   lfun : Val.t Id.Map.t;
   extra : TacStore.t }
 
-type ('glb, 'top) interp_fun = interp_sign ->
-    Goal.goal Evd.sigma -> 'glb -> Evd.evar_map * 'top
+type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
 
 module InterpObj =
 struct
@@ -30,9 +29,10 @@ module Interp = Register(InterpObj)
 let interp = Interp.obj
 let register_interp0 = Interp.register0
 
-let generic_interp ist gl v =
+let generic_interp ist v =
+  let open Ftactic.Notations in
   let unpacker wit v =
-    let (sigma, ans) = interp wit ist gl (glb v) in
-    (sigma, Val.Dyn (val_tag (topwit wit), ans))
+    interp wit ist (glb v) >>= fun ans ->
+    Ftactic.return (Val.Dyn (val_tag (topwit wit), ans))
   in
   unpack { unpacker; } v

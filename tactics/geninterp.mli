@@ -17,8 +17,7 @@ type interp_sign = {
   lfun : Val.t Id.Map.t;
   extra : TacStore.t }
 
-type ('glb, 'top) interp_fun = interp_sign ->
-    Goal.goal Evd.sigma -> 'glb -> Evd.evar_map * 'top
+type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
 
 val interp : ('raw, 'glb, 'top) genarg_type -> ('glb, 'top) interp_fun
 

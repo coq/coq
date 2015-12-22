@@ -182,17 +182,22 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
     | None ->
       begin match globtyp with
       | Genarg.ExtraArgType s' when CString.equal s s' ->
-        <:expr< fun ist gl v -> (gl.Evd.sigma, v) >>
+        <:expr< fun ist v -> Ftactic.return v >>
       | _ ->
-	<:expr< fun ist gl x ->
-	  let (sigma,a_interp) =
-	    Tacinterp.interp_genarg ist
-              (Tacmach.pf_env gl) (Tacmach.project gl) (Tacmach.pf_concl gl) gl.Evd.it
-               (Genarg.in_gen $make_globwit loc globtyp$ x)
-	  in
-          (sigma , Tacinterp.Value.cast $make_topwit loc globtyp$ a_interp)>>
+	<:expr< fun ist x ->
+          Ftactic.bind
+	    (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
+            (fun v -> Ftactic.return (Tacinterp.Value.cast $make_topwit loc globtyp$ v)) >>
       end
-    | Some f -> <:expr< $lid:f$>> in
+    | Some f ->
+      (** Compatibility layer, TODO: remove me *)
+      <:expr<
+        let f = $lid:f$ in
+        fun ist v -> Ftactic.nf_enter (fun gl ->
+          let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
+          Ftactic.bind (Ftactic.lift (Proofview.Unsafe.tclEVARS sigma)) (fun _ -> Ftactic.return v)
+        )
+      >> in
   let subst = match h with
     | None ->
       begin match globtyp with
