@@ -49,3 +49,10 @@ val add_struct_expr_constraints : env -> struct_expr_body -> env
 val struct_expr_constraints : struct_expr_body -> Univ.constraints
 
 val module_constraints : module_body -> Univ.constraints
+
+(* Warn when including functors with restricted signature, since
+   that may lead to the creation of axioms (cf. #3746). Behave:
+   this test below is partial, since [mod_type_alg] isn't always
+   properly filled. *)
+
+val warn_incl_signed_functor : env -> module_struct_entry -> unit

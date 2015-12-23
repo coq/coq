@@ -358,6 +358,48 @@ let rec translate_struct_include_module_entry env mp inl = function
       translate_apply env inl ftrans mexpr (fun _ _ _ -> None)
   | _ -> error ("You cannot Include a high-order structure.")
 
+let rec mse_head = function
+  |MSEident mp -> Some mp
+  |MSEapply(me,_) -> mse_head me
+  |MSEfunctor(_,_,me) -> mse_head me
+  |MSEwith _ -> assert false (* No 'with' syntax for modules *)
+
+let rec seb_head = function
+  |SEBident mp -> Some mp
+  |SEBapply(se,_,_) -> seb_head se
+  |SEBfunctor (_,_,se) -> seb_head se
+  |SEBstruct _ -> None
+  |SEBwith _ -> assert false (* No 'with' syntax for modules *)
+
+open Pp
+
+(* Warn when including functors with restricted signature, since
+   that may lead to the creation of axioms (cf. #3746). Behave:
+   this test below is partial, since [mod_type_alg] isn't always
+   properly filled. *)
+
+let warning_incl_signed_functor mp =
+  let s = string_of_mp mp in
+  msg_warning
+    (str ("Include of functor "^s^" which has a restricted signature.") ++ fnl() ++
+     str "We include its signature (possibly creating axioms)." ++ fnl () ++
+     str "Otherwise, you may first name an instance of this functor," ++ fnl () ++
+     str "and include it. Nota: this warning will be an error in Coq 8.5.")
+
+let rec warn_incl_signed_functor env mse =
+  let rec check_mp mp =
+    let mb = lookup_module mp env in
+    match mb.mod_type, mb.mod_type_alg, mb.mod_expr with
+    |SEBfunctor _, Some _, _ ->
+      (* functor + restricted signature = warning in 8.4, error in 8.5 *)
+      warning_incl_signed_functor mp
+    |SEBfunctor _, None, Some me ->
+      (* functor, no signature yet, a definition which may be restricted *)
+      Option.iter check_mp (seb_head me)
+    |_ -> ()
+  in
+  Option.iter check_mp (mse_head mse)
+
 let rec add_struct_expr_constraints env = function
   | SEBident _ -> env
 

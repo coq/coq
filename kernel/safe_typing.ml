@@ -464,7 +464,8 @@ let end_module l restype senv =
        let sign,_,resolver,cst =
 	 translate_struct_include_module_entry senv.env
 	   senv.modinfo.modpath inl me in
-	 sign,cst,resolver
+       let () = warn_incl_signed_functor senv.env me in
+       sign,cst,resolver
      else
        let mtb = 
 	 translate_module_type senv.env 
