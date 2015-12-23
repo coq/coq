@@ -29,6 +29,12 @@ let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
 let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
 
+let reference_to_id = function
+  | Libnames.Ident (loc, id) -> (loc, id)
+  | Libnames.Qualid (loc,_) ->
+      Errors.user_err_loc (loc, "",
+        str "This expression should be a simple identifier.")
+
 (* Tactics grammar rules *)
 
 GEXTEND Gram
@@ -242,16 +248,23 @@ GEXTEND Gram
       | n = integer -> MsgInt n ] ]
   ;
 
+  ltac_def_kind:
+    [ [ ":=" -> false
+      | "::=" -> true ] ]
+  ;
+
   (* Definitions for tactics *)
-  tacdef_body: 
-    [ [ id = ident; it=LIST1 input_fun; ":="; body = tactic_expr ->
-          Vernacexpr.TacticDefinition ((!@loc,id), TacFun (it, body))
-      | name = Constr.global; it=LIST1 input_fun; "::="; body = tactic_expr ->
-          Vernacexpr.TacticRedefinition (name, TacFun (it, body))
-      | id = ident; ":="; body = tactic_expr ->
-          Vernacexpr.TacticDefinition ((!@loc,id), body)
-      | name = Constr.global; "::="; body = tactic_expr ->
-          Vernacexpr.TacticRedefinition (name, body)
+  tacdef_body:
+    [ [ name = Constr.global; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
+          if redef then Vernacexpr.TacticRedefinition (name, TacFun (it, body))
+          else
+            let id = reference_to_id name in
+            Vernacexpr.TacticDefinition (id, TacFun (it, body))
+      | name = Constr.global; redef = ltac_def_kind; body = tactic_expr ->
+          if redef then Vernacexpr.TacticRedefinition (name, body)
+          else
+            let id = reference_to_id name in
+            Vernacexpr.TacticDefinition (id, body)
     ] ]
   ;
   tactic:
