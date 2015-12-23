@@ -769,13 +769,6 @@ let save_library_raw f sum lib univs proofs =
   System.marshal_out_segment f' ch (proofs     : seg_proofs);
   close_out ch
 
-(************************************************************************)
-(*s Display the memory use of a library. *)
-
-open Printf
-
-let mem s = Pp.mt ()
-
 module StringOrd = struct type t = string let compare = String.compare end
 module StringSet = Set.Make(StringOrd)
 
