@@ -393,7 +393,9 @@ let tauto_gen flags =
       tauto_intuitionistic flags
     end
 
-let default_intuition_tac = <:tactic< auto with * >>
+let default_intuition_tac =
+  let tac _ _ = Auto.h_auto None [] None in
+  register_tauto_tactic tac "auto_with"
 
 (* This is the uniform mode dealing with ->, not, iff and types isomorphic to
    /\ and *, \/ and +, False and Empty_set, True and unit, _and_ eq-like types.
