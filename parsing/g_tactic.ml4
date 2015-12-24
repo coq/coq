@@ -623,20 +623,6 @@ GEXTEND Gram
       | IDENT "edestruct";  icl = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct(false,true,icl))
 
-      (* Automation tactic *)
-      | IDENT "trivial"; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacTrivial (Off, lems, db))
-      | IDENT "info_trivial"; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacTrivial (Info, lems, db))
-      | IDENT "debug"; IDENT "trivial"; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacTrivial (Debug, lems, db))
-      | IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacAuto (Off, n, lems, db))
-      | IDENT "info_auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacAuto (Info, n, lems, db))
-      | IDENT "debug"; IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacAuto (Debug, n, lems, db))
-
       (* Context management *)
       | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacClear (true, l))
       | IDENT "clear"; l = LIST0 id_or_meta ->

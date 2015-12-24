@@ -1958,42 +1958,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
                   ((sigma,sigma'),c) clp eqpat) sigma')
       end }
 
-  (* Automation tactics *)
-  | TacTrivial (debug,lems,l) ->
-      begin if debug == Tacexpr.Info then
-          msg_warning
-	    (strbrk"The \"info_trivial\" tactic" ++ spc ()
-           ++strbrk"does not print traces anymore." ++ spc()
-           ++strbrk"Use \"Info 1 trivial\", instead.")
-      end;
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = Tacmach.New.project gl in
-        let lems = interp_auto_lemmas ist env sigma lems in
-        name_atomic ~env
-          (TacTrivial(debug,List.map snd lems,l))
-          (Auto.h_trivial ~debug
-	     lems
-	     (Option.map (List.map (interp_hint_base ist)) l))
-      end }
-  | TacAuto (debug,n,lems,l) ->
-      begin if debug == Tacexpr.Info then
-          msg_warning
-	    (strbrk"The \"info_auto\" tactic" ++ spc ()
-           ++strbrk"does not print traces anymore." ++ spc()
-           ++strbrk"Use \"Info 1 auto\", instead.")
-      end;
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = Tacmach.New.project gl in
-        let lems = interp_auto_lemmas ist env sigma lems in
-        name_atomic ~env
-          (TacAuto(debug,n,List.map snd lems,l))
-          (Auto.h_auto ~debug (Option.map (interp_int_or_var ist) n)
-	     lems
-	     (Option.map (List.map (interp_hint_base ist)) l))
-      end }
-
   (* Derived basic tactics *)
   | TacInductionDestruct (isrec,ev,(l,el)) ->
       (* spiwack: some unknown part of destruct needs the goal to be

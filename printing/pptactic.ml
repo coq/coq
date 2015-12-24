@@ -807,8 +807,6 @@ module Make
         let rec pr_atom0 a = tag_atom a (match a with
           | TacIntroPattern [] -> primitive "intros"
           | TacIntroMove (None,MoveLast) -> primitive "intro"
-          | TacTrivial (d,[],Some []) -> str (string_of_debug d) ++ primitive "trivial"
-          | TacAuto (d,None,[],Some []) -> str (string_of_debug d) ++ primitive "auto"
           | TacClear (true,[]) -> primitive "clear"
           | t -> str "(" ++ pr_atom1 t ++ str ")"
         )
@@ -915,23 +913,6 @@ module Make
               primitive "double induction"
               ++ pr_arg pr_quantified_hypothesis h1
               ++ pr_arg pr_quantified_hypothesis h2
-            )
-
-          (* Automation tactics *)
-          | TacTrivial (_,[],Some []) as x ->
-            pr_atom0 x
-          | TacTrivial (d,lems,db) ->
-            hov 0 (
-              str (string_of_debug d) ++ primitive "trivial"
-              ++ pr_auto_using pr.pr_constr lems ++ pr_hintbases db
-            )
-          | TacAuto (_,None,[],Some []) as x ->
-            pr_atom0 x
-          | TacAuto (d,n,lems,db) ->
-            hov 0 (
-              str (string_of_debug d) ++ primitive "auto"
-              ++ pr_opt (pr_or_var int) n
-              ++ pr_auto_using pr.pr_constr lems ++ pr_hintbases db
             )
 
           (* Context management *)

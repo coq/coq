@@ -221,8 +221,6 @@ let initial_atomic () =
         "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];
         "cofix", TacCofix None;
-        "trivial", TacTrivial (Off,[],None);
-        "auto", TacAuto(Off,None,[],None);
       ]
   in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in

@@ -438,37 +438,10 @@ let make_dimension n = function
   | Some d -> (false,d)
 
 open Genarg
+open G_auto
 
-(* Hint bases *)
-
-let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
-
-ARGUMENT EXTEND hintbases
-  TYPED AS preident_list_opt
-  PRINTED BY pr_hintbases
-| [ "with" "*" ] -> [ None ]
-| [ "with" ne_preident_list(l) ] -> [ Some l ]
-| [ ] -> [ Some [] ]
-END
-
-let pr_constr_coma_sequence prc _ _ =
-  prlist_with_sep pr_comma (fun (_,c) -> prc c)
-
-ARGUMENT EXTEND constr_coma_sequence
-  TYPED AS open_constr_list
-  PRINTED BY pr_constr_coma_sequence
-| [ open_constr(c) "," constr_coma_sequence(l) ] -> [ c::l ]
-| [ open_constr(c) ] -> [ [c] ]
-END
-
-let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using (fun (_,c) -> prc c)
-
-ARGUMENT EXTEND auto_using
-  TYPED AS open_constr_list
-  PRINTED BY pr_auto_using
-| [ "using" constr_coma_sequence(l) ] -> [ l ]
-| [ ] -> [ [] ]
-END
+let hintbases = G_auto.hintbases
+let wit_hintbases = G_auto.wit_hintbases
 
 TACTIC EXTEND eauto
 | [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)

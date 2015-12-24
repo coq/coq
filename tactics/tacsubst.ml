@@ -154,10 +154,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacLetTac (id,c,clp,b,eqpat) ->
     TacLetTac (id,subst_glob_constr subst c,clp,b,eqpat)
 
-  (* Automation tactics *)
-  | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (subst_glob_constr subst) lems,l)
-  | TacAuto (d,n,lems,l) -> TacAuto (d,n,List.map (subst_glob_constr subst) lems,l)
-
   (* Derived basic tactics *)
   | TacInductionDestruct (isrec,ev,(l,el)) ->
       let l' = List.map (fun (c,ids,cls) ->

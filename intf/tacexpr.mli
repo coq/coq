@@ -162,10 +162,6 @@ type 'a gen_atomic_tactic_expr =
       rec_flag * evars_flag * ('trm,'dtrm,'nam) induction_clause_list
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
 
-  (* Automation tactics *)
-  | TacTrivial of debug * 'trm list * string list option
-  | TacAuto of debug * int or_var option * 'trm list * string list option
-
   (* Context management *)
   | TacClear of bool * 'nam list
   | TacClearBody of 'nam list

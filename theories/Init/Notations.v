@@ -85,6 +85,7 @@ Open Scope type_scope.
 
 Declare ML Module "coretactics".
 Declare ML Module "extratactics".
+Declare ML Module "g_auto".
 Declare ML Module "eauto".
 Declare ML Module "g_class".
 Declare ML Module "g_eqdecide".

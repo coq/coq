@@ -15,12 +15,6 @@ val hintbases : hint_db_name list option Pcoq.Gram.entry
 
 val wit_hintbases : hint_db_name list option Genarg.uniform_genarg_type
 
-val wit_auto_using :
-  (Tacexpr.open_constr_expr list,
-  Tacexpr.open_glob_constr list, Evd.open_constr list)
-    Genarg.genarg_type
-
-
 val e_assumption : unit Proofview.tactic
 
 val registered_e_assumption : unit Proofview.tactic

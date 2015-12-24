@@ -420,19 +420,6 @@ let rec mlexpr_of_atomic_tactic = function
   (* Equivalence relations *)
   | Tacexpr.TacSymmetry ido -> <:expr< Tacexpr.TacSymmetry $mlexpr_of_clause ido$ >>
 
-  (* Automation tactics *)
-  | Tacexpr.TacAuto (debug,n,lems,l) ->
-      let d = mlexpr_of_debug debug in
-      let n = mlexpr_of_option (mlexpr_of_or_var mlexpr_of_int) n in
-      let lems = mlexpr_of_list mlexpr_of_constr lems in
-      let l = mlexpr_of_option (mlexpr_of_list mlexpr_of_string) l in
-      <:expr< Tacexpr.TacAuto $d$ $n$ $lems$ $l$ >>
-  | Tacexpr.TacTrivial (debug,lems,l) ->
-      let d = mlexpr_of_debug debug in
-      let l = mlexpr_of_option (mlexpr_of_list mlexpr_of_string) l in
-      let lems = mlexpr_of_list mlexpr_of_constr lems in
-      <:expr< Tacexpr.TacTrivial $d$ $lems$ $l$ >>
-
   | _ -> failwith "Quotation of atomic tactic expressions: TODO"
 
 and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function

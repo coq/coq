@@ -517,12 +517,6 @@ let rec intern_atomic lf ist x =
                  (clause_app (intern_hyp_location ist) cls),b,
 		 (Option.map (intern_intro_pattern_naming_loc lf ist) eqpat))
 
-  (* Automation tactics *)
-  | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (intern_constr ist) lems,l)
-  | TacAuto (d,n,lems,l) ->
-      TacAuto (d,Option.map (intern_int_or_var ist) n,
-        List.map (intern_constr ist) lems,l)
-
   (* Derived basic tactics *)
   | TacInductionDestruct (ev,isrec,(l,el)) ->
       TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),cls) ->
