@@ -281,6 +281,9 @@ GEXTEND Gram
   intropatterns:
     [ [ l = LIST0 nonsimple_intropattern -> l ]]
   ;
+  ne_intropatterns:
+    [ [ l = LIST1 nonsimple_intropattern -> l ]]
+  ;
   or_and_intropattern:
     [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> tc
       | "()" -> [[]]
@@ -532,7 +535,10 @@ GEXTEND Gram
   simple_tactic:
     [ [
       (* Basic tactics *)
-        IDENT "intros"; pl = intropatterns -> TacAtom (!@loc, TacIntroPattern pl)
+        IDENT "intros"; pl = ne_intropatterns ->
+          TacAtom (!@loc, TacIntroPattern pl)
+      | IDENT "intros" ->
+          TacAtom (!@loc, TacIntroPattern [!@loc,IntroForthcoming false])
       | IDENT "intro"; id = ident; hto = move_location ->
 	  TacAtom (!@loc, TacIntroMove (Some id, hto))
       | IDENT "intro"; hto = move_location -> TacAtom (!@loc, TacIntroMove (None, hto))

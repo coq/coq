@@ -1775,7 +1775,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (TacIntroPattern l)
           (* spiwack: print uninterpreted, not sure if it is the
              expected behaviour. *)
-          (Tactics.intros_patterns l')) sigma
+          (Tactics.intro_patterns l')) sigma
       end }
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.enter { enter = begin fun gl ->
