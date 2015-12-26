@@ -1386,7 +1386,7 @@ let internalize globalenv env allow_patvar lvar c =
 	       let (env',rbefore) =
 		 List.fold_left intern_local_binder (env,[]) before in
 	       let ro = f (intern env') in
-	       let n' = Option.map (fun _ -> List.length (List.filter (fun (_,(_,_,b,_)) -> (* remove let-ins *) b = None) rbefore)) n in
+	       let n' = Option.map (fun _ -> List.count (fun (_,(_,_,b,_)) -> (* remove let-ins *) b = None) rbefore) n in
 		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
 	     in
 	     let n, ro, (env',rbl) =

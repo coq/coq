@@ -436,7 +436,7 @@ let instance_constructor (cl,u) args =
   | None -> true
   | Some _ -> false
   in
-  let lenpars = List.length (List.filter filter (snd cl.cl_context)) in
+  let lenpars = List.count filter (snd cl.cl_context) in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
       | IndRef ind -> 

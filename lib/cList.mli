@@ -94,6 +94,8 @@ sig
   (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
     [f ai = true], then [smartfilter f l == l] *)
 
+  val count : ('a -> bool) -> 'a list -> int
+
   val index : 'a eq -> 'a -> 'a list -> int
   (** [index] returns the 1st index of an element in a list (counting from 1). *)
 

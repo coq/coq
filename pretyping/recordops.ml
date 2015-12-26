@@ -299,7 +299,7 @@ let check_and_decompose_canonical_structure ref =
     | Construct ((indsp,1),u) -> indsp
     | _ -> error_not_structure ref in
   let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
-  let ntrue_projs = List.length (List.filter (fun (_, x) -> x) s.s_PROJKIND) in
+  let ntrue_projs = List.count snd s.s_PROJKIND in
   if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
     error_not_structure ref;
   (sp,indsp)

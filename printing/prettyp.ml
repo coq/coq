@@ -132,7 +132,7 @@ let print_renames_list prefix l =
 let need_expansion impl ref =
   let typ = Global.type_of_global_unsafe ref in
   let ctx = prod_assum typ in
-  let nprods = List.length (List.filter (fun (_,b,_) -> Option.is_empty b) ctx) in
+  let nprods = List.count (fun (_,b,_) -> Option.is_empty b) ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
     let _,lastimpl = List.chop nprods impl in
       List.exists is_status_implicit lastimpl
