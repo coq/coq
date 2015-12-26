@@ -515,6 +515,14 @@ module New = struct
         in
         Proofview.Unsafe.tclEVARS sigma <*> tac >>= check_evars_if
 
+  let tclDELAYEDWITHHOLES check x tac =
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let Sigma (x, sigma, _) = x.Tacexpr.delayed env sigma in
+      tclWITHHOLES check (tac x) (Sigma.to_evar_map sigma)
+    end }
+
   let tclTIMEOUT n t =
     Proofview.tclOR
       (Proofview.tclTIMEOUT n t)

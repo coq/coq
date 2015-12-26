@@ -70,8 +70,8 @@ let induction_arg_of_quantified_hyp = function
    ElimOnIdent and not as "constr" *)
 
 let elimOnConstrWithHoles tac with_evars c =
-  Tacticals.New.tclWITHHOLES with_evars
-    (tac with_evars (Some (None,ElimOnConstr c.it))) c.sigma
+  Tacticals.New.tclDELAYEDWITHHOLES with_evars c
+    (fun c -> tac with_evars (Some (None,ElimOnConstr c)))
 
 TACTIC EXTEND simplify_eq_main
 | [ "simplify_eq" constr_with_bindings(c) ] ->
@@ -116,7 +116,7 @@ END
 open Proofview.Notations
 let discrHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  discr_main {it = Term.mkVar id,NoBindings; sigma = sigma;}
+  discr_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
 
 let injection_main c =
  elimOnConstrWithHoles (injClause None) false c
@@ -161,7 +161,7 @@ END
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  injection_main { it = Term.mkVar id,NoBindings; sigma = sigma; }
+  injection_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
@@ -201,7 +201,7 @@ END
 
 let onSomeWithHoles tac = function
   | None -> tac None
-  | Some c -> Tacticals.New.tclWITHHOLES false (tac (Some c.it)) c.sigma
+  | Some c -> Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> tac (Some c))
 
 TACTIC EXTEND contradiction
  [ "contradiction" constr_with_bindings_opt(c) ] ->

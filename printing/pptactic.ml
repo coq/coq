@@ -1433,7 +1433,7 @@ let () =
   Genprint.register_print0 Constrarg.wit_bindings
     (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun { Evd.it = it } -> pr_bindings_no_with pr_constr pr_lconstr it);
+    (fun it -> pr_bindings_no_with pr_constr pr_lconstr (fst (run_delayed it)));
   Genprint.register_print0 Constrarg.wit_constr_may_eval
     (pr_may_eval pr_constr_expr pr_lconstr_expr (pr_or_by_notation pr_reference) pr_constr_pattern_expr)
     (pr_may_eval (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr)
@@ -1442,7 +1442,7 @@ let () =
   Genprint.register_print0 Constrarg.wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun { Evd.it = it } -> pr_with_bindings pr_constr pr_lconstr it);
+    (fun it -> pr_with_bindings pr_constr pr_lconstr (fst (run_delayed it)));
   Genprint.register_print0 Stdarg.wit_int int int int;
   Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
   Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;

@@ -219,6 +219,7 @@ module New : sig
   val tclSOLVE : unit tactic list -> unit tactic
   val tclPROGRESS : unit tactic -> unit tactic
   val tclWITHHOLES : bool -> 'a tactic -> Evd.evar_map -> 'a tactic
+  val tclDELAYEDWITHHOLES : bool -> 'a delayed_open -> ('a -> unit tactic) -> unit tactic
 
   val tclTIMEOUT : int -> unit tactic -> unit tactic
   val tclTIME : string option -> 'a tactic -> 'a tactic

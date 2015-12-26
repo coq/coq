@@ -55,12 +55,12 @@ val wit_open_constr :
 val wit_constr_with_bindings :
   (constr_expr with_bindings,
   glob_constr_and_expr with_bindings,
-  constr with_bindings Evd.sigma) genarg_type
+  constr with_bindings delayed_open) genarg_type
 
 val wit_bindings :
   (constr_expr bindings,
   glob_constr_and_expr bindings,
-  constr bindings Evd.sigma) genarg_type
+  constr bindings delayed_open) genarg_type
 
 val wit_hyp_location_flag : Locus.hyp_location_flag uniform_genarg_type
 

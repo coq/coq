@@ -2277,13 +2277,15 @@ let () =
 let lift f = (); fun ist gl x -> (project gl, f ist (pf_env gl) (project gl) x)
 let lifts f = (); fun ist gl x -> f ist (pf_env gl) (project gl) x
 
-let interp_bindings' ist gl bl =
-  let (sigma, bl) = interp_bindings ist (pf_env gl) (project gl) bl in
-  (project gl, pack_sigma (sigma, bl))
+let interp_bindings' ist gl bl = (project gl, { delayed = fun env sigma ->
+  let (sigma, bl) = interp_bindings ist env (Sigma.to_evar_map sigma) bl in
+  Sigma.Unsafe.of_pair (bl, sigma)
+  })
 
-let interp_constr_with_bindings' ist gl c =
-  let (sigma, c) = interp_constr_with_bindings ist (pf_env gl) (project gl) c in
-  (project gl, pack_sigma (sigma, c))
+let interp_constr_with_bindings' ist gl c = (project gl, { delayed = fun env sigma ->
+  let (sigma, c) = interp_constr_with_bindings ist env (Sigma.to_evar_map sigma) c in
+  Sigma.Unsafe.of_pair (c, sigma)
+  })
 
 let () =
   Geninterp.register_interp0 wit_int_or_var (fun ist gl n -> project gl, interp_int_or_var ist n);

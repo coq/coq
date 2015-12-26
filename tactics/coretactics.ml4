@@ -74,15 +74,13 @@ END
 
 TACTIC EXTEND left_with
   [ "left" "with" bindings(bl) ] -> [
-    let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES false (Tactics.left_with_bindings false bl) sigma
+    Tacticals.New.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.left_with_bindings false bl)
   ]
 END
 
 TACTIC EXTEND eleft_with
   [ "eleft" "with" bindings(bl) ] -> [
-    let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES true (Tactics.left_with_bindings true bl) sigma
+    Tacticals.New.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.left_with_bindings true bl)
   ]
 END
 
@@ -98,15 +96,13 @@ END
 
 TACTIC EXTEND right_with
   [ "right" "with" bindings(bl) ] -> [
-    let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES false (Tactics.right_with_bindings false bl) sigma
+    Tacticals.New.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.right_with_bindings false bl)
   ]
 END
 
 TACTIC EXTEND eright_with
   [ "eright" "with" bindings(bl) ] -> [
-    let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES true (Tactics.right_with_bindings true bl) sigma
+    Tacticals.New.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.right_with_bindings true bl)
   ]
 END
 
@@ -118,9 +114,8 @@ TACTIC EXTEND constructor
     Tactics.constructor_tac false None i NoBindings
   ]
 | [ "constructor" int_or_var(i) "with" bindings(bl) ] -> [
-    let { Evd.sigma = sigma; it = bl } = bl in
-    let tac = Tactics.constructor_tac false None i bl in
-    Tacticals.New.tclWITHHOLES false tac sigma
+    let tac bl = Tactics.constructor_tac false None i bl in
+    Tacticals.New.tclDELAYEDWITHHOLES false bl tac
   ]
 END
 
@@ -130,9 +125,8 @@ TACTIC EXTEND econstructor
     Tactics.constructor_tac true None i NoBindings
   ]
 | [ "econstructor" int_or_var(i) "with" bindings(bl) ] -> [
-    let { Evd.sigma = sigma; it = bl } = bl in
-    let tac = Tactics.constructor_tac true None i bl in
-    Tacticals.New.tclWITHHOLES true tac sigma
+    let tac bl = Tactics.constructor_tac true None i bl in
+    Tacticals.New.tclDELAYEDWITHHOLES true bl tac
   ]
 END
 
@@ -140,8 +134,7 @@ END
 
 TACTIC EXTEND specialize
   [ "specialize" constr_with_bindings(c) ] -> [
-    let { Evd.sigma = sigma; it = c } = c in
-    Tacticals.New.tclWITHHOLES false (Tactics.specialize c) sigma
+    Tacticals.New.tclDELAYEDWITHHOLES false c Tactics.specialize
   ]
 END
 
@@ -161,15 +154,13 @@ END
 
 TACTIC EXTEND split_with
   [ "split" "with" bindings(bl) ] -> [
-    let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES false (Tactics.split_with_bindings false [bl]) sigma
+    Tacticals.New.tclDELAYEDWITHHOLES false bl (fun bl -> Tactics.split_with_bindings false [bl])
   ]
 END
 
 TACTIC EXTEND esplit_with
   [ "esplit" "with" bindings(bl) ] -> [
-    let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES true (Tactics.split_with_bindings true [bl]) sigma
+    Tacticals.New.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.split_with_bindings true [bl])
   ]
 END
 

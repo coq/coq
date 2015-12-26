@@ -55,7 +55,9 @@ let pr_with_bindings_typed prc prlc (c,bl) =
 let pr_fun_ind_using_typed prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
-    | Some b -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc b.Evd.it)
+    | Some b ->
+      let (b, _) = Tactics.run_delayed (Global.env ()) Evd.empty b in
+      spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc b)
 
 
 ARGUMENT EXTEND fun_ind_using
