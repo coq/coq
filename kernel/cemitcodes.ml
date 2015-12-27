@@ -306,8 +306,6 @@ let init () =
 
 type emitcodes = string
 
-let copy = String.copy
-
 let length = String.length
 
 type to_patch = emitcodes * (patch list) * fv
@@ -331,8 +329,6 @@ let subst_patch s (ri,pos) =
 
 let subst_to_patch s (code,pl,fv) =
   code,List.rev_map (subst_patch s) pl,fv
-
-let subst_pconstant s (kn, u) = (fst (subst_con_kn s kn), u)
 
 type body_code =
   | BCdefined of to_patch

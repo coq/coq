@@ -97,7 +97,6 @@ let intern_or_var f ist = function
   | ArgArg x -> ArgArg (f x)
 
 let intern_int_or_var = intern_or_var (fun (n : int) -> n)
-let intern_id_or_var = intern_or_var (fun (id : Id.t) -> id)
 let intern_string_or_var = intern_or_var (fun (s : string) -> s)
 
 let intern_global_reference ist = function
@@ -339,7 +338,7 @@ let intern_typed_pattern ist p =
   (* type it, so we remember the pattern as a glob_constr only *)
   (intern_constr_gen true false ist p,dummy_pat)
 
-let rec intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
+let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
   let interp_ref r =
     try Inl (intern_evaluable ist r)
     with e when Logic.catchable_exception e ->

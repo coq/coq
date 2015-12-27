@@ -363,10 +363,6 @@ let interp_intro_pattern_naming_var loc ist env sigma id =
   try try_interp_ltac_var (coerce_to_intro_pattern_naming env) ist (Some (env,sigma)) (loc,id)
   with Not_found -> IntroIdentifier id
 
-let interp_hint_base ist s =
-  try try_interp_ltac_var coerce_to_hint_base ist None (dloc,Id.of_string s)
-  with Not_found -> s
-
 let interp_int ist locid =
   try try_interp_ltac_var coerce_to_int ist None locid
   with Not_found ->
@@ -685,10 +681,6 @@ let interp_constr_list ist env sigma c =
 let interp_open_constr_list =
   interp_constr_in_compound_list (fun x -> x) (fun x -> x) interp_open_constr
 
-let interp_auto_lemmas ist env sigma lems =
-  let local_sigma, lems = interp_open_constr_list ist env sigma lems in
-  List.map (fun lem -> (local_sigma,lem)) lems
-
 (* Interprets a type expression *)
 let pf_interp_type ist gl =
   interp_type ist (pf_env gl) (project gl)
@@ -864,11 +856,6 @@ let interp_message ist l =
   Ftactic.List.map (interp_message_token ist) l >>= fun l ->
   Ftactic.return (prlist_with_sep spc (fun x -> x) l)
 
-let interp_message ist l =
-  let open Ftactic in
-  Ftactic.List.map (interp_message_token ist) l >>= fun l ->
-  Ftactic.return (prlist_with_sep spc (fun x -> x) l)
-
 let rec interp_intro_pattern ist env sigma = function
   | loc, IntroAction pat ->
       let (sigma,pat) = interp_intro_pattern_action ist env sigma pat in
@@ -977,18 +964,10 @@ let interp_constr_with_bindings ist env sigma (c,bl) =
   let sigma, c = interp_open_constr ist env sigma c in
   sigma, (c,bl)
 
-let interp_constr_with_bindings_arg ist env sigma (keep,c) =
-  let sigma, c = interp_constr_with_bindings ist env sigma c in
-  sigma, (keep,c)
-
 let interp_open_constr_with_bindings ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
   let sigma, c = interp_open_constr ist env sigma c in
   sigma, (c, bl)
-
-let interp_open_constr_with_bindings_arg ist env sigma (keep,c) =
-  let sigma, c = interp_open_constr_with_bindings ist env sigma c in
-  sigma,(keep,c)
 
 let loc_of_bindings = function
 | NoBindings -> Loc.ghost
@@ -1128,9 +1107,6 @@ let mk_open_constr_value ist gl c =
   sigma, Value.of_constr c_interp
 let mk_hyp_value ist env sigma c =
   (mkVar (interp_hyp ist env sigma c))
-let mk_int_or_var_value ist c = in_gen (topwit wit_int) (interp_int_or_var ist c)
-
-let pack_sigma (sigma,c) = {it=c;sigma=sigma;}
 
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftactic.t =

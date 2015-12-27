@@ -139,7 +139,6 @@ let rec repr g u =
     | Equiv v -> repr g v
     | Canonical arc -> arc
 
-let get_prop_arc g = repr g Level.prop
 let get_set_arc g = repr g Level.set
 let is_set_arc u = Level.is_set u.univ
 let is_prop_arc u = Level.is_prop u.univ
@@ -155,7 +154,7 @@ let use_index g u =
 
 (* [safe_repr] is like [repr] but if the graph doesn't contain the
    searched universe, we add it. *)
-let rec safe_repr g u =
+let safe_repr g u =
   let rec safe_repr_rec entries u =
     match UMap.find u entries with
     | Equiv v -> safe_repr_rec entries v
@@ -744,9 +743,6 @@ let check_constraints c g =
   Constraint.for_all (check_constraint g) c
 
 (* Normalization *)
-
-let lookup_level u g =
-  try Some (UMap.find u g) with Not_found -> None
 
 (** [normalize_universes g] returns a graph where all edges point
     directly to the canonical representent of their target. The output
