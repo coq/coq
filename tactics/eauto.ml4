@@ -64,6 +64,16 @@ let registered_e_assumption =
               (Tacmach.New.pf_ids_of_hyps gl))
   end }
 
+let eval_uconstrs ist cs =
+  let flags = {
+    Pretyping.use_typeclasses = false;
+    use_unif_heuristics = true;
+    use_hook = Some Pfedit.solve_by_implicit_tactic;
+    fail_evar = false;
+    expand_evars = true
+  } in
+  List.map (fun c -> Tacinterp.type_uconstr ~flags ist c) cs
+
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
 (************************************************************************)
@@ -103,13 +113,19 @@ let out_term = function
   | IsGlobRef gr -> fst (Universes.fresh_global_instance (Global.env ()) gr)
 
 let prolog_tac l n gl =
-  let l = List.map (fun x -> out_term (pf_apply (prepare_hint false (false,true)) gl x)) l in
+  let map c =
+    let (c, sigma) = Tactics.run_delayed (pf_env gl) (project gl) c in
+    let c = pf_apply (prepare_hint false (false,true)) gl (sigma, c) in
+    out_term c
+  in
+  let l = List.map map l in
   try (prolog l n gl)
   with UserError ("Refiner.tclFIRST",_) ->
     errorlabstrm "Prolog.prolog" (str "Prolog failed.")
 
 TACTIC EXTEND prolog
-| [ "prolog" "[" open_constr_list(l) "]" int_or_var(n) ] -> [ Proofview.V82.tactic (prolog_tac l n) ]
+| [ "prolog" "[" uconstr_list(l) "]" int_or_var(n) ] ->
+    [ Proofview.V82.tactic (prolog_tac (eval_uconstrs ist l) n) ]
 END
 
 open Auto
@@ -214,7 +230,7 @@ type search_state = {
   dblist : hint_db list;
   localdb :  hint_db list;
   prev : prev_search_state;
-  local_lemmas : Evd.open_constr list;
+  local_lemmas : Tacexpr.delayed_open_constr list;
 }
 
 and prev_search_state = (* for info eauto *)
@@ -446,33 +462,33 @@ let wit_hintbases = G_auto.wit_hintbases
 TACTIC EXTEND eauto
 | [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
-    [ Proofview.V82.tactic (gen_eauto (make_dimension n p) lems db) ]
+    [ Proofview.V82.tactic (gen_eauto (make_dimension n p) (eval_uconstrs ist lems) db) ]
 END
 
 TACTIC EXTEND new_eauto
 | [ "new" "auto" int_or_var_opt(n) auto_using(lems)
     hintbases(db) ] ->
     [ match db with
-      | None -> new_full_auto (make_depth n) lems
-      | Some l -> new_auto (make_depth n) lems l ]
+      | None -> new_full_auto (make_depth n) (eval_uconstrs ist lems)
+      | Some l -> new_auto (make_depth n) (eval_uconstrs ist lems) l ]
 END
 
 TACTIC EXTEND debug_eauto
 | [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
-    [ Proofview.V82.tactic (gen_eauto ~debug:Debug (make_dimension n p) lems db) ]
+    [ Proofview.V82.tactic (gen_eauto ~debug:Debug (make_dimension n p) (eval_uconstrs ist lems) db) ]
 END
 
 TACTIC EXTEND info_eauto
 | [ "info_eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
-    [ Proofview.V82.tactic (gen_eauto ~debug:Info (make_dimension n p) lems db) ]
+    [ Proofview.V82.tactic (gen_eauto ~debug:Info (make_dimension n p) (eval_uconstrs ist lems) db) ]
 END
 
 TACTIC EXTEND dfs_eauto
 | [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
       hintbases(db) ] ->
-    [ Proofview.V82.tactic (gen_eauto (true, make_depth p) lems db) ]
+    [ Proofview.V82.tactic (gen_eauto (true, make_depth p) (eval_uconstrs ist lems) db) ]
 END
 
 let cons a l = a :: l

@@ -21,12 +21,12 @@ val registered_e_assumption : unit Proofview.tactic
 
 val e_give_exact : ?flags:Unification.unify_flags -> constr -> unit Proofview.tactic
 
-val gen_eauto : ?debug:Tacexpr.debug -> bool * int -> open_constr list ->
+val gen_eauto : ?debug:Tacexpr.debug -> bool * int -> Tacexpr.delayed_open_constr list ->
   hint_db_name list option -> tactic
 
 val eauto_with_bases :
   ?debug:Tacexpr.debug ->
   bool * int ->
-  open_constr list -> hint_db list -> Proof_type.tactic
+  Tacexpr.delayed_open_constr list -> hint_db list -> Proof_type.tactic
 
 val autounfold : hint_db_name list -> Locus.clause -> tactic

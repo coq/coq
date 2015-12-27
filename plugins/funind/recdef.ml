@@ -1335,7 +1335,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 			  (Proofview.V82.of_tactic e_assumption);
 		      Eauto.eauto_with_bases
 			(true,5)
-			[Evd.empty,Lazy.force refl_equal]
+			[{ Tacexpr.delayed = fun _ sigma -> Sigma.here (Lazy.force refl_equal) sigma}]
 			[Hints.Hint_db.empty empty_transparent_state false]
 		      ]
 		    )

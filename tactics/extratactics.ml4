@@ -31,34 +31,42 @@ DECLARE PLUGIN "extratactics"
 (* replace, discriminate, injection, simplify_eq                      *)
 (* cutrewrite, dependent rewrite                                      *)
 
-let replace_in_clause_maybe_by (sigma1,c1) c2 cl  tac =
-  Tacticals.New.tclWITHHOLES false
-    (replace_in_clause_maybe_by c1 c2 cl (Option.map Tacinterp.eval_tactic tac))
-    sigma1
+let with_delayed_uconstr ist c tac =
+  let flags = {
+    Pretyping.use_typeclasses = false;
+    use_unif_heuristics = true;
+    use_hook = Some Pfedit.solve_by_implicit_tactic;
+    fail_evar = false;
+    expand_evars = true
+  } in
+  let c = Tacinterp.type_uconstr ~flags ist c in
+  Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
-let replace_term dir_opt (sigma,c) cl =
-  Tacticals.New.tclWITHHOLES false
-    (replace_term dir_opt c cl)
-    sigma
+let replace_in_clause_maybe_by ist c1 c2 cl tac =
+  with_delayed_uconstr ist c1
+  (fun c1 -> replace_in_clause_maybe_by c1 c2 cl (Option.map Tacinterp.eval_tactic tac))
+
+let replace_term ist dir_opt c cl =
+  with_delayed_uconstr ist c (fun c -> replace_term dir_opt c cl)
 
 TACTIC EXTEND replace
-   ["replace" open_constr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by c1 c2 cl tac ]
+   ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+-> [ replace_in_clause_maybe_by ist c1 c2 cl tac ]
 END
 
 TACTIC EXTEND replace_term_left
-  [ "replace"  "->" open_constr(c) clause(cl) ]
-  -> [ replace_term (Some true) c cl ]
+  [ "replace"  "->" uconstr(c) clause(cl) ]
+  -> [ replace_term ist (Some true) c cl ]
 END
 
 TACTIC EXTEND replace_term_right
-  [ "replace"  "<-" open_constr(c) clause(cl) ]
-  -> [ replace_term (Some false) c cl ]
+  [ "replace"  "<-" uconstr(c) clause(cl) ]
+  -> [ replace_term ist (Some false) c cl ]
 END
 
 TACTIC EXTEND replace_term
-  [ "replace" open_constr(c) clause(cl) ]
-  -> [ replace_term None c cl ]
+  [ "replace" uconstr(c) clause(cl) ]
+  -> [ replace_term ist None c cl ]
 END
 
 let induction_arg_of_quantified_hyp = function
@@ -243,22 +251,22 @@ END
 (**********************************************************************)
 (* Rewrite star                                                       *)
 
-let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
+let rewrite_star ist clause orient occs c (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
-  Tacticals.New.tclWITHHOLES false
-    (general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true) sigma
+  with_delayed_uconstr ist c
+    (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
 
 TACTIC EXTEND rewrite_star
-| [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
-    [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star (Some id) o Locus.AllOccurrences c tac ]
-| [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) by_arg_tac(tac) ] ->
-    [ rewrite_star None o (occurrences_of occ) c tac ]
-| [ "rewrite" "*" orient(o) open_constr(c) by_arg_tac(tac) ] ->
-    [ rewrite_star None o Locus.AllOccurrences c tac ]
+| [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
+    [ rewrite_star ist (Some id) o (occurrences_of occ) c tac ]
+| [ "rewrite" "*" orient(o) uconstr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] ->
+    [ rewrite_star ist (Some id) o (occurrences_of occ) c tac ]
+| [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) by_arg_tac(tac) ] ->
+    [ rewrite_star ist (Some id) o Locus.AllOccurrences c tac ]
+| [ "rewrite" "*" orient(o) uconstr(c) "at" occurrences(occ) by_arg_tac(tac) ] ->
+    [ rewrite_star ist None o (occurrences_of occ) c tac ]
+| [ "rewrite" "*" orient(o) uconstr(c) by_arg_tac(tac) ] ->
+    [ rewrite_star ist None o Locus.AllOccurrences c tac ]
     END
 
 (**********************************************************************)
