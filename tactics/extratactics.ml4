@@ -347,22 +347,14 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
-let refine_tac simple {Glob_term.closure=closure;term=term} =
+let refine_tac ist simple c =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags = Pretyping.all_no_fail_flags in
-    let tycon = Pretyping.OfType concl in
-    let lvar = { Pretyping.empty_lvar with
-      Pretyping.ltac_constrs = closure.Glob_term.typed;
-      Pretyping.ltac_uconstrs = closure.Glob_term.untyped;
-      Pretyping.ltac_idents = closure.Glob_term.idents;
-    } in
-    let update = { run = begin fun sigma ->
-      let sigma = Sigma.to_evar_map sigma in
-      let (sigma, c) = Pretyping.understand_ltac flags env sigma lvar tycon term in
-      Sigma.Unsafe.of_pair (c, sigma)
-    end } in
+    let expected_type = Pretyping.OfType concl in
+    let c = Tacinterp.type_uconstr ~flags ~expected_type ist c in
+    let update = { run = fun sigma -> c.delayed env sigma } in
     let refine = Proofview.Refine.refine ~unsafe:false update in
     if simple then refine
     else refine <*>
@@ -371,11 +363,11 @@ let refine_tac simple {Glob_term.closure=closure;term=term} =
   end }
 
 TACTIC EXTEND refine
-| [ "refine" uconstr(c) ] -> [ refine_tac false c ]
+| [ "refine" uconstr(c) ] -> [ refine_tac ist false c ]
 END
 
 TACTIC EXTEND simple_refine
-| [ "simple" "refine" uconstr(c) ] -> [ refine_tac true c ]
+| [ "simple" "refine" uconstr(c) ] -> [ refine_tac ist true c ]
 END
 
 (**********************************************************************)

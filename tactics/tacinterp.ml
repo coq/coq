@@ -685,6 +685,24 @@ let interp_open_constr_list =
 let pf_interp_type ist gl =
   interp_type ist (pf_env gl) (project gl)
 
+(* Fully evaluate an untyped constr *)
+let type_uconstr ?(flags = constr_flags)
+  ?(expected_type = WithoutTypeConstraint) ist c =
+  { delayed = begin fun env sigma ->
+  let open Pretyping in
+  let { closure; term } = c in
+  let vars = {
+    ltac_constrs = closure.typed;
+    ltac_uconstrs = closure.untyped;
+    ltac_idents = closure.idents;
+    ltac_genargs = ist.lfun;
+  } in
+  let sigma = Sigma.to_evar_map sigma in
+  let (sigma, c) = understand_ltac flags env sigma vars expected_type term in
+  Sigma.Unsafe.of_pair (c, sigma)
+  end }
+
+
 (* Interprets a reduction expression *)
 let interp_unfold ist env sigma (occs,qid) =
   (interp_occurrences ist occs,interp_evaluable ist env sigma qid)
@@ -1404,19 +1422,12 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
       end
   | TacPretype c ->
       Ftactic.enter begin fun gl ->
-        let sigma = Tacmach.New.project gl in
+        let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
-        let {closure;term} = interp_uconstr ist env c in
-        let vars = {
-          Pretyping.ltac_constrs = closure.typed;
-          Pretyping.ltac_uconstrs = closure.untyped;
-          Pretyping.ltac_idents = closure.idents;
-          Pretyping.ltac_genargs = ist.lfun;
-        } in
-        let (sigma,c_interp) =
-          Pretyping.understand_ltac constr_flags env sigma vars WithoutTypeConstraint term
-        in
-        Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c_interp))
+        let c = interp_uconstr ist env c in
+        let Sigma (c, sigma, _) = (type_uconstr ist c).delayed env sigma in
+        let sigma = Sigma.to_evar_map sigma in
+        Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c))
       end
   | TacNumgoals ->
       Ftactic.lift begin
