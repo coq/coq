@@ -33,7 +33,6 @@ let rec make_wit loc = function
   | IdentArgType -> <:expr< Constrarg.wit_ident >>
   | VarArgType -> <:expr< Constrarg.wit_var >>
   | ConstrArgType -> <:expr< Constrarg.wit_constr >>
-  | OpenConstrArgType -> <:expr< Constrarg.wit_open_constr >>
   | ListArgType t -> <:expr< Genarg.wit_list $make_wit loc t$ >>
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
   | PairArgType (t1,t2) ->

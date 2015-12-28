@@ -50,7 +50,7 @@ val wit_constr_may_eval :
 val wit_uconstr : (constr_expr , glob_constr_and_expr, Glob_term.closed_glob_constr) genarg_type
 
 val wit_open_constr :
-  (open_constr_expr, open_glob_constr, Evd.open_constr) genarg_type
+  (constr_expr, glob_constr_and_expr, constr) genarg_type
 
 val wit_constr_with_bindings :
   (constr_expr with_bindings,

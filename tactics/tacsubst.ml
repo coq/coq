@@ -281,9 +281,6 @@ and subst_genarg subst (x:glob_generic_argument) =
   | VarArgType -> in_gen (glbwit wit_var) (out_gen (glbwit wit_var) x)
   | ConstrArgType ->
       in_gen (glbwit wit_constr) (subst_glob_constr subst (out_gen (glbwit wit_constr) x))
-  | OpenConstrArgType ->
-      in_gen (glbwit wit_open_constr)
-        ((),subst_glob_constr subst (snd (out_gen (glbwit wit_open_constr) x)))
   | ListArgType _ ->
     let list_unpacker wit l =
       let map x =
@@ -322,6 +319,7 @@ let () =
   Genintern.register_subst0 wit_sort (fun _ v -> v);
   Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v);
   Genintern.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c);
+  Genintern.register_subst0 wit_open_constr (fun subst c -> subst_glob_constr subst c);
   Genintern.register_subst0 wit_red_expr subst_redexp;
   Genintern.register_subst0 wit_quant_hyp subst_declared_or_quantified_hypothesis;
   Genintern.register_subst0 wit_bindings subst_bindings;

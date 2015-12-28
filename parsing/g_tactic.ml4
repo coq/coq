@@ -231,7 +231,7 @@ GEXTEND Gram
     [ [ id = identref -> id ] ]
   ;
   open_constr:
-    [ [ c = constr -> ((),c) ] ]
+    [ [ c = constr -> c ] ]
   ;
   uconstr:
     [ [ c = constr -> c ] ]

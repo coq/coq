@@ -270,7 +270,6 @@ module Make
       | IdentArgType -> pr_id (out_gen (rawwit wit_ident) x)
       | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
       | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
-      | OpenConstrArgType -> prc (snd (out_gen (rawwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
@@ -301,7 +300,6 @@ module Make
       | IdentArgType -> pr_id (out_gen (glbwit wit_ident) x)
       | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
       | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
-      | OpenConstrArgType -> prc (snd (out_gen (glbwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x) in
@@ -331,7 +329,6 @@ module Make
       | IdentArgType -> pr_id (out_gen (topwit wit_ident) x)
       | VarArgType -> pr_id (out_gen (topwit wit_var) x)
       | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
-      | OpenConstrArgType -> prc (snd (out_gen (topwit wit_open_constr) x))
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x) in
@@ -1424,6 +1421,12 @@ let () =
     Ppconstr.pr_constr_expr
     (fun (c,_) -> Printer.pr_glob_constr c)
     Printer.pr_closed_glob
+  ;
+  Genprint.register_print0
+    Constrarg.wit_open_constr
+    Ppconstr.pr_constr_expr
+    (fun (c, _) -> Printer.pr_glob_constr c)
+    Printer.pr_constr
   ;
   Genprint.register_print0 Constrarg.wit_red_expr
     (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_reference, pr_constr_pattern_expr))

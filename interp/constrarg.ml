@@ -49,7 +49,7 @@ let wit_constr_may_eval =
 
 let wit_uconstr = Genarg.make0 None "uconstr"
 
-let wit_open_constr = unsafe_of_type OpenConstrArgType
+let wit_open_constr = Genarg.make0 ~dyn:(val_tag (topwit wit_constr)) None "open_constr"
 
 let wit_constr_with_bindings = Genarg.make0 None "constr_with_bindings"
 
@@ -72,6 +72,7 @@ let () =
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";
   register_name0 wit_uconstr "Constrarg.wit_uconstr";
+  register_name0 wit_open_constr "Constrarg.wit_open_constr";
   register_name0 wit_constr_may_eval "Constrarg.wit_constr_may_eval";
   register_name0 wit_red_expr "Constrarg.wit_red_expr";
   register_name0 wit_clause_dft_concl "Constrarg.wit_clause_dft_concl";

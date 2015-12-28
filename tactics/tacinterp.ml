@@ -1120,9 +1120,6 @@ let rec read_match_rule lfun ist env sigma = function
 
 (* misc *)
 
-let mk_open_constr_value ist gl c = 
-  let (sigma,c_interp) = pf_apply (interp_open_constr ist) gl c in
-  sigma, Value.of_constr c_interp
 let mk_hyp_value ist env sigma c =
   (mkVar (interp_hyp ist env sigma c))
 
@@ -1260,10 +1257,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
                                                (Genarg.out_gen (glbwit wit_ident) x)))
           | VarArgType ->
               Ftactic.return (Value.of_constr (mk_hyp_value ist env sigma (Genarg.out_gen (glbwit wit_var) x)))
-          | OpenConstrArgType ->
-              let (sigma,v) =
-                Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (Genarg.out_gen (glbwit wit_open_constr) x))) gl in
-              Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
               let ans = List.map (mk_hyp_value ist env sigma) (Genarg.out_gen wit x) in
@@ -1626,12 +1619,6 @@ and interp_genarg ist env sigma concl gl x =
       in
       evdref := sigma;
       in_gen (topwit wit_constr) c_interp
-    | OpenConstrArgType ->
-      let expected_type = WithoutTypeConstraint in
-      in_gen (topwit wit_open_constr)
-        (interp_open_constr ~expected_type
-           ist env !evdref
-           (snd (Genarg.out_gen (glbwit wit_open_constr) x)))
     | ListArgType ConstrArgType ->
         let (sigma,v) = interp_genarg_constr_list ist env !evdref x in
 	evdref := sigma;
@@ -2283,6 +2270,7 @@ let () =
   Geninterp.register_interp0 wit_tacvalue (fun ist gl c -> project gl, c);
   Geninterp.register_interp0 wit_red_expr (lifts interp_red_expr);
   Geninterp.register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
+  Geninterp.register_interp0 wit_open_constr (lifts interp_open_constr);
   Geninterp.register_interp0 wit_bindings interp_bindings';
   Geninterp.register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
   Geninterp.register_interp0 wit_constr_may_eval (lifts interp_constr_may_eval);

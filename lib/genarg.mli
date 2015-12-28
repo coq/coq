@@ -216,7 +216,6 @@ type argument_type =
   | VarArgType
   (** Specific types *)
   | ConstrArgType
-  | OpenConstrArgType
   | ListArgType of argument_type
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type
