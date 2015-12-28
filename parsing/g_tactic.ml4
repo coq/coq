@@ -453,15 +453,6 @@ GEXTEND Gram
     [ [ check_for_coloneq; "(";  id = ident; bl = LIST0 simple_binder;
         ":="; c = lconstr; ")" -> (id, mkCLambdaN_simple bl c) ] ]
   ;
-  hintbases:
-    [ [ "with"; "*" -> None
-      | "with"; l = LIST1 [ x = IDENT -> x] -> Some l
-      | -> Some [] ] ]
-  ;
-  auto_using:
-    [ [ "using"; l = LIST1 constr SEP "," -> l
-      | -> [] ] ]
-  ;
   eliminator:
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
