@@ -53,21 +53,5 @@ Tactic Notation "esplit" := esplit.
 
 Global Set Regular Subst Tactic.
 
-(** Some names have changed in the standard library, so we add aliases. *)
-Require Coq.ZArith.Int.
-Module Export Coq.
-  Module Export ZArith.
-    Module Int.
-      Module Z_as_Int.
-        Include Coq.ZArith.Int.Z_as_Int.
-        (* FIXME: Should these get a (compat "8.4")?  Or be moved to Z_as_Int, probably? *)
-        Notation plus := Coq.ZArith.Int.Z_as_Int.add (only parsing).
-        Notation minus := Coq.ZArith.Int.Z_as_Int.sub (only parsing).
-        Notation mult := Coq.ZArith.Int.Z_as_Int.mul (only parsing).
-      End Z_as_Int.
-    End Int.
-  End ZArith.
-End Coq.
-
 (** Many things now import [PeanoNat] rather than [NPeano], so we require it so that the old absolute names in [NPeano.Nat] are available. *)
 Require Coq.Numbers.Natural.Peano.NPeano.
