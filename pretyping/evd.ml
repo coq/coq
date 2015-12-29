@@ -658,7 +658,12 @@ let add d e i = match i.evar_body with
 let remove d e =
   let undf_evars = EvMap.remove e d.undf_evars in
   let defn_evars = EvMap.remove e d.defn_evars in
-  { d with undf_evars; defn_evars; }
+  let principal_future_goal = match d.principal_future_goal with
+  | None -> None
+  | Some e' -> if Evar.equal e e' then None else d.principal_future_goal
+  in
+  let future_goals = List.filter (fun e' -> not (Evar.equal e e')) d.future_goals in
+  { d with undf_evars; defn_evars; principal_future_goal; future_goals }
 
 let find d e =
   try EvMap.find e d.undf_evars
