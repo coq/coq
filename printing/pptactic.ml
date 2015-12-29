@@ -371,10 +371,11 @@ module Make
     in
     pr_sequence (fun x -> x) l
 
-  let pr_extend_gen pr_gen lev { mltac_name = s; mltac_index = i } l =
+  let pr_extend_gen check pr_gen lev { mltac_name = s; mltac_index = i } l =
     try
       let pp_rules = Hashtbl.find prtac_tab s in
       let pp = pp_rules.(i) in
+      let () = if not (List.for_all2eq check pp.pptac_args l) then raise Not_found in
       let (lev', pl) = pp.pptac_prods in
       let p = pr_tacarg_using_rule pr_gen (pl,l) in
       if lev' > lev then surround p else p
@@ -389,28 +390,35 @@ module Make
       in
       str "<" ++ name ++ str ">" ++ args
 
-  let pr_alias_gen pr_gen lev key l =
+  let pr_alias_gen check pr_gen lev key l =
     try
       let pp = KNmap.find key !prnotation_tab in
       let (lev', pl) = pp.pptac_prods in
+      let () = if not (List.for_all2eq check pp.pptac_args l) then raise Not_found in
       let p = pr_tacarg_using_rule pr_gen (pl, l) in
       if lev' > lev then surround p else p
     with Not_found ->
       KerName.print key ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
 
+  let check_type t arg = match arg with
+  | TacGeneric arg -> argument_type_eq t (genarg_tag arg)
+  | _ -> false
+
+  let unwrap_gen f = function TacGeneric x -> f x | _ -> assert false
+
   let pr_raw_extend_rec prc prlc prtac prpat =
-    pr_extend_gen (pr_raw_generic_rec prc prlc prtac prpat pr_reference)
+    pr_extend_gen check_type (unwrap_gen (pr_raw_generic_rec prc prlc prtac prpat pr_reference))
   let pr_glob_extend_rec prc prlc prtac prpat =
-    pr_extend_gen (pr_glb_generic_rec prc prlc prtac prpat)
+    pr_extend_gen check_type (unwrap_gen (pr_glb_generic_rec prc prlc prtac prpat))
   let pr_extend_rec prc prlc prtac prpat =
-    pr_extend_gen (pr_top_generic_rec prc prlc prtac prpat)
+    pr_extend_gen check_type (unwrap_gen (pr_top_generic_rec prc prlc prtac prpat))
 
   let pr_raw_alias prc prlc prtac prpat =
-    pr_alias_gen (pr_raw_generic_rec prc prlc prtac prpat pr_reference)
+    pr_alias_gen check_type (unwrap_gen (pr_raw_generic_rec prc prlc prtac prpat pr_reference))
   let pr_glob_alias prc prlc prtac prpat =
-    pr_alias_gen (pr_glb_generic_rec prc prlc prtac prpat)
+    pr_alias_gen check_type (unwrap_gen (pr_glb_generic_rec prc prlc prtac prpat))
   let pr_alias prc prlc prtac prpat =
-    pr_alias_gen (pr_top_generic_rec prc prlc prtac prpat)
+    pr_alias_gen check_type (unwrap_gen (pr_top_generic_rec prc prlc prtac prpat))
 
   (**********************************************************************)
   (* The tactic printer                                                 *)
@@ -716,8 +724,8 @@ module Make
     pr_reference : 'ref -> std_ppcmds;
     pr_name      : 'nam -> std_ppcmds;
     pr_generic   : 'lev generic_argument -> std_ppcmds;
-    pr_extend    : int -> ml_tactic_entry -> 'lev generic_argument list -> std_ppcmds;
-    pr_alias     : int -> KerName.t -> 'lev generic_argument list -> std_ppcmds;
+    pr_extend    : int -> ml_tactic_entry -> 'a gen_tactic_arg list -> std_ppcmds;
+    pr_alias     : int -> KerName.t -> 'a gen_tactic_arg list -> std_ppcmds;
   }
 
   constraint 'a = <
@@ -1352,9 +1360,18 @@ module Make
     (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
     (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
 
-  let pr_extend env = pr_extend_rec
-    (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-    (pr_glob_tactic_level env) pr_constr_pattern
+  let check_val_type t arg =
+    let t = Genarg.val_tag (Obj.magic t) in (** FIXME *)
+    let Val.Dyn (t', _) = arg in
+    match Genarg.Val.eq t t' with
+    | None -> false
+    | Some _ -> true
+
+  let pr_alias pr lev key args =
+    pr_alias_gen check_val_type pr lev key args
+
+  let pr_extend pr lev ml args =
+    pr_extend_gen check_val_type pr lev ml args
 
   let pr_tactic env = pr_tactic_level env ltop
 

@@ -257,7 +257,8 @@ let add_ml_tactic_entry name prods =
   let mkact i loc l : raw_tactic_expr =
     let open Tacexpr in
     let entry = { mltac_name = name; mltac_index = i } in
-    TacML (loc, entry, List.map snd l)
+    let map (_, arg) = TacGeneric arg in
+    TacML (loc, entry, List.map map l)
   in
   let rules = List.map_i (fun i p -> make_rule (mkact i) p) 0 prods in
   synchronize_level_positions ();
@@ -274,7 +275,24 @@ let head_is_ident tg = match tg.tacgram_prods with
 
 let add_tactic_entry kn tg =
   let entry, pos = get_tactic_entry tg.tacgram_level in
-  let mkact loc l = (TacAlias (loc,kn,l):raw_tactic_expr) in
+  let mkact loc l =
+    let filter = function
+    | GramTerminal _ -> None
+    | GramNonTerminal (_, t, _, None) -> None
+    | GramNonTerminal (_, t, _, Some _) -> Some (Genarg.unquote t)
+    in
+    let types = List.map_filter filter tg.tacgram_prods in
+    let map (id, arg) t =
+      (** HACK to handle especially the tactic(...) entry *)
+      let wit = Genarg.rawwit Constrarg.wit_tactic in
+      if Genarg.argument_type_eq t (Genarg.unquote wit) then
+        (id, Tacexp (Genarg.out_gen wit arg))
+      else
+        (id, TacGeneric arg)
+    in
+    let l = List.map2 map l types in
+    (TacAlias (loc,kn,l):raw_tactic_expr)
+  in
   let () =
     if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
       error "Notation for simple tactic must start with an identifier."

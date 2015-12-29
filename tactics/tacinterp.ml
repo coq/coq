@@ -156,12 +156,7 @@ module Value = struct
 
 end
 
-let print_top_val env arg v =
-  let unpacker wit cst =
-    try val_cast (topwit wit) v; mt ()
-    with CastError _ -> mt ()
-  in
-  unpack { unpacker } arg
+let print_top_val env v = mt () (** FIXME *)
 
 let dloc = Loc.ghost
 
@@ -1244,51 +1239,9 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   (* For extensions *)
   | TacAlias (loc,s,l) ->
       let body = Tacenv.interp_alias s in
-      let rec f x = match genarg_tag x with
-      | ConstrArgType
-      | ListArgType ConstrArgType
-      | OptArgType _ | PairArgType _ -> (** generic handler *)
-        interp_genarg ist x
-      | _ as tag -> (** Special treatment. TODO: use generic handler  *)
-        Ftactic.nf_enter begin fun gl ->
-          let sigma = Tacmach.New.project gl in
-          let env = Proofview.Goal.env gl in
-          match tag with
-          | IdentArgType ->
-              Ftactic.return (value_of_ident (interp_ident ist env sigma
-                                               (Genarg.out_gen (glbwit wit_ident) x)))
-          | VarArgType ->
-              Ftactic.return (Value.of_constr (mk_hyp_value ist env sigma (Genarg.out_gen (glbwit wit_var) x)))
-          | ListArgType VarArgType ->
-              let wit = glbwit (wit_list wit_var) in
-              let ans = List.map (mk_hyp_value ist env sigma) (Genarg.out_gen wit x) in
-              Ftactic.return (Value.of_list (val_tag wit_constr) ans)
-          | ListArgType IdentArgType ->
-              let wit = glbwit (wit_list wit_ident) in
-              let mk_ident x = intro_pattern_of_ident (interp_ident ist env sigma x) in
-              let ans = List.map mk_ident (Genarg.out_gen wit x) in
-              Ftactic.return (Value.of_list (val_tag wit_intro_pattern) ans)
-          | ListArgType t  ->
-              let open Ftactic in
-              list_unpack { list_unpacker = fun wit l ->
-                let map x = f (Genarg.in_gen (glbwit wit) x) in
-                Ftactic.List.map map (glb l) >>= fun l ->
-                let l = CList.map (fun x -> Value.cast (topwit wit) x) l in
-                Ftactic.return (Value.of_list (val_tag wit) l)
-              } x
-          | ExtraArgType _ ->
-              (** Special treatment of tactics *)
-              if Genarg.has_type x (glbwit wit_tactic) then
-                let tac = Genarg.out_gen (glbwit wit_tactic) x in
-                val_interp ist tac
-              else
-                Geninterp.generic_interp ist x
-          | _ -> assert false
-        end
-      in
       let (>>=) = Ftactic.bind in
       let interp_vars =
-        Ftactic.List.map (fun (x,v) -> f v >>= fun v -> Ftactic.return (x,v)) l
+        Ftactic.List.map (fun (x,v) -> interp_tacarg ist v >>= fun v -> Ftactic.return (x,v)) l
       in
       let addvar (x, v) accu = Id.Map.add x v accu in
       let tac l =
@@ -1302,8 +1255,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       in
       let tac =
         Ftactic.with_env interp_vars >>= fun (env, lr) ->
-        let l = List.map2 (fun (_, g) (_, t) -> print_top_val env g t) l lr in
-        let name () = Pptactic.pr_alias_gen (fun x -> x) 0 s l in
+        let name () = Pptactic.pr_alias (fun v -> print_top_val env v) 0 s (List.map snd lr) in
         Proofview.Trace.name_tactic name (tac lr)
       (* spiwack: this use of name_tactic is not robust to a
          change of implementation of [Ftactic]. In such a situation,
@@ -1316,10 +1268,9 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let trace = push_trace (loc,LtacMLCall tac) ist in
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       let tac = Tacenv.interp_ml_tactic opn in
-      let args = Ftactic.List.map_right (fun a -> interp_genarg ist a) l in
+      let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
       let tac args =
-        let l = List.map2 (print_top_val ()) l args in
-        let name () = Pptactic.pr_extend_gen (fun x -> x) 0 opn l in
+        let name () = Pptactic.pr_extend (fun v -> print_top_val () v) 0 opn args in
         Proofview.Trace.name_tactic name (catch_error_tac trace (tac args ist))
       in
       Ftactic.run args tac
@@ -1355,8 +1306,7 @@ and interp_ltac_reference loc' mustbetac ist r : Val.t Ftactic.t =
 
 and interp_tacarg ist arg : Val.t Ftactic.t =
   match arg with
-  | TacGeneric arg ->
-      Geninterp.generic_interp ist arg
+  | TacGeneric arg -> interp_genarg ist arg
   | Reference r -> interp_ltac_reference dloc false ist r
   | ConstrMayEval c ->
       Ftactic.enter begin fun gl ->

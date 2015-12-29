@@ -5,4 +5,4 @@ Tactic Notation "bar" hyp_list(hs) := foo hs.
 Goal True.
 do 5 pose proof 0 as ?n0.
 foo n1 n2.
-Fail bar n3 n4.
+bar n3 n4.

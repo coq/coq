@@ -171,6 +171,7 @@ let extend_atomic_tactic name entries =
   | None -> ()
   | Some args ->
     let open Tacexpr in
+    let args = List.map (fun a -> TacGeneric a) args in
     let entry = { mltac_name = name; mltac_index = i } in
     let body = TacML (Loc.ghost, entry, args) in
     Tacenv.register_ltac false false (Names.Id.of_string id) body

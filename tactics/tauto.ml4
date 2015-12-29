@@ -210,7 +210,7 @@ let constructor i =
   (** Take care of the index: this is the second entry in constructor. *)
   let name = { Tacexpr.mltac_name = name; mltac_index = 1 } in
   let i = in_gen (rawwit Constrarg.wit_int_or_var) (Misctypes.ArgArg i) in
-  Tacexpr.TacML (Loc.ghost, name, [i])
+  Tacexpr.TacML (Loc.ghost, name, [TacGeneric i])
 
 let is_disj _ ist =
   let flags = assoc_flags ist in

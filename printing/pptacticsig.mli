@@ -40,19 +40,16 @@ module type Pp = sig
   val pr_top_generic : env -> tlevel generic_argument -> std_ppcmds
 
   val pr_raw_extend: env -> int ->
-    ml_tactic_entry -> raw_generic_argument list -> std_ppcmds
+    ml_tactic_entry -> raw_tactic_arg list -> std_ppcmds
 
   val pr_glob_extend: env -> int ->
-    ml_tactic_entry -> glob_generic_argument list -> std_ppcmds
+    ml_tactic_entry -> glob_tactic_arg list -> std_ppcmds
 
-  val pr_extend : env -> int ->
-    ml_tactic_entry -> typed_generic_argument list -> std_ppcmds
+  val pr_extend :
+    (Val.t -> std_ppcmds) -> int -> ml_tactic_entry -> Val.t list -> std_ppcmds
 
-  val pr_extend_gen :
-    ('a -> std_ppcmds) -> int -> ml_tactic_entry -> 'a list -> std_ppcmds
-
-  val pr_alias_gen : ('a -> std_ppcmds) ->
-    int -> Names.KerName.t -> 'a list -> std_ppcmds
+  val pr_alias : (Val.t -> std_ppcmds) ->
+    int -> Names.KerName.t -> Val.t list -> std_ppcmds
 
   val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
 

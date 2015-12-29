@@ -245,8 +245,8 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   (* For extensions *)
   | TacAlias (_,s,l) ->
       let s = subst_kn subst s in
-      TacAlias (dloc,s,List.map (fun (id,a) -> (id,subst_genarg subst a)) l)
-  | TacML (_loc,opn,l) -> TacML (dloc,opn,List.map (subst_genarg subst) l)
+      TacAlias (dloc,s,List.map (fun (id,a) -> (id,subst_tacarg subst a)) l)
+  | TacML (_loc,opn,l) -> TacML (dloc,opn,List.map (subst_tacarg subst) l)
 
 and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 
@@ -261,7 +261,7 @@ and subst_tacarg subst = function
   | TacPretype c -> TacPretype (subst_glob_constr subst c)
   | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (subst_tactic subst t)
-  | TacGeneric arg -> TacGeneric (Genintern.generic_substitute subst arg)
+  | TacGeneric arg -> TacGeneric (subst_genarg subst arg)
 
 (* Reads the rules of a Match Context or a Match *)
 and subst_match_rule subst = function
