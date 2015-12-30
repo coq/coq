@@ -413,13 +413,6 @@ let tac_zero_infeq_false gl (n,d) =
 	      (tac_zero_inf_pos gl (-n,d)))
 ;;
 
-let create_meta () = mkMeta(Evarutil.new_meta());;
-
-let my_cut c gl=
-     let concl = pf_concl gl in
-       apply_type (mkProd(Anonymous,c,concl)) [create_meta()] gl
-;;
-
 let exact = exact_check;;
 
 let tac_use h =
@@ -587,7 +580,7 @@ let rec fourier () =
                       then tac_zero_inf_false gl (rational_to_fraction cres)
                       else tac_zero_infeq_false gl (rational_to_fraction cres)
            in
-           tac:=(Tacticals.New.tclTHENS (Proofview.V82.tactic (my_cut ineq))
+           tac:=(Tacticals.New.tclTHENS (cut ineq)
                      [Tacticals.New.tclTHEN (change_concl
 			       (mkAppL [| get coq_not; ineq|]
 				       ))
