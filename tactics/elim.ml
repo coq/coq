@@ -161,8 +161,8 @@ let induction_trailer abs_i abs_j bargs =
 
 let double_ind h1 h2 =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let abs_i = of_old (depth_of_quantified_hypothesis true h1) gl in
-  let abs_j = of_old (depth_of_quantified_hypothesis true h2) gl in
+  let abs_i = depth_of_quantified_hypothesis true h1 gl in
+  let abs_j = depth_of_quantified_hypothesis true h2 gl in
   let abs =
     if abs_i < abs_j then Proofview.tclUNIT (abs_i,abs_j) else
     if abs_i > abs_j then  Proofview.tclUNIT (abs_j,abs_i) else

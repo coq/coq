@@ -25,7 +25,7 @@ open Locus
 
 (** {6 General functions. } *)
 
-val is_quantified_hypothesis : Id.t -> goal sigma -> bool
+val is_quantified_hypothesis : Id.t -> ([`NF],'b) Proofview.Goal.t -> bool
 
 (** {6 Primitive tactics. } *)
 
@@ -73,7 +73,7 @@ val intros               : unit Proofview.tactic
 (** [depth_of_quantified_hypothesis b h g] returns the index of [h] in
    the conclusion of goal [g], up to head-reduction if [b] is [true] *)
 val depth_of_quantified_hypothesis :
-  bool -> quantified_hypothesis -> goal sigma -> int
+  bool -> quantified_hypothesis -> ([`NF],'b) Proofview.Goal.t -> int
 
 val intros_until         : quantified_hypothesis -> unit Proofview.tactic
 

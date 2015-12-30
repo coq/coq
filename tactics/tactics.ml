@@ -910,25 +910,25 @@ let intros_replacing ids =
 
 (* User-level introduction tactics *)
 
-let pf_lookup_hypothesis_as_renamed env ccl = function
+let lookup_hypothesis_as_renamed env ccl = function
   | AnonHyp n -> Detyping.lookup_index_as_renamed env ccl n
   | NamedHyp id -> Detyping.lookup_name_as_displayed env ccl id
 
-let pf_lookup_hypothesis_as_renamed_gen red h gl =
-  let env = pf_env gl in
+let lookup_hypothesis_as_renamed_gen red h gl =
+  let env = Proofview.Goal.env gl in
   let rec aux ccl =
-    match pf_lookup_hypothesis_as_renamed env ccl h with
+    match lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
           aux
 	    (snd ((fst (Redexpr.reduction_of_red_expr env (Red true)))
-	       env (project gl) ccl))
+	       env (Sigma.to_evar_map (Proofview.Goal.sigma gl)) ccl))
       | x -> x
   in
-  try aux (Tacmach.pf_concl gl)
+  try aux (Proofview.Goal.concl gl)
   with Redelimination -> None
 
-let is_quantified_hypothesis id g =
-  match pf_lookup_hypothesis_as_renamed_gen false (NamedHyp id) g with
+let is_quantified_hypothesis id gl =
+  match lookup_hypothesis_as_renamed_gen false (NamedHyp id) gl with
     | Some _ -> true
     | None -> false
 
@@ -940,7 +940,7 @@ let msg_quantified_hypothesis = function
       str " non dependent hypothesis"
 
 let depth_of_quantified_hypothesis red h gl =
-  match pf_lookup_hypothesis_as_renamed_gen red h gl with
+  match lookup_hypothesis_as_renamed_gen red h gl with
     | Some depth -> depth
     | None ->
         errorlabstrm "lookup_quantified_hypothesis"
@@ -951,7 +951,7 @@ let depth_of_quantified_hypothesis red h gl =
 
 let intros_until_gen red h =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let n = Tacmach.New.of_old (depth_of_quantified_hypothesis red h) gl in
+  let n = depth_of_quantified_hypothesis red h gl in
   Tacticals.New.tclDO n (if red then introf else intro)
   end }
 

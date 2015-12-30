@@ -1852,7 +1852,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (* TODO: move sigma as a side-effect *)
              (* spiwack: the [*p] variants are for printing *)
             let cp = c in
-            let c = Tacmach.New.of_old (fun gl -> interp_induction_arg ist gl c) gl in
+            let c = interp_induction_arg ist gl c in
             let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
             let ipatsp = ipats in
             let sigma,ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
