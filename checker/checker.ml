@@ -217,12 +217,6 @@ open Type_errors
 let anomaly_string () = str "Anomaly: "
 let report () = (str "." ++ spc () ++ str "Please report.")
 
-let print_loc loc =
-  if loc = Loc.ghost then
-    (str"<unknown>")
-  else
-    let loc = Loc.unloc loc in
-    (int (fst loc) ++ str"-" ++ int (snd loc))
 let guill s = str "\"" ++ str s ++ str "\""
 
 let where s =
