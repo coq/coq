@@ -27,29 +27,26 @@ let plugin_name = <:expr< __coq_plugin_name >>
 
 let rec make_patt = function
   | [] -> <:patt< [] >>
-  | GramNonTerminal(loc',_,_,Some p)::l ->
+  | ExtNonTerminal (_, p) :: l ->
       let p = Names.Id.to_string p in
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
 let rec make_when loc = function
   | [] -> <:expr< True >>
-  | GramNonTerminal(loc',t,_,Some p)::l ->
-      let loc' = of_coqloc loc' in
+  | ExtNonTerminal (EntryName (t, _), p) :: l ->
       let p = Names.Id.to_string p in
       let l = make_when loc l in
-      let loc = CompatLoc.merge loc' loc in
-      let t = mlexpr_of_argtype loc' (Genarg.unquote t) in
+      let t = mlexpr_of_argtype loc (Genarg.unquote t) in
       <:expr< Genarg.argument_type_eq (Genarg.genarg_tag $lid:p$) $t$ && $l$ >>
   | _::l -> make_when loc l
 
 let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
-  | GramNonTerminal(loc,t,_,Some p)::l ->
+  | ExtNonTerminal (EntryName (t, _), p) :: l ->
       let t = Genarg.unquote t in
-      let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
-      let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
+      let loc = MLast.loc_of_expr e in
       let e = make_let raw e l in
       let v =
         if raw then <:expr< Genarg.out_gen $make_rawwit loc t$ $lid:p$ >>
@@ -59,7 +56,7 @@ let rec make_let raw e = function
 
 let rec extract_signature = function
   | [] -> []
-  | GramNonTerminal (_,t,_,_) :: l -> Genarg.unquote t :: extract_signature l
+  | ExtNonTerminal (EntryName (t, _), _) :: l -> Genarg.unquote t :: extract_signature l
   | _::l -> extract_signature l
 
 
@@ -83,37 +80,32 @@ let make_fun_clauses loc s l =
 
 let rec make_args = function
   | [] -> <:expr< [] >>
-  | GramNonTerminal(loc,t,_,Some p)::l ->
+  | ExtNonTerminal (EntryName (t, _), p) :: l ->
       let t = Genarg.unquote t in
-      let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
       <:expr< [ Genarg.in_gen $make_topwit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
 
 let mlexpr_terminals_of_grammar_tactic_prod_item_expr = function
-  | GramTerminal s -> <:expr< Some $mlexpr_of_string s$ >>
-  | GramNonTerminal (loc,nt,_,sopt) ->
-    let loc = of_coqloc loc in <:expr< None >>
+  | ExtTerminal s -> <:expr< Some $mlexpr_of_string s$ >>
+  | ExtNonTerminal _ -> <:expr< None >>
 
 let make_prod_item = function
-  | GramTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
-  | GramNonTerminal (loc,nt,g,sopt) ->
-      let loc = of_coqloc loc in
+  | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
+  | ExtNonTerminal (EntryName (nt, g), id) ->
       let nt = Genarg.unquote nt in
       <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
-      $mlexpr_of_prod_entry_key g$ $mlexpr_of_option mlexpr_of_ident sopt$ >>
+      $mlexpr_of_prod_entry_key g$ (Some $mlexpr_of_ident id$) >>
 
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,b) -> mlexpr_of_list make_prod_item a) cl
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
-  | GramNonTerminal(loc',t,_,Some p)::l ->
-      let loc' = of_coqloc loc' in
+  | ExtNonTerminal (EntryName (t, _), p) :: l ->
       let l = make_tags loc l in
-      let loc = CompatLoc.merge loc' loc in
       let t = Genarg.unquote t in
-      let t = mlexpr_of_argtype loc' t in
+      let t = mlexpr_of_argtype loc t in
       <:expr< [ $t$ :: $l$ ] >>
   | _::l -> make_tags loc l
 
@@ -127,7 +119,7 @@ let make_one_printing_rule (pt,_,e) =
 let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
 
 let make_empty_check = function
-| GramNonTerminal(_, t, e, _)->
+| ExtNonTerminal (EntryName (t, e), _)->
   let t = Genarg.unquote t in
   let is_extra = match t with ExtraArgType _ -> true | _ -> false in
   if is_possibly_empty e || is_extra then
@@ -143,16 +135,16 @@ let make_empty_check = function
   else
   (* This does not parse epsilon (this Exit is static time) *)
     raise Exit
-| GramTerminal _ ->
+| ExtTerminal _ ->
   (* Idem *)
   raise Exit
 
 let rec possibly_atomic loc = function
 | [] -> []
-| ((GramNonTerminal _ :: _ | []), _, _) :: rem ->
+| ((ExtNonTerminal _ :: _ | []), _, _) :: rem ->
   (** This is not parsed by the TACTIC EXTEND rules *)
   assert false
-| (GramTerminal s :: prods, _, _) :: rem ->
+| (ExtTerminal s :: prods, _, _) :: rem ->
   let entry =
     try
       let l = List.map make_empty_check prods in
@@ -164,8 +156,8 @@ let rec possibly_atomic loc = function
 
 (** Special treatment of constr entries *)
 let is_constr_gram = function
-| GramTerminal _ -> false
-| GramNonTerminal (_, _, e, _) ->
+| ExtTerminal _ -> false
+| ExtNonTerminal (EntryName (_, e), _) ->
   match e with
   | Aentry e ->
     begin match Entry.repr e with
@@ -175,12 +167,11 @@ let is_constr_gram = function
   | _ -> false
 
 let make_var = function
-  | GramNonTerminal(loc',_,_,Some p) -> Some p
-  | GramNonTerminal(loc',_,_,None) -> Some (Id.of_string "_")
+  | ExtNonTerminal (_, p) -> Some p
   | _ -> assert false
 
 let declare_tactic loc s c cl = match cl with
-| [(GramTerminal name) :: rem, _, tac] when List.for_all is_constr_gram rem ->
+| [(ExtTerminal name) :: rem, _, tac] when List.for_all is_constr_gram rem ->
   (** The extension is only made of a name followed by constr entries: we do not
       add any grammar nor printing rule and add it as a true Ltac definition. *)
   let patt = make_patt rem in
@@ -258,7 +249,7 @@ EXTEND
         c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> c ];
         "->"; "["; e = Pcaml.expr; "]" ->
 	(match l with
-	  | GramNonTerminal _ :: _ ->
+	  | ExtNonTerminal _ :: _ ->
 	    (* En attendant la syntaxe de tacticielles *)
 	    failwith "Tactic syntax must start with an identifier"
 	  | _ -> (l,c,e))
@@ -266,14 +257,14 @@ EXTEND
   ;
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let EntryName (t, g) = interp_entry_name false TgAny e "" in
-        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let entry = interp_entry_name false TgAny e "" in
+        ExtNonTerminal (entry, Names.Id.of_string s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let EntryName (t, g) = interp_entry_name false TgAny e sep in
-        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let entry = interp_entry_name false TgAny e sep in
+        ExtNonTerminal (entry, Names.Id.of_string s)
       | s = STRING ->
 	if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
-        GramTerminal s
+        ExtTerminal s
     ] ]
   ;
   tac_name:

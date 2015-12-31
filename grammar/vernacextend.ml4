@@ -22,7 +22,7 @@ open Compat
 type rule = {
   r_head : string option;
   (** The first terminal grammar token *)
-  r_patt : Vernacexpr.vernac_expr grammar_prod_item list;
+  r_patt : extend_token list;
   (** The remaining tokens of the parsing rule *)
   r_class : MLast.expr option;
   (** An optional classifier for the STM *)
@@ -34,11 +34,10 @@ type rule = {
 
 let rec make_let e = function
   | [] -> e
-  | GramNonTerminal(loc,t,_,Some p)::l ->
+  | ExtNonTerminal (EntryName (t, _), p) :: l ->
       let t = Genarg.unquote t in
-      let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
-      let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
+      let loc = MLast.loc_of_expr e in
       let e = make_let e l in
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
   | _::l -> make_let e l
@@ -51,7 +50,7 @@ let make_clause { r_patt = pt; r_branch = e; } =
 (* To avoid warnings *)
 let mk_ignore c pt =
   let names = CList.map_filter (function
-  | GramNonTerminal(_,_,_,Some p) -> Some (Names.Id.to_string p)
+  | ExtNonTerminal (_, p) -> Some (Names.Id.to_string p)
   | _ -> None) pt in
   let fold accu id = <:expr< let _ = $lid:id$ in $accu$ >> in
   let names = List.fold_left fold <:expr< () >> names in
@@ -109,7 +108,7 @@ let make_fun_classifiers loc s c l =
 let mlexpr_of_clause =
   mlexpr_of_list
     (fun { r_head = a; r_patt = b; } -> mlexpr_of_list make_prod_item
-       (Option.List.cons (Option.map (fun a -> GramTerminal a) a) b))
+       (Option.List.cons (Option.map (fun a -> ExtTerminal a) a) b))
 
 let declare_command loc s c nt cl =
   let se = mlexpr_of_string s in
@@ -182,13 +181,13 @@ EXTEND
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let EntryName (t, g) = interp_entry_name false TgAny e "" in
-        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let entry = interp_entry_name false TgAny e "" in
+        ExtNonTerminal (entry, Names.Id.of_string s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let EntryName (t, g) = interp_entry_name false TgAny e sep in
-        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let entry = interp_entry_name false TgAny e sep in
+        ExtNonTerminal (entry, Names.Id.of_string s)
       | s = STRING ->
-        GramTerminal s
+        ExtTerminal s
     ] ]
   ;
   END

@@ -45,7 +45,7 @@ let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 
 let has_extraarg l =
   let check = function
-  | GramNonTerminal(_, t, _, _) ->
+  | ExtNonTerminal(EntryName (t, _), _) ->
     begin match Genarg.unquote t with
     | ExtraArgType _ -> true
     | _ -> false
@@ -74,7 +74,7 @@ let rec get_empty_entry : type s a. (s, a) entry_key -> _ = function
 
 let statically_known_possibly_empty s (prods,_) =
   List.for_all (function
-    | GramNonTerminal(_,t,e,_) ->
+    | ExtNonTerminal(EntryName (t, e), _) ->
       begin match Genarg.unquote t with
       | ExtraArgType s' ->
         (* For ExtraArg we don't know (we'll have to test dynamically) *)
@@ -83,26 +83,26 @@ let statically_known_possibly_empty s (prods,_) =
       | _ ->
         is_possibly_empty e
       end
-    | GramTerminal _ ->
+    | ExtTerminal _ ->
         (* This consumes a token for sure *) false)
       prods
 
 let possibly_empty_subentries loc (prods,act) =
-  let bind_name p v e = match p with
-    | None -> e
-    | Some id ->
-        let s = Names.Id.to_string id in <:expr< let $lid:s$ = $v$ in $e$ >> in
+  let bind_name id v e =
+    let s = Names.Id.to_string id in
+    <:expr< let $lid:s$ = $v$ in $e$ >>
+  in
   let rec aux = function
     | [] -> <:expr< let loc = $default_loc$ in let _ = loc in $act$ >>
-    | GramNonTerminal(_,_,e,p) :: tl when is_possibly_empty e ->
-        bind_name p (get_empty_entry e) (aux tl)
-    | GramNonTerminal(_,t,_,p) :: tl ->
+    | ExtNonTerminal(EntryName (_, e), id) :: tl when is_possibly_empty e ->
+        bind_name id (get_empty_entry e) (aux tl)
+    | ExtNonTerminal(EntryName (t, _), id) :: tl ->
         let t = match Genarg.unquote t with
         | ExtraArgType _ as t -> t
         | _ -> assert false
         in
         (* We check at runtime if extraarg s parses "epsilon" *)
-        let s = match p with None -> "_" | Some id -> Names.Id.to_string id in
+        let s = Names.Id.to_string id in
         <:expr< let $lid:s$ = match Genarg.default_empty_value $make_wit loc t$ with
           [ None -> raise Exit
           | Some v -> v ] in $aux tl$ >>
@@ -135,20 +135,20 @@ let make_possibly_empty_subentries loc s cl =
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
-    | GramNonTerminal (_,t,_,Some p) :: tl ->
+    | ExtNonTerminal (EntryName (t, _), p) :: tl ->
         let t = Genarg.unquote t in
 	let p = Names.Id.to_string p in
 	<:expr<
             (fun $lid:p$ ->
                let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
         >>
-    | (GramTerminal _ | GramNonTerminal (_,_,_,None)) :: tl ->
+    | ExtTerminal _ :: tl ->
 	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function
-  | GramTerminal s -> <:expr< Pcoq.Atoken (Lexer.terminal $mlexpr_of_string s$) >>
-  | GramNonTerminal (_,_,g,_) -> mlexpr_of_prod_entry_key g
+  | ExtTerminal s -> <:expr< Pcoq.Atoken (Lexer.terminal $mlexpr_of_string s$) >>
+  | ExtNonTerminal (EntryName (_, g), _) -> mlexpr_of_prod_entry_key g
 
 let rec make_prod = function
 | [] -> <:expr< Extend.Stop >>
@@ -315,15 +315,15 @@ EXTEND
   ;
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let EntryName (t, g) = interp_entry_name false TgAny e "" in
-	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let entry = interp_entry_name false TgAny e "" in
+        ExtNonTerminal (entry, Names.Id.of_string s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let EntryName (t, g) = interp_entry_name false TgAny e sep in
-	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let entry = interp_entry_name false TgAny e sep in
+        ExtNonTerminal (entry, Names.Id.of_string s)
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
 	    Lexer.add_keyword s;
-          GramTerminal s
+          ExtTerminal s
     ] ]
   ;
   entry_name:

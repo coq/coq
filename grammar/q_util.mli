@@ -8,6 +8,10 @@
 
 open Compat (* necessary for camlp4 *)
 
+type extend_token =
+| ExtTerminal of string
+| ExtNonTerminal of unit Pcoq.entry_name * Names.Id.t
+
 val mlexpr_of_list :  ('a -> MLast.expr) -> 'a list -> MLast.expr
 
 val mlexpr_of_pair :

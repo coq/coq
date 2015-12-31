@@ -10,6 +10,10 @@
 
 open Compat
 
+type extend_token =
+| ExtTerminal of string
+| ExtNonTerminal of unit Pcoq.entry_name * Names.Id.t
+
 let mlexpr_of_list f l =
   List.fold_right
     (fun e1 e2 ->
