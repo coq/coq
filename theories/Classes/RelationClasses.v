@@ -208,6 +208,10 @@ Hint Extern 4 (subrelation (flip _) _) =>
   class_apply @subrelation_symmetric : typeclass_instances.
 
 Arguments irreflexivity {A R Irreflexive} [x] _.
+Arguments symmetry {A} {R} {_} [x] [y] _.
+Arguments asymmetry {A} {R} {_} [x] [y] _ _.
+Arguments transitivity {A} {R} {_} [x] [y] [z] _ _.
+Arguments Antisymmetric A eqA {_} _.
 
 Hint Resolve irreflexivity : ord.
 
