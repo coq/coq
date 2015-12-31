@@ -1238,14 +1238,12 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       eval_tactic ist tac
   (* For extensions *)
   | TacAlias (loc,s,l) ->
-      let body = Tacenv.interp_alias s in
+      let (ids, body) = Tacenv.interp_alias s in
       let (>>=) = Ftactic.bind in
-      let interp_vars =
-        Ftactic.List.map (fun (x,v) -> interp_tacarg ist v >>= fun v -> Ftactic.return (x,v)) l
-      in
-      let addvar (x, v) accu = Id.Map.add x v accu in
+      let interp_vars = Ftactic.List.map (fun v -> interp_tacarg ist v) l in
       let tac l =
-        let lfun = List.fold_right addvar l ist.lfun in
+        let addvar x v accu = Id.Map.add x v accu in
+        let lfun = List.fold_right2 addvar ids l ist.lfun in
         let trace = push_trace (loc,LtacNotationCall s) ist in
         let ist = {
           lfun = lfun;
@@ -1255,11 +1253,18 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       in
       let tac =
         Ftactic.with_env interp_vars >>= fun (env, lr) ->
-        let name () = Pptactic.pr_alias (fun v -> print_top_val env v) 0 s (List.map snd lr) in
+        let name () = Pptactic.pr_alias (fun v -> print_top_val env v) 0 s lr in
         Proofview.Trace.name_tactic name (tac lr)
       (* spiwack: this use of name_tactic is not robust to a
          change of implementation of [Ftactic]. In such a situation,
          some more elaborate solution will have to be used. *)
+      in
+      let tac =
+        let len1 = List.length ids in
+        let len2 = List.length l in
+        if len1 = len2 then tac
+        else Tacticals.New.tclZEROMSG (str "Arguments length mismatch: \
+          expected " ++ int len1 ++ str ", found " ++ int len2)
       in
       Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 

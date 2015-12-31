@@ -1201,7 +1201,7 @@ module Make
             | TacML (loc,s,l) ->
               pr_with_comments loc (pr.pr_extend 1 s l), lcall
             | TacAlias (loc,kn,l) ->
-              pr_with_comments loc (pr.pr_alias (level_of inherited) kn (List.map snd l)), latom
+              pr_with_comments loc (pr.pr_alias (level_of inherited) kn l), latom
           )
           in
           if prec_less prec inherited then strm

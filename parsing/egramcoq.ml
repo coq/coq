@@ -286,9 +286,9 @@ let add_tactic_entry kn tg =
       (** HACK to handle especially the tactic(...) entry *)
       let wit = Genarg.rawwit Constrarg.wit_tactic in
       if Genarg.argument_type_eq t (Genarg.unquote wit) then
-        (id, Tacexp (Genarg.out_gen wit arg))
+        Tacexp (Genarg.out_gen wit arg)
       else
-        (id, TacGeneric arg)
+        TacGeneric arg
     in
     let l = List.map2 map l types in
     (TacAlias (loc,kn,l):raw_tactic_expr)

@@ -656,7 +656,7 @@ and intern_tactic_seq onlytac ist = function
 
   (* For extensions *)
   | TacAlias (loc,s,l) ->
-      let l = List.map (fun (id,a) -> (id,intern_tacarg !strict_check false ist a)) l in
+      let l = List.map (intern_tacarg !strict_check false ist) l in
       ist.ltacvars, TacAlias (loc,s,l)
   | TacML (loc,opn,l) ->
       let _ignore = Tacenv.interp_ml_tactic opn in

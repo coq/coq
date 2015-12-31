@@ -15,9 +15,10 @@ open Tacexpr
 (** Tactic notations (TacAlias) *)
 
 type alias = KerName.t
+type alias_tactic = Id.t list * glob_tactic_expr
 
 let alias_map = Summary.ref ~name:"tactic-alias"
-  (KNmap.empty : glob_tactic_expr KNmap.t)
+  (KNmap.empty : alias_tactic KNmap.t)
 
 let register_alias key tac =
   alias_map := KNmap.add key tac !alias_map

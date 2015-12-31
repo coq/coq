@@ -294,7 +294,7 @@ and 'a gen_tactic_expr =
   (* For ML extensions *)
   | TacML of Loc.t * ml_tactic_entry * 'a gen_tactic_arg list
   (* For syntax extensions *)
-  | TacAlias of Loc.t * KerName.t * (Id.t * 'a gen_tactic_arg) list
+  | TacAlias of Loc.t * KerName.t * 'a gen_tactic_arg list
 
 constraint 'a = <
     term:'t;

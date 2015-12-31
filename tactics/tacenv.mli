@@ -17,10 +17,13 @@ open Tacexpr
 type alias = KerName.t
 (** Type of tactic alias, used in the [TacAlias] node. *)
 
-val register_alias : alias -> glob_tactic_expr -> unit
+type alias_tactic = Id.t list * glob_tactic_expr
+(** Contents of a tactic notation *)
+
+val register_alias : alias -> alias_tactic -> unit
 (** Register a tactic alias. *)
 
-val interp_alias : alias -> glob_tactic_expr
+val interp_alias : alias -> alias_tactic
 (** Recover the the body of an alias. Raises an anomaly if it does not exist. *)
 
 val check_alias : alias -> bool

@@ -81,7 +81,7 @@ type tactic_grammar_obj = {
   tacobj_local : locality_flag;
   tacobj_tacgram : tactic_grammar;
   tacobj_tacpp : Pptactic.pp_tactic;
-  tacobj_body : Tacexpr.glob_tactic_expr
+  tacobj_body : Id.t list * Tacexpr.glob_tactic_expr;
 }
 
 let check_key key =
@@ -111,9 +111,10 @@ let load_tactic_notation i (_, tobj) =
     Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
 
 let subst_tactic_notation (subst, tobj) =
+  let (ids, body) = tobj.tacobj_body in
   { tobj with
     tacobj_key = Mod_subst.subst_kn subst tobj.tacobj_key;
-    tacobj_body = Tacsubst.subst_tactic subst tobj.tacobj_body;
+    tacobj_body = (ids, Tacsubst.subst_tactic subst body);
   }
 
 let classify_tactic_notation tacobj = Substitute tacobj
@@ -126,9 +127,9 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
        subst_function = subst_tactic_notation;
        classify_function = classify_tactic_notation}
 
-let cons_production_parameter l = function
-  | GramTerminal _ -> l
-  | GramNonTerminal (_,_,_,ido) -> Option.List.cons ido l
+let cons_production_parameter = function
+  | GramTerminal _ -> None
+  | GramNonTerminal (_, _, _, id) -> id
 
 let add_tactic_notation (local,n,prods,e) =
   let prods = List.map (interp_prod_item n) prods in
@@ -137,7 +138,7 @@ let add_tactic_notation (local,n,prods,e) =
     Pptactic.pptac_args = tags;
     pptac_prods = (n, List.map make_terminal_status prods);
   } in
-  let ids = List.fold_left cons_production_parameter [] prods in
+  let ids = List.map_filter cons_production_parameter prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
   let parule = {
     tacgram_level = n;
@@ -148,7 +149,7 @@ let add_tactic_notation (local,n,prods,e) =
     tacobj_local = local;
     tacobj_tacgram = parule;
     tacobj_tacpp = pprule;
-    tacobj_body = tac;
+    tacobj_body = (ids, tac);
   } in
   Lib.add_anonymous_leaf (inTacticGrammar tacobj)
 
