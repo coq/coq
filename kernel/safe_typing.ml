@@ -748,7 +748,7 @@ let end_modtype l senv =
 let add_include me is_module inl senv =
   let open Mod_typing in
   let mp_sup = senv.modpath in
-  let sign,_,resolver,cst =
+  let sign,(),resolver,cst =
     translate_mse_incl is_module senv.env mp_sup inl me
   in
   let senv = add_constraints (Now (false, cst)) senv in

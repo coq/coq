@@ -143,8 +143,13 @@ let e_judge_of_cast env evdref cj k tj =
   { uj_val = mkCast (cj.uj_val, k, expected_type);
     uj_type = expected_type }
 
-(* The typing machine without information, without universes but with
-   existential variables. *)
+let enrich_env env evdref =
+  let penv = Environ.pre_env env in
+  let penv' = Pre_env.({ penv with env_stratification =
+    { penv.env_stratification with env_universes = Evd.universes !evdref } }) in
+  Environ.env_of_pre_env penv'
+			  
+(* The typing machine with universes and existential variables. *)
 
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
@@ -263,6 +268,7 @@ and execute_recdef env evdref (names,lar,vdef) =
 and execute_array env evdref = Array.map (execute env evdref)
 
 let check env evdref c t =
+  let env = enrich_env env evdref in
   let j = execute env evdref c in
   if not (Evarconv.e_cumul env evdref j.uj_type t) then
     error_actual_type env j (nf_evar !evdref t)
@@ -270,12 +276,15 @@ let check env evdref c t =
 (* Type of a constr *)
 
 let unsafe_type_of env evd c =
-  let j = execute env (ref evd) c in
+  let evdref = ref evd in
+  let env = enrich_env env evdref in
+  let j = execute env evdref c in
     j.uj_type
 
 (* Sort of a type *)
 
 let sort_of env evdref c =
+  let env = enrich_env env evdref in
   let j = execute env evdref c in
   let a = e_type_judgment env evdref j in
   a.utj_type
@@ -284,6 +293,7 @@ let sort_of env evdref c =
 
 let type_of ?(refresh=false) env evd c =
   let evdref = ref evd in
+  let env = enrich_env env evdref in
   let j = execute env evdref c in
   (* side-effect on evdref *)
     if refresh then
@@ -291,6 +301,7 @@ let type_of ?(refresh=false) env evd c =
     else !evdref, j.uj_type
 
 let e_type_of ?(refresh=false) env evdref c =
+  let env = enrich_env env evdref in
   let j = execute env evdref c in
   (* side-effect on evdref *)
     if refresh then
@@ -300,6 +311,7 @@ let e_type_of ?(refresh=false) env evdref c =
     else j.uj_type
 
 let solve_evars env evdref c =
+  let env = enrich_env env evdref in
   let c = (execute env evdref c).uj_val in
   (* side-effect on evdref *)
   nf_evar !evdref c

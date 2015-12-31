@@ -139,12 +139,15 @@ let interval loc =
   loc1, loc2-1
 
 let dump_ref loc filepath modpath ident ty =
-  if !glob_output = Feedback then
+  match !glob_output with
+  | Feedback ->
     Pp.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
-  else
+  | NoGlob -> ()
+  | _ when not (Loc.is_ghost loc) ->
     let bl,el = interval loc in
     dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
 		  bl el filepath modpath ident ty)
+  | _ -> ()
 
 let dump_reference loc modpath ident ty =
   let filepath = Names.DirPath.to_string (Lib.library_dp ()) in

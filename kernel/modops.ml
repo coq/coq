@@ -67,14 +67,12 @@ type module_typing_error =
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
+  | IncludeRestrictedFunctor of module_path
 
 exception ModuleTypingError of module_typing_error
 
 let error_existing_label l =
   raise (ModuleTypingError (LabelAlreadyDeclared l))
-
-let error_application_to_not_path mexpr =
-  raise (ModuleTypingError (ApplicationToNotPath mexpr))
 
 let error_not_a_functor () =
   raise (ModuleTypingError NotAFunctor)
@@ -111,6 +109,9 @@ let error_generative_module_expected l =
 
 let error_no_such_label_sub l l1 =
   raise (ModuleTypingError (LabelMissing (l,l1)))
+
+let error_include_restricted_functor mp =
+  raise (ModuleTypingError (IncludeRestrictedFunctor mp))
 
 (** {6 Operations on functors } *)
 
