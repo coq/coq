@@ -47,10 +47,9 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
 let interp_prod_item lev = function
   | TacTerm s -> GramTerminal s
-  | TacNonTerm (loc, nt, po) ->
-      let sep = match po with Some (_,sep) -> sep | _ -> "" in
+  | TacNonTerm (loc, nt, (_, sep)) ->
       let EntryName (etyp, e) = interp_entry_name true (TgTactic lev) nt sep in
-      GramNonTerminal (loc, etyp, e, Option.map fst po)
+      GramNonTerminal (loc, etyp, e)
 
 let make_terminal_status = function
   | GramTerminal s -> Some s
@@ -58,7 +57,7 @@ let make_terminal_status = function
 
 let rec make_tags = function
   | GramTerminal s :: l -> make_tags l
-  | GramNonTerminal (loc, etyp, _, po) :: l -> Genarg.unquote etyp :: make_tags l
+  | GramNonTerminal (loc, etyp, _) :: l -> Genarg.unquote etyp :: make_tags l
   | [] -> []
 
 let make_fresh_key =
@@ -128,17 +127,17 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
        classify_function = classify_tactic_notation}
 
 let cons_production_parameter = function
-  | GramTerminal _ -> None
-  | GramNonTerminal (_, _, _, id) -> id
+| TacTerm _ -> None
+| TacNonTerm (_, _, (id, _)) -> Some id
 
 let add_tactic_notation (local,n,prods,e) =
+  let ids = List.map_filter cons_production_parameter prods in
   let prods = List.map (interp_prod_item n) prods in
   let tags = make_tags prods in
   let pprule = {
     Pptactic.pptac_args = tags;
     pptac_prods = (n, List.map make_terminal_status prods);
   } in
-  let ids = List.map_filter cons_production_parameter prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
   let parule = {
     tacgram_level = n;

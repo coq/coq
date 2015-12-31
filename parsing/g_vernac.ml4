@@ -1165,7 +1165,7 @@ GEXTEND Gram
   production_item:
     [ [ s = ne_string -> TacTerm s
       | nt = IDENT;
-        po = OPT [ "("; p = ident; sep = [ -> "" | ","; sep = STRING -> sep ];
+        po = [ "("; p = ident; sep = [ -> "" | ","; sep = STRING -> sep ];
                    ")" -> (p,sep) ] -> TacNonTerm (!@loc,nt,po) ] ]
   ;
 END

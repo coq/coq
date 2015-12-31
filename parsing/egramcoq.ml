@@ -257,7 +257,7 @@ let add_ml_tactic_entry name prods =
   let mkact i loc l : raw_tactic_expr =
     let open Tacexpr in
     let entry = { mltac_name = name; mltac_index = i } in
-    let map (_, arg) = TacGeneric arg in
+    let map arg = TacGeneric arg in
     TacML (loc, entry, List.map map l)
   in
   let rules = List.map_i (fun i p -> make_rule (mkact i) p) 0 prods in
@@ -278,11 +278,10 @@ let add_tactic_entry kn tg =
   let mkact loc l =
     let filter = function
     | GramTerminal _ -> None
-    | GramNonTerminal (_, t, _, None) -> None
-    | GramNonTerminal (_, t, _, Some _) -> Some (Genarg.unquote t)
+    | GramNonTerminal (_, t, _) -> Some (Genarg.unquote t)
     in
     let types = List.map_filter filter tg.tacgram_prods in
-    let map (id, arg) t =
+    let map arg t =
       (** HACK to handle especially the tactic(...) entry *)
       let wit = Genarg.rawwit Constrarg.wit_tactic in
       if Genarg.argument_type_eq t (Genarg.unquote wit) then

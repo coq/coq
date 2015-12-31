@@ -16,7 +16,7 @@ open Vernacexpr
 type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal : Loc.t * 'a Genarg.raw_abstract_argument_type *
-      ('s, 'a) Pcoq.entry_key * Names.Id.t option -> 's grammar_prod_item
+      ('s, 'a) Pcoq.entry_key -> 's grammar_prod_item
 
 val extend_vernac_command_grammar :
   Vernacexpr.extend_name -> vernac_expr Pcoq.Gram.entry option ->
@@ -27,5 +27,5 @@ val get_extend_vernac_rule : Vernacexpr.extend_name -> vernac_expr grammar_prod_
 (** Utility function reused in Egramcoq : *)
 
 val make_rule :
-  (Loc.t -> (Names.Id.t * Genarg.raw_generic_argument) list -> 'a) ->
+  (Loc.t -> Genarg.raw_generic_argument list -> 'a) ->
   'a grammar_prod_item list -> 'a Extend.production_rule

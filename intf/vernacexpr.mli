@@ -205,7 +205,7 @@ type proof_expr =
 
 type grammar_tactic_prod_item_expr =
   | TacTerm of string
-  | TacNonTerm of Loc.t * string * (Names.Id.t * string) option
+  | TacNonTerm of Loc.t * string * (Names.Id.t * string)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level

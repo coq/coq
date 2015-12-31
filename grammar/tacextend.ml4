@@ -95,7 +95,7 @@ let make_prod_item = function
   | ExtNonTerminal (EntryName (nt, g), id) ->
       let nt = Genarg.unquote nt in
       <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
-      $mlexpr_of_prod_entry_key g$ (Some $mlexpr_of_ident id$) >>
+      $mlexpr_of_prod_entry_key g$ >>
 
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,b) -> mlexpr_of_list make_prod_item a) cl

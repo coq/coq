@@ -105,10 +105,9 @@ module Make
     else id
 
   let pr_production_item = function
-    | TacNonTerm (loc,nt,Some (p,sep)) ->
+    | TacNonTerm (loc, nt, (p, sep)) ->
       let pp_sep = if not (String.is_empty sep) then str "," ++ quote (str sep) else mt () in
       str nt ++ str"(" ++ pr_id (strip_meta p) ++ pp_sep ++ str")"
-    | TacNonTerm (loc,nt,None) -> str nt
     | TacTerm s -> qs s
 
   let pr_comment pr_c = function
