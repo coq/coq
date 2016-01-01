@@ -72,7 +72,7 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
 
   end
 
-(* A few usefull wrappers:
+(* A few useful wrappers:
  * takes as argument the function [generate] above and build a function of type
  * u -> t -> t that creates a fresh table each time it is applied to the
  * sub-hcons functions. *)

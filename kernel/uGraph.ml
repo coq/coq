@@ -277,7 +277,7 @@ exception CycleDetected
    problems. arXiv preprint arXiv:1112.0784. *)
 
 (* [delta] is the timeout for backward search. It might be
-    usefull to tune a multiplicative constant. *)
+    useful to tune a multiplicative constant. *)
 let get_delta g =
   int_of_float
     (min (float_of_int g.n_edges ** 0.5)
@@ -668,7 +668,7 @@ let check_leq g u v =
     is_type0m_univ u ||
     check_eq_univs g u v || real_check_leq g u v
 
-(* enforc_univ_eq g u v will force u=v if possible, will fail otherwise *)
+(* enforce_univ_eq g u v will force u=v if possible, will fail otherwise *)
 
 let rec enforce_univ_eq u v g =
   let ucan = repr g u in

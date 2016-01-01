@@ -1,7 +1,7 @@
 			CoqIde FAQ
 
 Q0) What is CoqIde?
-R0: A powerfull graphical interface for Coq. See http://coq.inria.fr. for more informations.
+R0: A powerful graphical interface for Coq. See http://coq.inria.fr. for more informations.
 
 Q1) How to enable Emacs keybindings?
 R1: Insert 
