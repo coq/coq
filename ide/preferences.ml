@@ -700,10 +700,6 @@ let configure ?(apply=(fun () -> ())) () =
       ~border_width:2
       ~packing:scroll#add_with_viewport ()
     in
-    let reset_button = GButton.button
-      ~label:"Reset"
-      ~packing:box#pack ()
-    in
     let i = ref 0 in
     let cb = ref [] in
     let iter text tag =
