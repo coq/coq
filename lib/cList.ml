@@ -645,12 +645,13 @@ let rec split3 = function
       let (rx, ry, rz) = split3 l in (x::rx, y::ry, z::rz)
 
 let firstn n l =
-  let rec aux acc = function
-    | (0, l) -> List.rev acc
-    | (n, (h::t)) -> aux (h::acc) (pred n, t)
+  let rec aux acc n l =
+    match n, l with
+    | 0, _ -> List.rev acc
+    | n, h::t -> aux (h::acc) (pred n) t
     | _ -> failwith "firstn"
   in
-  aux [] (n,l)
+  aux [] n l
 
 let rec last = function
   | [] -> failwith "List.last"
