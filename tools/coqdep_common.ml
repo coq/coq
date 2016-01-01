@@ -165,11 +165,6 @@ let warning_module_notfound f s =
   eprintf "*** Warning: in file %s, library %s is required and has not been found in the loadpath!\n%!"
     f (String.concat "." s)
 
-let warning_notfound f s =
-  eprintf "*** Warning: in file %s, the file " f;
-  eprintf "%s.v is required and has not been found!\n" s;
-  flush stderr
-
 let warning_declare f s =
   eprintf "*** Warning: in file %s, declared ML module " f;
   eprintf "%s has not been found!\n" s;

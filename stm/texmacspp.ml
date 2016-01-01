@@ -20,9 +20,6 @@ let unlock loc =
   let start, stop = Loc.unloc loc in
   (string_of_int start, string_of_int stop)
 
-let xmlNoop = (* almost noop  *)
-  PCData ""
-
 let xmlWithLoc loc ename attr xml =
   let start, stop = unlock loc in
   Element(ename, [ "begin", start; "end", stop ] @ attr, xml)
