@@ -494,8 +494,6 @@ val restrict_universe_context : evar_map -> Univ.universe_set -> evar_map
 val universe_of_name : evar_map -> string -> Univ.universe_level
 val add_universe_name : evar_map -> string -> Univ.universe_level -> evar_map
 
-val universes : evar_map -> UGraph.t
-
 val add_constraints_context : evar_universe_context -> 
   Univ.constraints -> evar_universe_context
 
@@ -517,7 +515,6 @@ val is_sort_variable : evar_map -> sorts -> Univ.universe_level option
     not a local sort variable declared in [evm] *)
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
-val whd_sort_variable : evar_map -> constr -> constr
 (* val normalize_universe_level : evar_map -> Univ.universe_level -> Univ.universe_level *)
 val normalize_universe : evar_map -> Univ.universe -> Univ.universe
 val normalize_universe_instance : evar_map -> Univ.universe_instance -> Univ.universe_instance
