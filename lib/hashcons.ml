@@ -96,20 +96,6 @@ let recursive_hcons h f u =
   let () = loop := hrec in
   hrec
 
-(* A set of global hashcons functions *)
-let hashcons_resets = ref []
-let init() = List.iter (fun f -> f()) !hashcons_resets
-
-(* [register_hcons h u] registers the hcons function h, result of the above
- *   wrappers. It returns another hcons function that always uses the same
- *   table, which can be reinitialized by init()
- *)
-let register_hcons h u =
-  let hf = ref (h u) in
-  let reset() = hf := h u in
-  hashcons_resets := reset :: !hashcons_resets;
-  (fun x -> !hf x)
-
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
 
@@ -194,18 +180,3 @@ module Hobj = Make(
     let equal = comp_obj
     let hash = Hashtbl.hash
   end)
-
-(* Hashconsing functions for string and obj. Always use the same
- * global tables. The latter can be reinitialized with init()
- *)
-(* string : string -> string *)
-(* obj : Obj.t -> Obj.t *)
-let string = register_hcons (simple_hcons Hstring.generate Hstring.hcons) ()
-let obj = register_hcons (recursive_hcons Hobj.generate Hobj.hcons) ()
-
-(* The unsafe polymorphic hashconsing function *)
-let magic_hash (c : 'a) =
-  init();
-  let r = obj (Obj.repr c) in
-  init();
-  (Obj.magic r : 'a)
