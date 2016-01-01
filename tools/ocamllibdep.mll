@@ -164,7 +164,7 @@ let traite_fichier_modules md ext =
 
 let addQueue q v = q := v :: !q
 
-let rec treat_file old_name =
+let treat_file old_name =
   let name = Filename.basename old_name in
   let dirname = Some (Filename.dirname old_name) in
   match get_extension name [".mllib"] with

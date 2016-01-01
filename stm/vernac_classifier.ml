@@ -60,7 +60,7 @@ let undo_classifier = ref (fun _ -> assert false)
 let set_undo_classifier f = undo_classifier := f
 
 let rec classify_vernac e =
-  let rec static_classifier e = match e with
+  let static_classifier e = match e with
     (* PG compatibility *)
     | VernacUnsetOption (["Silent"]|["Undo"]|["Printing";"Depth"])
     | VernacSetOption   ((["Silent"]|["Undo"]|["Printing";"Depth"]),_)
