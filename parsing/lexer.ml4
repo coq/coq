@@ -80,6 +80,7 @@ module Error = struct
     | Undefined_token
     | Bad_token of string
     | UnsupportedUnicode of int
+    | IncorrectIndex of char list
 
   exception E of t
 
@@ -92,7 +93,16 @@ module Error = struct
          | Undefined_token -> "Undefined token"
          | Bad_token tok -> Format.sprintf "Bad token %S" tok
          | UnsupportedUnicode x ->
-             Printf.sprintf "Unsupported Unicode character (0x%x)" x)
+             Printf.sprintf "Unsupported Unicode character (0x%x)" x
+         | IncorrectIndex l ->
+             let l = List.map (fun c -> Char.code c - 48) l in
+             let s = match l with
+             | c::d::l ->
+                 let l = List.map string_of_int (List.rev l) in
+                 String.concat "" l ^ CString.ordinal (10 * d + c)
+             | [c] -> CString.ordinal c
+             | [] -> assert false in
+             Printf.sprintf "%s expected" s)
 
   (* Require to fix the Camlp4 signature *)
   let print ppf x = Pp.pp_with ppf (Pp.str (to_string x))
@@ -269,15 +279,30 @@ let check_no_char s =
   | [_;_] -> true
   | _ -> assert false
 
-let rec number_or_index c len = parser
-  | [< ' ('0'..'9' as c); s >] -> number_or_index c (store len c) s
-  | [< s >] ->
+let is_teen = function
+  | _::'1'::l -> true
+  | _ -> false
+
+let is_gt3 = function
+  | c::_ when c == '1' || c == '2' || c == '3' -> false
+  | _ -> true
+
+let check_gt3 l loc len =
+  if not (l == ['0']) && (is_teen l || is_gt3 l) then (false, len)
+  else err loc (IncorrectIndex l)
+
+let check_n n l loc len =
+  if List.hd l == n && not (is_teen l) then (false, len)
+  else err loc (IncorrectIndex l)
+
+let rec number_or_index bp l len = parser
+  | [< ' ('0'..'9' as c); s >] -> number_or_index bp (c::l) (store len c) s
+  | [< s >] ep ->
       match Stream.npeek 2 s with
-      | ['s';'t'] when c = '1' && check_no_char s -> njunk 2 s; false, len
-      | ['n';'d'] when c = '2' && check_no_char s -> njunk 2 s; false, len
-      | ['r';'d'] when c = '3' && check_no_char s -> njunk 2 s; false, len
-      | ['t';'h'] when not (len=1 && c='0') && check_no_char s ->
-        njunk 2 s; false, len
+      | ['s';'t'] when check_no_char s -> njunk 2 s; check_n '1' l (bp,ep) len
+      | ['n';'d'] when check_no_char s -> njunk 2 s; check_n '2' l (bp,ep) len
+      | ['r';'d'] when check_no_char s -> njunk 2 s; check_n '3' l (bp,ep) len
+      | ['t';'h'] when check_no_char s -> njunk 2 s; check_gt3 l (bp,ep) len
       | _ -> true, len
 
 let rec string in_comments bp len = parser
@@ -527,7 +552,7 @@ let rec next_token = parser bp
       let id = get_buff len in
       comment_stop bp;
       (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
-  | [< ' ('0'..'9' as c); (b,len) = number_or_index c (store 0 c) >] ep ->
+  | [< ' ('0'..'9' as c); (b,len) = number_or_index bp [c] (store 0 c) >] ep ->
       comment_stop bp;
       (if b then INT (get_buff len) else INDEX (get_buff len)), (bp, ep)
   | [< ''\"'; len = string None bp 0 >] ep ->
