@@ -8,7 +8,6 @@
 open Term
 open Environ
 open Evd
-open Nativelambda
 
 (** This module implements normalization by evaluation to OCaml code *)
 

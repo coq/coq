@@ -10,7 +10,6 @@ open Names
 open Term
 open Clenv
 open Pattern
-open Evd
 open Decl_kinds
 open Hints
 

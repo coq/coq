@@ -9,8 +9,6 @@
 open Names
 open Term
 open Decl_kinds
-open Constrexpr
-open Vernacexpr
 open Pfedit
 
 type 'a declaration_hook

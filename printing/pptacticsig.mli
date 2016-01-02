@@ -8,11 +8,9 @@
 
 open Pp
 open Genarg
-open Constrexpr
 open Tacexpr
 open Ppextend
 open Environ
-open Pattern
 open Misctypes
 
 module type Pp = sig

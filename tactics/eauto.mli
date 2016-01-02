@@ -8,7 +8,6 @@
 
 open Term
 open Proof_type
-open Evd
 open Hints
 
 val hintbases : hint_db_name list option Pcoq.Gram.entry
