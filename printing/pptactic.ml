@@ -1268,7 +1268,7 @@ module Make
 
   let pr_pat_and_constr_expr pr ((c,_),_) = pr c
 
-  let rec pr_glob_tactic_level env n t =
+  let pr_glob_tactic_level env n t =
     let glob_printers =
       (strip_prod_binders_glob_constr)
     in

@@ -2130,7 +2130,7 @@ let rewrite_hyp assert_style l2r id =
         Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
   end }
 
-let rec prepare_naming loc = function
+let prepare_naming loc = function
   | IntroIdentifier id -> NamingMustBe (loc,id)
   | IntroAnonymous -> NamingAvoid []
   | IntroFresh id -> NamingBasedOn (id,[])

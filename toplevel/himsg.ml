@@ -260,7 +260,7 @@ let explain_generalization env sigma (name,var) j =
   str "it has type" ++ spc () ++ pt ++
   spc () ++ str "which should be Set, Prop or Type."
 
-let rec explain_unification_error env sigma p1 p2 = function
+let explain_unification_error env sigma p1 p2 = function
   | None -> mt()
   | Some e ->
      let rec aux p1 p2 = function

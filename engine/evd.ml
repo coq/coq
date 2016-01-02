@@ -1230,7 +1230,7 @@ let pr_decl ((id,b,_),ok) =
   | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
       print_constr c ++ str (if ok then ")" else "}")
 
-let rec pr_evar_source = function
+let pr_evar_source = function
   | Evar_kinds.QuestionMark _ -> str "underscore"
   | Evar_kinds.CasesType false -> str "pattern-matching return predicate"
   | Evar_kinds.CasesType true ->
