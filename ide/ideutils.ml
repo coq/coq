@@ -9,8 +9,6 @@
 
 open Preferences
 
-exception Forbidden
-
 let warn_image () =
   let img = GMisc.image () in
   img#set_stock `DIALOG_WARNING;

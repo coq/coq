@@ -49,7 +49,7 @@ let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) Extend.rule = func
 
 type 'r gen_eval = Loc.t -> raw_generic_argument list -> 'r
 
-let rec ty_eval : type s a r. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> a = function
+let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> a = function
 | TyStop -> fun f loc -> f loc []
 | TyNext (rem, tok, None) -> fun f _ -> ty_eval rem f
 | TyNext (rem, tok, Some inj) -> fun f x ->

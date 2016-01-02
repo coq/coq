@@ -417,9 +417,6 @@ let assumption_message id =
 
 (** Global universe names, in a different summary *)
 
-type universe_names =
-    (Univ.universe_level Idmap.t * Id.t Univ.LMap.t)
-
 (* Discharged or not *)
 type universe_decl = polymorphic * (Id.t * Univ.universe_level) list
 

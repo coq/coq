@@ -62,8 +62,6 @@ module Keyset = Keymap.Set
 
 (* Mapping structure for references to be considered equivalent *)
 
-type keys = Keyset.t Keymap.t
-
 let keys = Summary.ref Keymap.empty ~name:"Keys_decl"
 
 let add_kv k v m =

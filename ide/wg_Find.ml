@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type mode = [ `FIND | `REPLACE ]
-
 let b2c = Ideutils.byte_offset_to_char_offset
 
 class finder name (view : GText.view) =
