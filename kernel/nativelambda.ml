@@ -485,7 +485,7 @@ module Renv =
     let pop env = Vect.pop env.name_rel
 	    
     let popn env n =
-      for i = 1 to n do pop env done
+      for _i = 1 to n do pop env done
 
     let get env n =
       Lrel (Vect.get_last env.name_rel (n-1), n)

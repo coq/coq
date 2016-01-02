@@ -154,7 +154,7 @@ let cut_at d id =
     if stateid_opt_equal state_id (Some id) then CSig.Stop (n, zone)
     else CSig.Cont (n + 1, data :: zone) in
   let n, zone = CList.fold_left_until aux (0, []) d.stack in
-  for i = 1 to n do ignore(pop d) done;
+  for _i = 1 to n do ignore(pop d) done;
   List.rev zone
 
 let find_id d f =
