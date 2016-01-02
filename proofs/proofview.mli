@@ -235,7 +235,7 @@ val tclBREAK : (iexn -> iexn option) -> 'a tactic -> 'a tactic
     This hook is used to add a suggestion about bullets when
     applicable. *)
 exception NoSuchGoals of int
-val set_nosuchgoals_hook: (int -> string option) -> unit
+val set_nosuchgoals_hook: (int -> Pp.std_ppcmds) -> unit
 
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 

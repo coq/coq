@@ -466,7 +466,7 @@ module Bullet = struct
   type behavior = {
     name : string;
     put : Proof.proof -> t -> Proof.proof;
-    suggest: Proof.proof -> string option
+    suggest: Proof.proof -> std_ppcmds
   }
 
   let behaviors = Hashtbl.create 4
@@ -476,7 +476,7 @@ module Bullet = struct
   let none = {
     name = "None";
     put = (fun x _ -> x);
-    suggest = (fun _ -> None)
+    suggest = (fun _ -> mt ())
   }
   let _ = register_behavior none
 
@@ -492,26 +492,20 @@ module Bullet = struct
     (* give a message only if more informative than the standard coq message *)
     let suggest_on_solved_goal sugg =
       match sugg with
-      | NeedClosingBrace -> Some "Try unfocusing with \"}\"."
-      | NoBulletInUse -> None
-      | ProofFinished -> None
-      | Suggest b -> Some ("Focus next goal with bullet "
-			   ^ Pp.string_of_ppcmds (pr_bullet b)
-			   ^".")
-      | Unfinished b -> Some ("The current bullet "
-			      ^ Pp.string_of_ppcmds (pr_bullet b)
-			      ^ " is unfinished.")
+      | NeedClosingBrace -> str"Try unfocusing with \"}\"."
+      | NoBulletInUse -> mt ()
+      | ProofFinished -> mt ()
+      | Suggest b -> str"Focus next goal with bullet " ++ pr_bullet b ++ str"."
+      | Unfinished b -> str"The current bullet " ++ pr_bullet b ++ str" is unfinished."
 
     (* give always a message. *)
     let suggest_on_error sugg =
       match sugg with
-      | NeedClosingBrace -> "Try unfocusing with \"}\"."
+      | NeedClosingBrace -> str"Try unfocusing with \"}\"."
       | NoBulletInUse -> assert false (* This should never raise an error. *)
-      | ProofFinished -> "No more subgoals."
-      | Suggest b -> ("Bullet " ^ Pp.string_of_ppcmds (pr_bullet b)
-		      ^ " is mandatory here.")
-      | Unfinished b -> ("Current bullet " ^ Pp.string_of_ppcmds (pr_bullet b)
-			 ^ " is not finished.")
+      | ProofFinished -> str"No more subgoals."
+      | Suggest b -> str"Bullet " ++ pr_bullet b ++ str" is mandatory here."
+      | Unfinished b -> str"Current bullet " ++ pr_bullet b ++ str" is not finished."
 
     exception FailedBullet of t * suggestion
 
@@ -519,8 +513,8 @@ module Bullet = struct
       Errors.register_handler
 	(function
 	| FailedBullet (b,sugg) ->
-	  let prefix = "Wrong bullet " ^ Pp.string_of_ppcmds (pr_bullet b) ^ " : " in
-	  Errors.errorlabstrm "Focus" (str prefix ++ str (suggest_on_error sugg))
+	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str" : " in
+	  Errors.errorlabstrm "Focus" (prefix ++ suggest_on_error sugg)
 	| _ -> raise Errors.Unhandled)
 
 

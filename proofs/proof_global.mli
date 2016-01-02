@@ -172,7 +172,7 @@ module Bullet : sig
   type behavior = {
     name : string;
     put : Proof.proof -> t -> Proof.proof;
-    suggest: Proof.proof -> string option
+    suggest: Proof.proof -> Pp.std_ppcmds
   }
 
   (** A registered behavior can then be accessed in Coq
@@ -189,7 +189,7 @@ module Bullet : sig
   (** Handles focusing/defocusing with bullets:
        *)
   val put : Proof.proof -> t -> Proof.proof
-  val suggest : Proof.proof -> string option
+  val suggest : Proof.proof -> Pp.std_ppcmds
 end
 
 

@@ -639,8 +639,8 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
 	  | _ , _, _ ->
             let end_cmd =
               str "This subproof is complete, but there are some unfocused goals." ++
-	      (match Proof_global.Bullet.suggest p
-              with None  -> str"" | Some s -> fnl () ++ str s) ++
+              (let s = Proof_global.Bullet.suggest p in
+               if Pp.is_empty s then s else fnl () ++ s) ++
               fnl ()
             in
 	    pr_subgoals ~pr_first:false (Some end_cmd) bsigma seeds shelf [] bgoals
