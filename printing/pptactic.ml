@@ -685,11 +685,6 @@ module Make
     | l -> spc () ++
       hov 2 (keyword "using" ++ spc () ++ prlist_with_sep pr_comma prc l)
 
-  let string_of_debug = function
-    | Off -> ""
-    | Debug -> "debug "
-    | Info -> "info_"
-
   let pr_then () = str ";"
 
   let ltop = (5,E)

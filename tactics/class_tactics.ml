@@ -569,14 +569,6 @@ let rec fix_limit limit (t : 'a tac) : 'a tac =
   if Int.equal limit 0 then fail_tac ReachedLimit
   else then_tac t { skft = fun sk fk -> (fix_limit (pred limit) t).skft sk fk }
 
-let fix_iterative' t =
-  let rec aux depth =
-    { skft = fun sk fk gls -> 
-      (fix_limit depth t).skft sk
-	(function NotApplicable as e -> fk e
-	  | ReachedLimit -> (aux (succ depth)).skft sk fk gls) gls }
-  in aux 1
-
 let fix_iterative t =
   let rec aux depth =
     or_else_tac (fix_limit depth t)

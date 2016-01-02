@@ -67,9 +67,6 @@ let auto_unif_flags_of st1 st2 useeager =
 let auto_unif_flags =
   auto_unif_flags_of full_transparent_state empty_transparent_state false
 
-let auto_flags_of_state st =
-  auto_unif_flags_of full_transparent_state st false
-
 (* Try unification with the precompiled clause, then use registered Apply *)
 
 let connect_hint_clenv poly (c, _, ctx) clenv gl =

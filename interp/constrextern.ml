@@ -462,15 +462,6 @@ let is_needed_for_correct_partial_application tail imp =
 
 exception Expl
 
-let params_implicit n impl = 
-  let rec aux n impl =
-    if n == 0 then true
-    else match impl with
-    | [] -> false
-    | imp :: impl when is_status_implicit imp -> aux (pred n) impl
-    | _ -> false
-  in aux n impl
-
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
 let explicitize loc inctx impl (cf,f) args =

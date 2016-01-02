@@ -391,5 +391,3 @@ and hcons_module_body mb =
     mod_delta = delta';
     mod_retroknowledge = retroknowledge';
   }
-
-and hcons_module_type_body mtb = hcons_module_body mtb

@@ -60,9 +60,7 @@ module Make(T : Task) = struct
 
   type more_data =
     | MoreDataUnivLevel of Univ.universe_level list
- 
-  let request_expiry_of_task (t, c) = T.request_of_task t, c
-  
+
   let slave_respond (Request r) =
     let res = T.perform r in
     Response res

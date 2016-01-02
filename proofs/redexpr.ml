@@ -158,8 +158,6 @@ let make_flag env f =
 	  f.rConst red
   in red
 
-let is_reference = function PRef _ | PVar _ -> true | _ -> false
-
 (* table of custom reductino fonctions, not synchronized,
    filled via ML calls to [declare_reduction] *)
 let reduction_tab = ref String.Map.empty

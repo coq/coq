@@ -1007,21 +1007,6 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
  * Note: argument f is the function used to instantiate evars.
  *)
 
-let are_canonical_instances args1 args2 env =
-  let n1 = Array.length args1 in
-  let n2 = Array.length args2 in
-  let rec aux n = function
-    | (id,_,c)::sign
-        when n < n1 && isVarId id args1.(n) && isVarId id args2.(n) ->
-        aux (n+1) sign
-    | [] ->
-        let rec aux2 n =
-          Int.equal n n1 ||
-          (isRelN (n1-n) args1.(n) && isRelN (n1-n) args2.(n) && aux2 (n+1))
-        in aux2 n
-    | _ -> false in
-  Int.equal n1 n2 && aux 0 (named_context env)
-
 let filter_compatible_candidates conv_algo env evd evi args rhs c =
   let c' = instantiate_evar_array evi c args in
   match conv_algo env evd Reduction.CONV rhs c' with

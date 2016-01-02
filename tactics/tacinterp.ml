@@ -1115,9 +1115,6 @@ let rec read_match_rule lfun ist env sigma = function
 
 (* misc *)
 
-let mk_hyp_value ist env sigma c =
-  (mkVar (interp_hyp ist env sigma c))
-
 let interp_focussed wit f v =
   Ftactic.nf_enter begin fun gl ->
     let v = Genarg.out_gen (glbwit wit) v in

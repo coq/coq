@@ -108,11 +108,6 @@ module Info = struct
   and compress f =
     CList.map_filter compress_tree f
 
-  let rec is_empty = let open Trace in function
-    | Seq(Dispatch,brs) -> List.for_all is_empty brs
-    | Seq(DBranch,br) -> List.for_all is_empty br
-    | _ -> false
-
   (** [with_sep] is [true] when [Tactic m] must be printed with a
       trailing semi-colon. *)
   let rec pr_tree with_sep = let open Trace in function

@@ -136,8 +136,6 @@ end) = struct
 
   let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
 
-  let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
-
   let pr_univ l =
     match l with
       | [_,x] -> str x

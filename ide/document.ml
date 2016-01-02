@@ -124,12 +124,6 @@ let context d =
   let pair _ x y = try Option.get x, y with Option.IsNone -> assert false in
   List.map (flat pair true) top, List.map (flat pair true) bot
 
-let iter d f =
-  let a, s, b = to_lists d in
-  List.iter (flat f false) a;
-  List.iter (flat f true)  s;
-  List.iter (flat f false) b
-  
 let stateid_opt_equal = Option.equal Stateid.equal
 
 let is_in_focus d id =

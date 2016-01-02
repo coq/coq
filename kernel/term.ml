@@ -486,8 +486,6 @@ let lambda_applist c l =
 
 let lambda_appvect c v = lambda_applist c (Array.to_list v)
 
-let lambda_app c a = lambda_applist c [a]
-
 let lambda_applist_assum n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
@@ -500,15 +498,6 @@ let lambda_applist_assum n c l =
   app n [] c l
 
 let lambda_appvect_assum n c v = lambda_applist_assum n c (Array.to_list v)
-
-(* pseudo-reduction rule:
- * [prod_app  s (Prod(_,B)) N --> B[N]
- * with an strip_outer_cast on the first argument to produce a product *)
-
-let prod_app t n =
-  match kind_of_term (strip_outer_cast t) with
-    | Prod (_,_,b) -> subst1 n b
-    | _ -> anomaly (str"Needed a product, but didn't find one")
 
 (* prod_applist T [ a1 ; ... ; an ] -> (T a1 ... an) *)
 let prod_applist c l =

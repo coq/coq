@@ -444,25 +444,11 @@ let new_type_evar env evdref loc =
       univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)) evdref
   in e
 
-let get_projection env cst =
-  let cb = lookup_constant cst env in
-    match cb.Declarations.const_proj with
-    | Some {Declarations.proj_ind = mind; proj_npars = n;
-	    proj_arg = m; proj_type = ty} -> 
-      (cst,mind,n,m,ty)
-    | None -> raise Not_found
-
 let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
 
 (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [evdref] and *)
 (* the type constraint tycon *)
-
-let is_GHole = function
-  | GHole _ -> true
-  | _ -> false
-
-let evars = ref Id.Map.empty
 
 let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var_map) t =
   let inh_conv_coerce_to_tycon = inh_conv_coerce_to_tycon resolve_tc in

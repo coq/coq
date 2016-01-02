@@ -940,8 +940,6 @@ let matches_head env sigma c t =
     | Proj (p, _) -> Constr_matching.matches env sigma c (mkConst (Projection.constant p))
     | _ -> raise Constr_matching.PatternMatchingFailure
 
-let is_pattern_meta = function Pattern.PMeta _ -> true | _ -> false
-
 (** FIXME: Specific function to handle projections: it ignores what happens on the
     parameters. This is a temporary fix while rewrite etc... are not up to equivalence
     of the projection and its eta expanded form.
@@ -1054,10 +1052,6 @@ let unfold env sigma name =
     clos_norm_flags (unfold_red name) env sigma
   else
     error (string_of_evaluable_ref env name^" is opaque.")
-
-let is_projection env = function
-  | EvalVarRef _ -> false
-  | EvalConstRef c -> Environ.is_projection c env
 
 (* [unfoldoccs : (readable_constraints -> (int list * full_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.

@@ -84,10 +84,6 @@ let add_load_path phys_path coq_path ~implicit =
       end
   | _ -> anomaly_too_many_paths phys_path
 
-let extend_path_with_dirpath p dir =
-  List.fold_left Filename.concat p
-    (List.rev_map Id.to_string (DirPath.repr dir))
-
 let filter_path f =
   let rec aux = function
   | [] -> []

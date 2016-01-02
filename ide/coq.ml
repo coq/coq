@@ -99,9 +99,6 @@ let display_coqtop_answer cmd lines =
      "Command was: "^cmd^"\n"^
      "Answer was: "^(String.concat "\n  " lines))
 
-let check_remaining_opt arg =
-  if arg <> "" && arg.[0] = '-' then fatal_error_popup ("Illegal option: "^arg)
-
 let rec filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
   let cmd = Filename.quote (coqtop_path ()) ^" -nois -filteropts " ^ argstr in
@@ -200,8 +197,6 @@ module GlibMainLoop = struct
   let read_all = Ideutils.io_read_all
   let async_chan_of_file fd = Glib.Io.channel_of_descr fd
   let async_chan_of_socket s = !gio_channel_of_descr_socket s
-  let add_timeout ~sec callback =
-    ignore(Glib.Timeout.add ~ms:(sec * 1000) ~callback)
 end
 
 module CoqTop = Spawn.Async(GlibMainLoop)

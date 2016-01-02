@@ -114,19 +114,6 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
                          (Some Tags.Proof.goal)));
       ignore(proof#scroll_to_mark ~use_align:true ~yalign:0.95 `INSERT)
 
-let mode_cesar (proof : #GText.view_skel) = function
-  | [] -> assert false
-  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: _ ->
-      proof#buffer#insert "    *** Declarative Mode ***\n";
-      List.iter
-        (fun hyp -> insert_xml proof#buffer hyp; proof#buffer#insert "\n")
-        hyps;
-      proof#buffer#insert "______________________________________\n";
-      proof#buffer#insert "thesis := \n ";
-      insert_xml proof#buffer cur_goal;
-      proof#buffer#insert "\n";
-      ignore (proof#scroll_to_iter (proof#buffer#get_iter_at_mark `INSERT))
-
 let rec flatten = function
 | [] -> []
 | (lg, rg) :: l ->

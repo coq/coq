@@ -698,19 +698,6 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
 	(* [id] a goal variable *)
 	GVar (loc,id), [], [], []
 
-let proj_impls r impls =
-  let env = Global.env () in
-  let f (x, l) = x, projection_implicits env r l in
-    List.map f impls
-
-let proj_scopes n scopes = 
-  List.skipn_at_least n scopes
-
-let proj_impls_scopes p impls scopes =
-  match p with
-  | Some (r, n) -> proj_impls r impls, proj_scopes n scopes
-  | None -> impls, scopes
-
 let find_appl_head_data c =
   match c with
   | GRef (loc,ref,_) as x -> 
