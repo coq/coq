@@ -222,7 +222,6 @@ val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_prod_assum :
   env ->  evar_map -> constr -> rel_context * constr
-val is_sort : env -> evar_map -> types -> bool
 
 type 'a miota_args = {
   mP      : constr;     (** the result type *)
