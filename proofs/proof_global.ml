@@ -496,10 +496,10 @@ module Bullet = struct
       | NoBulletInUse -> None
       | ProofFinished -> None
       | Suggest b -> Some ("Focus next goal with bullet "
-			   ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
+			   ^ Pp.string_of_ppcmds (pr_bullet b)
 			   ^".")
       | Unfinished b -> Some ("The current bullet "
-			      ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
+			      ^ Pp.string_of_ppcmds (pr_bullet b)
 			      ^ " is unfinished.")
 
     (* give always a message. *)
@@ -508,9 +508,9 @@ module Bullet = struct
       | NeedClosingBrace -> "Try unfocusing with \"}\"."
       | NoBulletInUse -> assert false (* This should never raise an error. *)
       | ProofFinished -> "No more subgoals."
-      | Suggest b -> ("Bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
+      | Suggest b -> ("Bullet " ^ Pp.string_of_ppcmds (pr_bullet b)
 		      ^ " is mandatory here.")
-      | Unfinished b -> ("Current bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
+      | Unfinished b -> ("Current bullet " ^ Pp.string_of_ppcmds (pr_bullet b)
 			 ^ " is not finished.")
 
     exception FailedBullet of t * suggestion
@@ -519,7 +519,7 @@ module Bullet = struct
       Errors.register_handler
 	(function
 	| FailedBullet (b,sugg) ->
-	  let prefix = "Wrong bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b)) ^ " : " in
+	  let prefix = "Wrong bullet " ^ Pp.string_of_ppcmds (pr_bullet b) ^ " : " in
 	  Errors.errorlabstrm "Focus" (str prefix ++ str (suggest_on_error sugg))
 	| _ -> raise Errors.Unhandled)
 

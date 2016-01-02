@@ -333,7 +333,6 @@ struct
   struct
     module IntM = Int.Map.Monad(M)
     module ExtM = Map.Monad(M)
-    open M
 
     let fold f s accu =
       let ff _ m accu = ExtM.fold f m accu in

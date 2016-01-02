@@ -1616,7 +1616,7 @@ end = struct (* {{{ *)
   let vernac_interp switch prev id q =
     assert(TaskQueue.n_workers (Option.get !queue) > 0);
     TaskQueue.enqueue_task (Option.get !queue)
-      QueryTask.({ QueryTask.t_where = prev; t_for = id; t_what = q }, switch)
+      QueryTask.({ t_where = prev; t_for = id; t_what = q }, switch)
 
   let init () = queue := Some (TaskQueue.create
     (if !Flags.async_proofs_full then 1 else 0))
