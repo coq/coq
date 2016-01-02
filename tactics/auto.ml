@@ -296,9 +296,6 @@ let tclTRY_dbg d tac =
 (* Papageno : cette fonction a été pas mal simplifiée depuis que la base
   de Hint impérative a été remplacée par plusieurs bases fonctionnelles *)
 
-let auto_unif_flags =
-  auto_unif_flags_of full_transparent_state empty_transparent_state false
-
 let flags_of_state st =
   auto_unif_flags_of st st false
 
