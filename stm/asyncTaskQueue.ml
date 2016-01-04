@@ -125,8 +125,9 @@ module Make(T : Task) = struct
                  "-async-proofs-worker-priority";
                    Flags.string_of_priority !Flags.async_proofs_worker_priority]
         | ("-ideslave"|"-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
-        | ("-async-proofs" |"-toploop" |"-vi2vo" |"-compile"
-          |"-load-vernac-source" |"-compile-verbose"
+        | ("-async-proofs" |"-toploop" |"-vi2vo"
+          |"-load-vernac-source" |"-l" |"-load-vernac-source-verbose" |"-lv"
+          |"-compile" |"-compile-verbose"
           |"-async-proofs-worker-priority" |"-worker-id") :: _ :: tl ->
           set_slave_opt tl
         | x::tl -> x :: set_slave_opt tl in
