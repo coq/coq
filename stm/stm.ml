@@ -1488,6 +1488,7 @@ end = struct (* {{{ *)
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> Errors.errorlabstrm "Stm" (str "no progress")
         | Evd.Evar_defined t ->
+            let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               t, Evd.evar_universe_context sigma
             else Errors.errorlabstrm "Stm" (str"The solution is not ground")
