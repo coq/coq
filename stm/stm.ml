@@ -1471,17 +1471,29 @@ end = struct (* {{{ *)
     try
       Reach.known_state ~cache:`No id;
       let t, uc = Future.purify (fun () ->
+       let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
+       let g = Evd.find sigma0 r_goal in
+       if not (
+         Evarutil.is_ground_term sigma0 Evd.(evar_concl g) &&
+         List.for_all (fun (_,bo,ty) ->
+            Evarutil.is_ground_term sigma0 ty &&
+            Option.cata (Evarutil.is_ground_term sigma0) true bo)
+           Evd.(evar_context g))
+       then
+         Errors.errorlabstrm "Stm" (strbrk("the par: goal selector supports ground "^
+           "goals only"))
+       else begin
         vernac_interp r_state_fb r_ast;
         let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> Errors.errorlabstrm "Stm" (str "no progress")
         | Evd.Evar_defined t ->
-            let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               t, Evd.evar_universe_context sigma
-            else Errors.errorlabstrm "Stm" (str"The solution is not ground"))
-        () in
-      RespBuiltSubProof (t,uc) 
+            else Errors.errorlabstrm "Stm" (str"The solution is not ground")
+       end) ()
+     in
+       RespBuiltSubProof (t,uc)
     with e when Errors.noncritical e -> RespError (Errors.print e)
 
   let name_of_task { t_name } = t_name
