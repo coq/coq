@@ -133,7 +133,7 @@ val declare_stringopt_option: string option option_sig -> string option write_fu
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 
-module OptionMap : Map.S with type key = option_name
+module OptionMap : CSig.MapS with type key = option_name
 
 val get_string_table :
   option_name ->

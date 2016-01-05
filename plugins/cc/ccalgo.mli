@@ -20,8 +20,8 @@ type pa_fun=
      fnargs:int}
 
 
-module PafMap : Map.S with type key = pa_fun
-module PacMap : Map.S with type key = pa_constructor
+module PafMap : CSig.MapS with type key = pa_fun
+module PacMap : CSig.MapS with type key = pa_constructor
 
 type cinfo =
     {ci_constr: pconstructor; (* inductive type *)
@@ -185,7 +185,7 @@ val empty_forest: unit -> forest
 (*type pa_constructor
 
 
-module PacMap:Map.S with type key=pa_constructor
+module PacMap:CSig.MapS with type key=pa_constructor
 
 type term =
     Symb of Term.constr
