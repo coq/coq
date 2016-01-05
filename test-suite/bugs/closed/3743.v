@@ -3,7 +3,7 @@
    coqtop version cagnode16:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (d65496f09c4b68fa318783e53f9cd6d5c18e1eb7) *)
 Require Export Coq.Setoids.Setoid.
 
-Fail Add Parametric Relation A
+Add Parametric Relation A
 : A (@eq A)
     transitivity proved by transitivity
       as refine_rel.

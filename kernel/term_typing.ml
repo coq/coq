@@ -424,11 +424,16 @@ let export_side_effects mb env ce =
       let trusted = check_signatures mb signatures in
       let push_seff env = function
         | kn, cb, `Nothing, _ ->
-            Environ.add_constant kn cb env
+           let env = Environ.add_constant kn cb env in
+	   if not cb.const_polymorphic then
+	     Environ.push_context ~strict:true cb.const_universes env
+	   else env
         | kn, cb, `Opaque(_, ctx), _ -> 
-            let env = Environ.add_constant kn cb env in
-            Environ.push_context_set
-              ~strict:(not cb.const_polymorphic) ctx env in
+           let env = Environ.add_constant kn cb env in
+	   if not cb.const_polymorphic then
+	     let env = Environ.push_context ~strict:true cb.const_universes env in
+             Environ.push_context_set ~strict:true ctx env
+	   else env in
       let rec translate_seff sl seff acc env =
         match sl, seff with
         | _, [] -> List.rev acc, ce
