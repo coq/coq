@@ -24,8 +24,10 @@ module Constants = struct
     try while true do fprintf fmt "%s\n" (input_line in_f) done
     with End_of_file -> close_in in_f
 
-  let header fmt = pp_file fmt hd_file
-  let footer fmt = pp_file fmt ft_file
+  let header fmt =
+    pp_file fmt (if !header_file_spec then !header_file else hd_file)
+  let footer fmt =
+    pp_file fmt (if !footer_file_spec then !footer_file else ft_file)
 
 end
 
