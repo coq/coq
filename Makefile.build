@@ -294,9 +294,10 @@ checker/check.cmxa: | md5chk checker/check.mllib.d
 # Csdp to micromega special targets
 ###########################################################################
 
-plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))
+plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))  \
+		$(addsuffix $(BESTLIB), lib/clib)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,nums unix)
+	$(HIDE)$(call bestocaml,,nums unix clib)
 
 ###########################################################################
 # CoqIde special targets
