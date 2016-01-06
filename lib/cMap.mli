@@ -25,7 +25,7 @@ module type S = Map.S
 
 module type ExtS =
 sig
-  include Map.S
+  include CSig.MapS
   (** The underlying Map library *)
 
   module Set : CSig.SetS with type elt = key

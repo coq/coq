@@ -17,6 +17,8 @@ Backtrace
 IStream
 Pp_control
 Loc
+CList
+CString
 Compat
 Flags
 Control
@@ -29,8 +31,6 @@ Segmenttree
 Unicodetable
 Unicode
 CObj
-CList
-CString
 CArray
 CStack
 Util

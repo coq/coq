@@ -13,7 +13,7 @@ open Globnames
 
 module OrderedConstr: Set.OrderedType with type t=constr
 
-module CM: Map.S with type key=constr
+module CM: CSig.MapS with type key=constr
 
 type h_item = global_reference * (int*constr) option
 

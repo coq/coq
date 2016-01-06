@@ -130,7 +130,7 @@ val check_constraints : constraints -> universes -> bool
 (** {6 Support for universe polymorphism } *)
 
 (** Polymorphic maps from universe levels to 'a *)
-module LMap : Map.S with type key = universe_level
+module LMap : CSig.MapS with type key = universe_level
 module LSet : CSig.SetS with type elt = universe_level
 type 'a universe_map = 'a LMap.t
 

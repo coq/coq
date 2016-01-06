@@ -132,10 +132,11 @@ SYSMOD:=str unix dynlink threads
 SYSCMA:=$(addsuffix .cma,$(SYSMOD))
 SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
 
+# We do not repeat the dependencies already in SYSMOD here
 ifeq ($(CAMLP4),camlp5)
-P4CMA:=gramlib.cma str.cma
+P4CMA:=gramlib.cma
 else
-P4CMA:=dynlink.cma camlp4lib.cma str.cma
+P4CMA:=camlp4lib.cma
 endif
 
 
@@ -294,9 +295,10 @@ checker/check.cmxa: | md5chk checker/check.mllib.d
 # Csdp to micromega special targets
 ###########################################################################
 
-plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))
+plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))  \
+		$(addsuffix $(BESTLIB), lib/clib)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,nums unix)
+	$(HIDE)$(call bestocaml,,nums unix clib)
 
 ###########################################################################
 # CoqIde special targets

@@ -60,7 +60,7 @@ val path_of_string : string -> full_path
 val string_of_path : full_path -> string
 val pr_path : full_path -> std_ppcmds
 
-module Spmap  : Map.S with type key = full_path
+module Spmap  : CSig.MapS with type key = full_path
 
 val restrict_path : int -> full_path -> full_path
 
