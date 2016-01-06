@@ -48,7 +48,7 @@ let parse f =
     res
 
 let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) l = function
-  | [] -> opts,List.rev l
+  | [] -> opts, l
   | ("-h"|"--help") :: _ ->
     raise Parsing_error
   | ("-no-opt"|"-byte") :: r ->
@@ -127,6 +127,10 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
 	  else if (Filename.check_suffix f ".mllib") then MLLIB f
 	  else if (Filename.check_suffix f ".mlpack") then MLPACK f
 	  else Subdir f) :: l) r
+
+let process_cmd_line orig_dir opts l args =
+  let (opts, l) = process_cmd_line orig_dir opts l args in
+  opts, List.rev l
 
 let rec post_canonize f =
   if Filename.basename f = Filename.current_dir_name
