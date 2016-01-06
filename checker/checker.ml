@@ -331,8 +331,6 @@ let parse_args argv =
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: "-as" :: p :: rem -> set_rec_include d p;parse rem
-    | "-R" :: d :: "-as" :: [] -> usage ()
     | "-R" :: d :: p :: rem -> set_rec_include d p;parse rem
     | "-R" :: ([] | [_]) -> usage ()
 

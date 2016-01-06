@@ -443,10 +443,6 @@ let parse_args arglist =
       end
     |"-R" ->
       begin match rem with
-      | d :: "-as" :: [] -> error_missing_arg opt
-      | d :: "-as" :: p :: rem ->
-        warning "option -R * -as * deprecated, remove the -as";
-        set_include d p true; args := rem
       | d :: p :: rem -> set_include d p true; args := rem
       | _ -> error_missing_arg opt
       end

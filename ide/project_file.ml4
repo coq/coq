@@ -86,7 +86,6 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     process_cmd_line orig_dir opts ((Include (CUnix.correct_path d orig_dir, lp)) :: l) r
   | "-I" :: d :: r ->
     process_cmd_line orig_dir opts ((MLInclude (CUnix.correct_path d orig_dir)) :: l) r
-  | "-R" :: p :: "-as" :: lp :: r
   | "-R" :: p :: lp :: r ->
     process_cmd_line orig_dir opts (RInclude (CUnix.correct_path p orig_dir,lp) :: l) r
   | ("-Q"|"-R"|"-I"|"-custom"|"-extra"|"-extra-phony") :: _ ->

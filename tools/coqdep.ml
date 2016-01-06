@@ -444,15 +444,8 @@ let rec parse = function
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
   | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
-  | "-I" :: r :: "-as" :: ln :: ll ->
-     add_rec_dir_no_import add_known r [];
-     add_rec_dir_no_import add_known r (split_period ln);
-     parse ll
-  | "-I" :: r :: "-as" :: [] -> usage ()
   | "-I" :: r :: ll -> add_caml_dir r; parse ll
   | "-I" :: [] -> usage ()
-  | "-R" :: r :: "-as" :: ln :: ll -> add_rec_dir_import add_known r (split_period ln); parse ll
-  | "-R" :: r :: "-as" :: [] -> usage ()
   | "-R" :: r :: ln :: ll -> add_rec_dir_import add_known r (split_period ln); parse ll
   | "-Q" :: r :: ln :: ll -> add_rec_dir_no_import add_known r (split_period ln); parse ll
   | "-R" :: ([] | [_]) -> usage ()
