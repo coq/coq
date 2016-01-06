@@ -139,48 +139,44 @@ let rec post_canonize f =
   else f
 
 (* Return: ((v,(mli,ml4,ml,mllib,mlpack),special,subdir),(ml_inc,q_inc,r_inc),(args,defs)) *)
-let split_arguments =
-  let rec aux = function
-  | V n :: r ->
-	let (v,m,o,s),i,d = aux r in ((CUnix.remove_path_dot n::v,m,o,s),i,d)
-  | ML n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,CUnix.remove_path_dot n::ml,mllib,mlpack),o,s),i,d)
-  | MLI n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(CUnix.remove_path_dot n::mli,ml4,ml,mllib,mlpack),o,s),i,d)
-  | ML4 n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,CUnix.remove_path_dot n::ml4,ml,mllib,mlpack),o,s),i,d)
-  | MLLIB n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,ml,CUnix.remove_path_dot n::mllib,mlpack),o,s),i,d)
-  | MLPACK n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,ml,mllib,CUnix.remove_path_dot n::mlpack),o,s),i,d)
-  | Special (n,dep,is_phony,c) :: r ->
-      let (v,m,o,s),i,d = aux r in ((v,m,(n,dep,is_phony,c)::o,s),i,d)
-  | Subdir n :: r ->
-      let (v,m,o,s),i,d = aux r in ((v,m,o,n::s),i,d)
-  | MLInclude p :: r ->
-      let t,(ml,q,r),d = aux r in (t,((CUnix.remove_path_dot (post_canonize p),
-                                   CUnix.canonical_path_name p)::ml,q,r),d)
-  | Include (p,l) :: r ->
-      let t,(ml,i,r),d = aux r in
-      let i_new = (CUnix.remove_path_dot (post_canonize p),l,
-		   CUnix.canonical_path_name p) in
-      (t,(ml,i_new::i,r),d)
-  | RInclude (p,l) :: r ->
-      let t,(ml,i,r),d = aux r in
-      let r_new = (CUnix.remove_path_dot (post_canonize p),l,
-		   CUnix.canonical_path_name p) in
-      (t,(ml,i,r_new::r),d)
-  | Def (v,def) :: r ->
-      let t,i,(args,defs) = aux r in (t,i,(args,(v,def)::defs))
-  | Arg a :: r ->
-      let t,i,(args,defs) = aux r in (t,i,(a::args,defs))
-  | [] -> ([],([],[],[],[],[]),[],[]),([],[],[]),([],[])
-  in aux
+let split_arguments args =
+  List.fold_right
+    (fun a ((v,(mli,ml4,ml,mllib,mlpack as m),o,s as t),
+            (ml_inc,q_inc,r_inc as i),(args,defs as d)) ->
+     match a with
+     | V n ->
+        ((CUnix.remove_path_dot n::v,m,o,s),i,d)
+     | ML n ->
+        ((v,(mli,ml4,CUnix.remove_path_dot n::ml,mllib,mlpack),o,s),i,d)
+     | MLI n ->
+        ((v,(CUnix.remove_path_dot n::mli,ml4,ml,mllib,mlpack),o,s),i,d)
+     | ML4 n ->
+        ((v,(mli,CUnix.remove_path_dot n::ml4,ml,mllib,mlpack),o,s),i,d)
+     | MLLIB n ->
+        ((v,(mli,ml4,ml,CUnix.remove_path_dot n::mllib,mlpack),o,s),i,d)
+     | MLPACK n ->
+        ((v,(mli,ml4,ml,mllib,CUnix.remove_path_dot n::mlpack),o,s),i,d)
+     | Special (n,dep,is_phony,c) ->
+        ((v,m,(n,dep,is_phony,c)::o,s),i,d)
+     | Subdir n ->
+        ((v,m,o,n::s),i,d)
+     | MLInclude p ->
+        let ml_new = (CUnix.remove_path_dot (post_canonize p),
+                      CUnix.canonical_path_name p) in
+        (t,(ml_new::ml_inc,q_inc,r_inc),d)
+     | Include (p,l) ->
+        let q_new = (CUnix.remove_path_dot (post_canonize p),l,
+		     CUnix.canonical_path_name p) in
+        (t,(ml_inc,q_new::q_inc,r_inc),d)
+     | RInclude (p,l) ->
+        let r_new = (CUnix.remove_path_dot (post_canonize p),l,
+		     CUnix.canonical_path_name p) in
+        (t,(ml_inc,q_inc,r_new::r_inc),d)
+     | Def (v,def) ->
+        (t,i,(args,(v,def)::defs))
+     | Arg a ->
+        (t,i,(a::args,defs)))
+    args (([],([],[],[],[],[]),[],[]),([],[],[]),([],[]))
 
 let read_project_file f =
   split_arguments
