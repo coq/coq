@@ -65,7 +65,7 @@ val subst_var : Id.t -> constr -> constr
    if two names are identical, the one of least indice is kept *)
 val subst_vars : Id.t list -> constr -> constr
 
-(** [substn_vars n [id1;...;idn] t] substitute [VAR idj] by [Rel j+n-1] in [t]
+(** [substn_vars n [id1;...;idk] t] substitute [VAR idj] by [Rel j+n-1] in [t]
    if two names are identical, the one of least indice is kept *)
 val substn_vars : int -> Id.t list -> constr -> constr
 
