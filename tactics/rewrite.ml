@@ -1526,7 +1526,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
   let treat sigma res = 
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")
-    | Some None -> Proofview.tclUNIT ()
+    | Some None -> newfail 0 (str"Failed to progress")
     | Some (Some res) ->
         let (undef, prf, newt) = res in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
@@ -1596,12 +1596,13 @@ let tactic_init_setoid () =
 (** Setoid rewriting when called with "rewrite_strat" *)
 let cl_rewrite_clause_strat strat clause =
   tclTHEN (tactic_init_setoid ())
-  (fun gl -> 
-     try Proofview.V82.of_tactic (cl_rewrite_clause_newtac strat clause) gl
-     with RewriteFailure e ->
-       errorlabstrm "" (str"setoid rewrite failed: " ++ e)
-     | Refiner.FailError (n, pp) -> 
-       tclFAIL n (str"setoid rewrite failed: " ++ Lazy.force pp) gl)
+  (tclWEAK_PROGRESS
+   (fun gl -> 
+    try Proofview.V82.of_tactic (cl_rewrite_clause_newtac strat clause) gl
+    with RewriteFailure e ->
+	 errorlabstrm "" (str"setoid rewrite failed: " ++ e)
+       | Refiner.FailError (n, pp) -> 
+	  tclFAIL n (str"setoid rewrite failed: " ++ Lazy.force pp) gl))
 
 (** Setoid rewriting when called with "setoid_rewrite" *)
 let cl_rewrite_clause l left2right occs clause gl =
