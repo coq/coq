@@ -193,10 +193,10 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
       (** Compatibility layer, TODO: remove me *)
       <:expr<
         let f = $lid:f$ in
-        fun ist v -> Ftactic.nf_enter (fun gl ->
+        fun ist v -> Ftactic.nf_s_enter { Proofview.Goal.s_enter = fun gl ->
           let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
-          Ftactic.bind (Ftactic.lift (Proofview.Unsafe.tclEVARS sigma)) (fun _ -> Ftactic.return v)
-        )
+          Sigma.Unsafe.of_pair (Ftactic.return v, sigma)
+        }
       >> in
   let subst = match h with
     | None ->

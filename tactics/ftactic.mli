@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Proofview.Notations
+
 (** Potentially focussing tactics *)
 
 type +'a focus
@@ -37,14 +39,19 @@ val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
 
 (** {5 Focussing} *)
 
-val nf_enter : (([ `NF ], 'r) Proofview.Goal.t -> 'a t) -> 'a t
+val nf_enter : ([ `NF ], 'a t) enter -> 'a t
 (** Enter a goal. The resulting tactic is focussed. *)
-(** FIXME: Should be polymorphic over the stage. *)
 
-val enter : (([ `LZ ], 'r) Proofview.Goal.t -> 'a t) -> 'a t
+val enter : ([ `LZ ], 'a t) enter -> 'a t
 (** Enter a goal, without evar normalization. The resulting tactic is
     focussed. *)
-(** FIXME: Should be polymorphic over the stage. *)
+
+val s_enter : ([ `LZ ], 'a t) s_enter -> 'a t
+(** Enter a goal and put back an evarmap. The resulting tactic is focussed. *)
+
+val nf_s_enter : ([ `NF ], 'a t) s_enter -> 'a t
+(** Enter a goal, without evar normalization and put back an evarmap. The
+    resulting tactic is focussed. *)
 
 val with_env : 'a t -> (Environ.env*'a) t
 (** [with_env t] returns, in addition to the return type of [t], an
