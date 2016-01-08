@@ -12,7 +12,6 @@ open Util
 open Names
 open Term
 open Termops
-open Context
 open Declarations
 open Tacmach
 open Clenv
@@ -154,8 +153,8 @@ type branch_args = {
   branchnames : Tacexpr.intro_patterns}
 
 type branch_assumptions = {
-  ba        : branch_args;     (* the branch args *)
-  assums    : named_context}   (* the list of assumptions introduced *)
+  ba        : branch_args;       (* the branch args *)
+  assums    : Context.Named.t}   (* the list of assumptions introduced *)
 
 let fix_empty_or_and_pattern nv l =
   (* 1- The syntax does not distinguish between "[ ]" for one clause with no

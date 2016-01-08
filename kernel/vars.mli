@@ -8,7 +8,6 @@
 
 open Names
 open Constr
-open Context
 
 (** {6 Occur checks } *)
 
@@ -69,10 +68,10 @@ type substl = constr list
    as if usable in [applist] while the substitution is
    represented the other way round, i.e. ending with either [u₁] or
    [c₁], as if usable for [substl]. *)
-val subst_of_rel_context_instance : rel_context -> constr list -> substl
+val subst_of_rel_context_instance : Context.Rel.t -> constr list -> substl
 
 (** For compatibility: returns the substitution reversed *)
-val adjust_subst_to_rel_context : rel_context -> constr list -> constr list
+val adjust_subst_to_rel_context : Context.Rel.t -> constr list -> constr list
 
 (** [substnl [a₁;...;an] k c] substitutes in parallel [a₁],...,[an]
     for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
@@ -92,13 +91,13 @@ val subst1 : constr -> constr -> constr
     accordingly indexes in [a₁],...,[an] and [c]. In terms of typing, if
     Γ ⊢ a{_n}..a₁ : Δ and Γ, Δ, Γ', Ω ⊢ with |Γ'|=[k], then
     Γ, Γ', [substnl_decl [a₁;...;an]] k Ω ⊢. *)
-val substnl_decl : substl -> int -> rel_declaration -> rel_declaration
+val substnl_decl : substl -> int -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
 
 (** [substl_decl σ Ω] is a short-hand for [substnl_decl σ 0 Ω] *)
-val substl_decl : substl -> rel_declaration -> rel_declaration
+val substl_decl : substl -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
 
 (** [subst1_decl a Ω] is a short-hand for [substnl_decl [a] 0 Ω] *)
-val subst1_decl : constr -> rel_declaration -> rel_declaration
+val subst1_decl : constr -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
 
 (** [replace_vars k [(id₁,c₁);...;(idn,cn)] t] substitutes [Var idj] by
     [cj] in [t]. *)
@@ -136,11 +135,11 @@ val subst_univs_constr : universe_subst -> constr -> constr
 (** Level substitutions for polymorphism. *)
 
 val subst_univs_level_constr : universe_level_subst -> constr -> constr
-val subst_univs_level_context : Univ.universe_level_subst -> rel_context -> rel_context
+val subst_univs_level_context : Univ.universe_level_subst -> Context.Rel.t -> Context.Rel.t
 
 (** Instance substitution for polymorphism. *)
 val subst_instance_constr : universe_instance -> constr -> constr
-val subst_instance_context : universe_instance -> rel_context -> rel_context
+val subst_instance_context : universe_instance -> Context.Rel.t -> Context.Rel.t
 
 type id_key = constant tableKey
 val eq_id_key : id_key -> id_key -> bool

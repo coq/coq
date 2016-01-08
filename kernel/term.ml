@@ -10,7 +10,6 @@ open Util
 open Pp
 open Errors
 open Names
-open Context
 open Vars
 
 (**********************************************************************)
@@ -590,24 +589,24 @@ let decompose_lam_n n =
 let decompose_prod_assum =
   let rec prodec_rec l c =
     match kind_of_term c with
-    | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) c
-    | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) c
+    | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (x,None,t) l) c
+    | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (x,Some b,t) l) c
     | Cast (c,_,_)      -> prodec_rec l c
     | _               -> l,c
   in
-  prodec_rec empty_rel_context
+  prodec_rec Context.Rel.empty
 
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
 let decompose_lam_assum =
   let rec lamdec_rec l c =
     match kind_of_term c with
-    | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) c
-    | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) c
+    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (x,None,t) l) c
+    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (x,Some b,t) l) c
     | Cast (c,_,_)      -> lamdec_rec l c
     | _               -> l,c
   in
-  lamdec_rec empty_rel_context
+  lamdec_rec Context.Rel.empty
 
 (* Given a positive integer n, decompose a product or let-in term
    of the form [forall (x1:T1)..(xi:=ci:Ti)..(xn:Tn), T] into the pair
@@ -619,12 +618,12 @@ let decompose_prod_n_assum n =
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
     else match kind_of_term c with
-    | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) (n-1) c
-    | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
+    | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (x,None,t) l) (n-1) c
+    | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (x,Some b,t) l) (n-1) c
     | Cast (c,_,_)      -> prodec_rec l n c
     | c -> error "decompose_prod_n_assum: not enough assumptions"
   in
-  prodec_rec empty_rel_context n
+  prodec_rec Context.Rel.empty n
 
 (* Given a positive integer n, decompose a lambda or let-in term [fun
    (x1:T1)..(xi:=ci:Ti)..(xn:Tn) => T] into the pair of the abstracted
@@ -638,12 +637,12 @@ let decompose_lam_n_assum n =
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else match kind_of_term c with
-    | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) (n-1) c
-    | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) n c
+    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (x,None,t) l) (n-1) c
+    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (x,Some b,t) l) n c
     | Cast (c,_,_)      -> lamdec_rec l n c
     | c -> error "decompose_lam_n_assum: not enough abstractions"
   in
-  lamdec_rec empty_rel_context n
+  lamdec_rec Context.Rel.empty n
 
 (* Same, counting let-in *)
 let decompose_lam_n_decls n =
@@ -652,12 +651,12 @@ let decompose_lam_n_decls n =
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else match kind_of_term c with
-    | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) (n-1) c
-    | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
+    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (x,None,t) l) (n-1) c
+    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (x,Some b,t) l) (n-1) c
     | Cast (c,_,_)      -> lamdec_rec l n c
     | c -> error "decompose_lam_n_decls: not enough abstractions"
   in
-  lamdec_rec empty_rel_context n
+  lamdec_rec Context.Rel.empty n
 
 let prod_assum t = fst (decompose_prod_assum t)
 let prod_n_assum n t = fst (decompose_prod_n_assum n t)
@@ -678,7 +677,7 @@ let strip_lam_n n t = snd (decompose_lam_n n t)
    Such a term can canonically be seen as the pair of a context of types
    and of a sort *)
 
-type arity = rel_context * sorts
+type arity = Context.Rel.t * sorts
 
 let destArity =
   let rec prodec_rec l c =

@@ -9,7 +9,6 @@
 open Names
 open Errors
 open Util
-open Context
 open Term
 open Vars
 open Entries
@@ -37,8 +36,8 @@ let detype_param = function
 
 let abstract_inductive hyps nparams inds =
   let ntyp = List.length inds in
-  let nhyp = named_context_length hyps in
-  let args = instance_from_named_context (List.rev hyps) in
+  let nhyp = Context.Named.length hyps in
+  let args = Context.Named.to_instance (List.rev hyps) in
   let args = Array.of_list args in
   let subs = List.init ntyp (fun k -> lift nhyp (mkApp(mkRel (k+1),args))) in
   let inds' =
@@ -100,7 +99,7 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
 	   Array.to_list mip.mind_consnames,
 	   Array.to_list lc))
       mib.mind_packets in
-  let sechyps' = map_named_context (expmod_constr modlist) sechyps in
+  let sechyps' = Context.Named.map (expmod_constr modlist) sechyps in
   let (params',inds') = abstract_inductive sechyps' nparams inds in
   let abs_ctx = Univ.instantiate_univ_context abs_ctx in
   let univs = Univ.UContext.union abs_ctx univs in

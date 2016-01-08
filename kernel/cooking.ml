@@ -173,7 +173,7 @@ let expmod_constr_subst cache modlist subst c =
 let cook_constr { Opaqueproof.modlist ; abstract } c =
   let cache = RefTable.create 13 in
   let expmod = expmod_constr_subst cache modlist (pi2 abstract) in
-  let hyps = Context.map_named_context expmod (pi1 abstract) in
+  let hyps = Context.Named.map expmod (pi1 abstract) in
   abstract_constant_body (expmod c) hyps
 
 let lift_univs cb subst =
@@ -195,13 +195,13 @@ let cook_constant env { from = cb; info } =
   let abstract, usubst, abs_ctx = abstract in
   let usubst, univs = lift_univs cb usubst in
   let expmod = expmod_constr_subst cache modlist usubst in
-  let hyps = Context.map_named_context expmod abstract in
+  let hyps = Context.Named.map expmod abstract in
   let body = on_body modlist (hyps, usubst, abs_ctx)
     (fun c -> abstract_constant_body (expmod c) hyps)
     cb.const_body
   in
   let const_hyps =
-    Context.fold_named_context (fun (h,_,_) hyps ->
+    Context.Named.fold_outside (fun (h,_,_) hyps ->
       List.filter (fun (id,_,_) -> not (Id.equal id h)) hyps)
       hyps ~init:cb.const_hyps in
   let typ = match cb.const_type with

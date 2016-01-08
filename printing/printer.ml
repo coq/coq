@@ -293,7 +293,7 @@ let pr_named_context_of env sigma =
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
 let pr_named_context env sigma ne_context =
-  hv 0 (Context.fold_named_context
+  hv 0 (Context.Named.fold_outside
 	  (fun d pps -> pps ++ ws 2 ++ pr_var_decl env sigma d)
           ne_context ~init:(mt ()))
 
@@ -306,7 +306,7 @@ let pr_rel_context_of env sigma =
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env sigma =
   let sign_env =
-    Context.fold_named_list_context
+    Context.NamedList.fold
       (fun d pps ->
          let pidt =  pr_var_list_decl env sigma d in
          (pps ++ fnl () ++ pidt))
@@ -333,7 +333,7 @@ let pr_context_limit n env sigma =
   else
     let k = lgsign-n in
     let _,sign_env =
-      Context.fold_named_list_context
+      Context.NamedList.fold
         (fun d (i,pps) ->
            if i < k then
 	     (i+1, (pps ++str "."))
@@ -726,7 +726,7 @@ let prterm = pr_lconstr
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
-  | Axiom of constant * (Label.t * Context.rel_context * types) list
+  | Axiom of constant * (Label.t * Context.Rel.t * types) list
   | Opaque of constant     (* An opaque constant. *)
   | Transparent of constant
 

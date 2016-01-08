@@ -12,7 +12,6 @@ open Names
 open Univ
 open Term
 open Vars
-open Context
 open Termops
 open Declarations
 open Declareops
@@ -142,12 +141,12 @@ let constructor_nallargs_env env ((kn,i),j) =
 
 let constructor_nalldecls (indsp,j) = (* TOCHANGE en decls *)
   let (mib,mip) = Global.lookup_inductive indsp in
-  mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
+  mip.mind_consnrealdecls.(j-1) + Context.Rel.length (mib.mind_params_ctxt)
 
 let constructor_nalldecls_env env ((kn,i),j) = (* TOCHANGE en decls *)
   let mib = Environ.lookup_mind kn env in
   let mip = mib.mind_packets.(i) in
-  mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
+  mip.mind_consnrealdecls.(j-1) + Context.Rel.length (mib.mind_params_ctxt)
 
 (* Arity of constructors excluding params, excluding local defs *)
 
@@ -213,21 +212,21 @@ let inductive_nparams_env env ind =
 
 let inductive_nparamdecls ind =
   let (mib,mip) = Global.lookup_inductive ind in
-  rel_context_length mib.mind_params_ctxt
+  Context.Rel.length mib.mind_params_ctxt
 
 let inductive_nparamdecls_env env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  rel_context_length mib.mind_params_ctxt
+  Context.Rel.length mib.mind_params_ctxt
 
 (* Full length of arity (with local defs) *)
 
 let inductive_nalldecls ind =
   let (mib,mip) = Global.lookup_inductive ind in
-  rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealdecls
+  Context.Rel.length (mib.mind_params_ctxt) + mip.mind_nrealdecls
 
 let inductive_nalldecls_env env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealdecls
+  Context.Rel.length (mib.mind_params_ctxt) + mip.mind_nrealdecls
 
 (* Others *)
 
@@ -249,13 +248,13 @@ let inductive_alldecls_env env (ind,u) =
 
 let constructor_has_local_defs (indsp,j) =
   let (mib,mip) = Global.lookup_inductive indsp in
-  let l1 = mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt) in
+  let l1 = mip.mind_consnrealdecls.(j-1) + Context.Rel.length (mib.mind_params_ctxt) in
   let l2 = recarg_length mip.mind_recargs j + mib.mind_nparams in
   not (Int.equal l1 l2)
 
 let inductive_has_local_defs ind =
   let (mib,mip) = Global.lookup_inductive ind in
-  let l1 = rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealdecls in
+  let l1 = Context.Rel.length (mib.mind_params_ctxt) + mip.mind_nrealdecls in
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
 
@@ -273,11 +272,11 @@ let projection_nparams p = projection_nparams_env (Global.env ()) p
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let ind_tags =
-    rel_context_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) in
+    Context.Rel.to_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) in
   let cstr_tags =
     Array.map2 (fun c n ->
       let d,_ = decompose_prod_assum c in
-      rel_context_tags (List.firstn n d))
+      Context.Rel.to_tags (List.firstn n d))
       mip.mind_nf_lc mip.mind_consnrealdecls in
   let print_info = { ind_tags; cstr_tags; style } in
   { ci_ind     = ind;
@@ -292,7 +291,7 @@ type constructor_summary = {
   cs_cstr : pconstructor;
   cs_params : constr list;
   cs_nargs : int;
-  cs_args : rel_context;
+  cs_args : Context.Rel.t;
   cs_concl_realargs : constr array
 }
 
@@ -306,10 +305,10 @@ let lift_constructor n cs = {
 
 (* Accept either all parameters or only recursively uniform ones *)
 let instantiate_params t params sign =
-  let nnonrecpar = rel_context_nhyps sign - List.length params in
+  let nnonrecpar = Context.Rel.nhyps sign - List.length params in
   (* Adjust the signature if recursively non-uniform parameters are not here *)
   let _,sign = context_chop nnonrecpar sign in
-  let _,t = decompose_prod_n_assum (rel_context_length sign) t in
+  let _,t = decompose_prod_n_assum (Context.Rel.length sign) t in
   let subst = subst_of_rel_context_instance sign params in
   substl subst t
 
@@ -323,7 +322,7 @@ let get_constructor ((ind,u as indu),mib,mip,params) j =
   let vargs = List.skipn (List.length params) allargs in
   { cs_cstr = (ith_constructor_of_inductive ind j,u);
     cs_params = params;
-    cs_nargs = rel_context_length args;
+    cs_nargs = Context.Rel.length args;
     cs_args = args;
     cs_concl_realargs = Array.of_list vargs }
 
@@ -374,14 +373,14 @@ let build_dependent_constructor cs =
   applist
     (mkConstructU cs.cs_cstr,
      (List.map (lift cs.cs_nargs) cs.cs_params)
-      @(extended_rel_list 0 cs.cs_args))
+      @(Context.Rel.to_extended_list 0 cs.cs_args))
 
 let build_dependent_inductive env ((ind, params) as indf) =
   let arsign,_ = get_arity env indf in
   let nrealargs = List.length arsign in
   applist
     (mkIndU ind,
-     (List.map (lift nrealargs) params)@(extended_rel_list 0 arsign))
+     (List.map (lift nrealargs) params)@(Context.Rel.to_extended_list 0 arsign))
 
 (* builds the arity of an elimination predicate in sort [s] *)
 
@@ -506,7 +505,7 @@ let set_pattern_names env ind brv =
   let arities =
     Array.map
       (fun c ->
-        rel_context_length ((prod_assum c)) -
+        Context.Rel.length ((prod_assum c)) -
         mib.mind_nparams)
       mip.mind_nf_lc in
   Array.map2 (set_names env) arities brv

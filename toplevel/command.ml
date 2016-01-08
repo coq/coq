@@ -12,7 +12,6 @@ open Util
 open Flags
 open Term
 open Vars
-open Context
 open Termops
 open Entries
 open Environ
@@ -87,7 +86,7 @@ let interp_definition pl bl p red_option c ctypopt =
     match ctypopt with
       None ->
         let subst = evd_comb0 Evd.nf_univ_variables evdref in
-	let ctx = map_rel_context (Vars.subst_univs_constr subst) ctx in
+	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
 	let env_bl = push_rel_context ctx env in
 	let c, imps2 = interp_constr_evars_impls ~impls env_bl evdref c in
         let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
@@ -100,7 +99,7 @@ let interp_definition pl bl p red_option c ctypopt =
     | Some ctyp ->
 	let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
 	let subst = evd_comb0 Evd.nf_univ_variables evdref in
-	let ctx = map_rel_context (Vars.subst_univs_constr subst) ctx in
+	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
 	let env_bl = push_rel_context ctx env in
 	let c, imps2 = interp_casted_constr_evars_impls ~impls env_bl evdref c ty in
 	let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
@@ -125,7 +124,7 @@ let interp_definition pl bl p red_option c ctypopt =
 	  definition_entry ~types:typ ~poly:p 
 	    ~univs:uctx body
   in
-  red_constant_entry (rel_context_length ctx) ce !evdref red_option, !evdref, pl, imps
+  red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, pl, imps
 
 let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd (Evd.empty,evd);
@@ -566,7 +565,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
 
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun (_, _, impls) -> userimpls @ 
-    lift_implicits (rel_context_nhyps ctx_params) impls) arities in
+    lift_implicits (Context.Rel.nhyps ctx_params) impls) arities in
   let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
   let impls = compute_internalization_env env0 (Inductive params) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
@@ -592,11 +591,11 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   let nf x = nf' (nf x) in
   let arities = List.map nf' arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf' cl,impsl)) constructors in
-  let ctx_params = map_rel_context nf ctx_params in
+  let ctx_params = Context.Rel.map nf ctx_params in
   let evd = !evdref in
   let pl, uctx = Evd.universe_context ?names:pl evd in
   List.iter (check_evars env_params Evd.empty evd) arities;
-  iter_rel_context (check_evars env0 Evd.empty evd) ctx_params;
+  Context.Rel.iter (check_evars env0 Evd.empty evd) ctx_params;
   List.iter (fun (_,ctyps,_) ->
     List.iter (check_evars env_ar_params Evd.empty evd) ctyps)
     constructors;
@@ -610,7 +609,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
     mind_entry_lc = ctypes
   }) indl arities aritypoly constructors in
   let impls =
-    let len = rel_context_nhyps ctx_params in
+    let len = Context.Rel.nhyps ctx_params in
       List.map2 (fun indimpls (_,_,cimpls) ->
 	indimpls, List.map (fun impls ->
 	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors

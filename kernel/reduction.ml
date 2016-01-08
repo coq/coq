@@ -20,7 +20,6 @@ open Util
 open Names
 open Term
 open Vars
-open Context
 open Univ
 open Environ
 open Closure
@@ -741,10 +740,10 @@ let dest_prod env =
     match kind_of_term t with
       | Prod (n,a,c0) ->
           let d = (n,None,a) in
-	  decrec (push_rel d env) (add_rel_decl d m) c0
+	  decrec (push_rel d env) (Context.Rel.add d m) c0
       | _ -> m,t
   in
-  decrec env empty_rel_context
+  decrec env Context.Rel.empty
 
 (* The same but preserving lets in the context, not internal ones. *)
 let dest_prod_assum env =
@@ -753,17 +752,17 @@ let dest_prod_assum env =
     match kind_of_term rty with
     | Prod (x,t,c)  ->
         let d = (x,None,t) in
-	prodec_rec (push_rel d env) (add_rel_decl d l) c
+	prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
         let d = (x,Some b,t) in
-	prodec_rec (push_rel d env) (add_rel_decl d l) c
+	prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let rty' = whd_betadeltaiota env rty in
 	if Term.eq_constr rty' rty then l, rty
 	else prodec_rec env l rty'
   in
-  prodec_rec env empty_rel_context
+  prodec_rec env Context.Rel.empty
 
 let dest_lam_assum env =
   let rec lamec_rec env l ty =
@@ -771,14 +770,14 @@ let dest_lam_assum env =
     match kind_of_term rty with
     | Lambda (x,t,c)  ->
         let d = (x,None,t) in
-	lamec_rec (push_rel d env) (add_rel_decl d l) c
+	lamec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
         let d = (x,Some b,t) in
-	lamec_rec (push_rel d env) (add_rel_decl d l) c
+	lamec_rec (push_rel d env) (Context.Rel.add d l) c
     | Cast (c,_,_)    -> lamec_rec env l c
     | _               -> l,rty
   in
-  lamec_rec env empty_rel_context
+  lamec_rec env Context.Rel.empty
 
 exception NotArity
 

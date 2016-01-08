@@ -1580,7 +1580,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
                            (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
     let hyps = pf_hyps gl in
-    let (id,bdyopt,typ) = Context.lookup_named id hyps in
+    let (id,bdyopt,typ) = Context.Named.lookup id hyps in
     let natureofid = match bdyopt with
       | None -> "Hypothesis"
       | Some bdy ->"Constant (let in)" in

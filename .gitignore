@@ -98,6 +98,8 @@ doc/RecTutorial/RecTutorial.html
 doc/RecTutorial/RecTutorial.pdf
 doc/RecTutorial/RecTutorial.ps
 dev/doc/naming-conventions.pdf
+dev/ocamldoc/*.html
+dev/ocamldoc/*.css
 
 # .mll files
 

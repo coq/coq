@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Evd
 open Environ
 open Libnames
@@ -161,7 +160,7 @@ val interp_binder_evars : env -> evar_map ref -> Name.t -> constr_expr -> types
 val interp_context_evars :
   ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
   env -> evar_map ref -> local_binder list ->
-  internalization_env * ((env * rel_context) * Impargs.manual_implicits)
+  internalization_env * ((env * Context.Rel.t) * Impargs.manual_implicits)
 
 (* val interp_context_gen : (env -> glob_constr -> unsafe_type_judgment Evd.in_evar_universe_context) -> *)
 (*   (env -> Evarutil.type_constraint -> glob_constr -> unsafe_judgment Evd.in_evar_universe_context) -> *)
@@ -178,7 +177,7 @@ val interp_context_evars :
 
 val locate_reference :  Libnames.qualid -> Globnames.global_reference
 val is_global : Id.t -> bool
-val construct_reference : named_context -> Id.t -> constr
+val construct_reference : Context.Named.t -> Id.t -> constr
 val global_reference : Id.t -> constr
 val global_reference_in_absolute_module : DirPath.t -> Id.t -> constr
 

@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Term
 open Vars
-open Context
 open Termops
 open Namegen
 open Declarations
@@ -131,7 +130,7 @@ type tomatch_status =
   | Pushed of (bool*((constr * tomatch_type) * int list * Name.t))
   | Alias of (bool*(Name.t * constr * (constr * types)))
   | NonDepAlias
-  | Abstract of int * rel_declaration
+  | Abstract of int * Context.Rel.Declaration.t
 
 type tomatch_stack = tomatch_status list
 
@@ -602,7 +601,7 @@ let relocate_index_tomatch n1 n2 =
       NonDepAlias :: genrec depth rest
   | Abstract (i,d) :: rest ->
       let i = relocate_rel n1 n2 depth i in
-      Abstract (i,map_rel_declaration (relocate_index n1 n2 depth) d)
+      Abstract (i, Context.Rel.Declaration.map (relocate_index n1 n2 depth) d)
       :: genrec (depth+1) rest in
   genrec 0
 
@@ -635,7 +634,7 @@ let replace_tomatch n c =
   | NonDepAlias  :: rest ->
       NonDepAlias :: replrec depth rest
   | Abstract (i,d) :: rest ->
-      Abstract (i,map_rel_declaration (replace_term n c depth) d)
+      Abstract (i, Context.Rel.Declaration.map (replace_term n c depth) d)
       :: replrec (depth+1) rest in
   replrec 0
 
@@ -660,7 +659,7 @@ let rec liftn_tomatch_stack n depth = function
       NonDepAlias :: liftn_tomatch_stack n depth rest
   | Abstract (i,d)::rest ->
       let i = if i<depth then i else i+n in
-      Abstract (i,map_rel_declaration (liftn n depth) d)
+      Abstract (i, Context.Rel.Declaration.map (liftn n depth) d)
       ::(liftn_tomatch_stack n (depth+1) rest)
 
 let lift_tomatch_stack n = liftn_tomatch_stack n 1
@@ -921,7 +920,7 @@ let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
   let tms = List.fold_right2 (fun par arg tomatch ->
     match kind_of_term par with
     | Rel i -> relocate_index_tomatch (i+n) (destRel arg) tomatch
-    | _ -> tomatch) (realargs@[cur]) (extended_rel_list 0 sign)
+    | _ -> tomatch) (realargs@[cur]) (Context.Rel.to_extended_list 0 sign)
        (lift_tomatch_stack n tms) in
   (* Pred is already dependent in the current term to match (if      *)
   (* (na<>Anonymous) and its realargs; we just need to adjust it to  *)
@@ -1118,7 +1117,7 @@ let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
-      let d = map_rel_declaration (nf_evar evd) d in
+      let d = Context.Rel.Declaration.map (nf_evar evd) d in
       let is_d = match d with (_, None, _) -> false | _ -> true in
       if is_d || List.exists (fun c -> dependent_decl (lift k c) d) tocheck
                  && Array.exists (is_dependent_branch k) brs then
@@ -1187,7 +1186,7 @@ let group_equations pb ind current cstrs mat =
 let rec generalize_problem names pb = function
   | [] -> pb, []
   | i::l ->
-      let (na,b,t as d) = map_rel_declaration (lift i) (Environ.lookup_rel i pb.env) in
+      let (na,b,t as d) = Context.Rel.Declaration.map (lift i) (Environ.lookup_rel i pb.env) in
       let pb',deps = generalize_problem names pb l in
       begin match (na, b) with
       | Anonymous, Some _ -> pb', deps
@@ -1230,7 +1229,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   (* We adjust the terms to match in the context they will be once the *)
   (* context [x1:T1,..,xn:Tn] will have been pushed on the current env *)
   let typs' =
-    List.map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 typs in
+    List.map_i (fun i d -> (mkRel i, Context.Rel.Declaration.map (lift i) d)) 1 typs in
 
   let extenv = push_rel_context typs pb.env in
 
@@ -1560,8 +1559,8 @@ let matx_of_eqns env eqns =
 *)
 
 let adjust_to_extended_env_and_remove_deps env extenv subst t =
-  let n = rel_context_length (rel_context env) in
-  let n' = rel_context_length (rel_context extenv) in
+  let n = Context.Rel.length (rel_context env) in
+  let n' = Context.Rel.length (rel_context extenv) in
   (* We first remove the bindings that are dependently typed (they are
      difficult to manage and it is not sure these are so useful in practice);
      Notes:
@@ -1673,8 +1672,8 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
     | None ->
 	(* This is the situation we are building a return predicate and
            we are in an impossible branch *)
-	let n = rel_context_length (rel_context env) in
-	let n' = rel_context_length (rel_context tycon_env) in
+	let n = Context.Rel.length (rel_context env) in
+	let n' = Context.Rel.length (rel_context tycon_env) in
 	let impossible_case_type, u =
 	  e_new_type_evar (reset_context env) evdref univ_flexible_alg ~src:(loc,Evar_kinds.ImpossibleCase) in
 	(lift (n'-n) impossible_case_type, mkSort u)
@@ -1744,7 +1743,7 @@ let build_inversion_problem loc env sigma tms t =
   let n = List.length sign in
 
   let decls =
-    List.map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 sign in
+    List.map_i (fun i d -> (mkRel i, Context.Rel.Declaration.map (lift i) d)) 1 sign in
 
   let pb_env = push_rel_context sign env in
   let decls =

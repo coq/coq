@@ -9,7 +9,6 @@
 open Pp
 open Names
 open Term
-open Context
 open Tacmach
 open Proof_type
 open Tacexpr
@@ -60,29 +59,29 @@ val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
 val onNthHypId       : int -> (Id.t -> tactic) -> tactic
 val onNthHyp         : int -> (constr -> tactic) -> tactic
-val onNthDecl        : int -> (named_declaration -> tactic) -> tactic
+val onNthDecl        : int -> (Context.Named.Declaration.t -> tactic) -> tactic
 val onLastHypId      : (Id.t -> tactic) -> tactic
 val onLastHyp        : (constr -> tactic) -> tactic
-val onLastDecl       : (named_declaration -> tactic) -> tactic
+val onLastDecl       : (Context.Named.Declaration.t -> tactic) -> tactic
 val onNLastHypsId    : int -> (Id.t list -> tactic) -> tactic
 val onNLastHyps      : int -> (constr list -> tactic) -> tactic
-val onNLastDecls     : int -> (named_context -> tactic) -> tactic
+val onNLastDecls     : int -> (Context.Named.t -> tactic) -> tactic
 
 val lastHypId   : goal sigma -> Id.t
 val lastHyp     : goal sigma -> constr
-val lastDecl    : goal sigma -> named_declaration
+val lastDecl    : goal sigma -> Context.Named.Declaration.t
 val nLastHypsId : int -> goal sigma -> Id.t list
 val nLastHyps   : int -> goal sigma -> constr list
-val nLastDecls  : int -> goal sigma -> named_context
+val nLastDecls  : int -> goal sigma -> Context.Named.t
 
-val afterHyp    : Id.t -> goal sigma -> named_context
+val afterHyp    : Id.t -> goal sigma -> Context.Named.t
 
 val ifOnHyp     : (Id.t * types -> bool) ->
                   (Id.t -> tactic) -> (Id.t -> tactic) ->
 		   Id.t -> tactic
 
-val onHyps      : (goal sigma -> named_context) ->
-                  (named_context -> tactic) -> tactic
+val onHyps      : (goal sigma -> Context.Named.t) ->
+                  (Context.Named.t -> tactic) -> tactic
 
 (** {6 Tacticals applying to goal components } *)
 
@@ -99,18 +98,18 @@ val onClauseLR : (Id.t option -> tactic) -> clause -> tactic
 (** {6 Elimination tacticals. } *)
 
 type branch_args = {
-  ity        : pinductive;   (** the type we were eliminating on *)
+  ity        : pinductive;  (** the type we were eliminating on *)
   largs      : constr list; (** its arguments *)
   branchnum  : int;         (** the branch number *)
   pred       : constr;      (** the predicate we used *)
   nassums    : int;         (** the number of assumptions to be introduced *)
   branchsign : bool list;   (** the signature of the branch.
-                               true=recursive argument, false=constant *)
+                                true=recursive argument, false=constant *)
   branchnames : intro_patterns}
 
 type branch_assumptions = {
-  ba        : branch_args;     (** the branch args *)
-  assums    : named_context}   (** the list of assumptions introduced *)
+  ba        : branch_args;       (** the branch args *)
+  assums    : Context.Named.t}   (** the list of assumptions introduced *)
 
 (** [check_disjunctive_pattern_size loc pats n] returns an appropriate 
    error message if |pats| <> n *)
@@ -223,7 +222,7 @@ module New : sig
   val tclTIMEOUT : int -> unit tactic -> unit tactic
   val tclTIME : string option -> 'a tactic -> 'a tactic
 
-  val nLastDecls  : ([ `NF ], 'r) Proofview.Goal.t -> int -> named_context
+  val nLastDecls  : ([ `NF ], 'r) Proofview.Goal.t -> int -> Context.Named.t
 
   val ifOnHyp     : (identifier * types -> bool) ->
     (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
@@ -232,11 +231,11 @@ module New : sig
   val onNthHypId : int -> (identifier -> unit tactic) -> unit tactic
   val onLastHypId      : (identifier -> unit tactic) -> unit tactic
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
-  val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
+  val onLastDecl       : (Context.Named.Declaration.t -> unit tactic) -> unit tactic
 
-  val onHyps      : ([ `NF ], named_context) Proofview.Goal.enter ->
-                    (named_context -> unit tactic) -> unit tactic
-  val afterHyp    : Id.t -> (named_context -> unit tactic) -> unit tactic
+  val onHyps      : ([ `NF ], Context.Named.t) Proofview.Goal.enter ->
+                    (Context.Named.t -> unit tactic) -> unit tactic
+  val afterHyp    : Id.t -> (Context.Named.t -> unit tactic) -> unit tactic
 
   val tryAllHyps          : (identifier -> unit tactic) -> unit tactic
   val tryAllHypsAndConcl  : (identifier option -> unit tactic) -> unit tactic

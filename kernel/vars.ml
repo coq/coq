@@ -8,7 +8,6 @@
 
 open Names
 open Esubst
-open Context
 
 (*********************)
 (*     Occurring     *)
@@ -160,9 +159,9 @@ let substnl laml n c = substn_many (make_subst laml) n c
 let substl laml c = substn_many (make_subst laml) 0 c
 let subst1 lam c = substn_many [|make_substituend lam|] 0 c
 
-let substnl_decl laml k r = map_rel_declaration (fun c -> substnl laml k c) r
-let substl_decl laml r = map_rel_declaration (fun c -> substnl laml 0 c) r
-let subst1_decl lam r = map_rel_declaration (fun c -> subst1 lam c) r
+let substnl_decl laml k r = Context.Rel.Declaration.map (fun c -> substnl laml k c) r
+let substl_decl laml r = Context.Rel.Declaration.map (fun c -> substnl laml 0 c) r
+let subst1_decl lam r = Context.Rel.Declaration.map (fun c -> subst1 lam c) r
 
 (* Build a substitution from an instance, inserting missing let-ins *)
 
@@ -302,7 +301,7 @@ let subst_univs_level_constr subst c =
       if !changed then c' else c
 
 let subst_univs_level_context s = 
-  map_rel_context (subst_univs_level_constr s)
+  Context.Rel.map (subst_univs_level_constr s)
       
 let subst_instance_constr subst c =
   if Univ.Instance.is_empty subst then c
@@ -343,7 +342,7 @@ let subst_instance_constr subst c =
 
 let subst_instance_context s ctx = 
   if Univ.Instance.is_empty s then ctx
-  else map_rel_context (fun x -> subst_instance_constr s x) ctx
+  else Context.Rel.map (fun x -> subst_instance_constr s x) ctx
 
 type id_key = constant tableKey
 let eq_id_key x y = Names.eq_table_key Constant.equal x y

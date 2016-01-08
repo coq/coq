@@ -10,7 +10,6 @@ open Pp
 open Names
 open Globnames
 open Term
-open Context
 open Environ
 open Pattern
 open Evd
@@ -109,13 +108,13 @@ val pr_pconstructor        : env -> pconstructor -> std_ppcmds
 val pr_context_unlimited   : env -> evar_map -> std_ppcmds
 val pr_ne_context_of       : std_ppcmds -> env -> evar_map -> std_ppcmds
 
-val pr_var_decl            : env -> evar_map -> named_declaration -> std_ppcmds
-val pr_var_list_decl       : env -> evar_map -> named_list_declaration -> std_ppcmds
-val pr_rel_decl            : env -> evar_map -> rel_declaration -> std_ppcmds
+val pr_var_decl            : env -> evar_map -> Context.Named.Declaration.t -> std_ppcmds
+val pr_var_list_decl       : env -> evar_map -> Context.NamedList.Declaration.t -> std_ppcmds
+val pr_rel_decl            : env -> evar_map -> Context.Rel.Declaration.t -> std_ppcmds
 
-val pr_named_context       : env -> evar_map -> named_context -> std_ppcmds
+val pr_named_context       : env -> evar_map -> Context.Named.t -> std_ppcmds
 val pr_named_context_of    : env -> evar_map -> std_ppcmds
-val pr_rel_context         : env -> evar_map -> rel_context -> std_ppcmds
+val pr_rel_context         : env -> evar_map -> Context.Rel.t -> std_ppcmds
 val pr_rel_context_of      : env -> evar_map -> std_ppcmds
 val pr_context_of          : env -> evar_map -> std_ppcmds
 
@@ -165,7 +164,7 @@ val prterm                 : constr -> std_ppcmds (** = pr_lconstr *)
 type context_object =
   | Variable of Id.t  (** A section variable or a Let definition *)
   (** An axiom and the type it inhabits (if an axiom of the empty type) *)
-  | Axiom of constant * (Label.t * Context.rel_context * types) list
+  | Axiom of constant * (Label.t * Context.Rel.t * types) list
   | Opaque of constant      (** An opaque constant. *)
   | Transparent of constant (** A transparent constant *)
 

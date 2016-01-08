@@ -1574,7 +1574,7 @@ let unfold_body x =
   Proofview.Goal.enter { enter = begin fun gl ->
   (** We normalize the given hypothesis immediately. *)
   let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  let (_, xval, _) = Context.lookup_named x hyps in
+  let (_, xval, _) = Context.Named.lookup x hyps in
   let xval = match xval with
   | None -> errorlabstrm "unfold_body"
     (pr_id x ++ str" is not a defined hypothesis.")
@@ -1656,7 +1656,7 @@ let subst_one_var dep_proof_ok x =
           (** [is_eq_x] ensures nf_evar on its side *)
           let hyps = Proofview.Goal.hyps gl in
           let test hyp _ = is_eq_x gl varx hyp in
-          Context.fold_named_context test ~init:() hyps;
+          Context.Named.fold_outside test ~init:() hyps;
           errorlabstrm "Subst"
             (str "Cannot find any non-recursive equality over " ++ pr_id x ++
 	       str".")

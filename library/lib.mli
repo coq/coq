@@ -164,7 +164,7 @@ type variable_context = variable_info list
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 
 val instance_from_variable_context : variable_context -> Names.Id.t array
-val named_of_variable_context : variable_context -> Context.named_context
+val named_of_variable_context : variable_context -> Context.Named.t
 
 val section_segment_of_constant : Names.constant -> abstr_info
 val section_segment_of_mutual_inductive: Names.mutual_inductive -> abstr_info
@@ -175,8 +175,8 @@ val is_in_section : Globnames.global_reference -> bool
 val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.universe_context_set -> unit
 val add_section_context : Univ.universe_context_set -> unit
 val add_section_constant : bool (* is_projection *) -> 
-  Names.constant -> Context.named_context -> unit
-val add_section_kn : Names.mutual_inductive -> Context.named_context -> unit
+  Names.constant -> Context.Named.t -> unit
+val add_section_kn : Names.mutual_inductive -> Context.Named.t -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 
 (** {6 Discharge: decrease the section level if in the current section } *)
@@ -189,6 +189,6 @@ val discharge_inductive : Names.inductive -> Names.inductive
 (* discharging a constant in one go *)
 val full_replacement_context : unit -> Opaqueproof.work_list list
 val full_section_segment_of_constant :
-  Names.constant -> (Context.named_context -> Context.named_context) list
+  Names.constant -> (Context.Named.t -> Context.Named.t) list
 
 

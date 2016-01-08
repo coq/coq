@@ -12,7 +12,6 @@ open Globnames
 open Decl_kinds
 open Term
 open Vars
-open Context
 open Evd
 open Util
 open Typeclasses_errors
@@ -59,10 +58,10 @@ type typeclass = {
   cl_impl : global_reference;
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : (global_reference * bool) option list * rel_context;
+  cl_context : (global_reference * bool) option list * Context.Rel.t;
 
   (* Context of definitions and properties on defs, will not be shared *)
-  cl_props : rel_context;
+  cl_props : Context.Rel.t;
 
   (* The method implementaions as projections. *)
   cl_projs : (Name.t * (direction * int option) option * constant option) list;
@@ -127,7 +126,7 @@ let typeclass_univ_instance (cl,u') =
     in Array.fold_left2 (fun subst u u' -> Univ.LMap.add u u' subst) 
       Univ.LMap.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
   in
-  let subst_ctx = Context.map_rel_context (subst_univs_level_constr subst) in
+  let subst_ctx = Context.Rel.map (subst_univs_level_constr subst) in
     { cl with cl_context = fst cl.cl_context, subst_ctx (snd cl.cl_context);
       cl_props = subst_ctx cl.cl_props}, u'
 
@@ -204,7 +203,7 @@ let discharge_class (_,cl) =
 	(decl :: ctx', n :: subst)
     ) ctx ([], []) in
   let discharge_rel_context subst n rel =
-    let rel = map_rel_context (Cooking.expmod_constr repl) rel in
+    let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
     let ctx, _ =
       List.fold_right
 	(fun (id, b, t) (ctx, k) ->
@@ -287,7 +286,7 @@ let build_subclasses ~check env sigma glob pri =
       | None -> []
       | Some (rels, ((tc,u), args)) ->
 	let instapp = 
-	  Reductionops.whd_beta sigma (appvectc c (Context.extended_rel_vect 0 rels))
+	  Reductionops.whd_beta sigma (appvectc c (Context.Rel.to_extended_vect 0 rels))
 	in
 	let projargs = Array.of_list (args @ [instapp]) in
 	let projs = List.map_filter 

@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Term
 open Vars
-open Context
 open Termops
 open Namegen
 open Environ
@@ -97,7 +96,7 @@ let make_inv_predicate env evd indf realargs id status concl =
 	  (* We lift to make room for the equations *)
 	  (hyps,lift nrealargs bodypred)
   in
-  let nhyps = rel_context_length hyps in
+  let nhyps = Context.Rel.length hyps in
   let env' = push_rel_context hyps env in
   (* Now the arity is pushed, and we need to construct the pairs
    * ai,mkRel(n-i+1) *)

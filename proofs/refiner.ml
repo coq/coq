@@ -197,10 +197,10 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
    destruct), this is not detected by this tactical. *)
 let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
     :Proof_type.goal list Evd.sigma =
-  let oldhyps:Context.named_context = pf_hyps goal in
+  let oldhyps:Context.Named.t = pf_hyps goal in
   let rslt:Proof_type.goal list Evd.sigma = tac goal in
   let { it = gls; sigma = sigma; } = rslt in
-  let hyps:Context.named_context list =
+  let hyps:Context.Named.t list =
     List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; }) gls in
   let cmp (i1, c1, t1) (i2, c2, t2) = Names.Id.equal i1 i2 in
   let newhyps =

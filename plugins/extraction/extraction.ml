@@ -11,7 +11,6 @@ open Util
 open Names
 open Term
 open Vars
-open Context
 open Declarations
 open Declareops
 open Environ

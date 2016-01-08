@@ -19,7 +19,6 @@ open Globnames
 open Nameops
 open Term
 open Vars
-open Context
 open Namegen
 open Declarations
 open Declareops
@@ -61,7 +60,7 @@ let check_privacy_block mib =
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
-  let indf = make_ind_family(pind, Context.extended_rel_list 0 lnamespar) in
+  let indf = make_ind_family(pind, Context.Rel.to_extended_list 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env indf in
 
@@ -92,8 +91,8 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
       let pbody =
         appvect
           (mkRel (ndepar + nbprod),
-           if dep then Context.extended_rel_vect 0 deparsign
-           else Context.extended_rel_vect 1 arsign) in
+           if dep then Context.Rel.to_extended_vect 0 deparsign
+           else Context.Rel.to_extended_vect 1 arsign) in
       let p =
 	it_mkLambda_or_LetIn_name env'
 	  ((if dep then mkLambda_name env' else mkLambda)
@@ -165,7 +164,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 	    let base = applist (lift i pk,realargs) in
             if depK then
 	      Reduction.beta_appvect
-                base [|applist (mkRel (i+1), Context.extended_rel_list 0 sign)|]
+                base [|applist (mkRel (i+1), Context.Rel.to_extended_list 0 sign)|]
             else
 	      base
       	| _ -> assert false
@@ -237,7 +236,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::hyps) c)
      	| Ind _ ->
             let realargs = List.skipn nparrec largs
-            and arg = appvect (mkRel (i+1), Context.extended_rel_vect 0 hyps) in
+            and arg = appvect (mkRel (i+1), Context.Rel.to_extended_vect 0 hyps) in
             applist(lift i fk,realargs@[arg])
      	| _ -> assert false
     in
@@ -312,29 +311,29 @@ let mis_make_indrec env sigma listdepkind mib u =
 
             (* arity in the context of the fixpoint, i.e.
                P1..P_nrec f1..f_nbconstruct *)
-	    let args = Context.extended_rel_list (nrec+nbconstruct) lnamesparrec in
+	    let args = Context.Rel.to_extended_list (nrec+nbconstruct) lnamesparrec in
 	    let indf = make_ind_family((indi,u),args) in
 
 	    let arsign,_ = get_arity env indf in
 	    let depind = build_dependent_inductive env indf in
 	    let deparsign = (Anonymous,None,depind)::arsign in
 
-	    let nonrecpar = rel_context_length lnonparrec in
-	    let larsign = rel_context_length deparsign in
+	    let nonrecpar = Context.Rel.length lnonparrec in
+	    let larsign = Context.Rel.length deparsign in
 	    let ndepar = larsign - nonrecpar in
 	    let dect = larsign+nrec+nbconstruct in
 
             (* constructors in context of the Cases expr, i.e.
                P1..P_nrec f1..f_nbconstruct F_1..F_nrec a_1..a_nar x:I *)
-	    let args' = Context.extended_rel_list (dect+nrec) lnamesparrec in
-	    let args'' = Context.extended_rel_list ndepar lnonparrec in
+	    let args' = Context.Rel.to_extended_list (dect+nrec) lnamesparrec in
+	    let args'' = Context.Rel.to_extended_list ndepar lnonparrec in
             let indf' = make_ind_family((indi,u),args'@args'') in
 
 	    let branches =
 	      let constrs = get_constructors env indf' in
 	      let fi = Termops.rel_vect (dect-i-nctyi) nctyi in
 	      let vecfi = Array.map
-		(fun f -> appvect (f, Context.extended_rel_vect ndepar lnonparrec))
+		(fun f -> appvect (f, Context.Rel.to_extended_vect ndepar lnonparrec))
 		fi
 	      in
 		Array.map3
@@ -355,9 +354,9 @@ let mis_make_indrec env sigma listdepkind mib u =
 	    let deparsign' = (Anonymous,None,depind')::arsign' in
 
 	    let pargs =
-	      let nrpar = Context.extended_rel_list (2*ndepar) lnonparrec
-	      and nrar = if dep then Context.extended_rel_list 0 deparsign'
-		else Context.extended_rel_list 1 arsign'
+	      let nrpar = Context.Rel.to_extended_list (2*ndepar) lnonparrec
+	      and nrar = if dep then Context.Rel.to_extended_list 0 deparsign'
+		else Context.Rel.to_extended_list 1 arsign'
 	      in nrpar@nrar
 
 	    in
@@ -400,14 +399,14 @@ let mis_make_indrec env sigma listdepkind mib u =
 
 	    let typtyi =
 	      let concl =
-		let pargs = if dep then Context.extended_rel_vect 0 deparsign
-		  else Context.extended_rel_vect 1 arsign
+		let pargs = if dep then Context.Rel.to_extended_vect 0 deparsign
+		  else Context.Rel.to_extended_vect 1 arsign
 		in appvect (mkRel (nbconstruct+ndepar+nonrecpar+j),pargs)
 	      in it_mkProd_or_LetIn_name env
 		concl
 		deparsign
 	    in
-	      mrec (i+nctyi) (rel_context_nhyps arsign ::ln) (typtyi::ltyp)
+	      mrec (i+nctyi) (Context.Rel.nhyps arsign ::ln) (typtyi::ltyp)
                 (deftyi::ldef) rest
         | [] ->
 	    let fixn = Array.of_list (List.rev ln) in
@@ -428,7 +427,7 @@ let mis_make_indrec env sigma listdepkind mib u =
 	    else
 	      let recarg = (dest_subterms recargsvec.(tyi)).(j) in
 	      let recarg = recargpar@recarg in
-	      let vargs = Context.extended_rel_list (nrec+i+j) lnamesparrec in
+	      let vargs = Context.Rel.to_extended_list (nrec+i+j) lnamesparrec in
 	      let cs = get_constructor ((indi,u),mibi,mipi,vargs) (j+1) in
 	      let p_0 =
 		type_rec_branch
@@ -442,7 +441,7 @@ let mis_make_indrec env sigma listdepkind mib u =
     in
     let rec put_arity env i = function
       | ((indi,u),_,_,dep,kinds)::rest ->
-	  let indf = make_ind_family ((indi,u), Context.extended_rel_list i lnamesparrec) in
+	  let indf = make_ind_family ((indi,u), Context.Rel.to_extended_list i lnamesparrec) in
 	  let s = 
 	    Evarutil.evd_comb1 (Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env) 
 	      evdref kinds 

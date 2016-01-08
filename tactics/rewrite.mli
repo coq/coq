@@ -71,7 +71,7 @@ val cl_rewrite_clause :
   bool -> Locus.occurrences -> Id.t option -> tactic
 
 val is_applied_rewrite_relation :
-  env -> evar_map -> Context.rel_context -> constr -> types option
+  env -> evar_map -> Context.Rel.t -> constr -> types option
 
 val declare_relation :
   ?binders:local_binder list -> constr_expr -> constr_expr -> Id.t ->

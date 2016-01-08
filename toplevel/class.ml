@@ -12,7 +12,6 @@ open Pp
 open Names
 open Term
 open Vars
-open Context
 open Termops
 open Entries
 open Environ
@@ -198,13 +197,13 @@ let build_id_coercion idf_opt source poly =
   let val_f =
     it_mkLambda_or_LetIn
       (mkLambda (Name Namegen.default_dependent_ident,
-		 applistc vs (extended_rel_list 0 lams),
+		 applistc vs (Context.Rel.to_extended_list 0 lams),
 		 mkRel 1))
        lams
   in
   let typ_f =
     it_mkProd_wo_LetIn
-      (mkProd (Anonymous, applistc vs (extended_rel_list 0 lams), lift 1 t))
+      (mkProd (Anonymous, applistc vs (Context.Rel.to_extended_list 0 lams), lift 1 t))
       lams
   in
   (* juste pour verification *)

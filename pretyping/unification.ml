@@ -1582,7 +1582,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     | AllOccurrences, InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
-        if Context.eq_named_declaration d newdecl
+        if Context.Named.Declaration.equal d newdecl
            && not (indirectly_dependent c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)
@@ -1634,7 +1634,7 @@ type abstraction_request =
 
 type 'r abstraction_result =
   Names.Id.t * named_context_val *
-    Context.named_declaration list * Names.Id.t option *
+    Context.Named.Declaration.t list * Names.Id.t option *
     types * (constr, 'r) Sigma.sigma option
 
 let make_abstraction env evd ccl abs =

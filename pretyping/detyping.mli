@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Environ
 open Glob_term
 open Termops
@@ -46,7 +45,7 @@ val detype_case :
 val detype_sort : evar_map -> sorts -> glob_sort
 
 val detype_rel_context : ?lax:bool -> constr option -> Id.t list -> (names_context * env) -> 
-  evar_map -> rel_context -> glob_decl list
+  evar_map -> Context.Rel.t -> glob_decl list
 
 val detype_closed_glob : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> closed_glob_constr -> glob_constr
 

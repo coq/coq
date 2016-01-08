@@ -11,7 +11,6 @@ open Util
 open Names
 open Term
 open Vars
-open Context
 open Termops
 open Univ
 open Evd
@@ -1466,17 +1465,17 @@ let splay_prod_assum env sigma =
     match kind_of_term t with
     | Prod (x,t,c)  ->
 	prodec_rec (push_rel (x,None,t) env)
-	  (add_rel_decl (x, None, t) l) c
+	  (Context.Rel.add (x, None, t) l) c
     | LetIn (x,b,t,c) ->
 	prodec_rec (push_rel (x, Some b, t) env)
-	  (add_rel_decl (x, Some b, t) l) c
+	  (Context.Rel.add (x, Some b, t) l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> 
       let t' = whd_betadeltaiota env sigma t in
 	if Term.eq_constr t t' then l,t
 	else prodec_rec env l t'
   in
-  prodec_rec env empty_rel_context
+  prodec_rec env Context.Rel.empty
 
 let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in
@@ -1491,20 +1490,20 @@ let splay_prod_n env sigma n =
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Prod (n,a,c0) ->
 	  decrec (push_rel (n,None,a) env)
-	    (m-1) (add_rel_decl (n,None,a) ln) c0
+	    (m-1) (Context.Rel.add (n,None,a) ln) c0
       | _                      -> invalid_arg "splay_prod_n"
   in
-  decrec env n empty_rel_context
+  decrec env n Context.Rel.empty
 
 let splay_lam_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Lambda (n,a,c0) ->
 	  decrec (push_rel (n,None,a) env)
-	    (m-1) (add_rel_decl (n,None,a) ln) c0
+	    (m-1) (Context.Rel.add (n,None,a) ln) c0
       | _                      -> invalid_arg "splay_lam_n"
   in
-  decrec env n empty_rel_context
+  decrec env n Context.Rel.empty
 
 let is_sort env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with

@@ -13,7 +13,6 @@ open Declare
 *)
 
 open Term
-open Context
 open Vars
 open Names
 open Evd
@@ -44,7 +43,7 @@ let check_evars env evm =
 
 type oblinfo =
   { ev_name: int * Id.t;
-    ev_hyps: named_context;
+    ev_hyps: Context.Named.t;
     ev_status: Evar_kinds.obligation_definition_status;
     ev_chop: int option;
     ev_src: Evar_kinds.t Loc.located;
@@ -191,7 +190,7 @@ open Environ
 let eterm_obligations env name evm fs ?status t ty = 
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
-  let nc_len = Context.named_context_length nc in
+  let nc_len = Context.Named.length nc in
   let evm = Evarutil.nf_evar_map_undefined evm in
   let evl = Evarutil.non_instantiated evm in
   let evl = Evar.Map.bindings evl in
