@@ -77,7 +77,17 @@ let call_compiler ml_filename =
     ::include_dirs
     @ ["-impl"; ml_filename] in
   if !Flags.debug then Pp.msg_debug (Pp.str (compiler_name ^ " " ^ (String.concat " " args)));
-  try CUnix.sys_command compiler_name args = Unix.WEXITED 0, link_filename
+  try
+    let res = CUnix.sys_command compiler_name args in
+    let res = match res with
+      | Unix.WEXITED 0 -> true
+      | Unix.WEXITED n ->
+         Pp.(msg_warning (str "command exited with status " ++ int n)); false
+      | Unix.WSIGNALED n ->
+         Pp.(msg_warning (str "command killed by signal " ++ int n)); false
+      | Unix.WSTOPPED n ->
+         Pp.(msg_warning (str "command stopped by signal " ++ int n)); false in
+    res, link_filename
   with Unix.Unix_error (e,_,_) ->
     Pp.(msg_warning (str (Unix.error_message e)));
     false, link_filename
