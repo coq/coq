@@ -197,7 +197,8 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 		 try_do_hyps (fun id -> id)  ids
                end })
 
-let auto_multi_rewrite ?(conds=Naive) = gen_auto_multi_rewrite conds (Proofview.tclUNIT())
+let auto_multi_rewrite ?(conds=Naive) lems cl =
+  Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds (Proofview.tclUNIT()) lems cl)
 
 let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
   let onconcl = match cl.Locus.concl_occs with NoOccurrences -> false | _ -> true in
@@ -206,7 +207,7 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
 	(* autorewrite with .... in clause using tac n'est sur que
 	   si clause represente soit le but soit UNE hypothese
 	*)
-	gen_auto_multi_rewrite conds tac_main lbas cl
+	Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds tac_main lbas cl)
     | _ ->
         Tacticals.New.tclZEROMSG (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
