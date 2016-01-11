@@ -212,10 +212,8 @@ val val_cast : 'a typed_abstract_argument_type -> Val.t -> 'a
 
 type argument_type =
   (** Basic types *)
-  | IdentArgType
-  | VarArgType
-  (** Specific types *)
   | ConstrArgType
+  (** Specific types *)
   | ListArgType of argument_type
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type

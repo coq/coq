@@ -223,8 +223,6 @@ let mlexpr_of_red_expr = function
       <:expr< Genredexpr.ExtraRedExpr $mlexpr_of_string s$ >>
 
 let rec mlexpr_of_argtype loc = function
-  | Genarg.IdentArgType -> <:expr< Genarg.IdentArgType >>
-  | Genarg.VarArgType -> <:expr< Genarg.VarArgType >>
   | Genarg.ConstrArgType -> <:expr< Genarg.ConstrArgType >>
   | Genarg.ListArgType t -> <:expr< Genarg.ListArgType $mlexpr_of_argtype loc t$ >>
   | Genarg.OptArgType t -> <:expr< Genarg.OptArgType $mlexpr_of_argtype loc t$ >>

@@ -276,9 +276,6 @@ and subst_match_rule subst = function
 
 and subst_genarg subst (x:glob_generic_argument) =
   match genarg_tag x with
-  | IdentArgType ->
-      in_gen (glbwit wit_ident) (out_gen (glbwit wit_ident) x)
-  | VarArgType -> in_gen (glbwit wit_var) (out_gen (glbwit wit_var) x)
   | ConstrArgType ->
       in_gen (glbwit wit_constr) (subst_glob_constr subst (out_gen (glbwit wit_constr) x))
   | ListArgType _ ->
@@ -314,6 +311,8 @@ and subst_genarg subst (x:glob_generic_argument) =
 let () =
   Genintern.register_subst0 wit_int_or_var (fun _ v -> v);
   Genintern.register_subst0 wit_ref subst_global_reference;
+  Genintern.register_subst0 wit_ident (fun _ v -> v);
+  Genintern.register_subst0 wit_var (fun _ v -> v);
   Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
   Genintern.register_subst0 wit_tactic subst_tactic;
   Genintern.register_subst0 wit_sort (fun _ v -> v);

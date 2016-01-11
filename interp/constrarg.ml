@@ -31,9 +31,11 @@ let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob
 let wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type =
   Genarg.make0 None "tactic"
 
-let wit_ident = unsafe_of_type IdentArgType
+let wit_ident =
+  Genarg.make0 None "ident"
 
-let wit_var = unsafe_of_type VarArgType
+let wit_var =
+  Genarg.make0 ~dyn:(val_tag (topwit wit_ident)) None "var"
 
 let wit_ref = Genarg.make0 None "ref"
 
@@ -68,6 +70,8 @@ let wit_clause_dft_concl  =
 let () =
   register_name0 wit_int_or_var "Constrarg.wit_int_or_var";
   register_name0 wit_ref "Constrarg.wit_ref";
+  register_name0 wit_ident "Constrarg.wit_ident";
+  register_name0 wit_var "Constrarg.wit_var";
   register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";

@@ -267,8 +267,6 @@ module Make
 
   let rec pr_raw_generic_rec prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
     match Genarg.genarg_tag x with
-      | IdentArgType -> pr_id (out_gen (rawwit wit_ident) x)
-      | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
       | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
       | ListArgType _ ->
         let list_unpacker wit l =
@@ -297,8 +295,6 @@ module Make
 
   let rec pr_glb_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
-      | IdentArgType -> pr_id (out_gen (glbwit wit_ident) x)
-      | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
       | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
       | ListArgType _ ->
         let list_unpacker wit l =
@@ -326,8 +322,6 @@ module Make
 
   let rec pr_top_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
-      | IdentArgType -> pr_id (out_gen (topwit wit_ident) x)
-      | VarArgType -> pr_id (out_gen (topwit wit_var) x)
       | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
       | ListArgType _ ->
         let list_unpacker wit l =
@@ -1415,6 +1409,10 @@ let () =
     (pr_or_var int) (pr_or_var int) int;
   Genprint.register_print0 Constrarg.wit_ref
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
+  Genprint.register_print0 Constrarg.wit_ident
+    pr_id pr_id pr_id;
+  Genprint.register_print0 Constrarg.wit_var
+    (pr_located pr_id) (pr_located pr_id) pr_id;
   Genprint.register_print0
     Constrarg.wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)

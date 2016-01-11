@@ -56,9 +56,6 @@ struct
 end
 
 type argument_type =
-  (* Basic types *)
-  | IdentArgType
-  | VarArgType
   (* Specific types *)
   | ConstrArgType
   | ListArgType of argument_type
@@ -67,8 +64,6 @@ type argument_type =
   | ExtraArgType of string
 
 let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
-| IdentArgType, IdentArgType -> true
-| VarArgType, VarArgType -> true
 | ConstrArgType, ConstrArgType -> true
 | ListArgType arg1, ListArgType arg2 -> argument_type_eq arg1 arg2
 | OptArgType arg1, OptArgType arg2 -> argument_type_eq arg1 arg2
@@ -78,8 +73,6 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | _ -> false
 
 let rec pr_argument_type = function
-| IdentArgType -> str "ident"
-| VarArgType -> str "var"
 | ConstrArgType -> str "constr"
 | ListArgType t -> pr_argument_type t ++ spc () ++ str "list"
 | OptArgType t -> pr_argument_type t ++ spc () ++ str "opt"
@@ -204,13 +197,10 @@ let default_empty_value t =
 
 (** Beware: keep in sync with the corresponding types *)
 let base_create n = Val.Base (Dyn.create n)
-let ident_T = base_create "ident"
 let genarg_T = base_create "genarg"
 let constr_T = base_create "constr"
 
 let rec val_tag = function
-| IdentArgType -> cast_tag ident_T
-| VarArgType -> cast_tag ident_T
   (** Must ensure that toplevel types of Var and Ident agree! *)
 | ConstrArgType -> cast_tag constr_T
 | ExtraArgType s -> cast_tag (String.Map.find s !arg0_map).dyn
@@ -232,8 +222,6 @@ let try_prj wit v = match prj (val_tag wit) v with
 
 let rec val_cast : type a. a typed_abstract_argument_type -> Val.t -> a =
 fun wit v -> match unquote wit with
-| IdentArgType
-| VarArgType
 | ConstrArgType
 | ExtraArgType _ -> try_prj wit v
 | ListArgType t ->

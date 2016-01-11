@@ -1518,11 +1518,11 @@ and interp_match_goal ist lz lr lmr =
 (* Interprets extended tactic generic arguments *)
 and interp_genarg ist x : Val.t Ftactic.t =
     let open Ftactic.Notations in
-    match genarg_tag x with
-    | IdentArgType ->
-      interp_focussed wit_ident (interp_ident ist) x
-    | VarArgType ->
-      interp_focussed wit_var (interp_hyp ist) x
+    (** Ad-hoc handling of some types. *)
+    let tag = genarg_tag x in
+    if argument_type_eq tag (unquote (topwit (wit_list wit_var))) then
+      interp_genarg_var_list ist x
+    else match tag with
     | ConstrArgType ->
       Ftactic.nf_s_enter { s_enter = begin fun gl ->
         let c = Genarg.out_gen (glbwit wit_constr) x in
@@ -1534,8 +1534,6 @@ and interp_genarg ist x : Val.t Ftactic.t =
       end }
     | ListArgType ConstrArgType ->
       interp_genarg_constr_list ist x
-    | ListArgType VarArgType ->
-      interp_genarg_var_list ist x
     | ListArgType _ ->
       let list_unpacker wit l =
         let map x =
@@ -2182,6 +2180,8 @@ let interp_constr_with_bindings' ist c = Ftactic.return { delayed = fun env sigm
 let () =
   Geninterp.register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
   Geninterp.register_interp0 wit_ref (lift interp_reference);
+  Geninterp.register_interp0 wit_ident (lift interp_ident);
+  Geninterp.register_interp0 wit_var (lift interp_hyp);
   Geninterp.register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
   Geninterp.register_interp0 wit_clause_dft_concl (lift interp_clause);
   Geninterp.register_interp0 wit_sort (lifts (fun _ _ evd s -> interp_sort evd s));

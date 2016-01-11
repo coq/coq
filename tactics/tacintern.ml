@@ -720,11 +720,6 @@ and intern_match_rule onlytac ist = function
 
 and intern_genarg ist x =
   match genarg_tag x with
-  | IdentArgType ->
-    let lf = ref Id.Set.empty in
-    map_raw wit_ident (intern_ident lf) ist x
-  | VarArgType ->
-    map_raw wit_var intern_hyp ist x
   | ConstrArgType ->
     map_raw wit_constr intern_constr ist x
   | ListArgType _ ->
@@ -823,9 +818,15 @@ let () =
   in
   Genintern.register_intern0 wit_clause_dft_concl intern_clause
 
+let intern_ident' ist id =
+  let lf = ref Id.Set.empty in
+  (ist, intern_ident lf ist id)
+
 let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
+  Genintern.register_intern0 wit_ident intern_ident';
+  Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_sort (fun ist s -> (ist, s));
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
