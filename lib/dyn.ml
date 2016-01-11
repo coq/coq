@@ -6,6 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module type TParam =
+sig
+  type 'a t
+end
+
 module type S =
 sig
 type 'a tag
@@ -14,6 +19,30 @@ type t = Dyn : 'a tag * 'a -> t
 val create : string -> 'a tag
 val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
 val repr : 'a tag -> string
+
+type any = Any : 'a tag -> any
+
+val name : string -> any option
+
+module Map(M : TParam) :
+sig
+  type t
+  val empty : t
+  val add : 'a tag -> 'a M.t -> t -> t
+  val remove : 'a tag -> t -> t
+  val find : 'a tag -> t -> 'a M.t
+  val mem : 'a tag -> t -> bool
+
+  type any = Any : 'a tag * 'a M.t -> any
+
+  type map = { map : 'a. 'a tag -> 'a M.t -> 'a M.t }
+  val map : map -> t -> t
+
+  val iter : (any -> unit) -> t -> unit
+  val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
+
+end
+
 val dump : unit -> (int * string) list
 end
 
@@ -24,6 +53,8 @@ struct
 type 'a tag = int
 
 type t = Dyn : 'a tag * 'a -> t
+
+type any = Any : 'a tag -> any
 
 let dyntab = ref (Int.Map.empty : string Int.Map.t)
 (** Instead of working with tags as strings, which are costly, we use their
@@ -51,6 +82,29 @@ let repr s =
     let () = Printf.eprintf "Unknown dynamic tag %i\n%!" s in
     assert false
 
+let name s =
+  let hash = Hashtbl.hash s in
+  if Int.Map.mem hash !dyntab then Some (Any hash) else None
+
 let dump () = Int.Map.bindings !dyntab
+
+module Map(M : TParam) =
+struct
+type t = Obj.t M.t Int.Map.t
+let cast : 'a M.t -> 'b M.t = Obj.magic
+let empty = Int.Map.empty
+let add tag v m = Int.Map.add tag (cast v) m
+let remove tag m = Int.Map.remove tag m
+let find tag m = cast (Int.Map.find tag m)
+let mem = Int.Map.mem
+
+type any = Any : 'a tag * 'a M.t -> any
+
+type map = { map : 'a. 'a tag -> 'a M.t -> 'a M.t }
+let map f m = Int.Map.mapi f.map m
+
+let iter f m = Int.Map.iter (fun k v -> f (Any (k, v))) m
+let fold f m accu = Int.Map.fold (fun k v accu -> f (Any (k, v)) accu) m accu
+end
 
 end

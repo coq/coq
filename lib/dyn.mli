@@ -7,6 +7,10 @@
 (************************************************************************)
 
 (** Dynamics. Use with extreme care. Not for kids. *)
+module type TParam =
+sig
+  type 'a t
+end
 
 module type S =
 sig
@@ -16,7 +20,32 @@ type t = Dyn : 'a tag * 'a -> t
 val create : string -> 'a tag
 val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
 val repr : 'a tag -> string
+
+type any = Any : 'a tag -> any
+
+val name : string -> any option
+
+module Map(M : TParam) :
+sig
+  type t
+  val empty : t
+  val add : 'a tag -> 'a M.t -> t -> t
+  val remove : 'a tag -> t -> t
+  val find : 'a tag -> t -> 'a M.t
+  val mem : 'a tag -> t -> bool
+
+  type any = Any : 'a tag * 'a M.t -> any
+
+  type map = { map : 'a. 'a tag -> 'a M.t -> 'a M.t }
+  val map : map -> t -> t
+
+  val iter : (any -> unit) -> t -> unit
+  val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
+
+end
+
 val dump : unit -> (int * string) list
+
 end
 
 (** FIXME: use OCaml 4.02 generative functors when available *)
