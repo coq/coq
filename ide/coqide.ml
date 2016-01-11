@@ -596,14 +596,14 @@ let get_current_word term =
   | None ->
   (** Then look at the current selected word *)
   let buf1 = term.script#buffer in
-  let buf2 = term.proof#buffer in
+  (* XXX let buf2 = term.proof#buffer in *)
   let buf3 = term.messages#buffer in
   if buf1#has_selection then
     let (start, stop) = buf1#selection_bounds in
     buf1#get_text ~slice:true ~start ~stop ()
-  else if buf2#has_selection then
+  (* else if buf2#has_selection then
     let (start, stop) = buf2#selection_bounds in
-    buf2#get_text ~slice:true ~start ~stop ()
+    buf2#get_text ~slice:true ~start ~stop () *)
   else if buf3#has_selection then
     let (start, stop) = buf3#selection_bounds in
     buf3#get_text ~slice:true ~start ~stop ()

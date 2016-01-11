@@ -171,7 +171,7 @@ module Doc = Document
 
 class coqops
   (_script:Wg_ScriptView.script_view)
-  (_pv:Wg_ProofView.proof_view)
+  (_pv:Wg_ProofNotebook.proof_notebook)
   (_mv:Wg_MessageView.message_view)
   (_sg:Wg_Segment.segment)
   (_ct:Coq.coqtop)
@@ -299,7 +299,7 @@ object(self)
     buffer#get_iter_at_mark `INSERT
 
   method private show_goals_aux ?(move_insert=false) () =
-    Coq.PrintOpt.set_printing_width proof#width;
+    (* XXX Coq.PrintOpt.set_printing_width proof#width; *)
     if move_insert then begin
       buffer#place_cursor ~where:self#get_start_of_input;
       script#recenter_insert;

@@ -843,7 +843,7 @@ let strip =
 (** * md5sum command *)
 
 let md5sum =
-  if arch = "Darwin" then "md5 -q" else "md5sum"
+  if arch = "Darwin" || arch = "NetBSD" then "md5 -q" else "md5sum"
 
 
 (** * Documentation : do we have latex, hevea, ... *)

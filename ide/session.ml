@@ -32,7 +32,7 @@ type jobpage = string CString.Map.t page
 type session = {
   buffer : GText.buffer;
   script : Wg_ScriptView.script_view;
-  proof : Wg_ProofView.proof_view;
+  proof : Wg_ProofNotebook.proof_notebook;
   messages : Wg_MessageView.message_view;
   segment : Wg_Segment.segment;
   fileops : FileOps.ops;
@@ -363,13 +363,14 @@ let create_jobpage coqtop coqops : jobpage =
     method refresh_color () = refresh ()
   end
 
-let create_proof () =
-  let proof = Wg_ProofView.proof_view () in
-  let _ = proof#misc#set_can_focus true in
-  let _ = GtkBase.Widget.add_events proof#as_widget
+let create_proof msg =
+  let pn = Wg_ProofNotebook.create msg () in
+  let _ = pn#misc#set_can_focus true in
+  let _ = pn#set_scrollable true in
+  let _ = GtkBase.Widget.add_events pn#as_widget
     [`ENTER_NOTIFY;`POINTER_MOTION]
   in
-  proof
+  pn
 
 let create_messages () =
   let messages = Wg_MessageView.message_view () in
@@ -390,8 +391,8 @@ let create file coqtop_args =
   let reset () = Coq.reset_coqtop coqtop in
   let buffer = create_buffer () in
   let script = create_script coqtop buffer in
-  let proof = create_proof () in
   let messages = create_messages () in
+  let proof = create_proof (messages#push) in
   let segment = new Wg_Segment.segment () in
   let command = new Wg_Command.command_window basename coqtop in
   let finder = new Wg_Find.finder basename (script :> GText.view) in

@@ -35,7 +35,7 @@ end
 
 class coqops :
   Wg_ScriptView.script_view ->
-  Wg_ProofView.proof_view ->
+  Wg_ProofNotebook.proof_notebook ->
   Wg_MessageView.message_view ->
   Wg_Segment.segment ->
   coqtop ->

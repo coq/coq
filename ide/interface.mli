@@ -21,6 +21,8 @@ type goal = {
   (** List of hypotheses *)
   goal_ccl : string;
   (** Goal conclusion *)
+  goal_name : string;
+  (** Goal name *)
 }
 
 type evar = {
