@@ -1,4 +1,54 @@
 =========================================
+= CHANGES BETWEEN COQ V8.5 AND CQQ V8.6 =
+=========================================
+
+- The interface of the Context module was changed.
+  Related types and functions were put in separate submodules.
+  The mapping from old identifiers to new identifiers is the following:
+
+    Context.named_declaration            --->  Context.Named.Declaration.t
+    Context.named_list_declaration       --->  Context.NamedList.Declaration.t
+    Context.rel_declaration              --->  Context.Rel.Declaration.t
+    Context.map_named_declaration        --->  Context.Named.Declaration.map
+    Context.map_named_list_declaration   --->  Context.NamedList.Declaration.map
+    Context.map_rel_declaration          --->  Context.Rel.Declaration.map
+    Context.fold_named_declaration       --->  Context.Named.Declaration.fold
+    Context.fold_rel_declaration         --->  Context.Rel.Declaration.fold
+    Context.exists_named_declaration     --->  Context.Named.Declaration.exists
+    Context.exists_rel_declaration       --->  Context.Rel.Declaration.exists
+    Context.for_all_named_declaration    --->  Context.Named.Declaration.for_all
+    Context.for_all_rel_declaration      --->  Context.Rel.Declaration.for_all
+    Context.eq_named_declaration         --->  Context.Named.Declaration.equal
+    Context.eq_rel_declaration           --->  Context.Rel.Declaration.equal
+    Context.named_context                --->  Context.Named.t
+    Context.named_list_context           --->  Context.NamedList.t
+    Context.rel_context                  --->  Context.Rel.t
+    Context.empty_named_context          --->  Context.Named.empty
+    Context.add_named_decl               --->  Context.Named.add
+    Context.vars_of_named_context        --->  Context.Named.to_vars
+    Context.lookup_named                 --->  Context.Named.lookup
+    Context.named_context_length         --->  Context.Named.length
+    Context.named_context_equal          --->  Context.Named.equal
+    Context.fold_named_context           --->  Context.Named.fold_outside
+    Context.fold_named_list_context      --->  Context.NamedList.fold
+    Context.fold_named_context_reverse   --->  Context.Named.fold_inside
+    Context.instance_from_named_context  --->  Context.Named.to_instance
+    Context.extended_rel_list            --->  Context.Rel.to_extended_list
+    Context.extended_rel_vect            --->  Context.Rel.to_extended_vect
+    Context.fold_rel_context             --->  Context.Rel.fold_outside
+    Context.fold_rel_context_reverse     --->  Context.Rel.fold_inside
+    Context.map_rel_context              --->  Context.Rel.map
+    Context.map_named_context            --->  Context.Named.map
+    Context.iter_rel_context             --->  Context.Rel.iter
+    Context.iter_named_context           --->  Context.Named.iter
+    Context.empty_rel_context            --->  Context.Rel.empty
+    Context.add_rel_decl                 --->  Context.Rel.add
+    Context.lookup_rel                   --->  Context.Rel.lookup
+    Context.rel_context_length           --->  Context.Rel.length
+    Context.rel_context_nhyps            --->  Context.Rel.nhyps
+    Context.rel_context_tags             --->  Context.Rel.to_tags
+
+=========================================
 = CHANGES BETWEEN COQ V8.4 AND CQQ V8.5 =
 =========================================
 

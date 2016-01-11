@@ -17,7 +17,6 @@ open Termops
 open Reductionops
 open Term
 open Vars
-open Context
 open Pattern
 open Patternops
 open Misctypes
@@ -269,8 +268,8 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
 	  let ctx_b2,b2 = decompose_lam_n_decls ci.ci_cstr_ndecls.(0) b2 in
 	  let ctx_b2',b2' = decompose_lam_n_decls ci.ci_cstr_ndecls.(1) b2' in
-	  let n = rel_context_length ctx_b2 in
-          let n' = rel_context_length ctx_b2' in
+	  let n = Context.Rel.length ctx_b2 in
+          let n' = Context.Rel.length ctx_b2' in
 	  if noccur_between 1 n b2 && noccur_between 1 n' b2' then
             let f l (na,_,t) = (Anonymous,na,t)::l in
 	    let ctx_br = List.fold_left f ctx ctx_b2 in

@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Evd
 open Environ
 
@@ -129,7 +128,7 @@ val gather_dependent_evars : evar_map -> evar list -> (Evar.Set.t option) Evar.M
     [nf_evar]. *)
 
 val undefined_evars_of_term : evar_map -> constr -> Evar.Set.t
-val undefined_evars_of_named_context : evar_map -> named_context -> Evar.Set.t
+val undefined_evars_of_named_context : evar_map -> Context.Named.t -> Evar.Set.t
 val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 (** [occur_evar_upto sigma k c] returns [true] if [k] appears in
@@ -170,8 +169,8 @@ val jv_nf_evar :
 val tj_nf_evar :
    evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
-val nf_named_context_evar : evar_map -> named_context -> named_context
-val nf_rel_context_evar : evar_map -> rel_context -> rel_context
+val nf_named_context_evar : evar_map -> Context.Named.t -> Context.Named.t
+val nf_rel_context_evar : evar_map -> Context.Rel.t -> Context.Rel.t
 val nf_env_evar : evar_map -> env -> env
 
 val nf_evar_info : evar_map -> evar_info -> evar_info

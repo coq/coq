@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Termops
 open Environ
 open Libnames
@@ -42,7 +41,7 @@ val extern_reference : Loc.t -> Id.Set.t -> global_reference -> reference
 val extern_type : bool -> env -> Evd.evar_map -> types -> constr_expr
 val extern_sort : Evd.evar_map -> sorts -> glob_sort
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
-  rel_context -> local_binder list
+  Context.Rel.t -> local_binder list
 
 (** Printing options *)
 val print_implicits : bool ref

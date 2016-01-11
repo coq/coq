@@ -11,7 +11,6 @@
 
 open Util
 open Names
-open Context
 open Decl_kinds
 open Libnames
 
@@ -55,7 +54,7 @@ let initialize_named_context_for_proof () =
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
 let last_section_hyps dir =
-  fold_named_context
+  Context.Named.fold_outside
     (fun (id,_,_) sec_ids ->
       try if DirPath.equal dir (variable_path id) then id::sec_ids else sec_ids
       with Not_found -> sec_ids)

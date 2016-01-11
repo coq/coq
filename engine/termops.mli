@@ -9,7 +9,6 @@
 open Pp
 open Names
 open Term
-open Context
 open Environ
 
 (** printers *)
@@ -22,7 +21,7 @@ val set_print_constr : (env -> constr -> std_ppcmds) -> unit
 val print_constr     : constr -> std_ppcmds
 val print_constr_env : env -> constr -> std_ppcmds
 val print_named_context : env -> std_ppcmds
-val pr_rel_decl : env -> rel_declaration -> std_ppcmds
+val pr_rel_decl : env -> Context.Rel.Declaration.t -> std_ppcmds
 val print_rel_context : env -> std_ppcmds
 val print_env : env -> std_ppcmds
 
@@ -31,7 +30,7 @@ val push_rel_assum : Name.t * types -> env -> env
 val push_rels_assum : (Name.t * types) list -> env -> env
 val push_named_rec_types : Name.t array * types array * 'a -> env -> env
 
-val lookup_rel_id : Id.t -> rel_context -> int * constr option * types
+val lookup_rel_id : Id.t -> Context.Rel.t -> int * constr option * types
 (** Associates the contents of an identifier in a [rel_context]. Raise
     [Not_found] if there is no such identifier. *)
 
@@ -42,20 +41,20 @@ val rel_vect : int -> int -> constr array
 val rel_list : int -> int -> constr list
 
 (** iterators/destructors on terms *)
-val mkProd_or_LetIn : rel_declaration -> types -> types
-val mkProd_wo_LetIn : rel_declaration -> types -> types
+val mkProd_or_LetIn : Context.Rel.Declaration.t -> types -> types
+val mkProd_wo_LetIn : Context.Rel.Declaration.t -> types -> types
 val it_mkProd : types -> (Name.t * types) list -> types
 val it_mkLambda : constr -> (Name.t * types) list -> constr
-val it_mkProd_or_LetIn : types -> rel_context -> types
-val it_mkProd_wo_LetIn : types -> rel_context -> types
-val it_mkLambda_or_LetIn : constr -> rel_context -> constr
-val it_mkNamedProd_or_LetIn : types -> named_context -> types
-val it_mkNamedProd_wo_LetIn : types -> named_context -> types
-val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
+val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
+val it_mkProd_wo_LetIn : types -> Context.Rel.t -> types
+val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr
+val it_mkNamedProd_or_LetIn : types -> Context.Named.t -> types
+val it_mkNamedProd_wo_LetIn : types -> Context.Named.t -> types
+val it_mkNamedLambda_or_LetIn : constr -> Context.Named.t -> constr
 
 (* Ad hoc version reinserting letin, assuming the body is defined in
    the context where the letins are expanded *)
-val it_mkLambda_or_LetIn_from_no_LetIn : constr -> rel_context -> constr
+val it_mkLambda_or_LetIn_from_no_LetIn : constr -> Context.Rel.t -> constr
 
 (** {6 Generic iterators on constr} *)
 
@@ -63,11 +62,11 @@ val map_constr_with_named_binders :
   (Name.t -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 val map_constr_with_binders_left_to_right :
-  (rel_declaration -> 'a -> 'a) ->
+  (Context.Rel.Declaration.t -> 'a -> 'a) ->
   ('a -> constr -> constr) ->
     'a -> constr -> constr
 val map_constr_with_full_binders :
-  (rel_declaration -> 'a -> 'a) ->
+  (Context.Rel.Declaration.t -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 
 (** [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
@@ -81,11 +80,11 @@ val fold_constr_with_binders :
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
 val fold_constr_with_full_binders :
-  (rel_declaration -> 'a -> 'a) -> ('a -> 'b -> constr -> 'b) ->
+  (Context.Rel.Declaration.t -> 'a -> 'a) -> ('a -> 'b -> constr -> 'b) ->
     'a -> 'b -> constr -> 'b
 
 val iter_constr_with_full_binders :
-  (rel_declaration -> 'a -> 'a) -> ('a -> constr -> unit) -> 'a ->
+  (Context.Rel.Declaration.t -> 'a -> 'a) -> ('a -> constr -> unit) -> 'a ->
     constr -> unit
 
 (**********************************************************************)
@@ -110,7 +109,7 @@ val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
 val dependent_univs : constr -> constr -> bool
 val dependent_univs_no_evar : constr -> constr -> bool
-val dependent_in_decl : constr -> named_declaration -> bool
+val dependent_in_decl : constr -> Context.Named.Declaration.t -> bool
 val count_occurrences : constr -> constr -> int
 val collect_metas : constr -> int list
 val collect_vars : constr -> Id.Set.t (** for visible vars only *)
@@ -164,11 +163,11 @@ exception CannotFilter
    (context,term), or raises [CannotFilter].
    Warning: Outer-kernel sort subtyping are taken into account: c1 has
    to be smaller than c2 wrt. sorts. *)
-type subst = (rel_context*constr) Evar.Map.t
-val filtering : rel_context -> Reduction.conv_pb -> constr -> constr -> subst
+type subst = (Context.Rel.t * constr) Evar.Map.t
+val filtering : Context.Rel.t -> Reduction.conv_pb -> constr -> constr -> subst
 
-val decompose_prod_letin : constr -> int * rel_context * constr
-val align_prod_letin : constr -> constr -> rel_context * constr
+val decompose_prod_letin : constr -> int * Context.Rel.t * constr
+val align_prod_letin : constr -> constr -> Context.Rel.t * constr
 
 (** [nb_lam] {% $ %}[x_1:T_1]...[x_n:T_n]c{% $ %} where {% $ %}c{% $ %} is not an abstraction
    gives {% $ %}n{% $ %} (casts are ignored) *)
@@ -197,51 +196,51 @@ val add_name : Name.t -> names_context -> names_context
 val lookup_name_of_rel : int -> names_context -> Name.t
 val lookup_rel_of_name : Id.t -> names_context -> int
 val empty_names_context : names_context
-val ids_of_rel_context : rel_context -> Id.t list
-val ids_of_named_context : named_context -> Id.t list
+val ids_of_rel_context : Context.Rel.t -> Id.t list
+val ids_of_named_context : Context.Named.t -> Id.t list
 val ids_of_context : env -> Id.t list
 val names_of_rel_context : env -> names_context
 
 (* [context_chop n Γ] returns (Γ₁,Γ₂) such that [Γ]=[Γ₂Γ₁], [Γ₁] has
    [n] hypotheses, excluding local definitions, and [Γ₁], if not empty,
    starts with an hypothesis (i.e. [Γ₁] has the form empty or [x:A;Γ₁'] *)
-val context_chop : int -> rel_context -> rel_context * rel_context
+val context_chop : int -> Context.Rel.t -> Context.Rel.t * Context.Rel.t
 
 (* [env_rel_context_chop n env] extracts out the [n] top declarations
    of the rel_context part of [env], counting both local definitions and
    hypotheses *)
-val env_rel_context_chop : int -> env -> env * rel_context
+val env_rel_context_chop : int -> env -> env * Context.Rel.t
 
 (** Set of local names *)
 val vars_of_env: env -> Id.Set.t
 val add_vname : Id.Set.t -> Name.t -> Id.Set.t
 
 (** other signature iterators *)
-val process_rel_context : (rel_declaration -> env -> env) -> env -> env
-val assums_of_rel_context : rel_context -> (Name.t * constr) list
-val lift_rel_context : int -> rel_context -> rel_context
-val substl_rel_context : constr list -> rel_context -> rel_context
-val smash_rel_context : rel_context -> rel_context (** expand lets in context *)
+val process_rel_context : (Context.Rel.Declaration.t -> env -> env) -> env -> env
+val assums_of_rel_context : Context.Rel.t -> (Name.t * constr) list
+val lift_rel_context : int -> Context.Rel.t -> Context.Rel.t
+val substl_rel_context : constr list -> Context.Rel.t -> Context.Rel.t
+val smash_rel_context : Context.Rel.t -> Context.Rel.t (** expand lets in context *)
 
 val map_rel_context_in_env :
-  (env -> constr -> constr) -> env -> rel_context -> rel_context
+  (env -> constr -> constr) -> env -> Context.Rel.t -> Context.Rel.t
 val map_rel_context_with_binders :
-  (int -> constr -> constr) -> rel_context -> rel_context
+  (int -> constr -> constr) -> Context.Rel.t -> Context.Rel.t
 val fold_named_context_both_sides :
-  ('a -> named_declaration -> named_declaration list -> 'a) ->
-    named_context -> init:'a -> 'a
-val mem_named_context : Id.t -> named_context -> bool
-val compact_named_context : named_context -> named_list_context
-val compact_named_context_reverse : named_context -> named_list_context
+  ('a -> Context.Named.Declaration.t -> Context.Named.Declaration.t list -> 'a) ->
+    Context.Named.t -> init:'a -> 'a
+val mem_named_context : Id.t -> Context.Named.t -> bool
+val compact_named_context : Context.Named.t -> Context.NamedList.t
+val compact_named_context_reverse : Context.Named.t -> Context.NamedList.t
 
 val clear_named_body : Id.t -> env -> env
 
 val global_vars : env -> constr -> Id.t list
-val global_vars_set_of_decl : env -> named_declaration -> Id.Set.t
+val global_vars_set_of_decl : env -> Context.Named.Declaration.t -> Id.Set.t
 
 (** Gives an ordered list of hypotheses, closed by dependencies,
    containing a given set *)
-val dependency_closure : env -> named_context -> Id.Set.t -> Id.t list
+val dependency_closure : env -> Context.Named.t -> Id.Set.t -> Id.t list
 
 (** Test if an identifier is the basename of a global reference *)
 val is_section_variable : Id.t -> bool

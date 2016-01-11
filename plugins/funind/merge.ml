@@ -19,7 +19,6 @@ open Pp
 open Names
 open Term
 open Vars
-open Context
 open Termops
 open Declarations
 open Glob_term
@@ -258,27 +257,27 @@ type merge_infos =
       lnk2: int merged_arg array;
 
       (** rec params which remain rec param (ie not linked) *)
-      recprms1: rel_declaration list;
-      recprms2: rel_declaration list;
+      recprms1: Context.Rel.Declaration.t list;
+      recprms2: Context.Rel.Declaration.t list;
       nrecprms1: int;
       nrecprms2: int;
 
       (** rec parms which became non parm (either linked to something
          or because after a rec parm that became non parm) *)
-      otherprms1: rel_declaration list;
-      otherprms2: rel_declaration list;
+      otherprms1: Context.Rel.Declaration.t list;
+      otherprms2: Context.Rel.Declaration.t list;
       notherprms1:int;
       notherprms2:int;
 
       (** args which remain args in merge *)
-      args1:rel_declaration list;
-      args2:rel_declaration list;
+      args1:Context.Rel.Declaration.t list;
+      args2:Context.Rel.Declaration.t list;
       nargs1:int;
       nargs2:int;
 
       (** functional result args *)
-      funresprms1: rel_declaration list;
-      funresprms2: rel_declaration list;
+      funresprms1: Context.Rel.Declaration.t list;
+      funresprms2: Context.Rel.Declaration.t list;
       nfunresprms1:int;
       nfunresprms2:int;
     }
@@ -851,7 +850,7 @@ let glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
   lident , bindlist , Some cstr_expr , lcstor_expr
 
 
-let mkProd_reldecl (rdecl:rel_declaration) (t2:glob_constr) =
+let mkProd_reldecl (rdecl:Context.Rel.Declaration.t) (t2:glob_constr) =
   match rdecl with
     | (nme,None,t) ->
         let traw = Detyping.detype false [] (Global.env()) Evd.empty t in

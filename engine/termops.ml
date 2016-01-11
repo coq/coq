@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Term
 open Vars
-open Context
 open Environ
 
 (* Sorts and sort family *)
@@ -700,9 +699,9 @@ let replace_term = replace_term_gen eq_constr
 
 let vars_of_env env =
   let s =
-    Context.fold_named_context (fun (id,_,_) s -> Id.Set.add id s)
+    Context.Named.fold_outside (fun (id,_,_) s -> Id.Set.add id s)
       (named_context env) ~init:Id.Set.empty in
-  Context.fold_rel_context
+  Context.Rel.fold_outside
     (fun (na,_,_) s -> match na with Name id -> Id.Set.add id s | _ -> s)
     (rel_context env) ~init:s
 
@@ -728,12 +727,12 @@ let lookup_rel_of_name id names =
 let empty_names_context = []
 
 let ids_of_rel_context sign =
-  Context.fold_rel_context
+  Context.Rel.fold_outside
     (fun (na,_,_) l -> match na with Name id -> id::l | Anonymous -> l)
     sign ~init:[]
 
 let ids_of_named_context sign =
-  Context.fold_named_context (fun (id,_,_) idl -> id::idl) sign ~init:[]
+  Context.Named.fold_outside (fun (id,_,_) idl -> id::idl) sign ~init:[]
 
 let ids_of_context env =
   (ids_of_rel_context (rel_context env))
@@ -788,7 +787,7 @@ let split_app c = match kind_of_term c with
 	c::(Array.to_list prev), last
   | _ -> assert false
 
-type subst = (rel_context*constr) Evar.Map.t
+type subst = (Context.Rel.t * constr) Evar.Map.t
 
 exception CannotFilter
 
@@ -825,7 +824,7 @@ let filtering env cv_pb c1 c2 =
   in
   aux env cv_pb c1 c2; !evm
 
-let decompose_prod_letin : constr -> int * rel_context * constr =
+let decompose_prod_letin : constr -> int * Context.Rel.t * constr =
   let rec prodec_rec i l c = match kind_of_term c with
     | Prod (n,t,c)    -> prodec_rec (succ i) ((n,None,t)::l) c
     | LetIn (n,d,t,c) -> prodec_rec (succ i) ((n,Some d,t)::l) c
@@ -861,7 +860,7 @@ let nb_prod_modulo_zeta x =
       | _ -> n
   in count 0 x
 
-let align_prod_letin c a : rel_context * constr =
+let align_prod_letin c a : Context.Rel.t * constr =
   let (lc,_,_) = decompose_prod_letin c in
   let (la,l,a) = decompose_prod_letin a in
   if not (la >= lc) then invalid_arg "align_prod_letin";
@@ -899,10 +898,10 @@ let process_rel_context f env =
   let sign = named_context_val env in
   let rels = rel_context env in
   let env0 = reset_with_named_context sign env in
-  Context.fold_rel_context f rels ~init:env0
+  Context.Rel.fold_outside f rels ~init:env0
 
 let assums_of_rel_context sign =
-  Context.fold_rel_context
+  Context.Rel.fold_outside
     (fun (na,c,t) l ->
       match c with
           Some _ -> l
@@ -912,7 +911,7 @@ let assums_of_rel_context sign =
 let map_rel_context_in_env f env sign =
   let rec aux env acc = function
     | d::sign ->
-	aux (push_rel d env) (map_rel_declaration (f env) d :: acc) sign
+	aux (push_rel d env) (Context.Rel.Declaration.map (f env) d :: acc) sign
     | [] ->
 	acc
   in
@@ -920,10 +919,10 @@ let map_rel_context_in_env f env sign =
 
 let map_rel_context_with_binders f sign =
   let rec aux k = function
-    | d::sign -> map_rel_declaration (f k) d :: aux (k-1) sign
+    | d::sign -> Context.Rel.Declaration.map (f k) d :: aux (k-1) sign
     | [] -> []
   in
-  aux (rel_context_length sign) sign
+  aux (Context.Rel.length sign) sign
 
 let substl_rel_context l =
   map_rel_context_with_binders (fun k -> substnl l (k-1))
@@ -955,7 +954,7 @@ let compact_named_context_reverse sign =
        if Option.equal Constr.equal c1 c2 && Constr.equal t1 t2
        then (i1::l2,c2,t2)::q
        else ([i1],c1,t1)::l
-  in Context.fold_named_context_reverse compact ~init:[] sign
+  in Context.Named.fold_inside compact ~init:[] sign
 
 let compact_named_context sign = List.rev (compact_named_context_reverse sign)
 
@@ -976,7 +975,7 @@ let global_vars_set_of_decl env = function
 let dependency_closure env sign hyps =
   if Id.Set.is_empty hyps then [] else
     let (_,lh) =
-      Context.fold_named_context_reverse
+      Context.Named.fold_inside
         (fun (hs,hl) (x,_,_ as d) ->
           if Id.Set.mem x hs then
             (Id.Set.union (global_vars_set_of_decl env d) (Id.Set.remove x hs),

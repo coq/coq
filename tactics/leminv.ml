@@ -14,7 +14,6 @@ open Term
 open Vars
 open Termops
 open Namegen
-open Context
 open Evd
 open Printer
 open Reductionops
@@ -157,7 +156,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
 	fold_named_context
 	  (fun env (id,_,_ as d) (revargs,hyps) ->
              if Id.List.mem id ivars then
-	       ((mkVar id)::revargs,add_named_decl d hyps)
+	       ((mkVar id)::revargs, Context.Named.add d hyps)
 	     else
 	       (revargs,hyps))
           env ~init:([],[])
@@ -206,8 +205,8 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     fold_named_context
       (fun env (id,_,_ as d) sign ->
          if mem_named_context id global_named_context then sign
-	 else add_named_decl d sign)
-      invEnv ~init:empty_named_context
+	 else Context.Named.add d sign)
+      invEnv ~init:Context.Named.empty
   end in
   let avoid = ref [] in
   let { sigma=sigma } = Proof.V82.subgoals pf in
@@ -218,7 +217,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
 	let h = next_ident_away (Id.of_string "H") !avoid in
 	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
 	avoid := h::!avoid;
-	ownSign := add_named_decl (h,None,ty) !ownSign;
+	ownSign := Context.Named.add (h,None,ty) !ownSign;
 	applist (mkVar h, inst)
     | _ -> map_constr fill_holes c
   in

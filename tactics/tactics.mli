@@ -9,7 +9,6 @@
 open Loc
 open Names
 open Term
-open Context
 open Environ
 open Proof_type
 open Evd
@@ -33,9 +32,9 @@ val is_quantified_hypothesis : Id.t -> goal sigma -> bool
 val introduction    : ?check:bool -> Id.t -> unit Proofview.tactic
 val refine          : constr -> tactic
 val convert_concl   : ?check:bool -> types -> cast_kind -> unit Proofview.tactic
-val convert_hyp     : ?check:bool -> named_declaration -> unit Proofview.tactic
+val convert_hyp     : ?check:bool -> Context.Named.Declaration.t -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
-val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
+val convert_hyp_no_check : Context.Named.Declaration.t -> unit Proofview.tactic
 val thin            : Id.t list -> tactic
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
@@ -50,7 +49,7 @@ val convert_leq     : constr -> constr -> unit Proofview.tactic
 
 val fresh_id_in_env : Id.t list -> Id.t -> env -> Id.t
 val fresh_id : Id.t list -> Id.t -> goal sigma -> Id.t
-val find_intro_names : rel_context -> goal sigma -> Id.t list
+val find_intro_names : Context.Rel.t -> goal sigma -> Id.t list
 
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic
@@ -180,7 +179,7 @@ val revert        : Id.t list -> unit Proofview.tactic
 (** {6 Resolution tactics. } *)
 
 val apply_type : constr -> constr list -> unit Proofview.tactic
-val bring_hyps : named_context -> unit Proofview.tactic
+val bring_hyps : Context.Named.t -> unit Proofview.tactic
 
 val apply                 : constr -> unit Proofview.tactic
 val eapply                : constr -> unit Proofview.tactic
@@ -239,20 +238,20 @@ type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
   indref: global_reference option;
-  params: rel_context;     (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
-  nparams: int;            (** number of parameters *)
-  predicates: rel_context; (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
-  npredicates: int;        (** Number of predicates *)
-  branches: rel_context;   (** branchr,...,branch1 *)
-  nbranches: int;          (** Number of branches *)
-  args: rel_context;       (** (xni, Ti_ni) ... (x1, Ti_1) *)
-  nargs: int;              (** number of arguments *)
-  indarg: rel_declaration option; (** Some (H,I prm1..prmp x1...xni)
-				     if HI is in premisses, None otherwise *)
-  concl: types;            (** Qi x1...xni HI (f...), HI and (f...)
-			      are optional and mutually exclusive *)
-  indarg_in_concl: bool;   (** true if HI appears at the end of conclusion *)
-  farg_in_concl: bool;     (** true if (f...) appears at the end of conclusion *)
+  params: Context.Rel.t;      (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
+  nparams: int;               (** number of parameters *)
+  predicates: Context.Rel.t;  (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
+  npredicates: int;           (** Number of predicates *)
+  branches: Context.Rel.t;    (** branchr,...,branch1 *)
+  nbranches: int;             (** Number of branches *)
+  args: Context.Rel.t;        (** (xni, Ti_ni) ... (x1, Ti_1) *)
+  nargs: int;                 (** number of arguments *)
+  indarg: Context.Rel.Declaration.t option;  (** Some (H,I prm1..prmp x1...xni)
+	  		 	                 if HI is in premisses, None otherwise *)
+  concl: types;               (** Qi x1...xni HI (f...), HI and (f...)
+			          are optional and mutually exclusive *)
+  indarg_in_concl: bool;      (** true if HI appears at the end of conclusion *)
+  farg_in_concl: bool;        (** true if (f...) appears at the end of conclusion *)
 }
 
 val compute_elim_sig : ?elimc: constr with_bindings -> types -> elim_scheme

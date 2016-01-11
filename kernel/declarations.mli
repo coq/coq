@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 
 (** This module defines the internal representation of global
    declarations. This includes global constants/axioms, mutual
@@ -38,7 +37,7 @@ type ('a, 'b) declaration_arity =
   | RegularArity of 'a
   | TemplateArity of 'b
 
-type constant_type = (types, rel_context * template_arity) declaration_arity
+type constant_type = (types, Context.Rel.t * template_arity) declaration_arity
 
 (** Inlining level of parameters at functor applications.
     None means no inlining *)
@@ -117,7 +116,7 @@ type one_inductive_body = {
 
     mind_typename : Id.t; (** Name of the type: [Ii] *)
 
-    mind_arity_ctxt : rel_context; (** Arity context of [Ii] with parameters: [forall params, Ui] *)
+    mind_arity_ctxt : Context.Rel.t; (** Arity context of [Ii] with parameters: [forall params, Ui] *)
 
     mind_arity : inductive_arity; (** Arity sort and original user arity *)
 
@@ -171,7 +170,7 @@ type mutual_inductive_body = {
 
     mind_nparams_rec : int;  (** Number of recursively uniform (i.e. ordinary) parameters *)
 
-    mind_params_ctxt : rel_context;  (** The context of parameters (includes let-in declaration) *)
+    mind_params_ctxt : Context.Rel.t;  (** The context of parameters (includes let-in declaration) *)
 
     mind_polymorphic : bool; (** Is it polymorphic or not *)
 

@@ -254,7 +254,7 @@ let subst_mind_body sub mib =
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
-      Context.map_rel_context (subst_mps sub) mib.mind_params_ctxt;
+      Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes;

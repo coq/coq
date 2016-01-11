@@ -48,7 +48,7 @@ let pf_last_hyp gl = List.hd (pf_hyps gl)
 
 let pf_get_hyp gls id =
   try
-    Context.lookup_named id (pf_hyps gls)
+    Context.Named.lookup id (pf_hyps gls)
   with Not_found ->
     raise (RefinerError (NoSuchHyp id))
 
@@ -198,7 +198,7 @@ module New = struct
   let pf_get_hyp id gl =
     let hyps = Proofview.Goal.hyps gl in
     let sign =
-      try Context.lookup_named id hyps
+      try Context.Named.lookup id hyps
       with Not_found -> raise (RefinerError (NoSuchHyp id))
     in
     sign

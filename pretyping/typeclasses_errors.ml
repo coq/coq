@@ -9,7 +9,6 @@
 (*i*)
 open Names
 open Term
-open Context
 open Environ
 open Constrexpr
 open Globnames
@@ -20,7 +19,7 @@ type contexts = Parameters | Properties
 type typeclass_error =
     | NotAClass of constr
     | UnboundMethod of global_reference * Id.t Loc.located (* Class name, method *)
-    | MismatchedContextInstance of contexts * constr_expr list * rel_context (* found, expected *)
+    | MismatchedContextInstance of contexts * constr_expr list * Context.Rel.t (* found, expected *)
 
 exception TypeClassError of env * typeclass_error
 

@@ -840,7 +840,7 @@ $(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
 
 mli-doc: $(DOCMLIS:.mli=.cmi)
 	$(SHOW)'OCAMLDOC -html'
-	$(HIDE)$(OCAMLFIND) ocamldoc -html -rectypes -I +threads -I $(MYCAMLP4LIB) $(MLINCLUDES) \
+	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads -I $(MYCAMLP4LIB) $(MLINCLUDES) \
 	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
@@ -862,7 +862,7 @@ OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -
 	$(OCAMLDOC_MLLIBD)
 
 ml-doc:
-	$(OCAMLFIND) ocamldoc -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(MLSTATICFILES)
+	$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(MLSTATICFILES)
 
 parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
 	$(OCAMLDOC_MLLIBD)

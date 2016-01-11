@@ -53,7 +53,7 @@ let type_constructor mind mib u typ params =
   let s = ind_subst mind mib u in
   let ctyp = substl s typ in
   let ctyp = subst_instance_constr u ctyp in
-  let ndecls = Context.rel_context_length mib.mind_params_ctxt in
+  let ndecls = Context.Rel.length mib.mind_params_ctxt in
   if Int.equal ndecls 0 then ctyp
   else
     let _,ctyp = decompose_prod_n_assum ndecls ctyp in

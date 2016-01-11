@@ -16,7 +16,6 @@ open Errors
 open Util
 open Names
 open Term
-open Context
 open Declarations
 open Environ
 open Entries
@@ -246,8 +245,8 @@ let infer_declaration ~trust env kn dcl =
 let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t
   | TemplateArity (ctx,_) ->
-      Context.fold_rel_context
-        (fold_rel_declaration
+      Context.Rel.fold_outside
+        (Context.Rel.Declaration.fold
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 

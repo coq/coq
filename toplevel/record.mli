@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Vernacexpr
 open Constrexpr
 open Impargs
@@ -22,15 +21,15 @@ val primitive_flag : bool ref
 
 val declare_projections :
   inductive -> ?kind:Decl_kinds.definition_object_kind -> Id.t ->
-  coercion_flag list -> manual_explicitation list list -> rel_context ->
+  coercion_flag list -> manual_explicitation list list -> Context.Rel.t ->
   (Name.t * bool) list * constant option list
 
 val declare_structure : Decl_kinds.recursivity_kind ->
   bool (** polymorphic?*) -> Univ.universe_context ->
   Id.t -> Id.t ->
-  manual_explicitation list -> rel_context -> (** params *) constr -> (** arity *)
+  manual_explicitation list -> Context.Rel.t -> (** params *) constr -> (** arity *)
   bool (** template arity ? *) ->
-  Impargs.manual_explicitation list list -> rel_context -> (** fields *)
+  Impargs.manual_explicitation list list -> Context.Rel.t -> (** fields *)
   ?kind:Decl_kinds.definition_object_kind -> ?name:Id.t ->
   bool -> (** coercion? *)
   bool list -> (** field coercions *)

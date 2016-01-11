@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Term
 open Vars
-open Context
 open Termops
 open Environ
 open Reductionops

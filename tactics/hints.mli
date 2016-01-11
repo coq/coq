@@ -10,7 +10,6 @@ open Pp
 open Util
 open Names
 open Term
-open Context
 open Environ
 open Globnames
 open Decl_kinds
@@ -192,7 +191,7 @@ val make_resolves :
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
 val make_resolve_hyp :
-  env -> evar_map -> named_declaration -> hint_entry list
+  env -> evar_map -> Context.Named.Declaration.t -> hint_entry list
 
 (** [make_extern pri pattern tactic_expr] *)
 

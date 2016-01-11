@@ -3,7 +3,6 @@ open Errors
 open Util
 open Term
 open Vars
-open Context
 open Namegen
 open Names
 open Pp
@@ -30,7 +29,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let env = Global.env () in
   let env_with_params = Environ.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
-  let rec change_predicates_names (avoid:Id.t list) (predicates:rel_context)  : rel_context =
+  let rec change_predicates_names (avoid:Id.t list) (predicates:Context.Rel.t)  : Context.Rel.t =
     match predicates with
     | [] -> []
     |(Name x,v,t)::predicates ->

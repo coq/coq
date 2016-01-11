@@ -141,7 +141,7 @@ let label_of = function
   | ConstructRef ((kn,_),_) -> pi3 (repr_mind kn)
   | VarRef id -> Label.of_id id
 
-let push (r : Context.rel_declaration) (ctx : Context.rel_context) = r :: ctx
+let push (r : Context.Rel.Declaration.t) (ctx : Context.Rel.t) = r :: ctx
 
 let rec traverse current ctx accu t = match kind_of_term t with
 | Var id ->

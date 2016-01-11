@@ -12,7 +12,6 @@ open Pp
 open Names
 open Term
 open Vars
-open Context
 open Termops
 open Namegen
 open Pre_env
@@ -78,12 +77,12 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
 
 let env_nf_evar sigma env =
   process_rel_context
-    (fun d e -> push_rel (map_rel_declaration (nf_evar sigma) d) e) env
+    (fun d e -> push_rel (Context.Rel.Declaration.map (nf_evar sigma) d) e) env
 
 let env_nf_betaiotaevar sigma env =
   process_rel_context
     (fun d e ->
-      push_rel (map_rel_declaration (Reductionops.nf_betaiota sigma) d) e) env
+      push_rel (Context.Rel.Declaration.map (Reductionops.nf_betaiota sigma) d) e) env
 
 let nf_evars_universes evm =
   Universes.nf_evars_and_universes_opt_subst (Reductionops.safe_evar_value evm) 
@@ -106,10 +105,10 @@ let nf_evar_map_universes evm =
 	Evd.raw_map (fun _ -> map_evar_info f) evm, f
 
 let nf_named_context_evar sigma ctx =
-  Context.map_named_context (nf_evar sigma) ctx
+  Context.Named.map (nf_evar sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
-  Context.map_rel_context (nf_evar sigma) ctx
+  Context.Rel.map (nf_evar sigma) ctx
 
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
@@ -303,7 +302,7 @@ let push_rel_context_to_named_context env typ =
   (* with vars of the rel context *)
   (* We do keep the instances corresponding to local definition (see above) *)
   let (subst, vsubst, _, env) =
-    Context.fold_rel_context
+    Context.Rel.fold_outside
       (fun (na,c,t) (subst, vsubst, avoid, env) ->
         let id =
           (* ppedrot: we want to infer nicer names for the refine tactic, but

@@ -12,7 +12,6 @@ open Names
 open Univ
 open Term
 open Vars
-open Context
 open Declarations
 open Declareops
 open Inductive
@@ -341,7 +340,7 @@ let typecheck_inductive env mie =
 type ill_formed_ind =
   | LocalNonPos of int
   | LocalNotEnoughArgs of int
-  | LocalNotConstructor of rel_context * constr list
+  | LocalNotConstructor of Context.Rel.t * constr list
   | LocalNonPar of int * int * int
 
 exception IllFormedInd of ill_formed_ind
@@ -361,7 +360,7 @@ let explain_ind_err id ntyp env nbpar c err =
 	raise (InductiveError
 		 (NotEnoughArgs (env,c',mkRel (kt+nbpar))))
     | LocalNotConstructor (paramsctxt,args)->
-        let nparams = rel_context_nhyps paramsctxt in
+        let nparams = Context.Rel.nhyps paramsctxt in
 	raise (InductiveError
 		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nparams,
                                   List.length args - nparams)))
@@ -384,7 +383,7 @@ let failwith_non_pos_list n ntypes l =
 
 (* Check the inductive type is called with the expected parameters *)
 let check_correct_par (env,n,ntypes,_) hyps l largs =
-  let nparams = rel_context_nhyps hyps in
+  let nparams = Context.Rel.nhyps hyps in
   let largs = Array.of_list largs in
   if Array.length largs < nparams then
     raise (IllFormedInd (LocalNotEnoughArgs l));
@@ -465,8 +464,8 @@ let array_min nmr a = if Int.equal nmr 0 then 0 else
     arguments (used to generate induction schemes, so a priori less
     relevant to the kernel). *)
 let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcnames indlc =
-  let lparams = rel_context_length hyps in
-  let nmr = rel_context_nhyps hyps in
+  let lparams = Context.Rel.length hyps in
+  let nmr = Context.Rel.nhyps hyps in
   (** Positivity of one argument [c] of a constructor (i.e. the
       constructor [cn] has a type of the shape [… -> c … -> P], where,
       more generally, the arrows may be dependent). *)
@@ -617,13 +616,13 @@ let check_positivity kn env_ar params inds =
   let ntypes = Array.length inds in
   let rc = Array.mapi (fun j t -> (Mrec (kn,j),t)) (Rtree.mk_rec_calls ntypes) in
   let lra_ind = Array.rev_to_list rc in
-  let lparams = rel_context_length params in
-  let nmr = rel_context_nhyps params in
+  let lparams = Context.Rel.length params in
+  let nmr = Context.Rel.nhyps params in
   let check_one i (_,lcnames,lc,(sign,_)) =
     let ra_env =
       List.init lparams (fun _ -> (Norec,mk_norec)) @ lra_ind in
     let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
-    let nargs = rel_context_nhyps sign - nmr in
+    let nargs = Context.Rel.nhyps sign - nmr in
     check_positivity_one ienv params (kn,i) nargs lcnames lc
   in
   let irecargs_nmr = Array.mapi check_one inds in
@@ -697,7 +696,7 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
       matching with a parameter context. *)
   let indty, paramsletsubst =
     (* [ty] = [Ind inst] is typed in context [params] *)
-    let inst = extended_rel_vect 0 paramslet in
+    let inst = Context.Rel.to_extended_vect 0 paramslet in
     let ty = mkApp (mkIndU indu, inst) in
     (* [Ind inst] is typed in context [params-wo-let] *)
     let inst' = rel_list 0 nparamargs in
@@ -710,7 +709,7 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
   in
   let ci = 
     let print_info =
-      { ind_tags = []; cstr_tags = [|rel_context_tags ctx|]; style = LetStyle } in
+      { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in
       { ci_ind     = ind;
 	ci_npar    = nparamargs;
 	ci_cstr_ndecls = mind_consnrealdecls;
@@ -783,8 +782,8 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env inds in
-  let nparamargs = rel_context_nhyps params in
-  let nparamdecls = rel_context_length params in
+  let nparamargs = Context.Rel.nhyps params in
+  let nparamdecls = Context.Rel.length params in
   let subst, ctx = Univ.abstract_universes p ctx in
   let params = Vars.subst_univs_level_context subst params in
   let env_ar = 
@@ -799,10 +798,10 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
     let splayed_lc = Array.map (dest_prod_assum env_ar) lc in
     let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
     let consnrealdecls =
-      Array.map (fun (d,_) -> rel_context_length d - rel_context_length params)
+      Array.map (fun (d,_) -> Context.Rel.length d - Context.Rel.length params)
 	splayed_lc in
     let consnrealargs =
-      Array.map (fun (d,_) -> rel_context_nhyps d - rel_context_nhyps params)
+      Array.map (fun (d,_) -> Context.Rel.nhyps d - Context.Rel.nhyps params)
 	splayed_lc in
     (* Elimination sorts *)
     let arkind,kelim = 
@@ -835,8 +834,8 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
       { mind_typename = id;
 	mind_arity = arkind;
 	mind_arity_ctxt = Vars.subst_univs_level_context subst ar_sign;
-	mind_nrealargs = rel_context_nhyps ar_sign - nparamargs;
-	mind_nrealdecls = rel_context_length ar_sign - nparamdecls;
+	mind_nrealargs = Context.Rel.nhyps ar_sign - nparamargs;
+	mind_nrealdecls = Context.Rel.length ar_sign - nparamdecls;
 	mind_kelim = kelim;
 	mind_consnames = Array.of_list cnames;
 	mind_consnrealdecls = consnrealdecls;

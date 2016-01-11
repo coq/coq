@@ -3,7 +3,6 @@ open Errors
 open Util
 open Term
 open Vars
-open Context
 open Namegen
 open Names
 open Declarations
@@ -230,7 +229,7 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
 
 
 
-let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
+let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
   let nochange ?t' msg  =
     begin
       observe (str ("Not treating ( "^msg^" )") ++ pr_lconstr t  ++ str "    " ++ match t' with None -> str "" | Some t -> Printer.pr_lconstr t );

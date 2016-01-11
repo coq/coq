@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Declarations
 open Environ
 open Evd
@@ -92,12 +91,12 @@ val inductive_nparamdecls : inductive -> int
 val inductive_nparamdecls_env : env -> inductive -> int
 
 (** @return params context *)
-val inductive_paramdecls : pinductive -> rel_context
-val inductive_paramdecls_env : env -> pinductive -> rel_context
+val inductive_paramdecls : pinductive -> Context.Rel.t
+val inductive_paramdecls_env : env -> pinductive -> Context.Rel.t
 
 (** @return full arity context, hence with letin *)
-val inductive_alldecls : pinductive -> rel_context
-val inductive_alldecls_env : env -> pinductive -> rel_context
+val inductive_alldecls : pinductive -> Context.Rel.t
+val inductive_alldecls_env : env -> pinductive -> Context.Rel.t
 
 (** {7 Extract information from a constructor name} *)
 
@@ -133,9 +132,9 @@ val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
 
 type constructor_summary = {
   cs_cstr : pconstructor;    (* internal name of the constructor plus universes *)
-  cs_params : constr list;  (* parameters of the constructor in current ctx *)
-  cs_nargs : int;           (* length of arguments signature (letin included) *)
-  cs_args : rel_context;    (* signature of the arguments (letin included) *)
+  cs_params : constr list;   (* parameters of the constructor in current ctx *)
+  cs_nargs : int;            (* length of arguments signature (letin included) *)
+  cs_args : Context.Rel.t;   (* signature of the arguments (letin included) *)
   cs_concl_realargs : constr array; (* actual realargs in the concl of cstr *)
 }
 val lift_constructor : int -> constructor_summary -> constructor_summary
@@ -148,11 +147,11 @@ val get_projections  : env -> inductive_family -> constant array option
 (** [get_arity] returns the arity of the inductive family instantiated
     with the parameters; if recursively non-uniform parameters are not
     part of the inductive family, they appears in the arity *)
-val get_arity        : env -> inductive_family -> rel_context * sorts_family
+val get_arity        : env -> inductive_family -> Context.Rel.t * sorts_family
 
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
-val make_arity_signature : env -> bool -> inductive_family -> rel_context
+val make_arity_signature : env -> bool -> inductive_family -> Context.Rel.t
 val make_arity : env -> bool -> inductive_family -> sorts -> types
 val build_branch_type : env -> bool -> constr -> constructor_summary -> types
 

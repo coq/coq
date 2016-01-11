@@ -24,7 +24,6 @@ open Errors
 open Util
 open Names
 open Term
-open Context
 open Vars
 open Declarations
 open Pre_env
@@ -70,7 +69,7 @@ let empty_context env =
 
 (* Rel context *)
 let lookup_rel n env =
-  lookup_rel n env.env_rel_context
+  Context.Rel.lookup n env.env_rel_context
 
 let evaluable_rel n env =
   match lookup_rel n env with
@@ -81,7 +80,7 @@ let nb_rel env = env.env_nb_rel
 
 let push_rel = push_rel
 
-let push_rel_context ctxt x = Context.fold_rel_context push_rel ctxt ~init:x
+let push_rel_context ctxt x = Context.Rel.fold_outside push_rel ctxt ~init:x
 
 let push_rec_types (lna,typarray,_) env =
   let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
@@ -120,7 +119,7 @@ let map_named_val f (ctxt,ctxtv) =
   in
   (map ctxt, ctxtv)
 
-let empty_named_context = empty_named_context
+let empty_named_context = Context.Named.empty
 
 let push_named = push_named
 let push_named_context = List.fold_right push_named
@@ -130,11 +129,11 @@ let val_of_named_context ctxt =
   List.fold_right push_named_context_val ctxt empty_named_context_val
 
 
-let lookup_named id env = Context.lookup_named id env.env_named_context
-let lookup_named_val id (ctxt,_) = Context.lookup_named id ctxt
+let lookup_named id env = Context.Named.lookup id env.env_named_context
+let lookup_named_val id (ctxt,_) = Context.Named.lookup id ctxt
 
 let eq_named_context_val c1 c2 =
-   c1 == c2 || named_context_equal (named_context_of_val c1) (named_context_of_val c2)
+   c1 == c2 || Context.Named.equal (named_context_of_val c1) (named_context_of_val c2)
 
 (* A local const is evaluable if it is defined  *)
 
@@ -153,7 +152,7 @@ let reset_with_named_context (ctxt,ctxtv) env =
   { env with
     env_named_context = ctxt;
     env_named_vals = ctxtv;
-    env_rel_context = empty_rel_context;
+    env_rel_context = Context.Rel.empty;
     env_rel_val = [];
     env_nb_rel = 0 }
 
@@ -176,7 +175,7 @@ let fold_named_context f env ~init =
   in fold_right env
 
 let fold_named_context_reverse f ~init env =
-  Context.fold_named_context_reverse f ~init:init (named_context env)
+  Context.Named.fold_inside f ~init:init (named_context env)
 
 
 (* Universe constraints *)
@@ -389,11 +388,11 @@ let add_mind kn mib env =
 
 let lookup_constant_variables c env =
   let cmap = lookup_constant c env in
-  Context.vars_of_named_context cmap.const_hyps
+  Context.Named.to_vars cmap.const_hyps
 
 let lookup_inductive_variables (kn,i) env =
   let mis = lookup_mind kn env in
-  Context.vars_of_named_context mis.mind_hyps
+  Context.Named.to_vars mis.mind_hyps
 
 let lookup_constructor_variables (ind,_) env =
   lookup_inductive_variables ind env
@@ -427,7 +426,7 @@ let global_vars_set env constr =
    contained in the types of the needed variables. *)
 
 let really_needed env needed =
-  Context.fold_named_context_reverse
+  Context.Named.fold_inside
     (fun need (id,copt,t) ->
       if Id.Set.mem id need then
         let globc =
@@ -443,9 +442,9 @@ let really_needed env needed =
 
 let keep_hyps env needed =
   let really_needed = really_needed env needed in
-  Context.fold_named_context
+  Context.Named.fold_outside
     (fun (id,_,_ as d) nsign ->
-      if Id.Set.mem id really_needed then add_named_decl d nsign
+      if Id.Set.mem id really_needed then Context.Named.add d nsign
       else nsign)
     (named_context env)
     ~init:empty_named_context

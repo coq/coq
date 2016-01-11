@@ -187,12 +187,12 @@ let process_goal sigma g =
     Richpp.richpp_of_pp (pr_goal_concl_style_env env sigma norm_constr)
   in
   let process_hyp d (env,l) =
-    let d = Context.map_named_list_declaration (Reductionops.nf_evar sigma) d in
+    let d = Context.NamedList.Declaration.map (Reductionops.nf_evar sigma) d in
     let d' = List.map (fun x -> (x, pi2 d, pi3 d)) (pi1 d) in
       (List.fold_right Environ.push_named d' env,
        (Richpp.richpp_of_pp (pr_var_list_decl env sigma d)) :: l) in
   let (_env, hyps) =
-    Context.fold_named_list_context process_hyp
+    Context.NamedList.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 

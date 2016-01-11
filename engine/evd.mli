@@ -10,7 +10,6 @@ open Util
 open Loc
 open Names
 open Term
-open Context
 open Environ
 
 (** {5 Existential variables and unification states}
@@ -105,8 +104,8 @@ type evar_info = {
 
 val make_evar : named_context_val -> types -> evar_info
 val evar_concl : evar_info -> constr
-val evar_context : evar_info -> named_context
-val evar_filtered_context : evar_info -> named_context
+val evar_context : evar_info -> Context.Named.t
+val evar_filtered_context : evar_info -> Context.Named.t
 val evar_hyps : evar_info -> named_context_val
 val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
@@ -223,7 +222,7 @@ val existential_opt_value : evar_map -> existential -> constr option
 (** Same as {!existential_value} but returns an option instead of raising an
     exception. *)
 
-val evar_instance_array : (named_declaration -> 'a -> bool) -> evar_info ->
+val evar_instance_array : (Context.Named.Declaration.t -> 'a -> bool) -> evar_info ->
   'a array -> (Id.t * 'a) list
 
 val instantiate_evar_array : evar_info -> constr -> constr array -> constr
@@ -423,7 +422,7 @@ val evar_list : constr -> existential list
 val evars_of_term : constr -> Evar.Set.t
   (** including evars in instances of evars *)
 
-val evars_of_named_context : named_context -> Evar.Set.t
+val evars_of_named_context : Context.Named.t -> Evar.Set.t
 
 val evars_of_filtered_evar_info : evar_info -> Evar.Set.t
 

@@ -11,7 +11,6 @@ open Errors
 open Names
 open Term
 open Vars
-open Context
 open Environ
 open Termops
 open Evd
@@ -501,7 +500,7 @@ let solve_pattern_eqn env l c =
     match kind_of_term a with
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
       | Rel n ->
-          let d = map_rel_declaration (lift n) (lookup_rel n env) in
+          let d = Context.Rel.Declaration.map (lift n) (lookup_rel n env) in
           mkLambda_or_LetIn d c'
       | Var id ->
           let d = lookup_named id env in mkNamedLambda_or_LetIn d c'

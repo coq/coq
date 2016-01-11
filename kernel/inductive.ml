@@ -12,7 +12,6 @@ open Names
 open Univ
 open Term
 open Vars
-open Context
 open Declarations
 open Declareops
 open Environ
@@ -77,7 +76,7 @@ let instantiate_params full t u args sign =
   let fail () =
     anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch") in
   let (rem_args, subs, ty) =
-    Context.fold_rel_context
+    Context.Rel.fold_outside
       (fun (_,copt,_) (largs,subs,ty) ->
         match (copt, largs, kind_of_term ty) with
           | (None, a::args, Prod(_,_,t)) -> (args, a::subs, t)
@@ -297,7 +296,7 @@ let build_dependent_inductive ind (_,mip) params =
   applist
     (mkIndU ind,
        List.map (lift mip.mind_nrealdecls) params
-       @ extended_rel_list 0 realargs)
+       @ Context.Rel.to_extended_list 0 realargs)
 
 (* This exception is local *)
 exception LocalArity of (sorts_family * sorts_family * arity_error) option
@@ -350,12 +349,12 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
   let build_one_branch i cty =
     let typi = full_constructor_instantiate (ind,u,specif,params) cty in
     let (cstrsign,ccl) = decompose_prod_assum typi in
-    let nargs = rel_context_length cstrsign in
+    let nargs = Context.Rel.length cstrsign in
     let (_,allargs) = decompose_app ccl in
     let (lparams,vargs) = List.chop (inductive_params specif) allargs in
     let cargs =
       let cstr = ith_constructor_of_inductive ind (i+1) in
-      let dep_cstr = applist (mkConstructU (cstr,u),lparams@(extended_rel_list 0 cstrsign)) in
+      let dep_cstr = applist (mkConstructU (cstr,u),lparams@(Context.Rel.to_extended_list 0 cstrsign)) in
       vargs @ [dep_cstr] in
     let base = lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
     it_mkProd_or_LetIn base cstrsign in
@@ -499,7 +498,7 @@ let subterm_var p renv =
   with Failure _ | Invalid_argument _ -> Not_subterm
 
 let push_ctxt_renv renv ctxt =
-  let n = rel_context_length ctxt in
+  let n = Context.Rel.length ctxt in
   { env = push_rel_context ctxt renv.env;
     rel_min = renv.rel_min+n;
     genv = iterate (fun ge -> lazy Not_subterm::ge) n renv.genv }
@@ -701,7 +700,7 @@ let restrict_spec env spec p =
   else let absctx, ar = dest_lam_assum env p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
-  if noccur_with_meta 1 (rel_context_length absctx) ar then spec
+  if noccur_with_meta 1 (Context.Rel.length absctx) ar then spec
   else
   let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
@@ -843,7 +842,7 @@ let filter_stack_domain env ci p stack =
   let absctx, ar = dest_lam_assum env p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
-  if noccur_with_meta 1 (rel_context_length absctx) ar then stack
+  if noccur_with_meta 1 (Context.Rel.length absctx) ar then stack
   else let env = push_rel_context absctx env in
   let rec filter_stack env ar stack =
     let t = whd_betadeltaiota env ar in

@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Term
-open Context
 open Environ
 
 (***********************************************************************
@@ -99,9 +98,9 @@ val betazeta_appvect : int -> constr -> constr array -> constr
 (***********************************************************************
   s Recognizing products and arities modulo reduction *)
 
-val dest_prod       : env -> types -> rel_context * types
-val dest_prod_assum : env -> types -> rel_context * types
-val dest_lam_assum  : env -> types -> rel_context * types
+val dest_prod       : env -> types -> Context.Rel.t * types
+val dest_prod_assum : env -> types -> Context.Rel.t * types
+val dest_lam_assum  : env -> types -> Context.Rel.t * types
 
 exception NotArity
 

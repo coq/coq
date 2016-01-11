@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Term
 open Vars
-open Context
 open Termops
 open Find_subterm
 open Namegen
@@ -1405,7 +1404,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       then
         let t = lift (i+1-n) t in
 	let abselim = beta_applist (elim,params@[t;branch]) in
-	let c = beta_applist (abselim, [mkApp (c, extended_rel_vect 0 sign)]) in
+	let c = beta_applist (abselim, [mkApp (c, Context.Rel.to_extended_vect 0 sign)]) in
 	  Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
       else
 	None
@@ -1413,7 +1412,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       (* goes from left to right when i increases! *)
       match List.nth l i with
       | Some proj ->
-	  let args = extended_rel_vect 0 sign in
+	  let args = Context.Rel.to_extended_vect 0 sign in
 	  let proj =
 	    if Environ.is_projection proj env then
 	      mkProj (Projection.make proj false, mkApp (c, args))
@@ -1942,7 +1941,7 @@ let bring_hyps hyps =
       let store = Proofview.Goal.extra gl in
       let concl = Tacmach.New.pf_nf_concl gl in
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
-      let args = Array.of_list (instance_from_named_context hyps) in
+      let args = Array.of_list (Context.Named.to_instance hyps) in
       Proofview.Refine.refine { run = begin fun sigma ->
         let Sigma (ev, sigma, p) =
           Evarutil.new_evar env sigma ~principal:true ~store newcl in
@@ -2568,7 +2567,7 @@ let generalize_dep ?(with_let=false) c gl =
       d::toquant
     else
       toquant in
-  let to_quantify = Context.fold_named_context seek sign ~init:[] in
+  let to_quantify = Context.Named.fold_outside seek sign ~init:[] in
   let to_quantify_rev = List.rev to_quantify in
   let qhyps = List.map (fun (id,_,_) -> id) to_quantify_rev in
   let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
@@ -2588,7 +2587,7 @@ let generalize_dep ?(with_let=false) c gl =
   in
   let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous)
     (cl',project gl) in
-  let args = instance_from_named_context to_quantify_rev in
+  let args = Context.Named.to_instance to_quantify_rev in
   tclTHENLIST
     [tclEVARS evd;
      Proofview.V82.of_tactic (apply_type cl'' (if Option.is_empty body then c::args else args));
@@ -2710,7 +2709,7 @@ let specialize (c,lbind) =
 let unfold_body x gl =
   let hyps = pf_hyps gl in
   let xval =
-    match Context.lookup_named x hyps with
+    match Context.Named.lookup x hyps with
         (_,Some xval,_) -> xval
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis.") in
@@ -3131,20 +3130,20 @@ type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
   indref: global_reference option;
-  params: rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
-  nparams: int;            (* number of parameters *)
-  predicates: rel_context; (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
-  npredicates: int;        (* Number of predicates *)
-  branches: rel_context;   (* branchr,...,branch1 *)
-  nbranches: int;          (* Number of branches *)
-  args: rel_context;       (* (xni, Ti_ni) ... (x1, Ti_1) *)
-  nargs: int;              (* number of arguments *)
-  indarg: rel_declaration option; (* Some (H,I prm1..prmp x1...xni)
-				     if HI is in premisses, None otherwise *)
-  concl: types;            (* Qi x1...xni HI (f...), HI and (f...)
-			      are optional and mutually exclusive *)
-  indarg_in_concl: bool;   (* true if HI appears at the end of conclusion *)
-  farg_in_concl: bool;     (* true if (f...) appears at the end of conclusion *)
+  params: Context.Rel.t;      (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
+  nparams: int;               (* number of parameters *)
+  predicates: Context.Rel.t;  (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
+  npredicates: int;           (* Number of predicates *)
+  branches: Context.Rel.t;    (* branchr,...,branch1 *)
+  nbranches: int;             (* Number of branches *)
+  args: Context.Rel.t;        (* (xni, Ti_ni) ... (x1, Ti_1) *)
+  nargs: int;                 (* number of arguments *)
+  indarg: Context.Rel.Declaration.t option; (* Some (H,I prm1..prmp x1...xni)
+                                               if HI is in premisses, None otherwise *)
+  concl: types;               (* Qi x1...xni HI (f...), HI and (f...)
+			         are optional and mutually exclusive *)
+  indarg_in_concl: bool;      (* true if HI appears at the end of conclusion *)
+  farg_in_concl: bool;        (* true if (f...) appears at the end of conclusion *)
 }
 
 let empty_scheme =
@@ -3303,7 +3302,7 @@ let hyps_of_vars env sign nogen hyps =
   if Id.Set.is_empty hyps then []
   else
     let (_,lh) =
-      Context.fold_named_context_reverse
+      Context.Named.fold_inside
         (fun (hs,hl) (x,_,_ as d) ->
 	  if Id.Set.mem x nogen then (hs,hl)
 	  else if Id.Set.mem x hs then (hs,x::hl)
@@ -3534,7 +3533,7 @@ let occur_rel n c =
    We also return the conclusion.
 *)
 let decompose_paramspred_branch_args elimt =
-  let rec cut_noccur elimt acc2 : rel_context * rel_context * types =
+  let rec cut_noccur elimt acc2 : Context.Rel.t * Context.Rel.t * types =
     match kind_of_term elimt with
       | Prod(nme,tpe,elimt') ->
 	  let hd_tpe,_ = decompose_app ((strip_prod_assum tpe)) in
@@ -3543,7 +3542,7 @@ let decompose_paramspred_branch_args elimt =
 	  else let acc3,ccl = decompose_prod_assum elimt in acc2 , acc3 , ccl
       | App(_, _) | Rel _ -> acc2 , [] , elimt
       | _ -> error_ind_scheme "" in
-  let rec cut_occur elimt acc1 : rel_context * rel_context * rel_context * types =
+  let rec cut_occur elimt acc1 : Context.Rel.t * Context.Rel.t * Context.Rel.t * types =
     match kind_of_term elimt with
       | Prod(nme,tpe,c) when occur_rel 1 c -> cut_occur c ((nme,None,tpe)::acc1)
       | Prod(nme,tpe,c) -> let acc2,acc3,ccl = cut_noccur elimt [] in acc1,acc2,acc3,ccl
@@ -3671,7 +3670,7 @@ let compute_scheme_signature scheme names_info ind_type_guess =
 	    let ind_is_ok =
 	      List.equal Term.eq_constr
 		(List.lastn scheme.nargs indargs)
-		(extended_rel_list 0 scheme.args) in
+		(Context.Rel.to_extended_list 0 scheme.args) in
 	    if not (ccl_arg_ok && ind_is_ok) then
 	      error_ind_scheme "the conclusion of"
 	  in (cond, check_concl)
@@ -4586,10 +4585,10 @@ let abstract_subproof id gk tac =
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) ->
 	if mem_named_context id current_sign &&
-          interpretable_as_section_decl evdref (Context.lookup_named id current_sign) d
+          interpretable_as_section_decl evdref (Context.Named.lookup id current_sign) d
         then (s1,push_named_context_val d s2)
-	else (add_named_decl d s1,s2))
-      global_sign (empty_named_context,empty_named_context_val) in
+	else (Context.Named.add d s1,s2))
+      global_sign (Context.Named.empty, empty_named_context_val) in
   let id = next_global_ident_away id (pf_ids_of_hyps gl) in
   let concl = it_mkNamedProd_or_LetIn (Proofview.Goal.concl gl) sign in
   let concl =
@@ -4617,7 +4616,7 @@ let abstract_subproof id gk tac =
   in
   let const, args =
     if !shrink_abstract then shrink_entry sign const
-    else (const, List.rev (instance_from_named_context sign))
+    else (const, List.rev (Context.Named.to_instance sign))
   in
   let cd = Entries.DefinitionEntry const in
   let decl = (cd, IsProof Lemma) in

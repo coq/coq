@@ -15,7 +15,6 @@
 
 open Util
 open Names
-open Context
 open Univ
 open Term
 open Declarations
@@ -66,9 +65,9 @@ type named_vals = (Id.t * lazy_val) list
 
 type env = {
   env_globals       : globals;
-  env_named_context : named_context;
+  env_named_context : Context.Named.t;
   env_named_vals    : named_vals;
-  env_rel_context   : rel_context;
+  env_rel_context   : Context.Rel.t;
   env_rel_val       : lazy_val list;
   env_nb_rel        : int;
   env_stratification : stratification;
@@ -77,7 +76,7 @@ type env = {
   indirect_pterms : Opaqueproof.opaquetab;
 }
 
-type named_context_val = named_context * named_vals
+type named_context_val = Context.Named.t * named_vals
 
 let empty_named_context_val = [],[]
 
@@ -87,9 +86,9 @@ let empty_env = {
     env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
-  env_named_context = empty_named_context;
+  env_named_context = Context.Named.empty;
   env_named_vals = [];
-  env_rel_context = empty_rel_context;
+  env_rel_context = Context.Rel.empty;
   env_rel_val = [];
   env_nb_rel = 0;
   env_stratification = {
@@ -107,7 +106,7 @@ let nb_rel env = env.env_nb_rel
 let push_rel d env =
   let rval = ref VKnone in
     { env with
-      env_rel_context = add_rel_decl d env.env_rel_context;
+      env_rel_context = Context.Rel.add d env.env_rel_context;
       env_rel_val = rval :: env.env_rel_val;
       env_nb_rel = env.env_nb_rel + 1 }
 
@@ -127,7 +126,7 @@ let env_of_rel n env =
 let push_named_context_val d (ctxt,vals) =
   let id,_,_ = d in
   let rval = ref VKnone in
-    add_named_decl d ctxt, (id,rval)::vals
+    Context.Named.add d ctxt, (id,rval)::vals
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
@@ -135,7 +134,7 @@ let push_named d env =
   let id,body,_ = d in
   let rval = ref VKnone in
   { env_globals = env.env_globals;
-    env_named_context = Context.add_named_decl d env.env_named_context;
+    env_named_context = Context.Named.add d env.env_named_context;
     env_named_vals = (id, rval) :: env.env_named_vals;
     env_rel_context = env.env_rel_context;
     env_rel_val = env.env_rel_val;

@@ -77,7 +77,7 @@ val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
 
 type 'r abstraction_result =
   Names.Id.t * named_context_val *
-    Context.named_declaration list * Names.Id.t option *
+    Context.Named.Declaration.t list * Names.Id.t option *
     types * (constr, 'r) Sigma.sigma option
 
 val make_abstraction : env -> 'r Sigma.t -> constr ->

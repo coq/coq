@@ -12,7 +12,6 @@ open Util
 open Names
 open Term
 open Vars
-open Context
 open Inductiveops
 open Environ
 open Glob_term
@@ -199,7 +198,7 @@ let computable p k =
        engendrera un prédicat non dépendant) *)
 
   let sign,ccl = decompose_lam_assum p in
-  Int.equal (rel_context_length sign) (k + 1)
+  Int.equal (Context.Rel.length sign) (k + 1)
   &&
   noccur_between 1 (k+1) ccl
 
@@ -315,7 +314,7 @@ let is_nondep_branch c l =
   try
     (* FIXME: do better using tags from l *)
     let sign,ccl = decompose_lam_n_decls (List.length l) c in
-    noccur_between 1 (rel_context_length sign) ccl
+    noccur_between 1 (Context.Rel.length sign) ccl
   with e when Errors.noncritical e -> (* Not eta-expanded or not reduced *)
     false
 

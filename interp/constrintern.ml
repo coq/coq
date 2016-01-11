@@ -101,7 +101,7 @@ let global_reference id =
 
 let construct_reference ctx id =
   try
-    Term.mkVar (let _ = Context.lookup_named id ctx in id)
+    Term.mkVar (let _ = Context.Named.lookup id ctx in id)
   with Not_found ->
     global_reference id
 
@@ -685,7 +685,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
       str "variable " ++ pr_id id ++ str " should be bound to a term.")
   else
     (* Is [id] a goal or section variable *)
-    let _ = Context.lookup_named id namedctx in
+    let _ = Context.Named.lookup id namedctx in
       try
 	(* [id] a section variable *)
 	(* Redundant: could be done in intern_qualid *)

@@ -28,7 +28,6 @@ open Names
 open Evd
 open Term
 open Vars
-open Context
 open Termops
 open Reductionops
 open Environ
@@ -311,7 +310,7 @@ let ltac_interp_name_env k0 lvar env =
      specification of pretype which accepts to start with a non empty
      rel_context) *)
   (* tail is the part of the env enriched by pretyping *)
-  let n = rel_context_length (rel_context env) - k0 in
+  let n = Context.Rel.length (rel_context env) - k0 in
   let ctxt,_ = List.chop n (rel_context env) in
   let env = pop_rel_context n env in
   let ctxt = List.map (fun (na,c,t) -> ltac_interp_name lvar na,c,t) ctxt in
@@ -515,14 +514,14 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
         let ty' = pretype_type empty_valcon env evdref lvar ty in
         let dcl = (na,None,ty'.utj_val) in
         let dcl' = (ltac_interp_name lvar na,None,ty'.utj_val) in
-	  type_bl (push_rel dcl env) (add_rel_decl dcl' ctxt) bl
+	  type_bl (push_rel dcl env) (Context.Rel.add dcl' ctxt) bl
       | (na,bk,Some bd,ty)::bl ->
         let ty' = pretype_type empty_valcon env evdref lvar ty in
         let bd' = pretype (mk_tycon ty'.utj_val) env evdref lvar bd in
         let dcl = (na,Some bd'.uj_val,ty'.utj_val) in
         let dcl' = (ltac_interp_name lvar na,Some bd'.uj_val,ty'.utj_val) in
-	  type_bl (push_rel dcl env) (add_rel_decl dcl' ctxt) bl in
-    let ctxtv = Array.map (type_bl env empty_rel_context) bl in
+	  type_bl (push_rel dcl env) (Context.Rel.add dcl' ctxt) bl in
+    let ctxtv = Array.map (type_bl env Context.Rel.empty) bl in
     let larj =
       Array.map2
         (fun e ar ->
@@ -549,7 +548,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
              (* we lift nbfix times the type in tycon, because of
 	      * the nbfix variables pushed to newenv *)
           let (ctxt,ty) =
-	    decompose_prod_n_assum (rel_context_length ctxt)
+	    decompose_prod_n_assum (Context.Rel.length ctxt)
               (lift nbfix ftys.(i)) in
           let nenv = push_rel_context ctxt newenv in
           let j = pretype (mk_tycon ty) nenv evdref lvar def in
@@ -870,7 +869,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       let pred = nf_evar !evdref pred in
       let p = nf_evar !evdref p in
       let f cs b =
-	let n = rel_context_length cs.cs_args in
+	let n = Context.Rel.length cs.cs_args in
 	let pi = lift n pred in (* liftn n 2 pred ? *)
 	let pi = beta_applist (pi, [build_dependent_constructor cs]) in
 	let csgn =
@@ -1003,7 +1002,7 @@ and pretype_type k0 resolve_tc valcon env evdref lvar = function
 
 let ise_pretype_gen flags env sigma lvar kind c =
   let evdref = ref sigma in
-  let k0 = rel_context_length (rel_context env) in
+  let k0 = Context.Rel.length (rel_context env) in
   let c' = match kind with
     | WithoutTypeConstraint ->
         (pretype k0 flags.use_typeclasses empty_tycon env evdref lvar c).uj_val
@@ -1045,7 +1044,7 @@ let on_judgment f j =
 
 let understand_judgment env sigma c =
   let evdref = ref sigma in
-  let k0 = rel_context_length (rel_context env) in
+  let k0 = Context.Rel.length (rel_context env) in
   let j = pretype k0 true empty_tycon env evdref empty_lvar c in
   let j = on_judgment (fun c ->
     let evd, c = process_inference_flags all_and_fail_flags env sigma (!evdref,c) in 
@@ -1053,7 +1052,7 @@ let understand_judgment env sigma c =
   in j, Evd.evar_universe_context !evdref
 
 let understand_judgment_tcc env evdref c =
-  let k0 = rel_context_length (rel_context env) in
+  let k0 = Context.Rel.length (rel_context env) in
   let j = pretype k0 true empty_tycon env evdref empty_lvar c in
   on_judgment (fun c ->
     let (evd,c) = process_inference_flags all_no_fail_flags env Evd.empty (!evdref,c) in

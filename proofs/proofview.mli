@@ -446,7 +446,7 @@ module Goal : sig
       environment of [gl] (i.e. the global environment and the
       hypotheses) and the current evar map. *)
   val concl : ([ `NF ], 'r) t -> Term.constr
-  val hyps : ([ `NF ], 'r) t -> Context.named_context
+  val hyps : ([ `NF ], 'r) t -> Context.Named.t
   val env : ('a, 'r) t -> Environ.env
   val sigma : ('a, 'r) t -> 'r Sigma.t
   val extra : ('a, 'r) t -> Evd.Store.t

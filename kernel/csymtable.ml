@@ -15,7 +15,6 @@
 open Util
 open Names
 open Term
-open Context
 open Vm
 open Cemitcodes
 open Cbytecodes
@@ -190,7 +189,7 @@ and slot_for_fv env fv =
       let nv = Pre_env.lookup_named_val id env in
       begin match force_lazy_val nv with
       | None ->
-          let _, b, _ = Context.lookup_named id env.env_named_context in
+          let _, b, _ = Context.Named.lookup id env.env_named_context in
           fill_fv_cache nv id val_of_named idfun b
       | Some (v, _) -> v
       end
@@ -198,7 +197,7 @@ and slot_for_fv env fv =
       let rv = Pre_env.lookup_rel_val i env in
       begin match force_lazy_val rv with
       | None ->
-          let _, b, _ = lookup_rel i env.env_rel_context in
+          let _, b, _ = Context.Rel.lookup i env.env_rel_context in
           fill_fv_cache rv i val_of_rel env_of_rel b
       | Some (v, _) -> v
       end

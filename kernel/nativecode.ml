@@ -8,7 +8,6 @@
 open Errors
 open Names
 open Term
-open Context
 open Declarations
 open Util
 open Nativevalues
@@ -1826,15 +1825,15 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
   in
   let auxdefs = List.fold_right get_rel_val fv_rel auxdefs in
   let auxdefs = List.fold_right get_named_val fv_named auxdefs in
-  let lvl = rel_context_length env.env_rel_context in
+  let lvl = Context.Rel.length env.env_rel_context in
   let fv_rel = List.map (fun (n,_) -> MLglobal (Grel (lvl-n))) fv_rel in
   let fv_named = List.map (fun (id,_) -> MLglobal (Gnamed id)) fv_named in
   let aux_name = fresh_lname Anonymous in
   auxdefs, MLlet(aux_name, ml, mkMLapp (MLlocal aux_name) (Array.of_list (fv_rel@fv_named)))
 
 and compile_rel env sigma univ auxdefs n =
-  let (_,body,_) = lookup_rel n env.env_rel_context in
-  let n = rel_context_length env.env_rel_context - n in
+  let (_,body,_) = Context.Rel.lookup n env.env_rel_context in
+  let n = Context.Rel.length env.env_rel_context - n in
   match body with
   | Some t ->
       let code = lambda_of_constr env sigma t in
@@ -1844,7 +1843,7 @@ and compile_rel env sigma univ auxdefs n =
       Glet(Grel n, MLprimitive (Mk_rel n))::auxdefs
 
 and compile_named env sigma univ auxdefs id =
-  let (_,body,_) = lookup_named id env.env_named_context in
+  let (_,body,_) = Context.Named.lookup id env.env_named_context in
   match body with
   | Some t ->
       let code = lambda_of_constr env sigma t in

@@ -12,7 +12,6 @@ open Names
 open Univ
 open Term
 open Vars
-open Context
 open Declarations
 open Environ
 open Entries
@@ -99,7 +98,7 @@ let judge_of_variable env id =
    variables of the current env.
    Order does not have to be checked assuming that all names are distinct *)
 let check_hyps_inclusion env c sign =
-  Context.fold_named_context
+  Context.Named.fold_outside
     (fun (id,b1,ty1) () ->
       try
         let (_,b2,ty2) = lookup_named id env in
@@ -561,6 +560,6 @@ let infer_local_decls env decls =
   | (id, d) :: l ->
       let (env, l) = inferec env l in
       let d = infer_local_decl env id d in
-	(push_rel d env, add_rel_decl d l)
-  | [] -> (env, empty_rel_context) in
+	(push_rel d env, Context.Rel.add d l)
+  | [] -> (env, Context.Rel.empty) in
   inferec env decls
