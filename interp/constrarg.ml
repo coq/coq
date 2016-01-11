@@ -44,7 +44,8 @@ let wit_quant_hyp = Genarg.make0 None "quant_hyp"
 let wit_sort : (glob_sort, glob_sort, sorts) genarg_type =
   Genarg.make0 None "sort"
 
-let wit_constr = unsafe_of_type ConstrArgType
+let wit_constr =
+  Genarg.make0 None "constr"
 
 let wit_constr_may_eval =
   Genarg.make0 ~dyn:(val_tag (topwit wit_constr)) None "constr_may_eval"
@@ -75,6 +76,7 @@ let () =
   register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";
+  register_name0 wit_constr "Constrarg.wit_constr";
   register_name0 wit_uconstr "Constrarg.wit_uconstr";
   register_name0 wit_open_constr "Constrarg.wit_open_constr";
   register_name0 wit_constr_may_eval "Constrarg.wit_constr_may_eval";

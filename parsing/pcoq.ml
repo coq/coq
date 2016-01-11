@@ -272,7 +272,7 @@ let create_entry u s etyp =
     new_entry etyp u s
 
 let create_constr_entry s =
-  outGramObj (rawwit wit_constr) (create_entry uconstr s ConstrArgType)
+  outGramObj (rawwit wit_constr) (create_entry uconstr s (unquote (rawwit wit_constr)))
 
 let create_generic_entry s wit =
   outGramObj wit (create_entry utactic s (unquote wit))
@@ -633,7 +633,7 @@ let compute_entry allow_create adjust forpat = function
       let u = get_univ u in
       let e =
         try get_entry u n
-        with Not_found when allow_create -> create_entry u n ConstrArgType in
+        with Not_found when allow_create -> create_entry u n (unquote (rawwit wit_constr)) in
       object_of_typed_entry e, None, true
 
 (* This computes the name of the level where to add a new rule *)

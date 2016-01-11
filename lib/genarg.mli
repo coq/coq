@@ -211,8 +211,6 @@ val val_cast : 'a typed_abstract_argument_type -> Val.t -> 'a
 (** {6 Type reification} *)
 
 type argument_type =
-  (** Basic types *)
-  | ConstrArgType
   (** Specific types *)
   | ListArgType of argument_type
   | OptArgType of argument_type

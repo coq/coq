@@ -267,7 +267,6 @@ module Make
 
   let rec pr_raw_generic_rec prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
     match Genarg.genarg_tag x with
-      | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
@@ -295,7 +294,6 @@ module Make
 
   let rec pr_glb_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
-      | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x) in
@@ -322,7 +320,6 @@ module Make
 
   let rec pr_top_generic_rec prc prlc prtac prpat x =
     match Genarg.genarg_tag x with
-      | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
       | ListArgType _ ->
         let list_unpacker wit l =
           let map x = pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x) in
@@ -1426,6 +1423,12 @@ let () =
   ;
   Genprint.register_print0 Constrarg.wit_sort
     pr_glob_sort pr_glob_sort (pr_sort Evd.empty);
+  Genprint.register_print0
+    Constrarg.wit_constr
+    Ppconstr.pr_constr_expr
+    (fun (c, _) -> Printer.pr_glob_constr c)
+    Printer.pr_constr
+  ;
   Genprint.register_print0
     Constrarg.wit_uconstr
     Ppconstr.pr_constr_expr

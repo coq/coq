@@ -1522,18 +1522,9 @@ and interp_genarg ist x : Val.t Ftactic.t =
     let tag = genarg_tag x in
     if argument_type_eq tag (unquote (topwit (wit_list wit_var))) then
       interp_genarg_var_list ist x
-    else match tag with
-    | ConstrArgType ->
-      Ftactic.nf_s_enter { s_enter = begin fun gl ->
-        let c = Genarg.out_gen (glbwit wit_constr) x in
-        let env = Proofview.Goal.env gl in
-        let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
-        let (sigma, c) = interp_constr ist env sigma c in
-        let c = in_gen (topwit wit_constr) c in
-        Sigma.Unsafe.of_pair (Ftactic.return c, sigma)
-      end }
-    | ListArgType ConstrArgType ->
+    else if argument_type_eq tag (unquote (topwit (wit_list wit_constr))) then
       interp_genarg_constr_list ist x
+    else match tag with
     | ListArgType _ ->
       let list_unpacker wit l =
         let map x =
@@ -2184,6 +2175,7 @@ let () =
   Geninterp.register_interp0 wit_var (lift interp_hyp);
   Geninterp.register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
   Geninterp.register_interp0 wit_clause_dft_concl (lift interp_clause);
+  Geninterp.register_interp0 wit_constr (lifts interp_constr);
   Geninterp.register_interp0 wit_sort (lifts (fun _ _ evd s -> interp_sort evd s));
   Geninterp.register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
   Geninterp.register_interp0 wit_red_expr (lifts interp_red_expr);

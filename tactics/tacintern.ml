@@ -720,8 +720,6 @@ and intern_match_rule onlytac ist = function
 
 and intern_genarg ist x =
   match genarg_tag x with
-  | ConstrArgType ->
-    map_raw wit_constr intern_constr ist x
   | ListArgType _ ->
       let list_unpacker wit l =
         let map x =
@@ -830,6 +828,7 @@ let () =
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_sort (fun ist s -> (ist, s));
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
+  Genintern.register_intern0 wit_constr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_open_constr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_red_expr (lift intern_red_expr);

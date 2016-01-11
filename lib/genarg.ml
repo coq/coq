@@ -57,14 +57,12 @@ end
 
 type argument_type =
   (* Specific types *)
-  | ConstrArgType
   | ListArgType of argument_type
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
 
 let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
-| ConstrArgType, ConstrArgType -> true
 | ListArgType arg1, ListArgType arg2 -> argument_type_eq arg1 arg2
 | OptArgType arg1, OptArgType arg2 -> argument_type_eq arg1 arg2
 | PairArgType (arg1l, arg1r), PairArgType (arg2l, arg2r) ->
@@ -73,7 +71,6 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | _ -> false
 
 let rec pr_argument_type = function
-| ConstrArgType -> str "constr"
 | ListArgType t -> pr_argument_type t ++ spc () ++ str "list"
 | OptArgType t -> pr_argument_type t ++ spc () ++ str "opt"
 | PairArgType (t1, t2) ->
@@ -190,19 +187,12 @@ let default_empty_value t =
       | _ -> None)
   | ExtraArgType s ->
     (String.Map.find s !arg0_map).nil
-  | _ -> None in
+  in
   match aux t with
   | Some v -> Some (Obj.obj v)
   | None -> None
 
-(** Beware: keep in sync with the corresponding types *)
-let base_create n = Val.Base (Dyn.create n)
-let genarg_T = base_create "genarg"
-let constr_T = base_create "constr"
-
 let rec val_tag = function
-  (** Must ensure that toplevel types of Var and Ident agree! *)
-| ConstrArgType -> cast_tag constr_T
 | ExtraArgType s -> cast_tag (String.Map.find s !arg0_map).dyn
 | ListArgType t -> cast_tag (Val.List (val_tag t))
 | OptArgType t -> cast_tag (Val.Opt (val_tag t))
@@ -222,7 +212,6 @@ let try_prj wit v = match prj (val_tag wit) v with
 
 let rec val_cast : type a. a typed_abstract_argument_type -> Val.t -> a =
 fun wit v -> match unquote wit with
-| ConstrArgType
 | ExtraArgType _ -> try_prj wit v
 | ListArgType t ->
   let Val.Dyn (tag, v) = v in
