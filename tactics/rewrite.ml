@@ -1521,12 +1521,13 @@ let assert_replacing id newt tac =
 let newfail n s = 
   Proofview.tclZERO (Refiner.FailError (n, lazy s))
 
-let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
+let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
   let treat sigma res = 
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")
-    | Some None -> newfail 0 (str"Failed to progress")
+    | Some None -> if progress then newfail 0 (str"Failed to progress")
+		   else Proofview.tclUNIT ()
     | Some (Some res) ->
         let (undef, prf, newt) = res in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
@@ -1593,12 +1594,11 @@ let tactic_init_setoid () =
   try init_setoid (); tclIDTAC
   with e when Errors.noncritical e -> tclFAIL 0 (str"Setoid library not loaded")
 
-(** Setoid rewriting when called with "rewrite_strat" *)
-let cl_rewrite_clause_strat strat clause =
+let cl_rewrite_clause_strat progress strat clause =
   tclTHEN (tactic_init_setoid ())
-  (tclWEAK_PROGRESS
+  ((if progress then tclWEAK_PROGRESS else fun x -> x)
    (fun gl -> 
-    try Proofview.V82.of_tactic (cl_rewrite_clause_newtac strat clause) gl
+    try Proofview.V82.of_tactic (cl_rewrite_clause_newtac ~progress strat clause) gl
     with RewriteFailure e ->
 	 errorlabstrm "" (str"setoid rewrite failed: " ++ e)
        | Refiner.FailError (n, pp) -> 
@@ -1607,8 +1607,12 @@ let cl_rewrite_clause_strat strat clause =
 (** Setoid rewriting when called with "setoid_rewrite" *)
 let cl_rewrite_clause l left2right occs clause gl =
   let strat = rewrite_with left2right (general_rewrite_unif_flags ()) l occs in
-    cl_rewrite_clause_strat strat clause gl
+    cl_rewrite_clause_strat true strat clause gl
 
+(** Setoid rewriting when called with "rewrite_strat" *)
+let cl_rewrite_clause_strat strat clause =
+  cl_rewrite_clause_strat false strat clause
+  
 let apply_glob_constr c l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
     let (sigma, c) = Pretyping.understand_tcc env sigma c in
@@ -2014,7 +2018,8 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
       tclWEAK_PROGRESS 
 	(tclTHEN
            (Refiner.tclEVARS evd)
-	   (Proofview.V82.of_tactic (cl_rewrite_clause_newtac ~abs:(Some abs) ~origsigma strat cl))) gl
+	   (Proofview.V82.of_tactic
+	    (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl))) gl
     with RewriteFailure e ->
       tclFAIL 0 (str"setoid rewrite failed: " ++ e) gl
 
