@@ -50,7 +50,7 @@ Constrexpr_ops
 
 Compat
 Tok
-Lexer
+Coq_lexer
 Pcoq
 G_prim
 G_tactic

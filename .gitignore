@@ -127,7 +127,7 @@ grammar/tacextend.ml
 grammar/vernacextend.ml
 grammar/argextend.ml
 parsing/pcoq.ml
-parsing/lexer.ml
+parsing/coq_lexer.ml
 plugins/setoid_ring/newring.ml
 plugins/field/field.ml
 plugins/nsatz/nsatz.ml

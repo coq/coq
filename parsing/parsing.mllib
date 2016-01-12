@@ -1,6 +1,6 @@
 Tok
 Compat
-Lexer
+Coq_lexer
 Pcoq
 Egramml
 Egramcoq
