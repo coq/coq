@@ -479,7 +479,7 @@ let default_fresh_id = Id.of_string "H"
 
 let interp_fresh_id ist env sigma l =
   let extract_ident ist env sigma id =
-    try try_interp_ltac_var (coerce_to_ident_not_fresh env)
+    try try_interp_ltac_var (coerce_to_ident_not_fresh sigma env)
 			    ist (Some (env,sigma)) (dloc,id)
     with Not_found -> id in
   let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in

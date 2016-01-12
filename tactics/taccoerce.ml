@@ -102,10 +102,14 @@ let coerce_var_to_ident fresh env v =
       destVar c
     else fail ()
 
+
 (* Interprets, if possible, a constr to an identifier which may not
    be fresh but suitable to be given to the fresh tactic. Works for
    vars, constants, inductive, constructors and sorts. *)
-let coerce_to_ident_not_fresh env v =
+let coerce_to_ident_not_fresh g env v =
+let id_of_name = function
+  | Names.Anonymous -> Id.of_string "x"
+  | Names.Name x -> x in
   let v = Value.normalize v in
   let fail () = raise (CannotCoerceTo "an identifier") in
   if has_type v (topwit wit_intro_pattern) then
@@ -119,7 +123,9 @@ let coerce_to_ident_not_fresh env v =
     | None -> fail ()
     | Some c ->
        match Constr.kind c with
-       | Var id -> id
+       | Var id -> id 
+       | Meta m -> id_of_name (Evd.meta_name g m)
+       | Evar (kn,_) -> (Evd.evar_ident kn g)
        | Const (cst,_) -> Label.to_id (Constant.label cst)
        | Construct (cstr,_) ->
 	  let ref = Globnames.ConstructRef cstr in
