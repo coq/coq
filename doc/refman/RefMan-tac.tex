@@ -4149,6 +4149,7 @@ The tactic {\tt exists (n // m)} did not fail. The hole was solved by
 
 \subsection{\tt tauto}
 \tacindex{tauto}
+\tacindex{dtauto}
 \label{tauto}
 
 This tactic implements a decision procedure for intuitionistic propositional
@@ -4197,8 +4198,21 @@ Abort.
 because \verb=(forall x:nat, ~ A -> P x)= cannot be treated as atomic and an
 instantiation of \verb=x= is necessary.
 
+\begin{Variants}
+
+\item {\tt dtauto}
+
+  While {\tt tauto} recognizes inductively defined connectives
+  isomorphic to the standard connective {\tt and}, {\tt prod}, {\tt
+    or}, {\tt sum}, {\tt False}, {\tt Empty\_set}, {\tt unit}, {\tt
+    True}, {\tt dtauto} recognizes also all inductive types with
+  one constructors and no indices, i.e. record-style connectives.
+
+\end{Variants}
+
 \subsection{\tt intuition \tac}
 \tacindex{intuition}
+\tacindex{dintuition}
 \label{intuition}
 
 The tactic \texttt{intuition} takes advantage of the search-tree built
@@ -4231,6 +4245,15 @@ incompatibilities.
 \item {\tt intuition}
 
   Is equivalent to {\tt intuition auto with *}.
+
+\item {\tt dintuition}
+
+  While {\tt intuition} recognizes inductively defined connectives
+  isomorphic to the standard connective {\tt and}, {\tt prod}, {\tt
+    or}, {\tt sum}, {\tt False}, {\tt Empty\_set}, {\tt unit}, {\tt
+    True}, {\tt dintuition} recognizes also all inductive types with
+  one constructors and no indices, i.e. record-style connectives.
+
 \end{Variants}
 
 \optindex{Intuition Negation Unfolding}
