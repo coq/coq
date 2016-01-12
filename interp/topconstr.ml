@@ -39,7 +39,9 @@ let error_invalid_pattern_notation loc =
 (* Functions on constr_expr *)
 
 let is_constructor id =
-  try ignore (Nametab.locate_extended (qualid_of_ident id)); true
+  try Globnames.isConstructRef
+        (Smartlocate.global_of_extended_global
+           (Nametab.locate_extended (qualid_of_ident id)))
   with Not_found -> false
 
 let rec cases_pattern_fold_names f a = function
