@@ -1468,6 +1468,24 @@ a hypothesis or in the body or the type of a local definition.
 
 \end{Variants}
 
+\subsection{\tt admit}
+\tacindex{admit}
+\tacindex{give\_up}
+\label{admit}
+
+The {\tt admit} tactic allows temporarily skipping a subgoal so as to
+progress further in the rest of the proof.  A proof containing
+admitted goals cannot be closed with {\tt Qed} but only with
+{\tt Admitted}.
+
+\begin{Variants}
+
+  \item {\tt give\_up}
+
+    Synonym of {\tt admit}.
+
+\end{Variants}
+
 \subsection{\tt absurd \term}
 \tacindex{absurd}
 \label{absurd}
