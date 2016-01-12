@@ -42,6 +42,8 @@ val default_no_delta_unify_flags : unit -> unify_flags
 val elim_flags : unit -> unify_flags
 val elim_no_delta_flags : unit -> unify_flags
 
+val is_keyed_unification : unit -> bool
+
 (** The "unique" unification fonction *)
 val w_unify :
   env -> evar_map -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map

@@ -205,9 +205,47 @@ let rewrite_conv_closed_unif_flags = {
   resolve_evars = false
 }
 
+let rewrite_keyed_core_unif_flags = {
+  modulo_conv_on_closed_terms = Some full_transparent_state;
+    (* We have this flag for historical reasons, it has e.g. the consequence *)
+    (* to rewrite "?x+2" in "y+(1+1)=0" or to rewrite "?x+?x" in "2+(1+1)=0" *)
+
+  use_metas_eagerly_in_conv_on_closed_terms = true;
+  use_evars_eagerly_in_conv_on_closed_terms = false;
+    (* Combined with modulo_conv_on_closed_terms, this flag allows since 8.2 *)
+    (* to rewrite e.g. "?x+(2+?x)" in "1+(1+2)=0" *)
+
+  modulo_delta = full_transparent_state;
+  modulo_delta_types = full_transparent_state;
+  check_applied_meta_types = true;
+  use_pattern_unification = true;
+    (* To rewrite "?n x y" in "y+x=0" when ?n is *)
+    (* a preexisting evar of the goal*)
+
+  use_meta_bound_pattern_unification = true;
+
+  frozen_evars = Evar.Set.empty;
+    (* This is set dynamically *)
+
+  restrict_conv_on_strict_subterms = false;
+  modulo_betaiota = true;
+  (* Different from conv_closed *)
+  modulo_eta = true;
+}
+
+let rewrite_keyed_unif_flags = {
+  core_unify_flags = rewrite_keyed_core_unif_flags;
+  merge_unify_flags = rewrite_keyed_core_unif_flags;
+  subterm_unify_flags = rewrite_keyed_core_unif_flags;
+  allow_K_in_toplevel_higher_order_unification = false;
+  resolve_evars = false
+}
+
 let rewrite_elim with_evars frzevars cls c e =
   Proofview.Goal.enter begin fun gl ->
-  let flags = make_flags frzevars (Proofview.Goal.sigma gl) rewrite_conv_closed_unif_flags c in
+  let flags = if Unification.is_keyed_unification ()
+	      then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
+  let flags = make_flags frzevars (Proofview.Goal.sigma gl) flags c in
   general_elim_clause with_evars flags cls c e
   end
 

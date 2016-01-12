@@ -37,6 +37,8 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> keyed_unification:=a);
 }
 
+let is_keyed_unification () = !keyed_unification
+
 let debug_unification = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optsync = true; Goptions.optdepr = false;
