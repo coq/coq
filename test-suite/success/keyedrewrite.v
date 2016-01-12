@@ -53,3 +53,9 @@ rewrite ->list_foo.
 reflexivity.
 Qed.
 
+ Require Import Bool.
+   Set Keyed Unification.
+
+   Lemma test b : b && true = b.
+    Fail rewrite andb_true_l.
+   Admitted.
