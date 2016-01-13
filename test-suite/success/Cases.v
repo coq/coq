@@ -1861,3 +1861,10 @@ Type (fun n => match n with
 
 Definition transport {A} (P : A->Type) {x y : A} (p : x=y) (u : P x) : P y :=
   match p with eq_refl => u end.
+
+(* Check in-pattern clauses with constant constructors, which were
+   previously interpreted as variables (before 8.5) *)
+
+Check match eq_refl 0 in _=O return O=O with eq_refl => eq_refl end.
+
+Check match niln in listn O return O=O with niln => eq_refl end.

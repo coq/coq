@@ -110,7 +110,6 @@ val replace_vars : (Id.t * constr) list -> constr -> constr
    then Γ\\{id₁,...,id{_n}\},x{_n}:U{_n},...,x₁:U₁,Γ' ⊢ [substn_vars
    (|Γ'|+1) [id₁;...;idn] t] : [substn_vars (|Γ'|+1) [id₁;...;idn]
    T]. *)
-
 val substn_vars : int -> Id.t list -> constr -> constr
 
 (** [subst_vars [id1;...;idn] t] is a short-hand for [substn_vars

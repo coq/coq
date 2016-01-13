@@ -38,6 +38,8 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> keyed_unification:=a);
 }
 
+let is_keyed_unification () = !keyed_unification
+
 let debug_unification = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optsync = true; Goptions.optdepr = false;
@@ -1671,8 +1673,13 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
     let cl = strip_outer_cast cl in
     (try
        if closed0 cl && not (isEvar cl) && keyed_unify env evd kop cl then
-	 (try w_typed_unify env evd CONV flags op cl,cl
-	  with ex when Pretype_errors.unsatisfiable_exception ex ->
+       (try
+         if !keyed_unification then
+           let f1, l1 = decompose_app_vect op in
+	   let f2, l2 = decompose_app_vect cl in
+	   w_typed_unify_array env evd flags f1 l1 f2 l2,cl
+	 else w_typed_unify env evd CONV flags op cl,cl
+       with ex when Pretype_errors.unsatisfiable_exception ex ->
 	    bestexn := Some ex; error "Unsat")
        else error "Bound 1"
      with ex when precatchable_exception ex ->

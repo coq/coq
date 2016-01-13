@@ -163,14 +163,14 @@ Constrarg
 Constrexpr_ops
 Genintern
 Notation_ops
-Topconstr
 Notation
 Dumpglob
+Syntax_def
+Smartlocate
+Topconstr
 Reserve
 Impargs
-Syntax_def
 Implicit_quantifiers
-Smartlocate
 Constrintern
 Modintern
 Constrextern

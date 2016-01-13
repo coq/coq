@@ -864,16 +864,17 @@ introduction pattern~$p$:
   expects the product to be over an inductive type
   whose number of constructors is $n$ (or more generally over a type
   of conclusion an inductive type built from $n$ constructors,
-  e.g. {\tt C -> A\textbackslash/B if $n=2$}): it destructs the introduced
+  e.g. {\tt C -> A\textbackslash/B} with $n=2$ since {\tt
+    A\textbackslash/B} has 2 constructors): it destructs the introduced
   hypothesis as {\tt destruct} (see Section~\ref{destruct}) would and
   applies on each generated subgoal the corresponding tactic;
   \texttt{intros}~$p_{i1}$ {\ldots} $p_{im_i}$; if the disjunctive
-  pattern is part of a sequence of patterns and is not the last
-  pattern of the sequence, then {\Coq} completes the pattern so that all
-  the argument of the constructors of the inductive type are
-  introduced (for instance, the list of patterns {\tt [$\;$|$\;$] H}
-  applied on goal {\tt forall x:nat, x=0 -> 0=x} behaves the same as
-  the list of patterns {\tt [$\,$|$\,$?$\,$] H});
+  pattern is part of a sequence of patterns, then {\Coq} completes the
+  pattern so that all the arguments of the constructors of the
+  inductive type are introduced (for instance, the list of patterns
+  {\tt [$\;$|$\;$] H} applied on goal {\tt forall x:nat, x=0 -> 0=x}
+  behaves the same as the list of patterns {\tt [$\,$|$\,$?$\,$] H},
+  up to one exception explained in the Remark below);
 \item introduction over a conjunction of patterns {\tt ($p_1$, \ldots,
   $p_n$)} expects the goal to be a product over an inductive type $I$ with a
   single constructor that itself has at least $n$ arguments: it
@@ -887,10 +888,10 @@ introduction pattern~$p$:
   {\tt ($p_1$,(\ldots,(\dots,$p_n$)\ldots))}; it expects the
   hypothesis to be a sequence of right-associative binary inductive
   constructors such as {\tt conj} or {\tt ex\_intro}; for instance, an
-  hypothesis with type {\tt A\verb|/\|exists x, B\verb|/\|C\verb|/\|D} can be
+  hypothesis with type {\tt A\verb|/\|(exists x, B\verb|/\|C\verb|/\|D)} can be
   introduced via pattern {\tt (a \& x \& b \& c \& d)};
 \item if the product is over an equality type, then a pattern of the
-  form {\tt [=$p_{1}$ \dots\ $p_n$]} applies either {\tt injection}
+  form {\tt [= $p_{1}$ \dots\ $p_n$]} applies either {\tt injection}
   (see Section~\ref{injection}) or {\tt discriminate} (see
   Section~\ref{discriminate}) instead of {\tt destruct}; if {\tt
     injection} is applicable, the patterns $p_1$, \ldots, $p_n$ are
@@ -950,6 +951,7 @@ Abort.
 
 \Rem {\tt intros $p_1~\ldots~p_n$} is not fully equivalent to
 \texttt{intros $p_1$;\ldots; intros $p_n$} for the following reasons:
+\label{bracketing-last}
 \begin{itemize}
 \item A wildcard pattern never succeeds when applied isolated on a
   dependent product, while it succeeds as part of a list of
@@ -970,6 +972,13 @@ Show 2.
 \end{coq_example}
 
 \end{itemize}
+
+This later behavior can be avoided by setting the following option:
+
+\begin{quote}
+\optindex{Bracketing Last Introduction Pattern}
+{\tt Set Bracketing Last Introduction Pattern}
+\end{quote}
 
 \subsection{\tt clear \ident}
 \tacindex{clear}
@@ -1456,6 +1465,24 @@ a hypothesis or in the body or the type of a local definition.
     done after each complete tactic (i.e. after a dot in proof mode),
     but not, for example, between each tactic when they are sequenced
     by semicolons.
+
+\end{Variants}
+
+\subsection{\tt admit}
+\tacindex{admit}
+\tacindex{give\_up}
+\label{admit}
+
+The {\tt admit} tactic allows temporarily skipping a subgoal so as to
+progress further in the rest of the proof.  A proof containing
+admitted goals cannot be closed with {\tt Qed} but only with
+{\tt Admitted}.
+
+\begin{Variants}
+
+  \item {\tt give\_up}
+
+    Synonym of {\tt admit}.
 
 \end{Variants}
 
@@ -4113,6 +4140,7 @@ The tactic {\tt exists (n // m)} did not fail. The hole was solved by
 
 \subsection{\tt tauto}
 \tacindex{tauto}
+\tacindex{dtauto}
 \label{tauto}
 
 This tactic implements a decision procedure for intuitionistic propositional
@@ -4161,8 +4189,21 @@ Abort.
 because \verb=(forall x:nat, ~ A -> P x)= cannot be treated as atomic and an
 instantiation of \verb=x= is necessary.
 
+\begin{Variants}
+
+\item {\tt dtauto}
+
+  While {\tt tauto} recognizes inductively defined connectives
+  isomorphic to the standard connective {\tt and}, {\tt prod}, {\tt
+    or}, {\tt sum}, {\tt False}, {\tt Empty\_set}, {\tt unit}, {\tt
+    True}, {\tt dtauto} recognizes also all inductive types with
+  one constructors and no indices, i.e. record-style connectives.
+
+\end{Variants}
+
 \subsection{\tt intuition \tac}
 \tacindex{intuition}
+\tacindex{dintuition}
 \label{intuition}
 
 The tactic \texttt{intuition} takes advantage of the search-tree built
@@ -4195,7 +4236,48 @@ incompatibilities.
 \item {\tt intuition}
 
   Is equivalent to {\tt intuition auto with *}.
+
+\item {\tt dintuition}
+
+  While {\tt intuition} recognizes inductively defined connectives
+  isomorphic to the standard connective {\tt and}, {\tt prod}, {\tt
+    or}, {\tt sum}, {\tt False}, {\tt Empty\_set}, {\tt unit}, {\tt
+    True}, {\tt dintuition} recognizes also all inductive types with
+  one constructors and no indices, i.e. record-style connectives.
+
 \end{Variants}
+
+\optindex{Intuition Negation Unfolding}
+\optindex{Intuition Iff Unfolding}
+
+Some aspects of the tactic {\tt intuition} can be
+controlled using options. To avoid that inner negations which do not
+need to be unfolded are unfolded, use:
+
+\begin{quote}
+{\tt Unset Intuition Negation Unfolding}
+\end{quote}
+
+To do that all negations of the goal are unfolded even inner ones
+(this is the default), use:
+
+\begin{quote}
+{\tt Set Intuition Negation Unfolding}
+\end{quote}
+
+To avoid that inner occurrence of {\tt iff} which do not need to be
+unfolded are unfolded (this is the default), use:
+
+\begin{quote}
+{\tt Unset Intuition Iff Unfolding}
+\end{quote}
+
+To do that all negations of the goal are unfolded even inner ones
+(this is the default), use:
+
+\begin{quote}
+{\tt Set Intuition Iff Unfolding}
+\end{quote}
 
 % En attente d'un moyen de valoriser les fichiers de demos
 %\SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_tauto.v}

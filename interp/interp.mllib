@@ -3,12 +3,12 @@ Constrarg
 Genintern
 Constrexpr_ops
 Notation_ops
-Topconstr
 Ppextend
 Notation
 Dumpglob
 Syntax_def
 Smartlocate
+Topconstr
 Reserve
 Impargs
 Implicit_quantifiers
