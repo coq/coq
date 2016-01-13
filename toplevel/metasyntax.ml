@@ -31,7 +31,7 @@ open Nameops
 (**********************************************************************)
 (* Tokens                                                             *)
 
-let cache_token (_,s) = Lexer.add_keyword s
+let cache_token (_,s) = Coq_lexer.add_keyword s
 
 let inToken : string -> obj =
   declare_object {(default_object "TOKEN") with
@@ -428,7 +428,7 @@ let rec interp_list_parser hd = function
 (* To protect alphabetic tokens and quotes from being seen as variables *)
 let quote_notation_token x =
   let n = String.length x in
-  let norm = Lexer.is_ident x in
+  let norm = Coq_lexer.is_ident x in
   if (n > 0 && norm) || (n > 2 && x.[0] == '\'') then "'"^x^"'"
   else x
 
@@ -436,7 +436,7 @@ let rec raw_analyze_notation_tokens = function
   | []    -> []
   | String ".." :: sl -> NonTerminal ldots_var :: raw_analyze_notation_tokens sl
   | String "_" :: _ -> error "_ must be quoted."
-  | String x :: sl when Lexer.is_ident x ->
+  | String x :: sl when Coq_lexer.is_ident x ->
       NonTerminal (Names.Id.of_string x) :: raw_analyze_notation_tokens sl
   | String s :: sl ->
       Terminal (String.drop_simple_quotes s) :: raw_analyze_notation_tokens sl
@@ -720,7 +720,7 @@ let rec define_keywords_aux = function
   | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
       when is_not_small_constr e ->
       Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
-      Lexer.add_keyword k;
+      Coq_lexer.add_keyword k;
       n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
   | [] -> []
@@ -729,7 +729,7 @@ let rec define_keywords_aux = function
 let define_keywords = function
   | GramConstrTerminal(IDENT k)::l ->
       Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
-      Lexer.add_keyword k;
+      Coq_lexer.add_keyword k;
       GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | l -> define_keywords_aux l
 
@@ -758,12 +758,12 @@ let make_production etyps symbols =
 	    let typ = List.assoc m etyps in
 	    distribute [GramConstrNonTerminal (typ, Some m)] ll
         | Terminal s ->
-	    distribute [GramConstrTerminal (Lexer.terminal s)] ll
+	    distribute [GramConstrTerminal (Coq_lexer.terminal s)] ll
         | Break _ ->
             ll
         | SProdList (x,sl) ->
             let tkl = List.flatten
-              (List.map (function Terminal s -> [Lexer.terminal s]
+              (List.map (function Terminal s -> [Coq_lexer.terminal s]
                 | Break _ -> []
                 | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator")) sl) in
 	    match List.assoc x etyps with

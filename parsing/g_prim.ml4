@@ -15,7 +15,7 @@ open Pcoq
 open Pcoq.Prim
 
 let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
-let _ = List.iter Lexer.add_keyword prim_kw
+let _ = List.iter Coq_lexer.add_keyword prim_kw
 
 
 let local_make_qualid l id = make_qualid (DirPath.make l) id

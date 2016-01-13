@@ -164,17 +164,17 @@ let save_translator_coqdoc () =
   (* translator state *)
   let ch = !chan_beautify in
   let cl = !Pp.comments in
-  let cs = Lexer.com_state() in
+  let cs = Coq_lexer.com_state() in
   (* end translator state *)
-  let coqdocstate = Lexer.location_table () in
+  let coqdocstate = Coq_lexer.location_table () in
   ch,cl,cs,coqdocstate
 
 let restore_translator_coqdoc (ch,cl,cs,coqdocstate) =
   if !Flags.beautify_file then close_out !chan_beautify;
   chan_beautify := ch;
   Pp.comments := cl;
-  Lexer.restore_com_state cs;
-  Lexer.restore_location_table coqdocstate
+  Coq_lexer.restore_com_state cs;
+  Coq_lexer.restore_location_table coqdocstate
 
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
