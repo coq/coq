@@ -428,10 +428,13 @@ end
 let usage () =
   eprintf " usage: coqdep [options] <filename>+\n";
   eprintf " options:\n";
-  eprintf "  -c : \n";
-  eprintf "  -D : \n";
-  eprintf "  -w : \n";
-  eprintf "  -boot : \n";
+  eprintf "  -c : Also print the dependencies of caml modules (=ocamldep).\n";
+  (* Does not work anymore  *)
+  (* eprintf " -w : Print informations on missing or wrong \"Declare
+     ML Module\" commands in coq files.\n";  *)
+  (* Does not work anymore: *)
+  (* eprintf " -D : Prints the missing ocmal module names. No dependency computed.\n"; *)
+  eprintf "  -boot : For coq developpers, prints dependencies over coq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
   eprintf "  -I dir -as logname : adds (non recursively) dir to coq load path under logical name logname\n"; 
@@ -441,7 +444,7 @@ let usage () =
   eprintf "  -Q dir logname : add (recusively) and open (non recursively) dir to coq load path under logical name logname\n";
   eprintf "  -dumpgraph f : print a dot dependency graph in file 'f'\n";
   eprintf "  -dumpgraphbox f : print a dot dependency graph box in file 'f'\n";
-  eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R search\n";
+  eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -suffix s : \n";
   eprintf "  -slash : deprecated, no effect\n";
