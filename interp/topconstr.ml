@@ -760,8 +760,10 @@ let ids_of_cases_tomatch tms =
     tms []
 
 let is_constructor id =
-  try ignore (Nametab.extended_locate (make_short_qualid id)); true
-  with Not_found -> true
+  try match Nametab.locate (make_short_qualid id) with
+  | ConstructRef _ -> true
+  | _ -> false
+  with Not_found -> false
  
 let rec cases_pattern_fold_names f a = function
   | CPatAlias (_,pat,id) -> f id a
@@ -926,8 +928,9 @@ let map_constr_expr_with_binders g f e = function
   | CPrim _ | CDynamic _ | CRef _ as x -> x
   | CRecord (loc,p,l) -> CRecord (loc,p,List.map (fun (id, c) -> (id, f e c)) l)
   | CCases (loc,sty,rtnpo,a,bl) ->
-      (* TODO: apply g on the binding variables in pat... *)
-      let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in
+      let bl = List.map (fun (loc,patl,rhs) ->
+        let ids = ids_of_pattern_list patl in
+        (loc,patl,f (Idset.fold g ids e) rhs)) bl in
       let ids = ids_of_cases_tomatch a in
       let po = Option.map (f (List.fold_right g ids e)) rtnpo in
       CCases (loc, sty, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
