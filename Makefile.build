@@ -555,7 +555,6 @@ program: $(PROGRAMVO)
 structures: $(STRUCTURESVO)
 vectors: $(VECTORSVO)
 msets: $(MSETSVO)
-mmaps: $(MMAPSVO)
 compat: $(COMPATVO)
 
 noreal: unicode logic arith bool zarith qarith lists sets fsets \

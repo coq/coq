@@ -293,7 +293,6 @@ STRINGSVO:=$(call cat_vo_itarget, theories/Strings)
 SETSVO:=$(call cat_vo_itarget, theories/Sets)
 FSETSVO:=$(call cat_vo_itarget, theories/FSets)
 MSETSVO:=$(call cat_vo_itarget, theories/MSets)
-MMAPSVO:=$(call cat_vo_itarget, theories/MMaps)
 RELATIONSVO:=$(call cat_vo_itarget, theories/Relations)
 WELLFOUNDEDVO:=$(call cat_vo_itarget, theories/Wellfounded)
 REALSVO:=$(call cat_vo_itarget, theories/Reals)
@@ -310,7 +309,7 @@ THEORIESVO:=\
   $(RELATIONSVO) $(WELLFOUNDEDVO) $(SETOIDSVO) \
   $(LISTSVO) $(STRINGSVO) \
   $(PARITHVO) $(NARITHVO) $(ZARITHVO) \
-  $(SETSVO) $(FSETSVO) $(MSETSVO) $(MMAPSVO) \
+  $(SETSVO) $(FSETSVO) $(MSETSVO) \
   $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
   $(NUMBERSVO) $(STRUCTURESVO) $(VECTORSVO) \
   $(COMPATVO)

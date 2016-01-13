@@ -476,13 +476,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/MSets/MSetPositive.v
     theories/MSets/MSetToFiniteSet.v
     (theories/MSets/MSets.v)
-    theories/MMaps/MMapAVL.v
-    theories/MMaps/MMapFacts.v
-    theories/MMaps/MMapInterface.v
-    theories/MMaps/MMapList.v
-    theories/MMaps/MMapPositive.v
-    theories/MMaps/MMapWeakList.v
-    (theories/MMaps/MMaps.v)
   </dd>
 
   <dt> <b>FSets</b>:
