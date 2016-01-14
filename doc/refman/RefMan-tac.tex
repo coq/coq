@@ -802,7 +802,7 @@ the tactic {\tt intro} applies the tactic {\tt hnf} until the tactic
 
 \end{Variants}
 
-\subsection{\tt intros {\intropattern} \mbox{\dots} \intropattern}
+\subsection{\tt intros {\intropatternlist}}
 \label{intros-pattern}
 \tacindex{intros \intropattern}
 \index{Introduction patterns}
@@ -811,9 +811,11 @@ the tactic {\tt intro} applies the tactic {\tt hnf} until the tactic
 \index{Disjunctive/conjunctive introduction patterns}
 \index{Equality introduction patterns}
 
-
-This extension of the tactic {\tt intros} combines introduction of
-variables or hypotheses and case analysis. An {\em introduction pattern} is
+This extension of the tactic {\tt intros} allows to apply tactics on
+the fly on the variables or hypotheses which have been introduced. An
+{\em introduction pattern list} {\intropatternlist} is a list of
+introduction patterns possibly containing the filling introduction
+patterns {\tt *} and {\tt **}. An {\em introduction pattern} is
 either:
 \begin{itemize}
 \item a {\em naming introduction pattern}, i.e. either one of:
@@ -827,7 +829,7 @@ either:
   \item a {\em disjunctive/conjunctive introduction pattern}, i.e. either one of:
     \begin{itemize}
     \item a disjunction of lists of patterns:
-      {\tt [$p_{11}$ \dots\ $p_{1m_1}$ | \dots\ | $p_{11}$ \dots\ $p_{nm_n}$]}
+      {\tt [$\intropatternlist_1$ | \dots\ | $\intropatternlist_n$]}
     \item a conjunction of patterns: {\tt ($p_1$ , \dots\ , $p_n$)}
     \item a list of patterns {\tt ($p_1$ \&\ \dots\ \&\ $p_n$)}
       for sequence of right-associative binary constructs
@@ -844,10 +846,6 @@ either:
 \item the wildcard: {\tt \_}
 \end{itemize}
 
-Introduction patterns can be combined into lists. An {\em introduction
-  pattern list} is a list of introduction patterns possibly containing
-the filling introduction patterns {\tt *} and {\tt **}.
-
 Assuming a goal of type $Q \to P$ (non-dependent product), or
 of type $\forall x:T,~P$ (dependent product), the behavior of
 {\tt intros $p$} is defined inductively over the structure of the
@@ -860,21 +858,22 @@ introduction pattern~$p$:
 \item introduction on \texttt{\ident} behaves as described in
   Section~\ref{intro};
 \item introduction over a disjunction of list of patterns {\tt
-  [$p_{11}$ \dots\ $p_{1m_1}$ | \dots\ | $p_{11}$ \dots\ $p_{nm_n}$]}
-  expects the product to be over an inductive type
-  whose number of constructors is $n$ (or more generally over a type
-  of conclusion an inductive type built from $n$ constructors,
-  e.g. {\tt C -> A\textbackslash/B} with $n=2$ since {\tt
-    A\textbackslash/B} has 2 constructors): it destructs the introduced
-  hypothesis as {\tt destruct} (see Section~\ref{destruct}) would and
-  applies on each generated subgoal the corresponding tactic;
-  \texttt{intros}~$p_{i1}$ {\ldots} $p_{im_i}$; if the disjunctive
-  pattern is part of a sequence of patterns, then {\Coq} completes the
-  pattern so that all the arguments of the constructors of the
-  inductive type are introduced (for instance, the list of patterns
-  {\tt [$\;$|$\;$] H} applied on goal {\tt forall x:nat, x=0 -> 0=x}
-  behaves the same as the list of patterns {\tt [$\,$|$\,$?$\,$] H},
-  up to one exception explained in the Remark below);
+  [$\intropatternlist_{1}$ | \dots\ | $\intropatternlist_n$]} expects
+  the product to be over an inductive type whose number of
+  constructors is $n$ (or more generally over a type of conclusion an
+  inductive type built from $n$ constructors, e.g. {\tt C ->
+    A\textbackslash/B} with $n=2$ since {\tt A\textbackslash/B} has 2
+  constructors): it destructs the introduced hypothesis as {\tt
+    destruct} (see Section~\ref{destruct}) would and applies on each
+  generated subgoal the corresponding tactic;
+  \texttt{intros}~$\intropatternlist_i$. The introduction patterns in
+  $\intropatternlist_i$ are expected to consume no more than the
+  number of arguments of the $i^{\mbox{\scriptsize th}}$
+  constructor. If it consumes less, then {\Coq} completes the pattern
+  so that all the arguments of the constructors of the inductive type
+  are introduced (for instance, the list of patterns {\tt [$\;$|$\;$]
+    H} applied on goal {\tt forall x:nat, x=0 -> 0=x} behaves the same
+  as the list of patterns {\tt [$\,$|$\,$?$\,$] H});
 \item introduction over a conjunction of patterns {\tt ($p_1$, \ldots,
   $p_n$)} expects the goal to be a product over an inductive type $I$ with a
   single constructor that itself has at least $n$ arguments: it
@@ -926,19 +925,6 @@ introduction pattern~$p$:
   not any more a quantification or an implication.
 \end{itemize}
 
-Then, if $p_1$ ... $p_n$ is a list of introduction patterns possibly
-containing {\tt *} or {\tt **}, {\tt intros $p_1$ ... $p_n$}
-\begin{itemize}
-\item introduction over {\tt *} introduces all forthcoming quantified
-  variables appearing in a row;
-\item introduction over {\tt **} introduces all forthcoming quantified
-  variables or hypotheses until the goal is not any more a
-  quantification or an implication;
-\item introduction over an introduction pattern $p$ introduces the
-  forthcoming quantified variables or premise of the goal and applies
-  the introduction pattern $p$ to it.
-\end{itemize}
-
 \Example
 
 \begin{coq_example}
@@ -949,36 +935,38 @@ intros * [a | (_,c)] f.
 Abort.
 \end{coq_eval}
 
-\Rem {\tt intros $p_1~\ldots~p_n$} is not fully equivalent to
-\texttt{intros $p_1$;\ldots; intros $p_n$} for the following reasons:
-\label{bracketing-last}
-\begin{itemize}
-\item A wildcard pattern never succeeds when applied isolated on a
-  dependent product, while it succeeds as part of a list of
-  introduction patterns if the hypotheses that depends on it are
-  erased too.
-\item A disjunctive or conjunctive pattern followed by an introduction
-  pattern forces the introduction in the context of all arguments of
-  the constructors before applying the next pattern while a terminal
-  disjunctive or conjunctive pattern does not. Here is an example
+\Rem {\tt intros $p_1~\ldots~p_n$} is not equivalent to \texttt{intros
+  $p_1$;\ldots; intros $p_n$} for the following reason: If one of the
+$p_i$ is a wildcard pattern, he might succeed in the first case
+because the further hypotheses it depends in are eventually erased too
+while it might fail in the second case because of dependencies in
+hypotheses which are not yet introduced (and a fortiori not yet
+erased).
 
-\begin{coq_example}
-Goal forall n:nat, n = 0 -> n = 0.
-intros [ | ] H.
-Show 2.
-Undo.
-intros [ | ]; intros H.
-Show 2.
-\end{coq_example}
-
-\end{itemize}
-
-This later behavior can be avoided by setting the following option:
+\Rem In {\tt intros $\intropatternlist$}, if the last introduction
+pattern is a disjunctive or conjunctive pattern {\tt
+  [$\intropatternlist_1$ | \dots\ | $\intropatternlist_n$]}, the
+completion of $\intropatternlist_i$ so that all the arguments of the
+$i^{\mbox{\scriptsize th}}$ constructors of the corresponding
+inductive type are introduced can be controlled with the
+following option:
+\optindex{Bracketing Last Introduction Pattern}
 
 \begin{quote}
-\optindex{Bracketing Last Introduction Pattern}
 {\tt Set Bracketing Last Introduction Pattern}
 \end{quote}
+
+Force completion, if needed, when the last introduction pattern is a
+disjunctive or conjunctive pattern (this is the default).
+
+\begin{quote}
+{\tt Unset Bracketing Last Introduction Pattern}
+\end{quote}
+
+Deactivate completion when the last introduction pattern is a disjunctive
+or conjunctive pattern.
+
+
 
 \subsection{\tt clear \ident}
 \tacindex{clear}
