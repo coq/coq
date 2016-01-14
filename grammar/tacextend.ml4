@@ -86,10 +86,6 @@ let rec make_args = function
       <:expr< [ Genarg.in_gen $make_topwit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
 
-let mlexpr_terminals_of_grammar_tactic_prod_item_expr = function
-  | ExtTerminal s -> <:expr< Some $mlexpr_of_string s$ >>
-  | ExtNonTerminal _ -> <:expr< None >>
-
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
   | ExtNonTerminal (EntryName (nt, g), id) ->
@@ -98,7 +94,7 @@ let make_prod_item = function
       $mlexpr_of_prod_entry_key g$ >>
 
 let mlexpr_of_clause cl =
-  mlexpr_of_list (fun (a,_,b) -> mlexpr_of_list make_prod_item a) cl
+  mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
@@ -112,9 +108,9 @@ let rec make_tags loc = function
 let make_one_printing_rule (pt,_,e) =
   let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
-  let prods = mlexpr_of_list mlexpr_terminals_of_grammar_tactic_prod_item_expr pt in
-  <:expr< { Pptactic.pptac_args = $make_tags loc pt$;
-            pptac_prods = ($level$, $prods$) } >>
+  let prods = mlexpr_of_list make_prod_item pt in
+  <:expr< { Pptactic.pptac_level = $level$;
+            pptac_prods = $prods$ } >>
 
 let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
 

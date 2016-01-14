@@ -55,11 +55,6 @@ let make_terminal_status = function
   | GramTerminal s -> Some s
   | GramNonTerminal _ -> None
 
-let rec make_tags = function
-  | GramTerminal s :: l -> make_tags l
-  | GramNonTerminal (loc, etyp, _) :: l -> Genarg.unquote etyp :: make_tags l
-  | [] -> []
-
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
   fun () ->
@@ -133,10 +128,9 @@ let cons_production_parameter = function
 let add_tactic_notation (local,n,prods,e) =
   let ids = List.map_filter cons_production_parameter prods in
   let prods = List.map (interp_prod_item n) prods in
-  let tags = make_tags prods in
   let pprule = {
-    Pptactic.pptac_args = tags;
-    pptac_prods = (n, List.map make_terminal_status prods);
+    Pptactic.pptac_level = n;
+    pptac_prods = prods;
   } in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
   let parule = {

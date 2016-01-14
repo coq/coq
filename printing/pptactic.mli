@@ -41,11 +41,11 @@ val declare_extra_genarg_pprule :
   'b glob_extra_genarg_printer ->
   'c extra_genarg_printer -> unit
 
-type grammar_terminals = string option list
+type grammar_terminals = Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list
 
 type pp_tactic = {
-  pptac_args : argument_type list;
-  pptac_prods : int * grammar_terminals;
+  pptac_level : int;
+  pptac_prods : grammar_terminals;
 }
 
 val declare_ml_tactic_pprule : ml_tactic_name -> pp_tactic array -> unit

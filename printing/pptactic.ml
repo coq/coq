@@ -26,11 +26,11 @@ open Printer
 
 let pr_global x = Nametab.pr_global_env Id.Set.empty x
 
-type grammar_terminals = string option list
+type grammar_terminals = Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list
 
 type pp_tactic = {
-  pptac_args : argument_type list;
-  pptac_prods : int * grammar_terminals;
+  pptac_level : int;
+  pptac_prods : grammar_terminals;
 }
 
 (* ML Extensions *)
@@ -345,16 +345,22 @@ module Make
         with Not_found -> Genprint.generic_top_print x
 
   let rec tacarg_using_rule_token pr_gen = function
-    | Some s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
-    | None :: l, a :: al ->
+    | Egramml.GramTerminal s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
+    | Egramml.GramNonTerminal _ :: l, a :: al ->
       let r = tacarg_using_rule_token pr_gen (l,al) in
       pr_gen a :: r
     | [], [] -> []
     | _ -> failwith "Inconsistent arguments of extended tactic"
 
+  type any_arg = AnyArg : 'a Genarg.raw_abstract_argument_type -> any_arg
+
+  let filter_arg = function
+  | Egramml.GramTerminal _ -> None
+  | Egramml.GramNonTerminal (_, t, _) -> Some (AnyArg t)
+
   let pr_tacarg_using_rule pr_gen l =
     let l = match l with
-    | (Some s :: l, al) ->
+    | (Egramml.GramTerminal s :: l, al) ->
       (** First terminal token should be considered as the name of the tactic,
           so we tag it differently than the other terminal tokens. *)
       primitive s :: (tacarg_using_rule_token pr_gen (l, al))
@@ -366,10 +372,10 @@ module Make
     try
       let pp_rules = Hashtbl.find prtac_tab s in
       let pp = pp_rules.(i) in
-      let () = if not (List.for_all2eq check pp.pptac_args l) then raise Not_found in
-      let (lev', pl) = pp.pptac_prods in
-      let p = pr_tacarg_using_rule pr_gen (pl,l) in
-      if lev' > lev then surround p else p
+      let args = List.map_filter filter_arg pp.pptac_prods in
+      let () = if not (List.for_all2eq check args l) then raise Not_found in
+      let p = pr_tacarg_using_rule pr_gen (pp.pptac_prods, l) in
+      if pp.pptac_level > lev then surround p else p
     with Not_found ->
       let name =
         str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic ++
@@ -384,15 +390,15 @@ module Make
   let pr_alias_gen check pr_gen lev key l =
     try
       let pp = KNmap.find key !prnotation_tab in
-      let (lev', pl) = pp.pptac_prods in
-      let () = if not (List.for_all2eq check pp.pptac_args l) then raise Not_found in
-      let p = pr_tacarg_using_rule pr_gen (pl, l) in
-      if lev' > lev then surround p else p
+      let args = List.map_filter filter_arg pp.pptac_prods in
+      let () = if not (List.for_all2eq check args l) then raise Not_found in
+      let p = pr_tacarg_using_rule pr_gen (pp.pptac_prods, l) in
+      if pp.pptac_level > lev then surround p else p
     with Not_found ->
       KerName.print key ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
 
-  let check_type t arg = match arg with
-  | TacGeneric arg -> argument_type_eq t (genarg_tag arg)
+  let check_type t arg = match t, arg with
+  | AnyArg t, TacGeneric arg -> argument_type_eq (unquote t) (genarg_tag arg)
   | _ -> false
 
   let unwrap_gen f = function TacGeneric x -> f x | _ -> assert false
@@ -1347,6 +1353,7 @@ module Make
     (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
 
   let check_val_type t arg =
+    let AnyArg t = t in
     let t = Genarg.val_tag (Obj.magic t) in (** FIXME *)
     let Val.Dyn (t', _) = arg in
     match Genarg.Val.eq t t' with
