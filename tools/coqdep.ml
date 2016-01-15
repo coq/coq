@@ -437,8 +437,8 @@ let usage () =
   eprintf "  -boot : For coq developpers, prints dependencies over coq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
-  eprintf "  -I dir -as logname : adds (non recursively) dir to coq load path under logical name logname\n"; 
-  eprintf "  -I dir : adds (non recursively) dir to ocaml path\n";
+  eprintf "  -I dir -as logname : add (non recursively) dir to coq load path under logical name logname\n";
+  eprintf "  -I dir : add (non recursively) dir to ocaml path\n";
   eprintf "  -R dir -as logname : add and import dir recursively to coq load path under logical name logname\n"; (* deprecate? *)
   eprintf "  -R dir logname : add and import dir recursively to coq load path under logical name logname\n";
   eprintf "  -Q dir logname : add (recusively) and open (non recursively) dir to coq load path under logical name logname\n";
