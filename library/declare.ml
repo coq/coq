@@ -32,6 +32,14 @@ type internal_flag =
   | InternalTacticRequest  (* kernel action, no message is displayed *)
   | UserIndividualRequest   (* user action, a message is displayed *)
 
+(** XML output hooks *)
+
+let (f_xml_declare_variable, xml_declare_variable) = Hook.make ~default:ignore ()
+let (f_xml_declare_constant, xml_declare_constant) = Hook.make ~default:ignore ()
+let (f_xml_declare_inductive, xml_declare_inductive) = Hook.make ~default:ignore ()
+
+let if_xml f x = if !Flags.xml_export then f x else ()
+
 (** Declaration of section variables and local definitions *)
 
 type section_variable_entry =
@@ -83,6 +91,7 @@ let declare_variable id obj =
   declare_var_implicits id;
   Notation.declare_ref_arguments_scope (VarRef id);
   Heads.declare_head (EvalVarRef id);
+  if_xml (Hook.get f_xml_declare_variable) oname;
   oname
 
 
@@ -216,6 +225,7 @@ let declare_constant_common id cst =
       let id = Label.to_id (pi3 (Constant.repr3 c)) in
       ignore(add_leaf id o);
       update_tables c;
+      let () = if_xml (Hook.get f_xml_declare_constant) (InternalTacticRequest, c) in
       match role with
       | Safe_typing.Subproof -> ()
       | Safe_typing.Schema (ind, kind) -> !declare_scheme kind [|ind,c|])
@@ -257,6 +267,7 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
     cst_was_seff = false;
   } in
   let kn = declare_constant_common id cst in
+  let () = if_xml (Hook.get f_xml_declare_constant) (internal, kn) in
   kn
 
 let declare_definition ?(internal=UserIndividualRequest)
@@ -365,8 +376,9 @@ let declare_projections mind =
 	let kn' = declare_constant id (ProjectionEntry entry,
 				       IsDefinition StructureComponent)
 	in
-	  assert(eq_constant kn kn')) kns; true
-    | Some None | None -> false
+	  assert(eq_constant kn kn')) kns; true,true
+    | Some None -> true,false
+    | None -> false,false
 
 (* for initial declaration *)
 let declare_mind mie =
@@ -375,9 +387,10 @@ let declare_mind mie =
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives") in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
-  let isprim = declare_projections mind in
+  let isrecord,isprim = declare_projections mind in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
+  if_xml (Hook.get f_xml_declare_inductive) (isrecord,oname);
   oname, isprim
 
 (* Declaration messages *)

@@ -107,6 +107,9 @@ val execution_error_hook : (Stateid.t -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val unreachable_state_hook : (Stateid.t -> Exninfo.iexn -> unit) Hook.t
 (* ready means that master has it at hand *)
 val state_ready_hook : (Stateid.t -> unit) Hook.t
+(* called with true before and with false after a tactic explicitly
+ * in the document is run *)
+val tactic_being_run_hook : (bool -> unit) Hook.t
 
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t

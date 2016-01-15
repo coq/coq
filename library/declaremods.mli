@@ -63,6 +63,13 @@ val start_modtype :
 
 val end_modtype : unit -> module_path
 
+(** Hooks for XML output *)
+val xml_declare_module : (module_path -> unit) Hook.t
+val xml_start_module : (module_path -> unit) Hook.t
+val xml_end_module : (module_path -> unit) Hook.t
+val xml_declare_module_type : (module_path -> unit) Hook.t
+val xml_start_module_type : (module_path -> unit) Hook.t
+val xml_end_module_type : (module_path -> unit) Hook.t
 
 (** {6 Libraries i.e. modules on disk } *)
 

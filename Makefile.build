@@ -587,9 +587,9 @@ pluginsbyte: $(PLUGINS)
 ###########################################################################
 
 theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP) | theories/Init/%.v.d
-	$(SHOW)'COQC -noinit $<'
+	$(SHOW)'COQC $(COQ_XML) -noinit $<'
 	$(HIDE)rm -f theories/Init/$*.glob
-	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq
+	$(HIDE)$(BOOTCOQC) $< $(COQ_XML) -noinit -R theories Coq
 
 theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
 	$(OCAML) $< $(TOTARGET)

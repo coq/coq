@@ -557,6 +557,17 @@ let openmodtype_info =
   Summary.ref ([] : module_type_body list) ~name:"MODTYPE-INFO"
 
 
+(** XML output hooks *)
+
+let (f_xml_declare_module, xml_declare_module) = Hook.make ~default:ignore ()
+let (f_xml_start_module, xml_start_module) = Hook.make ~default:ignore ()
+let (f_xml_end_module, xml_end_module) = Hook.make ~default:ignore ()
+let (f_xml_declare_module_type, xml_declare_module_type) = Hook.make ~default:ignore ()
+let (f_xml_start_module_type, xml_start_module_type) = Hook.make ~default:ignore ()
+let (f_xml_end_module_type, xml_end_module_type) = Hook.make ~default:ignore ()
+
+let if_xml f x = if !Flags.xml_export then f x else ()
+
 (** {6 Modules : start, end, declare} *)
 
 module RawModOps = struct
@@ -578,7 +589,9 @@ let start_module interp_modast export id args res fs =
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
-  Lib.add_frozen_state (); mp
+  Lib.add_frozen_state ();
+  if_xml (Hook.get f_xml_start_module) mp;
+  mp
 
 let end_module () =
   let oldoname,oldprefix,fs,lib_stack = Lib.end_module () in
@@ -617,6 +630,7 @@ let end_module () =
   assert (ModPath.equal (mp_of_kn (snd newoname)) mp);
 
   Lib.add_frozen_state () (* to prevent recaching *);
+  if_xml (Hook.get f_xml_end_module) mp;
   mp
 
 let declare_module interp_modast id args res mexpr_o fs =
@@ -666,6 +680,7 @@ let declare_module interp_modast id args res mexpr_o fs =
 
   let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
   ignore (Lib.add_leaf id (in_module sobjs));
+  if_xml (Hook.get f_xml_declare_module) mp;
   mp
 
 end
@@ -682,7 +697,9 @@ let start_modtype interp_modast id args mtys fs =
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
-  Lib.add_frozen_state (); mp
+  Lib.add_frozen_state ();
+  if_xml (Hook.get f_xml_start_module_type) mp;
+  mp
 
 let end_modtype () =
   let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
@@ -699,6 +716,7 @@ let end_modtype () =
   assert (ModPath.equal (mp_of_kn (snd oname)) mp);
 
   Lib.add_frozen_state ()(* to prevent recaching *);
+  if_xml (Hook.get f_xml_end_module_type) mp;
   mp
 
 let declare_modtype interp_modast id args mtys (mty,ann) fs =
@@ -729,6 +747,7 @@ let declare_modtype interp_modast id args mtys (mty,ann) fs =
   check_subtypes_mt mp sub_mty_l;
 
   ignore (Lib.add_leaf id (in_modtype sobjs));
+  if_xml (Hook.get f_xml_declare_module_type) mp;
   mp
 
 end

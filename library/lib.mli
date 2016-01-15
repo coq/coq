@@ -157,6 +157,10 @@ val unfreeze : frozen -> unit
 
 val init : unit -> unit
 
+(** XML output hooks *)
+val xml_open_section : (Names.Id.t -> unit) Hook.t
+val xml_close_section : (Names.Id.t -> unit) Hook.t
+
 (** {6 Section management for discharge } *)
 type variable_info = Names.Id.t * Decl_kinds.binding_kind *
     Term.constr option * Term.types
