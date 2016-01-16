@@ -8,11 +8,12 @@
 
 (* This file defines standard combinators to build ml expressions *)
 
+open Extend
 open Compat
 
 type extend_token =
 | ExtTerminal of string
-| ExtNonTerminal of unit Pcoq.entry_name * Names.Id.t
+| ExtNonTerminal of Genarg.argument_type * Extend.user_symbol * Names.Id.t
 
 let mlexpr_of_list f l =
   List.fold_right
@@ -66,23 +67,44 @@ let mlexpr_of_token = function
 | Tok.BULLET s -> <:expr< Tok.BULLET $mlexpr_of_string s$ >>
 | Tok.EOI -> <:expr< Tok.EOI >>
 
-let rec mlexpr_of_prod_entry_key : type s a. (s, a) Pcoq.entry_key -> _ = function
-  | Pcoq.Atoken t -> <:expr< Pcoq.Atoken $mlexpr_of_token t$ >>
-  | Pcoq.Alist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key s$ >>
-  | Pcoq.Alist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
-  | Pcoq.Alist0 s -> <:expr< Pcoq.Alist0 $mlexpr_of_prod_entry_key s$ >>
-  | Pcoq.Alist0sep (s,sep) -> <:expr< Pcoq.Alist0sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
-  | Pcoq.Aopt s -> <:expr< Pcoq.Aopt $mlexpr_of_prod_entry_key s$ >>
-  | Pcoq.Amodifiers s -> <:expr< Pcoq.Amodifiers $mlexpr_of_prod_entry_key s$ >>
-  | Pcoq.Aself -> <:expr< Pcoq.Aself >>
-  | Pcoq.Anext -> <:expr< Pcoq.Anext >>
-  | Pcoq.Aentry e ->
-    begin match Entry.repr e with
-    | Entry.Dynamic s -> <:expr< Pcoq.Aentry (Pcoq.name_of_entry $lid:s$) >>
-    | Entry.Static (u, s) -> <:expr< Pcoq.Aentry (Entry.unsafe_of_name ($str:u$, $str:s$)) >>
+let repr_entry e =
+  let entry u =
+    let _ = Pcoq.get_entry u e in
+    Some (Entry.univ_name u, e)
+  in
+  try entry Pcoq.uprim with Not_found ->
+  try entry Pcoq.uconstr with Not_found ->
+  try entry Pcoq.utactic with Not_found -> None
+
+let rec mlexpr_of_prod_entry_key = function
+  | Extend.Ulist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key s$ >>
+  | Extend.Ulist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
+  | Extend.Ulist0 s -> <:expr< Pcoq.Alist0 $mlexpr_of_prod_entry_key s$ >>
+  | Extend.Ulist0sep (s,sep) -> <:expr< Pcoq.Alist0sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
+  | Extend.Uopt s -> <:expr< Pcoq.Aopt $mlexpr_of_prod_entry_key s$ >>
+  | Extend.Umodifiers s -> <:expr< Pcoq.Amodifiers $mlexpr_of_prod_entry_key s$ >>
+  | Extend.Uentry e ->
+    begin match repr_entry e with
+    | None -> <:expr< Pcoq.Aentry (Pcoq.name_of_entry $lid:e$) >>
+    | Some (u, s) -> <:expr< Pcoq.Aentry (Entry.unsafe_of_name ($str:u$, $str:s$)) >>
     end
-  | Pcoq.Aentryl (e, l) ->
-    begin match Entry.repr e with
-    | Entry.Dynamic s -> <:expr< Pcoq.Aentryl (Pcoq.name_of_entry $lid:s$) >>
-    | Entry.Static (u, s) -> <:expr< Pcoq.Aentryl (Entry.unsafe_of_name ($str:u$, $str:s$)) $mlexpr_of_int l$ >>
-    end
+  | Extend.Uentryl (e, l) ->
+    (** Keep in sync with Pcoq! *)
+    assert (CString.equal e "tactic");
+    if l = 5 then <:expr< Pcoq.Aentry (Pcoq.name_of_entry Pcoq.Tactic.binder_tactic) >>
+    else <:expr< Pcoq.Aentryl (Pcoq.name_of_entry Pcoq.Tactic.tactic_expr) $mlexpr_of_int l$ >>
+
+let type_entry u e =
+  let Pcoq.TypedEntry (t, _) = Pcoq.get_entry u e in
+  Genarg.unquote t
+
+let rec type_of_user_symbol = function
+| Ulist1 s | Ulist1sep (s, _) | Ulist0 s | Ulist0sep (s, _) | Umodifiers s ->
+  Genarg.ListArgType (type_of_user_symbol s)
+| Uopt s ->
+  Genarg.OptArgType (type_of_user_symbol s)
+| Uentry e | Uentryl (e, _) ->
+  try type_entry Pcoq.uprim e with Not_found ->
+  try type_entry Pcoq.uconstr e with Not_found ->
+  try type_entry Pcoq.utactic e with Not_found ->
+  Genarg.ExtraArgType e

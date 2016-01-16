@@ -27,24 +27,23 @@ let plugin_name = <:expr< __coq_plugin_name >>
 
 let rec make_patt = function
   | [] -> <:patt< [] >>
-  | ExtNonTerminal (_, p) :: l ->
+  | ExtNonTerminal (_, _, p) :: l ->
       let p = Names.Id.to_string p in
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
 let rec make_when loc = function
   | [] -> <:expr< True >>
-  | ExtNonTerminal (EntryName (t, _), p) :: l ->
+  | ExtNonTerminal (t, _, p) :: l ->
       let p = Names.Id.to_string p in
       let l = make_when loc l in
-      let t = mlexpr_of_argtype loc (Genarg.unquote t) in
+      let t = mlexpr_of_argtype loc t in
       <:expr< Genarg.argument_type_eq (Genarg.genarg_tag $lid:p$) $t$ && $l$ >>
   | _::l -> make_when loc l
 
 let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
-  | ExtNonTerminal (EntryName (t, _), p) :: l ->
-      let t = Genarg.unquote t in
+  | ExtNonTerminal (t, _, p) :: l ->
       let p = Names.Id.to_string p in
       let loc = MLast.loc_of_expr e in
       let e = make_let raw e l in
@@ -56,7 +55,7 @@ let rec make_let raw e = function
 
 let rec extract_signature = function
   | [] -> []
-  | ExtNonTerminal (EntryName (t, _), _) :: l -> Genarg.unquote t :: extract_signature l
+  | ExtNonTerminal (t, _, _) :: l -> t :: extract_signature l
   | _::l -> extract_signature l
 
 
@@ -78,18 +77,9 @@ let make_fun_clauses loc s l =
   let map c = Compat.make_fun loc [make_clause c] in
   mlexpr_of_list map l
 
-let rec make_args = function
-  | [] -> <:expr< [] >>
-  | ExtNonTerminal (EntryName (t, _), p) :: l ->
-      let t = Genarg.unquote t in
-      let p = Names.Id.to_string p in
-      <:expr< [ Genarg.in_gen $make_topwit loc t$ $lid:p$ :: $make_args l$ ] >>
-  | _::l -> make_args l
-
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
-  | ExtNonTerminal (EntryName (nt, g), id) ->
-      let nt = Genarg.unquote nt in
+  | ExtNonTerminal (nt, g, id) ->
       <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
       $mlexpr_of_prod_entry_key g$ >>
 
@@ -98,9 +88,8 @@ let mlexpr_of_clause cl =
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
-  | ExtNonTerminal (EntryName (t, _), p) :: l ->
+  | ExtNonTerminal (t, _, p) :: l ->
       let l = make_tags loc l in
-      let t = Genarg.unquote t in
       let t = mlexpr_of_argtype loc t in
       <:expr< [ $t$ :: $l$ ] >>
   | _::l -> make_tags loc l
@@ -115,8 +104,7 @@ let make_one_printing_rule (pt,_,e) =
 let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
 
 let make_empty_check = function
-| ExtNonTerminal (EntryName (t, e), _)->
-  let t = Genarg.unquote t in
+| ExtNonTerminal (t, e, _)->
   let is_extra = match t with ExtraArgType _ -> true | _ -> false in
   if is_possibly_empty e || is_extra then
     (* This possibly parses epsilon *)
@@ -153,17 +141,11 @@ let rec possibly_atomic loc = function
 (** Special treatment of constr entries *)
 let is_constr_gram = function
 | ExtTerminal _ -> false
-| ExtNonTerminal (EntryName (_, e), _) ->
-  match e with
-  | Aentry e ->
-    begin match Entry.repr e with
-    | Entry.Static ("constr", "constr") -> true
-    | _ -> false
-    end
-  | _ -> false
+| ExtNonTerminal (_, Extend.Uentry "constr", _) -> true
+| _ -> false
 
 let make_var = function
-  | ExtNonTerminal (_, p) -> Some p
+  | ExtNonTerminal (_, _, p) -> Some p
   | _ -> assert false
 
 let declare_tactic loc s c cl = match cl with
@@ -253,11 +235,11 @@ EXTEND
   ;
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let entry = interp_entry_name false TgAny e "" in
-        ExtNonTerminal (entry, Names.Id.of_string s)
+        let e = parse_user_entry e "" in
+        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let entry = interp_entry_name false TgAny e sep in
-        ExtNonTerminal (entry, Names.Id.of_string s)
+        let e = parse_user_entry e sep in
+        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
       | s = STRING ->
 	if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
         ExtTerminal s

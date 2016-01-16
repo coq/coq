@@ -153,10 +153,14 @@ type gram_universe = Entry.universe
 
 val get_univ : string -> gram_universe
 
+type typed_entry = TypedEntry : 'a raw_abstract_argument_type * 'a Gram.entry -> typed_entry
+
 val uprim : gram_universe
 val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
+
+val get_entry : gram_universe -> string -> typed_entry
 
 val create_generic_entry : string -> ('a, rlevel) abstract_argument_type ->
   'a Gram.entry
@@ -281,6 +285,8 @@ type _ target = TgAny : 's target | TgTactic : int -> raw_tactic_expr target
 
 val interp_entry_name : bool (** true to fail on unknown entry *) ->
   's target -> string -> string -> 's entry_name
+
+val parse_user_entry : string -> string -> user_symbol
 
 (** Recover the list of all known tactic notation entries. *)
 val list_entry_names : unit -> (string * argument_type) list

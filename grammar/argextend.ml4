@@ -12,6 +12,7 @@ open Genarg
 open Q_util
 open Egramml
 open Compat
+open Extend
 open Pcoq
 
 let loc = CompatLoc.ghost
@@ -42,37 +43,33 @@ let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 
 let has_extraarg l =
   let check = function
-  | ExtNonTerminal(EntryName (t, _), _) ->
-    begin match Genarg.unquote t with
-    | ExtraArgType _ -> true
-    | _ -> false
-    end
+  | ExtNonTerminal(ExtraArgType _, _, _) -> true
   | _ -> false
   in
   List.exists check l
 
-let rec is_possibly_empty : type s a. (s, a) entry_key -> bool = function
-| Aopt _ -> true
-| Alist0 _ -> true
-| Alist0sep _ -> true
-| Amodifiers _ -> true
-| Alist1 t -> is_possibly_empty t
-| Alist1sep (t, _) -> is_possibly_empty t
+let rec is_possibly_empty = function
+| Uopt _ -> true
+| Ulist0 _ -> true
+| Ulist0sep _ -> true
+| Umodifiers _ -> true
+| Ulist1 t -> is_possibly_empty t
+| Ulist1sep (t, _) -> is_possibly_empty t
 | _ -> false
 
-let rec get_empty_entry : type s a. (s, a) entry_key -> _ = function
-| Aopt _ -> <:expr< None >>
-| Alist0 _ -> <:expr< [] >>
-| Alist0sep _ -> <:expr< [] >>
-| Amodifiers _ -> <:expr< [] >>
-| Alist1 t -> <:expr< [$get_empty_entry t$] >>
-| Alist1sep (t, _) -> <:expr< [$get_empty_entry t$] >>
+let rec get_empty_entry = function
+| Uopt _ -> <:expr< None >>
+| Ulist0 _ -> <:expr< [] >>
+| Ulist0sep _ -> <:expr< [] >>
+| Umodifiers _ -> <:expr< [] >>
+| Ulist1 t -> <:expr< [$get_empty_entry t$] >>
+| Ulist1sep (t, _) -> <:expr< [$get_empty_entry t$] >>
 | _ -> assert false
 
 let statically_known_possibly_empty s (prods,_) =
   List.for_all (function
-    | ExtNonTerminal(EntryName (t, e), _) ->
-      begin match Genarg.unquote t with
+    | ExtNonTerminal(t, e, _) ->
+      begin match t with
       | ExtraArgType s' ->
         (* For ExtraArg we don't know (we'll have to test dynamically) *)
         (* unless it is a recursive call *)
@@ -91,10 +88,10 @@ let possibly_empty_subentries loc (prods,act) =
   in
   let rec aux = function
     | [] -> <:expr< let loc = $default_loc$ in let _ = loc in $act$ >>
-    | ExtNonTerminal(EntryName (_, e), id) :: tl when is_possibly_empty e ->
+    | ExtNonTerminal(_, e, id) :: tl when is_possibly_empty e ->
         bind_name id (get_empty_entry e) (aux tl)
-    | ExtNonTerminal(EntryName (t, _), id) :: tl ->
-        let t = match Genarg.unquote t with
+    | ExtNonTerminal(t, _, id) :: tl ->
+        let t = match t with
         | ExtraArgType _ as t -> t
         | _ -> assert false
         in
@@ -132,8 +129,7 @@ let make_possibly_empty_subentries loc s cl =
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
-    | ExtNonTerminal (EntryName (t, _), p) :: tl ->
-        let t = Genarg.unquote t in
+    | ExtNonTerminal (t, _, p) :: tl ->
 	let p = Names.Id.to_string p in
 	<:expr<
             (fun $lid:p$ ->
@@ -145,7 +141,7 @@ let make_act loc act pil =
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Pcoq.Atoken (Lexer.terminal $mlexpr_of_string s$) >>
-  | ExtNonTerminal (EntryName (_, g), _) -> mlexpr_of_prod_entry_key g
+  | ExtNonTerminal (_, g, _) -> mlexpr_of_prod_entry_key g
 
 let rec make_prod = function
 | [] -> <:expr< Extend.Stop >>
@@ -303,8 +299,8 @@ EXTEND
       | e = argtype; LIDENT "option" -> OptArgType e ]
     | "0"
       [ e = LIDENT ->
-        let EntryName (t, _) = interp_entry_name false TgAny e "" in
-        Genarg.unquote t
+        let e = parse_user_entry e "" in
+        type_of_user_symbol e
       | "("; e = argtype; ")" -> e ] ]
   ;
   argrule:
@@ -312,11 +308,11 @@ EXTEND
   ;
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let entry = interp_entry_name false TgAny e "" in
-        ExtNonTerminal (entry, Names.Id.of_string s)
+        let e = parse_user_entry e "" in
+        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let entry = interp_entry_name false TgAny e sep in
-        ExtNonTerminal (entry, Names.Id.of_string s)
+        let e = parse_user_entry e sep in
+        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
 	    Lexer.add_keyword s;

@@ -34,8 +34,7 @@ type rule = {
 
 let rec make_let e = function
   | [] -> e
-  | ExtNonTerminal (EntryName (t, _), p) :: l ->
-      let t = Genarg.unquote t in
+  | ExtNonTerminal (t, _, p) :: l ->
       let p = Names.Id.to_string p in
       let loc = MLast.loc_of_expr e in
       let e = make_let e l in
@@ -50,7 +49,7 @@ let make_clause { r_patt = pt; r_branch = e; } =
 (* To avoid warnings *)
 let mk_ignore c pt =
   let names = CList.map_filter (function
-  | ExtNonTerminal (_, p) -> Some (Names.Id.to_string p)
+  | ExtNonTerminal (_, _, p) -> Some (Names.Id.to_string p)
   | _ -> None) pt in
   let fold accu id = <:expr< let _ = $lid:id$ in $accu$ >> in
   let names = List.fold_left fold <:expr< () >> names in
@@ -181,11 +180,11 @@ EXTEND
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let entry = interp_entry_name false TgAny e "" in
-        ExtNonTerminal (entry, Names.Id.of_string s)
+        let e = parse_user_entry e "" in
+        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let entry = interp_entry_name false TgAny e sep in
-        ExtNonTerminal (entry, Names.Id.of_string s)
+        let e = parse_user_entry e sep in
+        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
       | s = STRING ->
         ExtTerminal s
     ] ]
