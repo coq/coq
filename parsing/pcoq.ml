@@ -224,10 +224,7 @@ let get_entry u s =
   Hashtbl.find utab s
 
 let get_typed_entry e =
-  let (u, s) = match Entry.repr e with
-  | Entry.Dynamic _ -> assert false
-  | Entry.Static (u, s) -> (u, s)
-  in
+  let (u, s) = Entry.repr e in
   let u = Entry.get_univ u in
   get_entry u s
 
@@ -822,7 +819,7 @@ let rec parse_user_entry s sep =
     let s = match s with "hyp" -> "var" | _ -> s in
     Uentry s
 
-let rec interp_entry_name static up_level s sep =
+let rec interp_entry_name up_level s sep =
   let rec eval = function
   | Ulist1 e ->
     let EntryName (t, g) = eval e in
@@ -847,10 +844,7 @@ let rec interp_entry_name static up_level s sep =
       try try_get_entry uprim s with Not_found ->
       try try_get_entry uconstr s with Not_found ->
       try try_get_entry utactic s with Not_found ->
-	if static then
-	  error ("Unknown entry "^s^".")
-	else
-	  EntryName (unsafe_of_genarg (ExtraArgType s), Aentry (Entry.dynamic s))
+      error ("Unknown entry "^s^".")
     end
   | Uentryl (s, n) ->
     (** FIXME: do better someday *)

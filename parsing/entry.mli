@@ -14,9 +14,7 @@ type 'a t
     unique names made of a universe and an entry name. They should be kept
     synchronized with the {!Pcoq} entries though. *)
 
-type repr =
-| Static of string * string
-| Dynamic of string
+type repr = string * string
 (** Representation of entries. *)
 
 (** Table of Coq statically defined grammar entries *)
@@ -40,10 +38,6 @@ val create : universe -> string -> 'a t
     {!Pcoq}. *)
 
 (** {5 Meta-programming} *)
-
-val dynamic : string -> 'a t
-(** Dynamic entries. They refer to entries defined in the code source and may
-    only be used in meta-programming definitions from the grammar directory. *)
 
 val repr : 'a t -> repr
 

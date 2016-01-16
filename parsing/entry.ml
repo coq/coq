@@ -11,9 +11,7 @@ open Util
 
 type 'a t = string * string
 
-type repr =
-| Static of string * string
-| Dynamic of string
+type repr = string * string
 
 type universe = string
 
@@ -58,6 +56,4 @@ let unsafe_of_name (u, s) =
   assert (String.Set.mem uname !entries);
   (u, s)
 
-let repr = function
-| ("", u) -> Dynamic u
-| (u, s) -> Static (u, s)
+let repr (u, s) = (u, s)

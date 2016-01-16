@@ -283,8 +283,7 @@ type 's entry_name = EntryName :
 
 type _ target = TgAny : 's target | TgTactic : int -> raw_tactic_expr target
 
-val interp_entry_name : bool (** true to fail on unknown entry *) ->
-  's target -> string -> string -> 's entry_name
+val interp_entry_name : 's target -> string -> string -> 's entry_name
 
 val parse_user_entry : string -> string -> user_symbol
 
