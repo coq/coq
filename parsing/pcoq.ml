@@ -53,10 +53,8 @@ end
 (** Grammar entries with associated types *)
 
 type grammar_object = Gramobj.grammar_object
-type typed_entry = argument_type * grammar_object G.entry
-let in_typed_entry t e = (t,Gramobj.weaken_entry e)
-let type_of_typed_entry (t,e) = t
-let object_of_typed_entry (t,e) = e
+type typed_entry = TypedEntry : 'a raw_abstract_argument_type * 'a G.entry -> typed_entry
+let object_of_typed_entry (TypedEntry (_, e)) = Gramobj.weaken_entry e
 let weaken_entry x = Gramobj.weaken_entry x
 
 (** General entry keys *)
@@ -81,24 +79,6 @@ type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
 
 type 's entry_name = EntryName :
   'a raw_abstract_argument_type * ('s, 'a) entry_key -> 's entry_name
-
-module type Gramtypes =
-sig
-  val inGramObj : 'a raw_abstract_argument_type -> 'a G.entry -> typed_entry
-  val outGramObj : 'a raw_abstract_argument_type -> typed_entry -> 'a G.entry
-end
-
-module Gramtypes : Gramtypes =
-struct
-  let inGramObj rawwit = in_typed_entry (unquote rawwit)
-  let outGramObj (a:'a raw_abstract_argument_type) o =
-    if not (argument_type_eq (type_of_typed_entry o) (unquote a))
-      then anomaly ~label:"outGramObj" (str "wrong type");
-    (* downcast from grammar_object *)
-    Obj.magic (object_of_typed_entry o)
-end
-
-open Gramtypes
 
 (** Grammar extensions *)
 
@@ -257,25 +237,23 @@ let new_entry etyp u s =
   if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" uname s; flush stderr);
   let _ = Entry.create u s in
   let ename = uname ^ ":" ^ s in
-  let e = in_typed_entry etyp (Gram.entry_create ename) in
-  Hashtbl.add utab s e; e
+  let e = Gram.entry_create ename in
+  Hashtbl.add utab s (TypedEntry (etyp, e)); e
 
 let create_entry u s etyp =
   let utab = get_utable u in
   try
-    let e = Hashtbl.find utab s in
+    let TypedEntry (typ, e) = Hashtbl.find utab s in
     let u = Entry.univ_name u in
-    if not (argument_type_eq (type_of_typed_entry e) etyp) then
+    if not (argument_type_eq (unquote typ) (unquote etyp)) then
       failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
-    e
+    Obj.magic e
   with Not_found ->
     new_entry etyp u s
 
-let create_constr_entry s =
-  outGramObj (rawwit wit_constr) (create_entry uconstr s (unquote (rawwit wit_constr)))
+let create_constr_entry s = create_entry uconstr s (rawwit wit_constr)
 
-let create_generic_entry s wit =
-  outGramObj wit (create_entry utactic s (unquote wit))
+let create_generic_entry s wit = create_entry utactic s wit
 
 (* [make_gen_entry] builds entries extensible by giving its name (a string) *)
 (* For entries extensible only via the ML name, Gram.entry_create is enough *)
@@ -285,7 +263,7 @@ let make_gen_entry u rawwit s =
   let uname = Entry.univ_name u in
   let e = Gram.entry_create (uname ^ ":" ^ s) in
   let _ = Entry.create u s in
-  Hashtbl.add univ s (inGramObj rawwit e); e
+  Hashtbl.add univ s (TypedEntry (rawwit, e)); e
 
 (* Initial grammar entries *)
 
@@ -633,7 +611,10 @@ let compute_entry allow_create adjust forpat = function
       let u = get_univ u in
       let e =
         try get_entry u n
-        with Not_found when allow_create -> create_entry u n (unquote (rawwit wit_constr)) in
+        with Not_found when allow_create ->
+          let wit = rawwit wit_constr in
+          TypedEntry (wit, create_entry u n wit)
+      in
       object_of_typed_entry e, None, true
 
 (* This computes the name of the level where to add a new rule *)
@@ -779,9 +760,6 @@ let tactic_level s =
     else None
   else None
 
-let type_of_entry u s =
-  type_of_typed_entry (get_entry u s)
-
 let name_of_entry e = match String.split ':' (Gram.Entry.name e) with
 | u :: s :: [] -> Entry.unsafe_of_name (u, s)
 | _ -> assert false
@@ -795,9 +773,8 @@ let unsafe_of_genarg : argument_type -> 'a raw_abstract_argument_type =
   Obj.magic
 
 let try_get_entry u s =
-  (** Order the effects: type_of_entry can raise Not_found *)
-  let typ = type_of_entry u s in
-  let typ = unsafe_of_genarg typ in
+  (** Order the effects: get_entry can raise Not_found *)
+  let TypedEntry (typ, _) = get_entry u s in
   EntryName (typ, Aentry (Entry.unsafe_of_name (Entry.univ_name u, s)))
 
 let wit_list : 'a raw_abstract_argument_type -> 'a list raw_abstract_argument_type =
@@ -858,7 +835,7 @@ let rec interp_entry_name static up_level s sep =
 	  EntryName (unsafe_of_genarg (ExtraArgType s), Aentry (Entry.dynamic s))
 
 let list_entry_names () =
-  let add_entry key (entry, _) accu = (key, entry) :: accu in
+  let add_entry key (TypedEntry (entry, _)) accu = (key, unquote entry) :: accu in
   let ans = Hashtbl.fold add_entry (get_utable uprim) [] in
   let ans = Hashtbl.fold add_entry (get_utable uconstr) ans in
   Hashtbl.fold add_entry (get_utable utactic) ans
