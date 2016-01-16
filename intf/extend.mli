@@ -51,6 +51,18 @@ type constr_prod_entry_key =
 type simple_constr_prod_entry_key =
     (production_level,unit) constr_entry_key_gen
 
+(** {5 AST for user-provided entries} *)
+
+type user_symbol =
+| Ulist1 : user_symbol -> user_symbol
+| Ulist1sep : user_symbol * string -> user_symbol
+| Ulist0 : user_symbol -> user_symbol
+| Ulist0sep : user_symbol * string -> user_symbol
+| Uopt : user_symbol -> user_symbol
+| Umodifiers : user_symbol -> user_symbol
+| Uentry : string -> user_symbol
+| Uentryl : string * int -> user_symbol
+
 (** {5 Type-safe grammar extension} *)
 
 type ('self, 'a) symbol =

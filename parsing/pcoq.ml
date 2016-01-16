@@ -754,12 +754,6 @@ let coincide s pat off =
   done;
   !break
 
-let tactic_level s =
-  if Int.equal (String.length s) 7 && coincide s "tactic" 0 then
-    let c = s.[6] in if '5' >= c && c >= '0' then Some (Char.code c - 48)
-    else None
-  else None
-
 let name_of_entry e = match String.split ':' (Gram.Entry.name e) with
 | u :: s :: [] -> Entry.unsafe_of_name (u, s)
 | _ -> assert false
@@ -800,32 +794,56 @@ let get_tacentry (type s) (n : int) (t : s target) : s entry_name = match t with
   else if check_lvl (n + 1) then EntryName (rawwit wit_tactic, Anext)
   else EntryName (rawwit wit_tactic, atactic n)
 
-let rec interp_entry_name static up_level s sep =
+let rec parse_user_entry s sep =
   let l = String.length s in
   if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
-    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 3 (l-8)) "" in
-    EntryName (wit_list t, Alist1 g)
+    let entry = parse_user_entry (String.sub s 3 (l-8)) "" in
+    Ulist1 entry
   else if l > 12 && coincide s "ne_" 0 &&
                    coincide s "_list_sep" (l-9) then
-    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 3 (l-12)) "" in
-    EntryName (wit_list t, Alist1sep (g,sep))
+    let entry = parse_user_entry (String.sub s 3 (l-12)) "" in
+    Ulist1sep (entry, sep)
   else if l > 5 && coincide s "_list" (l-5) then
-    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-5)) "" in
-    EntryName (wit_list t, Alist0 g)
+    let entry = parse_user_entry (String.sub s 0 (l-5)) "" in
+    Ulist0 entry
   else if l > 9 && coincide s "_list_sep" (l-9) then
-    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-9)) "" in
-    EntryName (wit_list t, Alist0sep (g,sep))
+    let entry = parse_user_entry (String.sub s 0 (l-9)) "" in
+    Ulist0sep (entry, sep)
   else if l > 4 && coincide s "_opt" (l-4) then
-    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-4)) "" in
-    EntryName (wit_opt t, Aopt g)
+    let entry = parse_user_entry (String.sub s 0 (l-4)) "" in
+    Uopt entry
   else if l > 5 && coincide s "_mods" (l-5) then
-    let EntryName (t, g) = interp_entry_name static up_level (String.sub s 0 (l-1)) "" in
-    EntryName (wit_list t, Amodifiers g)
+    let entry = parse_user_entry (String.sub s 0 (l-1)) "" in
+    Umodifiers entry
+  else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
+    let n = Char.code s.[6] - 48 in
+    Uentryl ("tactic", n)
   else
     let s = match s with "hyp" -> "var" | _ -> s in
-      match tactic_level s with
-      | Some n -> get_tacentry n up_level
-      | None ->
+    Uentry s
+
+let rec interp_entry_name static up_level s sep =
+  let rec eval = function
+  | Ulist1 e ->
+    let EntryName (t, g) = eval e in
+    EntryName (wit_list t, Alist1 g)
+  | Ulist1sep (e, sep) ->
+    let EntryName (t, g) = eval e in
+    EntryName (wit_list t, Alist1sep (g, sep))
+  | Ulist0 e ->
+    let EntryName (t, g) = eval e in
+    EntryName (wit_list t, Alist0 g)
+  | Ulist0sep (e, sep) ->
+    let EntryName (t, g) = eval e in
+    EntryName (wit_list t, Alist0sep (g, sep))
+  | Uopt e ->
+    let EntryName (t, g) = eval e in
+    EntryName (wit_opt t, Aopt g)
+  | Umodifiers e ->
+    let EntryName (t, g) = eval e in
+    EntryName (wit_list t, Amodifiers g)
+  | Uentry s ->
+    begin
       try try_get_entry uprim s with Not_found ->
       try try_get_entry uconstr s with Not_found ->
       try try_get_entry utactic s with Not_found ->
@@ -833,6 +851,13 @@ let rec interp_entry_name static up_level s sep =
 	  error ("Unknown entry "^s^".")
 	else
 	  EntryName (unsafe_of_genarg (ExtraArgType s), Aentry (Entry.dynamic s))
+    end
+  | Uentryl (s, n) ->
+    (** FIXME: do better someday *)
+    assert (String.equal s "tactic");
+    get_tacentry n up_level
+  in
+  eval (parse_user_entry s sep)
 
 let list_entry_names () =
   let add_entry key (TypedEntry (entry, _)) accu = (key, unquote entry) :: accu in
