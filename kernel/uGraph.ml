@@ -17,8 +17,8 @@ open Univ
 (* Additional support for sort-polymorphic inductive types by HH [Mar 2006] *)
 (* Support for universe polymorphism by MS [2014] *)
 
-(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu Sozeau, 
-   Pierre-Marie Pédrot, Jacques-Henri Jourdan *)
+(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu
+   Sozeau, Pierre-Marie Pédrot, Jacques-Henri Jourdan *)
 
 let error_inconsistency o u v (p:explanation option) =
   raise (UniverseInconsistency (o,Universe.make u,Universe.make v,p))
@@ -41,7 +41,7 @@ let error_inconsistency o u v (p:explanation option) =
    new approach to incremental cycle detection and related
    problems. arXiv preprint arXiv:1112.0784.
 
-  *)
+ *)
 
 open Universe
 
@@ -145,7 +145,7 @@ let is_set_arc u = Level.is_set u.univ
 let is_prop_arc u = Level.is_prop u.univ
 
 exception AlreadyDeclared
-            
+
 (* Reindexes the given universe, using the next available index. *)
 let use_index g u =
   let u = repr g u in
@@ -275,7 +275,11 @@ exception CycleDetected
 
    Bender, M. A., Fineman, J. T., Gilbert, S., & Tarjan, R. E. (2011). A
    new approach to incremental cycle detection and related
-   problems. arXiv preprint arXiv:1112.0784. *)
+   problems. arXiv preprint arXiv:1112.0784.
+
+   The "STEP X" comments contained in this file refers to the
+   corresponding step numbers of the algorithm described in Section
+   5.1 of this paper.  *)
 
 (* [delta] is the timeout for backward search. It might be
     usefull to tune a multiplicative constant. *)
@@ -382,7 +386,7 @@ let get_new_edges g to_merge =
 
 
 let reorder g u v =
-  (* STEP 1: backward search in the k-level of u. *)
+  (* STEP 2: backward search in the k-level of u. *)
   let delta = get_delta g in
 
   (* [v_klvl] is the chosen future level for u, v and all
@@ -399,14 +403,14 @@ let reorder g u v =
       [], v_klvl, g
   in
   let f_traversed, g =
-    (* STEP 2: forward search. Contrary to what is described in
+    (* STEP 3: forward search. Contrary to what is described in
         the paper, we do not test whether v_klvl = u.klvl nor we assign
         v_klvl to v.klvl. Indeed, the first call to forward_traverse
         will do all that. *)
     forward_traverse [] g v_klvl (repr g v) v
   in
 
-  (* STEP 3: merge nodes if needed. *)
+  (* STEP 4: merge nodes if needed. *)
   let to_merge, b_reindex, f_reindex =
     if (repr g u).klvl = v_klvl then
       begin
@@ -460,7 +464,7 @@ let reorder g u v =
 
   in
 
-  (* STEP 4: reindex traversed nodes. *)
+  (* STEP 5: reindex traversed nodes. *)
   List.fold_left use_index g to_reindex
 
 (* Assumes [u] and [v] are already in the graph. *)
@@ -468,10 +472,10 @@ let reorder g u v =
 let insert_edge strict ucan vcan g =
   try
     let u = ucan.univ and v = vcan.univ in
-    (* do we need to reorder nodes ? *)
+    (* STEP 1: do we need to reorder nodes ? *)
     let g = if topo_compare ucan vcan <= 0 then g else reorder g u v in
 
-    (* insert the new edge in the graph. *)
+    (* STEP 6: insert the new edge in the graph. *)
     let u = repr g u in
     let v = repr g v in
     if u == v then
@@ -501,7 +505,7 @@ let add_universe vlev strict g =
   try
     let _arcv = UMap.find vlev g.entries in
       raise AlreadyDeclared
-  with Not_found -> 
+  with Not_found ->
     assert (g.index > min_int);
     let v = {
       univ = vlev;
