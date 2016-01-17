@@ -237,14 +237,15 @@ let new_entry etyp u s =
   let e = Gram.entry_create ename in
   Hashtbl.add utab s (TypedEntry (etyp, e)); e
 
-let create_entry u s etyp =
+let create_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
   let utab = get_utable u in
   try
     let TypedEntry (typ, e) = Hashtbl.find utab s in
-    let u = Entry.univ_name u in
-    if not (argument_type_eq (unquote typ) (unquote etyp)) then
+    match abstract_argument_type_eq typ etyp with
+    | None ->
+      let u = Entry.univ_name u in
       failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
-    Obj.magic e
+    | Some Refl -> e
   with Not_found ->
     new_entry etyp u s
 
@@ -808,6 +809,9 @@ let rec parse_user_entry s sep =
   else
     let s = match s with "hyp" -> "var" | _ -> s in
     Uentry s
+
+let arg_list = function Rawwit t -> Rawwit (ListArg t)
+let arg_opt = function Rawwit t -> Rawwit (OptArg t)
 
 let rec interp_entry_name up_level s sep =
   let rec eval = function

@@ -194,16 +194,6 @@ type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
-let arg_list : type l. (_, l) abstract_argument_type -> (_, l) abstract_argument_type = function
-| Rawwit t -> Rawwit (ListArg t)
-| Glbwit t -> Glbwit (ListArg t)
-| Topwit t -> Topwit (ListArg t)
-
-let arg_opt : type l. (_, l) abstract_argument_type -> (_, l) abstract_argument_type = function
-| Rawwit t -> Rawwit (OptArg t)
-| Glbwit t -> Glbwit (OptArg t)
-| Topwit t -> Topwit (OptArg t)
-
 type ('a, 'b, 'c, 'l) cast =
 | Rcast : 'a -> ('a, 'b, 'c, rlevel) cast
 | Gcast : 'b -> ('a, 'b, 'c, glevel) cast

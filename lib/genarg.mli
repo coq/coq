@@ -291,9 +291,6 @@ val wit_opt : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) gena
 val wit_pair : ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
   ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
 
-val arg_list : ('a, 'l) abstract_argument_type -> ('a list, 'l) abstract_argument_type
-val arg_opt : ('a, 'l) abstract_argument_type -> ('a option, 'l) abstract_argument_type
-
 (** {5 Magic used by the parser} *)
 
 val default_empty_value : ('raw, 'glb, 'top) genarg_type -> 'raw option
