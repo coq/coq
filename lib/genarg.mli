@@ -185,8 +185,6 @@ val val_tag : 'a typed_abstract_argument_type -> 'a Val.tag
 (** Retrieve the dynamic type associated to a toplevel genarg. Only works for
     ground generic arguments. *)
 
-val val_cast : 'a typed_abstract_argument_type -> Val.t -> 'a
-
 (** {6 Type reification} *)
 
 type argument_type =
@@ -195,9 +193,6 @@ type argument_type =
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
-
-exception CastError of argument_type * Val.t
-(** Exception raised by {!val_cast} *)
 
 (** {6 Equalities} *)
 

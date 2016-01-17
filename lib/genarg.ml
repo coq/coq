@@ -285,50 +285,7 @@ let rec val_tag : type a b c. (a, b, c) genarg_type -> c Val.tag = function
 | ExtraArg s ->
   match LoadMap.find s !arg0_map with LoadMap.Pack obj -> obj.dyn
 
-exception CastError of argument_type * Val.t
-
-let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
-  let Val.Dyn (t', x) = v in
-  match Val.eq t t' with
-  | None -> None
-  | Some Refl -> Some x
-
-let try_prj wit v = match prj (val_tag wit) v with
-| None -> raise (CastError (untype wit, v))
-| Some x -> x
-
-let rec val_cast : type a b c. (a, b, c) genarg_type -> Val.t -> c =
-fun wit v -> match wit with
-| ExtraArg _ -> try_prj wit v
-| ListArg t ->
-  let Val.Dyn (tag, v) = v in
-  begin match tag with
-  | Val.List tag ->
-    let map x = val_cast t (Val.Dyn (tag, x)) in
-    List.map map v
-  | _ -> raise (CastError (untype wit, Val.Dyn (tag, v)))
-  end
-| OptArg t ->
-  let Val.Dyn (tag, v) = v in
-  begin match tag with
-  | Val.Opt tag ->
-    let map x = val_cast t (Val.Dyn (tag, x)) in
-    Option.map map v
-  | _ ->  raise (CastError (untype wit, Val.Dyn (tag, v)))
-  end
-| PairArg (t1, t2) ->
-  let Val.Dyn (tag, v) = v in
-  begin match tag with
-  | Val.Pair (tag1, tag2) ->
-    let (v1, v2) = v in
-    let v1 = Val.Dyn (tag1, v1) in
-    let v2 = Val.Dyn (tag2, v2) in
-    (val_cast t1 v1, val_cast t2 v2)
-  | _ ->  raise (CastError (untype wit, Val.Dyn (tag, v)))
-  end
-
 let val_tag = function Topwit t -> val_tag t
-let val_cast = function Topwit t -> val_cast t
 
 (** Registering genarg-manipulating functions *)
 

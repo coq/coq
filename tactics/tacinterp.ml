@@ -149,10 +149,49 @@ module Value = struct
     let Val.Dyn (tag, _) = v in
     let tag = Val.repr tag in
     errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ tag
-      ++ str " while type " ++ Genarg.pr_argument_type wit ++ str " was expected.")
+      ++ str " while type " ++ Genarg.pr_argument_type (unquote (rawwit wit)) ++ str " was expected.")
 
-  let cast wit v =
-    try val_cast wit v with CastError (wit, v) -> cast_error wit v
+  let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
+    let Val.Dyn (t', x) = v in
+    match Val.eq t t' with
+    | None -> None
+    | Some Refl -> Some x
+
+  let try_prj wit v = match prj (val_tag wit) v with
+  | None -> cast_error wit v
+  | Some x -> x
+
+  let rec val_cast : type a b c. (a, b, c) genarg_type -> Val.t -> c =
+  fun wit v -> match wit with
+  | ExtraArg _ -> try_prj wit v
+  | ListArg t ->
+    let Val.Dyn (tag, v) = v in
+    begin match tag with
+    | Val.List tag ->
+      let map x = val_cast t (Val.Dyn (tag, x)) in
+      List.map map v
+    | _ -> cast_error wit (Val.Dyn (tag, v))
+    end
+  | OptArg t ->
+    let Val.Dyn (tag, v) = v in
+    begin match tag with
+    | Val.Opt tag ->
+      let map x = val_cast t (Val.Dyn (tag, x)) in
+      Option.map map v
+    | _ -> cast_error wit (Val.Dyn (tag, v))
+    end
+  | PairArg (t1, t2) ->
+    let Val.Dyn (tag, v) = v in
+    begin match tag with
+    | Val.Pair (tag1, tag2) ->
+      let (v1, v2) = v in
+      let v1 = Val.Dyn (tag1, v1) in
+      let v2 = Val.Dyn (tag2, v2) in
+      (val_cast t1 v1, val_cast t2 v2)
+    | _ -> cast_error wit (Val.Dyn (tag, v))
+    end
+
+  let cast (Topwit wit) v = val_cast wit v
 
 end
 
