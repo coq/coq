@@ -12,8 +12,8 @@
 (* Additional support for sort-polymorphic inductive types by HH [Mar 2006] *)
 (* Support for universe polymorphism by MS [2014] *)
 
-(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu Sozeau, 
-   Pierre-Marie Pédrot *)
+(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu
+   Sozeau, Pierre-Marie Pédrot *)
 
 open Pp
 open Errors
