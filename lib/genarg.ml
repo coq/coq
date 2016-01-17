@@ -117,6 +117,9 @@ type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
+let arg_list wit = ListArgType wit
+let arg_opt wit = OptArgType wit
+
 type ('a, 'b, 'c, 'l) cast = Obj.t
 
 let raw = Obj.obj

@@ -1354,11 +1354,12 @@ module Make
 
   let check_val_type t arg =
     let AnyArg t = t in
-    let t = Genarg.val_tag (Obj.magic t) in (** FIXME *)
-    let Val.Dyn (t', _) = arg in
-    match Genarg.Val.eq t t' with
-    | None -> false
-    | Some _ -> true
+(*     let t = Genarg.val_tag (Obj.magic t) in *)
+(*     let Val.Dyn (t', _) = arg in *)
+(*     match Genarg.Val.eq t t' with *)
+(*     | None -> false *)
+(*     | Some _ -> true *)
+    true (** FIXME *)
 
   let pr_alias pr lev key args =
     pr_alias_gen check_val_type pr lev key args

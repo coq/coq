@@ -759,20 +759,10 @@ let atactic n =
   if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
   else Aentryl (name_of_entry Tactic.tactic_expr, n)
 
-let unsafe_of_genarg : argument_type -> 'a raw_abstract_argument_type =
-  (** FIXME *)
-  Obj.magic
-
 let try_get_entry u s =
   (** Order the effects: get_entry can raise Not_found *)
   let TypedEntry (typ, _) = get_entry u s in
   EntryName (typ, Aentry (Entry.unsafe_of_name (Entry.univ_name u, s)))
-
-let wit_list : 'a raw_abstract_argument_type -> 'a list raw_abstract_argument_type =
-  fun t -> unsafe_of_genarg (ListArgType (unquote t))
-
-let wit_opt : 'a raw_abstract_argument_type -> 'a option raw_abstract_argument_type =
-  fun t -> unsafe_of_genarg (OptArgType (unquote t))
 
 type _ target =
 | TgAny : 's target
@@ -823,22 +813,22 @@ let rec interp_entry_name up_level s sep =
   let rec eval = function
   | Ulist1 e ->
     let EntryName (t, g) = eval e in
-    EntryName (wit_list t, Alist1 g)
+    EntryName (arg_list t, Alist1 g)
   | Ulist1sep (e, sep) ->
     let EntryName (t, g) = eval e in
-    EntryName (wit_list t, Alist1sep (g, sep))
+    EntryName (arg_list t, Alist1sep (g, sep))
   | Ulist0 e ->
     let EntryName (t, g) = eval e in
-    EntryName (wit_list t, Alist0 g)
+    EntryName (arg_list t, Alist0 g)
   | Ulist0sep (e, sep) ->
     let EntryName (t, g) = eval e in
-    EntryName (wit_list t, Alist0sep (g, sep))
+    EntryName (arg_list t, Alist0sep (g, sep))
   | Uopt e ->
     let EntryName (t, g) = eval e in
-    EntryName (wit_opt t, Aopt g)
+    EntryName (arg_opt t, Aopt g)
   | Umodifiers e ->
     let EntryName (t, g) = eval e in
-    EntryName (wit_list t, Amodifiers g)
+    EntryName (arg_list t, Amodifiers g)
   | Uentry s ->
     begin
       try try_get_entry uprim s with Not_found ->

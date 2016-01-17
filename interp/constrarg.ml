@@ -19,9 +19,6 @@ let loc_of_or_by_notation f = function
   | AN c -> f c
   | ByNotation (loc,s,_) -> loc
 
-let unsafe_of_type (t : argument_type) : ('a, 'b, 'c) Genarg.genarg_type =
-  Obj.magic t
-
 let wit_int_or_var =
   Genarg.make0 ~dyn:(val_tag (topwit Stdarg.wit_int)) None "int_or_var"
 
