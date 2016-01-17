@@ -68,7 +68,21 @@ ExtraArgType of string         '_a                      '_b
 
 (** {5 Generic types} *)
 
-type ('raw, 'glob, 'top) genarg_type
+module ArgT :
+sig
+  type 'a tag
+  val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
+  val repr : 'a tag -> string
+  type any = Any : 'a tag -> any
+  val name : string -> any option
+end
+
+type (_, _, _) genarg_type =
+| ExtraArg : ('a * 'b * 'c) ArgT.tag -> ('a, 'b, 'c) genarg_type
+| ListArg : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
+| OptArg : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
+| PairArg : ('a1, 'b1, 'c1) genarg_type * ('a2, 'b2, 'c2) genarg_type ->
+  ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
 (** Generic types. ['raw] is the OCaml lowest level, ['glob] is the globalized
     one, and ['top] the internalized one. *)
 
@@ -112,11 +126,14 @@ val create_arg : 'raw option -> ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'to
    out_gen is monomorphic over 'a, hence type-safe
 *)
 
-type rlevel
-type glevel
-type tlevel
+type rlevel = [ `rlevel ]
+type glevel = [ `glevel ]
+type tlevel = [ `tlevel ]
 
-type ('a, 'co) abstract_argument_type
+type (_, _) abstract_argument_type =
+| Rawwit : ('a, 'b, 'c) genarg_type -> ('a, rlevel) abstract_argument_type
+| Glbwit : ('a, 'b, 'c) genarg_type -> ('b, glevel) abstract_argument_type
+| Topwit : ('a, 'b, 'c) genarg_type -> ('c, tlevel) abstract_argument_type
 (** Type at level ['co] represented by an OCaml value of type ['a]. *)
 
 type 'a raw_abstract_argument_type = ('a, rlevel) abstract_argument_type
@@ -141,7 +158,7 @@ val topwit : ('a, 'b, 'c) genarg_type -> ('c, tlevel) abstract_argument_type
 
 (** {5 Generic arguments} *)
 
-type 'a generic_argument
+type 'l generic_argument = GenArg : ('a, 'l) abstract_argument_type * 'a -> 'l generic_argument
 (** A inhabitant of ['level generic_argument] is a inhabitant of some type at
     level ['level], together with the representation of this type. *)
 
@@ -220,7 +237,16 @@ type argument_type =
 exception CastError of argument_type * Val.t
 (** Exception raised by {!val_cast} *)
 
+(** {6 Equalities} *)
+
 val argument_type_eq : argument_type -> argument_type -> bool
+val genarg_type_eq :
+  ('a1, 'b1, 'c1) genarg_type ->
+  ('a2, 'b2, 'c2) genarg_type ->
+  ('a1 * 'b1 * 'c1, 'a2 * 'b2 * 'c2) CSig.eq option
+val abstract_argument_type_eq :
+  ('a, 'l) abstract_argument_type -> ('b, 'l) abstract_argument_type ->
+  ('a, 'b) CSig.eq option
 
 val pr_argument_type : argument_type -> Pp.std_ppcmds
 (** Print a human-readable representation for a given type. *)
