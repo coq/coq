@@ -265,84 +265,71 @@ module Make
   let with_evars ev s = if ev then "e" ^ s else s
 
 
-  let rec pr_raw_generic_rec prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
-    match Genarg.genarg_tag x with
-      | ListArgType _ ->
-        let list_unpacker wit l =
-          let map x = pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
-          pr_sequence map (raw l)
-        in
-        hov 0 (list_unpack { list_unpacker } x)
-      | OptArgType _ ->
-        let opt_unpacker wit o = match raw o with
+  let rec pr_raw_generic_rec prc prlc prtac prpat prref (GenArg (Rawwit wit, x)) =
+    match wit with
+      | ListArg wit ->
+        let map x = pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
+        let ans = pr_sequence map x in
+        hov 0 ans
+      | OptArg wit ->
+        let ans = match x with
           | None -> mt ()
           | Some x -> pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x)
         in
-        hov 0 (opt_unpack { opt_unpacker } x)
-      | PairArgType _ ->
-        let pair_unpacker wit1 wit2 o =
-          let p, q = raw o in
-          let p = in_gen (rawwit wit1) p in
-          let q = in_gen (rawwit wit2) q in
-          pr_sequence (pr_raw_generic_rec prc prlc prtac prpat prref) [p; q]
-        in
-        hov 0 (pair_unpack { pair_unpacker } x)
-      | ExtraArgType s ->
-        try pi1 (String.Map.find s !genarg_pprule) prc prlc prtac x
-        with Not_found -> Genprint.generic_raw_print x
+        hov 0 ans
+      | PairArg (wit1, wit2) ->
+        let p, q = x in
+        let p = in_gen (rawwit wit1) p in
+        let q = in_gen (rawwit wit2) q in
+        hov 0 (pr_sequence (pr_raw_generic_rec prc prlc prtac prpat prref) [p; q])
+      | ExtraArg s ->
+        try pi1 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (rawwit wit) x)
+        with Not_found -> Genprint.generic_raw_print (in_gen (rawwit wit) x)
 
 
-  let rec pr_glb_generic_rec prc prlc prtac prpat x =
-    match Genarg.genarg_tag x with
-      | ListArgType _ ->
-        let list_unpacker wit l =
-          let map x = pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x) in
-          pr_sequence map (glb l)
-        in
-        hov 0 (list_unpack { list_unpacker } x)
-      | OptArgType _ ->
-        let opt_unpacker wit o = match glb o with
+  let rec pr_glb_generic_rec prc prlc prtac prpat (GenArg (Glbwit wit, x)) =
+    match wit with
+      | ListArg wit ->
+        let map x = pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x) in
+        let ans = pr_sequence map x in
+        hov 0 ans
+      | OptArg wit ->
+        let ans = match x with
           | None -> mt ()
           | Some x -> pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x)
         in
-        hov 0 (opt_unpack { opt_unpacker } x)
-      | PairArgType _ ->
-        let pair_unpacker wit1 wit2 o =
-          let p, q = glb o in
-          let p = in_gen (glbwit wit1) p in
-          let q = in_gen (glbwit wit2) q in
-          pr_sequence (pr_glb_generic_rec prc prlc prtac prpat) [p; q]
-        in
-        hov 0 (pair_unpack { pair_unpacker } x)
-      | ExtraArgType s ->
-        try pi2 (String.Map.find s !genarg_pprule) prc prlc prtac x
-        with Not_found -> Genprint.generic_glb_print x
+        hov 0 ans
+      | PairArg (wit1, wit2) ->
+        let p, q = x in
+        let p = in_gen (glbwit wit1) p in
+        let q = in_gen (glbwit wit2) q in
+        let ans = pr_sequence (pr_glb_generic_rec prc prlc prtac prpat) [p; q] in
+        hov 0 ans
+      | ExtraArg s ->
+        try pi2 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (glbwit wit) x)
+        with Not_found -> Genprint.generic_glb_print (in_gen (glbwit wit) x)
 
-  let rec pr_top_generic_rec prc prlc prtac prpat x =
-    match Genarg.genarg_tag x with
-      | ListArgType _ ->
-        let list_unpacker wit l =
-          let map x = pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x) in
-          pr_sequence map (top l)
-        in
-        hov 0 (list_unpack { list_unpacker } x)
-      | OptArgType _ ->
-        let opt_unpacker wit o = match top o with
+  let rec pr_top_generic_rec prc prlc prtac prpat (GenArg (Topwit wit, x)) =
+    match wit with
+      | ListArg wit ->
+        let map x = pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x) in
+        let ans = pr_sequence map x in
+        hov 0 ans
+      | OptArg wit ->
+        let ans = match x with
           | None -> mt ()
           | Some x -> pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x)
         in
-        hov 0 (opt_unpack { opt_unpacker } x)
-      | PairArgType _ ->
-        let pair_unpacker wit1 wit2 o =
-          let p, q = top o in
-          let p = in_gen (topwit wit1) p in
-          let q = in_gen (topwit wit2) q in
-          pr_sequence (pr_top_generic_rec prc prlc prtac prpat) [p; q]
-        in
-        hov 0 (pair_unpack { pair_unpacker } x)
-      | ExtraArgType s ->
-        try pi3 (String.Map.find s !genarg_pprule) prc prlc prtac x
-        with Not_found -> Genprint.generic_top_print x
+        hov 0 ans
+      | PairArg (wit1, wit2) ->
+        let p, q = x in
+        let p = in_gen (topwit wit1) p in
+        let q = in_gen (topwit wit2) q in
+        let ans = pr_sequence (pr_top_generic_rec prc prlc prtac prpat) [p; q] in
+        hov 0 ans
+      | ExtraArg s ->
+        try pi3 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (topwit wit) x)
+        with Not_found -> Genprint.generic_top_print (in_gen (topwit wit) x)
 
   let rec tacarg_using_rule_token pr_gen = function
     | Egramml.GramTerminal s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)

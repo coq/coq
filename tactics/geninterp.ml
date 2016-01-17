@@ -29,10 +29,7 @@ module Interp = Register(InterpObj)
 let interp = Interp.obj
 let register_interp0 = Interp.register0
 
-let generic_interp ist v =
+let generic_interp ist (GenArg (Glbwit wit, v)) =
   let open Ftactic.Notations in
-  let unpacker wit v =
-    interp wit ist (glb v) >>= fun ans ->
-    Ftactic.return (Val.Dyn (val_tag (topwit wit), ans))
-  in
-  unpack { unpacker; } v
+  interp wit ist v >>= fun ans ->
+  Ftactic.return (Val.Dyn (val_tag (topwit wit), ans))

@@ -37,20 +37,16 @@ module Subst = Register (SubstObj)
 let intern = Intern.obj
 let register_intern0 = Intern.register0
 
-let generic_intern ist v =
-  let unpacker wit v =
-    let (ist, v) = intern wit ist (raw v) in
-    (ist, in_gen (glbwit wit) v)
-  in
-  unpack { unpacker; } v
+let generic_intern ist (GenArg (Rawwit wit, v)) =
+  let (ist, v) = intern wit ist v in
+  (ist, in_gen (glbwit wit) v)
 
 (** Substitution functions *)
 
 let substitute = Subst.obj
 let register_subst0 = Subst.register0
 
-let generic_substitute subs v =
-  let unpacker wit v = in_gen (glbwit wit) (substitute wit subs (glb v)) in
-  unpack { unpacker; } v
+let generic_substitute subs (GenArg (Glbwit wit, v)) =
+  in_gen (glbwit wit) (substitute wit subs v)
 
 let () = Hook.set Detyping.subst_genarg_hook generic_substitute

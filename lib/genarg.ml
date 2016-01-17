@@ -203,14 +203,6 @@ let raw : ('a, 'b, 'c, rlevel) cast -> _ = function Rcast x -> x
 let glb : ('a, 'b, 'c, glevel) cast -> _ = function Gcast x -> x
 let top : ('a, 'b, 'c, tlevel) cast -> _ = function Tcast x -> x
 
-type ('r, 'l) unpacker =
-  { unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> ('a, 'b, 'c, 'l) cast -> 'r }
-
-let unpack (type l) (pack : (_, l) unpacker) (GenArg (t, obj) : l generic_argument) = match t with
-| Rawwit t -> pack.unpacker t (Rcast obj)
-| Glbwit t -> pack.unpacker t (Gcast obj)
-| Topwit t -> pack.unpacker t (Tcast obj)
-
 (** Type transformers *)
 
 type ('r, 'l) list_unpacker =

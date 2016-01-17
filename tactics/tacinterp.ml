@@ -1524,38 +1524,34 @@ and interp_genarg ist x : Val.t Ftactic.t =
       interp_genarg_var_list ist x
     else if argument_type_eq tag (unquote (topwit (wit_list wit_constr))) then
       interp_genarg_constr_list ist x
-    else match tag with
-    | ListArgType _ ->
-      let list_unpacker wit l =
-        let map x =
-          interp_genarg ist (Genarg.in_gen (glbwit wit) x) >>= fun x ->
-          Ftactic.return (Value.cast (topwit wit) x)
-        in
-        Ftactic.List.map map (glb l) >>= fun l ->
-        Ftactic.return (Value.of_list (val_tag wit) l)
+    else
+    let GenArg (Glbwit wit, x) = x in
+    match wit with
+    | ListArg wit ->
+      let map x =
+        interp_genarg ist (Genarg.in_gen (glbwit wit) x) >>= fun x ->
+        Ftactic.return (Value.cast (topwit wit) x)
       in
-      list_unpack { list_unpacker } x
-    | OptArgType _ ->
-      let opt_unpacker wit o = match glb o with
+      Ftactic.List.map map x >>= fun l ->
+      Ftactic.return (Value.of_list (val_tag wit) l)
+    | OptArg wit ->
+      let ans = match x with
       | None -> Ftactic.return (Value.of_option (val_tag wit) None)
       | Some x ->
         interp_genarg ist (Genarg.in_gen (glbwit wit) x) >>= fun x ->
         let x = Value.cast (topwit wit) x in
         Ftactic.return (Value.of_option (val_tag wit) (Some x))
       in
-      opt_unpack { opt_unpacker } x
-    | PairArgType _ ->
-      let pair_unpacker wit1 wit2 o =
-        let (p, q) = glb o in
-        interp_genarg ist (Genarg.in_gen (glbwit wit1) p) >>= fun p ->
-        interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
-        let p = Value.cast (topwit wit1) p in
-        let q = Value.cast (topwit wit2) q in
-        Ftactic.return (Val.Dyn (Val.Pair (val_tag wit1, val_tag wit2), (p, q)))
-      in
-      pair_unpack { pair_unpacker } x
-    | ExtraArgType _ ->
-      Geninterp.generic_interp ist x
+      ans
+    | PairArg (wit1, wit2) ->
+      let (p, q) = x in
+      interp_genarg ist (Genarg.in_gen (glbwit wit1) p) >>= fun p ->
+      interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
+      let p = Value.cast (topwit wit1) p in
+      let q = Value.cast (topwit wit2) q in
+      Ftactic.return (Val.Dyn (Val.Pair (val_tag wit1, val_tag wit2), (p, q)))
+    | ExtraArg s ->
+      Geninterp.generic_interp ist (Genarg.in_gen (glbwit wit) x)
 
 (** returns [true] for genargs which have the same meaning
     independently of goals. *)

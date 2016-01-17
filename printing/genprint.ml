@@ -40,6 +40,6 @@ let raw_print wit v = (Print.obj wit).raw v
 let glb_print wit v = (Print.obj wit).glb v
 let top_print wit v = (Print.obj wit).top v
 
-let generic_raw_print v = unpack { unpacker = fun w v -> raw_print w (raw v); } v
-let generic_glb_print v = unpack { unpacker = fun w v -> glb_print w (glb v); } v
-let generic_top_print v = unpack { unpacker = fun w v -> top_print w (top v); } v
+let generic_raw_print (GenArg (Rawwit w, v)) = raw_print w v
+let generic_glb_print (GenArg (Glbwit w, v)) = glb_print w v
+let generic_top_print (GenArg (Topwit w, v)) = top_print w v

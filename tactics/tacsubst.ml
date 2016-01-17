@@ -274,35 +274,29 @@ and subst_match_rule subst = function
       ::(subst_match_rule subst tl)
   | [] -> []
 
-and subst_genarg subst (x:glob_generic_argument) =
-  match genarg_tag x with
-  | ListArgType _ ->
-    let list_unpacker wit l =
-      let map x =
-        let ans = subst_genarg subst (in_gen (glbwit wit) x) in
-        out_gen (glbwit wit) ans
-      in
-      in_gen (glbwit (wit_list wit)) (List.map map (glb l))
+and subst_genarg subst (GenArg (Glbwit wit, x)) =
+  match wit with
+  | ListArg wit ->
+    let map x =
+      let ans = subst_genarg subst (in_gen (glbwit wit) x) in
+      out_gen (glbwit wit) ans
     in
-    list_unpack { list_unpacker } x
-  | OptArgType _ ->
-    let opt_unpacker wit o = match glb o with
+    in_gen (glbwit (wit_list wit)) (List.map map x)
+  | OptArg wit ->
+    let ans = match x with
     | None -> in_gen (glbwit (wit_opt wit)) None
     | Some x ->
       let s = out_gen (glbwit wit) (subst_genarg subst (in_gen (glbwit wit) x)) in
       in_gen (glbwit (wit_opt wit)) (Some s)
     in
-    opt_unpack { opt_unpacker } x
-  | PairArgType _ ->
-      let pair_unpacker wit1 wit2 o =
-        let p, q = glb o in
-        let p = out_gen (glbwit wit1) (subst_genarg subst (in_gen (glbwit wit1) p)) in
-        let q = out_gen (glbwit wit2) (subst_genarg subst (in_gen (glbwit wit2) q)) in
-        in_gen (glbwit (wit_pair wit1 wit2)) (p, q)
-      in
-      pair_unpack { pair_unpacker } x
-  | ExtraArgType s ->
-      Genintern.generic_substitute subst x
+    ans
+  | PairArg (wit1, wit2) ->
+    let p, q = x in
+    let p = out_gen (glbwit wit1) (subst_genarg subst (in_gen (glbwit wit1) p)) in
+    let q = out_gen (glbwit wit2) (subst_genarg subst (in_gen (glbwit wit2) q)) in
+    in_gen (glbwit (wit_pair wit1 wit2)) (p, q)
+  | ExtraArg s ->
+      Genintern.generic_substitute subst (in_gen (glbwit wit) x)
 
 (** Registering *)
 

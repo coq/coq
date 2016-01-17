@@ -179,44 +179,6 @@ val has_type : 'co generic_argument -> ('a, 'co) abstract_argument_type -> bool
 (** [has_type v t] tells whether [v] has type [t]. If true, it ensures that
     [out_gen t v] will not raise a dynamic type exception. *)
 
-(** {6 Destructors} *)
-
-type ('a, 'b, 'c, 'l) cast
-
-val raw : ('a, 'b, 'c, rlevel) cast -> 'a
-val glb : ('a, 'b, 'c, glevel) cast -> 'b
-val top : ('a, 'b, 'c, tlevel) cast -> 'c
-
-type ('r, 'l) unpacker =
-  { unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> ('a, 'b, 'c, 'l) cast -> 'r }
-
-val unpack : ('r, 'l) unpacker -> 'l generic_argument -> 'r
-(** Existential-type destructors. *)
-
-(** {6 Manipulation of generic arguments}
-
-Those functions fail if they are applied to an argument which has not the right
-dynamic type. *)
-
-type ('r, 'l) list_unpacker =
-  { list_unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type ->
-    ('a list, 'b list, 'c list, 'l) cast -> 'r }
-
-val list_unpack : ('r, 'l) list_unpacker -> 'l generic_argument -> 'r
-
-type ('r, 'l) opt_unpacker =
-  { opt_unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type ->
-    ('a option, 'b option, 'c option, 'l) cast -> 'r }
-
-val opt_unpack : ('r, 'l) opt_unpacker -> 'l generic_argument -> 'r
-
-type ('r, 'l) pair_unpacker =
-  { pair_unpacker : 'a1 'a2 'b1 'b2 'c1 'c2.
-    ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
-    (('a1 * 'a2), ('b1 * 'b2), ('c1 * 'c2), 'l) cast -> 'r }
-
-val pair_unpack : ('r, 'l) pair_unpacker -> 'l generic_argument -> 'r
-
 (** {6 Dynamic toplevel values} *)
 
 val val_tag : 'a typed_abstract_argument_type -> 'a Val.tag
