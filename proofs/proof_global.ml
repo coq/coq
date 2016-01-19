@@ -623,7 +623,10 @@ module Bullet = struct
 	(!current_behavior).name
       end;
       optwrite = begin fun n ->
-	current_behavior := Hashtbl.find behaviors n
+	current_behavior :=
+          try Hashtbl.find behaviors n
+          with Not_found ->
+            Errors.error ("Unknown bullet behavior: \"" ^ n ^ "\".")
       end
     }
 
