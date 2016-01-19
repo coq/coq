@@ -634,24 +634,27 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
   if deep then begin
     let t2 = Retyping.get_type_of env sigma origc in
-    let sigma, t2 = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t2 in
-    if not (snd (infer_conv ~pb:Reduction.CUMUL env sigma t1 t2)) then
+    let sigma, t2 = Evarsolve.refresh_universes
+		      ~onlyalg:true (Some false) env sigma t2 in
+    let sigma, b = infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 in
+    if not b then
       if
         isSort (whd_betadeltaiota env sigma t1) &&
         isSort (whd_betadeltaiota env sigma t2)
-      then
-        mayneedglobalcheck := true
+      then (mayneedglobalcheck := true; sigma)
       else
         errorlabstrm "convert-check-hyp" (str "Types are incompatible.")
+    else sigma
   end
   else
     if not (isSort (whd_betadeltaiota env sigma t1)) then
       errorlabstrm "convert-check-hyp" (str "Not a type.")
+    else sigma
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
   let sigma, t' = t sigma in
-  check_types env sigma mayneedglobalcheck deep t' c;
+  let sigma = check_types env sigma mayneedglobalcheck deep t' c in
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
   if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
   sigma, t'
