@@ -6,5 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-val coq_file : string -> Cdglobals.coq_module -> unit
+module type S = sig
+
+module OutB : Output.S
+
+val coq_file        : string -> Cdglobals.coq_module -> unit
 val detect_subtitle : string -> Cdglobals.coq_module -> string option
+
+end
+
+module Make (Out : Output.S) : S with module OutB = Out

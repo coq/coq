@@ -184,6 +184,8 @@ let dvi = ref false
 let ps = ref false
 let pdf = ref false
 
+let preamble = ref []
+
 let parse () =
   let files = ref [] in
   let add_file f = files := f :: !files in
@@ -202,7 +204,7 @@ let parse () =
     | ("-with-footer" | "--with-footer") :: [] ->
 	usage ()
     | ("-p" | "--preamble") :: s :: rem ->
-	Output.push_in_preamble s; parse_rec rem
+        preamble := s :: !preamble; parse_rec rem
     | ("-p" | "--preamble") :: [] ->
 	usage ()
     | ("-noindex" | "--noindex" | "--no-index") :: rem ->
@@ -405,6 +407,11 @@ let copy src dst =
 (*s Functions for generating output files *)
 
 let gen_one_file l =
+  let module OutB = (val Output.output_factory !Cdglobals.target_language) in
+  let module Cpretty = Cpretty.Make(OutB)                                  in
+
+  List.iter (OutB.push_in_preamble) (List.rev !preamble);
+
   let file = function
     | Vernac_file (f,m) ->
         let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
@@ -412,42 +419,48 @@ let gen_one_file l =
           Cpretty.coq_file f m
     | Latex_file _ -> ()
   in
-    if (!header_trailer) then Output.header ();
-    if !toc then Output.make_toc ();
+    if (!header_trailer) then OutB.header ();
+    if !toc then OutB.make_toc ();
     List.iter file l;
-    if !index then Output.make_index();
-    if (!header_trailer) then Output.trailer ()
+    if !index then OutB.make_index();
+    if (!header_trailer) then OutB.trailer ()
 
 let gen_mult_files l =
+
+  let module OutB = (val Output.output_factory !Cdglobals.target_language) in
+  let module Cpretty = Cpretty.Make(OutB)                                  in
+
+  List.iter (OutB.push_in_preamble) (List.rev !preamble);
+
   let file = function
     | Vernac_file (f,m) ->
       let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
 	let hf = target_full_name m in
         Output.set_module m sub;
 	  open_out_file hf;
-	  if (!header_trailer) then Output.header ();
+	  if (!header_trailer) then OutB.header ();
 	  Cpretty.coq_file f m;
-	  if (!header_trailer) then Output.trailer ();
+	  if (!header_trailer) then OutB.trailer ();
 	  close_out_file()
     | Latex_file _ -> ()
   in
     List.iter file l;
     if (!index && !target_language=HTML) then begin
-      if (!multi_index) then Output.make_multi_index ();
+      if (!multi_index) then OutB.make_multi_index ();
       open_out_file (!index_name^".html");
       page_title := (if !title <> "" then !title else "Index");
-      if (!header_trailer) then Output.header ();
-      Output.make_index ();
-      if (!header_trailer) then Output.trailer ();
+      if (!header_trailer) then OutB.header ();
+      OutB.make_index ();
+      if (!header_trailer) then OutB.trailer ();
       close_out_file()
     end;
     if (!toc && !target_language=HTML) then begin
       open_out_file "toc.html";
       page_title := (if !title <> "" then !title else "Table of contents");
-      if (!header_trailer) then Output.header ();
+      if (!header_trailer) then OutB.header ();
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
-      Output.make_toc ();
-      if (!header_trailer) then Output.trailer ();
+      OutB.make_toc ();
+      if (!header_trailer) then OutB.trailer ();
       close_out_file()
     end
     (* NB: for latex and texmacs, a separated toc or index is meaningless... *)
