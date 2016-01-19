@@ -3047,23 +3047,33 @@ variables bound by a let-in construction inside the term itself (use
 here the {\tt zeta} flag). In any cases, opaque constants are not
 unfolded (see Section~\ref{Opaque}).
 
-The goal may be normalized with two strategies: {\em lazy} ({\tt lazy}
-tactic), or {\em call-by-value} ({\tt cbv} tactic). The lazy strategy
-is a call-by-need strategy, with sharing of reductions: the arguments of a
-function call are partially evaluated only when necessary, and if an
-argument is used several times then it is computed only once. This
-reduction is efficient for reducing expressions with dead code. For
-instance, the proofs of a proposition {\tt exists~$x$. $P(x)$} reduce to a
-pair of a witness $t$, and a proof that $t$ satisfies the predicate
-$P$. Most of the time, $t$ may be computed without computing the proof
-of $P(t)$, thanks to the lazy strategy.
+Normalization according to the flags is done by first evaluating the
+head of the expression into a {\em weak-head} normal form, i.e. until
+the evaluation is bloked by a variable (or an opaque constant, or an
+axiom), as e.g. in {\tt x\;u$_1$\;...\;u$_n$}, or {\tt match x with
+  ... end}, or {\tt (fix f x \{struct x\} := ...) x}, or is a
+constructed form (a $\lambda$-expression, a constructor, a cofixpoint,
+an inductive type, a product type, a sort), or is a redex that the
+flags prevent to reduce. Once a weak-head normal form is obtained,
+subterms are recursively reduced using the same strategy.
+
+Reduction to weak-head normal form can be done using two strategies:
+{\em lazy} ({\tt lazy} tactic), or {\em call-by-value} ({\tt cbv}
+tactic). The lazy strategy is a call-by-need strategy, with sharing of
+reductions: the arguments of a function call are weakly evaluated only
+when necessary, and if an argument is used several times then it is
+weakly computed only once. This reduction is efficient for reducing
+expressions with dead code. For instance, the proofs of a proposition
+{\tt exists~$x$. $P(x)$} reduce to a pair of a witness $t$, and a
+proof that $t$ satisfies the predicate $P$. Most of the time, $t$ may
+be computed without computing the proof of $P(t)$, thanks to the lazy
+strategy.
 
 The call-by-value strategy is the one used in ML languages: the
-arguments of a function call are evaluated first, using a weak
-reduction (no reduction under the $\lambda$-abstractions). Despite the
-lazy strategy always performs fewer reductions than the call-by-value
-strategy, the latter is generally more efficient for evaluating purely
-computational expressions (i.e. with few dead code).
+arguments of a function call are systematically weakly evaluated
+first. Despite the lazy strategy always performs fewer reductions than
+the call-by-value strategy, the latter is generally more efficient for
+evaluating purely computational expressions (i.e. with few dead code).
 
 \begin{Variants}
 \item {\tt compute} \tacindex{compute}\\
