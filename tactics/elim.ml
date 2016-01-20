@@ -17,28 +17,19 @@ open Tacticals.New
 open Tactics
 open Proofview.Notations
 
+(* Supposed to be called without as clause *)
 let introElimAssumsThen tac ba =
-  let nassums =
-    List.fold_left
-      (fun acc b -> if b then acc+2 else acc+1)
-      0 ba.Tacticals.branchsign
-  in
-  let introElimAssums = tclDO nassums intro in
+  assert (ba.Tacticals.branchnames == []);
+  let introElimAssums = tclDO ba.Tacticals.nassums intro in
   (tclTHEN introElimAssums (elim_on_ba tac ba))
 
+(* Supposed to be called with a non-recursive scheme *)
 let introCaseAssumsThen tac ba =
-  let case_thin_sign =
-    List.flatten
-      (List.map (function b -> if b then [false;true] else [false])
-	ba.Tacticals.branchsign)
-  in
-  let n1 = List.length case_thin_sign in
+  let n1 = List.length ba.Tacticals.branchsign in
   let n2 = List.length ba.Tacticals.branchnames in
   let (l1,l2),l3 =
     if n1 < n2 then List.chop n1 ba.Tacticals.branchnames, []
-    else
-      (ba.Tacticals.branchnames, []),
-       if n1 > n2 then snd (List.chop n2 case_thin_sign) else [] in
+    else (ba.Tacticals.branchnames, []), List.make (n1-n2) false in
   let introCaseAssums =
     tclTHEN (intro_patterns l1) (intros_clearing l3) in
   (tclTHEN introCaseAssums (case_on_ba (tac l2) ba))
