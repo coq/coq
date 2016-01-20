@@ -2014,7 +2014,7 @@ variables, use
 
 Instead of letting the unification engine try to solve an existential variable
 by itself, one can also provide an explicit hole together with a tactic to solve
-it. Using the syntax {\tt \textdollar(\expr)\textdollar}, the user can put a
+it. Using the syntax {\tt ltac:(\expr)}, the user can put a
 tactic anywhere a term is expected. The order of resolution is not specified and
 is implementation-dependent. The inner tactic may use any variable defined in
 its scope, including repeated alternations between variables introduced by term
