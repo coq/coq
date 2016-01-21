@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -625,7 +625,10 @@ module Bullet = struct
 	(!current_behavior).name
       end;
       optwrite = begin fun n ->
-	current_behavior := Hashtbl.find behaviors n
+	current_behavior :=
+          try Hashtbl.find behaviors n
+          with Not_found ->
+            Errors.error ("Unknown bullet behavior: \"" ^ n ^ "\".")
       end
     }
 

@@ -46,7 +46,9 @@ commands (Require, Require Export, Require Import),
 commands and
 .IR Load \&
 commands. Dependencies relative to modules from the Coq library are not
-printed.
+printed except if 
+.BR \-boot \&
+is given.
 
 Dependencies of Caml modules are computed by looking at
 .IR open \&
@@ -59,35 +61,50 @@ directives and the dot notation
 .BI \-c
 Prints the dependencies of Caml modules.
 (On Caml modules, the behaviour is exactly the same as ocamldep).
-.TP
-.BI \-w
-Prints a warning if a Coq command
-.IR Declare \& 
-.IR ML \& 
-.IR Module \&
-is incorrect. (For instance, you wrote `Declare ML Module "A".',
-but the module A contains #open "B"). The correct command is printed
-(see option \-D). The warning is printed on standard error.
-.TP
-.BI \-D
-This commands looks for every command
-.IR Declare \& 
-.IR ML \& 
-.IR Module \&
-of each Coq file given as argument and complete (if needed)
-the list of Caml modules. The new command is printed on
-the standard output. No dependency is computed with this option.
+\" THESE OPTIONS ARE BROKEN CURRENTLY
+\" .TP
+\" .BI \-w
+\" Prints a warning if a Coq command
+\" .IR Declare \& 
+\" .IR ML \& 
+\" .IR Module \&
+\" is incorrect. (For instance, you wrote `Declare ML Module "A".',
+\" but the module A contains #open "B"). The correct command is printed
+\" (see option \-D). The warning is printed on standard error.
+\" .TP
+\" .BI \-D
+\" This commands looks for every command
+\" .IR Declare \& 
+\" .IR ML \& 
+\" .IR Module \&
+\" of each Coq file given as argument and complete (if needed)
+\" the list of Caml modules. The new command is printed on
+\" the standard output. No dependency is computed with this option.
 .TP 
-.BI \-I \ directory
-The files .v .ml .mli of the directory
-.IR directory \&
-are taken into account during the calculus of dependencies,
-but their own dependencies are not printed.
+.BI \-I/\-Q/\-R \ options
+Have the same effects on load path and modules names than for other
+coq commands (coqtop, coqc).
 .TP 
 .BI \-coqlib \ directory
 Indicates where is the Coq library. The default value has been
 determined at installation time, and therefore this option should not
 be used under normal circumstances.
+.TP 
+.BI \-dumpgraph[box] \ file
+Dumps a dot dependency graph in file
+.IR file \&.
+.TP 
+.BI \-exclude-dir \ dir
+Skips subdirectory
+.IR dir \ during
+.BR -R/-Q \ search.
+.TP 
+.B \-sort
+Output the given file name ordered by dependencies.
+.TP 
+.B \-boot
+For coq developpers, prints dependencies over coq library files
+(omitted by default).
 
 
 .SH SEE ALSO

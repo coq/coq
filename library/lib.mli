@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -156,6 +156,10 @@ val freeze : marshallable:Summary.marshallable -> frozen
 val unfreeze : frozen -> unit
 
 val init : unit -> unit
+
+(** XML output hooks *)
+val xml_open_section : (Names.Id.t -> unit) Hook.t
+val xml_close_section : (Names.Id.t -> unit) Hook.t
 
 (** {6 Section management for discharge } *)
 type variable_info = Names.Id.t * Decl_kinds.binding_kind *

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -63,6 +63,13 @@ val start_modtype :
 
 val end_modtype : unit -> module_path
 
+(** Hooks for XML output *)
+val xml_declare_module : (module_path -> unit) Hook.t
+val xml_start_module : (module_path -> unit) Hook.t
+val xml_end_module : (module_path -> unit) Hook.t
+val xml_declare_module_type : (module_path -> unit) Hook.t
+val xml_start_module_type : (module_path -> unit) Hook.t
+val xml_end_module_type : (module_path -> unit) Hook.t
 
 (** {6 Libraries i.e. modules on disk } *)
 

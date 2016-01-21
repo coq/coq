@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -546,6 +546,8 @@ let in_require : require_obj -> obj =
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)
 
+let (f_xml_require, xml_require) = Hook.make ~default:ignore ()
+
 let require_library_from_dirpath modrefl export =
   let needed, contents = List.fold_left rec_intern_library ([], DPMap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
@@ -559,6 +561,7 @@ let require_library_from_dirpath modrefl export =
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
+    if !Flags.xml_export then List.iter (Hook.get f_xml_require) modrefl;
   add_frozen_state ()
 
 (* the function called by Vernacentries.vernac_import *)

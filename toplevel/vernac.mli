@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -22,6 +22,10 @@ exception End_of_input
 val just_parsing : bool ref
 
 val eval_expr : Loc.t * Vernacexpr.vernac_expr -> unit
+
+(** Set XML hooks *)
+val xml_start_library : (unit -> unit) Hook.t
+val xml_end_library   : (unit -> unit) Hook.t
 
 (** Load a vernac file, verbosely or not. Errors are annotated with file
    and location *)

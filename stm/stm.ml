@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -52,6 +52,9 @@ let execution_error, execution_error_hook = Hook.make
 
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun _ _ -> ()) ()
+
+let tactic_being_run, tactic_being_run_hook = Hook.make
+ ~default:(fun _ -> ()) ()
 
 include Hook
 
@@ -1799,16 +1802,21 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache, true
       | `Cmd { cast = x; cqueue = `TacQueue cancel } -> (fun () ->
             reach ~cache:`Shallow view.next;
+            Hooks.(call tactic_being_run true); 
             Partac.vernac_interp
-              cancel !Flags.async_proofs_n_tacworkers view.next id x
+              cancel !Flags.async_proofs_n_tacworkers view.next id x;
+            Hooks.(call tactic_being_run false)
           ), cache, true
       | `Cmd { cast = x; cqueue = `QueryQueue cancel }
         when Flags.async_proofs_is_master () -> (fun () ->
             reach view.next;
             Query.vernac_interp cancel view.next id x
           ), cache, false
-      | `Cmd { cast = x; ceff = eff } -> (fun () ->
-            reach view.next; vernac_interp id x;
+      | `Cmd { cast = x; ceff = eff; ctac } -> (fun () ->
+            reach view.next;
+            if ctac then Hooks.(call tactic_being_run true); 
+            vernac_interp id x;
+            if ctac then Hooks.(call tactic_being_run false); 
 	    if eff then update_global_env ()), cache, true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             reach view.next; vernac_interp id x;
@@ -2589,4 +2597,5 @@ let interp_hook = Hooks.interp_hook
 let with_fail_hook = Hooks.with_fail_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
 let get_fix_exn () = !State.fix_exn_ref
+let tactic_being_run_hook = Hooks.tactic_being_run_hook
 (* vim:set foldmethod=marker: *)

@@ -54,7 +54,7 @@ Hint Immediate In_eq Inf_lt.
 End OrderedTypeLists.
 
 
-(** * Results about keys and data as manipulated in MMaps. *)
+(** * Results about keys and data as manipulated in the future MMaps. *)
 
 Module KeyOrderedType(O:OrderedType).
  Include KeyDecidableType(O). (* provides eqk, eqke *)

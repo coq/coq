@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -276,6 +276,10 @@ let checknav loc ast =
 
 let eval_expr loc_ast = vernac_com (Flags.is_verbose()) checknav loc_ast
 
+(* XML output hooks *)
+let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
+let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
+
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
   chan_beautify :=
@@ -310,6 +314,7 @@ let compile verbosely f =
       Aux_file.start_aux_file_for long_f_dot_v;
       Dumpglob.start_dump_glob long_f_dot_v;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
+      if !Flags.xml_export then Hook.get f_xml_start_library ();
       let wall_clock1 = Unix.gettimeofday () in
       let _ = load_vernac verbosely long_f_dot_v in
       Stm.join ();
@@ -319,6 +324,7 @@ let compile verbosely f =
       Aux_file.record_in_aux_at Loc.ghost "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
+      if !Flags.xml_export then Hook.get f_xml_end_library ();
       Dumpglob.end_dump_glob ()
   | BuildVio ->
       let long_f_dot_v = ensure_v f in

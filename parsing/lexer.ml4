@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -336,6 +336,9 @@ let rec string in_comments bp len = parser
   | [< 'c; s >] -> string in_comments bp (store len c) s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
 
+(* Hook for exporting comment into xml theory files *)
+let (f_xml_output_comment, xml_output_comment) = Hook.make ~default:ignore ()
+
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
 let comm_loc bp = match !comment_begin with
@@ -378,6 +381,9 @@ let null_comment s =
 
 let comment_stop ep =
   let current_s = Buffer.contents current in
+  if !Flags.xml_export && Buffer.length current > 0 &&
+    (!between_com || not(null_comment current_s)) then
+      Hook.get f_xml_output_comment current_s;
   (if Flags.do_beautify() && Buffer.length current > 0 &&
     (!between_com || not(null_comment current_s)) then
     let bp = match !comment_begin with

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -43,6 +43,8 @@ val profile : bool
 
 val print_emacs : bool ref
 val coqtop_ui : bool ref
+
+val xml_export : bool ref
 
 val ide_slave : bool ref
 val ideslave_coqtop_flags : string option ref
