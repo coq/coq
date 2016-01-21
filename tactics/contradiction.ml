@@ -67,6 +67,17 @@ let contradiction_context =
 	    simplest_elim (mkVar id)
 	  else match kind_of_term typ with
 	  | Prod (na,t,u) when is_empty_type u ->
+	     Tacticals.New.tclORELSE
+               (match match_with_unit_or_eq_type t with
+               | Some _ ->
+                   let hd,args = decompose_app t in
+                   let (ind,_ as indu) = destInd hd in
+                   let nparams = Inductiveops.inductive_nparams_env env ind in
+                   let params = Util.List.firstn nparams args in
+                   let p = applist ((mkConstructUi (indu,1)), params) in
+                   simplest_elim (mkApp (mkVar id,[|p|]))
+               | None ->
+                   Tacticals.New.tclZEROMSG (Pp.str"Not a negated unit type."))
 	      (Proofview.tclORELSE
                  (Proofview.Goal.enter { enter = begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
