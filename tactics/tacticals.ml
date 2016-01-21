@@ -239,52 +239,14 @@ let gl_make_case_nodep ind gl =
   (Sigma.to_evar_map sigma, r)
 
 let make_elim_branch_assumptions ba gl =
-  let rec makerec (assums,cargs,constargs,recargs,indargs) lb lc =
-    match lb,lc with
-      | ([], _) ->
-          { ba = ba;
-            assums    = assums}
-      | ((true::tl), ((idrec,_,_ as recarg)::(idind,_,_ as indarg)::idtl)) ->
-	  makerec (recarg::indarg::assums,
-		   idrec::cargs,
-		   idrec::recargs,
-		   constargs,
-		   idind::indargs) tl idtl
-      | ((false::tl), ((id,_,_ as constarg)::idtl))      ->
-	  makerec (constarg::assums,
-		   id::cargs,
-		   id::constargs,
-		   recargs,
-		   indargs) tl idtl
-      | (_, _) -> anomaly (Pp.str "make_elim_branch_assumptions")
-  in
-  makerec ([],[],[],[],[]) ba.branchsign
-    (try List.firstn ba.nassums (pf_hyps gl)
-     with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions"))
+  let assums =
+    try List.rev (List.firstn ba.nassums (pf_hyps gl))
+    with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions") in
+  { ba = ba; assums = assums }
 
 let elim_on_ba tac ba gl = tac (make_elim_branch_assumptions ba gl) gl
 
-let make_case_branch_assumptions ba gl =
-  let rec makerec (assums,cargs,constargs,recargs) p_0 p_1 =
-    match p_0,p_1 with
-      | ([], _) ->
-          { ba = ba;
-            assums    = assums}
-      | ((true::tl), ((idrec,_,_ as recarg)::idtl)) ->
-	  makerec (recarg::assums,
-		   idrec::cargs,
-		   idrec::recargs,
-		   constargs) tl idtl
-      | ((false::tl), ((id,_,_ as constarg)::idtl)) ->
-	  makerec (constarg::assums,
-		   id::cargs,
-		   recargs,
-		   id::constargs) tl idtl
-      | (_, _) -> anomaly (Pp.str "make_case_branch_assumptions")
-  in
-  makerec ([],[],[],[]) ba.branchsign
-    (try List.firstn ba.nassums (pf_hyps gl)
-     with Failure _ -> anomaly (Pp.str "make_case_branch_assumptions"))
+let make_case_branch_assumptions = make_elim_branch_assumptions
 
 let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl
 

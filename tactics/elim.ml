@@ -145,8 +145,7 @@ let induction_trailer abs_i abs_j bargs =
 	  in
           let ids = List.rev (ids_of_named_context hyps) in
 	  (tclTHENLIST
-            [bring_hyps hyps; tclTRY (Proofview.V82.tactic (clear ids));
-	     simple_elimination (mkVar id)])
+            [revert ids; simple_elimination (mkVar id)])
           end }
           ))
 
