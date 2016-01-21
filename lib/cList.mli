@@ -94,6 +94,9 @@ sig
   (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
     [f ai = true], then [smartfilter f l == l] *)
 
+  val extend : bool list -> 'a -> 'a list -> 'a list
+(** [extend l a [a1..an]] assumes that the number of [true] in [l] is [n];
+    it extends [a1..an] by inserting [a] at the position of [false] in [l] *)
   val count : ('a -> bool) -> 'a list -> int
 
   val index : 'a eq -> 'a -> 'a list -> int

@@ -147,14 +147,16 @@ type branch_args = {
   largs      : constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
   pred       : constr;      (* the predicate we used *)
-  nassums    : int;         (* the number of assumptions to be introduced *)
+  nassums    : int;         (* number of assumptions/letin to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
-                               true=recursive argument, false=constant *)
+                               true=assumption, false=let-in *)
   branchnames : Tacexpr.intro_patterns}
 
 type branch_assumptions = {
   ba        : branch_args;       (* the branch args *)
   assums    : Context.Named.t}   (* the list of assumptions introduced *)
+
+open Misctypes
 
 let fix_empty_or_and_pattern nv l =
   (* 1- The syntax does not distinguish between "[ ]" for one clause with no
@@ -162,36 +164,68 @@ let fix_empty_or_and_pattern nv l =
   (* 2- More generally, we admit "[ ]" for any disjunctive pattern of
      arbitrary length *)
   match l with
-  | [[]] -> List.make nv []
+  | IntroOrPattern [[]] -> IntroOrPattern (List.make nv [])
   | _ -> l
 
-let check_or_and_pattern_size loc names n =
-  if not (Int.equal (List.length names) n) then
-    if Int.equal n 1 then
-      user_err_loc (loc,"",str "Expects a conjunctive pattern.")
-    else
-      user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n
-	++ str " branches.")
+let check_or_and_pattern_size loc names branchsigns =
+  let n = Array.length branchsigns in
+  let msg p1 p2 = strbrk "a conjunctive pattern made of " ++ int p1 ++ (if p1 == p2 then mt () else str " or " ++ int p2) ++ str " patterns" in
+  let err1 p1 p2 =
+    user_err_loc (loc,"",str "Expects " ++ msg p1 p2 ++ str ".") in
+  let errn n =
+    user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n
+	++ str " branches.") in
+  let err1' p1 p2 =
+    user_err_loc (loc,"",strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
+  match names with
+  | IntroAndPattern l ->
+      if not (Int.equal n 1) then errn n;
+      let p1 = List.count (fun x -> x) branchsigns.(0) in
+      let p2 = List.length branchsigns.(0) in
+      let p = List.length l in
+      if not (Int.equal p p1 || Int.equal p p2) ||
+         not (List.for_all (function _,IntroNaming _ | _,IntroAction _ -> true | _,IntroForthcoming _ -> false) l) then err1 p1 p2;
+      if Int.equal p p1 then
+        IntroAndPattern
+          (List.extend branchsigns.(0) (Loc.ghost,IntroNaming IntroAnonymous) l)
+      else
+        names
+  | IntroOrPattern ll ->
+      if not (Int.equal n (List.length ll)) then
+        if Int.equal n 1 then
+          let p1 = List.count (fun x -> x) branchsigns.(0) in
+          let p2 = List.length branchsigns.(0) in
+          err1' p1 p2 else errn n;
+      names
 
-let compute_induction_names n = function
+let get_and_check_or_and_pattern loc names branchsigns =
+  let names = check_or_and_pattern_size loc names branchsigns in
+  match names with
+  | IntroAndPattern l -> [|l|]
+  | IntroOrPattern l -> Array.of_list l
+
+let compute_induction_names branchletsigns = function
   | None ->
-      Array.make n []
+      Array.make (Array.length branchletsigns) []
   | Some (loc,names) ->
-      let names = fix_empty_or_and_pattern n names in
-      check_or_and_pattern_size loc names n;
-      Array.of_list names
+      let names = fix_empty_or_and_pattern (Array.length branchletsigns) names in
+      get_and_check_or_and_pattern loc names branchletsigns
 
-let compute_construtor_signatures isrec ((_,k as ity),u) =
+(* Compute the let-in signature of case analysis or standard induction scheme *)
+let compute_constructor_signatures isrec ((_,k as ity),u) =
   let rec analrec c recargs =
     match kind_of_term c, recargs with
     | Prod (_,_,c), recarg::rest ->
-	let b = match Declareops.dest_recarg recarg with
-	  | Norec | Imbr _  -> false
-	  | Mrec (_,j)  -> isrec && Int.equal j k
-	in b :: (analrec c rest)
-    | LetIn (_,_,_,c), rest -> false :: (analrec c rest)
+        let rest = analrec c rest in
+        begin match Declareops.dest_recarg recarg with
+        | Norec | Imbr _  -> true :: rest
+        | Mrec (_,j)  ->
+            if isrec && Int.equal j k then true :: true :: rest
+            else true :: rest
+        end
+    | LetIn (_,_,_,c), rest -> false :: analrec c rest
     | _, [] -> []
-    | _ -> anomaly (Pp.str "compute_construtor_signatures")
+    | _ -> anomaly (Pp.str "compute_constructor_signatures")
   in
   let (mib,mip) = Global.lookup_inductive ity in
   let n = mib.mind_nparams in
@@ -596,8 +630,8 @@ module New = struct
             (str "The elimination combinator " ++ str name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
-    let branchsigns = compute_construtor_signatures isrec ind in
-    let brnames = compute_induction_names (Array.length branchsigns) allnames in
+    let branchsigns = compute_constructor_signatures isrec ind in
+    let brnames = compute_induction_names branchsigns allnames in
     let flags = Unification.elim_flags () in
     let elimclause' =
       match predicate with
@@ -609,10 +643,7 @@ module New = struct
       let (hd,largs) = decompose_app clenv'.templtyp.Evd.rebus in
       let ba = { branchsign = branchsigns.(i);
                  branchnames = brnames.(i);
-                 nassums =
-          List.fold_left
-            (fun acc b -> if b then acc+2 else acc+1)
-            0 branchsigns.(i);
+                 nassums = List.length branchsigns.(i);
                  branchnum = i+1;
                  ity = ind;
                  largs = List.map (clenv_nf_meta clenv') largs;

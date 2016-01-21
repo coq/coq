@@ -16,6 +16,8 @@ type patvar = Id.t
 
 (** Introduction patterns *)
 
+type tuple_flag = bool (* tells pattern list should be list of fixed length *)
+
 type 'constr intro_pattern_expr =
   | IntroForthcoming of bool
   | IntroNaming of intro_pattern_naming_expr
@@ -31,7 +33,8 @@ and 'constr intro_pattern_action_expr =
   | IntroApplyOn of 'constr * (Loc.t * 'constr intro_pattern_expr)
   | IntroRewrite of bool
 and 'constr or_and_intro_pattern_expr =
-  (Loc.t * 'constr intro_pattern_expr) list list
+  | IntroOrPattern of (Loc.t * 'constr intro_pattern_expr) list list
+  | IntroAndPattern of (Loc.t * 'constr intro_pattern_expr) list
 
 (** Move destination for hypothesis *)
 

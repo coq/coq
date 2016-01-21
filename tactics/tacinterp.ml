@@ -511,7 +511,9 @@ let extract_ltac_constr_values ist env =
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
 let rec intropattern_ids (loc,pat) = match pat with
   | IntroNaming (IntroIdentifier id) -> [id]
-  | IntroAction (IntroOrAndPattern ll) ->
+  | IntroAction (IntroOrAndPattern (IntroAndPattern l)) ->
+      List.flatten (List.map intropattern_ids l)
+  | IntroAction (IntroOrAndPattern (IntroOrPattern ll)) ->
       List.flatten (List.map intropattern_ids (List.flatten ll))
   | IntroAction (IntroInjection l) ->
       List.flatten (List.map intropattern_ids l)
@@ -940,8 +942,13 @@ and interp_intro_pattern_action ist env sigma = function
       sigma, IntroApplyOn (c,ipat)
   | IntroWildcard | IntroRewrite _ as x -> sigma, x
 
-and interp_or_and_intro_pattern ist env sigma =
-  List.fold_map (interp_intro_pattern_list_as_list ist env) sigma
+and interp_or_and_intro_pattern ist env sigma = function
+  | IntroAndPattern l ->
+      let sigma, l = List.fold_map (interp_intro_pattern ist env) sigma l in
+      sigma, IntroAndPattern l
+  | IntroOrPattern ll ->
+      let sigma, ll = List.fold_map (interp_intro_pattern_list_as_list ist env) sigma ll in
+      sigma, IntroOrPattern ll
 
 and interp_intro_pattern_list_as_list ist env sigma = function
   | [loc,IntroNaming (IntroIdentifier id)] as l ->

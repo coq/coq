@@ -54,9 +54,15 @@ and subst_intro_pattern_action subst = function
   | IntroApplyOn (t,pat) ->
       IntroApplyOn (subst_glob_constr subst t,subst_intro_pattern subst pat)
   | IntroOrAndPattern l ->
-      IntroOrAndPattern (List.map (List.map (subst_intro_pattern subst)) l)
+      IntroOrAndPattern (subst_intro_or_and_pattern subst l)
   | IntroInjection l -> IntroInjection (List.map (subst_intro_pattern subst) l)
   | IntroWildcard | IntroRewrite _ as x -> x
+
+and subst_intro_or_and_pattern subst = function
+  | IntroAndPattern l ->
+      IntroAndPattern (List.map (subst_intro_pattern subst) l)
+  | IntroOrPattern ll ->
+      IntroOrPattern (List.map (List.map (subst_intro_pattern subst)) ll)
 
 let subst_induction_arg subst = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (subst_glob_with_bindings subst c)

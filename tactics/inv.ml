@@ -296,17 +296,17 @@ let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
       error "Discarding pattern not allowed for inversion equations."
   | IntroAction (IntroRewrite _) ->
       error "Rewriting pattern not allowed for inversion equations."
-  | IntroAction (IntroOrAndPattern [[]]) when allow_conj -> (None, [])
-  | IntroAction (IntroOrAndPattern [(_,IntroNaming (IntroIdentifier id)) :: _ as l])
+  | IntroAction (IntroOrAndPattern (IntroAndPattern [])) when allow_conj -> (None, [])
+  | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier id)) :: _ as l)))
       when allow_conj -> (Some id,l)
-  | IntroAction (IntroOrAndPattern [_]) ->
+  | IntroAction (IntroOrAndPattern (IntroAndPattern _)) ->
       if issimple then
         error"Conjunctive patterns not allowed for simple inversion equations."
       else
         error"Nested conjunctive patterns not allowed for inversion equations."
   | IntroAction (IntroInjection l) ->
       error "Injection patterns not allowed for inversion equations."
-  | IntroAction (IntroOrAndPattern l) ->
+  | IntroAction (IntroOrAndPattern (IntroOrPattern _)) ->
       error "Disjunctive patterns not allowed for inversion equations."
   | IntroAction (IntroApplyOn (c,pat)) ->
       error "Apply patterns not allowed for inversion equations."

@@ -105,3 +105,26 @@ Inductive I := C : let x:=1 in x=1 -> I.
 Goal I -> True.
 intros [x H]. (* Was failing in 8.5 *)
 Abort.
+
+(* Ensuring that the (pat1,...,patn) intropatterns has the expected size, up
+   to skipping let-ins *)
+
+Goal I -> 1=1.
+intros (H).  (* This skips x *)
+exact H.
+Qed.
+
+Goal I -> 1=1.
+Fail intros (x,H,H').
+Fail intros [|].
+intros (x,H).
+exact H.
+Qed.
+
+Goal Acc le 0 -> True.
+Fail induction 1 as (n,H). (* Induction hypothesis is missing *)
+induction 1 as (n,H,IH).
+exact Logic.I.
+Qed.
+
+

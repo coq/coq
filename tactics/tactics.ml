@@ -2089,14 +2089,15 @@ let intro_or_and_pattern loc bracketed ll thin tac id =
   Proofview.Goal.enter { enter = begin fun gl ->
   let c = mkVar id in
   let t = Tacmach.New.pf_unsafe_type_of gl c in
-  let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl t in
-  let nv = constructors_nrealdecls ind in
-  let ll = fix_empty_or_and_pattern (Array.length nv) ll in
-  check_or_and_pattern_size loc ll (Array.length nv);
+  let (ind,t) = Tacmach.New.pf_reduce_to_quantified_ind gl t in
+  let branchsigns = compute_constructor_signatures false ind in
+  let nv_with_let = Array.map List.length branchsigns in
+  let ll = fix_empty_or_and_pattern (Array.length branchsigns) ll in
+  let ll = get_and_check_or_and_pattern loc ll branchsigns in
   Tacticals.New.tclTHENLASTn
     (Tacticals.New.tclTHEN (simplest_case c) (Proofview.V82.tactic (clear [id])))
     (Array.map2 (fun n l -> tac thin (Some (bracketed,n)) l)
-       nv (Array.of_list ll))
+       nv_with_let ll)
   end }
 
 let rewrite_hyp assert_style l2r id =
@@ -2137,7 +2138,8 @@ let prepare_naming loc = function
 let rec explicit_intro_names = function
 | (_, IntroForthcoming _) :: l -> explicit_intro_names l
 | (_, IntroNaming (IntroIdentifier id)) :: l -> id :: explicit_intro_names l
-| (_, IntroAction (IntroOrAndPattern ll)) :: l' ->
+| (_, IntroAction (IntroOrAndPattern l)) :: l' ->
+    let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
 | (_, IntroAction (IntroInjection l)) :: l' ->
     explicit_intro_names (l@l')
@@ -2842,8 +2844,8 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
   let avoid = avoid @ avoid' in
   let rec peel_tac ra dests names thin =
     match ra with
-    | (RecArg,deprec,recvarname) ::
-        (IndArg,depind,hyprecname) :: ra' ->
+    | (RecArg,_,deprec,recvarname) ::
+        (IndArg,_,depind,hyprecname) :: ra' ->
         Proofview.Goal.enter { enter = begin fun gl ->
         let (recpat,names) = match names with
           | [loc,IntroNaming (IntroIdentifier id) as pat] ->
@@ -2860,7 +2862,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 	    peel_tac ra' (update_dest dests ids') names thin)
         end })
         end }
-    | (IndArg,dep,hyprecname) :: ra' ->
+    | (IndArg,_,dep,hyprecname) :: ra' ->
         Proofview.Goal.enter { enter = begin fun gl ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names =
@@ -2868,7 +2870,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 	dest_intro_patterns avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end }
-    | (RecArg,dep,recvarname) :: ra' ->
+    | (RecArg,_,dep,recvarname) :: ra' ->
         Proofview.Goal.enter { enter = begin fun gl ->
         let (pat,names) =
           consume_pattern avoid (Name recvarname) dep gl names in
@@ -2876,7 +2878,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 	dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end }
-    | (OtherArg,dep,_) :: ra' ->
+    | (OtherArg,_,dep,_) :: ra' ->
         Proofview.Goal.enter { enter = begin fun gl ->
         let (pat,names) = consume_pattern avoid Anonymous dep gl names in
         let dest = get_recarg_dest dests in
@@ -3682,9 +3684,9 @@ let compute_scheme_signature scheme names_info ind_type_guess =
   let rec check_branch p c =
     match kind_of_term c with
       | Prod (_,t,c) ->
-	(is_pred p t, dependent (mkRel 1) c) :: check_branch (p+1) c
+	(is_pred p t, true, dependent (mkRel 1) c) :: check_branch (p+1) c
       | LetIn (_,_,_,c) ->
-	(OtherArg, dependent (mkRel 1) c) :: check_branch (p+1) c
+	(OtherArg, false, dependent (mkRel 1) c) :: check_branch (p+1) c
       | _ when is_pred p c == IndArg -> []
       | _ -> raise Exit
   in
@@ -3694,12 +3696,12 @@ let compute_scheme_signature scheme names_info ind_type_guess =
 	(try
 	   let lchck_brch = check_branch p t in
 	   let n = List.fold_left
-	     (fun n (b,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
+	     (fun n (b,_,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
 	   let recvarname, hyprecname, avoid =
 	     make_up_names n scheme.indref names_info in
 	   let namesign =
-	     List.map (fun (b,dep) ->
-	       (b, dep, if b == IndArg then hyprecname else recvarname))
+	     List.map (fun (b,is_assum,dep) ->
+	       (b,is_assum,dep,if b == IndArg then hyprecname else recvarname))
 	       lchck_brch in
 	   (avoid,namesign) :: find_branches (p+1) brs
 	 with Exit-> error_ind_scheme "the branches of")
@@ -3744,7 +3746,7 @@ let given_elim hyp0 (elimc,lbind as e) gl =
   Tacmach.New.project gl, (e, Tacmach.New.pf_unsafe_type_of gl elimc), ind_type_guess
 
 type scheme_signature =
-    (Id.t list * (elim_arg_kind * bool * Id.t) list) array
+    (Id.t list * (elim_arg_kind * bool * bool * Id.t) list) array
 
 type eliminator_source =
   | ElimUsing of (eliminator * types) * scheme_signature
@@ -3865,7 +3867,10 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
       List.fold_left
         (fun a (id,b,_) -> if Option.is_empty b then (mkVar id)::a else a) [] deps in
     let (sigma, isrec, elim, indsign) = get_eliminator elim dep s (Proofview.Goal.assume gl) in
-    let names = compute_induction_names (Array.length indsign) names in
+    let branchletsigns =
+      let f (_,is_not_let,_,_) = is_not_let in
+      Array.map (fun (_,l) -> List.map f l) indsign in
+    let names = compute_induction_names branchletsigns names in
     let tac =
     (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
       (Tacticals.New.tclTHENLIST [

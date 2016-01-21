@@ -10,6 +10,9 @@ Tactics
   incompatibilities as soon as the inductive types have dependencies in
   the type of their constructors; "double induction" remains however
   deprecated).
+- In introduction patterns of the form (pat1,...,patn), n should match
+  the exact number of hypotheses introduced (except for local definitions
+  for which pattern can be omitted, as in regular pattern-matching).
 
 Program
 

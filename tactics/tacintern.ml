@@ -258,8 +258,11 @@ and intern_intro_pattern_action lf ist = function
   | IntroApplyOn (c,pat) ->
       IntroApplyOn (intern_constr ist c, intern_intro_pattern lf ist pat)
 
-and intern_or_and_intro_pattern lf ist =
-  List.map (List.map (intern_intro_pattern lf ist))
+and intern_or_and_intro_pattern lf ist = function
+   | IntroAndPattern l ->
+      IntroAndPattern (List.map (intern_intro_pattern lf ist) l)
+  | IntroOrPattern ll ->
+      IntroOrPattern (List.map (List.map (intern_intro_pattern lf ist)) ll)
 
 let intern_or_and_intro_pattern_loc lf ist = function
   | ArgVar (_,id) as x ->

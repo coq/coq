@@ -285,18 +285,19 @@ GEXTEND Gram
     [ [ l = LIST1 nonsimple_intropattern -> l ]]
   ;
   or_and_intropattern:
-    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> tc
-      | "()" -> [[]]
-      | "("; si = simple_intropattern; ")" -> [[si]]
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> IntroOrPattern tc
+      | "()" -> IntroAndPattern []
+      | "("; si = simple_intropattern; ")" -> IntroAndPattern [si]
       | "("; si = simple_intropattern; ",";
-             tc = LIST1 simple_intropattern SEP "," ; ")" -> [si::tc]
+             tc = LIST1 simple_intropattern SEP "," ; ")" ->
+             IntroAndPattern (si::tc)
       | "("; si = simple_intropattern; "&";
 	     tc = LIST1 simple_intropattern SEP "&" ; ")" ->
 	  (* (A & B & C) is translated into (A,(B,C)) *)
 	  let rec pairify = function
-	    | ([]|[_]|[_;_]) as l -> [l]
-	    | t::q -> [[t;(loc_of_ne_list q,IntroAction (IntroOrAndPattern (pairify q)))]]
-	  in pairify (si::tc) ] ]
+	    | ([]|[_]|[_;_]) as l -> l
+	    | t::q -> [t;(loc_of_ne_list q,IntroAction (IntroOrAndPattern (IntroAndPattern (pairify q))))]
+	  in IntroAndPattern (pairify (si::tc)) ] ]
   ;
   equality_intropattern:
     [ [ "->" -> IntroRewrite true

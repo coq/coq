@@ -48,6 +48,7 @@ sig
   val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
+  val extend : bool list -> 'a -> 'a list -> 'a list
   val count : ('a -> bool) -> 'a list -> int
   val index : 'a eq -> 'a -> 'a list -> int
   val index0 : 'a eq -> 'a -> 'a list -> int
@@ -375,6 +376,12 @@ let rec smartfilter f l = match l with
           if tl' == tl then l
           else h :: tl'
         else tl'
+
+let rec extend l a l' = match l,l' with
+  | true::l, b::l' -> b :: extend l a l'
+  | false::l, l' -> a :: extend l a l'
+  | [], [] -> []
+  | _ -> invalid_arg "extend"
 
 let count f l =
   let rec aux acc = function

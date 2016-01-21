@@ -102,28 +102,32 @@ type branch_args = {
   largs      : constr list; (** its arguments *)
   branchnum  : int;         (** the branch number *)
   pred       : constr;      (** the predicate we used *)
-  nassums    : int;         (** the number of assumptions to be introduced *)
+  nassums    : int;         (** number of assumptions/letin to be introduced *)
   branchsign : bool list;   (** the signature of the branch.
-                                true=recursive argument, false=constant *)
+                                true=assumption, false=let-in *)
   branchnames : intro_patterns}
 
 type branch_assumptions = {
   ba        : branch_args;       (** the branch args *)
   assums    : Context.Named.t}   (** the list of assumptions introduced *)
 
-(** [check_disjunctive_pattern_size loc pats n] returns an appropriate 
-   error message if |pats| <> n *)
-val check_or_and_pattern_size :
-  Loc.t -> delayed_open_constr or_and_intro_pattern_expr -> int -> unit
+(** [check_disjunctive_pattern_size loc pats n] returns an appropriate
+   error message if |pats| <> n; extends them if no pattern is given
+   for let-ins in the case of a conjunctive pattern *)
+val get_and_check_or_and_pattern : 
+  Loc.t -> delayed_open_constr or_and_intro_pattern_expr ->
+  bool list array -> intro_patterns array
 
 (** Tolerate "[]" to mean a disjunctive pattern of any length *)
 val fix_empty_or_and_pattern : int -> 
   delayed_open_constr or_and_intro_pattern_expr ->
   delayed_open_constr or_and_intro_pattern_expr
 
+val compute_constructor_signatures : rec_flag -> pinductive -> bool list array
+
 (** Useful for [as intro_pattern] modifier *)
 val compute_induction_names :
-  int -> or_and_intro_pattern option -> intro_patterns array
+  bool list array -> or_and_intro_pattern option -> intro_patterns array
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : Id.t -> goal sigma -> sorts_family
