@@ -167,7 +167,7 @@ let fix_empty_or_and_pattern nv l =
   | IntroOrPattern [[]] -> IntroOrPattern (List.make nv [])
   | _ -> l
 
-let check_or_and_pattern_size loc names branchsigns =
+let check_or_and_pattern_size check_and loc names branchsigns =
   let n = Array.length branchsigns in
   let msg p1 p2 = strbrk "a conjunctive pattern made of " ++ int p1 ++ (if p1 == p2 then mt () else str " or " ++ int p2) ++ str " patterns" in
   let err1 p1 p2 =
@@ -177,17 +177,23 @@ let check_or_and_pattern_size loc names branchsigns =
 	++ str " branches.") in
   let err1' p1 p2 =
     user_err_loc (loc,"",strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
+  let errforthcoming loc =
+    user_err_loc (loc,"",strbrk "Unexpected non atomic pattern.") in
   match names with
   | IntroAndPattern l ->
       if not (Int.equal n 1) then errn n;
-      let p1 = List.count (fun x -> x) branchsigns.(0) in
-      let p2 = List.length branchsigns.(0) in
-      let p = List.length l in
-      if not (Int.equal p p1 || Int.equal p p2) ||
-         not (List.for_all (function _,IntroNaming _ | _,IntroAction _ -> true | _,IntroForthcoming _ -> false) l) then err1 p1 p2;
-      if Int.equal p p1 then
-        IntroAndPattern
-          (List.extend branchsigns.(0) (Loc.ghost,IntroNaming IntroAnonymous) l)
+      let l' = List.filter (function _,IntroForthcoming _ -> true | _,IntroNaming _ | _,IntroAction _ -> false) l in
+      if l' != [] then errforthcoming (fst (List.hd l'));
+      if check_and then
+        let p1 = List.count (fun x -> x) branchsigns.(0) in
+        let p2 = List.length branchsigns.(0) in
+        let p = List.length l in
+        if not (Int.equal p p1 || Int.equal p p2) then err1 p1 p2;
+        if Int.equal p p1 then
+          IntroAndPattern
+            (List.extend branchsigns.(0) (Loc.ghost,IntroNaming IntroAnonymous) l)
+        else
+          names
       else
         names
   | IntroOrPattern ll ->
@@ -198,18 +204,22 @@ let check_or_and_pattern_size loc names branchsigns =
           err1' p1 p2 else errn n;
       names
 
-let get_and_check_or_and_pattern loc names branchsigns =
-  let names = check_or_and_pattern_size loc names branchsigns in
+let get_and_check_or_and_pattern_gen check_and loc names branchsigns =
+  let names = check_or_and_pattern_size check_and loc names branchsigns in
   match names with
   | IntroAndPattern l -> [|l|]
   | IntroOrPattern l -> Array.of_list l
 
-let compute_induction_names branchletsigns = function
+let get_and_check_or_and_pattern = get_and_check_or_and_pattern_gen true
+
+let compute_induction_names_gen check_and branchletsigns = function
   | None ->
       Array.make (Array.length branchletsigns) []
   | Some (loc,names) ->
       let names = fix_empty_or_and_pattern (Array.length branchletsigns) names in
-      get_and_check_or_and_pattern loc names branchletsigns
+      get_and_check_or_and_pattern_gen check_and loc names branchletsigns
+
+let compute_induction_names = compute_induction_names_gen true
 
 (* Compute the let-in signature of case analysis or standard induction scheme *)
 let compute_constructor_signatures isrec ((_,k as ity),u) =
@@ -631,7 +641,7 @@ module New = struct
     in
     let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
     let branchsigns = compute_constructor_signatures isrec ind in
-    let brnames = compute_induction_names branchsigns allnames in
+    let brnames = compute_induction_names_gen false branchsigns allnames in
     let flags = Unification.elim_flags () in
     let elimclause' =
       match predicate with

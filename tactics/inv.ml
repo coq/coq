@@ -296,8 +296,8 @@ let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
       error "Discarding pattern not allowed for inversion equations."
   | IntroAction (IntroRewrite _) ->
       error "Rewriting pattern not allowed for inversion equations."
-  | IntroAction (IntroOrAndPattern (IntroAndPattern [])) when allow_conj -> (None, [])
-  | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier id)) :: _ as l)))
+  | IntroAction (IntroOrAndPattern (IntroAndPattern [] | IntroOrPattern [[]])) when allow_conj -> (None, [])
+  | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier id)) :: _ as l) | IntroOrPattern [(_,IntroNaming (IntroIdentifier id)) :: _ as l ]))
       when allow_conj -> (Some id,l)
   | IntroAction (IntroOrAndPattern (IntroAndPattern _)) ->
       if issimple then
