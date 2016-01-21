@@ -35,7 +35,7 @@ let print_header () =
   ppnl (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   pp_flush ()
 
-let warning s = msg_warning (strbrk s)
+let warning s = with_option Flags.warn msg_warning (strbrk s)
 
 let toploop = ref None
 
