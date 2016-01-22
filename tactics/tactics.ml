@@ -2103,34 +2103,45 @@ let intro_or_and_pattern loc bracketed ll thin tac id =
        nv_with_let ll)
   end }
 
-let rewrite_hyp assert_style l2r id =
+let rewrite_hyp_then assert_style thin l2r id tac =
   let rew_on l2r =
     Hook.get forward_general_rewrite_clause l2r false (mkVar id,NoBindings) in
   let subst_on l2r x rhs =
     Hook.get forward_subst_one true x (id,rhs,l2r) in
-  let clear_var_and_eq c = tclTHEN (clear [id]) (clear [destVar c]) in
+  let clear_var_and_eq id' = clear [id';id] in
+  let early_clear id' thin =
+    List.filter (fun (_,id) -> not (Id.equal id id')) thin in
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let whd_betadeltaiota = Tacmach.New.pf_apply whd_betadeltaiota gl in
     let t = whd_betadeltaiota (type_of (mkVar id)) in
-    match match_with_equality_type t with
+    let eqtac, thin = match match_with_equality_type t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar lhs && not (occur_var env (destVar lhs) rhs) then
-          subst_on l2r (destVar lhs) rhs
+          let id' = destVar lhs in
+          subst_on l2r id' rhs, early_clear id' thin
         else if not l2r && isVar rhs && not (occur_var env (destVar rhs) lhs) then
-          subst_on l2r (destVar rhs) lhs
+          let id' = destVar rhs in
+          subst_on l2r id' lhs, early_clear id' thin
         else
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id])),
+          thin
     | Some (hdcncl,[c]) ->
         let l2r = not l2r in (* equality of the form eq_true *)
         if isVar c then
+          let id' = destVar c in
           Tacticals.New.tclTHEN (rew_on l2r allHypsAndConcl) 
-	    (Proofview.V82.tactic (clear_var_and_eq c))
+	    (Proofview.V82.tactic (clear_var_and_eq id')),
+          early_clear id' thin
         else
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id])),
+          thin
     | _ ->
-        Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
+        Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id])),
+        thin in
+    (* Skip the side conditions of the rewriting step *)
+    Tacticals.New.tclTHENFIRST eqtac (tac thin)
   end }
 
 let prepare_naming loc = function
@@ -2256,10 +2267,7 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
   | IntroInjection l' ->
       intro_decomp_eq loc l' thin tac id
   | IntroRewrite l2r ->
-      Tacticals.New.tclTHENFIRST
-        (* Skip the side conditions of the rewriting step *)
-	(rewrite_hyp style l2r id)
-        (tac thin None [])
+      rewrite_hyp_then style thin l2r id (fun thin -> tac thin None [])
   | IntroApplyOn (f,(loc,pat)) ->
       let naming,tac_ipat =
         prepare_intros_loc loc (IntroIdentifier id) destopt pat in
