@@ -248,7 +248,7 @@ let dump_def ty loc secpath id =
 let dump_definition (loc, id) sec s =
   dump_def s loc (Names.DirPath.to_string (Lib.current_dirpath sec)) (Names.Id.to_string id)
 
-let dump_constraint ((loc, n), _, _) sec ty =
+let dump_constraint (((loc, n),_), _, _) sec ty =
   match n with
     | Names.Name id -> dump_definition (loc, id) sec ty
     | Names.Anonymous -> ()

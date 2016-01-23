@@ -311,6 +311,7 @@ type program_info_aux = {
   prg_body: constr;
   prg_type: constr;
   prg_ctx:  Evd.evar_universe_context;
+  prg_pl: Id.t Loc.located list option;
   prg_obligations: obligations;
   prg_deps : Id.t list;
   prg_fixkind : fixpoint_kind option ;
@@ -510,15 +511,21 @@ let declare_definition prg =
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Stm.get_fix_exn () in
+  let pl, ctx =
+    Evd.universe_context ?names:prg.prg_pl (Evd.from_ctx prg.prg_ctx) in
   let ce =
     definition_entry ~fix_exn
      ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
      ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
   in
-    progmap_remove prg;
+  let () = progmap_remove prg in
+  let cst =
     !declare_definition_ref prg.prg_name 
-      prg.prg_kind ce prg.prg_implicits
-      (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
+     prg.prg_kind ce prg.prg_implicits
+     (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
+  in
+  Universes.register_universe_binders cst pl;
+  cst
       
 open Pp
 
@@ -644,7 +651,8 @@ let declare_obligation prg obl body ty uctx =
 	    else
 	      Some (TermObl (it_mkLambda_or_LetIn (mkApp (mkConst constant, args)) ctx)) }
 
-let init_prog_info ?(opaque = false) sign n b t ctx deps fixkind notations obls impls kind reduce hook =
+let init_prog_info ?(opaque = false) sign n pl b t ctx deps fixkind
+		   notations obls impls kind reduce hook =
   let obls', b = 
     match b with
     | None ->
@@ -664,7 +672,7 @@ let init_prog_info ?(opaque = false) sign n b t ctx deps fixkind notations obls 
 	  obls, b
   in
     { prg_name = n ; prg_body = b; prg_type = reduce t; 
-      prg_ctx = ctx; 
+      prg_ctx = ctx; prg_pl = pl;
       prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
       prg_implicits = impls; prg_kind = kind; prg_reduce = reduce; 
@@ -995,11 +1003,11 @@ let show_term n =
 	     Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
 
-let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
+let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
   let sign = Decls.initialize_named_context_for_proof () in
   let info = str (Id.to_string n) ++ str " has type-checked" in
-  let prg = init_prog_info sign ~opaque n term t ctx [] None [] obls implicits kind reduce hook in
+  let prg = init_prog_info sign ~opaque n pl term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose msg_info (info ++ str ".");
@@ -1014,13 +1022,13 @@ let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition)
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 
-let add_mutual_definitions l ctx ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
+let add_mutual_definitions l ctx ?pl ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
     ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
   let sign = Decls.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
-     let prg = init_prog_info sign ~opaque n (Some b) t ctx deps (Some fixkind)
+     let prg = init_prog_info sign ~opaque n pl (Some b) t ctx deps (Some fixkind)
        notations obls imps kind reduce hook 
      in progmap_add n (Ephemeron.create prg)) l;
     let _defined =

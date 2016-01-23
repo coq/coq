@@ -121,7 +121,7 @@ and constr_notation_substitution =
     constr_expr list list * (** for recursive notations *)
     local_binder list list (** for binders subexpressions *)
 
-type typeclass_constraint = Name.t located * binding_kind * constr_expr
+type typeclass_constraint = (Name.t located * Id.t located list option) * binding_kind * constr_expr
 
 and typeclass_context = typeclass_constraint list
 

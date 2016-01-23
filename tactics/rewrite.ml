@@ -1703,7 +1703,7 @@ let rec strategy_of_ast = function
 let mkappc s l = CAppExpl (Loc.ghost,(None,(Libnames.Ident (Loc.ghost,Id.of_string s)),None),l)
 
 let declare_an_instance n s args =
-  ((Loc.ghost,Name n), Explicit,
+  (((Loc.ghost,Name n),None), Explicit,
   CAppExpl (Loc.ghost, (None, Qualid (Loc.ghost, qualid_of_string s),None),
 	   args))
 
@@ -1919,7 +1919,7 @@ let add_morphism glob binders m s n =
   let poly = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in
   let instance =
-    ((Loc.ghost,Name instance_id), Explicit,
+    (((Loc.ghost,Name instance_id),None), Explicit,
     CAppExpl (Loc.ghost,
 	     (None, Qualid (Loc.ghost, Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper"),None),
 	     [cHole; s; m]))

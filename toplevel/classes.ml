@@ -101,19 +101,21 @@ let instance_hook k pri global imps ?hook cst =
   Typeclasses.declare_instance pri (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant k pri global imps ?hook id poly uctx term termtype =
+let declare_instance_constant k pri global imps ?hook id pl poly evm term termtype =
   let kind = IsDefinition Instance in
-  let uctx = 
+  let evm = 
     let levels = Univ.LSet.union (Universes.universes_of_constr termtype) 
 				 (Universes.universes_of_constr term) in
-      Universes.restrict_universe_context uctx levels 
+    Evd.restrict_universe_context evm levels 
   in
+  let pl, uctx = Evd.universe_context ?names:pl evm in
   let entry = 
-    Declare.definition_entry ~types:termtype ~poly ~univs:(Univ.ContextSet.to_context uctx) term
+    Declare.definition_entry ~types:termtype ~poly ~univs:uctx term
   in
   let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
     Declare.definition_message id;
+    Universes.register_universe_binders (ConstRef kn) pl;
     instance_hook k pri global imps ?hook (ConstRef kn);
     id
 
@@ -121,7 +123,9 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
     ?(generalize=true)
     ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
-  let evars = ref (Evd.from_env env) in
+  let ((loc, instid), pl) = instid in
+  let uctx = Evd.make_evar_universe_context env pl in
+  let evars = ref (Evd.from_ctx uctx) in
   let tclass, ids =
     match bk with
     | Implicit ->
@@ -158,7 +162,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
       cl, u, c', ctx', ctx, len, imps, args
   in
   let id =
-    match snd instid with
+    match instid with
 	Name id ->
 	  let sp = Lib.make_path id in
 	    if Nametab.exists_cci sp then
@@ -185,11 +189,13 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	    nf t
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
-	let pl, ctx = Evd.universe_context !evars in
+	let pl, ctx = Evd.universe_context ?names:pl !evars in
 	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
 	  (ParameterEntry 
             (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
-	in instance_hook k None global imps ?hook (ConstRef cst); id
+	in
+	  Universes.register_universe_binders (ConstRef cst) pl;
+	  instance_hook k None global imps ?hook (ConstRef cst); id
       end
     else (
       let props =
@@ -282,9 +288,8 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
       in
       let term = Option.map nf term in
 	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
-          let ctx = Evd.universe_context_set evm in
-	  declare_instance_constant k pri global imps ?hook id 
-            poly ctx (Option.get term) termtype
+	  declare_instance_constant k pri global imps ?hook id pl
+            poly evm (Option.get term) termtype
 	else if !refine_instance || Option.is_empty term then begin
 	  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	    if Flags.is_program_mode () then
@@ -304,7 +309,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
               let hook = Lemmas.mk_hook hook in
 	      let ctx = Evd.evar_universe_context evm in
 		ignore (Obligations.add_definition id ?term:constr
-			typ ctx ~kind:(Global,poly,Instance) ~hook obls);
+ 			?pl typ ctx ~kind:(Global,poly,Instance) ~hook obls);
 		id
 	    else
 	      (Flags.silently 
