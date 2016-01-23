@@ -408,17 +408,24 @@ let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),
                 (Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
 
+let check_same_poly p vars =
+  let pred = function Context _ -> p = false | Variable (_, _, poly, _) -> p != poly in
+  if List.exists pred vars then
+    error "Cannot mix universe polymorphic and monomorphic declarations in sections."
+
 let add_section_variable id impl poly ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-	sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
+       check_same_poly poly vars;
+       sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
 
 let add_section_context ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-	sectab := (Context ctx :: vars,repl,abs)::sl
+       check_same_poly true vars;
+       sectab := (Context ctx :: vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
   let rec aux = function
@@ -443,10 +450,11 @@ let instance_from_variable_context sign =
 
 let named_of_variable_context ctx = List.map (fun (id,_,b,t) -> (id,b,t)) ctx
   
-let add_section_replacement f g hyps =
+let add_section_replacement f g poly hyps =
   match !sectab with
   | [] -> ()
   | (vars,exps,abs)::sl ->
+    let () = check_same_poly poly vars in
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let subst, ctx = Univ.abstract_universes true ctx in
@@ -454,13 +462,13 @@ let add_section_replacement f g hyps =
     sectab := (vars,f (Univ.UContext.instance ctx,args) exps,
 	      g (sechyps,subst,ctx) abs)::sl
 
-let add_section_kn kn =
+let add_section_kn poly kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
-    add_section_replacement f f
+    add_section_replacement f f poly
 
-let add_section_constant is_projection kn =
+let add_section_constant poly kn =
   let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
-    add_section_replacement f f
+    add_section_replacement f f poly
 
 let replacement_context () = pi2 (List.hd !sectab)
 

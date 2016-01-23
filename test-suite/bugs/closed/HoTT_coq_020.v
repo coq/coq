@@ -59,8 +59,8 @@ Polymorphic Definition FunctorFrom0 objC (C : Category objC) : Functor Cat0 C
   := Build_Functor Cat0 C (fun x => match x with end).
 
 Section Law0.
-  Variable objC : Type.
-  Variable C : Category objC.
+  Polymorphic Variable objC : Type.
+  Polymorphic Variable C : Category objC.
 
   Set Printing All.
   Set Printing Universes.

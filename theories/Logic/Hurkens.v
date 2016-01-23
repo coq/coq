@@ -631,6 +631,8 @@ End NoRetractFromTypeToProp.
 
 Module TypeNeqSmallType.
 
+Unset Universe Polymorphism.
+
 Section Paradox.
 
 (** ** Universe [U] is equal to one of its elements. *)
@@ -654,7 +656,6 @@ Proof.
   rewrite <- h.
   reflexivity.
 Qed.
-
 
 Theorem paradox : False.
 Proof.
