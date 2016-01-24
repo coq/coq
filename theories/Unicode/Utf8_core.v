@@ -24,6 +24,9 @@ Notation "x ↔ y" := (x <-> y) (at level 95, no associativity): type_scope.
 Notation "¬ x" := (~x) (at level 75, right associativity) : type_scope.
 Notation "x ≠ y" := (x <> y) (at level 70) : type_scope.
 
+Notation "⊤" := True (at level 0) : type_scope.
+Notation "⊥" := False (at level 0) : type_scope.
+
 (* Abstraction *)
 Notation "'λ'  x .. y , t" := (fun x => .. (fun y => t) ..)
   (at level 200, x binder, y binder, right associativity).
