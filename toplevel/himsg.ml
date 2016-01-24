@@ -890,7 +890,17 @@ let explain_is_a_functor () =
   str "Illegal use of a functor."
 
 let explain_incompatible_module_types mexpr1 mexpr2 =
-  str "Incompatible module types."
+  let open Declarations in
+  let rec get_arg = function
+  | NoFunctor _ -> 0
+  | MoreFunctor (_, _, ty) -> succ (get_arg ty)
+  in
+  let len1 = get_arg mexpr1.mod_type in
+  let len2 = get_arg mexpr2.mod_type in
+  if len1 <> len2 then
+    str "Incompatible module types: module expects " ++ int len2 ++
+      str " arguments, found " ++ int len1 ++ str "."
+  else str "Incompatible module types."
 
 let explain_not_equal_module_paths mp1 mp2 =
   str "Non equal modules."
