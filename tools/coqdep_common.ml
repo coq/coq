@@ -504,15 +504,15 @@ let add_caml_known phys_dir _ f =
     | _ -> ()
 
 let add_coqlib_known recur phys_dir log_dir f =
-  match get_extension f [".vo"] with
-    | (basename,".vo") ->
+  match get_extension f [".vo"; ".vio"] with
+    | (basename, (".vo" | ".vio")) ->
         let name = log_dir@[basename] in
         let paths = if recur then suffixes name else [name] in
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
 let add_known recur phys_dir log_dir f =
-  match get_extension f [".v";".vo"] with
+  match get_extension f [".v"; ".vo"; ".vio"] with
     | (basename,".v") ->
 	let name = log_dir@[basename] in
 	let file = phys_dir//basename in
@@ -521,7 +521,7 @@ let add_known recur phys_dir log_dir f =
           let paths = List.tl (suffixes name) in
           let iter n = safe_hash_add compare_file clash_v vKnown (n, (file, false)) in
           List.iter iter paths
-    | (basename,".vo") when not(!option_boot) ->
+    | (basename, (".vo" | ".vio")) when not(!option_boot) ->
         let name = log_dir@[basename] in
 	let paths = if recur then suffixes name else [name] in
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
