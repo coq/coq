@@ -71,6 +71,9 @@ let let_evar name typ =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
+    let sigma = ref sigma in
+    let _ = Typing.sort_of env sigma typ in
+    let sigma = !sigma in
     let id = match name with
     | Names.Anonymous -> 
       let id = Namegen.id_of_name_using_hdchar env typ name in
