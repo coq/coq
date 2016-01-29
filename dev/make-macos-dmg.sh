@@ -8,7 +8,7 @@ eval `opam config env`
 make distclean
 OUTDIR=$PWD/_install
 DMGDIR=$PWD/_dmg
-./configure -debug -prefix $OUTDIR
+./configure -debug -prefix $OUTDIR -native-compiler no
 VERSION=$(sed -n -e '/^let coq_version/ s/^[^"]*"\([^"]*\)"$/\1/p' configure.ml)
 APP=bin/CoqIDE_${VERSION}.app
 

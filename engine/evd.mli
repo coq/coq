@@ -451,6 +451,7 @@ val meta_merge : ?with_univs:bool -> evar_map -> evar_map -> evar_map
 
 val undefined_metas : evar_map -> metavariable list
 val map_metas_fvalue : (constr -> constr) -> evar_map -> evar_map
+val map_metas : (constr -> constr) -> evar_map -> evar_map
 
 type metabinding = metavariable * constr * instance_status
 

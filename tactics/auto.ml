@@ -82,11 +82,14 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
       let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in
       let map c = Vars.subst_univs_level_constr subst c in
       let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
-      let clenv = { clenv with evd = evd ; env = Proofview.Goal.env gl } in
-      (** FIXME: We're being inefficient here because we substitute the whole
-          evar map instead of just its metas, which are the only ones
-          mentioning the old universes. *)
-      Clenv.map_clenv map clenv, map c
+      (** Only metas are mentioning the old universes. *)
+      let clenv = {
+        templval = Evd.map_fl map clenv.templval;
+        templtyp = Evd.map_fl map clenv.templtyp;
+        evd = Evd.map_metas map evd;
+        env = Proofview.Goal.env gl;
+      } in
+      clenv, map c
     else
       let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
       { clenv with evd = evd ; env = Proofview.Goal.env gl }, c

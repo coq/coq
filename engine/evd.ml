@@ -1026,6 +1026,10 @@ let map_metas_fvalue f evd =
   in
   set_metas evd (Metamap.smartmap map evd.metas)
 
+let map_metas f evd =
+  let map cl = map_clb f cl in
+  set_metas evd (Metamap.smartmap map evd.metas)
+
 let meta_opt_fvalue evd mv =
   match Metamap.find mv evd.metas with
     | Clval(_,b,_) -> Some b

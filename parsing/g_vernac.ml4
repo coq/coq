@@ -189,7 +189,7 @@ let test_plural_form_types = function
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    record_field decl_notation rec_definition;
+    record_field decl_notation rec_definition pidentref;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -780,10 +780,10 @@ GEXTEND Gram
       | IDENT "transparent" -> Conv_oracle.transparent ] ]
   ;
   instance_name:
-    [ [ name = identref; sup = OPT binders ->
-	  (let (loc,id) = name in (loc, Name id)),
+    [ [ name = pidentref; sup = OPT binders ->
+	  (let ((loc,id),l) = name in ((loc, Name id),l)),
           (Option.default [] sup)
-      | -> (!@loc, Anonymous), []  ] ]
+      | -> ((!@loc, Anonymous), None), []  ] ]
   ;
   reserv_list:
     [ [ bl = LIST1 reserv_tuple -> bl | b = simple_reserv -> [b] ] ]

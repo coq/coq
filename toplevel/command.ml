@@ -176,7 +176,9 @@ let _ = Obligations.declare_definition_ref :=
        (fun i k c imps hook -> declare_definition i k c [] imps hook)
 
 let do_definition ident k pl bl red_option c ctypopt hook =
-  let (ce, evd, pl, imps as def) = interp_definition pl bl (pi2 k) red_option c ctypopt in
+  let (ce, evd, pl', imps as def) =
+    interp_definition pl bl (pi2 k) red_option c ctypopt
+  in
     if Flags.is_program_mode () then
       let env = Global.env () in
       let (c,ctx), sideff = Future.force ce.const_entry_body in
@@ -193,9 +195,9 @@ let do_definition ident k pl bl red_option c ctypopt hook =
       let ctx = Evd.evar_universe_context evd in
       let hook = Lemmas.mk_hook (fun l r _ -> Lemmas.call_hook (fun exn -> exn) hook l r) in
 	ignore(Obligations.add_definition
-          ident ~term:c cty ctx ~implicits:imps ~kind:k ~hook obls)
+          ident ~term:c cty ctx ?pl ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
-      ignore(declare_definition ident k ce pl imps
+      ignore(declare_definition ident k ce pl' imps
         (Lemmas.mk_hook
           (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
 
@@ -904,10 +906,11 @@ let nf_evar_context sigma ctx =
   List.map (fun (n, b, t) ->
     (n, Option.map (Evarutil.nf_evar sigma) b, Evarutil.nf_evar sigma t)) ctx
 
-let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
+let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
-  let evdref = ref (Evd.from_env env) in
+  let ctx = Evd.make_evar_universe_context env pl in
+  let evdref = ref (Evd.from_ctx ctx) in
   let _, ((env', binders_rel), impls) = interp_context_evars env evdref bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
@@ -1013,9 +1016,9 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
       let hook l gr _ = 
 	let body = it_mkLambda_or_LetIn (mkApp (Universes.constr_of_global gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
-	let pl, univs = Evd.universe_context !evdref in
+	let pl, univs = Evd.universe_context ?names:pl !evdref in
 	  (*FIXME poly? *)
-	let ce = definition_entry ~types:ty ~univs (Evarutil.nf_evar !evdref body) in
+	let ce = definition_entry ~poly ~types:ty ~univs (Evarutil.nf_evar !evdref body) in
 	(** FIXME: include locality *)
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in
@@ -1039,7 +1042,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
     Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp 
   in
   let ctx = Evd.evar_universe_context !evdref in
-    ignore(Obligations.add_definition recname ~term:evars_def 
+    ignore(Obligations.add_definition recname ~term:evars_def ?pl
 	     evars_typ ctx evars ~hook)
 
 let interp_recursive isfix fixl notations =
@@ -1260,22 +1263,22 @@ let do_program_recursive local p fixkind fixl ntns =
   | Obligations.IsFixpoint _ -> (local, p, Fixpoint)
   | Obligations.IsCoFixpoint -> (local, p, CoFixpoint)
   in
-  Obligations.add_mutual_definitions defs ~kind ctx ntns fixkind
+  Obligations.add_mutual_definitions defs ~kind ?pl ctx ntns fixkind
 
 let do_program_fixpoint local poly l =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
-    | [(n, CWfRec r)], [((((_,id),_),_,bl,typ,def),ntn)] ->
+    | [(n, CWfRec r)], [((((_,id),pl),_,bl,typ,def),ntn)] ->
 	let recarg = 
 	  match n with
 	  | Some n -> mkIdentC (snd n)
 	  | None ->
 	      errorlabstrm "do_program_fixpoint"
 		(str "Recursive argument required for well-founded fixpoints")
-	in build_wellfounded (id, n, bl, typ, out_def def) r recarg ntn
+	in build_wellfounded (id, pl, n, bl, typ, out_def def) poly r recarg ntn
 	     
-    | [(n, CMeasureRec (m, r))], [((((_,id),_),_,bl,typ,def),ntn)] ->
-	build_wellfounded (id, n, bl, typ, out_def def)
+    | [(n, CMeasureRec (m, r))], [((((_,id),pl),_,bl,typ,def),ntn)] ->
+	build_wellfounded (id, pl, n, bl, typ, out_def def) poly
 	  (Option.default (CRef (lt_ref,None)) r) m ntn
 	  
     | _, _ when List.for_all (fun (n, ro) -> ro == CStructRec) g ->

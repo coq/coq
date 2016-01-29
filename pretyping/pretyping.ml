@@ -133,12 +133,12 @@ let interp_universe_level_name evd (loc,s) =
 	 in evd, level
     else 
       try
-	let id =
-	  try Id.of_string s with _ -> raise Not_found in
-	  evd, Idmap.find id names
+	let level = Evd.universe_of_name evd s in
+	evd, level
       with Not_found ->
-	try let level = Evd.universe_of_name evd s in
-	      evd, level
+	try 
+	  let id = try Id.of_string s with _ -> raise Not_found in
+	  evd, Idmap.find id names
 	with Not_found -> 
 	  if not (is_strict_universe_declarations ()) then
   	    new_univ_level_variable ~name:s univ_rigid evd

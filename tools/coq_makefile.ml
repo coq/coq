@@ -99,7 +99,13 @@ let string_prefix a b =
 let is_prefix dir1 dir2 =
   let l1 = String.length dir1 in
   let l2 = String.length dir2 in
-    dir1 = dir2 || (l1 < l2 && String.sub dir2 0 l1 = dir1 && dir2.[l1] = '/')
+  let sep = Filename.dir_sep in
+  if dir1 = dir2 then true
+  else if l1 + String.length sep <= l2 then
+    let dir1' = String.sub dir2 0 l1 in
+    let sep' = String.sub dir2 l1 (String.length sep) in
+    dir1' = dir1 && sep' = sep
+  else false
 
 let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in

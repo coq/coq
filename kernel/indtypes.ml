@@ -340,7 +340,7 @@ let typecheck_inductive env mie =
 type ill_formed_ind =
   | LocalNonPos of int
   | LocalNotEnoughArgs of int
-  | LocalNotConstructor of Context.Rel.t * constr list
+  | LocalNotConstructor of Context.Rel.t * int
   | LocalNonPar of int * int * int
 
 exception IllFormedInd of ill_formed_ind
@@ -359,11 +359,10 @@ let explain_ind_err id ntyp env nbpar c err =
     | LocalNotEnoughArgs kt ->
 	raise (InductiveError
 		 (NotEnoughArgs (env,c',mkRel (kt+nbpar))))
-    | LocalNotConstructor (paramsctxt,args)->
+    | LocalNotConstructor (paramsctxt,nargs)->
         let nparams = Context.Rel.nhyps paramsctxt in
 	raise (InductiveError
-		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nparams,
-                                  List.length args - nparams)))
+		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nparams,nargs)))
     | LocalNonPar (n,i,l) ->
 	raise (InductiveError
 		 (NonPar (env,c',n,mkRel i, mkRel (l+nbpar))))
@@ -587,7 +586,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
                 begin match hd with
                 | Rel j when Int.equal j (n + ntypes - i - 1) ->
                   check_correct_par ienv hyps (ntypes - i) largs
-                | _ -> raise (IllFormedInd (LocalNotConstructor(hyps,largs)))
+                | _ -> raise (IllFormedInd (LocalNotConstructor(hyps,nargs)))
                 end
               else
                 if not (List.for_all (noccur_between n ntypes) largs)

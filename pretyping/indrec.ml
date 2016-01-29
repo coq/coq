@@ -156,7 +156,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 	| Prod (n,t,c) ->
 	    let d = (n,None,t) in
 	    make_prod env (n,t,prec (push_rel d env) (i+1) (d::sign) c)
-	| LetIn (n,b,t,c) ->
+	| LetIn (n,b,t,c) when List.is_empty largs ->
 	    let d = (n,Some b,t) in
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::sign) c)
      	| Ind (_,_) ->
@@ -167,7 +167,10 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
                 base [|applist (mkRel (i+1), Context.Rel.to_extended_list 0 sign)|]
             else
 	      base
-      	| _ -> assert false
+      	| _ ->
+	   let t' = whd_betadeltaiota env sigma p in
+	   if Term.eq_constr p' t' then assert false
+	   else prec env i sign t'
     in
     prec env 0 []
   in
@@ -231,14 +234,17 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	| Prod (n,t,c) ->
 	    let d = (n,None,t) in
 	    mkLambda_name env (n,t,prec (push_rel d env) (i+1) (d::hyps) c)
-	| LetIn (n,b,t,c) ->
+	| LetIn (n,b,t,c) when List.is_empty largs ->
 	    let d = (n,Some b,t) in
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::hyps) c)
      	| Ind _ ->
             let realargs = List.skipn nparrec largs
             and arg = appvect (mkRel (i+1), Context.Rel.to_extended_vect 0 hyps) in
             applist(lift i fk,realargs@[arg])
-     	| _ -> assert false
+     	| _ ->
+	   let t' = whd_betadeltaiota env sigma p in
+	     if Term.eq_constr t' p' then assert false
+	     else prec env i hyps t'
     in
     prec env 0 []
   in

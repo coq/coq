@@ -537,10 +537,15 @@ let add_break_if_none n = function
   | l -> UnpCut (PpBrk(n,0)) :: l
 
 let check_open_binder isopen sl m =
+  let pr_token = function
+  | Terminal s -> str s
+  | Break n -> str "␣"
+  | _ -> assert false
+  in
   if isopen && not (List.is_empty sl) then
     errorlabstrm "" (str "as " ++ pr_id m ++
       str " is a non-closed binder, no such \"" ++
-      prlist_with_sep spc (function Terminal s -> str s | _ -> assert false) sl
+      prlist_with_sep spc pr_token sl
       ++ strbrk "\" is allowed to occur.")
 
 (* Heuristics for building default printing rules *)

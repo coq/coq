@@ -918,8 +918,9 @@ module Make
             hov 1 (
               (if abst then keyword "Declare" ++ spc () else mt ()) ++
                 keyword "Instance" ++
-                (match snd instid with Name id -> spc () ++ pr_lident (fst instid, id) ++ spc () |
-                    Anonymous -> mt ()) ++
+                (match instid with
+		 | (loc, Name id), l -> spc () ++ pr_plident ((loc, id),l) ++ spc () 
+                 | (_, Anonymous), _ -> mt ()) ++
                 pr_and_type_binders_arg sup ++
                 str":" ++ spc () ++
                 pr_constr cl ++ pr_priority pri ++
