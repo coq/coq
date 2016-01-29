@@ -38,6 +38,7 @@ open Ind_tables
 open Auto_ind_decl
 open Eqschemes
 open Elimschemes
+open Context.Rel.Declaration
 
 (* Flags governing automatic synthesis of schemes *)
 
@@ -463,7 +464,7 @@ let build_combined_scheme env schemes =
   in
   let ctx, _ =
     list_split_rev_at prods
-      (List.rev_map (fun (x, y) -> x, None, y) ctx) in
+      (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
   let typ = it_mkProd_wo_LetIn concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
   (body, typ)

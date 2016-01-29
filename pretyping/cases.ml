@@ -28,6 +28,7 @@ open Evarutil
 open Evarsolve
 open Evarconv
 open Evd
+open Context.Rel.Declaration
 
 (* Pattern-matching errors *)
 
@@ -272,13 +273,13 @@ let inductive_template evdref env tmloc ind =
     | None -> fun _ -> (Loc.ghost, Evar_kinds.InternalHole) in
    let (_,evarl,_) =
     List.fold_right
-      (fun (na,b,ty) (subst,evarl,n) ->
-	match b with
-        | None ->
+      (fun decl (subst,evarl,n) ->
+	match decl with
+        | LocalAssum (na,ty) ->
 	    let ty' = substl subst ty in
 	    let e = e_new_evar env evdref ~src:(hole_source n) ty' in
 	    (e::subst,e::evarl,n+1)
-	| Some b ->
+	| LocalDef (na,b,ty) ->
 	    (substl subst b::subst,evarl,n+1))
       arsign ([],[],1) in
    applist (mkIndU indu,List.rev evarl)
@@ -306,15 +307,15 @@ let binding_vars_of_inductive = function
   | NotInd _ -> []
   | IsInd (_,IndType(_,realargs),_) -> List.filter isRel realargs
 
-let extract_inductive_data env sigma (_,b,t) =
-  match b with
-  | None ->
+let extract_inductive_data env sigma decl =
+  match decl with
+  | LocalAssum (_,t) ->
     let tmtyp =
       try try_find_ind env sigma t None
       with Not_found -> NotInd (None,t) in
     let tmtypvars = binding_vars_of_inductive tmtyp in
     (tmtyp,tmtypvars)
-  | Some _ ->
+  | LocalDef (_,_,t) ->
     (NotInd (None, t), [])
 
 let unify_tomatch_with_patterns evdref env loc typ pats realnames =
@@ -427,7 +428,7 @@ let remove_current_pattern eqn =
 let push_current_pattern (cur,ty) eqn =
   match eqn.patterns with
     | pat::pats ->
-        let rhs_env = push_rel (alias_of_pat pat,Some cur,ty) eqn.rhs.rhs_env in
+        let rhs_env = push_rel (LocalDef (alias_of_pat pat,cur,ty)) eqn.rhs.rhs_env in
 	{ eqn with
             rhs = { eqn.rhs with rhs_env = rhs_env };
 	    patterns = pats }
@@ -454,9 +455,9 @@ let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
 exception NotAdjustable
 
 let rec adjust_local_defs loc = function
-  | (pat :: pats, (_,None,_) :: decls) ->
+  | (pat :: pats, LocalAssum _ :: decls) ->
       pat :: adjust_local_defs loc (pats,decls)
-  | (pats, (_,Some _,_) :: decls) ->
+  | (pats, LocalDef _ :: decls) ->
       PatVar (loc, Anonymous) :: adjust_local_defs loc (pats,decls)
   | [], [] -> []
   | _ -> raise NotAdjustable
@@ -528,9 +529,10 @@ let dependencies_in_pure_rhs nargs eqns =
   let deps_columns = matrix_transpose deps_rows in
   List.map (List.exists (fun x -> x)) deps_columns
 
-let dependent_decl a = function
-  | (na,None,t) -> dependent a t
-  | (na,Some c,t) -> dependent a t || dependent a c
+let dependent_decl a =
+  function
+  | LocalAssum (na,t) -> dependent a t
+  | LocalDef (na,c,t) -> dependent a t || dependent a c
 
 let rec dep_in_tomatch n = function
   | (Pushed _ | Alias _ | NonDepAlias) :: l -> dep_in_tomatch n l
@@ -601,7 +603,7 @@ let relocate_index_tomatch n1 n2 =
       NonDepAlias :: genrec depth rest
   | Abstract (i,d) :: rest ->
       let i = relocate_rel n1 n2 depth i in
-      Abstract (i, Context.Rel.Declaration.map (relocate_index n1 n2 depth) d)
+      Abstract (i, map_constr (relocate_index n1 n2 depth) d)
       :: genrec (depth+1) rest in
   genrec 0
 
@@ -634,7 +636,7 @@ let replace_tomatch n c =
   | NonDepAlias  :: rest ->
       NonDepAlias :: replrec depth rest
   | Abstract (i,d) :: rest ->
-      Abstract (i, Context.Rel.Declaration.map (replace_term n c depth) d)
+      Abstract (i, map_constr (replace_term n c depth) d)
       :: replrec (depth+1) rest in
   replrec 0
 
@@ -659,7 +661,7 @@ let rec liftn_tomatch_stack n depth = function
       NonDepAlias :: liftn_tomatch_stack n depth rest
   | Abstract (i,d)::rest ->
       let i = if i<depth then i else i+n in
-      Abstract (i, Context.Rel.Declaration.map (liftn n depth) d)
+      Abstract (i, map_constr (liftn n depth) d)
       ::(liftn_tomatch_stack n (depth+1) rest)
 
 let lift_tomatch_stack n = liftn_tomatch_stack n 1
@@ -695,7 +697,7 @@ let merge_name get_name obj = function
 let merge_names get_name = List.map2 (merge_name get_name)
 
 let get_names env sign eqns =
-  let names1 = List.make (List.length sign) Anonymous in
+  let names1 = List.make (Context.Rel.length sign) Anonymous in
   (* If any, we prefer names used in pats, from top to bottom *)
   let names2,aliasname =
     List.fold_right
@@ -713,7 +715,7 @@ let get_names env sign eqns =
       (fun (l,avoid) d na ->
 	 let na =
 	   merge_name
-	     (fun (na,_,t) -> Name (next_name_away (named_hd env t na) avoid))
+	     (fun (LocalAssum (na,t) | LocalDef (na,_,t)) -> Name (next_name_away (named_hd env t na) avoid))
 	     d na
 	 in
          (na::l,(out_name na)::avoid))
@@ -727,18 +729,16 @@ let get_names env sign eqns =
 (* We now replace the names y1 .. yn y by the actual names       *)
 (* xi1 .. xin xi to be found in the i-th clause of the matrix    *)
 
-let set_declaration_name x (_,c,t) = (x,c,t)
-
-let recover_initial_subpattern_names = List.map2 set_declaration_name
+let recover_initial_subpattern_names = List.map2 set_name
 
 let recover_and_adjust_alias_names names sign =
   let rec aux = function
   | [],[] ->
       []
-  | x::names, (_,None,t)::sign ->
-      (x,(alias_of_pat x,None,t)) :: aux (names,sign)
-  | names, (na,(Some _ as c),t)::sign ->
-      (PatVar (Loc.ghost,na),(na,c,t)) :: aux (names,sign)
+  | x::names, LocalAssum (_,t)::sign ->
+      (x, LocalAssum (alias_of_pat x,t)) :: aux (names,sign)
+  | names, (LocalDef (na,_,_) as decl)::sign ->
+      (PatVar (Loc.ghost,na), decl) :: aux (names,sign)
   | _ -> assert false
   in
   List.split (aux (names,sign))
@@ -753,11 +753,12 @@ let push_rels_eqn_with_names sign eqn =
   let sign = recover_initial_subpattern_names subpatnames sign in
   push_rels_eqn sign eqn
 
-let push_generalized_decl_eqn env n (na,c,t) eqn =
-  let na = match na with
-  | Anonymous -> Anonymous
-  | Name id -> pi1 (Environ.lookup_rel n eqn.rhs.rhs_env) in
-  push_rels_eqn [(na,c,t)] eqn
+let push_generalized_decl_eqn env n decl eqn =
+  match get_name decl with
+  | Anonymous ->
+      push_rels_eqn [decl] eqn
+  | Name _ ->
+      push_rels_eqn [set_name (get_name (Environ.lookup_rel n eqn.rhs.rhs_env)) decl] eqn
 
 let drop_alias_eqn eqn =
   { eqn with alias_stack = List.tl eqn.alias_stack }
@@ -765,7 +766,7 @@ let drop_alias_eqn eqn =
 let push_alias_eqn alias eqn =
   let aliasname = List.hd eqn.alias_stack in
   let eqn = drop_alias_eqn eqn in
-  let alias = set_declaration_name aliasname alias in
+  let alias = set_name aliasname alias in
   push_rels_eqn [alias] eqn
 
 (**********************************************************************)
@@ -931,7 +932,7 @@ let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
   in
   let pred = extract_predicate ccl tms in
   (* Build the predicate properly speaking *)
-  let sign = List.map2 set_declaration_name (na::names) sign in
+  let sign = List.map2 set_name (na::names) sign in
   it_mkLambda_or_LetIn_name env pred sign
 
 (* [expand_arg] is used by [specialize_predicate]
@@ -1117,14 +1118,14 @@ let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
-      let d = Context.Rel.Declaration.map (nf_evar evd) d in
-      let is_d = match d with (_, None, _) -> false | _ -> true in
+      let d = map_constr (nf_evar evd) d in
+      let is_d = match d with LocalAssum _ -> false | LocalDef _ -> true in
       if is_d || List.exists (fun c -> dependent_decl (lift k c) d) tocheck
                  && Array.exists (is_dependent_branch k) brs then
         (* Dependency in the current term to match and its dependencies is real *)
         let brs,tomatch,pred,inst = aux (k+1) brs tomatch pred (mkRel n::tocheck) deps in
         let inst = match d with
-        | (_, None, _) -> mkRel n :: inst
+        | LocalAssum _ -> mkRel n :: inst
         | _ -> inst
         in
         brs, Abstract (i,d) :: tomatch, pred, inst
@@ -1186,12 +1187,13 @@ let group_equations pb ind current cstrs mat =
 let rec generalize_problem names pb = function
   | [] -> pb, []
   | i::l ->
-      let (na,b,t as d) = Context.Rel.Declaration.map (lift i) (Environ.lookup_rel i pb.env) in
       let pb',deps = generalize_problem names pb l in
-      begin match (na, b) with
-      | Anonymous, Some _ -> pb', deps
+      let d = map_constr (lift i) (Environ.lookup_rel i pb.env) in
+      begin match d with
+      | LocalDef (Anonymous,_,_) -> pb', deps
       | _ ->
-        let d = on_pi3 (whd_betaiota !(pb.evdref)) d in (* for better rendering *)
+	 (* for better rendering *)
+	let d = map_type (whd_betaiota !(pb.evdref)) d in
         let tomatch = lift_tomatch_stack 1 pb'.tomatch in
         let tomatch = relocate_index_tomatch (i+1) 1 tomatch in
         { pb' with
@@ -1219,7 +1221,8 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   (* that had matched constructor C *)
   let cs_args = const_info.cs_args in
   let names,aliasname = get_names pb.env cs_args eqns in
-  let typs = List.map2 (fun (_,c,t) na -> (na,c,t)) cs_args names in
+  let typs = List.map2 set_name names cs_args
+  in
 
   (* We build the matrix obtained by expanding the matching on *)
   (* "C x1..xn as x" followed by a residual matching on eqn into *)
@@ -1229,7 +1232,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   (* We adjust the terms to match in the context they will be once the *)
   (* context [x1:T1,..,xn:Tn] will have been pushed on the current env *)
   let typs' =
-    List.map_i (fun i d -> (mkRel i, Context.Rel.Declaration.map (lift i) d)) 1 typs in
+    List.map_i (fun i d -> (mkRel i, map_constr (lift i) d)) 1 typs in
 
   let extenv = push_rel_context typs pb.env in
 
@@ -1267,7 +1270,8 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
 
   let typs' =
     List.map2
-      (fun (tm,(tmtyp,_),(na,_,_)) deps ->
+      (fun (tm, (tmtyp,_), decl) deps ->
+        let na = get_name decl in
 	let na = match curname, na with
 	| Name _, Anonymous -> curname
 	| Name _, Name _ -> na
@@ -1391,7 +1395,7 @@ and shift_problem ((current,t),_,na) pb =
   let pred = specialize_predicate_var (current,t,na) pb.tomatch pb.pred in
   let pb =
     { pb with
-       env = push_rel (na,Some current,ty) pb.env;
+       env = push_rel (LocalDef (na,current,ty)) pb.env;
        tomatch = tomatch;
        pred = lift_predicate 1 pred tomatch;
        history = pop_history pb.history;
@@ -1439,7 +1443,7 @@ and compile_generalization pb i d rest =
    ([false]). *)
 and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
   let f c t =
-    let alias = (na,Some c,t) in
+    let alias = LocalDef (na,c,t) in
     let pb =
       { pb with
          env = push_rel alias pb.env;
@@ -1575,9 +1579,9 @@ let adjust_to_extended_env_and_remove_deps env extenv subst t =
     (* \--------------extenv------------/ *)
     let (p, _, _) = lookup_rel_id x (rel_context extenv) in
     let rec traverse_local_defs p =
-      match pi2 (lookup_rel p extenv) with
-      | Some c -> assert (isRel c); traverse_local_defs (p + destRel c)
-      | None -> p in
+      match lookup_rel p extenv with
+      | LocalDef (_,c,_) -> assert (isRel c); traverse_local_defs (p + destRel c)
+      | LocalAssum _ -> p in
     let p = traverse_local_defs p in
     let u = lift (n' - n) u in
     try Some (p, u, expand_vars_in_term extenv u)
@@ -1622,7 +1626,7 @@ let abstract_tycon loc env evdref subst tycon extenv t =
      convertible subterms of the substitution *)
   let rec aux (k,env,subst as x) t =
     let t = whd_evar !evdref t in match kind_of_term t with
-    | Rel n when pi2 (lookup_rel n env) != None -> t
+    | Rel n when is_local_def (lookup_rel n env) -> t
     | Evar ev ->
         let ty = get_type_of env !evdref t in
 	let ty = Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty in
@@ -1658,7 +1662,8 @@ let abstract_tycon loc env evdref subst tycon extenv t =
 	List.map (fun a -> not (isRel a) || dependent a u
                            || Int.Set.mem (destRel a) depvl) inst in
       let named_filter =
-	List.map (fun (id,_,_) -> dependent (mkVar id) u)
+        let open Context.Named.Declaration in
+	List.map (fun d -> dependent (mkVar (get_id d)) u)
 	  (named_context extenv) in
       let filter = Filter.make (rel_filter @ named_filter) in
       let candidates = u :: List.map mkRel vl in
@@ -1726,7 +1731,7 @@ let build_inversion_problem loc env sigma tms t =
 	List.rev_append patl patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
       let pat,acc = make_patvar t acc in
-      let d = (alias_of_pat pat,None,typ) in
+      let d = LocalAssum (alias_of_pat pat,typ) in
       let patl,acc_sign,acc = aux (n+1) (push_rel d env) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
   let avoid0 = ids_of_context env in
@@ -1743,7 +1748,7 @@ let build_inversion_problem loc env sigma tms t =
   let n = List.length sign in
 
   let decls =
-    List.map_i (fun i d -> (mkRel i, Context.Rel.Declaration.map (lift i) d)) 1 sign in
+    List.map_i (fun i d -> (mkRel i, map_constr (lift i) d)) 1 sign in
 
   let pb_env = push_rel_context sign env in
   let decls =
@@ -1753,8 +1758,8 @@ let build_inversion_problem loc env sigma tms t =
   let dep_sign = find_dependencies_signature (List.make n true) decls in
 
   let sub_tms =
-    List.map2 (fun deps (tm,(tmtyp,_),(na,b,t)) ->
-      let na = if List.is_empty deps then Anonymous else force_name na in
+    List.map2 (fun deps (tm, (tmtyp,_), decl) ->
+      let na = if List.is_empty deps then Anonymous else force_name (get_name decl) in
       Pushed (true,((tm,tmtyp),deps,na)))
       dep_sign decls in
   let subst = List.map (fun (na,t) -> (na,lift n t)) subst in
@@ -1815,7 +1820,8 @@ let build_inversion_problem loc env sigma tms t =
 let build_initial_predicate arsign pred =
   let rec buildrec n pred tmnames = function
     | [] -> List.rev tmnames,pred
-    | ((na,c,t)::realdecls)::lnames ->
+    | (decl::realdecls)::lnames ->
+        let na = get_name decl in
         let n' = n + List.length realdecls in
         buildrec (n'+1) pred (force_name na::tmnames) lnames
     | _ -> assert false
@@ -1827,7 +1833,9 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
     match tm with
       | NotInd (bo,typ) ->
 	  (match t with
-	    | None -> [na,Option.map (lift n) bo,lift n typ]
+	    | None -> (match bo with
+		       | None -> [LocalAssum (na, lift n typ)]
+		       | Some b -> [LocalDef (na, lift n b, lift n typ)])
 	    | Some (loc,_,_) ->
  	    user_err_loc (loc,"",
 	    str"Unexpected type annotation for a term of non inductive type."))
@@ -1845,8 +1853,8 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 		      anomaly (Pp.str "Ill-formed 'in' clause in cases");
 		  List.rev realnal
 	      | None -> List.make nrealargs_ctxt Anonymous in
-	  (na,None,build_dependent_inductive env0 indf')
-	  ::(List.map2 (fun x (_,c,t) ->(x,c,t)) realnal arsign) in
+	  LocalAssum (na, build_dependent_inductive env0 indf')
+	  ::(List.map2 set_name realnal arsign) in
   let rec buildrec n = function
     | [],[] -> []
     | (_,tm)::ltm, (_,x)::tmsign ->
@@ -2027,7 +2035,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	      let previd, id = prime avoid (Name (Id.of_string "wildcard")) in
 		Name id, id :: avoid
 	in
-	  (PatVar (l, name), [name, None, ty] @ realargs, mkRel 1, ty, 
+	  (PatVar (l, name), [LocalAssum (name, ty)] @ realargs, mkRel 1, ty,
 	   (List.map (fun x -> mkRel 1) realargs), 1, avoid)
     | PatCstr (l,((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
@@ -2044,7 +2052,8 @@ let constr_of_pat env evdref arsign pat avoid =
 	assert (Int.equal nb_args_constr (List.length args));
 	let patargs, args, sign, env, n, m, avoid =
 	  List.fold_right2
-	    (fun (na, c, t) ua (patargs, args, sign, env, n, m, avoid)  ->
+	    (fun decl ua (patargs, args, sign, env, n, m, avoid)  ->
+               let t = get_type decl in
 	       let pat', sign', arg', typ', argtypargs, n', avoid =
 		 let liftt = liftn (List.length sign) (succ (List.length args)) t in
 		   typ env (substl args liftt, []) ua avoid
@@ -2066,7 +2075,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	      Anonymous ->
 		pat', sign, app, apptype, realargs, n, avoid
 	    | Name id ->
-		let sign = (alias, None, lift m ty) :: sign in
+		let sign = LocalAssum (alias, lift m ty) :: sign in
 		let avoid = id :: avoid in
 		let sign, i, avoid =
 		  try
@@ -2078,14 +2087,14 @@ let constr_of_pat env evdref arsign pat avoid =
 		      (lift 1 app) (* aliased term *)
 		    in
 		    let neq = eq_id avoid id in
-		      (Name neq, Some (mkRel 0), eq_t) :: sign, 2, neq :: avoid
+		      LocalDef (Name neq, mkRel 0, eq_t) :: sign, 2, neq :: avoid
 		  with Reduction.NotConvertible -> sign, 1, avoid
 		in
 		  (* Mark the equality as a hole *)
 		  pat', sign, lift i app, lift i apptype, realargs, n + i, avoid
   in
-  let pat', sign, patc, patty, args, z, avoid = typ env (pi3 (List.hd arsign), List.tl arsign) pat avoid in
-    pat', (sign, patc, (pi3 (List.hd arsign), args), pat'), avoid
+  let pat', sign, patc, patty, args, z, avoid = typ env (get_type (List.hd arsign), List.tl arsign) pat avoid in
+    pat', (sign, patc, (get_type (List.hd arsign), args), pat'), avoid
 
 
 (* shadows functional version *)
@@ -2100,23 +2109,23 @@ match kind_of_term t with
 | Rel 0 -> true
 | _ -> false
 
-let rels_of_patsign l =
-  List.map (fun ((na, b, t) as x) ->
-    match b with
-      | Some t' when is_topvar t' -> (na, None, t)
-      | _ -> x) l
+let rels_of_patsign =
+  List.map (fun decl ->
+	    match decl with
+	    | LocalDef (na,t',t) when is_topvar t' -> LocalAssum (na,t)
+	    | _ -> decl)
 
 let vars_of_ctx ctx =
   let _, y =
-    List.fold_right (fun (na, b, t)  (prev, vars) ->
-      match b with
-	| Some t' when is_topvar t' ->
+    List.fold_right (fun decl (prev, vars) ->
+      match decl with
+	| LocalDef (na,t',t) when is_topvar t' ->
 	    prev,
 	    (GApp (Loc.ghost,
 		(GRef (Loc.ghost, delayed_force coq_eq_refl_ref, None)), 
 		   [hole; GVar (Loc.ghost, prev)])) :: vars
 	| _ ->
-	    match na with
+	    match get_name decl with
 		Anonymous -> invalid_arg "vars_of_ctx"
 	      | Name n -> n, GVar (Loc.ghost, n) :: vars)
       ctx (Id.of_string "vars_of_ctx_error", [])
@@ -2225,7 +2234,7 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 	     match ineqs with
 	     | None -> [], arity
 	     | Some ineqs ->
-		 [Anonymous, None, ineqs], lift 1 arity
+		 [LocalAssum (Anonymous, ineqs)], lift 1 arity
 	   in
 	   let eqs_rels, arity = decompose_prod_n_assum neqs arity in
 	     eqs_rels @ neqs_rels @ rhs_rels', arity
@@ -2236,7 +2245,7 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
 	 let _btype = evd_comb1 (Typing.type_of env) evdref bbody in
 	 let branch_name = Id.of_string ("program_branch_" ^ (string_of_int !i)) in
-	 let branch_decl = (Name branch_name, Some (lift !i bbody), (lift !i btype)) in
+	 let branch_decl = LocalDef (Name branch_name, lift !i bbody, lift !i btype) in
 	 let branch =
 	   let bref = GVar (Loc.ghost, branch_name) in
 	     match vars_of_ctx rhs_rels with
@@ -2285,7 +2294,7 @@ let abstract_tomatch env tomatchs tycon =
 		 (fun t -> subst_term (lift 1 c) (lift 1 t)) tycon in
 	       let name = next_ident_away (Id.of_string "filtered_var") names in
 		 (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev,
-	       (Name name, Some (lift lenctx c), lift lenctx $ type_of_tomatch t) :: ctx,
+	       LocalDef (Name name, lift lenctx c, lift lenctx $ type_of_tomatch t) :: ctx,
 	       name :: names, tycon)
       ([], [], [], tycon) tomatchs
   in List.rev prev, ctx, tycon
@@ -2293,7 +2302,7 @@ let abstract_tomatch env tomatchs tycon =
 let build_dependent_signature env evdref avoid tomatchs arsign =
   let avoid = ref avoid in
   let arsign = List.rev arsign in
-  let allnames = List.rev_map (List.map pi1) arsign in
+  let allnames = List.rev_map (List.map get_name) arsign in
   let nar = List.fold_left (fun n names -> List.length names + n) 0 allnames in
   let eqs, neqs, refls, slift, arsign' =
     List.fold_left2
@@ -2309,11 +2318,15 @@ let build_dependent_signature env evdref avoid tomatchs arsign =
 	     (* Build the arity signature following the names in matched terms 
 		as much as possible *)
 	     let argsign = List.tl arsign in (* arguments in inverse application order *)
-	     let (appn, appb, appt) as _appsign = List.hd arsign in (* The matched argument *)
+	     let app_decl = List.hd arsign in (* The matched argument *)
+	     let appn = get_name app_decl in
+	     let appt = get_type app_decl in
 	     let argsign = List.rev argsign in (* arguments in application order *)
 	     let env', nargeqs, argeqs, refl_args, slift, argsign' =
 	       List.fold_left2
-		 (fun (env, nargeqs, argeqs, refl_args, slift, argsign') arg (name, b, t) ->
+		 (fun (env, nargeqs, argeqs, refl_args, slift, argsign') arg decl ->
+		    let name = get_name decl in
+		    let t = get_type decl in
 		    let argt = Retyping.get_type_of env !evdref arg in
 		    let eq, refl_arg =
 		      if Reductionops.is_conv env !evdref argt t then
@@ -2331,16 +2344,16 @@ let build_dependent_signature env evdref avoid tomatchs arsign =
 		    let previd, id =
 		      let name =
 			match kind_of_term arg with
-			Rel n -> pi1 (lookup_rel n env)
+			Rel n -> get_name (lookup_rel n env)
 			| _ -> name
 		      in
 			make_prime avoid name
 		    in
 		      (env, succ nargeqs,
-		       (Name (eq_id avoid previd), None, eq) :: argeqs,
+		       (LocalAssum (Name (eq_id avoid previd), eq)) :: argeqs,
 		       refl_arg :: refl_args,
 		       pred slift,
-		       (Name id, b, t) :: argsign'))
+		       set_name (Name id) decl :: argsign'))
 		 (env, neqs, [], [], slift, []) args argsign
 	     in
 	     let eq = mk_JMeq evdref
@@ -2351,22 +2364,23 @@ let build_dependent_signature env evdref avoid tomatchs arsign =
 	     in
 	     let refl_eq = mk_JMeq_refl evdref ty tm in
 	     let previd, id = make_prime avoid appn in
-	       (((Name (eq_id avoid previd), None, eq) :: argeqs) :: eqs,
+	       ((LocalAssum (Name (eq_id avoid previd), eq) :: argeqs) :: eqs,
 		succ nargeqs,
 		refl_eq :: refl_args,
 		pred slift,
-		(((Name id, appb, appt) :: argsign') :: arsigns))
+		((set_name (Name id) app_decl :: argsign') :: arsigns))
 
 	 | _ -> (* Non dependent inductive or not inductive, just use a regular equality *)
-	     let (name, b, typ) = match arsign with [x] -> x | _ -> assert(false) in
+	     let decl = match arsign with [x] -> x | _ -> assert(false) in
+	     let name = get_name decl in
 	     let previd, id = make_prime avoid name in
-	     let arsign' = (Name id, b, typ) in
+	     let arsign' = set_name (Name id) decl in
 	     let tomatch_ty = type_of_tomatch ty in
 	     let eq =
 	       mk_eq evdref (lift nar tomatch_ty)
 		 (mkRel slift) (lift nar tm)
 	     in
-	       ([(Name (eq_id avoid previd), None, eq)] :: eqs, succ neqs,
+	       ([LocalAssum (Name (eq_id avoid previd), eq)] :: eqs, succ neqs,
 		(mk_eq_refl evdref tomatch_ty tm) :: refl_args,
 		pred slift, (arsign' :: []) :: arsigns))
       ([], 0, [], nar, []) tomatchs arsign
@@ -2440,7 +2454,9 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
   (* We push the initial terms to match and push their alias to rhs' envs *)
   (* names of aliases will be recovered from patterns (hence Anonymous here) *)
 
-  let out_tmt na = function NotInd (c,t) -> (na,c,t) | IsInd (typ,_,_) -> (na,None,typ) in
+  let out_tmt na = function NotInd (None,t) -> LocalAssum (na,t)
+			  | NotInd (Some b, t) -> LocalDef (na,b,t)
+			  | IsInd (typ,_,_) -> LocalAssum (na,typ) in
   let typs = List.map2 (fun na (tm,tmt) -> (tm,out_tmt na tmt)) nal tomatchs in
     
   let typs =
@@ -2513,7 +2529,9 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
     (* names of aliases will be recovered from patterns (hence Anonymous *)
     (* here) *)
 
-    let out_tmt na = function NotInd (c,t) -> (na,c,t) | IsInd (typ,_,_) -> (na,None,typ) in
+    let out_tmt na = function NotInd (None,t) -> LocalAssum (na,t)
+			    | NotInd (Some b,t) -> LocalDef (na,b,t)
+			    | IsInd (typ,_,_) -> LocalAssum (na,typ) in
     let typs = List.map2 (fun na (tm,tmt) -> (tm,out_tmt na tmt)) nal tomatchs in
 
     let typs =

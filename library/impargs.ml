@@ -165,6 +165,7 @@ let update pos rig (na,st) =
 
 (* modified is_rigid_reference with a truncated env *)
 let is_flexible_reference env bound depth f =
+  let open Context.Named.Declaration in
   match kind_of_term f with
     | Rel n when n >= bound+depth -> (* inductive type *) false
     | Rel n when n >= depth -> (* previous argument *) true
@@ -173,8 +174,7 @@ let is_flexible_reference env bound depth f =
         let cb = Environ.lookup_constant kn env in
 	(match cb.const_body with Def _ -> true | _ -> false)
     | Var id ->
-        let (_, value, _) = Environ.lookup_named id env in
-        begin match value with None -> false | _ -> true end
+        Environ.lookup_named id env |> is_local_def
     | Ind _ | Construct _ -> false
     |  _ -> true
 
@@ -234,13 +234,14 @@ let find_displayed_name_in all avoid na (_,b as envnames_b) =
 
 let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   let rigid = ref true in
+  let open Context.Rel.Declaration in
   let rec aux env avoid n names t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (na,a,b) ->
 	  let na',avoid' = find_displayed_name_in all avoid na (names,b) in
 	  add_free_rels_until strict strongly_strict revpat n env a (Hyp (n+1))
-            (aux (push_rel (na',None,a) env) avoid' (n+1) (na'::names) b)
+            (aux (push_rel (LocalAssum (na',a)) env) avoid' (n+1) (na'::names) b)
       | _ ->
 	  rigid := is_rigid_head t;
 	  let names = List.rev names in
@@ -252,7 +253,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   match kind_of_term (whd_betadeltaiota env t) with
     | Prod (na,a,b) ->
 	let na',avoid = find_displayed_name_in all [] na ([],b) in
-	let v = aux (push_rel (na',None,a) env) avoid 1 [na'] b in
+	let v = aux (push_rel (LocalAssum (na',a)) env) avoid 1 [na'] b in
 	!rigid, Array.to_list v
     | _ -> true, []
 
@@ -427,7 +428,7 @@ let compute_mib_implicits flags manual kn =
       (Array.mapi  (* No need to lift, arities contain no de Bruijn *)
         (fun i mip ->
 	  (** No need to care about constraints here *)
-	  (Name mip.mind_typename, None, Global.type_of_global_unsafe (IndRef (kn,i))))
+	  Context.Rel.Declaration.LocalAssum (Name mip.mind_typename, Global.type_of_global_unsafe (IndRef (kn,i))))
         mib.mind_packets) in
   let env_ar = push_rel_context ar env in
   let imps_one_inductive i mip =
@@ -449,8 +450,8 @@ let compute_all_mib_implicits flags manual kn =
 
 let compute_var_implicits flags manual id =
   let env = Global.env () in
-  let (_,_,ty) = lookup_named id env in
-  compute_semi_auto_implicits env flags manual ty
+  let open Context.Named.Declaration in
+  compute_semi_auto_implicits env flags manual (get_type (lookup_named id env))
 
 (* Implicits of a global reference. *)
 

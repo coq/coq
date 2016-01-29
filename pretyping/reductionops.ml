@@ -15,6 +15,7 @@ open Termops
 open Univ
 open Evd
 open Environ
+open Context.Rel.Declaration
 
 exception Elimconst
 
@@ -607,7 +608,7 @@ let strong whdfun env sigma t =
   strongrec env t
 
 let local_strong whdfun sigma =
-  let rec strongrec t = map_constr strongrec (whdfun sigma t) in
+  let rec strongrec t = Constr.map strongrec (whdfun sigma t) in
   strongrec
 
 let rec strong_prodspine redfun sigma c =
@@ -799,6 +800,7 @@ let equal_stacks (x, l) (y, l') =
     | Some (lft1,lft2) -> f_equal (x, lft1) (y, lft2) 
 
 let rec whd_state_gen ?csts tactic_mode flags env sigma =
+  let open Context.Named.Declaration in
   let rec whrec cst_l (x, stack as s) =
     let () = if !debug_RAKAM then
 	let open Pp in
@@ -815,11 +817,11 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
     match kind_of_term x with
     | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
       (match lookup_rel n env with
-      | (_,Some body,_) -> whrec Cst_stack.empty (lift n body, stack)
+      | LocalDef (_,body,_) -> whrec Cst_stack.empty (lift n body, stack)
       | _ -> fold ())
     | Var id when Closure.RedFlags.red_set flags (Closure.RedFlags.fVAR id) ->
       (match lookup_named id env with
-      | (_,Some body,_) -> whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
+      | LocalDef (_,body,_) -> whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
       | _ -> fold ())
     | Evar ev ->
       (match safe_evar_value sigma ev with
@@ -922,7 +924,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       | Some _ when Closure.RedFlags.red_set flags Closure.RedFlags.fBETA ->
 	apply_subst whrec [] cst_l x stack
       | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
-	let env' = push_rel (na,None,t) env in
+	let env' = push_rel (LocalAssum (na,t)) env in
 	let whrec' = whd_state_gen tactic_mode flags env' sigma in
         (match kind_of_term (Stack.zip ~refold:true (fst (whrec' (c, Stack.empty)))) with
         | App (f,cl) ->
@@ -1442,7 +1444,7 @@ let splay_prod env sigma =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
       | Prod (n,a,c0) ->
-	  decrec (push_rel (n,None,a) env)
+	  decrec (push_rel (LocalAssum (n,a)) env)
 	    ((n,a)::m) c0
       | _ -> m,t
   in
@@ -1453,7 +1455,7 @@ let splay_lam env sigma =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
       | Lambda (n,a,c0) ->
-	  decrec (push_rel (n,None,a) env)
+	  decrec (push_rel (LocalAssum (n,a)) env)
 	    ((n,a)::m) c0
       | _ -> m,t
   in
@@ -1464,11 +1466,11 @@ let splay_prod_assum env sigma =
     let t = whd_betadeltaiota_nolet env sigma c in
     match kind_of_term t with
     | Prod (x,t,c)  ->
-	prodec_rec (push_rel (x,None,t) env)
-	  (Context.Rel.add (x, None, t) l) c
+	prodec_rec (push_rel (LocalAssum (x,t)) env)
+	  (Context.Rel.add (LocalAssum (x,t)) l) c
     | LetIn (x,b,t,c) ->
-	prodec_rec (push_rel (x, Some b, t) env)
-	  (Context.Rel.add (x, Some b, t) l) c
+	prodec_rec (push_rel (LocalDef (x,b,t)) env)
+	  (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> 
       let t' = whd_betadeltaiota env sigma t in
@@ -1489,8 +1491,8 @@ let splay_prod_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Prod (n,a,c0) ->
-	  decrec (push_rel (n,None,a) env)
-	    (m-1) (Context.Rel.add (n,None,a) ln) c0
+	  decrec (push_rel (LocalAssum (n,a)) env)
+	    (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
       | _                      -> invalid_arg "splay_prod_n"
   in
   decrec env n Context.Rel.empty
@@ -1499,8 +1501,8 @@ let splay_lam_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Lambda (n,a,c0) ->
-	  decrec (push_rel (n,None,a) env)
-	    (m-1) (Context.Rel.add (n,None,a) ln) c0
+	  decrec (push_rel (LocalAssum (n,a)) env)
+	    (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
       | _                      -> invalid_arg "splay_lam_n"
   in
   decrec env n Context.Rel.empty
@@ -1538,8 +1540,8 @@ let find_conclusion env sigma =
   let rec decrec env c =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
-      | Prod (x,t,c0) -> decrec (push_rel (x,None,t) env) c0
-      | Lambda (x,t,c0) -> decrec (push_rel (x,None,t) env) c0
+      | Prod (x,t,c0) -> decrec (push_rel (LocalAssum (x,t)) env) c0
+      | Lambda (x,t,c0) -> decrec (push_rel (LocalAssum (x,t)) env) c0
       | t -> t
   in
   decrec env
@@ -1623,7 +1625,7 @@ let meta_reducible_instance evd b =
 	  with
 	    | Some g -> irec (mkProj (p,g))
 	    | None -> mkProj (p,c))
-    | _ -> map_constr irec u
+    | _ -> Constr.map irec u
   in
   if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
   else irec b.rebus

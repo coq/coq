@@ -19,6 +19,7 @@ open Formula
 open Sequent
 open Globnames
 open Locus
+open Context.Named.Declaration
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 
@@ -34,12 +35,13 @@ let wrap n b continue seq gls=
     if i<=0 then seq else
       match nc with
 	  []->anomaly (Pp.str "Not the expected number of hyps")
-	| ((id,_,typ) as nd)::q->
+	| nd::q->
+            let id = get_id nd in
 	    if occur_var env id (pf_concl gls) ||
 	      List.exists (occur_var_in_decl env id) ctx then
 		(aux (i-1) q (nd::ctx))
 	    else
-	      add_formula Hyp (VarRef id) typ (aux (i-1) q (nd::ctx)) gls in
+	      add_formula Hyp (VarRef id) (get_type nd) (aux (i-1) q (nd::ctx)) gls in
   let seq1=aux n nc [] in
   let seq2=if b then
     add_formula Concl dummy_id (pf_concl gls) seq1 gls else seq1 in

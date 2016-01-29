@@ -9,6 +9,7 @@
 open Util
 open Pp
 open Term
+open Context.Named.Declaration
 
 (* This module implements the abstract interface to goals *)
 (* A general invariant of the module, is that a goal whose associated
@@ -73,7 +74,7 @@ module V82 = struct
     let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
     let evars = Evd.restore_future_goals evars prev_future_goals prev_principal_goal in
     let ctxt = Environ.named_context_of_val hyps in
-    let inst = Array.map_of_list (fun (id, _, _) -> mkVar id) ctxt in
+    let inst = Array.map_of_list (mkVar % get_id) ctxt in
     let ev = Term.mkEvar (evk,inst) in
     (evk, ev, evars)
 
@@ -139,7 +140,7 @@ module V82 = struct
     let env = env sigma gl in
     let genv = Global.env () in
     let is_proof_var decl =
-      try ignore (Environ.lookup_named (Util.pi1 decl) genv); false
+      try ignore (Environ.lookup_named (get_id decl) genv); false
       with Not_found -> true in
     Environ.fold_named_context_reverse (fun t decl ->
 					  if is_proof_var decl then

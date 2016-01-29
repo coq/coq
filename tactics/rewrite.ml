@@ -36,6 +36,7 @@ open Termops
 open Libnames
 open Sigma.Notations
 open Proofview.Notations
+open Context.Named.Declaration
 
 (** Typeclass-based generalized rewriting. *)
 
@@ -134,6 +135,7 @@ module GlobalBindings (M : sig
   val arrow : evars -> evars * constr
 end) = struct
   open M
+  open Context.Rel.Declaration
   let relation : evars -> evars * constr = find_global (fst relation) (snd relation)
 
   let reflexive_type = find_global relation_classes "Reflexive"
@@ -219,8 +221,8 @@ end) = struct
 	    let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
 	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
 	  else
-	    let (evars, b, arg, cstrs) = 
-	      aux (Environ.push_rel (na, None, ty) env) evars b cstrs 
+	    let (evars, b, arg, cstrs) =
+	      aux (Environ.push_rel (LocalAssum (na, ty)) env) evars b cstrs
 	    in
 	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
 	    let pred = mkLambda (na, ty, b) in
@@ -318,7 +320,7 @@ end) = struct
 	    let evars, rb = aux evars env b' (pred n) in
 	      app_poly env evars pointwise_relation [| ty; b'; rb |]
 	  else
-	    let evars, rb = aux evars (Environ.push_rel (na, None, ty) env) b (pred n) in
+	    let evars, rb = aux evars (Environ.push_rel (LocalAssum (na, ty)) env) b (pred n) in
 	      app_poly env evars forall_relation
 		[| ty; mkLambda (na, ty, b); mkLambda (na, ty, rb) |]
 	| _ -> raise Not_found
@@ -469,6 +471,7 @@ let rec decompose_app_rel env evd t =
   | _ -> error "Cannot find a relation to rewrite."
 
 let decompose_applied_relation env sigma (c,l) =
+  let open Context.Rel.Declaration in
   let ctype = Retyping.get_type_of env sigma c in
   let find_rel ty =
     let sigma, cl = Clenv.make_evar_clause env sigma ty in
@@ -491,7 +494,7 @@ let decompose_applied_relation env sigma (c,l) =
     | Some c -> c
     | None ->
 	let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
-	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> n, None, t) ctx)) with
+	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx)) with
 	| Some c -> c
 	| None -> error "Cannot find an homogeneous relation to rewrite."
 
@@ -766,9 +769,9 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 	else TypeGlobal.do_subrelation, TypeGlobal.apply_subrelation
       in
 	Environ.push_named
-	  (Id.of_string "do_subrelation", 
-	   Some (snd (app_poly_sort b env evars dosub [||])), 
-	   snd (app_poly_nocheck env evars appsub [||]))
+	  (LocalDef (Id.of_string "do_subrelation",
+	             snd (app_poly_sort b env evars dosub [||]),
+	             snd (app_poly_nocheck env evars appsub [||])))
 	  env
     in
     let evars, morph = new_cstr_evar evars env' app in
@@ -1110,8 +1113,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       (* 	    | _ -> b') *)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
-	let n' = name_app (fun id -> Tactics.fresh_id_in_env unfresh id env) n in
-	let env' = Environ.push_rel (n', None, t) env in
+        let n' = name_app (fun id -> Tactics.fresh_id_in_env unfresh id env) n in
+        let open Context.Rel.Declaration in
+	let env' = Environ.push_rel (LocalAssum (n', t)) env in
 	let bty = Retyping.get_type_of env' (goalevars evars) b in
 	let unlift = if prop then PropGlobal.unlift_cstr else TypeGlobal.unlift_cstr in
 	let state, b' = s.strategy { state ; env = env' ; unfresh ;
@@ -1495,8 +1499,8 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 (** Insert a declaration after the last declaration it depends on *)
 let rec insert_dependent env decl accu hyps = match hyps with
 | [] -> List.rev_append accu [decl]
-| (id, _, _  as ndecl) :: rem ->
-  if occur_var_in_decl env id decl then
+| ndecl :: rem ->
+  if occur_var_in_decl env (get_id ndecl) decl then
     List.rev_append accu (decl :: hyps)
   else
     insert_dependent env decl (ndecl :: accu) rem
@@ -1506,16 +1510,19 @@ let assert_replacing id newt tac =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let ctx = Environ.named_context env in
-    let after, before = List.split_when (fun (n, b, t) -> Id.equal n id) ctx in
+    let after, before = List.split_when (Id.equal id % get_id) ctx in
     let nc = match before with
     | [] -> assert false
-    | (id, b, _) :: rem -> insert_dependent env (id, None, newt) [] after @ rem
+    | d :: rem -> insert_dependent env (LocalAssum (get_id d, newt)) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Proofview.Refine.refine ~unsafe:false { run = begin fun sigma ->
       let Sigma (ev, sigma, p) = Evarutil.new_evar env' sigma concl in
       let Sigma (ev', sigma, q) = Evarutil.new_evar env sigma newt in
-      let map (n, _, _) = if Id.equal n id then ev' else mkVar n in
+      let map d =
+        let n = get_id d in
+        if Id.equal n id then ev' else mkVar n
+      in
       let (e, _) = destEvar ev in
       Sigma (mkEvar (e, Array.map_of_list map nc), sigma, p +> q)
     end }
@@ -1543,7 +1550,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	    assert_replacing id newt tac
 	| Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_hyp_no_check (id, None, newt)
+            convert_hyp_no_check (LocalAssum (id, newt))
 	| None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
             Proofview.Goal.enter { enter = begin fun gl ->
@@ -2053,7 +2060,8 @@ let setoid_proof ty fn fallback =
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
           let evm = sigma in
-          let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.unsafe_type_of env evm rel)))) in
+          let open Context.Rel.Declaration in
+          let car = get_type (List.hd (fst (Reduction.dest_prod env (Typing.unsafe_type_of env evm rel)))) in
 	    (try init_setoid () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e

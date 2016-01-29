@@ -28,6 +28,7 @@ open Locus
 open Locusops
 open Find_subterm
 open Sigma.Notations
+open Context.Named.Declaration
 
 let keyed_unification = ref (false)
 let _ = Goptions.declare_bool_option {
@@ -58,7 +59,7 @@ let occur_meta_or_undefined_evar evd c =
         | Evar_defined c ->
             occrec c; Array.iter occrec args
         | Evar_empty -> raise Occur)
-    | _ -> iter_constr occrec c
+    | _ -> Constr.iter occrec c
   in try occrec c; false with Occur | Not_found -> true
 
 let occur_meta_evd sigma mv c =
@@ -67,7 +68,7 @@ let occur_meta_evd sigma mv c =
     let c = whd_evar sigma (whd_meta sigma c) in
     match kind_of_term c with
     | Meta mv' when Int.equal mv mv' -> raise Occur
-    | _ -> iter_constr occrec c
+    | _ -> Constr.iter occrec c
   in try occrec c; false with Occur -> true
 
 (* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
@@ -75,7 +76,10 @@ let occur_meta_evd sigma mv c =
 
 let abstract_scheme env evd c l lname_typ =
   List.fold_left2
-    (fun (t,evd) (locc,a) (na,_,ta) ->
+    (fun (t,evd) (locc,a) decl ->
+       let open Context.Rel.Declaration in
+       let na = get_name decl in
+       let ta = get_type decl in
        let na = match kind_of_term a with Var id -> Name id | _ -> na in
 (* [occur_meta ta] test removed for support of eelim/ecase but consequences
    are unclear...
@@ -146,7 +150,7 @@ let rec subst_meta_instances bl c =
     | Meta i ->
       let select (j,_,_) = Int.equal i j in
       (try pi2 (List.find select bl) with Not_found -> c)
-    | _ -> map_constr (subst_meta_instances bl) c
+    | _ -> Constr.map (subst_meta_instances bl) c
 
 (** [env] should be the context in which the metas live *)
 
@@ -164,7 +168,7 @@ let pose_all_metas_as_evars env evd t =
         evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
         ev)
   | _ ->
-      map_constr aux t in
+      Constr.map aux t in
   let c = aux t in
   (* side-effect *)
   (!evdref, c)
@@ -568,8 +572,8 @@ let subst_defined_metas_evars (bl,el) c =
     | Evar (evk,args) ->
       let select (_,(evk',args'),_) = Evar.equal evk evk' && Array.equal Constr.equal args args' in
       (try substrec (pi3 (List.find select el))
-       with Not_found -> map_constr substrec c)
-    | _ -> map_constr substrec c
+       with Not_found -> Constr.map substrec c)
+    | _ -> Constr.map substrec c
   in try Some (substrec c) with Not_found -> None
 
 let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
@@ -1448,10 +1452,10 @@ let indirectly_dependent c d decls =
        it is needed otherwise, as e.g. when abstracting over "2" in
        "forall H:0=2, H=H:>(0=1+1) -> 0=2." where there is now obvious
        way to see that the second hypothesis depends indirectly over 2 *)
-    List.exists (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls
+    List.exists (fun d' -> dependent_in_decl (mkVar (get_id d')) d) decls
 
 let indirect_dependency d decls =
-  pi1 (List.hd (List.filter (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls))
+  decls  |>  List.filter (fun d' -> dependent_in_decl (mkVar (get_id d')) d)  |>  List.hd  |>  get_id
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
   let current_sigma = Sigma.to_evar_map current_sigma in
@@ -1570,7 +1574,8 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   in
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = mkVar id in
-  let compute_dependency _ (hyp,_,_ as d) (sign,depdecls) =
+  let compute_dependency _ d (sign,depdecls) =
+    let hyp = get_id d in
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
         if indirectly_dependent c d depdecls then
@@ -1607,7 +1612,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
           replace_term_occ_modulo occ test mkvarid concl
     in
     let lastlhyp =
-      if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in
+      if List.is_empty depdecls then None else Some (get_id (List.last depdecls)) in
     let res = match out test with
     | None -> None
     | Some (sigma, c) -> Some (Sigma.Unsafe.of_pair (c, sigma))

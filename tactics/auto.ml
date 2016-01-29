@@ -324,7 +324,7 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
           let env = Proofview.Goal.env gl in
           let nf c = Evarutil.nf_evar sigma c in
           let decl = Tacmach.New.pf_last_hyp (Proofview.Goal.assume gl) in
-          let hyp = Context.Named.Declaration.map nf decl in
+          let hyp = Context.Named.Declaration.map_constr nf decl in
 	  let hintl = make_resolve_hyp env sigma hyp
 	  in trivial_fail_db dbg mod_delta db_list
 	       (Hint_db.add_list env sigma hintl local_db)

@@ -43,6 +43,7 @@ open Misctypes
 open Sigma.Notations
 open Proofview.Notations
 open Unification
+open Context.Named.Declaration
 
 (* Options *)
 
@@ -960,7 +961,7 @@ let apply_on_clause (f,t) clause =
 
 let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
   let e = next_ident_away eq_baseid (ids_of_context env) in
-  let e_env = push_named (e,None,t) env in
+  let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) env in
   let discriminator =
     build_discriminator e_env sigma dirn (mkVar e) sort cpath in
   let sigma,(pf, absurd_term), eff = 
@@ -1064,7 +1065,7 @@ let make_tuple env sigma (rterm,rty) lind =
   assert (dependent (mkRel lind) rty);
   let sigdata = find_sigma_data env (get_sort_of env sigma rty) in
   let sigma, a = type_of ~refresh:true env sigma (mkRel lind) in
-  let (na,_,_) = lookup_rel lind env in
+  let na = Context.Rel.Declaration.get_name (lookup_rel lind env) in
   (* We move [lind] to [1] and lift other rels > [lind] by 1 *)
   let rty = lift (1-lind) (liftn lind (lind+1) rty) in
   (* Now [lind] is [mkRel 1] and we abstract on (na:a) *)
@@ -1335,7 +1336,7 @@ let simplify_args env sigma t =
 
 let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   let e = next_ident_away eq_baseid (ids_of_context env) in
-  let e_env = push_named (e, None,t) env in
+  let e_env = push_named (LocalAssum (e,t)) env in
   let evdref = ref sigma in
   let filter (cpath, t1', t2') =
     try
@@ -1612,14 +1613,14 @@ let unfold_body x =
   Proofview.Goal.enter { enter = begin fun gl ->
   (** We normalize the given hypothesis immediately. *)
   let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  let (_, xval, _) = Context.Named.lookup x hyps in
+  let xval = Context.Named.lookup x hyps |> get_value in
   let xval = match xval with
   | None -> errorlabstrm "unfold_body"
     (pr_id x ++ str" is not a defined hypothesis.")
   | Some xval -> pf_nf_evar gl xval
   in
   afterHyp x begin fun aft ->
-  let hl = List.fold_right (fun (y,yval,_) cl -> (y,InHyp) :: cl) aft [] in
+  let hl = List.fold_right (fun d cl -> (get_id d, InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   let reducth h = Proofview.V82.tactic (fun gl -> reduct_in_hyp rfun h gl) in
@@ -1636,9 +1637,10 @@ let restrict_to_eq_and_identity eq = (* compatibility *)
 exception FoundHyp of (Id.t * constr * bool)
 
 (* tests whether hyp [c] is [x = t] or [t = x], [x] not occurring in [t] *)
-let is_eq_x gl x (id,_,c) =
+let is_eq_x gl x d =
+  let id = get_id d in
   try
-    let c = pf_nf_evar gl c in
+    let c = pf_nf_evar gl (get_type d) in
     let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
     if (Term.eq_constr x lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
     if (Term.eq_constr x rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
@@ -1655,11 +1657,12 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
   (* The set of hypotheses using x *)
   let dephyps =
-    List.rev (snd (List.fold_right (fun (id,b,_ as dcl) (deps,allhyps) ->
+    List.rev (snd (List.fold_right (fun dcl (deps,allhyps) ->
+      let id = get_id dcl in
       if not (Id.equal id hyp)
          && List.exists (fun y -> occur_var_in_decl env y dcl) deps
       then
-        ((if b = None then deps else id::deps), id::allhyps)
+        ((if is_local_assum dcl then deps else id::deps), id::allhyps)
       else
         (deps,allhyps))
       hyps
@@ -1683,7 +1686,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
 let subst_one_var dep_proof_ok x =
   Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
-    let (_,xval,_) = pf_get_hyp x gl in
+    let xval = pf_get_hyp x gl |> get_value in
     (* If x has a body, simply replace x with body and clear x *)
     if not (Option.is_empty xval) then tclTHEN (unfold_body x) (clear [x]) else
       (* x is a variable: *)
@@ -1742,14 +1745,14 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let gl = Proofview.Goal.assume gl in
     let env = Proofview.Goal.env gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
-    let test (hyp,_,c) =
+    let test decl =
       try
-        let lbeq,u,(_,x,y) = find_eq_data_decompose c in
+        let lbeq,u,(_,x,y) = find_eq_data_decompose (get_type decl) in
         let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match kind_of_term x, kind_of_term y with
         | Var z, _ | _, Var z when not (is_evaluable env (EvalVarRef z))  ->
-            Some hyp
+            Some (get_id decl)
         | _ ->
             None
       with Constr_matching.PatternMatchingFailure -> None
@@ -1763,7 +1766,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
-    let (_,_,c) = pf_get_hyp hyp gl in
+    let c = pf_get_hyp hyp gl |> get_type in
     let _,_,(_,x,y) = find_eq_data_decompose c in
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
     if Term.eq_constr x y then Proofview.tclUNIT () else
@@ -1831,10 +1834,11 @@ let cond_eq_term c t gl =
 let rewrite_assumption_cond cond_eq_term cl =
   let rec arec hyps gl = match hyps with
     | [] -> error "No such assumption."
-    | (id,_,t) ::rest ->
+    | hyp ::rest ->
+        let id = get_id hyp in
 	begin
 	  try
-            let dir = cond_eq_term t gl in
+            let dir = cond_eq_term (get_type hyp) gl in
 	    general_rewrite_clause dir false (mkVar id,NoBindings) cl
 	  with | Failure _ | UserError _ -> arec rest gl
 	end

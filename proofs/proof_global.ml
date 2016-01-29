@@ -267,18 +267,19 @@ let _ = Goptions.declare_bool_option
       Goptions.optwrite = (fun b -> proof_using_auto_clear := b) }
 
 let set_used_variables l =
+  let open Context.Named.Declaration in
   let env = Global.env () in
   let ids = List.fold_right Id.Set.add l Id.Set.empty in
   let ctx = Environ.keep_hyps env ids in
   let ctx_set =
-    List.fold_right Id.Set.add (List.map pi1 ctx) Id.Set.empty in
+    List.fold_right Id.Set.add (List.map get_id ctx) Id.Set.empty in
   let vars_of = Environ.global_vars_set in
   let aux env entry (ctx, all_safe, to_clear as orig) =
     match entry with
-    | (x,None,_) ->
+    | LocalAssum (x,_) ->
        if Id.Set.mem x all_safe then orig
        else (ctx, all_safe, (Loc.ghost,x)::to_clear) 
-    | (x,Some bo, ty) as decl ->
+    | LocalDef (x,bo, ty) as decl ->
        if Id.Set.mem x all_safe then orig else
        let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
        if Id.Set.subset vars all_safe

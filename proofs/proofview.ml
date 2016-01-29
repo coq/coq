@@ -17,6 +17,7 @@ open Pp
 open Util
 open Proofview_monad
 open Sigma.Notations
+open Context.Named.Declaration
 
 (** Main state of tactics *)
 type proofview = Proofview_monad.proofview
@@ -750,9 +751,15 @@ module Progress = struct
   let eq_named_context_val sigma1 sigma2 ctx1 ctx2 =
     let open Environ in
     let c1 = named_context_of_val ctx1 and c2 = named_context_of_val ctx2 in
-    let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
-      Names.Id.equal i1 i2 && Option.equal (eq_constr sigma1 sigma2) c1 c2 
-      && (eq_constr sigma1 sigma2) t1 t2
+    let eq_named_declaration d1 d2 =
+      match d1, d2 with
+      | LocalAssum (i1,t1), LocalAssum (i2,t2) ->
+         Names.Id.equal i1 i2 && eq_constr sigma1 sigma2 t1 t2
+      | LocalDef (i1,c1,t1), LocalDef (i2,c2,t2) ->
+         Names.Id.equal i1 i2 && eq_constr sigma1 sigma2 c1 c2
+         && eq_constr sigma1 sigma2 t1 t2
+      | _ ->
+         false
     in List.equal eq_named_declaration c1 c2
 
   let eq_evar_body sigma1 sigma2 b1 b2 =
@@ -1075,12 +1082,13 @@ struct
   let typecheck_evar ev env sigma =
     let info = Evd.find sigma ev in
     (** Typecheck the hypotheses. *)
-    let type_hyp (sigma, env) (na, body, t as decl) =
+    let type_hyp (sigma, env) decl =
+      let t = get_type decl in
       let evdref = ref sigma in
       let _ = Typing.sort_of env evdref t in
-      let () = match body with
-      | None -> ()
-      | Some body -> Typing.check env evdref body t
+      let () = match decl with
+      | LocalAssum _ -> ()
+      | LocalDef (_,body,_) -> Typing.check env evdref body t
       in
       (!evdref, Environ.push_named decl env)
     in

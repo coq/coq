@@ -1832,24 +1832,25 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
   auxdefs, MLlet(aux_name, ml, mkMLapp (MLlocal aux_name) (Array.of_list (fv_rel@fv_named)))
 
 and compile_rel env sigma univ auxdefs n =
-  let (_,body,_) = Context.Rel.lookup n env.env_rel_context in
+  let decl = Context.Rel.lookup n env.env_rel_context in
   let n = Context.Rel.length env.env_rel_context - n in
-  match body with
-  | Some t ->
+  let open Context.Rel.Declaration in
+  match decl with
+  | LocalDef (_,t,_) ->
       let code = lambda_of_constr env sigma t in
       let auxdefs,code = compile_with_fv env sigma univ auxdefs None code in
       Glet(Grel n, code)::auxdefs
-  | None -> 
+  | LocalAssum _ ->
       Glet(Grel n, MLprimitive (Mk_rel n))::auxdefs
 
 and compile_named env sigma univ auxdefs id =
-  let (_,body,_) = Context.Named.lookup id env.env_named_context in
-  match body with
-  | Some t ->
+  let open Context.Named.Declaration in
+  match Context.Named.lookup id env.env_named_context with
+  | LocalDef (_,t,_) ->
       let code = lambda_of_constr env sigma t in
       let auxdefs,code = compile_with_fv env sigma univ auxdefs None code in
       Glet(Gnamed id, code)::auxdefs
-  | None -> 
+  | LocalAssum _ ->
       Glet(Gnamed id, MLprimitive (Mk_var id))::auxdefs
 
 let compile_constant env sigma prefix ~interactive con cb =

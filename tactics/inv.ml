@@ -28,6 +28,7 @@ open Misctypes
 open Tacexpr
 open Sigma.Notations
 open Proofview.Notations
+open Context.Named.Declaration
 
 let clear hyps = Proofview.V82.tactic (clear hyps)
 
@@ -181,9 +182,9 @@ let make_inv_predicate env evd indf realargs id status concl =
 let dependent_hyps env id idlist gl =
   let rec dep_rec =function
     | [] -> []
-    | (id1,_,_)::l ->
+    | d::l ->
 	(* Update the type of id1: it may have been subject to rewriting *)
-	let d = pf_get_hyp id1 gl in
+	let d = pf_get_hyp (get_id d) gl in
 	if occur_var_in_decl env id d
         then d :: dep_rec l
         else dep_rec l
@@ -192,8 +193,8 @@ let dependent_hyps env id idlist gl =
 
 let split_dep_and_nodep hyps gl =
   List.fold_right
-    (fun (id,_,_ as d) (l1,l2) ->
-       if var_occurs_in_pf gl id then (d::l1,l2) else (l1,d::l2))
+    (fun d (l1,l2) ->
+       if var_occurs_in_pf gl (get_id d) then (d::l1,l2) else (l1,d::l2))
     hyps ([],[])
 
 (* Computation of dids is late; must have been done in rewrite_equations*)
@@ -296,8 +297,8 @@ let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
       error "Discarding pattern not allowed for inversion equations."
   | IntroAction (IntroRewrite _) ->
       error "Rewriting pattern not allowed for inversion equations."
-  | IntroAction (IntroOrAndPattern (IntroAndPattern [] | IntroOrPattern [[]])) when allow_conj -> (None, [])
-  | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier id)) :: _ as l) | IntroOrPattern [(_,IntroNaming (IntroIdentifier id)) :: _ as l ]))
+  | IntroAction (IntroOrAndPattern (IntroAndPattern [])) when allow_conj -> (None, [])
+  | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier id)) :: _ as l)))
       when allow_conj -> (Some id,l)
   | IntroAction (IntroOrAndPattern (IntroAndPattern _)) ->
       if issimple then
@@ -384,7 +385,7 @@ let rewrite_equations as_mode othin neqns names ba =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let first_eq = ref MoveLast in
-  let avoid = if as_mode then List.map pi1 nodepids else [] in
+  let avoid = if as_mode then List.map get_id nodepids else [] in
   match othin with
     | Some thin ->
         tclTHENLIST
@@ -399,11 +400,11 @@ let rewrite_equations as_mode othin neqns names ba =
 		 (onLastHypId (fun id ->
 		   tclTRY (projectAndApply as_mode thin avoid id first_eq names depids)))))
 	       names;
-	     tclMAP (fun (id,_,_) -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
-               let idopt = if as_mode then Some id else None in
+	     tclMAP (fun d -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
+               let idopt = if as_mode then Some (get_id d) else None in
 	       intro_move idopt (if thin then MoveLast else !first_eq))
 	       nodepids;
-	     (tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids)]
+	     (tclMAP (fun d -> tclTRY (clear [get_id d])) depids)]
     | None ->
         (* simple inversion *)
         if as_mode then

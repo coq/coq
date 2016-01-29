@@ -116,7 +116,7 @@ let get_top_stack pts =
 let get_stack pts = Proof.get_at_focus proof_focus pts
 
 let get_last env = match Environ.named_context env with
-  | (id,_,_)::_ -> id
+  | decl :: _ -> Context.Named.Declaration.get_id decl
   | [] -> error "no previous statement to use"
 
 

@@ -23,22 +23,26 @@ open Cases
 open Logic
 open Printer
 open Evd
+open Context.Rel.Declaration
 
 (* This simplifies the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)
 let contract env lc =
   let l = ref [] in
-  let contract_context (na,c,t) env =
-    match c with
-      | Some c' when isRel c' ->
+  let contract_context decl env =
+    match decl with
+      | LocalDef (_,c',_) when isRel c' ->
           l := (Vars.substl !l c') :: !l;
           env
       | _ ->
-          let t' = Vars.substl !l t in
-          let c' = Option.map (Vars.substl !l) c in
-          let na' = named_hd env t' na in
+          let t' = Vars.substl !l (get_type decl) in
+          let c' = Option.map (Vars.substl !l) (get_value decl) in
+          let na' = named_hd env t' (get_name decl) in
           l := (mkRel 1) :: List.map (Vars.lift 1) !l;
-          push_rel (na',c',t') env in
+          match c' with
+          | None -> push_rel (LocalAssum (na',t')) env
+          | Some c' -> push_rel (LocalDef (na',c',t')) env
+  in
   let env = process_rel_context contract_context env in
   (env, List.map (Vars.substl !l) lc)
 
@@ -136,9 +140,9 @@ let pr_explicit env sigma t1 t2 = pr_explicit_aux env sigma t1 t2 explicit_flags
 
 let pr_db env i =
   try
-    match lookup_rel i env with
-        Name id, _, _ -> pr_id id
-      | Anonymous, _, _ -> str "<>"
+    match lookup_rel i env |> get_name with
+      | Name id -> pr_id id
+      | Anonymous -> str "<>"
   with Not_found -> str "UNBOUND_REL_" ++ int i
 
 let explain_unbound_rel env sigma n =

@@ -133,7 +133,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
    fun dir cstr tac gl ->
     let last_hyp_id =
      match Tacmach.pf_hyps gl with
-        (last_hyp_id,_,_)::_ -> last_hyp_id
+        d :: _ -> Context.Named.Declaration.get_id d
       | _ -> (* even the hypothesis id is missing *)
         raise (Logic.RefinerError (Logic.NoSuchHyp !id))
     in
@@ -142,7 +142,8 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
     match gls with
        g::_ ->
         (match Environ.named_context_of_val (Goal.V82.hyps gl'.Evd.sigma g) with
-            (lastid,_,_)::_ ->
+            d ::_ ->
+              let lastid = Context.Named.Declaration.get_id d in
               if not (Id.equal last_hyp_id lastid) then
                begin
                 let gl'' =

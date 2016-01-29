@@ -16,6 +16,7 @@ open Evd
 open Locus
 open Sigma.Notations
 open Proofview.Notations
+open Context.Named.Declaration
 
 (* The instantiate tactic *)
 
@@ -43,14 +44,14 @@ let instantiate_tac n c ido =
 	    match hloc with
 		InHyp ->
 		  (match decl with
-		      (_,None,typ) -> evar_list typ
+                    | LocalAssum (_,typ) -> evar_list typ
 		    | _ -> error
 			"Please be more specific: in type or value?")
 	      | InHypTypeOnly ->
-		  let (_, _, typ) = decl in evar_list typ
+		  evar_list (get_type decl)
 	      | InHypValueOnly ->
 		  (match decl with
-		      (_,Some body,_) -> evar_list body
+		    | LocalDef (_,body,_) -> evar_list body
 		    | _ -> error "Not a defined hypothesis.") in
   if List.length evl < n then
     error "Not enough uninstantiated existential variables.";

@@ -73,8 +73,9 @@ let judge_of_type u =
 
 let judge_of_relative env n =
   try
-    let (_,_,typ) = lookup_rel n env in
-      lift n typ
+    let open Context.Rel.Declaration in
+    let typ = get_type (lookup_rel n env) in
+    lift n typ
   with Not_found ->
     error_unbound_rel env n
 
@@ -91,7 +92,10 @@ let judge_of_variable env id =
 (* TODO: check order? *)
 let check_hyps_inclusion env f c sign =
   Context.Named.fold_outside
-    (fun (id,_,ty1) () ->
+    (fun decl () ->
+      let open Context.Named.Declaration in
+      let id = get_id decl in
+      let ty1 = get_type decl in
       try
         let ty2 = named_type id env in
         if not (eq_constr ty2 ty1) then raise Exit
@@ -325,6 +329,7 @@ let type_fixpoint env lna lar vdef vdeft =
     Ind et Constructsi un jour cela devient des constructions
     arbitraires et non plus des variables *)
 let rec execute env cstr =
+  let open Context.Rel.Declaration in
   match kind_of_term cstr with
     (* Atomic terms *)
     | Sort (Prop c) ->
@@ -368,13 +373,13 @@ let rec execute env cstr =
 
     | Lambda (name,c1,c2) ->
       let _ = execute_is_type env c1 in
-      let env1 = push_rel (name,None,c1) env in
+      let env1 = push_rel (LocalAssum (name,c1)) env in
       let c2t = execute env1 c2 in
         judge_of_abstraction env name c1 c2t
 
     | Prod (name,c1,c2) ->
       let vars = execute_is_type env c1 in
-      let env1 = push_rel (name,None,c1) env in
+      let env1 = push_rel (LocalAssum (name,c1)) env in
       let vars' = execute_is_type env1 c2 in
 	judge_of_product env name vars vars'
 
@@ -382,7 +387,7 @@ let rec execute env cstr =
       let c1t = execute env c1 in
       let _c2s = execute_is_type env c2 in
       let _ = judge_of_cast env c1 c1t DEFAULTcast c2 in
-      let env1 = push_rel (name,Some c1,c2) env in
+      let env1 = push_rel (LocalDef (name,c1,c2)) env in
       let c3t = execute env1 c3 in
 	subst1 c1 c3t
 

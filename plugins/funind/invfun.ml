@@ -5,6 +5,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+
 open Tacexpr
 open Declarations
 open Errors
@@ -20,6 +21,7 @@ open Indfun_common
 open Tacmach
 open Misctypes
 open Termops
+open Context.Rel.Declaration
 
 (* Some pretty printing function for debugging purpose *)
 
@@ -134,18 +136,21 @@ let generate_type evd g_to_f f graph i =
   let fun_ctxt,res_type =
     match ctxt with
       | [] | [_] -> anomaly (Pp.str "Not a valid context")
-      | (_,_,res_type)::fun_ctxt -> fun_ctxt,res_type
+      | decl :: fun_ctxt -> fun_ctxt, get_type decl
   in
   let rec args_from_decl i accu = function
   | [] -> accu
-  | (_, Some _, _) :: l ->
+  | LocalDef _ :: l ->
     args_from_decl (succ i) accu l
   | _ :: l ->
     let t = mkRel i in
     args_from_decl (succ i) (t :: accu) l
   in
   (*i We need to name the vars [res] and [fv] i*)
-  let filter = function (Name id,_,_) -> Some id | (Anonymous,_,_) -> None in
+  let filter = fun decl -> match get_name decl with
+			   | Name id -> Some id
+			   | Anonymous -> None
+  in
   let named_ctxt = List.map_filter filter fun_ctxt in
   let res_id = Namegen.next_ident_away_in_goal (Id.of_string "_res") named_ctxt in
   let fv_id = Namegen.next_ident_away_in_goal (Id.of_string "fv") (res_id :: named_ctxt) in
@@ -171,12 +176,12 @@ let generate_type evd g_to_f f graph i =
     \[\forall (x_1:t_1)\ldots(x_n:t_n), let fv := f x_1\ldots x_n in, forall res,  \]
     i*)
   let pre_ctxt =
-    (Name res_id,None,lift 1 res_type)::(Name fv_id,Some (mkApp(f,args_as_rels)),res_type)::fun_ctxt
+    LocalAssum (Name res_id, lift 1 res_type) :: LocalDef (Name fv_id, mkApp (f,args_as_rels), res_type) :: fun_ctxt
   in
   (*i and we can return the solution depending on which lemma type we are defining i*)
   if g_to_f
-  then (Anonymous,None,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
-  else (Anonymous,None,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
+  then LocalAssum (Anonymous,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
+  else LocalAssum (Anonymous,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
 
 
 (*
@@ -260,10 +265,10 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
     (* and built the intro pattern for each of them *)
     let intro_pats =
       List.map
-	(fun (_,_,br_type) ->
+	(fun decl ->
 	   List.map
 	     (fun id -> Loc.ghost, IntroNaming (IntroIdentifier id))
-	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
+	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum (get_type decl)))))
 	)
 	branches
     in
@@ -390,10 +395,10 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	(fun ((_,(ctxt,concl))) ->
 	   match ctxt with
 	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context")
-	     | hres::res::(x,_,t)::ctxt ->
+	     | hres::res::decl::ctxt ->
 		let res = Termops.it_mkLambda_or_LetIn
 			    (Termops.it_mkProd_or_LetIn concl [hres;res])
-			    ((x,None,t)::ctxt)
+			    (LocalAssum (get_name decl, get_type decl) :: ctxt)
 		in
 		res
 	)
@@ -408,8 +413,8 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
     let bindings =
       let params_bindings,avoid =
 	List.fold_left2
-	  (fun (bindings,avoid) (x,_,_) p ->
-	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
+	  (fun (bindings,avoid) decl p ->
+	     let id = Namegen.next_ident_away (Nameops.out_name (get_name decl)) avoid in
 	     p::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
@@ -418,8 +423,8 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       in
       let lemmas_bindings =
 	List.rev (fst  (List.fold_left2
-	  (fun (bindings,avoid) (x,_,_) p ->
-	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
+	  (fun (bindings,avoid) decl p ->
+	     let id = Namegen.next_ident_away (Nameops.out_name (get_name decl)) avoid in
 	     (nf_zeta p)::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
@@ -455,9 +460,10 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
    generalize every hypothesis which depends of [x] but [hyp]
 *)
 let generalize_dependent_of x hyp g =
+  let open Context.Named.Declaration in
   tclMAP
     (function
-       | (id,None,t) when not (Id.equal id hyp) &&
+       | LocalAssum (id,t) when not (Id.equal id hyp) &&
 	   (Termops.occur_var (pf_env g) x t) -> tclTHEN (Tactics.generalize [mkVar id]) (thin [id])
        | _ -> tclIDTAC
     )
@@ -663,10 +669,10 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     let branches = List.rev princ_infos.branches in
     let intro_pats =
       List.map
-	(fun (_,_,br_type) ->
+	(fun decl ->
 	   List.map
 	     (fun id -> id)
-	     (generate_fresh_id (Id.of_string "y") ids (nb_prod br_type))
+	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (get_type decl)))
 	)
 	branches
     in

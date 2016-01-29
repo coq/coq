@@ -20,6 +20,7 @@ open Reduction
 open Typeops
 open Entries
 open Pp
+open Context.Rel.Declaration
 
 (* Tell if indices (aka real arguments) contribute to size of inductive type *)
 (* If yes, this is compatible with the univalent model *)
@@ -122,7 +123,7 @@ let infos_and_sort env t =
       match kind_of_term t with
       | Prod (name,c1,c2) ->
         let varj = infer_type env c1 in
-	let env1 = Environ.push_rel (name,None,varj.utj_val) env in
+	let env1 = Environ.push_rel (LocalAssum (name,varj.utj_val)) env in
 	let max = Universe.sup max (univ_of_sort varj.utj_type) in
 	  aux env1 c2 max
     | _ when is_constructor_head t -> max
@@ -168,12 +169,14 @@ let infer_constructor_packet env_ar_par params lc =
 (* If indices matter *)
 let cumulate_arity_large_levels env sign =
   fst (List.fold_right
-    (fun (_,b,t as d) (lev,env) ->
-      if Option.is_empty b then
+    (fun d (lev,env) ->
+     match d with
+     | LocalAssum (_,t) ->
 	let tj = infer_type env t in
 	let u = univ_of_sort tj.utj_type in
 	  (Universe.sup u lev, push_rel d env)
-      else lev, push_rel d env)
+     | LocalDef _ ->
+	lev, push_rel d env)
     sign (Universe.type0m,env))
 
 let is_impredicative env u =
@@ -184,12 +187,12 @@ let is_impredicative env u =
    from the most recent and ignoring let-definitions) is not contributing 
    or is Some u_k if its level is u_k and is contributing. *)
 let param_ccls params =
-  let fold acc = function (_, None, p) -> 
+  let fold acc = function (LocalAssum (_, p)) ->
       (let c = strip_prod_assum p in
       match kind_of_term c with
         | Sort (Type u) -> Univ.Universe.level u
         | _ -> None) :: acc
-    | _ -> acc 
+    | LocalDef _ -> acc
   in
   List.fold_left fold [] params
 
@@ -249,7 +252,7 @@ let typecheck_inductive env mie =
 	 let full_arity = it_mkProd_or_LetIn arity params in
 	 let id = ind.mind_entry_typename in
 	 let env_ar' =
-           push_rel (Name id, None, full_arity) env_ar in
+           push_rel (LocalAssum (Name id, full_arity)) env_ar in
              (* (add_constraints cst2 env_ar) in *)
 	   (env_ar', (id,full_arity,sign @ params,expltype,deflev,inflev)::l))
       (env',[])
@@ -390,7 +393,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
   let nhyps = List.length hyps in
   let rec check k index = function
     | [] -> ()
-    | (_,Some _,_)::hyps -> check k (index+1) hyps
+    | LocalDef _ :: hyps -> check k (index+1) hyps
     | _::hyps ->
         match kind_of_term (whd_betadeltaiota env lpar.(k)) with
 	  | Rel w when Int.equal w index -> check (k-1) (index+1) hyps
@@ -412,7 +415,7 @@ if Int.equal nmr 0 then 0 else
       function
 	  ([],_) -> nmr
 	| (_,[]) -> assert false (* |hyps|>=nmr *)
-	| (lp,(_,Some _,_)::hyps) -> find k (index-1) (lp,hyps)
+	| (lp, LocalDef _ :: hyps) -> find k (index-1) (lp,hyps)
 	| (p::lp,_::hyps) ->
        ( match kind_of_term (whd_betadeltaiota env p) with
 	  | Rel w when Int.equal w index -> find (k+1) (index-1) (lp,hyps)
@@ -426,15 +429,15 @@ if Int.equal nmr 0 then 0 else
    [lra] is the list of recursive tree of each variable
  *)
 let ienv_push_var (env, n, ntypes, lra) (x,a,ra) =
- (push_rel (x,None,a) env, n+1, ntypes, (Norec,ra)::lra)
+  (push_rel (LocalAssum (x,a)) env, n+1, ntypes, (Norec,ra)::lra)
 
 let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lpar) =
   let auxntyp = 1 in
   let specif = (lookup_mind_specif env mi, u) in
   let ty = type_of_inductive env specif in
   let env' =
-    push_rel (Anonymous,None,
-              hnf_prod_applist env ty lpar) env in
+    let decl = LocalAssum (Anonymous, hnf_prod_applist env ty lpar) in
+    push_rel decl env in
   let ra_env' =
     (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
@@ -726,9 +729,9 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
     let body = mkCase (ci, p, mkRel 1, [|lift 1 branch|]) in
       it_mkLambda_or_LetIn (mkLambda (x,indty,body)) params
   in
-  let projections (na, b, t) (i, j, kns, pbs, subst, letsubst) =
-    match b with
-    | Some c ->
+  let projections decl (i, j, kns, pbs, subst, letsubst) =
+    match decl with
+    | LocalDef (na,c,t) ->
         (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- c(params,field1,..,fieldj)] *)
         let c = liftn 1 j c in
@@ -746,7 +749,7 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
            to [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj+1)] *)
         let letsubst = c2 :: letsubst in
         (i, j+1, kns, pbs, subst, letsubst)
-    | None ->
+    | LocalAssum (na,t) ->
       match na with
       | Name id ->
 	let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in

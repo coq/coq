@@ -35,7 +35,7 @@ type object_pr = {
   print_syntactic_def       : kernel_name -> std_ppcmds;
   print_module              : bool -> Names.module_path -> std_ppcmds;
   print_modtype             : module_path -> std_ppcmds;
-  print_named_decl          : Id.t * constr option * types -> std_ppcmds;
+  print_named_decl          : Context.Named.Declaration.t -> std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> Term.constr * Term.types -> Pp.std_ppcmds;
@@ -132,7 +132,8 @@ let print_renames_list prefix l =
 let need_expansion impl ref =
   let typ = Global.type_of_global_unsafe ref in
   let ctx = prod_assum typ in
-  let nprods = List.count (fun (_,b,_) -> Option.is_empty b) ctx in
+  let open Context.Rel.Declaration in
+  let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
     let _,lastimpl = List.chop nprods impl in
       List.exists is_status_implicit lastimpl
@@ -168,8 +169,10 @@ type opacity =
   | FullyOpaque
   | TransparentMaybeOpacified of Conv_oracle.level
 
-let opacity env = function
-  | VarRef v when not (Option.is_empty (pi2 (Environ.lookup_named v env))) ->
+let opacity env =
+  let open Context.Named.Declaration in
+  function
+  | VarRef v when is_local_def (Environ.lookup_named v env) ->
       Some(TransparentMaybeOpacified
         (Conv_oracle.get_strategy (Environ.oracle env) (VarKey v)))
   | ConstRef cst ->
@@ -440,11 +443,13 @@ let print_named_def name body typ =
 let print_named_assum name typ =
   str "*** [" ++ str name ++ str " : " ++ pr_ltype typ ++ str "]"
 
-let gallina_print_named_decl (id,c,typ) =
-  let s = Id.to_string id in
-  match c with
-    | Some body -> print_named_def s body typ
-    | None -> print_named_assum s typ
+let gallina_print_named_decl =
+  let open Context.Named.Declaration in
+  function
+  | LocalAssum (id, typ) ->
+     print_named_assum (Id.to_string id) typ
+  | LocalDef (id, body, typ) ->
+     print_named_def (Id.to_string id) body typ
 
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context
@@ -721,8 +726,8 @@ let print_any_name = function
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
     if not (DirPath.is_empty dir) then raise Not_found;
-    let (_,c,typ) = Global.lookup_named str in
-    (print_named_decl (str,c,typ))
+    let open Context.Named.Declaration in
+    str |> Global.lookup_named |> set_id str |> print_named_decl
   with Not_found ->
     errorlabstrm
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
@@ -750,8 +755,8 @@ let print_opaque_name qid =
 	let ty = Universes.unsafe_type_of_global gr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
-        let (_,c,ty) = lookup_named id env in
-	print_named_decl (id,c,ty)
+        let open Context.Named.Declaration in
+        lookup_named id env |> set_id id |> print_named_decl
 
 let print_about_any loc k =
   match k with

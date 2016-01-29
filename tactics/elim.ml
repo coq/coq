@@ -16,6 +16,7 @@ open Tacmach.New
 open Tacticals.New
 open Tactics
 open Proofview.Notations
+open Context.Named.Declaration
 
 (* Supposed to be called without as clause *)
 let introElimAssumsThen tac ba =
@@ -137,7 +138,8 @@ let induction_trailer abs_i abs_j bargs =
           in
 	  let (hyps,_) =
             List.fold_left
-	      (fun (bring_ids,leave_ids) (cid,_,_ as d) ->
+	      (fun (bring_ids,leave_ids) d ->
+                 let cid = get_id d in
                  if not (List.mem cid leave_ids)
                  then (d::bring_ids,leave_ids)
                  else (bring_ids,cid::leave_ids))

@@ -87,10 +87,18 @@ let is_opaque cb = match cb.const_body with
 
 (** {7 Constant substitutions } *)
 
-let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = Option.smartmap (subst_mps sub) copt in
-  let t' = subst_mps sub t in
-  if copt == copt' && t == t' then x else (id,copt',t')
+let subst_rel_declaration sub x =
+  let open Context.Rel.Declaration in
+  match x with
+  | LocalAssum (id,t) ->
+     let t' = subst_mps sub t in
+     if t == t' then x
+     else LocalAssum (id,t')
+  | LocalDef (id,v,t) ->
+     let v' = subst_mps sub v in
+     let t' = subst_mps sub t in
+     if v == v' && t == t' then x
+     else LocalDef (id,v',t')
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
@@ -140,11 +148,20 @@ let subst_const_body sub cb =
     share internal fields (e.g. constr), and not the records
     themselves. But would it really bring substantial gains ? *)
 
-let hcons_rel_decl ((n,oc,t) as d) =
-  let n' = Names.Name.hcons n
-  and oc' = Option.smartmap Term.hcons_constr oc
-  and t' = Term.hcons_types t
-  in if n' == n && oc' == oc && t' == t then d else (n',oc',t')
+let hcons_rel_decl d =
+  let open Context.Rel.Declaration in
+  match d with
+  | LocalAssum (n,t) ->
+     let n' = Names.Name.hcons n
+     and t' = Term.hcons_types t in
+     if n' == n && t' == t then d
+     else LocalAssum (n',t')
+  | LocalDef (n,v,t) ->
+     let n' = Names.Name.hcons n
+     and v' = Term.hcons_constr v
+     and t' = Term.hcons_types t in
+     if n' == n && v' == v && t' == t then d
+     else LocalDef (n',v',t')
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 

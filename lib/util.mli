@@ -84,6 +84,7 @@ val matrix_transpose : 'a list list -> 'a list list
 
 val identity : 'a -> 'a
 val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
+val (%) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 val const : 'a -> 'b -> 'a
 val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit

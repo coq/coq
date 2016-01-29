@@ -80,7 +80,7 @@ let push_rel d env =
 let push_rel_context ctxt x = fold_rel_context push_rel ctxt ~init:x
 
 let push_rec_types (lna,typarray,_) env =
-  let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
+  let ctxt = Array.map2_i (fun i na t -> LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
 (* Universe constraints *)

@@ -76,13 +76,15 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
 let env_nf_evar sigma env =
+  let open Context.Rel.Declaration in
   process_rel_context
-    (fun d e -> push_rel (Context.Rel.Declaration.map (nf_evar sigma) d) e) env
+    (fun d e -> push_rel (map_constr (nf_evar sigma) d) e) env
 
 let env_nf_betaiotaevar sigma env =
+  let open Context.Rel.Declaration in
   process_rel_context
     (fun d e ->
-      push_rel (Context.Rel.Declaration.map (Reductionops.nf_betaiota sigma) d) e) env
+      push_rel (map_constr (Reductionops.nf_betaiota sigma) d) e) env
 
 let nf_evars_universes evm =
   Universes.nf_evars_and_universes_opt_subst (Reductionops.safe_evar_value evm) 
@@ -149,11 +151,16 @@ let is_ground_term evd t =
   not (has_undefined_evars evd t)
 
 let is_ground_env evd env =
-  let is_ground_decl = function
-      (_,Some b,_) -> is_ground_term evd b
+  let open Context.Rel.Declaration in
+  let is_ground_rel_decl = function
+    | LocalDef (_,b,_) -> is_ground_term evd b
     | _ -> true in
-  List.for_all is_ground_decl (rel_context env) &&
-  List.for_all is_ground_decl (named_context env)
+  let open Context.Named.Declaration in
+  let is_ground_named_decl = function
+    | LocalDef (_,b,_) -> is_ground_term evd b
+    | _ -> true in
+  List.for_all is_ground_rel_decl (rel_context env) &&
+  List.for_all is_ground_named_decl (named_context env)
 
 (* Memoization is safe since evar_map and environ are applicative
    structures *)
@@ -231,10 +238,11 @@ let non_instantiated sigma =
 (************************)
 
 let make_pure_subst evi args =
+  let open Context.Named.Declaration in
   snd (List.fold_right
-    (fun (id,b,c) (args,l) ->
+    (fun decl (args,l) ->
       match args with
-        | a::rest -> (rest, (id,a)::l)
+        | a::rest -> (rest, (get_id decl, a)::l)
         | _ -> anomaly (Pp.str "Instance does not match its signature"))
     (evar_filtered_context evi) (Array.rev_to_list args,[]))
 
@@ -276,17 +284,15 @@ let subst2 subst vsubst c =
 
 let push_rel_context_to_named_context env typ =
   (* compute the instances relative to the named context and rel_context *)
-  let ids = List.map pi1 (named_context env) in
+  let open Context.Named.Declaration in
+  let ids = List.map get_id (named_context env) in
   let inst_vars = List.map mkVar ids in
   let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
-  let replace_var_named_declaration id0 id (id',b,t) =
+  let replace_var_named_declaration id0 id decl =
+    let id' = get_id decl in
     let id' = if Id.equal id0 id' then id else id' in
     let vsubst = [id0 , mkVar id] in
-    let b = match b with
-    | None -> None
-    | Some c -> Some (replace_vars vsubst c)
-    in
-    id', b, replace_vars vsubst t
+    decl |> set_id id' |> map_constr (replace_vars vsubst)
   in
   let replace_var_named_context id0 id  env =
     let nc = Environ.named_context env in
@@ -303,7 +309,12 @@ let push_rel_context_to_named_context env typ =
   (* We do keep the instances corresponding to local definition (see above) *)
   let (subst, vsubst, _, env) =
     Context.Rel.fold_outside
-      (fun (na,c,t) (subst, vsubst, avoid, env) ->
+      (fun decl (subst, vsubst, avoid, env) ->
+        let open Context.Rel.Declaration in
+        let na = get_name decl in
+	let c = get_value decl in
+	let t = get_type decl in
+        let open Context.Named.Declaration in
         let id =
           (* ppedrot: we want to infer nicer names for the refine tactic, but
              keeping at the same time backward compatibility in other code
@@ -321,7 +332,10 @@ let push_rel_context_to_named_context env typ =
                context. Unless [id] is a section variable. *)
             let subst = List.map (replace_vars [id0,mkVar id]) subst in
             let vsubst = (id0,mkVar id)::vsubst in
-            let d = (id0, Option.map (subst2 subst vsubst) c, subst2 subst vsubst t) in
+            let d = match c with
+              | None -> LocalAssum (id0, subst2 subst vsubst t)
+              | Some c -> LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
+            in
             let env = replace_var_named_context id0  id env in
             (mkVar id0 :: subst, vsubst, id::avoid, push_named d env)
         | _ ->
@@ -329,7 +343,10 @@ let push_rel_context_to_named_context env typ =
                incorrect. We revert to a less robust behaviour where
                the new binder has name [id]. Which amounts to the same
                behaviour than when [id=id0]. *)
-	    let d = (id,Option.map (subst2 subst vsubst) c,subst2 subst vsubst t) in
+            let d = match c with
+              | None -> LocalAssum (id, subst2 subst vsubst t)
+              | Some c -> LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
+            in
 	    (mkVar id :: subst, vsubst, id::avoid, push_named d env)
       )
       (rel_context env) ~init:([], [], ids, env) in
@@ -477,7 +494,7 @@ let rec check_and_clear_in_constr env evdref err ids c =
 	    let ctxt = Evd.evar_filtered_context evi in
 	    let (rids,filter) =
               List.fold_right2
-                (fun (rid, ob,c as h) a (ri,filter) ->
+                (fun h a (ri,filter) ->
                   try
                   (* Check if some id to clear occurs in the instance
                      a of rid in ev and remember the dependency *)
@@ -493,7 +510,8 @@ let rec check_and_clear_in_constr env evdref err ids c =
                     let () = Id.Map.iter check ri in
                   (* No dependency at all, we can keep this ev's context hyp *)
                     (ri, true::filter)
-                  with Depends id -> (Id.Map.add rid id ri, false::filter))
+                  with Depends id -> let open Context.Named.Declaration in
+                                     (Id.Map.add (get_id h) id ri, false::filter))
 		ctxt (Array.to_list l) (Id.Map.empty,[]) in
 	    (* Check if some rid to clear in the context of ev has dependencies
 	       in the type of ev and adjust the source of the dependency *)
@@ -528,11 +546,10 @@ let clear_hyps_in_evi_main env evdref hyps terms ids =
   let terms =
     List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids) terms in
   let nhyps =
-    let check_context ((id,ob,c) as decl) =
-      let err = OccurHypInSimpleClause (Some id) in
-      let ob' = Option.smartmap (fun c -> check_and_clear_in_constr env evdref err ids c) ob in
-      let c' = check_and_clear_in_constr env evdref err ids c in
-      if ob == ob' && c == c' then decl else (id, ob', c')
+    let open Context.Named.Declaration in
+    let check_context decl =
+      let err = OccurHypInSimpleClause (Some (get_id decl)) in
+      map_constr (check_and_clear_in_constr env evdref err ids) decl
     in
     let check_value vk = match force_lazy_val vk with
     | None -> vk
@@ -570,11 +587,12 @@ let process_dependent_evar q acc evm is_dependent e =
   (* Queues evars appearing in the types of the goal (conclusion, then
      hypotheses), they are all dependent. *)
   queue_term q true evi.evar_concl;
-  List.iter begin fun (_,b,t) ->
-    queue_term q true t;
-    match b with
-    | None -> ()
-    | Some b -> queue_term q true b
+  List.iter begin fun decl ->
+    let open Context.Named.Declaration in
+    queue_term q true (get_type decl);
+    match decl with
+    | LocalAssum _ -> ()
+    | LocalDef (_,b,_) -> queue_term q true b
   end (Environ.named_context_of_val evi.evar_hyps);
   match evi.evar_body with
   | Evar_empty ->
@@ -625,11 +643,11 @@ let undefined_evars_of_term evd t =
   evrec Evar.Set.empty t
 
 let undefined_evars_of_named_context evd nc =
-  List.fold_right (fun (_, b, t) s ->
-    Option.fold_left (fun s t ->
-      Evar.Set.union s (undefined_evars_of_term evd t))
-      (Evar.Set.union s (undefined_evars_of_term evd t)) b)
-    nc Evar.Set.empty
+  let open Context.Named.Declaration in
+  Context.Named.fold_outside
+    (fold (fun c s -> Evar.Set.union s (undefined_evars_of_term evd c)))
+    nc
+    ~init:Evar.Set.empty
 
 let undefined_evars_of_evar_info evd evi =
   Evar.Set.union (undefined_evars_of_term evd evi.evar_concl)
@@ -709,6 +727,7 @@ let idx = Namegen.default_dependent_ident
 (* Refining an evar to a product *)
 
 let define_pure_evar_as_product evd evk =
+  let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
@@ -717,7 +736,7 @@ let define_pure_evar_as_product evd evk =
   let evd1,(dom,u1) =
     new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi) in
   let evd2,rng =
-    let newenv = push_named (id, None, dom) evenv in
+    let newenv = push_named (LocalAssum (id, dom)) evenv in
     let src = evar_source evk evd1 in
     let filter = Filter.extend 1 (evar_filter evi) in
       if is_prop_sort s then
@@ -756,6 +775,7 @@ let define_evar_as_product evd (evk,args) =
 *)
 
 let define_pure_evar_as_lambda env evd evk =
+  let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
   let typ = whd_betadeltaiota evenv evd (evar_concl evi) in
@@ -766,7 +786,7 @@ let define_pure_evar_as_lambda env evd evk =
   let avoid = ids_of_named_context (evar_context evi) in
   let id =
     next_name_away_with_default_using_types "x" na avoid (whd_evar evd dom) in
-  let newenv = push_named (id, None, dom) evenv in
+  let newenv = push_named (LocalAssum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
   let evd2,body = new_evar_unsafe newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in

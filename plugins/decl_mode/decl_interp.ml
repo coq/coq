@@ -403,7 +403,7 @@ let interp_suffices_clause env sigma (hyps,cot)=
     match hyp with
 	(Hprop st | Hvar st) ->
 	  match st.st_label with
-	      Name id -> Environ.push_named (id,None,st.st_it) env0
+	      Name id -> Environ.push_named (Context.Named.Declaration.LocalAssum (id,st.st_it)) env0
 	    | _ -> env in
   let nenv = List.fold_right push_one locvars env in
     nenv,res

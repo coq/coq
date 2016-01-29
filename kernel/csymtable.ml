@@ -189,16 +189,18 @@ and slot_for_fv env fv =
       let nv = Pre_env.lookup_named_val id env in
       begin match force_lazy_val nv with
       | None ->
-          let _, b, _ = Context.Named.lookup id env.env_named_context in
-          fill_fv_cache nv id val_of_named idfun b
+         let open Context.Named in
+         let open Context.Named.Declaration in
+         fill_fv_cache nv id val_of_named idfun (lookup id env.env_named_context |> get_value)
       | Some (v, _) -> v
       end
   | FVrel i ->
       let rv = Pre_env.lookup_rel_val i env in
       begin match force_lazy_val rv with
       | None ->
-          let _, b, _ = Context.Rel.lookup i env.env_rel_context in
-          fill_fv_cache rv i val_of_rel env_of_rel b
+         let open Context.Rel in
+         let open Context.Rel.Declaration in
+	 fill_fv_cache rv i val_of_rel env_of_rel (lookup i env.env_rel_context |> get_value)
       | Some (v, _) -> v
       end
   | FVuniv_var idu ->

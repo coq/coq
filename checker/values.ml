@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 7c050ff1db22f14ee3a4c44aae533082 checker/cic.mli
+MD5 9f7fd499f812b6548a55f7067e6a9d06 checker/cic.mli
 
 *)
 
@@ -154,8 +154,8 @@ and v_prec = Tuple ("prec_declaration",
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
 
-
-let v_rdecl = v_tuple "rel_declaration" [|v_name;Opt v_constr;v_constr|]
+let v_rdecl = v_sum "rel_declaration" 0 [| [|v_name; v_constr|];               (* LocalAssum *)
+                                           [|v_name; v_constr; v_constr|] |]   (* LocalDef *)
 let v_rctxt = List v_rdecl
 
 let v_section_ctxt = v_enum "emptylist" 1

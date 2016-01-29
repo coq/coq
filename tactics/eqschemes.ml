@@ -58,6 +58,7 @@ open Inductiveops
 open Ind_tables
 open Indrec
 open Sigma.Notations
+open Context.Rel.Declaration
 
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
@@ -104,7 +105,7 @@ let get_sym_eq_data env (ind,u) =
     error "Not an inductive type with a single constructor.";
   let arityctxt = Vars.subst_instance_context u mip.mind_arity_ctxt in
   let realsign,_ = List.chop mip.mind_nrealdecls arityctxt in
-  if List.exists (fun (_,b,_) -> not (Option.is_empty b)) realsign then
+  if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported.";
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
@@ -139,7 +140,7 @@ let get_non_sym_eq_data env (ind,u) =
     error "Not an inductive type with a single constructor.";
   let arityctxt = Vars.subst_instance_context u mip.mind_arity_ctxt in
   let realsign,_ = List.chop mip.mind_nrealdecls arityctxt in
-  if List.exists (fun (_,b,_) -> not (Option.is_empty b)) realsign then
+  if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported";
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
@@ -173,7 +174,7 @@ let build_sym_scheme env ind =
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
-    name_context env ((Name varH,None,applied_ind)::realsign) in
+    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let c = 
   (my_it_mkLambda_or_LetIn paramsctxt
@@ -232,7 +233,7 @@ let build_sym_involutive_scheme env ind =
          (Context.Rel.to_extended_vect (nrealargs+1) mib.mind_params_ctxt)
          (rel_vect (nrealargs+1) nrealargs)) in
   let realsign_ind =
-    name_context env ((Name varH,None,applied_ind)::realsign) in
+    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let c = 
     (my_it_mkLambda_or_LetIn paramsctxt
@@ -352,9 +353,9 @@ let build_l2r_rew_scheme dep env ind kind =
         rel_vect 0 nrealargs]) in
   let realsign_P = lift_rel_context nrealargs realsign in
   let realsign_ind_P =
-    name_context env ((Name varH,None,applied_ind_P)::realsign_P) in
+    name_context env ((LocalAssum (Name varH,applied_ind_P))::realsign_P) in
   let realsign_ind_G =
-    name_context env ((Name varH,None,applied_ind_G)::
+    name_context env ((LocalAssum (Name varH,applied_ind_G))::
                       lift_rel_context (nrealargs+3) realsign) in
   let applied_sym_C n =
      mkApp(sym,
@@ -465,9 +466,9 @@ let build_l2r_forward_rew_scheme dep env ind kind =
         rel_vect (2*nrealargs+1) nrealargs]) in
   let realsign_P n = lift_rel_context (nrealargs*n+n) realsign in
   let realsign_ind =
-    name_context env ((Name varH,None,applied_ind)::realsign) in
+    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
   let realsign_ind_P n aP =
-    name_context env ((Name varH,None,aP)::realsign_P n) in
+    name_context env ((LocalAssum (Name varH,aP))::realsign_P n) in
   let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
@@ -545,7 +546,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let varP = fresh env (Id.of_string "P") in
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
-    name_context env ((Name varH,None,applied_ind)::realsign) in
+    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
   let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
@@ -599,9 +600,9 @@ let fix_r2l_forward_rew_scheme (c, ctx') =
   | hp :: p :: ind :: indargs ->
      let c' = 
       my_it_mkLambda_or_LetIn indargs
-	(mkLambda_or_LetIn (Context.Rel.Declaration.map (liftn (-1) 1) p)
-	  (mkLambda_or_LetIn (Context.Rel.Declaration.map (liftn (-1) 2) hp)
-	    (mkLambda_or_LetIn (Context.Rel.Declaration.map (lift 2) ind)
+        (mkLambda_or_LetIn (map_constr (liftn (-1) 1) p)
+	  (mkLambda_or_LetIn (map_constr (liftn (-1) 2) hp)
+	    (mkLambda_or_LetIn (map_constr (lift 2) ind)
 	      (Reductionops.whd_beta Evd.empty
 		(applist (c,
 	          Context.Rel.to_extended_list 3 indargs @ [mkRel 1;mkRel 3;mkRel 2]))))))
@@ -737,10 +738,10 @@ let build_congr env (eq,refl,ctx) ind =
   let arityctxt = Vars.subst_instance_context u mip.mind_arity_ctxt in
   let paramsctxt = Vars.subst_instance_context u mib.mind_params_ctxt in
   let realsign,_ = List.chop mip.mind_nrealdecls arityctxt in
-  if List.exists (fun (_,b,_) -> not (Option.is_empty b)) realsign then
+  if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported.";
   let env_with_arity = push_rel_context arityctxt env in
-  let (_,_,ty) = lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity in
+  let ty = get_type (lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity) in
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
   if Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt) then

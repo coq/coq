@@ -24,6 +24,7 @@ open Declarations
 open Glob_term
 open Glob_termops
 open Decl_kinds
+open Context.Rel.Declaration
 
 (** {1 Utilities}  *)
 
@@ -134,9 +135,9 @@ let showind (id:Id.t) =
   let cstrid = Constrintern.global_reference id in
   let ind1,cstrlist = Inductiveops.find_inductive (Global.env()) Evd.empty cstrid in
   let mib1,ib1 = Inductive.lookup_mind_specif (Global.env()) (fst ind1) in
-  List.iter (fun (nm, optcstr, tp) ->
-    print_string (string_of_name nm^":");
-    prconstr tp; print_string "\n")
+  List.iter (fun decl ->
+    print_string (string_of_name (Context.Rel.Declaration.get_name decl) ^ ":");
+    prconstr (get_type decl); print_string "\n")
     ib1.mind_arity_ctxt;
     Printf.printf "arity :"; prconstr (Inductiveops.type_of_inductive (Global.env ()) ind1);
   Array.iteri
@@ -459,11 +460,12 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
   let recprms2,otherprms2,args2,funresprms2 = bldprms (List.rev oib2.mind_arity_ctxt) mlnk2 in
   let _ = prstr "\notherprms1:\n" in
   let _ =
-    List.iter (fun (x,_,y) -> prstr (string_of_name x^" : ");prconstr y;prstr "\n")
+    List.iter (fun decl -> prstr (string_of_name (get_name decl) ^ " : ");
+			   prconstr (get_type decl); prstr "\n")
     otherprms1 in
   let _ = prstr "\notherprms2:\n" in
   let _ =
-    List.iter (fun (x,_,y) -> prstr (string_of_name x^" : ");prconstr y;prstr "\n")
+    List.iter (fun decl -> prstr (string_of_name (get_name decl) ^ " : "); prconstr (get_type decl); prstr "\n")
     otherprms2 in
   {
     ident=id;
@@ -823,9 +825,11 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
   let concl = Constrextern.extern_constr false (Global.env()) Evd.empty concl in
   let arity,_ =
     List.fold_left
-      (fun (acc,env) (nm,_,c) ->
+      (fun (acc,env) decl ->
+        let nm = Context.Rel.Declaration.get_name decl in
+        let c = get_type decl in
         let typ = Constrextern.extern_constr false env Evd.empty c in
-        let newenv = Environ.push_rel (nm,None,c) env in
+        let newenv = Environ.push_rel (LocalAssum (nm,c)) env in
         CProdN (Loc.ghost, [[(Loc.ghost,nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
       (concl,Global.env())
       (shift.funresprms2 @ shift.funresprms1
@@ -852,10 +856,10 @@ let glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
 
 let mkProd_reldecl (rdecl:Context.Rel.Declaration.t) (t2:glob_constr) =
   match rdecl with
-    | (nme,None,t) ->
+    | LocalAssum (nme,t) ->
         let traw = Detyping.detype false [] (Global.env()) Evd.empty t in
         GProd (Loc.ghost,nme,Explicit,traw,t2)
-    | (_,Some _,_) -> assert false
+    | LocalDef _ -> assert false
 
 
 (** [merge_inductive ind1 ind2 lnk] merges two graphs, linking
@@ -969,7 +973,7 @@ let funify_branches relinfo nfuns branch =
       | Rel i -> let reali = i-shift in (reali>=0 && reali<relinfo.nbranches)
       | _ -> false in
   (* FIXME: *)
-  (Anonymous,Some mkProp,mkProp)
+  LocalDef (Anonymous,mkProp,mkProp)
 
 
 let relprinctype_to_funprinctype relprinctype nfuns =

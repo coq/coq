@@ -1,3 +1,4 @@
+open Context.Rel.Declaration
 open Errors
 open Util
 open Names
@@ -13,10 +14,10 @@ open Decl_kinds
 open Sigma.Notations
 
 let is_rec_info scheme_info =
-  let test_branche min acc (_,_,br) =
+  let test_branche min acc decl =
     acc || (
       let new_branche =
-	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum br)) in
+	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum (get_type decl))) in
       let free_rels_in_br = Termops.free_rels new_branche in
       let max = min + scheme_info.Tactics.npredicates in
       Int.Set.exists (fun i -> i >= min && i< max) free_rels_in_br
@@ -153,7 +154,8 @@ let build_newrecursive
 	let evdref = ref (Evd.from_env env0) in
 	let _, (_, impls') = Constrintern.interp_context_evars env evdref bl in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity impls' in
-        (Environ.push_named (recname,None,arity) env, Id.Map.add recname impl impls))
+        let open Context.Named.Declaration in
+        (Environ.push_named (LocalAssum (recname,arity)) env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
     (* Declare local notations *)

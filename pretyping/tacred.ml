@@ -53,12 +53,13 @@ let is_evaluable env = function
   | EvalVarRef id -> is_evaluable_var env id
 
 let value_of_evaluable_ref env evref u =
+  let open Context.Named.Declaration in
   match evref with
   | EvalConstRef con -> 
     (try constant_value_in env (con,u)
     with NotEvaluableConst IsProj -> 
       raise (Invalid_argument "value_of_evaluable_ref"))
-  | EvalVarRef id -> Option.get (pi2 (lookup_named id env))
+  | EvalVarRef id -> lookup_named id env |> get_value |> Option.get
 
 let evaluable_of_global_reference env = function
   | ConstRef cst when is_evaluable_const env cst -> EvalConstRef cst
@@ -103,29 +104,29 @@ let destEvalRefU c = match kind_of_term c with
   | Evar ev -> (EvalEvar ev, Univ.Instance.empty)
   | _ -> anomaly (Pp.str "Not an unfoldable reference")
 
-let unsafe_reference_opt_value env sigma eval = 
+let unsafe_reference_opt_value env sigma eval =
   match eval with
   | EvalConst cst ->
     (match (lookup_constant cst env).Declarations.const_body with 
     | Declarations.Def c -> Some (Mod_subst.force_constr c)
     | _ -> None)
   | EvalVar id ->
-      let (_,v,_) = lookup_named id env in
-      v
+      let open Context.Named.Declaration in
+      lookup_named id env |> get_value
   | EvalRel n ->
-      let (_,v,_) = lookup_rel n env in
-      Option.map (lift n) v
+      let open Context.Rel.Declaration in
+      lookup_rel n env |> map_value (lift n) |> get_value
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 let reference_opt_value env sigma eval u = 
   match eval with
   | EvalConst cst -> constant_opt_value_in env (cst,u)
   | EvalVar id ->
-      let (_,v,_) = lookup_named id env in
-      v
+      let open Context.Named.Declaration in
+      lookup_named id env |> get_value
   | EvalRel n ->
-      let (_,v,_) = lookup_rel n env in
-      Option.map (lift n) v
+      let open Context.Rel.Declaration in
+      lookup_rel n env |> map_value (lift n) |> get_value
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 exception NotEvaluable
@@ -258,7 +259,8 @@ let compute_consteval_direct env sigma ref =
     let c',l = whd_betadelta_stack env sigma c in
     match kind_of_term c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
-	  srec (push_rel (id,None,t) env) (n+1) (t::labs) onlyproj g
+          let open Context.Rel.Declaration in
+	  srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) onlyproj g
       | Fix fix when not onlyproj ->
 	  (try check_fix_reversibility labs l fix
 	  with Elimconst -> NotAnElimination)
@@ -277,7 +279,8 @@ let compute_consteval_mutual_fix env sigma ref =
     let nargs = List.length l in
     match kind_of_term c' with
       | Lambda (na,t,g) when List.is_empty l ->
-	  srec (push_rel (na,None,t) env) (minarg+1) (t::labs) ref g
+          let open Context.Rel.Declaration in
+	  srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref g
       | Fix ((lv,i),(names,_,_)) ->
 	  (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
 	  (match compute_consteval_direct env sigma ref with
@@ -371,7 +374,8 @@ let make_elim_fun (names,(nbfix,lv,n)) u largs =
 let dummy = mkProp
 let vfx = Id.of_string "_expanded_fix_"
 let vfun = Id.of_string "_eliminator_function_"
-let venv = val_of_named_context [(vfx, None, dummy); (vfun, None, dummy)]
+let venv = let open Context.Named.Declaration in
+           val_of_named_context [LocalAssum (vfx, dummy); LocalAssum (vfun, dummy)]
 
 (* Mark every occurrence of substituted vars (associated to a function)
    as a problem variable: an evar that can be instantiated either by
@@ -534,9 +538,11 @@ let match_eval_ref_value env sigma constr =
   | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
     Some (constant_value_in env (sp, u))
   | Var id when is_evaluable env (EvalVarRef id) -> 
-    let (_,v,_) = lookup_named id env in v
-  | Rel n -> let (_,v,_) = lookup_rel n env in
-	       Option.map (lift n) v
+     let open Context.Named.Declaration in
+     lookup_named id env |> get_value
+  | Rel n ->
+     let open Context.Rel.Declaration in
+     lookup_rel n env |> map_value (lift n) |> get_value
   | Evar ev -> Evd.existential_opt_value sigma ev
   | _ -> None
 
@@ -601,12 +607,14 @@ let whd_nothing_for_iota env sigma s =
   let rec whrec (x, stack as s) =
     match kind_of_term x with
       | Rel n ->
+          let open Context.Rel.Declaration in
 	  (match lookup_rel n env with
-	     | (_,Some body,_) -> whrec (lift n body, stack)
+	     | LocalDef (_,body,_) -> whrec (lift n body, stack)
 	     | _ -> s)
       | Var id ->
+          let open Context.Named.Declaration in
 	  (match lookup_named id env with
-	     | (_,Some body,_) -> whrec (body, stack)
+	     | LocalDef (_,body,_) -> whrec (body, stack)
 	     | _ -> s)
       | Evar ev ->
 	(try whrec (Evd.existential_value sigma ev, stack)
@@ -809,7 +817,9 @@ let try_red_product env sigma c =
                         simpfun (Stack.zip (f,stack')))
              | _ -> simpfun (appvect (redrec env f, l)))
       | Cast (c,_,_) -> redrec env c
-      | Prod (x,a,b) -> mkProd (x, a, redrec (push_rel (x,None,a) env) b)
+      | Prod (x,a,b) ->
+          let open Context.Rel.Declaration in
+	  mkProd (x, a, redrec (push_rel (LocalAssum (x,a)) env) b)
       | LetIn (x,a,b,t) -> redrec env (subst1 a t)
       | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
       | Proj (p, c) -> 
@@ -1157,8 +1167,9 @@ let reduce_to_ind_gen allow_product env sigma t =
     match kind_of_term (fst (decompose_app t)) with
       | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
+	  let open Context.Rel.Declaration in
 	  if allow_product then
-	    elimrec (push_rel (n,None,ty) env) t' ((n,None,ty)::l)
+	    elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
 	  else
 	    errorlabstrm "" (str"Not an inductive definition.")
       | _ ->
@@ -1235,7 +1246,8 @@ let reduce_to_ref_gen allow_product env sigma ref t =
     match kind_of_term c with
       | Prod (n,ty,t') ->
           if allow_product then
-	    elimrec (push_rel (n,None,t) env) t' ((n,None,ty)::l)
+	    let open Context.Rel.Declaration in
+	    elimrec (push_rel (LocalAssum (n,t)) env) t' ((LocalAssum (n,ty))::l)
           else
             error_cannot_recognize ref
       | _ ->

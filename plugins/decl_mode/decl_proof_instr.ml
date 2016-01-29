@@ -30,6 +30,7 @@ open Namegen
 open Goptions
 open Misctypes
 open Sigma.Notations
+open Context.Named.Declaration
 
 (* Strictness option *)
 
@@ -229,7 +230,8 @@ let close_previous_case pts =
 (* automation *)
 
 let filter_hyps f gls =
-  let filter_aux (id,_,_) =
+  let filter_aux id =
+    let id = get_id id in
     if f id then
       tclIDTAC
     else
@@ -331,11 +333,12 @@ let enstack_subsubgoals env se stack gls=
 	    let rc,_ = Reduction.dest_prod env apptype in
 	    let rec meta_aux last lenv = function
 		[] -> (last,lenv,[])
-	      | (nam,_,typ)::q ->
+	      | decl::q ->
 		  let nlast=succ last in
 		  let (llast,holes,metas) =
 		    meta_aux nlast (mkMeta nlast :: lenv) q in
-		    (llast,holes,(nlast,special_nf gls (substl lenv typ))::metas) in
+                    let open Context.Rel.Declaration in
+		    (llast,holes,(nlast,special_nf gls (substl lenv (get_type decl)))::metas) in
 	    let (nlast,holes,nmetas) =
 		meta_aux se.se_last_meta [] (List.rev rc) in
 	    let refiner = applist (appterm,List.rev holes) in
@@ -411,7 +414,7 @@ let concl_refiner metas body gls =
 	let _A = subst_meta subst typ in
 	let x = id_of_name_using_hdchar env _A Anonymous in
 	let _x = fresh_id avoid x gls in
-	let nenv = Environ.push_named (_x,None,_A) env in
+	let nenv = Environ.push_named (LocalAssum (_x,_A)) env in
 	let asort = family_of_sort (Typing.sort_of nenv (ref evd) _A) in
 	let nsubst = (n,mkVar _x)::subst in
 	  if List.is_empty rest then
@@ -606,7 +609,7 @@ let assume_tac hyps gls =
        tclTHEN
 	 (push_intro_tac
 	    (fun id ->
-	       Proofview.V82.of_tactic (convert_hyp (id,None,st.st_it))) st.st_label))
+	       Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,st.st_it)))) st.st_label))
 	 hyps tclIDTAC gls
 
 let assume_hyps_or_theses hyps gls =
@@ -616,7 +619,7 @@ let assume_hyps_or_theses hyps gls =
 	   tclTHEN
 	     (push_intro_tac
 		(fun id ->
-		   Proofview.V82.of_tactic (convert_hyp (id,None,c))) nam)
+		   Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,c)))) nam)
        | Hprop {st_label=nam;st_it=Thesis (tk)} ->
 	   tclTHEN
 	     (push_intro_tac
@@ -628,7 +631,7 @@ let assume_st hyps gls =
     (fun st ->
        tclTHEN
 	 (push_intro_tac
-	    (fun id -> Proofview.V82.of_tactic (convert_hyp (id,None,st.st_it))) st.st_label))
+	    (fun id -> Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,st.st_it)))) st.st_label))
 	 hyps tclIDTAC gls
 
 let assume_st_letin hyps gls =
@@ -637,7 +640,7 @@ let assume_st_letin hyps gls =
        tclTHEN
 	 (push_intro_tac
 	    (fun id ->
-	       Proofview.V82.of_tactic (convert_hyp (id,Some (fst st.st_it),snd st.st_it))) st.st_label))
+	       Proofview.V82.of_tactic (convert_hyp (LocalDef (id, fst st.st_it, snd st.st_it)))) st.st_label))
 	 hyps tclIDTAC gls
 
 (* suffices *)
@@ -731,7 +734,7 @@ let rec consider_match may_intro introduced available expected gls =
 	  error "Not enough sub-hypotheses to match statements."
 	    (* should tell which ones *)
     | id::rest_ids,(Hvar st | Hprop st)::rest ->
-	tclIFTHENELSE (Proofview.V82.of_tactic (convert_hyp (id,None,st.st_it)))
+	tclIFTHENELSE (Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,st.st_it))))
 	  begin
 	    match st.st_label with
 		Anonymous ->
@@ -799,8 +802,8 @@ let define_tac id args body gls =
 let cast_tac id_or_thesis typ gls =
   match id_or_thesis with
       This id ->
-	let (_,body,_) = pf_get_hyp gls id in
-	  Proofview.V82.of_tactic (convert_hyp (id,body,typ)) gls
+	let body = pf_get_hyp gls id |> get_value in
+	  Proofview.V82.of_tactic (convert_hyp (of_tuple (id,body,typ))) gls
     | Thesis (For _ ) ->
 	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->

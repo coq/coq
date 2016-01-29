@@ -101,7 +101,7 @@ val occur_evar : existential_key -> types -> bool
 val occur_var : env -> Id.t -> types -> bool
 val occur_var_in_decl :
   env ->
-  Id.t -> 'a * types option * types -> bool
+  Id.t -> Context.Named.Declaration.t -> bool
 val free_rels : constr -> Int.Set.t
 
 (** [dependent m t] tests whether [m] is a subterm of [t] *)

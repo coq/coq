@@ -16,6 +16,7 @@ open Vars
 open Termops
 open Environ
 open Globnames
+open Context.Named.Declaration
 
 (** Generic filters *)
 module Filter :
@@ -230,20 +231,20 @@ let evar_instance_array test_id info args =
     else instance_mismatch ()
   | false :: filter, _ :: ctxt ->
     instrec filter ctxt i
-  | true :: filter, (id,_,_ as d) :: ctxt ->
+  | true :: filter, d :: ctxt ->
     if i < len then
       let c = Array.unsafe_get args i in
       if test_id d c then instrec filter ctxt (succ i)
-      else (id, c) :: instrec filter ctxt (succ i)
+      else (get_id d, c) :: instrec filter ctxt (succ i)
     else instance_mismatch ()
   | _ -> instance_mismatch ()
   in
   match Filter.repr (evar_filter info) with
   | None ->
-    let map i (id,_,_ as d) =
+     let map i d =
       if (i < len) then
         let c = Array.unsafe_get args i in
-        if test_id d c then None else Some (id,c)
+        if test_id d c then None else Some (get_id d, c)
       else instance_mismatch ()
     in
     List.map_filter_i map (evar_context info)
@@ -251,7 +252,7 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) 0
 
 let make_evar_instance_array info args =
-  evar_instance_array (fun (id,_,_) -> isVarId id) info args
+  evar_instance_array (isVarId % get_id) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -660,7 +661,7 @@ let restrict evk filter ?candidates evd =
       evar_extra = Store.empty } in
   let evar_names = reassign_name_defined evk evk' evd.evar_names in
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = Array.map_of_list (fun (id,_,_) -> mkVar id) ctxt in
+  let id_inst = Array.map_of_list (mkVar % get_id) ctxt in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
@@ -722,10 +723,10 @@ let evars_of_term c =
   evrec Evar.Set.empty c
 
 let evars_of_named_context nc =
-  List.fold_right (fun (_, b, t) s ->
+  List.fold_right (fun decl s ->
     Option.fold_left (fun s t ->
       Evar.Set.union s (evars_of_term t))
-      (Evar.Set.union s (evars_of_term t)) b)
+      (Evar.Set.union s (evars_of_term (get_type decl))) (get_value decl))
     nc Evar.Set.empty
 
 let evars_of_filtered_evar_info evi =
@@ -1228,8 +1229,9 @@ let pr_meta_map mmap =
   in
   prlist pr_meta_binding (metamap_to_list mmap)
 
-let pr_decl ((id,b,_),ok) =
-  match b with
+let pr_decl (decl,ok) =
+  let id = get_id decl in
+  match get_value decl with
   | None -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
   | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
       print_constr c ++ str (if ok then ")" else "}")
@@ -1346,8 +1348,9 @@ let print_env_short env =
   let pr_body n = function
   | None -> pr_name n
   | Some b -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")" in
-  let pr_named_decl (n, b, _) = pr_body (Name n) b in
-  let pr_rel_decl (n, b, _) = pr_body n b in
+  let pr_named_decl decl = pr_body (Name (get_id decl)) (get_value decl) in
+  let pr_rel_decl decl = let open Context.Rel.Declaration in
+                         pr_body (get_name decl) (get_value decl) in
   let nc = List.rev (named_context env) in
   let rc = List.rev (rel_context env) in
     str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++
