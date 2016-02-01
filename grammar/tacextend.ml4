@@ -86,14 +86,6 @@ let make_prod_item = function
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl
 
-let rec make_tags loc = function
-  | [] -> <:expr< [] >>
-  | ExtNonTerminal (t, _, p) :: l ->
-      let l = make_tags loc l in
-      let t = mlexpr_of_argtype loc t in
-      <:expr< [ $t$ :: $l$ ] >>
-  | _::l -> make_tags loc l
-
 let make_one_printing_rule (pt,_,e) =
   let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
@@ -102,41 +94,6 @@ let make_one_printing_rule (pt,_,e) =
             pptac_prods = $prods$ } >>
 
 let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
-
-let make_empty_check = function
-| ExtNonTerminal (t, e, _)->
-  let is_extra = match t with ExtraArgType _ -> true | _ -> false in
-  if is_possibly_empty e || is_extra then
-    (* This possibly parses epsilon *)
-    let wit = make_wit loc t in
-    let rawwit = make_rawwit loc t in
-    <:expr<
-      match Genarg.default_empty_value $wit$ with
-      [ None -> raise Exit
-      | Some v ->
-        Tacintern.intern_genarg Tacintern.fully_empty_glob_sign
-          (Genarg.in_gen $rawwit$ v) ] >>
-  else
-  (* This does not parse epsilon (this Exit is static time) *)
-    raise Exit
-| ExtTerminal _ ->
-  (* Idem *)
-  raise Exit
-
-let rec possibly_atomic loc = function
-| [] -> []
-| ((ExtNonTerminal _ :: _ | []), _, _) :: rem ->
-  (** This is not parsed by the TACTIC EXTEND rules *)
-  assert false
-| (ExtTerminal s :: prods, _, _) :: rem ->
-  let entry =
-    try
-      let l = List.map make_empty_check prods in
-      let l = mlexpr_of_list (fun x -> x) l in
-      (s, <:expr< try Some $l$ with [ Exit -> None ] >>)
-    with Exit -> (s, <:expr< None >>)
-  in
-  entry :: possibly_atomic loc rem
 
 (** Special treatment of constr entries *)
 let is_constr_gram = function
@@ -193,10 +150,7 @@ let declare_tactic loc s c cl = match cl with
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let pp = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
-  let atom =
-    mlexpr_of_list (mlexpr_of_pair mlexpr_of_string (fun x -> x))
-      (possibly_atomic loc cl) in
-  let obj = <:expr< fun () -> Metasyntax.add_ml_tactic_notation $se$ $gl$ $atom$ >> in
+  let obj = <:expr< fun () -> Metasyntax.add_ml_tactic_notation $se$ $gl$ >> in
   declare_str_items loc
     [ <:str_item< do {
       try do {

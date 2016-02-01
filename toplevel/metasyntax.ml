@@ -149,8 +149,6 @@ let add_tactic_notation (local,n,prods,e) =
 (**********************************************************************)
 (* ML Tactic entries                                                  *)
 
-type atomic_entry = string * Genarg.glob_generic_argument list option
-
 type ml_tactic_grammar_obj = {
   mltacobj_name : Tacexpr.ml_tactic_name;
   (** ML-side unique name *)
@@ -158,12 +156,56 @@ type ml_tactic_grammar_obj = {
   (** Grammar rules generating the ML tactic. *)
 }
 
+exception NonEmptyArgument
+
+let default_empty_value wit = match Genarg.default_empty_value wit with
+| None -> raise NonEmptyArgument
+| Some v -> v
+
+let rec empty_value : type a b c s. (a, b, c) Genarg.genarg_type -> (s, a) entry_key -> a =
+fun wit key -> match key with
+| Alist1 key ->
+  begin match wit with
+  | Genarg.ListArg wit -> [empty_value wit key]
+  | Genarg.ExtraArg _ -> default_empty_value wit
+  end
+| Alist1sep (key, _) ->
+  begin match wit with
+  | Genarg.ListArg wit -> [empty_value wit key]
+  | Genarg.ExtraArg _ -> default_empty_value wit
+  end
+| Alist0 _ -> []
+| Alist0sep (_, _) -> []
+| Amodifiers _ -> []
+| Aopt _ -> None
+| Aentry _ -> default_empty_value wit
+| Aentryl (_, _) -> default_empty_value wit
+
+| Atoken _ -> raise NonEmptyArgument
+| Aself -> raise NonEmptyArgument
+| Anext -> raise NonEmptyArgument
+
 (** ML tactic notations whose use can be restricted to an identifier are added
     as true Ltac entries. *)
 let extend_atomic_tactic name entries =
-  let add_atomic i (id, args) = match args with
+  let map_prod prods =
+    let (hd, rem) = match prods with
+    | GramTerminal s :: rem -> (s, rem)
+    | _ -> assert false (** Not handled by the ML extension syntax *)
+    in
+    let empty_value = function
+    | GramTerminal s -> raise NonEmptyArgument
+    | GramNonTerminal (_, typ, e) ->
+      let Genarg.Rawwit wit = typ in
+      let def = Genarg.in_gen typ (empty_value wit e) in
+      Tacintern.intern_genarg Tacintern.fully_empty_glob_sign def
+    in
+    try Some (hd, List.map empty_value rem) with NonEmptyArgument -> None
+  in
+  let entries = List.map map_prod entries in
+  let add_atomic i args = match args with
   | None -> ()
-  | Some args ->
+  | Some (id, args) ->
     let open Tacexpr in
     let args = List.map (fun a -> TacGeneric a) args in
     let entry = { mltac_name = name; mltac_index = i } in
@@ -186,13 +228,13 @@ let inMLTacticGrammar : ml_tactic_grammar_obj -> obj =
     subst_function = (fun (_, o) -> o);
   }
 
-let add_ml_tactic_notation name prods atomic =
+let add_ml_tactic_notation name prods =
   let obj = {
     mltacobj_name = name;
     mltacobj_prod = prods;
   } in
   Lib.add_anonymous_leaf (inMLTacticGrammar obj);
-  extend_atomic_tactic name atomic
+  extend_atomic_tactic name prods
 
 (**********************************************************************)
 (* Printing grammar entries                                           *)
