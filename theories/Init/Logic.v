@@ -70,9 +70,10 @@ Arguments or_intror [A B] _, A [B] _.
 
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
-Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
+Inductive iff (A B:Prop) : Prop :=
+  iff_intro : (A -> B) -> (B -> A) -> A <-> B
 
-Notation "A <-> B" := (iff A B) : type_scope.
+where "A <-> B" := (iff A B) : type_scope.
 
 Section Equivalence.
 
@@ -92,8 +93,6 @@ Theorem iff_sym : forall A B:Prop, (A <-> B) -> (B <-> A).
   Qed.
 
 End Equivalence.
-
-Hint Unfold iff: extcore.
 
 (** Backward direction of the equivalences above does not need assumptions *)
 
@@ -193,10 +192,13 @@ Proof.
   + left; right; assumption.
   + right; assumption.
 Qed.
+
 Lemma iff_and : forall A B : Prop, (A <-> B) -> (A -> B) /\ (B -> A).
 Proof.
   intros A B []; split; trivial.
 Qed.
+
+Coercion iff_and : iff >-> and.
 
 Lemma iff_to_and : forall A B : Prop, (A <-> B) <-> (A -> B) /\ (B -> A).
 Proof.
