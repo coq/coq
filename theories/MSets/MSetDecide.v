@@ -168,7 +168,7 @@ the above form:
 
     Tactic Notation "push" "not" "using" ident(db) :=
       let dec := solve_decidable using db in
-      unfold not, iff;
+      unfold not;
       repeat (
         match goal with
         | |- context [True -> False] => rewrite not_true_iff
@@ -191,7 +191,7 @@ the above form:
     Tactic Notation
       "push" "not" "in" "*" "|-" "using" ident(db) :=
       let dec := solve_decidable using db in
-      unfold not, iff in * |-;
+      unfold not in * |-;
       repeat (
         match goal with
         | H: context [True -> False] |- _ => rewrite not_true_iff in H
@@ -252,7 +252,7 @@ the above form:
 
     Tactic Notation "pull" "not" "using" ident(db) :=
       let dec := solve_decidable using db in
-      unfold not, iff;
+      unfold not;
       repeat (
         match goal with
         | |- context [True -> False] => rewrite not_true_iff
@@ -278,7 +278,7 @@ the above form:
     Tactic Notation
       "pull" "not" "in" "*" "|-" "using" ident(db) :=
       let dec := solve_decidable using db in
-      unfold not, iff in * |-;
+      unfold not in * |-;
       repeat (
         match goal with
         | H: context [True -> False] |- _ => rewrite not_true_iff in H
@@ -693,8 +693,6 @@ the above form:
       clients of this library).  It's specification is given at
       the top of the file. *)
   Ltac fsetdec :=
-    (** We first unfold any occurrences of [iff]. *)
-    unfold iff in *;
     (** We fold occurrences of [not] because it is better for
         [intros] to leave us with a goal of [~ P] than a goal of
         [False]. *)
