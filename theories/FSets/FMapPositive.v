@@ -1052,7 +1052,6 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   destruct (IHm2 _ _ H1); clear H1 IHm2.
   split; intros.
   destruct k; unfold In, MapsTo in *; simpl; auto.
-  split; eauto.
   destruct k; unfold In, MapsTo in *; simpl in *.
   eapply H3; eauto.
   eapply H2; eauto.

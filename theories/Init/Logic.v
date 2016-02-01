@@ -75,6 +75,8 @@ Inductive iff (A B:Prop) : Prop :=
 
 where "A <-> B" := (iff A B) : type_scope.
 
+Hint Resolve iff_intro : core.
+
 Section Equivalence.
 
 Theorem iff_refl : forall A:Prop, A <-> A.

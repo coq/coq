@@ -25,7 +25,7 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
 
  Lemma In_In : forall s x, M.In x s <-> In _ (!!s) x.
  Proof.
- unfold In; compute; auto with extcore.
+ unfold In; compute; auto.
  Qed.
 
  Lemma Subset_Included : forall s s',  s[<=]s'  <-> Included _ (!!s) (!!s').

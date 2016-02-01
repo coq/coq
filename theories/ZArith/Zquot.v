@@ -236,7 +236,7 @@ Proof. intros. zero_or_not b. apply Z.mul_quot_ge; auto with zarith. Qed.
     iff the modulo is zero. *)
 
 Lemma Z_quot_exact_full a b : a = b*(a÷b) <-> Z.rem a b = 0.
-Proof. intros. zero_or_not b. intuition. apply Z.quot_exact; auto. Qed.
+Proof. intros. zero_or_not b. apply Z.quot_exact; auto. Qed.
 
 (** A modulo cannot grow beyond its starting point. *)
 
