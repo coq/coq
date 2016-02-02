@@ -228,8 +228,8 @@ let rewrite_keyed_core_unif_flags = {
     (* This is set dynamically *)
 
   restrict_conv_on_strict_subterms = false;
-  modulo_betaiota = true;
-  (* Different from conv_closed *)
+  modulo_betaiota = false;
+
   modulo_eta = true;
 }
 
