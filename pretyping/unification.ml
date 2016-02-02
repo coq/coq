@@ -481,7 +481,8 @@ let key_of env b flags f =
       Id.Pred.mem id (fst flags.modulo_delta) ->
     Some (IsKey (VarKey id))
   | Proj (p, c) when Projection.unfolded p
-      || Cpred.mem (Projection.constant p) (snd flags.modulo_delta) ->
+    || (is_transparent env (ConstKey (Projection.constant p)) &&
+       (Cpred.mem (Projection.constant p) (snd flags.modulo_delta))) ->
     Some (IsProj (p, c))
   | _ -> None
   
