@@ -274,9 +274,6 @@ val name_of_entry : 'a Gram.entry -> 'a Entry.t
 
 (** Binding general entry keys to symbols *)
 
-val symbol_of_prod_entry_key :
-  ('self, 'a) entry_key -> Gram.symbol
-
 type 's entry_name = EntryName :
   'a raw_abstract_argument_type * ('s, 'a) entry_key -> 's entry_name
 
