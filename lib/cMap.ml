@@ -25,6 +25,7 @@ module type ExtS =
 sig
   include CSig.MapS
   module Set : CSig.SetS with type elt = key
+  val get : key -> 'a t -> 'a
   val update : key -> 'a -> 'a t -> 'a t
   val modify : key -> (key -> 'a -> 'a) -> 'a t -> 'a t
   val domain : 'a t -> Set.t
@@ -207,4 +208,5 @@ module Make(M : Map.OrderedType) =
 struct
   include Map.Make(M)
   include MapExt(M)
+  let get k m = try find k m with Not_found -> assert false
 end

@@ -286,6 +286,8 @@ struct
     let m = Int.Map.find h s in
     Map.find k m
 
+  let get k s = try find k s with Not_found -> assert false
+
   let split k s = assert false (** Cannot be implemented efficiently *)
 
   let map f s =
