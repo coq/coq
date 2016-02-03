@@ -249,7 +249,7 @@ val evar_source : existential_key -> evar_map -> Evar_kinds.t located
 (** Convenience function. Wrapper around {!find} to recover the source of an
     evar in a given evar map. *)
 
-val evar_ident : existential_key -> evar_map -> Id.t
+val evar_ident : existential_key -> evar_map -> Id.t option
 
 val rename : existential_key -> Id.t -> evar_map -> evar_map
 
@@ -602,6 +602,8 @@ type unsolvability_explanation = SeveralInstancesFound of int
 (** Failure explanation. *)
 
 val pr_existential_key : evar_map -> evar -> Pp.std_ppcmds
+
+val pr_evar_suggested_name : existential_key -> evar_map -> Id.t
 
 (** {5 Debug pretty-printers} *)
 

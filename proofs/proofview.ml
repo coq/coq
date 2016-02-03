@@ -1093,7 +1093,10 @@ struct
       | None -> Evd.define gl.Goal.self c sigma
       | Some evk ->
           let id = Evd.evar_ident gl.Goal.self sigma in
-          Evd.rename evk id (Evd.define gl.Goal.self c sigma)
+          let sigma = Evd.define gl.Goal.self c sigma in
+          match id with
+          | None -> sigma
+          | Some id -> Evd.rename evk id sigma
     in
     (** Restore the [future goals] state. *)
     let sigma = Evd.restore_future_goals sigma prev_future_goals prev_principal_goal in

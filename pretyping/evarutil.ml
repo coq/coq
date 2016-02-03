@@ -365,14 +365,7 @@ let new_pure_evar_full evd evi =
   (evd, evk)
 
 let new_pure_evar sign evd ?(src=default_source) ?filter ?candidates ?store ?naming ?(principal=false) typ =
-  let default_naming =
-    if principal then
-        (* waiting for a more principled approach
-           (unnamed evars, private names?) *)
-        Misctypes.IntroFresh (Names.Id.of_string "tmp_goal")
-      else
-        Misctypes.IntroAnonymous
-  in
+  let default_naming = Misctypes.IntroAnonymous in
   let naming = Option.default default_naming naming in
   let newevk = new_untyped_evar() in
   let evd = evar_declare sign newevk typ ~src ?filter ?candidates ?store ~naming evd in

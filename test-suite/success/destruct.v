@@ -96,21 +96,21 @@ Abort.
 (* Check that subterm selection does not solve existing evars *)
 
 Goal exists x, S x = S 0.
-eexists.
+eexists ?[x].
 Show x.  (* Incidentally test Show on a named goal *)
 destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
 change (0 = S 0).
 Abort.
 
 Goal exists x, S 0 = S x.
-eexists.
+eexists ?[x].
 destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
 change (0 = S ?x).
 [x]: exact 0. (* Incidentally test applying a tactic to a goal on the shelve *)
 Abort.
 
 Goal exists n p:nat, (S n,S n) = (S p,S p) /\ p = n.
-do 2 eexists.
+eexists ?[n]; eexists ?[p].
 destruct (_, S _). (* Was unifying at some time in trunk, now takes the first occurrence *)
 change ((n, n0) = (S ?p, S ?p) /\ ?p = ?n).
 Abort.
@@ -426,7 +426,7 @@ destruct b eqn:H.
 (* Check natural instantiation behavior when the goal has already an evar *)
 
 Goal exists x, S x = x.
-eexists.
+eexists ?[x].
 destruct (S _).
 change (0 = ?x).
 Abort.

@@ -208,15 +208,6 @@ let map_evar_info f evi =
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
-let evar_ident_info evi =
-  match evi.evar_source with
-  | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
-  | _,Evar_kinds.VarInstance id -> id
-  | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
-  | _ ->
-      let env = reset_with_named_context evi.evar_hyps (Global.env()) in
-      Namegen.id_of_name_using_hdchar env evi.evar_concl Anonymous
-
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
 
@@ -588,7 +579,7 @@ val add_name_undefined : intro_pattern_naming_expr -> Evar.t -> evar_info -> t -
 val remove_name_defined : Evar.t -> t -> t
 val rename : Evar.t -> Id.t -> t -> t
 val reassign_name_defined : Evar.t -> Evar.t -> t -> t
-val ident : Evar.t -> t -> Id.t
+val ident : Evar.t -> t -> Id.t option
 val key : Id.t -> t -> Evar.t
 
 end =
@@ -598,21 +589,21 @@ type t = Id.t EvMap.t * existential_key Idmap.t
 
 let empty = (EvMap.empty, Idmap.empty)
 
-let add_name_newly_undefined naming evk evi (evtoid,idtoev) =
+let add_name_newly_undefined naming evk evi (evtoid, idtoev as names) =
   let id = match naming with
-  | Misctypes.IntroAnonymous ->
-      let id = evar_ident_info evi in
-      Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev)
+  | Misctypes.IntroAnonymous -> None
   | Misctypes.IntroIdentifier id ->
-      let id' =
-        Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
-      if not (Names.Id.equal id id') then
-        user_err_loc
-          (Loc.ghost,"",str "Already an existential evar of name " ++ pr_id id);
-      id'
+    if Idmap.mem id idtoev then
+    user_err_loc
+      (Loc.ghost,"",str "Already an existential evar of name " ++ pr_id id);
+    Some id
   | Misctypes.IntroFresh id ->
-      Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
-  (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+    let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
+    Some id
+  in
+  match id with
+  | None -> names
+  | Some id -> (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
 
 let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
   if EvMap.mem evk evtoid then
@@ -620,25 +611,30 @@ let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
   else
     add_name_newly_undefined naming evk evi evar_names
 
-let remove_name_defined evk (evtoid,idtoev) =
-  let id = EvMap.find evk evtoid in
-  (EvMap.remove evk evtoid, Idmap.remove id idtoev)
+let remove_name_defined evk (evtoid, idtoev as names) =
+  let id = try Some (EvMap.find evk evtoid) with Not_found -> None in
+  match id with
+  | None -> names
+  | Some id -> (EvMap.remove evk evtoid, Idmap.remove id idtoev)
 
 let rename evk id (evtoid, idtoev) =
-  let id' = EvMap.find evk evtoid in
-  if Idmap.mem id idtoev then anomaly (str "Evar name already in use");
-  (EvMap.add evk id evtoid (* overwrite old name *), Idmap.add id evk (Idmap.remove id' idtoev))
+  let id' = try Some (EvMap.find evk evtoid) with Not_found -> None in
+  match id' with
+  | None -> (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+  | Some id' ->
+    if Idmap.mem id idtoev then anomaly (str "Evar name already in use");
+    (EvMap.update evk id evtoid (* overwrite old name *), Idmap.add id evk (Idmap.remove id' idtoev))
 
-let reassign_name_defined evk evk' (evtoid,idtoev) =
-  let id = EvMap.find evk evtoid in
-  (EvMap.add evk' id (EvMap.remove evk evtoid),
-   Idmap.add id evk' (Idmap.remove id idtoev))
+let reassign_name_defined evk evk' (evtoid, idtoev as names) =
+  let id = try Some (EvMap.find evk evtoid) with Not_found -> None in
+  match id with
+  | None -> names (** evk' must not be defined *)
+  | Some id ->
+    (EvMap.add evk' id (EvMap.remove evk evtoid),
+    Idmap.add id evk' (Idmap.remove id idtoev))
 
 let ident evk (evtoid, _) =
-  try EvMap.find evk evtoid
-  with Not_found ->
-    (* Unnamed (non-dependent) evar *)
-    add_suffix (Id.of_string "X") (string_of_int (Evar.repr evk))
+  try Some (EvMap.find evk evtoid) with Not_found -> None
 
 let key id (_, idtoev) =
   Idmap.find id idtoev
@@ -682,7 +678,7 @@ let add d e i = match i.evar_body with
   let evar_names = EvNames.add_name_undefined Misctypes.IntroAnonymous e i d.evar_names in
   { d with undf_evars = EvMap.add e i d.undf_evars; evar_names }
 | Evar_defined _ ->
-  let evar_names = try EvNames.remove_name_defined e d.evar_names with Not_found -> d.evar_names in
+  let evar_names = EvNames.remove_name_defined e d.evar_names in
   { d with defn_evars = EvMap.add e i d.defn_evars; evar_names }
 
 let remove d e =
@@ -1706,7 +1702,34 @@ type unsolvability_explanation = SeveralInstancesFound of int
 (**********************************************************)
 (* Pretty-printing *)
 
-let pr_existential_key sigma evk = str "?" ++ pr_id (evar_ident evk sigma)
+let pr_evar_suggested_name evk sigma =
+  let base_id evk' evi =
+  match evar_ident evk' sigma with
+  | Some id -> id
+  | None -> match evi.evar_source with
+  | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
+  | _,Evar_kinds.VarInstance id -> id
+  | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
+  | _ ->
+      let env = reset_with_named_context evi.evar_hyps (Global.env()) in
+      Namegen.id_of_name_using_hdchar env evi.evar_concl Anonymous
+  in
+  let names = EvMap.mapi base_id sigma.undf_evars in
+  let id = EvMap.find evk names in
+  let fold evk' id' (seen, n) =
+    if seen then (seen, n)
+    else if Evar.equal evk evk' then (true, n)
+    else if Id.equal id id' then (seen, succ n)
+    else (seen, n)
+  in
+  let (_, n) = EvMap.fold fold names (false, 0) in
+  if n = 0 then id else Nameops.add_suffix id (string_of_int (pred n))
+
+let pr_existential_key sigma evk = match evar_ident evk sigma with
+| None ->
+  str "?" ++ pr_id (pr_evar_suggested_name evk sigma)
+| Some id ->
+  str "?" ++ pr_id id
 
 let pr_instance_status (sc,typ) =
   begin match sc with
@@ -1895,7 +1918,7 @@ let pr_evar_list sigma l =
     h 0 (str (string_of_existential ev) ++
       str "==" ++ pr_evar_info evi ++
       (if evi.evar_body == Evar_empty
-       then str " {" ++ pr_id (evar_ident ev sigma) ++ str "}"
+       then str " {" ++  pr_existential_key sigma ev ++ str "}"
        else mt ()))
   in
   h 0 (prlist_with_sep fnl pr l)

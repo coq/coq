@@ -518,7 +518,10 @@ let rec detype flags avoid env sigma t =
 	  with Not_found -> isVarId id c in
       let id,l =
         try
-          let id = Evd.evar_ident evk sigma in
+          let id = match Evd.evar_ident evk sigma with
+          | None -> Evd.pr_evar_suggested_name evk sigma
+          | Some id -> id
+          in
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
           let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match kind_of_term c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
           let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel c && Int.Set.mem (destRel c) rels || isVar c && (Id.Set.mem (destVar c) fvs)))) (Evd.find sigma evk) cl in

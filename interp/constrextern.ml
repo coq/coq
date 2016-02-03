@@ -988,7 +988,10 @@ let rec glob_of_pat env sigma = function
   | PEvar (evk,l) ->
       let test (id,_,_) = function PVar id' -> Id.equal id id' | _ -> false in
       let l = Evd.evar_instance_array test (Evd.find sigma evk) l in
-      let id = Evd.evar_ident evk sigma in
+      let id = match Evd.evar_ident evk sigma with
+      | None -> Id.of_string "__"
+      | Some id -> id
+      in
       GEvar (loc,id,List.map (on_snd (glob_of_pat env sigma)) l)
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
