@@ -1450,9 +1450,7 @@ let default_matching_core_flags sigma =
   check_applied_meta_types = true;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = false;
-  frozen_evars =
-    fold_undefined (fun evk _ evars -> Evar.Set.add evk evars)
-      sigma Evar.Set.empty;
+  frozen_evars = Evar.Map.domain (Evd.undefined_map sigma);
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
   modulo_eta = false;
