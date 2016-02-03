@@ -575,34 +575,28 @@ type evar_constraint = conv_pb * Environ.env * constr * constr
 
 module EvMap = Evar.Map
 
-type evar_map = {
-  (** Existential variables *)
-  defn_evars : evar_info EvMap.t;
-  undf_evars : evar_info EvMap.t;
-  evar_names : Id.t EvMap.t * existential_key Idmap.t;
-  (** Universes *)
-  universes  : evar_universe_context;
-  (** Conversion problems *)
-  conv_pbs   : evar_constraint list;
-  last_mods  : Evar.Set.t;
-  (** Metas *)
-  metas      : clbinding Metamap.t;
-  (** Interactive proofs *)
-  effects    : Safe_typing.private_constants;
-  future_goals : Evar.t list; (** list of newly created evars, to be
-                                  eventually turned into goals if not solved.*)
-  principal_future_goal : Evar.t option; (** if [Some e], [e] must be
-                                             contained
-                                             [future_goals]. The evar
-                                             [e] will inherit
-                                             properties (now: the
-                                             name) of the evar which
-                                             will be instantiated with
-                                             a term containing [e]. *)
-  extras : Store.t;
-}
+module EvNames :
+sig
 
-(*** Lifting primitive from Evar.Map. ***)
+open Misctypes
+
+type t
+
+val empty : t
+val add_name_newly_undefined : intro_pattern_naming_expr -> Evar.t -> evar_info -> t -> t
+val add_name_undefined : intro_pattern_naming_expr -> Evar.t -> evar_info -> t -> t
+val remove_name_defined : Evar.t -> t -> t
+val rename : Evar.t -> Id.t -> t -> t
+val reassign_name_defined : Evar.t -> Evar.t -> t -> t
+val ident : Evar.t -> t -> Id.t
+val key : Id.t -> t -> Evar.t
+
+end =
+struct
+
+type t = Id.t EvMap.t * existential_key Idmap.t
+
+let empty = (EvMap.empty, Idmap.empty)
 
 let add_name_newly_undefined naming evk evi (evtoid,idtoev) =
   let id = match naming with
@@ -630,29 +624,65 @@ let remove_name_defined evk (evtoid,idtoev) =
   let id = EvMap.find evk evtoid in
   (EvMap.remove evk evtoid, Idmap.remove id idtoev)
 
-let remove_name_possibly_already_defined evk evar_names =
-  try remove_name_defined evk evar_names
-  with Not_found -> evar_names
-
-let rename evk id evd =
-  let (evtoid,idtoev) = evd.evar_names in
+let rename evk id (evtoid, idtoev) =
   let id' = EvMap.find evk evtoid in
   if Idmap.mem id idtoev then anomaly (str "Evar name already in use");
-  { evd with evar_names =
-      (EvMap.add evk id evtoid (* overwrite old name *),
-       Idmap.add id evk (Idmap.remove id' idtoev)) }
+  (EvMap.add evk id evtoid (* overwrite old name *), Idmap.add id evk (Idmap.remove id' idtoev))
 
 let reassign_name_defined evk evk' (evtoid,idtoev) =
   let id = EvMap.find evk evtoid in
   (EvMap.add evk' id (EvMap.remove evk evtoid),
    Idmap.add id evk' (Idmap.remove id idtoev))
 
+let ident evk (evtoid, _) =
+  try EvMap.find evk evtoid
+  with Not_found ->
+    (* Unnamed (non-dependent) evar *)
+    add_suffix (Id.of_string "X") (string_of_int (Evar.repr evk))
+
+let key id (_, idtoev) =
+  Idmap.find id idtoev
+
+end
+
+type evar_map = {
+  (** Existential variables *)
+  defn_evars : evar_info EvMap.t;
+  undf_evars : evar_info EvMap.t;
+  evar_names : EvNames.t;
+  (** Universes *)
+  universes  : evar_universe_context;
+  (** Conversion problems *)
+  conv_pbs   : evar_constraint list;
+  last_mods  : Evar.Set.t;
+  (** Metas *)
+  metas      : clbinding Metamap.t;
+  (** Interactive proofs *)
+  effects    : Safe_typing.private_constants;
+  future_goals : Evar.t list; (** list of newly created evars, to be
+                                  eventually turned into goals if not solved.*)
+  principal_future_goal : Evar.t option; (** if [Some e], [e] must be
+                                             contained
+                                             [future_goals]. The evar
+                                             [e] will inherit
+                                             properties (now: the
+                                             name) of the evar which
+                                             will be instantiated with
+                                             a term containing [e]. *)
+  extras : Store.t;
+}
+
+(*** Lifting primitive from Evar.Map. ***)
+
+let rename evk id evd =
+  { evd with evar_names = EvNames.rename evk id evd.evar_names }
+
 let add d e i = match i.evar_body with
 | Evar_empty ->
-  let evar_names = add_name_undefined Misctypes.IntroAnonymous e i d.evar_names in
+  let evar_names = EvNames.add_name_undefined Misctypes.IntroAnonymous e i d.evar_names in
   { d with undf_evars = EvMap.add e i d.undf_evars; evar_names }
 | Evar_defined _ ->
-  let evar_names = remove_name_possibly_already_defined e d.evar_names in
+  let evar_names = try EvNames.remove_name_defined e d.evar_names with Not_found -> d.evar_names in
   { d with defn_evars = EvMap.add e i d.defn_evars; evar_names }
 
 let remove d e =
@@ -783,7 +813,7 @@ let empty = {
   last_mods  = Evar.Set.empty;
   metas      = Metamap.empty;
   effects    = Safe_typing.empty_private_constants;
-  evar_names = (EvMap.empty,Idmap.empty); (* id<->key for undefined evars *)
+  evar_names = EvNames.empty; (* id<->key for undefined evars *)
   future_goals = [];
   principal_future_goal = None;
   extras = Store.empty;
@@ -819,14 +849,8 @@ let add_conv_pb ?(tail=false) pb d =
 
 let evar_source evk d = (find d evk).evar_source
 
-let evar_ident evk evd =
-  try EvMap.find evk (fst evd.evar_names)
-  with Not_found ->
-    (* Unnamed (non-dependent) evar *)
-    add_suffix (Id.of_string "X") (string_of_int (Evar.repr evk))
-
-let evar_key id evd =
-  Idmap.find id (snd evd.evar_names)
+let evar_ident evk evd = EvNames.ident evk evd.evar_names
+let evar_key id evd = EvNames.key id evd.evar_names
 
 let define_aux def undef evk body =
   let oldinfo =
@@ -848,7 +872,7 @@ let define evk body evd =
   | [] ->  evd.last_mods
   | _ -> Evar.Set.add evk evd.last_mods
   in
-  let evar_names = remove_name_defined evk evd.evar_names in
+  let evar_names = EvNames.remove_name_defined evk evd.evar_names in
   { evd with defn_evars; undf_evars; last_mods; evar_names }
 
 let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) 
@@ -868,7 +892,7 @@ let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole))
     evar_candidates = candidates;
     evar_extra = store; }
   in
-  let evar_names = add_name_newly_undefined naming evk evar_info evd.evar_names in
+  let evar_names = EvNames.add_name_newly_undefined naming evk evar_info evd.evar_names in
   { evd with undf_evars = EvMap.add evk evar_info evd.undf_evars; evar_names }
 
 let restrict evk evk' filter ?candidates evd =
@@ -877,7 +901,7 @@ let restrict evk evk' filter ?candidates evd =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;
       evar_extra = Store.empty } in
-  let evar_names = reassign_name_defined evk evk' evd.evar_names in
+  let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
   let id_inst = Array.map_of_list (fun (id,_,_) -> mkVar id) ctxt in
   let body = mkEvar(evk',id_inst) in
