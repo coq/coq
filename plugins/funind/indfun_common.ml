@@ -163,7 +163,7 @@ let save with_clean id const (locality,_,kind) hook =
 	(locality, ConstRef kn)
   in
   if with_clean then  Pfedit.delete_current_proof ();
-  Ephemeron.iter_opt hook (fun f -> Lemmas.call_hook fix_exn f l r);
+  Coq_ephemeron.iter_opt hook (fun f -> Lemmas.call_hook fix_exn f l r);
   definition_message id
 
 

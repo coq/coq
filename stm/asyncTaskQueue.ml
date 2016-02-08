@@ -314,7 +314,7 @@ module Make(T : Task) = struct
         let response = slave_respond request in
         report_status "Idle";
         marshal_response (Option.get !slave_oc) response;
-        Ephemeron.clear ()
+        Coq_ephemeron.clear ()
       with
       | MarshalError s ->
         pr_err ("Fatal marshal error: " ^ s); flush_all (); exit 2

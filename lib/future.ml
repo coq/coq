@@ -62,7 +62,7 @@ and 'a comp =
   | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
 
 and 'a comput =
-  | Ongoing of string * (UUID.t * fix_exn * 'a comp ref) Ephemeron.key
+  | Ongoing of string * (UUID.t * fix_exn * 'a comp ref) Coq_ephemeron.key
   | Finished of 'a
 
 and 'a computation = 'a comput ref
@@ -70,13 +70,13 @@ and 'a computation = 'a comput ref
 let unnamed = "unnamed"
 
 let create ?(name=unnamed) ?(uuid=UUID.fresh ()) f x =
-  ref (Ongoing (name, Ephemeron.create (uuid, f, Pervasives.ref x)))
+  ref (Ongoing (name, Coq_ephemeron.create (uuid, f, Pervasives.ref x)))
 let get x =
   match !x with
   | Finished v -> unnamed, UUID.invalid, id, ref (Val (v,None))
   | Ongoing (name, x) ->
-      try let uuid, fix, c = Ephemeron.get x in name, uuid, fix, c
-      with Ephemeron.InvalidKey ->
+      try let uuid, fix, c = Coq_ephemeron.get x in name, uuid, fix, c
+      with Coq_ephemeron.InvalidKey ->
         name, UUID.invalid, id, ref (Exn (NotHere name, Exninfo.null))
 
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn  ]

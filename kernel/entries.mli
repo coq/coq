@@ -104,7 +104,7 @@ type side_eff =
   | SEscheme of (inductive * constant * Declarations.constant_body * seff_env) list * string
 
 type side_effect = {
-  from_env : Declarations.structure_body Ephemeron.key;
+  from_env : Declarations.structure_body Coq_ephemeron.key;
   eff      : side_eff;
 }
 

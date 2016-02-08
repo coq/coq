@@ -32,7 +32,7 @@ CStack
 Util
 Ppstyle
 Errors
-Ephemeron
+Coq_ephemeron
 Future
 CUnix
 System
