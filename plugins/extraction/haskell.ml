@@ -340,7 +340,7 @@ let pp_decl = function
 	  in
 	  if void then mt ()
 	  else
-	    names.(i) ++ str " :: " ++ pp_type false [] typs.(i) ++ fnl () ++
+	    hov 2 (names.(i) ++ str " :: " ++ pp_type false [] typs.(i)) ++ fnl () ++
 	    (if is_custom r then
 		(names.(i) ++ str " = " ++ str (find_custom r))
 	     else
@@ -351,7 +351,7 @@ let pp_decl = function
       if is_inline_custom r then mt ()
       else
 	let e = pp_global Term r in
-	e ++ str " :: " ++ pp_type false [] t ++ fnl () ++
+	hov 2 (e ++ str " :: " ++ pp_type false [] t) ++ fnl () ++
 	  if is_custom r then
 	    hov 0 (e ++ str " = " ++ str (find_custom r) ++ fnl2 ())
 	  else
