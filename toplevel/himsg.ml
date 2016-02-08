@@ -1207,7 +1207,7 @@ let explain_unused_clause env pats =
 let explain_non_exhaustive env pats =
   str "Non exhaustive pattern-matching: no clause found for " ++
   str (String.plural (List.length pats) "pattern") ++
-  spc () ++ hov 0 (pr_sequence pr_cases_pattern pats)
+  spc () ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats)
 
 let explain_cannot_infer_predicate env sigma typs =
   let env = make_all_name_different env in
