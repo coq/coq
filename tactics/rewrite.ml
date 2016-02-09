@@ -42,6 +42,10 @@ open Libnames
 let classes_dirpath =
   Names.DirPath.make (List.map Id.of_string ["Classes";"Coq"])
 
+let init_relation_classes () =
+  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
+  else Coqlib.check_required_library ["Coq";"Classes";"RelationClasses"]
+
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
   else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
@@ -2041,8 +2045,9 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite_clause
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
 let not_declared env ty rel =
-  Tacticals.New.tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env Evd.empty rel ++ str" is not a declared " ++
-		str ty ++ str" relation. Maybe you need to require the Setoid library")
+  Tacticals.New.tclFAIL 0
+    (str" The relation " ++ Printer.pr_constr_env env Evd.empty rel ++ str" is not a declared " ++
+     str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 
 let setoid_proof ty fn fallback =
   Proofview.Goal.nf_enter begin fun gl ->
@@ -2055,7 +2060,7 @@ let setoid_proof ty fn fallback =
           let rel, _, _ = decompose_app_rel env sigma concl in
           let (sigma, t) = Typing.type_of env sigma rel in
           let car = pi3 (List.hd (fst (Reduction.dest_prod env t))) in
-	    (try init_setoid () with _ -> raise Not_found);
+	    (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e
       end
