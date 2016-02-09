@@ -29,8 +29,8 @@ sig
   module Declaration :
   sig
     (* local declaration *)
-    type t = LocalAssum of Name.t * Constr.t            (* local assumption *)
-	   | LocalDef of Name.t * Constr.t * Constr.t   (* local definition *)
+    type t = LocalAssum of Name.t * Constr.t            (** name, type *)
+           | LocalDef of Name.t * Constr.t * Constr.t   (** name, value, type *)
 
     (** Return the name bound by a given declaration. *)
     val get_name : t -> Name.t
@@ -143,8 +143,8 @@ sig
   (** Representation of {e local declarations}. *)
   module Declaration :
   sig
-    type t = LocalAssum of Id.t * Constr.t
-           | LocalDef of Id.t * Constr.t * Constr.t
+    type t = LocalAssum of Id.t * Constr.t            (** identifier, type *)
+           | LocalDef of Id.t * Constr.t * Constr.t   (** identifier, value, type *)
 
     (** Return the identifier bound by a given declaration. *)
     val get_id : t -> Id.t
