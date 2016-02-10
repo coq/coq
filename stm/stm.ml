@@ -513,7 +513,10 @@ end = struct (* {{{ *)
     let rec fill id =
       if (get_info id).state = None then fill (Vcs_aux.visit v id).next
       else copy_info_w_state v id in
-    fill stop
+    let v = fill stop in
+    (* We put in the new dag the first state (since Qed shall run on it,
+     * see check_task_aux) *)
+    copy_info_w_state v start
 
   let nodes_in_slice ~start ~stop =
     List.rev (List.map fst (nodes_in_slice ~start ~stop))
