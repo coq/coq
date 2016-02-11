@@ -57,7 +57,7 @@ let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
   let pprf = Proof.partial_proof p in
-  msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
+  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
 
 let show_node () =
   (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
@@ -65,22 +65,22 @@ let show_node () =
   ()
 
 let show_thesis () =
-     msg_error (anomaly (Pp.str "TODO") )
+     Feedback.msg_error (anomaly (Pp.str "TODO") )
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = get_pftreestate () in
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
-  msg_notice (pr_evars_int sigma 1 (Evarutil.non_instantiated sigma))
+  Feedback.msg_notice (pr_evars_int sigma 1 (Evarutil.non_instantiated sigma))
 
 let show_universes () =
   let pfts = get_pftreestate () in
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
   let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
-    msg_notice (Evd.pr_evar_universe_context (Evd.evar_universe_context sigma));
-    msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Evd.pr_evd_level sigma) ctx)
+    Feedback.msg_notice (Evd.pr_evar_universe_context (Evd.evar_universe_context sigma));
+    Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Evd.pr_evd_level sigma) ctx)
 
 let show_prooftree () =
   (* Spiwack: proof tree is currently not working *)
@@ -91,11 +91,10 @@ let enable_goal_printing = ref true
 let print_subgoals () =
   if !enable_goal_printing && is_verbose ()
   then begin
-    msg_notice (pr_open_subgoals ())
+    Feedback.msg_notice (pr_open_subgoals ())
   end
 
 let try_print_subgoals () =
-  Pp.flush_all();
   try print_subgoals () with Proof_global.NoCurrentProof | UserError _ -> ()
 
 
@@ -109,10 +108,10 @@ let show_intro all =
     let l,_= decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
-      msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
+      Feedback.msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
     else if not (List.is_empty l) then
       let n = List.last l in
-      msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
+      Feedback.msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
   end
 
 (** Prepare a "match" template for a given inductive type.
@@ -153,7 +152,7 @@ let show_match id =
   let pr_branch l =
     str "| " ++ hov 1 (prlist_with_sep spc str l) ++ str " =>"
   in
-  msg_notice (v 1 (str "match # with" ++ fnl () ++
+  Feedback.msg_notice (v 1 (str "match # with" ++ fnl () ++
 	    prlist_with_sep fnl pr_branch patterns ++ fnl () ++ str "end" ++ fnl ()))
 
 (* "Print" commands *)
@@ -194,23 +193,23 @@ let print_module r =
     let globdir = Nametab.locate_dir qid in
       match globdir with
 	  DirModule (dirpath,(mp,_)) ->
-	    msg_notice (Printmod.print_module (Printmod.printable_body dirpath) mp)
+	    Feedback.msg_notice (Printmod.print_module (Printmod.printable_body dirpath) mp)
 	| _ -> raise Not_found
   with
-      Not_found -> msg_error (str"Unknown Module " ++ pr_qualid qid)
+      Not_found -> Feedback.msg_error (str"Unknown Module " ++ pr_qualid qid)
 
 let print_modtype r =
   let (loc,qid) = qualid_of_reference r in
   try
     let kn = Nametab.locate_modtype qid in
-    msg_notice (Printmod.print_modtype kn)
+    Feedback.msg_notice (Printmod.print_modtype kn)
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
       let mp = Nametab.locate_module qid in
-      msg_notice (Printmod.print_module false mp)
+      Feedback.msg_notice (Printmod.print_module false mp)
     with Not_found ->
-      msg_error (str"Unknown Module Type or Module " ++ pr_qualid qid)
+      Feedback.msg_error (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
 let print_namespace ns =
   let ns = List.rev (Names.DirPath.repr ns) in
@@ -279,7 +278,7 @@ let print_namespace ns =
         acc
     ) constants (str"")
   in
-  msg_notice ((print_list pr_id ns)++str":"++fnl()++constants_in_namespace)
+  Feedback.msg_notice ((print_list pr_id ns)++str":"++fnl()++constants_in_namespace)
 
 let print_strategy r =
   let open Conv_oracle in
@@ -309,7 +308,7 @@ let print_strategy r =
       else str "Constant strategies" ++ fnl () ++
         hov 0 (prlist_with_sep fnl pr_strategy cst_lvl)
     in
-    msg_notice (var_msg ++ cst_msg)
+    Feedback.msg_notice (var_msg ++ cst_msg)
   | Some r ->
     let r = Smartlocate.smart_global r in
     let key = match r with
@@ -318,7 +317,7 @@ let print_strategy r =
     | IndRef _ | ConstructRef _ -> error "The reference is not unfoldable"
     in
     let lvl = get_strategy oracle key in
-    msg_notice (pr_strategy (r, lvl))
+    Feedback.msg_notice (pr_strategy (r, lvl))
 
 let dump_universes_gen g s =
   let output = open_out s in
@@ -352,7 +351,7 @@ let dump_universes_gen g s =
   try
     UGraph.dump_universes output_constraint g;
     close ();
-    msg_info (str "Universes written to file \"" ++ str s ++ str "\".")
+    Feedback.msg_info (str "Universes written to file \"" ++ str s ++ str "\".")
   with reraise ->
     let reraise = Errors.push reraise in
     close ();
@@ -367,11 +366,11 @@ let locate_file f =
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
-      msg_info (hov 0
+      Feedback.msg_info (hov 0
 	(pr_dirpath fulldir ++ strbrk " has been loaded from file " ++
 	 str file))
   | Library.LibInPath, fulldir, file ->
-      msg_info (hov 0
+      Feedback.msg_info (hov 0
 	(pr_dirpath fulldir ++ strbrk " is bound to file " ++ str file))
 
 let err_unmapped_library loc ?from qid =
@@ -506,7 +505,7 @@ let vernac_exact_proof c =
      called only at the begining of a proof. *)
   let status = by (Tactics.exact_proof c) in
   save_proof (Vernacexpr.(Proved(Opaque None,None)));
-  if not status then Pp.feedback Feedback.AddedAxiom
+  if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption locality poly (local, kind) l nl =
   let local = enforce_locality_exp locality local in
@@ -518,7 +517,7 @@ let vernac_assumption locality poly (local, kind) l nl =
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
   let status = do_assumptions kind nl l in
-  if not status then Pp.feedback Feedback.AddedAxiom
+  if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_record k poly finite struc binders sort nameopt cfs =
   let const = match nameopt with
@@ -636,7 +635,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
       id binders_ast (Enforce mty_ast) []
   in
   Dumpglob.dump_moddef loc mp "mod";
-  if_verbose msg_info (str "Module " ++ pr_id id ++ str " is declared");
+  if_verbose Feedback.msg_info (str "Module " ++ pr_id id ++ str " is declared");
   Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
 
 let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
@@ -657,7 +656,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
            export id binders_ast mty_ast_o
        in
        Dumpglob.dump_moddef loc mp "mod";
-       if_verbose msg_info
+       if_verbose Feedback.msg_info
          (str "Interactive Module " ++ pr_id id ++ str " started");
        List.iter
          (fun (export,id) ->
@@ -675,7 +674,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
 	   id binders_ast mty_ast_o mexpr_ast_l
        in
        Dumpglob.dump_moddef loc mp "mod";
-       if_verbose msg_info
+       if_verbose Feedback.msg_info
 	 (str "Module " ++ pr_id id ++ str " is defined");
        Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)])
          export
@@ -683,7 +682,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
 let vernac_end_module export (loc,id as lid) =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref loc mp "mod";
-  if_verbose msg_info (str "Module " ++ pr_id id ++ str " is defined");
+  if_verbose Feedback.msg_info (str "Module " ++ pr_id id ++ str " is defined");
   Option.iter (fun export -> vernac_import export [Ident lid]) export
 
 let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
@@ -704,7 +703,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
            id binders_ast mty_sign
        in
        Dumpglob.dump_moddef loc mp "modtype";
-       if_verbose msg_info
+       if_verbose Feedback.msg_info
 	 (str "Interactive Module Type " ++ pr_id id ++ str " started");
        List.iter
          (fun (export,id) ->
@@ -723,13 +722,13 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
 	    id binders_ast mty_sign mty_ast_l
         in
         Dumpglob.dump_moddef loc mp "modtype";
-	if_verbose msg_info
+	if_verbose Feedback.msg_info
 	  (str "Module Type " ++ pr_id id ++ str " is defined")
 
 let vernac_end_modtype (loc,id) =
   let mp = Declaremods.end_modtype () in
   Dumpglob.dump_modref loc mp "modtype";
-  if_verbose msg_info (str "Module Type " ++ pr_id id ++ str " is defined")
+  if_verbose Feedback.msg_info (str "Module Type " ++ pr_id id ++ str " is defined")
 
 let vernac_include l =
   Declaremods.declare_include Modintern.interp_module_ast l
@@ -797,7 +796,7 @@ let vernac_coercion locality poly local ref qids qidt =
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
   Class.try_add_new_coercion_with_target ref' ~local poly ~source ~target;
-  if_verbose msg_info (pr_global ref' ++ str " is now a coercion")
+  if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion locality poly local id qids qidt =
   let local = enforce_locality locality local in
@@ -813,7 +812,7 @@ let vernac_instance abst locality poly sup inst props pri =
   ignore(Classes.new_instance ~abstract:abst ~global poly sup inst props pri)
 
 let vernac_context poly l =
-  if not (Classes.context poly l) then Pp.feedback Feedback.AddedAxiom
+  if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_declare_instances locality ids pri =
   let glob = not (make_section_locality locality) in
@@ -869,7 +868,7 @@ let vernac_set_used_variables e =
 (* Auxiliary file management *)
 
 let expand filename =
-  Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) filename
+  Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
 
 let vernac_add_loadpath implicit pdir ldiropt =
   let pdir = expand pdir in
@@ -889,13 +888,13 @@ let vernac_declare_ml_module locality l =
   Mltop.declare_ml_modules local (List.map expand l)
 
 let vernac_chdir = function
-  | None -> msg_notice (str (Sys.getcwd()))
+  | None -> Feedback.msg_notice (str (Sys.getcwd()))
   | Some path ->
       begin
 	try Sys.chdir (expand path)
-	with Sys_error err -> msg_warning (str "Cd failed: " ++ str err)
+	with Sys_error err -> Feedback.msg_warning (str "Cd failed: " ++ str err)
       end;
-      if_verbose msg_info (str (Sys.getcwd()))
+      if_verbose Feedback.msg_info (str (Sys.getcwd()))
 
 
 (********************)
@@ -1068,7 +1067,7 @@ let vernac_declare_arguments locality r l nargs flags =
           some_scopes_specified ||
           some_simpl_flags_specified) &&
      no_flags then
-    msg_warning (strbrk "This command is just asserting the number and names of arguments of " ++ pr_global sr ++ strbrk". If this is what you want add ': assert' to silence the warning. If you want to clear implicit arguments add ': clear implicits'. If you want to clear notation scopes add ': clear scopes'")
+    Feedback.msg_warning (strbrk "This command is just asserting the number and names of arguments of " ++ pr_global sr ++ strbrk". If this is what you want add ': assert' to silence the warning. If you want to clear implicit arguments add ': clear implicits'. If you want to clear notation scopes add ': clear scopes'")
 
 
 let default_env () = {
@@ -1423,7 +1422,7 @@ let vernac_check_may_eval redexp glopt rc =
     | None ->
         let l = Evar.Set.union (Evd.evars_of_term j.Environ.uj_val) (Evd.evars_of_term j.Environ.uj_type) in
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
-	msg_notice (print_judgment env sigma' j ++
+	Feedback.msg_notice (print_judgment env sigma' j ++
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
                     Printer.pr_universe_ctx sigma uctx)
     | Some r ->
@@ -1434,7 +1433,7 @@ let vernac_check_may_eval redexp glopt rc =
           let Sigma (c, _, _) = redfun.Reductionops.e_redfun env evm c in
           c
         in
-	msg_notice (print_eval redfun env sigma' rc j)
+	Feedback.msg_notice (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
   let local = make_locality locality in
@@ -1450,7 +1449,7 @@ let vernac_global_check c =
   let senv = Safe_typing.add_constraints cstrs senv in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
-    msg_notice (print_safe_judgment env sigma j)
+    Feedback.msg_notice (print_safe_judgment env sigma j)
 
 
 let get_nth_goal n =
@@ -1487,7 +1486,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
     | NoHyp | Not_found -> print_about ref_or_by_not
 
 	       
-let vernac_print = function
+let vernac_print = let open Feedback in function
   | PrintTables -> msg_notice (print_tables ())
   | PrintFullContext-> msg_notice (print_full_context_typ ())
   | PrintSectionContext qid -> msg_notice (print_sec_context_typ qid)
@@ -1586,6 +1585,7 @@ let vernac_search s gopt r =
     | Some g -> snd (Pfedit.get_goal_context g) , Some g
   in
   let get_pattern c = snd (intern_constr_pattern env c) in
+  let open Feedback in
   match s with
   | SearchPattern c ->
       msg_notice (Search.search_pattern gopt (get_pattern c) r)
@@ -1596,8 +1596,8 @@ let vernac_search s gopt r =
   | SearchAbout sl ->
      msg_notice (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r)
 
-let vernac_locate = function
-  | LocateAny (AN qid) -> msg_notice (print_located_qualid qid)
+let vernac_locate = let open Feedback in function
+  | LocateAny (AN qid)  -> msg_notice (print_located_qualid qid)
   | LocateTerm (AN qid) -> msg_notice (print_located_term qid)
   | LocateAny (ByNotation (_, ntn, sc)) (** TODO : handle Ltac notations *)
   | LocateTerm (ByNotation (_, ntn, sc)) ->
@@ -1640,7 +1640,7 @@ let vernac_unfocus () =
 let vernac_unfocused () =
   let p = Proof_global.give_me_the_proof () in
   if Proof.unfocused p then
-    msg_notice (str"The proof is indeed fully unfocused.")
+    Feedback.msg_notice (str"The proof is indeed fully unfocused.")
   else
     error "The proof is not fully unfocused."
 
@@ -1668,7 +1668,7 @@ let vernac_bullet (bullet:Proof_global.Bullet.t) =
   Proof_global.simple_with_current_proof (fun _ p ->
     Proof_global.Bullet.put p bullet)
 
-let vernac_show = function
+let vernac_show = let open Feedback in function
   | ShowGoal goalref ->
     let info = match goalref with
       | OpenSubgoals -> pr_open_subgoals ()
@@ -1706,7 +1706,7 @@ let vernac_check_guard () =
     with UserError(_,s) ->
       (str ("Condition violated: ") ++s)
   in
-  msg_notice message
+  Feedback.msg_notice message
 
 exception End_of_input
 
@@ -1717,7 +1717,7 @@ let vernac_load interp fname =
       | Some x -> x
       | None -> raise End_of_input) in
   let fname =
-    Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
+    Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
   let fname = CUnix.make_suffix fname ".v" in
   let input =
     let longfname = Loadpath.locate_file fname in
@@ -1849,15 +1849,15 @@ let interp ?proof ~loc locality poly c =
   | VernacSearch (s,g,r) -> vernac_search s g r
   | VernacLocate l -> vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r
-  | VernacComments l -> if_verbose msg_info (str "Comments ok\n")
+  | VernacComments l -> if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
-  | VernacAbort id -> msg_warning (str "VernacAbort not handled by Stm")
-  | VernacAbortAll -> msg_warning (str "VernacAbortAll not handled by Stm")
-  | VernacRestart -> msg_warning (str "VernacRestart not handled by Stm")
-  | VernacUndo _ -> msg_warning (str "VernacUndo not handled by Stm")
-  | VernacUndoTo _ -> msg_warning (str "VernacUndoTo not handled by Stm")
-  | VernacBacktrack _ -> msg_warning (str "VernacBacktrack not handled by Stm")
+  | VernacAbort id -> Feedback.msg_warning (str "VernacAbort not handled by Stm")
+  | VernacAbortAll -> Feedback.msg_warning (str "VernacAbortAll not handled by Stm")
+  | VernacRestart -> Feedback.msg_warning (str "VernacRestart not handled by Stm")
+  | VernacUndo _ -> Feedback.msg_warning (str "VernacUndo not handled by Stm")
+  | VernacUndoTo _ -> Feedback.msg_warning (str "VernacUndoTo not handled by Stm")
+  | VernacBacktrack _ -> Feedback.msg_warning (str "VernacBacktrack not handled by Stm")
   
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t,None)] false
@@ -1991,7 +1991,7 @@ let with_fail b f =
       | HasNotFailed ->
           errorlabstrm "Fail" (str "The command has not failed!")
       | HasFailed msg ->
-          if is_verbose () || !test_mode || !ide_slave then msg_info
+          if is_verbose () || !test_mode || !ide_slave then Feedback.msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)
       | _ -> assert false
   end
@@ -2016,7 +2016,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
     | VernacRedirect (s, (_,v)) ->
-         Pp.with_output_to_file s (aux false) v
+         Feedback.with_output_to_file s (aux false) v
     | VernacTime (_,v) ->
         System.with_time !Flags.time
           (aux ?locality ?polymorphism isprogcmd) v;

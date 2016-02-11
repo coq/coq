@@ -18,6 +18,7 @@ open Names
 open Util
 open Ppvernac
 open Vernac_classifier
+open Feedback
 
 module Hooks = struct
 
@@ -27,28 +28,23 @@ let with_fail, with_fail_hook = Hook.make ()
 
 let state_computed, state_computed_hook = Hook.make
  ~default:(fun state_id ~in_cache ->
-    feedback ~state_id Feedback.Processed) ()
+    feedback ~id:(State state_id) Processed) ()
 
 let state_ready, state_ready_hook = Hook.make
  ~default:(fun state_id -> ()) ()
 
 let forward_feedback, forward_feedback_hook = Hook.make
  ~default:(function
-    | { Feedback.id = Feedback.Edit edit_id; route; contents } ->
-          feedback ~edit_id ~route contents
-    | { Feedback.id = Feedback.State state_id; route; contents } ->
-          feedback ~state_id ~route contents) ()
+    | { id = id; route; contents } ->
+      feedback ~id:id ~route contents) ()
 
 let parse_error, parse_error_hook = Hook.make
- ~default:(function
-    | Feedback.Edit edit_id -> fun loc msg ->
-        feedback ~edit_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))
-    | Feedback.State state_id -> fun loc msg ->
-        feedback ~state_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))) ()
+ ~default:(fun id loc msg ->
+        feedback ~id (ErrorMsg (loc, Pp.string_of_ppcmds msg))) ()
 
 let execution_error, execution_error_hook = Hook.make
  ~default:(fun state_id loc msg ->
-    feedback ~state_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))) ()
+    feedback ~id:(State state_id) (ErrorMsg (loc, Pp.string_of_ppcmds msg))) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun _ _ -> ()) ()
@@ -106,11 +102,11 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
     | VernacTime (_,e) | VernacRedirect (_,(_,e)) -> internal_command e
     | _ -> false in
   if internal_command expr then begin
-    prerr_endline (fun () -> "ignoring " ^ string_of_ppcmds(pr_vernac expr))
+    prerr_endline (fun () -> "ignoring " ^ Pp.string_of_ppcmds(pr_vernac expr))
   end else begin
-    set_id_for_feedback ?route (Feedback.State id);
+    set_id_for_feedback ?route (State id);
     Aux_file.record_in_aux_set_at loc;
-    prerr_endline (fun () -> "interpreting " ^ string_of_ppcmds(pr_vernac expr));
+    prerr_endline (fun () -> "interpreting " ^ Pp.string_of_ppcmds(pr_vernac expr));
     try Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr))
     with e ->
       let e = Errors.push e in
@@ -120,8 +116,8 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
 let vernac_parse ?newtip ?route eid s =
   let feedback_id = 
-    if Option.is_empty newtip then Feedback.Edit eid
-    else Feedback.State (Option.get newtip) in
+    if Option.is_empty newtip then Edit eid
+    else State (Option.get newtip) in
   set_id_for_feedback ?route feedback_id;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   Flags.with_option Flags.we_are_parsing (fun () ->
@@ -138,7 +134,7 @@ let vernac_parse ?newtip ?route eid s =
 
 let pr_open_cur_subgoals () =
   try Printer.pr_open_subgoals ()
-  with Proof_global.NoCurrentProof -> str""
+  with Proof_global.NoCurrentProof -> Pp.str ""
 
 let update_global_env () =
   if Proof_global.there_are_pending_proofs () then
@@ -230,7 +226,7 @@ end = struct (* {{{ *)
   let find_proof_at_depth vcs pl =
     try List.find (function
           | _, { Vcs_.kind = `Proof(m, n) } -> Int.equal n pl
-          | _, { Vcs_.kind = `Edit _ } -> anomaly(str"find_proof_at_depth")
+          | _, { Vcs_.kind = `Edit _ } -> anomaly(Pp.str "find_proof_at_depth")
           | _ -> false)
         (List.map (fun h -> h, Vcs_.get_branch vcs h) (Vcs_.branches vcs))
     with Not_found -> failwith "find_proof_at_depth"
@@ -238,9 +234,9 @@ end = struct (* {{{ *)
   exception Expired
   let visit vcs id =
     if Stateid.equal id Stateid.initial then
-      anomaly(str"Visiting the initial state id")
+      anomaly(Pp.str "Visiting the initial state id")
     else if Stateid.equal id Stateid.dummy then
-      anomaly(str"Visiting the dummy state id")
+      anomaly(Pp.str "Visiting the dummy state id")
     else
     try
       match Vcs_.Dag.from_node (Vcs_.dag vcs) id with
@@ -256,7 +252,7 @@ end = struct (* {{{ *)
       | [n, Sideff (Some x); p, Noop]
       | [p, Noop; n, Sideff (Some x)]-> { step = `Sideff(`Ast (x,p)); next = n }
       | [n, Sideff (Some x)]-> {step = `Sideff(`Ast (x,Stateid.dummy)); next=n}
-      | _ -> anomaly (str ("Malformed VCS at node "^Stateid.to_string id))
+      | _ -> anomaly (Pp.str ("Malformed VCS at node "^Stateid.to_string id))
     with Not_found -> raise Expired
 
 end (* }}} *)
@@ -339,10 +335,10 @@ end = struct (* {{{ *)
       "stm_" ^ Str.global_replace (Str.regexp " ") "_" (System.process_id ()) in
     let string_of_transaction = function
       | Cmd { cast = t } | Fork (t, _,_,_) ->
-          (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
+          (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff (Some t) ->
           sprintf "Sideff(%s)"
-            (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
+            (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff None -> "EnvChange"
       | Noop -> " "
       | Alias (id,_) -> sprintf "Alias(%s)" (Stateid.to_string id)
@@ -740,7 +736,7 @@ end = struct (* {{{ *)
   let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
   =
-    feedback ~state_id:id Feedback.(ProcessingIn !Flags.async_proofs_worker_id);
+    feedback ~id:(State id) (ProcessingIn !Flags.async_proofs_worker_id);
     let str_id = Stateid.to_string id in
     if is_cached id && not redefine then
       anomaly (str"defining state "++str str_id++str" twice");
@@ -1062,7 +1058,7 @@ end = struct (* {{{ *)
         List.iter (fun (id,s) -> State.assign id s) l; `End
     | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states; t_drop },
               RespBuiltProof (pl, time) ->
-        feedback (Feedback.InProgress ~-1);
+        feedback (InProgress ~-1);
         t_assign (`Val pl);
         record_pb_time t_name t_loc time;
         if !Flags.async_proofs_full || t_drop
@@ -1070,7 +1066,7 @@ end = struct (* {{{ *)
         else `End
     | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
-        feedback (Feedback.InProgress ~-1);
+        feedback (InProgress ~-1);
         let info = Stateid.add ~valid Exninfo.null e_error_at in
         let e = (RemoteException e_msg, info) in
         t_assign (`Exn e);
@@ -1086,7 +1082,7 @@ end = struct (* {{{ *)
         let e = (RemoteException (strbrk s), info) in
         t_assign (`Exn e);
         Hooks.(call execution_error start Loc.ghost (strbrk s));
-        feedback (Feedback.InProgress ~-1)
+        feedback (InProgress ~-1)
 
   let build_proof_here ~drop_pt (id,valid) loc eop =
     Future.create (State.exn_on id ~valid) (fun () ->
@@ -1097,7 +1093,7 @@ end = struct (* {{{ *)
       Aux_file.record_in_aux_at loc "proof_build_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       let p = Proof_global.return_proof ~allow_partial:drop_pt () in
-      if drop_pt then Pp.feedback ~state_id:id Feedback.Complete;
+      if drop_pt then feedback ~id:(State id) Complete;
       p)
 
   let perform_buildp { Stateid.exn_info; stop; document; loc } drop my_states =
@@ -1190,7 +1186,7 @@ end = struct (* {{{ *)
         "The system state could not be sent to the worker process. "^
         "Falling back to local, lazy, evaluation."));
       t_assign(`Comp(build_proof_here ~drop_pt t_exn_info t_loc t_stop));
-      feedback (Feedback.InProgress ~-1)
+      feedback (InProgress ~-1)
 
 end (* }}} *)
 
@@ -1270,7 +1266,7 @@ end = struct (* {{{ *)
       let (e, info) = Errors.push e in
       (try match Stateid.get info with
       | None ->
-          pperrnl (
+          msg_error (
             str"File " ++ str name ++ str ": proof of " ++ str r_name ++
             spc () ++ iprint (e, info))
       | Some (_, cur) ->
@@ -1280,12 +1276,12 @@ end = struct (* {{{ *)
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (`Ast ( { loc }, _)) } ->
               let start, stop = Loc.unloc loc in
-              pperrnl (
+              msg_error (
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
                 spc () ++ iprint (e, info))
           | _ ->
-              pperrnl (
+              msg_error (
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 spc () ++ iprint (e, info))
     with e ->
@@ -1378,7 +1374,7 @@ end = struct (* {{{ *)
     else 
       let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
       let t_uuid = Future.uuid f in
-      feedback (Feedback.InProgress 1);
+      feedback (InProgress 1);
       let task = ProofTask.(BuildProof {
         t_exn_info; t_start = start; t_stop = stop; t_assign; t_drop = drop_pt;
         t_loc = loc; t_uuid; t_name = pname;
@@ -1625,11 +1621,11 @@ end = struct (* {{{ *)
     Reach.known_state ~cache:`No r_where;
     try
       vernac_interp r_for { r_what with verbose = true };
-      feedback ~state_id:r_for Feedback.Processed     
+      feedback ~id:(State r_for) Processed
     with e when Errors.noncritical e ->
       let e = Errors.push e in
       let msg = string_of_ppcmds (iprint e) in
-      feedback ~state_id:r_for (Feedback.ErrorMsg (Loc.ghost, msg))
+      feedback ~id:(State r_for) (ErrorMsg (Loc.ghost, msg))
     
   let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
   let name_of_request { r_what } = string_of_ppcmds (pr_ast r_what)
@@ -1897,7 +1893,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     vernac_interp id ~proof x;
-                    feedback ~state_id:id Feedback.Incomplete
+                    feedback ~id:(State id) Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
                 Proof_global.discard_all ()
@@ -2034,7 +2030,6 @@ let check_task name (tasks,rcbackup) i =
   let vcs = VCS.backup () in
   try
     let rc = Future.purify (Slaves.check_task name tasks) i in
-    pperr_flush ();
     VCS.restore vcs;
     rc
   with e when Errors.noncritical e -> VCS.restore vcs; false
@@ -2044,7 +2039,6 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
   let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
     let u = Future.purify (Slaves.finish_task name u d p t) i in
-    pperr_flush ();
     VCS.restore vcs;
     u in
   try
@@ -2052,7 +2046,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     (u,a,true), p
   with e ->
     let e = Errors.push e in
-    pperrnl (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
+    msg_error (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
 let merge_proof_branch ?valid ?id qast keep brname =
@@ -2357,7 +2351,7 @@ type focus = {
   tip : Stateid.t
 }
 
-let query ~at ?(report_with=(Stateid.dummy,Feedback.default_route)) s =
+let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;

@@ -2,6 +2,69 @@
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 
+** Logging and Pretty Printing: **
+
+* Printing functions have been removed from `Pp.mli`, which is now a
+  purely pretty-printing interface. Functions affected are:
+
+```` ocaml
+val pp          : std_ppcmds -> unit
+val ppnl        : std_ppcmds -> unit
+val pperr       : std_ppcmds -> unit
+val pperrnl     : std_ppcmds -> unit
+val pperr_flush : unit -> unit
+val pp_flush    : unit -> unit
+val flush_all   : unit -> unit
+val msg         : std_ppcmds -> unit
+val msgnl       : std_ppcmds -> unit
+val msgerr      : std_ppcmds -> unit
+val msgerrnl    : std_ppcmds -> unit
+val message     : string -> unit
+````
+
+  which are no more available. Users of `Pp.pp msg` should now use the
+  proper `Feedback.msg_*` function. Clients also have no control over
+  flushing, the back end takes care of it.
+
+* Feedback related functions and definitions have been moved to the
+  `Feedback` module. `message_level` has been renamed to
+  level. Functions moved from Pp to Feedback are:
+
+```` ocaml
+val set_logger      : logger -> unit
+val std_logger      : logger
+val emacs_logger    : logger
+val feedback_logger : logger
+````
+
+* We now provide several loggers, `log_via_feedback` is removed in
+  favor of `set_logger feedback_logger`. Output functions are:
+
+```` ocaml
+val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
+val msg_info    : Pp.std_ppcmds -> unit
+val msg_notice  : Pp.std_ppcmds -> unit
+val msg_warning : Pp.std_ppcmds -> unit
+val msg_error   : Pp.std_ppcmds -> unit
+val msg_debug   : Pp.std_ppcmds -> unit
+````
+
+  with the `msg_*` functions being just an alias for `logger $Level`.
+
+* The main feedback functions are:
+
+```` ocaml
+val set_feeder : (feedback -> unit) -> unit
+val feedback : ?id:edit_or_state_id -> ?route:route_id -> feedback_content -> unit
+val set_id_for_feedback : ?route:route_id -> edit_or_state_id -> unit
+````
+  Note that `feedback` doesn't take two parameters anymore. After
+  refactoring the following function has been removed:
+
+```` ocaml
+val get_id_for_feedback : unit -> edit_or_state_id * route_id
+````
+
 - The interface of the Context module was changed.
   Related types and functions were put in separate submodules.
   The mapping from old identifiers to new identifiers is the following:

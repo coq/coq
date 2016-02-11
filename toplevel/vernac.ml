@@ -119,8 +119,7 @@ let verbose_phrase verbch loc =
 	let s = String.create len in
         seek_in ch (fst loc);
         really_input ch s 0 len;
-        ppnl (str s);
-        pp_flush()
+        Feedback.msg_notice (str s ++ fnl ())
     | None -> ()
 
 exception End_of_input
@@ -152,9 +151,9 @@ let pr_new_syntax loc ocom =
     | Some com -> Ppvernac.pr_vernac com
     | None -> mt() in
   if !beautify_file then
-    msg (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
+    Feedback.msg_notice (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
   else
-    msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
+    Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
   States.unfreeze fs;
   Format.set_formatter_out_channel stdout
 
@@ -193,14 +192,15 @@ let display_cmd_header loc com =
     with e -> str (Printexc.to_string e) in
   let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
   in
-  Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
-	 str " [" ++ str cmd ++ str "] ");
-  Pp.flush_all ()
+  Feedback.msg_notice
+    (str "Chars " ++ int start ++ str " - " ++ int stop ++
+     str " [" ++ str cmd ++ str "] ")
+
 
 let rec vernac_com verbose checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
-	let fname = Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
+	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
 	let st = save_translator_coqdoc () in
@@ -248,8 +248,7 @@ and read_vernac_file verbosely s =
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc_ast = parse_sentence input in
-      vernac_com verbosely checknav loc_ast;
-      pp_flush ()
+      vernac_com verbosely checknav loc_ast
     done
   with any ->   (* whatever the exception *)
     let (e, info) = Errors.push any in
@@ -294,7 +293,7 @@ let load_vernac verb file =
 let ensure_v f =
   if Filename.check_suffix f ".v" then f
   else begin
-    msg_warning (str "File \"" ++ str f ++ strbrk "\" has been implicitly \
+    Feedback.msg_warning (str "File \"" ++ str f ++ strbrk "\" has been implicitly \
     expanded to \"" ++ str f ++ str ".v\"");
     f ^ ".v"
   end
@@ -304,7 +303,7 @@ let compile verbosely f =
   let check_pending_proofs () =
     let pfs = Pfedit.get_all_proof_names () in
     if not (List.is_empty pfs) then
-      (msg_error (str "There are pending proofs"); flush_all (); exit 1) in
+      (Feedback.msg_error (str "There are pending proofs"); flush_all (); exit 1) in
   match !Flags.compilation_mode with
   | BuildVo ->
       let long_f_dot_v = ensure_v f in

@@ -387,7 +387,7 @@ let add_coercion_in_graph (ic,source,target) =
   end;
   let is_ambig = match !ambig_paths with [] -> false | _ -> true in
   if is_ambig && is_verbose () then
-    msg_warning (message_ambig !ambig_paths)
+    Feedback.msg_warning (message_ambig !ambig_paths)
 
 type coercion = {
   coercion_type   : coe_typ;

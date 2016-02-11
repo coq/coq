@@ -29,7 +29,7 @@ let reset () =
   beta := 0; delta := 0; zeta := 0; evar := 0; iota := 0; prune := 0
 
 let stop() =
-  msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
+  Feedback.msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
 	 str" zeta=" ++ int !zeta ++ str" evar=" ++ int !evar ++
          str" iota=" ++ int !iota ++ str" prune=" ++ int !prune ++ str"]")
 

@@ -568,7 +568,7 @@ let is_not_small_constr = function
 let rec define_keywords_aux = function
   | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
       when is_not_small_constr e ->
-      Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
+      Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
       CLexer.add_keyword k;
       n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
@@ -577,7 +577,7 @@ let rec define_keywords_aux = function
   (* Ensure that IDENT articulation terminal symbols are keywords *)
 let define_keywords = function
   | GramConstrTerminal(IDENT k)::l ->
-      Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
+      Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
       CLexer.add_keyword k;
       GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | l -> define_keywords_aux l
@@ -855,12 +855,12 @@ let check_rule_productivity l =
 let is_not_printable onlyparse noninjective = function
 | NVar _ ->
   let () = if not onlyparse then
-    msg_warning (strbrk "This notation will not be used for printing as it is bound to a single variable.")
+    Feedback.msg_warning (strbrk "This notation will not be used for printing as it is bound to a single variable.")
   in
   true
 | _ ->
   if not onlyparse && noninjective then
-    let () = msg_warning (strbrk "This notation will not be used for printing as it is not reversible.") in
+    let () = Feedback.msg_warning (strbrk "This notation will not be used for printing as it is not reversible.") in
     true
   else onlyparse
 
@@ -886,7 +886,7 @@ let find_precedence lev etyps symbols =
 	| ETName | ETBigint | ETReference ->
             begin match lev with
             | None ->
-	      ([msg_info,strbrk "Setting notation at level 0."],0)
+	      ([Feedback.msg_info,strbrk "Setting notation at level 0."],0)
             | Some 0 ->
               ([],0)
             | _ ->
@@ -904,7 +904,7 @@ let find_precedence lev etyps symbols =
 	else [],Option.get lev)
   | Terminal _ when last_is_terminal () ->
       if Option.is_empty lev then
-	([msg_info,strbrk "Setting notation at level 0."], 0)
+	([Feedback.msg_info,strbrk "Setting notation at level 0."], 0)
       else [],Option.get lev
   | _ ->
       if Option.is_empty lev then error "Cannot determine the level.";
@@ -931,7 +931,7 @@ let remove_curly_brackets l =
             (match next' with
               | Terminal "}" as t2 :: l'' as l1 ->
                   if not (List.equal Notation.symbol_eq l l0) || not (List.equal Notation.symbol_eq l' l1) then
-                    msg_warning (strbrk "Skipping spaces inside curly brackets");
+                    Feedback.msg_warning (strbrk "Skipping spaces inside curly brackets");
                   if deb && List.is_empty l'' then [t1;x;t2] else begin
                     check_curly_brackets_notation_exists ();
                     x :: aux false l''
@@ -976,7 +976,7 @@ let compute_pure_syntax_data df mods =
   let (msgs,(onlyparse,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
   let msgs =
     if onlyparse then
-      (msg_warning,
+      (Feedback.msg_warning,
       strbrk "The only parsing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
   msgs, sy_data, extra

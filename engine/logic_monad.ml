@@ -104,11 +104,11 @@ struct
       Util.iraise (Exception e, info)
 
   (** Use the current logger. The buffer is also flushed. *)
-  let print_debug s = make (fun _ -> Pp.msg_info s;Pp.pp_flush ())
-  let print_info s =  make (fun _ -> Pp.msg_info s;Pp.pp_flush ())
-  let print_warning s =  make (fun _ -> Pp.msg_warning s;Pp.pp_flush ())
-  let print_error s =  make (fun _ -> Pp.msg_error s;Pp.pp_flush ())
-  let print_notice s = make (fun _ -> Pp.msg_notice s;Pp.pp_flush ())
+  let print_debug   s = make (fun _ -> Feedback.msg_info s)
+  let print_info    s = make (fun _ -> Feedback.msg_info s)
+  let print_warning s = make (fun _ -> Feedback.msg_warning s)
+  let print_error   s = make (fun _ -> Feedback.msg_error s)
+  let print_notice  s = make (fun _ -> Feedback.msg_notice s)
 
   let run = fun x ->
     try x () with Exception e as src ->

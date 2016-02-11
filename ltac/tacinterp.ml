@@ -1242,7 +1242,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> interp_tactic ist (TacArg a)
   | TacInfo tac ->
-      msg_warning
+      Feedback.msg_warning
 	(strbrk "The general \"info\" tactic is currently not working." ++ spc()++
            strbrk "There is an \"Info\" command to replace it." ++fnl () ++
 	   strbrk "Some specific verbose tactics may also exist, such as info_eauto.");

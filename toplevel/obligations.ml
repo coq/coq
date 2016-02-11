@@ -24,7 +24,7 @@ let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
 
 let trace s =
-  if !Flags.debug then msg_debug s
+  if !Flags.debug then Feedback.msg_debug s
   else ()
 
 let succfix (depth, fixrels) =
@@ -731,11 +731,11 @@ type progress =
 let obligations_message rem =
   if rem > 0 then
     if Int.equal rem 1 then
-      Flags.if_verbose msg_info (int rem ++ str " obligation remaining")
+      Flags.if_verbose Feedback.msg_info (int rem ++ str " obligation remaining")
     else
-      Flags.if_verbose msg_info (int rem ++ str " obligations remaining")
+      Flags.if_verbose Feedback.msg_info (int rem ++ str " obligations remaining")
   else
-    Flags.if_verbose msg_info (str "No more obligations remaining")
+    Flags.if_verbose Feedback.msg_info (str "No more obligations remaining")
 
 let update_obls prg obls rem =
   let prg' = { prg with prg_obligations = (obls, rem) } in
@@ -992,7 +992,7 @@ and try_solve_obligations n tac =
   try ignore (solve_obligations n tac) with NoObligations _ -> ()
 
 and auto_solve_obligations n ?oblset tac : progress =
-  Flags.if_verbose msg_info (str "Solving obligations automatically...");
+  Flags.if_verbose Feedback.msg_info (str "Solving obligations automatically...");
   try solve_prg_obligations (get_prog_err n) ?oblset tac with NoObligations _ -> Dependent
 
 open Pp
@@ -1000,13 +1000,13 @@ let show_obligations_of_prg ?(msg=true) prg =
   let n = prg.prg_name in
   let obls, rem = prg.prg_obligations in
   let showed = ref 5 in
-    if msg then msg_info (int rem ++ str " obligation(s) remaining: ");
+    if msg then Feedback.msg_info (int rem ++ str " obligation(s) remaining: ");
     Array.iteri (fun i x ->
 		   match x.obl_body with
 		   | None ->
 		       if !showed > 0 then (
 			 decr showed;
-			 msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
+			 Feedback.msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
 				   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
 				   hov 1 (Printer.pr_constr_env (Global.env ()) Evd.empty x.obl_type ++
 					    str "." ++ fnl ())))
@@ -1035,12 +1035,12 @@ let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=Global,false,Definit
   let prg = init_prog_info sign ~opaque n pl term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
-    Flags.if_verbose msg_info (info ++ str ".");
+    Flags.if_verbose Feedback.msg_info (info ++ str ".");
     let cst = declare_definition prg in
       Defined cst)
   else (
     let len = Array.length obls in
-    let _ = Flags.if_verbose msg_info (info ++ str ", generating " ++ int len ++ str " obligation(s)") in
+    let _ = Flags.if_verbose Feedback.msg_info (info ++ str ", generating " ++ int len ++ str " obligation(s)") in
       progmap_add n (CEphemeron.create prg);
       let res = auto_solve_obligations (Some n) tactic in
 	match res with

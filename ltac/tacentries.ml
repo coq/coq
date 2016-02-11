@@ -435,7 +435,7 @@ let register_ltac local tacl =
           with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
         in
         let () = if is_primitive then
-          msg_warning (str "The Ltac name " ++ id_pp ++
+          Feedback.msg_warning (str "The Ltac name " ++ id_pp ++
             str " may be unusable because of a conflict with a notation.")
         in
         NewTac id, body
@@ -473,10 +473,10 @@ let register_ltac local tacl =
   let iter (def, tac) = match def with
   | NewTac id ->
     Tacenv.register_ltac false local id tac;
-    Flags.if_verbose msg_info (Nameops.pr_id id ++ str " is defined")
+    Flags.if_verbose Feedback.msg_info (Nameops.pr_id id ++ str " is defined")
   | UpdateTac kn ->
     Tacenv.redefine_ltac local kn tac;
     let name = Nametab.shortest_qualid_of_tactic kn in
-    Flags.if_verbose msg_info (Libnames.pr_qualid name ++ str " is redefined")
+    Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
   in
   List.iter iter defs

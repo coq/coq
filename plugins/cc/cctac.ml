@@ -424,10 +424,10 @@ let cc_tactic depth additionnal_terms =
 	      List.map
 		(build_term_to_complete uf newmeta)
 		(epsilons uf) in
-	    Pp.msg_info
+	    Feedback.msg_info
 	      (Pp.str "Goal is solvable by congruence but \
  some arguments are missing.");
-	    Pp.msg_info
+	    Feedback.msg_info
 	      (Pp.str "  Try " ++
 		 hov 8
 		 begin

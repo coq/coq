@@ -28,13 +28,14 @@ CArray
 CStack
 Util
 Stateid
-Feedback
 Pp
 Ppstyle
+Xml_datatype
+Richpp
+Feedback
 Xml_lexer
 Xml_parser
 Xml_printer
-Richpp
 CUnix
 Envars
 Aux_file

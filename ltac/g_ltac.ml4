@@ -231,7 +231,7 @@ GEXTEND Gram
         Subterm (mode, oid, pc)
       | IDENT "appcontext";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
-        msg_warning (strbrk "appcontext is deprecated");
+        Feedback.msg_warning (strbrk "appcontext is deprecated");
         Subterm (true,oid, pc)
       | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;
@@ -334,7 +334,7 @@ let vernac_solve n info tcom b =
        go back to the top of the prooftree *)
     let p = Proof.maximal_unfocus Vernacentries.command_focus p in
     p,status) in
-    if not status then Pp.feedback Feedback.AddedAxiom
+    if not status then Feedback.feedback Feedback.AddedAxiom
 
 let pr_ltac_selector = function
 | SelectNth i -> int i ++ str ":"
@@ -408,7 +408,7 @@ END
 
 VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
 | [ "Print" "Ltac" reference(r) ] ->
-  [ msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
+  [ Feedback.msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
 END
 
 let pr_ltac_ref = Libnames.pr_reference

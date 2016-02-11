@@ -167,8 +167,10 @@ let hcons_j j =
   { uj_val = hcons_constr j.uj_val; uj_type = hcons_constr j.uj_type} 
 
 let feedback_completion_typecheck =
-  Option.iter (fun state_id -> Pp.feedback ~state_id Feedback.Complete)
-	      
+  let open Feedback in
+  Option.iter (fun state_id ->
+      feedback ~id:(State state_id) Feedback.Complete)
+
 let infer_declaration ~trust env kn dcl =
   match dcl with
   | ParameterEntry (ctx,poly,(t,uctx),nl) ->
