@@ -114,7 +114,7 @@ let interp_definition pl bl p red_option c ctypopt =
           impl_eq (List.assoc_f Pervasives.(=) key impsty) va (* FIXME *)
         in
 	if not (try List.for_all chk imps2 with Not_found -> false)
-	then msg_warning
+	then Feedback.msg_warning
           (strbrk "Implicit arguments declaration relies on type." ++ spc () ++
 	   strbrk "The term declares more implicits than the type here.");
         let vars = Univ.LSet.union (Universes.universes_of_constr body) 
@@ -135,7 +135,7 @@ let get_locality id = function
 | Discharge ->
   (** If a Let is defined outside a section, then we consider it as a local definition *)
   let msg = pr_id id ++ strbrk " is declared as a local definition" in
-  let () = msg_warning msg in
+  let () = Feedback.msg_warning msg in
   true
 | Local -> true
 | Global -> false
@@ -166,7 +166,7 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     let () = if Pfedit.refining () then
       let msg = strbrk "Section definition " ++
         pr_id ident ++ strbrk " is not visible from current goals" in
-      msg_warning msg
+      Feedback.msg_warning msg
     in
     gr
   | Discharge | Local | Global ->
@@ -212,7 +212,7 @@ match local with
   let () = assumption_message ident in
   let () =
     if is_verbose () && Pfedit.refining () then
-    msg_warning (str"Variable" ++ spc () ++ pr_id ident ++
+    Feedback.msg_warning (str"Variable" ++ spc () ++ pr_id ident ++
     strbrk " is not visible from current goals")
   in
   let r = VarRef ident in
@@ -700,7 +700,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
 		constrimpls)
       impls;
   let warn_prim = match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false in
-  if_verbose msg_info (minductive_message warn_prim names);
+  if_verbose Feedback.msg_info (minductive_message warn_prim names);
   if mie.mind_entry_private == None
   then declare_default_schemes mind;
   mind
@@ -793,7 +793,7 @@ let check_mutuality env isfix fixl =
   let po = partial_order Id.equal preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::rest ->
-	msg_warning (non_full_mutual_message x xge y yge isfix rest)
+	Feedback.msg_warning (non_full_mutual_message x xge y yge isfix rest)
     | _ -> ()
 
 type structured_fixpoint_expr = {

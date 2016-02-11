@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module F = Feedback
-
 module Glue : sig
 
   (** The [Glue] module implements a container data structure with
@@ -76,13 +74,6 @@ struct
 end
 
 open Pp_control
-
-(* This should not be used outside of this file. Use
-   Flags.print_emacs instead. This one is updated when reading
-   command line options. This was the only way to make [Pp] depend on
-   an option without creating a circularity: [Flags] -> [Util] ->
-   [Pp] -> [Flags] *)
-let print_emacs = ref false
 
 (* The different kinds of blocks are:
    \begin{description}
@@ -356,119 +347,22 @@ let pp_dirs ?pp_tag ft =
 
 (* pretty print on stdout and stderr *)
 
-(* Special chars for emacs, to detect warnings inside goal output *)
-let emacs_quote_start = String.make 1 (Char.chr 254)
-let emacs_quote_end = String.make 1 (Char.chr 255)
-
-let emacs_quote_info_start = "<infomsg>"
-let emacs_quote_info_end = "</infomsg>"
-
-let emacs_quote g =
-  if !print_emacs then hov 0 (str emacs_quote_start ++ g ++ str emacs_quote_end)
-  else hov 0 g
-
-let emacs_quote_info g =
-  if !print_emacs then hov 0 (str emacs_quote_info_start++ brk(0,0) ++ g ++ brk(0,0) ++ str emacs_quote_info_end)
-  else hov 0 g
-
-
 (* pretty printing functions WITHOUT FLUSH *)
 let pp_with ?pp_tag ft strm =
   pp_dirs ?pp_tag ft (Glue.atom (Ppdir_ppcmds strm))
-
-let ppnl_with ft strm =
-  pp_dirs ft (Glue.atom (Ppdir_ppcmds (strm ++ fnl ())))
 
 (* pretty printing functions WITH FLUSH *)
 let msg_with ft strm =
   pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))
 
-let msgnl_with ft strm =
-  pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_newline))
-
-let msgnl x = msgnl_with !std_ft x
-
-(* Logging management *)
-type logger = F.level -> std_ppcmds -> unit
-
-let make_body info s =
-  emacs_quote (hov 0 (info ++ spc () ++ s))
-
-let debugbody strm = emacs_quote_info (hov 0 (str "Debug:" ++ spc () ++ strm))
-let warnbody strm = make_body (str "Warning:") strm
-let errorbody strm = make_body (str "Error:") strm
-let infobody strm = emacs_quote_info strm
-
-let std_logger level msg = match level with
-| F.Debug _ -> msgnl (debugbody msg)
-| F.Info    -> msgnl (hov 0 msg)
-| F.Notice  -> msgnl msg
-| F.Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
-| F.Error -> msgnl_with !err_ft (errorbody msg)
-
-let emacs_logger level mesg = match level with
-| F.Debug _ -> msgnl (debugbody mesg)
-| F.Info    -> msgnl (infobody mesg)
-| F.Notice  -> msgnl mesg
-| F.Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody mesg)) ()
-| F.Error -> msgnl_with !err_ft (errorbody mesg)
-
-let logger = ref std_logger
-
-let make_pp_emacs() = print_emacs:=true; logger:=emacs_logger
-let make_pp_nonemacs() = print_emacs:=false; logger := std_logger
-
-let ft_logger old_logger ft level mesg =
-  let open Feedback in
-  match level with
-  | Debug _ -> msgnl_with ft (debugbody mesg)
-  | Info    -> msgnl_with ft (infobody mesg)
-  | Notice  -> msgnl_with ft mesg
-  | Warning -> old_logger level mesg
-  | Error   -> old_logger level mesg
-
-let with_output_to_file fname func input =
-  let old_logger = !logger in
-  let channel = open_out (String.concat "." [fname; "out"]) in
-  logger := ft_logger old_logger (Format.formatter_of_out_channel channel);
-  try
-    let output = func input in
-    logger := old_logger;
-    close_out channel;
-    output
-  with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
-    logger := old_logger;
-    close_out channel;
-    Exninfo.iraise reraise
-
 (* If mixing some output and a goal display, please use msg_warning,
    so that interfaces (proofgeneral for example) can easily dispatch
    them to different windows. *)
-
-let msg_info    x = !logger F.Info x
-let msg_notice  x = !logger F.Notice x
-let msg_warning x = !logger F.Warning x
-let msg_error   x = !logger F.Error x
-let msg_debug   x = !logger (F.Debug "_") x
-
-let set_logger l = logger := l
-
-(** Standard logger *)
-let std_logger lvl msg = std_logger lvl msg
 
 (** Feedback logger *)
 let string_of_ppcmds c =
   Format.fprintf Format.str_formatter "@[%a@]" msg_with c;
   Format.flush_str_formatter ()
-
-let feedback_logger lvl msg =
-  let id, route = F.get_id_for_feedback () in
-  F.feedback ~route:route ~id:id (
-    F.Message {
-      F.message_level   = lvl;
-      F.message_content = string_of_ppcmds msg;
-    })
 
 (* Copy paste from Util *)
 

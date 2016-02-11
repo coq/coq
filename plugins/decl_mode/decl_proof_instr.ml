@@ -272,7 +272,7 @@ let justification tac gls=
 	   error "Insufficient justification."
 	 else
 	   begin
-	     msg_warning (str "Insufficient justification.");
+	     Feedback.msg_warning (str "Insufficient justification.");
 	     daimon_tac gls
 	   end) gls
 
@@ -1273,7 +1273,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	       end;
 	       match bro with
 		   None ->
-		     msg_warning (str "missing case");
+		     Feedback.msg_warning (str "missing case");
 		     tacnext (mkMeta 1)
 		 | Some (sub_ids,tree) ->
 		     let br_args =

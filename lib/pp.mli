@@ -6,16 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Modify pretty printing functions behavior for emacs ouput (special
-   chars inserted at some places). This function should called once in
-   module [Options], that's all. *)
-val make_pp_emacs   : unit -> unit
-val make_pp_nonemacs: unit -> unit
-
-(** [with_output_to_file file f x] executes [f x] with output
-    redirected to a file [file] *)
-val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
-
 (** Pretty-printers. *)
 
 type std_ppcmds
@@ -108,44 +98,6 @@ val tag : Tag.t -> std_ppcmds -> std_ppcmds
 val open_tag : Tag.t -> std_ppcmds
 val close_tag : unit -> std_ppcmds
 
-type logger = Feedback.level -> std_ppcmds -> unit
-
-(** {6 output functions}
-
-[msg_notice] do not put any decoration on output by default. If
-possible don't mix it with goal output (prefer msg_info or
-msg_warning) so that interfaces can dispatch outputs easily. Once all
-interfaces use the xml-like protocol this constraint can be
-relaxed. *)
-(* Should we advertise these functions more? Should they be the ONLY
-   allowed way to output something? *)
-
-val msg_info : std_ppcmds -> unit
-(** Message that displays information, usually in verbose mode, such as [Foobar
-    is defined] *)
-
-val msg_notice : std_ppcmds -> unit
-(** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
-
-val msg_warning : std_ppcmds -> unit
-(** Message indicating that something went wrong, but without serious
-    consequences. *)
-
-val msg_error : std_ppcmds -> unit
-(** Message indicating that something went really wrong, though still
-    recoverable; otherwise an exception would have been raised. *)
-
-val msg_debug : std_ppcmds -> unit
-(** For debugging purposes *)
-
-val set_logger : logger -> unit
-
-val std_logger : logger
-(** Standard logging function *)
-val feedback_logger : logger
-(** Feedback logging function *)
-
-
 (** {6 Utilities} *)
 
 val string_of_ppcmds : std_ppcmds -> string
@@ -215,5 +167,6 @@ val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 (** {6 Low-level pretty-printing functions with and without flush} *)
 
+(** FIXME: These ignore the logging settings and call [Format] directly *)
 val msg_with :                        Format.formatter -> std_ppcmds -> unit
 val pp_with  : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit

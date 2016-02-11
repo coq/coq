@@ -55,7 +55,7 @@ let call ?locality (opn,converted_args) =
       | Egramml.GramNonTerminal _ -> str "_"
       in
       let pr = pr_sequence pr_gram rules in
-      msg_warning (str "Deprecated vernacular command: " ++ pr)
+      Feedback.msg_warning (str "Deprecated vernacular command: " ++ pr)
     in
     loc:= "Checking arguments";
     let hunk = callback converted_args in
@@ -68,5 +68,5 @@ let call ?locality (opn,converted_args) =
     | reraise ->
         let reraise = Errors.push reraise in
         if !Flags.debug then
-	  msg_debug (str"Vernac Interpreter " ++ str !loc);
+	  Feedback.msg_debug (str"Vernac Interpreter " ++ str !loc);
         iraise reraise

@@ -76,20 +76,20 @@ let call_compiler ml_filename =
     ::"-w"::"a"
     ::include_dirs
     @ ["-impl"; ml_filename] in
-  if !Flags.debug then Pp.msg_debug (Pp.str (compiler_name ^ " " ^ (String.concat " " args)));
+  if !Flags.debug then Feedback.msg_debug (Pp.str (compiler_name ^ " " ^ (String.concat " " args)));
   try
     let res = CUnix.sys_command compiler_name args in
     let res = match res with
       | Unix.WEXITED 0 -> true
       | Unix.WEXITED n ->
-         Pp.(msg_warning (str "command exited with status " ++ int n)); false
+         Feedback.msg_warning Pp.(str "command exited with status " ++ int n); false
       | Unix.WSIGNALED n ->
-         Pp.(msg_warning (str "command killed by signal " ++ int n)); false
+         Feedback.msg_warning Pp.(str "command killed by signal " ++ int n); false
       | Unix.WSTOPPED n ->
-         Pp.(msg_warning (str "command stopped by signal " ++ int n)); false in
+         Feedback.msg_warning Pp.(str "command stopped by signal " ++ int n); false in
     res, link_filename
   with Unix.Unix_error (e,_,_) ->
-    Pp.(msg_warning (str (Unix.error_message e)));
+    Feedback.msg_warning Pp.(str (Unix.error_message e));
     false, link_filename
 
 let compile fn code =
@@ -123,7 +123,7 @@ let call_linker ?(fatal=true) prefix f upds =
     begin
       let msg = "Cannot find native compiler file " ^ f in
       if fatal then Errors.error msg
-      else if !Flags.debug then Pp.msg_debug (Pp.str msg)
+      else if !Flags.debug then Feedback.msg_debug (Pp.str msg)
     end
   else
   (try
@@ -132,8 +132,8 @@ let call_linker ?(fatal=true) prefix f upds =
    with Dynlink.Error e as exn ->
      let exn = Errors.push exn in
      let msg = "Dynlink error, " ^ Dynlink.error_message e in
-     if fatal then (Pp.msg_error (Pp.str msg); iraise exn)
-     else if !Flags.debug then Pp.msg_debug (Pp.str msg));
+     if fatal then (Feedback.msg_error (Pp.str msg); iraise exn)
+     else if !Flags.debug then Feedback.msg_debug (Pp.str msg));
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library ~prefix ~dirname ~basename =

@@ -1020,7 +1020,7 @@ VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF
 END
 
 VERNAC COMMAND EXTEND Print_keys CLASSIFIED AS QUERY
-| [ "Print" "Equivalent" "Keys" ] -> [ msg_info (Keys.pr_keys Printer.pr_global) ]
+| [ "Print" "Equivalent" "Keys" ] -> [ Feedback.msg_info (Keys.pr_keys Printer.pr_global) ]
 END
 
 

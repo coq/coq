@@ -88,7 +88,7 @@ let subst_global_reference subst =
  let subst_global ref =
   let ref',t' = subst_global subst ref in
    if not (eq_constr (Universes.constr_of_global ref') t') then
-    msg_warning (strbrk "The reference " ++ pr_global ref ++ str " is not " ++
+    Feedback.msg_warning (strbrk "The reference " ++ pr_global ref ++ str " is not " ++
           str " expanded to \"" ++ pr_lconstr t' ++ str "\", but to " ++
           pr_global ref') ;
    ref'

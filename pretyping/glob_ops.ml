@@ -326,8 +326,8 @@ let free_glob_vars  =
 
 let add_and_check_ident id set =
   if Id.Set.mem id set then
-    Pp.(msg_warning
-      (str "Collision between bound variables of name " ++ Id.print id));
+    Feedback.msg_warning
+      Pp.(str "Collision between bound variables of name " ++ Id.print id);
   Id.Set.add id set
 
 let bound_glob_vars =

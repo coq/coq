@@ -398,7 +398,7 @@ let declare_mind mie =
 let pr_rank i = pr_nth (i+1)
 
 let fixpoint_message indexes l =
-  Flags.if_verbose msg_info (match l with
+  Flags.if_verbose Feedback.msg_info (match l with
   | [] -> anomaly (Pp.str "no recursive definition")
   | [id] -> pr_id id ++ str " is recursively defined" ++
       (match indexes with
@@ -413,7 +413,7 @@ let fixpoint_message indexes l =
 		    | None -> mt ()))
 
 let cofixpoint_message l =
-  Flags.if_verbose msg_info (match l with
+  Flags.if_verbose Feedback.msg_info (match l with
   | [] -> anomaly (Pp.str "No corecursive definition.")
   | [id] -> pr_id id ++ str " is corecursively defined"
   | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
@@ -423,10 +423,10 @@ let recursive_message isfix i l =
   (if isfix then fixpoint_message i else cofixpoint_message) l
 
 let definition_message id =
-  Flags.if_verbose msg_info (pr_id id ++ str " is defined")
+  Flags.if_verbose Feedback.msg_info (pr_id id ++ str " is defined")
 
 let assumption_message id =
-  Flags.if_verbose msg_info (pr_id id ++ str " is assumed")
+  Flags.if_verbose Feedback.msg_info (pr_id id ++ str " is assumed")
 
 (** Global universe names, in a different summary *)
 

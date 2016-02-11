@@ -135,12 +135,12 @@ let native_conv_gen pb sigma env univs t1 t2 =
   match compile ml_filename code with
   | (true, fn) ->
       begin
-        if !Flags.debug then Pp.msg_debug (Pp.str "Running test...");
+        if !Flags.debug then Feedback.msg_debug (Pp.str "Running test...");
         let t0 = Sys.time () in
         call_linker ~fatal:true prefix fn (Some upds);
         let t1 = Sys.time () in
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
-        if !Flags.debug then Pp.msg_debug (Pp.str time_info);
+        if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         (* TODO change 0 when we can have deBruijn *)
         fst (conv_val env pb 0 !rt1 !rt2 univs)
       end
@@ -150,7 +150,7 @@ let native_conv_gen pb sigma env univs t1 t2 =
 let native_conv cv_pb sigma env t1 t2 =
   if Coq_config.no_native_compiler then begin
     let msg = "Native compiler is disabled, falling back to VM conversion test." in
-    Pp.msg_warning (Pp.str msg);
+    Feedback.msg_warning (Pp.str msg);
     vm_conv cv_pb env t1 t2
   end
   else

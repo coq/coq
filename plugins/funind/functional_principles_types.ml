@@ -18,7 +18,7 @@ exception Toberemoved
 
 let observe s =
   if do_observe ()
-  then Pp.msg_debug s
+  then Feedback.msg_debug s
 
 (*
    Transform an inductive induction principle into

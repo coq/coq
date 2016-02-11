@@ -132,7 +132,7 @@ let fold_constr_expr_with_binders g f n acc = function
 	fold_local_binders g f n'
 	  (fold_local_binders g f n acc t lb) c lb) l acc
   | CCoFix (loc,_,_) ->
-      msg_warning (strbrk "Capture check in multiple binders not done"); acc
+      Feedback.msg_warning (strbrk "Capture check in multiple binders not done"); acc
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function

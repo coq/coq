@@ -25,7 +25,7 @@ let init_size=5
 let cc_verbose=ref false
 
 let debug x =
-  if !cc_verbose then msg_debug (x ())
+  if !cc_verbose then Feedback.msg_debug (x ())
 
 let _=
   let gdopt=

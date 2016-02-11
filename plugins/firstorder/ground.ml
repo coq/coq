@@ -32,7 +32,7 @@ let ground_tac solver startseq gl=
   update_flags ();
   let rec toptac skipped seq gl=
     if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
-    then Pp.msg_debug (Printer.pr_goal gl);
+    then Feedback.msg_debug (Printer.pr_goal gl);
     tclORELSE (axiom_tac seq.gl seq)
       begin
 	try

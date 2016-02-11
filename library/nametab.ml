@@ -119,7 +119,7 @@ struct
 	      | Absolute (n,_) ->
 		  (* This is an absolute name, we must keep it
 		     otherwise it may become unaccessible forever *)
-		    msg_warning (str ("Trying to mask the absolute name \""
+		    Feedback.msg_warning (str ("Trying to mask the absolute name \""
 			     ^ U.to_string n ^ "\"!"));
 		  tree.path
 	      | Nothing
@@ -155,7 +155,7 @@ let rec push_exactly uname o level tree = function
         | Absolute (n,_) ->
             (* This is an absolute name, we must keep it
                 otherwise it may become unaccessible forever *)
-              msg_warning (str ("Trying to mask the absolute name \""
+              Feedback.msg_warning (str ("Trying to mask the absolute name \""
                         ^ U.to_string n ^ "\"!"));
             tree.path
         | Nothing
@@ -525,7 +525,7 @@ let shortest_qualid_of_tactic kn =
 let pr_global_env env ref =
   try str (string_of_qualid (shortest_qualid_of_global env ref))
   with Not_found as e ->
-    if !Flags.debug then Pp.msg_debug (Pp.str "pr_global_env not found"); raise e
+    if !Flags.debug then Feedback.msg_debug (Pp.str "pr_global_env not found"); raise e
 
 let global_inductive r =
   match global r with

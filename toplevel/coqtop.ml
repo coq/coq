@@ -32,10 +32,10 @@ let get_version_date () =
 
 let print_header () =
   let (ver,rev) = get_version_date () in
-  msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
+  Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   flush_all ()
 
-let warning s = with_option Flags.warn msg_warning (strbrk s)
+let warning s = with_option Flags.warn Feedback.msg_warning (strbrk s)
 
 let toploop = ref None
 
@@ -96,7 +96,7 @@ let memory_stat = ref false
 let print_memory_stat () =
   begin (* -m|--memory from the command-line *)
     if !memory_stat then
-    msg_notice
+    Feedback.msg_notice
       (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes" ++ fnl ());
   end;
   begin
@@ -142,7 +142,7 @@ let remove_top_ml () = Mltop.remove ()
 
 let inputstate = ref ""
 let set_inputstate s =
-  let () = msg_warning (str "The inputstate option is deprecated and discouraged.") in
+  let () = Feedback.msg_warning (str "The inputstate option is deprecated and discouraged.") in
   inputstate:=s
 let inputstate () =
   if not (String.is_empty !inputstate) then
@@ -151,7 +151,7 @@ let inputstate () =
 
 let outputstate = ref ""
 let set_outputstate s =
-  let () = msg_warning (str "The outputstate option is deprecated and discouraged.") in
+  let () = Feedback.msg_warning (str "The outputstate option is deprecated and discouraged.") in
   outputstate:=s
 let outputstate () =
   if not (String.is_empty !outputstate) then
@@ -242,7 +242,7 @@ let compile_files () =
 
 let set_emacs () =
   Flags.print_emacs := true;
-  Pp.make_pp_emacs ();
+  Feedback.(set_logger emacs_logger);
   Vernacentries.qed_display_script := false;
   color := `OFF
 
@@ -635,7 +635,7 @@ let init arglist =
   if !batch_mode then begin
     flush_all();
     if !output_context then
-      Pp.msg_notice (with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
+      Feedback.msg_notice (with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
     Profile.print_profile ();
     exit 0
   end

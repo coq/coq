@@ -66,7 +66,7 @@ let rec extract_signature = function
 let check_unicity s l =
   let l' = List.map (fun (l,_,_) -> extract_signature l) l in
   if not (Util.List.distinct l') then
-    Pp.msg_warning
+    Feedback.msg_warning
       (strbrk ("Two distinct rules of tactic entry "^s^" have the same "^
       "non-terminals in the same order: put them in distinct tactic entries"))
 
@@ -211,7 +211,7 @@ let declare_tactic loc s c cl = match cl with
         Tacenv.register_ml_tactic $se$ $tac$;
         Mltop.declare_cache_obj obj $plugin_name$; }
       with [ e when Errors.noncritical e ->
-        Pp.msg_warning
+        Feedback.msg_warning
           (Pp.app
             (Pp.str ("Exception in tactic extend " ^ $entry$ ^": "))
             (Errors.print e)) ]; } >>
@@ -234,7 +234,7 @@ let declare_tactic loc s c cl = match cl with
         Mltop.declare_cache_obj $obj$ $plugin_name$;
         List.iter (fun (s, r) -> Pptactic.declare_ml_tactic_pprule s r) $pp$; }
       with [ e when Errors.noncritical e ->
-        Pp.msg_warning
+        Feedback.msg_warning
           (Pp.app
             (Pp.str ("Exception in tactic extend " ^ $entry$ ^": "))
             (Errors.print e)) ]; } >>

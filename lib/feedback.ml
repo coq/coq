@@ -170,8 +170,71 @@ let is_feedback = function
 
 let default_route = 0
 
-(** Feedback *)
+(** Feedback and logging *)
+open Pp
+open Pp_control
 
+type logger = level -> std_ppcmds -> unit
+
+let msgnl_with fmt strm = msg_with fmt (strm ++ fnl ())
+let msgnl          strm = msgnl_with !std_ft strm
+
+(* XXX: This is really painful! *)
+module Emacs = struct
+
+  (* Special chars for emacs, to detect warnings inside goal output *)
+  let emacs_quote_start = String.make 1 (Char.chr 254)
+  let emacs_quote_end = String.make 1 (Char.chr 255)
+
+  let emacs_quote_err g =
+    hov 0 (str emacs_quote_start ++ g ++ str emacs_quote_end)
+
+  let emacs_quote_info_start = "<infomsg>"
+  let emacs_quote_info_end = "</infomsg>"
+
+  let emacs_quote_info g =
+    hov 0 (str emacs_quote_info_start++ brk(0,0) ++ g ++ brk(0,0) ++ str emacs_quote_info_end)
+
+end
+
+open Emacs
+
+let  dbg_str = str "Debug:"
+let info_str = mt ()
+let warn_str = str "Warning:"
+let  err_str = str "Error:"
+
+let make_body quoter info s = quoter (hov 0 (info ++ spc () ++ s))
+
+(* Generic logger *)
+let gen_logger dbg err level msg = match level with
+  | Debug _ -> msgnl (make_body dbg  dbg_str msg)
+  | Info    -> msgnl (make_body dbg info_str msg)
+  | Notice  -> msgnl msg
+  | Warning -> Flags.if_warn (fun () ->
+               msgnl_with !err_ft (make_body err warn_str msg)) ()
+  | Error   -> msgnl_with !err_ft (make_body err  err_str msg)
+
+(** Standard loggers *)
+let std_logger   = gen_logger (fun x -> x) (fun x -> x)
+
+(* Rules for emacs:
+   - Debug/info: emacs_quote_info
+   - Warning/Error: emacs_quote_err
+   - Notice: unquoted
+ *)
+let emacs_logger = gen_logger emacs_quote_info emacs_quote_err
+
+let logger       = ref std_logger
+let set_logger l = logger := l
+
+let msg_info    x = !logger Info x
+let msg_notice  x = !logger Notice x
+let msg_warning x = !logger Warning x
+let msg_error   x = !logger Error x
+let msg_debug   x = !logger (Debug "_") x
+
+(** Feeders *)
 let feeder = ref ignore
 let set_feeder f = feeder := f
 
@@ -188,4 +251,35 @@ let feedback ?id ?route what =
      id    = Option.default !feedback_id id;
   }
 
-let get_id_for_feedback () = !feedback_id, !feedback_route
+let feedback_logger lvl msg =
+  feedback ~route:!feedback_route ~id:!feedback_id (
+    Message {
+      message_level   = lvl;
+      message_content = string_of_ppcmds msg;
+    })
+
+(* Output to file *)
+let ft_logger old_logger ft level mesg =
+  let id x = x in
+  match level with
+  | Debug _ -> msgnl_with ft (make_body id  dbg_str mesg)
+  | Info    -> msgnl_with ft (make_body id info_str mesg)
+  | Notice  -> msgnl_with ft mesg
+  | Warning -> old_logger level mesg
+  | Error   -> old_logger level mesg
+
+let with_output_to_file fname func input =
+  let old_logger = !logger in
+  let channel = open_out (String.concat "." [fname; "out"]) in
+  logger := ft_logger old_logger (Format.formatter_of_out_channel channel);
+  try
+    let output = func input in
+    logger := old_logger;
+    close_out channel;
+    output
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
+    logger := old_logger;
+    close_out channel;
+    Exninfo.iraise reraise
+

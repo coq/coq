@@ -147,7 +147,7 @@ let find_mutually_recursive_statements thms =
 	  assert (List.is_empty rest);
           (* One occ. of common coind ccls and no common inductive hyps *)
 	  if not (List.is_empty common_same_indhyp) then
-	    if_verbose msg_info (str "Assuming mutual coinductive statements.");
+	    if_verbose Feedback.msg_info (str "Assuming mutual coinductive statements.");
 	  flush_all ();
           indccl, true, []
       | [], _::_ ->
@@ -155,7 +155,7 @@ let find_mutually_recursive_statements thms =
           | ind :: _ ->
             if List.distinct_f ind_ord (List.map pi1 ind)
             then
-              if_verbose msg_info
+              if_verbose Feedback.msg_info
                 (strbrk
                    ("Coinductive statements do not follow the order of "^
                     "definition, assuming the proof to be by induction."));
@@ -303,7 +303,7 @@ let admit (id,k,e) pl hook () =
   let () = match k with
   | Global, _, _ -> ()
   | Local, _, _ | Discharge, _, _ ->
-    msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
+    Feedback.msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
       str "declared as an axiom.")
   in
   let () = assumption_message id in

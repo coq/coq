@@ -192,7 +192,7 @@ let warning_or_error coe indsp err =
               (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
   in
   if coe then errorlabstrm "structure" st;
-  Flags.if_verbose msg_warning (hov 0 st)
+  Flags.if_verbose Feedback.msg_warning (hov 0 st)
 
 type field_status =
   | NoProjection of Name.t
@@ -258,7 +258,7 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 	| Some None | None -> false
       in
 	if not is_primitive then 
-	  Flags.if_verbose msg_warning
+	  Flags.if_verbose Feedback.msg_warning
 	    (hov 0 (str "The record " ++ Printer.pr_inductive env indsp ++ 
 		      str" could not be defined as a primitive record"));
 	is_primitive

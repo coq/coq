@@ -179,13 +179,13 @@ END
 
 let test_plurial_form = function
   | [(_,([_],_))] ->
-      Flags.if_verbose msg_warning
+      Flags.if_verbose Feedback.msg_warning
    (strbrk "Keywords Variables/Hypotheses/Parameters expect more than one assumption")
   | _ -> ()
 
 let test_plurial_form_types = function
   | [([_],_)] ->
-      Flags.if_verbose msg_warning
+      Flags.if_verbose Feedback.msg_warning
    (strbrk "Keywords Implicit Types expect more than one type")
   | _ -> ()
 
@@ -502,7 +502,7 @@ GEXTEND Gram
 	  VernacInclude(e::l)
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
 	  Flags.if_verbose
-            msg_warning (strbrk "Include Type is deprecated; use Include instead");
+            Feedback.msg_warning (strbrk "Include Type is deprecated; use Include instead");
           VernacInclude(e::l) ] ]
   ;
   export_token:
@@ -721,7 +721,7 @@ GEXTEND Gram
      (* moved there so that camlp5 factors it with the previous rule *)
      | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 [ "_" -> None | sc = IDENT -> Some sc ]; "]" ->
-        msg_warning (strbrk "Arguments Scope is deprecated; use Arguments instead");
+       Feedback. msg_warning (strbrk "Arguments Scope is deprecated; use Arguments instead");
         VernacArgumentsScope (qid,scl)
 
       (* Implicit *)
@@ -729,7 +729,7 @@ GEXTEND Gram
 	   pos = LIST0 [ "["; l = LIST0 implicit_name; "]" ->
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
 	   Flags.if_verbose
-             msg_warning (strbrk "Implicit Arguments is deprecated; use Arguments instead");
+            Feedback.msg_warning (strbrk "Implicit Arguments is deprecated; use Arguments instead");
 	   VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
