@@ -111,15 +111,14 @@ let check_one_lib admit (dir,m) =
      also check if it carries a validation certificate (yet to
      be implemented). *)
   if LibrarySet.mem dir admit then
-    (Flags.if_verbose ppnl
+    (Flags.if_verbose msg_notice
       (str "Admitting library: " ++ pr_dirpath dir);
       Safe_typing.unsafe_import file md m.library_extra_univs dig)
   else
-    (Flags.if_verbose ppnl
+    (Flags.if_verbose msg_notice
       (str "Checking library: " ++ pr_dirpath dir);
       Safe_typing.import file md m.library_extra_univs dig);
-  Flags.if_verbose pp (fnl());
-  pp_flush ();
+  Flags.if_verbose msg_notice (fnl());
   register_loaded_library m
 
 (*************************************************************************)
@@ -173,7 +172,7 @@ let remove_load_path dir =
 
 let add_load_path (phys_path,coq_path) =
   if !Flags.debug then
-    ppnl (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
+    msg_notice (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
            str phys_path);
   let phys_path = canonical_path_name phys_path in
   let physical, logical = !load_paths in
@@ -299,7 +298,7 @@ let name_clash_message dir mdir f =
 let depgraph = ref LibraryMap.empty
 
 let intern_from_file (dir, f) =
-  Flags.if_verbose pp (str"[intern "++str f++str" ..."); pp_flush ();
+  Flags.if_verbose msg_notice(str"[intern "++str f++str" ...");
   let (sd,md,table,opaque_csts,digest) =
     try
       let ch = System.with_magic_number_check raw_intern_library f in
@@ -323,7 +322,7 @@ let intern_from_file (dir, f) =
         errorlabstrm "intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
-        pp (str " (was a vio file) ");
+       msg_notice(str " (was a vio file) ");
       Option.iter (fun (_,_,b) -> if not b then
         errorlabstrm "intern_from_file"
           (str "The file "++str f++str " is still a .vio"))
@@ -334,12 +333,12 @@ let intern_from_file (dir, f) =
       Validate.validate !Flags.debug Values.v_libsum sd;
       Validate.validate !Flags.debug Values.v_lib md;
       Validate.validate !Flags.debug Values.v_opaques table;
-      Flags.if_verbose ppnl (str" done]"); pp_flush ();
+      Flags.if_verbose msg_notice (str" done]");
       let digest =
         if opaque_csts <> None then Cic.Dviovo (digest,udg)
         else (Cic.Dvo digest) in
       sd,md,table,opaque_csts,digest
-    with e -> Flags.if_verbose ppnl (str" failed!]"); raise e in
+    with e -> Flags.if_verbose msg_notice (str" failed!]"); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
   opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
   Option.iter (fun (opaque_csts,_,_) ->
@@ -407,11 +406,11 @@ let recheck_library ~norec ~admit ~check =
   let nochk =
     List.fold_right LibrarySet.remove (List.map fst (nrl@ml)) nochk in
   (* *)
-  Flags.if_verbose ppnl (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
+  Flags.if_verbose msg_notice (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
   List.iter (check_one_lib nochk) needed;
-  Flags.if_verbose ppnl (str"Modules were successfully checked")
+  Flags.if_verbose msg_notice (str"Modules were successfully checked")
 
 open Printf
 

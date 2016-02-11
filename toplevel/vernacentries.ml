@@ -92,7 +92,6 @@ let print_subgoals () =
   end
 
 let try_print_subgoals () =
-  Pp.flush_all();
   try print_subgoals () with Proof_global.NoCurrentProof | UserError _ -> ()
 
 

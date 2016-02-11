@@ -9,9 +9,11 @@
 (** Modify pretty printing functions behavior for emacs ouput (special
    chars inserted at some places). This function should called once in
    module [Options], that's all. *)
-val make_pp_emacs:unit -> unit
-val make_pp_nonemacs:unit -> unit
+val make_pp_emacs   : unit -> unit
+val make_pp_nonemacs: unit -> unit
 
+(** [with_output_to_file file f x] executes [f x] with output
+    redirected to a file [file] *)
 val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
 
 (** Pretty-printers. *)
@@ -20,18 +22,18 @@ type std_ppcmds
 
 (** {6 Formatting commands} *)
 
-val str  : string -> std_ppcmds
+val str   : string -> std_ppcmds
 val stras : int * string -> std_ppcmds
-val brk : int * int -> std_ppcmds
-val tbrk : int * int -> std_ppcmds
-val tab : unit -> std_ppcmds
-val fnl : unit -> std_ppcmds
-val pifb : unit -> std_ppcmds
-val ws : int -> std_ppcmds
-val mt : unit -> std_ppcmds
-val ismt : std_ppcmds -> bool
+val brk   : int * int -> std_ppcmds
+val tbrk  : int * int -> std_ppcmds
+val tab   : unit -> std_ppcmds
+val fnl   : unit -> std_ppcmds
+val pifb  : unit -> std_ppcmds
+val ws    : int -> std_ppcmds
+val mt    : unit -> std_ppcmds
+val ismt  : std_ppcmds -> bool
 
-val comment : int -> std_ppcmds
+val comment  : int -> std_ppcmds
 val comments : ((int * int) * string) list ref
 
 (** {6 Manipulation commands} *)
@@ -115,7 +117,7 @@ type message_level = Feedback.message_level =
   | Error
 
 type message = Feedback.message = {
-  message_level : message_level;
+  message_level   : message_level;
   message_content : string;
 }
 
@@ -252,27 +254,27 @@ val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 val pp_with : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
 
-(** {6 Pretty-printing functions {% \emph{%}without flush{% }%} on [stdout] and [stderr]. } *)
-
-(** These functions are low-level interface to printing and should not be used
-    in usual code. Consider using the [msg_*] function family instead. *)
-
-val pp : std_ppcmds -> unit
-val ppnl : std_ppcmds -> unit
-val pperr : std_ppcmds -> unit
-val pperrnl : std_ppcmds -> unit
-val pperr_flush : unit -> unit
-val pp_flush : unit -> unit
-val flush_all: unit -> unit
-
-(** {6 Deprecated functions} *)
-
-(** DEPRECATED. Do not use in newly written code. *)
-
 val msg_with : Format.formatter -> std_ppcmds -> unit
 
-val msg : std_ppcmds -> unit
-val msgnl : std_ppcmds -> unit
-val msgerr : std_ppcmds -> unit
-val msgerrnl : std_ppcmds -> unit
-val message : string -> unit       (** = pPNL *)
+(* (\** {6 Pretty-printing functions {% \emph{%}without flush{% }%} on [stdout] and [stderr]. } *\) *)
+
+(* (\** These functions are low-level interface to printing and should not be used *)
+(*     in usual code. Consider using the [msg_*] function family instead. *\) *)
+
+(* val pp : std_ppcmds -> unit *)
+(* val ppnl : std_ppcmds -> unit *)
+(* val pperr : std_ppcmds -> unit *)
+(* val pperrnl : std_ppcmds -> unit *)
+(* val pperr_flush : unit -> unit *)
+(* val pp_flush : unit -> unit *)
+(* val flush_all: unit -> unit *)
+
+(* (\** {6 Deprecated functions} *\) *)
+
+(* (\** DEPRECATED. Do not use in newly written code. *\) *)
+
+(* val msg : std_ppcmds -> unit *)
+(* val msgnl : std_ppcmds -> unit *)
+(* val msgerr : std_ppcmds -> unit *)
+(* val msgerrnl : std_ppcmds -> unit *)
+(* val message : string -> unit       (\** = pPNL *\) *)

@@ -532,4 +532,4 @@ let _ =
     coqdep ()
   with Errors.UserError(s,p) ->
     let pp = if s <> "_" then Pp.(str s ++ str ": " ++ p) else p in
-    Pp.msgerrnl pp
+    Pp.msg_error pp

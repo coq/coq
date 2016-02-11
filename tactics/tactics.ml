@@ -1154,7 +1154,7 @@ let enforce_prop_bound_names rename tac =
             mkProd (Anonymous,t,aux (push_rel (Anonymous,None,t) env) sigma (i-1) t')
         | LetIn (na,c,t,t') ->
             mkLetIn (na,c,t,aux (push_rel (na,Some c,t) env) sigma (i-1) t')
-        | _ -> print_int i; Pp.msg (print_constr t); assert false in
+        | _ -> print_int i; Pp.msg_notice (print_constr t); assert false in
       let rename_branch i =
         Proofview.Goal.nf_enter begin fun gl ->
           let env = Proofview.Goal.env gl in

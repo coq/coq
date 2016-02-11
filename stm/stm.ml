@@ -1268,7 +1268,7 @@ end = struct (* {{{ *)
       let (e, info) = Errors.push e in
       (try match Stateid.get info with
       | None ->
-          pperrnl (
+          msg_error (
             str"File " ++ str name ++ str ": proof of " ++ str r_name ++
             spc () ++ iprint (e, info))
       | Some (_, cur) ->
@@ -1278,12 +1278,12 @@ end = struct (* {{{ *)
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (`Ast ( { loc }, _)) } ->
               let start, stop = Loc.unloc loc in
-              pperrnl (
+              msg_error (
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
                 spc () ++ iprint (e, info))
           | _ ->
-              pperrnl (
+              msg_error (
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 spc () ++ iprint (e, info))
     with e ->
@@ -2032,7 +2032,6 @@ let check_task name (tasks,rcbackup) i =
   let vcs = VCS.backup () in
   try
     let rc = Future.purify (Slaves.check_task name tasks) i in
-    pperr_flush ();
     VCS.restore vcs;
     rc
   with e when Errors.noncritical e -> VCS.restore vcs; false
@@ -2042,7 +2041,6 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
   let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
     let u = Future.purify (Slaves.finish_task name u d p t) i in
-    pperr_flush ();
     VCS.restore vcs;
     u in
   try
@@ -2050,7 +2048,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     (u,a,true), p
   with e ->
     let e = Errors.push e in
-    pperrnl (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
+    msg_error (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
 let merge_proof_branch ?valid ?id qast keep brname =

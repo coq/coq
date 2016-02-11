@@ -351,9 +351,10 @@ let comment_stop ep =
     let bp = match !comment_begin with
         Some bp -> bp
       | None ->
-          msgerrnl(str "No begin location for comment '"
-                   ++ str current_s ++str"' ending at  "
-                   ++ int ep);
+          msg_notice
+            (str "No begin location for comment '"
+             ++ str current_s ++str"' ending at  "
+             ++ int ep);
           ep-1 in
     Pp.comments := ((bp,ep),current_s) :: !Pp.comments);
   Buffer.clear current;

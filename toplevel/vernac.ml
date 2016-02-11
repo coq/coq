@@ -120,8 +120,7 @@ let verbose_phrase verbch loc =
 	let s = String.create len in
         seek_in ch (fst loc);
         really_input ch s 0 len;
-        ppnl (str s);
-        pp_flush()
+        msg_notice (str s ++ fnl ())
     | None -> ()
 
 exception End_of_input
@@ -154,7 +153,7 @@ let pr_new_syntax loc ocom =
     | Some com -> Ppvernac.pr_vernac com
     | None -> mt() in
   if !beautify_file then
-    msg (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
+    msg_notice (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
   else
     msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
   States.unfreeze fs;
@@ -195,9 +194,10 @@ let display_cmd_header loc com =
     with e -> str (Printexc.to_string e) in
   let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
   in
-  Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
-	 str " [" ++ str cmd ++ str "] ");
-  Pp.flush_all ()
+  Pp.msg_notice
+    (str "Chars " ++ int start ++ str " - " ++ int stop ++
+     str " [" ++ str cmd ++ str "] ")
+
 
 let rec vernac_com verbose checknav (loc,com) =
   let interp = function
@@ -250,8 +250,7 @@ and read_vernac_file verbosely s =
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc_ast = parse_sentence input in
-      vernac_com verbosely checknav loc_ast;
-      pp_flush ()
+      vernac_com verbosely checknav loc_ast
     done
   with any ->   (* whatever the exception *)
     let (e, info) = Errors.push any in

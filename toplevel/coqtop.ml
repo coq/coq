@@ -32,8 +32,8 @@ let get_version_date () =
 
 let print_header () =
   let (ver,rev) = get_version_date () in
-  ppnl (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
-  pp_flush ()
+  msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
+  flush_all ()
 
 let warning s = with_option Flags.warn msg_warning (strbrk s)
 
@@ -96,8 +96,8 @@ let memory_stat = ref false
 let print_memory_stat () =
   begin (* -m|--memory from the command-line *)
     if !memory_stat then
-    ppnl
-      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes");
+    msg_notice
+      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes" ++ fnl ());
   end;
   begin
     (* operf-macro interface:
@@ -635,7 +635,7 @@ let init arglist =
   if !batch_mode then begin
     flush_all();
     if !output_context then
-      Pp.ppnl (with_option raw_print Prettyp.print_full_pure_context ());
+      Pp.msg_notice (with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
     Profile.print_profile ();
     exit 0
   end

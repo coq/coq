@@ -1586,12 +1586,12 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
 
  if debug then
    begin
-     Pp.pp (Pp.str "Formula....\n") ;
+     Pp.msg_notice (Pp.str "Formula....\n") ;
      let formula_typ = (Term.mkApp(Lazy.force coq_Cstr, [|spec.coeff|])) in
      let ff = dump_formula formula_typ
        (dump_cstr spec.typ spec.dump_coeff) ff in
-       Pp.pp (Printer.prterm ff) ;  Pp.pp_flush ();
-         Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff
+       Pp.msg_notice (Printer.prterm ff);
+       Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff
    end;
 
  match witness_list_tags prover cnf_ff with
@@ -1611,11 +1611,11 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
 
   if debug then
     begin
-      Pp.pp (Pp.str "\nAFormula\n") ;
+      Pp.msg_notice (Pp.str "\nAFormula\n") ;
       let formula_typ = (Term.mkApp( Lazy.force coq_Cstr,[| spec.coeff|])) in
       let ff' = dump_formula formula_typ
         (dump_cstr spec.typ spec.dump_coeff) ff' in
-        Pp.pp (Printer.prterm  ff') ;  Pp.pp_flush ();
+        Pp.msg_notice (Printer.prterm  ff');
         Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff'
     end;
 
@@ -1665,7 +1665,7 @@ let micromega_gen
 	      ]) gl
   with
    | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
-   | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
+   | CsdpNotFound -> flush stdout;
       Tacticals.tclFAIL 0 (Pp.str 
       (" Skipping what remains of this tactic: the complexity of the goal requires "
       ^ "the use of a specialized external tool called csdp. \n\n" 
@@ -1734,7 +1734,7 @@ let micromega_genr prover gl =
               ]) gl
   with
    | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
-   | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
+   | CsdpNotFound -> flush stdout ;
       Tacticals.tclFAIL 0 (Pp.str 
       (" Skipping what remains of this tactic: the complexity of the goal requires "
       ^ "the use of a specialized external tool called csdp. \n\n" 

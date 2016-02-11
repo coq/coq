@@ -108,7 +108,8 @@ module MakeTable =
          (fun c -> t := MySet.remove c !t))
 
     let print_table table_name printer table =
-      pp (str table_name ++
+      msg_notice
+        (str table_name ++
 	   (hov 0
 	      (if MySet.is_empty table then str " None" ++ fnl ()
                else MySet.fold

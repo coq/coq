@@ -384,22 +384,7 @@ let msg_with ft strm =
 let msgnl_with ft strm =
   pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_newline))
 
-(* pretty printing functions WITHOUT FLUSH *)
-let pp        x = pp_with   !std_ft x
-let ppnl      x = ppnl_with !std_ft x
-let pperr     x = pp_with   !err_ft x
-let pperrnl   x = ppnl_with !err_ft x
-let message   s = ppnl      (str s)
-let pp_flush  x = Format.pp_print_flush !std_ft x
-let pperr_flush x = Format.pp_print_flush !err_ft x
-let flush_all () =
-  flush stderr; flush stdout; pp_flush (); pperr_flush ()
-
-(* pretty printing functions WITH FLUSH *)
-let msg x = msg_with !std_ft x
 let msgnl x = msgnl_with !std_ft x
-let msgerr x = msg_with !err_ft x
-let msgerrnl x = msgnl_with !err_ft x
 
 (* Logging management *)
 
@@ -431,15 +416,15 @@ let infobody strm = emacs_quote_info strm
 
 let std_logger ~id:_ level msg = match level with
 | Debug _ -> msgnl (debugbody msg)
-| Info -> msgnl (hov 0 msg)
-| Notice -> msgnl msg
+| Info    -> msgnl (hov 0 msg)
+| Notice  -> msgnl msg
 | Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
 | Error -> msgnl_with !err_ft (errorbody msg)
 
 let emacs_logger ~id:_ level mesg = match level with
 | Debug _ -> msgnl (debugbody mesg)
-| Info -> msgnl (infobody mesg)
-| Notice -> msgnl mesg
+| Info    -> msgnl (infobody mesg)
+| Notice  -> msgnl mesg
 | Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody mesg)) ()
 | Error -> msgnl_with !err_ft (errorbody mesg)
 
@@ -607,3 +592,4 @@ let prvect_with_sep sep elem v = prvecti_with_sep sep (fun _ -> elem) v
 let prvect elem v = prvect_with_sep mt elem v
 
 let surround p = hov 1 (str"(" ++ p ++ str")")
+
