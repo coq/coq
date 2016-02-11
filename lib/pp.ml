@@ -399,14 +399,14 @@ let warnbody strm = make_body (str "Warning:") strm
 let errorbody strm = make_body (str "Error:") strm
 let infobody strm = emacs_quote_info strm
 
-let std_logger ~id:_ level msg = match level with
+let std_logger level msg = match level with
 | F.Debug _ -> msgnl (debugbody msg)
 | F.Info    -> msgnl (hov 0 msg)
 | F.Notice  -> msgnl msg
 | F.Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
 | F.Error -> msgnl_with !err_ft (errorbody msg)
 
-let emacs_logger ~id:_ level mesg = match level with
+let emacs_logger level mesg = match level with
 | F.Debug _ -> msgnl (debugbody mesg)
 | F.Info    -> msgnl (infobody mesg)
 | F.Notice  -> msgnl mesg
@@ -418,14 +418,14 @@ let logger = ref std_logger
 let make_pp_emacs() = print_emacs:=true; logger:=emacs_logger
 let make_pp_nonemacs() = print_emacs:=false; logger := std_logger
 
-let ft_logger old_logger ft ~id level mesg =
+let ft_logger old_logger ft level mesg =
   let open Feedback in
   match level with
   | Debug _ -> msgnl_with ft (debugbody mesg)
-  | Info -> msgnl_with ft (infobody mesg)
-  | Notice -> msgnl_with ft mesg
-  | Warning -> old_logger ~id:id level mesg
-  | Error -> old_logger ~id:id level mesg
+  | Info    -> msgnl_with ft (infobody mesg)
+  | Notice  -> msgnl_with ft mesg
+  | Warning -> old_logger level mesg
+  | Error   -> old_logger level mesg
 
 let with_output_to_file fname func input =
   let old_logger = !logger in
@@ -442,55 +442,33 @@ let with_output_to_file fname func input =
     close_out channel;
     Exninfo.iraise reraise
 
-let feedback_id = ref (Feedback.Edit 0)
-let feedback_route = ref Feedback.default_route
-
 (* If mixing some output and a goal display, please use msg_warning,
    so that interfaces (proofgeneral for example) can easily dispatch
    them to different windows. *)
 
-let msg_info    x = !logger ~id:!feedback_id F.Info x
-let msg_notice  x = !logger ~id:!feedback_id F.Notice x
-let msg_warning x = !logger ~id:!feedback_id F.Warning x
-let msg_error   x = !logger ~id:!feedback_id F.Error x
-let msg_debug   x = !logger ~id:!feedback_id (F.Debug "_") x
+let msg_info    x = !logger F.Info x
+let msg_notice  x = !logger F.Notice x
+let msg_warning x = !logger F.Warning x
+let msg_error   x = !logger F.Error x
+let msg_debug   x = !logger (F.Debug "_") x
 
-let set_logger l = logger := (fun ~id:_ lvl msg -> l lvl msg)
+let set_logger l = logger := l
 
-let std_logger lvl msg = std_logger ~id:!feedback_id lvl msg
+(** Standard logger *)
+let std_logger lvl msg = std_logger lvl msg
 
-(** Feedback *)
-
-let feeder = ref ignore
-let set_id_for_feedback ?(route=Feedback.default_route) i =
-  feedback_id := i; feedback_route := route
-let feedback ?state_id ?edit_id ?route what =
-  !feeder {
-     Feedback.contents = what;
-     Feedback.route = Option.default !feedback_route route;
-     Feedback.id =
-       match state_id, edit_id with
-       | Some id, _ -> Feedback.State id
-       | None, Some eid -> Feedback.Edit eid
-       | None, None -> !feedback_id;
-  }
-let set_feeder f = feeder := f
-let get_id_for_feedback () = !feedback_id, !feedback_route
-
-(** Utility *)
-
+(** Feedback logger *)
 let string_of_ppcmds c =
   Format.fprintf Format.str_formatter "@[%a@]" msg_with c;
   Format.flush_str_formatter ()
 
-let log_via_feedback () = logger := (fun ~id lvl msg ->
-  let open F in
-  !feeder {
-     F.contents = F.Message {
-        message_level = lvl;
-       message_content = string_of_ppcmds msg };
-     F.route = !feedback_route;
-     F.id = id })
+let feedback_logger lvl msg =
+  let id, route = F.get_id_for_feedback () in
+  F.feedback ~route:route ~id:id (
+    F.Message {
+      F.message_level   = lvl;
+      F.message_content = string_of_ppcmds msg;
+    })
 
 (* Copy paste from Util *)
 

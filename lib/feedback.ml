@@ -169,3 +169,23 @@ let is_feedback = function
   | _ -> false
 
 let default_route = 0
+
+(** Feedback *)
+
+let feeder = ref ignore
+let set_feeder f = feeder := f
+
+let feedback_id    = ref (Edit 0)
+let feedback_route = ref default_route
+
+let set_id_for_feedback ?(route=default_route) i =
+  feedback_id := i; feedback_route := route
+
+let feedback ?id ?route what =
+  !feeder {
+     contents = what;
+     route = Option.default !feedback_route route;
+     id    = Option.default !feedback_id id;
+  }
+
+let get_id_for_feedback () = !feedback_id, !feedback_route

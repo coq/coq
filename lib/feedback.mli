@@ -66,3 +66,23 @@ val of_feedback : feedback -> xml
 val to_feedback : xml -> feedback
 val is_feedback : xml -> bool
 
+(** {6 Feedback sent, even asynchronously, to the user interface} *)
+
+(* This stuff should be available to most of the system, line msg_* above.
+ * But I'm unsure this is the right place, especially for the global edit_id.
+ *
+ * Morally the parser gets a string and an edit_id, and gives back an AST.
+ * Feedbacks during the parsing phase are attached to this edit_id.
+ * The interpreter assignes an exec_id to the ast, and feedbacks happening
+ * during interpretation are attached to the exec_id.
+ * Only one among state_id and edit_id can be provided. *)
+
+val set_feeder : (feedback -> unit) -> unit
+
+val feedback :
+  ?id:edit_or_state_id -> ?route:route_id -> feedback_content -> unit
+
+val set_id_for_feedback : ?route:route_id -> edit_or_state_id -> unit
+val get_id_for_feedback : unit -> edit_or_state_id * route_id
+
+

@@ -458,7 +458,7 @@ let intern_from_file f =
 module DPMap = Map.Make(DirPath)
 
 let rec intern_library (needed, contents) (dir, f) from =
-  Pp.feedback(Feedback.FileDependency (from, f));
+  Feedback.feedback (Feedback.FileDependency (from, f));
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
@@ -472,7 +472,7 @@ let rec intern_library (needed, contents) (dir, f) from =
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
-  Pp.feedback(Feedback.FileLoaded(DirPath.to_string dir, f));
+  Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
   m.library_digests, intern_library_deps (needed, contents) dir m (Some f)
 
 and intern_library_deps libs dir m from =

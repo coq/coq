@@ -151,7 +151,7 @@ let do_daimon () =
       daimon_instr env p
     end
   in
-  if not status then Pp.feedback Feedback.AddedAxiom else ()
+  if not status then Feedback.feedback Feedback.AddedAxiom else ()
 
 (* post-instruction focus management *)
 

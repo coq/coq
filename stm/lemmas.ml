@@ -332,7 +332,7 @@ let universe_proof_terminator compute_guard hook =
   let open Proof_global in function
   | Admitted (id,k,pe,(ctx,pl)) ->
       admit (id,k,pe) pl (hook (Some ctx)) ();
-      Pp.feedback Feedback.AddedAxiom
+      Feedback.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
       let is_opaque, export_seff, exports = match opaque with
         | Vernacexpr.Transparent -> false, true, []

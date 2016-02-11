@@ -502,7 +502,7 @@ let vernac_exact_proof c =
      called only at the begining of a proof. *)
   let status = by (Tactics.New.exact_proof c) in
   save_proof (Vernacexpr.(Proved(Opaque None,None)));
-  if not status then Pp.feedback Feedback.AddedAxiom
+  if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption locality poly (local, kind) l nl =
   let local = enforce_locality_exp locality local in
@@ -514,7 +514,7 @@ let vernac_assumption locality poly (local, kind) l nl =
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
   let status = do_assumptions kind nl l in
-  if not status then Pp.feedback Feedback.AddedAxiom
+  if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_record k poly finite struc binders sort nameopt cfs =
   let const = match nameopt with
@@ -809,7 +809,7 @@ let vernac_instance abst locality poly sup inst props pri =
   ignore(Classes.new_instance ~abstract:abst ~global poly sup inst props pri)
 
 let vernac_context poly l =
-  if not (Classes.context poly l) then Pp.feedback Feedback.AddedAxiom
+  if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_declare_instances locality ids pri =
   let glob = not (make_section_locality locality) in
@@ -850,7 +850,7 @@ let vernac_solve n info tcom b =
        go back to the top of the prooftree *)
     let p = Proof.maximal_unfocus command_focus p in
     p,status) in
-    if not status then Pp.feedback Feedback.AddedAxiom
+    if not status then Feedback.feedback Feedback.AddedAxiom
  
 
   (* A command which should be a tactic. It has been

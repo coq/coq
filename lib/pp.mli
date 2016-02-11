@@ -138,32 +138,13 @@ val msg_error : std_ppcmds -> unit
 val msg_debug : std_ppcmds -> unit
 (** For debugging purposes *)
 
-val std_logger : logger
-(** Standard logging function *)
-
 val set_logger : logger -> unit
 
-val log_via_feedback : unit -> unit
+val std_logger : logger
+(** Standard logging function *)
+val feedback_logger : logger
+(** Feedback logging function *)
 
-(** {6 Feedback sent, even asynchronously, to the user interface} *)
-
-(* This stuff should be available to most of the system, line msg_* above.
- * But I'm unsure this is the right place, especially for the global edit_id.
- *
- * Morally the parser gets a string and an edit_id, and gives back an AST.
- * Feedbacks during the parsing phase are attached to this edit_id.
- * The interpreter assignes an exec_id to the ast, and feedbacks happening
- * during interpretation are attached to the exec_id.
- * Only one among state_id and edit_id can be provided. *)
-
-val feedback :
-  ?state_id:Feedback.state_id -> ?edit_id:Feedback.edit_id ->
-  ?route:Feedback.route_id -> Feedback.feedback_content -> unit
-
-val set_id_for_feedback :
-  ?route:Feedback.route_id -> Feedback.edit_or_state_id -> unit
-val set_feeder : (Feedback.feedback -> unit) -> unit
-val get_id_for_feedback : unit -> Feedback.edit_or_state_id * Feedback.route_id
 
 (** {6 Utilities} *)
 
@@ -232,31 +213,7 @@ val surround : std_ppcmds -> std_ppcmds
 
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
-(** {6 Low-level pretty-printing functions {% \emph{%}without flush{% }%}. } *)
+(** {6 Low-level pretty-printing functions with and without flush} *)
 
-val pp_with : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
-
-val msg_with : Format.formatter -> std_ppcmds -> unit
-
-(* (\** {6 Pretty-printing functions {% \emph{%}without flush{% }%} on [stdout] and [stderr]. } *\) *)
-
-(* (\** These functions are low-level interface to printing and should not be used *)
-(*     in usual code. Consider using the [msg_*] function family instead. *\) *)
-
-(* val pp : std_ppcmds -> unit *)
-(* val ppnl : std_ppcmds -> unit *)
-(* val pperr : std_ppcmds -> unit *)
-(* val pperrnl : std_ppcmds -> unit *)
-(* val pperr_flush : unit -> unit *)
-(* val pp_flush : unit -> unit *)
-(* val flush_all: unit -> unit *)
-
-(* (\** {6 Deprecated functions} *\) *)
-
-(* (\** DEPRECATED. Do not use in newly written code. *\) *)
-
-(* val msg : std_ppcmds -> unit *)
-(* val msgnl : std_ppcmds -> unit *)
-(* val msgerr : std_ppcmds -> unit *)
-(* val msgerrnl : std_ppcmds -> unit *)
-(* val message : string -> unit       (\** = pPNL *\) *)
+val msg_with :                        Format.formatter -> std_ppcmds -> unit
+val pp_with  : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
