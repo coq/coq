@@ -267,12 +267,12 @@ let derive_inversion fix_names =
 	lind;
       with e when Errors.noncritical e ->
       let e' = process_vernac_interp_error e in
-      msg_warning
+      Feedback.msg_warning
 	(str "Cannot build inversion information" ++
 	   if do_observe () then (fnl() ++ Errors.print e') else mt ())
   with e when Errors.noncritical e ->
       let e' = process_vernac_interp_error e in
-      msg_warning
+      Feedback.msg_warning
 	(str "Cannot build inversion information (early)" ++
 	   if do_observe () then (fnl() ++ Errors.print e') else mt ())       
 
@@ -292,12 +292,12 @@ let warning_error names e =
   in
   match e with
     | Building_graph e ->
-      Pp.msg_warning
+      Feedback.msg_warning
 	(str "Cannot define graph(s) for " ++
 	   h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
 	   e_explain e)
     | Defining_principle e ->
-      Pp.msg_warning
+      Feedback.msg_warning
 	(str "Cannot define principle(s) for "++
 	   h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
 	   e_explain e)

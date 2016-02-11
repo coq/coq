@@ -9,7 +9,7 @@
 open Xml_datatype
 
 (* Old plain messages (used to be in Pp) *)
-type message_level =
+type level =
   | Debug of string
   | Info
   | Notice
@@ -17,7 +17,7 @@ type message_level =
   | Error
 
 type message = {
-  message_level : message_level;
+  message_level : level;
   message_content : xml;
 }
 
@@ -65,4 +65,80 @@ type feedback = {
 val of_feedback : feedback -> xml
 val to_feedback : xml -> feedback
 val is_feedback : xml -> bool
+
+(** {6 Feedback sent, even asynchronously, to the user interface} *)
+
+(** Moved here from pp.ml *)
+
+(* Morally the parser gets a string and an edit_id, and gives back an AST.
+ * Feedbacks during the parsing phase are attached to this edit_id.
+ * The interpreter assignes an exec_id to the ast, and feedbacks happening
+ * during interpretation are attached to the exec_id.
+ * Only one among state_id and edit_id can be provided. *)
+
+(** A [logger] takes a level plus a pretty printing doc and logs it *)
+type logger = level -> Pp.std_ppcmds -> unit
+
+(** [set_logger l] makes the [msg_*] to use [l] for logging *)
+val set_logger : logger -> unit
+
+(** [std_logger] standard logger to [stdout/stderr]  *)
+val std_logger : logger
+
+(** [feedback_logger] will produce feedback messages instead IO events *)
+val feedback_logger : logger
+val emacs_logger    : logger
+
+val color_terminal_logger : logger
+(* This logger will apply the proper {!Pp_style} tags, and in
+   particular use the formatters {!Pp_control.std_ft} and
+   {!Pp_control.err_ft} to display those messages. Be careful this is
+   not compatible with the Emacs mode!  *)
+
+(** [set_feeder] A feeder processes the feedback, [ignore] by default *)
+val set_feeder : (feedback -> unit) -> unit
+
+(** [feedback ?id ?route fb] produces feedback fb, with [route] and
+    [id] set appropiatedly, if absent, it will use the defaults set by
+    [set_id_for_feedback] *)
+val feedback :
+  ?id:edit_or_state_id -> ?route:route_id -> feedback_content -> unit
+
+(** [set_id_for_feedback route id] Set the defaults for feedback *)
+val set_id_for_feedback : ?route:route_id -> edit_or_state_id -> unit
+
+(** [with_output_to_file file f x] executes [f x] with logging
+    redirected to a file [file] *)
+val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
+
+(** {6 output functions}
+
+[msg_notice] do not put any decoration on output by default. If
+possible don't mix it with goal output (prefer msg_info or
+msg_warning) so that interfaces can dispatch outputs easily. Once all
+interfaces use the xml-like protocol this constraint can be
+relaxed. *)
+(* Should we advertise these functions more? Should they be the ONLY
+   allowed way to output something? *)
+
+val msg_info : Pp.std_ppcmds -> unit
+(** Message that displays information, usually in verbose mode, such as [Foobar
+    is defined] *)
+
+val msg_notice : Pp.std_ppcmds -> unit
+(** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
+
+val msg_warning : Pp.std_ppcmds -> unit
+(** Message indicating that something went wrong, but without serious
+    consequences. *)
+
+val msg_error : Pp.std_ppcmds -> unit
+(** Message indicating that something went really wrong, though still
+    recoverable; otherwise an exception would have been raised. *)
+
+val msg_debug : Pp.std_ppcmds -> unit
+(** For debugging purposes *)
+
+
+
 

@@ -27,7 +27,7 @@ module Make = functor(S : SearchProblem) -> struct
       | [i] -> int i
       | i :: l -> pp_rec l ++ str "." ++ int i
     in
-    msg_debug (h 0 (pp_rec p) ++ pp)
+    Feedback.msg_debug (h 0 (pp_rec p) ++ pp)
 
   (*s Depth first search. *)
 

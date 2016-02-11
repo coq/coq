@@ -88,9 +88,9 @@ let all_subdirs ~unix_path:root =
       | _ -> ()
     in process_directory f path
   in
-  check_unix_dir (fun s -> msg_warning (str s)) root;
+  check_unix_dir (fun s -> Feedback.msg_warning (str s)) root;
   if exists_dir root then traverse root []
-  else msg_warning (str ("Cannot open " ^ root));
+  else Feedback.msg_warning (str ("Cannot open " ^ root));
   List.rev !l
 
 (* Caching directory contents for efficient syntactic equality of file
@@ -149,7 +149,7 @@ let where_in_path ?(warn=true) path filename =
   | (lpe, f) :: l' ->
     let () = match l' with
     | _ :: _ when warn ->
-      msg_warning
+      Feedback.msg_warning
         (str filename ++ str " has been found in" ++ spc () ++
           hov 0 (str "[ " ++
             hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
@@ -205,7 +205,7 @@ let is_in_system_path filename =
     let lpath = CUnix.path_to_list (Sys.getenv "PATH") in
     is_in_path lpath filename
   with Not_found ->
-    msg_warning (str "system variable PATH not found");
+    Feedback.msg_warning (str "system variable PATH not found");
     false
 
 let open_trapping_failure name =
@@ -216,7 +216,7 @@ let open_trapping_failure name =
 let try_remove filename =
   try Sys.remove filename
   with e when Errors.noncritical e ->
-    msg_warning
+    Feedback.msg_warning
       (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
 let error_corrupted file s =
@@ -345,13 +345,13 @@ let with_time time f x =
     let y = f x in
     let tend = get_time() in
     let msg2 = if time then "" else " (successful)" in
-    msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
+    Feedback.msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
     y
   with e ->
     let tend = get_time() in
     let msg = if time then "" else "Finished failing transaction in " in
     let msg2 = if time then "" else " (failure)" in
-    msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
+    Feedback.msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
     raise e
 
 let process_id () =

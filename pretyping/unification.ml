@@ -657,7 +657,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     and cN = Evarutil.whd_head_evar sigma curn in
     let () = 
       if !debug_unification then
-	msg_debug (Termops.print_constr_env curenv cM ++ str" ~= " ++ Termops.print_constr_env curenv cN)
+	Feedback.msg_debug (Termops.print_constr_env curenv cM ++ str" ~= " ++ Termops.print_constr_env curenv cN)
     in 
       match (kind_of_term cM,kind_of_term cN) with
 	| Meta k1, Meta k2 ->
@@ -1054,7 +1054,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
   in
     
-  if !debug_unification then msg_debug (str "Starting unification");
+  if !debug_unification then Feedback.msg_debug (str "Starting unification");
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
   try
   let res = 
@@ -1075,10 +1075,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     let a = match res with 
     | Some sigma -> sigma, ms, es
     | None -> unirec_rec (env,0) cv_pb opt subst m n in
-    if !debug_unification then msg_debug (str "Leaving unification with success");
+    if !debug_unification then Feedback.msg_debug (str "Leaving unification with success");
     a
   with e ->
-    if !debug_unification then msg_debug (str "Leaving unification with failure");
+    if !debug_unification then Feedback.msg_debug (str "Leaving unification with failure");
     raise e
 
 

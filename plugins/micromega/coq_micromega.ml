@@ -961,7 +961,7 @@ struct
 
   let parse_expr parse_constant parse_exp ops_spec env term =
     if debug
-    then Pp.msg_debug (Pp.str "parse_expr: " ++ Printer.prterm term);
+    then Feedback.msg_debug (Pp.str "parse_expr: " ++ Printer.prterm term);
 
 (*
     let constant_or_variable env term =
@@ -1082,7 +1082,7 @@ struct
 
   let rconstant term = 
     if debug
-    then Pp.msg_debug (Pp.str "rconstant: " ++ Printer.prterm term ++ fnl ());
+    then Feedback.msg_debug (Pp.str "rconstant: " ++ Printer.prterm term ++ fnl ());
     let res = rconstant term in
       if debug then 
 	(Printf.printf "rconstant -> %a\n" pp_Rcst res ; flush stdout) ;
@@ -1122,7 +1122,7 @@ struct
 
   let  parse_arith parse_op parse_expr env cstr gl =
    if debug
-   then Pp.msg_debug (Pp.str "parse_arith: " ++ Printer.prterm  cstr ++ fnl ());
+   then Feedback.msg_debug (Pp.str "parse_arith: " ++ Printer.prterm  cstr ++ fnl ());
    match kind_of_term cstr with
     | App(op,args) ->
        let (op,lhs,rhs) = parse_op gl (op,args) in
@@ -1651,12 +1651,12 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
 
  if debug then
    begin
-     Pp.pp (Pp.str "Formula....\n") ;
+     Feedback.msg_notice (Pp.str "Formula....\n") ;
      let formula_typ = (Term.mkApp(Lazy.force coq_Cstr, [|spec.coeff|])) in
      let ff = dump_formula formula_typ
        (dump_cstr spec.typ spec.dump_coeff) ff in
-       Pp.pp (Printer.prterm ff) ;  Pp.pp_flush ();
-         Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff
+       Feedback.msg_notice (Printer.prterm ff);
+       Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff
    end;
 
  match witness_list_tags prover cnf_ff with
@@ -1676,11 +1676,11 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
 
   if debug then
     begin
-      Pp.pp (Pp.str "\nAFormula\n") ;
+      Feedback.msg_notice (Pp.str "\nAFormula\n") ;
       let formula_typ = (Term.mkApp( Lazy.force coq_Cstr,[| spec.coeff|])) in
       let ff' = dump_formula formula_typ
         (dump_cstr spec.typ spec.dump_coeff) ff' in
-        Pp.pp (Printer.prterm  ff') ;  Pp.pp_flush ();
+        Feedback.msg_notice (Printer.prterm  ff');
         Printf.fprintf stdout "cnf : %a\n" (pp_cnf (fun o _ -> ())) cnf_ff'
     end;
 
@@ -1733,7 +1733,7 @@ let micromega_gen
     with
     | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
     | Mfourier.TimeOut  -> Tacticals.New.tclFAIL 0 (Pp.str "Timeout")
-    | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
+    | CsdpNotFound -> flush stdout ;
      Tacticals.New.tclFAIL 0 (Pp.str 
                            (" Skipping what remains of this tactic: the complexity of the goal requires "
                             ^ "the use of a specialized external tool called csdp. \n\n" 
@@ -1818,7 +1818,7 @@ let micromega_genr prover =
   with
   | Mfourier.TimeOut     -> Tacticals.New.tclFAIL 0 (Pp.str "TimeOut")
   | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
-  | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
+  | CsdpNotFound ->
       Tacticals.New.tclFAIL 0 (Pp.str 
       (" Skipping what remains of this tactic: the complexity of the goal requires "
       ^ "the use of a specialized external tool called csdp. \n\n" 
@@ -1903,7 +1903,7 @@ let call_csdpcert_q provername poly =
      let cert = Certificate.q_cert_of_pos cert in
      if Mc.qWeakChecker poly cert
      then Some cert
-     else ((print_string "buggy certificate" ; flush stdout) ;None)
+     else ((print_string "buggy certificate") ;None)
 
 let call_csdpcert_z provername poly =
  let l = List.map (fun (e,o) -> (z_to_q_pol e,o)) poly in

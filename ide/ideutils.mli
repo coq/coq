@@ -69,7 +69,7 @@ val requote : string -> string
 val textview_width : #GText.view_skel -> int
 (** Returns an approximate value of the character width of a textview *)
 
-type logger = Pp.message_level -> Richpp.richpp -> unit
+type logger = Feedback.level -> Richpp.richpp -> unit
 
 val default_logger : logger
 (** Default logger. It logs messages that the casual user should not see. *)

@@ -262,7 +262,7 @@ let add_new_coercion_core coef stre poly source target isid =
   in
   check_source (Some cls);
   if not (uniform_cond (llp-ind) lvs) then
-    msg_warning (explain_coercion_error coef NotUniform);
+    Feedback.msg_warning (explain_coercion_error coef NotUniform);
   let clt =
     try
       get_target tg ind
@@ -310,7 +310,7 @@ let add_coercion_hook poly local ref =
   in
   let () = try_add_new_coercion ref stre poly in
   let msg = pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
-  Flags.if_verbose msg_info msg
+  Flags.if_verbose Feedback.msg_info msg
 
 let add_coercion_hook poly = Lemmas.mk_hook (add_coercion_hook poly)
 

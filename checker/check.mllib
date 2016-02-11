@@ -22,8 +22,11 @@ CList
 CString
 Serialize
 Stateid
-Feedback
 Pp
+Ppstyle
+Xml_datatype
+Richpp
+Feedback
 Segmenttree
 Unicodetable
 Unicode
@@ -31,7 +34,6 @@ CObj
 CArray
 CStack
 Util
-Ppstyle
 Errors
 CEphemeron
 Future

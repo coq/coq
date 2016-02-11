@@ -551,7 +551,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
   (* Side effect! This has to be made more robust *)
   let () =
     match close_cmd with
-    | Some cmd -> msg_info cmd
+    | Some cmd -> Feedback.msg_info cmd
     | None -> ()
   in
   match goals with
@@ -629,12 +629,12 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
           begin match bgoals,shelf,given_up with
 	  | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack goals
           | [] , [] , _ ->
-	     msg_info (str "No more subgoals, but there are some goals you gave up:");
+	     Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
 	     fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] given_up
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
-	    msg_info (str "All the remaining goals are on the shelf.");
+	    Feedback.msg_info (str "All the remaining goals are on the shelf.");
 	    fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
 	  | _ , _, _ ->

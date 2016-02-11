@@ -36,7 +36,7 @@ struct
 
   let check_soft ?(warn = true) x =
     let iter (fatal, x) =
-      if fatal then Errors.error x else if warn then Pp.msg_warning (str x)
+      if fatal then Errors.error x else if warn then Feedback.msg_warning (str x)
     in
     Option.iter iter (Unicode.ident_refutation x)
 

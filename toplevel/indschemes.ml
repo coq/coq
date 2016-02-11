@@ -150,7 +150,7 @@ let alarm what internal msg =
   | UserAutomaticRequest
   | InternalTacticRequest ->
     (if debug then
-      msg_warning
+      Feedback.msg_warning
 	(hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
   | _ -> Some msg
 
@@ -303,7 +303,7 @@ let declare_congr_scheme ind =
     then
       ignore (define_individual_scheme congr_scheme_kind UserAutomaticRequest None ind)
     else
-      msg_warning (strbrk "Cannot build congruence scheme because eq is not found")
+      Feedback.msg_warning (strbrk "Cannot build congruence scheme because eq is not found")
   end
 
 let declare_sym_scheme ind =

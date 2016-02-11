@@ -107,7 +107,7 @@ let pp_tag t = match Pp.Tag.prj t tag with
 | None -> ""
 | Some key -> key
 
-let init_color_output () =
+let color_msg =
   let push_tag, pop_tag, clear_tag = make_style_stack !tags in
   let tag_handler = {
     Format.mark_open_tag = push_tag;
@@ -135,15 +135,4 @@ let init_color_output () =
     Format.pp_print_flush ft ();
     (** In case something went wrong, we reset the stack *)
     clear_tag ();
-  in
-  let logger level strm = match level with
-  | Debug _ -> msg ~header:("Debug", debug_tag) !std_ft strm
-  | Info -> msg !std_ft strm
-  | Notice -> msg !std_ft strm
-  | Warning ->
-    let header = ("Warning", warning_tag) in
-    Flags.if_warn (fun () -> msg ~header !err_ft strm) ()
-  | Error -> msg ~header:("Error", error_tag) !err_ft strm
-  in
-  let () = set_logger logger in
-  ()
+  in msg

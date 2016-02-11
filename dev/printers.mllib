@@ -26,8 +26,10 @@ Control
 Loc
 Serialize
 Stateid
-Feedback
 Pp
+Ppstyle
+Richpp
+Feedback
 Segmenttree
 Unicodetable
 Unicode
@@ -35,7 +37,6 @@ CObj
 CArray
 CStack
 Util
-Ppstyle
 Errors
 Bigint
 CUnix

@@ -57,12 +57,13 @@ let print_context env =
          env_modules=mods; env_modtypes=mtys};
        env_stratification=
         {env_universes=univ; env_engagement=engt}} = env in
-    ppnl(hov 0
+    Feedback.msg_notice
+      (hov 0
       (fnl() ++ str"CONTEXT SUMMARY" ++ fnl() ++
       str"===============" ++ fnl() ++ fnl() ++
       str "* " ++ hov 0 (pr_engagement engt ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_ax csts) ++
-      fnl())); pp_flush()
+       fnl()));
   end
 
 let stats () =

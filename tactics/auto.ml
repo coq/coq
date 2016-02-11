@@ -229,11 +229,11 @@ let tclLOG (dbg,depth,trace) pp tac =
       Proofview.V82.tactic begin fun gl ->
 	try
 	  let out = Proofview.V82.of_tactic tac gl in
-	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
+	  Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
 	  out
 	with reraise ->
           let reraise = Errors.push reraise in
-	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
+	  Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
 	  iraise reraise
       end
     | Info ->
@@ -289,10 +289,10 @@ let tclTRY_dbg d tac =
   let delay f = Proofview.tclUNIT () >>= fun () -> f () in
   let tac = match level with
   | Off -> tac
-  | Debug | Info -> delay (fun () -> msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d); tac)
+  | Debug | Info -> delay (fun () -> Feedback.msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d); tac)
   in
   let after = match level with
-  | Info -> delay (fun () -> msg_debug (pr_info_nop d); Proofview.tclUNIT ())
+  | Info -> delay (fun () -> Feedback.msg_debug (pr_info_nop d); Proofview.tclUNIT ())
   | Off | Debug -> Proofview.tclUNIT ()
   in
   Tacticals.New.tclORELSE0 tac after
