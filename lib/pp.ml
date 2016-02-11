@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module F = Feedback
+
 module Glue : sig
 
   (** The [Glue] module implements a container data structure with
@@ -387,24 +389,7 @@ let msgnl_with ft strm =
 let msgnl x = msgnl_with !std_ft x
 
 (* Logging management *)
-
-type message_level =  Feedback.message_level =
-  | Debug of string
-  | Info
-  | Notice
-  | Warning
-  | Error
-
-type message = Feedback.message = {
-  message_level : message_level;
-  message_content : string;
-}
-
-let of_message = Feedback.of_message
-let to_message = Feedback.to_message
-let is_message = Feedback.is_message
-
-type logger = message_level -> std_ppcmds -> unit
+type logger = F.level -> std_ppcmds -> unit
 
 let make_body info s =
   emacs_quote (hov 0 (info ++ spc () ++ s))
@@ -415,25 +400,27 @@ let errorbody strm = make_body (str "Error:") strm
 let infobody strm = emacs_quote_info strm
 
 let std_logger ~id:_ level msg = match level with
-| Debug _ -> msgnl (debugbody msg)
-| Info    -> msgnl (hov 0 msg)
-| Notice  -> msgnl msg
-| Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
-| Error -> msgnl_with !err_ft (errorbody msg)
+| F.Debug _ -> msgnl (debugbody msg)
+| F.Info    -> msgnl (hov 0 msg)
+| F.Notice  -> msgnl msg
+| F.Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
+| F.Error -> msgnl_with !err_ft (errorbody msg)
 
 let emacs_logger ~id:_ level mesg = match level with
-| Debug _ -> msgnl (debugbody mesg)
-| Info    -> msgnl (infobody mesg)
-| Notice  -> msgnl mesg
-| Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody mesg)) ()
-| Error -> msgnl_with !err_ft (errorbody mesg)
+| F.Debug _ -> msgnl (debugbody mesg)
+| F.Info    -> msgnl (infobody mesg)
+| F.Notice  -> msgnl mesg
+| F.Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody mesg)) ()
+| F.Error -> msgnl_with !err_ft (errorbody mesg)
 
 let logger = ref std_logger
 
 let make_pp_emacs() = print_emacs:=true; logger:=emacs_logger
 let make_pp_nonemacs() = print_emacs:=false; logger := std_logger
 
-let ft_logger old_logger ft ~id level mesg = match level with
+let ft_logger old_logger ft ~id level mesg =
+  let open Feedback in
+  match level with
   | Debug _ -> msgnl_with ft (debugbody mesg)
   | Info -> msgnl_with ft (infobody mesg)
   | Notice -> msgnl_with ft mesg
@@ -462,11 +449,11 @@ let feedback_route = ref Feedback.default_route
    so that interfaces (proofgeneral for example) can easily dispatch
    them to different windows. *)
 
-let msg_info x = !logger ~id:!feedback_id Info x
-let msg_notice x = !logger ~id:!feedback_id Notice x
-let msg_warning x = !logger ~id:!feedback_id Warning x
-let msg_error x = !logger ~id:!feedback_id Error x
-let msg_debug x = !logger ~id:!feedback_id (Debug "_") x
+let msg_info    x = !logger ~id:!feedback_id F.Info x
+let msg_notice  x = !logger ~id:!feedback_id F.Notice x
+let msg_warning x = !logger ~id:!feedback_id F.Warning x
+let msg_error   x = !logger ~id:!feedback_id F.Error x
+let msg_debug   x = !logger ~id:!feedback_id (F.Debug "_") x
 
 let set_logger l = logger := (fun ~id:_ lvl msg -> l lvl msg)
 
@@ -497,12 +484,13 @@ let string_of_ppcmds c =
   Format.flush_str_formatter ()
 
 let log_via_feedback () = logger := (fun ~id lvl msg ->
+  let open F in
   !feeder {
-     Feedback.contents = Feedback.Message {
-       message_level = lvl;
+     F.contents = F.Message {
+        message_level = lvl;
        message_content = string_of_ppcmds msg };
-     Feedback.route = !feedback_route;
-     Feedback.id = id })
+     F.route = !feedback_route;
+     F.id = id })
 
 (* Copy paste from Util *)
 

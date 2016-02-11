@@ -9,7 +9,7 @@
 open Xml_datatype
 
 (* Old plain messages (used to be in Pp) *)
-type message_level =
+type level =
   | Debug of string
   | Info
   | Notice
@@ -17,7 +17,7 @@ type message_level =
   | Error
 
 type message = {
-  message_level : message_level;
+  message_level : level;
   message_content : string;
 }
 

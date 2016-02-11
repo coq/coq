@@ -108,20 +108,7 @@ val tag : Tag.t -> std_ppcmds -> std_ppcmds
 val open_tag : Tag.t -> std_ppcmds
 val close_tag : unit -> std_ppcmds
 
-(** {6 Sending messages to the user} *)
-type message_level = Feedback.message_level =
-  | Debug of string
-  | Info
-  | Notice
-  | Warning
-  | Error
-
-type message = Feedback.message = {
-  message_level   : message_level;
-  message_content : string;
-}
-
-type logger = message_level -> std_ppcmds -> unit
+type logger = Feedback.level -> std_ppcmds -> unit
 
 (** {6 output functions}
 
@@ -157,11 +144,6 @@ val std_logger : logger
 val set_logger : logger -> unit
 
 val log_via_feedback : unit -> unit
-
-val of_message : message -> Xml_datatype.xml
-val to_message : Xml_datatype.xml -> message
-val is_message : Xml_datatype.xml -> bool
-
 
 (** {6 Feedback sent, even asynchronously, to the user interface} *)
 

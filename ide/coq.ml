@@ -296,17 +296,17 @@ let rec check_errors = function
 | `OUT :: _ -> raise (TubeError "OUT")
 
 let handle_intermediate_message handle xml =
-  let message = Pp.to_message xml in
-  let level = message.Pp.message_level in
-  let content = message.Pp.message_content in
+  let message = Feedback.to_message xml in
+  let level = message.Feedback.message_level in
+  let content = message.Feedback.message_content in
   let logger = match handle.waiting_for with
     | Some (_, l) -> l 
     | None -> function
-        | Pp.Error -> Minilib.log ~level:`ERROR
-        | Pp.Info -> Minilib.log ~level:`INFO
-        | Pp.Notice -> Minilib.log ~level:`NOTICE
-        | Pp.Warning -> Minilib.log ~level:`WARNING
-        | Pp.Debug _ -> Minilib.log ~level:`DEBUG
+        | Feedback.Error -> Minilib.log ~level:`ERROR
+        | Feedback.Info -> Minilib.log ~level:`INFO
+        | Feedback.Notice -> Minilib.log ~level:`NOTICE
+        | Feedback.Warning -> Minilib.log ~level:`WARNING
+        | Feedback.Debug _ -> Minilib.log ~level:`DEBUG
   in
   logger level content
 
@@ -340,7 +340,7 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
-    if Pp.is_message xml then begin
+    if Feedback.is_message xml then begin
       handle_intermediate_message handle xml;
       loop ()
     end else if Feedback.is_feedback xml then begin

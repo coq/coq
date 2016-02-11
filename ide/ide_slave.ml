@@ -435,11 +435,11 @@ let slave_logger xml_oc level message =
   (* convert the message into XML *)
   let msg = string_of_ppcmds (hov 0 message) in
   let message = {
-    Pp.message_level = level;
-    Pp.message_content = msg;
+    Feedback.message_level = level;
+    Feedback.message_content = msg;
   } in
   let () = pr_debug (Printf.sprintf "-> %S" msg) in
-  let xml = Pp.of_message message in
+  let xml = Feedback.of_message message in
   print_xml xml_oc xml
 
 let slave_feeder xml_oc msg =
@@ -472,7 +472,7 @@ let loop () =
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
       let q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r = eval_call xml_oc (slave_logger xml_oc Pp.Notice) q in
+      let r = eval_call xml_oc (slave_logger xml_oc Feedback.Notice) q in
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
       print_xml xml_oc (Xmlprotocol.of_answer q r);

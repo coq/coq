@@ -518,7 +518,7 @@ object(self)
       self#position_error_tag_at_iter start phrase loc;
       buffer#place_cursor ~where:stop;
       messages#clear;
-      messages#push Pp.Error msg;
+      messages#push Feedback.Error msg;
       self#show_goals
     end else
       self#show_goals_aux ~move_insert:true ()
@@ -594,7 +594,7 @@ object(self)
         if Queue.is_empty queue then conclude topstack else
         match Queue.pop queue, topstack with
         | `Skip(start,stop), [] ->
-            logger Pp.Error "You must close the proof with Qed or Admitted";
+            logger Feedback.Error "You must close the proof with Qed or Admitted";
             self#discard_command_queue queue;
             conclude [] 
         | `Skip(start,stop), (_,s) :: topstack ->
@@ -610,7 +610,7 @@ object(self)
             let handle_answer = function
               | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
                   Doc.assign_tip_id document id;
-                  logger Pp.Notice msg;
+                  logger Feedback.Notice msg;
                   self#commit_queue_transaction sentence;
                   loop id []
               | Good (id, (Util.Inr (* Unfocus *) tip, msg)) ->
@@ -618,7 +618,7 @@ object(self)
                   let topstack, _ = Doc.context document in
                   self#exit_focus;
                   self#cleanup (Doc.cut_at document tip);
-                  logger Pp.Notice msg;
+                  logger Feedback.Notice msg;
                   self#mark_as_needed sentence;
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
@@ -637,7 +637,7 @@ object(self)
    let next = function
      | Good _ ->
          messages#clear;
-         messages#push Pp.Info "All proof terms checked by the kernel";
+         messages#push Feedback.Info "All proof terms checked by the kernel";
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
@@ -731,8 +731,8 @@ object(self)
           self#cleanup (Doc.cut_at document to_id);
           conclusion ()
       | Fail (safe_id, loc, msg) ->
-          if loc <> None then messages#push Pp.Error "Fixme LOC";
-          messages#push Pp.Error msg;
+          if loc <> None then messages#push Feedback.Error "Fixme LOC";
+          messages#push Feedback.Error msg;
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
           else undo safe_id
                  (Doc.focused document && Doc.is_in_focus document safe_id))
@@ -750,7 +750,7 @@ object(self)
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
     messages#clear;
-    messages#push Pp.Error msg;
+    messages#push Feedback.Error msg;
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
     else
