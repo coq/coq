@@ -508,7 +508,7 @@ let get_id_for_feedback () = !feedback_id, !feedback_route
 (** Utility *)
 
 let string_of_ppcmds c =
-  msg_with Format.str_formatter c;
+  Format.fprintf Format.str_formatter "@[%a@]" msg_with c;
   Format.flush_str_formatter ()
 
 let log_via_feedback () = logger := (fun ~id lvl msg ->
