@@ -494,15 +494,18 @@ let is_instance = function
 let resolvable = Store.field ()
 
 let set_resolvable s b =
-  Store.set s resolvable b
+  if b then Store.remove s resolvable
+  else Store.set s resolvable ()
 
 let is_resolvable evi =
   assert (match evi.evar_body with Evar_empty -> true | _ -> false);
-  Option.default true (Store.get evi.evar_extra resolvable)
+  Option.is_empty (Store.get evi.evar_extra resolvable)
 
 let mark_resolvability_undef b evi =
-  let t = Store.set evi.evar_extra resolvable b in
-  { evi with evar_extra = t }
+  if is_resolvable evi = b then evi
+  else
+    let t = set_resolvable evi.evar_extra b in
+    { evi with evar_extra = t }
 
 let mark_resolvability b evi =
   assert (match evi.evar_body with Evar_empty -> true | _ -> false);

@@ -70,7 +70,7 @@ Abort.
 
 Goal (forall x y : nat, x = y -> S x = S y) -> True.
 intros.
-einjection (H O) as H0.
+einjection (H O ?[y]) as H0.
 instantiate (y:=O).
 Abort.
 

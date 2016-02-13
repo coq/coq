@@ -56,7 +56,7 @@ Section Finite_nat_set.
       subst fs1.
       apply iff_refl.
     intros H.
-    eapply counted_list_equal_nth_char.
+    eapply (counted_list_equal_nth_char _ _ _ _ ?[def]).
     intros i.
     destruct (counted_def_nth fs1 i _ ) eqn:H0.
     (* This was not part of the initial bug report; this is to check that

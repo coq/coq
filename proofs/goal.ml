@@ -89,7 +89,10 @@ module V82 = struct
   (* Instantiates a goal with an open term, using name of goal for evk' *)
   let partial_solution_to sigma evk evk' c =
     let id = Evd.evar_ident evk sigma in
-    Evd.rename evk' id (partial_solution sigma evk c)
+    let sigma = partial_solution sigma evk c in
+    match id with
+    | None -> sigma
+    | Some id -> Evd.rename evk' id sigma
 
   (* Parts of the progress tactical *)
   let same_goal evars1 gl1 evars2 gl2 =

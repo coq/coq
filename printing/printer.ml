@@ -400,7 +400,7 @@ let display_name = false
 
 (* display a goal name *)
 let pr_goal_name sigma g =
-  if display_name then str " " ++ Pp.surround (pr_id (Evd.evar_ident g sigma))
+  if display_name then str " " ++ Pp.surround (pr_existential_key sigma g)
   else mt ()
 
 (* display the conclusion of a goal *)
