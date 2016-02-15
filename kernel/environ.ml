@@ -27,6 +27,7 @@ open Term
 open Vars
 open Declarations
 open Pre_env
+open Context.Rel.Declaration
 
 (* The type of environments. *)
 
@@ -72,8 +73,7 @@ let lookup_rel n env =
   Context.Rel.lookup n env.env_rel_context
 
 let evaluable_rel n env =
-  let open Context.Rel.Declaration in
-  lookup_rel n env |> is_local_def
+  is_local_def (lookup_rel n env)
 
 let nb_rel env = env.env_nb_rel
 
@@ -82,7 +82,6 @@ let push_rel = push_rel
 let push_rel_context ctxt x = Context.Rel.fold_outside push_rel ctxt ~init:x
 
 let push_rec_types (lna,typarray,_) env =
-  let open Context.Rel.Declaration in
   let ctxt = Array.map2_i (fun i na t -> LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
@@ -128,11 +127,13 @@ let eq_named_context_val c1 c2 =
 
 (* A local const is evaluable if it is defined  *)
 
+open Context.Named.Declaration
+
 let named_type id env =
-  lookup_named id env |> Context.Named.Declaration.get_type
+  get_type (lookup_named id env)
 
 let named_body id env =
-  lookup_named id env |> Context.Named.Declaration.get_value
+  get_value (lookup_named id env)
 
 let evaluable_named id env =
   match named_body id env with
@@ -417,7 +418,6 @@ let global_vars_set env constr =
    contained in the types of the needed variables. *)
 
 let really_needed env needed =
-  let open Context.Named.Declaration in
   Context.Named.fold_inside
     (fun need decl ->
       if Id.Set.mem (get_id decl) need then
@@ -436,7 +436,6 @@ let keep_hyps env needed =
   let really_needed = really_needed env needed in
   Context.Named.fold_outside
     (fun d nsign ->
-      let open Context.Named.Declaration in
       if Id.Set.mem (get_id d) really_needed then Context.Named.add d nsign
       else nsign)
     (named_context env)
@@ -487,7 +486,6 @@ let compile_constant_body = Cbytegen.compile_constant_body false
 exception Hyp_not_found
 
 let apply_to_hyp (ctxt,vals) id f =
-  let open Context.Named.Declaration in
   let rec aux rtail ctxt vals =
     match ctxt, vals with
     | d::ctxt, v::vals ->
@@ -501,7 +499,6 @@ let apply_to_hyp (ctxt,vals) id f =
   in aux [] ctxt vals
 
 let apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
-  let open Context.Named.Declaration in
   let rec aux ctxt vals =
     match ctxt,vals with
     | d::ctxt, v::vals ->
@@ -516,7 +513,6 @@ let apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
   in aux ctxt vals
 
 let insert_after_hyp (ctxt,vals) id d check =
-  let open Context.Named.Declaration in
   let rec aux ctxt vals =
     match  ctxt, vals with
     | decl::ctxt', v::vals' ->
@@ -533,7 +529,6 @@ let insert_after_hyp (ctxt,vals) id d check =
 
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value (ctxt, vals) =
-  let open Context.Named.Declaration in
   let rec remove_hyps ctxt vals = match ctxt, vals with
   | [], [] -> [], []
   | d :: rctxt, (nid, v) :: rvals ->

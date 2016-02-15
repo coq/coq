@@ -203,9 +203,8 @@ let cook_constant env { from = cb; info } =
   let const_hyps =
     Context.Named.fold_outside (fun decl hyps ->
       let open Context.Named.Declaration in
-      let h = get_id decl in
-      List.filter (fun decl -> let id = get_id decl in
-                               not (Id.equal id h)) hyps)
+      List.filter (fun decl' -> not (Id.equal (get_id decl) (get_id decl')))
+		  hyps)
       hyps ~init:cb.const_hyps in
   let typ = match cb.const_type with
     | RegularArity t ->

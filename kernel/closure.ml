@@ -245,10 +245,12 @@ and 'a infos = {
 let info_flags info = info.i_flags
 let info_env info = info.i_cache.i_env
 
+open Context.Named.Declaration
+
 let rec assoc_defined id = function
 | [] -> raise Not_found
-| Context.Named.Declaration.LocalAssum _ :: ctxt -> assoc_defined id ctxt
-| Context.Named.Declaration.LocalDef (id', c, _) :: ctxt ->
+| LocalAssum _ :: ctxt -> assoc_defined id ctxt
+| LocalDef (id', c, _) :: ctxt ->
   if Id.equal id id' then c else assoc_defined id ctxt
 
 let ref_value_cache ({i_cache = cache} as infos)  ref =
@@ -285,9 +287,10 @@ let defined_rels flags env =
   let ctx = rel_context env in
   let len = List.length ctx in
   let ans = Array.make len None in
+  let open Context.Rel.Declaration in
   let iter i = function
-    | Context.Rel.Declaration.LocalAssum _ -> ()
-    | Context.Rel.Declaration.LocalDef (_,b,_) -> Array.unsafe_set ans i (Some b)
+    | LocalAssum _ -> ()
+    | LocalDef (_,b,_) -> Array.unsafe_set ans i (Some b)
   in
   let () = List.iteri iter ctx in
   ans

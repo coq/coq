@@ -319,7 +319,7 @@ let is_correct_arity env c pj ind specif params =
           let () =
             try conv env a1 a1'
             with NotConvertible -> raise (LocalArity None) in
-          srec (push_rel (LocalAssum (na1,a1)) env) t ar' 
+          srec (push_rel (LocalAssum (na1,a1)) env) t ar'
       (* The last Prod domain is the type of the scrutinee *)
       | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
 	 let env' = push_rel (LocalAssum (na1,a1)) env in

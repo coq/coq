@@ -1832,10 +1832,10 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
   auxdefs, MLlet(aux_name, ml, mkMLapp (MLlocal aux_name) (Array.of_list (fv_rel@fv_named)))
 
 and compile_rel env sigma univ auxdefs n =
-  let decl = Context.Rel.lookup n env.env_rel_context in
-  let n = Context.Rel.length env.env_rel_context - n in
-  let open Context.Rel.Declaration in
-  match decl with
+  let open Context.Rel in
+  let n = length env.env_rel_context - n in
+  let open Declaration in
+  match lookup n env.env_rel_context with
   | LocalDef (_,t,_) ->
       let code = lambda_of_constr env sigma t in
       let auxdefs,code = compile_with_fv env sigma univ auxdefs None code in

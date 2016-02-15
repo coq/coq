@@ -74,8 +74,7 @@ let judge_of_type u =
 let judge_of_relative env n =
   try
     let open Context.Rel.Declaration in
-    let typ = get_type (lookup_rel n env) in
-    lift n typ
+    env |> lookup_rel n |> get_type |> lift n
   with Not_found ->
     error_unbound_rel env n
 
