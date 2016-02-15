@@ -16,8 +16,8 @@ type id = Stateid.t
 
 class type ['a] signals =
   object
-    method popped : callback:('a -> unit) -> unit
-    method pushed : callback:('a -> unit) -> unit
+    method popped : callback:('a -> ('a list * 'a list) option -> unit) -> unit
+    method pushed : callback:('a -> ('a list * 'a list) option -> unit) -> unit
   end
 
 class ['a] signal () =
@@ -32,14 +32,14 @@ end
 type 'a document = {
   mutable stack : 'a sentence list;
   mutable context : ('a sentence list * 'a sentence list) option;
-  pushed_sig : 'a signal;
-  popped_sig : 'a signal;
+  pushed_sig : ('a * ('a list * 'a list) option) signal;
+  popped_sig : ('a * ('a list * 'a list) option) signal;
 }
 
-let connect d =
+let connect d : 'a signals =
   object
-    method pushed ~callback = d.pushed_sig#connect callback
-    method popped ~callback = d.popped_sig#connect callback
+    method pushed ~callback = d.pushed_sig#connect (fun (x, ctx) -> callback x ctx)
+    method popped ~callback = d.popped_sig#connect (fun (x, ctx) -> callback x ctx)
   end
 
 let create () = {
@@ -48,6 +48,12 @@ let create () = {
   pushed_sig = new signal ();
   popped_sig = new signal ();
 }
+
+let repr_context s = match s.context with
+| None -> None
+| Some (cl, cr) ->
+  let map s = s.data in
+  Some (List.map map cl, List.map map cr)
 
 (* Invariant, only the tip is a allowed to have state_id = None *)
 let invariant l = l = [] || (List.hd l).state_id <> None
@@ -64,12 +70,13 @@ let tip_data = function
 let push d x =
   assert(invariant d.stack);
   d.stack <- { data = x; state_id = None } :: d.stack;
-  d.pushed_sig#call x
+  d.pushed_sig#call (x, repr_context d)
 
 let pop = function
   | { stack = [] } -> raise Empty
-  | { stack = { data }::xs } as s -> s.stack <- xs; s.popped_sig#call data; data
-  
+  | { stack = { data }::xs } as s ->
+    s.stack <- xs; s.popped_sig#call (data, repr_context s); data
+
 let focus d ~cond_top:c_start ~cond_bot:c_stop =
   assert(invariant d.stack);
   if d.context <> None then invalid_arg "focus";

@@ -169,6 +169,55 @@ let flags_to_color f =
 
 module Doc = Document
 
+let segment_model (doc : sentence Doc.document) : Wg_Segment.model =
+object (self)
+
+  val mutable cbs = []
+
+  val mutable document_length = 0
+
+  method length = document_length
+
+  method changed ~callback = cbs <- callback :: cbs
+
+  method fold : 'a. ('a -> Wg_Segment.color -> 'a) -> 'a -> 'a = fun f accu ->
+    let fold accu _ _ s =
+      let flags = List.map mem_flag_of_flag s.flags in
+      f accu (flags_to_color flags)
+    in
+    Doc.fold_all doc accu fold
+
+  method private on_changed (i, f) =
+    let data = (i, flags_to_color f) in
+    List.iter (fun f -> f (`SET data)) cbs
+
+  method private on_push s ctx =
+    let after = match ctx with
+    | None -> []
+    | Some (l, _) -> l
+    in
+    List.iter (fun s -> set_index s (s.index + 1)) after;
+    set_index s (document_length - List.length after);
+    ignore ((SentenceId.connect s)#changed self#on_changed);
+    document_length <- document_length + 1;
+    List.iter (fun f -> f `INSERT) cbs
+
+  method private on_pop s ctx =
+    let () = match ctx with
+    | None -> ()
+    | Some (l, _) -> List.iter (fun s -> set_index s (s.index - 1)) l
+    in
+    set_index s (-1);
+    document_length <- document_length - 1;
+    List.iter (fun f -> f `REMOVE) cbs
+
+  initializer
+    let _ = (Doc.connect doc)#pushed self#on_push in
+    let _ = (Doc.connect doc)#popped self#on_pop in
+    ()
+
+end
+
 class coqops
   (_script:Wg_ScriptView.script_view)
   (_pv:Wg_ProofView.proof_view)
@@ -201,20 +250,8 @@ object(self)
     script#misc#set_has_tooltip true;
     ignore(script#misc#connect#query_tooltip ~callback:self#tooltip_callback);
     feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback;
-    let on_changed (i, f) = segment#add i (flags_to_color f) in
-    let on_push s =
-      set_index s document_length;
-      ignore ((SentenceId.connect s)#changed on_changed);
-      document_length <- succ document_length;
-      segment#set_length document_length;
-      let flags = List.map mem_flag_of_flag s.flags in
-      segment#add s.index (flags_to_color flags);
-    in
-    let on_pop s =
-      set_index s (-1);
-      document_length <- pred document_length;
-      segment#set_length document_length;
-    in
+    let md = segment_model document in
+    segment#set_model md;
     let on_click id =
       let find _ _ s = Int.equal s.index id in
       let sentence = Doc.find document find in
@@ -230,8 +267,6 @@ object(self)
       script#buffer#place_cursor iter;
       ignore (script#scroll_to_iter ~use_align:true ~yalign:0. iter)
     in
-    let _ = (Doc.connect document)#pushed on_push in
-    let _ = (Doc.connect document)#popped on_pop in
     let _ = segment#connect#clicked on_click in
     ()
 
