@@ -35,6 +35,7 @@ val rel_context_length : rel_context -> int
 val rel_context_nhyps : rel_context -> int
 val fold_rel_context :
   (rel_declaration -> 'a -> 'a) -> rel_context -> init:'a -> 'a
+val map_rel_decl : (constr -> constr) -> rel_declaration -> rel_declaration
 val map_rel_context : (constr -> constr) -> rel_context -> rel_context
 val extended_rel_list : int -> rel_context -> constr list
 val compose_lam : (name * constr) list -> constr -> constr

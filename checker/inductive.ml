@@ -634,8 +634,9 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
   let mib = Environ.lookup_mind mind env in
   let ntypes = mib.mind_ntypes in
   let push_ind specif env =
-     push_rel (LocalAssum (Anonymous,
-		           hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar)) env
+     let decl = LocalAssum (Anonymous,
+		            hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar) in
+     push_rel decl env
   in
   let env = Array.fold_right push_ind mib.mind_packets env in
   let rc = Array.mapi (fun j t -> (Imbr (mind,j),t)) (Rtree.mk_rec_calls ntypes) in

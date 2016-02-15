@@ -227,19 +227,19 @@ let rel_context_nhyps hyps =
   nhyps 0 hyps
 let fold_rel_context f l ~init = List.fold_right f l init
 
-let map_rel_context f l =
-  let map_decl = function
-    | LocalAssum (n, typ) as decl ->
-       let typ' = f typ in
-       if typ' == typ then decl else
-         LocalAssum (n, typ')
-    | LocalDef (n, body, typ) as decl ->
-       let body' = f body in
-       let typ' = f typ in
-       if body' == body && typ' == typ then decl else
-         LocalDef (n, body', typ')
-  in
-    List.smartmap map_decl l
+let map_rel_decl f = function
+  | LocalAssum (n, typ) as decl ->
+     let typ' = f typ in
+     if typ' == typ then decl else
+       LocalAssum (n, typ')
+  | LocalDef (n, body, typ) as decl ->
+     let body' = f body in
+     let typ' = f typ in
+     if body' == body && typ' == typ then decl else
+       LocalDef (n, body', typ')
+
+let map_rel_context f =
+  List.smartmap (map_rel_decl f)
 
 let extended_rel_list n hyps =
   let rec reln l p = function

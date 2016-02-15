@@ -319,7 +319,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
   let nhyps = List.length hyps in
   let rec check k index = function
     | [] -> ()
-    | LocalDef (_,_,_) :: hyps -> check k (index+1) hyps
+    | LocalDef _ :: hyps -> check k (index+1) hyps
     | _::hyps ->
         match whd_betadeltaiota env lpar.(k) with
 	  | Rel w when w = index -> check (k-1) (index+1) hyps
@@ -376,8 +376,9 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lpar) =
   let auxntyp = 1 in
   let specif = lookup_mind_specif env mi in
   let env' =
-    push_rel (LocalAssum (Anonymous,
-                          hnf_prod_applist env (type_of_inductive env (specif,u)) lpar)) env in
+    let decl = LocalAssum (Anonymous,
+                           hnf_prod_applist env (type_of_inductive env (specif,u)) lpar) in
+    push_rel decl env in
   let ra_env' =
     (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in

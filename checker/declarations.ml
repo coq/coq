@@ -517,14 +517,8 @@ let map_decl_arity f g = function
   | RegularArity a -> RegularArity (f a)
   | TemplateArity a -> TemplateArity (g a)
 
-let subst_rel_declaration sub = function
-  | LocalAssum (id,t) as x ->
-     let t' = subst_mps sub t in
-     if t == t' then x else LocalAssum (id,t')
-  | LocalDef (id,c,t) as x ->
-     let c' = subst_mps sub c in
-     let t' = subst_mps sub t in
-     if c == c' && t == t' then x else LocalDef (id,c',t')
+let subst_rel_declaration sub =
+  Term.map_rel_decl (subst_mps sub)
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
