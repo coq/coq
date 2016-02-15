@@ -88,6 +88,7 @@ let matrix_transpose mat =
 let identity x = x
 
 let compose f g x = f (g x)
+let (%) = compose
 
 let const x _ = x
 

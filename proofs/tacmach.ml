@@ -19,6 +19,7 @@ open Proof_type
 open Logic
 open Refiner
 open Sigma.Notations
+open Context.Named.Declaration
 
 let re_sig it  gc = { it = it; sigma = gc; }
 
@@ -41,9 +42,11 @@ let pf_hyps  = Refiner.pf_hyps
 let pf_concl gls = Goal.V82.concl (project gls) (sig_it gls)
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in
-  List.map (fun (id,_,x) -> (id, x)) sign
+  List.map (function LocalAssum (id,x)
+                   | LocalDef (id,_,x) -> id, x)
+           sign
 
-let pf_nth_hyp_id gls n = let (id,c,t) = List.nth (pf_hyps gls) (n-1) in id
+let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> get_id
 
 let pf_last_hyp gl = List.hd (pf_hyps gl)
 
@@ -54,8 +57,7 @@ let pf_get_hyp gls id =
     raise (RefinerError (NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
-  let (_,_,ty)= (pf_get_hyp gls id) in
-  ty
+  pf_get_hyp gls id |> get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
@@ -208,13 +210,14 @@ module New = struct
     sign
 
   let pf_get_hyp_typ id gl =
-    let (_,_,ty) = pf_get_hyp id gl in
-    ty
+    pf_get_hyp id gl |> get_type
 
   let pf_hyps_types gl =
     let env = Proofview.Goal.env gl in
     let sign = Environ.named_context env in
-    List.map (fun (id,_,x) -> (id, x)) sign
+    List.map (function LocalAssum (id,x)
+                     | LocalDef (id,_,x) -> id, x)
+             sign
 
   let pf_last_hyp gl =
     let hyps = Proofview.Goal.hyps gl in

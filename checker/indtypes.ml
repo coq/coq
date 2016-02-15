@@ -56,10 +56,10 @@ let is_constructor_head t =
 let conv_ctxt_prefix env (ctx1:rel_context) ctx2 =
   let rec chk env rctx1 rctx2 =
     match rctx1, rctx2 with
-        (_,None,ty1 as d1)::rctx1', (_,None,ty2)::rctx2' ->
+        (LocalAssum (_,ty1) as d1)::rctx1', LocalAssum (_,ty2)::rctx2' ->
           conv env ty1 ty2;
           chk (push_rel d1 env) rctx1' rctx2'
-      | (_,Some bd1,ty1 as d1)::rctx1', (_,Some bd2,ty2)::rctx2' ->
+      | (LocalDef (_,bd1,ty1) as d1)::rctx1', LocalDef (_,bd2,ty2)::rctx2' ->
           conv env ty1 ty2;
           conv env bd1 bd2;
           chk (push_rel d1 env) rctx1' rctx2'
@@ -94,10 +94,10 @@ let rec sorts_of_constr_args env t =
   match t with
     | Prod (name,c1,c2) ->
         let varj = infer_type env c1 in
-	let env1 = push_rel (name,None,c1) env in
+	let env1 = push_rel (LocalAssum (name,c1)) env in
 	varj :: sorts_of_constr_args env1 c2
     | LetIn (name,def,ty,c) ->
-        let env1 = push_rel (name,Some def,ty) env in
+        let env1 = push_rel (LocalDef (name,def,ty)) env in
 	sorts_of_constr_args env1 c
     | _ when is_constructor_head t -> []
     | _ -> anomaly ~label:"infos_and_sort" (Pp.str "not a positive constructor")
@@ -167,7 +167,7 @@ let typecheck_arity env params inds =
 	   full_arity is used as argument or subject to cast, an
 	   upper universe will be generated *)
 	let id = ind.mind_typename in
-	let env_ar' = push_rel (Name id, None, arity) env_ar in
+	let env_ar' = push_rel (LocalAssum (Name id, arity)) env_ar in
         env_ar')
       env
       inds in
@@ -319,7 +319,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
   let nhyps = List.length hyps in
   let rec check k index = function
     | [] -> ()
-    | (_,Some _,_)::hyps -> check k (index+1) hyps
+    | LocalDef (_,_,_) :: hyps -> check k (index+1) hyps
     | _::hyps ->
         match whd_betadeltaiota env lpar.(k) with
 	  | Rel w when w = index -> check (k-1) (index+1) hyps
@@ -340,7 +340,7 @@ let check_rec_par (env,n,_,_) hyps nrecp largs =
       | ([],_) -> ()
       | (_,[]) ->
           failwith "number of recursive parameters cannot be greater than the number of parameters."
-      | (lp,(_,Some _,_)::hyps) -> find (index-1) (lp,hyps)
+      | (lp,LocalDef _ :: hyps) -> find (index-1) (lp,hyps)
       | (p::lp,_::hyps) ->
           (match whd_betadeltaiota env p with
 	    | Rel w when w = index -> find (index-1) (lp,hyps)
@@ -370,14 +370,14 @@ let abstract_mind_lc env ntyps npars lc =
    [lra] is the list of recursive tree of each variable
  *)
 let ienv_push_var (env, n, ntypes, lra) (x,a,ra) =
- (push_rel (x,None,a) env, n+1, ntypes, (Norec,ra)::lra)
+ (push_rel (LocalAssum (x,a)) env, n+1, ntypes, (Norec,ra)::lra)
 
 let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lpar) =
   let auxntyp = 1 in
   let specif = lookup_mind_specif env mi in
   let env' =
-    push_rel (Anonymous,None,
-              hnf_prod_applist env (type_of_inductive env (specif,u)) lpar) env in
+    push_rel (LocalAssum (Anonymous,
+                          hnf_prod_applist env (type_of_inductive env (specif,u)) lpar)) env in
   let ra_env' =
     (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in

@@ -25,6 +25,7 @@ open Constrexpr
 open Constrexpr_ops
 open Goptions
 open Sigma.Notations
+open Context.Rel.Declaration
 
 (********** definition d'un record (structure) **************)
 
@@ -69,16 +70,19 @@ let interp_fields_evars env evars impls_env nots l =
 	| Anonymous -> impls
 	| Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method t' impl) impls
       in
-      let d = (i,b',t') in
+      let d = match b' with
+	      | None -> LocalAssum (i,t')
+	      | Some b' -> LocalDef (i,b',t')
+      in
       List.iter (Metasyntax.set_notation_for_interpretation impls) no;
       (push_rel d env, impl :: uimpls, d::params, impls))
     (env, [], [], impls_env) nots l
 
 let compute_constructor_level evars env l =
-  List.fold_right (fun (n,b,t as d) (env, univ) ->
+  List.fold_right (fun d (env, univ) ->
     let univ = 
-      if b = None then 
-	let s = Retyping.get_sort_of env evars t in
+      if is_local_assum d then
+	let s = Retyping.get_sort_of env evars (get_type d) in
 	  Univ.sup (univ_of_sort s) univ 
       else univ
     in (push_rel d env, univ)) 
@@ -123,7 +127,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
 	mkSort (Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars), false
   in
   let fullarity = it_mkProd_or_LetIn t' newps in
-  let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
+  let env_ar = push_rel_context newps (push_rel (LocalAssum (Name id,fullarity)) env0) in
   let env2,impls,newfs,data =
     interp_fields_evars env_ar evars impls_env nots (binders_of_decls fs)
   in
@@ -151,17 +155,17 @@ let typecheck_params_and_fields def id pl t ps nots fs =
   let newps = Context.Rel.map nf newps in
   let newfs = Context.Rel.map nf newfs in
   let ce t = Evarutil.check_evars env0 Evd.empty evars t in
-    List.iter (fun (n, b, t) -> Option.iter ce b; ce t) (List.rev newps);
-    List.iter (fun (n, b, t) -> Option.iter ce b; ce t) (List.rev newfs);
+    List.iter (iter_constr ce) (List.rev newps);
+    List.iter (iter_constr ce) (List.rev newfs);
     Evd.universe_context ?names:pl evars, nf arity, template, imps, newps, impls, newfs
 
-let degenerate_decl (na,b,t) =
-  let id = match na with
+let degenerate_decl decl =
+  let id = match get_name decl with
     | Name id -> id
     | Anonymous -> anomaly (Pp.str "Unnamed record variable") in
-  match b with
-    | None -> (id, LocalAssum t)
-    | Some b -> (id, LocalDef b)
+  match decl with
+    | LocalAssum (_,t) -> (id, Entries.LocalAssum t)
+    | LocalDef (_,b,_) -> (id, Entries.LocalDef b)
 
 type record_error =
   | MissingProj of Id.t * Id.t list
@@ -265,23 +269,25 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
   in
   let (_,_,kinds,sp_projs,_) =
     List.fold_left3
-      (fun (nfi,i,kinds,sp_projs,subst) coe (fi,optci,ti) impls ->
+      (fun (nfi,i,kinds,sp_projs,subst) coe decl impls ->
+        let fi = get_name decl in
+        let ti = get_type decl in
 	let (sp_projs,i,subst) =
 	  match fi with
 	  | Anonymous ->
 	      (None::sp_projs,i,NoProjection fi::subst)
 	  | Name fid -> try
 	    let kn, term = 
-	      if optci = None && primitive then 
+	      if is_local_assum decl && primitive then
 		(** Already defined in the kernel silently *)
 		let kn = destConstRef (Nametab.locate (Libnames.qualid_of_ident fid)) in
 		  Declare.definition_message fid;
 		  kn, mkProj (Projection.make kn false,mkRel 1)
 	      else
 		let ccl = subst_projection fid subst ti in
-		let body = match optci with
-		  | Some ci -> subst_projection fid subst ci
-		  | None ->
+		let body = match decl with
+		  | LocalDef (_,ci,_) -> subst_projection fid subst ci
+		  | LocalAssum _ ->
 	            (* [ccl] is defined in context [params;x:rp] *)
 		    (* [ccl'] is defined in context [params;x:rp;x:rp] *)
 		    let ccl' = liftn 1 2 ccl in
@@ -323,32 +329,32 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 	      let cl = Class.class_of_global (IndRef indsp) in
 	        Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
 	    end;
-	    let i = if Option.is_empty optci then i+1 else i in
+	    let i = if is_local_assum decl then i+1 else i in
 	      (Some kn::sp_projs, i, Projection term::subst)
             with NotDefinable why ->
 	      warning_or_error coe indsp why;
 	      (None::sp_projs,i,NoProjection fi::subst) in
-      (nfi-1,i,(fi, Option.is_empty optci)::kinds,sp_projs,subst))
+      (nfi-1,i,(fi, is_local_assum decl)::kinds,sp_projs,subst))
       (List.length fields,0,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
 
 let structure_signature ctx =
   let rec deps_to_evar evm l =
     match l with [] -> Evd.empty
-      | [(_,_,typ)] ->
+      | [decl] ->
         let env = Environ.empty_named_context_val in
         let evm = Sigma.Unsafe.of_evar_map evm in
-        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm typ in
+        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (get_type decl) in
         let evm = Sigma.to_evar_map evm in
         evm
-      | (_,_,typ)::tl ->
+      | decl::tl ->
           let env = Environ.empty_named_context_val in
           let evm = Sigma.Unsafe.of_evar_map evm in
-          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm typ in
+          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (get_type decl) in
           let evm = Sigma.to_evar_map evm in
 	  let new_tl = Util.List.map_i
-	    (fun pos (n,c,t) -> n,c,
-	       Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) 1 tl in
+	    (fun pos decl ->
+	       map_type (fun t -> Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) decl) 1 tl in
 	  deps_to_evar evm new_tl in
   deps_to_evar Evd.empty (List.rev ctx)
 
@@ -396,7 +402,7 @@ let implicits_of_context ctx =
       | Name n -> Some n
       | Anonymous -> None
     in ExplByPos (i, explname), (true, true, true))
-    1 (List.rev (Anonymous :: (List.map pi1 ctx)))
+    1 (List.rev (Anonymous :: (List.map get_name ctx)))
 
 let declare_class finite def poly ctx id idbuild paramimpls params arity 
     template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities sign =
@@ -409,7 +415,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
   let binder_name = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
   let impl, projs =
     match fields with
-    | [(Name proj_name, _, field)] when def ->
+    | [LocalAssum (Name proj_name, field) | LocalDef (Name proj_name, _, field)] when def ->
       let class_body = it_mkLambda_or_LetIn field params in
       let _class_type = it_mkProd_or_LetIn arity params in
       let class_entry = 
@@ -450,13 +456,13 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
 			      if b then Backward, pri else Forward, pri) coe)
 	  coers priorities
        in
-       let l = List.map3 (fun (id, _, _) b y -> (id, b, y))
+       let l = List.map3 (fun decl b y -> get_name decl, b, y)
          (List.rev fields) coers (Recordops.lookup_projections ind)
        in IndRef ind, l
   in
   let ctx_context =
-    List.map (fun (na, b, t) ->
-      match Typeclasses.class_of_constr t with
+    List.map (fun decl ->
+      match Typeclasses.class_of_constr (get_type decl) with
       | Some (_, ((cl,_), _)) -> Some (cl.cl_impl, true)
       | None -> None)
       params, params
@@ -478,7 +484,7 @@ let add_constant_class cst =
   let tc = 
     { cl_impl = ConstRef cst;
       cl_context = (List.map (const None) ctx, ctx);
-      cl_props = [(Anonymous, None, arity)];
+      cl_props = [LocalAssum (Anonymous, arity)];
       cl_projs = [];
       cl_strict = !typeclasses_strict;
       cl_unique = !typeclasses_unique
@@ -492,8 +498,8 @@ let add_inductive_class ind =
     let ctx = oneind.mind_arity_ctxt in
     let inst = Univ.UContext.instance mind.mind_universes in
     let map = function
-    | (_, Some _, _) -> None
-    | (_, None, t) -> Some (lazy t)
+    | LocalDef _ -> None
+    | LocalAssum (_, t) -> Some (lazy t)
     in
     let args = List.map_filter map ctx in
     let ty = Inductive.type_of_inductive_knowing_parameters
@@ -503,7 +509,7 @@ let add_inductive_class ind =
     in
       { cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
-	cl_props = [Anonymous, None, ty];
+	cl_props = [LocalAssum (Anonymous, ty)];
 	cl_projs = [];
 	cl_strict = !typeclasses_strict;
 	cl_unique = !typeclasses_unique }

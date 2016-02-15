@@ -54,7 +54,8 @@ type oblinfo =
 (** Substitute evar references in t using De Bruijn indices,
   where n binders were passed through. *)
 
-let subst_evar_constr evs n idf t = 
+let subst_evar_constr evs n idf t =
+  let open Context.Named.Declaration in
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
@@ -78,9 +79,9 @@ let subst_evar_constr evs n idf t =
 	let args =
 	  let rec aux hyps args acc =
 	     match hyps, args with
-		 ((_, None, _) :: tlh), (c :: tla) ->
+		 (LocalAssum _ :: tlh), (c :: tla) ->
 		   aux tlh tla ((substrec (depth, fixrels) c) :: acc)
-	       | ((_, Some _, _) :: tlh), (_ :: tla) ->
+	       | (LocalDef _ :: tlh), (_ :: tla) ->
 		   aux tlh tla acc
 	       | [], [] -> acc
 	       | _, _ -> acc (*failwith "subst_evars: invalid argument"*)
@@ -116,22 +117,23 @@ let subst_vars acc n t =
     Changes evars and hypothesis references to variable references.
 *)
 let etype_of_evar evs hyps concl =
+  let open Context.Named.Declaration in
   let rec aux acc n = function
-      (id, copt, t) :: tl ->
-	let t', s, trans = subst_evar_constr evs n mkVar t in
+      decl :: tl ->
+	let t', s, trans = subst_evar_constr evs n mkVar (get_type decl) in
 	let t'' = subst_vars acc 0 t' in
-	let rest, s', trans' = aux (id :: acc) (succ n) tl in
+	let rest, s', trans' = aux (get_id decl :: acc) (succ n) tl in
 	let s' = Int.Set.union s s' in
 	let trans' = Id.Set.union trans trans' in
-	  (match copt with
-	      Some c -> 
+	  (match decl with
+            | LocalDef (id,c,_) ->
 		let c', s'', trans'' = subst_evar_constr evs n mkVar c in
 		let c' = subst_vars acc 0 c' in
-		  mkNamedProd_or_LetIn (id, Some c', t'') rest,
+		  mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest,
 		Int.Set.union s'' s',
 		Id.Set.union trans'' trans'
-	    | None ->
-		mkNamedProd_or_LetIn (id, None, t'') rest, s', trans')
+	    | LocalAssum (id,_) ->
+		mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans')
     | [] ->
 	let t', s, trans = subst_evar_constr evs n mkVar concl in
 	  subst_vars acc 0 t', s, trans
@@ -589,15 +591,16 @@ let declare_mutual_definition l =
     Lemmas.call_hook fix_exn first.prg_hook local gr first.prg_ctx;
     List.iter progmap_remove l; kn
 
-let shrink_body c = 
+let shrink_body c =
+  let open Context.Rel.Declaration in
   let ctx, b = decompose_lam_assum c in
   let b', n, args = 
-    List.fold_left (fun (b, i, args) (n, u, t) ->
+    List.fold_left (fun (b, i, args) decl ->
       if noccurn 1 b then 
 	subst1 mkProp b, succ i, args
       else
-        let args = if Option.is_empty u then mkRel i :: args else args in
-        mkLambda_or_LetIn (n, u, t) b, succ i, args)
+	let args = if is_local_assum decl then mkRel i :: args else args in
+        mkLambda_or_LetIn decl b, succ i, args)
      (b, 1, []) ctx
   in ctx, b', Array.of_list args
 

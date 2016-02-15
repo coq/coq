@@ -727,7 +727,8 @@ let optimize lam =
 let lambda_of_constr env sigma c =
   set_global_env env;
   let env = Renv.make () in
-  let ids = List.rev_map (fun (id, _, _) -> id) !global_env.env_rel_context in
+  let open Context.Rel.Declaration in
+  let ids = List.rev_map get_name !global_env.env_rel_context in
   Renv.push_rels env (Array.of_list ids);
   let lam = lambda_of_constr env sigma c in
 (*  if Flags.vm_draw_opt () then begin

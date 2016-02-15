@@ -824,7 +824,7 @@ let __eps__ = Id.of_string "_eps_"
 let new_state_var typ state =
   let id = pf_get_new_id __eps__ state.gls in
   let {it=gl ; sigma=sigma} = state.gls in
-  let gls = Goal.V82.new_goal_with sigma gl [id,None,typ] in
+  let gls = Goal.V82.new_goal_with sigma gl [Context.Named.Declaration.LocalAssum (id,typ)] in
     state.gls<- gls;
     id
 

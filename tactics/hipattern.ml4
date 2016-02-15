@@ -19,6 +19,7 @@ open Constr_matching
 open Coqlib
 open Declarations
 open Tacmach.New
+open Context.Rel.Declaration
 
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
@@ -101,13 +102,16 @@ let match_with_one_constructor style onlybinary allow_rec t =
 	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
 	  if
 	    List.for_all
-	      (fun (_,b,c) -> Option.is_empty b && isRel c && Int.equal (destRel c) mib.mind_nparams) ctx
+	      (fun decl -> let c = get_type decl in
+	                   is_local_assum decl &&
+			   isRel c &&
+                           Int.equal (destRel c) mib.mind_nparams) ctx
 	  then
 	    Some (hdapp,args)
 	  else None
 	else
 	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
-	  let cargs = List.map pi3 ((prod_assum ctyp)) in
+	  let cargs = List.map get_type (prod_assum ctyp) in
 	  if not (is_lax_conjunction style) || has_nodep_prod ctyp then
 	    (* Record or non strict conjunction *)
 	    Some (hdapp,List.rev cargs)
@@ -152,7 +156,7 @@ let is_tuple t =
 let test_strict_disjunction n lc =
   Array.for_all_i (fun i c ->
     match (prod_assum (snd (decompose_prod_n_assum n c))) with
-    | [_,None,c] -> isRel c && Int.equal (destRel c) (n - i)
+    | [LocalAssum (_,c)] -> isRel c && Int.equal (destRel c) (n - i)
     | _ -> false) 0 lc
 
 let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =

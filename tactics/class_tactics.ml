@@ -302,8 +302,10 @@ type ('a,'b) optionk2 =
   | Nonek2 of failure
   | Somek2 of 'a * 'b * ('a,'b) optionk2 fk
 
-let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
-  let cty = Evarutil.nf_evar sigma cty in
+let make_resolve_hyp env sigma st flags only_classes pri decl =
+  let open Context.Named.Declaration in
+  let id = get_id decl in
+  let cty = Evarutil.nf_evar sigma (get_type decl) in
   let rec iscl env ty =
     let ctx, ar = decompose_prod_assum ty in
       match kind_of_term (fst (decompose_app ar)) with
@@ -345,9 +347,10 @@ let make_hints g st only_classes sign =
     List.fold_left
     (fun (paths, hints) hyp ->
       let consider =
-	try let (_, b, t) = Global.lookup_named (pi1 hyp) in
+        let open Context.Named.Declaration in
+	try let t = Global.lookup_named (get_id hyp) |> get_type in
 	      (* Section variable, reindex only if the type changed *)
-	      not (Term.eq_constr t (pi3 hyp))
+	      not (Term.eq_constr t (get_type hyp))
 	with Not_found -> true
      in
       if consider then 

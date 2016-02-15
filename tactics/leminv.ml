@@ -27,6 +27,7 @@ open Tacticals.New
 open Tactics
 open Decl_kinds
 open Proofview.Notations
+open Context.Named.Declaration
 
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
@@ -117,11 +118,11 @@ let rec add_prods_sign env sigma t =
     | Prod (na,c1,b) ->
 	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (id,None,c1) env) sigma b'
+        add_prods_sign (push_named (LocalAssum (id,c1)) env) sigma b'
     | LetIn (na,c1,t1,b) ->
 	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (id,Some c1,t1) env) sigma b'
+        add_prods_sign (push_named (LocalDef (id,c1,t1)) env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates whether the inversion lemma is dependent or not.
@@ -154,7 +155,8 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let ivars = global_vars env i in
       let revargs,ownsign =
 	fold_named_context
-	  (fun env (id,_,_ as d) (revargs,hyps) ->
+	  (fun env d (revargs,hyps) ->
+             let id = get_id d in
              if Id.List.mem id ivars then
 	       ((mkVar id)::revargs, Context.Named.add d hyps)
 	     else
@@ -166,7 +168,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_betadeltaiota env sigma pty in
-  let extenv = push_named (p,None,npty) env in
+  let extenv = push_named (LocalAssum (p,npty)) env in
   extenv, goal
 
 (* [inversion_scheme sign I]
@@ -203,8 +205,8 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let global_named_context = Global.named_context () in
   let ownSign = ref begin
     fold_named_context
-      (fun env (id,_,_ as d) sign ->
-         if mem_named_context id global_named_context then sign
+      (fun env d sign ->
+         if mem_named_context (get_id d) global_named_context then sign
 	 else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
   end in
@@ -217,9 +219,9 @@ let inversion_scheme env sigma t sort dep_option inv_op =
 	let h = next_ident_away (Id.of_string "H") !avoid in
 	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
 	avoid := h::!avoid;
-	ownSign := Context.Named.add (h,None,ty) !ownSign;
+	ownSign := Context.Named.add (LocalAssum (h,ty)) !ownSign;
 	applist (mkVar h, inst)
-    | _ -> map_constr fill_holes c
+    | _ -> Constr.map fill_holes c
   in
   let c = fill_holes pfterm in
   (* warning: side-effect on ownSign *)

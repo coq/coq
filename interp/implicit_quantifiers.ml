@@ -20,6 +20,7 @@ open Pp
 open Libobject
 open Nameops
 open Misctypes
+open Context.Rel.Declaration
 (*i*)
 
 let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
@@ -196,7 +197,7 @@ let combine_params avoid fn applied needed =
     List.partition
       (function
 	  (t, Some (loc, ExplByName id)) ->
-            let is_id (_, (na, _, _)) = match na with
+            let is_id (_, decl) = match get_name decl with
             | Name id' -> Id.equal id id'
             | Anonymous -> false
             in
@@ -209,22 +210,22 @@ let combine_params avoid fn applied needed =
     (fun x -> match x with (t, Some (loc, ExplByName id)) -> id, t | _ -> assert false)
     named
   in
-  let is_unset (_, (_, b, _)) = match b with
-  | None -> true
-  | Some _ -> false
+  let is_unset (_, decl) = match decl with
+  | LocalAssum _ -> true
+  | LocalDef _ -> false
   in
   let needed = List.filter is_unset needed in
   let rec aux ids avoid app need =
     match app, need with
 	[], [] -> List.rev ids, avoid
 
-      | app, (_, (Name id, _, _)) :: need when Id.List.mem_assoc id named ->
+      | app, (_, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need when Id.List.mem_assoc id named ->
 	  aux (Id.List.assoc id named :: ids) avoid app need
 
-      | (x, None) :: app, (None, (Name id, _, _)) :: need ->
+      | (x, None) :: app, (None, (LocalAssum (Name id, _) | LocalDef (Name id, _, _))) :: need ->
 	  aux (x :: ids) avoid app need
 
-      | _, (Some cl, (_, _, _) as d) :: need ->
+      | _, (Some cl, _ as d) :: need ->
 	  let t', avoid' = fn avoid d in
 	    aux (t' :: ids) avoid' app need
 
@@ -239,8 +240,8 @@ let combine_params avoid fn applied needed =
   in aux [] avoid applied needed
 
 let combine_params_freevar =
-  fun avoid (_, (na, _, _)) ->
-    let id' = next_name_away_from na avoid in
+  fun avoid (_, decl) ->
+    let id' = next_name_away_from (get_name decl) avoid in
       (CRef (Ident (Loc.ghost, id'),None), Id.Set.add id' avoid)
 
 let destClassApp cl =

@@ -31,6 +31,7 @@ open Reductionops
 open Constrexpr
 open Constrintern
 open Impargs
+open Context.Rel.Declaration
 
 type 'a declaration_hook = Decl_kinds.locality -> Globnames.global_reference -> 'a
 let mk_hook hook = hook
@@ -44,7 +45,8 @@ let call_hook fix_exn hook l c =
 
 let retrieve_first_recthm = function
   | VarRef id ->
-      (pi2 (Global.lookup_named id),variable_opacity id)
+      let open Context.Named.Declaration in
+      (get_value (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
       (Global.body_of_constant_body cb, is_opaque cb)
@@ -107,11 +109,12 @@ let find_mutually_recursive_statements thms =
         (fun env c -> fst (whd_betadeltaiota_stack env Evd.empty c))
         (Global.env()) hyps in
       let ind_hyps =
-        List.flatten (List.map_i (fun i (_,b,t) ->
+        List.flatten (List.map_i (fun i decl ->
+          let t = get_type decl in
           match kind_of_term t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
-                mind.mind_finite <> Decl_kinds.CoFinite && Option.is_empty b ->
+                mind.mind_finite <> Decl_kinds.CoFinite && is_local_assum decl ->
               [ind,x,i]
           | _ ->
               []) 0 (List.rev whnf_hyp_hds)) in
@@ -450,7 +453,7 @@ let start_proof_com kind thms hook =
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
     evdref := solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref);
-    let ids = List.map pi1 ctx in
+    let ids = List.map get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),

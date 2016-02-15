@@ -8,6 +8,7 @@
 
 open Names
 open Esubst
+open Context.Rel.Declaration
 
 (*********************)
 (*     Occurring     *)
@@ -159,17 +160,17 @@ let substnl laml n c = substn_many (make_subst laml) n c
 let substl laml c = substn_many (make_subst laml) 0 c
 let subst1 lam c = substn_many [|make_substituend lam|] 0 c
 
-let substnl_decl laml k r = Context.Rel.Declaration.map (fun c -> substnl laml k c) r
-let substl_decl laml r = Context.Rel.Declaration.map (fun c -> substnl laml 0 c) r
-let subst1_decl lam r = Context.Rel.Declaration.map (fun c -> subst1 lam c) r
+let substnl_decl laml k r = map_constr (fun c -> substnl laml k c) r
+let substl_decl laml r = map_constr (fun c -> substnl laml 0 c) r
+let subst1_decl lam r = map_constr (fun c -> subst1 lam c) r
 
 (* Build a substitution from an instance, inserting missing let-ins *)
 
 let subst_of_rel_context_instance sign l =
   let rec aux subst sign l =
     match sign, l with
-    | (_,None,_)::sign', a::args' -> aux (a::subst) sign' args'
-    | (_,Some c,_)::sign', args' ->
+    | LocalAssum _ :: sign', a::args' -> aux (a::subst) sign' args'
+    | LocalDef (_,c,_)::sign', args' ->
 	aux (substl subst c :: subst) sign' args'
     | [], [] -> subst
     | _ -> Errors.anomaly (Pp.str "Instance and signature do not match")

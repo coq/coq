@@ -40,7 +40,7 @@ open Eauto
 
 open Indfun_common
 open Sigma.Notations
-
+open Context.Rel.Declaration
 
 
 (* Ugly things which should not be here *)
@@ -181,7 +181,7 @@ let (value_f:constr list -> global_reference -> constr) =
       )
     in
     let context = List.map
-      (fun (x, c) -> Name x, None, c) (List.combine rev_x_id_l (List.rev al))
+      (fun (x, c) -> LocalAssum (Name x, c)) (List.combine rev_x_id_l (List.rev al))
     in
     let env = Environ.push_rel_context context (Global.env ()) in
     let glob_body =
@@ -678,8 +678,10 @@ let mkDestructEq :
   let hyps = pf_hyps g in
   let to_revert =
     Util.List.map_filter
-      (fun (id, _, t) ->
-        if Id.List.mem id not_on_hyp || not (Termops.occur_term expr t)
+      (fun decl ->
+        let open Context.Named.Declaration in
+        let id = get_id decl in
+        if Id.List.mem id not_on_hyp || not (Termops.occur_term expr (get_type decl))
         then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
   let type_of_expr = pf_unsafe_type_of g expr in
@@ -1252,7 +1254,7 @@ let clear_goals =
 	  then Termops.pop b'
 	  else if b' == b then t
 	  else mkProd(na,t',b')
-      | _ -> map_constr clear_goal t
+      | _ -> Term.map_constr clear_goal t
   in
   List.map clear_goal
 
@@ -1488,7 +1490,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let env = Global.env() in
   let evd = ref (Evd.from_env env) in
   let function_type = interp_type_evars env evd type_of_f in
-  let env = push_named (function_name,None,function_type) env in
+  let env = push_named (Context.Named.Declaration.LocalAssum (function_name,function_type)) env in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
   let ty = interp_type_evars env evd ~impls:rec_impls eq in
   let evm, nf = Evarutil.nf_evars_and_universes !evd in
@@ -1496,7 +1498,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let function_type = nf function_type in
  (* Pp.msgnl (str "lemma type := " ++ Printer.pr_lconstr equation_lemma_type ++ fnl ()); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in
-  let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> (x,None,y)) res_vars) env in
+  let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> LocalAssum (x,y)) res_vars) env in
   let eq' = nf_zeta env_eq' eq'  in
   let res =
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
@@ -1514,7 +1516,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
   let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx:(snd (Evd.universe_context evm)) res in
-  let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
+  let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> LocalAssum (x,t)) pre_rec_args) env in
   let relation =
     fst (*FIXME*)(interp_constr
       env_with_pre_rec_args

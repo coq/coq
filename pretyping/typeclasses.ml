@@ -16,6 +16,7 @@ open Evd
 open Util
 open Typeclasses_errors
 open Libobject
+open Context.Rel.Declaration
 (*i*)
 
 let typeclasses_unique_solutions = ref false
@@ -180,9 +181,7 @@ let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
-  let do_subst_ctx ctx = List.smartmap
-    (fun (na, b, t) -> (na, Option.smartmap do_subst b, do_subst t))
-    ctx in
+  let do_subst_ctx = List.smartmap (map_constr do_subst) in
   let do_subst_context (grs,ctx) =
     List.smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
     do_subst_ctx ctx in
@@ -199,15 +198,19 @@ let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
     ( fun (n,_,b,t) (ctx', subst) ->
-	let decl = (Name n, Option.map (substn_vars 1 subst) b, substn_vars 1 subst t) in
+        let decl = match b with
+                   | None -> LocalAssum (Name n, substn_vars 1 subst t)
+		   | Some b -> LocalDef (Name n, substn_vars 1 subst b, substn_vars 1 subst t)
+	in
 	(decl :: ctx', n :: subst)
     ) ctx ([], []) in
   let discharge_rel_context subst n rel =
     let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
     let ctx, _ =
       List.fold_right
-	(fun (id, b, t) (ctx, k) ->
-	   (id, Option.smartmap (substn_vars k subst) b, substn_vars k subst t) :: ctx, succ k)
+	(fun decl (ctx, k) ->
+	   map_constr (substn_vars k subst) decl :: ctx, succ k
+	)
 	rel ([], n)
     in ctx
   in
@@ -217,15 +220,15 @@ let discharge_class (_,cl) =
       | ConstRef cst -> Lib.section_segment_of_constant cst
       | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind in
   let discharge_context ctx' subst (grs, ctx) =
-    let grs' = 
-      let newgrs = List.map (fun (_, _, t) -> 
-	match class_of_constr t with
-	| None -> None
-	| Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
-	ctx' 
+    let grs' =
+      let newgrs = List.map (fun decl ->
+			     match decl |> get_type |> class_of_constr with
+			     | None -> None
+			     | Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
+			    ctx'
       in
-	List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
-	  @ newgrs
+      List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
+      @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
   if cl_impl' == cl.cl_impl then cl else
@@ -431,11 +434,7 @@ let add_class cl =
  *)
 
 let instance_constructor (cl,u) args =
-  let filter (_, b, _) = match b with
-  | None -> true
-  | Some _ -> false
-  in
-  let lenpars = List.count filter (snd cl.cl_context) in
+  let lenpars = List.count is_local_assum (snd cl.cl_context) in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
       | IndRef ind -> 

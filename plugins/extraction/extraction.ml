@@ -25,6 +25,7 @@ open Globnames
 open Miniml
 open Table
 open Mlutil
+open Context.Rel.Declaration
 (*i*)
 
 exception I of inductive_kind
@@ -74,7 +75,7 @@ type flag = info * scheme
 let rec flag_of_type env t : flag =
   let t = whd_betadeltaiota env none t in
   match kind_of_term t with
-    | Prod (x,t,c) -> flag_of_type (push_rel (x,None,t) env) c
+    | Prod (x,t,c) -> flag_of_type (push_rel (LocalAssum (x,t)) env) c
     | Sort s when Sorts.is_prop s -> (Logic,TypeScheme)
     | Sort _ -> (Info,TypeScheme)
     | _ -> if (sort_of env t) == InProp then (Logic,Default) else (Info,Default)
@@ -247,7 +248,7 @@ let rec extract_type env db j c args =
     | _ when sort_of env (applist (c, args)) == InProp -> Tdummy Kprop
     | Rel n ->
 	(match lookup_rel n env with
-           | (_,Some t,_) -> extract_type env db j (lift n t) args
+           | LocalDef (_,t,_) -> extract_type env db j (lift n t) args
 	   | _ ->
 	       (* Asks [db] a translation for [n]. *)
 	       if n > List.length db then Tunknown
@@ -560,7 +561,7 @@ let rec extract_term env mle mlt c args =
 	       put_magic_if magic (MLlam (id, d')))
     | LetIn (n, c1, t1, c2) ->
 	let id = id_of_name n in
-	let env' = push_rel (Name id, Some c1, t1) env in
+	let env' = push_rel (LocalDef (Name id, c1, t1)) env in
 	(* We directly push the args inside the [LetIn].
            TODO: the opt_let_app flag is supposed to prevent that *)
 	let args' = List.map (lift 1) args in
@@ -835,7 +836,7 @@ and extract_fix env mle i (fi,ti,ci as recd) mlt =
 
 let decomp_lams_eta_n n m env c t =
   let rels = fst (splay_prod_n env none n t) in
-  let rels = List.map (fun (id,_,c) -> (id,c)) rels in
+  let rels = List.map (fun (LocalAssum (id,c) | LocalDef (id,_,c)) -> (id,c)) rels in
   let rels',c = decompose_lam c in
   let d = n - m in
   (* we'd better keep rels' as long as possible. *)

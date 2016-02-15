@@ -66,7 +66,7 @@ type object_pr = {
   print_syntactic_def       : kernel_name -> std_ppcmds;
   print_module              : bool -> Names.module_path -> std_ppcmds;
   print_modtype             : module_path -> std_ppcmds;
-  print_named_decl          : Id.t * constr option * types -> std_ppcmds;
+  print_named_decl          : Context.Named.Declaration.t -> std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> Term.constr * Term.types -> Pp.std_ppcmds;

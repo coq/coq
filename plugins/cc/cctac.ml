@@ -23,6 +23,7 @@ open Pp
 open Errors
 open Util
 open Proofview.Notations
+open Context.Rel.Declaration
 
 let reference dir s = lazy (Coqlib.gen_reference "CC" dir s)
 
@@ -152,7 +153,7 @@ let rec quantified_atom_of_constr env sigma nrels term =
 	  let patts=patterns_of_constr env sigma nrels atom in
 	      `Nrule patts
 	else 
-	  quantified_atom_of_constr (Environ.push_rel (id,None,atom) env) sigma (succ nrels) ff
+	  quantified_atom_of_constr (Environ.push_rel (LocalAssum (id,atom)) env) sigma (succ nrels) ff
     | _ ->  
 	let patts=patterns_of_constr env sigma nrels term in
 	    `Rule patts
@@ -167,7 +168,7 @@ let litteral_of_constr env sigma term=
 	else
 	  begin
 	    try 
-	      quantified_atom_of_constr (Environ.push_rel (id,None,atom) env) sigma 1 ff  
+	      quantified_atom_of_constr (Environ.push_rel (LocalAssum (id,atom)) env) sigma 1 ff
 	    with Not_found ->
 	      `Other (decompose_term env sigma term)
 	  end
@@ -188,7 +189,8 @@ let make_prb gls depth additionnal_terms =
 	 let t = decompose_term env sigma c in
 	   ignore (add_term state t)) additionnal_terms;
     List.iter
-      (fun (id,_,e) ->
+      (fun decl ->
+         let (id,_,e) = Context.Named.Declaration.to_tuple decl in
 	 begin
 	   let cid=mkVar id in
 	   match litteral_of_constr env sigma e with
