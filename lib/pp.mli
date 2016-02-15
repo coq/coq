@@ -92,8 +92,6 @@ sig
   (** Project an object from a tag. *)
 end
 
-type tag_handler = Tag.t -> Format.tag
-
 val tag : Tag.t -> std_ppcmds -> std_ppcmds
 val open_tag : Tag.t -> std_ppcmds
 val close_tag : unit -> std_ppcmds
@@ -168,5 +166,6 @@ val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 (** {6 Low-level pretty-printing functions with and without flush} *)
 
 (** FIXME: These ignore the logging settings and call [Format] directly *)
+type tag_handler = Tag.t -> Format.tag
 val msg_with :                        Format.formatter -> std_ppcmds -> unit
 val pp_with  : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
