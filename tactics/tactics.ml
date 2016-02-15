@@ -2721,23 +2721,28 @@ let specialize (c,lbind) =
 
 (* The two following functions should already exist, but found nowhere *)
 (* Unfolds x by its definition everywhere *)
-let unfold_body x gl =
-  let hyps = pf_hyps gl in
-  let xval =
-    match Context.Named.lookup x hyps with
-        (_,Some xval,_) -> xval
-      | _ -> errorlabstrm "unfold_body"
-          (pr_id x ++ str" is not a defined hypothesis.") in
-  let aft = afterHyp x gl in
+let unfold_body x =
+  Proofview.Goal.enter { enter = begin fun gl ->
+  (** We normalize the given hypothesis immediately. *)
+  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  let (_, xval, _) = Context.Named.lookup x hyps in
+  let xval = match xval with
+  | None -> errorlabstrm "unfold_body"
+    (pr_id x ++ str" is not a defined hypothesis.")
+  | Some xval -> pf_nf_evar gl xval
+  in
+  Tacticals.New.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun (y,yval,_) cl -> (y,InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
-  tclTHENLIST
-    [tclMAP (fun h -> Proofview.V82.of_tactic (reduct_in_hyp rfun h)) hl;
-     Proofview.V82.of_tactic (reduct_in_concl (rfun,DEFAULTcast))] gl
+  let reducth h = reduct_in_hyp rfun h in
+  let reductc = reduct_in_concl (rfun, DEFAULTcast) in
+  Tacticals.New.tclTHENLIST [Tacticals.New.tclMAP reducth hl; reductc]
+  end
+  end }
 
 (* Either unfold and clear if defined or simply clear if not a definition *)
-let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])
+let expand_hyp id = Tacticals.New.tclTHEN (Tacticals.New.tclTRY (unfold_body id)) (Proofview.V82.tactic (clear [id]))
 
 (*****************************)
 (* High-level induction      *)
@@ -3891,7 +3896,7 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
         if deps = [] then Proofview.tclUNIT () else apply_type tmpcl deps_cstr;
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
         induct_tac elim;
-        Proofview.V82.tactic (tclMAP expand_hyp toclear)
+        Tacticals.New.tclMAP expand_hyp toclear;
       ])
       (Array.map2
          (induct_discharge lhyp0 avoid (re_intro_dependent_hypotheses statuslists))

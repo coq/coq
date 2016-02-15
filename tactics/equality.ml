@@ -1608,26 +1608,6 @@ user = raise user error specific to rewrite
 (**********************************************************************)
 (* Substitutions tactics (JCF) *)
 
-let unfold_body x =
-  Proofview.Goal.enter { enter = begin fun gl ->
-  (** We normalize the given hypothesis immediately. *)
-  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  let (_, xval, _) = Context.Named.lookup x hyps in
-  let xval = match xval with
-  | None -> errorlabstrm "unfold_body"
-    (pr_id x ++ str" is not a defined hypothesis.")
-  | Some xval -> pf_nf_evar gl xval
-  in
-  afterHyp x begin fun aft ->
-  let hl = List.fold_right (fun (y,yval,_) cl -> (y,InHyp) :: cl) aft [] in
-  let xvar = mkVar x in
-  let rfun _ _ c = replace_term xvar xval c in
-  let reducth h = reduct_in_hyp rfun h in
-  let reductc = reduct_in_concl (rfun, DEFAULTcast) in
-  tclTHENLIST [tclMAP reducth hl; reductc]
-  end
-  end }
-
 let restrict_to_eq_and_identity eq = (* compatibility *)
   if not (is_global glob_eq eq) &&
     not (is_global glob_identity eq) 
