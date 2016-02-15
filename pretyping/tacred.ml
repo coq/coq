@@ -963,10 +963,12 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
       | _ -> mkApp (app', [| a' |]))
   | _ -> map_constr_with_binders_left_to_right g f acc c
 
-let e_contextually byhead (occs,c) f env sigma t =
+let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
+  let sigma = Sigma.to_evar_map sigma in
+  (** FIXME: we do suspicious things with this evarmap *)
   let evd = ref sigma in
   let rec traverse nested (env,c as envc) t =
     if nowhere_except_in && (!pos > maxocc) then (* Shortcut *) t
@@ -985,8 +987,8 @@ let e_contextually byhead (occs,c) f env sigma t =
         (* Skip inner occurrences for stable counting of occurrences *)
         if locs != [] then
           ignore (traverse_below (Some (!pos-1)) envc t);
-	let evm, t = f subst env !evd t in
-	(evd := evm; t)
+	let Sigma (t, evm, _) = (f subst).e_redfun env (Sigma.Unsafe.of_evar_map !evd) t in
+	(evd := Sigma.to_evar_map evm; t)
       end
       else
 	traverse_below nested envc t
@@ -1005,11 +1007,15 @@ let e_contextually byhead (occs,c) f env sigma t =
   in
   let t' = traverse None (env,c) t in
   if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
-  !evd, t'
+  Sigma.Unsafe.of_pair (t', !evd)
+  end }
 
 let contextually byhead occs f env sigma t =
-  let f' subst env sigma t = sigma, f subst env sigma t in
-    snd (e_contextually byhead occs f' env sigma t)
+  let f' subst = { e_redfun = begin fun env sigma t ->
+    Sigma.here (f subst env (Sigma.to_evar_map sigma) t) sigma
+  end } in
+  let Sigma (c, _, _) = (e_contextually byhead occs f').e_redfun env (Sigma.Unsafe.of_evar_map sigma) t in
+  c
 
 (* linear bindings (following pretty-printer) of the value of name in c.
  * n is the number of the next occurrence of name.
@@ -1128,13 +1134,15 @@ let abstract_scheme env (locc,a) (c, sigma) =
     let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in
       mkLambda (na,ta,c'), sigma'
 
-let pattern_occs loccs_trm env sigma c =
+let pattern_occs loccs_trm = { e_redfun = begin fun env sigma c ->
+  let sigma = Sigma.to_evar_map sigma in
   let abstr_trm, sigma = List.fold_right (abstract_scheme env) loccs_trm (c,sigma) in
   try
     let _ = Typing.unsafe_type_of env sigma abstr_trm in
-      sigma, applist(abstr_trm, List.map snd loccs_trm)
+    Sigma.Unsafe.of_pair (applist(abstr_trm, List.map snd loccs_trm), sigma)
   with Type_errors.TypeError (env',t) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
+  end }
 
 (* Used in several tactics. *)
 

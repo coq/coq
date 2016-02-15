@@ -36,12 +36,13 @@ open Evarconv
 open Indschemes
 open Misctypes
 open Vernacexpr
+open Sigma.Notations
 
 let do_universe poly l = Declare.do_universe poly l
 let do_constraint poly l = Declare.do_constraint poly l
 
 let rec under_binders env sigma f n c =
-  if Int.equal n 0 then snd (f env sigma c) else
+  if Int.equal n 0 then f env sigma c else
     match kind_of_term c with
       | Lambda (x,t,c) ->
 	  mkLambda (x,t,under_binders (push_rel (x,None,t) env) sigma f (n-1) c)
@@ -71,10 +72,14 @@ let red_constant_entry n ce sigma = function
   | Some red ->
       let proof_out = ce.const_entry_body in
       let env = Global.env () in
+      let (redfun, _) = reduction_of_red_expr env red in
+      let redfun env sigma c =
+        let sigma = Sigma.Unsafe.of_evar_map sigma in
+        let Sigma (c, _, _) = redfun.e_redfun env sigma c in
+        c
+      in
       { ce with const_entry_body = Future.chain ~greedy:true ~pure:true proof_out
-        (fun ((body,ctx),eff) ->
-          (under_binders env sigma
-             (fst (reduction_of_red_expr env red)) n body,ctx),eff) }
+        (fun ((body,ctx),eff) -> (under_binders env sigma redfun n body,ctx),eff) }
 
 let interp_definition pl bl p red_option c ctypopt =
   let env = Global.env() in

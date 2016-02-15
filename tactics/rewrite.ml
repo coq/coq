@@ -1370,7 +1370,9 @@ module Strategies =
     let reduce (r : Redexpr.red_expr) : 'a pure_strategy = { strategy =
 	fun { state = state ; env = env ; term1 = t ; ty1 = ty ; cstr = cstr ; evars = evars } ->
           let rfn, ckind = Redexpr.reduction_of_red_expr env r in
-	  let evars', t' = rfn env (goalevars evars) t in
+          let sigma = Sigma.Unsafe.of_evar_map (goalevars evars) in
+	  let Sigma (t', sigma, _) = rfn.Reductionops.e_redfun env sigma t in
+	  let evars' = Sigma.to_evar_map sigma in
 	    if eq_constr t' t then
 	      state, Identity
 	    else

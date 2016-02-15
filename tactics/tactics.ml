@@ -569,29 +569,30 @@ let reduct_option ?(check=false) redfun = function
 (** Tactic reduction modulo evars (for universes essentially) *)
 
 let pf_e_reduce_decl redfun where (id,c,ty) gl =
-  let sigma = Tacmach.New.project gl in
-  let redfun = redfun (Tacmach.New.pf_env gl) in
+  let sigma = Proofview.Goal.sigma gl in
+  let redfun sigma c = redfun.e_redfun (Tacmach.New.pf_env gl) sigma c in
   match c with
   | None ->
       if where == InHypValueOnly then
 	errorlabstrm "" (pr_id id ++ str " has no value.");
-    let sigma, ty' = redfun sigma ty in
-      sigma, (id,None,ty')
+    let Sigma (ty', sigma, p) = redfun sigma ty in
+    Sigma ((id, None, ty'), sigma, p)
   | Some b ->
-      let sigma, b' = if where != InHypTypeOnly then redfun sigma b else sigma, b in
-      let sigma, ty' = if where != InHypValueOnly then redfun sigma ty else sigma, ty in
-	sigma, (id,Some b',ty')
+      let Sigma (b', sigma, p) = if where != InHypTypeOnly then redfun sigma b else Sigma.here b sigma in
+      let Sigma (ty', sigma, q) = if where != InHypValueOnly then redfun sigma ty else Sigma.here ty sigma in
+      Sigma ((id, Some b', ty'), sigma, p +> q)
 
 let e_reduct_in_concl (redfun, sty) =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
-    let sigma, c' = Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl) in
-    Sigma.Unsafe.of_pair (convert_concl_no_check c' sty, sigma)
+    let sigma = Proofview.Goal.sigma gl in
+    let Sigma (c', sigma, p) = redfun.e_redfun (Tacmach.New.pf_env gl) sigma (Tacmach.New.pf_concl gl) in
+    Sigma (convert_concl_no_check c' sty, sigma, p)
   end }
 
 let e_reduct_in_hyp ?(check=false) redfun (id, where) =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
-    let sigma, decl' = pf_e_reduce_decl redfun where (Tacmach.New.pf_get_hyp id gl) gl in
-    Sigma.Unsafe.of_pair (convert_hyp ~check decl', sigma)
+    let Sigma (decl', sigma, p) = pf_e_reduce_decl redfun where (Tacmach.New.pf_get_hyp id gl) gl in
+    Sigma (convert_hyp ~check decl', sigma, p)
   end }
 
 let e_reduct_option ?(check=false) redfun = function
@@ -604,9 +605,8 @@ let e_reduct_option ?(check=false) redfun = function
 let e_change_in_concl (redfun,sty) =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let sigma = Sigma.to_evar_map sigma in
-    let (sigma, c) = redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.raw_concl gl) in
-    Sigma.Unsafe.of_pair (convert_concl_no_check c sty, sigma)
+    let Sigma (c, sigma, p) = redfun.e_redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.raw_concl gl) in
+    Sigma (convert_concl_no_check c sty, sigma, p)
   end }
 
 let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env sigma =
@@ -614,24 +614,23 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env
   | None ->
       if where == InHypValueOnly then
 	errorlabstrm "" (pr_id id ++ str " has no value.");
-    let sigma',ty' = redfun false env sigma ty in
-      sigma', (id,None,ty')
+    let Sigma (ty', sigma, p) = (redfun false).e_redfun env sigma ty in
+    Sigma ((id, None, ty'), sigma, p)
   | Some b ->
-      let sigma',b' = 
-	if where != InHypTypeOnly then redfun true env sigma b else sigma, b 
+      let Sigma (b', sigma, p) =
+	if where != InHypTypeOnly then (redfun true).e_redfun env sigma b else Sigma.here b sigma
       in
-      let sigma',ty' = 
-	if where != InHypValueOnly then redfun false env sigma' ty else sigma', ty 
+      let Sigma (ty', sigma, q) =
+	if where != InHypValueOnly then (redfun false).e_redfun env sigma ty else Sigma.here ty sigma
       in
-	sigma', (id,Some b',ty')
+      Sigma ((id, Some b', ty'), sigma, p +> q)
 
 let e_change_in_hyp redfun (id,where) =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let sigma = Sigma.to_evar_map sigma in
     let hyp = Tacmach.New.pf_get_hyp id (Proofview.Goal.assume gl) in
-    let sigma, c = e_pf_change_decl redfun where hyp (Proofview.Goal.env gl) sigma in
-    Sigma.Unsafe.of_pair (convert_hyp c, sigma)
+    let Sigma (c, sigma, p) = e_pf_change_decl redfun where hyp (Proofview.Goal.env gl) sigma in
+    Sigma (convert_hyp c, sigma, p)
   end }
 
 type change_arg = Pattern.patvar_map -> constr Sigma.run
@@ -661,32 +660,33 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
     else sigma
 
 (* Now we introduce different instances of the previous tacticals *)
-let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
-  let sigma = Sigma.Unsafe.of_evar_map sigma in
+let change_and_check cv_pb mayneedglobalcheck deep t = { e_redfun = begin fun env sigma c ->
   let Sigma (t', sigma, p) = t.run sigma in
   let sigma = Sigma.to_evar_map sigma in
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
   if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
-  sigma, t'
+  Sigma.Unsafe.of_pair (t', sigma)
+end }
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
-let change_on_subterm cv_pb deep t where env sigma c =
+let change_on_subterm cv_pb deep t where = { e_redfun = begin fun env sigma c ->
   let mayneedglobalcheck = ref false in
-  let sigma,c = match where with
-  | None -> change_and_check cv_pb mayneedglobalcheck deep (t Id.Map.empty) env sigma c
+  let Sigma (c, sigma, p) = match where with
+  | None -> (change_and_check cv_pb mayneedglobalcheck deep (t Id.Map.empty)).e_redfun env sigma c
   | Some occl ->
-      e_contextually false occl
+      (e_contextually false occl
         (fun subst ->
-          change_and_check Reduction.CONV mayneedglobalcheck true (t subst))
+          change_and_check Reduction.CONV mayneedglobalcheck true (t subst))).e_redfun
         env sigma c in
   if !mayneedglobalcheck then
     begin
-      try ignore (Typing.unsafe_type_of env sigma c)
+      try ignore (Typing.unsafe_type_of env (Sigma.to_evar_map sigma) c)
       with e when catchable_exception e ->
         error "Replacement would lead to an ill-typed term."
     end;
-  sigma,c
+  Sigma (c, sigma, p)
+end }
 
 let change_in_concl occl t =
   e_change_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
@@ -924,9 +924,9 @@ let lookup_hypothesis_as_renamed_gen red h gl =
   let rec aux ccl =
     match lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
-          aux
-	    (snd ((fst (Redexpr.reduction_of_red_expr env (Red true)))
-	       env (Sigma.to_evar_map (Proofview.Goal.sigma gl)) ccl))
+        let (redfun, _) = Redexpr.reduction_of_red_expr env (Red true) in
+        let Sigma (c, _, _) = redfun.e_redfun env (Proofview.Goal.sigma gl) ccl in
+        aux c
       | x -> x
   in
   try aux (Proofview.Goal.concl gl)

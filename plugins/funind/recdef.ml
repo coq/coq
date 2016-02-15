@@ -690,9 +690,8 @@ let mkDestructEq :
      [generalize new_hyps;
       (fun g2 ->
         let changefun patvars = { run = fun sigma ->
-          let sigma = Sigma.to_evar_map sigma in
-          let (sigma, c) = pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2) in
-          Sigma.Unsafe.of_pair (c, sigma)
+          let redfun = pattern_occs [Locus.AllOccurrencesBut [1], expr] in
+          redfun.Reductionops.e_redfun (pf_env g2) sigma (pf_concl g2)
         } in
 	Proofview.V82.of_tactic (change_in_concl None changefun) g2);
       Proofview.V82.of_tactic (simplest_case expr)]), to_revert

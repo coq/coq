@@ -32,6 +32,7 @@ open Redexpr
 open Lemmas
 open Misctypes
 open Locality
+open Sigma.Notations
 
 let debug = false
 let prerr_endline =
@@ -1537,7 +1538,12 @@ let vernac_check_may_eval redexp glopt rc =
     | Some r ->
         Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
-	let redfun env evm c = snd (fst (reduction_of_red_expr env r_interp) env evm c) in
+	let redfun env evm c =
+          let (redfun, _) = reduction_of_red_expr env r_interp in
+          let evm = Sigma.Unsafe.of_evar_map evm in
+          let Sigma (c, _, _) = redfun.Reductionops.e_redfun env evm c in
+          c
+        in
 	msg_notice (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
