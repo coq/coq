@@ -1007,7 +1007,9 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         | None ->
         let evty = set_holes evdref cty subst in
         let instance = Filter.filter_list filter instance in
-        let evd,ev = new_evar_instance sign !evdref evty ~filter instance in
+        let evd = Sigma.Unsafe.of_evar_map !evdref in
+        let Sigma (ev, evd, _) = new_evar_instance sign evd evty ~filter instance in
+        let evd = Sigma.to_evar_map evd in
         evdref := evd;
         evsref := (fst (destEvar ev),evty)::!evsref;
         ev in

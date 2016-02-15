@@ -210,6 +210,6 @@ let defined_connectives=lazy
 let normalize_evaluables=
   onAllHypsAndConcl
     (function
-	 None->unfold_in_concl (Lazy.force defined_connectives)
+	 None-> Proofview.V82.of_tactic (unfold_in_concl (Lazy.force defined_connectives))
        | Some id ->
-	   unfold_in_hyp (Lazy.force defined_connectives) (id,InHypTypeOnly))
+	   Proofview.V82.of_tactic (unfold_in_hyp (Lazy.force defined_connectives) (id,InHypTypeOnly)))

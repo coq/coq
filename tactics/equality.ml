@@ -1622,8 +1622,8 @@ let unfold_body x =
   let hl = List.fold_right (fun (y,yval,_) cl -> (y,InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
-  let reducth h = Proofview.V82.tactic (fun gl -> reduct_in_hyp rfun h gl) in
-  let reductc = Proofview.V82.tactic (fun gl -> reduct_in_concl (rfun, DEFAULTcast) gl) in
+  let reducth h = reduct_in_hyp rfun h in
+  let reductc = reduct_in_concl (rfun, DEFAULTcast) in
   tclTHENLIST [tclMAP reducth hl; reductc]
   end
   end }

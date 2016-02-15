@@ -99,10 +99,10 @@ let protect_red map env sigma c =
     (mk_clos_but (lookup_map map c) (Esubst.subs_id 0) c);;
 
 let protect_tac map =
-  Tactics.reduct_option (protect_red map,DEFAULTcast) None ;;
+  Proofview.V82.of_tactic (Tactics.reduct_option (protect_red map,DEFAULTcast) None);;
 
 let protect_tac_in map id =
-  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Locus.InHyp));;
+  Proofview.V82.of_tactic (Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Locus.InHyp)));;
 
 
 (****************************************************************************)
@@ -527,8 +527,8 @@ let ring_equality env evd (r,add,mul,opp,req) =
 	  match opp with
               Some opp -> plapp evd coq_eq_morph [|r;add;mul;opp|]
             | None -> plapp evd coq_eq_smorph [|r;add;mul|] in
-	let setoid = Typing.solve_evars env evd setoid in
-	let op_morph = Typing.solve_evars env evd op_morph in
+	let setoid = Typing.e_solve_evars env evd setoid in
+	let op_morph = Typing.e_solve_evars env evd op_morph in
 	  (setoid,op_morph)
     | _ ->
 	let setoid = setoid_of_relation (Global.env ()) evd r req in
@@ -627,7 +627,7 @@ let make_hyp_list env evd lH =
       (fun c l -> plapp evd coq_cons [|carrier; (make_hyp env evd c); l|]) lH
       (plapp evd coq_nil [|carrier|])
   in 
-  let l' = Typing.solve_evars env evd l in
+  let l' = Typing.e_solve_evars env evd l in
     Evarutil.nf_evars_universes !evd l'
 
 let interp_power env evd pow =
@@ -753,7 +753,7 @@ let make_term_list env evd carrier rl =
   let l = List.fold_right
     (fun x l -> plapp evd coq_cons [|carrier;x;l|]) rl
     (plapp evd coq_nil [|carrier|])
-  in Typing.solve_evars env evd l
+  in Typing.e_solve_evars env evd l
 
 let carg = Tacinterp.Value.of_constr
 let tacarg expr =

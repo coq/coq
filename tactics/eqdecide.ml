@@ -123,7 +123,7 @@ let diseqCase hyps eqonleft =
   (tclTHEN (intro_using diseq)
   (tclTHEN (choose_noteq eqonleft)
   (tclTHEN (rewrite_and_clear (List.rev hyps))
-  (tclTHEN  (Proofview.V82.tactic red_in_concl)
+  (tclTHEN  (red_in_concl)
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (Simple.apply (mkVar diseq))
   (tclTHEN  (Extratactics.injHyp absurd)

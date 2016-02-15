@@ -484,15 +484,15 @@ and intros_with_rewrite_aux : tactic =
 			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id); thin [id]; intros_with_rewrite ] g
 		      else if isVar args.(1) && (Environ.evaluable_named (destVar args.(1)) (pf_env g)) 
 		      then tclTHENSEQ[
-			unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))];
-			tclMAP (fun id -> tclTRY(unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))] ((destVar args.(1)),Locus.InHyp) ))
+			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))]);
+			tclMAP (fun id -> tclTRY(Proofview.V82.of_tactic (unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))] ((destVar args.(1)),Locus.InHyp) )))
 			  (pf_ids_of_hyps g);
 			intros_with_rewrite
 		      ] g
 		      else if isVar args.(2) && (Environ.evaluable_named (destVar args.(2)) (pf_env g)) 
 		      then tclTHENSEQ[
-			unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(2)))];
-			tclMAP (fun id -> tclTRY(unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(2)))] ((destVar args.(2)),Locus.InHyp) ))
+			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(2)))]);
+			tclMAP (fun id -> tclTRY(Proofview.V82.of_tactic (unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(2)))] ((destVar args.(2)),Locus.InHyp) )))
 			  (pf_ids_of_hyps g);
 			intros_with_rewrite
 		      ] g
@@ -703,7 +703,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  thin ids
 	]
       else
-        unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (fst (destConst f)))]
+        Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (fst (destConst f)))])
     in
     (* The proof of each branche itself *)
     let ind_number = ref 0 in

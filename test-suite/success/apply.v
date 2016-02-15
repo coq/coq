@@ -543,7 +543,7 @@ Qed.
 Lemma bar (X: nat -> nat -> Prop) (foo:forall x, X x x) (a: unit) (H: tt = a):
   exists x, exists y, X x y.
 Proof.
-intros; eexists; eexists; case H.
+intros; eexists; eexists ?[y]; case H.
 apply (foo ?y).
 Grab Existential Variables.
 exact 0.

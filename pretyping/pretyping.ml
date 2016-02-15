@@ -42,6 +42,7 @@ open Glob_ops
 open Evarconv
 open Pattern
 open Misctypes
+open Sigma.Notations
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 type var_map = constr_under_binders Id.Map.t
@@ -444,10 +445,13 @@ let pretype_sort evdref = function
   | GType s -> evd_comb1 judge_of_Type evdref s
 
 let new_type_evar env evdref loc =
-  let e, s = 
-    evd_comb0 (fun evd -> Evarutil.new_type_evar env evd
-      univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)) evdref
-  in e
+  let sigma = Sigma.Unsafe.of_evar_map !evdref in
+  let Sigma ((e, _), sigma, _) =
+    Evarutil.new_type_evar env sigma
+      univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)
+  in
+  evdref := Sigma.to_evar_map sigma;
+  e
 
 let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
 

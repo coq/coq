@@ -245,7 +245,7 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
          Proofview.V82.tactic (tclTHEN
 				 (Proofview.V82.of_tactic ((with_prods nprods poly (term,cl) (unify_e_resolve poly flags))))
 				 (if complete then tclIDTAC else e_trivial_fail_db db_list local_db))
-      | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c]))
+      | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (Proofview.V82.of_tactic (unfold_in_concl [AllOccurrences,c])))
       | Extern tacast -> conclPattern concl p tacast
       in
       let tac = Proofview.V82.of_tactic (run_hint t tac) in

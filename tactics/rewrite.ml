@@ -64,8 +64,10 @@ type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
 let find_global dir s =
   let gr = lazy (try_find_global_reference dir s) in
-    fun (evd,cstrs) -> 
-      let evd, c = Evarutil.new_global evd (Lazy.force gr) in
+    fun (evd,cstrs) ->
+      let sigma = Sigma.Unsafe.of_evar_map evd in
+      let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force gr) in
+      let evd = Sigma.to_evar_map sigma in
 	(evd, cstrs), c
 
 (** Utility for dealing with polymorphic applications *)
@@ -105,7 +107,7 @@ let extends_undefined evars evars' =
 let app_poly_check env evars f args =
   let (evars, cstrs), fc = f evars in
   let evdref = ref evars in 
-  let t = Typing.solve_evars env evdref (mkApp (fc, args)) in
+  let t = Typing.e_solve_evars env evdref (mkApp (fc, args)) in
     (!evdref, cstrs), t
 
 let app_poly_nocheck env evars f args =
@@ -172,13 +174,17 @@ end) = struct
   let proper_type = 
     let l = lazy (Lazy.force proper_class).cl_impl in
       fun (evd,cstrs) -> 
-	let evd, c = Evarutil.new_global evd (Lazy.force l) in
+        let sigma = Sigma.Unsafe.of_evar_map evd in
+        let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
+        let evd = Sigma.to_evar_map sigma in
 	  (evd, cstrs), c
 	
   let proper_proxy_type = 
     let l = lazy (Lazy.force proper_proxy_class).cl_impl in
       fun (evd,cstrs) -> 
-	let evd, c = Evarutil.new_global evd (Lazy.force l) in
+        let sigma = Sigma.Unsafe.of_evar_map evd in
+        let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
+        let evd = Sigma.to_evar_map sigma in
 	  (evd, cstrs), c
 
   let proper_proof env evars carrier relation x =
@@ -347,7 +353,9 @@ end) = struct
 	  (try
 	   let params, args = Array.chop (Array.length args - 2) args in
 	   let env' = Environ.push_rel_context rels env in
-	   let evars, (evar, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
+	   let sigma = Sigma.Unsafe.of_evar_map sigma in
+	   let Sigma ((evar, _), evars, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
+	   let evars = Sigma.to_evar_map sigma in
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
@@ -407,7 +415,9 @@ module TypeGlobal = struct
 
 
   let inverse env (evd,cstrs) car rel = 
-    let evd, sort = Evarutil.new_Type ~rigid:Evd.univ_flexible env evd in
+    let sigma = Sigma.Unsafe.of_evar_map evd in
+    let Sigma (sort, sigma, _) = Evarutil.new_Type ~rigid:Evd.univ_flexible env sigma in
+    let evd = Sigma.to_evar_map sigma in
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end
@@ -1442,7 +1452,7 @@ type result = (evar_map * constr option * types) option option
 
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
   let evdref = ref sigma in
-  let sort = Typing.sort_of env evdref concl in
+  let sort = Typing.e_sort_of env evdref concl in
   let evars = (!evdref, Evar.Set.empty) in
   let evars, cstr =
     let prop, (evars, arrow) = 
@@ -1559,10 +1569,10 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             convert_concl_no_check newt DEFAULTcast
   in
   let beta_red _ sigma c = Reductionops.nf_betaiota sigma c in
-  let beta = Proofview.V82.tactic (Tactics.reduct_in_concl (beta_red, DEFAULTcast)) in
+  let beta = Tactics.reduct_in_concl (beta_red, DEFAULTcast) in
   let opt_beta = match clause with
   | None -> Proofview.tclUNIT ()
-  | Some id -> Proofview.V82.tactic (Tactics.reduct_in_hyp beta_red (id, InHyp))
+  | Some id -> Tactics.reduct_in_hyp beta_red (id, InHyp)
   in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in

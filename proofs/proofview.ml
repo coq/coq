@@ -1077,10 +1077,10 @@ struct
     (** Typecheck the hypotheses. *)
     let type_hyp (sigma, env) (na, body, t as decl) =
       let evdref = ref sigma in
-      let _ = Typing.sort_of env evdref t in
+      let _ = Typing.e_sort_of env evdref t in
       let () = match body with
       | None -> ()
-      | Some body -> Typing.check env evdref body t
+      | Some body -> Typing.e_check env evdref body t
       in
       (!evdref, Environ.push_named decl env)
     in
@@ -1089,12 +1089,12 @@ struct
     let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
     (** Typecheck the conclusion *)
     let evdref = ref sigma in
-    let _ = Typing.sort_of env evdref (Evd.evar_concl info) in
+    let _ = Typing.e_sort_of env evdref (Evd.evar_concl info) in
     !evdref
 
   let typecheck_proof c concl env sigma =
     let evdref = ref sigma in
-    let () = Typing.check env evdref c concl in
+    let () = Typing.e_check env evdref c concl in
     !evdref
 
   let (pr_constrv,pr_constr) =
@@ -1128,7 +1128,10 @@ struct
       | None -> Evd.define gl.Goal.self c sigma
       | Some evk ->
           let id = Evd.evar_ident gl.Goal.self sigma in
-          Evd.rename evk id (Evd.define gl.Goal.self c sigma)
+          let sigma = Evd.define gl.Goal.self c sigma in
+          match id with
+          | None -> sigma
+          | Some id -> Evd.rename evk id sigma
     in
     (** Restore the [future goals] state. *)
     let sigma = Evd.restore_future_goals sigma prev_future_goals prev_principal_goal in

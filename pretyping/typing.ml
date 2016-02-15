@@ -267,7 +267,7 @@ and execute_recdef env evdref (names,lar,vdef) =
 
 and execute_array env evdref = Array.map (execute env evdref)
 
-let check env evdref c t =
+let e_check env evdref c t =
   let env = enrich_env env evdref in
   let j = execute env evdref c in
   if not (Evarconv.e_cumul env evdref j.uj_type t) then
@@ -283,7 +283,7 @@ let unsafe_type_of env evd c =
 
 (* Sort of a type *)
 
-let sort_of env evdref c =
+let e_sort_of env evdref c =
   let env = enrich_env env evdref in
   let j = execute env evdref c in
   let a = e_type_judgment env evdref j in
@@ -310,10 +310,10 @@ let e_type_of ?(refresh=false) env evdref c =
       c
     else j.uj_type
 
-let solve_evars env evdref c =
+let e_solve_evars env evdref c =
   let env = enrich_env env evdref in
   let c = (execute env evdref c).uj_val in
   (* side-effect on evdref *)
   nf_evar !evdref c
 
-let _ = Evarconv.set_solve_evars solve_evars
+let _ = Evarconv.set_solve_evars e_solve_evars

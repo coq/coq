@@ -580,7 +580,7 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
                      Tacticals.New.tclTRY (
                       Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Proofview.V82.tactic (simpl_in_hyp (freshz,Locus.InHyp));
+                     simpl_in_hyp (freshz,Locus.InHyp);
 (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
@@ -724,7 +724,7 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                       Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
                      Equality.inj None false None (mkVar freshz,NoBindings);
-		     intros; (Proofview.V82.tactic simpl_in_concl);
+		     intros; simpl_in_concl;
                      Auto.default_auto;
                      Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [apply (andb_true_intro());
@@ -901,7 +901,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
             let freshH3 = fresh_id (Id.of_string "H") gl in
             Tacticals.New.tclTHENLIST [
 	      simplest_right ;
-              Proofview.V82.tactic (unfold_constr (Lazy.force Coqlib.coq_not_ref));
+              unfold_constr (Lazy.force Coqlib.coq_not_ref);
               intro;
               Equality.subst_all ();
               assert_by (Name freshH3)

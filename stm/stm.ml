@@ -513,7 +513,10 @@ end = struct (* {{{ *)
     let rec fill id =
       if (get_info id).state = None then fill (Vcs_aux.visit v id).next
       else copy_info_w_state v id in
-    fill stop
+    let v = fill stop in
+    (* We put in the new dag the first state (since Qed shall run on it,
+     * see check_task_aux) *)
+    copy_info_w_state v start
 
   let nodes_in_slice ~start ~stop =
     List.rev (List.map fst (nodes_in_slice ~start ~stop))
@@ -1685,6 +1688,13 @@ let collect_proof keep cur hd brkind id =
    | _ -> false in
  let may_pierce_opaque = function
    | { expr = VernacPrint (PrintName _) } -> true
+   (* These do not exactly pierce opaque, but are anyway impossible to properly
+    * delegate *)
+   | { expr = (VernacDeclareModule _
+              | VernacDefineModule _
+              | VernacDeclareModuleType _
+              | VernacInclude _) } -> true
+   | { expr =  (VernacRequire _ | VernacImport _) } -> true
    | _ -> false in
  let parent = function Some (p, _) -> p | None -> assert false in
  let is_empty = function `Async(_,_,[],_,_) | `MaybeASync(_,_,[],_,_) -> true | _ -> false in

@@ -199,10 +199,12 @@ let is_in_path lpath filename =
   with Not_found -> false
 
 let is_in_system_path filename =
-  let path = try Sys.getenv "PATH"
-             with Not_found -> error "system variable PATH not found" in
-  let lpath = CUnix.path_to_list path in
-  is_in_path lpath filename
+  try
+    let lpath = CUnix.path_to_list (Sys.getenv "PATH") in
+    is_in_path lpath filename
+  with Not_found ->
+    msg_warning (str "system variable PATH not found");
+    false
 
 let open_trapping_failure name =
   try open_out_bin name

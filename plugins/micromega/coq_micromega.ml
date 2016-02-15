@@ -1170,7 +1170,7 @@ struct
 
     let is_prop term =
      let ty   = Typing.unsafe_type_of (Tacmach.pf_env gl) (Tacmach.project gl) term in
-     let sort = Typing.sort_of (Tacmach.pf_env gl) (ref (Tacmach.project gl)) ty in
+     let sort = Typing.e_sort_of (Tacmach.pf_env gl) (ref (Tacmach.project gl)) ty in
      Term.is_prop_sort sort in
      
     let rec xparse_formula env tg term =
