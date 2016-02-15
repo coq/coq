@@ -2254,7 +2254,11 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
                Proof_global.there_are_pending_proofs ()
             then begin
               let bname = VCS.mk_branch_name x in
-              VCS.commit id (Fork (x,bname,Doesn'tGuaranteeOpacity,[]));
+              let opacity_of_produced_term =
+                match x.expr with
+                | VernacInstance (false, _,_ , None, _) -> GuaranteesOpacity
+                | _ -> Doesn'tGuaranteeOpacity in
+              VCS.commit id (Fork (x,bname,opacity_of_produced_term,[]));
               VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode "Classic";
             end else begin
