@@ -128,38 +128,38 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 type change_arg = patvar_map -> constr Sigma.run
 
 val make_change_arg   : constr -> change_arg
-val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> tactic
-val reduct_option     : ?check:bool -> tactic_reduction * cast_kind -> goal_location -> tactic
-val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
+val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic
+val reduct_option     : ?check:bool -> tactic_reduction * cast_kind -> goal_location -> unit Proofview.tactic
+val reduct_in_concl   : tactic_reduction * cast_kind -> unit Proofview.tactic
 val change_in_concl   : (occurrences * constr_pattern) option -> change_arg -> unit Proofview.tactic
 val change_concl      : constr -> unit Proofview.tactic
 val change_in_hyp     : (occurrences * constr_pattern) option -> change_arg ->
                         hyp_location -> unit Proofview.tactic
-val red_in_concl      : tactic
-val red_in_hyp        : hyp_location -> tactic
-val red_option        : goal_location -> tactic
-val hnf_in_concl      : tactic
-val hnf_in_hyp        : hyp_location -> tactic
-val hnf_option        : goal_location -> tactic
-val simpl_in_concl    : tactic
-val simpl_in_hyp      : hyp_location -> tactic
-val simpl_option      : goal_location -> tactic
-val normalise_in_concl : tactic
-val normalise_in_hyp  : hyp_location -> tactic
-val normalise_option  : goal_location -> tactic
-val normalise_vm_in_concl : tactic
+val red_in_concl      : unit Proofview.tactic
+val red_in_hyp        : hyp_location -> unit Proofview.tactic
+val red_option        : goal_location -> unit Proofview.tactic
+val hnf_in_concl      : unit Proofview.tactic
+val hnf_in_hyp        : hyp_location -> unit Proofview.tactic
+val hnf_option        : goal_location -> unit Proofview.tactic
+val simpl_in_concl    : unit Proofview.tactic
+val simpl_in_hyp      : hyp_location -> unit Proofview.tactic
+val simpl_option      : goal_location -> unit Proofview.tactic
+val normalise_in_concl : unit Proofview.tactic
+val normalise_in_hyp  : hyp_location -> unit Proofview.tactic
+val normalise_option  : goal_location -> unit Proofview.tactic
+val normalise_vm_in_concl : unit Proofview.tactic
 val unfold_in_concl   :
-  (occurrences * evaluable_global_reference) list -> tactic
+  (occurrences * evaluable_global_reference) list -> unit Proofview.tactic
 val unfold_in_hyp     :
-  (occurrences * evaluable_global_reference) list -> hyp_location -> tactic
+  (occurrences * evaluable_global_reference) list -> hyp_location -> unit Proofview.tactic
 val unfold_option     :
-  (occurrences * evaluable_global_reference) list -> goal_location -> tactic
+  (occurrences * evaluable_global_reference) list -> goal_location -> unit Proofview.tactic
 val change            :
   constr_pattern option -> change_arg -> clause -> tactic
 val pattern_option    :
   (occurrences * constr) list -> goal_location -> tactic
 val reduce            : red_expr -> clause -> tactic
-val unfold_constr     : global_reference -> tactic
+val unfold_constr     : global_reference -> unit Proofview.tactic
 
 (** {6 Modification of the local context. } *)
 

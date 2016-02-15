@@ -1569,10 +1569,10 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             convert_concl_no_check newt DEFAULTcast
   in
   let beta_red _ sigma c = Reductionops.nf_betaiota sigma c in
-  let beta = Proofview.V82.tactic (Tactics.reduct_in_concl (beta_red, DEFAULTcast)) in
+  let beta = Tactics.reduct_in_concl (beta_red, DEFAULTcast) in
   let opt_beta = match clause with
   | None -> Proofview.tclUNIT ()
-  | Some id -> Proofview.V82.tactic (Tactics.reduct_in_hyp beta_red (id, InHyp))
+  | Some id -> Tactics.reduct_in_hyp beta_red (id, InHyp)
   in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in

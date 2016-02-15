@@ -276,8 +276,8 @@ let tclUSER tac is_mes l g =
       if is_mes
       then observe_tclTHENLIST (str "tclUSER2")
         [
-	  unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference
-            (delayed_force Indfun_common.ltof_ref))];
+	  Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference
+            (delayed_force Indfun_common.ltof_ref))]);
          tac
 	 ]
       else tac
@@ -564,8 +564,8 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
 		     h_intros [k;h';def];
 		     observe_tac (str "simple_iter") (simpl_iter Locusops.onConcl);
 		     observe_tac (str "unfold functional")
-		       (unfold_in_concl[(Locus.OnlyOccurrences [1],
-					 evaluable_of_global_reference infos.func)]);
+		       (Proofview.V82.of_tactic (unfold_in_concl[(Locus.OnlyOccurrences [1],
+					 evaluable_of_global_reference infos.func)]));
 		     (
 		       observe_tclTHENLIST (str "test")[
 			 list_rewrite true
@@ -904,8 +904,8 @@ let make_rewrite expr_info l hp max =
 	 (observe_tclTHENLIST (str "make_rewrite")[
 	   simpl_iter Locusops.onConcl;
 	   observe_tac (str "unfold functional")
-	     (unfold_in_concl[(Locus.OnlyOccurrences [1],
-			       evaluable_of_global_reference expr_info.func)]);
+	     (Proofview.V82.of_tactic (unfold_in_concl[(Locus.OnlyOccurrences [1],
+			       evaluable_of_global_reference expr_info.func)]));
 	   
 	   (list_rewrite true 
 	      (List.map (fun e -> mkVar e,true) expr_info.eqs));
@@ -1425,7 +1425,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   let x = n_x_id ids nargs in
   observe_tac (str "start_equation") (observe_tclTHENLIST (str "start_equation") [
     h_intros x;
-    unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference f)];
+    Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference f)]);
     observe_tac (str "simplest_case")
       (Proofview.V82.of_tactic (simplest_case (mkApp (terminate_constr,
                              Array.of_list (List.map mkVar x)))));

@@ -927,15 +927,15 @@ let rec transform p t =
 	  transform p
 	    (mkApp (Lazy.force coq_Zplus,
 		     [| t1; (mkApp (Lazy.force coq_Zopp, [| t2 |])) |])) in
-	unfold sp_Zminus :: tac,t
+	Proofview.V82.of_tactic (unfold sp_Zminus) :: tac,t
     | Kapp(Zsucc,[t1]) ->
 	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer one |])) in
-	unfold sp_Zsucc :: tac,t
+	Proofview.V82.of_tactic (unfold sp_Zsucc) :: tac,t
     | Kapp(Zpred,[t1]) ->
 	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer negone |])) in
-	unfold sp_Zpred :: tac,t
+	Proofview.V82.of_tactic (unfold sp_Zpred) :: tac,t
    | Kapp(Zmult,[t1;t2]) ->
        let tac1,t1' = transform (P_APP 1 :: p) t1
        and tac2,t2' = transform (P_APP 2 :: p) t2 in
@@ -1091,8 +1091,8 @@ let replay_history tactic_normalisation =
 	    in
             Tacticals.New.tclTHENS
 	      (Tacticals.New.tclTHENLIST [
-		Proofview.V82.tactic (unfold sp_Zle);
-		Proofview.V82.tactic (simpl_in_concl);
+		unfold sp_Zle;
+		simpl_in_concl;
 		intro;
 		(absurd not_sup_sup) ])
 	      [ assumption ; reflexivity ]
@@ -1135,10 +1135,10 @@ let replay_history tactic_normalisation =
 		        (intros_using [id]);
 		        (loop l) ];
 		      Tacticals.New.tclTHENLIST [
-			(Proofview.V82.tactic (unfold sp_Zgt));
-			(Proofview.V82.tactic simpl_in_concl);
+			(unfold sp_Zgt);
+			simpl_in_concl;
 			reflexivity ] ];
-		  Tacticals.New.tclTHENLIST [ Proofview.V82.tactic (unfold sp_Zgt); Proofview.V82.tactic simpl_in_concl; reflexivity ]
+		  Tacticals.New.tclTHENLIST [ unfold sp_Zgt; simpl_in_concl; reflexivity ]
                 ];
 	      Tacticals.New.tclTHEN (Proofview.V82.tactic (mk_then tac)) reflexivity ]
 
@@ -1160,18 +1160,18 @@ let replay_history tactic_normalisation =
 		    [mkApp (Lazy.force coq_OMEGA4,
                       [| dd;kk;eq2;mkVar aux1; mkVar aux2 |])]);
 		  Proofview.V82.tactic (clear [aux1;aux2]);
-		  Proofview.V82.tactic (unfold sp_not);
+		  unfold sp_not;
 		  (intros_using [aux]);
 		  Proofview.V82.tactic (resolve_id aux);
 		  Proofview.V82.tactic (mk_then tac);
 		  assumption ] ;
 		 Tacticals.New.tclTHENLIST [
-		   Proofview.V82.tactic (unfold sp_Zgt);
-		   Proofview.V82.tactic simpl_in_concl;
+		   unfold sp_Zgt;
+		   simpl_in_concl;
 		   reflexivity ] ];
               Tacticals.New.tclTHENLIST [
-		Proofview.V82.tactic (unfold sp_Zgt);
-                Proofview.V82.tactic simpl_in_concl;
+		unfold sp_Zgt;
+                simpl_in_concl;
 		reflexivity ] ]
       | EXACT_DIVIDE (e1,k) :: l ->
 	  let id = hyp_of_tag e1.id in
@@ -1208,8 +1208,8 @@ let replay_history tactic_normalisation =
 		   (intros_using [id]);
 		   (loop l) ];
 		  Tacticals.New.tclTHENLIST [
-		    Proofview.V82.tactic (unfold sp_Zgt);
-                    Proofview.V82.tactic simpl_in_concl;
+		    unfold sp_Zgt;
+                    simpl_in_concl;
 		    reflexivity ] ];
 		Tacticals.New.tclTHEN (Proofview.V82.tactic (mk_then tac)) reflexivity ]
       | (MERGE_EQ(e3,e1,e2)) :: l ->
@@ -1329,12 +1329,12 @@ let replay_history tactic_normalisation =
 		   (intros_using [id]);
 		   (loop l) ];
 		 Tacticals.New.tclTHENLIST [
-		   Proofview.V82.tactic (unfold sp_Zgt);
-                   Proofview.V82.tactic simpl_in_concl;
+		   unfold sp_Zgt;
+                   simpl_in_concl;
 		   reflexivity ] ];
 	      Tacticals.New.tclTHENLIST [
-		Proofview.V82.tactic (unfold sp_Zgt);
-                Proofview.V82.tactic simpl_in_concl;
+		unfold sp_Zgt;
+                simpl_in_concl;
 		reflexivity ] ]
       | CONSTANT_NOT_NUL(e,k) :: l ->
 	  Tacticals.New.tclTHEN (Proofview.V82.tactic (generalize_tac [mkVar (hyp_of_tag e)])) Equality.discrConcl
@@ -1343,9 +1343,9 @@ let replay_history tactic_normalisation =
       | CONSTANT_NEG(e,k) :: l ->
 	  Tacticals.New.tclTHENLIST [
 	    Proofview.V82.tactic (generalize_tac [mkVar (hyp_of_tag e)]);
-            Proofview.V82.tactic (unfold sp_Zle);
-	    Proofview.V82.tactic simpl_in_concl;
-	    Proofview.V82.tactic (unfold sp_not);
+            unfold sp_Zle;
+	    simpl_in_concl;
+	    unfold sp_not;
 	    (intros_using [aux]);
 	    Proofview.V82.tactic (resolve_id aux);
 	    reflexivity
@@ -1839,7 +1839,7 @@ let destructure_goal =
       match destructurate_prop t with
       | Kapp(Not,[t]) ->
           (Tacticals.New.tclTHEN
-	     (Tacticals.New.tclTHEN (Proofview.V82.tactic (unfold sp_not)) intro)
+	     (Tacticals.New.tclTHEN (unfold sp_not) intro)
 	     destructure_hyps)
       | Kimp(a,b) -> (Tacticals.New.tclTHEN intro (loop b))
       | Kapp(False,[]) -> destructure_hyps

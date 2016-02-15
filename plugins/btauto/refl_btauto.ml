@@ -250,7 +250,7 @@ module Btauto = struct
           Tacticals.New.tclTHENLIST [
             Tactics.change_concl changed_gl;
             Tactics.apply (Lazy.force soundness);
-            Proofview.V82.tactic (Tactics.normalise_vm_in_concl);
+            Tactics.normalise_vm_in_concl;
             try_unification env
           ]
       | _ ->

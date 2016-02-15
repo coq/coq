@@ -1285,7 +1285,7 @@ let resolution env full_reified_goal systems_list =
   Proofview.V82.of_tactic (Tactics.change_concl reified) >>
   Proofview.V82.of_tactic (Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
   show_goal >>
-  Tactics.normalise_vm_in_concl >>
+  Proofview.V82.of_tactic (Tactics.normalise_vm_in_concl) >>
   (*i Alternatives to the previous line:
    - Normalisation without VM:
       Tactics.normalise_in_concl

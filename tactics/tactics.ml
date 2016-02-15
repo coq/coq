@@ -470,7 +470,7 @@ let cofix ido gl = match ido with
 type tactic_reduction = env -> evar_map -> constr -> constr
 
 let pf_reduce_decl redfun where (id,c,ty) gl =
-  let redfun' = Tacmach.pf_reduce redfun gl in
+  let redfun' = Tacmach.New.pf_apply redfun gl in
   match c with
   | None ->
       if where == InHypValueOnly then
@@ -549,12 +549,15 @@ let bind_red_expr_occurrences occs nbcl redexp =
    reduction function either to the conclusion or to a
    certain hypothesis *)
 
-let reduct_in_concl (redfun,sty) gl =
-  Proofview.V82.of_tactic (convert_concl_no_check (Tacmach.pf_reduce redfun gl (Tacmach.pf_concl gl)) sty) gl
+let reduct_in_concl (redfun,sty) =
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+    convert_concl_no_check (Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl)) sty
+  end }
 
-let reduct_in_hyp ?(check=false) redfun (id,where) gl =
-  Proofview.V82.of_tactic (convert_hyp ~check
-    (pf_reduce_decl redfun where (Tacmach.pf_get_hyp gl id) gl)) gl
+let reduct_in_hyp ?(check=false) redfun (id,where) =
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  convert_hyp ~check (pf_reduce_decl redfun where (Tacmach.New.pf_get_hyp id gl) gl)
+  end }
 
 let revert_cast (redfun,kind as r) =
   if kind == DEFAULTcast then (redfun,REVERTcast) else r
@@ -798,7 +801,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
           else Proofview.tclUNIT ()
         end <*>
 	  Proofview.tclORELSE
-	  (Tacticals.New.tclTHEN (Proofview.V82.tactic hnf_in_concl)
+	  (Tacticals.New.tclTHEN hnf_in_concl
 	     (intro_then_gen name_flag move_flag false dep_flag tac))
           begin function (e, info) -> match e with
             | RefinerError IntroNeedsProduct ->
@@ -2728,8 +2731,8 @@ let unfold_body x gl =
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST
-    [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
-     reduct_in_concl (rfun,DEFAULTcast)] gl
+    [tclMAP (fun h -> Proofview.V82.of_tactic (reduct_in_hyp rfun h)) hl;
+     Proofview.V82.of_tactic (reduct_in_concl (rfun,DEFAULTcast))] gl
 
 (* Either unfold and clear if defined or simply clear if not a definition *)
 let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])

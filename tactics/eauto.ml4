@@ -503,7 +503,7 @@ let autounfolds db occs cls gl =
     let ids = Idset.filter (fun id -> List.mem id hyps) ids in
       Cset.fold (fun cst -> cons (AllOccurrences, EvalConstRef cst)) csts
 	(Id.Set.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
-  in unfold_option unfolds cls gl
+  in Proofview.V82.of_tactic (unfold_option unfolds cls) gl
 
 let autounfold db cls gl =
   let cls = concrete_clause_of (fun () -> pf_ids_of_hyps gl) cls in
