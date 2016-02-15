@@ -135,6 +135,12 @@ let test_plural_form_types = function
    (strbrk "Keywords Implicit Types expect more than one type")
   | _ -> ()
 
+let fresh_var env c =
+  Namegen.next_ident_away (Id.of_string "pat")
+    (env @ Id.Set.elements (Topconstr.free_vars_of_constr_expr c))
+
+let _ = Hook.set Constrexpr_ops.fresh_var_hook fresh_var
+
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
@@ -235,11 +241,19 @@ GEXTEND Gram
   (* Simple definitions *)
   def_body:
     [ [ bl = binders; ":="; red = reduce; c = lconstr ->
+      let (bl, c) = expand_pattern_binders mkCLambdaN bl c in
       (match c with
           CCast(_,c, CastConv t) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
-	DefineBody (bl, red, c, Some t)
+        let ((bl, c), tyo) =
+          if List.exists (function LocalPattern _ -> true | _ -> false) bl
+          then
+            let c = CCast (!@loc, c, CastConv t) in
+            (expand_pattern_binders mkCLambdaN bl c, None)
+          else ((bl, c), Some t)
+        in
+	DefineBody (bl, red, c, tyo)
     | bl = binders; ":"; t = lconstr ->
         ProveBody (bl, t) ] ]
   ;

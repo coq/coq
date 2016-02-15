@@ -47,9 +47,12 @@ val glob_constr_of_notation_constr : Loc.t -> notation_constr -> glob_constr
 
 exception No_match
 
+type glob_decl2 =
+    (name, cases_pattern) Util.union * Decl_kinds.binding_kind *
+      glob_constr option * glob_constr
 val match_notation_constr : bool -> glob_constr -> interpretation ->
       (glob_constr * subscopes) list * (glob_constr list * subscopes) list *
-      (glob_decl list * subscopes) list
+      (glob_decl2 list * subscopes) list
 
 val match_notation_constr_cases_pattern :
   cases_pattern -> interpretation ->

@@ -279,6 +279,8 @@ end) = struct
 
       | CPatDelimiters (_,k,p) ->
         pr_delimiters k (pr_patt mt lsimplepatt p), 1
+      | CPatCast _ ->
+        assert false
     in
     let loc = cases_pattern_expr_loc p in
     pr_with_comments loc
@@ -298,6 +300,7 @@ end) = struct
   let begin_of_binder = function
   LocalRawDef((loc,_),_) -> fst (Loc.unloc loc)
     | LocalRawAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
+    | LocalPattern(loc,_,_) -> fst (Loc.unloc loc)
     | _ -> assert false
 
   let begin_of_binders = function
@@ -346,6 +349,8 @@ end) = struct
         | _ -> c, CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
                   str":=" ++ cut() ++ pr_c c)
+    | LocalPattern _ ->
+      assert false
 
   let pr_undelimited_binders sep pr_c =
     prlist_with_sep sep (pr_binder_among_many pr_c)
@@ -357,6 +362,8 @@ end) = struct
         pr_com_at n ++ kw() ++ pr_binder false pr_c (nal,k,t)
       | LocalRawAssum _ :: _ as bdl ->
         pr_com_at n ++ kw() ++ pr_undelimited_binders sep pr_c bdl
+      | LocalPattern (loc,p,tyo) :: _ ->
+        str "'" ++ pr_patt ltop p
       | _ -> assert false
 
   let pr_binders_gen pr_c sep is_open =
@@ -430,6 +437,7 @@ end) = struct
             let names_of_binder = function
               | LocalRawAssum (nal,_,_) -> nal
               | LocalRawDef (_,_) -> []
+              | LocalPattern _ -> assert false
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
                  spc() ++ str "{" ++ keyword "struct" ++ spc () ++ pr_id id ++ str"}"
@@ -530,6 +538,21 @@ end) = struct
                    (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) cofix),
           lfix
         )
+      | CProdN
+          (_,
+           [([(_,Name n)],_,_)],
+           CCases
+             (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
+              [(_,[(_,[p])],a)]))
+          when
+            Id.equal m n &&
+            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
+        return (
+          hov 0 (
+            keyword "forall" ++ spc () ++ str "'" ++ pr_patt ltop p ++
+            str "," ++ pr spc ltop a),
+          llambda
+        )
       | CProdN _ ->
         let (bl,a) = extract_prod_binders a in
         return (
@@ -538,6 +561,21 @@ end) = struct
                      (pr mt ltop) bl) ++
               str "," ++ pr spc ltop a),
           lprod
+        )
+      | CLambdaN
+          (_,
+           [([(_,Name n)],_,_)],
+           CCases
+             (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
+              [(_,[(_,[p])],a)]))
+          when
+            Id.equal m n &&
+            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
+        return (
+          hov 0 (
+            keyword "fun" ++ spc () ++ str "'" ++ pr_patt ltop p ++
+            pr_fun_sep ++ pr spc ltop a),
+          llambda
         )
       | CLambdaN _ ->
         let (bl,a) = extract_lam_binders a in

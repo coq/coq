@@ -107,7 +107,8 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     in
       List.iter 
 	(function LocalRawDef (b, _) -> error default_binder_kind b
-	   | LocalRawAssum (ls, bk, ce) -> List.iter (error bk) ls) ps
+	   | LocalRawAssum (ls, bk, ce) -> List.iter (error bk) ls
+           | LocalPattern _ -> assert false) ps
   in 
   let impls_env, ((env1,newps), imps) = interp_context_evars env0 evars ps in
   let t', template = match t with 

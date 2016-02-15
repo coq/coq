@@ -238,6 +238,8 @@ and pp_local_binder lb = (* don't know what it is for now *)
       let ppl =
         List.map (fun (loc, nam) -> (xmlCst (string_of_name nam) loc)) namll in
       xmlTyped (ppl @ [pp_expr ce])
+  | LocalPattern _ ->
+      assert false
 and pp_local_decl_expr lde = (* don't know what it is for now *)
   match lde with
   | AssumExpr (_, ce) -> pp_expr ce
@@ -351,6 +353,7 @@ and pp_cases_pattern_expr cpe =
       xmlApply loc
         (xmlOperator "delimiter" ~attr:["name", delim] loc ::
           [pp_cases_pattern_expr cpe])
+  | CPatCast _ -> assert false
 and pp_case_expr (e, name, pat) =
   match name, pat with
   | None, None -> xmlScrutinee [pp_expr e]

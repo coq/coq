@@ -6,6 +6,9 @@ Specification language
 - Giving implicit arguments explicitly to a constant with multiple
   choices of implicit arguments does not break any more insertion of
   further maximal implicit arguments.
+- Ability to put any pattern in binders, prefixed by quote, e.g.
+  "fun '(a,b) => ...", "λ '(a,(b,c)), ...", "Definition foo '(x,y) := ...".
+  It expands into a "let 'pattern := ..."
 
 Tactics
 
