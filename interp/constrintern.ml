@@ -431,14 +431,69 @@ let intern_assumption intern lvar env nal bk ty =
      let env, b = intern_generalized_binder intern_type lvar env (List.hd nal) b b' t ty in
      env, b
 
+let obj_string x =
+  if Obj.is_block (Obj.repr x) then
+    "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
+  else "int_val = " ^ string_of_int (Obj.magic x)
+
+let rec free_vars_of_pat il =
+  function
+  | CPatCstr (loc, c, l1, l2) ->
+      let il = List.fold_left free_vars_of_pat il l1 in
+      List.fold_left free_vars_of_pat il l2
+  | CPatAtom (loc, ro) ->
+      begin match ro with
+      | Some (Ident (loc, i)) -> (loc, i) :: il
+      | Some _ | None -> il
+      end
+  | CPatNotation (loc, n, l1, l2) ->
+      let il = List.fold_left free_vars_of_pat il (fst l1) in
+      List.fold_left (List.fold_left free_vars_of_pat) il (snd l1)
+  | (p : cases_pattern_expr) ->
+      failwith (Printf.sprintf "free_vars_of_pat %s" (obj_string p))
+
+let intern_local_pattern intern lvar env p =
+  List.fold_left
+    (fun env (loc, i) ->
+       let bk = Default Implicit in
+       let ty = CHole (loc, None, Misctypes.IntroAnonymous, None) in
+       let n = Name i in
+       let env, _ = intern_assumption intern lvar env [(loc, n)] bk ty in
+       env)
+    env (free_vars_of_pat [] p)
+
+type binder_data =
+  | BDRawDef of (Loc.t * glob_binder)
+  | BDPattern of
+      (Loc.t * (cases_pattern * Id.t list) *
+       (ltac_sign * (subscopes option ref * notation_var_internalization_type) Id.Map.t) *
+       intern_env * constr_expr)
+
+let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
+
 let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = function
   | LocalRawAssum(nal,bk,ty) ->
       let env, bl' = intern_assumption intern lvar env nal bk ty in
+      let bl' = List.map (fun a -> BDRawDef a) bl' in
       env, bl' @ bl
   | LocalRawDef((loc,na as locna),def) ->
       let indef = intern env def in
       (push_name_env lvar (impls_term_list indef) env locna,
-      (loc,(na,Explicit,Some(indef),GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None)))::bl)
+       (BDRawDef ((loc,(na,Explicit,Some(indef),GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None)))))::bl)
+  | LocalPattern (loc,p,ty) ->
+      let tyc =
+        match ty with
+        | Some ty -> ty
+        | None -> CHole(loc,None,Misctypes.IntroAnonymous,None)
+      in
+      let env = intern_local_pattern intern lvar env p in
+      let cp =
+        match !intern_cases_pattern_fwd env p with
+        | (_, [(_, cp)]) -> cp
+        | _ -> assert false
+      in
+      let il = List.map snd (free_vars_of_pat [] p) in
+      (env, BDPattern(loc,(cp,il),lvar,env,tyc) :: bl)
 
 let intern_generalization intern env lvar loc bk ak c =
   let c = intern {env with unb = true} c in
@@ -504,16 +559,36 @@ let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
     in
     (renaming',env), Name id'
 
-let make_letins = List.fold_right (fun (loc,(na,b,t)) c -> GLetIn (loc,na,b,c))
+type letin_param =
+  | LPLetIn of Loc.t * (Name.t * glob_constr)
+  | LPCases of Loc.t * (cases_pattern * Id.t list) * Id.t
 
-let rec subordinate_letins letins = function
+let make_letins =
+  List.fold_right
+    (fun a c ->
+     match a with
+     | LPLetIn (loc,(na,b)) ->
+         GLetIn(loc,na,b,c)
+     | LPCases (loc,(cp,il),id) ->
+         let tt = (GVar(loc,id),(Name id,None)) in
+         GCases(loc,Misctypes.LetPatternStyle,None,[tt],[(loc,il,[cp],c)]))
+
+let rec subordinate_letins intern letins = function
   (* binders come in reverse order; the non-let are returned in reverse order together *)
   (* with the subordinated let-in in writing order *)
-  | (loc,(na,_,Some b,t))::l ->
-      subordinate_letins ((loc,(na,b,t))::letins) l
-  | (loc,(na,bk,None,t))::l ->
-      let letins',rest = subordinate_letins [] l in
+  | BDRawDef (loc,(na,_,Some b,t))::l ->
+      subordinate_letins intern (LPLetIn (loc,(na,b))::letins) l
+  | BDRawDef (loc,(na,bk,None,t))::l ->
+      let letins',rest = subordinate_letins intern [] l in
       letins',((loc,(na,bk,t)),letins)::rest
+  | BDPattern (loc,u,lvar,env,tyc) :: l ->
+      let ienv = Id.Set.elements env.ids in
+      let id = Namegen.next_ident_away (Id.of_string "pat") ienv in
+      let na = (loc, Name id) in
+      let bk = Default Explicit in
+      let _, bl' = intern_assumption intern lvar env [na] bk tyc in
+      let bl' = List.map (fun a -> BDRawDef a) bl' in
+      subordinate_letins intern (LPCases (loc,u,id)::letins) (bl'@ l)
   | [] ->
       letins,[]
 
@@ -581,7 +656,7 @@ let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
 	let env,bl = List.fold_left (intern_local_binder_aux intern lvar) (env,[]) bl in
-	let letins,bl = subordinate_letins [] bl in
+	let letins,bl = subordinate_letins intern [] bl in
         let termin = aux subst' (renaming,env) terminator in
 	let res = List.fold_left (fun t binder ->
           subst_iterator ldots_var t
@@ -591,11 +666,14 @@ let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
       with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation"))
     | NProd (Name id, NHole _, c') when option_mem_assoc id binderopt ->
-        let (loc,(na,bk,t)),letins = snd (Option.get binderopt) in
-	GProd (loc,na,bk,t,make_letins letins (aux subst' infos c'))
+        let a,letins = snd (Option.get binderopt) in
+        let e = make_letins letins (aux subst' infos c') in
+        let (loc,(na,bk,t)) = a in
+        GProd (loc,na,bk,t,e)
     | NLambda (Name id,NHole _,c') when option_mem_assoc id binderopt ->
-        let (loc,(na,bk,t)),letins = snd (Option.get binderopt) in
-	GLambda (loc,na,bk,t,make_letins letins (aux subst' infos c'))
+        let a,letins = snd (Option.get binderopt) in
+        let (loc,(na,bk,t)) = a in
+        GLambda (loc,na,bk,t,make_letins letins (aux subst' infos c'))
     (* Two special cases to keep binder name synchronous with BinderType *)
     | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
@@ -1179,6 +1257,8 @@ let drop_notations_pattern looked_for =
     | CPatAtom (loc,None) -> RCPatAtom (loc,None)
     | CPatOr (loc, pl) ->
       RCPatOr (loc,List.map (in_pat top env) pl)
+    | CPatCast _ ->
+      assert false
   and in_pat_sc env x = in_pat false {env with tmp_scope = x}
   and in_not top loc env (subst,substlist as fullsubst) args = function
     | NVar id ->
@@ -1264,6 +1344,10 @@ let rec intern_pat genv aliases pat =
 let intern_cases_pattern genv env aliases pat =
   intern_pat genv aliases
     (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) env pat)
+
+let _ =
+  intern_cases_pattern_fwd :=
+    fun env p -> intern_cases_pattern (Global.env ()) env empty_alias p
 
 let intern_ind_pattern genv env pat =
   let no_not =
@@ -1370,10 +1454,11 @@ let internalize globalenv env allow_patvar lvar c =
           (fun (id,(n,order),bl,ty,_) ->
 	     let intern_ro_arg f =
 	       let before, after = split_at_annot bl n in
-	       let (env',rbefore) =
-		 List.fold_left intern_local_binder (env,[]) before in
+	       let (env',rbefore) = List.fold_left intern_local_binder (env,[]) before in
+               let rbefore = List.map (function BDRawDef a -> a | BDPattern _ -> assert false) rbefore in
 	       let ro = f (intern env') in
 	       let n' = Option.map (fun _ -> List.count (fun (_,(_,_,b,_)) -> (* remove let-ins *) b = None) rbefore) n in
+               let rbefore = List.map (fun a -> BDRawDef a) rbefore in
 		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
 	     in
 	     let n, ro, (env',rbl) =
@@ -1385,7 +1470,13 @@ let internalize globalenv env allow_patvar lvar c =
 	       | CMeasureRec (m,r) ->
 		   intern_ro_arg (fun f -> GMeasureRec (f m, Option.map f r))
 	     in
-	       ((n, ro), List.rev rbl, intern_type env' ty, env')) dl in
+	     let bl =
+               List.rev_map
+                 (function
+                  | BDRawDef a -> a
+                  | BDPattern (loc,_,_,_,_) ->
+                      Loc.raise loc (Stream.Error "pattern with quote not allowed after fix")) rbl in
+	       ((n, ro), bl, intern_type env' ty, env')) dl in
         let idl = Array.map2 (fun (_,_,_,_,bd) (a,b,c,env') ->
 	     let env'' = List.fold_left_i (fun i en name -> 
 					     let (_,bli,tyi,_) = idl_temp.(i) in
@@ -1409,8 +1500,8 @@ let internalize globalenv env allow_patvar lvar c =
 	in
         let idl_tmp = Array.map
           (fun ((loc,id),bl,ty,_) ->
-            let (env',rbl) =
-              List.fold_left intern_local_binder (env,[]) bl in
+            let (env',rbl) = List.fold_left intern_local_binder (env,[]) bl in
+            let rbl = List.map (function BDRawDef a -> a | BDPattern _ -> assert false) rbl in
             (List.rev rbl,
              intern_type env' ty,env')) dl in
 	let idl = Array.map2 (fun (_,_,_,bd) (b,c,env') ->
@@ -1878,7 +1969,16 @@ let intern_context global_level env impl_env binders =
   try
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let lenv, bl = List.fold_left
-	    (intern_local_binder_aux ~global_level (my_intern_constr env lvar) lvar)
+	    (fun (lenv, bl) b ->
+               let bl = List.map (fun a -> BDRawDef a) bl in
+	       let (env, bl) = intern_local_binder_aux ~global_level (my_intern_constr env lvar) lvar (lenv, bl) b in
+               let bl =
+                 List.map
+                   (function
+                    | BDRawDef a -> a
+                    | BDPattern (loc,_,_,_,_) ->
+                        Loc.raise loc (Stream.Error "pattern with quote not allowed here")) bl in
+	       (env, bl))
 	    ({ids = extract_ids env; unb = false;
 	      tmp_scope = None; scopes = []; impls = impl_env}, []) binders in
   (lenv.impls, List.map snd bl)

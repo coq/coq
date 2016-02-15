@@ -1,6 +1,12 @@
 Changes beyond V8.5
 ===================
 
+Specification language
+
+- Ability to put any pattern in binders, prefixed by quote, e.g.
+  "fun '(a,b) => ...", "λ '(a,(b,c)), ...", "Definition foo '(x,y) := ...".
+  It expands into a "let 'pattern := ..."
+
 Tactics
 
 - Flag "Bracketing Last Introduction Pattern" is now on by default.

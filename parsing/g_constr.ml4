@@ -401,6 +401,14 @@ GEXTEND Gram
               CPatPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
                 CPatNotation(!@loc,"( _ )",([p],[]),[])
             | _ -> p)
+      | "("; p = pattern LEVEL "200"; ":"; ty = lconstr; ")" ->
+          let p =
+            match p with
+              CPatPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
+                CPatNotation(!@loc,"( _ )",([p],[]),[])
+            | _ -> p
+          in
+	  CPatCast (!@loc, p, ty)
       | n = INT -> CPatPrim (!@loc, Numeral (Bigint.of_string n))
       | s = string -> CPatPrim (!@loc, String s) ] ]
   ;
@@ -476,6 +484,13 @@ GEXTEND Gram
 	  List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->
 	  List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
+      | "'"; p = pattern LEVEL "0" ->
+          let (p, ty) =
+            match p with
+            | CPatCast (_, p, ty) -> (p, Some ty)
+            | _ -> (p, None)
+          in
+          [LocalPattern (!@loc, p, ty)]
     ] ]
   ;
   typeclass_constraint:

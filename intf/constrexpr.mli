@@ -44,6 +44,8 @@ type raw_cases_pattern_expr =
   | RCPatAtom of Loc.t * Id.t option
   | RCPatOr of Loc.t * raw_cases_pattern_expr list
 
+type instance_expr = Misctypes.glob_level list
+
 type cases_pattern_expr =
   | CPatAlias of Loc.t * cases_pattern_expr * Id.t
   | CPatCstr of Loc.t * reference
@@ -58,14 +60,13 @@ type cases_pattern_expr =
   | CPatPrim of Loc.t * prim_token
   | CPatRecord of Loc.t * (reference * cases_pattern_expr) list
   | CPatDelimiters of Loc.t * string * cases_pattern_expr
+  | CPatCast of Loc.t * cases_pattern_expr * constr_expr
 
 and cases_pattern_notation_substitution =
     cases_pattern_expr list *     (** for constr subterms *)
     cases_pattern_expr list list  (** for recursive notations *)
 
-type instance_expr = Misctypes.glob_level list
-
-type constr_expr =
+and constr_expr =
   | CRef of reference * instance_expr option
   | CFix of Loc.t * Id.t located * fix_expr list
   | CCoFix of Loc.t * Id.t located * cofix_expr list
@@ -124,6 +125,7 @@ and recursion_order_expr =
 and local_binder =
   | LocalRawDef of Name.t located * constr_expr
   | LocalRawAssum of Name.t located list * binder_kind * constr_expr
+  | LocalPattern of Loc.t * cases_pattern_expr * constr_expr option
 
 and constr_notation_substitution =
     constr_expr list *      (** for constr subterms *)

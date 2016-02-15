@@ -279,6 +279,8 @@ end) = struct
 
       | CPatDelimiters (_,k,p) ->
         pr_delimiters k (pr_patt mt lsimplepatt p), 1
+      | CPatCast _ ->
+        assert false
     in
     let loc = cases_pattern_expr_loc p in
     pr_with_comments loc
@@ -346,6 +348,8 @@ end) = struct
         | _ -> c, CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
                   str":=" ++ cut() ++ pr_c c)
+    | LocalPattern _ ->
+      assert false
 
   let pr_undelimited_binders sep pr_c =
     prlist_with_sep sep (pr_binder_among_many pr_c)
@@ -430,6 +434,7 @@ end) = struct
             let names_of_binder = function
               | LocalRawAssum (nal,_,_) -> nal
               | LocalRawDef (_,_) -> []
+              | LocalPattern _ -> assert false
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
                  spc() ++ str "{" ++ keyword "struct" ++ spc () ++ pr_id id ++ str"}"
