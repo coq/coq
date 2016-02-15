@@ -569,8 +569,8 @@ let reduct_option ?(check=false) redfun = function
 (** Tactic reduction modulo evars (for universes essentially) *)
 
 let pf_e_reduce_decl redfun where (id,c,ty) gl =
-  let sigma = project gl in
-  let redfun = redfun (pf_env gl) in
+  let sigma = Tacmach.New.project gl in
+  let redfun = redfun (Tacmach.New.pf_env gl) in
   match c with
   | None ->
       if where == InHypValueOnly then
@@ -582,17 +582,17 @@ let pf_e_reduce_decl redfun where (id,c,ty) gl =
       let sigma, ty' = if where != InHypValueOnly then redfun sigma ty else sigma, ty in
 	sigma, (id,Some b',ty')
 
-let e_reduct_in_concl (redfun,sty) gl =
-  Proofview.V82.of_tactic
-    (let sigma, c' = (Tacmach.pf_apply redfun gl (Tacmach.pf_concl gl)) in
-       Proofview.Unsafe.tclEVARS sigma <*> 
-	 convert_concl_no_check c' sty) gl
+let e_reduct_in_concl (redfun, sty) =
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+    let sigma, c' = Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl) in
+    Sigma.Unsafe.of_pair (convert_concl_no_check c' sty, sigma)
+  end }
 
-let e_reduct_in_hyp ?(check=false) redfun (id,where) gl =
-  Proofview.V82.of_tactic 
-    (let sigma, decl' = pf_e_reduce_decl redfun where (Tacmach.pf_get_hyp gl id) gl in
-       Proofview.Unsafe.tclEVARS sigma <*> 
-	 convert_hyp ~check decl') gl
+let e_reduct_in_hyp ?(check=false) redfun (id, where) =
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+    let sigma, decl' = pf_e_reduce_decl redfun where (Tacmach.New.pf_get_hyp id gl) gl in
+    Sigma.Unsafe.of_pair (convert_hyp ~check decl', sigma)
+  end }
 
 let e_reduct_option ?(check=false) redfun = function
   | Some id -> e_reduct_in_hyp ~check (fst redfun) id
@@ -739,14 +739,16 @@ let reduction_clause redexp cl =
     | OnConcl occs ->
 	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
 
-let reduce redexp cl goal =
-  let cl = concrete_clause_of (fun () -> Tacmach.pf_ids_of_hyps goal) cl in
+let reduce redexp cl =
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let cl = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
   let redexps = reduction_clause redexp cl in
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
-  let tac = tclMAP (fun (where,redexp) ->
+  let tac = Tacticals.New.tclMAP (fun (where,redexp) ->
     e_reduct_option ~check
-      (Redexpr.reduction_of_red_expr (Tacmach.pf_env goal) redexp) where) redexps in
-  if check then with_check tac goal else tac goal
+      (Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp) where) redexps in
+  if check then Proofview.V82.tactic (fun gl -> with_check (Proofview.V82.of_tactic tac) gl) else tac (** FIXME *)
+  end }
 
 (* Unfolding occurrences of a constant *)
 
@@ -3943,7 +3945,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     if indvars = [] then [List.hd lid_params] else indvars in
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
     (* pattern to make the predicate appear. *)
-    reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
+    Proofview.V82.of_tactic (reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl);
     (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
        possible holes using arguments given by the user (but the
        functional one). *)
@@ -4717,9 +4719,9 @@ module New = struct
   open Locus
 
   let reduce_after_refine =
-    Proofview.V82.tactic (reduce
+    reduce
       (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
-      {onhyps=None; concl_occs=AllOccurrences })
+      {onhyps=None; concl_occs=AllOccurrences }
 
   let refine ?unsafe c =
     Proofview.Refine.refine ?unsafe c <*>

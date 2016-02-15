@@ -1967,7 +1967,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
         tclTHEN
 	  (tclEVARS sigma)
-	  (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl))
+	  (Proofview.V82.of_tactic (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl)))
           gl
       end
       end

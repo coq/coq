@@ -562,7 +562,7 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
 		   observe_tclTHENLIST (str "destruct_bounds_aux2")[
 		     observe_tac (str "clearing k ") (clear [id]);
 		     h_intros [k;h';def];
-		     observe_tac (str "simple_iter") (simpl_iter Locusops.onConcl);
+		     observe_tac (str "simple_iter") (Proofview.V82.of_tactic (simpl_iter Locusops.onConcl));
 		     observe_tac (str "unfold functional")
 		       (Proofview.V82.of_tactic (unfold_in_concl[(Locus.OnlyOccurrences [1],
 					 evaluable_of_global_reference infos.func)]));
@@ -902,7 +902,7 @@ let make_rewrite expr_info l hp max =
        [observe_tac(str "make_rewrite finalize") (
 	 (* tclORELSE( h_reflexivity) *)
 	 (observe_tclTHENLIST (str "make_rewrite")[
-	   simpl_iter Locusops.onConcl;
+	   Proofview.V82.of_tactic (simpl_iter Locusops.onConcl);
 	   observe_tac (str "unfold functional")
 	     (Proofview.V82.of_tactic (unfold_in_concl[(Locus.OnlyOccurrences [1],
 			       evaluable_of_global_reference expr_info.func)]));
