@@ -812,7 +812,7 @@ let interp_may_eval f ist env sigma = function
 	let ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
 	let evdref = ref sigma in
 	let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
-	let c = Typing.solve_evars env evdref c in
+	let c = Typing.e_solve_evars env evdref c in
 	!evdref , c
       with
 	| Not_found ->

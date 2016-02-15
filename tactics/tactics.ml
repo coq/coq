@@ -1814,7 +1814,7 @@ let check_is_type env ty msg =
   Proofview.tclEVARMAP >>= fun sigma ->
   let evdref = ref sigma in
   try
-    let _ = Typing.sort_of env evdref ty in
+    let _ = Typing.e_sort_of env evdref ty in
     Proofview.Unsafe.tclEVARS !evdref
   with e when Errors.noncritical e ->
     msg e
@@ -1823,10 +1823,10 @@ let check_decl env (_, c, ty) msg =
   Proofview.tclEVARMAP >>= fun sigma ->
   let evdref = ref sigma in
   try
-    let _ = Typing.sort_of env evdref ty in
+    let _ = Typing.e_sort_of env evdref ty in
     let _ = match c with
     | None -> ()
-    | Some c -> Typing.check env evdref c ty
+    | Some c -> Typing.e_check env evdref c ty
     in
     Proofview.Unsafe.tclEVARS !evdref
   with e when Errors.noncritical e ->

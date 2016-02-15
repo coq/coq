@@ -1004,7 +1004,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 	       ~src:(Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
 	     prop |])
   in
-  let def = Typing.solve_evars env evdref def in
+  let def = Typing.e_solve_evars env evdref def in
   let _ = evdref := Evarutil.nf_evar_map !evdref in
   let def = mkApp (def, [|intern_body_lam|]) in
   let binders_rel = nf_evar_context !evdref binders_rel in
@@ -1078,7 +1078,7 @@ let interp_recursive isfix fixl notations =
 	   let fixprot =
 	     try 
 	       let app = mkApp (delayed_force fix_proto, [|sort; t|]) in
-		 Typing.solve_evars env evdref app
+		 Typing.e_solve_evars env evdref app
 	     with e  when Errors.noncritical e -> t
 	   in
 	     (id,None,fixprot) :: env'

@@ -107,7 +107,7 @@ let extends_undefined evars evars' =
 let app_poly_check env evars f args =
   let (evars, cstrs), fc = f evars in
   let evdref = ref evars in 
-  let t = Typing.solve_evars env evdref (mkApp (fc, args)) in
+  let t = Typing.e_solve_evars env evdref (mkApp (fc, args)) in
     (!evdref, cstrs), t
 
 let app_poly_nocheck env evars f args =
@@ -1452,7 +1452,7 @@ type result = (evar_map * constr option * types) option option
 
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
   let evdref = ref sigma in
-  let sort = Typing.sort_of env evdref concl in
+  let sort = Typing.e_sort_of env evdref concl in
   let evars = (!evdref, Evar.Set.empty) in
   let evars, cstr =
     let prop, (evars, arrow) = 
