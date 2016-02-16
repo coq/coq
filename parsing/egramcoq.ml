@@ -206,14 +206,14 @@ type notation_grammar = {
 let extend_constr_constr_notation ng =
   let level = ng.notgram_level in
   let mkact loc env = CNotation (loc, ng.notgram_notation, env) in
-  let e = interp_constr_entry_key false (ETConstr (level, ())) in
+  let e = interp_constr_entry_key false level in
   let ext = (ETConstr (level, ()), ng.notgram_assoc) in
   extend_constr e ext (make_constr_action mkact) false ng.notgram_prods
 
 let extend_constr_pat_notation ng =
   let level = ng.notgram_level in
   let mkact loc env = CPatNotation (loc, ng.notgram_notation, env, []) in
-  let e = interp_constr_entry_key true (ETConstr (level, ())) in
+  let e = interp_constr_entry_key true level in
   let ext = ETConstr (level, ()), ng.notgram_assoc in
   extend_constr e ext (make_cases_pattern_action mkact) true ng.notgram_prods
 

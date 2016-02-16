@@ -153,8 +153,6 @@ type gram_universe = Entry.universe
 
 val get_univ : string -> gram_universe
 
-type typed_entry = TypedEntry : 'a raw_abstract_argument_type * 'a Gram.entry -> typed_entry
-
 val uprim : gram_universe
 val uconstr : gram_universe
 val utactic : gram_universe
@@ -162,8 +160,6 @@ val uvernac : gram_universe
 
 val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
 val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
-
-val get_entry : gram_universe -> string -> typed_entry
 
 val create_generic_entry : gram_universe -> string ->
   ('a, rlevel) abstract_argument_type -> 'a Gram.entry
@@ -267,7 +263,7 @@ val main_entry : (Loc.t * vernac_expr) option Gram.entry
 (** Binding constr entry keys to entries and symbols *)
 
 val interp_constr_entry_key : bool (** true for cases_pattern *) ->
-  constr_entry_key -> grammar_object Gram.entry * int option
+  int -> grammar_object Gram.entry * int option
 
 val symbol_of_constr_prod_entry_key : gram_assoc option ->
   constr_entry_key -> bool -> constr_prod_entry_key ->
@@ -279,16 +275,13 @@ val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
 (** Binding general entry keys to symbols *)
 
-type 's entry_name = EntryName :
-  'a raw_abstract_argument_type * ('s, 'a) entry_key -> 's entry_name
+type entry_name = EntryName :
+  'a raw_abstract_argument_type * (raw_tactic_expr, 'a) entry_key -> entry_name
 
-(** Interpret entry names of the form "ne_constr_list" as entry keys   *)
-
-type _ target = TgAny : 's target | TgTactic : int -> raw_tactic_expr target
-
-val interp_entry_name : 's target -> string -> string -> 's entry_name
-
-val parse_user_entry : string -> string -> user_symbol
+(** [interp_entry_name lev n sep] returns the entry corresponding to the name
+    [n] of the form "ne_constr_list" in a tactic entry of level [lev] with
+    separator [sep]. *)
+val interp_entry_name : int -> string -> string -> entry_name
 
 (** Recover the list of all known tactic notation entries. *)
 val list_entry_names : unit -> (string * argument_type) list

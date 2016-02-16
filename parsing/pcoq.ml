@@ -77,8 +77,8 @@ type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
 | Aentry : 'a Entry.t -> ('self, 'a) entry_key
 | Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
 
-type 's entry_name = EntryName :
-  'a raw_abstract_argument_type * ('s, 'a) entry_key -> 's entry_name
+type entry_name = EntryName :
+  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) entry_key -> entry_name
 
 (** Grammar extensions *)
 
@@ -586,7 +586,7 @@ let adjust_level assoc from = function
 	| ETConstr (p,()) -> Some (Some (n, Int.equal n p))
 	| _ -> Some (Some (n,false))
 
-let compute_entry allow_create adjust forpat = function
+let compute_entry adjust forpat = function
   | ETConstr (n,q) ->
       (if forpat then weaken_entry Constr.pattern
        else weaken_entry Constr.operconstr),
@@ -604,26 +604,19 @@ let compute_entry allow_create adjust forpat = function
   | ETConstrList _ -> anomaly (Pp.str "List of entries cannot be registered.")
   | ETOther (u,n) ->
       let u = get_univ u in
-      let e =
-        try get_entry u n
-        with Not_found when allow_create ->
-          let wit = rawwit wit_constr in
-          TypedEntry (wit, create_generic_entry u n wit)
-      in
+      let e = get_entry u n in
       object_of_typed_entry e, None, true
 
 (* This computes the name of the level where to add a new rule *)
-let interp_constr_entry_key forpat = function
-  | ETConstr(200,()) when not forpat ->
-      weaken_entry Constr.binder_constr, None
-  | e ->
-      let (e,level,_) = compute_entry true (fun (n,()) -> Some n) forpat e in
-      (e, level)
+let interp_constr_entry_key forpat level =
+  if level = 200 && not forpat then weaken_entry Constr.binder_constr, None
+  else if forpat then weaken_entry Constr.pattern, Some level
+  else weaken_entry Constr.operconstr, Some level
 
 (* This computes the name to give to a production knowing the name and
    associativity of the level where it must be added *)
 let interp_constr_prod_entry_key ass from forpat en =
-  compute_entry false (adjust_level ass from) forpat en
+  compute_entry (adjust_level ass from) forpat en
 
 (**********************************************************************)
 (* Binding constr entry keys to symbols                               *)
@@ -759,17 +752,11 @@ let atactic n =
 
 let try_get_entry u s =
   (** Order the effects: get_entry can raise Not_found *)
-  let TypedEntry (typ, _) = get_entry u s in
-  EntryName (typ, Aentry (Entry.unsafe_of_name (Entry.univ_name u, s)))
-
-type _ target =
-| TgAny : 's target
-| TgTactic : int -> Tacexpr.raw_tactic_expr target
+  let TypedEntry (typ, e) = get_entry u s in
+  EntryName (typ, Aentry (name_of_entry e))
 
 (** Quite ad-hoc *)
-let get_tacentry (type s) (n : int) (t : s target) : s entry_name = match t with
-| TgAny -> EntryName (rawwit wit_tactic, atactic n)
-| TgTactic m ->
+let get_tacentry n m =
   let check_lvl n =
     Int.equal m n
     && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)

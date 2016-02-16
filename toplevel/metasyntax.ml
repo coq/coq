@@ -48,7 +48,7 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 let interp_prod_item lev = function
   | TacTerm s -> GramTerminal s
   | TacNonTerm (loc, nt, (_, sep)) ->
-      let EntryName (etyp, e) = interp_entry_name (TgTactic lev) nt sep in
+      let EntryName (etyp, e) = interp_entry_name lev nt sep in
       GramNonTerminal (loc, etyp, e)
 
 let make_terminal_status = function

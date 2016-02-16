@@ -11,10 +11,6 @@ Loc
 CList
 CString
 
-Segmenttree
-Unicodetable
-Unicode
-
 Tok
 Compat
 
