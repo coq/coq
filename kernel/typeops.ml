@@ -18,6 +18,7 @@ open Entries
 open Reduction
 open Inductive
 open Type_errors
+open Context.Rel.Declaration
 
 let conv_leq l2r env x y = default_conv CUMUL ~l2r env x y
 
@@ -77,7 +78,6 @@ let judge_of_type u =
 (*s Type of a de Bruijn index. *)
 
 let judge_of_relative env n =
-  let open Context.Rel.Declaration in
   try
     let typ = get_type (lookup_rel n env) in
     { uj_val  = mkRel n;
@@ -99,9 +99,9 @@ let judge_of_variable env id =
    variables of the current env.
    Order does not have to be checked assuming that all names are distinct *)
 let check_hyps_inclusion env c sign =
-  let open Context.Named.Declaration in
   Context.Named.fold_outside
     (fun d1 () ->
+      let open Context.Named.Declaration in
       let id = get_id d1 in
       try
         let d2 = lookup_named id env in
@@ -127,7 +127,6 @@ let extract_level env p =
   match kind_of_term c with Sort (Type u) -> Univ.Universe.level u | _ -> None
 
 let extract_context_levels env l =
-  let open Context.Rel.Declaration in
   let fold l = function
     | LocalAssum (_,p) -> extract_level env p :: l
     | LocalDef _ -> l
@@ -420,7 +419,6 @@ let type_fixpoint env lna lar vdefj =
     Ind et Constructsi un jour cela devient des constructions
     arbitraires et non plus des variables *)
 let rec execute env cstr =
-  let open Context.Rel.Declaration in
   match kind_of_term cstr with
     (* Atomic terms *)
     | Sort (Prop c) ->
@@ -553,12 +551,12 @@ let infer_v env cv =
 (* Typing of several terms. *)
 
 let infer_local_decl env id = function
-  | LocalDef c ->
+  | LocalDefEntry c ->
       let j = infer env c in
-      Context.Rel.Declaration.LocalDef (Name id, j.uj_val, j.uj_type)
-  | LocalAssum c ->
+      LocalDef (Name id, j.uj_val, j.uj_type)
+  | LocalAssumEntry c ->
       let j = infer env c in
-      Context.Rel.Declaration.LocalAssum (Name id, assumption_of_judgment env j)
+      LocalAssum (Name id, assumption_of_judgment env j)
 
 let infer_local_decls env decls =
   let rec inferec env = function

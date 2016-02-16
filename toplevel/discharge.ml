@@ -14,6 +14,7 @@ open Vars
 open Entries
 open Declarations
 open Cooking
+open Entries
 open Context.Rel.Declaration
 
 (********************************)
@@ -21,8 +22,8 @@ open Context.Rel.Declaration
 
 let detype_param =
   function
-  | LocalAssum (Name id, p) -> id, Entries.LocalAssum p
-  | LocalDef (Name id, p,_) -> id, Entries.LocalDef p
+  | LocalAssum (Name id, p) -> id, LocalAssumEntry p
+  | LocalDef (Name id, p,_) -> id, LocalDefEntry p
   | _ -> anomaly (Pp.str "Unnamed inductive local variable")
 
 (* Replace

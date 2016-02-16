@@ -26,6 +26,7 @@ open Constrexpr_ops
 open Goptions
 open Sigma.Notations
 open Context.Rel.Declaration
+open Entries
 
 (********** definition d'un record (structure) **************)
 
@@ -164,8 +165,8 @@ let degenerate_decl decl =
     | Name id -> id
     | Anonymous -> anomaly (Pp.str "Unnamed record variable") in
   match decl with
-    | LocalAssum (_,t) -> (id, Entries.LocalAssum t)
-    | LocalDef (_,b,_) -> (id, Entries.LocalDef b)
+    | LocalAssum (_,t) -> (id, LocalAssumEntry t)
+    | LocalDef (_,b,_) -> (id, LocalDefEntry b)
 
 type record_error =
   | MissingProj of Id.t * Id.t list

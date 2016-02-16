@@ -38,6 +38,7 @@ open Misctypes
 open Vernacexpr
 open Sigma.Notations
 open Context.Rel.Declaration
+open Entries
 
 let do_universe poly l = Declare.do_universe poly l
 let do_constraint poly l = Declare.do_constraint poly l
@@ -385,8 +386,8 @@ let mk_mltype_data evdref env assums arity indname =
   (is_ml_type,indname,assums)
 
 let prepare_param = function
-  | LocalAssum (na,t) -> out_name na, Entries.LocalAssum t
-  | LocalDef (na,b,_) -> out_name na, Entries.LocalDef b
+  | LocalAssum (na,t) -> out_name na, LocalAssumEntry t
+  | LocalDef (na,b,_) -> out_name na, LocalDefEntry b
 
 (** Make the arity conclusion flexible to avoid generating an upper bound universe now,
     only if the universe does not appear anywhere else.
