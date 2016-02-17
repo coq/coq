@@ -60,6 +60,7 @@
 open Util
 open Names
 open Declarations
+open Context.Named.Declaration
 
 (** {6 Safe environments }
 
@@ -362,7 +363,8 @@ let check_required current_libs needed =
     hypothesis many many times, and the check performed here would
     cost too much. *)
 
-let safe_push_named (id,_,_ as d) env =
+let safe_push_named d env =
+  let id = get_id d in
   let _ =
     try
       let _ = Environ.lookup_named id env in
@@ -383,13 +385,13 @@ let push_named_def (id,de) senv =
 	(Opaqueproof.force_constraints (Environ.opaque_tables senv.env) o)
     | _ -> assert false in
   let senv' = push_context_set poly univs senv in
-  let env'' = safe_push_named (id,Some c,typ) senv'.env in
+  let env'' = safe_push_named (LocalDef (id,c,typ)) senv'.env in
     univs, {senv' with env=env''}
 
 let push_named_assum ((id,t,poly),ctx) senv =
   let senv' = push_context_set poly ctx senv in
   let t = Term_typing.translate_local_assum senv'.env t in
-  let env'' = safe_push_named (id,None,t) senv'.env in
+  let env'' = safe_push_named (LocalAssum (id,t)) senv'.env in
     {senv' with env=env''}
 
 

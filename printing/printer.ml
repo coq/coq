@@ -262,16 +262,19 @@ let pr_var_decl_skel pr_id env sigma (id,c,typ) =
   let ptyp = (str" : " ++ pt) in
   (pr_id id ++ hov 0 (pbody ++ ptyp))
 
-let pr_var_decl env sigma (id,c,typ) =
-  pr_var_decl_skel pr_id env sigma (id,c,typ)
+let pr_var_decl env sigma d =
+  pr_var_decl_skel pr_id env sigma (Context.Named.Declaration.to_tuple d)
 
 let pr_var_list_decl env sigma (l,c,typ) =
   hov 0 (pr_var_decl_skel (fun ids -> prlist_with_sep pr_comma pr_id ids) env sigma (l,c,typ))
 
-let pr_rel_decl env sigma (na,c,typ) =
-  let pbody = match c with
-    | None -> mt ()
-    | Some c ->
+let pr_rel_decl env sigma decl =
+  let open Context.Rel.Declaration in
+  let na = get_name decl in
+  let typ = get_type decl in
+  let pbody = match decl with
+    | LocalAssum _ -> mt ()
+    | LocalDef (_,c,_) ->
 	(* Force evaluation *)
 	let pb = pr_lconstr_env env sigma c in
 	let pb = if isCast c then surround pb else pb in
@@ -420,7 +423,8 @@ let pr_evgl_sign sigma evi =
   | None -> [], []
   | Some f -> List.filter2 (fun b c -> not b) f (evar_context evi)
   in
-  let ids = List.rev_map pi1 l in
+  let open Context.Named.Declaration in
+  let ids = List.rev_map get_id l in
   let warn =
     if List.is_empty ids then mt () else
       (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")

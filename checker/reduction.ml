@@ -490,7 +490,7 @@ let dest_prod env =
     let t = whd_betadeltaiota env c in
     match t with
       | Prod (n,a,c0) ->
-          let d = (n,None,a) in
+          let d = LocalAssum (n,a) in
 	  decrec (push_rel d env) (d::m) c0
       | _ -> m,t
   in
@@ -502,10 +502,10 @@ let dest_prod_assum env =
     let rty = whd_betadeltaiota_nolet env ty in
     match rty with
     | Prod (x,t,c)  ->
-        let d = (x,None,t) in
+        let d = LocalAssum (x,t) in
 	prodec_rec (push_rel d env) (d::l) c
     | LetIn (x,b,t,c) ->
-        let d = (x,Some b,t) in
+        let d = LocalDef (x,b,t) in
 	prodec_rec (push_rel d env) (d::l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
@@ -520,10 +520,10 @@ let dest_lam_assum env =
     let rty = whd_betadeltaiota_nolet env ty in
     match rty with
     | Lambda (x,t,c)  ->
-        let d = (x,None,t) in
+        let d = LocalAssum (x,t) in
 	lamec_rec (push_rel d env) (d::l) c
     | LetIn (x,b,t,c) ->
-        let d = (x,Some b,t) in
+        let d = LocalDef (x,b,t) in
 	lamec_rec (push_rel d env) (d::l) c
     | Cast (c,_,_)    -> lamec_rec env l c
     | _               -> l,rty

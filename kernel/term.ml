@@ -383,40 +383,46 @@ let mkNamedLambda id typ c = mkLambda (Name id, typ, subst_var id c)
 let mkNamedLetIn id c1 t c2 = mkLetIn (Name id, c1, t, subst_var id c2)
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
-let mkProd_or_LetIn (na,body,t) c =
-  match body with
-    | None -> mkProd (na, t, c)
-    | Some b -> mkLetIn (na, b, t, c)
+let mkProd_or_LetIn decl c =
+  let open Context.Rel.Declaration in
+  match decl with
+  | LocalAssum (na,t) -> mkProd (na, t, c)
+  | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
 
-let mkNamedProd_or_LetIn (id,body,t) c =
-  match body with
-    | None -> mkNamedProd id t c
-    | Some b -> mkNamedLetIn id b t c
+let mkNamedProd_or_LetIn decl c =
+  let open Context.Named.Declaration in
+  match decl with
+    | LocalAssum (id,t) -> mkNamedProd id t c
+    | LocalDef (id,b,t) -> mkNamedLetIn id b t c
 
 (* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
-let mkProd_wo_LetIn (na,body,t) c =
-  match body with
-    | None -> mkProd (na,  t, c)
-    | Some b -> subst1 b c
+let mkProd_wo_LetIn decl c =
+  let open Context.Rel.Declaration in
+  match decl with
+  | LocalAssum (na,t) -> mkProd (na, t, c)
+  | LocalDef (na,b,t) -> subst1 b c
 
-let mkNamedProd_wo_LetIn (id,body,t) c =
-  match body with
-    | None -> mkNamedProd id t c
-    | Some b -> subst1 b (subst_var id c)
+let mkNamedProd_wo_LetIn decl c =
+  let open Context.Named.Declaration in
+  match decl with
+    | LocalAssum (id,t) -> mkNamedProd id t c
+    | LocalDef (id,b,t) -> subst1 b (subst_var id c)
 
 (* non-dependent product t1 -> t2 *)
 let mkArrow t1 t2 = mkProd (Anonymous, t1, t2)
 
 (* Constructs either [[x:t]c] or [[x=b:t]c] *)
-let mkLambda_or_LetIn (na,body,t) c =
-  match body with
-    | None -> mkLambda (na, t, c)
-    | Some b -> mkLetIn (na, b, t, c)
+let mkLambda_or_LetIn decl c =
+  let open Context.Rel.Declaration in
+  match decl with
+    | LocalAssum (na,t) -> mkLambda (na, t, c)
+    | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
 
-let mkNamedLambda_or_LetIn (id,body,t) c =
-  match body with
-    | None -> mkNamedLambda id t c
-    | Some b -> mkNamedLetIn id b t c
+let mkNamedLambda_or_LetIn decl c =
+  let open Context.Named.Declaration in
+  match decl with
+    | LocalAssum (id,t) -> mkNamedLambda id t c
+    | LocalDef (id,b,t) -> mkNamedLetIn id b t c
 
 (* prodn n [xn:Tn;..;x1:T1;Gamma] b = (x1:T1)..(xn:Tn)b *)
 let prodn n env b =
@@ -576,10 +582,11 @@ let decompose_lam_n n =
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
 let decompose_prod_assum =
+  let open Context.Rel.Declaration in
   let rec prodec_rec l c =
     match kind_of_term c with
-    | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (x,None,t) l) c
-    | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (x,Some b,t) l) c
+    | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
+    | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)      -> prodec_rec l c
     | _               -> l,c
   in
@@ -589,9 +596,10 @@ let decompose_prod_assum =
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
 let decompose_lam_assum =
   let rec lamdec_rec l c =
+    let open Context.Rel.Declaration in
     match kind_of_term c with
-    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (x,None,t) l) c
-    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (x,Some b,t) l) c
+    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
+    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)      -> lamdec_rec l c
     | _               -> l,c
   in
@@ -606,11 +614,13 @@ let decompose_prod_n_assum n =
     error "decompose_prod_n_assum: integer parameter must be positive";
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
-    else match kind_of_term c with
-    | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (x,None,t) l) (n-1) c
-    | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (x,Some b,t) l) (n-1) c
-    | Cast (c,_,_)      -> prodec_rec l n c
-    | c -> error "decompose_prod_n_assum: not enough assumptions"
+    else
+      let open Context.Rel.Declaration in
+      match kind_of_term c with
+      | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
+      | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
+      | Cast (c,_,_)      -> prodec_rec l n c
+      | c -> error "decompose_prod_n_assum: not enough assumptions"
   in
   prodec_rec Context.Rel.empty n
 
@@ -625,11 +635,13 @@ let decompose_lam_n_assum n =
     error "decompose_lam_n_assum: integer parameter must be positive";
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
-    else match kind_of_term c with
-    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (x,None,t) l) (n-1) c
-    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (x,Some b,t) l) n c
-    | Cast (c,_,_)      -> lamdec_rec l n c
-    | c -> error "decompose_lam_n_assum: not enough abstractions"
+    else
+      let open Context.Rel.Declaration in
+      match kind_of_term c with
+      | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
+      | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
+      | Cast (c,_,_)      -> lamdec_rec l n c
+      | c -> error "decompose_lam_n_assum: not enough abstractions"
   in
   lamdec_rec Context.Rel.empty n
 
@@ -639,11 +651,13 @@ let decompose_lam_n_decls n =
     error "decompose_lam_n_decls: integer parameter must be positive";
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
-    else match kind_of_term c with
-    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (x,None,t) l) (n-1) c
-    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (x,Some b,t) l) (n-1) c
-    | Cast (c,_,_)      -> lamdec_rec l n c
-    | c -> error "decompose_lam_n_decls: not enough abstractions"
+    else
+      let open Context.Rel.Declaration in
+      match kind_of_term c with
+      | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
+      | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
+      | Cast (c,_,_)      -> lamdec_rec l n c
+      | c -> error "decompose_lam_n_decls: not enough abstractions"
   in
   lamdec_rec Context.Rel.empty n
 
@@ -669,10 +683,11 @@ let strip_lam_n n t = snd (decompose_lam_n n t)
 type arity = Context.Rel.t * sorts
 
 let destArity =
+  let open Context.Rel.Declaration in
   let rec prodec_rec l c =
     match kind_of_term c with
-    | Prod (x,t,c)    -> prodec_rec ((x,None,t)::l) c
-    | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
+    | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t) :: l) c
+    | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) c
     | Cast (c,_,_)      -> prodec_rec l c
     | Sort s          -> l,s
     | _               -> anomaly ~label:"destArity" (Pp.str "not an arity")

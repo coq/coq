@@ -42,6 +42,7 @@ open Tacintern
 open Taccoerce
 open Sigma.Notations
 open Proofview.Notations
+open Context.Named.Declaration
 
 let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
   let Val.Dyn (t, _) = v in
@@ -444,14 +445,13 @@ let interp_reference ist env sigma = function
     try try_interp_ltac_var (coerce_to_reference env) ist (Some (env,sigma)) (loc, id)
     with Not_found ->
       try
-        let (v, _, _) = Environ.lookup_named id env in
-        VarRef v
+        VarRef (get_id (Environ.lookup_named id env))
       with Not_found -> error_global_not_found_loc loc (qualid_of_ident id)
 
 let try_interp_evaluable env (loc, id) =
   let v = Environ.lookup_named id env in
   match v with
-  | (_, Some _, _) -> EvalVarRef id
+  | LocalDef _ -> EvalVarRef id
   | _ -> error_not_evaluable (VarRef id)
 
 let interp_evaluable ist env sigma = function

@@ -24,6 +24,7 @@ open Univ
 open Environ
 open Closure
 open Esubst
+open Context.Rel.Declaration
 
 let rec is_empty_stack = function
   [] -> true
@@ -739,7 +740,7 @@ let dest_prod env =
     let t = whd_betadeltaiota env c in
     match kind_of_term t with
       | Prod (n,a,c0) ->
-          let d = (n,None,a) in
+	  let d = LocalAssum (n,a) in
 	  decrec (push_rel d env) (Context.Rel.add d m) c0
       | _ -> m,t
   in
@@ -751,10 +752,10 @@ let dest_prod_assum env =
     let rty = whd_betadeltaiota_nolet env ty in
     match kind_of_term rty with
     | Prod (x,t,c)  ->
-        let d = (x,None,t) in
+        let d = LocalAssum (x,t) in
 	prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
-        let d = (x,Some b,t) in
+        let d = LocalDef (x,b,t) in
 	prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
@@ -769,10 +770,10 @@ let dest_lam_assum env =
     let rty = whd_betadeltaiota_nolet env ty in
     match kind_of_term rty with
     | Lambda (x,t,c)  ->
-        let d = (x,None,t) in
+        let d = LocalAssum (x,t) in
 	lamec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
-        let d = (x,Some b,t) in
+        let d = LocalDef (x,b,t) in
 	lamec_rec (push_rel d env) (Context.Rel.add d l) c
     | Cast (c,_,_)    -> lamec_rec env l c
     | _               -> l,rty

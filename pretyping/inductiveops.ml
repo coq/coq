@@ -17,6 +17,7 @@ open Declarations
 open Declareops
 open Environ
 open Reductionops
+open Context.Rel.Declaration
 
 (* The following three functions are similar to the ones defined in
    Inductive, but they expect an env *)
@@ -389,7 +390,7 @@ let make_arity_signature env dep indf =
   if dep then
     (* We need names everywhere *)
     Namegen.name_context env
-      ((Anonymous,None,build_dependent_inductive env indf)::arsign)
+      ((LocalAssum (Anonymous,build_dependent_inductive env indf))::arsign)
       (* Costly: would be better to name once for all at definition time *)
   else
     (* No need to enforce names *)
@@ -459,7 +460,7 @@ let is_predicate_explicitly_dep env pred arsign =
   let rec srec env pval arsign =
     let pv' = whd_betadeltaiota env Evd.empty pval in
     match kind_of_term pv', arsign with
-      | Lambda (na,t,b), (_,None,_)::arsign ->
+      | Lambda (na,t,b), (LocalAssum _)::arsign ->
 	  srec (push_rel_assum (na,t) env) b arsign
       | Lambda (na,_,t), _ ->
 
@@ -539,11 +540,11 @@ let arity_of_case_predicate env (ind,params) dep k =
    that appear in the type of the inductive by the sort of the
    conclusion, and the other ones by fresh universes. *)
 let rec instantiate_universes env evdref scl is = function
-  | (_,Some _,_ as d)::sign, exp ->
+  | (LocalDef _ as d)::sign, exp ->
       d :: instantiate_universes env evdref scl is (sign, exp)
   | d::sign, None::exp ->
       d :: instantiate_universes env evdref scl is (sign, exp)
-  | (na,None,ty)::sign, Some l::exp ->
+  | (LocalAssum (na,ty))::sign, Some l::exp ->
       let ctx,_ = Reduction.dest_arity env ty in
       let u = Univ.Universe.make l in
       let s =
@@ -557,7 +558,7 @@ let rec instantiate_universes env evdref scl is = function
 	  let evm = Evd.set_leq_sort env evm s (Sorts.sort_of_univ u) in
 	    evdref := evm; s
       in
-      (na,None,mkArity(ctx,s)):: instantiate_universes env evdref scl is (sign, exp)
+      (LocalAssum (na,mkArity(ctx,s))) :: instantiate_universes env evdref scl is (sign, exp)
   | sign, [] -> sign (* Uniform parameters are exhausted *)
   | [], _ -> assert false
 

@@ -23,6 +23,7 @@ open Declarations
 open Mod_subst
 open Globnames
 open Printer
+open Context.Named.Declaration
 
 (** For a constant c in a module sealed by an interface (M:T and
     not M<:T), [Global.lookup_constant] may return a [constant_body]
@@ -145,7 +146,7 @@ let push (r : Context.Rel.Declaration.t) (ctx : Context.Rel.t) = r :: ctx
 
 let rec traverse current ctx accu t = match kind_of_term t with
 | Var id ->
-  let body () = match Global.lookup_named id with (_, body, _) -> body in
+  let body () = Global.lookup_named id |> get_value in
   traverse_object accu body (VarRef id)
 | Const (kn, _) ->
   let body () = Global.body_of_constant_body (lookup_constant kn) in
@@ -208,8 +209,8 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   let (_, graph, ax2ty) = traverse (label_of gr) t in
   let fold obj _ accu = match obj with
   | VarRef id ->
-    let (_, body, t) = Global.lookup_named id in
-    if Option.is_empty body then ContextObjectMap.add (Variable id) t accu
+    let decl = Global.lookup_named id in
+    if is_local_assum decl then ContextObjectMap.add (Variable id) t accu
     else accu
   | ConstRef kn ->
     let cb = lookup_constant kn in

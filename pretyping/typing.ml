@@ -18,6 +18,7 @@ open Inductive
 open Inductiveops
 open Typeops
 open Arguments_renaming
+open Context.Rel.Declaration
 
 let meta_type evd mv =
   let ty =
@@ -88,16 +89,16 @@ let e_is_correct_arity env evdref c pj ind specif params =
   let rec srec env pt ar =
     let pt' = whd_betadeltaiota env !evdref pt in
     match kind_of_term pt', ar with
-    | Prod (na1,a1,t), (_,None,a1')::ar' ->
+    | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
         if not (Evarconv.e_cumul env evdref a1 a1') then error ();
-        srec (push_rel (na1,None,a1) env) t ar'
+        srec (push_rel (LocalAssum (na1,a1)) env) t ar'
     | Sort s, [] ->
         if not (Sorts.List.mem (Sorts.family s) allowed_sorts)
         then error ()
     | Evar (ev,_), [] ->
         let evd, s = Evd.fresh_sort_in_family env !evdref (max_sort allowed_sorts) in
         evdref := Evd.define ev (mkSort s) evd
-    | _, (_,Some _,_ as d)::ar' ->
+    | _, (LocalDef _ as d)::ar' ->
         srec (push_rel d env) (lift 1 pt') ar'
     | _ ->
         error ()
@@ -229,14 +230,14 @@ let rec execute env evdref cstr =
     | Lambda (name,c1,c2) ->
         let j = execute env evdref c1 in
 	let var = e_type_judgment env evdref j in
-	let env1 = push_rel (name,None,var.utj_val) env in
+	let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
         let j' = execute env1 evdref c2 in
         judge_of_abstraction env1 name var j'
 
     | Prod (name,c1,c2) ->
         let j = execute env evdref c1 in
         let varj = e_type_judgment env evdref j in
-	let env1 = push_rel (name,None,varj.utj_val) env in
+	let env1 = push_rel (LocalAssum (name, varj.utj_val)) env in
         let j' = execute env1 evdref c2 in
         let varj' = e_type_judgment env1 evdref j' in
 	judge_of_product env name varj varj'
@@ -246,7 +247,7 @@ let rec execute env evdref cstr =
         let j2 = execute env evdref c2 in
         let j2 = e_type_judgment env evdref j2 in
         let _ =  e_judge_of_cast env evdref j1 DEFAULTcast j2 in
-        let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
+        let env1 = push_rel (LocalDef (name, j1.uj_val, j2.utj_val)) env in
         let j3 = execute env1 evdref c3 in
         judge_of_letin env name j1 j2 j3
 

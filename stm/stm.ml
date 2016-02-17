@@ -1480,10 +1480,8 @@ end = struct (* {{{ *)
        let g = Evd.find sigma0 r_goal in
        if not (
          Evarutil.is_ground_term sigma0 Evd.(evar_concl g) &&
-         List.for_all (fun (_,bo,ty) ->
-            Evarutil.is_ground_term sigma0 ty &&
-            Option.cata (Evarutil.is_ground_term sigma0) true bo)
-           Evd.(evar_context g))
+         List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0))
+                      Evd.(evar_context g))
        then
          Errors.errorlabstrm "Stm" (strbrk("the par: goal selector supports ground "^
            "goals only"))

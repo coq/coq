@@ -15,6 +15,7 @@ open Reductionops
 open Misctypes
 open Sigma.Notations
 open Proofview.Notations
+open Context.Named.Declaration
 
 (* Absurd *)
 
@@ -47,7 +48,7 @@ let absurd c = absurd c
 let filter_hyp f tac =
   let rec seek = function
     | [] -> Proofview.tclZERO Not_found
-    | (id,_,t)::rest when f t -> tac id
+    | d::rest when f (get_type d) -> tac (get_id d)
     | _::rest -> seek rest in
   Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
@@ -60,8 +61,9 @@ let contradiction_context =
     let env = Proofview.Goal.env gl in
     let rec seek_neg l = match l with
       | [] ->  Tacticals.New.tclZEROMSG (Pp.str"No such contradiction")
-      | (id,_,typ)::rest ->
-          let typ = nf_evar sigma typ in
+      | d :: rest ->
+          let id = get_id d in
+          let typ = nf_evar sigma (get_type d) in
 	  let typ = whd_betadeltaiota env sigma typ in
 	  if is_empty_type typ then
 	    simplest_elim (mkVar id)

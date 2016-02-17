@@ -18,8 +18,8 @@ open Term
 (** {6 Local entries } *)
 
 type local_entry =
-  | LocalDef of constr
-  | LocalAssum of constr
+  | LocalDefEntry of constr
+  | LocalAssumEntry of constr
 
 
 (** {6 Declaration of inductive types. } *)

@@ -9,6 +9,7 @@
 open Declarations
 open Mod_subst
 open Util
+open Context.Rel.Declaration
 
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
@@ -87,10 +88,8 @@ let is_opaque cb = match cb.const_body with
 
 (** {7 Constant substitutions } *)
 
-let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = Option.smartmap (subst_mps sub) copt in
-  let t' = subst_mps sub t in
-  if copt == copt' && t == t' then x else (id,copt',t')
+let subst_rel_declaration sub =
+  map_constr (subst_mps sub)
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
@@ -140,11 +139,8 @@ let subst_const_body sub cb =
     share internal fields (e.g. constr), and not the records
     themselves. But would it really bring substantial gains ? *)
 
-let hcons_rel_decl ((n,oc,t) as d) =
-  let n' = Names.Name.hcons n
-  and oc' = Option.smartmap Term.hcons_constr oc
-  and t' = Term.hcons_types t
-  in if n' == n && oc' == oc && t' == t then d else (n',oc',t')
+let hcons_rel_decl =
+  map_type Term.hcons_types % map_value Term.hcons_constr % map_name Names.Name.hcons
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 

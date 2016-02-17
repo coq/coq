@@ -20,6 +20,7 @@ open Reductionops
 open Evarutil
 open Pretype_errors
 open Sigma.Notations
+open Context.Rel.Declaration
 
 let normalize_evar evd ev =
   match kind_of_term (whd_evar evd (mkEvar ev)) with
@@ -80,7 +81,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) pbty env evd t =
 	if !modified then 
 	  evdref := Evd.add !evdref ev {evi with evar_concl = ty'}
 	else ()
-    | _ -> iter_constr (refresh_term_evars onevars false) t
+    | _ -> Constr.iter (refresh_term_evars onevars false) t
   and refresh_polymorphic_positions args pos =
     let rec aux i = function
       | Some l :: ls -> 
@@ -163,7 +164,8 @@ type 'a update =
 | UpdateWith of 'a
 | NoUpdate
 
-let inst_of_vars sign = Array.map_of_list (fun (id,_,_) -> mkVar id) sign
+open Context.Named.Declaration
+let inst_of_vars sign = Array.map_of_list (mkVar % get_id) sign
 
 let restrict_evar_key evd evk filter candidates =
   match filter, candidates with
@@ -208,6 +210,7 @@ let restrict_instance evd evk filter argsv =
   let evi = Evd.find evd evk in
   Filter.filter_array (Filter.compose (evar_filter evi) filter) argsv
 
+open Context.Rel.Declaration
 let noccur_evar env evd evk c =
   let cache = ref Int.Set.empty (* cache for let-ins *) in
   let rec occur_rec (k, env as acc) c =
@@ -220,9 +223,9 @@ let noccur_evar env evd evk c =
            else Array.iter (occur_rec acc) args')
   | Rel i when i > k ->
       if not (Int.Set.mem (i-k) !cache) then
-      (match pi2 (Environ.lookup_rel i env) with
-       | None -> ()
-       | Some b -> cache := Int.Set.add (i-k) !cache; occur_rec acc (lift i b))
+      (match Environ.lookup_rel i env with
+       | LocalAssum _ -> ()
+       | LocalDef (_,b,_) -> cache := Int.Set.add (i-k) !cache; occur_rec acc (lift i b))
   | Proj (p,c) -> 
     let c = 
       try Retyping.expand_projection env evd p c []
@@ -244,9 +247,11 @@ let noccur_evar env evd evk c =
    variable in its family of aliased variables *)
 
 let compute_var_aliases sign =
-  List.fold_right (fun (id,b,c) aliases ->
-    match b with
-    | Some t ->
+  let open Context.Named.Declaration in
+  List.fold_right (fun decl aliases ->
+    let id = get_id decl in
+    match decl with
+    | LocalDef (_,t,_) ->
         (match kind_of_term t with
         | Var id' ->
             let aliases_of_id =
@@ -254,27 +259,30 @@ let compute_var_aliases sign =
             Id.Map.add id (aliases_of_id@[t]) aliases
         | _ ->
             Id.Map.add id [t] aliases)
-    | None -> aliases)
+    | LocalAssum _ -> aliases)
     sign Id.Map.empty
 
 let compute_rel_aliases var_aliases rels =
-  snd (List.fold_right (fun (_,b,u) (n,aliases) ->
-    (n-1,
-     match b with
-     | Some t ->
-         (match kind_of_term t with
-         | Var id' ->
-             let aliases_of_n =
-               try Id.Map.find id' var_aliases with Not_found -> [] in
-             Int.Map.add n (aliases_of_n@[t]) aliases
-         | Rel p ->
-             let aliases_of_n =
-               try Int.Map.find (p+n) aliases with Not_found -> [] in
-             Int.Map.add n (aliases_of_n@[mkRel (p+n)]) aliases
-         | _ ->
-             Int.Map.add n [lift n (mkCast(t,DEFAULTcast,u))] aliases)
-     | None -> aliases))
-         rels (List.length rels,Int.Map.empty))
+  snd (List.fold_right
+	 (fun decl (n,aliases) ->
+	  (n-1,
+	   match decl with
+	   | LocalDef (_,t,u) ->
+	      (match kind_of_term t with
+	       | Var id' ->
+		  let aliases_of_n =
+		    try Id.Map.find id' var_aliases with Not_found -> [] in
+		  Int.Map.add n (aliases_of_n@[t]) aliases
+	       | Rel p ->
+		  let aliases_of_n =
+		    try Int.Map.find (p+n) aliases with Not_found -> [] in
+		  Int.Map.add n (aliases_of_n@[mkRel (p+n)]) aliases
+	       | _ ->
+		  Int.Map.add n [lift n (mkCast(t,DEFAULTcast,u))] aliases)
+	   | LocalAssum _ -> aliases)
+	 )
+	 rels
+	 (List.length rels,Int.Map.empty))
 
 let make_alias_map env =
   (* We compute the chain of aliases for each var and rel *)
@@ -308,13 +316,13 @@ let normalize_alias aliases x =
 let normalize_alias_var var_aliases id =
   destVar (normalize_alias (var_aliases,Int.Map.empty) (mkVar id))
 
-let extend_alias (_,b,_) (var_aliases,rel_aliases) =
+let extend_alias decl (var_aliases,rel_aliases) =
   let rel_aliases =
     Int.Map.fold (fun n l -> Int.Map.add (n+1) (List.map (lift 1) l))
       rel_aliases Int.Map.empty in
   let rel_aliases =
-    match b with
-    | Some t ->
+    match decl with
+    | LocalDef(_,t,_) ->
         (match kind_of_term t with
         | Var id' ->
             let aliases_of_binder =
@@ -326,7 +334,7 @@ let extend_alias (_,b,_) (var_aliases,rel_aliases) =
             Int.Map.add 1 (aliases_of_binder@[mkRel (p+1)]) rel_aliases
         | _ ->
             Int.Map.add 1 [lift 1 t] rel_aliases)
-    | None -> rel_aliases in
+    | LocalAssum _ -> rel_aliases in
   (var_aliases, rel_aliases)
 
 let expand_alias_once aliases x =
@@ -432,16 +440,17 @@ let get_actual_deps aliases l t =
       | Rel n -> Int.Set.mem n fv_rels
       | _ -> assert false) l
 
+open Context.Named.Declaration
 let remove_instance_local_defs evd evk args =
   let evi = Evd.find evd evk in
   let len = Array.length args in
   let rec aux sign i = match sign with
   | [] ->
     let () = assert (i = len) in []
-  | (_, None, _) :: sign ->
+  | LocalAssum _ :: sign ->
     let () = assert (i < len) in
     (Array.unsafe_get args i) :: aux sign (succ i)
-  | (_, Some _, _) :: sign ->
+  | LocalDef _ :: sign ->
     aux sign (succ i)
   in
   aux (evar_filtered_context evi) 0
@@ -503,7 +512,8 @@ let solve_pattern_eqn env l c =
     match kind_of_term a with
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
       | Rel n ->
-          let d = Context.Rel.Declaration.map (lift n) (lookup_rel n env) in
+          let open Context.Rel.Declaration in
+          let d = map_constr (lift n) (lookup_rel n env) in
           mkLambda_or_LetIn d c'
       | Var id ->
           let d = lookup_named id env in mkNamedLambda_or_LetIn d c'
@@ -532,9 +542,9 @@ let make_projectable_subst aliases sigma evi args =
   let evar_aliases = compute_var_aliases sign in
   let (_,full_subst,cstr_subst) =
     List.fold_right
-      (fun (id,b,c) (args,all,cstrs) ->
-        match b,args with
-        | None, a::rest ->
+      (fun decl (args,all,cstrs) ->
+        match decl,args with
+        | LocalAssum (id,c), a::rest ->
             let a = whd_evar sigma a in
             let cstrs =
               let a',args = decompose_app_vect a in
@@ -544,7 +554,7 @@ let make_projectable_subst aliases sigma evi args =
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
               | _ -> cstrs in
             (rest,Id.Map.add id [a,normalize_alias_opt aliases a,id] all,cstrs)
-        | Some c, a::rest ->
+        | LocalDef (id,c,_), a::rest ->
             let a = whd_evar sigma a in
             (match kind_of_term c with
             | Var id' ->
@@ -606,10 +616,12 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let sign1 = evar_hyps evi1 in
   let filter1 = evar_filter evi1 in
   let src = subterm_source evk1 evi1.evar_source in
-  let ids1 = List.map pi1 (named_context_of_val sign1) in
+  let ids1 = List.map get_id (named_context_of_val sign1) in
   let inst_in_sign = List.map mkVar (Filter.filter_list filter1 ids1) in
+  let open Context.Rel.Declaration in
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
-    List.fold_right (fun (na,b,t_in_env as d) (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
+    List.fold_right (fun d (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
+      let LocalAssum (na,t_in_env) | LocalDef (na,_,t_in_env) = d in
       let id = next_name_away na avoid in
       let evd,t_in_sign =
         let s = Retyping.get_sort_of env evd t_in_env in
@@ -617,13 +629,13 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
 	 ~status:univ_flexible (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd src t_in_env
           ty_t_in_sign sign filter inst_in_env in
-      let evd,b_in_sign = match b with
-      | None -> evd,None
-      | Some b ->
+      let evd,b_in_sign = match d with
+      | LocalAssum _ -> evd,None
+      | LocalDef (_,b,_) ->
           let evd,b = define_evar_from_virtual_equation define_fun env evd src b
             t_in_sign sign filter inst_in_env in
           evd,Some b in
-      (push_named_context_val (id,b_in_sign,t_in_sign) sign, Filter.extend 1 filter,
+      (push_named_context_val (Context.Named.Declaration.of_tuple (id,b_in_sign,t_in_sign)) sign, Filter.extend 1 filter,
        (mkRel 1)::(List.map (lift 1) inst_in_env),
        (mkRel 1)::(List.map (lift 1) inst_in_sign),
        push_rel d env,evd,id::avoid))
@@ -763,9 +775,10 @@ let project_with_effects aliases sigma effects t subst =
   effects := p :: !effects;
   c
 
+open Context.Named.Declaration
 let rec find_solution_type evarenv = function
-  | (id,ProjectVar)::l -> pi3 (lookup_named id evarenv)
-  | [id,ProjectEvar _] -> (* bugged *) pi3 (lookup_named id evarenv)
+  | (id,ProjectVar)::l -> get_type (lookup_named id evarenv)
+  | [id,ProjectEvar _] -> (* bugged *) get_type (lookup_named id evarenv)
   | (id,ProjectEvar _)::l -> find_solution_type evarenv l
   | [] -> assert false
 
@@ -899,7 +912,7 @@ let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
  *)
 
 let set_of_evctx l =
-  List.fold_left (fun s (id,_,_) -> Id.Set.add id s) Id.Set.empty l
+  List.fold_left (fun s decl -> Id.Set.add (get_id decl) s) Id.Set.empty l
 
 let filter_effective_candidates evi filter candidates =
   match filter with
@@ -931,7 +944,13 @@ let closure_of_filter evd evk = function
   | Some filter ->
   let evi = Evd.find_undefined evd evk in
   let vars = collect_vars (Evarutil.nf_evar evd (evar_concl evi)) in
-  let test b (id,c,_) = b || Idset.mem id vars || match c with None -> false | Some c -> not (isRel c || isVar c) in
+  let test b decl = b || Idset.mem (get_id decl) vars ||
+                    match decl with
+                    | LocalAssum _ ->
+                       false
+                    | LocalDef (_,c,_) ->
+                       not (isRel c || isVar c)
+  in
   let newfilter = Filter.map_along test filter (evar_context evi) in
   (* Now ensure that restriction is at least what is was originally *)
   let newfilter = Option.cata (Filter.map_along (&&) newfilter) newfilter (Filter.repr (evar_filter evi)) in
@@ -1287,7 +1306,7 @@ let occur_evar_upto_types sigma n c =
          seen := Evar.Set.add sp !seen;
 	 Option.iter occur_rec (existential_opt_value sigma e);
 	 occur_rec (existential_type sigma e))
-    | _ -> iter_constr occur_rec c
+    | _ -> Constr.iter occur_rec c
   in
   try occur_rec c; false with Occur -> true
 
@@ -1372,15 +1391,16 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
     let t = whd_evar !evdref t in
     match kind_of_term t with
     | Rel i when i>k ->
-        (match pi2 (Environ.lookup_rel (i-k) env') with
-        | None -> project_variable (mkRel (i-k))
-        | Some b ->
+        let open Context.Rel.Declaration in
+        (match Environ.lookup_rel (i-k) env' with
+        | LocalAssum _ -> project_variable (mkRel (i-k))
+        | LocalDef (_,b,_) ->
           try project_variable (mkRel (i-k))
           with NotInvertibleUsingOurAlgorithm _ -> imitate envk (lift i b))
     | Var id ->
-        (match pi2 (Environ.lookup_named id env') with
-        | None -> project_variable t
-        | Some b ->
+        (match Environ.lookup_named id env' with
+        | LocalAssum _ -> project_variable t
+        | LocalDef (_,b,_) ->
           try project_variable t
           with NotInvertibleUsingOurAlgorithm _ -> imitate envk b)
     | LetIn (na,b,u,c) ->
@@ -1460,7 +1480,8 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
     let names = ref Idset.empty in
     let rec is_id_subst ctxt s =
       match ctxt, s with
-      | ((id, _, _) :: ctxt'), (c :: s') ->
+      | (decl :: ctxt'), (c :: s') ->
+        let id = get_id decl in
         names := Idset.add id !names;
         isVarId id c && is_id_subst ctxt' s'
       | [], [] -> true

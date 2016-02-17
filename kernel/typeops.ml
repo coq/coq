@@ -18,6 +18,7 @@ open Entries
 open Reduction
 open Inductive
 open Type_errors
+open Context.Rel.Declaration
 
 let conv_leq l2r env x y = default_conv CUMUL ~l2r env x y
 
@@ -78,7 +79,7 @@ let judge_of_type u =
 
 let judge_of_relative env n =
   try
-    let (_,_,typ) = lookup_rel n env in
+    let typ = get_type (lookup_rel n env) in
     { uj_val  = mkRel n;
       uj_type = lift n typ }
   with Not_found ->
@@ -99,17 +100,19 @@ let judge_of_variable env id =
    Order does not have to be checked assuming that all names are distinct *)
 let check_hyps_inclusion env c sign =
   Context.Named.fold_outside
-    (fun (id,b1,ty1) () ->
+    (fun d1 () ->
+      let open Context.Named.Declaration in
+      let id = get_id d1 in
       try
-        let (_,b2,ty2) = lookup_named id env in
-        conv env ty2 ty1;
-        (match b2,b1 with
-        | None, None -> ()
-        | None, Some _ ->
+        let d2 = lookup_named id env in
+        conv env (get_type d2) (get_type d1);
+        (match d2,d1 with
+        | LocalAssum _, LocalAssum _ -> ()
+        | LocalAssum _, LocalDef _ ->
             (* This is wrong, because we don't know if the body is
                needed or not for typechecking: *) ()
-        | Some _, None -> raise NotConvertible
-        | Some b2, Some b1 -> conv env b2 b1);
+        | LocalDef _, LocalAssum _ -> raise NotConvertible
+        | LocalDef (_,b2,_), LocalDef (_,b1,_) -> conv env b2 b1);
       with Not_found | NotConvertible | Option.Heterogeneous ->
         error_reference_variables env id c)
     sign
@@ -124,9 +127,9 @@ let extract_level env p =
   match kind_of_term c with Sort (Type u) -> Univ.Universe.level u | _ -> None
 
 let extract_context_levels env l =
-  let fold l (_, b, p) = match b with
-  | None -> extract_level env p :: l
-  | _ -> l
+  let fold l = function
+    | LocalAssum (_,p) -> extract_level env p :: l
+    | LocalDef _ -> l
   in
   List.fold_left fold [] l
 
@@ -458,13 +461,13 @@ let rec execute env cstr =
 
     | Lambda (name,c1,c2) ->
       let varj = execute_type env c1 in
-      let env1 = push_rel (name,None,varj.utj_val) env in
+      let env1 = push_rel (LocalAssum (name,varj.utj_val)) env in
       let j' = execute env1 c2 in
         judge_of_abstraction env name varj j'
 
     | Prod (name,c1,c2) ->
       let varj = execute_type env c1 in
-      let env1 = push_rel (name,None,varj.utj_val) env in
+      let env1 = push_rel (LocalAssum (name,varj.utj_val)) env in
       let varj' = execute_type env1 c2 in
 	judge_of_product env name varj varj'
 
@@ -472,7 +475,7 @@ let rec execute env cstr =
       let j1 = execute env c1 in
       let j2 = execute_type env c2 in
       let _ = judge_of_cast env j1 DEFAULTcast j2 in
-      let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
+      let env1 = push_rel (LocalDef (name,j1.uj_val,j2.utj_val)) env in
       let j' = execute env1 c3 in
         judge_of_letin env name j1 j2 j'
 
@@ -548,12 +551,12 @@ let infer_v env cv =
 (* Typing of several terms. *)
 
 let infer_local_decl env id = function
-  | LocalDef c ->
+  | LocalDefEntry c ->
       let j = infer env c in
-      (Name id, Some j.uj_val, j.uj_type)
-  | LocalAssum c ->
+      LocalDef (Name id, j.uj_val, j.uj_type)
+  | LocalAssumEntry c ->
       let j = infer env c in
-      (Name id, None, assumption_of_judgment env j)
+      LocalAssum (Name id, assumption_of_judgment env j)
 
 let infer_local_decls env decls =
   let rec inferec env = function

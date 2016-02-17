@@ -1,5 +1,5 @@
 =========================================
-= CHANGES BETWEEN COQ V8.5 AND CQQ V8.6 =
+= CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 
 - The interface of the Context module was changed.
@@ -9,9 +9,9 @@
     Context.named_declaration            --->  Context.Named.Declaration.t
     Context.named_list_declaration       --->  Context.NamedList.Declaration.t
     Context.rel_declaration              --->  Context.Rel.Declaration.t
-    Context.map_named_declaration        --->  Context.Named.Declaration.map
+    Context.map_named_declaration        --->  Context.Named.Declaration.map_constr
     Context.map_named_list_declaration   --->  Context.NamedList.Declaration.map
-    Context.map_rel_declaration          --->  Context.Rel.Declaration.map
+    Context.map_rel_declaration          --->  Context.Rel.Declaration.map_constr
     Context.fold_named_declaration       --->  Context.Named.Declaration.fold
     Context.fold_rel_declaration         --->  Context.Rel.Declaration.fold
     Context.exists_named_declaration     --->  Context.Named.Declaration.exists
@@ -37,8 +37,8 @@
     Context.extended_rel_vect            --->  Context.Rel.to_extended_vect
     Context.fold_rel_context             --->  Context.Rel.fold_outside
     Context.fold_rel_context_reverse     --->  Context.Rel.fold_inside
-    Context.map_rel_context              --->  Context.Rel.map
-    Context.map_named_context            --->  Context.Named.map
+    Context.map_rel_context              --->  Context.Rel.map_constr
+    Context.map_named_context            --->  Context.Named.map_constr
     Context.iter_rel_context             --->  Context.Rel.iter
     Context.iter_named_context           --->  Context.Named.iter
     Context.empty_rel_context            --->  Context.Rel.empty
@@ -48,8 +48,27 @@
     Context.rel_context_nhyps            --->  Context.Rel.nhyps
     Context.rel_context_tags             --->  Context.Rel.to_tags
 
+- Originally, rel-context was represented as:
+
+    Context.rel_context = Names.Name.t * Constr.t option * Constr.t
+
+  Now it is represented as:
+
+    Context.Rel.t = LocalAssum of Names.Name.t * Constr.t
+	          | LocalDef of Names.Name.t * Constr.t * Constr.t
+ 
+- Originally, named-context was represented as:
+
+    Context.named_context = Names.Id.t * Constr.t option * Constr.t
+
+  Now it is represented as:
+
+    Context.Named.t = LocalAssum of Names.Id.t * Constr.t
+	            | LocalDef of Names.Id.t * Constr.t * Constr.t
+
+
 =========================================
-= CHANGES BETWEEN COQ V8.4 AND CQQ V8.5 =
+= CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================
 
 ** Refactoring : more mli interfaces and simpler grammar.cma **

@@ -111,7 +111,8 @@ type cofixpoint = constr pcofixpoint
 
 (** {6 Type of assumptions and contexts}  *)
 
-type rel_declaration = Name.t * constr option * constr
+type rel_declaration = LocalAssum of Name.t * constr          (* name, type *)
+                     | LocalDef of Name.t * constr * constr   (* name, value, type *)
 type rel_context = rel_declaration list
 
 (** The declarations below in .vo should be outside sections,

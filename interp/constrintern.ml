@@ -29,6 +29,7 @@ open Nametab
 open Notation
 open Inductiveops
 open Decl_kinds
+open Context.Rel.Declaration
 
 (** constr_expr -> glob_constr translation:
     - it adds holes for implicit arguments
@@ -1645,14 +1646,14 @@ let internalize globalenv env allow_patvar lvar c =
 	      |loc,(Name y as x) -> (y,PatVar(loc,x)) :: l in
 	    match case_rel_ctxt,arg_pats with
 	      (* LetIn in the rel_context *)
-	      |(_,Some _,_)::t, l when not with_letin ->
+	      | LocalDef _ :: t, l when not with_letin ->
 		canonize_args t l forbidden_names match_acc ((Loc.ghost,Anonymous)::var_acc)
 	      |[],[] ->
 		(add_name match_acc na, var_acc)
 	      |_::t,PatVar (loc,x)::tt ->
 		canonize_args t tt forbidden_names
 		  (add_name match_acc (loc,x)) ((loc,x)::var_acc)
-	      |(cano_name,_,ty)::t,c::tt ->
+	      | (LocalAssum (cano_name,ty) | LocalDef (cano_name,_,ty)) :: t, c::tt ->
 		let fresh =
 		  Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names ty in
 		canonize_args t tt (fresh::forbidden_names)
@@ -1894,7 +1895,7 @@ let interp_rawcontext_evars env evdref k bl =
 	      let t' = locate_if_hole (loc_of_glob_constr t) na t in
 	      let t =
                 understand_tcc_evars env evdref ~expected_type:IsType t' in
-	      let d = (na,None,t) in
+	      let d = LocalAssum (na,t) in
 	      let impls =
 		if k == Implicit then
 		  let na = match na with Name n -> Some n | Anonymous -> None in
@@ -1904,7 +1905,7 @@ let interp_rawcontext_evars env evdref k bl =
 		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
 	      let c = understand_judgment_tcc env evdref b in
-	      let d = (na, Some c.uj_val, c.uj_type) in
+	      let d = LocalDef (na, c.uj_val, c.uj_type) in
 		(push_rel d env, d::params, n, impls))
       (env,[],k+1,[]) (List.rev bl)
   in (env, par), impls

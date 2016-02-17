@@ -20,6 +20,7 @@ open Vars
 open Pattern
 open Patternops
 open Misctypes
+open Context.Rel.Declaration
 (*i*)
 
 (* Given a term with second-order variables in it,
@@ -254,15 +255,15 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
           sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (na2,None,c2) env)
+	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (na2,None,c2) env)
+	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLetIn (na1,c1,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec ((na1,na2,t2)::ctx) (Environ.push_rel (na2,Some c2,t2) env)
+	  sorec ((na1,na2,t2)::ctx) (Environ.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
@@ -271,7 +272,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 	  let n = Context.Rel.length ctx_b2 in
           let n' = Context.Rel.length ctx_b2' in
 	  if noccur_between 1 n b2 && noccur_between 1 n' b2' then
-            let f l (na,_,t) = (Anonymous,na,t)::l in
+            let f l (LocalAssum (na,t) | LocalDef (na,_,t)) = (Anonymous,na,t)::l in
 	    let ctx_br = List.fold_left f ctx ctx_b2 in
 	    let ctx_br' = List.fold_left f ctx ctx_b2' in
 	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
@@ -367,21 +368,21 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       | [c1; c2] -> mk_ctx (mkLambda (x, c1, c2))
       | _ -> assert false
       in
-      let env' = Environ.push_rel (x,None,c1) env in
+      let env' = Environ.push_rel (LocalAssum (x,c1)) env in
       try_aux [(env, c1); (env', c2)] next_mk_ctx next
   | Prod (x,c1,c2) ->
       let next_mk_ctx = function
       | [c1; c2] -> mk_ctx (mkProd (x, c1, c2))
       | _ -> assert false
       in
-      let env' = Environ.push_rel (x,None,c1) env in
+      let env' = Environ.push_rel (LocalAssum (x,c1)) env in
       try_aux [(env, c1); (env', c2)] next_mk_ctx next
   | LetIn (x,c1,t,c2) ->
       let next_mk_ctx = function
       | [c1; c2] -> mk_ctx (mkLetIn (x, c1, t, c2))
       | _ -> assert false
       in
-      let env' = Environ.push_rel (x,Some c1,t) env in
+      let env' = Environ.push_rel (LocalDef (x,c1,t)) env in
       try_aux [(env, c1); (env', c2)] next_mk_ctx next
   | App (c1,lc) ->
         let topdown = true in

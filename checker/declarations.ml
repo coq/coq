@@ -517,11 +517,8 @@ let map_decl_arity f g = function
   | RegularArity a -> RegularArity (f a)
   | TemplateArity a -> TemplateArity (g a)
 
-
-let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = Option.smartmap (subst_mps sub) copt in
-  let t' = subst_mps sub t in
-  if copt == copt' && t == t' then x else (id,copt',t')
+let subst_rel_declaration sub =
+  Term.map_rel_decl (subst_mps sub)
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
