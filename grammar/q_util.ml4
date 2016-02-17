@@ -48,18 +48,18 @@ let mlexpr_of_ident id =
   <:expr< Names.Id.of_string $str:id$ >>
 
 let rec mlexpr_of_prod_entry_key f = function
-  | Extend.Ulist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key f s$ >>
-  | Extend.Ulist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
-  | Extend.Ulist0 s -> <:expr< Pcoq.Alist0 $mlexpr_of_prod_entry_key f s$ >>
-  | Extend.Ulist0sep (s,sep) -> <:expr< Pcoq.Alist0sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
-  | Extend.Uopt s -> <:expr< Pcoq.Aopt $mlexpr_of_prod_entry_key f s$ >>
-  | Extend.Umodifiers s -> <:expr< Pcoq.Amodifiers $mlexpr_of_prod_entry_key f s$ >>
-  | Extend.Uentry e -> <:expr< Pcoq.Aentry $f e$ >>
+  | Extend.Ulist1 s -> <:expr< Extend.Alist1 $mlexpr_of_prod_entry_key f s$ >>
+  | Extend.Ulist1sep (s,sep) -> <:expr< Extend.Alist1sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
+  | Extend.Ulist0 s -> <:expr< Extend.Alist0 $mlexpr_of_prod_entry_key f s$ >>
+  | Extend.Ulist0sep (s,sep) -> <:expr< Extend.Alist0sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
+  | Extend.Uopt s -> <:expr< Extend.Aopt $mlexpr_of_prod_entry_key f s$ >>
+  | Extend.Umodifiers s -> <:expr< Extend.Amodifiers $mlexpr_of_prod_entry_key f s$ >>
+  | Extend.Uentry e -> <:expr< Extend.Aentry $f e$ >>
   | Extend.Uentryl (e, l) ->
     (** Keep in sync with Pcoq! *)
     assert (CString.equal e "tactic");
-    if l = 5 then <:expr< Pcoq.Aentry (Pcoq.name_of_entry Pcoq.Tactic.binder_tactic) >>
-    else <:expr< Pcoq.Aentryl (Pcoq.name_of_entry Pcoq.Tactic.tactic_expr) $mlexpr_of_int l$ >>
+    if l = 5 then <:expr< Extend.Aentry (Pcoq.name_of_entry Pcoq.Tactic.binder_tactic) >>
+    else <:expr< Extend.Aentryl (Pcoq.name_of_entry Pcoq.Tactic.tactic_expr) $mlexpr_of_int l$ >>
 
 let rec type_of_user_symbol = function
 | Ulist1 s | Ulist1sep (s, _) | Ulist0 s | Ulist0sep (s, _) | Umodifiers s ->

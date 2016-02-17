@@ -64,21 +64,8 @@ let weaken_entry x = Gramobj.weaken_entry x
    dynamically interpreted as entries for the Coq level extensions
 *)
 
-type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
-| Atoken : Tok.t -> ('self, string) entry_key
-| Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
-| Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Alist0sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
-| Aopt : ('self, 'a) entry_key -> ('self, 'a option) entry_key
-| Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Aself : ('self, 'self) entry_key
-| Anext : ('self, 'self) entry_key
-| Aentry : 'a Entry.t -> ('self, 'a) entry_key
-| Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
-
 type entry_name = EntryName :
-  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) entry_key -> entry_name
+  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) symbol -> entry_name
 
 (** Grammar extensions *)
 
@@ -684,7 +671,7 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
 
 (** Binding general entry keys to symbol *)
 
-let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
+let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Atoken t -> Symbols.stoken t
   | Alist1 s -> Symbols.slist1 (symbol_of_prod_entry_key s)
   | Alist1sep (s,sep) ->

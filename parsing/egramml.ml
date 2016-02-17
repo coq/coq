@@ -9,6 +9,7 @@
 open Util
 open Compat
 open Names
+open Extend
 open Pcoq
 open Genarg
 open Vernacexpr
@@ -18,7 +19,7 @@ open Vernacexpr
 type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal :
-      Loc.t * 'a raw_abstract_argument_type * ('s, 'a) entry_key -> 's grammar_prod_item
+      Loc.t * 'a raw_abstract_argument_type * ('s, 'a) symbol -> 's grammar_prod_item
 
 type 'a ty_arg = ('a -> raw_generic_argument)
 
