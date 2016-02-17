@@ -446,6 +446,8 @@ type hypinfo = {
 let get_symmetric_proof b = 
   if b then PropGlobal.get_symmetric_proof else TypeGlobal.get_symmetric_proof
 
+let error_no_relation () = error "Cannot find a relation to rewrite."
+
 let rec decompose_app_rel env evd t = 
   (** Head normalize for compatibility with the old meta mechanism *)
   let t = Reductionops.whd_betaiota evd t in
@@ -461,8 +463,11 @@ let rec decompose_app_rel env evd t =
   | App (f, args) ->
     let len = Array.length args in
     let fargs = Array.sub args 0 (Array.length args - 2) in
-    mkApp (f, fargs), args.(len - 2), args.(len - 1)
-  | _ -> error "Cannot find a relation to rewrite."
+    let rel = mkApp (f, fargs) in
+    let ty = Retyping.get_type_of env evd rel in
+    let () = if not (Reduction.is_arity env ty) then error_no_relation () in
+    rel, args.(len - 2), args.(len - 1)
+  | _ -> error_no_relation ()
 
 let decompose_applied_relation env sigma (c,l) =
   let ctype = Retyping.get_type_of env sigma c in
@@ -2048,8 +2053,8 @@ let setoid_proof ty fn fallback =
       begin
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
-          let evm = sigma in
-          let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.unsafe_type_of env evm rel)))) in
+          let (sigma, t) = Typing.type_of env sigma rel in
+          let car = pi3 (List.hd (fst (Reduction.dest_prod env t))) in
 	    (try init_setoid () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e
