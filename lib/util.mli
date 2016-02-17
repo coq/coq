@@ -83,7 +83,15 @@ val matrix_transpose : 'a list list -> 'a list list
 (** {6 Functions. } *)
 
 val identity : 'a -> 'a
-val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
+
+(** Function composition: the mathematical [∘] operator.
+
+    So [g % f] is a synonym for [fun x -> g (f x)].
+
+    Also because [%] is right-associative, [h % g % f] means [fun x -> h (g (f x))].
+*)
+val (%) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
+
 val const : 'a -> 'b -> 'a
 val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit

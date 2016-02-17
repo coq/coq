@@ -87,7 +87,13 @@ let matrix_transpose mat =
 
 let identity x = x
 
-let compose f g x = f (g x)
+(** Function composition: the mathematical [∘] operator.
+
+    So [g % f] is a synonym for [fun x -> g (f x)].
+
+    Also because [%] is right-associative, [h % g % f] means [fun x -> h (g (f x))].
+ *)
+let (%) f g x = f (g x)
 
 let const x _ = x
 
