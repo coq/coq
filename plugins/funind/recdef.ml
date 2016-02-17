@@ -562,7 +562,7 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
 		   observe_tclTHENLIST (str "destruct_bounds_aux2")[
 		     observe_tac (str "clearing k ") (clear [id]);
 		     h_intros [k;h';def];
-		     observe_tac (str "simple_iter") (simpl_iter Locusops.onConcl);
+		     observe_tac (str "simple_iter") (Proofview.V82.of_tactic (simpl_iter Locusops.onConcl));
 		     observe_tac (str "unfold functional")
 		       (Proofview.V82.of_tactic (unfold_in_concl[(Locus.OnlyOccurrences [1],
 					 evaluable_of_global_reference infos.func)]));
@@ -690,9 +690,8 @@ let mkDestructEq :
      [generalize new_hyps;
       (fun g2 ->
         let changefun patvars = { run = fun sigma ->
-          let sigma = Sigma.to_evar_map sigma in
-          let (sigma, c) = pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2) in
-          Sigma.Unsafe.of_pair (c, sigma)
+          let redfun = pattern_occs [Locus.AllOccurrencesBut [1], expr] in
+          redfun.Reductionops.e_redfun (pf_env g2) sigma (pf_concl g2)
         } in
 	Proofview.V82.of_tactic (change_in_concl None changefun) g2);
       Proofview.V82.of_tactic (simplest_case expr)]), to_revert
@@ -902,7 +901,7 @@ let make_rewrite expr_info l hp max =
        [observe_tac(str "make_rewrite finalize") (
 	 (* tclORELSE( h_reflexivity) *)
 	 (observe_tclTHENLIST (str "make_rewrite")[
-	   simpl_iter Locusops.onConcl;
+	   Proofview.V82.of_tactic (simpl_iter Locusops.onConcl);
 	   observe_tac (str "unfold functional")
 	     (Proofview.V82.of_tactic (unfold_in_concl[(Locus.OnlyOccurrences [1],
 			       evaluable_of_global_reference expr_info.func)]));

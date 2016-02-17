@@ -157,15 +157,15 @@ val unfold_option     :
 val change            :
   constr_pattern option -> change_arg -> clause -> tactic
 val pattern_option    :
-  (occurrences * constr) list -> goal_location -> tactic
-val reduce            : red_expr -> clause -> tactic
+  (occurrences * constr) list -> goal_location -> unit Proofview.tactic
+val reduce            : red_expr -> clause -> unit Proofview.tactic
 val unfold_constr     : global_reference -> unit Proofview.tactic
 
 (** {6 Modification of the local context. } *)
 
 val clear         : Id.t list -> tactic
 val clear_body    : Id.t list -> unit Proofview.tactic
-val unfold_body   : Id.t -> tactic
+val unfold_body   : Id.t -> unit Proofview.tactic
 val keep          : Id.t list -> unit Proofview.tactic
 val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 

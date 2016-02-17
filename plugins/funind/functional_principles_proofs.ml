@@ -371,12 +371,12 @@ let isLetIn t =
     | _ -> false
 
 
-let h_reduce_with_zeta =
-  reduce
+let h_reduce_with_zeta cl =
+  Proofview.V82.of_tactic (reduce
     (Genredexpr.Cbv
        {Redops.all_flags
 	with Genredexpr.rDelta = false;
-       })
+       }) cl)
 
 
 
@@ -707,7 +707,7 @@ let build_proof
 		    [
 		      generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
 		      thin dyn_infos.rec_hyps;
-		      pattern_option [Locus.AllOccurrencesBut [1],t] None;
+		      Proofview.V82.of_tactic (pattern_option [Locus.AllOccurrencesBut [1],t] None);
 		      (fun g -> observe_tac "toto" (
 			 tclTHENSEQ [Proofview.V82.of_tactic (Simple.case t);
 				     (fun g' ->

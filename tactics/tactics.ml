@@ -569,30 +569,31 @@ let reduct_option ?(check=false) redfun = function
 (** Tactic reduction modulo evars (for universes essentially) *)
 
 let pf_e_reduce_decl redfun where (id,c,ty) gl =
-  let sigma = project gl in
-  let redfun = redfun (pf_env gl) in
+  let sigma = Proofview.Goal.sigma gl in
+  let redfun sigma c = redfun.e_redfun (Tacmach.New.pf_env gl) sigma c in
   match c with
   | None ->
       if where == InHypValueOnly then
 	errorlabstrm "" (pr_id id ++ str " has no value.");
-    let sigma, ty' = redfun sigma ty in
-      sigma, (id,None,ty')
+    let Sigma (ty', sigma, p) = redfun sigma ty in
+    Sigma ((id, None, ty'), sigma, p)
   | Some b ->
-      let sigma, b' = if where != InHypTypeOnly then redfun sigma b else sigma, b in
-      let sigma, ty' = if where != InHypValueOnly then redfun sigma ty else sigma, ty in
-	sigma, (id,Some b',ty')
+      let Sigma (b', sigma, p) = if where != InHypTypeOnly then redfun sigma b else Sigma.here b sigma in
+      let Sigma (ty', sigma, q) = if where != InHypValueOnly then redfun sigma ty else Sigma.here ty sigma in
+      Sigma ((id, Some b', ty'), sigma, p +> q)
 
-let e_reduct_in_concl (redfun,sty) gl =
-  Proofview.V82.of_tactic
-    (let sigma, c' = (Tacmach.pf_apply redfun gl (Tacmach.pf_concl gl)) in
-       Proofview.Unsafe.tclEVARS sigma <*> 
-	 convert_concl_no_check c' sty) gl
+let e_reduct_in_concl (redfun, sty) =
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let Sigma (c', sigma, p) = redfun.e_redfun (Tacmach.New.pf_env gl) sigma (Tacmach.New.pf_concl gl) in
+    Sigma (convert_concl_no_check c' sty, sigma, p)
+  end }
 
-let e_reduct_in_hyp ?(check=false) redfun (id,where) gl =
-  Proofview.V82.of_tactic 
-    (let sigma, decl' = pf_e_reduce_decl redfun where (Tacmach.pf_get_hyp gl id) gl in
-       Proofview.Unsafe.tclEVARS sigma <*> 
-	 convert_hyp ~check decl') gl
+let e_reduct_in_hyp ?(check=false) redfun (id, where) =
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+    let Sigma (decl', sigma, p) = pf_e_reduce_decl redfun where (Tacmach.New.pf_get_hyp id gl) gl in
+    Sigma (convert_hyp ~check decl', sigma, p)
+  end }
 
 let e_reduct_option ?(check=false) redfun = function
   | Some id -> e_reduct_in_hyp ~check (fst redfun) id
@@ -604,9 +605,8 @@ let e_reduct_option ?(check=false) redfun = function
 let e_change_in_concl (redfun,sty) =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let sigma = Sigma.to_evar_map sigma in
-    let (sigma, c) = redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.raw_concl gl) in
-    Sigma.Unsafe.of_pair (convert_concl_no_check c sty, sigma)
+    let Sigma (c, sigma, p) = redfun.e_redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.raw_concl gl) in
+    Sigma (convert_concl_no_check c sty, sigma, p)
   end }
 
 let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env sigma =
@@ -614,24 +614,23 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env
   | None ->
       if where == InHypValueOnly then
 	errorlabstrm "" (pr_id id ++ str " has no value.");
-    let sigma',ty' = redfun false env sigma ty in
-      sigma', (id,None,ty')
+    let Sigma (ty', sigma, p) = (redfun false).e_redfun env sigma ty in
+    Sigma ((id, None, ty'), sigma, p)
   | Some b ->
-      let sigma',b' = 
-	if where != InHypTypeOnly then redfun true env sigma b else sigma, b 
+      let Sigma (b', sigma, p) =
+	if where != InHypTypeOnly then (redfun true).e_redfun env sigma b else Sigma.here b sigma
       in
-      let sigma',ty' = 
-	if where != InHypValueOnly then redfun false env sigma' ty else sigma', ty 
+      let Sigma (ty', sigma, q) =
+	if where != InHypValueOnly then (redfun false).e_redfun env sigma ty else Sigma.here ty sigma
       in
-	sigma', (id,Some b',ty')
+      Sigma ((id, Some b', ty'), sigma, p +> q)
 
 let e_change_in_hyp redfun (id,where) =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let sigma = Sigma.to_evar_map sigma in
     let hyp = Tacmach.New.pf_get_hyp id (Proofview.Goal.assume gl) in
-    let sigma, c = e_pf_change_decl redfun where hyp (Proofview.Goal.env gl) sigma in
-    Sigma.Unsafe.of_pair (convert_hyp c, sigma)
+    let Sigma (c, sigma, p) = e_pf_change_decl redfun where hyp (Proofview.Goal.env gl) sigma in
+    Sigma (convert_hyp c, sigma, p)
   end }
 
 type change_arg = Pattern.patvar_map -> constr Sigma.run
@@ -661,32 +660,33 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
     else sigma
 
 (* Now we introduce different instances of the previous tacticals *)
-let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
-  let sigma = Sigma.Unsafe.of_evar_map sigma in
+let change_and_check cv_pb mayneedglobalcheck deep t = { e_redfun = begin fun env sigma c ->
   let Sigma (t', sigma, p) = t.run sigma in
   let sigma = Sigma.to_evar_map sigma in
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
   if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
-  sigma, t'
+  Sigma.Unsafe.of_pair (t', sigma)
+end }
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
-let change_on_subterm cv_pb deep t where env sigma c =
+let change_on_subterm cv_pb deep t where = { e_redfun = begin fun env sigma c ->
   let mayneedglobalcheck = ref false in
-  let sigma,c = match where with
-  | None -> change_and_check cv_pb mayneedglobalcheck deep (t Id.Map.empty) env sigma c
+  let Sigma (c, sigma, p) = match where with
+  | None -> (change_and_check cv_pb mayneedglobalcheck deep (t Id.Map.empty)).e_redfun env sigma c
   | Some occl ->
-      e_contextually false occl
+      (e_contextually false occl
         (fun subst ->
-          change_and_check Reduction.CONV mayneedglobalcheck true (t subst))
+          change_and_check Reduction.CONV mayneedglobalcheck true (t subst))).e_redfun
         env sigma c in
   if !mayneedglobalcheck then
     begin
-      try ignore (Typing.unsafe_type_of env sigma c)
+      try ignore (Typing.unsafe_type_of env (Sigma.to_evar_map sigma) c)
       with e when catchable_exception e ->
         error "Replacement would lead to an ill-typed term."
     end;
-  sigma,c
+  Sigma (c, sigma, p)
+end }
 
 let change_in_concl occl t =
   e_change_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
@@ -739,14 +739,16 @@ let reduction_clause redexp cl =
     | OnConcl occs ->
 	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
 
-let reduce redexp cl goal =
-  let cl = concrete_clause_of (fun () -> Tacmach.pf_ids_of_hyps goal) cl in
+let reduce redexp cl =
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let cl = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
   let redexps = reduction_clause redexp cl in
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
-  let tac = tclMAP (fun (where,redexp) ->
+  let tac = Tacticals.New.tclMAP (fun (where,redexp) ->
     e_reduct_option ~check
-      (Redexpr.reduction_of_red_expr (Tacmach.pf_env goal) redexp) where) redexps in
-  if check then with_check tac goal else tac goal
+      (Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp) where) redexps in
+  if check then Proofview.V82.tactic (fun gl -> with_check (Proofview.V82.of_tactic tac) gl) else tac (** FIXME *)
+  end }
 
 (* Unfolding occurrences of a constant *)
 
@@ -922,9 +924,9 @@ let lookup_hypothesis_as_renamed_gen red h gl =
   let rec aux ccl =
     match lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
-          aux
-	    (snd ((fst (Redexpr.reduction_of_red_expr env (Red true)))
-	       env (Sigma.to_evar_map (Proofview.Goal.sigma gl)) ccl))
+        let (redfun, _) = Redexpr.reduction_of_red_expr env (Red true) in
+        let Sigma (c, _, _) = redfun.e_redfun env (Proofview.Goal.sigma gl) ccl in
+        aux c
       | x -> x
   in
   try aux (Proofview.Goal.concl gl)
@@ -2719,23 +2721,28 @@ let specialize (c,lbind) =
 
 (* The two following functions should already exist, but found nowhere *)
 (* Unfolds x by its definition everywhere *)
-let unfold_body x gl =
-  let hyps = pf_hyps gl in
-  let xval =
-    match Context.Named.lookup x hyps with
-        (_,Some xval,_) -> xval
-      | _ -> errorlabstrm "unfold_body"
-          (pr_id x ++ str" is not a defined hypothesis.") in
-  let aft = afterHyp x gl in
+let unfold_body x =
+  Proofview.Goal.enter { enter = begin fun gl ->
+  (** We normalize the given hypothesis immediately. *)
+  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  let (_, xval, _) = Context.Named.lookup x hyps in
+  let xval = match xval with
+  | None -> errorlabstrm "unfold_body"
+    (pr_id x ++ str" is not a defined hypothesis.")
+  | Some xval -> pf_nf_evar gl xval
+  in
+  Tacticals.New.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun (y,yval,_) cl -> (y,InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
-  tclTHENLIST
-    [tclMAP (fun h -> Proofview.V82.of_tactic (reduct_in_hyp rfun h)) hl;
-     Proofview.V82.of_tactic (reduct_in_concl (rfun,DEFAULTcast))] gl
+  let reducth h = reduct_in_hyp rfun h in
+  let reductc = reduct_in_concl (rfun, DEFAULTcast) in
+  Tacticals.New.tclTHENLIST [Tacticals.New.tclMAP reducth hl; reductc]
+  end
+  end }
 
 (* Either unfold and clear if defined or simply clear if not a definition *)
-let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])
+let expand_hyp id = Tacticals.New.tclTHEN (Tacticals.New.tclTRY (unfold_body id)) (Proofview.V82.tactic (clear [id]))
 
 (*****************************)
 (* High-level induction      *)
@@ -3889,7 +3896,7 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
         if deps = [] then Proofview.tclUNIT () else apply_type tmpcl deps_cstr;
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
         induct_tac elim;
-        Proofview.V82.tactic (tclMAP expand_hyp toclear)
+        Tacticals.New.tclMAP expand_hyp toclear;
       ])
       (Array.map2
          (induct_discharge lhyp0 avoid (re_intro_dependent_hypotheses statuslists))
@@ -3943,7 +3950,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     if indvars = [] then [List.hd lid_params] else indvars in
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
     (* pattern to make the predicate appear. *)
-    reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
+    Proofview.V82.of_tactic (reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl);
     (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
        possible holes using arguments given by the user (but the
        functional one). *)
@@ -4717,9 +4724,9 @@ module New = struct
   open Locus
 
   let reduce_after_refine =
-    Proofview.V82.tactic (reduce
+    reduce
       (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
-      {onhyps=None; concl_occs=AllOccurrences })
+      {onhyps=None; concl_occs=AllOccurrences }
 
   let refine ?unsafe c =
     Proofview.Refine.refine ?unsafe c <*>

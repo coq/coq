@@ -61,8 +61,7 @@ val unfoldn :
 val fold_commands : constr list ->  reduction_function
 
 (** Pattern *)
-val pattern_occs : (occurrences * constr) list -> env -> evar_map -> constr -> 
-   evar_map * constr
+val pattern_occs : (occurrences * constr) list -> e_reduction_function
 
 (** Rem: Lazy strategies are defined in Reduction *)
 

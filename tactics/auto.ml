@@ -390,7 +390,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) 
     | Unfold_nth c ->
       Proofview.V82.tactic (fun gl ->
        if exists_evaluable_reference (pf_env gl) c then
-	 tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl) gl
+	 tclPROGRESS (Proofview.V82.of_tactic (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)) gl
        else tclFAIL 0 (str"Unbound reference") gl)
     | Extern tacast -> 
       conclPattern concl p tacast

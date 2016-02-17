@@ -18,6 +18,7 @@ open Tacred
 open Proof_type
 open Logic
 open Refiner
+open Sigma.Notations
 
 let re_sig it  gc = { it = it; sigma = gc; }
 
@@ -70,7 +71,10 @@ let pf_get_new_ids ids gls =
 let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 
 let pf_reduction_of_red_expr gls re c =
-  (fst (reduction_of_red_expr (pf_env gls) re)) (pf_env gls) (project gls) c
+  let (redfun, _) = reduction_of_red_expr (pf_env gls) re in
+  let sigma = Sigma.Unsafe.of_evar_map (project gls) in
+  let Sigma (c, sigma, _) = redfun.e_redfun (pf_env gls) sigma c in
+  (Sigma.to_evar_map sigma, c)
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_eapply f gls x = 

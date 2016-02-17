@@ -805,7 +805,10 @@ let interp_may_eval f ist env sigma = function
   | ConstrEval (r,c) ->
       let (sigma,redexp) = interp_red_expr ist env sigma r in
       let (sigma,c_interp) = f ist env sigma c in
-      (fst (Redexpr.reduction_of_red_expr env redexp) env sigma c_interp)
+      let (redfun, _) = Redexpr.reduction_of_red_expr env redexp in
+      let sigma = Sigma.Unsafe.of_evar_map sigma in
+      let Sigma (c, sigma, _) = redfun.Reductionops.e_redfun env sigma c_interp in
+      (Sigma.to_evar_map sigma, c)
   | ConstrContext ((loc,s),c) ->
       (try
 	let (sigma,ic) = f ist env sigma c in
@@ -1967,7 +1970,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
         tclTHEN
 	  (tclEVARS sigma)
-	  (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl))
+	  (Proofview.V82.of_tactic (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl)))
           gl
       end
       end

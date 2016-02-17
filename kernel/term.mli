@@ -202,7 +202,7 @@ val destCoFix : constr -> cofixpoint
 
 (** non-dependent product [t1 -> t2], an alias for
    [forall (_:t1), t2]. Beware [t_2] is NOT lifted.
-   Eg: in context [A:Prop], [A->A] is built by [(mkArrow (mkRel 0) (mkRel 1))]
+   Eg: in context [A:Prop], [A->A] is built by [(mkArrow (mkRel 1) (mkRel 2))]
 *)
 val mkArrow : types -> types -> constr
 

@@ -147,7 +147,7 @@ val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
     semantics as the similarly named tacticals in [Proofview]. The
     tactical of [Proofview] are used in the definition of the
     tacticals of [Tacticals.New], but they are more atomic. In
-    particular [Tacticals.New.tclORELSE] sees like of progress as a
+    particular [Tacticals.New.tclORELSE] sees lack of progress as a
     failure, whereas [Proofview.tclORELSE] doesn't. Additionally every
     tactic which can catch failure ([tclOR], [tclORELSE], [tclTRY],
     [tclREPEAt], etc…) are run into each goal independently (failures

@@ -113,7 +113,7 @@ let functional_induction with_clean c princl pat =
 	in
 	Tacticals.tclTHEN
 	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Proofview.V82.of_tactic (Equality.subst_gen (do_rewrite_dependent ()) [id]))) idl )
-	  (Tactics.reduce flag Locusops.allHypsAndConcl)
+	  (Proofview.V82.of_tactic (Tactics.reduce flag Locusops.allHypsAndConcl))
 	  g
       else Tacticals.tclIDTAC g
     in
