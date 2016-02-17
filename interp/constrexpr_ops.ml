@@ -299,7 +299,7 @@ let add_name_in_env env n =
   | Anonymous -> env
   | Name id -> id :: env
 
-let fresh_var_fwd = ref (fun _ _ -> failwith "fresh_var")
+let (fresh_var, fresh_var_hook) = Hook.make ~default:(fun _ _ -> assert false) ()
 
 let expand_pattern_binders mkC bl c =
   let rec loop bl c =
@@ -315,7 +315,7 @@ let expand_pattern_binders mkC bl c =
             let env = List.fold_left add_name_in_env env nl in
             (env, b :: bl, c)
         | LocalPattern (loc, p, ty) ->
-            let ni = !fresh_var_fwd env c in
+            let ni = Hook.get fresh_var env c in
             let id = (loc, Name ni) in
             let b =
               LocalRawAssum

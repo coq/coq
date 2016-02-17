@@ -189,7 +189,8 @@ let test_plural_form_types = function
 let fresh_var env c =
   Namegen.next_ident_away (Id.of_string "pat")
     (env @ Id.Set.elements (Topconstr.free_vars_of_constr_expr c))
-let _ = Constrexpr_ops.fresh_var_fwd := fresh_var
+
+let _ = Hook.set Constrexpr_ops.fresh_var_hook fresh_var
 
 (* Gallina declarations *)
 GEXTEND Gram

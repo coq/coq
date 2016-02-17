@@ -58,7 +58,7 @@ val mkCLambdaN : Loc.t -> local_binder list -> constr_expr -> constr_expr
 val mkCProdN : Loc.t -> local_binder list -> constr_expr -> constr_expr
 (** Same as [prod_constr_expr], with location *)
 
-val fresh_var_fwd : (Names.Id.t list -> Constrexpr.constr_expr -> Names.Id.t) ref
+val fresh_var_hook : (Names.Id.t list -> Constrexpr.constr_expr -> Names.Id.t) Hook.t
 val expand_pattern_binders :
   (Loc.t -> local_binder list -> constr_expr -> constr_expr) ->
   local_binder list -> constr_expr -> local_binder list * constr_expr
