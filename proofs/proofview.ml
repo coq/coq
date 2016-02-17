@@ -1000,7 +1000,6 @@ module Goal = struct
     end
 
   let goals =
-    Env.get >>= fun env ->
     Pv.get >>= fun step ->
     let sigma = step.solution in
     let map goal =
@@ -1008,6 +1007,7 @@ module Goal = struct
       | None -> None (** ppedrot: Is this check really necessary? *)
       | Some goal ->
         let gl =
+          Env.get >>= fun env ->
           tclEVARMAP >>= fun sigma ->
           tclUNIT (gmake env sigma goal)
         in
