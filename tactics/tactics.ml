@@ -2090,7 +2090,7 @@ let intro_or_and_pattern loc bracketed ll thin tac id =
   let c = mkVar id in
   let t = Tacmach.New.pf_unsafe_type_of gl c in
   let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl t in
-  let nv = constructors_nrealargs ind in
+  let nv = constructors_nrealdecls ind in
   let ll = fix_empty_or_and_pattern (Array.length nv) ll in
   check_or_and_pattern_size loc ll (Array.length nv);
   Tacticals.New.tclTHENLASTn

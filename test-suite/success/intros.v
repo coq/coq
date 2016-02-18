@@ -98,3 +98,10 @@ intros x ->.
 - reflexivity.
 - exact I.
 Qed.
+
+(* Fixing a bug when destructing a type with let-ins in the constructor *)
+
+Inductive I := C : let x:=1 in x=1 -> I.
+Goal I -> True.
+intros [x H]. (* Was failing in 8.5 *)
+Abort.
