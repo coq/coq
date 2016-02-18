@@ -82,6 +82,12 @@ struct
   type t = Anonymous     (** anonymous identifier *)
 	 | Name of Id.t  (** non-anonymous identifier *)
 
+  let is_anonymous = function
+    | Anonymous -> true
+    | Name _ -> false
+
+  let is_name = not % is_anonymous
+
   let compare n1 n2 = match n1, n2 with
     | Anonymous, Anonymous -> 0
     | Name id1, Name id2 -> Id.compare id1 id2

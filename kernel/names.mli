@@ -68,6 +68,12 @@ sig
   type t = Anonymous     (** anonymous identifier *)
 	 | Name of Id.t  (** non-anonymous identifier *)
 
+  val is_anonymous : t -> bool
+  (** Return [true] iff a given name is [Anonymous]. *)
+
+  val is_name : t -> bool
+  (** Return [true] iff a given name is [Name _]. *)
+
   val compare : t -> t -> int
   (** Comparison over names. *)
 
