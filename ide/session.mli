@@ -15,6 +15,7 @@ class type ['a] page =
     method update : 'a -> unit
     method on_update : callback:('a -> unit) -> unit
     method refresh_color : unit -> unit
+    method data : 'a
   end
 
 class type control =

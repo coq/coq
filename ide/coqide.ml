@@ -574,7 +574,7 @@ module Nav = struct
   let restart _ = on_current_term restart
   let interrupt sn =
     Minilib.log "User break received";
-    Coq.break_coqtop sn.coqtop
+    Coq.break_coqtop sn.coqtop CString.(Set.elements (Map.domain sn.jobpage#data))
   let interrupt = cb_on_current_term interrupt
   let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
 end

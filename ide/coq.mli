@@ -70,8 +70,8 @@ val init_coqtop : coqtop -> unit task -> unit
 (** Finish initializing a freshly spawned coqtop, by running a first task on it.
     The task should run its inner continuation at the end. *)
 
-val break_coqtop : coqtop -> unit
-(** Interrupt the current computation of coqtop. *)
+val break_coqtop : coqtop -> string list -> unit
+(** Interrupt the current computation of coqtop or the worker if coqtop it not running. *)
 
 val close_coqtop : coqtop -> unit
 (** Close coqtop. Subsequent requests will be discarded. Hook ignored. *)

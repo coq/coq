@@ -465,10 +465,6 @@ let close_coqtop coqtop =
 
 let reset_coqtop coqtop = respawn_coqtop ~why:Planned coqtop
 
-let break_coqtop coqtop =
-  try !interrupter (CoqTop.unixpid coqtop.handle.proc)
-  with _ -> Minilib.log "Error while sending Ctrl-C"
-
 let get_arguments coqtop = coqtop.sup_args
 
 let set_arguments coqtop args =
@@ -517,6 +513,17 @@ let hints x = eval_call (Xmlprotocol.hints x)
 let search flags = eval_call (Xmlprotocol.search flags)
 let init x = eval_call (Xmlprotocol.init x)
 let stop_worker x = eval_call (Xmlprotocol.stop_worker x)
+
+let break_coqtop coqtop workers =
+  if coqtop.status = Busy then
+    try !interrupter (CoqTop.unixpid coqtop.handle.proc)
+    with _ -> Minilib.log "Error while sending Ctrl-C"
+  else
+    let rec aux = function
+    | [] -> Void
+    | w :: ws -> stop_worker w coqtop.handle (fun _ -> aux ws)
+    in
+      let Void = aux workers in ()
 
 module PrintOpt =
 struct

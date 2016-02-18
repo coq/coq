@@ -19,6 +19,7 @@ class type ['a] page =
     method update : 'a -> unit
     method on_update : callback:('a -> unit) -> unit
     method refresh_color : unit -> unit
+    method data : 'a
   end
 
 class type control =
@@ -321,6 +322,7 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
       end
     method on_update ~callback:cb = callback := cb
     method refresh_color () = refresh ()
+    method data = !last_update
   end
 
 let create_jobpage coqtop coqops : jobpage =
@@ -361,6 +363,7 @@ let create_jobpage coqtop coqops : jobpage =
       end
     method on_update ~callback:cb = callback := cb
     method refresh_color () = refresh ()
+    method data = !last_update
   end
 
 let create_proof () =
