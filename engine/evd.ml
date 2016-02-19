@@ -781,25 +781,25 @@ let restrict_universe_context evd vars =
 let universe_subst evd =
   UState.subst evd.universes
 
-let merge_context_set ?(sideff=false) rigid evd ctx' = 
-  {evd with universes = UState.merge sideff rigid evd.universes ctx'}
+let merge_context_set ?loc ?(sideff=false) rigid evd ctx' =
+  {evd with universes = UState.merge ?loc sideff rigid evd.universes ctx'}
 
 let merge_universe_subst evd subst = 
   {evd with universes = UState.merge_subst evd.universes subst }
 
-let with_context_set rigid d (a, ctx) = 
-  (merge_context_set rigid d ctx, a)
+let with_context_set ?loc rigid d (a, ctx) =
+  (merge_context_set ?loc rigid d ctx, a)
 
-let new_univ_level_variable ?name ?(predicative=true) rigid evd =
-  let uctx', u = UState.new_univ_variable rigid name evd.universes in
+let new_univ_level_variable ?loc ?name ?(predicative=true) rigid evd =
+  let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, u)
 
-let new_univ_variable ?name ?(predicative=true) rigid evd =
-  let uctx', u = UState.new_univ_variable rigid name evd.universes in
+let new_univ_variable ?loc ?name ?(predicative=true) rigid evd =
+  let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?name ?(predicative=true) rigid d =
-  let (d', u) = new_univ_variable rigid ?name ~predicative d in
+let new_sort_variable ?loc ?name ?(predicative=true) rigid d =
+  let (d', u) = new_univ_variable ?loc rigid ?name ~predicative d in
     (d', Type u)
 
 let add_global_univ d u =
@@ -815,27 +815,27 @@ let make_evar_universe_context e l =
   | Some us ->
       List.fold_left
         (fun uctx (loc,id) ->
-        fst (UState.new_univ_variable univ_rigid (Some (Id.to_string id)) uctx))
+        fst (UState.new_univ_variable ~loc univ_rigid (Some (Id.to_string id)) uctx))
         uctx us
 
 (****************************************)
 (* Operations on constants              *)
 (****************************************)
 
-let fresh_sort_in_family ?(rigid=univ_flexible) env evd s = 
-  with_context_set rigid evd (Universes.fresh_sort_in_family env s)
+let fresh_sort_in_family ?loc ?(rigid=univ_flexible) env evd s = 
+  with_context_set ?loc rigid evd (Universes.fresh_sort_in_family env s)
 
-let fresh_constant_instance env evd c =
-  with_context_set univ_flexible evd (Universes.fresh_constant_instance env c)
+let fresh_constant_instance ?loc env evd c =
+  with_context_set ?loc univ_flexible evd (Universes.fresh_constant_instance env c)
 
-let fresh_inductive_instance env evd i =
-  with_context_set univ_flexible evd (Universes.fresh_inductive_instance env i)
+let fresh_inductive_instance ?loc env evd i =
+  with_context_set ?loc univ_flexible evd (Universes.fresh_inductive_instance env i)
 
-let fresh_constructor_instance env evd c =
-  with_context_set univ_flexible evd (Universes.fresh_constructor_instance env c)
+let fresh_constructor_instance ?loc env evd c =
+  with_context_set ?loc univ_flexible evd (Universes.fresh_constructor_instance env c)
 
-let fresh_global ?(rigid=univ_flexible) ?names env evd gr =
-  with_context_set rigid evd (Universes.fresh_global_instance ?names env gr)
+let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
+  with_context_set ?loc rigid evd (Universes.fresh_global_instance ?names env gr)
 
 let whd_sort_variable evd t = t
 

@@ -25,9 +25,14 @@ module UNameMap = struct
         | _, _ -> r) s t
 end
 
+type uinfo = {
+  uname : string option;
+  uloc : Loc.t option;
+}
+
 (* 2nd part used to check consistency on the fly. *)
 type t =
- { uctx_names : Univ.Level.t UNameMap.t * string Univ.LMap.t;
+ { uctx_names : Univ.Level.t UNameMap.t * uinfo Univ.LMap.t;
    uctx_local : Univ.universe_context_set; (** The local context of variables *)
    uctx_univ_variables : Universes.universe_opt_subst;
    (** The local universes that are unification variables *)
@@ -104,8 +109,13 @@ let constrain_variables diff ctx =
       with Not_found | Option.IsNone -> cstrs)
     diff Univ.Constraint.empty
 
-let add_uctx_names s l (names, names_rev) =
-  (UNameMap.add s l names, Univ.LMap.add l s names_rev)
+let add_uctx_names ?loc s l (names, names_rev) =
+  (UNameMap.add s l names, Univ.LMap.add l { uname = Some s; uloc = loc } names_rev)
+
+let add_uctx_loc l loc (names, names_rev) =
+  match loc with
+  | None -> (names, names_rev)
+  | Some _ -> (names, Univ.LMap.add l { uname = None; uloc = loc } names_rev)
 
 let of_binders b =
   let ctx = empty in
@@ -230,8 +240,8 @@ let add_universe_constraints ctx cstrs =
 let pr_uctx_level uctx = 
   let map, map_rev = uctx.uctx_names in 
     fun l ->
-      try str(Univ.LMap.find l map_rev)
-      with Not_found -> 
+      try str (Option.get (Univ.LMap.find l map_rev).uname)
+      with Not_found | Option.IsNone ->
         Universes.pr_with_global_universes l
 
 let universe_context ?names ctx =
@@ -252,10 +262,14 @@ let universe_context ?names ctx =
      in
        if not (Univ.LSet.is_empty left) then
          let n = Univ.LSet.cardinal left in
-           errorlabstrm "universe_context"
+         let loc =
+          let get_loc u = try (Univ.LMap.find u (snd ctx.uctx_names)).uloc with Not_found -> None in
+          try List.find_map get_loc (Univ.LSet.elements left) with Not_found -> Loc.ghost
+         in
+           user_err_loc (loc, "universe_context",
                         (str(CString.plural n "Universe") ++ spc () ++
                              Univ.LSet.pr (pr_uctx_level ctx) left ++
-                             spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound.")
+                             spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound."))
       else
         let inst = Univ.Instance.of_array (Array.of_list newinst) in
         let ctx = Univ.UContext.make (inst,
@@ -274,7 +288,7 @@ let univ_rigid = UnivRigid
 let univ_flexible = UnivFlexible false
 let univ_flexible_alg = UnivFlexible true
 
-let merge sideff rigid uctx ctx' =
+let merge ?loc sideff rigid uctx ctx' =
   let open Univ in
   let levels = ContextSet.levels ctx' in
   let uctx = if sideff then uctx else
@@ -301,10 +315,21 @@ let merge sideff rigid uctx ctx' =
                with UGraph.AlreadyDeclared when sideff -> g)
               levels g
   in
+  let uctx_names =
+    let fold u accu =
+      let modify _ info = match info.uloc with
+      | None -> { info with uloc = loc }
+      | Some _ -> info
+      in
+      try LMap.modify u modify accu
+      with Not_found -> LMap.add u { uname = None; uloc = loc } accu
+    in
+    (fst uctx.uctx_names, LSet.fold fold levels (snd uctx.uctx_names))
+  in
   let initial = declare uctx.uctx_initial_universes in
   let univs = declare uctx.uctx_universes in
   let uctx_universes = UGraph.merge_constraints (ContextSet.constraints ctx') univs in
-    { uctx with uctx_local; uctx_universes; uctx_initial_universes = initial }
+    { uctx with uctx_names; uctx_local; uctx_universes; uctx_initial_universes = initial }
 
 let merge_subst uctx s =
   { uctx with uctx_univ_variables = Univ.LMap.subst_union uctx.uctx_univ_variables s }
@@ -313,7 +338,7 @@ let emit_side_effects eff u =
   let uctxs = Safe_typing.universes_of_private eff in
   List.fold_left (merge true univ_rigid) u uctxs
 
-let new_univ_variable rigid name
+let new_univ_variable ?loc rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = Universes.new_univ_level (Global.current_dirpath ()) in
   let ctx' = Univ.ContextSet.add_universe u ctx in
@@ -328,8 +353,8 @@ let new_univ_variable rigid name
   in
   let names = 
     match name with
-    | Some n -> add_uctx_names n u uctx.uctx_names
-    | None -> uctx.uctx_names
+    | Some n -> add_uctx_names ?loc n u uctx.uctx_names
+    | None -> add_uctx_loc u loc uctx.uctx_names
   in
   let initial =
     UGraph.add_universe u false uctx.uctx_initial_universes
