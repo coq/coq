@@ -66,23 +66,23 @@ val define : 'r evar -> Constr.t -> 'r t -> (unit, 'r) sigma
 
 (** Polymorphic universes *)
 
-val new_univ_level_variable : ?name:string -> ?predicative:bool -> Evd.rigid ->
-  'r t -> (Univ.universe_level, 'r) sigma
-val new_univ_variable : ?name:string -> ?predicative:bool -> Evd.rigid ->
-  'r t -> (Univ.universe, 'r) sigma
-val new_sort_variable : ?name:string -> ?predicative:bool -> Evd.rigid ->
-  'r t -> (Sorts.t, 'r) sigma
+val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool ->
+  Evd.rigid -> 'r t -> (Univ.universe_level, 'r) sigma
+val new_univ_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool ->
+  Evd.rigid -> 'r t -> (Univ.universe, 'r) sigma
+val new_sort_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool ->
+  Evd.rigid -> 'r t -> (Sorts.t, 'r) sigma
 
-val fresh_sort_in_family : ?rigid:Evd.rigid -> Environ.env ->
+val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:Evd.rigid -> Environ.env ->
   'r t -> Term.sorts_family -> (Term.sorts, 'r) sigma
 val fresh_constant_instance :
-  Environ.env -> 'r t -> constant -> (pconstant, 'r) sigma
+  ?loc:Loc.t -> Environ.env -> 'r t -> constant -> (pconstant, 'r) sigma
 val fresh_inductive_instance :
-  Environ.env -> 'r t -> inductive -> (pinductive, 'r) sigma
-val fresh_constructor_instance : Environ.env -> 'r t -> constructor ->
+  ?loc:Loc.t -> Environ.env -> 'r t -> inductive -> (pinductive, 'r) sigma
+val fresh_constructor_instance : ?loc:Loc.t -> Environ.env -> 'r t -> constructor ->
   (pconstructor, 'r) sigma
 
-val fresh_global : ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->
+val fresh_global : ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->
   'r t -> Globnames.global_reference -> (constr, 'r) sigma
 
 (** FILLME *)

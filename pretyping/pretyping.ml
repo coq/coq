@@ -143,12 +143,12 @@ let interp_universe_level_name evd (loc,s) =
 	  evd, Idmap.find id names
 	with Not_found -> 
 	  if not (is_strict_universe_declarations ()) then
-  	    new_univ_level_variable ~name:s univ_rigid evd
+  	    new_univ_level_variable ~loc ~name:s univ_rigid evd
 	  else user_err_loc (loc, "interp_universe_level_name",
 			     Pp.(str "Undeclared universe: " ++ str s))
 
-let interp_universe evd = function
-  | [] -> let evd, l = new_univ_level_variable univ_rigid evd in
+let interp_universe ?loc evd = function
+  | [] -> let evd, l = new_univ_level_variable ?loc univ_rigid evd in
 	    evd, Univ.Universe.make l
   | l ->
     List.fold_left (fun (evd, u) l -> 
@@ -156,15 +156,15 @@ let interp_universe evd = function
 	(evd', Univ.sup u (Univ.Universe.make l)))
     (evd, Univ.Universe.type0m) l
 
-let interp_universe_level evd = function
-  | None -> new_univ_level_variable univ_rigid evd
+let interp_universe_level loc evd = function
+  | None -> new_univ_level_variable ~loc univ_rigid evd
   | Some (loc,s) -> interp_universe_level_name evd (loc,s)
 
-let interp_sort evd = function
+let interp_sort ?loc evd = function
   | GProp -> evd, Prop Null
   | GSet -> evd, Prop Pos
   | GType n -> 
-    let evd, u = interp_universe evd n in
+    let evd, u = interp_universe ?loc evd n in
       evd, Type u
 
 let interp_elimination_sort = function
@@ -385,11 +385,11 @@ let evar_kind_of_term sigma c =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let interp_universe_level_name evd l =
+let interp_universe_level_name loc evd l =
   match l with
   | GProp -> evd, Univ.Level.prop
   | GSet -> evd, Univ.Level.set
-  | GType s -> interp_universe_level evd s
+  | GType s -> interp_universe_level loc evd s
 
 let pretype_global loc rigid env evd gr us = 
   let evd, instance = 
@@ -404,7 +404,7 @@ let pretype_global loc rigid env evd gr us =
 		       str "Universe instance should have length " ++ int len)
        else
 	 let evd, l' = List.fold_left (fun (evd, univs) l -> 
-	    let evd, l = interp_universe_level_name evd l in
+	    let evd, l = interp_universe_level_name loc evd l in
 	      (evd, l :: univs)) (evd, []) l
 	 in
 	 if List.exists (fun l -> Univ.Level.is_prop l) l' then
@@ -413,7 +413,7 @@ let pretype_global loc rigid env evd gr us =
 		   str " universe instances must be greater or equal to Set.");
 	 evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
   in
-    Evd.fresh_global ~rigid ?names:instance env evd gr
+    Evd.fresh_global ~loc ~rigid ?names:instance env evd gr
 
 let pretype_ref loc evdref env ref us =
   match ref with
@@ -431,17 +431,17 @@ let pretype_ref loc evdref env ref us =
     let ty = Typing.unsafe_type_of env evd c in
       make_judge c ty
 
-let judge_of_Type evd s =
-  let evd, s = interp_universe evd s in
+let judge_of_Type loc evd s =
+  let evd, s = interp_universe ~loc evd s in
   let judge = 
     { uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) }
   in
     evd, judge
 
-let pretype_sort evdref = function
+let pretype_sort loc evdref = function
   | GProp -> judge_of_prop
   | GSet -> judge_of_set
-  | GType s -> evd_comb1 judge_of_Type evdref s
+  | GType s -> evd_comb1 (judge_of_Type loc) evdref s
 
 let new_type_evar env evdref loc =
   let sigma = Sigma.Unsafe.of_evar_map !evdref in
@@ -598,7 +598,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
   | GSort (loc,s) ->
-    let j = pretype_sort evdref s in
+    let j = pretype_sort loc evdref s in
       inh_conv_coerce_to_tycon loc env evdref j tycon
 
   | GApp (loc,f,args) ->

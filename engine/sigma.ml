@@ -36,36 +36,36 @@ let new_evar sigma ?naming info =
 let define evk c sigma =
   Sigma ((), Evd.define evk c sigma, ())
 
-let new_univ_level_variable ?name ?predicative rigid sigma =
-  let (sigma, u) = Evd.new_univ_level_variable ?name ?predicative rigid sigma in
+let new_univ_level_variable ?loc ?name ?predicative rigid sigma =
+  let (sigma, u) = Evd.new_univ_level_variable ?loc ?name ?predicative rigid sigma in
   Sigma (u, sigma, ())
 
-let new_univ_variable ?name ?predicative rigid sigma =
-  let (sigma, u) = Evd.new_univ_variable ?name ?predicative rigid sigma in
+let new_univ_variable ?loc ?name ?predicative rigid sigma =
+  let (sigma, u) = Evd.new_univ_variable ?loc ?name ?predicative rigid sigma in
   Sigma (u, sigma, ())
 
-let new_sort_variable ?name ?predicative rigid sigma =
-  let (sigma, u) = Evd.new_sort_variable ?name ?predicative rigid sigma in
+let new_sort_variable ?loc ?name ?predicative rigid sigma =
+  let (sigma, u) = Evd.new_sort_variable ?loc ?name ?predicative rigid sigma in
   Sigma (u, sigma, ())
 
-let fresh_sort_in_family ?rigid env sigma s =
-  let (sigma, s) = Evd.fresh_sort_in_family ?rigid env sigma s in
+let fresh_sort_in_family ?loc ?rigid env sigma s =
+  let (sigma, s) = Evd.fresh_sort_in_family ?loc ?rigid env sigma s in
   Sigma (s, sigma, ())
 
-let fresh_constant_instance env sigma cst =
-  let (sigma, cst) = Evd.fresh_constant_instance env sigma cst in
+let fresh_constant_instance ?loc env sigma cst =
+  let (sigma, cst) = Evd.fresh_constant_instance ?loc env sigma cst in
   Sigma (cst, sigma, ())
 
-let fresh_inductive_instance env sigma ind =
-  let (sigma, ind) = Evd.fresh_inductive_instance env sigma ind in
+let fresh_inductive_instance ?loc env sigma ind =
+  let (sigma, ind) = Evd.fresh_inductive_instance ?loc env sigma ind in
   Sigma (ind, sigma, ())
 
-let fresh_constructor_instance env sigma pc =
-  let (sigma, c) = Evd.fresh_constructor_instance env sigma pc in
+let fresh_constructor_instance ?loc env sigma pc =
+  let (sigma, c) = Evd.fresh_constructor_instance ?loc env sigma pc in
   Sigma (c, sigma, ())
 
-let fresh_global ?rigid ?names env sigma r =
-  let (sigma, c) = Evd.fresh_global ?rigid ?names env sigma r in
+let fresh_global ?loc ?rigid ?names env sigma r =
+  let (sigma, c) = Evd.fresh_global ?loc ?rigid ?names env sigma r in
   Sigma (c, sigma, ())
 
 (** Run *)

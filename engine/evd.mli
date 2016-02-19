@@ -504,9 +504,9 @@ val normalize_evar_universe_context_variables : evar_universe_context ->
 val normalize_evar_universe_context : evar_universe_context -> 
   evar_universe_context
 
-val new_univ_level_variable : ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe_level
-val new_univ_variable : ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe
-val new_sort_variable : ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * sorts
+val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe_level
+val new_univ_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe
+val new_sort_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * sorts
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 											   
 val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
@@ -541,10 +541,10 @@ val universes : evar_map -> UGraph.t
 val merge_universe_context : evar_map -> evar_universe_context -> evar_map
 val set_universe_context : evar_map -> evar_universe_context -> evar_map
 
-val merge_context_set : ?sideff:bool -> rigid -> evar_map -> Univ.universe_context_set -> evar_map
+val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.universe_context_set -> evar_map
 val merge_universe_subst : evar_map -> Universes.universe_opt_subst -> evar_map
 
-val with_context_set : rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
+val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
 
 val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
 val abstract_undefined_variables : evar_universe_context -> evar_universe_context
@@ -559,12 +559,12 @@ val update_sigma_env : evar_map -> env -> evar_map
 
 (** Polymorphic universes *)
 
-val fresh_sort_in_family : ?rigid:rigid -> env -> evar_map -> sorts_family -> evar_map * sorts
-val fresh_constant_instance : env -> evar_map -> constant -> evar_map * pconstant
-val fresh_inductive_instance : env -> evar_map -> inductive -> evar_map * pinductive
-val fresh_constructor_instance : env -> evar_map -> constructor -> evar_map * pconstructor
+val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> env -> evar_map -> sorts_family -> evar_map * sorts
+val fresh_constant_instance : ?loc:Loc.t -> env -> evar_map -> constant -> evar_map * pconstant
+val fresh_inductive_instance : ?loc:Loc.t -> env -> evar_map -> inductive -> evar_map * pinductive
+val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor -> evar_map * pconstructor
 
-val fresh_global : ?rigid:rigid -> ?names:Univ.Instance.t -> env -> evar_map -> 
+val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env -> evar_map -> 
   Globnames.global_reference -> evar_map * constr
 
 (********************************************************************

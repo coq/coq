@@ -84,11 +84,11 @@ val univ_rigid : rigid
 val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
-val merge : bool -> rigid -> t -> Univ.universe_context_set -> t
+val merge : ?loc:Loc.t -> bool -> rigid -> t -> Univ.universe_context_set -> t
 val merge_subst : t -> Universes.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
-val new_univ_variable : rigid -> string option -> t -> t * Univ.Level.t
+val new_univ_variable : ?loc:Loc.t -> rigid -> string option -> t -> t * Univ.Level.t
 val add_global_univ : t -> Univ.Level.t -> t
 val make_flexible_variable : t -> bool -> Univ.Level.t -> t
 
