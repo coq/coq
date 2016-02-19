@@ -148,7 +148,7 @@ val ise_pretype_gen :
 
 (** To embed constr in glob_constr *)
 
-val interp_sort : evar_map -> glob_sort -> evar_map * sorts
+val interp_sort : ?loc:Loc.t -> evar_map -> glob_sort -> evar_map * sorts
 val interp_elimination_sort : glob_sort -> sorts_family
 
 val genarg_interp_hook :
