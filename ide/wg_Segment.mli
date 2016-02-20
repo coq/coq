@@ -8,6 +8,8 @@
 
 type color = GDraw.color
 
+type model_event = [ `INSERT | `REMOVE | `SET of int * color ]
+
 class type segment_signals =
 object
   inherit GObj.misc_signals
@@ -15,15 +17,19 @@ object
   method clicked : callback:(int -> unit) -> GtkSignal.id
 end
 
+class type model =
+object
+  method changed : callback:(model_event -> unit) -> unit
+  method length : int
+  method fold : 'a. ('a -> color -> 'a) -> 'a -> 'a
+end
+
 class segment : unit ->
   object
     inherit GObj.widget
     val obj : Gtk.widget Gtk.obj
+    method set_model : model -> unit
     method connect : segment_signals
-    method length : int
-    method set_length : int -> unit
     method default_color : color
     method set_default_color : color -> unit
-    method add : int -> color -> unit
-    method remove : int -> unit
   end

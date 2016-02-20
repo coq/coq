@@ -14,6 +14,7 @@ class type ['a] page =
     inherit GObj.widget
     method update : 'a -> unit
     method on_update : callback:('a -> unit) -> unit
+    method data : 'a
   end
 
 class type control =

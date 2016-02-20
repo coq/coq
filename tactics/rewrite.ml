@@ -45,6 +45,10 @@ open Context.Named.Declaration
 let classes_dirpath =
   Names.DirPath.make (List.map Id.of_string ["Classes";"Coq"])
 
+let init_relation_classes () =
+  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
+  else Coqlib.check_required_library ["Coq";"Classes";"RelationClasses"]
+
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
   else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
@@ -462,6 +466,8 @@ type hypinfo = {
 let get_symmetric_proof b = 
   if b then PropGlobal.get_symmetric_proof else TypeGlobal.get_symmetric_proof
 
+let error_no_relation () = error "Cannot find a relation to rewrite."
+
 let rec decompose_app_rel env evd t = 
   (** Head normalize for compatibility with the old meta mechanism *)
   let t = Reductionops.whd_betaiota evd t in
@@ -477,8 +483,11 @@ let rec decompose_app_rel env evd t =
   | App (f, args) ->
     let len = Array.length args in
     let fargs = Array.sub args 0 (Array.length args - 2) in
-    mkApp (f, fargs), args.(len - 2), args.(len - 1)
-  | _ -> error "Cannot find a relation to rewrite."
+    let rel = mkApp (f, fargs) in
+    let ty = Retyping.get_type_of env evd rel in
+    let () = if not (Reduction.is_arity env ty) then error_no_relation () in
+    rel, args.(len - 2), args.(len - 1)
+  | _ -> error_no_relation ()
 
 let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
@@ -2059,8 +2068,9 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite_clause
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
 let not_declared env ty rel =
-  Tacticals.New.tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env Evd.empty rel ++ str" is not a declared " ++
-		str ty ++ str" relation. Maybe you need to require the Setoid library")
+  Tacticals.New.tclFAIL 0
+    (str" The relation " ++ Printer.pr_constr_env env Evd.empty rel ++ str" is not a declared " ++
+     str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 
 let setoid_proof ty fn fallback =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
@@ -2071,9 +2081,9 @@ let setoid_proof ty fn fallback =
       begin
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
-          let evm = sigma in
           let open Context.Rel.Declaration in
-          let car = get_type (List.hd (fst (Reduction.dest_prod env (Typing.unsafe_type_of env evm rel)))) in
+          let (sigma, t) = Typing.type_of env sigma rel in
+          let car = get_type (List.hd (fst (Reduction.dest_prod env t))) in
 	    (try init_setoid () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e

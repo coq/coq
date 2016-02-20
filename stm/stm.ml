@@ -83,6 +83,18 @@ let async_proofs_workers_extra_env = ref [||]
 type ast = { verbose : bool; loc : Loc.t; mutable expr : vernac_expr }
 let pr_ast { expr } = pr_vernac expr
 
+(* Commands piercing opaque *)
+let may_pierce_opaque = function
+  | { expr = VernacPrint (PrintName _) } -> true
+  | { expr = VernacExtend (("Extraction",_), _) } -> true
+  | { expr = VernacExtend (("SeparateExtraction",_), _) } -> true
+  | { expr = VernacExtend (("ExtractionLibrary",_), _) } -> true
+  | { expr = VernacExtend (("RecursiveExtractionLibrary",_), _) } -> true
+  | { expr = VernacExtend (("ExtractionConstant",_), _) } -> true
+  | { expr = VernacExtend (("ExtractionInlinedConstant",_), _) } -> true
+  | { expr = VernacExtend (("ExtractionInductive",_), _) } -> true
+  | _ -> false
+
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 let vernac_interp ?proof id ?route { verbose; loc; expr } =
   let rec internal_command = function
@@ -145,7 +157,7 @@ type cmd_t = {
   ceff : bool; (* is a side-effecting command *)
   cast : ast;
   cids : Id.t list;
-  cqueue : [ `MainQueue | `TacQueue of cancel_switch | `QueryQueue of cancel_switch ] }
+  cqueue : [ `MainQueue | `TacQueue of cancel_switch | `QueryQueue of cancel_switch | `SkipQueue ] }
 type fork_t = ast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Id.t list
 type qed_t = {
   qast : ast;
@@ -1662,7 +1674,7 @@ let delegate name =
   let time = get_hint_bp_time name in
   time >= 1.0 || !Flags.compilation_mode = Flags.BuildVio
               || !Flags.async_proofs_full
-
+ 
 let collect_proof keep cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
  let no_name = "" in
@@ -1684,23 +1696,20 @@ let collect_proof keep cur hd brkind id =
  let has_proof_no_using = function
    | Some (_, { expr = VernacProof(_,None) }) -> true
    | _ -> false in
- let may_pierce_opaque = function
-   | { expr = VernacPrint (PrintName _) } -> true
-   (* These do not exactly pierce opaque, but are anyway impossible to properly
-    * delegate *)
+ let too_complex_to_delegate = function
    | { expr = (VernacDeclareModule _
               | VernacDefineModule _
               | VernacDeclareModuleType _
               | VernacInclude _) } -> true
    | { expr =  (VernacRequire _ | VernacImport _) } -> true
-   | _ -> false in
+   | ast -> may_pierce_opaque ast in
  let parent = function Some (p, _) -> p | None -> assert false in
  let is_empty = function `Async(_,_,[],_,_) | `MaybeASync(_,_,[],_,_) -> true | _ -> false in
  let rec collect last accn id =
     let view = VCS.visit id in
     match view.step with
     | (`Sideff (`Ast(x,_)) | `Cmd { cast = x })
-      when may_pierce_opaque x -> `Sync(no_name,None,`Print)
+      when too_complex_to_delegate x -> `Sync(no_name,None,`Print)
     | `Cmd { cast = x } -> collect (Some (id,x)) (id::accn) view.next
     | `Sideff (`Ast(x,_)) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
@@ -1808,6 +1817,8 @@ let known_state ?(redefine_qed=false) ~cache id =
       | `Alias (id,_) -> (fun () ->
             reach view.next; reach id
           ), cache, true
+      | `Cmd { cast = x; cqueue = `SkipQueue } -> (fun () ->
+            reach view.next), cache, true
       | `Cmd { cast = x; cqueue = `TacQueue cancel } -> (fun () ->
             reach ~cache:`Shallow view.next;
             Hooks.(call tactic_being_run true); 
@@ -2173,6 +2184,10 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           let id = VCS.new_node ~id:newtip () in
           let queue =
             if !Flags.async_proofs_full then `QueryQueue (ref false)
+            else if Flags.(!compilation_mode = BuildVio) &&
+                    VCS.((get_branch head).kind = `Master) &&
+                    may_pierce_opaque x
+                 then `SkipQueue 
             else `MainQueue in
           VCS.commit id (Cmd {ctac=false;ceff=false;cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
@@ -2251,7 +2266,11 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
                Proof_global.there_are_pending_proofs ()
             then begin
               let bname = VCS.mk_branch_name x in
-              VCS.commit id (Fork (x,bname,Doesn'tGuaranteeOpacity,[]));
+              let opacity_of_produced_term =
+                match x.expr with
+                | VernacInstance (false, _,_ , None, _) -> GuaranteesOpacity
+                | _ -> Doesn'tGuaranteeOpacity in
+              VCS.commit id (Fork (x,bname,opacity_of_produced_term,[]));
               VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode "Classic";
             end else begin

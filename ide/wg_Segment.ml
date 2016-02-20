@@ -11,53 +11,13 @@ open Preferences
 
 type color = GDraw.color
 
-module Segment :
-sig
-  type +'a t
-  val length : 'a t -> int
-  val resize : 'a t -> int -> 'a t
-  val empty : 'a t
-  val add : int -> 'a -> 'a t -> 'a t
-  val remove : int -> 'a t -> 'a t
-  val fold : ('a -> 'a -> bool) -> (int -> int -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-end =
-struct
-  type 'a t = {
-    length : int;
-    content : 'a Int.Map.t;
-  }
+type model_event = [ `INSERT | `REMOVE | `SET of int * color ]
 
-  let empty = { length = 0; content = Int.Map.empty }
-
-  let length s = s.length
-
-  let resize s len =
-    if s.length <= len then { s with length = len }
-    else
-      let filter i v = i < len in
-      { length = len; content = Int.Map.filter filter s.content }
-
-  let add i v s =
-    if i < s.length then
-      { s with content = Int.Map.add i v s.content }
-    else s
-
-  let remove i s = { s with content = Int.Map.remove i s.content }
-
-  let fold eq f s accu =
-    let make k v (cur, accu) = match cur with
-    | None -> Some (k, k, v), accu
-    | Some (i, j, w) ->
-      if k = j + 1 && eq v w then Some (i, k, w), accu
-      else Some (k, k, v), (i, j, w) :: accu
-    in
-    let p, segments = Int.Map.fold make s.content (None, []) in
-    let segments = match p with
-    | None -> segments
-    | Some p -> p :: segments
-    in
-    List.fold_left (fun accu (i, j, v) -> f i j v accu) accu segments
-
+class type model =
+object
+  method changed : callback:(model_event -> unit) -> unit
+  method length : int
+  method fold : 'a. ('a -> color -> 'a) -> 'a -> 'a
 end
 
 let i2f = float_of_int
@@ -96,7 +56,7 @@ object (self)
 
   val mutable width = 1
   val mutable height = 20
-  val mutable data = Segment.empty
+  val mutable model : model option = None
   val mutable default : color = `WHITE
   val mutable pixmap : GDraw.pixmap = GDraw.pixmap ~width:1 ~height:1 ()
   val clicked = new GUtil.signal ()
@@ -114,10 +74,12 @@ object (self)
       end
     in
     let _ = box#misc#connect#size_allocate cb in
-    let clicked_cb ev =
+    let clicked_cb ev = match model with
+    | None -> true
+    | Some md ->
       let x = GdkEvent.Button.x ev in
       let (width, _) = pixmap#size in
-      let len = Segment.length data in
+      let len = md#length in
       let idx = f2i ((x *. i2f len) /. i2f width) in
       let () = clicked#call idx in
       true
@@ -128,31 +90,29 @@ object (self)
     (** Initial pixmap *)
     draw#set_pixmap pixmap
 
-  method length = Segment.length data
+  method set_model md =
+    model <- Some md;
+    let changed_cb = function
+    | `INSERT | `REMOVE ->
+      if self#misc#visible then self#refresh ()
+    | `SET (i, color) ->
+      if self#misc#visible then self#fill_range color i (i + 1)
+    in
+    md#changed changed_cb
 
-  method set_length len =
-    data <- Segment.resize data len;
-    if self#misc#visible then self#refresh ()
-
-  method private fill_range color i j =
+  method private fill_range color i j = match model with
+  | None -> ()
+  | Some md ->
     let i = i2f i in
     let j = i2f j in
     let width = i2f width in
-    let len = i2f (Segment.length data) in
+    let len = i2f md#length in
     let x = f2i ((i *. width) /. len) in
     let x' = f2i ((j *. width) /. len) in
     let w = x' - x in
     pixmap#set_foreground color;
     pixmap#rectangle ~x ~y:0 ~width:w ~height ~filled:true ();
     draw#set_mask None;
-
-  method add i color =
-    data <- Segment.add i color data;
-    if self#misc#visible then self#fill_range color i (i + 1)
-
-  method remove i =
-    data <- Segment.remove i data;
-    if self#misc#visible then self#fill_range default i (i + 1)
 
   method set_default_color color = default <- color
   method default_color = default
@@ -162,11 +122,23 @@ object (self)
     draw#set_pixmap pixmap;
     self#refresh ();
 
-  method private refresh () =
+  method private refresh () = match model with
+  | None -> ()
+  | Some md ->
     pixmap#set_foreground default;
     pixmap#rectangle ~x:0 ~y:0 ~width ~height ~filled:true ();
-    let fold i j v () = self#fill_range v i (j + 1) in
-    Segment.fold color_eq fold data ();
+    let make (k, cur, accu) v = match cur with
+    | None -> pred k, Some (k, k, v), accu
+    | Some (i, j, w) ->
+      if k = j - 1 && color_eq v w then pred k, Some (k, i, w), accu
+      else pred k, Some (k, k, v), (i, j, w) :: accu
+    in
+    let _, p, segments = md#fold make (md#length - 1, None, []) in
+    let segments = match p with
+    | None -> segments
+    | Some p -> p :: segments
+    in
+    List.iter (fun (i, j, v) -> self#fill_range v i (j + 1)) segments;
     draw#set_mask None;
 
   method connect =

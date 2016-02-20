@@ -108,8 +108,8 @@ val print :
 
 class type ['a] signals =
   object
-    method popped : callback:('a -> unit) -> unit
-    method pushed : callback:('a -> unit) -> unit
+    method popped : callback:('a -> ('a list * 'a list) option -> unit) -> unit
+    method pushed : callback:('a -> ('a list * 'a list) option -> unit) -> unit
   end
 
 val connect : 'a document -> 'a signals
