@@ -90,4 +90,3 @@ Declare ML Module "eauto".
 Declare ML Module "g_class".
 Declare ML Module "g_eqdecide".
 Declare ML Module "g_rewrite".
-Declare ML Module "tauto".

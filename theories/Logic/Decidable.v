@@ -50,7 +50,7 @@ Qed.
 Theorem dec_iff :
  forall A B:Prop, decidable A -> decidable B -> decidable (A<->B).
 Proof.
-unfold decidable; tauto.
+unfold decidable. tauto.
 Qed.
 
 Theorem not_not : forall P:Prop, decidable P -> ~ ~ P -> P.

@@ -474,6 +474,15 @@ let generalize_dependent_of x hyp g =
 (* [intros_with_rewrite] do the intros in each branch and treat each new hypothesis
        (unfolding, substituting, destructing cases \ldots)
  *)
+let tauto =
+  let dp = List.map Id.of_string ["Tauto" ; "Init"; "Coq"] in
+  let mp = ModPath.MPfile (DirPath.make dp) in
+  let kn = KerName.make2 mp (Label.make "tauto") in
+  Proofview.tclBIND (Proofview.tclUNIT ()) begin fun () ->
+    let body = Tacenv.interp_ltac kn in
+    Tacinterp.eval_tactic body
+  end
+
 let  rec intros_with_rewrite g =
   observe_tac "intros_with_rewrite" intros_with_rewrite_aux g
 and intros_with_rewrite_aux : tactic =
@@ -530,7 +539,7 @@ and intros_with_rewrite_aux : tactic =
 			  ] g
 			end
 		  | Ind _ when eq_constr t (Coqlib.build_coq_False ()) ->
-		      Proofview.V82.of_tactic Tauto.tauto g
+		      Proofview.V82.of_tactic tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[
 			Proofview.V82.of_tactic (simplest_case v);

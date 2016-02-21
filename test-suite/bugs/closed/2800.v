@@ -1,6 +1,6 @@
 Goal False.
 
-Fail intuition
+intuition
   match goal with
   | |- _ => idtac " foo"
   end.
