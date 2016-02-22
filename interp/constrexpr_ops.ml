@@ -272,7 +272,7 @@ let local_binder_loc = function
   | LocalRawAssum ((loc,_)::_,_,t)
   | LocalRawDef ((loc,_),t) -> Loc.merge loc (constr_loc t)
   | LocalRawAssum ([],_,_) -> assert false
-  | LocalPattern (loc,p,ty) -> loc
+  | LocalPattern (loc,_,_) -> loc
 
 let local_binders_loc bll = match bll with
   | [] -> Loc.ghost

@@ -539,6 +539,21 @@ end) = struct
               str "," ++ pr spc ltop a),
           lprod
         )
+      | CLambdaN
+          (_,
+           [([(_,Name n)],_,_)],
+           CCases
+             (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
+              [(_,[(_,[p])],e)]))
+          when
+            Id.equal m n &&
+            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr e)) ->
+        return (
+          hov 0 (
+            keyword "fun" ++ spc () ++ str "'" ++ pr_patt ltop p ++ spc () ++
+            str "=>" ++ pr spc ltop e),
+          llambda
+        )
       | CLambdaN _ ->
         let (bl,a) = extract_lam_binders a in
         return (

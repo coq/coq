@@ -297,8 +297,14 @@ GEXTEND Gram
           CCast(_,c, CastConv t) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
-        let (bl, c) = expand_pattern_binders mkCLambdaN bl c in
-	DefineBody (bl, red, c, Some t)
+        let ((bl, c), tyo) =
+          if List.exists (function LocalPattern _ -> true | _ -> false) bl
+          then
+            let c = CCast (!@loc, c, CastConv t) in
+            (expand_pattern_binders mkCLambdaN bl c, None)
+          else ((bl, c), Some t)
+        in
+	DefineBody (bl, red, c, tyo)
     | bl = binders; ":"; t = lconstr ->
         ProveBody (bl, t) ] ]
   ;
