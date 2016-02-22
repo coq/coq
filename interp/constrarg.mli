@@ -69,6 +69,6 @@ val wit_red_expr :
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
   (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
 
-val wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type
+val wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
 
 val wit_clause_dft_concl :  (Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) genarg_type

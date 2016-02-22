@@ -14,7 +14,7 @@ open Class_tactics
 DECLARE PLUGIN "g_class"
 
 TACTIC EXTEND progress_evars
-  [ "progress_evars" tactic(t) ] -> [ progress_evars (Tacinterp.eval_tactic t) ]
+  [ "progress_evars" tactic(t) ] -> [ progress_evars (Tacinterp.tactic_of_value ist t) ]
 END
 
 (** Options: depth, debug and transparency settings. *)

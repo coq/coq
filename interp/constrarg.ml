@@ -25,7 +25,7 @@ let wit_int_or_var =
 let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type =
   Genarg.make0 None "intropattern"
 
-let wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type =
+let wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type =
   Genarg.make0 None "tactic"
 
 let wit_ident =

@@ -135,17 +135,17 @@ END
 
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) l []) ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) l []) ]
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) [] l) ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) [] l) ]
 |   [ "firstorder" tactic_opt(t) firstorder_using(l)
        "with" ne_preident_list(l') ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) l l') ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) l l') ]
 END
 
 TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
-     [ Proofview.V82.tactic (gen_ground_tac false (Option.map eval_tactic t) [] []) ]
+     [ Proofview.V82.tactic (gen_ground_tac false (Option.map (tactic_of_value ist) t) [] []) ]
 END
 
 open Proofview.Notations

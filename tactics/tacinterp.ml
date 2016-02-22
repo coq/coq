@@ -1458,7 +1458,7 @@ and tactic_of_value ist vle =
   | (VFun _|VRec _) -> Tacticals.New.tclZEROMSG (str "A fully applied tactic is expected.")
   else if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in
-    eval_tactic ist tac
+    tactic_of_value ist tac
   else Tacticals.New.tclZEROMSG (str "Expression does not evaluate to a tactic.")
 
 (* Interprets the clauses of a recursive LetIn *)
@@ -2232,10 +2232,7 @@ let () =
   ()
 
 let () =
-  let interp ist tac =
-    let f = VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], tac) in
-    Ftactic.return (TacArg (dloc, TacGeneric (Genarg.in_gen (glbwit wit_tacvalue) f)))
-  in
+  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
   Geninterp.register_interp0 wit_tactic interp
 
 let () =

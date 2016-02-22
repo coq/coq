@@ -61,7 +61,7 @@ type 'a glob_extra_genarg_printer =
 type 'a extra_genarg_printer =
     (Term.constr -> std_ppcmds) ->
     (Term.constr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
+    (tolerability -> Val.t -> std_ppcmds) ->
     'a -> std_ppcmds
 
 let genarg_pprule = ref String.Map.empty
@@ -105,6 +105,8 @@ module Make
 
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
+
+  let pr_value _ _ = str "(* FIXME *)"
 
   let pr_with_occurrences pr (occs,c) =
     match occs with
@@ -1308,10 +1310,10 @@ module Make
         pr_generic = Genprint.generic_top_print;
         pr_extend = pr_extend_rec
           (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-          (pr_glob_tactic_level env) pr_constr_pattern;
+          pr_value pr_constr_pattern;
         pr_alias = pr_alias
           (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-          (pr_glob_tactic_level env) pr_constr_pattern;
+          pr_value pr_constr_pattern;
       }
       in
       make_pr_tac
@@ -1330,7 +1332,7 @@ module Make
 
   let pr_top_generic env = pr_top_generic_rec
     (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-    (pr_glob_tactic_level env) pr_constr_pattern
+    pr_value pr_constr_pattern
 
   let pr_raw_extend env = pr_raw_extend_rec
     pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr

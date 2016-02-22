@@ -88,6 +88,8 @@ val eval_tactic : glob_tactic_expr -> unit Proofview.tactic
 val eval_tactic_ist : interp_sign -> glob_tactic_expr -> unit Proofview.tactic
 (** Same as [eval_tactic], but with the provided [interp_sign]. *)
 
+val tactic_of_value : interp_sign -> Value.t -> unit Proofview.tactic
+
 (** Globalization + interpretation *)
 
 val interp_tac_gen : value Id.Map.t -> Id.t list ->

@@ -44,7 +44,7 @@ let with_delayed_uconstr ist c tac =
 
 let replace_in_clause_maybe_by ist c1 c2 cl tac =
   with_delayed_uconstr ist c1
-  (fun c1 -> replace_in_clause_maybe_by c1 c2 cl (Option.map Tacinterp.eval_tactic tac))
+  (fun c1 -> replace_in_clause_maybe_by c1 c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
 
 let replace_term ist dir_opt c cl =
   with_delayed_uconstr ist c (fun c -> replace_term dir_opt c cl)
@@ -237,7 +237,7 @@ TACTIC EXTEND autorewrite
     [ auto_multi_rewrite  l ( cl) ]
 | [ "autorewrite" "with" ne_preident_list(l) clause(cl) "using" tactic(t) ] ->
     [
-      auto_multi_rewrite_with (Tacinterp.eval_tactic t) l cl
+      auto_multi_rewrite_with (Tacinterp.tactic_of_value ist t) l cl
     ]
 END
 
@@ -245,14 +245,14 @@ TACTIC EXTEND autorewrite_star
 | [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) ] ->
     [ auto_multi_rewrite ~conds:AllMatches l cl ]
 | [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) "using" tactic(t) ] ->
-  [ auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.eval_tactic t) l cl ]
+  [ auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.tactic_of_value ist t) l cl ]
 END
 
 (**********************************************************************)
 (* Rewrite star                                                       *)
 
-let rewrite_star ist clause orient occs c (tac : glob_tactic_expr option) =
-  let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
+let rewrite_star ist clause orient occs c (tac : Val.t option) =
+  let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
     (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
 
@@ -512,12 +512,12 @@ let add_transitivity_lemma left lem =
 (* Vernacular syntax *)
 
 TACTIC EXTEND stepl
-| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (Tacinterp.eval_tactic tac) ]
+| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (Tacinterp.tactic_of_value ist tac) ]
 | ["stepl" constr(c) ] -> [ step true c (Proofview.tclUNIT ()) ]
 END
 
 TACTIC EXTEND stepr
-| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (Tacinterp.eval_tactic tac) ]
+| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (Tacinterp.tactic_of_value ist tac) ]
 | ["stepr" constr(c) ] -> [ step false c (Proofview.tclUNIT ()) ]
 END
 
@@ -883,7 +883,7 @@ END
 TACTIC EXTEND unshelve
 | [ "unshelve" tactic1(t) ] ->
     [
-      Proofview.with_shelf (Tacinterp.eval_tactic t) >>= fun (gls, ()) ->
+      Proofview.with_shelf (Tacinterp.tactic_of_value ist t) >>= fun (gls, ()) ->
       Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
       Proofview.Unsafe.tclSETGOALS (gls @ ogls)
     ]

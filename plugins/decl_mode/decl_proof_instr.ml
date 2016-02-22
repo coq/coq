@@ -496,7 +496,7 @@ let just_tac _then cut info gls0 =
         None ->
 	  Proofview.V82.of_tactic automation_tac gls
       | Some tac ->
-	  Proofview.V82.of_tactic (Tacinterp.eval_tactic tac) gls in
+	  Proofview.V82.of_tactic (Tacinterp.tactic_of_value (Tacinterp.default_ist ()) tac) gls in
     justification (tclTHEN items_tac method_tac) gls0
 
 let instr_cut mkstat _thus _then cut gls0 =
@@ -546,7 +546,7 @@ let instr_rew _thus rew_side cut gls0 =
         None ->
 	  Proofview.V82.of_tactic automation_tac gls
       | Some tac ->
-	  Proofview.V82.of_tactic (Tacinterp.eval_tactic tac) gls in
+	  Proofview.V82.of_tactic (Tacinterp.tactic_of_value (Tacinterp.default_ist ()) tac) gls in
   let just_tac gls =
     justification (tclTHEN items_tac method_tac) gls in
   let (c_id,_) = match cut.cut_stat.st_label with

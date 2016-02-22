@@ -176,19 +176,16 @@ let ltac_call tac (args:glob_tactic_arg list) =
 let ltac_lcall tac args =
   TacArg(Loc.ghost,TacCall(Loc.ghost, ArgVar(Loc.ghost, Id.of_string tac),args))
 
-let ltac_letin (x, e1) e2 =
-  TacLetIn(false,[(Loc.ghost,Id.of_string x),e1],e2)
-
-let ltac_apply (f:glob_tactic_expr) (args: Tacinterp.Value.t list) =
+let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
     let x = Reference (ArgVar (Loc.ghost, id)) in
     (succ i, x :: vars, Id.Map.add id arg lfun)
   in
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
+  let lfun = Id.Map.add (Id.of_string "F") f lfun in
   let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun = lfun; } in
-  Tacinterp.eval_tactic_ist ist
-    (ltac_letin ("F", Tacexp f) (ltac_lcall "F" args))
+  Tacinterp.eval_tactic_ist ist (ltac_lcall "F" args)
 
 let ltac_record flds =
   TacFun([Some(Id.of_string"proj")], ltac_lcall "proj" flds)
@@ -774,7 +771,7 @@ let ltac_ring_structure e =
   [req;sth;ext;morph;th;cst_tac;pow_tac;
    lemma1;lemma2;pretac;posttac]
 
-let ring_lookup (f:glob_tactic_expr) lH rl t =
+let ring_lookup (f : Value.t) lH rl t =
   Proofview.Goal.enter { enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
@@ -1046,7 +1043,7 @@ let ltac_field_structure e =
   [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
    field_simpl_eq_in_ok;cond_ok;pretac;posttac]
 
-let field_lookup (f:glob_tactic_expr) lH rl t =
+let field_lookup (f : Value.t) lH rl t =
   Proofview.Goal.enter { enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in

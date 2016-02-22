@@ -352,7 +352,6 @@ let t_reduction_not_iff = tacticIn reduction_not_iff "reduction_not_iff"
 
 let intuition_gen ist flags tac =
   Proofview.Goal.enter { enter = begin fun gl ->
-  let tac = Value.of_closure ist tac in
   let env = Proofview.Goal.env gl in
   let vars, ist, intuition = tauto_intuit flags t_reduction_not_iff tac in
   let glb_intuition = Tacintern.glob_tactic_env vars env intuition in
@@ -360,8 +359,9 @@ let intuition_gen ist flags tac =
   end }
 
 let tauto_intuitionistic flags =
+  let fail = Value.of_closure (default_ist ()) <:tactic<fail>> in
   Proofview.tclORELSE
-    (intuition_gen (default_ist ()) flags <:tactic<fail>>)
+    (intuition_gen (default_ist ()) flags fail)
     begin function (e, info) -> match e with
       | Refiner.FailError _ | UserError _ ->
           Tacticals.New.tclZEROMSG (str "tauto failed.")
@@ -395,7 +395,8 @@ let tauto_gen flags =
 
 let default_intuition_tac =
   let tac _ _ = Auto.h_auto None [] None in
-  register_tauto_tactic tac "auto_with"
+  let tac = register_tauto_tactic tac "auto_with" in
+  Value.of_closure (default_ist ()) tac
 
 (* This is the uniform mode dealing with ->, not, iff and types isomorphic to
    /\ and *, \/ and +, False and Empty_set, True and unit, _and_ eq-like types.

@@ -47,7 +47,7 @@ val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Gram.entry
 val wit_by_arg_tac :
   (raw_tactic_expr option,
   glob_tactic_expr option,
-  glob_tactic_expr option) Genarg.genarg_type
+  Genarg.Val.t option) Genarg.genarg_type
 
 val pr_by_arg_tac : 
   (int * Ppextend.parenRelation -> raw_tactic_expr -> Pp.std_ppcmds) ->

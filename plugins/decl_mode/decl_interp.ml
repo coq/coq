@@ -384,7 +384,7 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
 
 let interp_cut interp_it env sigma cut=
   let nenv,nstat = interp_it env sigma cut.cut_stat in
-    {cut with
+    { cut_using=Option.map (Tacinterp.Value.of_closure (Tacinterp.default_ist ())) cut.cut_using;
        cut_stat=nstat;
        cut_by=interp_justification_items nenv sigma cut.cut_by}
 
