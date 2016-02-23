@@ -68,7 +68,7 @@ let table : (string * string list * string) array =
    ; "core.id.congr_canonical",   ["Coq"; "Init"; "Logic_Type"], "identity_congr_canonical_form"
 
    ; "core.prod.type",   ["Coq"; "Init"; "Datatypes"], "prod"
-   ; "core.prod.rect",   ["Coq"; "Init"; "Datatypes"], "prod_rec"
+   ; "core.prod.rect",   ["Coq"; "Init"; "Datatypes"], "prod_rect"
    ; "core.prod.intro",  ["Coq"; "Init"; "Datatypes"], "pair"
    ; "core.prod.proj1",  ["Coq"; "Init"; "Datatypes"], "fst"
    ; "core.prod.proj2",  ["Coq"; "Init"; "Datatypes"], "snd"
@@ -181,12 +181,12 @@ let check_required_library d =
 
 let coq = Nameops.coq_string (* "Coq" *)
 
-let arith_dir     = [ coq; "Arith"   ]
-let arith_modules = [ arith_dir      ]
-let numbers_dir   = [ coq; "Numbers" ]
-let parith_dir    = [ coq; "PArith"  ]
-let narith_dir    = [ coq; "NArith"  ]
-let zarith_dir    = [ coq; "ZArith"  ]
+let arith_dir     = [ coq ; "Arith"   ]
+let arith_modules = [ arith_dir       ]
+let numbers_dir   = [ coq ; "Numbers" ]
+let parith_dir    = [ coq ; "PArith"  ]
+let narith_dir    = [ coq ; "NArith"  ]
+let zarith_dir    = [ coq ; "ZArith"  ]
 
 let zarith_base_modules =
   [ numbers_dir

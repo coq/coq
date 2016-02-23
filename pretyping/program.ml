@@ -12,54 +12,41 @@ open Util
 open Names
 open Term
 
-let make_dir l = DirPath.make (List.rev_map Id.of_string l)
+let sig_typ   () = Coqlib.get_ref "core.sig.type"
+let sig_intro () = Coqlib.get_ref "core.sig.intro"
+let sig_proj1 () = Coqlib.get_ref "core.sig.proj1"
+let sig_proj2 () = Coqlib.get_ref "core.sig.proj2"
 
-let find_reference locstr dir s =
-  let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
-  try Nametab.global_of_path sp
-  with Not_found ->
-    anomaly ~label:locstr (Pp.str "cannot find" ++ spc () ++ Libnames.pr_path sp)
+let sigT_typ   () = Coqlib.get_ref "core.sigT.type"
+let sigT_intro () = Coqlib.get_ref "core.sigT.intro"
+let sigT_proj1 () = Coqlib.get_ref "core.sigT.proj2"
+let sigT_proj2 () = Coqlib.get_ref "core.sigT.proj2"
 
-let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
-let coq_constant locstr dir s = Universes.constr_of_global (coq_reference locstr dir s)
+let prod_typ   () = Coqlib.get_ref "core.prod.type"
+let prod_intro () = Coqlib.get_ref "core.prod.intro"
+let prod_proj1 () = Coqlib.get_ref "core.prod.proj1"
+let prod_proj2 () = Coqlib.get_ref "core.prod.proj2"
 
-let init_constant dir s () = coq_constant "Program" dir s
-let init_reference dir s () = coq_reference "Program" dir s
+let coq_eq_ind      () = Coqlib.get_ref "core.eq.type"
+let coq_eq_refl     () = Coqlib.get_ref "core.eq.refl"
+let coq_eq_refl_ref () = Coqlib.get_ref "core.eq.refl"
+let coq_eq_rect     () = Coqlib.get_ref "core.eq.rect"
 
-let papp evdref r args = 
-  let gr = delayed_force r in
-    mkApp (Evarutil.e_new_global evdref gr, args)
+let coq_JMeq_ind  () = Coqlib.get_ref "core.jmeq.type"
+let coq_JMeq_refl () = Coqlib.get_ref "core.jmeq.refl"
 
-let sig_typ = init_reference ["Init"; "Specif"] "sig"
-let sig_intro = init_reference ["Init"; "Specif"] "exist"
-let sig_proj1 = init_reference ["Init"; "Specif"] "proj1_sig"
-
-let sigT_typ = init_reference ["Init"; "Specif"] "sigT"
-let sigT_intro = init_reference ["Init"; "Specif"] "existT"
-let sigT_proj1 = init_reference ["Init"; "Specif"] "projT1"
-let sigT_proj2 = init_reference ["Init"; "Specif"] "projT2"
-
-let prod_typ = init_reference ["Init"; "Datatypes"] "prod"
-let prod_intro = init_reference ["Init"; "Datatypes"] "pair"
-let prod_proj1 = init_reference ["Init"; "Datatypes"] "fst"
-let prod_proj2 = init_reference ["Init"; "Datatypes"] "snd"
-
-let coq_eq_ind = init_reference ["Init"; "Logic"] "eq"
-let coq_eq_refl = init_reference ["Init"; "Logic"] "eq_refl"
-let coq_eq_refl_ref = init_reference ["Init"; "Logic"] "eq_refl"
-let coq_eq_rect = init_reference ["Init"; "Logic"] "eq_rect"
-
-let coq_JMeq_ind = init_reference ["Logic";"JMeq"] "JMeq"
-let coq_JMeq_refl = init_reference ["Logic";"JMeq"] "JMeq_refl"
-
-let coq_not = init_constant ["Init";"Logic"] "not"
-let coq_and = init_constant ["Init";"Logic"] "and"
-
-let mk_coq_not x = mkApp (delayed_force coq_not, [| x |])
+let coq_not () = Coqlib.get_constr "core.not.type"
+let coq_and () = Coqlib.get_constr "core.and.type"
 
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
   | [] -> invalid_arg "unsafe_fold_right"
+
+let mk_coq_not x = mkApp (delayed_force coq_not, [| x |])
+
+let papp evdref r args =
+  let gr = delayed_force r in
+    mkApp (Evarutil.e_new_global evdref gr, args)
 
 let mk_coq_and l =
   let and_typ = delayed_force coq_and in
