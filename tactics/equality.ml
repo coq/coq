@@ -320,9 +320,13 @@ let jmeq_same_dom gl = function
    eliminate lbeq on sort_of_gl. *)
 
 let find_elim hdcncl lft2rgt dep cls ot gl =
-  let inccl = Option.is_empty cls in
-  if (is_global Coqlib.glob_eq hdcncl ||
-      (is_global Coqlib.glob_jmeq hdcncl &&
+  (* XXX: Must make the use of jmeq optional *)
+  let eq_ref = get_ref "core.eq.type"   in
+  (* let jm_ref = get_ref "core.jmeq.type" in *)
+  let jm_ref = Coqlib.glob_jmeq         in
+  let inccl  = Option.is_empty cls      in
+  if (is_global eq_ref hdcncl ||
+      (is_global jm_ref hdcncl &&
 	 jmeq_same_dom gl ot)) && not dep
     || Flags.version_less_or_equal Flags.V8_2
   then
@@ -1629,8 +1633,10 @@ let unfold_body x =
   end
 
 let restrict_to_eq_and_identity eq = (* compatibility *)
-  if not (is_global glob_eq eq) &&
-    not (is_global glob_identity eq) 
+  let eq_ref = get_ref "core.eq.type"   in
+  let id_ref = get_ref "core.id.type"   in
+  if not (is_global eq_ref eq) &&
+    not (is_global id_ref eq)
   then raise Constr_matching.PatternMatchingFailure
 
 exception FoundHyp of (Id.t * constr * bool)

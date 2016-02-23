@@ -55,7 +55,7 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let try_find_global_reference dir s =
   let sp = Libnames.make_path (make_dir ("Coq"::dir)) (Id.of_string s) in
     try Nametab.global_of_path sp
-    with Not_found -> 
+    with Not_found ->
       anomaly (str "Global reference " ++ str s ++ str " not found in generalized rewriting")
 
 let find_reference dir s =

@@ -249,17 +249,23 @@ let is_matching x y = is_matching (Global.env ()) Evd.empty x y
 let matches x y = matches (Global.env ()) Evd.empty x y
 
 let match_with_equation t =
+  let eq_ref = get_ref "core.eq.type"   in
+  (* let id_ref = get_ref "core.id.type"   in *)
+  (* let jm_ref = get_ref "core.jmeq.type" in *)
+  (* XXX: This must be generalized no to depend on identity or jmeq *)
+  let id_ref = glob_identity            in
+  let jm_ref = glob_jmeq                in
   if not (isApp t) then raise NoEquationFound;
   let (hdapp,args) = destApp t in
   match kind_of_term hdapp with
   | Ind (ind,u) ->
-      if eq_gr (IndRef ind) glob_eq then
+      if eq_gr (IndRef ind) eq_ref then
 	Some (build_coq_eq_data()),hdapp,
 	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-      else if eq_gr (IndRef ind) glob_identity then
+      else if eq_gr (IndRef ind) id_ref then
 	Some (build_coq_identity_data()),hdapp,
 	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-      else if eq_gr (IndRef ind) glob_jmeq then
+      else if eq_gr (IndRef ind) jm_ref then
 	Some (build_coq_jmeq_data()),hdapp,
 	HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
       else

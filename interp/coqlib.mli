@@ -55,15 +55,16 @@ val glob_jmeq     : global_reference
 type message = string
 
 val find_reference : message -> string list -> string -> global_reference
-(* This just prefixes with Coq... *)
+
+(** This just prefixes find_reference with Coq... *)
 val coq_reference  : message -> string list -> string -> global_reference
 
 (** For tactics/commands requiring vernacular libraries *)
 val check_required_library : string list -> unit
 
 (** Search in several modules (not prefixed by "Coq") *)
-val gen_constant_in_modules  : string->string list list-> string -> constr
-val gen_reference_in_modules : string->string list list-> string -> global_reference
+val gen_constant_in_modules  : string -> string list list -> string -> constr
+val gen_reference_in_modules : string -> string list list -> string -> global_reference
 
 (* Used in omega: They must query the particular theory *)
 val arith_modules       : string list list
@@ -73,7 +74,7 @@ val init_modules        : string list list
 (** {6 Global references } *)
 
 (** Modules *)
-val prelude_module : DirPath.t
+val prelude_module    : DirPath.t
 
 val logic_module      : DirPath.t
 val logic_module_name : string list

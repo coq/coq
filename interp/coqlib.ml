@@ -24,7 +24,7 @@ let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
   try global_of_extended_global (Nametab.extended_global_of_path sp)
   with Not_found ->
-    Format.eprintf "uy marcion %s %s\n%!" locstr s;
+    Format.eprintf "ref not found %s %s\n%!" locstr s;
     Printexc.print_backtrace stderr;
     anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
 
@@ -51,6 +51,7 @@ let table : (string * string list * string) array =
    ; "core.eq.sym",     ["Coq"; "Init"; "Logic"], "eq_sym"
    ; "core.eq.congr",   ["Coq"; "Init"; "Logic"], "f_equal"
    ; "core.eq.trans",   ["Coq"; "Init"; "Logic"], "eq_trans"
+   ; "core.eq.congr_canonical", ["Coq"; "Init"; "Logic"], "f_equal_canonical_form"
 
    ; "core.id.type",    ["Coq"; "Init"; "Datatypes"],  "identity"
    ; "core.id.refl",    ["Coq"; "Init"; "Datatypes"],  "identity_refl"
@@ -58,6 +59,7 @@ let table : (string * string list * string) array =
    ; "core.id.sym",     ["Coq"; "Init"; "Logic_Type"], "identity_sym"
    ; "core.id.congr",   ["Coq"; "Init"; "Logic_Type"], "identity_congr"
    ; "core.id.trans",   ["Coq"; "Init"; "Logic_Type"], "identity_trans"
+   ; "core.id.congr_canonical",   ["Coq"; "Init"; "Logic_Type"], "identity_congr_canonical_form"
 
    ; "core.prod.type",   ["Coq"; "Init"; "Datatypes"], "prod"
    ; "core.prod.rect",   ["Coq"; "Init"; "Datatypes"], "prod_rec"
@@ -85,7 +87,8 @@ let table : (string * string list * string) array =
    ; "core.jmeq.sym",    ["Coq"; "Logic"; "JMeq"], "JMeq_sym"
    ; "core.jmeq.congr",  ["Coq"; "Logic"; "JMeq"], "JMeq_congr"
    ; "core.jmeq.trans",  ["Coq"; "Logic"; "JMeq"], "JMeq_trans"
-
+   ; "core.jmeq.hom",    ["Coq"; "Logic"; "JMeq"], "JMeq_hom"
+   ; "core.jmeq.congr_canonical", ["Coq"; "Logic"; "JMeq"], "JMeq_congr_canonical_form"
 
    ; "core.bool.type",   ["Coq"; "Init"; "Datatypes"], "bool"
    ; "core.bool.true",   ["Coq"; "Init"; "Datatypes"], "true"
@@ -93,6 +96,10 @@ let table : (string * string list * string) array =
    ; "core.bool.andb",      ["Coq"; "Init"; "Datatypes"], "andb"
    ; "core.bool.andb_prop", ["Coq"; "Init"; "Datatypes"], "andb_prop"
    ; "core.bool.andb_true_intro", ["Coq"; "Init"; "Datatypes"], "andb_true_intro"
+
+   ; "core.eq_true.type",   ["Coq"; "Init"; "Datatypes"], "eq_true"
+   ; "core.eq_true.ind",    ["Coq"; "Init"; "Datatypes"], "eq_true_ind"
+   ; "core.eq_true.congr",  ["Coq"; "Init"; "Logic"],     "eq_true_congr"
 
   |]
 
@@ -106,26 +113,12 @@ let get_ref    s =
   (* Format.eprintf "get_ref_log: %s\n%!" s; *)
   Lazy.force (Hashtbl.find core_table s)
 
-let get_constr s =
-  (* Format.eprintf "get_constr_log: %s\n%!" s; *)
-  Universes.constr_of_global (Lazy.force (Hashtbl.find core_table s))
-
-let coq = Nameops.coq_string (* "Coq" *)
+let get_constr s = Universes.constr_of_global (get_ref s)
 
 (************************************************************************)
 (* Generic functions to find Coq objects *)
 
 type message = string
-
-let make_dir l = DirPath.make (List.rev_map Id.of_string l)
-
-let find_reference locstr dir s =
-  let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
-  try global_of_extended_global (Nametab.extended_global_of_path sp)
-  with Not_found ->
-    anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
-
-let coq_reference locstr dir s = find_reference locstr (coq::dir) s
 
 let has_suffix_in_dirs dirs ref =
   let dir = dirpath (path_of_global ref) in
@@ -158,8 +151,6 @@ let gen_reference_in_modules locstr dirs s =
 let gen_constant_in_modules locstr dirs s =
   Universes.constr_of_global (gen_reference_in_modules locstr dirs s)
 
-(* For tactics/commands requiring vernacular libraries *)
-
 let check_required_library d =
   let dir = make_dir d in
   if Library.library_is_loaded dir then ()
@@ -182,91 +173,75 @@ let check_required_library d =
 (************************************************************************)
 (* Specific Coq objects *)
 
-let coq_constant locstr dir s = Universes.constr_of_global (coq_reference locstr dir s)
+let coq = Nameops.coq_string (* "Coq" *)
 
-let init_reference dir s =
-  let d = "Init"::dir in
-  check_required_library (coq::d); coq_reference "Coqlib" d s
+let arith_dir     = [ coq; "Arith"   ]
+let arith_modules = [ arith_dir      ]
+let numbers_dir   = [ coq; "Numbers" ]
+let parith_dir    = [ coq; "PArith"  ]
+let narith_dir    = [ coq; "NArith"  ]
+let zarith_dir    = [ coq; "ZArith"  ]
 
-let init_constant dir s =
-  let d = "Init"::dir in
-  check_required_library (coq::d); coq_constant "Coqlib" d s
+let zarith_base_modules =
+  [ numbers_dir
+  ; parith_dir
+  ; narith_dir
+  ; zarith_dir
+  ]
 
-let logic_reference dir s =
-  let d = "Logic"::dir in
-  check_required_library ("Coq"::d); coq_reference "Coqlib" d s
-
-let arith_dir     = [coq;"Arith"]
-let arith_modules = [arith_dir]
-
-let numbers_dir = [coq; "Numbers"]
-let parith_dir  = [coq; "PArith"]
-let narith_dir  = [coq; "NArith"]
-let zarith_dir  = [coq; "ZArith"]
-
-let zarith_base_modules = [numbers_dir;parith_dir;narith_dir;zarith_dir]
-
-let init_dir = [coq;"Init"]
+let init_dir = [ coq; "Init" ]
 let init_modules = [
-  init_dir@["Datatypes"];
-  init_dir@["Logic"];
-  init_dir@["Specif"];
-  init_dir@["Logic_Type"];
-  init_dir@["Nat"];
-  init_dir@["Peano"];
-  init_dir@["Wf"]
+  init_dir @ [ "Datatypes"  ];
+  init_dir @ [ "Logic"      ];
+  init_dir @ [ "Specif"     ];
+  init_dir @ [ "Logic_Type" ];
+  init_dir @ [ "Nat"        ];
+  init_dir @ [ "Peano"      ];
+  init_dir @ [ "Wf"         ]
 ]
 
-let prelude_module_name = init_dir@["Prelude"]
-let prelude_module = make_dir prelude_module_name
+let prelude_module_name    = init_dir@["Prelude"]
+let prelude_module         = make_dir prelude_module_name
 
-let logic_module_name = init_dir@["Logic"]
-let logic_module = make_dir logic_module_name
+let logic_module_name      = init_dir@["Logic"]
+let logic_module           = make_dir logic_module_name
 
 let logic_type_module_name = init_dir@["Logic_Type"]
-let logic_type_module = make_dir logic_type_module_name
+let logic_type_module      = make_dir logic_type_module_name
 
-let datatypes_module_name = init_dir@["Datatypes"]
-let datatypes_module = make_dir datatypes_module_name
+let datatypes_module_name  = init_dir@["Datatypes"]
+let datatypes_module       = make_dir datatypes_module_name
 
-let jmeq_module_name = [coq;"Logic";"JMeq"]
-let jmeq_module = make_dir jmeq_module_name
+let jmeq_module_name       = [coq;"Logic";"JMeq"]
+let jmeq_module            = make_dir jmeq_module_name
+
+let coq_reference locstr dir s = find_reference locstr (coq::dir) s
 
 (* TODO: temporary hack. Works only if the module isn't an alias *)
 let make_ind dir id = Globnames.encode_mind dir (Id.of_string id)
-let make_con dir id = Globnames.encode_con dir (Id.of_string id)
+let make_con dir id = Globnames.encode_con dir  (Id.of_string id)
 
 (** Identity *)
 
-let id = make_con datatypes_module "idProp"
+let id         = make_con datatypes_module "idProp"
 let type_of_id = make_con datatypes_module "IDProp"
 
-let _ = Termops.set_impossible_default_clause 
-  (fun () -> 
+let _ = Termops.set_impossible_default_clause
+  (fun () ->
     let c, ctx = Universes.fresh_global_instance (Global.env()) (ConstRef id) in
     let (_, u) = destConst c in
-      (c,mkConstU (type_of_id,u)), ctx)
+      (c,mkConstU (type_of_id, u)), ctx)
 
 (** Natural numbers *)
-let nat_kn = make_ind datatypes_module "nat"
+let nat_kn   = make_ind datatypes_module "nat"
 let nat_path = Libnames.make_path datatypes_module (Id.of_string "nat")
 
 let glob_nat = IndRef (nat_kn,0)
 
 let path_of_O = ((nat_kn,0),1)
 let path_of_S = ((nat_kn,0),2)
-let glob_O = ConstructRef path_of_O
-let glob_S = ConstructRef path_of_S
-
-(** Booleans *)
-let bool_kn = make_ind datatypes_module "bool"
-
-let glob_bool = IndRef (bool_kn,0)
-
-let path_of_true = ((bool_kn,0),1)
-let path_of_false = ((bool_kn,0),2)
-let glob_true  = ConstructRef path_of_true
-let glob_false  = ConstructRef path_of_false
+let glob_O    = ConstructRef path_of_O
+let glob_S    = ConstructRef path_of_S
 
 (** Equality *)
 let eq_kn   = make_ind logic_module "eq"
@@ -307,9 +282,6 @@ type coq_eq_data = {
   trans: global_reference;
   congr: global_reference }
 
-let lazy_init_reference  dir id = lazy (init_reference dir id)
-let lazy_logic_reference dir id = lazy (logic_reference dir id)
-
 (* Leibniz equality on Type *)
 
 let build_eqdata_gen lib str =
@@ -323,7 +295,7 @@ let build_eqdata_gen lib str =
   }
 
 let build_coq_eq_data       () = build_eqdata_gen logic_module_name "eq"
-let build_coq_jmeq_data     () = build_eqdata_gen jmeq_module_name "jmeq"
+let build_coq_jmeq_data     () = build_eqdata_gen jmeq_module_name  "jmeq"
 let build_coq_identity_data () = build_eqdata_gen datatypes_module_name "id"
 
 (* Inversion data... *)
@@ -335,42 +307,29 @@ type coq_inversion_data = {
   inv_congr: global_reference  (* : forall params B (f:t->B) y, eq params y -> f c=f y *)
 }
 
-let coq_eq_congr_canonical =
-  lazy_init_reference ["Logic"] "f_equal_canonical_form"
-
 let build_coq_inversion_eq_data () =
   let _     = check_required_library logic_module_name in {
   inv_eq    = get_ref "core.eq.type";
   inv_ind   = get_ref "core.eq.ind";
-  inv_congr = Lazy.force coq_eq_congr_canonical }
-
-let coq_jmeq_hom   = lazy_logic_reference ["JMeq"] "JMeq_hom"
-let coq_jmeq_congr_canonical =
-  lazy_logic_reference ["JMeq"] "JMeq_congr_canonical_form"
+  inv_congr = get_ref "core.eq.congr_canonical" }
 
 let build_coq_inversion_jmeq_data () =
   let _ = check_required_library logic_module_name in {
-  inv_eq    = Lazy.force coq_jmeq_hom;
+  inv_eq    = get_ref "core.jmeq.hom";
   inv_ind   = get_ref "core.jmeq.ind";
-  inv_congr = Lazy.force coq_jmeq_congr_canonical }
-
-let coq_identity_congr_canonical = lazy_init_reference ["Logic_Type"] "identity_congr_canonical_form"
+  inv_congr = get_ref "core.jmeq.congr_canonical"; }
 
 let build_coq_inversion_identity_data () =
   let _     = check_required_library datatypes_module_name in
   let _     = check_required_library logic_type_module_name in {
   inv_eq    = get_ref "core.id.type";
   inv_ind   = get_ref "core.id.ind";
-  inv_congr = Lazy.force coq_identity_congr_canonical }
+  inv_congr = get_ref "core.id.congr_canonical"; }
 
 (* Equality to true *)
-let coq_eq_true_eq    = lazy_init_reference ["Datatypes"] "eq_true"
-let coq_eq_true_ind   = lazy_init_reference ["Datatypes"] "eq_true_ind"
-let coq_eq_true_congr = lazy_init_reference ["Logic"]     "eq_true_congr"
-
 let build_coq_inversion_eq_true_data () =
   let _ = check_required_library datatypes_module_name in
   let _ = check_required_library logic_module_name in {
-  inv_eq    = Lazy.force coq_eq_true_eq;
-  inv_ind   = Lazy.force coq_eq_true_ind;
-  inv_congr = Lazy.force coq_eq_true_congr }
+  inv_eq    = get_ref "core.eq_true.type";
+  inv_ind   = get_ref "core.eq_true.ind";
+  inv_congr = get_ref "core.eq_true.congr"; }
