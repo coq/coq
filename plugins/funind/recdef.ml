@@ -47,8 +47,8 @@ open Context.Rel.Declaration
 
 (* Ugly things which should not be here *)
 
-let coq_constant m s =
-  EConstr.of_constr (Coqlib.coq_constant "RecursiveDefinition" m s)
+let coq_constant m s = EConstr.of_constr @@ Universes.constr_of_global @@
+  Coqlib.coq_reference "RecursiveDefinition" m s
 
 let arith_Nat = ["Arith";"PeanoNat";"Nat"]
 let arith_Lt = ["Arith";"Lt"]

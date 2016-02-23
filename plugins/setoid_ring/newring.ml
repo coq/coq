@@ -283,7 +283,7 @@ let znew_ring_path =
 let zltac s =
   lazy(make_kn (MPfile znew_ring_path) DirPath.empty (Label.make s))
 
-let mk_cst l s = lazy (Coqlib.gen_reference "newring" l s);;
+let mk_cst l s = lazy (Coqlib.coq_reference "newring" l s);;
 let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s ;;
 
 (* Ring theory *)
