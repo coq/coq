@@ -101,15 +101,13 @@ let nf_zeta =
 
 
 let make_eq () =
-  try
-    Universes.constr_of_global (Coqlib.build_coq_eq ())
-  with _ -> assert false 
-let make_eq_refl () =
-  try
-    Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
+  try Coqlib.get_constr "core.eq.type"
   with _ -> assert false
 
-	  
+let make_eq_refl () =
+  try Coqlib.get_constr "core.eq.refl"
+  with _ -> assert false
+
 (* [generate_type g_to_f f graph i] build the completeness (resp. correctness) lemma type if [g_to_f = true]
    (resp. g_to_f = false) where [graph]  is the graph of [f] and is the [i]th function in the block.
 
@@ -522,7 +520,7 @@ and intros_with_rewrite_aux : tactic =
 			    intros_with_rewrite
 			  ] g
 			end
-		  | Ind _ when eq_constr t (Coqlib.build_coq_False ()) ->
+		  | Ind _ when eq_constr t (Coqlib.get_constr "core.False.type") ->
 		      Proofview.V82.of_tactic Tauto.tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[

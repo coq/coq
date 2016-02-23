@@ -612,8 +612,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   | None ->
     tclFAIL 0 (str"Terms do not have convertible types.")
   | Some evd ->
-    let e = build_coq_eq () in
-    let sym = build_coq_eq_sym () in
+    let e   = get_ref "core.eq.type" in
+    let sym = get_ref "core.eq.sym"  in
     Tacticals.New.pf_constr_of_global sym (fun sym ->
     Tacticals.New.pf_constr_of_global e (fun e ->
     let eq = applist (e, [t1;c1;c2]) in
@@ -875,7 +875,9 @@ let construct_discriminator env sigma dirn c sort =
   let (indp,_) = dest_ind_family indf in
   let ind, _ = check_privacy env indp in
   let (mib,mip) = lookup_mind_specif env ind in
-  let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop Null in
+  let true_0  = get_constr "core.True.type"  in
+  let false_0 = get_constr "core.False.type" in
+  let sort_0  = Prop Null                    in
   let deparsign = make_arity_signature env true indf in
   let p = it_mkLambda_or_LetIn (mkSort sort_0) deparsign in
   let cstrs = get_constructors env indf in
@@ -893,7 +895,7 @@ let rec build_discriminator env sigma dirn c sort = function
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
       let subval = build_discriminator cnum_env sigma dirn newc sort l  in
-      kont subval (build_coq_False (),mkSort (Prop Null))
+      kont subval (get_constr "core.False.type", mkSort (Prop Null))
 
 (* Note: discrimination could be more clever: if some elimination is
    not allowed because of a large impredicative constructor in the
@@ -936,8 +938,8 @@ let ind_scheme_of_eq lbeq =
 
 
 let discrimination_pf env sigma e (t,t1,t2) discriminator lbeq =
-  let i            = build_coq_I () in
-  let absurd_term  = build_coq_False () in
+  let i            = get_constr "core.True.I"     in
+  let absurd_term  = get_constr "core.False.type" in
   let eq_elim, eff = ind_scheme_of_eq lbeq in
   let sigma, eq_elim = Evd.fresh_global (Global.env ()) sigma eq_elim in
     sigma, (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term),

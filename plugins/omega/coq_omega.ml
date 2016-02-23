@@ -361,21 +361,21 @@ let sp_Zle = lazy (evaluable_ref_of_constr "Z.le" coq_Zle)
 let sp_Zgt = lazy (evaluable_ref_of_constr "Z.gt" coq_Zgt)
 let sp_Zge = lazy (evaluable_ref_of_constr "Z.ge" coq_Zge)
 let sp_Zlt = lazy (evaluable_ref_of_constr "Z.lt" coq_Zlt)
-let sp_not = lazy (evaluable_ref_of_constr "not" (lazy (build_coq_not ())))
+let sp_not = lazy (evaluable_ref_of_constr "not" (lazy (get_constr "core.not.type")))
 
 let mk_var v = mkVar (Id.of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])
 let mk_times t1 t2 = mkApp (Lazy.force coq_Zmult, [| t1; t2 |])
 let mk_minus t1 t2 = mkApp (Lazy.force coq_Zminus, [| t1;t2 |])
-let mk_eq t1 t2 = mkApp (Universes.constr_of_global (build_coq_eq ()),
+let mk_eq t1 t2  = mkApp (get_constr "core.eq.type",
 			 [| Lazy.force coq_Z; t1; t2 |])
-let mk_le t1 t2 = mkApp (Lazy.force coq_Zle, [| t1; t2 |])
-let mk_gt t1 t2 = mkApp (Lazy.force coq_Zgt, [| t1; t2 |])
-let mk_inv t = mkApp (Lazy.force coq_Zopp, [| t |])
-let mk_and t1 t2 =  mkApp (build_coq_and (), [| t1; t2 |])
-let mk_or t1 t2 =  mkApp (build_coq_or (), [| t1; t2 |])
-let mk_not t = mkApp (build_coq_not (), [| t |])
-let mk_eq_rel t1 t2 = mkApp (Universes.constr_of_global (build_coq_eq ()),
+let mk_le  t1 t2 = mkApp (Lazy.force coq_Zle, [| t1; t2 |])
+let mk_gt  t1 t2 = mkApp (Lazy.force coq_Zgt, [| t1; t2 |])
+let mk_inv t     = mkApp (Lazy.force coq_Zopp, [| t |])
+let mk_and t1 t2 = mkApp (get_constr "core.and.type", [| t1; t2 |])
+let mk_or  t1 t2 = mkApp (get_constr "core.or.type" , [| t1; t2 |])
+let mk_not t     = mkApp (get_constr "core.not.type", [| t |])
+let mk_eq_rel t1 t2 = mkApp (get_constr "core.eq.type",
 			     [| Lazy.force coq_comparison; t1; t2 |])
 let mk_inj t = mkApp (Lazy.force coq_Z_of_nat, [| t |])
 
@@ -420,19 +420,19 @@ type result =
 let destructurate_prop t =
   let c, args = decompose_app t in
   match kind_of_term c, args with
-    | _, [_;_;_] when is_global (build_coq_eq ()) c -> Kapp (Eq,args)
+    | _, [_;_;_] when is_global (get_ref "core.eq.type") c -> Kapp (Eq,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_neq) -> Kapp (Neq,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zne) -> Kapp (Zne,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zle) -> Kapp (Zle,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zlt) -> Kapp (Zlt,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zge) -> Kapp (Zge,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zgt) -> Kapp (Zgt,args)
-    | _, [_;_] when eq_constr c (build_coq_and ()) -> Kapp (And,args)
-    | _, [_;_] when eq_constr c (build_coq_or ()) -> Kapp (Or,args)
-    | _, [_;_] when eq_constr c (Lazy.force coq_iff) -> Kapp (Iff, args)
-    | _, [_] when eq_constr c (build_coq_not ()) -> Kapp (Not,args)
-    | _, [] when eq_constr c (build_coq_False ()) -> Kapp (False,args)
-    | _, [] when eq_constr c (build_coq_True ()) -> Kapp (True,args)
+    | _, [_;_] when eq_constr c (get_constr "core.and.type")   -> Kapp (And,args)
+    | _, [_;_] when eq_constr c (get_constr "core.or.type")    -> Kapp (Or,args)
+    | _, [_;_] when eq_constr c (get_constr "core.iff.type")   -> Kapp (Iff, args)
+    | _, [_]   when eq_constr c (get_constr "core.not.type")   -> Kapp (Not,args)
+    | _, []    when eq_constr c (get_constr "core.False.type") -> Kapp (False,args)
+    | _, []    when eq_constr c (get_constr "core.True.type")  -> Kapp (True,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_le) -> Kapp (Le,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_lt) -> Kapp (Lt,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_ge) -> Kapp (Ge,args)
@@ -1082,7 +1082,7 @@ let replay_history tactic_normalisation =
 	  let p_initial = [P_APP 2;P_TYPE] in
 	  let tac = shuffle_cancel p_initial e1.body in
 	  let solve_le =
-            let not_sup_sup = mkApp (Universes.constr_of_global (build_coq_eq ()),
+            let not_sup_sup = mkApp (get_constr "core.eq.type",
 				     [|
 					Lazy.force coq_comparison;
 					Lazy.force coq_Gt;
@@ -1242,7 +1242,7 @@ let replay_history tactic_normalisation =
 	  and eq2 = val_of(decompile orig) in
 	  let vid = unintern_id v in
 	  let theorem =
-            mkApp (build_coq_ex (), [|
+            mkApp (get_constr "core.ex.type", [|
 		      Lazy.force coq_Z;
 		      mkLambda
 			(Name vid,
@@ -1850,7 +1850,7 @@ let destructure_goal =
                 (Proofview.V82.tactic (Tactics.refine
 		                         (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |]))))
 	        intro
-	    with Undecidable -> Tactics.elim_type (build_coq_False ())
+	    with Undecidable -> Tactics.elim_type (get_constr "core.False.type")
 	  in
 	  Tacticals.New.tclTHEN goal_tac destructure_hyps
     in

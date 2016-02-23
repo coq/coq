@@ -81,11 +81,11 @@ let solveNoteqBranch side =
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
 let make_eq () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
+(*FIXME*) Coqlib.get_constr "core.eq.type"
 
 let mkDecideEqGoal eqonleft op rectype c1 c2 =
   let equality    = mkApp(make_eq(), [|rectype; c1; c2|]) in
-  let disequality = mkApp(build_coq_not (), [|equality|]) in
+  let disequality = mkApp(get_constr "core.not.type", [|equality|]) in
   if eqonleft then mkApp(op, [|equality; disequality |])
   else mkApp(op, [|disequality; equality |])
 
@@ -101,7 +101,7 @@ let mkGenDecideEqGoal rectype g =
   and yname    = next_ident_away idy hypnames in
   (mkNamedProd xname rectype
      (mkNamedProd yname rectype
-        (mkDecideEqGoal true (build_coq_sumbool ())
+        (mkDecideEqGoal true (get_constr "core.sumbool.type")
           rectype (mkVar xname) (mkVar yname))))
 
 let rec rewrite_and_clear hyps = match hyps with
@@ -218,7 +218,7 @@ let decideEquality rectype =
 let compare c1 c2 =
   Proofview.Goal.enter begin fun gl ->
   let rectype = pf_unsafe_type_of gl c1 in
-  let decide = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 in
+  let decide = mkDecideEqGoal true (get_constr "core.sumbool.type") rectype c1 c2 in
   (tclTHENS (cut decide)
             [(tclTHEN  intro
              (tclTHEN (onLastHyp simplest_case) clear_last));

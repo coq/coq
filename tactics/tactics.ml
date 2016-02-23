@@ -3151,12 +3151,10 @@ let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
   errorlabstrm "Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
-let glob = Universes.constr_of_global
+let coq_eq      = lazy (get_constr "core.eq.type")
+let coq_eq_refl = lazy (get_constr "core.eq.refl")
 
-let coq_eq      = lazy (glob (Coqlib.build_coq_eq ()))
-let coq_eq_refl = lazy (glob (Coqlib.build_coq_eq_refl ()))
-
-let coq_heq      = lazy (Universes.constr_of_global (Coqlib.coq_reference"mkHEq" ["Logic";"JMeq"] "JMeq"))
+let coq_heq      = lazy (Universes.constr_of_global (Coqlib.coq_reference "mkHEq" ["Logic";"JMeq"] "JMeq"))
 let coq_heq_refl = lazy (Universes.constr_of_global (Coqlib.coq_reference "mkHEq" ["Logic";"JMeq"] "JMeq_refl"))
 
 let mkEq t x y =
