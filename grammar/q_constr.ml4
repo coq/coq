@@ -62,7 +62,7 @@ EXTEND
         apply_ref <:expr< coq_not_ref >> [c] ]
     | "70" RIGHTA
       [ c1 = constr; "="; c2 = NEXT; ":>"; t = NEXT ->
-        apply_ref <:expr< lazy (build_coq_eq_data()).eq >> [t;c1;c2] ]
+        apply_ref <:expr< lazy (get_ref "core.eq.type") >> [t;c1;c2] ]
     | "10" LEFTA
       [ f = constr; args = LIST1 NEXT ->
         let args = mlexpr_of_list (fun x -> x) args in

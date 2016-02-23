@@ -23,9 +23,9 @@ let node_count = ref 0
 let logic_constant s = Universes.constr_of_global @@
   Coqlib.coq_reference "refl_tauto" ["Init";"Logic"] s
 
-let li_False = lazy (destInd (logic_constant "False"))
-let li_and   = lazy (destInd (logic_constant "and"))
-let li_or    = lazy (destInd (logic_constant "or"))
+let li_False = lazy (destInd (Coqlib.get_constr "core.False.type"))
+let li_and   = lazy (destInd (Coqlib.get_constr "core.and.type"))
+let li_or    = lazy (destInd (Coqlib.get_constr "core.or.type"))
 
 let pos_constant s = Universes.constr_of_global @@
   Coqlib.coq_reference "refl_tauto" ["Numbers";"BinNums"] s

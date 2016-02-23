@@ -36,18 +36,24 @@ let table : (string * string list * string) array =
    ; "core.True.I",     ["Coq"; "Init"; "Logic"], "I"
 
    ; "core.not.type",   ["Coq"; "Init"; "Logic"], "not"
+
    ; "core.or.type",    ["Coq"; "Init"; "Logic"], "or"
+
    ; "core.and.type",   ["Coq"; "Init"; "Logic"], "and"
+   ; "core.and.ind",    ["Coq"; "Init"; "Logic"], "and_ind"
 
    ; "core.iff.type",   ["Coq"; "Init"; "Logic"], "iff"
    ; "core.iff.proj1",  ["Coq"; "Init"; "Logic"], "proj1"
    ; "core.iff.proj2",  ["Coq"; "Init"; "Logic"], "proj2"
 
-   ; "core.ex.type",    ["Coq"; "Init"; "Specif"], "exist"
+   ; "core.ex.type",    ["Coq"; "Init"; "Logic"], "ex"
+   ; "core.ex.ind",     ["Coq"; "Init"; "Logic"], "ex_ind"
+   ; "core.ex.intro",   ["Coq"; "Init"; "Logic"], "ex_intro"
 
    ; "core.eq.type",    ["Coq"; "Init"; "Logic"], "eq"
    ; "core.eq.refl",    ["Coq"; "Init"; "Logic"], "eq_refl"
    ; "core.eq.ind",     ["Coq"; "Init"; "Logic"], "eq_ind"
+   ; "core.eq.rect",    ["Coq"; "Init"; "Logic"], "eq_rect"
    ; "core.eq.sym",     ["Coq"; "Init"; "Logic"], "eq_sym"
    ; "core.eq.congr",   ["Coq"; "Init"; "Logic"], "f_equal"
    ; "core.eq.trans",   ["Coq"; "Init"; "Logic"], "eq_trans"

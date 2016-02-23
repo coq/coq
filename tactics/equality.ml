@@ -1288,16 +1288,16 @@ let inject_if_homogenous_dependent_pair ty =
   try
     let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
-    let ceq = Universes.constr_of_global Coqlib.glob_eq in
-    let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
-    let existTconstr () = (Coqlib.build_sigma_type()).Coqlib.intro in
+    let ceq          = Coqlib.get_constr "core.eq.type"    in
+    let sigTconstr   = Coqlib.get_ref    "core.sigT.type"  in
+    let existTconstr = Coqlib.get_ref    "core.sigT.intro" in
     (* check whether the equality deals with dep pairs or not *)
     let eqTypeDest = fst (decompose_app t) in
-    if not (Globnames.is_global (sigTconstr()) eqTypeDest) then raise Exit;
+    if not (Globnames.is_global sigTconstr eqTypeDest) then raise Exit;
     let hd1,ar1 = decompose_app_vect t1 and
         hd2,ar2 = decompose_app_vect t2 in
-    if not (Globnames.is_global (existTconstr()) hd1) then raise Exit;
-    if not (Globnames.is_global (existTconstr()) hd2) then raise Exit;
+    if not (Globnames.is_global existTconstr hd1) then raise Exit;
+    if not (Globnames.is_global existTconstr hd2) then raise Exit;
     let ind,_ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise Exit in
     (* check if the user has declared the dec principle *)
     (* and compare the fst arguments of the dep pair *)

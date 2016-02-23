@@ -23,17 +23,15 @@ open Pp
 open Errors
 open Util
 
-let reference dir s = lazy (Coqlib.coq_reference "CC" dir s)
-
-let _f_equal = reference ["Init";"Logic"] "f_equal"
-let _eq_rect = reference ["Init";"Logic"] "eq_rect"
-let _refl_equal = reference ["Init";"Logic"] "eq_refl"
-let _sym_eq = reference ["Init";"Logic"] "eq_sym"
-let _trans_eq = reference ["Init";"Logic"] "eq_trans"
-let _eq = reference ["Init";"Logic"] "eq"
-let _False = reference ["Init";"Logic"] "False"
-let _True = reference ["Init";"Logic"] "True"
-let _I = reference ["Init";"Logic"] "I"
+let _f_equal    = lazy (Coqlib.get_ref "core.eq.congr")
+let _eq_rect    = lazy (Coqlib.get_ref "core.eq.rect")
+let _refl_equal = lazy (Coqlib.get_ref "core.eq.refl")
+let _sym_eq     = lazy (Coqlib.get_ref "core.eq.sym")
+let _trans_eq   = lazy (Coqlib.get_ref "core.eq.trans")
+let _eq         = lazy (Coqlib.get_ref "core.eq.type")
+let _False      = lazy (Coqlib.get_ref "core.False.type")
+let _True       = lazy (Coqlib.get_constr "core.True.type")
+let _I          = lazy (Coqlib.get_constr "core.True.I")
 
 let whd env=
   let infos=Closure.create_clos_infos Closure.betaiotazeta env in
@@ -381,9 +379,9 @@ let discriminate_tac (cstr,u as cstru) p =
     let xid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
     (* let tid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) gl in *)
     (* let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in *)
-    let identity = Universes.constr_of_global (Lazy.force _I) in
+    let identity = Lazy.force _I    in
     (* let trivial=pf_unsafe_type_of gls identity in *)
-    let trivial = Universes.constr_of_global (Lazy.force _True) in
+    let trivial  = Lazy.force _True in
     let evm, outtype = Evd.new_sort_variable Evd.univ_flexible (Proofview.Goal.sigma gl) in 
     let outtype = mkSort outtype in
     let pred=mkLambda(Name xid,outtype,mkRel 1) in

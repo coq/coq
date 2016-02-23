@@ -228,7 +228,7 @@ let ineq1_of_constr (h,t) =
               |_-> raise NoIneq)
           | Ind ((kn,i),_) ->
             if not (eq_gr (IndRef(kn,i))
-                      (Coqlib.build_coq_eq_data()).Coqlib.eq) then raise NoIneq;
+                      (Coqlib.get_ref "core.eq.type")) then raise NoIneq;
             let t0= args.(0) in
             let t1= args.(1) in
             let t2= args.(2) in
@@ -287,10 +287,10 @@ let constant path s = Universes.constr_of_global @@
 
 (* Standard library *)
 open Coqlib
+let coq_eq      = lazy (get_constr "core.eq.type")
 let coq_sym_eqT = lazy (get_ref "core.eq.sym")
 let coq_False   = lazy (get_constr "core.False.type")
 let coq_not     = lazy (get_constr "core.not.type")
-let coq_eq      = lazy (get_constr "core.eq.type")
 
 (* Rdefinitions *)
 let constant_real = constant ["Reals";"Rdefinitions"]

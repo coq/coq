@@ -475,15 +475,13 @@ exception ToShow of exn
 let jmeq () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    Universes.constr_of_global @@
-      Coqlib.coq_reference "Function" ["Logic";"JMeq"] "JMeq"
+    Coqlib.get_constr "core.jmeq.type"
   with e when Errors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    Universes.constr_of_global @@
-      Coqlib.coq_reference "Function" ["Logic";"JMeq"] "JMeq_refl"
+    Coqlib.get_constr "core.jmeq.refl"
   with e when Errors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
