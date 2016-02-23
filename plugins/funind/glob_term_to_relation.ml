@@ -244,11 +244,8 @@ let mk_result ctxt value avoid =
   Some functions to deal with overlapping patterns
 **************************************************)
 
-let coq_True_ref =
-  lazy  (Coqlib.coq_reference "" ["Init";"Logic"] "True")
-
-let coq_False_ref =
-  lazy  (Coqlib.coq_reference "" ["Init";"Logic"] "False")
+let coq_True_ref  = lazy (Coqlib.get_ref "core.True.type")
+let coq_False_ref = lazy (Coqlib.get_ref "core.False.type")
 
 (*
   [make_discr_match_el \[e1,...en\]] builds match e1,...,en with

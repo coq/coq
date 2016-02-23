@@ -133,6 +133,7 @@ let iter_ref () =
   try find_reference ["Recdef"] "iter" 
   with Not_found -> error "module Recdef not loaded"
 let iter = function () -> (constr_of_global (delayed_force iter_ref))
+
 let eq = function () -> (coq_init_constant "eq")
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
 let le_lt_n_Sm = function () -> (coq_constant arith_Lt "le_lt_n_Sm")
