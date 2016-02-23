@@ -60,7 +60,6 @@ G_ltac
 G_constr
 
 Q_util
-Q_coqast
 Egramml
 Argextend
 Tacextend

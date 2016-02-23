@@ -15,7 +15,6 @@ open Pp
 open Names
 open Genarg
 open Q_util
-open Q_coqast
 open Argextend
 open Pcoq
 open Egramml
@@ -31,6 +30,15 @@ let rec make_patt = function
       let p = Names.Id.to_string p in
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
+
+let rec mlexpr_of_argtype loc = function
+  | Genarg.ListArgType t -> <:expr< Genarg.ListArgType $mlexpr_of_argtype loc t$ >>
+  | Genarg.OptArgType t -> <:expr< Genarg.OptArgType $mlexpr_of_argtype loc t$ >>
+  | Genarg.PairArgType (t1,t2) ->
+      let t1 = mlexpr_of_argtype loc t1 in
+      let t2 = mlexpr_of_argtype loc t2 in
+      <:expr< Genarg.PairArgType $t1$ $t2$ >>
+  | Genarg.ExtraArgType s -> <:expr< Genarg.ExtraArgType $str:s$ >>
 
 let rec make_when loc = function
   | [] -> <:expr< True >>
