@@ -23,7 +23,8 @@ open Util
 open Tacticals.New
 open Proofview.Notations
 
-DECLARE PLUGIN "tauto"
+let tauto_plugin = "tauto"
+let () = Mltop.add_known_module tauto_plugin
 
 let assoc_var s ist =
   let v = Id.Map.find (Names.Id.of_string s) ist.lfun in
@@ -194,16 +195,23 @@ let flatten_contravariant_disj _ ist =
       tclTHEN (tclTHENLIST tacs) tac0
   | _ -> fail
 
+let make_unfold name =
+  let dir = DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"]) in
+  let const = Constant.make2 (MPfile dir) (Label.make name) in
+  (Locus.AllOccurrences, ArgArg (EvalConstRef const, None))
+
+let u_iff = make_unfold "iff"
+let u_not = make_unfold "not"
+
 let reduction_not_iff _ ist =
-  let avoid = Option.default [] (TacStore.get ist.extra f_avoid_ids) in
-  let debug = Option.default Tactic_debug.DebugOff (TacStore.get ist.extra f_debug) in
+  let make_reduce c = TacAtom (loc, TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
   let tac = match !negation_unfolding, unfold_iff () with
-    | true, true -> <:tactic< unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in * >>
-    | true, false -> <:tactic< unfold Coq.Init.Logic.not in * >>
-    | false, true -> <:tactic< unfold Coq.Init.Logic.iff in * >>
-    | false, false -> <:tactic< idtac >>
+    | true, true -> make_reduce [u_not; u_iff]
+    | true, false -> make_reduce [u_not]
+    | false, true -> make_reduce [u_iff]
+    | false, false -> TacId []
   in
-  interp_tac_gen ist.lfun avoid debug tac
+  eval_tactic_ist ist tac
 
 let coq_nnpp_path =
   let dir = List.map Id.of_string ["Classical_Prop";"Logic";"Coq"] in
@@ -247,34 +255,30 @@ let tauto_power_flags = {
   strict_unit = false
 }
 
-let with_flags flags ist tac =
+let with_flags flags _ ist =
   let f = (loc, Id.of_string "f") in
   let x = (loc, Id.of_string "x") in
   let arg = Val.Dyn (val_tag (topwit wit_tauto_flags), flags) in
-  let ist = { ist with lfun = Id.Map.add (snd f) tac (Id.Map.add (snd x) arg ist.lfun) } in
+  let ist = { ist with lfun = Id.Map.add (snd x) arg ist.lfun } in
   eval_tactic_ist ist (TacArg (loc, TacCall (loc, ArgVar f, [Reference (ArgVar x)])))
 
-TACTIC EXTEND with_flags
-| [ "with_uniform_flags" tactic(tac) ] -> [ with_flags tauto_uniform_unit_flags ist tac ]
-| [ "with_legacy_flags" tactic(tac) ] -> [ with_flags tauto_legacy_flags ist tac ]
-| [ "with_power_flags" tactic(tac) ] -> [ with_flags tauto_power_flags ist tac ]
-END
-
-let register_tauto_tactic_ tac name0 args =
+let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in
   let ids = List.map (fun id -> Some id) ids in
-  let name = { mltac_plugin = "tauto"; mltac_tactic = name0 ^ "_"; } in
+  let name = { mltac_plugin = tauto_plugin; mltac_tactic = name0; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let () = Tacenv.register_ml_tactic name [| tac |] in
   let tac = TacFun (ids, TacML (loc, entry, [])) in
   let obj () = Tacenv.register_ltac true true (Id.of_string name0) tac in
-  Mltop.declare_cache_obj obj "tauto"
+  Mltop.declare_cache_obj obj tauto_plugin
 
-let () = register_tauto_tactic_ is_empty "is_empty" ["tauto_flags"; "X1"]
-let () = register_tauto_tactic_ is_unit_or_eq "is_unit_or_eq" ["tauto_flags"; "X1"]
-let () = register_tauto_tactic_ is_disj "is_disj" ["tauto_flags"; "X1"]
-let () = register_tauto_tactic_ is_conj "is_conj" ["tauto_flags"; "X1"]
-let () = register_tauto_tactic_ flatten_contravariant_disj "flatten_contravariant_disj" ["tauto_flags"; "X1"; "X2"; "id"]
-let () = register_tauto_tactic_ flatten_contravariant_conj "flatten_contravariant_conj" ["tauto_flags"; "X1"; "X2"; "id"]
-let () = register_tauto_tactic_ apply_nnpp "apply_nnpp" []
-let () = register_tauto_tactic_ reduction_not_iff "reduction_not_iff" []
+let () = register_tauto_tactic is_empty "is_empty" ["tauto_flags"; "X1"]
+let () = register_tauto_tactic is_unit_or_eq "is_unit_or_eq" ["tauto_flags"; "X1"]
+let () = register_tauto_tactic is_disj "is_disj" ["tauto_flags"; "X1"]
+let () = register_tauto_tactic is_conj "is_conj" ["tauto_flags"; "X1"]
+let () = register_tauto_tactic flatten_contravariant_disj "flatten_contravariant_disj" ["tauto_flags"; "X1"; "X2"; "id"]
+let () = register_tauto_tactic flatten_contravariant_conj "flatten_contravariant_conj" ["tauto_flags"; "X1"; "X2"; "id"]
+let () = register_tauto_tactic apply_nnpp "apply_nnpp" []
+let () = register_tauto_tactic reduction_not_iff "reduction_not_iff" []
+let () = register_tauto_tactic (with_flags tauto_uniform_unit_flags) "with_uniform_flags" ["f"]
+let () = register_tauto_tactic (with_flags tauto_power_flags) "with_power_flags" ["f"]

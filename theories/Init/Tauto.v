@@ -85,14 +85,14 @@ Local Ltac tauto_classical flags :=
   (apply_nnpp || fail "tauto failed"); (tauto_intuitionistic flags || fail "Classical tauto failed").
 Local Ltac tauto_gen flags := tauto_intuitionistic flags || tauto_classical flags.
 
-Ltac tauto := with_uniform_flags (fun flags => tauto_gen flags).
-Ltac dtauto := with_power_flags (fun flags => tauto_gen flags).
+Ltac tauto := with_uniform_flags ltac:(fun flags => tauto_gen flags).
+Ltac dtauto := with_power_flags ltac:(fun flags => tauto_gen flags).
 
-Ltac intuition := with_uniform_flags (fun flags => intuition_gen flags ltac:(auto with *)).
-Local Ltac intuition_then tac := with_uniform_flags (fun flags => intuition_gen flags tac).
+Ltac intuition := with_uniform_flags ltac:(fun flags => intuition_gen flags ltac:(auto with *)).
+Local Ltac intuition_then tac := with_uniform_flags ltac:(fun flags => intuition_gen flags tac).
 
-Ltac dintuition := with_power_flags (fun flags => intuition_gen flags ltac:(auto with *)).
-Local Ltac dintuition_then tac := with_power_flags (fun flags => intuition_gen flags tac).
+Ltac dintuition := with_power_flags ltac:(fun flags => intuition_gen flags ltac:(auto with *)).
+Local Ltac dintuition_then tac := with_power_flags ltac:(fun flags => intuition_gen flags tac).
 
 Tactic Notation "intuition" := intuition.
 Tactic Notation "intuition" tactic(t) := intuition_then t.
