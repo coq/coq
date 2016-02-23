@@ -281,7 +281,7 @@ let default_justification elems gls=
 
 (* code for conclusion refining *)
 
-let constant dir s = lazy (Coqlib.gen_constant "Declarative" dir s)
+let constant dir s = lazy (Universes.constr_of_global (Coqlib.coq_reference "Declarative" dir s))
 
 let _and       = constant ["Init";"Logic"] "and"
 

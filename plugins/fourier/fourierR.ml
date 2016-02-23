@@ -281,7 +281,8 @@ let fourier_lineq lineq1 =
 (* Defined constants *)
 
 let get = Lazy.force
-let constant = Coqlib.gen_constant "Fourier"
+let constant path s = Universes.constr_of_global @@
+  Coqlib.coq_reference "Fourier" path s
 
 (* Standard library *)
 open Coqlib

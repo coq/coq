@@ -3153,12 +3153,11 @@ let error_ind_scheme s =
 
 let glob = Universes.constr_of_global
 
-let coq_eq = lazy (glob (Coqlib.build_coq_eq ()))
+let coq_eq      = lazy (glob (Coqlib.build_coq_eq ()))
 let coq_eq_refl = lazy (glob (Coqlib.build_coq_eq_refl ()))
 
-let coq_heq = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq")
-let coq_heq_refl = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq_refl")
-
+let coq_heq      = lazy (Universes.constr_of_global (Coqlib.coq_reference"mkHEq" ["Logic";"JMeq"] "JMeq"))
+let coq_heq_refl = lazy (Universes.constr_of_global (Coqlib.coq_reference "mkHEq" ["Logic";"JMeq"] "JMeq_refl"))
 
 let mkEq t x y =
   mkApp (Lazy.force coq_eq, [| t; x; y |])

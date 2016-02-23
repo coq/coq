@@ -32,10 +32,6 @@ let find_reference locstr dir s =
     anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
 
 let coq_reference locstr dir s = find_reference locstr (coq::dir) s
-let coq_constant locstr dir s = Universes.constr_of_global (coq_reference locstr dir s)
-
-let gen_reference = coq_reference
-let gen_constant = coq_constant
 
 let has_suffix_in_dirs dirs ref =
   let dir = dirpath (path_of_global ref) in
@@ -68,7 +64,6 @@ let gen_reference_in_modules locstr dirs s =
 let gen_constant_in_modules locstr dirs s =
   Universes.constr_of_global (gen_reference_in_modules locstr dirs s)
 
-
 (* For tactics/commands requiring vernacular libraries *)
 
 let check_required_library d =
@@ -92,17 +87,19 @@ let check_required_library d =
 (************************************************************************)
 (* Specific Coq objects *)
 
+let coq_constant locstr dir s = Universes.constr_of_global (coq_reference locstr dir s)
+
 let init_reference dir s =
   let d = "Init"::dir in
-  check_required_library (coq::d); gen_reference "Coqlib" d s
+  check_required_library (coq::d); coq_reference "Coqlib" d s
 
 let init_constant dir s =
   let d = "Init"::dir in
-  check_required_library (coq::d); gen_constant "Coqlib" d s
+  check_required_library (coq::d); coq_constant "Coqlib" d s
 
 let logic_reference dir s =
   let d = "Logic"::dir in
-  check_required_library ("Coq"::d); gen_reference "Coqlib" d s
+  check_required_library ("Coq"::d); coq_reference "Coqlib" d s
 
 let arith_dir = [coq;"Arith"]
 let arith_modules = [arith_dir]
@@ -385,8 +382,8 @@ let build_coq_iff_right_proj () = Lazy.force coq_iff_right_proj
 (* The following is less readable but does not depend on parsing *)
 let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
 let coq_identity_ref = lazy (init_reference ["Datatypes"] "identity")
-let coq_jmeq_ref     = lazy (gen_reference "Coqlib" ["Logic";"JMeq"] "JMeq")
-let coq_eq_true_ref = lazy (gen_reference "Coqlib" ["Init";"Datatypes"] "eq_true")
+let coq_jmeq_ref     = lazy (coq_reference "Coqlib" ["Logic";"JMeq"] "JMeq")
+let coq_eq_true_ref = lazy (coq_reference "Coqlib" ["Init";"Datatypes"] "eq_true")
 let coq_existS_ref  = lazy (anomaly (Pp.str "use coq_existT_ref"))
 let coq_existT_ref  = lazy (init_reference ["Specif"] "existT")
 let coq_exist_ref  = lazy (init_reference ["Specif"] "exist")

@@ -152,8 +152,10 @@ let mul = function
 
 let unconstr = mkRel 1
 
-let tpexpr =
-  lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PExpr")
+let gen_constant msg path s = Universes.constr_of_global @@
+  coq_reference msg path s
+
+let tpexpr  = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PExpr")
 let ttconst = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEc")
 let ttvar = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEX")
 let ttadd = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEadd")
