@@ -530,6 +530,21 @@ end) = struct
                    (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) cofix),
           lfix
         )
+      | CProdN
+          (_,
+           [([(_,Name n)],_,_)],
+           CCases
+             (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
+              [(_,[(_,[p])],a)]))
+          when
+            Id.equal m n &&
+            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
+        return (
+          hov 0 (
+            keyword "forall" ++ spc () ++ str "'" ++ pr_patt ltop p ++
+            str "," ++ pr spc ltop a),
+          llambda
+        )
       | CProdN _ ->
         let (bl,a) = extract_prod_binders a in
         return (
@@ -544,14 +559,14 @@ end) = struct
            [([(_,Name n)],_,_)],
            CCases
              (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
-              [(_,[(_,[p])],e)]))
+              [(_,[(_,[p])],a)]))
           when
             Id.equal m n &&
-            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr e)) ->
+            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
         return (
           hov 0 (
-            keyword "fun" ++ spc () ++ str "'" ++ pr_patt ltop p ++ spc () ++
-            str "=>" ++ pr spc ltop e),
+            keyword "fun" ++ spc () ++ str "'" ++ pr_patt ltop p ++
+            pr_fun_sep ++ pr spc ltop a),
           llambda
         )
       | CLambdaN _ ->
