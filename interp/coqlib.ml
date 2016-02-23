@@ -14,7 +14,6 @@ open Term
 open Libnames
 open Globnames
 open Nametab
-open Smartlocate
 
 (************************************************************************)
 (* New API *)
@@ -22,7 +21,7 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
 let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
-  try global_of_extended_global (Nametab.extended_global_of_path sp)
+  try Nametab.global_of_path sp
   with Not_found ->
     Format.eprintf "ref not found %s %s\n%!" locstr s;
     Printexc.print_backtrace stderr;
@@ -131,13 +130,12 @@ let has_suffix_in_dirs dirs ref =
   List.exists (fun d -> is_dirpath_prefix_of d dir) dirs
 
 let global_of_extended q =
-  try Some (global_of_extended_global q) with Not_found -> None
+  try Some (Nametab.global_of_path q) with Not_found -> None
 
 let gen_reference_in_modules locstr dirs s =
-  let dirs = List.map make_dir dirs in
-  let qualid = qualid_of_string s in
-  let all = Nametab.locate_extended_all qualid in
-  let all = List.map_filter global_of_extended all in
+  let dirs = List.map make_dir dirs   in
+  let qualid = qualid_of_string s     in
+  let all = Nametab.locate_all qualid in
   let all = List.sort_uniquize RefOrdered_env.compare all in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with

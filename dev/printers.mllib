@@ -140,6 +140,9 @@ Typeclasses_errors
 Typeclasses
 Detyping
 Indrec
+Declaremods
+Library
+Coqlib
 Program
 Coercion
 Cases

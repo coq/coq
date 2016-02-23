@@ -25,6 +25,7 @@ Tacred
 Typeclasses_errors
 Typeclasses
 Classops
+Coqlib
 Program
 Coercion
 Detyping
