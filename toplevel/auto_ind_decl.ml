@@ -594,7 +594,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                         | App (c,ca) -> (
                           match (kind_of_term c) with
                           | Ind (indeq, u) ->
-                              if eq_gr (IndRef indeq) Coqlib.glob_eq
+                              if eq_gr (IndRef indeq) (Coqlib.lib_ref "core.eq.type")
                               then
                                 Tacticals.New.tclTHEN
                                   (do_replace_bl mode bl_scheme_key ind
