@@ -59,7 +59,7 @@ EXTEND
         <:expr< Glob_term.GProd ($dloc$,Anonymous,Decl_kinds.Explicit,$c1$,$c2$) >> ]
     | "75" RIGHTA
       [ "~"; c = constr ->
-        apply_ref <:expr< coq_not_ref >> [c] ]
+        apply_ref <:expr< lazy (get_ref "core.not.type") >> [c] ]
     | "70" RIGHTA
       [ c1 = constr; "="; c2 = NEXT; ":>"; t = NEXT ->
         apply_ref <:expr< lazy (get_ref "core.eq.type") >> [t;c1;c2] ]
