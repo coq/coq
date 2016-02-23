@@ -127,6 +127,11 @@ let get_ref    s =
 
 let get_constr s = Universes.constr_of_global (get_ref s)
 
+(** Replaces a binding ! *)
+let add_ref  s c =
+  (* Format.eprintf "add_ref_log: %s\n%!" s; *)
+  Hashtbl.add core_table s (Lazy.from_val c)
+
 (************************************************************************)
 (* Generic functions to find Coq objects *)
 
@@ -318,11 +323,21 @@ type coq_inversion_data = {
   inv_congr: global_reference  (* : forall params B (f:t->B) y, eq params y -> f c=f y *)
 }
 
+let build_coq_inversion_gen l str =
+  List.iter check_required_library l; {
+    inv_eq    = get_ref ("core." ^ str ^ ".type");
+    inv_ind   = get_ref ("core." ^ str ^ ".ind");
+    inv_congr = get_ref ("core." ^ str ^ ".congr_canonical");
+  }
+
 let build_coq_inversion_eq_data () =
-  let _     = check_required_library logic_module_name in {
-  inv_eq    = get_ref "core.eq.type";
-  inv_ind   = get_ref "core.eq.ind";
-  inv_congr = get_ref "core.eq.congr_canonical" }
+  build_coq_inversion_gen [logic_module_name] "eq"
+
+let build_coq_inversion_identity_data () =
+  build_coq_inversion_gen [datatypes_module_name; logic_type_module_name] "id"
+
+let build_coq_inversion_eq_true_data () =
+  build_coq_inversion_gen [datatypes_module_name; logic_module_name] "eq_true"
 
 let build_coq_inversion_jmeq_data () =
   let _ = check_required_library logic_module_name in {
@@ -330,17 +345,3 @@ let build_coq_inversion_jmeq_data () =
   inv_ind   = get_ref "core.jmeq.ind";
   inv_congr = get_ref "core.jmeq.congr_canonical"; }
 
-let build_coq_inversion_identity_data () =
-  let _     = check_required_library datatypes_module_name in
-  let _     = check_required_library logic_type_module_name in {
-  inv_eq    = get_ref "core.id.type";
-  inv_ind   = get_ref "core.id.ind";
-  inv_congr = get_ref "core.id.congr_canonical"; }
-
-(* Equality to true *)
-let build_coq_inversion_eq_true_data () =
-  let _ = check_required_library datatypes_module_name in
-  let _ = check_required_library logic_module_name in {
-  inv_eq    = get_ref "core.eq_true.type";
-  inv_ind   = get_ref "core.eq_true.ind";
-  inv_congr = get_ref "core.eq_true.congr"; }

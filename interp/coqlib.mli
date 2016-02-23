@@ -38,6 +38,8 @@ open Util
 val get_ref    : string -> global_reference
 val get_constr : string -> constr
 
+val add_ref    : string -> global_reference -> unit
+
 (** Non-lazy, fixed equalities *)
 val glob_eq       : global_reference
 val glob_identity : global_reference
