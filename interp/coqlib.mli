@@ -64,11 +64,6 @@ val coq_reference  : message -> string list -> string -> global_reference
 (** For tactics/commands requiring vernacular libraries *)
 val check_required_library : string list -> unit
 
-(** Used in omega/ring: They must query their particular theory XXX PORT to omega.xxx.xxx*)
-val arith_modules       : string list list
-val zarith_base_modules : string list list
-val init_modules        : string list list
-
 (** Search in several modules (not prefixed by "Coq") *)
 val gen_constant_in_modules  : string -> string list list -> string -> constr
 val gen_reference_in_modules : string -> string list list -> string -> global_reference
@@ -77,15 +72,16 @@ val gen_reference_in_modules : string -> string list list -> string -> global_re
 
 (** Modules *)
 val prelude_module    : DirPath.t
+val jmeq_module       : DirPath.t
 
-val logic_module      : DirPath.t
-val logic_module_name : string list
-val logic_type_module : DirPath.t
-
-val jmeq_module      : DirPath.t
-val jmeq_module_name : string list
-
+val logic_module_name     : string list
 val datatypes_module_name : string list
+val jmeq_module_name      : string list
+
+(** Used in omega/ring: XXX: They must query their particular theory omega.obj.prop *)
+val arith_modules       : string list list
+val zarith_base_modules : string list list
+val init_modules        : string list list
 
 (** Natural numbers *)
 val nat_path  : full_path
