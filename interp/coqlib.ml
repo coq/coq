@@ -101,10 +101,17 @@ let table : (string * string list * string) array =
    ; "core.bool.andb",      ["Coq"; "Init"; "Datatypes"], "andb"
    ; "core.bool.andb_prop", ["Coq"; "Init"; "Datatypes"], "andb_prop"
    ; "core.bool.andb_true_intro", ["Coq"; "Init"; "Datatypes"], "andb_true_intro"
+   ; "core.bool.orb",       ["Coq"; "Init"; "Datatypes"], "orb"
+   ; "core.bool.xorb",      ["Coq"; "Init"; "Datatypes"], "xorb"
+   ; "core.bool.negb",      ["Coq"; "Init"; "Datatypes"], "negb"
 
    ; "core.eq_true.type",   ["Coq"; "Init"; "Datatypes"], "eq_true"
    ; "core.eq_true.ind",    ["Coq"; "Init"; "Datatypes"], "eq_true_ind"
    ; "core.eq_true.congr",  ["Coq"; "Init"; "Logic"],     "eq_true_congr"
+
+   ; "core.list.type",   ["Coq"; "Init"; "Datatypes"], "list"
+   ; "core.list.nil",    ["Coq"; "Init"; "Datatypes"], "nil"
+   ; "core.list.cons",   ["Coq"; "Init"; "DataTypes"], "cons"
 
   |]
 
