@@ -64,6 +64,7 @@ let gen_reference_in_modules locstr dirs s =
 let gen_constant_in_modules locstr dirs s =
   Universes.constr_of_global (gen_reference_in_modules locstr dirs s)
 
+
 (* For tactics/commands requiring vernacular libraries *)
 
 let check_required_library d =
@@ -81,8 +82,9 @@ let check_required_library d =
      (Loc.ghost,make_qualid (DirPath.make (List.rev prefix)) m)
 *)
 (* or failing ...*)
+      (Printexc.print_backtrace stderr;
       errorlabstrm "Coqlib.check_required_library"
-        (str "Library " ++ str (DirPath.to_string dir) ++ str " has to be required first.")
+        (str "Library " ++ str (DirPath.to_string dir) ++ str " has to be required first."))
 
 (************************************************************************)
 (* Specific Coq objects *)

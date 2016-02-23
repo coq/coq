@@ -138,6 +138,8 @@ type coq_eq_data = {
 
 val build_coq_eq_data : coq_eq_data delayed
 
+(* val coq_eq_ref : global_reference lazy_t *)
+
 val build_coq_identity_data : coq_eq_data delayed
 val build_coq_jmeq_data : coq_eq_data delayed
 
@@ -190,7 +192,6 @@ val build_coq_or : constr delayed
 (** Existential quantifier *)
 val build_coq_ex : constr delayed
 
-val coq_eq_ref : global_reference lazy_t
 val coq_identity_ref : global_reference lazy_t
 val coq_jmeq_ref : global_reference lazy_t
 val coq_eq_true_ref : global_reference lazy_t

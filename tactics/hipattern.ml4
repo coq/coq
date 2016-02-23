@@ -378,7 +378,7 @@ let rec first_match matcher = function
 
 (* Patterns "(eq ?1 ?2 ?3)" and "(identity ?1 ?2 ?3)" *)
 let coq_eq_pattern_gen eq = lazy PATTERN [ %eq ?X1 ?X2 ?X3 ]
-let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
+let coq_eq_pattern = coq_eq_pattern_gen (lazy (build_coq_eq_data()).eq)
 let coq_identity_pattern = coq_eq_pattern_gen coq_identity_ref
 let coq_jmeq_pattern = lazy PATTERN [ %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 ]
 
