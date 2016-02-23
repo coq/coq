@@ -23,15 +23,15 @@ open Pp
 open Errors
 open Util
 
-let _f_equal    = lazy (Coqlib.get_ref "core.eq.congr")
-let _eq_rect    = lazy (Coqlib.get_ref "core.eq.rect")
-let _refl_equal = lazy (Coqlib.get_ref "core.eq.refl")
-let _sym_eq     = lazy (Coqlib.get_ref "core.eq.sym")
-let _trans_eq   = lazy (Coqlib.get_ref "core.eq.trans")
-let _eq         = lazy (Coqlib.get_ref "core.eq.type")
-let _False      = lazy (Coqlib.get_ref "core.False.type")
-let _True       = lazy (Coqlib.get_constr "core.True.type")
-let _I          = lazy (Coqlib.get_constr "core.True.I")
+let _f_equal    = lazy (Coqlib.lib_ref "core.eq.congr")
+let _eq_rect    = lazy (Coqlib.lib_ref "core.eq.rect")
+let _refl_equal = lazy (Coqlib.lib_ref "core.eq.refl")
+let _sym_eq     = lazy (Coqlib.lib_ref "core.eq.sym")
+let _trans_eq   = lazy (Coqlib.lib_ref "core.eq.trans")
+let _eq         = lazy (Coqlib.lib_ref "core.eq.type")
+let _False      = lazy (Coqlib.lib_ref "core.False.type")
+let _True       = lazy (Coqlib.lib_constr "core.True.type")
+let _I          = lazy (Coqlib.lib_constr "core.True.I")
 
 let whd env=
   let infos=Closure.create_clos_infos Closure.betaiotazeta env in

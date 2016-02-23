@@ -283,17 +283,17 @@ let default_justification elems gls=
 
 
 (* iterated equality *)
-let _eq        = lazy (Coqlib.get_constr "core.eq.type")
-let _and       = lazy (Coqlib.get_constr "core.and.type")
-let _and_rect  = lazy (Coqlib.get_constr "core.and.ind")
-let _prod      = lazy (Coqlib.get_constr "core.prod.type")
-let _prod_rect = lazy (Coqlib.get_constr "core.prod.rect")
-let _ex        = lazy (Coqlib.get_constr "core.ex.type")
-let _ex_ind    = lazy (Coqlib.get_constr "core.ex.ind")
-let _sig       = lazy (Coqlib.get_constr "core.sig.type")
-let _sig_rect  = lazy (Coqlib.get_constr "core.sig.rect")
-let _sigT      = lazy (Coqlib.get_constr "core.sigT.type")
-let _sigT_rect = lazy (Coqlib.get_constr "core.sigT.rect")
+let _eq        = lazy (Coqlib.lib_constr "core.eq.type")
+let _and       = lazy (Coqlib.lib_constr "core.and.type")
+let _and_rect  = lazy (Coqlib.lib_constr "core.and.ind")
+let _prod      = lazy (Coqlib.lib_constr "core.prod.type")
+let _prod_rect = lazy (Coqlib.lib_constr "core.prod.rect")
+let _ex        = lazy (Coqlib.lib_constr "core.ex.type")
+let _ex_ind    = lazy (Coqlib.lib_constr "core.ex.ind")
+let _sig       = lazy (Coqlib.lib_constr "core.sig.type")
+let _sig_rect  = lazy (Coqlib.lib_constr "core.sig.rect")
+let _sigT      = lazy (Coqlib.lib_constr "core.sigT.type")
+let _sigT_rect = lazy (Coqlib.lib_constr "core.sigT.rect")
 
 type stackd_elt =
 {se_meta:metavariable;

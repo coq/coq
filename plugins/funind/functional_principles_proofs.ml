@@ -406,9 +406,9 @@ let rewrite_until_var arg_num eq_ids : tactic =
 
 let rec_pte_id = Id.of_string "Hrec"
 let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
-  let coq_False = Coqlib.get_constr "core.False.type" in
-  let coq_True  = Coqlib.get_constr "core.True.type"  in
-  let coq_I     = Coqlib.get_constr "core.True.I"     in
+  let coq_False = Coqlib.lib_constr "core.False.type" in
+  let coq_True  = Coqlib.lib_constr "core.True.type"  in
+  let coq_I     = Coqlib.lib_constr "core.True.I"     in
   let rec scan_type  context type_of_hyp : tactic =
     if isLetIn type_of_hyp then
       let real_type_of_hyp = it_mkProd_or_LetIn type_of_hyp context in

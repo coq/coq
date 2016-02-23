@@ -60,15 +60,15 @@ exception DecidabilityMutualNotSupported
 let dl = Loc.ghost
 
 (* Some pre declaration of constant we are going to use *)
-let andb_prop       () = Coqlib.get_constr "core.bool.andb_prop"
-let andb_true_intro () = Coqlib.get_constr "core.bool.andb_true_intro"
-let bb              () = Coqlib.get_constr "core.bool.type"
-let tt              () = Coqlib.get_constr "core.bool.true"
-let ff              () = Coqlib.get_constr "core.bool.false"
-let eq              () = Coqlib.get_constr "core.eq.type"
+let andb_prop       () = Coqlib.lib_constr "core.bool.andb_prop"
+let andb_true_intro () = Coqlib.lib_constr "core.bool.andb_true_intro"
+let bb              () = Coqlib.lib_constr "core.bool.type"
+let tt              () = Coqlib.lib_constr "core.bool.true"
+let ff              () = Coqlib.lib_constr "core.bool.false"
+let eq              () = Coqlib.lib_constr "core.eq.type"
 
-let sumbool () = Coqlib.get_constr "core.sumbool.type"
-let andb    () = Coqlib.get_constr "core.bool.andb"
+let sumbool () = Coqlib.lib_constr "core.sumbool.type"
+let andb    () = Coqlib.lib_constr "core.bool.andb"
 
 let induct_on  c = induction false None c None None
 let destruct_on c = destruct false None c None None
@@ -96,7 +96,7 @@ let mkFullInd (ind,u) n =
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
-  try let _ = Global.type_of_global_unsafe (Coqlib.get_ref "core.bool.type") in ()
+  try let _ = Global.type_of_global_unsafe (Coqlib.lib_ref "core.bool.type") in ()
   with e when Errors.noncritical e -> raise (UndefinedCst "bool")
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
@@ -768,7 +768,7 @@ let _ = lb_scheme_kind_aux := fun () -> lb_scheme_kind
 (* Decidable equality *)
 
 let check_not_is_defined () =
-  try ignore (Coqlib.get_constr "core.not.type")
+  try ignore (Coqlib.lib_constr "core.not.type")
   with e when Errors.noncritical e -> raise (UndefinedCst "not")
 
 (* {n=m}+{n<>m}  part  *)
@@ -819,7 +819,7 @@ let compute_dec_goal ind lnamesparrec nparrec =
         create_input (
           mkNamedProd n (mkFullInd ind (2*nparrec)) (
             mkNamedProd m (mkFullInd ind (2*nparrec+1)) (
-              mkApp(sumbool(), [|eqnm;mkApp (Coqlib.get_constr "core.not.type",[|eqnm|])|])
+              mkApp(sumbool(), [|eqnm;mkApp (Coqlib.lib_constr "core.not.type",[|eqnm|])|])
           )
         )
       )
@@ -891,7 +891,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
             let freshH3 = fresh_id (Id.of_string "H") gl in
             Tacticals.New.tclTHENLIST [
 	      simplest_right ;
-              Proofview.V82.tactic (unfold_constr (Coqlib.get_ref "core.not.type"));
+              Proofview.V82.tactic (unfold_constr (Coqlib.lib_ref "core.not.type"));
               intro;
               Equality.subst_all ();
               assert_by (Name freshH3)

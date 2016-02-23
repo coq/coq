@@ -723,9 +723,9 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
 let make_eq () =
-(*FIXME*) Coqlib.get_constr "core.eq.type"
+(*FIXME*) Coqlib.lib_constr "core.eq.type"
 let make_eq_refl () =
-(*FIXME*) Coqlib.get_constr "core.eq.refl"
+(*FIXME*) Coqlib.lib_constr "core.eq.refl"
 
 let get_rew_prf r = match r.rew_prf with
   | RewPrf (rel, prf) -> rel, prf 

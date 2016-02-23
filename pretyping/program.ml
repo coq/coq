@@ -12,31 +12,31 @@ open Util
 open Names
 open Term
 
-let sig_typ   () = Coqlib.get_ref "core.sig.type"
-let sig_intro () = Coqlib.get_ref "core.sig.intro"
-let sig_proj1 () = Coqlib.get_ref "core.sig.proj1"
-let sig_proj2 () = Coqlib.get_ref "core.sig.proj2"
+let sig_typ   () = Coqlib.lib_ref "core.sig.type"
+let sig_intro () = Coqlib.lib_ref "core.sig.intro"
+let sig_proj1 () = Coqlib.lib_ref "core.sig.proj1"
+let sig_proj2 () = Coqlib.lib_ref "core.sig.proj2"
 
-let sigT_typ   () = Coqlib.get_ref "core.sigT.type"
-let sigT_intro () = Coqlib.get_ref "core.sigT.intro"
-let sigT_proj1 () = Coqlib.get_ref "core.sigT.proj2"
-let sigT_proj2 () = Coqlib.get_ref "core.sigT.proj2"
+let sigT_typ   () = Coqlib.lib_ref "core.sigT.type"
+let sigT_intro () = Coqlib.lib_ref "core.sigT.intro"
+let sigT_proj1 () = Coqlib.lib_ref "core.sigT.proj2"
+let sigT_proj2 () = Coqlib.lib_ref "core.sigT.proj2"
 
-let prod_typ   () = Coqlib.get_ref "core.prod.type"
-let prod_intro () = Coqlib.get_ref "core.prod.intro"
-let prod_proj1 () = Coqlib.get_ref "core.prod.proj1"
-let prod_proj2 () = Coqlib.get_ref "core.prod.proj2"
+let prod_typ   () = Coqlib.lib_ref "core.prod.type"
+let prod_intro () = Coqlib.lib_ref "core.prod.intro"
+let prod_proj1 () = Coqlib.lib_ref "core.prod.proj1"
+let prod_proj2 () = Coqlib.lib_ref "core.prod.proj2"
 
-let coq_eq_ind      () = Coqlib.get_ref "core.eq.type"
-let coq_eq_refl     () = Coqlib.get_ref "core.eq.refl"
-let coq_eq_refl_ref () = Coqlib.get_ref "core.eq.refl"
-let coq_eq_rect     () = Coqlib.get_ref "core.eq.rect"
+let coq_eq_ind      () = Coqlib.lib_ref "core.eq.type"
+let coq_eq_refl     () = Coqlib.lib_ref "core.eq.refl"
+let coq_eq_refl_ref () = Coqlib.lib_ref "core.eq.refl"
+let coq_eq_rect     () = Coqlib.lib_ref "core.eq.rect"
 
-let coq_JMeq_ind  () = Coqlib.get_ref "core.jmeq.type"
-let coq_JMeq_refl () = Coqlib.get_ref "core.jmeq.refl"
+let coq_JMeq_ind  () = Coqlib.lib_ref "core.jmeq.type"
+let coq_JMeq_refl () = Coqlib.lib_ref "core.jmeq.refl"
 
-let coq_not () = Coqlib.get_constr "core.not.type"
-let coq_and () = Coqlib.get_constr "core.and.type"
+let coq_not () = Coqlib.lib_constr "core.not.type"
+let coq_and () = Coqlib.lib_constr "core.and.type"
 
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd

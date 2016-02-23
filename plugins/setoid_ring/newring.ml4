@@ -1008,7 +1008,7 @@ let ftheory_to_obj : field_info -> obj =
 let field_equality evd r inv req =
   match kind_of_term req with
     | App (f, [| _ |]) when eq_constr_nounivs f (Lazy.force coq_eq) ->
-        mkApp(Coqlib.get_constr "core.eq.congr", [|r;r;inv|])
+        mkApp(Coqlib.lib_constr "core.eq.congr", [|r;r;inv|])
     | _ ->
 	let _setoid = setoid_of_relation (Global.env ()) evd r req in
 	let signature = [Some (r,Some req)],Some(r,Some req) in

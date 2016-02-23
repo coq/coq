@@ -20,9 +20,9 @@ let step_count = ref 0
 
 let node_count = ref 0
 
-let li_False = lazy (destInd (Coqlib.get_constr "core.False.type"))
-let li_and   = lazy (destInd (Coqlib.get_constr "core.and.type"))
-let li_or    = lazy (destInd (Coqlib.get_constr "core.or.type"))
+let li_False = lazy (destInd (Coqlib.lib_constr "core.False.type"))
+let li_and   = lazy (destInd (Coqlib.lib_constr "core.and.type"))
+let li_or    = lazy (destInd (Coqlib.lib_constr "core.or.type"))
 
 let pos_constant s = Universes.constr_of_global @@
   Coqlib.coq_reference "refl_tauto" ["Numbers";"BinNums"] s

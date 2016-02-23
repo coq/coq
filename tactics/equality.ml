@@ -321,7 +321,7 @@ let jmeq_same_dom gl = function
 
 let find_elim hdcncl lft2rgt dep cls ot gl =
   (* XXX: Must make the use of jmeq optional *)
-  let eq_ref = get_ref "core.eq.type"   in
+  let eq_ref = lib_ref "core.eq.type"   in
   (* let jm_ref = get_ref "core.jmeq.type" in *)
   let jm_ref = Coqlib.glob_jmeq         in
   let inccl  = Option.is_empty cls      in
@@ -616,8 +616,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   | None ->
     tclFAIL 0 (str"Terms do not have convertible types.")
   | Some evd ->
-    let e   = get_ref "core.eq.type" in
-    let sym = get_ref "core.eq.sym"  in
+    let e   = lib_ref "core.eq.type" in
+    let sym = lib_ref "core.eq.sym"  in
     Tacticals.New.pf_constr_of_global sym (fun sym ->
     Tacticals.New.pf_constr_of_global e (fun e ->
     let eq = applist (e, [t1;c1;c2]) in
@@ -879,8 +879,8 @@ let construct_discriminator env sigma dirn c sort =
   let (indp,_) = dest_ind_family indf in
   let ind, _ = check_privacy env indp in
   let (mib,mip) = lookup_mind_specif env ind in
-  let true_0  = get_constr "core.True.type"  in
-  let false_0 = get_constr "core.False.type" in
+  let true_0  = lib_constr "core.True.type"  in
+  let false_0 = lib_constr "core.False.type" in
   let sort_0  = Prop Null                    in
   let deparsign = make_arity_signature env true indf in
   let p = it_mkLambda_or_LetIn (mkSort sort_0) deparsign in
@@ -899,7 +899,7 @@ let rec build_discriminator env sigma dirn c sort = function
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
       let subval = build_discriminator cnum_env sigma dirn newc sort l  in
-      kont subval (get_constr "core.False.type", mkSort (Prop Null))
+      kont subval (lib_constr "core.False.type", mkSort (Prop Null))
 
 (* Note: discrimination could be more clever: if some elimination is
    not allowed because of a large impredicative constructor in the
@@ -942,8 +942,8 @@ let ind_scheme_of_eq lbeq =
 
 
 let discrimination_pf env sigma e (t,t1,t2) discriminator lbeq =
-  let i            = get_constr "core.True.I"     in
-  let absurd_term  = get_constr "core.False.type" in
+  let i            = lib_constr "core.True.I"     in
+  let absurd_term  = lib_constr "core.False.type" in
   let eq_elim, eff = ind_scheme_of_eq lbeq in
   let sigma, eq_elim = Evd.fresh_global (Global.env ()) sigma eq_elim in
     sigma, (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term),
@@ -1288,9 +1288,9 @@ let inject_if_homogenous_dependent_pair ty =
   try
     let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
-    let ceq          = Coqlib.get_constr "core.eq.type"    in
-    let sigTconstr   = Coqlib.get_ref    "core.sigT.type"  in
-    let existTconstr = Coqlib.get_ref    "core.sigT.intro" in
+    let ceq          = Coqlib.lib_constr "core.eq.type"    in
+    let sigTconstr   = Coqlib.lib_ref    "core.sigT.type"  in
+    let existTconstr = Coqlib.lib_ref    "core.sigT.intro" in
     (* check whether the equality deals with dep pairs or not *)
     let eqTypeDest = fst (decompose_app t) in
     if not (Globnames.is_global sigTconstr eqTypeDest) then raise Exit;
@@ -1633,8 +1633,8 @@ let unfold_body x =
   end
 
 let restrict_to_eq_and_identity eq = (* compatibility *)
-  let eq_ref = get_ref "core.eq.type"   in
-  let id_ref = get_ref "core.id.type"   in
+  let eq_ref = lib_ref "core.eq.type"   in
+  let id_ref = lib_ref "core.id.type"   in
   if not (is_global eq_ref eq) &&
     not (is_global id_ref eq)
   then raise Constr_matching.PatternMatchingFailure

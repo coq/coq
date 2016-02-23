@@ -3151,11 +3151,11 @@ let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
   errorlabstrm "Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
-let mkEq t x y = mkApp (get_constr "core.eq.type", [| t; x; y |])
-let mkRefl t x = mkApp (get_constr "core.eq.refl", [| t; x |])
+let mkEq t x y = mkApp (lib_constr "core.eq.type", [| t; x; y |])
+let mkRefl t x = mkApp (lib_constr "core.eq.refl", [| t; x |])
 
-let mkHEq t x u y = mkApp (get_constr "core.jmeq.type", [| t; x; u; y |])
-let mkHRefl t x   = mkApp (get_constr "core.jmeq.refl",	[| t; x |])
+let mkHEq t x u y = mkApp (lib_constr "core.jmeq.type", [| t; x; u; y |])
+let mkHRefl t x   = mkApp (lib_constr "core.jmeq.refl",	[| t; x |])
 
 let lift_togethern n l =
   let l', _ =
@@ -3403,14 +3403,14 @@ let specialize_eqs id gl =
     match kind_of_term ty with
     | Prod (na, t, b) ->
 	(match kind_of_term t with
-	| App (eq, [| eqty; x; y |]) when Term.eq_constr (get_constr "core.eq.type") eq ->
+	| App (eq, [| eqty; x; y |]) when Term.eq_constr (lib_constr "core.eq.type") eq ->
 	    let c = if noccur_between 1 (List.length ctx) x then y else x in
 	    let pt = mkEq eqty c c  in
 	    let p  = mkRefl eqty c  in
 	      if unif (push_rel_context ctx env) evars pt t then
 		aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
 	      else acc, in_eqs, ctx, ty
-	| App (heq, [| eqty; x; eqty'; y |]) when Term.eq_constr heq (get_constr "core.jmeq.type") ->
+	| App (heq, [| eqty; x; eqty'; y |]) when Term.eq_constr heq (lib_constr "core.jmeq.type") ->
 	    let eqt, c = if noccur_between 1 (List.length ctx) x then eqty', y else eqty, x in
 	    let pt = mkHEq eqt c eqt c in
 	    let p  = mkHRefl eqt c     in

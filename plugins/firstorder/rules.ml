@@ -201,7 +201,7 @@ let ll_forall_tac prod backtrack id continue seq=
 
 (* special for compatibility with old Intuition *)
 
-let constant str = Coqlib.get_constr str
+let constant str = Coqlib.lib_constr str
 
 let defined_connectives = lazy
   [AllOccurrences, EvalConstRef (fst (destConst (constant "core.not.type")));

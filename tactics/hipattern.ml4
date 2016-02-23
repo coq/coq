@@ -249,7 +249,7 @@ let is_matching x y = is_matching (Global.env ()) Evd.empty x y
 let matches x y = matches (Global.env ()) Evd.empty x y
 
 let match_with_equation t =
-  let eq_ref = get_ref "core.eq.type"   in
+  let eq_ref = lib_ref "core.eq.type"   in
   (* let id_ref = get_ref "core.id.type"   in *)
   (* let jm_ref = get_ref "core.jmeq.type" in *)
   (* XXX: This must be generalized no to depend on identity or jmeq *)
@@ -384,9 +384,9 @@ let rec first_match matcher = function
 
 (* Patterns "(eq ?1 ?2 ?3)" and "(identity ?1 ?2 ?3)" *)
 let coq_eq_pattern_gen eq = lazy PATTERN [ %eq ?X1 ?X2 ?X3 ]
-let coq_eq_pattern        = coq_eq_pattern_gen (lazy (get_ref "core.eq.type"))
-let coq_identity_pattern  = coq_eq_pattern_gen (lazy (get_ref "core.id.type"))
-let jmeq_pat              = lazy (get_ref "core.jmeq.type")
+let coq_eq_pattern        = coq_eq_pattern_gen (lazy (lib_ref "core.eq.type"))
+let coq_identity_pattern  = coq_eq_pattern_gen (lazy (lib_ref "core.id.type"))
+let jmeq_pat              = lazy (lib_ref "core.jmeq.type")
 let coq_jmeq_pattern      = lazy PATTERN [ %jmeq_pat ?X1 ?X2 ?X3 ?X4 ]
 
 let match_eq eqn eq_pat =
@@ -457,9 +457,9 @@ let dest_nf_eq gls eqn =
 
 let match_sigma ex =
   match kind_of_term ex with
-  | App (f, [| a; p; car; cdr |]) when is_global (get_ref "core.sig.intro") f ->
+  | App (f, [| a; p; car; cdr |]) when is_global (lib_ref "core.sig.intro") f ->
     build_sigma (), (snd (destConstruct f), a, p, car, cdr)
-  | App (f, [| a; p; car; cdr |]) when is_global (get_ref "core.sigT.intro") f ->
+  | App (f, [| a; p; car; cdr |]) when is_global (lib_ref "core.sigT.intro") f ->
     build_sigma_type (), (snd (destConstruct f), a, p, car, cdr)
   | _ -> raise PatternMatchingFailure
 
@@ -467,7 +467,7 @@ let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
   match_sigma ex
 
 (* Pattern "(sig ?1 ?2)" *)
-let coq_sig_ref = lazy (get_ref "core.sig.type")
+let coq_sig_ref = lazy (lib_ref "core.sig.type")
 let coq_sig_pattern = lazy PATTERN [ %coq_sig_ref ?X1 ?X2 ]
 
 let match_sigma t =
@@ -484,9 +484,9 @@ let is_matching_sigma t = is_matching (Lazy.force coq_sig_pattern) t
 (* Pattern "{<?1>x=y}+{~(<?1>x=y)}" *)
 (* i.e. "(sumbool (eq ?1 x y) ~(eq ?1 x y))" *)
 
-let coq_or_ref      = lazy (get_ref "core.or.type")
-let coq_not_ref     = lazy (get_ref "core.not.type")
-let coq_sumbool_ref = lazy (get_ref "core.sumbool.type")
+let coq_or_ref      = lazy (lib_ref "core.or.type")
+let coq_not_ref     = lazy (lib_ref "core.not.type")
+let coq_sumbool_ref = lazy (lib_ref "core.sumbool.type")
 
 let coq_eqdec_inf_pattern =
  lazy PATTERN [ { ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 } ]
@@ -521,7 +521,7 @@ let match_eqdec t =
 (* Patterns "~ ?" and "? -> False" *)
 let coq_not_pattern = lazy PATTERN [ ~ _ ]
 
-let coq_False_ref = lazy (get_ref "core.False.type")
+let coq_False_ref = lazy (lib_ref "core.False.type")
 let coq_imp_False_pattern = lazy PATTERN [ _ -> %coq_False_ref ]
 
 let is_matching_not t = is_matching (Lazy.force coq_not_pattern) t

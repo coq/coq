@@ -882,8 +882,8 @@ let rec telescope = function
 	List.fold_left
 	  (fun (ty, tys, (k, constr)) (n, b, t) ->
 	    let pred = mkLambda (n, t, ty) in
-	    let ty    = get_constr "core.sigT.type"  in
-	    let intro = get_constr "core.sigT.intro" in
+	    let ty    = lib_constr "core.sigT.type"  in
+	    let intro = lib_constr "core.sigT.intro" in
 	    let sigty = mkApp (ty, [|t; pred|]) in
 	    let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
 	      (sigty, pred :: tys, (succ k, intro)))
@@ -891,8 +891,8 @@ let rec telescope = function
       in
       let (last, subst) = List.fold_right2
 	(fun pred (n, b, t) (prev, subst) ->
-	  let p1 = get_constr "core.sigT.proj1" in
-	  let p2 = get_constr "core.sigT.proj2" in
+	  let p1 = lib_constr "core.sigT.proj1" in
+	  let p2 = lib_constr "core.sigT.proj2" in
 	  let proj1 = applistc p1 [t; pred; prev] in
 	  let proj2 = applistc p2 [t; pred; prev] in
 	    (lift 1 proj2, (n, Some proj1, t) :: subst))

@@ -18,7 +18,7 @@ open Util
 (** The idea is to migrate to rebindable name-based approach, thus the
     only function this FILE will provide will be:
 
-    [get_ref : string -> global_reference]
+    [lib_ref : string -> global_reference]
 
     such that [find_reference "core.eq.type"]
     returns the proper [global_reference]
@@ -35,8 +35,8 @@ open Util
     This is work in progress, see below.
 *)
 
-val get_ref    : string -> global_reference
-val get_constr : string -> constr
+val lib_ref    : string -> global_reference
+val lib_constr : string -> constr
 
 val add_ref    : string -> global_reference -> unit
 

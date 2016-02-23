@@ -10,9 +10,9 @@ let (===) = Term.eq_constr
 
 
 module CoqList = struct
-  let typ  =  lazy (Coqlib.get_constr "core.list.type")
-  let _nil =  lazy (Coqlib.get_constr "core.list.nil")
-  let _cons = lazy (Coqlib.get_constr "core.list.cons")
+  let typ  =  lazy (Coqlib.lib_constr "core.list.type")
+  let _nil =  lazy (Coqlib.lib_constr "core.list.nil")
+  let _cons = lazy (Coqlib.lib_constr "core.list.cons")
 
   let cons ty h t = lapp _cons [|ty; h ; t|]
   let nil ty = lapp _nil [|ty|]
@@ -24,10 +24,10 @@ module CoqList = struct
 end
 
 module CoqPositive = struct
-  let typ = lazy (Coqlib.get_constr "num.pos.type")
-  let _xH = lazy (Coqlib.get_constr "num.pos.xH")
-  let _xO = lazy (Coqlib.get_constr "num.pos.xO")
-  let _xI = lazy (Coqlib.get_constr "num.pos.xI")
+  let typ = lazy (Coqlib.lib_constr "num.pos.type")
+  let _xH = lazy (Coqlib.lib_constr "num.pos.xH")
+  let _xO = lazy (Coqlib.lib_constr "num.pos.xO")
+  let _xI = lazy (Coqlib.lib_constr "num.pos.xI")
 
   (* A coq nat from an int *)
   let rec of_int n =
@@ -73,14 +73,14 @@ end
 
 module Bool = struct
 
-  let ind    = lazy (Globnames.destIndRef (Coqlib.get_ref "core.bool.type"))
-  let typ    = lazy (Coqlib.get_constr "core.bool.type")
-  let trueb  = lazy (Coqlib.get_constr "core.bool.true")
-  let falseb = lazy (Coqlib.get_constr "core.bool.false")
-  let andb   = lazy (Coqlib.get_constr "core.bool.andb")
-  let orb    = lazy (Coqlib.get_constr "core.bool.orb")
-  let xorb   = lazy (Coqlib.get_constr "core.bool.xorb")
-  let negb   = lazy (Coqlib.get_constr "core.bool.negb")
+  let ind    = lazy (Globnames.destIndRef (Coqlib.lib_ref "core.bool.type"))
+  let typ    = lazy (Coqlib.lib_constr "core.bool.type")
+  let trueb  = lazy (Coqlib.lib_constr "core.bool.true")
+  let falseb = lazy (Coqlib.lib_constr "core.bool.false")
+  let andb   = lazy (Coqlib.lib_constr "core.bool.andb")
+  let orb    = lazy (Coqlib.lib_constr "core.bool.orb")
+  let xorb   = lazy (Coqlib.lib_constr "core.bool.xorb")
+  let negb   = lazy (Coqlib.lib_constr "core.bool.negb")
 
   type t =
   | Var of int
@@ -132,7 +132,7 @@ module Btauto = struct
 
   open Pp
 
-  let eq = lazy (Coqlib.get_constr "core.eq.type")
+  let eq = lazy (Coqlib.lib_constr "core.eq.type")
 
   let get_constant dir s = lazy (Universes.constr_of_global @@ Coqlib.coq_reference contrib_name dir s)
 

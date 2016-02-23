@@ -33,8 +33,8 @@ let glob_Ascii = lazy (make_reference "Ascii")
 
 open Lazy
 
-let glob_true  () = get_ref "core.bool.true"
-let glob_false () = get_ref "core.bool.false"
+let glob_true  () = lib_ref "core.bool.true"
+let glob_false () = lib_ref "core.bool.false"
 
 let interp_ascii dloc p =
   let rec aux n p =

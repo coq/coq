@@ -1200,7 +1200,7 @@ let get_current_subgoals_types () =
     sigma, List.map (Goal.V82.abstract_type sigma) sgs
 
 let build_and_l l =
-  let and_constr =  Coqlib.get_constr "core.and.type" in
+  let and_constr =  Coqlib.lib_constr "core.and.type" in
   let conj_constr = coq_conj () in
   let mk_and p1 p2 =
     Term.mkApp(and_constr,[|p1;p2|]) in

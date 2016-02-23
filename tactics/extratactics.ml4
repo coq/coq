@@ -306,12 +306,12 @@ let project_hint pri l2r r =
   let sigma, c = Evd.fresh_global env sigma gr in
   let t = Retyping.get_type_of env sigma c in
   let t =
-    Tacred.reduce_to_quantified_ref env sigma (get_ref "core.iff.type") t in
+    Tacred.reduce_to_quantified_ref env sigma (lib_ref "core.iff.type") t in
   let sign,ccl = decompose_prod_assum t in
   let (a,b) = match snd (decompose_app ccl) with
     | [a;b] -> (a,b)
     | _ -> assert false in
-  let p = get_constr (if l2r then "core.iff.proj1" else "core.iff.proj2") in
+  let p = lib_constr (if l2r then "core.iff.proj1" else "core.iff.proj2") in
   let c = Reductionops.whd_beta Evd.empty (mkApp (c,Termops.extended_rel_vect 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in

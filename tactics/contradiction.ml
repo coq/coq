@@ -18,7 +18,7 @@ open Misctypes
 
 let mk_absurd_proof t =
   let id = Namegen.default_dependent_ident in
-  mkLambda (Names.Name id,mkApp(get_constr "core.not.type",[|t|]),
+  mkLambda (Names.Name id,mkApp(lib_constr "core.not.type",[|t|]),
     mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
 
 let absurd c =
@@ -30,7 +30,7 @@ let absurd c =
     let t = j.Environ.utj_val in
     Tacticals.New.tclTHENLIST [
       Proofview.Unsafe.tclEVARS sigma;
-      elim_type (get_constr "core.False.type");
+      elim_type (lib_constr "core.False.type");
       Simple.apply (mk_absurd_proof t)
     ]
   end

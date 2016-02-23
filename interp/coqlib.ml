@@ -159,13 +159,13 @@ let table : (string, global_reference Lazy.t) Hashtbl.t =
   ht
 
 (** Can throw Not_found *)
-let get_ref    s =
+let lib_ref    s =
   (* Format.eprintf "get_ref %s \n%!" s; *)
   try Lazy.force (Hashtbl.find table s)
   with | Not_found ->
     Format.eprintf "not found in table: %s %!" s; raise Not_found
 
-let get_constr s = Universes.constr_of_global (get_ref s)
+let lib_constr s = Universes.constr_of_global (lib_ref s)
 
 (** Replaces a binding ! *)
 let add_ref  s c =
@@ -300,11 +300,11 @@ type coq_sigma_data = {
   typ   : global_reference }
 
 let build_sigma_gen str =
-  { typ   = get_ref ("core." ^ str ^ ".type");
-    elim  = get_ref ("core." ^ str ^ ".rect");
-    intro = get_ref ("core." ^ str ^ ".intro");
-    proj1 = get_ref ("core." ^ str ^ ".proj1");
-    proj2 = get_ref ("core." ^ str ^ ".proj2");
+  { typ   = lib_ref ("core." ^ str ^ ".type");
+    elim  = lib_ref ("core." ^ str ^ ".rect");
+    intro = lib_ref ("core." ^ str ^ ".intro");
+    proj1 = lib_ref ("core." ^ str ^ ".proj1");
+    proj2 = lib_ref ("core." ^ str ^ ".proj2");
   }
 
 let build_prod       () = build_sigma_gen "prod"
@@ -324,12 +324,12 @@ type coq_eq_data = {
 
 let build_eqdata_gen lib str =
   let _ = check_required_library lib in {
-  eq    = get_ref ("core." ^ str ^ ".type");
-  ind   = get_ref ("core." ^ str ^ ".ind");
-  refl  = get_ref ("core." ^ str ^ ".refl");
-  sym   = get_ref ("core." ^ str ^ ".sym");
-  trans = get_ref ("core." ^ str ^ ".trans");
-  congr = get_ref ("core." ^ str ^ ".congr");
+  eq    = lib_ref ("core." ^ str ^ ".type");
+  ind   = lib_ref ("core." ^ str ^ ".ind");
+  refl  = lib_ref ("core." ^ str ^ ".refl");
+  sym   = lib_ref ("core." ^ str ^ ".sym");
+  trans = lib_ref ("core." ^ str ^ ".trans");
+  congr = lib_ref ("core." ^ str ^ ".congr");
   }
 
 let build_coq_eq_data       () = build_eqdata_gen logic_module_name "eq"
@@ -347,9 +347,9 @@ type coq_inversion_data = {
 
 let build_coq_inversion_gen l str =
   List.iter check_required_library l; {
-    inv_eq    = get_ref ("core." ^ str ^ ".type");
-    inv_ind   = get_ref ("core." ^ str ^ ".ind");
-    inv_congr = get_ref ("core." ^ str ^ ".congr_canonical");
+    inv_eq    = lib_ref ("core." ^ str ^ ".type");
+    inv_ind   = lib_ref ("core." ^ str ^ ".ind");
+    inv_congr = lib_ref ("core." ^ str ^ ".congr_canonical");
   }
 
 let build_coq_inversion_eq_data () =
@@ -363,7 +363,7 @@ let build_coq_inversion_eq_true_data () =
 
 let build_coq_inversion_jmeq_data () =
   let _ = check_required_library logic_module_name in {
-  inv_eq    = get_ref "core.jmeq.hom";
-  inv_ind   = get_ref "core.jmeq.ind";
-  inv_congr = get_ref "core.jmeq.congr_canonical"; }
+  inv_eq    = lib_ref "core.jmeq.hom";
+  inv_ind   = lib_ref "core.jmeq.ind";
+  inv_congr = lib_ref "core.jmeq.congr_canonical"; }
 

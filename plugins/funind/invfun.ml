@@ -101,11 +101,11 @@ let nf_zeta =
 
 
 let make_eq () =
-  try Coqlib.get_constr "core.eq.type"
+  try Coqlib.lib_constr "core.eq.type"
   with _ -> assert false
 
 let make_eq_refl () =
-  try Coqlib.get_constr "core.eq.refl"
+  try Coqlib.lib_constr "core.eq.refl"
   with _ -> assert false
 
 (* [generate_type g_to_f f graph i] build the completeness (resp. correctness) lemma type if [g_to_f = true]
@@ -520,7 +520,7 @@ and intros_with_rewrite_aux : tactic =
 			    intros_with_rewrite
 			  ] g
 			end
-		  | Ind _ when eq_constr t (Coqlib.get_constr "core.False.type") ->
+		  | Ind _ when eq_constr t (Coqlib.lib_constr "core.False.type") ->
 		      Proofview.V82.of_tactic Tauto.tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[
