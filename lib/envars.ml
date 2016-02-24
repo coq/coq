@@ -117,8 +117,8 @@ let guess_coqlib fail =
         | None -> coqroot
       in
       if Sys.file_exists (coqlib / prelude) then coqlib
-      else
-        fail "cannot guess a path for Coq libraries; please use -coqlib option")
+      else "")
+        (* fail "cannot guess a path for Coq libraries; please use -coqlib option") *)
 
 (** coqlib is now computed once during coqtop initialization *)
 
