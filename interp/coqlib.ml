@@ -21,22 +21,33 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
 let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
+  (* EG: Not using  *)
+  (* try global_of_extended_global (Nametab.global_of_path sp)   in *)
   try Nametab.global_of_path sp
   with Not_found ->
     (* Format.eprintf "ref not found %s %s\n%!" locstr s; *)
     (* Printexc.print_backtrace stderr; *)
     anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
 
-let ssr = true
+type mode = Ssr | HoTT | Coq
+let mode = Coq
 
 let coq = Nameops.coq_string (* "Coq" *)
-let init_dir = if ssr
-  then [ "mathcomp"; "ssreflect" ]
-  else [coq; "Init"]
 
-let lib_prelude, lib_logic, lib_data, lib_type, lib_specif = if ssr
-  then "init", "init", "init", "init", "init"
-  else "Prelude", "Logic", "Datatypes", "Logic_Type", "Specif"
+let init_dir = match mode with
+    Ssr  -> [ "mathcomp"; "ssreflect" ]
+  | HoTT -> [ "HoTT"; "Basics" ]
+  | Coq  -> [coq; "Init"]
+
+let lib_prelude, lib_logic, lib_data, lib_type, lib_specif = match mode with
+    Ssr  -> "init", "init", "init", "init", "init"
+  | HoTT -> "Overture", "Overture", "Overture", "Overture", "Overture"
+  | Coq  -> "Prelude", "Logic", "Datatypes", "Logic_Type", "Specif"
+
+let l_eq = match mode with
+  | Ssr  -> "eq"
+  | HoTT -> "paths"
+  | Coq  -> "eq"
 
 let prelude_module_name    = init_dir@[lib_prelude]
 let prelude_module         = make_dir prelude_module_name
@@ -82,11 +93,11 @@ let std_table : (string * string list * string) array =
    ; "core.ex.ind",     logic_lib, "ex_ind"
    ; "core.ex.intro",   logic_lib, "ex_intro"
 
-   ; "core.eq.type",    logic_lib, "eq"
-   ; "core.eq.refl",    logic_lib, "eq_refl"
-   ; "core.eq.ind",     logic_lib, "eq_ind"
-   ; "core.eq.rect",    logic_lib, "eq_rect"
-   ; "core.eq.sym",     logic_lib, "eq_sym"
+   ; "core.eq.type",    logic_lib, l_eq ^ ""
+   ; "core.eq.refl",    logic_lib, l_eq ^ "_refl"
+   ; "core.eq.ind",     logic_lib, l_eq ^ "_ind"
+   ; "core.eq.rect",    logic_lib, l_eq ^ "_rect"
+   ; "core.eq.sym",     logic_lib, l_eq ^ "_sym"
    ; "core.eq.congr",   logic_lib, "f_equal"
    ; "core.eq.trans",   logic_lib, "eq_trans"
    (* Is not there? *)

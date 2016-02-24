@@ -321,12 +321,15 @@ let jmeq_same_dom gl = function
 
 let find_elim hdcncl lft2rgt dep cls ot gl =
   (* XXX: Must make the use of jmeq optional *)
-  let eq_ref = lib_ref "core.eq.type"   in
+  (* let eq_ref = lib_ref "core.eq.type"   in *)
   (* let jm_ref = get_ref "core.jmeq.type" in *)
-  let jm_ref = Coqlib.glob_jmeq         in
-  let inccl  = Option.is_empty cls      in
-  if (is_global eq_ref hdcncl ||
-      (is_global jm_ref hdcncl &&
+  (* let jm_ref = Coqlib.glob_jmeq         in *)
+  (* let inccl  = Option.is_empty cls      in *)
+  (* if (is_global eq_ref hdcncl || *)
+  (*     (is_global jm_ref hdcncl && *)
+  let inccl = Option.is_empty cls in
+  if (is_global Coqlib.glob_eq hdcncl ||
+      (is_global Coqlib.glob_jmeq hdcncl &&
 	 jmeq_same_dom gl ot)) && not dep
     || Flags.version_less_or_equal Flags.V8_2
   then
