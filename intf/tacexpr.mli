@@ -206,7 +206,6 @@ constraint 'a = <
 
 and 'a gen_tactic_arg =
   | TacGeneric     of 'lev generic_argument
-  | MetaIdArg      of Loc.t * bool * string
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval
   | UConstr        of 'utrm
   | Reference      of 'ref
