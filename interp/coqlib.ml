@@ -15,6 +15,16 @@ open Libnames
 open Globnames
 open Nametab
 
+(* Useful for bad^W non-generic tactics *)
+(*
+let _ =
+  let open Pp in
+  Errors.register_handler (function
+    | Nametab.GlobalizationError qid ->
+      (str "GErr at " ++ str (Libnames.string_of_qualid qid))
+    | _ -> raise Unhandled)
+*)
+
 (************************************************************************)
 (* New API *)
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
@@ -30,7 +40,7 @@ let find_reference locstr dir s =
     anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
 
 type mode = Ssr | HoTT | Coq
-let mode = Coq
+let mode = Ssr
 
 let coq = Nameops.coq_string (* "Coq" *)
 
