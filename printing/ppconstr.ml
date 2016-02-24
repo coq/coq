@@ -511,8 +511,14 @@ end) = struct
       | _ ->
         pr sep inherited a
 
+let obj_string x =
+  if Obj.is_block (Obj.repr x) then
+    "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
+  else "int_val = " ^ string_of_int (Obj.magic x)
+
   let pr pr sep inherited a =
     let return (cmds, prec) = (tag_constr_expr a cmds, prec) in
+let _ = Printf.eprintf "pr a=%s\n%!" (obj_string a) in
     let (strm, prec) = match a with
       | CRef (r, us) ->
         return (pr_cref r us, latom)
@@ -539,6 +545,7 @@ end) = struct
           when
             Id.equal m n &&
             not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
+let _ = Printf.eprintf "*** CProdN oui\n%!" in
         return (
           hov 0 (
             keyword "forall" ++ spc () ++ str "'" ++ pr_patt ltop p ++
@@ -546,6 +553,7 @@ end) = struct
           llambda
         )
       | CProdN _ ->
+let _ = Printf.eprintf "*** CProdN non\n%!" in
         let (bl,a) = extract_prod_binders a in
         return (
           hov 0 (
@@ -712,6 +720,7 @@ end) = struct
       | CNotation (_,"( _ )",([t],[],[])) ->
         return (pr (fun()->str"(") (max_int,L) t ++ str")", latom)
       | CNotation (_,s,env) ->
+let _ = Printf.eprintf "*** CNotation \"%s\"\n%!" s in
         pr_notation (pr mt) (pr_binders_gen (pr mt ltop)) s env
       | CGeneralization (_,bk,ak,c) ->
         return (pr_generalization bk ak (pr mt ltop c), latom)
