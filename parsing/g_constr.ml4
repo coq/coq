@@ -132,10 +132,7 @@ GEXTEND Gram
   closed_binder open_binders binder binders binders_fixannot
   record_declaration typeclass_constraint pattern appl_arg;
   Constr.ident:
-    [ [ id = Prim.ident -> id
-
-      (* This is used in quotations and Syntax *)
-      | id = METAIDENT -> Id.of_string id ] ]
+    [ [ id = Prim.ident -> id ] ]
   ;
   Prim.name:
     [ [ "_" -> (!@loc, Anonymous) ] ]

@@ -1371,7 +1371,6 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
         let env = Proofview.Goal.env gl in
         Ftactic.return (Value.of_uconstr (interp_uconstr ist env c))
       end }
-  | MetaIdArg (loc,_,id) -> assert false
   | TacCall (loc,r,[]) ->
       interp_ltac_reference loc true ist r
   | TacCall (loc,f,l) ->

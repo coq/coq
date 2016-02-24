@@ -54,9 +54,11 @@ let mlexpr_of_option f = function
   | None -> <:expr< None >>
   | Some e -> <:expr< Some $f e$ >>
 
+let mlexpr_of_ident id =
+  <:expr< Names.Id.of_string $str:Names.Id.to_string id$ >>
+
 let mlexpr_of_token = function
 | Tok.KEYWORD s -> <:expr< Tok.KEYWORD $mlexpr_of_string s$ >>
-| Tok.METAIDENT s -> <:expr< Tok.METAIDENT $mlexpr_of_string s$ >>
 | Tok.PATTERNIDENT s -> <:expr< Tok.PATTERNIDENT $mlexpr_of_string s$ >>
 | Tok.IDENT s -> <:expr< Tok.IDENT $mlexpr_of_string s$ >>
 | Tok.FIELD s -> <:expr< Tok.FIELD $mlexpr_of_string s$ >>

@@ -146,7 +146,6 @@ GEXTEND Gram
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
-      | id = METAIDENT -> MetaIdArg (!@loc,true,id)
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
@@ -179,8 +178,7 @@ GEXTEND Gram
       | c = Constr.constr -> ConstrTerm c ] ]
   ;
   tactic_atom:
-    [ [ id = METAIDENT -> MetaIdArg (!@loc,true,id)
-      | n = integer -> TacGeneric (genarg_of_int n)
+    [ [ n = integer -> TacGeneric (genarg_of_int n)
       | r = reference -> TacCall (!@loc,r,[])
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;

@@ -1189,10 +1189,6 @@ module Make
           else str"(" ++ strm ++ str")"
 
         and pr_tacarg = function
-          | MetaIdArg (loc,true,s) ->
-            pr_with_comments loc (str "$" ++ str s)
-          | MetaIdArg (loc,false,s) ->
-            pr_with_comments loc (keyword "constr:" ++ str " $" ++ str s)
           | Reference r ->
             pr.pr_reference r
           | ConstrMayEval c ->

@@ -35,11 +35,6 @@ let dloc = Loc.ghost
 let error_global_not_found_loc (loc,qid) =
   error_global_not_found_loc loc qid
 
-let error_syntactic_metavariables_not_allowed loc =
-  user_err_loc
-    (loc,"out_ident",
-     str "Syntactic metavariables allowed only in quotations.")
-
 let error_tactic_expected loc =
   user_err_loc (loc,"",str "Tactic expected.")
 
@@ -672,7 +667,6 @@ and intern_tactic_as_arg loc onlytac ist a =
   | Tacexp a -> a
   | ConstrMayEval _ | UConstr _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
       if onlytac then error_tactic_expected loc else TacArg (loc,a)
-  | MetaIdArg _ -> assert false
 
 and intern_tactic_or_tacarg ist = intern_tactic false ist
 
@@ -686,13 +680,6 @@ and intern_tacarg strict onlytac ist = function
   | Reference r -> intern_non_tactic_reference strict ist r
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
   | UConstr c -> UConstr (intern_constr ist c)
-  | MetaIdArg (loc,istac,s) ->
-      (* $id can occur in Grammar tactic... *)
-      let id = Id.of_string s in
-      if find_var id ist then
-	if istac then Reference (ArgVar (adjust_loc loc,id))
-	else ConstrMayEval (ConstrTerm (GVar (adjust_loc loc,id), None))
-      else error_syntactic_metavariables_not_allowed loc
   | TacCall (loc,f,[]) -> intern_isolated_tactic_reference strict ist f
   | TacCall (loc,f,l) ->
       TacCall (loc,
