@@ -201,7 +201,7 @@ let not_dep_intros ist =
   <:tactic<
   repeat match goal with
   | |- (forall (_: ?X1), ?X2) => intro
-  | |- (init.not _) => unfold init.not at 1; intro
+  | |- (not _) => unfold not at 1; intro
   end >>
 
 let axioms flags ist =
@@ -230,8 +230,8 @@ let simplif flags ist =
     repeat
        (match reverse goal with
         | id: ?X1 |- _ => $t_is_conj; elim id; do 2 intro; clear id
-        | id: (init.iff _ _) |- _ => elim id; do 2 intro; clear id
-        | id: (init.not _) |- _ => red in id
+        | id: (iff _ _) |- _ => elim id; do 2 intro; clear id
+        | id: (not _) |- _ => red in id
         | id: ?X1 |- _ => $t_is_disj; elim id; intro; clear id
         | id0: (forall (_: ?X1), ?X2), id1: ?X1|- _ =>
 	    (* generalize (id0 id1); intro; clear id0 does not work
@@ -247,7 +247,7 @@ let simplif flags ist =
         | id: forall (_ : ?X1), ?X2|- _ =>
           $t_flatten_contravariant_conj
 	  (* moved from "id:(?A/\?B)->?X2|-" to "?A->?B->?X2|-" *)
-        | id: forall (_: init.iff ?X1 ?X2), ?X3|- _ =>
+        | id: forall (_: iff ?X1 ?X2), ?X3|- _ =>
           assert (forall (_: forall _:X1, X2), forall (_: forall _: X2, X1), X3)
 	    by (do 2 intro; apply id; split; assumption);
             clear id
@@ -255,8 +255,8 @@ let simplif flags ist =
           $t_flatten_contravariant_disj
 	  (* moved from "id:(?A\/?B)->?X2|-" to "?A->?X2,?B->?X2|-" *)
         | |- ?X1 => $t_is_conj; split
-        | |- (init.iff _ _) => split
-        | |- (init.not _) => red
+        | |- (iff _ _) => split
+        | |- (not _) => red
         end;
         $t_not_dep_intros) >>
 
@@ -296,9 +296,9 @@ let rec tauto_intuit flags t_reduce solver =
 
 let reduction_not_iff _ist =
   match !negation_unfolding, unfold_iff () with
-    | true, true -> <:tactic< unfold init.not, init.iff in * >>
-    | true, false -> <:tactic< unfold init.not in * >>
-    | false, true -> <:tactic< unfold init.iff in * >>
+    | true, true -> <:tactic< unfold not, iff in * >>
+    | true, false -> <:tactic< unfold not in * >>
+    | false, true -> <:tactic< unfold iff in * >>
     | false, false -> <:tactic< idtac >>
 
 let t_reduction_not_iff = tacticIn reduction_not_iff
