@@ -493,7 +493,6 @@ let process_chars bp c cs =
         err (bp, ep') Undefined_token
 
 let token_of_special c s = match c with
-  | '$' -> METAIDENT s
   | '.' -> FIELD s
   | _ -> assert false
 
@@ -532,8 +531,6 @@ let blank_or_eof cs =
 let rec next_token = parser bp
   | [< '' ' | '\t' | '\n' |'\r' as c; s >] ->
       comm_loc bp; push_char c; next_token s
-  | [< ''$' as c; t = parse_after_special c bp >] ep ->
-      comment_stop bp; (t, (ep, bp))
   | [< ''.' as c; t = parse_after_special c bp; s >] ep ->
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,

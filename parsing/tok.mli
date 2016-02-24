@@ -10,7 +10,6 @@
 
 type t =
   | KEYWORD of string
-  | METAIDENT of string
   | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string

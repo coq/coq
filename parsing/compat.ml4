@@ -262,7 +262,6 @@ IFDEF CAMLP5 THEN
     let pattern = match tok with
     | Tok.KEYWORD s -> "", s
     | Tok.IDENT s -> "IDENT", s
-    | Tok.METAIDENT s -> "METAIDENT", s
     | Tok.PATTERNIDENT s -> "PATTERNIDENT", s
     | Tok.FIELD s -> "FIELD", s
     | Tok.INT s -> "INT", s

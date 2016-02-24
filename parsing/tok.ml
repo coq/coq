@@ -10,7 +10,6 @@
 
 type t =
   | KEYWORD of string
-  | METAIDENT of string
   | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string
@@ -24,7 +23,6 @@ type t =
 let equal t1 t2 = match t1, t2 with
 | IDENT s1, KEYWORD s2 -> CString.equal s1 s2
 | KEYWORD s1, KEYWORD s2 -> CString.equal s1 s2
-| METAIDENT s1, METAIDENT s2 -> CString.equal s1 s2
 | PATTERNIDENT s1, PATTERNIDENT s2 -> CString.equal s1 s2
 | IDENT s1, IDENT s2 -> CString.equal s1 s2
 | FIELD s1, FIELD s2 -> CString.equal s1 s2
@@ -40,7 +38,6 @@ let extract_string = function
   | KEYWORD s -> s
   | IDENT s -> s
   | STRING s -> s
-  | METAIDENT s -> s
   | PATTERNIDENT s -> s
   | FIELD s -> s
   | INT s -> s
@@ -52,7 +49,6 @@ let extract_string = function
 let to_string = function
   | KEYWORD s -> Format.sprintf "%S" s
   | IDENT s -> Format.sprintf "IDENT %S" s
-  | METAIDENT s -> Format.sprintf "METAIDENT %S" s
   | PATTERNIDENT s -> Format.sprintf "PATTERNIDENT %S" s
   | FIELD s -> Format.sprintf "FIELD %S" s
   | INT s -> Format.sprintf "INT %s" s
@@ -76,7 +72,6 @@ let print ppf tok = Format.pp_print_string ppf (to_string tok)
 let of_pattern = function
   | "", s -> KEYWORD s
   | "IDENT", s -> IDENT s
-  | "METAIDENT", s -> METAIDENT s
   | "PATTERNIDENT", s -> PATTERNIDENT s
   | "FIELD", s -> FIELD s
   | "INT", s -> INT s
@@ -90,7 +85,6 @@ let of_pattern = function
 let to_pattern = function
   | KEYWORD s -> "", s
   | IDENT s -> "IDENT", s
-  | METAIDENT s -> "METAIDENT", s
   | PATTERNIDENT s -> "PATTERNIDENT", s
   | FIELD s -> "FIELD", s
   | INT s -> "INT", s
@@ -105,7 +99,6 @@ let match_pattern =
   function
     | "", "" -> (function KEYWORD s -> s | _ -> err ())
     | "IDENT", "" -> (function IDENT s -> s | _ -> err ())
-    | "METAIDENT", "" -> (function METAIDENT s -> s | _ -> err ())
     | "PATTERNIDENT", "" -> (function PATTERNIDENT s -> s | _ -> err ())
     | "FIELD", "" -> (function FIELD s -> s | _ -> err ())
     | "INT", "" -> (function INT s -> s | _ -> err ())
