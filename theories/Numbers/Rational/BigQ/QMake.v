@@ -1050,13 +1050,13 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  Theorem spec_of_Qc: forall q, [[of_Qc q]] = q.
  Proof.
  intros; apply Qc_decomp; simpl; intros.
- rewrite strong_spec_of_Qc; auto.
+ rewrite strong_spec_of_Qc. apply canon.
  Qed.
 
  Theorem spec_oppc: forall q, [[opp q]] = -[[q]].
  Proof.
  intros q; unfold Qcopp, to_Qc, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  rewrite spec_opp, <- Qred_opp, Qred_correct.
  apply Qeq_refl.
@@ -1085,10 +1085,10 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  unfold to_Qc.
  transitivity (Q2Qc ([x] + [y])).
  unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete; apply spec_add; auto.
  unfold Qcplus, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  apply Qplus_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
@@ -1099,10 +1099,10 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  unfold to_Qc.
  transitivity (Q2Qc ([x] + [y])).
  unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete; apply spec_add_norm; auto.
  unfold Qcplus, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  apply Qplus_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
@@ -1147,10 +1147,10 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  unfold to_Qc.
  transitivity (Q2Qc ([x] * [y])).
  unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete; apply spec_mul; auto.
  unfold Qcmult, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
@@ -1161,10 +1161,10 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  unfold to_Qc.
  transitivity (Q2Qc ([x] * [y])).
  unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete; apply spec_mul_norm; auto.
  unfold Qcmult, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
@@ -1185,10 +1185,10 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  unfold to_Qc.
  transitivity (Q2Qc (/[x])).
  unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete; apply spec_inv; auto.
  unfold Qcinv, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  apply Qinv_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
@@ -1199,10 +1199,10 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  unfold to_Qc.
  transitivity (Q2Qc (/[x])).
  unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete; apply spec_inv_norm; auto.
  unfold Qcinv, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  apply Qinv_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
@@ -1247,13 +1247,13 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  unfold to_Qc.
  transitivity (Q2Qc ([x]^2)).
  unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete; apply spec_square; auto.
  simpl Qcpower.
  replace (Q2Qc [x] * 1) with (Q2Qc [x]); try ring.
  simpl.
  unfold Qcmult, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
@@ -1264,14 +1264,14 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  unfold to_Qc.
  transitivity (Q2Qc ([x]^Zpos p)).
  unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete; apply spec_power_pos; auto.
  induction p using Pos.peano_ind.
  simpl; ring.
  rewrite Pos2Nat.inj_succ; simpl Qcpower.
  rewrite <- IHp; clear IHp.
  unfold Qcmult, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
+ apply Qc_decomp; unfold this.
  apply Qred_complete.
  setoid_replace ([x] ^ ' Pos.succ p)%Q with ([x] * [x] ^ ' p)%Q.
  apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
@@ -1281,4 +1281,3 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  Qed.
 
 End Make.
-
