@@ -81,14 +81,6 @@ Qed.
 Definition Q2Qc (q:Q) : Qc := Qcmake (Qred q) (Qred_involutive q).
 Arguments Q2Qc q%Q.
 
-Lemma Qred_eq_iff (q q' : Q) : Qred q = Qred q' <-> q == q'.
-Proof.
- split.
- - intros E. rewrite <- (Qred_correct q), <- (Qred_correct q').
-   now rewrite E.
- - apply Qred_complete.
-Qed.
-
 Lemma Q2Qc_eq_iff (q q' : Q) : Q2Qc q = Q2Qc q' <-> q == q'.
 Proof.
  split; intro H.
@@ -488,7 +480,7 @@ Proof.
   destruct n; simpl.
   destruct 1; auto.
   intros.
-  now apply Qc_is_canon. 
+  now apply Qc_is_canon.
 Qed.
 
 Lemma Qcpower_pos : forall p n, 0 <= p -> 0 <= p^n.
