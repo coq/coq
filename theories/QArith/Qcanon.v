@@ -130,12 +130,12 @@ Proof.
   intros; exact (Qgt_alt p q).
 Qed.
 
-Lemma Qle_alt : forall p q, (p<=q) <-> (p?=q <> Gt).
+Lemma Qcle_alt : forall p q, (p<=q) <-> (p?=q <> Gt).
 Proof.
   intros; exact (Qle_alt p q).
 Qed.
 
-Lemma Qge_alt : forall p q, (p>=q) <-> (p?=q <> Lt).
+Lemma Qcge_alt : forall p q, (p>=q) <-> (p?=q <> Lt).
 Proof.
   intros; exact (Qge_alt p q).
 Qed.
