@@ -23,7 +23,7 @@ open Nametab
 open Pfedit
 open Proof_type
 open Refiner
-open Tacmach
+open Tacmach.New
 open Tactic_debug
 open Constrexpr
 open Term
@@ -718,8 +718,8 @@ let interp_open_constr_list =
   interp_constr_in_compound_list (fun x -> x) (fun x -> x) interp_open_constr
 
 (* Interprets a type expression *)
-let pf_interp_type ist gl =
-  interp_type ist (pf_env gl) (project gl)
+let pf_interp_type ist env sigma =
+  interp_type ist env sigma
 
 (* Fully evaluate an untyped constr *)
 let type_uconstr ?(flags = constr_flags)
@@ -1240,7 +1240,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
          end
   | TacAbstract (tac,ido) ->
       Proofview.Goal.nf_enter { enter = begin fun gl -> Tactics.tclABSTRACT
-        (Option.map (Tacmach.New.of_old (pf_interp_ident ist) gl) ido) (interp_tactic ist tac)
+        (Option.map (pf_interp_ident ist gl) ido) (interp_tactic ist tac)
       end }
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
@@ -1704,13 +1704,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacExact c ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<exact>") begin
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,c_interp) = pf_interp_casted_constr ist gl c in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.exact_no_check c_interp)
-          gl
-      end
+      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+        let (sigma, c_interp) = pf_interp_casted_constr ist gl c in
+        Sigma.Unsafe.of_pair (Proofview.V82.tactic (Tactics.exact_no_check c_interp), sigma)
+      end }
       end
   | TacApply (a,ev,cb,cl) ->
       (* spiwack: until the tactic is in the monad *)
@@ -1765,19 +1762,17 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacMutualFix (id,n,l) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual fix>") begin
-      Proofview.V82.tactic begin fun gl ->
+      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
         let env = pf_env gl in
         let f sigma (id,n,c) =
-	  let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
+          let (sigma,c_interp) = pf_interp_type ist env sigma c in
 	  sigma , (interp_ident ist env sigma id,n,c_interp) in
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.mutual_fix (interp_ident ist env sigma id) n l_interp 0)
-          gl
-      end
+        let tac = Proofview.V82.tactic (Tactics.mutual_fix (interp_ident ist env sigma id) n l_interp 0) in
+        Sigma.Unsafe.of_pair (tac, sigma)
+      end }
       end
   | TacCofix idopt ->
       Proofview.Goal.enter { enter = begin fun gl ->
@@ -1791,19 +1786,17 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacMutualCofix (id,l) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual cofix>") begin
-      Proofview.V82.tactic begin fun gl ->
+      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
         let env = pf_env gl in
         let f sigma (id,c) =
-	  let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
+	  let (sigma,c_interp) = pf_interp_type ist env sigma c in
 	  sigma , (interp_ident ist env sigma id,c_interp) in
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.mutual_cofix (interp_ident ist env sigma id) l_interp 0)
-          gl
-      end
+        let tac = Proofview.V82.tactic (Tactics.mutual_cofix (interp_ident ist env sigma id) l_interp 0) in
+        Sigma.Unsafe.of_pair (tac, sigma)
+      end }
       end
   | TacAssert (b,t,ipat,c) ->
       Proofview.Goal.enter { enter = begin fun gl ->
@@ -1844,9 +1837,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let eqpat = interp_intro_pattern_naming_option ist env sigma eqpat in
         if Locusops.is_nowhere clp then
         (* We try to fully-typecheck the term *)
-          let (sigma,c_interp) =
-            Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl
-          in
+          let (sigma,c_interp) = pf_interp_constr ist gl c in
           let let_tac b na c cl eqpat =
             let id = Option.default (Loc.ghost,IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
@@ -1930,11 +1921,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (Tactics.clear_body l)
       end }
   | TacMove (id1,id2) ->
-      Proofview.V82.tactic begin fun gl -> 
-        Tactics.move_hyp (interp_hyp ist (pf_env gl) (project gl) id1)
-                   (interp_move_location ist (pf_env gl) (project gl) id2)
-                   gl
-      end
+      Proofview.Goal.enter { enter = begin fun gl ->
+        Proofview.V82.tactic (Tactics.move_hyp (interp_hyp ist (pf_env gl) (project gl) id1)
+                   (interp_move_location ist (pf_env gl) (project gl) id2))
+      end }
   | TacRename l ->
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Tacmach.New.pf_env gl in
@@ -1965,19 +1955,16 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacReduce (r,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<reduce>") begin
-      Proofview.V82.tactic begin fun gl -> 
+      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
         let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Proofview.V82.of_tactic (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl)))
-          gl
-      end
+        Sigma.Unsafe.of_pair (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl), sigma)
+      end }
       end
   | TacChange (None,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<change>") begin
       Proofview.V82.nf_evar_goals <*>
-      Proofview.V82.tactic begin fun gl ->
+      Proofview.Goal.nf_enter { enter = begin fun gl ->
         let is_onhyps = match cl.onhyps with
           | None | Some [] -> true
           | _ -> false
@@ -2000,9 +1987,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
           in
           Sigma.Unsafe.of_pair (c, sigma)
         end } in
-	  (Tactics.change None c_interp (interp_clause ist (pf_env gl) (project gl) cl))
-          gl
-      end
+        Proofview.V82.tactic (Tactics.change None c_interp (interp_clause ist (pf_env gl) (project gl) cl))
+      end }
       end
   | TacChange (Some op,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
@@ -2072,9 +2058,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           match c with
           | None -> sigma , None
           | Some c ->
-              let (sigma,c_interp) =
-                Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl
-              in
+              let (sigma,c_interp) = pf_interp_constr ist gl c in
               sigma , Some c_interp
         in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
