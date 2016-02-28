@@ -468,10 +468,14 @@ let rec decompose_app_rel env evd t =
     let len = Array.length args in
     let fargs = Array.sub args 0 (Array.length args - 2) in
     let rel = mkApp (f, fargs) in
-    let ty = Retyping.get_type_of env evd rel in
-    let () = if not (Reduction.is_arity env ty) then error_no_relation () in
     rel, args.(len - 2), args.(len - 1)
   | _ -> error_no_relation ()
+
+let decompose_app_rel env evd t =
+  let (rel, t1, t2) = decompose_app_rel env evd t in
+  let ty = Retyping.get_type_of env evd rel in
+  let () = if not (Reduction.is_arity env ty) then error_no_relation () in
+  (rel, t1, t2)
 
 let decompose_applied_relation env sigma (c,l) =
   let ctype = Retyping.get_type_of env sigma c in
