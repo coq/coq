@@ -1017,9 +1017,10 @@ let make_internalization_vars recvars mainvars typs =
   let extratyps = List.map (fun (x,y) -> (y,List.assoc x maintyps)) recvars in
   maintyps @ extratyps
 
-let make_interpretation_type isrec = function
+let make_interpretation_type isrec isonlybinding = function
   | NtnInternTypeConstr when isrec -> NtnTypeConstrList
-  | NtnInternTypeConstr | NtnInternTypeIdent -> NtnTypeConstr
+  | NtnInternTypeConstr | NtnInternTypeIdent ->
+     if isonlybinding then NtnTypeOnlyBinder else NtnTypeConstr
   | NtnInternTypeBinder when isrec -> NtnTypeBinderList
   | NtnInternTypeBinder -> error "Type not allowed in recursive notation."
 
@@ -1029,16 +1030,16 @@ let make_interpretation_vars recvars allvars =
     List.equal String.equal l1 l2
   in
   let check (x, y) =
-    let (scope1, _) = Id.Map.find x allvars in
-    let (scope2, _) = Id.Map.find y allvars in
+    let (_,scope1, _) = Id.Map.find x allvars in
+    let (_,scope2, _) = Id.Map.find y allvars in
     if not (eq_subscope scope1 scope2) then error_not_same_scope x y
   in
   let () = List.iter check recvars in
   let useless_recvars = List.map snd recvars in
   let mainvars =
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
-  Id.Map.mapi (fun x (sc, typ) ->
-    (sc, make_interpretation_type (Id.List.mem_assoc x recvars) typ)) mainvars
+  Id.Map.mapi (fun x (isonlybinding, sc, typ) ->
+    (sc, make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding typ)) mainvars
 
 let check_rule_productivity l =
   if List.for_all (function NonTerminal _ -> true | _ -> false) l then
@@ -1492,7 +1493,12 @@ let add_syntactic_definition ident (vars,c) local onlyparse =
       } in
       let nvars, pat = interp_notation_constr nenv c in
       let () = nonprintable := nenv.ninterp_only_parse in
-      let map id = let (sc, _) = Id.Map.find id nvars in (id, sc) in
+      let map id =
+        let (isonlybinding,sc, _) = Id.Map.find id nvars in
+        (* if a notation contains an ltac:, the body is not analyzed
+           and onlybinding detection fails *)
+        assert (!nonprintable || not isonlybinding);
+        (id, sc) in
       List.map map vars, pat
   in
   let onlyparse = match onlyparse with

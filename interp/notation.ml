@@ -529,9 +529,10 @@ let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
 let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeConstr, NtnTypeConstr -> true
+| NtnTypeOnlyBinder, NtnTypeOnlyBinder -> true
 | NtnTypeConstrList, NtnTypeConstrList -> true
 | NtnTypeBinderList, NtnTypeBinderList -> true
-| (NtnTypeConstr | NtnTypeConstrList | NtnTypeBinderList), _ -> false
+| (NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList), _ -> false
 
 
 let vars_eq (id1, (sc1, tp1)) (id2, (sc2, tp2)) =

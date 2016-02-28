@@ -275,7 +275,8 @@ let error_expect_binder_notation_type loc id =
 
 let set_var_scope loc id istermvar env ntnvars =
   try
-    let idscopes,typ = Id.Map.find id ntnvars in
+    let isonlybinding,idscopes,typ = Id.Map.find id ntnvars in
+    if istermvar then isonlybinding := false;
     let () = if istermvar then
       (* scopes have no effect on the interpretation of identifiers *)
       begin match !idscopes with
@@ -629,7 +630,7 @@ let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
 let split_by_type ids =
   List.fold_right (fun (x,(scl,typ)) (l1,l2,l3) ->
     match typ with
-    | NtnTypeConstr -> ((x,scl)::l1,l2,l3)
+    | NtnTypeConstr | NtnTypeOnlyBinder -> ((x,scl)::l1,l2,l3)
     | NtnTypeConstrList -> (l1,(x,scl)::l2,l3)
     | NtnTypeBinderList -> (l1,l2,(x,scl)::l3)) ids ([],[],[])
 
@@ -1845,7 +1846,7 @@ let intern_constr_pattern env ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
 let interp_notation_constr ?(impls=empty_internalization_env) nenv a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
-  let vl = Id.Map.map (fun typ -> (ref None, typ)) nenv.ninterp_var_type in
+  let vl = Id.Map.map (fun typ -> (ref true, ref None, typ)) nenv.ninterp_var_type in
   let c = internalize (Global.env()) {ids = extract_ids env; unb = false;
 						tmp_scope = None; scopes = []; impls = impls}
     false (empty_ltac_sign, vl) a in
@@ -1854,7 +1855,8 @@ let interp_notation_constr ?(impls=empty_internalization_env) nenv a =
   (* Splits variables into those that are binding, bound, or both *)
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in
-  let vars = Id.Map.map (fun (sc, typ) -> (out_scope !sc, typ)) vl in
+  let vars = Id.Map.map (fun (isonlybinding, sc, typ) ->
+    (!isonlybinding, out_scope !sc, typ)) vl in
   (* Returns [a] and the ordered list of variables with their scopes *)
   vars, a
 

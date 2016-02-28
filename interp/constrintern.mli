@@ -185,7 +185,7 @@ val global_reference_in_absolute_module : DirPath.t -> Id.t -> constr
     guaranteed to have the same domain as the input one. *)
 val interp_notation_constr : ?impls:internalization_env ->
   notation_interp_env -> constr_expr ->
-  (subscopes * notation_var_internalization_type) Id.Map.t *
+  (bool * subscopes * notation_var_internalization_type) Id.Map.t *
   notation_constr
 
 (** Globalization options *)
