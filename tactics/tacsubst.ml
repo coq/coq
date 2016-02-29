@@ -169,9 +169,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacMove (id1,id2) as x -> x
   | TacRename l as x -> x
 
-  (* Constructors *)
-  | TacSplit (ev,bll) -> TacSplit (ev,List.map (subst_bindings subst) bll)
-
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
   | TacChange (op,c,cl) ->

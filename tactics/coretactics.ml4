@@ -15,6 +15,7 @@ open Misctypes
 open Genredexpr
 
 open Proofview.Notations
+open Sigma.Notations
 
 DECLARE PLUGIN "coretactics"
 
@@ -145,6 +146,14 @@ END
 
 (** Split *)
 
+let rec delayed_list = function
+| [] -> { Tacexpr.delayed = fun _ sigma -> Sigma.here [] sigma }
+| x :: l ->
+  { Tacexpr.delayed = fun env sigma ->
+    let Sigma (x, sigma, p) = x.Tacexpr.delayed env sigma in
+    let Sigma (l, sigma, q) = (delayed_list l).Tacexpr.delayed env sigma in
+    Sigma (x :: l, sigma, p +> q) }
+
 TACTIC EXTEND split
   [ "split" ] -> [ Tactics.split_with_bindings false [NoBindings] ]
 END
@@ -162,6 +171,20 @@ END
 TACTIC EXTEND esplit_with
   [ "esplit" "with" bindings(bl) ] -> [
     Tacticals.New.tclDELAYEDWITHHOLES true bl (fun bl -> Tactics.split_with_bindings true [bl])
+  ]
+END
+
+TACTIC EXTEND exists
+  [ "exists" ] -> [ Tactics.split_with_bindings false [NoBindings] ]
+| [ "exists" ne_bindings_list_sep(bll, ",") ] -> [
+    Tacticals.New.tclDELAYEDWITHHOLES false (delayed_list bll) (fun bll -> Tactics.split_with_bindings false bll)
+  ]
+END
+
+TACTIC EXTEND eexists
+  [ "eexists" ] -> [ Tactics.split_with_bindings true [NoBindings] ]
+| [ "eexists" ne_bindings_list_sep(bll, ",") ] -> [
+    Tacticals.New.tclDELAYEDWITHHOLES true (delayed_list bll) (fun bll -> Tactics.split_with_bindings true bll)
   ]
 END
 

@@ -621,11 +621,6 @@ GEXTEND Gram
 	  TacAtom (!@loc, TacMove (hfrom,hto))
       | IDENT "rename"; l = LIST1 rename SEP "," -> TacAtom (!@loc, TacRename l)
 
-      (* Constructors *)
-      | "exists"; bll = opt_bindings -> TacAtom (!@loc, TacSplit (false,bll))
-      | IDENT "eexists"; bll = opt_bindings ->
-	  TacAtom (!@loc, TacSplit (true,bll))
-
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";
 	  cl = clause_dft_concl; t=opt_by_tactic -> TacAtom (!@loc, TacRewrite (false,l,cl,t))

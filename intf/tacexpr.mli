@@ -163,9 +163,6 @@ type 'a gen_atomic_tactic_expr =
   | TacMove of 'nam * 'nam move_location
   | TacRename of ('nam *'nam) list
 
-  (* Trmuctors *)
-  | TacSplit of evars_flag * 'trm bindings list
-
   (* Conversion *)
   | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
   | TacChange of 'pat option * 'dtrm * 'nam clause_expr

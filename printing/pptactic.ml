@@ -725,7 +725,6 @@ module Make
 
         (* some shortcuts *)
         let _pr_bindings = pr_bindings pr.pr_constr pr.pr_lconstr in
-        let pr_ex_bindings = pr_bindings_gen true pr.pr_constr pr.pr_lconstr in
         let pr_with_bindings = pr_with_bindings pr.pr_constr pr.pr_lconstr in
         let pr_with_bindings_arg_full = pr_with_bindings_arg in
         let pr_with_bindings_arg = pr_with_bindings_arg pr.pr_constr pr.pr_lconstr in
@@ -907,13 +906,6 @@ module Make
                 (fun (i1,i2) ->
                   pr.pr_name i1 ++ spc () ++ str "into" ++ spc () ++ pr.pr_name i2)
                 l
-            )
-
-          (* Constructors *)
-          | TacSplit (ev,l) ->
-            hov 1 (
-              primitive (with_evars ev "exists")
-              ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l
             )
 
           (* Conversion *)

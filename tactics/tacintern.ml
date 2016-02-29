@@ -531,9 +531,6 @@ let rec intern_atomic lf ist x =
 			     intern_hyp ist id1,
 			     intern_hyp ist id2) l)
 
-  (* Constructors *)
-  | TacSplit (ev,bll) -> TacSplit (ev,List.map (intern_bindings ist) bll)
-
   (* Conversion *)
   | TacReduce (r,cl) ->
       dump_glob_red_expr r;

@@ -1894,18 +1894,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (Tactics.rename_hyp l)
       end }
 
-  (* Constructors *)
-  | TacSplit (ev,bll) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
-        let named_tac =
-          let tac = Tactics.split_with_bindings ev bll in
-          name_atomic ~env (TacSplit (ev, bll)) tac
-        in
-        Tacticals.New.tclWITHHOLES ev named_tac sigma
-      end }
   (* Conversion *)
   | TacReduce (r,cl) ->
       (* spiwack: until the tactic is in the monad *)
