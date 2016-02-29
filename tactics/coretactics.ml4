@@ -140,6 +140,7 @@ END
 
 TACTIC EXTEND symmetry
   [ "symmetry" ] -> [ Tactics.intros_symmetry {onhyps=Some[];concl_occs=AllOccurrences} ]
+| [ "symmetry" clause(cl) ] -> [ Tactics.intros_symmetry cl ]
 END
 
 (** Split *)

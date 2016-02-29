@@ -625,8 +625,6 @@ GEXTEND Gram
       | "exists"; bll = opt_bindings -> TacAtom (!@loc, TacSplit (false,bll))
       | IDENT "eexists"; bll = opt_bindings ->
 	  TacAtom (!@loc, TacSplit (true,bll))
-      (* Equivalence relations *)
-      | IDENT "symmetry"; "in"; cl = in_clause -> TacAtom (!@loc, TacSymmetry cl)
 
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";

@@ -170,9 +170,6 @@ type 'a gen_atomic_tactic_expr =
   | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
   | TacChange of 'pat option * 'dtrm * 'nam clause_expr
 
-  (* Equivalence relations *)
-  | TacSymmetry of 'nam clause_expr
-
   (* Equality and inversion *)
   | TacRewrite of evars_flag *
       (bool * multi * 'dtrm with_bindings_arg) list * 'nam clause_expr *

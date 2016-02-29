@@ -1974,16 +1974,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end }
       end
 
-  (* Equivalence relations *)
-  | TacSymmetry c ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let cl = interp_clause ist env sigma c in
-        name_atomic ~env
-          (TacSymmetry cl)
-          (Tactics.intros_symmetry cl)
-      end }
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->

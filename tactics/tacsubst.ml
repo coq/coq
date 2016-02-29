@@ -178,9 +178,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacChange (Option.map (subst_glob_constr_or_pattern subst) op,
         subst_glob_constr subst c, cl)
 
-  (* Equivalence relations *)
-  | TacSymmetry _ as x -> x
-
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite (ev,

@@ -935,10 +935,6 @@ module Make
               ) ++ pr.pr_dconstr c ++ pr_clauses (Some true) pr.pr_name h
             )
 
-          (* Equivalence relations *)
-          | TacSymmetry cls ->
-            primitive "symmetry" ++ pr_clauses (Some true) pr.pr_name cls
-
           (* Equality and inversion *)
           | TacRewrite (ev,l,cl,by) ->
             hov 1 (

@@ -555,10 +555,6 @@ let rec intern_atomic lf ist x =
       TacChange (Some (intern_typed_pattern ist p),intern_constr ist c,
 	clause_app (intern_hyp_location ist) cl)
 
-  (* Equivalence relations *)
-  | TacSymmetry idopt ->
-      TacSymmetry (clause_app (intern_hyp_location ist) idopt)
-
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite
