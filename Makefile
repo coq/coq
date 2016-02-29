@@ -89,7 +89,7 @@ OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
 CAMLP4EXTENSIONS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo pa_macro.cmo
 CAMLP4OPTIONS=$(CAMLP4COMPAT) -D$(CAMLVERSION)
-CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)|\1|p'
+CAMLP4DEPS=LC_ALL=C sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=           # is "-dump-glob file" when making the doc
