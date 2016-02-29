@@ -491,7 +491,6 @@ let rec intern_atomic lf ist x =
       TacElim (ev,intern_constr_with_bindings_arg ist cb,
                Option.map (intern_constr_with_bindings ist) cbo)
   | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings_arg ist cb)
-  | TacFix (idopt,n) -> TacFix (Option.map (intern_ident lf ist) idopt,n)
   | TacMutualFix (id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
       TacMutualFix (intern_ident lf ist id, n, List.map f l)

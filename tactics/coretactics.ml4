@@ -192,6 +192,13 @@ TACTIC EXTEND admit
  [ "admit" ] -> [ Proofview.give_up ]
 END
 
+(* Fix *)
+
+TACTIC EXTEND fix
+  [ "fix" natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix None n) ]
+| [ "fix" ident(id) natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix (Some id) n) ]
+END
+
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
 open Tacexpr

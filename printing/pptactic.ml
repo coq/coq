@@ -828,7 +828,6 @@ module Make
               ++ pr_opt pr_eliminator cbo)
           | TacCase (ev,cb) ->
             hov 1 (primitive (with_evars ev "case") ++ spc () ++ pr_with_bindings_arg cb)
-          | TacFix (ido,n) -> hov 1 (primitive "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
           | TacMutualFix (id,n,l) ->
             hov 1 (
               primitive "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc()

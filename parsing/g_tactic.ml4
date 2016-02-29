@@ -555,8 +555,6 @@ GEXTEND Gram
           TacAtom (!@loc, TacElim (true,cl,el))
       | IDENT "case"; icl = induction_clause_list -> TacAtom (!@loc, mkTacCase false icl)
       | IDENT "ecase"; icl = induction_clause_list -> TacAtom (!@loc, mkTacCase true icl)
-      | "fix"; n = natural -> TacAtom (!@loc, TacFix (None,n))
-      | "fix"; id = ident; n = natural -> TacAtom (!@loc, TacFix (Some id,n))
       | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
 	  TacAtom (!@loc, TacMutualFix (id,n,List.map mk_fix_tac fd))
       | "cofix" -> TacAtom (!@loc, TacCofix None)

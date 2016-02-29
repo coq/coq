@@ -146,7 +146,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacElim (ev,subst_glob_with_bindings_arg subst cb,
                Option.map (subst_glob_with_bindings subst) cbo)
   | TacCase (ev,cb) -> TacCase (ev,subst_glob_with_bindings_arg subst cb)
-  | TacFix (idopt,n) as x -> x
   | TacMutualFix (id,n,l) ->
       TacMutualFix(id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
   | TacCofix idopt as x -> x

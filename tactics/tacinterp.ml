@@ -1749,15 +1749,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         Tacticals.New.tclWITHHOLES ev named_tac sigma
       end }
-  | TacFix (idopt,n) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let idopt = Option.map (interp_ident ist env sigma) idopt in
-        name_atomic ~env
-          (TacFix(idopt,n))
-          (Proofview.V82.tactic (Tactics.fix idopt n))
-      end }
   | TacMutualFix (id,n,l) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual fix>") begin
