@@ -898,11 +898,6 @@ module Make
             )
 
           (* Context management *)
-          | TacClearBody l ->
-            hov 1 (
-              primitive "clearbody" ++ spc ()
-              ++ prlist_with_sep spc pr.pr_name l
-            )
           | TacMove (id1,id2) ->
             hov 1 (
               primitive "move"

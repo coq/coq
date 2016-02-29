@@ -216,6 +216,12 @@ TACTIC EXTEND clear
 | [ "clear" "-" ne_hyp_list(ids) ] -> [ Tactics.keep ids ]
 END
 
+(* Clearbody *)
+
+TACTIC EXTEND clearbody
+  [ "clearbody" ne_hyp_list(ids) ] -> [ Tactics.clear_body ids ]
+END
+
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
 open Tacexpr
