@@ -1764,15 +1764,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Sigma.Unsafe.of_pair (tac, sigma)
       end }
       end
-  | TacCofix idopt ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let idopt = Option.map (interp_ident ist env sigma) idopt in
-        name_atomic ~env
-          (TacCofix (idopt))
-          (Proofview.V82.tactic (Tactics.cofix idopt))
-      end }
   | TacMutualCofix (id,l) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual cofix>") begin

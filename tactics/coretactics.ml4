@@ -199,6 +199,13 @@ TACTIC EXTEND fix
 | [ "fix" ident(id) natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix (Some id) n) ]
 END
 
+(* Cofix *)
+
+TACTIC EXTEND cofix
+  [ "cofix" ] -> [ Proofview.V82.tactic (Tactics.cofix None) ]
+| [ "cofix" ident(id) ] -> [ Proofview.V82.tactic (Tactics.cofix (Some id)) ]
+END
+
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
 open Tacexpr
@@ -217,7 +224,6 @@ let initial_atomic () =
         "compute", TacReduce(Cbv Redops.all_flags,nocl);
         "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];
-        "cofix", TacCofix None;
       ]
   in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in

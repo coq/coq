@@ -832,8 +832,6 @@ module Make
             hov 1 (
               primitive "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc()
               ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_fix_tac l)
-          | TacCofix ido ->
-            hov 1 (primitive "cofix" ++ pr_opt pr_id ido)
           | TacMutualCofix (id,l) ->
             hov 1 (
               primitive "cofix" ++ spc () ++ pr_id id ++ spc()

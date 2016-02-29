@@ -494,7 +494,6 @@ let rec intern_atomic lf ist x =
   | TacMutualFix (id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
       TacMutualFix (intern_ident lf ist id, n, List.map f l)
-  | TacCofix idopt -> TacCofix (Option.map (intern_ident lf ist) idopt)
   | TacMutualCofix (id,l) ->
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
