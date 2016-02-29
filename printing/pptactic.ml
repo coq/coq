@@ -892,12 +892,6 @@ module Make
             )
 
           (* Context management *)
-          | TacMove (id1,id2) ->
-            hov 1 (
-              primitive "move"
-              ++ brk (1,1) ++ pr.pr_name id1
-              ++ Miscprint.pr_move_location pr.pr_name id2
-            )
           | TacRename l ->
             hov 1 (
               primitive "rename" ++ brk (1,1)

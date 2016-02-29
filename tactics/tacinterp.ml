@@ -1875,11 +1875,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         (TacDoubleInduction (h1,h2))
         (Elim.h_double_induction h1 h2)
   (* Context management *)
-  | TacMove (id1,id2) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        Proofview.V82.tactic (Tactics.move_hyp (interp_hyp ist (pf_env gl) (project gl) id1)
-                   (interp_move_location ist (pf_env gl) (project gl) id2))
-      end }
   | TacRename l ->
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = pf_env gl in

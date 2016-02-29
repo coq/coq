@@ -617,8 +617,6 @@ GEXTEND Gram
 	  TacAtom (!@loc, TacInductionDestruct(false,true,icl))
 
       (* Context management *)
-      | IDENT "move"; hfrom = id_or_meta; hto = move_location ->
-	  TacAtom (!@loc, TacMove (hfrom,hto))
       | IDENT "rename"; l = LIST1 rename SEP "," -> TacAtom (!@loc, TacRename l)
 
       (* Equality and inversion *)

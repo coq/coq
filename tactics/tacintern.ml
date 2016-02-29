@@ -524,8 +524,6 @@ let rec intern_atomic lf ist x =
       let h2 = intern_quantified_hypothesis ist h2 in
       TacDoubleInduction (h1,h2)
   (* Context management *)
-  | TacMove (id1,id2) ->
-    TacMove (intern_hyp ist id1,intern_move_location ist id2)
   | TacRename l ->
       TacRename (List.map (fun (id1,id2) ->
 			     intern_hyp ist id1,

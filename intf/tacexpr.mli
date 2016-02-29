@@ -160,7 +160,6 @@ type 'a gen_atomic_tactic_expr =
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
 
   (* Context management *)
-  | TacMove of 'nam * 'nam move_location
   | TacRename of ('nam *'nam) list
 
   (* Conversion *)

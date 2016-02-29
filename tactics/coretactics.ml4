@@ -194,6 +194,15 @@ TACTIC EXTEND intros_until
   [ "intros" "until" quantified_hypothesis(h) ] -> [ Tactics.intros_until h ]
 END
 
+(** Move *)
+
+TACTIC EXTEND move
+  [ "move" hyp(id) "at" "top" ] -> [ Proofview.V82.tactic (Tactics.move_hyp id MoveFirst) ]
+| [ "move" hyp(id) "at" "bottom" ] -> [ Proofview.V82.tactic (Tactics.move_hyp id MoveLast) ]
+| [ "move" hyp(id) "after" hyp(h) ] -> [ Proofview.V82.tactic (Tactics.move_hyp id (MoveAfter h)) ]
+| [ "move" hyp(id) "before" hyp(h) ] -> [ Proofview.V82.tactic (Tactics.move_hyp id (MoveBefore h)) ]
+END
+
 (** Revert *)
 
 TACTIC EXTEND revert
