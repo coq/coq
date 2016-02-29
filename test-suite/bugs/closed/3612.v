@@ -35,6 +35,9 @@ Axiom path_path_sigma : forall {A : Type} (P : A -> Type) (u v : sigT P)
            (r : p..1 = q..1)
            (s : transport (fun x => transport P x u.2 = v.2) r p..2 = q..2),
 p = q.
+
+Declare ML Module "coretactics".
+
 Goal forall (A : Type) (B : forall _ : A, Type) (x : @sigT A (fun x : A => B x))
             (xx : @paths (@sigT A (fun x0 : A => B x0)) x x),
        @paths (@paths (@sigT A (fun x0 : A => B x0)) x x) xx

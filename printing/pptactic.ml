@@ -793,7 +793,6 @@ module Make
         let rec pr_atom0 a = tag_atom a (match a with
           | TacIntroPattern [] -> primitive "intros"
           | TacIntroMove (None,MoveLast) -> primitive "intro"
-          | TacClear (true,[]) -> primitive "clear"
           | t -> str "(" ++ pr_atom1 t ++ str ")"
         )
 
@@ -899,14 +898,6 @@ module Make
             )
 
           (* Context management *)
-          | TacClear (true,[]) as t ->
-            pr_atom0 t
-          | TacClear (keep,l) ->
-            hov 1 (
-              primitive "clear" ++ spc ()
-              ++ (if keep then str "- " else mt ())
-              ++ prlist_with_sep spc pr.pr_name l
-            )
           | TacClearBody l ->
             hov 1 (
               primitive "clearbody" ++ spc ()

@@ -206,6 +206,16 @@ TACTIC EXTEND cofix
 | [ "cofix" ident(id) ] -> [ Proofview.V82.tactic (Tactics.cofix (Some id)) ]
 END
 
+(* Clear *)
+
+TACTIC EXTEND clear
+  [ "clear" hyp_list(ids) ] -> [
+    if List.is_empty ids then Tactics.keep []
+    else Proofview.V82.tactic (Tactics.clear ids)
+  ]
+| [ "clear" "-" ne_hyp_list(ids) ] -> [ Tactics.keep ids ]
+END
+
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
 open Tacexpr

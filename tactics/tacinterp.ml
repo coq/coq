@@ -1881,17 +1881,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         (TacDoubleInduction (h1,h2))
         (Elim.h_double_induction h1 h2)
   (* Context management *)
-  | TacClear (b,l) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = pf_env gl in
-        let sigma = project gl in
-        let l = interp_hyp_list ist env sigma l in
-        if b then name_atomic ~env (TacClear (b, l)) (Tactics.keep l)
-        else
-          (* spiwack: until the tactic is in the monad *)
-          let tac = Proofview.V82.tactic (fun gl -> Tactics.clear l gl) in
-          Proofview.Trace.name_tactic (fun () -> Pp.str"<clear>") tac
-      end }
   | TacClearBody l ->
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = pf_env gl in

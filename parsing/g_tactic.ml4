@@ -618,10 +618,6 @@ GEXTEND Gram
 	  TacAtom (!@loc, TacInductionDestruct(false,true,icl))
 
       (* Context management *)
-      | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacClear (true, l))
-      | IDENT "clear"; l = LIST0 id_or_meta ->
-        let is_empty = match l with [] -> true | _ -> false in
-        TacAtom (!@loc, TacClear (is_empty, l))
       | IDENT "clearbody"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacClearBody l)
       | IDENT "move"; hfrom = id_or_meta; hto = move_location ->
 	  TacAtom (!@loc, TacMove (hfrom,hto))
