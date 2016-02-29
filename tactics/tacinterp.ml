@@ -1749,15 +1749,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         Tacticals.New.tclWITHHOLES ev named_tac sigma
       end }
-  | TacFix (idopt,n) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let idopt = Option.map (interp_ident ist env sigma) idopt in
-        name_atomic ~env
-          (TacFix(idopt,n))
-          (Proofview.V82.tactic (Tactics.fix idopt n))
-      end }
   | TacMutualFix (id,n,l) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual fix>") begin
@@ -1773,15 +1764,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Sigma.Unsafe.of_pair (tac, sigma)
       end }
       end
-  | TacCofix idopt ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let idopt = Option.map (interp_ident ist env sigma) idopt in
-        name_atomic ~env
-          (TacCofix (idopt))
-          (Proofview.V82.tactic (Tactics.cofix idopt))
-      end }
   | TacMutualCofix (id,l) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual cofix>") begin
@@ -1821,12 +1803,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (TacGeneralize cl)
           (Proofview.V82.tactic (Tactics.generalize_gen cl))) sigma
       end }
-  | TacGeneralizeDep c ->
-      (new_interp_constr ist c) (fun c ->
-        name_atomic (* spiwack: probably needs a goal environment *)
-        (TacGeneralizeDep c)
-        (Proofview.V82.tactic (Tactics.generalize_dep c))
-       )
   | TacLetTac (na,c,clp,b,eqpat) ->
       Proofview.V82.nf_evar_goals <*>
       Proofview.Goal.nf_enter { enter = begin fun gl ->
@@ -1899,31 +1875,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         (TacDoubleInduction (h1,h2))
         (Elim.h_double_induction h1 h2)
   (* Context management *)
-  | TacClear (b,l) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = pf_env gl in
-        let sigma = project gl in
-        let l = interp_hyp_list ist env sigma l in
-        if b then name_atomic ~env (TacClear (b, l)) (Tactics.keep l)
-        else
-          (* spiwack: until the tactic is in the monad *)
-          let tac = Proofview.V82.tactic (fun gl -> Tactics.clear l gl) in
-          Proofview.Trace.name_tactic (fun () -> Pp.str"<clear>") tac
-      end }
-  | TacClearBody l ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = pf_env gl in
-        let sigma = project gl in
-        let l = interp_hyp_list ist env sigma l in
-        name_atomic ~env
-          (TacClearBody l)
-          (Tactics.clear_body l)
-      end }
-  | TacMove (id1,id2) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        Proofview.V82.tactic (Tactics.move_hyp (interp_hyp ist (pf_env gl) (project gl) id1)
-                   (interp_move_location ist (pf_env gl) (project gl) id2))
-      end }
   | TacRename l ->
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = pf_env gl in
@@ -1938,18 +1889,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (Tactics.rename_hyp l)
       end }
 
-  (* Constructors *)
-  | TacSplit (ev,bll) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
-        let named_tac =
-          let tac = Tactics.split_with_bindings ev bll in
-          name_atomic ~env (TacSplit (ev, bll)) tac
-        in
-        Tacticals.New.tclWITHHOLES ev named_tac sigma
-      end }
   (* Conversion *)
   | TacReduce (r,cl) ->
       (* spiwack: until the tactic is in the monad *)
@@ -2018,16 +1957,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end }
       end
 
-  (* Equivalence relations *)
-  | TacSymmetry c ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let cl = interp_clause ist env sigma c in
-        name_atomic ~env
-          (TacSymmetry cl)
-          (Tactics.intros_symmetry cl)
-      end }
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->

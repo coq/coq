@@ -491,11 +491,9 @@ let rec intern_atomic lf ist x =
       TacElim (ev,intern_constr_with_bindings_arg ist cb,
                Option.map (intern_constr_with_bindings ist) cbo)
   | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings_arg ist cb)
-  | TacFix (idopt,n) -> TacFix (Option.map (intern_ident lf ist) idopt,n)
   | TacMutualFix (id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
       TacMutualFix (intern_ident lf ist id, n, List.map f l)
-  | TacCofix idopt -> TacCofix (Option.map (intern_ident lf ist) idopt)
   | TacMutualCofix (id,l) ->
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
@@ -507,7 +505,6 @@ let rec intern_atomic lf ist x =
       TacGeneralize (List.map (fun (c,na) ->
 	               intern_constr_with_occurrences ist c,
                        intern_name lf ist na) cl)
-  | TacGeneralizeDep c -> TacGeneralizeDep (intern_constr ist c)
   | TacLetTac (na,c,cls,b,eqpat) ->
       let na = intern_name lf ist na in
       TacLetTac (na,intern_constr ist c,
@@ -527,17 +524,10 @@ let rec intern_atomic lf ist x =
       let h2 = intern_quantified_hypothesis ist h2 in
       TacDoubleInduction (h1,h2)
   (* Context management *)
-  | TacClear (b,l) -> TacClear (b,List.map (intern_hyp ist) l)
-  | TacClearBody l -> TacClearBody (List.map (intern_hyp ist) l)
-  | TacMove (id1,id2) ->
-    TacMove (intern_hyp ist id1,intern_move_location ist id2)
   | TacRename l ->
       TacRename (List.map (fun (id1,id2) ->
 			     intern_hyp ist id1,
 			     intern_hyp ist id2) l)
-
-  (* Constructors *)
-  | TacSplit (ev,bll) -> TacSplit (ev,List.map (intern_bindings ist) bll)
 
   (* Conversion *)
   | TacReduce (r,cl) ->
@@ -559,10 +549,6 @@ let rec intern_atomic lf ist x =
   | TacChange (Some p,c,cl) ->
       TacChange (Some (intern_typed_pattern ist p),intern_constr ist c,
 	clause_app (intern_hyp_location ist) cl)
-
-  (* Equivalence relations *)
-  | TacSymmetry idopt ->
-      TacSymmetry (clause_app (intern_hyp_location ist) idopt)
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->

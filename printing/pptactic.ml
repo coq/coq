@@ -725,7 +725,6 @@ module Make
 
         (* some shortcuts *)
         let _pr_bindings = pr_bindings pr.pr_constr pr.pr_lconstr in
-        let pr_ex_bindings = pr_bindings_gen true pr.pr_constr pr.pr_lconstr in
         let pr_with_bindings = pr_with_bindings pr.pr_constr pr.pr_lconstr in
         let pr_with_bindings_arg_full = pr_with_bindings_arg in
         let pr_with_bindings_arg = pr_with_bindings_arg pr.pr_constr pr.pr_lconstr in
@@ -793,7 +792,6 @@ module Make
         let rec pr_atom0 a = tag_atom a (match a with
           | TacIntroPattern [] -> primitive "intros"
           | TacIntroMove (None,MoveLast) -> primitive "intro"
-          | TacClear (true,[]) -> primitive "clear"
           | t -> str "(" ++ pr_atom1 t ++ str ")"
         )
 
@@ -828,13 +826,10 @@ module Make
               ++ pr_opt pr_eliminator cbo)
           | TacCase (ev,cb) ->
             hov 1 (primitive (with_evars ev "case") ++ spc () ++ pr_with_bindings_arg cb)
-          | TacFix (ido,n) -> hov 1 (primitive "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
           | TacMutualFix (id,n,l) ->
             hov 1 (
               primitive "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc()
               ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_fix_tac l)
-          | TacCofix ido ->
-            hov 1 (primitive "cofix" ++ pr_opt pr_id ido)
           | TacMutualCofix (id,l) ->
             hov 1 (
               primitive "cofix" ++ spc () ++ pr_id id ++ spc()
@@ -857,11 +852,6 @@ module Make
               ++ prlist_with_sep pr_comma (fun (cl,na) ->
                 pr_with_occurrences pr.pr_constr cl ++ pr_as_name na)
                 l
-            )
-          | TacGeneralizeDep c ->
-            hov 1 (
-              primitive "generalize" ++ spc () ++ str "dependent"
-              ++ pr_constrarg c
             )
           | TacLetTac (na,c,cl,true,_) when Locusops.is_nowhere cl ->
             hov 1 (primitive "pose" ++ pr_pose pr.pr_constr pr.pr_lconstr na c)
@@ -902,25 +892,6 @@ module Make
             )
 
           (* Context management *)
-          | TacClear (true,[]) as t ->
-            pr_atom0 t
-          | TacClear (keep,l) ->
-            hov 1 (
-              primitive "clear" ++ spc ()
-              ++ (if keep then str "- " else mt ())
-              ++ prlist_with_sep spc pr.pr_name l
-            )
-          | TacClearBody l ->
-            hov 1 (
-              primitive "clearbody" ++ spc ()
-              ++ prlist_with_sep spc pr.pr_name l
-            )
-          | TacMove (id1,id2) ->
-            hov 1 (
-              primitive "move"
-              ++ brk (1,1) ++ pr.pr_name id1
-              ++ Miscprint.pr_move_location pr.pr_name id2
-            )
           | TacRename l ->
             hov 1 (
               primitive "rename" ++ brk (1,1)
@@ -929,13 +900,6 @@ module Make
                 (fun (i1,i2) ->
                   pr.pr_name i1 ++ spc () ++ str "into" ++ spc () ++ pr.pr_name i2)
                 l
-            )
-
-          (* Constructors *)
-          | TacSplit (ev,l) ->
-            hov 1 (
-              primitive (with_evars ev "exists")
-              ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l
             )
 
           (* Conversion *)
@@ -956,10 +920,6 @@ module Make
                     ++ keyword "with" ++ spc ()
               ) ++ pr.pr_dconstr c ++ pr_clauses (Some true) pr.pr_name h
             )
-
-          (* Equivalence relations *)
-          | TacSymmetry cls ->
-            primitive "symmetry" ++ pr_clauses (Some true) pr.pr_name cls
 
           (* Equality and inversion *)
           | TacRewrite (ev,l,cl,by) ->

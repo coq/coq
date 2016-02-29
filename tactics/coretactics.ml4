@@ -15,6 +15,7 @@ open Misctypes
 open Genredexpr
 
 open Proofview.Notations
+open Sigma.Notations
 
 DECLARE PLUGIN "coretactics"
 
@@ -140,9 +141,18 @@ END
 
 TACTIC EXTEND symmetry
   [ "symmetry" ] -> [ Tactics.intros_symmetry {onhyps=Some[];concl_occs=AllOccurrences} ]
+| [ "symmetry" clause(cl) ] -> [ Tactics.intros_symmetry cl ]
 END
 
 (** Split *)
+
+let rec delayed_list = function
+| [] -> { Tacexpr.delayed = fun _ sigma -> Sigma.here [] sigma }
+| x :: l ->
+  { Tacexpr.delayed = fun env sigma ->
+    let Sigma (x, sigma, p) = x.Tacexpr.delayed env sigma in
+    let Sigma (l, sigma, q) = (delayed_list l).Tacexpr.delayed env sigma in
+    Sigma (x :: l, sigma, p +> q) }
 
 TACTIC EXTEND split
   [ "split" ] -> [ Tactics.split_with_bindings false [NoBindings] ]
@@ -164,10 +174,33 @@ TACTIC EXTEND esplit_with
   ]
 END
 
+TACTIC EXTEND exists
+  [ "exists" ] -> [ Tactics.split_with_bindings false [NoBindings] ]
+| [ "exists" ne_bindings_list_sep(bll, ",") ] -> [
+    Tacticals.New.tclDELAYEDWITHHOLES false (delayed_list bll) (fun bll -> Tactics.split_with_bindings false bll)
+  ]
+END
+
+TACTIC EXTEND eexists
+  [ "eexists" ] -> [ Tactics.split_with_bindings true [NoBindings] ]
+| [ "eexists" ne_bindings_list_sep(bll, ",") ] -> [
+    Tacticals.New.tclDELAYEDWITHHOLES true (delayed_list bll) (fun bll -> Tactics.split_with_bindings true bll)
+  ]
+END
+
 (** Intro *)
 
 TACTIC EXTEND intros_until
   [ "intros" "until" quantified_hypothesis(h) ] -> [ Tactics.intros_until h ]
+END
+
+(** Move *)
+
+TACTIC EXTEND move
+  [ "move" hyp(id) "at" "top" ] -> [ Proofview.V82.tactic (Tactics.move_hyp id MoveFirst) ]
+| [ "move" hyp(id) "at" "bottom" ] -> [ Proofview.V82.tactic (Tactics.move_hyp id MoveLast) ]
+| [ "move" hyp(id) "after" hyp(h) ] -> [ Proofview.V82.tactic (Tactics.move_hyp id (MoveAfter h)) ]
+| [ "move" hyp(id) "before" hyp(h) ] -> [ Proofview.V82.tactic (Tactics.move_hyp id (MoveBefore h)) ]
 END
 
 (** Revert *)
@@ -192,6 +225,42 @@ TACTIC EXTEND admit
  [ "admit" ] -> [ Proofview.give_up ]
 END
 
+(* Fix *)
+
+TACTIC EXTEND fix
+  [ "fix" natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix None n) ]
+| [ "fix" ident(id) natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix (Some id) n) ]
+END
+
+(* Cofix *)
+
+TACTIC EXTEND cofix
+  [ "cofix" ] -> [ Proofview.V82.tactic (Tactics.cofix None) ]
+| [ "cofix" ident(id) ] -> [ Proofview.V82.tactic (Tactics.cofix (Some id)) ]
+END
+
+(* Clear *)
+
+TACTIC EXTEND clear
+  [ "clear" hyp_list(ids) ] -> [
+    if List.is_empty ids then Tactics.keep []
+    else Proofview.V82.tactic (Tactics.clear ids)
+  ]
+| [ "clear" "-" ne_hyp_list(ids) ] -> [ Tactics.keep ids ]
+END
+
+(* Clearbody *)
+
+TACTIC EXTEND clearbody
+  [ "clearbody" ne_hyp_list(ids) ] -> [ Tactics.clear_body ids ]
+END
+
+(* Generalize dependent *)
+
+TACTIC EXTEND generalize_dependent
+  [ "generalize" "dependent" constr(c) ] -> [ Proofview.V82.tactic (Tactics.generalize_dep c) ]
+END
+
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
 open Tacexpr
@@ -210,7 +279,6 @@ let initial_atomic () =
         "compute", TacReduce(Cbv Redops.all_flags,nocl);
         "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];
-        "cofix", TacCofix None;
       ]
   in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in

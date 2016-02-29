@@ -555,12 +555,8 @@ GEXTEND Gram
           TacAtom (!@loc, TacElim (true,cl,el))
       | IDENT "case"; icl = induction_clause_list -> TacAtom (!@loc, mkTacCase false icl)
       | IDENT "ecase"; icl = induction_clause_list -> TacAtom (!@loc, mkTacCase true icl)
-      | "fix"; n = natural -> TacAtom (!@loc, TacFix (None,n))
-      | "fix"; id = ident; n = natural -> TacAtom (!@loc, TacFix (Some id,n))
       | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
 	  TacAtom (!@loc, TacMutualFix (id,n,List.map mk_fix_tac fd))
-      | "cofix" -> TacAtom (!@loc, TacCofix None)
-      | "cofix"; id = ident -> TacAtom (!@loc, TacCofix (Some id))
       | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
 	  TacAtom (!@loc, TacMutualCofix (id,List.map mk_cofix_tac fd))
 
@@ -607,7 +603,6 @@ GEXTEND Gram
           na = as_name;
           l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->
           TacAtom (!@loc, TacGeneralize (((nl,c),na)::l))
-      | IDENT "generalize"; IDENT "dependent"; c = constr -> TacAtom (!@loc, TacGeneralizeDep c)
 
       (* Derived basic tactics *)
       | IDENT "induction"; ic = induction_clause_list ->
@@ -622,21 +617,7 @@ GEXTEND Gram
 	  TacAtom (!@loc, TacInductionDestruct(false,true,icl))
 
       (* Context management *)
-      | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacClear (true, l))
-      | IDENT "clear"; l = LIST0 id_or_meta ->
-        let is_empty = match l with [] -> true | _ -> false in
-        TacAtom (!@loc, TacClear (is_empty, l))
-      | IDENT "clearbody"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacClearBody l)
-      | IDENT "move"; hfrom = id_or_meta; hto = move_location ->
-	  TacAtom (!@loc, TacMove (hfrom,hto))
       | IDENT "rename"; l = LIST1 rename SEP "," -> TacAtom (!@loc, TacRename l)
-
-      (* Constructors *)
-      | "exists"; bll = opt_bindings -> TacAtom (!@loc, TacSplit (false,bll))
-      | IDENT "eexists"; bll = opt_bindings ->
-	  TacAtom (!@loc, TacSplit (true,bll))
-      (* Equivalence relations *)
-      | IDENT "symmetry"; "in"; cl = in_clause -> TacAtom (!@loc, TacSymmetry cl)
 
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";

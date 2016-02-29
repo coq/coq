@@ -146,17 +146,14 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacElim (ev,subst_glob_with_bindings_arg subst cb,
                Option.map (subst_glob_with_bindings subst) cbo)
   | TacCase (ev,cb) -> TacCase (ev,subst_glob_with_bindings_arg subst cb)
-  | TacFix (idopt,n) as x -> x
   | TacMutualFix (id,n,l) ->
       TacMutualFix(id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
-  | TacCofix idopt as x -> x
   | TacMutualCofix (id,l) ->
       TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_glob_constr subst c)) l)
   | TacAssert (b,otac,na,c) ->
       TacAssert (b,Option.map (subst_tactic subst) otac,na,subst_glob_constr subst c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (on_fst (subst_constr_with_occurrences subst))cl)
-  | TacGeneralizeDep c -> TacGeneralizeDep (subst_glob_constr subst c)
   | TacLetTac (id,c,clp,b,eqpat) ->
     TacLetTac (id,subst_glob_constr subst c,clp,b,eqpat)
 
@@ -169,22 +166,13 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacDoubleInduction (h1,h2) as x -> x
 
   (* Context management *)
-  | TacClear _ as x -> x
-  | TacClearBody l as x -> x
-  | TacMove (id1,id2) as x -> x
   | TacRename l as x -> x
-
-  (* Constructors *)
-  | TacSplit (ev,bll) -> TacSplit (ev,List.map (subst_bindings subst) bll)
 
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
   | TacChange (op,c,cl) ->
       TacChange (Option.map (subst_glob_constr_or_pattern subst) op,
         subst_glob_constr subst c, cl)
-
-  (* Equivalence relations *)
-  | TacSymmetry _ as x -> x
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->

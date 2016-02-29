@@ -884,8 +884,13 @@ let vernac_set_used_variables e =
         (str "Unknown variable: " ++ pr_id id))
     l;
   let _, to_clear = set_used_variables l in
-  vernac_solve
-    SelectAll None Tacexpr.(TacAtom (Loc.ghost,TacClear(false,to_clear))) false
+  (** FIXME: too fragile *)
+  let open Tacexpr in
+  let tac = { mltac_plugin = "coretactics"; mltac_tactic = "clear" } in
+  let tac = { mltac_name = tac; mltac_index = 0 } in
+  let arg = Genarg.in_gen (Genarg.rawwit (Genarg.wit_list Constrarg.wit_var)) to_clear in
+  let tac = if List.is_empty to_clear then TacId [] else TacML (Loc.ghost, tac, [TacGeneric arg]) in
+  vernac_solve SelectAll None tac false
 
 
 (*****************************)

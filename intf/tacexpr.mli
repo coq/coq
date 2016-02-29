@@ -145,15 +145,12 @@ type 'a gen_atomic_tactic_expr =
       ('nam * 'dtrm intro_pattern_expr located option) option
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
   | TacCase of evars_flag * 'trm with_bindings_arg
-  | TacFix of Id.t option * int
   | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
-  | TacCofix of Id.t option
   | TacMutualCofix of Id.t * (Id.t * 'trm) list
   | TacAssert of
       bool * 'tacexpr option *
       'dtrm intro_pattern_expr located option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
-  | TacGeneralizeDep of 'trm
   | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *
       intro_pattern_naming_expr located option
 
@@ -163,20 +160,11 @@ type 'a gen_atomic_tactic_expr =
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
 
   (* Context management *)
-  | TacClear of bool * 'nam list
-  | TacClearBody of 'nam list
-  | TacMove of 'nam * 'nam move_location
   | TacRename of ('nam *'nam) list
-
-  (* Trmuctors *)
-  | TacSplit of evars_flag * 'trm bindings list
 
   (* Conversion *)
   | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
   | TacChange of 'pat option * 'dtrm * 'nam clause_expr
-
-  (* Equivalence relations *)
-  | TacSymmetry of 'nam clause_expr
 
   (* Equality and inversion *)
   | TacRewrite of evars_flag *
