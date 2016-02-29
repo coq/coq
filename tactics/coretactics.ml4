@@ -222,6 +222,12 @@ TACTIC EXTEND clearbody
   [ "clearbody" ne_hyp_list(ids) ] -> [ Tactics.clear_body ids ]
 END
 
+(* Generalize dependent *)
+
+TACTIC EXTEND generalize_dependent
+  [ "generalize" "dependent" constr(c) ] -> [ Proofview.V82.tactic (Tactics.generalize_dep c) ]
+END
+
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
 open Tacexpr

@@ -151,7 +151,6 @@ type 'a gen_atomic_tactic_expr =
       bool * 'tacexpr option *
       'dtrm intro_pattern_expr located option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
-  | TacGeneralizeDep of 'trm
   | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *
       intro_pattern_naming_expr located option
 

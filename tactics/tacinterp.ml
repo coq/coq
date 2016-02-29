@@ -1803,12 +1803,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (TacGeneralize cl)
           (Proofview.V82.tactic (Tactics.generalize_gen cl))) sigma
       end }
-  | TacGeneralizeDep c ->
-      (new_interp_constr ist c) (fun c ->
-        name_atomic (* spiwack: probably needs a goal environment *)
-        (TacGeneralizeDep c)
-        (Proofview.V82.tactic (Tactics.generalize_dep c))
-       )
   | TacLetTac (na,c,clp,b,eqpat) ->
       Proofview.V82.nf_evar_goals <*>
       Proofview.Goal.nf_enter { enter = begin fun gl ->

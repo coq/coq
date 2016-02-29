@@ -854,11 +854,6 @@ module Make
                 pr_with_occurrences pr.pr_constr cl ++ pr_as_name na)
                 l
             )
-          | TacGeneralizeDep c ->
-            hov 1 (
-              primitive "generalize" ++ spc () ++ str "dependent"
-              ++ pr_constrarg c
-            )
           | TacLetTac (na,c,cl,true,_) when Locusops.is_nowhere cl ->
             hov 1 (primitive "pose" ++ pr_pose pr.pr_constr pr.pr_lconstr na c)
           | TacLetTac (na,c,cl,b,e) ->

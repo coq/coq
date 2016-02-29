@@ -154,7 +154,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacAssert (b,Option.map (subst_tactic subst) otac,na,subst_glob_constr subst c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (on_fst (subst_constr_with_occurrences subst))cl)
-  | TacGeneralizeDep c -> TacGeneralizeDep (subst_glob_constr subst c)
   | TacLetTac (id,c,clp,b,eqpat) ->
     TacLetTac (id,subst_glob_constr subst c,clp,b,eqpat)
 
