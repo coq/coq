@@ -1644,16 +1644,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
              expected behaviour. *)
           (Tactics.intro_patterns l')) sigma
       end }
-  | TacIntroMove (ido,hto) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let mloc = interp_move_location ist env sigma hto in
-        let ido = Option.map (interp_ident ist env sigma) ido in
-        name_atomic ~env
-          (TacIntroMove(ido,mloc))
-          (Tactics.intro_move ido mloc)
-      end }
   | TacExact c ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<exact>") begin

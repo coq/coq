@@ -528,11 +528,6 @@ GEXTEND Gram
           TacAtom (!@loc, TacIntroPattern pl)
       | IDENT "intros" ->
           TacAtom (!@loc, TacIntroPattern [!@loc,IntroForthcoming false])
-      | IDENT "intro"; id = ident; hto = move_location ->
-	  TacAtom (!@loc, TacIntroMove (Some id, hto))
-      | IDENT "intro"; hto = move_location -> TacAtom (!@loc, TacIntroMove (None, hto))
-      | IDENT "intro"; id = ident -> TacAtom (!@loc, TacIntroMove (Some id, MoveLast))
-      | IDENT "intro" -> TacAtom (!@loc, TacIntroMove (None, MoveLast))
 
       | IDENT "exact"; c = constr -> TacAtom (!@loc, TacExact c)
 

@@ -197,6 +197,19 @@ TACTIC EXTEND intros_until
   [ "intros" "until" quantified_hypothesis(h) ] -> [ Tactics.intros_until h ]
 END
 
+TACTIC EXTEND intro
+| [ "intro" ] -> [ Tactics.intro_move None MoveLast ]
+| [ "intro" ident(id) ] -> [ Tactics.intro_move (Some id) MoveLast ]
+| [ "intro" ident(id) "at" "top" ] -> [ Tactics.intro_move (Some id) MoveFirst ]
+| [ "intro" ident(id) "at" "bottom" ] -> [ Tactics.intro_move (Some id) MoveLast ]
+| [ "intro" ident(id) "after" hyp(h) ] -> [ Tactics.intro_move (Some id) (MoveAfter h) ]
+| [ "intro" ident(id) "before" hyp(h) ] -> [ Tactics.intro_move (Some id) (MoveBefore h) ]
+| [ "intro" "at" "top" ] -> [ Tactics.intro_move None MoveFirst ]
+| [ "intro" "at" "bottom" ] -> [ Tactics.intro_move None MoveLast ]
+| [ "intro" "after" hyp(h) ] -> [ Tactics.intro_move None (MoveAfter h) ]
+| [ "intro" "before" hyp(h) ] -> [ Tactics.intro_move None (MoveBefore h) ]
+END
+
 (** Move *)
 
 TACTIC EXTEND move
@@ -287,7 +300,6 @@ let initial_atomic () =
         "hnf", TacReduce(Hnf,nocl);
         "simpl", TacReduce(Simpl (Redops.all_flags,None),nocl);
         "compute", TacReduce(Cbv Redops.all_flags,nocl);
-        "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];
       ]
   in
