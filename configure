@@ -925,6 +925,7 @@ BROWSER=`escape_string "$BROWSER"`
 # ocaml strings (coq_config.ml) or in Makefile variables.
 
 ESCAPEDLABLGTKINCLUDES=`escape_string "$LABLGTKINCLUDES"`
+ESCAPEDLABLGTKLIB=`escape_string "$LABLGTKLIB"`
 
 case $ARCH in
     win32)
@@ -986,6 +987,7 @@ let camlp4bin = "$CAMLP4BIN"
 let camlp4lib = "$CAMLP4LIB"
 let camlp4compat = "$CAMLP4COMPAT"
 let coqideincl = "$ESCAPEDLABLGTKINCLUDES"
+let lablgtklib = "$ESCAPEDLABLGTKLIB"
 let cflags = "$cflags"
 let best = "$best_compiler"
 let arch = "$ARCH"

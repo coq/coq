@@ -66,7 +66,7 @@ let includes () =
       ((["-I"; "\"" ^ camlp4lib ^ "\""] @
 	 ["-I"; "\"" ^ coqlib ^ "\""] @
 	 if is_ocaml4 then ["-I"; "+compiler-libs"] else []) @
-	 (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
+	 (if !coqide then ["-thread"; "-I"; Coq_config.lablgtklib] else []))
 
 (* Transform bytecode object file names in native object file names *)
 let native_suffix f =
