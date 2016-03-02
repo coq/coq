@@ -83,8 +83,8 @@ OPTFLAGS=$(MLINCLUDES) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS= -slash $(LOCALINCLUDES)
 
 CAMLP4EXTENDFLAGS=-I . #grammar dependencies are now in camlp4use statements 
-CAMLP4DEPS=sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*\*)@\1@p'
-CAMLP4USE=sed -n -e 's/pa_macro.cmo/pa_macro.cmo -D$(CAMLVERSION)/' -e 's@^(\*.*camlp4use: "\(.*\)".*\*)@\1@p'
+CAMLP4DEPS=LC_ALL=C sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*\*)@\1@p'
+CAMLP4USE=LC_ALL=C sed -n -e 's/pa_macro.cmo/pa_macro.cmo -D$(CAMLVERSION)/' -e 's@^(\*.*camlp4use: "\(.*\)".*\*)@\1@p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
 COQ_XML=	# is "-xml" when building XML library
