@@ -10,3 +10,4 @@ rtauto/vo.otarget
 setoid_ring/vo.otarget
 extraction/vo.otarget
 derive/vo.otarget
+ssrmatching/vo.otarget

@@ -69,7 +69,8 @@ PLUGINS:=\
   omega		romega 		micromega 	quote \
   setoid_ring 	extraction 	fourier \
   cc 		funind 		firstorder 	derive \
-  rtauto 	nsatz           syntax          decl_mode	btauto
+  rtauto 	nsatz           syntax          decl_mode	btauto \
+  ssrmatching
 
 SRCDIRS:=\
   $(CORESRCDIRS)  \
@@ -196,13 +197,14 @@ OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
         string_syntax_plugin.cma )
 DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
 DERIVECMA:=plugins/derive/derive_plugin.cma
+SSRMATCHINGCMA:=plugins/ssrmatching/ssrmatching.cma
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
         $(QUOTECMA) $(RINGCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) \
         $(CCCMA)  $(FOCMA) $(RTAUTOCMA) $(BTAUTOCMA) \
         $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA) \
-	$(DERIVECMA)
+	$(DERIVECMA) $(SSRMATCHINGCMA)
 
 ifneq ($(HASNATDYNLINK),false)
  STATICPLUGINS:=
@@ -331,11 +333,12 @@ RTAUTOVO:=$(call cat_vo_itarget, plugins/rtauto)
 EXTRACTIONVO:=$(call cat_vo_itarget, plugins/extraction)
 CCVO:=
 DERIVEVO:=$(call cat_vo_itarget, plugins/derive)
+SSRMATCHINGVO:=$(call cat_vo_itarget, plugins/ssrmatching)
 
 PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) \
 	    $(FOURIERVO) $(CCVO) $(FUNINDVO) \
 	    $(RTAUTOVO) $(BTAUTOVO) $(RINGVO) $(QUOTEVO) \
-            $(NSATZVO) $(EXTRACTIONVO) $(DERIVEVO)
+            $(NSATZVO) $(EXTRACTIONVO) $(DERIVEVO) $(SSRMATCHINGVO)
 
 ALLVO:= $(THEORIESVO) $(PLUGINSVO)
 VFILES:= $(ALLVO:.vo=.v)

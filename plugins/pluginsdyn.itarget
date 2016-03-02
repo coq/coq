@@ -22,3 +22,4 @@ syntax/string_syntax_plugin.cmxs
 syntax/z_syntax_plugin.cmxs
 quote/quote_plugin.cmxs
 derive/derive_plugin.cmxs
+ssrmatching/ssrmatching_plugin.cmxs

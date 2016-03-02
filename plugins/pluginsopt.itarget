@@ -19,3 +19,4 @@ syntax/string_syntax_plugin.cmxa
 syntax/z_syntax_plugin.cmxa
 quote/quote_plugin.cmxa
 derive/derive_plugin.cmxa
+ssrmatching/ssrmatching_plugin.cmxa

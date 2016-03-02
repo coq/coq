@@ -19,3 +19,4 @@ syntax/string_syntax_plugin.cma
 syntax/z_syntax_plugin.cma
 quote/quote_plugin.cma
 derive/derive_plugin.cma
+ssrmatching/ssrmatching_plugin.cma
