@@ -1615,13 +1615,13 @@ let vernac_search s gopt r =
   let open Feedback in
   match s with
   | SearchPattern c ->
-      msg_notice (Search.search_pattern gopt (get_pattern c) r)
+      List.iter msg_notice (Search.search_pattern gopt (get_pattern c) r)
   | SearchRewrite c ->
-      msg_notice (Search.search_rewrite gopt (get_pattern c) r)
+      List.iter msg_notice (Search.search_rewrite gopt (get_pattern c) r)
   | SearchHead c ->
-      msg_notice (Search.search_by_head gopt (get_pattern c) r)
+      List.iter msg_notice (Search.search_by_head gopt (get_pattern c) r)
   | SearchAbout sl ->
-     msg_notice (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r)
+      List.iter msg_notice (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r)
 
 let vernac_locate = let open Feedback in function
   | LocateAny (AN qid)  -> msg_notice (print_located_qualid qid)

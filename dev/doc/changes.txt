@@ -193,6 +193,13 @@ define_evar_* mostly used internally in the unification engine.
 
   Proofview.Goal.enter { enter = begin fun gl -> ... end }
 
+** Search API **
+
+The main functions return now a list of `std_ppcmds` for the consumer
+to handle, instead of a single, large one. This allows to stream the results.
+
+[EG: is there anything more to document in Search, @gmachela]
+
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================
