@@ -104,8 +104,6 @@ let plain_display accu ref env c =
   let pr = pr_global ref in
   accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
 
-let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
-
 (** Filters *)
 
 (** This function tries to see whether the conclusion matches a pattern. *)
@@ -167,8 +165,9 @@ let search_pattern gopt pat mods =
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter;
+  (* Is this tail recursive? Could be the source of some StackOverflows *)
+  List.rev !ans
 
 (** SearchRewrite *)
 
@@ -196,8 +195,8 @@ let search_rewrite gopt pat mods =
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter;
+  List.rev !ans
 
 (** Search *)
 
@@ -212,8 +211,8 @@ let search_by_head gopt pat mods =
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter;
+  List.rev !ans
 
 (** SearchAbout *)
 
@@ -229,8 +228,8 @@ let search_about gopt items mods =
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter;
+  List.rev !ans
 
 type search_constraint =
   | Name_Pattern of string
