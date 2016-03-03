@@ -168,6 +168,13 @@ let next_utf8 s i =
        (c land 0x3F) lsl 6 + (d land 0x3F)
   else err ()
 
+let is_utf8 s =
+  let rec check i =
+    let (off, _) = next_utf8 s i in
+    check (i + off)
+  in
+  try check 0 with End_of_input -> true | Invalid_argument _ -> false
+
 (* Check the well-formedness of an identifier *)
 
 let initial_refutation j n s =

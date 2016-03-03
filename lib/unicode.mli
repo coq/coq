@@ -26,3 +26,6 @@ val lowercase_first_char : string -> string
 (** For extraction, turn a unicode string into an ascii-only one *)
 val is_basic_ascii : string -> bool
 val ascii_of_ident : string -> string
+
+(** Validate an UTF-8 string *)
+val is_utf8 : string -> bool
