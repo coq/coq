@@ -111,8 +111,6 @@ GEXTEND Gram
       | g=failkw; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  l = LIST0 message_token -> TacFail (g,n,l)
       | st = simple_tactic -> st
-      | IDENT "constr"; ":"; c = Constr.constr ->
-          TacArg(!@loc,ConstrMayEval(ConstrTerm c))
       | a = tactic_top_or_arg -> TacArg(!@loc,a)
       | r = reference; la = LIST0 tactic_arg ->
           TacArg(!@loc,TacCall (!@loc,r,la)) ]
@@ -140,9 +138,7 @@ GEXTEND Gram
   ;
   (* Tactic arguments *)
   tactic_arg:
-    [ [ "ltac:"; a = tactic_expr LEVEL "0" -> arg_of_expr a
-      | "ltac:"; n = natural -> TacGeneric (genarg_of_int n)
-      | a = tactic_top_or_arg -> a
+    [ [ a = tactic_top_or_arg -> a
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
@@ -151,6 +147,9 @@ GEXTEND Gram
   (* Can be used as argument and at toplevel in tactic expressions. *)
   tactic_top_or_arg:
     [ [ IDENT "uconstr"; ":" ; c = uconstr -> UConstr c
+      | IDENT "constr"; ":"; c = Constr.constr -> ConstrMayEval (ConstrTerm c)
+      | IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
+      | IDENT "ltac"; ":"; n = natural -> TacGeneric (genarg_of_int n)
       | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
         TacGeneric (genarg_of_ipattern ipat)
       | c = constr_eval -> ConstrMayEval c
