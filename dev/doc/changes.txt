@@ -1,5 +1,5 @@
 =========================================
-= CHANGES BETWEEN COQ V8.4 AND CQQ V8.5 =
+= CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================
 
 ** Refactoring : more mli interfaces and simpler grammar.cma **
