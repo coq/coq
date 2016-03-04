@@ -112,8 +112,8 @@ GEXTEND Gram
       | g=failkw; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  l = LIST0 message_token -> TacFail (g,n,l)
       | st = simple_tactic -> st
-      | a = tactic_top_or_arg -> TacArg(!@loc,a)
-      | r = reference; la = LIST0 tactic_arg ->
+      | a = tactic_arg -> TacArg(!@loc,a)
+      | r = reference; la = LIST0 tactic_arg_compat ->
           TacArg(!@loc,TacCall (!@loc,r,la)) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
@@ -137,16 +137,16 @@ GEXTEND Gram
           body = tactic_expr LEVEL "5" -> TacLetIn (isrec,llc,body)
       | IDENT "info"; tc = tactic_expr LEVEL "5" -> TacInfo tc ] ]
   ;
-  (* Tactic arguments *)
-  tactic_arg:
-    [ [ a = tactic_top_or_arg -> a
+  (* Tactic arguments to the right of an application *)
+  tactic_arg_compat:
+    [ [ a = tactic_arg -> a
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
-  tactic_top_or_arg:
+  tactic_arg:
     [ [ IDENT "uconstr"; ":"; "("; c = Constr.lconstr; ")" -> TacGeneric (genarg_of_uconstr c)
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> ConstrMayEval (ConstrTerm c)
       | IDENT "ltac"; ":"; "("; a = tactic_expr LEVEL "5"; ")" -> arg_of_expr a
