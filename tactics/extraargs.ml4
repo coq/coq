@@ -23,10 +23,15 @@ let create_generic_quotation name e wit =
   let inject (loc, v) = Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit wit) v) in
   Egramcoq.create_ltac_quotation name inject (e, None)
 
+let () = create_generic_quotation "integer" Pcoq.Prim.integer Stdarg.wit_int
+let () = create_generic_quotation "string" Pcoq.Prim.string Stdarg.wit_string
+
+let () = create_generic_quotation "ident" Pcoq.Prim.ident Constrarg.wit_ident
+let () = create_generic_quotation "reference" Pcoq.Prim.reference Constrarg.wit_ref
 let () = create_generic_quotation "uconstr" Pcoq.Constr.lconstr Constrarg.wit_uconstr
 let () = create_generic_quotation "constr" Pcoq.Constr.lconstr Constrarg.wit_constr
 let () = create_generic_quotation "ipattern" Pcoq.Tactic.simple_intropattern Constrarg.wit_intro_pattern
-let () = create_generic_quotation "int" Pcoq.Prim.integer Stdarg.wit_int
+let () = create_generic_quotation "open_constr" Pcoq.Constr.lconstr Constrarg.wit_open_constr
 let () =
   let inject (loc, v) = Tacexpr.Tacexp v in
   Egramcoq.create_ltac_quotation "ltac" inject (Pcoq.Tactic.tactic_expr, Some 5)
