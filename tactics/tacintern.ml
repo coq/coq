@@ -651,7 +651,7 @@ and intern_tactic_as_arg loc onlytac ist a =
   | TacCall _ | Reference _
   | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
-  | ConstrMayEval _ | UConstr _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
+  | ConstrMayEval _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
       if onlytac then error_tactic_expected loc else TacArg (loc,a)
 
 and intern_tactic_or_tacarg ist = intern_tactic false ist
@@ -665,7 +665,6 @@ and intern_tactic_fun ist (var,body) =
 and intern_tacarg strict onlytac ist = function
   | Reference r -> intern_non_tactic_reference strict ist r
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
-  | UConstr c -> UConstr (intern_constr ist c)
   | TacCall (loc,f,[]) -> intern_isolated_tactic_reference strict ist f
   | TacCall (loc,f,l) ->
       TacCall (loc,

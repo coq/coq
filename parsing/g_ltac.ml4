@@ -28,6 +28,7 @@ let arg_of_expr = function
 let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
 let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
+let genarg_of_uconstr c = in_gen (rawwit Constrarg.wit_uconstr) c
 
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
@@ -146,7 +147,7 @@ GEXTEND Gram
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
   tactic_top_or_arg:
-    [ [ IDENT "uconstr"; ":"; "("; c = Constr.lconstr; ")" -> UConstr c
+    [ [ IDENT "uconstr"; ":"; "("; c = Constr.lconstr; ")" -> TacGeneric (genarg_of_uconstr c)
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> ConstrMayEval (ConstrTerm c)
       | IDENT "ltac"; ":"; "("; a = tactic_expr LEVEL "5"; ")" -> arg_of_expr a
       | IDENT "ltac"; ":"; "("; n = natural; ")" -> TacGeneric (genarg_of_int n)
