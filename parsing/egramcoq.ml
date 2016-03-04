@@ -379,24 +379,27 @@ let with_grammar_rule_protection f x =
 
 let ltac_quotations = ref String.Set.empty
 
-let create_ltac_quotation name cast wit e =
+let create_ltac_quotation name cast (e, l) =
   let () =
     if String.Set.mem name !ltac_quotations then
       failwith ("Ltac quotation " ^ name ^ " already registered")
   in
   let () = ltac_quotations := String.Set.add name !ltac_quotations in
+  let entry = match l with
+  | None -> Aentry (name_of_entry e)
+  | Some l -> Aentryl (name_of_entry e, l)
+  in
 (*   let level = Some "1" in *)
   let level = None in
-  let assoc = Some Extend.RightA in
+  let assoc = None in
   let rule =
-    Next (Next (Next (Stop,
+    Next (Next (Next (Next (Next (Stop,
       Atoken (Lexer.terminal name)),
       Atoken (Lexer.terminal ":")),
-      Aentry (name_of_entry e))
+      Atoken (Lexer.terminal "(")),
+      entry),
+      Atoken (Lexer.terminal ")"))
   in
-  let action v _ _ loc =
-    let arg = TacGeneric (Genarg.in_gen (Genarg.rawwit wit) (cast (loc, v))) in
-    TacArg (loc, arg)
-  in
+  let action _ v _ _ _ loc = cast (loc, v) in
   let gram = (level, assoc, [Rule (rule, action)]) in
-  Pcoq.grammar_extend Tactic.tactic_expr None (None, [gram])
+  Pcoq.grammar_extend Tactic.tactic_arg None (None, [gram])

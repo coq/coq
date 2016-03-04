@@ -17,6 +17,20 @@ open Tacinterp
 open Misctypes
 open Locus
 
+(** Adding scopes for generic arguments not defined through ARGUMENT EXTEND *)
+
+let create_generic_quotation name e wit =
+  let inject (loc, v) = Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit wit) v) in
+  Egramcoq.create_ltac_quotation name inject (e, None)
+
+let () = create_generic_quotation "uconstr" Pcoq.Constr.lconstr Constrarg.wit_uconstr
+let () = create_generic_quotation "constr" Pcoq.Constr.lconstr Constrarg.wit_constr
+let () = create_generic_quotation "ipattern" Pcoq.Tactic.simple_intropattern Constrarg.wit_intro_pattern
+let () = create_generic_quotation "int" Pcoq.Prim.integer Stdarg.wit_int
+let () =
+  let inject (loc, v) = Tacexpr.Tacexp v in
+  Egramcoq.create_ltac_quotation "ltac" inject (Pcoq.Tactic.tactic_expr, Some 5)
+
 (* Rewriting orientation *)
 
 let _ = Metasyntax.add_token_obj "<-"

@@ -19,6 +19,8 @@ open Sigma.Notations
 
 DECLARE PLUGIN "coretactics"
 
+(** Basic tactics *)
+
 TACTIC EXTEND reflexivity
   [ "reflexivity" ] -> [ Tactics.intros_reflexivity ]
 END
