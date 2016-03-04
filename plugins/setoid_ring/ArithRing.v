@@ -32,13 +32,13 @@ Qed.
 Ltac natcst t :=
   match isnatcst t with
     true => constr:(N.of_nat t)
-  | _ => constr:InitialRing.NotConstant
+  | _ => constr:(InitialRing.NotConstant)
   end.
 
 Ltac Ss_to_add f acc :=
   match f with
   | S ?f1 => Ss_to_add f1 (S acc)
-  | _ => constr:(acc + f)%nat
+  | _ => constr:((acc + f)%nat)
   end.
 
 Ltac natprering :=

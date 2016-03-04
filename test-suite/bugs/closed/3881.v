@@ -23,7 +23,7 @@ Proof.
   pose (fun H => @isequiv_homotopic _ _ ((g o f) o f^-1) _ H
                                     (fun b => ap g (eisretr f b))) as k.
   revert k.
-  let x := match goal with |- let k := ?x in _ => constr:x end in
+  let x := match goal with |- let k := ?x in _ => constr:(x) end in
   intro k; clear k;
   pose (x _).
   pose (@isequiv_homotopic _ _ ((g o f) o f^-1) g _

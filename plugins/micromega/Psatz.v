@@ -69,7 +69,7 @@ Ltac xpsatz dom d :=
   end in tac.
 
 Tactic Notation "psatz" constr(dom) int_or_var(n) := xpsatz dom n.
-Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:-1.
+Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:(-1).
 
 Ltac psatzl dom :=
   let tac := lazymatch dom with

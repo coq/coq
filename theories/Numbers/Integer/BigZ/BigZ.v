@@ -148,26 +148,26 @@ Ltac isBigZcst t :=
  match t with
  | BigZ.Pos ?t => isBigNcst t
  | BigZ.Neg ?t => isBigNcst t
- | BigZ.zero => constr:true
- | BigZ.one => constr:true
- | BigZ.two => constr:true
- | BigZ.minus_one => constr:true
- | _ => constr:false
+ | BigZ.zero => constr:(true)
+ | BigZ.one => constr:(true)
+ | BigZ.two => constr:(true)
+ | BigZ.minus_one => constr:(true)
+ | _ => constr:(false)
  end.
 
 Ltac BigZcst t :=
  match isBigZcst t with
- | true => constr:t
- | false => constr:NotConstant
+ | true => constr:(t)
+ | false => constr:(NotConstant)
  end.
 
 Ltac BigZ_to_N t :=
  match t with
  | BigZ.Pos ?t => BigN_to_N t
- | BigZ.zero => constr:0%N
- | BigZ.one => constr:1%N
- | BigZ.two => constr:2%N
- | _ => constr:NotConstant
+ | BigZ.zero => constr:(0%N)
+ | BigZ.one => constr:(1%N)
+ | BigZ.two => constr:(2%N)
+ | _ => constr:(NotConstant)
  end.
 
 (** Registration for the "ring" tactic *)

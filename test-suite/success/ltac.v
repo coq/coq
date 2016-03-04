@@ -15,7 +15,7 @@ Ltac F x := idtac; G x
  with G y := idtac; F y.
 
 (* Check that Match Context keeps a closure *)
-Ltac U := let a := constr:I in
+Ltac U := let a := constr:(I) in
           match goal with
           |  |- _ => apply a
           end.
@@ -75,7 +75,7 @@ Qed.
 
 (* Check context binding *)
 Ltac sym t :=
-  match constr:t with
+  match constr:(t) with
   | context C[(?X1 = ?X2)] => context C [X1 = X2]
   end.
 
@@ -143,7 +143,7 @@ Qed.
 
 Ltac check_binding y := cut ((fun y => y) = S).
 Goal True.
-check_binding ipattern:H.
+check_binding ipattern:(H).
 Abort.
 
 (* Check that variables explicitly parsed as ltac variables are not
@@ -151,7 +151,7 @@ Abort.
 
 Ltac afi tac := intros; tac.
 Goal 1 = 2.
-afi ltac:auto.
+afi ltac:(auto).
 Abort.
 
 (* Tactic Notation avec listes *)
@@ -174,7 +174,7 @@ Abort.
    empty args *)
 
 Goal True.
-match constr:@None with @None => exact I end.
+match constr:(@None) with @None => exact I end.
 Abort.
 
 (* Check second-order pattern unification *)
@@ -218,7 +218,7 @@ Ltac Z1 t := set (x:=t).
 Ltac Z2 t := t.
 Goal True -> True.
 Z1 O.
-Z2 ltac:O.
+Z2 ltac:(O).
 exact I.
 Qed.
 
@@ -302,7 +302,7 @@ Abort.
 (* Check instantiation of binders using ltac names *)
 
 Goal True.
-let x := ipattern:y in assert (forall x y, x = y + 0).
+let x := ipattern:(y) in assert (forall x y, x = y + 0).
 intro.
 destruct y. (* Check that the name is y here *)
 Abort.
