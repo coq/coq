@@ -1612,16 +1612,20 @@ let vernac_search s gopt r =
     | Some g -> snd (Pfedit.get_goal_context g) , Some g
   in
   let get_pattern c = snd (intern_constr_pattern env c) in
-  let open Feedback in
+  let pr_search ref env c =
+    let pc = pr_lconstr_env env Evd.empty c in
+    let pr = pr_global ref in
+    Feedback.msg_notice @@ hov 2 (pr ++ str":" ++ spc () ++ pc)
+  in
   match s with
   | SearchPattern c ->
-      List.iter msg_notice (Search.search_pattern gopt (get_pattern c) r)
+      Search.search_pattern gopt (get_pattern c) r pr_search
   | SearchRewrite c ->
-      List.iter msg_notice (Search.search_rewrite gopt (get_pattern c) r)
+      Search.search_rewrite gopt (get_pattern c) r pr_search
   | SearchHead c ->
-      List.iter msg_notice (Search.search_by_head gopt (get_pattern c) r)
+      Search.search_by_head gopt (get_pattern c) r pr_search
   | SearchAbout sl ->
-      List.iter msg_notice (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r)
+      Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r pr_search
 
 let vernac_locate = let open Feedback in function
   | LocateAny (AN qid)  -> msg_notice (print_located_qualid qid)
