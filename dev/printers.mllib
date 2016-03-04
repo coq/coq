@@ -48,7 +48,7 @@ Rtree
 Heap
 Genarg
 Stateid
-Ephemeron
+CEphemeron
 Future
 RemoteCounter
 Monad

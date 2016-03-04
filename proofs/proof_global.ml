@@ -36,7 +36,7 @@ let find_proof_mode n =
     Errors.error (Format.sprintf "No proof mode named \"%s\"." n)
 
 let register_proof_mode ({name = n} as m) =
-  Hashtbl.add proof_modes n (Ephemeron.create m)
+  Hashtbl.add proof_modes n (CEphemeron.create m)
 
 (* initial mode: standard mode *)
 let standard = { name = "No" ; set = (fun ()->()) ; reset = (fun () -> ()) }
@@ -52,7 +52,7 @@ let _ =
     optname = "default proof mode" ;
     optkey = ["Default";"Proof";"Mode"] ;
     optread = begin fun () ->
-      (Ephemeron.default !default_proof_mode standard).name
+      (CEphemeron.default !default_proof_mode standard).name
     end;
     optwrite = begin fun n ->
       default_proof_mode := find_proof_mode n
@@ -83,12 +83,12 @@ type closed_proof = proof_object * proof_terminator
 
 type pstate = {
   pid : Id.t;
-  terminator : proof_terminator Ephemeron.key;
+  terminator : proof_terminator CEphemeron.key;
   endline_tactic : Tacexpr.raw_tactic_expr option;
   section_vars : Context.section_context option;
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
-  mode : proof_mode Ephemeron.key;
+  mode : proof_mode CEphemeron.key;
   universe_binders: universe_binders option;
 }
 
@@ -103,11 +103,11 @@ let current_proof_mode = ref !default_proof_mode
 let update_proof_mode () =
   match !pstates with
   | { mode = m } :: _ ->
-      Ephemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
+      CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
       current_proof_mode := m;
-      Ephemeron.iter_opt !current_proof_mode (fun x -> x.set ())
+      CEphemeron.iter_opt !current_proof_mode (fun x -> x.set ())
   | _ ->
-      Ephemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
+      CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
       current_proof_mode := find_proof_mode "No"
 
 (* combinators for the current_proof lists *)
@@ -215,9 +215,9 @@ let set_proof_mode mn =
   set_proof_mode (find_proof_mode mn) (get_current_proof_name ())
 
 let activate_proof_mode mode =
-  Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
+  CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
 let disactivate_proof_mode mode =
-  Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
+  CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
 
 (** [start_proof sigma id str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
@@ -230,7 +230,7 @@ let disactivate_proof_mode mode =
 let start_proof sigma id ?pl str goals terminator =
   let initial_state = {
     pid = id;
-    terminator = Ephemeron.create terminator;
+    terminator = CEphemeron.create terminator;
     proof = Proof.start sigma goals;
     endline_tactic = None;
     section_vars = None;
@@ -242,7 +242,7 @@ let start_proof sigma id ?pl str goals terminator =
 let start_dependent_proof id ?pl str goals terminator =
   let initial_state = {
     pid = id;
-    terminator = Ephemeron.create terminator;
+    terminator = CEphemeron.create terminator;
     proof = Proof.dependent_start goals;
     endline_tactic = None;
     section_vars = None;
@@ -375,7 +375,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
   in
   { id = pid; entries = entries; persistence = strength;
     universes = (universes, binders) },
-  fun pr_ending -> Ephemeron.get terminator pr_ending
+  fun pr_ending -> CEphemeron.get terminator pr_ending
 
 type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
 
@@ -423,11 +423,11 @@ let close_proof ~keep_body_ucst_separate fix_exn =
 
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)
-let get_terminator () = Ephemeron.get ( cur_pstate() ).terminator
+let get_terminator () = CEphemeron.get ( cur_pstate() ).terminator
 let set_terminator hook =
   match !pstates with
   | [] -> raise NoCurrentProof
-  | p :: ps -> pstates := { p with terminator = Ephemeron.create hook } :: ps
+  | p :: ps -> pstates := { p with terminator = CEphemeron.create hook } :: ps
 
 
 

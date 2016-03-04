@@ -291,7 +291,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)
     (* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
     (* 	end; *)
-    get_proof_clean true, Ephemeron.create hook
+    get_proof_clean true, CEphemeron.create hook
   end
 
 

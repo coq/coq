@@ -25,7 +25,7 @@ open Declarations
 (* The key attached to each constant is used by the VM to retrieve previous *)
 (* evaluations of the constant. It is essentially an index in the symbols table *)
 (* used by the VM. *)
-type key = int Ephemeron.key option ref 
+type key = int CEphemeron.key option ref 
 
 (** Linking information for the native compiler. *)
 
@@ -50,17 +50,17 @@ type stratification = {
 }
 
 type val_kind =
-    | VKvalue of (values * Id.Set.t) Ephemeron.key
+    | VKvalue of (values * Id.Set.t) CEphemeron.key
     | VKnone
 
 type lazy_val = val_kind ref
 
 let force_lazy_val vk = match !vk with
 | VKnone -> None
-| VKvalue v -> try Some (Ephemeron.get v) with Ephemeron.InvalidKey -> None
+| VKvalue v -> try Some (CEphemeron.get v) with CEphemeron.InvalidKey -> None
 
 let dummy_lazy_val () = ref VKnone
-let build_lazy_val vk key = vk := VKvalue (Ephemeron.create key)
+let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
 
 type named_vals = (Id.t * lazy_val) list
 

@@ -15,6 +15,6 @@ Rtree
 Heap
 Unionfind
 Genarg
-Ephemeron
+CEphemeron
 Future
 RemoteCounter

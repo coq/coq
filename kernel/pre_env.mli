@@ -19,7 +19,7 @@ type link_info =
   | LinkedInteractive of string
   | NotLinked
 
-type key = int Ephemeron.key option ref 
+type key = int CEphemeron.key option ref 
 
 type constant_key = constant_body * (link_info ref * key)
 
