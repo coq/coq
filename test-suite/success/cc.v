@@ -129,5 +129,10 @@ Qed.
 
 End bug_2447.
 
+(* congruence was supposed to do discriminate but it was bugged for
+   types with indices *)
 
-
+Inductive I : nat -> Type := C : I 0 | D : I 0.
+Goal ~C=D.
+congruence.
+Qed.

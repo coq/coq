@@ -223,24 +223,9 @@ let make_prb gls depth additionnal_terms =
 
 (* indhyps builds the array of arrays of constructor hyps for (ind largs) *)
 
-let build_projection intype outtype (cstr:pconstructor) special default gls=
-  let env=pf_env gls in
-  let (h,argv) = try destApp intype with DestKO -> (intype,[||]) in
-  let ind,u=destInd h in
-  let types=Inductiveops.arities_of_constructors env (ind,u) in
-  let lp=Array.length types in
-  let ci=pred (snd(fst cstr)) in
-  let branch i=
-    let ti= prod_appvect types.(i) argv in
-    let rc=fst (decompose_prod_assum ti) in
-    let head=
-      if Int.equal i ci then special else default in
-      it_mkLambda_or_LetIn head rc in
-  let branches=Array.init lp branch in
-  let casee=mkRel 1 in
-  let pred=mkLambda(Anonymous,intype,outtype) in
-  let case_info=make_case_info (pf_env gls) ind RegularStyle in
-  let body= mkCase(case_info, pred, casee, branches) in
+let build_projection intype (cstr:pconstructor) special default gls=
+  let ci= (snd(fst cstr)) in
+  let body=Equality.build_selector (pf_env gls) (project gls) ci (mkRel 1) intype special default in
   let id=pf_get_new_id (Id.of_string "t") gls in
     mkLambda(Name id,intype,body)
 
@@ -322,7 +307,7 @@ let rec proof_tac p : unit Proofview.tactic =
 	 let outtype = (* Termops.refresh_universes *) (type_of default) in
 	 let special=mkRel (1+nargs-argind) in
          let proj =
-           Tacmach.New.of_old (build_projection intype outtype cstr special default) gl
+           Tacmach.New.of_old (build_projection intype cstr special default) gl
          in
 	 let injt=
            app_global _f_equal [|intype;outtype;proj;ti;tj;_M 1|] in
@@ -391,7 +376,7 @@ let discriminate_tac (cstr,u as cstru) p =
     let outtype = mkSort outtype in
     let pred=mkLambda(Name xid,outtype,mkRel 1) in
     let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
-    let proj = Tacmach.New.of_old (build_projection intype outtype cstru trivial concl) gl in
+    let proj = Tacmach.New.of_old (build_projection intype cstru trivial concl) gl in
     let injt=app_global _f_equal
                     [|intype;outtype;proj;t1;t2;mkVar hid|] in
     let endt k =
