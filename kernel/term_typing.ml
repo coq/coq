@@ -125,14 +125,14 @@ let check_signatures curmb sl =
     | None -> None, None
     | Some curmb ->
         try
-          let mb = Ephemeron.get mb in
+          let mb = CEphemeron.get mb in
           match sl with
           | None -> sl, None
           | Some n ->
               if List.length mb >= how_many && CList.skipn how_many mb == curmb
               then Some (n + how_many), Some mb
               else None, None
-        with Ephemeron.InvalidKey -> None, None in
+        with CEphemeron.InvalidKey -> None, None in
   let sl, _ = List.fold_left is_direct_ancestor (Some 0,Some curmb) sl in
   sl
 

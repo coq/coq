@@ -225,11 +225,11 @@ let side_effects_of_private_constants x = Term_typing.uniq_seff (List.rev x)
 
 let private_con_of_con env c =
   let cbo = Environ.lookup_constant c env.env in
-  { Entries.from_env = Ephemeron.create env.revstruct;
+  { Entries.from_env = CEphemeron.create env.revstruct;
     Entries.eff      = Entries.SEsubproof (c,cbo,get_opaque_body env.env cbo) }
 
 let private_con_of_scheme ~kind env cl =
-  { Entries.from_env = Ephemeron.create env.revstruct;
+  { Entries.from_env = CEphemeron.create env.revstruct;
     Entries.eff      = Entries.SEscheme(
       List.map (fun (i,c) ->
         let cbo = Environ.lookup_constant c env.env in

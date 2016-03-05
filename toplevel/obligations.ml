@@ -314,11 +314,11 @@ type program_info_aux = {
   prg_sign: named_context_val;
 }
 
-type program_info = program_info_aux Ephemeron.key
+type program_info = program_info_aux CEphemeron.key
 
 let get_info x =
-  try Ephemeron.get x
-  with Ephemeron.InvalidKey ->
+  try CEphemeron.get x
+  with CEphemeron.InvalidKey ->
     Errors.anomaly Pp.(str "Program obligation can't be accessed by a worker")
 
 let assumption_message = Declare.assumption_message
@@ -451,7 +451,7 @@ let subst_deps_obl obls obl =
 
 module ProgMap = Map.Make(Id)
 
-let map_replace k v m = ProgMap.add k (Ephemeron.create v) (ProgMap.remove k m)
+let map_replace k v m = ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
 
 let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
 
@@ -675,7 +675,7 @@ let init_prog_info ?(opaque = false) sign n pl b t ctx deps fixkind
 let map_cardinal m =
   let i = ref 0 in
   ProgMap.iter (fun _ v ->
-		if snd (Ephemeron.get v).prg_obligations > 0 then incr i) m;
+		if snd (CEphemeron.get v).prg_obligations > 0 then incr i) m;
   !i
 
 exception Found of program_info
@@ -683,7 +683,7 @@ exception Found of program_info
 let map_first m =
   try
     ProgMap.iter (fun _ v ->
-		  if snd (Ephemeron.get v).prg_obligations > 0 then
+		  if snd (CEphemeron.get v).prg_obligations > 0 then
 		    raise (Found v)) m;
     assert(false)
   with Found x -> x
@@ -1040,7 +1040,7 @@ let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=Global,false,Definit
   else (
     let len = Array.length obls in
     let _ = Flags.if_verbose msg_info (info ++ str ", generating " ++ int len ++ str " obligation(s)") in
-      progmap_add n (Ephemeron.create prg);
+      progmap_add n (CEphemeron.create prg);
       let res = auto_solve_obligations (Some n) tactic in
 	match res with
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
@@ -1054,7 +1054,7 @@ let add_mutual_definitions l ctx ?pl ?tactic ?(kind=Global,false,Definition) ?(r
     (fun  (n, b, t, imps, obls) ->
      let prg = init_prog_info sign ~opaque n pl (Some b) t ctx deps (Some fixkind)
        notations obls imps kind reduce hook 
-     in progmap_add n (Ephemeron.create prg)) l;
+     in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
       List.fold_left (fun finished x ->
 	if finished then finished

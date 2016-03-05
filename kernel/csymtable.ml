@@ -130,8 +130,8 @@ let key rk =
   match !rk with
   | None -> raise NotEvaluated
   | Some k ->
-      try Ephemeron.get k
-      with Ephemeron.InvalidKey -> raise NotEvaluated
+      try CEphemeron.get k
+      with CEphemeron.InvalidKey -> raise NotEvaluated
 
 (************************)
 (* traduction des patch *)
@@ -170,7 +170,7 @@ let rec slot_for_getglobal env kn =
 	 | BCconstant -> set_global (val_of_constant kn)
     in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
-    rk := Some (Ephemeron.create pos);
+    rk := Some (CEphemeron.create pos);
     pos
 
 and slot_for_fv env fv =

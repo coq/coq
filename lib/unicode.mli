@@ -36,3 +36,6 @@ val is_basic_ascii : string -> bool
     translated to ["__Uxxxx_"] where {i xxxx} are four hexadecimal digits.
     @raise Unsupported if the input string contains unsupported UTF-8 characters. *)
 val ascii_of_ident : string -> string
+
+(** Validate an UTF-8 string *)
+val is_utf8 : string -> bool

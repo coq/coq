@@ -314,7 +314,9 @@ let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
     patl
 
 let mkNumeral n = Numeral n
-let mkString s = String s
+let mkString = function
+| None -> None
+| Some s -> if Unicode.is_utf8 s then Some (String s) else None
 
 let delay dir int loc x = (dir, (fun () -> int loc x))
 
@@ -326,7 +328,7 @@ let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
 let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
     (fun cont loc -> function String s -> delay dir interp loc s | p -> cont loc p)
-    (patl, (fun r -> Option.map mkString (uninterp r)), inpat)
+    (patl, (fun r -> mkString (uninterp r)), inpat)
 
 let check_required_module loc sc (sp,d) =
   try let _ = Nametab.global_of_path sp in ()
