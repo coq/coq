@@ -861,13 +861,13 @@ let descend_then env sigma head dirn =
 
  *)
 
-(* [construct_discriminator env dirn headval]
-   constructs a case-split on [headval], with the [dirn]-th branch
-   giving [True], and all the rest giving False. *)
+(* [construct_discriminator env sigma dirn c ind special default]]
+   constructs a case-split on [c] of type [ind], with the [dirn]-th
+   branch giving [special], and all the rest giving [default]. *)
 
-let construct_discriminator env sigma dirn c sort =
+let build_selector env sigma dirn c ind special default =
   let IndType(indf,_) =
-    try find_rectype env sigma (get_type_of env sigma c)
+    try find_rectype env sigma ind
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors
           like T := c : (A:Set)A->T and a discrimination
@@ -879,25 +879,29 @@ let construct_discriminator env sigma dirn c sort =
 		 dependent types.") in
   let (indp,_) = dest_ind_family indf in
   let ind, _ = check_privacy env indp in
+  let typ = Retyping.get_type_of env sigma default in
   let (mib,mip) = lookup_mind_specif env ind in
-  let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop Null in
   let deparsign = make_arity_signature env true indf in
-  let p = it_mkLambda_or_LetIn (mkSort sort_0) deparsign in
+  let p = it_mkLambda_or_LetIn typ deparsign in
   let cstrs = get_constructors env indf in
   let build_branch i =
-    let endpt = if Int.equal i dirn then true_0 else false_0 in
+    let endpt = if Int.equal i dirn then special else default in
     it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args in
   let brl =
     List.map build_branch(List.interval 1 (Array.length mip.mind_consnames)) in
   let ci = make_case_info env ind RegularStyle in
   mkCase (ci, p, c, Array.of_list brl)
 
-let rec build_discriminator env sigma dirn c sort = function
-  | [] -> construct_discriminator env sigma dirn c sort
+let rec build_discriminator env sigma dirn c = function
+  | [] ->
+      let ind = get_type_of env sigma c in
+      let true_0,false_0 =
+        build_coq_True(),build_coq_False() in
+      build_selector env sigma dirn c ind true_0 false_0
   | ((sp,cnum),argnum)::l ->
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
-      let subval = build_discriminator cnum_env sigma dirn newc sort l  in
+      let subval = build_discriminator cnum_env sigma dirn newc l in
       kont subval (build_coq_False (),mkSort (Prop Null))
 
 (* Note: discrimination could be more clever: if some elimination is
@@ -959,11 +963,11 @@ let apply_on_clause (f,t) clause =
      | _  -> errorlabstrm "" (str "Ill-formed clause applicator.")) in
   clenv_fchain ~with_univs:false argmv f_clause clause
 
-let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
+let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) env in
   let discriminator =
-    build_discriminator e_env sigma dirn (mkVar e) sort cpath in
+    build_discriminator e_env sigma dirn (mkVar e) cpath in
   let sigma,(pf, absurd_term), eff = 
     discrimination_pf env sigma e (t,t1,t2) discriminator lbeq in
   let pf_ty = mkArrow eqn absurd_term in
@@ -978,13 +982,11 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let concl = Proofview.Goal.concl gl in
     match find_positions env sigma t1 t2 with
     | Inr _ ->
 	tclZEROMSG (str"Not a discriminable equality.")
     | Inl (cpath, (_,dirn), _) ->
-	let sort = pf_apply get_type_of gl concl in
-	discr_positions env sigma u eq_clause cpath dirn sort
+	discr_positions env sigma u eq_clause cpath dirn
   end }
 
 let onEquality with_evars tac (c,lbindc) =
@@ -1414,12 +1416,11 @@ let injHyp clear_flag id = injClause None false (Some (clear_flag,ElimOnIdent (L
 
 let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let sort = pf_apply get_type_of gl (Proofview.Goal.concl gl) in
     let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
       match find_positions env sigma t1 t2 with
       | Inl (cpath, (_,dirn), _) ->
-	  discr_positions env sigma u clause cpath dirn sort
+	  discr_positions env sigma u clause cpath dirn
       | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
         ntac (clenv_value clause) 0
     | Inr posns ->
