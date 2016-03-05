@@ -120,7 +120,7 @@ let make_possibly_empty_subentries loc s cl =
 
 let make_act loc act pil =
   let rec make = function
-    | [] -> <:expr< Pcoq.Gram.action (fun loc -> ($act$ : 'a)) >>
+    | [] -> <:expr< Pcoq.Gram.action (fun loc -> let loc = Compat.to_coqloc loc in ($act$ : 'a)) >>
     | GramNonTerminal (_,t,_,Some p) :: tl ->
 	let p = Names.Id.to_string p in
 	<:expr<
