@@ -104,18 +104,18 @@ Ltac isBigQcst t :=
  | BigQ.Qz ?t => isBigZcst t
  | BigQ.Qq ?n ?d => match isBigZcst n with
              | true => isBigNcst d
-             | false => constr:false
+             | false => constr:(false)
              end
- | BigQ.zero => constr:true
- | BigQ.one => constr:true
- | BigQ.minus_one => constr:true
- | _ => constr:false
+ | BigQ.zero => constr:(true)
+ | BigQ.one => constr:(true)
+ | BigQ.minus_one => constr:(true)
+ | _ => constr:(false)
  end.
 
 Ltac BigQcst t :=
  match isBigQcst t with
- | true => constr:t
- | false => constr:NotConstant
+ | true => constr:(t)
+ | false => constr:(NotConstant)
  end.
 
 Add Field BigQfield : BigQfieldth

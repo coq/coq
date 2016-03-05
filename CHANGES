@@ -13,6 +13,11 @@ Tactics
 - In introduction patterns of the form (pat1,...,patn), n should match
   the exact number of hypotheses introduced (except for local definitions
   for which pattern can be omitted, as in regular pattern-matching).
+- Tactic scopes in Ltac like constr: and ltac: now require parentheses around
+  their argument.
+- Every generic argument type declares a tactic scope of the form "name:(...)"
+  where name is the name of the argument. This generalizes the constr: and ltac:
+  instances.
 
 Program
 

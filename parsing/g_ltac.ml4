@@ -28,6 +28,7 @@ let arg_of_expr = function
 let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
 let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
+let genarg_of_uconstr c = in_gen (rawwit Constrarg.wit_uconstr) c
 
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
@@ -111,10 +112,8 @@ GEXTEND Gram
       | g=failkw; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  l = LIST0 message_token -> TacFail (g,n,l)
       | st = simple_tactic -> st
-      | IDENT "constr"; ":"; c = Constr.constr ->
-          TacArg(!@loc,ConstrMayEval(ConstrTerm c))
-      | a = tactic_top_or_arg -> TacArg(!@loc,a)
-      | r = reference; la = LIST0 tactic_arg ->
+      | a = tactic_arg -> TacArg(!@loc,a)
+      | r = reference; la = LIST0 tactic_arg_compat ->
           TacArg(!@loc,TacCall (!@loc,r,la)) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
@@ -138,22 +137,17 @@ GEXTEND Gram
           body = tactic_expr LEVEL "5" -> TacLetIn (isrec,llc,body)
       | IDENT "info"; tc = tactic_expr LEVEL "5" -> TacInfo tc ] ]
   ;
-  (* Tactic arguments *)
-  tactic_arg:
-    [ [ "ltac:"; a = tactic_expr LEVEL "0" -> arg_of_expr a
-      | "ltac:"; n = natural -> TacGeneric (genarg_of_int n)
-      | a = tactic_top_or_arg -> a
+  (* Tactic arguments to the right of an application *)
+  tactic_arg_compat:
+    [ [ a = tactic_arg -> a
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
-  tactic_top_or_arg:
-    [ [ IDENT "uconstr"; ":" ; c = uconstr -> UConstr c
-      | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
-        TacGeneric (genarg_of_ipattern ipat)
-      | c = constr_eval -> ConstrMayEval c
+  tactic_arg:
+    [ [ c = constr_eval -> ConstrMayEval c
       | IDENT "fresh"; l = LIST0 fresh_id -> TacFreshId l
       | IDENT "type_term"; c=uconstr -> TacPretype c
       | IDENT "numgoals" -> TacNumgoals ] ]

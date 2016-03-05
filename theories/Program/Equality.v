@@ -238,8 +238,8 @@ Ltac inject_left H :=
 Ltac inject_right H :=
   progress (inversion H ; subst_right_no_fail ; clear_dups) ; clear H.
 
-Ltac autoinjections_left := repeat autoinjection ltac:inject_left.
-Ltac autoinjections_right := repeat autoinjection ltac:inject_right.
+Ltac autoinjections_left := repeat autoinjection ltac:(inject_left).
+Ltac autoinjections_right := repeat autoinjection ltac:(inject_right).
 
 Ltac simpl_depind := subst_no_fail ; autoinjections ; try discriminates ; 
   simpl_JMeq ; simpl_existTs ; simplify_IH_hyps.

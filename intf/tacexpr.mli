@@ -180,7 +180,6 @@ type 'a gen_atomic_tactic_expr =
 
 constraint 'a = <
     term:'trm;
-    utrm: 'utrm;
     dterm: 'dtrm;
     pattern:'pat;
     constant:'cst;
@@ -195,7 +194,6 @@ constraint 'a = <
 and 'a gen_tactic_arg =
   | TacGeneric     of 'lev generic_argument
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval
-  | UConstr        of 'utrm
   | Reference      of 'ref
   | TacCall of Loc.t * 'ref *
       'a gen_tactic_arg list
@@ -206,7 +204,6 @@ and 'a gen_tactic_arg =
 
 constraint 'a = <
     term:'trm;
-    utrm: 'utrm;
     dterm: 'dtrm;
     pattern:'pat;
     constant:'cst;
@@ -285,7 +282,6 @@ and 'a gen_tactic_expr =
 
 constraint 'a = <
     term:'t;
-    utrm: 'utrm;
     dterm: 'dtrm;
     pattern:'p;
     constant:'c;
@@ -300,7 +296,6 @@ and 'a gen_tactic_fun_ast =
 
 constraint 'a = <
     term:'t;
-    utrm: 'utrm;
     dterm: 'dtrm;
     pattern:'p;
     constant:'c;
@@ -313,7 +308,6 @@ constraint 'a = <
 (** Globalized tactics *)
 
 type g_trm = glob_constr_and_expr
-type g_utrm = g_trm
 type g_pat = glob_constr_pattern_and_expr
 type g_cst = evaluable_global_reference and_short_name or_var
 type g_ref = ltac_constant located or_var
@@ -321,7 +315,6 @@ type g_nam  = Id.t located
 
 type g_dispatch =  <
     term:g_trm;
-    utrm:g_utrm;
     dterm:g_trm;
     pattern:g_pat;
     constant:g_cst;
@@ -343,7 +336,6 @@ type glob_tactic_arg =
 (** Raw tactics *)
 
 type r_trm = constr_expr
-type r_utrm = r_trm
 type r_pat = constr_pattern_expr
 type r_cst = reference or_by_notation
 type r_ref = reference
@@ -352,7 +344,6 @@ type r_lev = rlevel
 
 type r_dispatch =  <
     term:r_trm;
-    utrm:r_utrm;
     dterm:r_trm;
     pattern:r_pat;
     constant:r_cst;
@@ -374,7 +365,6 @@ type raw_tactic_arg =
 (** Interpreted tactics *)
 
 type t_trm = Term.constr
-type t_utrm = Glob_term.closed_glob_constr
 type t_pat = constr_pattern
 type t_cst = evaluable_global_reference
 type t_ref = ltac_constant located
@@ -382,7 +372,6 @@ type t_nam  = Id.t
 
 type t_dispatch =  <
     term:t_trm;
-    utrm:t_utrm;
     dterm:g_trm;
     pattern:t_pat;
     constant:t_cst;

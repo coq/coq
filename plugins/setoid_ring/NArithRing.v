@@ -15,7 +15,7 @@ Set Implicit Arguments.
 Ltac Ncst t :=
   match isNcst t with
     true => t
-  | _ => constr:NotConstant
+  | _ => constr:(NotConstant)
   end.
 
 Add Ring Nr : Nth (decidable Neqb_ok, constants [Ncst]).

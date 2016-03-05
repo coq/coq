@@ -1365,11 +1365,6 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
         let (sigma,c_interp) = interp_constr_may_eval ist env sigma c in
         Sigma.Unsafe.of_pair (Ftactic.return (Value.of_constr c_interp), sigma)
       end }
-  | UConstr c ->
-      Ftactic.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        Ftactic.return (Value.of_uconstr (interp_uconstr ist env c))
-      end }
   | TacCall (loc,r,[]) ->
       interp_ltac_reference loc true ist r
   | TacCall (loc,f,l) ->

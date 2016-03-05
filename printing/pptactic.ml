@@ -696,7 +696,6 @@ module Make
   type 'a printer = {
     pr_tactic    : tolerability -> 'tacexpr -> std_ppcmds;
     pr_constr    : 'trm -> std_ppcmds;
-    pr_uconstr   : 'utrm -> std_ppcmds;
     pr_lconstr   : 'trm -> std_ppcmds;
     pr_dconstr   : 'dtrm -> std_ppcmds;
     pr_pattern   : 'pat -> std_ppcmds;
@@ -711,7 +710,6 @@ module Make
 
   constraint 'a = <
       term      :'trm;
-      utrm      :'utrm;
       dterm     :'dtrm;
       pattern   :'pat;
       constant  :'cst;
@@ -1153,8 +1151,6 @@ module Make
             pr.pr_reference r
           | ConstrMayEval c ->
             pr_may_eval pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c
-          | UConstr c ->
-            keyword "uconstr:" ++ pr.pr_uconstr c
           | TacFreshId l ->
             keyword "fresh" ++ pr_fresh_ids l
           | TacPretype c ->
@@ -1182,7 +1178,6 @@ module Make
     let pr = {
       pr_tactic = pr_raw_tactic_level;
       pr_constr = pr_constr_expr;
-      pr_uconstr = pr_constr_expr;
       pr_dconstr = pr_constr_expr;
       pr_lconstr = pr_lconstr_expr;
       pr_pattern = pr_constr_pattern_expr;
@@ -1213,7 +1208,6 @@ module Make
       let pr = {
         pr_tactic = prtac;
         pr_constr = pr_and_constr_expr (pr_glob_constr_env env);
-        pr_uconstr = pr_and_constr_expr (pr_glob_constr_env env);
         pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
         pr_lconstr = pr_and_constr_expr (pr_lglob_constr_env env);
         pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
@@ -1255,7 +1249,6 @@ module Make
       let pr = {
         pr_tactic = pr_glob_tactic_level env;
         pr_constr = pr_constr_env env Evd.empty;
-        pr_uconstr = pr_closed_glob_env env Evd.empty;
         pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
         pr_lconstr = pr_lconstr_env env Evd.empty;
         pr_pattern = pr_constr_pattern_env env Evd.empty;
