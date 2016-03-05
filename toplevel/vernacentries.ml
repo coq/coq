@@ -1439,9 +1439,18 @@ let vernac_debug b =
 let _ =
   declare_bool_option
     { optsync  = false;
-      optdepr  = false;
+      optdepr  = true;
       optname  = "Ltac debug";
       optkey   = ["Ltac";"Debug"];
+      optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
+      optwrite = vernac_debug }
+
+let _ =
+  declare_bool_option
+    { optsync  = false;
+      optdepr  = false;
+      optname  = "Ltac debug";
+      optkey   = ["Debug";"Ltac"];
       optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
       optwrite = vernac_debug }
 
