@@ -126,7 +126,7 @@ let process_vernac_interp_error ?(allow_uncaught=true) ?(with_header=true) (exc,
   | None -> e
   | Some trace ->
     let (e, info) = e in
-    match Himsg.extract_ltac_trace trace loc with
+    match Tactic_debug.extract_ltac_trace trace loc with
     | None, loc -> (e, Loc.add_loc info loc)
     | Some msg, loc ->
       (EvaluatedError (msg, Some e), Loc.add_loc info loc)

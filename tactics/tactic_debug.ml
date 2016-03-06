@@ -322,3 +322,81 @@ let db_breakpoint debug s =
       breakpoint:=None
   | _ ->
       return ()
+
+(** Extrating traces *)
+
+let (is_for_ml_f, is_ltac_for_ml_tactic_hook) = Hook.make ()
+
+let is_defined_ltac trace =
+  let rec aux = function
+  | (_, Tacexpr.LtacNameCall f) :: tail ->
+      not (Hook.get is_for_ml_f f)
+  | (_, Tacexpr.LtacAtomCall _) :: tail ->
+      false
+  | _ :: tail -> aux tail
+  | [] -> false in
+  aux (List.rev trace)
+
+let explain_ltac_call_trace last trace loc =
+  let calls = last :: List.rev_map snd trace in
+  let pr_call ck = match ck with
+  | Tacexpr.LtacNotationCall kn -> quote (KerName.print kn)
+  | Tacexpr.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
+  | Tacexpr.LtacMLCall t ->
+      quote (Pptactic.pr_glob_tactic (Global.env()) t)
+  | Tacexpr.LtacVarCall (id,t) ->
+      quote (Nameops.pr_id id) ++ strbrk " (bound to " ++
+        Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
+  | Tacexpr.LtacAtomCall te ->
+      quote (Pptactic.pr_glob_tactic (Global.env())
+              (Tacexpr.TacAtom (Loc.ghost,te)))
+  | Tacexpr.LtacConstrInterp (c, { Pretyping.ltac_constrs = vars }) ->
+      quote (Printer.pr_glob_constr_env (Global.env()) c) ++
+        (if not (Id.Map.is_empty vars) then
+          strbrk " (with " ++
+            prlist_with_sep pr_comma
+            (fun (id,c) ->
+                pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
+            (List.rev (Id.Map.bindings vars)) ++ str ")"
+        else mt())
+  in
+  match calls with
+  | [] -> mt ()
+  | _ ->
+    let kind_of_last_call = match List.last calls with
+    | Tacexpr.LtacConstrInterp _ -> ", last term evaluation failed."
+    | _ -> ", last call failed."
+    in
+    hov 0 (str "In nested Ltac calls to " ++
+           pr_enum pr_call calls ++ strbrk kind_of_last_call)
+
+let skip_extensions trace =
+  let rec aux = function
+  | (_,Tacexpr.LtacNameCall f as tac) :: _ 
+      when Hook.get is_for_ml_f f -> [tac]
+  | (_,(Tacexpr.LtacNotationCall _ | Tacexpr.LtacMLCall _) as tac)
+      :: _ -> [tac]
+  | t :: tail -> t :: aux tail
+  | [] -> [] in
+  List.rev (aux (List.rev trace))
+
+let extract_ltac_trace trace eloc =
+  let trace = skip_extensions trace in
+  let (loc,c),tail = List.sep_last trace in
+  if is_defined_ltac trace then
+    (* We entered a user-defined tactic,
+       we display the trace with location of the call *)
+    let msg = hov 0 (explain_ltac_call_trace c tail eloc ++ fnl()) in
+    Some msg, loc
+  else
+    (* We entered a primitive tactic, we don't display trace but
+       report on the finest location *)
+    let best_loc =
+      if not (Loc.is_ghost eloc) then eloc else
+        (* trace is with innermost call coming first *)
+        let rec aux = function
+        | (loc,_)::tail when not (Loc.is_ghost loc) -> loc
+        | _::tail -> aux tail
+        | [] -> Loc.ghost in
+        aux trace in
+    None, best_loc
