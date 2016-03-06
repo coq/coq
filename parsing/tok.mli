@@ -20,6 +20,7 @@ type t =
   | BULLET of string
   | EOI
 
+val equal : t -> t -> bool
 val extract_string : t -> string
 val to_string : t -> string
 (* Needed to fit Camlp4 signature *)

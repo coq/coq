@@ -276,7 +276,7 @@ ELSE
   module Gramext = G
   let stoken tok = match tok with
   | Tok.KEYWORD s -> Gramext.Skeyword s
-  | tok -> Gramext.Stoken ((=) tok, G.Token.to_string tok)
+  | tok -> Gramext.Stoken (Tok.equal tok, G.Token.to_string tok)
 END
 
 IFDEF CAMLP5_6_00 THEN

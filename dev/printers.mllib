@@ -19,6 +19,7 @@ Pp_control
 Loc
 CList
 CString
+Tok
 Compat
 Flags
 Control
@@ -153,7 +154,6 @@ Library
 States
 
 Genprint
-Tok
 Lexer
 Ppextend
 Pputils

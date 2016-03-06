@@ -49,8 +49,8 @@ Stdarg
 Constrarg
 Constrexpr_ops
 
-Compat
 Tok
+Compat
 Lexer
 Entry
 Pcoq
