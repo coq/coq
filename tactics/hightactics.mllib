@@ -1,8 +1,8 @@
 Extraargs
 Coretactics
 Extratactics
-G_auto
 Eauto
+G_auto
 Class_tactics
 G_class
 Rewrite

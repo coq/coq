@@ -16,6 +16,15 @@ DECLARE PLUGIN "g_auto"
 
 (* Hint bases *)
 
+
+TACTIC EXTEND eassumption
+| [ "eassumption" ] -> [ Eauto.e_assumption ]
+END
+
+TACTIC EXTEND eexact
+| [ "eexact" constr(c) ] -> [ Eauto.e_give_exact c ]
+END
+
 let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
 
 ARGUMENT EXTEND hintbases
@@ -45,6 +54,8 @@ ARGUMENT EXTEND auto_using
 | [ ] -> [ [] ]
 END
 
+(** Auto *)
+
 TACTIC EXTEND trivial
 | [ "trivial" auto_using(lems) hintbases(db) ] ->
     [ Auto.h_trivial (eval_uconstrs ist lems) db ]
@@ -73,4 +84,123 @@ END
 TACTIC EXTEND debug_auto
 | [ "debug" "auto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
     [ Auto.h_auto ~debug:Debug n (eval_uconstrs ist lems) db ]
+END
+
+(** Eauto *)
+
+TACTIC EXTEND prolog
+| [ "prolog" "[" uconstr_list(l) "]" int_or_var(n) ] ->
+    [ Eauto.prolog_tac (eval_uconstrs ist l) n ]
+END
+
+let make_depth n = snd (Eauto.make_dimension n None)
+
+TACTIC EXTEND eauto
+| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
+    hintbases(db) ] ->
+    [ Eauto.gen_eauto (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+END
+
+TACTIC EXTEND new_eauto
+| [ "new" "auto" int_or_var_opt(n) auto_using(lems)
+    hintbases(db) ] ->
+    [ match db with
+      | None -> Auto.new_full_auto (make_depth n) (eval_uconstrs ist lems)
+      | Some l -> Auto.new_auto (make_depth n) (eval_uconstrs ist lems) l ]
+END
+
+TACTIC EXTEND debug_eauto
+| [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
+    hintbases(db) ] ->
+    [ Eauto.gen_eauto ~debug:Debug (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+END
+
+TACTIC EXTEND info_eauto
+| [ "info_eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
+    hintbases(db) ] ->
+    [ Eauto.gen_eauto ~debug:Info (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+END
+
+TACTIC EXTEND dfs_eauto
+| [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
+      hintbases(db) ] ->
+    [ Eauto.gen_eauto (Eauto.make_dimension p None) (eval_uconstrs ist lems) db ]
+END
+
+TACTIC EXTEND autounfold
+| [ "autounfold" hintbases(db) clause(cl) ] -> [ Eauto.autounfold_tac db cl ]
+END
+
+TACTIC EXTEND autounfold_one
+| [ "autounfold_one" hintbases(db) "in" hyp(id) ] ->
+    [ Eauto.autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, Locus.InHyp)) ]
+| [ "autounfold_one" hintbases(db) ] ->
+    [ Eauto.autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None ]
+      END
+
+TACTIC EXTEND autounfoldify
+| [ "autounfoldify" constr(x) ] -> [
+    let db = match Term.kind_of_term x with
+      | Term.Const (c,_) -> Names.Label.to_string (Names.con_label c)
+      | _ -> assert false
+    in Eauto.autounfold ["core";db] Locusops.onConcl 
+  ]
+END
+
+TACTIC EXTEND unify
+| ["unify" constr(x) constr(y) ] -> [ Tactics.unify x y ]
+| ["unify" constr(x) constr(y) "with" preident(base)  ] -> [
+    let table = try Some (Hints.searchtable_map base) with Not_found -> None in
+    match table with
+    | None ->
+      let msg = str "Hint table " ++ str base ++ str " not found" in
+      Tacticals.New.tclZEROMSG msg
+    | Some t ->
+      let state = Hints.Hint_db.transparent_state t in
+      Tactics.unify ~state x y
+  ]
+END
+
+
+TACTIC EXTEND convert_concl_no_check
+| ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check x Term.DEFAULTcast ]
+END
+
+let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom
+
+ARGUMENT EXTEND hints_path_atom
+  TYPED AS hints_path_atom
+  PRINTED BY pr_hints_path_atom
+| [ global_list(g) ] -> [ Hints.PathHints (List.map Nametab.global g) ]
+| [ "*" ] -> [ Hints.PathAny ]
+END
+
+let pr_hints_path prc prx pry c = Hints.pp_hints_path c
+
+ARGUMENT EXTEND hints_path
+  TYPED AS hints_path
+  PRINTED BY pr_hints_path
+| [ "(" hints_path(p) ")"  ] -> [ p ]
+| [ "!" hints_path(p)  ] -> [ Hints.PathStar p ]
+| [ "emp" ] -> [ Hints.PathEmpty ]
+| [ "eps" ] -> [ Hints.PathEpsilon ]
+| [ hints_path_atom(a) ] -> [ Hints.PathAtom a ]
+| [ hints_path(p) "|" hints_path(q) ] -> [ Hints.PathOr (p, q) ]
+| [ hints_path(p) ";" hints_path(q) ] -> [ Hints.PathSeq (p, q) ]
+END
+
+let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
+
+ARGUMENT EXTEND opthints
+  TYPED AS preident_list_opt
+  PRINTED BY pr_hintbases
+| [ ":" ne_preident_list(l) ] -> [ Some l ]
+| [ ] -> [ None ]
+END
+
+VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
+| [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
+  let entry = Hints.HintsCutEntry p in
+    Hints.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
+      (match dbnames with None -> ["core"] | Some l -> l) entry ]
 END

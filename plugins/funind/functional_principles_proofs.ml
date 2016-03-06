@@ -1407,7 +1407,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
 (* 		 let ids = List.filter (fun id -> not (List.mem id ids)) ids' in  *)
 (* 		 rewrite *)
 (* 	      ) *)
-	      Eauto.gen_eauto (false,5) [] (Some [])
+	      Proofview.V82.of_tactic (Eauto.gen_eauto (false,5) [] (Some []))
 	    ]
 	    gls
 

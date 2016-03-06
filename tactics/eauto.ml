@@ -30,8 +30,6 @@ open Locusops
 open Hints
 open Proofview.Notations
 
-DECLARE PLUGIN "eauto"
-
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
@@ -49,14 +47,6 @@ let e_assumption =
   Proofview.Goal.enter { enter = begin fun gl ->
     Tacticals.New.tclFIRST (List.map assumption (Tacmach.New.pf_ids_of_hyps gl))
   end }
-
-TACTIC EXTEND eassumption
-| [ "eassumption" ] -> [ e_assumption ]
-END
-
-TACTIC EXTEND eexact
-| [ "eexact" constr(c) ] -> [ e_give_exact c ]
-END
 
 let registered_e_assumption =
   Proofview.Goal.enter { enter = begin fun gl ->
@@ -112,7 +102,8 @@ let out_term = function
   | IsConstr (c, _) -> c
   | IsGlobRef gr -> fst (Universes.fresh_global_instance (Global.env ()) gr)
 
-let prolog_tac l n gl =
+let prolog_tac l n =
+  Proofview.V82.tactic begin fun gl ->
   let map c =
     let (c, sigma) = Tactics.run_delayed (pf_env gl) (project gl) c in
     let c = pf_apply (prepare_hint false (false,true)) gl (sigma, c) in
@@ -122,11 +113,7 @@ let prolog_tac l n gl =
   try (prolog l n gl)
   with UserError ("Refiner.tclFIRST",_) ->
     errorlabstrm "Prolog.prolog" (str "Prolog failed.")
-
-TACTIC EXTEND prolog
-| [ "prolog" "[" uconstr_list(l) "]" int_or_var(n) ] ->
-    [ Proofview.V82.tactic (prolog_tac (eval_uconstrs ist l) n) ]
-END
+  end
 
 open Auto
 open Unification
@@ -442,8 +429,8 @@ let full_eauto ?(debug=Off) n lems gl =
   tclTRY (e_search_auto debug n lems db_list) gl
 
 let gen_eauto ?(debug=Off) np lems = function
-  | None -> full_eauto ~debug np lems
-  | Some l -> eauto ~debug np lems l
+  | None -> Proofview.V82.tactic (full_eauto ~debug np lems)
+  | Some l -> Proofview.V82.tactic (eauto ~debug np lems l)
 
 let make_depth = function
   | None -> !default_search_depth
@@ -452,44 +439,6 @@ let make_depth = function
 let make_dimension n = function
   | None -> (true,make_depth n)
   | Some d -> (false,d)
-
-open Genarg
-open G_auto
-
-let hintbases = G_auto.hintbases
-let wit_hintbases = G_auto.wit_hintbases
-
-TACTIC EXTEND eauto
-| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Proofview.V82.tactic (gen_eauto (make_dimension n p) (eval_uconstrs ist lems) db) ]
-END
-
-TACTIC EXTEND new_eauto
-| [ "new" "auto" int_or_var_opt(n) auto_using(lems)
-    hintbases(db) ] ->
-    [ match db with
-      | None -> new_full_auto (make_depth n) (eval_uconstrs ist lems)
-      | Some l -> new_auto (make_depth n) (eval_uconstrs ist lems) l ]
-END
-
-TACTIC EXTEND debug_eauto
-| [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Proofview.V82.tactic (gen_eauto ~debug:Debug (make_dimension n p) (eval_uconstrs ist lems) db) ]
-END
-
-TACTIC EXTEND info_eauto
-| [ "info_eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Proofview.V82.tactic (gen_eauto ~debug:Info (make_dimension n p) (eval_uconstrs ist lems) db) ]
-END
-
-TACTIC EXTEND dfs_eauto
-| [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
-      hintbases(db) ] ->
-    [ Proofview.V82.tactic (gen_eauto (true, make_depth p) (eval_uconstrs ist lems) db) ]
-END
 
 let cons a l = a :: l
 
@@ -505,25 +454,24 @@ let autounfolds db occs cls gl =
 	(Id.Set.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
   in Proofview.V82.of_tactic (unfold_option unfolds cls) gl
 
-let autounfold db cls gl =
+let autounfold db cls =
+  Proofview.V82.tactic begin fun gl ->
   let cls = concrete_clause_of (fun () -> pf_ids_of_hyps gl) cls in
   let tac = autounfolds db in
   tclMAP (function
     | OnHyp (id,occs,where) -> tac occs (Some (id,where))
     | OnConcl occs -> tac occs None)
     cls gl
+  end
 
-let autounfold_tac db cls gl =
+let autounfold_tac db cls =
+  Proofview.tclUNIT () >>= fun () ->
   let dbs = match db with
   | None -> String.Set.elements (current_db_names ())
   | Some [] -> ["core"]
   | Some l -> l
   in
-  autounfold dbs  cls gl
-
-TACTIC EXTEND autounfold
-| [ "autounfold" hintbases(db) clause(cl) ] -> [ Proofview.V82.tactic (autounfold_tac db cl) ]
-END
+  autounfold dbs cls
 
 let unfold_head env (ids, csts) c = 
   let rec aux c = 
@@ -578,90 +526,3 @@ let autounfold_one db cl =
       | None -> convert_concl_no_check c' DEFAULTcast
     else Tacticals.New.tclFAIL 0 (str "Nothing to unfold")
   end }
-
-(* 	  Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts *)
-(* 	    (Id.Set.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db) *)
-(*       in unfold_option unfolds cl *)
-
-(*       let db = try searchtable_map dbname  *)
-(* 	with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname) *)
-(*       in *)
-(*       let (ids, csts) = Hint_db.unfolds db in *)
-(* 	Cset.fold (fun cst -> tclORELSE (unfold_option [(occ, EvalVarRef id)] cst)) csts *)
-(* 	  (Id.Set.fold (fun id -> tclORELSE (unfold_option [(occ, EvalVarRef id)] cl) ids acc))) *)
-(*       (tclFAIL 0 (mt())) db *)
-      
-TACTIC EXTEND autounfold_one
-| [ "autounfold_one" hintbases(db) "in" hyp(id) ] ->
-    [ autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, InHyp)) ]
-| [ "autounfold_one" hintbases(db) ] ->
-    [ autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None ]
-      END
-
-TACTIC EXTEND autounfoldify
-| [ "autounfoldify" constr(x) ] -> [
-  Proofview.V82.tactic (
-    let db = match kind_of_term x with
-      | Const (c,_) -> Label.to_string (con_label c)
-      | _ -> assert false
-    in autounfold ["core";db] onConcl 
-  )]
-END
-
-TACTIC EXTEND unify
-| ["unify" constr(x) constr(y) ] -> [ unify x y ]
-| ["unify" constr(x) constr(y) "with" preident(base)  ] -> [
-    let table = try Some (searchtable_map base) with Not_found -> None in
-    match table with
-    | None ->
-      let msg = str "Hint table " ++ str base ++ str " not found" in
-      Tacticals.New.tclZEROMSG msg
-    | Some t ->
-      let state = Hint_db.transparent_state t in
-      unify ~state x y
-  ]
-END
-
-
-TACTIC EXTEND convert_concl_no_check
-| ["convert_concl_no_check" constr(x) ] -> [ convert_concl_no_check x DEFAULTcast ]
-END
-
-let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom
-
-ARGUMENT EXTEND hints_path_atom
-  TYPED AS hints_path_atom
-  PRINTED BY pr_hints_path_atom
-| [ global_list(g) ] -> [ PathHints (List.map Nametab.global g) ]
-| [ "*" ] -> [ PathAny ]
-END
-
-let pr_hints_path prc prx pry c = Hints.pp_hints_path c
-
-ARGUMENT EXTEND hints_path
-  TYPED AS hints_path
-  PRINTED BY pr_hints_path
-| [ "(" hints_path(p) ")"  ] -> [ p ]
-| [ "!" hints_path(p)  ] -> [ PathStar p ]
-| [ "emp" ] -> [ PathEmpty ]
-| [ "eps" ] -> [ PathEpsilon ]
-| [ hints_path_atom(a) ] -> [ PathAtom a ]
-| [ hints_path(p) "|" hints_path(q) ] -> [ PathOr (p, q) ]
-| [ hints_path(p) ";" hints_path(q) ] -> [ PathSeq (p, q) ]
-END
-
-let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
-
-ARGUMENT EXTEND opthints
-  TYPED AS preident_list_opt
-  PRINTED BY pr_hintbases
-| [ ":" ne_preident_list(l) ] -> [ Some l ]
-| [ ] -> [ None ]
-END
-
-VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
-| [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
-  let entry = HintsCutEntry p in
-    Hints.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
-      (match dbnames with None -> ["core"] | Some l -> l) entry ]
-END
