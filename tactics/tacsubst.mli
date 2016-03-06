@@ -11,6 +11,10 @@ open Mod_subst
 open Genarg
 open Misctypes
 
+(** TODO: Move those definitions somewhere sensible *)
+
+val ltac_trace_info : ltac_trace Exninfo.t
+
 (** Substitution of tactics at module closing time *)
 
 val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr

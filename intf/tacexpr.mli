@@ -394,3 +394,15 @@ type tactic_arg =
 
 type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
 type glob_red_expr = (g_trm, g_cst, g_pat) red_expr_gen
+
+(** Traces *)
+
+type ltac_call_kind =
+  | LtacMLCall of glob_tactic_expr
+  | LtacNotationCall of KerName.t
+  | LtacNameCall of ltac_constant
+  | LtacAtomCall of glob_atomic_tactic_expr
+  | LtacVarCall of Id.t * glob_tactic_expr
+  | LtacConstrInterp of Glob_term.glob_constr * Pretyping.ltac_var_map
+
+type ltac_trace = (Loc.t * ltac_call_kind) list

@@ -1247,9 +1247,9 @@ let explain_reduction_tactic_error = function
 
 let is_defined_ltac trace =
   let rec aux = function
-  | (_, Proof_type.LtacNameCall f) :: tail ->
+  | (_, Tacexpr.LtacNameCall f) :: tail ->
       not (Tacenv.is_ltac_for_ml_tactic f)
-  | (_, Proof_type.LtacAtomCall _) :: tail ->
+  | (_, Tacexpr.LtacAtomCall _) :: tail ->
       false
   | _ :: tail -> aux tail
   | [] -> false in
@@ -1258,17 +1258,17 @@ let is_defined_ltac trace =
 let explain_ltac_call_trace last trace loc =
   let calls = last :: List.rev_map snd trace in
   let pr_call ck = match ck with
-  | Proof_type.LtacNotationCall kn -> quote (KerName.print kn)
-  | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
-  | Proof_type.LtacMLCall t ->
+  | Tacexpr.LtacNotationCall kn -> quote (KerName.print kn)
+  | Tacexpr.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
+  | Tacexpr.LtacMLCall t ->
       quote (Pptactic.pr_glob_tactic (Global.env()) t)
-  | Proof_type.LtacVarCall (id,t) ->
+  | Tacexpr.LtacVarCall (id,t) ->
       quote (Nameops.pr_id id) ++ strbrk " (bound to " ++
         Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
-  | Proof_type.LtacAtomCall te ->
+  | Tacexpr.LtacAtomCall te ->
       quote (Pptactic.pr_glob_tactic (Global.env())
               (Tacexpr.TacAtom (Loc.ghost,te)))
-  | Proof_type.LtacConstrInterp (c, { Pretyping.ltac_constrs = vars }) ->
+  | Tacexpr.LtacConstrInterp (c, { Pretyping.ltac_constrs = vars }) ->
       quote (pr_glob_constr_env (Global.env()) c) ++
         (if not (Id.Map.is_empty vars) then
           strbrk " (with " ++
@@ -1282,7 +1282,7 @@ let explain_ltac_call_trace last trace loc =
   | [] -> mt ()
   | _ ->
     let kind_of_last_call = match List.last calls with
-    | Proof_type.LtacConstrInterp _ -> ", last term evaluation failed."
+    | Tacexpr.LtacConstrInterp _ -> ", last term evaluation failed."
     | _ -> ", last call failed."
     in
     hov 0 (str "In nested Ltac calls to " ++
@@ -1290,9 +1290,9 @@ let explain_ltac_call_trace last trace loc =
 
 let skip_extensions trace =
   let rec aux = function
-  | (_,Proof_type.LtacNameCall f as tac) :: _ 
+  | (_,Tacexpr.LtacNameCall f as tac) :: _ 
       when Tacenv.is_ltac_for_ml_tactic f -> [tac]
-  | (_,(Proof_type.LtacNotationCall _ | Proof_type.LtacMLCall _) as tac)
+  | (_,(Tacexpr.LtacNotationCall _ | Tacexpr.LtacMLCall _) as tac)
       :: _ -> [tac]
   | t :: tail -> t :: aux tail
   | [] -> [] in

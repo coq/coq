@@ -44,6 +44,8 @@ open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 
+let ltac_trace_info = Tacsubst.ltac_trace_info
+
 let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
   let Val.Dyn (t, _) = v in
   match Val.eq t (val_tag wit) with

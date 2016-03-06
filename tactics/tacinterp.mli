@@ -14,6 +14,8 @@ open Genarg
 open Redexpr
 open Misctypes
 
+val ltac_trace_info : ltac_trace Exninfo.t
+
 module Value :
 sig
   type t = Val.t
