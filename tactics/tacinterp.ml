@@ -44,6 +44,8 @@ open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 
+let ltac_trace_info = Tactic_debug.ltac_trace_info
+
 let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
   let Val.Dyn (t, _) = v in
   match Val.eq t (val_tag wit) with
@@ -1200,7 +1202,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
           let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
           value_interp ist >>= fun v -> return (name_vfun appl v)
         in
-	Ftactic.debug_prompt lev tac eval
+	Tactic_debug.debug_prompt lev tac eval
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
       
 
@@ -2199,3 +2201,16 @@ let lift_constr_tac_to_ml_tac vars tac =
     tac args ist
   end } in
   tac
+
+let vernac_debug b =
+  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optsync  = false;
+      optdepr  = false;
+      optname  = "Ltac debug";
+      optkey   = ["Ltac";"Debug"];
+      optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
+      optwrite = vernac_debug }

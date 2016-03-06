@@ -99,8 +99,6 @@ end
 module Ftac = Monad.Make(Self)
 module List = Ftac.List
 
-let debug_prompt = Tactic_debug.debug_prompt
-
 module Notations =
 struct
   let (>>=) = bind

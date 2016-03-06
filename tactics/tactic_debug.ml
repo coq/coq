@@ -14,10 +14,15 @@ open Termops
 open Nameops
 open Proofview.Notations
 
-let (prtac, tactic_printer) = Hook.make ()
-let (prmatchpatt, match_pattern_printer) = Hook.make ()
-let (prmatchrl, match_rule_printer) = Hook.make ()
+let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
 
+let prtac x =
+  Pptactic.pr_glob_tactic (Global.env()) x
+let prmatchpatt env sigma hyp =
+  Pptactic.pr_match_pattern (Printer.pr_constr_pattern_env env sigma) hyp
+let prmatchrl rl =
+  Pptactic.pr_match_rule false (Pptactic.pr_glob_tactic (Global.env()))
+    (fun (_,p) -> Printer.pr_constr_pattern p) rl
 
 (* This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -67,7 +72,7 @@ let help () =
 let goal_com tac =
   Proofview.tclTHEN
     db_pr_goal
-    (Proofview.tclLIFT (msg_tac_debug (str "Going to execute:" ++ fnl () ++ Hook.get prtac tac)))
+    (Proofview.tclLIFT (msg_tac_debug (str "Going to execute:" ++ fnl () ++ prtac tac)))
 
 (* [run (new_ref _)] gives us a ref shared among [NonLogical.t]
    expressions. It avoids parametrizing everything over a
@@ -228,7 +233,7 @@ let db_pattern_rule debug num r =
   if db then
   begin
     msg_tac_debug (str "Pattern rule " ++ int num ++ str ":" ++ fnl () ++
-      str "|" ++ spc () ++ Hook.get prmatchrl r)
+      str "|" ++ spc () ++ prmatchrl r)
   end
   else return ()
 
@@ -270,7 +275,7 @@ let db_hyp_pattern_failure debug env sigma (na,hyp) =
   if db then
     msg_tac_debug (str "The pattern hypothesis" ++ hyp_bound na ++
                 str " cannot match: " ++
-           Hook.get prmatchpatt env sigma hyp)
+           prmatchpatt env sigma hyp)
   else return ()
 
 (* Prints a matching failure message for a rule *)
@@ -317,3 +322,79 @@ let db_breakpoint debug s =
       breakpoint:=None
   | _ ->
       return ()
+
+(** Extrating traces *)
+
+let is_defined_ltac trace =
+  let rec aux = function
+  | (_, Tacexpr.LtacNameCall f) :: tail ->
+      not (Tacenv.is_ltac_for_ml_tactic f)
+  | (_, Tacexpr.LtacAtomCall _) :: tail ->
+      false
+  | _ :: tail -> aux tail
+  | [] -> false in
+  aux (List.rev trace)
+
+let explain_ltac_call_trace last trace loc =
+  let calls = last :: List.rev_map snd trace in
+  let pr_call ck = match ck with
+  | Tacexpr.LtacNotationCall kn -> quote (KerName.print kn)
+  | Tacexpr.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
+  | Tacexpr.LtacMLCall t ->
+      quote (Pptactic.pr_glob_tactic (Global.env()) t)
+  | Tacexpr.LtacVarCall (id,t) ->
+      quote (Nameops.pr_id id) ++ strbrk " (bound to " ++
+        Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
+  | Tacexpr.LtacAtomCall te ->
+      quote (Pptactic.pr_glob_tactic (Global.env())
+              (Tacexpr.TacAtom (Loc.ghost,te)))
+  | Tacexpr.LtacConstrInterp (c, { Pretyping.ltac_constrs = vars }) ->
+      quote (Printer.pr_glob_constr_env (Global.env()) c) ++
+        (if not (Id.Map.is_empty vars) then
+          strbrk " (with " ++
+            prlist_with_sep pr_comma
+            (fun (id,c) ->
+                pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
+            (List.rev (Id.Map.bindings vars)) ++ str ")"
+        else mt())
+  in
+  match calls with
+  | [] -> mt ()
+  | _ ->
+    let kind_of_last_call = match List.last calls with
+    | Tacexpr.LtacConstrInterp _ -> ", last term evaluation failed."
+    | _ -> ", last call failed."
+    in
+    hov 0 (str "In nested Ltac calls to " ++
+           pr_enum pr_call calls ++ strbrk kind_of_last_call)
+
+let skip_extensions trace =
+  let rec aux = function
+  | (_,Tacexpr.LtacNameCall f as tac) :: _ 
+      when Tacenv.is_ltac_for_ml_tactic f -> [tac]
+  | (_,(Tacexpr.LtacNotationCall _ | Tacexpr.LtacMLCall _) as tac)
+      :: _ -> [tac]
+  | t :: tail -> t :: aux tail
+  | [] -> [] in
+  List.rev (aux (List.rev trace))
+
+let extract_ltac_trace trace eloc =
+  let trace = skip_extensions trace in
+  let (loc,c),tail = List.sep_last trace in
+  if is_defined_ltac trace then
+    (* We entered a user-defined tactic,
+       we display the trace with location of the call *)
+    let msg = hov 0 (explain_ltac_call_trace c tail eloc ++ fnl()) in
+    Some msg, loc
+  else
+    (* We entered a primitive tactic, we don't display trace but
+       report on the finest location *)
+    let best_loc =
+      if not (Loc.is_ghost eloc) then eloc else
+        (* trace is with innermost call coming first *)
+        let rec aux = function
+        | (loc,_)::tail when not (Loc.is_ghost loc) -> loc
+        | _::tail -> aux tail
+        | [] -> Loc.ghost in
+        aux trace in
+    None, best_loc

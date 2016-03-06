@@ -13,15 +13,13 @@ open Tacexpr
 open Term
 open Evd
 
+(** TODO: Move those definitions somewhere sensible *)
+
+val ltac_trace_info : ltac_trace Exninfo.t
+
 (** This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
    complete panel of commands dedicated to a proof assistant framework *)
-
-val tactic_printer : (glob_tactic_expr -> Pp.std_ppcmds) Hook.t
-val match_pattern_printer :
-  (env -> evar_map -> constr_pattern match_pattern -> Pp.std_ppcmds) Hook.t
-val match_rule_printer :
-  ((Tacexpr.glob_constr_and_expr * constr_pattern,glob_tactic_expr) match_rule -> Pp.std_ppcmds) Hook.t
 
 (** Debug information *)
 type debug_info =
@@ -77,3 +75,6 @@ val db_logic_failure : debug_info -> exn -> unit Proofview.NonLogical.t
 (** Prints a logic failure message for a rule *)
 val db_breakpoint : debug_info ->
   Id.t Loc.located message_token list -> unit Proofview.NonLogical.t
+
+val extract_ltac_trace :
+  Tacexpr.ltac_trace -> Loc.t -> Pp.std_ppcmds option * Loc.t

@@ -261,3 +261,7 @@ TACTIC EXTEND setoid_transitivity
   [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity (Some t) ]
 | [ "setoid_etransitivity" ] -> [ setoid_transitivity None ]
 END
+
+VERNAC COMMAND EXTEND PrintRewriteHintDb CLASSIFIED AS QUERY
+  [ "Print" "Rewrite" "HintDb" preident(s) ] -> [ Pp.msg_notice (Autorewrite.print_rewrite_hintdb s) ]
+END

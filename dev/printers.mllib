@@ -174,7 +174,6 @@ Implicit_quantifiers
 Constrintern
 Modintern
 Constrextern
-Proof_type
 Goal
 Miscprint
 Logic
@@ -188,7 +187,6 @@ Proofview
 Proof
 Proof_global
 Pfedit
-Tactic_debug
 Decl_mode
 Ppconstr
 Entry
@@ -200,6 +198,7 @@ Egramml
 Egramcoq
 Tacsubst
 Tacenv
+Tactic_debug
 Trie
 Dn
 Btermdn

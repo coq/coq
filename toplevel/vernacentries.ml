@@ -1433,18 +1433,6 @@ let _ =
       optread  = Flags.get_dump_bytecode;
       optwrite = Flags.set_dump_bytecode }
 
-let vernac_debug b =
-  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
-
-let _ =
-  declare_bool_option
-    { optsync  = false;
-      optdepr  = false;
-      optname  = "Ltac debug";
-      optkey   = ["Ltac";"Debug"];
-      optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
-      optwrite = vernac_debug }
-
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -1641,7 +1629,6 @@ let vernac_print = function
   | PrintHint r -> msg_notice (Hints.pr_hint_ref (smart_global r))
   | PrintHintGoal -> msg_notice (Hints.pr_applicable_hint ())
   | PrintHintDbName s -> msg_notice (Hints.pr_hint_db_by_name s)
-  | PrintRewriteHintDbName s -> msg_notice (Autorewrite.print_rewrite_hintdb s)
   | PrintHintDb -> msg_notice (Hints.pr_searchtable ())
   | PrintScopes ->
       msg_notice (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))

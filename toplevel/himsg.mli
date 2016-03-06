@@ -36,9 +36,6 @@ val explain_pattern_matching_error :
 val explain_reduction_tactic_error :
   Tacred.reduction_tactic_error -> std_ppcmds
 
-val extract_ltac_trace :
-  Proof_type.ltac_trace -> Loc.t -> std_ppcmds option * Loc.t
-
 val explain_module_error : Modops.module_typing_error -> std_ppcmds
 
 val explain_module_internalization_error :

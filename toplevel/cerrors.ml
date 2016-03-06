@@ -120,13 +120,13 @@ let process_vernac_interp_error ?(allow_uncaught=true) ?(with_header=true) (exc,
       let err = Errors.make_anomaly msg in
       Util.iraise (err, info)
   in
-  let ltac_trace = Exninfo.get info Proof_type.ltac_trace_info in
+  let ltac_trace = Exninfo.get info Tactic_debug.ltac_trace_info in
   let loc = Option.default Loc.ghost (Loc.get_loc info) in
   match ltac_trace with
   | None -> e
   | Some trace ->
     let (e, info) = e in
-    match Himsg.extract_ltac_trace trace loc with
+    match Tactic_debug.extract_ltac_trace trace loc with
     | None, loc -> (e, Loc.add_loc info loc)
     | Some msg, loc ->
       (EvaluatedError (msg, Some e), Loc.add_loc info loc)

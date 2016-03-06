@@ -486,8 +486,6 @@ module Make
         keyword "Print Hint *"
       | PrintHintDbName s ->
         keyword "Print HintDb" ++ spc () ++ str s
-      | PrintRewriteHintDbName s ->
-        keyword "Print Rewrite HintDb" ++ spc() ++ str s
       | PrintUniverses (b, fopt) ->
         let cmd =
           if b then "Print Sorted Universes"

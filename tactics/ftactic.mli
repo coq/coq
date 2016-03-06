@@ -70,11 +70,6 @@ val (<*>) : unit t -> 'a t -> 'a t
 
 module List : Monad.ListS with type 'a t := 'a t
 
-(** {5 Debug} *)
-
-val debug_prompt :
-  int -> Tacexpr.glob_tactic_expr -> (Tactic_debug.debug_info -> 'a t) -> 'a t
-
 (** {5 Notations} *)
 
 module Notations :

@@ -2,7 +2,6 @@ Miscprint
 Goal
 Evar_refiner
 Proof_using
-Proof_type
 Proof_errors
 Logic
 Proofview
@@ -12,6 +11,5 @@ Redexpr
 Refiner
 Tacmach
 Pfedit
-Tactic_debug
 Clenv
 Clenvtac
