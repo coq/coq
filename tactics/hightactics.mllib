@@ -1,5 +1,6 @@
 Extraargs
 Coretactics
+Autorewrite
 Extratactics
 Eauto
 G_auto

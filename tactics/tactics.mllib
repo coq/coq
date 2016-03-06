@@ -25,5 +25,4 @@ Tactic_debug
 Tacinterp
 Evar_tactics
 Term_dnet
-Autorewrite
 Tactic_option

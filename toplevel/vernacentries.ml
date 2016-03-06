@@ -1629,7 +1629,6 @@ let vernac_print = function
   | PrintHint r -> msg_notice (Hints.pr_hint_ref (smart_global r))
   | PrintHintGoal -> msg_notice (Hints.pr_applicable_hint ())
   | PrintHintDbName s -> msg_notice (Hints.pr_hint_db_by_name s)
-  | PrintRewriteHintDbName s -> msg_notice (Autorewrite.print_rewrite_hintdb s)
   | PrintHintDb -> msg_notice (Hints.pr_searchtable ())
   | PrintScopes ->
       msg_notice (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))

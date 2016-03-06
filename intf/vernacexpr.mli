@@ -69,7 +69,6 @@ type printable =
   | PrintHint of reference or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string
-  | PrintRewriteHintDbName of string
   | PrintHintDb
   | PrintScopes
   | PrintScope of string
