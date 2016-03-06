@@ -143,5 +143,3 @@ let register_ltac for_ml local id tac =
 
 let redefine_ltac local kn tac =
   Lib.add_anonymous_leaf (inMD (local, Some kn, false, tac))
-
-let () = Hook.set Tactic_debug.is_ltac_for_ml_tactic_hook is_ltac_for_ml_tactic

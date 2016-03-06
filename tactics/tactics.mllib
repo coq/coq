@@ -1,4 +1,3 @@
-Tactic_debug
 Ftactic
 Geninterp
 Dnet
@@ -22,6 +21,7 @@ Hints
 Auto
 Tacintern
 Tactic_matching
+Tactic_debug
 Tacinterp
 Evar_tactics
 Term_dnet

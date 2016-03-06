@@ -325,12 +325,10 @@ let db_breakpoint debug s =
 
 (** Extrating traces *)
 
-let (is_for_ml_f, is_ltac_for_ml_tactic_hook) = Hook.make ()
-
 let is_defined_ltac trace =
   let rec aux = function
   | (_, Tacexpr.LtacNameCall f) :: tail ->
-      not (Hook.get is_for_ml_f f)
+      not (Tacenv.is_ltac_for_ml_tactic f)
   | (_, Tacexpr.LtacAtomCall _) :: tail ->
       false
   | _ :: tail -> aux tail
@@ -373,7 +371,7 @@ let explain_ltac_call_trace last trace loc =
 let skip_extensions trace =
   let rec aux = function
   | (_,Tacexpr.LtacNameCall f as tac) :: _ 
-      when Hook.get is_for_ml_f f -> [tac]
+      when Tacenv.is_ltac_for_ml_tactic f -> [tac]
   | (_,(Tacexpr.LtacNotationCall _ | Tacexpr.LtacMLCall _) as tac)
       :: _ -> [tac]
   | t :: tail -> t :: aux tail

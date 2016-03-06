@@ -78,5 +78,3 @@ val db_breakpoint : debug_info ->
 
 val extract_ltac_trace :
   Tacexpr.ltac_trace -> Loc.t -> Pp.std_ppcmds option * Loc.t
-
-val is_ltac_for_ml_tactic_hook : (KerName.t -> bool) Hook.t
