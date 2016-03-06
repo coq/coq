@@ -67,4 +67,9 @@ module type Pp = sig
     ('constr -> std_ppcmds) ->
     ('constr -> std_ppcmds) -> 'constr bindings -> std_ppcmds
 
+  val pr_match_pattern : ('a -> std_ppcmds) -> 'a match_pattern -> std_ppcmds
+
+  val pr_match_rule : bool -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
+    ('b, 'a) match_rule -> std_ppcmds
+
 end

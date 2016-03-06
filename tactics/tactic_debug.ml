@@ -14,10 +14,15 @@ open Termops
 open Nameops
 open Proofview.Notations
 
-let (prtac, tactic_printer) = Hook.make ()
-let (prmatchpatt, match_pattern_printer) = Hook.make ()
-let (prmatchrl, match_rule_printer) = Hook.make ()
+let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
 
+let prtac x =
+  Pptactic.pr_glob_tactic (Global.env()) x
+let prmatchpatt env sigma hyp =
+  Pptactic.pr_match_pattern (Printer.pr_constr_pattern_env env sigma) hyp
+let prmatchrl rl =
+  Pptactic.pr_match_rule false (Pptactic.pr_glob_tactic (Global.env()))
+    (fun (_,p) -> Printer.pr_constr_pattern p) rl
 
 (* This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -67,7 +72,7 @@ let help () =
 let goal_com tac =
   Proofview.tclTHEN
     db_pr_goal
-    (Proofview.tclLIFT (msg_tac_debug (str "Going to execute:" ++ fnl () ++ Hook.get prtac tac)))
+    (Proofview.tclLIFT (msg_tac_debug (str "Going to execute:" ++ fnl () ++ prtac tac)))
 
 (* [run (new_ref _)] gives us a ref shared among [NonLogical.t]
    expressions. It avoids parametrizing everything over a
@@ -228,7 +233,7 @@ let db_pattern_rule debug num r =
   if db then
   begin
     msg_tac_debug (str "Pattern rule " ++ int num ++ str ":" ++ fnl () ++
-      str "|" ++ spc () ++ Hook.get prmatchrl r)
+      str "|" ++ spc () ++ prmatchrl r)
   end
   else return ()
 
@@ -270,7 +275,7 @@ let db_hyp_pattern_failure debug env sigma (na,hyp) =
   if db then
     msg_tac_debug (str "The pattern hypothesis" ++ hyp_bound na ++
                 str " cannot match: " ++
-           Hook.get prmatchpatt env sigma hyp)
+           prmatchpatt env sigma hyp)
   else return ()
 
 (* Prints a matching failure message for a rule *)

@@ -18,8 +18,6 @@ open Genredexpr
 open Patternops
 open Pretyping
 
-let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
-
 (** Substitution of tactics at module closing time *)
 
 (** For generic arguments, we declare and store substitutions

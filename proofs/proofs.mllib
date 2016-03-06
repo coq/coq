@@ -11,6 +11,5 @@ Redexpr
 Refiner
 Tacmach
 Pfedit
-Tactic_debug
 Clenv
 Clenvtac

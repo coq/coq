@@ -1415,17 +1415,6 @@ let () =
   let printer _ _ prtac = prtac (0, E) in
   declare_extra_genarg_pprule wit_tactic printer printer printer
 
-let _ = Hook.set Tactic_debug.tactic_printer
-  (fun x -> pr_glob_tactic (Global.env()) x)
-
-let _ = Hook.set Tactic_debug.match_pattern_printer
-  (fun env sigma hyp -> pr_match_pattern (pr_constr_pattern_env env sigma) hyp)
-
-let _ = Hook.set Tactic_debug.match_rule_printer
-  (fun rl ->
-    pr_match_rule false (pr_glob_tactic (Global.env()))
-      (fun (_,p) -> pr_constr_pattern p) rl)
-
 module Richpp = struct
 
   include Make (Ppconstr.Richpp) (struct
