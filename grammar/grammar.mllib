@@ -29,35 +29,22 @@ CStack
 Util
 Ppstyle
 Errors
-Bigint
 Predicate
 Segmenttree
 Unicodetable
 Unicode
 Genarg
 
-Evar
 Names
-
-Libnames
-
-Redops
-Miscops
-Locusops
 
 Stdarg
 Constrarg
-Constrexpr_ops
 
 Tok
 Compat
 Lexer
 Entry
 Pcoq
-G_prim
-G_tactic
-G_ltac
-G_constr
 
 Q_util
 Egramml
