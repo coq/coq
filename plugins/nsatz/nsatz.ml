@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
 open Errors
 open Util
 open Term
@@ -16,8 +14,6 @@ open Coqlib
 
 open Num
 open Utile
-
-DECLARE PLUGIN "nsatz_plugin"
 
 (***********************************************************************
  Operations on coefficients
@@ -590,9 +586,5 @@ let nsatz_compute t =
     with Ideal.NotInIdeal ->
       error "nsatz cannot solve this problem" in
   return_term lpol
-
-TACTIC EXTEND nsatz_compute
-| [ "nsatz_compute"  constr(lt) ] -> [ Proofview.V82.tactic (nsatz_compute lt) ]
-END
 
 
