@@ -20,7 +20,6 @@ open Mlutil
 open Modutil
 open Common
 
-
 (*s Some utility functions. *)
 
 let pp_tvar id = str ("'" ^ Id.to_string id)
@@ -69,11 +68,14 @@ let pp_header_comment = function
 let then_nl pp = if Pp.is_empty pp then mt () else pp ++ fnl ()
 
 let pp_tdummy usf =
-  if usf.tdummy || usf.tunknown then str "type __ = Obj.t" ++ fnl () else mt ()
+  if usf.tdummy || usf.tunknown then
+    str "type " ++ str !extraction_magic_name ++ str " = Obj.t" ++ fnl ()
+  else mt ()
 
 let pp_mldummy usf =
   if usf.mldummy then
-    str "let __ = let rec f _ = Obj.repr f in Obj.repr f" ++ fnl ()
+    str "let " ++ str !extraction_magic_name ++
+    str " = let rec f _ = Obj.repr f in Obj.repr f" ++ fnl ()
   else mt ()
 
 let preamble _ comment used_modules usf =
@@ -142,8 +144,8 @@ let pp_type par vl t =
     | Tarr (t1,t2) ->
 	pp_par par
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
-    | Tdummy _ -> str "__"
-    | Tunknown -> str "__"
+    | Tdummy _ -> str !extraction_magic_name
+    | Tunknown -> str !extraction_magic_name
   in
   hov 0 (pp_rec par t)
 

@@ -23,7 +23,7 @@ val warning_axioms : unit -> unit
 val warning_opaques : bool -> unit
 val warning_both_mod_and_cst :
  qualid -> module_path -> global_reference -> unit
-val warning_id : string -> unit
+val warning_id : string -> string -> unit
 val error_axiom_scheme : global_reference -> int -> 'a
 val error_constant : global_reference -> 'a
 val error_inductive : global_reference -> 'a

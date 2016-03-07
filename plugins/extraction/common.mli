@@ -16,6 +16,8 @@ open Pp
     blocks are less that a line length. To avoid this awkward situation,
     we attach a big virtual size to [fnl] newlines. *)
 
+val extraction_magic_name : string ref
+
 val fnl : unit -> std_ppcmds
 val fnl2 : unit -> std_ppcmds
 val space_if : bool -> std_ppcmds
