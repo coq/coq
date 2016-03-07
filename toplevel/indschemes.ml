@@ -150,12 +150,14 @@ let alarm what internal msg =
   | InternalTacticRequest ->
     (if debug then
       msg_warning
-	(hov 0 msg ++ fnl () ++ what ++ str " not defined."))
-  | _ -> errorlabstrm "" msg
+	(hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
+  | _ -> Some msg
 
 let try_declare_scheme what f internal names kn =
   try f internal names kn
-  with
+  with e ->
+  let e = Errors.push e in
+  let msg = match fst e with
     | ParameterWithoutEquality cst ->
 	alarm what internal
 	  (str "Boolean equality not found for parameter " ++ pr_con cst ++
@@ -186,6 +188,11 @@ let try_declare_scheme what f internal names kn =
     | e when Errors.noncritical e ->
         alarm what internal
 	  (str "Unexpected error during scheme creation: " ++ Errors.print e)
+    | _ -> iraise e
+  in
+  match msg with
+  | None -> ()
+  | Some msg -> iraise (UserError ("", msg), snd e)
 
 let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in
