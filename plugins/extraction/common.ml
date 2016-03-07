@@ -30,14 +30,22 @@ let extraction_magic_name =
   in value
 
 let string_of_id id =
-  let s = Names.Id.to_string id in
+  let s = Unicode.ascii_of_ident (Names.Id.to_string id) in
   let _ =
     try
       Str.search_forward (Str.regexp (Str.quote !extraction_magic_name)) s 0 ;
-      warning_id !extraction_magic_name s
+      if s = !extraction_magic_name then
+        Errors.errorlabstrm "Extraction"
+          (str "You can not have an identifier exactly matching the magic name \
+                for extraction." ++ fnl ()
+           ++ str "The magic name is currently set to '"
+           ++ str !extraction_magic_name ++ str "'." ++ fnl ()
+           ++ str "You can change the magic name using \
+                   'Set Extraction Magic Name \"...\"'.")
+      else warning_id !extraction_magic_name s
     with Not_found -> ()
   in
-  Unicode.ascii_of_ident s
+  s
 
 let is_mp_bound = function MPbound _ -> true | _ -> false
 
