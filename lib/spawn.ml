@@ -220,10 +220,13 @@ let stats { oob_req; oob_resp; alive } =
   input_value oob_resp
 
 let rec wait p =
-  try snd (Unix.waitpid [] p.pid)
-  with
-  | Unix.Unix_error (Unix.EINTR, _, _) -> wait p
-  | Unix.Unix_error _ -> Unix.WEXITED 0o400
+  (* On windows kill is not reliable, so wait may never return. *) 
+  if Sys.os_type = "Unix" then 
+    try snd (Unix.waitpid [] p.pid)
+    with
+    | Unix.Unix_error (Unix.EINTR, _, _) -> wait p
+    | Unix.Unix_error _ -> Unix.WEXITED 0o400
+  else Unix.WEXITED 0o400
 
 end
 
@@ -267,8 +270,13 @@ let stats { oob_req; oob_resp; alive } =
   flush oob_req;
   let RespStats g = input_value oob_resp in g
 
-let wait { pid = unixpid } =
-  try snd (Unix.waitpid [] unixpid)
-  with Unix.Unix_error _ -> Unix.WEXITED 0o400
+let rec wait p =
+  (* On windows kill is not reliable, so wait may never return. *) 
+  if Sys.os_type = "Unix" then 
+    try snd (Unix.waitpid [] p.pid)
+    with
+    | Unix.Unix_error (Unix.EINTR, _, _) -> wait p
+    | Unix.Unix_error _ -> Unix.WEXITED 0o400
+  else Unix.WEXITED 0o400
 
 end
