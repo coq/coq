@@ -69,7 +69,7 @@ TIMED=          # non-empty will activate a default time command
 
 TIMECMD=	# if you prefer a specific time command instead of $(STDTIME)
                 # e.g. "'time -p'"
-CAMLFLAGS:=${CAMLFLAGS} -w -3
+
 # NB: if you want to collect compilation timings of .v and import them
 # in a spreadsheet, I suggest something like:
 #   make TIMED=1 2> timings.csv
