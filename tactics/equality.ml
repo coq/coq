@@ -228,7 +228,7 @@ let rewrite_keyed_core_unif_flags = {
     (* This is set dynamically *)
 
   restrict_conv_on_strict_subterms = false;
-  modulo_betaiota = false;
+  modulo_betaiota = true;
 
   modulo_eta = true;
 }

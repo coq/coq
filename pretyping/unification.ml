@@ -356,6 +356,22 @@ let set_no_delta_flags flags = {
   resolve_evars = flags.resolve_evars
 }
 
+(* For the first phase of keyed unification, restrict
+  to conversion (including beta-iota) only on closed terms *)
+let set_no_delta_open_core_flags flags = { flags with
+  modulo_delta = empty_transparent_state;
+  modulo_betaiota = false;
+}
+
+let set_no_delta_open_flags flags = {
+  core_unify_flags = set_no_delta_open_core_flags flags.core_unify_flags;
+  merge_unify_flags = set_no_delta_open_core_flags flags.merge_unify_flags;
+  subterm_unify_flags = set_no_delta_open_core_flags flags.subterm_unify_flags;
+  allow_K_in_toplevel_higher_order_unification =
+      flags.allow_K_in_toplevel_higher_order_unification;
+  resolve_evars = flags.resolve_evars
+}
+
 (* Default flag for the "simple apply" version of unification of a *)
 (* type against a type (e.g. apply) *)
 (* We set only the flags available at the time the new "apply" extended *)
@@ -1790,17 +1806,25 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
         let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
         let flags =
           if occur_meta_or_existential op || !keyed_unification then
+	    (* This is up to delta for subterms w/o metas ... *)
             flags
           else
             (* up to Nov 2014, unification was bypassed on evar/meta-free terms;
                now it is called in a minimalistic way, at least to possibly
                unify pre-existing non frozen evars of the goal or of the
                pattern *)
-            set_no_delta_flags flags in
+          set_no_delta_flags flags in
+	let t' = (strip_outer_cast op,t) in
         let (evd',cl) =
           try
-	    (* This is up to delta for subterms w/o metas ... *)
-	    w_unify_to_subterm env evd ~flags (strip_outer_cast op,t)
+  	    if is_keyed_unification () then
+    	      try (* First try finding a subterm w/o conversion on open terms *)
+	        let flags = set_no_delta_open_flags flags in
+		w_unify_to_subterm env evd ~flags t'
+	      with e ->
+		(* If this fails, try with full conversion *)
+		w_unify_to_subterm env evd ~flags t'
+	    else w_unify_to_subterm env evd ~flags t'
 	  with PretypeError (env,_,NoOccurrenceFound _) when
               allow_K ||
                 (* w_unify_to_subterm does not go through evars, so
