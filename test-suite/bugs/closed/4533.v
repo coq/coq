@@ -1,5 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-nois" "-indices-matter" "-R" "." 
-"Top" "-top" "bug_lex_wrong_rewrite_02") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-emacs" "-nois" "-indices-matter" "-R" "." "Top" "-top" "bug_lex_wrong_rewrite_02") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 1125 lines to 
 346 lines, then from 360 lines to 346 lines, then from 822 lines to 271 lines, 
 then from 285 lines to 271 lines *)
@@ -12,6 +11,7 @@ Tactic Notation "admit" := case proof_admitted.
 Require Coq.Init.Datatypes.
 Import Coq.Init.Notations.
 Global Set Universe Polymorphism.
+Global Set Primitive Projections.
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Module Export Datatypes.
   Set Implicit Arguments.
@@ -202,6 +202,7 @@ Module Type Preserves_Fibers (Os : ReflectiveSubuniverses).
   Module Export Os_Theory := ReflectiveSubuniverses_Theory Os.
 End Preserves_Fibers.
 
+Opaque eissect.
 Module Lex_Reflective_Subuniverses
        (Os : ReflectiveSubuniverses) (Opf : Preserves_Fibers Os).
   Import Opf.
@@ -222,3 +223,4 @@ v = _) r,
     | [ |- p2 @ p0 @ p1 @ eissect (to O A) (g x) = r ] => idtac "good"
     | [ |- ?G ] => fail 1 "bad" G
     end.
+    Fail rewrite concat_p_pp.
