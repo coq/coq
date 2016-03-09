@@ -2086,7 +2086,7 @@ let setoid_proof ty fn fallback =
           let open Context.Rel.Declaration in
           let (sigma, t) = Typing.type_of env sigma rel in
           let car = get_type (List.hd (fst (Reduction.dest_prod env t))) in
-	    (try init_setoid () with _ -> raise Not_found);
+	    (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e
       end
