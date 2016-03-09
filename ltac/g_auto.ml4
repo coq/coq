@@ -207,3 +207,4 @@ VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
     Hints.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
       (match dbnames with None -> ["core"] | Some l -> l) entry ]
 END
+

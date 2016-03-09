@@ -198,19 +198,32 @@ let with_prods nprods poly (c, clenv) f =
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 
-let rec e_trivial_fail_db db_list local_db goal =
-  let tacl =
-    Proofview.V82.of_tactic Eauto.registered_e_assumption ::
-    (tclTHEN (Proofview.V82.of_tactic Tactics.intro)
-       (function g'->
-	  let d = pf_last_hyp g' in
-	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
-          (e_trivial_fail_db db_list
-	      (Hint_db.add_list (pf_env g') (project g') hintl local_db) g'))) ::
-    (List.map (fun (x,_,_,_,_) -> x) 
-     (e_trivial_resolve db_list local_db (project goal) (pf_concl goal)))
+let rec e_trivial_fail_db db_list local_db =
+  let open Tacticals.New in
+  let open Tacmach.New in
+  let trivial_fail =
+    Proofview.Goal.nf_enter { enter = 
+    begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.New.project gl in
+    let d = pf_last_hyp gl in
+    let hintl = make_resolve_hyp env sigma d in
+    let hints = Hint_db.add_list env sigma hintl local_db in
+      e_trivial_fail_db db_list hints
+      end }
   in
-  tclFIRST (List.map tclCOMPLETE tacl) goal
+  let trivial_resolve =
+    Proofview.Goal.nf_enter { enter = 
+    begin fun gl ->
+    let tacs = e_trivial_resolve db_list local_db (project gl) (pf_concl gl) in
+      tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
+    end}                   
+  in               
+  let tacl =
+    Eauto.registered_e_assumption ::
+    (tclTHEN Tactics.intro trivial_fail :: [trivial_resolve])
+  in
+  tclFIRST (List.map tclCOMPLETE tacl)
 
 and e_my_find_search db_list local_db hdc complete sigma concl =
   let prods, concl = decompose_prod_assum concl in
@@ -242,19 +255,20 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
       | ERes_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_e_resolve poly flags)
       | Give_exact c -> Proofview.V82.tactic (e_give_exact flags poly c)
       | Res_pf_THEN_trivial_fail (term,cl) ->
-         Proofview.V82.tactic (tclTHEN
-				 (Proofview.V82.of_tactic ((with_prods nprods poly (term,cl) (unify_e_resolve poly flags))))
-				 (if complete then tclIDTAC else e_trivial_fail_db db_list local_db))
-      | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (Proofview.V82.of_tactic (unfold_in_concl [AllOccurrences,c])))
+         let fst = with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
+         let snd = if complete then Tacticals.New.tclIDTAC
+                   else e_trivial_fail_db db_list local_db in
+         Tacticals.New.tclTHEN fst snd
+      | Unfold_nth c ->
+         let tac = Proofview.V82.of_tactic (unfold_in_concl [AllOccurrences,c]) in
+         Proofview.V82.tactic (tclWEAK_PROGRESS tac)
       | Extern tacast -> conclPattern concl p tacast
       in
-      let tac = Proofview.V82.of_tactic (run_hint t tac) in
-      let tac = if complete then tclCOMPLETE tac else tac in
+      let tac = run_hint t tac in
+      let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
 	match repr_hint t with
-	| Extern _ -> (tac,b,true, name, lazy (pr_hint t))
-	| _ ->
-(* 	  let tac gl = with_pattern (pf_env gl) (project gl) flags p concl tac gl in *)
-	    (tac,b,false, name, lazy (pr_hint t))
+	| Extern _ -> (tac, b, true, name, lazy (pr_hint t))
+	| _ -> (tac, b, false, name, lazy (pr_hint t))
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db sigma concl =
@@ -375,7 +389,8 @@ let make_autogoal_hints =
 	then
 	  cached_hints
 	else
-	  let hints = make_hints g st only_classes (Environ.named_context_of_val sign) in
+	  let hints = make_hints g st only_classes (Environ.named_context_of_val sign)
+          in
 	    cache := (only_classes, sign, hints); hints
 
 let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : 'a tac =
@@ -436,6 +451,180 @@ let needs_backtrack env evd oev concl =
     occur_existential concl
   else true
 
+type newautoinfo =
+  { search_depth : int list;
+    last_tac : Pp.std_ppcmds Lazy.t;
+    search_cut : hints_path;
+    search_hints : hint_db; }
+
+let autogoal_cache = ref (true, Context.Named.empty,
+		          Hint_db.empty full_transparent_state true)
+
+let make_autogoal_hints' only_classes ?(st=full_transparent_state) g =
+  let open Proofview in
+  let open Tacmach.New in
+  let sign = Goal.hyps g in
+  let (onlyc, sign', cached_hints) = !autogoal_cache in
+  if onlyc == only_classes && 
+       Context.Named.equal sign sign' &&
+         Hint_db.transparent_state cached_hints == st
+  then cached_hints
+  else
+    let hints = make_hints {it = Goal.goal g; sigma = project g}
+                           st only_classes sign
+    in
+    autogoal_cache := (only_classes, sign, hints); hints
+    
+let make_autogoal' ?(st=full_transparent_state) only_classes cut i g =
+  let hints = make_autogoal_hints' only_classes ~st g in
+  let info = { search_hints = hints;
+               search_depth = [i]; last_tac = lazy (str"none");
+               search_cut = cut } in
+  info
+                 
+    (*                       
+           (* Do we need topological sorting on the dependent subgoals ? *)
+	   (* let gls = top_sort s' evm in *)
+		  (* (List.map (fun ev -> Some ev, ev) gls, s') *)
+	   let gls' = List.map_i
+	                (fun j (evar, g) ->
+		in g, info) 1 newgls in
+	    let glsv = {it = gls'; sigma = s';} in
+	    let fk' =
+	      (fun e ->
+		let do_backtrack =
+		  if unique then occur_existential concl
+		  else if info.unique then true
+		  else if List.is_empty gls' then 
+		    needs_backtrack env s' info.is_evar concl
+		  else true
+		in
+		let e' = match foundone with None -> e | Some e' -> merge_failures e e' in
+		  if !typeclasses_debug then
+		    msg_debug 
+		      ((if do_backtrack then str"Backtracking after "
+			else str "Not backtracking after ")
+		       ++ Lazy.force pp);
+		  if do_backtrack then aux (succ i) (Some e') tl
+		  else fk e')
+	    in
+	    sk glsv fk') *)
+    
+let new_hints_tac_gl only_classes hints info kont gl
+    : unit Proofview.tactic
+ =
+  let open Proofview in
+  let open Proofview.Notations in
+  let env = Goal.env gl in
+  let concl = Goal.concl gl in
+  let sigma = Goal.sigma gl in
+  let s = Sigma.to_evar_map sigma in
+  msg_debug (pr_depth info.search_depth ++ str": looking for " ++
+	       Printer.pr_constr_env (Goal.env gl) s concl);
+  let poss = e_possible_resolve hints info.search_hints s concl in
+  let _unique = is_unique env concl in
+  let idx = ref 1 in
+  let rec aux foundone = function
+    | (tac, _, b, name, pp) :: tl ->
+       let derivs = path_derivate info.search_cut name in
+       let tac_of i j = 
+         Goal.nf_enter { enter = fun gl' ->
+           let sigma' = Goal.sigma gl' in
+           let s' = Sigma.to_evar_map sigma' in
+           let hints' =
+             if b && not (Context.Named.equal (Goal.hyps gl') (Goal.hyps gl))
+	     then make_autogoal_hints (*FIXME use ' *) only_classes
+                                      ~st:(Hint_db.transparent_state info.search_hints)
+                                      {it = Goal.goal gl'; sigma = s';}
+	     else info.search_hints
+           in
+           let info' = 
+	     { search_depth = succ j :: i :: info.search_depth;
+               last_tac = pp;
+	       search_hints = hints';
+	       search_cut = derivs }
+           in
+	   msg_debug (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
+                        pr_ev s' (Proofview.Goal.goal gl'));
+           kont info' }
+       in
+       let result () =
+         let i = !idx in
+           incr idx;
+           if !typeclasses_debug then
+	     msg_debug (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
+			++ str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl));
+           Proofview.numgoals >>= fun j ->
+           (if j = 0 then Proofview.tclUNIT ()
+            else Proofview.tclDISPATCH (List.init j (tac_of i)))
+       in
+       if path_matches derivs [] then aux foundone tl
+       else Proofview.tclOR (Proofview.tclBIND tac result) (fun _ -> aux foundone tl)
+    | [] ->
+       if foundone == None && !typeclasses_debug then
+	 msg_debug (pr_depth info.search_depth ++ str": no match for " ++
+		      Printer.pr_constr_env (Goal.env gl) s concl ++
+		      spc () ++ str ", " ++ int (List.length poss) ++
+                      str" possibilities");
+       Tacticals.New.tclFAIL 0 (str"no hint applies")
+  in aux None poss
+
+let new_hints_tac cl hints info kont : unit Proofview.tactic =
+  Proofview.Goal.nf_enter
+    { enter = fun gl -> new_hints_tac_gl cl hints info kont gl }
+
+let cut_of_hints h =
+  List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
+
+let make_autogoals ?(only_classes=true) ?(unique=false) 
+    ?(st=full_transparent_state) hints gs evm' =
+  let cut = cut_of_hints hints in
+  List.map_i (make_autogoal' ~st only_classes cut) 1 gs
+
+let intro_tac'' only_classes info kont gl =
+  let open Proofview in
+  let open Proofview.Notations in
+  let env = Goal.env gl in
+  let sigma = Goal.sigma gl in
+  let s = Sigma.to_evar_map sigma in
+  let decl = Tacmach.New.pf_last_hyp gl in
+  let hint =
+    make_resolve_hyp env s (Hint_db.transparent_state info.search_hints)
+	             (true,false,false) only_classes None decl in
+  let ldb = Hint_db.add_list env s hint info.search_hints in
+  let info' =
+    { info with search_hints = ldb; last_tac = lazy (str"intro") }
+  in kont info'
+             
+let intro_tac' only_classes info kont =
+  Proofview.tclBIND Tactics.intro
+   (fun _ ->
+     Proofview.Goal.nf_enter { enter = fun gl -> intro_tac'' only_classes info kont gl })
+
+let rec eauto_tac' only_classes hints =
+  let kont info =
+    Proofview.numgoals >>= fun i ->
+    msg_debug (str"calling eauto recursively on " ++ int i ++ str" subgoals");
+    eauto_tac' only_classes hints info
+  in
+  fun info ->
+  Proofview.tclOR (intro_tac' only_classes info kont)
+                  (fun _ -> new_hints_tac only_classes hints info kont)
+   
+let new_eauto_tac_gl ?st only_classes hints i (gl : ([`NF],'c) Proofview.Goal.t) : unit Proofview.tactic =
+  let open Proofview in
+  let open Proofview.Notations in
+  let info = make_autogoal' ?st only_classes (cut_of_hints hints) i gl in
+  eauto_tac' only_classes hints info
+  
+let new_eauto_tac ?st only_classes hints : unit Proofview.tactic =
+  Proofview.numgoals >>= fun j ->
+  Proofview.tclDISPATCH
+    (List.init j
+               (fun i -> (Proofview.Goal.nf_enter
+                         { enter = fun gl ->
+                                   new_eauto_tac_gl ?st only_classes hints (succ i) gl })))
+    
 let hints_tac hints =
   { skft = fun sk fk {it = gl,info; sigma = s;} ->
       let env = Goal.V82.env s gl in
@@ -448,7 +637,8 @@ let hints_tac hints =
 	let derivs = path_derivate info.auto_cut name in
 	let res =
           try
-	    if path_matches derivs [] then None else Some (tac tacgl)
+	    if path_matches derivs [] then None
+            else Some (Proofview.V82.of_tactic tac tacgl)
 	  with e when catchable e -> None
 	in
 	  (match res with

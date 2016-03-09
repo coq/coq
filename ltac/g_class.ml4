@@ -85,3 +85,15 @@ END
 TACTIC EXTEND autoapply
   [ "autoapply" constr(c) "using" preident(i) ] -> [ Proofview.V82.tactic (autoapply c i) ]
 END
+
+open G_auto
+       
+TACTIC EXTEND fulleauto
+| ["fulleauto" opthints(dbnames) ] -> [
+    let dbs = match dbnames with None -> ["typeclass_instances"]
+                               | Some l -> l in
+    let dbs = List.map Hints.searchtable_map dbs in
+    Pp.msg_debug (Pp.str"Calling fulleauto");
+    Class_tactics.new_eauto_tac false dbs
+  ]
+END

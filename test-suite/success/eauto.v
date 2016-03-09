@@ -7,6 +7,55 @@
 (************************************************************************)
 Require Import List.
 
+Class A (A : Type).
+  Instance an: A nat.
+
+Class B (A : Type) (a : A).
+Instance bn0: B nat 0.
+Instance bn1: B nat 1.
+
+Goal A nat.
+Proof.
+  fulleauto.
+Qed.
+
+Goal B nat 2.
+Proof.
+  Fail fulleauto.
+Abort.
+
+Goal exists T : Type, A T.
+Proof.
+  eexists. fulleauto.
+Defined.
+
+Hint Extern 0 (_ /\ _) => constructor : typeclass_instances.
+
+Goal exists (T : Type) (t : T), A T /\ B T t.
+Proof.
+  eexists. eexists. fulleauto.
+Defined.
+
+Instance ab: A bool. (* Backtrack on A instance *)
+Goal exists (T : Type) (t : T), A T /\ B T t.
+Proof.
+  eexists. eexists. fulleauto.
+Defined.
+
+Class C {T} `(a : A T) (t : T). 
+Require Import Classes.Init.
+Hint Extern 0 { x : ?A & _ } =>
+  unshelve class_apply @existT : typeclass_instances.
+
+Set Typeclasses Debug.
+Instance can: C an 0.
+(* Backtrack on instance implementation *)
+Goal exists (T : Type) (t : T), { x : A T & C x t }.
+Proof.
+  eexists. eexists.
+  unshelve class_apply @existT; fulleauto.
+Defined.
+
 Parameter in_list : list (nat * nat) -> nat -> Prop.
 Definition not_in_list (l : list (nat * nat)) (n : nat) : Prop :=
   ~ in_list l n.
@@ -38,8 +87,8 @@ Hint Resolve lem1 lem2 lem3 lem4: essai.
 Goal
 forall (l : list (nat * nat)) (n p q : nat),
 not_in_list ((p, q) :: l) n -> not_in_list l n.
-intros.
- eauto with essai.
+  intros.
+  eauto with essai.
 Qed.
 
 (* Example from Nicolas Magaud on coq-club - Jul 2000 *)
