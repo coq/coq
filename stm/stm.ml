@@ -1140,9 +1140,10 @@ end = struct (* {{{ *)
   
   let perform_states query =
     if query = [] then [] else
-    let is_tac = function
-      | VernacSolve _ | VernacFocus _ | VernacUnfocus | VernacBullet _ -> true
-      | _ -> false in
+    let is_tac e = match classify_vernac e with
+    | VtProofStep _, _ -> true
+    | _ -> false
+    in
     let initial = 
       let rec aux id =
         try match VCS.visit id with { next } -> aux next
