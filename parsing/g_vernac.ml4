@@ -35,7 +35,6 @@ let _ = List.iter Lexer.add_keyword vernac_kw
 let query_command = Gram.entry_create "vernac:query_command"
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
-let noedit_mode = Gram.entry_create "vernac:noedit_command"
 let subprf = Gram.entry_create "vernac:subprf"
 
 let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
@@ -47,11 +46,6 @@ let of_type_with_opt_coercion = Gram.entry_create "vernac:of_type_with_opt_coerc
 let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
 let instance_name = Gram.entry_create "vernac:instance_name"
 let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
-
-let command_entry = ref noedit_mode
-let set_command_entry e = command_entry := e
-let get_command_entry () = !command_entry
-
 
 (* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
     proof editing and changes nothing else). Then sets it as the default proof mode. *)
@@ -81,10 +75,6 @@ let test_bracket_ident =
               | IDENT _ -> ()
 	      | _ -> raise Stream.Failure)
 	| _ -> raise Stream.Failure)
-
-let default_command_entry =
-  Gram.Entry.of_parser "command_entry"
-    (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
 
 GEXTEND Gram
   GLOBAL: vernac gallina_ext tactic_mode noedit_mode subprf subgoal_command;
@@ -129,7 +119,7 @@ GEXTEND Gram
     ] ]
   ;
   vernac_aux: LAST
-    [ [ prfcom = default_command_entry -> prfcom ] ]
+    [ [ prfcom = command_entry -> prfcom ] ]
   ;
   noedit_mode:
     [ [ c = subgoal_command -> c None] ]

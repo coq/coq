@@ -241,10 +241,16 @@ module Vernac_ :
     val vernac : vernac_expr Gram.entry
     val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
     val vernac_eoi : vernac_expr Gram.entry
+    val noedit_mode : vernac_expr Gram.entry
+    val command_entry : vernac_expr Gram.entry
   end
 
 (** The main entry: reads an optional vernac command *)
 val main_entry : (Loc.t * vernac_expr) option Gram.entry
+
+(** Handling of the proof mode entry *)
+val get_command_entry : unit -> vernac_expr Gram.entry
+val set_command_entry : vernac_expr Gram.entry -> unit
 
 (** Mapping formal entries into concrete ones *)
 
