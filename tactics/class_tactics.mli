@@ -48,6 +48,6 @@ val make_autogoal' :            ?st:Names.transparent_state ->
            Hints.hints_path -> int -> ([ `NF ], 'c) Proofview.Goal.t -> newautoinfo
 
 val new_eauto_tac : ?st:Names.transparent_state ->
-           bool ->
+           bool -> ?limit:Int.t -> 
            Hints.hint_db list -> unit Proofview.tactic
 

@@ -53,7 +53,7 @@ let pr_depth _prc _prlc _prt = function
   | None -> Pp.mt()
 
 ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
-| [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
+  | [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
 END
 
 (* true = All transparent, false = Opaque if possible *)
@@ -89,11 +89,20 @@ END
 open G_auto
        
 TACTIC EXTEND fulleauto
-| ["fulleauto" opthints(dbnames) ] -> [
-    let dbs = match dbnames with None -> ["typeclass_instances"]
-                               | Some l -> l in
+| ["fulleauto" depth(depth) "with" ne_preident_list(dbnames) ] -> [
+    let dbs = match dbnames with [] -> ["typeclass_instances"]
+                               | l -> l in
     let dbs = List.map Hints.searchtable_map dbs in
-    Pp.msg_debug (Pp.str"Calling fulleauto");
-    Class_tactics.new_eauto_tac false dbs
+    Class_tactics.new_eauto_tac false ?limit:depth dbs 
+  ]
+| ["fulleauto" depth(depth) ] -> [
+    let dbs = ["typeclass_instances"] in
+    let dbs = List.map Hints.searchtable_map dbs in
+    Class_tactics.new_eauto_tac false ?limit:depth dbs 
+  ]
+| ["fulleauto" ] -> [
+    let dbs = ["typeclass_instances"] in
+    let dbs = List.map Hints.searchtable_map dbs in
+    Class_tactics.new_eauto_tac false dbs 
   ]
 END

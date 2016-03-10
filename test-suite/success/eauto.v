@@ -52,9 +52,16 @@ Instance can: C an 0.
 (* Backtrack on instance implementation *)
 Goal exists (T : Type) (t : T), { x : A T & C x t }.
 Proof.
-  eexists. eexists.
-  unshelve class_apply @existT; fulleauto.
+  eexists. eexists. fulleauto.
 Defined.
+
+Class D T `(a: A T).
+  Instance: D _ an.
+Goal exists (T : Type), { x : A T & D T x }.
+Proof.
+  eexists. fulleauto.
+Defined.
+  
 
 Parameter in_list : list (nat * nat) -> nat -> Prop.
 Definition not_in_list (l : list (nat * nat)) (n : nat) : Prop :=
@@ -104,6 +111,13 @@ Lemma simpl_plus_l_rr1 :
  forall n : Nat,
  (forall m p : Nat, plus' n m = plus' n p -> m = p) ->
  forall m p : Nat, S' (plus' n m) = S' (plus' n p) -> m = p.
-intros.
- eauto. (* does EApply H *)
+  intros.
+  apply H0. apply f_equal_nat.
+  Time info_eauto.
+  Undo.
+  Unset Typeclasses Debug.
+  Set Typeclasses Iterative Deepening.
+  Time fulleauto 5. Show Proof.
+  Undo.
+  eauto. (* does EApply H *)
 Qed.

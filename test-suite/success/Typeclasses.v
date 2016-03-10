@@ -23,8 +23,14 @@ Notation "'return' t" := (unit t).
 Class A `(e: T) := { a := True }.
 Class B `(e_: T) := { e := e_; sg_ass :> A e }.
 
-Goal forall `{B T}, a.
-  intros. exact I.
+Set Typeclasses Debug.
+
+Goal forall `{B T}, Prop.
+  intros. apply a.
+Defined.
+
+Goal forall `{B T}, Prop.
+  intros. refine (@a _ _ _).
 Defined.
 
 Class B' `(e_: T) := { e' := e_; sg_ass' :> A e_ }.
@@ -73,8 +79,15 @@ Module IterativeDeepening.
   Goal C -> A.
     intros.
     Set Typeclasses Debug.
+    Fail Timeout 1 fulleauto.
+    Set Typeclasses Iterative Deepening.
+    Fail fulleauto 1.
+    fulleauto 2.
+    Undo.
+    Unset Typeclasses Iterative Deepening.
     Fail Timeout 1 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
+    Typeclasses eauto := 3.
     typeclasses eauto.
   Qed.
 

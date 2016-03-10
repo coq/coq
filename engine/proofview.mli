@@ -63,7 +63,7 @@ val dependent_init  : telescope -> entry * proofview
 
 (** [finished pv] is [true] if and only if [pv] is complete. That is,
     if it has an empty list of focused goals. There could still be
-    unsolved subgoaled, but they would then be out of focus. *)
+    unsolved subgoals, but they would then be out of focus. *)
 val finished : proofview -> bool
 
 (** Returns the current [evar] state. *)
