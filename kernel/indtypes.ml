@@ -452,7 +452,7 @@ let array_min nmr a = if Int.equal nmr 0 then 0 else
 
 (* The recursive function that checks positivity and builds the list
    of recursive arguments *)
-let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcnames indlc =
+let check_positivity_one recursive (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcnames indlc =
   let lparams = rel_context_length hyps in
   let nmr = rel_context_nhyps hyps in
   (* Checking the (strict) positivity of a constructor argument type [c] *)
@@ -538,6 +538,8 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 
           | Prod (na,b,d) ->
 	      let () = assert (List.is_empty largs) in
+	      if not recursive && not (noccur_between n ntypes b) then
+	        raise (InductiveError BadEntry);
               let nmr',recarg = check_pos ienv nmr b in
               let ienv' = ienv_push_var ienv (na,b,mk_norec) in
                 check_constr_rec ienv' nmr' (recarg::lrec) d
@@ -570,9 +572,11 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
   and nmr' = array_min nmr irecargs_nmr
   in (nmr', mk_paths (Mrec ind) irecargs)
 
-let check_positivity kn env_ar params inds =
+let check_positivity kn env_ar params finite inds =
   let ntypes = Array.length inds in
-  let rc = Array.mapi (fun j t -> (Mrec (kn,j),t)) (Rtree.mk_rec_calls ntypes) in
+  let recursive = finite != Decl_kinds.BiFinite in
+  let rc = Array.mapi (fun j t -> (Mrec (kn,j),t))
+		      (Rtree.mk_rec_calls ntypes) in
   let lra_ind = Array.rev_to_list rc in
   let lparams = rel_context_length params in
   let nmr = rel_context_nhyps params in
@@ -581,7 +585,7 @@ let check_positivity kn env_ar params inds =
       List.init lparams (fun _ -> (Norec,mk_norec)) @ lra_ind in
     let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
     let nargs = rel_context_nhyps sign - nmr in
-    check_positivity_one ienv params (kn,i) nargs lcnames lc
+    check_positivity_one recursive ienv params (kn,i) nargs lcnames lc
   in
   let irecargs_nmr = Array.mapi check_one inds in
   let irecargs = Array.map snd irecargs_nmr
@@ -807,10 +811,11 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 	mind_reloc_tbl = rtbl;
       } in
   let packets = Array.map2 build_one_packet inds recargs in
-  let pkt = packets.(0) in	  
+  let pkt = packets.(0) in
   let isrecord = 
     match isrecord with
-    | Some (Some rid) when pkt.mind_kelim == all_sorts && Array.length pkt.mind_consnames == 1
+    | Some (Some rid) when pkt.mind_kelim == all_sorts
+			   && Array.length pkt.mind_consnames == 1
 			   && pkt.mind_consnrealargs.(0) > 0 ->
       (** The elimination criterion ensures that all projections can be defined. *)
       let u = 
@@ -851,7 +856,7 @@ let check_inductive env kn mie =
   (* First type-check the inductive definition *)
   let (env_ar, env_ar_par, params, inds) = typecheck_inductive env mie in
   (* Then check positivity conditions *)
-  let (nmr,recargs) = check_positivity kn env_ar_par params inds in
+  let (nmr,recargs) = check_positivity kn env_ar_par params mie.mind_entry_finite inds in
   (* Build the inductive packets *)
     build_inductive env mie.mind_entry_polymorphic mie.mind_entry_private
       mie.mind_entry_universes

@@ -215,8 +215,8 @@ let print_polymorphism ref =
 let print_primitive_record recflag mipv = function
   | Some (Some (_, ps,_)) ->
     let eta = match recflag with
-    | Decl_kinds.CoFinite -> mt ()
-    | Decl_kinds.Finite | Decl_kinds.BiFinite -> str " and has eta conversion"
+    | Decl_kinds.CoFinite | Decl_kinds.Finite -> mt ()
+    | Decl_kinds.BiFinite -> str " and has eta conversion"
     in
     [pr_id mipv.(0).mind_typename ++ str" is primitive" ++ eta ++ str"."]
   | _ -> []
