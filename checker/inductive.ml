@@ -527,7 +527,7 @@ type guard_env =
 let make_renv env recarg tree =
   { env = env;
     rel_min = recarg+2; (* recarg = 0 ==> Rel 1 -> recarg; Rel 2 -> fix *)
-    genv = [Lazy.lazy_from_val(Subterm(Large,tree))] }
+    genv = [Lazy.from_val(Subterm(Large,tree))] }
 
 let push_var renv (x,ty,spec) =
   { env = push_rel (LocalAssum (x,ty)) renv.env;
@@ -538,7 +538,7 @@ let assign_var_spec renv (i,spec) =
   { renv with genv = List.assign renv.genv (i-1) spec }
 
 let push_var_renv renv (x,ty) =
-  push_var renv (x,ty,Lazy.lazy_from_val Not_subterm)
+  push_var renv (x,ty,Lazy.from_val Not_subterm)
 
 (* Fetch recursive information about a variable p *)
 let subterm_var p renv =
@@ -549,13 +549,13 @@ let push_ctxt_renv renv ctxt =
   let n = rel_context_length ctxt in
   { env = push_rel_context ctxt renv.env;
     rel_min = renv.rel_min+n;
-    genv = iterate (fun ge -> Lazy.lazy_from_val Not_subterm::ge) n renv.genv }
+    genv = iterate (fun ge -> Lazy.from_val Not_subterm::ge) n renv.genv }
 
 let push_fix_renv renv (_,v,_ as recdef) =
   let n = Array.length v in
   { env = push_rec_types recdef renv.env;
     rel_min = renv.rel_min+n;
-    genv = iterate (fun ge -> Lazy.lazy_from_val Not_subterm::ge) n renv.genv }
+    genv = iterate (fun ge -> Lazy.from_val Not_subterm::ge) n renv.genv }
 
 
 (* Definition and manipulation of the stack *)
@@ -862,7 +862,7 @@ and stack_element_specif = function
   |SArg x -> x
 
 and extract_stack renv a = function
-  | [] -> Lazy.lazy_from_val Not_subterm , []
+  | [] -> Lazy.from_val Not_subterm , []
   | h::t -> stack_element_specif h, t
 
 

@@ -877,7 +877,7 @@ let well_founded = init_constant ["Init"; "Wf"] "well_founded"
 let mkSubset name typ prop =
   mkApp (Universes.constr_of_global (delayed_force build_sigma).typ,
 	 [| typ; mkLambda (name, typ, prop) |])
-let sigT = Lazy.lazy_from_fun build_sigma_type
+let sigT = Lazy.from_fun build_sigma_type
 
 let make_qref s = Qualid (Loc.ghost, qualid_of_string s)
 let lt_ref = make_qref "Init.Peano.lt"

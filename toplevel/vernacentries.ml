@@ -334,7 +334,7 @@ let dump_universes_gen g s =
           | Univ.Eq ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=dashed];\n" left right
       end, begin fun () ->
-        if Lazy.lazy_is_val init then Printf.fprintf output "}\n";
+        if Lazy.is_val init then Printf.fprintf output "}\n";
         close_out output
       end
     end else begin

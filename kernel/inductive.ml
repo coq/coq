@@ -480,7 +480,7 @@ type guard_env =
 let make_renv env recarg tree =
   { env = env;
     rel_min = recarg+2; (* recarg = 0 ==> Rel 1 -> recarg; Rel 2 -> fix *)
-    genv = [Lazy.lazy_from_val(Subterm(Large,tree))] }
+    genv = [Lazy.from_val(Subterm(Large,tree))] }
 
 let push_var renv (x,ty,spec) =
   { env = push_rel (LocalAssum (x,ty)) renv.env;
@@ -817,7 +817,7 @@ and stack_element_specif = function
   |SArg x -> x
 
 and extract_stack renv a = function
-   | [] -> Lazy.lazy_from_val Not_subterm , []
+   | [] -> Lazy.from_val Not_subterm , []
    | h::t -> stack_element_specif h, t
 
 (* Check term c can be applied to one of the mutual fixpoints. *)

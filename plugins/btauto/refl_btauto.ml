@@ -12,7 +12,7 @@ let get_constant dir s = lazy (Coqlib.gen_constant contrib_name dir s)
 
 let get_inductive dir s =
   let glob_ref () = Coqlib.find_reference contrib_name ("Coq" :: dir) s in
-  Lazy.lazy_from_fun (fun () -> Globnames.destIndRef (glob_ref ()))
+  Lazy.from_fun (fun () -> Globnames.destIndRef (glob_ref ()))
 
 let decomp_term (c : Term.constr) =
   Term.kind_of_term (Term.strip_outer_cast c)
