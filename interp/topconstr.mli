@@ -12,7 +12,7 @@ open Constrexpr
 
 (** Topconstr *)
 
-val oldfashion_patterns : bool ref
+val asymmetric_patterns : bool ref
 
 (** Utilities on constr_expr *)
 

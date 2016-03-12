@@ -19,14 +19,14 @@ open Constrexpr_ops
 (*i*)
 
 
-let oldfashion_patterns = ref (false)
+let asymmetric_patterns = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optsync = true; Goptions.optdepr = false;
   Goptions.optname =
     "Constructors in patterns require all their arguments but no parameters instead of explicit parameters and arguments";
   Goptions.optkey = ["Asymmetric";"Patterns"];
-  Goptions.optread = (fun () -> !oldfashion_patterns);
-  Goptions.optwrite = (fun a -> oldfashion_patterns:=a);
+  Goptions.optread = (fun () -> !asymmetric_patterns);
+  Goptions.optwrite = (fun a -> asymmetric_patterns:=a);
 }
 
 (**********************************************************************)

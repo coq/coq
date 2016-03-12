@@ -1133,7 +1133,7 @@ let drop_notations_pattern looked_for =
 	| None -> RCPatAtom (loc, None)
 	| Some (n, head, pl) ->
           let pl =
-            if !oldfashion_patterns then pl else
+            if !asymmetric_patterns then pl else
             let pars = List.make n (CPatAtom (loc, None)) in
             List.rev_append pars pl in
 	  match drop_syndef top env head pl with
@@ -1238,7 +1238,7 @@ let rec intern_pat genv aliases pat =
       let aliases' = merge_aliases aliases id in
       intern_pat genv aliases' p
     | RCPatCstr (loc, head, expl_pl, pl) ->
-      if !oldfashion_patterns then
+      if !asymmetric_patterns then
         let len = if List.is_empty expl_pl then Some (List.length pl) else None in
 	let c,idslpl1 = find_constructor loc len head in
 	let with_letin =
