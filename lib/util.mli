@@ -114,7 +114,15 @@ val iraise : iexn -> 'a
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 (** Union type *)
 
+module Union :
+sig
+  val map : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) union -> ('c, 'd) union
+  val equal : ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('a, 'b) union -> ('a, 'b) union -> bool
+  val fold_left : ('c -> 'a -> 'c) -> ('c -> 'b -> 'c) -> 'c -> ('a, 'b) union -> 'c
+end
+
 val map_union : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) union -> ('c, 'd) union
+(** Alias for [Union.map] *)
 
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 (** Used for browsable-until structures. *)

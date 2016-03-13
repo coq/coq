@@ -132,9 +132,36 @@ type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 type ('a, 'b) eq = ('a, 'b) CSig.eq = Refl : ('a, 'a) eq
 
-let map_union f g = function
-  | Inl a -> Inl (f a)
-  | Inr b -> Inr (g b)
+module Union =
+struct
+  let map f g = function
+    | Inl a -> Inl (f a)
+    | Inr b -> Inr (g b)
+
+  (** Lifting equality onto union types. *)
+  let equal f g x y = match x, y with
+    | Inl x, Inl y -> f x y
+    | Inr x, Inr y -> g x y
+    | _, _ -> false
+
+  let fold_left f g a = function
+    | Inl y -> f a y
+    | Inr y -> g a y
+    | _ -> a
+end
+
+let map_union = Union.map
+
+(** Lifting equality onto union types. *)
+let equal_union f g x y = match x, y with
+  | Inl x, Inl y -> f x y
+  | Inr x, Inr y -> g x y
+  | _, _ -> false
+
+let fold_left_union f g a = function
+  | Inl y -> f a y
+  | Inr y -> g a y
+  | _ -> a
 
 type iexn = Exninfo.iexn
 
