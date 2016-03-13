@@ -244,16 +244,16 @@ end) = struct
       | CPatAlias (_, p, id) ->
         pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
 
-      | CPatCstr (_,c, [], []) ->
+      | CPatCstr (_,c, None, []) ->
         pr_reference c, latom
 
-      | CPatCstr (_, c, [], args) ->
+      | CPatCstr (_, c, None, args) ->
         pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
 
-      | CPatCstr (_, c, args, []) ->
+      | CPatCstr (_, c, Some args, []) ->
         str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
 
-      | CPatCstr (_, c, expl_args, extra_args) ->
+      | CPatCstr (_, c, Some expl_args, extra_args) ->
         surround (str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) expl_args)
         ++ prlist (pr_patt spc (lapp,L)) extra_args, lapp
 

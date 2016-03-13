@@ -304,7 +304,13 @@ and pp_cases_pattern_expr cpe =
       xmlApply loc
         (xmlOperator "alias" ~attr:["name", string_of_id id] loc ::
           [pp_cases_pattern_expr cpe])
-  | CPatCstr (loc, ref, cpel1, cpel2) ->
+  | CPatCstr (loc, ref, None, cpel2) ->
+      xmlApply loc
+        (xmlOperator "reference"
+           ~attr:["name", Libnames.string_of_reference ref] loc ::
+         [Element ("impargs", [], []);
+          Element ("args", [], (List.map pp_cases_pattern_expr cpel2))])
+  | CPatCstr (loc, ref, Some cpel1, cpel2) ->
       xmlApply loc
         (xmlOperator "reference"
            ~attr:["name", Libnames.string_of_reference ref] loc ::

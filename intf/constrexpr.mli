@@ -40,15 +40,15 @@ type raw_cases_pattern_expr =
   | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
   | RCPatCstr of Loc.t * Globnames.global_reference
     * raw_cases_pattern_expr list * raw_cases_pattern_expr list
-  (** [CPatCstr (_, Inl c, l1, l2)] represents (@c l1) l2 *)
+  (** [CPatCstr (_, c, l1, l2)] represents (@c l1) l2 *)
   | RCPatAtom of Loc.t * Id.t option
   | RCPatOr of Loc.t * raw_cases_pattern_expr list
 
 type cases_pattern_expr =
   | CPatAlias of Loc.t * cases_pattern_expr * Id.t
   | CPatCstr of Loc.t * reference
-    * cases_pattern_expr list * cases_pattern_expr list
-  (** [CPatCstr (_, Inl c, l1, l2)] represents (@c l1) l2 *)
+    * cases_pattern_expr list option * cases_pattern_expr list
+  (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
   | CPatAtom of Loc.t * reference option
   | CPatOr of Loc.t * cases_pattern_expr list
   | CPatNotation of Loc.t * notation * cases_pattern_notation_substitution

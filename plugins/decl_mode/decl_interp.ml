@@ -96,7 +96,7 @@ let rec add_vars_of_simple_pattern globs = function
       add_vars_of_simple_pattern globs p
   | CPatCstr (_,_,pl1,pl2) ->
     List.fold_left add_vars_of_simple_pattern
-      (List.fold_left add_vars_of_simple_pattern globs pl1) pl2
+      (Option.fold_left (List.fold_left add_vars_of_simple_pattern) globs pl1) pl2
   | CPatNotation(_,_,(pl,pll),pl') ->
       List.fold_left add_vars_of_simple_pattern globs (List.flatten (pl::pl'::pll))
   | CPatAtom (_,Some (Libnames.Ident (_,id))) -> add_var id globs

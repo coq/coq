@@ -1095,7 +1095,7 @@ let drop_notations_pattern looked_for =
     let (loc,qid) = qualid_of_reference re in
     try
       match locate_extended qid with
-      |SynDef sp ->
+      | SynDef sp ->
 	let (vars,a) = Syntax_def.search_syntactic_definition sp in
 	(match a with
 	| NRef g ->
@@ -1118,7 +1118,7 @@ let drop_notations_pattern looked_for =
 	      let (_,argscs) = find_remaining_scopes pats1 pats2 g in
 	      Some (g, idspl1, List.map2 (in_pat_sc env) argscs pats2)
 	| _ -> raise Not_found)
-      |TrueGlobal g ->
+      | TrueGlobal g ->
 	  test_kind top g;
 	  Dumpglob.add_glob loc g;
 	  let (_,argscs) = find_remaining_scopes [] pats g in
@@ -1140,16 +1140,15 @@ let drop_notations_pattern looked_for =
 	    |Some (a,b,c) -> RCPatCstr(loc, a, b, c)
 	    |None -> raise (InternalizationError (loc,NotAConstructor head))
       end
-    | CPatCstr (loc, head, [], pl) ->
+    | CPatCstr (loc, head, None, pl) ->
       begin
 	match drop_syndef top env head pl with
 	  | Some (a,b,c) -> RCPatCstr(loc, a, b, c)
 	  | None -> raise (InternalizationError (loc,NotAConstructor head))
       end
-    | CPatCstr (loc, r, expl_pl, pl) ->
-      let g = try
-		      (locate (snd (qualid_of_reference r)))
-	    with Not_found ->
+    | CPatCstr (loc, r, Some expl_pl, pl) ->
+      let g = try locate (snd (qualid_of_reference r))
+	      with Not_found ->
  	      raise (InternalizationError (loc,NotAConstructor r)) in
       let (argscs1,argscs2) = find_remaining_scopes expl_pl pl g in
       RCPatCstr (loc, g, List.map2 (in_pat_sc env) argscs1 expl_pl, List.map2 (in_pat_sc env) argscs2 pl)

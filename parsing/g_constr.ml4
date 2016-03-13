@@ -379,14 +379,14 @@ GEXTEND Gram
     | "10" RIGHTA
       [ p = pattern; lp = LIST1 NEXT ->
         (match p with
-	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, [], lp)
+	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, None, lp)
 	  | CPatCstr (_, r, l1, l2) -> CPatCstr (!@loc, r, l1 , l2@lp)
 	  | CPatNotation (_, n, s, l) -> CPatNotation (!@loc, n , s, l@lp)
           | _ -> Errors.user_err_loc
               (cases_pattern_expr_loc p, "compound_pattern",
                Pp.str "Such pattern cannot have arguments."))
-      |"@"; r = Prim.reference; lp = LIST1 NEXT ->
-        CPatCstr (!@loc, r, lp, []) ]
+      |"@"; r = Prim.reference; lp = LIST0 NEXT ->
+        CPatCstr (!@loc, r, Some lp, []) ]
     | "1" LEFTA
       [ c = pattern; "%"; key=IDENT -> CPatDelimiters (!@loc,key,c) ]
     | "0"

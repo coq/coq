@@ -52,7 +52,7 @@ let rec cases_pattern_fold_names f a = function
       List.fold_left (cases_pattern_fold_names f) a patl
   | CPatCstr (_,_,patl1,patl2) ->
     List.fold_left (cases_pattern_fold_names f)
-      (List.fold_left (cases_pattern_fold_names f) a patl1) patl2
+      (Option.fold_left (List.fold_left (cases_pattern_fold_names f)) a patl1) patl2
   | CPatNotation (_,_,(patl,patll),patl') ->
       List.fold_left (cases_pattern_fold_names f)
 	(List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'

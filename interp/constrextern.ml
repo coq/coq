@@ -266,7 +266,7 @@ let make_pat_notation loc ntn (terms,termlists as subst) args =
 
 let mkPat loc qid l =
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
-  if List.is_empty l then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,[],l)
+  if List.is_empty l then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,None,l)
 
 let pattern_printable_in_both_syntax (ind,_ as c) =
   let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
@@ -286,7 +286,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	when !Flags.in_debugger||Inductiveops.constructor_has_local_defs cstrsp ->
       let c = extern_reference loc Id.Set.empty (ConstructRef cstrsp) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-      CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])
+      CPatCstr (loc, c, Some (add_patt_for_params (fst cstrsp) args), [])
     | _ ->
   try
     if !Flags.raw_print || !print_no_symbol then raise No_match;
@@ -329,13 +329,13 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
                   let c = extern_reference loc Id.Set.empty (ConstructRef cstrsp) in
 		  if !Topconstr.asymmetric_patterns then
 		    if pattern_printable_in_both_syntax cstrsp
-		    then CPatCstr (loc, c, [], args)
-		    else CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])
+		    then CPatCstr (loc, c, None, args)
+		    else CPatCstr (loc, c, Some (add_patt_for_params (fst cstrsp) args), [])
 		  else
 		    let full_args = add_patt_for_params (fst cstrsp) args in
 		    match drop_implicits_in_patt (ConstructRef cstrsp) 0 full_args with
-		      |Some true_args -> CPatCstr (loc, c, [], true_args)
-		      |None -> CPatCstr (loc, c, full_args, [])
+		      |Some true_args -> CPatCstr (loc, c, None, true_args)
+		      |None -> CPatCstr (loc, c, Some full_args, [])
 	  in insert_pat_alias loc p na
 and apply_notation_to_pattern loc gr ((subst,substlist),(nb_to_drop,more_args))
     (tmp_scope, scopes as allscopes) vars =
@@ -413,7 +413,7 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
   if !Flags.in_debugger||Inductiveops.inductive_has_local_defs ind then
     let c = extern_reference Loc.ghost vars (IndRef ind) in
     let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-    CPatCstr (Loc.ghost, c, add_patt_for_params ind args, [])
+    CPatCstr (Loc.ghost, c, Some (add_patt_for_params ind args), [])
   else
     try
       if !Flags.raw_print || !print_no_symbol then raise No_match;
@@ -431,8 +431,8 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
       let c = extern_reference Loc.ghost vars (IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       match drop_implicits_in_patt (IndRef ind) 0 args with
-	   |Some true_args -> CPatCstr (Loc.ghost, c, [], true_args)
-	   |None -> CPatCstr (Loc.ghost, c, args, [])
+	   |Some true_args -> CPatCstr (Loc.ghost, c, None, true_args)
+	   |None -> CPatCstr (Loc.ghost, c, Some args, [])
 
 let extern_cases_pattern vars p =
   extern_cases_pattern_in_scope (None,[]) vars p

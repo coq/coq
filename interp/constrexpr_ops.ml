@@ -66,7 +66,7 @@ let rec cases_pattern_expr_eq p1 p2 =
       Id.equal i1 i2 && cases_pattern_expr_eq a1 a2
   | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) ->
       eq_reference c1 c2 &&
-      List.equal cases_pattern_expr_eq a1 a2 &&
+      Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
       List.equal cases_pattern_expr_eq b1 b2
   | CPatAtom(_,r1), CPatAtom(_,r2) ->
       Option.equal eq_reference r1 r2
