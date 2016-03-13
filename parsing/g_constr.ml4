@@ -380,6 +380,9 @@ GEXTEND Gram
       [ p = pattern; lp = LIST1 NEXT ->
         (match p with
 	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, None, lp)
+	  | CPatCstr (_, r, None, l2) -> Errors.user_err_loc
+              (cases_pattern_expr_loc p, "compound_pattern",
+               Pp.str "Nested applications not supported.")
 	  | CPatCstr (_, r, l1, l2) -> CPatCstr (!@loc, r, l1 , l2@lp)
 	  | CPatNotation (_, n, s, l) -> CPatNotation (!@loc, n , s, l@lp)
           | _ -> Errors.user_err_loc

@@ -918,7 +918,7 @@ let chop_params_pattern loc ind args with_letin =
   args
 
 let find_constructor loc add_params ref =
-  let cstr = match ref with
+  let (ind,_ as cstr) = match ref with
   | ConstructRef cstr -> cstr
   | IndRef _ ->
     let error = str "There is an inductive name deep in a \"in\" clause." in
@@ -927,15 +927,15 @@ let find_constructor loc add_params ref =
     let error = str "This reference is not a constructor." in
     user_err_loc (loc, "find_constructor", error)
   in
-  cstr, (function (ind,_ as c) -> match add_params with
-    |Some nb_args ->
+  cstr, match add_params with
+    | Some nb_args ->
       let nb =
-        if Int.equal nb_args (Inductiveops.constructor_nrealdecls c)
+        if Int.equal nb_args (Inductiveops.constructor_nrealdecls cstr)
           then Inductiveops.inductive_nparamdecls ind
           else Inductiveops.inductive_nparams ind
       in
       List.make nb ([], [(Id.Map.empty, PatVar(Loc.ghost,Anonymous))])
-    |None -> []) cstr
+    | None -> []
 
 let find_pattern_variable = function
   | Ident (loc,id) -> id
@@ -1099,16 +1099,17 @@ let drop_notations_pattern looked_for =
 	let (vars,a) = Syntax_def.search_syntactic_definition sp in
 	(match a with
 	| NRef g ->
+          (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
 	  test_kind top g;
 	  let () = assert (List.is_empty vars) in
 	  let (_,argscs) = find_remaining_scopes [] pats g in
 	  Some (g, [], List.map2 (in_pat_sc env) argscs pats)
-	| NApp (NRef g,[]) -> (* special case : Syndef for @Cstr *)
+	| NApp (NRef g,[]) -> (* special case: Syndef for @Cstr, this deactivates *)
 	      test_kind top g;
               let () = assert (List.is_empty vars) in
-	      let (argscs,_) = find_remaining_scopes pats [] g in
-	      Some (g, List.map2 (in_pat_sc env) argscs pats, [])
+	      Some (g, List.map (in_pat false env) pats, [])
 	| NApp (NRef g,args) ->
+              (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
 	      test_kind top g;
 	      let nvars = List.length vars in
 	      if List.length pats < nvars then error_not_enough_arguments loc;
@@ -1146,12 +1147,18 @@ let drop_notations_pattern looked_for =
 	  | Some (a,b,c) -> RCPatCstr(loc, a, b, c)
 	  | None -> raise (InternalizationError (loc,NotAConstructor head))
       end
-    | CPatCstr (loc, r, Some expl_pl, pl) ->
+     | CPatCstr (loc, r, Some expl_pl, pl) ->
       let g = try locate (snd (qualid_of_reference r))
 	      with Not_found ->
  	      raise (InternalizationError (loc,NotAConstructor r)) in
-      let (argscs1,argscs2) = find_remaining_scopes expl_pl pl g in
-      RCPatCstr (loc, g, List.map2 (in_pat_sc env) argscs1 expl_pl, List.map2 (in_pat_sc env) argscs2 pl)
+      if expl_pl == [] then
+        (* Convention: (@r) deactivates all further implicit arguments and scopes *)
+        RCPatCstr (loc, g, List.map (in_pat false env) pl, [])
+      else
+        (* Convention: (@r expl_pl) deactivates implicit arguments in expl_pl and in pl *)
+        (* but not scopes in expl_pl *)
+        let (argscs1,_) = find_remaining_scopes expl_pl pl g in
+        RCPatCstr (loc, g, List.map2 (in_pat_sc env) argscs1 expl_pl @ List.map (in_pat false env) pl, [])
     | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]),[])
 	when Bigint.is_strictly_pos p ->
       fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) (Numeral (Bigint.neg p))
@@ -1203,8 +1210,8 @@ let drop_notations_pattern looked_for =
       ensure_kind top loc g;
       let (argscs1,argscs2) = find_remaining_scopes pl args g in
       RCPatCstr (loc, g,
-		 List.map2 (fun x -> in_not false loc {env with tmp_scope = x} fullsubst []) argscs1 pl,
-		 List.map2 (in_pat_sc env) argscs2 args)
+		 List.map2 (fun x -> in_not false loc {env with tmp_scope = x} fullsubst []) argscs1 pl @
+		 List.map (in_pat false env) args, [])
     | NList (x,_,iter,terminator,lassoc) ->
       if not (List.is_empty args) then user_err_loc
         (loc,"",strbrk "Application of arguments to a recursive notation not supported in patterns.");
