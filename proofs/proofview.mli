@@ -505,9 +505,9 @@ module Refine : sig
   (** In [refine ?unsafe t], [t] is a term with holes under some
       [evar_map] context. The term [t] is used as a partial solution
       for the current goal (refine is a goal-dependent tactic), the
-      new holes created by [t] become the new subgoals. Exception
+      new holes created by [t] become the new subgoals. Exceptions
       raised during the interpretation of [t] are caught and result in
-      tactic failures. If [unsafe] is [true] (default) [t] is
+      tactic failures. If [unsafe] is [false] (default is [true]) [t] is
       type-checked beforehand. *)
 
   (** {7 Helper functions} *)
