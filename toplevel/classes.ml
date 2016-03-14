@@ -198,7 +198,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
             (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in
 	  Universes.register_universe_binders (ConstRef cst) pl;
-	  instance_hook k None global imps ?hook (ConstRef cst); id
+	  instance_hook k pri global imps ?hook (ConstRef cst); id
       end
     else (
       let props =
