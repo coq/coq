@@ -297,7 +297,7 @@ let main () =
       (* add topstart.cmo explicitly because we shunted ocamlmktop wrapper *)
     let args = if !top then args @ [ "topstart.cmo" ] else args in
       (* Now, with the .cma, we MUST use the -linkall option *)
-    let command = String.concat " " (prog::"-rectypes"::args) in
+    let command = String.concat " " (prog::"-rectypes"::"-w"::"-31"::args) in
       if !echo then
 	begin
 	  print_endline command;
