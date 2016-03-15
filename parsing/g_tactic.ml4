@@ -311,15 +311,6 @@ GEXTEND Gram
       | "**" -> !@loc, IntroForthcoming false ]]
   ;
   simple_intropattern:
-    [ [ pat = simple_intropattern_closed;
-        l = LIST0 ["%"; c = operconstr LEVEL "0" -> c] ->
-          let loc0,pat = pat in
-          let f c pat =
-            let loc = Loc.merge loc0 (Constrexpr_ops.constr_loc c) in
-            IntroAction (IntroApplyOn (c,(loc,pat))) in
-          !@loc, List.fold_right f l pat ] ]
-  ;
-  simple_intropattern_closed:
     [ [ pat = or_and_intropattern -> !@loc, IntroAction (IntroOrAndPattern pat)
       | pat = equality_intropattern -> !@loc, IntroAction pat
       | "_" -> !@loc, IntroAction IntroWildcard 
