@@ -26,6 +26,8 @@ let ok_dirname f =
   not (String.List.mem f !skipped_dirnames) &&
   (match Unicode.ident_refutation f with None -> true | _ -> false)
 
+let readdir dir = try Sys.readdir dir with any -> [||]
+
 let all_subdirs ~unix_path:root =
   let l = ref [] in
   let add f rel = l := (f, rel) :: !l in
@@ -38,7 +40,7 @@ let all_subdirs ~unix_path:root =
 	  add file newrel;
 	  traverse file newrel
         end)
-      (Sys.readdir dir)
+      (readdir dir)
   in
   if exists_dir root then traverse root [];
   List.rev !l
@@ -58,7 +60,7 @@ let dirmap = ref StrMap.empty
 
 let make_dir_table dir =
   let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
-  Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
+  Array.fold_left filter_dotfiles StrSet.empty (readdir dir)
 
 let exists_in_dir_respecting_case dir bf =
   let contents, cached =
