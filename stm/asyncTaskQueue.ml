@@ -184,6 +184,13 @@ module Make(T : Task) = struct
         let () = Unix.sleep 1 in
         kill_if ()
     in
+    let kill_if () =
+      try kill_if ()
+      with Sys.Break ->
+        let () = stop_waiting := true in
+        let () = TQueue.broadcast queue in
+        Worker.kill proc
+    in
     let _ = Thread.create kill_if () in
 
     try while true do
