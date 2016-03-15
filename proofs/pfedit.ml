@@ -104,9 +104,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match gi with
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
-      | Vernacexpr.SelectAll -> tac
-      | Vernacexpr.SelectAllParallel ->
-          Errors.anomaly(str"SelectAllParallel not handled by Stm")
+      | Vernacexpr.SelectAll | Vernacexpr.SelectAllParallel -> tac
     in
     let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
     let () =

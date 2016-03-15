@@ -1414,7 +1414,7 @@ and TacTask : sig
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
     t_assign   : output Future.assignement -> unit;
-    t_ast      : ast;
+    t_ast      : int * ast;
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;
     t_name     : string }  
@@ -1431,7 +1431,7 @@ end = struct (* {{{ *)
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
     t_assign   : output Future.assignement -> unit;
-    t_ast      : ast;
+    t_ast      : int * ast;
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;
     t_name     : string }  
@@ -1440,7 +1440,7 @@ end = struct (* {{{ *)
     r_state    : Stateid.t;
     r_state_fb : Stateid.t;
     r_document : VCS.vcs option;
-    r_ast      : ast;
+    r_ast      : int * ast;
     r_goal     : Goal.goal;
     r_name     : string }
 
@@ -1484,6 +1484,9 @@ end = struct (* {{{ *)
     | Some { t_kill } -> t_kill ()
     | _ -> ()
  
+  let command_focus = Proof.new_focus_kind ()
+  let focus_cond = Proof.no_cond command_focus
+
   let perform { r_state = id; r_state_fb; r_document = vcs; r_ast; r_goal } =
     Option.iter VCS.restore vcs;
     try
@@ -1499,7 +1502,9 @@ end = struct (* {{{ *)
          Errors.errorlabstrm "Stm" (strbrk("the par: goal selector supports ground "^
            "goals only"))
        else begin
-        vernac_interp r_state_fb r_ast;
+        let (i, ast) = r_ast in
+        Proof_global.simple_with_current_proof (fun _ p -> Proof.focus focus_cond () i p);
+        vernac_interp r_state_fb ast;
         let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> Errors.errorlabstrm "Stm" (str "no progress")
@@ -1528,12 +1533,11 @@ end = struct (* {{{ *)
   module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask)
 
   let vernac_interp cancel nworkers safe_id id { verbose; loc; expr = e } =
-    let e, etac, time, fail =
+    let e, time, fail =
       let rec find time fail = function
-        | VernacSolve(_,_,re,b) -> re, b, time, fail
         | VernacTime (_,e) | VernacRedirect (_,(_,e)) -> find true fail e
         | VernacFail e -> find time true e
-        | _ -> errorlabstrm "Stm" (str"unsupported") in find false false e in
+        | _ -> e, time, fail in find false false e in
     Hooks.call Hooks.with_fail fail (fun () ->
     (if time then System.with_time false else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
@@ -1545,8 +1549,7 @@ end = struct (* {{{ *)
           Future.create_delegate
             ~name:(Printf.sprintf "subgoal %d" i)
             (State.exn_on id ~valid:safe_id) in
-        let t_ast =
-          { verbose;loc;expr = VernacSolve(SelectNth i,None,e,etac) } in
+        let t_ast = (i, { verbose; loc; expr = e }) in
         let t_name = Goal.uid g in
         TaskQueue.enqueue_task queue
           ({ t_state = safe_id; t_state_fb = id;
