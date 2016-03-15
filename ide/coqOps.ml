@@ -864,7 +864,10 @@ object(self)
   method initialize =
     let get_initial_state =
       let next = function
-      | Fail _ -> messages#set ("Couln't initialize Coq"); Coq.return ()
+      | Fail (_, _, message) ->
+        let message = "Couldn't initialize coqtop\n\n" ^ message in
+        let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok ~message_type:`ERROR ~message () in
+        ignore (popup#run ()); exit 1
       | Good id -> initial_state <- id; Coq.return () in
       Coq.bind (Coq.init (get_filename ())) next in
     Coq.seq get_initial_state Coq.PrintOpt.enforce
