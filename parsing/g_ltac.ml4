@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Pp
 open Compat
 open Constrexpr
@@ -36,11 +37,35 @@ let reference_to_id = function
       Errors.user_err_loc (loc, "",
         str "This expression should be a simple identifier.")
 
+let tactic_mode = Gram.entry_create "vernac:tactic_command"
+let selector = Gram.entry_create "vernac:selector"
+
+(* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
+    proof editing and changes nothing else). Then sets it as the default proof mode. *)
+let _ =
+  let mode = {
+    Proof_global.name = "Classic";
+    set = (fun () -> set_command_entry tactic_mode);
+    reset = (fun () -> set_command_entry Pcoq.Vernac_.noedit_mode);
+  } in
+  Proof_global.register_proof_mode mode
+
+(* Hack to parse "[ id" without dropping [ *)
+let test_bracket_ident =
+  Gram.Entry.of_parser "test_bracket_ident"
+    (fun strm ->
+      match get_tok (stream_nth 0 strm) with
+        | KEYWORD "[" ->
+            (match get_tok (stream_nth 1 strm) with
+              | IDENT _ -> ()
+	      | _ -> raise Stream.Failure)
+	| _ -> raise Stream.Failure)
+
 (* Tactics grammar rules *)
 
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
-          constr_may_eval constr_eval;
+          tactic_mode constr_may_eval constr_eval selector;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
@@ -261,5 +286,20 @@ GEXTEND Gram
   ;
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
+  ;
+  selector:
+    [ [ n=natural; ":" -> Vernacexpr.SelectNth n
+      | test_bracket_ident; "["; id = ident; "]"; ":" -> Vernacexpr.SelectId id
+      | IDENT "all" ; ":" -> Vernacexpr.SelectAll
+      | IDENT "par" ; ":" -> Vernacexpr.SelectAllParallel ] ]
+  ;
+  tactic_mode:
+    [ [ g = OPT selector;
+        tac = G_vernac.subgoal_command -> tac g
+      | g = OPT selector; info = OPT [IDENT "Info";n=natural -> n];
+        tac = Tactic.tactic; use_dft_tac = [ "." -> false | "..." -> true ] ->
+        let g = Option.default (Proof_global.get_default_goal_selector ()) g in
+        Vernacexpr.VernacSolve (g, info, tac, use_dft_tac)
+    ] ]
   ;
   END
