@@ -272,6 +272,8 @@ val symbol_of_constr_prod_entry_key : gram_assoc option ->
 
 val name_of_entry : 'a Gram.entry -> 'a Entry.t
 
+val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
+
 (** Binding general entry keys to symbols *)
 
 type 's entry_name = EntryName :
