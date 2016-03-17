@@ -27,7 +27,6 @@ let plugin_name = <:expr< __coq_plugin_name >>
 let rec make_patt = function
   | [] -> <:patt< [] >>
   | ExtNonTerminal (_, _, p) :: l ->
-      let p = Names.Id.to_string p in
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
@@ -43,7 +42,6 @@ let rec mlexpr_of_argtype loc = function
 let rec make_when loc = function
   | [] -> <:expr< True >>
   | ExtNonTerminal (t, _, p) :: l ->
-      let p = Names.Id.to_string p in
       let l = make_when loc l in
       let t = mlexpr_of_argtype loc t in
       <:expr< Genarg.argument_type_eq (Genarg.genarg_tag $lid:p$) $t$ && $l$ >>
@@ -52,7 +50,6 @@ let rec make_when loc = function
 let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
   | ExtNonTerminal (t, _, p) :: l ->
-      let p = Names.Id.to_string p in
       let loc = MLast.loc_of_expr e in
       let e = make_let raw e l in
       let v =
@@ -198,10 +195,10 @@ EXTEND
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
+        ExtNonTerminal (type_of_user_symbol e, e, s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
+        ExtNonTerminal (type_of_user_symbol e, e, s)
       | s = STRING ->
 	if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
         ExtTerminal s

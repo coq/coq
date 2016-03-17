@@ -10,7 +10,7 @@ open Compat (* necessary for camlp4 *)
 
 type extend_token =
 | ExtTerminal of string
-| ExtNonTerminal of Genarg.argument_type * Extend.user_symbol * Names.Id.t
+| ExtNonTerminal of Genarg.argument_type * Extend.user_symbol * string
 
 val mlexpr_of_list :  ('a -> MLast.expr) -> 'a list -> MLast.expr
 
@@ -34,7 +34,7 @@ val mlexpr_of_string : string -> MLast.expr
 
 val mlexpr_of_option : ('a -> MLast.expr) -> 'a option -> MLast.expr
 
-val mlexpr_of_ident : Names.Id.t -> MLast.expr
+val mlexpr_of_ident : string -> MLast.expr
 
 val mlexpr_of_prod_entry_key : Extend.user_symbol -> MLast.expr
 

@@ -82,21 +82,19 @@ let statically_known_possibly_empty s (prods,_) =
       prods
 
 let possibly_empty_subentries loc (prods,act) =
-  let bind_name id v e =
-    let s = Names.Id.to_string id in
+  let bind_name s v e =
     <:expr< let $lid:s$ = $v$ in $e$ >>
   in
   let rec aux = function
     | [] -> <:expr< let loc = $default_loc$ in let _ = loc in $act$ >>
-    | ExtNonTerminal(_, e, id) :: tl when is_possibly_empty e ->
-        bind_name id (get_empty_entry e) (aux tl)
-    | ExtNonTerminal(t, _, id) :: tl ->
+    | ExtNonTerminal(_, e, s) :: tl when is_possibly_empty e ->
+        bind_name s (get_empty_entry e) (aux tl)
+    | ExtNonTerminal(t, _, s) :: tl ->
         let t = match t with
         | ExtraArgType _ as t -> t
         | _ -> assert false
         in
         (* We check at runtime if extraarg s parses "epsilon" *)
-        let s = Names.Id.to_string id in
         <:expr< let $lid:s$ = match Genarg.default_empty_value $make_wit loc t$ with
           [ None -> raise Exit
           | Some v -> v ] in $aux tl$ >>
@@ -130,7 +128,6 @@ let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
     | ExtNonTerminal (t, _, p) :: tl ->
-	let p = Names.Id.to_string p in
 	<:expr<
             (fun $lid:p$ ->
                let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
@@ -312,10 +309,10 @@ EXTEND
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
+        ExtNonTerminal (type_of_user_symbol e, e, s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (type_of_user_symbol e, e, Names.Id.of_string s)
+        ExtNonTerminal (type_of_user_symbol e, e, s)
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
 	    Lexer.add_keyword s;

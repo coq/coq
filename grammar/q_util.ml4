@@ -13,7 +13,7 @@ open Compat
 
 type extend_token =
 | ExtTerminal of string
-| ExtNonTerminal of Genarg.argument_type * Extend.user_symbol * Names.Id.t
+| ExtNonTerminal of Genarg.argument_type * Extend.user_symbol * string
 
 let mlexpr_of_list f l =
   List.fold_right
@@ -55,7 +55,7 @@ let mlexpr_of_option f = function
   | Some e -> <:expr< Some $f e$ >>
 
 let mlexpr_of_ident id =
-  <:expr< Names.Id.of_string $str:Names.Id.to_string id$ >>
+  <:expr< Names.Id.of_string $str:id$ >>
 
 let mlexpr_of_token = function
 | Tok.KEYWORD s -> <:expr< Tok.KEYWORD $mlexpr_of_string s$ >>

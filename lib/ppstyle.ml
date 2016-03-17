@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Util
+module String = CString
 
 type t = string
 (** We use the concatenated string, with dots separating each string. We

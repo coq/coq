@@ -2,7 +2,6 @@ Coq_config
 
 Hook
 Terminal
-Canary
 Hashset
 Hashcons
 CSet
@@ -29,13 +28,10 @@ CStack
 Util
 Ppstyle
 Errors
-Predicate
 Segmenttree
 Unicodetable
 Unicode
 Genarg
-
-Names
 
 Stdarg
 Constrarg
@@ -47,7 +43,6 @@ Entry
 Pcoq
 
 Q_util
-Egramml
 Argextend
 Tacextend
 Vernacextend
