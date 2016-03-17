@@ -55,7 +55,7 @@ type tauto_flags = {
 }
 
 let wit_tauto_flags : tauto_flags uniform_genarg_type =
-  Genarg.create_arg None "tauto_flags"
+  Genarg.create_arg "tauto_flags"
 
 let assoc_flags ist =
   let v = Id.Map.find (Names.Id.of_string "tauto_flags") ist.lfun in

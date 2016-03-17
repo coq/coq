@@ -18,11 +18,11 @@ open Constrarg
 exception CannotCoerceTo of string
 
 let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
-  Genarg.create_arg None "constr_context"
+  Genarg.create_arg "constr_context"
 
 (* includes idents known to be bound and references *)
 let (wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) Genarg.genarg_type) =
-  Genarg.create_arg None "constr_under_binders"
+  Genarg.create_arg "constr_under_binders"
 
 let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
   let Val.Dyn (t, _) = v in

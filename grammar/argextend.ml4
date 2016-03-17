@@ -48,82 +48,6 @@ let has_extraarg l =
   in
   List.exists check l
 
-let rec is_possibly_empty = function
-| Uopt _ -> true
-| Ulist0 _ -> true
-| Ulist0sep _ -> true
-| Umodifiers _ -> true
-| Ulist1 t -> is_possibly_empty t
-| Ulist1sep (t, _) -> is_possibly_empty t
-| _ -> false
-
-let rec get_empty_entry = function
-| Uopt _ -> <:expr< None >>
-| Ulist0 _ -> <:expr< [] >>
-| Ulist0sep _ -> <:expr< [] >>
-| Umodifiers _ -> <:expr< [] >>
-| Ulist1 t -> <:expr< [$get_empty_entry t$] >>
-| Ulist1sep (t, _) -> <:expr< [$get_empty_entry t$] >>
-| _ -> assert false
-
-let statically_known_possibly_empty s (prods,_) =
-  List.for_all (function
-    | ExtNonTerminal(t, e, _) ->
-      begin match t with
-      | ExtraArgType s' ->
-        (* For ExtraArg we don't know (we'll have to test dynamically) *)
-        (* unless it is a recursive call *)
-        s <> s'
-      | _ ->
-        is_possibly_empty e
-      end
-    | ExtTerminal _ ->
-        (* This consumes a token for sure *) false)
-      prods
-
-let possibly_empty_subentries loc (prods,act) =
-  let bind_name s v e =
-    <:expr< let $lid:s$ = $v$ in $e$ >>
-  in
-  let rec aux = function
-    | [] -> <:expr< let loc = $default_loc$ in let _ = loc in $act$ >>
-    | ExtNonTerminal(_, e, s) :: tl when is_possibly_empty e ->
-        bind_name s (get_empty_entry e) (aux tl)
-    | ExtNonTerminal(t, _, s) :: tl ->
-        let t = match t with
-        | ExtraArgType _ as t -> t
-        | _ -> assert false
-        in
-        (* We check at runtime if extraarg s parses "epsilon" *)
-        <:expr< let $lid:s$ = match Genarg.default_empty_value $make_wit loc t$ with
-          [ None -> raise Exit
-          | Some v -> v ] in $aux tl$ >>
-    | _ -> assert false (* already filtered out *) in
-  if has_extraarg prods then
-    (* Needs a dynamic check; catch all exceptions if ever some rhs raises *)
-    (* an exception rather than returning a value; *)
-    (* declares loc because some code can refer to it; *)
-    (* ensures loc is used to avoid "unused variable" warning *)
-    (true, <:expr< try Some $aux prods$
-                   with [ Exit -> None ] >>)
-  else
-    (* Static optimisation *)
-    (false, aux prods)
-
-let make_possibly_empty_subentries loc s cl =
-  let cl = List.filter (statically_known_possibly_empty s) cl in
-  if cl = [] then
-    <:expr< None >>
-  else
-    let rec aux = function
-    | (true, e) :: l ->
-        <:expr< match $e$ with [ Some v -> Some v | None -> $aux l$ ] >>
-    | (false, e) :: _ ->
-        <:expr< Some $e$ >>
-    | [] ->
-        <:expr< None >> in
-    aux (List.map (possibly_empty_subentries loc) cl)
-
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
@@ -214,12 +138,11 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let wit = <:expr< $lid:"wit_"^s$ >> in
   let rawwit = <:expr< Genarg.rawwit $wit$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
-  let default_value = <:expr< $make_possibly_empty_subentries loc s cl$ >> in
   declare_str_items loc
    [ <:str_item<
       value ($lid:"wit_"^s$) =
         let dyn = $dyn$ in
-        Genarg.make0 ?dyn $default_value$ $se$ >>;
+        Genarg.make0 ?dyn $se$ >>;
      <:str_item< Genintern.register_intern0 $wit$ $glob$ >>;
      <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
      <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
@@ -245,7 +168,7 @@ let declare_vernac_argument loc s pr cl =
   declare_str_items loc
    [ <:str_item<
       value ($lid:"wit_"^s$ : Genarg.genarg_type 'a unit unit) =
-        Genarg.create_arg None $se$ >>;
+        Genarg.create_arg $se$ >>;
      <:str_item<
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
     <:str_item< do {

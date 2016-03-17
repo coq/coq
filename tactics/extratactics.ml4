@@ -931,9 +931,9 @@ type cmp =
 type 'i test =
   | Test of cmp * 'i * 'i
 
-let wit_cmp : (cmp,cmp,cmp) Genarg.genarg_type = Genarg.make0 None "cmp"
+let wit_cmp : (cmp,cmp,cmp) Genarg.genarg_type = Genarg.make0 "cmp"
 let wit_test : (int or_var test,int or_var test,int test) Genarg.genarg_type =
-  Genarg.make0 None "tactest"
+  Genarg.make0 "tactest"
 
 let pr_cmp = function
   | Eq -> Pp.str"="

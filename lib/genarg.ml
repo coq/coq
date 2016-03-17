@@ -246,7 +246,6 @@ struct
 end
 
 type ('raw, 'glb, 'top) load = {
-  nil : 'raw option;
   dyn : 'top Val.tag;
 }
 
@@ -254,29 +253,18 @@ module LoadMap = ArgMap(struct type ('r, 'g, 't) t = ('r, 'g, 't) load end)
 
 let arg0_map = ref LoadMap.empty
 
-let create_arg opt ?dyn name =
+let create_arg ?dyn name =
   match ArgT.name name with
   | Some _ ->
     Errors.anomaly (str "generic argument already declared: " ++ str name)
   | None ->
     let dyn = match dyn with None -> Val.Base (ValT.create name) | Some dyn -> dyn in
-    let obj = LoadMap.Pack { nil = opt; dyn; } in
+    let obj = LoadMap.Pack { dyn; } in
     let name = ArgT.create name in
     let () = arg0_map := LoadMap.add name obj !arg0_map in
     ExtraArg name
 
 let make0 = create_arg
-
-let rec default_empty_value : type a b c. (a, b, c) genarg_type -> a option = function
-| ListArg _ -> Some []
-| OptArg _ -> Some None
-| PairArg (t1, t2) ->
-  begin match default_empty_value t1, default_empty_value t2 with
-  | Some v1, Some v2 -> Some (v1, v2)
-  | _ -> None
-  end
-| ExtraArg s ->
-  match LoadMap.find s !arg0_map with LoadMap.Pack obj -> obj.nil
 
 let rec val_tag : type a b c. (a, b, c) genarg_type -> c Val.tag = function
 | ListArg t -> Val.List (val_tag t)

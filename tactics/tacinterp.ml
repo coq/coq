@@ -109,7 +109,7 @@ type tacvalue =
   | VRec of value Id.Map.t ref * glob_tactic_expr
 
 let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
-  Genarg.create_arg None "tacvalue"
+  Genarg.create_arg "tacvalue"
 
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v
