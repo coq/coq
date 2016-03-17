@@ -10,6 +10,10 @@
 
 open Pp
 open Genarg
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
 open Names
 open Tacexpr
 open Taccoerce

@@ -18,6 +18,10 @@
 
 open Errors
 open Misctypes
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Tactic
 
 DECLARE PLUGIN "micromega_plugin"
 

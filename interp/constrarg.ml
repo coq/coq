@@ -82,3 +82,13 @@ let () =
   register_name0 wit_quant_hyp "Constrarg.wit_quant_hyp";
   register_name0 wit_bindings "Constrarg.wit_bindings";
   register_name0 wit_constr_with_bindings "Constrarg.wit_constr_with_bindings";
+  ()
+
+(** Aliases *)
+
+let wit_reference = wit_ref
+let wit_global = wit_ref
+let wit_clause = wit_clause_dft_concl
+let wit_quantified_hypothesis = wit_quant_hyp
+let wit_intropattern = wit_intro_pattern
+let wit_redexpr = wit_red_expr

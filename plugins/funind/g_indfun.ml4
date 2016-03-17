@@ -16,8 +16,12 @@ open Constrexpr
 open Indfun_common
 open Indfun
 open Genarg
+open Constrarg
 open Tacticals
 open Misctypes
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 DECLARE PLUGIN "recdef_plugin"
 

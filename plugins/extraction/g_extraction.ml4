@@ -11,6 +11,10 @@
 (* ML names *)
 
 open Genarg
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
 open Pp
 open Names
 open Nameops

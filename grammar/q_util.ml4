@@ -47,15 +47,6 @@ let mlexpr_of_option f = function
 let mlexpr_of_ident id =
   <:expr< Names.Id.of_string $str:id$ >>
 
-let repr_entry e =
-  let entry u =
-    let _ = Pcoq.get_entry u e in
-    Some (Entry.univ_name u, e)
-  in
-  try entry Pcoq.uprim with Not_found ->
-  try entry Pcoq.uconstr with Not_found ->
-  try entry Pcoq.utactic with Not_found -> None
-
 let rec mlexpr_of_prod_entry_key = function
   | Extend.Ulist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key s$ >>
   | Extend.Ulist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
@@ -63,11 +54,7 @@ let rec mlexpr_of_prod_entry_key = function
   | Extend.Ulist0sep (s,sep) -> <:expr< Pcoq.Alist0sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
   | Extend.Uopt s -> <:expr< Pcoq.Aopt $mlexpr_of_prod_entry_key s$ >>
   | Extend.Umodifiers s -> <:expr< Pcoq.Amodifiers $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Uentry e ->
-    begin match repr_entry e with
-    | None -> <:expr< Pcoq.Aentry (Pcoq.name_of_entry $lid:e$) >>
-    | Some (u, s) -> <:expr< Pcoq.Aentry (Entry.unsafe_of_name ($str:u$, $str:s$)) >>
-    end
+  | Extend.Uentry e -> <:expr< Pcoq.Aentry (Pcoq.name_of_entry $lid:e$) >>
   | Extend.Uentryl (e, l) ->
     (** Keep in sync with Pcoq! *)
     assert (CString.equal e "tactic");

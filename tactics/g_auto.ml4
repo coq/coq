@@ -10,6 +10,11 @@
 
 open Pp
 open Genarg
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 open Tacexpr
 
 DECLARE PLUGIN "g_auto"
@@ -128,7 +133,7 @@ TACTIC EXTEND dfs_eauto
 END
 
 TACTIC EXTEND autounfold
-| [ "autounfold" hintbases(db) clause(cl) ] -> [ Eauto.autounfold_tac db cl ]
+| [ "autounfold" hintbases(db) clause_dft_concl(cl) ] -> [ Eauto.autounfold_tac db cl ]
 END
 
 TACTIC EXTEND autounfold_one

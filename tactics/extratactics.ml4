@@ -10,7 +10,12 @@
 
 open Pp
 open Genarg
+open Stdarg
+open Constrarg
 open Extraargs
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 open Mod_subst
 open Names
 open Tacexpr
@@ -48,6 +53,8 @@ let replace_in_clause_maybe_by ist c1 c2 cl tac =
 
 let replace_term ist dir_opt c cl =
   with_delayed_uconstr ist c (fun c -> replace_term dir_opt c cl)
+
+let clause = Pcoq.Tactic.clause_dft_concl
 
 TACTIC EXTEND replace
    ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]

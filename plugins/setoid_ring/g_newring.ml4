@@ -14,6 +14,11 @@ open Libnames
 open Printer
 open Newring_ast
 open Newring
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 DECLARE PLUGIN "newring_plugin"
 

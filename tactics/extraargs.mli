@@ -53,7 +53,6 @@ val pr_by_arg_tac :
   (int * Ppextend.parenRelation -> raw_tactic_expr -> Pp.std_ppcmds) ->
   raw_tactic_expr option -> Pp.std_ppcmds
 
-
 (** Spiwack: Primitive for retroknowledge registration *)
 
 val retroknowledge_field : Retroknowledge.field Pcoq.Gram.entry

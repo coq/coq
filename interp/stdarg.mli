@@ -19,3 +19,8 @@ val wit_int : int uniform_genarg_type
 val wit_string : string uniform_genarg_type
 
 val wit_pre_ident : string uniform_genarg_type
+
+(** Aliases for compatibility *)
+
+val wit_integer : int uniform_genarg_type
+val wit_preident : string uniform_genarg_type

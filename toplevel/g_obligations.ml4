@@ -16,6 +16,12 @@
 open Libnames
 open Constrexpr
 open Constrexpr_ops
+open Stdarg
+open Constrarg
+open Extraargs
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 (* We define new entries for programs, with the use of this module
  * Subtac. These entries are named Subtac.<foo>

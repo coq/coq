@@ -20,6 +20,11 @@ open Extraargs
 open Tacmach
 open Tacticals
 open Rewrite
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 DECLARE PLUGIN "g_rewrite"
 

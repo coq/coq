@@ -23,12 +23,7 @@ let qualified_name loc s =
   let (name, path) = CList.sep_last path in
   qualified_name loc path name
 
-let mk_extraarg loc s =
-  try
-    let name = Genarg.get_name0 s in
-    qualified_name loc name
-  with Not_found ->
-    <:expr< $lid:"wit_"^s$ >>
+let mk_extraarg loc s = <:expr< $lid:"wit_"^s$ >>
 
 let rec make_wit loc = function
   | ListArgType t -> <:expr< Genarg.wit_list $make_wit loc t$ >>
