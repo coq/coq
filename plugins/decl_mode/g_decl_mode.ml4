@@ -87,7 +87,7 @@ let vernac_proof_instr instr =
 
 (* Only declared at raw level, because only used in vernac commands. *)
 let wit_proof_instr : (raw_proof_instr, glob_proof_instr, proof_instr) Genarg.genarg_type =
-  Genarg.make0 None "proof_instr"
+  Genarg.make0 "proof_instr"
 
 (* We create a new parser entry [proof_mode]. The Declarative proof mode
     will replace the normal parser entry for tactics with this one. *)

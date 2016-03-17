@@ -32,7 +32,7 @@ let sigref = mkRefC (Qualid (Loc.ghost, Libnames.qualid_of_string "Coq.Init.Spec
 type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
 
 let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
-  Genarg.create_arg None "withtac"
+  Genarg.create_arg "withtac"
 
 let withtac = Pcoq.create_generic_entry "withtac" (Genarg.rawwit wit_withtac)
 

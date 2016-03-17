@@ -158,36 +158,10 @@ type ml_tactic_grammar_obj = {
 
 exception NonEmptyArgument
 
-let default_empty_value wit = match Genarg.default_empty_value wit with
-| None -> raise NonEmptyArgument
-| Some v -> v
-
-let rec empty_value : type a b c s. (a, b, c) Genarg.genarg_type -> (s, a) entry_key -> a =
-fun wit key -> match key with
-| Alist1 key ->
-  begin match wit with
-  | Genarg.ListArg wit -> [empty_value wit key]
-  | Genarg.ExtraArg _ -> default_empty_value wit
-  end
-| Alist1sep (key, _) ->
-  begin match wit with
-  | Genarg.ListArg wit -> [empty_value wit key]
-  | Genarg.ExtraArg _ -> default_empty_value wit
-  end
-| Alist0 _ -> []
-| Alist0sep (_, _) -> []
-| Amodifiers _ -> []
-| Aopt _ -> None
-| Aentry _ -> default_empty_value wit
-| Aentryl (_, _) -> default_empty_value wit
-
-| Atoken _ -> raise NonEmptyArgument
-| Aself -> raise NonEmptyArgument
-| Anext -> raise NonEmptyArgument
-
 (** ML tactic notations whose use can be restricted to an identifier are added
     as true Ltac entries. *)
 let extend_atomic_tactic name entries =
+  let open Tacexpr in
   let map_prod prods =
     let (hd, rem) = match prods with
     | GramTerminal s :: rem -> (s, rem)
@@ -197,8 +171,11 @@ let extend_atomic_tactic name entries =
     | GramTerminal s -> raise NonEmptyArgument
     | GramNonTerminal (_, typ, e) ->
       let Genarg.Rawwit wit = typ in
-      let def = Genarg.in_gen typ (empty_value wit e) in
-      Tacintern.intern_genarg Tacintern.fully_empty_glob_sign def
+      let inj x = TacArg (Loc.ghost, TacGeneric (Genarg.in_gen typ x)) in
+      let default = epsilon_value inj e in
+      match default with
+      | None -> raise NonEmptyArgument
+      | Some def -> Tacintern.intern_tactic_or_tacarg Tacintern.fully_empty_glob_sign def
     in
     try Some (hd, List.map empty_value rem) with NonEmptyArgument -> None
   in
@@ -206,8 +183,7 @@ let extend_atomic_tactic name entries =
   let add_atomic i args = match args with
   | None -> ()
   | Some (id, args) ->
-    let open Tacexpr in
-    let args = List.map (fun a -> TacGeneric a) args in
+    let args = List.map (fun a -> Tacexp a) args in
     let entry = { mltac_name = name; mltac_index = i } in
     let body = TacML (Loc.ghost, entry, args) in
     Tacenv.register_ltac false false (Names.Id.of_string id) body

@@ -110,11 +110,11 @@ end
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision when the three types agree. *)
 
-val make0 : 'raw option -> ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
+val make0 : ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
 (** Create a new generic type of argument: force to associate
     unique ML types at each of the three levels. *)
 
-val create_arg : 'raw option -> ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
+val create_arg : ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
 (** Alias for [make0]. *)
 
 (** {5 Specialized types} *)
@@ -249,8 +249,6 @@ val wit_pair : ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
   ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
 
 (** {5 Magic used by the parser} *)
-
-val default_empty_value : ('raw, 'glb, 'top) genarg_type -> 'raw option
 
 val register_name0 : ('a, 'b, 'c) genarg_type -> string -> unit
 (** Used by the extension to give a name to types. The string should be the
