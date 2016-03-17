@@ -200,8 +200,6 @@ let parse_string f x =
 
 type gram_universe = Entry.universe
 
-let trace = ref false
-
 let uprim   = Entry.uprim
 let uconstr = Entry.uconstr
 let utactic = Entry.utactic
@@ -231,37 +229,20 @@ let get_typed_entry e =
 let new_entry etyp u s =
   let utab = get_utable u in
   let uname = Entry.univ_name u in
-  if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" uname s; flush stderr);
   let _ = Entry.create u s in
   let ename = uname ^ ":" ^ s in
   let e = Gram.entry_create ename in
   Hashtbl.add utab s (TypedEntry (etyp, e)); e
 
-let create_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
+let make_gen_entry u rawwit s = new_entry rawwit u s
+
+let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
   let utab = get_utable u in
-  try
-    let TypedEntry (typ, e) = Hashtbl.find utab s in
-    match abstract_argument_type_eq typ etyp with
-    | None ->
-      let u = Entry.univ_name u in
-      failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
-    | Some Refl -> e
-  with Not_found ->
+  if Hashtbl.mem utab s then
+    let u = Entry.univ_name u in
+    failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists");
+  else
     new_entry etyp u s
-
-let create_constr_entry s = create_entry uconstr s (rawwit wit_constr)
-
-let create_generic_entry = create_entry
-
-(* [make_gen_entry] builds entries extensible by giving its name (a string) *)
-(* For entries extensible only via the ML name, Gram.entry_create is enough *)
-
-let make_gen_entry u rawwit s =
-  let univ = get_utable u in
-  let uname = Entry.univ_name u in
-  let e = Gram.entry_create (uname ^ ":" ^ s) in
-  let _ = Entry.create u s in
-  Hashtbl.add univ s (TypedEntry (rawwit, e)); e
 
 (* Initial grammar entries *)
 
@@ -312,7 +293,7 @@ module Constr =
     let operconstr = gec_constr "operconstr"
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
-    let binder_constr = create_constr_entry "binder_constr"
+    let binder_constr = gec_constr "binder_constr"
     let ident = make_gen_entry uconstr (rawwit wit_ident) "ident"
     let global = make_gen_entry uconstr (rawwit wit_ref) "global"
     let sort = make_gen_entry uconstr (rawwit wit_sort) "sort"
@@ -612,7 +593,7 @@ let compute_entry allow_create adjust forpat = function
         try get_entry u n
         with Not_found when allow_create ->
           let wit = rawwit wit_constr in
-          TypedEntry (wit, create_entry u n wit)
+          TypedEntry (wit, create_generic_entry u n wit)
       in
       object_of_typed_entry e, None, true
 
