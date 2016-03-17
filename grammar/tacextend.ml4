@@ -10,14 +10,8 @@
 
 (** Implementation of the TACTIC EXTEND macro. *)
 
-open Util
-open Pp
-open Names
-open Genarg
 open Q_util
 open Argextend
-open Pcoq
-open Egramml
 open Compat
 
 let dloc = <:expr< Loc.ghost >>
@@ -39,14 +33,6 @@ let rec mlexpr_of_argtype loc = function
       <:expr< Genarg.PairArgType $t1$ $t2$ >>
   | Genarg.ExtraArgType s -> <:expr< Genarg.ExtraArgType $str:s$ >>
 
-let rec make_when loc = function
-  | [] -> <:expr< True >>
-  | ExtNonTerminal (t, _, p) :: l ->
-      let l = make_when loc l in
-      let t = mlexpr_of_argtype loc t in
-      <:expr< Genarg.argument_type_eq (Genarg.genarg_tag $lid:p$) $t$ && $l$ >>
-  | _::l -> make_when loc l
-
 let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
   | ExtNonTerminal (t, _, p) :: l ->
@@ -64,21 +50,12 @@ let rec extract_signature = function
   | _::l -> extract_signature l
 
 
-
-let check_unicity s l =
-  let l' = List.map (fun (l,_,_) -> extract_signature l) l in
-  if not (Util.List.distinct l') then
-    Pp.msg_warning
-      (strbrk ("Two distinct rules of tactic entry "^s^" have the same "^
-      "non-terminals in the same order: put them in distinct tactic entries"))
-
 let make_clause (pt,_,e) =
   (make_patt pt,
    vala None,
    make_let false e pt)
 
 let make_fun_clauses loc s l =
-  check_unicity s l;
   let map c = Compat.make_fun loc [make_clause c] in
   mlexpr_of_list map l
 
@@ -126,7 +103,7 @@ let declare_tactic loc s c cl = match cl with
     (** Special handling of tactics without arguments: such tactics do not do
         a Proofview.Goal.nf_enter to compute their arguments. It matters for some
         whole-prof tactics like [shelve_unifiable]. *)
-    if List.is_empty rem then
+    if CList.is_empty rem then
       <:expr< fun _ $lid:"ist"$ -> $tac$ >>
     else
       let f = Compat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
@@ -201,7 +178,7 @@ EXTEND
         let e = parse_user_entry e sep in
         ExtNonTerminal (type_of_user_symbol e, e, s)
       | s = STRING ->
-	if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
+	let () = if CString.is_empty s then failwith "Empty terminal." in
         ExtTerminal s
     ] ]
   ;

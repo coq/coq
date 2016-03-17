@@ -10,10 +10,8 @@
 
 open Genarg
 open Q_util
-open Egramml
 open Compat
 open Extend
-open Pcoq
 
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
@@ -36,17 +34,10 @@ let make_rawwit loc arg = <:expr< Genarg.rawwit $make_wit loc arg$ >>
 let make_globwit loc arg = <:expr< Genarg.glbwit $make_wit loc arg$ >>
 let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 
-let has_extraarg l =
-  let check = function
-  | ExtNonTerminal(ExtraArgType _, _, _) -> true
-  | _ -> false
-  in
-  List.exists check l
-
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
-    | ExtNonTerminal (t, _, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
+    | ExtNonTerminal (_, _, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
     | ExtTerminal _ :: tl ->
 	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
@@ -241,10 +232,7 @@ EXTEND
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
         ExtNonTerminal (type_of_user_symbol e, e, s)
-      | s = STRING ->
-	  if String.length s > 0 && Util.is_letter s.[0] then
-	    Lexer.add_keyword s;
-          ExtTerminal s
+      | s = STRING -> ExtTerminal s
     ] ]
   ;
   entry_name:
