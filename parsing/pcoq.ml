@@ -229,23 +229,24 @@ let get_typed_entry e =
 let new_entry etyp u s =
   let utab = get_utable u in
   let uname = Entry.univ_name u in
-  let entry = Entry.create u s in
+  let _ = Entry.create u s in
   let ename = uname ^ ":" ^ s in
   let e = Gram.entry_create ename in
-  Hashtbl.add utab s (TypedEntry (etyp, e)); (entry, e)
+  Hashtbl.add utab s (TypedEntry (etyp, e)); e
 
-let make_gen_entry u rawwit s = snd (new_entry rawwit u s)
+let make_gen_entry u rawwit s = new_entry rawwit u s
 
 module GrammarObj =
 struct
-  type ('r, _, _) obj = 'r Entry.t
+  type ('r, _, _) obj = 'r Gram.entry
   let name = "grammar"
   let default _ = None
 end
 
 module Grammar = Register(GrammarObj)
 
-let genarg_grammar wit = Grammar.obj wit
+let register_grammar = Grammar.register0
+let genarg_grammar = Grammar.obj
 
 let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
   let utab = get_utable u in
@@ -253,9 +254,9 @@ let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a 
     let u = Entry.univ_name u in
     failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists");
   else
-    let (entry, e) = new_entry etyp u s in
+    let e = new_entry etyp u s in
     let Rawwit t = etyp in
-    let () = Grammar.register0 t entry in
+    let () = Grammar.register0 t e in
     e
 
 (* Initial grammar entries *)
@@ -863,24 +864,24 @@ let () =
   let open Constrarg in
 (*   Grammar.register0 wit_unit; *)
 (*   Grammar.register0 wit_bool; *)
-  Grammar.register0 wit_int (name_of_entry Prim.integer);
-  Grammar.register0 wit_string (name_of_entry Prim.string);
-  Grammar.register0 wit_pre_ident (name_of_entry Prim.preident);
-  Grammar.register0 wit_int_or_var (name_of_entry Tactic.int_or_var);
-  Grammar.register0 wit_intro_pattern (name_of_entry Tactic.simple_intropattern);
-  Grammar.register0 wit_ident (name_of_entry Prim.ident);
-  Grammar.register0 wit_var (name_of_entry Prim.var);
-  Grammar.register0 wit_ref (name_of_entry Prim.reference);
-  Grammar.register0 wit_quant_hyp (name_of_entry Tactic.quantified_hypothesis);
-  Grammar.register0 wit_sort (name_of_entry Constr.sort);
-  Grammar.register0 wit_constr (name_of_entry Constr.constr);
-  Grammar.register0 wit_constr_may_eval (name_of_entry Tactic.constr_may_eval);
-  Grammar.register0 wit_uconstr (name_of_entry Tactic.uconstr);
-  Grammar.register0 wit_open_constr (name_of_entry Tactic.open_constr);
-  Grammar.register0 wit_constr_with_bindings (name_of_entry Tactic.constr_with_bindings);
-  Grammar.register0 wit_bindings (name_of_entry Tactic.bindings);
+  Grammar.register0 wit_int (Prim.integer);
+  Grammar.register0 wit_string (Prim.string);
+  Grammar.register0 wit_pre_ident (Prim.preident);
+  Grammar.register0 wit_int_or_var (Tactic.int_or_var);
+  Grammar.register0 wit_intro_pattern (Tactic.simple_intropattern);
+  Grammar.register0 wit_ident (Prim.ident);
+  Grammar.register0 wit_var (Prim.var);
+  Grammar.register0 wit_ref (Prim.reference);
+  Grammar.register0 wit_quant_hyp (Tactic.quantified_hypothesis);
+  Grammar.register0 wit_sort (Constr.sort);
+  Grammar.register0 wit_constr (Constr.constr);
+  Grammar.register0 wit_constr_may_eval (Tactic.constr_may_eval);
+  Grammar.register0 wit_uconstr (Tactic.uconstr);
+  Grammar.register0 wit_open_constr (Tactic.open_constr);
+  Grammar.register0 wit_constr_with_bindings (Tactic.constr_with_bindings);
+  Grammar.register0 wit_bindings (Tactic.bindings);
 (*   Grammar.register0 wit_hyp_location_flag; *)
-  Grammar.register0 wit_red_expr (name_of_entry Tactic.red_expr);
-  Grammar.register0 wit_tactic (name_of_entry Tactic.tactic);
-  Grammar.register0 wit_clause_dft_concl (name_of_entry Tactic.clause_dft_concl);
+  Grammar.register0 wit_red_expr (Tactic.red_expr);
+  Grammar.register0 wit_tactic (Tactic.tactic);
+  Grammar.register0 wit_clause_dft_concl (Tactic.clause_dft_concl);
   ()

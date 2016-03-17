@@ -64,6 +64,27 @@ let rec make_prod = function
 let make_rule loc (prods,act) =
   <:expr< Extend.Rule $make_prod (List.rev prods)$ $make_act loc act prods$ >>
 
+let is_ident x = function
+| <:expr< $lid:s$ >> -> CString.equal s x
+| _ -> false
+
+let make_extend loc s cl wit = match cl with
+| [[ExtNonTerminal (_, Uentry e, id)], act] when is_ident id act ->
+  (** Special handling of identity arguments by not redeclaring an entry *)
+  <:str_item<
+    value $lid:s$ =
+      let () = Pcoq.register_grammar $wit$ $lid:e$ in
+      $lid:e$
+  >>
+| _ ->
+  let se = mlexpr_of_string s in
+  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
+  <:str_item<
+    value $lid:s$ =
+      let $lid:s$ = Pcoq.create_generic_entry Pcoq.utactic $se$ (Genarg.rawwit $wit$) in
+      let () = Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]) in
+      $lid:s$ >>
+
 let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let rawtyp, rawpr, globtyp, globpr = match typ with
     | `Uniform typ ->
@@ -129,8 +150,6 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
-  let rawwit = <:expr< Genarg.rawwit $wit$ >> in
-  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   declare_str_items loc
    [ <:str_item<
       value ($lid:"wit_"^s$) =
@@ -139,10 +158,8 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
      <:str_item< Genintern.register_intern0 $wit$ $glob$ >>;
      <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
      <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
-     <:str_item<
-      value $lid:s$ = Pcoq.create_generic_entry Pcoq.utactic $se$ $rawwit$ >>;
+     make_extend loc s cl wit;
      <:str_item< do {
-      Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule
         $wit$ $lid:rawpr$ $lid:globpr$ $lid:pr$;
       Egramcoq.create_ltac_quotation $se$
@@ -153,8 +170,6 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
 let declare_vernac_argument loc s pr cl =
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
-  let rawwit = <:expr< Genarg.rawwit $wit$ >> in
-  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   let pr_rules = match pr with
     | None -> <:expr< fun _ _ _ _ -> str $str:"[No printer for "^s^"]"$ >>
     | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
@@ -162,10 +177,8 @@ let declare_vernac_argument loc s pr cl =
    [ <:str_item<
       value ($lid:"wit_"^s$ : Genarg.genarg_type 'a unit unit) =
         Genarg.create_arg $se$ >>;
-     <:str_item<
-      value $lid:s$ = Pcoq.create_generic_entry Pcoq.utactic $se$ $rawwit$ >>;
+     make_extend loc s cl wit;
     <:str_item< do {
-      Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule $wit$
         $pr_rules$
         (fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not globwit printer"))

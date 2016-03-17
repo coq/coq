@@ -160,7 +160,8 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
-val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Entry.t
+val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
+val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
 
 val get_entry : gram_universe -> string -> typed_entry
 
