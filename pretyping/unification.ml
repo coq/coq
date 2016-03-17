@@ -1532,8 +1532,9 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     | e when Errors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with
-    | Some (evd,c1,_) as x, Some (_,c2,_) ->
-      if is_conv env sigma c1 c2 then x else raise (NotUnifiable None)
+    | Some (evd,c1,x), Some (_,c2,_) ->
+      let (evd,b) = infer_conv ~pb:CONV env evd c1 c2 in
+      if b then Some (evd, c1, x) else raise (NotUnifiable None)
     | Some _, None -> c1
     | None, Some _ -> c2
     | None, None -> None in
