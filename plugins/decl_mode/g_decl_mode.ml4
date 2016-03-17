@@ -95,7 +95,7 @@ let proof_mode : vernac_expr Gram.entry =
   Gram.entry_create "vernac:proof_command"
 (* Auxiliary grammar entry. *)
 let proof_instr : raw_proof_instr Gram.entry =
-  Pcoq.create_generic_entry "proof_instr" (Genarg.rawwit wit_proof_instr)
+  Pcoq.create_generic_entry Pcoq.utactic "proof_instr" (Genarg.rawwit wit_proof_instr)
 
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr

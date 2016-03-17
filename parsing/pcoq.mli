@@ -162,8 +162,8 @@ val uvernac : gram_universe
 
 val get_entry : gram_universe -> string -> typed_entry
 
-val create_generic_entry : string -> ('a, rlevel) abstract_argument_type ->
-  'a Gram.entry
+val create_generic_entry : gram_universe -> string ->
+  ('a, rlevel) abstract_argument_type -> 'a Gram.entry
 
 module Prim :
   sig

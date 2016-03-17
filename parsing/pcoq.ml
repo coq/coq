@@ -251,7 +251,7 @@ let create_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.ent
 
 let create_constr_entry s = create_entry uconstr s (rawwit wit_constr)
 
-let create_generic_entry s wit = create_entry utactic s wit
+let create_generic_entry = create_entry
 
 (* [make_gen_entry] builds entries extensible by giving its name (a string) *)
 (* For entries extensible only via the ML name, Gram.entry_create is enough *)

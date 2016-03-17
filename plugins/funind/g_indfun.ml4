@@ -149,7 +149,7 @@ let (wit_function_rec_definition_loc : function_rec_definition_loc_argtype Genar
   Genarg.create_arg "function_rec_definition_loc"
 
 let function_rec_definition_loc =
-  Pcoq.create_generic_entry "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
+  Pcoq.create_generic_entry Pcoq.utactic "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
 
 GEXTEND Gram
   GLOBAL: function_rec_definition_loc ;

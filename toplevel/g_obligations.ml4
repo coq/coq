@@ -34,7 +34,7 @@ type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_a
 let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
   Genarg.create_arg "withtac"
 
-let withtac = Pcoq.create_generic_entry "withtac" (Genarg.rawwit wit_withtac)
+let withtac = Pcoq.create_generic_entry Pcoq.utactic "withtac" (Genarg.rawwit wit_withtac)
 
 GEXTEND Gram
   GLOBAL: withtac;

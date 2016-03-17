@@ -147,7 +147,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
      <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
      <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
      <:str_item<
-      value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
+      value $lid:s$ = Pcoq.create_generic_entry Pcoq.utactic $se$ $rawwit$ >>;
      <:str_item< do {
       Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule
@@ -170,7 +170,7 @@ let declare_vernac_argument loc s pr cl =
       value ($lid:"wit_"^s$ : Genarg.genarg_type 'a unit unit) =
         Genarg.create_arg $se$ >>;
      <:str_item<
-      value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
+      value $lid:s$ = Pcoq.create_generic_entry Pcoq.utactic $se$ $rawwit$ >>;
     <:str_item< do {
       Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule $wit$
