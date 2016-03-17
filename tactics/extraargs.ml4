@@ -55,6 +55,14 @@ ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 | [ ] -> [ true ]
 END
 
+let pr_int _ _ _ i = Pp.int i
+
+let _natural = Pcoq.Prim.natural
+
+ARGUMENT EXTEND natural TYPED AS int PRINTED BY pr_int
+| [ _natural(i) ] -> [ i ]
+END
+
 let pr_orient = pr_orient () () ()
 
 
@@ -122,6 +130,8 @@ let interp_glob ist gl (t,_) = Tacmach.project gl , (ist,t)
 
 let glob_glob = Tacintern.intern_constr
 
+let pr_lconstr _ prc _ c = prc c
+
 let subst_glob = Tacsubst.subst_glob_constr_and_expr
 
 ARGUMENT EXTEND glob
@@ -137,6 +147,14 @@ ARGUMENT EXTEND glob
      GLOB_TYPED AS glob_constr_and_expr
      GLOB_PRINTED BY pr_gen
   [ constr(c) ] -> [ c ]
+END
+
+let l_constr = Pcoq.Constr.lconstr
+
+ARGUMENT EXTEND lconstr
+    TYPED AS constr
+    PRINTED BY pr_lconstr
+  [ l_constr(c) ] -> [ c ]
 END
 
 ARGUMENT EXTEND lglob

@@ -63,11 +63,11 @@ open Obligations
 let classify_obbl _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]), VtLater)
 
 VERNAC COMMAND EXTEND Obligations CLASSIFIED BY classify_obbl
-| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) withtac(tac) ] ->
+| [ "Obligation" integer(num) "of" ident(name) ":" lglob(t) withtac(tac) ] ->
     [ obligation (num, Some name, Some t) tac ]
 | [ "Obligation" integer(num) "of" ident(name) withtac(tac) ] ->
     [ obligation (num, Some name, None) tac ]
-| [ "Obligation" integer(num) ":" lconstr(t) withtac(tac) ] ->
+| [ "Obligation" integer(num) ":" lglob(t) withtac(tac) ] ->
     [ obligation (num, None, Some t) tac ]
 | [ "Obligation" integer(num) withtac(tac) ] ->
     [ obligation (num, None, None) tac ]

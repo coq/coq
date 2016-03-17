@@ -94,7 +94,7 @@ let out_disjunctive = function
   | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)
   | _ -> Errors.error "Disjunctive or conjunctive intro pattern expected."
 
-ARGUMENT EXTEND with_names TYPED AS simple_intropattern_opt PRINTED BY pr_intro_as_pat
+ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 |   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ]
 | []  ->[ None ]
 END

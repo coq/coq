@@ -15,6 +15,7 @@ open Misctypes
 open Genredexpr
 open Stdarg
 open Constrarg
+open Extraargs
 open Pcoq.Constr
 open Pcoq.Prim
 open Pcoq.Tactic

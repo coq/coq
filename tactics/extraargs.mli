@@ -21,6 +21,8 @@ val wit_occurrences : (int list or_var, int list or_var, int list) Genarg.genarg
 val pr_occurrences : int list or_var -> Pp.std_ppcmds
 val occurrences_of : int list -> Locus.occurrences
 
+val wit_natural : int Genarg.uniform_genarg_type
+
 val wit_glob :
   (constr_expr,
   Tacexpr.glob_constr_and_expr,
@@ -30,6 +32,11 @@ val wit_lglob :
   (constr_expr,
   Tacexpr.glob_constr_and_expr,
   Tacinterp.interp_sign * glob_constr) Genarg.genarg_type
+
+val wit_lconstr :
+  (constr_expr,
+  Tacexpr.glob_constr_and_expr,
+  Constr.t) Genarg.genarg_type
 
 val glob : constr_expr Pcoq.Gram.entry
 val lglob : constr_expr Pcoq.Gram.entry

@@ -42,7 +42,7 @@ let rec make_let e = function
 
 let make_clause { r_patt = pt; r_branch = e; } =
   (make_patt pt,
-   vala (Some (make_when (MLast.loc_of_expr e) pt)),
+   vala None,
    make_let e pt)
 
 (* To avoid warnings *)
@@ -58,11 +58,11 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
   match c ,cg with
   | Some c, _ ->
      (make_patt pt,
-      vala (Some (make_when (MLast.loc_of_expr c) pt)),
+      vala None,
       make_let (mk_ignore c pt) pt)
   | None, Some cg ->
      (make_patt pt,
-      vala (Some (make_when (MLast.loc_of_expr cg) pt)),
+      vala None,
       <:expr< fun () -> $cg$ $str:s$ >>)
   | None, None -> msg_warning
       (strbrk("Vernac entry \""^s^"\" misses a classifier. "^
@@ -85,7 +85,7 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
        strbrk("Specific classifiers have precedence over global "^
          "classifiers. Only one classifier is called.")++fnl());
     (make_patt pt,
-      vala (Some (make_when loc pt)),
+      vala None,
       <:expr< fun () -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
 
 let make_fun_clauses loc s l =

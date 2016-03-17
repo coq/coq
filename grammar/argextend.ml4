@@ -46,18 +46,16 @@ let has_extraarg l =
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
-    | ExtNonTerminal (t, _, p) :: tl ->
-	<:expr<
-            (fun $lid:p$ ->
-               let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
-        >>
+    | ExtNonTerminal (t, _, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
     | ExtTerminal _ :: tl ->
 	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Pcoq.Atoken (Lexer.terminal $mlexpr_of_string s$) >>
-  | ExtNonTerminal (_, g, _) -> mlexpr_of_prod_entry_key g
+  | ExtNonTerminal (_, g, _) ->
+    let base s = <:expr< Pcoq.name_of_entry $lid:s$ >> in
+    mlexpr_of_prod_entry_key base g
 
 let rec make_prod = function
 | [] -> <:expr< Extend.Stop >>
@@ -174,7 +172,6 @@ let declare_vernac_argument loc s pr cl =
         (fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not wit printer")) }
       >> ]
 
-open Pcoq
 open Pcaml
 open PcamlSig (* necessary for camlp4 *)
 

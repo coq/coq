@@ -85,8 +85,9 @@ let make_fun_clauses loc s l =
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
   | ExtNonTerminal (nt, g, id) ->
+    let base s = <:expr< Pcoq.genarg_grammar $mk_extraarg loc s$ >> in
       <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
-      $mlexpr_of_prod_entry_key g$ >>
+      $mlexpr_of_prod_entry_key base g$ >>
 
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl

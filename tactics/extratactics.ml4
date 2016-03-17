@@ -154,23 +154,23 @@ TACTIC EXTEND einjection
 | [ "einjection" quantified_hypothesis(h) ] -> [ injClause None true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 TACTIC EXTEND injection_as_main
-| [ "injection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
+| [ "injection" constr_with_bindings(c) "as" intropattern_list(ipat)] ->
     [ elimOnConstrWithHoles (injClause (Some ipat)) false c ]
 END
 TACTIC EXTEND injection_as
-| [ "injection" "as" simple_intropattern_list(ipat)] ->
+| [ "injection" "as" intropattern_list(ipat)] ->
     [ injClause (Some ipat) false None ]
-| [ "injection" quantified_hypothesis(h) "as" simple_intropattern_list(ipat) ] ->
+| [ "injection" quantified_hypothesis(h) "as" intropattern_list(ipat) ] ->
     [ injClause (Some ipat) false (Some (induction_arg_of_quantified_hyp h)) ]
 END
 TACTIC EXTEND einjection_as_main
-| [ "einjection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
+| [ "einjection" constr_with_bindings(c) "as" intropattern_list(ipat)] ->
     [ elimOnConstrWithHoles (injClause (Some ipat)) true c ]
 END
 TACTIC EXTEND einjection_as
-| [ "einjection" "as" simple_intropattern_list(ipat)] ->
+| [ "einjection" "as" intropattern_list(ipat)] ->
     [ injClause (Some ipat) true None ]
-| [ "einjection" quantified_hypothesis(h) "as" simple_intropattern_list(ipat) ] ->
+| [ "einjection" quantified_hypothesis(h) "as" intropattern_list(ipat) ] ->
     [ injClause (Some ipat) true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
