@@ -28,16 +28,6 @@ let mlexpr_of_pair m1 m2 (a1,a2) =
   let loc = CompatLoc.merge (MLast.loc_of_expr e1) (MLast.loc_of_expr e2) in
   <:expr< ($e1$, $e2$) >>
 
-let mlexpr_of_triple m1 m2 m3 (a1,a2,a3)=
-  let e1 = m1 a1 and e2 = m2 a2 and e3 = m3 a3 in
-  let loc = CompatLoc.merge (MLast.loc_of_expr e1) (MLast.loc_of_expr e3) in
-  <:expr< ($e1$, $e2$, $e3$) >>
-
-let mlexpr_of_quadruple m1 m2 m3 m4 (a1,a2,a3,a4)=
-  let e1 = m1 a1 and e2 = m2 a2 and e3 = m3 a3 and e4 = m4 a4 in
-  let loc = CompatLoc.merge (MLast.loc_of_expr e1) (MLast.loc_of_expr e4) in
-  <:expr< ($e1$, $e2$, $e3$, $e4$) >>
-
 (* We don't give location for tactic quotation! *)
 let loc = CompatLoc.ghost
 
@@ -56,18 +46,6 @@ let mlexpr_of_option f = function
 
 let mlexpr_of_ident id =
   <:expr< Names.Id.of_string $str:id$ >>
-
-let mlexpr_of_token = function
-| Tok.KEYWORD s -> <:expr< Tok.KEYWORD $mlexpr_of_string s$ >>
-| Tok.PATTERNIDENT s -> <:expr< Tok.PATTERNIDENT $mlexpr_of_string s$ >>
-| Tok.IDENT s -> <:expr< Tok.IDENT $mlexpr_of_string s$ >>
-| Tok.FIELD s -> <:expr< Tok.FIELD $mlexpr_of_string s$ >>
-| Tok.INT s -> <:expr< Tok.INT $mlexpr_of_string s$ >>
-| Tok.INDEX s -> <:expr< Tok.INDEX $mlexpr_of_string s$ >>
-| Tok.STRING s -> <:expr< Tok.STRING $mlexpr_of_string s$ >>
-| Tok.LEFTQMARK -> <:expr< Tok.LEFTQMARK >>
-| Tok.BULLET s -> <:expr< Tok.BULLET $mlexpr_of_string s$ >>
-| Tok.EOI -> <:expr< Tok.EOI >>
 
 let repr_entry e =
   let entry u =
