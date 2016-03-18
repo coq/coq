@@ -1,6 +1,15 @@
 Changes beyond V8.5
 ===================
 
+Vernacular commands
+
+- Two functions "print : forall X, X -> unit" and "print_id : forall
+  X, X -> X" are provided to instrument the tactics cbn and cbv with a
+  printing effect. [This can be generalized to other functions using a
+  new command "Declare Printing Effect foo" which makes it print its
+  second argument (the function is supposed to be polymorphic) as a
+  side effect of being computed by cbn or cbv].
+
 Tactics
 
 - Flag "Bracketing Last Introduction Pattern" is now on by default.

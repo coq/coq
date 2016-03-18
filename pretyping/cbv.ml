@@ -12,6 +12,8 @@ open Term
 open Vars
 open Closure
 open Esubst
+open Mod_subst
+open Libobject
 
 (**** Call by value reduction ****)
 
@@ -176,6 +178,52 @@ let cofixp_reducible flgs _ stk =
     false
 
 
+let rec reify_stack t = function
+  | TOP -> t
+  | APP (args,st) ->
+      reify_stack (mkApp(t,Array.map reify_value args)) st
+  | CASE (ty,br,ci,env,st) ->
+      reify_stack
+        (mkCase (ci, ty, t,br))
+        st
+  | PROJ (p, pinfo, st) ->
+       reify_stack (mkProj (p, t)) st
+
+
+and reify_value = function (* reduction under binders *)
+  | VAL (n,t) -> lift n t
+  | STACK (0,v,stk) ->
+      reify_stack (reify_value v) stk
+  | STACK (n,v,stk) ->
+      lift n (reify_stack (reify_value v) stk)
+  | CBN(t,env) ->
+    t
+      (* map_constr_with_binders subs_lift (cbv_norm_term) env t *)
+  | LAM (n,ctxt,b,env) ->
+      Termops.it_mkLambda b ctxt
+  | FIXP ((lij,(names,lty,bds)),env,args) ->
+      mkApp
+        (mkFix (lij,
+		(names,
+		 lty,
+		 bds)),
+         Array.map reify_value args)
+  | COFIXP ((j,(names,lty,bds)),env,args) ->
+      mkApp
+        (mkCoFix (j,
+		  (names,lty,bds)),
+         Array.map reify_value args)
+  | CONSTR (c,args) ->
+      mkApp(mkConstructU c, Array.map reify_value args)
+
+
+(* Printing hook *)
+let printing_hook t stack =
+  match stack with
+  | APP(v,stk1) when Print_hook.is_print_ref t && Array.length v >= 2  ->
+      Pp.ppnl (Termops.print_constr (reify_value v.(1)))
+  | _ -> ()
+
 (* The main recursive functions
  *
  * Go under applications and cases/projections (pushed in the stack), 
@@ -220,7 +268,9 @@ let rec norm_head info env t stack =
 
   | Var id -> norm_head_ref 0 info env stack (VarKey id)
 
-  | Const sp -> norm_head_ref 0 info env stack (ConstKey sp)
+  | Const sp ->
+      printing_hook t stack;
+      norm_head_ref 0 info env stack (ConstKey sp)
 
   | LetIn (_, b, _, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
@@ -316,7 +366,7 @@ and cbv_stack_value info env = function
     | (FIXP(fix,env,[||]), APP(appl,TOP)) -> FIXP(fix,env,appl)
     | (COFIXP(cofix,env,[||]), APP(appl,TOP)) -> COFIXP(cofix,env,appl)
     | (CONSTR(c,[||]), APP(appl,TOP)) -> CONSTR(c,appl)
-      
+
     (* definitely a value *)
     | (head,stk) -> mkSTACK(head, stk)
 
@@ -325,7 +375,7 @@ and cbv_stack_value info env = function
  * normalize (even under binders) the applied terms and we build the
  * final term
  *)
-let rec apply_stack info t = function
+and apply_stack info t = function
   | TOP -> t
   | APP (args,st) ->
       apply_stack info (mkApp(t,Array.map (cbv_norm_value info) args)) st

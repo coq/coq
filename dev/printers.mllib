@@ -123,6 +123,7 @@ Evd
 Sigma
 Glob_ops
 Redops
+Print_hook
 Reductionops
 Inductiveops
 Arguments_renaming

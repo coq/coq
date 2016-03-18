@@ -161,6 +161,21 @@ the resulting term with its type. The term to be reduced may depend on
 hypothesis introduced in the first subgoal (if a proof is in
 progress).
 
+Evaluation can be instrumented with a printing function which can print
+any term.
+By default, two printing functions are proposed:
+\begin{itemize}
+\item {\tt print : forall X, X -> unit.} which behaves as the constant function
+{\tt \_ => tt};
+\item {\tt print\_id : forall X, X -> X.} which behaves as the identity function.
+\end{itemize}
+
+A new printing function {\tt foo} may be declared using
+
+{\tt Declare Printing Effect foo.}
+
+Two strategies currently support printing: \texttt{cbv} and \texttt{cbn}.
+
 \SeeAlso Section~\ref{Conversion-tactics}.
 
 \subsection[\tt Compute {\term}.]{\tt Compute {\term}.\comindex{Compute}}
