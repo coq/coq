@@ -63,8 +63,10 @@ let apply_subdir f path name =
     | Unix.S_REG -> f (FileRegular name)
     | _ -> ()
 
+let readdir dir = try Sys.readdir dir with any -> [||]
+
 let process_directory f path =
-  Array.iter (apply_subdir f path) (Sys.readdir path)
+  Array.iter (apply_subdir f path) (readdir path)
 
 let process_subdirectories f path =
   let f = function FileDir (path,base) -> f path base | FileRegular _ -> () in
@@ -106,7 +108,7 @@ let dirmap = ref StrMap.empty
 
 let make_dir_table dir =
   let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
-  Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
+  Array.fold_left filter_dotfiles StrSet.empty (readdir dir)
 
 let exists_in_dir_respecting_case dir bf =
   let cache_dir dir =

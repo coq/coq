@@ -145,12 +145,13 @@ let typecheck_params_and_fields def id pl t ps nots fs =
 	arity, evars
       else
 	let evars = Evd.set_leq_sort env_ar evars (Type univ) aritysort in
-	  if Univ.is_small_univ univ then
-	    (* We can assume that the level aritysort is not constrained
-  	       and clear it. *)
-	    mkArity (ctx, Sorts.sort_of_univ univ),
-	    Evd.set_eq_sort env_ar evars (Prop Pos) aritysort
-	  else arity, evars
+	if Univ.is_small_univ univ &&
+	   Option.cata (Evd.is_flexible_level evars) false (Evd.is_sort_variable evars aritysort) then
+	   (* We can assume that the level in aritysort is not constrained
+	       and clear it, if it is flexible *)
+	  mkArity (ctx, Sorts.sort_of_univ univ),
+	  Evd.set_eq_sort env_ar evars (Prop Pos) aritysort
+	else arity, evars
   in
   let evars, nf = Evarutil.nf_evars_and_universes evars in
   let newps = Context.Rel.map nf newps in
