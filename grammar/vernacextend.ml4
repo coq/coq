@@ -10,13 +10,9 @@
 
 (** Implementation of the VERNAC EXTEND macro. *)
 
-open Pp
-open Util
 open Q_util
 open Argextend
 open Tacextend
-open Pcoq
-open Egramml
 open Compat
 
 type rule = {
@@ -42,7 +38,7 @@ let rec make_let e = function
 
 let make_clause { r_patt = pt; r_branch = e; } =
   (make_patt pt,
-   vala (Some (make_when (MLast.loc_of_expr e) pt)),
+   vala None,
    make_let e pt)
 
 (* To avoid warnings *)
@@ -58,34 +54,34 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
   match c ,cg with
   | Some c, _ ->
      (make_patt pt,
-      vala (Some (make_when (MLast.loc_of_expr c) pt)),
+      vala None,
       make_let (mk_ignore c pt) pt)
   | None, Some cg ->
      (make_patt pt,
-      vala (Some (make_when (MLast.loc_of_expr cg) pt)),
+      vala None,
       <:expr< fun () -> $cg$ $str:s$ >>)
-  | None, None -> msg_warning
-      (strbrk("Vernac entry \""^s^"\" misses a classifier. "^
+  | None, None -> prerr_endline
+      (("Vernac entry \""^s^"\" misses a classifier. "^
          "A classifier is a function that returns an expression "^
-         "of type vernac_classification (see Vernacexpr). You can: ")++
-       str"- "++hov 0 (
-        strbrk("Use '... EXTEND "^s^" CLASSIFIED AS QUERY ...' if the "^
-          "new vernacular command does not alter the system state;"))++fnl()++
-       str"- "++hov 0 (
-        strbrk("Use '... EXTEND "^s^" CLASSIFIED AS SIDEFF ...' if the "^
+         "of type vernac_classification (see Vernacexpr). You can: ") ^
+       "- " ^ (
+        ("Use '... EXTEND "^s^" CLASSIFIED AS QUERY ...' if the "^
+          "new vernacular command does not alter the system state;"))^ "\n" ^
+       "- " ^ (
+        ("Use '... EXTEND "^s^" CLASSIFIED AS SIDEFF ...' if the "^
           "new vernacular command alters the system state but not the "^
-          "parser nor it starts a proof or ends one;"))++fnl()++
-       str"- "++hov 0 (
-        strbrk("Use '... EXTEND "^s^" CLASSIFIED BY f ...' to specify "^
+          "parser nor it starts a proof or ends one;"))^ "\n" ^
+       "- " ^ (
+        ("Use '... EXTEND "^s^" CLASSIFIED BY f ...' to specify "^
           "a global function f.  The function f will be called passing "^
-          "\""^s^"\" as the only argument;")) ++fnl()++
-       str"- "++hov 0 (
-        strbrk"Add a specific classifier in each clause using the syntax:"
-        ++fnl()++strbrk("'[...] => [ f ] -> [...]'. "))++fnl()++
-       strbrk("Specific classifiers have precedence over global "^
-         "classifiers. Only one classifier is called.")++fnl());
+          "\""^s^"\" as the only argument;")) ^ "\n" ^
+       "- " ^ (
+        "Add a specific classifier in each clause using the syntax:"
+        ^ "\n" ^("'[...] => [ f ] -> [...]'. "))^ "\n" ^
+       ("Specific classifiers have precedence over global "^
+         "classifiers. Only one classifier is called.") ^ "\n");
     (make_patt pt,
-      vala (Some (make_when loc pt)),
+      vala None,
       <:expr< fun () -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
 
 let make_fun_clauses loc s l =
@@ -164,8 +160,7 @@ EXTEND
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]";
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      if String.is_empty s then
-        Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
+      let () = if CString.is_empty s then failwith "Command name is empty." in
       let b = <:expr< fun () -> $e$ >> in
       { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;

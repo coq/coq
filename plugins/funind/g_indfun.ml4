@@ -16,8 +16,12 @@ open Constrexpr
 open Indfun_common
 open Indfun
 open Genarg
+open Constrarg
 open Tacticals
 open Misctypes
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 DECLARE PLUGIN "recdef_plugin"
 
@@ -90,7 +94,7 @@ let out_disjunctive = function
   | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)
   | _ -> Errors.error "Disjunctive or conjunctive intro pattern expected."
 
-ARGUMENT EXTEND with_names TYPED AS simple_intropattern_opt PRINTED BY pr_intro_as_pat
+ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 |   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ]
 | []  ->[ None ]
 END
@@ -149,7 +153,7 @@ let (wit_function_rec_definition_loc : function_rec_definition_loc_argtype Genar
   Genarg.create_arg "function_rec_definition_loc"
 
 let function_rec_definition_loc =
-  Pcoq.create_generic_entry "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
+  Pcoq.create_generic_entry Pcoq.utactic "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
 
 GEXTEND Gram
   GLOBAL: function_rec_definition_loc ;

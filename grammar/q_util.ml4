@@ -47,44 +47,63 @@ let mlexpr_of_option f = function
 let mlexpr_of_ident id =
   <:expr< Names.Id.of_string $str:id$ >>
 
-let repr_entry e =
-  let entry u =
-    let _ = Pcoq.get_entry u e in
-    Some (Entry.univ_name u, e)
-  in
-  try entry Pcoq.uprim with Not_found ->
-  try entry Pcoq.uconstr with Not_found ->
-  try entry Pcoq.utactic with Not_found -> None
-
-let rec mlexpr_of_prod_entry_key = function
-  | Extend.Ulist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Ulist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
-  | Extend.Ulist0 s -> <:expr< Pcoq.Alist0 $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Ulist0sep (s,sep) -> <:expr< Pcoq.Alist0sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
-  | Extend.Uopt s -> <:expr< Pcoq.Aopt $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Umodifiers s -> <:expr< Pcoq.Amodifiers $mlexpr_of_prod_entry_key s$ >>
-  | Extend.Uentry e ->
-    begin match repr_entry e with
-    | None -> <:expr< Pcoq.Aentry (Pcoq.name_of_entry $lid:e$) >>
-    | Some (u, s) -> <:expr< Pcoq.Aentry (Entry.unsafe_of_name ($str:u$, $str:s$)) >>
-    end
+let rec mlexpr_of_prod_entry_key f = function
+  | Extend.Ulist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key f s$ >>
+  | Extend.Ulist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
+  | Extend.Ulist0 s -> <:expr< Pcoq.Alist0 $mlexpr_of_prod_entry_key f s$ >>
+  | Extend.Ulist0sep (s,sep) -> <:expr< Pcoq.Alist0sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
+  | Extend.Uopt s -> <:expr< Pcoq.Aopt $mlexpr_of_prod_entry_key f s$ >>
+  | Extend.Umodifiers s -> <:expr< Pcoq.Amodifiers $mlexpr_of_prod_entry_key f s$ >>
+  | Extend.Uentry e -> <:expr< Pcoq.Aentry $f e$ >>
   | Extend.Uentryl (e, l) ->
     (** Keep in sync with Pcoq! *)
     assert (CString.equal e "tactic");
     if l = 5 then <:expr< Pcoq.Aentry (Pcoq.name_of_entry Pcoq.Tactic.binder_tactic) >>
     else <:expr< Pcoq.Aentryl (Pcoq.name_of_entry Pcoq.Tactic.tactic_expr) $mlexpr_of_int l$ >>
 
-let type_entry u e =
-  let Pcoq.TypedEntry (t, _) = Pcoq.get_entry u e in
-  Genarg.unquote t
-
 let rec type_of_user_symbol = function
 | Ulist1 s | Ulist1sep (s, _) | Ulist0 s | Ulist0sep (s, _) | Umodifiers s ->
   Genarg.ListArgType (type_of_user_symbol s)
 | Uopt s ->
   Genarg.OptArgType (type_of_user_symbol s)
-| Uentry e | Uentryl (e, _) ->
-  try type_entry Pcoq.uprim e with Not_found ->
-  try type_entry Pcoq.uconstr e with Not_found ->
-  try type_entry Pcoq.utactic e with Not_found ->
-  Genarg.ExtraArgType e
+| Uentry e | Uentryl (e, _) -> Genarg.ExtraArgType e
+
+let coincide s pat off =
+  let len = String.length pat in
+  let break = ref true in
+  let i = ref 0 in
+  while !break && !i < len do
+    let c = Char.code s.[off + !i] in
+    let d = Char.code pat.[!i] in
+    break := Int.equal c d;
+    incr i
+  done;
+  !break
+
+let rec parse_user_entry s sep =
+  let l = String.length s in
+  if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
+    let entry = parse_user_entry (String.sub s 3 (l-8)) "" in
+    Ulist1 entry
+  else if l > 12 && coincide s "ne_" 0 &&
+                   coincide s "_list_sep" (l-9) then
+    let entry = parse_user_entry (String.sub s 3 (l-12)) "" in
+    Ulist1sep (entry, sep)
+  else if l > 5 && coincide s "_list" (l-5) then
+    let entry = parse_user_entry (String.sub s 0 (l-5)) "" in
+    Ulist0 entry
+  else if l > 9 && coincide s "_list_sep" (l-9) then
+    let entry = parse_user_entry (String.sub s 0 (l-9)) "" in
+    Ulist0sep (entry, sep)
+  else if l > 4 && coincide s "_opt" (l-4) then
+    let entry = parse_user_entry (String.sub s 0 (l-4)) "" in
+    Uopt entry
+  else if l > 5 && coincide s "_mods" (l-5) then
+    let entry = parse_user_entry (String.sub s 0 (l-1)) "" in
+    Umodifiers entry
+  else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
+    let n = Char.code s.[6] - 48 in
+    Uentryl ("tactic", n)
+  else
+    let s = match s with "hyp" -> "var" | _ -> s in
+    Uentry s

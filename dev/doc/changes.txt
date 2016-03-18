@@ -66,6 +66,15 @@
     Context.Named.t = LocalAssum of Names.Id.t * Constr.t
 	            | LocalDef of Names.Id.t * Constr.t * Constr.t
 
+- The various EXTEND macros do not handle specially the Coq-defined entries
+  anymore. Instead, they just output a name that have to exist in the scope
+  of the ML code. The parsing rules (VERNAC) ARGUMENT EXTEND will look for
+  variables "$name" of type Gram.entry, while the parsing rules of
+  (VERNAC COMMAND | TACTIC) EXTEND, as well as the various TYPED AS clauses will
+  look for variables "wit_$name" of type Genarg.genarg_type. The small DSL
+  for constructing compound entries still works over this scheme. Note that in
+  the case of (VERNAC) ARGUMENT EXTEND, the name of the argument entry is bound
+  in the parsing rules, so beware of recursive calls.
 
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =

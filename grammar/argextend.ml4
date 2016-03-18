@@ -10,10 +10,8 @@
 
 open Genarg
 open Q_util
-open Egramml
 open Compat
 open Extend
-open Pcoq
 
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
@@ -23,12 +21,7 @@ let qualified_name loc s =
   let (name, path) = CList.sep_last path in
   qualified_name loc path name
 
-let mk_extraarg loc s =
-  try
-    let name = Genarg.get_name0 s in
-    qualified_name loc name
-  with Not_found ->
-    <:expr< $lid:"wit_"^s$ >>
+let mk_extraarg loc s = <:expr< $lid:"wit_"^s$ >>
 
 let rec make_wit loc = function
   | ListArgType t -> <:expr< Genarg.wit_list $make_wit loc t$ >>
@@ -41,28 +34,19 @@ let make_rawwit loc arg = <:expr< Genarg.rawwit $make_wit loc arg$ >>
 let make_globwit loc arg = <:expr< Genarg.glbwit $make_wit loc arg$ >>
 let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 
-let has_extraarg l =
-  let check = function
-  | ExtNonTerminal(ExtraArgType _, _, _) -> true
-  | _ -> false
-  in
-  List.exists check l
-
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
-    | ExtNonTerminal (t, _, p) :: tl ->
-	<:expr<
-            (fun $lid:p$ ->
-               let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
-        >>
+    | ExtNonTerminal (_, _, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
     | ExtTerminal _ :: tl ->
 	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Pcoq.Atoken (Lexer.terminal $mlexpr_of_string s$) >>
-  | ExtNonTerminal (_, g, _) -> mlexpr_of_prod_entry_key g
+  | ExtNonTerminal (_, g, _) ->
+    let base s = <:expr< Pcoq.name_of_entry $lid:s$ >> in
+    mlexpr_of_prod_entry_key base g
 
 let rec make_prod = function
 | [] -> <:expr< Extend.Stop >>
@@ -70,6 +54,27 @@ let rec make_prod = function
 
 let make_rule loc (prods,act) =
   <:expr< Extend.Rule $make_prod (List.rev prods)$ $make_act loc act prods$ >>
+
+let is_ident x = function
+| <:expr< $lid:s$ >> -> CString.equal s x
+| _ -> false
+
+let make_extend loc s cl wit = match cl with
+| [[ExtNonTerminal (_, Uentry e, id)], act] when is_ident id act ->
+  (** Special handling of identity arguments by not redeclaring an entry *)
+  <:str_item<
+    value $lid:s$ =
+      let () = Pcoq.register_grammar $wit$ $lid:e$ in
+      $lid:e$
+  >>
+| _ ->
+  let se = mlexpr_of_string s in
+  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
+  <:str_item<
+    value $lid:s$ =
+      let $lid:s$ = Pcoq.create_generic_entry Pcoq.utactic $se$ (Genarg.rawwit $wit$) in
+      let () = Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]) in
+      $lid:s$ >>
 
 let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let rawtyp, rawpr, globtyp, globpr = match typ with
@@ -136,8 +141,6 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
-  let rawwit = <:expr< Genarg.rawwit $wit$ >> in
-  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   declare_str_items loc
    [ <:str_item<
       value ($lid:"wit_"^s$) =
@@ -146,10 +149,8 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
      <:str_item< Genintern.register_intern0 $wit$ $glob$ >>;
      <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
      <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
-     <:str_item<
-      value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
+     make_extend loc s cl wit;
      <:str_item< do {
-      Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule
         $wit$ $lid:rawpr$ $lid:globpr$ $lid:pr$;
       Egramcoq.create_ltac_quotation $se$
@@ -160,8 +161,6 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
 let declare_vernac_argument loc s pr cl =
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
-  let rawwit = <:expr< Genarg.rawwit $wit$ >> in
-  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   let pr_rules = match pr with
     | None -> <:expr< fun _ _ _ _ -> str $str:"[No printer for "^s^"]"$ >>
     | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
@@ -169,17 +168,14 @@ let declare_vernac_argument loc s pr cl =
    [ <:str_item<
       value ($lid:"wit_"^s$ : Genarg.genarg_type 'a unit unit) =
         Genarg.create_arg $se$ >>;
-     <:str_item<
-      value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
+     make_extend loc s cl wit;
     <:str_item< do {
-      Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule $wit$
         $pr_rules$
         (fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not globwit printer"))
         (fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not wit printer")) }
       >> ]
 
-open Pcoq
 open Pcaml
 open PcamlSig (* necessary for camlp4 *)
 
@@ -236,10 +232,7 @@ EXTEND
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
         ExtNonTerminal (type_of_user_symbol e, e, s)
-      | s = STRING ->
-	  if String.length s > 0 && Util.is_letter s.[0] then
-	    Lexer.add_keyword s;
-          ExtTerminal s
+      | s = STRING -> ExtTerminal s
     ] ]
   ;
   entry_name:

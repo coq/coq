@@ -1,46 +1,22 @@
 Coq_config
 
-Hook
-Terminal
 Hashset
 Hashcons
-CSet
 CMap
 Int
-Dyn
-HMap
 Option
 Store
 Exninfo
-Backtrace
-Pp_control
-Flags
 Loc
 CList
 CString
-Serialize
-Stateid
-Feedback
-Pp
 
-CArray
-CStack
-Util
-Ppstyle
-Errors
 Segmenttree
 Unicodetable
 Unicode
-Genarg
-
-Stdarg
-Constrarg
 
 Tok
 Compat
-Lexer
-Entry
-Pcoq
 
 Q_util
 Argextend

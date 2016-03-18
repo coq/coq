@@ -20,6 +20,11 @@ open Extraargs
 open Tacmach
 open Tacticals
 open Rewrite
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 DECLARE PLUGIN "g_rewrite"
 
@@ -186,7 +191,7 @@ type binders_argtype = local_binder list
 let wit_binders =
  (Genarg.create_arg "binders" : binders_argtype Genarg.uniform_genarg_type)
 
-let binders = Pcoq.create_generic_entry "binders" (Genarg.rawwit wit_binders)
+let binders = Pcoq.create_generic_entry Pcoq.utactic "binders" (Genarg.rawwit wit_binders)
 
 open Pcoq
 

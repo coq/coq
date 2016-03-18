@@ -10,6 +10,11 @@
 
 open Misctypes
 open Class_tactics
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
+open Stdarg
+open Constrarg
 
 DECLARE PLUGIN "g_class"
 

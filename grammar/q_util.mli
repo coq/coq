@@ -28,6 +28,8 @@ val mlexpr_of_option : ('a -> MLast.expr) -> 'a option -> MLast.expr
 
 val mlexpr_of_ident : string -> MLast.expr
 
-val mlexpr_of_prod_entry_key : Extend.user_symbol -> MLast.expr
+val mlexpr_of_prod_entry_key : (string -> MLast.expr) -> Extend.user_symbol -> MLast.expr
 
 val type_of_user_symbol : Extend.user_symbol -> Genarg.argument_type
+
+val parse_user_entry : string -> string -> Extend.user_symbol

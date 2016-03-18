@@ -16,6 +16,12 @@
 open Libnames
 open Constrexpr
 open Constrexpr_ops
+open Stdarg
+open Constrarg
+open Extraargs
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 (* We define new entries for programs, with the use of this module
  * Subtac. These entries are named Subtac.<foo>
@@ -34,7 +40,7 @@ type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_a
 let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
   Genarg.create_arg "withtac"
 
-let withtac = Pcoq.create_generic_entry "withtac" (Genarg.rawwit wit_withtac)
+let withtac = Pcoq.create_generic_entry Pcoq.utactic "withtac" (Genarg.rawwit wit_withtac)
 
 GEXTEND Gram
   GLOBAL: withtac;
@@ -57,11 +63,11 @@ open Obligations
 let classify_obbl _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]), VtLater)
 
 VERNAC COMMAND EXTEND Obligations CLASSIFIED BY classify_obbl
-| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) withtac(tac) ] ->
+| [ "Obligation" integer(num) "of" ident(name) ":" lglob(t) withtac(tac) ] ->
     [ obligation (num, Some name, Some t) tac ]
 | [ "Obligation" integer(num) "of" ident(name) withtac(tac) ] ->
     [ obligation (num, Some name, None) tac ]
-| [ "Obligation" integer(num) ":" lconstr(t) withtac(tac) ] ->
+| [ "Obligation" integer(num) ":" lglob(t) withtac(tac) ] ->
     [ obligation (num, None, Some t) tac ]
 | [ "Obligation" integer(num) withtac(tac) ] ->
     [ obligation (num, None, None) tac ]

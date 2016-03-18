@@ -200,8 +200,6 @@ let parse_string f x =
 
 type gram_universe = Entry.universe
 
-let trace = ref false
-
 let uprim   = Entry.uprim
 let uconstr = Entry.uconstr
 let utactic = Entry.utactic
@@ -231,37 +229,35 @@ let get_typed_entry e =
 let new_entry etyp u s =
   let utab = get_utable u in
   let uname = Entry.univ_name u in
-  if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" uname s; flush stderr);
   let _ = Entry.create u s in
   let ename = uname ^ ":" ^ s in
   let e = Gram.entry_create ename in
   Hashtbl.add utab s (TypedEntry (etyp, e)); e
 
-let create_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
+let make_gen_entry u rawwit s = new_entry rawwit u s
+
+module GrammarObj =
+struct
+  type ('r, _, _) obj = 'r Gram.entry
+  let name = "grammar"
+  let default _ = None
+end
+
+module Grammar = Register(GrammarObj)
+
+let register_grammar = Grammar.register0
+let genarg_grammar = Grammar.obj
+
+let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
   let utab = get_utable u in
-  try
-    let TypedEntry (typ, e) = Hashtbl.find utab s in
-    match abstract_argument_type_eq typ etyp with
-    | None ->
-      let u = Entry.univ_name u in
-      failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
-    | Some Refl -> e
-  with Not_found ->
-    new_entry etyp u s
-
-let create_constr_entry s = create_entry uconstr s (rawwit wit_constr)
-
-let create_generic_entry s wit = create_entry utactic s wit
-
-(* [make_gen_entry] builds entries extensible by giving its name (a string) *)
-(* For entries extensible only via the ML name, Gram.entry_create is enough *)
-
-let make_gen_entry u rawwit s =
-  let univ = get_utable u in
-  let uname = Entry.univ_name u in
-  let e = Gram.entry_create (uname ^ ":" ^ s) in
-  let _ = Entry.create u s in
-  Hashtbl.add univ s (TypedEntry (rawwit, e)); e
+  if Hashtbl.mem utab s then
+    let u = Entry.univ_name u in
+    failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists");
+  else
+    let e = new_entry etyp u s in
+    let Rawwit t = etyp in
+    let () = Grammar.register0 t e in
+    e
 
 (* Initial grammar entries *)
 
@@ -312,7 +308,7 @@ module Constr =
     let operconstr = gec_constr "operconstr"
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
-    let binder_constr = create_constr_entry "binder_constr"
+    let binder_constr = gec_constr "binder_constr"
     let ident = make_gen_entry uconstr (rawwit wit_ident) "ident"
     let global = make_gen_entry uconstr (rawwit wit_ref) "global"
     let sort = make_gen_entry uconstr (rawwit wit_sort) "sort"
@@ -612,7 +608,7 @@ let compute_entry allow_create adjust forpat = function
         try get_entry u n
         with Not_found when allow_create ->
           let wit = rawwit wit_constr in
-          TypedEntry (wit, create_entry u n wit)
+          TypedEntry (wit, create_generic_entry u n wit)
       in
       object_of_typed_entry e, None, true
 
@@ -860,3 +856,32 @@ let epsilon_value f e =
   let entry = G.entry_create "epsilon" in
   let () = maybe_uncurry (Gram.extend entry) ext in
   try Some (parse_string entry "") with _ -> None
+
+(** Registering grammar of generic arguments *)
+
+let () =
+  let open Stdarg in
+  let open Constrarg in
+(*   Grammar.register0 wit_unit; *)
+(*   Grammar.register0 wit_bool; *)
+  Grammar.register0 wit_int (Prim.integer);
+  Grammar.register0 wit_string (Prim.string);
+  Grammar.register0 wit_pre_ident (Prim.preident);
+  Grammar.register0 wit_int_or_var (Tactic.int_or_var);
+  Grammar.register0 wit_intro_pattern (Tactic.simple_intropattern);
+  Grammar.register0 wit_ident (Prim.ident);
+  Grammar.register0 wit_var (Prim.var);
+  Grammar.register0 wit_ref (Prim.reference);
+  Grammar.register0 wit_quant_hyp (Tactic.quantified_hypothesis);
+  Grammar.register0 wit_sort (Constr.sort);
+  Grammar.register0 wit_constr (Constr.constr);
+  Grammar.register0 wit_constr_may_eval (Tactic.constr_may_eval);
+  Grammar.register0 wit_uconstr (Tactic.uconstr);
+  Grammar.register0 wit_open_constr (Tactic.open_constr);
+  Grammar.register0 wit_constr_with_bindings (Tactic.constr_with_bindings);
+  Grammar.register0 wit_bindings (Tactic.bindings);
+(*   Grammar.register0 wit_hyp_location_flag; *)
+  Grammar.register0 wit_red_expr (Tactic.red_expr);
+  Grammar.register0 wit_tactic (Tactic.tactic);
+  Grammar.register0 wit_clause_dft_concl (Tactic.clause_dft_concl);
+  ()

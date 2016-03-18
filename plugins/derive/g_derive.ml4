@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
+
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 
 let classify_derive_command _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]),VtLater)
