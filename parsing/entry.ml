@@ -9,51 +9,22 @@
 open Errors
 open Util
 
-type 'a t = string * string
-
-type repr = string * string
-
-type universe = string
-
-(* The univ_tab is not part of the state. It contains all the grammars that
-   exist or have existed before in the session. *)
-
-let univ_tab = (Hashtbl.create 7 : (string, unit) Hashtbl.t)
-
-let create_univ s =
-  Hashtbl.add univ_tab s (); s
-
-let univ_name s = s
-
-let uprim   = create_univ "prim"
-let uconstr = create_univ "constr"
-let utactic = create_univ "tactic"
-let uvernac = create_univ "vernac"
-
-let get_univ s =
-  try
-    Hashtbl.find univ_tab s; s
-  with Not_found ->
-    anomaly (Pp.str ("Unknown grammar universe: "^s))
+type 'a t = string
 
 (** Entries are registered with a unique name *)
 
 let entries = ref String.Set.empty
 
-let create u name =
-  let uname = u ^ ":" ^ name in
+let create name =
   let () =
-    if String.Set.mem uname !entries then
-    anomaly (Pp.str ("Entry " ^ uname ^ " already defined"))
+    if String.Set.mem name !entries then
+    anomaly (Pp.str ("Entry " ^ name ^ " already defined"))
   in
-  let () = entries := String.Set.add uname !entries in
-  (u, name)
+  let () = entries := String.Set.add name !entries in
+  name
 
-let dynamic name = ("", name)
+let unsafe_of_name name =
+  assert (String.Set.mem name !entries);
+  name
 
-let unsafe_of_name (u, s) =
-  let uname = u ^ ":" ^ s in
-  assert (String.Set.mem uname !entries);
-  (u, s)
-
-let repr (u, s) = (u, s)
+let repr s = s

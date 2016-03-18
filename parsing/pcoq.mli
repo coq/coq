@@ -149,7 +149,7 @@ val parse_string : 'a Gram.entry -> string -> 'a
 val eoi_entry : 'a Gram.entry -> 'a Gram.entry
 val map_entry : ('a -> 'b) -> 'a Gram.entry -> 'b Gram.entry
 
-type gram_universe = Entry.universe
+type gram_universe
 
 val get_univ : string -> gram_universe
 
@@ -158,6 +158,7 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
+val set_grammar : 'a Entry.t -> 'a Gram.entry -> unit
 val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
 val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
 
