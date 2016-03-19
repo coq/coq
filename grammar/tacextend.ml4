@@ -68,7 +68,7 @@ let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
 (** Special treatment of constr entries *)
 let is_constr_gram = function
 | ExtTerminal _ -> false
-| ExtNonTerminal (Extend.Uentry "constr", _) -> true
+| ExtNonTerminal (Uentry "constr", _) -> true
 | _ -> false
 
 let make_var = function

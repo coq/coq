@@ -8,10 +8,8 @@
 
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
-open Genarg
 open Q_util
 open Compat
-open Extend
 
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
@@ -24,6 +22,10 @@ let rec make_wit loc = function
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
   | ExtraArgType s -> mk_extraarg loc s
+
+let is_self s = function
+| ExtraArgType s' -> s = s'
+| _ -> false
 
 let make_rawwit loc arg = <:expr< Genarg.rawwit $make_wit loc arg$ >>
 let make_globwit loc arg = <:expr< Genarg.glbwit $make_wit loc arg$ >>
@@ -79,30 +81,26 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   in
   let glob = match g with
     | None ->
-      begin match rawtyp with
-      | Genarg.ExtraArgType s' when s = s' ->
+      if is_self s rawtyp then
         <:expr< fun ist v -> (ist, v) >>
-      | _ ->
+      else
         <:expr< fun ist v ->
           let ans = out_gen $make_globwit loc rawtyp$
           (Tacintern.intern_genarg ist
           (Genarg.in_gen $make_rawwit loc rawtyp$ v)) in
           (ist, ans) >>
-      end
     | Some f ->
       <:expr< fun ist v -> (ist, $lid:f$ ist v) >>
   in
   let interp = match f with
     | None ->
-      begin match globtyp with
-      | Genarg.ExtraArgType s' when s = s' ->
+      if is_self s globtyp then
         <:expr< fun ist v -> Ftactic.return v >>
-      | _ ->
+      else
 	<:expr< fun ist x ->
           Ftactic.bind
 	    (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
             (fun v -> Ftactic.return (Tacinterp.Value.cast $make_topwit loc globtyp$ v)) >>
-      end
     | Some f ->
       (** Compatibility layer, TODO: remove me *)
       <:expr<
@@ -114,23 +112,17 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
       >> in
   let subst = match h with
     | None ->
-      begin match globtyp with
-      | Genarg.ExtraArgType s' when s = s' ->
+      if is_self s globtyp then
         <:expr< fun s v -> v >>
-      | _ ->
+      else
         <:expr< fun s x ->
           out_gen $make_globwit loc globtyp$
           (Tacsubst.subst_genarg s
             (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
-      end
     | Some f -> <:expr< $lid:f$>> in
   let dyn = match typ with
   | `Uniform typ ->
-    let is_new = match typ with
-    | Genarg.ExtraArgType s' when s = s' -> true
-    | _ -> false
-    in
-    if is_new then <:expr< None >>
+    if is_self s typ then <:expr< None >>
     else <:expr< Some (Genarg.val_tag $make_topwit loc typ$) >>
   | `Specialized _ -> <:expr< None >>
   in
