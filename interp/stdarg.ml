@@ -23,12 +23,6 @@ let wit_string : string uniform_genarg_type =
 let wit_pre_ident : string uniform_genarg_type =
   make0 "preident"
 
-let () = register_name0 wit_unit "Stdarg.wit_unit"
-let () = register_name0 wit_bool "Stdarg.wit_bool"
-let () = register_name0 wit_int "Stdarg.wit_int"
-let () = register_name0 wit_string "Stdarg.wit_string"
-let () = register_name0 wit_pre_ident "Stdarg.wit_pre_ident"
-
 (** Aliases for compatibility *)
 
 let wit_integer = wit_int

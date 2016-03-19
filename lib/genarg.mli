@@ -242,13 +242,3 @@ val wit_list : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_ty
 val wit_opt : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
 val wit_pair : ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
   ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
-
-(** {5 Magic used by the parser} *)
-
-val register_name0 : ('a, 'b, 'c) genarg_type -> string -> unit
-(** Used by the extension to give a name to types. The string should be the
-    absolute path of the argument witness, e.g.
-    [register_name0 wit_toto "MyArg.wit_toto"]. *)
-
-val get_name0 : string -> string
-(** Return the absolute path of a given witness. *)

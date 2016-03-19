@@ -303,17 +303,3 @@ struct
   | _ -> assert false
 
 end
-
-(** Hackish part *)
-
-let arg0_names = ref (String.Map.empty : string String.Map.t)
- 
-let register_name0 t name = match t with
-| ExtraArg s ->
-  let s = ArgT.repr s in
-  let () = assert (not (String.Map.mem s !arg0_names)) in
-  arg0_names := String.Map.add s name !arg0_names
-| _ -> failwith "register_name0"
-
-let get_name0 name =
-  String.Map.find name !arg0_names
