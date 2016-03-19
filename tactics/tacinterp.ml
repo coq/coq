@@ -2214,3 +2214,5 @@ let _ =
       optkey   = ["Ltac";"Debug"];
       optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
       optwrite = vernac_debug }
+
+let () = Hook.set Vernacentries.interp_redexp_hook interp_redexp

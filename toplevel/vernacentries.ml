@@ -20,7 +20,6 @@ open Tacmach
 open Constrintern
 open Prettyp
 open Printer
-open Tacinterp
 open Command
 open Goptions
 open Libnames
@@ -33,6 +32,9 @@ open Lemmas
 open Misctypes
 open Locality
 open Sigma.Notations
+
+(** TODO: make this function independent of Ltac *)
+let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
 
 let debug = false
 let prerr_endline =
@@ -471,7 +473,7 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
           | None -> None
           | Some r ->
 	      let (evc,env)= get_current_context () in
- 		Some (snd (interp_redexp env evc r)) in
+ 		Some (snd (Hook.get f_interp_redexp env evc r)) in
 	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof locality p kind l lettop =
@@ -1501,7 +1503,7 @@ let vernac_check_may_eval redexp glopt rc =
                     Printer.pr_universe_ctx sigma uctx)
     | Some r ->
         Tacintern.dump_glob_red_expr r;
-        let (sigma',r_interp) = interp_redexp env sigma' r in
+        let (sigma',r_interp) = Hook.get f_interp_redexp env sigma' r in
 	let redfun env evm c =
           let (redfun, _) = reduction_of_red_expr env r_interp in
           let evm = Sigma.Unsafe.of_evar_map evm in
@@ -1512,7 +1514,7 @@ let vernac_check_may_eval redexp glopt rc =
 
 let vernac_declare_reduction locality s r =
   let local = make_locality locality in
-  declare_red_expr local s (snd (interp_redexp (Global.env()) Evd.empty r))
+  declare_red_expr local s (snd (Hook.get f_interp_redexp (Global.env()) Evd.empty r))
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =

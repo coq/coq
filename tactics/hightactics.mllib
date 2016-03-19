@@ -1,3 +1,6 @@
+Tacinterp
+Evar_tactics
+Tactic_option
 Extraargs
 G_obligations
 Coretactics
@@ -12,3 +15,4 @@ G_rewrite
 Tauto
 Eqdecide
 G_eqdecide
+G_ltac
