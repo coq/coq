@@ -15,14 +15,14 @@ type argument_type =
 | ExtraArgType of string
 
 type user_symbol =
-| Ulist1 : user_symbol -> user_symbol
-| Ulist1sep : user_symbol * string -> user_symbol
-| Ulist0 : user_symbol -> user_symbol
-| Ulist0sep : user_symbol * string -> user_symbol
-| Uopt : user_symbol -> user_symbol
-| Umodifiers : user_symbol -> user_symbol
-| Uentry : string -> user_symbol
-| Uentryl : string * int -> user_symbol
+| Ulist1 of user_symbol
+| Ulist1sep of user_symbol * string
+| Ulist0 of user_symbol
+| Ulist0sep of user_symbol * string
+| Uopt of user_symbol
+| Umodifiers of user_symbol
+| Uentry of string
+| Uentryl of string * int
 
 type extend_token =
 | ExtTerminal of string
