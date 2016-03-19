@@ -310,10 +310,11 @@ open Stdarg
 open Constrarg
 open Vernacexpr
 open Vernac_classifier
+open Goptions
 
 let print_info_trace = ref None
 
-let _ = let open Goptions in declare_int_option {
+let _ = declare_int_option {
   optsync = true;
   optdepr = false;
   optname = "print info trace";
