@@ -671,7 +671,7 @@ let rec tmpp v loc =
 
   (* Solving *)
 
-  | (VernacSolve _ | VernacSolveExistential _) as x ->
+  | (VernacSolveExistential _) as x ->
       xmlLtac loc [PCData (Pp.string_of_ppcmds (Ppvernac.pr_vernac x))]
 
   (* Auxiliary file and library management *)

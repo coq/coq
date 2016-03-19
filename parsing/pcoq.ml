@@ -383,6 +383,7 @@ module Vernac_ =
     let rec_definition = gec_vernac "Vernac.rec_definition"
     (* Main vernac entry *)
     let main_entry = Gram.entry_create "vernac"
+    let noedit_mode = gec_vernac "noedit_command"
 
     let () =
       let act_vernac = Gram.action (fun v loc -> Some (!@loc, v)) in
@@ -393,9 +394,17 @@ module Vernac_ =
       ] in
       maybe_uncurry (Gram.extend main_entry) (None, make_rule rule)
 
+    let command_entry_ref = ref noedit_mode
+    let command_entry =
+      Gram.Entry.of_parser "command_entry"
+        (fun strm -> Gram.parse_tokens_after_filter !command_entry_ref strm)
+
   end
 
 let main_entry = Vernac_.main_entry
+
+let set_command_entry e = Vernac_.command_entry_ref := e
+let get_command_entry () = !Vernac_.command_entry_ref
 
 (**********************************************************************)
 (* This determines (depending on the associativity of the current

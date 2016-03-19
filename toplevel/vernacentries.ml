@@ -826,35 +826,6 @@ let vernac_declare_class id =
 let command_focus = Proof.new_focus_kind ()
 let focus_command_cond = Proof.no_cond command_focus
 
-
-let print_info_trace = ref None
-
-let _ = let open Goptions in declare_int_option {
-  optsync = true;
-  optdepr = false;
-  optname = "print info trace";
-  optkey = ["Info" ; "Level"];
-  optread = (fun () -> !print_info_trace);
-  optwrite = fun n -> print_info_trace := n;
-}
-
-let vernac_solve n info tcom b =
-  if not (refining ()) then
-    error "Unknown command of the non proof-editing mode.";
-  let status = Proof_global.with_current_proof (fun etac p ->
-    let with_end_tac = if b then Some etac else None in
-    let global = match n with SelectAll -> true | _ -> false in
-    let info = Option.append info !print_info_trace in
-    let (p,status) =
-      solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
-    in
-    (* in case a strict subtree was completed,
-       go back to the top of the prooftree *)
-    let p = Proof.maximal_unfocus command_focus p in
-    p,status) in
-    if not status then Pp.feedback Feedback.AddedAxiom
- 
-
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
      machine, and enables to instantiate existential variables when
@@ -884,14 +855,13 @@ let vernac_set_used_variables e =
         (str "Unknown variable: " ++ pr_id id))
     l;
   let _, to_clear = set_used_variables l in
-  (** FIXME: too fragile *)
-  let open Tacexpr in
-  let tac = { mltac_plugin = "coretactics"; mltac_tactic = "clear" } in
-  let tac = { mltac_name = tac; mltac_index = 0 } in
-  let arg = Genarg.in_gen (Genarg.rawwit (Genarg.wit_list Constrarg.wit_var)) to_clear in
-  let tac = if List.is_empty to_clear then TacId [] else TacML (Loc.ghost, tac, [TacGeneric arg]) in
-  vernac_solve SelectAll None tac false
-
+  let to_clear = List.map snd to_clear in
+  Proof_global.with_current_proof begin fun _ p ->
+    if List.is_empty to_clear then (p, ())
+    else
+      let tac = Proofview.V82.tactic (Tactics.clear to_clear) in
+      fst (solve SelectAll None tac p), ()
+  end
 
 (*****************************)
 (* Auxiliary file management *)
@@ -1909,7 +1879,6 @@ let interp ?proof ~loc locality poly c =
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)
-  | VernacSolve (n,info,tac,b) -> vernac_solve n info tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
 
   (* Auxiliary file and library management *)

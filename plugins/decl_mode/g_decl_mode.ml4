@@ -135,7 +135,7 @@ let _ =
 				       set = begin fun () ->
 					 (* We set the command non terminal to
 					     [proof_mode] (which we just defined). *)
-					 G_vernac.set_command_entry proof_mode ;
+					 Pcoq.set_command_entry proof_mode ;
 					 (* We substitute the goal printer, by the one we built
 					     for the proof mode. *)
 					 Printer.set_printer_pr { Printer.default_printer_pr with
@@ -147,7 +147,7 @@ let _ =
 				       reset = begin fun () ->
 					 (* We restore the command non terminal to
 					      [noedit_mode]. *)
-					 G_vernac.set_command_entry G_vernac.noedit_mode ;
+					 Pcoq.set_command_entry Pcoq.Vernac_.noedit_mode ;
 					 (* We restore the goal printer to default *)
 					 Printer.set_printer_pr Printer.default_printer_pr
 				       end

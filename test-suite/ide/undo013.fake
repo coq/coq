@@ -23,5 +23,5 @@ ADD { Qed. }
 ADD { apply H. }
 # </replay>
 ADD { Qed. }
-QUERY { Fail idtac. }
+QUERY { Fail Show. }
 QUERY { Check (aa,bb,cc). }

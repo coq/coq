@@ -31,7 +31,6 @@ type goal_selector =
   | SelectNth of int
   | SelectId of Id.t
   | SelectAll
-  | SelectAllParallel
 
 type goal_identifier = string
 type scope_name = string
@@ -363,7 +362,6 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of goal_selector * int option * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)

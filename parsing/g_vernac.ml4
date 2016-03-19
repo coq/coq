@@ -34,8 +34,6 @@ let _ = List.iter Lexer.add_keyword vernac_kw
 
 let query_command = Gram.entry_create "vernac:query_command"
 
-let tactic_mode = Gram.entry_create "vernac:tactic_command"
-let noedit_mode = Gram.entry_create "vernac:noedit_command"
 let subprf = Gram.entry_create "vernac:subprf"
 
 let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
@@ -48,21 +46,6 @@ let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
 let instance_name = Gram.entry_create "vernac:instance_name"
 let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
 
-let command_entry = ref noedit_mode
-let set_command_entry e = command_entry := e
-let get_command_entry () = !command_entry
-
-
-(* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
-    proof editing and changes nothing else). Then sets it as the default proof mode. *)
-let set_tactic_mode () = set_command_entry tactic_mode
-let set_noedit_mode () = set_command_entry noedit_mode
-let _ = Proof_global.register_proof_mode {Proof_global.
-					    name = "Classic" ;
-					    set = set_tactic_mode ;
-					    reset = set_noedit_mode
-					 }
-
 let make_bullet s =
   let n = String.length s in
   match s.[0] with
@@ -71,23 +54,8 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
-(* Hack to parse "[ id" without dropping [ *)
-let test_bracket_ident =
-  Gram.Entry.of_parser "test_bracket_ident"
-    (fun strm ->
-      match get_tok (stream_nth 0 strm) with
-        | KEYWORD "[" ->
-            (match get_tok (stream_nth 1 strm) with
-              | IDENT _ -> ()
-	      | _ -> raise Stream.Failure)
-	| _ -> raise Stream.Failure)
-
-let default_command_entry =
-  Gram.Entry.of_parser "command_entry"
-    (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
-
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext tactic_mode noedit_mode subprf subgoal_command;
+  GLOBAL: vernac gallina_ext noedit_mode subprf subgoal_command;
   vernac: FIRST
     [ [ IDENT "Time"; c = located_vernac -> VernacTime c
       | IDENT "Redirect"; s = ne_string; c = located_vernac -> VernacRedirect (s, c)
@@ -129,22 +97,10 @@ GEXTEND Gram
     ] ]
   ;
   vernac_aux: LAST
-    [ [ prfcom = default_command_entry -> prfcom ] ]
+    [ [ prfcom = command_entry -> prfcom ] ]
   ;
   noedit_mode:
     [ [ c = subgoal_command -> c None] ]
-  ;
-
-  selector:
-    [ [ n=natural; ":" -> SelectNth n
-      | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id
-      | IDENT "all" ; ":" -> SelectAll
-      | IDENT "par" ; ":" -> SelectAllParallel ] ]
-  ;
-
-  tactic_mode:
-  [ [ gln = OPT selector;
-      tac = subgoal_command -> tac gln ] ]
   ;
 
   subprf:
@@ -161,13 +117,7 @@ GEXTEND Gram
                     | None -> c None
                     | _ ->
                         VernacError (UserError ("",str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
-                  end
-      | info = OPT [IDENT "Info";n=natural -> n];
-        tac = Tactic.tactic;
-        use_dft_tac = [ "." -> false | "..." -> true ] ->
-        (fun g ->
-            let g = Option.default (Proof_global.get_default_goal_selector ()) g in
-            VernacSolve(g,info,tac,use_dft_tac)) ] ]
+                  end ] ]
   ;
   located_vernac:
     [ [ v = vernac -> !@loc, v ] ]

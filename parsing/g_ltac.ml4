@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4deps: "grammar/grammar.cma" i*)
+
+open Util
 open Pp
 open Compat
 open Constrexpr
@@ -36,11 +39,42 @@ let reference_to_id = function
       Errors.user_err_loc (loc, "",
         str "This expression should be a simple identifier.")
 
+let tactic_mode = Gram.entry_create "vernac:tactic_command"
+
+let new_entry name =
+  let e = Gram.entry_create name in
+  let entry = Entry.create name in
+  let () = Pcoq.set_grammar entry e in
+  e
+
+let selector = new_entry "vernac:selector"
+
+(* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
+    proof editing and changes nothing else). Then sets it as the default proof mode. *)
+let _ =
+  let mode = {
+    Proof_global.name = "Classic";
+    set = (fun () -> set_command_entry tactic_mode);
+    reset = (fun () -> set_command_entry Pcoq.Vernac_.noedit_mode);
+  } in
+  Proof_global.register_proof_mode mode
+
+(* Hack to parse "[ id" without dropping [ *)
+let test_bracket_ident =
+  Gram.Entry.of_parser "test_bracket_ident"
+    (fun strm ->
+      match get_tok (stream_nth 0 strm) with
+        | KEYWORD "[" ->
+            (match get_tok (stream_nth 1 strm) with
+              | IDENT _ -> ()
+	      | _ -> raise Stream.Failure)
+	| _ -> raise Stream.Failure)
+
 (* Tactics grammar rules *)
 
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
-          constr_may_eval constr_eval;
+          tactic_mode constr_may_eval constr_eval selector;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
@@ -262,4 +296,76 @@ GEXTEND Gram
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
   ;
+  selector:
+    [ [ n=natural; ":" -> Vernacexpr.SelectNth n
+      | test_bracket_ident; "["; id = ident; "]"; ":" -> Vernacexpr.SelectId id
+      | IDENT "all" ; ":" -> Vernacexpr.SelectAll ] ]
+  ;
+  tactic_mode:
+    [ [ g = OPT selector; tac = G_vernac.subgoal_command -> tac g ] ]
+  ;
   END
+
+open Stdarg
+open Constrarg
+open Vernacexpr
+open Vernac_classifier
+
+let print_info_trace = ref None
+
+let _ = let open Goptions in declare_int_option {
+  optsync = true;
+  optdepr = false;
+  optname = "print info trace";
+  optkey = ["Info" ; "Level"];
+  optread = (fun () -> !print_info_trace);
+  optwrite = fun n -> print_info_trace := n;
+}
+
+let vernac_solve n info tcom b =
+  let status = Proof_global.with_current_proof (fun etac p ->
+    let with_end_tac = if b then Some etac else None in
+    let global = match n with SelectAll -> true | _ -> false in
+    let info = Option.append info !print_info_trace in
+    let (p,status) =
+      Pfedit.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
+    in
+    (* in case a strict subtree was completed,
+       go back to the top of the prooftree *)
+    let p = Proof.maximal_unfocus Vernacentries.command_focus p in
+    p,status) in
+    if not status then Pp.feedback Feedback.AddedAxiom
+
+let pr_ltac_selector = function
+| SelectNth i -> int i ++ str ":"
+| SelectId id -> str "[" ++ Nameops.pr_id id ++ str "]" ++ str ":"
+| SelectAll -> str "all" ++ str ":"
+
+VERNAC ARGUMENT EXTEND ltac_selector PRINTED BY pr_ltac_selector
+| [ selector(s) ] -> [ s ]
+END
+
+let pr_ltac_info n = str "Info" ++ spc () ++ int n
+
+VERNAC ARGUMENT EXTEND ltac_info PRINTED BY pr_ltac_info
+| [ "Info" natural(n) ] -> [ n ]
+END
+
+let pr_ltac_use_default b = if b then str ".." else mt ()
+
+VERNAC ARGUMENT EXTEND ltac_use_default PRINTED BY pr_ltac_use_default
+| [ "." ] -> [ false ]
+| [ "..." ] -> [ true ]
+END
+
+VERNAC tactic_mode EXTEND VernacSolve
+| [ - ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
+    [ classify_as_proofstep ] -> [
+    let g = Option.default (Proof_global.get_default_goal_selector ()) g in
+    vernac_solve g n t def
+  ]
+| [ - "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
+    [ VtProofStep true, VtLater ] -> [
+    vernac_solve SelectAll n t def
+  ]
+END
