@@ -8,18 +8,11 @@
 
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
-open Genarg
 open Q_util
 open Compat
-open Extend
 
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
-
-let qualified_name loc s =
-  let path = CString.split '.' s in
-  let (name, path) = CList.sep_last path in
-  qualified_name loc path name
 
 let mk_extraarg loc s = <:expr< $lid:"wit_"^s$ >>
 
@@ -30,6 +23,10 @@ let rec make_wit loc = function
       <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
   | ExtraArgType s -> mk_extraarg loc s
 
+let is_self s = function
+| ExtraArgType s' -> s = s'
+| _ -> false
+
 let make_rawwit loc arg = <:expr< Genarg.rawwit $make_wit loc arg$ >>
 let make_globwit loc arg = <:expr< Genarg.glbwit $make_wit loc arg$ >>
 let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
@@ -37,14 +34,14 @@ let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
-    | ExtNonTerminal (_, _, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
+    | ExtNonTerminal (_, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
     | ExtTerminal _ :: tl ->
 	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Extend.Atoken (Lexer.terminal $mlexpr_of_string s$) >>
-  | ExtNonTerminal (_, g, _) ->
+  | ExtNonTerminal (g, _) ->
     let base s = <:expr< Pcoq.name_of_entry $lid:s$ >> in
     mlexpr_of_prod_entry_key base g
 
@@ -56,11 +53,11 @@ let make_rule loc (prods,act) =
   <:expr< Extend.Rule $make_prod (List.rev prods)$ $make_act loc act prods$ >>
 
 let is_ident x = function
-| <:expr< $lid:s$ >> -> CString.equal s x
+| <:expr< $lid:s$ >> -> (s : string) = x
 | _ -> false
 
 let make_extend loc s cl wit = match cl with
-| [[ExtNonTerminal (_, Uentry e, id)], act] when is_ident id act ->
+| [[ExtNonTerminal (Uentry e, id)], act] when is_ident id act ->
   (** Special handling of identity arguments by not redeclaring an entry *)
   <:str_item<
     value $lid:s$ =
@@ -84,30 +81,26 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   in
   let glob = match g with
     | None ->
-      begin match rawtyp with
-      | Genarg.ExtraArgType s' when CString.equal s s' ->
+      if is_self s rawtyp then
         <:expr< fun ist v -> (ist, v) >>
-      | _ ->
+      else
         <:expr< fun ist v ->
           let ans = out_gen $make_globwit loc rawtyp$
           (Tacintern.intern_genarg ist
           (Genarg.in_gen $make_rawwit loc rawtyp$ v)) in
           (ist, ans) >>
-      end
     | Some f ->
       <:expr< fun ist v -> (ist, $lid:f$ ist v) >>
   in
   let interp = match f with
     | None ->
-      begin match globtyp with
-      | Genarg.ExtraArgType s' when CString.equal s s' ->
+      if is_self s globtyp then
         <:expr< fun ist v -> Ftactic.return v >>
-      | _ ->
+      else
 	<:expr< fun ist x ->
           Ftactic.bind
 	    (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
             (fun v -> Ftactic.return (Tacinterp.Value.cast $make_topwit loc globtyp$ v)) >>
-      end
     | Some f ->
       (** Compatibility layer, TODO: remove me *)
       <:expr<
@@ -119,23 +112,17 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
       >> in
   let subst = match h with
     | None ->
-      begin match globtyp with
-      | Genarg.ExtraArgType s' when CString.equal s s' ->
+      if is_self s globtyp then
         <:expr< fun s v -> v >>
-      | _ ->
+      else
         <:expr< fun s x ->
           out_gen $make_globwit loc globtyp$
           (Tacsubst.subst_genarg s
             (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
-      end
     | Some f -> <:expr< $lid:f$>> in
   let dyn = match typ with
   | `Uniform typ ->
-    let is_new = match typ with
-    | Genarg.ExtraArgType s' when CString.equal s s' -> true
-    | _ -> false
-    in
-    if is_new then <:expr< None >>
+    if is_self s typ then <:expr< None >>
     else <:expr< Some (Genarg.val_tag $make_topwit loc typ$) >>
   | `Specialized _ -> <:expr< None >>
   in
@@ -228,10 +215,10 @@ EXTEND
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (type_of_user_symbol e, e, s)
+        ExtNonTerminal (e, s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (type_of_user_symbol e, e, s)
+        ExtNonTerminal (e, s)
       | s = STRING -> ExtTerminal s
     ] ]
   ;

@@ -8,12 +8,27 @@
 
 (* This file defines standard combinators to build ml expressions *)
 
-open Extend
 open Compat
+
+type argument_type =
+| ListArgType of argument_type
+| OptArgType of argument_type
+| PairArgType of argument_type * argument_type
+| ExtraArgType of string
+
+type user_symbol =
+| Ulist1 : user_symbol -> user_symbol
+| Ulist1sep : user_symbol * string -> user_symbol
+| Ulist0 : user_symbol -> user_symbol
+| Ulist0sep : user_symbol * string -> user_symbol
+| Uopt : user_symbol -> user_symbol
+| Umodifiers : user_symbol -> user_symbol
+| Uentry : string -> user_symbol
+| Uentryl : string * int -> user_symbol
 
 type extend_token =
 | ExtTerminal of string
-| ExtNonTerminal of Genarg.argument_type * Extend.user_symbol * string
+| ExtNonTerminal of user_symbol * string
 
 let mlexpr_of_list f l =
   List.fold_right
@@ -48,25 +63,25 @@ let mlexpr_of_ident id =
   <:expr< Names.Id.of_string $str:id$ >>
 
 let rec mlexpr_of_prod_entry_key f = function
-  | Extend.Ulist1 s -> <:expr< Extend.Alist1 $mlexpr_of_prod_entry_key f s$ >>
-  | Extend.Ulist1sep (s,sep) -> <:expr< Extend.Alist1sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
-  | Extend.Ulist0 s -> <:expr< Extend.Alist0 $mlexpr_of_prod_entry_key f s$ >>
-  | Extend.Ulist0sep (s,sep) -> <:expr< Extend.Alist0sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
-  | Extend.Uopt s -> <:expr< Extend.Aopt $mlexpr_of_prod_entry_key f s$ >>
-  | Extend.Umodifiers s -> <:expr< Extend.Amodifiers $mlexpr_of_prod_entry_key f s$ >>
-  | Extend.Uentry e -> <:expr< Extend.Aentry $f e$ >>
-  | Extend.Uentryl (e, l) ->
+  | Ulist1 s -> <:expr< Extend.Alist1 $mlexpr_of_prod_entry_key f s$ >>
+  | Ulist1sep (s,sep) -> <:expr< Extend.Alist1sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
+  | Ulist0 s -> <:expr< Extend.Alist0 $mlexpr_of_prod_entry_key f s$ >>
+  | Ulist0sep (s,sep) -> <:expr< Extend.Alist0sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
+  | Uopt s -> <:expr< Extend.Aopt $mlexpr_of_prod_entry_key f s$ >>
+  | Umodifiers s -> <:expr< Extend.Amodifiers $mlexpr_of_prod_entry_key f s$ >>
+  | Uentry e -> <:expr< Extend.Aentry $f e$ >>
+  | Uentryl (e, l) ->
     (** Keep in sync with Pcoq! *)
-    assert (CString.equal e "tactic");
+    assert (e = "tactic");
     if l = 5 then <:expr< Extend.Aentry (Pcoq.name_of_entry Pcoq.Tactic.binder_tactic) >>
     else <:expr< Extend.Aentryl (Pcoq.name_of_entry Pcoq.Tactic.tactic_expr) $mlexpr_of_int l$ >>
 
 let rec type_of_user_symbol = function
 | Ulist1 s | Ulist1sep (s, _) | Ulist0 s | Ulist0sep (s, _) | Umodifiers s ->
-  Genarg.ListArgType (type_of_user_symbol s)
+  ListArgType (type_of_user_symbol s)
 | Uopt s ->
-  Genarg.OptArgType (type_of_user_symbol s)
-| Uentry e | Uentryl (e, _) -> Genarg.ExtraArgType e
+  OptArgType (type_of_user_symbol s)
+| Uentry e | Uentryl (e, _) -> ExtraArgType e
 
 let coincide s pat off =
   let len = String.length pat in
