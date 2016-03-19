@@ -104,7 +104,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match gi with
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
-      | Vernacexpr.SelectAll | Vernacexpr.SelectAllParallel -> tac
+      | Vernacexpr.SelectAll -> tac
     in
     let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
     let () =
