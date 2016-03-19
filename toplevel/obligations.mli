@@ -54,10 +54,8 @@ type progress = (* Resolution status of a program *)
   | Remain of int  (* n obligations remaining *)
   | Dependent (* Dependent on other definitions *)
   | Defined of global_reference (* Defined as id *)
-      
-val set_default_tactic : bool -> Tacexpr.glob_tactic_expr -> unit
-val get_default_tactic : unit -> locality_flag * unit Proofview.tactic
-val print_default_tactic : unit -> Pp.std_ppcmds
+
+val default_tactic : unit Proofview.tactic ref
 
 val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
 val get_proofs_transparency : unit -> bool

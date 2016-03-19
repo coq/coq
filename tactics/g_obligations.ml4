@@ -19,16 +19,22 @@ open Constrexpr_ops
 open Stdarg
 open Constrarg
 open Extraargs
-open Pcoq.Prim
-open Pcoq.Constr
-open Pcoq.Tactic
+
+let (set_default_tactic, get_default_tactic, print_default_tactic) = 
+  Tactic_option.declare_tactic_option "Program tactic"
+
+let () =
+  (** Delay to recover the tactic imperatively *)
+  let tac = Proofview.tclBIND (Proofview.tclUNIT ()) begin fun () ->
+    snd (get_default_tactic ())
+  end in
+  Obligations.default_tactic := tac
 
 (* We define new entries for programs, with the use of this module
  * Subtac. These entries are named Subtac.<foo>
  *)
 
 module Gram = Pcoq.Gram
-module Vernac = Pcoq.Vernac_
 module Tactic = Pcoq.Tactic
 
 open Pcoq
