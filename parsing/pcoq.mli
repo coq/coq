@@ -112,19 +112,6 @@ type gram_reinit = gram_assoc * gram_position
    dynamically interpreted as entries for the Coq level extensions
 *)
 
-type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
-| Atoken : Tok.t -> ('self, string) entry_key
-| Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
-| Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Alist0sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
-| Aopt : ('self, 'a) entry_key -> ('self, 'a option) entry_key
-| Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Aself : ('self, 'self) entry_key
-| Anext : ('self, 'self) entry_key
-| Aentry : 'a Entry.t -> ('self, 'a) entry_key
-| Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
-
 (** Add one extension at some camlp4 position of some camlp4 entry *)
 val unsafe_grammar_extend :
   grammar_object Gram.entry ->
@@ -149,7 +136,7 @@ val parse_string : 'a Gram.entry -> string -> 'a
 val eoi_entry : 'a Gram.entry -> 'a Gram.entry
 val map_entry : ('a -> 'b) -> 'a Gram.entry -> 'b Gram.entry
 
-type gram_universe = Entry.universe
+type gram_universe
 
 val get_univ : string -> gram_universe
 
@@ -158,6 +145,7 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
+val set_grammar : 'a Entry.t -> 'a Gram.entry -> unit
 val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
 val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
 
@@ -276,7 +264,7 @@ val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 (** Binding general entry keys to symbols *)
 
 type entry_name = EntryName :
-  'a raw_abstract_argument_type * (raw_tactic_expr, 'a) entry_key -> entry_name
+  'a raw_abstract_argument_type * (raw_tactic_expr, 'a) Extend.symbol -> entry_name
 
 (** [interp_entry_name lev n sep] returns the entry corresponding to the name
     [n] of the form "ne_constr_list" in a tactic entry of level [lev] with

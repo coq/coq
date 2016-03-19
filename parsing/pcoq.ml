@@ -64,21 +64,8 @@ let weaken_entry x = Gramobj.weaken_entry x
    dynamically interpreted as entries for the Coq level extensions
 *)
 
-type ('self, 'a) entry_key = ('self, 'a) Extend.symbol =
-| Atoken : Tok.t -> ('self, string) entry_key
-| Alist1 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Alist1sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
-| Alist0 : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Alist0sep : ('self, 'a) entry_key * string -> ('self, 'a list) entry_key
-| Aopt : ('self, 'a) entry_key -> ('self, 'a option) entry_key
-| Amodifiers : ('self, 'a) entry_key -> ('self, 'a list) entry_key
-| Aself : ('self, 'self) entry_key
-| Anext : ('self, 'self) entry_key
-| Aentry : 'a Entry.t -> ('self, 'a) entry_key
-| Aentryl : 'a Entry.t * int -> ('self, 'a) entry_key
-
 type entry_name = EntryName :
-  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) entry_key -> entry_name
+  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) symbol -> entry_name
 
 (** Grammar extensions *)
 
@@ -198,40 +185,49 @@ let map_entry f en =
 let parse_string f x =
   let strm = Stream.of_string x in Gram.entry_parse f (Gram.parsable strm)
 
-type gram_universe = Entry.universe
-
-let uprim   = Entry.uprim
-let uconstr = Entry.uconstr
-let utactic = Entry.utactic
-let uvernac = Entry.uvernac
-let get_univ = Entry.get_univ
+type gram_universe = string
 
 let utables : (string, (string, typed_entry) Hashtbl.t) Hashtbl.t =
   Hashtbl.create 97
 
+let create_universe u =
+  let table = Hashtbl.create 97 in
+  let () = Hashtbl.add utables u table in
+  u
+
+let uprim   = create_universe "prim"
+let uconstr = create_universe "constr"
+let utactic = create_universe "tactic"
+let uvernac = create_universe "vernac"
+
+let get_univ u =
+  if Hashtbl.mem utables u then u
+  else raise Not_found
+
 let get_utable u =
-  let u = Entry.univ_name u in
   try Hashtbl.find utables u
-  with Not_found ->
-    let table = Hashtbl.create 97 in
-    Hashtbl.add utables u table;
-    table
+  with Not_found -> assert false
 
 let get_entry u s =
   let utab = get_utable u in
   Hashtbl.find utab s
 
-let get_typed_entry e =
-  let (u, s) = Entry.repr e in
-  let u = Entry.get_univ u in
-  get_entry u s
+(** A table associating grammar to entries *)
+let gtable : Obj.t Gram.entry String.Map.t ref = ref String.Map.empty
+
+let get_grammar (e : 'a Entry.t) : 'a Gram.entry =
+  Obj.magic (String.Map.find (Entry.repr e) !gtable)
+
+let set_grammar (e : 'a Entry.t) (g : 'a Gram.entry) =
+  assert (not (String.Map.mem (Entry.repr e) !gtable));
+  gtable := String.Map.add (Entry.repr e) (Obj.magic g) !gtable
 
 let new_entry etyp u s =
   let utab = get_utable u in
-  let uname = Entry.univ_name u in
-  let _ = Entry.create u s in
-  let ename = uname ^ ":" ^ s in
+  let ename = u ^ ":" ^ s in
+  let entry = Entry.create ename in
   let e = Gram.entry_create ename in
+  let () = set_grammar entry e in
   Hashtbl.add utab s (TypedEntry (etyp, e)); e
 
 let make_gen_entry u rawwit s = new_entry rawwit u s
@@ -251,8 +247,7 @@ let genarg_grammar = Grammar.obj
 let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
   let utab = get_utable u in
   if Hashtbl.mem utab s then
-    let u = Entry.univ_name u in
-    failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists");
+    failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists")
   else
     let e = new_entry etyp u s in
     let Rawwit t = etyp in
@@ -603,7 +598,6 @@ let compute_entry adjust forpat = function
   | ETPattern -> weaken_entry Constr.pattern, None, false
   | ETConstrList _ -> anomaly (Pp.str "List of entries cannot be registered.")
   | ETOther (u,n) ->
-      let u = get_univ u in
       let e = get_entry u n in
       object_of_typed_entry e, None, true
 
@@ -677,7 +671,14 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
 
 (** Binding general entry keys to symbol *)
 
-let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
+let tuplify l =
+  List.fold_left (fun accu x -> Obj.repr (x, accu)) (Obj.repr ()) l
+
+let rec adj : type a b c. (a, b, Loc.t -> Loc.t * c) adj -> _ = function
+| Adj0 -> Obj.magic (fun accu f loc -> f (Obj.repr (to_coqloc loc, tuplify accu)))
+| AdjS e -> Obj.magic (fun accu f x -> adj e (x :: accu) f)
+
+let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Atoken t -> Symbols.stoken t
   | Alist1 s -> Symbols.slist1 (symbol_of_prod_entry_key s)
   | Alist1sep (s,sep) ->
@@ -696,26 +697,32 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) entry_key -> _ = function
   | Aself -> Symbols.sself
   | Anext -> Symbols.snext
   | Aentry e ->
-    let e = get_typed_entry e in
-    Symbols.snterm (Gram.Entry.obj (object_of_typed_entry e))
+    let e = get_grammar e in
+    Symbols.snterm (Gram.Entry.obj (weaken_entry e))
   | Aentryl (e, n) ->
-    let e = get_typed_entry e in
-    Symbols.snterml (Gram.Entry.obj (object_of_typed_entry e), string_of_int n)
+    let e = get_grammar e in
+    Symbols.snterml (Gram.Entry.obj (weaken_entry e), string_of_int n)
+  | Arules rs -> Gram.srules' (symbol_of_rules rs [] (fun x -> I0 x))
+
+and symbol_of_rule : type s a r. (s, a, r) Extend.rule -> _ = function
+| Stop -> fun accu -> accu
+| Next (r, s) -> fun accu -> symbol_of_rule r (symbol_of_prod_entry_key s :: accu)
+
+and symbol_of_rules : type a. a Extend.rules -> _ = function
+| Rule0 -> fun accu _ -> accu
+| RuleS (r, e, rs) -> fun accu f ->
+  let symb = symbol_of_rule r [] in
+  let act = adj e [] f in
+  symbol_of_rules rs ((symb, act) :: accu) (fun x -> IS (f x))
 
 let level_of_snterml e = int_of_string (Symbols.snterml_level e)
-
-let rec of_coq_rule : type self a r. (self, a, r) Extend.rule -> _ = function
-| Stop -> fun accu -> accu
-| Next (r, tok) -> fun accu ->
-  let symb = symbol_of_prod_entry_key tok in
-  of_coq_rule r (symb :: accu)
 
 let rec of_coq_action : type a r. (r, a, Loc.t -> r) Extend.rule -> a -> Gram.action = function
 | Stop -> fun f -> Gram.action (fun loc -> f (to_coqloc loc))
 | Next (r, _) -> fun f -> Gram.action (fun x -> of_coq_action r (f x))
 
 let of_coq_production_rule : type a. a Extend.production_rule -> _ = function
-| Rule (toks, act) -> (of_coq_rule toks [], of_coq_action toks act)
+| Rule (toks, act) -> (symbol_of_rule toks [], of_coq_action toks act)
 
 let of_coq_single_extend_statement (lvl, assoc, rule) =
   (lvl, Option.map of_coq_assoc assoc, List.map of_coq_production_rule rule)
@@ -742,9 +749,7 @@ let coincide s pat off =
   done;
   !break
 
-let name_of_entry e = match String.split ':' (Gram.Entry.name e) with
-| u :: s :: [] -> Entry.unsafe_of_name (u, s)
-| _ -> assert false
+let name_of_entry e = Entry.unsafe_of_name (Gram.Entry.name e)
 
 let atactic n =
   if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
