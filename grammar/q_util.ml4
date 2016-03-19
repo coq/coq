@@ -57,7 +57,7 @@ let rec mlexpr_of_prod_entry_key f = function
   | Extend.Uentry e -> <:expr< Extend.Aentry $f e$ >>
   | Extend.Uentryl (e, l) ->
     (** Keep in sync with Pcoq! *)
-    assert (CString.equal e "tactic");
+    assert (e = "tactic");
     if l = 5 then <:expr< Extend.Aentry (Pcoq.name_of_entry Pcoq.Tactic.binder_tactic) >>
     else <:expr< Extend.Aentryl (Pcoq.name_of_entry Pcoq.Tactic.tactic_expr) $mlexpr_of_int l$ >>
 

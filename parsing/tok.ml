@@ -8,6 +8,8 @@
 
 (** The type of token for the Coq lexer and parser *)
 
+let string_equal (s1 : string) s2 = s1 = s2
+
 type t =
   | KEYWORD of string
   | PATTERNIDENT of string
@@ -21,16 +23,16 @@ type t =
   | EOI
 
 let equal t1 t2 = match t1, t2 with
-| IDENT s1, KEYWORD s2 -> CString.equal s1 s2
-| KEYWORD s1, KEYWORD s2 -> CString.equal s1 s2
-| PATTERNIDENT s1, PATTERNIDENT s2 -> CString.equal s1 s2
-| IDENT s1, IDENT s2 -> CString.equal s1 s2
-| FIELD s1, FIELD s2 -> CString.equal s1 s2
-| INT s1, INT s2 -> CString.equal s1 s2
-| INDEX s1, INDEX s2 -> CString.equal s1 s2
-| STRING s1, STRING s2 -> CString.equal s1 s2
+| IDENT s1, KEYWORD s2 -> string_equal s1 s2
+| KEYWORD s1, KEYWORD s2 -> string_equal s1 s2
+| PATTERNIDENT s1, PATTERNIDENT s2 -> string_equal s1 s2
+| IDENT s1, IDENT s2 -> string_equal s1 s2
+| FIELD s1, FIELD s2 -> string_equal s1 s2
+| INT s1, INT s2 -> string_equal s1 s2
+| INDEX s1, INDEX s2 -> string_equal s1 s2
+| STRING s1, STRING s2 -> string_equal s1 s2
 | LEFTQMARK, LEFTQMARK -> true
-| BULLET s1, BULLET s2 -> CString.equal s1 s2
+| BULLET s1, BULLET s2 -> string_equal s1 s2
 | EOI, EOI -> true
 | _ -> false
 

@@ -16,11 +16,6 @@ open Extend
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
 
-let qualified_name loc s =
-  let path = CString.split '.' s in
-  let (name, path) = CList.sep_last path in
-  qualified_name loc path name
-
 let mk_extraarg loc s = <:expr< $lid:"wit_"^s$ >>
 
 let rec make_wit loc = function
@@ -56,7 +51,7 @@ let make_rule loc (prods,act) =
   <:expr< Extend.Rule $make_prod (List.rev prods)$ $make_act loc act prods$ >>
 
 let is_ident x = function
-| <:expr< $lid:s$ >> -> CString.equal s x
+| <:expr< $lid:s$ >> -> (s : string) = x
 | _ -> false
 
 let make_extend loc s cl wit = match cl with
@@ -85,7 +80,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let glob = match g with
     | None ->
       begin match rawtyp with
-      | Genarg.ExtraArgType s' when CString.equal s s' ->
+      | Genarg.ExtraArgType s' when s = s' ->
         <:expr< fun ist v -> (ist, v) >>
       | _ ->
         <:expr< fun ist v ->
@@ -100,7 +95,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let interp = match f with
     | None ->
       begin match globtyp with
-      | Genarg.ExtraArgType s' when CString.equal s s' ->
+      | Genarg.ExtraArgType s' when s = s' ->
         <:expr< fun ist v -> Ftactic.return v >>
       | _ ->
 	<:expr< fun ist x ->
@@ -120,7 +115,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let subst = match h with
     | None ->
       begin match globtyp with
-      | Genarg.ExtraArgType s' when CString.equal s s' ->
+      | Genarg.ExtraArgType s' when s = s' ->
         <:expr< fun s v -> v >>
       | _ ->
         <:expr< fun s x ->
@@ -132,7 +127,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let dyn = match typ with
   | `Uniform typ ->
     let is_new = match typ with
-    | Genarg.ExtraArgType s' when CString.equal s s' -> true
+    | Genarg.ExtraArgType s' when s = s' -> true
     | _ -> false
     in
     if is_new then <:expr< None >>

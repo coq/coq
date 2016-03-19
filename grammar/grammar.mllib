@@ -1,15 +1,8 @@
 Coq_config
 
-Hashset
-Hashcons
-CMap
-Int
-Option
 Store
 Exninfo
 Loc
-CList
-CString
 
 Tok
 Compat

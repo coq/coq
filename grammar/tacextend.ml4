@@ -24,15 +24,6 @@ let rec make_patt = function
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
-let rec mlexpr_of_argtype loc = function
-  | Genarg.ListArgType t -> <:expr< Genarg.ListArgType $mlexpr_of_argtype loc t$ >>
-  | Genarg.OptArgType t -> <:expr< Genarg.OptArgType $mlexpr_of_argtype loc t$ >>
-  | Genarg.PairArgType (t1,t2) ->
-      let t1 = mlexpr_of_argtype loc t1 in
-      let t2 = mlexpr_of_argtype loc t2 in
-      <:expr< Genarg.PairArgType $t1$ $t2$ >>
-  | Genarg.ExtraArgType s -> <:expr< Genarg.ExtraArgType $str:s$ >>
-
 let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
   | ExtNonTerminal (t, _, p) :: l ->
@@ -43,12 +34,6 @@ let rec make_let raw e = function
                else <:expr< Tacinterp.Value.cast $make_topwit    loc t$ $lid:p$ >> in
       <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let raw e l
-
-let rec extract_signature = function
-  | [] -> []
-  | ExtNonTerminal (t, _, _) :: l -> t :: extract_signature l
-  | _::l -> extract_signature l
-
 
 let make_clause (pt,_,e) =
   (make_patt pt,
@@ -99,13 +84,13 @@ let declare_tactic loc s c cl = match cl with
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let ml = <:expr< { Tacexpr.mltac_name = $se$; Tacexpr.mltac_index = 0 } >> in
   let name = mlexpr_of_string name in
-  let tac =
+  let tac = match rem with
+  | [] ->
     (** Special handling of tactics without arguments: such tactics do not do
         a Proofview.Goal.nf_enter to compute their arguments. It matters for some
         whole-prof tactics like [shelve_unifiable]. *)
-    if CList.is_empty rem then
       <:expr< fun _ $lid:"ist"$ -> $tac$ >>
-    else
+  | _ ->
       let f = Compat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
       <:expr< Tacinterp.lift_constr_tac_to_ml_tac $vars$ $f$ >>
   in
@@ -178,7 +163,7 @@ EXTEND
         let e = parse_user_entry e sep in
         ExtNonTerminal (type_of_user_symbol e, e, s)
       | s = STRING ->
-	let () = if CString.is_empty s then failwith "Empty terminal." in
+	let () = if s = "" then failwith "Empty terminal." in
         ExtTerminal s
     ] ]
   ;
