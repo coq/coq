@@ -13,7 +13,7 @@ open Compat
 
 type extend_token =
 | ExtTerminal of string
-| ExtNonTerminal of Genarg.argument_type * Extend.user_symbol * string
+| ExtNonTerminal of Extend.user_symbol * string
 
 let mlexpr_of_list f l =
   List.fold_right

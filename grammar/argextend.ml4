@@ -32,14 +32,14 @@ let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
-    | ExtNonTerminal (_, _, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
+    | ExtNonTerminal (_, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
     | ExtTerminal _ :: tl ->
 	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Extend.Atoken (Lexer.terminal $mlexpr_of_string s$) >>
-  | ExtNonTerminal (_, g, _) ->
+  | ExtNonTerminal (g, _) ->
     let base s = <:expr< Pcoq.name_of_entry $lid:s$ >> in
     mlexpr_of_prod_entry_key base g
 
@@ -55,7 +55,7 @@ let is_ident x = function
 | _ -> false
 
 let make_extend loc s cl wit = match cl with
-| [[ExtNonTerminal (_, Uentry e, id)], act] when is_ident id act ->
+| [[ExtNonTerminal (Uentry e, id)], act] when is_ident id act ->
   (** Special handling of identity arguments by not redeclaring an entry *)
   <:str_item<
     value $lid:s$ =
@@ -223,10 +223,10 @@ EXTEND
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (type_of_user_symbol e, e, s)
+        ExtNonTerminal (e, s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (type_of_user_symbol e, e, s)
+        ExtNonTerminal (e, s)
       | s = STRING -> ExtTerminal s
     ] ]
   ;

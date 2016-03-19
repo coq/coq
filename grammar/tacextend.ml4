@@ -20,13 +20,14 @@ let plugin_name = <:expr< __coq_plugin_name >>
 
 let rec make_patt = function
   | [] -> <:patt< [] >>
-  | ExtNonTerminal (_, _, p) :: l ->
+  | ExtNonTerminal (_, p) :: l ->
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
 let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
-  | ExtNonTerminal (t, _, p) :: l ->
+  | ExtNonTerminal (g, p) :: l ->
+      let t = type_of_user_symbol g in
       let loc = MLast.loc_of_expr e in
       let e = make_let raw e l in
       let v =
@@ -46,7 +47,8 @@ let make_fun_clauses loc s l =
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
-  | ExtNonTerminal (nt, g, id) ->
+  | ExtNonTerminal (g, id) ->
+    let nt = type_of_user_symbol g in
     let base s = <:expr< Pcoq.name_of_entry (Pcoq.genarg_grammar $mk_extraarg loc s$) >> in
       <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
       $mlexpr_of_prod_entry_key base g$ >>
@@ -66,11 +68,11 @@ let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
 (** Special treatment of constr entries *)
 let is_constr_gram = function
 | ExtTerminal _ -> false
-| ExtNonTerminal (_, Extend.Uentry "constr", _) -> true
+| ExtNonTerminal (Extend.Uentry "constr", _) -> true
 | _ -> false
 
 let make_var = function
-  | ExtNonTerminal (_, _, p) -> Some p
+  | ExtNonTerminal (_, p) -> Some p
   | _ -> assert false
 
 let declare_tactic loc s c cl = match cl with
@@ -158,10 +160,10 @@ EXTEND
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (type_of_user_symbol e, e, s)
+        ExtNonTerminal (e, s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (type_of_user_symbol e, e, s)
+        ExtNonTerminal (e, s)
       | s = STRING ->
 	let () = if s = "" then failwith "Empty terminal." in
         ExtTerminal s

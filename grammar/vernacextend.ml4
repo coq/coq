@@ -30,7 +30,8 @@ type rule = {
 
 let rec make_let e = function
   | [] -> e
-  | ExtNonTerminal (t, _, p) :: l ->
+  | ExtNonTerminal (g, p) :: l ->
+      let t = type_of_user_symbol g in
       let loc = MLast.loc_of_expr e in
       let e = make_let e l in
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
@@ -44,7 +45,7 @@ let make_clause { r_patt = pt; r_branch = e; } =
 (* To avoid warnings *)
 let mk_ignore c pt =
   let fold accu = function
-  | ExtNonTerminal (_, _, p) -> p :: accu
+  | ExtNonTerminal (_, p) -> p :: accu
   | _ -> accu
   in
   let names = List.fold_left fold [] pt in
@@ -179,10 +180,10 @@ EXTEND
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (type_of_user_symbol e, e, s)
+        ExtNonTerminal (e, s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (type_of_user_symbol e, e, s)
+        ExtNonTerminal (e, s)
       | s = STRING ->
         ExtTerminal s
     ] ]
