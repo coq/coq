@@ -19,8 +19,9 @@ module PrintObj =
 struct
   type ('raw, 'glb, 'top) obj = ('raw, 'glb, 'top) printer
   let name = "printer"
-  let default wit = match unquote (rawwit wit) with
-  | ExtraArgType name ->
+  let default wit = match wit with
+  | ExtraArg tag ->
+    let name = ArgT.repr tag in
     let printer = {
       raw = (fun _ -> str "<genarg:" ++ str name ++ str ">");
       glb = (fun _ -> str "<genarg:" ++ str name ++ str ">");

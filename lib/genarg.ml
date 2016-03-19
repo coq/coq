@@ -56,35 +56,14 @@ struct
 
 end
 
-type argument_type =
-  (* Specific types *)
-  | ListArgType of argument_type
-  | OptArgType of argument_type
-  | PairArgType of argument_type * argument_type
-  | ExtraArgType of string
-
-let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
-| ListArgType arg1, ListArgType arg2 -> argument_type_eq arg1 arg2
-| OptArgType arg1, OptArgType arg2 -> argument_type_eq arg1 arg2
-| PairArgType (arg1l, arg1r), PairArgType (arg2l, arg2r) ->
-  argument_type_eq arg1l arg2l && argument_type_eq arg1r arg2r
-| ExtraArgType s1, ExtraArgType s2 -> CString.equal s1 s2
-| _ -> false
-
-let rec pr_argument_type = function
-| ListArgType t -> pr_argument_type t ++ spc () ++ str "list"
-| OptArgType t -> pr_argument_type t ++ spc () ++ str "opt"
-| PairArgType (t1, t2) ->
-    str "("++ pr_argument_type t1 ++ spc () ++
-    str "*" ++ spc () ++ pr_argument_type t2 ++ str ")"
-| ExtraArgType s -> str s
-
 type (_, _, _) genarg_type =
 | ExtraArg : ('a * 'b * 'c) ArgT.tag -> ('a, 'b, 'c) genarg_type
 | ListArg : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
 | OptArg : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
 | PairArg : ('a1, 'b1, 'c1) genarg_type * ('a2, 'b2, 'c2) genarg_type ->
   ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
+
+type argument_type = ArgumentType : ('a, 'b, 'c) genarg_type -> argument_type
 
 let rec genarg_type_eq : type a1 a2 b1 b2 c1 c2.
   (a1, b1, c1) genarg_type -> (a2, b2, c2) genarg_type ->
@@ -110,6 +89,22 @@ fun t1 t2 -> match t1, t2 with
     | Some Refl -> Some Refl
   end
 | _ -> None
+
+let rec pr_genarg_type : type a b c. (a, b, c) genarg_type -> std_ppcmds = function
+| ListArg t -> pr_genarg_type t ++ spc () ++ str "list"
+| OptArg t -> pr_genarg_type t ++ spc () ++ str "opt"
+| PairArg (t1, t2) ->
+    str "("++ pr_genarg_type t1 ++ spc () ++
+    str "*" ++ spc () ++ pr_genarg_type t2 ++ str ")"
+| ExtraArg s -> str (ArgT.repr s)
+
+let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
+| ArgumentType t1, ArgumentType t2 ->
+  match genarg_type_eq t1 t2 with
+  | None -> false
+  | Some Refl -> true
+
+let rec pr_argument_type (ArgumentType t) = pr_genarg_type t
 
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision *)
@@ -177,16 +172,10 @@ let has_type (GenArg (t, v)) u = match abstract_argument_type_eq t u with
 | None -> false
 | Some _ -> true
 
-let rec untype : type a b c. (a, b, c) genarg_type -> argument_type = function
-| ExtraArg t -> ExtraArgType (ArgT.repr t)
-| ListArg t -> ListArgType (untype t)
-| OptArg t -> OptArgType (untype t)
-| PairArg (t1, t2) -> PairArgType (untype t1, untype t2)
-
 let unquote : type l. (_, l) abstract_argument_type -> _ = function
-| Rawwit t -> untype t
-| Glbwit t -> untype t
-| Topwit t -> untype t
+| Rawwit t -> ArgumentType t
+| Glbwit t -> ArgumentType t
+| Topwit t -> ArgumentType t
 
 let genarg_tag (GenArg (t, _)) = unquote t
 

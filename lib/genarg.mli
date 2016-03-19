@@ -187,12 +187,7 @@ val val_tag : 'a typed_abstract_argument_type -> 'a Val.tag
 
 (** {6 Type reification} *)
 
-type argument_type =
-  (** Specific types *)
-  | ListArgType of argument_type
-  | OptArgType of argument_type
-  | PairArgType of argument_type * argument_type
-  | ExtraArgType of string
+type argument_type = ArgumentType : ('a, 'b, 'c) genarg_type -> argument_type
 
 (** {6 Equalities} *)
 

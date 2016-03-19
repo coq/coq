@@ -67,8 +67,8 @@ type 'a extra_genarg_printer =
 let genarg_pprule = ref String.Map.empty
 
 let declare_extra_genarg_pprule wit f g h =
-  let s = match unquote (topwit wit) with
-    | ExtraArgType s -> s
+  let s = match wit with
+    | ExtraArg s -> ArgT.repr s
     | _ -> error
       "Can declare a pretty-printing rule only for extra argument types."
   in
