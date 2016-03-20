@@ -4095,6 +4095,10 @@ let check_enough_applied env sigma elim =
           (* Last argument is supposed to be the induction argument *)
           check_expected_type env sigma elimc elimt
 
+let guard_no_unifiable = Proofview.guard_no_unifiable >>= function
+| None -> Proofview.tclUNIT ()
+| Some l -> Proofview.tclZERO (RefinerError (UnresolvedBindings l))
+
 let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
@@ -4129,7 +4133,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
           let Sigma (ans, sigma, q) = mkletin_goal env sigma store with_eq false (id,lastlhyp,ccl,c) (Some t) in
           Sigma (ans, sigma, p +> q)
         end };
-        Proofview.(if with_evars then shelve_unifiable else guard_no_unifiable);
+        if with_evars then Proofview.shelve_unifiable else guard_no_unifiable;
         if is_arg_pure_hyp
         then Tacticals.New.tclTRY (Proofview.V82.tactic (thin [destVar c0]))
         else Proofview.tclUNIT ();

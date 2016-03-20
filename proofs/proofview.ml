@@ -625,18 +625,18 @@ let shelve_unifiable =
   InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve_unifiable")) >>
   Shelf.modify (fun gls -> gls @ u)
 
-(** [guard_no_unifiable] fails with error [UnresolvedBindings] if some
+(** [guard_no_unifiable] returns the list of unifiable goals if some
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
 let guard_no_unifiable =
   let open Proof in
   Pv.get >>= fun initial ->
   let (u,n) = partition_unifiable initial.solution initial.comb in
   match u with
-  | [] -> tclUNIT ()
+  | [] -> tclUNIT None
   | gls ->
       let l = CList.map (fun g -> Evd.dependent_evar_ident g initial.solution) gls in
       let l = CList.map (fun id -> Names.Name id) l in
-      tclZERO (Logic.RefinerError (Logic.UnresolvedBindings l))
+      tclUNIT (Some l)
 
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
     goals of p *)

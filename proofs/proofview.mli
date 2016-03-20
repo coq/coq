@@ -295,9 +295,9 @@ val shelve : unit tactic
     considered). *)
 val shelve_unifiable : unit tactic
 
-(** [guard_no_unifiable] fails with error [UnresolvedBindings] if some
+(** [guard_no_unifiable] returns the list of unifiable goals if some
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
-val guard_no_unifiable : unit tactic
+val guard_no_unifiable : Names.Name.t list option tactic
 
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
     goals of p *)
