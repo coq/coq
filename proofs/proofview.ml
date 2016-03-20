@@ -924,8 +924,20 @@ let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
 
 (** {6 Goal-dependent tactics} *)
 
-(* To avoid shadowing by the local [Goal] module *)
-module GoalV82 = Goal.V82
+let goal_env evars gl =
+  let evi = Evd.find evars gl in
+  Evd.evar_filtered_env evi
+
+let goal_nf_evar sigma gl =
+  let evi = Evd.find sigma gl in
+  let evi = Evarutil.nf_evar_info sigma evi in
+  let sigma = Evd.add sigma gl evi in
+  (gl, sigma)
+
+let goal_extra evars gl =
+  let evi = Evd.find evars gl in
+  evi.Evd.evar_extra
+
 
 let catchable_exception = function
   | Logic_monad.Exception _ -> false
@@ -950,7 +962,7 @@ module Goal = struct
   let sigma { sigma=sigma } = Sigma.Unsafe.of_evar_map sigma
   let hyps { env=env } = Environ.named_context env
   let concl { concl=concl } = concl
-  let extra { sigma=sigma; self=self } = Goal.V82.extra sigma self
+  let extra { sigma=sigma; self=self } = goal_extra sigma self
 
   let raw_concl { concl=concl } = concl
 
@@ -1225,7 +1237,7 @@ module V82 = struct
       in
         (* Old style tactics expect the goals normalized with respect to evars. *)
       let (initgoals,initevd) =
-        Evd.Monad.List.map (fun g s -> GoalV82.nf_evar s g) ps.comb ps.solution
+        Evd.Monad.List.map (fun g s -> goal_nf_evar s g) ps.comb ps.solution
       in
       let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
       let sgs = CList.flatten goalss in
@@ -1241,7 +1253,7 @@ module V82 = struct
      solution. *)
   let nf_evar_goals =
     Pv.modify begin fun ps ->
-    let map g s = GoalV82.nf_evar s g in
+    let map g s = goal_nf_evar s g in
     let (goals,evd) = Evd.Monad.List.map map ps.comb ps.solution in
     { ps with solution = evd; comb = goals; }
     end
@@ -1275,7 +1287,7 @@ module V82 = struct
   let of_tactic t gls =
     try
       let init = { shelf = []; solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
-      let (_,final,_,_) = apply (GoalV82.env gls.Evd.sigma gls.Evd.it) t init in
+      let (_,final,_,_) = apply (goal_env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
     with Logic_monad.TacticFailure e as src ->
       let (_, info) = Errors.push src in
