@@ -200,7 +200,6 @@ Ppdecl_proof
 Egramml
 Egramcoq
 Tacsubst
-Tacenv
 Trie
 Dn
 Btermdn
