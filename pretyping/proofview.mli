@@ -413,6 +413,9 @@ module Unsafe : sig
       into [g']). It returns [None] if [g] has been (partially)
       solved. *)
   val advance : Evd.evar_map -> Evar.t -> Evar.t option
+
+  val typeclass_resolvable : unit Evd.Store.field
+
 end
 
 (** This module gives access to the innards of the monad. Its use is

@@ -20,8 +20,8 @@ Patternops
 Constr_matching
 Tacred
 Typeclasses_errors
-Typeclasses
 Proofview
+Typeclasses
 Classops
 Program
 Coercion

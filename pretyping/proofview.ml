@@ -56,10 +56,12 @@ type telescope =
   | TNil of Evd.evar_map
   | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
 
+let typeclass_resolvable = Evd.Store.field ()
+
 let dependent_init =
   (* Goals are created with a store which marks them as unresolvable
      for type classes. *)
-  let store = Typeclasses.set_resolvable Evd.Store.empty false in
+  let store = Evd.Store.set Evd.Store.empty typeclass_resolvable () in
   (* Goals don't have a source location. *)
   let src = (Loc.ghost,Evar_kinds.GoalEvar) in
   (* Main routine *)
@@ -908,10 +910,15 @@ module Unsafe = struct
       | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
       | loc,_ -> loc,Evar_kinds.GoalEvar }
     in
-    let info = Typeclasses.mark_unresolvable info in
+    let info = match Evd.Store.get info.Evd.evar_extra typeclass_resolvable with
+    | None -> { info with Evd.evar_extra = Evd.Store.set info.Evd.evar_extra typeclass_resolvable () }
+    | Some () -> info
+    in
     Evd.add evd content info
 
   let advance = advance
+
+  let typeclass_resolvable = typeclass_resolvable
 
 end
 

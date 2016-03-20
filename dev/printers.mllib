@@ -141,6 +141,9 @@ Find_subterm
 Tacred
 Classops
 Typeclasses_errors
+Logic_monad
+Proofview_monad
+Proofview
 Typeclasses
 Detyping
 Indrec
@@ -181,9 +184,6 @@ Refiner
 Clenv
 Evar_refiner
 Proof_errors
-Logic_monad
-Proofview_monad
-Proofview
 Refine
 Proof
 Proof_global
