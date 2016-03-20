@@ -19,3 +19,4 @@ val process_vernac_interp_error : ?allow_uncaught:bool -> ?with_header:bool -> U
 
 val explain_exn_default : exn -> Pp.std_ppcmds
 
+val register_additional_error_info : (Util.iexn -> (Pp.std_ppcmds option * Loc.t) option) -> unit

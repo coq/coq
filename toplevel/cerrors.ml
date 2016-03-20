@@ -110,6 +110,11 @@ let rec strip_wrapping_exceptions = function
     strip_wrapping_exceptions e
   | exc -> exc
 
+let additional_error_info = ref []
+
+let register_additional_error_info f =
+  additional_error_info := f :: !additional_error_info
+
 let process_vernac_interp_error ?(allow_uncaught=true) ?(with_header=true) (exc, info) =
   let exc = strip_wrapping_exceptions exc in
   let e = process_vernac_interp_error with_header (exc, info) in
@@ -120,19 +125,12 @@ let process_vernac_interp_error ?(allow_uncaught=true) ?(with_header=true) (exc,
       let err = Errors.make_anomaly msg in
       Util.iraise (err, info)
   in
-  let ltac_trace = Exninfo.get info Tactic_debug.ltac_trace_info in
-  let loc = Option.default Loc.ghost (Loc.get_loc info) in
-  match ltac_trace with
+  let e' =
+    try Some (CList.find_map (fun f -> f e) !additional_error_info)
+    with _ -> None
+  in
+  match e' with
   | None -> e
-  | Some trace ->
-    let (e, info) = e in
-    match Tactic_debug.extract_ltac_trace trace loc with
-    | None, loc -> (e, Loc.add_loc info loc)
-    | Some msg, loc ->
-      (EvaluatedError (msg, Some e), Loc.add_loc info loc)
-
-let _ = Tactic_debug.explain_logic_error :=
-  (fun e -> Errors.print (fst (process_vernac_interp_error (e, Exninfo.null))))
-
-let _ = Tactic_debug.explain_logic_error_no_anomaly :=
-  (fun e -> Errors.print_no_report (fst (process_vernac_interp_error (e, Exninfo.null))))
+  | Some (None, loc) -> (fst e, Loc.add_loc (snd e) loc)
+  | Some (Some msg, loc) ->
+    (EvaluatedError (msg, Some (fst e)), Loc.add_loc (snd e) loc)

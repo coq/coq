@@ -61,13 +61,13 @@ val db_matching_failure : debug_info -> unit Proofview.NonLogical.t
 val db_eval_failure : debug_info -> Pp.std_ppcmds -> unit Proofview.NonLogical.t
 
 (** An exception handler *)
-val explain_logic_error: (exn -> Pp.std_ppcmds) ref
+val explain_logic_error: exn -> Pp.std_ppcmds
 
 (** For use in the Ltac debugger: some exception that are usually
    consider anomalies are acceptable because they are caught later in
    the process that is being debugged.  One should not require
    from users that they report these anomalies. *)
-val explain_logic_error_no_anomaly : (exn -> Pp.std_ppcmds) ref
+val explain_logic_error_no_anomaly : exn -> Pp.std_ppcmds
 
 (** Prints a logic failure message for a rule *)
 val db_logic_failure : debug_info -> exn -> unit Proofview.NonLogical.t

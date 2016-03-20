@@ -365,7 +365,7 @@ let debugging_exception_step ist signal_anomaly e pp =
     if signal_anomaly then explain_logic_error
     else explain_logic_error_no_anomaly in
   debugging_step ist (fun () ->
-    pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ !explain_exc e)
+    pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ explain_exc e)
 
 let error_ltac_variable loc id env v s =
    user_err_loc (loc, "", str "Ltac variable " ++ pr_id id ++

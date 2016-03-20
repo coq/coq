@@ -14,6 +14,7 @@ open Termops
 open Nameops
 open Proofview.Notations
 
+
 let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
 
 let prtac x =
@@ -34,9 +35,11 @@ type debug_info =
   | DebugOff
 
 (* An exception handler *)
-let explain_logic_error = ref (fun e -> mt())
+let explain_logic_error e =
+  Errors.print (fst (Cerrors.process_vernac_interp_error (e, Exninfo.null)))
 
-let explain_logic_error_no_anomaly = ref (fun e -> mt())
+let explain_logic_error_no_anomaly e =
+  Errors.print_no_report (fst (Cerrors.process_vernac_interp_error (e, Exninfo.null)))
 
 let msg_tac_debug s = Proofview.NonLogical.print_debug (s++fnl())
 let msg_tac_notice s = Proofview.NonLogical.print_notice (s++fnl())
@@ -202,7 +205,7 @@ let debug_prompt lev tac f =
         (Proofview.tclLIFT begin
           (skip:=0) >> (skipped:=0) >>
             if Logic.catchable_exception reraise then
-              msg_tac_debug (str "Level " ++ int lev ++ str ": " ++ Pervasives.(!) explain_logic_error reraise)
+              msg_tac_debug (str "Level " ++ int lev ++ str ": " ++ explain_logic_error reraise)
             else return ()
         end)
         (Proofview.tclZERO ~info reraise)
@@ -304,7 +307,7 @@ let db_logic_failure debug err =
   is_debug debug >>= fun db ->
   if db then
   begin
-    msg_tac_debug (Pervasives.(!) explain_logic_error err) >>
+    msg_tac_debug (explain_logic_error err) >>
     msg_tac_debug (str "This rule has failed due to a logic error!" ++ fnl() ++
            str "Let us try the next one...")
   end
@@ -398,3 +401,12 @@ let extract_ltac_trace trace eloc =
         | [] -> Loc.ghost in
         aux trace in
     None, best_loc
+
+let get_ltac_trace (_, info) =
+  let ltac_trace = Exninfo.get info ltac_trace_info in
+  let loc = Option.default Loc.ghost (Loc.get_loc info) in
+  match ltac_trace with
+  | None -> None
+  | Some trace -> Some (extract_ltac_trace trace loc)
+
+let () = Cerrors.register_additional_error_info get_ltac_trace
