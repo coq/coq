@@ -76,6 +76,15 @@ let rec contract3' env a b c = function
       let y,x = contract3' env a b c x in
       y,CannotSolveConstraint ((pb,env,t,u),x)
 
+(** Ad-hoc reductions *)
+
+let j_nf_betaiotaevar sigma j =
+  { uj_val = Evarutil.nf_evar sigma j.uj_val;
+    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
+
+let jv_nf_betaiotaevar sigma jl =
+  Array.map (j_nf_betaiotaevar sigma) jl
+
 (** Printers *)
 
 let pr_lconstr c = quote (pr_lconstr c)
@@ -322,7 +331,7 @@ let explain_unification_error env sigma p1 p2 = function
 
 let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env in
-  let j = Evarutil.j_nf_betaiotaevar sigma j in
+  let j = j_nf_betaiotaevar sigma j in
   let t = Reductionops.nf_betaiota sigma t in
   (** Actually print *)
   let pe = pr_ne_context_of (str "In environment") env sigma in
@@ -337,7 +346,7 @@ let explain_actual_type env sigma j t reason =
   ppreason ++ str ".")
 
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
-  let randl = Evarutil.jv_nf_betaiotaevar sigma randl in
+  let randl = jv_nf_betaiotaevar sigma randl in
   let exptyp = Evarutil.nf_evar sigma exptyp in
   let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
   let rator = Evarutil.j_nf_evar sigma rator in
@@ -779,7 +788,7 @@ let explain_unsatisfiable_constraints env sigma constr comp =
     explain_typeclass_resolution env sigma info k ++ fnl () ++ cstr
 
 let explain_pretype_error env sigma err =
-  let env = Evarutil.env_nf_betaiotaevar sigma env in
+  let env = Evardefine.env_nf_betaiotaevar sigma env in
   let env = make_all_name_different env in
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c

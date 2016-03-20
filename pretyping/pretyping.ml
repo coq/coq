@@ -36,6 +36,7 @@ open Typeops
 open Globnames
 open Nameops
 open Evarutil
+open Evardefine
 open Pretype_errors
 open Glob_term
 open Glob_ops
@@ -233,6 +234,23 @@ let check_extra_evars_are_solved env current_sigma pending =
 	| Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
 	| _ ->
 	    error_unsolvable_implicit loc env current_sigma evk None) pending
+
+(* [check_evars] fails if some unresolved evar remains *)
+
+let check_evars env initial_sigma sigma c =
+  let rec proc_rec c =
+    match kind_of_term c with
+    | Evar (evk,_ as ev) ->
+        (match existential_opt_value sigma ev with
+        | Some c -> proc_rec c
+        | None ->
+	  if not (Evd.mem initial_sigma evk) then
+            let (loc,k) = evar_source evk sigma in
+	      match k with
+	      | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
+	      | _ -> Pretype_errors.error_unsolvable_implicit loc env sigma evk None)
+      | _ -> Constr.iter proc_rec c
+  in proc_rec c
 
 let check_evars_are_solved env current_sigma frozen pending =
   check_typeclasses_instances_are_solved env current_sigma frozen;

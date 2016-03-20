@@ -56,10 +56,12 @@ type telescope =
   | TNil of Evd.evar_map
   | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
 
+let typeclass_resolvable = Evd.Store.field ()
+
 let dependent_init =
   (* Goals are created with a store which marks them as unresolvable
      for type classes. *)
-  let store = Typeclasses.set_resolvable Evd.Store.empty false in
+  let store = Evd.Store.set Evd.Store.empty typeclass_resolvable () in
   (* Goals don't have a source location. *)
   let src = (Loc.ghost,Evar_kinds.GoalEvar) in
   (* Main routine *)
@@ -625,18 +627,18 @@ let shelve_unifiable =
   InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve_unifiable")) >>
   Shelf.modify (fun gls -> gls @ u)
 
-(** [guard_no_unifiable] fails with error [UnresolvedBindings] if some
+(** [guard_no_unifiable] returns the list of unifiable goals if some
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
 let guard_no_unifiable =
   let open Proof in
   Pv.get >>= fun initial ->
   let (u,n) = partition_unifiable initial.solution initial.comb in
   match u with
-  | [] -> tclUNIT ()
+  | [] -> tclUNIT None
   | gls ->
       let l = CList.map (fun g -> Evd.dependent_evar_ident g initial.solution) gls in
       let l = CList.map (fun id -> Names.Name id) l in
-      tclZERO (Logic.RefinerError (Logic.UnresolvedBindings l))
+      tclUNIT (Some l)
 
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
     goals of p *)
@@ -901,18 +903,22 @@ module Unsafe = struct
   let reset_future_goals p =
     { p with solution = Evd.reset_future_goals p.solution }
 
-  let mark_as_goal_evm evd content =
+  let mark_as_goal evd content =
     let info = Evd.find evd content in
     let info =
       { info with Evd.evar_source = match info.Evd.evar_source with
       | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
       | loc,_ -> loc,Evar_kinds.GoalEvar }
     in
-    let info = Typeclasses.mark_unresolvable info in
+    let info = match Evd.Store.get info.Evd.evar_extra typeclass_resolvable with
+    | None -> { info with Evd.evar_extra = Evd.Store.set info.Evd.evar_extra typeclass_resolvable () }
+    | Some () -> info
+    in
     Evd.add evd content info
 
-  let mark_as_goal p gl =
-    { p with solution = mark_as_goal_evm p.solution gl }
+  let advance = advance
+
+  let typeclass_resolvable = typeclass_resolvable
 
 end
 
@@ -924,8 +930,20 @@ let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
 
 (** {6 Goal-dependent tactics} *)
 
-(* To avoid shadowing by the local [Goal] module *)
-module GoalV82 = Goal.V82
+let goal_env evars gl =
+  let evi = Evd.find evars gl in
+  Evd.evar_filtered_env evi
+
+let goal_nf_evar sigma gl =
+  let evi = Evd.find sigma gl in
+  let evi = Evarutil.nf_evar_info sigma evi in
+  let sigma = Evd.add sigma gl evi in
+  (gl, sigma)
+
+let goal_extra evars gl =
+  let evi = Evd.find evars gl in
+  evi.Evd.evar_extra
+
 
 let catchable_exception = function
   | Logic_monad.Exception _ -> false
@@ -950,7 +968,7 @@ module Goal = struct
   let sigma { sigma=sigma } = Sigma.Unsafe.of_evar_map sigma
   let hyps { env=env } = Environ.named_context env
   let concl { concl=concl } = concl
-  let extra { sigma=sigma; self=self } = Goal.V82.extra sigma self
+  let extra { sigma=sigma; self=self } = goal_extra sigma self
 
   let raw_concl { concl=concl } = concl
 
@@ -1063,118 +1081,6 @@ end
 
 
 
-(** {6 The refine tactic} *)
-
-module Refine =
-struct
-
-  let extract_prefix env info =
-    let ctx1 = List.rev (Environ.named_context env) in
-    let ctx2 = List.rev (Evd.evar_context info) in
-    let rec share l1 l2 accu = match l1, l2 with
-    | d1 :: l1, d2 :: l2 ->
-      if d1 == d2 then share l1 l2 (d1 :: accu)
-      else (accu, d2 :: l2)
-    | _ -> (accu, l2)
-    in
-    share ctx1 ctx2 []
-
-  let typecheck_evar ev env sigma =
-    let info = Evd.find sigma ev in
-    (** Typecheck the hypotheses. *)
-    let type_hyp (sigma, env) decl =
-      let t = get_type decl in
-      let evdref = ref sigma in
-      let _ = Typing.e_sort_of env evdref t in
-      let () = match decl with
-      | LocalAssum _ -> ()
-      | LocalDef (_,body,_) -> Typing.e_check env evdref body t
-      in
-      (!evdref, Environ.push_named decl env)
-    in
-    let (common, changed) = extract_prefix env info in
-    let env = Environ.reset_with_named_context (Environ.val_of_named_context common) env in
-    let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
-    (** Typecheck the conclusion *)
-    let evdref = ref sigma in
-    let _ = Typing.e_sort_of env evdref (Evd.evar_concl info) in
-    !evdref
-
-  let typecheck_proof c concl env sigma =
-    let evdref = ref sigma in
-    let () = Typing.e_check env evdref c concl in
-    !evdref
-
-  let (pr_constrv,pr_constr) =
-    Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
-
-  let refine ?(unsafe = true) f = Goal.enter { Goal.enter = begin fun gl ->
-    let sigma = Goal.sigma gl in
-    let sigma = Sigma.to_evar_map sigma in
-    let env = Goal.env gl in
-    let concl = Goal.concl gl in
-    (** Save the [future_goals] state to restore them after the
-        refinement. *)
-    let prev_future_goals = Evd.future_goals sigma in
-    let prev_principal_goal = Evd.principal_future_goal sigma in
-    (** Create the refinement term *)
-    let (c, sigma) = Sigma.run (Evd.reset_future_goals sigma) f in
-    let evs = Evd.future_goals sigma in
-    let evkmain = Evd.principal_future_goal sigma in
-    (** Check that the introduced evars are well-typed *)
-    let fold accu ev = typecheck_evar ev env accu in
-    let sigma = if unsafe then sigma else CList.fold_left fold sigma evs in
-    (** Check that the refined term is typesafe *)
-    let sigma = if unsafe then sigma else typecheck_proof c concl env sigma in
-    (** Check that the goal itself does not appear in the refined term *)
-    let _ =
-      if not (Evarutil.occur_evar_upto sigma gl.Goal.self c) then ()
-      else Pretype_errors.error_occur_check env sigma gl.Goal.self c
-    in
-    (** Proceed to the refinement *)
-    let sigma = match evkmain with
-      | None -> Evd.define gl.Goal.self c sigma
-      | Some evk ->
-          let id = Evd.evar_ident gl.Goal.self sigma in
-          let sigma = Evd.define gl.Goal.self c sigma in
-          match id with
-          | None -> sigma
-          | Some id -> Evd.rename evk id sigma
-    in
-    (** Restore the [future goals] state. *)
-    let sigma = Evd.restore_future_goals sigma prev_future_goals prev_principal_goal in
-    (** Select the goals *)
-    let comb = undefined sigma (CList.rev evs) in
-    let sigma = CList.fold_left Unsafe.mark_as_goal_evm sigma comb in
-    let open Proof in
-    InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"refine"++spc()++ Hook.get pr_constrv env sigma c)))) >>
-    Pv.modify (fun ps -> { ps with solution = sigma; comb; })
-  end }
-
-  (** Useful definitions *)
-
-  let with_type env evd c t =
-    let my_type = Retyping.get_type_of env evd c in
-    let j = Environ.make_judge c my_type in
-    let (evd,j') =
-      Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
-    in
-    evd , j'.Environ.uj_val
-
-  let refine_casted ?unsafe f = Goal.enter { Goal.enter = begin fun gl ->
-    let concl = Goal.concl gl in
-    let env = Goal.env gl in
-    let f = { run = fun h ->
-      let Sigma (c, h, p) = f.run h in
-      let sigma, c = with_type env (Sigma.to_evar_map h) c concl in
-      Sigma (c, Sigma.Unsafe.of_evar_map sigma, p)
-    } in
-    refine ?unsafe f
-  end }
-end
-
-
-
 (** {6 Trace} *)
 
 module Trace = struct
@@ -1225,7 +1131,7 @@ module V82 = struct
       in
         (* Old style tactics expect the goals normalized with respect to evars. *)
       let (initgoals,initevd) =
-        Evd.Monad.List.map (fun g s -> GoalV82.nf_evar s g) ps.comb ps.solution
+        Evd.Monad.List.map (fun g s -> goal_nf_evar s g) ps.comb ps.solution
       in
       let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
       let sgs = CList.flatten goalss in
@@ -1241,7 +1147,7 @@ module V82 = struct
      solution. *)
   let nf_evar_goals =
     Pv.modify begin fun ps ->
-    let map g s = GoalV82.nf_evar s g in
+    let map g s = goal_nf_evar s g in
     let (goals,evd) = Evd.Monad.List.map map ps.comb ps.solution in
     { ps with solution = evd; comb = goals; }
     end
@@ -1275,7 +1181,7 @@ module V82 = struct
   let of_tactic t gls =
     try
       let init = { shelf = []; solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
-      let (_,final,_,_) = apply (GoalV82.env gls.Evd.sigma gls.Evd.it) t init in
+      let (_,final,_,_) = apply (goal_env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
     with Logic_monad.TacticFailure e as src ->
       let (_, info) = Errors.push src in

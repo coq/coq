@@ -370,7 +370,7 @@ let refine_tac ist simple c =
     let expected_type = Pretyping.OfType concl in
     let c = Tacinterp.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma -> c.delayed env sigma } in
-    let refine = Proofview.Refine.refine ~unsafe:false update in
+    let refine = Refine.refine ~unsafe:false update in
     if simple then refine
     else refine <*>
            Tactics.New.reduce_after_refine <*>

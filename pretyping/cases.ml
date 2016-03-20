@@ -25,6 +25,7 @@ open Glob_ops
 open Retyping
 open Pretype_errors
 open Evarutil
+open Evardefine
 open Evarsolve
 open Evarconv
 open Evd

@@ -1539,7 +1539,7 @@ let assert_replacing id newt tac =
     | d :: rem -> insert_dependent env (LocalAssum (get_id d, newt)) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
-    Proofview.Refine.refine ~unsafe:false { run = begin fun sigma ->
+    Refine.refine ~unsafe:false { run = begin fun sigma ->
       let Sigma (ev, sigma, p) = Evarutil.new_evar env' sigma concl in
       let Sigma (ev', sigma, q) = Evarutil.new_evar env sigma newt in
       let map d =
@@ -1568,7 +1568,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
         let gls = List.rev (Evd.fold_undefined fold undef []) in
 	match clause, prf with
 	| Some id, Some p ->
-            let tac = Proofview.Refine.refine ~unsafe:false { run = fun h -> Sigma (p, h, Sigma.refl) } <*> Proofview.Unsafe.tclNEWGOALS gls in
+            let tac = Refine.refine ~unsafe:false { run = fun h -> Sigma (p, h, Sigma.refl) } <*> Proofview.Unsafe.tclNEWGOALS gls in
             Proofview.Unsafe.tclEVARS undef <*>
 	    assert_replacing id newt tac
 	| Some id, None ->
@@ -1582,7 +1582,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
               let Sigma (ev, sigma, q) = Evarutil.new_evar env sigma newt in
               Sigma (mkApp (p, [| ev |]), sigma, q)
             end } in
-            Proofview.Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
+            Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
             end }
 	| None, None ->
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1880,7 +1880,7 @@ let build_morphism_signature m =
   let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
   let evd = solve_constraints env !evd in
   let m = Evarutil.nf_evar evd morph in
-    Evarutil.check_evars env Evd.empty evd m; m
+    Pretyping.check_evars env Evd.empty evd m; m
 
 let default_morphism sign m =
   let env = Global.env () in

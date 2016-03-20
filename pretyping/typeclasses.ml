@@ -490,7 +490,7 @@ let is_instance = function
    Nota: we will only check the resolvability status of undefined evars.
  *)
 
-let resolvable = Store.field ()
+let resolvable = Proofview.Unsafe.typeclass_resolvable
 
 let set_resolvable s b =
   if b then Store.remove s resolvable

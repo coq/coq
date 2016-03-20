@@ -76,6 +76,11 @@
   the case of (VERNAC) ARGUMENT EXTEND, the name of the argument entry is bound
   in the parsing rules, so beware of recursive calls.
 
+- Evarutil was split in two parts. The new Evardefine file exposes functions
+define_evar_* mostly used internally in the unification engine.
+
+- The Refine module was move out of Proofview.
+
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================

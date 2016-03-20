@@ -1,4 +1,5 @@
 Locusops
+Pretype_errors
 Reductionops
 Inductiveops
 Vnorm
@@ -6,9 +7,8 @@ Arguments_renaming
 Nativenorm
 Retyping
 Cbv
-Pretype_errors
 Find_subterm
-Evarutil
+Evardefine
 Evarsolve
 Recordops
 Evarconv

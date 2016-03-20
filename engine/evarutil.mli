@@ -78,6 +78,8 @@ val new_evar_instance :
 
 val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
 
+val safe_evar_value : evar_map -> existential -> constr option
+
 (** {6 Evars/Metas switching...} *)
 
 val non_instantiated : evar_map -> evar_info Evar.Map.t
@@ -96,20 +98,6 @@ val has_undefined_evars : evar_map -> constr -> bool
 
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
-(** [check_evars env initial_sigma extended_sigma c] fails if some
-   new unresolved evar remains in [c] *)
-val check_evars : env -> evar_map -> evar_map -> constr -> unit
-
-val define_evar_as_product : evar_map -> existential -> evar_map * types
-val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
-val define_evar_as_sort : env -> evar_map -> existential -> evar_map * sorts
-
-(** Instantiate an evar by as many lambda's as needed so that its arguments
-    are moved to the evar substitution (i.e. turn [?x[vars1:=args1] args] into
-    [?y[vars1:=args1,vars:=args]] with
-    [vars1 |- ?x:=\vars.?y[vars1:=vars1,vars:=vars]] *)
-val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
-  evar_map * existential
 
 (** [gather_dependent_evars evm seeds] classifies the evars in [evm]
     as dependent_evars and goals (these may overlap). A goal is an
@@ -140,26 +128,12 @@ val occur_evar_upto : evar_map -> Evar.t -> Constr.t -> bool
 
 val judge_of_new_Type : 'r Sigma.t -> (unsafe_judgment, 'r) Sigma.sigma
 
-type type_constraint = types option
-type val_constraint = constr option
-
-val empty_tycon : type_constraint
-val mk_tycon : constr -> type_constraint
-val empty_valcon : val_constraint
-val mk_valcon : constr -> val_constraint
-
-val split_tycon :
-  Loc.t -> env ->  evar_map -> type_constraint ->
-    evar_map * (Name.t * type_constraint * type_constraint)
-
-val valcon_of_tycon : type_constraint -> val_constraint
-val lift_tycon : int -> type_constraint -> type_constraint
-
 (***********************************************************)
 
 (** [flush_and_check_evars] raise [Uninstantiated_evar] if an evar remains
     uninstantiated; [nf_evar] leaves uninstantiated evars as is *)
 
+val whd_evar :  evar_map -> constr -> constr
 val nf_evar :  evar_map -> constr -> constr
 val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
 val jl_nf_evar :
@@ -177,12 +151,6 @@ val nf_evar_info : evar_map -> evar_info -> evar_info
 val nf_evar_map : evar_map -> evar_map
 val nf_evar_map_undefined : evar_map -> evar_map
 
-val env_nf_evar : evar_map -> env -> env
-val env_nf_betaiotaevar : evar_map -> env -> env
-
-val j_nf_betaiotaevar : evar_map -> unsafe_judgment -> unsafe_judgment
-val jv_nf_betaiotaevar :
-  evar_map -> unsafe_judgment array -> unsafe_judgment array
 (** Presenting terms without solved evars *)
 
 val nf_evars_universes : evar_map -> constr -> constr
@@ -211,11 +179,6 @@ val kind_of_term_upto : evar_map -> constr -> (constr,types) kind_of_term
     interpreted in [sigma2]. The universe constraints in [sigma2] are
     assumed to be an extention of those in [sigma1]. *)
 val eq_constr_univs_test : evar_map -> evar_map -> constr -> constr -> bool
-
-(** {6 debug pretty-printer:} *)
-
-val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
-
 
 (** {6 Removing hyps in evars'context}
 raise OccurHypInSimpleClause if the removal breaks dependencies *)
@@ -251,3 +214,8 @@ val subterm_source : existential_key -> Evar_kinds.t Loc.located ->
   Evar_kinds.t Loc.located
 
 val meta_counter_summary_name : string
+
+(** Deprecater *)
+
+type type_constraint = types option
+type val_constraint = constr option

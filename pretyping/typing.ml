@@ -39,7 +39,7 @@ let e_type_judgment env evdref j =
   match kind_of_term (whd_betadeltaiota env !evdref j.uj_type) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | Evar ev ->
-        let (evd,s) = Evarutil.define_evar_as_sort env !evdref ev in
+        let (evd,s) = Evardefine.define_evar_as_sort env !evdref ev in
         evdref := evd; { utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type env j
 
@@ -61,7 +61,7 @@ let e_judge_of_apply env evdref funj argjv =
 	 else
 	   error_cant_apply_bad_type env (n,c1, hj.uj_type) funj argjv
       | Evar ev ->
-	  let (evd',t) = Evarutil.define_evar_as_product !evdref ev in
+	  let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
           evdref := evd';
           let (_,_,c2) = destProd t in
 	  apply_rec (n+1) (subst1 hj.uj_val c2) restjl

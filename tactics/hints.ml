@@ -1072,7 +1072,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
       subst := (evar,mkVar id)::!subst;
       mkNamedLambda id t (iter (replace_term evar (mkVar id) c)) in
   let c' = iter c in
-    if check then Evarutil.check_evars (Global.env()) Evd.empty sigma c';
+    if check then Pretyping.check_evars (Global.env()) Evd.empty sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     if poly then IsConstr (c', diff)
     else if local then IsConstr (c', diff)

@@ -18,6 +18,7 @@ open Termops
 open Environ
 open Recordops
 open Evarutil
+open Evardefine
 open Evarsolve
 open Globnames
 open Evd

@@ -154,8 +154,8 @@ end
     focused goals. *)
 type proofview = {
   solution : Evd.evar_map;
-  comb : Goal.goal list;
-  shelf : Goal.goal list;
+  comb : Evar.t list;
+  shelf : Evar.t list;
 }
 
 (** {6 Instantiation of the logic monad} *)

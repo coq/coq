@@ -295,9 +295,9 @@ val shelve : unit tactic
     considered). *)
 val shelve_unifiable : unit tactic
 
-(** [guard_no_unifiable] fails with error [UnresolvedBindings] if some
+(** [guard_no_unifiable] returns the list of unifiable goals if some
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
-val guard_no_unifiable : unit tactic
+val guard_no_unifiable : Names.Name.t list option tactic
 
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
     goals of p *)
@@ -406,7 +406,16 @@ module Unsafe : sig
 
   (** Give an evar the status of a goal (changes its source location
       and makes it unresolvable for type classes. *)
-  val mark_as_goal : proofview -> Evar.t -> proofview
+  val mark_as_goal : Evd.evar_map -> Evar.t -> Evd.evar_map
+
+  (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
+      the current avatar of [g] (for instance [g] was changed by [clear]
+      into [g']). It returns [None] if [g] has been (partially)
+      solved. *)
+  val advance : Evd.evar_map -> Evar.t -> Evar.t option
+
+  val typeclass_resolvable : unit Evd.Store.field
+
 end
 
 (** This module gives access to the innards of the monad. Its use is
@@ -487,39 +496,6 @@ module Goal : sig
 
   (** Every goal is valid at a later stage. FIXME: take a later evarmap *)
   val lift : ('a, 'r) t -> ('r, 's) Sigma.le -> ('a, 's) t
-
-end
-
-
-(** {6 The refine tactic} *)
-
-module Refine : sig
-
-  (** Printer used to print the constr which refine refines. *)
-  val pr_constr :
-    (Environ.env -> Evd.evar_map -> Term.constr -> Pp.std_ppcmds) Hook.t
-
-  (** {7 Refinement primitives} *)
-
-  val refine : ?unsafe:bool -> Constr.t Sigma.run -> unit tactic
-  (** In [refine ?unsafe t], [t] is a term with holes under some
-      [evar_map] context. The term [t] is used as a partial solution
-      for the current goal (refine is a goal-dependent tactic), the
-      new holes created by [t] become the new subgoals. Exceptions
-      raised during the interpretation of [t] are caught and result in
-      tactic failures. If [unsafe] is [false] (default is [true]) [t] is
-      type-checked beforehand. *)
-
-  (** {7 Helper functions} *)
-
-  val with_type : Environ.env -> Evd.evar_map ->
-    Term.constr -> Term.types -> Evd.evar_map * Term.constr
-  (** [with_type env sigma c t] ensures that [c] is of type [t]
-      inserting a coercion if needed. *)
-
-  val refine_casted : ?unsafe:bool -> Constr.t Sigma.run -> unit tactic
-  (** Like {!refine} except the refined term is coerced to the conclusion of the
-      current goal. *)
 
 end
 
