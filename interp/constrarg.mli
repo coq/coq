@@ -71,6 +71,11 @@ val wit_red_expr :
 
 val wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
 
+(** [wit_ltac] is subtly different from [wit_tactic]: they only change for their
+    toplevel interpretation. The one of [wit_ltac] forces the tactic and
+    discards the result. *)
+val wit_ltac : (raw_tactic_expr, glob_tactic_expr, unit) genarg_type
+
 val wit_clause_dft_concl :  (Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) genarg_type
 
 (** Aliases for compatibility *)

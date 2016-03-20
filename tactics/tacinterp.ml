@@ -2144,6 +2144,10 @@ let () =
   Geninterp.register_interp0 wit_tactic interp
 
 let () =
+  let interp ist tac = interp_tactic ist tac >>= fun () -> Ftactic.return () in
+  Geninterp.register_interp0 wit_ltac interp
+
+let () =
   Geninterp.register_interp0 wit_uconstr (fun ist c -> Ftactic.nf_enter { enter = begin fun gl ->
     Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) c)
   end })

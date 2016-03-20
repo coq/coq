@@ -28,6 +28,8 @@ let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob
 let wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type =
   Genarg.make0 "tactic"
 
+let wit_ltac = Genarg.make0 ~dyn:(val_tag (topwit Stdarg.wit_unit)) "ltac"
+
 let wit_ident =
   Genarg.make0 "ident"
 

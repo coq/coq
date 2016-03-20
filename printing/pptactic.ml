@@ -1415,6 +1415,11 @@ let () =
   let printer _ _ prtac = prtac (0, E) in
   declare_extra_genarg_pprule wit_tactic printer printer printer
 
+let () =
+  let pr_unit _ _ _ () = str "()" in
+  let printer _ _ prtac = prtac (0, E) in
+  declare_extra_genarg_pprule wit_ltac printer printer pr_unit
+
 module Richpp = struct
 
   include Make (Ppconstr.Richpp) (struct
