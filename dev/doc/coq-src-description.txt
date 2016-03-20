@@ -19,13 +19,6 @@ highparsing :
  Files in parsing/ that cannot be linked too early.
  Contains the grammar rules g_*.ml4
 
-hightactics :
-
- Files in tactics/ that cannot be linked too early.
- These are the .ml4 files that uses the EXTEND possibilities
- provided by grammar.cma, for instance eauto.ml4.
-
-
 Special components
 ------------------
 

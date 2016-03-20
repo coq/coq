@@ -503,7 +503,7 @@ test-suite: world $(ALLSTDLIB).v
 ##################################################################
 
 .PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
-.PHONY: engine highparsing stm toplevel hightactics
+.PHONY: engine highparsing stm toplevel ltac
 
 lib: lib/clib.cma lib/lib.cma
 kernel: kernel/kernel.cma
@@ -518,7 +518,7 @@ pretyping: pretyping/pretyping.cma
 highparsing: parsing/highparsing.cma
 stm: stm/stm.cma
 toplevel: toplevel/toplevel.cma
-hightactics: tactics/hightactics.cma
+ltac: ltac/ltac.cma
 
 ###########################################################################
 # 2) theories and plugins files
@@ -869,7 +869,7 @@ parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
 grammar/grammar.dot : | grammar/grammar.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
-tactics/tactics.dot: | tactics/tactics.mllib.d tactics/hightactics.mllib.d
+tactics/tactics.dot: | tactics/tactics.mllib.d ltac/ltac.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
 %.dot: %.mli

@@ -63,7 +63,7 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 CORESRCDIRS:=\
   config 	lib		kernel		kernel/byterun	library \
   proofs 	tactics 	pretyping	interp		stm \
-  toplevel	parsing	printing	grammar	        intf	engine
+  toplevel	parsing	printing	grammar	        intf	engine	ltac
 
 PLUGINS:=\
   omega		romega 		micromega 	quote \
@@ -161,14 +161,14 @@ BYTERUN:=$(addprefix kernel/byterun/, \
   coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
 
 # LINK ORDER:
-# Beware that highparsing.cma should appear before hightactics.cma
+# Beware that highparsing.cma should appear before ltac.cma
 # respecting this order is useful for developers that want to load or link
 # the libraries directly
 
 CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma \
-	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
+	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma ltac/ltac.cma
 
 TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 
@@ -379,7 +379,7 @@ OCAMLDOCDIR=dev/ocamldoc
 DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
 	./engine/*.mli ./pretyping/*.mli ./interp/*.mli printing/*.mli \
 	./parsing/*.mli ./proofs/*.mli \
-	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli)
+	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli ./ltac/*.mli)
 
 # Defining options to generate dependencies graphs
 DOT=dot
