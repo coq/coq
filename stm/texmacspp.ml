@@ -503,9 +503,6 @@ let rec tmpp v loc =
   | VernacError _ -> xmlWithLoc loc "error" [] []
 
   (* Syntax *)
-  | VernacTacticNotation _ as x ->
-      xmlLtac loc [PCData (Pp.string_of_ppcmds (Ppvernac.pr_vernac x))]
-
   | VernacSyntaxExtension (_, ((_, name), sml)) ->
       let attrs = List.flatten (List.map attribute_of_syntax_modifier sml) in
       xmlReservedNotation attrs name loc

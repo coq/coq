@@ -195,7 +195,6 @@ let rec classify_vernac e =
     | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _
     | VernacSyntaxExtension _ 
     | VernacSyntacticDefinition _
-    | VernacTacticNotation _
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *)

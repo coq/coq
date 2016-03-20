@@ -1822,8 +1822,6 @@ let interp ?proof ~loc locality poly c =
   | VernacError e -> raise e
 
   (* Syntax *)
-  | VernacTacticNotation (n,r,e) ->
-      Metasyntax.add_tactic_notation (make_module_locality locality,n,r,e)
   | VernacSyntaxExtension (local,sl) ->
       vernac_syntax_extension locality local sl
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
@@ -1978,8 +1976,7 @@ let check_vernac_supports_locality c l =
   match l, c with
   | None, _ -> ()
   | Some _, (
-      VernacTacticNotation _
-    | VernacOpenCloseScope _
+      VernacOpenCloseScope _
     | VernacSyntaxExtension _ | VernacInfix _ | VernacNotation _
     | VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
     | VernacAssumption _ | VernacStartTheoremProof _

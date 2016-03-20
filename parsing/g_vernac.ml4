@@ -1048,10 +1048,6 @@ GEXTEND Gram
      | IDENT "Format"; IDENT "Notation"; n = STRING; s = STRING; fmt = STRING ->
            VernacNotationAddFormat (n,s,fmt)
 
-     | IDENT "Tactic"; IDENT "Notation"; n = tactic_level;
-	 pil = LIST1 production_item; ":="; t = Tactic.tactic
-         -> VernacTacticNotation (n,pil,t)
-
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
 	   Metasyntax.check_infix_modifiers l;
@@ -1076,9 +1072,6 @@ GEXTEND Gram
   ;
   obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]
-  ;
-  tactic_level:
-    [ [ "("; "at"; IDENT "level"; n = natural; ")" -> n | -> 0 ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> NumLevel n
@@ -1110,11 +1103,5 @@ GEXTEND Gram
       | IDENT "binder" -> ETBinder true
       | IDENT "closed"; IDENT "binder" -> ETBinder false
     ] ]
-  ;
-  production_item:
-    [ [ s = ne_string -> TacTerm s
-      | nt = IDENT;
-        po = [ "("; p = ident; sep = [ -> "" | ","; sep = STRING -> sep ];
-                   ")" -> (p,sep) ] -> TacNonTerm (!@loc,nt,po) ] ]
   ;
 END

@@ -370,3 +370,37 @@ VERNAC tactic_mode EXTEND VernacSolve
     vernac_solve SelectAll n t def
   ]
 END
+
+let pr_ltac_tactic_level n = str "(at level " ++ int n ++ str ")"
+
+VERNAC ARGUMENT EXTEND ltac_tactic_level PRINTED BY pr_ltac_tactic_level
+| [ "(" "at" "level" natural(n) ")" ] -> [ n ]
+END
+
+VERNAC ARGUMENT EXTEND ltac_production_sep
+| [ "," string(sep) ] -> [ sep ]
+END
+
+let pr_ltac_production_item = function
+| TacTerm s -> quote (str s)
+| TacNonTerm (_, arg, (id, sep)) ->
+  let sep = match sep with
+  | "" -> mt ()
+  | sep -> str "," ++ spc () ++ quote (str sep)
+  in
+  str arg ++ str "(" ++ Nameops.pr_id id ++ sep ++ str ")"
+
+VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
+| [ string(s) ] -> [ TacTerm s ]
+| [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
+  [ TacNonTerm (loc, Names.Id.to_string nt, (p, Option.default "" sep)) ]
+END
+
+VERNAC COMMAND EXTEND VernacTacticNotation CLASSIFIED AS SIDEFF
+| [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] ->
+  [
+    let l = Locality.LocalityFixme.consume () in
+    let n = Option.default 0 n in
+    Metasyntax.add_tactic_notation (Locality.make_module_locality l, n, r, e)
+  ]
+END

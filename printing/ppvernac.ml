@@ -378,17 +378,6 @@ module Make
     | l -> spc() ++
       hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
-  let print_level n =
-    if not (Int.equal n 0) then
-      spc () ++ tag_keyword (str "(at level " ++ int n ++ str ")")
-    else
-      mt ()
-
-  let pr_grammar_tactic_rule n (_,pil,t) =
-    hov 2 (keyword "Tactic Notation" ++ print_level n ++ spc() ++
-             hov 0 (prlist_with_sep sep pr_production_item pil ++
-                      spc() ++ str":=" ++ spc() ++ pr_raw_tactic t))
-
   let pr_univs pl =
     match pl with
     | None -> mt ()
@@ -644,8 +633,6 @@ module Make
           return (keyword "No-parsing-rule for VernacError")
 
       (* Syntax *)
-        | VernacTacticNotation (n,r,e) ->
-          return (pr_grammar_tactic_rule n ("",r,e))
         | VernacOpenCloseScope (_,(opening,sc)) ->
           return (
             keyword (if opening then "Open " else "Close ") ++
