@@ -1,6 +1,5 @@
 Locusops
 Pretype_errors
-Evarutil
 Reductionops
 Inductiveops
 Vnorm
@@ -21,7 +20,6 @@ Patternops
 Constr_matching
 Tacred
 Typeclasses_errors
-Proofview
 Typeclasses
 Classops
 Program
