@@ -50,7 +50,7 @@ let pr_lconstr_core goal_concl_style env sigma t =
 
 let pr_lconstr_env env = pr_lconstr_core false env
 let pr_constr_env env = pr_constr_core false env
-let _ = Hook.set Proofview.Refine.pr_constr pr_constr_env
+let _ = Hook.set Refine.pr_constr pr_constr_env
 
 let pr_lconstr_goal_style_env env = pr_lconstr_core true env
 let pr_constr_goal_style_env env = pr_constr_core true env

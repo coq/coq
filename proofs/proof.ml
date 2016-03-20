@@ -334,22 +334,24 @@ let compact p =
 (*** Tactics ***)
 
 let run_tactic env tac pr =
+  let open Proofview.Notations in
   let sp = pr.proofview in
-  let (_,tacticced_proofview,(status,to_shelve,give_up),info_trace) =
+  let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
+  let tac =
+    tac >>= fun () ->
+    Proofview.tclEVARMAP >>= fun sigma ->
+    (* Already solved goals are not to be counted as shelved. Nor are
+      they to be marked as unresolvable. *)
+    let retrieved = undef sigma (List.rev (Evd.future_goals sigma)) in
+    let sigma = List.fold_left Proofview.Unsafe.mark_as_goal sigma retrieved in
+    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+    Proofview.tclUNIT retrieved
+  in
+  let (retrieved,proofview,(status,to_shelve,give_up),info_trace) =
     Proofview.apply env tac sp
   in
-  let sigma = Proofview.return tacticced_proofview in
-  (* Already solved goals are not to be counted as shelved. Nor are
-     they to be marked as unresolvable. *)
-  let undef l = List.filter (fun g -> Evd.is_undefined sigma g) l in
-  let retrieved = undef (List.rev (Evd.future_goals sigma)) in
-  let shelf = (undef pr.shelf)@retrieved@(undef to_shelve) in
-  let proofview =
-    List.fold_left
-      Proofview.Unsafe.mark_as_goal
-      tacticced_proofview
-      retrieved
-  in
+  let sigma = Proofview.return proofview in
+  let shelf = (undef sigma pr.shelf)@retrieved@(undef sigma to_shelve) in
   let given_up = pr.given_up@give_up in
   let proofview = Proofview.Unsafe.reset_future_goals proofview in
   { pr with proofview ; shelf ; given_up },(status,info_trace)

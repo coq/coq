@@ -431,7 +431,7 @@ end
 module New : sig
 
   val refine : ?unsafe:bool -> constr Sigma.run -> unit Proofview.tactic
-  (** [refine ?unsafe c] is [Proofview.Refine.refine ?unsafe c]
+  (** [refine ?unsafe c] is [Refine.refine ?unsafe c]
       followed by beta-iota-reduction of the conclusion. *)
 
   val reduce_after_refine : unit Proofview.tactic

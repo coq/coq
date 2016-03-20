@@ -184,6 +184,7 @@ Proof_errors
 Logic_monad
 Proofview_monad
 Proofview
+Refine
 Proof
 Proof_global
 Pfedit

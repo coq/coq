@@ -330,7 +330,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 		if not (Option.is_empty term) then
                   let init_refine =
                     Tacticals.New.tclTHENLIST [
-                      Proofview.Refine.refine { run = fun evm -> Sigma (Option.get term, evm, Sigma.refl) };
+                      Refine.refine { run = fun evm -> Sigma (Option.get term, evm, Sigma.refl) };
                       Proofview.Unsafe.tclNEWGOALS gls;
                       Tactics.New.reduce_after_refine;
                     ]
