@@ -60,7 +60,6 @@ type printable =
   | PrintClasses
   | PrintTypeClasses
   | PrintInstances of reference or_by_notation
-  | PrintLtac of reference
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions

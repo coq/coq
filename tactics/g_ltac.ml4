@@ -404,3 +404,8 @@ VERNAC COMMAND EXTEND VernacTacticNotation CLASSIFIED AS SIDEFF
     Metasyntax.add_tactic_notation (Locality.make_module_locality l, n, r, e)
   ]
 END
+
+VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
+| [ "Print" "Ltac" reference(r) ] ->
+  [ msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
+END

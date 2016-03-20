@@ -455,8 +455,6 @@ module Make
         keyword "Print TypeClasses"
       | PrintInstances qid ->
         keyword "Print Instances" ++ spc () ++ pr_smart_global qid
-      | PrintLtac qid ->
-        keyword "Print Ltac" ++ spc() ++ pr_ltac_ref qid
       | PrintCoercions ->
         keyword "Print Coercions"
       | PrintCoercionPaths (s,t) ->
