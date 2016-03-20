@@ -21,6 +21,7 @@ Constr_matching
 Tacred
 Typeclasses_errors
 Typeclasses
+Proofview
 Classops
 Program
 Coercion

@@ -4,7 +4,6 @@ Evar_refiner
 Proof_using
 Proof_errors
 Logic
-Proofview
 Refine
 Proof
 Proof_global
