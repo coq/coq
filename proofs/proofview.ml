@@ -1272,20 +1272,6 @@ module V82 = struct
     in
     CList.flatten (CList.map evars_of_initial initial)
 
-  let instantiate_evar n com pv =
-    let (evk,_) =
-      let evl = Evarutil.non_instantiated pv.solution in
-      let evl = Evar.Map.bindings evl in
-      if (n <= 0) then
-	Errors.error "incorrect existential variable index"
-      else if CList.length evl < n then
-	  Errors.error "not so many uninstantiated existential variables"
-      else
-	CList.nth evl (n-1)
-    in
-    { pv with
-	solution = Evar_refiner.instantiate_pf_com evk com pv.solution }
-
   let of_tactic t gls =
     try
       let init = { shelf = []; solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in

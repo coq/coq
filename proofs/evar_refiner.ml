@@ -59,14 +59,3 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
                  str (string_of_existential evk))
   in
   define_and_solve_constraints evk typed_c env (evars_reset_evd sigma' sigma)
-
-(* vernac command Existential *)
-
-(* Main component of vernac command Existential *)
-let instantiate_pf_com evk com sigma =
-  let evi = Evd.find sigma evk in
-  let env = Evd.evar_filtered_env evi in
-  let rawc = Constrintern.intern_constr env com in
-  let ltac_vars = Pretyping.empty_lvar in
-  let sigma' = w_refine (evk, evi) (ltac_vars, rawc) sigma in
-  sigma'

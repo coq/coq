@@ -577,9 +577,6 @@ module V82 : sig
   
   (* returns the existential variable used to start the proof *)
   val top_evars : entry -> Evd.evar list
-    
-  (* Implements the Existential command *)
-  val instantiate_evar : int -> Constrexpr.constr_expr -> proofview -> proofview
 
   (* Caution: this function loses quite a bit of information. It
      should be avoided as much as possible.  It should work as
