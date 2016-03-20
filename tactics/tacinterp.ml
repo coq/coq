@@ -1219,34 +1219,53 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
           Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return arg)
         end
       | _ as tag -> (** Special treatment. TODO: use generic handler  *)
-        Ftactic.nf_enter begin fun gl ->
-          let sigma = Proofview.Goal.sigma gl in
-          let env = Proofview.Goal.env gl in
           match tag with
           | IntOrVarArgType ->
+            Ftactic.enter begin fun _ ->
               Ftactic.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
+            end
           | IdentArgType ->
+            Ftactic.enter begin fun gl ->
+              let sigma = Proofview.Goal.sigma gl in
+              let env = Proofview.Goal.env (Proofview.Goal.assume gl) in
               Ftactic.return (value_of_ident (interp_ident ist env sigma
                                                (out_gen (glbwit wit_ident) x)))
+            end
           | VarArgType ->
+            Ftactic.enter begin fun gl ->
+              let sigma = Proofview.Goal.sigma gl in
+              let env = Proofview.Goal.env (Proofview.Goal.assume gl) in
               Ftactic.return (mk_hyp_value ist env sigma (out_gen (glbwit wit_var) x))
-          | GenArgType -> f (out_gen (glbwit wit_genarg) x)
+            end
+          | GenArgType ->
+            Ftactic.enter begin fun _ ->
+              f (out_gen (glbwit wit_genarg) x)
+            end
           | ConstrArgType ->
+            Ftactic.nf_enter begin fun gl ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
               in
               Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
+            end
           | OpenConstrArgType ->
+            Ftactic.nf_enter begin fun gl ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
               Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
+            end
           | ConstrMayEvalArgType ->
+            Ftactic.nf_enter begin fun gl ->
+              let sigma = Proofview.Goal.sigma gl in
+              let env = Proofview.Goal.env gl in
               let (sigma,c_interp) =
                 interp_constr_may_eval ist env sigma
                   (out_gen (glbwit wit_constr_may_eval) x)
               in
               Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c_interp))
+            end
           | ListArgType ConstrArgType ->
+            Ftactic.nf_enter begin fun gl ->
               let wit = glbwit (wit_list wit_constr) in
               let (sigma,l_interp) = Tacmach.New.of_old begin fun gl ->
                 Evd.MonadR.List.map_right
@@ -1255,22 +1274,34 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
                   (project gl)
               end gl in
               Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (in_gen (topwit (wit_list wit_genarg)) l_interp))
+            end
           | ListArgType VarArgType ->
+            Ftactic.enter begin fun gl ->
+              let sigma = Proofview.Goal.sigma gl in
+              let env = Proofview.Goal.env (Proofview.Goal.assume gl) in
               let wit = glbwit (wit_list wit_var) in
               Ftactic.return (
                 let ans = List.map (mk_hyp_value ist env sigma) (out_gen wit x) in
                 in_gen (topwit (wit_list wit_genarg)) ans
               )
+            end
           | ListArgType IntOrVarArgType ->
+            Ftactic.enter begin fun _ ->
               let wit = glbwit (wit_list wit_int_or_var) in
               let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
               Ftactic.return (in_gen (topwit (wit_list wit_genarg)) ans)
+            end
           | ListArgType IdentArgType ->
+            Ftactic.enter begin fun gl ->
+              let sigma = Proofview.Goal.sigma gl in
+              let env = Proofview.Goal.env (Proofview.Goal.assume gl) in
               let wit = glbwit (wit_list wit_ident) in
               let mk_ident x = value_of_ident (interp_ident ist env sigma x) in
               let ans = List.map mk_ident (out_gen wit x) in
               Ftactic.return (in_gen (topwit (wit_list wit_genarg)) ans)
+            end
           | ListArgType t  ->
+            Ftactic.enter begin fun gl ->
               let open Ftactic in
               let list_unpacker wit l =
                 let map x =
@@ -1281,17 +1312,22 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
                 Ftactic.return (in_gen (topwit (wit_list wit)) l)
               in
               list_unpack { list_unpacker } x
+            end
           | ExtraArgType _ ->
               (** Special treatment of tactics *)
-              if has_type x (glbwit wit_tactic) then
+            if has_type x (glbwit wit_tactic) then
+              Ftactic.enter begin fun _ ->
                 let tac = out_gen (glbwit wit_tactic) x in
                 val_interp ist tac
-              else
-                let goal = Proofview.Goal.goal gl in
-                let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
-                Ftactic.(lift (Proofview.Unsafe.tclEVARS newsigma) <*> return v)
+              end
+            else
+              Ftactic.nf_enter begin fun gl ->
+                let sigma = Proofview.Goal.sigma gl in
+                  let goal = Proofview.Goal.goal gl in
+                  let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
+                  Ftactic.(lift (Proofview.Unsafe.tclEVARS newsigma) <*> return v)
+              end
           | _ -> assert false
-        end
       in
       let (>>=) = Ftactic.bind in
       let interp_vars =
