@@ -694,7 +694,6 @@ let rec tmpp v loc =
   | VernacBackTo _ -> PCData "VernacBackTo"
 
   (* Commands *)
-  | VernacDeclareTacticDefinition _ as x -> xmlTODO loc x
   | VernacCreateHintDb _ as x -> xmlTODO loc x
   | VernacRemoveHints _ as x -> xmlTODO loc x
   | VernacHints _ as x -> xmlTODO loc x

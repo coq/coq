@@ -995,29 +995,6 @@ module Make
           return (keyword "Cd" ++ pr_opt qs s)
 
         (* Commands *)
-        | VernacDeclareTacticDefinition l ->
-          let pr_tac_body tacdef_body =
-            let id, redef, body =
-              match tacdef_body with
-              | TacticDefinition ((_,id), body) -> pr_id id, false, body
-              | TacticRedefinition (id, body) -> pr_ltac_ref id, true, body
-            in
-            let idl, body =
-              match body with
-                | Tacexpr.TacFun (idl,b) -> idl,b
-                | _ -> [], body in
-            id ++
-              prlist (function None -> str " _"
-                | Some id -> spc () ++ pr_id id) idl
-            ++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
-              pr_raw_tactic body
-          in
-          return (
-            hov 1
-              (keyword "Ltac" ++ spc () ++
-                 prlist_with_sep (fun () ->
-                   fnl() ++ keyword "with" ++ spc ()) pr_tac_body l)
-          )
         | VernacCreateHintDb (dbname,b) ->
           return (
             hov 1 (keyword "Create HintDb" ++ spc () ++

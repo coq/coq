@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Errors
 open Util
 open Names
@@ -14,6 +15,8 @@ open Pcoq
 open Egramml
 open Egramcoq
 open Vernacexpr
+open Libnames
+open Nameops
 
 (**********************************************************************)
 (* Tactic Notation                                                    *)
@@ -184,3 +187,77 @@ let add_ml_tactic_notation name prods =
   } in
   Lib.add_anonymous_leaf (inMLTacticGrammar obj);
   extend_atomic_tactic name prods
+
+(** Command *)
+
+
+type tacdef_kind =
+  | NewTac of Id.t
+  | UpdateTac of Nametab.ltac_constant
+
+let is_defined_tac kn =
+  try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
+
+let register_ltac local tacl =
+  let map tactic_body =
+    match tactic_body with
+    | TacticDefinition ((loc,id), body) ->
+        let kn = Lib.make_kn id in
+        let id_pp = pr_id id in
+        let () = if is_defined_tac kn then
+          Errors.user_err_loc (loc, "",
+            str "There is already an Ltac named " ++ id_pp ++ str".")
+        in
+        let is_primitive =
+          try
+            match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
+            | Tacexpr.TacArg _ -> false
+            | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
+          with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
+        in
+        let () = if is_primitive then
+          msg_warning (str "The Ltac name " ++ id_pp ++
+            str " may be unusable because of a conflict with a notation.")
+        in
+        NewTac id, body
+    | TacticRedefinition (ident, body) ->
+        let loc = loc_of_reference ident in
+        let kn =
+          try Nametab.locate_tactic (snd (qualid_of_reference ident))
+          with Not_found ->
+            Errors.user_err_loc (loc, "",
+                        str "There is no Ltac named " ++ pr_reference ident ++ str ".")
+        in
+        UpdateTac kn, body
+  in
+  let rfun = List.map map tacl in
+  let recvars =
+    let fold accu (op, _) = match op with
+    | UpdateTac _ -> accu
+    | NewTac id -> (Lib.make_path id, Lib.make_kn id) :: accu
+    in
+    List.fold_left fold [] rfun
+  in
+  let ist = Tacintern.make_empty_glob_sign () in
+  let map (name, body) =
+    let body = Flags.with_option Tacintern.strict_check (Tacintern.intern_tactic_or_tacarg ist) body in
+    (name, body)
+  in
+  let defs () =
+    (** Register locally the tactic to handle recursivity. This function affects
+        the whole environment, so that we transactify it afterwards. *)
+    let iter_rec (sp, kn) = Nametab.push_tactic (Nametab.Until 1) sp kn in
+    let () = List.iter iter_rec recvars in
+    List.map map rfun
+  in
+  let defs = Future.transactify defs () in
+  let iter (def, tac) = match def with
+  | NewTac id ->
+    Tacenv.register_ltac false local id tac;
+    Flags.if_verbose msg_info (Nameops.pr_id id ++ str " is defined")
+  | UpdateTac kn ->
+    Tacenv.redefine_ltac local kn tac;
+    let name = Nametab.shortest_qualid_of_tactic kn in
+    Flags.if_verbose msg_info (Libnames.pr_qualid name ++ str " is redefined")
+  in
+  List.iter iter defs

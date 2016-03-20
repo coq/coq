@@ -751,11 +751,7 @@ GEXTEND Gram
   GLOBAL: command query_command class_rawexpr;
 
   command:
-    [ [ IDENT "Ltac";
-        l = LIST1 tacdef_body SEP "with" ->
-          VernacDeclareTacticDefinition l
-
-      | IDENT "Comments"; l = LIST0 comment -> VernacComments l
+    [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
 
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";

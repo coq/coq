@@ -48,6 +48,7 @@ let new_entry name =
   e
 
 let selector = new_entry "vernac:selector"
+let tacdef_body = new_entry "tactic:tacdef_body"
 
 (* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
     proof editing and changes nothing else). Then sets it as the default proof mode. *)
@@ -311,6 +312,7 @@ open Constrarg
 open Vernacexpr
 open Vernac_classifier
 open Goptions
+open Libnames
 
 let print_info_trace = ref None
 
@@ -408,4 +410,20 @@ END
 VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
 | [ "Print" "Ltac" reference(r) ] ->
   [ msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
+END
+
+VERNAC ARGUMENT EXTEND ltac_tacdef_body
+| [ tacdef_body(t) ] -> [ t ]
+END
+
+VERNAC COMMAND EXTEND VernacDeclareTacticDefinition
+| [ "Ltac" ne_ltac_tacdef_body_list_sep(l, "with") ] => [
+    VtSideff (List.map (function
+      | TacticDefinition ((_,r),_) -> r
+      | TacticRedefinition (Ident (_,r),_) -> r
+      | TacticRedefinition (Qualid (_,q),_) -> snd(repr_qualid q)) l), VtLater
+  ] -> [
+    let lc = Locality.LocalityFixme.consume () in
+    Tacentries.register_ltac (Locality.make_module_locality lc) l
+  ]
 END

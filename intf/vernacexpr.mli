@@ -379,7 +379,6 @@ type vernac_expr =
   | VernacBackTo of int
 
   (* Commands *)
-  | VernacDeclareTacticDefinition of tacdef_body list
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * reference list
   | VernacHints of obsolete_locality * string list * hints_expr

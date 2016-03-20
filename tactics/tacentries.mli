@@ -17,3 +17,5 @@ val add_tactic_notation :
 
 val add_ml_tactic_notation : ml_tactic_name ->
   Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list list -> unit
+
+val register_ltac : bool -> Vernacexpr.tacdef_body list -> unit
