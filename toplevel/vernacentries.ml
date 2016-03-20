@@ -1427,7 +1427,6 @@ let vernac_check_may_eval redexp glopt rc =
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
                     Printer.pr_universe_ctx sigma uctx)
     | Some r ->
-        Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = Hook.get f_interp_redexp env sigma' r in
 	let redfun env evm c =
           let (redfun, _) = reduction_of_red_expr env r_interp in
