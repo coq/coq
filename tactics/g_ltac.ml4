@@ -398,8 +398,9 @@ VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
   [ TacNonTerm (loc, Names.Id.to_string nt, (p, Option.default "" sep)) ]
 END
 
-VERNAC COMMAND EXTEND VernacTacticNotation CLASSIFIED AS SIDEFF
-| [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] ->
+VERNAC COMMAND EXTEND VernacTacticNotation
+| [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] =>
+  [ VtUnknown, VtNow ] ->
   [
     let l = Locality.LocalityFixme.consume () in
     let n = Option.default 0 n in
