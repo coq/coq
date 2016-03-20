@@ -60,7 +60,6 @@ type printable =
   | PrintClasses
   | PrintTypeClasses
   | PrintInstances of reference or_by_notation
-  | PrintLtac of reference
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions
@@ -291,8 +290,6 @@ type vernac_expr =
   | VernacError of exn (* always fails *)
 
   (* Syntax *)
-  | VernacTacticNotation of
-      int * grammar_tactic_prod_item_expr list * raw_tactic_expr
   | VernacSyntaxExtension of
       obsolete_locality * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
@@ -382,7 +379,6 @@ type vernac_expr =
   | VernacBackTo of int
 
   (* Commands *)
-  | VernacDeclareTacticDefinition of tacdef_body list
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * reference list
   | VernacHints of obsolete_locality * string list * hints_expr

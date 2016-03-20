@@ -378,17 +378,6 @@ module Make
     | l -> spc() ++
       hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
-  let print_level n =
-    if not (Int.equal n 0) then
-      spc () ++ tag_keyword (str "(at level " ++ int n ++ str ")")
-    else
-      mt ()
-
-  let pr_grammar_tactic_rule n (_,pil,t) =
-    hov 2 (keyword "Tactic Notation" ++ print_level n ++ spc() ++
-             hov 0 (prlist_with_sep sep pr_production_item pil ++
-                      spc() ++ str":=" ++ spc() ++ pr_raw_tactic t))
-
   let pr_univs pl =
     match pl with
     | None -> mt ()
@@ -466,8 +455,6 @@ module Make
         keyword "Print TypeClasses"
       | PrintInstances qid ->
         keyword "Print Instances" ++ spc () ++ pr_smart_global qid
-      | PrintLtac qid ->
-        keyword "Print Ltac" ++ spc() ++ pr_ltac_ref qid
       | PrintCoercions ->
         keyword "Print Coercions"
       | PrintCoercionPaths (s,t) ->
@@ -644,8 +631,6 @@ module Make
           return (keyword "No-parsing-rule for VernacError")
 
       (* Syntax *)
-        | VernacTacticNotation (n,r,e) ->
-          return (pr_grammar_tactic_rule n ("",r,e))
         | VernacOpenCloseScope (_,(opening,sc)) ->
           return (
             keyword (if opening then "Open " else "Close ") ++
@@ -1010,29 +995,6 @@ module Make
           return (keyword "Cd" ++ pr_opt qs s)
 
         (* Commands *)
-        | VernacDeclareTacticDefinition l ->
-          let pr_tac_body tacdef_body =
-            let id, redef, body =
-              match tacdef_body with
-              | TacticDefinition ((_,id), body) -> pr_id id, false, body
-              | TacticRedefinition (id, body) -> pr_ltac_ref id, true, body
-            in
-            let idl, body =
-              match body with
-                | Tacexpr.TacFun (idl,b) -> idl,b
-                | _ -> [], body in
-            id ++
-              prlist (function None -> str " _"
-                | Some id -> spc () ++ pr_id id) idl
-            ++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
-              pr_raw_tactic body
-          in
-          return (
-            hov 1
-              (keyword "Ltac" ++ spc () ++
-                 prlist_with_sep (fun () ->
-                   fnl() ++ keyword "with" ++ spc ()) pr_tac_body l)
-          )
         | VernacCreateHintDb (dbname,b) ->
           return (
             hov 1 (keyword "Create HintDb" ++ spc () ++

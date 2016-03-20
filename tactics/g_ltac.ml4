@@ -48,6 +48,7 @@ let new_entry name =
   e
 
 let selector = new_entry "vernac:selector"
+let tacdef_body = new_entry "tactic:tacdef_body"
 
 (* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
     proof editing and changes nothing else). Then sets it as the default proof mode. *)
@@ -311,6 +312,7 @@ open Constrarg
 open Vernacexpr
 open Vernac_classifier
 open Goptions
+open Libnames
 
 let print_info_trace = ref None
 
@@ -368,5 +370,60 @@ VERNAC tactic_mode EXTEND VernacSolve
 | [ - "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     [ VtProofStep true, VtLater ] -> [
     vernac_solve SelectAll n t def
+  ]
+END
+
+let pr_ltac_tactic_level n = str "(at level " ++ int n ++ str ")"
+
+VERNAC ARGUMENT EXTEND ltac_tactic_level PRINTED BY pr_ltac_tactic_level
+| [ "(" "at" "level" natural(n) ")" ] -> [ n ]
+END
+
+VERNAC ARGUMENT EXTEND ltac_production_sep
+| [ "," string(sep) ] -> [ sep ]
+END
+
+let pr_ltac_production_item = function
+| TacTerm s -> quote (str s)
+| TacNonTerm (_, arg, (id, sep)) ->
+  let sep = match sep with
+  | "" -> mt ()
+  | sep -> str "," ++ spc () ++ quote (str sep)
+  in
+  str arg ++ str "(" ++ Nameops.pr_id id ++ sep ++ str ")"
+
+VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
+| [ string(s) ] -> [ TacTerm s ]
+| [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
+  [ TacNonTerm (loc, Names.Id.to_string nt, (p, Option.default "" sep)) ]
+END
+
+VERNAC COMMAND EXTEND VernacTacticNotation CLASSIFIED AS SIDEFF
+| [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] ->
+  [
+    let l = Locality.LocalityFixme.consume () in
+    let n = Option.default 0 n in
+    Tacentries.add_tactic_notation (Locality.make_module_locality l, n, r, e)
+  ]
+END
+
+VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
+| [ "Print" "Ltac" reference(r) ] ->
+  [ msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
+END
+
+VERNAC ARGUMENT EXTEND ltac_tacdef_body
+| [ tacdef_body(t) ] -> [ t ]
+END
+
+VERNAC COMMAND EXTEND VernacDeclareTacticDefinition
+| [ "Ltac" ne_ltac_tacdef_body_list_sep(l, "with") ] => [
+    VtSideff (List.map (function
+      | TacticDefinition ((_,r),_) -> r
+      | TacticRedefinition (Ident (_,r),_) -> r
+      | TacticRedefinition (Qualid (_,q),_) -> snd(repr_qualid q)) l), VtLater
+  ] -> [
+    let lc = Locality.LocalityFixme.consume () in
+    Tacentries.register_ltac (Locality.make_module_locality lc) l
   ]
 END

@@ -751,11 +751,7 @@ GEXTEND Gram
   GLOBAL: command query_command class_rawexpr;
 
   command:
-    [ [ IDENT "Ltac";
-        l = LIST1 tacdef_body SEP "with" ->
-          VernacDeclareTacticDefinition l
-
-      | IDENT "Comments"; l = LIST0 comment -> VernacComments l
+    [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
 
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
@@ -890,7 +886,6 @@ GEXTEND Gram
       | IDENT "Classes" ->  PrintClasses
       | IDENT "TypeClasses" -> PrintTypeClasses
       | IDENT "Instances"; qid = smart_global -> PrintInstances qid
-      | IDENT "Ltac"; qid = global -> PrintLtac qid
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)
@@ -1048,10 +1043,6 @@ GEXTEND Gram
      | IDENT "Format"; IDENT "Notation"; n = STRING; s = STRING; fmt = STRING ->
            VernacNotationAddFormat (n,s,fmt)
 
-     | IDENT "Tactic"; IDENT "Notation"; n = tactic_level;
-	 pil = LIST1 production_item; ":="; t = Tactic.tactic
-         -> VernacTacticNotation (n,pil,t)
-
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
 	   Metasyntax.check_infix_modifiers l;
@@ -1076,9 +1067,6 @@ GEXTEND Gram
   ;
   obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]
-  ;
-  tactic_level:
-    [ [ "("; "at"; IDENT "level"; n = natural; ")" -> n | -> 0 ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> NumLevel n
@@ -1110,11 +1098,5 @@ GEXTEND Gram
       | IDENT "binder" -> ETBinder true
       | IDENT "closed"; IDENT "binder" -> ETBinder false
     ] ]
-  ;
-  production_item:
-    [ [ s = ne_string -> TacTerm s
-      | nt = IDENT;
-        po = [ "("; p = ident; sep = [ -> "" | ","; sep = STRING -> sep ];
-                   ")" -> (p,sep) ] -> TacNonTerm (!@loc,nt,po) ] ]
   ;
 END

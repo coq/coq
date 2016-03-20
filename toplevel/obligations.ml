@@ -323,8 +323,7 @@ let get_info x =
 
 let assumption_message = Declare.assumption_message
 
-let (set_default_tactic, get_default_tactic, print_default_tactic) = 
-  Tactic_option.declare_tactic_option "Program tactic"
+let default_tactic = ref (Proofview.tclUNIT ())
 
 (* true = All transparent, false = Opaque if possible *)
 let proofs_transparency = ref true
@@ -895,7 +894,7 @@ let rec solve_obligation prg num tac =
   let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd obl.obl_type ~terminator hook in
   let () = trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
             Printer.pr_constr_env (Global.env ()) Evd.empty obl.obl_type) in
-  let _ = Pfedit.by (snd (get_default_tactic ())) in
+  let _ = Pfedit.by !default_tactic in
   Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
 
 and obligation (user_num, name, typ) tac =
@@ -924,7 +923,7 @@ and solve_obligation_by_tac prg obls i tac =
 	      | None ->
 		  match obl.obl_tac with
 		  | Some t -> t
-		  | None -> snd (get_default_tactic ())
+		  | None -> !default_tactic
 	    in
 	    let evd = Evd.from_ctx !prg.prg_ctx in
 	    let evd = Evd.update_sigma_env evd (Global.env ()) in

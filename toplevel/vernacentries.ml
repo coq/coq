@@ -20,7 +20,6 @@ open Tacmach
 open Constrintern
 open Prettyp
 open Printer
-open Tacinterp
 open Command
 open Goptions
 open Libnames
@@ -33,6 +32,9 @@ open Lemmas
 open Misctypes
 open Locality
 open Sigma.Notations
+
+(** TODO: make this function independent of Ltac *)
+let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
 
 let debug = false
 let prerr_endline =
@@ -471,7 +473,7 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
           | None -> None
           | Some r ->
 	      let (evc,env)= get_current_context () in
- 		Some (snd (interp_redexp env evc r)) in
+ 		Some (snd (Hook.get f_interp_redexp env evc r)) in
 	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof locality p kind l lettop =
@@ -911,81 +913,6 @@ let vernac_restore_state file =
 
 (************)
 (* Commands *)
-
-type tacdef_kind =
-  | NewTac of Id.t
-  | UpdateTac of Nametab.ltac_constant
-
-let is_defined_tac kn =
-  try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
-
-let register_ltac local tacl =
-  let map tactic_body =
-    match tactic_body with
-    | TacticDefinition ((loc,id), body) ->
-        let kn = Lib.make_kn id in
-        let id_pp = pr_id id in
-        let () = if is_defined_tac kn then
-          Errors.user_err_loc (loc, "",
-            str "There is already an Ltac named " ++ id_pp ++ str".")
-        in
-        let is_primitive =
-          try
-            match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
-            | Tacexpr.TacArg _ -> false
-            | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
-          with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
-        in
-        let () = if is_primitive then
-          msg_warning (str "The Ltac name " ++ id_pp ++
-            str " may be unusable because of a conflict with a notation.")
-        in
-        NewTac id, body
-    | TacticRedefinition (ident, body) ->
-        let loc = loc_of_reference ident in
-        let kn =
-          try Nametab.locate_tactic (snd (qualid_of_reference ident))
-          with Not_found ->
-            Errors.user_err_loc (loc, "",
-                        str "There is no Ltac named " ++ pr_reference ident ++ str ".")
-        in
-        UpdateTac kn, body
-  in
-  let rfun = List.map map tacl in
-  let recvars =
-    let fold accu (op, _) = match op with
-    | UpdateTac _ -> accu
-    | NewTac id -> (Lib.make_path id, Lib.make_kn id) :: accu
-    in
-    List.fold_left fold [] rfun
-  in
-  let ist = Tacintern.make_empty_glob_sign () in
-  let map (name, body) =
-    let body = Flags.with_option Tacintern.strict_check (Tacintern.intern_tactic_or_tacarg ist) body in
-    (name, body)
-  in
-  let defs () =
-    (** Register locally the tactic to handle recursivity. This function affects
-        the whole environment, so that we transactify it afterwards. *)
-    let iter_rec (sp, kn) = Nametab.push_tactic (Nametab.Until 1) sp kn in
-    let () = List.iter iter_rec recvars in
-    List.map map rfun
-  in
-  let defs = Future.transactify defs () in
-  let iter (def, tac) = match def with
-  | NewTac id ->
-    Tacenv.register_ltac false local id tac;
-    Flags.if_verbose msg_info (Nameops.pr_id id ++ str " is defined")
-  | UpdateTac kn ->
-    Tacenv.redefine_ltac local kn tac;
-    let name = Nametab.shortest_qualid_of_tactic kn in
-    Flags.if_verbose msg_info (Libnames.pr_qualid name ++ str " is redefined")
-  in
-  List.iter iter defs
-
-let vernac_declare_tactic_definition locality def =
-  let local = make_module_locality locality in
-  register_ltac local def
 
 let vernac_create_hintdb locality id b =
   let local = make_module_locality locality in
@@ -1500,8 +1427,7 @@ let vernac_check_may_eval redexp glopt rc =
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
                     Printer.pr_universe_ctx sigma uctx)
     | Some r ->
-        Tacintern.dump_glob_red_expr r;
-        let (sigma',r_interp) = interp_redexp env sigma' r in
+        let (sigma',r_interp) = Hook.get f_interp_redexp env sigma' r in
 	let redfun env evm c =
           let (redfun, _) = reduction_of_red_expr env r_interp in
           let evm = Sigma.Unsafe.of_evar_map evm in
@@ -1512,7 +1438,7 @@ let vernac_check_may_eval redexp glopt rc =
 
 let vernac_declare_reduction locality s r =
   let local = make_locality locality in
-  declare_red_expr local s (snd (interp_redexp (Global.env()) Evd.empty r))
+  declare_red_expr local s (snd (Hook.get f_interp_redexp (Global.env()) Evd.empty r))
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
@@ -1580,7 +1506,6 @@ let vernac_print = function
   | PrintClasses -> msg_notice (Prettyp.print_classes())
   | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
   | PrintInstances c -> msg_notice (Prettyp.print_instances (smart_global c))
-  | PrintLtac qid -> msg_notice (Tacintern.print_ltac (snd (qualid_of_reference qid)))
   | PrintCoercions -> msg_notice (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
       msg_notice (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
@@ -1820,8 +1745,6 @@ let interp ?proof ~loc locality poly c =
   | VernacError e -> raise e
 
   (* Syntax *)
-  | VernacTacticNotation (n,r,e) ->
-      Metasyntax.add_tactic_notation (make_module_locality locality,n,r,e)
   | VernacSyntaxExtension (local,sl) ->
       vernac_syntax_extension locality local sl
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
@@ -1899,8 +1822,6 @@ let interp ?proof ~loc locality poly c =
   | VernacBackTo _ -> anomaly (str "VernacBackTo not handled by Stm")
 
   (* Commands *)
-  | VernacDeclareTacticDefinition def ->
-      vernac_declare_tactic_definition locality def
   | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb locality dbname b
   | VernacRemoveHints (dbnames,ids) -> vernac_remove_hints locality dbnames ids
   | VernacHints (local,dbnames,hints) ->
@@ -1976,15 +1897,13 @@ let check_vernac_supports_locality c l =
   match l, c with
   | None, _ -> ()
   | Some _, (
-      VernacTacticNotation _
-    | VernacOpenCloseScope _
+      VernacOpenCloseScope _
     | VernacSyntaxExtension _ | VernacInfix _ | VernacNotation _
     | VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
     | VernacAssumption _ | VernacStartTheoremProof _
     | VernacCoercion _ | VernacIdentityCoercion _
     | VernacInstance _ | VernacDeclareInstances _
     | VernacDeclareMLModule _
-    | VernacDeclareTacticDefinition _
     | VernacCreateHintDb _ | VernacRemoveHints _ | VernacHints _
     | VernacSyntacticDefinition _
     | VernacArgumentsScope _ | VernacDeclareImplicits _ | VernacArguments _
