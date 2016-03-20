@@ -13,9 +13,6 @@ open Pattern
 open Decl_kinds
 open Hints
 
-val extern_interp :
-  (patvar_map -> Tacexpr.glob_tactic_expr -> unit Proofview.tactic) Hook.t
-
 (** Auto and related automation tactics *)
 
 val priority : ('a * full_hint) list -> ('a * full_hint) list
@@ -35,7 +32,7 @@ val unify_resolve : polymorphic -> Unification.unify_flags -> (raw_hint * clause
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> constr_pattern option -> Tacexpr.glob_tactic_expr -> unit Proofview.tactic
+val conclPattern : constr -> constr_pattern option -> Genarg.glob_generic_argument -> unit Proofview.tactic
 
 (** The Auto tactic *)
 

@@ -2179,12 +2179,6 @@ let _ =
   in
   Hook.set Pretyping.genarg_interp_hook eval
 
-let _ = Hook.set Auto.extern_interp
-  (fun l ->
-    let lfun = Id.Map.map (fun c -> Value.of_constr c) l in
-    let ist = { (default_ist ()) with lfun; } in
-    interp_tactic ist)
-
 (** Used in tactic extension **)
 
 let dummy_id = Id.of_string "_"

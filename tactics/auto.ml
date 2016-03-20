@@ -140,8 +140,6 @@ si après Intros la conclusion matche le pattern.
 
 (* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
 
-let (forward_interp_tactic, extern_interp) = Hook.make ()
-
 let conclPattern concl pat tac =
   let constr_bindings env sigma =
     match pat with
@@ -156,7 +154,13 @@ let conclPattern concl pat tac =
      let env = Proofview.Goal.env gl in
      let sigma = Tacmach.New.project gl in
        constr_bindings env sigma >>= fun constr_bindings ->
-     Hook.get forward_interp_tactic constr_bindings tac
+     let open Genarg in
+     let open Geninterp in
+     let inj c = Val.Dyn (val_tag (topwit Constrarg.wit_constr), c) in
+     let fold id c accu = Id.Map.add id (inj c) accu in
+     let lfun = Id.Map.fold fold constr_bindings Id.Map.empty in
+     let ist = { lfun; extra = TacStore.empty } in
+     Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
   end }
 
 (***********************************************************)
