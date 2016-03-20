@@ -120,7 +120,7 @@ let declare_tactic loc s c cl = match cl with
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let pp = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
-  let obj = <:expr< fun () -> Metasyntax.add_ml_tactic_notation $se$ $gl$ >> in
+  let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ $gl$ >> in
   declare_str_items loc
     [ <:str_item< do {
       try do {

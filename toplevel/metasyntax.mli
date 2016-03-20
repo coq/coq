@@ -15,15 +15,6 @@ open Notation_term
 
 val add_token_obj : string -> unit
 
-(** Adding a tactic notation in the environment *)
-
-val add_tactic_notation :
-  locality_flag * int * grammar_tactic_prod_item_expr list * raw_tactic_expr ->
-    unit
-
-val add_ml_tactic_notation : ml_tactic_name ->
-  Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list list -> unit
-
 (** Adding a (constr) notation in the environment*)
 
 val add_infix : locality_flag -> (lstring * syntax_modifier list) ->
