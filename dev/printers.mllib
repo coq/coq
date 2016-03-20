@@ -131,6 +131,7 @@ Retyping
 Cbv
 Pretype_errors
 Evarutil
+Evardefine
 Evarsolve
 Recordops
 Evarconv

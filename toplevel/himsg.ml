@@ -779,7 +779,7 @@ let explain_unsatisfiable_constraints env sigma constr comp =
     explain_typeclass_resolution env sigma info k ++ fnl () ++ cstr
 
 let explain_pretype_error env sigma err =
-  let env = Evarutil.env_nf_betaiotaevar sigma env in
+  let env = Evardefine.env_nf_betaiotaevar sigma env in
   let env = make_all_name_different env in
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c

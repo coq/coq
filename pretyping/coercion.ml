@@ -245,7 +245,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		       | Lambda (n, t, t') -> c, t'
 			   (*| Prod (n, t, t') -> t'*)
 		       | Evar (k, args) ->
-			   let (evs, t) = Evarutil.define_evar_as_lambda env !evdref (k,args) in
+			   let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k,args) in
 			     evdref := evs;
 			     let (n, dom, rng) = destLambda t in
 			     let dom = whd_evar !evdref dom in
@@ -375,7 +375,7 @@ let inh_app_fun_core env evd j =
     match kind_of_term t with
     | Prod (_,_,_) -> (evd,j)
     | Evar ev ->
-	let (evd',t) = define_evar_as_product evd ev in
+	let (evd',t) = Evardefine.define_evar_as_product evd ev in
 	  (evd',{ uj_val = j.uj_val; uj_type = t })
     | _ ->
       	try let t,p =
@@ -416,7 +416,7 @@ let inh_coerce_to_sort loc env evd j =
     match kind_of_term typ with
     | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
     | Evar ev when not (is_defined evd (fst ev)) ->
-	let (evd',s) = define_evar_as_sort env evd ev in
+	let (evd',s) = Evardefine.define_evar_as_sort env evd ev in
 	  (evd',{ utj_val = j.uj_val; utj_type = s })
     | _ ->
 	inh_tosort_force loc env evd j

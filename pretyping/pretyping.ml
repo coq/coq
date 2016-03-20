@@ -36,6 +36,7 @@ open Typeops
 open Globnames
 open Nameops
 open Evarutil
+open Evardefine
 open Pretype_errors
 open Glob_term
 open Glob_ops

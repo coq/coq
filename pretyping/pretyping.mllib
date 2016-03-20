@@ -9,6 +9,7 @@ Cbv
 Pretype_errors
 Find_subterm
 Evarutil
+Evardefine
 Evarsolve
 Recordops
 Evarconv
