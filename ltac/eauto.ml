@@ -60,7 +60,7 @@ let eval_uconstrs ist cs =
     fail_evar = false;
     expand_evars = true
   } in
-  List.map (fun c -> Tacinterp.type_uconstr ~flags ist c) cs
+  List.map (fun c -> Pretyping.type_uconstr ~flags ist c) cs
 
 (************************************************************************)
 (*   PROLOG tactic                                                      *)

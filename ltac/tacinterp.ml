@@ -723,24 +723,6 @@ let interp_open_constr_list =
 let pf_interp_type ist env sigma =
   interp_type ist env sigma
 
-(* Fully evaluate an untyped constr *)
-let type_uconstr ?(flags = constr_flags)
-  ?(expected_type = WithoutTypeConstraint) ist c =
-  { delayed = begin fun env sigma ->
-  let open Pretyping in
-  let { closure; term } = c in
-  let vars = {
-    ltac_constrs = closure.typed;
-    ltac_uconstrs = closure.untyped;
-    ltac_idents = closure.idents;
-    ltac_genargs = ist.lfun;
-  } in
-  let sigma = Sigma.to_evar_map sigma in
-  let (sigma, c) = understand_ltac flags env sigma vars expected_type term in
-  Sigma.Unsafe.of_pair (c, sigma)
-  end }
-
-
 (* Interprets a reduction expression *)
 let interp_unfold ist env sigma (occs,qid) =
   (interp_occurrences ist occs,interp_evaluable ist env sigma qid)

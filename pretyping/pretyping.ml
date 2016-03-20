@@ -58,6 +58,8 @@ type ltac_var_map = {
 }
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
+type 'a delayed_open =
+  { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
 
 (************************************************************************)
 (* This concerns Cases *)
@@ -1107,3 +1109,26 @@ let understand_tcc_evars ?(flags=all_no_fail_flags) env evdref ?(expected_type=W
 
 let understand_ltac flags env sigma lvar kind c =
   ise_pretype_gen flags env sigma lvar kind c
+
+let constr_flags = {
+  use_typeclasses = true;
+  use_unif_heuristics = true;
+  use_hook = None;
+  fail_evar = true;
+  expand_evars = true }
+
+(* Fully evaluate an untyped constr *)
+let type_uconstr ?(flags = constr_flags)
+  ?(expected_type = WithoutTypeConstraint) ist c =
+  { delayed = begin fun env sigma ->
+  let { closure; term } = c in
+  let vars = {
+    ltac_constrs = closure.typed;
+    ltac_uconstrs = closure.untyped;
+    ltac_idents = closure.idents;
+    ltac_genargs = ist.Geninterp.lfun;
+  } in
+  let sigma = Sigma.to_evar_map sigma in
+  let (sigma, c) = understand_ltac flags env sigma vars expected_type term in
+  Sigma.Unsafe.of_pair (c, sigma)
+  end }

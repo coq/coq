@@ -48,7 +48,7 @@ let eval_uconstrs ist cs =
     fail_evar = false;
     expand_evars = true
   } in
-  List.map (fun c -> Tacinterp.type_uconstr ~flags ist c) cs
+  List.map (fun c -> Pretyping.type_uconstr ~flags ist c) cs
 
 let pr_auto_using _ _ _ = Pptactic.pr_auto_using (fun _ -> mt ())
 

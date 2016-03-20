@@ -64,11 +64,6 @@ val val_interp : interp_sign -> glob_tactic_expr -> (value -> unit Proofview.tac
 (** Interprets an expression that evaluates to a constr *)
 val interp_ltac_constr : interp_sign -> glob_tactic_expr -> (constr -> unit Proofview.tactic) -> unit Proofview.tactic
 
-val type_uconstr :
-  ?flags:Pretyping.inference_flags ->
-  ?expected_type:Pretyping.typing_constraint ->
-  interp_sign -> Glob_term.closed_glob_constr -> constr delayed_open
-
 (** Interprets redexp arguments *)
 val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map * red_expr
 
