@@ -1880,7 +1880,7 @@ let build_morphism_signature m =
   let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
   let evd = solve_constraints env !evd in
   let m = Evarutil.nf_evar evd morph in
-    Evarutil.check_evars env Evd.empty evd m; m
+    Pretyping.check_evars env Evd.empty evd m; m
 
 let default_morphism sign m =
   let env = Global.env () in

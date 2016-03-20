@@ -594,9 +594,7 @@ let pr_state (tm,sk) =
 (*** Reduction Functions Operators ***)
 (*************************************)
 
-let safe_evar_value sigma ev =
-  try Some (Evd.existential_value sigma ev)
-  with NotInstantiatedEvar | Not_found -> None
+let safe_evar_value = Evarutil.safe_evar_value
 
 let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
@@ -1183,30 +1181,8 @@ let whd_zeta c = Stack.zip (local_whd_state_gen zeta Evd.empty (c,Stack.empty))
 (****************************************************************************)
 
 (* Replacing defined evars for error messages *)
-let rec whd_evar sigma c =
-  match kind_of_term c with
-    | Evar ev ->
-        let (evk, args) = ev in
-        let args = Array.map (fun c -> whd_evar sigma c) args in
-        (match safe_evar_value sigma (evk, args) with
-            Some c -> whd_evar sigma c
-          | None -> c)
-    | Sort (Type u) -> 
-      let u' = Evd.normalize_universe sigma u in
-	if u' == u then c else mkSort (Sorts.sort_of_univ u')
-    | Const (c', u) when not (Univ.Instance.is_empty u) -> 
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkConstU (c', u')
-    | Ind (i, u) when not (Univ.Instance.is_empty u) -> 
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkIndU (i, u')
-    | Construct (co, u) when not (Univ.Instance.is_empty u) ->
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkConstructU (co, u')
-    | _ -> c
-
-let nf_evar =
-  local_strong whd_evar
+let whd_evar = Evarutil.whd_evar
+let nf_evar = Evarutil.nf_evar
 
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add

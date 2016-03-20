@@ -17,8 +17,11 @@ open Namegen
 open Pre_env
 open Environ
 open Evd
-open Pretype_errors
 open Sigma.Notations
+
+let safe_evar_value sigma ev =
+  try Some (Evd.existential_value sigma ev)
+  with NotInstantiatedEvar | Not_found -> None
 
 (** Combinators *)
 
@@ -61,22 +64,41 @@ let rec flush_and_check_evars sigma c =
 
 (* let nf_evar_key = Profile.declare_profile "nf_evar"  *)
 (* let nf_evar = Profile.profile2 nf_evar_key Reductionops.nf_evar *)
-let nf_evar = Reductionops.nf_evar
+
+let rec whd_evar sigma c =
+  match kind_of_term c with
+    | Evar ev ->
+        let (evk, args) = ev in
+        let args = Array.map (fun c -> whd_evar sigma c) args in
+        (match safe_evar_value sigma (evk, args) with
+            Some c -> whd_evar sigma c
+          | None -> c)
+    | Sort (Type u) -> 
+      let u' = Evd.normalize_universe sigma u in
+	if u' == u then c else mkSort (Sorts.sort_of_univ u')
+    | Const (c', u) when not (Univ.Instance.is_empty u) -> 
+      let u' = Evd.normalize_universe_instance sigma u in
+	if u' == u then c else mkConstU (c', u')
+    | Ind (i, u) when not (Univ.Instance.is_empty u) -> 
+      let u' = Evd.normalize_universe_instance sigma u in
+	if u' == u then c else mkIndU (i, u')
+    | Construct (co, u) when not (Univ.Instance.is_empty u) ->
+      let u' = Evd.normalize_universe_instance sigma u in
+	if u' == u then c else mkConstructU (co, u')
+    | _ -> c
+
+let rec nf_evar sigma t = Constr.map (fun t -> nf_evar sigma t) (whd_evar sigma t)
+
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
     uj_type = nf_evar sigma j.uj_type }
-let j_nf_betaiotaevar sigma j =
-  { uj_val = nf_evar sigma j.uj_val;
-    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
 let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
-let jv_nf_betaiotaevar sigma jl =
-  Array.map (j_nf_betaiotaevar sigma) jl
 let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
 let nf_evars_universes evm =
-  Universes.nf_evars_and_universes_opt_subst (Reductionops.safe_evar_value evm) 
+  Universes.nf_evars_and_universes_opt_subst (safe_evar_value evm) 
     (Evd.universe_subst evm)
     
 let nf_evars_and_universes evm =
@@ -469,7 +491,7 @@ let rec check_and_clear_in_constr env evdref err ids c =
       | Evar (evk,l as ev) ->
 	  if Evd.is_defined !evdref evk then
 	    (* If evk is already defined we replace it by its definition *)
-	    let nc = Reductionops.whd_evar !evdref c in
+	    let nc = whd_evar !evdref c in
 	      (check_and_clear_in_constr env evdref err ids nc)
 	  else
 	    (* We check for dependencies to elements of ids in the
@@ -524,7 +546,7 @@ let rec check_and_clear_in_constr env evdref err ids c =
 	      let evi' = { evi with evar_extra = extra' } in
 	      evdref := Evd.add !evdref evk evi' ;
 	    (* spiwack: /hacking session *)
-              Reductionops.whd_evar !evdref c
+              whd_evar !evdref c
 
       | _ -> map_constr (check_and_clear_in_constr env evdref err ids) c
 
@@ -647,23 +669,6 @@ let undefined_evars_of_evar_info evd evi =
        (undefined_evars_of_named_context evd
 	  (named_context_of_val evi.evar_hyps)))
 
-(* [check_evars] fails if some unresolved evar remains *)
-
-let check_evars env initial_sigma sigma c =
-  let rec proc_rec c =
-    match kind_of_term c with
-    | Evar (evk,_ as ev) ->
-        (match existential_opt_value sigma ev with
-        | Some c -> proc_rec c
-        | None ->
-	  if not (Evd.mem initial_sigma evk) then
-            let (loc,k) = evar_source evk sigma in
-	      match k with
-	      | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
-	      | _ -> error_unsolvable_implicit loc env sigma evk None)
-      | _ -> iter_constr proc_rec c
-  in proc_rec c
-
 (* spiwack: this is a more complete version of
    {!Termops.occur_evar}. The latter does not look recursively into an
    [evar_map]. If unification only need to check superficially, tactics
@@ -692,7 +697,7 @@ let subterm_source evk (loc,k) =
 
 (** Term exploration up to instantiation. *)
 let kind_of_term_upto sigma t =
-  Constr.kind (Reductionops.whd_evar sigma t)
+  Constr.kind (whd_evar sigma t)
 
 (** [eq_constr_univs_test sigma1 sigma2 t u] tests equality of [t] and
     [u] up to existential variable instantiation and equalisable

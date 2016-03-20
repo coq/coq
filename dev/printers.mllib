@@ -123,14 +123,15 @@ Evd
 Sigma
 Glob_ops
 Redops
+Pretype_errors
+Evarutil
 Reductionops
 Inductiveops
 Arguments_renaming
 Nativenorm
 Retyping
 Cbv
-Pretype_errors
-Evarutil
+
 Evardefine
 Evarsolve
 Recordops

@@ -78,6 +78,8 @@ val new_evar_instance :
 
 val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
 
+val safe_evar_value : evar_map -> existential -> constr option
+
 (** {6 Evars/Metas switching...} *)
 
 val non_instantiated : evar_map -> evar_info Evar.Map.t
@@ -96,9 +98,6 @@ val has_undefined_evars : evar_map -> constr -> bool
 
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
-(** [check_evars env initial_sigma extended_sigma c] fails if some
-   new unresolved evar remains in [c] *)
-val check_evars : env -> evar_map -> evar_map -> constr -> unit
 
 (** [gather_dependent_evars evm seeds] classifies the evars in [evm]
     as dependent_evars and goals (these may overlap). A goal is an
@@ -134,6 +133,7 @@ val judge_of_new_Type : 'r Sigma.t -> (unsafe_judgment, 'r) Sigma.sigma
 (** [flush_and_check_evars] raise [Uninstantiated_evar] if an evar remains
     uninstantiated; [nf_evar] leaves uninstantiated evars as is *)
 
+val whd_evar :  evar_map -> constr -> constr
 val nf_evar :  evar_map -> constr -> constr
 val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
 val jl_nf_evar :
@@ -151,9 +151,6 @@ val nf_evar_info : evar_map -> evar_info -> evar_info
 val nf_evar_map : evar_map -> evar_map
 val nf_evar_map_undefined : evar_map -> evar_map
 
-val j_nf_betaiotaevar : evar_map -> unsafe_judgment -> unsafe_judgment
-val jv_nf_betaiotaevar :
-  evar_map -> unsafe_judgment array -> unsafe_judgment array
 (** Presenting terms without solved evars *)
 
 val nf_evars_universes : evar_map -> constr -> constr
