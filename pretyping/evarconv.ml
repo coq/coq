@@ -143,6 +143,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
     try
       match kind_of_term t2 with
 	Prod (_,a,b) -> (* assert (l2=[]); *)
+	  let _, a, b = destProd (Evarutil.nf_evar sigma t2) in
       	  if dependent (mkRel 1) b then raise Not_found
 	  else lookup_canonical_conversion (proji, Prod_cs),
 	    (Stack.append_app [|a;pop b|] Stack.empty)
