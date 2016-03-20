@@ -881,5 +881,6 @@ let () =
 (*   Grammar.register0 wit_hyp_location_flag; *)
   Grammar.register0 wit_red_expr (Tactic.red_expr);
   Grammar.register0 wit_tactic (Tactic.tactic);
+  Grammar.register0 wit_ltac (Tactic.tactic);
   Grammar.register0 wit_clause_dft_concl (Tactic.clause_dft_concl);
   ()

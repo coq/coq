@@ -795,6 +795,7 @@ let () =
   Genintern.register_intern0 wit_ident intern_ident';
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_ltac (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_sort (fun ist s -> (ist, s));
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
   Genintern.register_intern0 wit_constr (fun ist c -> (ist,intern_constr ist c));

@@ -14,11 +14,8 @@ Equality
 Contradiction
 Inv
 Leminv
-Tacsubst
 Taccoerce
-Tacenv
 Hints
 Auto
 Tactic_matching
-Tactic_debug
 Term_dnet

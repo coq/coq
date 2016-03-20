@@ -365,7 +365,7 @@ let debugging_exception_step ist signal_anomaly e pp =
     if signal_anomaly then explain_logic_error
     else explain_logic_error_no_anomaly in
   debugging_step ist (fun () ->
-    pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ !explain_exc e)
+    pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ explain_exc e)
 
 let error_ltac_variable loc id env v s =
    user_err_loc (loc, "", str "Ltac variable " ++ pr_id id ++
@@ -2144,6 +2144,10 @@ let () =
   Geninterp.register_interp0 wit_tactic interp
 
 let () =
+  let interp ist tac = interp_tactic ist tac >>= fun () -> Ftactic.return () in
+  Geninterp.register_interp0 wit_ltac interp
+
+let () =
   Geninterp.register_interp0 wit_uconstr (fun ist c -> Ftactic.nf_enter { enter = begin fun gl ->
     Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) c)
   end })
@@ -2174,12 +2178,6 @@ let _ =
       failwith "not a tactic"
   in
   Hook.set Pretyping.genarg_interp_hook eval
-
-let _ = Hook.set Auto.extern_interp
-  (fun l ->
-    let lfun = Id.Map.map (fun c -> Value.of_constr c) l in
-    let ist = { (default_ist ()) with lfun; } in
-    interp_tactic ist)
 
 (** Used in tactic extension **)
 

@@ -299,6 +299,7 @@ let () =
   Genintern.register_subst0 wit_var (fun _ v -> v);
   Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
   Genintern.register_subst0 wit_tactic subst_tactic;
+  Genintern.register_subst0 wit_ltac subst_tactic;
   Genintern.register_subst0 wit_constr subst_glob_constr;
   Genintern.register_subst0 wit_sort (fun _ v -> v);
   Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v);

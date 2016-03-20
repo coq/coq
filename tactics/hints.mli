@@ -33,7 +33,7 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of Tacexpr.glob_tactic_expr       (* Hint Extern *)
+  | Extern     of Genarg.glob_generic_argument       (* Hint Extern *)
 
 type hint
 type raw_hint = constr * types * Univ.universe_context_set

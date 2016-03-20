@@ -200,8 +200,6 @@ Ppdecl_proof
 Egramml
 Egramcoq
 Tacsubst
-Tacenv
-Tactic_debug
 Trie
 Dn
 Btermdn

@@ -76,7 +76,7 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of glob_tactic_expr       (* Hint Extern *)
+  | Extern     of Genarg.glob_generic_argument (* Hint Extern *)
 
 type hints_path_atom = 
   | PathHints of global_reference list
@@ -749,6 +749,7 @@ let make_unfold eref =
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
+  let tacast = Genarg.in_gen (Genarg.glbwit Constrarg.wit_ltac) tacast in
   let hdconstr = Option.map try_head_pattern pat in
   (hdconstr,
    { pri = pri;
@@ -900,7 +901,7 @@ let subst_autohint (subst, obj) =
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code.obj else Unfold_nth ref'
       | Extern tac ->
-	  let tac' = Tacsubst.subst_tactic subst tac in
+	  let tac' = Genintern.generic_substitute subst tac in
 	  if tac==tac' then data.code.obj else Extern tac'
     in
     let name' = subst_path_atom subst data.name in
@@ -1219,7 +1220,7 @@ let pr_hint h = match h.obj with
           env
         with e when Errors.noncritical e -> Global.env ()
       in
-      (str "(*external*) " ++ Pptactic.pr_glob_tactic env tac)
+      (str "(*external*) " ++ Pptactic.pr_glb_generic env tac)
 
 let pr_id_hint (id, v) =
   (pr_hint v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())
