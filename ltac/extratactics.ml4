@@ -290,7 +290,7 @@ let add_rewrite_hint bases ort t lcsr =
         if poly then ctx
 	else (Global.push_context_set false ctx; Univ.ContextSet.empty)
     in
-      Constrexpr_ops.constr_loc ce, (c, ctx), ort, t in
+      Constrexpr_ops.constr_loc ce, (c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases

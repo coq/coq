@@ -27,13 +27,13 @@ type rew_rule = { rew_lemma: constr;
 		  rew_pat: constr;
 		  rew_ctx: Univ.universe_context_set;
 		  rew_l2r: bool;
-		  rew_tac: glob_tactic_expr option }
+		  rew_tac: Genarg.glob_generic_argument option }
 
 let subst_hint subst hint =
   let cst' = subst_mps subst hint.rew_lemma in
   let typ' = subst_mps subst hint.rew_type in
   let pat' = subst_mps subst hint.rew_pat in
-  let t' = Option.smartmap (Tacsubst.subst_tactic subst) hint.rew_tac in
+  let t' = Option.smartmap (Genintern.generic_substitute subst) hint.rew_tac in
     if hint.rew_lemma == cst' && hint.rew_type == typ' && hint.rew_tac == t' then hint else
       { hint with
 	rew_lemma = cst'; rew_type = typ';
@@ -85,10 +85,10 @@ let print_rewrite_hintdb bas =
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
 	       Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
 	       Option.cata (fun tac -> str " then use tactic " ++
-	       Pptactic.pr_glob_tactic (Global.env()) tac) (mt ()) h.rew_tac)
+	       Pptactic.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))
 
-type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * raw_tactic_expr option
+type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option
 
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =
@@ -104,7 +104,12 @@ let one_base general_rewrite_maybe_in tac_main bas =
     Sigma.Unsafe.of_pair (tac, sigma)
   end } in
   let lrul = List.map (fun h -> 
-  let tac = match h.rew_tac with None -> Proofview.tclUNIT () | Some t -> Tacinterp.eval_tactic t in
+  let tac = match h.rew_tac with
+  | None -> Proofview.tclUNIT ()
+  | Some tac ->
+    let ist = { Geninterp.lfun = Id.Map.empty; extra = Geninterp.TacStore.empty } in
+    Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
+  in
     (h.rew_ctx,h.rew_lemma,h.rew_l2r,tac)) lrul in
     Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS (List.fold_left (fun tac (ctx,csr,dir,tc) ->
       Tacticals.New.tclTHEN tac
@@ -300,6 +305,8 @@ let add_rew_rules base lrul =
   let counter = ref 0 in
   let env = Global.env () in
   let sigma = Evd.from_env env in
+  let ist = { Genintern.ltacvars = Id.Set.empty; genv = Global.env () } in
+  let intern tac = snd (Genintern.generic_intern ist tac) in
   let lrul =
     List.fold_left
       (fun dn (loc,(c,ctx),b,t) ->
@@ -308,7 +315,7 @@ let add_rew_rules base lrul =
 	let pat = if b then info.hyp_left else info.hyp_right in
 	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
 		    rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
-		    rew_tac = Option.map Tacintern.glob_tactic t}
+		    rew_tac = Option.map intern t}
 	in incr counter;
 	  HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
