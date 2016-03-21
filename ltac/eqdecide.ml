@@ -22,7 +22,9 @@ open Tactics
 open Tacticals.New
 open Auto
 open Constr_matching
+open Misctypes
 open Hipattern
+open Pretyping
 open Tacmach.New
 open Coqlib
 open Proofview.Notations
@@ -72,10 +74,15 @@ let mkBranches c1 c2 =
      clear_last;
      intros]
 
+let discrHyp id =
+  let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
+  let tac c = Equality.discr_tac false (Some (None, Tacexpr.ElimOnConstr c)) in
+  Tacticals.New.tclDELAYEDWITHHOLES false c tac
+
 let solveNoteqBranch side =
   tclTHEN (choose_noteq side)
     (tclTHEN introf
-      (onLastHypId (fun id -> Extratactics.discrHyp id)))
+      (onLastHypId (fun id -> discrHyp id)))
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
@@ -115,6 +122,11 @@ let rec rewrite_and_clear hyps = match hyps with
 let eqCase tac =
   tclTHEN intro (onLastHypId tac)
 
+let injHyp id =
+  let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
+  let tac c = Equality.injClause None false (Some (None, Tacexpr.ElimOnConstr c)) in
+  Tacticals.New.tclDELAYEDWITHHOLES false c tac
+
 let diseqCase hyps eqonleft =
   let diseq  = Id.of_string "diseq" in
   let absurd = Id.of_string "absurd" in
@@ -124,7 +136,7 @@ let diseqCase hyps eqonleft =
   (tclTHEN  (red_in_concl)
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (Simple.apply (mkVar diseq))
-  (tclTHEN  (Extratactics.injHyp absurd)
+  (tclTHEN  (injHyp absurd)
             (full_trivial []))))))))
 
 open Proofview.Notations
