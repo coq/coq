@@ -16,6 +16,5 @@ G_class
 Rewrite
 G_rewrite
 Tauto
-Eqdecide
 G_eqdecide
 G_ltac
