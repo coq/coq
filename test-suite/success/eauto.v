@@ -121,3 +121,45 @@ Lemma simpl_plus_l_rr1 :
   Undo.
   eauto. (* does EApply H *)
 Qed.
+
+(* Example from Nicolas Tabareau on coq-club - Feb 2016. 
+  Full backtracking on dependent subgoals.
+ *)
+Require Import Coq.Classes.Init.
+Set Typeclasses Dependency Order.
+Unset Typeclasses Iterative Deepening.
+Notation "x .1" := (projT1 x) (at level 3).
+Notation "x .2" := (projT2 x) (at level 3).
+
+Parameter myType: Type. 
+
+Class Foo (a:myType) := {}.
+
+Class Bar (a:myType) := {}.
+
+Class Qux (a:myType) := {}.
+
+Parameter fooTobar : forall a (H : Foo a), {b: myType & Bar b}.
+
+Parameter barToqux : forall a (H : Bar a), {b: myType & Qux b}.
+
+Hint Extern 5 (Bar ?D.1) =>
+    destruct D; simpl : typeclass_instances.
+
+Hint Extern 5 (Qux ?D.1) =>
+    destruct D; simpl : typeclass_instances.
+
+Hint Extern 1 myType => unshelve refine (fooTobar _ _).1 : typeclass_instances.
+
+Hint Extern 1 myType => unshelve refine (barToqux _ _).1 : typeclass_instances.
+
+Hint Extern 0 { x : _ & _ } => simple refine (existT _ _ _) : typeclass_instances.
+
+Definition trivial a (H : Foo a) : {b : myType & Qux b}. 
+Proof.
+  Fail typeclasses eauto with typeclass_instances.
+  fulleauto 4.
+  Undo. Set Typeclasses Iterative Deepening.
+  fulleauto.
+Defined.
+

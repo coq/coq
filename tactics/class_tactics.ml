@@ -555,6 +555,12 @@ let needs_backtrack' env evd unique concl =
     occur_existential concl
   else true
 
+let merge_exceptions e e' =
+  match fst e, fst e' with
+  | ReachedLimitEx, _ -> e
+  | _, ReachedLimitEx -> e'
+  | _, _ -> e
+
 let new_hints_tac_gl only_classes hints info kont gl
     : unit Proofview.tactic
  =
@@ -615,7 +621,8 @@ let new_hints_tac_gl only_classes hints info kont gl
            else Proofview.tclDISPATCH (List.init j (tac_of i)))
        in
        if path_matches derivs [] then aux foundone e tl
-       else ortac (Proofview.tclBIND tac result) (fun e -> aux foundone e tl)
+       else ortac (Proofview.tclBIND tac result)
+                  (fun e' -> aux foundone (merge_exceptions e e') tl)
     | [] ->
        if foundone == None && !typeclasses_debug then
 	 msg_debug (pr_depth info.search_depth ++ str": no match for " ++
@@ -624,7 +631,7 @@ let new_hints_tac_gl only_classes hints info kont gl
                       str" possibilities");
        match e with
        | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
-       | _ -> Tacticals.New.tclFAIL 0 (str"no hint applies")
+       | (_,ie) -> Proofview.tclZERO ~info:ie NotApplicableEx
   in aux None (NotApplicableEx,Exninfo.null) poss
 
 let new_hints_tac cl hints info kont : unit Proofview.tactic =
@@ -658,12 +665,6 @@ let intro_tac' only_classes info kont =
   Proofview.tclBIND Tactics.intro
    (fun _ ->
      Proofview.Goal.nf_enter { enter = fun gl -> intro_tac'' only_classes info kont gl })
-
-let merge_exceptions e e' =
-  match fst e, fst e' with
-  | ReachedLimitEx, _ -> e
-  | _, ReachedLimitEx -> e'
-  | _, _ -> e
 
 let rec eauto_tac' only_classes hints limit depth =
   let kont info =
