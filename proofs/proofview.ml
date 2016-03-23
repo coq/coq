@@ -1061,6 +1061,7 @@ struct
   let typecheck_proof c concl env sigma =
     let evdref = ref sigma in
     let () = Typing.check env evdref c concl in
+    Evarconv.check_problems_are_solved env !evdref;
     !evdref
 
   let (pr_constrv,pr_constr) =
