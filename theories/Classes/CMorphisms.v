@@ -527,7 +527,7 @@ Hint Extern 7 (@Proper _ _ _) => proper_reflexive
 Section Normalize.
   Context (A : Type).
 
-  Class Normalizes (m : crelation A) (m' : crelation A) : Prop :=
+  Class Normalizes (m : crelation A) (m' : crelation A) :=
     normalizes : relation_equivalence m m'.
   
   (** Current strategy: add [flip] everywhere and reduce using [subrelation]

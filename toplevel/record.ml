@@ -135,8 +135,8 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     let _, univ = compute_constructor_level evars env_ar newfs in
     let ctx, aritysort = Reduction.dest_arity env0 arity in
       assert(List.is_empty ctx); (* Ensured by above analysis *)
-      if Sorts.is_prop aritysort || 
-	(Sorts.is_set aritysort && is_impredicative_set env0) then
+      if not def && (Sorts.is_prop aritysort || 
+	(Sorts.is_set aritysort && is_impredicative_set env0)) then
 	arity, evars
       else
 	let evars = Evd.set_leq_sort env_ar evars (Type univ) aritysort in
@@ -408,9 +408,9 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
     match fields with
     | [(Name proj_name, _, field)] when def ->
       let class_body = it_mkLambda_or_LetIn field params in
-      let _class_type = it_mkProd_or_LetIn arity params in
+      let class_type = it_mkProd_or_LetIn arity params in
       let class_entry = 
-	Declare.definition_entry (* ?types:class_type *) ~poly ~univs:ctx class_body in
+	Declare.definition_entry ~types:class_type ~poly ~univs:ctx class_body in
       let cst = Declare.declare_constant (snd id)
 	(DefinitionEntry class_entry, IsDefinition Definition)
       in
