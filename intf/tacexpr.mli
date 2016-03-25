@@ -122,7 +122,7 @@ type open_glob_constr = unit * glob_constr_and_expr
 type binding_bound_vars = Id.Set.t
 type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 
-type 'a delayed_open =
+type 'a delayed_open = 'a Pretyping.delayed_open =
   { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
 
 type delayed_open_constr_with_bindings = Term.constr with_bindings delayed_open

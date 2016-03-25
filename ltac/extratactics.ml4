@@ -44,7 +44,7 @@ let with_delayed_uconstr ist c tac =
     fail_evar = false;
     expand_evars = true
   } in
-  let c = Tacinterp.type_uconstr ~flags ist c in
+  let c = Pretyping.type_uconstr ~flags ist c in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
 let replace_in_clause_maybe_by ist c1 c2 cl tac =
@@ -290,7 +290,7 @@ let add_rewrite_hint bases ort t lcsr =
         if poly then ctx
 	else (Global.push_context_set false ctx; Univ.ContextSet.empty)
     in
-      Constrexpr_ops.constr_loc ce, (c, ctx), ort, t in
+      Constrexpr_ops.constr_loc ce, (c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
@@ -368,7 +368,7 @@ let refine_tac ist simple c =
     let env = Proofview.Goal.env gl in
     let flags = Pretyping.all_no_fail_flags in
     let expected_type = Pretyping.OfType concl in
-    let c = Tacinterp.type_uconstr ~flags ~expected_type ist c in
+    let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma -> c.delayed env sigma } in
     let refine = Refine.refine ~unsafe:false update in
     if simple then refine

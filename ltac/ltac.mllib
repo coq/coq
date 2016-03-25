@@ -9,15 +9,11 @@ Tactic_option
 Extraargs
 G_obligations
 Coretactics
-Autorewrite
 Extratactics
-Eauto
 G_auto
-Class_tactics
 G_class
 Rewrite
 G_rewrite
 Tauto
-Eqdecide
 G_eqdecide
 G_ltac
