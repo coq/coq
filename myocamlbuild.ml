@@ -115,8 +115,8 @@ let core_mllib = List.map (fun s -> s^".mllib") core_libs
 let tolink = "tools/tolink.ml"
 
 let c_headers_base =
-  ["coq_fix_code.h";"coq_instruct.h"; "coq_memory.h"; "int64_emul.h";
-   "coq_gc.h"; "coq_interp.h"; "coq_values.h"; "int64_native.h";
+  ["coq_fix_code.h";"coq_instruct.h"; "coq_memory.h";
+   "coq_gc.h"; "coq_interp.h"; "coq_values.h";
    "coq_jumptbl.h"]
 let c_headers = List.map ((^) "kernel/byterun/") c_headers_base
 
