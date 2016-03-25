@@ -22,3 +22,4 @@ Class_tactics
 Tactic_matching
 Term_dnet
 Eqdecide
+Autorewrite

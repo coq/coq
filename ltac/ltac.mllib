@@ -9,7 +9,6 @@ Tactic_option
 Extraargs
 G_obligations
 Coretactics
-Autorewrite
 Extratactics
 G_auto
 G_class
