@@ -30,7 +30,8 @@ let delayed_emacs_cmd s =
 let get_current_context () =
   try Pfedit.get_current_goal_context ()
   with e when Logic.catchable_exception e ->
-    (Evd.empty, Global.env())
+    let env = Global.env () in
+    (Evd.from_env env, env)
 
 (**********************************************************************)
 (** Terms                                                             *)

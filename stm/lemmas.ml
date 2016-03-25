@@ -511,5 +511,11 @@ let save_proof ?proof = function
 let get_current_context () =
   try Pfedit.get_current_goal_context ()
   with e when Logic.catchable_exception e ->
-    let env = Global.env () in
-    (Evd.from_env env, env)
+    try (* No more focused goals ? *)
+      let p = Pfedit.get_pftreestate () in
+      let evd = Proof.in_proof p (fun x -> x) in
+      (evd, Global.env ())
+    with Proof_global.NoCurrentProof ->
+      let env = Global.env () in
+      (Evd.from_env env, env)
+           

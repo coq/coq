@@ -85,7 +85,8 @@ let get_current_goal_context () =
   with NoSuchGoal ->
     (* spiwack: returning empty evar_map, since if there is no goal, under focus,
         there is no accessible evar either *)
-    (Evd.empty, Global.env ())
+    let env = Global.env () in
+    (Evd.from_env env, env)
 
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
