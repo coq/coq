@@ -1058,8 +1058,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
   try
   let res = 
-    if occur_meta_or_undefined_evar sigma m || occur_meta_or_undefined_evar sigma n
-      || subterm_restriction opt flags then None
+    if subterm_restriction opt flags ||
+      occur_meta_or_undefined_evar sigma m || occur_meta_or_undefined_evar sigma n
+    then
+      None
     else 
       let sigma, b = match flags.modulo_conv_on_closed_terms with
 	| Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
