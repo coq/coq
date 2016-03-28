@@ -6,6 +6,9 @@ open Util
 let is_profiling = ref false
 let set_profiling b = is_profiling := b
 
+let should_display_profile_at_close = ref false
+let set_display_profile_at_close b = should_display_profile_at_close := b
+
 
 let new_call = ref false
 let entered_call() = new_call := true
@@ -256,3 +259,10 @@ let print_results_tactic tactic =
   print_table tactic_total "" true table_tactic
 
 let reset_profile() = stack := [{entry=empty_entry(); children=Hashtbl.create 20}]
+
+let do_print_results_at_close () =
+  if !should_display_profile_at_close
+  then print_results ()
+  else ()
+
+let _ = Declaremods.append_end_library_hook do_print_results_at_close
