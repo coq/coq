@@ -1299,12 +1299,7 @@ let add_syntactic_definition ident (vars,c) local onlyparse =
       } in
       let nvars, pat = interp_notation_constr nenv c in
       let () = nonprintable := nenv.ninterp_only_parse in
-      let map id =
-        let (isonlybinding,sc, _) = Id.Map.find id nvars in
-        (* if a notation contains an ltac:, the body is not analyzed
-           and onlybinding detection fails *)
-        assert (!nonprintable || not isonlybinding);
-        (id, sc) in
+      let map id = let (_,sc,_) = Id.Map.find id nvars in (id, sc) in
       List.map map vars, pat
   in
   let onlyparse = match onlyparse with
