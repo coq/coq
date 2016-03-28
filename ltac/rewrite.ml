@@ -1046,7 +1046,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		      | x -> x
 		    in
 		    let res =
-		      { rew_car = prod_appvect r.rew_car args;
+		      { rew_car = Reductionops.hnf_prod_appvect env (goalevars evars) r.rew_car args;
 			rew_from = mkApp(r.rew_from, args); rew_to = mkApp(r.rew_to, args);
 			rew_prf = prf; rew_evars = r.rew_evars }
 		    in 
