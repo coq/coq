@@ -107,8 +107,6 @@ dev/ocamlweb-doc/lex.ml
 ide/coq_lex.ml
 ide/config_lexer.ml
 ide/utf8_convert.ml
-ide/highlight.ml
-plugins/dp/dp_zenon.ml
 tools/gallina_lexer.ml
 tools/coqwc.ml
 tools/coqdep_lexer.ml
@@ -121,29 +119,17 @@ lib/xml_lexer.ml
 g_*.ml
 
 ide/project_file.ml
-lib/pp.ml
 parsing/compat.ml
 grammar/q_util.ml
 grammar/q_constr.ml
-grammar/q_coqast.ml
 grammar/tacextend.ml
 grammar/vernacextend.ml
 grammar/argextend.ml
-parsing/pcoq.ml
 parsing/lexer.ml
-plugins/setoid_ring/newring.ml
-plugins/field/field.ml
-plugins/nsatz/nsatz.ml
-tactics/tauto.ml
-tactics/eauto.ml
 tactics/hipattern.ml
-tactics/class_tactics.ml
-tactics/coretactics.ml
-tactics/rewrite.ml
-tactics/eqdecide.ml
-tactics/extratactics.ml
-tactics/extraargs.ml
-toplevel/whelp.ml
+ltac/coretactics.ml
+ltac/extratactics.ml
+ltac/extraargs.ml
 ide/coqide_main.ml
 
 # other auto-generated files
