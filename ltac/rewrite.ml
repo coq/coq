@@ -359,7 +359,7 @@ end) = struct
 	   let env' = Environ.push_rel_context rels env in
 	   let sigma = Sigma.Unsafe.of_evar_map sigma in
 	   let Sigma ((evar, _), evars, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
-	   let evars = Sigma.to_evar_map sigma in
+	   let evars = Sigma.to_evar_map evars in
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
