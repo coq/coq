@@ -105,7 +105,6 @@ let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
      raise (SubtermUnificationError (!nested,((cl,!pos),t),lastpos,e)) in
   let rec substrec k t =
     if nowhere_except_in && !pos > maxocc then t else
-    if not (Vars.closed0 t) then subst_below k t else
     try
       let subst = test.match_fun test.testing_state t in
       if Locusops.is_selected !pos occs then
