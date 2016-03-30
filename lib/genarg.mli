@@ -70,15 +70,15 @@ ExtraArgType of string         '_a                      '_b
 
 module ArgT :
 sig
-  type 'a tag
-  val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
-  val repr : 'a tag -> string
-  type any = Any : 'a tag -> any
+  type ('a, 'b, 'c) tag
+  val eq : ('a1, 'b1, 'c1) tag -> ('a2, 'b2, 'c2) tag -> ('a1 * 'b1 * 'c1, 'a2 * 'b2 * 'c2) CSig.eq option
+  val repr : ('a, 'b, 'c) tag -> string
+  type any = Any : ('a, 'b, 'c) tag -> any
   val name : string -> any option
 end
 
 type (_, _, _) genarg_type =
-| ExtraArg : ('a * 'b * 'c) ArgT.tag -> ('a, 'b, 'c) genarg_type
+| ExtraArg : ('a, 'b, 'c) ArgT.tag -> ('a, 'b, 'c) genarg_type
 | ListArg : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
 | OptArg : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
 | PairArg : ('a1, 'b1, 'c1) genarg_type * ('a2, 'b2, 'c2) genarg_type ->

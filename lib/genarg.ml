@@ -10,7 +10,20 @@ open Pp
 open Util
 
 module ValT = Dyn.Make(struct end)
-module ArgT = Dyn.Make(struct end)
+module ArgT =
+struct
+  module DYN = Dyn.Make(struct end)
+  module Map = DYN.Map
+  type ('a, 'b, 'c) tag = ('a * 'b * 'c) DYN.tag
+  type any = Any : ('a, 'b, 'c) tag -> any
+  let eq = DYN.eq
+  let repr = DYN.repr
+  let create = DYN.create
+  let name s = match DYN.name s with
+  | None -> None
+  | Some (DYN.Any t) ->
+    Some (Any (Obj.magic t)) (** All created tags are made of triples *)
+end
 
 module Val =
 struct
@@ -57,7 +70,7 @@ struct
 end
 
 type (_, _, _) genarg_type =
-| ExtraArg : ('a * 'b * 'c) ArgT.tag -> ('a, 'b, 'c) genarg_type
+| ExtraArg : ('a, 'b, 'c) ArgT.tag -> ('a, 'b, 'c) genarg_type
 | ListArg : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
 | OptArg : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
 | PairArg : ('a1, 'b1, 'c1) genarg_type * ('a2, 'b2, 'c2) genarg_type ->
