@@ -98,13 +98,13 @@ let rec pr_genarg_type : type a b c. (a, b, c) genarg_type -> std_ppcmds = funct
     str "*" ++ spc () ++ pr_genarg_type t2 ++ str ")"
 | ExtraArg s -> str (ArgT.repr s)
 
-let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
+let argument_type_eq arg1 arg2 = match arg1, arg2 with
 | ArgumentType t1, ArgumentType t2 ->
   match genarg_type_eq t1 t2 with
   | None -> false
   | Some Refl -> true
 
-let rec pr_argument_type (ArgumentType t) = pr_genarg_type t
+let pr_argument_type (ArgumentType t) = pr_genarg_type t
 
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision *)
@@ -114,11 +114,6 @@ type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 type rlevel = [ `rlevel ]
 type glevel = [ `glevel ]
 type tlevel = [ `tlevel ]
-
-type _ level =
-| Rlevel : rlevel level
-| Glevel : glevel level
-| Tlevel : tlevel level
 
 type (_, _) abstract_argument_type =
 | Rawwit : ('a, 'b, 'c) genarg_type -> ('a, rlevel) abstract_argument_type
@@ -182,48 +177,6 @@ let genarg_tag (GenArg (t, _)) = unquote t
 type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
-
-type ('a, 'b, 'c, 'l) cast =
-| Rcast : 'a -> ('a, 'b, 'c, rlevel) cast
-| Gcast : 'b -> ('a, 'b, 'c, glevel) cast
-| Tcast : 'c -> ('a, 'b, 'c, tlevel) cast
-
-let raw : ('a, 'b, 'c, rlevel) cast -> _ = function Rcast x -> x
-let glb : ('a, 'b, 'c, glevel) cast -> _ = function Gcast x -> x
-let top : ('a, 'b, 'c, tlevel) cast -> _ = function Tcast x -> x
-
-(** Type transformers *)
-
-type ('r, 'l) list_unpacker =
-  { list_unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type ->
-    ('a list, 'b list, 'c list, 'l) cast -> 'r }
-
-let list_unpack (type l) (pack : (_, l) list_unpacker) (GenArg (t, obj) : l generic_argument) = match t with
-| Rawwit (ListArg t) -> pack.list_unpacker t (Rcast obj)
-| Glbwit (ListArg t) -> pack.list_unpacker t (Gcast obj)
-| Topwit (ListArg t) -> pack.list_unpacker t (Tcast obj)
-| _ -> failwith "out_gen"
-
-type ('r, 'l) opt_unpacker =
-  { opt_unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type ->
-    ('a option, 'b option, 'c option, 'l) cast -> 'r }
-
-let opt_unpack (type l) (pack : (_, l) opt_unpacker) (GenArg (t, obj) : l generic_argument) = match t with
-| Rawwit (OptArg t) -> pack.opt_unpacker t (Rcast obj)
-| Glbwit (OptArg t) -> pack.opt_unpacker t (Gcast obj)
-| Topwit (OptArg t) -> pack.opt_unpacker t (Tcast obj)
-| _ -> failwith "out_gen"
-
-type ('r, 'l) pair_unpacker =
-  { pair_unpacker : 'a1 'a2 'b1 'b2 'c1 'c2.
-    ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
-    (('a1 * 'a2), ('b1 * 'b2), ('c1 * 'c2), 'l) cast -> 'r }
-
-let pair_unpack (type l) (pack : (_, l) pair_unpacker) (GenArg (t, obj) : l generic_argument) = match t with
-| Rawwit (PairArg (t1, t2)) -> pack.pair_unpacker t1 t2 (Rcast obj)
-| Glbwit (PairArg (t1, t2)) -> pack.pair_unpacker t1 t2 (Gcast obj)
-| Topwit (PairArg (t1, t2)) -> pack.pair_unpacker t1 t2 (Tcast obj)
-| _ -> failwith "out_gen"
 
 (** Creating args *)
 
