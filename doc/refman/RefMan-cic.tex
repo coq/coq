@@ -552,14 +552,14 @@ The declaration for parameterized lists is:
                         \end{array}\right]}
     \vskip.5em
 
-which corresponds to the result of the \Coq\ declaration:
+\noindent which corresponds to the result of the \Coq\ declaration:
 \begin{coq_example*}
 Inductive list (A:Set) : Set :=
   | nil : list A
   | cons : A -> list A -> list A.
 \end{coq_example*}
 
-The declaration for a mutual inductive definition of forests and trees is:
+\noindent The declaration for a mutual inductive definition of forests and trees is:
     \vskip.5em
 \ind{}{\left[\begin{array}{r \colon l}\tree&\Set\\\forest&\Set\end{array}\right]}
       {\left[\begin{array}{r \colon l}
@@ -569,7 +569,7 @@ The declaration for a mutual inductive definition of forests and trees is:
                       \end{array}\right]}
     \vskip.5em
  
-which corresponds to the result of the \Coq\ 
+\noindent which corresponds to the result of the \Coq\
 declaration:
 \begin{coq_example*}
 Inductive tree : Set :=
@@ -579,7 +579,7 @@ with forest : Set :=
   | consf : tree -> forest -> forest.
 \end{coq_example*}
 
-The declaration for a mutual inductive definition of even and odd is:
+\noindent The declaration for a mutual inductive definition of even and odd is:
     \newcommand\GammaI{\left[\begin{array}{r \colon l}
                         \even & \nat\ra\Prop \\
                         \odd & \nat\ra\Prop
@@ -594,7 +594,7 @@ The declaration for a mutual inductive definition of even and odd is:
     \vskip.5em
     \ind{1}{\GammaI}{\GammaC}
     \vskip.5em
-which corresponds to the result of the \Coq\ 
+\noindent which corresponds to the result of the \Coq\
 declaration:
 \begin{coq_example*}
 Inductive even : nat -> Prop :=
