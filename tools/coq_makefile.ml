@@ -43,6 +43,16 @@ let section s =
   print_com (String.make (l+2) '#');
   print "\n"
 
+(* These are the Coq library directories that are used for
+ * plugin development
+ *)
+let lib_dirs =
+  ["kernel"; "lib"; "library"; "parsing";
+   "pretyping"; "interp"; "printing"; "intf";
+   "proofs"; "tactics"; "tools"; "toplevel";
+   "stm"; "grammar"; "config"; "ltac"; "engine"]
+
+
 let usage () =
   output_string stderr "Usage summary:
 
@@ -452,12 +462,8 @@ let variables is_install opt (args,defs) =
     end;
     (* Caml executables and relative variables *)
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
-    print "COQSRCLIBS?=-I \"$(COQLIB)kernel\" -I \"$(COQLIB)lib\" \\
-  -I \"$(COQLIB)library\" -I \"$(COQLIB)parsing\" -I \"$(COQLIB)engine\" -I \"$(COQLIB)pretyping\" \\
-  -I \"$(COQLIB)interp\" -I \"$(COQLIB)printing\" -I \"$(COQLIB)intf\" \\
-  -I \"$(COQLIB)proofs\" -I \"$(COQLIB)tactics\" -I \"$(COQLIB)tools\" \\
-  -I \"$(COQLIB)toplevel\" -I \"$(COQLIB)ltac\" -I \"$(COQLIB)stm\" \\
-  -I \"$(COQLIB)grammar\" -I \"$(COQLIB)config\"";
+    print "COQSRCLIBS?=" ;
+    List.iter (fun c -> print "-I \"$(COQLIB)"; print c ; print "\" \\\n") lib_dirs ;
     List.iter (fun c -> print " \\
   -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
@@ -800,6 +806,21 @@ let check_overlapping_include (_,inc_i,inc_r) =
 	    Printf.eprintf "Warning: in options -R/-Q, %s and %s overlap\n" pdir pdir') l;
   in aux (inc_i@inc_r)
 
+(* Generate a .merlin file that references the standard library and
+ * any -I included paths.
+ *)
+let merlin targets (ml_inc,_,_) =
+  print ".merlin:\n";
+  print "\t@echo 'FLG -rectypes' > .merlin\n" ;
+  List.iter (fun c ->
+      printf "\t@echo \"B $(COQLIB) %s\" >> .merlin\n" c)
+    lib_dirs ;
+  List.iter (fun (_,c) ->
+      printf "\t@echo \"B %s\" >> .merlin\n" c;
+      printf "\t@echo \"S %s\" >> .merlin\n" c)
+    ml_inc;
+  print "\n"
+
 let do_makefile args =
   let has_file var = function
     |[] -> var := false
@@ -842,6 +863,7 @@ let do_makefile args =
   section "Special targets.";
   standard opt;
   install targets inc is_install;
+  merlin targets inc;
   clean sds sps;
   make_makefile sds;
   implicit ();

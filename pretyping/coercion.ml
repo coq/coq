@@ -129,7 +129,7 @@ let mu env evdref t =
   let rec aux v =
     let v' = hnf env !evdref v in
       match disc_subset v' with
-      Some (u, p) ->
+      | Some (u, p) ->
 	let f, ct = aux u in
 	let p = hnf_nodelta env !evdref p in
 	  (Some (fun x ->
@@ -243,7 +243,6 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		     let remove_head a c =
 		       match kind_of_term c with
 		       | Lambda (n, t, t') -> c, t'
-			   (*| Prod (n, t, t') -> t'*)
 		       | Evar (k, args) ->
 			   let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k,args) in
 			     evdref := evs;
@@ -299,9 +298,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		      with NoSubtacCoercion ->
 			let typ = Typing.unsafe_type_of env evm c in
 			let typ' = Typing.unsafe_type_of env evm c' in
-			  (* 			     if not (is_arity env evm typ) then *)
 			  coerce_application typ typ' c c' l l')
-		       (* 			     else subco () *)
 		 else
 		   subco ()
 	   | x, y when Constr.equal c c' ->
@@ -309,9 +306,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		 let evm =  !evdref in
 		 let lam_type = Typing.unsafe_type_of env evm c in
 		 let lam_type' = Typing.unsafe_type_of env evm c' in
-		   (* 			 if not (is_arity env evm lam_type) then ( *)
 		   coerce_application lam_type lam_type' c c' l l'
-		     (* 			 ) else subco () *)
 	       else subco ()
 	   | _ -> subco ())
       | _, _ ->  subco ()
@@ -337,10 +332,17 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	    raise NoSubtacCoercion
   in coerce_unify env x y
 
+let app_coercion env evdref coercion v =
+  match coercion with
+  | None -> v
+  | Some f ->
+     let v' = Typing.e_solve_evars env evdref (f v) in
+     whd_betaiota !evdref v'
+
 let coerce_itf loc env evd v t c1 =
   let evdref = ref evd in
   let coercion = coerce loc env evdref t c1 in
-  let t = Option.map (app_opt env evdref coercion) v in
+  let t = Option.map (app_coercion env evdref coercion) v in
     !evdref, t
 
 let saturate_evd env evd =
@@ -426,7 +428,7 @@ let inh_coerce_to_base loc env evd j =
     let evdref = ref evd in
     let ct, typ' = mu env evdref j.uj_type in
     let res =
-      { uj_val = app_opt env evdref ct j.uj_val;
+      { uj_val = app_coercion env evdref ct j.uj_val;
 	uj_type = typ' }
     in !evdref, res
   else (evd, j)
