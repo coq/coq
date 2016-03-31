@@ -128,6 +128,88 @@ let interp_entry_name up_level s sep =
   eval (parse_user_entry s sep)
 
 (**********************************************************************)
+(** Grammar declaration for Tactic Notation (Coq level)               *)
+
+let get_tactic_entry n =
+  if Int.equal n 0 then
+    Tactic.simple_tactic, None
+  else if Int.equal n 5 then
+    Tactic.binder_tactic, None
+  else if 1<=n && n<5 then
+    Tactic.tactic_expr, Some (Extend.Level (string_of_int n))
+  else
+    error ("Invalid Tactic Notation level: "^(string_of_int n)^".")
+
+(**********************************************************************)
+(** State of the grammar extensions                                   *)
+
+type tactic_grammar = {
+  tacgram_level : int;
+  tacgram_prods : Tacexpr.raw_tactic_expr grammar_prod_item list;
+}
+
+(** ML Tactic grammar extensions *)
+
+let add_ml_tactic_entry (name, prods) =
+  let entry = Tactic.simple_tactic in
+  let mkact i loc l : Tacexpr.raw_tactic_expr =
+    let open Tacexpr in
+    let entry = { mltac_name = name; mltac_index = i } in
+    let map arg = TacGeneric arg in
+    TacML (loc, entry, List.map map l)
+  in
+  let rules = List.map_i (fun i p -> make_rule (mkact i) p) 0 prods in
+  synchronize_level_positions ();
+  grammar_extend entry None (None, [(None, None, List.rev rules)]);
+  1
+
+(* Declaration of the tactic grammar rule *)
+
+let head_is_ident tg = match tg.tacgram_prods with
+| GramTerminal _::_ -> true
+| _ -> false
+
+(** Tactic grammar extensions *)
+
+let add_tactic_entry (kn, tg) =
+  let open Tacexpr in
+  let entry, pos = get_tactic_entry tg.tacgram_level in
+  let mkact loc l =
+    let filter = function
+    | GramTerminal _ -> None
+    | GramNonTerminal (_, t, _) -> Some (Genarg.unquote t)
+    in
+    let types = List.map_filter filter tg.tacgram_prods in
+    let map arg t =
+      (** HACK to handle especially the tactic(...) entry *)
+      let wit = Genarg.rawwit Constrarg.wit_tactic in
+      if Genarg.argument_type_eq t (Genarg.unquote wit) then
+        Tacexp (Genarg.out_gen wit arg)
+      else
+        TacGeneric arg
+    in
+    let l = List.map2 map l types in
+    (TacAlias (loc,kn,l):raw_tactic_expr)
+  in
+  let () =
+    if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
+      error "Notation for simple tactic must start with an identifier."
+  in
+  let rules = make_rule mkact tg.tacgram_prods in
+  synchronize_level_positions ();
+  grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
+  1
+
+let tactic_grammar =
+  create_grammar_command "TacticGrammar" add_tactic_entry
+
+let ml_tactic_grammar =
+  create_grammar_command "MLTacticGrammar" add_ml_tactic_entry
+
+let extend_tactic_grammar kn ntn = extend_grammar tactic_grammar (kn, ntn)
+let extend_ml_tactic_grammar n ntn = extend_grammar ml_tactic_grammar (n, ntn)
+
+(**********************************************************************)
 (* Tactic Notation                                                    *)
 
 let interp_prod_item lev = function
@@ -172,13 +254,13 @@ let cache_tactic_notation (_, tobj) =
   let key = tobj.tacobj_key in
   let () = check_key key in
   Tacenv.register_alias key tobj.tacobj_body;
-  Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram;
+  extend_tactic_grammar key tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
 
 let open_tactic_notation i (_, tobj) =
   let key = tobj.tacobj_key in
   if Int.equal i 1 && not tobj.tacobj_local then
-    Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
+    extend_tactic_grammar key tobj.tacobj_tacgram
 
 let load_tactic_notation i (_, tobj) =
   let key = tobj.tacobj_key in
@@ -187,7 +269,7 @@ let load_tactic_notation i (_, tobj) =
   Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;
   if Int.equal i 1 && not tobj.tacobj_local then
-    Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
+    extend_tactic_grammar key tobj.tacobj_tacgram
 
 let subst_tactic_notation (subst, tobj) =
   let (ids, body) = tobj.tacobj_body in
@@ -296,6 +378,37 @@ let add_ml_tactic_notation name prods =
   } in
   Lib.add_anonymous_leaf (inMLTacticGrammar obj);
   extend_atomic_tactic name prods
+
+(**********************************************************************)
+(** Ltac quotations                                                   *)
+
+let ltac_quotations = ref String.Set.empty
+
+let create_ltac_quotation name cast (e, l) =
+  let open Extend in
+  let () =
+    if String.Set.mem name !ltac_quotations then
+      failwith ("Ltac quotation " ^ name ^ " already registered")
+  in
+  let () = ltac_quotations := String.Set.add name !ltac_quotations in
+  let entry = match l with
+  | None -> Aentry (name_of_entry e)
+  | Some l -> Aentryl (name_of_entry e, l)
+  in
+(*   let level = Some "1" in *)
+  let level = None in
+  let assoc = None in
+  let rule =
+    Next (Next (Next (Next (Next (Stop,
+      Atoken (Lexer.terminal name)),
+      Atoken (Lexer.terminal ":")),
+      Atoken (Lexer.terminal "(")),
+      entry),
+      Atoken (Lexer.terminal ")"))
+  in
+  let action _ v _ _ _ loc = cast (loc, v) in
+  let gram = (level, assoc, [Rule (rule, action)]) in
+  Pcoq.grammar_extend Tactic.tactic_arg None (None, [gram])
 
 (** Command *)
 
