@@ -25,7 +25,7 @@ open Locus
 
 let create_generic_quotation name e wit =
   let inject (loc, v) = Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit wit) v) in
-  Egramcoq.create_ltac_quotation name inject (e, None)
+  Tacentries.create_ltac_quotation name inject (e, None)
 
 let () = create_generic_quotation "integer" Pcoq.Prim.integer Stdarg.wit_int
 let () = create_generic_quotation "string" Pcoq.Prim.string Stdarg.wit_string
@@ -38,7 +38,7 @@ let () = create_generic_quotation "ipattern" Pcoq.Tactic.simple_intropattern Con
 let () = create_generic_quotation "open_constr" Pcoq.Constr.lconstr Constrarg.wit_open_constr
 let () =
   let inject (loc, v) = Tacexpr.Tacexp v in
-  Egramcoq.create_ltac_quotation "ltac" inject (Pcoq.Tactic.tactic_expr, Some 5)
+  Tacentries.create_ltac_quotation "ltac" inject (Pcoq.Tactic.tactic_expr, Some 5)
 
 (* Rewriting orientation *)
 

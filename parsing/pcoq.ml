@@ -57,16 +57,6 @@ type typed_entry = TypedEntry : 'a raw_abstract_argument_type * 'a G.entry -> ty
 let object_of_typed_entry (TypedEntry (_, e)) = Gramobj.weaken_entry e
 let weaken_entry x = Gramobj.weaken_entry x
 
-(** General entry keys *)
-
-(** This intermediate abstract representation of entries can
-   both be reified into mlexpr for the ML extensions and
-   dynamically interpreted as entries for the Coq level extensions
-*)
-
-type entry_name = EntryName :
-  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) symbol -> entry_name
-
 (** Grammar extensions *)
 
 (** NB: [extend_statment =
@@ -740,107 +730,7 @@ let grammar_extend e reinit ext =
   let ext = of_coq_extend_statement ext in
   unsafe_grammar_extend e reinit ext
 
-(**********************************************************************)
-(* Interpret entry names of the form "ne_constr_list" as entry keys   *)
-
-let coincide s pat off =
-  let len = String.length pat in
-  let break = ref true in
-  let i = ref 0 in
-  while !break && !i < len do
-    let c = Char.code s.[off + !i] in
-    let d = Char.code pat.[!i] in
-    break := Int.equal c d;
-    incr i
-  done;
-  !break
-
 let name_of_entry e = Entry.unsafe_of_name (Gram.Entry.name e)
-
-let atactic n =
-  if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
-  else Aentryl (name_of_entry Tactic.tactic_expr, n)
-
-let try_get_entry u s =
-  (** Order the effects: get_entry can raise Not_found *)
-  let TypedEntry (typ, e) = get_entry u s in
-  EntryName (typ, Aentry (name_of_entry e))
-
-(** Quite ad-hoc *)
-let get_tacentry n m =
-  let check_lvl n =
-    Int.equal m n
-    && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
-    && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
-  in
-  if check_lvl n then EntryName (rawwit wit_tactic, Aself)
-  else if check_lvl (n + 1) then EntryName (rawwit wit_tactic, Anext)
-  else EntryName (rawwit wit_tactic, atactic n)
-
-let rec parse_user_entry s sep =
-  let l = String.length s in
-  if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
-    let entry = parse_user_entry (String.sub s 3 (l-8)) "" in
-    Ulist1 entry
-  else if l > 12 && coincide s "ne_" 0 &&
-                   coincide s "_list_sep" (l-9) then
-    let entry = parse_user_entry (String.sub s 3 (l-12)) "" in
-    Ulist1sep (entry, sep)
-  else if l > 5 && coincide s "_list" (l-5) then
-    let entry = parse_user_entry (String.sub s 0 (l-5)) "" in
-    Ulist0 entry
-  else if l > 9 && coincide s "_list_sep" (l-9) then
-    let entry = parse_user_entry (String.sub s 0 (l-9)) "" in
-    Ulist0sep (entry, sep)
-  else if l > 4 && coincide s "_opt" (l-4) then
-    let entry = parse_user_entry (String.sub s 0 (l-4)) "" in
-    Uopt entry
-  else if l > 5 && coincide s "_mods" (l-5) then
-    let entry = parse_user_entry (String.sub s 0 (l-1)) "" in
-    Umodifiers entry
-  else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
-    let n = Char.code s.[6] - 48 in
-    Uentryl ("tactic", n)
-  else
-    let s = match s with "hyp" -> "var" | _ -> s in
-    Uentry s
-
-let arg_list = function Rawwit t -> Rawwit (ListArg t)
-let arg_opt = function Rawwit t -> Rawwit (OptArg t)
-
-let rec interp_entry_name up_level s sep =
-  let rec eval = function
-  | Ulist1 e ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Alist1 g)
-  | Ulist1sep (e, sep) ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Alist1sep (g, sep))
-  | Ulist0 e ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Alist0 g)
-  | Ulist0sep (e, sep) ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Alist0sep (g, sep))
-  | Uopt e ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_opt t, Aopt g)
-  | Umodifiers e ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Amodifiers g)
-  | Uentry s ->
-    begin
-      try try_get_entry uprim s with Not_found ->
-      try try_get_entry uconstr s with Not_found ->
-      try try_get_entry utactic s with Not_found ->
-      error ("Unknown entry "^s^".")
-    end
-  | Uentryl (s, n) ->
-    (** FIXME: do better someday *)
-    assert (String.equal s "tactic");
-    get_tacentry n up_level
-  in
-  eval (parse_user_entry s sep)
 
 let list_entry_names () =
   let add_entry key (TypedEntry (entry, _)) accu = (key, unquote entry) :: accu in

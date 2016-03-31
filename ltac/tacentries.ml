@@ -11,12 +11,203 @@ open Errors
 open Util
 open Names
 open Libobject
+open Genarg
 open Pcoq
 open Egramml
 open Egramcoq
 open Vernacexpr
 open Libnames
 open Nameops
+
+(**********************************************************************)
+(* Interpret entry names of the form "ne_constr_list" as entry keys   *)
+
+let coincide s pat off =
+  let len = String.length pat in
+  let break = ref true in
+  let i = ref 0 in
+  while !break && !i < len do
+    let c = Char.code s.[off + !i] in
+    let d = Char.code pat.[!i] in
+    break := Int.equal c d;
+    incr i
+  done;
+  !break
+
+let atactic n =
+  let open Extend in
+  if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
+  else Aentryl (name_of_entry Tactic.tactic_expr, n)
+
+type entry_name = EntryName :
+  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) Extend.symbol -> entry_name
+
+let try_get_entry u s =
+  let open Extend in
+  (** Order the effects: get_entry can raise Not_found *)
+  let TypedEntry (typ, e) = get_entry u s in
+  EntryName (typ, Aentry (name_of_entry e))
+
+(** Quite ad-hoc *)
+let get_tacentry n m =
+  let open Extend in
+  let check_lvl n =
+    Int.equal m n
+    && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
+    && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
+  in
+  if check_lvl n then EntryName (rawwit Constrarg.wit_tactic, Aself)
+  else if check_lvl (n + 1) then EntryName (rawwit Constrarg.wit_tactic, Anext)
+  else EntryName (rawwit Constrarg.wit_tactic, atactic n)
+
+let rec parse_user_entry s sep =
+  let open Extend in
+  let l = String.length s in
+  if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
+    let entry = parse_user_entry (String.sub s 3 (l-8)) "" in
+    Ulist1 entry
+  else if l > 12 && coincide s "ne_" 0 &&
+                   coincide s "_list_sep" (l-9) then
+    let entry = parse_user_entry (String.sub s 3 (l-12)) "" in
+    Ulist1sep (entry, sep)
+  else if l > 5 && coincide s "_list" (l-5) then
+    let entry = parse_user_entry (String.sub s 0 (l-5)) "" in
+    Ulist0 entry
+  else if l > 9 && coincide s "_list_sep" (l-9) then
+    let entry = parse_user_entry (String.sub s 0 (l-9)) "" in
+    Ulist0sep (entry, sep)
+  else if l > 4 && coincide s "_opt" (l-4) then
+    let entry = parse_user_entry (String.sub s 0 (l-4)) "" in
+    Uopt entry
+  else if l > 5 && coincide s "_mods" (l-5) then
+    let entry = parse_user_entry (String.sub s 0 (l-1)) "" in
+    Umodifiers entry
+  else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
+    let n = Char.code s.[6] - 48 in
+    Uentryl ("tactic", n)
+  else
+    let s = match s with "hyp" -> "var" | _ -> s in
+    Uentry s
+
+let arg_list = function Rawwit t -> Rawwit (ListArg t)
+let arg_opt = function Rawwit t -> Rawwit (OptArg t)
+
+let interp_entry_name up_level s sep =
+  let open Extend in
+  let rec eval = function
+  | Ulist1 e ->
+    let EntryName (t, g) = eval e in
+    EntryName (arg_list t, Alist1 g)
+  | Ulist1sep (e, sep) ->
+    let EntryName (t, g) = eval e in
+    EntryName (arg_list t, Alist1sep (g, sep))
+  | Ulist0 e ->
+    let EntryName (t, g) = eval e in
+    EntryName (arg_list t, Alist0 g)
+  | Ulist0sep (e, sep) ->
+    let EntryName (t, g) = eval e in
+    EntryName (arg_list t, Alist0sep (g, sep))
+  | Uopt e ->
+    let EntryName (t, g) = eval e in
+    EntryName (arg_opt t, Aopt g)
+  | Umodifiers e ->
+    let EntryName (t, g) = eval e in
+    EntryName (arg_list t, Amodifiers g)
+  | Uentry s ->
+    begin
+      try try_get_entry uprim s with Not_found ->
+      try try_get_entry uconstr s with Not_found ->
+      try try_get_entry utactic s with Not_found ->
+      error ("Unknown entry "^s^".")
+    end
+  | Uentryl (s, n) ->
+    (** FIXME: do better someday *)
+    assert (String.equal s "tactic");
+    get_tacentry n up_level
+  in
+  eval (parse_user_entry s sep)
+
+(**********************************************************************)
+(** Grammar declaration for Tactic Notation (Coq level)               *)
+
+let get_tactic_entry n =
+  if Int.equal n 0 then
+    Tactic.simple_tactic, None
+  else if Int.equal n 5 then
+    Tactic.binder_tactic, None
+  else if 1<=n && n<5 then
+    Tactic.tactic_expr, Some (Extend.Level (string_of_int n))
+  else
+    error ("Invalid Tactic Notation level: "^(string_of_int n)^".")
+
+(**********************************************************************)
+(** State of the grammar extensions                                   *)
+
+type tactic_grammar = {
+  tacgram_level : int;
+  tacgram_prods : Tacexpr.raw_tactic_expr grammar_prod_item list;
+}
+
+(** ML Tactic grammar extensions *)
+
+let add_ml_tactic_entry (name, prods) =
+  let entry = Tactic.simple_tactic in
+  let mkact i loc l : Tacexpr.raw_tactic_expr =
+    let open Tacexpr in
+    let entry = { mltac_name = name; mltac_index = i } in
+    let map arg = TacGeneric arg in
+    TacML (loc, entry, List.map map l)
+  in
+  let rules = List.map_i (fun i p -> make_rule (mkact i) p) 0 prods in
+  synchronize_level_positions ();
+  grammar_extend entry None (None, [(None, None, List.rev rules)]);
+  1
+
+(* Declaration of the tactic grammar rule *)
+
+let head_is_ident tg = match tg.tacgram_prods with
+| GramTerminal _::_ -> true
+| _ -> false
+
+(** Tactic grammar extensions *)
+
+let add_tactic_entry (kn, tg) =
+  let open Tacexpr in
+  let entry, pos = get_tactic_entry tg.tacgram_level in
+  let mkact loc l =
+    let filter = function
+    | GramTerminal _ -> None
+    | GramNonTerminal (_, t, _) -> Some (Genarg.unquote t)
+    in
+    let types = List.map_filter filter tg.tacgram_prods in
+    let map arg t =
+      (** HACK to handle especially the tactic(...) entry *)
+      let wit = Genarg.rawwit Constrarg.wit_tactic in
+      if Genarg.argument_type_eq t (Genarg.unquote wit) then
+        Tacexp (Genarg.out_gen wit arg)
+      else
+        TacGeneric arg
+    in
+    let l = List.map2 map l types in
+    (TacAlias (loc,kn,l):raw_tactic_expr)
+  in
+  let () =
+    if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
+      error "Notation for simple tactic must start with an identifier."
+  in
+  let rules = make_rule mkact tg.tacgram_prods in
+  synchronize_level_positions ();
+  grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
+  1
+
+let tactic_grammar =
+  create_grammar_command "TacticGrammar" add_tactic_entry
+
+let ml_tactic_grammar =
+  create_grammar_command "MLTacticGrammar" add_ml_tactic_entry
+
+let extend_tactic_grammar kn ntn = extend_grammar tactic_grammar (kn, ntn)
+let extend_ml_tactic_grammar n ntn = extend_grammar ml_tactic_grammar (n, ntn)
 
 (**********************************************************************)
 (* Tactic Notation                                                    *)
@@ -63,13 +254,13 @@ let cache_tactic_notation (_, tobj) =
   let key = tobj.tacobj_key in
   let () = check_key key in
   Tacenv.register_alias key tobj.tacobj_body;
-  Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram;
+  extend_tactic_grammar key tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
 
 let open_tactic_notation i (_, tobj) =
   let key = tobj.tacobj_key in
   if Int.equal i 1 && not tobj.tacobj_local then
-    Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
+    extend_tactic_grammar key tobj.tacobj_tacgram
 
 let load_tactic_notation i (_, tobj) =
   let key = tobj.tacobj_key in
@@ -78,7 +269,7 @@ let load_tactic_notation i (_, tobj) =
   Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;
   if Int.equal i 1 && not tobj.tacobj_local then
-    Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
+    extend_tactic_grammar key tobj.tacobj_tacgram
 
 let subst_tactic_notation (subst, tobj) =
   let (ids, body) = tobj.tacobj_body in
@@ -187,6 +378,37 @@ let add_ml_tactic_notation name prods =
   } in
   Lib.add_anonymous_leaf (inMLTacticGrammar obj);
   extend_atomic_tactic name prods
+
+(**********************************************************************)
+(** Ltac quotations                                                   *)
+
+let ltac_quotations = ref String.Set.empty
+
+let create_ltac_quotation name cast (e, l) =
+  let open Extend in
+  let () =
+    if String.Set.mem name !ltac_quotations then
+      failwith ("Ltac quotation " ^ name ^ " already registered")
+  in
+  let () = ltac_quotations := String.Set.add name !ltac_quotations in
+  let entry = match l with
+  | None -> Aentry (name_of_entry e)
+  | Some l -> Aentryl (name_of_entry e, l)
+  in
+(*   let level = Some "1" in *)
+  let level = None in
+  let assoc = None in
+  let rule =
+    Next (Next (Next (Next (Next (Stop,
+      Atoken (Lexer.terminal name)),
+      Atoken (Lexer.terminal ":")),
+      Atoken (Lexer.terminal "(")),
+      entry),
+      Atoken (Lexer.terminal ")"))
+  in
+  let action _ v _ _ _ loc = cast (loc, v) in
+  let gram = (level, assoc, [Rule (rule, action)]) in
+  Pcoq.grammar_extend Tactic.tactic_arg None (None, [gram])
 
 (** Command *)
 
