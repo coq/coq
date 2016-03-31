@@ -268,13 +268,9 @@ val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
 (** Binding general entry keys to symbols *)
 
-type entry_name = EntryName :
-  'a raw_abstract_argument_type * (raw_tactic_expr, 'a) Extend.symbol -> entry_name
+type typed_entry = TypedEntry : 'a raw_abstract_argument_type * 'a Gram.entry -> typed_entry
 
-(** [interp_entry_name lev n sep] returns the entry corresponding to the name
-    [n] of the form "ne_constr_list" in a tactic entry of level [lev] with
-    separator [sep]. *)
-val interp_entry_name : int -> string -> string -> entry_name
+val get_entry : gram_universe -> string -> typed_entry
 
 (** Recover the list of all known tactic notation entries. *)
 val list_entry_names : unit -> (string * argument_type) list
