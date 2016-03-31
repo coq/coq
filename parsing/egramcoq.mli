@@ -41,6 +41,20 @@ type tactic_grammar = {
   tacgram_prods : Tacexpr.raw_tactic_expr grammar_prod_item list;
 }
 
+(** {5 Extending the parser with Summary-synchronized commands} *)
+
+type 'a grammar_command
+(** Type of synchronized parsing extensions. The ['a] type should be
+    marshallable. *)
+
+val create_grammar_command : string -> ('a -> int) -> 'a grammar_command
+(** Create a new grammar-modifying command with the given name. The function
+    should modify the parser state and return the number of grammar extensions
+    performed. *)
+
+val extend_grammar : 'a grammar_command -> 'a -> unit
+(** Extend the grammar of Coq with the given data. *)
+
 (** {5 Adding notations} *)
 
 val extend_constr_grammar : Notation.level -> notation_grammar -> unit

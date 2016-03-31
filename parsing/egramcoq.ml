@@ -217,7 +217,7 @@ let extend_constr_pat_notation ng =
   let ext = ETConstr (level, ()), ng.notgram_assoc in
   extend_constr e ext (make_cases_pattern_action mkact) true ng.notgram_prods
 
-let extend_constr_notation ng =
+let extend_constr_notation (_, ng) =
   (* Add the notation in constr *)
   let nb = extend_constr_constr_notation ng in
   (* Add the notation in cases_pattern *)
@@ -245,14 +245,24 @@ type tactic_grammar = {
   tacgram_prods : Tacexpr.raw_tactic_expr grammar_prod_item list;
 }
 
-type all_grammar_command =
-  | Notation of Notation.level * notation_grammar
-  | TacticGrammar of KerName.t * tactic_grammar
-  | MLTacticGrammar of ml_tactic_name * Tacexpr.raw_tactic_expr grammar_prod_item list list
+module GrammarCommand = Dyn.Make(struct end)
+module GrammarInterp = struct type 'a t = 'a -> int end
+module GrammarInterpMap = GrammarCommand.Map(GrammarInterp)
+
+let grammar_interp = ref GrammarInterpMap.empty
+
+let (grammar_state : (int * GrammarCommand.t) list ref) = ref []
+
+type 'a grammar_command = 'a GrammarCommand.tag
+
+let create_grammar_command name interp : _ grammar_command =
+  let obj = GrammarCommand.create name in
+  let () = grammar_interp := GrammarInterpMap.add obj interp !grammar_interp in
+  obj
 
 (** ML Tactic grammar extensions *)
 
-let add_ml_tactic_entry name prods =
+let add_ml_tactic_entry (name, prods) =
   let entry = Tactic.simple_tactic in
   let mkact i loc l : raw_tactic_expr =
     let open Tacexpr in
@@ -273,7 +283,7 @@ let head_is_ident tg = match tg.tacgram_prods with
 
 (** Tactic grammar extensions *)
 
-let add_tactic_entry kn tg =
+let add_tactic_entry (kn, tg) =
   let entry, pos = get_tactic_entry tg.tacgram_level in
   let mkact loc l =
     let filter = function
@@ -301,31 +311,34 @@ let add_tactic_entry kn tg =
   grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
   1
 
-let (grammar_state : (int * all_grammar_command) list ref) = ref []
+let extend_grammar tag g =
+  let nb = GrammarInterpMap.find tag !grammar_interp g in
+  grammar_state := (nb, GrammarCommand.Dyn (tag, g)) :: !grammar_state
 
-let extend_grammar gram =
-  let nb = match gram with
-  | Notation (_,a) -> extend_constr_notation a
-  | TacticGrammar (kn, g) -> add_tactic_entry kn g
-  | MLTacticGrammar (name, pr) -> add_ml_tactic_entry name pr
-  in
-  grammar_state := (nb,gram) :: !grammar_state
+let extend_dyn_grammar (GrammarCommand.Dyn (tag, g)) = extend_grammar tag g
 
-let extend_constr_grammar pr ntn =
-  extend_grammar (Notation (pr, ntn))
+let constr_grammar : (Notation.level * notation_grammar) GrammarCommand.tag =
+  create_grammar_command "Notation" extend_constr_notation
 
-let extend_tactic_grammar kn ntn =
-  extend_grammar (TacticGrammar (kn, ntn))
+let tactic_grammar =
+  create_grammar_command "TacticGrammar" add_tactic_entry
 
-let extend_ml_tactic_grammar name ntn =
-  extend_grammar (MLTacticGrammar (name, ntn))
+let ml_tactic_grammar =
+  create_grammar_command "MLTacticGrammar" add_ml_tactic_entry
+
+let extend_constr_grammar pr ntn = extend_grammar constr_grammar (pr, ntn)
+let extend_tactic_grammar kn ntn = extend_grammar tactic_grammar (kn, ntn)
+let extend_ml_tactic_grammar n ntn = extend_grammar ml_tactic_grammar (n, ntn)
 
 let recover_constr_grammar ntn prec =
-  let filter = function
-  | _, Notation (prec', ng) when
-      Notation.level_eq prec prec' &&
-      String.equal ntn ng.notgram_notation -> Some ng
-  | _ -> None
+  let filter (_, gram) : notation_grammar option = match gram with
+  | GrammarCommand.Dyn (tag, obj) ->
+    match GrammarCommand.eq tag constr_grammar with
+    | None -> None
+    | Some Refl ->
+      let (prec', ng) = obj in
+      if Notation.level_eq prec prec' && String.equal ntn ng.notgram_notation then Some ng
+      else None
   in
   match List.map_filter filter !grammar_state with
   | [x] -> x
@@ -334,7 +347,7 @@ let recover_constr_grammar ntn prec =
 (* Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
-type frozen_t = (int * all_grammar_command) list * Lexer.frozen_t
+type frozen_t = (int * GrammarCommand.t) list * Lexer.frozen_t
 
 let freeze _ : frozen_t = (!grammar_state, Lexer.freeze ())
 
@@ -353,7 +366,7 @@ let unfreeze (grams, lex) =
   remove_levels n;
   grammar_state := common;
   Lexer.unfreeze lex;
-  List.iter extend_grammar (List.rev_map snd redo)
+  List.iter extend_dyn_grammar (List.rev_map snd redo)
 
 (** No need to provide an init function : the grammar state is
     statically available, and already empty initially, while
