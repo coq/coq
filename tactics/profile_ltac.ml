@@ -80,11 +80,8 @@ let exit_tactic option_start_time_add_total c =
         if add_total then Hashtbl.remove on_stack c;
         let diff = time() -. start_time in
         parent.entry.local <- parent.entry.local -. diff;
-        msgnl(str("leaving saving"^(string_of_float diff)));
         add_entry node.entry add_total {total = diff; local = diff; ncalls = 1; max_total = diff};
-(*        print_stack(!stack)*)
-    | None ->
-        msgnl(str("leaving without saving")); ()
+    | None -> ()
   )
 
 let string_of_call ck =
@@ -121,7 +118,6 @@ let do_profile s call_trace tac =
     match call_trace with
       | (_, c) :: _ ->
 	let s = string_of_call c in
-        msgnl(str("starting "^s));
 	let parent = List.hd !stack in
 	let node, add_total = try Hashtbl.find on_stack s, false
 			      with Not_found ->
@@ -142,7 +138,6 @@ let do_profile s call_trace tac =
       (match call_trace with
       | (_, c) :: _ ->
       	let s = string_of_call c in
-        msgnl(str("leaving "^s));
 	exit_tactic option_start_time_add_total s
       | [] -> ()))))
 
