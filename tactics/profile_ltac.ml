@@ -135,12 +135,14 @@ let do_profile s call_trace tac =
   else None)) >>= fun option_start_time_add_total ->
   tclFINALLY
     tac
-    (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->     (match call_trace with
+    (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+      (match call_trace with
       | (_, c) :: _ ->
-let s = string_of_call c in
+      	let s = string_of_call c in
         msgnl(str("leaving "^s));
-| [] -> ());
-	exit_tactic option_start_time_add_total s)))
+	exit_tactic option_start_time_add_total s
+      | [] -> ()))))
+
 
 
 let format_sec x = (Printf.sprintf "%.3fs" x)
@@ -149,7 +151,6 @@ let padl n s = ws (max 0 (n - utf8_length s)) ++ str s
 let padr n s = str s ++ ws (max 0 (n - utf8_length s))
 let padr_with c n s =
   let ulength = utf8_length s in
-  let length = String.length s in
   str (utf8_sub s 0 n) ++ str(String.make (max 0 (n - ulength)) c)
 
 let rec list_iter_is_last f = function
@@ -216,9 +217,12 @@ let print_results() =
   print_table all_total "" true global;
   msgnl(str"");
   header();
-  print_table all_total "" true tree;
-  msgnl(str"");
-  print_stack(!stack)
+  print_table all_total "" true tree
+  (* FOR DEBUGGING *)
+  (* ;
+     msgnl(str"");
+     print_stack(!stack)
+  *)
 
 let print_results_tactic tactic =
   let tree = (List.hd !stack).children in
