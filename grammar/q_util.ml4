@@ -22,7 +22,6 @@ type user_symbol =
 | Ulist0 of user_symbol
 | Ulist0sep of user_symbol * string
 | Uopt of user_symbol
-| Umodifiers of user_symbol
 | Uentry of string
 | Uentryl of string * int
 
@@ -68,7 +67,6 @@ let rec mlexpr_of_prod_entry_key f = function
   | Ulist0 s -> <:expr< Extend.Alist0 $mlexpr_of_prod_entry_key f s$ >>
   | Ulist0sep (s,sep) -> <:expr< Extend.Alist0sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
   | Uopt s -> <:expr< Extend.Aopt $mlexpr_of_prod_entry_key f s$ >>
-  | Umodifiers s -> <:expr< Extend.Amodifiers $mlexpr_of_prod_entry_key f s$ >>
   | Uentry e -> <:expr< Extend.Aentry $f e$ >>
   | Uentryl (e, l) ->
     (** Keep in sync with Pcoq! *)
@@ -77,7 +75,7 @@ let rec mlexpr_of_prod_entry_key f = function
     else <:expr< Extend.Aentryl (Pcoq.name_of_entry Pcoq.Tactic.tactic_expr) $mlexpr_of_int l$ >>
 
 let rec type_of_user_symbol = function
-| Ulist1 s | Ulist1sep (s, _) | Ulist0 s | Ulist0sep (s, _) | Umodifiers s ->
+| Ulist1 s | Ulist1sep (s, _) | Ulist0 s | Ulist0sep (s, _) ->
   ListArgType (type_of_user_symbol s)
 | Uopt s ->
   OptArgType (type_of_user_symbol s)
@@ -113,9 +111,6 @@ let rec parse_user_entry s sep =
   else if l > 4 && coincide s "_opt" (l-4) then
     let entry = parse_user_entry (String.sub s 0 (l-4)) "" in
     Uopt entry
-  else if l > 5 && coincide s "_mods" (l-5) then
-    let entry = parse_user_entry (String.sub s 0 (l-1)) "" in
-    Umodifiers entry
   else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
     let n = Char.code s.[6] - 48 in
     Uentryl ("tactic", n)

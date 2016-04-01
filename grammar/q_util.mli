@@ -20,7 +20,6 @@ type user_symbol =
 | Ulist0 of user_symbol
 | Ulist0sep of user_symbol * string
 | Uopt of user_symbol
-| Umodifiers of user_symbol
 | Uentry of string
 | Uentryl of string * int
 

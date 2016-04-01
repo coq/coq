@@ -683,13 +683,6 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Alist0sep (s,sep) ->
       Symbols.slist0sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
   | Aopt s -> Symbols.sopt (symbol_of_prod_entry_key s)
-  | Amodifiers s ->
-       Gram.srules'
-        [([], Gram.action (fun _loc -> []));
-         ([gram_token_of_string "(";
-           Symbols.slist1sep (symbol_of_prod_entry_key s, gram_token_of_string ",");
-           gram_token_of_string ")"],
-	   Gram.action (fun _ l _ _loc -> l))]
   | Aself -> Symbols.sself
   | Anext -> Symbols.snext
   | Aentry e ->

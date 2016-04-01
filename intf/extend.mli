@@ -59,7 +59,6 @@ type user_symbol =
 | Ulist0 : user_symbol -> user_symbol
 | Ulist0sep : user_symbol * string -> user_symbol
 | Uopt : user_symbol -> user_symbol
-| Umodifiers : user_symbol -> user_symbol
 | Uentry : string -> user_symbol
 | Uentryl : string * int -> user_symbol
 
@@ -83,7 +82,6 @@ type ('self, 'a) symbol =
 | Alist0 : ('self, 'a) symbol -> ('self, 'a list) symbol
 | Alist0sep : ('self, 'a) symbol * string -> ('self, 'a list) symbol
 | Aopt : ('self, 'a) symbol -> ('self, 'a option) symbol
-| Amodifiers : ('self, 'a) symbol -> ('self, 'a list) symbol
 | Aself : ('self, 'self) symbol
 | Anext : ('self, 'self) symbol
 | Aentry : 'a Entry.t -> ('self, 'a) symbol

@@ -79,9 +79,6 @@ let rec parse_user_entry s sep =
   else if l > 4 && coincide s "_opt" (l-4) then
     let entry = parse_user_entry (String.sub s 0 (l-4)) "" in
     Uopt entry
-  else if l > 5 && coincide s "_mods" (l-5) then
-    let entry = parse_user_entry (String.sub s 0 (l-1)) "" in
-    Umodifiers entry
   else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
     let n = Char.code s.[6] - 48 in
     Uentryl ("tactic", n)
@@ -110,9 +107,6 @@ let interp_entry_name up_level s sep =
   | Uopt e ->
     let EntryName (t, g) = eval e in
     EntryName (arg_opt t, Aopt g)
-  | Umodifiers e ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Amodifiers g)
   | Uentry s ->
     begin
       try try_get_entry uprim s with Not_found ->
