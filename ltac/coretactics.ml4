@@ -222,6 +222,13 @@ TACTIC EXTEND simple_destruct
   [ "simple" "destruct" quantified_hypothesis(h) ] -> [ Tactics.simple_destruct h ]
 END
 
+(** Double induction *)
+
+TACTIC EXTEND double_induction
+  [ "double" "induction" quantified_hypothesis(h1) quantified_hypothesis(h2) ] ->
+  [ Elim.h_double_induction h1 h2 ]
+END
+
 (* Admit *)
 
 TACTIC EXTEND admit

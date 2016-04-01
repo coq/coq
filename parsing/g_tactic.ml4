@@ -606,8 +606,6 @@ GEXTEND Gram
 	  TacAtom (!@loc, TacInductionDestruct (true,false,ic))
       | IDENT "einduction"; ic = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct(true,true,ic))
-      | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
-	  h2 = quantified_hypothesis -> TacAtom (!@loc, TacDoubleInduction (h1,h2))
       | IDENT "destruct"; icl = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct(false,false,icl))
       | IDENT "edestruct";  icl = induction_clause_list ->

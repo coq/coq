@@ -162,7 +162,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
         subst_induction_arg subst c, ids, cls) l in
       let el' = Option.map (subst_glob_with_bindings subst) el in
       TacInductionDestruct (isrec,ev,(l',el'))
-  | TacDoubleInduction (h1,h2) as x -> x
 
   (* Context management *)
   | TacRename l as x -> x

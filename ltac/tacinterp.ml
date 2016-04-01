@@ -1822,12 +1822,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         Sigma.Unsafe.of_pair (tac, sigma)
       end }
-  | TacDoubleInduction (h1,h2) ->
-      let h1 = interp_quantified_hypothesis ist h1 in
-      let h2 = interp_quantified_hypothesis ist h2 in
-      name_atomic
-        (TacDoubleInduction (h1,h2))
-        (Elim.h_double_induction h1 h2)
   (* Context management *)
   | TacRename l ->
       Proofview.Goal.enter { enter = begin fun gl ->

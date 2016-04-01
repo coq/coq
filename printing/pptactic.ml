@@ -909,12 +909,6 @@ module Make
                 pr_opt (pr_clauses None pr.pr_name) cl) l ++
               pr_opt pr_eliminator el
           )
-        | TacDoubleInduction (h1,h2) ->
-          hov 1 (
-            primitive "double induction"
-            ++ pr_arg pr_quantified_hypothesis h1
-            ++ pr_arg pr_quantified_hypothesis h2
-          )
 
         (* Context management *)
         | TacRename l ->

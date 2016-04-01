@@ -520,10 +520,6 @@ let rec intern_atomic lf ist x =
                Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
                Option.map (clause_app (intern_hyp_location ist)) cls)) l,
                Option.map (intern_constr_with_bindings ist) el))
-  | TacDoubleInduction (h1,h2) ->
-      let h1 = intern_quantified_hypothesis ist h1 in
-      let h2 = intern_quantified_hypothesis ist h2 in
-      TacDoubleInduction (h1,h2)
   (* Context management *)
   | TacRename l ->
       TacRename (List.map (fun (id1,id2) ->

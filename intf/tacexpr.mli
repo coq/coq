@@ -157,7 +157,6 @@ type 'a gen_atomic_tactic_expr =
   (* Derived basic tactics *)
   | TacInductionDestruct of
       rec_flag * evars_flag * ('trm,'dtrm,'nam) induction_clause_list
-  | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
 
   (* Context management *)
   | TacRename of ('nam *'nam) list
