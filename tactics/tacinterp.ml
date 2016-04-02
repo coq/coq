@@ -564,7 +564,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
       intern_gen kind_for_intern ~allow_patvar ~ltacvars env c
   in
   (* Jason Gross: To avoid unnecessary modifications to tacinterp, as
-      suggest by Arnaud Spiwack, we run push_trace immediately.  We do
+      suggested by Arnaud Spiwack, we run push_trace immediately.  We do
       this with the kludge of an empty proofview, and rely on the
       invariant that running the tactic returned by push_trace does
       not modify sigma. *)
