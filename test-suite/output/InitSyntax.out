@@ -4,7 +4,8 @@ Inductive sig2 (A : Type) (P Q : A -> Prop) : Type :=
 For sig2: Argument A is implicit
 For exist2: Argument A is implicit
 For sig2: Argument scopes are [type_scope type_scope type_scope]
-For exist2: Argument scopes are [type_scope _ _ _ _ _]
+For exist2: Argument scopes are [type_scope function_scope function_scope _ _
+              _]
 exists x : nat, x = x
      : Prop
 fun b : bool => if b then b else b

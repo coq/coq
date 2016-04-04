@@ -4,6 +4,8 @@
    coqtop version cagnode16:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (07e4438bd758c2ced8caf09a6961ccd77d84e42b) *)
 Reserved Notation "x -> y" (at level 99, right associativity, y at level 200).
 Reserved Notation "x = y" (at level 70, no associativity).
+Delimit Scope type_scope with type.
+Bind Scope type_scope with Sortclass.
 Open Scope type_scope.
 Axiom admit : forall {T}, T.
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
