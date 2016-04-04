@@ -24,6 +24,10 @@ Program
 - The "Shrink Obligations" flag now applies to all obligations, not only those
   solved by the automatic tactic.
 
+Notations
+
+- "Bind Scope" can once again bind "Funclass" and "Sortclass".
+
 Changes from V8.5beta3 to V8.5
 ==============================
 
@@ -102,9 +106,6 @@ solved by the automatic tactic.
   incompatibilities).
 - Documented the Hint Cut command that allows control of the
   proof-search during typeclass resolution (see reference manual).
-
-Notations
-- "Bind Scope" can once again bind "Funclass" and "Sortclass".
 
 API
 
