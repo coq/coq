@@ -48,7 +48,7 @@ let cl_of_qualid = function
   | RefClass r -> Class.class_of_global (Smartlocate.smart_global ~head:true r)
 
 let scope_class_of_qualid qid =
-  Notation.scope_class_of_reference (Smartlocate.smart_global qid)
+  Notation.scope_class_of_class (cl_of_qualid qid)
 
 (*******************)
 (* "Show" commands *)

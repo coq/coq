@@ -513,13 +513,6 @@ let rec tmpp v loc =
       xmlScope loc "delimit" name ~attr:["delimiter",tag] []
   | VernacDelimiters (name,None) ->
       xmlScope loc "undelimit" name ~attr:[] []
-  | VernacBindScope (name,l) ->
-      xmlScope loc "bind" name
-        (List.map (function
-          | ByNotation(loc,name,None) -> xmlNotation [] name loc []
-          | ByNotation(loc,name,Some d) ->
-              xmlNotation ["delimiter",d] name loc []
-          | AN ref -> xmlReference ref) l)
   | VernacInfix (_,((_,name),sml),ce,sn) ->
       let attrs = List.flatten (List.map attribute_of_syntax_modifier sml) in
       let sc_attr =
@@ -535,6 +528,7 @@ let rec tmpp v loc =
         | Some scope -> ["scope", scope]
         | None -> [] in
       xmlNotation (sc_attr @ attrs) name loc [pp_expr ce]
+  | VernacBindScope _ as x -> xmlTODO loc x
   | VernacNotationAddFormat _ as x -> xmlTODO loc x
   | VernacUniverse _
   | VernacConstraint _
