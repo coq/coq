@@ -648,7 +648,7 @@ module Make
         | VernacBindScope (sc,cll) ->
           return (
             keyword "Bind Scope" ++ spc () ++ str sc ++
-              spc() ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_smart_global cll
+              spc() ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_class_rawexpr cll
           )
         | VernacArgumentsScope (q,scl) ->
           let pr_opt_scope = function

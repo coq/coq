@@ -26,6 +26,9 @@ val cl_typ_eq : cl_typ -> cl_typ -> bool
 
 val subst_cl_typ : substitution -> cl_typ -> cl_typ
 
+(** Comparison of [cl_typ] *)
+val cl_typ_ord : cl_typ -> cl_typ -> int
+
 (** This is the type of infos for declared classes *)
 type cl_info_typ = {
   cl_param : int }

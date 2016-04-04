@@ -103,6 +103,9 @@ solved by the automatic tactic.
 - Documented the Hint Cut command that allows control of the
   proof-search during typeclass resolution (see reference manual).
 
+Notations
+- "Bind Scope" can once again bind "Funclass" and "Sortclass".
+
 API
 
 - Some functions from pretyping/typing.ml and their derivatives were potential
