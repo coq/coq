@@ -29,6 +29,14 @@ Tactic Notation "constructor" := Coq.Init.Notations.constructor.
 Tactic Notation "constructor" int_or_var(n) := constructor_84_n n.
 Tactic Notation "constructor" "(" tactic(tac) ")" := constructor_84_tac tac.
 
+(** In 8.4, [econstructor (tac)] allowed backtracking across the use of [econstructor]; it has been subsumed by [econstructor; tac]. *)
+Ltac econstructor_84_n n := econstructor n.
+Ltac econstructor_84_tac tac := once (econstructor; tac).
+
+Tactic Notation "econstructor" := Coq.Init.Notations.econstructor.
+Tactic Notation "econstructor" int_or_var(n) := econstructor_84_n n.
+Tactic Notation "econstructor" "(" tactic(tac) ")" := econstructor_84_tac tac.
+
 (** Some tactic notations do not factor well with tactics; we add global parsing entries for some tactics that would otherwise be overwritten by custom variants. See https://coq.inria.fr/bugs/show_bug.cgi?id=4392. *)
 Tactic Notation "reflexivity" := reflexivity.
 Tactic Notation "assumption" := assumption.
@@ -44,7 +52,6 @@ Tactic Notation "left" := left.
 Tactic Notation "eleft" := eleft.
 Tactic Notation "right" := right.
 Tactic Notation "eright" := eright.
-Tactic Notation "econstructor" := econstructor.
 Tactic Notation "symmetry" := symmetry.
 Tactic Notation "split" := split.
 Tactic Notation "esplit" := esplit.
