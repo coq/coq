@@ -22,10 +22,11 @@ Global Set Nonrecursive Elimination Schemes.
 Global Set Universal Lemma Under Conjunction.
 
 (** In 8.4, [constructor (tac)] allowed backtracking across the use of [constructor]; it has been subsumed by [constructor; tac]. *)
+Ltac constructor_84_n n := constructor n.
 Ltac constructor_84_tac tac := once (constructor; tac).
 
 Tactic Notation "constructor" := Coq.Init.Notations.constructor.
-Tactic Notation "constructor" int_or_var(n) := Coq.Init.Notations.constructor n.
+Tactic Notation "constructor" int_or_var(n) := constructor_84_n n.
 Tactic Notation "constructor" "(" tactic(tac) ")" := constructor_84_tac tac.
 
 (** Some tactic notations do not factor well with tactics; we add global parsing entries for some tactics that would otherwise be overwritten by custom variants. See https://coq.inria.fr/bugs/show_bug.cgi?id=4392. *)
@@ -43,7 +44,6 @@ Tactic Notation "left" := left.
 Tactic Notation "eleft" := eleft.
 Tactic Notation "right" := right.
 Tactic Notation "eright" := eright.
-Tactic Notation "constructor" := constructor.
 Tactic Notation "econstructor" := econstructor.
 Tactic Notation "symmetry" := symmetry.
 Tactic Notation "split" := split.
