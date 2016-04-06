@@ -127,9 +127,10 @@ let flex_kind_of_term flags env evd c sk =
        else Rigid
     | Evar ev ->
        if is_evar_allowed flags (fst ev) then Flexible ev else Rigid
-    | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ | Int _ | Float _ | Array _ -> Rigid
+    | Lambda _ | Prod _ | Sort _ | Ind _ | Int _ | Float _ | Array _ -> Rigid
+    | Construct _ | CoFix _ (* Incorrect: should check only app in sk *) -> Rigid
     | Meta _ -> Rigid
-    | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
+    | Fix _ -> Rigid (* happens when the fixpoint is partially applied (should check it?) *)
     | Cast _ | App _ | Case _ -> assert false
 
 let apprec_nohdbeta flags env evd c =
@@ -368,12 +369,23 @@ let rec ise_app_rev_stack2 env f evd sk1 sk2 =
 (* This function tries to unify 2 stacks element by element. It works
    from the end to the beginning. If it unifies a non empty suffix of
    stacks but not the entire stacks, the first part of the answer is
-   Some(the remaining prefixes to tackle)) *)
+   Some(the remaining prefixes to tackle)
+   If [no_app] is set, situations like [match head u1 u2 with ... end]
+   will not try to match [u1] and [u2] (why?); but situations like
+   [match head u1 u2 with ... end v] will try to match [v] (??) *)
+(* Input: E1[] =? E2[] where the E1, E2 are concatenations of
+     n-ary-app/case/fix/proj elimination rules
+   Output:
+   - either None if E1 = E2 is solved,
+   - or Some (E1'',E2'') such that there is a decomposition of
+     E1[] = E1'[E1''[]] and E2[] = E2'[E2''[]] s.t.  E1' = E2' and
+     E1'' cannot be unified with E2''
+   - UnifFailure if no such non-empty E1' = E2' exists *)
 let ise_stack2 no_app env evd f sk1 sk2 =
-  let rec ise_stack2 deep i sk1 sk2 =
-    let fail x = if deep then Some (List.rev sk1, List.rev sk2), Success i
+  let rec ise_stack2 deep i revsk1 revsk2 =
+    let fail x = if deep then Some (List.rev revsk1, List.rev revsk2), Success i
       else None, x in
-    match sk1, sk2 with
+    match revsk1, revsk2 with
     | [], [] -> None, Success i
     | Stack.Case (_,t1,_,c1)::q1, Stack.Case (_,t2,_,c2)::q2 ->
       (match f env i CONV t1 t2 with
@@ -398,7 +410,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
       else fail (UnifFailure (i,NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
        if no_app && deep then fail ((*dummy*)UnifFailure(i,NotSameHead)) else
-         begin match ise_app_rev_stack2 env f i sk1 sk2 with
+         begin match ise_app_rev_stack2 env f i revsk1 revsk2 with
                |_,(UnifFailure _ as x) -> fail x
                |(l1, l2), Success i' -> ise_stack2 true i' l1 l2
          end
@@ -407,8 +419,8 @@ let ise_stack2 no_app env evd f sk1 sk2 =
 
 (* Make sure that the matching suffix is the all stack *)
 let exact_ise_stack2 env evd f sk1 sk2 =
-  let rec ise_stack2 i sk1 sk2 =
-    match sk1, sk2 with
+  let rec ise_stack2 i revsk1 revsk2 =
+    match revsk1, revsk2 with
     | [], [] -> Success i
     | Stack.Case (_,t1,_,c1)::q1, Stack.Case (_,t2,_,c2)::q2 ->
       ise_and i [
@@ -429,7 +441,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
     | Stack.App _ :: _, Stack.App _ :: _ ->
-         begin match ise_app_rev_stack2 env f i sk1 sk2 with
+         begin match ise_app_rev_stack2 env f i revsk1 revsk2 with
                |_,(UnifFailure _ as x) -> x
                |(l1, l2), Success i' -> ise_stack2 i' l1 l2
          end
@@ -522,26 +534,30 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   let quick_fail i = (* not costly, loses info *)
     UnifFailure (i, NotSameHead)
   in
-  let miller_pfenning on_left fallback ev lF tM evd =
+  let miller_pfenning l2r fallback ev lF tM evd =
     match is_unification_pattern_evar env evd ev lF tM with
       | None -> fallback ()
       | Some l1' -> (* Miller-Pfenning's patterns unification *)
         let t2 = tM in
         let t2 = solve_pattern_eqn env evd l1' t2 in
           solve_simple_eqn (conv_fun evar_conv_x) flags env evd
-            (position_problem on_left pbty,ev,t2)
+            (position_problem l2r pbty,ev,t2)
   in
-  let consume_stack on_left (termF,skF) (termO,skO) evd =
-    let switch f a b = if on_left then f a b else f b a in
+  let consume_stack l2r (termF,skF) (termO,skO) evd =
+    let switch f a b = if l2r then f a b else f b a in
     let not_only_app = Stack.not_purely_applicative skO in
     match switch (ise_stack2 not_only_app env evd (evar_conv_x flags)) skF skO with
-      |Some (l,r), Success i' when on_left && (not_only_app || List.is_empty l) ->
+    | Some (l,r), Success i' when l2r && (not_only_app || List.is_empty l) ->
+        (* E[?n]=E'[redex] reduces to either l[?n]=r[redex] with
+           case/fix/proj in E' (why?) or ?n=r[redex] *)
         switch (evar_conv_x flags env i' pbty) (Stack.zip evd (termF,l)) (Stack.zip evd (termO,r))
-      |Some (r,l), Success i' when not on_left && (not_only_app || List.is_empty l) ->
+    | Some (r,l), Success i' when not l2r && (not_only_app || List.is_empty l) ->
+        (* E'[redex]=E[?n] reduces to either r[redex]=l[?n] with
+           case/fix/proj in E' (why?) or r[redex]=?n *)
         switch (evar_conv_x flags env i' pbty) (Stack.zip evd (termF,l)) (Stack.zip evd (termO,r))
-      |None, Success i' -> switch (evar_conv_x flags env i' pbty) termF termO
-      |_, (UnifFailure _ as x) -> x
-      |Some _, _ -> UnifFailure (evd,NotSameArgSize) in
+    | None, Success i' -> switch (evar_conv_x flags env i' pbty) termF termO
+    | _, (UnifFailure _ as x) -> x
+    | Some _, _ -> UnifFailure (evd,NotSameArgSize) in
   let eta_lambda env evd onleft term (term',sk') =
     (* Reduces an equation [env |- <(fun na:c1 => c'1)|empty> = <term'|sk'>] to
        [env, na:c1 |- c'1 = sk'[term'] (with some additional reduction) *)
@@ -615,32 +631,39 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                 with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
                  (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk sk')]
   in
-  let consume on_left (_, skF as apprF) (_,skM as apprM) i =
+  let consume l2r (_, skF as apprF) (_,skM as apprM) i =
     if not (Stack.is_empty skF && Stack.is_empty skM) then
-      consume_stack on_left apprF apprM i
+      consume_stack l2r apprF apprM i
     else quick_fail i
   in
-  let miller on_left ev (termF,skF as apprF) (termM, skM as apprM) i =
-    let switch f a b = if on_left then f a b else f b a in
+  let miller l2r ev (termF,skF as apprF) (termM, skM as apprM) i =
+    let switch f a b = if l2r then f a b else f b a in
     let not_only_app = Stack.not_purely_applicative skM in
       match Stack.list_of_app_stack skF with
       | None -> quick_fail evd
       | Some lF ->
         let tM = Stack.zip evd apprM in
-          miller_pfenning on_left
+          miller_pfenning l2r
             (fun () -> if not_only_app then (* Postpone the use of an heuristic *)
               switch (fun x y -> Success (Evarutil.add_unification_pb (pbty,env,x,y) i)) (Stack.zip evd apprF) tM
             else quick_fail i)
             ev lF tM i
   in
-  let flex_maybeflex on_left ev (termF,skF as apprF) (termM, skM as apprM) vM =
-    let switch f a b = if on_left then f a b else f b a in
+  let flex_maybeflex l2r ev (termF,skF as apprF) (termM, skM as apprM) vM =
+    (* Problem: E[?n[inst]] = E'[redex]
+       Strategy, as far as I understand:
+       1.  if E[]=[]u1..un and ?n[inst] u1..un = E'[redex] is a Miller pattern: solve it now
+       2a. if E'=E'1[E'2] and E=E'1 unifiable, recursively solve ?n[inst] = E'2[redex]
+       2b. if E'=E'1[E'2] and E=E1[E2] and E=E'1 unifiable and E' contient app/fix/proj,
+           recursively solve E2[?n[inst]] = E'2[redex]
+       3.  reduce the redex into M and recursively solve E[?n[inst]] =? E'[M] *)
+    let switch f a b = if l2r then f a b else f b a in
     let delta i =
       switch (evar_eqappr_x flags env i pbty) apprF
         (whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (vM,skM))
     in
-    let default i = ise_try i [miller on_left ev apprF apprM;
-                               consume on_left apprF apprM;
+    let default i = ise_try i [miller l2r ev apprF apprM;
+                               consume l2r apprF apprM;
                                delta]
     in
       match EConstr.kind evd termM with
@@ -661,8 +684,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                   let delta' i =
                     switch (evar_eqappr_x flags env i pbty) apprF apprM'
                   in
-                  fun i -> ise_try i [miller on_left ev apprF apprM';
-                                   consume on_left apprF apprM'; delta']
+                  fun i -> ise_try i [miller l2r ev apprF apprM';
+                                   consume l2r apprF apprM'; delta']
                 with Retyping.RetypeError _ ->
                 (* Happens thanks to w_unify building ill-typed terms *)
                   default
@@ -670,8 +693,19 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           end
       | _ -> default evd
   in
-  let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
-    let switch f a b = if on_left then f a b else f b a in
+  let flex_rigid l2r ev (termF, skF as apprF) (termR, skR as apprR) =
+    (* Problem: E[?n[inst]] = E'[M] with M blocking computation (in theory)
+       Strategy, as far as I understand:
+       1.  if E[]=[]u1..un and ?n[inst] u1..un = E'[M] is a Miller pattern: solve it now
+       2a. if E'=E'1[E'2] and E=E'1 unifiable and E' contient app/fix/proj,
+           recursively solve ?n[inst] = E'2[M]
+       2b. if E'=E'1[E'2] and E=E1[E2] and E=E'1 unifiable and E' contient app/fix/proj,
+           recursively solve E2[?n[inst]] = E'2[M]
+       3a. if M a lambda or a constructor: eta-expand and recursively solve
+       3b. if M a constructor C ..ui..: eta-expand and recursively solve proji[E[?n[inst]]]=ui
+       4.  fail if E purely applicative and ?n occurs rigidly in E'[M]
+       5.  absorb arguments if purely applicative and postpone *)
+    let switch f a b = if l2r then f a b else f b a in
     let eta evd =
       match EConstr.kind evd termR with
       | Lambda _ when (* if ever problem is ill-typed: *) List.is_empty skR ->
@@ -681,10 +715,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     in
     match Stack.list_of_app_stack skF with
     | None ->
-        ise_try evd [consume_stack on_left apprF apprR; eta]
+        ise_try evd [consume_stack l2r apprF apprR; eta]
     | Some lF ->
         let tR = Stack.zip evd apprR in
-          miller_pfenning on_left
+          miller_pfenning l2r
             (fun () ->
               ise_try evd
                 [eta;(* Postpone the use of an heuristic *)
@@ -714,6 +748,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
          solve_simple_eqn (conv_fun evar_conv_x) flags env i'
                           (position_problem true pbty,destEvar i' ev1',term2)
        else
+         (* HH: Why not to drop sk1 and sk2 since they unified *)
          evar_eqappr_x flags env evd pbty
                        (ev1', sk1) (term2, sk2)
     | Some (r,[]), Success i' ->
@@ -734,7 +769,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
        if isEvar i' ev1' then
          solve_simple_eqn (conv_fun evar_conv_x) flags env i'
                           (position_problem true pbty,destEvar i' ev1',Stack.zip i' (term2,r))
-       else evar_eqappr_x flags env evd pbty
+       else
+         (* HH: Why not to drop sk1 and sk2 since they unified *)
+         evar_eqappr_x flags env evd pbty
                           (ev1', sk1) (term2, sk2)
     | None, (UnifFailure _ as x) ->
        (* sk1 and sk2 have no common outer part *)
@@ -774,7 +811,17 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   match (flex_kind_of_term flags env evd term1 sk1,
          flex_kind_of_term flags env evd term2 sk2) with
     | Flexible (sp1,al1), Flexible (sp2,al2) ->
-        (* sk1[?ev1] =? sk2[?ev2] *)
+      (* Notations:
+         - "sk" is a stack (or, more abstractly, an evaluation context, written E)
+         - "ev" is an evar "?ev", more precisely an evar ?n with an instance inst
+         - "al" is an evar instance
+         Problem: E₁[?n₁[inst₁]] = E₂[?n₂[inst₂]] (i.e. sk1[?ev1] =? sk2[?ev2]
+         Strategy is first-order unification
+           1a. if E₁=E₂ unifiable, solve ?n₁[inst₁] = ?n₂[inst₂]
+           1b. if E₂=E₂'[E₂''] and E₁=E₂' unifiable, recursively solve ?n₁[inst₁] = E₂''[?n₂[inst₂]]
+           1b'. if E₁=E₁'[E₁''] and E₁'=E₂ unifiable, recursively solve E₁''[?n₁[inst₁]] = ?n₂[inst₂]
+             recursively solve E2[?n[inst]] = E'2[redex]
+           2. fails if neither E₁ nor E₂ is a prefix of the other *)
         let f1 i = first_order env i term1 term2 sk1 sk2
         and f2 i =
           if Evar.equal sp1 sp2 then
