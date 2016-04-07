@@ -41,6 +41,7 @@ val declare_instance_constant :
 val new_instance :
   ?abstract:bool -> (** Not abstract by default. *)
   ?global:bool -> (** Not global by default. *)
+  ?refine:bool -> (** Allow refinement *)
   Decl_kinds.polymorphic ->
   local_binder list ->
   typeclass_constraint ->

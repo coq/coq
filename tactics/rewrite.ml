@@ -1725,7 +1725,7 @@ let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 let anew_instance global binders instance fields =
   new_instance (Flags.is_universe_polymorphism ()) 
     binders instance (Some (true, CRecord (Loc.ghost,None,fields)))
-    ~global ~generalize:false None
+    ~global ~generalize:false ~refine:false None
 
 let declare_instance_refl global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
