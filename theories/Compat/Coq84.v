@@ -76,3 +76,11 @@ End Coq.
 
 (** Many things now import [PeanoNat] rather than [NPeano], so we require it so that the old absolute names in [NPeano.Nat] are available. *)
 Require Coq.Numbers.Natural.Peano.NPeano.
+
+(** The following coercions were declared by default in Specif.v. *)
+Coercion sig_of_sig2 : sig2 >-> sig.
+Coercion sigT_of_sigT2 : sigT2 >-> sigT.
+Coercion sigT_of_sig : sig >-> sigT.
+Coercion sig_of_sigT : sigT >-> sig.
+Coercion sigT2_of_sig2 : sig2 >-> sigT2.
+Coercion sig2_of_sigT2 : sigT2 >-> sig2.
