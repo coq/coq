@@ -61,11 +61,13 @@ struct
     end
   | _ -> None
 
-  let rec repr : type a. a tag -> std_ppcmds = function
-  | Base t -> str (ValT.repr t)
-  | List t -> repr t ++ spc () ++ str "list"
-  | Opt t -> repr t ++ spc () ++ str "option"
-  | Pair (t1, t2) -> str "(" ++ repr t1 ++ str " * " ++ repr t2 ++ str ")"
+  let repr = ValT.repr
+
+  let rec pr : type a. a tag -> std_ppcmds = function
+  | Base t -> str (repr t)
+  | List t -> pr t ++ spc () ++ str "list"
+  | Opt t -> pr t ++ spc () ++ str "option"
+  | Pair (t1, t2) -> str "(" ++ pr t1 ++ str " * " ++ pr t2 ++ str ")"
 
 end
 

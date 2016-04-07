@@ -65,7 +65,7 @@ let val_tag wit = val_tag (topwit wit)
 
 let pr_argument_type arg =
   let Val.Dyn (tag, _) = arg in
-  Val.repr tag
+  Val.pr tag
 
 let safe_msgnl s =
   Proofview.NonLogical.catch
@@ -83,9 +83,9 @@ let push_appl appl args =
   match appl with
   | UnnamedAppl -> UnnamedAppl
   | GlbAppl l -> GlbAppl (List.map (fun (h,vs) -> (h,vs@args)) l)
-let pr_generic arg = (** FIXME *)
+let pr_generic arg =
     let Val.Dyn (tag, _) = arg in
-    str"<" ++ Val.repr tag ++ str ">"
+    str"<" ++ Val.pr tag ++ str ":(" ++ Pptactic.pr_value Pptactic.ltop arg ++ str ")>"
 let pr_appl h vs =
   Pptactic.pr_ltac_constant  h ++ spc () ++
   Pp.prlist_with_sep spc pr_generic vs
@@ -148,9 +148,9 @@ module Value = struct
     of_tacvalue closure
 
   let cast_error wit v =
-    let pr_v = mt () in (** FIXME *)
+    let pr_v = Pptactic.pr_value Pptactic.ltop v in
     let Val.Dyn (tag, _) = v in
-    let tag = Val.repr tag in
+    let tag = Val.pr tag in
     errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ tag
       ++ str " while type " ++ Genarg.pr_argument_type (unquote (rawwit wit)) ++ str " was expected.")
 
@@ -198,7 +198,7 @@ module Value = struct
 
 end
 
-let print_top_val env v = mt () (** FIXME *)
+let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
 
 let dloc = Loc.ghost
 

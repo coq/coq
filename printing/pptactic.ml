@@ -106,7 +106,23 @@ module Make
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
 
-  let pr_value _ _ = str "(* FIXME *)"
+  let rec pr_value lev (Val.Dyn (tag, x)) : std_ppcmds = match tag with
+  | Val.List tag ->
+    pr_sequence (fun x -> pr_value lev (Val.Dyn (tag, x))) x
+  | Val.Opt tag -> pr_opt (fun x -> pr_value lev (Val.Dyn (tag, x))) x
+  | Val.Pair (tag1, tag2) ->
+    str "(" ++ pr_value lev (Val.Dyn (tag1, fst x)) ++ str ", " ++
+      pr_value lev (Val.Dyn (tag1, fst x)) ++ str ")"
+  | Val.Base t ->
+    let name = Val.repr t in
+    let default = str "<" ++ str name ++ str ">" in
+    match ArgT.name name with
+    | None -> default
+    | Some (ArgT.Any arg) ->
+      let wit = ExtraArg arg in
+      match Val.eq (val_tag (Topwit wit)) (Val.Base t) with
+      | None -> default
+      | Some Refl -> Genprint.generic_top_print (in_gen (Topwit wit) x)
 
   let pr_with_occurrences pr (occs,c) =
     match occs with
@@ -1245,7 +1261,7 @@ module Make
     let typed_printers =
       (strip_prod_binders_constr)
     in
-    let prtac n (t:tactic_expr) =
+    let rec prtac n (t:tactic_expr) =
       let pr = {
         pr_tactic = pr_glob_tactic_level env;
         pr_constr = pr_constr_env env Evd.empty;
@@ -1261,10 +1277,10 @@ module Make
           pr_value pr_constr_pattern;
         pr_extend = pr_extend_rec
           (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-          pr_value pr_constr_pattern;
+          prtac pr_constr_pattern;
         pr_alias = pr_alias
           (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-          pr_value pr_constr_pattern;
+          prtac pr_constr_pattern;
       }
       in
       make_pr_tac

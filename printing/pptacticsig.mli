@@ -72,4 +72,6 @@ module type Pp = sig
   val pr_match_rule : bool -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
     ('b, 'a) match_rule -> std_ppcmds
 
+  val pr_value : tolerability -> Val.t -> std_ppcmds
+
 end

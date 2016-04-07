@@ -468,7 +468,7 @@ let pp_generic_argument arg =
 
 let prgenarginfo arg =
   let Val.Dyn (tag, _) = arg in
-  let tpe = Val.repr tag in
+  let tpe = Val.pr tag in
   (** FIXME *)
 (*   try *)
 (*     let data = Pptactic.pr_top_generic (Global.env ()) arg in *)

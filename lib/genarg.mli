@@ -99,7 +99,8 @@ sig
   type t = Dyn : 'a tag * 'a -> t
 
   val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
-  val repr: 'a tag -> Pp.std_ppcmds
+  val repr : 'a typ -> string
+  val pr : 'a tag -> Pp.std_ppcmds
 
 end
 (** Dynamic types for toplevel values. While the generic types permit to relate
