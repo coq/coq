@@ -168,7 +168,7 @@ val is_message : Xml_datatype.xml -> bool
  *
  * Morally the parser gets a string and an edit_id, and gives back an AST.
  * Feedbacks during the parsing phase are attached to this edit_id.
- * The interpreter assignes an exec_id to the ast, and feedbacks happening
+ * The interpreter assigns an exec_id to the ast, and feedbacks happening
  * during interpretation are attached to the exec_id.
  * Only one among state_id and edit_id can be provided. *)
 
