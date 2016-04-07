@@ -341,11 +341,9 @@ module Make
     | [], [] -> []
     | _ -> failwith "Inconsistent arguments of extended tactic"
 
-  type any_arg = AnyArg : 'a Genarg.raw_abstract_argument_type -> any_arg
-
   let filter_arg = function
   | Egramml.GramTerminal _ -> None
-  | Egramml.GramNonTerminal (_, t, _) -> Some (AnyArg t)
+  | Egramml.GramNonTerminal (_, Rawwit t, _) -> Some (ArgumentType t)
 
   let pr_tacarg_using_rule pr_gen l =
     let l = match l with
@@ -386,25 +384,25 @@ module Make
     with Not_found ->
       KerName.print key ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
 
-  let check_type t arg = match t, arg with
-  | AnyArg t, TacGeneric arg -> argument_type_eq (unquote t) (genarg_tag arg)
-  | _ -> false
+  let check_type t arg = match arg with
+  | TacGeneric arg -> argument_type_eq t (genarg_tag arg)
+  | _ -> argument_type_eq t (ArgumentType wit_tactic)
 
-  let unwrap_gen f = function TacGeneric x -> f x | _ -> assert false
+  let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.ghost, arg))
 
   let pr_raw_extend_rec prc prlc prtac prpat =
-    pr_extend_gen check_type (unwrap_gen (pr_raw_generic_rec prc prlc prtac prpat pr_reference))
+    pr_extend_gen check_type (pr_farg prtac)
   let pr_glob_extend_rec prc prlc prtac prpat =
-    pr_extend_gen check_type (unwrap_gen (pr_glb_generic_rec prc prlc prtac prpat))
+    pr_extend_gen check_type (pr_farg prtac)
   let pr_extend_rec prc prlc prtac prpat =
-    pr_extend_gen check_type (unwrap_gen (pr_top_generic_rec prc prlc prtac prpat))
+    pr_extend_gen check_type (pr_farg prtac)
 
   let pr_raw_alias prc prlc prtac prpat =
-    pr_alias_gen check_type (unwrap_gen (pr_raw_generic_rec prc prlc prtac prpat pr_reference))
+    pr_alias_gen check_type (pr_farg prtac)
   let pr_glob_alias prc prlc prtac prpat =
-    pr_alias_gen check_type (unwrap_gen (pr_glb_generic_rec prc prlc prtac prpat))
+    pr_alias_gen check_type (pr_farg prtac)
   let pr_alias prc prlc prtac prpat =
-    pr_alias_gen check_type (unwrap_gen (pr_top_generic_rec prc prlc prtac prpat))
+    pr_alias_gen check_type (pr_farg prtac)
 
   (**********************************************************************)
   (* The tactic printer                                                 *)
@@ -1185,7 +1183,7 @@ module Make
       pr_constant = pr_or_by_notation pr_reference;
       pr_reference = pr_reference;
       pr_name = pr_lident;
-      pr_generic = Genprint.generic_raw_print;
+      pr_generic = pr_raw_generic_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr pr_reference;
       pr_extend = pr_raw_extend_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
       pr_alias = pr_raw_alias pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
     } in
@@ -1215,7 +1213,9 @@ module Make
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
-        pr_generic = Genprint.generic_glb_print;
+        pr_generic = pr_glb_generic_rec
+          (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
+          prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
         pr_extend = pr_glob_extend_rec
           (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
           prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
@@ -1256,7 +1256,9 @@ module Make
         pr_constant = pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
-        pr_generic = Genprint.generic_top_print;
+        pr_generic = pr_top_generic_rec
+          (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
+          pr_value pr_constr_pattern;
         pr_extend = pr_extend_rec
           (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
           pr_value pr_constr_pattern;
@@ -1291,7 +1293,7 @@ module Make
     (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
 
   let check_val_type t arg =
-    let AnyArg t = t in
+    let ArgumentType t = t in
 (*     let t = Genarg.val_tag (Obj.magic t) in *)
 (*     let Val.Dyn (t', _) = arg in *)
 (*     match Genarg.Val.eq t t' with *)
