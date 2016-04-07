@@ -170,7 +170,12 @@ Proof. intros. setoid_rewrite <- @foo_prf at 1. change (beq_nat x 0 = foo_neg y)
 
 Definition t := nat -> bool.
 Definition h (a b : t) := forall n, a n = b n.
-Goal forall a b, h a b -> a 0 = true.
+
+Instance subrelh : subrelation h (Morphisms.pointwise_relation nat eq).
+Proof. intros x y H; assumption. Qed.
+
+Goal forall a b, h a b -> a 0 = b 0.
 intros.
-rewrite H. (* Fallback on ordinary rewrite without anomaly *)
-Abort.
+setoid_rewrite H. (* Fallback on ordinary rewrite without anomaly *)
+reflexivity.
+Qed.
