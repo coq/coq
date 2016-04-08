@@ -479,6 +479,14 @@ let make_hunks etyps symbols from =
 
   in make symbols
 
+let rec trailing_precedence etyps from = function
+  | [] -> assert false
+  | [NonTerminal id|SProdList (id,_)] ->
+     let typ = List.assoc id etyps in
+     Some (precedence_of_entry_type from typ)
+  | [Terminal _|Break _] -> None
+  | _ :: l -> trailing_precedence etyps from l
+
 (* Build default printing rules from explicit format *)
 
 let error_format () = error "The format does not match the notation."
@@ -672,7 +680,7 @@ type syntax_extension = {
   synext_level : Notation.level;
   synext_notation : notation;
   synext_notgram : notation_grammar;
-  synext_unparsing : unparsing list;
+  synext_unparsing : unparsing_rule;
   synext_extra : (string * string) list;
 }
 
@@ -691,7 +699,7 @@ let cache_one_syntax_extension se =
     Egramcoq.extend_constr_grammar prec se.synext_notgram;
     (* Declare the printing rule *)
     Notation.declare_notation_printing_rule ntn
-      ~extra:se.synext_extra (se.synext_unparsing, fst prec)
+      ~extra:se.synext_extra se.synext_unparsing
 
 let cache_syntax_extension (_, (_, sy)) =
   List.iter cache_one_syntax_extension sy
@@ -1051,7 +1059,7 @@ exception NoSyntaxRule
 let recover_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
-    let pp_rule,_ = Notation.find_notation_printing_rule ntn in
+    let pp_rule= Notation.find_notation_printing_rule ntn in
     let pp_extra_rules = Notation.find_notation_extra_printing_rules ntn in
     let pa_rule = Egramcoq.recover_constr_grammar ntn prec in
     { synext_level = prec;
@@ -1085,14 +1093,16 @@ let make_pa_rule i_typs (n,typs,symbols,_) ntn =
     notgram_prods = prod;
     notgram_typs = i_typs; }
 
-let make_pp_rule (n,typs,symbols,fmt) =
-  match fmt with
+let make_pp_rule (n,typs,symbols,fmt) (lev,_) =
+  let unp = match fmt with
   | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
-  | Some fmt -> hunks_of_format (n, List.split typs) (symbols, parse_format fmt)
+  | Some fmt -> hunks_of_format (n, List.split typs) (symbols, parse_format fmt) in
+  let trailingprec = trailing_precedence typs lev symbols in
+  (unp, lev, trailingprec)
 
 let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) extra =
   let pa_rule = make_pa_rule i_typs sy_data ntn in
-  let pp_rule = make_pp_rule sy_data in
+  let pp_rule = make_pp_rule sy_data prec in
   let sy = {
     synext_level = prec;
     synext_notation = ntn;
