@@ -98,3 +98,10 @@ Notation "#  x : T => t" := (fun x : T => t)
 
 Check # x : nat => x.
 Check # _ : nat => 2.
+
+(* Check printing of notations that have arguments at higher level
+   than the notation itself *)
+
+Notation "## a" := (S a) (at level 0, a at level 100).
+Check fun x => (S x) + x.
+Check fun x => S (x + x).

@@ -50,3 +50,7 @@ end
      : nat -> nat
 # _ : nat => 2
      : nat -> nat
+fun x : nat => (## x) + x
+     : nat -> nat
+fun x : nat => ## x + x
+     : nat -> nat
