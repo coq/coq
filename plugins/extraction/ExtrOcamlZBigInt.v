@@ -46,7 +46,7 @@ Extract Constant Pos.max => "Big.max".
 Extract Constant Pos.compare =>
  "fun x y -> Big.compare_case Eq Lt Gt x y".
 Extract Constant Pos.compare_cont =>
- "fun x y c -> Big.compare_case c Lt Gt x y".
+ "fun c x y -> Big.compare_case c Lt Gt x y".
 
 Extract Constant N.add => "Big.add".
 Extract Constant N.succ => "Big.succ".
