@@ -85,8 +85,8 @@ end) = struct
         mt ()
       | UnpMetaVar (_, prec) as unp :: l ->
         let c = pop env in
+        let pp1= pr (n, prec) c in
         let pp2 = aux l in
-        let pp1 = pr (n, prec) c in
         return unp pp1 pp2
       | UnpListMetaVar (_, prec, sl) as unp :: l ->
         let cl = pop envlist in
@@ -95,15 +95,16 @@ end) = struct
         return unp pp1 pp2
       | UnpBinderListMetaVar (_, isopen, sl) as unp :: l ->
         let cl = pop bll in
-        let pp2 = aux l in
         let pp1 = pr_binders (fun () -> aux sl) isopen cl in
+        let pp2 = aux l in
         return unp pp1 pp2
       | UnpTerminal s as unp :: l ->
-        let pp2 = aux l in
         let pp1 = str s in
+        let pp2 = aux l in
         return unp pp1 pp2
       | UnpBox (b,sub) as unp :: l ->
-        let pp1 = ppcmd_of_box b (aux sub) in
+        let pp1 = aux sub in
+        let pp1 = ppcmd_of_box b pp1 in
         let pp2 = aux l in
         return unp pp1 pp2
       | UnpCut cut as unp :: l ->
@@ -114,8 +115,12 @@ end) = struct
     aux unps
 
   let pr_notation pr pr_binders s env =
-    let unpl, level = find_notation_printing_rule s in
-    print_hunks level pr pr_binders env unpl, level
+    let unpl, level, trailing_level = find_notation_printing_rule s in
+    let pp = print_hunks level pr pr_binders env unpl in
+    let level = match trailing_level with
+      | Some (level',_) -> max level level'
+      | _ -> level in
+    pp, level 
 
   let pr_delimiters key strm =
     strm ++ str ("%"^key)
