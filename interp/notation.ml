@@ -993,7 +993,7 @@ let pr_visibility prglob = function
 (**********************************************************************)
 (* Mapping notations to concrete syntax *)
 
-type unparsing_rule = unparsing list * precedence
+type unparsing_rule = unparsing list * precedence * tolerability option
 type extra_unparsing_rules = (string * string) list
 (* Concrete syntax for symbolic-extension table *)
 let notation_rules =
