@@ -1213,22 +1213,15 @@ module Make
         with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
       try
         let rl = Egramml.get_extend_vernac_rule s in
-        let start,rl,cl =
-          match rl with
-            | Egramml.GramTerminal s :: rl -> str s, rl, cl
-            | Egramml.GramNonTerminal _ :: rl -> pr_arg (List.hd cl), rl, List.tl cl
-            | [] -> anomaly (Pp.str "Empty entry") in
-        let (pp,_) =
-          List.fold_left
-            (fun (strm,args) pi ->
-              let pp,args = match pi with
-                | Egramml.GramNonTerminal _ -> (pr_arg (List.hd args), List.tl args)
-                | Egramml.GramTerminal s -> (str s, args) in
-              (strm ++ spc() ++ pp), args)
-            (start,cl) rl in
-        hov 1 pp
+        let rec aux rl cl =
+          match rl, cl with
+          | Egramml.GramNonTerminal _ :: rl, arg :: cl -> pr_arg arg :: aux rl cl
+          | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
+          | [], [] -> []
+          | _ -> assert false in
+        hov 1 (pr_sequence (fun x -> x) (aux rl cl))
       with Not_found ->
-        hov 1 (str "TODO(" ++ str (fst s) ++ prlist_with_sep sep pr_arg cl ++ str ")")
+        hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
     in pr_vernac
 
