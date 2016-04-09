@@ -413,7 +413,26 @@ VERNAC COMMAND EXTEND VernacPrintLtac CLASSIFIED AS QUERY
   [ msg_notice (Tacintern.print_ltac (snd (Libnames.qualid_of_reference r))) ]
 END
 
+let pr_ltac_ref = Libnames.pr_reference
+
+let pr_tacdef_body tacdef_body =
+  let id, redef, body =
+    match tacdef_body with
+    | TacticDefinition ((_,id), body) -> Nameops.pr_id id, false, body
+    | TacticRedefinition (id, body) -> pr_ltac_ref id, true, body
+  in
+  let idl, body =
+    match body with
+      | Tacexpr.TacFun (idl,b) -> idl,b
+      | _ -> [], body in
+  id ++
+    prlist (function None -> str " _"
+      | Some id -> spc () ++ Nameops.pr_id id) idl
+  ++ (if redef then str" ::=" else str" :=") ++ brk(1,1)
+  ++ Pptactic.pr_raw_tactic body
+
 VERNAC ARGUMENT EXTEND ltac_tacdef_body
+PRINTED BY pr_tacdef_body
 | [ tacdef_body(t) ] -> [ t ]
 END
 
