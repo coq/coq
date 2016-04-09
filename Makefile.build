@@ -43,6 +43,9 @@ VALIDATE ?=
 # Is "-xml" when building XML library:
 COQ_XML ?=
 
+# Is "-beautify" when checking beautification
+DOBEAUTIFY ?=
+
 ###########################################################################
 # Default starting rule
 ###########################################################################
@@ -100,7 +103,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 # the output format of the unix command time. For instance:
 #   TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
-COQOPTS=$(COQ_XML) $(NATIVECOMPUTE)
+COQOPTS=$(COQ_XML) $(NATIVECOMPUTE) $(DOBEAUTIFY)
 BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
 
 LOCALINCLUDES=$(addprefix -I , $(SRCDIRS) )
@@ -490,6 +493,56 @@ test-suite: world $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
 	$(MAKE) $(MAKE_TSOPTS) report
+
+theories/Init/%.v.beautified: theories/Init/%.v $(VO_TOOLS_DEP) | theories/Init/%.v.d
+	$(SHOW)'COQC -beautify -noinit $<'
+	$(HIDE)rm -f theories/Init/$*.glob
+	$(HIDE)$(BOOTCOQC) $< -beautify -noinit -R theories Coq
+
+theories/Init/%.v.backup: theories/Init/%.v.beautified $(VO_TOOLS_DEP) | theories/Init/%.v.d
+	$(SHOW)'COQC -noinit $<'
+	mv -f theories/Init/$*.v theories/Init/$*.v.backup
+	mv -f theories/Init/$*.v.beautified theories/Init/$*.v
+	rm -f theories/Init/$*.vo
+	$(BOOTCOQC) theories/Init/$* -noinit -R theories Coq
+
+%.v.beautified: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
+	$(SHOW)'COQC -beautify $<'
+	$(HIDE)rm -f $*.glob
+	$(HIDE)$(BOOTCOQC) $< -beautify
+
+%.v.backup: %.v.beautified theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
+	$(SHOW)'COQC $<.v.beautified'
+	$(HIDE)mv -f $*.v $*.v.backup
+	$(HIDE)mv -f $*.v.beautified $*.v
+	$(HIDE)$(BOOTCOQC) $*
+
+TOBEAUTIFYVO=$(THEORIESVO) $(PLUGINSVO)
+
+beautify:
+	$(SHOW) '*** Beautifying files ***'
+	$(HIDE)$(MAKE) DOBEAUTIFY=-beautify $(TOBEAUTIFYVO)
+	$(SHOW) '*** Beautifying ok ***'
+	$(SHOW) '*** Upgrading beautified files ***'
+	$(HIDE)for i in $(TOBEAUTIFYVO);\
+	do j=`dirname $$i`/`basename $$i .vo`.v;\
+	  mv -f $$j $$j.backup;\
+	  if [ $$i -nt $$j ]; then mv -f $$j.beautified $$j; fi;\
+	  rm -f "$$j"o;\
+	done
+	$(SHOW) '*** Upgrading ok ***'
+	$(SHOW) '*** Recompiling beautified files ***'
+	$(HIDE)$(MAKE) $(TOBEAUTIFYVO)
+	$(SHOW) '*** Recompiling ok ***'
+
+check-beautify:
+	$(MAKE) beautify
+	$(SHOW) '*** Restoring initial files ***'
+	$(HIDE)for i in $(TOBEAUTIFYVO);\
+	do j=`dirname $$i`/`basename $$i .vo`.v;\
+	  echo mv -f $$j.backup $$j;\
+	done;
+	$(SHOW) '*** Restoring ok ***'
 
 ###########################################################################
 # Default rules for compiling ML code
