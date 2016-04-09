@@ -34,9 +34,11 @@ val file_exists_respecting_case : string -> string -> bool
 (** {6 I/O functions } *)
 (** Generic input and output functions, parameterized by a magic number
   and a suffix. The intern functions raise the exception [Bad_magic_number]
-  when the check fails, with the full file name. *)
+  when the check fails, with the full file name and expected/observed magic
+  numbers. *)
 
-exception Bad_magic_number of string
+type magic_number_error = {filename: string; actual: int; expected: int}
+exception Bad_magic_number of magic_number_error
 
 val raw_extern_state : int -> string -> out_channel
 

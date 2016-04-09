@@ -214,7 +214,8 @@ let skip_in_segment f ch =
   seek_in ch stop;
   stop, digest_in f ch
 
-exception Bad_magic_number of string
+type magic_number_error = {filename: string; actual: int; expected: int}
+exception Bad_magic_number of magic_number_error
 
 let raw_extern_state magic filename =
   let channel = open_trapping_failure filename in
@@ -224,8 +225,12 @@ let raw_extern_state magic filename =
 let raw_intern_state magic filename =
   try
     let channel = open_in_bin filename in
-    if not (Int.equal (input_binary_int filename channel) magic) then
-      raise (Bad_magic_number filename);
+    let actual_magic = input_binary_int filename channel in
+    if not (Int.equal actual_magic magic) then
+        raise (Bad_magic_number {
+            filename=filename;
+            actual=actual_magic;
+            expected=magic});
     channel
   with
   | End_of_file -> error_corrupted filename "premature end of file"
@@ -255,9 +260,11 @@ let intern_state magic filename =
 
 let with_magic_number_check f a =
   try f a
-  with Bad_magic_number fname ->
+  with Bad_magic_number {filename=fname;actual=actual;expected=expected} ->
     errorlabstrm "with_magic_number_check"
-    (str"File " ++ str fname ++ strbrk" has bad magic number." ++ spc () ++
+    (str"File " ++ str fname ++ strbrk" has bad magic number " ++
+    int actual ++ str" (expected " ++ int expected ++ str")." ++
+    spc () ++
     strbrk "It is corrupted or was compiled with another version of Coq.")
 
 (* Time stamps. *)
