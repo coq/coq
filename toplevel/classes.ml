@@ -121,7 +121,7 @@ let declare_instance_constant k pri global imps ?hook id pl poly evm term termty
     instance_hook k pri global imps ?hook (ConstRef kn);
     id
 
-let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) props
+let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) poly ctx (instid, bk, cl) props
     ?(generalize=true)
     ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
@@ -293,7 +293,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
 	  declare_instance_constant k pri global imps ?hook id pl
             poly evm (Option.get term) termtype
-	else if Flags.is_program_mode () || !refine_instance || Option.is_empty term then begin
+	else if Flags.is_program_mode () || refine || Option.is_empty term then begin
 	  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	    if Flags.is_program_mode () then
 	      let hook vis gr _ =

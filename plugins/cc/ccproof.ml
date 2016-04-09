@@ -93,13 +93,13 @@ let pinject p c n a =
    p_rule=Inject(p,c,n,a)}
 
 let rec equal_proof uf i j=
-  debug (str "equal_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
+  debug (fun () -> str "equal_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
   if i=j then prefl (term uf i) else
     let (li,lj)=join_path uf i j in
     ptrans (path_proof uf i li) (psym (path_proof uf j lj))
       
 and edge_proof uf ((i,j),eq)=
-  debug (str "edge_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
+  debug (fun () -> str "edge_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
   let pi=equal_proof uf i eq.lhs in
   let pj=psym (equal_proof uf j eq.rhs) in
   let pij=
@@ -115,7 +115,7 @@ and edge_proof uf ((i,j),eq)=
   ptrans (ptrans pi pij) pj
   
 and constr_proof uf i ipac=
-  debug (str "constr_proof " ++ pr_idx_term uf i ++ brk (1,20));
+  debug (fun () -> str "constr_proof " ++ pr_idx_term uf i ++ brk (1,20));
   let t=find_oldest_pac uf i ipac in
   let eq_it=equal_proof uf i t in
   if ipac.args=[] then
@@ -128,20 +128,20 @@ and constr_proof uf i ipac=
     ptrans eq_it (pcongr p (prefl targ))
       
 and path_proof uf i l=
-  debug (str "path_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ str "{" ++
+  debug (fun () -> str "path_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ str "{" ++
 	   (prlist_with_sep (fun () -> str ",") (fun ((_,j),_) -> int j) l) ++ str "}");
   match l with
   | [] -> prefl (term uf i)
   | x::q->ptrans (path_proof uf (snd (fst x)) q) (edge_proof uf x)
     
 and congr_proof uf i j=
-  debug (str "congr_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
+  debug (fun () -> str "congr_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
   let (i1,i2) = subterms uf i
   and (j1,j2) = subterms uf j in
   pcongr (equal_proof uf i1 j1) (equal_proof uf i2 j2)
     
 and ind_proof uf i ipac j jpac=
-   debug (str "ind_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
+   debug (fun () -> str "ind_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
   let p=equal_proof uf i j
   and p1=constr_proof uf i ipac
   and p2=constr_proof uf j jpac in

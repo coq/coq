@@ -15,20 +15,27 @@ Ltac omega := Coq.omega.Omega.omega.
 (** The number of arguments given in [match] statements has changed from 8.4 to 8.5. *)
 Global Set Asymmetric Patterns.
 
+(** The automatic elimination schemes for records were dropped by default in 8.5.  This restores the default behavior of Coq 8.4. *)
+Global Set Nonrecursive Elimination Schemes.
+
 (** See bug 3545 *)
 Global Set Universal Lemma Under Conjunction.
 
-(** In 8.5, [refine] leaves over dependent subgoals. *)
-Tactic Notation "refine" uconstr(term) := refine term; shelve_unifiable.
-
 (** In 8.4, [constructor (tac)] allowed backtracking across the use of [constructor]; it has been subsumed by [constructor; tac]. *)
-Ltac constructor_84 := constructor.
 Ltac constructor_84_n n := constructor n.
 Ltac constructor_84_tac tac := once (constructor; tac).
 
-Tactic Notation "constructor" := constructor_84.
+Tactic Notation "constructor" := Coq.Init.Notations.constructor.
 Tactic Notation "constructor" int_or_var(n) := constructor_84_n n.
 Tactic Notation "constructor" "(" tactic(tac) ")" := constructor_84_tac tac.
+
+(** In 8.4, [econstructor (tac)] allowed backtracking across the use of [econstructor]; it has been subsumed by [econstructor; tac]. *)
+Ltac econstructor_84_n n := econstructor n.
+Ltac econstructor_84_tac tac := once (econstructor; tac).
+
+Tactic Notation "econstructor" := Coq.Init.Notations.econstructor.
+Tactic Notation "econstructor" int_or_var(n) := econstructor_84_n n.
+Tactic Notation "econstructor" "(" tactic(tac) ")" := econstructor_84_tac tac.
 
 (** Some tactic notations do not factor well with tactics; we add global parsing entries for some tactics that would otherwise be overwritten by custom variants. See https://coq.inria.fr/bugs/show_bug.cgi?id=4392. *)
 Tactic Notation "reflexivity" := reflexivity.
@@ -45,8 +52,6 @@ Tactic Notation "left" := left.
 Tactic Notation "eleft" := eleft.
 Tactic Notation "right" := right.
 Tactic Notation "eright" := eright.
-Tactic Notation "constructor" := constructor.
-Tactic Notation "econstructor" := econstructor.
 Tactic Notation "symmetry" := symmetry.
 Tactic Notation "split" := split.
 Tactic Notation "esplit" := esplit.
@@ -71,3 +76,11 @@ End Coq.
 
 (** Many things now import [PeanoNat] rather than [NPeano], so we require it so that the old absolute names in [NPeano.Nat] are available. *)
 Require Coq.Numbers.Natural.Peano.NPeano.
+
+(** The following coercions were declared by default in Specif.v. *)
+Coercion sig_of_sig2 : sig2 >-> sig.
+Coercion sigT_of_sigT2 : sigT2 >-> sigT.
+Coercion sigT_of_sig : sig >-> sigT.
+Coercion sig_of_sigT : sigT >-> sig.
+Coercion sigT2_of_sig2 : sig2 >-> sigT2.
+Coercion sig2_of_sigT2 : sigT2 >-> sig2.

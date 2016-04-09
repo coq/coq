@@ -120,7 +120,7 @@ val term_equal : term -> term -> bool
 
 val constr_of_term : term -> constr
 
-val debug : Pp.std_ppcmds -> unit
+val debug : (unit -> Pp.std_ppcmds) -> unit
 
 val forest : state -> forest
 

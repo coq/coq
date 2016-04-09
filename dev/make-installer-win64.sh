@@ -22,7 +22,7 @@ if [ ! -e bin/make.exe ]; then
 fi
 VERSION=`grep ^VERSION= config/Makefile | cut -d = -f 2`
 cd dev/nsis
-"$NSIS" -DVERSION=$VERSION -DGTK_RUNTIME="`cygpath -w $BASE`" coq.nsi
+"$NSIS" -DVERSION=$VERSION -DGTK_RUNTIME="`cygpath -w $BASE`" -DARCH="win64" coq.nsi
 echo Installer:
 ls -h $PWD/*exe
 cd ../..

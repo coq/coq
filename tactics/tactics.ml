@@ -1468,7 +1468,8 @@ let descend_in_conjunctions avoid tac (err, info) c =
             let sigma = Sigma.Unsafe.of_evar_map sigma in
 	    let Sigma (elim, _, _) = build_case_analysis_scheme env sigma (ind,u) false sort in
 	    NotADefinedRecordUseScheme elim in
-	Tacticals.New.tclFIRST
+	Tacticals.New.tclORELSE0
+	(Tacticals.New.tclFIRST
 	  (List.init n (fun i ->
             Proofview.Goal.enter { enter = begin fun gl ->
             let env = Proofview.Goal.env gl in
@@ -1481,7 +1482,8 @@ let descend_in_conjunctions avoid tac (err, info) c =
 		[Proofview.V82.tactic (refine p);
 		 (* Might be ill-typed due to forbidden elimination. *)
 		 Tacticals.New.onLastHypId (tac (not isrec))]
-           end }))
+           end })))
+          (Proofview.tclZERO ~info err)
     | None -> Proofview.tclZERO ~info err
   with RefinerError _|UserError _ -> Proofview.tclZERO ~info err
   end }
