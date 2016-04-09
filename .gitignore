@@ -38,6 +38,8 @@
 *.v.html
 *.stamp
 *.native
+*.beautified
+*.backup
 revision
 TAGS
 .DS_Store
