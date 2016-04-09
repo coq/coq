@@ -354,7 +354,8 @@ VERNAC ARGUMENT EXTEND ltac_info PRINTED BY pr_ltac_info
 | [ "Info" natural(n) ] -> [ n ]
 END
 
-let pr_ltac_use_default b = if b then str ".." else mt ()
+let pr_ltac_use_default b =
+  if b then (* Bug: a space is inserted before "..." *) str ".." else mt ()
 
 VERNAC ARGUMENT EXTEND ltac_use_default PRINTED BY pr_ltac_use_default
 | [ "." ] -> [ false ]

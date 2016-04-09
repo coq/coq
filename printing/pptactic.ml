@@ -109,7 +109,7 @@ module Make
   let rec pr_value lev (Val.Dyn (tag, x)) : std_ppcmds = match tag with
   | Val.List tag ->
     pr_sequence (fun x -> pr_value lev (Val.Dyn (tag, x))) x
-  | Val.Opt tag -> pr_opt (fun x -> pr_value lev (Val.Dyn (tag, x))) x
+  | Val.Opt tag -> pr_opt_no_spc (fun x -> pr_value lev (Val.Dyn (tag, x))) x
   | Val.Pair (tag1, tag2) ->
     str "(" ++ pr_value lev (Val.Dyn (tag1, fst x)) ++ str ", " ++
       pr_value lev (Val.Dyn (tag1, fst x)) ++ str ")"
@@ -282,24 +282,25 @@ module Make
 
   let with_evars ev s = if ev then "e" ^ s else s
 
+  let hov_if_not_empty n p = if Pp.ismt p then p else hov n p
 
   let rec pr_raw_generic_rec prc prlc prtac prpat prref (GenArg (Rawwit wit, x)) =
     match wit with
       | ListArg wit ->
         let map x = pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
         let ans = pr_sequence map x in
-        hov 0 ans
+        hov_if_not_empty 0 ans
       | OptArg wit ->
         let ans = match x with
           | None -> mt ()
           | Some x -> pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x)
         in
-        hov 0 ans
+        hov_if_not_empty 0 ans
       | PairArg (wit1, wit2) ->
         let p, q = x in
         let p = in_gen (rawwit wit1) p in
         let q = in_gen (rawwit wit2) q in
-        hov 0 (pr_sequence (pr_raw_generic_rec prc prlc prtac prpat prref) [p; q])
+        hov_if_not_empty 0 (pr_sequence (pr_raw_generic_rec prc prlc prtac prpat prref) [p; q])
       | ExtraArg s ->
         try pi1 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (rawwit wit) x)
         with Not_found -> Genprint.generic_raw_print (in_gen (rawwit wit) x)
@@ -310,19 +311,19 @@ module Make
       | ListArg wit ->
         let map x = pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x) in
         let ans = pr_sequence map x in
-        hov 0 ans
+        hov_if_not_empty 0 ans
       | OptArg wit ->
         let ans = match x with
           | None -> mt ()
           | Some x -> pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x)
         in
-        hov 0 ans
+        hov_if_not_empty 0 ans
       | PairArg (wit1, wit2) ->
         let p, q = x in
         let p = in_gen (glbwit wit1) p in
         let q = in_gen (glbwit wit2) q in
         let ans = pr_sequence (pr_glb_generic_rec prc prlc prtac prpat) [p; q] in
-        hov 0 ans
+        hov_if_not_empty 0 ans
       | ExtraArg s ->
         try pi2 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (glbwit wit) x)
         with Not_found -> Genprint.generic_glb_print (in_gen (glbwit wit) x)
@@ -332,19 +333,19 @@ module Make
       | ListArg wit ->
         let map x = pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x) in
         let ans = pr_sequence map x in
-        hov 0 ans
+        hov_if_not_empty 0 ans
       | OptArg wit ->
         let ans = match x with
           | None -> mt ()
           | Some x -> pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x)
         in
-        hov 0 ans
+        hov_if_not_empty 0 ans
       | PairArg (wit1, wit2) ->
         let p, q = x in
         let p = in_gen (topwit wit1) p in
         let q = in_gen (topwit wit2) q in
         let ans = pr_sequence (pr_top_generic_rec prc prlc prtac prpat) [p; q] in
-        hov 0 ans
+        hov_if_not_empty 0 ans
       | ExtraArg s ->
         try pi3 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (topwit wit) x)
         with Not_found -> Genprint.generic_top_print (in_gen (topwit wit) x)
