@@ -15,3 +15,13 @@ lazymatch goal with
 | H1 : HT |- _ => idtac
 end.
 Abort.
+
+Ltac f x y z :=
+  symmetry in x, y;
+  auto with z;
+  auto;
+  intros;
+  clearbody x;
+  generalize dependent z.
+
+Print Ltac f.
