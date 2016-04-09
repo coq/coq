@@ -518,6 +518,7 @@ let pr_comma () = str "," ++ spc ()
 let pr_semicolon () = str ";" ++ spc ()
 let pr_bar () = str "|" ++ spc ()
 let pr_arg pr x = spc () ++ pr x
+let pr_non_empty_arg pr x = let pp = pr x in if ismt pp then mt () else spc () ++ pr x
 let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
 let pr_opt_no_spc pr = function None -> mt () | Some x -> pr x
 

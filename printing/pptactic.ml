@@ -542,7 +542,7 @@ module Make
         str "(" ++ keyword "value of" ++ spc () ++ pr_id id ++ str ")"
       ) occs
 
-  let pr_in pp = spc () ++ hov 0 (keyword "in" ++ pp)
+  let pr_in pp = hov 0 (keyword "in" ++ pp)
 
   let pr_simple_hyp_clause pr_id = function
     | [] -> mt ()
@@ -829,7 +829,7 @@ module Make
               (if a then mt() else primitive "simple ") ++
                 primitive (with_evars ev "apply") ++ spc () ++
                 prlist_with_sep pr_comma pr_with_bindings_arg cb ++
-                pr_in_hyp_as pr.pr_dconstr pr.pr_name inhyp
+                pr_non_empty_arg (pr_in_hyp_as pr.pr_dconstr pr.pr_name) inhyp
             )
           | TacElim (ev,cb,cbo) ->
             hov 1 (
@@ -873,7 +873,7 @@ module Make
                 (if b then pr_pose pr.pr_constr pr.pr_lconstr na c
                  else pr_pose_as_style pr.pr_constr na c) ++
                 pr_opt (fun p -> pr_eqn_ipat p ++ spc ()) e ++
-                pr_clauses (Some b) pr.pr_name cl)
+                pr_non_empty_arg (pr_clauses (Some b) pr.pr_name) cl)
           (*  | TacInstantiate (n,c,ConclLocation ()) ->
               hov 1 (str "instantiate" ++ spc() ++
               hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
@@ -918,7 +918,7 @@ module Make
           | TacReduce (r,h) ->
             hov 1 (
               pr_red_expr r
-              ++ pr_clauses (Some true) pr.pr_name h
+              ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) h
             )
           | TacChange (op,c,h) ->
             hov 1 (
@@ -930,7 +930,7 @@ module Make
                   | Some p ->
                     pr.pr_pattern p ++ spc ()
                     ++ keyword "with" ++ spc ()
-              ) ++ pr.pr_dconstr c ++ pr_clauses (Some true) pr.pr_name h
+              ) ++ pr.pr_dconstr c ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) h
             )
 
           (* Equality and inversion *)
@@ -943,7 +943,7 @@ module Make
                   pr_orient b ++ pr_multi m ++
                     pr_with_bindings_arg_full pr.pr_dconstr pr.pr_dconstr c)
                 l
-              ++ pr_clauses (Some true) pr.pr_name cl
+              ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) cl
               ++ (
                 match by with
                   | Some by -> pr_by_tactic (pr.pr_tactic ltop) by
@@ -962,14 +962,14 @@ module Make
               pr_induction_kind k ++ spc ()
               ++ pr_quantified_hypothesis hyp
               ++ pr_with_inversion_names pr.pr_dconstr ids
-              ++ pr_simple_hyp_clause pr.pr_name cl
+              ++ pr_non_empty_arg (pr_simple_hyp_clause pr.pr_name) cl
             )
           | TacInversion (InversionUsing (c,cl),hyp) ->
             hov 1 (
               primitive "inversion" ++ spc()
               ++ pr_quantified_hypothesis hyp ++ spc ()
               ++ keyword "using" ++ spc () ++ pr.pr_constr c
-              ++ pr_simple_hyp_clause pr.pr_name cl
+              ++ pr_non_empty_arg (pr_simple_hyp_clause pr.pr_name) cl
             )
         )
         in

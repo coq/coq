@@ -199,6 +199,9 @@ val pr_bar : unit -> std_ppcmds
 val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
 (** Adds a space in front of its argument. *)
 
+val pr_non_empty_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
+(** Adds a space in front of its argument if non empty. *)
+
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 (** Inner object preceded with a space if [Some], nothing otherwise. *)
 
