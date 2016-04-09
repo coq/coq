@@ -778,8 +778,8 @@ module Make
             hov 0 (
               str key ++ spc() ++
                 (if coe then str"> " else str"") ++ pr_lident id ++ pr_univs pl ++
-                pr_and_type_binders_arg indpar ++ spc() ++
-                Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++
+                pr_and_type_binders_arg indpar ++
+                pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++
                 str" :=") ++ pr_constructor_list k lc ++
               prlist (pr_decl_notation pr_constr) ntn
           in
