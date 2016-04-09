@@ -191,7 +191,7 @@ constraint 'a = <
 
 (** Possible arguments of a tactic definition *)
 
-and 'a gen_tactic_arg =
+type 'a gen_tactic_arg =
   | TacGeneric     of 'lev generic_argument
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval
   | Reference      of 'ref
