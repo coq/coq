@@ -675,15 +675,13 @@ module Make
             str " ]")
 
   let pr_hintbases = function
-    | None -> spc () ++ keyword "with" ++ str" *"
+    | None -> keyword "with" ++ str" *"
     | Some [] -> mt ()
-    | Some l ->
-      spc () ++ hov 2 (keyword "with" ++ prlist (fun s -> spc () ++ str s) l)
+    | Some l -> hov 2 (keyword "with" ++ prlist (fun s -> spc () ++ str s) l)
 
   let pr_auto_using prc = function
     | [] -> mt ()
-    | l -> spc () ++
-      hov 2 (keyword "using" ++ spc () ++ prlist_with_sep pr_comma prc l)
+    | l -> hov 2 (keyword "using" ++ spc () ++ prlist_with_sep pr_comma prc l)
 
   let pr_then () = str ";"
 
