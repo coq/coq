@@ -1105,6 +1105,16 @@ dev/%.mllib.d: $(D_DEPEND_BEFORE_SRC) dev/%.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLL
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(OCAMLC) -ccopt "-MM -MQ $@ -MQ $(<:.c=.o) -isystem $(CAMLHLIB)" $< $(TOTARGET)
 
+theories/Init/%.v.beautified: theories/Init/%.v $(VO_TOOLS_DEP) | theories/Init/%.v.d
+	$(SHOW)'COQC -beautify -noinit $<'
+	$(HIDE)rm -f theories/Init/$*.glob
+	$(HIDE)$(BOOTCOQC) $< -beautify -noinit -R theories Coq
+
+%.v.beautified: %.v | %.v.d
+	$(SHOW)'COQC -beautify $<'
+	$(HIDE)rm -f $*.glob
+	$(HIDE)$(BOOTCOQC) $< -beautify
+
 ###########################################################################
 # this sets up developper supporting stuff
 ###########################################################################
