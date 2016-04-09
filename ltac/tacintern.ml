@@ -795,6 +795,12 @@ let () =
   Genintern.register_intern0 wit_ident intern_ident';
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic0 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic1 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic2 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic3 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic4 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic5 (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_ltac (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_sort (fun ist s -> (ist, s));
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
