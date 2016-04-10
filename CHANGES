@@ -1,6 +1,12 @@
 Changes beyond V8.5
 ===================
 
+Specification language
+
+- Giving implicit arguments explicitly to a constant with multiple
+  choices of implicit arguments does not break any more insertion of
+  further maximal implicit arguments.
+
 Tactics
 
 - Flag "Bracketing Last Introduction Pattern" is now on by default.

@@ -6,8 +6,10 @@ Error: To rename arguments the "rename" flag must be specified.
 Argument A renamed to T.
 @eq_refl
      : forall (B : Type) (y : B), y = y
-@eq_refl nat
-     : forall x : nat, x = x
+eq_refl
+     : ?y = ?y
+where
+?y : [ |- nat] 
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq_refl: Arguments are renamed to B, y
