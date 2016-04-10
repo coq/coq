@@ -478,7 +478,7 @@ let explicitize loc inctx impl (cf,f) args =
           (is_needed_for_correct_partial_application tail imp) ||
 	  (!print_implicits_defensive &&
 	   is_significant_implicit a &&
-	   not (is_inferable_implicit inctx n imp))
+	   (not (is_inferable_implicit inctx n imp) || !Flags.beautify_file))
 	in
         if visible then
 	  (a,Some (Loc.ghost, ExplByName (name_of_implicit imp))) :: tail
