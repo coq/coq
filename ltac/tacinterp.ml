@@ -1650,7 +1650,7 @@ and name_atomic ?env tacexpr tac : unit Proofview.tactic =
   | Some e -> Proofview.tclUNIT e
   | None -> Proofview.tclENV
   end >>= fun env ->
-  let name () = Pptactic.pr_tactic env (TacAtom (Loc.ghost,tacexpr)) in
+  let name () = Pptactic.pr_atomic_tactic env tacexpr in
   Proofview.Trace.name_tactic name tac
 
 (* Interprets a primitive tactic *)
@@ -1769,7 +1769,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let tac = Option.map (interp_tactic ist) t in
         Tacticals.New.tclWITHHOLES false
         (name_atomic ~env
-          (TacAssert(b,t,ipat,c))
+          (TacAssert(b,Option.map ignore t,ipat,c))
           (Tactics.forward b tac ipat' c)) sigma
       end }
   | TacGeneralize cl ->
@@ -1951,7 +1951,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = project gl in
         let cl = interp_clause ist env sigma cl in
         name_atomic ~env
-          (TacRewrite (ev,l,cl,by))
+          (TacRewrite (ev,l,cl,Option.map ignore by))
           (Equality.general_multi_rewrite ev l' cl
              (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by),
                Equality.Naive)

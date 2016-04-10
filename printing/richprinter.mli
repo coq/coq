@@ -34,6 +34,3 @@ val richpp_vernac : Vernacexpr.vernac_expr -> rich_pp
 
 (** [richpp_constr constr] produces a rich pretty-printing of [constr]. *)
 val richpp_constr : Constrexpr.constr_expr -> rich_pp
-
-(** [richpp_tactic constr] produces a rich pretty-printing of [tactic]. *)
-val richpp_tactic : Environ.env -> Tacexpr.tactic_expr -> rich_pp

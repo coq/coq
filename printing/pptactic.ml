@@ -94,8 +94,6 @@ module Make
         : raw_tactic_expr -> std_ppcmds -> std_ppcmds
       val tag_raw_atomic_tactic_expr
         : raw_atomic_tactic_expr -> std_ppcmds -> std_ppcmds
-      val tag_tactic_expr
-        : tactic_expr -> std_ppcmds -> std_ppcmds
       val tag_atomic_tactic_expr
         : atomic_tactic_expr -> std_ppcmds -> std_ppcmds
   end)
@@ -411,14 +409,10 @@ module Make
     pr_extend_gen check_type (pr_farg prtac)
   let pr_glob_extend_rec prc prlc prtac prpat =
     pr_extend_gen check_type (pr_farg prtac)
-  let pr_extend_rec prc prlc prtac prpat =
-    pr_extend_gen check_type (pr_farg prtac)
 
   let pr_raw_alias prc prlc prtac prpat =
     pr_alias_gen check_type (pr_farg prtac)
   let pr_glob_alias prc prlc prtac prpat =
-    pr_alias_gen check_type (pr_farg prtac)
-  let pr_alias prc prlc prtac prpat =
     pr_alias_gen check_type (pr_farg prtac)
 
   (**********************************************************************)
@@ -528,9 +522,8 @@ module Make
     | ipat ->
       spc() ++ prc c ++ pr_as_ipat prdc ipat
 
-  let pr_by_tactic prt = function
-    | TacId [] -> mt ()
-    | tac -> spc() ++ keyword "by" ++ spc () ++ prt tac
+  let pr_by_tactic prt tac =
+    spc() ++ keyword "by" ++ spc () ++ prt tac
 
   let pr_hyp_location pr_id = function
     | occs, InHyp -> spc () ++ pr_with_occurrences pr_id occs
@@ -732,7 +725,7 @@ module Make
       level     :'lev
     >
 
-    let rec pr_atom pr strip_prod_binders tag_atom =
+    let pr_atom pr strip_prod_binders tag_atom =
       let pr_with_bindings = pr_with_bindings pr.pr_constr pr.pr_lconstr in
       let pr_with_bindings_arg_full = pr_with_bindings_arg in
       let pr_with_bindings_arg = pr_with_bindings_arg pr.pr_constr pr.pr_lconstr in
@@ -1255,13 +1248,10 @@ module Make
           | _ -> error "Cannot translate fix tactic: not enough products" in
     strip_ty [] n ty
 
-  let pr_tactic_level env n t =
-    let typed_printers =
-      (strip_prod_binders_constr)
-    in
-    let rec prtac n (t:tactic_expr) =
+  let pr_atomic_tactic_level env n t =
+    let prtac n (t:atomic_tactic_expr) =
       let pr = {
-        pr_tactic = pr_glob_tactic_level env;
+        pr_tactic = (fun _ _ -> str "<tactic>");
         pr_constr = pr_constr_env env Evd.empty;
         pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
         pr_lconstr = pr_lconstr_env env Evd.empty;
@@ -1270,21 +1260,13 @@ module Make
         pr_constant = pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
-        pr_generic = pr_top_generic_rec
-          (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-          pr_value pr_constr_pattern;
-        pr_extend = pr_extend_rec
-          (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-          prtac pr_constr_pattern;
-        pr_alias = pr_alias
-          (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-          prtac pr_constr_pattern;
+        (** Those are not used by the atomic printer *)
+        pr_generic = (fun _ -> assert false);
+        pr_extend = (fun _ _ _ -> assert false);
+        pr_alias = (fun _ _ _ -> assert false);
       }
       in
-      make_pr_tac
-        pr typed_printers
-        tag_atomic_tactic_expr tag_tactic_expr
-        n t
+      pr_atom pr strip_prod_binders_constr tag_atomic_tactic_expr t
     in
     prtac n t
 
@@ -1321,7 +1303,7 @@ module Make
   let pr_extend pr lev ml args =
     pr_extend_gen check_val_type pr lev ml args
 
-  let pr_tactic env = pr_tactic_level env ltop
+  let pr_atomic_tactic env = pr_atomic_tactic_level env ltop
 
 end
 
@@ -1351,7 +1333,6 @@ include Make (Ppconstr) (struct
     let tag_glob_atomic_tactic_expr = do_not_tag
     let tag_raw_tactic_expr         = do_not_tag
     let tag_raw_atomic_tactic_expr  = do_not_tag
-    let tag_tactic_expr             = do_not_tag
     let tag_atomic_tactic_expr      = do_not_tag
 end)
 
@@ -1449,7 +1430,6 @@ module Richpp = struct
     let tag_glob_atomic_tactic_expr a = tag (AGlobAtomicTacticExpr a)
     let tag_raw_tactic_expr         e = tag (ARawTacticExpr e)
     let tag_raw_atomic_tactic_expr  a = tag (ARawAtomicTacticExpr a)
-    let tag_tactic_expr             e = tag (ATacticExpr e)
     let tag_atomic_tactic_expr      a = tag (AAtomicTacticExpr a)
   end)
 
