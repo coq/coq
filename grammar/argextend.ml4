@@ -75,8 +75,9 @@ let make_extend loc s cl wit = match cl with
 
 let declare_tactic_argument loc s (typ, f, g, h) cl =
   let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
-    | `Uniform (typ, pr) ->
-      typ, pr, typ, pr, Some typ, pr
+    | `Uniform (otyp, pr) ->
+      let typ = match otyp with Some typ -> typ | None -> ExtraArgType s in
+      typ, pr, typ, pr, otyp, pr
     | `Specialized (a, b, c, d, e, f) -> a, b, c, d, e, f
   in
   let glob = match g with
@@ -180,23 +181,25 @@ EXTEND
         "END" ->
          declare_vernac_argument loc s pr l ] ]
   ;
+  argextend_specialized:
+  [ [ "RAW_TYPED"; "AS"; rawtyp = argtype;
+      "RAW_PRINTED"; "BY"; rawpr = LIDENT;
+      "GLOB_TYPED"; "AS"; globtyp = argtype;
+      "GLOB_PRINTED"; "BY"; globpr = LIDENT ->
+      (rawtyp, rawpr, globtyp, globpr) ] ]
+  ;
   argextend_header:
-    [ [ "TYPED"; "AS"; typ = argtype;
-        "PRINTED"; "BY"; pr = LIDENT;
-        f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
-        g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
-        h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ] ->
-        (`Uniform (typ, pr), f, g, h)
-      | typ = OPT [ "TYPED"; "AS"; typ = argtype -> typ ];
+    [ [ typ = OPT [ "TYPED"; "AS"; typ = argtype -> typ ];
         "PRINTED"; "BY"; pr = LIDENT;
         f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
         g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
         h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ];
-        "RAW_TYPED"; "AS"; rawtyp = argtype;
-        "RAW_PRINTED"; "BY"; rawpr = LIDENT;
-        "GLOB_TYPED"; "AS"; globtyp = argtype;
-        "GLOB_PRINTED"; "BY"; globpr = LIDENT ->
-        (`Specialized (rawtyp, rawpr, globtyp, globpr, typ, pr), f, g, h) ] ]
+        special = OPT argextend_specialized ->
+        let repr = match special with
+        | None -> `Uniform (typ, pr)
+        | Some (rtyp, rpr, gtyp, gpr) -> `Specialized (rtyp, rpr, gtyp, gpr, typ, pr)
+        in
+        (repr, f, g, h) ] ]
   ;
   argtype:
     [ "2"
