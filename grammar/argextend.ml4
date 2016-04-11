@@ -76,7 +76,12 @@ let make_extend loc s cl wit = match cl with
 let declare_tactic_argument loc s (typ, f, g, h) cl =
   let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
     | `Uniform (otyp, pr) ->
-      let typ = match otyp with Some typ -> typ | None -> ExtraArgType s in
+      let typ = match otyp with
+      | None -> ExtraArgType s
+      | Some typ ->
+        let () = if is_self s typ then Printf.eprintf "Redundant [TYPED AS %s] clause.\n%!" s in
+        typ
+      in
       typ, pr, typ, pr, otyp, pr
     | `Specialized (a, b, c, d, e, f) -> a, b, c, d, e, f
   in
