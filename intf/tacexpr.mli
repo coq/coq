@@ -377,18 +377,12 @@ type t_dispatch =  <
     constant:t_cst;
     reference:t_ref;
     name:t_nam;
-    tacexpr:glob_tactic_expr;
+    tacexpr:unit;
     level:tlevel
 >
 
-type tactic_expr =
-    t_dispatch gen_tactic_expr
-
 type atomic_tactic_expr =
     t_dispatch gen_atomic_tactic_expr
-
-type tactic_arg =
-    t_dispatch gen_tactic_arg
 
 (** Misc *)
 
