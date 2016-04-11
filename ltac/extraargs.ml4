@@ -104,6 +104,7 @@ let glob_occs ist l = l
 let subst_occs evm l = l
 
 ARGUMENT EXTEND occurrences
+  TYPED AS int list
   PRINTED BY pr_int_list_full
 
   INTERPRETED BY interp_occs
@@ -152,6 +153,7 @@ ARGUMENT EXTEND lconstr
 END
 
 ARGUMENT EXTEND lglob
+  TYPED AS glob
     PRINTED BY pr_globc
 
      INTERPRETED BY interp_glob
