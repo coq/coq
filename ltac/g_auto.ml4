@@ -174,7 +174,6 @@ END
 let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom
 
 ARGUMENT EXTEND hints_path_atom
-  TYPED AS hints_path_atom
   PRINTED BY pr_hints_path_atom
 | [ global_list(g) ] -> [ Hints.PathHints (List.map Nametab.global g) ]
 | [ "*" ] -> [ Hints.PathAny ]
@@ -183,7 +182,6 @@ END
 let pr_hints_path prc prx pry c = Hints.pp_hints_path c
 
 ARGUMENT EXTEND hints_path
-  TYPED AS hints_path
   PRINTED BY pr_hints_path
 | [ "(" hints_path(p) ")"  ] -> [ p ]
 | [ "!" hints_path(p)  ] -> [ Hints.PathStar p ]

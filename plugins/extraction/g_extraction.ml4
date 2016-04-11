@@ -35,7 +35,6 @@ let pr_int_or_id _ _ _ = function
   | ArgId id -> pr_id id
 
 ARGUMENT EXTEND int_or_id
-  TYPED AS int_or_id
   PRINTED BY pr_int_or_id
 | [ preident(id) ] -> [ ArgId (Id.of_string id) ]
 | [ integer(i) ] -> [ ArgInt i ]

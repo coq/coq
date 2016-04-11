@@ -980,9 +980,7 @@ let interp_test ist gls = function
 ARGUMENT EXTEND test
   PRINTED BY pr_itest'
   INTERPRETED BY interp_test
-  RAW_TYPED AS test
   RAW_PRINTED BY pr_test'
-  GLOB_TYPED AS test
   GLOB_PRINTED BY pr_test'
 | [ int_or_var(x) comparison(c) int_or_var(y) ] -> [ Test(c,x,y) ]
 END

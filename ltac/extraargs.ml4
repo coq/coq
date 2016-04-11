@@ -110,10 +110,7 @@ ARGUMENT EXTEND occurrences
   GLOBALIZED BY glob_occs
   SUBSTITUTED BY subst_occs
 
-  RAW_TYPED AS occurrences_or_var
   RAW_PRINTED BY pr_occurrences
-
-  GLOB_TYPED AS occurrences_or_var
   GLOB_PRINTED BY pr_occurrences
 
 | [ ne_integer_list(l) ] -> [ ArgArg l ]
@@ -141,10 +138,7 @@ ARGUMENT EXTEND glob
      GLOBALIZED BY glob_glob
      SUBSTITUTED BY subst_glob
 
-     RAW_TYPED AS constr_expr
      RAW_PRINTED BY pr_gen
-
-     GLOB_TYPED AS glob_constr_and_expr
      GLOB_PRINTED BY pr_gen
   [ constr(c) ] -> [ c ]
 END
@@ -164,10 +158,7 @@ ARGUMENT EXTEND lglob
      GLOBALIZED BY glob_glob
      SUBSTITUTED BY subst_glob
 
-     RAW_TYPED AS constr_expr
      RAW_PRINTED BY pr_gen
-
-     GLOB_TYPED AS glob_constr_and_expr
      GLOB_PRINTED BY pr_gen
   [ lconstr(c) ] -> [ c ]
 END
@@ -207,9 +198,7 @@ ARGUMENT EXTEND hloc
     INTERPRETED BY interp_place
     GLOBALIZED BY intern_place
     SUBSTITUTED BY subst_place
-    RAW_TYPED AS loc_place
     RAW_PRINTED BY pr_loc_place
-    GLOB_TYPED AS loc_place
     GLOB_PRINTED BY pr_loc_place
   [ ] ->
     [ ConclLocation () ]
@@ -223,12 +212,6 @@ ARGUMENT EXTEND hloc
     [ HypLocation ((Loc.ghost,id),InHypValueOnly) ]
 
  END
-
-
-
-
-
-
 
 (* Julien: Mise en commun des differentes version de replace with in by *)
 
