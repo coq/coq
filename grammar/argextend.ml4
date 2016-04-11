@@ -73,11 +73,11 @@ let make_extend loc s cl wit = match cl with
       let () = Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]) in
       $lid:s$ >>
 
-let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
-  let rawtyp, rawpr, globtyp, globpr = match typ with
-    | `Uniform typ ->
-      typ, pr, typ, pr
-    | `Specialized (a, b, c, d) -> a, b, c, d
+let declare_tactic_argument loc s (typ, f, g, h) cl =
+  let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
+    | `Uniform (typ, pr) ->
+      typ, pr, typ, pr, Some typ, pr
+    | `Specialized (a, b, c, d, e, f) -> a, b, c, d, e, f
   in
   let glob = match g with
     | None ->
@@ -121,10 +121,10 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
             (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let dyn = match typ with
-  | `Uniform typ ->
+  | None -> <:expr< None >>
+  | Some typ ->
     if is_self s typ then <:expr< None >>
     else <:expr< Some (Genarg.val_tag $make_topwit loc typ$) >>
-  | `Specialized _ -> <:expr< None >>
   in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
@@ -186,8 +186,9 @@ EXTEND
         f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
         g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
         h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ] ->
-        (`Uniform typ, pr, f, g, h)
-      | "PRINTED"; "BY"; pr = LIDENT;
+        (`Uniform (typ, pr), f, g, h)
+      | typ = OPT [ "TYPED"; "AS"; typ = argtype -> typ ];
+        "PRINTED"; "BY"; pr = LIDENT;
         f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
         g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
         h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ];
@@ -195,7 +196,7 @@ EXTEND
         "RAW_PRINTED"; "BY"; rawpr = LIDENT;
         "GLOB_TYPED"; "AS"; globtyp = argtype;
         "GLOB_PRINTED"; "BY"; globpr = LIDENT ->
-        (`Specialized (rawtyp, rawpr, globtyp, globpr), pr, f, g, h) ] ]
+        (`Specialized (rawtyp, rawpr, globtyp, globpr, typ, pr), f, g, h) ] ]
   ;
   argtype:
     [ "2"
