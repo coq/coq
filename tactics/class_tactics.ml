@@ -205,7 +205,7 @@ let unify_resolve_newcl poly flags =
         if not (Evarconv.e_cumul env ~ts:flags.core_unify_flags.modulo_delta
                                       evdref cl.cl_concl concl) then
           Type_errors.error_actual_type env
-                                        Environ.{uj_val = term; uj_type = cl.cl_concl}
+                                        {Environ.uj_val = term; Environ.uj_type = cl.cl_concl}
                                         concl;
         !evdref
       in Sigma.here term (Sigma.Unsafe.of_evar_map sigma') }
