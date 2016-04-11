@@ -74,7 +74,7 @@ let make_extend loc s cl wit = match cl with
       $lid:s$ >>
 
 let warning_redundant prefix s =
-  Printf.eprintf "Redundant [%sTYPED AS %s] clause.\n%!" prefix s
+  Printf.eprintf "Redundant [%sTYPED AS] clause in [ARGUMENT EXTEND %s].\n%!" prefix s
 
 let get_type prefix s = function
 | None -> None
@@ -83,13 +83,23 @@ let get_type prefix s = function
     let () = warning_redundant prefix s in None
   else Some typ
 
+let check_type prefix s = function
+| None -> ()
+| Some _ -> warning_redundant prefix s
+
 let declare_tactic_argument loc s (typ, f, g, h) cl =
   let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
     | `Uniform (typ, pr) ->
       let typ = get_type "" s typ in
       typ, pr, typ, pr, typ, pr
-    | `Specialized (a, b, c, d, e, f) ->
-      get_type "RAW_" s a, b, get_type "GLOB_" s c, d, e, f
+    | `Specialized (a, rpr, c, gpr, e, tpr) ->
+      (** Check that we actually need the TYPED AS arguments *)
+      let rawtyp = get_type "RAW_" s a in
+      let glbtyp = get_type "GLOB_" s c in
+      let toptyp = get_type "" s e in
+      let () = match g with None -> () | Some _ -> check_type "RAW_" s rawtyp in
+      let () = match f, h with Some _, Some _ -> check_type "GLOB_" s glbtyp | _ -> () in
+      rawtyp, rpr, glbtyp, gpr, toptyp, tpr
   in
   let glob = match g with
     | None ->
