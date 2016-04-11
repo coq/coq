@@ -73,40 +73,48 @@ let make_extend loc s cl wit = match cl with
       let () = Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]) in
       $lid:s$ >>
 
+let warning_redundant prefix s =
+  Printf.eprintf "Redundant [%sTYPED AS %s] clause.\n%!" prefix s
+
+let get_type prefix s = function
+| None -> None
+| Some typ ->
+  if is_self s typ then
+    let () = warning_redundant prefix s in None
+  else Some typ
+
 let declare_tactic_argument loc s (typ, f, g, h) cl =
   let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
-    | `Uniform (otyp, pr) ->
-      let typ = match otyp with
-      | None -> ExtraArgType s
-      | Some typ ->
-        let () = if is_self s typ then Printf.eprintf "Redundant [TYPED AS %s] clause.\n%!" s in
-        typ
-      in
-      typ, pr, typ, pr, otyp, pr
-    | `Specialized (a, b, c, d, e, f) -> a, b, c, d, e, f
+    | `Uniform (typ, pr) ->
+      let typ = get_type "" s typ in
+      typ, pr, typ, pr, typ, pr
+    | `Specialized (a, b, c, d, e, f) ->
+      get_type "RAW_" s a, b, get_type "GLOB_" s c, d, e, f
   in
   let glob = match g with
     | None ->
-      if is_self s rawtyp then
-        <:expr< fun ist v -> (ist, v) >>
-      else
+      begin match rawtyp with
+      | None -> <:expr< fun ist v -> (ist, v) >>
+      | Some rawtyp ->
         <:expr< fun ist v ->
           let ans = out_gen $make_globwit loc rawtyp$
           (Tacintern.intern_genarg ist
           (Genarg.in_gen $make_rawwit loc rawtyp$ v)) in
           (ist, ans) >>
+      end
     | Some f ->
       <:expr< fun ist v -> (ist, $lid:f$ ist v) >>
   in
   let interp = match f with
     | None ->
-      if is_self s globtyp then
-        <:expr< fun ist v -> Ftactic.return v >>
-      else
-	<:expr< fun ist x ->
+      begin match globtyp with
+      | None -> <:expr< fun ist v -> Ftactic.return v >>
+      | Some globtyp ->
+        <:expr< fun ist x ->
           Ftactic.bind
-	    (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
+            (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
             (fun v -> Ftactic.return (Tacinterp.Value.cast $make_topwit loc globtyp$ v)) >>
+      end
     | Some f ->
       (** Compatibility layer, TODO: remove me *)
       <:expr<
@@ -118,13 +126,14 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
       >> in
   let subst = match h with
     | None ->
-      if is_self s globtyp then
-        <:expr< fun s v -> v >>
-      else
+      begin match globtyp with
+      | None -> <:expr< fun s v -> v >>
+      | Some globtyp ->
         <:expr< fun s x ->
           out_gen $make_globwit loc globtyp$
           (Tacsubst.subst_genarg s
             (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
+      end
     | Some f -> <:expr< $lid:f$>> in
   let dyn = match typ with
   | None -> <:expr< None >>
@@ -187,9 +196,9 @@ EXTEND
          declare_vernac_argument loc s pr l ] ]
   ;
   argextend_specialized:
-  [ [ "RAW_TYPED"; "AS"; rawtyp = argtype;
+  [ [ rawtyp = OPT [ "RAW_TYPED"; "AS"; rawtyp = argtype -> rawtyp ];
       "RAW_PRINTED"; "BY"; rawpr = LIDENT;
-      "GLOB_TYPED"; "AS"; globtyp = argtype;
+      globtyp = OPT [ "GLOB_TYPED"; "AS"; globtyp = argtype -> globtyp ];
       "GLOB_PRINTED"; "BY"; globpr = LIDENT ->
       (rawtyp, rawpr, globtyp, globpr) ] ]
   ;
