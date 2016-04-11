@@ -497,15 +497,17 @@ type newautoinfo =
     search_cut : hints_path;
     search_hints : hint_db; }
 
-let autogoal_cache = ref (true, Context.Named.empty,
+let autogoal_cache = ref (DirPath.empty, true, Context.Named.empty,
 		          Hint_db.empty full_transparent_state true)
 
 let make_autogoal_hints' only_classes ?(st=full_transparent_state) g =
   let open Proofview in
   let open Tacmach.New in
   let sign = Goal.hyps g in
-  let (onlyc, sign', cached_hints) = !autogoal_cache in
-  if onlyc == only_classes && 
+  let (dir, onlyc, sign', cached_hints) = !autogoal_cache in
+  let cwd = Lib.cwd () in
+  if DirPath.equal cwd dir &&
+     (onlyc == only_classes) && 
        Context.Named.equal sign sign' &&
          Hint_db.transparent_state cached_hints == st
   then cached_hints
@@ -513,7 +515,7 @@ let make_autogoal_hints' only_classes ?(st=full_transparent_state) g =
     let hints = make_hints {it = Goal.goal g; sigma = project g}
                            st only_classes sign
     in
-    autogoal_cache := (only_classes, sign, hints); hints
+    autogoal_cache := (cwd, only_classes, sign, hints); hints
     
 let make_autogoal' ?(st=full_transparent_state) only_classes cut i g =
   let hints = make_autogoal_hints' only_classes ~st g in
