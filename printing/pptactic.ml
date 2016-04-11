@@ -827,8 +827,6 @@ module Make
         | TacIntroPattern (_::_ as p) ->
           hov 1 (primitive "intros" ++ spc () ++
                     prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
-        | TacExact c ->
-          hov 1 (primitive "exact" ++ pr_constrarg c)
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (
             (if a then mt() else primitive "simple ") ++

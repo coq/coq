@@ -15,6 +15,7 @@ open Constrarg
 open Pcoq.Prim
 open Pcoq.Constr
 open Names
+open Tacmach
 open Tacexpr
 open Taccoerce
 open Tacinterp
@@ -173,6 +174,16 @@ ARGUMENT EXTEND lglob
      RAW_PRINTED BY pr_gen
      GLOB_PRINTED BY pr_gen
   [ lconstr(c) ] -> [ c ]
+END
+
+let interp_casted_constr ist gl c =
+  interp_constr_gen (Pretyping.OfType (pf_concl gl)) ist (pf_env gl) (project gl) c
+
+ARGUMENT EXTEND casted_constr
+  TYPED AS constr
+  PRINTED BY pr_gen
+  INTERPRETED BY interp_casted_constr
+  [ constr(c) ] -> [ c ]
 END
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location

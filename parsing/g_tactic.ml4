@@ -529,8 +529,6 @@ GEXTEND Gram
       | IDENT "intros" ->
           TacAtom (!@loc, TacIntroPattern [!@loc,IntroForthcoming false])
 
-      | IDENT "exact"; c = constr -> TacAtom (!@loc, TacExact c)
-
       | IDENT "apply"; cl = LIST1 constr_with_bindings_arg SEP ",";
           inhyp = in_hyp_as -> TacAtom (!@loc, TacApply (true,false,cl,inhyp))
       | IDENT "eapply"; cl = LIST1 constr_with_bindings_arg SEP ",";

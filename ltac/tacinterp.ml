@@ -684,10 +684,6 @@ let interp_typed_pattern ist env sigma (_,c,_) =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
   pattern_of_constr env sigma c
 
-(* Interprets a constr expression casted by the current goal *)
-let pf_interp_casted_constr ist gl c =
-  interp_constr_gen (OfType (pf_concl gl)) ist (pf_env gl) (project gl) c
-
 (* Interprets a constr expression *)
 let pf_interp_constr ist gl =
   interp_constr ist (pf_env gl) (project gl)
@@ -1644,14 +1640,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
              expected behaviour. *)
           (Tactics.intro_patterns l')) sigma
       end }
-  | TacExact c ->
-      (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<exact>") begin
-      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
-        let (sigma, c_interp) = pf_interp_casted_constr ist gl c in
-        Sigma.Unsafe.of_pair (Tactics.exact_no_check c_interp, sigma)
-      end }
-      end
   | TacApply (a,ev,cb,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<apply>") begin

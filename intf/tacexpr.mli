@@ -139,7 +139,6 @@ type intro_pattern_naming = intro_pattern_naming_expr located
 type 'a gen_atomic_tactic_expr =
   (* Basic tactics *)
   | TacIntroPattern of 'dtrm intro_pattern_expr located list
-  | TacExact of 'trm
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
       ('nam * 'dtrm intro_pattern_expr located option) option
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option

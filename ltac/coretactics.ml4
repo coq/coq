@@ -26,6 +26,10 @@ TACTIC EXTEND reflexivity
   [ "reflexivity" ] -> [ Tactics.intros_reflexivity ]
 END
 
+TACTIC EXTEND exact
+  [ "exact" casted_constr(c) ] -> [ Tactics.exact_no_check c ]
+END
+
 TACTIC EXTEND assumption
   [ "assumption" ] -> [ Tactics.assumption ]
 END
