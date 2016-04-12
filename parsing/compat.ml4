@@ -193,7 +193,11 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   let entry_create = Entry.create
   let entry_parse e p =
     try Entry.parse e p
-    with Exc_located (loc,e) -> Loc.raise (to_coqloc loc) e
+    with Exc_located (loc,e) ->
+      let loc' = Loc.get_loc (Exninfo.info e) in
+      let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
+      Loc.raise loc e
+
 IFDEF CAMLP5_6_02_1 THEN
   let entry_print ft x = Entry.print ft x
 ELSE
