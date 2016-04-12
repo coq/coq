@@ -661,16 +661,8 @@ module Make
                        | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
           )
         | VernacNotation (_,c,((_,s),l),opt) ->
-          let ps =
-            let n = String.length s in
-            if n > 2 && s.[0] == '\'' && s.[n-1] == '\''
-            then
-              let s' = String.sub s 1 (n-2) in
-              if String.contains s' '\'' then qs s else str s'
-            else qs s
-          in
           return (
-            hov 2 (keyword "Notation" ++ spc() ++ ps ++
+            hov 2 (keyword "Notation" ++ spc() ++ qs s ++
                      str " :=" ++ Flags.without_option Flags.beautify_file pr_constrarg c ++ pr_syntax_modifiers l ++
                      (match opt with
                        | None -> mt()
