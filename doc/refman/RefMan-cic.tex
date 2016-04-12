@@ -544,14 +544,43 @@ $\forall\Gamma_P, T^\prime$ where $\Gamma_P$ is called the {\em context of param
     \def\colon{@{\hskip.5em:\hskip.5em}}
 
 The declaration for parameterized lists is:
+\begin{latexonly}
     \vskip.5em
 
-\ind{1}{\List:\Set\ra\Set}{\left[\begin{array}{r \colon l}
-                        \Nil & \forall A:\Set,\List~A \\
-                        \cons & \forall A:\Set, A \ra \List~A \ra \List~A
-                        \end{array}\right]}
+\ind{1}{[\List:\Set\ra\Set]}{\left[\begin{array}{r \colon l}
+                                      \Nil & \forall A:\Set,\List~A \\
+                                      \cons & \forall A:\Set, A \ra \List~A \ra \List~A
+                                   \end{array}
+                             \right]}
     \vskip.5em
-
+\end{latexonly}
+\begin{rawhtml}<pre><table style="border-spacing:0">
+  <tr style="vertical-align:middle">
+    <td style="width:10pt;text-align:center;font-family:sans-serif;font-style:italic">Ind</td>
+    <td style="width:20pt;text-align:center">[1]</td>
+    <td style="width:5pt;text-align:center">⎛<br>⎝</td>
+    <td style="width:120pt;text-align:center">[ <span style="font-family:monospace">list : Set → Set</span> ]</td>
+    <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
+    <td style="width:10pt;text-align:center">⎡<br>⎣</td>
+    <td>
+      <table style="border-spacing:0">
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">nil</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
+          <td style="text-align:left;font-family:monospace">∀A : Set, list A</td>
+        </tr>
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">cons</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
+          <td style="text-align:left;font-family:monospace">∀A : Set, A → list A → list A</td>
+        </tr>
+      </table>
+    </td>
+    <td style="width:10pt;text-align:center">⎤<br>⎦</td>
+    <td style="width:5pt;text-align:center">⎞<br>⎠</td>
+  </tr>
+</table></pre>
+\end{rawhtml}
 \noindent which corresponds to the result of the \Coq\ declaration:
 \begin{coq_example*}
 Inductive list (A:Set) : Set :=
@@ -559,16 +588,64 @@ Inductive list (A:Set) : Set :=
   | cons : A -> list A -> list A.
 \end{coq_example*}
 
-\noindent The declaration for a mutual inductive definition of forests and trees is:
+\noindent The declaration for a mutual inductive definition of {\tree} and {\forest} is:
+\begin{latexonly}
     \vskip.5em
-\ind{}{\left[\begin{array}{r \colon l}\tree&\Set\\\forest&\Set\end{array}\right]}
-      {\left[\begin{array}{r \colon l}
-            \node & \forest \ra \tree\\
-            \emptyf & \forest\\
-            \consf & \tree \ra \forest \ra \forest\\
-                      \end{array}\right]}
+\ind{~}{\left[\begin{array}{r \colon l}\tree&\Set\\\forest&\Set\end{array}\right]}
+       {\left[\begin{array}{r \colon l}
+             \node & \forest \ra \tree\\
+             \emptyf & \forest\\
+             \consf & \tree \ra \forest \ra \forest\\
+                       \end{array}\right]}
     \vskip.5em
- 
+\end{latexonly}
+\begin{rawhtml}<pre><table style="border-spacing:0">
+  <tr style="vertical-align:middle">
+    <td style="width:10pt;text-align:center;font-family:sans-serif;font-style:italic">Ind</td>
+    <td style="width:20pt;text-align:center">[1]</td>
+    <td style="width:5pt;text-align:center">⎛<br>⎜<br>⎝</td>
+    <td style="width:10pt;text-align:center">⎡<br>⎣</td>
+    <td>
+      <table style="border-spacing:0">
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">tree</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">Set</td>
+        </tr>
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">forest</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">Set</td>
+        </tr>
+      </table>
+    </td>
+    <td style="width:10pt;text-align:center">⎤<br>⎦</td>
+    <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
+    <td style="width:10pt;text-align:center">⎡<br>⎢<br>⎣</td>
+    <td>
+      <table style="border-spacing:0">
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">node</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">forest → tree</td>
+        </tr>
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">emptyf</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">forest</td>
+        </tr>
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">consf</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">tree → forest → forest</td>
+        </tr>
+      </table>
+    </td>
+    <td style="width:10pt;text-align:center">⎤<br>⎥<br>⎦</td>
+    <td style="width:5pt;text-align:center">⎞<br>⎟<br>⎠</td>
+  </tr>
+</table></pre>
+\end{rawhtml}
 \noindent which corresponds to the result of the \Coq\
 declaration:
 \begin{coq_example*}
@@ -579,7 +656,8 @@ with forest : Set :=
   | consf : tree -> forest -> forest.
 \end{coq_example*}
 
-\noindent The declaration for a mutual inductive definition of even and odd is:
+\noindent The declaration for a mutual inductive definition of {\even} and {\odd} is:
+\begin{latexonly}
     \newcommand\GammaI{\left[\begin{array}{r \colon l}
                         \even & \nat\ra\Prop \\
                         \odd & \nat\ra\Prop
@@ -594,6 +672,54 @@ with forest : Set :=
     \vskip.5em
     \ind{1}{\GammaI}{\GammaC}
     \vskip.5em
+\end{latexonly}
+\begin{rawhtml}<pre><table style="border-spacing:0">
+  <tr style="vertical-align:middle">
+    <td style="width:10pt;text-align:center;font-family:sans-serif;font-style:italic">Ind</td>
+    <td style="width:20pt;text-align:center">[1]</td>
+    <td style="width:5pt;text-align:center">⎛<br>⎜<br>⎝</td>
+    <td style="width:10pt;text-align:center">⎡<br>⎣</td>
+    <td>
+      <table style="border-spacing:0">
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">even</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">nat → Prop</td>
+        </tr>
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">odd</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">nat → Prop</td>
+        </tr>
+      </table>
+    </td>
+    <td style="width:10pt;text-align:center">⎤<br>⎦</td>
+    <td style="width:20pt;text-align:center;font-family:monospace">:=</td>
+    <td style="width:10pt;text-align:center">⎡<br>⎢<br>⎣</td>
+    <td>
+      <table style="border-spacing:0">
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">even_O</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">even O</td>
+        </tr>
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">even_S</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">∀n : nat, odd n → even (S n)</td>
+        </tr>
+        <tr>
+          <td style="width:20pt;text-align:right;font-family:monospace">odd_S</td>
+          <td style="width:20pt;text-align:center;font-family:monospace">:</td>
+          <td style="text-align:left;font-family:monospace">∀n : nat, even n → odd (S n)</td>
+        </tr>
+      </table>
+    </td>
+    <td style="width:10pt;text-align:center">⎤<br>⎥<br>⎦</td>
+    <td style="width:5pt;text-align:center">⎞<br>⎟<br>⎠</td>
+  </tr>
+</table></pre>
+\end{rawhtml}
 \noindent which corresponds to the result of the \Coq\
 declaration:
 \begin{coq_example*}
@@ -610,9 +736,9 @@ contains an inductive declaration.
 
 \begin{description}
 \item[Ind]  \index{Typing rules!Ind}
-  \inference{\frac{\WFE{\Gamma}\hskip2em\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\hskip2em(a:A)\in\Gamma_I}{\WTEG{a}{A}}}
+  \inference{\frac{\WFE{\Gamma}~~~~~~~~\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E~~~~~~~~(a:A)\in\Gamma_I}{\WTEG{a}{A}}}
 \item[Constr]  \index{Typing rules!Constr}
-  \inference{\frac{\WFE{\Gamma}\hskip2em\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\hskip2em(c:C)\in\Gamma_C}{\WTEG{c}{C}}}
+  \inference{\frac{\WFE{\Gamma}~~~~~~~~\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E~~~~~~~~(c:C)\in\Gamma_C}{\WTEG{c}{C}}}
 \end{description}
 
 \begin{latexonly}%
@@ -726,19 +852,16 @@ any $u_i$
 the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
 
-%% \begin{latexonly}%
-   \newcommand\vv{\textSFxi}    % │
-   \newcommand\hh{\textSFx}     %   ─
-   \newcommand\vh{\textSFviii}  % ├
-   \newcommand\hv{\textSFii}    %   └
-   \newlength\framecharacterwidth
-   \settowidth\framecharacterwidth{\hh}
-   \newcommand\ws{\hbox{}\hskip\the\framecharacterwidth}
-   \newcommand\ruleref[1]{\hskip.25em\dots\hskip.2em{\em (bullet #1)}}
-%%   \def\captionstrut{\vbox to 1.5em{}}
+\newcommand\vv{\textSFxi}    % │
+\newcommand\hh{\textSFx}     %   ─
+\newcommand\vh{\textSFviii}  % ├
+\newcommand\hv{\textSFii}    %   └
+\newlength\framecharacterwidth
+\settowidth\framecharacterwidth{\hh}
+\newcommand\ws{\hbox{}\hskip\the\framecharacterwidth}
+\newcommand\ruleref[1]{\hskip.25em\dots\hskip.2em{\em (bullet #1)}}
 
-%%   \begin{figure}[H]
-For instance, if one considers the type
+\noindent For instance, if one considers the type
 
 \begin{verbatim}
 Inductive tree (A:Type) : Type :=
@@ -746,29 +869,49 @@ Inductive tree (A:Type) : Type :=
  | node : A -> (nat -> tree A) -> tree A
 \end{verbatim}
 
-Then every instantiated constructor of $\ListA$ satisfies the nested positivity condition for $\List$
-
+\begin{latexonly}
+\noindent Then every instantiated constructor of $\ListA$ satisfies the nested positivity condition for $\List$\\
 \noindent
-    \ws\ws\ws\ws\vv\\
-    \ws\ws\ws\ws\vh\hh\ws concerning type $\ListA$ of constructor $\Nil$:\\
-    \ws\ws\ws\ws\vv\ws\ws\ws\ws Type $\ListA$ of constructor $\Nil$ satisfies the positivity condition for $\List$\\
-    \ws\ws\ws\ws\vv\ws\ws\ws\ws because $\List$ does not appear in any (real) arguments of the type of that constructor\\
-    \ws\ws\ws\ws\vv\ws\ws\ws\ws (primarily because $\List$ does not have any (real) arguments)\ruleref1\\
-    \ws\ws\ws\ws\vv\\
-    \ws\ws\ws\ws\hv\hh\ws concerning type $\forall~A\ra\ListA\ra\ListA$ of constructor $\cons$:\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws Type $\forall~A:\Type,A\ra\ListA\ra\ListA$ of constructor $\cons$\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws satisfies the positivity condition for $\List$ because:\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $\Type$\ruleref3\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $A$\ruleref3\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $\ListA$\ruleref4\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws\vv\\
-    \ws\ws\ws\ws\ws\ws\ws\ws\ws\hv\hh\ws $\List$ satisfies the positivity condition for $\ListA$\ruleref1
-%%     \caption{\captionstrut A proof that $X$ occurs strictly positively in $\ListA$}
-%%   \end{figure}
-%% \end{latexonly}%
+\ws\ws\vv\\
+\ws\ws\vh\hh\ws concerning type $\ListA$ of constructor $\Nil$:\\
+\ws\ws\vv\ws\ws\ws\ws Type $\ListA$ of constructor $\Nil$ satisfies the positivity condition for $\List$\\
+\ws\ws\vv\ws\ws\ws\ws because $\List$ does not appear in any (real) arguments of the type of that constructor\\
+\ws\ws\vv\ws\ws\ws\ws (primarily because $\List$ does not have any (real) arguments)\ruleref1\\
+\ws\ws\vv\\
+\ws\ws\hv\hh\ws concerning type $\forall~A\ra\ListA\ra\ListA$ of constructor $\cons$:\\
+\ws\ws\ws\ws\ws\ws\ws Type $\forall~A:\Type,A\ra\ListA\ra\ListA$ of constructor $\cons$\\
+\ws\ws\ws\ws\ws\ws\ws satisfies the positivity condition for $\List$ because:\\
+\ws\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $\Type$\ruleref3\\
+\ws\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $A$\ruleref3\\
+\ws\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\ws\vh\hh\ws $\List$ occurs only strictly positively in $\ListA$\ruleref4\\
+\ws\ws\ws\ws\ws\ws\ws\vv\\
+\ws\ws\ws\ws\ws\ws\ws\hv\hh\ws $\List$ satisfies the positivity condition for $\ListA$\ruleref1
+\end{latexonly}
+\begin{rawhtml}
+<pre>
+<span style="font-family:serif">Then every instantiated constructor of <span style="font-family:monospace">list A</span> satisfies the nested positivity condition for <span style="font-family:monospace">list</span></span>
+  │
+  ├─ <span style="font-family:serif">concerning type <span style="font-family:monospace">list A</span> of constructor <span style="font-family:monospace">nil</span>:</span>
+  │    <span style="font-family:serif">Type <span style="font-family:monospace">list A</span> of constructor <span style="font-family:monospace">nil</span> satisfies the positivity condition for <span style="font-family:monospace">list</span></span>
+  │    <span style="font-family:serif">because <span style="font-family:monospace">list</span> does not appear in any (real) arguments of the type of that constructor</span>
+  │    <span style="font-family:serif">(primarily because list does not have any (real) arguments) ... <span style="font-style:italic">(bullet 1)</span></span>
+  │
+  ╰─ <span style="font-family:serif">concerning type <span style="font-family:monospace">∀ A → list A → list A</span> of constructor <span style="font-family:monospace">cons</span>:</span>
+       <span style="font-family:serif">Type <span style="font-family:monospace">∀ A : Type, A → list A → list A</span> of constructor <span style="font-family:monospace">cons</span></span>
+       <span style="font-family:serif">satisfies the positivity condition for <span style="font-family:monospace">list</span> because:</span>
+       │
+       ├─ <span style="font-family:serif"><span style="font-family:monospace">list</span> occurs only strictly positively in <span style="font-family:monospace">Type</span> ... <span style="font-style:italic">(bullet 3)</span></span>
+       │
+       ├─ <span style="font-family:serif"><span style="font-family:monospace">list</span> occurs only strictly positively in <span style="font-family:monospace">A</span> ... <span style="font-style:italic">(bullet 3)</span></span>
+       │
+       ├─ <span style="font-family:serif"><span style="font-family:monospace">list</span> occurs only strictly positively in <span style="font-family:monospace">list A</span> ... <span style="font-style:italic">(bullet 4)</span></span>
+       │
+       ╰─ <span style="font-family:serif"><span style="font-family:monospace">list</span> satisfies the positivity condition for <span style="font-family:monospace">list A</span> ... <span style="font-style:italic">(bullet 1)</span></span>
+</pre>
+\end{rawhtml}
 
 \paragraph{Correctness rules.}
 We shall now describe the rules allowing the introduction of a new
@@ -783,7 +926,7 @@ inductive definition.
 \inference{
   \frac{
   (\WTE{\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
-  ~~ (\WTE{\Gamma_I;\Gamma_P}{C_i}{s_{q_i}})_{i=1\ldots  n}
+  ~~~~~~~~ (\WTE{\Gamma_I;\Gamma_P}{C_i}{s_{q_i}})_{i=1\ldots  n}
 }
   {\WF{E;\Ind{}{p}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
 provided that the following side conditions hold:
@@ -811,23 +954,23 @@ inductive definition.
 The following declaration introduces the second-order existential
 quantifier $\exists X.P(X)$.
 \begin{coq_example*}
-Inductive exProp (P:Prop->Prop) : Prop 
-  := exP_intro : forall X:Prop, P X -> exProp P.
+Inductive exProp (P:Prop->Prop) : Prop :=
+  exP_intro : forall X:Prop, P X -> exProp P.
 \end{coq_example*}
 The same definition on \Set{} is not allowed and fails:
 % (********** The following is not correct and should produce **********)
 % (*** Error: Large non-propositional inductive types must be in Type***)
 \begin{coq_example}
-Fail Inductive exSet (P:Set->Prop) : Set
-  := exS_intro : forall X:Set, P X -> exSet P.
+Fail Inductive exSet (P:Set->Prop) : Set :=
+  exS_intro : forall X:Set, P X -> exSet P.
 \end{coq_example}
 It is possible to declare the same inductive definition in the
 universe \Type. 
 The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
 \Type_j$ with the constraint that the parameter \texttt{X} of \texttt{exT\_intro} has type $\Type_k$ with $k<j$ and $k\leq i$.
 \begin{coq_example*}
-Inductive exType (P:Type->Prop) : Type
-  := exT_intro : forall X:Type, P X -> exType P.
+Inductive exType (P:Type->Prop) : Type :=
+  exT_intro : forall X:Type, P X -> exType P.
 \end{coq_example*}
 %We shall assume for the following definitions that, if necessary, we
 %annotated the type of constructors such that we know if the argument
