@@ -73,6 +73,17 @@ Notation "x <= y < z" := (x<=y /\ y<z) : bigQ_scope.
 Notation "x <= y <= z" := (x<=y /\ y<=z) : bigQ_scope.
 Notation "[ q ]" := (BigQ.to_Q q) : bigQ_scope.
 
+(** Parsing and Printing digits strings as type bigQ *)
+
+Definition bigQ_of_Z' z' := Some (BigQ.Qz (BigZ.of_Z (Z_of_Z' z'))).
+Definition Z'_of_bigQ bq :=
+  match bq with
+  | BigQ.Qz bz => Some (Z'_of_Z (BigZ.to_Z bz))
+  | _ => None
+  end.
+
+Numeral Notation BigQ.t_ bigQ_of_Z' Z'_of_bigQ : bigQ_scope.
+
 (** [BigQ] is a field *)
 
 Lemma BigQfieldth :

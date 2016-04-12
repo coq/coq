@@ -71,6 +71,13 @@ Notation "[ i ]" := (BigZ.to_Z i) : bigZ_scope.
 Infix "mod" := BigZ.modulo (at level 40, no associativity) : bigZ_scope.
 Infix "÷" := BigZ.quot (at level 40, left associativity) : bigZ_scope.
 
+(** Parsing and Printing digits strings as type bigZ *)
+
+Definition bigZ_of_Z' z' := Some (BigZ.of_Z (Z_of_Z' z')).
+Definition Z'_of_bigZ bz := Some (Z'_of_Z (BigZ.to_Z bz)).
+
+Numeral Notation BigZ.t_ bigZ_of_Z' Z'_of_bigZ : bigZ_scope.
+
 (** Some additional results about [BigZ] *)
 
 Theorem spec_to_Z: forall n : bigZ,
