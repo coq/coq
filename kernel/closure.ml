@@ -938,6 +938,7 @@ let kh info v stk = fapp_stack(kni info v stk)
 (************************************************************************)
 
 let rec zip_term zfun m stk =
+  Control.check_for_interrupt ();
   match stk with
     | [] -> m
     | Zapp args :: s ->
