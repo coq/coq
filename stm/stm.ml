@@ -2250,7 +2250,11 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
           VCS.commit id (Cmd {ctac=false;ceff=true;cast=x;cids=l;cqueue=`MainQueue});
-          VCS.propagate_sideff (Some x);
+	  let replay = match x.expr with
+	    | VernacDefinition(_, _, DefineBody _) -> None
+	    | _ -> Some x
+	  in
+	  VCS.propagate_sideff replay;
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish (); `Ok
 
