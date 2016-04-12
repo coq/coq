@@ -522,8 +522,9 @@ module Make
     | ipat ->
       spc() ++ prc c ++ pr_as_ipat prdc ipat
 
-  let pr_by_tactic prt tac =
-    spc() ++ keyword "by" ++ spc () ++ prt tac
+  let pr_by_tactic prt = function
+    | Some tac -> keyword "by" ++ spc () ++ prt tac
+    | None -> mt()
 
   let pr_hyp_location pr_id = function
     | occs, InHyp -> spc () ++ pr_with_occurrences pr_id occs
@@ -836,7 +837,7 @@ module Make
           hov 1 (
             primitive (if b then "assert" else "enough") ++
               pr_assumption pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c ++
-              pr_by_tactic (pr.pr_tactic ltop) tac
+              pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
           )
         | TacAssert (_,None,ipat,c) ->
           hov 1 (
@@ -919,7 +920,7 @@ module Make
           )
 
         (* Equality and inversion *)
-        | TacRewrite (ev,l,cl,by) ->
+        | TacRewrite (ev,l,cl,tac) ->
           hov 1 (
             primitive (with_evars ev "rewrite") ++ spc ()
             ++ prlist_with_sep
@@ -929,11 +930,7 @@ module Make
                   pr_with_bindings_arg_full pr.pr_dconstr pr.pr_dconstr c)
               l
             ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) cl
-            ++ (
-              match by with
-                | Some by -> pr_by_tactic (pr.pr_tactic ltop) by
-                | None -> mt()
-            )
+            ++ pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
           )
         | TacInversion (DepInversion (k,c,ids),hyp) ->
           hov 1 (

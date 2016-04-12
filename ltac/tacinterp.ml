@@ -1766,10 +1766,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (if Option.is_empty t then interp_constr else interp_type) ist env sigma c
         in
         let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
-        let tac = Option.map (interp_tactic ist) t in
+        let tac = Option.map (Option.map (interp_tactic ist)) t in
         Tacticals.New.tclWITHHOLES false
         (name_atomic ~env
-          (TacAssert(b,Option.map ignore t,ipat,c))
+          (TacAssert(b,Option.map (Option.map ignore) t,ipat,c))
           (Tactics.forward b tac ipat' c)) sigma
       end }
   | TacGeneralize cl ->
