@@ -1032,7 +1032,7 @@ module Make
                       spc() ++ pr_br imp max (pr_if k (str"!") ++ pr_name id ++ pr_s s) ++
                         aux (n-1) tl in
                 prlist_with_sep (fun () -> str", ") (aux nargs) impl ++
-                  if not (List.is_empty mods) then str" : " else str"" ++
+                  (if not (List.is_empty mods) then str" : " else str"") ++
                     prlist_with_sep (fun () -> str", " ++ spc()) (function
                       | `ReductionDontExposeCase -> keyword "simpl nomatch"
                       | `ReductionNeverUnfold -> keyword "simpl never"
