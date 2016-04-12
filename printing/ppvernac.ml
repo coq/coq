@@ -518,7 +518,7 @@ module Make
       match v with
         | VernacPolymorphic (poly, v) ->
           let s = if poly then keyword "Polymorphic" else keyword "Monomorphic" in
-          return (s ++ pr_vernac v)
+          return (s ++ spc () ++ pr_vernac v)
         | VernacProgram v ->
           return (keyword "Program" ++ spc() ++ pr_vernac v)
         | VernacLocal (local, v) ->
