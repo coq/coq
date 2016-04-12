@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*
+
 open Pp
 open Errors
 open Util
@@ -187,3 +189,5 @@ let _ = Notation.declare_numeral_interpreter "Z_scope"
     GRef (Loc.ghost, glob_NEG, None)],
   uninterp_z,
   true)
+
+*)

@@ -117,3 +117,5 @@ val lift_constr_tac_to_ml_tac : Id.t option list ->
 
 val default_ist : unit -> Geninterp.interp_sign
 (** Empty ist with debug set on the current value. *)
+
+val interp_ftactic : interp_sign -> glob_tactic_expr -> Value.t Ftactic.t

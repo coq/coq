@@ -350,6 +350,20 @@ Definition id : ID := fun A x => x.
 Definition IDProp := forall A:Prop, A -> A.
 Definition idProp : IDProp := fun A x => x.
 
+(** [Z'] is the datatype used to parse and print numeral types (such as
+    nat, Z, int31, R, or user datatypes...) as strings of digits (such 0,
+    -58, 42...); type used in "Numeral Notation" vernacular commands *)
+
+Inductive positive' : Set :=
+  | x'I : positive' -> positive'
+  | x'O : positive' -> positive'
+  | x'H : positive'.
+
+Inductive Z' : Set :=
+  | Z'0 : Z'
+  | Z'pos : positive' -> Z'
+  | Z'neg : positive' -> Z'.
+
 
 (* begin hide *)
 

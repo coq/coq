@@ -8,6 +8,8 @@
 
 (* digit-based syntax for int31, bigN bigZ and bigQ *)
 
+(*
+
 open Bigint
 open Names
 open Globnames
@@ -305,3 +307,5 @@ let _ = Notation.declare_numeral_interpreter bigQ_scope
   interp_bigQ
   ([GRef (Loc.ghost, bigQ_z, None)], uninterp_bigQ,
    true)
+
+*)

@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*
+
 open Util
 open Names
 open Globnames
@@ -118,3 +120,5 @@ let _ = Notation.declare_numeral_interpreter "R_scope"
     [glob_Ropp;glob_R0;glob_Rplus;glob_Rmult;glob_R1],
     uninterp_r,
     false)
+
+*)
