@@ -116,9 +116,9 @@ open Pp
 open Genarg
 open Ppconstr
 open Printer
-let pr_firstorder_using_raw _ _ _ l = str "using " ++ prlist_with_sep pr_comma pr_reference l
-let pr_firstorder_using_glob _ _ _ l = str "using " ++ prlist_with_sep pr_comma (pr_or_var (fun x -> (pr_global (snd x)))) l
-let pr_firstorder_using_typed _ _ _ l = str "using " ++ prlist_with_sep pr_comma pr_global l
+let pr_firstorder_using_raw _ _ _ = Pptactic.pr_auto_using pr_reference
+let pr_firstorder_using_glob _ _ _ = Pptactic.pr_auto_using (pr_or_var (fun x -> pr_global (snd x)))
+let pr_firstorder_using_typed _ _ _ = Pptactic.pr_auto_using pr_global
 
 let warn_deprecated_syntax =
   CWarnings.create ~name:"firstorder-deprecated-syntax" ~category:"deprecated"
