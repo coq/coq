@@ -285,6 +285,23 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
        subst_function = subst_tactic_notation;
        classify_function = classify_tactic_notation}
 
+let rec safe_printing_level n prods =
+  match List.last prods with
+  | TacTerm _ -> n
+  | TacNonTerm (_, (nt, sep), _) ->
+     let level = match parse_user_entry nt sep with
+     | Extend.Uentryl ("tactic",n') -> Some n'
+     | Extend.Uentry ("tactic") -> Some 5
+     | Extend.Uentry ("binder_tactic") -> Some 5
+     | _ -> None in
+     match level with
+     | Some n' when n' > n ->
+         msg_warning (strbrk "Notation ends with a tactic at a level "
+           ++ strbrk "higher than the tactic itself. Using this level "
+           ++ strbrk "for ensuring correct parenthesizing when printing.");
+         n'
+     | _ -> n
+
 let cons_production_parameter = function
 | TacTerm _ -> None
 | TacNonTerm (_, _, id) -> Some id
@@ -305,6 +322,7 @@ let add_glob_tactic_notation local n prods forml ids tac =
 
 let add_tactic_notation local n prods e =
   let ids = List.map_filter cons_production_parameter prods in
+  let printing_level = safe_printing_level n prods in
   let prods = List.map (interp_prod_item n) prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
   add_glob_tactic_notation local n prods false ids tac
