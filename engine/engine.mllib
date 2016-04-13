@@ -7,3 +7,5 @@ Sigma
 Proofview_monad
 Evarutil
 Proofview
+Ftactic
+Geninterp
