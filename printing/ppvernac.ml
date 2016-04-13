@@ -377,6 +377,14 @@ module Make
     | None -> mt ()
     | Some pl -> str"@{" ++ prlist_with_sep spc pr_lident pl ++ str"}"
 
+  let pr_rec_definition ((((loc,id),pl),ro,bl,type_,def),ntn) =
+    let pr_pure_lconstr c = Flags.without_option Flags.beautify_file pr_lconstr c in
+    let annot = pr_guard_annot pr_lconstr_expr bl ro in
+    pr_id id ++ pr_univs pl ++ pr_binders_arg bl ++ annot
+    ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
+    ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) def
+    ++ prlist (pr_decl_notation pr_constr) ntn
+
   let pr_statement head (idpl,(bl,c,guard)) =
     assert (not (Option.is_empty idpl));
     let id, pl = Option.get idpl in
@@ -785,19 +793,10 @@ module Make
           | Some Local -> "Local "
           | None | Some Global -> ""
         in
-        let pr_pure_lconstr c =
-          Flags.without_option Flags.beautify_file pr_lconstr c in
-        let pr_onerec = function
-          | (((loc,id),pl),ro,bl,type_,def),ntn ->
-            let annot = pr_guard_annot pr_lconstr_expr bl ro in
-            pr_id id ++ pr_univs pl ++ pr_binders_arg bl ++ annot
-            ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
-            ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) def ++
-              prlist (pr_decl_notation pr_constr) ntn
-        in
         return (
           hov 0 (str local ++ keyword "Fixpoint" ++ spc () ++
-                   prlist_with_sep (fun _ -> fnl () ++ keyword "with" ++ spc ()) pr_onerec recs)
+                   prlist_with_sep (fun _ -> fnl () ++ keyword "with"
+                     ++ spc ()) pr_rec_definition recs)
         )
 
       | VernacCoFixpoint (local, corecs) ->
