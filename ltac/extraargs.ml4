@@ -273,7 +273,23 @@ let pr_r_int31_field i31f =
     | Retroknowledge.Int31PhiInv -> str "phi inv"
     | Retroknowledge.Int31Plus -> str "plus"
     | Retroknowledge.Int31Times -> str "times"
-    | _ -> assert false
+    | Retroknowledge.Int31Constructor -> assert false
+    | Retroknowledge.Int31PlusC -> str "plusc"
+    | Retroknowledge.Int31PlusCarryC -> str "pluscarryc"
+    | Retroknowledge.Int31Minus -> str "minus"
+    | Retroknowledge.Int31MinusC -> str "minusc"
+    | Retroknowledge.Int31MinusCarryC -> str "minuscarryc"
+    | Retroknowledge.Int31TimesC -> str "timesc"
+    | Retroknowledge.Int31Div21 -> str "div21"
+    | Retroknowledge.Int31Div -> str "div"
+    | Retroknowledge.Int31Diveucl -> str "diveucl"
+    | Retroknowledge.Int31AddMulDiv -> str "addmuldiv"
+    | Retroknowledge.Int31Compare -> str "compare"
+    | Retroknowledge.Int31Head0 -> str "head0"
+    | Retroknowledge.Int31Tail0 -> str "tail0"
+    | Retroknowledge.Int31Lor -> str "lor"
+    | Retroknowledge.Int31Land -> str "land"
+    | Retroknowledge.Int31Lxor -> str "lxor"
 
 let pr_retroknowledge_field f =
   match f with
@@ -281,7 +297,7 @@ let pr_retroknowledge_field f =
   | Retroknowledge.KNat natf -> pr_r_nat_field () () () natf
   | Retroknowledge.KN nf -> pr_r_n_field () () () nf *)
   | Retroknowledge.KInt31 (group, i31f) -> (pr_r_int31_field i31f) ++
-                                           str "in " ++ str group
+                                           spc () ++ str "in " ++ qs group
 
 VERNAC ARGUMENT EXTEND retroknowledge_nat
 PRINTED BY pr_r_nat_field
