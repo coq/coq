@@ -1001,7 +1001,7 @@ module Make
           return (
             hov 2
               (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
-                 prlist (fun x -> spc() ++ pr_id x) ids ++ str":=" ++ pr_constrarg c ++
+                 prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
                  pr_syntax_modifiers
                  (match onlyparsing with None -> [] | Some v -> [SetOnlyParsing v]))
           )
