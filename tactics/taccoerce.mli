@@ -44,6 +44,8 @@ sig
   val of_list : 'a Val.tag -> 'a list -> t
   val to_option : t -> t option option
   val of_option : 'a Val.tag -> 'a option -> t
+  val to_pair : t -> (t * t) option
+  val of_pair : 'a Val.tag -> 'b Val.tag -> ('a * 'b) -> t
 end
 
 (** {5 Coercion functions} *)

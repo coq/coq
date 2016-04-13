@@ -97,23 +97,38 @@ module Make
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
 
-  let rec pr_value lev (Val.Dyn (tag, x)) : std_ppcmds = match tag with
-  | Val.List tag ->
-    pr_sequence (fun x -> pr_value lev (Val.Dyn (tag, x))) x
-  | Val.Opt tag -> pr_opt_no_spc (fun x -> pr_value lev (Val.Dyn (tag, x))) x
-  | Val.Pair (tag1, tag2) ->
-    str "(" ++ pr_value lev (Val.Dyn (tag1, fst x)) ++ str ", " ++
-      pr_value lev (Val.Dyn (tag1, fst x)) ++ str ")"
-  | Val.Base t ->
-    let name = Val.repr t in
-    let default = str "<" ++ str name ++ str ">" in
-    match ArgT.name name with
-    | None -> default
-    | Some (ArgT.Any arg) ->
-      let wit = ExtraArg arg in
-      match Val.eq (val_tag (Topwit wit)) (Val.Base t) with
+  let has_type (Val.Dyn (tag, x)) t = match Val.eq tag t with
+  | None -> false
+  | Some _ -> true
+
+  let unbox : type a. Val.t -> a Val.typ -> a= fun (Val.Dyn (tag, x)) t ->
+  match Val.eq tag t with
+  | None -> assert false
+  | Some Refl -> x
+
+  let rec pr_value lev v : std_ppcmds =
+    if has_type v Val.list_tag then
+      pr_sequence (fun x -> pr_value lev x) (unbox v Val.list_tag)
+    else if has_type v Val.opt_tag then
+      pr_opt_no_spc (fun x -> pr_value lev x) (unbox v Val.opt_tag)
+    else if has_type v Val.pair_tag then
+      let (v1, v2) = unbox v Val.pair_tag in
+      str "(" ++ pr_value lev v1 ++ str ", " ++ pr_value lev v2 ++ str ")"
+    else
+      let Val.Dyn (tag, x) = v in
+      let name = Val.repr tag in
+      let default = str "<" ++ str name ++ str ">" in
+      match ArgT.name name with
       | None -> default
-      | Some Refl -> Genprint.generic_top_print (in_gen (Topwit wit) x)
+      | Some (ArgT.Any arg) ->
+        let wit = ExtraArg arg in
+        match val_tag (Topwit wit) with
+        | Val.Base t ->
+          begin match Val.eq t tag with
+          | None -> default
+          | Some Refl -> Genprint.generic_top_print (in_gen (Topwit wit) x)
+          end
+        | _ -> default
 
   let pr_with_occurrences pr (occs,c) =
     match occs with

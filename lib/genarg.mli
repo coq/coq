@@ -96,11 +96,17 @@ sig
   | Opt : 'a tag -> 'a option tag
   | Pair : 'a tag * 'b tag -> ('a * 'b) tag
 
-  type t = Dyn : 'a tag * 'a -> t
+  type t = Dyn : 'a typ * 'a -> t
 
-  val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
+  val eq : 'a typ -> 'b typ -> ('a, 'b) CSig.eq option
   val repr : 'a typ -> string
-  val pr : 'a tag -> Pp.std_ppcmds
+  val pr : 'a typ -> Pp.std_ppcmds
+
+  val list_tag : t list typ
+  val opt_tag : t option typ
+  val pair_tag : (t * t) typ
+
+  val inject : 'a tag -> 'a -> t
 
 end
 (** Dynamic types for toplevel values. While the generic types permit to relate

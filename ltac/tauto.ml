@@ -256,7 +256,7 @@ let tauto_power_flags = {
 let with_flags flags _ ist =
   let f = (loc, Id.of_string "f") in
   let x = (loc, Id.of_string "x") in
-  let arg = Val.Dyn (val_tag (topwit wit_tauto_flags), flags) in
+  let arg = Val.inject (val_tag (topwit wit_tauto_flags)) flags in
   let ist = { ist with lfun = Id.Map.add (snd x) arg ist.lfun } in
   eval_tactic_ist ist (TacArg (loc, TacCall (loc, ArgVar f, [Reference (ArgVar x)])))
 

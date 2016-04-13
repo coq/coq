@@ -48,18 +48,27 @@ let ltac_trace_info = Tactic_debug.ltac_trace_info
 
 let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
   let Val.Dyn (t, _) = v in
-  match Val.eq t (val_tag wit) with
+  let t' = match val_tag wit with
+  | Val.Base t' -> t'
+  | _ -> assert false (** not used in this module *)
+  in
+  match Val.eq t t' with
   | None -> false
   | Some Refl -> true
 
-let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
+let prj : type a. a Val.typ -> Val.t -> a option = fun t v ->
   let Val.Dyn (t', x) = v in
   match Val.eq t t' with
   | None -> None
   | Some Refl -> Some x
 
-let in_gen wit v = Val.Dyn (val_tag wit, v)
-let out_gen wit v = match prj (val_tag wit) v with None -> assert false | Some x -> x
+let in_gen wit v = Val.inject (val_tag wit) v
+let out_gen wit v =
+  let t = match val_tag wit with
+  | Val.Base t -> t
+  | _ -> assert false (** not used in this module *)
+  in
+  match prj t v with None -> assert false | Some x -> x
 
 let val_tag wit = val_tag (topwit wit)
 
@@ -152,47 +161,31 @@ module Value = struct
     let Val.Dyn (tag, _) = v in
     let tag = Val.pr tag in
     errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ tag
-      ++ str " while type " ++ Genarg.pr_argument_type (unquote (rawwit wit)) ++ str " was expected.")
+      ++ str " while type " ++ Val.pr wit ++ str " was expected.")
 
-  let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
-    let Val.Dyn (t', x) = v in
-    match Val.eq t t' with
-    | None -> None
-    | Some Refl -> Some x
-
-  let try_prj wit v = match prj (val_tag wit) v with
+  let unbox wit v ans = match ans with
   | None -> cast_error wit v
   | Some x -> x
 
-  let rec val_cast : type a b c. (a, b, c) genarg_type -> Val.t -> c =
-  fun wit v -> match wit with
-  | ExtraArg _ -> try_prj wit v
-  | ListArg t ->
-    let Val.Dyn (tag, v) = v in
-    begin match tag with
-    | Val.List tag ->
-      let map x = val_cast t (Val.Dyn (tag, x)) in
-      List.map map v
-    | _ -> cast_error wit (Val.Dyn (tag, v))
-    end
-  | OptArg t ->
-    let Val.Dyn (tag, v) = v in
-    begin match tag with
-    | Val.Opt tag ->
-      let map x = val_cast t (Val.Dyn (tag, x)) in
-      Option.map map v
-    | _ -> cast_error wit (Val.Dyn (tag, v))
-    end
-  | PairArg (t1, t2) ->
-    let Val.Dyn (tag, v) = v in
-    begin match tag with
-    | Val.Pair (tag1, tag2) ->
-      let (v1, v2) = v in
-      let v1 = Val.Dyn (tag1, v1) in
-      let v2 = Val.Dyn (tag2, v2) in
-      (val_cast t1 v1, val_cast t2 v2)
-    | _ -> cast_error wit (Val.Dyn (tag, v))
-    end
+  let rec prj : type a. a Val.tag -> Val.t -> a = fun tag v -> match tag with
+  | Val.List tag -> List.map (fun v -> prj tag v) (unbox Val.list_tag v (to_list v))
+  | Val.Opt tag -> Option.map (fun v -> prj tag v) (unbox Val.opt_tag v (to_option v))
+  | Val.Pair (tag1, tag2) ->
+    let (x, y) = unbox Val.pair_tag v (to_pair v) in
+    (prj tag1 x, prj tag2 y)
+  | Val.Base t ->
+    let Val.Dyn (t', x) = v in
+    match Val.eq t t' with
+    | None -> cast_error t v
+    | Some Refl -> x
+
+  let rec tag_of_arg : type a b c. (a, b, c) genarg_type -> c Val.tag = fun wit -> match wit with
+  | ExtraArg _ -> val_tag wit
+  | ListArg t -> Val.List (tag_of_arg t)
+  | OptArg t -> Val.Opt (tag_of_arg t)
+  | PairArg (t1, t2) -> Val.Pair (tag_of_arg t1, tag_of_arg t2)
+
+  let rec val_cast arg v = prj (tag_of_arg arg) v
 
   let cast (Topwit wit) v = val_cast wit v
 
@@ -1574,7 +1567,7 @@ and interp_genarg ist x : Val.t Ftactic.t =
       interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
       let p = Value.cast (topwit wit1) p in
       let q = Value.cast (topwit wit2) q in
-      Ftactic.return (Val.Dyn (Val.Pair (val_tag wit1, val_tag wit2), (p, q)))
+      Ftactic.return (Value.of_pair (val_tag wit1) (val_tag wit2) (p, q))
     | ExtraArg s ->
       Geninterp.generic_interp ist (Genarg.in_gen (glbwit wit) x)
 

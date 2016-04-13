@@ -36,38 +36,23 @@ struct
   | Opt : 'a tag -> 'a option tag
   | Pair : 'a tag * 'b tag -> ('a * 'b) tag
 
-  type t = Dyn : 'a tag * 'a -> t
+  type t = Dyn : 'a typ * 'a -> t
 
-  let rec eq : type a b. a tag -> b tag -> (a, b) CSig.eq option =
-  fun t1 t2 -> match t1, t2 with
-  | Base t1, Base t2 -> ValT.eq t1 t2
-  | List t1, List t2 ->
-    begin match eq t1 t2 with
-    | None -> None
-    | Some Refl -> Some Refl
-    end
-  | Opt t1, Opt t2 ->
-    begin match eq t1 t2 with
-    | None -> None
-    | Some Refl -> Some Refl
-    end
-  | Pair (t1, u1), Pair (t2, u2) ->
-    begin match eq t1 t2 with
-    | None -> None
-    | Some Refl ->
-      match eq u1 u2 with
-      | None -> None
-      | Some Refl -> Some Refl
-    end
-  | _ -> None
-
+  let eq = ValT.eq
   let repr = ValT.repr
 
-  let rec pr : type a. a tag -> std_ppcmds = function
-  | Base t -> str (repr t)
-  | List t -> pr t ++ spc () ++ str "list"
-  | Opt t -> pr t ++ spc () ++ str "option"
-  | Pair (t1, t2) -> str "(" ++ pr t1 ++ str " * " ++ pr t2 ++ str ")"
+  let rec pr : type a. a typ -> std_ppcmds = fun t -> str (repr t)
+
+  let list_tag = ValT.create "list"
+  let opt_tag = ValT.create "option"
+  let pair_tag = ValT.create "pair"
+
+  let rec inject : type a. a tag -> a -> t = fun tag x -> match tag with
+  | Base t -> Dyn (t, x)
+  | List tag -> Dyn (list_tag, List.map (fun x -> inject tag x) x)
+  | Opt tag -> Dyn (opt_tag, Option.map (fun x -> inject tag x) x)
+  | Pair (tag1, tag2) ->
+    Dyn (pair_tag, (inject tag1 (fst x), inject tag2 (snd x)))
 
 end
 

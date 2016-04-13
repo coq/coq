@@ -24,13 +24,18 @@ let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
 let (wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) Genarg.genarg_type) =
   Genarg.create_arg "constr_under_binders"
 
+(** All the types considered here are base types *)
+let val_tag wit = match val_tag wit with
+| Val.Base t -> t
+| _ -> assert false
+
 let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
   let Val.Dyn (t, _) = v in
   match Val.eq t (val_tag wit) with
   | None -> false
   | Some Refl -> true
 
-let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
+let prj : type a. a Val.typ -> Val.t -> a option = fun t v ->
   let Val.Dyn (t', x) = v in
   match Val.eq t t' with
   | None -> None
@@ -74,23 +79,17 @@ let to_int v =
     Some (out_gen (topwit wit_int) v)
   else None
 
-let to_list v =
-  let v = normalize v in
-  let Val.Dyn (tag, v) = v in
-  match tag with
-  | Val.List t -> Some (List.map (fun x -> Val.Dyn (t, x)) v)
-  | _ -> None
+let to_list v = prj Val.list_tag v
 
-let of_list t v = Val.Dyn (Val.List t, v)
+let of_list t v = Val.Dyn (Val.list_tag, List.map (fun v -> Val.inject t v) v)
 
-let to_option v =
-  let v = normalize v in
-  let Val.Dyn (tag, v) = v in
-  match tag with
-  | Val.Opt t -> Some (Option.map (fun x -> Val.Dyn (t, x)) v)
-  | _ -> None
+let to_option v = prj Val.opt_tag v
 
-let of_option t v = Val.Dyn (Val.Opt t, v)
+let of_option t v = Val.Dyn (Val.opt_tag, Option.map (fun v -> Val.inject t v) v)
+
+let to_pair v = prj Val.pair_tag v
+
+let of_pair t1 t2 (v1, v2) = Val.Dyn (Val.pair_tag, (Val.inject t1 v1, Val.inject t2 v2))
 
 end
 
