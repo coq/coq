@@ -2210,12 +2210,7 @@ let eval_constr (c : constr) =
   let env = Global.env () in
   let sigma = Evd.empty in
   let j = Arguments_renaming.rename_typing env c in
-  let cv = Genredexpr.CbvVm None in
-  let (sigma, r_interp) = interp_redexp env sigma cv in
-  let (redfun, _) = Redexpr.reduction_of_red_expr env r_interp in
-  let evm = Sigma.Unsafe.of_evar_map sigma in
-  match redfun.Reductionops.e_redfun env evm j.Environ.uj_val with
-  | Sigma (c, _, _) -> c
+  Vnorm.cbv_vm env j.uj_val j.uj_type
 
 let eval_tacexpr ist env (te : Tacexpr.glob_tactic_expr) =
   let vft = interp_ftactic ist te in
