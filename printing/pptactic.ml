@@ -913,7 +913,7 @@ module Make
             ++ spc ()
             ++ prlist_with_sep pr_comma (fun ((clear_flag,h),ids,cl) ->
               pr_clear_flag clear_flag (pr_induction_arg pr.pr_dconstr pr.pr_dconstr) h ++
-                pr_with_induction_names pr.pr_dconstr ids ++
+                pr_non_empty_arg (pr_with_induction_names pr.pr_dconstr) ids ++
                 pr_opt (pr_clauses None pr.pr_name) cl) l ++
               pr_opt pr_eliminator el
           )
