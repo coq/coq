@@ -1196,7 +1196,7 @@ module Make
             | Dash n -> str (String.make n '-')
             | Star n -> str (String.make n '*')
             | Plus n -> str (String.make n '+')
-          end ++ spc())
+          end)
         | VernacSubproof None ->
           return (str "{")
         | VernacSubproof (Some i) ->
