@@ -1281,7 +1281,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       in
       let tac =
         Ftactic.with_env interp_vars >>= fun (env, lr) ->
-        let name () = Pptactic.pr_alias (fun v -> print_top_val env v) 0 s lr in
+        let name () = Pptactic.pr_alias (fun _ v -> print_top_val env v) 0 s lr in
         Proofview.Trace.name_tactic name (tac lr)
       (* spiwack: this use of name_tactic is not robust to a
          change of implementation of [Ftactic]. In such a situation,
@@ -1303,7 +1303,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let tac = Tacenv.interp_ml_tactic opn in
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
       let tac args =
-        let name () = Pptactic.pr_extend (fun v -> print_top_val () v) 0 opn args in
+        let name () = Pptactic.pr_extend (fun _ v -> print_top_val () v) 0 opn args in
         Proofview.Trace.name_tactic name (catch_error_tac trace (tac args ist))
       in
       Ftactic.run args tac
