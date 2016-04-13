@@ -121,6 +121,7 @@ let get_tactic_entry n =
 
 type tactic_grammar = {
   tacgram_level : int;
+  tacgram_pplevel : int;
   tacgram_prods : Pptactic.grammar_terminals;
 }
 
@@ -250,8 +251,28 @@ type tactic_grammar_obj = {
   tacobj_forml : bool;
 }
 
+let warn_non_stratified_parsing_level =
+  CWarnings.create ~name:"non-stratified-parsing-level" ~category:"parsing"
+         (fun () ->
+              strbrk "Notation ends with a tactic at a level "
+           ++ strbrk "higher than the tactic itself. Using this latter level "
+           ++ strbrk "for ensuring correct parenthesizing when printing.")
+
+let rec safe_printing_level n prods =
+  match List.last prods with
+  | TacTerm _ -> n
+  | TacNonTerm (_, (nt, sep), _) ->
+     let level = match parse_user_entry nt sep with
+     | Extend.Uentryl ("tactic",n') -> Some n'
+     | Extend.Uentry ("tactic") -> Some 5
+     | Extend.Uentry ("binder_tactic") -> Some 5
+     | _ -> None in
+     match level with
+     | Some n' when n' > n -> warn_non_stratified_parsing_level (); n'
+     | _ -> n
+
 let pprule pa = {
-  Pptactic.pptac_level = pa.tacgram_level;
+  Pptactic.pptac_level = pa.tacgram_pplevel;
   pptac_prods = pa.tacgram_prods;
 }
 
@@ -302,9 +323,10 @@ let cons_production_parameter = function
 | TacTerm _ -> None
 | TacNonTerm (_, _, id) -> Some id
 
-let add_glob_tactic_notation local n prods forml ids tac =
+let add_glob_tactic_notation local n ppn prods forml ids tac =
   let parule = {
     tacgram_level = n;
+    tacgram_pplevel = ppn;
     tacgram_prods = prods;
   } in
   let tacobj = {
@@ -318,9 +340,10 @@ let add_glob_tactic_notation local n prods forml ids tac =
 
 let add_tactic_notation local n prods e =
   let ids = List.map_filter cons_production_parameter prods in
+  let ppn = safe_printing_level n prods in
   let prods = List.map interp_prod_item prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
-  add_glob_tactic_notation local n prods false ids tac
+  add_glob_tactic_notation local n ppn prods false ids tac
 
 (**********************************************************************)
 (* ML Tactic entries                                                  *)
@@ -372,7 +395,7 @@ let add_ml_tactic_notation name prods =
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
     let map id = Reference (Misctypes.ArgVar (Loc.ghost, id)) in
     let tac = TacML (Loc.ghost, entry, List.map map ids) in
-    add_glob_tactic_notation false 0 prods true ids tac
+    add_glob_tactic_notation false 0 0 prods true ids tac
   in
   List.iteri iter (List.rev prods);
   extend_atomic_tactic name prods
