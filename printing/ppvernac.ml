@@ -225,6 +225,11 @@ module Make
     | NoInline -> str "[no inline]"
     | InlineAt i -> str "[inline at level " ++ int i ++ str "]"
 
+  let pr_assumption_inline = function
+    | DefaultInline -> str "Inline"
+    | NoInline -> mt ()
+    | InlineAt i -> str "Inline(" ++ int i ++ str ")"
+
   let pr_module_ast_inl leading_space pr_c (mast,inl) =
     pr_module_ast leading_space pr_c mast ++ pr_inline inl
 
@@ -733,14 +738,14 @@ module Make
         )
         | VernacExactProof c ->
           return (hov 2 (keyword "Proof" ++ pr_lconstrarg c))
-        | VernacAssumption (stre,_,l) ->
+        | VernacAssumption (stre,t,l) ->
           let n = List.length (List.flatten (List.map fst (List.map snd l))) in
           let pr_params (c, (xl, t)) =
             hov 2 (prlist_with_sep sep pr_plident xl ++ spc() ++
-              (if c then str":>" else str":" ++ spc() ++ pr_lconstr_expr t))
-          in
+              (if c then str":>" else str":" ++ spc() ++ pr_lconstr_expr t)) in
           let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
-          return (hov 2 (pr_assumption_token (n > 1) stre ++ spc() ++ assumptions))
+          return (hov 2 (pr_assumption_token (n > 1) stre ++
+                         pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
         | VernacInductive (p,f,l) ->
           let pr_constructor (coe,(id,c)) =
             hov 2 (pr_lident id ++ str" " ++
@@ -926,14 +931,14 @@ module Make
                      pr_lident m ++ b ++
                      pr_of_module_type pr_lconstr tys ++
                      (if List.is_empty bd then mt () else str ":= ") ++
-                     prlist_with_sep (fun () -> str " <+ ")
+                     prlist_with_sep (fun () -> str " <+")
                      (pr_module_ast_inl true pr_lconstr) bd)
           )
         | VernacDeclareModule (export,id,bl,m1) ->
           let b = pr_module_binders bl pr_lconstr in
           return (
             hov 2 (keyword "Declare Module" ++ spc() ++ pr_require_token export ++
-                     pr_lident id ++ b ++
+                     pr_lident id ++ b ++ str " :" ++
                      pr_module_ast_inl true pr_lconstr m1)
           )
         | VernacDeclareModuleType (id,bl,tyl,m) ->
@@ -941,7 +946,7 @@ module Make
           let pr_mt = pr_module_ast_inl true pr_lconstr in
           return (
             hov 2 (keyword "Module Type " ++ pr_lident id ++ b ++
-                     prlist_strict (fun m -> str " <: " ++ pr_mt m) tyl ++
+                     prlist_strict (fun m -> str " <:" ++ pr_mt m) tyl ++
                      (if List.is_empty m then mt () else str ":= ") ++
                      prlist_with_sep (fun () -> str " <+ ") pr_mt m)
           )
