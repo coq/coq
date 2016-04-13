@@ -47,10 +47,7 @@ ARGUMENT EXTEND glob_constr_with_bindings
     GLOBALIZED BY glob_glob_constr_with_bindings
     SUBSTITUTED BY subst_glob_constr_with_bindings
 
-    RAW_TYPED AS constr_expr_with_bindings
     RAW_PRINTED BY pr_constr_expr_with_bindings
-
-    GLOB_TYPED AS glob_constr_with_bindings
     GLOB_PRINTED BY pr_glob_constr_with_bindings
 
    [ constr_with_bindings(bl) ] -> [ bl ]
@@ -76,10 +73,7 @@ ARGUMENT EXTEND rewstrategy
     GLOBALIZED BY glob_strategy
     SUBSTITUTED BY subst_strategy
 
-    RAW_TYPED AS raw_strategy
     RAW_PRINTED BY pr_raw_strategy
-
-    GLOB_TYPED AS glob_strategy
     GLOB_PRINTED BY pr_glob_strategy
 
     [ glob(c) ] -> [ StratConstr (c, true) ]

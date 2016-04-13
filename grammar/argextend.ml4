@@ -73,34 +73,58 @@ let make_extend loc s cl wit = match cl with
       let () = Pcoq.grammar_extend $lid:s$ None (None, [(None, None, $rules$)]) in
       $lid:s$ >>
 
-let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
-  let rawtyp, rawpr, globtyp, globpr = match typ with
-    | `Uniform typ ->
-      typ, pr, typ, pr
-    | `Specialized (a, b, c, d) -> a, b, c, d
+let warning_redundant prefix s =
+  Printf.eprintf "Redundant [%sTYPED AS] clause in [ARGUMENT EXTEND %s].\n%!" prefix s
+
+let get_type prefix s = function
+| None -> None
+| Some typ ->
+  if is_self s typ then
+    let () = warning_redundant prefix s in None
+  else Some typ
+
+let check_type prefix s = function
+| None -> ()
+| Some _ -> warning_redundant prefix s
+
+let declare_tactic_argument loc s (typ, f, g, h) cl =
+  let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
+    | `Uniform (typ, pr) ->
+      let typ = get_type "" s typ in
+      typ, pr, typ, pr, typ, pr
+    | `Specialized (a, rpr, c, gpr, e, tpr) ->
+      (** Check that we actually need the TYPED AS arguments *)
+      let rawtyp = get_type "RAW_" s a in
+      let glbtyp = get_type "GLOB_" s c in
+      let toptyp = get_type "" s e in
+      let () = match g with None -> () | Some _ -> check_type "RAW_" s rawtyp in
+      let () = match f, h with Some _, Some _ -> check_type "GLOB_" s glbtyp | _ -> () in
+      rawtyp, rpr, glbtyp, gpr, toptyp, tpr
   in
   let glob = match g with
     | None ->
-      if is_self s rawtyp then
-        <:expr< fun ist v -> (ist, v) >>
-      else
+      begin match rawtyp with
+      | None -> <:expr< fun ist v -> (ist, v) >>
+      | Some rawtyp ->
         <:expr< fun ist v ->
           let ans = out_gen $make_globwit loc rawtyp$
           (Tacintern.intern_genarg ist
           (Genarg.in_gen $make_rawwit loc rawtyp$ v)) in
           (ist, ans) >>
+      end
     | Some f ->
       <:expr< fun ist v -> (ist, $lid:f$ ist v) >>
   in
   let interp = match f with
     | None ->
-      if is_self s globtyp then
-        <:expr< fun ist v -> Ftactic.return v >>
-      else
-	<:expr< fun ist x ->
+      begin match globtyp with
+      | None -> <:expr< fun ist v -> Ftactic.return v >>
+      | Some globtyp ->
+        <:expr< fun ist x ->
           Ftactic.bind
-	    (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
+            (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
             (fun v -> Ftactic.return (Tacinterp.Value.cast $make_topwit loc globtyp$ v)) >>
+      end
     | Some f ->
       (** Compatibility layer, TODO: remove me *)
       <:expr<
@@ -112,19 +136,20 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
       >> in
   let subst = match h with
     | None ->
-      if is_self s globtyp then
-        <:expr< fun s v -> v >>
-      else
+      begin match globtyp with
+      | None -> <:expr< fun s v -> v >>
+      | Some globtyp ->
         <:expr< fun s x ->
           out_gen $make_globwit loc globtyp$
           (Tacsubst.subst_genarg s
             (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
+      end
     | Some f -> <:expr< $lid:f$>> in
   let dyn = match typ with
-  | `Uniform typ ->
+  | None -> <:expr< None >>
+  | Some typ ->
     if is_self s typ then <:expr< None >>
     else <:expr< Some (Genarg.val_tag $make_topwit loc typ$) >>
-  | `Specialized _ -> <:expr< None >>
   in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
@@ -180,22 +205,25 @@ EXTEND
         "END" ->
          declare_vernac_argument loc s pr l ] ]
   ;
+  argextend_specialized:
+  [ [ rawtyp = OPT [ "RAW_TYPED"; "AS"; rawtyp = argtype -> rawtyp ];
+      "RAW_PRINTED"; "BY"; rawpr = LIDENT;
+      globtyp = OPT [ "GLOB_TYPED"; "AS"; globtyp = argtype -> globtyp ];
+      "GLOB_PRINTED"; "BY"; globpr = LIDENT ->
+      (rawtyp, rawpr, globtyp, globpr) ] ]
+  ;
   argextend_header:
-    [ [ "TYPED"; "AS"; typ = argtype;
+    [ [ typ = OPT [ "TYPED"; "AS"; typ = argtype -> typ ];
         "PRINTED"; "BY"; pr = LIDENT;
         f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
         g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
-        h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ] ->
-        (`Uniform typ, pr, f, g, h)
-      | "PRINTED"; "BY"; pr = LIDENT;
-        f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
-        g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
         h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ];
-        "RAW_TYPED"; "AS"; rawtyp = argtype;
-        "RAW_PRINTED"; "BY"; rawpr = LIDENT;
-        "GLOB_TYPED"; "AS"; globtyp = argtype;
-        "GLOB_PRINTED"; "BY"; globpr = LIDENT ->
-        (`Specialized (rawtyp, rawpr, globtyp, globpr), pr, f, g, h) ] ]
+        special = OPT argextend_specialized ->
+        let repr = match special with
+        | None -> `Uniform (typ, pr)
+        | Some (rtyp, rpr, gtyp, gpr) -> `Specialized (rtyp, rpr, gtyp, gpr, typ, pr)
+        in
+        (repr, f, g, h) ] ]
   ;
   argtype:
     [ "2"
