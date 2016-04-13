@@ -498,6 +498,11 @@ end) = struct
       pr (lapp,L) a  ++
         prlist (fun a -> spc () ++ pr_expl_args pr a) l)
 
+  let pr_record_body_gen pr l =
+    spc () ++
+    prlist_with_sep pr_semicolon
+      (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr ltop c)) l
+
   let pr_forall () = keyword "forall" ++ spc ()
 
   let pr_fun () = keyword "fun" ++ spc ()
@@ -600,10 +605,7 @@ end) = struct
         return (pr_app (pr mt) a l, lapp)
       | CRecord (_,l) ->
         return (
-          hv 0 (str"{|" ++ spc () ++
-                  prlist_with_sep pr_semicolon
-                  (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr spc ltop c)) l
-                ++ str" |}"),
+          hv 0 (str"{|" ++ pr_record_body_gen (pr spc) l ++ str" |}"),
           latom
         )
       | CCases (_,LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,[(loc,[p])],b)]) ->
@@ -735,6 +737,8 @@ end) = struct
   let pr_lconstr_pattern_expr c = !term_pr.pr_lconstr_pattern_expr c
 
   let pr_cases_pattern_expr = pr_patt ltop
+
+  let pr_record_body = pr_record_body_gen pr
 
   let pr_binders = pr_undelimited_binders spc (pr ltop)
 

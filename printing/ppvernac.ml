@@ -895,9 +895,12 @@ module Make
                  | (_, Anonymous), _ -> mt ()) ++
                 pr_and_type_binders_arg sup ++
                 str":" ++ spc () ++
+                (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
                 pr_constr cl ++ pr_priority pri ++
                 (match props with
-                  | Some (_,p) -> spc () ++ str":=" ++ spc () ++ pr_constr p
+                  | Some (true,CRecord (_,l)) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
+                  | Some (true,_) -> assert false
+                  | Some (false,p) -> spc () ++ str":=" ++ spc () ++ pr_constr p
                   | None -> mt()))
           )
 
