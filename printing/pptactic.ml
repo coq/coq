@@ -964,6 +964,13 @@ module Make
 
     let make_pr_tac pr strip_prod_binders tag_atom tag =
 
+        let pr_ltac_constr pr = function
+          | TacArg (_,TacGeneric arg)
+          | TacArg (_,Tacexp (TacArg (_,TacGeneric arg))) as u
+              when argument_type_eq (genarg_tag arg) (ArgumentType wit_constr)
+                -> keyword "constr:" ++ surround (pr u)
+          | u -> pr u in
+
         let extract_binders = function
           | Tacexp (TacFun (lvar,body)) -> (lvar,Tacexp body)
           | body -> ([],body) in
@@ -982,9 +989,10 @@ module Make
               let llc = List.map (fun (id,t) -> (id,extract_binders t)) llc in
               v 0
                 (hv 0 (
-                  pr_let_clauses recflag (pr_tac ltop) llc
+                  pr_let_clauses recflag (pr_ltac_constr (pr_tac ltop)) llc
                   ++ spc () ++ keyword "in"
-                 ) ++ fnl () ++ pr_tac (llet,E) u),
+                 ) ++ fnl ()
+                 ++ pr_ltac_constr (pr_tac (llet,E)) u),
               llet
             | TacMatch (lz,t,lrul) ->
               hov 0 (
@@ -992,7 +1000,7 @@ module Make
                 ++ pr_tac ltop t ++ spc () ++ keyword "with"
                 ++ prlist (fun r ->
                   fnl () ++ str "| "
-                  ++ pr_match_rule true (pr_tac ltop) pr.pr_lpattern r
+                  ++ pr_match_rule true (pr_ltac_constr (pr_tac ltop)) pr.pr_lpattern r
                 ) lrul
                 ++ fnl() ++ keyword "end"),
               lmatch
@@ -1002,14 +1010,14 @@ module Make
                 ++ keyword (if lr then "match reverse goal with" else "match goal with")
                 ++ prlist (fun r ->
                   fnl () ++ str "| "
-                  ++ pr_match_rule false (pr_tac ltop) pr.pr_lpattern r
+                  ++ pr_match_rule false (pr_ltac_constr (pr_tac ltop)) pr.pr_lpattern r
                 ) lrul ++ fnl() ++ keyword "end"),
               lmatch
             | TacFun (lvar,body) ->
               hov 2 (
                 keyword "fun"
                 ++ prlist pr_funvar lvar ++ str " =>" ++ spc ()
-                ++ pr_tac (lfun,E) body),
+                ++ pr_ltac_constr (pr_tac (lfun,E)) body),
               lfun
             | TacThens (t,tl) ->
               hov 1 (
