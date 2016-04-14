@@ -1569,7 +1569,8 @@ and interp_genarg ist x : Val.t Ftactic.t =
       let q = Value.cast (topwit wit2) q in
       Ftactic.return (Value.of_pair (val_tag wit1) (val_tag wit2) (p, q))
     | ExtraArg s ->
-      Geninterp.generic_interp ist (Genarg.in_gen (glbwit wit) x)
+      Geninterp.interp wit ist x >>= fun x ->
+      Ftactic.return (in_gen (Topwit wit) x)
 
 (** returns [true] for genargs which have the same meaning
     independently of goals. *)

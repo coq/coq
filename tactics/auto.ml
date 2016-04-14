@@ -160,7 +160,9 @@ let conclPattern concl pat tac =
      let fold id c accu = Id.Map.add id (inj c) accu in
      let lfun = Id.Map.fold fold constr_bindings Id.Map.empty in
      let ist = { lfun; extra = TacStore.empty } in
-     Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
+     match tac with
+     | GenArg (Glbwit wit, tac) ->
+      Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
   end }
 
 (***********************************************************)

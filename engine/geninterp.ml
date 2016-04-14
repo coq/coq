@@ -28,8 +28,3 @@ module Interp = Register(InterpObj)
 
 let interp = Interp.obj
 let register_interp0 = Interp.register0
-
-let generic_interp ist (GenArg (Glbwit wit, v)) =
-  let open Ftactic.Notations in
-  interp wit ist v >>= fun ans ->
-  Ftactic.return (Val.inject (val_tag (topwit wit)) ans)
