@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4deps: "grammar/grammar.cma" i*)
+
 open Constrintern
 open Pp
 open Errors
@@ -26,9 +28,8 @@ let obj_string x =
 
 let eval_constr (c : constr) =
   let env = Global.env () in
-  let sigma = Evd.empty in
   let j = Arguments_renaming.rename_typing env c in
-  Vnorm.cbv_vm env j.uj_val j.uj_type
+  Vnorm.cbv_vm env j.Environ.uj_val j.Environ.uj_type
 
 let eval_tacexpr ist env (te : Tacexpr.glob_tactic_expr) =
   let vft = Tacinterp.interp_ftactic ist te in
@@ -204,10 +205,10 @@ type numeral_notation_obj =
   Bigint.bigint * Libnames.full_path
 
 let inNumeralNotation : numeral_notation_obj -> Libobject.obj =
-  Libobject.declare_object Libobject.{
-    (default_object "NUMERAL NOTATION") with
-    cache_function = cache_numeral_notation;
-    load_function = load_numeral_notation }
+  Libobject.declare_object {
+    (Libobject.default_object "NUMERAL NOTATION") with
+    Libobject.cache_function = cache_numeral_notation;
+    Libobject.load_function = load_numeral_notation }
 
 let vernac_numeral_notation loc ty f g sc patl waft =
   let zpos'ty =
