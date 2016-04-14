@@ -210,7 +210,8 @@ let inNumeralNotation : numeral_notation_obj -> Libobject.obj =
     Libobject.cache_function = cache_numeral_notation;
     Libobject.load_function = load_numeral_notation }
 
-let vernac_numeral_notation loc ty f g sc patl waft =
+let vernac_numeral_notation ty f g sc patl waft =
+  let loc = Loc.ghost in
   let zpos'ty =
     let z'ty =
       let c = qualid_of_ident (Id.of_string "Z'") in
@@ -320,5 +321,24 @@ let vernac_numeral_notation loc ty f g sc patl waft =
       user_err_loc
         (loc, "_", str (string_of_reference ty) ++ str " is not a type")
 
-let () =
-  Hook.set Vernacentries.vernac_numeral_notation_hook vernac_numeral_notation
+open Constrarg
+open Stdarg
+
+VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS QUERY
+  | [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+      ident(sc) ] ->
+    [ let (patl, waft) = ([], 0) in
+      vernac_numeral_notation ty f g (Id.to_string sc) patl waft ]
+  | [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+      ident(sc) "(" "printing" reference_list(patl) ")" ] ->
+    [ let waft = 0 in
+      vernac_numeral_notation ty f g (Id.to_string sc) patl waft ]
+  | [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+      ident(sc) "(" "warning" "after" int(waft) ")" ] ->
+    [ let patl = [] in
+      vernac_numeral_notation ty f g (Id.to_string sc) patl waft ]
+  | [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+      ident(sc) "(" "printing" reference_list(patl) ")"
+      "(" "warning" "after" int(waft) ")" ] ->
+    [ vernac_numeral_notation ty f g (Id.to_string sc) patl waft ]
+END

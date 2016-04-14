@@ -1054,30 +1054,9 @@ GEXTEND Gram
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (local,(s,l))
 
-     | IDENT "Numeral"; IDENT "Notation"; ty = reference; f = reference;
-       g = reference; ":"; sc = IDENT;
-       (patl, waft) = num_pat_list_warning_after ->
-	 VernacNumeralNotation (ty,f,g,sc,patl,waft)
-
      (* "Print" "Grammar" should be here but is in "command" entry in order
         to factorize with other "Print"-based vernac entries *)
   ] ]
-  ;
-  num_pat_list_warning_after:
-    [ [ "("; patl = num_pat_list; ")";
-        (patl2, waft) = num_pat_list_warning_after ->
-          ((if patl2 = [] then patl else patl2), waft)
-      | "("; waft = warning_after; ")";
-        (patl, waft2) = num_pat_list_warning_after ->
-          (patl, max waft waft2)
-      | ->
-          ([], 0) ] ]
-  ;
-  num_pat_list:
-    [ [ IDENT "printing"; patl = LIST1 reference -> patl ] ]
-  ;
-  warning_after:
-    [ [ IDENT "warning"; IDENT "after"; m = INT -> int_of_string m ] ]
   ;
   only_parsing:
     [ [ "("; IDENT "only"; IDENT "parsing"; ")" ->

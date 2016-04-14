@@ -1726,8 +1726,6 @@ let vernac_load interp fname =
   try while true do interp (snd (parse_sentence input)) done
   with End_of_input -> ()
 
-let (f_vernac_numeral_notation, vernac_numeral_notation_hook) = Hook.make ()
-
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
@@ -1757,8 +1755,6 @@ let interp ?proof ~loc locality poly c =
       vernac_notation locality local c infpl sc
   | VernacNotationAddFormat(n,k,v) ->
       Metasyntax.add_notation_extra_printing_rule n k v
-  | VernacNumeralNotation (ty,f,g,sc,patl,waft) ->
-      Hook.get f_vernac_numeral_notation loc ty f g sc patl waft
 
   (* Gallina *)
   | VernacDefinition (k,lid,d) -> vernac_definition locality poly k lid d
