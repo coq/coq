@@ -27,7 +27,7 @@ let wit_string : string uniform_genarg_type =
   make0 "string"
 
 let wit_pre_ident : string uniform_genarg_type =
-  make0 "preident"
+  make0 ~dyn:(val_tag (topwit wit_string)) "preident"
 
 (** Aliases for compatibility *)
 

@@ -938,12 +938,6 @@ type cmp =
 type 'i test =
   | Test of cmp * 'i * 'i
 
-let wit_cmp : (cmp,cmp,cmp) Genarg.genarg_type = Genarg.make0 "cmp"
-let _ = Geninterp.register_val0 wit_cmp None
-let wit_test : (int or_var test,int or_var test,int test) Genarg.genarg_type =
-  Genarg.make0 "tactest"
-let _ = Geninterp.register_val0 wit_test None
-
 let pr_cmp = function
   | Eq -> Pp.str"="
   | Lt -> Pp.str"<"
@@ -966,7 +960,7 @@ let pr_itest' _prc _prlc _prt = pr_itest
 
 
 
-ARGUMENT EXTEND comparison TYPED AS cmp PRINTED BY pr_cmp'
+ARGUMENT EXTEND comparison PRINTED BY pr_cmp'
 | [ "="  ] -> [ Eq ]
 | [ "<"  ] -> [ Lt ]
 | [ "<=" ] -> [ Le ]

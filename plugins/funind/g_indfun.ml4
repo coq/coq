@@ -65,6 +65,7 @@ let pr_fun_ind_using_typed prc prlc _ opt_c =
 
 
 ARGUMENT EXTEND fun_ind_using
+  TYPED AS constr_with_bindings option
   PRINTED BY pr_fun_ind_using_typed
   RAW_TYPED AS constr_with_bindings_opt
   RAW_PRINTED BY pr_fun_ind_using
