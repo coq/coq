@@ -9,10 +9,14 @@
 open Vernacexpr
 open Tacexpr
 
+type 'a grammar_tactic_prod_item_expr =
+| TacTerm of string
+| TacNonTerm of Loc.t * 'a * Names.Id.t
+
 (** Adding a tactic notation in the environment *)
 
 val add_tactic_notation :
-  locality_flag * int * grammar_tactic_prod_item_expr list * raw_tactic_expr ->
+  locality_flag * int * (string * string option) grammar_tactic_prod_item_expr list * raw_tactic_expr ->
     unit
 
 val add_ml_tactic_notation : ml_tactic_name ->

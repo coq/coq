@@ -19,6 +19,10 @@ open Vernacexpr
 open Libnames
 open Nameops
 
+type 'a grammar_tactic_prod_item_expr =
+| TacTerm of string
+| TacNonTerm of Loc.t * 'a * Names.Id.t
+
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
@@ -60,24 +64,28 @@ let get_tacentry n m =
   else if check_lvl (n + 1) then EntryName (rawwit Constrarg.wit_tactic, Anext)
   else EntryName (rawwit Constrarg.wit_tactic, atactic n)
 
+let get_separator = function
+| None -> error "Missing separator."
+| Some sep -> sep
+
 let rec parse_user_entry s sep =
   let open Extend in
   let l = String.length s in
   if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
-    let entry = parse_user_entry (String.sub s 3 (l-8)) "" in
+    let entry = parse_user_entry (String.sub s 3 (l-8)) None in
     Ulist1 entry
   else if l > 12 && coincide s "ne_" 0 &&
                    coincide s "_list_sep" (l-9) then
-    let entry = parse_user_entry (String.sub s 3 (l-12)) "" in
-    Ulist1sep (entry, sep)
+    let entry = parse_user_entry (String.sub s 3 (l-12)) None in
+    Ulist1sep (entry, get_separator sep)
   else if l > 5 && coincide s "_list" (l-5) then
-    let entry = parse_user_entry (String.sub s 0 (l-5)) "" in
+    let entry = parse_user_entry (String.sub s 0 (l-5)) None in
     Ulist0 entry
   else if l > 9 && coincide s "_list_sep" (l-9) then
-    let entry = parse_user_entry (String.sub s 0 (l-9)) "" in
-    Ulist0sep (entry, sep)
+    let entry = parse_user_entry (String.sub s 0 (l-9)) None in
+    Ulist0sep (entry, get_separator sep)
   else if l > 4 && coincide s "_opt" (l-4) then
-    let entry = parse_user_entry (String.sub s 0 (l-4)) "" in
+    let entry = parse_user_entry (String.sub s 0 (l-4)) None in
     Uopt entry
   else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
     let n = Char.code s.[6] - 48 in
@@ -208,7 +216,7 @@ let extend_ml_tactic_grammar n ntn = extend_grammar ml_tactic_grammar (n, ntn)
 
 let interp_prod_item lev = function
   | TacTerm s -> GramTerminal s
-  | TacNonTerm (loc, nt, (_, sep)) ->
+  | TacNonTerm (loc, (nt, sep), _) ->
       let EntryName (etyp, e) = interp_entry_name lev nt sep in
       GramNonTerminal (loc, etyp, e)
 
@@ -284,7 +292,7 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
 
 let cons_production_parameter = function
 | TacTerm _ -> None
-| TacNonTerm (_, _, (id, _)) -> Some id
+| TacNonTerm (_, _, id) -> Some id
 
 let add_tactic_notation (local,n,prods,e) =
   let ids = List.map_filter cons_production_parameter prods in

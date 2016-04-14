@@ -200,10 +200,6 @@ type one_inductive_expr =
 type proof_expr =
   plident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
 
-type grammar_tactic_prod_item_expr =
-  | TacTerm of string
-  | TacNonTerm of Loc.t * string * (Names.Id.t * string)
-
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
   | SetLevel of int

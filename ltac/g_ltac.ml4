@@ -385,18 +385,18 @@ VERNAC ARGUMENT EXTEND ltac_production_sep
 END
 
 let pr_ltac_production_item = function
-| TacTerm s -> quote (str s)
-| TacNonTerm (_, arg, (id, sep)) ->
+| Tacentries.TacTerm s -> quote (str s)
+| Tacentries.TacNonTerm (_, (arg, sep), id) ->
   let sep = match sep with
-  | "" -> mt ()
-  | sep -> str "," ++ spc () ++ quote (str sep)
+  | None -> mt ()
+  | Some sep -> str "," ++ spc () ++ quote (str sep)
   in
   str arg ++ str "(" ++ Nameops.pr_id id ++ sep ++ str ")"
 
 VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
-| [ string(s) ] -> [ TacTerm s ]
+| [ string(s) ] -> [ Tacentries.TacTerm s ]
 | [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
-  [ TacNonTerm (loc, Names.Id.to_string nt, (p, Option.default "" sep)) ]
+  [ Tacentries.TacNonTerm (loc, (Names.Id.to_string nt, sep), p) ]
 END
 
 VERNAC COMMAND EXTEND VernacTacticNotation

@@ -104,12 +104,6 @@ module Make
     if s.[0] == '$' then Id.of_string (String.sub s 1 (String.length s - 1))
     else id
 
-  let pr_production_item = function
-    | TacNonTerm (loc, nt, (p, sep)) ->
-      let pp_sep = if not (String.is_empty sep) then str "," ++ quote (str sep) else mt () in
-      str nt ++ str"(" ++ pr_id (strip_meta p) ++ pp_sep ++ str")"
-    | TacTerm s -> qs s
-
   let pr_comment pr_c = function
     | CommentConstr c -> pr_c c
     | CommentString s -> qs s
