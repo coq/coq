@@ -1546,28 +1546,21 @@ and interp_genarg ist x : Val.t Ftactic.t =
     let GenArg (Glbwit wit, x) = x in
     match wit with
     | ListArg wit ->
-      let map x =
-        interp_genarg ist (Genarg.in_gen (glbwit wit) x) >>= fun x ->
-        Ftactic.return (Value.cast (topwit wit) x)
-      in
+      let map x = interp_genarg ist (Genarg.in_gen (glbwit wit) x) in
       Ftactic.List.map map x >>= fun l ->
-      Ftactic.return (Value.of_list (val_tag wit) l)
+      Ftactic.return (Val.Dyn (Val.list_tag, l))
     | OptArg wit ->
-      let ans = match x with
-      | None -> Ftactic.return (Value.of_option (val_tag wit) None)
+      begin match x with
+      | None -> Ftactic.return (Val.Dyn (Val.opt_tag, None))
       | Some x ->
         interp_genarg ist (Genarg.in_gen (glbwit wit) x) >>= fun x ->
-        let x = Value.cast (topwit wit) x in
-        Ftactic.return (Value.of_option (val_tag wit) (Some x))
-      in
-      ans
+        Ftactic.return (Val.Dyn (Val.opt_tag, Some x))
+      end
     | PairArg (wit1, wit2) ->
       let (p, q) = x in
       interp_genarg ist (Genarg.in_gen (glbwit wit1) p) >>= fun p ->
       interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
-      let p = Value.cast (topwit wit1) p in
-      let q = Value.cast (topwit wit2) q in
-      Ftactic.return (Value.of_pair (val_tag wit1) (val_tag wit2) (p, q))
+      Ftactic.return (Val.Dyn (Val.pair_tag, (p, q)))
     | ExtraArg s ->
       Geninterp.interp wit ist x >>= fun x ->
       Ftactic.return (in_gen (Topwit wit) x)
