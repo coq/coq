@@ -1,3 +1,8 @@
+Changes from V8.5 to V8.5pl1
+============================
+
+- The syntax p%c1..%cn is deactivated.
+
 Changes from V8.5beta3 to V8.5
 ==============================
 
