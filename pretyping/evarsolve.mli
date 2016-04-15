@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -34,7 +34,8 @@ type conv_fun_bool =
 val evar_define : conv_fun -> ?choose:bool -> env -> evar_map -> 
   bool option -> existential -> constr -> evar_map
 
-val refresh_universes : ?inferred:bool -> ?onlyalg:bool (* Only algebraic universes *) ->
+val refresh_universes : ?status:Evd.rigid ->
+			?onlyalg:bool (* Only algebraic universes *) ->
   bool option (* direction: true for levels lower than the existing levels *) ->
   env -> evar_map -> types -> evar_map * types
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -9,6 +9,7 @@
 open Declarations
 open Mod_subst
 open Univ
+open Entries
 
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
@@ -49,17 +50,6 @@ val is_opaque : constant_body -> bool
 
 val string_of_side_effect : side_effect -> string
 
-type side_effects
-val no_seff : side_effects
-val iter_side_effects : (side_effect -> unit) -> side_effects -> unit
-val fold_side_effects : ('a -> side_effect -> 'a) -> 'a -> side_effects -> 'a
-val uniquize_side_effects : side_effects -> side_effects
-val union_side_effects : side_effects -> side_effects -> side_effects
-val flatten_side_effects : side_effects list -> side_effects
-val side_effects_of_list : side_effect list -> side_effects
-val cons_side_effects : side_effect -> side_effects -> side_effects
-val side_effects_is_empty : side_effects -> bool
-
 (** {6 Inductive types} *)
 
 val eq_recarg : recarg -> recarg -> bool
@@ -87,3 +77,4 @@ val inductive_context : mutual_inductive_body -> universe_context
 
 val hcons_const_body : constant_body -> constant_body
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
+val hcons_module_body : module_body -> module_body

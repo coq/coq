@@ -8,6 +8,7 @@ Hashcons
 CSet
 CMap
 Int
+Dyn
 HMap
 Option
 Store
@@ -18,11 +19,11 @@ Pp_control
 Flags
 Control
 Loc
+CList
+CString
 Serialize
 Deque
 CObj
-CList
-CString
 CArray
 CStack
 Util

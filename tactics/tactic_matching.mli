@@ -32,7 +32,7 @@ val match_term :
   Environ.env ->
   Evd.evar_map ->
   Term.constr ->
-  (Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
+  (Tacexpr.binding_bound_vars * Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
   Tacexpr.glob_tactic_expr t Proofview.tactic
 
 (** [match_goal env sigma hyps concl rules] matches the goal
@@ -43,7 +43,7 @@ val match_term :
 val match_goal:
   Environ.env ->
   Evd.evar_map ->
-  Context.named_context ->
+  Context.Named.t ->
   Term.constr ->
-  (Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
+  (Tacexpr.binding_bound_vars * Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
   Tacexpr.glob_tactic_expr t Proofview.tactic

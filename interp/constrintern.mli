@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Evd
 open Environ
 open Libnames
@@ -95,7 +94,8 @@ val intern_context : bool -> env -> internalization_env -> local_binder list -> 
 
 (** {6 Composing internalization with type inference (pretyping) } *)
 
-(** Main interpretation functions expecting evars to be all resolved *)
+(** Main interpretation functions, using type class inference,
+    expecting evars and pending problems to be all resolved *)
 
 val interp_constr : env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> constr Evd.in_evar_universe_context
@@ -106,9 +106,10 @@ val interp_casted_constr : env -> evar_map -> ?impls:internalization_env ->
 val interp_type : env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> types Evd.in_evar_universe_context
 
-(** Main interpretation function expecting evars to be all resolved *)
+(** Main interpretation function expecting all postponed problems to
+    be resolved, but possibly leaving evars. *)
 
-val interp_open_constr   : env -> evar_map -> constr_expr -> evar_map * constr
+val interp_open_constr : env -> evar_map -> constr_expr -> evar_map * constr
 
 (** Accepting unresolved evars *)
 
@@ -159,7 +160,7 @@ val interp_binder_evars : env -> evar_map ref -> Name.t -> constr_expr -> types
 val interp_context_evars :
   ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
   env -> evar_map ref -> local_binder list ->
-  internalization_env * ((env * rel_context) * Impargs.manual_implicits)
+  internalization_env * ((env * Context.Rel.t) * Impargs.manual_implicits)
 
 (* val interp_context_gen : (env -> glob_constr -> unsafe_type_judgment Evd.in_evar_universe_context) -> *)
 (*   (env -> Evarutil.type_constraint -> glob_constr -> unsafe_judgment Evd.in_evar_universe_context) -> *)
@@ -176,7 +177,7 @@ val interp_context_evars :
 
 val locate_reference :  Libnames.qualid -> Globnames.global_reference
 val is_global : Id.t -> bool
-val construct_reference : named_context -> Id.t -> constr
+val construct_reference : Context.Named.t -> Id.t -> constr
 val global_reference : Id.t -> constr
 val global_reference_in_absolute_module : DirPath.t -> Id.t -> constr
 
@@ -184,7 +185,7 @@ val global_reference_in_absolute_module : DirPath.t -> Id.t -> constr
     guaranteed to have the same domain as the input one. *)
 val interp_notation_constr : ?impls:internalization_env ->
   notation_interp_env -> constr_expr ->
-  (subscopes * notation_var_internalization_type) Id.Map.t *
+  (bool * subscopes * notation_var_internalization_type) Id.Map.t *
   notation_constr
 
 (** Globalization options *)

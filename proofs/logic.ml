@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -22,6 +22,7 @@ open Proof_type
 open Type_errors
 open Retyping
 open Misctypes
+open Context.Named.Declaration
 
 type refiner_error =
 
@@ -95,12 +96,12 @@ let check_typability env sigma c =
    forces the user to give them in order). *)
 
 let clear_hyps env sigma ids sign cl =
-  let evdref = ref (Evd.create_goal_evar_defs sigma) in
+  let evdref = ref (Evd.clear_metas sigma) in
   let (hyps,cl) = Evarutil.clear_hyps_in_evi env evdref sign cl ids in
   (hyps, cl, !evdref)
 
 let clear_hyps2 env sigma ids sign t cl =
-  let evdref = ref (Evd.create_goal_evar_defs sigma) in
+  let evdref = ref (Evd.clear_metas sigma) in
   let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
   (hyps, t, cl, !evdref)
 
@@ -160,7 +161,8 @@ let reorder_context env sign ord =
       | _ ->
           (match ctxt_head with
             | [] -> error_no_such_hypothesis (List.hd ord)
-            | (x,_,_ as d) :: ctxt ->
+            | d :: ctxt ->
+                let x = get_id d in
                 if Id.Set.mem x expected then
                   step ord (Id.Set.remove x expected)
                     ctxt (push_item x d moved_hyps) ctxt_tail
@@ -175,7 +177,8 @@ let reorder_val_context env sign ord =
 
 
 
-let check_decl_position env sign (x,_,_ as d) =
+let check_decl_position env sign d =
+  let x = get_id d in
   let needed = global_vars_set_of_decl env d in
   let deps = dependency_closure env (named_context_of_val sign) needed in
   if Id.List.mem x deps then
@@ -200,16 +203,17 @@ let move_location_eq m1 m2 = match m1, m2 with
 
 let rec get_hyp_after h = function
   | [] -> error_no_such_hypothesis h
-  | (hyp,_,_) :: right ->
-      if Id.equal hyp h then
-	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveFirst
+  | d :: right ->
+      if Id.equal (get_id d) h then
+	match right with d' ::_ -> MoveBefore (get_id d') | [] -> MoveFirst
       else
        get_hyp_after h right
 
 let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
-    | (hyp,c,typ) as d :: right ->
+    | d :: right ->
+        let hyp,_,typ = to_tuple d in
       	if Id.equal hyp hfrom then
 	  (left,right,d, toleft || move_location_eq hto MoveLast)
       	else
@@ -227,27 +231,28 @@ let hyp_of_move_location = function
   | MoveBefore id -> id
   | _ -> assert false
 
-let move_hyp toleft (left,(idfrom,_,_ as declfrom),right) hto =
+let move_hyp toleft (left,declfrom,right) hto =
   let env = Global.env() in
-  let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
+  let test_dep d d2 =
     if toleft
-    then occur_var_in_decl env hyp2 d
-    else occur_var_in_decl env hyp d2
+    then occur_var_in_decl env (get_id d2) d
+    else occur_var_in_decl env (get_id d) d2
   in
   let rec moverec first middle = function
     | [] ->
 	if match hto with MoveFirst | MoveLast -> false | _ -> true then
 	  error_no_such_hypothesis (hyp_of_move_location hto);
 	List.rev first @ List.rev middle
-    | (hyp,_,_) :: _ as right when move_location_eq hto (MoveBefore hyp) ->
+    | d :: _ as right when move_location_eq hto (MoveBefore (get_id d)) ->
 	List.rev first @ List.rev middle @ right
-    | (hyp,_,_) as d :: right ->
+    | d :: right ->
+        let hyp = get_id d in
 	let (first',middle') =
       	  if List.exists (test_dep d) middle then
 	    if not (move_location_eq hto (MoveAfter hyp)) then
 	      (first, d::middle)
             else
-	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id idfrom ++
+	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id (get_id declfrom) ++
 	        Miscprint.pr_move_location pr_id hto ++
 	        str (if toleft then ": it occurs in " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")
@@ -356,9 +361,11 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
       | App (f,l) ->
 	let (acc',hdty,sigma,applicand) =
 	  if is_template_polymorphic env f then
-	    let sigma, ty = 
+	    let ty = 
 	      (* Template sort-polymorphism of definition and inductive types *)
-	      type_of_global_reference_knowing_conclusion env sigma f conclty
+	      let firstmeta = Array.findi (fun i x -> occur_meta x) l in
+	      let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
+	        type_of_global_reference_knowing_parameters env sigma f args
 	    in
 	      goalacc, ty, sigma, f
 	  else
@@ -481,12 +488,14 @@ and mk_casegoals sigma goal goalacc p c =
   (acc'',lbrty,conclty,sigma,p',c')
 
 
-let convert_hyp check sign sigma (id,b,bt as d) =
+let convert_hyp check sign sigma d =
+  let id,b,bt = to_tuple d in
   let env = Global.env() in
   let reorder = ref [] in
   let sign' =
     apply_to_hyp sign id
-      (fun _ (_,c,ct) _ ->
+      (fun _ d' _ ->
+        let _,c,ct = to_tuple d' in
         let env = Global.env_of_context sign in
         if check && not (is_conv env sigma bt ct) then
 	  errorlabstrm "Logic.convert_hyp"
@@ -520,17 +529,17 @@ let prim_refiner r sigma goal =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
 	    let sign,t,cl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t cl in
-	    move_hyp false ([],(id,None,t),named_context_of_val sign)
+	    move_hyp false ([], LocalAssum (id,t),named_context_of_val sign)
 	      nexthyp,
 	      t,cl,sigma
 	  else
             (if !check && mem_named_context id (named_context_of_val sign) then
 	      errorlabstrm "Logic.prim_refiner"
                 (str "Variable " ++ pr_id id ++ str " is already declared.");
-	     push_named_context_val (id,None,t) sign,t,cl,sigma) in
+	     push_named_context_val (LocalAssum (id,t)) sign,t,cl,sigma) in
         let (sg2,ev2,sigma) = 
 	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
-	let oterm = Term.mkApp (mkNamedLambda id t ev2 , [| ev1 |]) in
+	let oterm = Term.mkNamedLetIn id ev1 t ev2 in
 	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
@@ -544,7 +553,8 @@ let prim_refiner r sigma goal =
 		  with Not_found ->
 		    error "Cannot do a fixpoint on a non inductive type."
             	else
-		  check_ind (push_rel (na,None,c1) env) (k-1) b
+                  let open Context.Rel.Declaration in
+		  check_ind (push_rel (LocalAssum (na,c1)) env) (k-1) b
             | _ -> error "Not enough products."
 	in
 	let ((sp,_),u) = check_ind env n cl in
@@ -558,7 +568,7 @@ let prim_refiner r sigma goal =
 	      if !check && mem_named_context f (named_context_of_val sign) then
 		errorlabstrm "Logic.prim_refiner"
 		  (str "Name " ++ pr_id f ++ str " already used in the environment");
-	      mk_sign (push_named_context_val (f,None,ar) sign) oth
+	      mk_sign (push_named_context_val (LocalAssum (f,ar)) sign) oth
 	  | [] ->
 	      Evd.Monad.List.map (fun (_,_,c) sigma ->
                 let gl,ev,sig' =
@@ -582,7 +592,8 @@ let prim_refiner r sigma goal =
      	let rec check_is_coind env cl =
 	  let b = whd_betadeltaiota env sigma cl in
           match kind_of_term b with
-            | Prod (na,c1,b) -> check_is_coind (push_rel (na,None,c1) env) b
+            | Prod (na,c1,b) -> let open Context.Rel.Declaration in
+                                check_is_coind (push_rel (LocalAssum (na,c1)) env) b
             | _ ->
 		try
 		  let _ = find_coinductive env sigma b in ()
@@ -599,7 +610,7 @@ let prim_refiner r sigma goal =
                 error "Name already used in the environment.")
               with
               |	Not_found ->
-                  mk_sign (push_named_context_val (f,None,ar) sign) oth)
+                  mk_sign (push_named_context_val (LocalAssum (f,ar)) sign) oth)
 	  | [] -> 
               Evd.Monad.List.map (fun (_,c) sigma ->
                 let gl,ev,sigma =

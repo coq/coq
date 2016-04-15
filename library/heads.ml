@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,6 +15,7 @@ open Environ
 open Globnames
 open Libobject
 open Lib
+open Context.Named.Declaration
 
 (** Characterization of the head of a term *)
 
@@ -63,12 +64,15 @@ let kind_of_head env t =
       (try on_subterm k l b (variable_head id)
        with Not_found ->
         (* a goal variable *)
-        match pi2 (lookup_named id env) with
-        | Some c -> aux k l c b
-        | None -> NotImmediatelyComputableHead)
+        match lookup_named id env with
+        | LocalDef (_,c,_) -> aux k l c b
+        | LocalAssum _ -> NotImmediatelyComputableHead)
   | Const (cst,_) ->
       (try on_subterm k l b (constant_head cst)
-       with Not_found -> assert false)
+       with Not_found ->
+         Errors.anomaly
+           Pp.(str "constant not found in kind_of_head: " ++
+               str (Names.Constant.to_string cst)))
   | Construct _ | CoFix _ ->
       if b then NotImmediatelyComputableHead else ConstructorHead
   | Sort _ | Ind _ | Prod _ -> RigidHead RigidType
@@ -129,8 +133,8 @@ let compute_head = function
      | None -> RigidHead (RigidParameter cst)
      | Some c -> kind_of_head env c)
 | EvalVarRef id ->
-    (match pi2 (Global.lookup_named id) with
-     | Some c when not (Decls.variable_opacity id) ->
+    (match Global.lookup_named id with
+     | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->
            kind_of_head (Global.env()) c
      | _ ->
            RigidHead (RigidVar id))

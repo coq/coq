@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Module Version1.
   Set Implicit Arguments.
   Set Universe Polymorphism.

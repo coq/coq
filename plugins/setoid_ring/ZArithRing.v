@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -17,14 +17,14 @@ Set Implicit Arguments.
 Ltac Zcst t :=
   match isZcst t with
     true => t
-  | _ => constr:NotConstant
+  | _ => constr:(NotConstant)
   end.
 
 Ltac isZpow_coef t :=
   match t with
   | Zpos ?p => isPcst p
-  | Z0 => constr:true
-  | _ => constr:false
+  | Z0 => constr:(true)
+  | _ => constr:(false)
   end.
 
 Notation N_of_Z := Z.to_N (only parsing).
@@ -32,7 +32,7 @@ Notation N_of_Z := Z.to_N (only parsing).
 Ltac Zpow_tac t :=
  match isZpow_coef t with
  | true => constr:(N_of_Z t)
- | _ => constr:NotConstant
+ | _ => constr:(NotConstant)
  end.
 
 Ltac Zpower_neg :=

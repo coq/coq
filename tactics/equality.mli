@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -23,7 +23,7 @@ type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 type orientation = bool
 
 type conditions =
-  | Naive (* Only try the first occurence of the lemma (default) *)
+  | Naive (* Only try the first occurrence of the lemma (default) *)
   | FirstSolved (* Use the first match whose side-conditions are solved *)
   | AllMatches (* Rewrite all matches whose side-conditions are solved *)
 
@@ -117,3 +117,8 @@ val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
 val replace_term : bool option -> constr -> clause -> unit Proofview.tactic
 
 val set_eq_dec_scheme_kind : mutual scheme_kind -> unit
+
+(* [build_selector env sigma i c t u v] matches on [c] of
+   type [t] and returns [u] in branch [i] and [v] on other branches *)
+val build_selector : env -> evar_map -> int -> constr -> types ->
+  constr -> constr -> constr

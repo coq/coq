@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -23,22 +23,26 @@ open Cases
 open Logic
 open Printer
 open Evd
+open Context.Rel.Declaration
 
 (* This simplifies the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)
 let contract env lc =
   let l = ref [] in
-  let contract_context (na,c,t) env =
-    match c with
-      | Some c' when isRel c' ->
+  let contract_context decl env =
+    match decl with
+      | LocalDef (_,c',_) when isRel c' ->
           l := (Vars.substl !l c') :: !l;
           env
       | _ ->
-          let t' = Vars.substl !l t in
-          let c' = Option.map (Vars.substl !l) c in
-          let na' = named_hd env t' na in
+          let t' = Vars.substl !l (get_type decl) in
+          let c' = Option.map (Vars.substl !l) (get_value decl) in
+          let na' = named_hd env t' (get_name decl) in
           l := (mkRel 1) :: List.map (Vars.lift 1) !l;
-          push_rel (na',c',t') env in
+          match c' with
+          | None -> push_rel (LocalAssum (na',t')) env
+          | Some c' -> push_rel (LocalDef (na',c',t')) env
+  in
   let env = process_rel_context contract_context env in
   (env, List.map (Vars.substl !l) lc)
 
@@ -71,6 +75,15 @@ let rec contract3' env a b c = function
       let env,t,u = contract2 env t u in
       let y,x = contract3' env a b c x in
       y,CannotSolveConstraint ((pb,env,t,u),x)
+
+(** Ad-hoc reductions *)
+
+let j_nf_betaiotaevar sigma j =
+  { uj_val = Evarutil.nf_evar sigma j.uj_val;
+    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
+
+let jv_nf_betaiotaevar sigma jl =
+  Array.map (j_nf_betaiotaevar sigma) jl
 
 (** Printers *)
 
@@ -136,9 +149,9 @@ let pr_explicit env sigma t1 t2 = pr_explicit_aux env sigma t1 t2 explicit_flags
 
 let pr_db env i =
   try
-    match lookup_rel i env with
-        Name id, _, _ -> pr_id id
-      | Anonymous, _, _ -> str "<>"
+    match lookup_rel i env |> get_name with
+      | Name id -> pr_id id
+      | Anonymous -> str "<>"
   with Not_found -> str "UNBOUND_REL_" ++ int i
 
 let explain_unbound_rel env sigma n =
@@ -260,7 +273,7 @@ let explain_generalization env sigma (name,var) j =
   str "it has type" ++ spc () ++ pt ++
   spc () ++ str "which should be Set, Prop or Type."
 
-let rec explain_unification_error env sigma p1 p2 = function
+let explain_unification_error env sigma p1 p2 = function
   | None -> mt()
   | Some e ->
      let rec aux p1 p2 = function
@@ -318,7 +331,7 @@ let rec explain_unification_error env sigma p1 p2 = function
 
 let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env in
-  let j = Evarutil.j_nf_betaiotaevar sigma j in
+  let j = j_nf_betaiotaevar sigma j in
   let t = Reductionops.nf_betaiota sigma t in
   (** Actually print *)
   let pe = pr_ne_context_of (str "In environment") env sigma in
@@ -333,7 +346,7 @@ let explain_actual_type env sigma j t reason =
   ppreason ++ str ".")
 
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
-  let randl = Evarutil.jv_nf_betaiotaevar sigma randl in
+  let randl = jv_nf_betaiotaevar sigma randl in
   let exptyp = Evarutil.nf_evar sigma exptyp in
   let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
   let rator = Evarutil.j_nf_evar sigma rator in
@@ -775,7 +788,7 @@ let explain_unsatisfiable_constraints env sigma constr comp =
     explain_typeclass_resolution env sigma info k ++ fnl () ++ cstr
 
 let explain_pretype_error env sigma err =
-  let env = Evarutil.env_nf_betaiotaevar sigma env in
+  let env = Evardefine.env_nf_betaiotaevar sigma env in
   let env = make_all_name_different env in
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c
@@ -783,7 +796,7 @@ let explain_pretype_error env sigma err =
     let {uj_val = c; uj_type = actty} = j in
     let (env, c, actty, expty), e = contract3' env c actty t e in
     let j = {uj_val = c; uj_type = actty} in
-    explain_actual_type env sigma j t (Some e)
+    explain_actual_type env sigma j expty (Some e)
   | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
   | UnsolvableImplicit (evk,exp) -> explain_unsolvable_implicit env sigma evk exp
   | VarNotFound id -> explain_var_not_found env id
@@ -822,7 +835,7 @@ let explain_not_match_error = function
   | ModuleTypeFieldExpected ->
     strbrk "a module type is expected"
   | NotConvertibleInductiveField id | NotConvertibleConstructorField id ->
-    str "types given to " ++ str (Id.to_string id) ++ str " differ"
+    str "types given to " ++ pr_id id ++ str " differ"
   | NotConvertibleBodyField ->
     str "the body of definitions differs"
   | NotConvertibleTypeField (env, typ1, typ2) ->
@@ -847,7 +860,7 @@ let explain_not_match_error = function
   | RecordProjectionsExpected nal ->
     (if List.length nal >= 2 then str "expected projection names are "
      else str "expected projection name is ") ++
-    pr_enum (function Name id -> str (Id.to_string id) | _ -> str "_") nal
+    pr_enum (function Name id -> pr_id id | _ -> str "_") nal
   | NotEqualInductiveAliases ->
     str "Aliases to inductive types do not match"
   | NoTypeConstraintExpected ->
@@ -890,17 +903,27 @@ let explain_is_a_functor () =
   str "Illegal use of a functor."
 
 let explain_incompatible_module_types mexpr1 mexpr2 =
-  str "Incompatible module types."
+  let open Declarations in
+  let rec get_arg = function
+  | NoFunctor _ -> 0
+  | MoreFunctor (_, _, ty) -> succ (get_arg ty)
+  in
+  let len1 = get_arg mexpr1.mod_type in
+  let len2 = get_arg mexpr2.mod_type in
+  if len1 <> len2 then
+    str "Incompatible module types: module expects " ++ int len2 ++
+      str " arguments, found " ++ int len1 ++ str "."
+  else str "Incompatible module types."
 
 let explain_not_equal_module_paths mp1 mp2 =
   str "Non equal modules."
 
 let explain_no_such_label l =
-  str "No such label " ++ str (Label.to_string l) ++ str "."
+  str "No such label " ++ pr_label l ++ str "."
 
 let explain_incompatible_labels l l' =
   str "Opening and closing labels are not the same: " ++
-  str (Label.to_string l) ++ str " <> " ++ str (Label.to_string l') ++ str "!"
+  pr_label l ++ str " <> " ++ pr_label l' ++ str "!"
 
 let explain_not_a_module s =
   quote (str s) ++ str " is not a module."
@@ -909,23 +932,26 @@ let explain_not_a_module_type s =
   quote (str s) ++ str " is not a module type."
 
 let explain_not_a_constant l =
-  quote (Label.print l) ++ str " is not a constant."
+  quote (pr_label l) ++ str " is not a constant."
 
 let explain_incorrect_label_constraint l =
   str "Incorrect constraint for label " ++
-  quote (Label.print l) ++ str "."
+  quote (pr_label l) ++ str "."
 
 let explain_generative_module_expected l =
-  str "The module " ++ str (Label.to_string l) ++ str " is not generative." ++
+  str "The module " ++ pr_label l ++ str " is not generative." ++
   strbrk " Only components of generative modules can be changed" ++
   strbrk " using the \"with\" construct."
 
 let explain_label_missing l s =
-  str "The field " ++ str (Label.to_string l) ++ str " is missing in "
+  str "The field " ++ pr_label l ++ str " is missing in "
   ++ str s ++ str "."
 
-let explain_higher_order_include () =
-  str "You cannot Include a higher-order structure."
+let explain_include_restricted_functor mp =
+  let q = Nametab.shortest_qualid_of_module mp in
+  str "Cannot include the functor " ++ Libnames.pr_qualid q ++
+  strbrk " since it has a restricted signature. " ++
+  strbrk "You may name first an instance of this functor, and include it."
 
 let explain_module_error = function
   | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
@@ -943,7 +969,7 @@ let explain_module_error = function
   | IncorrectWithConstraint l -> explain_incorrect_label_constraint l
   | GenerativeModuleExpected l -> explain_generative_module_expected l
   | LabelMissing (l,s) -> explain_label_missing l s
-  | HigherOrderInclude -> explain_higher_order_include ()
+  | IncludeRestrictedFunctor mp -> explain_include_restricted_functor mp
 
 (* Module internalization errors *)
 
@@ -1194,7 +1220,7 @@ let explain_unused_clause env pats =
 let explain_non_exhaustive env pats =
   str "Non exhaustive pattern-matching: no clause found for " ++
   str (String.plural (List.length pats) "pattern") ++
-  spc () ++ hov 0 (pr_sequence pr_cases_pattern pats)
+  spc () ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats)
 
 let explain_cannot_infer_predicate env sigma typs =
   let env = make_all_name_different env in
@@ -1227,77 +1253,3 @@ let explain_reduction_tactic_error = function
       quote (pr_goal_concl_style_env env sigma c) ++
       spc () ++ str "is not well typed." ++ fnl () ++
       explain_type_error env' Evd.empty e
-
-let is_defined_ltac trace =
-  let rec aux = function
-  | (_, Proof_type.LtacNameCall f) :: tail ->
-      not (Tacenv.is_ltac_for_ml_tactic f)
-  | (_, Proof_type.LtacAtomCall _) :: tail ->
-      false
-  | _ :: tail -> aux tail
-  | [] -> false in
-  aux (List.rev trace)
-
-let explain_ltac_call_trace last trace loc =
-  let calls = last :: List.rev_map snd trace in
-  let pr_call ck = match ck with
-  | Proof_type.LtacNotationCall kn -> quote (KerName.print kn)
-  | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
-  | Proof_type.LtacMLCall t ->
-      quote (Pptactic.pr_glob_tactic (Global.env()) t)
-  | Proof_type.LtacVarCall (id,t) ->
-      quote (Nameops.pr_id id) ++ strbrk " (bound to " ++
-        Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
-  | Proof_type.LtacAtomCall te ->
-      quote (Pptactic.pr_glob_tactic (Global.env())
-              (Tacexpr.TacAtom (Loc.ghost,te)))
-  | Proof_type.LtacConstrInterp (c, { Pretyping.ltac_constrs = vars }) ->
-      quote (pr_glob_constr_env (Global.env()) c) ++
-        (if not (Id.Map.is_empty vars) then
-          strbrk " (with " ++
-            prlist_with_sep pr_comma
-            (fun (id,c) ->
-                pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
-            (List.rev (Id.Map.bindings vars)) ++ str ")"
-        else mt())
-  in
-  match calls with
-  | [] -> mt ()
-  | _ ->
-    let kind_of_last_call = match List.last calls with
-    | Proof_type.LtacConstrInterp _ -> ", last term evaluation failed."
-    | _ -> ", last call failed."
-    in
-    hov 0 (str "In nested Ltac calls to " ++
-           pr_enum pr_call calls ++ strbrk kind_of_last_call)
-
-let skip_extensions trace =
-  let rec aux = function
-  | (_,Proof_type.LtacNameCall f as tac) :: _ 
-      when Tacenv.is_ltac_for_ml_tactic f -> [tac]
-  | (_,(Proof_type.LtacNotationCall _ | Proof_type.LtacMLCall _) as tac)
-      :: _ -> [tac]
-  | t :: tail -> t :: aux tail
-  | [] -> [] in
-  List.rev (aux (List.rev trace))
-
-let extract_ltac_trace trace eloc =
-  let trace = skip_extensions trace in
-  let (loc,c),tail = List.sep_last trace in
-  if is_defined_ltac trace then
-    (* We entered a user-defined tactic,
-       we display the trace with location of the call *)
-    let msg = hov 0 (explain_ltac_call_trace c tail eloc ++ fnl()) in
-    Some msg, loc
-  else
-    (* We entered a primitive tactic, we don't display trace but
-       report on the finest location *)
-    let best_loc =
-      if not (Loc.is_ghost eloc) then eloc else
-        (* trace is with innermost call coming first *)
-        let rec aux = function
-        | (loc,_)::tail when not (Loc.is_ghost loc) -> loc
-        | _::tail -> aux tail
-        | [] -> Loc.ghost in
-        aux trace in
-    None, best_loc

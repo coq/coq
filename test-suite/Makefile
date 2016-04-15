@@ -154,6 +154,9 @@ summary.log:
 	$(SHOW) SUMMARY
 	$(HIDE)$(MAKE) --quiet summary > "$@"
 
+report: summary.log
+	$(HIDE)if grep -F 'Error!' summary.log ; then false; fi
+
 #######################################################################
 # Regression (and progression) tests
 #######################################################################
@@ -208,7 +211,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$*" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be prepared" ; \
@@ -238,7 +241,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$*" $(call get_coq_prog_args,"$<") -async-proofs on \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
 	    -async-proofs-private-flags fallback-to-lazy-if-marshal-error=no,fallback-to-lazy-if-slave-dies=no \
 	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
@@ -349,10 +352,10 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v
           fi; \
 	} > "$@"
 
-# Additionnal dependencies for module tests
+# Additional dependencies for module tests
 $(addsuffix .log,$(wildcard modules/*.v)): %.v.log: modules/Nat.vo modules/plik.vo
 modules/%.vo: modules/%.v
-	$(HIDE)$(coqtop) -R modules Mods -compile $(<:.v=)
+	$(HIDE)$(coqtop) -R modules Mods -compile $<
 
 #######################################################################
 # Miscellaneous tests
@@ -388,7 +391,7 @@ misc/deps-order.log:
 	} > "$@"
 
 # Sort universes for the whole standard library
-EXPECTED_UNIVERSES := 3
+EXPECTED_UNIVERSES := 4 # Prop is not counted
 universes: misc/universes.log
 misc/universes.log: misc/universes/all_stdlib.v
 	@echo "TEST      misc/universes"

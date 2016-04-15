@@ -48,6 +48,8 @@ sig
   val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
+  val extend : bool list -> 'a -> 'a list -> 'a list
+  val count : ('a -> bool) -> 'a list -> int
   val index : 'a eq -> 'a -> 'a list -> int
   val index0 : 'a eq -> 'a -> 'a list -> int
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
@@ -375,6 +377,18 @@ let rec smartfilter f l = match l with
           else h :: tl'
         else tl'
 
+let rec extend l a l' = match l,l' with
+  | true::l, b::l' -> b :: extend l a l'
+  | false::l, l' -> a :: extend l a l'
+  | [], [] -> []
+  | _ -> invalid_arg "extend"
+
+let count f l =
+  let rec aux acc = function
+    | [] -> acc
+    | h :: t -> if f h then aux (acc + 1) t else aux acc t in
+  aux 0 l
+
 let rec index_f f x l n = match l with
 | [] -> raise Not_found
 | y :: l -> if f x y then n else index_f f x l (succ n)
@@ -638,12 +652,13 @@ let rec split3 = function
       let (rx, ry, rz) = split3 l in (x::rx, y::ry, z::rz)
 
 let firstn n l =
-  let rec aux acc = function
-    | (0, l) -> List.rev acc
-    | (n, (h::t)) -> aux (h::acc) (pred n, t)
+  let rec aux acc n l =
+    match n, l with
+    | 0, _ -> List.rev acc
+    | n, h::t -> aux (h::acc) (pred n) t
     | _ -> failwith "firstn"
   in
-  aux [] (n,l)
+  aux [] n l
 
 let rec last = function
   | [] -> failwith "List.last"

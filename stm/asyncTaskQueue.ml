@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -60,9 +60,7 @@ module Make(T : Task) = struct
 
   type more_data =
     | MoreDataUnivLevel of Univ.universe_level list
- 
-  let request_expiry_of_task (t, c) = T.request_of_task t, c
-  
+
   let slave_respond (Request r) =
     let res = T.perform r in
     Response res
@@ -125,8 +123,9 @@ module Make(T : Task) = struct
                  "-async-proofs-worker-priority";
                    Flags.string_of_priority !Flags.async_proofs_worker_priority]
         | ("-ideslave"|"-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
-        | ("-async-proofs" |"-toploop" |"-vi2vo" |"-compile"
-          |"-load-vernac-source" |"-compile-verbose"
+        | ("-async-proofs" |"-toploop" |"-vi2vo"
+          |"-load-vernac-source" |"-l" |"-load-vernac-source-verbose" |"-lv"
+          |"-compile" |"-compile-verbose"
           |"-async-proofs-worker-priority" |"-worker-id") :: _ :: tl ->
           set_slave_opt tl
         | x::tl -> x :: set_slave_opt tl in
@@ -182,6 +181,13 @@ module Make(T : Task) = struct
       else
         let () = Unix.sleep 1 in
         kill_if ()
+    in
+    let kill_if () =
+      try kill_if ()
+      with Sys.Break ->
+        let () = stop_waiting := true in
+        let () = TQueue.broadcast queue in
+        Worker.kill proc
     in
     let _ = Thread.create kill_if () in
 
@@ -297,7 +303,7 @@ module Make(T : Task) = struct
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback fb) []; flush oc in
     Pp.set_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
-    Pp.log_via_feedback ();
+    Pp.log_via_feedback (fun msg -> Richpp.repr (Richpp.richpp_of_pp msg));
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
       match unmarshal_more_data (Option.get !slave_ic) with
@@ -313,7 +319,7 @@ module Make(T : Task) = struct
         let response = slave_respond request in
         report_status "Idle";
         marshal_response (Option.get !slave_oc) response;
-        Ephemeron.clear ()
+        CEphemeron.clear ()
       with
       | MarshalError s ->
         pr_err ("Fatal marshal error: " ^ s); flush_all (); exit 2

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -21,7 +21,7 @@ open Modops
 open Mod_subst
 
 type 'alg translation =
-  module_signature * 'alg option * delta_resolver * Univ.constraints
+  module_signature * 'alg * delta_resolver * Univ.ContextSet.t
 
 let rec mp_from_mexpr = function
   | MEident mp -> mp
@@ -52,7 +52,7 @@ let rec rebuild_mp mp l =
   | []-> mp
   | i::r -> rebuild_mp (MPdot(mp,Label.of_id i)) r
 
-let (+++) = Univ.Constraint.union
+let (+++) = Univ.ContextSet.union
 
 let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
   let lab,idl = match idl with
@@ -72,33 +72,71 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaques terms,
 	 as long as they have the right type *)
-      let ccst = Declareops.constraints_of_constant (opaque_tables env) cb in
-      let env' = Environ.add_constraints ccst env' in
-      let newus, cst = Univ.UContext.dest ctx in
-      let env' = Environ.add_constraints cst env' in
-      let c',cst = match cb.const_body with
-	| Undef _ | OpaqueDef _ ->
-	  let j = Typeops.infer env' c in
-	  let typ = Typeops.type_of_constant_type env' cb.const_type in
-	  let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-	    j.uj_type typ in
-	  j.uj_val,cst' +++ cst
-	| Def cs ->
-	  let cst' = Reduction.infer_conv env' (Environ.universes env') c
-	    (Mod_subst.force_constr cs) in
-	  let cst = (*FIXME MS: what to check here? subtyping of polymorphic constants... *)
-	    if cb.const_polymorphic then cst' +++ cst
-	    else cst' +++ cst
+      let uctx = Declareops.universes_of_constant (opaque_tables env) cb in
+      let uctx = (* Context of the spec *)
+	if cb.const_polymorphic then
+	  Univ.instantiate_univ_context uctx
+	else uctx
+      in
+      let c', univs, ctx' = 
+	if not cb.const_polymorphic then
+	  let env' = Environ.push_context ~strict:true uctx env' in
+	  let env' = Environ.push_context ~strict:true ctx env' in
+	  let c',cst = match cb.const_body with
+	    | Undef _ | OpaqueDef _ ->
+	      let j = Typeops.infer env' c in
+	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
+						j.uj_type typ in
+	      j.uj_val, cst'
+	    | Def cs ->
+	       let c' = Mod_subst.force_constr cs in
+	         c, Reduction.infer_conv env' (Environ.universes env') c c'
+	  in c', ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
+	else
+	  let cus, ccst = Univ.UContext.dest uctx in
+	  let newus, cst = Univ.UContext.dest ctx in
+	  let () =
+	    if not (Univ.Instance.length cus == Univ.Instance.length newus) then
+	      error_incorrect_with_constraint lab
 	  in
-            c, cst
+	  let inst = Univ.Instance.append cus newus in
+	  let csti = Univ.enforce_eq_instances cus newus cst in
+	  let csta = Univ.Constraint.union csti ccst in
+	  let env' = Environ.push_context ~strict:false (Univ.UContext.make (inst, csta)) env in
+	  let () = if not (UGraph.check_constraints cst (Environ.universes env')) then
+		     error_incorrect_with_constraint lab
+	  in
+	  let cst = match cb.const_body with
+	    | Undef _ | OpaqueDef _ ->
+	      let j = Typeops.infer env' c in
+	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let typ = Vars.subst_instance_constr cus typ in
+	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
+						j.uj_type typ in
+	      cst'
+	    | Def cs ->
+	       let c' = Vars.subst_instance_constr cus (Mod_subst.force_constr cs) in
+	       let cst' = Reduction.infer_conv env' (Environ.universes env') c c' in
+	        cst'
+	  in
+	    if not (Univ.Constraint.is_empty cst) then
+	      error_incorrect_with_constraint lab;
+	    let subst, ctx = Univ.abstract_universes true ctx in
+	      Vars.subst_univs_level_constr subst c, ctx, Univ.ContextSet.empty
       in
       let def = Def (Mod_subst.from_val c') in
-      let ctx' = Univ.UContext.make (newus, cst) in
+(*      let ctx' = Univ.UContext.make (newus, cst) in *)
+      let univs =
+        if cb.const_polymorphic then Some cb.const_universes
+        else None
+      in
       let cb' =
 	{ cb with
 	  const_body = def;
-	  const_body_code = Option.map Cemitcodes.from_val (compile_constant_body env' def);
-	  const_universes = ctx' }
+          const_universes = ctx ;
+	  const_body_code = Option.map Cemitcodes.from_val
+                              (compile_constant_body env' univs def) }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'
     else
@@ -145,9 +183,11 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
 	  begin
             try
               let mtb_old = module_type_of_module old in
-              Subtyping.check_subtypes env' mtb_mp1 mtb_old
-                +++ old.mod_constraints
-	    with Failure _ -> error_incorrect_with_constraint lab
+              let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
+              Univ.ContextSet.add_constraints chk_cst old.mod_constraints
+	    with Failure _ ->
+              (* TODO: where can a Failure come from ??? *)
+              error_incorrect_with_constraint lab
 	  end
 	| Algebraic (NoFunctor (MEident(mp'))) ->
 	  check_modpath_equiv env' mp1 mp';
@@ -194,59 +234,25 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       | Algebraic (NoFunctor (MEident mp0)) ->
 	let mpnew = rebuild_mp mp0 idl in
 	check_modpath_equiv env' mpnew mp;
-	before@(lab,spec)::after, equiv, Univ.Constraint.empty
+	before@(lab,spec)::after, equiv, Univ.ContextSet.empty
       | _ -> error_generative_module_expected lab
       end
   with
   | Not_found -> error_no_such_label lab
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
-let mk_alg_with alg wd = Option.map (fun a -> MEwith (a,wd)) alg
-
 let check_with env mp (sign,alg,reso,cst) = function
   |WithDef(idl,c) ->
     let struc = destr_nofunctor sign in
     let struc',c',cst' = check_with_def env struc (idl,c) mp reso in
-    let alg' = mk_alg_with alg (WithDef (idl,(c',cst'))) in
-    (NoFunctor struc'),alg',reso, cst+++(Univ.UContext.constraints cst')
+    let wd' = WithDef (idl,(c',Univ.ContextSet.to_context cst')) in
+    NoFunctor struc', MEwith (alg,wd'), reso, cst+++cst'
   |WithMod(idl,mp1) as wd ->
     let struc = destr_nofunctor sign in
     let struc',reso',cst' = check_with_mod env struc (idl,mp1) mp reso in
-    let alg' = mk_alg_with alg wd in
-    (NoFunctor struc'),alg',reso', cst+++cst'
+    NoFunctor struc', MEwith (alg,wd), reso', cst+++cst'
 
-let mk_alg_app mpo alg arg = match mpo, alg with
-  | Some _, Some alg -> Some (MEapply (alg,arg))
-  | _ -> None
-
-(** Translation of a module struct entry :
-    - We translate to a module when a [module_path] is given,
-      otherwise to a module type.
-    - The first output is the expanded signature
-    - The second output is the algebraic expression, kept for the extraction.
-      It is never None when translating to a module, but for module type
-      it could not be contain [SEBapply] or [SEBfunctor].
-*)
-
-let rec translate_mse env mpo inl = function
-  |MEident mp1 ->
-    let sign,reso = match mpo with
-      |Some mp ->
-        let mb = strengthen_and_subst_mb (lookup_module mp1 env) mp false in
-        mb.mod_type, mb.mod_delta
-      |None ->
-        let mtb = lookup_modtype mp1 env in
-        mtb.mod_type, mtb.mod_delta
-    in
-    sign,Some (MEident mp1),reso,Univ.Constraint.empty
-  |MEapply (fe,mp1) ->
-    translate_apply env inl (translate_mse env mpo inl fe) mp1 (mk_alg_app mpo)
-  |MEwith(me, with_decl) ->
-    assert (mpo == None); (* No 'with' syntax for modules *)
-    let mp = mp_from_mexpr me in
-    check_with env mp (translate_mse env None inl me) with_decl
-
-and translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =
+let translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =
   let farg_id, farg_b, fbody_b = destr_functor sign in
   let mtb = module_type_of_module (lookup_module mp1 env) in
   let cst2 = Subtyping.check_subtypes env mtb farg_b in
@@ -256,76 +262,129 @@ and translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =
   let body = subst_signature subst fbody_b in
   let alg' = mkalg alg mp1 in
   let reso' = subst_codom_delta_resolver subst reso in
-  body,alg',reso', cst1 +++ cst2
+  body,alg',reso', Univ.ContextSet.add_constraints cst2 cst1
 
-let mk_alg_funct mpo mbid mtb alg = match mpo, alg with
-  | Some _, Some alg -> Some (MoreFunctor (mbid,mtb,alg))
-  | _ -> None
+(** Translation of a module struct entry :
+    - We translate to a module when a [module_path] is given,
+      otherwise to a module type.
+    - The first output is the expanded signature
+    - The second output is the algebraic expression, kept for the extraction.
+*)
 
-let mk_mod mp e ty ty' cst reso =
+let mk_alg_app alg arg = MEapply (alg,arg)
+
+let rec translate_mse env mpo inl = function
+  |MEident mp1 as me ->
+    let mb = match mpo with
+      |Some mp -> strengthen_and_subst_mb (lookup_module mp1 env) mp false
+      |None -> lookup_modtype mp1 env
+    in
+    mb.mod_type, me, mb.mod_delta, Univ.ContextSet.empty
+  |MEapply (fe,mp1) ->
+    translate_apply env inl (translate_mse env mpo inl fe) mp1 mk_alg_app
+  |MEwith(me, with_decl) ->
+    assert (mpo == None); (* No 'with' syntax for modules *)
+    let mp = mp_from_mexpr me in
+    check_with env mp (translate_mse env None inl me) with_decl
+
+let mk_mod mp e ty cst reso =
   { mod_mp = mp;
     mod_expr = e;
     mod_type = ty;
-    mod_type_alg = ty';
+    mod_type_alg = None;
     mod_constraints = cst;
     mod_delta = reso;
     mod_retroknowledge = [] }
 
-let mk_modtype mp ty cst reso = mk_mod mp Abstract ty None cst reso
+let mk_modtype mp ty cst reso = mk_mod mp Abstract ty cst reso
 
 let rec translate_mse_funct env mpo inl mse = function
   |[] ->
     let sign,alg,reso,cst = translate_mse env mpo inl mse in
-    sign, Option.map (fun a -> NoFunctor a) alg, reso, cst
+    sign, NoFunctor alg, reso, cst
   |(mbid, ty) :: params ->
     let mp_id = MPbound mbid in
     let mtb = translate_modtype env mp_id inl ([],ty) in
     let env' = add_module_type mp_id mtb env in
     let sign,alg,reso,cst = translate_mse_funct env' mpo inl mse params in
-    let alg' = mk_alg_funct mpo mbid mtb alg in
+    let alg' = MoreFunctor (mbid,mtb,alg) in
     MoreFunctor (mbid, mtb, sign), alg',reso, cst +++ mtb.mod_constraints
 
 and translate_modtype env mp inl (params,mte) =
   let sign,alg,reso,cst = translate_mse_funct env None inl mte params in
   let mtb = mk_modtype (mp_from_mexpr mte) sign cst reso in
   let mtb' = subst_modtype_and_resolver mtb mp in
-  { mtb' with mod_type_alg = alg }
+  { mtb' with mod_type_alg = Some alg }
 
 (** [finalize_module] :
-    from an already-translated (or interactive) implementation
-    and a signature entry, produce a final [module_expr] *)
+    from an already-translated (or interactive) implementation and
+    an (optional) signature entry, produces a final [module_body] *)
 
 let finalize_module env mp (sign,alg,reso,cst) restype = match restype with
   |None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
-    mk_mod mp impl sign None cst reso
+    mk_mod mp impl sign cst reso
   |Some (params_mte,inl) ->
     let res_mtb = translate_modtype env mp inl params_mte in
-    let auto_mtb = mk_modtype mp sign Univ.Constraint.empty reso in
+    let auto_mtb = mk_modtype mp sign Univ.ContextSet.empty reso in
     let cst' = Subtyping.check_subtypes env auto_mtb res_mtb in
     let impl = match alg with Some e -> Algebraic e | None -> Struct sign in
     { res_mtb with
       mod_mp = mp;
       mod_expr = impl;
-      (** cst from module body typing, cst' from subtyping, 
-          and constraints from module type. *)
-      mod_constraints = cst +++ cst' +++ res_mtb.mod_constraints }
+      (** cst from module body typing,
+          cst' from subtyping,
+          constraints from module type. *)
+      mod_constraints =
+        Univ.ContextSet.add_constraints cst' (cst +++ res_mtb.mod_constraints) }
 
 let translate_module env mp inl = function
   |MType (params,ty) ->
     let mtb = translate_modtype env mp inl (params,ty) in
     module_body_of_type mp mtb
   |MExpr (params,mse,oty) ->
-    let t = translate_mse_funct env (Some mp) inl mse params in
+    let (sg,alg,reso,cst) = translate_mse_funct env (Some mp) inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
-    finalize_module env mp t restype
+    finalize_module env mp (sg,Some alg,reso,cst) restype
 
-let rec translate_mse_incl env mp inl = function
+(** We now forbid any Include of functors with restricted signatures.
+    Otherwise, we could end with the creation of undesired axioms
+    (see #3746). Note that restricted non-functorized modules are ok,
+    thanks to strengthening. *)
+
+let rec unfunct = function
+  |NoFunctor me -> me
+  |MoreFunctor(_,_,me) -> unfunct me
+
+let rec forbid_incl_signed_functor env = function
+  |MEapply(fe,_) -> forbid_incl_signed_functor env fe
+  |MEwith _ -> assert false (* No 'with' syntax for modules *)
+  |MEident mp1 ->
+    let mb = lookup_module mp1 env in
+    match mb.mod_type, mb.mod_type_alg, mb.mod_expr with
+    |MoreFunctor _, Some _, _ ->
+      (* functor + restricted signature = error *)
+      error_include_restricted_functor mp1
+    |MoreFunctor _, None, Algebraic me ->
+      (* functor, no signature yet, a definition which may be restricted *)
+      forbid_incl_signed_functor env (unfunct me)
+    |_ -> ()
+
+let rec translate_mse_inclmod env mp inl = function
   |MEident mp1 ->
     let mb = strengthen_and_subst_mb (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr mb.mod_type in
-    sign,None,mb.mod_delta,Univ.Constraint.empty
+    sign,(),mb.mod_delta,Univ.ContextSet.empty
   |MEapply (fe,arg) ->
-    let ftrans = translate_mse_incl env mp inl fe in
-    translate_apply env inl ftrans arg (fun _ _ -> None)
-  |_ -> Modops.error_higher_order_include ()
+    let ftrans = translate_mse_inclmod env mp inl fe in
+    translate_apply env inl ftrans arg (fun _ _ -> ())
+  |MEwith _ -> assert false (* No 'with' syntax for modules *)
+
+let translate_mse_incl is_mod env mp inl me =
+  if is_mod then
+    let () = forbid_incl_signed_functor env me in
+    translate_mse_inclmod env mp inl me
+  else
+    let mtb = translate_modtype env mp inl ([],me) in
+    let sign = clean_bounded_mod_expr mtb.mod_type in
+    sign,(),mtb.mod_delta,mtb.mod_constraints

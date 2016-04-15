@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -83,7 +83,15 @@ val matrix_transpose : 'a list list -> 'a list list
 (** {6 Functions. } *)
 
 val identity : 'a -> 'a
-val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
+
+(** Function composition: the mathematical [∘] operator.
+
+    So [g % f] is a synonym for [fun x -> g (f x)].
+
+    Also because [%] is right-associative, [h % g % f] means [fun x -> h (g (f x))].
+*)
+val (%) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
+
 val const : 'a -> 'b -> 'a
 val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit
@@ -106,10 +114,20 @@ val iraise : iexn -> 'a
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 (** Union type *)
 
+module Union :
+sig
+  val map : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) union -> ('c, 'd) union
+  val equal : ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('a, 'b) union -> ('a, 'b) union -> bool
+  val fold_left : ('c -> 'a -> 'c) -> ('c -> 'b -> 'c) -> 'c -> ('a, 'b) union -> 'c
+end
+
 val map_union : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) union -> ('c, 'd) union
+(** Alias for [Union.map] *)
 
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 (** Used for browsable-until structures. *)
+
+type ('a, 'b) eq = ('a, 'b) CSig.eq = Refl : ('a, 'a) eq
 
 val open_utf8_file_in : string -> in_channel
 (** Open an utf-8 encoded file and skip the byte-order mark if any. *)

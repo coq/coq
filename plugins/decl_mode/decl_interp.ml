@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -96,7 +96,7 @@ let rec add_vars_of_simple_pattern globs = function
       add_vars_of_simple_pattern globs p
   | CPatCstr (_,_,pl1,pl2) ->
     List.fold_left add_vars_of_simple_pattern
-      (List.fold_left add_vars_of_simple_pattern globs pl1) pl2
+      (Option.fold_left (List.fold_left add_vars_of_simple_pattern) globs pl1) pl2
   | CPatNotation(_,_,(pl,pll),pl') ->
       List.fold_left add_vars_of_simple_pattern globs (List.flatten (pl::pl'::pll))
   | CPatAtom (_,Some (Libnames.Ident (_,id))) -> add_var id globs
@@ -384,7 +384,7 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
 
 let interp_cut interp_it env sigma cut=
   let nenv,nstat = interp_it env sigma cut.cut_stat in
-    {cut with
+    { cut_using=Option.map (Tacinterp.Value.of_closure (Tacinterp.default_ist ())) cut.cut_using;
        cut_stat=nstat;
        cut_by=interp_justification_items nenv sigma cut.cut_by}
 
@@ -403,7 +403,7 @@ let interp_suffices_clause env sigma (hyps,cot)=
     match hyp with
 	(Hprop st | Hvar st) ->
 	  match st.st_label with
-	      Name id -> Environ.push_named (id,None,st.st_it) env0
+	      Name id -> Environ.push_named (Context.Named.Declaration.LocalAssum (id,st.st_it)) env0
 	    | _ -> env in
   let nenv = List.fold_right push_one locvars env in
     nenv,res

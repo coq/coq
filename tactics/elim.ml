@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -16,29 +16,21 @@ open Tacmach.New
 open Tacticals.New
 open Tactics
 open Proofview.Notations
+open Context.Named.Declaration
 
+(* Supposed to be called without as clause *)
 let introElimAssumsThen tac ba =
-  let nassums =
-    List.fold_left
-      (fun acc b -> if b then acc+2 else acc+1)
-      0 ba.Tacticals.branchsign
-  in
-  let introElimAssums = tclDO nassums intro in
+  assert (ba.Tacticals.branchnames == []);
+  let introElimAssums = tclDO ba.Tacticals.nassums intro in
   (tclTHEN introElimAssums (elim_on_ba tac ba))
 
+(* Supposed to be called with a non-recursive scheme *)
 let introCaseAssumsThen tac ba =
-  let case_thin_sign =
-    List.flatten
-      (List.map (function b -> if b then [false;true] else [false])
-	ba.Tacticals.branchsign)
-  in
-  let n1 = List.length case_thin_sign in
+  let n1 = List.length ba.Tacticals.branchsign in
   let n2 = List.length ba.Tacticals.branchnames in
   let (l1,l2),l3 =
     if n1 < n2 then List.chop n1 ba.Tacticals.branchnames, []
-    else
-      (ba.Tacticals.branchnames, []),
-       if n1 > n2 then snd (List.chop n2 case_thin_sign) else [] in
+    else (ba.Tacticals.branchnames, []), List.make (n1-n2) false in
   let introCaseAssums =
     tclTHEN (intro_patterns l1) (intros_clearing l3) in
   (tclTHEN introCaseAssums (case_on_ba (tac l2) ba))
@@ -84,7 +76,7 @@ let tmphyp_name = Id.of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let type_of = pf_unsafe_type_of gl in
   let typc = type_of c in
   tclTHENS (cut typc)
@@ -93,11 +85,11 @@ let general_decompose recognizer c =
 	    (ifOnHyp recognizer (general_decompose_aux recognizer)
 	      (fun id -> Proofview.V82.tactic (clear [id]))));
        Proofview.V82.tactic (exact_no_check c) ]
-  end
+  end }
 
 let head_in indl t gl =
   let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
+  let sigma = Tacmach.New.project gl in
   try
     let ity,_ =
       if !up_to_delta
@@ -107,10 +99,10 @@ let head_in indl t gl =
   with Not_found -> false
 
 let decompose_these c l =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let indl = List.map (fun x -> x, Univ.Instance.empty) l in
   general_decompose (fun (_,t) -> head_in indl t gl) c
-  end
+  end }
 
 let decompose_and c =
   general_decompose
@@ -138,7 +130,7 @@ let induction_trailer abs_i abs_j bargs =
     (tclDO (abs_j - abs_i) intro)
     (onLastHypId
        (fun id ->
-          Proofview.Goal.nf_enter begin fun gl ->
+          Proofview.Goal.nf_enter { enter = begin fun gl ->
 	  let idty = pf_unsafe_type_of gl (mkVar id) in
 	  let fvty = global_vars (pf_env gl) idty in
 	  let possible_bring_hyps =
@@ -146,7 +138,8 @@ let induction_trailer abs_i abs_j bargs =
           in
 	  let (hyps,_) =
             List.fold_left
-	      (fun (bring_ids,leave_ids) (cid,_,_ as d) ->
+	      (fun (bring_ids,leave_ids) d ->
+                 let cid = get_id d in
                  if not (List.mem cid leave_ids)
                  then (d::bring_ids,leave_ids)
                  else (bring_ids,cid::leave_ids))
@@ -154,15 +147,14 @@ let induction_trailer abs_i abs_j bargs =
 	  in
           let ids = List.rev (ids_of_named_context hyps) in
 	  (tclTHENLIST
-            [bring_hyps hyps; tclTRY (Proofview.V82.tactic (clear ids));
-	     simple_elimination (mkVar id)])
-          end
+            [revert ids; simple_elimination (mkVar id)])
+          end }
           ))
 
 let double_ind h1 h2 =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let abs_i = of_old (depth_of_quantified_hypothesis true h1) gl in
-  let abs_j = of_old (depth_of_quantified_hypothesis true h2) gl in
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let abs_i = depth_of_quantified_hypothesis true h1 gl in
+  let abs_j = depth_of_quantified_hypothesis true h2 gl in
   let abs =
     if abs_i < abs_j then Proofview.tclUNIT (abs_i,abs_j) else
     if abs_i > abs_j then  Proofview.tclUNIT (abs_j,abs_i) else
@@ -173,7 +165,7 @@ let double_ind h1 h2 =
        	(fun id ->
            elimination_then
              (introElimAssumsThen (induction_trailer abs_i abs_j)) (mkVar id))))
-  end
+  end }
 
 let h_double_induction = double_ind
 

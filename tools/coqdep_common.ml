@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -165,11 +165,6 @@ let warning_module_notfound f s =
   eprintf "*** Warning: in file %s, library %s is required and has not been found in the loadpath!\n%!"
     f (String.concat "." s)
 
-let warning_notfound f s =
-  eprintf "*** Warning: in file %s, the file " f;
-  eprintf "%s.v is required and has not been found!\n" s;
-  flush stderr
-
 let warning_declare f s =
   eprintf "*** Warning: in file %s, declared ML module " f;
   eprintf "%s has not been found!\n" s;
@@ -209,6 +204,18 @@ let absolute_dir dir =
 let absolute_file_name basename odir =
   let dir = match odir with Some dir -> dir | None -> "." in
   absolute_dir dir // basename
+
+(** [find_dir_logpath dir] Return the logical path of directory [dir]
+    if it has been given one. Raise [Not_found] otherwise. In
+    particular we can check if "." has been attributed a logical path
+    after processing all options and silently give the default one if
+    it hasn't. We may also use this to warn if ap hysical path is met
+    twice.*)
+let register_dir_logpath,find_dir_logpath =
+  let tbl: (string, string list) Hashtbl.t = Hashtbl.create 19 in
+  let reg physdir logpath = Hashtbl.add tbl (absolute_dir physdir) logpath in
+  let fnd physdir = Hashtbl.find tbl (absolute_dir physdir) in
+  reg,fnd
 
 let file_name s = function
   | None     -> s
@@ -329,7 +336,8 @@ let escape =
     Buffer.contents s'
 
 let compare_file f1 f2 =
-  absolute_dir (Filename.dirname f1) = absolute_dir (Filename.dirname f2)
+  absolute_file_name (Filename.basename f1) (Some (Filename.dirname f1))
+  = absolute_file_name (Filename.basename f2) (Some (Filename.dirname f2))
 
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
@@ -481,15 +489,15 @@ let add_caml_known phys_dir _ f =
     | _ -> ()
 
 let add_coqlib_known recur phys_dir log_dir f =
-  match get_extension f [".vo"] with
-    | (basename,".vo") ->
+  match get_extension f [".vo"; ".vio"] with
+    | (basename, (".vo" | ".vio")) ->
         let name = log_dir@[basename] in
         let paths = if recur then suffixes name else [name] in
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
 let add_known recur phys_dir log_dir f =
-  match get_extension f [".v";".vo"] with
+  match get_extension f [".v"; ".vo"; ".vio"] with
     | (basename,".v") ->
 	let name = log_dir@[basename] in
 	let file = phys_dir//basename in
@@ -498,7 +506,7 @@ let add_known recur phys_dir log_dir f =
           let paths = List.tl (suffixes name) in
           let iter n = safe_hash_add compare_file clash_v vKnown (n, (file, false)) in
           List.iter iter paths
-    | (basename,".vo") when not(!option_boot) ->
+    | (basename, (".vo" | ".vio")) when not(!option_boot) ->
         let name = log_dir@[basename] in
 	let paths = if recur then suffixes name else [name] in
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
@@ -509,11 +517,12 @@ let add_known recur phys_dir log_dir f =
 let is_not_seen_directory phys_f =
   not (StrSet.mem phys_f !norec_dirs)
 
-let rec add_directory add_file phys_dir log_dir =
+let rec add_directory recur add_file phys_dir log_dir =
+  register_dir_logpath phys_dir log_dir;
   let f = function
     | FileDir (phys_f,f) ->
-        if is_not_seen_directory phys_f then
-          add_directory add_file phys_f (log_dir @ [f])
+        if is_not_seen_directory phys_f && recur then
+          add_directory true add_file phys_f (log_dir @ [f])
     | FileRegular f ->
         add_file phys_dir log_dir f
   in
@@ -523,24 +532,29 @@ let rec add_directory add_file phys_dir log_dir =
   else
     warning_cannot_open_dir phys_dir
 
+(** Simply add this directory and imports it, no subdirs. This is used
+    by the implicit adding of the current path (which is not recursive). *)
+let add_norec_dir_import add_file phys_dir log_dir =
+  try add_directory false (add_file true) phys_dir log_dir with Unix_error _ -> ()
+
 (** -Q semantic: go in subdirs but only full logical paths are known. *)
-let add_dir add_file phys_dir log_dir =
-  try add_directory (add_file false) phys_dir log_dir with Unix_error _ -> ()
+let add_rec_dir_no_import add_file phys_dir log_dir =
+  try add_directory true (add_file false) phys_dir log_dir with Unix_error _ -> ()
 
 (** -R semantic: go in subdirs and suffixes of logical paths are known. *)
-let add_rec_dir add_file phys_dir log_dir =
-  add_directory (add_file true) phys_dir log_dir
+let add_rec_dir_import add_file phys_dir log_dir =
+  add_directory true (add_file true) phys_dir log_dir
 
 (** -R semantic but only on immediate capitalized subdirs *)
 
 let add_rec_uppercase_subdirs add_file phys_dir log_dir =
   process_subdirectories (fun phys_dir f ->
-    add_directory (add_file true) phys_dir (log_dir@[String.capitalize f]))
+    add_directory true (add_file true) phys_dir (log_dir@[String.capitalize f]))
     phys_dir
 
 (** -I semantic: do not go in subdirs. *)
 let add_caml_dir phys_dir =
-  add_directory add_caml_known phys_dir []
+  add_directory false add_caml_known phys_dir []
 
 let rec treat_file old_dirname old_name =
   let name = Filename.basename old_name
@@ -555,15 +569,12 @@ let rec treat_file old_dirname old_name =
   match try (stat complete_name).st_kind with _ -> S_BLK with
     | S_DIR ->
 	(if name.[0] <> '.' then
-	   let dir=opendir complete_name in
            let newdirname =
              match dirname with
                | None -> name
                | Some d -> d//name
 	   in
-	   try
-	     while true do treat_file (Some newdirname) (readdir dir) done
-	   with End_of_file -> closedir dir)
+           Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
     | S_REG ->
 	(match get_extension name [".v";".ml";".mli";".ml4";".mllib";".mlpack"] with
 	   | (base,".v") ->

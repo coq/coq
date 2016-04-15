@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -164,7 +164,64 @@ let flags_to_color f =
   else if List.mem `INCOMPLETE f then `NAME "gray"
   else `NAME Preferences.processed_color#get
 
+let validate s =
+  let open Xml_datatype in
+  let rec validate = function
+  | PCData s -> Glib.Utf8.validate s
+  | Element (_, _, children) -> List.for_all validate children
+  in
+  validate (Richpp.repr s)
+
 module Doc = Document
+
+let segment_model (doc : sentence Doc.document) : Wg_Segment.model =
+object (self)
+
+  val mutable cbs = []
+
+  val mutable document_length = 0
+
+  method length = document_length
+
+  method changed ~callback = cbs <- callback :: cbs
+
+  method fold : 'a. ('a -> Wg_Segment.color -> 'a) -> 'a -> 'a = fun f accu ->
+    let fold accu _ _ s =
+      let flags = List.map mem_flag_of_flag s.flags in
+      f accu (flags_to_color flags)
+    in
+    Doc.fold_all doc accu fold
+
+  method private on_changed (i, f) =
+    let data = (i, flags_to_color f) in
+    List.iter (fun f -> f (`SET data)) cbs
+
+  method private on_push s ctx =
+    let after = match ctx with
+    | None -> []
+    | Some (l, _) -> l
+    in
+    List.iter (fun s -> set_index s (s.index + 1)) after;
+    set_index s (document_length - List.length after);
+    ignore ((SentenceId.connect s)#changed self#on_changed);
+    document_length <- document_length + 1;
+    List.iter (fun f -> f `INSERT) cbs
+
+  method private on_pop s ctx =
+    let () = match ctx with
+    | None -> ()
+    | Some (l, _) -> List.iter (fun s -> set_index s (s.index - 1)) l
+    in
+    set_index s (-1);
+    document_length <- document_length - 1;
+    List.iter (fun f -> f `REMOVE) cbs
+
+  initializer
+    let _ = (Doc.connect doc)#pushed self#on_push in
+    let _ = (Doc.connect doc)#popped self#on_pop in
+    ()
+
+end
 
 class coqops
   (_script:Wg_ScriptView.script_view)
@@ -198,20 +255,8 @@ object(self)
     script#misc#set_has_tooltip true;
     ignore(script#misc#connect#query_tooltip ~callback:self#tooltip_callback);
     feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback;
-    let on_changed (i, f) = segment#add i (flags_to_color f) in
-    let on_push s =
-      set_index s document_length;
-      (SentenceId.connect s)#changed on_changed;
-      document_length <- succ document_length;
-      segment#set_length document_length;
-      let flags = List.map mem_flag_of_flag s.flags in
-      segment#add s.index (flags_to_color flags);
-    in
-    let on_pop s =
-      set_index s (-1);
-      document_length <- pred document_length;
-      segment#set_length document_length;
-    in
+    let md = segment_model document in
+    segment#set_model md;
     let on_click id =
       let find _ _ s = Int.equal s.index id in
       let sentence = Doc.find document find in
@@ -227,8 +272,6 @@ object(self)
       script#buffer#place_cursor iter;
       ignore (script#scroll_to_iter ~use_align:true ~yalign:0. iter)
     in
-    let _ = (Doc.connect document)#pushed on_push in
-    let _ = (Doc.connect document)#popped on_pop in
     let _ = segment#connect#clicked on_click in
     ()
 
@@ -319,7 +362,7 @@ object(self)
   method raw_coq_query phrase =
     let action = log "raw_coq_query starting now" in
     let display_error s =
-      if not (Glib.Utf8.validate s) then
+      if not (validate s) then
         flash_info "This error is so nasty that I can't even display it."
       else messages#add s;
     in
@@ -328,7 +371,7 @@ object(self)
     let next = function
     | Fail (_, _, err) -> display_error err; Coq.return ()
     | Good msg ->
-      messages#add msg; Coq.return ()
+      messages#add_string msg; Coq.return ()
     in
     Coq.bind (Coq.seq action query) next
 
@@ -556,7 +599,7 @@ object(self)
         if Queue.is_empty queue then conclude topstack else
         match Queue.pop queue, topstack with
         | `Skip(start,stop), [] ->
-            logger Pp.Error "You muse close the proof with Qed or Admitted";
+            logger Pp.Error (Richpp.richpp_of_string "You must close the proof with Qed or Admitted");
             self#discard_command_queue queue;
             conclude [] 
         | `Skip(start,stop), (_,s) :: topstack ->
@@ -572,7 +615,7 @@ object(self)
             let handle_answer = function
               | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
                   Doc.assign_tip_id document id;
-                  logger Pp.Notice msg;
+                  logger Pp.Notice (Richpp.richpp_of_string msg);
                   self#commit_queue_transaction sentence;
                   loop id []
               | Good (id, (Util.Inr (* Unfocus *) tip, msg)) ->
@@ -580,7 +623,7 @@ object(self)
                   let topstack, _ = Doc.context document in
                   self#exit_focus;
                   self#cleanup (Doc.cut_at document tip);
-                  logger Pp.Notice msg;
+                  logger Pp.Notice (Richpp.richpp_of_string msg);
                   self#mark_as_needed sentence;
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
@@ -599,7 +642,7 @@ object(self)
    let next = function
      | Good _ ->
          messages#clear;
-         messages#push Pp.Info "All proof terms checked by the kernel";
+         messages#push Pp.Info (Richpp.richpp_of_string "All proof terms checked by the kernel");
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
@@ -693,7 +736,7 @@ object(self)
           self#cleanup (Doc.cut_at document to_id);
           conclusion ()
       | Fail (safe_id, loc, msg) ->
-          if loc <> None then messages#push Pp.Error "Fixme LOC";
+          if loc <> None then messages#push Pp.Error (Richpp.richpp_of_string "Fixme LOC");
           messages#push Pp.Error msg;
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
           else undo safe_id
@@ -769,7 +812,7 @@ object(self)
       self#show_goals
     in
     let display_error (loc, s) =
-      if not (Glib.Utf8.validate s) then
+      if not (validate s) then
         flash_info "This error is so nasty that I can't even display it."
       else messages#add s
     in
@@ -779,10 +822,10 @@ object(self)
       let next = function
       | Fail (_, l, str) -> (* FIXME: check *)
         display_error (l, str);
-        messages#add ("Unsuccessfully tried: "^phrase);
+        messages#add (Richpp.richpp_of_string ("Unsuccessfully tried: "^phrase));
         more
       | Good msg ->
-        messages#add msg;
+        messages#add_string msg;
         stop Tags.Script.processed
       in
       Coq.bind (Coq.seq action query) next
@@ -826,7 +869,10 @@ object(self)
   method initialize =
     let get_initial_state =
       let next = function
-      | Fail _ -> messages#set ("Couln't initialize Coq"); Coq.return ()
+      | Fail (_, _, message) ->
+        let message = "Couldn't initialize coqtop\n\n" ^ (Richpp.raw_print message) in
+        let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok ~message_type:`ERROR ~message () in
+        ignore (popup#run ()); exit 1
       | Good id -> initial_state <- id; Coq.return () in
       Coq.bind (Coq.init (get_filename ())) next in
     Coq.seq get_initial_state Coq.PrintOpt.enforce

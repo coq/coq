@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -30,12 +30,12 @@ Local Open Scope Z_scope.
 Ltac compute_POS :=
   match goal with
     |  |- context [(Zpos (xI ?X1))] =>
-      match constr:X1 with
+      match constr:(X1) with
 	| context [1%positive] => fail 1
 	| _ => rewrite (Pos2Z.inj_xI X1)
       end
     |  |- context [(Zpos (xO ?X1))] =>
-      match constr:X1 with
+      match constr:(X1) with
 	| context [1%positive] => fail 1
 	| _ => rewrite (Pos2Z.inj_xO X1)
       end

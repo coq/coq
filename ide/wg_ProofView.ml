@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,6 +8,7 @@
 
 open Util
 open Preferences
+open Ideutils
 
 class type proof_view =
   object
@@ -83,7 +84,8 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
           let () = hook_tag_cb tag hint sel_cb on_hover in
           [tag], hints
         in
-        let () = proof#buffer#insert ~tags (hyp ^ "\n") in
+        let () = insert_xml ~tags proof#buffer hyp in
+        proof#buffer#insert "\n";
         insert_hyp rem_hints hs
       in
       let () = proof#buffer#insert head_str in
@@ -96,13 +98,14 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
           else []
         in
         proof#buffer#insert (goal_str 1 goals_cnt);
-        proof#buffer#insert ~tags cur_goal;
+        insert_xml proof#buffer cur_goal;
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
       let fold_goal i _ { Interface.goal_ccl = g } =
         proof#buffer#insert (goal_str i goals_cnt);
-        proof#buffer#insert (g ^ "\n")
+        insert_xml proof#buffer g;
+        proof#buffer#insert "\n"
       in
       let () = Util.List.fold_left_i fold_goal 2 () rem_goals in
 
@@ -110,17 +113,6 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
                ~where:(proof#buffer#end_iter#backward_to_tag_toggle
                          (Some Tags.Proof.goal)));
       ignore(proof#scroll_to_mark ~use_align:true ~yalign:0.95 `INSERT)
-
-let mode_cesar (proof : #GText.view_skel) = function
-  | [] -> assert false
-  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: _ ->
-      proof#buffer#insert "    *** Declarative Mode ***\n";
-      List.iter
-        (fun hyp -> proof#buffer#insert (hyp^"\n"))
-        hyps;
-      proof#buffer#insert "______________________________________\n";
-      proof#buffer#insert ("thesis := \n "^cur_goal^"\n");
-      ignore (proof#scroll_to_iter (proof#buffer#get_iter_at_mark `INSERT))
 
 let rec flatten = function
 | [] -> []
@@ -152,8 +144,8 @@ let display mode (view : #GText.view_skel) goals hints evars =
       (* The proof is finished, with the exception of given up goals. *)
       view#buffer#insert "No more subgoals, but there are some goals you gave up:\n\n";
       let iter goal =
-        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
-        view#buffer#insert msg
+        insert_xml view#buffer goal.Interface.goal_ccl;
+        view#buffer#insert "\n"
       in
       List.iter iter given_up_goals;
       view#buffer#insert "\nYou need to go back and solve them."
@@ -161,8 +153,8 @@ let display mode (view : #GText.view_skel) goals hints evars =
       (* All the goals have been resolved but those on the shelf. *)
       view#buffer#insert "All the remaining goals are on the shelf:\n\n";
       let iter goal =
-        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
-        view#buffer#insert msg
+        insert_xml view#buffer goal.Interface.goal_ccl;
+        view#buffer#insert "\n"
       in
       List.iter iter shelved_goals
     | _, _, _, _ ->
@@ -174,8 +166,8 @@ let display mode (view : #GText.view_skel) goals hints evars =
       view#buffer#insert "This subproof is complete, but there are some unfocused goals:\n\n";
       let iter i goal =
         let () = view#buffer#insert (goal_str (succ i)) in
-        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
-        view#buffer#insert msg
+        insert_xml view#buffer goal.Interface.goal_ccl;
+        view#buffer#insert "\n"
       in
       List.iteri iter bg
     end

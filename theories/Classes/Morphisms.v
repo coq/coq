@@ -1,7 +1,7 @@
 (* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -465,7 +465,7 @@ Ltac partial_application_tactic :=
   let rec do_partial_apps H m cont := 
     match m with
       | ?m' ?x => class_apply @Reflexive_partial_app_morphism ; 
-        [(do_partial_apps H m' ltac:idtac)|clear H]
+        [(do_partial_apps H m' ltac:(idtac))|clear H]
       | _ => cont
     end
   in

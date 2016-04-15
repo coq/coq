@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,13 +19,13 @@ Local Open Scope list_scope.
 
 Ltac isInt31cst_lst l :=
  match l with
- | nil => constr:true
+ | nil => constr:(true)
  | ?t::?l => match t with
                | D1 => isInt31cst_lst l
                | D0 => isInt31cst_lst l
-               | _ => constr:false
+               | _ => constr:(false)
              end
- | _ => constr:false
+ | _ => constr:(false)
  end.
 
 Ltac isInt31cst t :=
@@ -38,17 +38,17 @@ Ltac isInt31cst t :=
       ::i11::i12::i13::i14::i15::i16::i17::i18::i19::i20
       ::i21::i22::i23::i24::i25::i26::i27::i28::i29::i30::nil)
     in isInt31cst_lst l
- | Int31.On => constr:true
- | Int31.In => constr:true
- | Int31.Tn => constr:true
- | Int31.Twon => constr:true
- | _ => constr:false
+ | Int31.On => constr:(true)
+ | Int31.In => constr:(true)
+ | Int31.Tn => constr:(true)
+ | Int31.Twon => constr:(true)
+ | _ => constr:(false)
  end.
 
 Ltac Int31cst t :=
  match isInt31cst t with
- | true => constr:t
- | false => constr:NotConstant
+ | true => constr:(t)
+ | false => constr:(NotConstant)
  end.
 
 (** The generic ring structure inferred from the Cyclic structure *)

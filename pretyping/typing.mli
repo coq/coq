@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -24,16 +24,16 @@ val type_of : ?refresh:bool -> env -> evar_map -> constr -> evar_map * types
 val e_type_of : ?refresh:bool -> env -> evar_map ref -> constr -> types
 
 (** Typecheck a type and return its sort *)
-val sort_of : env -> evar_map ref -> types -> sorts
+val e_sort_of : env -> evar_map ref -> types -> sorts
 
 (** Typecheck a term has a given type (assuming the type is OK) *)
-val check   : env -> evar_map ref -> constr -> types -> unit
+val e_check   : env -> evar_map ref -> constr -> types -> unit
 
 (** Returns the instantiated type of a metavariable *)
 val meta_type : evar_map -> metavariable -> types
 
 (** Solve existential variables using typing *)
-val solve_evars : env -> evar_map ref -> constr -> constr
+val e_solve_evars : env -> evar_map ref -> constr -> constr
 
 (** Raise an error message if incorrect elimination for this inductive *)
 (** (first constr is term to match, second is return predicate) *)

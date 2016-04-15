@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -139,12 +139,15 @@ let interval loc =
   loc1, loc2-1
 
 let dump_ref loc filepath modpath ident ty =
-  if !glob_output = Feedback then
+  match !glob_output with
+  | Feedback ->
     Pp.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
-  else
+  | NoGlob -> ()
+  | _ when not (Loc.is_ghost loc) ->
     let bl,el = interval loc in
     dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
 		  bl el filepath modpath ident ty)
+  | _ -> ()
 
 let dump_reference loc modpath ident ty =
   let filepath = Names.DirPath.to_string (Lib.library_dp ()) in
@@ -245,7 +248,7 @@ let dump_def ty loc secpath id =
 let dump_definition (loc, id) sec s =
   dump_def s loc (Names.DirPath.to_string (Lib.current_dirpath sec)) (Names.Id.to_string id)
 
-let dump_constraint ((loc, n), _, _) sec ty =
+let dump_constraint (((loc, n),_), _, _) sec ty =
   match n with
     | Names.Name id -> dump_definition (loc, id) sec ty
     | Names.Anonymous -> ()

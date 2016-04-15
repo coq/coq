@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -68,18 +68,54 @@ ExtraArgType of string         '_a                      '_b
 
 (** {5 Generic types} *)
 
-type ('raw, 'glob, 'top) genarg_type
+module ArgT :
+sig
+  type ('a, 'b, 'c) tag
+  val eq : ('a1, 'b1, 'c1) tag -> ('a2, 'b2, 'c2) tag -> ('a1 * 'b1 * 'c1, 'a2 * 'b2 * 'c2) CSig.eq option
+  val repr : ('a, 'b, 'c) tag -> string
+  type any = Any : ('a, 'b, 'c) tag -> any
+  val name : string -> any option
+end
+
+type (_, _, _) genarg_type =
+| ExtraArg : ('a, 'b, 'c) ArgT.tag -> ('a, 'b, 'c) genarg_type
+| ListArg : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
+| OptArg : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
+| PairArg : ('a1, 'b1, 'c1) genarg_type * ('a2, 'b2, 'c2) genarg_type ->
+  ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
 (** Generic types. ['raw] is the OCaml lowest level, ['glob] is the globalized
     one, and ['top] the internalized one. *)
+
+module Val :
+sig
+  type 'a typ
+
+  type _ tag =
+  | Base : 'a typ -> 'a tag
+  | List : 'a tag -> 'a list tag
+  | Opt : 'a tag -> 'a option tag
+  | Pair : 'a tag * 'b tag -> ('a * 'b) tag
+
+  type t = Dyn : 'a tag * 'a -> t
+
+  val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
+  val repr : 'a typ -> string
+  val pr : 'a tag -> Pp.std_ppcmds
+
+end
+(** Dynamic types for toplevel values. While the generic types permit to relate
+    objects at various levels of interpretation, toplevel values are wearing
+    their own type regardless of where they came from. This allows to use the
+    same runtime representation for several generic types. *)
 
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision when the three types agree. *)
 
-val make0 : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
+val make0 : ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
 (** Create a new generic type of argument: force to associate
     unique ML types at each of the three levels. *)
 
-val create_arg : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
+val create_arg : ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
 (** Alias for [make0]. *)
 
 (** {5 Specialized types} *)
@@ -91,11 +127,14 @@ val create_arg : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
    out_gen is monomorphic over 'a, hence type-safe
 *)
 
-type rlevel
-type glevel
-type tlevel
+type rlevel = [ `rlevel ]
+type glevel = [ `glevel ]
+type tlevel = [ `tlevel ]
 
-type ('a, 'co) abstract_argument_type
+type (_, _) abstract_argument_type =
+| Rawwit : ('a, 'b, 'c) genarg_type -> ('a, rlevel) abstract_argument_type
+| Glbwit : ('a, 'b, 'c) genarg_type -> ('b, glevel) abstract_argument_type
+| Topwit : ('a, 'b, 'c) genarg_type -> ('c, tlevel) abstract_argument_type
 (** Type at level ['co] represented by an OCaml value of type ['a]. *)
 
 type 'a raw_abstract_argument_type = ('a, rlevel) abstract_argument_type
@@ -120,7 +159,7 @@ val topwit : ('a, 'b, 'c) genarg_type -> ('c, tlevel) abstract_argument_type
 
 (** {5 Generic arguments} *)
 
-type 'a generic_argument
+type 'l generic_argument = GenArg : ('a, 'l) abstract_argument_type * 'a -> 'l generic_argument
 (** A inhabitant of ['level generic_argument] is a inhabitant of some type at
     level ['level], together with the representation of this type. *)
 
@@ -141,66 +180,26 @@ val has_type : 'co generic_argument -> ('a, 'co) abstract_argument_type -> bool
 (** [has_type v t] tells whether [v] has type [t]. If true, it ensures that
     [out_gen t v] will not raise a dynamic type exception. *)
 
-(** {6 Destructors} *)
+(** {6 Dynamic toplevel values} *)
 
-type ('a, 'b, 'c, 'l) cast
-
-val raw : ('a, 'b, 'c, rlevel) cast -> 'a
-val glb : ('a, 'b, 'c, glevel) cast -> 'b
-val top : ('a, 'b, 'c, tlevel) cast -> 'c
-
-type ('r, 'l) unpacker =
-  { unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> ('a, 'b, 'c, 'l) cast -> 'r }
-
-val unpack : ('r, 'l) unpacker -> 'l generic_argument -> 'r
-(** Existential-type destructors. *)
-
-(** {6 Manipulation of generic arguments}
-
-Those functions fail if they are applied to an argument which has not the right
-dynamic type. *)
-
-type ('r, 'l) list_unpacker =
-  { list_unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type ->
-    ('a list, 'b list, 'c list, 'l) cast -> 'r }
-
-val list_unpack : ('r, 'l) list_unpacker -> 'l generic_argument -> 'r
-
-type ('r, 'l) opt_unpacker =
-  { opt_unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type ->
-    ('a option, 'b option, 'c option, 'l) cast -> 'r }
-
-val opt_unpack : ('r, 'l) opt_unpacker -> 'l generic_argument -> 'r
-
-type ('r, 'l) pair_unpacker =
-  { pair_unpacker : 'a1 'a2 'b1 'b2 'c1 'c2.
-    ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
-    (('a1 * 'a2), ('b1 * 'b2), ('c1 * 'c2), 'l) cast -> 'r }
-
-val pair_unpack : ('r, 'l) pair_unpacker -> 'l generic_argument -> 'r
+val val_tag : 'a typed_abstract_argument_type -> 'a Val.tag
+(** Retrieve the dynamic type associated to a toplevel genarg. Only works for
+    ground generic arguments. *)
 
 (** {6 Type reification} *)
 
-type argument_type =
-  (** Basic types *)
-  | IntOrVarArgType
-  | IdentArgType
-  | VarArgType
-  (** Specific types *)
-  | GenArgType
-  | ConstrArgType
-  | ConstrMayEvalArgType
-  | QuantHypArgType
-  | OpenConstrArgType
-  | ConstrWithBindingsArgType
-  | BindingsArgType
-  | RedExprArgType
-  | ListArgType of argument_type
-  | OptArgType of argument_type
-  | PairArgType of argument_type * argument_type
-  | ExtraArgType of string
+type argument_type = ArgumentType : ('a, 'b, 'c) genarg_type -> argument_type
+
+(** {6 Equalities} *)
 
 val argument_type_eq : argument_type -> argument_type -> bool
+val genarg_type_eq :
+  ('a1, 'b1, 'c1) genarg_type ->
+  ('a2, 'b2, 'c2) genarg_type ->
+  ('a1 * 'b1 * 'c1, 'a2 * 'b2 * 'c2) CSig.eq option
+val abstract_argument_type_eq :
+  ('a, 'l) abstract_argument_type -> ('b, 'l) abstract_argument_type ->
+  ('a, 'b) CSig.eq option
 
 val pr_argument_type : argument_type -> Pp.std_ppcmds
 (** Print a human-readable representation for a given type. *)
@@ -244,35 +243,3 @@ val wit_list : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_ty
 val wit_opt : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
 val wit_pair : ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
   ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
-
-(** {5 Magic used by the parser} *)
-
-val default_empty_value : ('raw, 'glb, 'top) genarg_type -> 'raw option
-
-val register_name0 : ('a, 'b, 'c) genarg_type -> string -> unit
-(** Used by the extension to give a name to types. The string should be the
-    absolute path of the argument witness, e.g.
-    [register_name0 wit_toto "MyArg.wit_toto"]. *)
-
-val get_name0 : string -> string
-(** Return the absolute path of a given witness. *)
-
-(** {5 Unsafe loophole} *)
-
-module Unsafe :
-sig
-
-(** Unsafe magic functions. Not for kids. This is provided here as a loophole to
-    escape this module. Do NOT use outside of the dedicated areas. NOT. EVER. *)
-
-val inj : argument_type -> Obj.t -> 'lev generic_argument
-(** Injects an object as generic argument. !!!BEWARE!!! only do this as
-    [inj tpe x] where:
-
-    1. [tpe] is the reification of a [('a, 'b, 'c) genarg_type];
-    2. [x] has type ['a], ['b] or ['c] according to the return level ['lev]. *)
-
-val prj : 'lev generic_argument -> Obj.t
-(** Recover the contents of a generic argument. *)
-
-end

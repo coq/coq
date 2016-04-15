@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -78,10 +78,10 @@ let globalize_with_summary fs f =
 let i2l = Label.of_id
 
 let push_named_assum a = globalize0 (Safe_typing.push_named_assum a)
-let push_named_def d = globalize0 (Safe_typing.push_named_def d)
+let push_named_def d = globalize (Safe_typing.push_named_def d)
 let add_constraints c = globalize0 (Safe_typing.add_constraints c)
-let push_context_set c = globalize0 (Safe_typing.push_context_set c)
-let push_context c = globalize0 (Safe_typing.push_context c)
+let push_context_set b c = globalize0 (Safe_typing.push_context_set b c)
+let push_context b c = globalize0 (Safe_typing.push_context b c)
 
 let set_engagement c = globalize0 (Safe_typing.set_engagement c)
 let add_constant dir id d = globalize (Safe_typing.add_constant dir (i2l id) d)
@@ -198,13 +198,13 @@ let type_of_global_in_context env r =
   | IndRef ind ->
      let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
      let univs = 
-       if mib.mind_polymorphic then mib.mind_universes 
+       if mib.mind_polymorphic then Univ.instantiate_univ_context mib.mind_universes 
        else Univ.UContext.empty
      in Inductive.type_of_inductive env (specif, Univ.UContext.instance univs), univs
   | ConstructRef cstr ->
      let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
      let univs = 
-       if mib.mind_polymorphic then mib.mind_universes 
+       if mib.mind_polymorphic then Univ.instantiate_univ_context mib.mind_universes 
        else Univ.UContext.empty
      in
      let inst = Univ.UContext.instance univs in
@@ -249,7 +249,7 @@ let current_dirpath () =
 
 let with_global f = 
   let (a, ctx) = f (env ()) (current_dirpath ()) in
-    push_context_set ctx; a
+    push_context_set false ctx; a
 
 (* spiwack: register/unregister functions for retroknowledge *)
 let register field value by_clause =

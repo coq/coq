@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,8 +13,10 @@ open Names
 open Nameops
 open Term
 open Vars
-open Context
 open Environ
+
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 
 (* Sorts and sort family *)
 
@@ -99,26 +101,28 @@ let print_constr_env t = !term_printer t
 let print_constr t = !term_printer (Global.env()) t
 let set_print_constr f = term_printer := f
 
-let pr_var_decl env (id,c,typ) =
-  let pbody = match c with
-    | None ->  (mt ())
-    | Some c ->
+let pr_var_decl env decl =
+  let open NamedDecl in
+  let pbody = match decl with
+    | LocalAssum _ ->  mt ()
+    | LocalDef (_,c,_) ->
 	(* Force evaluation *)
 	let pb = print_constr_env env c in
 	  (str" := " ++ pb ++ cut () ) in
-  let pt = print_constr_env env typ in
+  let pt = print_constr_env env (get_type decl) in
   let ptyp = (str" : " ++ pt) in
-    (pr_id id ++ hov 0 (pbody ++ ptyp))
+    (pr_id (get_id decl) ++ hov 0 (pbody ++ ptyp))
 
-let pr_rel_decl env (na,c,typ) =
-  let pbody = match c with
-    | None -> mt ()
-    | Some c ->
+let pr_rel_decl env decl =
+  let open RelDecl in
+  let pbody = match decl with
+    | LocalAssum _ -> mt ()
+    | LocalDef (_,c,_) ->
 	(* Force evaluation *)
 	let pb = print_constr_env env c in
 	  (str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = print_constr_env env typ in
-    match na with
+  let ptyp = print_constr_env env (get_type decl) in
+    match get_name decl with
       | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
       | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
@@ -158,55 +162,53 @@ let rel_list n m =
   in
   reln [] 1
 
-(* Same as [rel_list] but takes a context as argument and skips let-ins *)
-let extended_rel_list n hyps =
-  let rec reln l p = function
-    | (_,None,_) :: hyps -> reln (mkRel (n+p) :: l) (p+1) hyps
-    | (_,Some _,_) :: hyps -> reln l (p+1) hyps
-    | [] -> l
-  in
-  reln [] 1 hyps
-
-let extended_rel_vect n hyps = Array.of_list (extended_rel_list n hyps)
-
-
-
-let push_rel_assum (x,t) env = push_rel (x,None,t) env
+let push_rel_assum (x,t) env =
+  let open RelDecl in
+  push_rel (LocalAssum (x,t)) env
 
 let push_rels_assum assums =
-  push_rel_context (List.map (fun (x,t) -> (x,None,t)) assums)
+  let open RelDecl in
+  push_rel_context (List.map (fun (x,t) -> LocalAssum (x,t)) assums)
 
 let push_named_rec_types (lna,typarray,_) env =
+  let open NamedDecl in
   let ctxt =
     Array.map2_i
       (fun i na t ->
 	 match na with
-	   | Name id -> (id, None, lift i t)
+	   | Name id -> LocalAssum (id, lift i t)
 	   | Anonymous -> anomaly (Pp.str "Fix declarations must be named"))
       lna typarray in
   Array.fold_left
     (fun e assum -> push_named assum e) env ctxt
 
 let lookup_rel_id id sign =
+  let open RelDecl in
   let rec lookrec n = function
-    | []                     -> raise Not_found
-    | (Anonymous, _, _) :: l -> lookrec (n + 1) l
-    | (Name id', b, t) :: l  ->
-      if Names.Id.equal id' id then (n, b, t) else lookrec (n + 1) l
+    | [] ->
+        raise Not_found
+    | (LocalAssum (Anonymous, _) | LocalDef (Anonymous,_,_)) :: l ->
+        lookrec (n + 1) l
+    | LocalAssum (Name id', t) :: l  ->
+        if Names.Id.equal id' id then (n,None,t)  else lookrec (n + 1) l
+    | LocalDef (Name id', b, t) :: l  ->
+        if Names.Id.equal id' id then (n,Some b,t) else lookrec (n + 1) l
   in
   lookrec 1 sign
 
 (* Constructs either [forall x:t, c] or [let x:=b:t in c] *)
-let mkProd_or_LetIn (na,body,t) c =
-  match body with
-    | None -> mkProd (na, t, c)
-    | Some b -> mkLetIn (na, b, t, c)
+let mkProd_or_LetIn decl c =
+  let open RelDecl in
+  match decl with
+    | LocalAssum (na,t) -> mkProd (na, t, c)
+    | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
 
 (* Constructs either [forall x:t, c] or [c] in which [x] is replaced by [b] *)
-let mkProd_wo_LetIn (na,body,t) c =
-  match body with
-    | None -> mkProd (na,  t, c)
-    | Some b -> subst1 b c
+let mkProd_wo_LetIn decl c =
+  let open RelDecl in
+  match decl with
+    | LocalAssum (na,t) -> mkProd (na, t, c)
+    | LocalDef (_,b,_) -> subst1 b c
 
 let it_mkProd init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
 let it_mkLambda init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
@@ -222,10 +224,11 @@ let it_mkNamedProd_wo_LetIn init = it_named_context_quantifier mkNamedProd_wo_Le
 let it_mkNamedLambda_or_LetIn init = it_named_context_quantifier mkNamedLambda_or_LetIn ~init
 
 let it_mkLambda_or_LetIn_from_no_LetIn c decls =
+  let open RelDecl in
   let rec aux k decls c = match decls with
   | [] -> c
-  | (na,Some b,t)::decls -> mkLetIn (na,b,t,aux (k-1) decls (liftn 1 k c))
-  | (na,None,t)::decls -> mkLambda (na,t,aux (k-1) decls c)
+  | LocalDef (na,b,t) :: decls -> mkLetIn (na,b,t,aux (k-1) decls (liftn 1 k c))
+  | LocalAssum (na,t) :: decls -> mkLambda (na,t,aux (k-1) decls c)
   in aux (List.length decls) (List.rev decls) c
 
 (* *)
@@ -316,7 +319,7 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
    (co-)fixpoint) *)
 
 let fold_rec_types g (lna,typarray,_) e =
-  let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
+  let ctxt = Array.map2_i (fun i na t -> RelDecl.LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> g assum e) e ctxt
 
 let map_left2 f a g b =
@@ -331,7 +334,9 @@ let map_left2 f a g b =
     r, s
   end
 
-let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
+let map_constr_with_binders_left_to_right g f l c =
+  let open RelDecl in
+  match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
   | Cast (b,k,t) -> 
@@ -341,18 +346,18 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
       else mkCast (b',k,t')
   | Prod (na,t,b) ->
       let t' = f l t in
-      let b' = f (g (na,None,t) l) b in
+      let b' = f (g (LocalAssum (na,t)) l) b in
 	if t' == t && b' == b then c
 	else mkProd (na, t', b')
   | Lambda (na,t,b) ->
       let t' = f l t in
-      let b' = f (g (na,None,t) l) b in
+      let b' = f (g (LocalAssum (na,t)) l) b in
 	if t' == t && b' == b then c
 	else mkLambda (na, t', b')
   | LetIn (na,bo,t,b) ->
       let bo' = f l bo in
       let t' = f l t in
-      let b' = f (g (na,Some bo,t) l) b in
+      let b' = f (g (LocalDef (na,bo,t)) l) b in
 	if bo' == bo && t' == t && b' == b then c
 	else mkLetIn (na, bo', t', b')	    
   | App (c,[||]) -> assert false
@@ -393,7 +398,9 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
 	else mkCoFix (ln,(lna,tl',bl'))
 
 (* strong *)
-let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
+let map_constr_with_full_binders g f l cstr =
+  let open RelDecl in
+  match kind_of_term cstr with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> cstr
   | Cast (c,k, t) ->
@@ -402,16 +409,16 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
       if c==c' && t==t' then cstr else mkCast (c', k, t')
   | Prod (na,t,c) ->
       let t' = f l t in
-      let c' = f (g (na,None,t) l) c in
+      let c' = f (g (LocalAssum (na,t)) l) c in
       if t==t' && c==c' then cstr else mkProd (na, t', c')
   | Lambda (na,t,c) ->
       let t' = f l t in
-      let c' = f (g (na,None,t) l) c in
+      let c' = f (g (LocalAssum (na,t)) l) c in
       if t==t' && c==c' then cstr else  mkLambda (na, t', c')
   | LetIn (na,b,t,c) ->
       let b' = f l b in
       let t' = f l t in
-      let c' = f (g (na,Some b,t) l) c in
+      let c' = f (g (LocalDef (na,b,t)) l) c in
       if b==b' && t==t' && c==c' then cstr else mkLetIn (na, b', t', c')
   | App (c,al) ->
       let c' = f l c in
@@ -432,7 +439,7 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
   | Fix (ln,(lna,tl,bl)) ->
       let tl' = Array.map (f l) tl in
       let l' =
-        Array.fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+        Array.fold_left2 (fun l na t -> g (LocalAssum (na,t)) l) l lna tl in
       let bl' = Array.map (f l') bl in
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
@@ -440,7 +447,7 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
   | CoFix(ln,(lna,tl,bl)) ->
       let tl' = Array.map (f l) tl in
       let l' =
-        Array.fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+        Array.fold_left2 (fun l na t -> g (LocalAssum (na,t)) l) l lna tl in
       let bl' = Array.map (f l') bl in
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
@@ -453,23 +460,25 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
    index) which is processed by [g] (which typically add 1 to [n]) at
    each binder traversal; it is not recursive *)
 
-let fold_constr_with_full_binders g f n acc c = match kind_of_term c with
+let fold_constr_with_full_binders g f n acc c =
+  let open RelDecl in
+  match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
-  | Prod (na,t,c) -> f (g (na,None,t) n) (f n acc t) c
-  | Lambda (na,t,c) -> f (g (na,None,t) n) (f n acc t) c
-  | LetIn (na,b,t,c) -> f (g (na,Some b,t) n) (f n (f n acc b) t) c
+  | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (p,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2 (fun c n t -> g (n,None,t) c) n lna tl in
+      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n,t)) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | CoFix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2 (fun c n t -> g (n,None,t) c) n lna tl in
+      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n,t)) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
 
@@ -481,23 +490,25 @@ let fold_constr_with_binders g f n acc c =
    each binder traversal; it is not recursive and the order with which
    subterms are processed is not specified *)
 
-let iter_constr_with_full_binders g f l c = match kind_of_term c with
+let iter_constr_with_full_binders g f l c =
+  let open RelDecl in
+  match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> ()
   | Cast (c,_, t) -> f l c; f l t
-  | Prod (na,t,c) -> f l t; f (g (na,None,t) l) c
-  | Lambda (na,t,c) -> f l t; f (g (na,None,t) l) c
-  | LetIn (na,b,t,c) -> f l b; f l t; f (g (na,Some b,t) l) c
+  | Prod (na,t,c) -> f l t; f (g (LocalAssum (na,t)) l) c
+  | Lambda (na,t,c) -> f l t; f (g (LocalAssum (na,t)) l) c
+  | LetIn (na,b,t,c) -> f l b; f l t; f (g (LocalDef (na,b,t)) l) c
   | App (c,args) -> f l c; Array.iter (f l) args
   | Proj (p,c) -> f l c
   | Evar (_,args) -> Array.iter (f l) args
   | Case (_,p,c,bl) -> f l p; f l c; Array.iter (f l) bl
   | Fix (_,(lna,tl,bl)) ->
-      let l' = Array.fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      let l' = Array.fold_left2 (fun l na t -> g (LocalAssum (na,t)) l) l lna tl in
       Array.iter (f l) tl;
       Array.iter (f l') bl
   | CoFix (_,(lna,tl,bl)) ->
-      let l' = Array.fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      let l' = Array.fold_left2 (fun l na t -> g (LocalAssum (na,t)) l) l lna tl in
       Array.iter (f l) tl;
       Array.iter (f l') bl
 
@@ -545,10 +556,11 @@ let occur_var env id c =
   in
   try occur_rec c; false with Occur -> true
 
-let occur_var_in_decl env hyp (_,c,typ) =
-  match c with
-    | None -> occur_var env hyp typ
-    | Some body ->
+let occur_var_in_decl env hyp decl =
+  let open NamedDecl in
+  match decl with
+    | LocalAssum (_,typ) -> occur_var env hyp typ
+    | LocalDef (_, body, typ) ->
         occur_var env hyp typ ||
         occur_var env hyp body
 
@@ -561,7 +573,7 @@ let free_rels m =
   in
   frec 1 Int.Set.empty m
 
-(* collects all metavar occurences, in left-to-right order, preserving
+(* collects all metavar occurrences, in left-to-right order, preserving
  * repetitions and all. *)
 
 let collect_metas c =
@@ -607,10 +619,11 @@ let dependent_no_evar = dependent_main true false
 let dependent_univs = dependent_main false true
 let dependent_univs_no_evar = dependent_main true true
 
-let dependent_in_decl a (_,c,t) =
-  match c with
-    | None -> dependent a t
-    | Some body -> dependent a body || dependent a t
+let dependent_in_decl a decl =
+  let open NamedDecl in
+  match decl with
+    | LocalAssum (_,t) -> dependent a t
+    | LocalDef (_, body, t) -> dependent a body || dependent a t
 
 let count_occurrences m t =
   let n = ref 0 in
@@ -713,10 +726,10 @@ let replace_term = replace_term_gen eq_constr
 
 let vars_of_env env =
   let s =
-    Context.fold_named_context (fun (id,_,_) s -> Id.Set.add id s)
+    Context.Named.fold_outside (fun decl s -> Id.Set.add (NamedDecl.get_id decl) s)
       (named_context env) ~init:Id.Set.empty in
-  Context.fold_rel_context
-    (fun (na,_,_) s -> match na with Name id -> Id.Set.add id s | _ -> s)
+  Context.Rel.fold_outside
+    (fun decl s -> match RelDecl.get_name decl with Name id -> Id.Set.add id s | _ -> s)
     (rel_context env) ~init:s
 
 let add_vname vars = function
@@ -741,12 +754,12 @@ let lookup_rel_of_name id names =
 let empty_names_context = []
 
 let ids_of_rel_context sign =
-  Context.fold_rel_context
-    (fun (na,_,_) l -> match na with Name id -> id::l | Anonymous -> l)
+  Context.Rel.fold_outside
+    (fun decl l -> match RelDecl.get_name decl with Name id -> id::l | Anonymous -> l)
     sign ~init:[]
 
 let ids_of_named_context sign =
-  Context.fold_named_context (fun (id,_,_) idl -> id::idl) sign ~init:[]
+  Context.Named.fold_outside (fun decl idl -> NamedDecl.get_id decl :: idl) sign ~init:[]
 
 let ids_of_context env =
   (ids_of_rel_context (rel_context env))
@@ -754,7 +767,7 @@ let ids_of_context env =
 
 
 let names_of_rel_context env =
-  List.map (fun (na,_,_) -> na) (rel_context env)
+  List.map RelDecl.get_name (rel_context env)
 
 let is_section_variable id =
   try let _ = Global.lookup_named id in true
@@ -801,7 +814,7 @@ let split_app c = match kind_of_term c with
 	c::(Array.to_list prev), last
   | _ -> assert false
 
-type subst = (rel_context*constr) Evar.Map.t
+type subst = (Context.Rel.t * constr) Evar.Map.t
 
 exception CannotFilter
 
@@ -827,7 +840,7 @@ let filtering env cv_pb c1 c2 =
         end
       | Prod (n,t1,c1), Prod (_,t2,c2) ->
 	  aux env cv_pb t1 t2;
-	  aux ((n,None,t1)::env) cv_pb c1 c2
+	  aux (RelDecl.LocalAssum (n,t1) :: env) cv_pb c1 c2
       | _, Evar (ev,_) -> define cv_pb env ev c1
       | Evar (ev,_), _ -> define cv_pb env ev c2
       | _ ->
@@ -838,15 +851,43 @@ let filtering env cv_pb c1 c2 =
   in
   aux env cv_pb c1 c2; !evm
 
-let decompose_prod_letin : constr -> int * rel_context * constr =
+let decompose_prod_letin : constr -> int * Context.Rel.t * constr =
   let rec prodec_rec i l c = match kind_of_term c with
-    | Prod (n,t,c)    -> prodec_rec (succ i) ((n,None,t)::l) c
-    | LetIn (n,d,t,c) -> prodec_rec (succ i) ((n,Some d,t)::l) c
+    | Prod (n,t,c)    -> prodec_rec (succ i) (RelDecl.LocalAssum (n,t)::l) c
+    | LetIn (n,d,t,c) -> prodec_rec (succ i) (RelDecl.LocalDef (n,d,t)::l) c
     | Cast (c,_,_)    -> prodec_rec i l c
     | _               -> i,l,c in
   prodec_rec 0 []
 
-let align_prod_letin c a : rel_context * constr =
+(* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
+ * gives n (casts are ignored) *)
+let nb_lam =
+  let rec nbrec n c = match kind_of_term c with
+    | Lambda (_,_,c) -> nbrec (n+1) c
+    | Cast (c,_,_) -> nbrec n c
+    | _ -> n
+  in
+  nbrec 0
+
+(* similar to nb_lam, but gives the number of products instead *)
+let nb_prod =
+  let rec nbrec n c = match kind_of_term c with
+    | Prod (_,_,c) -> nbrec (n+1) c
+    | Cast (c,_,_) -> nbrec n c
+    | _ -> n
+  in
+  nbrec 0
+
+let nb_prod_modulo_zeta x =
+  let rec count n c =
+    match kind_of_term c with
+        Prod(_,_,t) -> count (n+1) t
+      | LetIn(_,a,_,t) -> count n (subst1 a t)
+      | Cast(c,_,_) -> count n c
+      | _ -> n
+  in count 0 x
+
+let align_prod_letin c a : Context.Rel.t * constr =
   let (lc,_,_) = decompose_prod_letin c in
   let (la,l,a) = decompose_prod_letin a in
   if not (la >= lc) then invalid_arg "align_prod_letin";
@@ -884,20 +925,20 @@ let process_rel_context f env =
   let sign = named_context_val env in
   let rels = rel_context env in
   let env0 = reset_with_named_context sign env in
-  Context.fold_rel_context f rels ~init:env0
+  Context.Rel.fold_outside f rels ~init:env0
 
 let assums_of_rel_context sign =
-  Context.fold_rel_context
-    (fun (na,c,t) l ->
-      match c with
-          Some _ -> l
-        | None -> (na, t)::l)
+  Context.Rel.fold_outside
+    (fun decl l ->
+      match decl with
+      | RelDecl.LocalDef _ -> l
+      | RelDecl.LocalAssum (na,t) -> (na, t)::l)
     sign ~init:[]
 
 let map_rel_context_in_env f env sign =
   let rec aux env acc = function
     | d::sign ->
-	aux (push_rel d env) (map_rel_declaration (f env) d :: acc) sign
+	aux (push_rel d env) (RelDecl.map_constr (f env) d :: acc) sign
     | [] ->
 	acc
   in
@@ -905,10 +946,10 @@ let map_rel_context_in_env f env sign =
 
 let map_rel_context_with_binders f sign =
   let rec aux k = function
-    | d::sign -> map_rel_declaration (f k) d :: aux (k-1) sign
+    | d::sign -> RelDecl.map_constr (f k) d :: aux (k-1) sign
     | [] -> []
   in
-  aux (rel_context_length sign) sign
+  aux (Context.Rel.length sign) sign
 
 let substl_rel_context l =
   map_rel_context_with_binders (fun k -> substnl l (k-1))
@@ -919,60 +960,54 @@ let lift_rel_context n =
 let smash_rel_context sign =
   let rec aux acc = function
   | [] -> acc
-  | (_,None,_ as d) :: l -> aux (d::acc) l
-  | (_,Some b,_) :: l ->
+  | (RelDecl.LocalAssum _ as d) :: l -> aux (d::acc) l
+  | RelDecl.LocalDef (_,b,_) :: l ->
       (* Quadratic in the number of let but there are probably a few of them *)
       aux (List.rev (substl_rel_context [b] (List.rev acc))) l
   in List.rev (aux [] sign)
 
-let adjust_subst_to_rel_context sign l =
-  let rec aux subst sign l =
-    match sign, l with
-    | (_,None,_)::sign', a::args' -> aux (a::subst) sign' args'
-    | (_,Some c,_)::sign', args' ->
-	aux (substl (List.rev subst) c :: subst) sign' args'
-    | [], [] -> List.rev subst
-    | _ -> anomaly (Pp.str "Instance and signature do not match")
-  in aux [] (List.rev sign) l
-
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
-let rec mem_named_context id = function
-  | (id',_,_) :: _ when Id.equal id id' -> true
+let rec mem_named_context id ctxt =
+  match ctxt with
+  | decl :: _ when Id.equal id (NamedDecl.get_id decl) -> true
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
 let compact_named_context_reverse sign =
-  let compact l (i1,c1,t1) =
+  let compact l decl =
+    let (i1,c1,t1) = NamedDecl.to_tuple decl in
     match l with
     | [] -> [[i1],c1,t1]
     | (l2,c2,t2)::q ->
        if Option.equal Constr.equal c1 c2 && Constr.equal t1 t2
        then (i1::l2,c2,t2)::q
        else ([i1],c1,t1)::l
-  in Context.fold_named_context_reverse compact ~init:[] sign
+  in Context.Named.fold_inside compact ~init:[] sign
 
 let compact_named_context sign = List.rev (compact_named_context_reverse sign)
 
 let clear_named_body id env =
+  let open NamedDecl in
   let aux _ = function
-  | (id',Some c,t) when Id.equal id id' -> push_named (id,None,t)
+  | LocalDef (id',c,t) when Id.equal id id' -> push_named (LocalAssum (id,t))
   | d -> push_named d in
   fold_named_context aux env ~init:(reset_context env)
 
 let global_vars env ids = Id.Set.elements (global_vars_set env ids)
 
 let global_vars_set_of_decl env = function
-  | (_,None,t) -> global_vars_set env t
-  | (_,Some c,t) ->
+  | NamedDecl.LocalAssum (_,t) -> global_vars_set env t
+  | NamedDecl.LocalDef (_,c,t) ->
       Id.Set.union (global_vars_set env t)
         (global_vars_set env c)
 
 let dependency_closure env sign hyps =
   if Id.Set.is_empty hyps then [] else
     let (_,lh) =
-      Context.fold_named_context_reverse
-        (fun (hs,hl) (x,_,_ as d) ->
+      Context.Named.fold_inside
+        (fun (hs,hl) d ->
+          let x = NamedDecl.get_id d in
           if Id.Set.mem x hs then
             (Id.Set.union (global_vars_set_of_decl env d) (Id.Set.remove x hs),
             x::hl)
@@ -987,12 +1022,12 @@ let on_judgment f j = { uj_val = f j.uj_val; uj_type = f j.uj_type }
 let on_judgment_value f j = { j with uj_val = f j.uj_val }
 let on_judgment_type f j = { j with uj_type = f j.uj_type }
 
-(* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k
-     variables; skips let-in's *)
+(* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k non let-in
+     variables skips let-in's; let-in's in the middle are put in ctx2 *)
 let context_chop k ctx =
   let rec chop_aux acc = function
     | (0, l2) -> (List.rev acc, l2)
-    | (n, ((_,Some _,_ as h)::t)) -> chop_aux (h::acc) (n, t)
+    | (n, (RelDecl.LocalDef _ as h)::t) -> chop_aux (h::acc) (n, t)
     | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
     | (_, []) -> anomaly (Pp.str "context_chop")
   in chop_aux [] (k,ctx)

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -29,6 +29,7 @@ open Proof_type
 open Pfedit
 open Glob_term
 open Pretyping
+open Termops
 open Constrintern
 open Misctypes
 open Genredexpr
@@ -38,7 +39,8 @@ open Auto
 open Eauto
 
 open Indfun_common
-
+open Sigma.Notations
+open Context.Rel.Declaration
 
 
 (* Ugly things which should not be here *)
@@ -179,7 +181,7 @@ let (value_f:constr list -> global_reference -> constr) =
       )
     in
     let context = List.map
-      (fun (x, c) -> Name x, None, c) (List.combine rev_x_id_l (List.rev al))
+      (fun (x, c) -> LocalAssum (Name x, c)) (List.combine rev_x_id_l (List.rev al))
     in
     let env = Environ.push_rel_context context (Global.env ()) in
     let glob_body =
@@ -194,7 +196,7 @@ let (value_f:constr list -> global_reference -> constr) =
 			       Anonymous)],
 	  GVar(d0,v_id)])
     in
-    let body = fst (understand env Evd.empty glob_body)(*FIXME*) in
+    let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context
 
 let (declare_f : Id.t -> logical_kind -> constr list -> global_reference -> global_reference) =
@@ -203,7 +205,7 @@ let (declare_f : Id.t -> logical_kind -> constr list -> global_reference -> glob
 
 
 
-(* Debuging mechanism *)
+(* Debugging mechanism *)
 let debug_queue = Stack.create ()
 
 let rec print_debug_queue b e = 
@@ -212,10 +214,10 @@ let rec print_debug_queue b e =
     begin
       let lmsg,goal = Stack.pop debug_queue in 
       if b then 
-	Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	Pp.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal" ++ fnl() ++ goal))
       else
 	begin
-	  Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	  Pp.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal));
 	end;
       (* print_debug_queue false e; *)
     end
@@ -274,8 +276,8 @@ let tclUSER tac is_mes l g =
       if is_mes
       then observe_tclTHENLIST (str "tclUSER2")
         [
-	  unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference
-            (delayed_force Indfun_common.ltof_ref))];
+	  Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference
+            (delayed_force Indfun_common.ltof_ref))]);
          tac
 	 ]
       else tac
@@ -291,9 +293,9 @@ let tclUSER_if_not_mes concl_tac is_mes names_to_suppress =
 
   
 
-(* Travelling term.
+(* Traveling term.
    Both definitions of [f_terminate] and [f_equation] use the same generic 
-   travelling mechanism.
+   traveling mechanism.
 *)
 
 (* [check_not_nested forbidden e] checks that [e] does not contains any variable 
@@ -327,7 +329,7 @@ let check_not_nested forbidden e =
   with UserError(_,p) -> 
     errorlabstrm "_" (str "on expr : " ++ Printer.pr_lconstr e ++ str " " ++ p)
 
-(* ['a info] contains the local information for travelling *)
+(* ['a info] contains the local information for traveling *)
 type 'a infos = 
     { nb_arg : int; (* function number of arguments *)
       concl_tac : tactic; (* final tactic to finish proofs *)
@@ -337,7 +339,7 @@ type 'a infos =
       f_id : Id.t;  (* function name *)
       f_constr : constr;  (* function term *)
       f_terminate : constr; (* termination proof term *)
-      func : global_reference; (* functionnal reference *)
+      func : global_reference; (* functional reference *)
       info : 'a;
       is_main_branch : bool; (* on the main branch or on a matched expression *)
       is_final : bool; (* final first order term or not *)
@@ -357,7 +359,7 @@ type ('a,'b) journey_info_tac =
     'b infos -> (* argument of the tactic *)
     tactic
        
-(* journey_info : specifies the actions to do on the different term constructors during the travelling of the term
+(* journey_info : specifies the actions to do on the different term constructors during the traveling of the term
 *)
 type journey_info = 
     { letiN : ((Name.t*constr*types*constr),constr) journey_info_tac;
@@ -560,10 +562,10 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
 		   observe_tclTHENLIST (str "destruct_bounds_aux2")[
 		     observe_tac (str "clearing k ") (clear [id]);
 		     h_intros [k;h';def];
-		     observe_tac (str "simple_iter") (simpl_iter Locusops.onConcl);
+		     observe_tac (str "simple_iter") (Proofview.V82.of_tactic (simpl_iter Locusops.onConcl));
 		     observe_tac (str "unfold functional")
-		       (unfold_in_concl[(Locus.OnlyOccurrences [1],
-					 evaluable_of_global_reference infos.func)]);
+		       (Proofview.V82.of_tactic (unfold_in_concl[(Locus.OnlyOccurrences [1],
+					 evaluable_of_global_reference infos.func)]));
 		     (
 		       observe_tclTHENLIST (str "test")[
 			 list_rewrite true
@@ -676,8 +678,10 @@ let mkDestructEq :
   let hyps = pf_hyps g in
   let to_revert =
     Util.List.map_filter
-      (fun (id, _, t) ->
-        if Id.List.mem id not_on_hyp || not (Termops.occur_term expr t)
+      (fun decl ->
+        let open Context.Named.Declaration in
+        let id = get_id decl in
+        if Id.List.mem id not_on_hyp || not (Termops.occur_term expr (get_type decl))
         then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
   let type_of_expr = pf_unsafe_type_of g expr in
@@ -685,11 +689,13 @@ let mkDestructEq :
            to_revert_constr in
     pf_typel new_hyps (fun _ ->
     observe_tclTHENLIST (str "mkDestructEq")
-     [Simple.generalize new_hyps;
+     [generalize new_hyps;
       (fun g2 ->
-	Proofview.V82.of_tactic (change_in_concl None
-	  (fun patvars sigma ->
-	    pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2))) g2);
+        let changefun patvars = { run = fun sigma ->
+          let redfun = pattern_occs [Locus.AllOccurrencesBut [1], expr] in
+          redfun.Reductionops.e_redfun (pf_env g2) sigma (pf_concl g2)
+        } in
+	Proofview.V82.of_tactic (change_in_concl None changefun) g2);
       Proofview.V82.of_tactic (simplest_case expr)]), to_revert
 
 
@@ -897,10 +903,10 @@ let make_rewrite expr_info l hp max =
        [observe_tac(str "make_rewrite finalize") (
 	 (* tclORELSE( h_reflexivity) *)
 	 (observe_tclTHENLIST (str "make_rewrite")[
-	   simpl_iter Locusops.onConcl;
+	   Proofview.V82.of_tactic (simpl_iter Locusops.onConcl);
 	   observe_tac (str "unfold functional")
-	     (unfold_in_concl[(Locus.OnlyOccurrences [1],
-			       evaluable_of_global_reference expr_info.func)]);
+	     (Proofview.V82.of_tactic (unfold_in_concl[(Locus.OnlyOccurrences [1],
+			       evaluable_of_global_reference expr_info.func)]));
 	   
 	   (list_rewrite true 
 	      (List.map (fun e -> mkVar e,true) expr_info.eqs));
@@ -1110,7 +1116,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 	       [observe_tac (str "generalize")
 		  (onNLastHypsId (nargs+1)
 		     (tclMAP (fun id ->
-			tclTHEN (Tactics.Simple.generalize [mkVar id]) (clear [id]))
+			tclTHEN (Tactics.generalize [mkVar id]) (clear [id]))
 		     ))
 	       ;
 		observe_tac (str "fix") (fix (Some hrec) (nargs+1));
@@ -1248,7 +1254,7 @@ let clear_goals =
 	  then Termops.pop b'
 	  else if b' == b then t
 	  else mkProd(na,t',b')
-      | _ -> map_constr clear_goal t
+      | _ -> Term.map_constr clear_goal t
   in
   List.map clear_goal
 
@@ -1293,13 +1299,14 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
     ref_ := Some lemma ;
     let lid = ref [] in
     let h_num = ref (-1) in
+    let env = Global.env () in
     Proof_global.discard_all ();
-    build_proof Evd.empty
+    build_proof (Evd.from_env env)
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   observe_tclTHENLIST (str "")
 	     [
-	       Simple.generalize [lemma];
+	       generalize [lemma];
 	       Proofview.V82.of_tactic (Simple.intro hid);
 	       (fun g ->
 		  let ids = pf_ids_of_hyps g in
@@ -1329,7 +1336,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 			  (Proofview.V82.of_tactic e_assumption);
 		      Eauto.eauto_with_bases
 			(true,5)
-			[Evd.empty,Lazy.force refl_equal]
+			[{ Tacexpr.delayed = fun _ sigma -> Sigma.here (Lazy.force refl_equal) sigma}]
 			[Hints.Hint_db.empty empty_transparent_state false]
 		      ]
 		    )
@@ -1398,9 +1405,7 @@ let com_terminate
   start_proof ctx tclIDTAC tclIDTAC;
   try
     let sigma, new_goal_type = build_new_goal_type () in
-    let sigma =
-      Evd.from_env ~ctx:(Evd.evar_universe_context sigma) Environ.empty_env
-    in
+    let sigma = Evd.from_ctx (Evd.evar_universe_context sigma) in
     open_new_goal start_proof sigma
       using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
@@ -1421,7 +1426,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   let x = n_x_id ids nargs in
   observe_tac (str "start_equation") (observe_tclTHENLIST (str "start_equation") [
     h_intros x;
-    unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference f)];
+    Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference f)]);
     observe_tac (str "simplest_case")
       (Proofview.V82.of_tactic (simplest_case (mkApp (terminate_constr,
                              Array.of_list (List.map mkVar x)))));
@@ -1437,9 +1442,7 @@ let (com_eqn : int -> Id.t ->
 	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant")
     in
     let (evmap, env) = Lemmas.get_current_context() in
-    let evmap =
-      Evd.from_env ~ctx:(Evd.evar_universe_context evmap) Environ.empty_env
-    in
+    let evmap = Evd.from_ctx (Evd.evar_universe_context evmap) in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (Lemmas.start_proof eq_name (Global, false, Proof Lemma)
@@ -1487,7 +1490,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let env = Global.env() in
   let evd = ref (Evd.from_env env) in
   let function_type = interp_type_evars env evd type_of_f in
-  let env = push_named (function_name,None,function_type) env in
+  let env = push_named (Context.Named.Declaration.LocalAssum (function_name,function_type)) env in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
   let ty = interp_type_evars env evd ~impls:rec_impls eq in
   let evm, nf = Evarutil.nf_evars_and_universes !evd in
@@ -1495,7 +1498,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let function_type = nf function_type in
  (* Pp.msgnl (str "lemma type := " ++ Printer.pr_lconstr equation_lemma_type ++ fnl ()); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in
-  let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> (x,None,y)) res_vars) env in
+  let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> LocalAssum (x,y)) res_vars) env in
   let eq' = nf_zeta env_eq' eq'  in
   let res =
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
@@ -1512,12 +1515,12 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let equation_id = add_suffix function_name "_equation" in
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
-  let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx:(Evd.universe_context evm) res in
-  let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
+  let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx:(snd (Evd.universe_context evm)) res in
+  let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> LocalAssum (x,t)) pre_rec_args) env in
   let relation =
     fst (*FIXME*)(interp_constr
       env_with_pre_rec_args
-      Evd.empty
+      (Evd.from_env env_with_pre_rec_args)
       r)
   in
   let tcc_lemma_name = add_suffix function_name "_tcc" in

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -91,13 +91,13 @@ val from_here : ?fix_exn:fix_exn -> 'a -> 'a computation
  * When a future enters the environment a corresponding hook is run to perform
  * some work.  If this fails, then its failure has to be annotated with the
  * same state id that corresponds to the future computation end.  I.e. Qed
- * is split into two parts, the lazy one (the future) and the eagher one
+ * is split into two parts, the lazy one (the future) and the eager one
  * (the hook), both performing some computations for the same state id. *)
 val fix_exn_of : 'a computation -> fix_exn
 
 (* Run remotely, returns the function to assign.
    If not blocking (the default) it raises NotReady if forced before the
-   delage assigns it. *)
+   delegate assigns it. *)
 type 'a assignement = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
 val create_delegate :
   ?blocking:bool -> name:string ->
@@ -157,7 +157,11 @@ val transactify : ('a -> 'b) -> 'a -> 'b
 (** Debug: print a computation given an inner printing function. *)
 val print : ('a -> Pp.std_ppcmds) -> 'a computation -> Pp.std_ppcmds
 
+type freeze
 (* These functions are needed to get rid of side effects.
    Thy are set for the outermos layer of the system, since they have to
    deal with the whole system state. *)
-val set_freeze : (unit -> Dyn.t) -> (Dyn.t -> unit) -> unit
+val set_freeze : (unit -> freeze) -> (freeze -> unit) -> unit
+
+val customize_not_ready_msg : (string -> Pp.std_ppcmds) -> unit
+val customize_not_here_msg : (string -> Pp.std_ppcmds) -> unit

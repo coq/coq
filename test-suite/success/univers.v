@@ -60,3 +60,20 @@ Qed.
 (* Submitted by Danko Ilik (bug report #1507); related to LetIn *)
 
 Record U : Type := { A:=Type; a:A }.
+
+(** Check assignement of sorts to inductives and records. *)
+
+Variable sh : list nat.
+
+Definition is_box_in_shape (b :nat * nat) := True.
+Definition myType := Type.
+
+Module Ind.
+Inductive box_in : myType :=
+  myBox (coord : nat * nat) (_ : is_box_in_shape coord) : box_in.
+End Ind.
+
+Module Rec.
+Record box_in : myType :=
+  BoxIn { coord :> nat * nat; _ : is_box_in_shape coord }.
+End Rec.

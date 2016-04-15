@@ -10,54 +10,75 @@
 
 \begin{center}
 \begin{huge}
-An history of Coq versions
+A history of Coq versions
 \end{huge}
 \end{center}
 \bigskip
 
 \centerline{\large 1984-1989: The Calculus of Constructions}
+
+\bigskip
+\centerline{\large (see README.V1-V5 for details)}
 \mbox{}\\
 \mbox{}\\
 \begin{tabular}{l|l|l}
 version & date & comments \\
 \hline
-CoC V1.10& mention of dates from 6 December & implementation language is Caml\\
-         & 1984 to 13 February 1985 \\
 
-CoC V1.11& mention of dates from 6 December\\
-         & 1984 to 19 February 1985\\
+CONSTR V1.10& mention of dates from 6 December & \feature{type-checker for Coquand's Calculus }\\
+         & 1984 to 13 February 1985 & \feature{of Constructions}, implementation  \\
+         & frozen 22 December 1984 & language is a predecessor of CAML\\
 
-CoC V2.13& dated 16 December 1985\\
+CONSTR V1.11& mention of dates from 6 December\\
+         & 1984 to 19 February 1985 (freeze date) &\\
 
-CoC V2.13& dated 25 June 1986\\
+CoC V2.8& dated 16 December 1985 (freeze date)\\
 
-CoC V3.1& dated 20 November 1986 & \feature{auto}\\
+CoC V2.9& & \feature{cumulative hierarchy of universes}\\
+
+CoC V2.13& dated 25 June 1986 (freeze date)\\
+
+CoC V3.1& started summer 1986 & \feature{AUTO tactic}\\
+  & dated 20 November 1986 & implementation language now named CAML\\
 
 CoC V3.2& dated 27 November 1986\\
 
-CoC V3.3 and V3.4& dated 1 January 1987 & creation of a directory for examples\\
+CoC V3.3& dated 1 January 1987 & creation of a directory for examples\\
 
-CoC V4.1& dated 24 July 1987\\
+CoC V3.4& dated 1 January 1987 & \feature{lambda and product distinguished in the syntax}\\
+
+CoC V4.1& dated 24 July 1987 (freeze date)\\
 
 CoC V4.2& dated 10 September 1987\\
 
-CoC V4.3& dated 15 September 1987\\
+CoC V4.3& dated 15 September 1987 & \feature{mathematical vernacular toplevel}\\
+  & frozen November 1987 & \feature{section mechanism}\\
+  & & \feature{logical vs computational content (sorte Spec)}\\
+  & & \feature{LCF engine}\\
 
-CoC V4.4& dated 27 January 1988\\
+CoC V4.4& dated 27 January 1988 & \feature{impredicatively encoded inductive types}\\
+  & frozen March 1988\\
 
-CoC V4.5 and V4.5.5& dated 15 March 1988\\
+CoC V4.5 and V4.5.5& dated 15 March 1988 & \feature{program extraction}\\
+  & demonstrated in June 1988\\
 
-CoC V4.6 and V4.7& dated 1 September 1988\\
+CoC V4.6& dated 1 September 1988 & start of LEGO fork\\
 
-CoC V4.8& dated 1 December 1988\\
+CoC V4.7& started 6 September 1988 \\
 
-CoC V4.8.5& dated 1 February 1989\\
+CoC V4.8& dated 1 December 1988 (release time) & \feature{floating universes}\\
 
-CoC V4.9& dated 1 March 1989\\
+CoC V4.8.5& dated 1 February 1989 & \\
 
-CoC V4.10 and 4.10.1& dated 1 May 1989 & first public release - in English\\
+CoC V4.9& dated 1 March 1989 (release date)\\
+
+CoC V4.10 and 4.10.1& dated 1 May 1989 & released with documentation in English\\
 \end{tabular}
 
+\bigskip
+
+\noindent Note: CoC above stands as an abbreviation for {\em Calculus of
+  Constructions}, official name of the system.
 \bigskip
 \bigskip
 
@@ -80,7 +101,7 @@ Coq V5.2 & log dated 4 October 1990 & internal use \\
 
 Coq V5.3 & log dated 12 October 1990 & internal use \\
 
-Coq V5.4 & headers dated 24 October 1990 & internal use, \feature{extraction} (version 1) [3-12-90]\\
+Coq V5.4 & headers dated 24 October 1990 & internal use, new \feature{extraction} (version 1) [3-12-90]\\
 
 Coq V5.5 & started 6 December 1990 & internal use \\
 
@@ -202,6 +223,7 @@ version & date & comments \\
 Coq ``V6'' archive & 20 March 1996 & new cvs repository on pauillac.inria.fr with code ported \\
  & & to Caml Special Light (to later become Objective Caml)\\
  & & has implicit arguments and coercions\\
+ & & has coinductive types\\
 
 Coq V6.1beta& released 18 November 1996 & \feature{coercions} [23-5-1996], \feature{user-level implicit arguments} [23-5-1996]\\
  & & \feature{omega} [10-9-1996] \\
@@ -265,7 +287,17 @@ Coq V7.3.1& released 5 October 2002 & \feature{module system} [2-8-2002]\\
   & & \feature{pattern-matching compilation} (version 2) [13-6-2002]\\
 
 Coq V7.4& released 6 February 2003 & \feature{notation}, \feature{scopes} [13-10-2002]\\
+\end{tabular}
 
+\medskip
+\bigskip
+
+\centerline{V- New concrete syntax}
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+version & date & comments \\
+\hline
 Coq V8.0& released 21 April 2004 & \feature{new concrete syntax}, \feature{Set predicative}, \feature{CoqIDE} [from 4-2-2003]\\
 
 Coq V8.0pl1& released 18 July 2004\\
@@ -307,6 +339,46 @@ Coq V8.2 & released 17 February 2009 & \feature{type classes} [10-12-2007], \fea
 
 & & a first package released on
 February 11 was incomplete\\
+Coq V8.2pl1& released 4 July 2009 & \\
+Coq V8.2pl2& released 29 June 2010 & \\
+\end{tabular}
+
+\medskip
+\bigskip
+
+\newpage
+\mbox{}\\
+\mbox{}\\
+\begin{tabular}{l|l|l}
+Coq V8.3 beta & released 16 February 2010 & \feature{MSets library} [13-10-2009] \\
+Coq V8.3 & released 14 October 2010 & \feature{nsatz} [3-6-2010] \\
+Coq V8.3pl1& released 23 December 2010 & \\
+Coq V8.3pl2& released 19 April 2011 & \\
+Coq V8.3pl3& released 19 December 2011 & \\
+Coq V8.3pl3& released 26 March 2012 & \\
+Coq V8.3pl5& released 28 September 2012 & \\
+Coq V8.4 beta & released 27 December 2011 &  \feature{modular arithmetic library} [2010-2012]\\
+&& \feature{vector library} [10-12-2010]\\
+&& \feature{structured scripts} [22-4-2010]\\
+&& \feature{eta-conversion} [20-9-2010]\\
+&& \feature{new proof engine available} [10-12-2010]\\
+Coq V8.4 beta2 & released 21 May 2012 & \\
+Coq V8.4 & released 12 August 2012 &\\
+Coq V8.4pl1& released 22 December 2012 & \\
+Coq V8.4pl2& released 4 April 2013 & \\
+Coq V8.4pl3& released 21 December 2013 & \\
+Coq V8.4pl4& released 24 April 2014 & \\
+Coq V8.4pl5& released 22 October 2014 & \\
+Coq V8.4pl6& released 9 April 2015 & \\
+
+Coq V8.5 beta1 & released 21 January 2015 & \feature{computation via compilation to OCaml} [22-1-2013]\\
+&& \feature{asynchonous evaluation} [8-8-2013]\\
+&& \feature{new proof engine deployed} [2-11-2013]\\
+&& \feature{universe polymorphism} [6-5-2014]\\
+&& \feature{primitive projections} [6-5-2014]\\
+
+Coq V8.5 beta2 & released 22 April 2015 & \feature{MMaps library} [4-3-2015]\\
+
 \end{tabular}
 
 \medskip

@@ -21,7 +21,6 @@
 
 value coq_kind_of_closure(value v) {
   opcode_t * c;
-  int res;
   int is_app = 0;
   c = Code_val(v);
   if (Is_instruction(c, GRAB)) return Val_int(0);

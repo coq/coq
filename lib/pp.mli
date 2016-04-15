@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -116,7 +116,7 @@ type message_level = Feedback.message_level =
 
 type message = Feedback.message = {
   message_level : message_level;
-  message_content : string;
+  message_content : Xml_datatype.xml;
 }
 
 type logger = message_level -> std_ppcmds -> unit
@@ -154,7 +154,7 @@ val std_logger : logger
 
 val set_logger : logger -> unit
 
-val log_via_feedback : unit -> unit
+val log_via_feedback : (std_ppcmds -> Xml_datatype.xml) -> unit
 
 val of_message : message -> Xml_datatype.xml
 val to_message : Xml_datatype.xml -> message
@@ -198,6 +198,9 @@ val pr_bar : unit -> std_ppcmds
 
 val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
 (** Adds a space in front of its argument. *)
+
+val pr_non_empty_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
+(** Adds a space in front of its argument if non empty. *)
 
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 (** Inner object preceded with a space if [Some], nothing otherwise. *)

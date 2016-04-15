@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -36,9 +36,9 @@ Qed.
 Ltac bool_cst t :=
   let t := eval hnf in t in
   match t with
-    true => constr:true
-  | false => constr:false
-  | _ => constr:NotConstant
+    true => constr:(true)
+  | false => constr:(false)
+  | _ => constr:(NotConstant)
   end.
 
 Add Ring bool_ring : BoolTheory (decidable bool_eq_ok, constants [bool_cst]).

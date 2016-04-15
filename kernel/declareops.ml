@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -9,6 +9,7 @@
 open Declarations
 open Mod_subst
 open Util
+open Context.Rel.Declaration
 
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
@@ -87,10 +88,8 @@ let is_opaque cb = match cb.const_body with
 
 (** {7 Constant substitutions } *)
 
-let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = Option.smartmap (subst_mps sub) copt in
-  let t' = subst_mps sub t in
-  if copt == copt' && t == t' then x else (id,copt',t')
+let subst_rel_declaration sub =
+  map_constr (subst_mps sub)
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
@@ -140,11 +139,8 @@ let subst_const_body sub cb =
     share internal fields (e.g. constr), and not the records
     themselves. But would it really bring substantial gains ? *)
 
-let hcons_rel_decl ((n,oc,t) as d) =
-  let n' = Names.Name.hcons n
-  and oc' = Option.smartmap Term.hcons_constr oc
-  and t' = Term.hcons_types t
-  in if n' == n && oc' == oc && t' == t then d else (n',oc',t')
+let hcons_rel_decl =
+  map_type Term.hcons_types % map_value Term.hcons_constr % map_name Names.Name.hcons
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 
@@ -254,7 +250,7 @@ let subst_mind_body sub mib =
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
-      Context.map_rel_context (subst_mps sub) mib.mind_params_ctxt;
+      Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes;
@@ -304,17 +300,90 @@ let hcons_mind mib =
 
 (** {6 Stm machinery } *)
 
-let string_of_side_effect = function
-  | SEsubproof (c,_,_) -> Names.string_of_con c
-  | SEscheme (cl,_) ->
-      String.concat ", " (List.map (fun (_,c,_,_) -> Names.string_of_con c) cl)
-type side_effects = side_effect list
-let no_seff = ([] : side_effects)
-let iter_side_effects f l = List.iter f (List.rev l)
-let fold_side_effects f a l = List.fold_left f a l
-let uniquize_side_effects l = List.rev (CList.uniquize (List.rev l))
-let union_side_effects l1 l2 = l1 @ l2
-let flatten_side_effects l = List.flatten l
-let side_effects_of_list l = l
-let cons_side_effects x l = x :: l
-let side_effects_is_empty = List.is_empty
+let string_of_side_effect { Entries.eff } = match eff with
+  | Entries.SEsubproof (c,_,_) -> "P(" ^ Names.string_of_con c ^ ")"
+  | Entries.SEscheme (cl,_) ->
+      "S(" ^ String.concat ", " (List.map (fun (_,c,_,_) -> Names.string_of_con c) cl) ^ ")"
+
+(** Hashconsing of modules *)
+
+let hcons_functorize hty he hself f = match f with
+| NoFunctor e ->
+  let e' = he e in
+  if e == e' then f else NoFunctor e'
+| MoreFunctor (mid, ty, nf) ->
+  (** FIXME *)
+  let mid' = mid in
+  let ty' = hty ty in
+  let nf' = hself nf in
+  if mid == mid' && ty == ty' && nf == nf' then f
+  else MoreFunctor (mid, ty', nf')
+
+let hcons_module_alg_expr me = me
+
+let rec hcons_structure_field_body sb = match sb with
+| SFBconst cb ->
+  let cb' = hcons_const_body cb in
+  if cb == cb' then sb else SFBconst cb'
+| SFBmind mib ->
+  let mib' = hcons_mind mib in
+  if mib == mib' then sb else SFBmind mib'
+| SFBmodule mb ->
+  let mb' = hcons_module_body mb in
+  if mb == mb' then sb else SFBmodule mb'
+| SFBmodtype mb ->
+  let mb' = hcons_module_body mb in
+  if mb == mb' then sb else SFBmodtype mb'
+
+and hcons_structure_body sb =
+  (** FIXME *)
+  let map (l, sfb as fb) =
+    let l' = Names.Label.hcons l in
+    let sfb' = hcons_structure_field_body sfb in
+    if l == l' && sfb == sfb' then fb else (l', sfb')
+  in
+  List.smartmap map sb
+
+and hcons_module_signature ms =
+  hcons_functorize hcons_module_body hcons_structure_body hcons_module_signature ms
+
+and hcons_module_expression me =
+  hcons_functorize hcons_module_body hcons_module_alg_expr hcons_module_expression me
+
+and hcons_module_implementation mip = match mip with
+| Abstract -> Abstract
+| Algebraic me ->
+  let me' = hcons_module_expression me in
+  if me == me' then mip else Algebraic me'
+| Struct ms ->
+  let ms' = hcons_module_signature ms in
+  if ms == ms' then mip else Struct ms
+| FullStruct -> FullStruct
+
+and hcons_module_body mb =
+  let mp' = mb.mod_mp in
+  let expr' = hcons_module_implementation mb.mod_expr in
+  let type' = hcons_module_signature mb.mod_type in
+  let type_alg' = mb.mod_type_alg in
+  let constraints' = Univ.hcons_universe_context_set mb.mod_constraints in
+  let delta' = mb.mod_delta in
+  let retroknowledge' = mb.mod_retroknowledge in
+
+  if
+    mb.mod_mp == mp' &&
+    mb.mod_expr == expr' &&
+    mb.mod_type == type' &&
+    mb.mod_type_alg == type_alg' &&
+    mb.mod_constraints == constraints' &&
+    mb.mod_delta == delta' &&
+    mb.mod_retroknowledge == retroknowledge'
+  then mb
+  else {
+    mod_mp = mp';
+    mod_expr = expr';
+    mod_type = type';
+    mod_type_alg = type_alg';
+    mod_constraints = constraints';
+    mod_delta = delta';
+    mod_retroknowledge = retroknowledge';
+  }

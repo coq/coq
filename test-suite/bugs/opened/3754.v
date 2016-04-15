@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 9113 lines to 279 lines *)
 (* coqc version trunk (October 2014) compiled on Oct 19 2014 18:56:9 with OCaml 3.12.1

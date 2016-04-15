@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -9,7 +9,6 @@
 open Loc
 open Names
 open Term
-open Context
 open Environ
 open Proof_type
 open Evd
@@ -26,16 +25,16 @@ open Locus
 
 (** {6 General functions. } *)
 
-val is_quantified_hypothesis : Id.t -> goal sigma -> bool
+val is_quantified_hypothesis : Id.t -> ([`NF],'b) Proofview.Goal.t -> bool
 
 (** {6 Primitive tactics. } *)
 
 val introduction    : ?check:bool -> Id.t -> unit Proofview.tactic
 val refine          : constr -> tactic
 val convert_concl   : ?check:bool -> types -> cast_kind -> unit Proofview.tactic
-val convert_hyp     : ?check:bool -> named_declaration -> unit Proofview.tactic
+val convert_hyp     : ?check:bool -> Context.Named.Declaration.t -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
-val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
+val convert_hyp_no_check : Context.Named.Declaration.t -> unit Proofview.tactic
 val thin            : Id.t list -> tactic
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
@@ -50,7 +49,7 @@ val convert_leq     : constr -> constr -> unit Proofview.tactic
 
 val fresh_id_in_env : Id.t list -> Id.t -> env -> Id.t
 val fresh_id : Id.t list -> Id.t -> goal sigma -> Id.t
-val find_intro_names : rel_context -> goal sigma -> Id.t list
+val find_intro_names : Context.Rel.t -> goal sigma -> Id.t list
 
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic
@@ -74,7 +73,7 @@ val intros               : unit Proofview.tactic
 (** [depth_of_quantified_hypothesis b h g] returns the index of [h] in
    the conclusion of goal [g], up to head-reduction if [b] is [true] *)
 val depth_of_quantified_hypothesis :
-  bool -> quantified_hypothesis -> goal sigma -> int
+  bool -> quantified_hypothesis -> ([`NF],'b) Proofview.Goal.t -> int
 
 val intros_until         : quantified_hypothesis -> unit Proofview.tactic
 
@@ -118,6 +117,7 @@ val intros_patterns : intro_patterns -> unit Proofview.tactic
 val assumption       : unit Proofview.tactic
 val exact_no_check   : constr -> tactic
 val vm_cast_no_check : constr -> tactic
+val native_cast_no_check : constr -> tactic
 val exact_check      : constr -> unit Proofview.tactic
 val exact_proof      : Constrexpr.constr_expr -> tactic
 
@@ -125,51 +125,51 @@ val exact_proof      : Constrexpr.constr_expr -> tactic
 
 type tactic_reduction = env -> evar_map -> constr -> constr
 
-type change_arg = patvar_map -> evar_map -> evar_map * constr
+type change_arg = patvar_map -> constr Sigma.run
 
 val make_change_arg   : constr -> change_arg
-val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> tactic
-val reduct_option     : ?check:bool -> tactic_reduction * cast_kind -> goal_location -> tactic
-val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
+val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic
+val reduct_option     : ?check:bool -> tactic_reduction * cast_kind -> goal_location -> unit Proofview.tactic
+val reduct_in_concl   : tactic_reduction * cast_kind -> unit Proofview.tactic
 val change_in_concl   : (occurrences * constr_pattern) option -> change_arg -> unit Proofview.tactic
 val change_concl      : constr -> unit Proofview.tactic
 val change_in_hyp     : (occurrences * constr_pattern) option -> change_arg ->
                         hyp_location -> unit Proofview.tactic
-val red_in_concl      : tactic
-val red_in_hyp        : hyp_location -> tactic
-val red_option        : goal_location -> tactic
-val hnf_in_concl      : tactic
-val hnf_in_hyp        : hyp_location -> tactic
-val hnf_option        : goal_location -> tactic
-val simpl_in_concl    : tactic
-val simpl_in_hyp      : hyp_location -> tactic
-val simpl_option      : goal_location -> tactic
-val normalise_in_concl : tactic
-val normalise_in_hyp  : hyp_location -> tactic
-val normalise_option  : goal_location -> tactic
-val normalise_vm_in_concl : tactic
+val red_in_concl      : unit Proofview.tactic
+val red_in_hyp        : hyp_location -> unit Proofview.tactic
+val red_option        : goal_location -> unit Proofview.tactic
+val hnf_in_concl      : unit Proofview.tactic
+val hnf_in_hyp        : hyp_location -> unit Proofview.tactic
+val hnf_option        : goal_location -> unit Proofview.tactic
+val simpl_in_concl    : unit Proofview.tactic
+val simpl_in_hyp      : hyp_location -> unit Proofview.tactic
+val simpl_option      : goal_location -> unit Proofview.tactic
+val normalise_in_concl : unit Proofview.tactic
+val normalise_in_hyp  : hyp_location -> unit Proofview.tactic
+val normalise_option  : goal_location -> unit Proofview.tactic
+val normalise_vm_in_concl : unit Proofview.tactic
 val unfold_in_concl   :
-  (occurrences * evaluable_global_reference) list -> tactic
+  (occurrences * evaluable_global_reference) list -> unit Proofview.tactic
 val unfold_in_hyp     :
-  (occurrences * evaluable_global_reference) list -> hyp_location -> tactic
+  (occurrences * evaluable_global_reference) list -> hyp_location -> unit Proofview.tactic
 val unfold_option     :
-  (occurrences * evaluable_global_reference) list -> goal_location -> tactic
+  (occurrences * evaluable_global_reference) list -> goal_location -> unit Proofview.tactic
 val change            :
   constr_pattern option -> change_arg -> clause -> tactic
 val pattern_option    :
-  (occurrences * constr) list -> goal_location -> tactic
-val reduce            : red_expr -> clause -> tactic
-val unfold_constr     : global_reference -> tactic
+  (occurrences * constr) list -> goal_location -> unit Proofview.tactic
+val reduce            : red_expr -> clause -> unit Proofview.tactic
+val unfold_constr     : global_reference -> unit Proofview.tactic
 
 (** {6 Modification of the local context. } *)
 
 val clear         : Id.t list -> tactic
 val clear_body    : Id.t list -> unit Proofview.tactic
-val unfold_body   : Id.t -> tactic
+val unfold_body   : Id.t -> unit Proofview.tactic
 val keep          : Id.t list -> unit Proofview.tactic
 val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 
-val specialize    : constr with_bindings -> tactic
+val specialize    : constr with_bindings -> unit Proofview.tactic
 
 val move_hyp      : Id.t -> Id.t move_location -> tactic
 val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
@@ -178,8 +178,8 @@ val revert        : Id.t list -> unit Proofview.tactic
 
 (** {6 Resolution tactics. } *)
 
-val apply_type : constr -> constr list -> tactic
-val bring_hyps : named_context -> unit Proofview.tactic
+val apply_type : constr -> constr list -> unit Proofview.tactic
+val bring_hyps : Context.Named.t -> unit Proofview.tactic
 
 val apply                 : constr -> unit Proofview.tactic
 val eapply                : constr -> unit Proofview.tactic
@@ -196,14 +196,16 @@ val eapply_with_bindings  : constr with_bindings -> unit Proofview.tactic
 val cut_and_apply         : constr -> unit Proofview.tactic
 
 val apply_in :
-  advanced_flag -> evars_flag -> clear_flag -> Id.t -> 
+  advanced_flag -> evars_flag -> Id.t -> 
     (clear_flag * constr with_bindings located) list ->
     intro_pattern option -> unit Proofview.tactic
 
 val apply_delayed_in :
-  advanced_flag -> evars_flag -> clear_flag -> Id.t -> 
+  advanced_flag -> evars_flag -> Id.t -> 
     (clear_flag * delayed_open_constr_with_bindings located) list ->
     intro_pattern option -> unit Proofview.tactic
+
+val run_delayed : Environ.env -> evar_map -> 'a delayed_open -> 'a * evar_map
 
 (** {6 Elimination tactics. } *)
 
@@ -236,20 +238,20 @@ type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
   indref: global_reference option;
-  params: rel_context;     (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
-  nparams: int;            (** number of parameters *)
-  predicates: rel_context; (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
-  npredicates: int;        (** Number of predicates *)
-  branches: rel_context;   (** branchr,...,branch1 *)
-  nbranches: int;          (** Number of branches *)
-  args: rel_context;       (** (xni, Ti_ni) ... (x1, Ti_1) *)
-  nargs: int;              (** number of arguments *)
-  indarg: rel_declaration option; (** Some (H,I prm1..prmp x1...xni)
-				     if HI is in premisses, None otherwise *)
-  concl: types;            (** Qi x1...xni HI (f...), HI and (f...)
-			      are optional and mutually exclusive *)
-  indarg_in_concl: bool;   (** true if HI appears at the end of conclusion *)
-  farg_in_concl: bool;     (** true if (f...) appears at the end of conclusion *)
+  params: Context.Rel.t;      (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
+  nparams: int;               (** number of parameters *)
+  predicates: Context.Rel.t;  (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
+  npredicates: int;           (** Number of predicates *)
+  branches: Context.Rel.t;    (** branchr,...,branch1 *)
+  nbranches: int;             (** Number of branches *)
+  args: Context.Rel.t;        (** (xni, Ti_ni) ... (x1, Ti_1) *)
+  nargs: int;                 (** number of arguments *)
+  indarg: Context.Rel.Declaration.t option;  (** Some (H,I prm1..prmp x1...xni)
+	  		 	                 if HI is in premisses, None otherwise *)
+  concl: types;               (** Qi x1...xni HI (f...), HI and (f...)
+			          are optional and mutually exclusive *)
+  indarg_in_concl: bool;      (** true if HI appears at the end of conclusion *)
+  farg_in_concl: bool;        (** true if (f...) appears at the end of conclusion *)
 }
 
 val compute_elim_sig : ?elimc: constr with_bindings -> types -> elim_scheme
@@ -383,7 +385,8 @@ val letin_pat_tac : (bool * intro_pattern_naming) option ->
 (** {6 Generalize tactics. } *)
 
 val generalize      : constr list -> tactic
-val generalize_gen  : ((occurrences * constr) * Name.t) list -> tactic
+val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> tactic
+
 val new_generalize  : constr list -> unit Proofview.tactic
 val new_generalize_gen  : ((occurrences * constr) * Name.t) list -> unit Proofview.tactic
 
@@ -415,9 +418,6 @@ module Simple : sig
   (** Simplified version of some of the above tactics *)
 
   val intro           : Id.t -> unit Proofview.tactic
-  val generalize      : constr list -> tactic
-  val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> tactic
-
   val apply  : constr -> unit Proofview.tactic
   val eapply : constr -> unit Proofview.tactic
   val elim   : constr -> unit Proofview.tactic
@@ -430,8 +430,8 @@ end
 
 module New : sig
 
-  val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map*constr) -> unit Proofview.tactic
-  (** [refine ?unsafe c] is [Proofview.Refine.refine ?unsafe c]
+  val refine : ?unsafe:bool -> constr Sigma.run -> unit Proofview.tactic
+  (** [refine ?unsafe c] is [Refine.refine ?unsafe c]
       followed by beta-iota-reduction of the conclusion. *)
 
   val reduce_after_refine : unit Proofview.tactic

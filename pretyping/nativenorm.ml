@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,13 +19,9 @@ open Util
 open Nativecode
 open Nativevalues
 open Nativelambda
+open Context.Rel.Declaration
 
 (** This module implements normalization by evaluation to OCaml code *)
-
-let evars_of_evar_map evd =
-  { evars_val = Evd.existential_opt_value evd;
-    evars_typ = Evd.existential_type evd;
-    evars_metas = Evd.meta_type evd }
 
 exception Find_at of int
 
@@ -58,8 +54,8 @@ let find_rectype_a env c =
 
 (* Instantiate inductives and parameters in constructor type *)
 
-let type_constructor mind mib typ params = 
-  let s = ind_subst mind mib Univ.Instance.empty (* FIXME *)in
+let type_constructor mind mib u typ params =
+  let s = ind_subst mind mib u in
   let ctyp = substl s typ in
   let nparams = Array.length params in
   if Int.equal nparams 0 then ctyp
@@ -73,13 +69,13 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
   let params = Array.sub allargs 0 nparams in
   try
     if const then
-      let ctyp = type_constructor mind mib (mip.mind_nf_lc.(0)) params in
+      let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(0)) params in
       retroknowledge Retroknowledge.get_vm_decompile_constant_info env (mkInd ind) tag, ctyp
     else
       raise Not_found
   with Not_found ->
   let i = invert_tag const tag mip.mind_reloc_tbl in
-  let ctyp = type_constructor mind mib (mip.mind_nf_lc.(i-1)) params in
+  let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(i-1)) params in
   (mkApp(mkConstructU((ind,i),u), params), ctyp)
  
 
@@ -95,12 +91,12 @@ let construct_of_constr_const env tag typ =
 
 let construct_of_constr_block = construct_of_constr false
 
-let build_branches_type env (mind,_ as _ind) mib mip params dep p =
+let build_branches_type env (mind,_ as _ind) mib mip u params dep p =
   let rtbl = mip.mind_reloc_tbl in
   (* [build_one_branch i cty] construit le type de la ieme branche (commence
      a 0) et les lambda correspondant aux realargs *)
   let build_one_branch i cty =
-    let typi = type_constructor mind mib cty params in
+    let typi = type_constructor mind mib u cty params in
     let decl,indapp = Reductionops.splay_prod env Evd.empty typi in
     let decl_with_letin,_ = decompose_prod_assum typi in
     let ind,cargs = find_rectype_a env indapp in
@@ -126,9 +122,8 @@ let build_case_type dep p realargs c =
   else mkApp(p, realargs)
 
 (* TODO move this function *)
-let type_of_rel env n = 
-  let (_,_,ty) = lookup_rel n env in
-  lift n ty
+let type_of_rel env n =
+  lookup_rel n env |> get_type |> lift n
 
 let type_of_prop = mkSort type1_sort
 
@@ -137,8 +132,9 @@ let type_of_sort s =
   | Prop _ -> type_of_prop
   | Type u -> mkType (Univ.super u)
 
-let type_of_var env id = 
-  try let (_,_,ty) = lookup_named id env in ty
+let type_of_var env id =
+  let open Context.Named.Declaration in
+  try lookup_named id env |> get_type
   with Not_found ->
     anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound")
 
@@ -186,7 +182,7 @@ let rec nf_val env v typ =
           Errors.anomaly
             (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
-      let env = push_rel (name,None,dom) env in
+      let env = push_rel (LocalAssum (name,dom)) env in
       let body = nf_val env (f (mk_rel_accu lvl)) codom in
       mkLambda(name,dom,body)
   | Vconst n -> construct_of_constr_const env n typ
@@ -262,7 +258,7 @@ and nf_atom env atom =
   | Aprod(n,dom,codom) ->
       let dom = nf_type env dom in
       let vn = mk_rel_accu (nb_rel env) in
-      let env = push_rel (n,None,dom) env in
+      let env = push_rel (LocalAssum (n,dom)) env in
       let codom = nf_type env (codom vn) in
       mkProd(n,dom,codom)
   | Ameta (mv,_) -> mkMeta mv
@@ -297,7 +293,7 @@ and nf_atom_type env atom =
       let pT = whd_betadeltaiota env pT in
       let dep, p = nf_predicate env ind mip params p pT in
       (* Calcul du type des branches *)
-      let btypes = build_branches_type env (fst ind) mib mip params dep p in
+      let btypes = build_branches_type env (fst ind) mib mip u params dep p in
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) ans bs in
       let mkbranch i v =
@@ -333,7 +329,7 @@ and nf_atom_type env atom =
   | Aprod(n,dom,codom) ->
       let dom,s1 = nf_type_sort env dom in
       let vn = mk_rel_accu (nb_rel env) in
-      let env = push_rel (n,None,dom) env in
+      let env = push_rel (LocalAssum (n,dom)) env in
       let codom,s2 = nf_type_sort env (codom vn) in
       mkProd(n,dom,codom), mkSort (sort_of_product env s1 s2)
   | Aevar(ev,ty) ->
@@ -361,7 +357,7 @@ and  nf_predicate env ind mip params v pT =
 	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let dep,body = 
-	nf_predicate (push_rel (name,None,dom) env) ind mip params vb codom in
+	nf_predicate (push_rel (LocalAssum (name,dom)) env) ind mip params vb codom in
       dep, mkLambda(name,dom,body)
   | Vfun f, _ -> 
       let k = nb_rel env in
@@ -371,15 +367,21 @@ and  nf_predicate env ind mip params v pT =
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
-      let body = nf_type (push_rel (name,None,dom) env) vb in
+      let body = nf_type (push_rel (LocalAssum (name,dom)) env) vb in
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_type env v
+
+let evars_of_evar_map sigma =
+  { Nativelambda.evars_val = Evd.existential_opt_value sigma;
+    Nativelambda.evars_typ = Evd.existential_type sigma;
+    Nativelambda.evars_metas = Evd.meta_type sigma }
 
 let native_norm env sigma c ty =  
   if Coq_config.no_native_compiler then
     error "Native_compute reduction has been disabled at configure time."
   else
-  let penv = Environ.pre_env env in 
+  let penv = Environ.pre_env env in
+  let sigma = evars_of_evar_map sigma in
   (*
   Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);
   Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
@@ -400,3 +402,10 @@ let native_norm env sigma c ty =
         if !Flags.debug then Pp.msg_debug (Pp.str time_info);
         res
     | _ -> anomaly (Pp.str "Compilation failure") 
+
+let native_conv_generic pb sigma t =
+  Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t
+
+let native_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
+  Reductionops.infer_conv_gen (fun pb ~l2r sigma ts -> native_conv_generic pb sigma)
+    ~catch_incon:true ~pb env sigma t1 t2

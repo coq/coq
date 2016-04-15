@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -83,12 +83,13 @@ let strengthen_const mp_from l cb resolver =
     | Def _ -> cb
     | _ ->
       let con = Constant.make2 mp_from l in
-      (* let con =  constant_of_delta resolver con in*)
       let u = 
-	if cb.const_polymorphic then Univ.UContext.instance cb.const_universes 
+	if cb.const_polymorphic then
+	  Univ.make_abstract_instance cb.const_universes
 	else Univ.Instance.empty
       in
-      { cb with const_body = Def (Declarations.from_val (Const (con,u))) }
+      { cb with
+	const_body = Def (Declarations.from_val (Const (con,u))) }
 
 let rec strengthen_mod mp_from mp_to mb =
   if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then mb

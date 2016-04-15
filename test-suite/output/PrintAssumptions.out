@@ -16,3 +16,5 @@ extensionality : forall (P Q : Type) (f g : P -> Q),
                  (forall x : P, f x = g x) -> f = g
 Closed under the global context
 Closed under the global context
+Axioms:
+M.foo : False

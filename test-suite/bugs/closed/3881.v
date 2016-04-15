@@ -8,7 +8,7 @@ Reserved Notation "x -> y" (at level 99, right associativity, y at level 200).
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Axiom admit : forall {T}, T.
 Notation "g 'o' f" := (fun x => g (f x)) (at level 40, left associativity).
-Notation "g 'o' f" := $(let g' := g in let f' := f in exact (fun x => g' (f' x)))$ (at level 40, left associativity). (* Ensure that x is not captured in [g] or [f] in case they contain holes *)
+Notation "g 'o' f" := ltac:(let g' := g in let f' := f in exact (fun x => g' (f' x))) (at level 40, left associativity). (* Ensure that x is not captured in [g] or [f] in case they contain holes *)
 Inductive eq {A} (x:A) : A -> Prop := eq_refl : x = x where "x = y" := (@eq _ x y) : type_scope.
 Arguments eq_refl {_ _}.
 Definition ap {A B:Type} (f:A -> B) {x y:A} (p:x = y) : f x = f y := match p with eq_refl => eq_refl end.
@@ -23,7 +23,7 @@ Proof.
   pose (fun H => @isequiv_homotopic _ _ ((g o f) o f^-1) _ H
                                     (fun b => ap g (eisretr f b))) as k.
   revert k.
-  let x := match goal with |- let k := ?x in _ => constr:x end in
+  let x := match goal with |- let k := ?x in _ => constr:(x) end in
   intro k; clear k;
   pose (x _).
   pose (@isequiv_homotopic _ _ ((g o f) o f^-1) g _

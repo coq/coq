@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -35,7 +35,7 @@ let print_header () =
   ppnl (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   pp_flush ()
 
-let warning s = msg_warning (strbrk s)
+let warning s = with_option Flags.warn msg_warning (strbrk s)
 
 let toploop = ref None
 
@@ -144,13 +144,19 @@ let inputstate = ref ""
 let set_inputstate s =
   let () = msg_warning (str "The inputstate option is deprecated and discouraged.") in
   inputstate:=s
-let inputstate () = if not (String.is_empty !inputstate) then intern_state !inputstate
+let inputstate () =
+  if not (String.is_empty !inputstate) then
+    let fname = Loadpath.locate_file (CUnix.make_suffix !inputstate ".coq") in
+    intern_state fname
 
 let outputstate = ref ""
 let set_outputstate s =
   let () = msg_warning (str "The outputstate option is deprecated and discouraged.") in
   outputstate:=s
-let outputstate () = if not (String.is_empty !outputstate) then extern_state !outputstate
+let outputstate () =
+  if not (String.is_empty !outputstate) then
+    let fname = CUnix.make_suffix !outputstate ".coq" in
+    extern_state fname
 
 let set_include d p implicit =
   let p = dirpath_of_string p in
@@ -162,6 +168,7 @@ let add_load_vernacular verb s =
 let load_vernacular () =
   List.iter
     (fun (s,b) ->
+      let s = Loadpath.locate_file s in
       if Flags.do_beautify () then
 	with_option beautify_file (Vernac.load_vernac b) s
       else
@@ -171,8 +178,8 @@ let load_vernacular () =
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
 let load_vernac_obj () =
-  List.iter (fun f -> Library.require_library_from_file None f None)
-    (List.rev !load_vernacular_obj)
+  let map dir = Qualid (Loc.ghost, qualid_of_string dir) in
+  Vernacentries.vernac_require None None (List.rev_map map !load_vernacular_obj)
 
 let require_prelude () =
   let vo = Envars.coqlib () / "theories/Init/Prelude.vo" in
@@ -185,9 +192,14 @@ let require_prelude () =
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
-  if !load_init then silently require_prelude ();
-  List.iter (fun s -> Library.require_library_from_file None s (Some false))
-    (List.rev !require_list)
+  let () = if !load_init then silently require_prelude () in
+  let map dir = Qualid (Loc.ghost, qualid_of_string dir) in
+  Vernacentries.vernac_require None (Some false) (List.rev_map map !require_list)
+
+let add_compat_require v =
+  match v with
+  | Flags.V8_4 -> add_require "Coq.Compat.Coq84"
+  | _ -> ()
 
 let compile_list = ref ([] : (bool * string) list)
 
@@ -226,15 +238,6 @@ let compile_files () =
           compile_file vf)
         (List.rev l)
 
-(*s options for the virtual machine *)
-
-let boxed_val = ref false
-let use_vm = ref false
-
-let set_vm_opt () =
-  Vm.set_transp_values (not !boxed_val);
-  Vconv.set_use_vm !use_vm
-
 (** Options for proof general *)
 
 let set_emacs () =
@@ -254,18 +257,19 @@ let set_emacs () =
 *)
 
 let init_gc () =
-  let param =
-    try ignore (Sys.getenv "OCAMLRUNPARAM"); true
-    with Not_found -> false
-  in
-  let control = Gc.get () in
-  let tweaked_control = { control with
-    Gc.minor_heap_size = 33554432; (** 4M *)
-(*     Gc.major_heap_increment = 268435456; (** 32M *) *)
-    Gc.space_overhead = 120;
-  } in
-  if param then ()
-  else Gc.set tweaked_control
+  try
+    (* OCAMLRUNPARAM environment variable is set.
+     * In that case, we let ocamlrun to use the values provided by the user.
+     *)
+    ignore (Sys.getenv "OCAMLRUNPARAM")
+
+  with Not_found ->
+    (* OCAMLRUNPARAM environment variable is not set.
+     * In this case, we put in place our preferred configuration.
+     *)
+    Gc.set { (Gc.get ()) with
+             Gc.minor_heap_size = 33554432; (** 4M *)
+             Gc.space_overhead = 120}
 
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
@@ -352,7 +356,8 @@ let get_int opt n =
 
 let get_host_port opt s =
   match CString.split ':' s with
-  | [host; port] -> Some (Spawned.Socket(host, int_of_string port))
+  | [host; portr; portw] ->
+       Some (Spawned.Socket(host, int_of_string portr, int_of_string portw))
   | ["stdfds"] -> Some Spawned.AnonPipe
   | _ ->
      prerr_endline ("Error: host:port or stdfds expected after option "^opt);
@@ -438,10 +443,6 @@ let parse_args arglist =
       end
     |"-R" ->
       begin match rem with
-      | d :: "-as" :: [] -> error_missing_arg opt
-      | d :: "-as" :: p :: rem ->
-        warning "option -R * -as * deprecated, remove the -as";
-        set_include d p true; args := rem
       | d :: p :: rem -> set_include d p true; args := rem
       | _ -> error_missing_arg opt
       end
@@ -476,7 +477,7 @@ let parse_args arglist =
     |"-async-proofs-private-flags" ->
         Flags.async_proofs_private_flags := Some (next ());
     |"-worker-id" -> set_worker_id opt (next ())
-    |"-compat" -> Flags.compat_version := get_compat_version (next ())
+    |"-compat" -> let v = get_compat_version (next ()) in Flags.compat_version := v; add_compat_require v
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())
     |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true
@@ -541,8 +542,8 @@ let parse_args arglist =
     |"-unicode" -> add_require "Utf8_core"
     |"-v"|"--version" -> Usage.version (exitcode ())
     |"-verbose-compat-notations" -> verb_compat_ntn := true
-    |"-vm" -> use_vm := true
     |"-where" -> print_where := true
+    |"-xml" -> Flags.xml_export := true
 
     (* Deprecated options *)
     |"-byte" -> warning "option -byte deprecated, call with .byte suffix"
@@ -558,7 +559,6 @@ let parse_args arglist =
     |"-force-load-proofs" -> warning "Obsolete option \"-force-load-proofs\"."
     |"-unsafe" -> warning "Obsolete option \"-unsafe\"."; ignore (next ())
     |"-quality" -> warning "Obsolete option \"-quality\"."
-    |"-xml" -> warning "Obsolete option \"-xml\"."
 
     (* Unknown option *)
     | s -> extras := s :: !extras
@@ -573,7 +573,7 @@ let parse_args arglist =
       else fatal_error (Errors.print e) false
     | any -> fatal_error (Errors.print any) (Errors.is_anomaly any)
 
-let init arglist =
+let init_toplevel arglist =
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   Lib.init();
@@ -601,7 +601,6 @@ let init arglist =
       if_verbose print_header ();
       inputstate ();
       Mltop.init_known_plugins ();
-      set_vm_opt ();
       engage ();
       (* Be careful to set these variables after the inputstate *)
       Syntax_def.set_verbose_compat_notations !verb_compat_ntn;
@@ -637,8 +636,6 @@ let init arglist =
     Profile.print_profile ();
     exit 0
   end
-
-let init_toplevel = init
 
 let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in

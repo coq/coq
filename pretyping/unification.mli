@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -42,6 +42,8 @@ val default_no_delta_unify_flags : unit -> unify_flags
 val elim_flags : unit -> unify_flags
 val elim_no_delta_flags : unit -> unify_flags
 
+val is_keyed_unification : unit -> bool
+
 (** The "unique" unification fonction *)
 val w_unify :
   env -> evar_map -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map
@@ -73,15 +75,15 @@ type abstraction_request =
 | AbstractExact of Names.Name.t * constr * types option * Locus.clause * bool
 
 val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
-  env -> Evd.evar_map -> pending_constr -> Evd.evar_map * constr
+  env -> 'r Sigma.t -> pending_constr -> (constr, 'r) Sigma.sigma
 
-type abstraction_result =
+type 'r abstraction_result =
   Names.Id.t * named_context_val *
-    Context.named_declaration list * Names.Id.t option *
-    types * (Evd.evar_map * constr) option
+    Context.Named.Declaration.t list * Names.Id.t option *
+    types * (constr, 'r) Sigma.sigma option
 
-val make_abstraction : env -> Evd.evar_map -> constr ->
-  abstraction_request -> abstraction_result
+val make_abstraction : env -> 'r Sigma.t -> constr ->
+  abstraction_request -> 'r abstraction_result
 
 val pose_all_metas_as_evars : env -> evar_map -> constr -> evar_map * constr
 

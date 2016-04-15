@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -83,6 +83,8 @@ let profile = false
 let print_emacs = ref false
 let coqtop_ui = ref false
 
+let xml_export = ref false
+
 let ide_slave = ref false
 let ideslave_coqtop_flags = ref None
 
@@ -101,18 +103,20 @@ let we_are_parsing = ref false
 (* Current means no particular compatibility consideration.
    For correct comparisons, this constructor should remain the last one. *)
 
-type compat_version = V8_2 | V8_3 | V8_4 | Current
+type compat_version = V8_2 | V8_3 | V8_4 | V8_5 | Current
 
 let compat_version = ref Current
 
 let version_strictly_greater v = match !compat_version, v with
-| V8_2, (V8_2 | V8_3 | V8_4 | Current) -> false
-| V8_3, (V8_3 | V8_4 | Current) -> false
-| V8_4, (V8_4 | Current) -> false
+| V8_2, (V8_2 | V8_3 | V8_4 | V8_5 | Current) -> false
+| V8_3, (V8_3 | V8_4 | V8_5 | Current) -> false
+| V8_4, (V8_4 | V8_5 | Current) -> false
+| V8_5, (V8_5 | Current) -> false
 | Current, Current -> false
 | V8_3, V8_2 -> true
 | V8_4, (V8_2 | V8_3) -> true
-| Current, (V8_2 | V8_3 | V8_4) -> true
+| V8_5, (V8_2 | V8_3 | V8_4) -> true
+| Current, (V8_2 | V8_3 | V8_4 | V8_5) -> true
 
 let version_less_or_equal v = not (version_strictly_greater v)
 
@@ -120,6 +124,7 @@ let pr_version = function
   | V8_2 -> "8.2"
   | V8_3 -> "8.3"
   | V8_4 -> "8.4"
+  | V8_5 -> "8.5"
   | Current -> "current"
 
 (* Translate *)

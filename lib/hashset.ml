@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -16,7 +16,7 @@
 
 module type EqType = sig
   type t
-  val equal : t -> t -> bool
+  val eq : t -> t -> bool
 end
 
 type statistics = {
@@ -162,7 +162,7 @@ module Make (E : EqType) =
         t.hashes.(index) <- newhashes;
         if sz <= t.limit && newsz > t.limit then begin
           t.oversize <- t.oversize + 1;
-          for i = 0 to over_limit do test_shrink_bucket t done;
+          for _i = 0 to over_limit do test_shrink_bucket t done;
         end;
         if t.oversize > Array.length t.table / over_limit then resize t
       end else if Weak.check bucket i then begin
@@ -183,7 +183,7 @@ module Make (E : EqType) =
       if i >= sz then ifnotfound index
       else if h = hashes.(i) then begin
         match Weak.get bucket i with
-        | Some v when E.equal v d -> v
+        | Some v when E.eq v d -> v
         | _ -> loop (i + 1)
       end else loop (i + 1)
     in

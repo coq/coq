@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -130,7 +130,8 @@ let annotate phrase =
 
 (** Goal display *)
 
-let hyp_next_tac sigma env (id,_,ast) =
+let hyp_next_tac sigma env decl =
+  let (id,_,ast) = Context.Named.Declaration.to_tuple decl in
   let id_s = Names.Id.to_string id in
   let type_s = string_of_ppcmds (pr_ltype_env env sigma ast) in
   [
@@ -184,14 +185,19 @@ let process_goal sigma g =
   let id = Goal.uid g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-    string_of_ppcmds (pr_goal_concl_style_env env sigma norm_constr) in
+    Richpp.richpp_of_pp (pr_goal_concl_style_env env sigma norm_constr)
+  in
   let process_hyp d (env,l) =
-    let d = Context.map_named_list_declaration (Reductionops.nf_evar sigma) d in
-    let d' = List.map (fun x -> (x, pi2 d, pi3 d)) (pi1 d) in
+    let d = Context.NamedList.Declaration.map_constr (Reductionops.nf_evar sigma) d in
+    let d' = List.map (fun name -> let open Context.Named.Declaration in
+                                   match pi2 d with
+                                   | None -> LocalAssum (name, pi3 d)
+                                   | Some value -> LocalDef (name, value, pi3 d))
+                      (pi1 d) in
       (List.fold_right Environ.push_named d' env,
-       (string_of_ppcmds (pr_var_list_decl env sigma d)) :: l) in
+       (Richpp.richpp_of_pp (pr_var_list_decl env sigma d)) :: l) in
   let (_env, hyps) =
-    Context.fold_named_list_context process_hyp
+    Context.NamedList.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
@@ -291,11 +297,13 @@ let export_option_value = function
   | Goptions.BoolValue b   -> Interface.BoolValue b
   | Goptions.IntValue x    -> Interface.IntValue x
   | Goptions.StringValue s -> Interface.StringValue s
+  | Goptions.StringOptValue s -> Interface.StringOptValue s
 
 let import_option_value = function
   | Interface.BoolValue b   -> Goptions.BoolValue b
   | Interface.IntValue x    -> Goptions.IntValue x
   | Interface.StringValue s -> Goptions.StringValue s
+  | Interface.StringOptValue s -> Goptions.StringOptValue s
 
 let export_option_state s = {
   Interface.opt_sync  = s.Goptions.opt_sync;
@@ -314,6 +322,8 @@ let set_options options =
   | BoolValue b -> Goptions.set_bool_option_value name b
   | IntValue i -> Goptions.set_int_option_value name i
   | StringValue s -> Goptions.set_string_option_value name s
+  | StringOptValue (Some s) -> Goptions.set_string_option_value name s
+  | StringOptValue None -> Goptions.unset_option_value_gen None name
   in
   List.iter iter options
 
@@ -329,10 +339,14 @@ let handle_exn (e, info) =
   let loc_of e = match Loc.get_loc e with
     | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
     | _ -> None in
-  let mk_msg () = read_stdout ()^"\n"^string_of_ppcmds (Errors.print ~info e) in
+  let mk_msg () =
+    let msg = read_stdout () in
+    let msg = str msg ++ fnl () ++ Errors.print ~info e in
+    Richpp.richpp_of_pp msg
+  in
   match e with
-  | Errors.Drop -> dummy, None, "Drop is not allowed by coqide!"
-  | Errors.Quit -> dummy, None, "Quit is not allowed by coqide!"
+  | Errors.Drop -> dummy, None, Richpp.richpp_of_string "Drop is not allowed by coqide!"
+  | Errors.Quit -> dummy, None, Richpp.richpp_of_string "Quit is not allowed by coqide!"
   | e ->
       match Stateid.get info with
       | Some (valid, _) -> valid, loc_of info, mk_msg ()
@@ -357,6 +371,7 @@ let init =
                0 (Printf.sprintf "Add LoadPath \"%s\". " dir)
            else Stm.get_current_state (), `NewTip in
          Stm.set_compilation_hints file;
+         Stm.finish ();
          initial_id
    end
 
@@ -428,12 +443,12 @@ let print_xml =
 
 let slave_logger xml_oc level message =
   (* convert the message into XML *)
-  let msg = string_of_ppcmds (hov 0 message) in
+  let msg = hov 0 message in
   let message = {
     Pp.message_level = level;
-    Pp.message_content = msg;
+    Pp.message_content = (Richpp.repr (Richpp.richpp_of_pp msg));
   } in
-  let () = pr_debug (Printf.sprintf "-> %S" msg) in
+  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg)) in
   let xml = Pp.of_message message in
   print_xml xml_oc xml
 
@@ -465,7 +480,7 @@ let loop () =
     try
       let xml_query = Xml_parser.parse xml_ic in
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
-      let q = Xmlprotocol.to_call xml_query in
+      let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
       let r = eval_call xml_oc (slave_logger xml_oc Pp.Notice) q in
       let () = pr_debug_answer q r in

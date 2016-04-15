@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,6 +18,8 @@ open Tacred
 open Proof_type
 open Logic
 open Refiner
+open Sigma.Notations
+open Context.Named.Declaration
 
 let re_sig it  gc = { it = it; sigma = gc; }
 
@@ -40,21 +42,22 @@ let pf_hyps  = Refiner.pf_hyps
 let pf_concl gls = Goal.V82.concl (project gls) (sig_it gls)
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in
-  List.map (fun (id,_,x) -> (id, x)) sign
+  List.map (function LocalAssum (id,x)
+                   | LocalDef (id,_,x) -> id, x)
+           sign
 
-let pf_nth_hyp_id gls n = let (id,c,t) = List.nth (pf_hyps gls) (n-1) in id
+let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> get_id
 
 let pf_last_hyp gl = List.hd (pf_hyps gl)
 
 let pf_get_hyp gls id =
   try
-    Context.lookup_named id (pf_hyps gls)
+    Context.Named.lookup id (pf_hyps gls)
   with Not_found ->
     raise (RefinerError (NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
-  let (_,_,ty)= (pf_get_hyp gls id) in
-  ty
+  pf_get_hyp gls id |> get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
@@ -70,7 +73,10 @@ let pf_get_new_ids ids gls =
 let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 
 let pf_reduction_of_red_expr gls re c =
-  (fst (reduction_of_red_expr (pf_env gls) re)) (pf_env gls) (project gls) c
+  let (redfun, _) = reduction_of_red_expr (pf_env gls) re in
+  let sigma = Sigma.Unsafe.of_evar_map (project gls) in
+  let Sigma (c, sigma, _) = redfun.e_redfun (pf_env gls) sigma c in
+  (Sigma.to_evar_map sigma, c)
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_eapply f gls x = 
@@ -95,7 +101,7 @@ let pf_const_value              = pf_reduce (fun env _ -> constant_value_in env)
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
-let pf_hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_get_type_of gls)
+let pf_hnf_type_of gls          = pf_whd_betadeltaiota gls % pf_get_type_of gls
 
 let pf_is_matching              = pf_apply Constr_matching.is_matching_conv
 let pf_matches                  = pf_apply Constr_matching.matches_conv
@@ -158,11 +164,15 @@ let pr_glls glls =
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New = struct
 
+  let project gl =
+    let sigma = Proofview.Goal.sigma gl in
+    Sigma.to_evar_map sigma
+
   let pf_apply f gl =
-    f (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
+    f (Proofview.Goal.env gl) (project gl)
 
   let of_old f gl =
-    f { Evd.it = Proofview.Goal.goal gl ; sigma = Proofview.Goal.sigma gl }
+    f { Evd.it = Proofview.Goal.goal gl ; sigma = project gl; }
 
   let pf_global id gl =
     (** We only check for the existence of an [id] in [hyps] *)
@@ -194,29 +204,30 @@ module New = struct
   let pf_get_hyp id gl =
     let hyps = Proofview.Goal.hyps gl in
     let sign =
-      try Context.lookup_named id hyps
+      try Context.Named.lookup id hyps
       with Not_found -> raise (RefinerError (NoSuchHyp id))
     in
     sign
 
   let pf_get_hyp_typ id gl =
-    let (_,_,ty) = pf_get_hyp id gl in
-    ty
+    pf_get_hyp id gl |> get_type
 
   let pf_hyps_types gl =
     let env = Proofview.Goal.env gl in
     let sign = Environ.named_context env in
-    List.map (fun (id,_,x) -> (id, x)) sign
+    List.map (function LocalAssum (id,x)
+                     | LocalDef (id,_,x) -> id, x)
+             sign
 
   let pf_last_hyp gl =
     let hyps = Proofview.Goal.hyps gl in
     List.hd hyps
 
-  let pf_nf_concl (gl : [ `LZ ] Proofview.Goal.t) =
+  let pf_nf_concl (gl : ([ `LZ ], 'r) Proofview.Goal.t) =
     (** We normalize the conclusion just after *)
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = project gl in
     nf_evar sigma concl
 
   let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
@@ -235,6 +246,6 @@ module New = struct
   let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
   let pf_compute gl t = pf_apply compute gl t
 
-  let pf_nf_evar gl t = nf_evar (Proofview.Goal.sigma gl) t
+  let pf_nf_evar gl t = nf_evar (project gl) t
 
 end

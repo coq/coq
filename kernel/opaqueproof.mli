@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,9 +11,9 @@ open Term
 open Mod_subst
 
 (** This module implements the handling of opaque proof terms.
-    Opauqe proof terms are special since:
+    Opaque proof terms are special since:
     - they can be lazily computed and substituted
-    - they are stoked in an optionally loaded segment of .vo files
+    - they are stored in an optionally loaded segment of .vo files
     An [opaque] proof terms holds the real data until fully discharged.
     In this case it is called [direct].
     When it is [turn_indirect] the data is relocated to an opaque table
@@ -48,7 +48,7 @@ type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
 
 type cooking_info = { 
   modlist : work_list; 
-  abstract : Context.named_context * Univ.universe_level_subst * Univ.UContext.t } 
+  abstract : Context.Named.t * Univ.universe_level_subst * Univ.UContext.t } 
 
 (* The type has two caveats:
    1) cook_constr is defined after

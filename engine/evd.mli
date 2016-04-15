@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -10,7 +10,6 @@ open Util
 open Loc
 open Names
 open Term
-open Context
 open Environ
 
 (** {5 Existential variables and unification states}
@@ -105,8 +104,8 @@ type evar_info = {
 
 val make_evar : named_context_val -> types -> evar_info
 val evar_concl : evar_info -> constr
-val evar_context : evar_info -> named_context
-val evar_filtered_context : evar_info -> named_context
+val evar_context : evar_info -> Context.Named.t
+val evar_filtered_context : evar_info -> Context.Named.t
 val evar_hyps : evar_info -> named_context_val
 val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
@@ -119,7 +118,7 @@ val map_evar_info : (constr -> constr) -> evar_info -> evar_info
 
 (** {6 Unification state} **)
 
-type evar_universe_context
+type evar_universe_context = UState.t
 (** The universe context associated to an evar map *)
 
 type evar_map
@@ -129,9 +128,12 @@ type evar_map
 val empty : evar_map
 (** The empty evar map. *)
 
-val from_env : ?ctx:evar_universe_context -> env -> evar_map
+val from_env : env -> evar_map
 (** The empty evar map with given universe context, taking its initial 
     universes from env. *)
+
+val from_ctx : evar_universe_context -> evar_map
+(** The empty evar map with given universe context *)
 
 val is_empty : evar_map -> bool
 (** Whether an evarmap is empty. *)
@@ -139,6 +141,10 @@ val is_empty : evar_map -> bool
 val has_undefined : evar_map -> bool
 (** [has_undefined sigma] is [true] if and only if
     there are uninstantiated evars in [sigma]. *)
+
+val new_evar : evar_map ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> evar_info -> evar_map * evar
+(** Creates a fresh evar mapping to the given information. *)
 
 val add : evar_map -> evar -> evar_info -> evar_map
 (** [add sigma ev info] adds [ev] with evar info [info] in sigma.
@@ -216,7 +222,7 @@ val existential_opt_value : evar_map -> existential -> constr option
 (** Same as {!existential_value} but returns an option instead of raising an
     exception. *)
 
-val evar_instance_array : (named_declaration -> 'a -> bool) -> evar_info ->
+val evar_instance_array : (Context.Named.Declaration.t -> 'a -> bool) -> evar_info ->
   'a array -> (Id.t * 'a) list
 
 val instantiate_evar_array : evar_info -> constr -> constr array -> constr
@@ -227,14 +233,8 @@ val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
 
 (** {6 Misc} *)
 
-val evar_declare :
-  named_context_val -> evar -> types -> ?src:Loc.t * Evar_kinds.t ->
-      ?filter:Filter.t -> ?candidates:constr list -> ?store:Store.t ->
-      ?naming:Misctypes.intro_pattern_naming_expr -> evar_map -> evar_map
-(** Convenience function. Just a wrapper around {!add}. *)
-
-val restrict : evar -> evar -> Filter.t -> ?candidates:constr list ->
-  evar_map -> evar_map
+val restrict : evar -> Filter.t -> ?candidates:constr list ->
+  evar_map -> evar_map * evar
 (** Restrict an undefined evar into a new evar by filtering context and
     possibly limiting the instances to a set of candidates *)
 
@@ -246,7 +246,7 @@ val evar_source : existential_key -> evar_map -> Evar_kinds.t located
 (** Convenience function. Wrapper around {!find} to recover the source of an
     evar in a given evar map. *)
 
-val evar_ident : existential_key -> evar_map -> Id.t
+val evar_ident : existential_key -> evar_map -> Id.t option
 
 val rename : existential_key -> Id.t -> evar_map -> evar_map
 
@@ -258,10 +258,10 @@ val dependent_evar_ident : existential_key -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
 
-val emit_side_effects : Declareops.side_effects -> evar_map -> evar_map
+val emit_side_effects : Safe_typing.private_constants -> evar_map -> evar_map
 (** Push a side-effect into the evar map. *)
 
-val eval_side_effects : evar_map -> Declareops.side_effects
+val eval_side_effects : evar_map -> Safe_typing.private_constants
 (** Return the effects contained in the evar map. *)
 
 val drop_side_effects : evar_map -> evar_map
@@ -422,7 +422,7 @@ val evar_list : constr -> existential list
 val evars_of_term : constr -> Evar.Set.t
   (** including evars in instances of evars *)
 
-val evars_of_named_context : named_context -> Evar.Set.t
+val evars_of_named_context : Context.Named.t -> Evar.Set.t
 
 val evars_of_filtered_evar_info : evar_info -> Evar.Set.t
 
@@ -439,7 +439,6 @@ val meta_opt_fvalue : evar_map -> metavariable -> (constr freelisted * instance_
 val meta_type      : evar_map -> metavariable -> types
 val meta_ftype     : evar_map -> metavariable -> types freelisted
 val meta_name      : evar_map -> metavariable -> Name.t
-val meta_with_name : evar_map -> Id.t -> metavariable
 val meta_declare   :
   metavariable -> types -> ?name:Name.t -> evar_map -> evar_map
 val meta_assign    : metavariable -> constr * instance_status -> evar_map -> evar_map
@@ -448,15 +447,15 @@ val meta_reassign  : metavariable -> constr * instance_status -> evar_map -> eva
 val clear_metas : evar_map -> evar_map
 
 (** [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
-val meta_merge : evar_map -> evar_map -> evar_map
+val meta_merge : ?with_univs:bool -> evar_map -> evar_map -> evar_map
 
 val undefined_metas : evar_map -> metavariable list
 val map_metas_fvalue : (constr -> constr) -> evar_map -> evar_map
+val map_metas : (constr -> constr) -> evar_map -> evar_map
 
 type metabinding = metavariable * constr * instance_status
 
 val retract_coercible_metas : evar_map -> metabinding list * evar_map
-val subst_defined_metas_evars : metabinding list * ('a * existential * constr) list -> constr -> constr option
 
 (** {5 FIXME: Nothing to do here} *)
 
@@ -465,7 +464,7 @@ val subst_defined_metas_evars : metabinding list * ('a * existential * constr) l
 
 (** Rigid or flexible universe variables *)
 
-type rigid = 
+type rigid = UState.rigid =
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
 
@@ -475,7 +474,7 @@ val univ_flexible_alg : rigid
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
-val evar_universe_context_set : Univ.universe_context -> evar_universe_context -> Univ.universe_context_set
+val evar_universe_context_set : evar_universe_context -> Univ.universe_context_set
 val evar_universe_context_constraints : evar_universe_context -> Univ.constraints
 val evar_context_universe_context : evar_universe_context -> Univ.universe_context
 val evar_universe_context_of : Univ.universe_context_set -> evar_universe_context
@@ -483,12 +482,17 @@ val empty_evar_universe_context : evar_universe_context
 val union_evar_universe_context : evar_universe_context -> evar_universe_context ->
   evar_universe_context
 val evar_universe_context_subst : evar_universe_context -> Universes.universe_opt_subst
+val constrain_variables : Univ.LSet.t -> evar_universe_context -> Univ.constraints
 
+
+val evar_universe_context_of_binders :
+  Universes.universe_binders -> evar_universe_context
+							    
+val make_evar_universe_context : env -> (Id.t located) list option -> evar_universe_context
+val restrict_universe_context : evar_map -> Univ.universe_set -> evar_map							   
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> string -> Univ.universe_level
 val add_universe_name : evar_map -> string -> Univ.universe_level -> evar_map
-
-val universes : evar_map -> Univ.universes
 
 val add_constraints_context : evar_universe_context -> 
   Univ.constraints -> evar_universe_context
@@ -500,16 +504,17 @@ val normalize_evar_universe_context_variables : evar_universe_context ->
 val normalize_evar_universe_context : evar_universe_context -> 
   evar_universe_context
 
-val new_univ_level_variable : ?name:string -> rigid -> evar_map -> evar_map * Univ.universe_level
-val new_univ_variable : ?name:string -> rigid -> evar_map -> evar_map * Univ.universe
-val new_sort_variable : ?name:string -> rigid -> evar_map -> evar_map * sorts
+val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe_level
+val new_univ_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe
+val new_sort_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * sorts
+val add_global_univ : evar_map -> Univ.Level.t -> evar_map
+											   
 val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
 val is_sort_variable : evar_map -> sorts -> Univ.universe_level option 
 (** [is_sort_variable evm s] returns [Some u] or [None] if [s] is 
     not a local sort variable declared in [evm] *)
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
-val whd_sort_variable : evar_map -> constr -> constr
 (* val normalize_universe_level : evar_map -> Univ.universe_level -> Univ.universe_level *)
 val normalize_universe : evar_map -> Univ.universe -> Univ.universe
 val normalize_universe_instance : evar_map -> Univ.universe_instance -> Univ.universe_instance
@@ -527,18 +532,19 @@ val check_leq : evar_map -> Univ.universe -> Univ.universe -> bool
 
 val evar_universe_context : evar_map -> evar_universe_context
 val universe_context_set : evar_map -> Univ.universe_context_set
-val universe_context : evar_map -> Univ.universe_context
+val universe_context : ?names:(Id.t located) list -> evar_map ->
+		       (Id.t * Univ.Level.t) list * Univ.universe_context
 val universe_subst : evar_map -> Universes.universe_opt_subst
-val universes : evar_map -> Univ.universes
+val universes : evar_map -> UGraph.t
 
 
 val merge_universe_context : evar_map -> evar_universe_context -> evar_map
 val set_universe_context : evar_map -> evar_universe_context -> evar_map
 
-val merge_context_set : rigid -> evar_map -> Univ.universe_context_set -> evar_map
+val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.universe_context_set -> evar_map
 val merge_universe_subst : evar_map -> Universes.universe_opt_subst -> evar_map
 
-val with_context_set : rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
+val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
 
 val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
 val abstract_undefined_variables : evar_universe_context -> evar_universe_context
@@ -549,25 +555,24 @@ val refresh_undefined_universes : evar_map -> evar_map * Univ.universe_level_sub
 
 val nf_constraints : evar_map -> evar_map
 
+val update_sigma_env : evar_map -> env -> evar_map
+
 (** Polymorphic universes *)
 
-val fresh_sort_in_family : ?rigid:rigid -> env -> evar_map -> sorts_family -> evar_map * sorts
-val fresh_constant_instance : env -> evar_map -> constant -> evar_map * pconstant
-val fresh_inductive_instance : env -> evar_map -> inductive -> evar_map * pinductive
-val fresh_constructor_instance : env -> evar_map -> constructor -> evar_map * pconstructor
+val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> env -> evar_map -> sorts_family -> evar_map * sorts
+val fresh_constant_instance : ?loc:Loc.t -> env -> evar_map -> constant -> evar_map * pconstant
+val fresh_inductive_instance : ?loc:Loc.t -> env -> evar_map -> inductive -> evar_map * pinductive
+val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor -> evar_map * pconstructor
 
-val fresh_global : ?rigid:rigid -> ?names:Univ.Instance.t -> env -> evar_map -> 
+val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env -> evar_map -> 
   Globnames.global_reference -> evar_map * constr
 
 (********************************************************************
-  Conversion w.r.t. an evar map: might generate universe unifications 
-  that are kept in the evarmap.
-  Raises [NotConvertible]. *)
-
-val conversion : env -> evar_map -> conv_pb -> constr -> constr -> evar_map
+  Conversion w.r.t. an evar map, not unifying universes. See 
+  [Reductionops.infer_conv] for conversion up-to universes. *)
 
 val test_conversion : env -> evar_map -> conv_pb -> constr -> constr -> bool
-(** This one forgets about the assignemts of universes. *)
+(** WARNING: This does not allow unification of universes *)
 
 val eq_constr_univs : evar_map -> constr -> constr -> evar_map * bool
 (** Syntactic equality up to universes, recording the associated constraints *)
@@ -592,6 +597,8 @@ type unsolvability_explanation = SeveralInstancesFound of int
 
 val pr_existential_key : evar_map -> evar -> Pp.std_ppcmds
 
+val pr_evar_suggested_name : existential_key -> evar_map -> Id.t
+
 (** {5 Debug pretty-printers} *)
 
 val pr_evar_info : evar_info -> Pp.std_ppcmds
@@ -608,4 +615,6 @@ val pr_evd_level : evar_map -> Univ.Level.t -> Pp.std_ppcmds
 val create_evar_defs      : evar_map -> evar_map
 (** Create an [evar_map] with empty meta map: *)
 
-val create_goal_evar_defs : evar_map -> evar_map
+(** {5 Summary names} *)
+
+val evar_counter_summary_name : string

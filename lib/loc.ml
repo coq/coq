@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -31,7 +31,7 @@ let ghost = {
   fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
   bp = 0; ep = 0; }
 
-let is_ghost loc = Pervasives.(=) loc ghost (** FIXME *)
+let is_ghost loc = loc.ep = 0
 
 let merge loc1 loc2 =
   if loc1.bp < loc2.bp then

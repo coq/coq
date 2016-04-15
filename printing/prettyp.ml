@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -35,7 +35,7 @@ type object_pr = {
   print_syntactic_def       : kernel_name -> std_ppcmds;
   print_module              : bool -> Names.module_path -> std_ppcmds;
   print_modtype             : module_path -> std_ppcmds;
-  print_named_decl          : Id.t * constr option * types -> std_ppcmds;
+  print_named_decl          : Context.Named.Declaration.t -> std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> Term.constr * Term.types -> Pp.std_ppcmds;
@@ -73,8 +73,15 @@ let print_ref reduce ref =
       in it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
-  hov 0 (pr_global ref ++ str " :" ++ spc () ++ pr_ltype typ ++ 
-  	   Printer.pr_universe_ctx univs)
+  let env = Global.env () in
+  let bl = Universes.universe_binders_of_global ref in
+  let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
+  let inst =
+    if Global.is_polymorphic ref then Printer.pr_universe_instance sigma univs
+    else mt ()
+  in
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype_env env sigma typ ++ 
+  	   Printer.pr_universe_ctx sigma univs)
 
 (********************************)
 (** Printing implicit arguments *)
@@ -125,7 +132,8 @@ let print_renames_list prefix l =
 let need_expansion impl ref =
   let typ = Global.type_of_global_unsafe ref in
   let ctx = prod_assum typ in
-  let nprods = List.length (List.filter (fun (_,b,_) -> Option.is_empty b) ctx) in
+  let open Context.Rel.Declaration in
+  let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
     let _,lastimpl = List.chop nprods impl in
       List.exists is_status_implicit lastimpl
@@ -161,8 +169,10 @@ type opacity =
   | FullyOpaque
   | TransparentMaybeOpacified of Conv_oracle.level
 
-let opacity env = function
-  | VarRef v when not (Option.is_empty (pi2 (Environ.lookup_named v env))) ->
+let opacity env =
+  let open Context.Named.Declaration in
+  function
+  | VarRef v when is_local_def (Environ.lookup_named v env) ->
       Some(TransparentMaybeOpacified
         (Conv_oracle.get_strategy (Environ.oracle env) (VarKey v)))
   | ConstRef cst ->
@@ -208,8 +218,8 @@ let print_polymorphism ref =
 let print_primitive_record recflag mipv = function
   | Some (Some (_, ps,_)) ->
     let eta = match recflag with
-    | Decl_kinds.CoFinite -> mt ()
-    | Decl_kinds.Finite | Decl_kinds.BiFinite -> str " and has eta conversion"
+    | Decl_kinds.CoFinite | Decl_kinds.Finite -> mt ()
+    | Decl_kinds.BiFinite -> str " and has eta conversion"
     in
     [pr_id mipv.(0).mind_typename ++ str" is primitive" ++ eta ++ str"."]
   | _ -> []
@@ -433,11 +443,13 @@ let print_named_def name body typ =
 let print_named_assum name typ =
   str "*** [" ++ str name ++ str " : " ++ pr_ltype typ ++ str "]"
 
-let gallina_print_named_decl (id,c,typ) =
-  let s = Id.to_string id in
-  match c with
-    | Some body -> print_named_def s body typ
-    | None -> print_named_assum s typ
+let gallina_print_named_decl =
+  let open Context.Named.Declaration in
+  function
+  | LocalAssum (id, typ) ->
+     print_named_assum (Id.to_string id) typ
+  | LocalDef (id, body, typ) ->
+     print_named_def (Id.to_string id) body typ
 
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context
@@ -463,16 +475,21 @@ let gallina_print_section_variable id =
   print_named_decl id ++
   with_line_skip (print_name_infos (VarRef id))
 
-let print_body = function
-  | Some c  -> pr_lconstr c
+let print_body env evd = function
+  | Some c  -> pr_lconstr_env env evd c
   | None -> (str"<no body>")
 
-let print_typed_body (val_0,typ) =
-  (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ)
+let print_typed_body env evd (val_0,typ) =
+  (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd typ)
 
 let ungeneralized_type_of_constant_type t = 
   Typeops.type_of_constant_type (Global.env ()) t
 
+let print_instance sigma cb =
+  if cb.const_polymorphic then
+    pr_universe_instance sigma cb.const_universes
+  else mt()
+				
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
@@ -481,17 +498,23 @@ let print_constant with_values sep sp =
   let univs = Univ.instantiate_univ_context 
     (Global.universes_of_constant_body cb)
   in
+  let ctx =
+    Evd.evar_universe_context_of_binders
+      (Universes.universe_binders_of_global (ConstRef sp))
+  in
+  let env = Global.env () and sigma = Evd.from_ctx ctx in
+  let pr_ltype = pr_ltype_env env sigma in
   hov 0 (pr_polymorphic cb.const_polymorphic ++
     match val_0 with
     | None ->
 	str"*** [ " ++
-	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++
+	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-	Printer.pr_universe_ctx univs
+	Printer.pr_universe_ctx sigma univs
     | _ ->
-	print_basename sp ++ str sep ++ cut () ++
-	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ)++
-        Printer.pr_universe_ctx univs)
+	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
+	(if with_values then print_typed_body env sigma (val_0,typ) else pr_ltype typ)++
+        Printer.pr_universe_ctx sigma univs)
 
 let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++
@@ -703,8 +726,8 @@ let print_any_name = function
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
     if not (DirPath.is_empty dir) then raise Not_found;
-    let (_,c,typ) = Global.lookup_named str in
-    (print_named_decl (str,c,typ))
+    let open Context.Named.Declaration in
+    str |> Global.lookup_named |> set_id str |> print_named_decl
   with Not_found ->
     errorlabstrm
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
@@ -732,8 +755,8 @@ let print_opaque_name qid =
 	let ty = Universes.unsafe_type_of_global gr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
-        let (_,c,ty) = lookup_named id env in
-	print_named_decl (id,c,ty)
+        let open Context.Named.Declaration in
+        lookup_named id env |> set_id id |> print_named_decl
 
 let print_about_any loc k =
   match k with

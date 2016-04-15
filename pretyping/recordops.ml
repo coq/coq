@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -299,7 +299,7 @@ let check_and_decompose_canonical_structure ref =
     | Construct ((indsp,1),u) -> indsp
     | _ -> error_not_structure ref in
   let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
-  let ntrue_projs = List.length (List.filter (fun (_, x) -> x) s.s_PROJKIND) in
+  let ntrue_projs = List.count snd s.s_PROJKIND in
   if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
     error_not_structure ref;
   (sp,indsp)

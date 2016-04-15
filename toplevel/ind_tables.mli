@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,6 +8,7 @@
 
 open Term
 open Names
+open Declare
 
 (** This module provides support for registering inductive scheme builders,
    declaring schemes and generating schemes on demand *)
@@ -19,9 +20,9 @@ type individual
 type 'a scheme_kind
 
 type mutual_scheme_object_function =
-  mutual_inductive -> constr array Evd.in_evar_universe_context * Declareops.side_effects
+  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
 type individual_scheme_object_function =
-  inductive -> constr Evd.in_evar_universe_context * Declareops.side_effects
+  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
 
 (** Main functions to register a scheme builder *)
 
@@ -32,21 +33,17 @@ val declare_individual_scheme_object : string -> ?aux:string ->
   individual_scheme_object_function ->
   individual scheme_kind
 
-(*
-val declare_scheme : 'a scheme_kind -> (inductive * constant) array -> unit
-*)
-
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
 val define_individual_scheme : individual scheme_kind -> 
-  Declare.internal_flag (** internal *) ->
-  Id.t option -> inductive -> constant * Declareops.side_effects
+  internal_flag (** internal *) ->
+  Id.t option -> inductive -> constant * Safe_typing.private_constants
 
-val define_mutual_scheme : mutual scheme_kind -> Declare.internal_flag (** internal *) ->
-  (int * Id.t) list -> mutual_inductive -> constant array * Declareops.side_effects
+val define_mutual_scheme : mutual scheme_kind -> internal_flag (** internal *) ->
+  (int * Id.t) list -> mutual_inductive -> constant array * Safe_typing.private_constants
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
-val find_scheme : 'a scheme_kind -> inductive -> constant * Declareops.side_effects
+val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> constant * Safe_typing.private_constants
 
 val check_scheme : 'a scheme_kind -> inductive -> bool
 

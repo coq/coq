@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -67,7 +67,9 @@ let iter_constructors indsp u fn env nconstr =
     fn (ConstructRef (indsp, i)) env typ
   done
 
-let iter_named_context_name_type f = List.iter (fun (nme,_,typ) -> f nme typ) 
+let iter_named_context_name_type f =
+  let open Context.Named.Declaration in
+  List.iter (fun decl -> f (get_id decl) (get_type decl))
 
 (* General search over hypothesis of a goal *)
 let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
@@ -79,12 +81,13 @@ let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
 
 (* General search over declarations *)
 let iter_declarations (fn : global_reference -> env -> constr -> unit) =
+  let open Context.Named.Declaration in
   let env = Global.env () in
   let iter_obj (sp, kn) lobj = match object_tag lobj with
   | "VARIABLE" ->
     begin try
-      let (id, _, typ) = Global.lookup_named (basename sp) in
-      fn (VarRef id) env typ
+      let decl = Global.lookup_named (basename sp) in
+      fn (VarRef (get_id decl)) env (get_type decl)
     with Not_found -> (* we are in a section *) () end
   | "CONSTANT" ->
     let cst = Global.constant_of_delta_kn kn in

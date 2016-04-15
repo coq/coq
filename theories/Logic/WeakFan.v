@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -89,7 +89,7 @@ Qed.
 Theorem WeakFanTheorem : forall P, barred P -> inductively_barred P [].
 Proof.
 intros P Hbar.
-destruct Hbar with (X P) as (l,(Hd/Y_approx,HP)).
+destruct Hbar with (X P) as (l,(Hd%Y_approx,HP)).
 assert (inductively_barred P l) by (apply (now P l), HP).
 clear Hbar HP.
 induction l as [|a l].

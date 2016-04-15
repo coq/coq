@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -166,12 +166,14 @@ let consistency_checks exists dir dirinfo =
     let globref =
       try Nametab.locate_dir (qualid_of_dirpath dir)
       with Not_found ->
-        anomaly (pr_dirpath dir ++ str " should already exist!")
+        errorlabstrm "consistency_checks"
+          (pr_dirpath dir ++ str " should already exist!")
     in
     assert (eq_global_dir_reference globref dirinfo)
   else
     if Nametab.exists_dir dir then
-      anomaly (pr_dirpath dir ++ str " already exists")
+      errorlabstrm "consistency_checks"
+        (pr_dirpath dir ++ str " already exists")
 
 let compute_visibility exists i =
   if exists then Nametab.Exactly i else Nametab.Until i
@@ -369,7 +371,7 @@ let rec replace_module_object idl mp0 objs0 mp1 objs1 =
   match idl, objs0 with
   | _,[] -> []
   | id::idl,(id',obj)::tail when Id.equal id id' ->
-    assert (object_has_tag obj "MODULE");
+    assert (String.equal (object_tag obj) "MODULE");
     let mp_id = MPdot(mp0, Label.of_id id) in
     let objs = match idl with
       | [] -> Lib.subst_objects (map_mp mp1 mp_id empty_delta_resolver) objs1
@@ -555,6 +557,17 @@ let openmodtype_info =
   Summary.ref ([] : module_type_body list) ~name:"MODTYPE-INFO"
 
 
+(** XML output hooks *)
+
+let (f_xml_declare_module, xml_declare_module) = Hook.make ~default:ignore ()
+let (f_xml_start_module, xml_start_module) = Hook.make ~default:ignore ()
+let (f_xml_end_module, xml_end_module) = Hook.make ~default:ignore ()
+let (f_xml_declare_module_type, xml_declare_module_type) = Hook.make ~default:ignore ()
+let (f_xml_start_module_type, xml_start_module_type) = Hook.make ~default:ignore ()
+let (f_xml_end_module_type, xml_end_module_type) = Hook.make ~default:ignore ()
+
+let if_xml f x = if !Flags.xml_export then f x else ()
+
 (** {6 Modules : start, end, declare} *)
 
 module RawModOps = struct
@@ -576,7 +589,9 @@ let start_module interp_modast export id args res fs =
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
-  Lib.add_frozen_state (); mp
+  Lib.add_frozen_state ();
+  if_xml (Hook.get f_xml_start_module) mp;
+  mp
 
 let end_module () =
   let oldoname,oldprefix,fs,lib_stack = Lib.end_module () in
@@ -615,6 +630,7 @@ let end_module () =
   assert (ModPath.equal (mp_of_kn (snd newoname)) mp);
 
   Lib.add_frozen_state () (* to prevent recaching *);
+  if_xml (Hook.get f_xml_end_module) mp;
   mp
 
 let declare_module interp_modast id args res mexpr_o fs =
@@ -664,6 +680,7 @@ let declare_module interp_modast id args res mexpr_o fs =
 
   let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
   ignore (Lib.add_leaf id (in_module sobjs));
+  if_xml (Hook.get f_xml_declare_module) mp;
   mp
 
 end
@@ -680,7 +697,9 @@ let start_modtype interp_modast id args mtys fs =
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
-  Lib.add_frozen_state (); mp
+  Lib.add_frozen_state ();
+  if_xml (Hook.get f_xml_start_module_type) mp;
+  mp
 
 let end_modtype () =
   let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
@@ -697,6 +716,7 @@ let end_modtype () =
   assert (ModPath.equal (mp_of_kn (snd oname)) mp);
 
   Lib.add_frozen_state ()(* to prevent recaching *);
+  if_xml (Hook.get f_xml_end_module_type) mp;
   mp
 
 let declare_modtype interp_modast id args mtys (mty,ann) fs =
@@ -727,6 +747,7 @@ let declare_modtype interp_modast id args mtys (mty,ann) fs =
   check_subtypes_mt mp sub_mty_l;
 
   ignore (Lib.add_leaf id (in_modtype sobjs));
+  if_xml (Hook.get f_xml_declare_module_type) mp;
   mp
 
 end

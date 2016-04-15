@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,21 +18,33 @@ open Constrarg
 exception CannotCoerceTo of string
 
 let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
-  Genarg.create_arg None "constr_context"
+  Genarg.create_arg "constr_context"
 
 (* includes idents known to be bound and references *)
 let (wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) Genarg.genarg_type) =
-  Genarg.create_arg None "constr_under_binders"
+  Genarg.create_arg "constr_under_binders"
+
+let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
+  let Val.Dyn (t, _) = v in
+  match Val.eq t (val_tag wit) with
+  | None -> false
+  | Some Refl -> true
+
+let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
+  let Val.Dyn (t', x) = v in
+  match Val.eq t t' with
+  | None -> None
+  | Some Refl -> Some x
+
+let in_gen wit v = Val.Dyn (val_tag wit, v)
+let out_gen wit v = match prj (val_tag wit) v with None -> assert false | Some x -> x
 
 module Value =
 struct
 
-type t = tlevel generic_argument
+type t = Val.t
 
-let rec normalize v =
-  if has_type v (topwit wit_genarg) then
-    normalize (out_gen (topwit wit_genarg) v)
-  else v
+let normalize v = v
 
 let of_constr c = in_gen (topwit wit_constr) c
 
@@ -64,9 +76,21 @@ let to_int v =
 
 let to_list v =
   let v = normalize v in
-  let list_unpacker wit l = List.map (fun v -> in_gen (topwit wit) v) (top l) in
-  try Some (list_unpack { list_unpacker } v)
-  with Failure _ -> None
+  let Val.Dyn (tag, v) = v in
+  match tag with
+  | Val.List t -> Some (List.map (fun x -> Val.Dyn (t, x)) v)
+  | _ -> None
+
+let of_list t v = Val.Dyn (Val.List t, v)
+
+let to_option v =
+  let v = normalize v in
+  let Val.Dyn (tag, v) = v in
+  match tag with
+  | Val.Opt t -> Some (Option.map (fun x -> Val.Dyn (t, x)) v)
+  | _ -> None
+
+let of_option t v = Val.Dyn (Val.Opt t, v)
 
 end
 

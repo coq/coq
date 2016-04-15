@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -9,6 +9,8 @@
 open Util
 open Pp
 open Term
+open Sigma.Notations
+open Context.Named.Declaration
 
 (* This module implements the abstract interface to goals *)
 (* A general invariant of the module, is that a goal whose associated
@@ -70,10 +72,12 @@ module V82 = struct
 		Evd.evar_extra = extra }
     in
     let evi = Typeclasses.mark_unresolvable evi in
-    let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
+    let evars = Sigma.Unsafe.of_evar_map evars in
+    let Sigma (evk, evars, _) = Evarutil.new_pure_evar_full evars evi in
+    let evars = Sigma.to_evar_map evars in
     let evars = Evd.restore_future_goals evars prev_future_goals prev_principal_goal in
     let ctxt = Environ.named_context_of_val hyps in
-    let inst = Array.map_of_list (fun (id, _, _) -> mkVar id) ctxt in
+    let inst = Array.map_of_list (mkVar % get_id) ctxt in
     let ev = Term.mkEvar (evk,inst) in
     (evk, ev, evars)
 
@@ -89,7 +93,10 @@ module V82 = struct
   (* Instantiates a goal with an open term, using name of goal for evk' *)
   let partial_solution_to sigma evk evk' c =
     let id = Evd.evar_ident evk sigma in
-    Evd.rename evk' id (partial_solution sigma evk c)
+    let sigma = partial_solution sigma evk c in
+    match id with
+    | None -> sigma
+    | Some id -> Evd.rename evk' id sigma
 
   (* Parts of the progress tactical *)
   let same_goal evars1 gl1 evars2 gl2 =
@@ -123,8 +130,10 @@ module V82 = struct
     let new_evi =
       { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in
-    let (new_sigma, evk) = Evarutil.new_pure_evar_full Evd.empty new_evi in
-    { Evd.it = evk ; sigma = new_sigma; }
+    let sigma = Sigma.Unsafe.of_evar_map Evd.empty in
+    let Sigma (evk, sigma, _) = Evarutil.new_pure_evar_full sigma new_evi in
+    let sigma = Sigma.to_evar_map sigma in
+    { Evd.it = evk ; sigma = sigma; }
 
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =
@@ -139,7 +148,7 @@ module V82 = struct
     let env = env sigma gl in
     let genv = Global.env () in
     let is_proof_var decl =
-      try ignore (Environ.lookup_named (Util.pi1 decl) genv); false
+      try ignore (Environ.lookup_named (get_id decl) genv); false
       with Not_found -> true in
     Environ.fold_named_context_reverse (fun t decl ->
 					  if is_proof_var decl then

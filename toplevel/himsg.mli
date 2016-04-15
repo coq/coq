@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -35,9 +35,6 @@ val explain_pattern_matching_error :
 
 val explain_reduction_tactic_error :
   Tacred.reduction_tactic_error -> std_ppcmds
-
-val extract_ltac_trace :
-  Proof_type.ltac_trace -> Loc.t -> std_ppcmds option * Loc.t
 
 val explain_module_error : Modops.module_typing_error -> std_ppcmds
 

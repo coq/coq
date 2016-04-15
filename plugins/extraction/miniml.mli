@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -16,11 +16,16 @@ open Globnames
    object expects, and what these arguments will become in the ML
    object. *)
 
-(* We eliminate from terms:  1) types 2) logical parts.
-   [Kother] stands both for logical or other reasons
-   (for instance user-declared implicit arguments w.r.t. extraction). *)
+(* We eliminate from terms:
+   1) types
+   2) logical parts
+   3) user-declared implicit arguments of a constant of constructor
+*)
 
-type kill_reason = Ktype | Kother
+type kill_reason =
+  | Ktype
+  | Kprop
+  | Kimplicit of global_reference * int  (* n-th arg of a cst or construct *)
 
 type sign = Keep | Kill of kill_reason
 
@@ -118,7 +123,7 @@ and ml_ast =
   | MLcase   of ml_type * ml_ast * ml_branch array
   | MLfix    of int * Id.t array * ml_ast array
   | MLexn    of string
-  | MLdummy
+  | MLdummy  of kill_reason
   | MLaxiom
   | MLmagic  of ml_ast
 

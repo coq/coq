@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -238,6 +238,69 @@ end
 
 END
 
+(** Some definitions are grammar-specific in Camlp4, so we use a functor to
+    depend on it while taking a dummy argument in Camlp5. *)
+
+module GramextMake (G : GrammarSig) :
+sig
+  val stoken : Tok.t -> G.symbol
+  val sself : G.symbol
+  val snext : G.symbol
+  val slist0 : G.symbol -> G.symbol
+  val slist0sep : G.symbol * G.symbol -> G.symbol
+  val slist1 : G.symbol -> G.symbol
+  val slist1sep : G.symbol * G.symbol -> G.symbol
+  val sopt : G.symbol -> G.symbol
+  val snterml : G.internal_entry * string -> G.symbol
+  val snterm : G.internal_entry -> G.symbol
+  val snterml_level : G.symbol -> string
+end =
+struct
+
+IFDEF CAMLP5 THEN
+  let stoken tok =
+    let pattern = match tok with
+    | Tok.KEYWORD s -> "", s
+    | Tok.IDENT s -> "IDENT", s
+    | Tok.PATTERNIDENT s -> "PATTERNIDENT", s
+    | Tok.FIELD s -> "FIELD", s
+    | Tok.INT s -> "INT", s
+    | Tok.INDEX s -> "INDEX", s
+    | Tok.STRING s -> "STRING", s
+    | Tok.LEFTQMARK -> "LEFTQMARK", ""
+    | Tok.BULLET s -> "BULLET", s
+    | Tok.EOI -> "EOI", ""
+    in
+    Gramext.Stoken pattern
+ELSE
+  module Gramext = G
+  let stoken tok = match tok with
+  | Tok.KEYWORD s -> Gramext.Skeyword s
+  | tok -> Gramext.Stoken (Tok.equal tok, G.Token.to_string tok)
+END
+
+IFDEF CAMLP5_6_00 THEN
+  let slist0sep (x, y) = Gramext.Slist0sep (x, y, false)
+  let slist1sep (x, y) = Gramext.Slist1sep (x, y, false)
+ELSE
+  let slist0sep (x, y) = Gramext.Slist0sep (x, y)
+  let slist1sep (x, y) = Gramext.Slist1sep (x, y)
+END
+
+  let snterml (x, y) = Gramext.Snterml (x, y)
+  let snterm x = Gramext.Snterm x
+  let sself = Gramext.Sself
+  let snext = Gramext.Snext
+  let slist0 x = Gramext.Slist0 x
+  let slist1 x = Gramext.Slist1 x
+  let sopt x = Gramext.Sopt x
+
+  let snterml_level = function
+  | Gramext.Snterml (_, l) -> l
+  | _ -> failwith "snterml_level"
+
+end
+
 
 (** Misc functional adjustments *)
 
@@ -322,4 +385,12 @@ let qualified_name loc path name =
   let fold dir accu = Ast.IdAcc (loc, Ast.IdUid (loc, dir), accu) in
   let path = List.fold_right fold path (Ast.IdLid (loc, name)) in
   Ast.ExId (loc, path)
+END
+
+IFDEF CAMLP5 THEN
+let warning_verbose = Gramext.warning_verbose
+ELSE
+(* TODO: this is a workaround, since there isn't such
+   [warning_verbose] in new camlp4. *)
+let warning_verbose = ref true
 END

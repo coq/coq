@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -30,13 +30,8 @@ let verbose = ref false
 let rec make_compilation_args = function
   | [] -> []
   | file :: fl ->
-      let file_noext =
-        if Filename.check_suffix file ".v" then
-          Filename.chop_suffix file ".v"
-        else file
-      in
       (if !verbose then "-compile-verbose" else "-compile")
-      :: file_noext :: (make_compilation_args fl)
+      :: file :: (make_compilation_args fl)
 
 (* compilation of files [files] with command [command] and args [args] *)
 
@@ -74,17 +69,6 @@ let parse_args () =
     | "-image" :: [] ->	usage ()
     | "-byte" :: rem -> binary := "coqtop.byte"; parse (cfiles,args) rem
     | "-opt" :: rem -> binary := "coqtop"; parse (cfiles,args) rem
-
-(* Obsolete options *)
-
-    | "-libdir" :: _ :: rem ->
-        print_string "Warning: option -libdir deprecated and ignored\n";
-        flush stdout;
-        parse (cfiles,args) rem
-    | ("-db"|"-debugger") :: rem ->
-        print_string "Warning: option -db/-debugger deprecated and ignored\n";
-        flush stdout;
-        parse (cfiles,args) rem
 
 (* Informative options *)
 
@@ -129,21 +113,11 @@ let parse_args () =
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
 	    | []        -> usage ()
 	end
+    | ("-I"|"-include" as o) :: s :: rem -> parse (cfiles,s::o::args) rem
 
 (* Options for coqtop : c) options with 1 argument and possibly more *)
 
-    | ("-I"|"-include" as o) :: rem ->
-	begin
-	  match rem with
-	  | s :: "-as" :: t :: rem' -> parse (cfiles,t::"-as"::s::o::args) rem'
-	  | s :: "-as" :: [] -> usage ()
-	  | s :: rem' -> parse (cfiles,s::o::args) rem'
-	  | []        -> usage ()
-	end
-    | "-R" :: s :: "-as" :: t :: rem ->	parse (cfiles,t::"-as"::s::"-R"::args) rem
-    | "-R" :: s :: "-as" :: [] -> usage ()
-    | "-R" :: s :: t :: rem -> parse (cfiles,t::s::"-R"::args) rem
-    | "-Q" :: s :: t :: rem -> parse (cfiles,t::s::"-Q"::args) rem
+    | ("-R"|"-Q" as o) :: s :: t :: rem -> parse (cfiles,t::s::o::args) rem
     | ("-schedule-vio-checking"
       |"-check-vio-tasks" | "-schedule-vio2vo" as o) :: s :: rem ->
         let nodash, rem =

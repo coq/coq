@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -22,10 +22,8 @@ open Libnames
 (** Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
 val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> unit
-val require_library_from_file :
-  Id.t option -> CUnix.physical_path -> bool option -> unit
 
-(** {6 ... } *)
+(** {6 Start the compilation of a library } *)
 
 (** Segments of a library *)
 type seg_sum
@@ -39,10 +37,12 @@ type seg_proofs = Term.constr Future.computation array
    an export otherwise just a simple import *)
 val import_module : bool -> qualid located list -> unit
 
-(** {6 Start the compilation of a library } *)
-val start_library : string -> DirPath.t * string
+(** Start the compilation of a file as a library. The argument must be an
+    existing file on the system, and the returned path is the associated
+    absolute logical path of the library. *)
+val start_library : CUnix.physical_path -> DirPath.t
 
-(** {6 End the compilation of a library and save it to a ".vo" file } *)
+(** End the compilation of a library and save it to a ".vo" file *)
 val save_library_to :
   ?todo:(((Future.UUID.t,'document) Stateid.request * bool) list * 'counters) ->
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
@@ -67,6 +67,9 @@ val library_full_filename : DirPath.t -> string
   (** - Overwrite the filename of all libraries (used when restoring a state) *)
 val overwrite_library_filenames : string -> unit
 
+(** {6 Hook for the xml exportation of libraries } *)
+val xml_require : (DirPath.t -> unit) Hook.t
+
 (** {6 Locate a library in the load paths } *)
 exception LibUnmappedDir
 exception LibNotFound
@@ -81,9 +84,6 @@ val locate_qualified_library :
   @raise LibNotFound if there is no corresponding file in the path
 
 *)
-
-(** {6 Statistics: display the memory use of a library. } *)
-val mem : DirPath.t -> Pp.std_ppcmds
 
 (** {6 Native compiler. } *)
 val native_name_from_filename : string -> string

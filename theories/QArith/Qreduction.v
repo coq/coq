@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -93,11 +93,17 @@ Proof.
   Close Scope Z_scope.
 Qed.
 
+Lemma Qred_eq_iff q q' : Qred q = Qred q' <-> q == q'.
+Proof.
+ split.
+ - intros E. rewrite <- (Qred_correct q), <- (Qred_correct q').
+   now rewrite E.
+ - apply Qred_complete.
+Qed.
+
 Add Morphism Qred : Qred_comp.
 Proof.
-  intros q q' H.
-  rewrite (Qred_correct q); auto.
-  rewrite (Qred_correct q'); auto.
+  intros. now rewrite !Qred_correct.
 Qed.
 
 Definition Qplus' (p q : Q) := Qred (Qplus p q).
@@ -148,4 +154,14 @@ Theorem Qred_compare: forall x y,
   Qcompare x y = Qcompare (Qred x) (Qred y).
 Proof.
   intros x y; apply Qcompare_comp; apply Qeq_sym; apply Qred_correct.
+Qed.
+
+Lemma Qred_le q q' : Qred q <= Qred q' <-> q <= q'.
+Proof.
+  now rewrite !Qle_alt, <- Qred_compare.
+Qed.
+
+Lemma Qred_lt q q' : Qred q < Qred q' <-> q < q'.
+Proof.
+  now rewrite !Qlt_alt, <- Qred_compare.
 Qed.

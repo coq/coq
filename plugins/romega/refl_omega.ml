@@ -44,9 +44,9 @@ let occ_step_eq s1 s2 = match s1, s2 with
 
 (* chemin identifiant une proposition sous forme du nom de l'hypothèse et
    d'une liste de pas à partir de la racine de l'hypothèse *)
-type occurence = {o_hyp : Names.Id.t; o_path : occ_path}
+type occurrence = {o_hyp : Names.Id.t; o_path : occ_path}
 
-(* \subsection{refiable formulas} *)
+(* \subsection{reifiable formulas} *)
 type oformula =
     (* integer *)
   | Oint of Bigint.bigint
@@ -55,7 +55,7 @@ type oformula =
   | Omult of oformula * oformula
   | Ominus of oformula * oformula
   | Oopp of  oformula
-    (* an atome in the environment *)
+    (* an atom in the environment *)
   | Oatom of int
     (* weird expression that cannot be translated *)
   | Oufo of oformula
@@ -75,13 +75,13 @@ type oproposition =
   | Pimp of int * oproposition * oproposition
   | Pprop of Term.constr
 
-(* Les équations ou proposiitions atomiques utiles du calcul *)
+(* Les équations ou propositions atomiques utiles du calcul *)
 and oequation = {
     e_comp: comparaison;		(* comparaison *)
     e_left: oformula;			(* formule brute gauche *)
     e_right: oformula;			(* formule brute droite *)
     e_trace: Term.constr;		(* tactique de normalisation *)
-    e_origin: occurence;		(* l'hypothèse dont vient le terme *)
+    e_origin: occurrence;		(* l'hypothèse dont vient le terme *)
     e_negated: bool;			(* vrai si apparait en position nié
 					   après normalisation *)
     e_depends: direction  list;		(* liste des points de disjonction dont
@@ -111,7 +111,7 @@ type environment = {
   real_indices : (int,int) Hashtbl.t;
   mutable cnt_connectors : int;
   equations : (int,oequation) Hashtbl.t;
-  constructors : (int, occurence) Hashtbl.t
+  constructors : (int, occurrence) Hashtbl.t
 }
 
 (* \subsection{Solution tree}
@@ -136,7 +136,7 @@ type solution_tree =
    chemins pour extraire des equations ou d'hypothèses *)
 
 type context_content =
-    CCHyp of occurence
+    CCHyp of occurrence
   | CCEqua of int
 
 (* \section{Specific utility functions to handle base types} *)
@@ -1266,7 +1266,7 @@ let resolution env full_reified_goal systems_list =
       |	(O_right :: l) -> app coq_p_right [| loop l |] in
     let correct_index =
       let i = List.index0 Names.Id.equal e.e_origin.o_hyp l_hyps in
-      (* PL: it seems that additionnally introduced hyps are in the way during
+      (* PL: it seems that additionally introduced hyps are in the way during
              normalization, hence this index shifting... *)
       if Int.equal i 0 then 0 else Pervasives.(+) i (List.length to_introduce)
     in
@@ -1285,7 +1285,7 @@ let resolution env full_reified_goal systems_list =
   Proofview.V82.of_tactic (Tactics.change_concl reified) >>
   Proofview.V82.of_tactic (Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
   show_goal >>
-  Tactics.normalise_vm_in_concl >>
+  Proofview.V82.of_tactic (Tactics.normalise_vm_in_concl) >>
   (*i Alternatives to the previous line:
    - Normalisation without VM:
       Tactics.normalise_in_concl

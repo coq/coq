@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,9 +19,9 @@ val env : unit -> Environ.env
 
 val env_is_initial : unit -> bool
 
-val universes : unit -> Univ.universes
+val universes : unit -> UGraph.t
 val named_context_val : unit -> Environ.named_context_val
-val named_context : unit -> Context.named_context
+val named_context : unit -> Context.Named.t
 
 (** {6 Enriching the global environment } *)
 
@@ -30,19 +30,20 @@ val set_engagement : Declarations.engagement -> unit
 
 (** Variables, Local definitions, constants, inductive types *)
 
-val push_named_assum : (Id.t * Constr.types) Univ.in_universe_context_set -> unit
-val push_named_def   : (Id.t * Entries.definition_entry) -> unit
+val push_named_assum : (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
+val push_named_def   : (Id.t * Safe_typing.private_constants Entries.definition_entry) -> Univ.universe_context_set
 
 val add_constant :
-  DirPath.t -> Id.t -> Safe_typing.global_declaration -> constant
+  DirPath.t -> Id.t -> Safe_typing.global_declaration ->
+    constant * Safe_typing.exported_private_constant list
 val add_mind :
   DirPath.t -> Id.t -> Entries.mutual_inductive_entry -> mutual_inductive
 
 (** Extra universe constraints *)
 val add_constraints : Univ.constraints -> unit
 
-val push_context : Univ.universe_context -> unit
-val push_context_set : Univ.universe_context_set -> unit
+val push_context : bool -> Univ.universe_context -> unit
+val push_context_set : bool -> Univ.universe_context_set -> unit
 
 (** Non-interactive modules and module types *)
 
@@ -72,7 +73,7 @@ val add_module_parameter :
 
 (** {6 Queries in the global environment } *)
 
-val lookup_named     : variable -> Context.named_declaration
+val lookup_named     : variable -> Context.Named.Declaration.t
 val lookup_constant  : constant -> Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body

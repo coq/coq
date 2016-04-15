@@ -13,7 +13,7 @@ SetCompressor lzma
 
 !define MY_PRODUCT "Coq" ;Define your own software name here
 !define COQ_SRC_PATH "..\.."
-!define OUTFILE "coq-installer-${VERSION}.exe"
+!define OUTFILE "coq-installer-${VERSION}-${ARCH}.exe"
 
 !include "MUI2.nsh"
 !include "FileAssociation.nsh"
@@ -95,8 +95,8 @@ Section "Coq" Sec1
   File /r ${COQ_SRC_PATH}\theories\*.vo
   File /r ${COQ_SRC_PATH}\theories\*.v
   File /r ${COQ_SRC_PATH}\theories\*.glob
-  File /r ${COQ_SRC_PATH}\theories\*.cmi
-  File /r ${COQ_SRC_PATH}\theories\*.cmxs
+  ; File /r ${COQ_SRC_PATH}\theories\*.cmi
+  ; File /r ${COQ_SRC_PATH}\theories\*.cmxs
   SetOutPath "$INSTDIR\lib\plugins"
   File /r ${COQ_SRC_PATH}\plugins\*.vo
   File /r ${COQ_SRC_PATH}\plugins\*.v

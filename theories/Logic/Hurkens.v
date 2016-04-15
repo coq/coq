@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -266,7 +266,7 @@ End Paradox.
 
 (** The [paradox] tactic can be called as a shortcut to use the paradox. *)
 Ltac paradox h :=
-  refine ((fun h => _) (paradox _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ));cycle 1.
+  unshelve (refine ((fun h => _) (paradox _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ))).
 
 End Generic.
 
@@ -319,77 +319,31 @@ Proof.
   + cbn. exact (fun u F => forall x:u, F x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. easy.
+
   + cbn. exact (fun F => u22u1 (forall x, F x)).
   + cbn. exact (fun _ x => u22u1_unit _ x).
   + cbn. exact (fun _ x => u22u1_counit _ x).
-  + cbn. intros **. now rewrite u22u1_coherent.
   (** Small universe *)
   + exact U0.
   (** The interpretation of the small universe is the image of
       [U0] in [U1]. *)
   + cbn. exact (fun X => u02u1 X).
   + cbn. exact (fun u F => u12u0 (forall x:(u02u1 u), u02u1 (F x))).
-  + cbn. intros * x. exact (u12u0_unit _ x).
-  + cbn. intros * x. exact (u12u0_counit _ x).
   + cbn. exact (fun u F => u12u0 (forall x:u, u02u1 (F x))).
-  + cbn. intros * x. exact (u12u0_unit _ x).
-  + cbn. intros * x. exact (u12u0_counit _ x).
   + cbn. exact (u12u0 F).
   + cbn in h.
     exact (u12u0_counit _ h).
+  + cbn. easy.
+  + cbn. intros **. now rewrite u22u1_coherent.
+  + cbn. intros * x. exact (u12u0_unit _ x).
+  + cbn. intros * x. exact (u12u0_counit _ x).
+  + cbn. intros * x. exact (u12u0_unit _ x).
+  + cbn. intros * x. exact (u12u0_counit _ x).
 Qed.
 
 End Paradox.
 
 End NoRetractToImpredicativeUniverse.
-
-(** * Prop is not a retract *)
-
-(** The existence in the pure Calculus of Constructions of a retract
-    from [Prop] into a small type of [Prop] is inconsistent. This is a
-    special case of the previous result. *)
-
-Module NoRetractFromSmallPropositionToProp.
-
-Section Paradox.
-
-(** ** Retract of [Prop] in a small type *)
-
-(** The retract is axiomatized using logical equivalence as the
-    equality on propositions. *)
-
-Variable bool : Prop.
-Variable p2b : Prop -> bool.
-Variable b2p : bool -> Prop.
-Hypothesis p2p1 : forall A:Prop, b2p (p2b A) -> A.
-Hypothesis p2p2 : forall A:Prop, A -> b2p (p2b A).
-
-(** ** Paradox *)
-
-Theorem paradox : forall B:Prop, B.
-Proof.
-  intros B.
-  pose proof
-      (NoRetractToImpredicativeUniverse.paradox@{Type Prop}) as P.
-  refine (P _ _ _ _ _ _ _ _ _ _);clear P.
-  + exact bool.
-  + exact (fun x => forall P:Prop, (x->P)->P).
-  + cbn. exact (fun _ x P k => k x).
-  + cbn. intros F P x.
-    apply P.
-    intros f.
-    exact (f x).
-  + cbn. easy.
-  + exact b2p.
-  + exact p2b.
-  + exact p2p2.
-  + exact p2p1.
-Qed.
-
-End Paradox.
-
-End NoRetractFromSmallPropositionToProp.
 
 (** * Modal fragments of [Prop] are not retracts *)
 
@@ -428,7 +382,7 @@ Qed.
 
 Definition Forall {A:Type} (P:A->MProp) : MProp.
 Proof.
-  refine (exist _ _ _).
+  unshelve (refine (exist _ _ _)).
   + exact (forall x:A, El (P x)).
   + intros h x.
     eapply strength in h.
@@ -458,27 +412,27 @@ Proof.
   + exact (fun _ => Forall).
   + cbn. exact (fun _ _ f => f).
   + cbn. exact (fun _ _ f => f).
-  + cbn. easy.
   + exact Forall.
   + cbn. exact (fun _ f => f).
   + cbn. exact (fun _ f => f).
-  + cbn. easy.
   (** Small universe *)
   + exact bool.
   + exact (fun b => El (b2p b)).
   + cbn. exact (fun _ F => p2b (Forall (fun x => b2p (F x)))).
-  + cbn. auto.
-  + cbn. intros * f.
-    apply p2p1 in f. cbn in f.
-    exact f.
   + exact (fun _ F => p2b (Forall (fun x => b2p (F x)))).
-  + cbn. auto.
-  + cbn. intros * f.
-    apply p2p1 in f. cbn in f.
-    exact f.
   + apply p2b.
     exact B.
   + cbn in h. auto.
+  + cbn. easy.
+  + cbn. easy.
+  + cbn. auto.
+  + cbn. intros * f.
+    apply p2p1 in f. cbn in f.
+    exact f.
+  + cbn. auto.
+  + cbn. intros * f.
+    apply p2p1 in f. cbn in f.
+    exact f.
 Qed.
 
 End Paradox.
@@ -516,23 +470,97 @@ Hypothesis p2p2 : forall A:NProp, El A -> El (b2p (p2b A)).
 Theorem paradox : forall B:NProp, El B.
 Proof.
   intros B.
-  refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _));cycle 1.
+  unshelve (refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _))).
   + exact (fun P => ~~P).
-  + cbn. auto.
-  + cbn. auto.
-  + cbn. auto.
   + exact bool.
   + exact p2b.
   + exact b2p.
-  + auto.
-  + auto.
   + exact B.
   + exact h.
+  + cbn. auto.
+  + cbn. auto.
+  + cbn. auto.
+  + auto.
+  + auto.
 Qed.
 
 End Paradox.
 
 End NoRetractToNegativeProp.
+
+(** * Prop is not a retract *)
+
+(** The existence in the pure Calculus of Constructions of a retract
+    from [Prop] into a small type of [Prop] is inconsistent. This is a
+    special case of the previous result. *)
+
+Module NoRetractFromSmallPropositionToProp.
+
+(** ** The universe of propositions. *)
+
+Definition NProp := { P:Prop | P -> P}.
+Definition El : NProp -> Prop := @proj1_sig _ _.
+
+Section MParadox.
+
+(** ** Retract of [Prop] in a small type, using the identity modality. *)
+
+Variable bool : NProp.
+Variable p2b : NProp -> El bool.
+Variable b2p : El bool -> NProp.
+Hypothesis p2p1 : forall A:NProp, El (b2p (p2b A)) -> El A.
+Hypothesis p2p2 : forall A:NProp, El A -> El (b2p (p2b A)).
+
+(** ** Paradox *)
+
+Theorem mparadox : forall B:NProp, El B.
+Proof.
+  intros B.
+  unshelve (refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _))).
+  + exact (fun P => P).
+  + exact bool.
+  + exact p2b.
+  + exact b2p.
+  + exact B.
+  + exact h.
+  + cbn. auto.
+  + cbn. auto.
+  + cbn. auto.
+  + auto.
+  + auto.
+Qed.
+
+End MParadox.
+
+Section Paradox.
+
+(** ** Retract of [Prop] in a small type *)
+
+(** The retract is axiomatized using logical equivalence as the
+    equality on propositions. *)
+Variable bool : Prop.
+Variable p2b : Prop -> bool.
+Variable b2p : bool -> Prop.
+Hypothesis p2p1 : forall A:Prop, b2p (p2b A) -> A.
+Hypothesis p2p2 : forall A:Prop, A -> b2p (p2b A).
+
+(** ** Paradox *)
+
+Theorem paradox : forall B:Prop, B.
+Proof.
+  intros B.
+  unshelve (refine (mparadox (exist _ bool (fun x => x)) _ _ _ _
+                   (exist _ B (fun x => x)))).
+  + intros p. red. red. exact (p2b (El p)).
+  + cbn. intros b. red. exists (b2p b). exact (fun x => x).
+  + cbn. intros [A H]. cbn. apply p2p1.
+  + cbn. intros [A H]. cbn. apply p2p2.
+Qed.
+
+End Paradox.
+
+End NoRetractFromSmallPropositionToProp.
+
 
 (** * Large universes are no retracts of [Prop]. *)
 
@@ -569,7 +597,6 @@ Proof.
   + cbn. exact (fun u F => forall x, F x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. easy.
   + exact (fun F => forall A:Prop, F(up A)).
   + cbn. exact (fun F f A => f (up A)).
   + cbn.
@@ -577,20 +604,21 @@ Proof.
     specialize (f (down A)).
     rewrite up_down in f.
     exact f.
+  + exact Prop.
+  + cbn. exact (fun X => X).
+  + cbn. exact (fun A P => forall x:A, P x).
+  + cbn. exact (fun A P => forall x:A, P x).
+  + cbn. exact P.
+  + exact h.
+  + cbn. easy.
   + cbn.
     intros F f A.
     destruct (up_down A). cbn.
     reflexivity.
-  + exact Prop.
-  + cbn. exact (fun X => X).
-  + cbn. exact (fun A P => forall x:A, P x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. exact (fun A P => forall x:A, P x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. exact P.
-  + exact h.
 Qed.
 
 End Paradox.
@@ -602,6 +630,8 @@ End NoRetractFromTypeToProp.
 (** No Coq universe can be equal to one of its elements. *)
 
 Module TypeNeqSmallType.
+
+Unset Universe Polymorphism.
 
 Section Paradox.
 
@@ -627,7 +657,6 @@ Proof.
   reflexivity.
 Qed.
 
-
 Theorem paradox : False.
 Proof.
   Generic.paradox p.
@@ -637,37 +666,37 @@ Proof.
   + cbn. exact (fun X F => forall x:X, F x).
   + cbn. exact (fun _ _ x => x).
   + cbn. exact (fun _ _ x => x).
-  + cbn. easy.
   + exact (fun F => forall x:A, F (up x)).
   + cbn. exact (fun _ f => fun x:A => f (up x)).
   + cbn. intros * f X.
     specialize (f (down X)).
     rewrite up_down in f.
     exact f.
-  + cbn. intros ? f X.
-    destruct (up_down X). cbn.
-    reflexivity.
   (** Small universe *)
   + exact A.
   (** The interpretation of [A] as a universe is [U]. *)
   + cbn. exact up.
   + cbn. exact (fun _ F => down (forall x, up (F x))).
-  + cbn. intros ? ? f.
-    rewrite up_down.
-    exact f.
-  + cbn. intros ? ? f.
-    rewrite up_down in f.
-    exact f.
   + cbn. exact (fun _ F => down (forall x, up (F x))).
-  + cbn. intros ? ? f.
-    rewrite up_down.
-    exact f.
-  + cbn. intros ? ? f.
-    rewrite up_down in f.
-    exact f.
   + cbn. exact (down False).
   + rewrite up_down in p.
     exact p.
+  + cbn. easy.
+  + cbn. intros ? f X.
+    destruct (up_down X). cbn.
+    reflexivity.
+  + cbn. intros ? ? f.
+    rewrite up_down.
+    exact f.
+  + cbn. intros ? ? f.
+    rewrite up_down in f.
+    exact f.
+  + cbn. intros ? ? f.
+    rewrite up_down.
+    exact f.
+  + cbn. intros ? ? f.
+    rewrite up_down in f.
+    exact f.
 Qed.
 
 End Paradox.
@@ -683,7 +712,7 @@ Module PropNeqType.
 Theorem paradox : Prop <> Type.
 Proof.
   intros h.
-  refine (TypeNeqSmallType.paradox _ _).
+  unshelve (refine (TypeNeqSmallType.paradox _ _)).
   + exact Prop.
   + easy.
 Qed.

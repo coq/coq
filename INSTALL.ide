@@ -39,7 +39,7 @@ COMPILATION REQUIREMENTS
   install GTK+ 2.x, should you need to force it for one reason
   or another.)
 - The OCaml bindings for GTK+ 2.x, lablgtk2 with support for gtksourceview2.
-  You need at least version 2.14.2.
+  You need at least version 2.16.
 
   Your distribution may contain precompiled packages. For example, for
   Debian, run
@@ -119,5 +119,5 @@ TROUBLESHOOTING
   rid of the problem is to edit by hand your coqiderc (either
   /home/<user>/.config/coq/coqiderc under Linux, or
   C:\Documents and Settings\<user>\.config\coq\coqiderc under Windows)
-  and replace any occurence of MOD4 by MOD1.
+  and replace any occurrence of MOD4 by MOD1.
 

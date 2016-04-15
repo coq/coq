@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -52,6 +52,11 @@ val pop_info : unit -> unit
 val clear_info : unit -> unit
 val flash_info : ?delay:int -> string -> unit
 
+val xml_to_string : Richpp.richpp -> string
+
+val insert_xml : ?tags:GText.tag list ->
+  #GText.buffer_skel -> Richpp.richpp -> unit
+
 val set_location : (string -> unit) ref
 
 (* In win32, when a command-line is to be executed via cmd.exe
@@ -64,9 +69,9 @@ val requote : string -> string
 val textview_width : #GText.view_skel -> int
 (** Returns an approximate value of the character width of a textview *)
 
-type logger = Pp.message_level -> string -> unit
+type logger = Pp.message_level -> Richpp.richpp -> unit
 
-val default_logger : Pp.message_level -> string -> unit
+val default_logger : logger
 (** Default logger. It logs messages that the casual user should not see. *)
 
 (** {6 I/O operations} *)

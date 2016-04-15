@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -523,8 +523,9 @@ let shortest_qualid_of_tactic kn =
     KnTab.shortest_qualid Id.Set.empty sp !the_tactictab
 
 let pr_global_env env ref =
-  try str (string_of_qualid (shortest_qualid_of_global env ref))
-  with Not_found as e -> prerr_endline "pr_global_env not found"; raise e
+  try pr_qualid (shortest_qualid_of_global env ref)
+  with Not_found as e ->
+    if !Flags.debug then Pp.msg_debug (Pp.str "pr_global_env not found"); raise e
 
 let global_inductive r =
   match global r with

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -10,19 +10,15 @@
 
 (** Implementation of the VERNAC EXTEND macro. *)
 
-open Pp
-open Util
 open Q_util
 open Argextend
 open Tacextend
-open Pcoq
-open Egramml
 open Compat
 
 type rule = {
   r_head : string option;
   (** The first terminal grammar token *)
-  r_patt : grammar_prod_item list;
+  r_patt : extend_token list;
   (** The remaining tokens of the parsing rule *)
   r_class : MLast.expr option;
   (** An optional classifier for the STM *)
@@ -34,24 +30,25 @@ type rule = {
 
 let rec make_let e = function
   | [] -> e
-  | GramNonTerminal(loc,t,_,Some p)::l ->
-      let loc = of_coqloc loc in
-      let p = Names.Id.to_string p in
-      let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
+  | ExtNonTerminal (g, p) :: l ->
+      let t = type_of_user_symbol g in
+      let loc = MLast.loc_of_expr e in
       let e = make_let e l in
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
   | _::l -> make_let e l
 
 let make_clause { r_patt = pt; r_branch = e; } =
   (make_patt pt,
-   vala (Some (make_when (MLast.loc_of_expr e) pt)),
+   vala None,
    make_let e pt)
 
 (* To avoid warnings *)
 let mk_ignore c pt =
-  let names = CList.map_filter (function
-  | GramNonTerminal(_,_,_,Some p) -> Some (Names.Id.to_string p)
-  | _ -> None) pt in
+  let fold accu = function
+  | ExtNonTerminal (_, p) -> p :: accu
+  | _ -> accu
+  in
+  let names = List.fold_left fold [] pt in
   let fold accu id = <:expr< let _ = $lid:id$ in $accu$ >> in
   let names = List.fold_left fold <:expr< () >> names in
   <:expr< do { let _ = $names$ in $c$ } >>
@@ -60,34 +57,34 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
   match c ,cg with
   | Some c, _ ->
      (make_patt pt,
-      vala (Some (make_when (MLast.loc_of_expr c) pt)),
+      vala None,
       make_let (mk_ignore c pt) pt)
   | None, Some cg ->
      (make_patt pt,
-      vala (Some (make_when (MLast.loc_of_expr cg) pt)),
+      vala None,
       <:expr< fun () -> $cg$ $str:s$ >>)
-  | None, None -> msg_warning
-      (strbrk("Vernac entry \""^s^"\" misses a classifier. "^
+  | None, None -> prerr_endline
+      (("Vernac entry \""^s^"\" misses a classifier. "^
          "A classifier is a function that returns an expression "^
-         "of type vernac_classification (see Vernacexpr). You can: ")++
-       str"- "++hov 0 (
-        strbrk("Use '... EXTEND "^s^" CLASSIFIED AS QUERY ...' if the "^
-          "new vernacular command does not alter the system state;"))++fnl()++
-       str"- "++hov 0 (
-        strbrk("Use '... EXTEND "^s^" CLASSIFIED AS SIDEFF ...' if the "^
+         "of type vernac_classification (see Vernacexpr). You can: ") ^
+       "- " ^ (
+        ("Use '... EXTEND "^s^" CLASSIFIED AS QUERY ...' if the "^
+          "new vernacular command does not alter the system state;"))^ "\n" ^
+       "- " ^ (
+        ("Use '... EXTEND "^s^" CLASSIFIED AS SIDEFF ...' if the "^
           "new vernacular command alters the system state but not the "^
-          "parser nor it starts a proof or ends one;"))++fnl()++
-       str"- "++hov 0 (
-        strbrk("Use '... EXTEND "^s^" CLASSIFIED BY f ...' to specify "^
+          "parser nor it starts a proof or ends one;"))^ "\n" ^
+       "- " ^ (
+        ("Use '... EXTEND "^s^" CLASSIFIED BY f ...' to specify "^
           "a global function f.  The function f will be called passing "^
-          "\""^s^"\" as the only argument;")) ++fnl()++
-       str"- "++hov 0 (
-        strbrk"Add a specific classifier in each clause using the syntax:"
-        ++fnl()++strbrk("'[...] => [ f ] -> [...]'. "))++fnl()++
-       strbrk("Specific classifiers have precedence over global "^
-         "classifiers. Only one classifier is called.")++fnl());
+          "\""^s^"\" as the only argument;")) ^ "\n" ^
+       "- " ^ (
+        "Add a specific classifier in each clause using the syntax:"
+        ^ "\n" ^("'[...] => [ f ] -> [...]'. "))^ "\n" ^
+       ("Specific classifiers have precedence over global "^
+         "classifiers. Only one classifier is called.") ^ "\n");
     (make_patt pt,
-      vala (Some (make_when loc pt)),
+      vala None,
       <:expr< fun () -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
 
 let make_fun_clauses loc s l =
@@ -105,10 +102,12 @@ let make_fun_classifiers loc s c l =
   let cl = List.map (fun x -> Compat.make_fun loc [make_clause_classifier c s x]) l in
   mlexpr_of_list (fun x -> x) cl
 
-let mlexpr_of_clause =
-  mlexpr_of_list
-    (fun { r_head = a; r_patt = b; } -> mlexpr_of_list make_prod_item
-       (Option.List.cons (Option.map (fun a -> GramTerminal a) a) b))
+let mlexpr_of_clause cl =
+  let mkexpr { r_head = a; r_patt = b; } = match a with
+  | None -> mlexpr_of_list make_prod_item b
+  | Some a -> mlexpr_of_list make_prod_item (ExtTerminal a :: b)
+  in
+  mlexpr_of_list mkexpr cl
 
 let declare_command loc s c nt cl =
   let se = mlexpr_of_string s in
@@ -166,8 +165,7 @@ EXTEND
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]";
         d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      if String.is_empty s then
-        Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
+      let () = if s = "" then failwith "Command name is empty." in
       let b = <:expr< fun () -> $e$ >> in
       { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;
@@ -181,13 +179,13 @@ EXTEND
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = interp_entry_name false None e "" in
-        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let e = parse_user_entry e "" in
+        ExtNonTerminal (e, s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let t, g = interp_entry_name false None e sep in
-        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
+        let e = parse_user_entry e sep in
+        ExtNonTerminal (e, s)
       | s = STRING ->
-        GramTerminal s
+        ExtTerminal s
     ] ]
   ;
   END

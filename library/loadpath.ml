@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -27,8 +27,6 @@ let logical p = p.path_logical
 let physical p = p.path_physical
 
 let get_load_paths () = !load_paths
-
-let get_paths () = List.map physical !load_paths
 
 let anomaly_too_many_paths path =
   anomaly (str "Several logical paths are associated to" ++ spc () ++ str path)
@@ -86,10 +84,6 @@ let add_load_path phys_path coq_path ~implicit =
       end
   | _ -> anomaly_too_many_paths phys_path
 
-let extend_path_with_dirpath p dir =
-  List.fold_left Filename.concat p
-    (List.rev_map Id.to_string (DirPath.repr dir))
-
 let filter_path f =
   let rec aux = function
   | [] -> []
@@ -99,16 +93,23 @@ let filter_path f =
   in
   aux !load_paths
 
-let expand_path dir =
+let expand_path ?root dir =
   let rec aux = function
   | [] -> []
-  | { path_physical = ph; path_logical = lg; path_implicit = implicit }  :: l ->
-    match implicit with
-    | true ->
-      (** The path is implicit, so that we only want match the logical suffix *)
-      if is_dirpath_suffix_of dir lg then (ph, lg) :: aux l else aux l
-    | false ->
-      (** Otherwise we must match exactly *)
-      if DirPath.equal dir lg then (ph, lg) :: aux l else aux l
-  in
+  | { path_physical = ph; path_logical = lg; path_implicit = implicit } :: l ->
+    let success =
+      match root with
+      | None ->
+        if implicit then is_dirpath_suffix_of dir lg
+        else DirPath.equal dir lg
+      | Some root ->
+        is_dirpath_prefix_of root lg &&
+          is_dirpath_suffix_of dir (drop_dirpath_prefix root lg) in
+    if success then (ph, lg) :: aux l else aux l in
   aux !load_paths
+
+let locate_file fname =
+  let paths = List.map physical !load_paths in
+  let _,longfname =
+    System.find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
+  longfname

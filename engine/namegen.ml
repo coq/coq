@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -22,6 +22,7 @@ open Libnames
 open Globnames
 open Environ
 open Termops
+open Context.Rel.Declaration
 
 (**********************************************************************)
 (* Conventional names *)
@@ -113,7 +114,7 @@ let hdchar env c =
     | Rel n ->
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else
-	   try match Environ.lookup_rel (n-k) env with
+	   try match Environ.lookup_rel (n-k) env |> to_tuple with
 	     | (Name id,_,_)   -> lowercase_first_char id
 	     | (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
 	   with Not_found -> "y")
@@ -142,10 +143,9 @@ let prod_name = mkProd_name
 let prod_create   env (a,b) = mkProd (named_hd env a Anonymous, a, b)
 let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous, a, b)
 
-let name_assumption env (na,c,t) =
-  match c with
-    | None      -> (named_hd env t na, None, t)
-    | Some body -> (named_hd env body na, c, t)
+let name_assumption env = function
+    | LocalAssum (na,t) -> LocalAssum (named_hd env t na, t)
+    | LocalDef (na,c,t) -> LocalDef (named_hd env c na, c, t)
 
 let name_context env hyps =
   snd
@@ -277,11 +277,12 @@ let next_name_away = next_name_away_with_default default_non_dependent_string
 let make_all_name_different env =
   let avoid = ref (ids_of_named_context (named_context env)) in
   process_rel_context
-    (fun (na,c,t) newenv ->
+    (fun decl newenv ->
+       let (na,_,t) = to_tuple decl in
        let na = named_hd newenv t na in
        let id = next_name_away na !avoid in
        avoid := id::!avoid;
-       push_rel (Name id,c,t) newenv)
+       push_rel (set_name (Name id) decl) newenv)
     env
 
 (* 5- Looks for next fresh name outside a list; avoids also to use names that

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -24,10 +24,10 @@ open Errors
 open Util
 open Names
 open Term
-open Context
 open Vars
 open Declarations
 open Pre_env
+open Context.Rel.Declaration
 
 (* The type of environments. *)
 
@@ -70,21 +70,19 @@ let empty_context env =
 
 (* Rel context *)
 let lookup_rel n env =
-  lookup_rel n env.env_rel_context
+  Context.Rel.lookup n env.env_rel_context
 
 let evaluable_rel n env =
-  match lookup_rel n env with
-  | (_,Some _,_) -> true
-  | _ -> false
+  is_local_def (lookup_rel n env)
 
 let nb_rel env = env.env_nb_rel
 
 let push_rel = push_rel
 
-let push_rel_context ctxt x = Context.fold_rel_context push_rel ctxt ~init:x
+let push_rel_context ctxt x = Context.Rel.fold_outside push_rel ctxt ~init:x
 
 let push_rec_types (lna,typarray,_) env =
-  let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
+  let ctxt = Array.map2_i (fun i na t -> LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
 let fold_rel_context f env ~init =
@@ -108,19 +106,10 @@ let named_vals_of_val = snd
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
    *** /!\ ***   [f t] should be convertible with t *)
-let map_named_val f (ctxt,ctxtv) =
-  let rec map ctx = match ctx with
-  | [] -> []
-  | (id, body, typ) :: rem ->
-    let body' = Option.smartmap f body in
-    let typ' = f typ in
-    let rem' = map rem in
-    if body' == body && typ' == typ && rem' == rem then ctx
-    else (id, body', typ') :: rem'
-  in
-  (map ctxt, ctxtv)
+let map_named_val f =
+  on_fst (Context.Named.map f)
 
-let empty_named_context = empty_named_context
+let empty_named_context = Context.Named.empty
 
 let push_named = push_named
 let push_named_context = List.fold_right push_named
@@ -130,19 +119,21 @@ let val_of_named_context ctxt =
   List.fold_right push_named_context_val ctxt empty_named_context_val
 
 
-let lookup_named id env = Context.lookup_named id env.env_named_context
-let lookup_named_val id (ctxt,_) = Context.lookup_named id ctxt
+let lookup_named id env = Context.Named.lookup id env.env_named_context
+let lookup_named_val id (ctxt,_) = Context.Named.lookup id ctxt
 
 let eq_named_context_val c1 c2 =
-   c1 == c2 || named_context_equal (named_context_of_val c1) (named_context_of_val c2)
+   c1 == c2 || Context.Named.equal (named_context_of_val c1) (named_context_of_val c2)
 
 (* A local const is evaluable if it is defined  *)
 
+open Context.Named.Declaration
+
 let named_type id env =
-  let (_,_,t) = lookup_named id env in t
+  get_type (lookup_named id env)
 
 let named_body id env =
-  let (_,b,_) = lookup_named id env in b
+  get_value (lookup_named id env)
 
 let evaluable_named id env =
   match named_body id env with
@@ -153,7 +144,7 @@ let reset_with_named_context (ctxt,ctxtv) env =
   { env with
     env_named_context = ctxt;
     env_named_vals = ctxtv;
-    env_rel_context = empty_rel_context;
+    env_rel_context = Context.Rel.empty;
     env_rel_val = [];
     env_nb_rel = 0 }
 
@@ -176,31 +167,49 @@ let fold_named_context f env ~init =
   in fold_right env
 
 let fold_named_context_reverse f ~init env =
-  Context.fold_named_context_reverse f ~init:init (named_context env)
+  Context.Named.fold_inside f ~init:init (named_context env)
 
 
 (* Universe constraints *)
 
-let add_constraints c env =
-  if Univ.Constraint.is_empty c then
-    env
-  else
-    let s = env.env_stratification in
+let map_universes f env =
+  let s = env.env_stratification in
     { env with env_stratification =
-      { s with env_universes = Univ.merge_constraints c s.env_universes } }
+	 { s with env_universes = f s.env_universes } }
+				     
+let add_constraints c env =
+  if Univ.Constraint.is_empty c then env
+  else map_universes (UGraph.merge_constraints c) env
 
 let check_constraints c env =
-  Univ.check_constraints c env.env_stratification.env_universes
-
-let set_engagement c env = (* Unsafe *)
-  { env with env_stratification =
-    { env.env_stratification with env_engagement = c } }
+  UGraph.check_constraints c env.env_stratification.env_universes
 
 let push_constraints_to_env (_,univs) env =
   add_constraints univs env
 
-let push_context ctx env = add_constraints (Univ.UContext.constraints ctx) env
-let push_context_set ctx env = add_constraints (Univ.ContextSet.constraints ctx) env
+let add_universes strict ctx g =
+  let g = Array.fold_left
+	    (* Be lenient, module typing reintroduces universes and constraints due to includes *)
+	    (fun g v -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
+	    g (Univ.Instance.to_array (Univ.UContext.instance ctx))
+  in
+    UGraph.merge_constraints (Univ.UContext.constraints ctx) g
+			   
+let push_context ?(strict=false) ctx env =
+  map_universes (add_universes strict ctx) env
+
+let add_universes_set strict ctx g =
+  let g = Univ.LSet.fold
+	    (fun v g -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
+	    (Univ.ContextSet.levels ctx) g
+  in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
+
+let push_context_set ?(strict=false) ctx env =
+  map_universes (add_universes_set strict ctx) env
+
+let set_engagement c env = (* Unsafe *)
+  { env with env_stratification =
+    { env.env_stratification with env_engagement = c } }
 
 (* Global constants *)
 
@@ -371,11 +380,11 @@ let add_mind kn mib env =
 
 let lookup_constant_variables c env =
   let cmap = lookup_constant c env in
-  Context.vars_of_named_context cmap.const_hyps
+  Context.Named.to_vars cmap.const_hyps
 
 let lookup_inductive_variables (kn,i) env =
   let mis = lookup_mind kn env in
-  Context.vars_of_named_context mis.mind_hyps
+  Context.Named.to_vars mis.mind_hyps
 
 let lookup_constructor_variables (ind,_) env =
   lookup_inductive_variables ind env
@@ -409,15 +418,15 @@ let global_vars_set env constr =
    contained in the types of the needed variables. *)
 
 let really_needed env needed =
-  Context.fold_named_context_reverse
-    (fun need (id,copt,t) ->
-      if Id.Set.mem id need then
+  Context.Named.fold_inside
+    (fun need decl ->
+      if Id.Set.mem (get_id decl) need then
         let globc =
-          match copt with
-            | None -> Id.Set.empty
-            | Some c -> global_vars_set env c in
+          match decl with
+            | LocalAssum _ -> Id.Set.empty
+            | LocalDef (_,c,_) -> global_vars_set env c in
         Id.Set.union
-          (global_vars_set env t)
+          (global_vars_set env (get_type decl))
           (Id.Set.union globc need)
       else need)
     ~init:needed
@@ -425,9 +434,9 @@ let really_needed env needed =
 
 let keep_hyps env needed =
   let really_needed = really_needed env needed in
-  Context.fold_named_context
-    (fun (id,_,_ as d) nsign ->
-      if Id.Set.mem id really_needed then add_named_decl d nsign
+  Context.Named.fold_outside
+    (fun d nsign ->
+      if Id.Set.mem (get_id d) really_needed then Context.Named.add d nsign
       else nsign)
     (named_context env)
     ~init:empty_named_context
@@ -479,9 +488,9 @@ exception Hyp_not_found
 let apply_to_hyp (ctxt,vals) id f =
   let rec aux rtail ctxt vals =
     match ctxt, vals with
-    | (idc,c,ct as d)::ctxt, v::vals ->
-	if Id.equal idc id then
-	  (f ctxt d rtail)::ctxt, v::vals
+    | d::ctxt, v::vals ->
+	if Id.equal (get_id d) id then
+          (f ctxt d rtail)::ctxt, v::vals
 	else
 	  let ctxt',vals' = aux (d::rtail) ctxt vals in
 	  d::ctxt', v::vals'
@@ -492,8 +501,8 @@ let apply_to_hyp (ctxt,vals) id f =
 let apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
   let rec aux ctxt vals =
     match ctxt,vals with
-    | (idc,c,ct as d)::ctxt, v::vals ->
-	if Id.equal idc id then
+    | d::ctxt, v::vals ->
+	if Id.equal (get_id d) id then
 	  let sign = ctxt,vals in
 	  push_named_context_val (f d sign) sign
 	else
@@ -506,8 +515,8 @@ let apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
 let insert_after_hyp (ctxt,vals) id d check =
   let rec aux ctxt vals =
     match  ctxt, vals with
-    | (idc,c,ct)::ctxt', v::vals' ->
-	if Id.equal idc id then begin
+    | decl::ctxt', v::vals' ->
+	if Id.equal (get_id decl) id then begin
 	  check ctxt;
 	  push_named_context_val d (ctxt,vals)
 	end else
@@ -523,9 +532,8 @@ let remove_hyps ids check_context check_value (ctxt, vals) =
   let rec remove_hyps ctxt vals = match ctxt, vals with
   | [], [] -> [], []
   | d :: rctxt, (nid, v) :: rvals ->
-    let (id, _, _) = d in
     let ans = remove_hyps rctxt rvals in
-    if Id.Set.mem id ids then ans
+    if Id.Set.mem (get_id d) ids then ans
     else
       let (rctxt', rvals') = ans in
       let d' = check_context d in
@@ -584,7 +592,10 @@ let dispatch =
 	  Array.init 31 (fun n -> mkConstruct
 			   (digit_ind, nth_digit_plus_one i (30-n)))
 	in
-	  mkApp(mkConstruct(ind, 1), array_of_int tag)
+	(* We check that no bit above 31 is set to one. This assertion used to
+	fail in the VM, and led to conversion tests failing at Qed. *)
+        assert (Int.equal (tag lsr 31) 0);
+	mkApp(mkConstruct(ind, 1), array_of_int tag)
   in
 
   (* subfunction which dispatches the compiling information of an

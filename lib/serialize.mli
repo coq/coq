@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -35,3 +35,5 @@ val of_edit_id: int -> xml
 val to_edit_id: xml -> int
 val of_loc : Loc.t -> xml
 val to_loc : xml -> Loc.t
+val of_xml : xml -> xml
+val to_xml : xml -> xml

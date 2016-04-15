@@ -6,6 +6,8 @@ lines, then from 421 lines to 428 lines, then from 444 lines to 429 lines, then 
 Reserved Notation "x -> y" (at level 99, right associativity, y at level 200).
 Reserved Notation "x = y  :>  T" (at level 70, y at next level, no associativity).
 Reserved Notation "x = y" (at level 70, no associativity).
+Delimit Scope type_scope with type.
+Bind Scope type_scope with Sortclass.
 Open Scope type_scope.
 Global Set Universe Polymorphism.
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
@@ -35,6 +37,9 @@ Axiom path_path_sigma : forall {A : Type} (P : A -> Type) (u v : sigT P)
            (r : p..1 = q..1)
            (s : transport (fun x => transport P x u.2 = v.2) r p..2 = q..2),
 p = q.
+
+Declare ML Module "coretactics".
+
 Goal forall (A : Type) (B : forall _ : A, Type) (x : @sigT A (fun x : A => B x))
             (xx : @paths (@sigT A (fun x0 : A => B x0)) x x),
        @paths (@paths (@sigT A (fun x0 : A => B x0)) x x) xx

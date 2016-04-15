@@ -34,8 +34,8 @@ Module NonPrim.
   : forall b:B, P b.
   Proof.
     intros b.
-    refine (pr1 (isconnected_elim _ _)).
-    2:exact b.
+    unshelve (refine (pr1 (isconnected_elim _ _))).
+    exact b.
     intro x.
     exact (transport P x.2 (d x.1)).
   Defined.
@@ -47,8 +47,8 @@ Module NonPrim.
   : forall b:B, P b.
   Proof.
     intros b.
-    refine (pr1 (isconnected_elim _ _)).
-    2:exact b.
+    unshelve (refine (pr1 (isconnected_elim _ _))).
+    exact b.
     intros [a p].
     exact (transport P p (d a)).
   Defined.
@@ -65,7 +65,7 @@ Module NonPrim.
     set (fibermap := fun a0p : hfiber f (f a)
                      => let (a0, p) := a0p in transport P p (d a0)).
     Set Printing Implicit.
-    let G := match goal with |- ?G => constr:G end in
+    let G := match goal with |- ?G => constr:(G) end in
     first [ match goal with
               | [ |- (@isconnected_elim n (@hfiber A B f (f a))
                                         (@isconnected_hfiber_conn_map n A B f H (f a))
@@ -111,8 +111,8 @@ Module Prim.
   : forall b:B, P b.
   Proof.
     intros b.
-    refine (pr1 (isconnected_elim _ _)).
-    2:exact b.
+    unshelve (refine (pr1 (isconnected_elim _ _))).
+    exact b.
     intro x.
     exact (transport P x.2 (d x.1)).
   Defined.
@@ -124,8 +124,8 @@ Module Prim.
   : forall b:B, P b.
   Proof.
     intros b.
-    refine (pr1 (isconnected_elim _ _)).
-    2:exact b.
+    unshelve (refine (pr1 (isconnected_elim _ _))).
+    exact b.
     intros [a p].
     exact (transport P p (d a)).
   Defined.
@@ -142,7 +142,7 @@ Module Prim.
     set (fibermap := fun a0p : hfiber f (f a)
                      => let (a0, p) := a0p in transport P p (d a0)).
     Set Printing Implicit.
-    let G := match goal with |- ?G => constr:G end in
+    let G := match goal with |- ?G => constr:(G) end in
     first [ match goal with
               | [ |- (@isconnected_elim n (@hfiber A B f (f a))
                                         (@isconnected_hfiber_conn_map n A B f H (f a))

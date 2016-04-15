@@ -22,18 +22,10 @@
 #include "coq_memory.h" 
 #include "coq_values.h" 
 
-/*spiwack : imports support functions for 64-bit integers */
-#include <caml/config.h>
-#ifdef ARCH_INT64_TYPE
-#include "int64_native.h"
-#else
-#include "int64_emul.h"
-#endif
-
 /* spiwack: I append here a few macros for value/number manipulation */
 #define uint32_of_value(val) (((uint32_t)val >> 1))
 #define value_of_uint32(i)   ((value)(((uint32_t)(i) << 1) | 1))
-#define UI64_of_uint32(lo)  ((uint64_t)(I64_literal(0,(uint32_t)(lo))))
+#define UI64_of_uint32(lo) ((uint64_t)(lo))
 #define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
 /* /spiwack */
 
@@ -341,6 +333,7 @@ value coq_interprete
       /* Fallthrough */
       Instruct(ENVACC){
 	print_instr("ENVACC");
+	print_int(*pc);
 	accu = Field(coq_env, *pc++);
         Next;
       }
@@ -371,6 +364,10 @@ value coq_interprete
 	sp[1] = (value)pc;
 	sp[2] = coq_env;
 	sp[3] = Val_long(coq_extra_args);
+	print_instr("call stack=");
+	print_lint(sp[1]);
+	print_lint(sp[2]);
+	print_lint(sp[3]);
 	pc = Code_val(accu);
 	coq_env = accu;
 	coq_extra_args = 0;
@@ -458,6 +455,7 @@ value coq_interprete
 	sp[0] = arg1;
 	sp[1] = arg2;
 	pc = Code_val(accu);
+	print_lint(accu);
 	coq_env = accu;
 	coq_extra_args += 1;
 	goto check_stacks;
@@ -481,11 +479,18 @@ value coq_interprete
 	print_instr("RETURN");
 	print_int(*pc);
 	sp += *pc++;
+	print_instr("stack=");
+	print_lint(sp[0]);
+	print_lint(sp[1]);
+	print_lint(sp[2]);
 	if (coq_extra_args > 0) {
+	  print_instr("extra args > 0");
+	  print_lint(coq_extra_args);
 	  coq_extra_args--;
 	  pc = Code_val(accu);
 	  coq_env = accu;
 	} else {
+	  print_instr("extra args = 0");
 	  pc = (code_t)(sp[0]);
 	  coq_env = sp[1];
 	  coq_extra_args = Long_val(sp[2]);
@@ -585,7 +590,10 @@ value coq_interprete
 	Alloc_small(accu, 1 + nvars, Closure_tag);
 	Code_val(accu) = pc + *pc;
 	pc++;
-	for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
+	for (i = 0; i < nvars; i++) {
+	  print_lint(sp[i]);
+	  Field(accu, i + 1) = sp[i];
+	}
 	sp += nvars;
 	Next;
       }
@@ -720,6 +728,7 @@ value coq_interprete
       /* Fallthrough */
       Instruct(GETGLOBAL){
 	print_instr("GETGLOBAL");
+	print_int(*pc);
 	accu = Field(coq_global_data, *pc);
         pc++;
         Next;
@@ -732,7 +741,7 @@ value coq_interprete
 	tag_t tag = *pc++;
 	mlsize_t i;
 	value block;
-	print_instr("MAKEBLOCK");
+	print_instr("MAKEBLOCK, tag=");
 	Alloc_small(block, wosize, tag);
 	Field(block, 0) = accu;
 	for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
@@ -743,7 +752,8 @@ value coq_interprete
 	
 	tag_t tag = *pc++;
 	value block;
-	print_instr("MAKEBLOCK1");
+	print_instr("MAKEBLOCK1, tag=");
+	print_int(tag);
 	Alloc_small(block, 1, tag);
 	Field(block, 0) = accu;
 	accu = block;
@@ -753,7 +763,8 @@ value coq_interprete
 	
 	tag_t tag = *pc++;
 	value block;
-	print_instr("MAKEBLOCK2");
+	print_instr("MAKEBLOCK2, tag=");
+	print_int(tag);
 	Alloc_small(block, 2, tag);
 	Field(block, 0) = accu;
 	Field(block, 1) = sp[0];
@@ -764,7 +775,8 @@ value coq_interprete
       Instruct(MAKEBLOCK3) {
 	tag_t tag = *pc++;
 	value block;
-	print_instr("MAKEBLOCK3");
+	print_instr("MAKEBLOCK3, tag=");
+	print_int(tag);
 	Alloc_small(block, 3, tag);
 	Field(block, 0) = accu;
 	Field(block, 1) = sp[0];
@@ -776,7 +788,8 @@ value coq_interprete
       Instruct(MAKEBLOCK4) {
 	tag_t tag = *pc++;
 	value block;
-	print_instr("MAKEBLOCK4");
+	print_instr("MAKEBLOCK4, tag=");
+	print_int(tag);
 	Alloc_small(block, 4, tag);
 	Field(block, 0) = accu;
 	Field(block, 1) = sp[0];
@@ -844,7 +857,6 @@ value coq_interprete
       }
 	
       Instruct(SETFIELD1){
-        int i, j, size, size_aux;
 	print_instr("SETFIELD1");
 	caml_modify(&Field(accu, 1),*sp);
        	sp++;
@@ -884,19 +896,17 @@ value coq_interprete
       Instruct(PROJ){
 	print_instr("PROJ");
 	if (Is_accu (accu)) {
+          value block;
 	  /* Skip over the index of projected field */
 	  pc++;
-	  /* Save the argument on the stack */
-	  *--sp = accu;
 	  /* Create atom */
-	  Alloc_small(accu, 2, ATOM_PROJ_TAG);
-	  Field(accu, 0) = Field(coq_global_data, *pc);
-	  Field(accu, 1) = sp[0];
-	  sp[0] = accu;
+	  Alloc_small(block, 2, ATOM_PROJ_TAG);
+	  Field(block, 0) = Field(coq_global_data, *pc);
+	  Field(block, 1) = accu;
 	  /* Create accumulator */
 	  Alloc_small(accu, 2, Accu_tag);
 	  Code_val(accu) = accumulate;
-	  Field(accu,1) = *sp++;
+	  Field(accu, 1) = block;
 	} else {
 	    accu = Field(accu, *pc++);
 	}
@@ -943,6 +953,7 @@ value coq_interprete
       /* Fallthrough */
       Instruct(CONSTINT) {
 	print_instr("CONSTINT");
+	print_int(*pc);
 	accu = Val_int(*pc);
 	pc++;
 	Next;
@@ -1110,7 +1121,6 @@ value coq_interprete
 	/* returns the sum plus one with a carry */
 	uint32_t s;
 	s = (uint32_t)accu + (uint32_t)*sp++ + 1;
-	value block;
         if( (uint32_t)s <= (uint32_t)accu ) {
           /* carry */
 	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
@@ -1183,8 +1193,8 @@ value coq_interprete
         print_instr("MULCINT31");
 	uint64_t p;
         /*accu = 2v+1, *sp=2w+1 ==> p = 2v*w */
-        p = I64_mul (UI64_of_value (accu), UI64_of_uint32 ((*sp++)^1));
-	if ( I64_is_zero(p) ) {
+        p = UI64_of_value (accu) * UI64_of_uint32 ((*sp++)^1);
+	if (p == 0) {
 	  accu = (value)1;
 	}
 	else {
@@ -1193,8 +1203,8 @@ value coq_interprete
 	     of the non-constant constructor is then 1 */
 	  Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
 	  /*unsigned shift*/
-	  Field(accu, 0) = (value)(I64_lsr(p,31)|1) ;  /*higher part*/
-	  Field(accu, 1) = (value)(I64_to_int32(p)|1); /*lower part*/
+	  Field(accu, 0) = (value)((p >> 31)|1) ;  /*higher part*/
+	  Field(accu, 1) = (value)((int32_t)p|1); /*lower part*/
 	}
 	Next;
       }
@@ -1206,19 +1216,20 @@ value coq_interprete
                     int62 by the int31 */
         uint64_t bigint;
         bigint = UI64_of_value(accu);
-        bigint = I64_or(I64_lsl(bigint, 31),UI64_of_value(*sp++));
+        bigint = (bigint << 31) | UI64_of_value(*sp++);
         uint64_t divisor;
         divisor = UI64_of_value(*sp++);
         Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
-        if (I64_is_zero (divisor)) {
+        if (divisor == 0) {
           Field(accu, 0) = 1; /* 2*0+1 */
           Field(accu, 1) = 1; /* 2*0+1 */
 	}
 	else {
 	  uint64_t quo, mod;
-          I64_udivmod(bigint, divisor, &quo, &mod);
-          Field(accu, 0) = value_of_uint32(I64_to_int32(quo));
-	  Field(accu, 1) = value_of_uint32(I64_to_int32(mod));
+	  quo = bigint / divisor;
+	  mod = bigint % divisor;
+          Field(accu, 0) = value_of_uint32((uint32_t)(quo));
+	  Field(accu, 1) = value_of_uint32((uint32_t)(mod));
 	}
 	Next;
       }
@@ -1271,7 +1282,7 @@ value coq_interprete
 
       Instruct (COMPAREINT31) {
 	/* returns Eq if equal, Lt if accu is less than *sp, Gt otherwise */
-	/* assumes Inudctive _ : _ := Eq | Lt | Gt */
+	/* assumes Inductive _ : _ := Eq | Lt | Gt */
 	print_instr("COMPAREINT31");
 	if ((uint32_t)accu == (uint32_t)*sp) {
 	  accu = 1;  /* 2*0+1 */

@@ -975,8 +975,8 @@ the constants {\qualid$_1$} {\ldots} {\qualid$_n$} in tactics using
 $\delta$-conversion (unfolding a constant is replacing it by its
 definition).
 
-{\tt Opaque} has also on effect on the conversion algorithm of {\Coq},
-telling it to delay the unfolding of a constant as mush as possible when
+{\tt Opaque} has also an effect on the conversion algorithm of {\Coq},
+telling it to delay the unfolding of a constant as much as possible when
 {\Coq} has to check the conversion (see Section~\ref{conv-rules})
 of two distinct applied constants.
 
@@ -1082,26 +1082,6 @@ directly as an Ltac tactic, but nothing prevent the user to also
 perform a {\tt Ltac \ident\ := {\rm\sl convtactic}}.
 
 \SeeAlso sections \ref{Conversion-tactics}
-
-\subsection{\tt Set Virtual Machine
-\label{SetVirtualMachine}
-\optindex{Virtual Machine}}
-
-This activates the bytecode-based conversion algorithm.
-
-\subsection{\tt Unset Virtual Machine
-\optindex{Virtual Machine}}
-
-This deactivates the bytecode-based conversion algorithm.
-
-\subsection{\tt Test Virtual Machine
-\optindex{Virtual Machine}}
-
-This tells if the bytecode-based conversion algorithm is
-activated. The default behavior is to have the bytecode-based
-conversion algorithm deactivated.
-
-\SeeAlso sections~\ref{vmcompute} and~\ref{vmoption}.
 
 \section{Controlling the locality of commands}
 

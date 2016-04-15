@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -16,7 +16,7 @@ type 'a focus =
 
 (** Type of tactics potentially goal-dependent. If it contains a [Depends],
     then the length of the inner list is guaranteed to be the number of
-    currently focussed goals. Otherwise it means the tactic does not depends
+    currently focussed goals. Otherwise it means the tactic does not depend
     on the current set of focussed goals. *)
 type 'a t = 'a focus Proofview.tactic
 
@@ -37,16 +37,32 @@ let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
   Proofview.tclDISPATCHL (List.map f l) >>= fun l ->
   Proofview.tclUNIT (Depends (List.concat l))
 
+let goals = Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l)
+let set_sigma r =
+  let Sigma.Sigma (ans, sigma, _) = r in
+  Proofview.Unsafe.tclEVARS (Sigma.to_evar_map sigma) >>= fun () -> ans
+
 let nf_enter f =
-  bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
+  bind goals
     (fun gl ->
       gl >>= fun gl ->
       Proofview.Goal.normalize gl >>= fun nfgl ->
-      Proofview.V82.wrap_exceptions (fun () -> f nfgl))
+      Proofview.V82.wrap_exceptions (fun () -> f.enter nfgl))
+
+let nf_s_enter f =
+  bind goals
+    (fun gl ->
+      gl >>= fun gl ->
+      Proofview.Goal.normalize gl >>= fun nfgl ->
+      Proofview.V82.wrap_exceptions (fun () -> set_sigma (f.s_enter nfgl)))
 
 let enter f =
-  bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
-    (fun gl -> gl >>= fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+  bind goals
+    (fun gl -> gl >>= fun gl -> Proofview.V82.wrap_exceptions (fun () -> f.enter gl))
+
+let s_enter f =
+  bind goals
+    (fun gl -> gl >>= fun gl -> Proofview.V82.wrap_exceptions (fun () -> set_sigma (f.s_enter gl)))
 
 let with_env t =
   t >>= function
@@ -83,4 +99,8 @@ end
 module Ftac = Monad.Make(Self)
 module List = Ftac.List
 
-let debug_prompt = Tactic_debug.debug_prompt
+module Notations =
+struct
+  let (>>=) = bind
+  let (<*>) = fun m n -> bind m (fun () -> n)
+end

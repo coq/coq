@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,7 +11,7 @@ open Tacexpr
 open Equality
 
 (** Rewriting rules before tactic interpretation *)
-type raw_rew_rule = Loc.t * Term.constr Univ.in_universe_context_set * bool * Tacexpr.raw_tactic_expr option
+type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option
 
 (** To add rewriting rules to a base *)
 val add_rew_rules : string -> raw_rew_rule list -> unit
@@ -29,7 +29,7 @@ type rew_rule = { rew_lemma: constr;
 		  rew_pat: constr;
 		  rew_ctx: Univ.universe_context_set;
 		  rew_l2r: bool;
-		  rew_tac: glob_tactic_expr option }
+		  rew_tac: Genarg.glob_generic_argument option }
 
 val find_rewrites : string -> rew_rule list
 

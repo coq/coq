@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,8 +19,6 @@ external set_drawinstr : unit -> unit = "coq_set_drawinstr"
 external offset_closure : Obj.t -> int -> Obj.t = "coq_offset_closure"
 external offset : Obj.t -> int = "coq_offset"
 
-let accu_tag = 0
-
 (*******************************************)
 (* Initalization of the abstract machine ***)
 (*******************************************)
@@ -28,9 +26,6 @@ let accu_tag = 0
 external init_vm : unit -> unit = "init_coq_vm"
 
 let _ = init_vm ()
-
-external transp_values : unit -> bool = "get_coq_transp_value"
-external set_transp_values : bool -> unit = "coq_set_transp_value"
 
 (*******************************************)
 (* Machine code *** ************************)
@@ -126,12 +121,12 @@ type vswitch = {
 (*                                                                        *)
 (* + Accumulators : At_[accumulate| accu | arg1 | ... | argn ]            *)
 (*   - representation of [accu] : tag_[....]                              *)
-(*     -- tag <= 2 : encoding atom type (sorts, free vars, etc.)          *)
-(*     -- 3_[accu|proj name] : a projection blocked by an accu            *)
-(*     -- 4_[accu|fix_app] : a fixpoint blocked by an accu                *)
-(*     -- 5_[accu|vswitch] : a match blocked by an accu                   *)
-(*     -- 6_[fcofix]       : a cofix function                             *)
-(*     -- 7_[fcofix|val]   : a cofix function, val represent the value    *)
+(*     -- tag <= 3 : encoding atom type (sorts, free vars, etc.)          *)
+(*     -- 10_[accu|proj name] : a projection blocked by an accu           *)
+(*     -- 11_[accu|fix_app] : a fixpoint blocked by an accu               *)
+(*     -- 12_[accu|vswitch] : a match blocked by an accu                  *)
+(*     -- 13_[fcofix]       : a cofix function                            *)
+(*     -- 14_[fcofix|val]   : a cofix function, val represent the value   *)
 (*        of the function applied to arg1 ... argn                        *)
 (* The [arguments] type, which is abstracted as an array, represents :    *)
 (*          tag[ _ | _ |v1|... | vn]                                      *)
@@ -141,8 +136,8 @@ type vswitch = {
 
 type atom =
   | Aid of Vars.id_key
-  | Aiddef of Vars.id_key * values
-  | Aind of pinductive
+  | Aind of inductive
+  | Atype of Univ.universe
 
 (* Zippers *)
 
@@ -165,75 +160,10 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
+  | Vuniv_level of Univ.universe_level
 
-(*************************************************)
-(* Destructors ***********************************)
-(*************************************************)
-
-let rec whd_accu a stk =
-  let stk =
-    if Int.equal (Obj.size a) 2 then stk
-    else Zapp (Obj.obj a) :: stk in
-  let at = Obj.field a 1 in
-  match Obj.tag at with
-  | i when i <= 2 ->
-      Vatom_stk(Obj.magic at, stk)
-  | 3 (* proj tag *) ->
-     let zproj = Zproj (Obj.obj (Obj.field at 0)) in
-     whd_accu (Obj.field at 1) (zproj :: stk)
-  | 4 (* fix_app tag *) ->
-      let fa = Obj.field at 1 in
-      let zfix  =
-	Zfix (Obj.obj (Obj.field fa 1), Obj.obj fa) in
-      whd_accu (Obj.field at 0) (zfix :: stk)
-  | 5 (* switch tag  *) ->
-      let zswitch = Zswitch (Obj.obj (Obj.field at 1)) in
-      whd_accu (Obj.field at 0) (zswitch :: stk)
-  | 6 (* cofix_tag *) ->
-      let vcfx = Obj.obj (Obj.field at 0) in
-      let to_up = Obj.obj a in
-      begin match stk with
-      | []          -> Vcofix(vcfx, to_up, None)
-      | [Zapp args] -> Vcofix(vcfx, to_up, Some args)
-      | _           -> assert false
-      end
-  | 7 (* cofix_evaluated_tag *) ->
-      let vcofix = Obj.obj (Obj.field at 0) in
-      let res = Obj.obj a in
-      begin match stk with
-      | []          -> Vcofix(vcofix, res, None)
-      | [Zapp args] -> Vcofix(vcofix, res, Some args)
-      | _           -> assert false
-      end
-  | _ -> assert false
-
-external kind_of_closure : Obj.t -> int = "coq_kind_of_closure"
-
-let whd_val : values -> whd =
-  fun v ->
-    let o = Obj.repr v in
-    if Obj.is_int o then Vconstr_const (Obj.obj o)
-    else
-      let tag = Obj.tag o in
-      if tag = accu_tag then
-	(
-	if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
-	else
-	  if is_accumulate (fun_code o) then whd_accu o []
-	  else (Vprod(Obj.obj o)))
-      else
-	if tag = Obj.closure_tag || tag = Obj.infix_tag then
-	  (	   match kind_of_closure o with
-	   | 0 -> Vfun(Obj.obj o)
-	   | 1 -> Vfix(Obj.obj o, None)
-	   | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
-	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
-	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
-	else 
-          Vconstr_block(Obj.obj o)
-         
 (************************************************)
-(* Abstrct machine ******************************)
+(* Abstract machine *****************************)
 (************************************************)
 
 (* gestion de la pile *)
@@ -258,6 +188,7 @@ let arg args i =
 		("Vm.arg size = "^(string_of_int (nargs args))^
 		 " acces "^(string_of_int i))
 
+(* Apply a value to arguments contained in [vargs] *)
 let apply_arguments vf vargs =
   let n = nargs vargs in
   if Int.equal n 0 then vf
@@ -268,15 +199,116 @@ let apply_arguments vf vargs =
      interprete (fun_code vf) vf (Obj.magic vf) (n - 1)
    end
 
-let apply_vstack vf vstk =
-  let n = Array.length vstk in
+(* Apply value [vf] to an array of argument values [varray] *)
+let apply_varray vf varray =
+  let n = Array.length varray in
   if Int.equal n 0 then vf
   else
     begin
       push_ra stop;
-      push_vstack vstk;
+      push_vstack varray;
       interprete (fun_code vf) vf (Obj.magic vf) (n - 1)
     end
+
+(*************************************************)
+(* Destructors ***********************************)
+(*************************************************)
+
+let uni_lvl_val (v : values) : Univ.universe_level =
+    let whd = Obj.magic v in
+    match whd with
+    | Vuniv_level lvl -> lvl
+    | _ ->
+      let pr =
+        let open Pp in
+        match whd with
+        | Vsort _ -> str "Vsort"
+        | Vprod _ -> str "Vprod"
+        | Vfun _ -> str "Vfun"
+        | Vfix _ -> str "Vfix"
+        | Vcofix _ -> str "Vcofix"
+        | Vconstr_const i -> str "Vconstr_const"
+        | Vconstr_block b -> str "Vconstr_block"
+        | Vatom_stk (a,stk) -> str "Vatom_stk"
+        | _ -> assert false
+      in
+      Errors.anomaly
+        Pp.(   strbrk "Parsing virtual machine value expected universe level, got "
+            ++ pr)
+
+let rec whd_accu a stk =
+  let stk =
+    if Int.equal (Obj.size a) 2 then stk
+    else Zapp (Obj.obj a) :: stk in
+  let at = Obj.field a 1 in
+  match Obj.tag at with
+  | i when Int.equal i type_atom_tag ->
+     begin match stk with
+     | [Zapp args] ->
+	let u = ref (Obj.obj (Obj.field at 0)) in
+	for i = 0 to nargs args - 1 do
+	  u := Univ.Universe.sup !u (Univ.Universe.make (uni_lvl_val (arg args i)))
+	done;
+	Vsort (Type !u)
+     | _ -> assert false
+     end
+  | i when i <= max_atom_tag ->
+      Vatom_stk(Obj.magic at, stk)
+  | i when Int.equal i proj_tag ->
+     let zproj = Zproj (Obj.obj (Obj.field at 0)) in
+     whd_accu (Obj.field at 1) (zproj :: stk)
+  | i when Int.equal i fix_app_tag ->
+      let fa = Obj.field at 1 in
+      let zfix  =
+	Zfix (Obj.obj (Obj.field fa 1), Obj.obj fa) in
+      whd_accu (Obj.field at 0) (zfix :: stk)
+  | i when Int.equal i switch_tag ->
+      let zswitch = Zswitch (Obj.obj (Obj.field at 1)) in
+      whd_accu (Obj.field at 0) (zswitch :: stk)
+  | i when Int.equal i cofix_tag ->
+      let vcfx = Obj.obj (Obj.field at 0) in
+      let to_up = Obj.obj a in
+      begin match stk with
+      | []          -> Vcofix(vcfx, to_up, None)
+      | [Zapp args] -> Vcofix(vcfx, to_up, Some args)
+      | _           -> assert false
+      end
+  | i when Int.equal i cofix_evaluated_tag ->
+      let vcofix = Obj.obj (Obj.field at 0) in
+      let res = Obj.obj a in
+      begin match stk with
+      | []          -> Vcofix(vcofix, res, None)
+      | [Zapp args] -> Vcofix(vcofix, res, Some args)
+      | _           -> assert false
+      end
+  | tg ->
+    Errors.anomaly
+      Pp.(strbrk "Failed to parse VM value. Tag = " ++ int tg)
+
+external kind_of_closure : Obj.t -> int = "coq_kind_of_closure"
+
+let whd_val : values -> whd =
+  fun v ->
+    let o = Obj.repr v in
+    if Obj.is_int o then Vconstr_const (Obj.obj o)
+    else
+      let tag = Obj.tag o in
+      if tag = accu_tag then
+	(
+	if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
+        else
+	  if is_accumulate (fun_code o) then whd_accu o []
+	  else Vprod(Obj.obj o))
+      else
+	if tag = Obj.closure_tag || tag = Obj.infix_tag then
+	  (match kind_of_closure o with
+	   | 0 -> Vfun(Obj.obj o)
+	   | 1 -> Vfix(Obj.obj o, None)
+	   | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
+	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
+	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
+	else
+           Vconstr_block(Obj.obj o)
 
 (**********************************************)
 (* Constructors *******************************)
@@ -303,6 +335,8 @@ let rec obj_of_str_const str =
 	Obj.set_field res i (obj_of_str_const args.(i))
       done;
       res
+  | Const_univ_level l -> Obj.repr (Vuniv_level l)
+  | Const_type u -> obj_of_atom (Atype u)
 
 let val_of_obj o = ((Obj.obj o) : values)
 
@@ -310,13 +344,22 @@ let val_of_str_const str = val_of_obj (obj_of_str_const str)
 
 let val_of_atom a = val_of_obj (obj_of_atom a)
 
+let atom_of_proj kn v =
+  let r = Obj.new_block proj_tag 2 in
+  Obj.set_field r 0 (Obj.repr kn);
+  Obj.set_field r 1 (Obj.repr v);
+  ((Obj.obj r) : atom)
+
+let val_of_proj kn v =
+  val_of_atom (atom_of_proj kn v)
+
 module IdKeyHash =
 struct
-  type t = pconstant tableKey
-  let equal = Names.eq_table_key (Univ.eq_puniverses Constant.equal)
+  type t = constant tableKey
+  let equal = Names.eq_table_key Constant.equal
   open Hashset.Combine
   let hash = function
-  | ConstKey (c,u) -> combinesmall 1 (Constant.hash c)
+  | ConstKey c -> combinesmall 1 (Constant.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
 end
@@ -360,14 +403,14 @@ external closure_arity : vfun -> int = "coq_closure_arity"
 
 let body_of_vfun k vf =
   let vargs = mkrel_vstack k 1 in
-  apply_vstack (Obj.magic vf) vargs
+  apply_varray (Obj.magic vf) vargs
 
 let decompose_vfun2 k vf1 vf2 =
   let arity = min (closure_arity vf1) (closure_arity vf2) in
   assert (0 < arity && arity < Sys.max_array_length);
   let vargs = mkrel_vstack k arity in
-  let v1 = apply_vstack (Obj.magic vf1) vargs in
-  let v2 = apply_vstack (Obj.magic vf2) vargs in
+  let v1 = apply_varray (Obj.magic vf1) vargs in
+  let v2 = apply_varray (Obj.magic vf2) vargs in
   arity, v1, v2
 
 (* Functions over fixpoint *)
@@ -497,7 +540,7 @@ let reduce_cofix k vcf =
     let self = Obj.new_block accu_tag 2 in
     Obj.set_field self 0 (Obj.repr accumulate);
     Obj.set_field self 1 (Obj.repr atom);
-    apply_vstack (Obj.obj e) [|Obj.obj self|] in
+    apply_varray (Obj.obj e) [|Obj.obj self|] in
   (Array.init ndef cofix_body, ftyp)
 
 
@@ -550,62 +593,13 @@ let branch_of_switch k sw =
   in
   Array.map eval_branch sw.sw_annot.rtbl
 
-
-
-(* Evaluation *)
-
-let rec whd_stack v stk =
+(* Apply the term represented by a under stack stk to argument v *)
+(* t = a stk --> t v *)
+let rec apply_stack a stk v =
   match stk with
-  | [] -> whd_val v
-  | Zapp args :: stkt -> whd_stack (apply_arguments v args) stkt
-  | Zfix (f,args) :: stkt ->
-      let o = Obj.repr v in
-      if Obj.is_block o && Obj.tag o = accu_tag then
-	whd_accu (Obj.repr v) stk
-      else
-	let v', stkt =
-	  match stkt with
-	  | Zapp args' :: stkt ->
-	      push_ra stop;
-	      push_arguments args';
-	      push_val v;
-	      push_arguments args;
-	      let v' =
-		interprete (fun_code f) (Obj.magic f) (Obj.magic f)
-		  (nargs args+ nargs args') in
-	      v', stkt
-	  | _ ->
-	      push_ra stop;
-	      push_val v;
-	      push_arguments args;
-	      let v' =
-		interprete (fun_code f) (Obj.magic f) (Obj.magic f)
-		  (nargs args) in
-	      v', stkt
-	in
-	whd_stack v' stkt
-  | Zswitch sw :: stkt ->
-      let o = Obj.repr v in
-      if Obj.is_block o && Obj.tag o = accu_tag then
-	if Obj.tag (Obj.field o 1) < cofix_tag then whd_accu (Obj.repr v) stk
-	else
-	  let to_up =
-	    match whd_accu (Obj.repr v) [] with
-	    | Vcofix (_, to_up, _) -> to_up
-	    | _ -> assert false in
-	  whd_stack (apply_switch sw to_up) stkt
-      else whd_stack (apply_switch sw v) stkt
-
-let rec force_whd v stk =
-  match whd_stack v stk with
-  | Vatom_stk(Aiddef(_,v),stk) -> force_whd v stk
-  | res -> res
-
-
-let rec eta_stack a stk v =
-  match stk with
-  | [] -> apply_vstack a [|v|]
-  | Zapp args :: stk -> eta_stack (apply_arguments a args) stk v
+  | [] -> apply_varray a [|v|]
+  | Zapp args :: stk -> apply_stack (apply_arguments a args) stk v
+  | Zproj kn :: stk -> apply_stack (val_of_proj kn a) stk v
   | Zfix(f,args) :: stk ->
       let a,stk = 
 	match stk with
@@ -626,11 +620,11 @@ let rec eta_stack a stk v =
 	      interprete (fun_code f) (Obj.magic f) (Obj.magic f)
 		(nargs args) in
 	    a, stk in
-      eta_stack a stk v
+      apply_stack a stk v
   | Zswitch sw :: stk ->
-      eta_stack (apply_switch sw a) stk v
+      apply_stack (apply_switch sw a) stk v
 
-let eta_whd k whd =
+let apply_whd k whd =
   let v = val_of_rel k in
   match whd with
   | Vsort _ | Vprod _ | Vconstr_const _ | Vconstr_block _ -> assert false
@@ -649,8 +643,35 @@ let eta_whd k whd =
       push_val v;
       interprete (fun_code to_up) (Obj.magic to_up) (Obj.magic to_up) 0
   | Vatom_stk(a,stk) ->
-      eta_stack (val_of_atom a) stk v 
+      apply_stack (val_of_atom a) stk v 
+  | Vuniv_level lvl -> assert false
 
-
-      
-      
+let rec pr_atom a =
+  Pp.(match a with
+  | Aid c -> str "Aid(" ++ (match c with
+                            | ConstKey c -> Names.pr_con c
+			    | RelKey i -> str "#" ++ int i
+			    | _ -> str "...") ++ str ")"
+  | Aind (mi,i) -> str "Aind(" ++ Names.pr_mind mi ++ str "#" ++ int i ++ str ")"
+  | Atype _ -> str "Atype(")
+and pr_whd w =
+  Pp.(match w with
+  | Vsort _ -> str "Vsort"
+  | Vprod _ -> str "Vprod"
+  | Vfun _ -> str "Vfun"
+  | Vfix _ -> str "Vfix"
+  | Vcofix _ -> str "Vcofix"
+  | Vconstr_const i -> str "Vconstr_const(" ++ int i ++ str ")"
+  | Vconstr_block b -> str "Vconstr_block"
+  | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
+  | Vuniv_level _ -> assert false)
+and pr_stack stk =
+  Pp.(match stk with
+      | [] -> str "[]"
+      | s :: stk -> pr_zipper s ++ str " :: " ++ pr_stack stk)
+and pr_zipper z =
+  Pp.(match z with
+  | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
+  | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
+  | Zswitch s -> str "Zswitch(...)"
+  | Zproj c -> str "Zproj(" ++ Names.pr_con c ++ str ")")

@@ -14,6 +14,11 @@ open Libnames
 open Printer
 open Newring_ast
 open Newring
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 DECLARE PLUGIN "newring_plugin"
 
@@ -46,9 +51,14 @@ VERNAC ARGUMENT EXTEND ring_mod
   | [ "div" constr(div_spec) ] -> [ Div_spec div_spec ]
 END
 
+VERNAC ARGUMENT EXTEND ring_mods
+  | [ "(" ne_ring_mod_list_sep(mods, ",") ")" ] -> [ mods ]
+END
+
 VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
-  | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods(l) ] ->
-    [ let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
+  | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods_opt(l) ] ->
+    [ let l = match l with None -> [] | Some l -> l in
+      let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
       add_theory id (ic t) set k cst (pre,post) power sign div]
   | [ "Print" "Rings" ] => [Vernac_classifier.classify_as_query] -> [
     msg_notice (strbrk "The following ring structures have been declared:");
@@ -70,9 +80,14 @@ VERNAC ARGUMENT EXTEND field_mod
   | [ "completeness" constr(inj) ] -> [ Inject inj ]
 END
 
+VERNAC ARGUMENT EXTEND field_mods
+  | [ "(" ne_field_mod_list_sep(mods, ",") ")" ] -> [ mods ]
+END
+
 VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
-| [ "Add" "Field" ident(id) ":" constr(t) field_mods(l) ] ->
-  [ let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods l in
+| [ "Add" "Field" ident(id) ":" constr(t) field_mods_opt(l) ] ->
+  [ let l = match l with None -> [] | Some l -> l in
+    let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods l in
     add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign div]
 | [ "Print" "Fields" ] => [Vernac_classifier.classify_as_query] -> [
     msg_notice (strbrk "The following field structures have been declared:");

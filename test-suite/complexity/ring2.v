@@ -39,7 +39,7 @@ Admitted.
 Ltac Zcst t :=
   match isZcst t with
     true => t
-  | _ => constr:NotConstant
+  | _ => constr:(NotConstant)
   end.
 
 Add Ring Zr : Zth

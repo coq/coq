@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Environ
 
 (*********************************************************************
@@ -39,13 +38,13 @@ val lambda_name : env -> Name.t * types * constr -> constr
 
 val prod_create : env -> types * types -> constr
 val lambda_create : env -> types * constr -> constr
-val name_assumption : env -> rel_declaration -> rel_declaration
-val name_context : env -> rel_context -> rel_context
+val name_assumption : env -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
+val name_context : env -> Context.Rel.t -> Context.Rel.t
 
-val mkProd_or_LetIn_name : env -> types -> rel_declaration -> types
-val mkLambda_or_LetIn_name : env -> constr -> rel_declaration -> constr
-val it_mkProd_or_LetIn_name   : env -> types -> rel_context -> types
-val it_mkLambda_or_LetIn_name : env -> constr -> rel_context -> constr
+val mkProd_or_LetIn_name : env -> types -> Context.Rel.Declaration.t -> types
+val mkLambda_or_LetIn_name : env -> constr -> Context.Rel.Declaration.t -> constr
+val it_mkProd_or_LetIn_name   : env -> types -> Context.Rel.t -> types
+val it_mkLambda_or_LetIn_name : env -> constr -> Context.Rel.t -> constr
 
 (*********************************************************************
    Fresh names *)

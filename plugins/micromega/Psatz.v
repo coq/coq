@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -69,7 +69,7 @@ Ltac xpsatz dom d :=
   end in tac.
 
 Tactic Notation "psatz" constr(dom) int_or_var(n) := xpsatz dom n.
-Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:-1.
+Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:(-1).
 
 Ltac psatzl dom :=
   let tac := lazymatch dom with

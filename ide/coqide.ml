@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -318,10 +318,10 @@ let export kind sn =
         local_cd f ^ cmd_coqdoc#get ^ " --" ^ kind ^ " -o " ^
         (Filename.quote output) ^ " " ^ (Filename.quote basef) ^ " 2>&1"
       in
-      sn.messages#set ("Running: "^cmd);
+      sn.messages#set (Richpp.richpp_of_string ("Running: "^cmd));
       let finally st = flash_info (cmd ^ pr_exit_status st)
       in
-      run_command sn.messages#add finally cmd
+      run_command (fun msg -> sn.messages#add_string msg) finally cmd
 
 let export kind = cb_on_current_term (export kind)
 
@@ -431,9 +431,9 @@ let compile sn =
 	^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
-      sn.messages#set ("Running: "^cmd);
+      sn.messages#set (Richpp.richpp_of_string ("Running: "^cmd));
       let display s =
-        sn.messages#add s;
+        sn.messages#add_string s;
         Buffer.add_string buf s
       in
       let finally st =
@@ -441,8 +441,8 @@ let compile sn =
           flash_info (f ^ " successfully compiled")
         else begin
           flash_info (f ^ " failed to compile");
-          sn.messages#set "Compilation output:\n";
-          sn.messages#add (Buffer.contents buf);
+          sn.messages#set (Richpp.richpp_of_string "Compilation output:\n");
+          sn.messages#add (Richpp.richpp_of_string (Buffer.contents buf));
         end
       in
       run_command display finally cmd
@@ -464,13 +464,13 @@ let make sn =
     |Some f ->
       File.saveall ();
       let cmd = local_cd f ^ cmd_make#get ^ " 2>&1" in
-      sn.messages#set "Compilation output:\n";
+      sn.messages#set (Richpp.richpp_of_string "Compilation output:\n");
       Buffer.reset last_make_buf;
       last_make := "";
       last_make_index := 0;
       last_make_dir := Filename.dirname f;
       let display s =
-        sn.messages#add s;
+        sn.messages#add_string s;
         Buffer.add_string last_make_buf s
       in
       let finally st = flash_info (cmd_make#get ^ pr_exit_status st)
@@ -508,11 +508,11 @@ let next_error sn =
     let stopi = b#get_iter_at_byte ~line:(line-1) stop in
     b#apply_tag Tags.Script.error ~start:starti ~stop:stopi;
     b#place_cursor ~where:starti;
-    sn.messages#set error_msg;
+    sn.messages#set (Richpp.richpp_of_string error_msg);
     sn.script#misc#grab_focus ()
   with Not_found ->
     last_make_index := 0;
-    sn.messages#set "No more errors.\n"
+    sn.messages#set (Richpp.richpp_of_string "No more errors.\n")
 
 let next_error = cb_on_current_term next_error
 
@@ -570,7 +570,7 @@ module Nav = struct
   let restart _ = on_current_term restart
   let interrupt sn =
     Minilib.log "User break received";
-    Coq.break_coqtop sn.coqtop
+    Coq.break_coqtop sn.coqtop CString.(Set.elements (Map.domain sn.jobpage#data))
   let interrupt = cb_on_current_term interrupt
   let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
 end
@@ -718,7 +718,7 @@ let initial_about () =
     else ""
   in
   let msg = initial_string ^ version_info ^ log_file_message () in
-  on_current_term (fun term -> term.messages#add msg)
+  on_current_term (fun term -> term.messages#add_string msg)
 
 let coq_icon () =
   (* May raise Nof_found *)
@@ -783,7 +783,7 @@ let coqtop_arguments sn =
         let args = String.concat " " args in
         let msg = Printf.sprintf "Invalid arguments: %s" args in
         let () = sn.messages#clear in
-        sn.messages#push Pp.Error msg
+        sn.messages#push Pp.Error (Richpp.richpp_of_string msg)
     else dialog#destroy ()
   in
   let _ = entry#connect#activate ok_cb in
@@ -1059,8 +1059,8 @@ let build_ui () =
     ("Hide", "_Hide", `MISSING_IMAGE,
         ~callback:(fun _ -> let sess = notebook#current_term in
           toggle_proof_visibility sess.buffer sess.analyzed_view#get_insert), "Hide proof", "h"); *)
-    ("Previous", "_Previous", `GO_BACK, Nav.previous_occ, "Previous occurence", "less");
-    ("Next", "_Next", `GO_FORWARD, Nav.next_occ, "Next occurence", "greater");
+    ("Previous", "_Previous", `GO_BACK, Nav.previous_occ, "Previous occurrence", "less");
+    ("Next", "_Next", `GO_FORWARD, Nav.next_occ, "Next occurrence", "greater");
     ("Force", "_Force", `EXECUTE, Nav.join_document, "Fully check the document", "f");
   ] end;
 
@@ -1140,17 +1140,17 @@ let build_ui () =
     item "Help" ~label:"_Help";
     item "Browse Coq Manual" ~label:"Browse Coq _Manual"
       ~callback:(fun _ ->
-        browse notebook#current_term.messages#add (doc_url ()));
+        browse notebook#current_term.messages#add_string (doc_url ()));
     item "Browse Coq Library" ~label:"Browse Coq _Library"
       ~callback:(fun _ ->
-        browse notebook#current_term.messages#add library_url#get);
+        browse notebook#current_term.messages#add_string library_url#get);
     item "Help for keyword" ~label:"Help for _keyword" ~stock:`HELP
       ~callback:(fun _ -> on_current_term (fun sn ->
-        browse_keyword sn.messages#add (get_current_word sn)));
+        browse_keyword sn.messages#add_string (get_current_word sn)));
     item "Help for μPG mode" ~label:"Help for μPG mode"
       ~callback:(fun _ -> on_current_term (fun sn ->
          sn.messages#clear;
-         sn.messages#add (NanoPG.get_documentation ())));
+         sn.messages#add_string (NanoPG.get_documentation ())));
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];

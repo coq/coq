@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,7 +13,7 @@ open Miniml
 open Declarations
 
 module Refset' : CSig.SetS with type elt = global_reference
-module Refmap' : Map.S with type key = global_reference
+module Refmap' : CSig.MapS with type key = global_reference
 
 val safe_basename_of_global : global_reference -> Id.t
 
@@ -38,8 +38,8 @@ val error_MPfile_as_mod : module_path -> bool -> 'a
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
 val check_loaded_modfile : module_path -> unit
-val msg_non_implicit : global_reference -> int -> Name.t -> string
-val error_non_implicit : string -> 'a
+val msg_of_implicit : kill_reason -> string
+val err_or_warn_remaining_implicit : kill_reason -> unit
 
 val info_file : string -> unit
 
@@ -55,7 +55,6 @@ val string_of_modfile : module_path -> string
 val file_of_modfile : module_path -> string
 val is_toplevel : module_path -> bool
 val at_toplevel : module_path -> bool
-val visible_con : constant -> bool
 val mp_length : module_path -> int
 val prefixes_mp : module_path -> MPset.t
 val common_prefix_from_list :
@@ -65,14 +64,22 @@ val labels_of_ref : global_reference -> module_path * Label.t list
 
 (*s Some table-related operations *)
 
-val add_term : constant -> ml_decl -> unit
-val lookup_term : constant -> ml_decl
+(* For avoiding repeated extraction of the same constant or inductive,
+   we use cache functions below. Indexing by constant name isn't enough,
+   due to modules we could have a same constant name but different
+   content. So we check that the [constant_body] hasn't changed from
+   recording time to retrieving time. Same for inductive : we store
+   [mutual_inductive_body] as checksum. In both case, we should ideally
+   also check the env *)
 
-val add_type : constant -> ml_schema -> unit
-val lookup_type : constant -> ml_schema
+val add_typedef : constant -> constant_body -> ml_type -> unit
+val lookup_typedef : constant -> constant_body -> ml_type option
+
+val add_cst_type : constant -> constant_body -> ml_schema -> unit
+val lookup_cst_type : constant -> constant_body -> ml_schema option
 
 val add_ind : mutual_inductive -> mutual_inductive_body -> ml_ind -> unit
-val lookup_ind : mutual_inductive -> mutual_inductive_body * ml_ind
+val lookup_ind : mutual_inductive -> mutual_inductive_body -> ml_ind option
 
 val add_inductive_kind : mutual_inductive -> inductive_kind -> unit
 val is_coinductive : global_reference -> bool
@@ -166,7 +173,7 @@ val to_keep : global_reference -> bool
 
 (*s Table for implicits arguments *)
 
-val implicits_of_global : global_reference -> int list
+val implicits_of_global : global_reference -> Int.Set.t
 
 (*s Table for user-given custom ML extractions. *)
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -128,11 +128,12 @@ type 'a write_function = 'a -> unit
 val declare_int_option   : int option option_sig -> int option write_function
 val declare_bool_option  : bool option_sig   -> bool write_function
 val declare_string_option: string option_sig -> string write_function
+val declare_stringopt_option: string option option_sig -> string option write_function
 
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 
-module OptionMap : Map.S with type key = option_name
+module OptionMap : CSig.MapS with type key = option_name
 
 val get_string_table :
   option_name ->
@@ -165,6 +166,7 @@ type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
+  | StringOptValue of string option
 
 (** Summary of an option status *)
 type option_state = {

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -44,15 +44,15 @@ module RefHash =
 struct
   type t = my_global_reference
   let equal gr1 gr2 = match gr1, gr2 with
-  | ConstRef c1, ConstRef c2 -> Constant.CanOrd.equal c1 c2
-  | IndRef i1, IndRef i2 -> eq_ind i1 i2
-  | ConstructRef c1, ConstructRef c2 -> eq_constructor c1 c2
+  | ConstRef c1, ConstRef c2 -> Constant.SyntacticOrd.equal c1 c2
+  | IndRef i1, IndRef i2 -> eq_syntactic_ind i1 i2
+  | ConstructRef c1, ConstructRef c2 -> eq_syntactic_constructor c1 c2
   | _ -> false
   open Hashset.Combine
   let hash = function
-  | ConstRef c -> combinesmall 1 (Constant.hash c)
-  | IndRef i -> combinesmall 2 (ind_hash i)
-  | ConstructRef c -> combinesmall 3 (constructor_hash c)
+  | ConstRef c -> combinesmall 1 (Constant.SyntacticOrd.hash c)
+  | IndRef i -> combinesmall 2 (ind_syntactic_hash i)
+  | ConstructRef c -> combinesmall 3 (constructor_syntactic_hash c)
 end
 
 module RefTable = Hashtbl.Make(RefHash)
@@ -173,7 +173,7 @@ let expmod_constr_subst cache modlist subst c =
 let cook_constr { Opaqueproof.modlist ; abstract } c =
   let cache = RefTable.create 13 in
   let expmod = expmod_constr_subst cache modlist (pi2 abstract) in
-  let hyps = Context.map_named_context expmod (pi1 abstract) in
+  let hyps = Context.Named.map expmod (pi1 abstract) in
   abstract_constant_body (expmod c) hyps
 
 let lift_univs cb subst =
@@ -195,14 +195,16 @@ let cook_constant env { from = cb; info } =
   let abstract, usubst, abs_ctx = abstract in
   let usubst, univs = lift_univs cb usubst in
   let expmod = expmod_constr_subst cache modlist usubst in
-  let hyps = Context.map_named_context expmod abstract in
+  let hyps = Context.Named.map expmod abstract in
   let body = on_body modlist (hyps, usubst, abs_ctx)
     (fun c -> abstract_constant_body (expmod c) hyps)
     cb.const_body
   in
   let const_hyps =
-    Context.fold_named_context (fun (h,_,_) hyps ->
-      List.filter (fun (id,_,_) -> not (Id.equal id h)) hyps)
+    Context.Named.fold_outside (fun decl hyps ->
+      let open Context.Named.Declaration in
+      List.filter (fun decl' -> not (Id.equal (get_id decl) (get_id decl')))
+		  hyps)
       hyps ~init:cb.const_hyps in
   let typ = match cb.const_type with
     | RegularArity t ->

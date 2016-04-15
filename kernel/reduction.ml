@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,13 +20,11 @@ open Util
 open Names
 open Term
 open Vars
-open Context
 open Univ
 open Environ
 open Closure
 open Esubst
-
-let left2right = ref false
+open Context.Rel.Declaration
 
 let rec is_empty_stack = function
   [] -> true
@@ -56,8 +54,7 @@ let compare_stack_shape stk1 stk2 =
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zproj (n1,m1,p1)::s1, Zproj (n2,m2,p2)::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
-    | ((Zcase(c1,_,_)|ZcaseT(c1,_,_,_))::s1,
-       (Zcase(c2,_,_)|ZcaseT(c2,_,_,_))::s2) ->
+    | (ZcaseT(c1,_,_,_)::s1, ZcaseT(c2,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
@@ -91,9 +88,8 @@ let pure_stack lfts stk =
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
             | (ZcaseT(ci,p,br,e),(l,pstk)) ->
-                (l,Zlcase(ci,l,mk_clos e p,Array.map (mk_clos e) br)::pstk)
-            | (Zcase(ci,p,br),(l,pstk)) ->
-                (l,Zlcase(ci,l,p,br)::pstk)) in
+                (l,Zlcase(ci,l,mk_clos e p,Array.map (mk_clos e) br)::pstk))
+  in
   snd (pure_rec lfts stk)
 
 (****************************************************************************)
@@ -124,34 +120,20 @@ let whd_betadeltaiota_nolet env t =
        Prod _|Lambda _|Fix _|CoFix _|LetIn _) -> t
     | _ -> whd_val (create_clos_infos betadeltaiotanolet env) (inject t)
 
-(* Beta *)
-
-let beta_appvect c v =
-  let rec stacklam env t stack =
-    match kind_of_term t, stack with
-        Lambda(_,_,c), arg::stacktl -> stacklam (arg::env) c stacktl
-      | _ -> applist (substl env t, stack) in
-  stacklam [] c (Array.to_list v)
-    
-let betazeta_appvect n c v =
-  let rec stacklam n env t stack =
-    if Int.equal n 0 then applist (substl env t, stack) else
-    match kind_of_term t, stack with
-        Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
-      | LetIn(_,b,_,c), _ -> stacklam (n-1) (b::env) c stack
-      | _ -> anomaly (Pp.str "Not enough lambda/let's") in
-  stacklam n [] c (Array.to_list v)
-
 (********************************************************************)
 (*                         Conversion                               *)
 (********************************************************************)
 
 (* Conversion utility functions *)
-type 'a conversion_function = env -> 'a -> 'a -> unit
-type 'a trans_conversion_function = Names.transparent_state -> 'a conversion_function
-type 'a universe_conversion_function = env -> Univ.universes -> 'a -> 'a -> unit
-type 'a trans_universe_conversion_function = 
-  Names.transparent_state -> 'a universe_conversion_function
+
+(* functions of this type are called from the kernel *)
+type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
+
+(* functions of this type can be called from outside the kernel *)
+type 'a extended_conversion_function =
+  ?l2r:bool -> ?reds:Names.transparent_state -> env ->
+  ?evars:((existential->constr option) * UGraph.t) ->
+  'a -> 'a -> unit
 
 exception NotConvertible
 exception NotConvertibleVect of int
@@ -175,20 +157,22 @@ let is_cumul = function CUMUL -> true | CONV -> false
 type 'a universe_compare = 
   { (* Might raise NotConvertible *)
     compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
-    compare_instances: bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+    compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
   } 
 
 type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
+type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.constraints
 
 let sort_cmp_universes env pb s0 s1 (u, check) =
   (check.compare env pb s0 s1 u, check)
 
-let convert_instances flex u u' (s, check) =
-  (check.compare_instances flex u u' s, check)
+(* [flex] should be true for constants, false for inductive types and
+   constructors. *)
+let convert_instances ~flex u u' (s, check) =
+  (check.compare_instances ~flex u u' s, check)
 
 let conv_table_key infos k1 k2 cuniv =
   if k1 == k2 then cuniv else
@@ -198,7 +182,7 @@ let conv_table_key infos k1 k2 cuniv =
     else 
       let flex = evaluable_constant cst (info_env infos) 
 	&& RedFlags.red_set (info_flags infos) (RedFlags.fCONST cst)
-      in convert_instances flex u u' cuniv
+      in convert_instances ~flex u u' cuniv
   | VarKey id, VarKey id' when Id.equal id id' -> cuniv
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
@@ -210,9 +194,7 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
           let cu1 = cmp_rec s1 s2 cuniv in
           (match (z1,z2) with
             | (Zlapp a1,Zlapp a2) -> 
-	      if !left2right then
-		Array.fold_left2 (fun cu x y -> f x y cu) cu1 a1 a2
-	      else Array.fold_right2 f a1 a2 cu1
+	       Array.fold_right2 f a1 a2 cu1
 	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
 	      if not (eq_constant c1 c2) then 
 		raise NotConvertible
@@ -237,7 +219,6 @@ let rec no_arg_available = function
   | Zshift _ :: stk -> no_arg_available stk
   | Zapp v :: stk -> Int.equal (Array.length v) 0 && no_arg_available stk
   | Zproj _ :: _ -> true
-  | Zcase _ :: _ -> true
   | ZcaseT _ :: _ -> true
   | Zfix _ :: _ -> true
 
@@ -250,7 +231,6 @@ let rec no_nth_arg_available n = function
       if n >= k then no_nth_arg_available (n-k) stk
       else false
   | Zproj _ :: _ -> true
-  | Zcase _ :: _ -> true
   | ZcaseT _ :: _ -> true
   | Zfix _ :: _ -> true
 
@@ -260,13 +240,12 @@ let rec no_case_available = function
   | Zshift _ :: stk -> no_case_available stk
   | Zapp _ :: stk -> no_case_available stk
   | Zproj (_,_,p) :: _ -> false
-  | Zcase _ :: _ -> false
   | ZcaseT _ :: _ -> false
   | Zfix _ :: _ -> true
 
 let in_whnf (t,stk) =
   match fterm_of t with
-    | (FLetIn _ | FCase _ | FCaseT _ | FApp _ 
+    | (FLetIn _ | FCaseT _ | FApp _ 
 	  | FCLOS _ | FLIFT _ | FCast _) -> false
     | FLambda _ -> no_arg_available stk
     | FConstruct _ -> no_case_available stk
@@ -532,8 +511,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else raise NotConvertible
 
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
-     | ( (FLetIn _, _) | (FCase _,_) | (FCaseT _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
-       | (_, FLetIn _) | (_,FCase _) | (_,FCaseT _) | (_,FApp _) | (_,FCLOS _) | (_,FLIFT _)
+     | ( (FLetIn _, _) | (FCaseT _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
+       | (_, FLetIn _) | (_,FCaseT _) | (_,FApp _) | (_,FCLOS _) | (_,FLIFT _)
        | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
 
      (* In all other cases, terms are not convertible *)
@@ -558,17 +537,17 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
     fold 0 cuniv
   else raise NotConvertible
 
-let clos_fconv trans cv_pb l2r evars env univs t1 t2 =
+let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let reds = Closure.RedFlags.red_add_transparent betaiotazeta trans in
   let infos = create_clos_infos ~evars reds env in
   ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
 
 
 let check_eq univs u u' = 
-  if not (check_eq univs u u') then raise NotConvertible
+  if not (UGraph.check_eq univs u u') then raise NotConvertible
 
 let check_leq univs u u' = 
-  if not (check_leq univs u u') then raise NotConvertible
+  if not (UGraph.check_leq univs u u') then raise NotConvertible
 
 let check_sort_cmp_universes env pb s0 s1 univs =
   match (s0,s1) with
@@ -594,8 +573,8 @@ let check_sort_cmp_universes env pb s0 s1 univs =
 let checked_sort_cmp_universes env pb s0 s1 univs =
   check_sort_cmp_universes env pb s0 s1 univs; univs
 
-let check_convert_instances _flex u u' univs =
-  if Univ.Instance.check_eq univs u u' then univs
+let check_convert_instances ~flex u u' univs =
+  if UGraph.check_eq_instances univs u u' then univs
   else raise NotConvertible
 
 let checked_universes =
@@ -603,12 +582,12 @@ let checked_universes =
     compare_instances = check_convert_instances }
 
 let infer_eq (univs, cstrs as cuniv) u u' =
-  if Univ.check_eq univs u u' then cuniv
+  if UGraph.check_eq univs u u' then cuniv
   else
     univs, (Univ.enforce_eq u u' cstrs)
 
 let infer_leq (univs, cstrs as cuniv) u u' =
-  if Univ.check_leq univs u u' then cuniv
+  if UGraph.check_leq univs u u' then cuniv
   else
     let cstrs' = Univ.enforce_leq u u' cstrs in
       univs, cstrs'
@@ -634,60 +613,38 @@ let infer_cmp_universes env pb s0 s1 univs =
 	| CONV -> infer_eq univs u1 u2)
         else univs
 
-let infer_convert_instances flex u u' (univs,cstrs) =
+let infer_convert_instances ~flex u u' (univs,cstrs) =
   (univs, Univ.enforce_eq_instances u u' cstrs)
 
-let infered_universes : (Univ.universes * Univ.Constraint.t) universe_compare = 
+let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare = 
   { compare = infer_cmp_universes;
     compare_instances = infer_convert_instances }
 
-let trans_fconv_universes reds cv_pb l2r evars env univs t1 t2 =
+let gen_conv cv_pb l2r reds env evars univs t1 t2 =
   let b = 
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2 
     else eq_constr_univs univs t1 t2
   in
     if b then ()
     else 
-      let _ = clos_fconv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
+      let _ = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
 	()
 
 (* Profiling *)
-let trans_fconv_universes = 
+let gen_conv cv_pb ?(l2r=false) ?(reds=full_transparent_state) env ?(evars=(fun _->None), universes env) =
+  let evars, univs = evars in
   if Flags.profile then
-    let trans_fconv_universes_key = Profile.declare_profile "trans_fconv_universes" in
-      Profile.profile8 trans_fconv_universes_key trans_fconv_universes
-  else trans_fconv_universes
+    let fconv_universes_key = Profile.declare_profile "trans_fconv_universes" in
+      Profile.profile8 fconv_universes_key gen_conv cv_pb l2r reds env evars univs
+  else gen_conv cv_pb l2r reds env evars univs
 
-let trans_fconv reds cv_pb l2r evars env = 
-  trans_fconv_universes reds cv_pb l2r evars env (universes env)
+let conv = gen_conv CONV
 
-let trans_conv_cmp ?(l2r=false) conv reds = trans_fconv reds conv l2r (fun _->None)
-let trans_conv ?(l2r=false) ?(evars=fun _->None) reds = trans_fconv reds CONV l2r evars
-let trans_conv_leq ?(l2r=false) ?(evars=fun _->None) reds = trans_fconv reds CUMUL l2r evars
+let conv_leq = gen_conv CUMUL
 
-let trans_conv_universes ?(l2r=false) ?(evars=fun _->None) reds = 
-  trans_fconv_universes reds CONV l2r evars
-let trans_conv_leq_universes ?(l2r=false) ?(evars=fun _->None) reds = 
-  trans_fconv_universes reds CUMUL l2r evars
-
-let fconv = trans_fconv (Id.Pred.full, Cpred.full)
-
-let conv_cmp ?(l2r=false) cv_pb = fconv cv_pb l2r (fun _->None)
-let conv ?(l2r=false) ?(evars=fun _->None) = fconv CONV l2r evars
-let conv_leq ?(l2r=false) ?(evars=fun _->None) = fconv CUMUL l2r evars
-
-let conv_leq_vecti ?(l2r=false) ?(evars=fun _->None) env v1 v2 =
-  Array.fold_left2_i
-    (fun i _ t1 t2 ->
-      try conv_leq ~l2r ~evars env t1 t2
-      with NotConvertible -> raise (NotConvertibleVect i))
-    ()
-    v1
-    v2
-
-let generic_conv cv_pb l2r evars reds env univs t1 t2 =
+let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
   let (s, _) = 
-    clos_fconv reds cv_pb l2r evars env univs t1 t2 
+    clos_gen_conv reds cv_pb l2r evars env univs t1 t2 
   in s
 
 let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
@@ -697,8 +654,8 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
   in
     if b then cstrs
     else
-      let univs = ((univs, Univ.Constraint.empty), infered_universes) in
-      let ((_,cstrs), _) = clos_fconv reds cv_pb l2r evars env univs t1 t2 in
+      let univs = ((univs, Univ.Constraint.empty), inferred_universes) in
+      let ((_,cstrs), _) = clos_gen_conv reds cv_pb l2r evars env univs t1 t2 in
 	cstrs
 
 (* Profiling *)
@@ -716,39 +673,20 @@ let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_sta
     env univs t1 t2 = 
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
 
-(* option for conversion *)
-let nat_conv = ref (fun cv_pb sigma ->
-		    fconv cv_pb false (sigma.Nativelambda.evars_val))
-let set_nat_conv f = nat_conv := f
+(* This reference avoids always having to link C code with the kernel *)
+let vm_conv = ref (fun cv_pb env ->
+		   gen_conv cv_pb env ~evars:((fun _->None), universes env))
 
-let native_conv cv_pb sigma env t1 t2 =
-  if eq_constr t1 t2 then ()
-  else begin
-    let t1 = (it_mkLambda_or_LetIn t1 (rel_context env)) in
-    let t2 = (it_mkLambda_or_LetIn t2 (rel_context env)) in
-    !nat_conv cv_pb sigma env t1 t2 
-  end
-
-let vm_conv = ref (fun cv_pb -> fconv cv_pb false (fun _->None))
-let set_vm_conv f = vm_conv := f
+let set_vm_conv (f:conv_pb -> Term.types kernel_conversion_function) = vm_conv := f
 let vm_conv cv_pb env t1 t2 =
   try
     !vm_conv cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
     Pp.msg_warning (Pp.str "Bytecode compilation failed, falling back to standard conversion");
-    fconv cv_pb false (fun _->None) env t1 t2
-
-
-let default_conv = ref (fun cv_pb ?(l2r=false) -> fconv cv_pb l2r (fun _->None))
-
-let set_default_conv f = default_conv := f
+    gen_conv cv_pb env t1 t2
 
 let default_conv cv_pb ?(l2r=false) env t1 t2 =
-  try
-    !default_conv ~l2r cv_pb env t1 t2
-  with Not_found | Invalid_argument _ ->
-    Pp.msg_warning (Pp.str "Compilation failed, falling back to standard conversion");
-    fconv cv_pb false (fun _->None) env t1 t2
+    gen_conv cv_pb env t1 t2
 
 let default_conv_leq = default_conv CUMUL
 (*
@@ -761,12 +699,28 @@ let conv env t1 t2 =
   Profile.profile4 convleqkey conv env t1 t2;;
 *)
 
+(* Application with on-the-fly reduction *)
+
+let beta_applist c l =
+  let rec app subst c l =
+    match kind_of_term c, l with
+    | Lambda(_,_,c), arg::l -> app (arg::subst) c l
+    | _ -> applist (substl subst c, l) in
+  app [] c l
+
+let beta_appvect c v = beta_applist c (Array.to_list v)
+
+let beta_app c a = beta_applist c [a]
+
+(* Compatibility *)
+let betazeta_appvect = lambda_appvect_assum
+
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
 (* pseudo-reduction rule:
- * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
+ * [hnf_prod_app env (Prod(_,B)) N --> B[N]
  * with an HNF on the first argument to produce a product.
  * if this does not work, then we use the string S as part of our
  * error message. *)
@@ -786,11 +740,11 @@ let dest_prod env =
     let t = whd_betadeltaiota env c in
     match kind_of_term t with
       | Prod (n,a,c0) ->
-          let d = (n,None,a) in
-	  decrec (push_rel d env) (add_rel_decl d m) c0
+	  let d = LocalAssum (n,a) in
+	  decrec (push_rel d env) (Context.Rel.add d m) c0
       | _ -> m,t
   in
-  decrec env empty_rel_context
+  decrec env Context.Rel.empty
 
 (* The same but preserving lets in the context, not internal ones. *)
 let dest_prod_assum env =
@@ -798,33 +752,33 @@ let dest_prod_assum env =
     let rty = whd_betadeltaiota_nolet env ty in
     match kind_of_term rty with
     | Prod (x,t,c)  ->
-        let d = (x,None,t) in
-	prodec_rec (push_rel d env) (add_rel_decl d l) c
+        let d = LocalAssum (x,t) in
+	prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
-        let d = (x,Some b,t) in
-	prodec_rec (push_rel d env) (add_rel_decl d l) c
+        let d = LocalDef (x,b,t) in
+	prodec_rec (push_rel d env) (Context.Rel.add d l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
       let rty' = whd_betadeltaiota env rty in
 	if Term.eq_constr rty' rty then l, rty
 	else prodec_rec env l rty'
   in
-  prodec_rec env empty_rel_context
+  prodec_rec env Context.Rel.empty
 
 let dest_lam_assum env =
   let rec lamec_rec env l ty =
     let rty = whd_betadeltaiota_nolet env ty in
     match kind_of_term rty with
     | Lambda (x,t,c)  ->
-        let d = (x,None,t) in
-	lamec_rec (push_rel d env) (add_rel_decl d l) c
+        let d = LocalAssum (x,t) in
+	lamec_rec (push_rel d env) (Context.Rel.add d l) c
     | LetIn (x,b,t,c) ->
-        let d = (x,Some b,t) in
-	lamec_rec (push_rel d env) (add_rel_decl d l) c
+        let d = LocalDef (x,b,t) in
+	lamec_rec (push_rel d env) (Context.Rel.add d l) c
     | Cast (c,_,_)    -> lamec_rec env l c
     | _               -> l,rty
   in
-  lamec_rec env empty_rel_context
+  lamec_rec env Context.Rel.empty
 
 exception NotArity
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,6 +20,7 @@ open Pp
 open Mutils
 open Proofview
 open Goptions
+open Proofview.Notations
 
 (**
   * Debug flag 
@@ -81,10 +82,10 @@ let _ =
    optread = (fun () -> !lia_enum);
    optwrite = (fun x -> lia_enum := x)
   } in
- ignore (declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth)) ;
- ignore (declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth)) ;
- ignore (declare_bool_option lia_enum_opt)
-
+ let _ = declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth) in
+ let _ = declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth) in 
+ let _ = declare_bool_option lia_enum_opt in
+ ()
  
 (**
   * Initialize a tag type to the Tag module declaration (see Mutils).
@@ -887,7 +888,7 @@ struct
 
 
   let is_convertible gl t1 t2 = 
-   Reductionops.is_conv (Tacmach.New.pf_env gl) (Goal.sigma gl) t1 t2
+   Reductionops.is_conv (Tacmach.pf_env gl) (Tacmach.project gl) t1 t2
 
   let parse_zop gl (op,args) =
    match kind_of_term op with
@@ -1168,8 +1169,8 @@ struct
       with e when Errors.noncritical e -> (X(t),env,tg) in
 
     let is_prop term =
-     let ty   = Typing.unsafe_type_of (Goal.env gl) (Goal.sigma gl) term in
-     let sort = Typing.sort_of (Goal.env gl) (ref (Goal.sigma gl)) ty in
+     let ty   = Typing.unsafe_type_of (Tacmach.pf_env gl) (Tacmach.project gl) term in
+     let sort = Typing.e_sort_of (Tacmach.pf_env gl) (ref (Tacmach.project gl)) ty in
      Term.is_prop_sort sort in
      
     let rec xparse_formula env tg term =
@@ -1444,8 +1445,8 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
  let ff  = dump_formula formula_typ (dump_cstr spec.coeff spec.dump_coeff) ff in
  let vm = dump_varmap (spec.typ) env in
  (* todo : directly generate the proof term - or generalize before conversion? *)
-  Proofview.Goal.nf_enter
-  begin fun gl -> 
+  Proofview.Goal.nf_enter { enter = begin fun gl -> 
+   let gl = Tacmach.New.of_old (fun x -> x) gl in
    Tacticals.New.tclTHENLIST
     [
      Tactics.change_concl
@@ -1457,12 +1458,12 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
 	[["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|spec.typ|])); 
        ("__wit", cert, cert_typ)
       ]
-      (Tacmach.New.pf_concl gl))
+      (Tacmach.pf_concl gl))
    ;
    Tactics.new_generalize env ;
    Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
   ] 
-  end
+  end }
 
 
 (**
@@ -1707,11 +1708,10 @@ let micromega_gen
     (normalise:'cst atom -> 'cst mc_cnf)
     unsat deduce 
     spec prover =
- Proofview.Goal.nf_enter
-  begin 
-   fun gl -> 
-    let concl = Tacmach.New.pf_concl gl in
-    let hyps  = Tacmach.New.pf_hyps_types gl in
+ Proofview.Goal.nf_enter { enter = begin fun gl -> 
+    let gl = Tacmach.New.of_old (fun x -> x) gl in
+    let concl = Tacmach.pf_concl gl in
+    let hyps  = Tacmach.pf_hyps_types gl in
     try
      let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
      let env = Env.elements env in
@@ -1735,7 +1735,7 @@ let micromega_gen
                             ^ "the use of a specialized external tool called csdp. \n\n" 
                             ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
                             ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp"))
-  end
+  end }
 
 let micromega_gen parse_arith 
     (negate:'cst atom -> 'cst mc_cnf)
@@ -1756,9 +1756,8 @@ let micromega_order_changer cert env ff  =
  let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[| coeff|])) in
  let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
  let vm = dump_varmap (typ) env in
- Proofview.Goal.nf_enter
-  begin 
-   fun gl -> 
+ Proofview.Goal.nf_enter { enter = begin fun gl -> 
+    let gl = Tacmach.New.of_old (fun x -> x) gl in
     Tacticals.New.tclTHENLIST
      [
      (Tactics.change_concl
@@ -1770,11 +1769,11 @@ let micromega_order_changer cert env ff  =
 	    [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|typ|]));
          ("__wit", cert, cert_typ)
         ]
-        (Tacmach.New.pf_concl gl)));
+        (Tacmach.pf_concl gl)));
       Tactics.new_generalize env ;
       Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
      ]
-  end
+  end }
 
 
 let micromega_genr prover =
@@ -1790,11 +1789,10 @@ let micromega_genr prover =
     proof_typ = Lazy.force coq_QWitness ;
     dump_proof = dump_psatz coq_Q dump_q
   } in
-  Proofview.Goal.nf_enter
-   begin 
-    fun gl -> 
-     let concl = Tacmach.New.pf_concl gl in
-     let hyps  = Tacmach.New.pf_hyps_types gl in
+  Proofview.Goal.nf_enter { enter = begin fun gl -> 
+     let gl = Tacmach.New.of_old (fun x -> x) gl in
+     let concl = Tacmach.pf_concl gl in
+     let hyps  = Tacmach.pf_hyps_types gl in
      try
       let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
        let env = Env.elements env in
@@ -1822,7 +1820,7 @@ let micromega_genr prover =
       ^ "the use of a specialized external tool called csdp. \n\n" 
       ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
        ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp"))
-    end
+    end }
 
 
 let micromega_genr prover  = (micromega_genr prover)

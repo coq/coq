@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,10 +19,12 @@ open Lib
 (************************************************************************)
 (*s Low-level interning/externing of libraries to files *)
 
-(*s Loading from disk to cache (preparation phase) *)
+let raw_extern_library f =
+  System.raw_extern_state Coq_config.vo_magic_number f
 
-let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern Coq_config.vo_magic_number
+let raw_intern_library f =
+  System.with_magic_number_check
+    (System.raw_intern_state Coq_config.vo_magic_number) f
 
 (************************************************************************)
 (** Serialized objects loaded on-the-fly *)
@@ -56,7 +58,7 @@ let in_delayed f ch =
 let fetch_delayed del =
   let { del_digest = digest; del_file = f; del_off = pos; } = del in
   try
-    let ch = System.with_magic_number_check raw_intern_library f in
+    let ch = raw_intern_library f in
     let () = seek_in ch pos in
     let obj, _, digest' = System.marshal_in_segment f ch in
     let () = close_in ch in
@@ -130,7 +132,7 @@ let try_find_library dir =
   try find_library dir
   with Not_found ->
     errorlabstrm "Library.find_library"
-      (str "Unknown library " ++ str (DirPath.to_string dir))
+      (str "Unknown library " ++ pr_dirpath dir)
 
 let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
@@ -169,9 +171,8 @@ let register_loaded_library m =
     let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
-    (* This will not produce errors or warnings if the native compiler was
-       not enabled *)
-    Nativelib.link_library ~prefix ~dirname ~basename:f
+    if not Coq_config.no_native_compiler then
+      Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
     | [] -> link m; [libname]
@@ -284,28 +285,18 @@ let locate_absolute_library dir =
     with Not_found -> [] in
   match find ".vo" @ find ".vio" with
   | [] -> raise LibNotFound
-  | [file] -> dir, file
+  | [file] -> file
   | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
        msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
          str vo ++ str " because it is more recent");
-       dir, vi
-  | [vo;vi] -> dir, vo
+       vi
+  | [vo;vi] -> vo
   | _ -> assert false
 
 let locate_qualified_library ?root ?(warn = true) qid =
   (* Search library in loadpath *)
   let dir, base = repr_qualid qid in
-  let loadpath = match root with
-  | None -> Loadpath.expand_path dir
-  | Some root ->
-    let filter path =
-      if is_dirpath_prefix_of root path then
-        let path = drop_dirpath_prefix root path in
-        is_dirpath_suffix_of dir path
-      else false
-    in
-    Loadpath.filter_path filter
-  in
+  let loadpath = Loadpath.expand_path ?root dir in
   let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
   let find ext =
     try
@@ -434,7 +425,7 @@ let mk_summary m = {
 }
 
 let intern_from_file f =
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (lsd : seg_sum), _, digest_lsd = System.marshal_in_segment f ch in
   let (lmd : seg_lib delayed) = in_delayed f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
@@ -457,7 +448,7 @@ let intern_from_file f =
 module DPMap = Map.Make(DirPath)
 
 let rec intern_library (needed, contents) (dir, f) from =
-  Pp.feedback(Feedback.FileDependency (from, f));
+  Pp.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
@@ -465,6 +456,7 @@ let rec intern_library (needed, contents) (dir, f) from =
   try (DPMap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
+  let f = match f with Some f -> f | None -> try_locate_absolute_library dir in
   let m = intern_from_file f in
   if not (DirPath.equal dir m.library_name) then
     errorlabstrm "load_physical_library"
@@ -479,51 +471,19 @@ and intern_library_deps libs dir m from =
   (dir :: needed, DPMap.add dir m contents )
 
 and intern_mandatory_library caller from libs (dir,d) =
-  let digest, libs = intern_library libs (try_locate_absolute_library dir) from in
+  let digest, libs = intern_library libs (dir, None) from in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    errorlabstrm "" (str "Compiled library " ++ str (DirPath.to_string caller) ++ str ".vo makes inconsistent assumptions over library " ++ str (DirPath.to_string dir));
+    errorlabstrm "" (str "Compiled library " ++ pr_dirpath caller ++ str ".vo makes inconsistent assumptions over library " ++ pr_dirpath dir);
   libs
 
-let rec_intern_library libs mref =
-  let _, libs = intern_library libs mref None in
+let rec_intern_library libs (dir, f) =
+  let _, libs = intern_library libs (dir, Some f) None in
   libs
-
-let check_library_short_name f dir = function
-  | Some id when not (Id.equal id (snd (split_dirpath dir))) ->
-      errorlabstrm "check_library_short_name"
-      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
-      pr_dirpath dir ++ spc () ++ str "and not library" ++ spc () ++
-      pr_id id)
-  | _ -> ()
-
-let rec_intern_by_filename_only id f =
-  let m = try intern_from_file f with Sys_error s -> error s in
-  (* Only the base name is expected to match *)
-  check_library_short_name f m.library_name id;
-  (* We check no other file containing same library is loaded *)
-  if library_is_loaded m.library_name then
-    begin
-      msg_warning
-	(pr_dirpath m.library_name ++ str " is already loaded from file " ++
-	str (library_full_filename m.library_name));
-      m.library_name, []
-    end
- else
-    let needed, contents = intern_library_deps ([], DPMap.empty) m.library_name m (Some f) in
-    let needed = List.map (fun dir -> dir, DPMap.find dir contents) needed in
-    m.library_name, needed
 
 let native_name_from_filename f =
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (lmd : seg_sum), pos, digest_lmd = System.marshal_in_segment f ch in
   Nativecode.mod_uid_of_dirpath lmd.md_name
-
-let rec_intern_library_from_file idopt f =
-  (* A name is specified, we have to check it contains library id *)
-  let paths = Loadpath.get_paths () in
-  let _, f =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".vo") in
-  rec_intern_by_filename_only idopt f
 
 (**********************************************************************)
 (*s [require_library] loads and possibly opens a library. This is a
@@ -585,6 +545,8 @@ let in_require : require_obj -> obj =
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)
 
+let (f_xml_require, xml_require) = Hook.make ~default:ignore ()
+
 let require_library_from_dirpath modrefl export =
   let needed, contents = List.fold_left rec_intern_library ([], DPMap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
@@ -598,18 +560,7 @@ let require_library_from_dirpath modrefl export =
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
-  add_frozen_state ()
-
-let require_library_from_file idopt file export =
-  let modref,needed = rec_intern_library_from_file idopt file in
-  let needed = List.rev_map snd needed in
-  if Lib.is_module_or_modtype () then begin
-    add_anonymous_leaf (in_require (needed,[modref],None));
-    Option.iter (fun exp -> add_anonymous_leaf (in_import_library ([modref],exp)))
-      export
-  end
-  else
-    add_anonymous_leaf (in_require (needed,[modref],export));
+    if !Flags.xml_export then List.iter (Hook.get f_xml_require) modrefl;
   add_frozen_state ()
 
 (* the function called by Vernacentries.vernac_import *)
@@ -618,7 +569,7 @@ let safe_locate_module (loc,qid) =
   try Nametab.locate_module qid
   with Not_found ->
     user_err_loc
-      (loc,"import_library", str (string_of_qualid qid) ++ str " is not a module")
+      (loc,"import_library", pr_qualid qid ++ str " is not a module")
 
 let import_module export modl =
   (* Optimization: libraries in a raw in the list are imported
@@ -643,7 +594,7 @@ let import_module export modl =
             try Declaremods.import_module export mp; aux [] l
             with Not_found ->
               user_err_loc (loc,"import_library",
-                str (string_of_qualid dir) ++ str " is not a module"))
+                pr_qualid dir ++ str " is not a module"))
     | [] -> flush acc
   in aux [] modl
 
@@ -653,9 +604,9 @@ let import_module export modl =
 let check_coq_overwriting p id =
   let l = DirPath.repr p in
   let is_empty = match l with [] -> true | _ -> false in
-  if not !Flags.boot && not is_empty && String.equal (Id.to_string (List.last l)) "Coq" then
+  if not !Flags.boot && not is_empty && Id.equal (List.last l) coq_root then
     errorlabstrm ""
-      (str "Cannot build module " ++ str (DirPath.to_string p) ++ str "." ++ pr_id id ++ str "." ++ spc () ++
+      (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ pr_id id ++ str "." ++ spc () ++
       str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
 
 (* Verifies that a string starts by a letter and do not contain
@@ -678,29 +629,27 @@ let check_module_name s =
     | c -> err c
 
 let start_library f =
-  let paths = Loadpath.get_paths () in
-  let _, longf =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+  let () = if not (Sys.file_exists f) then
+    errorlabstrm "" (hov 0 (str "Can't find file" ++ spc () ++ str f))
+  in
   let ldir0 =
     try
-      let lp = Loadpath.find_load_path (Filename.dirname longf) in
+      let lp = Loadpath.find_load_path (Filename.dirname f) in
       Loadpath.logical lp
     with Not_found -> Nameops.default_root_prefix
   in
-  let file = Filename.basename f in
+  let file = Filename.chop_extension (Filename.basename f) in
   let id = Id.of_string file in
   check_module_name file;
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
   Declaremods.start_library ldir;
-  ldir,longf
+  ldir
 
 let load_library_todo f =
-  let paths = Loadpath.get_paths () in
-  let _, longf =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+  let longf = Loadpath.locate_file (f^".v") in
   let f = longf^"io" in
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (s0 : seg_sum), _, _ = System.marshal_in_segment f ch in
   let (s1 : seg_lib), _, _ = System.marshal_in_segment f ch in
   let (s2 : seg_univ option), _, _ = System.marshal_in_segment f ch in
@@ -788,7 +737,8 @@ let save_library_to ?todo dir f otab =
   if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
     error_recursively_dependent_library dir;
   (* Open the vo file and write the magic number *)
-  let (f',ch) = raw_extern_library f in
+  let f' = f in
+  let ch = raw_extern_library f' in
   try
     (* Writing vo payload *)
     System.marshal_out_segment f' ch (sd           : seg_sum);
@@ -811,7 +761,8 @@ let save_library_to ?todo dir f otab =
     iraise reraise
 
 let save_library_raw f sum lib univs proofs =
-  let (f',ch) = raw_extern_library (f^"o") in
+  let f' = f^"o" in
+  let ch = raw_extern_library f' in
   System.marshal_out_segment f' ch (sum        : seg_sum);
   System.marshal_out_segment f' ch (lib        : seg_lib);
   System.marshal_out_segment f' ch (Some univs : seg_univ option);
@@ -819,13 +770,6 @@ let save_library_raw f sum lib univs proofs =
   System.marshal_out_segment f' ch (None       : 'tasks option);
   System.marshal_out_segment f' ch (proofs     : seg_proofs);
   close_out ch
-
-(************************************************************************)
-(*s Display the memory use of a library. *)
-
-open Printf
-
-let mem s = Pp.mt ()
 
 module StringOrd = struct type t = string let compare = String.compare end
 module StringSet = Set.Make(StringOrd)

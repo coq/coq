@@ -426,7 +426,7 @@ let subst_lazy_constr sub = function
 let indirect_opaque_access =
   ref ((fun dp i -> assert false) : DirPath.t -> int -> constr)
 let indirect_opaque_univ_access =
-  ref ((fun dp i -> assert false) : DirPath.t -> int -> Univ.constraints)
+  ref ((fun dp i -> assert false) : DirPath.t -> int -> Univ.ContextSet.t)
 
 let force_lazy_constr = function
   | Indirect (l,dp,i) ->
@@ -435,7 +435,7 @@ let force_lazy_constr = function
 
 let force_lazy_constr_univs = function
   | OpaqueDef (Indirect (l,dp,i)) -> !indirect_opaque_univ_access dp i
-  | _ -> Univ.empty_constraint
+  | _ -> Univ.ContextSet.empty
 
 let subst_constant_def sub = function
   | Undef inl -> Undef inl
@@ -456,6 +456,8 @@ let constant_has_body cb = match cb.const_body with
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
   | Def _ | Undef _ -> false
+
+let opaque_univ_context cb = force_lazy_constr_univs cb.const_body
 
 let subst_rel_declaration sub (id,copt,t as x) =
   let copt' = Option.smartmap (subst_mps sub) copt in
@@ -515,11 +517,8 @@ let map_decl_arity f g = function
   | RegularArity a -> RegularArity (f a)
   | TemplateArity a -> TemplateArity (g a)
 
-
-let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = Option.smartmap (subst_mps sub) copt in
-  let t' = subst_mps sub t in
-  if copt == copt' && t == t' then x else (id,copt',t')
+let subst_rel_declaration sub =
+  Term.map_rel_decl (subst_mps sub)
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 

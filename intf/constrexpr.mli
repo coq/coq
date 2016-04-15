@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -32,21 +32,23 @@ type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
-type prim_token = Numeral of Bigint.bigint | String of string
+type prim_token =
+  | Numeral of Bigint.bigint (** representation of integer literals that appear in Coq scripts. *)
+  | String of string
 
 type raw_cases_pattern_expr =
   | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
   | RCPatCstr of Loc.t * Globnames.global_reference
     * raw_cases_pattern_expr list * raw_cases_pattern_expr list
-  (** [CPatCstr (_, Inl c, l1, l2)] represents (@c l1) l2 *)
+  (** [CPatCstr (_, c, l1, l2)] represents ((@c l1) l2) *)
   | RCPatAtom of Loc.t * Id.t option
   | RCPatOr of Loc.t * raw_cases_pattern_expr list
 
 type cases_pattern_expr =
   | CPatAlias of Loc.t * cases_pattern_expr * Id.t
   | CPatCstr of Loc.t * reference
-    * cases_pattern_expr list * cases_pattern_expr list
-  (** [CPatCstr (_, Inl c, l1, l2)] represents (@c l1) l2 *)
+    * cases_pattern_expr list option * cases_pattern_expr list
+  (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
   | CPatAtom of Loc.t * reference option
   | CPatOr of Loc.t * cases_pattern_expr list
   | CPatNotation of Loc.t * notation * cases_pattern_notation_substitution
@@ -73,9 +75,15 @@ type constr_expr =
   | CAppExpl of Loc.t * (proj_flag * reference * instance_expr option) * constr_expr list
   | CApp of Loc.t * (proj_flag * constr_expr) *
       (constr_expr * explicitation located option) list
-  | CRecord of Loc.t * constr_expr option * (reference * constr_expr) list
-  | CCases of Loc.t * case_style * constr_expr option *
-      case_expr list * branch_expr list
+  | CRecord of Loc.t * (reference * constr_expr) list
+
+  (* representation of the "let" and "match" constructs *)
+  | CCases of Loc.t                 (* position of the "match" keyword *)
+	      * case_style          (* determines whether this value represents "let" or "match" construct *)
+	      * constr_expr option  (* return-clause *)
+	      * case_expr list
+	      * branch_expr list    (* branches *)
+
   | CLetTuple of Loc.t * Name.t located list * (Name.t located option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of Loc.t * constr_expr * (Name.t located option * constr_expr option)
@@ -90,8 +98,9 @@ type constr_expr =
   | CPrim of Loc.t * prim_token
   | CDelimiters of Loc.t * string * constr_expr
 
-and case_expr =
-  constr_expr * (Name.t located option * cases_pattern_expr option)
+and case_expr = constr_expr                 (* expression that is being matched *)
+	      * Name.t located option       (* as-clause *)
+	      * cases_pattern_expr option   (* in-clause *)
 
 and branch_expr =
   Loc.t * cases_pattern_expr list located list * constr_expr
@@ -121,7 +130,7 @@ and constr_notation_substitution =
     constr_expr list list * (** for recursive notations *)
     local_binder list list (** for binders subexpressions *)
 
-type typeclass_constraint = Name.t located * binding_kind * constr_expr
+type typeclass_constraint = (Name.t located * Id.t located list option) * binding_kind * constr_expr
 
 and typeclass_context = typeclass_constraint list
 

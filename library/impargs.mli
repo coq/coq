@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -59,8 +59,8 @@ type implicit_explanation =
 	  inferable following a rigid path (useful to know how to print a
 	  partial application) *)
   | Manual
-      (** means the argument has been explicitely set as implicit. *)
-      
+      (** means the argument has been explicitly set as implicit. *)
+
 (**  We also consider arguments inferable from the conclusion but it is
      operational only if [conclusion_matters] is true. *)
 

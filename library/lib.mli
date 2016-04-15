@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -55,6 +55,7 @@ val segment_of_objects :
 
 val add_leaf : Names.Id.t -> Libobject.obj -> Libnames.object_name
 val add_anonymous_leaf : Libobject.obj -> unit
+val pull_to_head : Libnames.object_name -> unit
 
 (** this operation adds all objects with the same name and calls [load_object]
    for each of them *)
@@ -156,6 +157,10 @@ val unfreeze : frozen -> unit
 
 val init : unit -> unit
 
+(** XML output hooks *)
+val xml_open_section : (Names.Id.t -> unit) Hook.t
+val xml_close_section : (Names.Id.t -> unit) Hook.t
+
 (** {6 Section management for discharge } *)
 type variable_info = Names.Id.t * Decl_kinds.binding_kind *
     Term.constr option * Term.types
@@ -163,7 +168,7 @@ type variable_context = variable_info list
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 
 val instance_from_variable_context : variable_context -> Names.Id.t array
-val named_of_variable_context : variable_context -> Context.named_context
+val named_of_variable_context : variable_context -> Context.Named.t
 
 val section_segment_of_constant : Names.constant -> abstr_info
 val section_segment_of_mutual_inductive: Names.mutual_inductive -> abstr_info
@@ -172,10 +177,11 @@ val section_instance : Globnames.global_reference -> Univ.universe_instance * Na
 val is_in_section : Globnames.global_reference -> bool
 
 val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.universe_context_set -> unit
-
-val add_section_constant : bool (* is_projection *) -> 
-  Names.constant -> Context.named_context -> unit
-val add_section_kn : Names.mutual_inductive -> Context.named_context -> unit
+val add_section_context : Univ.universe_context_set -> unit
+val add_section_constant : Decl_kinds.polymorphic ->
+  Names.constant -> Context.Named.t -> unit
+val add_section_kn : Decl_kinds.polymorphic ->
+  Names.mutual_inductive -> Context.Named.t -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 
 (** {6 Discharge: decrease the section level if in the current section } *)
@@ -188,6 +194,6 @@ val discharge_inductive : Names.inductive -> Names.inductive
 (* discharging a constant in one go *)
 val full_replacement_context : unit -> Opaqueproof.work_list list
 val full_section_segment_of_constant :
-  Names.constant -> (Context.named_context -> Context.named_context) list
+  Names.constant -> (Context.Named.t -> Context.Named.t) list
 
 

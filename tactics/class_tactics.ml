@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -140,58 +140,61 @@ let rec eq_constr_mod_evars x y =
   | _, _ -> compare_constr eq_constr_mod_evars x y
 
 let progress_evars t =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let check =
-      Proofview.Goal.nf_enter begin fun gl' ->
+      Proofview.Goal.nf_enter { enter = begin fun gl' ->
         let newconcl = Proofview.Goal.concl gl' in
         if eq_constr_mod_evars concl newconcl
         then Tacticals.New.tclFAIL 0 (str"No progress made (modulo evars)")
         else Proofview.tclUNIT ()
-      end
+      end }
     in t <*> check
-  end
+  end }
 
 
 let e_give_exact flags poly (c,clenv) gl =
+  let (c, _, _) = c in
   let c, gl =
     if poly then
       let clenv', subst = Clenv.refresh_undefined_univs clenv in
-      let clenv' = connect_clenv gl clenv' in
+      let evd = evars_reset_evd ~with_conv_pbs:true gl.sigma clenv'.evd in
       let c = Vars.subst_univs_level_constr subst c in
-	c, {gl with sigma = clenv'.evd}
+	c, {gl with sigma = evd}
     else c, gl
   in
   let t1 = pf_unsafe_type_of gl c in
     tclTHEN (Proofview.V82.of_tactic (Clenvtac.unify ~flags t1)) (exact_no_check c) gl
 
-let unify_e_resolve poly flags (c,clenv) gls =
-  let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
-  let clenv' = connect_clenv gls clenv' in
-  let clenv' = clenv_unique_resolver ~flags clenv' gls in
-  Proofview.V82.of_tactic (Clenvtac.clenv_refine true ~with_classes:false clenv') gls
+let unify_e_resolve poly flags = { enter = begin fun gls (c,clenv) ->
+  let clenv', c = connect_hint_clenv poly c clenv gls in
+  let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags clenv') gls in
+    Clenvtac.clenv_refine true ~with_classes:false clenv'
+  end }
 
-let unify_resolve poly flags (c,clenv) gls =
-  let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
-  let clenv' = connect_clenv gls clenv' in
-  let clenv' = clenv_unique_resolver ~flags clenv' gls in
-  Proofview.V82.of_tactic 
-    (Clenvtac.clenv_refine false ~with_classes:false clenv') gls
+let unify_resolve poly flags = { enter = begin fun gls (c,clenv) ->
+  let clenv', _ = connect_hint_clenv poly c clenv gls in
+  let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags clenv') gls in
+    Clenvtac.clenv_refine false ~with_classes:false clenv'
+  end }
 
-let clenv_of_prods poly nprods (c, clenv) gls =
+let clenv_of_prods poly nprods (c, clenv) gl =
+  let (c, _, _) = c in
   if poly || Int.equal nprods 0 then Some clenv
   else
-    let ty = pf_unsafe_type_of gls c in
+    let ty = Tacmach.New.pf_unsafe_type_of gl c in
     let diff = nb_prod ty - nprods in
       if Pervasives.(>=) diff 0 then
         (* Was Some clenv... *)
-	Some (mk_clenv_from_n gls (Some diff) (c,ty))
+	Some (Tacmach.New.of_old (fun gls -> mk_clenv_from_n gls (Some diff) (c,ty)) gl)
       else None
 
-let with_prods nprods poly (c, clenv) f gls =
-  match clenv_of_prods poly nprods (c, clenv) gls with
-  | None -> tclFAIL 0 (str"Not enough premisses") gls
-  | Some clenv' -> f (c, clenv') gls
+let with_prods nprods poly (c, clenv) f =
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  match clenv_of_prods poly nprods (c, clenv) gl with
+  | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
+  | Some clenv' -> f.enter gl (c, clenv')
+  end }
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 
@@ -203,7 +206,7 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
-	      (Hint_db.add_list hintl local_db) g'))) ::
+	      (Hint_db.add_list (pf_env g') (project g') hintl local_db) g'))) ::
     (List.map (fun (x,_,_,_,_) -> x) 
      (e_trivial_resolve db_list local_db (project goal) (pf_concl goal)))
   in
@@ -235,13 +238,14 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
   let tac_of_hint =
     fun (flags, {pri = b; pat = p; poly = poly; code = t; name = name}) ->
       let tac = function
-      | Res_pf (term,cl) -> Proofview.V82.tactic (with_prods nprods poly (term,cl) (unify_resolve poly flags))
-      | ERes_pf (term,cl) -> Proofview.V82.tactic (with_prods nprods poly (term,cl) (unify_e_resolve poly flags))
+      | Res_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_resolve poly flags)
+      | ERes_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_e_resolve poly flags)
       | Give_exact c -> Proofview.V82.tactic (e_give_exact flags poly c)
       | Res_pf_THEN_trivial_fail (term,cl) ->
-          Proofview.V82.tactic (tclTHEN (with_prods nprods poly (term,cl) (unify_e_resolve poly flags))
-            (if complete then tclIDTAC else e_trivial_fail_db db_list local_db))
-      | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c]))
+         Proofview.V82.tactic (tclTHEN
+				 (Proofview.V82.of_tactic ((with_prods nprods poly (term,cl) (unify_e_resolve poly flags))))
+				 (if complete then tclIDTAC else e_trivial_fail_db db_list local_db))
+      | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (Proofview.V82.of_tactic (unfold_in_concl [AllOccurrences,c])))
       | Extern tacast -> conclPattern concl p tacast
       in
       let tac = Proofview.V82.of_tactic (run_hint t tac) in
@@ -298,8 +302,10 @@ type ('a,'b) optionk2 =
   | Nonek2 of failure
   | Somek2 of 'a * 'b * ('a,'b) optionk2 fk
 
-let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
-  let cty = Evarutil.nf_evar sigma cty in
+let make_resolve_hyp env sigma st flags only_classes pri decl =
+  let open Context.Named.Declaration in
+  let id = get_id decl in
+  let cty = Evarutil.nf_evar sigma (get_type decl) in
   let rec iscl env ty =
     let ctx, ar = decompose_prod_assum ty in
       match kind_of_term (fst (decompose_app ar)) with
@@ -341,9 +347,10 @@ let make_hints g st only_classes sign =
     List.fold_left
     (fun (paths, hints) hyp ->
       let consider =
-	try let (_, b, t) = Global.lookup_named (pi1 hyp) in
+        let open Context.Named.Declaration in
+	try let t = Global.lookup_named (get_id hyp) |> get_type in
 	      (* Section variable, reindex only if the type changed *)
-	      not (Term.eq_constr t (pi3 hyp))
+	      not (Term.eq_constr t (get_type hyp))
 	with Not_found -> true
      in
       if consider then 
@@ -353,7 +360,7 @@ let make_hints g st only_classes sign =
 	  (PathOr (paths, path), hint @ hints)
       else (paths, hints))
     (PathEmpty, []) sign
-  in Hint_db.add_list hintlist (Hint_db.empty st true)
+  in Hint_db.add_list (pf_env g) (project g) hintlist (Hint_db.empty st true)
 
 let make_autogoal_hints =
   let cache = ref (true, Environ.empty_named_context_val, 
@@ -388,7 +395,7 @@ let intro_tac : atac =
 	  let context = Environ.named_context_of_val (Goal.V82.hyps s g') in
 	  let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints)
 	    (true,false,false) info.only_classes None (List.hd context) in
-	  let ldb = Hint_db.add_list hint info.hints in
+	  let ldb = Hint_db.add_list env s hint info.hints in
 	    (g', { info with is_evar = None; hints = ldb; auto_last_tac = lazy (str"intro") })) gls
       in {it = gls'; sigma = s;})
 
@@ -564,14 +571,6 @@ let rec fix (t : 'a tac) : 'a tac =
 let rec fix_limit limit (t : 'a tac) : 'a tac =
   if Int.equal limit 0 then fail_tac ReachedLimit
   else then_tac t { skft = fun sk fk -> (fix_limit (pred limit) t).skft sk fk }
-
-let fix_iterative' t =
-  let rec aux depth =
-    { skft = fun sk fk gls -> 
-      (fix_limit depth t).skft sk
-	(function NotApplicable as e -> fk e
-	  | ReachedLimit -> (aux (succ depth)).skft sk fk gls) gls }
-  in aux 1
 
 let fix_iterative t =
   let rec aux depth =
@@ -900,4 +899,5 @@ let autoapply c i gl =
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
-  unify_e_resolve false flags (c,ce) gl
+  let tac = { enter = fun gl -> (unify_e_resolve false flags).enter gl ((c,cty,Univ.ContextSet.empty),ce) } in
+  Proofview.V82.of_tactic (Proofview.Goal.nf_enter tac) gl

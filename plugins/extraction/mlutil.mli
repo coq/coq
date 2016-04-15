@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -67,7 +67,8 @@ val type_expunge : abbrev_map -> ml_type -> ml_type
 val type_expunge_from_sign : abbrev_map -> signature -> ml_type -> ml_type
 
 val eq_ml_type : ml_type -> ml_type -> bool
-val isDummy : ml_type -> bool
+val isTdummy : ml_type -> bool
+val isMLdummy : ml_ast -> bool
 val isKill : sign -> bool
 
 val case_expunge : signature -> ml_ast -> ml_ident list * ml_ast
@@ -110,6 +111,8 @@ val ast_subst : ml_ast -> ml_ast -> ml_ast
 
 val ast_glob_subst : ml_ast Refmap'.t -> ml_ast -> ml_ast
 
+val dump_unused_vars : ml_ast -> ml_ast
+
 val normalize : ml_ast -> ml_ast
 val optimize_fix : ml_ast -> ml_ast
 val inline : global_reference -> ml_ast -> bool
@@ -125,8 +128,8 @@ exception Impossible
 type sign_kind =
   | EmptySig
   | NonLogicalSig (* at least a [Keep] *)
-  | UnsafeLogicalSig (* No [Keep], at least a [Kill Kother] *)
   | SafeLogicalSig (* only [Kill Ktype] *)
+  | UnsafeLogicalSig (* No [Keep], not all [Kill Ktype] *)
 
 val sign_kind : signature -> sign_kind
 

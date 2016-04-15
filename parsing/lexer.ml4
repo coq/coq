@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,6 @@
 
 open Pp
 open Util
-open Compat
 open Tok
 
 (* Dictionaries: trees annotated with string options, each node being a map
@@ -70,7 +69,7 @@ let ttree_remove ttree str =
   remove ttree 0
 
 
-(* Errors occuring while lexing (explained as "Lexer error: ...") *)
+(* Errors occurring while lexing (explained as "Lexer error: ...") *)
 
 module Error = struct
 
@@ -81,6 +80,7 @@ module Error = struct
     | Undefined_token
     | Bad_token of string
     | UnsupportedUnicode of int
+    | IncorrectIndex of char list
 
   exception E of t
 
@@ -93,7 +93,16 @@ module Error = struct
          | Undefined_token -> "Undefined token"
          | Bad_token tok -> Format.sprintf "Bad token %S" tok
          | UnsupportedUnicode x ->
-             Printf.sprintf "Unsupported Unicode character (0x%x)" x)
+             Printf.sprintf "Unsupported Unicode character (0x%x)" x
+         | IncorrectIndex l ->
+             let l = List.map (fun c -> Char.code c - 48) l in
+             let s = match l with
+             | c::d::l ->
+                 let l = List.map string_of_int (List.rev l) in
+                 String.concat "" l ^ CString.ordinal (10 * d + c)
+             | [c] -> CString.ordinal c
+             | [] -> assert false in
+             Printf.sprintf "%s expected" s)
 
   (* Require to fix the Camlp4 signature *)
   let print ppf x = Pp.pp_with ppf (Pp.str (to_string x))
@@ -263,9 +272,38 @@ let rec ident_tail len = parser
           ident_tail (nstore n len s) s
       | _ -> len
 
-let rec number len = parser
-  | [< ' ('0'..'9' as c); s >] -> number (store len c) s
-  | [< >] -> len
+let check_no_char s =
+  match Stream.npeek 3 s with
+  | [_;_;('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_')] -> false
+  | [_;_;_] -> true
+  | [_;_] -> true
+  | _ -> assert false
+
+let is_teen = function
+  | _::'1'::l -> true
+  | _ -> false
+
+let is_gt3 = function
+  | c::_ when c == '1' || c == '2' || c == '3' -> false
+  | _ -> true
+
+let check_gt3 l loc len =
+  if not (l == ['0']) && (is_teen l || is_gt3 l) then (false, len)
+  else err loc (IncorrectIndex l)
+
+let check_n n l loc len =
+  if List.hd l == n && not (is_teen l) then (false, len)
+  else err loc (IncorrectIndex l)
+
+let rec number_or_index bp l len = parser
+  | [< ' ('0'..'9' as c); s >] -> number_or_index bp (c::l) (store len c) s
+  | [< s >] ep ->
+      match Stream.npeek 2 s with
+      | ['s';'t'] when check_no_char s -> njunk 2 s; check_n '1' l (bp,ep) len
+      | ['n';'d'] when check_no_char s -> njunk 2 s; check_n '2' l (bp,ep) len
+      | ['r';'d'] when check_no_char s -> njunk 2 s; check_n '3' l (bp,ep) len
+      | ['t';'h'] when check_no_char s -> njunk 2 s; check_gt3 l (bp,ep) len
+      | _ -> true, len
 
 let rec string in_comments bp len = parser
   | [< ''"'; esc=(parser [<''"' >] -> true | [< >] -> false); s >] ->
@@ -297,6 +335,9 @@ let rec string in_comments bp len = parser
             string in_comments bp (store len '*') s) s
   | [< 'c; s >] -> string in_comments bp (store len c) s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
+
+(* Hook for exporting comment into xml theory files *)
+let (f_xml_output_comment, xml_output_comment) = Hook.make ~default:ignore ()
 
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
@@ -340,6 +381,9 @@ let null_comment s =
 
 let comment_stop ep =
   let current_s = Buffer.contents current in
+  if !Flags.xml_export && Buffer.length current > 0 &&
+    (!between_com || not(null_comment current_s)) then
+      Hook.get f_xml_output_comment current_s;
   (if Flags.do_beautify() && Buffer.length current > 0 &&
     (!between_com || not(null_comment current_s)) then
     let bp = match !comment_begin with
@@ -449,7 +493,6 @@ let process_chars bp c cs =
         err (bp, ep') Undefined_token
 
 let token_of_special c s = match c with
-  | '$' -> METAIDENT s
   | '.' -> FIELD s
   | _ -> assert false
 
@@ -488,8 +531,6 @@ let blank_or_eof cs =
 let rec next_token = parser bp
   | [< '' ' | '\t' | '\n' |'\r' as c; s >] ->
       comm_loc bp; push_char c; next_token s
-  | [< ''$' as c; t = parse_after_special c bp >] ep ->
-      comment_stop bp; (t, (ep, bp))
   | [< ''.' as c; t = parse_after_special c bp; s >] ep ->
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
@@ -514,9 +555,9 @@ let rec next_token = parser bp
       let id = get_buff len in
       comment_stop bp;
       (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
-  | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
+  | [< ' ('0'..'9' as c); (b,len) = number_or_index bp [c] (store 0 c) >] ep ->
       comment_stop bp;
-      (INT (get_buff len), (bp, ep))
+      (if b then INT (get_buff len) else INDEX (get_buff len)), (bp, ep)
   | [< ''\"'; len = string None bp 0 >] ep ->
       comment_stop bp;
       (STRING (get_buff len), (bp, ep))
@@ -565,7 +606,7 @@ let loct_add loct i loc = Hashtbl.add loct i loc
 
 let current_location_table = ref (loct_create ())
 
-type location_table = (int, CompatLoc.t) Hashtbl.t
+type location_table = (int, Compat.CompatLoc.t) Hashtbl.t
 let location_table () = !current_location_table
 let restore_location_table t = current_location_table := t
 
@@ -602,7 +643,7 @@ let func cs =
     Stream.from
       (fun i ->
          let (tok, loc) = next_token cs in
-         loct_add loct i (make_loc loc); Some tok)
+         loct_add loct i (Compat.make_loc loc); Some tok)
   in
   current_location_table := loct;
   (ts, loct_func loct)
@@ -622,10 +663,10 @@ ELSE (* official camlp4 for ocaml >= 3.10 *)
 
 module M_ = Camlp4.ErrorHandler.Register (Error)
 
-module Loc = CompatLoc
+module Loc = Compat.CompatLoc
 module Token = struct
   include Tok (* Cf. tok.ml *)
-  module Loc = CompatLoc
+  module Loc = Compat.CompatLoc
   module Error = Camlp4.Struct.EmptyError
   module Filter = struct
     type token_filter = (Tok.t * Loc.t) Stream.t -> (Tok.t * Loc.t) Stream.t
@@ -643,7 +684,7 @@ let mk () _init_loc(*FIXME*) cs =
   let rec self =
     parser i
        [< (tok, loc) = next_token; s >] ->
-          let loc = make_loc loc in
+          let loc = Compat.make_loc loc in
             loct_add loct i loc;
             [< '(tok, loc); self s >]
       | [< >] -> [< >]
@@ -683,7 +724,7 @@ let strip s =
 
 let terminal s =
   let s = strip s in
-  let () = match s with "" -> Errors.error "empty token." | _ -> () in
+  let () = match s with "" -> failwith "empty token." | _ -> () in
   if is_ident_not_keyword s then IDENT s
   else if is_number s then INT s
   else KEYWORD s

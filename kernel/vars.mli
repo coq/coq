@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,6 @@
 
 open Names
 open Constr
-open Context
 
 (** {6 Occur checks } *)
 
@@ -42,32 +41,85 @@ val liftn : int -> int -> constr -> constr
 (** [lift n c] lifts by [n] the positive indexes in [c] *)
 val lift : int -> constr -> constr
 
-(** [substnl [a1;...;an] k c] substitutes in parallel [a1],...,[an]
+(** The type [substl] is the type of substitutions [u₁..un] of type
+    some context Δ and defined in some environment Γ. Typing of
+    substitutions is defined by:
+    - Γ ⊢ ∅ : ∅,
+    - Γ ⊢ u₁..u{_n-1} : Δ and Γ ⊢ u{_n} : An\[u₁..u{_n-1}\] implies
+      Γ ⊢ u₁..u{_n} : Δ,x{_n}:A{_n}
+    - Γ ⊢ u₁..u{_n-1} : Δ and Γ ⊢ un : A{_n}\[u₁..u{_n-1}\] implies
+      Γ ⊢ u₁..u{_n} : Δ,x{_n}:=c{_n}:A{_n} when Γ ⊢ u{_n} ≡ c{_n}\[u₁..u{_n-1}\]
+
+    Note that [u₁..un] is represented as a list with [un] at the head of
+    the list, i.e. as [[un;...;u₁]]. *)
+
+type substl = constr list
+
+(** Let [Γ] be a context interleaving declarations [x₁:T₁..xn:Tn]
+   and definitions [y₁:=c₁..yp:=cp] in some context [Γ₀]. Let
+   [u₁..un] be an {e instance} of [Γ], i.e. an instance in [Γ₀]
+   of the [xi]. Then, [subst_of_rel_context_instance Γ u₁..un]
+   returns the corresponding {e substitution} of [Γ], i.e. the
+   appropriate interleaving [σ] of the [u₁..un] with the [c₁..cp],
+   all of them in [Γ₀], so that a derivation [Γ₀, Γ, Γ₁|- t:T]
+   can be instantiated into a derivation [Γ₀, Γ₁ |- t[σ]:T[σ]] using
+   [substnl σ |Γ₁| t].
+   Note that the instance [u₁..un] is represented starting with [u₁],
+   as if usable in [applist] while the substitution is
+   represented the other way round, i.e. ending with either [u₁] or
+   [c₁], as if usable for [substl]. *)
+val subst_of_rel_context_instance : Context.Rel.t -> constr list -> substl
+
+(** For compatibility: returns the substitution reversed *)
+val adjust_subst_to_rel_context : Context.Rel.t -> constr list -> constr list
+
+(** [substnl [a₁;...;an] k c] substitutes in parallel [a₁],...,[an]
     for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
-    accordingly indexes in [a1],...,[an] and [c] *)
-val substnl : constr list -> int -> constr -> constr
-val substl : constr list -> constr -> constr
+    accordingly indexes in [an],...,[a1] and [c]. In terms of typing, if
+    Γ ⊢ a{_n}..a₁ : Δ and Γ, Δ, Γ' ⊢ c : T with |Γ'|=k, then
+    Γ, Γ' ⊢ [substnl [a₁;...;an] k c] : [substnl [a₁;...;an] k T]. *)
+val substnl : substl -> int -> constr -> constr
+
+(** [substl σ c] is a short-hand for [substnl σ 0 c] *)
+val substl : substl -> constr -> constr
+
+(** [substl a c] is a short-hand for [substnl [a] 0 c] *)
 val subst1 : constr -> constr -> constr
 
-val substnl_decl : constr list -> int -> rel_declaration -> rel_declaration
-val substl_decl : constr list -> rel_declaration -> rel_declaration
-val subst1_decl : constr -> rel_declaration -> rel_declaration
+(** [substnl_decl [a₁;...;an] k Ω] substitutes in parallel [a₁], ..., [an]
+    for respectively [Rel(k+1)], ..., [Rel(k+n)] in [Ω]; it relocates
+    accordingly indexes in [a₁],...,[an] and [c]. In terms of typing, if
+    Γ ⊢ a{_n}..a₁ : Δ and Γ, Δ, Γ', Ω ⊢ with |Γ'|=[k], then
+    Γ, Γ', [substnl_decl [a₁;...;an]] k Ω ⊢. *)
+val substnl_decl : substl -> int -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
 
-val substnl_named_decl : constr list -> int -> named_declaration -> named_declaration
-val subst1_named_decl : constr -> named_declaration -> named_declaration
-val substl_named_decl : constr list -> named_declaration -> named_declaration
+(** [substl_decl σ Ω] is a short-hand for [substnl_decl σ 0 Ω] *)
+val substl_decl : substl -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
 
+(** [subst1_decl a Ω] is a short-hand for [substnl_decl [a] 0 Ω] *)
+val subst1_decl : constr -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
+
+(** [replace_vars k [(id₁,c₁);...;(idn,cn)] t] substitutes [Var idj] by
+    [cj] in [t]. *)
 val replace_vars : (Id.t * constr) list -> constr -> constr
-(** (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
-val subst_var : Id.t -> constr -> constr
 
-(** [subst_vars [id1;...;idn] t] substitute [VAR idj] by [Rel j] in [t]
-   if two names are identical, the one of least indice is kept *)
+(** [substn_vars k [id₁;...;idn] t] substitutes [Var idj] by [Rel j+k-1] in [t].
+   If two names are identical, the one of least index is kept. In terms of
+   typing, if Γ,x{_n}:U{_n},...,x₁:U₁,Γ' ⊢ t:T, together with id{_j}:T{_j} and
+   Γ,x{_n}:U{_n},...,x₁:U₁,Γ' ⊢ T{_j}\[id{_j+1}..id{_n}:=x{_j+1}..x{_n}\] ≡ Uj,
+   then Γ\\{id₁,...,id{_n}\},x{_n}:U{_n},...,x₁:U₁,Γ' ⊢ [substn_vars
+   (|Γ'|+1) [id₁;...;idn] t] : [substn_vars (|Γ'|+1) [id₁;...;idn]
+   T]. *)
+val substn_vars : int -> Id.t list -> constr -> constr
+
+(** [subst_vars [id1;...;idn] t] is a short-hand for [substn_vars
+   [id1;...;idn] 1 t]: it substitutes [Var idj] by [Rel j] in [t]. If
+   two names are identical, the one of least index is kept. *)
 val subst_vars : Id.t list -> constr -> constr
 
-(** [substn_vars n [id1;...;idn] t] substitute [VAR idj] by [Rel j+n-1] in [t]
-   if two names are identical, the one of least indice is kept *)
-val substn_vars : int -> Id.t list -> constr -> constr
+(** [subst_var id t] is a short-hand for [substn_vars [id] 1 t]: it
+    substitutes [Var id] by [Rel 1] in [t]. *)
+val subst_var : Id.t -> constr -> constr
 
 (** {3 Substitution of universes} *)
 
@@ -82,11 +134,11 @@ val subst_univs_constr : universe_subst -> constr -> constr
 (** Level substitutions for polymorphism. *)
 
 val subst_univs_level_constr : universe_level_subst -> constr -> constr
-val subst_univs_level_context : Univ.universe_level_subst -> rel_context -> rel_context
+val subst_univs_level_context : Univ.universe_level_subst -> Context.Rel.t -> Context.Rel.t
 
 (** Instance substitution for polymorphism. *)
 val subst_instance_constr : universe_instance -> constr -> constr
-val subst_instance_context : universe_instance -> rel_context -> rel_context
+val subst_instance_context : universe_instance -> Context.Rel.t -> Context.Rel.t
 
-type id_key = pconstant tableKey
+type id_key = constant tableKey
 val eq_id_key : id_key -> id_key -> bool

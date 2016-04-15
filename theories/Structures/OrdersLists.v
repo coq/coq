@@ -54,7 +54,7 @@ Hint Immediate In_eq Inf_lt.
 End OrderedTypeLists.
 
 
-(** * Results about keys and data as manipulated in MMaps. *)
+(** * Results about keys and data as manipulated in the future MMaps. *)
 
 Module KeyOrderedType(O:OrderedType).
  Include KeyDecidableType(O). (* provides eqk, eqke *)
@@ -76,7 +76,7 @@ Module KeyOrderedType(O:OrderedType).
  Instance ltk_compat' {elt} : Proper (eqke==>eqke==>iff) (@ltk elt).
  Proof. eapply subrelation_proper; eauto with *. Qed.
 
- (* Additionnal facts *)
+ (* Additional facts *)
 
  Instance pair_compat {elt} : Proper (O.eq==>Logic.eq==>eqke) (@pair key elt).
  Proof. apply pair_compat. Qed.

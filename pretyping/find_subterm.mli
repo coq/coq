@@ -1,13 +1,12 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
 open Locus
-open Context
 open Term
 open Evd
 open Pretype_errors
@@ -50,7 +49,7 @@ val replace_term_occ_modulo : occurrences or_like_first ->
 val replace_term_occ_decl_modulo :
   (occurrences * hyp_location_flag) or_like_first ->
   'a testing_function -> (unit -> constr) ->
-  named_declaration -> named_declaration
+  Context.Named.Declaration.t -> Context.Named.Declaration.t
 
 (** [subst_closed_term_occ occl c d] replaces occurrences of
     closed [c] at positions [occl] by [Rel 1] in [d] (see also Note OCC),
@@ -62,7 +61,7 @@ val subst_closed_term_occ : env -> evar_map -> occurrences or_like_first ->
     closed [c] at positions [occl] by [Rel 1] in [decl]. *)
 val subst_closed_term_occ_decl : env -> evar_map ->
   (occurrences * hyp_location_flag) or_like_first ->
-  constr -> named_declaration -> named_declaration * evar_map
+  constr -> Context.Named.Declaration.t -> Context.Named.Declaration.t * evar_map
 
 (** Miscellaneous *)
 val error_invalid_occurrence : int list -> 'a

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -391,7 +391,7 @@ rewrite <- (add_0_r (b*(a/b))) at 2.
 apply add_cancel_l.
 Qed.
 
-(** Some additionnal inequalities about div. *)
+(** Some additional inequalities about div. *)
 
 Theorem div_lt_upper_bound:
   forall a b q, 0<b -> a < b*q -> a/b < q.

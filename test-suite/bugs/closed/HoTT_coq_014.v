@@ -3,9 +3,9 @@ Set Implicit Arguments.
 Generalizable All Variables.
 Set Universe Polymorphism.
 
-Polymorphic Record SpecializedCategory (obj : Type) := Build_SpecializedCategory' {
-  Object :> _ := obj;
-  Morphism' : obj -> obj -> Type;
+Polymorphic Record SpecializedCategory@{l k} (obj : Type@{l}) := Build_SpecializedCategory' {
+  Object :> Type@{l} := obj;
+  Morphism' : obj -> obj -> Type@{k};
 
   Identity' : forall o, Morphism' o o;
   Compose' : forall s d d', Morphism' d d' -> Morphism' s d -> Morphism' s d'

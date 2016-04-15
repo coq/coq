@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -63,13 +63,13 @@ let grab_sentence_start (iter:GText.iter) soi =
 
 (** Search forward the first character immediately after a sentence end *)
 
-let rec grab_sentence_stop (start:GText.iter) =
+let grab_sentence_stop (start:GText.iter) =
   (forward_search is_sentence_end start)#forward_char
 
 (** Search forward the first character immediately after a "." sentence end
     (and not just a "\{" or "\}" or comment end *)
 
-let rec grab_ending_dot (start:GText.iter) =
+let grab_ending_dot (start:GText.iter) =
   let is_ending_dot s = is_sentence_end s && s#char = Char.code '.' in
   (forward_search is_ending_dot start)#forward_char
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -35,8 +35,7 @@ let cbv_native env sigma c =
     cbv_vm env sigma c
   else
     let ctyp = Retyping.get_type_of env sigma c in
-    let evars = Nativenorm.evars_of_evar_map sigma in
-    Nativenorm.native_norm env evars c ctyp
+    Nativenorm.native_norm env sigma c ctyp
 
 let whd_cbn flags env sigma t =
   let (state,_) =
@@ -159,8 +158,6 @@ let make_flag env f =
 	  f.rConst red
   in red
 
-let is_reference = function PRef _ | PVar _ -> true | _ -> false
-
 (* table of custom reductino fonctions, not synchronized,
    filled via ML calls to [declare_reduction] *)
 let reduction_tab = ref String.Map.empty
@@ -197,7 +194,7 @@ let out_arg = function
 let out_with_occurrences (occs,c) =
   (Locusops.occurrences_map (List.map out_arg) occs, c)
 
-let e_red f env evm c = evm, f env evm c
+let e_red f = { e_redfun = fun env evm c -> Sigma.here (f env (Sigma.to_evar_map evm) c) evm }
 
 let head_style = false (* Turn to true to have a semantics where simpl
    only reduce at the head when an evaluable reference is given, e.g.

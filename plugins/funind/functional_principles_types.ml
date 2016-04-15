@@ -3,15 +3,16 @@ open Errors
 open Util
 open Term
 open Vars
-open Context
 open Namegen
 open Names
 open Pp
 open Entries
 open Tactics
+open Context.Rel.Declaration
 open Indfun_common
 open Functional_principles_proofs
 open Misctypes
+open Sigma.Notations
 
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
@@ -29,14 +30,16 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let env = Global.env () in
   let env_with_params = Environ.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
-  let rec change_predicates_names (avoid:Id.t list) (predicates:rel_context)  : rel_context =
+  let rec change_predicates_names (avoid:Id.t list) (predicates:Context.Rel.t)  : Context.Rel.t =
     match predicates with
     | [] -> []
-    |(Name x,v,t)::predicates ->
-       let id =  Namegen.next_ident_away x avoid in
-       Hashtbl.add tbl id x;
-       (Name id,v,t)::(change_predicates_names (id::avoid) predicates)
-    | (Anonymous,_,_)::_ -> anomaly (Pp.str "Anonymous property binder ")
+    | decl :: predicates ->
+       (match Context.Rel.Declaration.get_name decl with
+	| Name x ->
+	   let id = Namegen.next_ident_away x avoid in
+	   Hashtbl.add tbl id x;
+	   set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
+	| Anonymous -> anomaly (Pp.str "Anonymous property binder "))
   in
   let avoid = (Termops.ids_of_context env_with_params ) in
   let princ_type_info =
@@ -46,15 +49,16 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
 (*   observe (str "starting princ_type := " ++ pr_lconstr_env env princ_type); *)
 (*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
-  let change_predicate_sort i (x,_,t) =
+  let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
-    let args,_ = decompose_prod t in
+    let args,_ = decompose_prod (get_type decl) in
     let real_args =
       if princ_type_info.indarg_in_concl
       then List.tl args
       else args
     in
-    Nameops.out_name x,None,compose_prod real_args (mkSort new_sort)
+    Context.Named.Declaration.LocalAssum (Nameops.out_name (Context.Rel.Declaration.get_name decl),
+                                          compose_prod real_args (mkSort new_sort))
   in
   let new_predicates =
     List.map_i
@@ -69,7 +73,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	   | _ -> error "Not a valid predicate"
 	)
   in
-  let ptes_vars = List.map (fun (id,_,_) -> id) new_predicates in
+  let ptes_vars = List.map Context.Named.Declaration.get_id new_predicates in
   let is_pte =
     let set = List.fold_right Id.Set.add ptes_vars Id.Set.empty in
     fun t ->
@@ -114,7 +118,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Rel n ->
 	    begin
 	      try match Environ.lookup_rel n env with
-		| _,_,t when is_dom t -> raise Toberemoved
+		| LocalAssum (_,t) | LocalDef (_,_,t) when is_dom t -> raise Toberemoved
 		| _ -> pre_princ,[]
 	      with Not_found -> assert false
 	    end
@@ -159,7 +163,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       try
 	let new_t,binders_to_remove_from_t = compute_new_princ_type remove env t in
 	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
-	let new_env = Environ.push_rel (x,None,t) env in
+	let new_env = Environ.push_rel (LocalAssum (x,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	 if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
 	 then (Termops.pop new_b), filter_map (eq_constr (mkRel 1)) Termops.pop binders_to_remove_from_b
@@ -188,7 +192,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_t,binders_to_remove_from_t = compute_new_princ_type remove env t in
 	let new_v,binders_to_remove_from_v = compute_new_princ_type remove env v in
 	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
-	let new_env = Environ.push_rel (x,Some v,t) env in
+	let new_env = Environ.push_rel (LocalDef (x,v,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
 	then (Termops.pop new_b),filter_map (eq_constr (mkRel 1)) Termops.pop binders_to_remove_from_b
@@ -227,7 +231,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   it_mkProd_or_LetIn
     (it_mkProd_or_LetIn
-       pre_res (List.map (fun (id,t,b) -> Name(Hashtbl.find tbl id), t,b)
+       pre_res (List.map (function Context.Named.Declaration.LocalAssum (id,b)   -> LocalAssum (Name (Hashtbl.find tbl id), b)
+                                 | Context.Named.Declaration.LocalDef (id,t,b) -> LocalDef (Name (Hashtbl.find tbl id), t, b))
           	      new_predicates)
     )
     princ_type_info.params
@@ -235,10 +240,12 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 
 
 let change_property_sort evd toSort princ princName =
+  let open Context.Rel.Declaration in
   let princ_info = compute_elim_sig princ in
-  let change_sort_in_predicate (x,v,t) =
-    (x,None,
-     let args,ty = decompose_prod t in
+  let change_sort_in_predicate decl =
+    LocalAssum
+    (get_name decl,
+     let args,ty = decompose_prod (get_type decl) in
      let s = destSort ty in
        Global.add_constraints (Univ.enforce_leq (univ_of_sort toSort) (univ_of_sort s) Univ.Constraint.empty);
        compose_prod args (mkSort toSort)
@@ -291,7 +298,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)
     (* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
     (* 	end; *)
-    get_proof_clean true, Ephemeron.create hook
+    get_proof_clean true, CEphemeron.create hook
   end
 
 
@@ -303,7 +310,8 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   try
 
   let f = funs.(i) in
-  let type_sort = Universes.new_sort_in_family InType in
+  let env = Global.env () in    
+  let type_sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd InType in
   let new_sorts =
     match sorts with
       | None -> Array.make (Array.length funs) (type_sort)
@@ -317,23 +325,23 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 	  id_of_f,Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
   in
   let names = ref [new_princ_name] in
-  let evd' = !evd in 
   let hook =
     fun  new_principle_type _ _  -> 
     if Option.is_empty sorts
     then
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
-	let s = Universes.new_sort_in_family fam_sort in
+	let evd' = Evd.from_env (Global.env ()) in
+	let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in
 	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
 	let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
 	let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' value) in
 	(* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-	let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs:(Evd.universe_context evd') value in
+	let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs:(snd (Evd.universe_context evd')) value in
 	ignore(
 	  Declare.declare_constant
 	    name
-	    (Entries.DefinitionEntry ce,
+	    (DefinitionEntry ce,
 	     Decl_kinds.IsDefinition (Decl_kinds.Scheme))
 	);
 	Declare.definition_message name;
@@ -394,7 +402,7 @@ let get_funs_constant mp dp =
 	    let body = Tacred.cbv_norm_flags
 	      (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
 	      (Global.env ())
-	      (Evd.empty)
+	      (Evd.from_env (Global.env ()))
 	      body
 	    in
 	    body
@@ -446,7 +454,7 @@ let get_funs_constant mp dp =
 exception No_graph_found
 exception Found_type of int
 
-let make_scheme evd (fas : (pconstant*glob_sort) list) : Entries.definition_entry list =
+let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_constants definition_entry list =
   let env = Global.env () in
   let funs = List.map fst fas in
   let first_fun = List.hd funs in
@@ -483,11 +491,10 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Entries.definition_entr
   let i = ref (-1) in
   let sorts =
     List.rev_map (fun (_,x) ->
-		Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)
+		  Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd (Pretyping.interp_elimination_sort x)
 	     )
       fas
   in
-  evd:=sigma;
   (* We create the first priciple by tactic *)
   let first_type,other_princ_types =
     match l_schemes with
@@ -541,7 +548,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Entries.definition_entr
       let sorts = Array.of_list sorts in
       List.map (compute_new_princ_type_from_rel funs sorts) other_princ_types
     in
-    let first_princ_body,first_princ_type = const.Entries.const_entry_body, const.Entries.const_entry_type in
+    let first_princ_body,first_princ_type = const.const_entry_body, const.const_entry_type in
     let ctxt,fix = decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
     let (idxs,_),(_,ta,_ as decl) = destFix fix in
     let other_result =
@@ -585,19 +592,17 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Entries.definition_entr
 	     Termops.it_mkLambda_or_LetIn (mkFix((idxs,i),decl)) ctxt
 	   in
 	   {const with
-	      Entries.const_entry_body = 
-                (Future.from_val (Term_typing.mk_pure_proof princ_body));
-	      Entries.const_entry_type = Some scheme_type
+	      const_entry_body = 
+                (Future.from_val (Safe_typing.mk_pure_proof princ_body));
+	      const_entry_type = Some scheme_type
 	   }
       )
       other_fun_princ_types
     in
     const::other_result
 
-	   
 let build_scheme fas =
-  Dumpglob.pause ();
-  let evd = (ref Evd.empty) in
+  let evd = (ref (Evd.from_env (Global.env ()))) in
   let pconstants = (List.map
 	 (fun (_,f,sort) ->
 	    let f_as_constant =
@@ -622,18 +627,15 @@ let build_scheme fas =
        ignore
 	 (Declare.declare_constant
 	    princ_id
-	    (Entries.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
+	    (DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
        Declare.definition_message princ_id
     )
     fas
-    bodies_types;
-    Dumpglob.continue ()
-
-
+    bodies_types
 
 let build_case_scheme fa =
   let env = Global.env ()
-  and sigma = Evd.empty in
+  and sigma = (Evd.from_env (Global.env ())) in
 (*   let id_to_constr id =  *)
 (*     Constrintern.global_reference  id *)
 (*   in  *)
@@ -653,12 +655,15 @@ let build_case_scheme fa =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     List.assoc_f Constant.equal (fst (destConst funs)) this_block_funs_indexes
   in
-  let ind_fun =
+  let (ind, sf) =
 	 let ind = first_fun_kn,funs_indexes in
 	   (ind,Univ.Instance.empty)(*FIXME*),prop_sort
   in
-  let sigma, scheme = 
-    (fun (ind,sf) -> Indrec.build_case_analysis_scheme_default env sigma ind sf)  ind_fun in
+  let sigma = Sigma.Unsafe.of_evar_map sigma in
+  let Sigma (scheme, sigma, _) = 
+      Indrec.build_case_analysis_scheme_default env sigma ind sf
+  in
+  let sigma = Sigma.to_evar_map sigma in
   let scheme_type =  (Typing.unsafe_type_of env sigma ) scheme in
   let sorts =
     (fun (_,_,x) ->
@@ -673,14 +678,14 @@ let build_case_scheme fa =
 	    );
   *)
     generate_functional_principle
-      (ref Evd.empty)
+      (ref (Evd.from_env (Global.env ())))
       false
       scheme_type
       (Some ([|sorts|]))
       (Some princ_name)
       this_block_funs
       0
-      (prove_princ_for_struct (ref Evd.empty) false 0 [|fst (destConst funs)|])
+      (prove_princ_for_struct (ref (Evd.from_env (Global.env ()))) false 0 [|fst (destConst funs)|])
   in
   ()
  

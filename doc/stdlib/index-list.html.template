@@ -59,6 +59,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/WeakFan.v
     theories/Logic/WKL.v
     theories/Logic/FinFun.v
+    theories/Logic/PropFacts.v
   </dd>
 
   <dt> <b>Structures</b>:
@@ -476,13 +477,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/MSets/MSetPositive.v
     theories/MSets/MSetToFiniteSet.v
     (theories/MSets/MSets.v)
-    theories/MMaps/MMapAVL.v
-    theories/MMaps/MMapFacts.v
-    theories/MMaps/MMapInterface.v
-    theories/MMaps/MMapList.v
-    theories/MMaps/MMapPositive.v
-    theories/MMaps/MMapWeakList.v
-    (theories/MMaps/MMaps.v)
   </dd>
 
   <dt> <b>FSets</b>:
@@ -591,7 +585,7 @@ through the <tt>Require Import</tt> command.</p>
   </dd>
 
   <dt> <b>Program</b>:
-    Support for dependently-typed programming.
+    Support for dependently-typed programming
   </dt>
   <dd>
     theories/Program/Basics.v
@@ -611,5 +605,14 @@ through the <tt>Require Import</tt> command.</p>
   <dd>
     theories/Unicode/Utf8_core.v
     theories/Unicode/Utf8.v
+  </dd>
+
+  <dt> <b>Compat</b>:
+    Compatibility wrappers for previous versions of Coq
+  </dt>
+  <dd>
+    theories/Compat/AdmitAxiom.v
+    theories/Compat/Coq84.v
+    theories/Compat/Coq85.v
   </dd>
 </dl>

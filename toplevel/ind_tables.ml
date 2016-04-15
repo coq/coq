@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -28,11 +28,10 @@ open Pp
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
-
 type mutual_scheme_object_function =
-  mutual_inductive -> constr array Evd.in_evar_universe_context * Declareops.side_effects
+  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
 type individual_scheme_object_function =
-  inductive -> constr Evd.in_evar_universe_context * Declareops.side_effects
+  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
 
 type 'a scheme_kind = string
 
@@ -114,8 +113,8 @@ let is_visible_name id =
 
 let compute_name internal id =
   match internal with
-  | KernelVerbose | UserVerbose -> id
-  | KernelSilent ->
+  | UserAutomaticRequest | UserIndividualRequest -> id
+  | InternalTacticRequest ->
       Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
 
 let define internal id c p univs =
@@ -125,7 +124,9 @@ let define internal id c p univs =
   let c = Vars.subst_univs_fn_constr 
     (Universes.make_opt_subst (Evd.evar_universe_context_subst ctx)) c in
   let entry = {
-    const_entry_body = Future.from_val ((c,Univ.ContextSet.empty), Declareops.no_seff);
+    const_entry_body =
+      Future.from_val ((c,Univ.ContextSet.empty),
+                       Safe_typing.empty_private_constants);
     const_entry_secctx = None;
     const_entry_type = None;
     const_entry_polymorphic = p;
@@ -136,66 +137,65 @@ let define internal id c p univs =
   } in
   let kn = fd id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with
-    | KernelSilent -> ()
+    | InternalTacticRequest -> ()
     | _-> definition_message id
   in
   kn
 
-let define_individual_scheme_base kind suff f internal idopt (mind,i as ind) =
-  let (c, ctx), eff = f ind in
+let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
+  let (c, ctx), eff = f mode ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
-  let const = define internal id c mib.mind_polymorphic ctx in
+  let const = define mode id c mib.mind_polymorphic ctx in
   declare_scheme kind [|ind,const|];
-  const, Declareops.cons_side_effects
-     (Safe_typing.sideff_of_scheme kind (Global.safe_env()) [ind,const]) eff
+  const, Safe_typing.add_private
+     (Safe_typing.private_con_of_scheme kind (Global.safe_env()) [ind,const]) eff
 
-let define_individual_scheme kind internal names (mind,i as ind) =
+let define_individual_scheme kind mode names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
   | _,MutualSchemeFunction f -> assert false
   | s,IndividualSchemeFunction f ->
-      define_individual_scheme_base kind s f internal names ind
+      define_individual_scheme_base kind s f mode names ind
 
-let define_mutual_scheme_base kind suff f internal names mind =
-  let (cl, ctx), eff = f mind in
+let define_mutual_scheme_base kind suff f mode names mind =
+  let (cl, ctx), eff = f mode mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
-
   let consts = Array.map2 (fun id cl -> 
-     define internal id cl mib.mind_polymorphic ctx) ids cl in
+     define mode id cl mib.mind_polymorphic ctx) ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
   consts,
-  Declareops.cons_side_effects 
-    (Safe_typing.sideff_of_scheme
+  Safe_typing.add_private 
+    (Safe_typing.private_con_of_scheme
       kind (Global.safe_env()) (Array.to_list schemes))
     eff 
 
-let define_mutual_scheme kind internal names mind =
+let define_mutual_scheme kind mode names mind =
   match Hashtbl.find scheme_object_table kind with
   | _,IndividualSchemeFunction _ -> assert false
   | s,MutualSchemeFunction f ->
-      define_mutual_scheme_base kind s f internal names mind
+      define_mutual_scheme_base kind s f mode names mind
 
 let find_scheme_on_env_too kind ind =
   let s = String.Map.find kind (Indmap.find ind !scheme_map) in
-  s, Declareops.cons_side_effects
-      (Safe_typing.sideff_of_scheme
+  s, Safe_typing.add_private
+      (Safe_typing.private_con_of_scheme
             kind (Global.safe_env()) [ind, s])
-      Declareops.no_seff 
+      Safe_typing.empty_private_constants
 
-let find_scheme kind (mind,i as ind) =
+let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
   try find_scheme_on_env_too kind ind
   with Not_found ->
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction f ->
-      define_individual_scheme_base kind s f KernelSilent None ind
+      define_individual_scheme_base kind s f mode None ind
   | s,MutualSchemeFunction f ->
-      let ca, eff = define_mutual_scheme_base kind s f KernelSilent [] mind in
+      let ca, eff = define_mutual_scheme_base kind s f mode [] mind in
       ca.(i), eff
 
 let check_scheme kind ind =

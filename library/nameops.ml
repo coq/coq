@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,7 +12,7 @@ open Names
 
 (* Identifiers *)
 
-let pr_id id = str (Id.to_string id)
+let pr_id id = Id.print id
 
 let pr_name = function
   | Anonymous -> str "_"
@@ -141,7 +141,7 @@ let name_max na1 na2 =
   | Name _ -> na1
   | Anonymous -> na2
 
-let pr_lab l = str (Label.to_string l)
+let pr_lab l = Label.print l
 
 let default_library = Names.DirPath.initial (* = ["Top"] *)
 

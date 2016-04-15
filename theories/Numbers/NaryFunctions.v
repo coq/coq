@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,7 +15,7 @@ Require Import List.
 (** * Generic dependently-typed operators about [n]-ary functions *)
 
 (** The type of [n]-ary function: [nfun A n B] is
-    [A -> ... -> A -> B] with [n] occurences of [A] in this type. *)
+    [A -> ... -> A -> B] with [n] occurrences of [A] in this type. *)
 
 Fixpoint nfun A n B :=
  match n with

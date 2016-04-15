@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,9 +19,6 @@ open Libnames
 let unlock loc =
   let start, stop = Loc.unloc loc in
   (string_of_int start, string_of_int stop)
-
-let xmlNoop = (* almost noop  *)
-  PCData ""
 
 let xmlWithLoc loc ename attr xml =
   let start, stop = unlock loc in
@@ -244,7 +241,7 @@ and pp_local_decl_expr lde = (* don't know what it is for now *)
   match lde with
   | AssumExpr (_, ce) -> pp_expr ce
   | DefExpr (_, ce, _) -> pp_expr ce
-and pp_inductive_expr ((_, (l, id)), lbl, ceo, _, cl_or_rdexpr) =
+and pp_inductive_expr ((_, ((l, id),_)), lbl, ceo, _, cl_or_rdexpr) =
   (* inductive_expr *)
   let b,e = Loc.unloc l in
   let location = ["begin", string_of_int b; "end", string_of_int e] in
@@ -273,7 +270,7 @@ and pp_recursion_order_expr optid roe = (* don't know what it is for now *)
     | CMeasureRec (e, None) -> "mesrec", [pp_expr e]
     | CMeasureRec (e, Some rel) -> "mesrec", [pp_expr e] @ [pp_expr rel] in
   Element ("recursion_order", ["kind", kind] @ attrs, expr)
-and pp_fixpoint_expr ((loc, id), (optid, roe), lbl, ce, ceo) =
+and pp_fixpoint_expr (((loc, id), pl), (optid, roe), lbl, ce, ceo) =
   (* fixpoint_expr *)
   let start, stop = unlock loc in
   let id = Id.to_string id in
@@ -286,7 +283,7 @@ and pp_fixpoint_expr ((loc, id), (optid, roe), lbl, ce, ceo) =
   | Some ce -> [pp_expr ce]
   | None -> []
   end
-and pp_cofixpoint_expr ((loc, id), lbl, ce, ceo) = (* cofixpoint_expr *)
+and pp_cofixpoint_expr (((loc, id), pl), lbl, ce, ceo) = (* cofixpoint_expr *)
   (* Nota: it is like fixpoint_expr without (optid, roe)
    * so could be merged if there is no more differences *)
   let start, stop = unlock loc in
@@ -307,7 +304,13 @@ and pp_cases_pattern_expr cpe =
       xmlApply loc
         (xmlOperator "alias" ~attr:["name", string_of_id id] loc ::
           [pp_cases_pattern_expr cpe])
-  | CPatCstr (loc, ref, cpel1, cpel2) ->
+  | CPatCstr (loc, ref, None, cpel2) ->
+      xmlApply loc
+        (xmlOperator "reference"
+           ~attr:["name", Libnames.string_of_reference ref] loc ::
+         [Element ("impargs", [], []);
+          Element ("args", [], (List.map pp_cases_pattern_expr cpel2))])
+  | CPatCstr (loc, ref, Some cpel1, cpel2) ->
       xmlApply loc
         (xmlOperator "reference"
            ~attr:["name", Libnames.string_of_reference ref] loc ::
@@ -347,7 +350,7 @@ and pp_cases_pattern_expr cpe =
       xmlApply loc
         (xmlOperator "delimiter" ~attr:["name", delim] loc ::
           [pp_cases_pattern_expr cpe])
-and pp_case_expr (e, (name, pat)) =
+and pp_case_expr (e, name, pat) =
   match name, pat with
   | None, None -> xmlScrutinee [pp_expr e]
   | Some (loc, name), None ->
@@ -460,7 +463,7 @@ and pp_expr ?(attr=[]) e =
           (return @
            [Element ("scrutinees", [], List.map pp_case_expr cel)] @
            [pp_branch_expr_list bel]))
-  | CRecord (_, _, _) -> assert false
+  | CRecord (_, _) -> assert false
   | CLetIn (loc, (varloc, var), value, body) ->
       xmlApply loc
         (xmlOperator "let" loc ::
@@ -473,7 +476,7 @@ and pp_expr ?(attr=[]) e =
       xmlApply loc
         (xmlOperator "fix" loc ::
            List.flatten (List.map
-             (fun (a,b,cl,c,d) -> pp_fixpoint_expr (a,b,cl,c,Some d))
+             (fun (a,b,cl,c,d) -> pp_fixpoint_expr ((a,None),b,cl,c,Some d))
              fel))
 
 let pp_comment (c) =
@@ -487,12 +490,12 @@ let rec tmpp v loc =
   (* Control *)
   | VernacLoad (verbose,f) ->
       xmlWithLoc loc "load" ["verbose",string_of_bool verbose;"file",f] []
-  | VernacTime l ->
+  | VernacTime (loc,e) ->
       xmlApply loc (Element("time",[],[]) ::
-                    List.map (fun(loc,e) ->tmpp e loc) l)
-  | VernacRedirect (s, l) ->
+                    [tmpp e loc])
+  | VernacRedirect (s, (loc,e)) ->
       xmlApply loc (Element("redirect",["path", s],[]) ::
-                      List.map (fun(loc,e) ->tmpp e loc) l)
+                    [tmpp e loc])
   | VernacTimeout (s,e) ->
       xmlApply loc (Element("timeout",["val",string_of_int s],[]) ::
                     [tmpp e loc])
@@ -500,9 +503,6 @@ let rec tmpp v loc =
   | VernacError _ -> xmlWithLoc loc "error" [] []
 
   (* Syntax *)
-  | VernacTacticNotation _ as x ->
-      xmlLtac loc [PCData (Pp.string_of_ppcmds (Ppvernac.pr_vernac x))]
-
   | VernacSyntaxExtension (_, ((_, name), sml)) ->
       let attrs = List.flatten (List.map attribute_of_syntax_modifier sml) in
       xmlReservedNotation attrs name loc
@@ -513,13 +513,6 @@ let rec tmpp v loc =
       xmlScope loc "delimit" name ~attr:["delimiter",tag] []
   | VernacDelimiters (name,None) ->
       xmlScope loc "undelimit" name ~attr:[] []
-  | VernacBindScope (name,l) ->
-      xmlScope loc "bind" name
-        (List.map (function
-          | ByNotation(loc,name,None) -> xmlNotation [] name loc []
-          | ByNotation(loc,name,Some d) ->
-              xmlNotation ["delimiter",d] name loc []
-          | AN ref -> xmlReference ref) l)
   | VernacInfix (_,((_,name),sml),ce,sn) ->
       let attrs = List.flatten (List.map attribute_of_syntax_modifier sml) in
       let sc_attr =
@@ -535,12 +528,13 @@ let rec tmpp v loc =
         | Some scope -> ["scope", scope]
         | None -> [] in
       xmlNotation (sc_attr @ attrs) name loc [pp_expr ce]
+  | VernacBindScope _ as x -> xmlTODO loc x
   | VernacNotationAddFormat _ as x -> xmlTODO loc x
   | VernacUniverse _
   | VernacConstraint _
   | VernacPolymorphic (_, _) as x -> xmlTODO loc x
   (* Gallina *)
-  | VernacDefinition (ldk, (_,id), de) ->
+  | VernacDefinition (ldk, ((_,id),_), de) ->
       let l, dk =
         match ldk with
         | Some l, dk -> (l, dk)
@@ -555,7 +549,7 @@ let rec tmpp v loc =
       let str_dk = Kindops.string_of_definition_kind (l, false, dk) in
       let str_id = Id.to_string id in
       (xmlDef str_dk str_id loc [pp_expr e])
-  | VernacStartTheoremProof (tk, [ Some (_,id), ([], statement, None) ], b) ->
+  | VernacStartTheoremProof (tk, [ Some ((_,id),_), ([], statement, None) ], b) ->
       let str_tk = Kindops.string_of_theorem_kind tk in
       let str_id = Id.to_string id in
       (xmlThm str_tk str_id loc [pp_expr statement])
@@ -575,10 +569,11 @@ let rec tmpp v loc =
       end
   | VernacExactProof _ as x -> xmlTODO loc x
   | VernacAssumption ((l, a), _, sbwcl) ->
+      let binders = List.map (fun (_, (id, c)) -> (List.map fst id, c)) sbwcl in
       let many =
-        List.length (List.flatten (List.map fst (List.map snd sbwcl))) > 1 in
+        List.length (List.flatten (List.map fst binders)) > 1 in
       let exprs =
-        List.flatten (List.map pp_simple_binder (List.map snd sbwcl)) in
+        List.flatten (List.map pp_simple_binder binders) in
       let l = match l with Some x -> x | None -> Decl_kinds.Global in
       let kind = string_of_assumption_kind l a many in
       xmlAssumption kind loc exprs
@@ -667,7 +662,7 @@ let rec tmpp v loc =
 
   (* Solving *)
 
-  | (VernacSolve _ | VernacSolveExistential _) as x ->
+  | (VernacSolveExistential _) as x ->
       xmlLtac loc [PCData (Pp.string_of_ppcmds (Ppvernac.pr_vernac x))]
 
   (* Auxiliary file and library management *)
@@ -693,7 +688,6 @@ let rec tmpp v loc =
   | VernacBackTo _ -> PCData "VernacBackTo"
 
   (* Commands *)
-  | VernacDeclareTacticDefinition _ as x -> xmlTODO loc x
   | VernacCreateHintDb _ as x -> xmlTODO loc x
   | VernacRemoveHints _ as x -> xmlTODO loc x
   | VernacHints _ as x -> xmlTODO loc x
@@ -723,7 +717,6 @@ let rec tmpp v loc =
   | VernacRegister _ as x -> xmlTODO loc x
   | VernacComments (cl) ->
       xmlComment loc (List.flatten (List.map pp_comment cl))
-  | VernacNop as x -> xmlTODO loc x
 
   (* Stm backdoor *)
   | VernacStm _ as x -> xmlTODO loc x

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -38,6 +38,7 @@ open Ind_tables
 open Auto_ind_decl
 open Eqschemes
 open Elimschemes
+open Context.Rel.Declaration
 
 (* Flags governing automatic synthesis of schemes *)
 
@@ -128,8 +129,8 @@ let define id internal ctx c t =
       { const_entry_body = c;
         const_entry_secctx = None;
         const_entry_type = t;
-	const_entry_polymorphic = true;
-	const_entry_universes = Evd.universe_context ctx;
+	const_entry_polymorphic = Flags.is_universe_polymorphism ();
+	const_entry_universes = snd (Evd.universe_context ctx);
         const_entry_opaque = false;
         const_entry_inline_code = false;
         const_entry_feedback = None;
@@ -146,16 +147,18 @@ let declare_beq_scheme_gen internal names kn =
 let alarm what internal msg =
   let debug = false in
   match internal with
-  | KernelVerbose 
-  | KernelSilent ->
+  | UserAutomaticRequest
+  | InternalTacticRequest ->
     (if debug then
       msg_warning
-	(hov 0 msg ++ fnl () ++ what ++ str " not defined."))
-  | _ -> errorlabstrm "" msg
+	(hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
+  | _ -> Some msg
 
 let try_declare_scheme what f internal names kn =
   try f internal names kn
-  with
+  with e ->
+  let e = Errors.push e in
+  let msg = match fst e with
     | ParameterWithoutEquality cst ->
 	alarm what internal
 	  (str "Boolean equality not found for parameter " ++ pr_con cst ++
@@ -186,6 +189,11 @@ let try_declare_scheme what f internal names kn =
     | e when Errors.noncritical e ->
         alarm what internal
 	  (str "Unexpected error during scheme creation: " ++ Errors.print e)
+    | _ -> iraise e
+  in
+  match msg with
+  | None -> ()
+  | Some msg -> iraise (UserError ("", msg), snd e)
 
 let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in
@@ -195,13 +203,13 @@ let beq_scheme_msg mind =
     (List.init (Array.length mib.mind_packets) (fun i -> (mind,i)))
 
 let declare_beq_scheme_with l kn =
-  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen UserVerbose l kn
+  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen UserIndividualRequest l kn
 
 let try_declare_beq_scheme kn =
   (* TODO: handle Fix, eventually handle
       proof-irrelevance; improve decidability by depending on decidability
       for the parameters rather than on the bl and lb properties *)
-  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen KernelVerbose [] kn
+  try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen UserAutomaticRequest [] kn
 
 let declare_beq_scheme = declare_beq_scheme_with []
 
@@ -215,7 +223,7 @@ let declare_one_case_analysis_scheme ind =
        induction scheme, the other ones share the same code with the
        apropriate type *)
   if Sorts.List.mem InType kelim then
-    ignore (define_individual_scheme dep KernelVerbose None ind)
+    ignore (define_individual_scheme dep UserAutomaticRequest None ind)
 
 (* Induction/recursion schemes *)
 
@@ -238,7 +246,7 @@ let declare_one_induction_scheme ind =
     List.map_filter (fun (sort,kind) ->
       if Sorts.List.mem sort kelim then Some kind else None)
       (if from_prop then kinds_from_prop else kinds_from_type) in
-  List.iter (fun kind -> ignore (define_individual_scheme kind KernelVerbose None ind))
+  List.iter (fun kind -> ignore (define_individual_scheme kind UserAutomaticRequest None ind))
     elims
 
 let declare_induction_schemes kn =
@@ -261,11 +269,11 @@ let eq_dec_scheme_msg ind = (* TODO: mutual inductive case *)
 
 let declare_eq_decidability_scheme_with l kn =
   try_declare_scheme (eq_dec_scheme_msg (kn,0))
-    declare_eq_decidability_gen UserVerbose l kn
+    declare_eq_decidability_gen UserIndividualRequest l kn
 
 let try_declare_eq_decidability kn =
   try_declare_scheme (eq_dec_scheme_msg (kn,0))
-    declare_eq_decidability_gen KernelVerbose [] kn
+    declare_eq_decidability_gen UserAutomaticRequest [] kn
 
 let declare_eq_decidability = declare_eq_decidability_scheme_with []
 
@@ -274,17 +282,17 @@ let ignore_error f x =
 
 let declare_rewriting_schemes ind =
   if Hipattern.is_inductive_equality ind then begin
-    ignore (define_individual_scheme rew_r2l_scheme_kind KernelVerbose None ind);
-    ignore (define_individual_scheme rew_r2l_dep_scheme_kind KernelVerbose None ind);
+    ignore (define_individual_scheme rew_r2l_scheme_kind UserAutomaticRequest None ind);
+    ignore (define_individual_scheme rew_r2l_dep_scheme_kind UserAutomaticRequest None ind);
     ignore (define_individual_scheme rew_r2l_forward_dep_scheme_kind
-      KernelVerbose None ind);
+      UserAutomaticRequest None ind);
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
-    ignore_error (define_individual_scheme rew_l2r_scheme_kind KernelVerbose None) ind;
+    ignore_error (define_individual_scheme rew_l2r_scheme_kind UserAutomaticRequest None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_dep_scheme_kind KernelVerbose None) ind;
+      (define_individual_scheme rew_l2r_dep_scheme_kind UserAutomaticRequest None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_forward_dep_scheme_kind KernelVerbose None) ind
+      (define_individual_scheme rew_l2r_forward_dep_scheme_kind UserAutomaticRequest None) ind
   end
 
 let declare_congr_scheme ind =
@@ -293,7 +301,7 @@ let declare_congr_scheme ind =
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with e when Errors.noncritical e -> false
     then
-      ignore (define_individual_scheme congr_scheme_kind KernelVerbose None ind)
+      ignore (define_individual_scheme congr_scheme_kind UserAutomaticRequest None ind)
     else
       msg_warning (strbrk "Cannot build congruence scheme because eq is not found")
   end
@@ -301,7 +309,7 @@ let declare_congr_scheme ind =
 let declare_sym_scheme ind =
   if Hipattern.is_inductive_equality ind then
     (* Expect the equality to be symmetric *)
-    ignore_error (define_individual_scheme sym_scheme_kind KernelVerbose None) ind
+    ignore_error (define_individual_scheme sym_scheme_kind UserAutomaticRequest None) ind
 
 (* Scheme command *)
 
@@ -360,19 +368,28 @@ requested
 let do_mutual_induction_scheme lnamedepindsort =
   let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
   and env0 = Global.env() in
-  let sigma, lrecspec =
+  let sigma, lrecspec, _ =
     List.fold_right
-      (fun (_,dep,ind,sort) (evd, l) -> 
-        let evd, indu = Evd.fresh_inductive_instance env0 evd ind in
-          (evd, (indu,dep,interp_elimination_sort sort) :: l))
-    lnamedepindsort (Evd.from_env env0,[])
+      (fun (_,dep,ind,sort) (evd, l, inst) -> 
+       let evd, indu, inst =
+	 match inst with
+	 | None ->
+	    let _, ctx = Global.type_of_global_in_context env0 (IndRef ind) in
+	    let ctxs = Univ.ContextSet.of_context ctx in
+	    let evd = Evd.from_ctx (Evd.evar_universe_context_of ctxs) in
+	    let u = Univ.UContext.instance ctx in
+	      evd, (ind,u), Some u
+	 | Some ui -> evd, (ind, ui), inst
+       in
+          (evd, (indu,dep,interp_elimination_sort sort) :: l, inst))
+    lnamedepindsort (Evd.from_env env0,[],None)
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma decl in
     (* let decltype = refresh_universes decltype in *)
-    let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Declareops.no_seff) in
-    let cst = define fi UserVerbose sigma proof_output (Some decltype) in
+    let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
+    let cst = define fi UserIndividualRequest sigma proof_output (Some decltype) in
     ConstRef cst :: lrecref
   in
   let _ = List.fold_right2 declare listdecl lrecnames [] in
@@ -423,7 +440,7 @@ let fold_left' f = function
 
 let build_combined_scheme env schemes =
   let defs = List.map (fun cst -> (* FIXME *)
-    let evd, c = Evd.fresh_constant_instance env Evd.empty cst in
+    let evd, c = Evd.fresh_constant_instance env (Evd.from_env env) cst in
       (c, Typeops.type_of_constant_in env c)) schemes in
 (*   let nschemes = List.length schemes in *)
   let find_inductive ty =
@@ -454,7 +471,7 @@ let build_combined_scheme env schemes =
   in
   let ctx, _ =
     list_split_rev_at prods
-      (List.rev_map (fun (x, y) -> x, None, y) ctx) in
+      (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
   let typ = it_mkProd_wo_LetIn concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
   (body, typ)
@@ -469,8 +486,8 @@ let do_combined_scheme name schemes =
       schemes
   in
   let body,typ = build_combined_scheme (Global.env ()) csts in
-  let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Declareops.no_seff) in
-  ignore (define (snd name) UserVerbose Evd.empty proof_output (Some typ));
+  let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
+  ignore (define (snd name) UserIndividualRequest Evd.empty proof_output (Some typ));
   fixpoint_message None [snd name]
 
 (**********************************************************************)

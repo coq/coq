@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,11 +12,14 @@ open Names
 open Term
 open Environ
 open Univ
+open Globnames
 
+(** Global universe names *)
 type universe_names = 
     Univ.universe_level Idmap.t * Id.t Univ.LMap.t
 
-let global_universes = Summary.ref ~name:"Global universe names" 
+let global_universes =
+  Summary.ref ~name:"Global universe names"
   ((Idmap.empty, Univ.LMap.empty) : universe_names)
 
 let global_universe_names () = !global_universes
@@ -26,6 +29,25 @@ let pr_with_global_universes l =
   try Nameops.pr_id (LMap.find l (snd !global_universes))
   with Not_found -> Level.pr l
 
+(** Local universe names of polymorphic references *)
+
+type universe_binders = (Id.t * Univ.universe_level) list
+
+let universe_binders_table = Summary.ref Refmap.empty ~name:"universe binders"
+
+let universe_binders_of_global ref =
+  try
+    let l = Refmap.find ref !universe_binders_table in l
+  with Not_found -> []
+
+let register_universe_binders ref l =
+  universe_binders_table := Refmap.add ref l !universe_binders_table
+		     
+(* To disallow minimization to Set *)
+
+let set_minimization = ref true
+let is_set_minimization () = !set_minimization
+			    
 type universe_constraint_type = ULe | UEq | ULub
 
 type universe_constraint = universe * universe_constraint_type * universe
@@ -80,6 +102,7 @@ module Constraints = struct
 end
 
 type universe_constraints = Constraints.t
+type 'a constraint_accumulator = universe_constraints -> 'a -> 'a option
 type 'a universe_constrained = 'a * universe_constraints
 
 type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
@@ -113,79 +136,76 @@ let to_constraints g s =
       | _, ULe, Some l' -> enforce_leq x y acc
       | _, ULub, _ -> acc
       | _, d, _ -> 
-	let f = if d == ULe then check_leq else check_eq in
+	let f = if d == ULe then UGraph.check_leq else UGraph.check_eq in
 	  if f g x y then acc else 
 	    raise (Invalid_argument 
 		   "to_constraints: non-trivial algebraic constraint between universes")
   in Constraints.fold tr s Constraint.empty
 
-let eq_constr_univs_infer univs m n =
-  if m == n then true, Constraints.empty
+let eq_constr_univs_infer univs fold m n accu =
+  if m == n then Some accu
   else 
-    let cstrs = ref Constraints.empty in
-    let eq_universes strict = Univ.Instance.check_eq univs in
+    let cstrs = ref accu in
+    let eq_universes strict = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	  if Univ.check_eq univs u1 u2 then true
-	  else
-	    (cstrs := Constraints.add (u1, UEq, u2) !cstrs;
-	     true)
+	match fold (Constraints.singleton (u1, UEq, u2)) !cstrs with
+	| None -> false
+	| Some accu -> cstrs := accu; true
     in
     let rec eq_constr' m n = 
       m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
     let res = Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n in
-      res, !cstrs
+    if res then Some !cstrs else None
 
 (** Variant of [eq_constr_univs_infer] taking kind-of-term functions,
     to expose subterms of [m] and [n], arguments. *)
-let eq_constr_univs_infer_with kind1 kind2 univs m n =
+let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
   (* spiwack: duplicates the code of [eq_constr_univs_infer] because I
      haven't find a way to factor the code without destroying
      pointer-equality optimisations in [eq_constr_univs_infer].
      Pointer equality is not sufficient to ensure equality up to
      [kind1,kind2], because [kind1] and [kind2] may be different,
      typically evaluating [m] and [n] in different evar maps. *)
-  let cstrs = ref Constraints.empty in
-  let eq_universes strict = Univ.Instance.check_eq univs in
+  let cstrs = ref accu in
+  let eq_universes strict = UGraph.check_eq_instances univs in
   let eq_sorts s1 s2 = 
     if Sorts.equal s1 s2 then true
     else
       let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-      if Univ.check_eq univs u1 u2 then true
-      else
-	(cstrs := Constraints.add (u1, UEq, u2) !cstrs;
-	 true)
+      match fold (Constraints.singleton (u1, UEq, u2)) !cstrs with
+      | None -> false
+      | Some accu -> cstrs := accu; true
   in
   let rec eq_constr' m n = 
     Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' m n
   in
   let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' m n in
-  res, !cstrs
+  if res then Some !cstrs else None
 
-let leq_constr_univs_infer univs m n =
-  if m == n then true, Constraints.empty
+let leq_constr_univs_infer univs fold m n accu =
+  if m == n then Some accu
   else 
-    let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = Univ.Instance.check_eq univs l l' in
+    let cstrs = ref accu in
+    let eq_universes strict l l' = UGraph.check_eq_instances univs l l' in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_eq univs u1 u2 then true
-	else (cstrs := Constraints.add (u1, UEq, u2) !cstrs;
-	      true)
+	match fold (Constraints.singleton (u1, UEq, u2)) !cstrs with
+	| None -> false
+	| Some accu -> cstrs := accu; true
     in
     let leq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_leq univs u1 u2 then true
-	else
-	  (cstrs := Constraints.add (u1, ULe, u2) !cstrs; 
-	   true)
+	match fold (Constraints.singleton (u1, ULe, u2)) !cstrs with
+	| None -> false
+	| Some accu -> cstrs := accu; true
     in
     let rec eq_constr' m n = 
       m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
@@ -195,7 +215,7 @@ let leq_constr_univs_infer univs m n =
 	eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
     let res = compare_leq m n in
-    res, !cstrs
+    if res then Some !cstrs else None
 
 let eq_constr_universes m n =
   if m == n then true, Constraints.empty
@@ -625,14 +645,14 @@ let normalize_univ_variable_opt_subst ectx =
   in
   let update l b =
     assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
-    ectx := Univ.LMap.add l (Some b) !ectx; b
+    try ectx := Univ.LMap.add l (Some b) !ectx; b with Not_found -> assert false
   in normalize_univ_variable ~find ~update
 
 let normalize_univ_variable_subst subst =
   let find l = Univ.LMap.find l !subst in
   let update l b =
     assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
-    subst := Univ.LMap.add l b !subst; b in
+    try subst := Univ.LMap.update l b !subst; b with Not_found -> assert false in
     normalize_univ_variable ~find ~update
 
 let normalize_universe_opt_subst subst =
@@ -795,7 +815,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	    let cstrs' = List.fold_left (fun cstrs (d, r) -> 
 	      if d == Univ.Le then
 		enforce_leq inst (Universe.make r) cstrs
-	      else 
+	      else
 		try let lev = Option.get (Universe.level inst) in
 		      Constraint.add (lev, d, r) cstrs
 		with Option.IsNone -> failwith "")
@@ -820,40 +840,87 @@ let minimize_univ_variables ctx us algs left right cstrs =
       if v == None then fst (aux acc u)
       else LSet.remove u ctx', us, LSet.remove u algs, seen, cstrs)
       us (ctx, us, algs, lbounds, cstrs)
-      
+
 let normalize_context_set ctx us algs = 
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   let uf = UF.create () in
+  (** Keep the Prop/Set <= i constraints separate for minimization *)
+  let smallles, csts =
+    Constraint.fold (fun (l,d,r as cstr) (smallles, noneqs) ->
+        if d == Le then
+	  if Univ.Level.is_small l then
+	    if is_set_minimization () && LSet.mem r ctx then
+	      (Constraint.add cstr smallles, noneqs)
+	    else (smallles, noneqs)
+	  else if Level.is_small r then
+	    if Level.is_prop r then
+	      raise (Univ.UniverseInconsistency
+		       (Le,Universe.make l,Universe.make r,None))
+	    else (smallles, Constraint.add (l,Eq,r) noneqs)
+	  else (smallles, Constraint.add cstr noneqs)
+	else (smallles, Constraint.add cstr noneqs))
+    csts (Constraint.empty, Constraint.empty)
+  in
   let csts = 
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
-    let g = Univ.merge_constraints csts Univ.empty_universes in
-      Univ.constraints_of_universes g
+    let g = Univ.LSet.fold (fun v g -> UGraph.add_universe v false g)
+			   ctx UGraph.empty_universes
+    in
+    let g =
+      Univ.Constraint.fold
+	(fun (l, d, r) g ->
+	 let g =
+	   if not (Level.is_small l || LSet.mem l ctx) then
+	     try UGraph.add_universe l false g
+	     with UGraph.AlreadyDeclared -> g
+	   else g
+	 in
+	 let g =
+	   if not (Level.is_small r || LSet.mem r ctx) then
+	     try UGraph.add_universe r false g
+	     with UGraph.AlreadyDeclared -> g
+	   else g
+	 in g) csts g
+    in
+    let g = Univ.Constraint.fold UGraph.enforce_constraint csts g in
+      UGraph.constraints_of_universes g
   in
   let noneqs =
-    Constraint.fold (fun (l,d,r) noneqs ->
-      if d == Eq then (UF.union l r uf; noneqs) 
-      else Constraint.add (l,d,r) noneqs)
-    csts Constraint.empty
+    Constraint.fold (fun (l,d,r as cstr) noneqs ->
+      if d == Eq then (UF.union l r uf; noneqs)
+      else (* We ignore the trivial Prop/Set <= i constraints. *)
+	if d == Le && Univ.Level.is_small l then noneqs
+	else if Univ.Level.is_prop l && d == Lt && Univ.Level.is_set r
+	then noneqs
+	else Constraint.add cstr noneqs)
+      csts Constraint.empty
   in
+  let noneqs = Constraint.union noneqs smallles in
   let partition = UF.partition uf in
   let flex x = LMap.mem x us in
-  let ctx, subst, eqs = List.fold_left (fun (ctx, subst, cstrs) s -> 
+  let ctx, subst, us, eqs = List.fold_left (fun (ctx, subst, us, cstrs) s -> 
     let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in
     (* Add equalities for globals which can't be merged anymore. *)
     let cstrs = LSet.fold (fun g cst -> 
       Constraint.add (canon, Univ.Eq, g) cst) global
       cstrs 
     in
+    (* Also add equalities for rigid variables *)
+    let cstrs = LSet.fold (fun g cst -> 
+      Constraint.add (canon, Univ.Eq, g) cst) rigid
+      cstrs
+    in
     let subst = LSet.fold (fun f -> LMap.add f canon) rigid subst in
-    let subst = LSet.fold (fun f -> LMap.add f canon) flexible subst in 
-      (LSet.diff (LSet.diff ctx rigid) flexible, subst, cstrs))
-    (ctx, LMap.empty, Constraint.empty) partition
+    let subst = LSet.fold (fun f -> LMap.add f canon) flexible subst in
+    let canonu = Some (Universe.make canon) in
+    let us = LSet.fold (fun f -> LMap.add f canonu) flexible us in
+      (LSet.diff ctx flexible, subst, us, cstrs))
+    (ctx, LMap.empty, us, Constraint.empty) partition
   in
   (* Noneqs is now in canonical form w.r.t. equality constraints, 
      and contains only inequality constraints. *)
   let noneqs = subst_univs_level_constraints subst noneqs in
-  let us = LMap.fold (fun u v acc -> LMap.add u (Some (Universe.make v)) acc) subst us in
   (* Compute the left and right set of flexible variables, constraints
      mentionning other variables remain in noneqs. *)
   let noneqs, ucstrsl, ucstrsr = 
@@ -887,10 +954,10 @@ let universes_of_constr c =
   let rec aux s c = 
     match kind_of_term c with
     | Const (_, u) | Ind (_, u) | Construct (_, u) ->
-      LSet.union (Instance.levels u) s
+      LSet.fold LSet.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) -> 
       let u = univ_of_sort u in
-	LSet.union (Universe.levels u) s
+      LSet.fold LSet.add (Universe.levels u) s
     | _ -> fold_constr aux s c
   in aux LSet.empty c
 
@@ -941,12 +1008,12 @@ let simplify_universe_context (univs,csts) =
   let csts' = subst_univs_level_constraints subst csts' in
     (univs', csts'), subst
 
-let is_small_leq (l,d,r) =
-  Level.is_small l && d == Univ.Le
+let is_trivial_leq (l,d,r) =
+  Univ.Level.is_prop l && (d == Univ.Le || (d == Univ.Lt && Univ.Level.is_set r))
 
 (* Prop < i <-> Set+1 <= i <-> Set < i *)
 let translate_cstr (l,d,r as cstr) =
-  if Level.equal Level.prop l && d == Univ.Lt then
+  if Level.equal Level.prop l && d == Univ.Lt && not (Level.equal Level.set r) then
     (Level.set, d, r)
   else cstr
 
@@ -954,8 +1021,8 @@ let refresh_constraints univs (ctx, cstrs) =
   let cstrs', univs' = 
     Univ.Constraint.fold (fun c (cstrs', univs as acc) -> 
       let c = translate_cstr c in
-      if Univ.check_constraint univs c && not (is_small_leq c) then acc
-      else (Univ.Constraint.add c cstrs', Univ.enforce_constraint c univs))
+      if is_trivial_leq c then acc
+      else (Univ.Constraint.add c cstrs', UGraph.enforce_constraint c univs))
       cstrs (Univ.Constraint.empty, univs)
   in ((ctx, cstrs'), univs')
 

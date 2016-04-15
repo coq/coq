@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,7 +11,6 @@
 open Pp
 open Errors
 open Util
-open Unix
 
 (** Dealing with directories *)
 
@@ -44,7 +43,7 @@ let ok_dirname f =
 (* Check directory can be opened *)
 
 let exists_dir dir =
-  try let _ = closedir (opendir dir) in true with Unix_error _ -> false
+  try Sys.is_directory dir with Sys_error _ -> false
 
 let check_unix_dir warn dir =
   if (Sys.os_type = "Win32" || Sys.os_type = "Cygwin") &&
@@ -57,17 +56,17 @@ let check_unix_dir warn dir =
 let apply_subdir f path name =
   (* we avoid all files and subdirs starting by '.' (e.g. .svn) *)
   (* as well as skipped files like CVS, ... *)
-  if name.[0] <> '.' && ok_dirname name then
+  if ok_dirname name then
     let path = if path = "." then name else path//name in
-    match try (stat path).st_kind with Unix_error _ -> S_BLK with
-    | S_DIR -> f (FileDir (path,name))
-    | S_REG -> f (FileRegular name)
+    match try (Unix.stat path).Unix.st_kind with Unix.Unix_error _ -> Unix.S_BLK with
+    | Unix.S_DIR -> f (FileDir (path,name))
+    | Unix.S_REG -> f (FileRegular name)
     | _ -> ()
 
+let readdir dir = try Sys.readdir dir with any -> [||]
+
 let process_directory f path =
-  let dirh = opendir path in
-  try while true do apply_subdir f path (readdir dirh) done
-  with End_of_file -> closedir dirh
+  Array.iter (apply_subdir f path) (readdir path)
 
 let process_subdirectories f path =
   let f = function FileDir (path,base) -> f path base | FileRegular _ -> () in
@@ -94,17 +93,50 @@ let all_subdirs ~unix_path:root =
   else msg_warning (str ("Cannot open " ^ root));
   List.rev !l
 
-let file_exists_respecting_case f =
-  if Coq_config.arch = "Darwin" then
-    (* ensure that the file exists with expected case on the
-       case-insensitive but case-preserving default MacOS file system *)
-    let rec aux f =
-      let bf = Filename.basename f in
-      let df = Filename.dirname f in
-      (String.equal df "." || String.equal df "/" || aux df)
-      && Array.exists (String.equal bf) (Sys.readdir df)
-    in aux f
-  else Sys.file_exists f
+(* Caching directory contents for efficient syntactic equality of file
+   names even on case-preserving but case-insensitive file systems *)
+
+module StrMod = struct
+  type t = string
+  let compare = compare
+end
+
+module StrMap = Map.Make(StrMod)
+module StrSet = Set.Make(StrMod)
+
+let dirmap = ref StrMap.empty
+
+let make_dir_table dir =
+  let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
+  Array.fold_left filter_dotfiles StrSet.empty (readdir dir)
+
+let exists_in_dir_respecting_case dir bf =
+  let cache_dir dir =
+    let contents = make_dir_table dir in
+    dirmap := StrMap.add dir contents !dirmap;
+    contents in
+  let contents, fresh =
+    try
+      (* in batch mode, assume the directory content is still fresh *)
+      StrMap.find dir !dirmap, !Flags.batch_mode
+    with Not_found ->
+      (* in batch mode, we are not yet sure the directory exists *)
+      if !Flags.batch_mode && not (exists_dir dir) then StrSet.empty, true
+      else cache_dir dir, true in
+  StrSet.mem bf contents ||
+    not fresh &&
+      (* rescan, there is a new file we don't know about *)
+      StrSet.mem bf (cache_dir dir)
+
+let file_exists_respecting_case path f =
+  (* This function ensures that a file with expected lowercase/uppercase
+     is the correct one, even on case-insensitive file systems *)
+  let rec aux f =
+    let bf = Filename.basename f in
+    let df = Filename.dirname f in
+    (String.equal df "." || aux df)
+    && exists_in_dir_respecting_case (Filename.concat path df) bf
+  in (!Flags.batch_mode || Sys.file_exists (Filename.concat path f)) && aux f
 
 let rec search paths test =
   match paths with
@@ -130,7 +162,7 @@ let where_in_path ?(warn=true) path filename =
   in
   check_and_warn (search path (fun lpe ->
     let f = Filename.concat lpe filename in
-    if file_exists_respecting_case f then [lpe,f] else []))
+    if file_exists_respecting_case lpe filename then [lpe,f] else []))
 
 let where_in_path_rex path rex =
   search path (fun lpe ->
@@ -146,13 +178,18 @@ let where_in_path_rex path rex =
 
 let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then
-    if file_exists_respecting_case filename then
+    (* the name is considered to be a physical name and we use the file
+       system rules (e.g. possible case-insensitivity) to find it *)
+    if Sys.file_exists filename then
       let root = Filename.dirname filename in
       root, filename
     else
       errorlabstrm "System.find_file_in_path"
 	(hov 0 (str "Can't find file" ++ spc () ++ str filename))
   else
+    (* the name is considered to be the transcription as a relative
+       physical name of a logical name, so we deal with it as a name
+       to be locate respecting case *)
     try where_in_path ~warn paths filename
     with Not_found ->
       errorlabstrm "System.find_file_in_path"
@@ -164,10 +201,12 @@ let is_in_path lpath filename =
   with Not_found -> false
 
 let is_in_system_path filename =
-  let path = try Sys.getenv "PATH"
-             with Not_found -> error "system variable PATH not found" in
-  let lpath = CUnix.path_to_list path in
-  is_in_path lpath filename
+  try
+    let lpath = CUnix.path_to_list (Sys.getenv "PATH") in
+    is_in_path lpath filename
+  with Not_found ->
+    msg_warning (str "system variable PATH not found");
+    false
 
 let open_trapping_failure name =
   try open_out_bin name
@@ -227,48 +266,42 @@ let skip_in_segment f ch =
 
 exception Bad_magic_number of string
 
-let raw_extern_intern magic =
-  let extern_state filename =
-    let channel = open_trapping_failure filename in
-    output_binary_int channel magic;
-    filename, channel
-  and intern_state filename =
-    try
-      let channel = open_in_bin filename in
-      if not (Int.equal (input_binary_int filename channel) magic) then
-        raise (Bad_magic_number filename);
-      channel
-    with
-    | End_of_file -> error_corrupted filename "premature end of file"
-    | Failure s | Sys_error s -> error_corrupted filename s
-  in
-  (extern_state,intern_state)
+let raw_extern_state magic filename =
+  let channel = open_trapping_failure filename in
+  output_binary_int channel magic;
+  channel
 
-let extern_intern ?(warn=true) magic =
-  let (raw_extern,raw_intern) = raw_extern_intern magic in
-  let extern_state name val_0 =
+let raw_intern_state magic filename =
+  try
+    let channel = open_in_bin filename in
+    if not (Int.equal (input_binary_int filename channel) magic) then
+      raise (Bad_magic_number filename);
+    channel
+  with
+  | End_of_file -> error_corrupted filename "premature end of file"
+  | Failure s | Sys_error s -> error_corrupted filename s
+
+let extern_state magic filename val_0 =
+  try
+    let channel = raw_extern_state magic filename in
     try
-      let (filename,channel) = raw_extern name in
-      try
-        marshal_out channel val_0;
-        close_out channel
-      with reraise ->
-	let reraise = Errors.push reraise in
-        let () = try_remove filename in
-        iraise reraise
-    with Sys_error s ->
-      errorlabstrm "System.extern_state" (str "System error: " ++ str s)
-  and intern_state paths name =
-    try
-      let _,filename = find_file_in_path ~warn paths name in
-      let channel = raw_intern filename in
-      let v = marshal_in filename channel in
-      close_in channel;
-      v
-    with Sys_error s ->
-      errorlabstrm "System.intern_state" (str "System error: " ++ str s)
-  in
-  (extern_state,intern_state)
+      marshal_out channel val_0;
+      close_out channel
+    with reraise ->
+      let reraise = Errors.push reraise in
+      let () = try_remove filename in
+      iraise reraise
+  with Sys_error s ->
+    errorlabstrm "System.extern_state" (str "System error: " ++ str s)
+
+let intern_state magic filename =
+  try
+    let channel = raw_intern_state magic filename in
+    let v = marshal_in filename channel in
+    close_in channel;
+    v
+  with Sys_error s ->
+    errorlabstrm "System.intern_state" (str "System error: " ++ str s)
 
 let with_magic_number_check f a =
   try f a
@@ -283,7 +316,7 @@ type time = float * float * float
 
 let get_time () =
   let t = Unix.times ()  in
-  (Unix.gettimeofday(), t.tms_utime, t.tms_stime)
+  (Unix.gettimeofday(), t.Unix.tms_utime, t.Unix.tms_stime)
 
 (* Keep only 3 significant digits *)
 let round f = (floor (f *. 1e3)) *. 1e-3

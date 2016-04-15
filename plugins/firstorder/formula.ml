@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,6 +15,7 @@ open Tacmach
 open Util
 open Declarations
 open Globnames
+open Context.Rel.Declaration
 
 let qflag=ref true
 
@@ -139,8 +140,8 @@ let build_atoms gl metagen side cciterm =
 		  negative:= unsigned :: !negative
 	    end;
 	  let v = ind_hyps 0 i l gl in
-	  let g i _ (_,_,t) =
-	    build_rec env polarity (lift i t) in
+	  let g i _ decl =
+	    build_rec env polarity (lift i (get_type decl)) in
 	  let f l =
 	    List.fold_left_i g (1-(List.length l)) () l in
 	    if polarity && (* we have a constant constructor *)
@@ -150,8 +151,8 @@ let build_atoms gl metagen side cciterm =
       | Exists(i,l)->
 	  let var=mkMeta (metagen true) in
 	  let v =(ind_hyps 1 i l gl).(0) in
-	  let g i _ (_,_,t) =
-	    build_rec (var::env) polarity (lift i t) in
+	  let g i _ decl =
+	    build_rec (var::env) polarity (lift i (get_type decl)) in
 	    List.fold_left_i g (2-(List.length l)) () v
       | Forall(_,b)->
 	  let var=mkMeta (metagen true) in
@@ -224,7 +225,7 @@ let build_formula side nam typ gl metagen=
 		  | And(_,_,_)        -> Rand
 		  | Or(_,_,_)         -> Ror
 		  | Exists (i,l) ->
-		      let (_,_,d)=List.last (ind_hyps 0 i l gl).(0) in
+		      let d = get_type (List.last (ind_hyps 0 i l gl).(0)) in
 			Rexists(m,d,trivial)
 		  | Forall (_,a) -> Rforall
 		  | Arrow (a,b) -> Rarrow in

@@ -18,7 +18,7 @@ exception Unsupported
    to simplify the masking process. (This choice seems to be a good
    trade-off between speed and space after some benchmarks.) *)
 
-(* A 256ko table, initially filled with zeros. *)
+(* A 256 KiB table, initially filled with zeros. *)
 let table = Array.make (1 lsl 17) 0
 
 (* Associate a 2-bit pattern to each status at position [i].
@@ -147,6 +147,11 @@ let utf8_of_unicode n =
       s
     end
 
+(* If [s] is some UTF-8 encoded string
+   and [i] is a position of some UTF-8 character within [s]
+   then [next_utf8 s i] returns [(j,n)] where:
+   - [j] indicates the position of the next UTF-8 character
+   - [n] represents the UTF-8 character at index [i] *)
 let next_utf8 s i =
   let err () = invalid_arg "utf8" in
   let l = String.length s - i in
@@ -167,6 +172,13 @@ let next_utf8 s i =
     4, (a land 0x07) lsl 18 + (b land 0x3F) lsl 12 +
        (c land 0x3F) lsl 6 + (d land 0x3F)
   else err ()
+
+let is_utf8 s =
+  let rec check i =
+    let (off, _) = next_utf8 s i in
+    check (i + off)
+  in
+  try check 0 with End_of_input -> true | Invalid_argument _ -> false
 
 (* Check the well-formedness of an identifier *)
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -14,9 +14,9 @@ module type HashconsedType =
   sig
     (** {6 Generic hashconsing signature}
 
-        Given an equivalence relation [equal], a hashconsing function is a
+        Given an equivalence relation [eq], a hashconsing function is a
         function that associates the same canonical element to two elements
-        related by [equal]. Usually, the element chosen is canonical w.r.t.
+        related by [eq]. Usually, the element chosen is canonical w.r.t.
         physical equality [(==)], so as to reduce memory consumption and
         enhance efficiency of equality tests.
 
@@ -32,15 +32,15 @@ module type HashconsedType =
         Usually a tuple of functions. *)
     val hashcons :  u -> t -> t
     (** The actual hashconsing function, using its fist argument to recursively
-        hashcons substructures. It should be compatible with [equal], that is
-        [equal x (hashcons f x) = true]. *)
-    val equal : t -> t -> bool
+        hashcons substructures. It should be compatible with [eq], that is
+        [eq x (hashcons f x) = true]. *)
+    val eq : t -> t -> bool
     (** A comparison function. It is allowed to use physical equality
         on the sub-terms hashconsed by the [hashcons] function, but it should be
         insensible to shallow copy of the compared object. *)
     val hash : t -> int
     (** A hash function passed to the underlying hashtable structure. [hash]
-        should be compatible with [equal], i.e. if [equal x y = true] then
+        should be compatible with [eq], i.e. if [eq x y = true] then
         [hash x = hash y]. *)
   end
 

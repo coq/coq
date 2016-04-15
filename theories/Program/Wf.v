@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -89,7 +89,7 @@ Section Measure_well_founded.
   Lemma measure_wf: well_founded MR.
   Proof with auto.
     unfold well_founded.
-    cut (forall a: M, (fun mm: M => forall a0: T, m a0 = mm -> Acc MR a0) a).
+    cut (forall (a: M) (a0: T), m a0 = a -> Acc MR a0).
       intros.
       apply (H (m a))...
     apply (@well_founded_ind M R wf (fun mm => forall a, m a = mm -> Acc MR a)).

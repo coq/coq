@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,6 +13,7 @@ open Util
 open Term
 open Tacmach
 open Proof_search
+open Context.Named.Declaration
 
 let force count lazc = incr count;Lazy.force lazc
 
@@ -128,9 +129,9 @@ let rec make_form atom_env gls term =
 
 let rec make_hyps atom_env gls lenv = function
     [] -> []
-  | (_,Some body,typ)::rest ->
+  | LocalDef (_,body,typ)::rest ->
       make_hyps atom_env gls (typ::body::lenv) rest
-  | (id,None,typ)::rest ->
+  | LocalAssum (id,typ)::rest ->
       let hrec=
 	make_hyps atom_env gls (typ::lenv) rest in
 	if List.exists (Termops.dependent (mkVar id)) lenv ||

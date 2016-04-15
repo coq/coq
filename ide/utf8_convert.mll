@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,7 +12,7 @@
 
 }
 
-(* Replace all occurences of \x{iiii} and \x{iiiiiiii} by UTF-8 valid chars *)
+(* Replace all occurrences of \x{iiii} and \x{iiiiiiii} by UTF-8 valid chars *)
 
 let digit = ['0'-'9''A'-'Z''a'-'z']
 let short = digit digit digit digit

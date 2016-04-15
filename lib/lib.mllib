@@ -1,6 +1,5 @@
 Errors
 Bigint
-Dyn
 Segmenttree
 Unicodetable
 Unicode
@@ -15,6 +14,6 @@ Rtree
 Heap
 Unionfind
 Genarg
-Ephemeron
+CEphemeron
 Future
 RemoteCounter

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -33,9 +33,9 @@ and pr_intro_pattern_action prc = function
   | IntroRewrite false -> str "<-"
 
 and pr_or_and_intro_pattern prc = function
-  | [pl] ->
+  | IntroAndPattern pl ->
       str "(" ++ hv 0 (prlist_with_sep pr_comma (pr_intro_pattern prc) pl) ++ str ")"
-  | pll ->
+  | IntroOrPattern pll ->
       str "[" ++
       hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc (pr_intro_pattern prc)) pll)
       ++ str "]"

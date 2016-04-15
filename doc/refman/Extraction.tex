@@ -198,6 +198,11 @@ this constant is not declared in the generated file.
 
 \asubsection{Extra elimination of useless arguments}
 
+The following command provides some extra manual control on the
+code elimination performed during extraction, in a way which
+is independent but complementary to the main elimination
+principles of extraction (logical parts and types).
+
 \begin{description}
 \item \comindex{Extraction Implicit}
  {\tt Extraction Implicit} \qualid\ [ \ident$_1$ \dots\ \ident$_n$ ].
@@ -207,12 +212,27 @@ This experimental command allows declaring some arguments of
 be removed by extraction. Here \qualid\ can be any function or
 inductive constructor, and \ident$_i$ are the names of the concerned
 arguments. In fact, an argument can also be referred by a number
-indicating its position, starting from 1. When an actual extraction
-takes place, an error is raised if the {\tt Extraction Implicit}
+indicating its position, starting from 1.
+\end{description}
+
+When an actual extraction takes place, an error is normally raised if the
+{\tt Extraction Implicit}
 declarations cannot be honored, that is if any of the implicited
-variables still occurs in the final code. This declaration of useless
-arguments is independent but complementary to the main elimination
-principles of extraction (logical parts and types).
+variables still occurs in the final code. This behavior can be relaxed
+via the following option:
+
+\begin{description}
+\item \optindex{Extraction SafeImplicits} {\tt Unset Extraction SafeImplicits.}
+
+Default is Set. When this option is Unset, a warning is emitted
+instead of an error if some implicited variables still occur in the
+final code of an extraction. This way, the extracted code may be
+obtained nonetheless and reviewed manually to locate the source of the issue
+(in the code, some comments mark the location of these remaining
+implicited variables).
+Note that this extracted code might not compile or run properly,
+depending of the use of these remaining implicited variables.
+
 \end{description}
 
 \asubsection{Realizing axioms}\label{extraction:axioms}

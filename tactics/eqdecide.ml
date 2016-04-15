@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,8 +12,6 @@
 (*                           by Eduardo Gimenez                        *)
 (************************************************************************)
 
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
 open Errors
 open Util
 open Names
@@ -24,9 +22,12 @@ open Tactics
 open Tacticals.New
 open Auto
 open Constr_matching
+open Misctypes
 open Hipattern
+open Pretyping
 open Tacmach.New
 open Coqlib
+open Proofview.Notations
 
 (* This file containts the implementation of the tactics ``Decide
    Equality'' and ``Compare''. They can be used to decide the
@@ -73,10 +74,15 @@ let mkBranches c1 c2 =
      clear_last;
      intros]
 
+let discrHyp id =
+  let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
+  let tac c = Equality.discr_tac false (Some (None, Tacexpr.ElimOnConstr c)) in
+  Tacticals.New.tclDELAYEDWITHHOLES false c tac
+
 let solveNoteqBranch side =
   tclTHEN (choose_noteq side)
     (tclTHEN introf
-      (onLastHypId (fun id -> Extratactics.discrHyp id)))
+      (onLastHypId (fun id -> discrHyp id)))
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
@@ -116,16 +122,21 @@ let rec rewrite_and_clear hyps = match hyps with
 let eqCase tac =
   tclTHEN intro (onLastHypId tac)
 
+let injHyp id =
+  let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
+  let tac c = Equality.injClause None false (Some (None, Tacexpr.ElimOnConstr c)) in
+  Tacticals.New.tclDELAYEDWITHHOLES false c tac
+
 let diseqCase hyps eqonleft =
   let diseq  = Id.of_string "diseq" in
   let absurd = Id.of_string "absurd" in
   (tclTHEN (intro_using diseq)
   (tclTHEN (choose_noteq eqonleft)
   (tclTHEN (rewrite_and_clear (List.rev hyps))
-  (tclTHEN  (Proofview.V82.tactic red_in_concl)
+  (tclTHEN  (red_in_concl)
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (Simple.apply (mkVar diseq))
-  (tclTHEN  (Extratactics.injHyp absurd)
+  (tclTHEN  (injHyp absurd)
             (full_trivial []))))))))
 
 open Proofview.Notations
@@ -146,7 +157,7 @@ let rec solveArg hyps eqonleft op largs rargs = match largs, rargs with
     intros_reflexivity;
   ]
 | a1 :: largs, a2 :: rargs ->
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let rectype = pf_unsafe_type_of gl a1 in
   let decide = mkDecideEqGoal eqonleft op rectype a1 a2 in
   let tac hyp = solveArg (hyp :: hyps) eqonleft op largs rargs in
@@ -154,13 +165,13 @@ let rec solveArg hyps eqonleft op largs rargs = match largs, rargs with
     if eqonleft then [eqCase tac;diseqCase hyps eqonleft;default_auto]
     else [diseqCase hyps eqonleft;eqCase tac;default_auto] in
   (tclTHENS (elim_type decide) subtacs)
-  end
+  end }
 | _ -> invalid_arg "List.fold_right2"
 
 let solveEqBranch rectype =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.enter begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
         let concl = pf_nf_concl gl in
         match_eqdec concl >>= fun (eqonleft,op,lhs,rhs,_) ->
           let (mib,mip) = Global.lookup_inductive rectype in
@@ -169,7 +180,7 @@ let solveEqBranch rectype =
           let rargs   = getargs rhs
           and largs   = getargs lhs in
           solveArg [] eqonleft op largs rargs
-      end
+      end }
     end
     begin function (e, info) -> match e with
       | PatternMatchingFailure -> Tacticals.New.tclZEROMSG (Pp.str"Unexpected conclusion!")
@@ -185,7 +196,7 @@ let hd_app c = match kind_of_term c with
 let decideGralEquality =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.enter begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
         let concl = pf_nf_concl gl in
         match_eqdec concl >>= fun (eqonleft,_,c1,c2,typ) ->
         let headtyp = hd_app (pf_compute gl typ) in
@@ -196,7 +207,7 @@ let decideGralEquality =
           (tclTHEN
              (mkBranches c1 c2)
              (tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
-      end
+      end }
     end
     begin function (e, info) -> match e with
       | PatternMatchingFailure ->
@@ -207,20 +218,20 @@ let decideGralEquality =
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 
 let decideEquality rectype =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let decide = mkGenDecideEqGoal rectype gl in
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal])
-  end
+  end }
 
 
 (* The tactic Compare *)
 
 let compare c1 c2 =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let rectype = pf_unsafe_type_of gl c1 in
   let decide = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 in
   (tclTHENS (cut decide)
             [(tclTHEN  intro
              (tclTHEN (onLastHyp simplest_case) clear_last));
              decideEquality rectype])
-  end
+  end }

@@ -87,7 +87,13 @@ let matrix_transpose mat =
 
 let identity x = x
 
-let compose f g x = f (g x)
+(** Function composition: the mathematical [∘] operator.
+
+    So [g % f] is a synonym for [fun x -> g (f x)].
+
+    Also because [%] is right-associative, [h % g % f] means [fun x -> h (g (f x))].
+ *)
+let (%) f g x = f (g x)
 
 let const x _ = x
 
@@ -124,10 +130,26 @@ let delayed_force f = f ()
 
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
+type ('a, 'b) eq = ('a, 'b) CSig.eq = Refl : ('a, 'a) eq
 
-let map_union f g = function
-  | Inl a -> Inl (f a)
-  | Inr b -> Inr (g b)
+module Union =
+struct
+  let map f g = function
+    | Inl a -> Inl (f a)
+    | Inr b -> Inr (g b)
+
+  (** Lifting equality onto union types. *)
+  let equal f g x y = match x, y with
+    | Inl x, Inl y -> f x y
+    | Inr x, Inr y -> g x y
+    | _, _ -> false
+
+  let fold_left f g a = function
+    | Inl y -> f a y
+    | Inr y -> g a y
+end
+
+let map_union = Union.map
 
 type iexn = Exninfo.iexn
 

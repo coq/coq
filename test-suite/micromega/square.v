@@ -53,8 +53,7 @@ Qed.
 
 Theorem sqrt2_not_rational : ~exists x:Q, x^2==2#1.
 Proof.
- unfold Qeq; intros [x]; simpl (Qden (2#1)); rewrite Z.mul_1_r.
- intros HQeq.
+ unfold Qeq; intros (x,HQeq); simpl (Qden (2#1)) in HQeq; rewrite Z.mul_1_r in HQeq.
  assert (Heq : (Qnum x ^ 2 = 2 * ' Qden x ^ 2%Q)%Z) by
    (rewrite QnumZpower in HQeq ; rewrite QdenZpower in HQeq ; auto).
  assert (Hnx : (Qnum x <> 0)%Z)

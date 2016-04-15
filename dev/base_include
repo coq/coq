@@ -17,6 +17,7 @@
 #directory "grammar";;
 #directory "intf";;
 #directory "stm";;
+#directory "ltac";;
 
 #directory "+camlp4";; (* lazy solution: add both of camlp4/5 so that *)
 #directory "+camlp5";; (* Gramext is found in top_printers.ml *)
@@ -149,6 +150,7 @@ open Tactic_debug
 open Decl_proof_instr
 open Decl_mode
 
+open Hints
 open Auto
 open Autorewrite
 open Contradiction

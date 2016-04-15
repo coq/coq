@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -57,7 +57,7 @@ struct
     open Hashset.Combine
     type t = set
     type u = M.t -> M.t
-    let equal s1 s2 = s1 == s2 || eqeq (spine s1 []) (spine s2 [])
+    let eq s1 s2 = s1 == s2 || eqeq (spine s1 []) (spine s2 [])
     let hash s = Set.fold (fun v accu -> combine (H.hash v) accu) s 0
     let hashcons = umap
   end

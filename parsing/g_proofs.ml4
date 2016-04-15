@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -37,12 +37,12 @@ GEXTEND Gram
   command:
     [ [ IDENT "Goal"; c = lconstr -> VernacGoal c
       | IDENT "Proof" ->
-          VernacProof (None,hint_proof_using G_vernac.section_subset_descr None)
+          VernacProof (None,hint_proof_using G_vernac.section_subset_expr None)
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
       | IDENT "Proof"; "with"; ta = tactic; 
-        l = OPT [ "using"; l = G_vernac.section_subset_descr -> l ] ->
-          VernacProof (Some ta,hint_proof_using G_vernac.section_subset_descr l)
-      | IDENT "Proof"; "using"; l = G_vernac.section_subset_descr;
+        l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
+          VernacProof (Some ta,hint_proof_using G_vernac.section_subset_expr l)
+      | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
         ta = OPT [ "with"; ta = tactic -> ta ] ->
           VernacProof (ta,Some l)
       | IDENT "Proof"; c = lconstr -> VernacExactProof c
@@ -73,8 +73,10 @@ GEXTEND Gram
       | IDENT "Unfocused" -> VernacUnfocused
       | IDENT "Show" -> VernacShow (ShowGoal OpenSubgoals)
       | IDENT "Show"; n = natural -> VernacShow (ShowGoal (NthGoal n))
+      | IDENT "Show"; id = ident -> VernacShow (ShowGoal (GoalId id))
+      | IDENT "Show"; IDENT "Goal" -> VernacShow (ShowGoal (GoalId (Names.Id.of_string "Goal")))
       | IDENT "Show"; IDENT "Goal"; n = string ->
-          VernacShow (ShowGoal (GoalId n))
+          VernacShow (ShowGoal (GoalUid n))
       | IDENT "Show"; IDENT "Implicit"; IDENT "Arguments"; n = OPT natural ->
 	  VernacShow (ShowGoalImplicitly n)
       | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode

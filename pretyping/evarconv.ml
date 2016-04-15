@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,10 +18,13 @@ open Termops
 open Environ
 open Recordops
 open Evarutil
+open Evardefine
 open Evarsolve
 open Globnames
 open Evd
 open Pretype_errors
+open Sigma.Notations
+open Context.Rel.Declaration
 
 type unify_fun = transparent_state ->
   env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
@@ -54,12 +57,15 @@ let eval_flexible_term ts env evd c =
       then constant_opt_value_in env cu
       else None
   | Rel n ->
-      (try let (_,v,_) = lookup_rel n env in Option.map (lift n) v
-      with Not_found -> None)
+      (try match lookup_rel n env with
+           | LocalAssum _ -> None
+           | LocalDef (_,v,_) -> Some (lift n v)
+       with Not_found -> None)
   | Var id ->
       (try
 	 if is_transparent_variable ts id then
-	   let (_,v,_) = lookup_named id env in v
+           let open Context.Named.Declaration in
+	   lookup_named id env |> get_value
 	 else None
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
@@ -138,6 +144,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
     try
       match kind_of_term t2 with
 	Prod (_,a,b) -> (* assert (l2=[]); *)
+	  let _, a, b = destProd (Evarutil.nf_evar sigma t2) in
       	  if dependent (mkRel 1) b then raise Not_found
 	  else lookup_canonical_conversion (proji, Prod_cs),
 	    (Stack.append_app [|a;pop b|] Stack.empty)
@@ -317,25 +324,22 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
      Note: incomplete heuristic... *)
   let ground_test =
     if is_ground_term evd term1 && is_ground_term evd term2 then (
-      let evd, e = 
+      let e =
 	try
 	  let evd, b = infer_conv ~catch_incon:false ~pb:pbty ~ts:(fst ts)
 	    env evd term1 term2 
 	  in
-	    if b then evd, None
-	    else evd, Some (ConversionFailed (env,term1,term2))
-	with Univ.UniverseInconsistency e -> evd, Some (UnifUnivInconsistency e)
+	    if b then Success evd
+	    else UnifFailure (evd, ConversionFailed (env,term1,term2))
+	with Univ.UniverseInconsistency e -> UnifFailure (evd, UnifUnivInconsistency e)
       in
 	match e with
-	| None -> Some (evd, e)
-	| Some e -> 
-	  if is_ground_env evd env then Some (evd, Some e)
-	  else None)
+	| UnifFailure (evd, e) when not (is_ground_env evd env) -> None
+	| _ -> Some e)
     else None
   in
   match ground_test with
-    | Some (evd, None) -> Success evd
-    | Some (evd, Some e) -> UnifFailure (evd,e)
+    | Some result -> result
     | None ->
 	(* Until pattern-unification is used consistently, use nohdbeta to not
 	   destroy beta-redexes that can be used for 1st-order unification *)
@@ -393,7 +397,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     assert (match sk with [] -> true | _ -> false);
     let (na,c1,c'1) = destLambda term in
     let c = nf_evar evd c1 in
-    let env' = push_rel (na,None,c) env in
+    let env' = push_rel (LocalAssum (na,c)) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
       (fst ts) env' evd Cst_stack.empty (c'1, Stack.empty) in
     let out2 = whd_nored_state evd
@@ -560,7 +564,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	       let b = nf_evar i b1 in
 	       let t = nf_evar i t1 in
                let na = Nameops.name_max na1 na2 in
-	       evar_conv_x ts (push_rel (na,Some b,t) env) i pbty c'1 c'2);
+	       evar_conv_x ts (push_rel (LocalDef (na,b,t)) env) i pbty c'1 c'2);
 	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
 	and f2 i =
           let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1)
@@ -675,7 +679,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
            (fun i ->
 	     let c = nf_evar i c1 in
              let na = Nameops.name_max na1 na2 in
-	     evar_conv_x ts (push_rel (na,None,c) env) i CONV c'1 c'2)]
+	     evar_conv_x ts (push_rel (LocalAssum (na,c)) env) i CONV c'1 c'2)]
 
     | Flexible ev1, Rigid -> flex_rigid true ev1 appr1 appr2
     | Rigid, Flexible ev2 -> flex_rigid false ev2 appr2 appr1
@@ -734,7 +738,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                (fun i ->
  	         let c = nf_evar i c1 in
                  let na = Nameops.name_max n1 n2 in
-	         evar_conv_x ts (push_rel (na,None,c) env) i pbty c'1 c'2)]
+	         evar_conv_x ts (push_rel (LocalAssum (na,c)) env) i pbty c'1 c'2)]
 
 	| Rel x1, Rel x2 ->
 	    if Int.equal x1 x2 then
@@ -830,7 +834,9 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 	      (i,t2::ks, m-1, test)
 	  else
 	    let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
-            let (i',ev) = new_evar env i ~src:dloc (substl ks b) in
+	    let i = Sigma.Unsafe.of_evar_map i in
+            let Sigma (ev, i', _) = Evarutil.new_evar env i ~src:dloc (substl ks b) in
+            let i' = Sigma.to_evar_map i' in
 	    (i', ev :: ks, m - 1,test))
 	(evd,[],List.length bs,fun i -> Success i) bs
     in
@@ -854,7 +860,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
-    | Some (Some (id, projs, pbs)) when mib.Declarations.mind_finite <> Decl_kinds.CoFinite -> 
+    | Some (Some (id, projs, pbs)) when mib.Declarations.mind_finite == Decl_kinds.BiFinite -> 
       let pars = mib.Declarations.mind_nparams in
 	(try 
 	   let l1' = Stack.tail pars sk1 in
@@ -909,6 +915,7 @@ let choose_less_dependent_instance evk evd term args =
   | [] -> None
   | (id, _) :: _ -> Some (Evd.define evk (mkVar id) evd)
 
+open Context.Named.Declaration
 let apply_on_subterm env evdref f c t =
   let rec applyrec (env,(k,c) as acc) t =
     (* By using eq_constr, we make an approximation, for instance, we *)
@@ -919,7 +926,7 @@ let apply_on_subterm env evdref f c t =
       match kind_of_term t with
       | Evar (evk,args) when Evd.is_undefined !evdref evk ->
           let ctx = evar_filtered_context (Evd.find_undefined !evdref evk) in
-          let g (_,b,_) a = if Option.is_empty b then applyrec acc a else a in
+          let g decl a = if is_local_assum decl then applyrec acc a else a in
           mkEvar (evk, Array.of_list (List.map2 g ctx (Array.to_list args)))
       | _ ->
         map_constr_with_binders_left_to_right
@@ -936,17 +943,17 @@ let filter_possible_projections c ty ctxt args =
   let fv2 = collect_vars (mkApp (c,args)) in
   let len = Array.length args in
   let tyvars = collect_vars ty in
-  List.map_i (fun i (id,b,_) ->
+  List.map_i (fun i decl ->
     let () = assert (i < len) in
     let a = Array.unsafe_get args i in
-    (match b with None -> false | Some c -> not (isRel c || isVar c)) ||
+    (match decl with LocalAssum _ -> false | LocalDef (_,c,_) -> not (isRel c || isVar c)) ||
     a == c ||
     (* Here we make an approximation, for instance, we could also be *)
     (* interested in finding a term u convertible to c such that a occurs *)
     (* in u *)
     isRel a && Int.Set.mem (destRel a) fv1 ||
     isVar a && Id.Set.mem (destVar a) fv2 ||
-    Id.Set.mem id tyvars)
+    Id.Set.mem (get_id decl) tyvars)
     0 ctxt
 
 let solve_evars = ref (fun _ -> failwith "solve_evars not installed")
@@ -977,17 +984,18 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   let env_evar = evar_filtered_env evi in
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
-  let instance = List.map mkVar (List.map pi1 ctxt) in
+  let instance = List.map mkVar (List.map get_id ctxt) in
 
   let rec make_subst = function
-  | (id,_,t)::ctxt', c::l, occs::occsl when isVarId id c ->
+  | decl'::ctxt', c::l, occs::occsl when isVarId (get_id decl') c ->
       begin match occs with
       | Some _ ->
         error "Cannot force abstraction on identity instance."
       | None ->
         make_subst (ctxt',l,occsl)
       end
-  | (id,_,t)::ctxt', c::l, occs::occsl ->
+  | decl'::ctxt', c::l, occs::occsl ->
+      let (id,_,t) = to_tuple decl' in
       let evs = ref [] in
       let ty = Retyping.get_type_of env_rhs evd c in
       let filter' = filter_possible_projections c ty ctxt args in
@@ -1004,7 +1012,9 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         | None ->
         let evty = set_holes evdref cty subst in
         let instance = Filter.filter_list filter instance in
-        let evd,ev = new_evar_instance sign !evdref evty ~filter instance in
+        let evd = Sigma.Unsafe.of_evar_map !evdref in
+        let Sigma (ev, evd, _) = new_evar_instance sign evd evty ~filter instance in
+        let evd = Sigma.to_evar_map evd in
         evdref := evd;
         evsref := (fst (destEvar ev),evty)::!evsref;
         ev in
@@ -1096,7 +1106,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       | Some evd -> Success evd
       | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
   | Evar (evk1,args1), Evar (evk2,args2) when Evar.equal evk1 evk2 ->
-      let f env evd pbty x y = is_trans_fconv pbty ts env evd x y in
+      let f env evd pbty x y = is_fconv ~reds:ts pbty env evd x y in
       Success (solve_refl ~can_drop:true f env evd
                  (position_problem true pbty) evk1 args1 args2)
   | Evar ev1, Evar ev2 ->

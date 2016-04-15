@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -25,6 +25,9 @@ type cl_typ =
 val cl_typ_eq : cl_typ -> cl_typ -> bool
 
 val subst_cl_typ : substitution -> cl_typ -> cl_typ
+
+(** Comparison of [cl_typ] *)
+val cl_typ_ord : cl_typ -> cl_typ -> int
 
 (** This is the type of infos for declared classes *)
 type cl_info_typ = {

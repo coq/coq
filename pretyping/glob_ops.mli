@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -38,6 +38,7 @@ val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a
 val iter_glob_constr : (glob_constr -> unit) -> glob_constr -> unit
 val occur_glob_constr : Id.t -> glob_constr -> bool
 val free_glob_vars : glob_constr -> Id.t list
+val bound_glob_vars : glob_constr -> Id.Set.t
 val loc_of_glob_constr : glob_constr -> Loc.t
 
 (** [map_pattern_binders f m c] applies [f] to all the binding names

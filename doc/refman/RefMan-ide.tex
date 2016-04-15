@@ -215,12 +215,13 @@ mouse button, press the key you want for the new shortcut, and release
 the mouse button afterwards. If your system does not allow it, you may still 
 edit this configuration file by hand, but this is more involved.
 
-\section{Using unicode symbols}
+\section{Using Unicode symbols}
 
-\CoqIDE{} supports unicode character encoding in its text windows,
-consequently a large set of symbols is available for notations.
+\CoqIDE{} is based on GTK+ and inherits from it support for Unicode in
+its text windows. Consequently a large set of symbols is available for
+notations.
 
-\subsection{Displaying unicode symbols}
+\subsection{Displaying Unicode symbols}
 
 You just need to define suitable notations as described in
 Chapter~\ref{Addoc-syntax}. For example, to use the mathematical symbols
@@ -236,31 +237,33 @@ file \verb|utf8.v| of \Coq{} library, so you may enable them just by
 \verb|Require utf8| inside \CoqIDE{}, or equivalently, by starting
 \CoqIDE{} with \verb|coqide -l utf8|.
 
-However, there are some issues when using such unicode symbols: you of
+However, there are some issues when using such Unicode symbols: you of
 course need to use a character font which supports them. In the Fonts
-section of the preferences, the Preview line displays some unicode symbols, so
+section of the preferences, the Preview line displays some Unicode symbols, so
 you could figure out if the selected font is OK. Related to this, one
-thing you may need to do is choose whether Gtk should use antialiased
+thing you may need to do is choose whether GTK+ should use antialiased
 fonts or not, by setting the environment variable \verb|GDK_USE_XFT|
 to 1 or 0 respectively.
 
 \subsection{Defining an input method for non ASCII symbols}
 
-To input an Unicode symbol, a general method is to press both the
-CONTROL and the SHIFT keys, and type the hexadecimal code of the
+To input a Unicode symbol, a general method provided by GTK+
+is to simultaneously press the
+Control, Shift and ``u'' keys, release, then type the hexadecimal code of the
 symbol required, for example \verb|2200| for the $\forall$ symbol.
 A list of symbol codes is available at \url{http://www.unicode.org}. 
 
-This method obviously doesn't scale, that's why the preferred alternative is to
-use an Input Method Editor. On POSIX systems (Linux distros, BSD variants and
-MacOS X), you can use \texttt{uim} version 1.6 or later which provides a \LaTeX{}-style
+An alternative method which does not require to know the hexadecimal
+code of the character is to use an Input Method Editor. On POSIX
+systems (Linux distributions, BSD variants and MacOS X), you can use
+\texttt{uim} version 1.6 or later which provides a \LaTeX{}-style
 input method.
 
 To configure \texttt{uim}, execute \texttt{uim-pref-gtk} as your regular user.
 In the "Global Settings" group set the default Input Method to "ELatin" (don't
 forget to tick the checkbox "Specify default IM"). In the "ELatin" group set the
 layout to "TeX", and remember the content of the "[ELatin] on" field (by default
-"<Control>\textbackslash"). You can now execute CoqIDE with the following commands (assuming
+Control-\textbackslash). You can now execute CoqIDE with the following commands (assuming
 you use a Bourne-style shell):
 
 \begin{verbatim}
@@ -268,7 +271,7 @@ $ export GTK_IM_MODULE=uim
 $ coqide
 \end{verbatim}
 
-Activate the ELatin Input Method with Ctrl-\textbackslash, then type the
+Activate the ELatin Input Method with Control-\textbackslash, then type the
 sequence "\verb=\Gamma=". You will see the sequence being
 replaced by $\Gamma$ as soon as you type the second "a".
 
@@ -286,7 +289,7 @@ detect its character encoding.)
 If you choose something else than UTF-8, then missing characters will
 be written encoded by \verb|\x{....}| or \verb|\x{........}| where
 each dot is an hexadecimal digit: the number between braces is the
-hexadecimal UNICODE index for the missing character.
+hexadecimal Unicode index for the missing character.
 
 
 %%% Local Variables: 

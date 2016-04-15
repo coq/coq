@@ -9,6 +9,7 @@
 open Vernacexpr
 open Names
 open Feedback
+open Loc
 
 (** state-transaction-machine interface *)
 
@@ -19,7 +20,7 @@ open Feedback
    The sentence [s] is parsed in the state [ontop].
    If [newtip] is provided, then the returned state id is guaranteed to be
    [newtip] *)
-val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(located_vernac_expr -> unit) ->
+val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(vernac_expr located -> unit) ->
   bool -> edit_id -> string ->
     Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
@@ -35,7 +36,9 @@ val query :
    new document tip, the document between [id] and [fo.stop] has been dropped.
    The portion between [fo.stop] and [fo.tip] has been kept.  [fo.start] is
    just to tell the gui where the editing zone starts, in case it wants to
-   graphically denote it.  All subsequent [add] happen on top of [id]. *)
+   graphically denote it.  All subsequent [add] happen on top of [id].
+   If Flags.async_proofs_full is set, then [id] is not [observe]d, else it is.
+*)
 type focus = { start : Stateid.t; stop : Stateid.t; tip : Stateid.t }
 val edit_at : Stateid.t -> [ `NewTip | `Focus of focus ]
 
@@ -49,11 +52,11 @@ val stop_worker : string -> unit
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : unit -> unit
 
-(* Saves on the dist a .vio corresponding to the current status:
-   - if the worker prool is empty, all tasks are saved
+(* Saves on the disk a .vio corresponding to the current status:
+   - if the worker pool is empty, all tasks are saved
    - if the worker proof is not empty, then it waits until all workers
      are done with their current jobs and then dumps (or fails if one
-     of the completed tasks is a failuere) *)
+     of the completed tasks is a failure) *)
 val snapshot_vio : DirPath.t -> string -> unit
 
 (* Empties the task queue, can be used only if the worker pool is empty (E.g.
@@ -81,6 +84,10 @@ val set_compilation_hints : string -> unit
 (* Reorders the task queue putting forward what is in the perspective *)
 val set_perspective : Stateid.t list -> unit
 
+type document
+val backup : unit -> document
+val restore : document -> unit
+
 (** workers **************************************************************** **)
 
 module ProofTask : AsyncTaskQueue.Task
@@ -98,9 +105,12 @@ val state_computed_hook : (Stateid.t -> in_cache:bool -> unit) Hook.t
 val parse_error_hook :
   (Feedback.edit_or_state_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val execution_error_hook : (Stateid.t -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
-val unreachable_state_hook : (Stateid.t -> unit) Hook.t
+val unreachable_state_hook : (Stateid.t -> Exninfo.iexn -> unit) Hook.t
 (* ready means that master has it at hand *)
 val state_ready_hook : (Stateid.t -> unit) Hook.t
+(* called with true before and with false after a tactic explicitly
+ * in the document is run *)
+val tactic_being_run_hook : (bool -> unit) Hook.t
 
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
@@ -117,7 +127,7 @@ val state_of_id : Stateid.t -> [ `Valid of state option | `Expired ]
 (* Adds a new line to the document.  It replaces the core of Vernac.interp.
    [finish] is called as the last bit of this function is the system
    is running interactively (-emacs or coqtop). *)
-val interp : bool -> located_vernac_expr -> unit
+val interp : bool -> vernac_expr located -> unit
 
 (* Queries for backward compatibility *)
 val current_proof_depth : unit -> int
@@ -130,3 +140,4 @@ val process_error_hook : Future.fix_exn Hook.t
 val interp_hook : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
   Loc.t * Vernacexpr.vernac_expr -> unit) Hook.t
 val with_fail_hook : (bool -> (unit -> unit) -> unit) Hook.t
+val get_fix_exn : unit -> (Exninfo.iexn -> Exninfo.iexn)

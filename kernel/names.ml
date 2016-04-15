@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -23,6 +23,7 @@ open Util
 
 (** {6 Identifiers } *)
 
+(** Representation and operations on identifiers. *)
 module Id =
 struct
   type t = string
@@ -74,10 +75,18 @@ struct
 
 end
 
-
+(** Representation and operations on identifiers that are allowed to be anonymous
+    (i.e. "_" in concrete syntax). *)
 module Name =
 struct
-  type t = Name of Id.t | Anonymous
+  type t = Anonymous     (** anonymous identifier *)
+	 | Name of Id.t  (** non-anonymous identifier *)
+
+  let is_anonymous = function
+    | Anonymous -> true
+    | Name _ -> false
+
+  let is_name = not % is_anonymous
 
   let compare n1 n2 = match n1, n2 with
     | Anonymous, Anonymous -> 0
@@ -102,7 +111,7 @@ struct
       let hashcons hident = function
         | Name id -> Name (hident id)
         | n -> n
-      let equal n1 n2 =
+      let eq n1 n2 =
         n1 == n2 ||
         match (n1,n2) with
           | (Name id1, Name id2) -> id1 == id2
@@ -117,8 +126,8 @@ struct
 
 end
 
-type name = Name.t = Name of Id.t | Anonymous
 (** Alias, to import constructors. *)
+type name = Name.t = Anonymous | Name of Id.t
 
 (** {6 Various types based on identifiers } *)
 
@@ -204,7 +213,7 @@ struct
     DirPath.to_string p ^ "." ^ s
 
   let debug_to_string (i, s, p) =
-    "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
+    "<"^DirPath.to_string p ^"#" ^ s ^"#"^ string_of_int i^">"
 
   let compare (x : t) (y : t) =
     if x == y then 0
@@ -236,7 +245,7 @@ struct
       type t = _t
       type u = (Id.t -> Id.t) * (DirPath.t -> DirPath.t)
       let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
-      let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
+      let eq ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
         (x == y) ||
         (Int.equal n1 n2 && s1 == s2 && dir1 == dir2)
       let hash = hash
@@ -281,6 +290,11 @@ module ModPath = struct
     | MPfile sl -> DirPath.to_string sl
     | MPbound uid -> MBId.to_string uid
     | MPdot (mp,l) -> to_string mp ^ "." ^ Label.to_string l
+
+  let rec debug_to_string = function
+    | MPfile sl -> DirPath.to_string sl
+    | MPbound uid -> MBId.debug_to_string uid
+    | MPdot (mp,l) -> debug_to_string mp ^ "." ^ Label.to_string l
 
   (** we compare labels first if both are MPdots *)
   let rec compare mp1 mp2 =
@@ -327,7 +341,7 @@ module ModPath = struct
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
       | MPdot (md,l) -> MPdot (hashcons hfuns md, hstr l)
-    let rec equal d1 d2 =
+    let rec eq d1 d2 =
       d1 == d2 ||
       match d1,d2 with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
@@ -375,12 +389,16 @@ module KerName = struct
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
 
-  let to_string kn =
+  let to_string_gen mp_to_string kn =
     let dp =
       if DirPath.is_empty kn.dirpath then "."
       else "#" ^ DirPath.to_string kn.dirpath ^ "#"
     in
-    ModPath.to_string kn.modpath ^ dp ^ Label.to_string kn.knlabel
+    mp_to_string kn.modpath ^ dp ^ Label.to_string kn.knlabel
+
+  let to_string kn = to_string_gen ModPath.to_string kn
+
+  let debug_to_string kn = to_string_gen ModPath.debug_to_string kn
 
   let print kn = str (to_string kn)
 
@@ -423,7 +441,7 @@ module KerName = struct
     let hashcons (hmod,hdir,hstr) kn =
       let { modpath = mp; dirpath = dp; knlabel = l; refhash; } = kn in
       { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; refhash; canary; }
-    let equal kn1 kn2 =
+    let eq kn1 kn2 =
       kn1.modpath == kn2.modpath && kn1.dirpath == kn2.dirpath &&
         kn1.knlabel == kn2.knlabel
     let hash = hash
@@ -477,7 +495,7 @@ module KerPair = struct
     | Dual (kn,_) -> kn
 
   let same kn = Same kn
-  let make knu knc = if knu == knc then Same knc else Dual (knu,knc)
+  let make knu knc = if KerName.equal knu knc then Same knc else Dual (knu,knc)
 
   let make1 = same
   let make2 mp l = same (KerName.make2 mp l)
@@ -500,9 +518,9 @@ module KerPair = struct
   let print kp = str (to_string kp)
 
   let debug_to_string = function
-    | Same kn -> "(" ^ KerName.to_string kn ^ ")"
+    | Same kn -> "(" ^ KerName.debug_to_string kn ^ ")"
     | Dual (knu,knc) ->
-      "(" ^ KerName.to_string knu ^ "," ^ KerName.to_string knc ^ ")"
+      "(" ^ KerName.debug_to_string knu ^ "," ^ KerName.debug_to_string knc ^ ")"
 
   let debug_print kp = str (debug_to_string kp)
 
@@ -524,6 +542,23 @@ module KerPair = struct
     let hash x = KerName.hash (canonical x)
   end
 
+  module SyntacticOrd = struct
+    type t = kernel_pair
+    let compare x y = match x, y with
+      | Same knx, Same kny -> KerName.compare knx kny
+      | Dual (knux,kncx), Dual (knuy,kncy) ->
+        let c = KerName.compare knux knuy in
+        if not (Int.equal c 0) then c
+        else KerName.compare kncx kncy
+      | Same _, _ -> -1
+      | Dual _, _ -> 1
+    let equal x y = x == y || compare x y = 0
+    let hash = function
+      | Same kn -> KerName.hash kn
+      | Dual (knu, knc) ->
+        Hashset.Combine.combine (KerName.hash knu) (KerName.hash knc)
+  end
+
   (** Default (logical) comparison and hash is on the canonical part *)
   let equal = CanOrd.equal
   let hash = CanOrd.hash
@@ -535,7 +570,7 @@ module KerPair = struct
       let hashcons hkn = function
         | Same kn -> Same (hkn kn)
         | Dual (knu,knc) -> make (hkn knu) (hkn knc)
-      let equal x y = (* physical comparison on subterms *)
+      let eq x y = (* physical comparison on subterms *)
         x == y ||
         match x,y with
         | Same x, Same y -> x == y
@@ -573,11 +608,16 @@ module Mindmap = HMap.Make(MutInd.CanOrd)
 module Mindset = Mindmap.Set
 module Mindmap_env = HMap.Make(MutInd.UserOrd)
 
-(** Beware: first inductive has index 0 *)
-(** Beware: first constructor has index 1 *)
+(** Designation of a (particular) inductive type. *)
+type inductive = MutInd.t      (* the name of the inductive type *)
+               * int           (* the position of this inductive type
+                                  within the block of mutually-recursive inductive types.
+                                  BEWARE: indexing starts from 0. *)
 
-type inductive = MutInd.t * int
-type constructor = inductive * int
+(** Designation of a (particular) constructor of a (particular) inductive type. *)
+type constructor = inductive   (* designates the inductive type *)
+                 * int         (* the index of the constructor
+                                  BEWARE: indexing starts from 1. *)
 
 let ind_modpath (mind,_) = MutInd.modpath mind
 let constr_modpath (ind,_) = ind_modpath ind
@@ -590,6 +630,8 @@ let index_of_constructor (ind, i) = i
 let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.equal m1 m2
 let eq_user_ind (m1, i1) (m2, i2) =
   Int.equal i1 i2 && MutInd.UserOrd.equal m1 m2
+let eq_syntactic_ind (m1, i1) (m2, i2) =
+  Int.equal i1 i2 && MutInd.SyntacticOrd.equal m1 m2
 
 let ind_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
@@ -597,15 +639,22 @@ let ind_ord (m1, i1) (m2, i2) =
 let ind_user_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
   if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
+let ind_syntactic_ord (m1, i1) (m2, i2) =
+  let c = Int.compare i1 i2 in
+  if Int.equal c 0 then MutInd.SyntacticOrd.compare m1 m2 else c
 
 let ind_hash (m, i) =
   Hashset.Combine.combine (MutInd.hash m) (Int.hash i)
 let ind_user_hash (m, i) =
   Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
+let ind_syntactic_hash (m, i) =
+  Hashset.Combine.combine (MutInd.SyntacticOrd.hash m) (Int.hash i)
 
 let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
 let eq_user_constructor (ind1, j1) (ind2, j2) =
   Int.equal j1 j2 && eq_user_ind ind1 ind2
+let eq_syntactic_constructor (ind1, j1) (ind2, j2) =
+  Int.equal j1 j2 && eq_syntactic_ind ind1 ind2
 
 let constructor_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
@@ -613,11 +662,16 @@ let constructor_ord (ind1, j1) (ind2, j2) =
 let constructor_user_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
   if Int.equal c 0 then ind_user_ord ind1 ind2 else c
+let constructor_syntactic_ord (ind1, j1) (ind2, j2) =
+  let c = Int.compare j1 j2 in
+  if Int.equal c 0 then ind_syntactic_ord ind1 ind2 else c
 
 let constructor_hash (ind, i) =
   Hashset.Combine.combine (ind_hash ind) (Int.hash i)
 let constructor_user_hash (ind, i) =
   Hashset.Combine.combine (ind_user_hash ind) (Int.hash i)
+let constructor_syntactic_hash (ind, i) =
+  Hashset.Combine.combine (ind_syntactic_hash ind) (Int.hash i)
 
 module InductiveOrdered = struct
   type t = inductive
@@ -662,7 +716,7 @@ module Hind = Hashcons.Make(
     type t = inductive
     type u = MutInd.t -> MutInd.t
     let hashcons hmind (mind, i) = (hmind mind, i)
-    let equal (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
+    let eq (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
     let hash = ind_hash
   end)
 
@@ -671,7 +725,7 @@ module Hconstruct = Hashcons.Make(
     type t = constructor
     type u = inductive -> inductive
     let hashcons hind (ind, j) = (hind ind, j)
-    let equal (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
+    let eq (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
     let hash = constructor_hash
   end)
 
@@ -805,13 +859,22 @@ struct
 
   let hash (c, b) = (if b then 0 else 1) + Constant.hash c
 
+  module SyntacticOrd = struct
+    type t = constant * bool
+    let compare (c, b) (c', b') =
+      if b = b' then Constant.SyntacticOrd.compare c c' else -1
+    let equal (c, b as x) (c', b' as x') =
+      x == x' || b = b' && Constant.SyntacticOrd.equal c c'
+    let hash (c, b) = (if b then 0 else 1) + Constant.SyntacticOrd.hash c
+  end
+
   module Self_Hashcons =
     struct
       type _t = t
       type t = _t
       type u = Constant.t -> Constant.t
       let hashcons hc (c,b) = (hc c,b)
-      let equal ((c,b) as x) ((c',b') as y) =
+      let eq ((c,b) as x) ((c',b') as y) =
         x == y || (c == c' && b == b')
       let hash = hash
     end

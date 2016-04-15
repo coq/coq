@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,19 +13,22 @@ open Misctypes
 open Tacexpr
 open Geninterp
 open Quote
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 DECLARE PLUGIN "quote_plugin"
 
 let loc = Loc.ghost
-let cont = (loc, Id.of_string "cont")
-let x = (loc, Id.of_string "x")
+let cont = Id.of_string "cont"
+let x = Id.of_string "x"
 
-let make_cont (k : glob_tactic_expr) (c : Constr.t) =
+let make_cont (k : Genarg.Val.t) (c : Constr.t) =
   let c = Tacinterp.Value.of_constr c in
-  let tac = TacCall (loc, ArgVar cont, [Reference (ArgVar x)]) in
-  let tac = TacLetIn (false, [(cont, Tacexp k)], TacArg (loc, tac)) in
-  let ist = { lfun = Id.Map.singleton (snd x) c; extra = TacStore.empty; } in
-  Tacinterp.eval_tactic_ist ist tac
+  let tac = TacCall (loc, ArgVar (loc, cont), [Reference (ArgVar (loc, x))]) in
+  let ist = { lfun = Id.Map.add cont k (Id.Map.singleton x c); extra = TacStore.empty; } in
+  Tacinterp.eval_tactic_ist ist (TacArg (loc, tac))
 
 TACTIC EXTEND quote
   [ "quote" ident(f) ] -> [ quote f [] ]

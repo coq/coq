@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -33,6 +33,8 @@ open Pfedit
 open Tacred
 open Printer
 open Vernacexpr
+open Sigma.Notations
+open Context.Named.Declaration
 
 (****************************************)
 (* General functions                    *)
@@ -74,7 +76,7 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of glob_tactic_expr       (* Hint Extern *)
+  | Extern     of Genarg.glob_generic_argument (* Hint Extern *)
 
 type hints_path_atom = 
   | PathHints of global_reference list
@@ -97,7 +99,9 @@ type 'a with_uid = {
   uid : KerName.t;
 }
 
-type hint = (constr * clausenv) hint_ast with_uid
+type raw_hint = constr * types * Univ.universe_context_set
+
+type hint = (raw_hint * clausenv) hint_ast with_uid
 
 type 'a with_metadata = {
   pri  : int;            (* A number lower is higher priority *)
@@ -110,7 +114,7 @@ type 'a with_metadata = {
 type full_hint = hint with_metadata
 
 type hint_entry = global_reference option * 
-  (constr * types * Univ.universe_context_set) hint_ast with_uid with_metadata
+  raw_hint hint_ast with_uid with_metadata
 
 type import_level = [ `LAX | `WARN | `STRICT ]
 
@@ -150,27 +154,6 @@ let fresh_key =
       (ModPath.to_string mp) (DirPath.to_string dir) cur)
     in
     KerName.make mp dir (Label.of_id lbl)
-
-let eq_hints_path_atom p1 p2 = match p1, p2 with
-| PathHints gr1, PathHints gr2 -> List.equal eq_gr gr1 gr2
-| PathAny, PathAny -> true
-| (PathHints _ | PathAny), _ -> false
-
-let eq_auto_tactic t1 t2 = match t1, t2 with
-| Res_pf (c1, _), Res_pf (c2, _) -> Constr.equal c1 c2
-| ERes_pf (c1, _), ERes_pf (c2, _) -> Constr.equal c1 c2
-| Give_exact (c1, _), Give_exact (c2, _) -> Constr.equal c1 c2
-| Res_pf_THEN_trivial_fail (c1, _), Res_pf_THEN_trivial_fail (c2, _) -> Constr.equal c1 c2
-| Unfold_nth gr1, Unfold_nth gr2 -> eq_egr gr1 gr2
-| Extern tac1, Extern tac2 -> tac1 == tac2 (** May cause redundancy in addkv *)
-| (Res_pf _ | ERes_pf _ | Give_exact _ | Res_pf_THEN_trivial_fail _
-  | Unfold_nth _ | Extern _), _ -> false
-
-let eq_hint_metadata t1 t2 =
-  Int.equal t1.pri t2.pri &&
-  Option.equal constr_pattern_eq t1.pat t2.pat &&
-  eq_hints_path_atom t1.name t2.name &&
-  eq_auto_tactic t1.code t2.code
 
 let pri_order_int (id1, {pri=pri1}) (id2, {pri=pri2}) =
   let d = pri1 - pri2 in
@@ -266,21 +249,20 @@ let strip_params env c =
     | _ -> c)
   | _ -> c
 
-let instantiate_hint p =
-  let mk_clenv c cty ctx =
-    let env = Global.env () in
-    let sigma = Evd.merge_context_set univ_flexible (Evd.from_env env) ctx in
-    let cl = mk_clenv_from_env (Global.env()) sigma None (c,cty) in 
+let instantiate_hint env sigma p =
+  let mk_clenv (c, cty, ctx) =
+    let sigma = Evd.merge_context_set univ_flexible sigma ctx in
+    let cl = mk_clenv_from_env env sigma None (c,cty) in 
       {cl with templval = 
 	  { cl.templval with rebus = strip_params env cl.templval.rebus };
 	env = empty_env}
   in
   let code = match p.code.obj with
-    | Res_pf (c, cty, ctx) -> Res_pf (c, mk_clenv c cty ctx)
-    | ERes_pf (c, cty, ctx) -> ERes_pf (c, mk_clenv c cty ctx)
-    | Res_pf_THEN_trivial_fail (c, cty, ctx) ->
-      Res_pf_THEN_trivial_fail (c, mk_clenv c cty ctx)
-    | Give_exact (c, cty, ctx) -> Give_exact (c, mk_clenv c cty ctx)
+    | Res_pf c -> Res_pf (c, mk_clenv c)
+    | ERes_pf c -> ERes_pf (c, mk_clenv c)
+    | Res_pf_THEN_trivial_fail c ->
+      Res_pf_THEN_trivial_fail (c, mk_clenv c)
+    | Give_exact c -> Give_exact (c, mk_clenv c)
     | Unfold_nth e -> Unfold_nth e
     | Extern t -> Extern t
   in
@@ -381,15 +363,19 @@ let rec normalize_path h =
 
 let path_derivate hp hint = normalize_path (path_derivate hp hint)
 
+let pp_hints_path_atom a =
+  match a with
+  | PathAny -> str"*"
+  | PathHints grs -> pr_sequence pr_global grs
+					   
 let rec pp_hints_path = function
-  | PathAtom (PathAny) -> str"."
-  | PathAtom (PathHints grs) -> pr_sequence pr_global grs
-  | PathStar p -> str "(" ++ pp_hints_path p ++ str")*"
+  | PathAtom pa -> pp_hints_path_atom pa
+  | PathStar p -> str "!(" ++ pp_hints_path p ++ str")"
   | PathSeq (p, p') -> pp_hints_path p ++ str" ; " ++ pp_hints_path p'
   | PathOr (p, p') -> 
     str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ spc () ++ pp_hints_path p' ++ str ")"
-  | PathEmpty -> str"Ø"
-  | PathEpsilon -> str"ε"
+  | PathEmpty -> str"emp"
+  | PathEpsilon -> str"eps"
 
 let subst_path_atom subst p =
   match p with
@@ -457,7 +443,9 @@ module Hint_db = struct
     else List.exists (matches_mode args) modes
 
   let merge_entry db nopat pat =
-    let h = Sort.merge pri_order (List.map snd db.hintdb_nopat @ nopat) pat in
+    let h = List.sort pri_order_int (List.map snd db.hintdb_nopat) in
+    let h = List.merge pri_order_int h nopat in
+    let h = List.merge pri_order_int h pat in
     List.map realize_tac h
 
   let map_none db =
@@ -524,8 +512,8 @@ module Hint_db = struct
     in
       List.fold_left (fun db (gr,(id,v)) -> addkv gr id v db) db' db.hintdb_nopat
 
-  let add_one (k, v) db =
-    let v = instantiate_hint v in
+  let add_one env sigma (k, v) db =
+    let v = instantiate_hint env sigma v in
     let st',db,rebuild =
       match v.code.obj with
       | Unfold_nth egr ->
@@ -542,7 +530,7 @@ module Hint_db = struct
     let db, id = next_hint_id db in
     addkv k id v db
 
-  let add_list l db = List.fold_left (fun db k -> add_one k db) db l
+  let add_list env sigma l db = List.fold_left (fun db k -> add_one env sigma k db) db l
 
   let remove_sdl p sdl = List.smartfilter p sdl 
 
@@ -561,7 +549,9 @@ module Hint_db = struct
 
   let remove_one gr db = remove_list [gr] db
 
-  let get_entry se = List.map realize_tac (se.sentry_nopat @ se.sentry_pat)
+  let get_entry se =
+    let h = List.merge pri_order_int se.sentry_nopat se.sentry_pat in
+    List.map realize_tac h
 
   let iter f db =
     let iter_se k se = f (Some k) se.sentry_mode (get_entry se) in
@@ -668,7 +658,7 @@ let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
     match kind_of_term cty with
     | Prod _ -> failwith "make_exact_entry"
     | _ ->
-	let pat = pi3 (Patternops.pattern_of_constr env sigma cty) in
+	let pat = Patternops.pattern_of_constr env sigma cty in
 	let hd =
 	  try head_pattern_bound pat
 	  with BoundPattern -> failwith "make_exact_entry"
@@ -687,7 +677,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
         let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
         let ce = mk_clenv_from_env env sigma' None (c,cty) in
 	let c' = clenv_type (* ~reduce:false *) ce in
-	let pat = pi3 (Patternops.pattern_of_constr env ce.evd c') in
+	let pat = Patternops.pattern_of_constr env ce.evd c' in
         let hd =
 	  try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry" in
@@ -738,11 +728,12 @@ let make_resolves env sigma flags pri poly ?name cr =
   ents
 
 (* used to add an hypothesis to the local hint database *)
-let make_resolve_hyp env sigma (hname,_,htyp) =
+let make_resolve_hyp env sigma decl =
+  let hname = get_id decl in
   try
     [make_apply_entry env sigma (true, true, false) None false
        ~name:(PathHints [VarRef hname])
-       (mkVar hname, htyp, Univ.ContextSet.empty)]
+       (mkVar hname, get_type decl, Univ.ContextSet.empty)]
   with
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly (Pp.str "make_resolve_hyp")
@@ -758,6 +749,7 @@ let make_unfold eref =
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
+  let tacast = Genarg.in_gen (Genarg.glbwit Constrarg.wit_ltac) tacast in
   let hdconstr = Option.map try_head_pattern pat in
   (hdconstr,
    { pri = pri;
@@ -785,7 +777,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd, { pri=1;
 	      poly = poly;
-              pat = Some (pi3 (Patternops.pattern_of_constr env ce.evd (clenv_type ce)));
+              pat = Some (Patternops.pattern_of_constr env ce.evd (clenv_type ce));
 	      name = name;
               code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx)) })
 
@@ -812,7 +804,9 @@ let add_hint dbname hintlist =
   in
   let () = List.iter check hintlist in
   let db = get_db dbname in
-  let db' = Hint_db.add_list hintlist db in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let db' = Hint_db.add_list env sigma hintlist db in
     searchtable_add (dbname,db')
 
 let add_transparency dbname grs b =
@@ -907,7 +901,7 @@ let subst_autohint (subst, obj) =
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code.obj else Unfold_nth ref'
       | Extern tac ->
-	  let tac' = Tacsubst.subst_tactic subst tac in
+	  let tac' = Genintern.generic_substitute subst tac in
 	  if tac==tac' then data.code.obj else Extern tac'
     in
     let name' = subst_path_atom subst data.name in
@@ -1051,7 +1045,7 @@ let default_prepare_hint_ident = Id.of_string "H"
 
 exception Found of constr * types
 
-let prepare_hint check env init (sigma,c) =
+let prepare_hint check (poly,local) env init (sigma,c) =
   let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
   (* We re-abstract over uninstantiated evars.
      It is actually a bit stupid to generalize over evars since the first
@@ -1064,13 +1058,13 @@ let prepare_hint check env init (sigma,c) =
       (* We skip the test whether args is the identity or not *)
       let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
       let t = List.fold_right (fun (e,id) c -> replace_term e id c) !subst t in
-      if not (Int.Set.is_empty (free_rels t)) then
+      if not (closed0 c) then
 	error "Hints with holes dependent on a bound variable not supported.";
       if occur_existential t then
 	(* Not clever enough to construct dependency graph of evars *)
 	error "Not clever enough to deal with evars dependent in other evars.";
       raise (Found (c,t))
-    | _ -> iter_constr find_next_evar c in
+    | _ -> Constr.iter find_next_evar c in
   let rec iter c =
     try find_next_evar c; c
     with Found (evar,t) ->
@@ -1079,15 +1073,20 @@ let prepare_hint check env init (sigma,c) =
       subst := (evar,mkVar id)::!subst;
       mkNamedLambda id t (iter (replace_term evar (mkVar id) c)) in
   let c' = iter c in
-    if check then Evarutil.check_evars (Global.env()) Evd.empty sigma c';
+    if check then Pretyping.check_evars (Global.env()) Evd.empty sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
-      IsConstr (c', diff)
+    if poly then IsConstr (c', diff)
+    else if local then IsConstr (c', diff)
+    else (Global.push_context_set false diff;
+	  IsConstr (c', Univ.ContextSet.empty))
 
 let interp_hints poly =
   fun h ->
-  let f c =
-    let evd,c = Constrintern.interp_open_constr (Global.env()) Evd.empty c in
-      prepare_hint true (Global.env()) Evd.empty (evd,c) in
+  let env = (Global.env()) in
+  let sigma = Evd.from_env env in
+  let f poly c =
+    let evd,c = Constrintern.interp_open_constr env sigma c in
+      prepare_hint true (poly,false) (Global.env()) Evd.empty (evd,c) in
   let fref r =
     let gr = global_with_alias r in
     Dumpglob.add_glob (loc_of_reference r) gr;
@@ -1100,7 +1099,7 @@ let interp_hints poly =
     | HintsReference c ->
       let gr = global_with_alias c in
 	(PathHints [gr], poly, IsGlobRef gr)
-    | HintsConstr c -> (PathAny, poly, f c)
+    | HintsConstr c -> (PathAny, poly, f poly c)
   in
   let fres (pri, b, r) =
     let path, poly, gr = fi r in
@@ -1135,7 +1134,8 @@ let add_hints local dbnames0 h =
   if String.List.mem "nocore" dbnames0 then
     error "The hint database \"nocore\" is meant to stay empty.";
   let dbnames = if List.is_empty dbnames0 then ["core"] else dbnames0 in
-  let env = Global.env() and sigma = Evd.empty in
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
   match h with
   | HintsResolveEntry lhints -> add_resolves env sigma lhints local dbnames
   | HintsImmediateEntry lhints -> add_trivials env sigma lhints local dbnames
@@ -1155,7 +1155,7 @@ let expand_constructor_hints env sigma lems =
 	  (fun i -> IsConstr (mkConstructU ((ind,i+1),u), 
 			      Univ.ContextSet.empty))
     | _ ->
-	[prepare_hint false env sigma (evd,lem)]) lems
+	[prepare_hint false (false,true) env sigma (evd,lem)]) lems
 
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
@@ -1163,10 +1163,16 @@ let expand_constructor_hints env sigma lems =
 let add_hint_lemmas env sigma eapply lems hint_db =
   let lems = expand_constructor_hints env sigma lems in
   let hintlist' =
-    List.map_append (make_resolves env sigma (eapply,true,false) None true) lems in
-  Hint_db.add_list hintlist' hint_db
+    List.map_append (make_resolves env sigma (eapply,true,false) None false) lems in
+  Hint_db.add_list env sigma hintlist' hint_db
 
 let make_local_hint_db env sigma ts eapply lems =
+  let map c =
+    let sigma = Sigma.Unsafe.of_evar_map sigma in
+    let Sigma (c, sigma, _) = c.delayed env sigma in
+    (Sigma.to_evar_map sigma, c)
+  in
+  let lems = List.map map lems in
   let sign = Environ.named_context env in
   let ts = match ts with
     | None -> Hint_db.transparent_state (searchtable_map "core") 
@@ -1174,7 +1180,7 @@ let make_local_hint_db env sigma ts eapply lems =
   in
   let hintlist = List.map_append (make_resolve_hyp env sigma) sign in
   add_hint_lemmas env sigma eapply lems
-    (Hint_db.add_list hintlist (Hint_db.empty ts false))
+    (Hint_db.add_list env sigma hintlist (Hint_db.empty ts false))
 
 let make_local_hint_db = 
   if Flags.profile then
@@ -1198,12 +1204,14 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
+let pr_hint_elt (c, _, _) = pr_constr c
+
 let pr_hint h = match h.obj with
-  | Res_pf (c,clenv) -> (str"apply " ++ pr_constr c)
-  | ERes_pf (c,clenv) -> (str"eapply " ++ pr_constr c)
-  | Give_exact (c,clenv) -> (str"exact " ++ pr_constr c)
-  | Res_pf_THEN_trivial_fail (c,clenv) ->
-      (str"apply " ++ pr_constr c ++ str" ; trivial")
+  | Res_pf (c, _) -> (str"apply " ++ pr_hint_elt c)
+  | ERes_pf (c, _) -> (str"eapply " ++ pr_hint_elt c)
+  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt c)
+  | Res_pf_THEN_trivial_fail (c, _) ->
+      (str"apply " ++ pr_hint_elt c ++ str" ; trivial")
   | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac ->
       let env =
@@ -1212,7 +1220,7 @@ let pr_hint h = match h.obj with
           env
         with e when Errors.noncritical e -> Global.env ()
       in
-      (str "(*external*) " ++ Pptactic.pr_glob_tactic env tac)
+      (str "(*external*) " ++ Pptactic.pr_glb_generic env tac)
 
 let pr_id_hint (id, v) =
   (pr_hint v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())

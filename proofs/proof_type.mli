@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -57,19 +57,3 @@ type rule = prim_rule
 type goal = Goal.goal
 
 type tactic = goal sigma -> goal list sigma
-
-(** Ltac traces *)
-
-(** TODO: Move those definitions somewhere sensible *)
-
-type ltac_call_kind =
-  | LtacMLCall of glob_tactic_expr
-  | LtacNotationCall of KerName.t
-  | LtacNameCall of ltac_constant
-  | LtacAtomCall of glob_atomic_tactic_expr
-  | LtacVarCall of Id.t * glob_tactic_expr
-  | LtacConstrInterp of glob_constr * Pretyping.ltac_var_map
-
-type ltac_trace = (Loc.t * ltac_call_kind) list
-
-val ltac_trace_info : ltac_trace Exninfo.t

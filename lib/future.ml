@@ -1,31 +1,38 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
 (* To deal with side effects we have to save/restore the system state *)
-let freeze = ref (fun () -> assert false : unit -> Dyn.t)
-let unfreeze = ref (fun _ -> () : Dyn.t -> unit)
+type freeze
+let freeze = ref (fun () -> assert false : unit -> freeze)
+let unfreeze = ref (fun _ -> () : freeze -> unit)
 let set_freeze f g = freeze := f; unfreeze := g
 
-exception NotReady of string
-exception NotHere of string
-let _ = Errors.register_handler (function
-  | NotReady name ->
+let not_ready_msg = ref (fun name ->
       Pp.strbrk("The value you are asking for ("^name^") is not ready yet. "^
                 "Please wait or pass "^
                 "the \"-async-proofs off\" option to CoqIDE to disable "^
                 "asynchronous script processing and don't pass \"-quick\" to "^
-                "coqc.")
-  | NotHere name ->
+                "coqc."))
+let not_here_msg = ref (fun name ->
       Pp.strbrk("The value you are asking for ("^name^") is not available "^
                 "in this process. If you really need this, pass "^
                 "the \"-async-proofs off\" option to CoqIDE to disable "^
                 "asynchronous script processing and don't pass \"-quick\" to "^
-                "coqc.")
+                "coqc."))
+
+let customize_not_ready_msg f = not_ready_msg := f
+let customize_not_here_msg f = not_here_msg := f
+
+exception NotReady of string
+exception NotHere of string
+let _ = Errors.register_handler (function
+  | NotReady name -> !not_ready_msg name
+  | NotHere name -> !not_here_msg name
   | _ -> raise Errors.Unhandled)
 
 type fix_exn = Exninfo.iexn -> Exninfo.iexn
@@ -52,11 +59,11 @@ type 'a assignement = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computat
 and 'a comp =
   | Delegated of (unit -> unit)
   | Closure of (unit -> 'a)
-  | Val of 'a * Dyn.t option
+  | Val of 'a * freeze option
   | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
 
 and 'a comput =
-  | Ongoing of string * (UUID.t * fix_exn * 'a comp ref) Ephemeron.key
+  | Ongoing of string * (UUID.t * fix_exn * 'a comp ref) CEphemeron.key
   | Finished of 'a
 
 and 'a computation = 'a comput ref
@@ -64,13 +71,13 @@ and 'a computation = 'a comput ref
 let unnamed = "unnamed"
 
 let create ?(name=unnamed) ?(uuid=UUID.fresh ()) f x =
-  ref (Ongoing (name, Ephemeron.create (uuid, f, Pervasives.ref x)))
+  ref (Ongoing (name, CEphemeron.create (uuid, f, Pervasives.ref x)))
 let get x =
   match !x with
   | Finished v -> unnamed, UUID.invalid, id, ref (Val (v,None))
   | Ongoing (name, x) ->
-      try let uuid, fix, c = Ephemeron.get x in name, uuid, fix, c
-      with Ephemeron.InvalidKey ->
+      try let uuid, fix, c = CEphemeron.get x in name, uuid, fix, c
+      with CEphemeron.InvalidKey ->
         name, UUID.invalid, id, ref (Exn (NotHere name, Exninfo.null))
 
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn  ]

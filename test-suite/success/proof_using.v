@@ -117,5 +117,82 @@ End T1.
 
 Check (bla 7 : 2 = 8).
 
+Section A.
+Variable a : nat.
+Variable b : nat.
+Variable c : nat.
+Variable H1 : a = 3.
+Variable H2 : a = 3 -> b = 7.
+Variable H3 : c = 3.
+
+Lemma foo : a = a.
+Proof using Type*.
+pose H1 as e1.
+pose H2 as e2.
+reflexivity.
+Qed.
+
+Lemma bar : a = 3 -> b = 7.
+Proof using b*.
+exact H2.
+Qed.
+
+Lemma baz : c=3.
+Proof using c*.
+exact H3.
+Qed.
+
+Lemma baz2 : c=3.
+Proof using c* a.
+exact H3.
+Qed.
+
+End A.
+
+Check (foo 3 7 (refl_equal 3)
+               (fun _ => refl_equal 7)).
+Check (bar 3 7 (refl_equal 3)
+               (fun _ => refl_equal 7)).
+Check (baz2 99 3 (refl_equal 3)).
+Check (baz 3 (refl_equal 3)).
+
+Section Let.
+
+Variables a b : nat.
+Let pa : a = a. Proof. reflexivity. Qed.
+Unset Default Proof Using.
+Set Suggest Proof Using.
+Lemma test_let : a = a.
+Proof using a.
+exact pa.
+Qed.
+
+Let ppa : pa = pa. Proof. reflexivity. Qed.
+
+Lemma test_let2 : pa = pa.
+Proof using Type.
+exact ppa.
+Qed.
+
+End Let.
+
+Check (test_let 3).
+
+(* Disabled
+Section Clear.
+
+Variable a: nat.
+Hypotheses H : a = 4.
+
+Set Proof Using Clear Unused.
+
+Lemma test_clear : a = a.
+Proof using a.
+Fail rewrite H.
+trivial.
+Qed.
+
+End Clear.
+*)
 
 

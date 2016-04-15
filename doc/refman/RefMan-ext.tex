@@ -226,6 +226,7 @@ Definition c := {| y := 3; x := 5 |}.
 This syntax can be disabled globally for printing by
 \begin{quote}
 {\tt Unset Printing Records.}
+\optindex{Printing Records}
 \end{quote}
 For a given type, one can override this using either
 \begin{quote}
@@ -253,6 +254,7 @@ Reset Initial.
 
 \Rem An experimental syntax for projections based on a dot notation is
 available. The command to activate it is
+\optindex{Printing Projections}
 \begin{quote}
 {\tt Set Printing Projections.}
 \end{quote}
@@ -283,12 +285,15 @@ To deactivate the printing of projections, use
 {\tt Unset Printing Projections}.
 
 \subsection{Primitive Projections}
+\optindex{Primitive Projections}
+\optindex{Printing Primitive Projection Parameters}
+\optindex{Printing Primitive Projection Compatibility}
 \index{Primitive projections}
 \label{prim-proj}
 
 The option {\tt Set Primitive Projections} turns on the use of primitive
 projections when defining subsequent records. Primitive projections
-extended the calculus of inductive constructions with a new binary term
+extended the Calculus of Inductive Constructions with a new binary term
 constructor {\tt r.(p)} representing a primitive projection p applied to
 a record object {\tt r} (i.e., primitive projections are always
 applied). Even if the record type has parameters, these do not appear at
@@ -313,6 +318,12 @@ for the usual defined ones.
   % - [pattern x at n], [rewrite x at n] and in general abstraction and selection
   %   of occurrences may fail due to the disappearance of parameters.
 
+For compatibility, the parameters still appear to the user when printing terms
+even though they are absent in the actual AST manipulated by the kernel. This
+can be changed by unsetting the {\tt Printing Primitive Projection Parameters}
+flag. Further compatibility printing can be deactivated thanks to the
+{\tt Printing Primitive Projection Compatibility} option which governs the
+printing of pattern-matching over primitive records.
 
 \section{Variants and extensions of {\mbox{\tt match}}
 \label{Extensions-of-match}
@@ -1249,7 +1260,7 @@ possible, the correct argument will be automatically generated.
 
 \end{ErrMsgs}
 
-\subsection{Declaration of implicit arguments for a constant
+\subsection{Declaration of implicit arguments
 \comindex{Arguments}}
 \label{ImplicitArguments}
 
@@ -1262,7 +1273,7 @@ a priori and a posteriori.
 \subsubsection{Implicit Argument Binders}
 
 In the first setting, one wants to explicitly give the implicit
-arguments of a constant as part of its definition. To do this, one has
+arguments of a declared object as part of its definition. To do this, one has
 to surround the bindings of implicit arguments by curly braces:
 \begin{coq_eval}
 Reset Initial.
@@ -1299,7 +1310,7 @@ usual implicit arguments disambiguation syntax.
 
 \subsubsection{Declaring Implicit Arguments}
 
-To set implicit arguments for a constant a posteriori, one can use the
+To set implicit arguments a posteriori, one can use the
 command:
 \begin{quote}
 \tt Arguments {\qualid} \nelist{\possiblybracketedident}{}
@@ -1378,7 +1389,7 @@ Check (fun l => map length l = map (list nat) nat length l).
 \Rem To know which are the implicit arguments of an object, use the command
 {\tt Print Implicit} (see \ref{PrintImplicit}).
 
-\subsection{Automatic declaration of implicit arguments for a constant}
+\subsection{Automatic declaration of implicit arguments}
 
 {\Coq} can also automatically detect what are the implicit arguments
 of a defined object. The command is just
@@ -1581,7 +1592,7 @@ Implicit arguments names can be redefined using the following syntax:
 \end{quote}
 
 Without the {\tt rename} flag, {\tt Arguments} can be used to assert
-that a given constant has the expected number of arguments and that
+that a given object has the expected number of arguments and that
 these arguments are named as expected.
 
 \noindent {\bf Example (continued): }
@@ -1997,13 +2008,13 @@ variables, use
 \end{quote}
 
 \subsection{Solving existential variables using tactics}
-\ttindex{\textdollar( \ldots )\textdollar}
+\ttindex{ltac:( \ldots )}
 
 \def\expr{\textrm{\textsl{tacexpr}}}
 
 Instead of letting the unification engine try to solve an existential variable
 by itself, one can also provide an explicit hole together with a tactic to solve
-it. Using the syntax {\tt \textdollar(\expr)\textdollar}, the user can put a
+it. Using the syntax {\tt ltac:(\expr)}, the user can put a
 tactic anywhere a term is expected. The order of resolution is not specified and
 is implementation-dependent. The inner tactic may use any variable defined in
 its scope, including repeated alternations between variables introduced by term
@@ -2011,7 +2022,7 @@ binding as well as those introduced by tactic binding. The expression {\expr}
 can be any tactic expression as described at section~\ref{TacticLanguage}.
 
 \begin{coq_example*}
-Definition foo (x : nat) : nat := $( exact x )$.
+Definition foo (x : nat) : nat := ltac:(exact x).
 \end{coq_example*}
 
 This construction is useful when one wants to define complicated terms using

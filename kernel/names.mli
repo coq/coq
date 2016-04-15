@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -10,30 +10,33 @@ open Util
 
 (** {6 Identifiers } *)
 
+(** Representation and operations on identifiers. *)
 module Id :
 sig
   type t
-  (** Type of identifiers *)
+  (** Values of this type represent (Coq) identifiers. *)
 
   val equal : t -> t -> bool
-  (** Equality over identifiers *)
+  (** Equality over identifiers. *)
 
   val compare : t -> t -> int
-  (** Comparison over identifiers *)
+  (** Comparison over identifiers. *)
 
   val hash : t -> int
-  (** Hash over identifiers *)
+  (** Hash over identifiers. *)
 
   val is_valid : string -> bool
-  (** Check that a string may be converted to an identifier. *)
+  (** Check that a string may be converted to an identifier.
+  @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val of_string : string -> t
-  (** Converts a string into an identifier. May raise [UserError _] if the
-      string is not valid, or echo a warning if it contains invalid identifier
-      characters. *)
+  (** Converts a string into an identifier.
+      @raise UserError if the string is not valid, or echo a warning if it contains invalid identifier characters.
+      @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val of_string_soft : string -> t
-  (** Same as {!of_string} except that no warning is ever issued. *)
+  (** Same as {!of_string} except that no warning is ever issued.
+      @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val to_string : t -> string
   (** Converts a identifier into an string. *)
@@ -58,10 +61,18 @@ sig
 
 end
 
+(** Representation and operations on identifiers that are allowed to be anonymous
+    (i.e. "_" in concrete syntax). *)
 module Name :
 sig
-  type t = Name of Id.t | Anonymous
-  (** A name is either undefined, either an identifier. *)
+  type t = Anonymous     (** anonymous identifier *)
+	 | Name of Id.t  (** non-anonymous identifier *)
+
+  val is_anonymous : t -> bool
+  (** Return [true] iff a given name is [Anonymous]. *)
+
+  val is_name : t -> bool
+  (** Return [true] iff a given name is [Name _]. *)
 
   val compare : t -> t -> int
   (** Comparison over names. *)
@@ -79,7 +90,7 @@ end
 
 (** {6 Type aliases} *)
 
-type name = Name.t = Name of Id.t | Anonymous
+type name = Name.t = Anonymous | Name of Id.t
 type variable = Id.t
 type module_ident = Id.t
 
@@ -160,6 +171,8 @@ sig
   module Set : Set.S with type elt = t
   module Map : Map.ExtS with type key = t and module Set := Set
 
+  val hcons : t -> t
+
 end
 
 (** {6 Unique names for bound modules} *)
@@ -217,6 +230,9 @@ sig
 
   val to_string : t -> string
 
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs information related to debug. *)
+
   val initial : t
   (** Name of the toplevel structure ([= MPfile initial_dir]) *)
 
@@ -244,6 +260,10 @@ sig
 
   (** Display *)
   val to_string : t -> string
+
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs information related to debug. *)
+
   val print : t -> Pp.std_ppcmds
 
   (** Comparisons *)
@@ -300,6 +320,12 @@ sig
   end
 
   module UserOrd : sig
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
+  module SyntacticOrd : sig
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val hash : t -> int
@@ -379,6 +405,12 @@ sig
     val hash : t -> int
   end
 
+  module SyntacticOrd : sig
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
   val equal : t -> t -> bool
   (** Default comparison, alias for [CanOrd.equal] *)
 
@@ -395,18 +427,23 @@ end
 
 module Mindset : CSig.SetS with type elt = MutInd.t
 module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
-module Mindmap_env : Map.S with type key = MutInd.t
+module Mindmap_env : CSig.MapS with type key = MutInd.t
 
-(** Beware: first inductive has index 0 *)
-type inductive = MutInd.t * int
+(** Designation of a (particular) inductive type. *)
+type inductive = MutInd.t      (* the name of the inductive type *)
+               * int           (* the position of this inductive type
+                                  within the block of mutually-recursive inductive types.
+                                  BEWARE: indexing starts from 0. *)
 
-(** Beware: first constructor has index 1 *)
-type constructor = inductive * int
+(** Designation of a (particular) constructor of a (particular) inductive type. *)
+type constructor = inductive   (* designates the inductive type *)
+                 * int         (* the index of the constructor
+                                  BEWARE: indexing starts from 1. *)
 
-module Indmap : Map.S with type key = inductive
-module Constrmap : Map.S with type key = constructor
-module Indmap_env : Map.S with type key = inductive
-module Constrmap_env : Map.S with type key = constructor
+module Indmap : CSig.MapS with type key = inductive
+module Constrmap : CSig.MapS with type key = constructor
+module Indmap_env : CSig.MapS with type key = inductive
+module Constrmap_env : CSig.MapS with type key = constructor
 
 val ind_modpath : inductive -> ModPath.t
 val constr_modpath : constructor -> ModPath.t
@@ -417,16 +454,22 @@ val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 val eq_ind : inductive -> inductive -> bool
 val eq_user_ind : inductive -> inductive -> bool
+val eq_syntactic_ind : inductive -> inductive -> bool
 val ind_ord : inductive -> inductive -> int
 val ind_hash : inductive -> int
 val ind_user_ord : inductive -> inductive -> int
 val ind_user_hash : inductive -> int
+val ind_syntactic_ord : inductive -> inductive -> int
+val ind_syntactic_hash : inductive -> int
 val eq_constructor : constructor -> constructor -> bool
 val eq_user_constructor : constructor -> constructor -> bool
+val eq_syntactic_constructor : constructor -> constructor -> bool
 val constructor_ord : constructor -> constructor -> int
-val constructor_user_ord : constructor -> constructor -> int
 val constructor_hash : constructor -> int
+val constructor_user_ord : constructor -> constructor -> int
 val constructor_user_hash : constructor -> int
+val constructor_syntactic_ord : constructor -> constructor -> int
+val constructor_syntactic_hash : constructor -> int
 
 (** Better to have it here that in Closure, since required in grammar.cma *)
 type evaluable_global_reference =
@@ -639,6 +682,12 @@ module Projection : sig
   type t
     
   val make : constant -> bool -> t
+
+  module SyntacticOrd : sig
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
 
   val constant : t -> constant
   val unfolded : t -> bool

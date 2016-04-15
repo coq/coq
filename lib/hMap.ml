@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -286,6 +286,8 @@ struct
     let m = Int.Map.find h s in
     Map.find k m
 
+  let get k s = try find k s with Not_found -> assert false
+
   let split k s = assert false (** Cannot be implemented efficiently *)
 
   let map f s =
@@ -333,7 +335,6 @@ struct
   struct
     module IntM = Int.Map.Monad(M)
     module ExtM = Map.Monad(M)
-    open M
 
     let fold f s accu =
       let ff _ m accu = ExtM.fold f m accu in

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Evd
 open Environ
 open Inductiveops
@@ -45,11 +44,11 @@ val compile_cases :
 val constr_of_pat : 
            Environ.env ->
            Evd.evar_map ref ->
-           rel_declaration list ->
+           Context.Rel.Declaration.t list ->
            Glob_term.cases_pattern ->
            Names.Id.t list ->
            Glob_term.cases_pattern *
-           (rel_declaration list * Term.constr *
+           (Context.Rel.Declaration.t list * Term.constr *
             (Term.types * Term.constr list) * Glob_term.cases_pattern) *
            Names.Id.t list
 
@@ -83,7 +82,7 @@ type tomatch_status =
   | Pushed of (bool*((constr * tomatch_type) * int list * Name.t))
   | Alias of (bool * (Name.t * constr * (constr * types)))
   | NonDepAlias
-  | Abstract of int * rel_declaration
+  | Abstract of int * Context.Rel.Declaration.t
 
 type tomatch_stack = tomatch_status list
 
@@ -117,7 +116,7 @@ val prepare_predicate :            Loc.t ->
            Environ.env ->
            Evd.evar_map ->
            (Term.types * tomatch_type) list ->
-           Context.rel_context list ->
+           Context.Rel.t list ->
            Constr.constr option ->
            'a option -> (Evd.evar_map * Names.name list * Term.constr) list
 

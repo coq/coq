@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 8b7e75b4b94a2d8506a62508e0374c0a checker/cic.mli
+MD5 9f7fd499f812b6548a55f7067e6a9d06 checker/cic.mli
 
 *)
 
@@ -154,8 +154,8 @@ and v_prec = Tuple ("prec_declaration",
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
 
-
-let v_rdecl = v_tuple "rel_declaration" [|v_name;Opt v_constr;v_constr|]
+let v_rdecl = v_sum "rel_declaration" 0 [| [|v_name; v_constr|];               (* LocalAssum *)
+                                           [|v_name; v_constr; v_constr|] |]   (* LocalDef *)
 let v_rctxt = List v_rdecl
 
 let v_section_ctxt = v_enum "emptylist" 1
@@ -307,10 +307,10 @@ and v_impl =
 and v_noimpl = v_enum "no_impl" 1 (* Abstract is mandatory for mtb *)
 and v_module =
   Tuple ("module_body",
-         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_cstrs;v_resolver;Any|])
+         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
 and v_modtype =
   Tuple ("module_type_body",
-         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_cstrs;v_resolver;Any|])
+         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
 
 (** kernel/safe_typing *)
 

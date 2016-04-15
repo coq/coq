@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -39,10 +39,30 @@ type 'a safe_transformer = safe_environment -> 'a * safe_environment
 
 (** {6 Stm machinery } *)
 
-val sideff_of_con : safe_environment -> constant -> Declarations.side_effect
-val sideff_of_scheme :
-  string -> safe_environment -> (inductive * constant) list ->
-    Declarations.side_effect
+type private_constant
+type private_constants
+
+type private_constant_role =
+  | Subproof
+  | Schema of inductive * string
+
+val side_effects_of_private_constants :
+  private_constants -> Entries.side_effects
+
+val empty_private_constants : private_constants
+val add_private : private_constant -> private_constants -> private_constants
+val concat_private : private_constants -> private_constants -> private_constants
+
+val private_con_of_con : safe_environment -> constant -> private_constant
+val private_con_of_scheme : kind:string -> safe_environment -> (inductive * constant) list -> private_constant
+
+val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
+val inline_private_constants_in_constr :
+  Environ.env -> Constr.constr -> private_constants -> Constr.constr
+val inline_private_constants_in_definition_entry :
+  Environ.env -> private_constants Entries.definition_entry -> private_constants Entries.definition_entry
+
+val universes_of_private : private_constants -> Univ.universe_context_set list
 
 val is_curmod_library : safe_environment -> bool
 
@@ -57,18 +77,29 @@ val is_joined_environment : safe_environment -> bool
 (** Insertion of local declarations (Local or Variables) *)
 
 val push_named_assum :
-  (Id.t * Term.types) Univ.in_universe_context_set -> safe_transformer0
+  (Id.t * Term.types * bool (* polymorphic *))
+    Univ.in_universe_context_set -> safe_transformer0
+
+(** Returns the full universe context necessary to typecheck the definition
+  (futures are forced) *)
 val push_named_def :
-  Id.t * Entries.definition_entry -> safe_transformer0
+  Id.t * private_constants Entries.definition_entry -> Univ.universe_context_set safe_transformer
 
 (** Insertion of global axioms or definitions *)
 
 type global_declaration =
-  | ConstantEntry of Entries.constant_entry
+                  (* bool: export private constants *)
+  | ConstantEntry of bool * private_constants Entries.constant_entry
   | GlobalRecipe of Cooking.recipe
 
+type exported_private_constant = 
+  constant * private_constants Entries.constant_entry * private_constant_role
+
+(** returns the main constant plus a list of auxiliary constants (empty
+    unless one requires the side effects to be exported) *)
 val add_constant :
-  DirPath.t -> Label.t -> global_declaration -> constant safe_transformer
+  DirPath.t -> Label.t -> global_declaration ->
+    (constant * exported_private_constant list) safe_transformer
 
 (** Adding an inductive type *)
 
@@ -88,10 +119,10 @@ val add_modtype :
 (** Adding universe constraints *)
 
 val push_context_set :
-  Univ.universe_context_set -> safe_transformer0
+  bool -> Univ.universe_context_set -> safe_transformer0
 
 val push_context :
-  Univ.universe_context -> safe_transformer0
+  bool -> Univ.universe_context -> safe_transformer0
 
 val add_constraints :
   Univ.constraints -> safe_transformer0

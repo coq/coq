@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -74,6 +74,9 @@ val initial_euctx : proof -> Evd.evar_universe_context
 (* Returns [true] if the considered proof is completed, that is if no goal remain
     to be considered (this does not require that all evars have been solved). *)
 val is_done : proof -> bool
+
+(* Like is_done, but this time it really means done (i.e. nothing left to do) *)
+val is_complete : proof -> bool
 
 (* Returns the list of partial proofs to initial goals. *)
 val partial_proof : proof -> Term.constr list

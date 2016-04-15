@@ -7,14 +7,12 @@
 \asection{General Presentation}
 
 \begin{flushleft}
-  \em The status of Universe Polymorphism is experimental. Some features
-  are not compatible with it (yet): bytecode compilation does not handle
-  polymorphic definitions, it treats them as opaque constants.
+  \em The status of Universe Polymorphism is experimental.
 \end{flushleft}
 
 This section describes the universe polymorphic extension of Coq.
-Universe polymorphism allows writing generic definitions making use of
-universes and reuse them at different and sometimes incompatible levels.
+Universe polymorphism makes it possible to write generic definitions making use of
+universes and reuse them at different and sometimes incompatible universe levels.
 
 A standard example of the difference between universe \emph{polymorphic} and
 \emph{monomorphic} definitions is given by the identity function:
@@ -65,11 +63,11 @@ Now \texttt{pidentity} is used at two different levels: at the head of
 the application it is instantiated at \texttt{Top.3} while in the
 argument position it is instantiated at \texttt{Top.4}. This definition
 is only valid as long as \texttt{Top.4} is strictly smaller than
-\texttt{Top.3}, as show by the constraints. Not that this definition is
-monomorphic (not universe polymorphic), so in turn the two universes are
-actually global levels.
+\texttt{Top.3}, as show by the constraints. Note that this definition is
+monomorphic (not universe polymorphic), so the two universes
+(in this case \texttt{Top.3} and \texttt{Top.4}) are actually global levels.
 
-Inductive types can also be declared universes polymorphic, on universes
+Inductive types can also be declared universes polymorphic on universes
 appearing in their parameters or fields. A typical example is given by
 monoids:
 
@@ -81,7 +79,7 @@ Print Monoid.
 
 The \texttt{Monoid}'s carrier universe is polymorphic, hence it is
 possible to instantiate it for example with \texttt{Monoid} itself.
-First we build the trivial unit monoid, in \texttt{Set}:
+First we build the trivial unit monoid in \texttt{Set}:
 \begin{coq_example}
 Definition unit_monoid : Monoid := 
   {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
@@ -119,17 +117,27 @@ producing global universe constraints, one can use the
 \begin{itemize}
 \item \texttt{Lemma}, \texttt{Axiom}, and all the other ``definition''
   keywords support polymorphism.
-\item \texttt{Variables}, \texttt{Context} in a section support polymorphism.
-  This means that the
-  variables are discharged polymorphically over definitions that use
-  them. In other words, two definitions in the section sharing a common
-  variable will both get parameterized by the universes produced by the 
-  variable declaration. This is in contrast to a ``mononorphic'' variable
-  which introduces global universes, making the two definitions depend on
-  the \emph{same} global universes associated to the variable.
+\item \texttt{Variables}, \texttt{Context}, \texttt{Universe} and
+  \texttt{Constraint} in a section support polymorphism.  This means
+  that the universe variables (and associated constraints) are
+  discharged polymorphically over definitions that use them. In other
+  words, two definitions in the section sharing a common variable will
+  both get parameterized by the universes produced by the variable
+  declaration. This is in contrast to a ``mononorphic'' variable which
+  introduces global universes and constraints, making the two
+  definitions depend on the \emph{same} global universes associated to
+  the variable.
 \item \texttt{Hint \{Resolve, Rewrite\}} will use the auto/rewrite hint
   polymorphically, not at a single instance.
 \end{itemize}
+
+\asection{Global and local universes}
+
+Each universe is declared in a global or local environment before it can
+be used. To ensure compatibility, every \emph{global} universe is set to
+be strictly greater than \Set~when it is introduced, while every
+\emph{local} (i.e. polymorphically quantified) universe is introduced as
+greater or equal to \Set.
 
 \asection{Conversion and unification}
 
@@ -151,6 +159,7 @@ unification can have different unfolding behaviors on the same
 development with universe polymorphism switched on or off.
 
 \asection{Minimization}
+\optindex{Universe Minimization ToSet}
 
 Universe polymorphism with cumulativity tends to generate many useless
 inclusion constraints in general. Typically at each application of a
@@ -173,23 +182,48 @@ This definition is elaborated by minimizing the universe of id to level
 generated at the application of id and a constraint that $\Set \le i$.
 This minimization process is applied only to fresh universe
 variables. It simply adds an equation between the variable and its lower
-bound if it is an atomic universe (i.e. not an algebraic max()).
+bound if it is an atomic universe (i.e. not an algebraic \texttt{max()}
+universe).
+
+The option \texttt{Unset Universe Minimization ToSet} disallows
+minimization to the sort $\Set$ and only collapses floating universes
+between themselves.
 
 \asection{Explicit Universes}
 
-\begin{flushleft}
-  \em The design and implementation of explicit universes is very
-  experimental and is likely to change in future versions.
-\end{flushleft}
+The syntax has been extended to allow users to explicitly bind names to
+universes and explicitly instantiate polymorphic definitions.
 
-The syntax has been extended to allow users to explicitely bind names to
-universes and explicitely instantantiate polymorphic
-definitions. Currently, binding is implicit at the first occurrence of a 
-universe name. For example, i and j below are introduced by the
-annotations attached to Types. 
+\subsection{\tt Universe {\ident}.
+  \comindex{Universe}
+  \label{UniverseCmd}}
+
+In the monorphic case, this command declares a new global universe named
+{\ident}. It supports the polymorphic flag only in sections, meaning the
+universe quantification will be discharged on each section definition
+independently.
+
+\subsection{\tt Constraint {\ident} {\textit{ord}} {\ident}.
+  \comindex{Constraint}
+  \label{ConstraintCmd}}
+
+This command declares a new constraint between named universes.
+The order relation can be one of $<$, $\le$ or $=$. If consistent, 
+the constraint is then enforced in the global environment. Like
+\texttt{Universe}, it can be used with the \texttt{Polymorphic} prefix
+in sections only to declare constraints discharged at section closing time.
+
+\begin{ErrMsgs}
+\item \errindex{Undeclared universe {\ident}}.
+\item \errindex{Universe inconsistency}
+\end{ErrMsgs}
+
+\subsection{Polymorphic definitions}
+For polymorphic definitions, the declaration of (all) universe levels
+introduced by a definition uses the following syntax:
 
 \begin{coq_example*}
-Polymorphic Definition le (A : Type@{i}) : Type@{j} := A.
+Polymorphic Definition le@{i j} (A : Type@{i}) : Type@{j} := A.
 \end{coq_example*}
 \begin{coq_example}
 Print le.
@@ -197,40 +231,32 @@ Print le.
 
 During refinement we find that $j$ must be larger or equal than $i$, as
 we are using $A : Type@{i} <= Type@{j}$, hence the generated
-constraint. Note that the names here are not bound in the final
-definition, they just allow to specify locally what relations should
-hold. In the term and in general in proof mode, universe names
-introduced in the types can be refered to in terms.
+constraint. At the end of a definition or proof, we check that the only
+remaining universes are the ones declared. In the term and in general in
+proof mode, introduced universe names can be referred to in
+terms. Note that local universe names shadow global universe names.
+During a proof, one can use \texttt{Show Universes} to display
+the current context of universes.
 
-Definitions can also be instantiated explicitely, giving their full instance:
+Definitions can also be instantiated explicitly, giving their full instance:
 \begin{coq_example}
 Check (pidentity@{Set}).
-Check (le@{i j}).
+Universes k l.
+Check (le@{k l}).
 \end{coq_example}
 
 User-named universes are considered rigid for unification and are never
-miminimized.
+minimized.
 
-Finally, two commands allow to name \emph{global} universes and constraints.
+\subsection{\tt Unset Strict Universe Declaration.
+  \optindex{Strict Universe Declaration}
+  \label{StrictUniverseDeclaration}}
 
-\subsection{\tt Universe {\ident}.
-  \comindex{Universe}
-  \label{UniverseCmd}}
-
-This command declare a new global universe named {\ident}.
-
-\subsection{\tt Constraint {\ident} {\textit{ord}} {\ident}.
-  \comindex{Constraint}
-  \label{ConstraintCmd}}
-
-This command declare a new constraint between named universes. 
-The order relation can be one of $<$, $<=$ or $=$. If consistent, 
-the constraint is then enforced in the global environment.
-
-\begin{ErrMsgs}
-\item \errindex{Undeclared universe {\ident}}.
-\item \errindex{Universe inconsistency}
-\end{ErrMsgs}
+The command \texttt{Unset Strict Universe Declaration} allows one to
+freely use identifiers for universes without declaring them first, with
+the semantics that the first use declares it. In this mode, the universe
+names are not associated with the definition or proof once it has been
+defined. This is meant mainly for debugging purposes.
 
 %%% Local Variables: 
 %%% mode: latex

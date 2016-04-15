@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -72,10 +72,10 @@ let print_params env sigma params =
   if List.is_empty params then mt ()
   else Printer.pr_rel_context env sigma params ++ brk(1,2)
 
-let print_constructors envpar names types =
+let print_constructors envpar sigma names types =
   let pc =
     prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
-      (fun (id,c) -> pr_id id ++ str " : " ++ Printer.pr_lconstr_env envpar Evd.empty c)
+      (fun (id,c) -> pr_id id ++ str " : " ++ Printer.pr_lconstr_env envpar sigma c)
       (Array.to_list (Array.map2 (fun n t -> (n,t)) names types))
   in
   hv 0 (str "  " ++ pc)
@@ -83,21 +83,26 @@ let print_constructors envpar names types =
 let build_ind_type env mip =
   Inductive.type_of_inductive env mip
 
-let print_one_inductive env mib ((_,i) as ind) =
+let print_one_inductive env sigma mib ((_,i) as ind) =
   let u = if mib.mind_polymorphic then 
       Univ.UContext.instance mib.mind_universes 
     else Univ.Instance.empty in
   let mip = mib.mind_packets.(i) in
   let params = Inductive.inductive_paramdecls (mib,u) in
-  let args = extended_rel_list 0 params in
+  let args = Context.Rel.to_extended_list 0 params in
   let arity = hnf_prod_applist env (build_ind_type env ((mib,mip),u)) args in
   let cstrtypes = Inductive.type_of_constructors (ind,u) (mib,mip) in
   let cstrtypes = Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
   let envpar = push_rel_context params env in
+  let inst =
+    if mib.mind_polymorphic then
+      Printer.pr_universe_instance sigma mib.mind_universes
+    else mt ()
+  in
   hov 0 (
-    pr_id mip.mind_typename ++ brk(1,4) ++ print_params env Evd.empty params ++
-    str ": " ++ Printer.pr_lconstr_env envpar Evd.empty arity ++ str " :=") ++
-  brk(0,2) ++ print_constructors envpar mip.mind_consnames cstrtypes
+    pr_id mip.mind_typename ++ inst ++ brk(1,4) ++ print_params env sigma params ++
+    str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ str " :=") ++
+  brk(0,2) ++ print_constructors envpar sigma mip.mind_consnames cstrtypes
 
 let print_mutual_inductive env mind mib =
   let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
@@ -109,11 +114,13 @@ let print_mutual_inductive env mind mib =
     | BiFinite -> "Variant"
     | CoFinite -> "CoInductive"
   in
+  let bl = Universes.universe_binders_of_global (IndRef (mind, 0)) in
+  let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
   hov 0 (Printer.pr_polymorphic mib.mind_polymorphic ++
     def keyword ++ spc () ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
-      (print_one_inductive env mib) inds ++
-      Printer.pr_universe_ctx (Univ.instantiate_univ_context mib.mind_universes))
+      (print_one_inductive env sigma mib) inds ++
+      Printer.pr_universe_ctx sigma (Univ.instantiate_univ_context mib.mind_universes))
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -136,12 +143,14 @@ let print_record env mind mib =
   in
   let mip = mib.mind_packets.(0) in
   let params = Inductive.inductive_paramdecls (mib,u) in
-  let args = extended_rel_list 0 params in
+  let args = Context.Rel.to_extended_list 0 params in
   let arity = hnf_prod_applist env (build_ind_type env ((mib,mip),u)) args in
   let cstrtypes = Inductive.type_of_constructors ((mind,0),u) (mib,mip) in
   let cstrtype = hnf_prod_applist env cstrtypes.(0) args in
   let fields = get_fields cstrtype in
   let envpar = push_rel_context params env in
+  let bl = Universes.universe_binders_of_global (IndRef (mind,0)) in
+  let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
   let keyword =
     let open Decl_kinds in
     match mib.mind_finite with
@@ -153,16 +162,16 @@ let print_record env mind mib =
     hov 0 (
       Printer.pr_polymorphic mib.mind_polymorphic ++
       def keyword ++ spc () ++ pr_id mip.mind_typename ++ brk(1,4) ++
-      print_params env Evd.empty params ++
-      str ": " ++ Printer.pr_lconstr_env envpar Evd.empty arity ++ brk(1,2) ++
+      print_params env sigma params ++
+      str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ brk(1,2) ++
       str ":= " ++ pr_id mip.mind_consnames.(0)) ++
     brk(1,2) ++
     hv 2 (str "{ " ++
       prlist_with_sep (fun () -> str ";" ++ brk(2,0))
         (fun (id,b,c) ->
           pr_id id ++ str (if b then " : " else " := ") ++
-          Printer.pr_lconstr_env envpar Evd.empty c) fields) ++ str" }" ++
-      Printer.pr_universe_ctx (Univ.instantiate_univ_context mib.mind_universes))
+          Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }" ++
+      Printer.pr_universe_ctx sigma (Univ.instantiate_univ_context mib.mind_universes))
 
 let pr_mutual_inductive_body env mind mib =
   if mib.mind_record <> None && not !Flags.raw_print then
@@ -254,11 +263,16 @@ let nametab_register_modparam mbid mtb =
       List.iter (nametab_register_body mp dir) struc
 
 let print_body is_impl env mp (l,body) =
-  let name = str (Label.to_string l) in
+  let name = pr_label l in
   hov 2 (match body with
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name
     | SFBconst cb ->
+       let u =
+	 if cb.const_polymorphic then Univ.UContext.instance cb.const_universes
+	 else Univ.Instance.empty
+       in
+       let sigma = Evd.empty in
       (match cb.const_body with
 	| Def _ -> def "Definition" ++ spc ()
 	| OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
@@ -267,15 +281,17 @@ let print_body is_impl env mp (l,body) =
 	  | None -> mt ()
 	  | Some env ->
 	    str " :" ++ spc () ++
-	    hov 0 (Printer.pr_ltype_env env Evd.empty (* No evars in modules *)
-		     (Typeops.type_of_constant_type env cb.const_type)) ++
+	    hov 0 (Printer.pr_ltype_env env sigma
+		(Vars.subst_instance_constr u
+   		  (Typeops.type_of_constant_type env cb.const_type))) ++
 	    (match cb.const_body with
 	      | Def l when is_impl ->
 		spc () ++
 		hov 2 (str ":= " ++
-		       Printer.pr_lconstr_env env Evd.empty (Mod_subst.force_constr l))
+		       Printer.pr_lconstr_env env sigma
+			  (Vars.subst_instance_constr u (Mod_subst.force_constr l)))
 	      | _ -> mt ()) ++ str "." ++
-	    Printer.pr_universe_ctx cb.const_universes)
+	    Printer.pr_universe_ctx sigma (Univ.instantiate_univ_context cb.const_universes))
     | SFBmind mib ->
       try
 	let env = Option.get env in

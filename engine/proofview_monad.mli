@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -68,15 +68,19 @@ end
 
 (** Type of proof views: current [evar_map] together with the list of
     focused goals. *)
-type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
+type proofview = {
+  solution : Evd.evar_map;
+  comb : Evar.t list;
+  shelf : Evar.t list;
+}
 
 (** {6 Instantiation of the logic monad} *)
 
 module P : sig
   type s = proofview * Environ.env
 
-  (** Status (safe/unsafe) * shelved goals * given up *)
-  type w = bool * Evar.t list * Evar.t list
+  (** Status (safe/unsafe) * given up *)
+  type w = bool * Evar.t list
 
   val wunit : w
   val wprod : w -> w -> w
@@ -123,7 +127,7 @@ module Status : Writer with type t := bool
 
 (** Lens to the list of goals which have been shelved during the
     execution of the tactic. *)
-module Shelf : Writer with type t = Evar.t list
+module Shelf : State with type t = Evar.t list
 
 (** Lens to the list of goals which were given up during the execution
     of the tactic. *)

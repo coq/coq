@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -59,19 +59,22 @@ let proceed_with_occurrences f occs x =
 (** Applying a function over a named_declaration with an hypothesis
     location request *)
 
-let map_named_declaration_with_hyploc f hyploc acc (id,bodyopt,typ) =
-  let f = f (Some (id,hyploc)) in
-  match bodyopt,hyploc with
-  | None, InHypValueOnly ->
+let map_named_declaration_with_hyploc f hyploc acc decl =
+  let open Context.Named.Declaration in
+  let f = f (Some (get_id decl, hyploc)) in
+  match decl,hyploc with
+  | LocalAssum (id,_), InHypValueOnly ->
       error_occurrences_error (IncorrectInValueOccurrence id)
-  | None, _ | Some _, InHypTypeOnly ->
-      let acc,typ = f acc typ in acc,(id,bodyopt,typ)
-  | Some body, InHypValueOnly ->
-      let acc,body = f acc body in acc,(id,Some body,typ)
-  | Some body, InHyp ->
+  | LocalAssum (id,typ), _ ->
+      let acc,typ = f acc typ in acc, LocalAssum (id,typ)
+  | LocalDef (id,body,typ), InHypTypeOnly ->
+      let acc,typ = f acc typ in acc, LocalDef (id,body,typ)
+  | LocalDef (id,body,typ), InHypValueOnly ->
+      let acc,body = f acc body in acc, LocalDef (id,body,typ)
+  | LocalDef (id,body,typ), InHyp ->
       let acc,body = f acc body in
       let acc,typ = f acc typ in
-      acc,(id,Some body,typ)
+      acc, LocalDef (id,body,typ)
 
 (** Finding a subterm up to some testing function *)
 

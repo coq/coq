@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -67,7 +67,7 @@ module V82 : sig
   val same_goal : Evd.evar_map -> goal -> Evd.evar_map -> goal -> bool
 
  (* Used for congruence closure *)
-  val new_goal_with : Evd.evar_map -> goal -> Context.named_context -> goal Evd.sigma
+  val new_goal_with : Evd.evar_map -> goal -> Context.Named.t -> goal Evd.sigma
 
   (* Used by the compatibility layer and typeclasses *)
   val nf_evar : Evd.evar_map -> goal -> goal * Evd.evar_map

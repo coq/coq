@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -100,11 +100,14 @@ object(self)
         if Str.string_match (Str.regexp "\\. *$") com 0 then com
         else com ^ " " ^ arg ^" . "
       in
-      let log level message = result#buffer#insert (message^"\n") in
+      let log level message =
+        Ideutils.insert_xml result#buffer message;
+        result#buffer#insert "\n";
+      in
       let process =
 	Coq.bind (Coq.query ~logger:log (phrase,Stateid.dummy)) (function
           | Interface.Fail (_,l,str) ->
-            result#buffer#insert str;
+            Ideutils.insert_xml result#buffer str;
             notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;
 	    Coq.return ()
           | Interface.Good res ->

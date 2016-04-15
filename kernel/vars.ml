@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,7 @@
 
 open Names
 open Esubst
-open Context
+open Context.Rel.Declaration
 
 (*********************)
 (*     Occurring     *)
@@ -151,20 +151,33 @@ let make_subst = function
   done;
   subst
 
+(* The type of substitutions, with term substituting most recent
+    binder at the head *)
+
+type substl = Constr.t list
+
 let substnl laml n c = substn_many (make_subst laml) n c
 let substl laml c = substn_many (make_subst laml) 0 c
 let subst1 lam c = substn_many [|make_substituend lam|] 0 c
 
-let substnl_decl laml k r = map_rel_declaration (fun c -> substnl laml k c) r
-let substl_decl laml r = map_rel_declaration (fun c -> substnl laml 0 c) r
-let subst1_decl lam r = map_rel_declaration (fun c -> subst1 lam c) r
+let substnl_decl laml k r = map_constr (fun c -> substnl laml k c) r
+let substl_decl laml r = map_constr (fun c -> substnl laml 0 c) r
+let subst1_decl lam r = map_constr (fun c -> subst1 lam c) r
 
-let substnl_named_decl laml k d =
-  map_named_declaration (fun c -> substnl laml k c) d
-let substl_named_decl laml d =
-  map_named_declaration (fun c -> substnl laml 0 c) d
-let subst1_named_decl lam d =
-  map_named_declaration (fun c -> subst1 lam c) d
+(* Build a substitution from an instance, inserting missing let-ins *)
+
+let subst_of_rel_context_instance sign l =
+  let rec aux subst sign l =
+    match sign, l with
+    | LocalAssum _ :: sign', a::args' -> aux (a::subst) sign' args'
+    | LocalDef (_,c,_)::sign', args' ->
+	aux (substl subst c :: subst) sign' args'
+    | [], [] -> subst
+    | _ -> Errors.anomaly (Pp.str "Instance and signature do not match")
+  in aux [] (List.rev sign) l
+
+let adjust_subst_to_rel_context sign l =
+  List.rev (subst_of_rel_context_instance sign l)
 
 (* (thin_val sigma) removes identity substitutions from sigma *)
 
@@ -197,15 +210,10 @@ let replace_vars var_alist x =
     in
     substrec 0 x
 
-(*
-let repvarkey = Profile.declare_profile "replace_vars";;
-let replace_vars vl c = Profile.profile2 repvarkey replace_vars vl c ;;
-*)
-
-(* (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
+(* (subst_var str t) substitute (Var str) by (Rel 1) in t *)
 let subst_var str t = replace_vars [(str, Constr.mkRel 1)] t
 
-(* (subst_vars [id1;...;idn] t) substitute (VAR idj) by (Rel j) in t *)
+(* (subst_vars [id1;...;idn] t) substitute (Var idj) by (Rel j) in t *)
 let substn_vars p vars c =
   let _,subst =
     List.fold_left (fun (n,l) var -> ((n+1),(var,Constr.mkRel n)::l)) (p,[]) vars
@@ -294,7 +302,7 @@ let subst_univs_level_constr subst c =
       if !changed then c' else c
 
 let subst_univs_level_context s = 
-  map_rel_context (subst_univs_level_constr s)
+  Context.Rel.map (subst_univs_level_constr s)
       
 let subst_instance_constr subst c =
   if Univ.Instance.is_empty subst then c
@@ -335,7 +343,7 @@ let subst_instance_constr subst c =
 
 let subst_instance_context s ctx = 
   if Univ.Instance.is_empty s then ctx
-  else map_rel_context (fun x -> subst_instance_constr s x) ctx
+  else Context.Rel.map (fun x -> subst_instance_constr s x) ctx
 
-type id_key = pconstant tableKey
-let eq_id_key x y = Names.eq_table_key (Univ.eq_puniverses Constant.equal) x y
+type id_key = constant tableKey
+let eq_id_key x y = Names.eq_table_key Constant.equal x y

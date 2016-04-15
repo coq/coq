@@ -283,7 +283,7 @@ end.
 
 (** Quotienting a polynomial by the relation X_i^2 ~ X_i *)
 
-(* Remove the multiple occurences of monomials x_k *)
+(* Remove the multiple occurrences of monomials x_k *)
 
 Fixpoint reduce_aux k p :=
 match p with

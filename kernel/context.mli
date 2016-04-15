@@ -1,122 +1,260 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** The modules defined below represent a {e local context}
+    as defined by Chapter 4 in the Reference Manual:
+
+    A {e local context} is an ordered list of of {e local declarations}
+    of names that we call {e variables}.
+
+    A {e local declaration} of some variable can be either:
+    - a {e local assumption}, or
+    - a {e local definition}.
+
+    {e Local assumptions} are denoted in the Reference Manual as [(name : typ)] and
+    {e local definitions} are there denoted as [(name := value : typ)].
+*)
+
 open Names
 
-(** TODO: cleanup *)
+(** Representation of contexts that can capture anonymous as well as non-anonymous variables.
+    Individual declarations are then designated by de Bruijn indexes. *)
+module Rel :
+sig
+  module Declaration :
+  sig
+    (* local declaration *)
+    type t = LocalAssum of Name.t * Constr.t            (** name, type *)
+           | LocalDef of Name.t * Constr.t * Constr.t   (** name, value, type *)
 
-(** {6 Declarations} *)
-(** A {e declaration} has the form [(name,body,type)]. It is either an
-    {e assumption} if [body=None] or a {e definition} if
-    [body=Some actualbody]. It is referred by {e name} if [na] is an
-    identifier or by {e relative index} if [na] is not an identifier
-    (in the latter case, [na] is of type [name] but just for printing
-    purpose) *)
+    (** Return the name bound by a given declaration. *)
+    val get_name : t -> Name.t
 
-type named_declaration = Id.t * Constr.t option * Constr.t
-type named_list_declaration = Id.t list * Constr.t option * Constr.t
-type rel_declaration = Name.t * Constr.t option * Constr.t
+    (** Return [Some value] for local-declarations and [None] for local-assumptions. *)
+    val get_value : t -> Constr.t option
 
-val map_named_declaration :
-  (Constr.t -> Constr.t) -> named_declaration -> named_declaration
-val map_named_list_declaration :
-  (Constr.t -> Constr.t) -> named_list_declaration -> named_list_declaration
-val map_rel_declaration :
-  (Constr.t -> Constr.t) -> rel_declaration -> rel_declaration
+    (** Return the type of the name bound by a given declaration. *)
+    val get_type : t -> Constr.t
 
-val fold_named_declaration :
-  (Constr.t -> 'a -> 'a) -> named_declaration -> 'a -> 'a
-val fold_rel_declaration :
-  (Constr.t -> 'a -> 'a) -> rel_declaration -> 'a -> 'a
+    (** Set the name that is bound by a given declaration. *)
+    val set_name : Name.t -> t -> t
 
-val exists_named_declaration :
-  (Constr.t -> bool) -> named_declaration -> bool
-val exists_rel_declaration :
-  (Constr.t -> bool) -> rel_declaration -> bool
+    (** Set the type of the bound variable in a given declaration. *)
+    val set_type : Constr.t -> t -> t
 
-val for_all_named_declaration :
-  (Constr.t -> bool) -> named_declaration -> bool
-val for_all_rel_declaration :
-  (Constr.t -> bool) -> rel_declaration -> bool
+    (** Return [true] iff a given declaration is a local assumption. *)
+    val is_local_assum : t -> bool
 
-val eq_named_declaration :
-  named_declaration -> named_declaration -> bool
+    (** Return [true] iff a given declaration is a local definition. *)
+    val is_local_def : t -> bool
 
-val eq_rel_declaration :
-    rel_declaration -> rel_declaration -> bool
+    (** Check whether any term in a given declaration satisfies a given predicate. *)
+    val exists : (Constr.t -> bool) -> t -> bool
 
-(** {6 Signatures of ordered named declarations } *)
+    (** Check whether all terms in a given declaration satisfy a given predicate. *)
+    val for_all : (Constr.t -> bool) -> t -> bool
 
-type named_context = named_declaration list
-type section_context = named_context
-type named_list_context = named_list_declaration list
-type rel_context = rel_declaration list
-(** In [rel_context], more recent declaration is on top *)
+    (** Check whether the two given declarations are equal. *)
+    val equal : t -> t -> bool
 
-val empty_named_context : named_context
-val add_named_decl : named_declaration -> named_context -> named_context
-val vars_of_named_context : named_context -> Id.Set.t
+    (** Map the name bound by a given declaration. *)
+    val map_name : (Name.t -> Name.t) -> t -> t
 
-val lookup_named : Id.t -> named_context -> named_declaration
+    (** For local assumptions, this function returns the original local assumptions.
+        For local definitions, this function maps the value in the local definition. *)
+    val map_value : (Constr.t -> Constr.t) -> t -> t
 
-(** number of declarations *)
-val named_context_length : named_context -> int
+    (** Map the type of the name bound by a given declaration. *)
+    val map_type : (Constr.t -> Constr.t) -> t -> t
 
-(** named context equality *)
-val named_context_equal : named_context -> named_context -> bool
+    (** Map all terms in a given declaration. *)
+    val map_constr : (Constr.t -> Constr.t) -> t -> t
 
-(** {6 Recurrence on [named_context]: older declarations processed first } *)
-val fold_named_context :
-  (named_declaration -> 'a -> 'a) -> named_context -> init:'a -> 'a
+    (** Perform a given action on all terms in a given declaration. *)
+    val iter_constr : (Constr.t -> unit) -> t -> unit
 
-val fold_named_list_context :
-  (named_list_declaration -> 'a -> 'a) -> named_list_context -> init:'a -> 'a
+    (** Reduce all terms in a given declaration to a single value. *)
+    val fold : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
 
-(** newer declarations first *)
-val fold_named_context_reverse :
-  ('a -> named_declaration -> 'a) -> init:'a -> named_context -> 'a
+    val to_tuple : t -> Name.t * Constr.t option * Constr.t
+    val of_tuple : Name.t * Constr.t option * Constr.t -> t
+  end
 
-(** {6 Section-related auxiliary functions } *)
-val instance_from_named_context : named_context -> Constr.t list
+  (** Rel-context is represented as a list of declarations.
+      Inner-most declarations are at the beginning of the list.
+      Outer-most declarations are at the end of the list. *)
+  type t = Declaration.t list
 
-(** {6 ... } *)
-(** Signatures of ordered optionally named variables, intended to be
-   accessed by de Bruijn indices *)
+  (** empty rel-context *)
+  val empty : t
 
-(** {6 Recurrence on [rel_context]: older declarations processed first } *)
-val fold_rel_context :
-  (rel_declaration -> 'a -> 'a) -> rel_context -> init:'a -> 'a
+  (** Return a new rel-context enriched by with a given inner-most declaration. *)
+  val add : Declaration.t -> t -> t
 
-(** newer declarations first *)
-val fold_rel_context_reverse :
-  ('a -> rel_declaration -> 'a) -> init:'a -> rel_context -> 'a
+  (** Return the number of {e local declarations} in a given context. *)
+  val length : t -> int
 
-(** {6 Map function of [rel_context] } *)
-val map_rel_context : (Constr.t -> Constr.t) -> rel_context -> rel_context
+  (** Check whether given two rel-contexts are equal. *)
+  val equal : t -> t -> bool
 
-(** {6 Map function of [named_context] } *)
-val map_named_context : (Constr.t -> Constr.t) -> named_context -> named_context
+  (** Return the number of {e local assumptions} in a given rel-context. *)
+  val nhyps : t -> int
 
-(** {6 Map function of [rel_context] } *)
-val iter_rel_context : (Constr.t -> unit) -> rel_context -> unit
+  (** Return a declaration designated by a given de Bruijn index.
+      @raise Not_found if the designated de Bruijn index outside the range. *)
+  val lookup : int -> t -> Declaration.t
 
-(** {6 Map function of [named_context] } *)
-val iter_named_context : (Constr.t -> unit) -> named_context -> unit
+  (** Map all terms in a given rel-context. *)
+  val map : (Constr.t -> Constr.t) -> t -> t
 
-(** {6 Contexts of declarations referred to by de Bruijn indices } *)
+  (** Perform a given action on every declaration in a given rel-context. *)
+  val iter : (Constr.t -> unit) -> t -> unit
 
-val empty_rel_context : rel_context
-val add_rel_decl : rel_declaration -> rel_context -> rel_context
+  (** Reduce all terms in a given rel-context to a single value.
+      Innermost declarations are processed first. *)
+  val fold_inside : ('a -> Declaration.t -> 'a) -> init:'a -> t -> 'a
 
-val lookup_rel : int -> rel_context -> rel_declaration
-(** Size of the [rel_context] including LetIns *)
-val rel_context_length : rel_context -> int
-(** Size of the [rel_context] without LetIns *)
-val rel_context_nhyps : rel_context -> int
-(** Indicates whether a LetIn or a Lambda, starting from oldest declaration *)
-val rel_context_tags : rel_context -> bool list
+  (** Reduce all terms in a given rel-context to a single value.
+      Outermost declarations are processed first. *)
+  val fold_outside : (Declaration.t -> 'a -> 'a) -> t -> init:'a -> 'a
+
+  (** Map a given rel-context to a list where each {e local assumption} is mapped to [true]
+      and each {e local definition} is mapped to [false]. *)
+  val to_tags : t -> bool list
+
+  (** [extended_list n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
+      with n = |Δ| and with the {e local definitions} of [Γ] skipped in
+      [args]. Example: for [x:T, y:=c, z:U] and [n]=2, it gives [Rel 5, Rel 3]. *)
+  val to_extended_list : int -> t -> Constr.t list
+
+  (** [extended_vect n Γ] does the same, returning instead an array. *)
+  val to_extended_vect : int -> t -> Constr.t array
+end
+
+(** This module represents contexts that can capture non-anonymous variables.
+    Individual declarations are then designated by the identifiers they bind. *)
+module Named :
+sig
+  (** Representation of {e local declarations}. *)
+  module Declaration :
+  sig
+    type t = LocalAssum of Id.t * Constr.t            (** identifier, type *)
+           | LocalDef of Id.t * Constr.t * Constr.t   (** identifier, value, type *)
+
+    (** Return the identifier bound by a given declaration. *)
+    val get_id : t -> Id.t
+
+    (** Return [Some value] for local-declarations and [None] for local-assumptions. *)
+    val get_value : t -> Constr.t option
+
+    (** Return the type of the name bound by a given declaration. *)
+    val get_type : t -> Constr.t
+
+    (** Set the identifier that is bound by a given declaration. *)
+    val set_id : Id.t -> t -> t
+
+    (** Set the type of the bound variable in a given declaration. *)
+    val set_type : Constr.t -> t -> t
+
+    (** Return [true] iff a given declaration is a local assumption. *)
+    val is_local_assum : t -> bool
+
+    (** Return [true] iff a given declaration is a local definition. *)
+    val is_local_def : t -> bool
+
+    (** Check whether any term in a given declaration satisfies a given predicate. *)
+    val exists : (Constr.t -> bool) -> t -> bool
+
+    (** Check whether all terms in a given declaration satisfy a given predicate. *)
+    val for_all : (Constr.t -> bool) -> t -> bool
+
+    (** Check whether the two given declarations are equal. *)
+    val equal : t -> t -> bool
+
+    (** Map the identifier bound by a given declaration. *)
+    val map_id : (Id.t -> Id.t) -> t -> t
+
+    (** For local assumptions, this function returns the original local assumptions.
+        For local definitions, this function maps the value in the local definition. *)
+    val map_value : (Constr.t -> Constr.t) -> t -> t
+
+    (** Map the type of the name bound by a given declaration. *)
+    val map_type : (Constr.t -> Constr.t) -> t -> t
+
+    (** Map all terms in a given declaration. *)
+    val map_constr : (Constr.t -> Constr.t) -> t -> t
+
+    (** Perform a given action on all terms in a given declaration. *)
+    val iter_constr : (Constr.t -> unit) -> t -> unit
+
+    (** Reduce all terms in a given declaration to a single value. *)
+    val fold : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
+
+    val to_tuple : t -> Id.t * Constr.t option * Constr.t
+    val of_tuple : Id.t * Constr.t option * Constr.t -> t
+  end
+
+  (** Rel-context is represented as a list of declarations.
+      Inner-most declarations are at the beginning of the list.
+      Outer-most declarations are at the end of the list. *)
+  type t = Declaration.t list
+
+  (** empty named-context *)
+  val empty : t
+
+  (** Return a new rel-context enriched by with a given inner-most declaration. *)
+  val add : Declaration.t -> t -> t
+
+  (** Return the number of {e local declarations} in a given named-context. *)
+  val length : t -> int
+
+  (** Return a declaration designated by an identifier of the variable bound in that declaration.
+      @raise Not_found if the designated identifier is not bound in a given named-context. *)
+  val lookup : Id.t -> t -> Declaration.t
+
+  (** Check whether given two rel-contexts are equal. *)
+  val equal : t -> t -> bool
+
+  (** Map all terms in a given named-context. *)
+  val map : (Constr.t -> Constr.t) -> t -> t
+
+  (** Perform a given action on every declaration in a given named-context. *)
+  val iter : (Constr.t -> unit) -> t -> unit
+
+  (** Reduce all terms in a given named-context to a single value.
+      Innermost declarations are processed first. *)
+  val fold_inside : ('a -> Declaration.t -> 'a) -> init:'a -> t -> 'a
+
+  (** Reduce all terms in a given named-context to a single value.
+      Outermost declarations are processed first. *)
+  val fold_outside : (Declaration.t -> 'a -> 'a) -> t -> init:'a -> 'a
+
+  (** Return the set of all identifiers bound in a given named-context. *)
+  val to_vars : t -> Id.Set.t
+
+  (** [instance_from_named_context Ω] builds an instance [args] such
+      that [Ω ⊢ args:Ω] where [Ω] is a named context and with the local
+      definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
+      gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
+  val to_instance : t -> Constr.t list
+end
+
+module NamedList :
+sig
+  module Declaration :
+  sig
+    type t = Id.t list * Constr.t option * Constr.t
+    val map_constr : (Constr.t -> Constr.t) -> t -> t
+  end
+
+  type t = Declaration.t list
+
+  val fold : (Declaration.t -> 'a -> 'a) -> t -> init:'a -> 'a
+end
+
+type section_context = Named.t

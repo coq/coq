@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Set Printing Universes.
 Set Universe Polymorphism.
 Definition foo (a := Type) (b := Type) (c := Type) := Type.
@@ -17,7 +18,7 @@ Top.8}
    Top.6
    Top.7
    Top.8 |=  *) *)
-Definition bar := $(let t := eval compute in foo in exact t)$.
+Definition bar := ltac:(let t := eval compute in foo in exact t).
 Check @bar. (* bar@{Top.13 Top.14 Top.15
 Top.16}
      : Type@{Top.16+1}

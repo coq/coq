@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -32,13 +32,13 @@ Qed.
 Ltac natcst t :=
   match isnatcst t with
     true => constr:(N.of_nat t)
-  | _ => constr:InitialRing.NotConstant
+  | _ => constr:(InitialRing.NotConstant)
   end.
 
 Ltac Ss_to_add f acc :=
   match f with
   | S ?f1 => Ss_to_add f1 (S acc)
-  | _ => constr:(acc + f)%nat
+  | _ => constr:((acc + f)%nat)
   end.
 
 Ltac natprering :=

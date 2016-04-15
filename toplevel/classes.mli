@@ -1,13 +1,12 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
 open Names
-open Context
 open Environ
 open Constrexpr
 open Typeclasses
@@ -15,9 +14,9 @@ open Libnames
 
 (** Errors *)
 
-val mismatched_params : env -> constr_expr list -> rel_context -> 'a
+val mismatched_params : env -> constr_expr list -> Context.Rel.t -> 'a
 
-val mismatched_props : env -> constr_expr list -> rel_context -> 'a
+val mismatched_props : env -> constr_expr list -> Context.Rel.t -> 'a
 
 (** Instance declaration *)
 
@@ -31,8 +30,9 @@ val declare_instance_constant :
   Impargs.manual_explicitation list -> (** implicits *)
   ?hook:(Globnames.global_reference -> unit) ->
   Id.t -> (** name *)
+  Id.t Loc.located list option ->
   bool -> (* polymorphic *)
-  Univ.universe_context_set -> (* Universes *)
+  Evd.evar_map -> (* Universes *)
   Constr.t -> (** body *)
   Term.types -> (** type *)
   Names.Id.t
@@ -40,6 +40,7 @@ val declare_instance_constant :
 val new_instance :
   ?abstract:bool -> (** Not abstract by default. *)
   ?global:bool -> (** Not global by default. *)
+  ?refine:bool -> (** Allow refinement *)
   Decl_kinds.polymorphic ->
   local_binder list ->
   typeclass_constraint ->

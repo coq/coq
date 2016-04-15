@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Declarations
 open Univ
 
@@ -41,9 +40,9 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 
 val empty_env : env
 
-val universes     : env -> Univ.universes
-val rel_context   : env -> rel_context
-val named_context : env -> named_context
+val universes     : env -> UGraph.t
+val rel_context   : env -> Context.Rel.t
+val named_context : env -> Context.Named.t
 val named_context_val : env -> named_context_val
 
 val opaque_tables : env -> Opaqueproof.opaquetab
@@ -60,25 +59,25 @@ val empty_context : env -> bool
 (** {5 Context of de Bruijn variables ([rel_context]) } *)
 
 val nb_rel           : env -> int
-val push_rel         : rel_declaration -> env -> env
-val push_rel_context :     rel_context -> env -> env
+val push_rel         : Context.Rel.Declaration.t -> env -> env
+val push_rel_context : Context.Rel.t -> env -> env
 val push_rec_types   : rec_declaration -> env -> env
 
 (** Looks up in the context of local vars referred by indice ([rel_context]) 
    raises [Not_found] if the index points out of the context *)
-val lookup_rel    : int -> env -> rel_declaration
+val lookup_rel    : int -> env -> Context.Rel.Declaration.t
 val evaluable_rel : int -> env -> bool
 
 (** {6 Recurrence on [rel_context] } *)
 
 val fold_rel_context :
-  (env -> rel_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
+  (env -> Context.Rel.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (** {5 Context of variables (section variables and goal assumptions) } *)
 
-val named_context_of_val : named_context_val -> named_context
+val named_context_of_val : named_context_val -> Context.Named.t
 val named_vals_of_val : named_context_val -> Pre_env.named_vals
-val val_of_named_context : named_context -> named_context_val
+val val_of_named_context : Context.Named.t -> named_context_val
 val empty_named_context_val : named_context_val
 
 
@@ -88,18 +87,18 @@ val empty_named_context_val : named_context_val
 val map_named_val :
    (constr -> constr) -> named_context_val -> named_context_val
 
-val push_named : named_declaration -> env -> env
-val push_named_context : named_context -> env -> env
+val push_named : Context.Named.Declaration.t -> env -> env
+val push_named_context : Context.Named.t -> env -> env
 val push_named_context_val  :
-    named_declaration -> named_context_val -> named_context_val
+    Context.Named.Declaration.t -> named_context_val -> named_context_val
 
 
 
 (** Looks up in the context of local vars referred by names ([named_context]) 
    raises [Not_found] if the Id.t is not found *)
 
-val lookup_named     : variable -> env -> named_declaration
-val lookup_named_val : variable -> named_context_val -> named_declaration
+val lookup_named     : variable -> env -> Context.Named.Declaration.t
+val lookup_named_val : variable -> named_context_val -> Context.Named.Declaration.t
 val evaluable_named  : variable -> env -> bool
 val named_type : variable -> env -> types
 val named_body : variable -> env -> constr option
@@ -107,11 +106,11 @@ val named_body : variable -> env -> constr option
 (** {6 Recurrence on [named_context]: older declarations processed first } *)
 
 val fold_named_context :
-  (env -> named_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
+  (env -> Context.Named.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
-  ('a -> named_declaration -> 'a) -> init:'a -> env -> 'a
+  ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
 
 (** This forgets named and rel contexts *)
 val reset_context : env -> env
@@ -208,8 +207,8 @@ val add_constraints : Univ.constraints -> env -> env
 
 (** Check constraints are satifiable in the environment. *)
 val check_constraints : Univ.constraints -> env -> bool
-val push_context : Univ.universe_context -> env -> env
-val push_context_set : Univ.universe_context_set -> env -> env
+val push_context : ?strict:bool -> Univ.universe_context -> env -> env
+val push_context_set : ?strict:bool -> Univ.universe_context_set -> env -> env
 val push_constraints_to_env : 'a Univ.constrained -> env -> env
 
 val set_engagement : engagement -> env -> env
@@ -228,7 +227,7 @@ val vars_of_global : env -> constr -> Id.Set.t
 val really_needed : env -> Id.Set.t -> Id.Set.t
 
 (** like [really_needed] but computes a well ordered named context *)
-val keep_hyps : env -> Id.Set.t -> section_context
+val keep_hyps : env -> Id.Set.t -> Context.section_context
 
 (** {5 Unsafe judgments. }
     We introduce here the pre-type of judgments, which is
@@ -250,7 +249,7 @@ type unsafe_type_judgment = {
 
 (** {6 Compilation of global declaration } *)
 
-val compile_constant_body : env -> constant_def -> Cemitcodes.body_code option
+val compile_constant_body : env -> constant_universes option -> constant_def -> Cemitcodes.body_code option
 
 exception Hyp_not_found
 
@@ -258,22 +257,22 @@ exception Hyp_not_found
    return [tail::(f head (id,_,_) (rev tail))::head].
    the value associated to id should not change *)
 val apply_to_hyp : named_context_val -> variable ->
-  (named_context -> named_declaration -> named_context -> named_declaration) ->
+  (Context.Named.t -> Context.Named.Declaration.t -> Context.Named.t -> Context.Named.Declaration.t) ->
     named_context_val
 
 (** [apply_to_hyp_and_dependent_on sign id f g] split [sign] into
    [tail::(id,_,_)::head] and
    return [(g tail)::(f (id,_,_))::head]. *)
 val apply_to_hyp_and_dependent_on : named_context_val -> variable ->
-  (named_declaration -> named_context_val -> named_declaration) ->
-    (named_declaration -> named_context_val -> named_declaration) ->
+  (Context.Named.Declaration.t -> named_context_val -> Context.Named.Declaration.t) ->
+    (Context.Named.Declaration.t -> named_context_val -> Context.Named.Declaration.t) ->
       named_context_val
 
 val insert_after_hyp : named_context_val -> variable ->
-  named_declaration ->
-    (named_context -> unit) -> named_context_val
+  Context.Named.Declaration.t ->
+    (Context.Named.t -> unit) -> named_context_val
 
-val remove_hyps : Id.Set.t -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
+val remove_hyps : Id.Set.t -> (Context.Named.Declaration.t -> Context.Named.Declaration.t) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
 
 
 

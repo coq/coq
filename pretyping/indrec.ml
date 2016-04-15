@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,7 +19,6 @@ open Globnames
 open Nameops
 open Term
 open Vars
-open Context
 open Namegen
 open Declarations
 open Declareops
@@ -28,6 +27,8 @@ open Inductiveops
 open Environ
 open Reductionops
 open Nametab
+open Sigma.Notations
+open Context.Rel.Declaration
 
 type dep_flag = bool
 
@@ -60,7 +61,7 @@ let check_privacy_block mib =
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
-  let indf = make_ind_family(pind, Termops.extended_rel_list 0 lnamespar) in
+  let indf = make_ind_family(pind, Context.Rel.to_extended_list 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env indf in
 
@@ -77,7 +78,6 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   (* mais pas très joli ... (mais manque get_sort_of à ce niveau) *)
   let env' = push_rel_context lnamespar env in
 
-
   let rec add_branch env k =
     if Int.equal k (Array.length mip.mind_consnames) then
       let nbprod = k+1 in
@@ -85,14 +85,14 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
       let indf' = lift_inductive_family nbprod indf in
       let arsign,_ = get_arity env indf' in
       let depind = build_dependent_inductive env indf' in
-      let deparsign = (Anonymous,None,depind)::arsign in
+      let deparsign = LocalAssum (Anonymous,depind)::arsign in
 
       let ci = make_case_info env (fst pind) RegularStyle in
       let pbody =
         appvect
           (mkRel (ndepar + nbprod),
-           if dep then Termops.extended_rel_vect 0 deparsign
-           else Termops.extended_rel_vect 1 arsign) in
+           if dep then Context.Rel.to_extended_vect 0 deparsign
+           else Context.Rel.to_extended_vect 1 arsign) in
       let p =
 	it_mkLambda_or_LetIn_name env'
 	  ((if dep then mkLambda_name env' else mkLambda)
@@ -118,15 +118,16 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
       let cs = lift_constructor (k+1) constrs.(k) in
       let t = build_branch_type env dep (mkRel (k+1)) cs in
       mkLambda_string "f" t
-	(add_branch (push_rel (Anonymous, None, t) env) (k+1))
+	(add_branch (push_rel (LocalAssum (Anonymous, t)) env) (k+1))
   in
-  let sigma, s = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env sigma kind in
+  let Sigma (s, sigma, p) = Sigma.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env sigma kind in
   let typP = make_arity env' dep indf s in
   let c = 
     it_mkLambda_or_LetIn_name env
     (mkLambda_string "P" typP
-     (add_branch (push_rel (Anonymous,None,typP) env') 0)) lnamespar
-  in sigma, c
+     (add_branch (push_rel (LocalAssum (Anonymous,typP)) env') 0)) lnamespar
+  in
+  Sigma (c, sigma, p)
 
 (* check if the type depends recursively on one of the inductive scheme *)
 
@@ -153,20 +154,23 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
       let p',largs = whd_betadeltaiota_nolet_stack env sigma p in
       match kind_of_term p' with
 	| Prod (n,t,c) ->
-	    let d = (n,None,t) in
+	    let d = LocalAssum (n,t) in
 	    make_prod env (n,t,prec (push_rel d env) (i+1) (d::sign) c)
-	| LetIn (n,b,t,c) ->
-	    let d = (n,Some b,t) in
+	| LetIn (n,b,t,c) when List.is_empty largs ->
+	    let d = LocalDef (n,b,t) in
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::sign) c)
      	| Ind (_,_) ->
 	    let realargs = List.skipn nparams largs in
 	    let base = applist (lift i pk,realargs) in
             if depK then
 	      Reduction.beta_appvect
-                base [|applist (mkRel (i+1), Termops.extended_rel_list 0 sign)|]
+                base [|applist (mkRel (i+1), Context.Rel.to_extended_list 0 sign)|]
             else
 	      base
-      	| _ -> assert false
+      	| _ ->
+	   let t' = whd_betadeltaiota env sigma p in
+	   if Term.eq_constr p' t' then assert false
+	   else prec env i sign t'
     in
     prec env 0 []
   in
@@ -188,22 +192,22 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 	     | None ->
 		 make_prod env
 		   (n,t,
-		    process_constr (push_rel (n,None,t) env) (i+1) c_0 rest
+		    process_constr (push_rel (LocalAssum (n,t)) env) (i+1) c_0 rest
 		      (nhyps-1) (i::li))
              | Some(dep',p) ->
 		 let nP = lift (i+1+decP) p in
-                 let env' = push_rel (n,None,t) env in
+                 let env' = push_rel (LocalAssum (n,t)) env in
 		 let t_0 = process_pos env' dep' nP (lift 1 t) in
 		 make_prod_dep (dep || dep') env
                    (n,t,
 		    mkArrow t_0
 		      (process_constr
-			(push_rel (Anonymous,None,t_0) env')
+			(push_rel (LocalAssum (Anonymous,t_0)) env')
 			 (i+2) (lift 1 c_0) rest (nhyps-1) (i::li))))
       | LetIn (n,b,t,c_0) ->
 	  mkLetIn (n,b,t,
 		   process_constr
-		     (push_rel (n,Some b,t) env)
+		     (push_rel (LocalDef (n,b,t)) env)
 		     (i+1) c_0 recargs (nhyps-1) li)
       | _ -> assert false
     else
@@ -228,22 +232,25 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
       let p',largs = whd_betadeltaiota_nolet_stack env sigma p in
       match kind_of_term p' with
 	| Prod (n,t,c) ->
-	    let d = (n,None,t) in
+	    let d = LocalAssum (n,t) in
 	    mkLambda_name env (n,t,prec (push_rel d env) (i+1) (d::hyps) c)
-	| LetIn (n,b,t,c) ->
-	    let d = (n,Some b,t) in
+	| LetIn (n,b,t,c) when List.is_empty largs ->
+	    let d = LocalDef (n,b,t) in
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::hyps) c)
      	| Ind _ ->
             let realargs = List.skipn nparrec largs
-            and arg = appvect (mkRel (i+1), Termops.extended_rel_vect 0 hyps) in
+            and arg = appvect (mkRel (i+1), Context.Rel.to_extended_vect 0 hyps) in
             applist(lift i fk,realargs@[arg])
-     	| _ -> assert false
+     	| _ ->
+	   let t' = whd_betadeltaiota env sigma p in
+	     if Term.eq_constr t' p' then assert false
+	     else prec env i hyps t'
     in
     prec env 0 []
   in
   (* ici, cstrprods est la liste des produits du constructeur instantié *)
   let rec process_constr env i f = function
-    | (n,None,t as d)::cprest, recarg::rest ->
+    | (LocalAssum (n,t) as d)::cprest, recarg::rest ->
         let optionpos =
 	  match dest_recarg recarg with
             | Norec   -> None
@@ -264,7 +271,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 		 (n,t,process_constr env' (i+1)
 		    (whd_beta Evd.empty (applist (lift 1 f, [(mkRel 1); arg])))
 		    (cprest,rest)))
-    | (n,Some c,t as d)::cprest, rest ->
+    | (LocalDef (n,c,t) as d)::cprest, rest ->
 	mkLetIn
 	  (n,c,t,
 	   process_constr (push_rel d env) (i+1) (lift 1 f)
@@ -275,24 +282,13 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
   in
   process_constr env 0 f (List.rev cstr.cs_args, recargs)
 
-
-(* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k
-   variables *)
-let context_chop k ctx =
-  let rec chop_aux acc = function
-    | (0, l2) -> (List.rev acc, l2)
-    | (n, ((_,Some _,_ as h)::t)) -> chop_aux (h::acc) (n, t)
-    | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
-    | (_, []) -> failwith "context_chop"
-  in chop_aux [] (k,ctx)
-
 (* Main function *)
 let mis_make_indrec env sigma listdepkind mib u =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let evdref = ref sigma in
   let lnonparrec,lnamesparrec =
-    context_chop (nparams-nparrec) (Vars.subst_instance_context u mib.mind_params_ctxt) in
+    Termops.context_chop (nparams-nparrec) (Vars.subst_instance_context u mib.mind_params_ctxt) in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.make mib.mind_ntypes (None : (bool * constr) option) in
@@ -321,29 +317,29 @@ let mis_make_indrec env sigma listdepkind mib u =
 
             (* arity in the context of the fixpoint, i.e.
                P1..P_nrec f1..f_nbconstruct *)
-	    let args = Termops.extended_rel_list (nrec+nbconstruct) lnamesparrec in
+	    let args = Context.Rel.to_extended_list (nrec+nbconstruct) lnamesparrec in
 	    let indf = make_ind_family((indi,u),args) in
 
 	    let arsign,_ = get_arity env indf in
 	    let depind = build_dependent_inductive env indf in
-	    let deparsign = (Anonymous,None,depind)::arsign in
+	    let deparsign = LocalAssum (Anonymous,depind)::arsign in
 
-	    let nonrecpar = rel_context_length lnonparrec in
-	    let larsign = rel_context_length deparsign in
+	    let nonrecpar = Context.Rel.length lnonparrec in
+	    let larsign = Context.Rel.length deparsign in
 	    let ndepar = larsign - nonrecpar in
 	    let dect = larsign+nrec+nbconstruct in
 
             (* constructors in context of the Cases expr, i.e.
                P1..P_nrec f1..f_nbconstruct F_1..F_nrec a_1..a_nar x:I *)
-	    let args' = Termops.extended_rel_list (dect+nrec) lnamesparrec in
-	    let args'' = Termops.extended_rel_list ndepar lnonparrec in
+	    let args' = Context.Rel.to_extended_list (dect+nrec) lnamesparrec in
+	    let args'' = Context.Rel.to_extended_list ndepar lnonparrec in
             let indf' = make_ind_family((indi,u),args'@args'') in
 
 	    let branches =
 	      let constrs = get_constructors env indf' in
 	      let fi = Termops.rel_vect (dect-i-nctyi) nctyi in
 	      let vecfi = Array.map
-		(fun f -> appvect (f, Termops.extended_rel_vect ndepar lnonparrec))
+		(fun f -> appvect (f, Context.Rel.to_extended_vect ndepar lnonparrec))
 		fi
 	      in
 		Array.map3
@@ -361,12 +357,12 @@ let mis_make_indrec env sigma listdepkind mib u =
 
 	    let depind' = build_dependent_inductive env indf' in
 	    let arsign',_ = get_arity env indf' in
-	    let deparsign' = (Anonymous,None,depind')::arsign' in
+	    let deparsign' = LocalAssum (Anonymous,depind')::arsign' in
 
 	    let pargs =
-	      let nrpar = Termops.extended_rel_list (2*ndepar) lnonparrec
-	      and nrar = if dep then Termops.extended_rel_list 0 deparsign'
-		else Termops.extended_rel_list 1 arsign'
+	      let nrpar = Context.Rel.to_extended_list (2*ndepar) lnonparrec
+	      and nrar = if dep then Context.Rel.to_extended_list 0 deparsign'
+		else Context.Rel.to_extended_list 1 arsign'
 	      in nrpar@nrar
 
 	    in
@@ -391,11 +387,13 @@ let mis_make_indrec env sigma listdepkind mib u =
 		    let branch = branches.(0) in
 		    let ctx, br = decompose_lam_assum branch in
 		    let n, subst = 
-		      List.fold_right (fun (na,b,t) (i, subst) ->
-			if b == None then 
-			  let t = mkProj (Projection.make ps.(i) true, mkRel 1) in
-			    (i + 1, t :: subst)
-			else (i, mkRel 0 :: subst))
+		      List.fold_right (fun decl (i, subst) ->
+			match decl with
+			| LocalAssum (na,t) ->
+			    let t = mkProj (Projection.make ps.(i) true, mkRel 1) in
+			    i + 1, t :: subst
+			| LocalDef (na,b,t) ->
+			    i, mkRel 0 :: subst)
 			ctx (0, [])
 		    in
 		    let term = substl subst br in
@@ -409,14 +407,14 @@ let mis_make_indrec env sigma listdepkind mib u =
 
 	    let typtyi =
 	      let concl =
-		let pargs = if dep then Termops.extended_rel_vect 0 deparsign
-		  else Termops.extended_rel_vect 1 arsign
+		let pargs = if dep then Context.Rel.to_extended_vect 0 deparsign
+		  else Context.Rel.to_extended_vect 1 arsign
 		in appvect (mkRel (nbconstruct+ndepar+nonrecpar+j),pargs)
 	      in it_mkProd_or_LetIn_name env
 		concl
 		deparsign
 	    in
-	      mrec (i+nctyi) (rel_context_nhyps arsign ::ln) (typtyi::ltyp)
+	      mrec (i+nctyi) (Context.Rel.nhyps arsign ::ln) (typtyi::ltyp)
                 (deftyi::ldef) rest
         | [] ->
 	    let fixn = Array.of_list (List.rev ln) in
@@ -437,28 +435,28 @@ let mis_make_indrec env sigma listdepkind mib u =
 	    else
 	      let recarg = (dest_subterms recargsvec.(tyi)).(j) in
 	      let recarg = recargpar@recarg in
-	      let vargs = Termops.extended_rel_list (nrec+i+j) lnamesparrec in
+	      let vargs = Context.Rel.to_extended_list (nrec+i+j) lnamesparrec in
 	      let cs = get_constructor ((indi,u),mibi,mipi,vargs) (j+1) in
 	      let p_0 =
 		type_rec_branch
                   true dep env !evdref (vargs,depPvec,i+j) tyi cs recarg
 	      in
 		mkLambda_string "f" p_0
-		  (onerec (push_rel (Anonymous,None,p_0) env) (j+1))
+		  (onerec (push_rel (LocalAssum (Anonymous,p_0)) env) (j+1))
 	  in onerec env 0
       | [] ->
 	  makefix i listdepkind
     in
     let rec put_arity env i = function
       | ((indi,u),_,_,dep,kinds)::rest ->
-	  let indf = make_ind_family ((indi,u), Termops.extended_rel_list i lnamesparrec) in
+	  let indf = make_ind_family ((indi,u), Context.Rel.to_extended_list i lnamesparrec) in
 	  let s = 
 	    Evarutil.evd_comb1 (Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env) 
 	      evdref kinds 
 	  in
 	  let typP = make_arity env dep indf s in
 	    mkLambda_string "P" typP
-	      (put_arity (push_rel (Anonymous,None,typP) env) (i+1) rest)
+	      (put_arity (push_rel (LocalAssum (Anonymous,typP)) env) (i+1) rest)
       | [] ->
 	  make_branch env 0 listdepkind
     in
@@ -474,7 +472,9 @@ let mis_make_indrec env sigma listdepkind mib u =
 	  it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind)
 	    lnamesparrec
       else
-	let evd', c = mis_make_case_com dep env !evdref (indi,u) (mibi,mipi) kind in
+        let sigma = Sigma.Unsafe.of_evar_map !evdref in
+        let Sigma (c, sigma, _) = mis_make_case_com dep env sigma (indi,u) (mibi,mipi) kind in
+        let evd' = Sigma.to_evar_map sigma in
 	  evdref := evd'; c
   in
     (* Body of mis_make_indrec *)

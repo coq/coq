@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,7 +18,7 @@ type message_level =
 
 type message = {
   message_level : message_level;
-  message_content : string;
+  message_content : xml;
 }
 
 let of_message_level = function
@@ -39,12 +39,12 @@ let to_message_level =
 
 let of_message msg =
   let lvl = of_message_level msg.message_level in
-  let content = Serialize.of_string msg.message_content in
+  let content = Serialize.of_xml msg.message_content in
   Xml_datatype.Element ("message", [], [lvl; content])
 let to_message xml = match xml with
   | Xml_datatype.Element ("message", [], [lvl; content]) -> {
       message_level = to_message_level lvl;
-      message_content = Serialize.to_string content }
+      message_content = Serialize.to_xml content }
   | _ -> raise Serialize.Marshal_error
 
 let is_message = function

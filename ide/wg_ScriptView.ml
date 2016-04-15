@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -141,7 +141,7 @@ object(self)
 
   (** We don't care about atomicity. Return:
     1. `OK when there was no error, `FAIL otherwise
-    2. `NOOP if no write occured, `WRITE otherwise
+    2. `NOOP if no write occurred, `WRITE otherwise
   *)
   method private process_action = function
   | Insert ins ->

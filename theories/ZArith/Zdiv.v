@@ -1,7 +1,7 @@
 (* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -279,7 +279,7 @@ Proof. intros; rewrite Z.div_exact; auto. Qed.
 Theorem Zmod_le: forall a b, 0 < b -> 0 <= a -> a mod b <= a.
 Proof. intros. apply Z.mod_le; auto. Qed.
 
-(** Some additionnal inequalities about Z.div. *)
+(** Some additional inequalities about Z.div. *)
 
 Theorem Zdiv_lt_upper_bound:
   forall a b q, 0 < b -> a < q*b -> a/b < q.

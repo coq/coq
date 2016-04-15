@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -212,6 +212,7 @@ let extend_with_auto_hints l seq gl=
     match repr_hint p_a_t.code with
 	Res_pf (c,_) | Give_exact (c,_)
       | Res_pf_THEN_trivial_fail (c,_) ->
+          let (c, _, _) = c in
 	  (try
 	     let gr = global_of_constr c in
 	     let typ=(pf_unsafe_type_of gl c) in

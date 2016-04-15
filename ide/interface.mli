@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,14 +12,15 @@
 
 type raw = bool
 type verbose = bool
+type richpp = Richpp.richpp
 
 (** The type of coqtop goals *)
 type goal = {
   goal_id : string;
   (** Unique goal identifier *)
-  goal_hyp : string list;
+  goal_hyp : richpp list;
   (** List of hypotheses *)
-  goal_ccl : string;
+  goal_ccl : richpp;
   (** Goal conclusion *)
 }
 
@@ -61,6 +62,7 @@ type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
+  | StringOptValue of string option
 
 (** Summary of an option status *)
 type option_state = {
@@ -117,7 +119,7 @@ type edit_id = Feedback.edit_id
    should probably retract to that point *)
 type 'a value =
   | Good of 'a
-  | Fail of (state_id * location * string)
+  | Fail of (state_id * location * richpp)
 
 type ('a, 'b) union = ('a, 'b) Util.union
 
@@ -201,7 +203,7 @@ type about_sty = unit
 type about_rty = coq_info
 
 type handle_exn_sty = Exninfo.iexn
-type handle_exn_rty = state_id * location * string
+type handle_exn_rty = state_id * location * richpp
 
 (* Retrocompatibility stuff *)
 type interp_sty = (raw * verbose) * string

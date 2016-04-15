@@ -30,7 +30,7 @@ Definition prod_rect' A B (P : prod A B -> Type) (u : forall (fst : A) (snd : B)
            (p : prod A B) : P p
   := u (fst p) (snd p).
 
-Notation typeof x := ($(let T := type of x in exact T)$) (only parsing).
+Notation typeof x := (ltac:(let T := type of x in exact T)) (only parsing).
 
 (* Check for eta *)
 Check eq_refl : typeof (@prod_rect) = typeof (@prod_rect').

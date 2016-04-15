@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -82,12 +82,17 @@ let fold_strategy f { var_opacity; cst_opacity; } accu =
 let get_transp_state { var_trstate; cst_trstate } = (var_trstate, cst_trstate)
 
 (* Unfold the first constant only if it is "more transparent" than the
-   second one. In case of tie, expand the second one. *)
+   second one. In case of tie, use the recommended default. *)
 let oracle_order f o l2r k1 k2 =
   match get_strategy o f k1, get_strategy o f k2 with
-    | Expand, _ -> true
-    | Level n1, Opaque -> true
-    | Level n1, Level n2 -> n1 < n2
-    | _ -> l2r (* use recommended default *)
+  | Expand, Expand -> l2r
+  | Expand, (Opaque | Level _) -> true
+  | (Opaque | Level _), Expand -> false
+  | Opaque, Opaque -> l2r
+  | Level _, Opaque -> true
+  | Opaque, Level _ -> false
+  | Level n1, Level n2 ->
+     if Int.equal n1 n2 then l2r
+     else n1 < n2
 
 let get_strategy o = get_strategy o (fun x -> x)

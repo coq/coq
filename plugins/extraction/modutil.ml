@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -100,7 +100,7 @@ let ast_iter_references do_term do_cons do_type a =
 	Array.iter (fun (_,p,_) -> patt_iter_references do_cons p) v
 
       | MLrel _ | MLlam _ | MLapp _ | MLletin _ | MLtuple _ | MLfix _ | MLexn _
-      | MLdummy | MLaxiom | MLmagic _ -> ()
+      | MLdummy _ | MLaxiom | MLmagic _ -> ()
   in iter a
 
 let ind_iter_references do_term do_cons do_type kn ind =
@@ -269,7 +269,7 @@ let rec optim_se top to_appear s = function
       let a = normalize (ast_glob_subst !s a) in
       let i = inline r a in
       if i then s := Refmap'.add r a !s;
-      let d = match optimize_fix a with
+      let d = match dump_unused_vars (optimize_fix a) with
 	| MLfix (0, _, [|c|]) ->
 	  Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
 	| a -> Dterm (r, a, t)
@@ -283,7 +283,8 @@ let rec optim_se top to_appear s = function
 	if inline rv.(i) fake_body
 	then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
       done;
-      (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top to_appear s lse)
+      let av' = Array.map dump_unused_vars av in
+      (l,SEdecl (Dfix (rv, av', tv))) :: (optim_se top to_appear s lse)
   | (l,SEmodule m) :: lse ->
       let m = { m with ml_mod_expr = optim_me to_appear s m.ml_mod_expr}
       in (l,SEmodule m) :: (optim_se top to_appear s lse)
@@ -387,16 +388,15 @@ let is_prefix pre s =
   in
   is_prefix_aux 0
 
-let check_implicits = function
-  | MLexn s ->
-      if String.length s > 8 && (s.[0] == 'U' || s.[0] == 'I') then
-	begin
-	  if is_prefix "UNBOUND" s then assert false;
-	  if is_prefix "IMPLICIT" s then
-	    error_non_implicit (String.sub s 9 (String.length s - 9));
-	end;
-      false
-  | _ -> false
+exception RemainingImplicit of kill_reason
+
+let check_for_remaining_implicits struc =
+  let check = function
+    | MLdummy (Kimplicit _ as k) -> raise (RemainingImplicit k)
+    | _ -> false
+  in
+  try ignore (struct_ast_search check struc)
+  with RemainingImplicit k -> err_or_warn_remaining_implicit k
 
 let optimize_struct to_appear struc =
   let subst = ref (Refmap'.empty : ml_ast Refmap'.t) in
@@ -404,12 +404,16 @@ let optimize_struct to_appear struc =
     List.map (fun (mp,lse) -> (mp, optim_se true (fst to_appear) subst lse))
       struc
   in
-  ignore (struct_ast_search check_implicits opt_struc);
-  if library () then
-    List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
-  else begin
-    reset_needed ();
-    List.iter add_needed (fst to_appear);
-    List.iter add_needed_mp (snd to_appear);
-    depcheck_struct opt_struc
-  end
+  let mini_struc =
+    if library () then
+      List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
+    else
+      begin
+        reset_needed ();
+        List.iter add_needed (fst to_appear);
+        List.iter add_needed_mp (snd to_appear);
+        depcheck_struct opt_struc
+      end
+  in
+  let () = check_for_remaining_implicits mini_struc in
+  mini_struc

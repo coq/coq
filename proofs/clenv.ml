@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -24,6 +24,7 @@ open Pretype_errors
 open Evarutil
 open Unification
 open Misctypes
+open Sigma.Notations
 
 (* Abbreviations *)
 
@@ -119,7 +120,7 @@ let clenv_environments evd bound t =
   clrec (evd,[]) bound t
 
 let mk_clenv_from_env env sigma n (c,cty) =
-  let evd = create_goal_evar_defs sigma in
+  let evd = clear_metas sigma in
   let (evd,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (applist (c,args));
     templtyp = mk_freelisted concl;
@@ -335,21 +336,14 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
       else
         let src = evar_source_of_meta mv clenv.evd in
         let src = adjust_meta_source clenv.evd mv src in
-	let (evd,evar) = new_evar (cl_env clenv) clenv.evd ~src ty in
+        let evd = Sigma.Unsafe.of_evar_map clenv.evd in
+	let Sigma (evar, evd, _) = new_evar (cl_env clenv) evd ~src ty in
+	let evd = Sigma.to_evar_map evd in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
 	fold clenv mvs in
   fold clenv dep_mvs
 
 (******************************************************************)
-
-let connect_clenv gls clenv =
-  let evd = evars_reset_evd ~with_conv_pbs:true gls.sigma clenv.evd in
-  { clenv with
-    evd = evd ;
-    env = Goal.V82.env evd (sig_it gls) }
-
-(* let connect_clenv_key = Profile.declare_profile "connect_clenv";; *)
-(* let connect_clenv = Profile.profile2 connect_clenv_key connect_clenv *)
 
 (* [clenv_fchain mv clenv clenv']
  *
@@ -379,12 +373,12 @@ let fchain_flags () =
   { (default_unify_flags ()) with
     allow_K_in_toplevel_higher_order_unification = true }
 
-let clenv_fchain ?(flags=fchain_flags ()) mv clenv nextclenv =
+let clenv_fchain ?with_univs ?(flags=fchain_flags ()) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
   let clenv' =
     { templval = clenv.templval;
       templtyp = clenv.templtyp;
-      evd = meta_merge nextclenv.evd clenv.evd;
+      evd = meta_merge ?with_univs nextclenv.evd clenv.evd;
       env = nextclenv.env } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
@@ -431,6 +425,44 @@ let check_bindings bl =
 	  (str "The position " ++ int n ++
 	   str " occurs more than once in binding list.")
     | [] -> ()
+
+let explain_no_such_bound_variable evd id =
+  let fold l (n, clb) =
+    let na = match clb with
+    | Cltyp (na, _) -> na
+    | Clval (na, _, _) -> na
+    in
+    if na != Anonymous then out_name na :: l else l
+  in
+  let mvl = List.fold_left fold [] (Evd.meta_list evd) in
+  errorlabstrm "Evd.meta_with_name"
+    (str"No such bound variable " ++ pr_id id ++
+     (if mvl == [] then str " (no bound variables at all in the expression)."
+      else
+        (str" (possible name" ++
+         str (if List.length mvl == 1 then " is: " else "s are: ") ++
+         pr_enum pr_id mvl ++ str").")))
+
+let meta_with_name evd id =
+  let na = Name id in
+  let fold (l1, l2 as l) (n, clb) =
+    let (na',def) = match clb with
+    | Cltyp (na, _) -> (na, false)
+    | Clval (na, _, _) -> (na, true)
+    in
+    if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
+    else l
+  in
+  let (mvl, mvnodef) = List.fold_left fold ([], []) (Evd.meta_list evd) in
+  match mvnodef, mvl with
+    | _,[]  ->
+      explain_no_such_bound_variable evd id
+    | ([n],_|_,[n]) ->
+        n
+    | _  ->
+        errorlabstrm "Evd.meta_with_name"
+          (str "Binder name \"" ++ pr_id id ++
+           strbrk "\" occurs more than once in clause.")
 
 let meta_of_binder clause loc mvs = function
   | NamedHyp s -> meta_with_name clause.evd s
@@ -576,7 +608,9 @@ let make_evar_clause env sigma ?len t =
     | Cast (t, _, _) -> clrec (sigma, holes) n t
     | Prod (na, t1, t2) ->
       let store = Typeclasses.set_resolvable Evd.Store.empty false in
-      let sigma, ev = new_evar ~store env sigma t1 in
+      let sigma = Sigma.Unsafe.of_evar_map sigma in
+      let Sigma (ev, sigma, _) = new_evar ~store env sigma t1 in
+      let sigma = Sigma.to_evar_map sigma in
       let dep = dependent (mkRel 1) t2 in
       let hole = {
         hole_evar = ev;

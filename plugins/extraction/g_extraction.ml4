@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,6 +11,10 @@
 (* ML names *)
 
 open Genarg
+open Stdarg
+open Constrarg
+open Pcoq.Prim
+open Pcoq.Constr
 open Pp
 open Names
 open Nameops
@@ -31,7 +35,6 @@ let pr_int_or_id _ _ _ = function
   | ArgId id -> pr_id id
 
 ARGUMENT EXTEND int_or_id
-  TYPED AS int_or_id
   PRINTED BY pr_int_or_id
 | [ preident(id) ] -> [ ArgId (Id.of_string id) ]
 | [ integer(i) ] -> [ ArgInt i ]

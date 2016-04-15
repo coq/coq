@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -173,6 +173,12 @@ let is_done p =
 (* spiwack: for compatibility with <= 8.2 proof engine *)
 let has_unresolved_evar p =
   Proofview.V82.has_unresolved_evar p.proofview
+let has_shelved_goals p = not (CList.is_empty (p.shelf))
+let has_given_up_goals p = not (CList.is_empty (p.given_up))
+
+let is_complete p =
+  is_done p && not (has_unresolved_evar p) &&
+  not (has_shelved_goals p) && not (has_given_up_goals p)
 
 (* Returns the list of partial proofs to initial goals *)
 let partial_proof p = Proofview.partial_proof p.entry p.proofview
@@ -305,9 +311,9 @@ end
 let return p =
   if not (is_done p) then
     raise UnfinishedProof
-  else if not (CList.is_empty (p.shelf)) then
+  else if has_shelved_goals p then
     raise HasShelvedGoals
-  else if not (CList.is_empty (p.given_up)) then
+  else if has_given_up_goals p then
     raise HasGivenUpGoals
   else if has_unresolved_evar p then
     (* spiwack: for compatibility with <= 8.3 proof engine *)
@@ -328,22 +334,24 @@ let compact p =
 (*** Tactics ***)
 
 let run_tactic env tac pr =
+  let open Proofview.Notations in
   let sp = pr.proofview in
-  let (_,tacticced_proofview,(status,to_shelve,give_up),info_trace) =
+  let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
+  let tac =
+    tac >>= fun () ->
+    Proofview.tclEVARMAP >>= fun sigma ->
+    (* Already solved goals are not to be counted as shelved. Nor are
+      they to be marked as unresolvable. *)
+    let retrieved = undef sigma (List.rev (Evd.future_goals sigma)) in
+    let sigma = List.fold_left Proofview.Unsafe.mark_as_goal sigma retrieved in
+    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+    Proofview.tclUNIT retrieved
+  in
+  let (retrieved,proofview,(status,to_shelve,give_up),info_trace) =
     Proofview.apply env tac sp
   in
-  let sigma = Proofview.return tacticced_proofview in
-  (* Already solved goals are not to be counted as shelved. Nor are
-     they to be marked as unresolvable. *)
-  let undef l = List.filter (fun g -> Evd.is_undefined sigma g) l in
-  let retrieved = undef (List.rev (Evd.future_goals sigma)) in
-  let shelf = (undef pr.shelf)@retrieved@(undef to_shelve) in
-  let proofview =
-    List.fold_left
-      Proofview.Unsafe.mark_as_goal
-      tacticced_proofview
-      retrieved
-  in
+  let sigma = Proofview.return proofview in
+  let shelf = (undef sigma pr.shelf)@retrieved@(undef sigma to_shelve) in
   let given_up = pr.given_up@give_up in
   let proofview = Proofview.Unsafe.reset_future_goals proofview in
   { pr with proofview ; shelf ; given_up },(status,info_trace)
@@ -381,9 +389,27 @@ module V82 = struct
       { p with proofview = Proofview.V82.grab p.proofview }
 
 
+  (* Main component of vernac command Existential *)
   let instantiate_evar n com pr =
-    let sp = pr.proofview in
-    let proofview = Proofview.V82.instantiate_evar n com sp in
+    let tac =
+      Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
+      let (evk, evi) =
+        let evl = Evarutil.non_instantiated sigma in
+        let evl = Evar.Map.bindings evl in
+        if (n <= 0) then
+          Errors.error "incorrect existential variable index"
+        else if CList.length evl < n then
+          Errors.error "not so many uninstantiated existential variables"
+        else
+          CList.nth evl (n-1)
+      in
+      let env = Evd.evar_filtered_env evi in
+      let rawc = Constrintern.intern_constr env com in
+      let ltac_vars = Pretyping.empty_lvar in
+      let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) sigma in
+      Proofview.Unsafe.tclEVARS sigma
+    end in
+    let ((), proofview, _, _) = Proofview.apply (Global.env ()) tac pr.proofview in
     let shelf =
       List.filter begin fun g ->
         Evd.is_undefined (Proofview.return proofview) g

@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 12106 lines to 1070 lines *)
 Set Universe Polymorphism.
@@ -7,7 +8,7 @@ Inductive foo : Type@{l} := bar : foo .
 Section MakeEq.
   Variables (a : foo@{i}) (b : foo@{j}).
 
-  Let t := $(let ty := type of b in exact ty)$.
+  Let t := ltac:(let ty := type of b in exact ty).
   Definition make_eq (x:=b) := a : t.
 End MakeEq.
 

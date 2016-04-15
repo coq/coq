@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -74,6 +74,13 @@ val check_eq : universe check_function
 (** The initial graph of universes: Prop < Set *)
 val initial_universes : universes
 
+(** Adds a universe to the graph, ensuring it is >= or > Set.
+   @raises AlreadyDeclared if the level is already declared in the graph. *)
+
+exception AlreadyDeclared
+
+val add_universe : universe_level -> bool -> universes -> universes
+
 (** {6 Constraints. } *)
 
 type constraint_type = Lt | Le | Eq
@@ -117,14 +124,14 @@ type univ_inconsistency = constraint_type * universe * universe
 exception UniverseInconsistency of univ_inconsistency
 
 val merge_constraints : constraints -> universes -> universes
-
+						    
 val check_constraints : constraints -> universes -> bool
 
 (** {6 Support for universe polymorphism } *)
 
 (** Polymorphic maps from universe levels to 'a *)
-module LMap : Map.S with type key = universe_level
-
+module LMap : CSig.MapS with type key = universe_level
+module LSet : CSig.SetS with type elt = universe_level
 type 'a universe_map = 'a LMap.t
 
 (** {6 Substitution} *)
@@ -177,7 +184,7 @@ sig
   type t
 
   val empty : t
-
+  val make : universe_instance constrained -> t
   val instance : t -> Instance.t
   val constraints : t -> constraints
 
@@ -186,12 +193,16 @@ end
 module ContextSet :
   sig 
     type t
+    val make : LSet.t -> constraints -> t
     val empty : t
     val constraints : t -> constraints
   end
 
 type universe_context = UContext.t
 type universe_context_set = ContextSet.t
+
+val merge_context : bool -> universe_context -> universes -> universes
+val merge_context_set : bool -> universe_context_set -> universes -> universes
 
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
@@ -219,6 +230,9 @@ val subst_instance_constraints : universe_instance -> constraints -> constraints
 val instantiate_univ_context : universe_context -> universe_context
 val instantiate_univ_constraints : universe_instance -> universe_context -> constraints
 
+(** Build the relative instance corresponding to the context *)
+val make_abstract_instance : universe_context -> universe_instance
+									    
 (** {6 Pretty-printing of universes. } *)
 
 val pr_universes : universes -> Pp.std_ppcmds

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,6 +15,10 @@ open Goptions
 open Tacticals
 open Tacinterp
 open Libnames
+open Constrarg
+open Stdarg
+open Pcoq.Prim
+open Pcoq.Tactic
 
 DECLARE PLUGIN "ground_plugin"
 
@@ -52,8 +56,15 @@ let _=
   in
     declare_int_option gdopt
 
+let default_intuition_tac =
+  let tac _ _ = Auto.h_auto None [] None in
+  let name = { Tacexpr.mltac_plugin = "ground_plugin"; mltac_tactic = "auto_with"; } in
+  let entry = { Tacexpr.mltac_name = name; mltac_index = 0 } in
+  Tacenv.register_ml_tactic name [| tac |];
+  Tacexpr.TacML (Loc.ghost, entry, [])
+
 let (set_default_solver, default_solver, print_default_solver) = 
-  Tactic_option.declare_tactic_option ~default:(<:tactic<auto with *>>) "Firstorder default solver"
+  Tactic_option.declare_tactic_option ~default:default_intuition_tac "Firstorder default solver"
 
 VERNAC COMMAND EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
 | [ "Set" "Firstorder" "Solver" tactic(t) ] -> [
@@ -128,17 +139,17 @@ END
 
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) l []) ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) l []) ]
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) [] l) ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) [] l) ]
 |   [ "firstorder" tactic_opt(t) firstorder_using(l)
        "with" ne_preident_list(l') ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) l l') ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) l l') ]
 END
 
 TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
-     [ Proofview.V82.tactic (gen_ground_tac false (Option.map eval_tactic t) [] []) ]
+     [ Proofview.V82.tactic (gen_ground_tac false (Option.map (tactic_of_value ist) t) [] []) ]
 END
 
 open Proofview.Notations

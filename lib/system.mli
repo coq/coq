@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -59,7 +59,7 @@ val where_in_path_rex :
 val find_file_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 
-val file_exists_respecting_case : string -> bool
+val file_exists_respecting_case : string -> string -> bool
 
 (** {6 I/O functions } *)
 (** Generic input and output functions, parameterized by a magic number
@@ -68,11 +68,13 @@ val file_exists_respecting_case : string -> bool
 
 exception Bad_magic_number of string
 
-val raw_extern_intern : int ->
-  (string -> string * out_channel) * (string -> in_channel)
+val raw_extern_state : int -> string -> out_channel
 
-val extern_intern : ?warn:bool -> int ->
-  (string -> 'a -> unit) * (CUnix.load_path -> string -> 'a)
+val raw_intern_state : int -> string -> in_channel
+
+val extern_state : int -> string -> 'a -> unit
+
+val intern_state : int -> string -> 'a
 
 val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
 

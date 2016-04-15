@@ -40,15 +40,20 @@ let conv_vect fconv vect1 vect2 cu =
     !rcu
   else raise NotConvertible
 
-let infos = ref (create_clos_infos betaiotazeta Environ.empty_env)
-
 let rec conv_val env pb k v1 v2 cu =
   if v1 == v2 then cu
   else conv_whd env pb k (whd_val v1) (whd_val v2) cu
 
 and conv_whd env pb k whd1 whd2 cu =
+(*  Pp.(msg_debug (str "conv_whd(" ++ pr_whd whd1 ++ str ", " ++ pr_whd whd2 ++ str ")")) ; *)
   match whd1, whd2 with
-  | Vsort s1, Vsort s2 -> check_sort_cmp_universes env pb s1 s2 cu; cu
+  | Vsort s1, Vsort s2 -> sort_cmp_universes env pb s1 s2 cu
+  | Vuniv_level _ , _
+  | _ , Vuniv_level _ ->
+    (** Both of these are invalid since universes are handled via
+     ** special cases in the code.
+     **)
+    assert false
   | Vprod p1, Vprod p2 ->
       let cu = conv_val env CONV k (dom p1) (dom p2) cu in
       conv_fun env pb k (codom p1) (codom p2) cu
@@ -76,53 +81,53 @@ and conv_whd env pb k whd1 whd2 cu =
   | Vatom_stk(a1,stk1), Vatom_stk(a2,stk2) ->
       conv_atom env pb k a1 stk1 a2 stk2 cu
   | Vfun _, _ | _, Vfun _ ->
-      conv_val env CONV (k+1) (eta_whd k whd1) (eta_whd k whd2) cu
-  | _, Vatom_stk(Aiddef(_,v),stk) ->
-      conv_whd env pb k whd1 (force_whd v stk) cu
-  | Vatom_stk(Aiddef(_,v),stk), _ ->
-      conv_whd env pb k (force_whd v stk) whd2 cu
+      conv_val env CONV (k+1) (apply_whd k whd1) (apply_whd k whd2) cu
 
   | Vsort _, _ | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconstr_const _, _
   | Vconstr_block _, _ | Vatom_stk _, _ -> raise NotConvertible
 
 
 and conv_atom env pb k a1 stk1 a2 stk2 cu =
+(*  Pp.(msg_debug (str "conv_atom(" ++ pr_atom a1 ++ str ", " ++ pr_atom a2 ++ str ")")) ; *)
   match a1, a2 with
-  | Aind ind1, Aind ind2 ->
-      if eq_puniverses eq_ind ind1 ind2 && compare_stack stk1 stk2
+  | Aind ((mi,i) as ind1) , Aind ind2 ->
+      if eq_ind ind1 ind2 && compare_stack stk1 stk2
       then
-	conv_stack env k stk1 stk2 cu
+        if Environ.polymorphic_ind ind1 env
+        then
+          let mib = Environ.lookup_mind mi env in
+	  let ulen = Univ.UContext.size mib.Declarations.mind_universes in
+          match stk1 , stk2 with
+	  | [], [] -> assert (Int.equal ulen 0); cu
+	  | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->
+	     assert (ulen <= nargs args1);
+             assert (ulen <= nargs args2);
+	     let u1 = Array.init ulen (fun i -> uni_lvl_val (arg args1 i)) in
+	     let u2 = Array.init ulen (fun i -> uni_lvl_val (arg args2 i)) in
+	     let u1 = Univ.Instance.of_array u1 in
+	     let u2 = Univ.Instance.of_array u2 in
+	     let cu = convert_instances ~flex:false u1 u2 cu in
+             conv_arguments env ~from:ulen k args1 args2
+			    (conv_stack env k stk1' stk2' cu)
+	  | _, _ -> assert false (* Should not happen if problem is well typed *)
+        else
+	  conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Aid ik1, Aid ik2 ->
       if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
-  | Aiddef(ik1,v1), Aiddef(ik2,v2) ->
-      begin
-	try
-	  if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
-	    conv_stack env k stk1 stk2 cu
-	  else raise NotConvertible
-	with NotConvertible ->
-	  if oracle_order Univ.out_punivs (oracle_of_infos !infos) 
-	    false ik1 ik2 then
-            conv_whd env pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
-          else conv_whd env pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
-      end
-  | Aiddef(ik1,v1), _ ->
-      conv_whd env pb k (force_whd v1 stk1) (Vatom_stk(a2,stk2)) cu
-  | _, Aiddef(ik2,v2) ->
-      conv_whd env pb k (Vatom_stk(a1,stk1)) (force_whd v2 stk2) cu
+  | Atype _ , _ | _, Atype _ -> assert false
   | Aind _, _ | Aid _, _ -> raise NotConvertible
 
-and conv_stack env k stk1 stk2 cu =
+and conv_stack env ?from:(from=0) k stk1 stk2 cu =
   match stk1, stk2 with
   | [], [] -> cu
   | Zapp args1 :: stk1, Zapp args2 :: stk2 ->
-      conv_stack env k stk1 stk2 (conv_arguments env k args1 args2 cu)
+      conv_stack env k stk1 stk2 (conv_arguments env ~from:from k args1 args2 cu)
   | Zfix(f1,args1) :: stk1, Zfix(f2,args2) :: stk2 ->
       conv_stack env k stk1 stk2
-	(conv_arguments env k args1 args2 (conv_fix env k f1 f2 cu))
+	(conv_arguments env ~from:from k args1 args2 (conv_fix env k f1 f2 cu))
   | Zswitch sw1 :: stk1, Zswitch sw2 :: stk2 ->
       if check_switch sw1 sw2 then
 	let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
@@ -166,98 +171,37 @@ and conv_cofix env k cf1 cf2 cu =
       conv_vect (conv_val env CONV (k + Array.length tcf1)) bcf1 bcf2 cu
     else raise NotConvertible
 
-and conv_arguments env k args1 args2 cu =
+and conv_arguments env ?from:(from=0) k args1 args2 cu =
   if args1 == args2 then cu
   else
     let n = nargs args1 in
     if Int.equal n (nargs args2) then
       let rcu = ref cu in
-      for i = 0 to n - 1 do
+      for i = from to n - 1 do
 	rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu
       done;
       !rcu
     else raise NotConvertible
 
-let rec eq_puniverses f (x,l1) (y,l2) cu =
-  if f x y then conv_universes l1 l2 cu
-  else raise NotConvertible
+let vm_conv_gen cv_pb env univs t1 t2 =
+  try 
+    let v1 = val_of_constr env t1 in
+    let v2 = val_of_constr env t2 in
+    fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
+  with Not_found | Invalid_argument _ ->
+    (Pp.msg_warning
+      (Pp.str "Bytecode compilation failed, falling back to default conversion");
+     Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
+			    full_transparent_state env univs t1 t2)
 
-and conv_universes l1 l2 cu =
-  if Univ.Instance.equal l1 l2 then cu else raise NotConvertible
+let vm_conv cv_pb env t1 t2 =
+  let univs = Environ.universes env in
+  let b =
+    if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
+    else Constr.eq_constr_univs univs t1 t2
+  in
+  if not b then
+    let univs = (univs, checked_universes) in
+    let _ = vm_conv_gen cv_pb env univs t1 t2 in ()
 
-let rec conv_eq env pb t1 t2 cu =
-  if t1 == t2 then cu
-  else
-    match kind_of_term t1, kind_of_term t2 with
-    | Rel n1, Rel n2 ->
-	if Int.equal n1 n2 then cu else raise NotConvertible
-    | Meta m1, Meta m2 ->
-	if Int.equal m1 m2 then cu else raise NotConvertible
-    | Var id1, Var id2 ->
-	if Id.equal id1 id2 then cu else raise NotConvertible
-    | Sort s1, Sort s2 -> check_sort_cmp_universes env pb s1 s2 cu; cu
-    | Cast (c1,_,_), _ -> conv_eq env pb c1 t2 cu
-    | _, Cast (c2,_,_) -> conv_eq env pb t1 c2 cu
-    | Prod (_,t1,c1), Prod (_,t2,c2) ->
-	conv_eq env pb c1 c2 (conv_eq env CONV t1 t2 cu)
-    | Lambda (_,t1,c1), Lambda (_,t2,c2) -> conv_eq env CONV c1 c2 cu
-    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) ->
-	conv_eq env pb c1 c2 (conv_eq env CONV b1 b2 cu)
-    | App (c1,l1), App (c2,l2) ->
-	conv_eq_vect env l1 l2 (conv_eq env CONV c1 c2 cu)
-    | Evar (e1,l1), Evar (e2,l2) ->
-	if Evar.equal e1 e2 then conv_eq_vect env l1 l2 cu
-	else raise NotConvertible
-    | Const c1, Const c2 -> eq_puniverses eq_constant c1 c2 cu
-    | Proj (p1,c1), Proj (p2,c2) ->
-	if eq_constant (Projection.constant p1) (Projection.constant p2) then
-	  conv_eq env pb c1 c2 cu 
-	else raise NotConvertible
-    | Ind c1, Ind c2 ->
-       eq_puniverses eq_ind c1 c2 cu
-    | Construct c1, Construct c2 ->
-       eq_puniverses eq_constructor c1 c2 cu
-    | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-	let pcu = conv_eq env CONV p1 p2 cu in
-	let ccu = conv_eq env CONV c1 c2 pcu in
-	conv_eq_vect env bl1 bl2 ccu
-    | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
-	if Int.equal i1 i2 && Array.equal Int.equal ln1 ln2 then conv_eq_vect env tl1 tl2 (conv_eq_vect env bl1 bl2 cu)
-	else raise NotConvertible
-    | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-	if Int.equal ln1 ln2 then conv_eq_vect env tl1 tl2 (conv_eq_vect env bl1 bl2 cu)
-	else raise NotConvertible
-    | _ -> raise NotConvertible
-
-and conv_eq_vect env vt1 vt2 cu =
-  let len = Array.length vt1 in
-  if Int.equal len (Array.length vt2) then
-    let rcu = ref cu in
-    for i = 0 to len-1 do
-      rcu := conv_eq env CONV vt1.(i) vt2.(i) !rcu
-    done; !rcu
-  else raise NotConvertible
-
-let vconv pb env t1 t2 =
-  infos := create_clos_infos betaiotazeta env;
-  let _cu =
-    try conv_eq env pb t1 t2 (universes env)
-    with NotConvertible ->
-      let v1 = val_of_constr env t1 in
-      let v2 = val_of_constr env t2 in
-      let cu = conv_val env pb (nb_rel env) v1 v2 (universes env) in
-      cu
-  in ()
-
-let _ = Reduction.set_vm_conv vconv
-
-let use_vm = ref false
-
-let set_use_vm b =
-  use_vm := b;
-  if b then Reduction.set_default_conv (fun cv_pb ?(l2r=false) -> vconv cv_pb)
-  else Reduction.set_default_conv (fun cv_pb ?(l2r=false) -> Reduction.conv_cmp cv_pb)
-
-let use_vm _ = !use_vm
-
-
+let _ = Reduction.set_vm_conv vm_conv

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -16,6 +16,14 @@ let () = lang_manager#set_search_path
 let style_manager = GSourceView2.source_style_scheme_manager ~default:true
 let () = style_manager#set_search_path
   ((Minilib.coqide_data_dirs ())@style_manager#search_path)
+
+type tag = {
+  tag_fg_color : string option;
+  tag_bg_color : string option;
+  tag_bold : bool;
+  tag_italic : bool;
+  tag_underline : bool;
+}
 
 (** Generic preferences *)
 
@@ -170,6 +178,30 @@ object
   | _ -> None
 end
 
+let tag : tag repr =
+let _to s = if s = "" then None else Some s in
+let _of = function None -> "" | Some s -> s in
+object
+  method from tag = [
+    _of tag.tag_fg_color;
+    _of tag.tag_bg_color;
+    string_of_bool tag.tag_bold;
+    string_of_bool tag.tag_italic;
+    string_of_bool tag.tag_underline;
+  ]
+  method into = function
+  | [fg; bg; bd; it; ul] ->
+    (try Some {
+      tag_fg_color = _to fg;
+      tag_bg_color = _to bg;
+      tag_bold = bool_of_string bd;
+      tag_italic = bool_of_string it;
+      tag_underline = bool_of_string ul;
+      }
+    with _ -> None)
+  | _ -> None
+end
+
 end
 
 let get_config_file name =
@@ -248,8 +280,19 @@ let automatic_tactics =
 let cmd_print =
   new preference ~name:["cmd_print"] ~init:"lpr" ~repr:Repr.(string)
 
+let attach_modifiers (pref : string preference) prefix =
+  let cb mds =
+    let mds = str_to_mod_list mds in
+    let change ~path ~key ~modi ~changed =
+      if CString.is_sub prefix path 0 then
+        ignore (GtkData.AccelMap.change_entry ~key ~modi:mds ~replace:true path)
+    in
+    GtkData.AccelMap.foreach change
+  in
+  pref#connect#changed cb
+
 let modifier_for_navigation =
-  new preference ~name:["modifier_for_navigation"] ~init:"<Control><Alt>" ~repr:Repr.(string)
+  new preference ~name:["modifier_for_navigation"] ~init:"<Control>" ~repr:Repr.(string)
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
@@ -259,6 +302,11 @@ let modifier_for_tactics =
 
 let modifier_for_display =
   new preference ~name:["modifier_for_display"] ~init:"<Alt><Shift>" ~repr:Repr.(string)
+
+let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/"
+let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/"
+let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/"
+let _ = attach_modifiers modifier_for_display "<Actions>/View/"
 
 let modifiers_valid =
   new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
@@ -338,6 +386,89 @@ let processing_color =
 let _ = attach_bg processing_color Tags.Script.to_process
 let _ = attach_bg processing_color Tags.Script.incomplete
 
+let default_tag = {
+  tag_fg_color = None;
+  tag_bg_color = None;
+  tag_bold = false;
+  tag_italic = false;
+  tag_underline = false;
+}
+
+let tags = ref Util.String.Map.empty
+
+let list_tags () = !tags
+
+let make_tag ?fg ?bg ?(bold = false) ?(italic = false) ?(underline = false) () = {
+  tag_fg_color = fg;
+  tag_bg_color = bg;
+  tag_bold = bold;
+  tag_italic = italic;
+  tag_underline = underline;
+}
+
+let create_tag name default =
+  let pref = new preference ~name:[name] ~init:default ~repr:Repr.(tag) in
+  let set_tag tag =
+    begin match pref#get.tag_bg_color with
+    | None -> tag#set_property (`BACKGROUND_SET false)
+    | Some c ->
+      tag#set_property (`BACKGROUND_SET true);
+      tag#set_property (`BACKGROUND c)
+    end;
+    begin match pref#get.tag_fg_color with
+    | None -> tag#set_property (`FOREGROUND_SET false)
+    | Some c ->
+      tag#set_property (`FOREGROUND_SET true);
+      tag#set_property (`FOREGROUND c)
+    end;
+    begin match pref#get.tag_bold with
+    | false -> tag#set_property (`WEIGHT_SET false)
+    | true ->
+      tag#set_property (`WEIGHT_SET true);
+      tag#set_property (`WEIGHT `BOLD)
+    end;
+    begin match pref#get.tag_italic with
+    | false -> tag#set_property (`STYLE_SET false)
+    | true ->
+      tag#set_property (`STYLE_SET true);
+      tag#set_property (`STYLE `ITALIC)
+    end;
+    begin match pref#get.tag_underline with
+    | false -> tag#set_property (`UNDERLINE_SET false)
+    | true ->
+      tag#set_property (`UNDERLINE_SET true);
+      tag#set_property (`UNDERLINE `SINGLE)
+    end;
+  in
+  let iter table =
+    let tag = GText.tag ~name () in
+    table#add tag#as_tag;
+    pref#connect#changed (fun _ -> set_tag tag);
+    set_tag tag;
+  in
+  List.iter iter [Tags.Script.table; Tags.Proof.table; Tags.Message.table];
+  tags := Util.String.Map.add name pref !tags
+
+let () =
+  let iter (name, tag) = create_tag name tag in
+  List.iter iter [
+    ("constr.evar", make_tag ());
+    ("constr.keyword", make_tag ~fg:"dark green" ());
+    ("constr.notation", make_tag ());
+    ("constr.path", make_tag ());
+    ("constr.reference", make_tag ~fg:"navy"());
+    ("constr.type", make_tag ~fg:"#008080" ());
+    ("constr.variable", make_tag ());
+    ("message.debug", make_tag ());
+    ("message.error", make_tag ());
+    ("message.warning", make_tag ());
+    ("module.definition", make_tag ~fg:"orange red" ~bold:true ());
+    ("module.keyword", make_tag ());
+    ("tactic.keyword", make_tag ());
+    ("tactic.primitive", make_tag ());
+    ("tactic.string", make_tag ());
+  ]
+
 let processed_color =
   new preference ~name:["processed_color"] ~init:"light green" ~repr:Repr.(string)
 
@@ -383,6 +514,74 @@ let highlight_current_line =
 
 let nanoPG =
   new preference ~name:["nanoPG"] ~init:false ~repr:Repr.(bool)
+
+class tag_button (box : Gtk.box Gtk.obj) =
+object (self)
+
+  inherit GObj.widget box
+
+  val fg_color = GButton.color_button ()
+  val fg_unset = GButton.toggle_button ()
+  val bg_color = GButton.color_button ()
+  val bg_unset = GButton.toggle_button ()
+  val bold = GButton.toggle_button ()
+  val italic = GButton.toggle_button ()
+  val underline = GButton.toggle_button ()
+
+  method set_tag tag =
+    let track c but set = match c with
+    | None -> set#set_active true
+    | Some c ->
+      set#set_active false;
+      but#set_color (Tags.color_of_string c)
+    in
+    track tag.tag_bg_color bg_color bg_unset;
+    track tag.tag_fg_color fg_color fg_unset;
+    bold#set_active tag.tag_bold;
+    italic#set_active tag.tag_italic;
+    underline#set_active tag.tag_underline;
+
+  method tag =
+    let get but set =
+      if set#active then None
+      else Some (Tags.string_of_color but#color)
+    in
+    {
+      tag_bg_color = get bg_color bg_unset;
+      tag_fg_color = get fg_color fg_unset;
+      tag_bold = bold#active;
+      tag_italic = italic#active;
+      tag_underline = underline#active;
+    }
+
+  initializer
+    let box = new GPack.box box in
+    let set_stock button stock =
+      let stock = GMisc.image ~stock ~icon_size:`BUTTON () in
+      button#set_image stock#coerce
+    in
+    set_stock fg_unset `CANCEL;
+    set_stock bg_unset `CANCEL;
+    set_stock bold `BOLD;
+    set_stock italic `ITALIC;
+    set_stock underline `UNDERLINE;
+    box#pack fg_color#coerce;
+    box#pack fg_unset#coerce;
+    box#pack bg_color#coerce;
+    box#pack bg_unset#coerce;
+    box#pack bold#coerce;
+    box#pack italic#coerce;
+    box#pack underline#coerce;
+    let cb but obj = obj#set_sensitive (not but#active) in
+    let _ = fg_unset#connect#toggled (fun () -> cb fg_unset fg_color#misc) in
+    let _ = bg_unset#connect#toggled (fun () -> cb bg_unset bg_color#misc) in
+    ()
+
+end
+
+let tag_button () =
+  let box = GPack.hbox () in
+  new tag_button (Gobject.unsafe_cast box#as_widget)
 
 (** Old style preferences *)
 
@@ -484,6 +683,40 @@ let configure ?(apply=(fun () -> ())) () =
     ] in
     let label = "Color configuration" in
     let callback () = () in
+    custom ~label box callback true
+  in
+
+  let config_tags =
+    let box = GPack.vbox () in
+    let scroll = GBin.scrolled_window
+      ~hpolicy:`NEVER
+      ~vpolicy:`AUTOMATIC
+      ~packing:(box#pack ~expand:true)
+      ()
+    in
+    let table = GPack.table
+      ~row_spacings:5
+      ~col_spacings:5
+      ~border_width:2
+      ~packing:scroll#add_with_viewport ()
+    in
+    let i = ref 0 in
+    let cb = ref [] in
+    let iter text tag =
+      let label = GMisc.label
+        ~text ~packing:(table#attach ~expand:`X ~left:0 ~top:!i) ()
+      in
+      let () = label#set_xalign 0. in
+      let button = tag_button () in
+      let callback () = tag#set button#tag in
+      button#set_tag tag#get;
+      table#attach ~left:1 ~top:!i button#coerce;
+      incr i;
+      cb := callback :: !cb;
+    in
+    let () = Util.String.Map.iter iter !tags in
+    let label = "Tag configuration" in
+    let callback () = List.iter (fun f -> f ()) !cb in
     custom ~label box callback true
   in
 
@@ -690,6 +923,8 @@ let configure ?(apply=(fun () -> ())) () =
 	     [config_font]);
      Section("Colors", Some `SELECT_COLOR,
              [config_color; source_language; source_style]);
+     Section("Tags", Some `SELECT_COLOR,
+             [config_tags]);
      Section("Editor", Some `EDIT, [config_editor]);
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;

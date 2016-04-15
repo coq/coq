@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -71,3 +71,7 @@ val unfreeze_summary : frozen_bits -> unit
 val surgery_summary : frozen -> frozen_bits -> frozen
 val project_summary : frozen -> ?complement:bool -> string list -> frozen_bits
 val pointer_equal : frozen_bits -> frozen_bits -> bool
+
+(** {6 Debug} *)
+
+val dump : unit -> (int * string) list

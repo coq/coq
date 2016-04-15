@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -41,12 +41,24 @@ type case_printing =
   { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
     cstr_tags : bool list array; (* whether each pattern var of each constructor is a let-in (true) or not (false) *)
     style     : case_style }
+
+(* INVARIANT:
+ * - Array.length ci_cstr_ndecls = Array.length ci_cstr_nargs
+ * - forall (i : 0 .. pred (Array.length ci_cstr_ndecls)),
+ *          ci_cstr_ndecls.(i) >= ci_cstr_nargs.(i)
+ *)
 type case_info =
-  { ci_ind        : inductive;
-    ci_npar       : int;
-    ci_cstr_ndecls : int array; (* number of pattern vars of each constructor (with let's)*)
-    ci_cstr_nargs : int array; (* number of pattern vars of each constructor (w/o let's) *)
-    ci_pp_info    : case_printing (* not interpreted by the kernel *)
+  { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
+    ci_npar       : int;            (* number of parameters of the above inductive type *)
+    ci_cstr_ndecls : int array;     (* For each constructor, the corresponding integer determines
+                                       the number of values that can be bound in a match-construct.
+                                       NOTE: parameters of the inductive type are therefore excluded from the count *)
+    ci_cstr_nargs : int array;      (* for each constructor, the corresponding integers determines
+                                       the number of values that can be applied to the constructor,
+                                       in addition to the parameters of the related inductive type
+                                       NOTE: "lets" are therefore excluded from the count
+                                       NOTE: parameters of the inductive type are also excluded from the count *)
+    ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
 (********************************************************************)
@@ -545,8 +557,8 @@ let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
 let eq_constr_univs univs m n =
   if m == n then true
   else 
-    let eq_universes _ = Univ.Instance.check_eq univs in
-    let eq_sorts s1 s2 = s1 == s2 || Univ.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+    let eq_universes _ = UGraph.check_eq_instances univs in
+    let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in compare_head_gen eq_universes eq_sorts eq_constr' m n
@@ -554,11 +566,11 @@ let eq_constr_univs univs m n =
 let leq_constr_univs univs m n =
   if m == n then true
   else 
-    let eq_universes _ = Univ.Instance.check_eq univs in
+    let eq_universes _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || 
-      Univ.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+      UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let leq_sorts s1 s2 = s1 == s2 || 
-      Univ.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+      UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
@@ -571,12 +583,12 @@ let eq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes strict = Univ.Instance.check_eq univs in
+    let eq_universes strict = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_eq univs u1 u2 then true
+	if UGraph.check_eq univs u1 u2 then true
 	else
 	  (cstrs := Univ.enforce_eq u1 u2 !cstrs;
 	   true)
@@ -591,12 +603,12 @@ let leq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes strict l l' = Univ.Instance.check_eq univs l l' in
+    let eq_universes strict l l' = UGraph.check_eq_instances univs l l' in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_eq univs u1 u2 then true
+	if UGraph.check_eq univs u1 u2 then true
 	else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
 	      true)
     in
@@ -604,7 +616,7 @@ let leq_constr_univs_infer univs m n =
       if Sorts.equal s1 s2 then true
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_leq univs u1 u2 then true
+	if UGraph.check_leq univs u1 u2 then true
 	else
 	  (cstrs := Univ.enforce_leq u1 u2 !cstrs; 
 	   true)
@@ -732,12 +744,10 @@ let hasheq t1 t2 =
       n1 == n2 && b1 == b2 && t1 == t2 && c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
     | Proj (p1,c1), Proj(p2,c2) -> p1 == p2 && c1 == c2
-    | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && array_eqeq l1 l2
+    | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && array_eqeq l1 l2
     | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
-    | Ind ((sp1,i1),u1), Ind ((sp2,i2),u2) -> 
-      sp1 == sp2 && Int.equal i1 i2 && u1 == u2
-    | Construct (((sp1,i1),j1),u1), Construct (((sp2,i2),j2),u2) ->
-      sp1 == sp2 && Int.equal i1 i2 && Int.equal j1 j2 && u1 == u2
+    | Ind (ind1,u1), Ind (ind2,u2) -> ind1 == ind2 && u1 == u2
+    | Construct (cstr1,u1), Construct (cstr2,u2) -> cstr1 == cstr2 && u1 == u2
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
       ci1 == ci2 && p1 == p2 && c1 == c2 && array_eqeq bl1 bl2
     | Fix ((ln1, i1),(lna1,tl1,bl1)), Fix ((ln2, i2),(lna2,tl2,bl2)) ->
@@ -757,10 +767,10 @@ let hasheq t1 t2 =
     once and for all the table we'll use for hash-consing all constr *)
 
 module HashsetTerm =
-  Hashset.Make(struct type t = constr let equal = hasheq end)
+  Hashset.Make(struct type t = constr let eq = hasheq end)
 
 module HashsetTermArray =
-  Hashset.Make(struct type t = constr array let equal = array_eqeq end)
+  Hashset.Make(struct type t = constr array let eq = array_eqeq end)
 
 let term_table = HashsetTerm.create 19991
 (* The associative table to hashcons terms. *)
@@ -815,19 +825,19 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Proj (p,c) ->
         let c, hc = sh_rec c in
 	let p' = Projection.hcons p in
-	  (Proj (p', c), combinesmall 17 (combine (Projection.hash p') hc))
+	  (Proj (p', c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
       | Const (c,u) ->
 	let c' = sh_con c in
 	let u', hu = sh_instance u in
-	(Const (c', u'), combinesmall 9 (combine (Constant.hash c) hu))
-      | Ind ((kn,i) as ind,u) ->
+	(Const (c', u'), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
+      | Ind (ind,u) ->
 	let u', hu = sh_instance u in
 	(Ind (sh_ind ind, u'), 
-	 combinesmall 10 (combine (ind_hash ind) hu))
-      | Construct ((((kn,i),j) as c,u))->
+	 combinesmall 10 (combine (ind_syntactic_hash ind) hu))
+      | Construct (c,u) ->
 	let u', hu = sh_instance u in
 	(Construct (sh_construct c, u'),
-	 combinesmall 11 (combine (constructor_hash c) hu))
+	 combinesmall 11 (combine (constructor_syntactic_hash c) hu))
       | Case (ci,p,c,bl) ->
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
@@ -930,7 +940,7 @@ struct
     List.equal (==) info1.ind_tags info2.ind_tags &&
     Array.equal (List.equal (==)) info1.cstr_tags info2.cstr_tags &&
     info1.style == info2.style
-  let equal ci ci' =
+  let eq ci ci' =
     ci.ci_ind == ci'.ci_ind &&
     Int.equal ci.ci_npar ci'.ci_npar &&
     Array.equal Int.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
@@ -972,7 +982,7 @@ module Hsorts =
       let hashcons huniv = function
           Prop c -> Prop c
         | Type u -> Type (huniv u)
-      let equal s1 s2 =
+      let eq s1 s2 =
         s1 == s2 ||
 	  match (s1,s2) with
             (Prop c1, Prop c2) -> c1 == c2

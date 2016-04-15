@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -98,7 +98,7 @@ module Hsorts =
 	  let u' = huniv u in 
 	    if u' == u then c else Type u'
         | s -> s
-      let equal s1 s2 = match (s1,s2) with
+      let eq s1 s2 = match (s1,s2) with
         | (Prop c1, Prop c2) -> c1 == c2
         | (Type u1, Type u2) -> u1 == u2
         |_ -> false

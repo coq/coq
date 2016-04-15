@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,14 +20,15 @@ let get_current_proof_name = Proof_global.get_current_proof_name
 let get_all_proof_names = Proof_global.get_all_proof_names
 
 type lemma_possible_guards = Proof_global.lemma_possible_guards
+type universe_binders = Proof_global.universe_binders
 
 let delete_proof = Proof_global.discard
 let delete_current_proof = Proof_global.discard_current
 let delete_all_proofs = Proof_global.discard_all
 
-let start_proof (id : Id.t) str sigma hyps c ?init_tac terminator =
+let start_proof (id : Id.t) ?pl str sigma hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof sigma id str goals terminator;
+  Proof_global.start_proof sigma id ?pl str goals terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
@@ -53,6 +54,9 @@ let set_used_variables l =
   Proof_global.set_used_variables l
 let get_used_variables () =
   Proof_global.get_used_variables ()
+
+let get_universe_binders () =
+  Proof_global.get_universe_binders ()
 
 exception NoSuchGoal
 let _ = Errors.register_handler begin function
@@ -81,7 +85,8 @@ let get_current_goal_context () =
   with NoSuchGoal ->
     (* spiwack: returning empty evar_map, since if there is no goal, under focus,
         there is no accessible evar either *)
-    (Evd.empty, Global.env ())
+    let env = Global.env () in
+    (Evd.from_env env, env)
 
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
@@ -101,14 +106,12 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
       | Vernacexpr.SelectAll -> tac
-      | Vernacexpr.SelectAllParallel ->
-          Errors.anomaly(str"SelectAllParallel not handled by Stm")
     in
     let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
     let () =
       match info_lvl with
       | None -> ()
-      | Some i -> Pp.msg_notice (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
+      | Some i -> Pp.msg_info (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
     in
     (p,status)
   with
@@ -133,29 +136,33 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
-  let evd = Evd.from_env ~ctx Environ.empty_env in
+  let evd = Evd.from_ctx ctx in
   let terminator = Proof_global.make_terminator (fun _ -> ()) in
   start_proof id goal_kind evd sign typ terminator;
   try
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in
     delete_current_proof ();
-    const, status, univs
+    const, status, fst univs
   with reraise ->
     let reraise = Errors.push reraise in
     delete_current_proof ();
     iraise reraise
 
-let build_by_tactic env ctx ?(poly=false) typ tac =
+let build_by_tactic ?(side_eff=true) env ctx ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
   let gk = Global, poly, Proof Theorem in
   let ce, status, univs = build_constant_by_tactic id ctx sign ~goal_kind:gk typ tac in
-  let ce = Term_typing.handle_entry_side_effects env ce in
+  let ce =
+    if side_eff then Safe_typing.inline_private_constants_in_definition_entry env ce
+    else { ce with
+      const_entry_body = Future.chain ~pure:true ce.const_entry_body
+        (fun (pt, _) -> pt, Safe_typing.empty_private_constants) } in
   let (cb, ctx), se = Future.force ce.const_entry_body in
-  assert(Declareops.side_effects_is_empty se);
-  assert(Univ.ContextSet.is_empty ctx);
-  cb, status, univs
+  let univs' = Evd.merge_context_set Evd.univ_rigid (Evd.from_ctx univs) ctx in
+  assert(Safe_typing.empty_private_constants = se);
+  cb, status, Evd.evar_universe_context univs'
 
 let refine_by_tactic env sigma ty tac =
   (** Save the initial side-effects to restore them afterwards. We set the
@@ -189,7 +196,7 @@ let refine_by_tactic env sigma ty tac =
       other goals that were already present during its invocation, so that
       those goals rely on effects that are not present anymore. Hopefully,
       this hack will work in most cases. *)
-  let ans = Term_typing.handle_side_effects env ans neff in
+  let ans = Safe_typing.inline_private_constants_in_constr env ans neff in
   ans, sigma
 
 (**********************************************************************)
@@ -207,7 +214,7 @@ let solve_by_implicit_tactic env sigma evk =
   match (!implicit_tactic, snd (evar_source evk sigma)) with
   | Some tac, (Evar_kinds.ImplicitArg _ | Evar_kinds.QuestionMark _)
       when
-	Context.named_context_equal (Environ.named_context_of_val evi.evar_hyps)
+	Context.Named.equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) []) in
       (try

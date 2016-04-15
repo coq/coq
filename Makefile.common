@@ -63,7 +63,7 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 CORESRCDIRS:=\
   config 	lib		kernel		kernel/byterun	library \
   proofs 	tactics 	pretyping	interp		stm \
-  toplevel	parsing	printing	grammar	        intf	engine
+  toplevel	parsing	printing	grammar	        intf	engine	ltac
 
 PLUGINS:=\
   omega		romega 		micromega 	quote \
@@ -161,14 +161,14 @@ BYTERUN:=$(addprefix kernel/byterun/, \
   coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
 
 # LINK ORDER:
-# Beware that highparsing.cma should appear before hightactics.cma
+# Beware that highparsing.cma should appear before ltac.cma
 # respecting this order is useful for developers that want to load or link
 # the libraries directly
 
 CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma \
-	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
+	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma ltac/ltac.cma
 
 TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 
@@ -293,7 +293,6 @@ STRINGSVO:=$(call cat_vo_itarget, theories/Strings)
 SETSVO:=$(call cat_vo_itarget, theories/Sets)
 FSETSVO:=$(call cat_vo_itarget, theories/FSets)
 MSETSVO:=$(call cat_vo_itarget, theories/MSets)
-MMAPSVO:=$(call cat_vo_itarget, theories/MMaps)
 RELATIONSVO:=$(call cat_vo_itarget, theories/Relations)
 WELLFOUNDEDVO:=$(call cat_vo_itarget, theories/Wellfounded)
 REALSVO:=$(call cat_vo_itarget, theories/Reals)
@@ -302,6 +301,7 @@ SETOIDSVO:=$(call cat_vo_itarget, theories/Setoids)
 UNICODEVO:=$(call cat_vo_itarget, theories/Unicode)
 CLASSESVO:=$(call cat_vo_itarget, theories/Classes)
 PROGRAMVO:=$(call cat_vo_itarget, theories/Program)
+COMPATVO:=$(call cat_vo_itarget, theories/Compat)
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) \
@@ -309,9 +309,10 @@ THEORIESVO:=\
   $(RELATIONSVO) $(WELLFOUNDEDVO) $(SETOIDSVO) \
   $(LISTSVO) $(STRINGSVO) \
   $(PARITHVO) $(NARITHVO) $(ZARITHVO) \
-  $(SETSVO) $(FSETSVO) $(MSETSVO) $(MMAPSVO) \
+  $(SETSVO) $(FSETSVO) $(MSETSVO) \
   $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
-  $(NUMBERSVO) $(STRUCTURESVO) $(VECTORSVO)
+  $(NUMBERSVO) $(STRUCTURESVO) $(VECTORSVO) \
+  $(COMPATVO)
 
 THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(UNICODEVO) $(ARITHVO)
 
@@ -378,7 +379,7 @@ OCAMLDOCDIR=dev/ocamldoc
 DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
 	./engine/*.mli ./pretyping/*.mli ./interp/*.mli printing/*.mli \
 	./parsing/*.mli ./proofs/*.mli \
-	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli)
+	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli ./ltac/*.mli)
 
 # Defining options to generate dependencies graphs
 DOT=dot

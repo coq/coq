@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 (** It would be nice if we had more lax constraint checking of inductive types, and had variance annotations on their universes *)
 Set Printing All.
 Set Printing Implicit.
@@ -21,7 +22,7 @@ Section lift.
   Definition Lift (A : Type@{i}) : Type@{j} := A.
 End lift.
 
-Goal forall (A : Type@{i}) (x y : A), @paths@{i} A x y -> @paths@{j} A x y.
+Goal forall (A : Type@{i}) (x y : A), @paths@{i j} A x y -> @paths@{j k} A x y.
 intros A x y p.
 compute in *. destruct p. exact idpath.
 Defined.

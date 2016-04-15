@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -198,6 +198,9 @@ let split_lib_at_opening sp =
 let add_entry sp node =
   lib_stk := (sp,node) :: !lib_stk
 
+let pull_to_head oname =
+  lib_stk := (oname,List.assoc oname !lib_stk) :: List.remove_assoc oname !lib_stk
+
 let anonymous_id =
   let n = ref 0 in
   fun () -> incr n; Names.Id.of_string ("_" ^ (string_of_int !n))
@@ -392,30 +395,51 @@ type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 		  
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
+type secentry =
+  | Variable of (Names.Id.t * Decl_kinds.binding_kind *
+		   Decl_kinds.polymorphic * Univ.universe_context_set)
+  | Context of Univ.universe_context_set
+
 let sectab =
-  Summary.ref ([] : ((Names.Id.t * Decl_kinds.binding_kind * 
-		Decl_kinds.polymorphic * Univ.universe_context_set) list *
-		        Opaqueproof.work_list * abstr_list) list)
+  Summary.ref ([] : (secentry list * Opaqueproof.work_list * abstr_list) list)
     ~name:"section-context"
 
 let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),
                 (Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
 
+let check_same_poly p vars =
+  let pred = function Context _ -> p = false | Variable (_, _, poly, _) -> p != poly in
+  if List.exists pred vars then
+    error "Cannot mix universe polymorphic and monomorphic declarations in sections."
+
 let add_section_variable id impl poly ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-	sectab := ((id,impl,poly,ctx)::vars,repl,abs)::sl
+       check_same_poly poly vars;
+       sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
+
+let add_section_context ctx =
+  match !sectab with
+    | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
+    | (vars,repl,abs)::sl ->
+       check_same_poly true vars;
+       sectab := (Context ctx :: vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
+  let open Context.Named.Declaration in
   let rec aux = function
-    | ((id,impl,poly,ctx)::idl,(id',b,t)::hyps) when Names.Id.equal id id' ->
+    | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (get_id decl) ->
+      let (id',b,t) = to_tuple decl in
       let l, r = aux (idl,hyps) in 
 	(id',impl,b,t) :: l, if poly then Univ.ContextSet.union r ctx else r
-    | ((_,_,poly,ctx)::idl,hyps) -> 
+    | (Variable (_,_,poly,ctx)::idl,hyps) ->
         let l, r = aux (idl,hyps) in
           l, if poly then Univ.ContextSet.union r ctx else r
+    | (Context ctx :: idl, hyps) ->
+       let l, r = aux (idl, hyps) in
+       l, Univ.ContextSet.union r ctx
     | [], _ -> [],Univ.ContextSet.empty
   in aux (secs,ohyps)
 
@@ -426,25 +450,30 @@ let instance_from_variable_context sign =
     | [] -> [] in
   Array.of_list (inst_rec sign)
 
-let named_of_variable_context ctx = List.map (fun (id,_,b,t) -> (id,b,t)) ctx
+let named_of_variable_context ctx = let open Context.Named.Declaration in
+                                    List.map (function id,_,None,t -> LocalAssum (id,t)
+                                                     | id,_,Some b,t -> LocalDef (id,b,t))
+                                             ctx
   
-let add_section_replacement f g hyps =
+let add_section_replacement f g poly hyps =
   match !sectab with
   | [] -> ()
   | (vars,exps,abs)::sl ->
+    let () = check_same_poly poly vars in
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let subst, ctx = Univ.abstract_universes true ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
-    sectab := (vars,f (Univ.UContext.instance ctx,args) exps,g (sechyps,subst,ctx) abs)::sl
+    sectab := (vars,f (Univ.UContext.instance ctx,args) exps,
+	      g (sechyps,subst,ctx) abs)::sl
 
-let add_section_kn kn =
+let add_section_kn poly kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
-    add_section_replacement f f
+    add_section_replacement f f poly
 
-let add_section_constant is_projection kn =
+let add_section_constant poly kn =
   let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
-    add_section_replacement f f
+    add_section_replacement f f poly
 
 let replacement_context () = pi2 (List.hd !sectab)
 
@@ -456,10 +485,13 @@ let section_segment_of_mutual_inductive kn =
 
 let section_instance = function
   | VarRef id ->
-      if List.exists (fun (id',_,_,_) -> Names.id_eq id id') 
-	(pi1 (List.hd !sectab))
-      then Univ.Instance.empty, [||]
-      else raise Not_found
+     let eq = function
+       | Variable (id',_,_,_) -> Names.id_eq id id'
+       | Context _ -> false
+     in
+     if List.exists eq (pi1 (List.hd !sectab))
+     then Univ.Instance.empty, [||]
+     else raise Not_found
   | ConstRef con ->
       Names.Cmap.find con (fst (pi2 (List.hd !sectab)))
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
@@ -478,6 +510,10 @@ let full_section_segment_of_constant con =
 (*************)
 (* Sections. *)
 
+(* XML output hooks *)
+let (f_xml_open_section, xml_open_section) = Hook.make ~default:ignore ()
+let (f_xml_close_section, xml_close_section) = Hook.make ~default:ignore ()
+
 let open_section id =
   let olddir,(mp,oldsec) = !path_prefix in
   let dir = add_dirpath_suffix olddir id in
@@ -489,6 +525,7 @@ let open_section id =
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
   path_prefix := prefix;
+  if !Flags.xml_export then Hook.get f_xml_open_section id;
   add_section ()
 
 
@@ -517,6 +554,7 @@ let close_section () =
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
   add_entry oname (ClosedSection (List.rev (mark::secdecls)));
+  if !Flags.xml_export then Hook.get f_xml_close_section (basename (fst oname));
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;

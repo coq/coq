@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -34,8 +34,8 @@ val compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 (** Lift a hash to option types. *)
 val hash : ('a -> int) -> 'a option -> int
 
-(** [get x] returns [y] where [x] is [Some y]. It raises IsNone
-    if [x] equals [None]. *)
+(** [get x] returns [y] where [x] is [Some y].
+    @raise IsNone if [x] equals [None]. *)
 val get : 'a option -> 'a
 
 (** [make x] returns [Some x]. *)
@@ -54,7 +54,7 @@ val flatten : 'a option option -> 'a option
 val append : 'a option -> 'a option -> 'a option
 
 
-(** {6 "Iterators"} ***)
+(** {6 "Iterators"} *)
 
 (** [iter f x] executes [f y] if [x] equals [Some y]. It does nothing
     otherwise. *)
@@ -63,8 +63,8 @@ val iter : ('a -> unit) -> 'a option -> unit
 exception Heterogeneous
 
 (** [iter2 f x y] executes [f z w] if [x] equals [Some z] and [y] equals
-    [Some w]. It does nothing if both [x] and [y] are [None]. And raises
-    [Heterogeneous] otherwise. *)
+    [Some w]. It does nothing if both [x] and [y] are [None].
+    @raise Heterogeneous otherwise. *)
 val iter2 : ('a -> 'b -> unit) -> 'a option -> 'b option -> unit
 
 (** [map f x] is [None] if [x] is [None] and [Some (f y)] if [x] is [Some y]. *)
@@ -78,8 +78,8 @@ val smartmap : ('a -> 'a) -> 'a option -> 'a option
 val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a option -> 'b
 
 (** [fold_left2 f a x y] is [f z w] if [x] is [Some z] and [y] is [Some w].
-    It is [a] if both [x] and [y] are [None]. Otherwise it raises
-    [Heterogeneous]. *)
+    It is [a] if both [x] and [y] are [None].
+    @raise Heterogeneous otherwise. *)
 val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option -> 'c option -> 'a
 
 (** [fold_right f x a] is [f y a] if [x] is [Some y], and [a] otherwise. *)
@@ -91,7 +91,7 @@ val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
 (** [cata f e x] is [e] if [x] is [None] and [f a] if [x] is [Some a] *)
 val cata : ('a -> 'b) -> 'b -> 'a option -> 'b
 
-(** {6 More Specific Operations} ***)
+(** {6 More Specific Operations} *)
 
 (** [default a x] is [y] if [x] is [Some y] and [a] otherwise. *)
 val default : 'a -> 'a option -> 'a

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -30,7 +30,7 @@ let smartmap_cast_type f c =
 let glob_sort_eq g1 g2 = match g1, g2 with
 | GProp, GProp -> true
 | GSet, GSet -> true
-| GType l1, GType l2 -> List.equal CString.equal l1 l2
+| GType l1, GType l2 -> List.equal (fun x y -> CString.equal (snd x) (snd y)) l1 l2
 | _ -> false
 
 let intro_pattern_naming_eq nam1 nam2 = match nam1, nam2 with

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -29,7 +29,7 @@ type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
 type var_map = Pattern.constr_under_binders Id.Map.t
 type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
-type unbound_ltac_var_map = Genarg.tlevel Genarg.generic_argument Id.Map.t
+type unbound_ltac_var_map = Genarg.Val.t Id.Map.t
 
 type ltac_var_map = {
   ltac_constrs : var_map;
@@ -55,6 +55,9 @@ type inference_flags = {
   expand_evars : bool
 }
 
+type 'a delayed_open =
+  { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
+
 val default_inference_flags : bool -> inference_flags
 
 val no_classes_no_fail_inference_flags : inference_flags
@@ -66,9 +69,12 @@ val all_and_fail_flags : inference_flags
 (** Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
 val allow_anonymous_refs : bool ref
   
-(** Generic call to the interpreter from glob_constr to open_constr, leaving
-    unresolved holes as evars and returning the typing contexts of
-    these evars. Work as [understand_gen] for the rest. *)
+(** Generic calls to the interpreter from glob_constr to open_constr;
+    by default, inference_flags tell to use type classes and
+    heuristics (but no external tactic solver hooks), as well as to
+    ensure that conversion problems are all solved and expand evars,
+    but unresolved evars can remain. The difference is in whether the
+    evar_map is modified explicitly or by side-effect. *)
 
 val understand_tcc : ?flags:inference_flags -> env -> evar_map ->
   ?expected_type:typing_constraint -> glob_constr -> open_constr
@@ -92,7 +98,12 @@ val understand_ltac : inference_flags ->
   env -> evar_map -> ltac_var_map ->
   typing_constraint -> glob_constr -> pure_open_constr
 
-(** Standard call to get a constr from a glob_constr, resolving implicit args *)
+(** Standard call to get a constr from a glob_constr, resolving
+    implicit arguments and coercions, and compiling pattern-matching;
+    the default inference_flags tells to use type classes and
+    heuristics (but no external tactic solver hook), as well as to
+    ensure that conversion problems are all solved and that no
+    unresolved evar remains, expanding evars. *)
 
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
   env -> evar_map -> glob_constr -> constr Evd.in_evar_universe_context
@@ -102,12 +113,18 @@ val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
 val understand_judgment : env -> evar_map -> 
   glob_constr -> unsafe_judgment Evd.in_evar_universe_context
 
-(** Idem but do not fail on unresolved evars *)
+(** Idem but do not fail on unresolved evars (type cl*)
 val understand_judgment_tcc : env -> evar_map ref ->
   glob_constr -> unsafe_judgment
 
+val type_uconstr :
+  ?flags:inference_flags ->
+  ?expected_type:typing_constraint ->
+  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr delayed_open
+
 (** Trying to solve remaining evars and remaining conversion problems
-    with type classes, heuristics, and possibly an external solver *)
+    possibly using type classes, heuristics, external tactic solver
+    hook depending on given flags. *)
 (* For simplicity, it is assumed that current map has no other evars
    with candidate and no other conversion problems that the one in
    [pending], however, it can contain more evars than the pending ones. *)
@@ -115,10 +132,15 @@ val understand_judgment_tcc : env -> evar_map ref ->
 val solve_remaining_evars : inference_flags ->
   env -> (* initial map *) evar_map -> (* map to solve *) pending -> evar_map
 
-(** Checking evars are all solved and reporting an appropriate error message *)
+(** Checking evars and pending conversion problems are all solved,
+    reporting an appropriate error message *)
 
 val check_evars_are_solved :
   env -> (* current map: *) evar_map -> (* map to check: *) pending -> unit
+
+(** [check_evars env initial_sigma extended_sigma c] fails if some
+   new unresolved evar remains in [c] *)
+val check_evars : env -> evar_map -> evar_map -> constr -> unit
 
 (**/**)
 (** Internal of Pretyping... *)
@@ -138,12 +160,9 @@ val ise_pretype_gen :
 
 (** To embed constr in glob_constr *)
 
-val constr_in : constr -> Dyn.t
-val constr_out : Dyn.t -> constr
-
-val interp_sort : evar_map -> glob_sort -> evar_map * sorts
+val interp_sort : ?loc:Loc.t -> evar_map -> glob_sort -> evar_map * sorts
 val interp_elimination_sort : glob_sort -> sorts_family
 
 val genarg_interp_hook :
-  (types -> env -> evar_map -> Genarg.typed_generic_argument Id.Map.t ->
+  (types -> env -> evar_map -> unbound_ltac_var_map ->
     Genarg.glob_generic_argument -> constr * evar_map) Hook.t

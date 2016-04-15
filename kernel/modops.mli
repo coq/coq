@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -126,13 +126,11 @@ type module_typing_error =
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
-  | HigherOrderInclude
+  | IncludeRestrictedFunctor of module_path
 
 exception ModuleTypingError of module_typing_error
 
 val error_existing_label : Label.t -> 'a
-
-val error_application_to_not_path : module_struct_entry -> 'a
 
 val error_incompatible_modtypes :
   module_type_body -> module_type_body -> 'a
@@ -154,4 +152,4 @@ val error_generative_module_expected : Label.t -> 'a
 
 val error_no_such_label_sub : Label.t->string->'a
 
-val error_higher_order_include : unit -> 'a
+val error_include_restricted_functor : module_path -> 'a

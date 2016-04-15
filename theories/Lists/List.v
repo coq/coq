@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -26,7 +26,7 @@ In a special module to avoid conflicts. *)
 Module ListNotations.
 Notation " [ ] " := nil (format "[ ]") : list_scope.
 Notation " [ x ] " := (cons x nil) : list_scope.
-Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
+Notation " [ x ; y ; .. ; z ] " :=  (cons x (cons y .. (cons z nil) ..)) : list_scope.
 End ListNotations.
 
 Import ListNotations.
@@ -69,7 +69,7 @@ Section Facts.
   Variable A : Type.
 
 
-  (** *** Genereric facts *)
+  (** *** Generic facts *)
 
   (** Discrimination *)
   Theorem nil_cons : forall (x:A) (l:list A), [] <> x :: l.
@@ -622,9 +622,9 @@ Section Elts.
   Qed.
 
 
-  (****************************************)
-  (** ** Counting occurences of a element *)
-  (****************************************)
+  (******************************************)
+  (** ** Counting occurrences of an element *)
+  (******************************************)
 
   Fixpoint count_occ (l : list A) (x : A) : nat :=
     match l with
@@ -970,6 +970,7 @@ Section Map.
   Lemma in_flat_map : forall (f:A->list B)(l:list A)(y:B),
     In y (flat_map f l) <-> exists x, In x l /\ In y (f x).
   Proof using A B.
+    clear Hfinjective.
     induction l; simpl; split; intros.
     contradiction.
     destruct H as (x,(H,_)); contradiction.

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,7 +11,6 @@
 
 open Util
 open Names
-open Context
 open Decl_kinds
 open Libnames
 
@@ -47,16 +46,20 @@ let constant_kind kn = Cmap.find kn !csttab
 
 (** Miscellaneous functions. *)
 
+open Context.Named.Declaration
+
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
   List.fold_right
-    (fun (id,c,t as d) signv ->
-      let d = if variable_opacity id then (id,None,t) else d in
+    (fun d signv ->
+      let id = get_id d in
+      let d = if variable_opacity id then LocalAssum (id, get_type d) else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
 let last_section_hyps dir =
-  fold_named_context
-    (fun (id,_,_) sec_ids ->
+  Context.Named.fold_outside
+    (fun d sec_ids ->
+      let id = get_id d in
       try if DirPath.equal dir (variable_path id) then id::sec_ids else sec_ids
       with Not_found -> sec_ids)
     (Environ.named_context (Global.env()))

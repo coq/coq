@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,25 +20,27 @@ open Pfedit
 (** This file is about the interpretation of raw commands into typed
     ones and top-level declaration of the main Gallina objects *)
 
-val do_universe : Id.t Loc.located list -> unit
-val do_constraint : (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit
+val do_universe : polymorphic -> Id.t Loc.located list -> unit
+val do_constraint : polymorphic ->
+  (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit
 
 (** {6 Hooks for Pcoq} *)
 
-val set_declare_definition_hook : (definition_entry -> unit) -> unit
-val get_declare_definition_hook : unit -> (definition_entry -> unit)
+val set_declare_definition_hook : (Safe_typing.private_constants definition_entry -> unit) -> unit
+val get_declare_definition_hook : unit -> (Safe_typing.private_constants definition_entry -> unit)
 
 (** {6 Definitions/Let} *)
 
 val interp_definition :
-  local_binder list -> polymorphic -> red_expr option -> constr_expr ->
-  constr_expr option -> definition_entry * Evd.evar_map * Impargs.manual_implicits
+  lident list option -> local_binder list -> polymorphic -> red_expr option -> constr_expr ->
+  constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * 
+      Universes.universe_binders * Impargs.manual_implicits
 
 val declare_definition : Id.t -> definition_kind ->
-  definition_entry -> Impargs.manual_implicits ->
+  Safe_typing.private_constants definition_entry -> Universes.universe_binders -> Impargs.manual_implicits ->
     Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
 
-val do_definition : Id.t -> definition_kind ->
+val do_definition : Id.t -> definition_kind -> lident list option ->
   local_binder list -> red_expr option -> constr_expr ->
   constr_expr option -> unit Lemmas.declaration_hook -> unit
 
@@ -52,12 +54,12 @@ val do_definition : Id.t -> definition_kind ->
     nor in a module type and meant to be instantiated. *)
 val declare_assumption : coercion_flag -> assumption_kind -> 
   types Univ.in_universe_context_set ->
-  Impargs.manual_implicits ->
+  Universes.universe_binders -> Impargs.manual_implicits ->
   bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located ->
   global_reference * Univ.Instance.t * bool
 
 val do_assumptions : locality * polymorphic * assumption_object_kind ->
-  Vernacexpr.inline -> simple_binder with_coercion list -> bool
+  Vernacexpr.inline -> (plident list * constr_expr) with_coercion list -> bool
 
 (* val declare_assumptions : variable Loc.located list -> *)
 (*   coercion_flag -> assumption_kind -> types Univ.in_universe_context_set ->  *)
@@ -70,6 +72,7 @@ val do_assumptions : locality * polymorphic * assumption_object_kind ->
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
+  ind_univs : lident list option;
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
@@ -90,13 +93,13 @@ type one_inductive_impls =
 val interp_mutual_inductive :
   structured_inductive_expr -> decl_notation list -> polymorphic ->
     private_flag -> Decl_kinds.recursivity_kind ->
-    mutual_inductive_entry * one_inductive_impls list
+    mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
 
 (** Registering a mutual inductive definition together with its
    associated schemes *)
 
 val declare_mutual_inductive_with_eliminations :
-  mutual_inductive_entry -> one_inductive_impls list ->
+  mutual_inductive_entry -> Universes.universe_binders -> one_inductive_impls list ->
   mutual_inductive
 
 (** Entry points for the vernacular commands Inductive and CoInductive *)
@@ -109,6 +112,7 @@ val do_mutual_inductive :
 
 type structured_fixpoint_expr = {
   fix_name : Id.t;
+  fix_univs : lident list option;
   fix_annot : Id.t Loc.located option;
   fix_binders : local_binder list;
   fix_body : constr_expr option;
@@ -133,24 +137,24 @@ type recursive_preentry =
 
 val interp_fixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
-    recursive_preentry * Evd.evar_universe_context * 
+    recursive_preentry * lident list option * Evd.evar_universe_context * 
     (Name.t list * Impargs.manual_implicits * int option) list
 
 val interp_cofixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
-    recursive_preentry * Evd.evar_universe_context * 
+    recursive_preentry * lident list option * Evd.evar_universe_context * 
     (Name.t list * Impargs.manual_implicits * int option) list
 
 (** Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
   locality -> polymorphic ->
-  recursive_preentry * Evd.evar_universe_context * 
+  recursive_preentry * lident list option * Evd.evar_universe_context * 
   (Name.t list * Impargs.manual_implicits * int option) list ->
   lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint : locality -> polymorphic -> 
-  recursive_preentry * Evd.evar_universe_context * 
+  recursive_preentry * lident list option * Evd.evar_universe_context * 
   (Name.t list * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit
 
@@ -166,5 +170,5 @@ val do_cofixpoint :
 
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
-val declare_fix : ?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
-  Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference
+val declare_fix : ?opaque:bool -> definition_kind -> Universes.universe_binders -> Univ.universe_context -> Id.t ->
+  Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

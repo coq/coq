@@ -1,13 +1,12 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
 open Term
-open Context
 open Globnames
 
 val qflag : bool ref
@@ -27,7 +26,7 @@ type counter = bool -> metavariable
 val construct_nhyps : pinductive -> Proof_type.goal Tacmach.sigma -> int array
 
 val ind_hyps : int -> pinductive -> constr list ->
-  Proof_type.goal Tacmach.sigma -> rel_context array
+  Proof_type.goal Tacmach.sigma -> Context.Rel.t array
 
 type atoms = {positive:constr list;negative:constr list}
 

@@ -73,18 +73,19 @@ load verbosely Coq file
 (Load Verbose filename.)
 
 .TP
-.BI \-load\-vernac\-object \ filename
-load Coq object file
-.I filename.vo
+.BI \-load\-vernac\-object \ path
+load Coq library
+.I path
+(Require path.)
 
 .TP
-.BI \-require \ filename
-load Coq object file
-.I filename.vo
-and import it (Require Import filename.)
+.BI \-require \ path
+load Coq library
+.I path
+and import it (Require Import path.)
 
 .TP
-.BI \-compile \ filename
+.BI \-compile \ filename.v
 compile Coq file
 .I filename.v 
 (implies 
@@ -92,7 +93,7 @@ compile Coq file
 )
 
 .TP
-.BI \-compile\-verbose \ filename
+.BI \-compile\-verbose \ filename.v
 verbosely compile Coq file
 .I filename.v
 (implies 
@@ -151,6 +152,12 @@ set sort Set impredicative
 .TP
 .B \-dont\-load\-proofs
 don't load opaque proofs in memory
+
+.TP
+.B \-xml
+export XML files either to the hierarchy rooted in
+the directory $COQ_XML_LIBRARY_ROOT (if set) or to
+stdout (if unset)
 
 .SH SEE ALSO
 

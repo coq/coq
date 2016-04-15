@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -10,16 +10,17 @@
 
 type t =
   | KEYWORD of string
-  | METAIDENT of string
   | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string
   | INT of string
+  | INDEX of string
   | STRING of string
   | LEFTQMARK
   | BULLET of string
   | EOI
 
+val equal : t -> t -> bool
 val extract_string : t -> string
 val to_string : t -> string
 (* Needed to fit Camlp4 signature *)

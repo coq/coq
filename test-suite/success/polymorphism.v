@@ -1,3 +1,5 @@
+Unset Strict Universe Declaration.
+
 Module withoutpoly.
 
 Inductive empty :=. 
@@ -240,7 +242,7 @@ Fail Check (Prop : Set).
 Fail Check (Set : Set).
 Check (Set : Type).
 Check (Prop : Type).
-Definition setType := $(let t := type of Set in exact t)$.
+Definition setType := ltac:(let t := type of Set in exact t).
 
 Definition foo (A : Prop) := A.
 
@@ -301,7 +303,7 @@ Set Printing Universes.
 Axiom admit : forall A, A.
 Record R := {O : Type}.
 
-Definition RL (x : R@{i}) : $(let u := constr:(Type@{i}:Type@{j}) in exact (R@{j}) )$ := {|O := @O x|}.
+Definition RL (x : R@{i}) : ltac:(let u := constr:(Type@{i}:Type@{j}) in exact (R@{j}) ) := {|O := @O x|}.
 Definition RLRL : forall x : R, RL x = RL (RL x) := fun x => eq_refl.
 Definition RLRL' : forall x : R, RL x = RL (RL x).
   intros. apply eq_refl.

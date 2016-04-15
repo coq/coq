@@ -149,7 +149,7 @@ let get_locality = function
 | Global -> false
 
 let save with_clean id const (locality,_,kind) hook =
-  let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
+  let fix_exn = Future.fix_exn_of const.const_entry_body in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
         let k = Kindops.logical_kind_of_goal_kind kind in
@@ -163,7 +163,7 @@ let save with_clean id const (locality,_,kind) hook =
 	(locality, ConstRef kn)
   in
   if with_clean then  Pfedit.delete_current_proof ();
-  Ephemeron.iter_opt hook (fun f -> Lemmas.call_hook fix_exn f l r);
+  CEphemeron.iter_opt hook (fun f -> Lemmas.call_hook fix_exn f l r);
   definition_message id
 
 
@@ -180,9 +180,10 @@ let get_proof_clean do_reduce =
 let with_full_print f a =
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
-  and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () 
-  in
+  and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
   let old_rawprint = !Flags.raw_print in
+  let old_printuniverses = !Constrextern.print_universes in
+  Constrextern.print_universes := true;
   Flags.raw_print := true;
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
@@ -195,6 +196,7 @@ let with_full_print f a =
     Impargs.make_strict_implicit_args old_strict_implicit_args;
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
     Flags.raw_print := old_rawprint;
+    Constrextern.print_universes := old_printuniverses;
     Dumpglob.continue ();
     res
   with
@@ -203,6 +205,7 @@ let with_full_print f a =
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
 	Flags.raw_print := old_rawprint;
+	Constrextern.print_universes := old_printuniverses;
 	Dumpglob.continue ();
 	raise reraise
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -87,7 +87,7 @@ let check_required_library d =
 *)
 (* or failing ...*)
       errorlabstrm "Coqlib.check_required_library"
-        (str "Library " ++ str (DirPath.to_string dir) ++ str " has to be required first.")
+        (str "Library " ++ pr_dirpath dir ++ str " has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects *)

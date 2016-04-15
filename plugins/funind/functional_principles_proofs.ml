@@ -3,18 +3,19 @@ open Errors
 open Util
 open Term
 open Vars
-open Context
 open Namegen
 open Names
 open Declarations
 open Pp
 open Tacmach
+open Termops
 open Proof_type
 open Tacticals
 open Tactics
 open Indfun_common
 open Libnames
 open Globnames
+open Context.Rel.Declaration
 
 (* let msgnl = Pp.msgnl *)
 
@@ -52,10 +53,10 @@ let rec print_debug_queue e =
       let _ =
 	match e with
 	| Some e ->
-	   Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	   Pp.msg_debug (hov 0 (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal" ++ fnl() ++ goal))
 	| None ->
 	   begin
-	     Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	     Pp.msg_debug (str " from " ++ lmsg ++ str " on goal" ++ fnl() ++ goal);
 	   end in
       print_debug_queue None ;
     end
@@ -229,7 +230,7 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
 
 
 
-let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
+let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
   let nochange ?t' msg  =
     begin
       observe (str ("Not treating ( "^msg^" )") ++ pr_lconstr t  ++ str "    " ++ match t' with None -> str "" | Some t -> Printer.pr_lconstr t );
@@ -304,11 +305,11 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
     in
     let new_type_of_hyp,ctxt_size,witness_fun =
       List.fold_left_i
-	(fun i (end_of_type,ctxt_size,witness_fun) ((x',b',t') as decl) ->
+	(fun i (end_of_type,ctxt_size,witness_fun) decl ->
 	   try
 	     let witness = Int.Map.find i sub in
-	     if not (Option.is_empty b') then anomaly (Pp.str "can not redefine a rel!");
-	     (Termops.pop end_of_type,ctxt_size,mkLetIn(x',witness,t',witness_fun))
+	     if is_local_def decl then anomaly (Pp.str "can not redefine a rel!");
+	     (Termops.pop end_of_type,ctxt_size,mkLetIn (get_name decl, witness, get_type decl, witness_fun))
 	   with Not_found  ->
 	     (mkProd_or_LetIn decl end_of_type, ctxt_size + 1, mkLambda_or_LetIn decl witness_fun)
 	)
@@ -371,12 +372,12 @@ let isLetIn t =
     | _ -> false
 
 
-let h_reduce_with_zeta =
-  reduce
+let h_reduce_with_zeta cl =
+  Proofview.V82.of_tactic (reduce
     (Genredexpr.Cbv
        {Redops.all_flags
 	with Genredexpr.rDelta = false;
-       })
+       }) cl)
 
 
 
@@ -536,7 +537,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 		(scan_type new_context new_t')
 	    with Failure "NoChange" ->
 	      (* Last thing todo : push the rel in the context and continue *)
-	      scan_type ((x,None,t_x)::context) t'
+	      scan_type (LocalAssum (x,t_x) :: context) t'
 	  end
       end
     else
@@ -705,9 +706,9 @@ let build_proof
 		  in
 		  tclTHENSEQ
 		    [
-		      Simple.generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
+		      generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
 		      thin dyn_infos.rec_hyps;
-		      pattern_option [Locus.AllOccurrencesBut [1],t] None;
+		      Proofview.V82.of_tactic (pattern_option [Locus.AllOccurrencesBut [1],t] None);
 		      (fun g -> observe_tac "toto" (
 			 tclTHENSEQ [Proofview.V82.of_tactic (Simple.case t);
 				     (fun g' ->
@@ -736,7 +737,8 @@ let build_proof
 		      tclTHEN
 			(Proofview.V82.of_tactic intro)
 			(fun g' ->
-			   let (id,_,_) = pf_last_hyp g' in
+                           let open Context.Named.Declaration in
+			   let id = pf_last_hyp g' |> get_id in
 			   let new_term =
 			     pf_nf_betaiota g'
 			       (mkApp(dyn_infos.info,[|mkVar id|]))
@@ -921,7 +923,9 @@ let generalize_non_dep hyp g =
   let env = Global.env () in
   let hyp_typ = pf_unsafe_type_of g (mkVar hyp) in
   let to_revert,_ =
-    Environ.fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
+    let open Context.Named.Declaration in
+    Environ.fold_named_context_reverse (fun (clear,keep) decl ->
+      let hyp = get_id decl in
       if Id.List.mem hyp hyps
         || List.exists (Termops.occur_var_in_decl env hyp) keep
 	|| Termops.occur_var env hyp hyp_typ
@@ -932,11 +936,11 @@ let generalize_non_dep hyp g =
   in
 (*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
   tclTHEN
-    ((* observe_tac "h_generalize" *) (Simple.generalize  (List.map mkVar to_revert) ))
+    ((* observe_tac "h_generalize" *) (generalize  (List.map mkVar to_revert) ))
     ((* observe_tac "thin" *) (thin to_revert))
     g
 
-let id_of_decl (na,_,_) =  (Nameops.out_name na)
+let id_of_decl decl = Nameops.out_name (get_name decl)
 let var_of_decl decl = mkVar (id_of_decl decl)
 let revert idl =
   tclTHEN
@@ -1044,7 +1048,8 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
       (
 	fun g' ->
 	  let just_introduced = nLastDecls nb_intro_to_do g' in
-	  let just_introduced_id = List.map (fun (id,_,_) -> id) just_introduced in
+          let open Context.Named.Declaration in
+	  let just_introduced_id = List.map get_id just_introduced in
 	  tclTHEN (Proofview.V82.of_tactic (Equality.rewriteLR equation_lemma))
 		  (revert just_introduced_id) g'
       )
@@ -1069,11 +1074,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	 (Name new_id)
       )
     in
-    let fresh_decl =
-      (fun (na,b,t) ->
-	 (fresh_id na,b,t)
-      )
-    in
+    let fresh_decl = map_name fresh_id in
     let princ_info : elim_scheme =
       { princ_info with
 	  params = List.map fresh_decl princ_info.params;
@@ -1120,11 +1121,11 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	)
     in
     observe (str "full_params := " ++
-	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na))
+	       prlist_with_sep spc (fun decl -> Ppconstr.pr_id (Nameops.out_name (get_name decl)))
 	       full_params
 	    );
     observe (str "princ_params := " ++
-	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na))
+	       prlist_with_sep spc (fun decl -> Ppconstr.pr_id (Nameops.out_name (get_name decl)))
 	       princ_params
 	    );
     observe (str "fbody_with_full_params := " ++
@@ -1165,7 +1166,8 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    in
 	    let pte_to_fix,rev_info =
 	      List.fold_left_i
-		(fun i (acc_map,acc_info) (pte,_,_) ->
+		(fun i (acc_map,acc_info) decl ->
+		   let pte = get_name decl in
 		   let infos = info_array.(i) in
 		   let type_args,_ = decompose_prod infos.types in
 		   let nargs = List.length type_args in
@@ -1259,7 +1261,8 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		 let args = nLastDecls nb_args g in
 		 let fix_body = fix_info.body_with_param in
 (* 		 observe (str "fix_body := "++ pr_lconstr_env (pf_env gl) fix_body); *)
-		 let args_id = List.map (fun (id,_,_) -> id) args in
+                 let open Context.Named.Declaration in
+		 let args_id = List.map get_id args in
 		 let dyn_infos =
 		   {
 		     nb_rec_hyps = -100;
@@ -1276,7 +1279,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		       (do_replace evd
 			  full_params
 			  (fix_info.idx + List.length princ_params)
-			  (args_id@(List.map (fun (id,_,_) -> Nameops.out_name id ) princ_params))
+			  (args_id@(List.map (fun decl -> Nameops.out_name (get_name decl)) princ_params))
 			  (all_funs.(fix_info.num_in_block))
 			  fix_info.num_in_block
 			  all_funs
@@ -1317,8 +1320,9 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    [
 	      tclDO nb_args (Proofview.V82.of_tactic intro);
 	      (fun g -> (* replacement of the function by its body *)
-		 let args = nLastDecls nb_args g in
-		 let args_id = List.map (fun (id,_,_) -> id) args in
+	         let args = nLastDecls nb_args g in
+                 let open Context.Named.Declaration in
+		 let args_id = List.map get_id args in
 		 let dyn_infos =
 		   {
 		     nb_rec_hyps = -100;
@@ -1334,7 +1338,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		 in
 		 let fname = destConst (fst (decompose_app (List.hd (List.rev pte_args)))) in
 		 tclTHENSEQ
-		   [unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (fst fname))];
+		   [Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (fst fname))]);
 		    let do_prove =
 		      build_proof
 			interactive_proof
@@ -1403,7 +1407,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
 (* 		 let ids = List.filter (fun id -> not (List.mem id ids)) ids' in  *)
 (* 		 rewrite *)
 (* 	      ) *)
-	      Eauto.gen_eauto (false,5) [] (Some [])
+	      Proofview.V82.of_tactic (Eauto.gen_eauto (false,5) [] (Some []))
 	    ]
 	    gls
 
@@ -1460,7 +1464,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 		  (fun g ->
 		     if is_mes
 		     then
-		       unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference (delayed_force ltof_ref))] g
+		       Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference (delayed_force ltof_ref))]) g
 		     else tclIDTAC g
 		  );
 		  observe_tac "rew_and_finish"
@@ -1472,7 +1476,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 			    tclCOMPLETE(
 				    Eauto.eauto_with_bases
 				      (true,5)
-				      [Evd.empty,Lazy.force refl_equal]
+				      [{ Tacexpr.delayed = fun _ sigma -> Sigma.here (Lazy.force refl_equal) sigma}]
 				      [Hints.Hint_db.empty empty_transparent_state false]
 				  )
 			   )
@@ -1520,7 +1524,7 @@ let prove_principle_for_gen
       avoid := new_id :: !avoid;
       Name new_id
   in
-  let fresh_decl (na,b,t) = (fresh_id na,b,t) in
+  let fresh_decl = map_name fresh_id in
   let princ_info : elim_scheme =
     { princ_info with
 	params = List.map fresh_decl princ_info.params;
@@ -1550,11 +1554,11 @@ let prove_principle_for_gen
   in
   let rec_arg_id =
     match List.rev post_rec_arg with
-      | (Name id,_,_)::_ -> id
+      | (LocalAssum (Name id,_) | LocalDef (Name id,_,_)) :: _ -> id
       | _ -> assert false
   in
 (*   observe (str "rec_arg_id := " ++ pr_lconstr (mkVar rec_arg_id)); *)
-  let subst_constrs = List.map (fun (na,_,_) -> mkVar (Nameops.out_name na)) (pre_rec_arg@princ_info.params) in
+  let subst_constrs = List.map (fun decl -> mkVar (Nameops.out_name (get_name decl))) (pre_rec_arg@princ_info.params) in
   let relation = substl subst_constrs relation in
   let input_type = substl subst_constrs rec_arg_type in
   let wf_thm_id = Nameops.out_name (fresh_id (Name (Id.of_string "wf_R"))) in
@@ -1562,7 +1566,7 @@ let prove_principle_for_gen
     Nameops.out_name (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
   in
   let revert l =
-    tclTHEN (Tactics.Simple.generalize (List.map mkVar l)) (clear l)
+    tclTHEN (Tactics.generalize (List.map mkVar l)) (clear l)
   in
   let fix_id = Nameops.out_name (fresh_id (Name hrec_id)) in
   let prove_rec_arg_acc g =
@@ -1582,7 +1586,7 @@ let prove_principle_for_gen
       )
       g
   in
-  let args_ids = List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.args in
+  let args_ids = List.map (fun decl -> Nameops.out_name (get_name decl)) princ_info.args in
   let lemma =
     match !tcc_lemma_ref with
      | None -> error "No tcc proof !!"
@@ -1629,7 +1633,7 @@ let prove_principle_for_gen
     [
       observe_tac "start_tac" start_tac;
       h_intros
-	(List.rev_map (fun (na,_,_) -> Nameops.out_name na)
+	(List.rev_map (fun decl -> Nameops.out_name (get_name decl))
 	   (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
 	);
       (* observe_tac "" *) Proofview.V82.of_tactic (assert_by
@@ -1667,7 +1671,7 @@ let prove_principle_for_gen
 	 in
 	 let acc_inv = lazy (mkApp(Lazy.force acc_inv, [|mkVar  acc_rec_arg_id|])) in
 	 let predicates_names =
-	   List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.predicates
+	   List.map (fun decl -> Nameops.out_name (get_name decl)) princ_info.predicates
 	 in
 	 let pte_info =
 	   { proving_tac =
@@ -1683,7 +1687,7 @@ let prove_principle_for_gen
 		       is_mes acc_inv fix_id
 
 		       (!tcc_list@(List.map
-			   (fun (na,_,_) -> (Nameops.out_name na))
+			   (fun decl -> (Nameops.out_name (get_name decl)))
 			   (princ_info.args@princ_info.params)
 			)@ ([acc_rec_arg_id])) eqs
 		    )
@@ -1712,7 +1716,7 @@ let prove_principle_for_gen
 	 (* observe_tac "instanciate_hyps_with_args"  *)
 	   (instanciate_hyps_with_args
 	      make_proof
-	      (List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.branches)
+	      (List.map (fun decl -> Nameops.out_name (get_name decl)) princ_info.branches)
 	      (List.rev args_ids)
 	   )
 	   gl'

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,9 +8,7 @@
 
 open Names
 open Term
-open Context
 open Declarations
-open Univ
 
 (** The type of environments. *)
 
@@ -19,7 +17,7 @@ type link_info =
   | LinkedInteractive of string
   | NotLinked
 
-type key = int Ephemeron.key option ref 
+type key = int CEphemeron.key option ref 
 
 type constant_key = constant_body * (link_info ref * key)
 
@@ -32,7 +30,7 @@ type globals = {
   env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
-  env_universes : universes;
+  env_universes : UGraph.t;
   env_engagement : engagement
 }
 
@@ -46,9 +44,9 @@ type named_vals = (Id.t * lazy_val) list
 
 type env = {
     env_globals       : globals;
-    env_named_context : named_context;
+    env_named_context : Context.Named.t;
     env_named_vals    : named_vals;
-    env_rel_context   : rel_context;
+    env_rel_context   : Context.Rel.t;
     env_rel_val       : lazy_val list;
     env_nb_rel        : int;
     env_stratification : stratification;
@@ -57,7 +55,7 @@ type env = {
     indirect_pterms : Opaqueproof.opaquetab;
 }
 
-type named_context_val = named_context * named_vals
+type named_context_val = Context.Named.t * named_vals
 
 val empty_named_context_val : named_context_val
 
@@ -66,15 +64,15 @@ val empty_env : env
 (** Rel context *)
 
 val nb_rel         : env -> int
-val push_rel       : rel_declaration -> env -> env
+val push_rel       : Context.Rel.Declaration.t -> env -> env
 val lookup_rel_val : int -> env -> lazy_val
 val env_of_rel     : int -> env -> env
 
 (** Named context *)
 
 val push_named_context_val  :
-    named_declaration -> named_context_val -> named_context_val
-val push_named       : named_declaration -> env -> env
+    Context.Named.Declaration.t -> named_context_val -> named_context_val
+val push_named       : Context.Named.Declaration.t -> env -> env
 val lookup_named_val : Id.t -> env -> lazy_val
 val env_of_named     : Id.t -> env -> env
 

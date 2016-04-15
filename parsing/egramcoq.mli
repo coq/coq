@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -36,34 +36,27 @@ type notation_grammar = {
   notgram_typs : notation_var_internalization_type list;
 }
 
-type tactic_grammar = {
-  tacgram_level : int;
-  tacgram_prods : grammar_prod_item list;
-}
+(** {5 Extending the parser with Summary-synchronized commands} *)
+
+type 'a grammar_command
+(** Type of synchronized parsing extensions. The ['a] type should be
+    marshallable. *)
+
+val create_grammar_command : string -> ('a -> int) -> 'a grammar_command
+(** Create a new grammar-modifying command with the given name. The function
+    should modify the parser state and return the number of grammar extensions
+    performed. *)
+
+val extend_grammar : 'a grammar_command -> 'a -> unit
+(** Extend the grammar of Coq with the given data. *)
 
 (** {5 Adding notations} *)
 
 val extend_constr_grammar : Notation.level -> notation_grammar -> unit
 (** Add a term notation rule to the parsing system. *)
 
-val extend_tactic_grammar : KerName.t -> tactic_grammar -> unit
-(** Add a tactic notation rule to the parsing system. This produces a TacAlias
-    tactic with the provided kernel name. *)
-
-val extend_ml_tactic_grammar : Tacexpr.ml_tactic_name -> grammar_prod_item list list -> unit
-(** Add a ML tactic notation rule to the parsing system. This produces a
-    TacML tactic with the provided string as name. *)
-
 val recover_constr_grammar : notation -> Notation.level -> notation_grammar
 (** For a declared grammar, returns the rule + the ordered entry types
     of variables in the rule (for use in the interpretation) *)
 
 val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
-
-(** {5 Adding tactic quotations} *)
-
-val create_ltac_quotation : string -> ('grm Loc.located -> 'raw) ->
-  ('raw, 'glb, 'top) genarg_type -> 'grm Gram.entry -> unit
-(** [create_ltac_quotation name f wit e] adds a quotation rule to Ltac, that is,
-    Ltac grammar now accepts arguments of the form ["name" ":" <e>], and
-    generates a generic argument using [f] on the entry parsed by [e]. *)

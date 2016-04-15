@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,7 +13,7 @@ open Names
 
 (**********************************************)
 
-let pr_dirpath sl = (str (DirPath.to_string sl))
+let pr_dirpath sl = str (DirPath.to_string sl)
 
 (*s Operations on dirpaths *)
 
@@ -197,7 +197,7 @@ let string_of_reference = function
 
 let pr_reference = function
   | Qualid (_,qid) -> pr_qualid qid
-  | Ident (_,id) -> str (Id.to_string id)
+  | Ident (_,id) -> Id.print id
 
 let loc_of_reference = function
   | Qualid (loc,qid) -> loc

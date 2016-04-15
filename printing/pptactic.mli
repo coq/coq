@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -32,7 +32,7 @@ type 'a glob_extra_genarg_printer =
 type 'a extra_genarg_printer =
     (Term.constr -> std_ppcmds) ->
     (Term.constr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
+    (tolerability -> Val.t -> std_ppcmds) ->
     'a -> std_ppcmds
 
 val declare_extra_genarg_pprule :
@@ -41,11 +41,11 @@ val declare_extra_genarg_pprule :
   'b glob_extra_genarg_printer ->
   'c extra_genarg_printer -> unit
 
-type grammar_terminals = string option list
+type grammar_terminals = Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list
 
 type pp_tactic = {
-  pptac_args : argument_type list;
-  pptac_prods : int * grammar_terminals;
+  pptac_level : int;
+  pptac_prods : grammar_terminals;
 }
 
 val declare_ml_tactic_pprule : ml_tactic_name -> pp_tactic array -> unit

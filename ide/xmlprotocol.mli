@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,7 +13,7 @@ open Xml_datatype
 
 type 'a call
 
-type unknown
+type unknown_call = Unknown : 'a call -> unknown_call
 
 val add         : add_sty         -> add_rty call
 val edit_at     : edit_at_sty     -> edit_at_rty call
@@ -43,7 +43,7 @@ val protocol_version : string
 (** * XML data marshalling *)
 
 val of_call : 'a call -> xml
-val to_call : xml -> unknown call
+val to_call : xml -> unknown_call
 
 val of_answer : 'a call -> 'a value -> xml
 val to_answer : 'a call -> xml -> 'a value

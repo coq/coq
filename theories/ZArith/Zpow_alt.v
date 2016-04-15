@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,7 +11,7 @@ Local Open Scope Z_scope.
 
 (** An alternative power function for Z *)
 
-(** This [Zpower_alt] is extensionnaly equal to [Z.pow],
+(** This [Zpower_alt] is extensionally equal to [Z.pow],
     but not convertible with it. The number of
     multiplications is logarithmic instead of linear, but
     these multiplications are bigger. Experimentally, it seems

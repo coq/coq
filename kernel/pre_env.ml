@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,17 +15,17 @@
 
 open Util
 open Names
-open Context
 open Univ
 open Term
 open Declarations
+open Context.Named.Declaration
 
 (* The type of environments. *)
 
 (* The key attached to each constant is used by the VM to retrieve previous *)
 (* evaluations of the constant. It is essentially an index in the symbols table *)
 (* used by the VM. *)
-type key = int Ephemeron.key option ref 
+type key = int CEphemeron.key option ref 
 
 (** Linking information for the native compiler. *)
 
@@ -45,30 +45,30 @@ type globals = {
   env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
-  env_universes : universes;
+  env_universes : UGraph.t;
   env_engagement : engagement
 }
 
 type val_kind =
-    | VKvalue of (values * Id.Set.t) Ephemeron.key
+    | VKvalue of (values * Id.Set.t) CEphemeron.key
     | VKnone
 
 type lazy_val = val_kind ref
 
 let force_lazy_val vk = match !vk with
 | VKnone -> None
-| VKvalue v -> try Some (Ephemeron.get v) with Ephemeron.InvalidKey -> None
+| VKvalue v -> try Some (CEphemeron.get v) with CEphemeron.InvalidKey -> None
 
 let dummy_lazy_val () = ref VKnone
-let build_lazy_val vk key = vk := VKvalue (Ephemeron.create key)
+let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
 
 type named_vals = (Id.t * lazy_val) list
 
 type env = {
   env_globals       : globals;
-  env_named_context : named_context;
+  env_named_context : Context.Named.t;
   env_named_vals    : named_vals;
-  env_rel_context   : rel_context;
+  env_rel_context   : Context.Rel.t;
   env_rel_val       : lazy_val list;
   env_nb_rel        : int;
   env_stratification : stratification;
@@ -77,7 +77,7 @@ type env = {
   indirect_pterms : Opaqueproof.opaquetab;
 }
 
-type named_context_val = named_context * named_vals
+type named_context_val = Context.Named.t * named_vals
 
 let empty_named_context_val = [],[]
 
@@ -87,13 +87,13 @@ let empty_env = {
     env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
-  env_named_context = empty_named_context;
+  env_named_context = Context.Named.empty;
   env_named_vals = [];
-  env_rel_context = empty_rel_context;
+  env_rel_context = Context.Rel.empty;
   env_rel_val = [];
   env_nb_rel = 0;
   env_stratification = {
-    env_universes = initial_universes;
+    env_universes = UGraph.initial_universes;
     env_engagement = (PredicativeSet,StratifiedType) };
   env_conv_oracle = Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge;
@@ -107,7 +107,7 @@ let nb_rel env = env.env_nb_rel
 let push_rel d env =
   let rval = ref VKnone in
     { env with
-      env_rel_context = add_rel_decl d env.env_rel_context;
+      env_rel_context = Context.Rel.add d env.env_rel_context;
       env_rel_val = rval :: env.env_rel_val;
       env_nb_rel = env.env_nb_rel + 1 }
 
@@ -125,18 +125,16 @@ let env_of_rel n env =
 (* Named context *)
 
 let push_named_context_val d (ctxt,vals) =
-  let id,_,_ = d in
   let rval = ref VKnone in
-    add_named_decl d ctxt, (id,rval)::vals
+    Context.Named.add d ctxt, (get_id d,rval)::vals
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
   assert (env.env_rel_context = []); *)
-  let id,body,_ = d in
   let rval = ref VKnone in
   { env_globals = env.env_globals;
-    env_named_context = Context.add_named_decl d env.env_named_context;
-    env_named_vals = (id, rval) :: env.env_named_vals;
+    env_named_context = Context.Named.add d env.env_named_context;
+    env_named_vals = (get_id d, rval) :: env.env_named_vals;
     env_rel_context = env.env_rel_context;
     env_rel_val = env.env_rel_val;
     env_nb_rel = env.env_nb_rel;

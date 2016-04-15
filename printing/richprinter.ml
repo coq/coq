@@ -22,4 +22,3 @@ let make_richpp pr ast =
 
 let richpp_vernac = make_richpp RichppVernac.pr_vernac
 let richpp_constr = make_richpp RichppConstr.pr_constr_expr
-let richpp_tactic env = make_richpp (RichppTactic.pr_tactic env)

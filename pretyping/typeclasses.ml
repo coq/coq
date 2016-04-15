@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,11 +12,11 @@ open Globnames
 open Decl_kinds
 open Term
 open Vars
-open Context
 open Evd
 open Util
 open Typeclasses_errors
 open Libobject
+open Context.Rel.Declaration
 (*i*)
 
 let typeclasses_unique_solutions = ref false
@@ -59,10 +59,10 @@ type typeclass = {
   cl_impl : global_reference;
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : (global_reference * bool) option list * rel_context;
+  cl_context : (global_reference * bool) option list * Context.Rel.t;
 
   (* Context of definitions and properties on defs, will not be shared *)
-  cl_props : rel_context;
+  cl_props : Context.Rel.t;
 
   (* The method implementaions as projections. *)
   cl_projs : (Name.t * (direction * int option) option * constant option) list;
@@ -127,7 +127,7 @@ let typeclass_univ_instance (cl,u') =
     in Array.fold_left2 (fun subst u u' -> Univ.LMap.add u u' subst) 
       Univ.LMap.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
   in
-  let subst_ctx = Context.map_rel_context (subst_univs_level_constr subst) in
+  let subst_ctx = Context.Rel.map (subst_univs_level_constr subst) in
     { cl with cl_context = fst cl.cl_context, subst_ctx (snd cl.cl_context);
       cl_props = subst_ctx cl.cl_props}, u'
 
@@ -181,9 +181,7 @@ let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
-  let do_subst_ctx ctx = List.smartmap
-    (fun (na, b, t) -> (na, Option.smartmap do_subst b, do_subst t))
-    ctx in
+  let do_subst_ctx = List.smartmap (map_constr do_subst) in
   let do_subst_context (grs,ctx) =
     List.smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
     do_subst_ctx ctx in
@@ -200,15 +198,19 @@ let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
     ( fun (n,_,b,t) (ctx', subst) ->
-	let decl = (Name n, Option.map (substn_vars 1 subst) b, substn_vars 1 subst t) in
+        let decl = match b with
+                   | None -> LocalAssum (Name n, substn_vars 1 subst t)
+		   | Some b -> LocalDef (Name n, substn_vars 1 subst b, substn_vars 1 subst t)
+	in
 	(decl :: ctx', n :: subst)
     ) ctx ([], []) in
   let discharge_rel_context subst n rel =
-    let rel = map_rel_context (Cooking.expmod_constr repl) rel in
+    let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
     let ctx, _ =
       List.fold_right
-	(fun (id, b, t) (ctx, k) ->
-	   (id, Option.smartmap (substn_vars k subst) b, substn_vars k subst t) :: ctx, succ k)
+	(fun decl (ctx, k) ->
+	   map_constr (substn_vars k subst) decl :: ctx, succ k
+	)
 	rel ([], n)
     in ctx
   in
@@ -218,15 +220,15 @@ let discharge_class (_,cl) =
       | ConstRef cst -> Lib.section_segment_of_constant cst
       | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind in
   let discharge_context ctx' subst (grs, ctx) =
-    let grs' = 
-      let newgrs = List.map (fun (_, _, t) -> 
-	match class_of_constr t with
-	| None -> None
-	| Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
-	ctx' 
+    let grs' =
+      let newgrs = List.map (fun decl ->
+			     match decl |> get_type |> class_of_constr with
+			     | None -> None
+			     | Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
+			    ctx'
       in
-	List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
-	  @ newgrs
+      List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
+      @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
   if cl_impl' == cl.cl_impl then cl else
@@ -287,7 +289,7 @@ let build_subclasses ~check env sigma glob pri =
       | None -> []
       | Some (rels, ((tc,u), args)) ->
 	let instapp = 
-	  Reductionops.whd_beta sigma (appvectc c (Termops.extended_rel_vect 0 rels)) 
+	  Reductionops.whd_beta sigma (appvectc c (Context.Rel.to_extended_vect 0 rels))
 	in
 	let projargs = Array.of_list (args @ [instapp]) in
 	let projs = List.map_filter 
@@ -370,7 +372,7 @@ let add_instance check inst =
   List.iter (fun (path, pri, c) -> add_instance_hint (IsConstr c) path
     (is_local inst) pri poly)
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
-       (Global.env ()) Evd.empty inst.is_impl inst.is_pri)
+       (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_pri)
 
 let rebuild_instance (action, inst) =
   let () = match action with
@@ -432,11 +434,7 @@ let add_class cl =
  *)
 
 let instance_constructor (cl,u) args =
-  let filter (_, b, _) = match b with
-  | None -> true
-  | Some _ -> false
-  in
-  let lenpars = List.length (List.filter filter (snd cl.cl_context)) in
+  let lenpars = List.count is_local_assum (snd cl.cl_context) in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
       | IndRef ind -> 
@@ -492,18 +490,21 @@ let is_instance = function
    Nota: we will only check the resolvability status of undefined evars.
  *)
 
-let resolvable = Store.field ()
+let resolvable = Proofview.Unsafe.typeclass_resolvable
 
 let set_resolvable s b =
-  Store.set s resolvable b
+  if b then Store.remove s resolvable
+  else Store.set s resolvable ()
 
 let is_resolvable evi =
   assert (match evi.evar_body with Evar_empty -> true | _ -> false);
-  Option.default true (Store.get evi.evar_extra resolvable)
+  Option.is_empty (Store.get evi.evar_extra resolvable)
 
 let mark_resolvability_undef b evi =
-  let t = Store.set evi.evar_extra resolvable b in
-  { evi with evar_extra = t }
+  if is_resolvable evi = b then evi
+  else
+    let t = set_resolvable evi.evar_extra b in
+    { evi with evar_extra = t }
 
 let mark_resolvability b evi =
   assert (match evi.evar_body with Evar_empty -> true | _ -> false);

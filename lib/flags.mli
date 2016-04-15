@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -44,6 +44,8 @@ val profile : bool
 val print_emacs : bool ref
 val coqtop_ui : bool ref
 
+val xml_export : bool ref
+
 val ide_slave : bool ref
 val ideslave_coqtop_flags : string option ref
 
@@ -55,7 +57,7 @@ val raw_print : bool ref
 val record_print : bool ref
 val univ_print : bool ref
 
-type compat_version = V8_2 | V8_3 | V8_4 | Current
+type compat_version = V8_2 | V8_3 | V8_4 | V8_5 | Current
 val compat_version : compat_version ref
 val version_strictly_greater : compat_version -> bool
 val version_less_or_equal : compat_version -> bool
@@ -88,6 +90,7 @@ val is_universe_polymorphism : unit -> bool
 val make_polymorphic_flag : bool -> unit
 val use_polymorphic_flag : unit -> bool
 
+val warn : bool ref
 val make_warn : bool -> unit
 val if_warn : ('a -> unit) -> 'a -> unit
 

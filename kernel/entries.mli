@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,8 +18,8 @@ open Term
 (** {6 Local entries } *)
 
 type local_entry =
-  | LocalDef of constr
-  | LocalAssum of constr
+  | LocalDefEntry of constr
+  | LocalAssumEntry of constr
 
 
 (** {6 Declaration of inductive types. } *)
@@ -54,11 +54,11 @@ type mutual_inductive_entry = {
   mind_entry_private : bool option }
 
 (** {6 Constants (Definition/Axiom) } *)
-type proof_output = constr Univ.in_universe_context_set * Declareops.side_effects
-type const_entry_body = proof_output Future.computation
+type 'a proof_output = constr Univ.in_universe_context_set * 'a
+type 'a const_entry_body = 'a proof_output Future.computation
 
-type definition_entry = {
-  const_entry_body   : const_entry_body;
+type 'a definition_entry = {
+  const_entry_body   : 'a const_entry_body;
   (* List of section variables *)
   const_entry_secctx : Context.section_context option;
   (* State id on which the completion of type checking is reported *)
@@ -78,8 +78,8 @@ type projection_entry = {
   proj_entry_ind : mutual_inductive;
   proj_entry_arg : int }
 
-type constant_entry =
-  | DefinitionEntry of definition_entry
+type 'a constant_entry =
+  | DefinitionEntry of 'a definition_entry
   | ParameterEntry of parameter_entry
   | ProjectionEntry of projection_entry
 
@@ -96,3 +96,16 @@ type module_entry =
   | MType of module_params_entry * module_struct_entry
   | MExpr of
       module_params_entry * module_struct_entry * module_struct_entry option
+
+type seff_env = [ `Nothing | `Opaque of Constr.t * Univ.universe_context_set ]
+
+type side_eff =
+  | SEsubproof of constant * Declarations.constant_body * seff_env
+  | SEscheme of (inductive * constant * Declarations.constant_body * seff_env) list * string
+
+type side_effect = {
+  from_env : Declarations.structure_body CEphemeron.key;
+  eff      : side_eff;
+}
+
+type side_effects = side_effect list

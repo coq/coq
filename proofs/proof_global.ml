@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -36,7 +36,7 @@ let find_proof_mode n =
     Errors.error (Format.sprintf "No proof mode named \"%s\"." n)
 
 let register_proof_mode ({name = n} as m) =
-  Hashtbl.add proof_modes n (Ephemeron.create m)
+  Hashtbl.add proof_modes n (CEphemeron.create m)
 
 (* initial mode: standard mode *)
 let standard = { name = "No" ; set = (fun ()->()) ; reset = (fun () -> ()) }
@@ -52,7 +52,7 @@ let _ =
     optname = "default proof mode" ;
     optkey = ["Default";"Proof";"Mode"] ;
     optread = begin fun () ->
-      (Ephemeron.default !default_proof_mode standard).name
+      (CEphemeron.default !default_proof_mode standard).name
     end;
     optwrite = begin fun n ->
       default_proof_mode := find_proof_mode n
@@ -63,14 +63,14 @@ let _ =
 
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
-type proof_universes = Evd.evar_universe_context
+type proof_universes = Evd.evar_universe_context * Universes.universe_binders option
+type universe_binders = Id.t Loc.located list
 
 type proof_object = {
   id : Names.Id.t;
-  entries : Entries.definition_entry list;
+  entries : Safe_typing.private_constants Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: proof_universes;
-  (* constraints : Univ.constraints; *)
 }
 
 type proof_ending =
@@ -83,12 +83,13 @@ type closed_proof = proof_object * proof_terminator
 
 type pstate = {
   pid : Id.t;
-  terminator : proof_terminator Ephemeron.key;
+  terminator : proof_terminator CEphemeron.key;
   endline_tactic : Tacexpr.raw_tactic_expr option;
   section_vars : Context.section_context option;
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
-  mode : proof_mode Ephemeron.key;
+  mode : proof_mode CEphemeron.key;
+  universe_binders: universe_binders option;
 }
 
 let make_terminator f = f
@@ -105,11 +106,11 @@ let current_proof_mode = ref !default_proof_mode
 let update_proof_mode () =
   match !pstates with
   | { mode = m } :: _ ->
-      Ephemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
+      CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
       current_proof_mode := m;
-      Ephemeron.iter_opt !current_proof_mode (fun x -> x.set ())
+      CEphemeron.iter_opt !current_proof_mode (fun x -> x.set ())
   | _ ->
-      Ephemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
+      CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
       current_proof_mode := find_proof_mode "No"
 
 (* combinators for the current_proof lists *)
@@ -217,9 +218,9 @@ let set_proof_mode mn =
   set_proof_mode (find_proof_mode mn) (get_current_proof_name ())
 
 let activate_proof_mode mode =
-  Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
+  CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
 let disactivate_proof_mode mode =
-  Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
+  CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
 
 (** [start_proof sigma id str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
@@ -229,41 +230,71 @@ let disactivate_proof_mode mode =
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints). *)
-let start_proof sigma id str goals terminator =
+let start_proof sigma id ?pl str goals terminator =
   let initial_state = {
     pid = id;
-    terminator = Ephemeron.create terminator;
+    terminator = CEphemeron.create terminator;
     proof = Proof.start sigma goals;
     endline_tactic = None;
     section_vars = None;
     strength = str;
-    mode = find_proof_mode "No" } in
+    mode = find_proof_mode "No";
+    universe_binders = pl } in
   push initial_state pstates
 
-let start_dependent_proof id str goals terminator =
+let start_dependent_proof id ?pl str goals terminator =
   let initial_state = {
     pid = id;
-    terminator = Ephemeron.create terminator;
+    terminator = CEphemeron.create terminator;
     proof = Proof.dependent_start goals;
     endline_tactic = None;
     section_vars = None;
     strength = str;
-    mode = find_proof_mode "No" } in
+    mode = find_proof_mode "No";
+    universe_binders = pl } in
   push initial_state pstates
 
 let get_used_variables () = (cur_pstate ()).section_vars
+let get_universe_binders () = (cur_pstate ()).universe_binders
+
+let proof_using_auto_clear = ref false
+let _ = Goptions.declare_bool_option
+    { Goptions.optsync  = true;
+      Goptions.optdepr  = false;
+      Goptions.optname  = "Proof using Clear Unused";
+      Goptions.optkey   = ["Proof";"Using";"Clear";"Unused"];
+      Goptions.optread  = (fun () -> !proof_using_auto_clear);
+      Goptions.optwrite = (fun b -> proof_using_auto_clear := b) }
 
 let set_used_variables l =
+  let open Context.Named.Declaration in
   let env = Global.env () in
   let ids = List.fold_right Id.Set.add l Id.Set.empty in
   let ctx = Environ.keep_hyps env ids in
+  let ctx_set =
+    List.fold_right Id.Set.add (List.map get_id ctx) Id.Set.empty in
+  let vars_of = Environ.global_vars_set in
+  let aux env entry (ctx, all_safe, to_clear as orig) =
+    match entry with
+    | LocalAssum (x,_) ->
+       if Id.Set.mem x all_safe then orig
+       else (ctx, all_safe, (Loc.ghost,x)::to_clear) 
+    | LocalDef (x,bo, ty) as decl ->
+       if Id.Set.mem x all_safe then orig else
+       let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
+       if Id.Set.subset vars all_safe
+       then (decl :: ctx, Id.Set.add x all_safe, to_clear)
+       else (ctx, all_safe, (Loc.ghost,x) :: to_clear) in
+  let ctx, _, to_clear =
+    Environ.fold_named_context aux env ~init:(ctx,ctx_set,[]) in
+  let to_clear = if !proof_using_auto_clear then to_clear else [] in
   match !pstates with
   | [] -> raise NoCurrentProof
   | p :: rest ->
       if not (Option.is_empty p.section_vars) then
         Errors.error "Used section variables can be declared only once";
       pstates := { p with section_vars = Some ctx} :: rest;
-      ctx
+      ctx, to_clear
 
 let get_open_goals () =
   let gl, gll, shelf , _ , _ = Proof.proof (cur_pstate ()).proof in
@@ -272,8 +303,14 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
 
+let constrain_variables init uctx =
+  let levels = Univ.Instance.levels (Univ.UContext.instance init) in
+  let cstrs = UState.constrain_variables levels uctx in
+  Univ.ContextSet.add_constraints cstrs (UState.context_set uctx)
+
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
-  let { pid; section_vars; strength; proof; terminator } = cur_pstate () in
+  let { pid; section_vars; strength; proof; terminator; universe_binders } =
+    cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let initial_euctx = Proof.initial_euctx proof in
@@ -290,22 +327,27 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
     if poly || now then
       let make_body t (c, eff) =
         let open Universes in
-        let body = c and typ = nf t in
+        let body = c in
+	let typ =
+	  if not (keep_body_ucst_separate || not (Safe_typing.empty_private_constants = eff)) then
+	    nf t
+	  else t
+	in
         let used_univs_body = Universes.universes_of_constr body in
         let used_univs_typ = Universes.universes_of_constr typ in
-        if keep_body_ucst_separate then
+        if keep_body_ucst_separate ||
+           not (Safe_typing.empty_private_constants = eff) then
           let initunivs = Evd.evar_context_universe_context initial_euctx in
-          let ctx = Evd.evar_universe_context_set initunivs universes in
+          let ctx = constrain_variables initunivs universes in
           (* For vi2vo compilation proofs are computed now but we need to
            * complement the univ constraints of the typ with the ones of
            * the body.  So we keep the two sets distinct. *)
-          let ctx_body = restrict_universe_context ctx used_univs_body in
-          let ctx_typ = restrict_universe_context ctx used_univs_typ in
-          let univs_typ = Univ.ContextSet.to_context ctx_typ in
-          (univs_typ, typ), ((body, ctx_body), eff)
+	  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+          let ctx_body = restrict_universe_context ctx used_univs in
+          (initunivs, typ), ((body, ctx_body), eff)
         else
           let initunivs = Univ.UContext.empty in
-          let ctx = Evd.evar_universe_context_set initunivs universes in
+          let ctx = constrain_variables initunivs universes in
           (* Since the proof is computed now, we can simply have 1 set of
            * constraints in which we merge the ones for the body and the ones
            * for the typ *)
@@ -320,7 +362,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
         let initunivs = Evd.evar_context_universe_context initial_euctx in
         Future.from_val (initunivs, nf t),
         Future.chain ~pure:true p (fun (pt,eff) ->
-          (pt,Evd.evar_universe_context_set initunivs (Future.force univs)),eff)
+          (pt,constrain_variables initunivs (Future.force univs)),eff)
   in
   let entries =
     Future.map2 (fun p (_, t) ->
@@ -335,19 +377,20 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
 	  const_entry_opaque = true;
 	  const_entry_universes = univs;
 	  const_entry_polymorphic = poly})
-      fpl initial_goals in
-  { id = pid; entries = entries; persistence = strength; universes = universes },
-  fun pr_ending -> Ephemeron.get terminator pr_ending
+		fpl initial_goals in
+  let binders =
+    Option.map (fun names -> fst (Evd.universe_context ~names (Evd.from_ctx universes)))
+	       universe_binders
+  in
+  { id = pid; entries = entries; persistence = strength;
+    universes = (universes, binders) },
+  fun pr_ending -> CEphemeron.get terminator pr_ending
 
-type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
+type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
 
 let return_proof ?(allow_partial=false) () =
  let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
  if allow_partial then begin
-  if Proof.is_done proof then begin
-    msg_warning (str"The proof of " ++ str (Names.Id.to_string pid) ++
-     str" is complete, no need to end it with Admitted");
-  end;
   let proofs = Proof.partial_proof proof in
   let _,_,_,_, evd = Proof.proof proof in
   let eff = Evd.eval_side_effects evd in
@@ -389,11 +432,11 @@ let close_proof ~keep_body_ucst_separate fix_exn =
 
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)
-let get_terminator () = Ephemeron.get ( cur_pstate() ).terminator
+let get_terminator () = CEphemeron.get ( cur_pstate() ).terminator
 let set_terminator hook =
   match !pstates with
   | [] -> raise NoCurrentProof
-  | p :: ps -> pstates := { p with terminator = Ephemeron.create hook } :: ps
+  | p :: ps -> pstates := { p with terminator = CEphemeron.create hook } :: ps
 
 
 
@@ -424,7 +467,7 @@ module Bullet = struct
   type behavior = {
     name : string;
     put : Proof.proof -> t -> Proof.proof;
-    suggest: Proof.proof -> string option
+    suggest: Proof.proof -> std_ppcmds
   }
 
   let behaviors = Hashtbl.create 4
@@ -434,7 +477,7 @@ module Bullet = struct
   let none = {
     name = "None";
     put = (fun x _ -> x);
-    suggest = (fun _ -> None)
+    suggest = (fun _ -> mt ())
   }
   let _ = register_behavior none
 
@@ -450,26 +493,20 @@ module Bullet = struct
     (* give a message only if more informative than the standard coq message *)
     let suggest_on_solved_goal sugg =
       match sugg with
-      | NeedClosingBrace -> Some "Try unfocusing with \"}\"."
-      | NoBulletInUse -> None
-      | ProofFinished -> None
-      | Suggest b -> Some ("Focus next goal with bullet "
-			   ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
-			   ^".")
-      | Unfinished b -> Some ("The current bullet "
-			      ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
-			      ^ " is unfinished.")
+      | NeedClosingBrace -> str"Try unfocusing with \"}\"."
+      | NoBulletInUse -> mt ()
+      | ProofFinished -> mt ()
+      | Suggest b -> str"Focus next goal with bullet " ++ pr_bullet b ++ str"."
+      | Unfinished b -> str"The current bullet " ++ pr_bullet b ++ str" is unfinished."
 
     (* give always a message. *)
     let suggest_on_error sugg =
       match sugg with
-      | NeedClosingBrace -> "Try unfocusing with \"}\"."
+      | NeedClosingBrace -> str"Try unfocusing with \"}\"."
       | NoBulletInUse -> assert false (* This should never raise an error. *)
-      | ProofFinished -> "No more subgoals."
-      | Suggest b -> ("Bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
-		      ^ " is mandatory here.")
-      | Unfinished b -> ("Current bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
-			 ^ " is not finished.")
+      | ProofFinished -> str"No more subgoals."
+      | Suggest b -> str"Bullet " ++ pr_bullet b ++ str" is mandatory here."
+      | Unfinished b -> str"Current bullet " ++ pr_bullet b ++ str" is not finished."
 
     exception FailedBullet of t * suggestion
 
@@ -477,8 +514,8 @@ module Bullet = struct
       Errors.register_handler
 	(function
 	| FailedBullet (b,sugg) ->
-	  let prefix = "Wrong bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b)) ^ " : " in
-	  Errors.errorlabstrm "Focus" (str prefix ++ str (suggest_on_error sugg))
+	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str" : " in
+	  Errors.errorlabstrm "Focus" (prefix ++ suggest_on_error sugg)
 	| _ -> raise Errors.Unhandled)
 
 
@@ -589,7 +626,10 @@ module Bullet = struct
 	(!current_behavior).name
       end;
       optwrite = begin fun n ->
-	current_behavior := Hashtbl.find behaviors n
+	current_behavior :=
+          try Hashtbl.find behaviors n
+          with Not_found ->
+            Errors.error ("Unknown bullet behavior: \"" ^ n ^ "\".")
       end
     }
 
@@ -624,7 +664,6 @@ let print_goal_selector = function
   | Vernacexpr.SelectAll -> "all"
   | Vernacexpr.SelectNth i -> string_of_int i
   | Vernacexpr.SelectId id -> Id.to_string id
-  | Vernacexpr.SelectAllParallel -> "par"
 
 let parse_goal_selector = function
   | "all" -> Vernacexpr.SelectAll
@@ -672,3 +711,9 @@ let copy_terminators ~src ~tgt =
   assert(List.length src = List.length tgt);
   List.map2 (fun op p -> { p with terminator = op.terminator }) src tgt
 
+let update_global_env () =
+  with_current_proof (fun _ p ->
+     Proof.in_proof p (fun sigma ->
+       let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
+       let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in
+         (p, ())))

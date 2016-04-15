@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -98,9 +98,6 @@ let display_coqtop_answer cmd lines =
     ("Coqtop exited\n"^
      "Command was: "^cmd^"\n"^
      "Answer was: "^(String.concat "\n  " lines))
-
-let check_remaining_opt arg =
-  if arg <> "" && arg.[0] = '-' then fatal_error_popup ("Illegal option: "^arg)
 
 let rec filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
@@ -200,8 +197,6 @@ module GlibMainLoop = struct
   let read_all = Ideutils.io_read_all
   let async_chan_of_file fd = Glib.Io.channel_of_descr fd
   let async_chan_of_socket s = !gio_channel_of_descr_socket s
-  let add_timeout ~sec callback =
-    ignore(Glib.Timeout.add ~ms:(sec * 1000) ~callback)
 end
 
 module CoqTop = Spawn.Async(GlibMainLoop)
@@ -302,13 +297,13 @@ let handle_intermediate_message handle xml =
   let logger = match handle.waiting_for with
     | Some (_, l) -> l 
     | None -> function
-        | Pp.Error -> Minilib.log ~level:`ERROR
-        | Pp.Info -> Minilib.log ~level:`INFO
-        | Pp.Notice -> Minilib.log ~level:`NOTICE
-        | Pp.Warning -> Minilib.log ~level:`WARNING
-        | Pp.Debug _ -> Minilib.log ~level:`DEBUG
+        | Pp.Error -> fun s -> Minilib.log ~level:`ERROR (xml_to_string s)
+        | Pp.Info -> fun s -> Minilib.log ~level:`INFO  (xml_to_string s)
+        | Pp.Notice -> fun s -> Minilib.log ~level:`NOTICE  (xml_to_string s)
+        | Pp.Warning -> fun s -> Minilib.log ~level:`WARNING  (xml_to_string s)
+        | Pp.Debug _ -> fun s -> Minilib.log ~level:`DEBUG (xml_to_string s)
   in
-  logger level content
+  logger level (Richpp.richpp_of_xml content)
 
 let handle_feedback feedback_processor xml =
   let feedback = Feedback.to_feedback xml in
@@ -336,7 +331,7 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
   let lex = Lexing.from_string s in
   let p = Xml_parser.make (Xml_parser.SLexbuf lex) in
   let rec loop () =
-    let xml = Xml_parser.parse p in
+    let xml = Xml_parser.parse ~do_not_canonicalize:true p in
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
@@ -465,10 +460,6 @@ let close_coqtop coqtop =
 
 let reset_coqtop coqtop = respawn_coqtop ~why:Planned coqtop
 
-let break_coqtop coqtop =
-  try !interrupter (CoqTop.unixpid coqtop.handle.proc)
-  with _ -> Minilib.log "Error while sending Ctrl-C"
-
 let get_arguments coqtop = coqtop.sup_args
 
 let set_arguments coqtop args =
@@ -517,6 +508,17 @@ let hints x = eval_call (Xmlprotocol.hints x)
 let search flags = eval_call (Xmlprotocol.search flags)
 let init x = eval_call (Xmlprotocol.init x)
 let stop_worker x = eval_call (Xmlprotocol.stop_worker x)
+
+let break_coqtop coqtop workers =
+  if coqtop.status = Busy then
+    try !interrupter (CoqTop.unixpid coqtop.handle.proc)
+    with _ -> Minilib.log "Error while sending Ctrl-C"
+  else
+    let rec aux = function
+    | [] -> Void
+    | w :: ws -> stop_worker w coqtop.handle (fun _ -> aux ws)
+    in
+      let Void = aux workers in ()
 
 module PrintOpt =
 struct

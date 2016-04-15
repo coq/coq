@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -14,13 +14,12 @@ open Genarg
 open Constrexpr
 open Tacexpr
 open Libnames
-open Compat
 open Misctypes
 open Genredexpr
 
 (** The parser of Coq *)
 
-module Gram : GrammarSig
+module Gram : Compat.GrammarSig
 
 (** The parser of Coq is built from three kinds of rule declarations:
 
@@ -106,27 +105,26 @@ type grammar_object
 (** Type of reinitialization data *)
 type gram_reinit = gram_assoc * gram_position
 
+(** General entry keys *)
+
+(** This intermediate abstract representation of entries can
+   both be reified into mlexpr for the ML extensions and
+   dynamically interpreted as entries for the Coq level extensions
+*)
+
 (** Add one extension at some camlp4 position of some camlp4 entry *)
-val grammar_extend :
+val unsafe_grammar_extend :
   grammar_object Gram.entry ->
   gram_reinit option (** for reinitialization if ever needed *) ->
   Gram.extend_statment -> unit
 
+val grammar_extend :
+  'a Gram.entry ->
+  gram_reinit option (** for reinitialization if ever needed *) ->
+  'a Extend.extend_statment -> unit
+
 (** Remove the last n extensions *)
 val remove_grammars : int -> unit
-
-
-
-
-(** The type of typed grammar objects *)
-type typed_entry
-
-(** The possible types for extensible grammars *)
-type entry_type = argument_type
-
-val type_of_typed_entry : typed_entry -> entry_type
-val object_of_typed_entry : typed_entry -> grammar_object Gram.entry
-val weaken_entry : 'a Gram.entry -> grammar_object Gram.entry
 
 (** Temporary activate camlp4 verbosity *)
 
@@ -138,11 +136,7 @@ val parse_string : 'a Gram.entry -> string -> 'a
 val eoi_entry : 'a Gram.entry -> 'a Gram.entry
 val map_entry : ('a -> 'b) -> 'a Gram.entry -> 'b Gram.entry
 
-(** Table of Coq statically defined grammar entries *)
-
 type gram_universe
-
-(** There are four predefined universes: "prim", "constr", "tactic", "vernac" *)
 
 val get_univ : string -> gram_universe
 
@@ -151,9 +145,12 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
-val create_entry : gram_universe -> string -> entry_type -> typed_entry
-val create_generic_entry : string -> ('a, rlevel) abstract_argument_type ->
-  'a Gram.entry
+val set_grammar : 'a Entry.t -> 'a Gram.entry -> unit
+val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
+val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
+
+val create_generic_entry : gram_universe -> string ->
+  ('a, rlevel) abstract_argument_type -> 'a Gram.entry
 
 module Prim :
   sig
@@ -163,10 +160,12 @@ module Prim :
     val ident : Id.t Gram.entry
     val name : Name.t located Gram.entry
     val identref : Id.t located Gram.entry
+    val pidentref : (Id.t located * (Id.t located list) option) Gram.entry
     val pattern_ident : Id.t Gram.entry
     val pattern_identref : Id.t located Gram.entry
     val base_ident : Id.t Gram.entry
     val natural : int Gram.entry
+    val index : int Gram.entry
     val bigint : Bigint.bigint Gram.entry
     val integer : int Gram.entry
     val string : string Gram.entry
@@ -212,7 +211,7 @@ module Module :
 
 module Tactic :
   sig
-    val open_constr : open_constr_expr Gram.entry
+    val open_constr : constr_expr Gram.entry
     val constr_with_bindings : constr_expr with_bindings Gram.entry
     val bindings : constr_expr bindings Gram.entry
     val hypident : (Id.t located * Locus.hyp_location_flag) Gram.entry
@@ -230,7 +229,6 @@ module Tactic :
     val binder_tactic : raw_tactic_expr Gram.entry
     val tactic : raw_tactic_expr Gram.entry
     val tactic_eoi : raw_tactic_expr Gram.entry
-    val tacdef_body : (reference * bool * raw_tactic_expr) Gram.entry
   end
 
 module Vernac_ :
@@ -242,54 +240,40 @@ module Vernac_ :
     val vernac : vernac_expr Gram.entry
     val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
     val vernac_eoi : vernac_expr Gram.entry
+    val noedit_mode : vernac_expr Gram.entry
+    val command_entry : vernac_expr Gram.entry
   end
 
 (** The main entry: reads an optional vernac command *)
 val main_entry : (Loc.t * vernac_expr) option Gram.entry
+
+(** Handling of the proof mode entry *)
+val get_command_entry : unit -> vernac_expr Gram.entry
+val set_command_entry : vernac_expr Gram.entry -> unit
 
 (** Mapping formal entries into concrete ones *)
 
 (** Binding constr entry keys to entries and symbols *)
 
 val interp_constr_entry_key : bool (** true for cases_pattern *) ->
-  constr_entry_key -> grammar_object Gram.entry * int option
+  int -> grammar_object Gram.entry * int option
 
 val symbol_of_constr_prod_entry_key : gram_assoc option ->
   constr_entry_key -> bool -> constr_prod_entry_key ->
     Gram.symbol
 
-(** General entry keys *)
+val name_of_entry : 'a Gram.entry -> 'a Entry.t
 
-(** This intermediate abstract representation of entries can
-   both be reified into mlexpr for the ML extensions and
-   dynamically interpreted as entries for the Coq level extensions
-*)
-
-type prod_entry_key =
-  | Alist1 of prod_entry_key
-  | Alist1sep of prod_entry_key * string
-  | Alist0 of prod_entry_key
-  | Alist0sep of prod_entry_key * string
-  | Aopt of prod_entry_key
-  | Amodifiers of prod_entry_key
-  | Aself
-  | Anext
-  | Atactic of int
-  | Agram of string
-  | Aentry of string * string
+val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
 (** Binding general entry keys to symbols *)
 
-val symbol_of_prod_entry_key :
-  prod_entry_key -> Gram.symbol
+type typed_entry = TypedEntry : 'a raw_abstract_argument_type * 'a Gram.entry -> typed_entry
 
-(** Interpret entry names of the form "ne_constr_list" as entry keys   *)
-
-val interp_entry_name : bool (** true to fail on unknown entry *) ->
-  int option -> string -> string -> entry_type * prod_entry_key
+val get_entry : gram_universe -> string -> typed_entry
 
 (** Recover the list of all known tactic notation entries. *)
-val list_entry_names : unit -> (string * entry_type) list
+val list_entry_names : unit -> (string * argument_type) list
 
 (** Registering/resetting the level of a constr entry *)
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,8 +20,8 @@ type pa_fun=
      fnargs:int}
 
 
-module PafMap : Map.S with type key = pa_fun
-module PacMap : Map.S with type key = pa_constructor
+module PafMap : CSig.MapS with type key = pa_fun
+module PacMap : CSig.MapS with type key = pa_constructor
 
 type cinfo =
     {ci_constr: pconstructor; (* inductive type *)
@@ -30,7 +30,7 @@ type cinfo =
 
 type term =
     Symb of constr
-  | Product of sorts_family * sorts_family
+  | Product of sorts * sorts
   | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
@@ -120,7 +120,7 @@ val term_equal : term -> term -> bool
 
 val constr_of_term : term -> constr
 
-val debug : Pp.std_ppcmds -> unit
+val debug : (unit -> Pp.std_ppcmds) -> unit
 
 val forest : state -> forest
 
@@ -185,7 +185,7 @@ val empty_forest: unit -> forest
 (*type pa_constructor
 
 
-module PacMap:Map.S with type key=pa_constructor
+module PacMap:CSig.MapS with type key=pa_constructor
 
 type term =
     Symb of Term.constr

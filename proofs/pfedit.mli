@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -55,8 +55,10 @@ val delete_all_proofs : unit -> unit
 
 type lemma_possible_guards = Proof_global.lemma_possible_guards
 
+type universe_binders = Id.t Loc.located list
+
 val start_proof :
-  Id.t -> goal_kind -> Evd.evar_map -> named_context_val -> constr ->
+  Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_map -> named_context_val -> constr ->
   ?init_tac:unit Proofview.tactic ->
   Proof_global.proof_terminator -> unit
 
@@ -69,11 +71,11 @@ val start_proof :
 val cook_this_proof :
     Proof_global.proof_object ->
   (Id.t *
-    (Entries.definition_entry * Proof_global.proof_universes * goal_kind))
+    (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * goal_kind))
 
 val cook_proof : unit ->
   (Id.t *
-    (Entries.definition_entry * Proof_global.proof_universes * goal_kind))
+    (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * goal_kind))
 
 (** {6 ... } *)
 (** [get_pftreestate ()] returns the current focused pending proof.
@@ -117,8 +119,12 @@ val set_end_tac : Tacexpr.raw_tactic_expr -> unit
 (** {6 ... } *)
 (** [set_used_variables l] declares that section variables [l] will be
     used in the proof *)
-val set_used_variables : Id.t list -> Context.section_context
+val set_used_variables :
+  Id.t list -> Context.section_context * (Loc.t * Names.Id.t) list
 val get_used_variables : unit -> Context.section_context option
+
+(** {6 Universe binders } *)
+val get_universe_binders : unit -> universe_binders option
 
 (** {6 ... } *)
 (** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
@@ -151,9 +157,9 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 val build_constant_by_tactic :
   Id.t -> Evd.evar_universe_context -> named_context_val -> ?goal_kind:goal_kind ->
   types -> unit Proofview.tactic -> 
-  Entries.definition_entry * bool * Evd.evar_universe_context
+  Safe_typing.private_constants Entries.definition_entry * bool * Evd.evar_universe_context
 
-val build_by_tactic : env -> Evd.evar_universe_context -> ?poly:polymorphic -> 
+val build_by_tactic : ?side_eff:bool -> env -> Evd.evar_universe_context -> ?poly:polymorphic ->
   types -> unit Proofview.tactic -> 
   constr * bool * Evd.evar_universe_context
 

@@ -367,7 +367,8 @@ There is a for loop that repeats a tactic {\num} times:
 \begin{quote}
 {\tt do} {\num} {\tacexpr}
 \end{quote}
-{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+{\tacexpr} is evaluated to $v$ which must be a tactic value.
+This tactic value $v$ is
 applied {\num} times. Supposing ${\num}>1$, after the first
 application of $v$, $v$ is applied, at least once, to the generated
 subgoals and so on. It fails if the application of $v$ fails before
@@ -394,7 +395,8 @@ We can catch the tactic errors with:
 \begin{quote}
 {\tt try} {\tacexpr}
 \end{quote}
-{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+{\tacexpr} is evaluated to $v$ which must be a tactic value.
+The tactic value $v$ is
 applied to each focused goal independently. If the application of $v$
 fails in a goal, it catches the error and leaves the goal
 unchanged. If the level of the exception is positive, then the
@@ -406,7 +408,8 @@ We can check if a tactic made progress with:
 \begin{quote}
 {\tt progress} {\tacexpr}
 \end{quote}
-{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+{\tacexpr} is evaluated to $v$ which must be a tactic value.
+The tactic value $v$ is
 applied to each focued subgoal independently. If the application of
 $v$ to one of the focused subgoal produced subgoals equal to the
 initial goals (up to syntactical equality), then an error of level 0
@@ -422,7 +425,7 @@ We can branch with the following structure:
 {\tacexpr}$_1$ {\tt +} {\tacexpr}$_2$
 \end{quote}
 {\tacexpr}$_1$ and {\tacexpr}$_2$ are evaluated to $v_1$ and
-$v_2$. $v_1$ and $v_2$ must be tactic values. $v_1$ is applied to each
+$v_2$ which must be tactic values. The tactic value $v_1$ is applied to each
 focused goal independently and if it fails or a later tactic fails,
 then the proof backtracks to the current goal and $v_2$ is applied.
 
@@ -462,7 +465,7 @@ Yet another way of branching without backtracking is the following structure:
 {\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$
 \end{quote}
 {\tacexpr}$_1$ and {\tacexpr}$_2$ are evaluated to $v_1$ and
-$v_2$. $v_1$ and $v_2$ must be tactic values. $v_1$ is applied in each
+$v_2$ which must be tactic values. The tactic value $v_1$ is applied in each
 subgoal independently and if it fails \emph{to progress} then $v_2$ is
 applied. {\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$ is equivalent to {\tt
   first [} {\tt progress} {\tacexpr}$_1$ {\tt |} {\tt progress}
@@ -494,7 +497,8 @@ single success \emph{a posteriori}:
 \begin{quote}
 {\tt once} {\tacexpr}
 \end{quote}
-{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+{\tacexpr} is evaluated to $v$ which must be a tactic value.
+The tactic value $v$ is
 applied but only its first success is used. If $v$ fails, {\tt once}
 {\tacexpr} fails like $v$. If $v$ has a least one success, {\tt once}
 {\tacexpr} succeeds once, but cannot produce more successes.
@@ -505,7 +509,8 @@ Coq provides an experimental way to check that a tactic has \emph{exactly one} s
 \begin{quote}
 {\tt exactly\_once} {\tacexpr}
 \end{quote}
-{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+{\tacexpr} is evaluated to $v$ which must be a tactic value.
+The tactic value $v$ is
 applied if it has at most one success. If $v$ fails, {\tt
   exactly\_once} {\tacexpr} fails like $v$. If $v$ has a exactly one
 success, {\tt exactly\_once} {\tacexpr} succeeds like $v$. If $v$ has
@@ -592,7 +597,8 @@ amount of time:
 \begin{quote}
 {\tt timeout} {\num} {\tacexpr}
 \end{quote}
-{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+{\tacexpr} is evaluated to $v$ which must be a tactic value.
+The tactic value $v$ is
 applied normally, except that it is interrupted after ${\num}$ seconds
 if it is still running. In this case the outcome is a failure.
 
@@ -690,6 +696,13 @@ expression every time. It is first-order except on the
 variables of the form {\tt @?id} that occur in head position of an
 application. For these variables, the matching is second-order and
 returns a functional term.
+
+Alternatively, when a metavariable of the form {\tt ?id} occurs under
+binders, say $x_1$, \ldots, $x_n$ and the expression matches, the
+metavariable is instantiated by a term which can then be used in any
+context which also binds the variables $x_1$, \ldots, $x_n$ with
+same types. This provides with a primitive form of matching
+under context which does not require manipulating a functional term.
 
 If the matching with {\cpattern}$_1$ succeeds, then {\tacexpr}$_1$ is
 evaluated into some value by substituting the pattern matching
@@ -1088,7 +1101,7 @@ using the syntax:
 {\tt Ltac} {\qualid} {\ident}$_1$ ... {\ident}$_n$ {\tt ::=}
 {\tacexpr}
 \end{quote}
-A previous definition of \qualid must exist in the environment.
+A previous definition of {\qualid} must exist in the environment.
 The new definition will always be used instead of the old one and
 it goes accross module boundaries.
 

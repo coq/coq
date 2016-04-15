@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -17,11 +17,11 @@ open Decl_kinds
 
 (** Forward declaration. *)
 val declare_fix_ref : (?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
-  Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference) ref
+  Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference) ref
 
 val declare_definition_ref :
   (Id.t -> definition_kind ->
-     Entries.definition_entry -> Impargs.manual_implicits
+     Safe_typing.private_constants Entries.definition_entry -> Impargs.manual_implicits
        -> global_reference Lemmas.declaration_hook -> global_reference) ref
 
 val check_evars : env -> evar_map -> unit
@@ -54,21 +54,20 @@ type progress = (* Resolution status of a program *)
   | Remain of int  (* n obligations remaining *)
   | Dependent (* Dependent on other definitions *)
   | Defined of global_reference (* Defined as id *)
-      
-val set_default_tactic : bool -> Tacexpr.glob_tactic_expr -> unit
-val get_default_tactic : unit -> locality_flag * unit Proofview.tactic
-val print_default_tactic : unit -> Pp.std_ppcmds
+
+val default_tactic : unit Proofview.tactic ref
 
 val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
 val get_proofs_transparency : unit -> bool
 
 val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types -> 
   Evd.evar_universe_context ->
+  ?pl:(Id.t Loc.located list) -> (* Universe binders *)
   ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:unit Proofview.tactic ->
   ?reduce:(Term.constr -> Term.constr) ->
-  ?hook:unit Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
+  ?hook:(Evd.evar_universe_context -> unit) Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
 
 type notations =
     (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
@@ -81,10 +80,11 @@ val add_mutual_definitions :
   (Names.Id.t * Term.constr * Term.types *
       (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
   Evd.evar_universe_context ->
+  ?pl:(Id.t Loc.located list) -> (* Universe binders *)
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(Term.constr -> Term.constr) ->
-  ?hook:unit Lemmas.declaration_hook -> ?opaque:bool ->
+  ?hook:(Evd.evar_universe_context -> unit) Lemmas.declaration_hook -> ?opaque:bool ->
   notations ->
   fixpoint_kind -> unit
 

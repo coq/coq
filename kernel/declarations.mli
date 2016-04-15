@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 
 (** This module defines the internal representation of global
    declarations. This includes global constants/axioms, mutual
@@ -38,7 +37,7 @@ type ('a, 'b) declaration_arity =
   | RegularArity of 'a
   | TemplateArity of 'b
 
-type constant_type = (types, rel_context * template_arity) declaration_arity
+type constant_type = (types, Context.Rel.t * template_arity) declaration_arity
 
 (** Inlining level of parameters at functor applications.
     None means no inlining *)
@@ -79,12 +78,6 @@ type constant_body = {
     const_proj : projection_body option;
     const_inline_code : bool }
 
-type seff_env = [ `Nothing | `Opaque of Constr.t * Univ.universe_context_set ]
-
-type side_effect =
-  | SEsubproof of constant * constant_body * seff_env
-  | SEscheme of (inductive * constant * constant_body * seff_env) list * string
-    
 (** {6 Representation of mutual inductive types in the kernel } *)
 
 type recarg =
@@ -123,7 +116,7 @@ type one_inductive_body = {
 
     mind_typename : Id.t; (** Name of the type: [Ii] *)
 
-    mind_arity_ctxt : rel_context; (** Arity context of [Ii] with parameters: [forall params, Ui] *)
+    mind_arity_ctxt : Context.Rel.t; (** Arity context of [Ii] with parameters: [forall params, Ui] *)
 
     mind_arity : inductive_arity; (** Arity sort and original user arity *)
 
@@ -177,7 +170,7 @@ type mutual_inductive_body = {
 
     mind_nparams_rec : int;  (** Number of recursively uniform (i.e. ordinary) parameters *)
 
-    mind_params_ctxt : rel_context;  (** The context of parameters (includes let-in declaration) *)
+    mind_params_ctxt : Context.Rel.t;  (** The context of parameters (includes let-in declaration) *)
 
     mind_polymorphic : bool; (** Is it polymorphic or not *)
 
@@ -244,17 +237,26 @@ and module_body =
   { mod_mp : module_path; (** absolute path of the module *)
     mod_expr : module_implementation; (** implementation *)
     mod_type : module_signature; (** expanded type *)
-    (** algebraic type, kept if it's relevant for extraction *)
-    mod_type_alg : module_expression option;
-    (** set of all constraints in the module  *)
-    mod_constraints : Univ.constraints;
-    (** quotiented set of equivalent constants and inductive names *)
-    mod_delta : Mod_subst.delta_resolver;
+    mod_type_alg : module_expression option; (** algebraic type *)
+    mod_constraints : Univ.ContextSet.t; (**
+      set of all universes constraints in the module  *)
+    mod_delta : Mod_subst.delta_resolver; (**
+      quotiented set of equivalent constants and inductive names *)
     mod_retroknowledge : Retroknowledge.action list }
+
+(** For a module, there are five possible situations:
+    - [Declare Module M : T] then [mod_expr = Abstract; mod_type_alg = Some T]
+    - [Module M := E] then [mod_expr = Algebraic E; mod_type_alg = None]
+    - [Module M : T := E] then [mod_expr = Algebraic E; mod_type_alg = Some T]
+    - [Module M. ... End M] then [mod_expr = FullStruct; mod_type_alg = None]
+    - [Module M : T. ... End M] then [mod_expr = Struct; mod_type_alg = Some T]
+    And of course, all these situations may be functors or not. *)
 
 (** A [module_type_body] is just a [module_body] with no
     implementation ([mod_expr] always [Abstract]) and also
-    an empty [mod_retroknowledge] *)
+    an empty [mod_retroknowledge]. Its [mod_type_alg] contains
+    the algebraic definition of this module type, or [None]
+    if it has been built interactively. *)
 
 and module_type_body = module_body
 

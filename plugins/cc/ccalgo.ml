@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -25,7 +25,7 @@ let init_size=5
 let cc_verbose=ref false
 
 let debug x =
-  if !cc_verbose then msg_debug x
+  if !cc_verbose then msg_debug (x ())
 
 let _=
   let gdopt=
@@ -129,14 +129,14 @@ type cinfo=
      ci_nhyps: int}     (* # projectable args *)
 
 let family_eq f1 f2 = match f1, f2 with
-| InProp, InProp
-| InSet, InSet
-| InType, InType -> true
-| _ -> false
+  | Prop Pos, Prop Pos
+  | Prop Null, Prop Null
+  | Type _, Type _ -> true
+  | _ -> false
 
 type term=
     Symb of constr
-  | Product of sorts_family * sorts_family
+  | Product of sorts * sorts
   | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
@@ -161,7 +161,7 @@ let hash_sorts_family = function
 
 let rec hash_term = function
   | Symb c -> combine 1 (hash_constr c)
-  | Product (s1, s2) -> combine3 2 (hash_sorts_family s1) (hash_sorts_family s2)
+  | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
   | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
   | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (constructor_hash c) i j
@@ -425,8 +425,8 @@ let _B_ = Name (Id.of_string "A")
 let _body_ =  mkProd(Anonymous,mkRel 2,mkRel 2)
 
 let cc_product s1 s2 =
-  mkLambda(_A_,mkSort(Universes.new_sort_in_family s1),
-	   mkLambda(_B_,mkSort(Universes.new_sort_in_family s2),_body_))
+  mkLambda(_A_,mkSort(s1),
+	   mkLambda(_B_,mkSort(s2),_body_))
 
 let rec constr_of_term = function
     Symb s-> applist_projection s []
@@ -603,7 +603,7 @@ let add_inst state (inst,int_subst) =
   Control.check_for_interrupt ();
   if state.rew_depth > 0 then
   if is_redundant state inst.qe_hyp_id int_subst then
-    debug (str "discarding redundant (dis)equality")
+    debug (fun () -> str "discarding redundant (dis)equality")
   else
     begin
       Identhash.add state.q_history inst.qe_hyp_id int_subst;
@@ -618,7 +618,7 @@ let add_inst state (inst,int_subst) =
 	    state.rew_depth<-pred state.rew_depth;
 	    if inst.qe_pol then
 	      begin
-		debug (
+		debug (fun () ->
 		   (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
 	          (str "  [" ++ Termops.print_constr prf ++ str " : " ++
 			   pr_term s ++ str " == " ++ pr_term t ++ str "]"));
@@ -626,7 +626,7 @@ let add_inst state (inst,int_subst) =
 	      end
 	    else
 	      begin
-		debug (
+		debug (fun () ->
 		   (str "Adding new disequality, depth="++ int state.rew_depth) ++ fnl () ++
 	          (str "  [" ++ Termops.print_constr prf ++ str " : " ++
 			   pr_term s ++ str " <> " ++ pr_term t ++ str "]"));
@@ -657,7 +657,7 @@ let join_path uf i j=
   min_path (down_path uf i [],down_path uf j [])
 
 let union state i1 i2 eq=
-  debug (str "Linking " ++ pr_idx_term state.uf i1 ++
+  debug (fun () -> str "Linking " ++ pr_idx_term state.uf i1 ++
 		 str " and " ++ pr_idx_term state.uf i2 ++ str ".");
   let r1= get_representative state.uf i1
   and r2= get_representative state.uf i2 in
@@ -698,7 +698,7 @@ let union state i1 i2 eq=
 
 let merge eq state = (* merge and no-merge *)
   debug
-    (str "Merging " ++ pr_idx_term state.uf eq.lhs ++
+    (fun () -> str "Merging " ++ pr_idx_term state.uf eq.lhs ++
        str " and " ++ pr_idx_term state.uf eq.rhs ++ str ".");
   let uf=state.uf in
   let i=find uf eq.lhs
@@ -711,7 +711,7 @@ let merge eq state = (* merge and no-merge *)
 
 let update t state = (* update 1 and 2 *)
   debug
-    (str "Updating term " ++ pr_idx_term state.uf t ++ str ".");
+    (fun () -> str "Updating term " ++ pr_idx_term state.uf t ++ str ".");
   let (i,j) as sign = signature state.uf t in
   let (u,v) = subterms state.uf t in
   let rep = get_representative state.uf i in
@@ -773,7 +773,7 @@ let process_constructor_mark t i rep pac state =
 
 let process_mark t m state =
   debug
-    (str "Processing mark for term " ++ pr_idx_term state.uf t ++ str ".");
+    (fun () -> str "Processing mark for term " ++ pr_idx_term state.uf t ++ str ".");
   let i=find state.uf t in
   let rep=get_representative state.uf i in
     match m with
@@ -794,7 +794,7 @@ let check_disequalities state =
           else (str "No", check_aux q)
         in
         let _ = debug
-        (str "Checking if " ++ pr_idx_term state.uf dis.lhs ++ str " = " ++
+        (fun () -> str "Checking if " ++ pr_idx_term state.uf dis.lhs ++ str " = " ++
          pr_idx_term state.uf dis.rhs ++ str " ... " ++ info) in
         ans
     | [] -> None
@@ -824,7 +824,7 @@ let __eps__ = Id.of_string "_eps_"
 let new_state_var typ state =
   let id = pf_get_new_id __eps__ state.gls in
   let {it=gl ; sigma=sigma} = state.gls in
-  let gls = Goal.V82.new_goal_with sigma gl [id,None,typ] in
+  let gls = Goal.V82.new_goal_with sigma gl [Context.Named.Declaration.LocalAssum (id,typ)] in
     state.gls<- gls;
     id
 
@@ -979,7 +979,7 @@ let find_instances state =
   let pb_stack= init_pb_stack state in
   let res =ref [] in
   let _ =
-    debug (str "Running E-matching algorithm ... ");
+    debug (fun () -> str "Running E-matching algorithm ... ");
     try
       while true do
 	Control.check_for_interrupt ();
@@ -990,7 +990,7 @@ let find_instances state =
     !res
 
 let rec execute first_run state =
-  debug (str "Executing ... ");
+  debug (fun () -> str "Executing ... ");
   try
     while
       Control.check_for_interrupt ();
@@ -1000,7 +1000,7 @@ let rec execute first_run state =
 	None ->
 	  if not(Int.Set.is_empty state.pa_classes) then
 	    begin
-	      debug (str "First run was incomplete, completing ... ");
+	      debug (fun () -> str "First run was incomplete, completing ... ");
 	      complete state;
 	      execute false state
 	    end
@@ -1015,12 +1015,12 @@ let rec execute first_run state =
 		  end
 		else
 	      begin
-		debug (str "Out of instances ... ");
+		debug (fun () -> str "Out of instances ... ");
 		None
 	      end
 	    else
 	      begin
-		debug (str "Out of depth ... ");
+		debug (fun () -> str "Out of depth ... ");
 		None
 	      end
       | Some dis -> Some

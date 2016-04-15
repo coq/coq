@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -119,7 +119,6 @@ type fterm =
   | FProj of projection * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
-  | FCase of case_info * fconstr * fconstr * fconstr array
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
   | FLambda of int * (Name.t * constr) list * constr * fconstr subs
   | FProd of Name.t * fconstr * fconstr
@@ -136,7 +135,6 @@ type fterm =
 
 type stack_member =
   | Zapp of fconstr array
-  | Zcase of case_info * fconstr * fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
   | Zproj of int * int * constant
   | Zfix of fconstr * stack

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -32,10 +32,3 @@ Require List.
 Export List.ListNotations.
 
 Require Import Bvector.
-
-(** Treating n-ary exists *)
-
-Tactic Notation "exists" constr(x) := exists x.
-Tactic Notation "exists" constr(x) constr(y) := exists x ; exists y.
-Tactic Notation "exists" constr(x) constr(y) constr(z) := exists x ; exists y ; exists z.
-Tactic Notation "exists" constr(x) constr(y) constr(z) constr(w) := exists x ; exists y ; exists z ; exists w.

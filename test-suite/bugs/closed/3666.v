@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 (* File reduced by coq-bug-finder from original input, then from 11542 lines to 325 lines, then from 347 lines to 56 lines, then from 58 lines to 15 lines *)
 (* coqc version trunk (September 2014) compiled on Sep 25 2014 2:53:46 with OCaml 4.01.0
    coqtop version cagnode16:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (bec7e0914f4a7144cd4efa8ffaccc9f72dbdb790) *)

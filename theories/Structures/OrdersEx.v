@@ -87,7 +87,7 @@ End PairOrderedType.
 (** Even if [positive] can be seen as an ordered type with respect to the
   usual order (see above), we can also use a lexicographic order over bits
   (lower bits are considered first). This is more natural when using
-  [positive] as indexes for sets or maps (see MSetPositive and MMapPositive. *)
+  [positive] as indexes for sets or maps (see MSetPositive). *)
 
 Local Open Scope positive.
 

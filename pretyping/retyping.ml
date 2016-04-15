@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -18,6 +18,7 @@ open Reductionops
 open Environ
 open Termops
 open Arguments_renaming
+open Context.Rel.Declaration
 
 type retype_error =
   | NotASort
@@ -71,13 +72,14 @@ let rec subst_type env sigma typ = function
 let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env n ar args =
     match kind_of_term (whd_betadeltaiota env sigma ar), args with
-    | Prod (na, t, b), h::l -> concl_of_arity (push_rel (na,Some (lift n h),t) env) (n + 1) b l
+    | Prod (na, t, b), h::l -> concl_of_arity (push_rel (LocalDef (na, lift n h, t)) env) (n + 1) b l
     | Sort s, [] -> s
     | _ -> retype_error NotASort
   in concl_of_arity env 0 ft (Array.to_list args)
 
 let type_of_var env id =
-  try let (_,_,ty) = lookup_named id env in ty
+  let open Context.Named.Declaration in
+  try get_type (lookup_named id env)
   with Not_found -> retype_error (BadVariable id)
 
 let decomp_sort env sigma t =
@@ -86,13 +88,13 @@ let decomp_sort env sigma t =
   | _ -> retype_error NotASort
 
 let retype ?(polyprop=true) sigma =
-  let rec type_of env cstr=
+  let rec type_of env cstr =
     match kind_of_term cstr with
     | Meta n ->
       (try strip_outer_cast (Evd.meta_ftype sigma n).Evd.rebus
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
-        let (_,_,ty) = lookup_rel n env in
+	let ty = get_type (lookup_rel n env) in
         lift n ty
     | Var id -> type_of_var env id
     | Const cst -> rename_type_of_constant env cst
@@ -115,9 +117,9 @@ let retype ?(polyprop=true) sigma =
           | Prod _ -> whd_beta sigma (applist (t, [c]))
           | _ -> t)
     | Lambda (name,c1,c2) ->
-          mkProd (name, c1, type_of (push_rel (name,None,c1) env) c2)
+          mkProd (name, c1, type_of (push_rel (LocalAssum (name,c1)) env) c2)
     | LetIn (name,b,c1,c2) ->
-         subst1 b (type_of (push_rel (name,Some b,c1) env) c2)
+         subst1 b (type_of (push_rel (LocalDef (name,b,c1)) env) c2)
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
     | App(f,args) when is_template_polymorphic env f ->
@@ -140,7 +142,7 @@ let retype ?(polyprop=true) sigma =
     | Sort (Prop c) -> type1_sort
     | Sort (Type u) -> Type (Univ.super u)
     | Prod (name,t,c2) ->
-        (match (sort_of env t, sort_of (push_rel (name,None,t) env) c2) with
+        (match (sort_of env t, sort_of (push_rel (LocalAssum (name,t)) env) c2) with
 	  | _, (Prop Null as s) -> s
           | Prop _, (Prop Pos as s) -> s
           | Type _, (Prop Pos as s) when is_impredicative_set env -> s
@@ -161,7 +163,7 @@ let retype ?(polyprop=true) sigma =
     | Sort (Prop c) -> InType
     | Sort (Type u) -> InType
     | Prod (name,t,c2) ->
-	let s2 = sort_family_of (push_rel (name,None,t) env) c2 in
+	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
 	if not (is_impredicative_set env) &&
 	   s2 == InSet && sort_family_of env t == InType then InType else s2
     | App(f,args) when is_template_polymorphic env f ->
@@ -235,9 +237,9 @@ let get_judgment_of env evc c = { uj_val = c; uj_type = get_type_of env evc c }
 let sorts_of_context env evc ctxt =
   let rec aux = function
   | [] -> env,[]
-  | (_,_,t as d)::ctxt ->
+  | d :: ctxt ->
       let env,sorts = aux ctxt in
-      let s = get_sort_of env evc t in
+      let s = get_sort_of env evc (get_type d) in
       (push_rel d env,s::sorts) in
   snd (aux ctxt)
 

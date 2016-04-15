@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -151,3 +151,46 @@ intros x H1 H.
 induction H.
 change (0 = z -> True) in IHrepr''.
 Abort.
+
+(* Test double induction *)
+
+(* This was failing in 8.5 and before because of a bug in the order of
+   hypotheses *)
+
+Inductive I2 : Type :=
+  C2 : forall x:nat, x=x -> I2.
+Goal forall a b:I2, a = b.
+double induction a b.
+Abort.
+
+(* This was leaving useless hypotheses in 8.5 and before because of
+   the same bug. This is a change of compatibility. *)
+
+Inductive I3 : Prop :=
+  C3 : forall x:nat, x=x -> I3.
+Goal forall a b:I3, a = b.
+double induction a b.
+Fail clear H. (* H should have been erased *)
+Abort.
+
+(* This one had quantification in reverse order in 8.5 and before *)
+(* This is a change of compatibility. *)
+
+Goal forall m n, le m n -> le n m -> n=m.
+intros m n. double induction 1 2.
+3:destruct 1. (* Should be "S m0 <= m0" *)
+Abort.
+
+(* Idem *)
+
+Goal forall m n p q, le m n -> le p q -> n+p=m+q.
+intros *. double induction 1 2.
+3:clear H2. (* H2 should have been erased *)
+Abort.
+
+(* This is unchanged *)
+
+Goal forall m n:nat, n=m.
+double induction m n.
+Abort.
+

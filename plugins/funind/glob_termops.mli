@@ -6,7 +6,7 @@ open Misctypes
 val get_pattern_id : cases_pattern -> Id.t list
 
 (* [pattern_to_term pat] returns a glob_constr corresponding to [pat].
-   [pat] must not contain occurences of anonymous pattern
+   [pat] must not contain occurrences of anonymous pattern
 *)
 val pattern_to_term : cases_pattern -> glob_constr
 
@@ -64,7 +64,7 @@ val change_vars : Id.t Id.Map.t -> glob_constr -> glob_constr
 
 (* [alpha_pat avoid pat] rename all the variables present in [pat] s.t.
    the result does not share variables with [avoid]. This function create
-   a fresh variable for each occurence of the anonymous pattern.
+   a fresh variable for each occurrence of the anonymous pattern.
 
    Also returns a mapping  from old variables to new ones and the concatenation of
    [avoid] with the variables appearing in the result.

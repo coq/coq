@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,7 +19,7 @@ open Mod_subst
 type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
-  | Reloc_getglobal of pconstant
+  | Reloc_getglobal of Names.constant
 
 type patch = reloc_info * int
 
@@ -29,10 +29,18 @@ let patch_char4 buff pos c1 c2 c3 c4 =
   String.unsafe_set buff (pos + 2) c3;
   String.unsafe_set buff (pos + 3) c4 
   
-let patch_int buff pos n =
+let patch buff (pos, n) =
   patch_char4 buff pos 
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
+
+let patch_int buff patches =
+  (* copy code *before* patching because of nested evaluations:
+     the code we are patching might be called (and thus "concurrently" patched)
+     and results in wrong results. Side-effects... *)
+  let buff = String.copy buff in
+  let () = List.iter (fun p -> patch buff p) patches in
+  buff
 
 (* Buffering of bytecode *)
 
@@ -127,11 +135,11 @@ let slot_for_const c =
   enter (Reloc_const c);
   out_int 0
 
-and slot_for_annot a =
+let slot_for_annot a =
   enter (Reloc_annot a);
   out_int 0
 
-and slot_for_getglobal p =
+let slot_for_getglobal p =
   enter (Reloc_getglobal p);
   out_int 0
 
@@ -190,7 +198,7 @@ let emit_instr = function
       Array.iter (out_label_with_orig org) lbl_bodies
   | Kgetglobal q ->
       out opGETGLOBAL; slot_for_getglobal q
-  | Kconst((Const_b0 i)) ->
+  | Kconst (Const_b0 i) ->
       if i >= 0 && i <= 3
           then out (opCONST0 + i)
           else (out opCONSTINT; out_int i)
@@ -298,8 +306,6 @@ let init () =
 
 type emitcodes = string
 
-let copy = String.copy
-
 let length = String.length
 
 type to_patch = emitcodes * (patch list) * fv
@@ -307,10 +313,10 @@ type to_patch = emitcodes * (patch list) * fv
 (* Substitution *)
 let rec subst_strcst s sc =
   match sc with
-  | Const_sorts _ | Const_b0 _ -> sc
+  | Const_sorts _ | Const_b0 _ | Const_univ_level _ | Const_type _ -> sc
   | Const_proj p -> Const_proj (subst_constant s p)
   | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
-  | Const_ind(ind,u) -> let kn,i = ind in Const_ind((subst_mind s kn, i), u)
+  | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
 let subst_patch s (ri,pos) =
   match ri with
@@ -319,21 +325,19 @@ let subst_patch s (ri,pos) =
       let ci = {a.ci with ci_ind = (subst_mind s kn,i)} in
       (Reloc_annot {a with ci = ci},pos)
   | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
-  | Reloc_getglobal kn -> (Reloc_getglobal (subst_pcon s kn), pos)
+  | Reloc_getglobal kn -> (Reloc_getglobal (subst_constant s kn), pos)
 
 let subst_to_patch s (code,pl,fv) =
   code,List.rev_map (subst_patch s) pl,fv
 
-let subst_pconstant s (kn, u) = (fst (subst_con_kn s kn), u)
-
 type body_code =
   | BCdefined of to_patch
-  | BCalias of pconstant
+  | BCalias of Names.constant
   | BCconstant
 
 type to_patch_substituted =
 | PBCdefined of to_patch substituted
-| PBCalias of pconstant substituted
+| PBCalias of Names.constant substituted
 | PBCconstant
 
 let from_val = function
@@ -343,7 +347,7 @@ let from_val = function
 
 let force = function
 | PBCdefined tp -> BCdefined (force subst_to_patch tp)
-| PBCalias cu -> BCalias (force subst_pconstant cu)
+| PBCalias cu -> BCalias (force subst_constant cu)
 | PBCconstant -> BCconstant
 
 let subst_to_patch_subst s = function
@@ -366,6 +370,8 @@ let to_memory (init_code, fun_code, fv) =
   emit fun_code;
   let code = String.create !out_position in
   String.unsafe_blit !out_buffer 0 code 0 !out_position;
+  (** Later uses of this string are all purely functional *)
+  let code = CString.hcons code in
   let reloc = List.rev !reloc_info in
   Array.iter (fun lbl ->
     (match lbl with
@@ -373,8 +379,3 @@ let to_memory (init_code, fun_code, fv) =
     | Label_undefined patchlist ->
 	assert (patchlist = []))) !label_table;
   (code, reloc, fv)
-
-
-
-
-

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -35,7 +35,7 @@ Qed.
 
 (**********)
 Ltac intro_hyp_glob trm :=
-  match constr:trm with
+  match constr:(trm) with
     | (?X1 + ?X2)%F =>
       match goal with
         |  |- (derivable _) => intro_hyp_glob X1; intro_hyp_glob X2
@@ -55,7 +55,7 @@ Ltac intro_hyp_glob trm :=
         | _ => idtac
       end
     | (?X1 / ?X2)%F =>
-      let aux := constr:X2 in
+      let aux := constr:(X2) in
         match goal with
           | _:(forall x0:R, aux x0 <> 0) |- (derivable _) =>
             intro_hyp_glob X1; intro_hyp_glob X2
@@ -82,7 +82,7 @@ Ltac intro_hyp_glob trm :=
         | _ => idtac
       end
     | (/ ?X1)%F =>
-      let aux := constr:X1 in
+      let aux := constr:(X1) in
         match goal with
           | _:(forall x0:R, aux x0 <> 0) |- (derivable _) =>
             intro_hyp_glob X1
@@ -108,7 +108,7 @@ Ltac intro_hyp_glob trm :=
     | (pow_fct _) => idtac
     | Rabs => idtac
     | ?X1 =>
-      let p := constr:X1 in
+      let p := constr:(X1) in
         match goal with
           | _:(derivable p) |- _ => idtac
           |  |- (derivable p) => idtac
@@ -130,7 +130,7 @@ Ltac intro_hyp_glob trm :=
 
 (**********)
 Ltac intro_hyp_pt trm pt :=
-  match constr:trm with
+  match constr:(trm) with
     | (?X1 + ?X2)%F =>
       match goal with
         |  |- (derivable_pt _ _) => intro_hyp_pt X1 pt; intro_hyp_pt X2 pt
@@ -156,7 +156,7 @@ Ltac intro_hyp_pt trm pt :=
         | _ => idtac
       end
     | (?X1 / ?X2)%F =>
-      let aux := constr:X2 in
+      let aux := constr:(X2) in
         match goal with
           | _:(aux pt <> 0) |- (derivable_pt _ _) =>
             intro_hyp_pt X1 pt; intro_hyp_pt X2 pt
@@ -202,7 +202,7 @@ Ltac intro_hyp_pt trm pt :=
         | _ => idtac
       end
     | (/ ?X1)%F =>
-      let aux := constr:X1 in
+      let aux := constr:(X1) in
         match goal with
           | _:(aux pt <> 0) |- (derivable_pt _ _) =>
             intro_hyp_pt X1 pt
@@ -249,7 +249,7 @@ Ltac intro_hyp_pt trm pt :=
         | _ => idtac
       end
     | ?X1 =>
-      let p := constr:X1 in
+      let p := constr:(X1) in
         match goal with
           | _:(derivable_pt p pt) |- _ => idtac
           |  |- (derivable_pt p pt) => idtac
@@ -578,89 +578,89 @@ Ltac is_cont_glob :=
 
 (**********)
 Ltac rew_term trm :=
-  match constr:trm with
+  match constr:(trm) with
     | (?X1 + ?X2) =>
       let p1 := rew_term X1 with p2 := rew_term X2 in
-        match constr:p1 with
+        match constr:(p1) with
           | (fct_cte ?X3) =>
-            match constr:p2 with
+            match constr:(p2) with
               | (fct_cte ?X4) => constr:(fct_cte (X3 + X4))
-              | _ => constr:(p1 + p2)%F
+              | _ => constr:((p1 + p2)%F)
             end
-          | _ => constr:(p1 + p2)%F
+          | _ => constr:((p1 + p2)%F)
         end
     | (?X1 - ?X2) =>
       let p1 := rew_term X1 with p2 := rew_term X2 in
-        match constr:p1 with
+        match constr:(p1) with
           | (fct_cte ?X3) =>
-            match constr:p2 with
+            match constr:(p2) with
               | (fct_cte ?X4) => constr:(fct_cte (X3 - X4))
-              | _ => constr:(p1 - p2)%F
+              | _ => constr:((p1 - p2)%F)
             end
-          | _ => constr:(p1 - p2)%F
+          | _ => constr:((p1 - p2)%F)
         end
     | (?X1 / ?X2) =>
       let p1 := rew_term X1 with p2 := rew_term X2 in
-        match constr:p1 with
+        match constr:(p1) with
           | (fct_cte ?X3) =>
-            match constr:p2 with
+            match constr:(p2) with
               | (fct_cte ?X4) => constr:(fct_cte (X3 / X4))
-              | _ => constr:(p1 / p2)%F
+              | _ => constr:((p1 / p2)%F)
             end
           | _ =>
-            match constr:p2 with
-              | (fct_cte ?X4) => constr:(p1 * fct_cte (/ X4))%F
-              | _ => constr:(p1 / p2)%F
+            match constr:(p2) with
+              | (fct_cte ?X4) => constr:((p1 * fct_cte (/ X4))%F)
+              | _ => constr:((p1 / p2)%F)
             end
         end
     | (?X1 * / ?X2) =>
       let p1 := rew_term X1 with p2 := rew_term X2 in
-        match constr:p1 with
+        match constr:(p1) with
           | (fct_cte ?X3) =>
-            match constr:p2 with
+            match constr:(p2) with
               | (fct_cte ?X4) => constr:(fct_cte (X3 / X4))
-              | _ => constr:(p1 / p2)%F
+              | _ => constr:((p1 / p2)%F)
             end
           | _ =>
-            match constr:p2 with
-              | (fct_cte ?X4) => constr:(p1 * fct_cte (/ X4))%F
-              | _ => constr:(p1 / p2)%F
+            match constr:(p2) with
+              | (fct_cte ?X4) => constr:((p1 * fct_cte (/ X4))%F)
+              | _ => constr:((p1 / p2)%F)
             end
         end
     | (?X1 * ?X2) =>
       let p1 := rew_term X1 with p2 := rew_term X2 in
-        match constr:p1 with
+        match constr:(p1) with
           | (fct_cte ?X3) =>
-            match constr:p2 with
+            match constr:(p2) with
               | (fct_cte ?X4) => constr:(fct_cte (X3 * X4))
-              | _ => constr:(p1 * p2)%F
+              | _ => constr:((p1 * p2)%F)
             end
-          | _ => constr:(p1 * p2)%F
+          | _ => constr:((p1 * p2)%F)
         end
     | (- ?X1) =>
       let p := rew_term X1 in
-        match constr:p with
+        match constr:(p) with
           | (fct_cte ?X2) => constr:(fct_cte (- X2))
-          | _ => constr:(- p)%F
+          | _ => constr:((- p)%F)
         end
     | (/ ?X1) =>
       let p := rew_term X1 in
-        match constr:p with
+        match constr:(p) with
           | (fct_cte ?X2) => constr:(fct_cte (/ X2))
-          | _ => constr:(/ p)%F
+          | _ => constr:((/ p)%F)
         end
-    | (?X1 AppVar) => constr:X1
+    | (?X1 AppVar) => constr:(X1)
     | (?X1 ?X2) =>
       let p := rew_term X2 in
-        match constr:p with
+        match constr:(p) with
           | (fct_cte ?X3) => constr:(fct_cte (X1 X3))
           | _ => constr:(comp X1 p)
         end
-    | AppVar => constr:id
+    | AppVar => constr:(id)
     | (AppVar ^ ?X1) => constr:(pow_fct X1)
     | (?X1 ^ ?X2) =>
       let p := rew_term X1 in
-        match constr:p with
+        match constr:(p) with
           | (fct_cte ?X3) => constr:(fct_cte (pow_fct X2 X3))
           | _ => constr:(comp (pow_fct X2) p)
         end
@@ -669,7 +669,7 @@ Ltac rew_term trm :=
 
 (**********)
 Ltac deriv_proof trm pt :=
-  match constr:trm with
+  match constr:(trm) with
     | (?X1 + ?X2)%F =>
       let p1 := deriv_proof X1 pt with p2 := deriv_proof X2 pt in
         constr:(derivable_pt_plus X1 X2 pt p1 p2)
@@ -684,14 +684,14 @@ Ltac deriv_proof trm pt :=
         | id:(?X2 pt <> 0) |- _ =>
           let p1 := deriv_proof X1 pt with p2 := deriv_proof X2 pt in
             constr:(derivable_pt_div X1 X2 pt p1 p2 id)
-        | _ => constr:False
+        | _ => constr:(False)
       end
     | (/ ?X1)%F =>
       match goal with
         | id:(?X1 pt <> 0) |- _ =>
           let p1 := deriv_proof X1 pt in
             constr:(derivable_pt_inv X1 pt p1 id)
-        | _ => constr:False
+        | _ => constr:(False)
       end
     | (comp ?X1 ?X2) =>
       let pt_f1 := eval cbv beta in (X2 pt) in
@@ -710,21 +710,21 @@ Ltac deriv_proof trm pt :=
     | sqrt =>
       match goal with
         | id:(0 < pt) |- _ => constr:(derivable_pt_sqrt pt id)
-        | _ => constr:False
+        | _ => constr:(False)
       end
     | (fct_cte ?X1) => constr:(derivable_pt_const X1 pt)
     | ?X1 =>
-      let aux := constr:X1 in
+      let aux := constr:(X1) in
         match goal with
-          | id:(derivable_pt aux pt) |- _ => constr:id
+          | id:(derivable_pt aux pt) |- _ => constr:(id)
           | id:(derivable aux) |- _ => constr:(id pt)
-          | _ => constr:False
+          | _ => constr:(False)
         end
   end.
 
 (**********)
 Ltac simplify_derive trm pt :=
-  match constr:trm with
+  match constr:(trm) with
     | (?X1 + ?X2)%F =>
       try rewrite derive_pt_plus; simplify_derive X1 pt;
         simplify_derive X2 pt
@@ -753,7 +753,7 @@ Ltac simplify_derive trm pt :=
     | Rsqr => try rewrite derive_pt_Rsqr
     | sqrt => try rewrite derive_pt_sqrt
     | ?X1 =>
-      let aux := constr:X1 in
+      let aux := constr:(X1) in
         match goal with
           | id:(derive_pt aux pt ?X2 = _),H:(derivable aux) |- _ =>
             try replace (derive_pt aux pt (H pt)) with (derive_pt aux pt X2);

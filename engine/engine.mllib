@@ -1,5 +1,9 @@
 Logic_monad
 Termops
 Namegen
+UState
 Evd
+Sigma
 Proofview_monad
+Evarutil
+Proofview

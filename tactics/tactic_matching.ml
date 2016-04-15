@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,6 +11,7 @@
 
 open Names
 open Tacexpr
+open Context.Named.Declaration
 
 (** [t] is the type of matching successes. It ultimately contains a
     {!Tacexpr.glob_tactic_expr} representing the left-hand side of the
@@ -278,9 +279,10 @@ module PatternMatching (E:StaticEnvironment) = struct
       [hyps]. Tries the hypotheses in order. For each success returns
       the name of the matched hypothesis. *)
   let hyp_match_type hypname pat hyps =
-    pick hyps >>= fun (id,b,hyp) ->
-    let refresh = not (Option.is_empty b) in
-    pattern_match_term refresh pat hyp () <*>
+    pick hyps >>= fun decl ->
+    let id = get_id decl in
+    let refresh = is_local_def decl in
+    pattern_match_term refresh pat (get_type decl) () <*>
     put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
     return id
 
@@ -290,12 +292,12 @@ module PatternMatching (E:StaticEnvironment) = struct
       success returns the name of the matched hypothesis. *)
   let hyp_match_body_and_type hypname bodypat typepat hyps =
     pick hyps >>= function
-      | (id,Some body,hyp) ->
+      | LocalDef (id,body,hyp) ->
           pattern_match_term false bodypat body () <*>
           pattern_match_term true typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
           return id
-      | (id,None,hyp) -> fail
+      | LocalAssum (id,hyp) -> fail
 
   (** [hyp_match pat hyps] dispatches to
       {!hyp_match_type} or {!hyp_match_body_and_type} depending on whether
@@ -317,7 +319,7 @@ module PatternMatching (E:StaticEnvironment) = struct
         (* spiwack: alternatively it is possible to return the list
            with the matched hypothesis removed directly in
            [hyp_match]. *)
-        let select_matched_hyp (id,_,_) = Id.equal id matched_hyp in
+        let select_matched_hyp decl = Id.equal (get_id decl) matched_hyp in
         let hyps = CList.remove_first select_matched_hyp hyps in
         hyp_pattern_list_match pats hyps lhs
     | [] -> return lhs

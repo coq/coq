@@ -2,12 +2,9 @@ open Names
 open Term
 open Cbytecodes
 
-(** Efficient Virtual Machine *)
+(** Debug printing *)
 
 val set_drawinstr : unit -> unit
-
-val transp_values : unit -> bool
-val set_transp_values : bool -> unit
 
 (** Machine code *)
 
@@ -25,8 +22,8 @@ type arguments
 
 type atom =
   | Aid of Vars.id_key
-  | Aiddef of Vars.id_key * values
-  | Aind of pinductive
+  | Aind of inductive
+  | Atype of Univ.universe
 
 (** Zippers *)
 
@@ -49,19 +46,27 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
+  | Vuniv_level of Univ.universe_level
+
+(** For debugging purposes only *)
+
+val pr_atom : atom -> Pp.std_ppcmds
+val pr_whd : whd -> Pp.std_ppcmds
+val pr_stack : stack -> Pp.std_ppcmds
 
 (** Constructors *)
 
 val val_of_str_const : structured_constant -> values
 val val_of_rel : int -> values
 val val_of_named : Id.t -> values
-val val_of_constant : pconstant -> values
+val val_of_constant : constant -> values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 
 (** Destructors *)
 
 val whd_val : values -> whd
+val uni_lvl_val : values -> Univ.universe_level
 
 (** Arguments *)
 
@@ -106,10 +111,6 @@ val case_info : vswitch -> case_info
 val type_of_switch : vswitch -> values
 val branch_of_switch : int -> vswitch -> (int * values) array
 
-(** Evaluation *)
+(** Apply a value *)
 
-val whd_stack : values -> stack -> whd
-val force_whd : values -> stack -> whd
-
-val eta_whd : int -> whd -> values
-
+val apply_whd : int -> whd -> values

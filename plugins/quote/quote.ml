@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -109,6 +109,7 @@ open Pattern
 open Patternops
 open Constr_matching
 open Tacmach
+open Proofview.Notations
 (*i*)
 
 (*s First, we need to access some Coq constants
@@ -211,9 +212,9 @@ let compute_rhs bodyi index_of_f =
           let i = destRel (Array.last args) in
 	  PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
-          PApp (pi3 (pattern_of_constr (Global.env()) Evd.empty f), Array.map aux args)
+          PApp (pattern_of_constr (Global.env()) Evd.empty f, Array.map aux args)
       | Cast (c,_,_) -> aux c
-      | _ -> pi3 (pattern_of_constr (Global.env())(*FIXME*) Evd.empty c)
+      | _ -> pattern_of_constr (Global.env())(*FIXME*) Evd.empty c
   in
   aux bodyi
 
@@ -227,7 +228,7 @@ let compute_ivs f cs gl =
         let (args3, body3) = decompose_lam body2 in
         let nargs3 = List.length args3 in
         let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in
+        let sigma = Tacmach.New.project gl in
         let is_conv = Reductionops.is_conv env sigma in
           begin match decomp_term body3 with
           | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
@@ -446,7 +447,7 @@ let quote_terms ivs lc =
   yet. *)
 
 let quote f lid =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let f = Tacmach.New.pf_global f gl in
     let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
     let ivs = compute_ivs f cl gl in
@@ -459,10 +460,10 @@ let quote f lid =
     match ivs.variable_lhs with
     | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast
     | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast
-  end
+  end }
 
 let gen_quote cont c f lid =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let f = Tacmach.New.pf_global f gl in
   let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
   let ivs = compute_ivs f cl gl in
@@ -474,7 +475,7 @@ let gen_quote cont c f lid =
   match ivs.variable_lhs with
     | None -> cont (mkApp (f, [| p |]))
     | Some _ -> cont (mkApp (f, [| vm; p |]))
-  end
+  end }
 
 (*i
 

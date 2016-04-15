@@ -13,7 +13,6 @@ open Declare
 *)
 
 open Term
-open Context
 open Vars
 open Names
 open Evd
@@ -44,7 +43,7 @@ let check_evars env evm =
 
 type oblinfo =
   { ev_name: int * Id.t;
-    ev_hyps: named_context;
+    ev_hyps: Context.Named.t;
     ev_status: Evar_kinds.obligation_definition_status;
     ev_chop: int option;
     ev_src: Evar_kinds.t Loc.located;
@@ -52,13 +51,11 @@ type oblinfo =
     ev_tac: unit Proofview.tactic option;
     ev_deps: Int.Set.t }
 
-(* spiwack: Store field for internalizing ev_tac in evar_infos' evar_extra. *)
-let evar_tactic = Store.field ()
-
 (** Substitute evar references in t using De Bruijn indices,
   where n binders were passed through. *)
 
-let subst_evar_constr evs n idf t = 
+let subst_evar_constr evs n idf t =
+  let open Context.Named.Declaration in
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
@@ -82,9 +79,9 @@ let subst_evar_constr evs n idf t =
 	let args =
 	  let rec aux hyps args acc =
 	     match hyps, args with
-		 ((_, None, _) :: tlh), (c :: tla) ->
+		 (LocalAssum _ :: tlh), (c :: tla) ->
 		   aux tlh tla ((substrec (depth, fixrels) c) :: acc)
-	       | ((_, Some _, _) :: tlh), (_ :: tla) ->
+	       | (LocalDef _ :: tlh), (_ :: tla) ->
 		   aux tlh tla acc
 	       | [], [] -> acc
 	       | _, _ -> acc (*failwith "subst_evars: invalid argument"*)
@@ -120,22 +117,23 @@ let subst_vars acc n t =
     Changes evars and hypothesis references to variable references.
 *)
 let etype_of_evar evs hyps concl =
+  let open Context.Named.Declaration in
   let rec aux acc n = function
-      (id, copt, t) :: tl ->
-	let t', s, trans = subst_evar_constr evs n mkVar t in
+      decl :: tl ->
+	let t', s, trans = subst_evar_constr evs n mkVar (get_type decl) in
 	let t'' = subst_vars acc 0 t' in
-	let rest, s', trans' = aux (id :: acc) (succ n) tl in
+	let rest, s', trans' = aux (get_id decl :: acc) (succ n) tl in
 	let s' = Int.Set.union s s' in
 	let trans' = Id.Set.union trans trans' in
-	  (match copt with
-	      Some c -> 
+	  (match decl with
+            | LocalDef (id,c,_) ->
 		let c', s'', trans'' = subst_evar_constr evs n mkVar c in
 		let c' = subst_vars acc 0 c' in
-		  mkNamedProd_or_LetIn (id, Some c', t'') rest,
+		  mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest,
 		Int.Set.union s'' s',
 		Id.Set.union trans'' trans'
-	    | None ->
-		mkNamedProd_or_LetIn (id, None, t'') rest, s', trans')
+	    | LocalAssum (id,_) ->
+		mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans')
     | [] ->
 	let t', s, trans = subst_evar_constr evs n mkVar concl in
 	  subst_vars acc 0 t', s, trans
@@ -194,7 +192,7 @@ open Environ
 let eterm_obligations env name evm fs ?status t ty = 
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
-  let nc_len = Context.named_context_length nc in
+  let nc_len = Context.Named.length nc in
   let evm = Evarutil.nf_evar_map_undefined evm in
   let evl = Evarutil.non_instantiated evm in
   let evl = Evar.Map.bindings evl in
@@ -229,17 +227,9 @@ let eterm_obligations env name evm fs ?status t ty =
 	   | Some s -> s, None
 	   | None -> Evar_kinds.Define true, None
 	 in
-	 let tac = match Store.get ev.evar_extra evar_tactic with
-	   | Some t ->
-	       if Dyn.has_tag t "tactic" then
-		 Some (Tacinterp.interp 
-			  (Tacinterp.globTacticIn (Tacinterp.tactic_out t)))
-	       else None
-	   | None -> None
-	 in
 	 let info = { ev_name = (n, nstr);
 		      ev_hyps = hyps; ev_status = status; ev_chop = chop;
-		      ev_src = loc, k; ev_typ = evtyp ; ev_deps = deps; ev_tac = tac }
+		      ev_src = loc, k; ev_typ = evtyp ; ev_deps = deps; ev_tac = None }
 	 in (id, info) :: l)
       evn []
   in
@@ -277,7 +267,7 @@ let reduce c =
 exception NoObligations of Id.t option
 
 let explain_no_obligations = function
-    Some ident -> str "No obligations for program " ++ str (Id.to_string ident)
+    Some ident -> str "No obligations for program " ++ Id.print ident
   | None -> str "No obligations remaining"
 
 type obligation_info =
@@ -311,6 +301,7 @@ type program_info_aux = {
   prg_body: constr;
   prg_type: constr;
   prg_ctx:  Evd.evar_universe_context;
+  prg_pl: Id.t Loc.located list option;
   prg_obligations: obligations;
   prg_deps : Id.t list;
   prg_fixkind : fixpoint_kind option ;
@@ -318,21 +309,21 @@ type program_info_aux = {
   prg_notations : notations ;
   prg_kind : definition_kind;
   prg_reduce : constr -> constr;
-  prg_hook : unit Lemmas.declaration_hook;
+  prg_hook : (Evd.evar_universe_context -> unit) Lemmas.declaration_hook;
   prg_opaque : bool;
+  prg_sign: named_context_val;
 }
 
-type program_info = program_info_aux Ephemeron.key
+type program_info = program_info_aux CEphemeron.key
 
 let get_info x =
-  try Ephemeron.get x
-  with Ephemeron.InvalidKey ->
+  try CEphemeron.get x
+  with CEphemeron.InvalidKey ->
     Errors.anomaly Pp.(str "Program obligation can't be accessed by a worker")
 
 let assumption_message = Declare.assumption_message
 
-let (set_default_tactic, get_default_tactic, print_default_tactic) = 
-  Tactic_option.declare_tactic_option "Program tactic"
+let default_tactic = ref (Proofview.tclUNIT ())
 
 (* true = All transparent, false = Opaque if possible *)
 let proofs_transparency = ref true
@@ -459,22 +450,9 @@ let subst_deps_obl obls obl =
 
 module ProgMap = Map.Make(Id)
 
-let map_replace k v m = ProgMap.add k (Ephemeron.create v) (ProgMap.remove k m)
+let map_replace k v m = ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
 
 let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
-
-let map_cardinal m =
-  let i = ref 0 in
-    ProgMap.iter (fun _ _ -> incr i) m;
-    !i
-
-exception Found of program_info
-
-let map_first m =
-  try
-    ProgMap.iter (fun _ v -> raise (Found v)) m;
-    assert(false)
-  with Found x -> x
 
 let from_prg : program_info ProgMap.t ref =
   Summary.ref ProgMap.empty ~name:"program-tcc-table"
@@ -521,16 +499,23 @@ let declare_definition prg =
   let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
+  let fix_exn = Stm.get_fix_exn () in
+  let pl, ctx =
+    Evd.universe_context ?names:prg.prg_pl (Evd.from_ctx prg.prg_ctx) in
   let ce =
-    definition_entry ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
-      ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
+    definition_entry ~fix_exn
+     ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
+     ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
   in
-    progmap_remove prg;
+  let () = progmap_remove prg in
+  let cst =
     !declare_definition_ref prg.prg_name 
-      prg.prg_kind ce prg.prg_implicits
-      (Lemmas.mk_hook (fun l r ->
-         Lemmas.call_hook (fun exn -> exn) prg.prg_hook l r; r))
-
+     prg.prg_kind ce prg.prg_implicits
+     (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
+  in
+  Universes.register_universe_binders cst pl;
+  cst
+      
 open Pp
 
 let rec lam_index n t acc =
@@ -550,11 +535,11 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      let m = nb_prod fixtype in
+      let m = Termops.nb_prod fixtype in
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	List.map_i (fun i _ -> i) 0 ctx
 
-let mk_proof c = ((c, Univ.ContextSet.empty), Declareops.no_seff)
+let mk_proof c = ((c, Univ.ContextSet.empty), Safe_typing.empty_private_constants)
 
 let declare_mutual_definition l =
   let len = List.length l in
@@ -594,6 +579,7 @@ let declare_mutual_definition l =
   in
   (* Declare the recursive definitions *)
   let ctx = Evd.evar_context_universe_context first.prg_ctx in
+  let fix_exn = Stm.get_fix_exn () in
   let kns = List.map4 (!declare_fix_ref ~opaque (local, poly, kind) ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
@@ -601,18 +587,19 @@ let declare_mutual_definition l =
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
-      Lemmas.call_hook (fun exn -> exn) first.prg_hook local gr;
-      List.iter progmap_remove l; kn
+    Lemmas.call_hook fix_exn first.prg_hook local gr first.prg_ctx;
+    List.iter progmap_remove l; kn
 
-let shrink_body c = 
+let shrink_body c =
+  let open Context.Rel.Declaration in
   let ctx, b = decompose_lam_assum c in
   let b', n, args = 
-    List.fold_left (fun (b, i, args) (n, u, t) ->
+    List.fold_left (fun (b, i, args) decl ->
       if noccurn 1 b then 
 	subst1 mkProp b, succ i, args
       else
-        let args = if Option.is_empty u then mkRel i :: args else args in
-        mkLambda_or_LetIn (n, u, t) b, succ i, args)
+	let args = if is_local_assum decl then mkRel i :: args else args in
+        mkLambda_or_LetIn decl b, succ i, args)
      (b, 1, []) ctx
   in ctx, b', Array.of_list args
 
@@ -625,7 +612,7 @@ let declare_obligation prg obl body ty uctx =
   let body = prg.prg_reduce body in
   let ty = Option.map prg.prg_reduce ty in
   match obl.obl_status with
-  | Evar_kinds.Expand -> { obl with obl_body = Some (TermObl body) }
+  | Evar_kinds.Expand -> false, { obl with obl_body = Some (TermObl body) }
   | Evar_kinds.Define opaque ->
       let opaque = if get_proofs_transparency () then false else opaque in
       let poly = pi2 prg.prg_kind in
@@ -633,8 +620,9 @@ let declare_obligation prg obl body ty uctx =
 	if get_shrink_obligations () && not poly then
 	  shrink_body body else [], body, [||] 
       in
+      let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
       let ce = 
-        { const_entry_body = Future.from_val((body,Univ.ContextSet.empty),Declareops.no_seff);
+        { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
 	  const_entry_type = if List.is_empty ctx then ty else None;
 	  const_entry_polymorphic = poly;
@@ -649,13 +637,14 @@ let declare_obligation prg obl body ty uctx =
       in
 	if not opaque then add_hint false prg constant;
 	definition_message obl.obl_name;
-	{ obl with obl_body = 
+	true, { obl with obl_body =
 	    if poly then 
 	      Some (DefinedObl constant)
 	    else
 	      Some (TermObl (it_mkLambda_or_LetIn (mkApp (mkConst constant, args)) ctx)) }
 
-let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls kind reduce hook =
+let init_prog_info ?(opaque = false) sign n pl b t ctx deps fixkind
+		   notations obls impls kind reduce hook =
   let obls', b = 
     match b with
     | None ->
@@ -675,12 +664,28 @@ let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls
 	  obls, b
   in
     { prg_name = n ; prg_body = b; prg_type = reduce t; 
-      prg_ctx = ctx; 
+      prg_ctx = ctx; prg_pl = pl;
       prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
       prg_implicits = impls; prg_kind = kind; prg_reduce = reduce; 
-      prg_hook = hook;
-      prg_opaque = opaque; }
+      prg_hook = hook; prg_opaque = opaque;
+      prg_sign = sign }
+
+let map_cardinal m =
+  let i = ref 0 in
+  ProgMap.iter (fun _ v ->
+		if snd (CEphemeron.get v).prg_obligations > 0 then incr i) m;
+  !i
+
+exception Found of program_info
+
+let map_first m =
+  try
+    ProgMap.iter (fun _ v ->
+		  if snd (CEphemeron.get v).prg_obligations > 0 then
+		    raise (Found v)) m;
+    assert(false)
+  with Found x -> x
 
 let get_prog name =
   let prg_infos = !from_prg in
@@ -795,12 +800,12 @@ let solve_by_tac name evi t poly ctx =
   let (entry,_,ctx') = Pfedit.build_constant_by_tactic 
     id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
-  let entry = Term_typing.handle_entry_side_effects env entry in
-  let body, eff = Future.force entry.Entries.const_entry_body in
-  assert(Declareops.side_effects_is_empty eff);
-  assert(Univ.ContextSet.is_empty (snd body));
+  let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
+  let body, eff = Future.force entry.const_entry_body in
+  assert(Safe_typing.empty_private_constants = eff);
+  let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
   Inductiveops.control_only_guard (Global.env ()) (fst body);
-  (fst body), entry.Entries.const_entry_type, ctx'
+  (fst body), entry.const_entry_type, Evd.evar_universe_context ctx'
 
 let obligation_terminator name num guard hook pf =
   let open Proof_global in
@@ -812,19 +817,19 @@ let obligation_terminator name num guard hook pf =
     else
       let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
       let env = Global.env () in
-      let entry = Term_typing.handle_entry_side_effects env entry in
+      let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
       let ty = entry.Entries.const_entry_type  in
       let (body, cstr), eff = Future.force entry.Entries.const_entry_body in
-      assert(Declareops.side_effects_is_empty eff);
+      assert(Safe_typing.empty_private_constants = eff);
       assert(Univ.ContextSet.is_empty cstr);
       Inductiveops.control_only_guard (Global.env ()) body;
       (** Declare the obligation ourselves and drop the hook *)
       let prg = get_info (ProgMap.find name !from_prg) in
-      let prg = { prg with prg_ctx = uctx } in
+      let prg = { prg with prg_ctx = fst uctx } in
       let obls, rem = prg.prg_obligations in
       let obl = obls.(num) in
-      let ctx = Evd.evar_context_universe_context uctx in
-      let obl = declare_obligation prg obl body ty ctx in
+      let ctx = Evd.evar_context_universe_context (fst uctx) in
+      let (_, obl) = declare_obligation prg obl body ty ctx in
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in
       try ignore (update_obls prg obls (pred rem))
@@ -847,9 +852,11 @@ let obligation_hook prg obl num auto ctx' _ gr =
   let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
   let ctx' =
     if not (pi2 prg.prg_kind) (* Not polymorphic *) then
-      (* This context is already declared globally, we cannot
-          instantiate the rigid variables anymore *)
-      Evd.abstract_undefined_variables ctx'
+      (* The universe context was declared globally, we continue
+         from the new global environment. *)
+      let evd = Evd.from_env (Global.env ()) in
+      let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
+        Evd.evar_universe_context ctx'
     else ctx'
   in
   let prg = { prg with prg_ctx = ctx' } in
@@ -879,14 +886,15 @@ let rec solve_obligation prg num tac =
   in
   let obl = subst_deps_obl obls obl in
   let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
-  let evd = Evd.from_env ~ctx:prg.prg_ctx Environ.empty_env in
+  let evd = Evd.from_ctx prg.prg_ctx in
+  let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let terminator guard hook = Proof_global.make_terminator (obligation_terminator prg.prg_name num guard hook) in
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
-  let () = Lemmas.start_proof_univs obl.obl_name kind evd obl.obl_type ~terminator hook in
+  let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd obl.obl_type ~terminator hook in
   let () = trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
             Printer.pr_constr_env (Global.env ()) Evd.empty obl.obl_type) in
-  let _ = Pfedit.by (snd (get_default_tactic ())) in
+  let _ = Pfedit.by !default_tactic in
   Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
 
 and obligation (user_num, name, typ) tac =
@@ -915,15 +923,24 @@ and solve_obligation_by_tac prg obls i tac =
 	      | None ->
 		  match obl.obl_tac with
 		  | Some t -> t
-		  | None -> snd (get_default_tactic ())
+		  | None -> !default_tactic
 	    in
+	    let evd = Evd.from_ctx !prg.prg_ctx in
+	    let evd = Evd.update_sigma_env evd (Global.env ()) in
 	    let t, ty, ctx = 
 	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac 
-	        (pi2 !prg.prg_kind) !prg.prg_ctx
+	        (pi2 !prg.prg_kind) (Evd.evar_universe_context evd)
 	    in
 	    let uctx = Evd.evar_context_universe_context ctx in
-	      prg := {!prg with prg_ctx = ctx};
-	      obls.(i) <- declare_obligation !prg obl t ty uctx;
+	    let () = prg := {!prg with prg_ctx = ctx} in
+	    let def, obl' = declare_obligation !prg obl t ty uctx in
+	      obls.(i) <- obl';
+	      if def && not (pi2 !prg.prg_kind) then (
+	        (* Declare the term constraints with the first obligation only *)
+	        let evd = Evd.from_env (Global.env ()) in
+	        let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
+		let ctx' = Evd.evar_universe_context evd in
+		  prg := {!prg with prg_ctx = ctx'});
 	      true
 	  else false
 	with e when Errors.noncritical e ->
@@ -988,7 +1005,7 @@ let show_obligations_of_prg ?(msg=true) prg =
 		       if !showed > 0 then (
 			 decr showed;
 			 msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
-				   str "of" ++ spc() ++ str (Id.to_string n) ++ str ":" ++ spc () ++
+				   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
 				   hov 1 (Printer.pr_constr_env (Global.env ()) Evd.empty x.obl_type ++
 					    str "." ++ fnl ())))
 		   | Some _ -> ())
@@ -1005,14 +1022,15 @@ let show_obligations ?(msg=true) n =
 let show_term n =
   let prg = get_prog_err n in
   let n = prg.prg_name in
-    (str (Id.to_string n) ++ spc () ++ str":" ++ spc () ++
+    (Id.print n ++ spc () ++ str":" ++ spc () ++
 	     Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
 
-let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
-    ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ -> ())) ?(opaque = false) obls =
-  let info = str (Id.to_string n) ++ str " has type-checked" in
-  let prg = init_prog_info ~opaque n term t ctx [] None [] obls implicits kind reduce hook in
+let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
+    ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
+  let sign = Decls.initialize_named_context_for_proof () in
+  let info = Id.print n ++ str " has type-checked" in
+  let prg = init_prog_info sign ~opaque n pl term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose msg_info (info ++ str ".");
@@ -1021,20 +1039,21 @@ let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition)
   else (
     let len = Array.length obls in
     let _ = Flags.if_verbose msg_info (info ++ str ", generating " ++ int len ++ str " obligation(s)") in
-      progmap_add n (Ephemeron.create prg);
+      progmap_add n (CEphemeron.create prg);
       let res = auto_solve_obligations (Some n) tactic in
 	match res with
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 
-let add_mutual_definitions l ctx ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
-    ?(hook=Lemmas.mk_hook (fun _ _ -> ())) ?(opaque = false) notations fixkind =
+let add_mutual_definitions l ctx ?pl ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
+    ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
+  let sign = Decls.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
-     let prg = init_prog_info ~opaque n (Some b) t ctx deps (Some fixkind)
+     let prg = init_prog_info sign ~opaque n pl (Some b) t ctx deps (Some fixkind)
        notations obls imps kind reduce hook 
-     in progmap_add n (Ephemeron.create prg)) l;
+     in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
       List.fold_left (fun finished x ->
 	if finished then finished

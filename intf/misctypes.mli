@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -31,7 +31,8 @@ and 'constr intro_pattern_action_expr =
   | IntroApplyOn of 'constr * (Loc.t * 'constr intro_pattern_expr)
   | IntroRewrite of bool
 and 'constr or_and_intro_pattern_expr =
-  (Loc.t * 'constr intro_pattern_expr) list list
+  | IntroOrPattern of (Loc.t * 'constr intro_pattern_expr) list list
+  | IntroAndPattern of (Loc.t * 'constr intro_pattern_expr) list
 
 (** Move destination for hypothesis *)
 
@@ -43,9 +44,12 @@ type 'id move_location =
 
 (** Sorts *)
 
-type 'a glob_sort_gen = GProp | GSet | GType of 'a
-type sort_info = string list
-type level_info = string option
+type 'a glob_sort_gen =
+  | GProp (** representation of [Prop] literal *)
+  | GSet  (** representation of [Set] literal *)
+  | GType of 'a (** representation of [Type] literal *)
+type sort_info = string Loc.located list
+type level_info = string Loc.located option
 
 type glob_sort = sort_info glob_sort_gen
 type glob_level = level_info glob_sort_gen

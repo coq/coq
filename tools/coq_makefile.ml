@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -42,6 +42,16 @@ let section s =
   print_com (String.make (l+2) ' ');
   print_com (String.make (l+2) '#');
   print "\n"
+
+(* These are the Coq library directories that are used for
+ * plugin development
+ *)
+let lib_dirs =
+  ["kernel"; "lib"; "library"; "parsing";
+   "pretyping"; "interp"; "printing"; "intf";
+   "proofs"; "tactics"; "tools"; "toplevel";
+   "stm"; "grammar"; "config"; "ltac"; "engine"]
+
 
 let usage () =
   output_string stderr "Usage summary:
@@ -99,7 +109,13 @@ let string_prefix a b =
 let is_prefix dir1 dir2 =
   let l1 = String.length dir1 in
   let l2 = String.length dir2 in
-    dir1 = dir2 || (l1 < l2 && String.sub dir2 0 l1 = dir1 && dir2.[l1] = '/')
+  let sep = Filename.dir_sep in
+  if dir1 = dir2 then true
+  else if l1 + String.length sep <= l2 then
+    let dir1' = String.sub dir2 0 l1 in
+    let sep' = String.sub dir2 l1 (String.length sep) in
+    dir1' = dir1 && sep' = sep
+  else false
 
 let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
@@ -446,12 +462,8 @@ let variables is_install opt (args,defs) =
     end;
     (* Caml executables and relative variables *)
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
-    print "COQSRCLIBS?=-I \"$(COQLIB)kernel\" -I \"$(COQLIB)lib\" \\
-  -I \"$(COQLIB)library\" -I \"$(COQLIB)parsing\" -I \"$(COQLIB)engine\" -I \"$(COQLIB)pretyping\" \\
-  -I \"$(COQLIB)interp\" -I \"$(COQLIB)printing\" -I \"$(COQLIB)intf\" \\
-  -I \"$(COQLIB)proofs\" -I \"$(COQLIB)tactics\" -I \"$(COQLIB)tools\" \\
-  -I \"$(COQLIB)toplevel\" -I \"$(COQLIB)stm\" -I \"$(COQLIB)grammar\" \\
-  -I \"$(COQLIB)config\"";
+    print "COQSRCLIBS?=" ;
+    List.iter (fun c -> print "-I \"$(COQLIB)"; print c ; print "\" \\\n") lib_dirs ;
     List.iter (fun c -> print " \\
   -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
@@ -508,7 +520,7 @@ let parameters () =
   print "define donewline\n\n\nendef\n";
   print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr -d '\\r' | tr '\\n' '@'; })))\n";
   print "$(call includecmdwithout@,$(COQBIN)coqtop -config)\n\n";
-  print "TIMED=\nTIMECMD=\nSTDTIME?=/usr/bin/time -f \"$* (user: %U mem: %M ko)\"\n";
+  print "TIMED?=\nTIMECMD?=\nSTDTIME=/usr/bin/time -f \"$* (user: %U mem: %M ko)\"\n";
   print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n";
   print "vo_to_obj = $(addsuffix .o,\\\n";
   print "  $(filter-out Warning: Error:,\\\n";
@@ -770,7 +782,7 @@ let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((ml_inc,i_inc,r_inc) as l
 	&& not_tops mllib && not_tops mlpack) then
     l
   else
-    ((".",here)::ml_inc,(".","Top",here)::i_inc,r_inc)
+    ((".",here)::ml_inc,i_inc,(".","Top",here)::r_inc)
 
 let warn_install_at_root_directory
     (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_ml,inc_i,inc_r) =
@@ -793,6 +805,21 @@ let check_overlapping_include (_,inc_i,inc_r) =
 	  if is_prefix abspdir abspdir' || is_prefix abspdir' abspdir then
 	    Printf.eprintf "Warning: in options -R/-Q, %s and %s overlap\n" pdir pdir') l;
   in aux (inc_i@inc_r)
+
+(* Generate a .merlin file that references the standard library and
+ * any -I included paths.
+ *)
+let merlin targets (ml_inc,_,_) =
+  print ".merlin:\n";
+  print "\t@echo 'FLG -rectypes' > .merlin\n" ;
+  List.iter (fun c ->
+      printf "\t@echo \"B $(COQLIB) %s\" >> .merlin\n" c)
+    lib_dirs ;
+  List.iter (fun (_,c) ->
+      printf "\t@echo \"B %s\" >> .merlin\n" c;
+      printf "\t@echo \"S %s\" >> .merlin\n" c)
+    ml_inc;
+  print "\n"
 
 let do_makefile args =
   let has_file var = function
@@ -836,6 +863,7 @@ let do_makefile args =
   section "Special targets.";
   standard opt;
   install targets inc is_install;
+  merlin targets inc;
   clean sds sps;
   make_makefile sds;
   implicit ();

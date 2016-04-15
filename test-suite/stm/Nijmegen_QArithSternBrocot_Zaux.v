@@ -1902,14 +1902,14 @@ Qed.
 
 Lemma Zsgn_15 : forall x y : Z, Zsgn (x * y) = (Zsgn x * Zsgn y)%Z.
 Proof.
- intros [y| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *; constructor.
+ intros [|p1|p1]; [intros y|intros [|p2|p2] ..]; simpl in |- *; constructor.
 Qed.
 
 Lemma Zsgn_16 :
  forall x y : Z,
  Zsgn (x * y) = 1%Z -> {(0 < x)%Z /\ (0 < y)%Z} + {(x < 0)%Z /\ (y < 0)%Z}.
 Proof.
- intros [y| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *; intro H;
+ intros [|p1|p1]; [intros y|intros [|p2|p2] ..]; simpl in |- *; intro H;
   try discriminate H; [ left | right ]; repeat split.
 Qed. 
 
@@ -1917,13 +1917,13 @@ Lemma Zsgn_17 :
  forall x y : Z,
  Zsgn (x * y) = (-1)%Z -> {(0 < x)%Z /\ (y < 0)%Z} + {(x < 0)%Z /\ (0 < y)%Z}.
 Proof.
- intros [y| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *; intro H;
+ intros [|p1|p1]; [intros y|intros [|p2|p2] ..]; simpl in |- *; intro H;
   try discriminate H; [ left | right ]; repeat split.
 Qed. 
 
 Lemma Zsgn_18 : forall x y : Z, Zsgn (x * y) = 0%Z -> {x = 0%Z} + {y = 0%Z}.
 Proof.
- intros [y| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *; intro H;
+ intros [|p1|p1]; [intros y|intros [|p2|p2] ..]; simpl in |- *; intro H;
   try discriminate H; [ left | right | right ]; constructor.
 Qed. 
 
@@ -1932,40 +1932,40 @@ Qed.
 Lemma Zsgn_19 : forall x y : Z, (0 < Zsgn x + Zsgn y)%Z -> (0 < x + y)%Z.
 Proof.
  Proof.
- intros [y| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *; intro H;
+ intros [|p1|p1]; [intros y|intros [|p2|p2] ..]; simpl in |- *; intro H;
   discriminate H || (constructor || apply Zsgn_12; assumption).
 Qed.
 
 Lemma Zsgn_20 : forall x y : Z, (Zsgn x + Zsgn y < 0)%Z -> (x + y < 0)%Z.
 Proof.
  Proof.
- intros [y| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *; intro H;
+ intros [|p1|p1]; [intros y|intros [|p2|p2] ..]; simpl in |- *; intro H;
   discriminate H || (constructor || apply Zsgn_11; assumption).
 Qed.
 
 
 Lemma Zsgn_21 : forall x y : Z, (0 < Zsgn x + Zsgn y)%Z -> (0 <= x)%Z.
 Proof.
- intros [y| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *; intros H H0;
+ intros [|p1|p1]; [intros y|intros [|p2|p2] ..]; simpl in |- *; intros H H0;
   discriminate H || discriminate H0.
 Qed.
 
 Lemma Zsgn_22 : forall x y : Z, (Zsgn x + Zsgn y < 0)%Z -> (x <= 0)%Z.
 Proof.
  Proof.
- intros [y| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *; intros H H0;
+ intros [|p1|p1]; [intros y|intros [|p2|p2] ..]; simpl in |- *; intros H H0;
   discriminate H || discriminate H0.
 Qed.
 
 Lemma Zsgn_23 : forall x y : Z, (0 < Zsgn x + Zsgn y)%Z -> (0 <= y)%Z.
 Proof.
- intros [[| p2| p2]| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *;
+ intros [|p1|p1] [|p2|p2]; simpl in |- *;
   intros H H0; discriminate H || discriminate H0.
 Qed.
 
 Lemma Zsgn_24 : forall x y : Z, (Zsgn x + Zsgn y < 0)%Z -> (y <= 0)%Z.
 Proof.
- intros [[| p2| p2]| p1 [| p2| p2]| p1 [| p2| p2]]; simpl in |- *;
+ intros [|p1|p1] [|p2|p2]; simpl in |- *;
   intros H H0; discriminate H || discriminate H0.
 Qed.
 

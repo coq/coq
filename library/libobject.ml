@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,6 +8,9 @@
 
 open Libnames
 open Pp
+open Util
+
+module Dyn = Dyn.Make(struct end)
 
 (* The relax flag is used to make it possible to load files while ignoring
    failures to incorporate some objects.  This can be useful when one
@@ -70,15 +73,25 @@ type dynamic_object_declaration = {
   dyn_discharge_function : object_name * obj -> obj option;
   dyn_rebuild_function : obj -> obj }
 
-let object_tag = Dyn.tag
-let object_has_tag = Dyn.has_tag
+let object_tag (Dyn.Dyn (t, _)) = Dyn.repr t
 
 let cache_tab =
   (Hashtbl.create 17 : (string,dynamic_object_declaration) Hashtbl.t)
 
+let make_dyn (type a) (tag : a Dyn.tag) =
+  let infun x = Dyn.Dyn (tag, x) in
+  let outfun : (Dyn.t -> a) = fun dyn ->
+    let Dyn.Dyn (t, x) = dyn in
+    match Dyn.eq t tag with
+    | None -> assert false
+    | Some Refl -> x
+  in
+  (infun, outfun)
+
 let declare_object_full odecl =
   let na = odecl.object_name in
-  let (infun,outfun) = Dyn.create na in
+  let tag = Dyn.create na in
+  let (infun, outfun) = make_dyn tag in
   let cacher (oname,lobj) = odecl.cache_function (oname,outfun lobj)
   and loader i (oname,lobj) = odecl.load_function i (oname,outfun lobj)
   and opener i (oname,lobj) = odecl.open_function i (oname,outfun lobj)
@@ -107,6 +120,9 @@ let declare_object_full odecl =
 
 let declare_object odecl =
   try fst (declare_object_full odecl)
+  with e -> Errors.fatal_error (Errors.print e) (Errors.is_anomaly e)
+let declare_object_full odecl =
+  try declare_object_full odecl
   with e -> Errors.fatal_error (Errors.print e) (Errors.is_anomaly e)
 
 let missing_tab = (Hashtbl.create 17 : (string, unit) Hashtbl.t)
@@ -155,3 +171,5 @@ let discharge_object ((_,lobj) as node) =
 
 let rebuild_object lobj =
   apply_dyn_fun lobj (fun d -> d.dyn_rebuild_function lobj) lobj
+
+let dump = Dyn.dump

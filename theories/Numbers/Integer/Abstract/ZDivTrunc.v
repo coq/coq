@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -404,7 +404,7 @@ Proof.
 intros. rewrite rem_eq by order. rewrite sub_move_r; nzsimpl; tauto.
 Qed.
 
-(** Some additionnal inequalities about quot. *)
+(** Some additional inequalities about quot. *)
 
 Theorem quot_lt_upper_bound:
   forall a b q, 0<=a -> 0<b -> a < b*q -> a÷b < q.

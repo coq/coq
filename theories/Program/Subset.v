@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -82,7 +82,7 @@ Qed.
 Definition match_eq (A B : Type) (x : A) (fn : {y : A | y = x} -> B) : B :=
   fn (exist _ x eq_refl).
 
-(* This is what we want to be able to do: replace the originaly matched object by a new,
+(* This is what we want to be able to do: replace the originally matched object by a new,
    propositionally equal one. If [fn] works on [x] it should work on any [y | y = x]. *)
 
 Lemma match_eq_rewrite : forall (A B : Type) (x : A) (fn : {y : A | y = x} -> B)

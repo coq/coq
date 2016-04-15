@@ -9,7 +9,7 @@ Section SpecializedFunctor.
   (* Variable objC : Type. *)
   Context `(C : SpecializedCategory objC).
 
-  Polymorphic Record SpecializedFunctor := {
+  Record SpecializedFunctor := {
     ObjectOf' : objC -> Type;
     ObjectC : Object C
   }.

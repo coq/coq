@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -67,15 +67,12 @@ type module_typing_error =
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
   | LabelMissing of Label.t * string
-  | HigherOrderInclude
+  | IncludeRestrictedFunctor of module_path
 
 exception ModuleTypingError of module_typing_error
 
 let error_existing_label l =
   raise (ModuleTypingError (LabelAlreadyDeclared l))
-
-let error_application_to_not_path mexpr =
-  raise (ModuleTypingError (ApplicationToNotPath mexpr))
 
 let error_not_a_functor () =
   raise (ModuleTypingError NotAFunctor)
@@ -113,8 +110,8 @@ let error_generative_module_expected l =
 let error_no_such_label_sub l l1 =
   raise (ModuleTypingError (LabelMissing (l,l1)))
 
-let error_higher_order_include () =
-  raise (ModuleTypingError HigherOrderInclude)
+let error_include_restricted_functor mp =
+  raise (ModuleTypingError (IncludeRestrictedFunctor mp))
 
 (** {6 Operations on functors } *)
 
@@ -331,13 +328,15 @@ let strengthen_const mp_from l cb resolver =
     let kn = KerName.make2 mp_from l in
     let con = constant_of_delta_kn resolver kn in
     let u = 
-      if cb.const_polymorphic then 
-	Univ.UContext.instance cb.const_universes
+      if cb.const_polymorphic then
+	let u = Univ.UContext.instance cb.const_universes in
+	let s = Univ.make_instance_subst u in
+	  Univ.subst_univs_level_instance s u
       else Univ.Instance.empty
     in
       { cb with
 	const_body = Def (Mod_subst.from_val (mkConstU (con,u)));
-	const_body_code = Some (Cemitcodes.from_val (Cbytegen.compile_alias (con,u))) }
+	const_body_code = Some (Cemitcodes.from_val (Cbytegen.compile_alias con)) }
 
 let rec strengthen_mod mp_from mp_to mb =
   if mp_in_delta mb.mod_mp mb.mod_delta then mb

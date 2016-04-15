@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -66,7 +66,7 @@ let rec cases_pattern_expr_eq p1 p2 =
       Id.equal i1 i2 && cases_pattern_expr_eq a1 a2
   | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) ->
       eq_reference c1 c2 &&
-      List.equal cases_pattern_expr_eq a1 a2 &&
+      Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
       List.equal cases_pattern_expr_eq b1 b2
   | CPatAtom(_,r1), CPatAtom(_,r2) ->
       Option.equal eq_reference r1 r2
@@ -125,11 +125,10 @@ let rec constr_expr_eq e1 e2 =
       Option.equal Int.equal proj1 proj2 &&
       constr_expr_eq e1 e2 &&
       List.equal args_eq al1 al2
-  | CRecord (_, e1, l1), CRecord (_, e2, l2) ->
+  | CRecord (_, l1), CRecord (_, l2) ->
     let field_eq (r1, e1) (r2, e2) =
       eq_reference r1 r2 && constr_expr_eq e1 e2
     in
-    Option.equal constr_expr_eq e1 e2 &&
     List.equal field_eq l1 l2
   | CCases(_,_,r1,a1,brl1), CCases(_,_,r2,a2,brl2) ->
       (** Don't care about the case_style *)
@@ -178,7 +177,7 @@ and args_eq (a1,e1) (a2,e2) =
   Option.equal (eq_located explicitation_eq) e1 e2 &&
   constr_expr_eq a1 a2
 
-and case_expr_eq (e1, (n1, p1)) (e2, (n2, p2)) =
+and case_expr_eq (e1, n1, p1) (e2, n2, p2) =
   constr_expr_eq e1 e2 &&
   Option.equal (eq_located Name.equal) n1 n2 &&
   Option.equal cases_pattern_expr_eq p1 p2
@@ -238,7 +237,7 @@ let constr_loc = function
   | CLetIn (loc,_,_,_) -> loc
   | CAppExpl (loc,_,_) -> loc
   | CApp (loc,_,_) -> loc
-  | CRecord (loc,_,_) -> loc
+  | CRecord (loc,_) -> loc
   | CCases (loc,_,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
   | CIf (loc,_,_,_,_) -> loc

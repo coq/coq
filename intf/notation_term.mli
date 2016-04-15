@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -61,7 +61,7 @@ type subscopes = tmp_scope_name option * scope_name list
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
 type notation_var_instance_type =
-  | NtnTypeConstr | NtnTypeConstrList | NtnTypeBinderList
+  | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
 
 (** Type of variables when interpreting a constr_expr as an notation_constr:
     in a recursive pattern x..y, both x and y carry the individual type

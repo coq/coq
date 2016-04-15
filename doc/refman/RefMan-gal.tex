@@ -311,7 +311,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 {\annotation} & ::= & {\tt \{ struct} {\ident} {\tt \}} \\ 
 &&\\
 {\caseitem} & ::= & {\term} \zeroone{{\tt as} \name}
-     \zeroone{{\tt in} \pattern} \\
+     \zeroone{{\tt in} \qualid \sequence{\pattern}{}} \\
 &&\\
 {\ifitem} & ::= & \zeroone{{\tt as} {\name}} {\returntype} \\
 &&\\
@@ -322,7 +322,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 {\multpattern} & ::= & \nelist{\pattern}{\tt ,}\\
 &&\\
 {\pattern} & ::= & {\qualid} \nelist{\pattern}{}  \\
- & $|$ & {\tt @} {\qualid} \sequence{\pattern}{} \\
+ & $|$ & {\tt @} {\qualid} \nelist{\pattern}{} \\
 
  & $|$ & {\pattern} {\tt as} {\ident}             \\
  & $|$ & {\pattern} {\tt \%} {\ident}         \\
@@ -468,8 +468,8 @@ proposition $B$ or the functional dependent product from $A$ to $B$ (a
 construction usually written $\Pi_{x:A}.B$ in set theory).
 
 Non dependent product types have a special notation: ``$A$ {\tt ->}
-$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. The non dependent
-product is used both to denote the propositional implication and
+$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. The {\em non dependent
+product} is used both to denote the propositional implication and
 function types.
 
 \subsection{Applications
@@ -496,9 +496,8 @@ arguments is used for making explicit the value of implicit arguments
 The expression ``{\term}~{\tt :}~{\type}'' is a type cast
 expression. It enforces the type of {\term} to be {\type}.
 
-``{\term}~{\tt <:}~{\type}'' locally sets up the virtual machine (as if option
-{\tt Virtual Machine} were on, see \ref{SetVirtualMachine}) for checking that
-{\term} has type {\type}.
+``{\term}~{\tt <:}~{\type}'' locally sets up the virtual machine for checking
+that {\term} has type {\type}.
 
 \subsection{Inferable subterms
 \label{hole}
@@ -609,17 +608,20 @@ the type of each branch can depend on the type dependencies specific
 to the branch and the whole pattern-matching expression has a type
 determined by the specific dependencies in the type of the term being
 matched. This dependency of the return type in the annotations of the
-inductive type is expressed using a {\tt
-``in~I~\_~$\ldots$~\_~\ident$_1$~$\ldots$~\ident$_n$}'' clause, where
+inductive type is expressed using a 
+  ``in~I~\_~$\ldots$~\_~\pattern$_1$~$\ldots$~\pattern$_n$'' clause, where
 \begin{itemize}
 \item $I$ is the inductive type of the term being matched;
 
-\item the names \ident$_i$'s correspond to the arguments of the
-inductive type that carry the annotations: the return type is dependent
-on them;
-
-\item the {\_}'s denote the family parameters of the inductive type:
+\item the {\_}'s are matching the parameters of the inductive type:
 the return type is not dependent on them.
+
+\item the \pattern$_i$'s are matching the annotations of the inductive
+  type: the return type is dependent on them
+
+\item in the basic case which we describe below, each \pattern$_i$ is a
+  name \ident$_i$; see \ref{match-in-patterns} for the general case
+
 \end{itemize}
 
 For instance, in the following example:
@@ -971,7 +973,7 @@ are the names of its constructors and {\type$_1$}, {\ldots},
 {\type$_n$} their respective types. The types of the constructors have
 to satisfy a {\em positivity condition} (see Section~\ref{Positivity})
 for {\ident}.  This condition ensures the soundness of the inductive
-definition.  If this is the case, the constants {\ident},
+definition.  If this is the case, the names {\ident},
 {\ident$_1$}, {\ldots}, {\ident$_n$} are added to the environment with
 their respective types.  Accordingly to the universe where
 the inductive type lives ({\it e.g.} its type {\sort}), {\Coq} provides a
@@ -990,7 +992,7 @@ Inductive nat : Set :=
 \end{coq_example}
 
 The type {\tt nat} is defined as the least \verb:Set: containing {\tt
-  O} and closed by the {\tt S} constructor. The constants {\tt nat},
+  O} and closed by the {\tt S} constructor. The names {\tt nat},
 {\tt O} and {\tt S} are added to the environment.
 
 Now let us have a look at the elimination principles. They are three
@@ -1101,7 +1103,7 @@ Inductive list (A:Set) : Set :=
 \end{coq_example*}
 
 Note that in the type of {\tt nil} and {\tt cons}, we write {\tt
-  (list A)} and not just {\tt list}.\\ The constants {\tt nil} and
+  (list A)} and not just {\tt list}.\\ The constructors {\tt nil} and
 {\tt cons} will have respectively types:
 
 \begin{coq_example}

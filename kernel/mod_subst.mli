@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -68,8 +68,9 @@ val empty_subst : substitution
 
 val is_empty_subst : substitution -> bool
 
-(** add_* add [arg2/arg1]\{arg3\} to the substitution with no
-   sequential composition  *)
+(** add_* add [arg2/arg1]\{arg3\} to the substitution with no sequential
+   composition. Most often this is not what you want. For sequential
+   composition, try [join (map_mbid mp delta) subs] **)
 val add_mbid :
   MBId.t -> module_path -> delta_resolver  -> substitution -> substitution
 val add_mp :

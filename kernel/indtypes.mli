@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -42,6 +42,6 @@ val enforce_indices_matter : unit -> unit
 val is_indices_matter : unit -> bool
 
 val compute_projections : pinductive -> Id.t -> Id.t ->
-  int -> Context.rel_context -> int array -> int array -> 
-  Context.rel_context -> Context.rel_context -> 
+  int -> Context.Rel.t -> int array -> int array -> 
+  Context.Rel.t -> Context.Rel.t -> 
   (constant array * projection_body array)

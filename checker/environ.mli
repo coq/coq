@@ -39,6 +39,8 @@ val push_rec_types : name array * constr array * 'a -> env -> env
 (* Universes *)
 val universes : env -> Univ.universes
 val add_constraints : Univ.constraints -> env -> env
+val push_context : ?strict:bool -> Univ.universe_context -> env -> env
+val push_context_set : ?strict:bool -> Univ.universe_context_set -> env -> env
 val check_constraints : Univ.constraints -> env -> bool
 
 (* Constants *)

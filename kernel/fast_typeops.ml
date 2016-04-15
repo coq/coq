@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -33,7 +33,7 @@ let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
-(* This should be a type (a priori without intension to be an assumption) *)
+(* This should be a type (a priori without intention to be an assumption) *)
 let type_judgment env c t =
   match kind_of_term(whd_betadeltaiota env t) with
     | Sort s -> {utj_val = c; utj_type = s }
@@ -52,8 +52,8 @@ let assumption_of_judgment env t ty =
     error_assumption env (make_judge t ty)
 
 (************************************************)
-(* Incremental typing rules: builds a typing judgement given the *)
-(* judgements for the subterms. *)
+(* Incremental typing rules: builds a typing judgment given the *)
+(* judgments for the subterms. *)
 
 (*s Type of sorts *)
 
@@ -73,8 +73,8 @@ let judge_of_type u =
 
 let judge_of_relative env n =
   try
-    let (_,_,typ) = lookup_rel n env in
-      lift n typ
+    let open Context.Rel.Declaration in
+    env |> lookup_rel n |> get_type |> lift n
   with Not_found ->
     error_unbound_rel env n
 
@@ -90,8 +90,11 @@ let judge_of_variable env id =
    variables of the current env *)
 (* TODO: check order? *)
 let check_hyps_inclusion env f c sign =
-  Context.fold_named_context
-    (fun (id,_,ty1) () ->
+  Context.Named.fold_outside
+    (fun decl () ->
+      let open Context.Named.Declaration in
+      let id = get_id decl in
+      let ty1 = get_type decl in
       try
         let ty2 = named_type id env in
         if not (eq_constr ty2 ty1) then raise Exit
@@ -227,7 +230,7 @@ let judge_of_cast env c ct k expected_type =
       default_conv ~l2r:true CUMUL env ct expected_type
     | NATIVEcast ->
       let sigma = Nativelambda.empty_evars in
-      native_conv CUMUL sigma env ct expected_type
+      Nativeconv.native_conv CUMUL sigma env ct expected_type
   with NotConvertible ->
     error_actual_type env (make_judge c ct) expected_type
 
@@ -325,6 +328,7 @@ let type_fixpoint env lna lar vdef vdeft =
     Ind et Constructsi un jour cela devient des constructions
     arbitraires et non plus des variables *)
 let rec execute env cstr =
+  let open Context.Rel.Declaration in
   match kind_of_term cstr with
     (* Atomic terms *)
     | Sort (Prop c) ->
@@ -368,13 +372,13 @@ let rec execute env cstr =
 
     | Lambda (name,c1,c2) ->
       let _ = execute_is_type env c1 in
-      let env1 = push_rel (name,None,c1) env in
+      let env1 = push_rel (LocalAssum (name,c1)) env in
       let c2t = execute env1 c2 in
         judge_of_abstraction env name c1 c2t
 
     | Prod (name,c1,c2) ->
       let vars = execute_is_type env c1 in
-      let env1 = push_rel (name,None,c1) env in
+      let env1 = push_rel (LocalAssum (name,c1)) env in
       let vars' = execute_is_type env1 c2 in
 	judge_of_product env name vars vars'
 
@@ -382,7 +386,7 @@ let rec execute env cstr =
       let c1t = execute env c1 in
       let _c2s = execute_is_type env c2 in
       let _ = judge_of_cast env c1 c1t DEFAULTcast c2 in
-      let env1 = push_rel (name,Some c1,c2) env in
+      let env1 = push_rel (LocalDef (name,c1,c2)) env in
       let c3t = execute env1 c3 in
 	subst1 c1 c3t
 

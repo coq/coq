@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,14 +19,14 @@ open Constrexpr_ops
 (*i*)
 
 
-let oldfashion_patterns = ref (false)
+let asymmetric_patterns = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optsync = true; Goptions.optdepr = false;
   Goptions.optname =
     "Constructors in patterns require all their arguments but no parameters instead of explicit parameters and arguments";
   Goptions.optkey = ["Asymmetric";"Patterns"];
-  Goptions.optread = (fun () -> !oldfashion_patterns);
-  Goptions.optwrite = (fun a -> oldfashion_patterns:=a);
+  Goptions.optread = (fun () -> !asymmetric_patterns);
+  Goptions.optwrite = (fun a -> asymmetric_patterns:=a);
 }
 
 (**********************************************************************)
@@ -38,27 +38,11 @@ let error_invalid_pattern_notation loc =
 (**********************************************************************)
 (* Functions on constr_expr *)
 
-let ids_of_cases_indtype =
-  let rec vars_of ids = function
-    (* We deal only with the regular cases *)
-    | (CPatCstr (_,_,l1,l2)|CPatNotation (_,_,(l1,[]),l2)) ->
-      List.fold_left vars_of (List.fold_left vars_of [] l2) l1
-    (* assume the ntn is applicative and does not instantiate the head !! *)
-    | CPatDelimiters(_,_,c) -> vars_of ids c
-    | CPatAtom (_, Some (Libnames.Ident (_, x))) -> x::ids
-    | _ -> ids in
-  vars_of []
-
-let ids_of_cases_tomatch tms =
-  List.fold_right
-    (fun (_,(ona,indnal)) l ->
-      Option.fold_right (fun t -> (@) (ids_of_cases_indtype t))
-      indnal (Option.fold_right (Loc.down_located name_cons) ona l))
-    tms []
-
 let is_constructor id =
-  try ignore (Nametab.locate_extended (qualid_of_ident id)); true
-  with Not_found -> true
+  try Globnames.isConstructRef
+        (Smartlocate.global_of_extended_global
+           (Nametab.locate_extended (qualid_of_ident id)))
+  with Not_found -> false
 
 let rec cases_pattern_fold_names f a = function
   | CPatRecord (_, l) ->
@@ -68,7 +52,7 @@ let rec cases_pattern_fold_names f a = function
       List.fold_left (cases_pattern_fold_names f) a patl
   | CPatCstr (_,_,patl1,patl2) ->
     List.fold_left (cases_pattern_fold_names f)
-      (List.fold_left (cases_pattern_fold_names f) a patl1) patl2
+      (Option.fold_left (List.fold_left (cases_pattern_fold_names f)) a patl1) patl2
   | CPatNotation (_,_,(patl,patll),patl') ->
       List.fold_left (cases_pattern_fold_names f)
 	(List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'
@@ -81,6 +65,17 @@ let ids_of_pattern_list =
     (Loc.located_fold_left
       (List.fold_left (cases_pattern_fold_names Id.Set.add)))
     Id.Set.empty
+
+let ids_of_cases_indtype p =
+  Id.Set.elements (cases_pattern_fold_names Id.Set.add Id.Set.empty p)
+
+let ids_of_cases_tomatch tms =
+  List.fold_right
+    (fun (_, ona, indnal) l ->
+      Option.fold_right (fun t ids -> cases_pattern_fold_names Id.Set.add ids t)
+      indnal
+        (Option.fold_right (Loc.down_located (name_fold Id.Set.add)) ona l))
+    tms Id.Set.empty
 
 let rec fold_constr_expr_binders g f n acc b = function
   | (nal,bk,t)::l ->
@@ -116,11 +111,11 @@ let fold_constr_expr_with_binders g f n acc = function
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
-  | CRecord (loc,_,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
+  | CRecord (loc,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
   | CCases (loc,sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
-      let acc = Option.fold_left (f (List.fold_right g ids n)) acc rtnpo in
-      let acc = List.fold_left (f n) acc (List.map fst al) in
+      let acc = Option.fold_left (f (Id.Set.fold g ids n)) acc rtnpo in
+      let acc = List.fold_left (f n) acc (List.map (fun (fst,_,_) -> fst) al) in
       List.fold_right (fun (loc,patl,rhs) acc ->
 	let ids = ids_of_pattern_list patl in
 	f (Id.Set.fold g ids n) acc rhs) bl acc
@@ -218,13 +213,14 @@ let map_constr_expr_with_binders g f e = function
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _
   | CPrim _ | CRef _ as x -> x
-  | CRecord (loc,p,l) -> CRecord (loc,p,List.map (fun (id, c) -> (id, f e c)) l)
+  | CRecord (loc,l) -> CRecord (loc,List.map (fun (id, c) -> (id, f e c)) l)
   | CCases (loc,sty,rtnpo,a,bl) ->
-      (* TODO: apply g on the binding variables in pat... *)
-      let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in
+      let bl = List.map (fun (loc,patl,rhs) ->
+        let ids = ids_of_pattern_list patl in
+        (loc,patl,f (Id.Set.fold g ids e) rhs)) bl in
       let ids = ids_of_cases_tomatch a in
-      let po = Option.map (f (List.fold_right g ids e)) rtnpo in
-      CCases (loc, sty, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
+      let po = Option.map (f (Id.Set.fold g ids e)) rtnpo in
+      CCases (loc, sty, po, List.map (fun (tm,x,y) -> f e tm,x,y) a,bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let e' = List.fold_right (Loc.down_located (name_fold g)) nal e in
       let e'' = Option.fold_right (Loc.down_located (name_fold g)) ona e in

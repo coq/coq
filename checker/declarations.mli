@@ -2,17 +2,18 @@ open Names
 open Cic
 
 val force_constr : constr_substituted -> constr
-val force_lazy_constr_univs : Cic.constant_def -> Univ.constraints
+val force_lazy_constr_univs : Cic.constant_def -> Univ.ContextSet.t
 val from_val : constr -> constr_substituted
 
 val indirect_opaque_access : (DirPath.t -> int -> constr) ref
-val indirect_opaque_univ_access : (DirPath.t -> int -> Univ.constraints) ref
+val indirect_opaque_univ_access : (DirPath.t -> int -> Univ.ContextSet.t) ref
 
 (** Constant_body *)
 
 val body_of_constant : constant_body -> constr option
 val constant_has_body : constant_body -> bool
 val is_opaque : constant_body -> bool
+val opaque_univ_context : constant_body -> Univ.ContextSet.t
 
 (* Mutual inductives *)
 

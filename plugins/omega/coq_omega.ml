@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -27,6 +27,8 @@ open Globnames
 open Nametab
 open Contradiction
 open Misctypes
+open Proofview.Notations
+open Context.Named.Declaration
 
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -34,9 +36,9 @@ open OmegaSolver
 (* Added by JCF, 09/03/98 *)
 
 let elim_id id =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     simplest_elim (Tacmach.New.pf_global id gl)
-  end
+  end }
 let resolve_id id gl = Proofview.V82.of_tactic (apply (pf_global gl id)) gl
 
 let timing timer_name f arg = f arg
@@ -539,7 +541,7 @@ let context operation path (t : constr) =
   in
   loop 1 path t
 
-let occurence path (t : constr) =
+let occurrence path (t : constr) =
   let rec loop p0 t = match (p0,kind_of_term t) with
     | (p, Cast (c,_,_)) -> loop p c
     | ([], _) -> t
@@ -555,7 +557,7 @@ let occurence path (t : constr) =
     | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
     | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
     | (p, _) ->
-	failwith ("occurence " ^ string_of_int(List.length p))
+	failwith ("occurrence " ^ string_of_int(List.length p))
   in
   loop path t
 
@@ -660,7 +662,7 @@ let clever_rewrite_gen_nat p result (t,args) =
 let clever_rewrite p vpath t gl =
   let full = pf_concl gl in
   let (abstracted,occ) = abstract_path (Lazy.force coq_Z) (List.rev p) full in
-  let vargs = List.map (fun p -> occurence p occ) vpath in
+  let vargs = List.map (fun p -> occurrence p occ) vpath in
   let t' = applist(t, (vargs @ [abstracted])) in
   exact (applist(t',[mkNewMeta()])) gl
 
@@ -926,15 +928,15 @@ let rec transform p t =
 	  transform p
 	    (mkApp (Lazy.force coq_Zplus,
 		     [| t1; (mkApp (Lazy.force coq_Zopp, [| t2 |])) |])) in
-	unfold sp_Zminus :: tac,t
+	Proofview.V82.of_tactic (unfold sp_Zminus) :: tac,t
     | Kapp(Zsucc,[t1]) ->
 	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer one |])) in
-	unfold sp_Zsucc :: tac,t
+	Proofview.V82.of_tactic (unfold sp_Zsucc) :: tac,t
     | Kapp(Zpred,[t1]) ->
 	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer negone |])) in
-	unfold sp_Zpred :: tac,t
+	Proofview.V82.of_tactic (unfold sp_Zpred) :: tac,t
    | Kapp(Zmult,[t1;t2]) ->
        let tac1,t1' = transform (P_APP 1 :: p) t1
        and tac2,t2' = transform (P_APP 2 :: p) t2 in
@@ -1090,8 +1092,8 @@ let replay_history tactic_normalisation =
 	    in
             Tacticals.New.tclTHENS
 	      (Tacticals.New.tclTHENLIST [
-		Proofview.V82.tactic (unfold sp_Zle);
-		Proofview.V82.tactic (simpl_in_concl);
+		unfold sp_Zle;
+		simpl_in_concl;
 		intro;
 		(absurd not_sup_sup) ])
 	      [ assumption ; reflexivity ]
@@ -1134,10 +1136,10 @@ let replay_history tactic_normalisation =
 		        (intros_using [id]);
 		        (loop l) ];
 		      Tacticals.New.tclTHENLIST [
-			(Proofview.V82.tactic (unfold sp_Zgt));
-			(Proofview.V82.tactic simpl_in_concl);
+			(unfold sp_Zgt);
+			simpl_in_concl;
 			reflexivity ] ];
-		  Tacticals.New.tclTHENLIST [ Proofview.V82.tactic (unfold sp_Zgt); Proofview.V82.tactic simpl_in_concl; reflexivity ]
+		  Tacticals.New.tclTHENLIST [ unfold sp_Zgt; simpl_in_concl; reflexivity ]
                 ];
 	      Tacticals.New.tclTHEN (Proofview.V82.tactic (mk_then tac)) reflexivity ]
 
@@ -1159,18 +1161,18 @@ let replay_history tactic_normalisation =
 		    [mkApp (Lazy.force coq_OMEGA4,
                       [| dd;kk;eq2;mkVar aux1; mkVar aux2 |])]);
 		  Proofview.V82.tactic (clear [aux1;aux2]);
-		  Proofview.V82.tactic (unfold sp_not);
+		  unfold sp_not;
 		  (intros_using [aux]);
 		  Proofview.V82.tactic (resolve_id aux);
 		  Proofview.V82.tactic (mk_then tac);
 		  assumption ] ;
 		 Tacticals.New.tclTHENLIST [
-		   Proofview.V82.tactic (unfold sp_Zgt);
-		   Proofview.V82.tactic simpl_in_concl;
+		   unfold sp_Zgt;
+		   simpl_in_concl;
 		   reflexivity ] ];
               Tacticals.New.tclTHENLIST [
-		Proofview.V82.tactic (unfold sp_Zgt);
-                Proofview.V82.tactic simpl_in_concl;
+		unfold sp_Zgt;
+                simpl_in_concl;
 		reflexivity ] ]
       | EXACT_DIVIDE (e1,k) :: l ->
 	  let id = hyp_of_tag e1.id in
@@ -1207,8 +1209,8 @@ let replay_history tactic_normalisation =
 		   (intros_using [id]);
 		   (loop l) ];
 		  Tacticals.New.tclTHENLIST [
-		    Proofview.V82.tactic (unfold sp_Zgt);
-                    Proofview.V82.tactic simpl_in_concl;
+		    unfold sp_Zgt;
+                    simpl_in_concl;
 		    reflexivity ] ];
 		Tacticals.New.tclTHEN (Proofview.V82.tactic (mk_then tac)) reflexivity ]
       | (MERGE_EQ(e3,e1,e2)) :: l ->
@@ -1328,12 +1330,12 @@ let replay_history tactic_normalisation =
 		   (intros_using [id]);
 		   (loop l) ];
 		 Tacticals.New.tclTHENLIST [
-		   Proofview.V82.tactic (unfold sp_Zgt);
-                   Proofview.V82.tactic simpl_in_concl;
+		   unfold sp_Zgt;
+                   simpl_in_concl;
 		   reflexivity ] ];
 	      Tacticals.New.tclTHENLIST [
-		Proofview.V82.tactic (unfold sp_Zgt);
-                Proofview.V82.tactic simpl_in_concl;
+		unfold sp_Zgt;
+                simpl_in_concl;
 		reflexivity ] ]
       | CONSTANT_NOT_NUL(e,k) :: l ->
 	  Tacticals.New.tclTHEN (Proofview.V82.tactic (generalize_tac [mkVar (hyp_of_tag e)])) Equality.discrConcl
@@ -1342,9 +1344,9 @@ let replay_history tactic_normalisation =
       | CONSTANT_NEG(e,k) :: l ->
 	  Tacticals.New.tclTHENLIST [
 	    Proofview.V82.tactic (generalize_tac [mkVar (hyp_of_tag e)]);
-            Proofview.V82.tactic (unfold sp_Zle);
-	    Proofview.V82.tactic simpl_in_concl;
-	    Proofview.V82.tactic (unfold sp_not);
+            unfold sp_Zle;
+	    simpl_in_concl;
+	    unfold sp_not;
 	    (intros_using [aux]);
 	    Proofview.V82.tactic (resolve_id aux);
 	    reflexivity
@@ -1416,7 +1418,7 @@ let reintroduce id =
 open Proofview.Notations
 
 let coq_omega =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   let destructure_omega = Tacmach.New.of_old destructure_omega gl in
@@ -1464,12 +1466,12 @@ let coq_omega =
       Tacticals.New.tclTHEN prelude (replay_history tactic_normalisation path)
     with NO_CONTRADICTION -> Tacticals.New.tclZEROMSG (Pp.str"Omega can't solve this system")
   end
-  end
+  end }
 
 let coq_omega = coq_omega
 
 let nat_inject =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let is_conv = Tacmach.New.pf_apply Reductionops.is_conv gl in
   let rec explore p t : unit Proofview.tactic =
     try match destructurate_term t with
@@ -1603,7 +1605,7 @@ let nat_inject =
   in
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   loop (List.rev hyps_types)
-  end
+  end }
 
 let dec_binop = function
   | Zne -> coq_dec_Zne
@@ -1673,46 +1675,47 @@ let onClearedName id tac =
   (* so renaming may be necessary *)
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (tclTRY (clear [id])))
-    (Proofview.Goal.nf_enter begin fun gl ->
+    (Proofview.Goal.nf_enter { enter = begin fun gl ->
      let id = Tacmach.New.of_old (fresh_id [] id) gl in
      Tacticals.New.tclTHEN (introduction id) (tac id)
-    end)
+    end })
 
 let onClearedName2 id tac =
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (tclTRY (clear [id])))
-    (Proofview.Goal.nf_enter begin fun gl ->
+    (Proofview.Goal.nf_enter { enter = begin fun gl ->
      let id1 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_left")) gl in
      let id2 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_right")) gl in
       Tacticals.New.tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
-    end)
+    end })
 
 let destructure_hyps =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let type_of = Tacmach.New.pf_unsafe_type_of gl in
   let decidability = Tacmach.New.of_old decidability gl in
   let pf_nf = Tacmach.New.of_old pf_nf gl in
     let rec loop = function
       | [] -> (Tacticals.New.tclTHEN nat_inject coq_omega)
-      | (i,body,t)::lit ->
+      | decl::lit ->
+          let (i,_,t) = to_tuple decl in
 	  begin try match destructurate_prop t with
 	  | Kapp(False,[]) -> elim_id i
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
           | Kapp(Or,[t1;t2]) ->
               (Tacticals.New.tclTHENS
                  (elim_id i)
-                 [ onClearedName i (fun i -> (loop ((i,None,t1)::lit)));
-                   onClearedName i (fun i -> (loop ((i,None,t2)::lit))) ])
+                 [ onClearedName i (fun i -> (loop (LocalAssum (i,t1)::lit)));
+                   onClearedName i (fun i -> (loop (LocalAssum (i,t2)::lit))) ])
           | Kapp(And,[t1;t2]) ->
               Tacticals.New.tclTHEN
 		(elim_id i)
 		(onClearedName2 i (fun i1 i2 ->
-		  loop ((i1,None,t1)::(i2,None,t2)::lit)))
+		  loop (LocalAssum (i1,t1) :: LocalAssum (i2,t2) :: lit)))
           | Kapp(Iff,[t1;t2]) ->
 	      Tacticals.New.tclTHEN
 		(elim_id i)
 		(onClearedName2 i (fun i1 i2 ->
-		  loop ((i1,None,mkArrow t1 t2)::(i2,None,mkArrow t2 t1)::lit)))
+		  loop (LocalAssum (i1,mkArrow t1 t2) :: LocalAssum (i2,mkArrow t2 t1) :: lit)))
           | Kimp(t1,t2) ->
 	      (* t1 and t2 might be in Type rather than Prop.
 		 For t1, the decidability check will ensure being Prop. *)
@@ -1723,7 +1726,7 @@ let destructure_hyps =
 		  Proofview.V82.tactic (generalize_tac [mkApp (Lazy.force coq_imp_simp,
                                                                [| t1; t2; d1; mkVar i|])]);
 		  (onClearedName i (fun i ->
-		    (loop ((i,None,mk_or (mk_not t1) t2)::lit))))
+		    (loop (LocalAssum (i,mk_or (mk_not t1) t2) :: lit))))
                 ]
               else
 		loop lit
@@ -1734,7 +1737,7 @@ let destructure_hyps =
 		    Proofview.V82.tactic (generalize_tac
                                             [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop ((i,None,mk_and (mk_not t1) (mk_not t2)):: lit))))
+                      (loop (LocalAssum (i,mk_and (mk_not t1) (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(And,[t1;t2]) ->
 		  let d1 = decidability t1 in
@@ -1743,7 +1746,7 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_and,
 				                    [| t1; t2; d1; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop ((i,None,mk_or (mk_not t1) (mk_not t2))::lit))))
+                      (loop (LocalAssum (i,mk_or (mk_not t1) (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(Iff,[t1;t2]) ->
 		  let d1 = decidability t1 in
@@ -1753,9 +1756,8 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_iff,
 				                    [| t1; t2; d1; d2; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop ((i,None,
-			      mk_or (mk_and t1 (mk_not t2))
-				(mk_and (mk_not t1) t2))::lit))))
+                      (loop (LocalAssum (i, mk_or (mk_and t1 (mk_not t2))
+				                  (mk_and (mk_not t1) t2)) :: lit))))
                   ]
 	      | Kimp(t1,t2) ->
 		    (* t2 must be in Prop otherwise ~(t1->t2) wouldn't be ok.
@@ -1766,14 +1768,14 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_imp,
 				                    [| t1; t2; d1; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop ((i,None,mk_and t1 (mk_not t2)) :: lit))))
+                      (loop (LocalAssum (i,mk_and t1 (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(Not,[t]) ->
 		  let d = decidability t in
                   Tacticals.New.tclTHENLIST [
 		    Proofview.V82.tactic (generalize_tac
 			                    [mkApp (Lazy.force coq_not_not, [| t; d; mkVar i |])]);
-		    (onClearedName i (fun i -> (loop ((i,None,t)::lit))))
+		    (onClearedName i (fun i -> (loop (LocalAssum (i,t) :: lit))))
                   ]
 	      | Kapp(op,[t1;t2]) ->
 		  (try
@@ -1806,15 +1808,13 @@ let destructure_hyps =
 		    match destructurate_type (pf_nf typ) with
 		    | Kapp(Nat,_) ->
                         (Tacticals.New.tclTHEN
-			   (convert_hyp_no_check
-                                                    (i,body,
-				                     (mkApp (Lazy.force coq_neq, [| t1;t2|]))))
+			   (convert_hyp_no_check (set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
+                                                           decl))
 			   (loop lit))
 		    | Kapp(Z,_) ->
                         (Tacticals.New.tclTHEN
-			   (convert_hyp_no_check
-                                                    (i,body,
-				                     (mkApp (Lazy.force coq_Zne, [| t1;t2|]))))
+			   (convert_hyp_no_check (set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
+                                                           decl))
 			   (loop lit))
 		    | _ -> loop lit
                   end
@@ -1828,17 +1828,17 @@ let destructure_hyps =
     in
     let hyps = Proofview.Goal.hyps gl in
     loop hyps
-  end
+  end }
 
 let destructure_goal =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let decidability = Tacmach.New.of_old decidability gl in
     let rec loop t =
       match destructurate_prop t with
       | Kapp(Not,[t]) ->
           (Tacticals.New.tclTHEN
-	     (Tacticals.New.tclTHEN (Proofview.V82.tactic (unfold sp_not)) intro)
+	     (Tacticals.New.tclTHEN (unfold sp_not) intro)
 	     destructure_hyps)
       | Kimp(a,b) -> (Tacticals.New.tclTHEN intro (loop b))
       | Kapp(False,[]) -> destructure_hyps
@@ -1855,7 +1855,7 @@ let destructure_goal =
 	  Tacticals.New.tclTHEN goal_tac destructure_hyps
     in
     (loop concl)
-  end
+  end }
 
 let destructure_goal = destructure_goal
 

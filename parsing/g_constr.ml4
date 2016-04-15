@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -132,10 +132,7 @@ GEXTEND Gram
   closed_binder open_binders binder binders binders_fixannot
   record_declaration typeclass_constraint pattern appl_arg;
   Constr.ident:
-    [ [ id = Prim.ident -> id
-
-      (* This is used in quotations and Syntax *)
-      | id = METAIDENT -> Id.of_string id ] ]
+    [ [ id = Prim.ident -> id ] ]
   ;
   Prim.name:
     [ [ "_" -> (!@loc, Anonymous) ] ]
@@ -153,12 +150,12 @@ GEXTEND Gram
     [ [ "Set"  -> GSet
       | "Prop" -> GProp
       | "Type" -> GType []
-      | "Type"; "@{"; u = universe; "}" -> GType (List.map Id.to_string u)
+      | "Type"; "@{"; u = universe; "}" -> GType (List.map (fun (loc,x) -> (loc, Id.to_string x)) u)
       ] ]
   ;
   universe:
-    [ [ IDENT "max"; "("; ids = LIST1 ident SEP ","; ")" -> ids
-      | id = ident -> [id]
+    [ [ IDENT "max"; "("; ids = LIST1 identref SEP ","; ")" -> ids
+      | id = identref -> [id]
       ] ]
   ;
   lconstr:
@@ -218,17 +215,23 @@ GEXTEND Gram
 	  CGeneralization (!@loc, Implicit, None, c)
       | "`("; c = operconstr LEVEL "200"; ")" ->
 	  CGeneralization (!@loc, Explicit, None, c)
-      | "$("; tac = Tactic.tactic; ")$" ->
+      | IDENT "ltac"; ":"; "("; tac = Tactic.tactic_expr; ")" ->
           let arg = Genarg.in_gen (Genarg.rawwit Constrarg.wit_tactic) tac in
           CHole (!@loc, None, IntroAnonymous, Some arg)
       ] ]
   ;
   record_declaration:
-    [ [ fs = LIST0 record_field_declaration SEP ";" -> CRecord (!@loc, None, fs)
-(*       | c = lconstr; "with"; fs = LIST1 record_field_declaration SEP ";" -> *)
-(* 	  CRecord (!@loc, Some c, fs) *)
+    [ [ fs = record_fields -> CRecord (!@loc, fs) ] ]
+  ;
+
+  record_fields:
+    [ [ f = record_field_declaration; ";"; fs = record_fields -> f :: fs
+      | f = record_field_declaration; ";" -> [f]
+      | f = record_field_declaration -> [f]
+      | -> []
     ] ]
   ;
+
   record_field_declaration:
     [ [ id = global; params = LIST0 identref; ":="; c = lconstr ->
       (id, abstract_constr_expr c (binders_of_lidents params)) ] ]
@@ -258,14 +261,14 @@ GEXTEND Gram
           CLetTuple (!@loc,lb,po,c1,c2)
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, None, [(c1,(None,None))], [(!@loc, [(!@loc,[p])], c2)])
+	    CCases (!@loc, LetPatternStyle, None, [c1, None, None], [(!@loc, [(!@loc,[p])], c2)])
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
 	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, None))], [(!@loc, [(!@loc, [p])], c2)])
+	    CCases (!@loc, LetPatternStyle, Some rt, [c1, aliasvar p, None], [(!@loc, [(!@loc, [p])], c2)])
       | "let"; "'"; p=pattern; "in"; t = pattern LEVEL "200";
 	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, Some t))], [(!@loc, [(!@loc, [p])], c2)])
+	    CCases (!@loc, LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [(!@loc, [(!@loc, [p])], c2)])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
@@ -302,7 +305,7 @@ GEXTEND Gram
     [ [ "Set" -> GSet
       | "Prop" -> GProp
       | "Type" -> GType None
-      | id = ident -> GType (Some (Id.to_string id))
+      | id = identref -> GType (Some (fst id, Id.to_string (snd id)))
       ] ]
   ;
   fix_constr:
@@ -329,11 +332,10 @@ GEXTEND Gram
         br=branches; "end" -> CCases(!@loc,RegularStyle,ty,ci,br) ] ]
   ;
   case_item:
-    [ [ c=operconstr LEVEL "100"; p=pred_pattern -> (c,p) ] ]
-  ;
-  pred_pattern:
-    [ [ ona = OPT ["as"; id=name -> id];
-        ty = OPT ["in"; t=pattern -> t] -> (ona,ty) ] ]
+    [ [ c=operconstr LEVEL "100";
+        ona = OPT ["as"; id=name -> id];
+	ty = OPT ["in"; t=pattern -> t] ->
+	   (c,ona,ty) ] ]
   ;
   case_type:
     [ [ "return"; ty = operconstr LEVEL "100" -> ty ] ]
@@ -356,8 +358,15 @@ GEXTEND Gram
     [ [ pll = LIST1 mult_pattern SEP "|";
         "=>"; rhs = lconstr -> (!@loc,pll,rhs) ] ]
   ;
-  recordpattern:
+  record_pattern:
     [ [ id = global; ":="; pat = pattern -> (id, pat) ] ]
+  ;
+  record_patterns:
+    [ [ p = record_pattern; ";"; ps = record_patterns -> p :: ps
+      | p = record_pattern; ";" -> [p]
+      | p = record_pattern-> [p]
+      | -> []
+    ] ]
   ;
   pattern:
     [ "200" RIGHTA [ ]
@@ -370,19 +379,22 @@ GEXTEND Gram
     | "10" RIGHTA
       [ p = pattern; lp = LIST1 NEXT ->
         (match p with
-	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, [], lp)
+	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, None, lp)
+	  | CPatCstr (_, r, None, l2) -> Errors.user_err_loc
+              (cases_pattern_expr_loc p, "compound_pattern",
+               Pp.str "Nested applications not supported.")
 	  | CPatCstr (_, r, l1, l2) -> CPatCstr (!@loc, r, l1 , l2@lp)
 	  | CPatNotation (_, n, s, l) -> CPatNotation (!@loc, n , s, l@lp)
           | _ -> Errors.user_err_loc
               (cases_pattern_expr_loc p, "compound_pattern",
                Pp.str "Such pattern cannot have arguments."))
-      |"@"; r = Prim.reference; lp = LIST1 NEXT ->
-        CPatCstr (!@loc, r, lp, []) ]
+      |"@"; r = Prim.reference; lp = LIST0 NEXT ->
+        CPatCstr (!@loc, r, Some lp, []) ]
     | "1" LEFTA
       [ c = pattern; "%"; key=IDENT -> CPatDelimiters (!@loc,key,c) ]
     | "0"
       [ r = Prim.reference -> CPatAtom (!@loc,Some r)
-      | "{|"; pat = LIST0 recordpattern SEP ";" ; "|}" -> CPatRecord (!@loc, pat)
+      | "{|"; pat = record_patterns; "|}" -> CPatRecord (!@loc, pat)
       | "_" -> CPatAtom (!@loc,None)
       | "("; p = pattern LEVEL "200"; ")" ->
           (match p with

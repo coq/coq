@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -14,7 +14,6 @@ open Term
 open Vars
 open Termops
 open Namegen
-open Context
 open Evd
 open Printer
 open Reductionops
@@ -27,6 +26,8 @@ open Declare
 open Tacticals.New
 open Tactics
 open Decl_kinds
+open Proofview.Notations
+open Context.Named.Declaration
 
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
@@ -117,14 +118,14 @@ let rec add_prods_sign env sigma t =
     | Prod (na,c1,b) ->
 	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (id,None,c1) env) sigma b'
+        add_prods_sign (push_named (LocalAssum (id,c1)) env) sigma b'
     | LetIn (na,c1,t1,b) ->
 	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (id,Some c1,t1) env) sigma b'
+        add_prods_sign (push_named (LocalDef (id,c1,t1)) env) sigma b'
     | _ -> (env,t)
 
-(* [dep_option] indicates wether the inversion lemma is dependent or not.
+(* [dep_option] indicates whether the inversion lemma is dependent or not.
    If it is dependent and I is of the form (x_bar:T_bar)(I t_bar) then
    the stated goal will be (x_bar:T_bar)(H:(I t_bar))(P t_bar H)
    where P:(x_bar:T_bar)(H:(I x_bar))[sort].
@@ -154,9 +155,10 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let ivars = global_vars env i in
       let revargs,ownsign =
 	fold_named_context
-	  (fun env (id,_,_ as d) (revargs,hyps) ->
+	  (fun env d (revargs,hyps) ->
+             let id = get_id d in
              if Id.List.mem id ivars then
-	       ((mkVar id)::revargs,add_named_decl d hyps)
+	       ((mkVar id)::revargs, Context.Named.add d hyps)
 	     else
 	       (revargs,hyps))
           env ~init:([],[])
@@ -166,7 +168,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_betadeltaiota env sigma pty in
-  let extenv = push_named (p,None,npty) env in
+  let extenv = push_named (LocalAssum (p,npty)) env in
   extenv, goal
 
 (* [inversion_scheme sign I]
@@ -194,7 +196,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     errorlabstrm "lemma_inversion"
     (str"Computed inversion goal was not closed in initial signature.");
   *)
-  let pf = Proof.start (Evd.from_env ~ctx:(evar_universe_context sigma) invEnv) [invEnv,invGoal] in
+  let pf = Proof.start (Evd.from_ctx (evar_universe_context sigma)) [invEnv,invGoal] in
   let pf =
     fst (Proof.run_tactic env (
       tclTHEN intro (onLastHypId inv_op)) pf)
@@ -203,10 +205,10 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let global_named_context = Global.named_context () in
   let ownSign = ref begin
     fold_named_context
-      (fun env (id,_,_ as d) sign ->
-         if mem_named_context id global_named_context then sign
-	 else add_named_decl d sign)
-      invEnv ~init:empty_named_context
+      (fun env d sign ->
+         if mem_named_context (get_id d) global_named_context then sign
+	 else Context.Named.add d sign)
+      invEnv ~init:Context.Named.empty
   end in
   let avoid = ref [] in
   let { sigma=sigma } = Proof.V82.subgoals pf in
@@ -217,9 +219,9 @@ let inversion_scheme env sigma t sort dep_option inv_op =
 	let h = next_ident_away (Id.of_string "H") !avoid in
 	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
 	avoid := h::!avoid;
-	ownSign := add_named_decl (h,None,ty) !ownSign;
+	ownSign := Context.Named.add (LocalAssum (h,ty)) !ownSign;
 	applist (mkVar h, inst)
-    | _ -> map_constr fill_holes c
+    | _ -> Constr.map fill_holes c
   in
   let c = fill_holes pfterm in
   (* warning: side-effect on ownSign *)
@@ -229,7 +231,8 @@ let inversion_scheme env sigma t sort dep_option inv_op =
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof, ctx = inversion_scheme env sigma t sort dep inv_op in
-  let entry = definition_entry ~poly:(Flags.use_polymorphic_flag ()) ~univs:ctx invProof in
+  let entry = definition_entry ~poly:(Flags.use_polymorphic_flag ())
+			       ~univs:(snd ctx) invProof in
   let _ = declare_constant name (DefinitionEntry entry, IsProof Lemma) in
   ()
 
@@ -268,7 +271,7 @@ let lemInv id c gls =
 let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv id c)) id
 
 let lemInvIn id c ids =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
@@ -280,7 +283,7 @@ let lemInvIn id c ids =
     in
     ((tclTHEN (tclTHEN (bring_hyps hyps) (Proofview.V82.tactic (lemInv id c)))
         (intros_replace_ids)))
-  end
+  end }
 
 let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id
 

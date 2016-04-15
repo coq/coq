@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -55,8 +55,13 @@ module NonLogical : sig
 
   val read_line : string t
   val print_char : char -> unit t
-  (** {!Pp.pp}. The buffer is also flushed. *)
-  val print : Pp.std_ppcmds -> unit t
+
+  (** Loggers. The buffer is also flushed. *)
+  val print_debug : Pp.std_ppcmds -> unit t
+  val print_warning : Pp.std_ppcmds -> unit t
+  val print_notice : Pp.std_ppcmds -> unit t
+  val print_info : Pp.std_ppcmds -> unit t
+  val print_error : Pp.std_ppcmds -> unit t
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)

@@ -94,3 +94,19 @@ Proof (false_positive.add_comm 5).
 
 Print Assumptions comm_plus5.
 (* Should answer : Closed under the global context *)
+
+(** Print Assumption and Include *)
+
+Module INCLUDE.
+
+Module M.
+Axiom foo : False.
+End M.
+
+Module N.
+Include M.
+End N.
+
+Print Assumptions N.foo.
+
+End INCLUDE.

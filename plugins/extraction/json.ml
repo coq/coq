@@ -153,7 +153,7 @@ let rec json_expr env = function
       ("what", json_str "expr:exception");
       ("msg", json_str s)
     ]
-  | MLdummy -> json_dict [("what", json_str "expr:dummy")]
+  | MLdummy _ -> json_dict [("what", json_str "expr:dummy")]
   | MLmagic a -> json_dict [
       ("what", json_str "expr:coerce");
       ("value", json_expr env a)

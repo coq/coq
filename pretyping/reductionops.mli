@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Univ
 open Evd
 open Environ
@@ -109,7 +108,7 @@ type contextual_reduction_function = env -> evar_map -> constr -> constr
 type reduction_function = contextual_reduction_function
 type local_reduction_function = evar_map -> constr -> constr
 
-type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
+type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> constr -> (constr, 'r) Sigma.sigma }
 
 type contextual_stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
@@ -218,11 +217,10 @@ val splay_prod : env ->  evar_map -> constr -> (Name.t * constr) list * constr
 val splay_lam : env ->  evar_map -> constr -> (Name.t * constr) list * constr
 val splay_arity : env ->  evar_map -> constr -> (Name.t * constr) list * sorts
 val sort_of_arity : env -> evar_map -> constr -> sorts
-val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
-val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
+val splay_prod_n : env ->  evar_map -> int -> constr -> Context.Rel.t * constr
+val splay_lam_n : env ->  evar_map -> int -> constr -> Context.Rel.t * constr
 val splay_prod_assum :
-  env ->  evar_map -> constr -> rel_context * constr
-val is_sort : env -> evar_map -> types -> bool
+  env ->  evar_map -> constr -> Context.Rel.t * constr
 
 type 'a miota_args = {
   mP      : constr;     (** the result type *)
@@ -251,28 +249,36 @@ type conversion_test = constraints -> constraints
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
-val sort_cmp : env -> conv_pb -> sorts -> sorts -> universes -> unit
-
-val is_conv : env ->  evar_map -> constr -> constr -> bool
-val is_conv_leq : env ->  evar_map -> constr -> constr -> bool
-val is_fconv : conv_pb -> env ->  evar_map -> constr -> constr -> bool
-
-val is_trans_conv : transparent_state -> env -> evar_map -> constr -> constr -> bool
-val is_trans_conv_leq : transparent_state -> env ->  evar_map -> constr -> constr -> bool
-val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr -> constr -> bool
+val is_conv : ?reds:transparent_state -> env -> evar_map -> constr -> constr -> bool
+val is_conv_leq : ?reds:transparent_state -> env ->  evar_map -> constr -> constr -> bool
+val is_fconv : ?reds:transparent_state -> conv_pb -> env ->  evar_map -> constr -> constr -> bool
 
 (** [check_conv] Checks universe constraints only.
     pb defaults to CUMUL and ts to a full transparent state.
  *)
 val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> constr -> constr -> bool
 
-(** [infer_fconv] Adds necessary universe constraints to the evar map.
+(** [infer_conv] Adds necessary universe constraints to the evar map.
     pb defaults to CUMUL and ts to a full transparent state.
     @raises UniverseInconsistency iff catch_incon is set to false, 
     otherwise returns false in that case.
  *)
 val infer_conv : ?catch_incon:bool -> ?pb:conv_pb -> ?ts:transparent_state -> 
   env -> evar_map -> constr -> constr -> evar_map * bool
+
+(** Conversion with inference of universe constraints *)
+val set_vm_infer_conv : (?pb:conv_pb -> env -> evar_map -> constr -> constr ->
+  evar_map * bool) -> unit
+val vm_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
+  evar_map * bool
+
+
+(** [infer_conv_gen] behaves like [infer_conv] but is parametrized by a
+conversion function. Used to pretype vm and native casts. *)
+val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> transparent_state ->
+    (constr, evar_map) Reduction.generic_conversion_function) ->
+  ?catch_incon:bool -> ?pb:conv_pb -> ?ts:transparent_state -> env ->
+  evar_map -> constr -> constr -> evar_map * bool
 
 (** {6 Special-Purpose Reduction Functions } *)
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -114,3 +114,7 @@ let to_loc xml =
       with Not_found | Invalid_argument _ -> raise Marshal_error)
   | _ -> raise Marshal_error
 
+let of_xml x = Element ("xml", [], [x])
+let to_xml xml = match xml with
+| Element ("xml", [], [x]) -> x
+| _ -> raise Marshal_error

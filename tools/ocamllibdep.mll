@@ -98,23 +98,14 @@ let file_name s = function
 
 type dir = string option
 
-(* Visits all the directories under [dir], including [dir],
-   or just [dir] if [recur=false] *)
-
-let rec add_directory add_file phys_dir =
-  let dirh = opendir phys_dir in
-  try
-    while true do
-      let f = readdir dirh in
-      (* we avoid all files and subdirs starting by '.' (e.g. .svn),
-         plus CVS and _darcs and any subdirs given via -exclude-dirs *)
-      if f.[0] <> '.' then
-        let phys_f = if phys_dir = "." then f else phys_dir//f in
-	match try (stat phys_f).st_kind with _ -> S_BLK with
-	  | S_REG -> add_file phys_dir f
-	  | _ -> ()
-    done
-  with End_of_file -> closedir dirh
+let add_directory add_file phys_dir =
+  Array.iter (fun f ->
+    (* we avoid all files starting by '.' *)
+    if f.[0] <> '.' then
+      let phys_f = if phys_dir = "." then f else phys_dir//f in
+      match try (stat phys_f).st_kind with _ -> S_BLK with
+      | S_REG -> add_file phys_dir f
+      | _ -> ()) (Sys.readdir phys_dir)
 
 let error_cannot_parse s (i,j) =
   Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
@@ -173,7 +164,7 @@ let traite_fichier_modules md ext =
 
 let addQueue q v = q := v :: !q
 
-let rec treat_file old_name =
+let treat_file old_name =
   let name = Filename.basename old_name in
   let dirname = Some (Filename.dirname old_name) in
   match get_extension name [".mllib"] with

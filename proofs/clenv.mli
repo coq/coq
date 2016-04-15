@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -49,9 +49,8 @@ val refresh_undefined_univs : clausenv -> clausenv * Univ.universe_level_subst
 
 (** {6 linking of clenvs } *)
 
-val connect_clenv : Goal.goal sigma -> clausenv -> clausenv
 val clenv_fchain :
-  ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
+  ?with_univs:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
 
 (** {6 Unification with clenvs } *)
 

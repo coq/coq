@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -77,23 +77,23 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "by" tactic3(t) :=
-  setoidreplace (default_relation x y) ltac:t.
+  setoidreplace (default_relation x y) ltac:(t).
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "at" int_or_var_list(o)
   "by" tactic3(t) :=
-  setoidreplaceat (default_relation x y) ltac:t o.
+  setoidreplaceat (default_relation x y) ltac:(t) o.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "in" hyp(id)
   "by" tactic3(t) :=
-  setoidreplacein (default_relation x y) id ltac:t.
+  setoidreplacein (default_relation x y) id ltac:(t).
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "in" hyp(id)
   "at" int_or_var_list(o)
   "by" tactic3(t) :=
-  setoidreplaceinat (default_relation x y) id ltac:t o.
+  setoidreplaceinat (default_relation x y) id ltac:(t) o.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel) :=
@@ -107,13 +107,13 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
   "by" tactic3(t) :=
-  setoidreplace (rel x y) ltac:t.
+  setoidreplace (rel x y) ltac:(t).
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
   "at" int_or_var_list(o)
   "by" tactic3(t) :=
-  setoidreplaceat (rel x y) ltac:t o.
+  setoidreplaceat (rel x y) ltac:(t) o.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
@@ -130,14 +130,14 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
   "in" hyp(id)
   "by" tactic3(t) :=
-  setoidreplacein (rel x y) id ltac:t.
+  setoidreplacein (rel x y) id ltac:(t).
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
   "in" hyp(id)
   "at" int_or_var_list(o)
   "by" tactic3(t) :=
-  setoidreplaceinat (rel x y) id ltac:t o.
+  setoidreplaceinat (rel x y) id ltac:(t) o.
 
 (** The [add_morphism_tactic] tactic is run at each [Add Morphism]
    command before giving the hand back to the user to discharge the

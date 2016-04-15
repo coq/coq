@@ -208,7 +208,7 @@ Definition two : nat := S one.
 
 Actually \Coq~ allows several possible syntaxes:
 \begin{coq_example}
-Definition three : nat := S two.
+Definition three := S two : nat.
 \end{coq_example}
 
 Here is a way to define the doubling function, which expects an

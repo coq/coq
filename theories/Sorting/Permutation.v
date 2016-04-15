@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -321,7 +321,7 @@ Proof.
   induction H; intros; try (injection Heqm; intros; subst; clear Heqm);
     discriminate || (try tauto).
   apply Permutation_length_1_inv in H as ->; left; auto.
-  apply IHPermutation1 in Heqm as [H1|H1]; apply IHPermutation2 in H1 as ();
+  apply IHPermutation1 in Heqm as [H1|H1]; apply IHPermutation2 in H1 as [];
     auto.
 Qed.
 

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -136,12 +136,10 @@ end) = struct
 
   let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
 
-  let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
-
   let pr_univ l =
     match l with
-      | [x] -> str x
-      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") str l ++ str")"
+      | [_,x] -> str x
+      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") (fun x -> str (snd x)) l ++ str")"
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
@@ -153,11 +151,11 @@ end) = struct
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
-    let id = tag_ref (str (Id.to_string id)) in
+    let id = tag_ref (pr_id id) in
     let sl = match List.rev (DirPath.repr sl) with
     | [] -> mt ()
     | sl ->
-      let pr dir = tag_path (str (Id.to_string dir)) ++ str "." in
+      let pr dir = tag_path (pr_id dir) ++ str "." in
       prlist pr sl
     in
     sl ++ id
@@ -174,7 +172,7 @@ end) = struct
       tag_type (str "Set")
     | GType u ->
       (match u with
-        | Some u -> str u
+        | Some (_,u) -> str u
         | None -> tag_type (str "Type"))
 
   let pr_universe_instance l =
@@ -182,7 +180,7 @@ end) = struct
 
   let pr_reference = function
   | Qualid (_, qid) -> pr_qualid qid
-  | Ident (_, id) -> tag_var (str (Id.to_string id))
+  | Ident (_, id) -> tag_var (pr_id id)
 
   let pr_cref ref us =
     pr_reference ref ++ pr_universe_instance us
@@ -246,16 +244,16 @@ end) = struct
       | CPatAlias (_, p, id) ->
         pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
 
-      | CPatCstr (_,c, [], []) ->
+      | CPatCstr (_,c, None, []) ->
         pr_reference c, latom
 
-      | CPatCstr (_, c, [], args) ->
+      | CPatCstr (_, c, None, args) ->
         pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
 
-      | CPatCstr (_, c, args, []) ->
+      | CPatCstr (_, c, Some args, []) ->
         str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
 
-      | CPatCstr (_, c, expl_args, extra_args) ->
+      | CPatCstr (_, c, Some expl_args, extra_args) ->
         surround (str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) expl_args)
         ++ prlist (pr_patt spc (lapp,L)) extra_args, lapp
 
@@ -457,7 +455,7 @@ end) = struct
         (pr_decl true) dl ++
         fnl() ++ keyword "for" ++ spc () ++ pr_id id
 
-  let pr_asin pr (na,indnalopt) =
+  let pr_asin pr na indnalopt =
     (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
       | Some na -> spc () ++ keyword "as" ++ spc () ++  pr_lname na
       | None -> mt ()) ++
@@ -465,8 +463,8 @@ end) = struct
         | None -> mt ()
         | Some t -> spc () ++ keyword "in" ++ spc () ++ pr_patt lsimplepatt t)
 
-  let pr_case_item pr (tm,asin) =
-    hov 0 (pr (lcast,E) tm ++ pr_asin pr asin)
+  let pr_case_item pr (tm,as_clause, in_clause) =
+    hov 0 (pr (lcast,E) tm ++ pr_asin pr as_clause in_clause)
 
   let pr_case_type pr po =
     match po with
@@ -595,28 +593,20 @@ end) = struct
           return (p, lproj)
       | CApp (_,(None,a),l) ->
         return (pr_app (pr mt) a l, lapp)
-      | CRecord (_,w,l) ->
-        let beg =
-          match w with
-            | None ->
-              spc ()
-            | Some t ->
-              spc () ++ pr spc ltop t ++ spc ()
-              ++ keyword "with" ++ spc ()
-        in
+      | CRecord (_,l) ->
         return (
-          hv 0 (str"{|" ++ beg ++
+          hv 0 (str"{|" ++ spc () ++
                   prlist_with_sep pr_semicolon
                   (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr spc ltop c)) l
                 ++ str" |}"),
           latom
         )
-      | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
+      | CCases (_,LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,[(loc,[p])],b)]) ->
         return (
           hv 0 (
             keyword "let" ++ spc () ++ str"'" ++
               hov 0 (pr_patt ltop p ++
-                       pr_asin (pr_dangling_with_for mt pr) asin ++
+                       pr_asin (pr_dangling_with_for mt pr) as_clause in_clause ++
                        str " :=" ++ pr spc ltop c ++
                        pr_case_type (pr_dangling_with_for mt pr) rtntypopt ++
                        spc () ++ keyword "in" ++ pr spc ltop b)),
@@ -638,13 +628,13 @@ end) = struct
       | CLetTuple (_,nal,(na,po),c,b) ->
         return (
           hv 0 (
-            keyword "let" ++ spc () ++
-              hov 0 (str "(" ++
+            hov 2 (keyword "let" ++ spc () ++
+              hov 1 (str "(" ++
                        prlist_with_sep sep_v pr_lname nal ++
                        str ")" ++
-                       pr_simple_return_type (pr mt) na po ++ str " :=" ++
-                       pr spc ltop c ++ spc ()
-                     ++ keyword "in") ++
+                       pr_simple_return_type (pr mt) na po ++ str " :=") ++
+                       pr spc ltop c
+                     ++ keyword " in") ++
               pr spc ltop b),
           lletin
         )

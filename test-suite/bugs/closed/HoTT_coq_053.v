@@ -39,7 +39,7 @@ Definition NatCategory (n : nat) :=
 Definition NatCategory' (n : nat) :=
   match n with
     | 0 => (fun X => @Build_PreCategory X
-                         (fun _ _ => Unit : Prop)) Unit
+                         (fun _ _ => Unit : Set)) Unit
     | _ => DiscreteCategory Bool
   end.
 

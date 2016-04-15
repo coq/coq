@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -33,7 +33,7 @@ module type Hashconsed =
 sig
   type t
   val hash : t -> int
-  val equal : t -> t -> bool
+  val eq : t -> t -> bool
   val hcons : t -> t
 end
 
@@ -51,7 +51,7 @@ struct
     type t = _t
     type u = (M.t -> M.t)
     let hash = function Nil -> 0 | Cons (_, h, _) -> h
-    let equal l1 l2 = match l1, l2 with
+    let eq l1 l2 = match l1, l2 with
     | Nil, Nil -> true
     | Cons (x1, _, l1), Cons (x2, _, l2) -> x1 == x2 && l1 == l2
     | _ -> false
@@ -131,7 +131,7 @@ module HList = struct
   let rec remove x = function
   | Nil -> nil
   | Cons (y, _, l) ->
-    if H.equal x y then l
+    if H.eq x y then l
     else cons y (remove x l)
 
   end
@@ -229,7 +229,7 @@ module Level = struct
     type _t = t
     type t = _t
     type u = unit
-    let equal x y = x.hash == y.hash && RawLevel.hequal x.data y.data
+    let eq x y = x.hash == y.hash && RawLevel.hequal x.data y.data
     let hash x = x.hash
     let hashcons () x =
       let data' = RawLevel.hcons x.data in
@@ -244,7 +244,8 @@ module Level = struct
 
   let set = make Set
   let prop = make Prop
-
+  let var i = make (Var i)
+		  
   let is_small x = 
     match data x with
     | Level _ -> false
@@ -281,8 +282,8 @@ module Level = struct
 end
 
 (** Level sets and maps *)
-module LSet = Set.Make (Level)
-module LMap = Map.Make (Level)
+module LMap = HMap.Make (Level)
+module LSet = LMap.Set
 
 type 'a universe_map = 'a LMap.t
 
@@ -319,7 +320,7 @@ struct
       let hashcons hdir (b,n as x) = 
 	let b' = hdir b in 
 	  if b' == b then x else (b',n)
-      let equal l1 l2 =
+      let eq l1 l2 =
         l1 == l2 || 
         match l1,l2 with
 	| (b,n), (b',n') -> b == b' && n == n'
@@ -338,7 +339,7 @@ struct
       let hcons =
         Hashcons.simple_hcons H.generate H.hcons Level.hcons
       let hash = ExprHash.hash
-      let equal x y = x == y ||
+      let eq x y = x == y ||
         (let (u,n) = x and (v,n') = y in
            Int.equal n n' && Level.equal u v)
 
@@ -559,20 +560,26 @@ let repr g u =
   in
   repr_rec u
 
-(* [safe_repr] also search for the canonical representative, but
-   if the graph doesn't contain the searched universe, we add it. *)
+let get_set_arc g = repr g Level.set
 
-let safe_repr g u =
-  let rec safe_repr_rec u =
-    match UMap.find u g with
-      | Equiv v -> safe_repr_rec v
-      | Canonical arc -> arc
-  in
-  try g, safe_repr_rec u
-  with Not_found ->
-    let can = terminal u in
-    enter_arc can g, can
-
+exception AlreadyDeclared
+	    
+let add_universe vlev strict g =
+  try
+    let _arcv = UMap.find vlev g in
+      raise AlreadyDeclared
+  with Not_found -> 
+    let v = terminal vlev in
+    let arc =
+      let arc = get_set_arc g in
+	if strict then
+	  { arc with lt=vlev::arc.lt}
+	else 
+	  { arc with le=vlev::arc.le}
+    in
+    let g = enter_arc arc g in
+      enter_arc v g
+		       
 (* reprleq : canonical_arc -> canonical_arc list *)
 (* All canonical arcv such that arcu<=arcv with arcv#arcu *)
 let reprleq g arcu =
@@ -739,8 +746,8 @@ let is_lt g arcu arcv =
 (** First, checks on universe levels *)
 
 let check_equal g u v =
-  let g, arcu = safe_repr g u in
-  let _, arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
   arcu == arcv
 
 let check_eq_level g u v = u == v || check_equal g u v
@@ -749,8 +756,8 @@ let is_set_arc u = Level.is_set u.univ
 let is_prop_arc u = Level.is_prop u.univ
 
 let check_smaller g strict u v =
-  let g, arcu = safe_repr g u in
-  let g, arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
   if strict then
     is_lt g arcu arcv
   else
@@ -900,8 +907,8 @@ let error_inconsistency o u v =
 (* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
 
 let enforce_univ_eq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
     match fast_compare g arcu arcv with
     | FastEQ -> g
     | FastLT -> error_inconsistency Eq v u
@@ -916,8 +923,8 @@ let enforce_univ_eq u v g =
 (* enforce_univ_leq : Level.t -> Level.t -> unit *)
 (* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
 let enforce_univ_leq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
   if is_leq g arcu arcv then g
   else
     match fast_compare g arcv arcu with
@@ -928,8 +935,8 @@ let enforce_univ_leq u v g =
 
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
 let enforce_univ_lt u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
     match fast_compare g arcu arcv with
     | FastLT -> g
     | FastLE -> fst (setlt g arcu arcv)
@@ -941,7 +948,10 @@ let enforce_univ_lt u v g =
       | FastLE | FastLT -> error_inconsistency Lt u v
 
 (* Prop = Set is forbidden here. *)
-let initial_universes = enforce_univ_lt Level.prop Level.set UMap.empty
+let initial_universes =
+  let g = enter_arc (terminal Level.set) UMap.empty in
+  let g = enter_arc (terminal Level.prop) g in
+    enforce_univ_lt Level.prop Level.set g
 
 (* Constraints and sets of constraints. *)    
 
@@ -970,7 +980,7 @@ module Constraint = Set.Make(UConstraintOrd)
 let empty_constraint = Constraint.empty
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
-
+		  
 type constraints = Constraint.t
 
 (** A value with universe constraints. *)
@@ -1079,7 +1089,7 @@ struct
 	  a
 	end
 
-    let equal t1 t2 =
+    let eq t1 t2 =
       t1 == t2 ||
 	(Int.equal (Array.length t1) (Array.length t2) &&
 	   let rec aux i =
@@ -1146,7 +1156,7 @@ struct
 
   (** Universe contexts (variables as a list) *)
   let empty = (Instance.empty, Constraint.empty)
-
+  let make x = x
   let instance (univs, cst) = univs
   let constraints (univs, cst) = cst
 end
@@ -1158,6 +1168,8 @@ struct
   type t = LSet.t constrained
   let empty = LSet.empty, Constraint.empty
   let constraints (_, cst) = cst
+  let levels (ctx, _) = ctx
+  let make ctx cst = (ctx, cst)
 end
 type universe_context_set = ContextSet.t
 
@@ -1207,6 +1219,9 @@ let subst_instance_constraints s csts =
     (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
     csts Constraint.empty 
 
+let make_abstract_instance (ctx, _) = 
+  Array.mapi (fun i l -> Level.var i) ctx
+
 (** Substitute instance inst for ctx in csts *)
 let instantiate_univ_context (ctx, csts) = 
   (ctx, subst_instance_constraints ctx csts)
@@ -1237,6 +1252,20 @@ let subst_univs_universe fn ul =
       in
 	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.Huniv.tip u))
 	  substs nosubst
+
+let merge_context strict ctx g =
+  let g = Array.fold_left
+   (* Be lenient, module typing reintroduces universes and 
+      constraints due to includes *)
+	    (fun g v -> try add_universe v strict g with AlreadyDeclared -> g)
+	    g (UContext.instance ctx)
+  in merge_constraints (UContext.constraints ctx) g
+
+let merge_context_set strict ctx g =
+  let g = LSet.fold
+	    (fun v g -> try add_universe v strict g with AlreadyDeclared -> g)
+	    (ContextSet.levels ctx) g
+  in merge_constraints (ContextSet.constraints ctx) g
 
 (** Pretty-printing *)
 

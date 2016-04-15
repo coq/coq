@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -104,18 +104,18 @@ Ltac isBigQcst t :=
  | BigQ.Qz ?t => isBigZcst t
  | BigQ.Qq ?n ?d => match isBigZcst n with
              | true => isBigNcst d
-             | false => constr:false
+             | false => constr:(false)
              end
- | BigQ.zero => constr:true
- | BigQ.one => constr:true
- | BigQ.minus_one => constr:true
- | _ => constr:false
+ | BigQ.zero => constr:(true)
+ | BigQ.one => constr:(true)
+ | BigQ.minus_one => constr:(true)
+ | _ => constr:(false)
  end.
 
 Ltac BigQcst t :=
  match isBigQcst t with
- | true => constr:t
- | false => constr:NotConstant
+ | true => constr:(t)
+ | false => constr:(NotConstant)
  end.
 
 Add Field BigQfield : BigQfieldth

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -75,7 +75,7 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intros.
     inversion H.
-    - apply app_cons_not_nil in H1 as ().
+    - apply app_cons_not_nil in H1 as [].
     - assert (x ++ [a] = [x0]) by auto with sets.
       apply app_eq_unit in H0 as [(->, _)| (_, [=])].
       auto using d_nil.
@@ -95,10 +95,10 @@ Section Wf_Lexicographic_Exponentiation.
      intros.
     - inversion H.
       assert ([b; a] = ([] ++ [b]) ++ [a]) by auto with sets.
-      destruct (app_inj_tail (l ++ [y]) ([] ++ [b]) _ _ H0) as ((?, <-)/app_inj_tail, <-).
+      destruct (app_inj_tail (l ++ [y]) ([] ++ [b]) _ _ H0) as ((?, <-)%app_inj_tail, <-).
       inversion H1; subst; [ apply rt_step; assumption | apply rt_refl ].
     - inversion H0.
-      + apply app_cons_not_nil in H3 as ().
+      + apply app_cons_not_nil in H3 as [].
       + rewrite app_comm_cons in H0, H1. apply desc_prefix in H0.
         pose proof (H x0 b H0).
         apply rt_trans with (y := x0); auto with sets.
@@ -145,7 +145,7 @@ Section Wf_Lexicographic_Exponentiation.
           pose proof H0 as H0'.
           apply app_inj_tail in H0' as (_, ->).
           rewrite app_assoc_reverse in H0.
-          apply Hind in H0 as ().
+          apply Hind in H0 as [].
           split.
           assumption.
           apply d_conc; auto with sets.

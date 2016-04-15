@@ -1,5 +1,88 @@
 =========================================
-= CHANGES BETWEEN COQ V8.4 AND CQQ V8.5 =
+= CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
+=========================================
+
+- The interface of the Context module was changed.
+  Related types and functions were put in separate submodules.
+  The mapping from old identifiers to new identifiers is the following:
+
+    Context.named_declaration            --->  Context.Named.Declaration.t
+    Context.named_list_declaration       --->  Context.NamedList.Declaration.t
+    Context.rel_declaration              --->  Context.Rel.Declaration.t
+    Context.map_named_declaration        --->  Context.Named.Declaration.map_constr
+    Context.map_named_list_declaration   --->  Context.NamedList.Declaration.map
+    Context.map_rel_declaration          --->  Context.Rel.Declaration.map_constr
+    Context.fold_named_declaration       --->  Context.Named.Declaration.fold
+    Context.fold_rel_declaration         --->  Context.Rel.Declaration.fold
+    Context.exists_named_declaration     --->  Context.Named.Declaration.exists
+    Context.exists_rel_declaration       --->  Context.Rel.Declaration.exists
+    Context.for_all_named_declaration    --->  Context.Named.Declaration.for_all
+    Context.for_all_rel_declaration      --->  Context.Rel.Declaration.for_all
+    Context.eq_named_declaration         --->  Context.Named.Declaration.equal
+    Context.eq_rel_declaration           --->  Context.Rel.Declaration.equal
+    Context.named_context                --->  Context.Named.t
+    Context.named_list_context           --->  Context.NamedList.t
+    Context.rel_context                  --->  Context.Rel.t
+    Context.empty_named_context          --->  Context.Named.empty
+    Context.add_named_decl               --->  Context.Named.add
+    Context.vars_of_named_context        --->  Context.Named.to_vars
+    Context.lookup_named                 --->  Context.Named.lookup
+    Context.named_context_length         --->  Context.Named.length
+    Context.named_context_equal          --->  Context.Named.equal
+    Context.fold_named_context           --->  Context.Named.fold_outside
+    Context.fold_named_list_context      --->  Context.NamedList.fold
+    Context.fold_named_context_reverse   --->  Context.Named.fold_inside
+    Context.instance_from_named_context  --->  Context.Named.to_instance
+    Context.extended_rel_list            --->  Context.Rel.to_extended_list
+    Context.extended_rel_vect            --->  Context.Rel.to_extended_vect
+    Context.fold_rel_context             --->  Context.Rel.fold_outside
+    Context.fold_rel_context_reverse     --->  Context.Rel.fold_inside
+    Context.map_rel_context              --->  Context.Rel.map_constr
+    Context.map_named_context            --->  Context.Named.map_constr
+    Context.iter_rel_context             --->  Context.Rel.iter
+    Context.iter_named_context           --->  Context.Named.iter
+    Context.empty_rel_context            --->  Context.Rel.empty
+    Context.add_rel_decl                 --->  Context.Rel.add
+    Context.lookup_rel                   --->  Context.Rel.lookup
+    Context.rel_context_length           --->  Context.Rel.length
+    Context.rel_context_nhyps            --->  Context.Rel.nhyps
+    Context.rel_context_tags             --->  Context.Rel.to_tags
+
+- Originally, rel-context was represented as:
+
+    Context.rel_context = Names.Name.t * Constr.t option * Constr.t
+
+  Now it is represented as:
+
+    Context.Rel.t = LocalAssum of Names.Name.t * Constr.t
+	          | LocalDef of Names.Name.t * Constr.t * Constr.t
+ 
+- Originally, named-context was represented as:
+
+    Context.named_context = Names.Id.t * Constr.t option * Constr.t
+
+  Now it is represented as:
+
+    Context.Named.t = LocalAssum of Names.Id.t * Constr.t
+	            | LocalDef of Names.Id.t * Constr.t * Constr.t
+
+- The various EXTEND macros do not handle specially the Coq-defined entries
+  anymore. Instead, they just output a name that have to exist in the scope
+  of the ML code. The parsing rules (VERNAC) ARGUMENT EXTEND will look for
+  variables "$name" of type Gram.entry, while the parsing rules of
+  (VERNAC COMMAND | TACTIC) EXTEND, as well as the various TYPED AS clauses will
+  look for variables "wit_$name" of type Genarg.genarg_type. The small DSL
+  for constructing compound entries still works over this scheme. Note that in
+  the case of (VERNAC) ARGUMENT EXTEND, the name of the argument entry is bound
+  in the parsing rules, so beware of recursive calls.
+
+- Evarutil was split in two parts. The new Evardefine file exposes functions
+define_evar_* mostly used internally in the unification engine.
+
+- The Refine module was move out of Proofview.
+
+=========================================
+= CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================
 
 ** Refactoring : more mli interfaces and simpler grammar.cma **

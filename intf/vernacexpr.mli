@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -19,7 +19,6 @@ open Libnames
 type lident = Id.t located
 type lname = Name.t located
 type lstring = string located
-type lreference = reference
 
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
@@ -32,7 +31,6 @@ type goal_selector =
   | SelectNth of int
   | SelectId of Id.t
   | SelectAll
-  | SelectAllParallel
 
 type goal_identifier = string
 type scope_name = string
@@ -40,7 +38,8 @@ type scope_name = string
 type goal_reference =
   | OpenSubgoals
   | NthGoal of int
-  | GoalId of goal_identifier
+  | GoalId of Id.t
+  | GoalUid of goal_identifier
 
 type printable =
   | PrintTables
@@ -61,7 +60,6 @@ type printable =
   | PrintClasses
   | PrintTypeClasses
   | PrintInstances of reference or_by_notation
-  | PrintLtac of reference
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions
@@ -69,7 +67,6 @@ type printable =
   | PrintHint of reference or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string
-  | PrintRewriteHintDbName of string
   | PrintHintDb
   | PrintScopes
   | PrintScope of string
@@ -155,10 +152,14 @@ type option_value = Goptions.option_value =
   | BoolValue of bool
   | IntValue of int option
   | StringValue of string
+  | StringOptValue of string option
 
 type option_ref_value =
   | StringRefValue of string
   | QualidRefValue of reference
+
+(** Identifier and optional list of bound universes. *)						 
+type plident = lident * lident list option
 
 type sort_expr = glob_sort
 
@@ -168,10 +169,10 @@ type definition_expr =
       * constr_expr option
 
 type fixpoint_expr =
-    Id.t located * (Id.t located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr option
+    plident * (Id.t located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr option
 
 type cofixpoint_expr =
-    Id.t located * local_binder list * constr_expr * constr_expr option
+    plident * local_binder list * constr_expr * constr_expr option
 
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
@@ -190,18 +191,14 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
 type inductive_expr =
-  lident with_coercion * local_binder list * constr_expr option * inductive_kind *
+  plident with_coercion * local_binder list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
-  lident * local_binder list * constr_expr option * constructor_expr list
+  plident * local_binder list * constr_expr option * constructor_expr list
 
 type proof_expr =
-  lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
-
-type grammar_tactic_prod_item_expr =
-  | TacTerm of string
-  | TacNonTerm of Loc.t * string * (Names.Id.t * string) option
+  plident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
@@ -221,12 +218,12 @@ type scheme =
   | EqualityScheme of reference or_by_notation
 
 type section_subset_expr =
-  | SsSet of lident list
+  | SsEmpty
+  | SsSingl of lident
   | SsCompl of section_subset_expr
   | SsUnion of section_subset_expr * section_subset_expr
   | SsSubstr of section_subset_expr * section_subset_expr
-
-type section_subset_descr = SsAll | SsType | SsExpr of section_subset_expr
+  | SsFwdClose of section_subset_expr
 
 (** Extension identifiers for the VERNAC EXTEND mechanism. *)
 type extend_name =
@@ -282,20 +279,18 @@ type module_binder = bool option * lident list * module_ast_inl
 type vernac_expr =
   (* Control *)
   | VernacLoad of verbose_flag * string
-  | VernacTime of vernac_list
-  | VernacRedirect of string * vernac_list
+  | VernacTime of vernac_expr located
+  | VernacRedirect of string * vernac_expr located
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
   | VernacError of exn (* always fails *)
 
   (* Syntax *)
-  | VernacTacticNotation of
-      int * grammar_tactic_prod_item_expr list * raw_tactic_expr
   | VernacSyntaxExtension of
       obsolete_locality * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
   | VernacDelimiters of scope_name * string option
-  | VernacBindScope of scope_name * reference or_by_notation list
+  | VernacBindScope of scope_name * class_rawexpr list
   | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *
       constr_expr * scope_name option
   | VernacNotation of
@@ -305,12 +300,12 @@ type vernac_expr =
 
   (* Gallina *)
   | VernacDefinition of
-      (locality option * definition_object_kind) * lident * definition_expr
+      (locality option * definition_object_kind) * plident * definition_expr
   | VernacStartTheoremProof of theorem_kind * proof_expr list * bool
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *
-      inline * simple_binder with_coercion list
+      inline * (plident list * constr_expr) with_coercion list
   | VernacInductive of private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       locality option * (fixpoint_expr * decl_notation list) list
@@ -325,14 +320,14 @@ type vernac_expr =
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
-      lreference option * export_flag option * lreference list
-  | VernacImport of export_flag * lreference list
+      reference option * export_flag option * reference list
+  | VernacImport of export_flag * reference list
   | VernacCanonical of reference or_by_notation
   | VernacCoercion of obsolete_locality * reference or_by_notation *
       class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of obsolete_locality * lident *
       class_rawexpr * class_rawexpr
-  | VernacNameSectionHypSet of lident * section_subset_descr 
+  | VernacNameSectionHypSet of lident * section_subset_expr 
 
   (* Type classes *)
   | VernacInstance of
@@ -360,7 +355,6 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of goal_selector * int option * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
@@ -381,8 +375,6 @@ type vernac_expr =
   | VernacBackTo of int
 
   (* Commands *)
-  | VernacDeclareTacticDefinition of
-      (rec_flag * (reference * bool * raw_tactic_expr) list)
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * reference list
   | VernacHints of obsolete_locality * string list * hints_expr
@@ -416,7 +408,6 @@ type vernac_expr =
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
-  | VernacNop
 
   (* Stm backdoor *)
   | VernacStm of vernac_expr stm_vernac
@@ -437,7 +428,7 @@ type vernac_expr =
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard
-  | VernacProof of raw_tactic_expr option * section_subset_descr option
+  | VernacProof of raw_tactic_expr option * section_subset_expr option
   | VernacProofMode of string
   (* Toplevel control *)
   | VernacToplevelControl of exn
@@ -450,9 +441,9 @@ type vernac_expr =
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
 
-and vernac_list = located_vernac_expr list
-
-and located_vernac_expr = Loc.t * vernac_expr
+and tacdef_body =
+  | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
+  | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
 
 (* A vernac classifier has to tell if a command:
    vernac_when: has to be executed now (alters the parser) or later

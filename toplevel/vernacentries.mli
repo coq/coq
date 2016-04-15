@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,6 +15,9 @@ val dump_global : Libnames.reference or_by_notation -> unit
 val show_prooftree : unit -> unit
 
 val show_node : unit -> unit
+
+val vernac_require :
+  Libnames.reference option -> bool option -> Libnames.reference list -> unit
 
 (** This function can be used by any command that want to observe terms
    in the context of the current goal *)
@@ -56,3 +59,8 @@ val vernac_end_proof :
   ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
 
 val with_fail : bool -> (unit -> unit) -> unit
+
+val command_focus : unit Proof.focus_kind
+
+val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Tacexpr.raw_red_expr ->
+  Evd.evar_map * Redexpr.red_expr) Hook.t

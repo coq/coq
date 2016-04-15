@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -12,10 +12,11 @@ open Util
 open Names
 open Term
 open Termops
-open Context
 open Declarations
 open Tacmach
 open Clenv
+open Sigma.Notations
+open Context.Named.Declaration
 
 (************************************************************************)
 (* Tacticals re-exported from the Refiner module                        *)
@@ -69,7 +70,7 @@ let nthDecl m gl =
   try List.nth (pf_hyps gl) (m-1)
   with Failure _ -> error "No such assumption."
 
-let nthHypId m gl = pi1 (nthDecl m gl)
+let nthHypId m gl = nthDecl m gl |> get_id
 let nthHyp m gl   = mkVar (nthHypId m gl)
 
 let lastDecl gl   = nthDecl 1 gl
@@ -80,7 +81,7 @@ let nLastDecls n gl =
   try List.firstn n (pf_hyps gl)
   with Failure _ -> error "Not enough hypotheses in the goal."
 
-let nLastHypsId n gl = List.map pi1 (nLastDecls n gl)
+let nLastHypsId n gl = List.map get_id (nLastDecls n gl)
 let nLastHyps n gl   = List.map mkVar (nLastHypsId n gl)
 
 let onNthDecl m tac gl  = tac (nthDecl m gl) gl
@@ -98,7 +99,7 @@ let onNLastHypsId n tac = onHyps (nLastHypsId n) tac
 let onNLastHyps n tac   = onHyps (nLastHyps n) tac
 
 let afterHyp id gl =
-  fst (List.split_when (fun (hyp,_,_) -> Id.equal hyp id) (pf_hyps gl))
+  fst (List.split_when (Id.equal id % get_id) (pf_hyps gl))
 
 (***************************************)
 (*           Clause Tacticals          *)
@@ -147,14 +148,16 @@ type branch_args = {
   largs      : constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
   pred       : constr;      (* the predicate we used *)
-  nassums    : int;         (* the number of assumptions to be introduced *)
+  nassums    : int;         (* number of assumptions/letin to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
-                               true=recursive argument, false=constant *)
+                               true=assumption, false=let-in *)
   branchnames : Tacexpr.intro_patterns}
 
 type branch_assumptions = {
-  ba        : branch_args;     (* the branch args *)
-  assums    : named_context}   (* the list of assumptions introduced *)
+  ba        : branch_args;       (* the branch args *)
+  assums    : Context.Named.t}   (* the list of assumptions introduced *)
+
+open Misctypes
 
 let fix_empty_or_and_pattern nv l =
   (* 1- The syntax does not distinguish between "[ ]" for one clause with no
@@ -162,36 +165,78 @@ let fix_empty_or_and_pattern nv l =
   (* 2- More generally, we admit "[ ]" for any disjunctive pattern of
      arbitrary length *)
   match l with
-  | [[]] -> List.make nv []
+  | IntroOrPattern [[]] -> IntroOrPattern (List.make nv [])
   | _ -> l
 
-let check_or_and_pattern_size loc names n =
-  if not (Int.equal (List.length names) n) then
-    if Int.equal n 1 then
-      user_err_loc (loc,"",str "Expects a conjunctive pattern.")
-    else
-      user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n
-	++ str " branches.")
+let check_or_and_pattern_size check_and loc names branchsigns =
+  let n = Array.length branchsigns in
+  let msg p1 p2 = strbrk "a conjunctive pattern made of " ++ int p1 ++ (if p1 == p2 then mt () else str " or " ++ int p2) ++ str " patterns" in
+  let err1 p1 p2 =
+    user_err_loc (loc,"",str "Expects " ++ msg p1 p2 ++ str ".") in
+  let errn n =
+    user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n
+	++ str " branches.") in
+  let err1' p1 p2 =
+    user_err_loc (loc,"",strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
+  let errforthcoming loc =
+    user_err_loc (loc,"",strbrk "Unexpected non atomic pattern.") in
+  match names with
+  | IntroAndPattern l ->
+      if not (Int.equal n 1) then errn n;
+      let l' = List.filter (function _,IntroForthcoming _ -> true | _,IntroNaming _ | _,IntroAction _ -> false) l in
+      if l' != [] then errforthcoming (fst (List.hd l'));
+      if check_and then
+        let p1 = List.count (fun x -> x) branchsigns.(0) in
+        let p2 = List.length branchsigns.(0) in
+        let p = List.length l in
+        if not (Int.equal p p1 || Int.equal p p2) then err1 p1 p2;
+        if Int.equal p p1 then
+          IntroAndPattern
+            (List.extend branchsigns.(0) (Loc.ghost,IntroNaming IntroAnonymous) l)
+        else
+          names
+      else
+        names
+  | IntroOrPattern ll ->
+      if not (Int.equal n (List.length ll)) then
+        if Int.equal n 1 then
+          let p1 = List.count (fun x -> x) branchsigns.(0) in
+          let p2 = List.length branchsigns.(0) in
+          err1' p1 p2 else errn n;
+      names
 
-let compute_induction_names n = function
+let get_and_check_or_and_pattern_gen check_and loc names branchsigns =
+  let names = check_or_and_pattern_size check_and loc names branchsigns in
+  match names with
+  | IntroAndPattern l -> [|l|]
+  | IntroOrPattern l -> Array.of_list l
+
+let get_and_check_or_and_pattern = get_and_check_or_and_pattern_gen true
+
+let compute_induction_names_gen check_and branchletsigns = function
   | None ->
-      Array.make n []
+      Array.make (Array.length branchletsigns) []
   | Some (loc,names) ->
-      let names = fix_empty_or_and_pattern n names in
-      check_or_and_pattern_size loc names n;
-      Array.of_list names
+      let names = fix_empty_or_and_pattern (Array.length branchletsigns) names in
+      get_and_check_or_and_pattern_gen check_and loc names branchletsigns
 
-let compute_construtor_signatures isrec ((_,k as ity),u) =
+let compute_induction_names = compute_induction_names_gen true
+
+(* Compute the let-in signature of case analysis or standard induction scheme *)
+let compute_constructor_signatures isrec ((_,k as ity),u) =
   let rec analrec c recargs =
     match kind_of_term c, recargs with
     | Prod (_,_,c), recarg::rest ->
-	let b = match Declareops.dest_recarg recarg with
-	  | Norec | Imbr _  -> false
-	  | Mrec (_,j)  -> isrec && Int.equal j k
-	in b :: (analrec c rest)
-    | LetIn (_,_,_,c), rest -> false :: (analrec c rest)
+        let rest = analrec c rest in
+        begin match Declareops.dest_recarg recarg with
+        | Norec | Imbr _  -> true :: rest
+        | Mrec (_,j)  ->
+            if isrec && Int.equal j k then true :: true :: rest
+            else true :: rest
+        end
+    | LetIn (_,_,_,c), rest -> false :: analrec c rest
     | _, [] -> []
-    | _ -> anomaly (Pp.str "compute_construtor_signatures")
+    | _ -> anomaly (Pp.str "compute_constructor_signatures")
   in
   let (mib,mip) = Global.lookup_inductive ity in
   let n = mib.mind_nparams in
@@ -225,60 +270,28 @@ let gl_make_elim ind gl =
     pf_apply Evd.fresh_global gl gr
 
 let gl_make_case_dep ind gl =
-  pf_apply Indrec.build_case_analysis_scheme gl ind true
+  let sigma = Sigma.Unsafe.of_evar_map (Tacmach.project gl) in
+  let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind true
     (elimination_sort_of_goal gl)
+  in
+  (Sigma.to_evar_map sigma, r)
 
 let gl_make_case_nodep ind gl =
-  pf_apply Indrec.build_case_analysis_scheme gl ind false
+  let sigma = Sigma.Unsafe.of_evar_map (Tacmach.project gl) in
+  let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind false
     (elimination_sort_of_goal gl)
+  in
+  (Sigma.to_evar_map sigma, r)
 
 let make_elim_branch_assumptions ba gl =
-  let rec makerec (assums,cargs,constargs,recargs,indargs) lb lc =
-    match lb,lc with
-      | ([], _) ->
-          { ba = ba;
-            assums    = assums}
-      | ((true::tl), ((idrec,_,_ as recarg)::(idind,_,_ as indarg)::idtl)) ->
-	  makerec (recarg::indarg::assums,
-		   idrec::cargs,
-		   idrec::recargs,
-		   constargs,
-		   idind::indargs) tl idtl
-      | ((false::tl), ((id,_,_ as constarg)::idtl))      ->
-	  makerec (constarg::assums,
-		   id::cargs,
-		   id::constargs,
-		   recargs,
-		   indargs) tl idtl
-      | (_, _) -> anomaly (Pp.str "make_elim_branch_assumptions")
-  in
-  makerec ([],[],[],[],[]) ba.branchsign
-    (try List.firstn ba.nassums (pf_hyps gl)
-     with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions"))
+  let assums =
+    try List.rev (List.firstn ba.nassums (pf_hyps gl))
+    with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions") in
+  { ba = ba; assums = assums }
 
 let elim_on_ba tac ba gl = tac (make_elim_branch_assumptions ba gl) gl
 
-let make_case_branch_assumptions ba gl =
-  let rec makerec (assums,cargs,constargs,recargs) p_0 p_1 =
-    match p_0,p_1 with
-      | ([], _) ->
-          { ba = ba;
-            assums    = assums}
-      | ((true::tl), ((idrec,_,_ as recarg)::idtl)) ->
-	  makerec (recarg::assums,
-		   idrec::cargs,
-		   idrec::recargs,
-		   constargs) tl idtl
-      | ((false::tl), ((id,_,_ as constarg)::idtl)) ->
-	  makerec (constarg::assums,
-		   id::cargs,
-		   recargs,
-		   id::constargs) tl idtl
-      | (_, _) -> anomaly (Pp.str "make_case_branch_assumptions")
-  in
-  makerec ([],[],[],[]) ba.branchsign
-    (try List.firstn ba.nassums (pf_hyps gl)
-     with Failure _ -> anomaly (Pp.str "make_case_branch_assumptions"))
+let make_case_branch_assumptions = make_elim_branch_assumptions
 
 let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl
 
@@ -508,6 +521,14 @@ module New = struct
         in
         Proofview.Unsafe.tclEVARS sigma <*> tac >>= check_evars_if
 
+  let tclDELAYEDWITHHOLES check x tac =
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let Sigma (x, sigma, _) = x.Tacexpr.delayed env sigma in
+      tclWITHHOLES check (tac x) (Sigma.to_evar_map sigma)
+    end }
+
   let tclTIMEOUT n t =
     Proofview.tclOR
       (Proofview.tclTIMEOUT n t)
@@ -532,71 +553,71 @@ module New = struct
   let nthHypId m gl =
     (** We only use [id] *)
     let gl = Proofview.Goal.assume gl in
-    let (id,_,_) = nthDecl m gl in
-    id
+    nthDecl m gl |> get_id
   let nthHyp m gl = 
     mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
-    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end
+    Proofview.Goal.enter { enter = begin fun gl -> tac (nthHypId m gl) end }
   let onNthHyp m tac =
-    Proofview.Goal.enter begin fun gl -> tac (nthHyp m gl) end
+    Proofview.Goal.enter { enter = begin fun gl -> tac (nthHyp m gl) end }
 
   let onLastHypId = onNthHypId 1
   let onLastHyp   = onNthHyp 1
 
   let onNthDecl m tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       Proofview.tclUNIT (nthDecl m gl) >>= tac
-    end
+    end }
   let onLastDecl  = onNthDecl 1
 
   let ifOnHyp pred tac1 tac2 id =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let typ = Tacmach.New.pf_get_hyp_typ id gl in
     if pred (id,typ) then
       tac1 id
     else
       tac2 id
-    end
+    end }
 
-  let onHyps find tac = Proofview.Goal.nf_enter (fun gl -> tac (find gl))
+  let onHyps find tac = Proofview.Goal.nf_enter { enter = begin fun gl -> tac (find.enter gl) end }
 
   let afterHyp id tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
-    let rem, _ = List.split_when (fun (hyp,_,_) -> Id.equal hyp id) hyps in
+    let rem, _ = List.split_when (Id.equal id % get_id) hyps in
     tac rem
-    end
+    end }
 
   let fullGoal gl =
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
     None :: List.map Option.make hyps
 
   let tryAllHyps tac =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
     tclFIRST_PROGRESS_ON tac hyps
-    end
+    end }
   let tryAllHypsAndConcl tac =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
       tclFIRST_PROGRESS_ON tac (fullGoal gl)
-    end
+    end }
 
   let onClause tac cl =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
     tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
-    end
+    end }
 
   (* Find the right elimination suffix corresponding to the sort of the goal *)
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate ind (c, t) =
-    Proofview.Goal.nf_enter begin fun gl ->
-    let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
-    (** FIXME: evar leak. *)
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    (Proofview.Goal.nf_enter { enter = begin fun gl ->
+    let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
     (* applying elimination_scheme just a little modified *)
     let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_unsafe_type_of gl elim)) gl in
     let indmv =
@@ -618,9 +639,9 @@ module New = struct
 	  errorlabstrm "Tacticals.general_elim_then_using"
             (str "The elimination combinator " ++ str name_elim ++ str " is unknown.")
     in
-    let elimclause' = clenv_fchain indmv elimclause indclause in
-    let branchsigns = compute_construtor_signatures isrec ind in
-    let brnames = compute_induction_names (Array.length branchsigns) allnames in
+    let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
+    let branchsigns = compute_constructor_signatures isrec ind in
+    let brnames = compute_induction_names_gen false branchsigns allnames in
     let flags = Unification.elim_flags () in
     let elimclause' =
       match predicate with
@@ -632,10 +653,7 @@ module New = struct
       let (hd,largs) = decompose_app clenv'.templtyp.Evd.rebus in
       let ba = { branchsign = branchsigns.(i);
                  branchnames = brnames.(i);
-                 nassums =
-          List.fold_left
-            (fun acc b -> if b then acc+2 else acc+1)
-            0 branchsigns.(i);
+                 nassums = List.length branchsigns.(i);
                  branchnum = i+1;
                  ity = ind;
                  largs = List.map (clenv_nf_meta clenv') largs;
@@ -647,10 +665,10 @@ module New = struct
     Proofview.tclTHEN
       (Clenvtac.clenv_refine false clenv')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
-    end
+    end }) end }
 
   let elimination_then tac c =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
@@ -658,7 +676,7 @@ module New = struct
       | Some _ -> false,gl_make_case_dep
     in
     general_elim_then_using mkelim isrec None tac None ind (c, t)
-    end
+    end }
 
   let case_then_using =
     general_elim_then_using gl_make_case_dep false
@@ -667,16 +685,16 @@ module New = struct
     general_elim_then_using gl_make_case_nodep false
 
   let elim_on_ba tac ba =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let branches = Tacmach.New.of_old (make_elim_branch_assumptions ba) gl in
     tac branches
-    end
+    end }
 
   let case_on_ba tac ba = 
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
     let branches = Tacmach.New.of_old (make_case_branch_assumptions ba) gl in
     tac branches
-    end
+    end }
 
   let elimination_sort_of_goal gl =
     (** Retyping will expand evars anyway. *)
@@ -693,11 +711,11 @@ module New = struct
   | Some id -> elimination_sort_of_hyp id gl
 
   let pf_constr_of_global ref tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
-      let sigma = Proofview.Goal.sigma gl in
+      let sigma = Tacmach.New.project gl in
       let (sigma, c) = Evd.fresh_global env sigma ref in
       Proofview.Unsafe.tclEVARS sigma <*> (tac c)
-    end
+    end }
 
 end

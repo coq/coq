@@ -1,7 +1,7 @@
 (* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -266,21 +266,11 @@ Section GenericInstances.
     transitivity (y x0)...
   Qed.
 
+  Unset Strict Universe Declaration.
+  
   (** The complement of a crelation conserves its proper elements. *)
-  
-  Program Definition complement_proper
-          `(mR : Proper (A -> A -> Prop) (RA ==> RA ==> iff) R) :
-    Proper (RA ==> RA ==> iff) (complement R) := _.
-  
-  Next Obligation.
-  Proof.
-    unfold complement.
-    pose (mR x y X x0 y0 X0).
-    intuition.
-  Qed.
  
   (** The [flip] too, actually the [flip] instance is a bit more general. *)
-
   Program Definition flip_proper
           `(mor : Proper (A -> B -> C) (RA ==> RB ==> RC) f) :
     Proper (RB ==> RA ==> RC) (flip f) := _.
@@ -462,7 +452,7 @@ Ltac partial_application_tactic :=
   let rec do_partial_apps H m cont := 
     match m with
       | ?m' ?x => class_apply @Reflexive_partial_app_morphism ; 
-        [(do_partial_apps H m' ltac:idtac)|clear H]
+        [(do_partial_apps H m' ltac:(idtac))|clear H]
       | _ => cont
     end
   in
@@ -521,8 +511,8 @@ Ltac proper_reflexive :=
 Hint Extern 1 (subrelation (flip _) _) => class_apply @flip1 : typeclass_instances.
 Hint Extern 1 (subrelation _ (flip _)) => class_apply @flip2 : typeclass_instances.
 
-Hint Extern 1 (Proper _ (complement _)) => apply @complement_proper 
-  : typeclass_instances.
+(* Hint Extern 1 (Proper _ (complement _)) => apply @complement_proper  *)
+(*   : typeclass_instances. *)
 Hint Extern 1 (Proper _ (flip _)) => apply @flip_proper 
   : typeclass_instances.
 Hint Extern 2 (@Proper _ (flip _) _) => class_apply @proper_flip_proper 
@@ -537,7 +527,7 @@ Hint Extern 7 (@Proper _ _ _) => proper_reflexive
 Section Normalize.
   Context (A : Type).
 
-  Class Normalizes (m : crelation A) (m' : crelation A) : Prop :=
+  Class Normalizes (m : crelation A) (m' : crelation A) :=
     normalizes : relation_equivalence m m'.
   
   (** Current strategy: add [flip] everywhere and reduce using [subrelation]

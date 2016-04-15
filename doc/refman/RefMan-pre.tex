@@ -956,20 +956,20 @@ Ltac language dependent subgoals, deep backtracking and multiple goal
 handling, along with miscellaneous features and an improved potential
 for future modifications. Dependent subgoals allow statements in a
 goal to mention the proof of another. Proofs of unsolved subgoals
-appear as existential variables. Primitive backtracking make it
+appear as existential variables. Primitive backtracking makes it
 possible to write a tactic with several possible outcomes which are
 tried successively when subsequent tactics fail. Primitives are also
 available to control the backtracking behavior of tactics. Multiple
 goal handling paves the way for smarter automation tactics. It is
 currently used for simple goal manipulation such as goal reordering.
 
-The way Coq processes a document in batch and interactive mode has
+The way {\Coq} processes a document in batch and interactive mode has
 been redesigned by Enrico Tassi with help from Bruno Barras.  Opaque
 proofs, the text between Proof and Qed, can be processed
 asynchronously, decoupling the checking of definitions and statements
 from the checking of proofs.  It improves the responsiveness of
 interactive development, since proofs can be processed in the
-background.  Similarly compilation of a file can be split into two
+background.  Similarly, compilation of a file can be split into two
 phases: the first one checking only definitions and statements and the
 second one checking proofs.  A file resulting from the first
 phase~--~with the .vio extension~--~can be already Required.  All .vio
@@ -977,13 +977,13 @@ files can be turned into complete .vo files in parallel.  The same
 infrastructure also allows terminating tactics to be run in parallel
 on a set of goals via the \verb=par:= goal selector.
 
-CoqIDE was modified to cope with asynchronous checking of the
-document.  Its source code was also made separate from that of Coq, so
-that CoqIDE no longer has a special status among user interfaces,
-paving the way for decoupling its release cycle from that of Coq in
+{\CoqIDE} was modified to cope with asynchronous checking of the
+document.  Its source code was also made separate from that of {\Coq}, so
+that {\CoqIDE} no longer has a special status among user interfaces,
+paving the way for decoupling its release cycle from that of {\Coq} in
 the future.
 
-Carst Tankink developed a Coq back end for user interfaces built on
+Carst Tankink developed a {\Coq} back-end for user interfaces built on
 Makarius Wenzel's Prover IDE framework (PIDE), like PIDE/jEdit (with
 help from Makarius Wenzel) or PIDE/Coqoon (with help from Alexander
 Faithfull and Jesper Bengtson).  The development of such features was
@@ -1017,7 +1017,7 @@ principles such as propositional extensionality and univalence, thanks to
 Maxime Dénès and Bruno Barras. To ensure compatibility with the
 univalence axiom, a new flag ``-indices-matter'' has been implemented, 
 taking into account the universe levels of indices when computing the
-levels of inductive types. This supports using Coq as a tool to explore
+levels of inductive types. This supports using {\Coq} as a tool to explore
 the relations between homotopy theory and type theory.
 
 Maxime Dénès and Benjamin Grégoire developed an implementation of
@@ -1025,17 +1025,23 @@ conversion test and normal form computation using the OCaml native
 compiler. It complements the virtual machine conversion offering much
 faster computation for expensive functions.
 
-{\Coq} 8.5 also comes with a bunch of many various smaller-scale changes
-and improvements regarding the different components of the system.
+{\Coq} 8.5 also comes with a bunch of many various smaller-scale
+changes and improvements regarding the different components of the
+system. We shall only list a few of them.
 
-Maxime Dénès maintained the bytecode-based reduction machine.
+Pierre Boutillier developed an improved tactic for simplification of
+expressions called {\tt cbn}.
+
+Maxime Dénès maintained the bytecode-based reduction machine. Pierre
+Letouzey maintained the extraction mechanism.
 
 Pierre-Marie Pédrot has extended the syntax of terms to,
 experimentally, allow holes in terms to be solved by a locally
 specified tactic.
 
 Existential variables are referred to by identifiers rather than mere
-numbers, thanks to Hugo Herbelin.
+numbers, thanks to Hugo Herbelin who also improved the tactic language
+here and there.
 
 Error messages for universe inconsistencies have been improved by
 Matthieu Sozeau. Error messages for unification and type inference
@@ -1043,14 +1049,42 @@ failures have been improved by Hugo Herbelin, Pierre-Marie Pédrot and
 Arnaud Spiwack.
 
 Pierre Courtieu contributed new features for using {\Coq} through Proof
-General and for better interactive experience (bullets, Search etc).
+General and for better interactive experience (bullets, Search, etc).
 
-A distribution channel for Coq packages using the Opam tool has been
-developed by Thomas Braibant and Guillaume Claret.
+The efficiency of the whole system has been significantly improved
+thanks to contributions from Pierre-Marie Pédrot.
+
+A distribution channel for {\Coq} packages using the OPAM tool has
+been initiated by Thomas Braibant and developed by Guillaume Claret,
+with contributions by Enrico Tassi and feedback from Hugo Herbelin.
+
+Packaging tools were provided by Pierre Letouzey and Enrico Tassi
+(Windows), Pierre Boutillier, Matthieu Sozeau and Maxime Dénès (MacOS
+X). Maxime Dénès improved significantly the testing and benchmarking
+support.
+
+Many power users helped to improve the design of the new features via
+the bug tracker, the coq development mailing list or the coq-club
+mailing list. Special thanks are going to the users who contributed
+patches and intensive brain-storming, starting with Jason Gross,
+Jonathan Leivent, Greg Malecha, Clément Pit-Claudel, Marc Lasson,
+Lionel Rieg. It would however be impossible to mention with precision
+all names of people who to some extent influenced the development.
+
+Version 8.5 is one of the most important release of {\Coq}. Its
+development spanned over about 3 years and a half with about one year
+of beta-testing. General maintenance during part or whole of this
+period has been done by Pierre Boutillier, Pierre Courtieu, Maxime
+Dénès, Hugo Herbelin, Pierre Letouzey, Guillaume Melquiond,
+Pierre-Marie Pédrot, Matthieu Sozeau, Arnaud Spiwack, Enrico Tassi as
+well as Bruno Barras, Yves Bertot, Frédéric Besson, Xavier Clerc,
+Pierre Corbineau, Jean-Christophe Filliâtre, Julien Forest, Sébastien
+Hinderer, Assia Mahboubi, Jean-Marc Notin, Yann Régis-Gianas, François
+Ripault, Carst Tankink. Maxime Dénès coordinated the release process.
 
 \begin{flushright}
-Paris, January 2015\\
-Hugo Herbelin \& Matthieu Sozeau\\
+Paris, January 2015, revised December 2015,\\
+Hugo Herbelin, Matthieu Sozeau and the {\Coq} development team\\
 \end{flushright}
 
 

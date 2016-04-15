@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -23,6 +23,7 @@ open Declarations
 open Mod_subst
 open Globnames
 open Printer
+open Context.Named.Declaration
 
 (** For a constant c in a module sealed by an interface (M:T and
     not M<:T), [Global.lookup_constant] may return a [constant_body]
@@ -55,7 +56,7 @@ let rec fields_of_functor f subs mp0 args = function
     match args with
     | [] -> assert false (* we should only encounter applied functors *)
     | mpa :: args ->
-      let subs = add_mbid mbid mpa empty_delta_resolver (*TODO*) subs in
+      let subs = join (map_mbid mbid mpa empty_delta_resolver (*TODO*)) subs in
       fields_of_functor f subs mp0 args e
 
 let rec lookup_module_in_impl mp =
@@ -64,11 +65,11 @@ let rec lookup_module_in_impl mp =
     (* The module we search might not be exported by its englobing module(s).
        We access the upper layer, and then do a manual search *)
     match mp with
-      | MPfile _ | MPbound _ ->
-	raise Not_found (* should have been found by [lookup_module] *)
-      | MPdot (mp',lab') ->
-	let fields = memoize_fields_of_mp mp' in
-	search_mod_label lab' fields
+    | MPfile _ -> raise Not_found (* can happen if mp is an open module *)
+    | MPbound _ -> assert false
+    | MPdot (mp',lab') ->
+       let fields = memoize_fields_of_mp mp' in
+       search_mod_label lab' fields
 
 and memoize_fields_of_mp mp =
   try MPmap.find mp !modcache
@@ -141,58 +142,131 @@ let label_of = function
   | ConstructRef ((kn,_),_) -> pi3 (repr_mind kn)
   | VarRef id -> Label.of_id id
 
-let push (r : Context.rel_declaration) (ctx : Context.rel_context) = r :: ctx
-
 let rec traverse current ctx accu t = match kind_of_term t with
 | Var id ->
-  let body () = match Global.lookup_named id with (_, body, _) -> body in
+  let body () = Global.lookup_named id |> get_value in
   traverse_object accu body (VarRef id)
 | Const (kn, _) ->
   let body () = Global.body_of_constant_body (lookup_constant kn) in
   traverse_object accu body (ConstRef kn)
-| Ind (ind, _) ->
-  traverse_object accu (fun () -> None) (IndRef ind)
-| Construct (cst, _) ->
-  traverse_object accu (fun () -> None) (ConstructRef cst)
+| Ind ((mind, _) as ind, _) ->
+  traverse_inductive accu mind (IndRef ind)
+| Construct (((mind, _), _) as cst, _) ->
+  traverse_inductive accu mind (ConstructRef cst)
 | Meta _ | Evar _ -> assert false
 | Case (_,oty,c,[||]) ->
-    (* non dependent match on an inductive with no constructors *) 
+    (* non dependent match on an inductive with no constructors *)
     begin match Constr.(kind oty, kind c) with
-    | Lambda(Anonymous,_,oty), Const (kn, _)
+    | Lambda(_,_,oty), Const (kn, _)
       when Vars.noccurn 1 oty &&
       not (Declareops.constant_has_body (lookup_constant kn)) ->
         let body () = Global.body_of_constant_body (lookup_constant kn) in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
     | _ ->
-        Termops.fold_constr_with_full_binders push (traverse current) ctx accu t
+        Termops.fold_constr_with_full_binders
+          Context.Rel.add (traverse current) ctx accu t
     end
-| _ -> Termops.fold_constr_with_full_binders push (traverse current) ctx accu t
+| _ -> Termops.fold_constr_with_full_binders
+          Context.Rel.add (traverse current) ctx accu t
 
 and traverse_object ?inhabits (curr, data, ax2ty) body obj =
   let data, ax2ty =
-    let already_in = Refmap.mem obj data in
+    let already_in = Refmap_env.mem obj data in
     match body () with
     | None ->
         let data =
-          if not already_in then Refmap.add obj Refset.empty data else data in
+          if not already_in then Refmap_env.add obj Refset_env.empty data else data in
         let ax2ty =
           if Option.is_empty inhabits then ax2ty else
           let ty = Option.get inhabits in
-          try let l = Refmap.find obj ax2ty in Refmap.add obj (ty::l) ax2ty 
-          with Not_found -> Refmap.add obj [ty] ax2ty in
+          try let l = Refmap_env.find obj ax2ty in Refmap_env.add obj (ty::l) ax2ty 
+          with Not_found -> Refmap_env.add obj [ty] ax2ty in
         data, ax2ty
     | Some body ->
       if already_in then data, ax2ty else
       let contents,data,ax2ty =
-        traverse (label_of obj) [] (Refset.empty,data,ax2ty) body in
-      Refmap.add obj contents data, ax2ty
+        traverse (label_of obj) Context.Rel.empty
+                 (Refset_env.empty,data,ax2ty) body in
+      Refmap_env.add obj contents data, ax2ty
   in
-  (Refset.add obj curr, data, ax2ty)
+  (Refset_env.add obj curr, data, ax2ty)
+
+(** Collects the references occurring in the declaration of mutual inductive
+    definitions. All the constructors and names of a mutual inductive
+    definition share exactly the same dependencies. Also, there is no explicit
+    dependency between mutually defined inductives and constructors. *)
+and traverse_inductive (curr, data, ax2ty) mind obj =
+  let firstind_ref = (IndRef (mind, 0)) in
+  let label = label_of obj in
+  let data, ax2ty =
+   (* Invariant : I_0 \in data iff I_i \in data iff c_ij \in data
+      where I_0, I_1, ... are in the same mutual definition and c_ij
+      are all their constructors. *)
+   if Refmap_env.mem firstind_ref data then data, ax2ty else
+     let mib = Global.lookup_mind mind in
+     (* Collects references of parameters *)
+     let param_ctx = mib.mind_params_ctxt in
+     let nparam = List.length param_ctx in
+     let accu =
+       traverse_context label Context.Rel.empty
+                        (Refset_env.empty, data, ax2ty) param_ctx
+     in
+     (* Build the context of all arities *)
+     let arities_ctx =
+       let global_env = Global.env () in
+       Array.fold_left (fun accu oib ->
+          let pspecif = Univ.in_punivs (mib, oib) in
+          let ind_type = Inductive.type_of_inductive global_env pspecif in
+          let ind_name = Name oib.mind_typename in
+          Context.Rel.add (Context.Rel.Declaration.LocalAssum (ind_name, ind_type)) accu)
+          Context.Rel.empty mib.mind_packets
+     in
+     (* For each inductive, collects references in their arity and in the type
+        of constructors*)
+     let (contents, data, ax2ty) = Array.fold_left (fun accu oib ->
+         let arity_wo_param =
+           List.rev (List.skipn nparam (List.rev oib.mind_arity_ctxt))
+         in
+         let accu =
+           traverse_context
+             label param_ctx accu arity_wo_param
+         in
+         Array.fold_left (fun accu cst_typ ->
+            let param_ctx, cst_typ_wo_param = Term.decompose_prod_n_assum nparam cst_typ in
+            let ctx = Context.(Rel.fold_outside Context.Rel.add ~init:arities_ctx param_ctx) in
+            traverse label ctx accu cst_typ_wo_param)
+          accu oib.mind_user_lc)
+       accu mib.mind_packets
+     in
+     (* Maps all these dependencies to inductives and constructors*)
+     let data = Array.fold_left_i (fun n data oib ->
+       let ind = (mind, n) in
+       let data = Refmap_env.add (IndRef ind) contents data in
+       Array.fold_left_i (fun k data _ ->
+         Refmap_env.add (ConstructRef (ind, k+1)) contents data
+       ) data oib.mind_consnames) data mib.mind_packets
+     in
+     data, ax2ty
+  in
+  (Refset_env.add obj curr, data, ax2ty)
+
+(** Collects references in a rel_context. *)
+and traverse_context current ctx accu ctxt =
+  snd (Context.Rel.fold_outside (fun decl (ctx, accu) ->
+    match decl with
+     | Context.Rel.Declaration.LocalDef (_,c,t) ->
+          let accu = traverse current ctx (traverse current ctx accu t) c in
+          let ctx = Context.Rel.add decl ctx in
+          ctx, accu
+     | Context.Rel.Declaration.LocalAssum (_,t) ->
+          let accu = traverse current ctx accu t in
+          let ctx = Context.Rel.add decl ctx in
+           ctx, accu) ctxt ~init:(ctx, accu))
 
 let traverse current t =
   let () = modcache := MPmap.empty in
-  traverse current [] (Refset.empty, Refmap.empty, Refmap.empty) t
+  traverse current Context.Rel.empty (Refset_env.empty, Refmap_env.empty, Refmap_env.empty) t
 
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when
@@ -208,14 +282,14 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   let (_, graph, ax2ty) = traverse (label_of gr) t in
   let fold obj _ accu = match obj with
   | VarRef id ->
-    let (_, body, t) = Global.lookup_named id in
-    if Option.is_empty body then ContextObjectMap.add (Variable id) t accu
+    let decl = Global.lookup_named id in
+    if is_local_assum decl then ContextObjectMap.add (Variable id) t accu
     else accu
   | ConstRef kn ->
     let cb = lookup_constant kn in
     if not (Declareops.constant_has_body cb) then
       let t = type_of_constant cb in
-      let l = try Refmap.find obj ax2ty with Not_found -> [] in
+      let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
       ContextObjectMap.add (Axiom (kn,l)) t accu
     else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
       let t = type_of_constant cb in
@@ -227,4 +301,4 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       accu
   | IndRef _ | ConstructRef _ -> accu
   in
-  Refmap.fold fold graph ContextObjectMap.empty
+  Refmap_env.fold fold graph ContextObjectMap.empty

@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -217,12 +217,6 @@ open Type_errors
 let anomaly_string () = str "Anomaly: "
 let report () = (str "." ++ spc () ++ str "Please report.")
 
-let print_loc loc =
-  if loc = Loc.ghost then
-    (str"<unknown>")
-  else
-    let loc = Loc.unloc loc in
-    (int (fst loc) ++ str"-" ++ int (snd loc))
 let guill s = str "\"" ++ str s ++ str "\""
 
 let where s =
@@ -337,8 +331,6 @@ let parse_args argv =
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: "-as" :: p :: rem -> set_rec_include d p;parse rem
-    | "-R" :: d :: "-as" :: [] -> usage ()
     | "-R" :: d :: p :: rem -> set_rec_include d p;parse rem
     | "-R" :: ([] | [_]) -> usage ()
 

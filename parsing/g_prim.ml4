@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -32,7 +32,7 @@ let my_int_of_string loc s =
 
 GEXTEND Gram
   GLOBAL:
-    bigint natural integer identref name ident var preident
+    bigint natural index integer identref name ident var preident
     fullyqualid qualid reference dirpath ne_lstring
     ne_string string pattern_ident pattern_identref by_notation smart_global;
   preident:
@@ -112,6 +112,9 @@ GEXTEND Gram
   ;
   natural:
     [ [ i = INT -> my_int_of_string (!@loc) i ] ]
+  ;
+  index:
+    [ [ i = INDEX -> my_int_of_string (!@loc) i ] ]
   ;
   bigint: (* Negative numbers are dealt with specially *)
     [ [ i = INT -> (Bigint.of_string i) ] ]

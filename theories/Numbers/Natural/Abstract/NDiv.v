@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -137,7 +137,7 @@ Proof. intros; apply mul_succ_div_gt; auto'. Qed.
 Lemma div_exact : forall a b, b~=0 -> (a == b*(a/b) <-> a mod b == 0).
 Proof. intros. apply div_exact; auto'. Qed.
 
-(** Some additionnal inequalities about div. *)
+(** Some additional inequalities about div. *)
 
 Theorem div_lt_upper_bound:
   forall a b q, b~=0 -> a < b*q -> a/b < q.

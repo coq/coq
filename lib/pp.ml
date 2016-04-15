@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -51,25 +51,18 @@ sig
   val prj : t -> 'a key -> 'a option
 end =
 struct
-  (** See module {Dyn} for more details. *)
 
-  type t = int * Obj.t
+module Dyn = Dyn.Make(struct end)
 
-  type 'a key = int
-
-  let dyntab = ref (Int.Map.empty : string Int.Map.t)
-
-  let create (s : string) =
-    let hash = Hashtbl.hash s in
-    let () = assert (not (Int.Map.mem hash !dyntab)) in
-    let () = dyntab := Int.Map.add hash s !dyntab in
-    hash
-
-  let inj x h = (h, Obj.repr x)
-
-  let prj (nh, rv) h =
-    if Int.equal h nh then Some (Obj.magic rv)
-    else None
+type t = Dyn.t
+type 'a key = 'a Dyn.tag
+let create = Dyn.create
+let inj x k = Dyn.Dyn (k, x)
+let prj : type a. t -> a key -> a option = fun dyn k ->
+  let Dyn.Dyn (k', x) = dyn in
+  match Dyn.eq k k' with
+  | None -> None
+  | Some CSig.Refl -> Some x
 
 end
 
@@ -268,7 +261,7 @@ let rec pr_com ft s =
       let n = String.index s '\n' in
       String.sub s 0 n, Some (String.sub s (n+1) (String.length s - n - 1))
     with Not_found -> s,None in
-  com_if ft (Lazy.lazy_from_val());
+  com_if ft (Lazy.from_val());
 (*  let s1 =
     if String.length s1 <> 0 && s1.[0] = ' ' then
       (Format.pp_print_space ft (); String.sub s1 1 (String.length s1 - 1))
@@ -297,29 +290,29 @@ let pp_dirs ?pp_tag ft =
         begin match tok with
         | Str_def s ->
           let n = utf8_length s in
-          com_if ft (Lazy.lazy_from_val()); Format.pp_print_as ft n s
+          com_if ft (Lazy.from_val()); Format.pp_print_as ft n s
         | Str_len (s, n) ->
-          com_if ft (Lazy.lazy_from_val()); Format.pp_print_as ft n s
+          com_if ft (Lazy.from_val()); Format.pp_print_as ft n s
         end
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
-        com_if ft (Lazy.lazy_from_val());
+        com_if ft (Lazy.from_val());
         pp_open_box bty ;
         if not (Format.over_max_boxes ()) then Glue.iter pp_cmd ss;
         Format.pp_close_box ft ()
-    | Ppcmd_open_box bty      -> com_if ft (Lazy.lazy_from_val()); pp_open_box bty
+    | Ppcmd_open_box bty      -> com_if ft (Lazy.from_val()); pp_open_box bty
     | Ppcmd_close_box         -> Format.pp_close_box ft ()
     | Ppcmd_close_tbox        -> Format.pp_close_tbox ft ()
     | Ppcmd_white_space n     ->
-        com_if ft (Lazy.lazy_from_fun (fun()->Format.pp_print_break ft n 0))
+        com_if ft (Lazy.from_fun (fun()->Format.pp_print_break ft n 0))
     | Ppcmd_print_break(m,n)  ->
-        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_break ft m n))
+        com_if ft (Lazy.from_fun(fun()->Format.pp_print_break ft m n))
     | Ppcmd_set_tab           -> Format.pp_set_tab ft ()
     | Ppcmd_print_tbreak(m,n) ->
-        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_tbreak ft m n))
+        com_if ft (Lazy.from_fun(fun()->Format.pp_print_tbreak ft m n))
     | Ppcmd_force_newline     ->
         com_brk ft; Format.pp_force_newline ft ()
     | Ppcmd_print_if_broken   ->
-        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_if_newline ft ()))
+        com_if ft (Lazy.from_fun(fun()->Format.pp_print_if_newline ft ()))
     | Ppcmd_comment i         ->
         let coms = split_com [] [] i !comments in
 (*        Format.pp_open_hvbox ft 0;*)
@@ -362,11 +355,11 @@ let emacs_quote_info_start = "<infomsg>"
 let emacs_quote_info_end = "</infomsg>"
 
 let emacs_quote g =
-  if !print_emacs then str emacs_quote_start ++ hov 0 g ++ str emacs_quote_end
+  if !print_emacs then hov 0 (str emacs_quote_start ++ g ++ str emacs_quote_end)
   else hov 0 g
 
 let emacs_quote_info g =
-  if !print_emacs then str emacs_quote_info_start++fnl() ++ hov 0 g ++ str emacs_quote_info_end
+  if !print_emacs then hov 0 (str emacs_quote_info_start++ brk(0,0) ++ g ++ brk(0,0) ++ str emacs_quote_info_end)
   else hov 0 g
 
 
@@ -412,7 +405,7 @@ type message_level =  Feedback.message_level =
 
 type message = Feedback.message = {
   message_level : message_level;
-  message_content : string;
+  message_content : Xml_datatype.xml;
 }
 
 let of_message = Feedback.of_message
@@ -424,7 +417,7 @@ type logger = message_level -> std_ppcmds -> unit
 let make_body info s =
   emacs_quote (hov 0 (info ++ spc () ++ s))
 
-let debugbody strm = hov 0 (str "Debug:" ++ spc () ++ strm)
+let debugbody strm = emacs_quote_info (hov 0 (str "Debug:" ++ spc () ++ strm))
 let warnbody strm = make_body (str "Warning:") strm
 let errorbody strm = make_body (str "Error:") strm
 let infobody strm = emacs_quote_info strm
@@ -511,11 +504,11 @@ let string_of_ppcmds c =
   msg_with Format.str_formatter c;
   Format.flush_str_formatter ()
 
-let log_via_feedback () = logger := (fun ~id lvl msg ->
+let log_via_feedback printer = logger := (fun ~id lvl msg ->
   !feeder {
      Feedback.contents = Feedback.Message {
        message_level = lvl;
-       message_content = string_of_ppcmds msg };
+       message_content = printer msg };
      Feedback.route = !feedback_route;
      Feedback.id = id })
 
@@ -525,6 +518,7 @@ let pr_comma () = str "," ++ spc ()
 let pr_semicolon () = str ";" ++ spc ()
 let pr_bar () = str "|" ++ spc ()
 let pr_arg pr x = spc () ++ pr x
+let pr_non_empty_arg pr x = let pp = pr x in if ismt pp then mt () else spc () ++ pr x
 let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
 let pr_opt_no_spc pr = function None -> mt () | Some x -> pr x
 

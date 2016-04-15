@@ -1,10 +1,12 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+
+open Proofview.Notations
 
 (** Potentially focussing tactics *)
 
@@ -37,12 +39,19 @@ val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
 
 (** {5 Focussing} *)
 
-val nf_enter : ([ `NF ] Proofview.Goal.t -> 'a t) -> 'a t
+val nf_enter : ([ `NF ], 'a t) enter -> 'a t
 (** Enter a goal. The resulting tactic is focussed. *)
 
-val enter : ([ `LZ ] Proofview.Goal.t -> 'a t) -> 'a t
+val enter : ([ `LZ ], 'a t) enter -> 'a t
 (** Enter a goal, without evar normalization. The resulting tactic is
     focussed. *)
+
+val s_enter : ([ `LZ ], 'a t) s_enter -> 'a t
+(** Enter a goal and put back an evarmap. The resulting tactic is focussed. *)
+
+val nf_s_enter : ([ `NF ], 'a t) s_enter -> 'a t
+(** Enter a goal, without evar normalization and put back an evarmap. The
+    resulting tactic is focussed. *)
 
 val with_env : 'a t -> (Environ.env*'a) t
 (** [with_env t] returns, in addition to the return type of [t], an
@@ -61,7 +70,10 @@ val (<*>) : unit t -> 'a t -> 'a t
 
 module List : Monad.ListS with type 'a t := 'a t
 
-(** {5 Debug} *)
+(** {5 Notations} *)
 
-val debug_prompt :
-  int -> Tacexpr.glob_tactic_expr -> (Tactic_debug.debug_info -> 'a t) -> 'a t
+module Notations :
+sig
+  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+  val (<*>) : unit t -> 'a t -> 'a t
+end

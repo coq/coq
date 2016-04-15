@@ -34,3 +34,14 @@ Module d.
     debug eauto.
   Defined.
 End d.
+
+(* An other variant which was still failing in 8.5 beta2 *)
+
+Parameter A B : Prop.
+Axiom a:B.
+
+Hint Extern 1 => match goal with H:_ -> id _ |- _ => try (unfold id in H) end.
+Goal (B -> id A) -> A.
+intros.
+eauto using a.
+Abort.

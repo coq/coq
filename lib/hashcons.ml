@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,7 +15,7 @@
  *   of objects of type t (u usually has the form (t1->t1)*(t2->t2)*...).
  * [hashcons u x] is a function that hash-cons the sub-structures of x using
  *   the hash-consing functions u provides.
- * [equal] is a comparison function. It is allowed to use physical equality
+ * [eq] is a comparison function. It is allowed to use physical equality
  *   on the sub-terms hash-consed by the hashcons function.
  * [hash] is the hash function given to the Hashtbl.Make function
  *
@@ -27,7 +27,7 @@ module type HashconsedType =
     type t
     type u
     val hashcons :  u -> t -> t
-    val equal : t -> t -> bool
+    val eq : t -> t -> bool
     val hash : t -> int
   end
 
@@ -53,7 +53,7 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
 
     (* We create the type of hashtables for t, with our comparison fun.
      * An invariant is that the table never contains two entries equals
-     * w.r.t (=), although the equality on keys is X.equal. This is
+     * w.r.t (=), although the equality on keys is X.eq. This is
      * granted since we hcons the subterms before looking up in the table.
      *)
     module Htbl = Hashset.Make(X)
@@ -72,7 +72,7 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
 
   end
 
-(* A few usefull wrappers:
+(* A few useful wrappers:
  * takes as argument the function [generate] above and build a function of type
  * u -> t -> t that creates a fresh table each time it is applied to the
  * sub-hcons functions. *)
@@ -96,20 +96,6 @@ let recursive_hcons h f u =
   let () = loop := hrec in
   hrec
 
-(* A set of global hashcons functions *)
-let hashcons_resets = ref []
-let init() = List.iter (fun f -> f()) !hashcons_resets
-
-(* [register_hcons h u] registers the hcons function h, result of the above
- *   wrappers. It returns another hcons function that always uses the same
- *   table, which can be reinitialized by init()
- *)
-let register_hcons h u =
-  let hf = ref (h u) in
-  let reset() = hf := h u in
-  hashcons_resets := reset :: !hashcons_resets;
-  (fun x -> !hf x)
-
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
 
@@ -124,7 +110,7 @@ module Hlist (D:HashedType) =
       let hashcons (hrec,hdata) = function
         | x :: l -> hdata x :: hrec l
         | l -> l
-      let equal l1 l2 =
+      let eq l1 l2 =
         l1 == l2 ||
           match l1, l2 with
           | [], [] -> true
@@ -144,7 +130,7 @@ module Hstring = Make(
     type t = string
     type u = unit
     let hashcons () s =(* incr accesstr;*) s
-    external equal : string -> string -> bool = "caml_string_equal" "noalloc"
+    external eq : string -> string -> bool = "caml_string_equal" "noalloc"
     (** Copy from CString *)
     let rec hash len s i accu =
       if i = len then accu
@@ -191,21 +177,6 @@ module Hobj = Make(
     type t = Obj.t
     type u = (Obj.t -> Obj.t) * unit
     let hashcons (hrec,_) = hash_obj hrec
-    let equal = comp_obj
+    let eq = comp_obj
     let hash = Hashtbl.hash
   end)
-
-(* Hashconsing functions for string and obj. Always use the same
- * global tables. The latter can be reinitialized with init()
- *)
-(* string : string -> string *)
-(* obj : Obj.t -> Obj.t *)
-let string = register_hcons (simple_hcons Hstring.generate Hstring.hcons) ()
-let obj = register_hcons (recursive_hcons Hobj.generate Hobj.hcons) ()
-
-(* The unsafe polymorphic hashconsing function *)
-let magic_hash (c : 'a) =
-  init();
-  let r = obj (Obj.repr c) in
-  init();
-  (Obj.magic r : 'a)

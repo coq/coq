@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -46,7 +46,7 @@ type library_t = {
   library_opaques : Cic.opaque_table;
   library_deps : Cic.library_deps;
   library_digest : Cic.vodigest;
-  library_extra_univs : Univ.constraints }
+  library_extra_univs : Univ.ContextSet.t }
 
 module LibraryOrdered =
   struct
@@ -97,7 +97,7 @@ let access_opaque_univ_table dp i =
     let t = LibraryMap.find dp !opaque_univ_tables in
     assert (i < Array.length t);
     Future.force t.(i)
-  with Not_found -> Univ.empty_constraint
+  with Not_found -> Univ.ContextSet.empty
 
 
 let _ = Declarations.indirect_opaque_access := access_opaque_table
@@ -271,20 +271,10 @@ let try_locate_qualified_library qid =
     | LibNotFound -> error_lib_not_found qid
 
 (************************************************************************)
-(*s Low-level interning/externing of libraries to files *)
+(*s Low-level interning of libraries from files *)
 
-(*s Loading from disk to cache (preparation phase) *)
-
-let raw_intern_library =
-  snd (System.raw_extern_intern Coq_config.vo_magic_number)
-
-let with_magic_number_check f a =
-  try f a
-  with System.Bad_magic_number fname ->
-    errorlabstrm "with_magic_number_check"
-    (str"file " ++ str fname ++ spc () ++ str"has bad magic number." ++
-    spc () ++ str"It is corrupted" ++ spc () ++
-    str"or was compiled with another version of Coq.")
+let raw_intern_library f =
+  System.raw_intern_state Coq_config.vo_magic_number f
 
 (************************************************************************)
 (* Internalise libraries *)
@@ -312,7 +302,7 @@ let intern_from_file (dir, f) =
   Flags.if_verbose pp (str"[intern "++str f++str" ..."); pp_flush ();
   let (sd,md,table,opaque_csts,digest) =
     try
-      let ch = with_magic_number_check raw_intern_library f in
+      let ch = System.with_magic_number_check raw_intern_library f in
       let (sd:Cic.summary_disk), _, digest = System.marshal_in_segment f ch in
       let (md:Cic.library_disk), _, _ = System.marshal_in_segment f ch in
       let (opaque_csts:'a option), _, udg = System.marshal_in_segment f ch in
@@ -357,9 +347,8 @@ let intern_from_file (dir, f) =
       LibraryMap.add sd.md_name opaque_csts !opaque_univ_tables)
     opaque_csts;
   let extra_cst =
-    Option.default Univ.empty_constraint
-      (Option.map (fun (_,cs,_) ->
-         Univ.ContextSet.constraints cs) opaque_csts) in
+    Option.default Univ.ContextSet.empty
+      (Option.map (fun (_,cs,_) -> cs) opaque_csts) in
   mk_library sd md f table digest extra_cst
 
 let get_deps (dir, f) =

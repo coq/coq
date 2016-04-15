@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -11,7 +11,7 @@ open Spawn
 let pr_err s = Printf.eprintf "(Spawned,%d) %s\n%!" (Unix.getpid ()) s
 let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
 
-type chandescr = AnonPipe | Socket of string * int
+type chandescr = AnonPipe | Socket of string * int * int
 
 let handshake cin cout =
   try
@@ -26,18 +26,19 @@ let handshake cin cout =
   | End_of_file ->
       pr_err "Handshake failed: End_of_file"; raise (Failure "handshake")
 
-let open_bin_connection h p =
+let open_bin_connection h pr pw =
   let open Unix in
-  let cin, cout = open_connection (ADDR_INET (inet_addr_of_string h,p)) in
+  let _, cout = open_connection (ADDR_INET (inet_addr_of_string h,pr)) in
+  let cin, _ = open_connection (ADDR_INET (inet_addr_of_string h,pw)) in
   set_binary_mode_in cin true;
   set_binary_mode_out cout true;
   let cin = CThread.prepare_in_channel_for_thread_friendly_io cin in
   cin, cout
 
-let controller h p =
+let controller h pr pw =
   prerr_endline "starting controller thread";
   let main () =
-    let ic, oc = open_bin_connection h p in
+    let ic, oc = open_bin_connection h pr pw in
     let rec loop () =
       try
         match CThread.thread_friendly_input_value ic with
@@ -61,8 +62,8 @@ let init_channels () =
   if !channels <> None then Errors.anomaly(Pp.str "init_channels called twice");
   let () = match !main_channel with
   | None -> ()
-  | Some (Socket(mh,mp)) ->
-    channels := Some (open_bin_connection mh mp);
+  | Some (Socket(mh,mpr,mpw)) ->
+    channels := Some (open_bin_connection mh mpr mpw);
   | Some AnonPipe ->
     let stdin = Unix.in_channel_of_descr (Unix.dup Unix.stdin) in
     let stdout = Unix.out_channel_of_descr (Unix.dup Unix.stdout) in
@@ -74,8 +75,8 @@ let init_channels () =
   in
   match !control_channel with
   | None -> ()
-  | Some (Socket (ch, cp)) ->
-    controller ch cp
+  | Some (Socket (ch, cpr, cpw)) ->
+    controller ch cpr cpw
   | Some AnonPipe ->
     Errors.anomaly (Pp.str "control channel cannot be a pipe")
 

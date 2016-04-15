@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -87,7 +87,7 @@ let vernac_proof_instr instr =
 
 (* Only declared at raw level, because only used in vernac commands. *)
 let wit_proof_instr : (raw_proof_instr, glob_proof_instr, proof_instr) Genarg.genarg_type =
-  Genarg.make0 None "proof_instr"
+  Genarg.make0 "proof_instr"
 
 (* We create a new parser entry [proof_mode]. The Declarative proof mode
     will replace the normal parser entry for tactics with this one. *)
@@ -95,7 +95,7 @@ let proof_mode : vernac_expr Gram.entry =
   Gram.entry_create "vernac:proof_command"
 (* Auxiliary grammar entry. *)
 let proof_instr : raw_proof_instr Gram.entry =
-  Pcoq.create_generic_entry "proof_instr" (Genarg.rawwit wit_proof_instr)
+  Pcoq.create_generic_entry Pcoq.utactic "proof_instr" (Genarg.rawwit wit_proof_instr)
 
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr
@@ -135,7 +135,7 @@ let _ =
 				       set = begin fun () ->
 					 (* We set the command non terminal to
 					     [proof_mode] (which we just defined). *)
-					 G_vernac.set_command_entry proof_mode ;
+					 Pcoq.set_command_entry proof_mode ;
 					 (* We substitute the goal printer, by the one we built
 					     for the proof mode. *)
 					 Printer.set_printer_pr { Printer.default_printer_pr with
@@ -147,7 +147,7 @@ let _ =
 				       reset = begin fun () ->
 					 (* We restore the command non terminal to
 					      [noedit_mode]. *)
-					 G_vernac.set_command_entry G_vernac.noedit_mode ;
+					 Pcoq.set_command_entry Pcoq.Vernac_.noedit_mode ;
 					 (* We restore the goal printer to default *)
 					 Printer.set_printer_pr Printer.default_printer_pr
 				       end

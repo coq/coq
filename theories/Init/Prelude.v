@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -15,6 +15,7 @@ Require Coq.Init.Nat.
 Require Export Peano.
 Require Export Coq.Init.Wf.
 Require Export Coq.Init.Tactics.
+Require Export Coq.Init.Tauto.
 (* Initially available plugins
    (+ nat_syntax_plugin loaded in Datatypes) *)
 Declare ML Module "extraction_plugin".

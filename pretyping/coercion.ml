@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -129,7 +129,7 @@ let mu env evdref t =
   let rec aux v =
     let v' = hnf env !evdref v in
       match disc_subset v' with
-      Some (u, p) ->
+      | Some (u, p) ->
 	let f, ct = aux u in
 	let p = hnf_nodelta env !evdref p in
 	  (Some (fun x ->
@@ -142,6 +142,7 @@ let mu env evdref t =
 and coerce loc env evdref (x : Term.constr) (y : Term.constr)
     : (Term.constr -> Term.constr) option
     =
+  let open Context.Rel.Declaration in
   let rec coerce_unify env x y =
     let x = hnf env !evdref x and y = hnf env !evdref y in
       try
@@ -151,8 +152,9 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
   and coerce' env x y : (Term.constr -> Term.constr) option =
     let subco () = subset_coerce env evdref x y in
     let dest_prod c =
+      let open Context.Rel.Declaration in
       match Reductionops.splay_prod_n env ( !evdref) 1 c with
-      | [(na,b,t)], c -> (na,t), c
+      | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na,t), c
       | _ -> raise NoSubtacCoercion
     in
     let coerce_application typ typ' c c' l l' =
@@ -187,7 +189,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		    (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	else Some (fun x -> 
 	  let term = co x in
-	    Typing.solve_evars env evdref term)
+	    Typing.e_solve_evars env evdref term)
       in
 	if isEvar c || isEvar c' then
 	  (* Second-order unification needed. *)
@@ -205,7 +207,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	  let name' = 
 	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.ids_of_context env))
 	  in
-	  let env' = push_rel (name', None, a') env in
+	  let env' = push_rel (LocalAssum (name', a')) env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 	    (* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
 	  let coec1 = app_opt env' evdref c1 (mkRel 1) in
@@ -241,9 +243,8 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		     let remove_head a c =
 		       match kind_of_term c with
 		       | Lambda (n, t, t') -> c, t'
-			   (*| Prod (n, t, t') -> t'*)
 		       | Evar (k, args) ->
-			   let (evs, t) = Evarutil.define_evar_as_lambda env !evdref (k,args) in
+			   let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k,args) in
 			     evdref := evs;
 			     let (n, dom, rng) = destLambda t in
 			     let dom = whd_evar !evdref dom in
@@ -255,7 +256,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		       | _ -> raise NoSubtacCoercion
 		     in
 		     let (pb, b), (pb', b') = remove_head a pb, remove_head a' pb' in
-		     let env' = push_rel (Name Namegen.default_dependent_ident, None, a) env in
+		     let env' = push_rel (LocalAssum (Name Namegen.default_dependent_ident, a)) env in
 		     let c2 = coerce_unify env' b b' in
 		       match c1, c2 with
 		       | None, None -> None
@@ -297,9 +298,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		      with NoSubtacCoercion ->
 			let typ = Typing.unsafe_type_of env evm c in
 			let typ' = Typing.unsafe_type_of env evm c' in
-			  (* 			     if not (is_arity env evm typ) then *)
 			  coerce_application typ typ' c c' l l')
-		       (* 			     else subco () *)
 		 else
 		   subco ()
 	   | x, y when Constr.equal c c' ->
@@ -307,9 +306,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		 let evm =  !evdref in
 		 let lam_type = Typing.unsafe_type_of env evm c in
 		 let lam_type' = Typing.unsafe_type_of env evm c' in
-		   (* 			 if not (is_arity env evm lam_type) then ( *)
 		   coerce_application lam_type lam_type' c c' l l'
-		     (* 			 ) else subco () *)
 	       else subco ()
 	   | _ -> subco ())
       | _, _ ->  subco ()
@@ -335,15 +332,22 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	    raise NoSubtacCoercion
   in coerce_unify env x y
 
+let app_coercion env evdref coercion v =
+  match coercion with
+  | None -> v
+  | Some f ->
+     let v' = Typing.e_solve_evars env evdref (f v) in
+     whd_betaiota !evdref v'
+
 let coerce_itf loc env evd v t c1 =
   let evdref = ref evd in
   let coercion = coerce loc env evdref t c1 in
-  let t = Option.map (app_opt env evdref coercion) v in
+  let t = Option.map (app_coercion env evdref coercion) v in
     !evdref, t
 
 let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
-    ~filter:Typeclasses.no_goals ~split:false ~fail:false env evd
+    ~filter:Typeclasses.no_goals ~split:true ~fail:false env evd
 
 (* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =
@@ -373,7 +377,7 @@ let inh_app_fun_core env evd j =
     match kind_of_term t with
     | Prod (_,_,_) -> (evd,j)
     | Evar ev ->
-	let (evd',t) = define_evar_as_product evd ev in
+	let (evd',t) = Evardefine.define_evar_as_product evd ev in
 	  (evd',{ uj_val = j.uj_val; uj_type = t })
     | _ ->
       	try let t,p =
@@ -414,7 +418,7 @@ let inh_coerce_to_sort loc env evd j =
     match kind_of_term typ with
     | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
     | Evar ev when not (is_defined evd (fst ev)) ->
-	let (evd',s) = define_evar_as_sort env evd ev in
+	let (evd',s) = Evardefine.define_evar_as_sort env evd ev in
 	  (evd',{ utj_val = j.uj_val; utj_type = s })
     | _ ->
 	inh_tosort_force loc env evd j
@@ -424,7 +428,7 @@ let inh_coerce_to_base loc env evd j =
     let evdref = ref evd in
     let ct, typ' = mu env evdref j.uj_type in
     let res =
-      { uj_val = app_opt env evdref ct j.uj_val;
+      { uj_val = app_coercion env evdref ct j.uj_val;
 	uj_type = typ' }
     in !evdref, res
   else (evd, j)
@@ -475,7 +479,8 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
 	  let name = match name with
 	    | Anonymous -> Name Namegen.default_dependent_ident
 	    | _ -> name in
-	  let env1 = push_rel (name,None,u1) env in
+	  let open Context.Rel.Declaration in
+	  let env1 = push_rel (LocalAssum (name,u1)) env in
 	  let (evd', v1) =
 	    inh_conv_coerce_to_fail loc env1 evd rigidonly
               (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in

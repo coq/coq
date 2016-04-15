@@ -8,6 +8,7 @@ Hashcons
 CSet
 CMap
 Int
+Dyn
 HMap
 Option
 Store
@@ -17,6 +18,8 @@ Flags
 Control
 Pp_control
 Loc
+CList
+CString
 Serialize
 Stateid
 Feedback
@@ -25,14 +28,12 @@ Segmenttree
 Unicodetable
 Unicode
 CObj
-CList
-CString
 CArray
 CStack
 Util
 Ppstyle
 Errors
-Ephemeron
+CEphemeron
 Future
 CUnix
 

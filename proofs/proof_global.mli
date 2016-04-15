@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -55,18 +55,18 @@ val compact_the_proof : unit -> unit
     (i.e. an proof ending command) and registers the appropriate
     values. *)
 type lemma_possible_guards = int list list
-type proof_universes = Evd.evar_universe_context
+type proof_universes = Evd.evar_universe_context * Universes.universe_binders option
+type universe_binders = Names.Id.t Loc.located list
 type proof_object = {
   id : Names.Id.t;
-  entries : Entries.definition_entry list;
+  entries : Safe_typing.private_constants Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: proof_universes;
-  (* constraints : Univ.constraints; *)
-  (** guards : lemma_possible_guards; *)
 }
 
 type proof_ending =
-  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * proof_universes
+  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
+		  proof_universes
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
@@ -83,24 +83,30 @@ val apply_terminator : proof_terminator -> proof_ending -> unit
     closing commands and the xml plugin); [terminator] is used at the
     end of the proof to close the proof. *)
 val start_proof :
-  Evd.evar_map -> Names.Id.t -> Decl_kinds.goal_kind -> (Environ.env * Term.types) list  ->
+  Evd.evar_map -> Names.Id.t -> ?pl:universe_binders ->
+  Decl_kinds.goal_kind -> (Environ.env * Term.types) list  ->
     proof_terminator -> unit
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
 val start_dependent_proof :
-  Names.Id.t -> Decl_kinds.goal_kind -> Proofview.telescope  ->
-    proof_terminator -> unit
+  Names.Id.t -> ?pl:universe_binders -> Decl_kinds.goal_kind ->
+  Proofview.telescope -> proof_terminator -> unit
+
+(** Update the proofs global environment after a side-effecting command
+  (e.g. a sublemma definition) has been run inside it. Assumes
+  there_are_pending_proofs. *)
+val update_global_env : unit -> unit
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
 val close_proof : keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof
 
 (* Intermediate step necessary to delegate the future.
- * Both access the current proof state. The formes is supposed to be
+ * Both access the current proof state. The former is supposed to be
  * chained with a computation that completed the proof *)
 
-type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
+type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
 
 (* If allow_partial is set (default no) then an incomplete proof
  * is allowed (no error), and a warn is given if the proof is complete. *)
@@ -132,9 +138,13 @@ val set_interp_tac :
     -> unit
 
 (** Sets the section variables assumed by the proof, returns its closure
- * (w.r.t. type dependencies *)
-val set_used_variables : Names.Id.t list -> Context.section_context
+ * (w.r.t. type dependencies and let-ins covered by it) + a list of
+ * ids to be cleared *)
+val set_used_variables :
+  Names.Id.t list -> Context.section_context * (Loc.t * Names.Id.t) list
 val get_used_variables : unit -> Context.section_context option
+
+val get_universe_binders : unit -> universe_binders option
 
 (**********************************************************)
 (*                                                        *)
@@ -162,7 +172,7 @@ module Bullet : sig
   type behavior = {
     name : string;
     put : Proof.proof -> t -> Proof.proof;
-    suggest: Proof.proof -> string option
+    suggest: Proof.proof -> Pp.std_ppcmds
   }
 
   (** A registered behavior can then be accessed in Coq
@@ -179,7 +189,7 @@ module Bullet : sig
   (** Handles focusing/defocusing with bullets:
        *)
   val put : Proof.proof -> t -> Proof.proof
-  val suggest : Proof.proof -> string option
+  val suggest : Proof.proof -> Pp.std_ppcmds
 end
 
 

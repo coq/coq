@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -22,9 +22,12 @@ val broadcast : 'a t -> unit
 val wait_until_n_are_waiting_then_snapshot : int -> 'a t -> 'a list
 
 val clear : 'a t -> unit
+val clear_saving : 'a t -> ('a -> 'b option) -> 'b list
 val is_empty : 'a t -> bool
 
 exception BeingDestroyed
 (* Threads blocked in pop can get this exception if the queue is being
  * destroyed *)
 val destroy : 'a t -> unit
+
+val length : 'a t -> int

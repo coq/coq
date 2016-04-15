@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -20,7 +20,6 @@ type t =
   | AGlobAtomicTacticExpr of glob_atomic_tactic_expr
   | ARawTacticExpr        of raw_tactic_expr
   | ARawAtomicTacticExpr  of raw_atomic_tactic_expr
-  | ATacticExpr           of tactic_expr
   | AAtomicTacticExpr     of atomic_tactic_expr
 
 let tag_of_annotation = function
@@ -32,7 +31,6 @@ let tag_of_annotation = function
   | AGlobAtomicTacticExpr _ -> "glob_atomic_tactic_expr"
   | ARawTacticExpr _        -> "raw_tactic_expr"
   | ARawAtomicTacticExpr _  -> "raw_atomic_tactic_expr"
-  | ATacticExpr _           -> "tactic_expr"
   | AAtomicTacticExpr _     -> "atomic_tactic_expr"
 
 let attributes_of_annotation a =

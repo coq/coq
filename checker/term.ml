@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -222,24 +222,29 @@ let rel_context_length = List.length
 let rel_context_nhyps hyps =
   let rec nhyps acc = function
     | [] -> acc
-    | (_,None,_)::hyps -> nhyps (1+acc) hyps
-    | (_,Some _,_)::hyps -> nhyps acc hyps in
+    | LocalAssum _ :: hyps -> nhyps (1+acc) hyps
+    | LocalDef _ :: hyps -> nhyps acc hyps in
   nhyps 0 hyps
 let fold_rel_context f l ~init = List.fold_right f l init
 
-let map_rel_context f l =
-  let map_decl (n, body_o, typ as decl) =
-    let body_o' = Option.smartmap f body_o in
-    let typ' = f typ in
-      if body_o' == body_o && typ' == typ then decl else
-	(n, body_o', typ')
-  in
-    List.smartmap map_decl l
+let map_rel_decl f = function
+  | LocalAssum (n, typ) as decl ->
+     let typ' = f typ in
+     if typ' == typ then decl else
+       LocalAssum (n, typ')
+  | LocalDef (n, body, typ) as decl ->
+     let body' = f body in
+     let typ' = f typ in
+     if body' == body && typ' == typ then decl else
+       LocalDef (n, body', typ')
+
+let map_rel_context f =
+  List.smartmap (map_rel_decl f)
 
 let extended_rel_list n hyps =
   let rec reln l p = function
-    | (_,None,_) :: hyps -> reln (Rel (n+p) :: l) (p+1) hyps
-    | (_,Some _,_) :: hyps -> reln l (p+1) hyps
+    | LocalAssum _ :: hyps -> reln (Rel (n+p) :: l) (p+1) hyps
+    | LocalDef _ :: hyps -> reln l (p+1) hyps
     | [] -> l
   in
   reln [] 1 hyps
@@ -272,8 +277,8 @@ let decompose_lam_n_assum n =
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else match c with
-    | Lambda (x,t,c)  -> lamdec_rec ((x,None,t) :: l) (n-1) c
-    | LetIn (x,b,t,c) -> lamdec_rec ((x,Some b,t) :: l) n c
+    | Lambda (x,t,c)  -> lamdec_rec (LocalAssum (x,t) :: l) (n-1) c
+    | LetIn (x,b,t,c) -> lamdec_rec (LocalDef (x,b,t) :: l) n c
     | Cast (c,_,_)      -> lamdec_rec l n c
     | c -> error "decompose_lam_n_assum: not enough abstractions"
   in
@@ -282,18 +287,18 @@ let decompose_lam_n_assum n =
 (* Iterate products, with or without lets *)
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
-let mkProd_or_LetIn (na,body,t) c =
-  match body with
-    | None -> Prod (na, t, c)
-    | Some b -> LetIn (na, b, t, c)
+let mkProd_or_LetIn decl c =
+  match decl with
+    | LocalAssum (na,t) -> Prod (na, t, c)
+    | LocalDef (na,b,t) -> LetIn (na, b, t, c)
 
 let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
 
 let decompose_prod_assum =
   let rec prodec_rec l c =
     match c with
-    | Prod (x,t,c)    -> prodec_rec ((x,None,t) :: l) c
-    | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t) :: l) c
+    | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t) :: l) c
+    | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) c
     | Cast (c,_,_)    -> prodec_rec l c
     | _               -> l,c
   in
@@ -305,8 +310,8 @@ let decompose_prod_n_assum n =
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
     else match c with
-    | Prod (x,t,c)    -> prodec_rec ((x,None,t) :: l) (n-1) c
-    | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t) :: l) (n-1) c
+    | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t) :: l) (n-1) c
+    | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) (n-1) c
     | Cast (c,_,_)    -> prodec_rec l n c
     | c -> error "decompose_prod_n_assum: not enough assumptions"
   in
@@ -324,8 +329,8 @@ let mkArity (sign,s) = it_mkProd_or_LetIn (Sort s) sign
 let destArity =
   let rec prodec_rec l c =
     match c with
-    | Prod (x,t,c)    -> prodec_rec ((x,None,t)::l) c
-    | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
+    | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t)::l) c
+    | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t)::l) c
     | Cast (c,_,_)    -> prodec_rec l c
     | Sort s          -> l,s
     | _               -> anomaly ~label:"destArity" (Pp.str "not an arity")

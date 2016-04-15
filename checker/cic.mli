@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -111,7 +111,8 @@ type cofixpoint = constr pcofixpoint
 
 (** {6 Type of assumptions and contexts}  *)
 
-type rel_declaration = Name.t * constr option * constr
+type rel_declaration = LocalAssum of Name.t * constr          (* name, type *)
+                     | LocalDef of Name.t * constr * constr   (* name, value, type *)
 type rel_context = rel_declaration list
 
 (** The declarations below in .vo should be outside sections,
@@ -380,7 +381,7 @@ and module_body =
     (** algebraic type, kept if it's relevant for extraction *)
     mod_type_alg : module_expression option;
     (** set of all constraints in the module  *)
-    mod_constraints : Univ.constraints;
+    mod_constraints : Univ.ContextSet.t;
     (** quotiented set of equivalent constants and inductive names *)
     mod_delta : delta_resolver;
     mod_retroknowledge : action list }

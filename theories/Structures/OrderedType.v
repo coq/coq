@@ -342,7 +342,7 @@ Module KeyOrderedType(O:OrderedType).
    compute in Hxx'; compute in Hyy'. rewrite Hxx', Hyy'; auto.
   Qed.
 
-  (* Additionnal facts *)
+  (* Additional facts *)
 
   Lemma eqk_not_ltk : forall x x', eqk x x' -> ~ltk x x'.
    Proof.

@@ -333,33 +333,36 @@ let raw_push_named (na,raw_value,raw_typ) env =
   match na with
     | Anonymous -> env
     | Name id ->
-	let value = Option.map (fun x-> fst (Pretyping.understand env Evd.empty x)) raw_value in
-	let typ,ctx = Pretyping.understand env Evd.empty ~expected_type:Pretyping.IsType raw_typ in
-	Environ.push_named (id,value,typ) env
+	let value = Option.map (fun x-> fst (Pretyping.understand env (Evd.from_env env) x)) raw_value in
+	let typ,ctx = Pretyping.understand env (Evd.from_env env) ~expected_type:Pretyping.IsType raw_typ in
+        let open Context.Named.Declaration in
+	Environ.push_named (of_tuple (id,value,typ)) env
 
 
 let add_pat_variables pat typ env : Environ.env =
   let rec add_pat_variables env pat typ  : Environ.env =
-    observe (str "new rel env := " ++ Printer.pr_rel_context_of env Evd.empty);
+    let open Context.Rel.Declaration in
+    observe (str "new rel env := " ++ Printer.pr_rel_context_of env (Evd.from_env env));
 
     match pat with
-      | PatVar(_,na) -> Environ.push_rel (na,None,typ) env
+      | PatVar(_,na) -> Environ.push_rel (LocalAssum (na,typ)) env
       | PatCstr(_,c,patl,na) ->
 	  let Inductiveops.IndType(indf,indargs) =
-	    try Inductiveops.find_rectype env Evd.empty typ
+	    try Inductiveops.find_rectype env (Evd.from_env env) typ
 	    with Not_found -> assert false
 	  in
 	  let constructors = Inductiveops.get_constructors env indf in
 	  let constructor : Inductiveops.constructor_summary = List.find (fun cs -> eq_constructor c (fst cs.Inductiveops.cs_cstr)) (Array.to_list constructors) in
-	  let cs_args_types :types list = List.map (fun (_,_,t) -> t) constructor.Inductiveops.cs_args in
+	  let cs_args_types :types list = List.map get_type constructor.Inductiveops.cs_args in
 	  List.fold_left2 add_pat_variables env patl (List.rev cs_args_types)
   in
   let new_env = add_pat_variables  env pat typ in
   let res =
     fst (
-      Context.fold_rel_context
-	(fun (na,v,t) (env,ctxt) ->
-	 match na with
+      Context.Rel.fold_outside
+	(fun decl (env,ctxt) ->
+         let _,v,t = Context.Rel.Declaration.to_tuple decl in
+	 match Context.Rel.Declaration.get_name decl with
 	   | Anonymous -> assert false
 	   | Name id ->
 	       let new_t =  substl ctxt t in
@@ -370,13 +373,14 @@ let add_pat_variables pat typ env : Environ.env =
 			  Option.fold_right (fun v _ -> str "old value := " ++ Printer.pr_lconstr v ++ fnl ()) v (mt ()) ++
 			  Option.fold_right (fun v _ -> str "new value := " ++ Printer.pr_lconstr v ++ fnl ()) new_v (mt ())
 		       );
-	       (Environ.push_named (id,new_v,new_t) env,mkVar id::ctxt)
+               let open Context.Named.Declaration in
+	       (Environ.push_named (of_tuple (id,new_v,new_t)) env,mkVar id::ctxt)
       )
 	(Environ.rel_context new_env)
 	~init:(env,[])
     )
   in
-  observe (str "new var env := " ++ Printer.pr_named_context_of res Evd.empty);
+  observe (str "new var env := " ++ Printer.pr_named_context_of res (Evd.from_env env));
   res
 
 
@@ -393,19 +397,20 @@ let rec pattern_to_term_and_type env typ  = function
 	  constr
       in
       let Inductiveops.IndType(indf,indargs) =
-	try Inductiveops.find_rectype env Evd.empty typ
+	try Inductiveops.find_rectype env (Evd.from_env env) typ
 	with Not_found -> assert false
       in
       let constructors = Inductiveops.get_constructors env indf in
       let constructor  = List.find (fun cs -> eq_constructor (fst cs.Inductiveops.cs_cstr) constr) (Array.to_list constructors) in
-      let cs_args_types :types list = List.map (fun (_,_,t) -> t) constructor.Inductiveops.cs_args in
+      let open Context.Rel.Declaration in
+      let cs_args_types :types list = List.map get_type constructor.Inductiveops.cs_args in
       let _,cstl = Inductiveops.dest_ind_family indf in
       let csta = Array.of_list cstl in
       let implicit_args =
 	Array.to_list
 	  (Array.init
 	     (cst_narg - List.length patternl)
-	     (fun i -> Detyping.detype false [] env Evd.empty csta.(i))
+	     (fun i -> Detyping.detype false [] env (Evd.from_env env) csta.(i))
 	  )
       in
       let patl_as_term =
@@ -486,9 +491,9 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		   a pseudo value "v1 ... vn".
 		   The "value" of this branch is then simply [res]
 		*)
-		let rt_as_constr,ctx = Pretyping.understand env Evd.empty rt in
-		let rt_typ = Typing.unsafe_type_of env Evd.empty rt_as_constr in
-		let res_raw_type = Detyping.detype false [] env Evd.empty rt_typ in
+		let rt_as_constr,ctx = Pretyping.understand env (Evd.from_env env) rt in
+		let rt_typ = Typing.unsafe_type_of env (Evd.from_env env) rt_as_constr in
+		let res_raw_type = Detyping.detype false [] env (Evd.from_env env) rt_typ in
 		let res = fresh_id args_res.to_avoid "_res" in
 		let new_avoid = res::args_res.to_avoid in
 		let res_rt = mkGVar res in
@@ -594,12 +599,13 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	   and combine the two result
 	*)
 	let v_res = build_entry_lc env funnames avoid v in
-	let v_as_constr,ctx = Pretyping.understand env Evd.empty v in
-	let v_type = Typing.unsafe_type_of env Evd.empty v_as_constr in
+	let v_as_constr,ctx = Pretyping.understand env (Evd.from_env env) v in
+	let v_type = Typing.unsafe_type_of env (Evd.from_env env) v_as_constr in
 	let new_env =
+          let open Context.Named.Declaration in
 	  match n with
 	      Anonymous -> env
-	    | Name id -> Environ.push_named (id,Some v_as_constr,v_type) env
+	    | Name id -> Environ.push_named (of_tuple (id,Some v_as_constr,v_type)) env
 	in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_letin n) v_res b_res
@@ -610,10 +616,10 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let make_discr = make_discr_match brl in
 	build_entry_lc_from_case env funnames make_discr el brl avoid
     | GIf(_,b,(na,e_option),lhs,rhs) ->
-	let b_as_constr,ctx = Pretyping.understand env Evd.empty b in
-	let b_typ = Typing.unsafe_type_of env Evd.empty b_as_constr in
+	let b_as_constr,ctx = Pretyping.understand env (Evd.from_env env) b in
+	let b_typ = Typing.unsafe_type_of env (Evd.from_env env) b_as_constr in
 	let (ind,_) =
-	  try Inductiveops.find_inductive env Evd.empty b_typ
+	  try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	  with Not_found ->
 	    errorlabstrm "" (str "Cannot find the inductive associated to " ++
 			       Printer.pr_glob_constr b ++ str " in " ++
@@ -642,10 +648,10 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	      )
 	      nal
 	  in
-	  let b_as_constr,ctx = Pretyping.understand env Evd.empty b in
-	  let b_typ = Typing.unsafe_type_of env Evd.empty b_as_constr in
+	  let b_as_constr,ctx = Pretyping.understand env (Evd.from_env env) b in
+	  let b_typ = Typing.unsafe_type_of env (Evd.from_env env) b_as_constr in
 	  let (ind,_) =
-	    try Inductiveops.find_inductive env Evd.empty b_typ
+	    try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	    with Not_found ->
 	      errorlabstrm "" (str "Cannot find the inductive associated to " ++
 				 Printer.pr_glob_constr b ++ str " in " ++
@@ -681,7 +687,7 @@ and build_entry_lc_from_case env funname make_discr
 	let case_resl =
 	    List.fold_right
 	      (fun (case_arg,_) ctxt_argsl ->
-		let arg_res = build_entry_lc env funname avoid case_arg  in
+		let arg_res = build_entry_lc env funname ctxt_argsl.to_avoid case_arg in
 		combine_results combine_args arg_res ctxt_argsl
 	      )
 	      el
@@ -689,8 +695,8 @@ and build_entry_lc_from_case env funname make_discr
 	in
 	let types =
 	  List.map (fun (case_arg,_) ->
-		      let case_arg_as_constr,ctx = Pretyping.understand env Evd.empty case_arg in
-		      Typing.unsafe_type_of env Evd.empty case_arg_as_constr
+		      let case_arg_as_constr,ctx = Pretyping.understand env (Evd.from_env env) case_arg in
+		      Typing.unsafe_type_of env (Evd.from_env env) case_arg_as_constr
 		   ) el
 	in
 	(****** The next works only if the match is not dependent ****)
@@ -737,11 +743,11 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		   List.fold_right
 		     (fun id acc ->
 			let typ_of_id =
-			  Typing.unsafe_type_of env_with_pat_ids Evd.empty (mkVar id)
+			  Typing.unsafe_type_of env_with_pat_ids (Evd.from_env env) (mkVar id)
 			in
 			let raw_typ_of_id =
 			  Detyping.detype false []
-			    env_with_pat_ids Evd.empty typ_of_id
+			    env_with_pat_ids (Evd.from_env env) typ_of_id
 			in
 			mkGProd (Name id,raw_typ_of_id,acc))
 		     pat_ids
@@ -785,15 +791,15 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	      List.map3
 	      (fun pat e typ_as_constr ->
 		 let this_pat_ids = ids_of_pat pat in
-		 let typ = Detyping.detype false [] new_env Evd.empty typ_as_constr in
+		 let typ = Detyping.detype false [] new_env (Evd.from_env env) typ_as_constr in
 		 let pat_as_term = pattern_to_term pat in
 		 List.fold_right
 		   (fun id  acc ->
 		      if Id.Set.mem id this_pat_ids
 		      then (Prod (Name id),
-		      let typ_of_id = Typing.unsafe_type_of new_env Evd.empty (mkVar id) in
+		      let typ_of_id = Typing.unsafe_type_of new_env (Evd.from_env env) (mkVar id) in
 		      let raw_typ_of_id =
-			Detyping.detype false [] new_env Evd.empty typ_of_id
+			Detyping.detype false [] new_env (Evd.from_env env) typ_of_id
 		      in
 		      raw_typ_of_id
 			   )::acc
@@ -875,7 +881,7 @@ exception Continue
 *)
 let rec rebuild_cons env nb_args relname args crossed_types depth rt =
   observe (str "rebuilding : " ++ pr_glob_constr rt);
-
+  let open Context.Rel.Declaration in
   match rt with
     | GProd(_,n,k,t,b) ->
 	let not_free_in_t id = not (is_free_in id t) in
@@ -894,8 +900,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			let new_t =
 			  mkGApp(mkGVar(mk_rel_id this_relname),args'@[res_rt])
 			in
-			let t',ctx = Pretyping.understand env Evd.empty new_t in
-			let new_env = Environ.push_rel (n,None,t') env in
+			let t',ctx = Pretyping.understand env (Evd.from_env env) new_t in
+			let new_env = Environ.push_rel (LocalAssum (n,t')) env in
 			let new_b,id_to_exclude =
 			  rebuild_cons new_env
 			    nb_args relname
@@ -914,7 +920,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		  try
 		    observe (str "computing new type for eq : " ++ pr_glob_constr rt);
 		    let t' =
-		      try fst (Pretyping.understand env Evd.empty t)(*FIXME*)
+		      try fst (Pretyping.understand env (Evd.from_env env) t)(*FIXME*)
                       with e when Errors.noncritical e -> raise Continue
 		    in
 		    let is_in_b = is_free_in id b in
@@ -926,7 +932,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    let subst_b =
 		      if is_in_b then b else  replace_var_by_term id rt b
 		    in
-		    let new_env = Environ.push_rel (n,None,t') env in
+		    let new_env = Environ.push_rel (LocalAssum (n,t')) env in
 		    let new_b,id_to_exclude =
 		      rebuild_cons
 			new_env
@@ -937,7 +943,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    mkGProd(n,t,new_b),id_to_exclude
 		  with Continue ->
 		    let jmeq = Globnames.IndRef (fst (destInd (jmeq ()))) in
-		    let ty',ctx = Pretyping.understand env Evd.empty ty in
+		    let ty',ctx = Pretyping.understand env (Evd.from_env env) ty in
 		    let ind,args' = Inductive.find_inductive env ty' in
 		    let mib,_ = Global.lookup_inductive (fst ind) in
 		    let nparam = mib.Declarations.mind_nparams in
@@ -949,7 +955,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			    GRef (Loc.ghost,Globnames.IndRef (fst ind),None),
 			    (List.map
 			      (fun p -> Detyping.detype false []
-				 env Evd.empty
+				 env (Evd.from_env env)
 				 p) params)@(Array.to_list
 				      (Array.make
 					 (List.length args' - nparam)
@@ -959,7 +965,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		      GApp(loc1,GRef(loc2,jmeq,None),[ty;GVar(loc3,id);rt_typ;rt])
 		    in
 		    observe (str "computing new type for jmeq : " ++ pr_glob_constr eq');
-		    let eq'_as_constr,ctx = Pretyping.understand env Evd.empty eq' in
+		    let eq'_as_constr,ctx = Pretyping.understand env (Evd.from_env env) eq' in
 		    observe (str " computing new type for jmeq : done") ;
 		    let new_args =
 		      match kind_of_term eq'_as_constr with
@@ -970,20 +976,19 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			      (fun acc var_as_constr arg ->
 				 if isRel var_as_constr
 				 then
-				   let (na,_,_) =
-				     Environ.lookup_rel (destRel var_as_constr) env
-				   in
+                                   let open Context.Rel.Declaration in
+				   let na = get_name (Environ.lookup_rel (destRel var_as_constr) env) in
 				   match na with
 				     | Anonymous -> acc
 				     | Name id' ->
 					 (id',Detyping.detype false []
 					    env
-                                            Evd.empty
+                                            (Evd.from_env env)
 					    arg)::acc
 				 else if isVar var_as_constr
 				 then (destVar var_as_constr,Detyping.detype false []
 					 env
-                                         Evd.empty
+                                         (Evd.from_env env)
 					 arg)::acc
 				 else acc
 			      )
@@ -1009,8 +1014,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		     if is_in_b then b else  replace_var_by_term id rt b
 		    in
 		    let new_env =
-		      let t',ctx = Pretyping.understand env Evd.empty eq' in
-		      Environ.push_rel (n,None,t') env
+		      let t',ctx = Pretyping.understand env (Evd.from_env env) eq' in
+		      Environ.push_rel (LocalAssum (n,t')) env
 		    in
 		    let new_b,id_to_exclude =
 		      rebuild_cons
@@ -1047,8 +1052,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		  else raise Continue
 	      with Continue -> 
 		observe (str "computing new type for prod : " ++ pr_glob_constr rt);
-		let t',ctx = Pretyping.understand env Evd.empty t in
-		let new_env = Environ.push_rel (n,None,t') env in
+		let t',ctx = Pretyping.understand env (Evd.from_env env) t in
+		let new_env = Environ.push_rel (LocalAssum (n,t')) env in
 		let new_b,id_to_exclude =
 		  rebuild_cons new_env
 		    nb_args relname
@@ -1063,8 +1068,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	      end
 	    | _ ->
 		observe (str "computing new type for prod : " ++ pr_glob_constr rt);
-		let t',ctx = Pretyping.understand env Evd.empty t in
-		let new_env = Environ.push_rel (n,None,t') env in
+		let t',ctx = Pretyping.understand env (Evd.from_env env) t in
+		let new_env = Environ.push_rel (LocalAssum (n,t')) env in
 		let new_b,id_to_exclude =
 		  rebuild_cons new_env
 		    nb_args relname
@@ -1082,10 +1087,10 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_crossed_types = t :: crossed_types in
 	  observe (str "computing new type for lambda : " ++ pr_glob_constr rt);
-	  let t',ctx = Pretyping.understand env Evd.empty t in
+	  let t',ctx = Pretyping.understand env (Evd.from_env env) t in
 	  match n with
 	    | Name id ->
-		let new_env = Environ.push_rel (n,None,t') env in
+		let new_env = Environ.push_rel (LocalAssum (n,t')) env in
 		let new_b,id_to_exclude =
 		  rebuild_cons new_env
 		    nb_args relname
@@ -1104,9 +1109,11 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     | GLetIn(_,n,t,b) ->
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
-	  let t',ctx = Pretyping.understand env Evd.empty t in
-	  let type_t' = Typing.unsafe_type_of env Evd.empty t' in
-	  let new_env = Environ.push_rel (n,Some t',type_t') env in
+	  let evd = (Evd.from_env env) in
+	  let t',ctx = Pretyping.understand env evd t in
+	  let evd = Evd.from_ctx ctx in
+	  let type_t' = Typing.unsafe_type_of env evd t' in
+	  let new_env = Environ.push_rel (LocalDef (n,t',type_t')) env in
 	  let new_b,id_to_exclude =
 	    rebuild_cons new_env
 	      nb_args relname
@@ -1129,8 +1136,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	      args (crossed_types)
 	      depth t
 	  in
-	  let t',ctx = Pretyping.understand env Evd.empty new_t in
-	  let new_env = Environ.push_rel (na,None,t') env in
+	  let t',ctx = Pretyping.understand env (Evd.from_env env) new_t in
+	  let new_env = Environ.push_rel (LocalAssum (na,t')) env in
 	  let new_b,id_to_exclude =
 	    rebuild_cons new_env
 	      nb_args relname
@@ -1252,12 +1259,13 @@ let do_build_inductive
   let relnames = Array.map mk_rel_id funnames in
   let relnames_as_set = Array.fold_right Id.Set.add relnames Id.Set.empty in
   (* Construction of the pseudo constructors *)
+  let open Context.Named.Declaration in
   let evd,env =
     Array.fold_right2
       (fun id c (evd,env) ->
        let evd,t = Typing.type_of env evd (mkConstU c) in
        evd,
-       Environ.push_named (id,None,t)
+       Environ.push_named (LocalAssum (id,t))
 			   (* try *)
 			   (*   Typing.e_type_of env evd (mkConstU c) *)
 			   (* with Not_found -> *)
@@ -1296,8 +1304,8 @@ let do_build_inductive
     *)
     let rel_arities = Array.mapi rel_arity funsargs in
     Util.Array.fold_left2 (fun env rel_name rel_ar ->
-			     Environ.push_named (rel_name,None, 
-						 fst (with_full_print (Constrintern.interp_constr env Evd.empty) rel_ar)) env) env relnames rel_arities
+			     Environ.push_named (LocalAssum (rel_name,
+						             fst (with_full_print (Constrintern.interp_constr env evd) rel_ar))) env) env relnames rel_arities
   in
   (* and of the real constructors*)
   let constr i res =
@@ -1395,7 +1403,7 @@ let do_build_inductive
       (rel_constructors)
   in
   let rel_ind i ext_rel_constructors =
-    ((Loc.ghost,relnames.(i)),
+    (((Loc.ghost,relnames.(i)), None),
     rel_params,
     Some rel_arities.(i),
     ext_rel_constructors),[]
@@ -1460,8 +1468,17 @@ let do_build_inductive
 
 
 let build_inductive evd funconstants funsargs returned_types rtl =
+  let pu = !Detyping.print_universes in
+  let cu = !Constrextern.print_universes in
   try
-    do_build_inductive evd funconstants funsargs returned_types rtl
-  with e when Errors.noncritical e -> raise (Building_graph e)
+    Detyping.print_universes := true;
+    Constrextern.print_universes := true;
+    do_build_inductive evd funconstants funsargs returned_types rtl;
+    Detyping.print_universes := pu;
+    Constrextern.print_universes := cu
+  with e when Errors.noncritical e ->
+    Detyping.print_universes := pu;
+    Constrextern.print_universes := cu;
+    raise (Building_graph e)
 
 

@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Set Universe Polymorphism.
 Record UnitSubuniverse := { a : Type@{sm} ; x : (Type@{sm} : Type@{lg}) ; inO_internal : Type@{lg} -> Type@{lg} }.
 Class In (O : UnitSubuniverse@{sm lg}) (T : Type@{lg}) := in_inO_internal : inO_internal O T.

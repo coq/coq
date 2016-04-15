@@ -1,7 +1,7 @@
 Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 12653 lines to 12453 lines, then from 11673 lines to 681 lines, then from 693 lines to 469 lines, then from 375 lines to 56 lines *)
 Set Universe Polymorphism.
-Notation Type1 := $(let U := constr:(Type) in let gt := constr:(Set : U) in exact U)$ (only parsing).
+Notation Type1 := ltac:(let U := constr:(Type) in let gt := constr:(Set : U) in exact U) (only parsing).
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y) : type_scope.
 Inductive Unit : Type1 := tt : Unit.
 Fail Check Unit : Set. (* [Check Unit : Set] should fail if [Type1] is defined correctly *)

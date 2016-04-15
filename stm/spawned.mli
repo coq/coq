@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -8,7 +8,7 @@
 
 (* To link this file, threads are needed *)
 
-type chandescr = AnonPipe | Socket of string * int
+type chandescr = AnonPipe | Socket of string * int * int
 
 (* Argument parsing should set these *)
 val main_channel : chandescr option ref

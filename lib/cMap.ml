@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -23,8 +23,9 @@ module type S = Map.S
 
 module type ExtS =
 sig
-  include Map.S
+  include CSig.MapS
   module Set : CSig.SetS with type elt = key
+  val get : key -> 'a t -> 'a
   val update : key -> 'a -> 'a t -> 'a t
   val modify : key -> (key -> 'a -> 'a) -> 'a t -> 'a t
   val domain : 'a t -> Set.t
@@ -207,4 +208,5 @@ module Make(M : Map.OrderedType) =
 struct
   include Map.Make(M)
   include MapExt(M)
+  let get k m = try find k m with Not_found -> assert false
 end

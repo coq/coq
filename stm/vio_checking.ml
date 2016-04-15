@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -43,7 +43,7 @@ let schedule_vio_checking j fs =
   let rec filter_argv b = function
     | [] -> []
     | "-schedule-vio-checking" :: rest -> filter_argv true rest
-    | s :: rest when s.[0] = '-' && b -> filter_argv false (s :: rest)
+    | s :: rest when String.length s > 0 && s.[0] = '-' && b -> filter_argv false (s :: rest)
     | _ :: rest when b -> filter_argv b rest
     | s :: rest -> s :: filter_argv b rest in
   let pack = function
@@ -104,9 +104,7 @@ let schedule_vio_compilation j fs =
     let f =
       if Filename.check_suffix f ".vio" then Filename.chop_extension f
       else f in
-    let paths = Loadpath.get_paths () in
-    let _, long_f_dot_v =
-      System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+    let long_f_dot_v = Loadpath.locate_file (f^".v") in
     let aux = Aux_file.load_aux_file_for long_f_dot_v in
     let eta =
       try float_of_string (Aux_file.get aux Loc.ghost "vo_compile_time")

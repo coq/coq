@@ -68,6 +68,12 @@ einjection (H O).
 instantiate (1:=O).
 Abort.
 
+Goal (forall x y : nat, x = y -> S x = S y) -> True.
+intros.
+einjection (H O ?[y]) as H0.
+instantiate (y:=O).
+Abort.
+
 (* Test the injection intropattern *)
 
 Goal forall (a b:nat) l l', cons a l = cons b l' -> a=b.

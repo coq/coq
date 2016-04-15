@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -13,10 +13,10 @@ open Mod_subst
 
 (** {6 Global reference is a kernel side type for all references together } *)
 type global_reference =
-  | VarRef of variable
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
+  | VarRef of variable           (** A reference to the section-context. *)
+  | ConstRef of constant         (** A reference to the environment. *)
+  | IndRef of inductive          (** A reference to an inductive type. *)
+  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
 
 val isVarRef : global_reference -> bool
 val isConstRef : global_reference -> bool

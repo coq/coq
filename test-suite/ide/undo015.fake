@@ -25,5 +25,5 @@ ADD { destruct H. }
 ADD { Qed. }
 ADD { apply H. }
 ADD { Qed. }
-QUERY { Fail idtac. }
+QUERY { Fail Show. }
 QUERY { Check (aa,bb,cc). }

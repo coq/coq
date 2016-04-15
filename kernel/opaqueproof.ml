@@ -1,6 +1,6 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -16,7 +16,7 @@ type work_list = (Instance.t * Id.t array) Cmap.t *
 
 type cooking_info = { 
   modlist : work_list; 
-  abstract : Context.named_context * Univ.universe_level_subst * Univ.UContext.t } 
+  abstract : Context.Named.t * Univ.universe_level_subst * Univ.UContext.t } 
 type proofterm = (constr * Univ.universe_context_set) Future.computation
 type opaque =
   | Indirect of substitution list * DirPath.t * int (* subst, lib, index *)
@@ -43,7 +43,10 @@ let set_indirect_univ_accessor f = (get_univ := f)
 let create cu = Direct ([],cu)
 
 let turn_indirect dp o (prfs,odp) = match o with
-  | Indirect _ -> Errors.anomaly (Pp.str "Already an indirect opaque")
+  | Indirect (_,_,i) ->
+      if not (Int.Map.mem i prfs)
+      then Errors.anomaly (Pp.str "Indirect in a different table")
+      else Errors.anomaly (Pp.str "Already an indirect opaque")
   | Direct (d,cu) ->
       let cu = Future.chain ~pure:true cu (fun (c, u) -> hcons_constr c, u) in
       let id = Int.Map.cardinal prfs in

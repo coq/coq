@@ -1,7 +1,7 @@
 (* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -208,6 +208,10 @@ Hint Extern 4 (subrelation (flip _) _) =>
   class_apply @subrelation_symmetric : typeclass_instances.
 
 Arguments irreflexivity {A R Irreflexive} [x] _.
+Arguments symmetry {A} {R} {_} [x] [y] _.
+Arguments asymmetry {A} {R} {_} [x] [y] _ _.
+Arguments transitivity {A} {R} {_} [x] [y] [z] _ _.
+Arguments Antisymmetric A eqA {_} _.
 
 Hint Resolve irreflexivity : ord.
 
