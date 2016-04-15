@@ -147,21 +147,9 @@ struct
   let fold_left f g a = function
     | Inl y -> f a y
     | Inr y -> g a y
-    | _ -> a
 end
 
 let map_union = Union.map
-
-(** Lifting equality onto union types. *)
-let equal_union f g x y = match x, y with
-  | Inl x, Inl y -> f x y
-  | Inr x, Inr y -> g x y
-  | _, _ -> false
-
-let fold_left_union f g a = function
-  | Inl y -> f a y
-  | Inr y -> g a y
-  | _ -> a
 
 type iexn = Exninfo.iexn
 
