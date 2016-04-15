@@ -97,7 +97,7 @@ let rec parse_user_entry s sep =
 let arg_list = function Rawwit t -> Rawwit (ListArg t)
 let arg_opt = function Rawwit t -> Rawwit (OptArg t)
 
-let interp_entry_name up_level s sep =
+let interp_entry_name interp symb =
   let open Extend in
   let rec eval = function
   | Ulist1 e ->
@@ -115,19 +115,10 @@ let interp_entry_name up_level s sep =
   | Uopt e ->
     let EntryName (t, g) = eval e in
     EntryName (arg_opt t, Aopt g)
-  | Uentry s ->
-    begin
-      try try_get_entry uprim s with Not_found ->
-      try try_get_entry uconstr s with Not_found ->
-      try try_get_entry utactic s with Not_found ->
-      error ("Unknown entry "^s^".")
-    end
-  | Uentryl (s, n) ->
-    (** FIXME: do better someday *)
-    assert (String.equal s "tactic");
-    get_tacentry n up_level
+  | Uentry s -> interp s None
+  | Uentryl (s, n) -> interp s (Some n)
   in
-  eval (parse_user_entry s sep)
+  eval symb
 
 (**********************************************************************)
 (** Grammar declaration for Tactic Notation (Coq level)               *)
@@ -217,8 +208,22 @@ let extend_ml_tactic_grammar n ntn = extend_grammar ml_tactic_grammar (n, ntn)
 let interp_prod_item lev = function
   | TacTerm s -> GramTerminal s
   | TacNonTerm (loc, (nt, sep), _) ->
-      let EntryName (etyp, e) = interp_entry_name lev nt sep in
-      GramNonTerminal (loc, etyp, e)
+    let symbol = parse_user_entry nt sep in
+    let interp s = function
+    | None ->
+      begin
+        try try_get_entry uprim s with Not_found ->
+        try try_get_entry uconstr s with Not_found ->
+        try try_get_entry utactic s with Not_found ->
+        error ("Unknown entry "^s^".")
+      end
+    | Some n ->
+      (** FIXME: do better someday *)
+      assert (String.equal s "tactic");
+      get_tacentry n lev
+    in
+    let EntryName (etyp, e) = interp_entry_name interp symbol in
+    GramNonTerminal (loc, etyp, e)
 
 let make_terminal_status = function
   | GramTerminal s -> Some s
@@ -294,7 +299,7 @@ let cons_production_parameter = function
 | TacTerm _ -> None
 | TacNonTerm (_, _, id) -> Some id
 
-let add_tactic_notation (local,n,prods,e) =
+let add_tactic_notation local n prods e =
   let ids = List.map_filter cons_production_parameter prods in
   let prods = List.map (interp_prod_item n) prods in
   let pprule = {
@@ -380,6 +385,21 @@ let inMLTacticGrammar : ml_tactic_grammar_obj -> obj =
   }
 
 let add_ml_tactic_notation name prods =
+  let interp_prods = function
+  | TacTerm s -> GramTerminal s
+  | TacNonTerm (loc, symb, _) ->
+    let interp (ArgT.Any tag) lev = match lev with
+    | None ->
+      let wit = ExtraArg tag in
+      EntryName (Rawwit wit, Extend.Aentry (Pcoq.name_of_entry (Pcoq.genarg_grammar wit)))
+    | Some lev ->
+      assert (coincide (ArgT.repr tag) "tactic" 0);
+      EntryName (Rawwit Constrarg.wit_tactic, atactic lev)
+    in
+    let EntryName (etyp, e) = interp_entry_name interp symb in
+    GramNonTerminal (loc, etyp, e)
+  in
+  let prods = List.map (fun p -> List.map interp_prods p) prods in
   let obj = {
     mltacobj_name = name;
     mltacobj_prod = prods;

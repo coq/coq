@@ -13,14 +13,15 @@ type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
 | TacNonTerm of Loc.t * 'a * Names.Id.t
 
-(** Adding a tactic notation in the environment *)
-
 val add_tactic_notation :
-  locality_flag * int * (string * string option) grammar_tactic_prod_item_expr list * raw_tactic_expr ->
-    unit
+  locality_flag -> int -> (string * string option) grammar_tactic_prod_item_expr list ->
+  raw_tactic_expr -> unit
+(** [add_tactic_notation local level prods expr] adds a tactic notation in the
+    environment at level [level] with locality [local] made of the grammar
+    productions [prods] and returning the body [expr] *)
 
 val add_ml_tactic_notation : ml_tactic_name ->
-  Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list list -> unit
+  Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list list -> unit
 
 val register_ltac : bool -> Vernacexpr.tacdef_body list -> unit
 

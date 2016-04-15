@@ -53,14 +53,14 @@ type simple_constr_prod_entry_key =
 
 (** {5 AST for user-provided entries} *)
 
-type user_symbol =
-| Ulist1 : user_symbol -> user_symbol
-| Ulist1sep : user_symbol * string -> user_symbol
-| Ulist0 : user_symbol -> user_symbol
-| Ulist0sep : user_symbol * string -> user_symbol
-| Uopt : user_symbol -> user_symbol
-| Uentry : string -> user_symbol
-| Uentryl : string * int -> user_symbol
+type 'a user_symbol =
+| Ulist1 of 'a user_symbol
+| Ulist1sep of 'a user_symbol * string
+| Ulist0 of 'a user_symbol
+| Ulist0sep of 'a user_symbol * string
+| Uopt of 'a user_symbol
+| Uentry of 'a
+| Uentryl of 'a * int
 
 (** {5 Type-safe grammar extension} *)
 

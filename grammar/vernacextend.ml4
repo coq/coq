@@ -102,6 +102,14 @@ let make_fun_classifiers loc s c l =
   let cl = List.map (fun x -> Compat.make_fun loc [make_clause_classifier c s x]) l in
   mlexpr_of_list (fun x -> x) cl
 
+let make_prod_item = function
+  | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
+  | ExtNonTerminal (g, id) ->
+    let nt = type_of_user_symbol g in
+    let base s = <:expr< Pcoq.name_of_entry (Pcoq.genarg_grammar $mk_extraarg loc s$) >> in
+      <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
+      $mlexpr_of_prod_entry_key base g$ >>
+
 let mlexpr_of_clause cl =
   let mkexpr { r_head = a; r_patt = b; } = match a with
   | None -> mlexpr_of_list make_prod_item b
