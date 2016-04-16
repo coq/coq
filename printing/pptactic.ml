@@ -70,6 +70,17 @@ let declare_extra_genarg_pprule wit f g h =
   let h prc prlc prtac x = h prc prlc prtac (out_gen (topwit wit) x) in
   genarg_pprule := String.Map.add s (f,g,h) !genarg_pprule
 
+let find_extra_genarg_pprule wit =
+  let s = match wit with
+    | ExtraArg s -> ArgT.repr s
+    | _ -> error
+      "Can declare a pretty-printing rule only for extra argument types."
+  in
+  let (f,g,h) = String.Map.find s !genarg_pprule in
+  (fun prc prlc prtac x -> f prc prlc prtac (in_gen (rawwit wit) x)),
+  (fun prc prlc prtac x -> g prc prlc prtac (in_gen (glbwit wit) x)),
+  (fun prc prlc prtac x -> h prc prlc prtac (in_gen (topwit wit) x))
+
 module Make
   (Ppconstr : Ppconstrsig.Pp)
   (Taggers : sig
@@ -297,7 +308,6 @@ module Make
       | ExtraArg s ->
         try pi1 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (rawwit wit) x)
         with Not_found -> Genprint.generic_raw_print (in_gen (rawwit wit) x)
-
 
   let rec pr_glb_generic_rec prc prlc prtac prpat (GenArg (Glbwit wit, x)) =
     match wit with
