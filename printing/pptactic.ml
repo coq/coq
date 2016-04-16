@@ -623,7 +623,7 @@ module Make
     | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
     | ElimOnAnonHyp n -> int n
 
-  let pr_induction_kind = function
+  let pr_inversion_kind = function
     | SimpleInversion -> primitive "simple inversion"
     | FullInversion -> primitive "inversion"
     | FullInversionClear -> primitive "inversion_clear"
@@ -951,16 +951,16 @@ module Make
           )
         | TacInversion (DepInversion (k,c,ids),hyp) ->
           hov 1 (
-            primitive "dependent " ++ pr_induction_kind k ++ spc ()
+            primitive "dependent " ++ pr_inversion_kind k ++ spc ()
             ++ pr_quantified_hypothesis hyp
             ++ pr_with_inversion_names pr.pr_dconstr ids
             ++ pr_with_constr pr.pr_constr c
           )
         | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
           hov 1 (
-            pr_induction_kind k ++ spc ()
+            pr_inversion_kind k ++ spc ()
             ++ pr_quantified_hypothesis hyp
-            ++ pr_with_inversion_names pr.pr_dconstr ids
+            ++ pr_non_empty_arg (pr_with_inversion_names pr.pr_dconstr) ids
             ++ pr_non_empty_arg (pr_simple_hyp_clause pr.pr_name) cl
           )
         | TacInversion (InversionUsing (c,cl),hyp) ->
