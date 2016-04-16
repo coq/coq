@@ -86,10 +86,6 @@ module Make
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
 
-  let pr_ne_sep sep pr = function
-  [] -> mt()
-    | l -> sep() ++ pr l
-
   let pr_set_entry_type = function
     | ETName -> str"ident"
     | ETReference -> str"global"
@@ -271,7 +267,7 @@ module Make
       pr_opt (fun sc -> str ": " ++ str sc) scopt
 
   let pr_binders_arg =
-    pr_ne_sep spc pr_binders
+    pr_non_empty_arg pr_binders
 
   let pr_and_type_binders_arg bl =
     pr_binders_arg bl
