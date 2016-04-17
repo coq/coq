@@ -520,6 +520,9 @@ let check_caml_version () =
       die ("Your version of OCaml is 4.02.0 which suffers from a bug inducing\n" ^
         "very slow compilation times. If you still want to use it, use \n" ^
         "option -force-caml-version.\n")
+    else if caml_version_nums = [4;1;0] && !Prefs.debug then
+      die ("Your version of OCaml is 4.01.0 which fails to compile Coq in " ^
+        "-debug mode.\nRemove -debug option or use a different version of OCaml.\n")
     else
       printf "You have OCaml %s. Good!\n" caml_version
   else
