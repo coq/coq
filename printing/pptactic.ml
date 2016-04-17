@@ -1278,7 +1278,7 @@ module Make
           | TacNumgoals ->
             keyword "numgoals"
           | (TacCall _|Tacexp _ | TacGeneric _) as a ->
-            keyword "ltac:" ++ surround (pr_tac ltop (TacArg (Loc.ghost,a)))
+            keyword "ltac:" ++ pr_tac (latom,E) (TacArg (Loc.ghost,a))
 
         in pr_tac
 
