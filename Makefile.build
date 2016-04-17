@@ -498,7 +498,7 @@ test-suite: world $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) all
 	$(MAKE) $(MAKE_TSOPTS) report
 
-BEAUTIFIED=$(THEORIESVO)
+BEAUTIFIED=$(THEORIESVO) $(PLUGINSVO)
 TOBEAUTIFY=$(BEAUTIFIED:.vo=.v.beautified)
 
 check-beautify: $(TOBEAUTIFY)
