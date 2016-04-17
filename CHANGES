@@ -1,3 +1,69 @@
+Changes from V8.5 to V8.5pl1
+============================
+
+Critical bugfix
+- The subterm relation for the guard condition was incorrectly defined on
+  primitive projections (#4588)
+
+Plugin development tools
+- add a .merlin target to the makefile
+
+Various performance improvements (time, space used by .vo files)
+
+Other bugfixes
+
+- Fix order of arguments to Big.compare_case in ExtrOcamlZBigInt.v
+- Added compatibility coercions from Specif.v which were present in Coq 8.4.
+- Fixing a source of inefficiency and an artificial dependency in the printer in the congruence tactic.
+- Allow to unset the refinement mode of Instance in ML
+- Fixing an incorrect use of prod_appvect on a term which was not a product in setoid_rewrite.
+- Add -compat 8.4 econstructor tactics, and tests
+- Add compatibility Nonrecursive Elimination Schemes
+- Fixing the "No applicable tactic" non informative error message regression on apply.
+- Univs: fix get_current_context (bug #4603, part I)
+- Fix a bug in Program coercion code
+- Fix handling of arity of definitional classes.
+- #4630: Some tactics are 20x slower in 8.5 than 8.4.
+- #4627: records with no declared arity can be template polymorphic.
+- #4623: set tactic too weak with universes (regression)
+- Fix incorrect behavior of CS resolution
+- #4591: Uncaught exception in directory browsing.
+- CoqIDE is more resilient to initialization errors.
+- #4614: "Fully check the document" is uninterruptable.
+- Try eta-expansion of records only on non-recursive ones
+- Fix bug when a sort is ascribed to a Record
+- Primitive projections: protect kernel from erroneous definitions.
+- Fixed bug #4533 with previous Keyed Unification commit
+- Win: kill unreliable hence do not waitpid after kill -9 (Close #4369)
+- Fix strategy of Keyed Unification
+- #4608: Anomaly "output_value: abstract value (outside heap)".
+- #4607: do not read native code files if native compiler was disabled.
+- #4105: poor escaping in the protocol between CoqIDE and coqtop.
+- #4596: [rewrite] broke in the past few weeks.
+- #4533 (partial): respect declared global transparency of projections in unification.ml
+- #4544: Backtrack on using full betaiota reduction during keyed unification.
+- #4540: CoqIDE bottom progress bar does not update.
+- Fix regression from 8.4 in reflexivity
+- #4580: [Set Refine Instance Mode] also used for Program Instance.
+- #4582: cannot override notation [ x ].
+- STM: Print/Extraction have to be skipped if -quick
+- #4542: CoqIDE: STOP button also stops workers
+- STM: classify some variants of Instance as regular `Fork nodes.
+- #4574: Anomaly: Uncaught exception Invalid_argument("splay_arity").
+- Do not give a name to anonymous evars anymore. See bug #4547.
+- STM: always stock in vio files the first node (state) of a proof
+- STM: not delegate proofs that contain Vernac(Module|Require|Import), #4530
+- Don't fail fatally if PATH is not set.
+- #4537: Coq 8.5 is slower in typeclass resolution.
+- #4522: Incorrect "Warning..." on windows.
+- #4373: coqdep does not know about .vio files.
+- #3826: "Incompatible module types" is uninformative.
+- #4495: Failed assertion in metasyntax.ml.
+- #4511: evar tactic can create non-typed evars.
+- #4503: mixing universe polymorphic and monomorphic variables and definitions in sections is unsupported.
+- #4519: oops, global shadowed local universe level bindings.
+- #4506: Anomaly: File "pretyping/indrec.ml", line 169, characters 14-20: Assertion failed.
+
 Changes from V8.5beta3 to V8.5
 ==============================
 
