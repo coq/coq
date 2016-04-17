@@ -91,6 +91,8 @@ sig
   val map_left : ('a -> 'b) -> 'a array -> 'b array
   (** As [map] but guaranteed to be left-to-right. *)
 
+  val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
+
   val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
   (** Iter on two arrays. Raise [Invalid_argument "Array.iter2_i"] if sizes differ. *)
 
@@ -104,15 +106,21 @@ sig
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   (** Same, folding on the right *)
 
+  val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  (** Same as [fold_left_map] but providing the index as well *)
+
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   (** Same with two arrays, folding on the left; see also [Smart.fold_left2_map] *)
 
-  val fold_left2_map_i :
-    (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
-  (** Same than [fold_left2_map] but passing the index of the array *)
+  val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
+  (** Same as [fold_left2_map] but providing the index as well. *)
 
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   (** Same with two arrays, folding on the right *)
+
+  val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b array -> 'c array -> 'd array ->
+    'a * 'e array
+  (** Same with three arrays, folding on the left. *)
 
   val distinct : 'a array -> bool
   (** Return [true] if every element of the array is unique (for default
@@ -135,6 +143,7 @@ sig
         [f x == x] for all [x] in [a]. *)
 
     val map_i : (int -> 'a -> 'a) -> 'a array -> 'a array
+    (** Same as [Smart.map] but providing the index of the element. *)
 
     val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
     (** [Smart.map2 f a b] behaves as [map2 f a b] but returns [a] instead of a copy when
@@ -145,10 +154,10 @@ sig
         returns [b] as second component instead of a copy of [b] when
         the output array is pointwise the same as the input array [b] *)
 
-    val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
-    (** [Smart.fold_left2_map f a b c] behaves as [fold_left2_map] but
-        returns [c] as second component instead of a copy of [c] when
-        the output array is pointwise the same as the input array [c] *)
+    val fold_left2_map2_i : (int -> 'a -> 'b -> 'c -> 'a * 'b * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'b array * 'c array
+    (** [Smart.fold_left2_map2_i f a b c] behaves as [fold_left2_map2] but
+        returns [b] and [c] as second and third components when
+        the output arrays are pointwise the same as the input arrays. *)
 
   end
   (** The functions defined in this module are optimized specializations
@@ -170,6 +179,9 @@ sig
     sig
       val map : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
       (** [Fun1.Smart.map f x v = Smart.map (f x) v] *)
+
+      val map_i : (int -> 'r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
+      (** [Fun1.Smart.map_i f x v = Smart.map_i (fun i => f i x) v] *)
     end
 
   end

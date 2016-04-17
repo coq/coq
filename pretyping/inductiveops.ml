@@ -237,7 +237,7 @@ let inductive_paramdecls_env env (ind,u) = inductive_paramdecls env (ind,u)
 
 let inductive_alldecls env (ind,u) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-    Vars.subst_instance_context u mip.mind_arity_ctxt
+  Vars.subst_instance_context u mip.mind_arity_ctxt
 
 let inductive_alldecls_env env (ind,u) = inductive_alldecls env (ind,u)
 [@@ocaml.deprecated "Alias for Inductiveops.inductive_alldecls"]
@@ -319,7 +319,7 @@ let instantiate_params t params sign =
   substl subst t
 
 let get_constructor ((ind,u as indu),mib,mip,params) j =
-  assert (j <= Array.length mip.mind_consnames);
+  assert (j > 0 && j <= Array.length mip.mind_consnames);
   let typi = mis_nf_constructor_type (indu,mib,mip) j in
   let ctx = Vars.subst_instance_context u mib.mind_params_ctxt in
   let typi = instantiate_params typi params ctx in

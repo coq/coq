@@ -160,8 +160,12 @@ let retype ?(polyprop=true) sigma =
           mkProd (name, c1, type_of (push_rel (LocalAssum (name,c1)) env) c2)
     | LetIn (name,b,c1,c2) ->
          subst1 b (type_of (push_rel (LocalDef (name,b,c1)) env) c2)
-    | Fix ((_,i),(_,tys,_)) -> tys.(i)
-    | CoFix (i,(_,tys,_)) -> tys.(i)
+    | Fix ((vn,i),(_,tys,_ as recdef)) ->
+       let subst = List.init i (fun k -> mkFix ((vn,pred i - k), recdef)) in
+       substl subst tys.(i)
+    | CoFix (i,(_,tys,_ as recdef)) ->
+      let subst = List.init i (fun k -> mkCoFix ((pred i - k), recdef)) in
+      substl subst tys.(i)
     | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
         let t = type_of_global_reference_knowing_parameters env f args in
         strip_outer_cast sigma (subst_type env sigma t (Array.to_list args))

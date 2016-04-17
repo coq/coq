@@ -241,7 +241,8 @@ Defined.
 
 Definition cast: forall {m} (v: t m) {n}, m = n -> t n.
 Proof.
-refine (fix cast {m} (v: t m) {struct v} :=
+  (* MS: FIXME unshelve due to Evd.define when checking fixpoints... *)
+unshelve refine (fix cast {m} (v: t m) {struct v} :=
  match v in t m' return forall n, m' = n -> t n with
  |F1 => fun n => match n with
    | 0 => fun H => False_rect _ _

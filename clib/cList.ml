@@ -70,6 +70,7 @@ sig
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b list -> 'c list -> 'a * 'd list
+  val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b list -> 'c list -> 'a * 'd list
   val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
   val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c list -> 'd list -> 'a * 'e list
   val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
@@ -646,6 +647,14 @@ let fold_left2_map f e l l' =
       let (e,y) = f e x x' in
       (e, y::l)
     ) (e, []) l l'
+
+let fold_left2_map_i f e l l' =
+  let (e, n, l) =
+    List.fold_left2 (fun (e,n,l) x x' ->
+      let (e,y) = f n e x x' in
+      (e, n+1, y::l)
+    ) (e, 0, []) l l'
+  in e, List.rev l
 
 let fold_right2_map f l l' e =
   List.fold_right2 (fun x x' (l,e) -> let (y,e) = f x x' e in (y::l,e)) l l' ([],e)

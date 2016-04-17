@@ -1446,7 +1446,9 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
       Pp.(str"the " ++ int (pos + 1) ++ str
        "th constructor does not have the expected name: " ++ str s) in
   let check_type pos t =
-    check_if (Constr.equal t ob.mind_user_lc.(pos))
+    (* We lift [t] to live in the context of previous constructors
+      (inductive-inductive types) *)
+    check_if (Constr.equal (Vars.lift pos t) ob.mind_user_lc.(pos))
       Pp.(str"the " ++ int (pos + 1) ++ str
        "th constructor does not have the expected type") in
   let check_type_cte pos = check_type pos (Constr.mkInd ind) in

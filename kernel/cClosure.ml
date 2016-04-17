@@ -588,9 +588,9 @@ let rec to_constr lfts v =
         mkFix fx
       else
         let n = Array.length bds in
-        let subs_ty = comp_subs lfts e in
-        let subs_bd = comp_subs (el_liftn n lfts) (subs_liftn n e) in
-        let tys = Array.Fun1.map subst_constr subs_ty tys in
+        let subs_ty i = comp_subs (el_liftn i lfts) (subs_liftn i e) in
+        let subs_bd = subs_ty n in
+        let tys = Array.mapi (fun i -> subst_constr (subs_ty i)) tys in
         let bds = Array.Fun1.map subst_constr subs_bd bds in
         mkFix (op, (lna, tys, bds))
     | FCoFix ((op,(lna,tys,bds)) as cfx, e) ->
@@ -598,9 +598,9 @@ let rec to_constr lfts v =
         mkCoFix cfx
       else
         let n = Array.length bds in
-        let subs_ty = comp_subs lfts e in
-        let subs_bd = comp_subs (el_liftn n lfts) (subs_liftn n e) in
-        let tys = Array.Fun1.map subst_constr subs_ty tys in
+        let subs_ty i = comp_subs (el_liftn i lfts) (subs_liftn i e) in
+        let subs_bd = subs_ty n in
+        let tys = Array.mapi (fun i -> subst_constr (subs_ty i)) tys in
         let bds = Array.Fun1.map subst_constr subs_bd bds in
         mkCoFix (op, (lna, tys, bds))
     | FApp (f,ve) ->
@@ -764,7 +764,8 @@ let get_nth_arg head n stk =
         (** The stack contains [Zupdate] mark only if in sharing mode *)
         strip_rec rstk (update ~share:true m h.mark h.term) n s
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as s -> (None, List.rev rstk @ s) in
-  strip_rec [] head n stk
+  if n < 0 then (None, stk)
+  else strip_rec [] head n stk
 
 let rec subs_consn v i n s =
   if Int.equal i n then s
@@ -1542,15 +1543,17 @@ and norm_head info tab m =
         let rng = klt (push_relevance info na) tab (subs_lift e) rng in
           mkProd(na, kl info tab dom, rng)
       | FCoFix((n,(na,tys,bds)),e) ->
-          let infobd = push_relevances info na in
-          let ftys = Array.map (fun ty -> klt info tab e ty) tys in
-          let fbds = Array.map (fun bd -> klt infobd tab (subs_liftn (Array.length na) e) bd) bds in
-          mkCoFix (n, (na, ftys, fbds))
+        let infobd = push_relevances info na in
+        (* XXX FIXME relevances in types *)
+        let ftys = Array.mapi (fun i ty -> klt info tab (subs_liftn i e) ty) tys in
+        let fbds = Array.map (fun bd -> klt infobd tab (subs_liftn (Array.length na) e) bd) bds in
+        mkCoFix (n, (na, ftys, fbds))
       | FFix((n,(na,tys,bds)),e) ->
-          let infobd = push_relevances info na in
-          let ftys = Array.map (fun ty -> klt info tab e ty) tys in
-          let fbds = Array.map (fun bd -> klt infobd tab (subs_liftn (Array.length na) e) bd) bds in
-          mkFix (n, (na, ftys, fbds))
+        let infobd = push_relevances info na in
+        (* XXX FIXME relevances in types *)
+        let ftys = Array.mapi (fun i ty -> klt info tab (subs_liftn i e) ty) tys in
+        let fbds = Array.map (fun bd -> klt infobd tab (subs_liftn (Array.length na) e) bd) bds in
+        mkFix (n, (na, ftys, fbds))
       | FEvar((i,args),env) ->
           mkEvar(i, List.map (fun a -> klt info tab env a) args)
       | FProj (p,c) ->

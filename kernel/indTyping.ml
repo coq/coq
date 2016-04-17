@@ -59,7 +59,6 @@ let mind_check_names mie =
   vue since inductive and constructors are not referred to by their
   name, but only by the name of the inductive packet and an index. *)
 
-
 (************************************************************************)
 (************************** Type checking *******************************)
 (************************************************************************)
@@ -101,9 +100,10 @@ let check_indices_matter env_params info indices =
   else check_context_univs ~ctor:false env_params info indices
 
 (* env_ar contains the inductives before the current ones in the block, and no parameters *)
-let check_arity ~template env_params env_ar ind =
-  let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
-  let indices, ind_sort = Reduction.dest_arity env_params arity in
+let check_arity ~template ctx_params env_ar ind =
+  let env_ar_params = push_rel_context ctx_params env_ar in
+  let {utj_val=arity;utj_type=_} = Typeops.infer_type env_ar_params ind.mind_entry_arity in
+  let indices, ind_sort = Reduction.dest_arity env_ar_params arity in
   let ind_min_univ = if template then Some Universe.type0m else None in
   let univ_info = {
     ind_squashed=false;
@@ -113,47 +113,62 @@ let check_arity ~template env_params env_ar ind =
     missing=Universe.Set.empty;
   }
   in
-  let univ_info = check_indices_matter env_params univ_info indices in
+  let univ_info = check_indices_matter env_ar_params univ_info indices in
   (* We do not need to generate the universe of the arity with params;
      if later, after the validation of the inductive definition,
      full_arity is used as argument or subject to cast, an upper
      universe will be generated *)
-  let arity = it_mkProd_or_LetIn arity (Environ.rel_context env_params) in
+  let arity = it_mkProd_or_LetIn arity ctx_params in
   let x = Context.make_annot (Name ind.mind_entry_typename) (Sorts.relevance_of_sort ind_sort) in
-  push_rel (LocalAssum (x, arity)) env_ar,
-  (arity, indices, univ_info)
+  push_rel (LocalAssum (x, arity)) env_ar, (arity, indices, univ_info)
 
 let check_constructor_univs env_ar_par info (args,_) =
   (* We ignore the output, positivity will check that it's the expected inductive type *)
   check_context_univs ~ctor:true env_ar_par info args
 
-let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
-  let lc = Array.map_of_list (fun c -> (Typeops.infer_type env_ar_par c).utj_val) lc in
-  let splayed_lc = Array.map (Reduction.dest_prod_assum env_ar_par) lc in
-  let univ_info = match Array.length lc with
+let check_constructors env_ar_cstrs ctx_params isrecord names lc (arity,indices,univ_info) =
+  let univ_info = match List.length lc with
     (* Empty type: all OK *)
     | 0 -> univ_info
 
     | 1 ->
+      let env_params = push_rel_context ctx_params env_ar_cstrs in
+      let lc = Array.map_of_list (fun c -> (Typeops.infer_type env_params c).utj_val) lc in
+      let splayed_lc = Array.map (Reduction.dest_prod_assum env_params) lc in
       (* SProp primitive records are OK, if we squash and become fakerecord also OK *)
       if isrecord then univ_info
       (* 1 constructor with no arguments also OK in SProp (to make
          things easier on ourselves when reducing we forbid letins) *)
-      else if (Environ.typing_flags env_ar_par).allow_uip
+      else if (Environ.typing_flags env_ar_cstrs).allow_uip
            && fst (splayed_lc.(0)) = []
-           && List.for_all Context.Rel.Declaration.is_local_assum params
+           && List.for_all Context.Rel.Declaration.is_local_assum ctx_params
       then univ_info
       (* 1 constructor with arguments must squash if SProp
          (we could allow arguments in SProp but the reduction rule is a pain) *)
-      else check_univ_leq env_ar_par Univ.Universe.type0m univ_info
+      else check_univ_leq env_ar_cstrs Univ.Universe.type0m univ_info
 
     (* More than 1 constructor: must squash if Prop/SProp *)
-    | _ -> check_univ_leq env_ar_par Univ.Universe.type0 univ_info
+    | _ -> check_univ_leq env_ar_cstrs Univ.Universe.type0 univ_info
   in
-  let univ_info = Array.fold_left (check_constructor_univs env_ar_par) univ_info splayed_lc in
-  (* generalize the constructors over the parameters *)
-  let lc = Array.map (fun c -> Term.it_mkProd_or_LetIn c params) lc in
-  (arity, lc), (indices, splayed_lc), univ_info
+  let (env_ar_cstrs', univ_info), lc =
+    List.fold_left2_map (fun (env, univ_info) n t ->
+      (* First infer the type of the constructor *)
+      let env_params = push_rel_context ctx_params env in
+      let j = Typeops.infer_type env_params t in
+      (* Prepare a new context including the constructor, for the following constructors *)
+      let annot = Context.make_annot (Name n) (Sorts.relevance_of_sort j.utj_type) in
+      let cty = it_mkProd_or_LetIn j.utj_val ctx_params in
+      let decl = LocalAssum (annot, cty) in
+      (* Split the arguments from the conclusion *)
+      let splayed = Reduction.dest_prod_assum env_params j.utj_val in
+      (* Check the arguments sorts *)
+      let univ_info = check_constructor_univs env_params univ_info splayed in
+      (Environ.push_rel decl env, univ_info), (cty, splayed))
+      (env_ar_cstrs, univ_info) names lc
+  in
+  let lc, splayed_lc = List.split lc in
+  let lc = Array.of_list lc and splayed_lc = Array.of_list splayed_lc in
+  env_ar_cstrs', ((arity, lc), (indices, splayed_lc), univ_info)
 
 let check_record data =
   List.for_all (fun (_,(_,splayed_lc),info) ->
@@ -301,12 +316,13 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   let ind_univ = Univ.subst_univs_level_universe usubst univ_info.ind_univ in
 
   let arity = match univ_info.ind_min_univ with
-    | None -> RegularArity {mind_user_arity = arity; mind_sort = Sorts.sort_of_univ ind_univ}
+    | None ->
+      RegularArity {mind_user_arity = arity; mind_sort = Sorts.sort_of_univ ind_univ}
     | Some min_univ -> TemplateArity { template_level = min_univ; }
   in
 
   let kelim = allowed_sorts univ_info in
-  (arity,lc), (indices,splayed_lc), kelim
+  ((arity,lc), (indices,splayed_lc), kelim)
 
 let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with
@@ -338,17 +354,19 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let env_params, params = Typeops.check_context env_univs mie.mind_entry_params in
 
   (* Arities *)
-  let env_ar, data = List.fold_left_map (check_arity ~template:has_template_poly env_params) env_univs mie.mind_entry_inds in
-  let env_ar_par = push_rel_context params env_ar in
+  let env_ar, data = List.fold_left_map (check_arity ~template:has_template_poly params) env_univs mie.mind_entry_inds in
 
   (* Constructors *)
   let isrecord = match mie.mind_entry_record with
     | Some (Some _) -> true
     | Some None | None -> false
   in
-  let data = List.map2 (fun ind data ->
-      check_constructors env_ar_par isrecord params ind.mind_entry_lc data)
-      mie.mind_entry_inds data
+
+  let _env_ar_par_cstrs, data =
+    List.fold_left2_map (fun env_ar_cstrs ind data ->
+      check_constructors env_ar_cstrs params isrecord
+        ind.mind_entry_consnames ind.mind_entry_lc data)
+      env_ar mie.mind_entry_inds data
   in
 
   let record = mie.mind_entry_record in
@@ -361,7 +379,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         (* if someone tried to declare a record as SProp but it can't
            be primitive we must squash. *)
         let data = List.map (fun (a,b,univs) ->
-            a,b,check_univ_leq env_ar_par Univ.Universe.type0m univs)
+            a,b,check_univ_leq env_ar Univ.Universe.type0m univs)
             data
         in
         data, Some None
@@ -399,11 +417,11 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let data = List.map (abstract_packets usubst) data in
   let template = get_template mie.mind_entry_universes params data in
 
-  let env_ar_par =
-    let ctx = Environ.rel_context env_ar_par in
+  let env_ar =
+    let ctx = Environ.rel_context env_ar in
     let ctx = Vars.subst_univs_level_context usubst ctx in
-    let env = Environ.pop_rel_context (Environ.nb_rel env_ar_par) env_ar_par in
+    let env = Environ.pop_rel_context (Environ.nb_rel env_ar) env_ar in
     Environ.push_rel_context ctx env
   in
 
-  env_ar_par, univs, template, variance, record, params, Array.of_list data
+  env_ar, univs, template, variance, record, params, Array.of_list data

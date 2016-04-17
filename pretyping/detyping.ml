@@ -698,9 +698,9 @@ let detype_fix detype flags avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
          (avoid, add_name (set_name (Name id) (LocalAssum (na,ty))) env, id::l))
       (avoid, env, []) names tys in
   let n = Array.length tys in
-  let v = Array.map3
-    (fun c t i -> share_names detype flags (i+1) [] def_avoid def_env sigma c (lift n t))
-    bodies tys vn in
+  let v = Array.map3_i
+    (fun j c t i -> share_names detype flags (i+1) [] def_avoid def_env sigma c (lift (n-j) t))
+  bodies tys vn in
   GRec(GFix (Array.map (fun i -> Some i) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
@@ -714,8 +714,8 @@ let detype_cofix detype flags avoid env sigma n (names,tys,bodies) =
          (avoid, add_name (set_name (Name id) (LocalAssum (na,ty))) env, id::l))
       (avoid, env, []) names tys in
   let ntys = Array.length tys in
-  let v = Array.map2
-    (fun c t -> share_names detype flags 0 [] def_avoid def_env sigma c (lift ntys t))
+  let v = Array.map2_i
+    (fun j c t -> share_names detype flags 0 [] def_avoid def_env sigma c (lift (ntys-j) t))
     bodies tys in
   GRec(GCoFix n,Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,

@@ -302,7 +302,7 @@ let nb_rel env = env.env_nb_rel
 let push_rel_context ctxt x = Context.Rel.fold_outside push_rel ctxt ~init:x
 
 let push_rec_types (lna,typarray,_) env =
-  let ctxt = Array.map2_i (fun i na t -> LocalAssum (na, lift i t)) lna typarray in
+  let ctxt = Array.map2 (fun na t -> LocalAssum (na, t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
 let fold_rel_context f env ~init =

@@ -449,7 +449,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             let fixdef = Array.of_list (List.rev ldef) in
             let lrelevance = CArray.rev_of_list lrelevance in
             let names = Array.map (fun r -> make_annot (Name(Id.of_string "F")) r) lrelevance in
-              mkFix ((fixn,p),(names,fixtyi,fixdef))
+              mkFix ((fixn,p),(names,Array.mapi lift fixtyi,fixdef))
       in
         mrec 0 [] [] [] []
     in

@@ -97,7 +97,7 @@ it)
                 => (Forall_parse_of_item p' * Forall_parse_of_production
 p'')%type
             end.
-
+    Print Forall_parse_of.
     Definition Forall_parse_of_item {str it} (p : parse_of_item String G str it)
       := match p return Type with
            | @ParseNonTerminal _ _ _ name str p'

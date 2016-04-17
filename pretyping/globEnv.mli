@@ -51,6 +51,8 @@ val lfun : t -> unbound_ltac_var_map
 
 val vars_of_env : t -> Id.Set.t
 
+val nf_env_evar : evar_map -> t -> t
+
 (** Push to the environment, returning the declaration(s) with interpreted names *)
 
 val push_rel : hypnaming:naming_mode -> evar_map -> rel_declaration -> t -> rel_declaration * t

@@ -449,16 +449,25 @@ let compute_mib_implicits flags kn =
           Context.Rel.Declaration.LocalAssum (Context.make_annot (Name mip.mind_typename) r, ty))
         mib.mind_packets) in
   let env_ar = Environ.push_rel_context ar env in
-  let imps_one_inductive i mip =
+  let imps_one_inductive i env_ar_cstrs mip =
     let ind = (kn,i) in
     let ar, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef ind) in
-    ((GlobRef.IndRef ind,compute_semi_auto_implicits env sigma flags (of_constr ar)),
-     Array.mapi (fun j (ctx, cty) ->
-      let c = of_constr (Term.it_mkProd_or_LetIn cty ctx) in
-       (GlobRef.ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar sigma flags c))
-       mip.mind_nf_lc)
+    let impls = (GlobRef.IndRef ind,compute_semi_auto_implicits env sigma flags (of_constr ar)) in
+    let env_ar_cstrs, cstrimpls =
+      Array.fold_left2_map_i (fun j env_ar_cstrs name (ctx, cty) ->
+        let c = Term.it_mkProd_or_LetIn cty ctx in
+        let r = Inductive.relevance_of_inductive env ind in
+        let decl = Context.Rel.Declaration.LocalAssum (Context.make_annot (Name name) r, c) in
+        let env' = Environ.push_rel decl env_ar_cstrs in
+        (env', (GlobRef.ConstructRef (ind,j+1),
+          compute_semi_auto_implicits env_ar_cstrs sigma flags (of_constr c))))
+        env_ar_cstrs mip.mind_consnames mip.mind_nf_lc
+      in
+      env_ar_cstrs, (impls, cstrimpls)
   in
-  Array.mapi imps_one_inductive mib.mind_packets
+  let env_ar_cstrs, impls =
+    Array.fold_left_map_i imps_one_inductive env_ar mib.mind_packets
+  in impls
 
 let compute_all_mib_implicits flags kn =
   let imps = compute_mib_implicits flags kn in
@@ -485,7 +494,14 @@ let compute_global_implicits flags = let open GlobRef in function
 (* Merge a manual implicit position with an implicit_status list *)
 
 let merge_impls (cond,oldimpls) (_,newimpls) =
-  let oldimpls,usersuffiximpls = List.chop (List.length newimpls) oldimpls in
+  let oldimpls,newimpls,usersuffiximpls =
+    if List.length newimpls > List.length oldimpls then
+      let newimpls, suff = List.chop (List.length oldimpls) newimpls in
+      oldimpls, newimpls, suff
+    else
+      let old, suff = List.chop (List.length newimpls) oldimpls in
+      old, newimpls, suff
+  in
   cond, (List.map2 (fun orig ni ->
     match orig with
     | Some (_, Manual, _) -> orig

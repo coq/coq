@@ -132,6 +132,8 @@ let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
 
 let prepare_recursive_declaration fixnames fixrs fixtypes fixdefs =
   let defs = List.map (Vars.subst_vars (List.rev fixnames)) fixdefs in
+  (* Not updated yet to recursive-recursive functions *)
+  (* let _fixttypes = List.map_i (fun i ty -> Vars.lift i ty) 0 fixtypes in *)
   let names = List.map2 (fun id r -> Context.make_annot (Name id) r) fixnames fixrs in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 

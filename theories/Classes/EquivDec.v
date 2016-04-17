@@ -139,20 +139,20 @@ Require Import List.
 #[global]
 Program Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
   { equiv_dec :=
-    fix aux (x y : list A) :=
-    match x, y with
-      | nil, nil => in_left
-      | cons hd tl, cons hd' tl' =>
-        if hd == hd' then
-          if aux tl tl' then in_left else in_right
+      fix aux (x y : list A) :=
+        match x, y with
+        | nil, nil => in_left
+        | cons hd tl, cons hd' tl' =>
+          if hd == hd' then
+            if aux tl tl' then in_left else in_right
           else in_right
-      | _, _ => in_right
-    end }.
+        | _, _ => in_right
+        end }.
 
-  Next Obligation.
-    match goal with y : list _ |- _ => destruct y end ;
+Next Obligation.
+  match goal with y : list _ |- _ => destruct y end ;
     unfold not in *; eauto.
-  Defined.
+Defined.
 
-  Solve Obligations with unfold equiv, complement in * ; 
-    program_simpl ; intuition (discriminate || eauto).
+Solve Obligations with unfold equiv, complement in * ;
+program_simpl ; intuition (discriminate || eauto).

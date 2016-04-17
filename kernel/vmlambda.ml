@@ -227,12 +227,12 @@ let map_lam_with_binders g f n lam =
     if t == t' && a == a' && branches == branches' then lam else
       Lcase(ci,rtbl,t',a',branches')
   | Lfix(init,(ids,ltypes,lbodies)) ->
-    let ltypes' = Array.Smart.map (f n) ltypes in
+    let ltypes' = Array.Smart.map_i (fun i ty -> f (g i n) ty) ltypes in
     let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
     if ltypes == ltypes' && lbodies == lbodies' then lam
     else Lfix(init,(ids,ltypes',lbodies'))
   | Lcofix(init,(ids,ltypes,lbodies)) ->
-    let ltypes' = Array.Smart.map (f n) ltypes in
+    let ltypes' = Array.Smart.map_i (fun i ty -> f (g i n) ty) ltypes in
     let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
     if ltypes == ltypes' && lbodies == lbodies' then lam
     else Lcofix(init,(ids,ltypes',lbodies'))
@@ -398,7 +398,7 @@ let rec occurrence k kind lam =
     !r
   | Lfix(_,(ids,ltypes,lbodies))
   | Lcofix(_,(ids,ltypes,lbodies)) ->
-    let kind = occurrence_args k kind ltypes in
+    let kind = Array.fold_left_i (fun i -> occurrence (k+i)) kind ltypes in
     let _ = occurrence_args (k+Array.length ids) false lbodies in
     kind
   | Lproj(_,arg) ->
@@ -715,16 +715,14 @@ let rec lambda_of_constr env c =
     Lcase(ci, rtbl, lt, la, branches)
 
   | Fix(rec_init,(names,type_bodies,rec_bodies)) ->
-    let ltypes = lambda_of_args env 0 type_bodies in
-    Renv.push_rels env names;
+    let ltypes = lambda_of_types env names type_bodies in
     let lbodies = lambda_of_args env 0 rec_bodies in
     Renv.popn env (Array.length names);
     Lfix(rec_init, (names, ltypes, lbodies))
 
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
     let rec_bodies = Array.map2 (Reduction.eta_expand env.global_env) rec_bodies type_bodies in
-    let ltypes = lambda_of_args env 0 type_bodies in
-    Renv.push_rels env names;
+    let ltypes = lambda_of_types env names type_bodies in
     let lbodies = lambda_of_args env 0 rec_bodies in
     Renv.popn env (Array.length names);
     Lcofix(init, (names, ltypes, lbodies))
@@ -768,6 +766,12 @@ and lambda_of_args env start args =
     Array.init (nargs - start)
       (fun i -> lambda_of_constr env args.(start + i))
   else empty_args
+
+and lambda_of_types env names types =
+  Array.map2
+   (fun na ty ->
+     let lty = lambda_of_constr env ty in
+     Renv.push_rel env na; lty) names types
 
 (*********************************)
 let dump_lambda = ref false

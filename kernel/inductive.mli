@@ -67,6 +67,7 @@ val constrained_type_of_constructor : pconstructor -> mind_specif -> types const
 val type_of_constructor : pconstructor -> mind_specif -> types
 
 (** Return constructor types in normal form *)
+
 val arities_of_constructors : pinductive -> mind_specif -> types array
 
 (** Return constructor types in user form *)
@@ -110,9 +111,8 @@ val type_case_branches :
   env -> pinductive * constr list -> unsafe_judgment -> constr
     -> types array * types
 
-val build_branches_type :
-  pinductive -> mutual_inductive_body * one_inductive_body ->
-    constr list -> constr -> types array
+val build_branches_type : pinductive -> mutual_inductive_body * one_inductive_body ->
+      constr list -> constr -> types array
 
 (** Return the arity of an inductive type *)
 val mind_arity : one_inductive_body -> Constr.rel_context * Sorts.family
@@ -134,6 +134,7 @@ val is_primitive_positive_container : env -> Constant.t -> bool
 
 (** When [chk] is false, the guard condition is not actually
     checked. *)
+val check_one_fix : env -> fixpoint -> int -> unit
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
 

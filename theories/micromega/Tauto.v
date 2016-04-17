@@ -56,7 +56,7 @@ Section S.
   Register TT as micromega.GFormula.TT.
   Register FF as micromega.GFormula.FF.
   Register X  as micromega.GFormula.X.
-  Register A  as micromega.GFormula.A.
+  Register A  as micromega.GFormula.At.
   Register AND as micromega.GFormula.AND.
   Register OR  as micromega.GFormula.OR.
   Register NOT  as micromega.GFormula.NOT.

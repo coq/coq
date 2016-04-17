@@ -436,7 +436,7 @@ and extract_really_ind env kn mib =
     let packets =
       Array.mapi
         (fun i mip ->
-           let (_,u),_ = UnivGen.fresh_inductive_instance env (kn,i) in
+           let (_,u as pind),_ = UnivGen.fresh_inductive_instance env (kn,i) in
            let ar = Inductive.type_of_inductive ((mib,mip),u) in
            let ar = EConstr.of_constr ar in
            let info = (fst (flag_of_type env sg ar) = Info) in
@@ -913,6 +913,7 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
 (*s Extraction of a (co)-fixpoint. *)
 
 and extract_fix env sg mle i (fi,ti,ci as recd) mlt =
+  (* MS: FIXME, for ind-ind, (co-)fixpoints can depend on each other *)
   let env = push_rec_types recd env in
   let metas = Array.map new_meta fi in
   metas.(i) <- mlt;

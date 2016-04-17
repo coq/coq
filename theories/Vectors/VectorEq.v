@@ -66,7 +66,8 @@ Section CAST.
 
  Definition cast: forall {A m} (v: t A m) {n}, m = n -> t A n.
  Proof.
- refine (fix cast {A m} (v: t A m) {struct v} :=
+   (*MS: fixme *)
+   unshelve refine (fix cast {A m} (v: t A m) {struct v} :=
   match v in t _ m' return forall n, m' = n -> t A n with
   |[] => fun n => match n with
     | 0 => fun _ => []

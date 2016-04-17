@@ -429,12 +429,11 @@ let iter_with_full_binders env sigma g f n c =
     Array.Fun1.iter f n pms; f_ctx p; iter_invert (f n) iv; f n c; Array.iter f_ctx bl
   | Proj (p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
-    Array.iter (f n) tl;
-    let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na, lift i t)) n) n lna tl in
+    let n' = Array.fold_left2 (fun n na t -> f n t; g (LocalAssum (na,t)) n) n lna tl in
     Array.iter (f n') bl
   | CoFix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
-    let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na,lift i t)) n) n lna tl in
+    let n' = Array.fold_left2 (fun n na t -> f n t; g (LocalAssum (na,t)) n) n lna tl in
     Array.iter (f n') bl
   | Array (_u,t,def,ty) -> Array.Fun1.iter f n t; f n def; f n ty
 

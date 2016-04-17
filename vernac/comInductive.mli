@@ -49,11 +49,14 @@ val interp_mutual_inductive_constr
   -> variances:Entries.variance_entry
   -> ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list
   -> indnames:Names.Id.t list
+  -> relevances:Sorts.relevance list
   -> arities:EConstr.t list
   -> arityconcl:(bool * EConstr.ESorts.t) option list
   -> constructors:(Names.Id.t list * Constr.constr list) list
-  -> env_ar_params:Environ.env
-  (** Environment with the inductives and parameters in the rel_context *)
+  -> env:Environ.env
+  (** Original environment *)
+  -> env_ar:Environ.env
+  (** Environment with the full arities in the rel_context *)
   -> cumulative:bool
   -> poly:bool
   -> private_ind:bool
@@ -83,11 +86,13 @@ val template_polymorphism_candidate
    monomorphic universe context that can be made parametric in its
    conclusion sort, if one is given. *)
 
-val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:int -> binders:int
+val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:int -> binders:int -> ncstrs:int
   -> EConstr.t -> Evd.evar_map
 (** [nparams] is the number of parameters which aren't treated as
     uniform, ie the length of params (including letins) where the env
-    is [uniform params, inductives, params, binders]. *)
+    is [uniform params, inductives, params, cstrs, binders] and ncstrs is the
+    length of the context of previous constructor types
+    (for inductive-inductive types).  *)
 
 val variance_of_entry
   : cumulative:bool

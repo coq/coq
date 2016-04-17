@@ -39,6 +39,7 @@ open Pretyping
 
 type var_internalization_type =
   | Inductive
+  | Constructor
   | Recursive
   | Method
   | Variable

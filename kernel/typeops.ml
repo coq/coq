@@ -328,19 +328,19 @@ let judge_of_array env u tj defj =
    the App case of execute; from this constraints, the expected
    dynamic constraints of the form u<=v are enforced *)
 
-let type_of_inductive_knowing_parameters env (ind,u) args =
+let type_of_inductive_knowing_parameters env (ind, u) args =
   let (mib,_mip) as spec = lookup_mind_specif env ind in
   check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters
-      (spec,u) (Inductive.make_param_univs env args)
+    (spec,u) (Inductive.make_param_univs env args)
   in
   check_constraints cst env;
   t
 
 let type_of_inductive env (ind,u) =
-  let (mib,mip) = lookup_mind_specif env ind in
+  let (mib,_mip as spec) = lookup_mind_specif env ind in
   check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
-  let t,cst = Inductive.constrained_type_of_inductive ((mib,mip),u) in
+  let t,cst = Inductive.constrained_type_of_inductive (spec,u) in
   check_constraints cst env;
   t
 
@@ -424,7 +424,7 @@ let check_fixpoint env lna lar vdef vdeft =
   let lt = Array.length vdeft in
   assert (Int.equal (Array.length lar) lt);
   try
-    conv_leq_vecti env vdeft (Array.map (fun ty -> lift lt ty) lar)
+    conv_leq_vecti env vdeft (Array.mapi (fun i ty -> lift (lt - i) ty) lar)
   with NotConvertibleVect i ->
     error_ill_typed_rec_body env i lna (make_judgev vdef vdeft) lar
 
@@ -442,7 +442,7 @@ let type_of_global_in_context env r =
     let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
     let univs = Declareops.inductive_polymorphic_context mib in
     let inst = Univ.make_abstract_instance univs in
-    Inductive.type_of_inductive (specif, inst), univs
+    Inductive.type_of_inductive (specif,inst), univs
   | ConstructRef cstr ->
     let (mib,_ as specif) =
       Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
@@ -568,19 +568,22 @@ let rec execute env cstr =
         in
         cstr, t
 
-    | Fix ((_vn,i as vni),recdef as fix) ->
-      let (fix_ty,recdef') = execute_recdef env recdef i in
-      let cstr, fix = if recdef == recdef' then cstr, fix else
-          let fix = (vni,recdef') in mkFix fix, fix
+    | Fix ((vn,i as vni),recdef) ->
+      let (fix_ty,recdef') = execute_recdef ~vn env recdef i in
+      let cstr = if recdef == recdef' then cstr else
+          let fix = (vni,recdef') in mkFix fix
       in
-      check_fix env fix; cstr, fix_ty
+      let substi = List.init i (fun k -> mkFix ((vn,pred i - k),recdef')) in
+      cstr, substl substi fix_ty
 
     | CoFix (i,recdef as cofix) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let cstr, cofix = if recdef == recdef' then cstr, cofix else
           let cofix = (i,recdef') in mkCoFix cofix, cofix
       in
-      check_cofix env cofix; cstr, fix_ty
+      let () = check_cofix env cofix in
+      let substi = List.init i (fun k -> mkCoFix ((pred i - k),recdef')) in
+      cstr, substl substi fix_ty
 
     (* Primitive types *)
     | Int _ -> cstr, type_of_int env
@@ -614,21 +617,50 @@ and execute_is_type env constr =
   let c, t = execute env constr in
     c, check_type env constr t
 
-and execute_recdef env (names,lar,vdef as recdef) i =
-  let lar', lart = execute_array env lar in
-  let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
-  let env1 = push_rec_types (names',lar',vdef) env in (* vdef is ignored *)
-  let vdef', vdeft = execute_array env1 vdef in
-  let () = check_fixpoint env1 names' lar' vdef' vdeft in
+and execute_recdef ?vn env (names,lar,vdef as recdef) i =
+  let open Context.Rel.Declaration in
+  (* We build a temporary array of indices, so that when typechecking the body
+     of the i-th fixpoint, we have access only to the unfolding of the 0..i-1 previous
+     fixpoints which are already typechecked and guard-checked. *)
+  let tempindexes, update_indices =
+    match vn with
+    | None -> [||], (fun _ -> ())
+    | Some indexes ->
+      let arr = Array.map (fun _ -> -1) indexes in
+      arr, (fun i ->
+        let fix = ((indexes, i), recdef) in
+        arr.(i) <- indexes.(i);
+        check_one_fix env fix i)
+  in
+  let mkfix na i =
+    match vn with
+    | None -> LocalDef (na, lift i (mkCoFix (i, recdef)), lar.(i))
+    | Some _indexes -> LocalDef (na, lift i (mkFix ((tempindexes, i), recdef)), lar.(i))
+  in
+  let (_envass, envdefs), names', lar' =
+    CArray.Smart.fold_left2_map2_i (fun i (envass, envdefs) na ar ->
+        let ar', art = execute envass ar in
+        let na' = check_assumption env na ar' art in
+        let envass' = push_rel (LocalAssum (na', ar')) envass in
+        let envdefs' = push_rel (mkfix na i) envdefs in
+        (envass', envdefs'), na', ar') (env, env) names lar in
+  let vdef', vdeft = execute_array_rec update_indices envdefs vdef in
   let recdef = if names == names' && lar == lar' && vdef == vdef' then recdef else (names',lar',vdef') in
-    (lar'.(i),recdef)
+  (* TODO: We should update envdefs here in case some marks have changed *)
+  let () = check_fixpoint envdefs names' lar' vdef' vdeft in
+  (lar'.(i),recdef)
 
 and execute_array env cs =
   let tys = Array.make (Array.length cs) mkProp in
   let cs = Array.Smart.map_i (fun i c -> let c, ty = execute env c in tys.(i) <- ty; c) cs in
   cs, tys
 
-(* Derived functions *)
+and execute_array_rec upd env cs =
+  let tys = Array.make (Array.length cs) mkProp in
+  let cs = Array.Smart.map_i (fun i c ->
+    upd i; (* We allow each fixpoint to unfold its own definition during type-checking *)
+    let c, ty = execute env c in tys.(i) <- ty; c) cs in
+  cs, tys
 
 let check_wellformed_universes env c =
   let univs = universes_of_constr c in

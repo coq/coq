@@ -549,10 +549,10 @@ let iter_with_binders g f n c = match kind c with
     Array.Fun1.iter (fun n (ctx, b) -> f (iterate g (Array.length ctx) n) b) n bl
   | Proj (_p,c) -> f n c
   | Fix (_,(_,tl,bl)) ->
-      Array.Fun1.iter f n tl;
+      Array.iteri (fun i -> f (iterate g i n)) tl;
       Array.Fun1.iter f (iterate g (Array.length tl) n) bl
   | CoFix (_,(_,tl,bl)) ->
-      Array.Fun1.iter f n tl;
+      Array.iteri (fun i -> f (iterate g i n)) tl;
       Array.Fun1.iter f (iterate g (Array.length tl) n) bl
   | Array(_u,t,def,ty) ->
     Array.iter (f n) t; f n def; f n ty
@@ -583,11 +583,11 @@ let fold_constr_with_binders g f n acc c =
   | Fix (_,(_,tl,bl)) ->
       let n' = iterate g (Array.length tl) n in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
-      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+      Array.fold_left_i (fun i acc (t,b) -> f n' (f (iterate g i n) acc t) b) acc fd
   | CoFix (_,(_,tl,bl)) ->
       let n' = iterate g (Array.length tl) n in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
-      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+      Array.fold_left_i (fun i acc (t,b) -> f n' (f (iterate g i n) acc t) b) acc fd
   | Array(_u,t,def,ty) ->
     f n (f n (Array.fold_left (f n) acc t) def) ty
 
@@ -825,13 +825,13 @@ let map_with_binders g f l c0 = match kind c0 with
     if pms' == pms && p' == p && iv' == iv && c' == c && bl' == bl then c0
     else mkCase (ci, u, pms', p', iv', c', bl')
   | Fix (ln, (lna, tl, bl)) ->
-    let tl' = Array.Fun1.Smart.map f l tl in
+    let tl' = Array.Fun1.Smart.map_i (fun i l -> f (iterate g i l)) l tl in
     let l' = iterate g (Array.length tl) l in
     let bl' = Array.Fun1.Smart.map f l' bl in
     if tl' == tl && bl' == bl then c0
     else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl)) ->
-    let tl' = Array.Fun1.Smart.map f l tl in
+    let tl' = Array.Fun1.Smart.map_i (fun i l -> f (iterate g i l)) l tl in
     let l' = iterate g (Array.length tl) l in
     let bl' = Array.Fun1.Smart.map f l' bl in
     mkCoFix (ln,(lna,tl',bl'))

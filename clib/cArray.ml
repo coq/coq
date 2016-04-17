@@ -56,13 +56,17 @@ sig
   val map3_i :
     (int -> 'a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
   val map_left : ('a -> 'b) -> 'a array -> 'b array
+  val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
   val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
   val iter3 : ('a -> 'b -> 'c -> unit) -> 'a array -> 'b array -> 'c array -> unit
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
+  val fold_left_map_i :  (int -> 'a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
+  val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b array -> 'c array -> 'd array ->
+    'a * 'e array
   val distinct : 'a array -> bool
   val rev_of_list : 'a list -> 'a array
   val rev_to_list : 'a array -> 'a list
@@ -73,7 +77,7 @@ sig
     val map_i : (int -> 'a -> 'a) -> 'a array -> 'a array
     val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
     val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
-    val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
+    val fold_left2_map2_i : (int -> 'a -> 'b -> 'c -> 'a * 'b * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'b array * 'c array
   end
   module Fun1 :
   sig
@@ -83,6 +87,7 @@ sig
     module Smart :
     sig
       val map : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
+      val map_i : (int -> 'r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
     end
   end
 end
@@ -391,10 +396,16 @@ let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
     r
   end
 
-let iter2_i f v1 v2 =
+let iter2 f v1 v2 =
   let len1 = Array.length v1 in
   let len2 = Array.length v2 in
   let () = if not (Int.equal len2 len1) then invalid_arg "Array.iter2" in
+  for i = 0 to len1 - 1 do f (uget v1 i) (uget v2 i) done
+
+let iter2_i f v1 v2 =
+  let len1 = Array.length v1 in
+  let len2 = Array.length v2 in
+  let () = if not (Int.equal len2 len1) then invalid_arg "Array.iter2_i" in
   for i = 0 to len1 - 1 do f i (uget v1 i) (uget v2 i) done
 
 let iter3 f v1 v2 v3 =
@@ -435,6 +446,11 @@ let fold_left_map f e v =
   let v' = Array.map (fun x -> let (e,y) = f !e' x in e' := e; y) v in
   (!e',v')
 
+let fold_left_map_i f e v =
+  let e' = ref e in
+  let v' = Array.mapi (fun i x -> let (e,y) = f i !e' x in e' := e; y) v in
+  (!e',v')
+
 let fold_right2_map f v1 v2 e =
   let e' = ref e in
   let v' =
@@ -450,6 +466,11 @@ let fold_left2_map f e v1 v2 =
 let fold_left2_map_i f e v1 v2 =
   let e' = ref e in
   let v' = map2_i (fun idx x1 x2 -> let (e,y) = f idx !e' x1 x2 in e' := e; y) v1 v2 in
+  (!e',v')
+
+let fold_left3_map f e v1 v2 v3 =
+  let e' = ref e in
+  let v' = map3 (fun x1 x2 x3 -> let (e,y) = f !e' x1 x2 x3 in e' := e; y) v1 v2 v3 in
   (!e',v')
 
 let distinct v =
@@ -603,11 +624,10 @@ struct
       !r, ans
     end else !r, ar
 
-  (** Same as [Smart.map2] but threads a state meanwhile *)
-  let fold_left2_map f accu aux_ar ar =
+  let fold_left2_map2_i f accu ar aux_ar =
     let len = Array.length ar in
     let aux_len = Array.length aux_ar in
-    let () = if not (Int.equal len aux_len) then invalid_arg "Array.Smart.fold_left2_map" in
+    let () = if not (Int.equal len aux_len) then invalid_arg "Array.Smart.fold_left2_map2_i" in
     let i = ref 0 in
     let break = ref true in
     let r = ref accu in
@@ -616,29 +636,32 @@ struct
     while !break && (!i < len) do
       let v = Array.unsafe_get ar !i in
       let w = Array.unsafe_get aux_ar !i in
-      let (accu, v') = f !r w v in
+      let (accu, v', w') = f !i !r v w in
       r := accu;
-      if v == v' then incr i
+      if v == v' && w == w' then incr i
       else begin
         break := false;
-        temp := Some v';
+        temp := Some (v', w');
       end
     done;
     if !i < len then begin
-      let ans : 'a array = Array.copy ar in
-      let v = match !temp with None -> assert false | Some x -> x in
+      let aux_ans : 'c array = Array.copy aux_ar in
+      let ans : 'b array = Array.copy ar in
+      let (v, w) = match !temp with None -> assert false | Some x -> x in
       Array.unsafe_set ans !i v;
+      Array.unsafe_set aux_ans !i w;
       incr i;
       while !i < len do
         let v = Array.unsafe_get ar !i in
         let w = Array.unsafe_get aux_ar !i in
-        let (accu, v') = f !r w v in
+        let (accu, v', w') = f !i !r v w in
         r := accu;
         if v != v' then Array.unsafe_set ans !i v';
+        if w != w' then Array.unsafe_set aux_ans !i w';
         incr i
       done;
-      !r, ans
-    end else !r, ar
+      !r, ans, aux_ans
+    end else !r, ar, aux_ar
 
 end
 
@@ -706,6 +729,34 @@ struct
         ans
       end else ar
 
+    let map_i f arg (ar : 'a array) =
+      let len = Array.length ar in
+      let i = ref 0 in
+      let break = ref true in
+      let temp = ref None in
+      while !break && (!i < len) do
+        let v = Array.unsafe_get ar !i in
+        let v' = f !i arg v in
+        if v == v' then incr i
+        else begin
+          break := false;
+          temp := Some v';
+        end
+      done;
+      if !i < len then begin
+        (* The array is not the same as the original one *)
+        let ans : 'a array = Array.copy ar in
+        let v = match !temp with None -> assert false | Some x -> x in
+        Array.unsafe_set ans !i v;
+        incr i;
+        while !i < len do
+          let v = Array.unsafe_get ans !i in
+          let v' = f !i arg v in
+          if v != v' then Array.unsafe_set ans !i v';
+          incr i
+        done;
+        ans
+      end else ar
   end
 
 end

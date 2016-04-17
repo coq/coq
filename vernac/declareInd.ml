@@ -127,7 +127,12 @@ let is_recursive mie =
   in
   let nind = List.length mie.mind_entry_inds in
   let nparams = List.length mie.mind_entry_params in
-  List.exists (fun ind -> List.exists (fun t -> is_recursive_constructor (nparams+1) nind t) ind.mind_entry_lc) mie.mind_entry_inds
+  match mie.mind_entry_inds with
+  | [ind] ->
+      snd (List.fold_left
+        (fun (lift, isrec) t -> (succ lift, isrec || is_recursive_constructor lift nind t))
+        (nparams+1, false) ind.mind_entry_lc)
+  | _ -> false
 
 let warn_non_primitive_record =
   CWarnings.create ~name:"non-primitive-record" ~category:"record"

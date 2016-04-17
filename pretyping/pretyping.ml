@@ -68,6 +68,38 @@ let clear_bidirectionality_hint gr =
 open Inductive
 open Inductiveops
 
+(*
+let push_rel sigma d env = {
+  env = push_rel d env.env;
+  extra = lazy (push_rel_decl_to_named_context sigma d (Lazy.force env.extra));
+}
+
+let pop_rel_context n env sigma = make_env (pop_rel_context n env.env) sigma
+
+let push_rel_context sigma ctx env = {
+  env = push_rel_context ctx env.env;
+  extra = lazy (List.fold_right (fun d acc -> push_rel_decl_to_named_context sigma d acc) ctx (Lazy.force env.extra));
+}
+
+let lookup_named id env = lookup_named id env.env
+
+let e_new_evar env evdref ?src ?naming typ =
+  let subst2 subst vsubst c = csubst_subst subst (replace_vars vsubst c) in
+  let open Context.Named.Declaration in
+  let inst_vars = List.map (get_id %> mkVar) (named_context env.env) in
+  let inst_rels = List.rev (rel_list 0 (nb_rel env.env)) in
+  let (subst, vsubst, _, nc) = Lazy.force env.extra in
+  let typ' = subst2 subst vsubst typ in
+  let instance = inst_rels @ inst_vars in
+  let sign = val_of_named_context nc in
+  let sigma = Sigma.Unsafe.of_evar_map !evdref in
+  let Sigma (e, sigma, _) = new_evar_instance sign sigma typ' ?src ?naming instance in
+  evdref := Sigma.to_evar_map sigma;
+  e
+
+end *)
+
+
 (************************************************************************)
 
 (* An auxiliary function for searching for fixpoint guard indexes *)
@@ -331,10 +363,13 @@ let adjust_evar_source sigma na c =
   | _, _ -> sigma, c
 
 (* coerce to tycon if any *)
-let inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j = function
+let inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma j = function
   | None -> sigma, j, Some Coercion.empty_coercion_trace
   | Some t ->
-    Coercion.inh_conv_coerce_to ?loc ~program_mode resolve_tc !!env sigma j t
+    let flags =
+      Evarconv.({ (default_flags_of TransparentState.full) with Evarsolve.allowed_evars = allowed_evars })
+    in
+    Coercion.inh_conv_coerce_to ?loc ~program_mode resolve_tc !!env sigma ~flags j t
 
 let check_instance subst = function
   | [] -> ()
@@ -481,7 +516,9 @@ let mark_obligation_evar sigma k evc =
     Evd.set_obligation_evar sigma (fst (destEvar sigma evc))
   | _ -> sigma
 
-type 'a pretype_fun = ?loc:Loc.t -> program_mode:bool -> poly:bool -> bool -> type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
+type 'a pretype_fun = ?loc:Loc.t -> program_mode:bool ->
+  allowed_evars:Evarsolve.AllowedEvars.t ->
+  poly:bool -> bool -> type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
 
 type pretyper = {
   pretype_ref : pretyper -> GlobRef.t * glob_level list option -> unsafe_judgment pretype_fun;
@@ -507,52 +544,52 @@ type pretyper = {
 }
 
 (** Tie the loop *)
-let eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma t =
+let eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma t =
   let loc = t.CAst.loc in
   match DAst.get t with
   | GRef (ref,u) ->
-    self.pretype_ref self (ref, u) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_ref self (ref, u) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GVar id ->
-    self.pretype_var self id ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_var self id ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GEvar (evk, args) ->
-    self.pretype_evar self (evk, args) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_evar self (evk, args) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GPatVar knd ->
-    self.pretype_patvar self knd ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_patvar self knd ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GApp (c, args) ->
-    self.pretype_app self (c, args) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_app self (c, args) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GProj (hd, args, c) ->
-    self.pretype_proj self (hd, args, c) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_proj self (hd, args, c) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GLambda (na, bk, t, c) ->
-    self.pretype_lambda self (na, bk, t, c) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_lambda self (na, bk, t, c) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GProd (na, bk, t, c) ->
-    self.pretype_prod self (na, bk, t, c) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_prod self (na, bk, t, c) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GLetIn (na, b, t, c) ->
-    self.pretype_letin self (na, b, t, c) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_letin self (na, b, t, c) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GCases (st, c, tm, cl) ->
-    self.pretype_cases self (st, c, tm, cl) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_cases self (st, c, tm, cl) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GLetTuple (na, b, t, c) ->
-    self.pretype_lettuple self (na, b, t, c) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_lettuple self (na, b, t, c) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GIf (c, r, t1, t2) ->
-    self.pretype_if self (c, r, t1, t2) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_if self (c, r, t1, t2) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GRec (knd, nas, decl, c, t) ->
-    self.pretype_rec self (knd, nas, decl, c, t) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_rec self (knd, nas, decl, c, t) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GSort s ->
-    self.pretype_sort self s ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_sort self s ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GHole (knd, nam, arg) ->
-    self.pretype_hole self (knd, nam, arg) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_hole self (knd, nam, arg) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GCast (c, k, t) ->
-    self.pretype_cast self (c, k, t) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_cast self (c, k, t) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GInt n ->
-    self.pretype_int self n ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_int self n ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
   | GFloat f ->
-    self.pretype_float self f ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_float self f ?loc ~program_mode ~allowed_evars  ~poly resolve_tc tycon env sigma
   | GArray (u,t,def,ty) ->
-    self.pretype_array self (u,t,def,ty) ?loc ~program_mode ~poly resolve_tc tycon env sigma
+    self.pretype_array self (u,t,def,ty) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
 
-let eval_type_pretyper self ~program_mode ~poly resolve_tc tycon env sigma t =
-  self.pretype_type self t ~program_mode ~poly resolve_tc tycon env sigma
+let eval_type_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma t =
+  self.pretype_type self t ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
 
-let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk update =
+let pretype_instance self ~program_mode ~allowed_evars ~poly resolve_tc env sigma loc hyps evk update =
   let f decl (subst,update,sigma) =
     let id = NamedDecl.get_id decl in
     let b = Option.map (replace_vars subst) (NamedDecl.get_value decl) in
@@ -584,7 +621,7 @@ let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk 
     let sigma, c, update =
       try
         let c = snd (List.find (fun (CAst.{v=id'},c) -> Id.equal id id') update) in
-        let sigma, c = eval_pretyper self ~program_mode ~poly resolve_tc (mk_tycon t) env sigma c in
+        let sigma, c = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc (mk_tycon t) env sigma c in
         check_body sigma id (Some c.uj_val);
         sigma, c.uj_val, List.remove_first (fun (CAst.{v=id'},_) -> Id.equal id id') update
       with Not_found ->
@@ -613,18 +650,19 @@ struct
 
   let discard_trace (sigma,t,otrace) = sigma, t
 
+
   let pretype_ref self (ref, u) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let sigma, t_ref = pretype_ref ?loc sigma env ref u in
-    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma t_ref tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma t_ref tycon
 
   let pretype_var self id =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
-    let pretype tycon env sigma t = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma t in
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
+    let pretype tycon env sigma t = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma t in
     let sigma, t_id = pretype_id (fun e r t -> pretype tycon e r t) loc env sigma id in
-    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma t_id tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma t_id tycon
 
-  let pretype_evar self (CAst.{v=id;loc=locid}, inst) ?loc ~program_mode ~poly resolve_tc tycon env sigma =
+  let pretype_evar self (CAst.{v=id;loc=locid}, inst) ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma =
       (* Ne faudrait-il pas s'assurer que hyps est bien un
          sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
       let id = interp_ltac_id env id in
@@ -632,18 +670,18 @@ struct
         try Evd.evar_key id sigma
         with Not_found -> error_evar_not_found ?loc:locid !!env sigma id in
       let hyps = evar_filtered_context (Evd.find sigma evk) in
-      let sigma, args = pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk inst in
+      let sigma, args = pretype_instance self ~program_mode ~allowed_evars ~poly resolve_tc env sigma loc hyps evk inst in
       let c = mkEvar (evk, args) in
       let j = Retyping.get_judgment_of !!env sigma c in
-      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma j tycon
 
-  let pretype_patvar self kind ?loc ~program_mode ~poly resolve_tc tycon env sigma =
+  let pretype_patvar self kind ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma =
     let k = Evar_kinds.MatchingVar kind in
     let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) tycon in
     sigma, { uj_val; uj_type }
 
   let pretype_hole self (k, naming, ext) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     match ext with
     | None ->
       let open Namegen in
@@ -659,8 +697,32 @@ struct
       let j, sigma = GlobEnv.interp_glob_genarg ?loc ~poly env sigma tycon arg in
       sigma, j
 
+  let refold_fixpoints envk sigma fixes c =
+    let rec map (env, k) c =
+      let map = map_constr_with_binders_left_to_right env sigma (fun d (env, k) -> EConstr.push_rel d env, succ k) map (env,k) in
+      let chd, cargs = decompose_app_vect sigma c in
+      let c =
+        if isRel sigma chd then
+          let n = destRel sigma chd in
+          if n > k && n <= k + Array.length fixes then
+            (* It points to one of the fixpoints, take its hnf *)
+            Tacred.hnf_constr env sigma c
+          else c
+        else c
+      in
+      let chd, cargs = decompose_app_vect sigma c in
+      if isFix sigma chd then
+        (match kind sigma chd with
+        | Fix ((idxs, i), (names, bodies, tys)) ->
+          (* Todo check the bodies *)
+          let args' = Array.map map cargs in
+          mkApp (mkRel (k + Array.length fixes - i), args')
+        | _ -> map c)
+      else map c
+    in map envk c
+
   let pretype_rec self (fixkind, names, bl, lar, vdef) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let open Context.Rel.Declaration in
     let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
     let pretype_type tycon env sigma c = eval_type_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
@@ -669,28 +731,36 @@ struct
     let rec type_bl env sigma ctxt = function
       | [] -> sigma, ctxt
       | (na,bk,None,ty)::bl ->
-        let sigma, ty' = pretype_type empty_valcon env sigma ty in
+        let sigma, ty' = pretype_type ~allowed_evars empty_valcon env sigma ty in
         let rty' = Sorts.relevance_of_sort ty'.utj_type in
         let dcl = LocalAssum (make_annot na rty', ty'.utj_val) in
         let dcl', env = push_rel ~hypnaming sigma dcl env in
         type_bl env sigma (Context.Rel.add dcl' ctxt) bl
       | (na,bk,Some bd,ty)::bl ->
-        let sigma, ty' = pretype_type empty_valcon env sigma ty in
+        let sigma, ty' = pretype_type ~allowed_evars empty_valcon env sigma ty in
         let rty' = Sorts.relevance_of_sort ty'.utj_type in
-        let sigma, bd' = pretype (mk_tycon ty'.utj_val) env sigma bd in
+        let sigma, bd' = pretype ~allowed_evars (mk_tycon ty'.utj_val) env sigma bd in
         let dcl = LocalDef (make_annot na rty', bd'.uj_val, ty'.utj_val) in
         let dcl', env = push_rel ~hypnaming sigma dcl env in
-        type_bl env sigma (Context.Rel.add dcl' ctxt) bl in
-    let sigma, ctxtv = Array.fold_left_map (fun sigma -> type_bl env sigma Context.Rel.empty) sigma bl in
-    let sigma, larj =
-      Array.fold_left2_map
-        (fun sigma e ar ->
-          pretype_type empty_valcon (snd (push_rel_context ~hypnaming sigma e env)) sigma ar)
-        sigma ctxtv lar in
-    let lara = Array.map (fun a -> a.utj_val) larj in
-    let ftys = Array.map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
+        type_bl env sigma (Context.Rel.add dcl' ctxt) bl
+    in
+    let (sigma, decls, env_ar), ftydecls =
+      Array.fold_left3_map
+        (fun (sigma, decls, env_ar) na bl ar ->
+          let sigma, e = type_bl env_ar sigma Context.Rel.empty bl in
+          let sigma, arty = pretype_type ~allowed_evars empty_valcon (snd (push_rel_context ~hypnaming sigma e env_ar)) sigma ar in
+          let rar = Sorts.relevance_of_sort arty.utj_type in
+          let ar = it_mkProd_or_LetIn arty.utj_val e in
+          let ann = make_annot (Name na) rar in
+          let decl = LocalAssum (ann, ar) in
+          let decl', env = push_rel ~hypnaming sigma decl env_ar in
+          (sigma, decl' :: decls, env), (ann, decls, e, ar))
+        (sigma, [], env) names bl lar
+    in
     let nbfix = Array.length lar in
-    let names = Array.map (fun id -> Name id) names in
+    let names = Array.map (fun (na, _, _, _) -> na) ftydecls in
+    let ctxtv = Array.map (fun (_, _, e, _) -> e) ftydecls in
+    let ftys = Array.map (fun (_, _, _, fty) -> fty) ftydecls in
     let sigma =
       match tycon with
       | Some t ->
@@ -698,73 +768,179 @@ struct
           | GFix (vn,i) -> i
           | GCoFix i -> i
         in
-        begin match Evarconv.unify_delay !!env sigma ftys.(fixi) t with
+        let (na, decls, _, fty) = ftydecls.(fixi) in
+        let env = EConstr.push_rel_context decls !!env in
+        begin match Evarconv.unify_delay env sigma fty (lift (Context.Rel.length decls) t) with
           | exception Evarconv.UnableToUnify _ -> sigma
           | sigma -> sigma
         end
       | None -> sigma
     in
-    let names = Array.map2 (fun na t ->
-        make_annot na (Retyping.relevance_of_type !!(env) sigma t))
-        names ftys
-    in
-      (* Note: bodies are not used by push_rec_types, so [||] is safe *)
     let names,newenv = push_rec_types ~hypnaming sigma (names,ftys) env in
+    let is_recrec = not (Array.for_all_i (fun i -> noccur_between sigma 1 i) 1 ftys) in
     let sigma, vdefj =
-      Array.fold_left2_map_i
-        (fun i sigma ctxt def ->
-           (* we lift nbfix times the type in tycon, because of
-            * the nbfix variables pushed to newenv *)
-           let (ctxt,ty) =
-             decompose_prod_n_assum sigma (Context.Rel.length ctxt)
-               (lift nbfix ftys.(i)) in
+      if is_recrec then
+        (* We define partial bodies for all the fixpoints, where the body of a given
+          fixpoint is an existential variables. These will be gradually refined by
+          typechecking.  *)
+        let indexes, possible_indexes =
+          match fixkind with
+          | GFix (vn,i) ->
+            (Some (Array.mapi
+              (fun i n ->
+                  match n with
+                  | Some n -> n
+                  | None -> Context.Rel.length ctxtv.(i) - 1) vn),
+            (Array.to_list (Array.mapi
+                            (fun i annot -> match annot with
+                            | Some n -> [n]
+                            | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
+                vn)))
+          | GCoFix _ -> None, []
+        in
+        let sigma, fixes =
+          Array.fold_left_map_i (fun i sigma (na, decls, e, ar) ->
+            let ty = lift (nbfix - i) ar in
+            let ctx, ty = decompose_prod_n_assum sigma (Context.Rel.length e) ty in
+            let ctx', env = push_rel_context ~hypnaming sigma ctx env_ar in
+            let sigma, ev = new_evar env sigma ty in
+            let term = it_mkLambda_or_LetIn ev ctx' in
+            sigma, (ev, term)) sigma ftydecls
+        in
+        let bodies = Array.map (fun (x, t) -> destEvar sigma x) fixes in
+        let recdef = (names, ftys, Array.map snd fixes) in
+        let mkfix i =
+          match indexes with
+          | Some indexes -> lift i (mkFix ((indexes, i), recdef))
+          | None -> lift i (mkCoFix (i, recdef))
+        in
+        let fixes = Array.init nbfix mkfix in
+        let fixdecls =
+          Array.rev_to_list
+            (Array.map2_i (fun i na fix -> LocalDef (na, fix, ftys.(i))) names fixes)
+        in
+        (* let allowed_evars =
+          Array.fold_left (fun allowed_evars ev ->
+            EvarSolve.AllowedEvars.remove (fst ev) allowed_evars)
+          allowed_evars bodies
+        in *)
+        (* env_ar has "partial" fixpoints defininitions for all the
+          mutual fixpoints. *)
+        (* Feedback.msg_debug Pp.(pr_evar_map None !!env sigma); *)
+        let fixdecls = nf_rel_context_evar sigma fixdecls in
+        let fixdecls, env_ar = push_rel_context ~hypnaming sigma fixdecls env in
+          CArray.fold_left2_map_i (fun i sigma (na, decls, ctxt, ar) def ->
+            (* we lift nbfix times the type in tycon, because of
+              the (nbfix - i) variables pushed to env_ar *)
+            let (ctxt,ty) = decompose_prod_n_assum sigma (Context.Rel.length ctxt)
+                (lift (nbfix - i) ar) in
+            (* ctxt, ty is in env_ar = env, f_i : F_i (for all i) *)
+            let ctxt, nenv = push_rel_context ~hypnaming sigma ctxt env_ar in
+            let nenv = GlobEnv.nf_env_evar sigma nenv in
+            (* env, f_i : F_i, ctxt |- ty *)
+            (* Feedback.msg_debug (str" Pretyping with env and tycon " ++
+             Termops.Internal.print_rel_context !!nenv ++
+             Termops.Internal.print_constr_env !!nenv sigma ty);*)
+            let sigma, j = pretype ~allowed_evars (mk_tycon ty) nenv sigma def in
+            (* if not (Evar.Set.is_empty allowed_evars) then *)
+               (* Feedback.msg_debug Pp.(str "finished pretyping fix body" ++
+                            Termops.Internal.print_constr_env !!nenv sigma j.uj_val); *)
+            let uj_val = refold_fixpoints (!!nenv, Context.Rel.length ctxt) sigma fixes j.uj_val in
+            (* if not (Evar.Set.is_empty allowed_evars) then *)
+               (* Feedback.msg_debug Pp.(str "after refolding: " ++
+                            Termops.Internal.print_constr_env !!nenv sigma uj_val); *)
+            let uj_val =
+              (* Feedback.msg_debug Pp.(str "Testing occurence of "++
+                Evar.print (fst bodies.(i)) ++ str "evars: "++ brk(0,0) ++
+                pr_evar_map None !!env sigma); *)
+              if Array.exists (fun ev -> occur_evar sigma (fst ev) uj_val) bodies then
+                (Feedback.msg_debug Pp.(str "Occur in uj_val");
+                (* There is a self-reference to the unrefined body
+                  after refolding the fixpoints, the fixpoint must be ill-formed,
+                  and guard-checking will catch it. *)
+                  if Array.exists (fun ev -> occur_evar sigma (fst ev) j.uj_val) bodies then
+                    (* There is already a self-reference to the unrefined
+                      body before refolding the fixpoint, this is an occur-check. *)
+                    user_err ?loc Pp.(str "Cannot refine the fixpoint body evar " ++
+                      Termops.pr_existential_key (Global.env ()) sigma (fst bodies.(i)) ++
+                      str" with a term that refers to it: " ++ brk (0,0) ++
+                      Termops.Internal.print_constr_env !!nenv sigma j.uj_val)
+                  else j.uj_val)
+              else uj_val
+            in
+            (* env, f_i : F_i, ctxt |- j = def : ty *)
+            let lam_uj_val = it_mkLambda_or_LetIn uj_val ctxt in
+            let uj_type = it_mkProd_or_LetIn j.uj_type ctxt in
+            (* env, f_i : F_i |- uj_val, uj_type *)
+            let _, inst, _, _ = push_rel_context_to_named_context ~hypnaming !!nenv sigma uj_val in
+            (* Feedback.msg_debug (str" Defining fixpoint with " ++ Termops.Internal.print_constr_env !!env_ar sigma inst); *)
+            let sigma = Evd.define (fst bodies.(i)) inst sigma in
+            (* Ensure the partial fixpoint is guarded *)
+            let () =
+              if not (Option.is_empty indexes) then
+                ignore (esearch_guard ?loc !!env sigma possible_indexes recdef)
+            in
+            (* Feedback.msg_debug (str" Defined fixpoint"); *)
+            sigma, { uj_val = lam_uj_val; uj_type })
+          sigma ftydecls vdef
+      else
+        CArray.fold_left2_map_i (fun i sigma (na, decls, ctxt, ar) def ->
+          (* we lift nbfix times the type in tycon, because of
+            the (nbfix - i) variables pushed to env_ar *)
+          let (ctxt,ty) = decompose_prod_n_assum sigma (Context.Rel.length ctxt)
+              (lift (nbfix - i) ar) in
            let ctxt,nenv = push_rel_context ~hypnaming sigma ctxt newenv in
-           let sigma, j = pretype (mk_tycon ty) nenv sigma def in
+           let sigma, j = pretype ~allowed_evars (mk_tycon ty) nenv sigma def in
            sigma, { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
                     uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
-        sigma ctxtv vdef in
-      let sigma = Typing.check_type_fixpoint ?loc !!env sigma names ftys vdefj in
-      let nf c = nf_evar sigma c in
-      let ftys = Array.map nf ftys in (* FIXME *)
-      let fdefs = Array.map (fun x -> nf (j_val x)) vdefj in
-      let fixj = match fixkind with
-        | GFix (vn,i) ->
-              (* First, let's find the guard indexes. *)
-              (* If recursive argument was not given by user, we try all args.
-                 An earlier approach was to look only for inductive arguments,
-                 but doing it properly involves delta-reduction, and it finally
-                 doesn't seem worth the effort (except for huge mutual
-                 fixpoints ?) *)
-          let possible_indexes =
-            Array.to_list (Array.mapi
-                             (fun i annot -> match annot with
-                             | Some n -> [n]
-                             | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
-           vn)
-          in
-          let fixdecls = (names,ftys,fdefs) in
-          let indexes = esearch_guard ?loc !!env sigma possible_indexes fixdecls in
-          make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
-        | GCoFix i ->
-          let fixdecls = (names,ftys,fdefs) in
-          let cofix = (i, fixdecls) in
-            (try check_cofix !!env (i, nf_fix sigma fixdecls)
-             with reraise ->
-               let (e, info) = Exninfo.capture reraise in
-               let info = Option.cata (Loc.add_loc info) info loc in
-               Exninfo.iraise (e, info));
-            make_judge (mkCoFix cofix) ftys.(i)
+        sigma ftydecls vdef
+    in
+    let ftys = Array.map (nf_evar sigma) ftys in
+    let vdefj = Array.map (fun x -> j_nf_evar sigma x) vdefj in
+    let sigma = Typing.check_type_fixpoint ?loc !!env sigma names ftys vdefj in
+    let fdefs = Array.map j_val vdefj in
+    let fixj = match fixkind with
+      | GFix (vn,i) ->
+        (* First, let's find the guard indexes. *)
+        (* If recursive argument was not given by user, we try all args.
+            An earlier approach was to look only for inductive arguments,
+            but doing it properly involves delta-reduction, and it finally
+            doesn't seem worth the effort (except for huge mutual fixpoints ?) *)
+        let possible_indexes =
+          Array.to_list (Array.mapi
+                            (fun i annot -> match annot with
+                            | Some n -> [n]
+                            | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
+          vn)
+        in
+        let fixdecls = (names,ftys,fdefs) in
+        let indexes = esearch_guard ?loc !!env sigma possible_indexes fixdecls in
+        let make_one n = mkFix ((indexes,n),fixdecls) in
+        let ty =
+          let substi = List.init i (fun k -> make_one (pred i - k)) in
+          substl substi ftys.(i)
+        in
+                make_judge (make_one i) ty
+            | GCoFix i ->
+        let fixdecls = (names,ftys,fdefs) in
+        let make_one n = mkCoFix (n,fixdecls) in
+        let ty =
+          let substi = List.init i (fun k -> make_one (pred i - k)) in
+          substl substi ftys.(i)
+        in
+        make_judge (make_one i) ty
       in
-      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma fixj tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma fixj tycon
+
 
   let pretype_sort self s =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let sigma, j = pretype_sort ?loc sigma s in
-    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma j tycon
 
   let pretype_app self (f, args) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
-    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
+    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
     let sigma, fj = pretype empty_tycon env sigma f in
     let floc = loc_of_glob_constr f in
     let length = List.length args in
@@ -878,7 +1054,7 @@ struct
       apply_rec env sigma 0 body typ body candargs [] args
     in
     let sigma, resj = refresh_template env sigma resj in
-    let sigma, resj, otrace = inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon in
+    let sigma, resj, otrace = inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma resj tycon in
     let refine_arg n (sigma,t) (newarg,ty,origarg,trace) =
       (* Refine an argument (originally `origarg`) represented by an evar
          (`newarg`) to use typing information from the context *)
@@ -908,12 +1084,12 @@ struct
     (sigma, resj)
 
   let pretype_proj self ((f,us), args, c) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     pretype_app self (DAst.make ?loc (GRef (GlobRef.ConstRef f,us)), args @ [c])
-      ?loc ~program_mode ~poly resolve_tc tycon env sigma
+      ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma
 
   let pretype_lambda self (name, bk, c1, c2) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let open Context.Rel.Declaration in
     let tycon' = if program_mode
       then Option.map (Coercion.remove_subset !!env sigma) tycon
@@ -949,21 +1125,21 @@ struct
             error_not_product ?loc !!env sigma ty
     in
     let dom_valcon = valcon_of_tycon dom in
-    let sigma, j = eval_type_pretyper self ~program_mode ~poly resolve_tc dom_valcon env sigma c1 in
+    let sigma, j = eval_type_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc dom_valcon env sigma c1 in
     let name = {binder_name=name; binder_relevance=Sorts.relevance_of_sort j.utj_type} in
     let var = LocalAssum (name, j.utj_val) in
     let vars = VarSet.variables (Global.env ()) in
     let hypnaming = if program_mode then ProgramNaming vars else RenameExistingBut vars in
     let var',env' = push_rel ~hypnaming sigma var env in
-    let sigma, j' = eval_pretyper self ~program_mode ~poly resolve_tc rng env' sigma c2 in
+    let sigma, j' = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc rng env' sigma c2 in
     let name = get_name var' in
     let resj = judge_of_abstraction !!env (orelse_name name name') j j' in
-    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma resj tycon
 
   let pretype_prod self (name, bk, c1, c2) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let open Context.Rel.Declaration in
-    let pretype_type tycon env sigma c = eval_type_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
+    let pretype_type tycon env sigma c = eval_type_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
     let sigma, j = pretype_type empty_valcon env sigma c1 in
     let vars = VarSet.variables (Global.env ()) in
     let hypnaming = if program_mode then ProgramNaming vars else RenameExistingBut vars in
@@ -985,13 +1161,13 @@ struct
         let (e, info) = Exninfo.capture e in
         let info = Option.cata (Loc.add_loc info) info loc in
         Exninfo.iraise (e, info) in
-      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma resj tycon
 
   let pretype_letin self (name, c1, t, c2) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let open Context.Rel.Declaration in
-    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
-    let pretype_type tycon env sigma c = eval_type_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
+    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
+    let pretype_type tycon env sigma c = eval_type_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
     let sigma, tycon1 =
       match t with
       | Some t ->
@@ -1014,10 +1190,10 @@ struct
              uj_type = subst1 j.uj_val j'.uj_type }
 
   let pretype_lettuple self (nal, (na, po), c, d) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let open Context.Rel.Declaration in
-    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
-    let pretype_type tycon env sigma c = eval_type_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
+    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
+    let pretype_type tycon env sigma c = eval_type_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
     let sigma, cj = pretype empty_tycon env sigma c in
     let (IndType (indf,realargs)) as indty =
       try find_rectype !!env sigma cj.uj_type
@@ -1112,14 +1288,14 @@ struct
             in sigma, { uj_val = v; uj_type = ccl })
 
   let pretype_cases self (sty, po, tml, eqns)  =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
-    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
+    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
     Cases.compile_cases ?loc ~program_mode sty (pretype, sigma) tycon env (po,tml,eqns)
 
   let pretype_if self (c, (na, po), b1, b2) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let open Context.Rel.Declaration in
-    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
+    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
     let sigma, cj = pretype empty_tycon env sigma c in
     let (IndType (indf,realargs)) as indty =
       try find_rectype !!env sigma cj.uj_type
@@ -1146,7 +1322,7 @@ struct
       let psign,env_p = push_rel_context ~hypnaming sigma psign predenv in
       let sigma, pred, p = match po with
         | Some p ->
-          let sigma, pj = eval_type_pretyper self ~program_mode ~poly resolve_tc empty_valcon env_p sigma p in
+          let sigma, pj = eval_type_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc empty_valcon env_p sigma p in
           let ccl = nf_evar sigma pj.utj_val in
           let pred = it_mkLambda_or_LetIn ccl psign in
           let typ = lift (- nar) (beta_applist sigma (pred,[cj.uj_val])) in
@@ -1181,13 +1357,13 @@ struct
         mkCase (EConstr.contract_case !!env sigma (ci, pred, make_case_invert !!env indty ci, cj.uj_val, [|b1;b2|]))
       in
       let cj = { uj_val = v; uj_type = p } in
-      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma cj tycon
 
   let pretype_cast self (c, k, t) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
-    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma c in
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
+    let pretype tycon env sigma c = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma c in
     let sigma, cj =
-      let sigma, tj = eval_type_pretyper self ~program_mode ~poly resolve_tc empty_valcon env sigma t in
+      let sigma, tj = eval_type_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc empty_valcon env sigma t in
       let sigma, tval = Evarsolve.refresh_universes
           ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma tj.utj_val in
       let tval = nf_evar sigma tval in
@@ -1216,10 +1392,10 @@ struct
       in
       let v = mkCast (cj.uj_val, k, tval) in
       sigma, { uj_val = v; uj_type = tval }
-    in discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
+    in discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma cj tycon
 
 (* [pretype_type valcon env sigma c] coerces [c] into a type *)
-let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEnv.t) sigma = match DAst.get c with
+let pretype_type self c ?loc ~program_mode ~allowed_evars ~poly resolve_tc valcon (env : GlobEnv.t) sigma = match DAst.get c with
   | GHole (knd, naming, None) ->
       let loc = loc_of_glob_constr c in
       (match valcon with
@@ -1246,7 +1422,7 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
          let sigma = if program_mode then mark_obligation_evar sigma knd utj_val else sigma in
          sigma, { utj_val; utj_type = s})
   | _ ->
-      let sigma, j = eval_pretyper self ~program_mode ~poly resolve_tc empty_tycon env sigma c in
+      let sigma, j = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc empty_tycon env sigma c in
       let loc = loc_of_glob_constr c in
       let sigma, tj = Coercion.inh_coerce_to_sort ?loc !!env sigma j in
         match valcon with
@@ -1260,25 +1436,25 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
           end
 
   let pretype_int self i =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
         let resj =
           try Typing.judge_of_int !!env i
           with Invalid_argument _ ->
             user_err ?loc (str "Type of int63 should be registered first.")
         in
-        discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
+        discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma resj tycon
 
   let pretype_float self f =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
       let resj =
         try Typing.judge_of_float !!env f
         with Invalid_argument _ ->
           user_err ?loc (str "Type of float should be registered first.")
         in
-        discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
+        discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma resj tycon
 
   let pretype_array self (u,t,def,ty) =
-    fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
+    fun ?loc ~program_mode ~allowed_evars ~poly resolve_tc tycon env sigma ->
     let sigma, u = match u with
       | None -> sigma, None
       | Some [u] ->
@@ -1292,7 +1468,7 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
           })
     in
     let sigma, tycon' = split_as_array !!env sigma tycon in
-    let sigma, jty = eval_type_pretyper self ~program_mode ~poly resolve_tc tycon' env sigma ty in
+    let sigma, jty = eval_type_pretyper self ~program_mode ~poly ~allowed_evars resolve_tc tycon' env sigma ty in
     (* XXX not sure if we need to be this complex, I wrote this while
        being confused by broken universe substitutions *)
     let sigma, u = match Univ.Universe.level (Sorts.univ_of_sort jty.utj_type) with
@@ -1310,8 +1486,8 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
         in
         sigma, u
     in
-    let sigma, jdef = eval_pretyper self ~program_mode ~poly resolve_tc (mk_tycon jty.utj_val) env sigma def in
-    let pretype_elem = eval_pretyper self ~program_mode ~poly resolve_tc (mk_tycon jty.utj_val) env in
+    let sigma, jdef = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc (mk_tycon jty.utj_val) env sigma def in
+    let pretype_elem = eval_pretyper self ~program_mode ~allowed_evars ~poly resolve_tc (mk_tycon jty.utj_val) env in
     let sigma, jt = Array.fold_left_map pretype_elem sigma t in
     let u = Univ.Instance.of_array [| u |] in
     let ta = EConstr.of_constr @@ Typeops.type_of_array !!env u in
@@ -1319,7 +1495,7 @@ let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEn
       uj_val = EConstr.mkArray(EInstance.make u, Array.map (fun j -> j.uj_val) jt, jdef.uj_val, jty.utj_val);
       uj_type = EConstr.mkApp(ta,[|jdef.uj_type|])
     } in
-    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode ~allowed_evars resolve_tc env sigma j tycon
 
 end
 
@@ -1353,10 +1529,12 @@ let default_pretyper =
   }
 
 let pretype ~program_mode ~poly resolve_tc tycon env sigma c =
-  eval_pretyper default_pretyper ~program_mode ~poly resolve_tc tycon env sigma c
+  eval_pretyper default_pretyper ~program_mode ~allowed_evars:Evarsolve.AllowedEvars.all
+    ~poly resolve_tc tycon env sigma c
 
 let pretype_type ~program_mode ~poly resolve_tc tycon env sigma c =
-  eval_type_pretyper default_pretyper ~program_mode ~poly resolve_tc tycon env sigma c
+  eval_type_pretyper default_pretyper ~program_mode ~allowed_evars:Evarsolve.AllowedEvars.all
+    ~poly resolve_tc tycon env sigma c
 
 let ise_pretype_gen flags env sigma lvar kind c =
   let program_mode = flags.program_mode in
