@@ -194,7 +194,7 @@ module Make
     | ConstrContext ((_,id),c) ->
       hov 0
         (keyword "context" ++ spc () ++ pr_id id ++ spc () ++
-           str "[" ++ prlc c ++ str "]")
+           str "[ " ++ prlc c ++ str " ]")
     | ConstrTypeOf c ->
       hov 1 (keyword "type of" ++ spc() ++ prc c)
     | ConstrTerm c when test c ->
