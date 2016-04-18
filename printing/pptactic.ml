@@ -77,6 +77,17 @@ let declare_extra_genarg_pprule wit f g h =
   let h prc prlc prtac x = h prc prlc prtac (out_gen (topwit wit) x) in
   genarg_pprule := String.Map.add s (f,g,h) !genarg_pprule
 
+let find_extra_genarg_pprule wit =
+  let s = match wit with
+    | ExtraArg s -> ArgT.repr s
+    | _ -> error
+      "Can declare a pretty-printing rule only for extra argument types."
+  in
+  let (f,g,h) = String.Map.find s !genarg_pprule in
+  (fun prc prlc prtac x -> f prc prlc prtac (in_gen (rawwit wit) x)),
+  (fun prc prlc prtac x -> g prc prlc prtac (in_gen (glbwit wit) x)),
+  (fun prc prlc prtac x -> h prc prlc prtac (in_gen (topwit wit) x))
+
 module Make
   (Ppconstr : Ppconstrsig.Pp)
   (Taggers : sig
@@ -201,7 +212,7 @@ module Make
     | ConstrContext ((_,id),c) ->
       hov 0
         (keyword "context" ++ spc () ++ pr_id id ++ spc () ++
-           str "[" ++ prlc c ++ str "]")
+           str "[ " ++ prlc c ++ str " ]")
     | ConstrTypeOf c ->
       hov 1 (keyword "type of" ++ spc() ++ prc c)
     | ConstrTerm c when test c ->
@@ -257,8 +268,10 @@ module Make
     | NoBindings -> mt ()
 
   let pr_clear_flag clear_flag pp x =
-    (match clear_flag with Some false -> str "!" | Some true -> str ">" | None -> mt())
-    ++ pp x
+    match clear_flag with
+    | Some false -> surround (pp x)
+    | Some true -> str ">" ++ pp x
+    | None -> pp x
 
   let pr_with_bindings prc prlc (c,bl) =
     prc c ++ pr_bindings prc prlc bl
@@ -302,7 +315,6 @@ module Make
       | ExtraArg s ->
         try pi1 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (rawwit wit) x)
         with Not_found -> Genprint.generic_raw_print (in_gen (rawwit wit) x)
-
 
   let rec pr_glb_generic_rec prc prlc prtac prpat (GenArg (Glbwit wit, x)) =
     match wit with
@@ -350,9 +362,13 @@ module Make
 
   let rec tacarg_using_rule_token pr_gen = function
     | Egramml.GramTerminal s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
-    | Egramml.GramNonTerminal _ :: l, a :: al ->
+    | Egramml.GramNonTerminal (_,Rawwit wit,e) :: l, a :: al ->
+      let lev = match e,wit with
+        | Extend.Aentryl (_,lev), ExtraArg t when ArgT.repr t = "tactic" -> lev
+        | Extend.Aentry _, ExtraArg t when ArgT.repr t = "tactic" -> 5
+        | _ -> 0 in
       let r = tacarg_using_rule_token pr_gen (l,al) in
-      pr_gen a :: r
+      pr_gen (lev,E) a :: r
     | [], [] -> []
     | _ -> failwith "Inconsistent arguments of extended tactic"
 
@@ -385,7 +401,7 @@ module Make
       in
       let args = match l with
         | [] -> mt ()
-        | _ -> spc() ++ pr_sequence pr_gen l
+        | _ -> spc() ++ pr_sequence (pr_gen (1,Any)) l
       in
       str "<" ++ name ++ str ">" ++ args
 
@@ -397,13 +413,13 @@ module Make
       let p = pr_tacarg_using_rule pr_gen (pp.pptac_prods, l) in
       if pp.pptac_level > lev then surround p else p
     with Not_found ->
-      KerName.print key ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
+      KerName.print key ++ spc() ++ pr_sequence (pr_gen (1,Any)) l ++ str" (* Generic printer *)"
 
   let check_type t arg = match arg with
   | TacGeneric arg -> argument_type_eq t (genarg_tag arg)
   | _ -> argument_type_eq t (ArgumentType wit_tactic)
 
-  let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.ghost, arg))
+  let pr_farg prtac lev arg = prtac lev (TacArg (Loc.ghost, arg))
 
   let pr_raw_extend_rec prc prlc prtac prpat =
     pr_extend_gen check_type (pr_farg prtac)
@@ -478,10 +494,9 @@ module Make
 
   let pr_with_induction_names prc = function
     | None, None -> mt ()
-    | Some eqpat, None -> spc () ++ hov 1 (pr_eqn_ipat eqpat)
-    | None, Some ipat -> spc () ++ hov 1 (pr_as_disjunctive_ipat prc ipat)
+    | Some eqpat, None -> hov 1 (pr_eqn_ipat eqpat)
+    | None, Some ipat -> hov 1 (pr_as_disjunctive_ipat prc ipat)
     | Some eqpat, Some ipat ->
-      spc () ++
         hov 1 (pr_as_disjunctive_ipat prc ipat ++ spc () ++ pr_eqn_ipat eqpat)
 
   let pr_as_intro_pattern prc ipat =
@@ -522,8 +537,9 @@ module Make
     | ipat ->
       spc() ++ prc c ++ pr_as_ipat prdc ipat
 
-  let pr_by_tactic prt tac =
-    spc() ++ keyword "by" ++ spc () ++ prt tac
+  let pr_by_tactic prt = function
+    | Some tac -> keyword "by" ++ spc () ++ prt tac
+    | None -> mt()
 
   let pr_hyp_location pr_id = function
     | occs, InHyp -> spc () ++ pr_with_occurrences pr_id occs
@@ -578,7 +594,7 @@ module Make
     | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
     | ElimOnAnonHyp n -> int n
 
-  let pr_induction_kind = function
+  let pr_inversion_kind = function
     | SimpleInversion -> primitive "simple inversion"
     | FullInversion -> primitive "inversion"
     | FullInversionClear -> primitive "inversion_clear"
@@ -836,7 +852,7 @@ module Make
           hov 1 (
             primitive (if b then "assert" else "enough") ++
               pr_assumption pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c ++
-              pr_by_tactic (pr.pr_tactic ltop) tac
+              pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
           )
         | TacAssert (_,None,ipat,c) ->
           hov 1 (
@@ -877,7 +893,7 @@ module Make
             ++ spc ()
             ++ prlist_with_sep pr_comma (fun ((clear_flag,h),ids,cl) ->
               pr_clear_flag clear_flag (pr_induction_arg pr.pr_dconstr pr.pr_dconstr) h ++
-                pr_with_induction_names pr.pr_dconstr ids ++
+                pr_non_empty_arg (pr_with_induction_names pr.pr_dconstr) ids ++
                 pr_opt (pr_clauses None pr.pr_name) cl) l ++
               pr_opt pr_eliminator el
           )
@@ -919,7 +935,7 @@ module Make
           )
 
         (* Equality and inversion *)
-        | TacRewrite (ev,l,cl,by) ->
+        | TacRewrite (ev,l,cl,tac) ->
           hov 1 (
             primitive (with_evars ev "rewrite") ++ spc ()
             ++ prlist_with_sep
@@ -929,24 +945,20 @@ module Make
                   pr_with_bindings_arg_full pr.pr_dconstr pr.pr_dconstr c)
               l
             ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) cl
-            ++ (
-              match by with
-                | Some by -> pr_by_tactic (pr.pr_tactic ltop) by
-                | None -> mt()
-            )
+            ++ pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
           )
         | TacInversion (DepInversion (k,c,ids),hyp) ->
           hov 1 (
-            primitive "dependent " ++ pr_induction_kind k ++ spc ()
+            primitive "dependent " ++ pr_inversion_kind k ++ spc ()
             ++ pr_quantified_hypothesis hyp
             ++ pr_with_inversion_names pr.pr_dconstr ids
             ++ pr_with_constr pr.pr_constr c
           )
         | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
           hov 1 (
-            pr_induction_kind k ++ spc ()
+            pr_inversion_kind k ++ spc ()
             ++ pr_quantified_hypothesis hyp
-            ++ pr_with_inversion_names pr.pr_dconstr ids
+            ++ pr_non_empty_arg (pr_with_inversion_names pr.pr_dconstr) ids
             ++ pr_non_empty_arg (pr_simple_hyp_clause pr.pr_name) cl
           )
         | TacInversion (InversionUsing (c,cl),hyp) ->
@@ -961,6 +973,13 @@ module Make
       pr_atom1
 
     let make_pr_tac pr strip_prod_binders tag_atom tag =
+
+        let pr_ltac_constr pr = function
+          | TacArg (_,TacGeneric arg)
+          | TacArg (_,Tacexp (TacArg (_,TacGeneric arg))) as u
+              when argument_type_eq (genarg_tag arg) (ArgumentType wit_constr)
+                -> keyword "constr:" ++ surround (pr u)
+          | u -> pr u in
 
         let extract_binders = function
           | Tacexp (TacFun (lvar,body)) -> (lvar,Tacexp body)
@@ -980,9 +999,10 @@ module Make
               let llc = List.map (fun (id,t) -> (id,extract_binders t)) llc in
               v 0
                 (hv 0 (
-                  pr_let_clauses recflag (pr_tac ltop) llc
+                  pr_let_clauses recflag (pr_ltac_constr (pr_tac ltop)) llc
                   ++ spc () ++ keyword "in"
-                 ) ++ fnl () ++ pr_tac (llet,E) u),
+                 ) ++ fnl ()
+                 ++ pr_ltac_constr (pr_tac (llet,E)) u),
               llet
             | TacMatch (lz,t,lrul) ->
               hov 0 (
@@ -990,7 +1010,7 @@ module Make
                 ++ pr_tac ltop t ++ spc () ++ keyword "with"
                 ++ prlist (fun r ->
                   fnl () ++ str "| "
-                  ++ pr_match_rule true (pr_tac ltop) pr.pr_lpattern r
+                  ++ pr_match_rule true (pr_ltac_constr (pr_tac ltop)) pr.pr_lpattern r
                 ) lrul
                 ++ fnl() ++ keyword "end"),
               lmatch
@@ -1000,14 +1020,14 @@ module Make
                 ++ keyword (if lr then "match reverse goal with" else "match goal with")
                 ++ prlist (fun r ->
                   fnl () ++ str "| "
-                  ++ pr_match_rule false (pr_tac ltop) pr.pr_lpattern r
+                  ++ pr_match_rule false (pr_ltac_constr (pr_tac ltop)) pr.pr_lpattern r
                 ) lrul ++ fnl() ++ keyword "end"),
               lmatch
             | TacFun (lvar,body) ->
               hov 2 (
                 keyword "fun"
                 ++ prlist pr_funvar lvar ++ str " =>" ++ spc ()
-                ++ pr_tac (lfun,E) body),
+                ++ pr_ltac_constr (pr_tac (lfun,E)) body),
               lfun
             | TacThens (t,tl) ->
               hov 1 (
@@ -1163,7 +1183,7 @@ module Make
           | TacNumgoals ->
             keyword "numgoals"
           | (TacCall _|Tacexp _ | TacGeneric _) as a ->
-            keyword "ltac:" ++ pr_tac (latom,E) (TacArg (Loc.ghost,a))
+            keyword "ltac:" ++ surround (pr_tac ltop (TacArg (Loc.ghost,a)))
 
         in pr_tac
 
@@ -1409,8 +1429,32 @@ let () =
   Genprint.register_print0 Stdarg.wit_string pr_string pr_string pr_string
 
 let () =
-  let printer _ _ prtac = prtac (0, E) in
+  let printer _ _ prtac = prtac (5, E) in
   declare_extra_genarg_pprule wit_tactic printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (0, E) in
+  declare_extra_genarg_pprule wit_tactic0 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (1, E) in
+  declare_extra_genarg_pprule wit_tactic1 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (2, E) in
+  declare_extra_genarg_pprule wit_tactic2 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (3, E) in
+  declare_extra_genarg_pprule wit_tactic3 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (4, E) in
+  declare_extra_genarg_pprule wit_tactic4 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (5, E) in
+  declare_extra_genarg_pprule wit_tactic5 printer printer printer
 
 let () =
   let pr_unit _ _ _ () = str "()" in

@@ -110,7 +110,7 @@ Module KeyDecidableType(D:DecidableType).
   unfold In, MapsTo.
   setoid_rewrite Exists_exists; setoid_rewrite InA_alt.
   firstorder.
-  exists (snd x), x; auto.
+  exists (snd x); exists x; auto.
  Qed.
 
  Lemma In_nil {elt} k : In k (@nil (key*elt)) <-> False.

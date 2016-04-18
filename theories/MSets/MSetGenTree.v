@@ -983,7 +983,7 @@ Proof.
  apply (StrictOrder_Irreflexive (elements s2)); auto.
  intros s1 s2 s3 (s1' & s2' & B1 & B2 & E1 & E2 & L12)
                  (s2'' & s3' & B2' & B3 & E2' & E3 & L23).
- exists s1', s3'; do 4 (split; trivial).
+ exists s1'; exists s3'; do 4 (split; trivial).
  assert (eqlistA X.eq (elements s2') (elements s2'')).
   apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto with *.
   rewrite <- eq_Leq. transitivity s2; auto. symmetry; auto.
@@ -995,11 +995,11 @@ Instance lt_compat : Proper (eq==>eq==>iff) lt.
 Proof.
  intros s1 s2 E12 s3 s4 E34. split.
  intros (s1' & s3' & B1 & B3 & E1 & E3 & LT).
- exists s1', s3'; do 2 (split; trivial).
+ exists s1'; exists s3'; do 2 (split; trivial).
   split. transitivity s1; auto. symmetry; auto.
   split; auto. transitivity s3; auto. symmetry; auto.
  intros (s1' & s3' & B1 & B3 & E1 & E3 & LT).
- exists s1', s3'; do 2 (split; trivial).
+ exists s1'; exists s3'; do 2 (split; trivial).
   split. transitivity s2; auto.
   split; auto. transitivity s4; auto.
 Qed.
@@ -1079,8 +1079,8 @@ Proof.
  intros.
  destruct (compare_Cmp s1 s2); constructor.
  rewrite eq_Leq; auto.
- intros; exists s1, s2; repeat split; auto.
- intros; exists s2, s1; repeat split; auto.
+ intros; exists s1; exists s2; repeat split; auto.
+ intros; exists s2; exists s1; repeat split; auto.
 Qed.
 
 

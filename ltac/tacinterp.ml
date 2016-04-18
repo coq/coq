@@ -1282,7 +1282,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       in
       let tac =
         Ftactic.with_env interp_vars >>= fun (env, lr) ->
-        let name () = Pptactic.pr_alias (fun v -> print_top_val env v) 0 s lr in
+        let name () = Pptactic.pr_alias (fun _ v -> print_top_val env v) 0 s lr in
         Proofview.Trace.name_tactic name (tac lr)
       (* spiwack: this use of name_tactic is not robust to a
          change of implementation of [Ftactic]. In such a situation,
@@ -1304,7 +1304,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let tac = Tacenv.interp_ml_tactic opn in
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
       let tac args =
-        let name () = Pptactic.pr_extend (fun v -> print_top_val () v) 0 opn args in
+        let name () = Pptactic.pr_extend (fun _ v -> print_top_val () v) 0 opn args in
         Proofview.Trace.name_tactic name (catch_error_tac trace (tac args ist))
       in
       Ftactic.run args tac
@@ -1766,10 +1766,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (if Option.is_empty t then interp_constr else interp_type) ist env sigma c
         in
         let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
-        let tac = Option.map (interp_tactic ist) t in
+        let tac = Option.map (Option.map (interp_tactic ist)) t in
         Tacticals.New.tclWITHHOLES false
         (name_atomic ~env
-          (TacAssert(b,Option.map ignore t,ipat,c))
+          (TacAssert(b,Option.map (Option.map ignore) t,ipat,c))
           (Tactics.forward b tac ipat' c)) sigma
       end }
   | TacGeneralize cl ->
@@ -2124,6 +2124,30 @@ let () =
 let () =
   let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
   Geninterp.register_interp0 wit_tactic interp
+
+let () =
+  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
+  Geninterp.register_interp0 wit_tactic0 interp
+
+let () =
+  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
+  Geninterp.register_interp0 wit_tactic1 interp
+
+let () =
+  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
+  Geninterp.register_interp0 wit_tactic2 interp
+
+let () =
+  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
+  Geninterp.register_interp0 wit_tactic3 interp
+
+let () =
+  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
+  Geninterp.register_interp0 wit_tactic4 interp
+
+let () =
+  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
+  Geninterp.register_interp0 wit_tactic5 interp
 
 let () =
   let interp ist tac = interp_tactic ist tac >>= fun () -> Ftactic.return () in

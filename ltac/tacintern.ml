@@ -498,7 +498,7 @@ let rec intern_atomic lf ist x =
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
   | TacAssert (b,otac,ipat,c) ->
-      TacAssert (b,Option.map (intern_pure_tactic ist) otac,
+      TacAssert (b,Option.map (Option.map (intern_pure_tactic ist)) otac,
                  Option.map (intern_intro_pattern lf ist) ipat,
                  intern_constr_gen false (not (Option.is_empty otac)) ist c)
   | TacGeneralize cl ->
@@ -795,6 +795,12 @@ let () =
   Genintern.register_intern0 wit_ident intern_ident';
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic0 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic1 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic2 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic3 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic4 (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_tactic5 (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_ltac (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_sort (fun ist s -> (ist, s));
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
