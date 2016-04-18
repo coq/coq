@@ -86,42 +86,14 @@ type (_, _, _) genarg_type =
 (** Generic types. ['raw] is the OCaml lowest level, ['glob] is the globalized
     one, and ['top] the internalized one. *)
 
-module Val :
-sig
-  type 'a typ
-
-  type _ tag =
-  | Base : 'a typ -> 'a tag
-  | List : 'a tag -> 'a list tag
-  | Opt : 'a tag -> 'a option tag
-  | Pair : 'a tag * 'b tag -> ('a * 'b) tag
-
-  type t = Dyn : 'a typ * 'a -> t
-
-  val eq : 'a typ -> 'b typ -> ('a, 'b) CSig.eq option
-  val repr : 'a typ -> string
-  val pr : 'a typ -> Pp.std_ppcmds
-
-  val list_tag : t list typ
-  val opt_tag : t option typ
-  val pair_tag : (t * t) typ
-
-  val inject : 'a tag -> 'a -> t
-
-end
-(** Dynamic types for toplevel values. While the generic types permit to relate
-    objects at various levels of interpretation, toplevel values are wearing
-    their own type regardless of where they came from. This allows to use the
-    same runtime representation for several generic types. *)
-
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision when the three types agree. *)
 
-val make0 : ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
+val make0 : string -> ('raw, 'glob, 'top) genarg_type
 (** Create a new generic type of argument: force to associate
     unique ML types at each of the three levels. *)
 
-val create_arg : ?dyn:'top Val.tag -> string -> ('raw, 'glob, 'top) genarg_type
+val create_arg : string -> ('raw, 'glob, 'top) genarg_type
 (** Alias for [make0]. *)
 
 (** {5 Specialized types} *)
@@ -185,12 +157,6 @@ val out_gen : ('a, 'co) abstract_argument_type -> 'co generic_argument -> 'a
 val has_type : 'co generic_argument -> ('a, 'co) abstract_argument_type -> bool
 (** [has_type v t] tells whether [v] has type [t]. If true, it ensures that
     [out_gen t v] will not raise a dynamic type exception. *)
-
-(** {6 Dynamic toplevel values} *)
-
-val val_tag : 'a typed_abstract_argument_type -> 'a Val.tag
-(** Retrieve the dynamic type associated to a toplevel genarg. Only works for
-    ground generic arguments. *)
 
 (** {6 Type reification} *)
 

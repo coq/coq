@@ -29,7 +29,7 @@ type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
 type var_map = Pattern.constr_under_binders Id.Map.t
 type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
-type unbound_ltac_var_map = Genarg.Val.t Id.Map.t
+type unbound_ltac_var_map = Geninterp.Val.t Id.Map.t
 
 type ltac_var_map = {
   ltac_constrs : var_map;

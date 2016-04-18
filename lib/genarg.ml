@@ -9,7 +9,6 @@
 open Pp
 open Util
 
-module ValT = Dyn.Make(struct end)
 module ArgT =
 struct
   module DYN = Dyn.Make(struct end)
@@ -23,37 +22,6 @@ struct
   | None -> None
   | Some (DYN.Any t) ->
     Some (Any (Obj.magic t)) (** All created tags are made of triples *)
-end
-
-module Val =
-struct
-
-  type 'a typ = 'a ValT.tag
-
-  type _ tag =
-  | Base : 'a typ -> 'a tag
-  | List : 'a tag -> 'a list tag
-  | Opt : 'a tag -> 'a option tag
-  | Pair : 'a tag * 'b tag -> ('a * 'b) tag
-
-  type t = Dyn : 'a typ * 'a -> t
-
-  let eq = ValT.eq
-  let repr = ValT.repr
-
-  let rec pr : type a. a typ -> std_ppcmds = fun t -> str (repr t)
-
-  let list_tag = ValT.create "list"
-  let opt_tag = ValT.create "option"
-  let pair_tag = ValT.create "pair"
-
-  let rec inject : type a. a tag -> a -> t = fun tag x -> match tag with
-  | Base t -> Dyn (t, x)
-  | List tag -> Dyn (list_tag, List.map (fun x -> inject tag x) x)
-  | Opt tag -> Dyn (opt_tag, Option.map (fun x -> inject tag x) x)
-  | Pair (tag1, tag2) ->
-    Dyn (pair_tag, (inject tag1 (fst x), inject tag2 (snd x)))
-
 end
 
 type (_, _, _) genarg_type =
@@ -187,35 +155,13 @@ struct
   include ArgT.Map(struct type 'a t = 'a pack end)
 end
 
-type ('raw, 'glb, 'top) load = {
-  dyn : 'top Val.tag;
-}
-
-module LoadMap = ArgMap(struct type ('r, 'g, 't) t = ('r, 'g, 't) load end)
-
-let arg0_map = ref LoadMap.empty
-
-let create_arg ?dyn name =
+let create_arg name =
   match ArgT.name name with
+  | None -> ExtraArg (ArgT.create name)
   | Some _ ->
     Errors.anomaly (str "generic argument already declared: " ++ str name)
-  | None ->
-    let dyn = match dyn with None -> Val.Base (ValT.create name) | Some dyn -> dyn in
-    let obj = LoadMap.Pack { dyn; } in
-    let name = ArgT.create name in
-    let () = arg0_map := LoadMap.add name obj !arg0_map in
-    ExtraArg name
 
 let make0 = create_arg
-
-let rec val_tag : type a b c. (a, b, c) genarg_type -> c Val.tag = function
-| ListArg t -> Val.List (val_tag t)
-| OptArg t -> Val.Opt (val_tag t)
-| PairArg (t1, t2) -> Val.Pair (val_tag t1, val_tag t2)
-| ExtraArg s ->
-  match LoadMap.find s !arg0_map with LoadMap.Pack obj -> obj.dyn
-
-let val_tag = function Topwit t -> val_tag t
 
 (** Registering genarg-manipulating functions *)
 

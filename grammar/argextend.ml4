@@ -88,6 +88,7 @@ let check_type prefix s = function
 | Some _ -> warning_redundant prefix s
 
 let declare_tactic_argument loc s (typ, f, g, h) cl =
+  let se = mlexpr_of_string s in
   let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
     | `Uniform (typ, pr) ->
       let typ = get_type "" s typ in
@@ -147,20 +148,15 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
     | Some f -> <:expr< $lid:f$>> in
   let dyn = match typ with
   | None -> <:expr< None >>
-  | Some typ ->
-    if is_self s typ then <:expr< None >>
-    else <:expr< Some (Genarg.val_tag $make_topwit loc typ$) >>
+  | Some typ -> <:expr< Some (Geninterp.val_tag $make_topwit loc typ$) >>
   in
-  let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
   declare_str_items loc
-   [ <:str_item<
-      value ($lid:"wit_"^s$) =
-        let dyn = $dyn$ in
-        Genarg.make0 ?dyn $se$ >>;
+   [ <:str_item< value ($lid:"wit_"^s$) = Genarg.make0 $se$ >>;
      <:str_item< Genintern.register_intern0 $wit$ $glob$ >>;
      <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
      <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
+     <:str_item< Geninterp.register_val0 $wit$ $dyn$ >>;
      make_extend loc s cl wit;
      <:str_item< do {
       Pptactic.declare_extra_genarg_pprule

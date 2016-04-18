@@ -14,15 +14,20 @@ open Misctypes
 open Genarg
 open Stdarg
 open Constrarg
+open Geninterp
 
 exception CannotCoerceTo of string
 
 let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
-  Genarg.create_arg "constr_context"
+  let wit = Genarg.create_arg "constr_context" in
+  let () = register_val0 wit None in
+  wit
 
 (* includes idents known to be bound and references *)
 let (wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) Genarg.genarg_type) =
-  Genarg.create_arg "constr_under_binders"
+  let wit = Genarg.create_arg "constr_under_binders" in
+  let () = register_val0 wit None in
+  wit
 
 (** All the types considered here are base types *)
 let val_tag wit = match val_tag wit with

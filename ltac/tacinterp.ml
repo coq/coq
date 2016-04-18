@@ -30,6 +30,7 @@ open Term
 open Termops
 open Tacexpr
 open Genarg
+open Geninterp
 open Stdarg
 open Constrarg
 open Printer
@@ -118,7 +119,9 @@ type tacvalue =
   | VRec of value Id.Map.t ref * glob_tactic_expr
 
 let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
-  Genarg.create_arg "tacvalue"
+  let wit = Genarg.create_arg "tacvalue" in
+  let () = register_val0 wit None in
+  wit
 
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v

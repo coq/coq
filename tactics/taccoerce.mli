@@ -12,6 +12,7 @@ open Term
 open Misctypes
 open Pattern
 open Genarg
+open Geninterp
 
 (** Coercions from highest level generic arguments to actual data used by Ltac
     interpretation. Those functions examinate dynamic types and try to return

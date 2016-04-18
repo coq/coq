@@ -11,6 +11,12 @@ open Tacexpr
 open Term
 open Misctypes
 open Genarg
+open Geninterp
+
+let make0 ?dyn name =
+  let wit = Genarg.make0 name in
+  let () = Geninterp.register_val0 wit dyn in
+  wit
 
 (** This is a hack for now, to break the dependency of Genarg on constr-related
     types. We should use dedicated functions someday. *)
@@ -20,50 +26,50 @@ let loc_of_or_by_notation f = function
   | ByNotation (loc,s,_) -> loc
 
 let wit_int_or_var =
-  Genarg.make0 ~dyn:(val_tag (topwit Stdarg.wit_int)) "int_or_var"
+  make0 ~dyn:(val_tag (topwit Stdarg.wit_int)) "int_or_var"
 
 let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type =
-  Genarg.make0 "intropattern"
+  make0 "intropattern"
 
 let wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type =
-  Genarg.make0 "tactic"
+  make0 "tactic"
 
-let wit_ltac = Genarg.make0 ~dyn:(val_tag (topwit Stdarg.wit_unit)) "ltac"
+let wit_ltac = make0 ~dyn:(val_tag (topwit Stdarg.wit_unit)) "ltac"
 
 let wit_ident =
-  Genarg.make0 "ident"
+  make0 "ident"
 
 let wit_var =
-  Genarg.make0 ~dyn:(val_tag (topwit wit_ident)) "var"
+  make0 ~dyn:(val_tag (topwit wit_ident)) "var"
 
-let wit_ref = Genarg.make0 "ref"
+let wit_ref = make0 "ref"
 
-let wit_quant_hyp = Genarg.make0 "quant_hyp"
+let wit_quant_hyp = make0 "quant_hyp"
 
 let wit_sort : (glob_sort, glob_sort, sorts) genarg_type =
-  Genarg.make0 "sort"
+  make0 "sort"
 
 let wit_constr =
-  Genarg.make0 "constr"
+  make0 "constr"
 
 let wit_constr_may_eval =
-  Genarg.make0 ~dyn:(val_tag (topwit wit_constr)) "constr_may_eval"
+  make0 ~dyn:(val_tag (topwit wit_constr)) "constr_may_eval"
 
-let wit_uconstr = Genarg.make0 "uconstr"
+let wit_uconstr = make0 "uconstr"
 
-let wit_open_constr = Genarg.make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
+let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
 
-let wit_constr_with_bindings = Genarg.make0 "constr_with_bindings"
+let wit_constr_with_bindings = make0 "constr_with_bindings"
 
-let wit_bindings = Genarg.make0 "bindings"
+let wit_bindings = make0 "bindings"
 
 let wit_hyp_location_flag : 'a Genarg.uniform_genarg_type =
-  Genarg.make0 "hyp_location_flag"
+  make0 "hyp_location_flag"
 
-let wit_red_expr = Genarg.make0 "redexpr"
+let wit_red_expr = make0 "redexpr"
 
 let wit_clause_dft_concl  =
-  Genarg.make0 "clause_dft_concl"
+  make0 "clause_dft_concl"
 
 (** Aliases *)
 

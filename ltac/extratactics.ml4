@@ -258,7 +258,7 @@ END
 (**********************************************************************)
 (* Rewrite star                                                       *)
 
-let rewrite_star ist clause orient occs c (tac : Val.t option) =
+let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
   let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
     (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
@@ -939,8 +939,10 @@ type 'i test =
   | Test of cmp * 'i * 'i
 
 let wit_cmp : (cmp,cmp,cmp) Genarg.genarg_type = Genarg.make0 "cmp"
+let _ = Geninterp.register_val0 wit_cmp None
 let wit_test : (int or_var test,int or_var test,int test) Genarg.genarg_type =
   Genarg.make0 "tactest"
+let _ = Geninterp.register_val0 wit_test None
 
 let pr_cmp = function
   | Eq -> Pp.str"="

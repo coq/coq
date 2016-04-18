@@ -14,6 +14,7 @@ open Util
 open Constrexpr
 open Tacexpr
 open Genarg
+open Geninterp
 open Constrarg
 open Libnames
 open Ppextend
