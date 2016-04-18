@@ -353,7 +353,8 @@ struct
   let r_modules =
     [["Coq";"Reals" ; "Rdefinitions"];
      ["Coq";"Reals" ; "Rpow_def"] ;
-]
+     ["Coq";"Reals" ; "Raxioms"] ;
+    ]
 
   let z_modules = [["Coq";"ZArith";"BinInt"]]
 
@@ -466,8 +467,9 @@ struct
   let coq_Rdiv = lazy (r_constant "Rdiv")
   let coq_Rinv = lazy (r_constant "Rinv")
   let coq_Rpower = lazy (r_constant "pow")
+  let coq_IZR    = lazy (r_constant "IZR")
   let coq_IQR    = lazy (constant "IQR")
-  let coq_IZR    = lazy (constant "IZR")
+
 
   let coq_PEX = lazy (constant "PEX" )
   let coq_PEc = lazy (constant"PEc")
@@ -1045,7 +1047,7 @@ struct
       coq_Rplus , (fun x y -> Mc.CPlus(x,y)) ;
       coq_Rminus , (fun x y -> Mc.CMinus(x,y)) ; 
       coq_Rmult  , (fun x y -> Mc.CMult(x,y)) ; 
-      coq_Rdiv   , (fun x y -> Mc.CMult(x,Mc.CInv y)) ;
+    (*      coq_Rdiv   , (fun x y -> Mc.CMult(x,Mc.CInv y)) ;*)
     ]
 
   let rec rconstant term =
@@ -1067,10 +1069,14 @@ struct
 	  with
 	      ParseError -> 
 		match op with
-		  | op when Constr.equal op (Lazy.force coq_Rinv) -> Mc.CInv(rconstant args.(0))
-		  | op when Constr.equal op (Lazy.force coq_IQR)  -> Mc.CQ (parse_q args.(0))
-(*		  | op when op = Lazy.force coq_IZR  -> Mc.CZ (parse_z args.(0))*)
-		  | _ ->  raise ParseError
+		| op when Constr.equal op (Lazy.force coq_Rinv) ->
+                  let arg = rconstant args.(0) in 
+                  if Mc.qeq_bool (Mc.q_of_Rcst arg) {Mc.qnum = Mc.Z0 ; Mc.qden = Mc.XH}
+                  then raise ParseError (* This is a division by zero -- no semantics *)
+                  else Mc.CInv(arg) 
+		| op when Constr.equal op (Lazy.force coq_IQR)  -> Mc.CQ (parse_q args.(0))
+		| op when Constr.equal op   (Lazy.force coq_IZR)  -> Mc.CZ (parse_z args.(0))
+		| _ ->  raise ParseError
 	end
 
     |  _ -> raise ParseError

@@ -430,9 +430,6 @@ let nlinear_prover prfdepth (sys: (Mc.q Mc.pExpr * Mc.op1) list) =
   
   MonMap.fold (fun s m acc -> ((pol_of_mon m , Mc.NonStrict), Mc.PsatzSquare(norm0 (pol_of_mon s)))::acc) square [] in
 
- Printf.printf "#square %i\n" (List.length square) ;
- flush stdout ;
-
  let sys = sys @ square in
 
 
