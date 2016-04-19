@@ -92,7 +92,7 @@ SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk
 .PHONY: all run clean $(SUBSYSTEMS)
 
 all: run
-	$(MAKE) --quiet summary.log
+	$(MAKE) report
 
 run: $(SUBSYSTEMS)
 bugs: $(BUGS)
@@ -151,11 +151,11 @@ summary:
 	}
 
 summary.log:
-	$(SHOW) SUMMARY
+	$(SHOW) BUILDING SUMMARY FILE
 	$(HIDE)$(MAKE) --quiet summary > "$@"
 
 report: summary.log
-	$(HIDE)if grep -F 'Error!' summary.log ; then false; fi
+	$(HIDE)if grep -q -F 'Error!' summary.log ; then echo FAILURES; grep -F 'Error!' summary.log; false; else echo NO FAILURES; fi
 
 #######################################################################
 # Regression (and progression) tests
