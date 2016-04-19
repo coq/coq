@@ -71,7 +71,6 @@ Check let' f x y (a:=0) z (b:bool) := x+y+z+1 in f 0 1 2.
 Module A.
 Notation "f ( x )" := (f x) (at level 10, format "f ( x )").
 Check fun f x => f x + S x.
-End A.
 
 Open Scope list_scope.
 Notation list1 := (1::nil)%list.
@@ -79,6 +78,7 @@ Notation plus2 n := (S (S n)).
 (* plus2 was not correctly printed in the two following tests in 8.3pl1 *)
 Print plus2.
 Check fun n => match n with list1 => 0 | _ => 2 end.
+End A.
 
 (* This one is not fully satisfactory because binders in the same type
    are re-factorized and parentheses are needed even for atomic binder
