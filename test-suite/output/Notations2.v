@@ -68,8 +68,10 @@ Check let' f x y (a:=0) z (b:bool) := x+y+z+1 in f 0 1 2.
 
 (* In practice, only the printing rule is used here *)
 (* Note: does not work for pattern *)
+Module A.
 Notation "f ( x )" := (f x) (at level 10, format "f ( x )").
 Check fun f x => f x + S x.
+End A.
 
 Open Scope list_scope.
 Notation list1 := (1::nil)%list.
@@ -98,3 +100,9 @@ Notation "#  x : T => t" := (fun x : T => t)
 
 Check # x : nat => x.
 Check # _ : nat => 2.
+
+(* Check bug 4677 *)
+Check fun x (H:le x 0) => exist (le x) 0 H.
+
+Parameters (A : Set) (x y : A) (Q : A -> A -> Prop) (conj : Q x y).
+Check (exist (Q x) y conj).

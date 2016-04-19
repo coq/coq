@@ -794,15 +794,21 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
      otherwise how to ensure it corresponds to a well-typed eta-expansion;
      we make an exception for types which are metavariables: this is useful e.g.
      to print "{x:_ & P x}" knowing that notation "{x & P x}" is not defined. *)
-  | b1, NLambda (Name id,(NHole _ | NVar _ as t2),b2) when inner ->
-      let id' = Namegen.next_ident_away id (free_glob_vars b1) in
+  | b1, NLambda (Name id as na,(NHole _ | NVar _ as t2),b2) when inner ->
+      let avoid =
+        free_glob_vars b1 @ (* as in Namegen: *) glob_visible_short_qualid b1 in
+      let id' = Namegen.next_ident_away id avoid in
       let t1 = GHole(Loc.ghost,Evar_kinds.BinderType (Name id'),Misctypes.IntroAnonymous,None) in
       let sigma = match t2 with
       | NHole _ -> sigma
       | NVar id2 -> bind_env alp sigma id2 t1
       | _ -> assert false in
-      match_in u alp metas (bind_binder sigma id [(Name id',Explicit,None,t1)])
-       (mkGApp Loc.ghost b1 (GVar (Loc.ghost,id'))) b2
+      let (alp,sigma) =
+        if Id.List.mem id blmetas then
+          alp, bind_binder sigma id [(Name id',Explicit,None,t1)]
+        else
+          match_names metas (alp,sigma) (Name id') na in
+      match_in u alp metas sigma (mkGApp Loc.ghost b1 (GVar (Loc.ghost,id'))) b2
 
   | (GRec _ | GEvar _), _
   | _,_ -> raise No_match

@@ -1,3 +1,10 @@
+Changes from V8.5pl1 to V8.5pl2
+===============================
+
+Bugfixes
+
+- #4677: fix alpha-conversion in notations needing eta-expansion
+
 Changes from V8.5 to V8.5pl1
 ============================
 
