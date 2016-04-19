@@ -71,19 +71,6 @@ let rec print_stack (st : treenode list) =
     | x::xs -> print_treenode "" x; msgnl(str("::")); print_stack xs)
 
 
-let exit_tactic option_start_time_add_total c =
-  (match option_start_time_add_total with
-    | Some (start_time, add_total) ->
-        let node :: stack' = !stack in
-        let parent = List.hd stack' in
-        stack := stack';
-        if add_total then Hashtbl.remove on_stack c;
-        let diff = time() -. start_time in
-        parent.entry.local <- parent.entry.local -. diff;
-        add_entry node.entry add_total {total = diff; local = diff; ncalls = 1; max_total = diff};
-    | None -> ()
-  )
-
 let string_of_call ck =
   let s =
   string_of_ppcmds
@@ -103,6 +90,19 @@ let string_of_call ck =
   for i = 0 to String.length s - 1 do if s.[i] = '\n' then s.[i] <- ' ' done;
   let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
   CString.strip s
+
+let exit_tactic option_start_time_add_total c =
+  (match option_start_time_add_total with
+    | Some (start_time, add_total) ->
+        let node :: stack' = !stack in
+        let parent = List.hd stack' in
+        stack := stack';
+        if add_total then Hashtbl.remove on_stack (string_of_call c);
+        let diff = time() -. start_time in
+        parent.entry.local <- parent.entry.local -. diff;
+        add_entry node.entry add_total {total = diff; local = diff; ncalls = 1; max_total = diff};
+    | None -> ()
+  )
 
 let tclFINALLY tac (finally : unit Proofview.tactic) =
   let open Proofview.Notations in
@@ -137,8 +137,7 @@ let do_profile s call_trace tac =
     (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
       (match call_trace with
       | (_, c) :: _ ->
-      	let s = string_of_call c in
-	exit_tactic option_start_time_add_total s
+        exit_tactic option_start_time_add_total c
       | [] -> ()))))
 
 
