@@ -63,6 +63,9 @@ let prj : type a. a Val.typ -> Val.t -> a option = fun t v ->
   | None -> None
   | Some Refl -> Some x
 
+let in_list tag v =
+  let tag = match tag with Val.Base tag -> tag | _ -> assert false in
+  Val.Dyn (Val.list_tag, List.map (fun x -> Val.Dyn (tag, x)) v)
 let in_gen wit v = Val.inject (val_tag wit) v
 let out_gen wit v =
   let t = match val_tag wit with
@@ -1577,7 +1580,7 @@ and interp_genarg_constr_list ist x =
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let lc = Genarg.out_gen (glbwit (wit_list wit_constr)) x in
   let (sigma,lc) = interp_constr_list ist env sigma lc in
-  let lc = Value.of_list (val_tag wit_constr) lc in
+  let lc = in_list (val_tag wit_constr) lc in
   Sigma.Unsafe.of_pair (Ftactic.return lc, sigma)
   end }
 
@@ -1587,7 +1590,8 @@ and interp_genarg_var_list ist x =
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let lc = Genarg.out_gen (glbwit (wit_list wit_var)) x in
   let lc = interp_hyp_list ist env sigma lc in
-  Ftactic.return (Value.of_list (val_tag wit_var) lc)
+  let lc = in_list (val_tag wit_var) lc in
+  Ftactic.return lc
   end }
 
 (* Interprets tactic expressions : returns a "constr" *)

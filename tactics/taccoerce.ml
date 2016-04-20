@@ -86,15 +86,9 @@ let to_int v =
 
 let to_list v = prj Val.list_tag v
 
-let of_list t v = Val.Dyn (Val.list_tag, List.map (fun v -> Val.inject t v) v)
-
 let to_option v = prj Val.opt_tag v
 
-let of_option t v = Val.Dyn (Val.opt_tag, Option.map (fun v -> Val.inject t v) v)
-
 let to_pair v = prj Val.pair_tag v
-
-let of_pair t1 t2 (v1, v2) = Val.Dyn (Val.pair_tag, (Val.inject t1 v1, Val.inject t2 v2))
 
 end
 
