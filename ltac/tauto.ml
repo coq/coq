@@ -55,14 +55,13 @@ type tauto_flags = {
   strict_unit : bool;
 }
 
-let wit_tauto_flags : tauto_flags uniform_genarg_type =
-  let wit = Genarg.create_arg "tauto_flags" in
-  let () = register_val0 wit None in
-  wit
+let tag_tauto_flags : tauto_flags Val.typ = Val.create "tauto_flags"
 
-let assoc_flags ist =
-  let v = Id.Map.find (Names.Id.of_string "tauto_flags") ist.lfun in
-  try Value.cast (topwit wit_tauto_flags) v with _ -> assert false
+let assoc_flags ist : tauto_flags =
+  let Val.Dyn (tag, v) = Id.Map.find (Names.Id.of_string "tauto_flags") ist.lfun in
+  match Val.eq tag tag_tauto_flags with
+  | None -> assert false
+  | Some Refl -> v
 
 (* Whether inner not are unfolded *)
 let negation_unfolding = ref true
@@ -259,7 +258,7 @@ let tauto_power_flags = {
 let with_flags flags _ ist =
   let f = (loc, Id.of_string "f") in
   let x = (loc, Id.of_string "x") in
-  let arg = Val.inject (val_tag (topwit wit_tauto_flags)) flags in
+  let arg = Val.Dyn (tag_tauto_flags, flags) in
   let ist = { ist with lfun = Id.Map.add (snd x) arg ist.lfun } in
   eval_tactic_ist ist (TacArg (loc, TacCall (loc, ArgVar f, [Reference (ArgVar x)])))
 
