@@ -16,6 +16,13 @@ let push = Backtrace.add_backtrace
 
 exception Anomaly of string option * std_ppcmds (* System errors *)
 
+let _ =
+  let pr = function
+  | Anomaly (s, pp) -> Some ("\"Anomaly: " ^ string_of_ppcmds pp ^ "\"")
+  | _ -> None
+  in
+  Printexc.register_printer pr
+
 let make_anomaly ?label pp =
   Anomaly (label, pp)
 
