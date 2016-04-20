@@ -156,7 +156,10 @@ let conclPattern concl pat tac =
        constr_bindings env sigma >>= fun constr_bindings ->
      let open Genarg in
      let open Geninterp in
-     let inj c = Val.inject (val_tag (topwit Constrarg.wit_constr)) c in
+     let inj c = match val_tag (topwit Constrarg.wit_constr) with
+     | Val.Base tag -> Val.Dyn (tag, c)
+     | _ -> assert false
+     in
      let fold id c accu = Id.Map.add id (inj c) accu in
      let lfun = Id.Map.fold fold constr_bindings Id.Map.empty in
      let ist = { lfun; extra = TacStore.empty } in

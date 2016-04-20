@@ -93,5 +93,9 @@ end
 
 module Interp = Register(InterpObj)
 
-let interp = Interp.obj
+let interp wit ist v =
+  let f = Interp.obj wit in
+  let tag = val_tag (Topwit wit) in
+  Ftactic.bind (f ist v) (fun v -> Ftactic.return (Val.inject tag v))
+
 let register_interp0 = Interp.register0

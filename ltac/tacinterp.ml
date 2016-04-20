@@ -66,7 +66,12 @@ let prj : type a. a Val.typ -> Val.t -> a option = fun t v ->
 let in_list tag v =
   let tag = match tag with Val.Base tag -> tag | _ -> assert false in
   Val.Dyn (Val.list_tag, List.map (fun x -> Val.Dyn (tag, x)) v)
-let in_gen wit v = Val.inject (val_tag wit) v
+let in_gen wit v =
+  let t = match val_tag wit with
+  | Val.Base t -> t
+  | _ -> assert false (** not used in this module *)
+  in
+  Val.Dyn (t, v)
 let out_gen wit v =
   let t = match val_tag wit with
   | Val.Base t -> t
@@ -1143,17 +1148,6 @@ let rec read_match_rule lfun ist env sigma = function
   | [] -> []
 
 
-(* misc *)
-
-let interp_focussed wit f v =
-  Ftactic.nf_enter { enter = begin fun gl ->
-    let v = Genarg.out_gen (glbwit wit) v in
-    let env = Proofview.Goal.env gl in
-    let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
-    let v = in_gen (topwit wit) (f env sigma v) in
-    Ftactic.return v
-  end }
-
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftactic.t =
   (* The name [appl] of applied top-level Ltac names is ignored in
@@ -1568,8 +1562,7 @@ and interp_genarg ist x : Val.t Ftactic.t =
       interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
       Ftactic.return (Val.Dyn (Val.pair_tag, (p, q)))
     | ExtraArg s ->
-      Geninterp.interp wit ist x >>= fun x ->
-      Ftactic.return (in_gen (Topwit wit) x)
+      Geninterp.interp wit ist x
 
 (** returns [true] for genargs which have the same meaning
     independently of goals. *)
