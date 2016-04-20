@@ -56,15 +56,6 @@ let make_prod_item = function
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl
 
-let make_one_printing_rule (pt,_,e) =
-  let level = mlexpr_of_int 0 in (* only level 0 supported here *)
-  let loc = MLast.loc_of_expr e in
-  let prods = mlexpr_of_list make_prod_item pt in
-  <:expr< { Pptactic.pptac_level = $level$;
-            pptac_prods = $prods$ } >>
-
-let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
-
 (** Special treatment of constr entries *)
 let is_constr_gram = function
 | ExtTerminal _ -> false
@@ -118,15 +109,13 @@ let declare_tactic loc s c cl = match cl with
       TacML tactic. *)
   let entry = mlexpr_of_string s in
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
-  let pp = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
   let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ $gl$ >> in
   declare_str_items loc
     [ <:str_item< do {
       try do {
         Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc s cl$);
-        Mltop.declare_cache_obj $obj$ $plugin_name$;
-        Pptactic.declare_ml_tactic_pprule $se$ (Array.of_list $pp$); }
+        Mltop.declare_cache_obj $obj$ $plugin_name$; }
       with [ e when Errors.noncritical e ->
         Pp.msg_warning
           (Pp.app

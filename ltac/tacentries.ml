@@ -360,7 +360,13 @@ let extend_atomic_tactic name entries =
   List.iteri add_atomic entries
 
 let cache_ml_tactic_notation (_, obj) =
-  extend_ml_tactic_grammar obj.mltacobj_name obj.mltacobj_prod
+  extend_ml_tactic_grammar obj.mltacobj_name obj.mltacobj_prod;
+  let pp_rule prods = {
+    Pptactic.pptac_level = 0 (* only level 0 supported here *);
+    pptac_prods = prods;
+  } in
+  let pp_rules = Array.map_of_list pp_rule obj.mltacobj_prod in
+  Pptactic.declare_ml_tactic_pprule obj.mltacobj_name pp_rules
 
 let open_ml_tactic_notation i obj =
   if Int.equal i 1 then cache_ml_tactic_notation obj
