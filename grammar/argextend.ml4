@@ -119,19 +119,21 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
   let interp = match f with
     | None ->
       begin match globtyp with
-      | None -> <:expr< fun ist v -> Ftactic.return v >>
+      | None ->
+        let typ = match globtyp with None -> ExtraArgType s | Some typ -> typ in
+        <:expr< fun ist v -> Ftactic.return (Geninterp.Val.inject (Geninterp.val_tag $make_topwit loc typ$) v) >>
       | Some globtyp ->
         <:expr< fun ist x ->
-          Ftactic.bind
-            (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
-            (fun v -> Ftactic.return (Tacinterp.Value.cast $make_topwit loc globtyp$ v)) >>
+          Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x) >>
       end
     | Some f ->
       (** Compatibility layer, TODO: remove me *)
+      let typ = match globtyp with None -> ExtraArgType s | Some typ -> typ in
       <:expr<
         let f = $lid:f$ in
         fun ist v -> Ftactic.nf_s_enter { Proofview.Goal.s_enter = fun gl ->
           let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
+          let v = Geninterp.Val.inject (Geninterp.val_tag $make_topwit loc typ$) v in
           Sigma.Unsafe.of_pair (Ftactic.return v, sigma)
         }
       >> in

@@ -86,16 +86,13 @@ type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
 
 module InterpObj =
 struct
-  type ('raw, 'glb, 'top) obj = ('glb, 'top) interp_fun
+  type ('raw, 'glb, 'top) obj = ('glb, Val.t) interp_fun
   let name = "interp"
   let default _ = None
 end
 
 module Interp = Register(InterpObj)
 
-let interp wit ist v =
-  let f = Interp.obj wit in
-  let tag = val_tag (Topwit wit) in
-  Ftactic.bind (f ist v) (fun v -> Ftactic.return (Val.inject tag v))
+let interp = Interp.obj
 
 let register_interp0 = Interp.register0

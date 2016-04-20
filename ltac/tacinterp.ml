@@ -2042,6 +2042,13 @@ let hide_interp global t ot =
 (***************************************************************************)
 (** Register standard arguments *)
 
+let register_interp0 wit f =
+  let open Ftactic.Notations in
+  let interp ist v =
+    f ist v >>= fun v -> Ftactic.return (Val.inject (val_tag wit) v)
+  in
+  Geninterp.register_interp0 wit interp
+
 let def_intern ist x = (ist, x)
 let def_subst _ x = x
 let def_interp ist x = Ftactic.return x
@@ -2049,7 +2056,7 @@ let def_interp ist x = Ftactic.return x
 let declare_uniform t =
   Genintern.register_intern0 t def_intern;
   Genintern.register_subst0 t def_subst;
-  Geninterp.register_interp0 t def_interp
+  register_interp0 t def_interp
 
 let () =
   declare_uniform wit_unit
@@ -2090,33 +2097,33 @@ let interp_constr_with_bindings' ist c = Ftactic.return { delayed = fun env sigm
   }
 
 let () =
-  Geninterp.register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
-  Geninterp.register_interp0 wit_ref (lift interp_reference);
-  Geninterp.register_interp0 wit_ident (lift interp_ident);
-  Geninterp.register_interp0 wit_var (lift interp_hyp);
-  Geninterp.register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
-  Geninterp.register_interp0 wit_clause_dft_concl (lift interp_clause);
-  Geninterp.register_interp0 wit_constr (lifts interp_constr);
-  Geninterp.register_interp0 wit_sort (lifts (fun _ _ evd s -> interp_sort evd s));
-  Geninterp.register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
-  Geninterp.register_interp0 wit_red_expr (lifts interp_red_expr);
-  Geninterp.register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
-  Geninterp.register_interp0 wit_open_constr (lifts interp_open_constr);
-  Geninterp.register_interp0 wit_bindings interp_bindings';
-  Geninterp.register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
-  Geninterp.register_interp0 wit_constr_may_eval (lifts interp_constr_may_eval);
+  register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
+  register_interp0 wit_ref (lift interp_reference);
+  register_interp0 wit_ident (lift interp_ident);
+  register_interp0 wit_var (lift interp_hyp);
+  register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
+  register_interp0 wit_clause_dft_concl (lift interp_clause);
+  register_interp0 wit_constr (lifts interp_constr);
+  register_interp0 wit_sort (lifts (fun _ _ evd s -> interp_sort evd s));
+  register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
+  register_interp0 wit_red_expr (lifts interp_red_expr);
+  register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
+  register_interp0 wit_open_constr (lifts interp_open_constr);
+  register_interp0 wit_bindings interp_bindings';
+  register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
+  register_interp0 wit_constr_may_eval (lifts interp_constr_may_eval);
   ()
 
 let () =
   let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
-  Geninterp.register_interp0 wit_tactic interp
+  register_interp0 wit_tactic interp
 
 let () =
   let interp ist tac = interp_tactic ist tac >>= fun () -> Ftactic.return () in
-  Geninterp.register_interp0 wit_ltac interp
+  register_interp0 wit_ltac interp
 
 let () =
-  Geninterp.register_interp0 wit_uconstr (fun ist c -> Ftactic.nf_enter { enter = begin fun gl ->
+  register_interp0 wit_uconstr (fun ist c -> Ftactic.nf_enter { enter = begin fun gl ->
     Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) c)
   end })
 

@@ -122,6 +122,7 @@ let pr_firstorder_using_glob _ _ _ l = str "using " ++ prlist_with_sep pr_comma 
 let pr_firstorder_using_typed _ _ _ l = str "using " ++ prlist_with_sep pr_comma pr_global l
 
 ARGUMENT EXTEND firstorder_using
+  TYPED AS reference_list
   PRINTED BY pr_firstorder_using_typed
   RAW_TYPED AS reference_list
   RAW_PRINTED BY pr_firstorder_using_raw

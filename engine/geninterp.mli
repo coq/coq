@@ -64,4 +64,4 @@ type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
 val interp : ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun
 
 val register_interp0 :
-  ('raw, 'glb, 'top) genarg_type -> ('glb, 'top) interp_fun -> unit
+  ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun -> unit
