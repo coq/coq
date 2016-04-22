@@ -132,6 +132,7 @@ let rec abstract_glob_constr c = function
   | Constrexpr.LocalRawAssum (idl,k,t)::bl ->
       List.fold_right (fun x b -> Constrexpr_ops.mkLambdaC([x],k,t,b)) idl
         (abstract_glob_constr c bl)
+  | Constrexpr.LocalPattern _::bl -> assert false
 
 let interp_casted_constr_with_implicits env sigma impls c  =
   Constrintern.intern_gen Pretyping.WithoutTypeConstraint env ~impls
@@ -215,6 +216,7 @@ let rec local_binders_length = function
   | [] -> 0
   | Constrexpr.LocalRawDef _::bl -> 1 + local_binders_length bl
   | Constrexpr.LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
+  | Constrexpr.LocalPattern _::bl -> assert false
 
 let prepare_body ((name,_,args,types,_),_) rt =
   let n = local_binders_length args in
@@ -861,6 +863,7 @@ let make_graph (f_ref:global_reference) =
 					(fun (loc,n) ->
 					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
 					nal
+                                  | Constrexpr.LocalPattern _ -> assert false
 			       )
 			       nal_tas
 			    )

@@ -112,6 +112,7 @@ let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder list) =
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
+    | LocalPattern _ :: tl -> assert false
     | [] -> bdvars, l
   in aux bound l binders
 
