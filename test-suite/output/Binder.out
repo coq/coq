@@ -1,0 +1,8 @@
+foo = fun '(x, y) => x + y
+     : nat * nat -> nat
+forall '(a, b), a /\ b
+     : Prop
+foo = λ '(x, y), x + y
+     : nat * nat → nat
+∀ '(a, b), a ∧ b
+     : Prop

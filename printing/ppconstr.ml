@@ -300,6 +300,7 @@ end) = struct
   let begin_of_binder = function
   LocalRawDef((loc,_),_) -> fst (Loc.unloc loc)
     | LocalRawAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
+    | LocalPattern(loc,_,_) -> fst (Loc.unloc loc)
     | _ -> assert false
 
   let begin_of_binders = function
@@ -361,6 +362,8 @@ end) = struct
         pr_com_at n ++ kw() ++ pr_binder false pr_c (nal,k,t)
       | LocalRawAssum _ :: _ as bdl ->
         pr_com_at n ++ kw() ++ pr_undelimited_binders sep pr_c bdl
+      | LocalPattern (loc,p,tyo) :: _ ->
+        str "'" ++ pr_patt ltop p
       | _ -> assert false
 
   let pr_binders_gen pr_c sep is_open =
