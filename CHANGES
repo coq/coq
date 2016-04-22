@@ -52,7 +52,7 @@ Other bugfixes
 - #4540: CoqIDE bottom progress bar does not update.
 - Fix regression from 8.4 in reflexivity
 - #4580: [Set Refine Instance Mode] also used for Program Instance.
-- #4582: cannot override notation [ x ].
+- #4582: cannot override notation [ x ]. MAY CREATE INCOMPATIBILITIES, see #4683.
 - STM: Print/Extraction have to be skipped if -quick
 - #4542: CoqIDE: STOP button also stops workers
 - STM: classify some variants of Instance as regular `Fork nodes.
