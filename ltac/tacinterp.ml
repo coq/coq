@@ -1530,7 +1530,9 @@ and interp_match ist lz constr lmr =
 
 (* Interprets the Match Context expressions *)
 and interp_match_goal ist lz lr lmr =
-    Ftactic.nf_enter { enter = begin fun gl ->
+    Ftactic.enter { enter = begin fun gl ->
+      (* Because match_goal will lazily whd_evar when necessary *)
+      let gl = Proofview.Goal.assume gl in
       let sigma = project gl in
       let env = Proofview.Goal.env gl in
       let hyps = Proofview.Goal.hyps gl in

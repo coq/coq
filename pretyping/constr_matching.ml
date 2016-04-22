@@ -56,10 +56,10 @@ let warn_bound_meta name =
 let warn_bound_bound name =
   msg_warning (str "Collision between bound variables of name " ++ pr_id name)
 
-let constrain n (ids, m as x) (names, terms as subst) =
+let constrain sigma n (ids, m as x) (names, terms as subst) =
   try
     let (ids', m') = Id.Map.find n terms in
-    if List.equal Id.equal ids ids' && eq_constr m m' then subst
+    if List.equal Id.equal ids ids' && Evarutil.eq_constr_univs_test sigma sigma m m' then subst
     else raise PatternMatchingFailure
   with Not_found ->
     let () = if Id.Map.mem n names then warn_bound_meta n in
@@ -131,7 +131,7 @@ let make_renaming ids = function
   end
 | _ -> dummy_constr
 
-let merge_binding allow_bound_rels ctx n cT subst =
+let merge_binding sigma allow_bound_rels ctx n cT subst =
   let c = match ctx with
   | [] -> (* Optimization *)
     ([], cT)
@@ -150,7 +150,7 @@ let merge_binding allow_bound_rels ctx n cT subst =
         ([], lift (- depth) cT)
       else raise PatternMatchingFailure
   in
-  constrain n c subst
+  constrain sigma n c subst
       
 let matches_core env sigma convert allow_partial_app allow_bound_rels
     (binding_vars,pat) c =
@@ -168,6 +168,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
   in
   let rec sorec ctx env subst p t =
     let cT = strip_outer_cast t in
+    let cT = whd_evar sigma cT in
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
         let fold (ans, seen) = function
@@ -179,11 +180,11 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
         let relargs, relset = List.fold_left fold ([], Int.Set.empty) args in
         let frels = free_rels cT in
         if Int.Set.subset frels relset then
-          constrain n ([], build_lambda relargs ctx cT) subst
+          constrain sigma n ([], build_lambda relargs ctx cT) subst
         else
           raise PatternMatchingFailure
 
-      | PMeta (Some n), m -> merge_binding allow_bound_rels ctx n cT subst
+      | PMeta (Some n), m -> merge_binding sigma allow_bound_rels ctx n cT subst
 
       | PMeta None, m -> subst
 
@@ -214,7 +215,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
             let subst =
               match meta with
               | None -> subst
-              | Some n -> merge_binding allow_bound_rels ctx n c subst in
+              | Some n -> merge_binding sigma allow_bound_rels ctx n c subst in
             Array.fold_left2 (sorec ctx env) subst args1 args22
           else (* Might be a projection on the right *)
 	    match kind_of_term c2 with
@@ -304,8 +305,8 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 	  let chk_head = sorec ctx env (sorec ctx env subst a1 a2) p1 p2 in
 	  List.fold_left chk_branch chk_head br1
 
-      |	PFix c1, Fix _ when eq_constr (mkFix c1) cT -> subst
-      |	PCoFix c1, CoFix _ when eq_constr (mkCoFix c1) cT -> subst
+      |	PFix c1, Fix _ when Evarutil.eq_constr_univs_test sigma sigma (mkFix c1) cT -> subst
+      |	PCoFix c1, CoFix _ when Evarutil.eq_constr_univs_test sigma sigma (mkCoFix c1) cT -> subst
       | _ -> raise PatternMatchingFailure
 
   in
