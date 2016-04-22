@@ -70,6 +70,7 @@ Other bugfixes
 - #4503: mixing universe polymorphic and monomorphic variables and definitions in sections is unsupported.
 - #4519: oops, global shadowed local universe level bindings.
 - #4506: Anomaly: File "pretyping/indrec.ml", line 169, characters 14-20: Assertion failed.
+- #4548: Coqide crashes when going back one command
 
 Changes from V8.5beta3 to V8.5
 ==============================
