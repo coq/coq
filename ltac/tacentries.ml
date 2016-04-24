@@ -46,12 +46,6 @@ let atactic n =
 type entry_name = EntryName :
   'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) Extend.symbol -> entry_name
 
-let try_get_entry u s =
-  let open Extend in
-  (** Order the effects: get_entry can raise Not_found *)
-  let TypedEntry (typ, e) = get_entry u s in
-  EntryName (typ, Aentry (name_of_entry e))
-
 (** Quite ad-hoc *)
 let get_tacentry n m =
   let open Extend in

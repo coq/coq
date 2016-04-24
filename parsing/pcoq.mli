@@ -268,10 +268,6 @@ val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
 (** Binding general entry keys to symbols *)
 
-type typed_entry = TypedEntry : 'a raw_abstract_argument_type * 'a Gram.entry -> typed_entry
-
-val get_entry : gram_universe -> string -> typed_entry
-
 (** Recover the list of all known tactic notation entries. *)
 val list_entry_names : unit -> (string * argument_type) list
 
