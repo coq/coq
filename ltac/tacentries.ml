@@ -91,7 +91,6 @@ let rec parse_user_entry s sep =
     let n = Char.code s.[6] - 48 in
     Uentryl ("tactic", n)
   else
-    let s = match s with "hyp" -> "var" | _ -> s in
     Uentry s
 
 let arg_list = function Rawwit t -> Rawwit (ListArg t)
@@ -205,18 +204,30 @@ let extend_ml_tactic_grammar n ntn = extend_grammar ml_tactic_grammar (n, ntn)
 (**********************************************************************)
 (* Tactic Notation                                                    *)
 
+let entry_names = ref String.Map.empty
+
+let register_tactic_notation_entry name entry =
+  let entry = match entry with
+  | ExtraArg arg -> ArgT.Any arg
+  | _ -> assert false
+  in
+  entry_names := String.Map.add name entry !entry_names
+
 let interp_prod_item lev = function
   | TacTerm s -> GramTerminal s
   | TacNonTerm (loc, (nt, sep), _) ->
     let symbol = parse_user_entry nt sep in
     let interp s = function
     | None ->
-      begin
-        try try_get_entry uprim s with Not_found ->
-        try try_get_entry uconstr s with Not_found ->
-        try try_get_entry utactic s with Not_found ->
-        error ("Unknown entry "^s^".")
-      end
+      let ArgT.Any arg =
+        if String.Map.mem s !entry_names then
+          String.Map.find s !entry_names
+        else match ArgT.name s with
+        | None -> error ("Unknown entry "^s^".")
+        | Some arg -> arg
+      in
+      let wit = ExtraArg arg in
+      EntryName (Rawwit wit, Extend.Aentry (name_of_entry (genarg_grammar wit)))
     | Some n ->
       (** FIXME: do better someday *)
       assert (String.equal s "tactic");

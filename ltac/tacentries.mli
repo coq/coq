@@ -20,6 +20,9 @@ val add_tactic_notation :
     environment at level [level] with locality [local] made of the grammar
     productions [prods] and returning the body [expr] *)
 
+val register_tactic_notation_entry : string -> ('a, 'b, 'c) Genarg.genarg_type -> unit
+(** Register an argument under a given entry name for tactic notations. *)
+
 val add_ml_tactic_notation : ml_tactic_name ->
   Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list list -> unit
 

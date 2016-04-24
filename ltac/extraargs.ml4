@@ -40,6 +40,16 @@ let () =
   let inject (loc, v) = Tacexpr.Tacexp v in
   Tacentries.create_ltac_quotation "ltac" inject (Pcoq.Tactic.tactic_expr, Some 5)
 
+(** Backward-compatible tactic notation entry names *)
+
+let () =
+  let register name entry = Tacentries.register_tactic_notation_entry name entry in
+  register "hyp" wit_var;
+  register "simple_intropattern" wit_intro_pattern;
+  register "integer" wit_integer;
+  register "reference" wit_ref;
+  ()
+
 (* Rewriting orientation *)
 
 let _ = Metasyntax.add_token_obj "<-"
