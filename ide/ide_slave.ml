@@ -282,10 +282,10 @@ let export_coq_object t = {
 }
 
 let import_search_constraint = function
-  | Interface.Name_Pattern s    -> Search.Name_Pattern s
-  | Interface.Type_Pattern s    -> Search.Type_Pattern s
-  | Interface.SubType_Pattern s -> Search.SubType_Pattern s
-  | Interface.In_Module ms      -> Search.In_Module ms
+  | Interface.Name_Pattern s    -> Search.Name_Pattern (Str.regexp s)
+  | Interface.Type_Pattern s    -> Search.Type_Pattern (Search.pattern_of_string s)
+  | Interface.SubType_Pattern s -> Search.SubType_Pattern (Search.pattern_of_string s)
+  | Interface.In_Module ms      -> Search.In_Module (Search.dirpath_of_string_list ms)
   | Interface.Include_Blacklist -> Search.Include_Blacklist
 
 let search flags =
