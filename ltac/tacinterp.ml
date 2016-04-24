@@ -678,7 +678,7 @@ let interp_open_constr ?(expected_type=WithoutTypeConstraint) ist =
 let interp_pure_open_constr ist =
   interp_gen WithoutTypeConstraint ist false pure_open_constr_flags
 
-let interp_typed_pattern ist env sigma (c,_) =
+let interp_typed_pattern ist env sigma (_,c,_) =
   let sigma, c =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
   pattern_of_constr env sigma c
@@ -1106,12 +1106,11 @@ let interp_context ctxt = in_gen (topwit wit_constr_context) ctxt
 (* Reads a pattern by substituting vars of lfun *)
 let use_types = false
 
-let eval_pattern lfun ist env sigma ((glob,_),pat as c) =
-  let bound_names = bound_glob_vars glob in
+let eval_pattern lfun ist env sigma (bvars,(glob,_),pat as c) =
   if use_types then
-    (bound_names,interp_typed_pattern ist env sigma c)
+    (bvars,interp_typed_pattern ist env sigma c)
   else
-    (bound_names,instantiate_pattern env sigma lfun pat)
+    (bvars,instantiate_pattern env sigma lfun pat)
 
 let read_pattern lfun ist env sigma = function
   | Subterm (b,ido,c) -> Subterm (b,ido,eval_pattern lfun ist env sigma c)

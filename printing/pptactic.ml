@@ -1188,7 +1188,7 @@ module Make
 
   let pr_and_constr_expr pr (c,_) = pr c
 
-  let pr_pat_and_constr_expr pr ((c,_),_) = pr c
+  let pr_pat_and_constr_expr pr (_,(c,_),_) = pr c
 
   let pr_glob_tactic_level env n t =
     let glob_printers =
