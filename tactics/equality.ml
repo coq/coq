@@ -1595,6 +1595,17 @@ user = raise user error specific to rewrite
 (**********************************************************************)
 (* Substitutions tactics (JCF) *)
 
+let regular_subst_tactic = ref false
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "more regular behavior of tactic subst";
+      optkey   = ["Regular";"Subst";"Tactic"];
+      optread  = (fun () -> !regular_subst_tactic);
+      optwrite = (:=) regular_subst_tactic }
+
 let unfold_body x =
   Proofview.Goal.enter begin fun gl ->
   (** We normalize the given hypothesis immediately. *)
@@ -1642,23 +1653,24 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
   (* The set of hypotheses using x *)
   let dephyps =
-    List.rev (snd (List.fold_right (fun (id,b,_ as dcl) (deps,allhyps) ->
+    List.rev (pi3 (List.fold_right (fun (id,b,_ as dcl) (dest,deps,allhyps) ->
       if not (Id.equal id hyp)
          && List.exists (fun y -> occur_var_in_decl env y dcl) deps
       then
-        ((if b = None then deps else id::deps), id::allhyps)
+        let id_dest = if !regular_subst_tactic then dest else MoveLast in
+        (dest,(if b = None then deps else id::deps), (id_dest,id)::allhyps)
       else
-        (deps,allhyps))
+        (MoveBefore id,deps,allhyps))
       hyps
-      ([x],[]))) in
+      (MoveBefore x,[x],[]))) in (* In practice, no dep hyps before x, so MoveBefore x is good enough *)
   (* Decides if x appears in conclusion *)
   let depconcl = occur_var env x concl in
   let need_rewrite = not (List.is_empty dephyps) || depconcl in
   tclTHENLIST
     ((if need_rewrite then
-      [revert dephyps;
+      [revert (List.map snd dephyps);
        general_rewrite dir AllOccurrences true dep_proof_ok (mkVar hyp);
-       (tclMAP intro_using dephyps)]
+       (tclMAP (fun (dest,id) -> intro_move (Some id) dest) dephyps)]
       else
        [Proofview.tclUNIT ()]) @
      [tclTRY (clear [x; hyp])])
@@ -1708,17 +1720,6 @@ let default_subst_tactic_flags () =
     { only_leibniz = false; rewrite_dependent_proof = true }
   else
     { only_leibniz = true; rewrite_dependent_proof = false }
-
-let regular_subst_tactic = ref false
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "more regular behavior of tactic subst";
-      optkey   = ["Regular";"Subst";"Tactic"];
-      optread  = (fun () -> !regular_subst_tactic);
-      optwrite = (:=) regular_subst_tactic }
 
 let subst_all ?(flags=default_subst_tactic_flags ()) () =
 
