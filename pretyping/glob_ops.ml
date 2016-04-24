@@ -266,7 +266,7 @@ let add_name_to_ids set na =
     | Anonymous -> set
     | Name id -> Id.Set.add id set
 
-let free_glob_vars  =
+let free_glob_vars =
   let rec vars bounded vs = function
     | GVar (loc,id') -> if Id.Set.mem id' bounded then vs else Id.Set.add id' vs
     | GApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
@@ -323,6 +323,16 @@ let free_glob_vars  =
   fun rt ->
     let vs = vars Id.Set.empty Id.Set.empty rt in
     Id.Set.elements vs
+
+let glob_visible_short_qualid c =
+  let rec aux acc = function
+    | GRef (_,c,_) ->
+        let qualid = Nametab.shortest_qualid_of_global Id.Set.empty c in
+        let dir,id = Libnames.repr_qualid  qualid in
+        if DirPath.is_empty dir then id :: acc else acc
+    | c ->
+        fold_glob_constr aux acc c
+  in aux [] c
 
 let add_and_check_ident id set =
   if Id.Set.mem id set then

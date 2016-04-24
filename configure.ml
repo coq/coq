@@ -565,6 +565,12 @@ let check_camlp5_version () =
   | Not_found -> die "Error: cannot find Camlp5 binaries in path.\n"
   | _ -> die "Error: unsupported Camlp5 (version < 5.01 or unrecognized).\n"
 
+let check_caml_version_for_camlp4 () =
+  if caml_version_nums = [4;1;0] && !Prefs.debug then
+    die ("Your version of OCaml is 4.01.0 which fails to compile Coq in -debug\n" ^
+            "mode with Camlp4. Remove -debug option or use a different version of OCaml\n" ^
+            "or use Camlp5.\n")
+
 let config_camlpX () =
   try
     if not !Prefs.usecamlp5 then raise NoCamlp5;
@@ -583,6 +589,7 @@ let config_camlpX () =
       let camlp4orf = which_camlpX "camlp4orf" in
       let version_line, _ = run ~err:StdOut camlp4orf ["-v"] in
       let camlp4_version = List.nth (string_split ' ' version_line) 2 in
+      check_caml_version_for_camlp4 ();
       "camlp4", camlp4orf, Filename.dirname camlp4orf, camlp4libdir, camlp4mod, camlp4_version
     with _ -> die "No Camlp4 installation found.\n"
 

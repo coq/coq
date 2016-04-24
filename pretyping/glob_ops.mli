@@ -40,6 +40,7 @@ val occur_glob_constr : Id.t -> glob_constr -> bool
 val free_glob_vars : glob_constr -> Id.t list
 val bound_glob_vars : glob_constr -> Id.Set.t
 val loc_of_glob_constr : glob_constr -> Loc.t
+val glob_visible_short_qualid : glob_constr -> Id.t list
 
 (** [map_pattern_binders f m c] applies [f] to all the binding names
     in a pattern-matching expression ({!Glob_term.GCases}) represented
