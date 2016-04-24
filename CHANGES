@@ -4,6 +4,7 @@ Changes from V8.5pl1 to V8.5pl2
 Bugfixes
 
 - #4677: fix alpha-conversion in notations needing eta-expansion
+- Fully preserve initial order of hypotheses in "Regular Subst Tactic" mode.
 
 Changes from V8.5 to V8.5pl1
 ============================
