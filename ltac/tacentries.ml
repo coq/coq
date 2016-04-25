@@ -233,10 +233,6 @@ let interp_prod_item lev = function
     let EntryName (etyp, e) = interp_entry_name interp symbol in
     GramNonTerminal (loc, etyp, e)
 
-let make_terminal_status = function
-  | GramTerminal s -> Some s
-  | GramNonTerminal _ -> None
-
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
   fun () ->
@@ -256,8 +252,12 @@ type tactic_grammar_obj = {
   tacobj_key : KerName.t;
   tacobj_local : locality_flag;
   tacobj_tacgram : tactic_grammar;
-  tacobj_tacpp : Pptactic.pp_tactic;
   tacobj_body : Id.t list * Tacexpr.glob_tactic_expr;
+}
+
+let pprule pa = {
+  Pptactic.pptac_level = pa.tacgram_level;
+  pptac_prods = pa.tacgram_prods;
 }
 
 let check_key key =
@@ -270,7 +270,7 @@ let cache_tactic_notation (_, tobj) =
   let () = check_key key in
   Tacenv.register_alias key tobj.tacobj_body;
   extend_tactic_grammar key tobj.tacobj_tacgram;
-  Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
+  Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram)
 
 let open_tactic_notation i (_, tobj) =
   let key = tobj.tacobj_key in
@@ -282,7 +282,7 @@ let load_tactic_notation i (_, tobj) =
   let () = check_key key in
   (** Only add the printing and interpretation rules. *)
   Tacenv.register_alias key tobj.tacobj_body;
-  Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;
+  Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram);
   if Int.equal i 1 && not tobj.tacobj_local then
     extend_tactic_grammar key tobj.tacobj_tacgram
 
@@ -310,10 +310,6 @@ let cons_production_parameter = function
 let add_tactic_notation local n prods e =
   let ids = List.map_filter cons_production_parameter prods in
   let prods = List.map (interp_prod_item n) prods in
-  let pprule = {
-    Pptactic.pptac_level = n;
-    pptac_prods = prods;
-  } in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
   let parule = {
     tacgram_level = n;
@@ -323,7 +319,6 @@ let add_tactic_notation local n prods e =
     tacobj_key = make_fresh_key ();
     tacobj_local = local;
     tacobj_tacgram = parule;
-    tacobj_tacpp = pprule;
     tacobj_body = (ids, tac);
   } in
   Lib.add_anonymous_leaf (inTacticGrammar tacobj)
