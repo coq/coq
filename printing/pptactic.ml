@@ -33,15 +33,8 @@ type pp_tactic = {
   pptac_prods : grammar_terminals;
 }
 
-(* ML Extensions *)
-let prtac_tab : (ml_tactic_name, pp_tactic array) Hashtbl.t =
-  Hashtbl.create 17
-
 (* Tactic notations *)
 let prnotation_tab = Summary.ref ~name:"pptactic-notation" KNmap.empty
-
-let declare_ml_tactic_pprule key pt =
-  Hashtbl.add prtac_tab key pt
 
 let declare_notation_tactic_pprule kn pt =
   prnotation_tab := KNmap.add kn pt !prnotation_tab
@@ -371,14 +364,6 @@ module Make
     pr_sequence (fun x -> x) l
 
   let pr_extend_gen check pr_gen lev { mltac_name = s; mltac_index = i } l =
-    try
-      let pp_rules = Hashtbl.find prtac_tab s in
-      let pp = pp_rules.(i) in
-      let args = List.map_filter filter_arg pp.pptac_prods in
-      let () = if not (List.for_all2eq check args l) then raise Not_found in
-      let p = pr_tacarg_using_rule pr_gen (pp.pptac_prods, l) in
-      if pp.pptac_level > lev then surround p else p
-    with Not_found ->
       let name =
         str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic ++
         str "@" ++ int i
