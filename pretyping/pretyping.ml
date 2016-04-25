@@ -1126,7 +1126,7 @@ let type_uconstr ?(flags = constr_flags)
     ltac_constrs = closure.typed;
     ltac_uconstrs = closure.untyped;
     ltac_idents = closure.idents;
-    ltac_genargs = ist.Geninterp.lfun;
+    ltac_genargs = Id.Map.empty;
   } in
   let sigma = Sigma.to_evar_map sigma in
   let (sigma, c) = understand_ltac flags env sigma vars expected_type term in
