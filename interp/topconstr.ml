@@ -67,7 +67,7 @@ let ids_of_pattern_list =
     Id.Set.empty
 
 let ids_of_cases_indtype p =
-  Id.Set.elements (cases_pattern_fold_names Id.Set.add Id.Set.empty p)
+  cases_pattern_fold_names Id.Set.add Id.Set.empty p
 
 let ids_of_cases_tomatch tms =
   List.fold_right
