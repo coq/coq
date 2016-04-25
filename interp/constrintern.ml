@@ -1287,7 +1287,7 @@ let intern_ind_pattern genv scopes pat =
       let idslpl2 = List.map (intern_pat genv empty_alias) pl2 in
       (with_letin,
        match product_of_cases_patterns [] (List.rev_append idslpl1 idslpl2) with
-       | _,[_,pl] -> (c,chop_params_pattern loc c pl with_letin)
+       | ids,[_,pl] -> (ids,c,chop_params_pattern loc c pl with_letin)
        | _ -> error_bad_inductive_type loc)
     | x -> error_bad_inductive_type (raw_cases_pattern_expr_loc x)
 
@@ -1639,7 +1639,13 @@ let internalize globalenv env allow_patvar lvar c =
     (* the "in" part *)
     let match_td,typ = match t with
     | Some t ->
-	let with_letin,(ind,l) = intern_ind_pattern globalenv (None,env.scopes) t in
+	let with_letin,(ids,ind,l) = intern_ind_pattern globalenv (None,env.scopes) t in
+        let is_shadowing id = Name.equal (snd na) (Name id) && Id.Set.mem id forbidden_names_for_gen in
+        List.iter (fun id -> if is_shadowing id then
+          msg_warning
+            (str "Name " ++ pr_id id ++
+             strbrk " on which pattern-matching is done is shadowing the binder of same name in its \"in\" clause."))
+          ids;
 	let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
 	let nparams = (List.length (mib.Declarations.mind_params_ctxt)) in
 	(* for "in Vect n", we answer (["n","n"],[(loc,"n")])
