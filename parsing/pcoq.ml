@@ -12,8 +12,6 @@ open Errors
 open Util
 open Extend
 open Genarg
-open Stdarg
-open Constrarg
 open Tok (* necessary for camlp4 *)
 
 (** The parser of Coq *)
@@ -53,8 +51,6 @@ end
 (** Grammar entries with associated types *)
 
 type grammar_object = Gramobj.grammar_object
-type typed_entry = TypedEntry : 'a raw_abstract_argument_type * 'a G.entry -> typed_entry
-let object_of_typed_entry (TypedEntry (_, e)) = Gramobj.weaken_entry e
 let weaken_entry x = Gramobj.weaken_entry x
 
 (** Grammar extensions *)
@@ -177,12 +173,11 @@ let parse_string f x =
 
 type gram_universe = string
 
-let utables : (string, (string, typed_entry) Hashtbl.t) Hashtbl.t =
+let utables : (string, unit) Hashtbl.t =
   Hashtbl.create 97
 
 let create_universe u =
-  let table = Hashtbl.create 97 in
-  let () = Hashtbl.add utables u table in
+  let () = Hashtbl.add utables u () in
   u
 
 let uprim   = create_universe "prim"
@@ -194,14 +189,6 @@ let get_univ u =
   if Hashtbl.mem utables u then u
   else raise Not_found
 
-let get_utable u =
-  try Hashtbl.find utables u
-  with Not_found -> assert false
-
-let get_entry u s =
-  let utab = get_utable u in
-  Hashtbl.find utab s
-
 (** A table associating grammar to entries *)
 let gtable : Obj.t Gram.entry String.Map.t ref = ref String.Map.empty
 
@@ -212,15 +199,14 @@ let set_grammar (e : 'a Entry.t) (g : 'a Gram.entry) =
   assert (not (String.Map.mem (Entry.repr e) !gtable));
   gtable := String.Map.add (Entry.repr e) (Obj.magic g) !gtable
 
-let new_entry etyp u s =
-  let utab = get_utable u in
+let new_entry u s =
   let ename = u ^ ":" ^ s in
   let entry = Entry.create ename in
   let e = Gram.entry_create ename in
   let () = set_grammar entry e in
-  Hashtbl.add utab s (TypedEntry (etyp, e)); e
+  e
 
-let make_gen_entry u rawwit s = new_entry rawwit u s
+let make_gen_entry u s = new_entry u s
 
 module GrammarObj =
 struct
@@ -235,36 +221,32 @@ let register_grammar = Grammar.register0
 let genarg_grammar = Grammar.obj
 
 let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Gram.entry =
-  let utab = get_utable u in
-  if Hashtbl.mem utab s then
-    failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists")
-  else
-    let e = new_entry etyp u s in
-    let Rawwit t = etyp in
-    let () = Grammar.register0 t e in
-    e
+  let e = new_entry u s in
+  let Rawwit t = etyp in
+  let () = Grammar.register0 t e in
+  e
 
 (* Initial grammar entries *)
 
 module Prim =
   struct
-    let gec_gen x = make_gen_entry uprim x
+    let gec_gen n = make_gen_entry uprim n
 
     (* Entries that can be referred via the string -> Gram.entry table *)
     (* Typically for tactic or vernac extensions *)
-    let preident = gec_gen (rawwit wit_pre_ident) "preident"
-    let ident = gec_gen (rawwit wit_ident) "ident"
-    let natural = gec_gen (rawwit wit_int) "natural"
-    let index = gec_gen (rawwit wit_int) "index"
-    let integer = gec_gen (rawwit wit_int) "integer"
+    let preident = gec_gen "preident"
+    let ident = gec_gen "ident"
+    let natural = gec_gen "natural"
+    let index = gec_gen "index"
+    let integer = gec_gen "integer"
     let bigint = Gram.entry_create "Prim.bigint"
-    let string = gec_gen (rawwit wit_string) "string"
-    let reference = make_gen_entry uprim (rawwit wit_ref) "reference"
+    let string = gec_gen "string"
+    let reference = make_gen_entry uprim "reference"
     let by_notation = Gram.entry_create "by_notation"
     let smart_global = Gram.entry_create "smart_global"
 
     (* parsed like ident but interpreted as a term *)
-    let var = gec_gen (rawwit wit_var) "var"
+    let var = gec_gen "var"
 
     let name = Gram.entry_create "Prim.name"
     let identref = Gram.entry_create "Prim.identref"
@@ -286,7 +268,7 @@ module Prim =
 
 module Constr =
   struct
-    let gec_constr = make_gen_entry uconstr (rawwit wit_constr)
+    let gec_constr = make_gen_entry uconstr
 
     (* Entries that can be referred via the string -> Gram.entry table *)
     let constr = gec_constr "constr"
@@ -294,9 +276,9 @@ module Constr =
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
     let binder_constr = gec_constr "binder_constr"
-    let ident = make_gen_entry uconstr (rawwit wit_ident) "ident"
-    let global = make_gen_entry uconstr (rawwit wit_ref) "global"
-    let sort = make_gen_entry uconstr (rawwit wit_sort) "sort"
+    let ident = make_gen_entry uconstr "ident"
+    let global = make_gen_entry uconstr "global"
+    let sort = make_gen_entry uconstr "sort"
     let pattern = Gram.entry_create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
@@ -324,32 +306,32 @@ module Tactic =
     (* Entries that can be referred via the string -> Gram.entry table *)
     (* Typically for tactic user extensions *)
     let open_constr =
-      make_gen_entry utactic (rawwit wit_open_constr) "open_constr"
+      make_gen_entry utactic "open_constr"
     let constr_with_bindings =
-      make_gen_entry utactic (rawwit wit_constr_with_bindings) "constr_with_bindings"
+      make_gen_entry utactic "constr_with_bindings"
     let bindings =
-      make_gen_entry utactic (rawwit wit_bindings) "bindings"
+      make_gen_entry utactic "bindings"
     let hypident = Gram.entry_create "hypident"
-    let constr_may_eval = make_gen_entry utactic (rawwit wit_constr_may_eval) "constr_may_eval"
-    let constr_eval = make_gen_entry utactic (rawwit wit_constr_may_eval) "constr_eval"
+    let constr_may_eval = make_gen_entry utactic "constr_may_eval"
+    let constr_eval = make_gen_entry utactic "constr_eval"
     let uconstr =
-      make_gen_entry utactic (rawwit wit_uconstr) "uconstr"
+      make_gen_entry utactic "uconstr"
     let quantified_hypothesis =
-      make_gen_entry utactic (rawwit wit_quant_hyp) "quantified_hypothesis"
-    let int_or_var = make_gen_entry utactic (rawwit wit_int_or_var) "int_or_var"
-    let red_expr = make_gen_entry utactic (rawwit wit_red_expr) "red_expr"
+      make_gen_entry utactic "quantified_hypothesis"
+    let int_or_var = make_gen_entry utactic "int_or_var"
+    let red_expr = make_gen_entry utactic "red_expr"
     let simple_intropattern =
-      make_gen_entry utactic (rawwit wit_intro_pattern) "simple_intropattern"
+      make_gen_entry utactic "simple_intropattern"
     let clause_dft_concl = 
-      make_gen_entry utactic (rawwit wit_clause_dft_concl) "clause"
+      make_gen_entry utactic "clause"
 
 
     (* Main entries for ltac *)
     let tactic_arg = Gram.entry_create "tactic:tactic_arg"
-    let tactic_expr = make_gen_entry utactic (rawwit wit_tactic)  "tactic_expr"
-    let binder_tactic = make_gen_entry utactic (rawwit wit_tactic) "binder_tactic"
+    let tactic_expr = make_gen_entry utactic "tactic_expr"
+    let binder_tactic = make_gen_entry utactic "binder_tactic"
 
-    let tactic = make_gen_entry utactic (rawwit wit_tactic) "tactic"
+    let tactic = make_gen_entry utactic "tactic"
 
     (* Main entry for quotations *)
     let tactic_eoi = eoi_entry tactic
@@ -593,9 +575,7 @@ let compute_entry adjust forpat = function
   | ETReference -> weaken_entry Constr.global, None, false
   | ETPattern -> weaken_entry Constr.pattern, None, false
   | ETConstrList _ -> anomaly (Pp.str "List of entries cannot be registered.")
-  | ETOther (u,n) ->
-      let e = get_entry u n in
-      object_of_typed_entry e, None, true
+  | ETOther (u,n) -> assert false
 
 (* This computes the name of the level where to add a new rule *)
 let interp_constr_entry_key forpat level =
@@ -725,11 +705,7 @@ let grammar_extend e reinit ext =
 
 let name_of_entry e = Entry.unsafe_of_name (Gram.Entry.name e)
 
-let list_entry_names () =
-  let add_entry key (TypedEntry (entry, _)) accu = (key, unquote entry) :: accu in
-  let ans = Hashtbl.fold add_entry (get_utable uprim) [] in
-  let ans = Hashtbl.fold add_entry (get_utable uconstr) ans in
-  Hashtbl.fold add_entry (get_utable utactic) ans
+let list_entry_names () = []
 
 let epsilon_value f e =
   let r = Rule (Next (Stop, e), fun x _ -> f x) in

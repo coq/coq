@@ -45,25 +45,29 @@ let make_fun_clauses loc s l =
   let map c = Compat.make_fun loc [make_clause c] in
   mlexpr_of_list map l
 
+let get_argt e = <:expr< match $e$ with [ Genarg.ExtraArg tag -> tag | _ -> assert False ] >>
+
+let rec mlexpr_of_symbol = function
+| Ulist1 s -> <:expr< Extend.Ulist1 $mlexpr_of_symbol s$ >>
+| Ulist1sep (s,sep) -> <:expr< Extend.Ulist1sep $mlexpr_of_symbol s$ $str:sep$ >>
+| Ulist0 s -> <:expr< Extend.Ulist0 $mlexpr_of_symbol s$ >>
+| Ulist0sep (s,sep) -> <:expr< Extend.Ulist0sep $mlexpr_of_symbol s$ $str:sep$ >>
+| Uopt s -> <:expr< Extend.Uopt $mlexpr_of_symbol s$ >>
+| Uentry e ->
+  let arg = get_argt <:expr< $lid:"wit_"^e$ >> in
+  <:expr< Extend.Uentry (Genarg.ArgT.Any $arg$) >>
+| Uentryl (e, l) ->
+  assert (e = "tactic");
+  let arg = get_argt <:expr< Constrarg.wit_tactic >> in
+  <:expr< Extend.Uentryl (Genarg.ArgT.Any $arg$) $mlexpr_of_int l$>>
+
 let make_prod_item = function
-  | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
+  | ExtTerminal s -> <:expr< Tacentries.TacTerm $str:s$ >>
   | ExtNonTerminal (g, id) ->
-    let nt = type_of_user_symbol g in
-    let base s = <:expr< Pcoq.name_of_entry (Pcoq.genarg_grammar $mk_extraarg loc s$) >> in
-      <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
-      $mlexpr_of_prod_entry_key base g$ >>
+    <:expr< Tacentries.TacNonTerm $default_loc$ $mlexpr_of_symbol g$ $mlexpr_of_ident id$ >>
 
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl
-
-let make_one_printing_rule (pt,_,e) =
-  let level = mlexpr_of_int 0 in (* only level 0 supported here *)
-  let loc = MLast.loc_of_expr e in
-  let prods = mlexpr_of_list make_prod_item pt in
-  <:expr< { Pptactic.pptac_level = $level$;
-            pptac_prods = $prods$ } >>
-
-let make_printing_rule r = mlexpr_of_list make_one_printing_rule r
 
 (** Special treatment of constr entries *)
 let is_constr_gram = function
@@ -118,15 +122,13 @@ let declare_tactic loc s c cl = match cl with
       TacML tactic. *)
   let entry = mlexpr_of_string s in
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
-  let pp = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
   let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ $gl$ >> in
   declare_str_items loc
     [ <:str_item< do {
       try do {
         Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc s cl$);
-        Mltop.declare_cache_obj $obj$ $plugin_name$;
-        Pptactic.declare_ml_tactic_pprule $se$ (Array.of_list $pp$); }
+        Mltop.declare_cache_obj $obj$ $plugin_name$; }
       with [ e when Errors.noncritical e ->
         Pp.msg_warning
           (Pp.app

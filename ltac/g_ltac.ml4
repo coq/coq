@@ -405,7 +405,7 @@ VERNAC COMMAND EXTEND VernacTacticNotation
   [
     let l = Locality.LocalityFixme.consume () in
     let n = Option.default 0 n in
-    Tacentries.add_tactic_notation (Locality.make_module_locality l, n, r, e)
+    Tacentries.add_tactic_notation (Locality.make_module_locality l) n r e
   ]
 END
 
