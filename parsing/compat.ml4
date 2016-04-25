@@ -370,27 +370,6 @@ let make_fun loc cl =
 
 END
 
-(** Explicit antiquotation $anti:... $ *)
-
-IFDEF CAMLP5 THEN
-let expl_anti loc e = <:expr< $anti:e$ >>
-ELSE
-let expl_anti _loc e = e (* FIXME: understand someday if we can do better *)
-END
-
-(** Qualified names in OCaml *)
-
-IFDEF CAMLP5 THEN
-let qualified_name loc path name =
-  let fold dir accu = <:expr< $uid:dir$.$accu$ >> in
-  List.fold_right fold path <:expr< $lid:name$ >>
-ELSE
-let qualified_name loc path name =
-  let fold dir accu = Ast.IdAcc (loc, Ast.IdUid (loc, dir), accu) in
-  let path = List.fold_right fold path (Ast.IdLid (loc, name)) in
-  Ast.ExId (loc, path)
-END
-
 IFDEF CAMLP5 THEN
 let warning_verbose = Gramext.warning_verbose
 ELSE
