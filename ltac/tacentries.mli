@@ -6,29 +6,51 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Ltac toplevel command entries. *)
+
 open Vernacexpr
 open Tacexpr
+
+(** {5 Tactic Definitions} *)
+
+val register_ltac : locality_flag -> Vernacexpr.tacdef_body list -> unit
+(** Adds new Ltac definitions to the environment. *)
+
+(** {5 Tactic Notations} *)
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
 | TacNonTerm of Loc.t * 'a * Names.Id.t
 
+type raw_argument = string * string option
+(** An argument type as provided in Tactic notations, i.e. a string like
+    "ne_foo_list_opt" together with a separator that only makes sense in the
+    "_sep" cases. *)
+
+type argument = Genarg.ArgT.any Extend.user_symbol
+(** A fully resolved argument type given as an AST with generic arguments on the
+    leaves. *)
+
 val add_tactic_notation :
-  locality_flag -> int -> (string * string option) grammar_tactic_prod_item_expr list ->
+  locality_flag -> int -> raw_argument grammar_tactic_prod_item_expr list ->
   raw_tactic_expr -> unit
 (** [add_tactic_notation local level prods expr] adds a tactic notation in the
     environment at level [level] with locality [local] made of the grammar
     productions [prods] and returning the body [expr] *)
 
 val register_tactic_notation_entry : string -> ('a, 'b, 'c) Genarg.genarg_type -> unit
-(** Register an argument under a given entry name for tactic notations. *)
+(** Register an argument under a given entry name for tactic notations. When
+    translating [raw_argument] into [argument], atomic names will be first
+    looked up according to names registered through this function and fallback
+    to finding an argument by name (as in {!Genarg}) if there is none
+    matching. *)
 
 val add_ml_tactic_notation : ml_tactic_name ->
-  Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list list -> unit
+  argument grammar_tactic_prod_item_expr list list -> unit
+(** A low-level variant of {!add_tactic_notation} used by the TACTIC EXTEND
+    ML-side macro. *)
 
-val register_ltac : bool -> Vernacexpr.tacdef_body list -> unit
-
-(** {5 Adding tactic quotations} *)
+(** {5 Tactic Quotations} *)
 
 val create_ltac_quotation : string ->
   ('grm Loc.located -> raw_tactic_arg) -> ('grm Pcoq.Gram.entry * int option) -> unit

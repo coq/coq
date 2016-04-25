@@ -23,6 +23,9 @@ type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
 | TacNonTerm of Loc.t * 'a * Names.Id.t
 
+type raw_argument = string * string option
+type argument = Genarg.ArgT.any Extend.user_symbol
+
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
