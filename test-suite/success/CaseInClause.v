@@ -20,3 +20,7 @@ Theorem foo : forall (n m : nat) (pf : n = m),
                 match pf in _ = N with 
                   | eq_refl => unit
                 end.
+
+(* Check redundant clause is removed *)
+Inductive I : nat * nat -> Type := C : I (0,0).
+Check fun x : I (1,1) => match x in I (y,z) return y = z with C => eq_refl end.

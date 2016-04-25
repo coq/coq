@@ -1532,9 +1532,10 @@ let internalize globalenv env allow_patvar lvar c =
                   (GHole(Loc.ghost,Evar_kinds.CasesType false,Misctypes.IntroAnonymous,None))
                   rtnpo) (* "=> P" if there were a return predicate P, and "=> _" otherwise *) in
              let catch_all_sub_eqn =
-               (Loc.ghost,[],List.make (List.length thepats) (PatVar(Loc.ghost,Anonymous)), (* "|_,..,_" *)
-		GHole(Loc.ghost,Evar_kinds.ImpossibleCase,Misctypes.IntroAnonymous,None))   (* "=> _" *) in
-             Some (GCases(Loc.ghost,Term.RegularStyle,sub_rtn,sub_tms,[main_sub_eqn;catch_all_sub_eqn]))
+               if List.for_all (irrefutable globalenv) thepats then [] else
+                 [Loc.ghost,[],List.make (List.length thepats) (PatVar(Loc.ghost,Anonymous)), (* "|_,..,_" *)
+		  GHole(Loc.ghost,Evar_kinds.ImpossibleCase,Misctypes.IntroAnonymous,None)]   (* "=> _" *) in
+             Some (GCases(Loc.ghost,Term.RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
 	in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
 	GCases (loc, sty, rtnpo, tms, List.flatten eqns')

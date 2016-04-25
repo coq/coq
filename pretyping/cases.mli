@@ -32,6 +32,8 @@ val error_wrong_numarg_constructor_loc : Loc.t -> env -> constructor -> int -> '
 
 val error_wrong_numarg_inductive_loc : Loc.t -> env -> inductive -> int -> 'a
 
+val irrefutable : env -> cases_pattern -> bool
+
 (** {6 Compilation primitive. } *)
 
 val compile_cases :
