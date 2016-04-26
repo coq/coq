@@ -125,12 +125,12 @@ TACTIC EXTEND snewfunind
 END
 
 
-let pr_constr_coma_sequence prc _ _ = prlist_with_sep pr_comma prc
+let pr_constr_comma_sequence prc _ _ = prlist_with_sep pr_comma prc
 
-ARGUMENT EXTEND constr_coma_sequence'
+ARGUMENT EXTEND constr_comma_sequence'
   TYPED AS constr_list
-  PRINTED BY pr_constr_coma_sequence
-| [ constr(c) "," constr_coma_sequence'(l) ] -> [ c::l ]
+  PRINTED BY pr_constr_comma_sequence
+| [ constr(c) "," constr_comma_sequence'(l) ] -> [ c::l ]
 | [ constr(c) ] -> [ [c] ]
 END
 
@@ -139,7 +139,7 @@ let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using prc
 ARGUMENT EXTEND auto_using'
   TYPED AS constr_list
   PRINTED BY pr_auto_using
-| [ "using" constr_coma_sequence'(l) ] -> [ l ]
+| [ "using" constr_comma_sequence'(l) ] -> [ l ]
 | [ ] -> [ [] ]
 END
 
