@@ -79,8 +79,7 @@ let rec type_of_user_symbol = function
   ListArgType (type_of_user_symbol s)
 | Uopt s ->
   OptArgType (type_of_user_symbol s)
-| Uentry e -> ExtraArgType e
-| Uentryl (e, n) -> ExtraArgType (e ^ string_of_int n)
+| Uentry e | Uentryl (e, _) -> ExtraArgType e
 
 let coincide s pat off =
   let len = String.length pat in

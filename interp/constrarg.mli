@@ -71,18 +71,6 @@ val wit_red_expr :
 
 val wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
 
-val wit_tactic0 : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
-
-val wit_tactic1 : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
-
-val wit_tactic2 : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
-
-val wit_tactic3 : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
-
-val wit_tactic4 : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
-
-val wit_tactic5 : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
-
 (** [wit_ltac] is subtly different from [wit_tactic]: they only change for their
     toplevel interpretation. The one of [wit_ltac] forces the tactic and
     discards the result. *)
