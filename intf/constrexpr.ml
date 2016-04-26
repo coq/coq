@@ -31,8 +31,16 @@ type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
+(** Representation of integer literals that appear in Coq scripts.
+    We now use raw strings of digits in base 10 (big-endian), and a separate
+    sign flag. Note that this representation is not unique, due to possible
+    multiple leading zeros, and -0 = +0 *)
+
+type sign = bool
+type raw_natural_number = string
+
 type prim_token =
-  | Numeral of Bigint.bigint (** representation of integer literals that appear in Coq scripts. *)
+  | Numeral of raw_natural_number * sign
   | String of string
 
 type instance_expr = Misctypes.glob_level list

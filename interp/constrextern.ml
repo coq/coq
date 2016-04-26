@@ -239,23 +239,31 @@ let expand_curly_brackets loc mknot ntn l =
 let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 
+let is_number s =
+  let rec aux i =
+    Int.equal (String.length s) i ||
+    match s.[i] with '0'..'9' -> aux (i+1) | _ -> false
+  in aux 0
+
+let is_zero s =
+  let rec aux i =
+    Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
+  in aux 0
+
 let make_notation_gen loc ntn mknot mkprim destprim l =
   if has_curly_brackets ntn
   then expand_curly_brackets loc mknot ntn l
   else match ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
-    | "- _", [Some (Numeral p)] when Bigint.is_strictly_pos p ->
+    | "- _", [Some (Numeral (p,true))] when not (is_zero p) ->
         mknot (loc,ntn,([mknot (loc,"( _ )",l)]))
     | _ ->
 	match decompose_notation_key ntn, l with
-	| [Terminal "-"; Terminal x], [] ->
-	    (try mkprim (loc, Numeral (Bigint.neg (Bigint.of_string x)))
-	     with Failure _ -> mknot (loc,ntn,[]))
-	| [Terminal x], [] ->
-	    (try mkprim (loc, Numeral (Bigint.of_string x))
-	     with Failure _ -> mknot (loc,ntn,[]))
-	| _ ->
-	    mknot (loc,ntn,l)
+	| [Terminal "-"; Terminal x], [] when is_number x ->
+	   mkprim (loc, Numeral (x,false))
+	| [Terminal x], [] when is_number x ->
+	   mkprim (loc, Numeral (x,true))
+	| _ -> mknot (loc,ntn,l)
 
 let make_notation loc ntn (terms,termlists,binders as subst) =
   if not (List.is_empty termlists) || not (List.is_empty binders) then

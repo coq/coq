@@ -324,6 +324,10 @@ type 'r env = {
 
 let push_constr subst v = { subst with constrs = v :: subst.constrs }
 
+let mkNumeral n =
+  if Bigint.is_pos_or_zero n then Numeral (Bigint.to_string n, true)
+  else Numeral (Bigint.to_string (Bigint.neg n), false)
+
 let push_item : type s r. s target -> (s, r) entry -> s env -> r -> s env = fun forpat e subst v ->
 match e with
 | TTConstr _ -> push_constr subst v
@@ -337,8 +341,8 @@ match e with
 | TTBinderListF _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
 | TTBigint ->
   begin match forpat with
-  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral v))
-  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral v))
+  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (mkNumeral v))
+  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (mkNumeral v))
   end
 | TTReference ->
   begin match forpat with

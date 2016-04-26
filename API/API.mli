@@ -2055,8 +2055,10 @@ sig
   type explicitation = Constrexpr.explicitation =
                      | ExplByPos of int * Names.Id.t option
                      | ExplByName of Names.Id.t
+  type sign = bool
+  type raw_natural_number = string
   type prim_token = Constrexpr.prim_token =
-                  | Numeral of Bigint.bigint
+                  | Numeral of raw_natural_number * sign
                   | String of string
   type notation = string
   type instance_expr = Misctypes.glob_level list

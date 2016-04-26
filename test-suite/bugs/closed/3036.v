@@ -15,11 +15,11 @@ Definition perm := Qc.
 Locate Qle_bool.
 
 Definition compatibleb (p1 p2 : perm) : bool :=
-let p1pos := Qle_bool 00 p1 in
-  let p2pos := Qle_bool 00 p2 in
+let p1pos := Qle_bool 0 p1 in
+  let p2pos := Qle_bool 0 p2 in
     negb (
          (p1pos && p2pos)
-      || ((p1pos || p2pos) && (negb (Qle_bool 00 ((p1 + p2)%Qc)))))%Qc.
+      || ((p1pos || p2pos) && (negb (Qle_bool 0 ((p1 + p2)%Qc)))))%Qc.
 
 Definition compatible (p1 p2 : perm) := compatibleb p1 p2 = true.
 
