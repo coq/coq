@@ -341,17 +341,29 @@ let inh_coerce_to_ind evdref env loc ty tyi =
      un inductif cela doit être égal *)
   if not (e_cumul env evdref expected_typ ty) then evdref := sigma
 
-let binding_vars_of_inductive = function
-  | NotInd _ -> []
-  | IsInd (_,IndType(_,realargs),_) -> List.filter (fun c -> isRel c || isVar c) realargs
+let rec accumulate_bindings env t acc =
+  match kind_of_term t with
+  | App (f,v) when isConstruct f ->
+     let cstr,u = destConstruct f in
+     let n = constructor_nrealargs_env env cstr in
+     let l = List.lastn n (Array.to_list v) in
+     List.fold_right (accumulate_bindings env) l acc
+  | Rel _ | Var _ -> List.add_set Constr.equal t acc
+  | _ -> acc
 
-let extract_inductive_data env sigma decl =
+let binding_vars_of_inductive deep env = function
+  | NotInd _ -> []
+  | IsInd (_,IndType(_,realargs),_) ->
+     if deep then List.fold_right (accumulate_bindings env) realargs []
+     else List.filter (fun c -> isRel c || isVar c) realargs
+
+let extract_inductive_data deep env sigma decl =
   match decl with
   | LocalAssum (_,t) ->
     let tmtyp =
       try try_find_ind env sigma t None
       with Not_found -> NotInd (None,t) in
-    let tmtypvars = binding_vars_of_inductive tmtyp in
+    let tmtypvars = binding_vars_of_inductive deep env tmtyp in
     (tmtyp,tmtypvars)
   | LocalDef (_,_,t) ->
     (NotInd (None, t), [])
@@ -1286,7 +1298,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
 
   let typs' =
     List.map (fun (c,d) ->
-      (c,extract_inductive_data extenv !(pb.evdref) d,d)) typs' in
+      (c,extract_inductive_data false extenv !(pb.evdref) d,d)) typs' in
 
   (* We compute over which of x(i+1)..xn and x matching on xi will need a *)
   (* generalization *)
@@ -1419,7 +1431,7 @@ and match_current pb (initial,tomatch) =
 	  (* We compile branches *)
 	  let brvals = Array.map2 (compile_branch initial current realargs (names,dep) deps pb arsign) eqns cstrs in
 	  (* We build the (elementary) case analysis *)
-          let depstocheck = current::binding_vars_of_inductive typ in
+          let depstocheck = current::binding_vars_of_inductive false pb.env typ in
           let brvals,tomatch,pred,inst =
             postprocess_dependencies !(pb.evdref) depstocheck
               brvals pb.tomatch pb.pred deps cstrs in
@@ -1801,7 +1813,7 @@ let build_inversion_problem loc env sigma tms t =
 
   let pb_env = push_rel_context sign env in
   let decls =
-    List.map (fun (c,d) -> (c,extract_inductive_data pb_env sigma d,d)) decls in
+    List.map (fun (c,d) -> (c,extract_inductive_data false pb_env sigma d,d)) decls in
 
   let decls = List.rev decls in
   let dep_sign = find_dependencies_signature (List.make n true) decls in
@@ -2511,7 +2523,7 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
   let typs = List.map2 (fun na (tm,tmt) -> (tm,out_tmt na tmt)) nal tomatchs in
     
   let typs =
-    List.map (fun (c,d) -> (c,extract_inductive_data env !evdref d,d)) typs in
+    List.map (fun (c,d) -> (c,extract_inductive_data true env !evdref d,d)) typs in
     
   let dep_sign =
     find_dependencies_signature
@@ -2586,7 +2598,7 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
     let typs = List.map2 (fun na (tm,tmt) -> (tm,out_tmt na tmt)) nal tomatchs in
 
     let typs =
-      List.map (fun (c,d) -> (c,extract_inductive_data env sigma d,d)) typs in
+      List.map (fun (c,d) -> (c,extract_inductive_data true env sigma d,d)) typs in
 
     let dep_sign =
       find_dependencies_signature
