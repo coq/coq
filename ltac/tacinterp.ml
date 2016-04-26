@@ -168,7 +168,7 @@ module Value = struct
     let pr_v = Pptactic.pr_value Pptactic.ltop v in
     let Val.Dyn (tag, _) = v in
     let tag = Val.pr tag in
-    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ tag
+    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
       ++ str " while type " ++ Val.pr wit ++ str " was expected.")
 
   let unbox wit v ans = match ans with
