@@ -147,7 +147,7 @@ pr
   pr " Local Notation Size := (SizePlus O).";
   pr "";
 
-  pr " Tactic Notation (at level 3) \"do_size\" tactic3(t) := do %i t." (size+1);
+  pr " Tactic Notation \"do_size\" tactic(t) := do %i t." (size+1);
   pr "";
 
   pr " Definition dom_t n := match n with";
