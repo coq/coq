@@ -463,9 +463,10 @@ module Make
 
   let pr_with_induction_names prc = function
     | None, None -> mt ()
-    | Some eqpat, None -> hov 1 (pr_eqn_ipat eqpat)
-    | None, Some ipat -> hov 1 (pr_as_disjunctive_ipat prc ipat)
+    | Some eqpat, None -> spc () ++ hov 1 (pr_eqn_ipat eqpat)
+    | None, Some ipat -> spc () ++ hov 1 (pr_as_disjunctive_ipat prc ipat)
     | Some eqpat, Some ipat ->
+      spc () ++
         hov 1 (pr_as_disjunctive_ipat prc ipat ++ spc () ++ pr_eqn_ipat eqpat)
 
   let pr_as_intro_pattern prc ipat =
