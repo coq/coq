@@ -151,7 +151,7 @@ module Value = struct
     let pr_v = Pptactic.pr_value Pptactic.ltop v in
     let Val.Dyn (tag, _) = v in
     let tag = Val.pr tag in
-    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
+    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ tag
       ++ str " while type " ++ Genarg.pr_argument_type (unquote (rawwit wit)) ++ str " was expected.")
 
   let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
