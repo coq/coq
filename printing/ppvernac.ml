@@ -21,7 +21,7 @@ open Decl_kinds
 
 module Make
   (Ppconstr : Ppconstrsig.Pp)
-  (Pptacticsig : Pptacticsig.Pp)
+  (Pptactic : Pptacticsig.Pp)
   (Taggers  : sig
     val tag_keyword : std_ppcmds -> std_ppcmds
     val tag_vernac  : vernac_expr -> std_ppcmds -> std_ppcmds
@@ -30,7 +30,7 @@ module Make
 
   open Taggers
   open Ppconstr
-  open Pptacticsig
+  open Pptactic
 
   let keyword s = tag_keyword (str s)
 
@@ -81,38 +81,10 @@ module Make
     | VernacEndSubproof -> str""
     | _ -> str"."
 
+  let pr_gen t = pr_raw_generic (Global.env ()) t
+
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
-
-  open Genarg
-
-  type 'c entry_name = EntryName : ('c, 'a) Extend.symbol -> 'c entry_name
-
-  let hov_if_not_empty n p = if Pp.ismt p then p else hov n p
-
-  let rec pr_gen = function
-    | GenArg (Rawwit (ListArg wit), x), EntryName (Alist1 e) ->
-        let map x = pr_gen (GenArg (rawwit wit, x), EntryName e) in
-        hov_if_not_empty 0 (pr_sequence map x)
-    | GenArg (Rawwit (ListArg wit), x), EntryName (Alist0 e) ->
-        let map x = pr_gen (GenArg (rawwit wit, x), EntryName e) in
-        hov_if_not_empty 0 (pr_sequence map x)
-    | GenArg (Rawwit (ListArg wit), x), EntryName (Alist1sep (e,sep)) ->
-        let map x = pr_gen (GenArg (rawwit wit, x), EntryName e) in
-        hov_if_not_empty 0 (prlist_with_sep (fun () -> spc() ++ str sep ++ spc()) map x)
-    | GenArg (Rawwit (ListArg wit), x), EntryName (Alist0sep (e,sep)) ->
-        let map x = pr_gen (GenArg (rawwit wit, x), EntryName e) in
-        hov_if_not_empty 0 (prlist_with_sep (fun () -> spc() ++ str sep ++ spc()) map x)
-    | GenArg (Rawwit (OptArg wit), x), EntryName (Aopt e) ->
-        let ans = match x with
-          | None -> mt ()
-          | Some x -> pr_gen (GenArg (rawwit wit, x), EntryName e) in
-        hov_if_not_empty 0 ans
-    | GenArg (Rawwit (PairArg (wit1, wit2)), _), _ -> error "Pair of entries not implemented."
-    | GenArg (Rawwit (ExtraArg s as wit), x), e ->
-        (try pi1 (Pptactic.find_extra_genarg_pprule wit) pr_constr_expr pr_lconstr_expr (fun _ -> pr_raw_tactic) x
-        with Not_found -> Genprint.generic_raw_print (in_gen (rawwit wit) x))
-    | _, _ -> assert false
 
   let pr_set_entry_type = function
     | ETName -> str"ident"
@@ -1229,23 +1201,20 @@ module Make
         return (str "}")
 
   and pr_extend s cl =
-    let pr_based_on_grammar a =
+    let pr_arg a =
       try pr_gen a
-      with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
-    let pr_based_on_structure a =
-      try Pptactic.pr_raw_generic (Global.env ()) a
       with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
     try
       let rl = Egramml.get_extend_vernac_rule s in
-      let rec aux sep rl cl =
+      let rec aux rl cl =
         match rl, cl with
-        | Egramml.GramNonTerminal (_,_,e) :: rl, (GenArg (wit,x)) :: cl -> pr_based_on_grammar (GenArg (wit,x),EntryName e) :: aux sep rl cl
-        | Egramml.GramTerminal s :: rl, cl -> sep() ++ str s :: aux spc rl cl
+        | Egramml.GramNonTerminal _ :: rl, arg :: cl -> pr_arg arg :: aux rl cl
+        | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
         | [], [] -> []
         | _ -> assert false in
-      hov 1 (pr_sequence (fun x -> x) (aux mt rl cl))
+      hov 1 (pr_sequence (fun x -> x) (aux rl cl))
     with Not_found ->
-      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_based_on_structure cl ++ str ")")
+      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
   let pr_vernac v =
     try pr_vernac_body v ++ sep_end v

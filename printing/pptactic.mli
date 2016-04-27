@@ -41,12 +41,6 @@ val declare_extra_genarg_pprule :
   'b glob_extra_genarg_printer ->
   'c extra_genarg_printer -> unit
 
-val find_extra_genarg_pprule :
-  ('a, 'b, 'c) genarg_type ->
-  'a raw_extra_genarg_printer *
-  'b glob_extra_genarg_printer *
-  'c extra_genarg_printer
-
 type grammar_terminals = Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list
 
 type pp_tactic = {
