@@ -50,7 +50,6 @@ module type Pp = sig
     ('a * Names.Id.t) option * recursion_order_expr ->
     std_ppcmds
 
-  val pr_record_body : (reference * constr_expr) list -> std_ppcmds
   val pr_binders : local_binder list -> std_ppcmds
   val pr_constr_pattern_expr : constr_pattern_expr -> std_ppcmds
   val pr_lconstr_pattern_expr : constr_pattern_expr -> std_ppcmds
