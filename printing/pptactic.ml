@@ -250,10 +250,8 @@ module Make
     | NoBindings -> mt ()
 
   let pr_clear_flag clear_flag pp x =
-    match clear_flag with
-    | Some false -> surround (pp x)
-    | Some true -> str ">" ++ pp x
-    | None -> pp x
+    (match clear_flag with Some false -> str "!" | Some true -> str ">" | None -> mt())
+    ++ pp x
 
   let pr_with_bindings prc prlc (c,bl) =
     prc c ++ pr_bindings prc prlc bl
