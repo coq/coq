@@ -2125,30 +2125,6 @@ let () =
   Geninterp.register_interp0 wit_tactic interp
 
 let () =
-  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
-  Geninterp.register_interp0 wit_tactic0 interp
-
-let () =
-  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
-  Geninterp.register_interp0 wit_tactic1 interp
-
-let () =
-  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
-  Geninterp.register_interp0 wit_tactic2 interp
-
-let () =
-  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
-  Geninterp.register_interp0 wit_tactic3 interp
-
-let () =
-  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
-  Geninterp.register_interp0 wit_tactic4 interp
-
-let () =
-  let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
-  Geninterp.register_interp0 wit_tactic5 interp
-
-let () =
   let interp ist tac = interp_tactic ist tac >>= fun () -> Ftactic.return () in
   Geninterp.register_interp0 wit_ltac interp
 
