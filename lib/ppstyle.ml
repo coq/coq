@@ -136,6 +136,7 @@ let init_color_output () =
     (** In case something went wrong, we reset the stack *)
     clear_tag ();
   in
+  let open Feedback in
   let logger level strm = match level with
   | Debug _ -> msg ~header:("Debug", debug_tag) !std_ft strm
   | Info -> msg !std_ft strm

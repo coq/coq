@@ -172,7 +172,7 @@ let print_env_reification env =
   in
   let prop_info = str "ENVIRONMENT OF PROPOSITIONS :" ++ fnl () ++ loop 'P' 0 env.props in
   let term_info = str "ENVIRONMENT OF TERMS :" ++ fnl () ++ loop 'V' 0 env.terms in
-  msg_debug (prop_info ++ fnl () ++ term_info)
+  Feedback.msg_debug (prop_info ++ fnl () ++ term_info)
 
 (* \subsection{Gestion des environnements de variable pour Omega} *)
 (* generation d'identifiant d'equation pour Omega *)

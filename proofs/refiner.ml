@@ -57,7 +57,7 @@ let tclIDTAC gls = goal_goal_list gls
 
 (* the message printing identity tactic *)
 let tclIDTAC_MESSAGE s gls =
-  Pp.msg_info (hov 0 s); pp_flush (); tclIDTAC gls
+  Feedback.msg_info (hov 0 s); tclIDTAC gls
 
 (* General failure tactic *)
 let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" (str s)
@@ -218,7 +218,8 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
 	   (fun acc (nm,_,_) -> (Names.Id.to_string nm) ^ " " ^ acc)
 	   "" lh))
     "" newhyps in
-  pp (str (emacs_str "<infoH>")
+  Feedback.msg_notice
+    (str (emacs_str "<infoH>")
       ++  (hov 0 (str s))
       ++  (str (emacs_str "</infoH>")) ++ fnl());
   tclIDTAC goal;;

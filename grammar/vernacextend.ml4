@@ -66,7 +66,7 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
      (make_patt pt,
       vala (Some (make_when (MLast.loc_of_expr cg) pt)),
       <:expr< fun () -> $cg$ $str:s$ >>)
-  | None, None -> msg_warning
+  | None, None -> Feedback.msg_warning
       (strbrk("Vernac entry \""^s^"\" misses a classifier. "^
          "A classifier is a function that returns an expression "^
          "of type vernac_classification (see Vernacexpr). You can: ")++
@@ -121,7 +121,7 @@ let declare_command loc s c nt cl =
           CList.iteri (fun i (depr, f) -> Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
           CList.iteri (fun i f -> Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$ }
 	with [ e when Errors.noncritical e ->
-	  Pp.msg_warning
+	  Feedback.msg_warning
 	    (Pp.app
 	       (Pp.str ("Exception in vernac extend " ^ $se$ ^": "))
 	       (Errors.print e)) ];

@@ -98,11 +98,11 @@ let coqide_cmd_checks (loc,ast) =
   if is_debug ast then
     user_error "Debug mode not available within CoqIDE";
   if is_known_option ast then
-    msg_warning (strbrk"This will not work. Use CoqIDE display menu instead");
+    Feedback.msg_warning (strbrk"This will not work. Use CoqIDE display menu instead");
   if Vernac.is_navigation_vernac ast || is_undo ast then
-    msg_warning (strbrk "Rather use CoqIDE navigation instead");
+    Feedback.msg_warning (strbrk "Rather use CoqIDE navigation instead");
   if is_query ast then
-    msg_warning (strbrk "Query commands should not be inserted in scripts")
+    Feedback.msg_warning (strbrk "Query commands should not be inserted in scripts")
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
@@ -206,7 +206,7 @@ let export_pre_goals pgs =
 let goals () =
   Stm.finish ();
   let s = read_stdout () in
-  if not (String.is_empty s) then msg_info (str s);
+  if not (String.is_empty s) then Feedback.msg_info (str s);
   try
     let pfts = Proof_global.give_me_the_proof () in
     Some (export_pre_goals (Proof.map_structured_proof pfts process_goal))
@@ -216,7 +216,7 @@ let evars () =
   try
     Stm.finish ();
     let s = read_stdout () in
-    if not (String.is_empty s) then msg_info (str s);
+    if not (String.is_empty s) then Feedback.msg_info (str s);
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
     let exl = Evar.Map.bindings (Evarutil.non_instantiated sigma) in
@@ -249,7 +249,7 @@ let status force =
   Stm.finish ();
   if force then Stm.join ();
   let s = read_stdout () in
-  if not (String.is_empty s) then msg_info (str s);
+  if not (String.is_empty s) then Feedback.msg_info (str s);
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
@@ -435,11 +435,11 @@ let slave_logger xml_oc level message =
   (* convert the message into XML *)
   let msg = string_of_ppcmds (hov 0 message) in
   let message = {
-    Pp.message_level = level;
-    Pp.message_content = msg;
+    Feedback.message_level = level;
+    Feedback.message_content = msg;
   } in
   let () = pr_debug (Printf.sprintf "-> %S" msg) in
-  let xml = Pp.of_message message in
+  let xml = Feedback.of_message message in
   print_xml xml_oc xml
 
 let slave_feeder xml_oc msg =
@@ -461,8 +461,8 @@ let loop () =
     CThread.thread_friendly_read in_ch s ~off:0 ~len) in
   let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
-  set_logger (slave_logger xml_oc);
-  set_feeder (slave_feeder xml_oc);
+  Feedback.set_logger (slave_logger xml_oc);
+  Feedback.set_feeder (slave_feeder xml_oc);
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
@@ -472,7 +472,7 @@ let loop () =
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
       let q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r = eval_call xml_oc (slave_logger xml_oc Pp.Notice) q in
+      let r = eval_call xml_oc (slave_logger xml_oc Feedback.Notice) q in
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
       print_xml xml_oc (Xmlprotocol.of_answer q r);

@@ -287,7 +287,7 @@ let locate_absolute_library dir =
   | [] -> raise LibNotFound
   | [file] -> dir, file
   | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-       msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
+       Feedback.msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
          str vo ++ str " because it is more recent");
        dir, vi
   | [vo;vi] -> dir, vo
@@ -321,7 +321,7 @@ let locate_qualified_library ?root ?(warn = true) qid =
     | [lpath, file] -> lpath, file
     | [lpath_vo, vo; lpath_vi, vi]
       when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-       msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
+       Feedback.msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
          str vo ++ str " because it is more recent");
        lpath_vi, vi
     | [lpath_vo, vo; _ ] -> lpath_vo, vo
@@ -380,7 +380,7 @@ let access_table what tables dp i =
     | Fetched t -> t
     | ToFetch f ->
       let dir_path = Names.DirPath.to_string dp in
-      Flags.if_verbose msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
+      Flags.if_verbose Feedback.msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
       let t =
         try fetch_delayed f
         with Faulty f ->
@@ -458,7 +458,7 @@ let intern_from_file f =
 module DPMap = Map.Make(DirPath)
 
 let rec intern_library (needed, contents) (dir, f) from =
-  Pp.feedback(Feedback.FileDependency (from, f));
+  Feedback.feedback (Feedback.FileDependency (from, f));
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
@@ -472,7 +472,7 @@ let rec intern_library (needed, contents) (dir, f) from =
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
-  Pp.feedback(Feedback.FileLoaded(DirPath.to_string dir, f));
+  Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
   m.library_digests, intern_library_deps (needed, contents) dir m (Some f)
 
 and intern_library_deps libs dir m from =
@@ -764,7 +764,7 @@ let save_library_to ?todo dir f otab =
 	error "Could not compile the library to native code."
    with reraise ->
     let reraise = Errors.push reraise in
-    let () = msg_warning (str "Removed file " ++ str f') in
+    let () = Feedback.msg_warning (str "Removed file " ++ str f') in
     let () = close_out ch in
     let () = Sys.remove f' in
     iraise reraise

@@ -52,17 +52,17 @@ let rec print_debug_queue e =
       let _ =
 	match e with
 	| Some e ->
-	   Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	   Feedback.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
 	| None ->
 	   begin
-	     Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	     Feedback.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
 	   end in
       print_debug_queue None ;
     end
 
 let observe strm =
   if do_observe ()
-  then Pp.msg_debug strm
+  then Feedback.msg_debug strm
   else ()
 
 let do_observe_tac s tac g = 

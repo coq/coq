@@ -26,7 +26,7 @@ let refresh_arity ar =
     | _ -> ar, Univ.ContextSet.empty
 
 let check_constant_declaration env kn cb =
-  Flags.if_verbose ppnl (str "  checking cst: " ++ prcon kn); pp_flush ();
+  Flags.if_verbose Feedback.msg_notice (str "  checking cst: " ++ prcon kn);
   let env' =
     if cb.const_polymorphic then
       let inst = Univ.make_abstract_instance cb.const_universes in

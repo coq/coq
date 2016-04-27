@@ -50,7 +50,7 @@ let pr_constr_with_binding prc (c,bl) :  Pp.std_ppcmds =
 
 let observe strm =
   if do_observe ()
-  then Pp.msg_debug strm
+  then Feedback.msg_debug strm
   else ()
 
 (*let observennl strm =

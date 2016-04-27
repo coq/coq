@@ -187,7 +187,7 @@ let declare_delimiters scope key =
     | None -> scope_map := String.Map.add scope newsc !scope_map
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
-	msg_warning
+	Feedback.msg_warning
 	  (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
 	scope_map := String.Map.add scope newsc !scope_map
   end;
@@ -195,7 +195,7 @@ let declare_delimiters scope key =
     let oldscope = String.Map.find key !delimiters_map in
     if String.equal oldscope scope then ()
     else begin
-      msg_warning (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
+      Feedback.msg_warning (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
       delimiters_map := String.Map.add key scope !delimiters_map
     end
   with Not_found -> delimiters_map := String.Map.add key scope !delimiters_map
@@ -204,7 +204,7 @@ let remove_delimiters scope =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = None } in
   match sc.delimiters with
-    | None -> msg_warning (str "No bound key for scope " ++ str scope ++ str ".")
+    | None -> Feedback.msg_warning (str "No bound key for scope " ++ str scope ++ str ".")
     | Some key ->
        scope_map := String.Map.add scope newsc !scope_map;
        try
@@ -391,7 +391,7 @@ let declare_notation_interpretation ntn scopt pat df =
     let which_scope = match scopt with
     | None -> mt ()
     | Some _ -> str " in scope " ++ str scope in
-    msg_warning (str "Notation " ++ str ntn ++ str " was already used" ++ which_scope)
+    Feedback.msg_warning (str "Notation " ++ str ntn ++ str " was already used" ++ which_scope)
   in
   let sc = { sc with notations = String.Map.add ntn (pat,df) sc.notations } in
   let () = scope_map := String.Map.add scope sc !scope_map in

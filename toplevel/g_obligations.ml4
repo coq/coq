@@ -109,7 +109,7 @@ open Pp
 
 VERNAC COMMAND EXTEND Show_Solver CLASSIFIED AS QUERY
 | [ "Show" "Obligation" "Tactic" ] -> [
-    msg_info (str"Program obligation tactic is " ++ print_default_tactic ()) ]
+    Feedback.msg_info (str"Program obligation tactic is " ++ print_default_tactic ()) ]
 END
 
 VERNAC COMMAND EXTEND Show_Obligations CLASSIFIED AS QUERY
@@ -118,8 +118,8 @@ VERNAC COMMAND EXTEND Show_Obligations CLASSIFIED AS QUERY
 END
 
 VERNAC COMMAND EXTEND Show_Preterm CLASSIFIED AS QUERY
-| [ "Preterm" "of" ident(name) ] -> [ msg_info (show_term (Some name)) ]
-| [ "Preterm" ] -> [ msg_info (show_term None) ]
+| [ "Preterm" "of" ident(name) ] -> [ Feedback.msg_info (show_term (Some name)) ]
+| [ "Preterm" ] -> [ Feedback.msg_info (show_term None) ]
 END
 
 open Pp

@@ -108,7 +108,8 @@ module MakeTable =
          (fun c -> t := MySet.remove c !t))
 
     let print_table table_name printer table =
-      pp (str table_name ++
+      Feedback.msg_notice
+        (str table_name ++
 	   (hov 0
 	      (if MySet.is_empty table then str " None" ++ fnl ()
                else MySet.fold
@@ -122,7 +123,7 @@ module MakeTable =
       method mem x =
 	let y = A.encode x in
         let answer = MySet.mem y !t in
-        msg_info (A.member_message y answer)
+        Feedback.msg_info (A.member_message y answer)
       method print = print_table A.title A.printer !t
     end
 
@@ -271,7 +272,7 @@ let declare_option cast uncast
   in
   let warn () =
     if depr then
-      msg_warning (str "Option " ++ str (nickname key) ++ str " is deprecated")
+      Feedback.msg_warning (str "Option " ++ str (nickname key) ++ str " is deprecated")
   in
   let cread () = cast (read ()) in
   let cwrite v = warn (); write (uncast v) in
@@ -346,12 +347,12 @@ let set_int_option_value_gen locality =
   set_option_value locality check_int_value
 let set_bool_option_value_gen locality key v =
   try set_option_value locality check_bool_value key v
-  with UserError (_,s) -> msg_warning s
+  with UserError (_,s) -> Feedback.msg_warning s
 let set_string_option_value_gen locality =
   set_option_value locality check_string_value
 let unset_option_value_gen locality key =
   try set_option_value locality check_unset_value key ()
-  with UserError (_,s) -> msg_warning s
+  with UserError (_,s) -> Feedback.msg_warning s
 
 let set_int_option_value = set_int_option_value_gen None
 let set_bool_option_value = set_bool_option_value_gen None
@@ -375,9 +376,9 @@ let print_option_value key =
   let s = read () in
   match s with
     | BoolValue b ->
-	msg_info (str "The " ++ str name ++ str " mode is " ++ str (if b then "on" else "off"))
+	Feedback.msg_info (str "The " ++ str name ++ str " mode is " ++ str (if b then "on" else "off"))
     | _ ->
-	msg_info (str "Current value of " ++ str name ++ str " is " ++ msg_option_value (name, s))
+	Feedback.msg_info (str "Current value of " ++ str name ++ str " is " ++ msg_option_value (name, s))
 
 let get_tables () =
   let tables = !value_tab in

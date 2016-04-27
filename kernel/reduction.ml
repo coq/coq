@@ -721,7 +721,7 @@ let vm_conv cv_pb env t1 t2 =
   try
     !vm_conv cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
-    (Pp.msg_warning
+    (Feedback.msg_warning
       (Pp.str "Bytecode compilation failed, falling back to default conversion");
      fconv cv_pb false (fun _->None) env t1 t2)
 

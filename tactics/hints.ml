@@ -711,7 +711,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	else begin
 	  if not eapply then failwith "make_apply_entry";
           if verbose then
-	    msg_warning (str "the hint: eapply " ++ pr_lconstr c ++
+	    Feedback.msg_warning (str "the hint: eapply " ++ pr_lconstr c ++
 	    str " will only be used by eauto");
           (Some hd,
            { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
@@ -1347,7 +1347,7 @@ let is_imported h = try KNmap.find h.uid !statustable with Not_found -> true
 let warn h x =
   let hint = pr_hint h in
   let (mp, _, _) = KerName.repr h.uid in
-  let () = msg_warning (str "Hint used but not imported: " ++ hint ++ print_mp mp) in
+  let () = Feedback.msg_warning (str "Hint used but not imported: " ++ hint ++ print_mp mp) in
   Proofview.tclUNIT x
 
 let run_hint tac k = match !warn_hint with

@@ -189,7 +189,7 @@ let vm_conv_gen cv_pb env univs t1 t2 =
     let v2 = val_of_constr env t2 in
     fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
   with Not_found | Invalid_argument _ ->
-    (Pp.msg_warning
+    (Feedback.msg_warning
       (Pp.str "Bytecode compilation failed, falling back to default conversion");
      Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
 			    full_transparent_state env univs t1 t2)

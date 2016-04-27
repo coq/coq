@@ -31,7 +31,7 @@ let cbv_vm env sigma c =
 
 let cbv_native env sigma c =
   if Coq_config.no_native_compiler then
-    let () = msg_warning (str "native_compute disabled at configure time; falling back to vm_compute.") in
+    let () = Feedback.msg_warning (str "native_compute disabled at configure time; falling back to vm_compute.") in
     cbv_vm env sigma c
   else
     let ctyp = Retyping.get_type_of env sigma c in
@@ -223,7 +223,7 @@ let reduction_of_red_expr env =
      let am = if !simplIsCbn then strong_cbn (make_flag f) else simpl in
      let () =
        if not (!simplIsCbn || List.is_empty f.rConst) then
-	 Pp.msg_warning (Pp.strbrk "The legacy simpl does not deal with delta flags.") in
+	 Feedback.msg_warning (Pp.strbrk "The legacy simpl does not deal with delta flags.") in
      (contextualize (if head_style then whd_am else am) am o,DEFAULTcast)
   | Cbv f -> (e_red (cbv_norm_flags (make_flag f)),DEFAULTcast)
   | Cbn f ->

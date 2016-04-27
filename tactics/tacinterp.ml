@@ -1197,7 +1197,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> interp_tactic ist (TacArg a)
   | TacInfo tac ->
-      msg_warning
+      Feedback.msg_warning
 	(strbrk "The general \"info\" tactic is currently not working." ++ spc()++
            strbrk "There is an \"Info\" command to replace it." ++fnl () ++
 	   strbrk "Some specific verbose tactics may also exist, such as info_eauto.");
@@ -2021,7 +2021,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   (* Automation tactics *)
   | TacTrivial (debug,lems,l) ->
       begin if debug == Tacexpr.Info then
-          msg_warning
+          Feedback.msg_warning
 	    (strbrk"The \"info_trivial\" tactic" ++ spc ()
            ++strbrk"does not print traces anymore." ++ spc()
            ++strbrk"Use \"Info 1 trivial\", instead.")
@@ -2038,7 +2038,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
   | TacAuto (debug,n,lems,l) ->
       begin if debug == Tacexpr.Info then
-          msg_warning
+          Feedback.msg_warning
 	    (strbrk"The \"info_auto\" tactic" ++ spc ()
            ++strbrk"does not print traces anymore." ++ spc()
            ++strbrk"Use \"Info 1 auto\", instead.")

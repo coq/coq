@@ -309,7 +309,7 @@ let implicits_of_glob_constr ?(with_products=true) l =
 	  else
             let () = match bk with
             | Implicit ->
-	       msg_warning (strbrk "Ignoring implicit status of product binder " ++ 
+	       Feedback.msg_warning (strbrk "Ignoring implicit status of product binder " ++ 
 			      pr_name na ++ strbrk " and following binders")
             | _ -> ()
             in []

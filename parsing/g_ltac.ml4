@@ -200,7 +200,7 @@ GEXTEND Gram
         Subterm (mode, oid, pc)
       | IDENT "appcontext";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
-        msg_warning (strbrk "appcontext is deprecated");
+        Feedback.msg_warning (strbrk "appcontext is deprecated");
         Subterm (true,oid, pc)
       | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;

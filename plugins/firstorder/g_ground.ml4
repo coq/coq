@@ -64,7 +64,7 @@ END
 
 VERNAC COMMAND EXTEND Firstorder_Print_Solver CLASSIFIED AS QUERY
 | [ "Print" "Firstorder" "Solver" ] -> [
-    Pp.msg_info
+    Feedback.msg_info
       (Pp.(++) (Pp.str"Firstorder solver tactic is ") (print_default_solver ())) ]
 END
 
@@ -120,7 +120,7 @@ ARGUMENT EXTEND firstorder_using
 | [ "using" reference(a) "," ne_reference_list_sep(l,",") ] -> [ a::l ]
 | [ "using" reference(a) reference(b) reference_list(l) ] -> [
     Flags.if_verbose
-      Pp.msg_warning (Pp.str "Deprecated syntax; use \",\" as separator");
+      Feedback.msg_warning (Pp.str "Deprecated syntax; use \",\" as separator");
     a::b::l
   ]
 | [ ] -> [ [] ]

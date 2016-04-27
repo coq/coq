@@ -17,7 +17,7 @@ open Check
 let () = at_exit flush_all
 
 let fatal_error info anomaly =
-  flush_all (); pperrnl info; flush_all ();
+  flush_all (); Feedback.msg_error info; flush_all ();
   exit (if anomaly then 129 else 1)
 
 let coq_root = Id.of_string "Coq"
@@ -67,12 +67,12 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
       Check.add_load_path (dir,coq_dirpath)
     end
   else
-    msg_warning (str "Cannot open " ++ str dir)
+    Feedback.msg_warning (str "Cannot open " ++ str dir)
 
 let convert_string d =
   try Id.of_string d
   with Errors.UserError _ ->
-    if_verbose msg_warning
+    if_verbose Feedback.msg_warning
       (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise Exit
 
@@ -90,7 +90,7 @@ let add_rec_path ~unix_path ~coq_root =
     List.iter Check.add_load_path dirs;
     Check.add_load_path (unix_path, coq_root)
   else
-    msg_warning (str "Cannot open " ++ str unix_path)
+    Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
@@ -123,7 +123,7 @@ let init_load_path () =
     add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;
   (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
   List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix)
-    (xdg_dirs ~warn:(fun x -> msg_warning (str x)));
+    (xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)));
   (* then directories in COQPATH *)
   List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix) coqpath;
   (* then current directory *)
@@ -294,7 +294,7 @@ let rec explain_exn = function
           Format.printf "@\nis not convertible with@\n";
           Print.print_pure_constr a;
           Format.printf "@\n====== universes ====@\n";
-          Pp.pp (Univ.pr_universes
+          Feedback.msg_notice (Univ.pr_universes
             (ctx.Environ.env_stratification.Environ.env_universes));
           str "\nCantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"

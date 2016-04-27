@@ -547,7 +547,7 @@ let pp_info () =
 	int s_info.created_branches ++ str " created" ++ fnl () ++
 	str "Hypotheses : " ++
 	int s_info.created_hyps ++ str " created" ++ fnl () in
-    msg_info
+    Feedback.msg_info
       ( str "Proof-search statistics :" ++ fnl () ++
 	count_info ++
 	str "Branch ends: " ++

@@ -44,7 +44,7 @@ let compact el ({ solution } as pv) =
        evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
-  msg_info (Pp.str (Printf.sprintf "Evars: %d -> %d\n" size new_size));
+  Feedback.msg_info (Pp.str (Printf.sprintf "Evars: %d -> %d\n" size new_size));
   new_el, { pv with solution = new_solution; }
 
 
@@ -845,7 +845,7 @@ let tclTIME s t =
       else
         str (msg ^ " after ") ++ int n ++ str (String.plural n " backtracking")
     in
-    msg_info(str "Tactic call" ++ pr_opt str s ++ str " ran for " ++
+    Feedback.msg_info(str "Tactic call" ++ pr_opt str s ++ str " ran for " ++
              System.fmt_time_difference t1 t2 ++ str " " ++ surround msg) in
   let rec aux n t =
     let open Proof in

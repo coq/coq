@@ -424,7 +424,7 @@ let hints_tac hints =
 	  | None -> aux i foundone tl
 	  | Some {it = gls; sigma = s';} ->
 	    if !typeclasses_debug then
-	      msg_debug (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
+	      Feedback.msg_debug (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
 			 ++ str" on" ++ spc () ++ pr_ev s gl);
 	    let sgls =
 	      evars_to_goals
@@ -472,7 +472,7 @@ let hints_tac hints =
 		  else true
 		in
 		  if !typeclasses_debug then
-		    msg_debug 
+		    Feedback.msg_debug 
 		      ((if do_backtrack then str"Backtracking after "
 			else str "Not backtracking after ")
 		       ++ Lazy.force pp);
@@ -482,7 +482,7 @@ let hints_tac hints =
 	      sk glsv fk')
       | [] ->
 	if not foundone && !typeclasses_debug then
-	  msg_debug (pr_depth info.auto_depth ++ str": no match for " ++
+	  Feedback.msg_debug (pr_depth info.auto_depth ++ str": no match for " ++
 		       Printer.pr_constr_env (Goal.V82.env s gl) s concl ++
 		       spc () ++ str ", " ++ int (List.length poss) ++ str" possibilities");
 	fk ()

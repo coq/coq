@@ -10,7 +10,7 @@ class type message_view_signals =
 object
   inherit GObj.misc_signals
   inherit GUtil.add_ml_signals
-  method pushed : callback:(Pp.message_level -> string -> unit) -> GtkSignal.id
+  method pushed : callback:(Feedback.level -> string -> unit) -> GtkSignal.id
 end
 
 class type message_view =
@@ -20,7 +20,7 @@ class type message_view =
     method clear : unit
     method add : string -> unit
     method set : string -> unit
-    method push : Pp.message_level -> string -> unit
+    method push : Feedback.level -> string -> unit
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
       (** for more advanced text edition *)
