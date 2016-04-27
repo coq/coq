@@ -795,7 +795,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   apply (StrictOrder_Irreflexive s2); auto.
   intros s1 s2 s3 (s1' & s2' & B1 & B2 & E1 & E2 & L12)
                   (s2'' & s3' & B2' & B3 & E2' & E3 & L23).
-  exists s1'; exists s3'.
+  exists s1', s3'.
   repeat rewrite <- isok_iff in *.
   do 4 (split; trivial).
   assert (eqlistA X.eq s2' s2'').
@@ -809,11 +809,11 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   intros s1 s2 E12 s3 s4 E34. split.
   intros (s1' & s3' & B1 & B3 & E1 & E3 & LT).
-  exists s1'; exists s3'; do 2 (split; trivial).
+  exists s1', s3'; do 2 (split; trivial).
    split. transitivity s1; auto. symmetry; auto.
    split; auto. transitivity s3; auto. symmetry; auto.
   intros (s1' & s3' & B1 & B3 & E1 & E3 & LT).
-  exists s1'; exists s3'; do 2 (split; trivial).
+  exists s1', s3'; do 2 (split; trivial).
    split. transitivity s2; auto.
    split; auto. transitivity s4; auto.
   Qed.
@@ -829,8 +829,8 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   intros s s' Hs Hs'.
   destruct (compare_spec_aux s s'); constructor; auto.
-  exists s; exists s'; repeat split; auto using @ok.
-  exists s'; exists s; repeat split; auto using @ok.
+  exists s, s'; repeat split; auto using @ok.
+  exists s', s; repeat split; auto using @ok.
   Qed.
 
 End MakeRaw.

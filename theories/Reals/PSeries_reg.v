@@ -54,7 +54,7 @@ rewrite Rplus_comm; apply Rplus_lt_compat_l, Rmult_lt_compat_r.
 apply Rlt_trans with z; assumption.
 destruct (boule_of_interval _ _ cmp) as [c [r [P1 P2]]].
 assert (0 < /2) by (apply Rinv_0_lt_compat, Rlt_0_2).
-exists c; exists r; split.
+exists c, r; split.
  destruct h; unfold Boule; simpl; apply Rabs_def1.
   apply Rplus_lt_reg_l with c; rewrite P2;
   replace (c + (z - c)) with (z * / 2 + z * / 2) by field.
