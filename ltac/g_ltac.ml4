@@ -175,7 +175,8 @@ GEXTEND Gram
   (* Tactic arguments to the right of an application *)
   tactic_arg_compat:
     [ [ a = tactic_arg -> a
-      | c = Constr.constr -> (match c with CRef (r,None) -> Reference r | c -> ConstrMayEval (ConstrTerm c))
+      | r = reference -> Reference r
+      | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
