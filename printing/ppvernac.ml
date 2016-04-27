@@ -1237,13 +1237,13 @@ module Make
       with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
     try
       let rl = Egramml.get_extend_vernac_rule s in
-      let rec aux rl cl =
+      let rec aux sep rl cl =
         match rl, cl with
-        | Egramml.GramNonTerminal (_,_,e) :: rl, (GenArg (wit,x)) :: cl -> pr_based_on_grammar (GenArg (wit,x),EntryName e) :: aux rl cl
-        | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
+        | Egramml.GramNonTerminal (_,_,e) :: rl, (GenArg (wit,x)) :: cl -> pr_based_on_grammar (GenArg (wit,x),EntryName e) :: aux sep rl cl
+        | Egramml.GramTerminal s :: rl, cl -> sep() ++ str s :: aux spc rl cl
         | [], [] -> []
         | _ -> assert false in
-      hov 1 (pr_sequence (fun x -> x) (aux rl cl))
+      hov 1 (pr_sequence (fun x -> x) (aux mt rl cl))
     with Not_found ->
       hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_based_on_structure cl ++ str ")")
 
