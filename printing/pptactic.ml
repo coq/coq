@@ -345,13 +345,9 @@ module Make
 
   let rec tacarg_using_rule_token pr_gen = function
     | Egramml.GramTerminal s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
-    | Egramml.GramNonTerminal (_,Rawwit wit,e) :: l, a :: al ->
-      let lev = match e,wit with
-        | Extend.Aentryl (_,lev), ExtraArg t when ArgT.repr t = "tactic" -> lev
-        | Extend.Aentry _, ExtraArg t when ArgT.repr t = "tactic" -> 5
-        | _ -> 0 in
+    | Egramml.GramNonTerminal _ :: l, a :: al ->
       let r = tacarg_using_rule_token pr_gen (l,al) in
-      pr_gen (lev,E) a :: r
+      pr_gen a :: r
     | [], [] -> []
     | _ -> failwith "Inconsistent arguments of extended tactic"
 
@@ -376,7 +372,7 @@ module Make
       in
       let args = match l with
         | [] -> mt ()
-        | _ -> spc() ++ pr_sequence (pr_gen (1,Any)) l
+        | _ -> spc() ++ pr_sequence pr_gen l
       in
       str "<" ++ name ++ str ">" ++ args
 
@@ -388,13 +384,13 @@ module Make
       let p = pr_tacarg_using_rule pr_gen (pp.pptac_prods, l) in
       if pp.pptac_level > lev then surround p else p
     with Not_found ->
-      KerName.print key ++ spc() ++ pr_sequence (pr_gen (1,Any)) l ++ str" (* Generic printer *)"
+      KerName.print key ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
 
   let check_type t arg = match arg with
   | TacGeneric arg -> argument_type_eq t (genarg_tag arg)
   | _ -> argument_type_eq t (ArgumentType wit_tactic)
 
-  let pr_farg prtac lev arg = prtac lev (TacArg (Loc.ghost, arg))
+  let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.ghost, arg))
 
   let pr_raw_extend_rec prc prlc prtac prpat =
     pr_extend_gen check_type (pr_farg prtac)

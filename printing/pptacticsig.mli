@@ -44,9 +44,9 @@ module type Pp = sig
     ml_tactic_entry -> glob_tactic_arg list -> std_ppcmds
 
   val pr_extend :
-    (tolerability -> Val.t -> std_ppcmds) -> int -> ml_tactic_entry -> Val.t list -> std_ppcmds
+    (Val.t -> std_ppcmds) -> int -> ml_tactic_entry -> Val.t list -> std_ppcmds
 
-  val pr_alias : (tolerability -> Val.t -> std_ppcmds) ->
+  val pr_alias : (Val.t -> std_ppcmds) ->
     int -> Names.KerName.t -> Val.t list -> std_ppcmds
 
   val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
