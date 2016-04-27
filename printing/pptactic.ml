@@ -1414,8 +1414,32 @@ let () =
   Genprint.register_print0 Stdarg.wit_string pr_string pr_string pr_string
 
 let () =
-  let printer _ _ prtac = prtac (0, E) in
+  let printer _ _ prtac = prtac (5, E) in
   declare_extra_genarg_pprule wit_tactic printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (0, E) in
+  declare_extra_genarg_pprule wit_tactic0 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (1, E) in
+  declare_extra_genarg_pprule wit_tactic1 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (2, E) in
+  declare_extra_genarg_pprule wit_tactic2 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (3, E) in
+  declare_extra_genarg_pprule wit_tactic3 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (4, E) in
+  declare_extra_genarg_pprule wit_tactic4 printer printer printer
+
+let () =
+  let printer _ _ prtac = prtac (5, E) in
+  declare_extra_genarg_pprule wit_tactic5 printer printer printer
 
 let () =
   let pr_unit _ _ _ () = str "()" in
