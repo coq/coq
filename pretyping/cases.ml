@@ -968,8 +968,6 @@ let rec extract_predicate ccl = function
   | [] ->
       ccl
 
-let build_inversion_problem_forward = ref (fun _ -> failwith "To be set")
-
 let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
   let sign = make_arity_signature env true indf in
   (* n is the number of real args + 1 (+ possible let-ins in sign) *)
@@ -991,20 +989,9 @@ let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
   | Name _ -> ccl
   in
   let pred = extract_predicate ccl tms in
- (* Insert inversion on the pattern-structure of the realargs *)
-  let sigma,pred =
-    if isEvar ccl then
-      let thisind = IndType (indf,realargs) in
-      let thistm = (cur,(IsInd (mkAppliedInd thisind,thisind,names))) in
-      let sign = List.map2 set_name (na::names) sign in
-      let env = push_rel_context sign env in
-      let sigma,pred = !build_inversion_problem_forward Loc.ghost env sigma [thistm] pred in
-      let pred = substl (Context.Rel.to_extended_list 0 sign) pred in
-      sigma, pred
-    else
-      sigma, pred in
   (* Build the predicate properly speaking *)
-  sigma, it_mkLambda_or_LetIn_name env pred sign
+  let sign = List.map2 set_name (na::names) sign in
+  it_mkLambda_or_LetIn_name env pred sign
 
 (* [expand_arg] is used by [specialize_predicate]
    if Yk denotes [Xk;xk] or [Xk],
@@ -1107,8 +1094,7 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
   snd (List.fold_left (expand_arg tms) (1,ccl''') newtomatchs)
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
-  let sigma, pred = abstract_predicate env !evdref indf current realargs dep tms p in
-  evdref := sigma;
+  let pred = abstract_predicate env !evdref indf current realargs dep tms p in
   (pred, whd_betaiota !evdref
            (applist (pred, realargs@[current])))
 
@@ -1896,8 +1882,6 @@ let build_inversion_problem loc env sigma tms t =
   let pred = (compile pb).uj_val in
   (!evdref,pred)
 
-let _ = build_inversion_problem_forward := build_inversion_problem
-
 (* Here, [pred] is assumed to be in the context built from all *)
 (* realargs and terms to match *)
 let build_initial_predicate arsign pred =
@@ -2030,7 +2014,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
 	(* Second strategy: we build an "inversion" predicate *)
 	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
 	(match p1 with
-	 | Some (sigma1,pred1) -> [sigma1, pred1(*; sigma2, pred2*)]
+	 | Some (sigma1,pred1) -> [sigma1, pred1; sigma2, pred2]
 	 | None -> [sigma2, pred2])
     | None, _ ->
 	(* No dependent type constraint, or no constraints at all: *)
@@ -2048,7 +2032,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
 	(* Second strategy: we directly use the evar as a non dependent pred *)
         let pred2 = lift (List.length (List.flatten arsign)) t in
-	[(*sigma1, pred1;*) sigma, pred2]
+	[sigma1, pred1; sigma, pred2]
     (* Some type annotation *)
     | Some rtntyp, _ ->
       (* We extract the signature of the arity *)
