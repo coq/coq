@@ -9,7 +9,6 @@
 (** Basic specifications : sets that may contain logical information *)
 
 Set Implicit Arguments.
-Set Reversible Pattern Implicit.
 
 Require Import Notations.
 Require Import Datatypes.
