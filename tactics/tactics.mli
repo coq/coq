@@ -365,7 +365,7 @@ val pose_proof : Name.t -> constr ->
 
 (** Common entry point for user-level "assert", "enough" and "pose proof" *)
 
-val forward   : bool -> unit Proofview.tactic option option ->
+val forward   : bool -> unit Proofview.tactic option ->
   intro_pattern option -> constr -> unit Proofview.tactic
 
 (** Implements the tactic cut, actually a modus ponens rule *)

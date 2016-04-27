@@ -483,6 +483,10 @@ GEXTEND Gram
     [ [ "as"; id = ident -> Names.Name id | -> Names.Anonymous ] ]
   ;
   by_tactic:
+    [ [ "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
+      | -> TacId [] ] ]
+  ;
+  opt_by_tactic:
     [ [ "by"; tac = tactic_expr LEVEL "3" -> Some tac
     | -> None ] ]
   ;
@@ -617,9 +621,9 @@ GEXTEND Gram
 
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=by_tactic -> TacAtom (!@loc, TacRewrite (false,l,cl,t))
+	  cl = clause_dft_concl; t=opt_by_tactic -> TacAtom (!@loc, TacRewrite (false,l,cl,t))
       | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=by_tactic -> TacAtom (!@loc, TacRewrite (true,l,cl,t))
+	  cl = clause_dft_concl; t=opt_by_tactic -> TacAtom (!@loc, TacRewrite (true,l,cl,t))
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion

@@ -99,7 +99,7 @@ let intro = Tactics.intro
 let assert_ ?by c =
   let tac = match by with
   | None -> None
-  | Some tac -> Some (Some tac)
+  | Some tac -> Some (tclCOMPLETE tac)
   in
   Proofview.tclINDEPENDENT (Tactics.forward true tac None c)
 
