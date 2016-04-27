@@ -54,7 +54,3 @@ end
      : ∀ x : nat, x <= 0 -> {x0 : nat | x <= x0}
 exist (Q x) y conj
      : {x0 : A | Q x x0}
-fun x : nat => (## x) + x
-     : nat -> nat
-fun x : nat => ## x + x
-     : nat -> nat

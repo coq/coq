@@ -106,10 +106,3 @@ Check fun x (H:le x 0) => exist (le x) 0 H.
 
 Parameters (A : Set) (x y : A) (Q : A -> A -> Prop) (conj : Q x y).
 Check (exist (Q x) y conj).
-
-(* Check printing of notations that have arguments at higher level
-   than the notation itself *)
-
-Notation "## a" := (S a) (at level 0, a at level 100).
-Check fun x => (S x) + x.
-Check fun x => S (x + x).
