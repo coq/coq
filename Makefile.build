@@ -498,25 +498,6 @@ test-suite: world $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) all
 	$(MAKE) $(MAKE_TSOPTS) report
 
-BEAUTIFIED=$(THEORIESVO)
-TOBEAUTIFY=$(BEAUTIFIED:.vo=.v.beautified)
-
-check-beautify: $(TOBEAUTIFY)
-	@echo Upgrading with beautified files
-	$(HIDE)for i in $(TOBEAUTIFY);\
-	do j=`dirname $$i`/`basename $$i .v.beautified`.v;\
-	  mv -f $$j $$j.backup;\
-	  if [ $$i -nt $$j ]; then mv -f $$i $$j; fi;\
-	  rm -f "$$j"o;\
-	done
-	@echo Recompiling beautified files
-	$(HIDE)$(MAKE) $(BEAUTIFIED)
-	@echo Restoring initial files
-	$(HIDE)for i in $(TOBEAUTIFY);\
-	do j=`dirname $$i`/`basename $$i .v.beautified`.v;\
-	  mv -f $$j.backup $$j;\
-	done;
-
 ##################################################################
 # partial targets: 1) core ML parts
 ##################################################################
@@ -1129,23 +1110,10 @@ theories/Init/%.v.beautified: theories/Init/%.v $(VO_TOOLS_DEP) | theories/Init/
 	$(HIDE)rm -f theories/Init/$*.glob
 	$(HIDE)$(BOOTCOQC) $< -beautify -noinit -R theories Coq
 
-%.v.beautified: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
+%.v.beautified: %.v | %.v.d
 	$(SHOW)'COQC -beautify $<'
 	$(HIDE)rm -f $*.glob
 	$(HIDE)$(BOOTCOQC) $< -beautify
-
-theories/Init/%.v.backup: theories/Init/%.v.beautified $(VO_TOOLS_DEP) | theories/Init/%.v.d
-	$(SHOW)'COQC -noinit $<'
-	mv -f theories/Init/$*.v theories/Init/$*.v.backup
-	mv -f theories/Init/$*.v.beautified theories/Init/$*.v
-	rm -f theories/Init/$*.vo
-	$(BOOTCOQC) theories/Init/$* -noinit -R theories Coq
-
-%.v.backup: %.v.beautified theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
-	$(SHOW)'COQC $<.v.beautified'
-	$(HIDE)mv -f $*.v $*.v.backup
-	$(HIDE)mv -f $*.v.beautified $*.v
-	$(HIDE)$(BOOTCOQC) $*
 
 ###########################################################################
 # this sets up developper supporting stuff
