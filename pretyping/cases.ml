@@ -1763,29 +1763,25 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
  *)
 
 let build_inversion_problem loc env sigma tms t =
-  let make_patvar env t (subst,avoid) =
-    let name = match kind_of_term t with
-      | Rel n -> get_name (lookup_rel n env)
-      | Var id -> Name (Context.Named.Declaration.get_id (lookup_named id env))
-      | _ -> named_hd env t Anonymous in
-    let id = next_name_away name avoid in
+  let make_patvar t (subst,avoid) =
+    let id = next_name_away (named_hd env t Anonymous) avoid in
     PatVar (Loc.ghost,Name id), ((id,t)::subst, id::avoid) in
-  let rec reveal_pattern env t (subst,avoid as acc) =
+  let rec reveal_pattern t (subst,avoid as acc) =
     match kind_of_term (whd_betadeltaiota env sigma t) with
     | Construct (cstr,u) -> PatCstr (Loc.ghost,cstr,[],Anonymous), acc
     | App (f,v) when isConstruct f ->
 	let cstr,u = destConstruct f in
 	let n = constructor_nrealargs_env env cstr in
 	let l = List.lastn n (Array.to_list v) in
-	let l,acc = List.fold_map' (reveal_pattern env) l acc in
+	let l,acc = List.fold_map' reveal_pattern l acc in
 	PatCstr (Loc.ghost,cstr,l,Anonymous), acc
-    | _ -> make_patvar env t acc in
+    | _ -> make_patvar t acc in
   let rec aux n env acc_sign tms acc =
     match tms with
     | [] -> [], acc_sign, acc
     | (t, IsInd (_,IndType(indf,realargs),_)) :: tms ->
-	let patl,acc = List.fold_map' (reveal_pattern env) realargs acc in
-	let pat,acc = make_patvar env t acc in
+	let patl,acc = List.fold_map' reveal_pattern realargs acc in
+	let pat,acc = make_patvar t acc in
 	let indf' = lift_inductive_family n indf in
 	let sign = make_arity_signature env true indf' in
         let patl = pat :: List.rev patl in
@@ -1795,8 +1791,8 @@ let build_inversion_problem loc env sigma tms t =
 	let patl',acc_sign,acc = aux (n+p) env' (sign@acc_sign) tms acc in
 	List.rev_append patl patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
-      let pat,acc = make_patvar env t acc in
-      let d = LocalAssum (alias_of_pat pat,lift n typ) in
+      let pat,acc = make_patvar t acc in
+      let d = LocalAssum (alias_of_pat pat,typ) in
       let patl,acc_sign,acc = aux (n+1) (push_rel d env) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
   let avoid0 = ids_of_context env in
