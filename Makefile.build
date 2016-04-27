@@ -82,7 +82,7 @@ STDTIME=/usr/bin/time -f "$* (user: %U mem: %M ko)"
 TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 
 COQOPTS=$(COQ_XML) $(VM) $(NATIVECOMPUTE)
-BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
+BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -beautify -compile
 
 # The SHOW and HIDE variables control whether make will echo complete commands 
 # or only abbreviated versions. 
@@ -502,7 +502,7 @@ BEAUTIFIED=$(THEORIESVO) $(PLUGINSVO)
 TOBEAUTIFY=$(BEAUTIFIED:.vo=.v.beautified)
 
 check-beautify: $(TOBEAUTIFY)
-	@echo Upgrading with beautified files
+	@echo Upgrading beautified files
 	$(HIDE)for i in $(TOBEAUTIFY);\
 	do j=`dirname $$i`/`basename $$i .v.beautified`.v;\
 	  mv -f $$j $$j.backup;\
