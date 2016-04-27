@@ -8,9 +8,6 @@
 
 module type Pp = sig
 
-  (** Prints a fixpoint body *)
-  val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.std_ppcmds
-
   (** Prints a vernac expression *)
   val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.std_ppcmds
 
