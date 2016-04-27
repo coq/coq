@@ -89,52 +89,16 @@ let msg_may_need_inversion () =
 let make_anonymous_patvars n =
   List.make n (PatVar (Loc.ghost,Anonymous))
 
-type bound_variable =
-  | RelVar of int
-  | NamedVar of Id.t
-
-let eq_bound_variable n1 n2 =
-  match n1, n2 with
-  | RelVar n1, RelVar n2 -> Int.equal n1 n2
-  | NamedVar id1, NamedVar id2 -> Id.equal id1 id2
-  | _ -> false
-
-let lookup_bound_variable env = function
-  | RelVar i -> map_constr (lift i) (Environ.lookup_rel i env)
-  | NamedVar id ->
-     match Environ.lookup_named id env with
-     | Context.Named.Declaration.LocalAssum (id,t) -> LocalAssum (Name id,t)
-     | Context.Named.Declaration.LocalDef (id,c,t) -> LocalDef (Name id,c,t)
-
-let liftn_bound_variable n depth = function
-  | RelVar i -> RelVar (if i<depth then i else i+n)
-  | NamedVar _ as x -> x
-
-let lift_bound_variable n = liftn_bound_variable n 1
-
-let constr_of_bound_variable = function
-  | RelVar n -> mkRel n
-  | NamedVar id -> mkVar id
-
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
 
-let binds_to n k p = match n, kind_of_term p with
-  | RelVar n, Rel j -> Int.equal j (n + k)
-  | NamedVar id, Var id' -> Id.equal id id'
-  | _ -> false
+let relocate_rel n1 n2 k j = if Int.equal j (n1 + k) then n2+k else j
 
-let binds_to' n k p = match n, p with
-  | RelVar n, RelVar j -> Int.equal j (n + k)
-  | NamedVar id, NamedVar id' -> Id.equal id id'
-  | _ -> false
-
-let rec relocate_index n1 n2 k t =
-  if binds_to n1 k t then lift k (constr_of_bound_variable n2)
-  else map_constr_with_binders succ (relocate_index n1 n2) k t
-
-let relocate_bound_variable n1 n2 k t =
-  if binds_to' n1 k t then lift_bound_variable k n2 else t
+let rec relocate_index n1 n2 k t = match kind_of_term t with
+  | Rel j when Int.equal j (n1 + k) -> mkRel (n2+k)
+  | Rel j when j < n1+k -> t
+  | Rel j when j > n1+k -> t
+  | _ -> map_constr_with_binders succ (relocate_index n1 n2) k t
 
 (**********************************************************************)
 (* Structures used in compiling pattern-matching *)
@@ -166,10 +130,10 @@ type tomatch_type =
    if the alias was introduced by an initial pushed and [false]
    otherwise.*)
 type tomatch_status =
-  | Pushed of (bool*((constr * tomatch_type) * bound_variable list * Name.t))
+  | Pushed of (bool*((constr * tomatch_type) * int list * Name.t))
   | Alias of (bool*(Name.t * constr * (constr * types)))
   | NonDepAlias
-  | Abstract of bound_variable * Context.Rel.Declaration.t
+  | Abstract of int * Context.Rel.Declaration.t
 
 type tomatch_stack = tomatch_status list
 
@@ -343,7 +307,7 @@ let inh_coerce_to_ind evdref env loc ty tyi =
 
 let binding_vars_of_inductive = function
   | NotInd _ -> []
-  | IsInd (_,IndType(_,realargs),_) -> List.filter (fun c -> isRel c || isVar c) realargs
+  | IsInd (_,IndType(_,realargs),_) -> List.filter isRel realargs
 
 let extract_inductive_data env sigma decl =
   match decl with
@@ -596,28 +560,23 @@ let dependencies_in_rhs nargs current tms eqns =
 
 let rec find_dependency_list tmblock = function
   | [] -> []
-  | (used,tm,tdeps,d)::rest ->
+  | (used,tdeps,d)::rest ->
       let deps = find_dependency_list tmblock rest in
       if used && List.exists (fun x -> dependent_decl x d) tmblock
       then
-        try
-          let n = match kind_of_term tm with
-            | Rel n -> RelVar n
-            | Var id -> NamedVar id
-            | _ -> raise Exit in
-          List.add_set eq_bound_variable n (List.union eq_bound_variable deps tdeps)
-        with Exit -> deps
+        List.add_set Int.equal
+          (List.length rest + 1) (List.union Int.equal deps tdeps)
       else deps
 
 let find_dependencies is_dep_or_cstr_in_rhs (tm,(_,tmtypleaves),d) nextlist =
   let deps = find_dependency_list (tm::tmtypleaves) nextlist in
   if is_dep_or_cstr_in_rhs || not (List.is_empty deps)
-  then ((true ,tm,deps,d)::nextlist)
-  else ((false,tm,[]  ,d)::nextlist)
+  then ((true ,deps,d)::nextlist)
+  else ((false,[]  ,d)::nextlist)
 
 let find_dependencies_signature deps_in_rhs typs =
   let l = List.fold_right2 find_dependencies deps_in_rhs typs [] in
-  List.map (fun (_,_,deps,_) -> deps) l
+  List.map (fun (_,deps,_) -> deps) l
 
 (* Assume we had terms t1..tq to match in a context xp:Tp,...,x1:T1 |-
    and xn:Tn has just been regeneralized into x:Tn so that the terms
@@ -637,7 +596,7 @@ let relocate_index_tomatch n1 n2 =
   | Pushed (b,((c,tm),l,na)) :: rest ->
       let c = relocate_index n1 n2 depth c in
       let tm = map_tomatch_type (relocate_index n1 n2 depth) tm in
-      let l = List.map (relocate_bound_variable n1 n2 depth) l in
+      let l = List.map (relocate_rel n1 n2 depth) l in
       Pushed (b,((c,tm),l,na)) :: genrec depth rest
   | Alias (initial,(na,c,d)) :: rest ->
       (* [c] is out of relocation scope *)
@@ -645,7 +604,7 @@ let relocate_index_tomatch n1 n2 =
   | NonDepAlias :: rest ->
       NonDepAlias :: genrec depth rest
   | Abstract (i,d) :: rest ->
-      let i = relocate_bound_variable n1 n2 depth i in
+      let i = relocate_rel n1 n2 depth i in
       Abstract (i, map_constr (relocate_index n1 n2 depth) d)
       :: genrec (depth+1) rest in
   genrec 0
@@ -653,7 +612,7 @@ let relocate_index_tomatch n1 n2 =
 (* [replace_tomatch n c tomatch] replaces [Rel n] by [c] in [tomatch] *)
 
 let rec replace_term n c k t =
-  if binds_to n k t then lift k c
+  if isRel t && Int.equal (destRel t) (n + k) then lift k c
   else map_constr_with_binders succ (replace_term n c) k t
 
 let length_of_tomatch_type_sign na t =
@@ -671,7 +630,7 @@ let replace_tomatch n c =
   | Pushed (initial,((b,tm),l,na)) :: rest ->
       let b = replace_term n c depth b in
       let tm = map_tomatch_type (replace_term n c depth) tm in
-      List.iter (fun i -> if binds_to' n depth i then anomaly (Pp.str "replace_tomatch")) l;
+      List.iter (fun i -> if Int.equal i (n + depth) then anomaly (Pp.str "replace_tomatch")) l;
       Pushed (initial,((b,tm),l,na)) :: replrec depth rest
   | Alias (initial,(na,b,d)) :: rest ->
       (* [b] is out of replacement scope *)
@@ -695,7 +654,7 @@ let rec liftn_tomatch_stack n depth = function
   | Pushed (initial,((c,tm),l,na))::rest ->
       let c = liftn n depth c in
       let tm = liftn_tomatch_type n depth tm in
-      let l = List.map (liftn_bound_variable n depth) l in
+      let l = List.map (fun i -> if i<depth then i else i+n) l in
       Pushed (initial,((c,tm),l,na))::(liftn_tomatch_stack n depth rest)
   | Alias (initial,(na,c,d))::rest ->
       Alias (initial,(na,liftn n depth c,map_pair (liftn n depth) d))
@@ -703,7 +662,7 @@ let rec liftn_tomatch_stack n depth = function
   | NonDepAlias  :: rest ->
       NonDepAlias :: liftn_tomatch_stack n depth rest
   | Abstract (i,d)::rest ->
-      let i = liftn_bound_variable n depth i in
+      let i = if i<depth then i else i+n in
       Abstract (i, map_constr (liftn n depth) d)
       ::(liftn_tomatch_stack n (depth+1) rest)
 
@@ -801,8 +760,7 @@ let push_generalized_decl_eqn env n decl eqn =
   | Anonymous ->
       push_rels_eqn [decl] eqn
   | Name _ ->
-      let na = get_name (lookup_bound_variable eqn.rhs.rhs_env n) in
-      push_rels_eqn [set_name na decl] eqn
+      push_rels_eqn [set_name (get_name (Environ.lookup_rel n eqn.rhs.rhs_env)) decl] eqn
 
 let drop_alias_eqn eqn =
   { eqn with alias_stack = List.tl eqn.alias_stack }
@@ -876,7 +834,7 @@ let liftn_predicate n = map_predicate (liftn n)
 
 let lift_predicate n = liftn_predicate n 1
 
-let regeneralize_index_predicate n = map_predicate (relocate_index n (RelVar 1)) 0
+let regeneralize_index_predicate n = map_predicate (relocate_index n 1) 0
 
 let substnl_predicate sigma = map_predicate (substnl sigma)
 
@@ -914,8 +872,7 @@ let generalize_predicate (names,na) ny d tms ccl =
   | _ -> () in
   let p = List.length names + 1 in
   let ccl = lift_predicate 1 ccl tms in
-  let ny' = lift_bound_variable (p+1) ny in
-  regeneralize_index_predicate ny' ccl tms
+  regeneralize_index_predicate (ny+p+1) ccl tms
 
 (*****************************************************************************)
 (* We just matched over cur:ind(realargs) in the following matching problem  *)
@@ -965,8 +922,7 @@ let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
   (* build_branch                                                    *)
   let tms = List.fold_right2 (fun par arg tomatch ->
     match kind_of_term par with
-    | Rel i -> relocate_index_tomatch (RelVar (i+n)) (RelVar (destRel arg)) tomatch
-    | Var id -> relocate_index_tomatch (NamedVar id) (RelVar (destRel arg)) tomatch
+    | Rel i -> relocate_index_tomatch (i+n) (destRel arg) tomatch
     | _ -> tomatch) (realargs@[cur]) (Context.Rel.to_extended_list 0 sign)
        (lift_tomatch_stack n tms) in
   (* Pred is already dependent in the current term to match (if      *)
@@ -1098,7 +1054,7 @@ let adjust_predicate_from_tomatch tomatch (current,typ as ct) pb =
       in
       let n = List.length names in
       { pb with pred = liftn_predicate n k pb.pred pb.tomatch },
-      (ct,List.map (liftn_bound_variable n k) deps,na)
+      (ct,List.map (fun i -> if i >= k then i+n else i) deps,na)
   | _ ->
       pb, (ct,deps,na)
 
@@ -1108,23 +1064,23 @@ let adjust_predicate_from_tomatch tomatch (current,typ as ct) pb =
 let rec ungeneralize n ng body =
   match kind_of_term body with
   | Lambda (_,_,c) when Int.equal ng 0 ->
-      subst1 n c
+      subst1 (mkRel n) c
   | Lambda (na,t,c) ->
       (* We traverse an inner generalization *)
-      mkLambda (na,t,ungeneralize (lift 1 n) (ng-1) c)
+      mkLambda (na,t,ungeneralize (n+1) (ng-1) c)
   | LetIn (na,b,t,c) ->
       (* We traverse an alias *)
-      mkLetIn (na,b,t,ungeneralize (lift 1 n) ng c)
+      mkLetIn (na,b,t,ungeneralize (n+1) ng c)
   | Case (ci,p,c,brs) ->
       (* We traverse a split *)
       let p =
         let sign,p = decompose_lam_assum p in
         let sign2,p = decompose_prod_n_assum ng p in
-        let p = prod_applist p [lift (List.length sign+ng) n] in
+        let p = prod_applist p [mkRel (n+List.length sign+ng)] in
         it_mkLambda_or_LetIn (it_mkProd_or_LetIn p sign2) sign in
       mkCase (ci,p,c,Array.map2 (fun q c ->
         let sign,b = decompose_lam_n_decls q c in
-        it_mkLambda_or_LetIn (ungeneralize (lift q n) ng b) sign)
+        it_mkLambda_or_LetIn (ungeneralize (n+q) ng b) sign)
         ci.ci_cstr_ndecls brs)
   | App (f,args) ->
       (* We traverse an inner generalization *)
@@ -1133,7 +1089,7 @@ let rec ungeneralize n ng body =
   | _ -> assert false
 
 let ungeneralize_branch n k (sign,body) cs =
-  (sign,ungeneralize (lift cs.cs_nargs n) k body)
+  (sign,ungeneralize (n+cs.cs_nargs) k body)
 
 let rec is_dependent_generalization ng body =
   match kind_of_term body with
@@ -1160,19 +1116,18 @@ let rec is_dependent_generalization ng body =
 let is_dependent_branch k (_,br) =
   is_dependent_generalization k br
 
-let postprocess_dependencies evd tocheck brs tomatch pred (deps:bound_variable list) cs =
+let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
-      let n' = constr_of_bound_variable n in
       let d = map_constr (nf_evar evd) d in
       let is_d = match d with LocalAssum _ -> false | LocalDef _ -> true in
       if is_d || List.exists (fun c -> dependent_decl (lift k c) d) tocheck
                  && Array.exists (is_dependent_branch k) brs then
         (* Dependency in the current term to match and its dependencies is real *)
-        let brs,tomatch,pred,inst = aux (k+1) brs tomatch pred (n'::tocheck) deps in
+        let brs,tomatch,pred,inst = aux (k+1) brs tomatch pred (mkRel n::tocheck) deps in
         let inst = match d with
-        | LocalAssum _ -> n' :: inst
+        | LocalAssum _ -> mkRel n :: inst
         | _ -> inst
         in
         brs, Abstract (i,d) :: tomatch, pred, inst
@@ -1181,9 +1136,9 @@ let postprocess_dependencies evd tocheck brs tomatch pred (deps:bound_variable l
         (* terms by its actual value in both the remaining terms to match and *)
         (* the bodies of the Case *)
         let pred = lift_predicate (-1) pred tomatch in
-        let tomatch = relocate_index_tomatch (RelVar 1) (lift_bound_variable 1 n) tomatch in
+        let tomatch = relocate_index_tomatch 1 (n+1) tomatch in
         let tomatch = lift_tomatch_stack (-1) tomatch in
-        let brs = Array.map2 (ungeneralize_branch n' k) brs cs in
+        let brs = Array.map2 (ungeneralize_branch n k) brs cs in
         aux k brs tomatch pred tocheck deps
   | _ -> assert false
   in aux 0 brs tomatch pred tocheck deps
@@ -1235,15 +1190,14 @@ let rec generalize_problem names pb = function
   | [] -> pb, []
   | i::l ->
       let pb',deps = generalize_problem names pb l in
-      let d = lookup_bound_variable pb.env i in
+      let d = map_constr (lift i) (Environ.lookup_rel i pb.env) in
       begin match d with
       | LocalDef (Anonymous,_,_) -> pb', deps
       | _ ->
 	 (* for better rendering *)
 	let d = map_type (whd_betaiota !(pb.evdref)) d in
         let tomatch = lift_tomatch_stack 1 pb'.tomatch in
-        let i' = lift_bound_variable 1 i in
-        let tomatch = relocate_index_tomatch i' (RelVar 1) tomatch in
+        let tomatch = relocate_index_tomatch (i+1) 1 tomatch in
         { pb' with
             tomatch = Abstract (i,d) :: tomatch;
             pred = generalize_predicate names i d pb'.tomatch pb'.pred  },
@@ -1309,8 +1263,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   (* Do the specialization for terms to match *)
   let tomatch = List.fold_right2 (fun par arg tomatch ->
     match kind_of_term par with
-    | Rel i -> replace_tomatch (RelVar (i+const_info.cs_nargs)) arg tomatch
-    | Var id -> replace_tomatch (NamedVar id) arg tomatch
+    | Rel i -> replace_tomatch (i+const_info.cs_nargs) arg tomatch
     | _ -> tomatch) (current::realargs) (ci::cirealargs)
       (lift_tomatch_stack const_info.cs_nargs pb.tomatch) in
 
@@ -2596,7 +2549,7 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
     let typs' =
       List.map3
         (fun (tm,tmt) deps na ->
-          let deps = if not (isRel tm || isVar tm) then [] else deps in
+          let deps = if not (isRel tm) then [] else deps in
           ((tm,tmt),deps,na))
         tomatchs dep_sign nal in
 
@@ -2633,3 +2586,4 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
 
   (* We coerce to the tycon (if an elim predicate was provided) *)
   inh_conv_coerce_to_tycon loc env evdref j tycon
+
