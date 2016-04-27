@@ -259,8 +259,7 @@ module Make
     | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
   let pr_decl_notation prc ((loc,ntn),c,scopt) =
-    fnl () ++ keyword "where " ++ qs ntn ++ str " := "
-    ++ Flags.without_option Flags.beautify_file prc c ++
+    fnl () ++ keyword "where " ++ qs ntn ++ str " := " ++ prc c ++
       pr_opt (fun sc -> str ": " ++ str sc) scopt
 
   let pr_binders_arg =
@@ -675,7 +674,7 @@ module Make
           in
           return (
             hov 2 (keyword "Notation" ++ spc() ++ ps ++
-                     str " :=" ++ Flags.without_option Flags.beautify_file pr_constrarg c ++ pr_syntax_modifiers l ++
+                     str " :=" ++ pr_constrarg c ++ pr_syntax_modifiers l ++
                      (match opt with
                        | None -> mt()
                        | Some sc -> str" :" ++ spc() ++ str sc))
@@ -757,7 +756,7 @@ module Make
           let pr_constructor (coe,(id,c)) =
             hov 2 (pr_lident id ++ str" " ++
                      (if coe then str":>" else str":") ++
-                     Flags.without_option Flags.beautify_file pr_spc_lconstr c)
+                     pr_spc_lconstr c)
           in
           let pr_constructor_list b l = match l with
             | Constructors [] -> mt()
@@ -795,14 +794,12 @@ module Make
             | Some Local -> "Local "
             | None | Some Global -> ""
           in
-          let pr_pure_lconstr c =
-            Flags.without_option Flags.beautify_file pr_lconstr c in
           let pr_onerec = function
             | (((loc,id),pl),ro,bl,type_,def),ntn ->
               let annot = pr_guard_annot pr_lconstr_expr bl ro in
               pr_id id ++ pr_univs pl ++ pr_binders_arg bl ++ annot
               ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
-              ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) def ++
+              ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) def ++
                 prlist (pr_decl_notation pr_constr) ntn
           in
           return (
