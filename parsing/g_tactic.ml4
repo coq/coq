@@ -111,8 +111,8 @@ let check_for_coloneq =
       | KEYWORD "(" -> skip_binders 2
       | _ -> err ())
 
-let lookup_at_as_comma =
-  Gram.Entry.of_parser "lookup_at_as_comma"
+let lookup_at_as_coma =
+  Gram.Entry.of_parser "lookup_at_as_coma"
     (fun strm ->
       match get_tok (stream_nth 0 strm) with
 	| KEYWORD (","|"at"|"as") -> ()
@@ -595,7 +595,7 @@ GEXTEND Gram
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
 	  let gen_everywhere c = ((AllOccurrences,c),Names.Anonymous) in
           TacAtom (!@loc, TacGeneralize (List.map gen_everywhere (c::l)))
-      | IDENT "generalize"; c = constr; lookup_at_as_comma; nl = occs;
+      | IDENT "generalize"; c = constr; lookup_at_as_coma; nl = occs;
           na = as_name;
           l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->
           TacAtom (!@loc, TacGeneralize (((nl,c),na)::l))
