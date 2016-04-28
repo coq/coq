@@ -149,20 +149,15 @@ let add_tactic_entry (kn, ml, tg) =
   let open Tacexpr in
   let entry, pos = get_tactic_entry tg.tacgram_level in
   let mkact loc l =
-    let filter = function
-    | GramTerminal _ -> None
-    | GramNonTerminal (_, t, _) -> Some (Genarg.unquote t)
-    in
-    let types = List.map_filter filter tg.tacgram_prods in
-    let map arg t =
+    let map arg =
       (** HACK to handle especially the tactic(...) entry *)
       let wit = Genarg.rawwit Constrarg.wit_tactic in
-      if Genarg.argument_type_eq t (Genarg.unquote wit) && not ml then
+      if Genarg.has_type arg wit && not ml then
         Tacexp (Genarg.out_gen wit arg)
       else
         TacGeneric arg
     in
-    let l = List.map2 map l types in
+    let l = List.map map l in
     (TacAlias (loc,kn,l):raw_tactic_expr)
   in
   let () =
