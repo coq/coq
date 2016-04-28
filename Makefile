@@ -1297,9 +1297,17 @@ install-library:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	cp $(LIBCOQRUN) $(FULLCOQLIB)
-	cp --parents $(CONFIG) $(OBJECTCMI) $(LINKCMO) $(COQIDECMA) $(COQIDECMO:.cmo=.cmi) $(GRAMMARCMA) $(FULLCOQLIB)
+	for f in $(CONFIG) $(OBJECTCMI) $(LINKCMO) $(COQIDECMA) \
+	         $(COQIDECMO:.cmo=.cmi) $(GRAMMARCMA); do \
+	    $(MKDIR) -p $(FULLCOQLIB)/`dirname $$f`; \
+	    cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+	done
 ifeq ($(BEST),opt)
-	cp --parents $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a) $(COQIDECMXALL) $(FULLCOQLIB)
+	for f in $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) \
+	         $(LINKCMO:.cma=.a) $(COQIDECMXALL); do \
+	    $(MKDIR) -p $(FULLCOQLIB)/`dirname $$f`; \
+	    cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+	done
 endif
 
 install-library-light:
