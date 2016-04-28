@@ -248,11 +248,14 @@ explicitly the type of the quantified variable. We check:
 \begin{coq_example}
 Check (forall m:nat, gt m 0).
 \end{coq_example}
-We may clean-up the development by removing the contents of the
-current section:
+We may revert to the clean state of
+our initial session using the \Coq~ \verb:Reset: command:
 \begin{coq_example}
-Reset Declaration.
+Reset Initial.
 \end{coq_example}
+\begin{coq_eval}
+Set Printing Width 60.
+\end{coq_eval}
 
 \section{Introduction to the proof engine: Minimal Logic}
 
@@ -658,10 +661,8 @@ respectively 1 and 2. Such abstract entities may be entered in the context
 as global variables. But we must be careful about the pollution of our
 global environment by such declarations. For instance, we have already 
 polluted our \Coq~ session by declaring the variables
-\verb:n:, \verb:Pos_n:, \verb:A:, \verb:B:, and \verb:C:. If we want to revert to the clean state of
-our initial session, we may use the \Coq~ \verb:Reset: command, which returns
-to the state just prior the given global notion as we did before to
-remove a section, or we may return to the initial state using~:
+\verb:n:, \verb:Pos_n:, \verb:A:, \verb:B:, and \verb:C:.
+
 \begin{coq_example}
 Reset Initial.
 \end{coq_example}
@@ -770,7 +771,7 @@ Let us now close the current section.
 End R_sym_trans.
 \end{coq_example}
 
-Here \Coq's printout is a warning that all local hypotheses have been 
+All the local hypotheses have been
 discharged in the statement of \verb:refl_if:, which now becomes a general
 theorem in the first-order language declared in section 
 \verb:Predicate_calculus:. In this particular example, the use of section
@@ -1105,7 +1106,13 @@ mathematical justification of a logical development relies only on
 
 Conversely, ordinary mathematical definitions can be unfolded at will, they
 are {\sl transparent}. 
+
 \chapter{Induction}
+
+\begin{coq_eval}
+Reset Initial.
+Set Printing Width 60.
+\end{coq_eval}
 
 \section{Data Types as Inductively Defined Mathematical Collections}
 
@@ -1195,7 +1202,7 @@ That is, instead of computing for natural \verb:i: an element of the indexed
 \verb:Set: \verb:(P i):, \verb:prim_rec: computes uniformly an element of 
 \verb:nat:. Let us check the type of \verb:prim_rec::
 \begin{coq_example}
-Check prim_rec.
+About prim_rec.
 \end{coq_example}
 
 Oops! Instead of the expected type \verb+nat->(nat->nat->nat)->nat->nat+ we
@@ -1241,21 +1248,15 @@ Fixpoint plus (n m:nat) {struct n} : nat :=
 For the rest of the session, we shall clean up what we did so far with 
 types \verb:bool: and \verb:nat:, in order to use the initial definitions
 given in \Coq's \verb:Prelude: module, and not to get confusing error
-messages due to our redefinitions. We thus revert to the state before
-our definition of \verb:bool: with the \verb:Reset: command:
+messages due to our redefinitions. We thus revert to the initial state:
 \begin{coq_example}
-Reset bool.
-\end{coq_example}
-
-
-\subsection{Simple proofs by induction}
-
-\begin{coq_eval}
 Reset Initial.
-\end{coq_eval}
+\end{coq_example}
 \begin{coq_eval}
 Set Printing Width 60.
 \end{coq_eval}
+
+\subsection{Simple proofs by induction}
 
 Let us now show how to do proofs by structural induction. We start with easy
 properties of the \verb:plus: function we just defined. Let us first
@@ -1480,6 +1481,11 @@ Qed.
 
 \chapter{Modules}
 
+\begin{coq_eval}
+Reset Initial.
+Set Printing Width 60.
+\end{coq_eval}
+
 \section{Opening library modules}
 
 When you start \Coq~ without further requirements in the command line,
@@ -1543,9 +1549,13 @@ definitions available in the current context, especially if large
 libraries have been loaded. A convenient \verb:Search: command
 is available to lookup all known facts 
 concerning a given predicate. For instance, if you want to know all the
-known lemmas about the less or equal relation, just ask:
+known lemmas about both the successor and the less or equal relation, just ask:
+\begin{coq_eval}
+Reset Initial.
+Set Printing Width 60.
+\end{coq_eval}
 \begin{coq_example}
-Search le.
+Search S le.
 \end{coq_example}
 Another command \verb:SearchHead: displays only lemmas where the searched
 predicate appears at the head position in the conclusion.
@@ -1553,9 +1563,9 @@ predicate appears at the head position in the conclusion.
 SearchHead le.
 \end{coq_example}
 
-A new and more convenient search tool is \textsf{SearchPattern}
+A new and more convenient search tool is \verb:SearchPattern:
 developed by Yves Bertot. It allows finding the theorems with a
-conclusion matching a given pattern, where \verb:\_: can be used in
+conclusion matching a given pattern, where \verb:_: can be used in
 place of an arbitrary term. We remark in this example, that \Coq{}
 provides usual infix notations for arithmetic operators.
 
