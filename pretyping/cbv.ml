@@ -310,7 +310,7 @@ and cbv_stack_value info env = function
     | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,pi,stk)))
         when red_set (info_flags info) fIOTA && Projection.unfolded p ->
       let arg = args.(pi.Declarations.proj_npars + pi.Declarations.proj_arg) in
-	cbv_stack_value info env (arg, stk)
+	cbv_stack_value info env (strip_appl arg stk)
 
     (* may be reduced later by application *)
     | (FIXP(fix,env,[||]), APP(appl,TOP)) -> FIXP(fix,env,appl)
