@@ -10,6 +10,26 @@ open Values
 
 (** {6 Interactive visit of a vo} *)
 
+let rec read_num max =
+  let quit () =
+    Printf.printf "\nGoodbye!\n%!";
+    exit 0 in
+  Printf.printf "# %!";
+  let l = try read_line () with End_of_file -> quit () in
+  if l = "u" then None
+  else if l = "x" then quit ()
+  else
+    try
+      let v = int_of_string l in
+      if v < 0 || v >= max then
+        let () =
+          Printf.printf "Out-of-range input! (only %d children)\n%!" max in
+        read_num max
+      else Some v
+    with Failure "int_of_string" ->
+      Printf.printf "Unrecognized input! <n> enters the <n>-th child, u goes up 1 level, x exits\n%!";
+      read_num max
+
 type 'a repr =
 | INT of int
 | STRING of string
@@ -246,15 +266,13 @@ let rec visit v o pos =
     (fun i vop -> Printf.printf "  %d: %s\n" i (node_info vop))
     children;
   Printf.printf "-------------\n";
-  Printf.printf ("# %!");
-  let l = read_line () in
   try
-    if l = "u" then let info = pop () in visit info.typ info.obj info.pos
-    else if l = "x" then (Printf.printf "\nGoodbye!\n\n";exit 0)
-    else
-      let v',o',pos' = children.(int_of_string l) in
-      push (get_name v) v o pos;
-      visit v' o' pos'
+    match read_num (Array.length children) with
+    | None -> let info = pop () in visit info.typ info.obj info.pos
+    | Some child ->
+       let v',o',pos' = children.(child) in
+       push (get_name v) v o pos;
+       visit v' o' pos'
   with
   | Failure "empty stack" -> ()
   | Failure "forbidden" -> let info = pop () in visit info.typ info.obj info.pos
@@ -341,13 +359,13 @@ let visit_vo f =
       let size = if Sys.word_size = 64 then header.size64 else header.size32 in
       Printf.printf "  %d: %s, starting at byte %d (size %iw)\n" i name pos size)
       segments;
-    Printf.printf "# %!";
-    let l = read_line () in
-    let seg = int_of_string l in
-    seek_in ch segments.(seg).pos;
-    let o = Repr.input ch in
-    let () = Visit.init () in
-    Visit.visit segments.(seg).typ o []
+    match read_num (Array.length segments) with
+    | Some seg ->
+       seek_in ch segments.(seg).pos;
+       let o = Repr.input ch in
+       let () = Visit.init () in
+       Visit.visit segments.(seg).typ o []
+    | None -> ()
   done
 
 let main =
