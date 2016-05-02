@@ -28,7 +28,7 @@ let pr_engagement (impr_set,type_in_type) =
     match impr_set with
     | ImpredicativeSet -> str "Theory: Set is impredicative"
     | PredicativeSet -> str "Theory: Set is predicative"
-  end ++
+  end ++ fnl() ++
   begin
     match type_in_type with
     | StratifiedType -> str "Theory: Stratified type hierarchy"

@@ -566,10 +566,11 @@ let check_camlp5_version () =
   | _ -> die "Error: unsupported Camlp5 (version < 5.01 or unrecognized).\n"
 
 let check_caml_version_for_camlp4 () =
-  if caml_version_nums = [4;1;0] && !Prefs.debug then
-    die ("Your version of OCaml is 4.01.0 which fails to compile Coq in -debug\n" ^
-            "mode with Camlp4. Remove -debug option or use a different version of OCaml\n" ^
-            "or use Camlp5.\n")
+  if caml_version_nums = [4;1;0] && !Prefs.debug && not !Prefs.force_caml_version then
+    die ("Your version of OCaml is detected to be 4.01.0 which fails to compile\n" ^
+         "Coq in -debug mode with Camlp4. Remove -debug option or use a different\n" ^
+         "version of OCaml or use Camlp5, or bypass this test by using option\n" ^
+         "-force-caml-version.\n")
 
 let config_camlpX () =
   try

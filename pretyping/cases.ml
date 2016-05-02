@@ -1765,12 +1765,12 @@ let build_inversion_problem loc env sigma tms t =
       Pushed (true,((tm,tmtyp),deps,na)))
       dep_sign decls in
   let subst = List.map (fun (na,t) -> (na,lift n t)) subst in
-  (* [eqn1] is the first clause of the auxiliary pattern-matching that
+  (* [main_eqn] is the main clause of the auxiliary pattern-matching that
      serves as skeleton for the return type: [patl] is the
      substructure of constructors extracted from the list of
      constraints on the inductive types of the multiple terms matched
      in the original pattern-matching problem Xi *)
-  let eqn1 =
+  let main_eqn =
     { patterns = patl;
       alias_stack = [];
       eqn_loc = Loc.ghost;
@@ -1781,19 +1781,24 @@ let build_inversion_problem loc env sigma tms t =
               rhs_vars = List.map fst subst;
               avoid_ids = avoid;
 	      it = Some (lift n t) } } in
-  (* [eqn2] is the default clause of the auxiliary pattern-matching: it will
-     catch the clauses of the original pattern-matching problem Xi whose
-     type constraints are incompatible with the constraints on the
+  (* [catch_all] is a catch-all default clause of the auxiliary
+     pattern-matching, if needed: it will catch the clauses
+     of the original pattern-matching problem Xi whose type
+     constraints are incompatible with the constraints on the
      inductive types of the multiple terms matched in Xi *)
-  let eqn2 =
-    { patterns = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) patl;
-      alias_stack = [];
-      eqn_loc = Loc.ghost;
-      used = ref false;
-      rhs = { rhs_env = pb_env;
-              rhs_vars = [];
-	      avoid_ids = avoid0;
-	      it = None } } in
+  let catch_all_eqn =
+    if List.for_all (irrefutable env) patl then
+      (* No need for a catch all clause *)
+      []
+    else
+      [ { patterns = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) patl;
+          alias_stack = [];
+          eqn_loc = Loc.ghost;
+          used = ref false;
+          rhs = { rhs_env = pb_env;
+                  rhs_vars = [];
+	          avoid_ids = avoid0;
+	          it = None } } ] in
   (* [pb] is the auxiliary pattern-matching serving as skeleton for the
       return type of the original problem Xi *)
   (* let sigma, s = Evd.new_sort_variable sigma in *)
@@ -1810,7 +1815,7 @@ let build_inversion_problem loc env sigma tms t =
       pred      = (*ty *) mkSort s;
       tomatch   = sub_tms;
       history   = start_history n;
-      mat       = [eqn1;eqn2];
+      mat       = main_eqn :: catch_all_eqn;
       caseloc   = loc;
       casestyle = RegularStyle;
       typing_function = build_tycon loc env pb_env s subst} in

@@ -95,9 +95,22 @@
       <keyword>Type</keyword>
     </context>
 
-    <context id="coq" class="no-spell-check">
+    <!-- Terms -->
+    <context id="constr">
       <include>
         <context ref="string"/>
+        <context ref="coqdoc"/>
+        <context ref="comment"/>
+        <context ref="constr-sort"/>
+        <context ref="constr-keyword"/>
+        <context id="dot-nosep">
+          <match>\.\.</match>
+        </context>
+      </include>
+    </context>
+
+    <context id="coq" class="no-spell-check">
+      <include>
         <context ref="coqdoc"/>
         <context ref="comment"/>
 
@@ -110,14 +123,7 @@
             <context sub-pattern="gal2" where="start" style-ref="gallina-keyword"/>
             <context sub-pattern="id_list" where="start" style-ref="identifier"/>
             <context sub-pattern="gal4list" where="start" style-ref="gallina-keyword"/>
-            <context ref="constr-keyword"/>
-            <context ref="constr-sort"/>
-            <context id="dot-nosep">
-              <match>\.\.</match>
-            </context>
-            <context ref="string"/>
-            <context ref="coqdoc"/>
-            <context ref="comment"/>
+            <context ref="constr"/>
           </include>
         </context>
 
@@ -127,20 +133,18 @@
           <include>
             <context sub-pattern="0" where="start" style-ref="vernac-keyword"/>
             <context sub-pattern="0" where="end" style-ref="vernac-keyword"/>
-            <context ref="command-in-proof"/>
-            <context ref="string"/>
             <context ref="coqdoc"/>
             <context ref="comment"/>
-            <context ref="constr-keyword"/>
-            <context ref="constr-sort"/>
-            <context id="bullet" extend-parent="false">
-              <match>\%{dot_sep}\s*(?'bul'\%{bullet})</match>
-              <include>
-                <context sub-pattern="bul" style-ref="vernac-keyword"/>
-              </include>
+            <context id="bullet" style-ref="vernac-keyword" extend-parent="false">
+              <match>\%{bullet}</match>
             </context>
-            <context id="bullet-sol" style-ref="vernac-keyword">
-              <match>^\s*\%{bullet}</match>
+            <context extend-parent="false">
+              <start>\%[</start>
+              <end>\%{dot_sep}</end>
+              <include>
+                <context ref="command-in-proof"/>
+                <context ref="constr"/>
+              </include>
             </context>
           </include>
         </context>
@@ -150,11 +154,19 @@
           <end>\%{dot_sep}</end>
           <include>
             <context sub-pattern="0" where="start" style-ref="vernac-keyword"/>
-            <context ref="constr-keyword"/>
-            <context ref="constr-sort"/>
+            <context ref="constr"/>
           </include>
         </context>
 
+        <context ref="command"/>
+      </include>
+    </context>
+
+    <!-- Toplevel commands -->
+    <context id="command" extend-parent="false">
+      <start>\%[</start>
+      <end>\%{dot_sep}</end>
+      <include>
         <context id="command-in-proof" style-ref="vernac-keyword">
           <keyword>About</keyword>
           <keyword>Check</keyword>
@@ -166,7 +178,7 @@
           <keyword>Transparent</keyword>
         </context>
 
-        <context id="command" style-ref="vernac-keyword">
+        <context id="toplevel-command" style-ref="vernac-keyword">
           <keyword>Add</keyword>
           <keyword>Load</keyword>
           <keyword>(Print|Reset)\%{space}+Extraction\%{space}+(Inline|Blacklist)</keyword>
@@ -228,7 +240,10 @@
             <context sub-pattern="qua_list" style-ref="identifier"/>
           </include>
         </context>
+
+        <context ref="constr"/>
       </include>
     </context>
+
   </definitions>
 </language>
