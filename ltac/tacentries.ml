@@ -357,16 +357,17 @@ let add_ml_tactic_notation name prods =
     Some id, GramNonTerminal (loc, etyp, e)
   in
   let prods = List.map (fun p -> List.map interp_prods p) prods in
+  let len = List.length prods in
   let iter i prods =
     let open Tacexpr in
     let (ids, prods) = List.split prods in
     let ids = List.map_filter (fun x -> x) ids in
-    let entry = { mltac_name = name; mltac_index = i } in
+    let entry = { mltac_name = name; mltac_index = len - i - 1 } in
     let map id = Reference (Misctypes.ArgVar (Loc.ghost, id)) in
     let tac = TacML (Loc.ghost, entry, List.map map ids) in
     add_glob_tactic_notation false 0 prods true ids tac
   in
-  List.iteri iter prods;
+  List.iteri iter (List.rev prods);
   extend_atomic_tactic name (List.map (fun p -> List.map snd p) prods)
 
 (**********************************************************************)
