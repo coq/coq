@@ -24,17 +24,14 @@ open Ppdecl_proof
 let pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (Tacmach.project gs) (Evd.sig_it gs) in
   let env = Goal.V82.env sigma g in
-  let preamb,thesis,penv,pc =
-    (str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
-    (str "thesis := "  ++ fnl ()),
-    Printer.pr_context_of env sigma,
-    Printer.pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
-  in
-    preamb ++
-    str"  " ++ hv 0 (penv ++ fnl () ++
-		       str (Printer.emacs_str "")  ++
-		       str "============================" ++ fnl ()  ++
-		       thesis ++ str " " ++  pc) ++ fnl ()
+  let concl = Goal.V82.concl sigma g in
+  let goal =
+    Printer.pr_context_of env sigma ++ cut () ++
+      str "============================" ++ cut ()  ++
+      str "thesis :=" ++ cut () ++
+      Printer.pr_goal_concl_style_env env sigma concl in
+  str "     *** Declarative Mode ***" ++ fnl () ++ fnl () ++
+    str "  " ++ v 0 goal
 
 let pr_subgoals ?(pr_first=true) _ sigma _ _ _ gll =
   match gll with

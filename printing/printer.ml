@@ -381,16 +381,12 @@ let pr_transparent_state (ids, csts) =
 let default_pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (project gs) (sig_it gs) in
   let env = Goal.V82.env sigma g in
-  let preamb,thesis,penv,pc =
-    mt (), mt (),
-    pr_context_of env sigma,
-    pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
-  in
-    preamb ++
-    str"  " ++ hv 0 (penv ++ fnl () ++
-		       str (emacs_str "")  ++
-		       str "============================" ++ fnl ()  ++
-		       thesis ++ str " " ++  pc)
+  let concl = Goal.V82.concl sigma g in
+  let goal =
+    pr_context_of env sigma ++ cut () ++
+      str "============================" ++ cut ()  ++
+      pr_goal_concl_style_env env sigma concl in
+  str "  " ++ v 0 goal
 
 (* display a goal tag *)
 let pr_goal_tag g =
