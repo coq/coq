@@ -46,9 +46,6 @@ let wit_ref = make0 "ref"
 
 let wit_quant_hyp = make0 "quant_hyp"
 
-let wit_sort : (glob_sort, glob_sort, sorts) genarg_type =
-  make0 "sort"
-
 let wit_constr =
   make0 "constr"
 

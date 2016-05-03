@@ -730,9 +730,7 @@ let () =
   Grammar.register0 wit_var (Prim.var);
   Grammar.register0 wit_ref (Prim.reference);
   Grammar.register0 wit_quant_hyp (Tactic.quantified_hypothesis);
-  Grammar.register0 wit_sort (Constr.sort);
   Grammar.register0 wit_constr (Constr.constr);
-  Grammar.register0 wit_constr_may_eval (Tactic.constr_may_eval);
   Grammar.register0 wit_uconstr (Tactic.uconstr);
   Grammar.register0 wit_open_constr (Tactic.open_constr);
   Grammar.register0 wit_constr_with_bindings (Tactic.constr_with_bindings);

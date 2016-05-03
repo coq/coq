@@ -2104,14 +2104,12 @@ let () =
   register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
   register_interp0 wit_clause_dft_concl (lift interp_clause);
   register_interp0 wit_constr (lifts interp_constr);
-  register_interp0 wit_sort (lifts (fun _ _ evd s -> interp_sort evd s));
   register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
   register_interp0 wit_red_expr (lifts interp_red_expr);
   register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
   register_interp0 wit_open_constr (lifts interp_open_constr);
   register_interp0 wit_bindings interp_bindings';
   register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
-  register_interp0 wit_constr_may_eval (lifts interp_constr_may_eval);
   ()
 
 let () =

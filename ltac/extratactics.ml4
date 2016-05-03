@@ -393,6 +393,12 @@ open Leminv
 
 let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
 
+VERNAC ARGUMENT EXTEND sort
+| [ "Set" ] -> [ GSet ]
+| [ "Prop" ] -> [ GProp ]
+| [ "Type" ] -> [ GType [] ]
+END
+
 VERNAC COMMAND EXTEND DeriveInversionClear
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
   => [ seff na ]

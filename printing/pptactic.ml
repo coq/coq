@@ -1365,8 +1365,6 @@ let () =
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) (fun id -> pr_lident (Loc.ghost,id)))
   ;
-  Genprint.register_print0 Constrarg.wit_sort
-    pr_glob_sort pr_glob_sort (pr_sort Evd.empty);
   Genprint.register_print0
     Constrarg.wit_constr
     Ppconstr.pr_constr_expr
@@ -1394,11 +1392,6 @@ let () =
     (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_bindings_no_with pr_constr pr_lconstr (fst (run_delayed it)));
-  Genprint.register_print0 Constrarg.wit_constr_may_eval
-    (pr_may_eval pr_constr_expr pr_lconstr_expr (pr_or_by_notation pr_reference) pr_constr_pattern_expr)
-    (pr_may_eval (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr)
-      (pr_or_var (pr_and_short_name pr_evaluable_reference)) (pr_pat_and_constr_expr pr_glob_constr))
-    pr_constr;
   Genprint.register_print0 Constrarg.wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))

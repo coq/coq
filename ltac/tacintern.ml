@@ -800,7 +800,6 @@ let () =
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_ltac (lift intern_tactic_or_tacarg);
-  Genintern.register_intern0 wit_sort (fun ist s -> (ist, s));
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
   Genintern.register_intern0 wit_constr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c));
@@ -808,7 +807,6 @@ let () =
   Genintern.register_intern0 wit_red_expr (lift intern_red_expr);
   Genintern.register_intern0 wit_bindings (lift intern_bindings);
   Genintern.register_intern0 wit_constr_with_bindings (lift intern_constr_with_bindings);
-  Genintern.register_intern0 wit_constr_may_eval (lift intern_constr_may_eval);
   ()
 
 (***************************************************************************)

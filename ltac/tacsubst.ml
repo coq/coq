@@ -301,7 +301,6 @@ let () =
   Genintern.register_subst0 wit_tactic subst_tactic;
   Genintern.register_subst0 wit_ltac subst_tactic;
   Genintern.register_subst0 wit_constr subst_glob_constr;
-  Genintern.register_subst0 wit_sort (fun _ v -> v);
   Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v);
   Genintern.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c);
   Genintern.register_subst0 wit_open_constr (fun subst c -> subst_glob_constr subst c);
@@ -309,5 +308,4 @@ let () =
   Genintern.register_subst0 wit_quant_hyp subst_declared_or_quantified_hypothesis;
   Genintern.register_subst0 wit_bindings subst_bindings;
   Genintern.register_subst0 wit_constr_with_bindings subst_glob_with_bindings;
-  Genintern.register_subst0 wit_constr_may_eval subst_raw_may_eval;
   ()
