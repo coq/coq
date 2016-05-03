@@ -73,7 +73,7 @@ Definition Trunc_ind {n A}
   (P : Trunc n A -> Type) {Pt : forall aa, IsTrunc n (P aa)}
   : (forall a, P (tr a)) -> (forall aa, P aa)
 := (fun f aa => match aa with tr a => fun _ => f a end Pt).
-Definition merely (A : Type@{i}) : hProp@{i} := BuildhProp (Trunc -1 A).
+Definition merely (A : Type@{i}) : hProp := BuildhProp (Trunc -1 A).
 Definition cconst_factors_contr `{Funext}  {X Y : Type} (f : X -> Y)
            (P : Type) `{Pc : X -> Contr P}
            (g : X -> P) (h : P -> Y) (p : h o g == f)
