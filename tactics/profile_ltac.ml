@@ -14,6 +14,18 @@ let new_call = ref false
 let entered_call() = new_call := true
 let is_new_call() = let b = !new_call in new_call := false; b
 
+(** LtacProf cannot yet handle backtracking into multi-success tactics.  To properly support this, we'd have to somehow recreate our location in the call-stack, and stop/restart the intervening timers.  This is tricky and possibly expensive, so instead we currently just emit a warning that profiling results will be off. *)
+let encountered_multi_success_backtracking = ref false
+let warn_encountered_multi_success_backtracking() =
+  if !encountered_multi_success_backtracking
+  then msg_warning (str "Ltac Profiler cannot yet handle backtracking into multi-success tactics; profiling results may be wildly inaccurate.")
+let encounter_multi_success_backtracking() =
+  if not !encountered_multi_success_backtracking
+  then begin
+    encountered_multi_success_backtracking := true;
+    warn_encountered_multi_success_backtracking()
+  end
+
 
 type entry = {mutable total : float; mutable local : float; mutable ncalls : int; mutable max_total : float}
 let empty_entry() = {total = 0.; local = 0.; ncalls = 0; max_total = 0.}
@@ -93,7 +105,8 @@ let string_of_call ck =
 
 let exit_tactic option_start_time_add_total c =
   (match option_start_time_add_total with
-    | Some (start_time, add_total) ->
+    | Some (start_time, add_total) -> begin
+      try
         let node :: stack' = !stack in
         let parent = List.hd stack' in
         stack := stack';
@@ -101,6 +114,9 @@ let exit_tactic option_start_time_add_total c =
         let diff = time() -. start_time in
         parent.entry.local <- parent.entry.local -. diff;
         add_entry node.entry add_total {total = diff; local = diff; ncalls = 1; max_total = diff};
+      with Failure("hd") -> (* oops, our stack is invalid *)
+	encounter_multi_success_backtracking()
+    end
     | None -> ()
   )
 
@@ -204,6 +220,7 @@ let print_results() =
       table
   in
   cumulate tree;
+  warn_encountered_multi_success_backtracking();
   msgnl(str"");
   msgnl(h 0(
       str"total time: "++padl 11 (format_sec(all_total))
@@ -239,6 +256,7 @@ let print_results_tactic tactic =
     Hashtbl.fold
       (fun _ node all_total -> node.entry.total +. all_total)
       table_tactic 0. in
+  warn_encountered_multi_success_backtracking();
   msgnl(str"");
    msgnl(h 0(
       str"total time:           "++padl 11 (format_sec(all_total))
@@ -252,7 +270,9 @@ let print_results_tactic tactic =
   header();
   print_table tactic_total "" true table_tactic
 
-let reset_profile() = stack := [{entry=empty_entry(); children=Hashtbl.create 20}]
+let reset_profile() =
+  stack := [{entry=empty_entry(); children=Hashtbl.create 20}];
+  encountered_multi_success_backtracking := false
 
 let do_print_results_at_close () =
   if !should_display_profile_at_close
