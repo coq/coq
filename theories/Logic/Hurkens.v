@@ -360,13 +360,12 @@ Module NoRetractToModalProposition.
 Section Paradox.
 
 Variable M : Prop -> Prop.
-Hypothesis unit : forall A:Prop, A -> M A.
-Hypothesis join : forall A:Prop, M (M A) -> M A.
 Hypothesis incr : forall A B:Prop, (A->B) -> M A -> M B.
 
 Lemma strength: forall A (P:A->Prop), M(forall x:A,P x) -> forall x:A,M(P x).
 Proof.
-  eauto.
+  intros A P h x.
+  eapply incr in h; eauto.
 Qed.
 
 (** ** The universe of modal propositions *)
@@ -470,7 +469,7 @@ Hypothesis p2p2 : forall A:NProp, El A -> El (b2p (p2b A)).
 Theorem paradox : forall B:NProp, El B.
 Proof.
   intros B.
-  unshelve (refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _))).
+  unshelve (refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _))).
   + exact (fun P => ~~P).
   + exact bool.
   + exact p2b.
@@ -480,8 +479,6 @@ Proof.
   + cbn. auto.
   + cbn. auto.
   + cbn. auto.
-  + auto.
-  + auto.
 Qed.
 
 End Paradox.
@@ -516,7 +513,7 @@ Hypothesis p2p2 : forall A:NProp, El A -> El (b2p (p2b A)).
 Theorem mparadox : forall B:NProp, El B.
 Proof.
   intros B.
-  unshelve (refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _))).
+  unshelve (refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _))).
   + exact (fun P => P).
   + exact bool.
   + exact p2b.
@@ -526,8 +523,6 @@ Proof.
   + cbn. auto.
   + cbn. auto.
   + cbn. auto.
-  + auto.
-  + auto.
 Qed.
 
 End MParadox.
