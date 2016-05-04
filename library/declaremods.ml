@@ -727,7 +727,10 @@ let declare_modtype interp_modast id args mtys (mty,ann) fs =
   let arg_entries_r = intern_args interp_modast args in
   let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
-  let entry = params, fst (interp_modast env ModType mty) in
+  let mte, _ = interp_modast env ModType mty in
+  (* We check immediately that mte is well-formed *)
+  let _ = Mod_typing.translate_mse env None inl mte in
+  let entry = params, mte in
   let sub_mty_l = build_subtypes interp_modast env mp arg_entries_r mtys in
   let sobjs = get_functor_sobjs false env inl entry in
   let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in

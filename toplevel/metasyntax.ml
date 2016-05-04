@@ -848,7 +848,7 @@ let make_interpretation_vars recvars allvars =
     (sc, make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding typ)) mainvars
 
 let check_rule_productivity l =
-  if List.for_all (function NonTerminal _ -> true | _ -> false) l then
+  if List.for_all (function NonTerminal _ | Break _ -> true | _ -> false) l then
     error "A notation must include at least one symbol.";
   if (match l with SProdList _ :: _ -> true | _ -> false) then
     error "A recursive notation must start with at least one symbol."
@@ -866,8 +866,21 @@ let is_not_printable onlyparse noninjective = function
   else onlyparse
 
 let find_precedence lev etyps symbols =
-  match symbols with
-  | NonTerminal x :: _ ->
+  let first_symbol =
+    let rec aux = function
+      | Break _ :: t -> aux t
+      | h :: t -> h
+      | [] -> assert false (* rule is known to be productive *) in
+    aux symbols in
+  let last_is_terminal () =
+    let rec aux b = function
+      | Break _ :: t -> aux b t
+      | Terminal _ :: t -> aux true t
+      | _ :: t -> aux false t
+      | [] -> b in
+    aux false symbols in
+  match first_symbol with
+  | NonTerminal x ->
       (try match List.assoc x etyps with
 	| ETConstr _ ->
 	    error "The level of the leftmost non-terminal cannot be changed."
@@ -890,9 +903,7 @@ let find_precedence lev etyps symbols =
 	if Option.is_empty lev then
 	  error "A left-recursive notation must have an explicit level."
 	else [],Option.get lev)
-  | Terminal _ ::l when
-      (match List.last symbols with Terminal _ -> true |_ -> false)
-      ->
+  | Terminal _ when last_is_terminal () ->
       if Option.is_empty lev then
 	([msg_info,strbrk "Setting notation at level 0."], 0)
       else [],Option.get lev

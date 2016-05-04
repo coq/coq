@@ -2833,41 +2833,56 @@ This tactic is deprecated. It can be replaced by {\tt enough}
 \tacindex{subst}
 \optindex{Regular Subst Tactic}
 
-This tactic applies to a goal that has \ident\ in its context and
-(at least) one hypothesis, say {\tt H}, of type {\tt
-  \ident=t} or {\tt t=\ident}. Then it replaces
-\ident\ by {\tt t} everywhere in the goal (in the hypotheses
-and in the conclusion) and clears \ident\ and {\tt H} from the context.
+This tactic applies to a goal that has \ident\ in its context and (at
+least) one hypothesis, say $H$, of type {\tt \ident} = $t$ or $t$
+{\tt = \ident} with {\ident} not occurring in $t$.  Then it replaces
+{\ident} by $t$ everywhere in the goal (in the hypotheses and in the
+conclusion) and clears {\ident} and $H$ from the context.
+
+If {\ident} is a local definition of the form {\ident} := $t$, it is
+also unfolded and cleared.
 
 \Rem
-When several hypotheses have the form {\tt \ident=t} or {\tt
-  t=\ident}, the first one is used.
+When several hypotheses have the form {\tt \ident} = $t$ or {\tt
+  $t$ = \ident}, the first one is used.
+
+\Rem
+If $H$ is itself dependent in the goal, it is replaced by the
+proof of reflexivity of equality.
 
 \begin{Variants}
-  \item {\tt subst \ident$_1$ \dots \ident$_n$}
+  \item {\tt subst \ident$_1$ {\dots} \ident$_n$}
 
-    Is equivalent to {\tt subst \ident$_1$; \dots; subst \ident$_n$}.
+    This is equivalent to {\tt subst \ident$_1$; \dots; subst \ident$_n$}.
   \item {\tt subst}
 
-    Applies {\tt subst} repeatedly to all identifiers from the context
-    for which an equality exists.
+    This applies {\tt subst} repeatedly from top to bottom to all
+    identifiers of the context for which an equality of the form {\tt
+      \ident} = $t$ or $t$ {\tt = \ident} or {\tt \ident} := $t$ exists, with
+    {\ident} not occurring in $t$.
 
-\noindent {\bf Remark: } The behavior of {\tt subst} can be controlled using option {\tt Set
-    Regular Subst Tactic}. When this option is activated, {\tt subst}
-  manages the following corner cases which otherwise it
-  does not:
+\noindent {\bf Remark: } The behavior of {\tt subst} can be controlled
+using option {\tt Set Regular Subst Tactic}. When this option is
+activated, {\tt subst} also deals with the following corner cases:
 \begin{itemize}
 \item A context with ordered hypotheses {\tt \ident$_1$ = \ident$_2$}
   and {\tt \ident$_1$ = $t$}, or {$t'$ = \ident$_1$} with $t'$ not a
   variable, and no other hypotheses of the form {\tt \ident$_2$ = $u$}
-  or {\tt $u$ = \ident$_2$}
+  or {\tt $u$ = \ident$_2$}; without the option, a second call to {\tt
+    subst} would be necessary to replace {\ident$_2$} by $t$ or $t'$
+  respectively.
+
 \item A context with cyclic dependencies as with hypotheses {\tt
-  \ident$_1$ = f~\ident$_2$} and {\tt \ident$_2$ = g~\ident$_1$}
+  \ident$_1$ = f~\ident$_2$} and {\tt \ident$_2$ = g~\ident$_1$} which
+  without the option would be a cause of failure of {\tt subst}.
 \end{itemize}
-Additionally, it prevents a local definition such as {\tt \ident :=
-  $t$} to be unfolded which otherwise it would exceptionally unfold in
+Additionally, it prevents a local definition such as {\tt \ident} :=
+  $t$ to be unfolded which otherwise it would exceptionally unfold in
 configurations containing hypotheses of the form {\tt {\ident} = $u$},
 or {\tt $u'$ = \ident} with $u'$ not a variable.
+
+Finally, it preserves the initial order of hypotheses, which without
+the option it may break.
 
 The option is on by default.
 

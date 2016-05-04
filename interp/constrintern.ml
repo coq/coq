@@ -759,7 +759,15 @@ let intern_qualid loc qid intern env lvar us args =
       let subst = (terms, Id.Map.empty, Id.Map.empty) in
       let infos = (Id.Map.empty, env) in
       let projapp = match c with NRef _ -> true | _ -> false in
-	subst_aconstr_in_glob_constr loc intern lvar subst infos c, projapp, args2
+      let c = subst_aconstr_in_glob_constr loc intern lvar subst infos c in
+      let c = match us, c with
+      | None, _ -> c
+      | Some _, GRef (loc, ref, None) -> GRef (loc, ref, us)
+      | Some _, _ ->
+        user_err_loc (loc, "", str "Notation " ++ pr_qualid qid ++
+          str " cannot have a universe instance")
+      in
+      c, projapp, args2
 
 (* Rule out section vars since these should have been found by intern_var *)
 let intern_non_secvar_qualid loc qid intern env lvar us args =

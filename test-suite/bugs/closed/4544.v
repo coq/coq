@@ -841,7 +841,7 @@ End Truncation_Modalities.
 
 Module Import TrM := Modalities_Theory Truncation_Modalities.
 
-Definition merely (A : Type@{i}) : hProp@{i} := BuildhProp (Trunc -1 A).
+Definition merely (A : Type@{i}) : hProp := BuildhProp (Trunc -1 A).
 
 Notation IsSurjection := (IsConnMap -1).
 

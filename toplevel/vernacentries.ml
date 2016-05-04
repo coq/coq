@@ -466,8 +466,8 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
- 	  start_proof_and_print (local,p,DefinitionBody Definition)
-	    [Some (lid,pl), (bl,t,None)] no_hook
+	  start_proof_and_print (local,p,DefinitionBody k)
+	    [Some (lid,pl), (bl,t,None)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None

@@ -1836,19 +1836,19 @@ let on_the_bodies = function
 | [id] -> str " depends on the body of " ++ pr_id id
 | l -> str " depends on the bodies of " ++ pr_sequence pr_id l
 
-let check_is_type env ty msg =
-  Proofview.tclEVARMAP >>= fun sigma ->
+exception DependsOnBody of Id.t option
+
+let check_is_type env sigma ty =
   let evdref = ref sigma in
   try
     let _ = Typing.e_sort_of env evdref ty in
-    Proofview.Unsafe.tclEVARS !evdref
+    !evdref
   with e when Errors.noncritical e ->
-    msg e
+    raise (DependsOnBody None)
 
-let check_decl env decl msg =
+let check_decl env sigma decl =
   let open Context.Named.Declaration in
   let ty = get_type decl in
-  Proofview.tclEVARMAP >>= fun sigma ->
   let evdref = ref sigma in
   try
     let _ = Typing.e_sort_of env evdref ty in
@@ -1856,15 +1856,17 @@ let check_decl env decl msg =
     | LocalAssum _ -> ()
     | LocalDef (_,c,_) -> Typing.e_check env evdref c ty
     in
-    Proofview.Unsafe.tclEVARS !evdref
+    !evdref
   with e when Errors.noncritical e ->
-    msg e
+    let id = get_id decl in
+    raise (DependsOnBody (Some id))
 
 let clear_body ids =
   let open Context.Named.Declaration in
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+    let sigma = Tacmach.New.project gl in
     let ctx = named_context env in
     let map = function
     | LocalAssum (id,t) as decl ->
@@ -1878,23 +1880,32 @@ let clear_body ids =
     let ctx = List.map map ctx in
     let base_env = reset_context env in
     let env = push_named_context ctx base_env in
-    let check_hyps =
-      let check env decl =
-        let msg _ = Tacticals.New.tclZEROMSG
-          (str "Hypothesis " ++ pr_id (get_id decl) ++ on_the_bodies ids)
+    let check =
+      try
+        let check (env, sigma) decl =
+          (** Do no recheck hypotheses that do not depend *)
+          let sigma =
+            if List.exists (fun id -> occur_var_in_decl env id decl) ids then
+              check_decl env sigma decl
+            else sigma
+          in
+          (push_named decl env, sigma)
         in
-        check_decl env decl msg <*> Proofview.tclUNIT (push_named decl env)
-      in
-      let checks = Proofview.Monad.List.fold_left check base_env (List.rev ctx) in
-      Proofview.tclIGNORE checks
+        let (env, sigma) = List.fold_left check (base_env, sigma) (List.rev ctx) in
+        let sigma =
+          if List.exists (fun id -> occur_var env id concl) ids then
+            check_is_type env sigma concl
+          else sigma
+        in
+        Proofview.Unsafe.tclEVARS sigma
+      with DependsOnBody where ->
+        let msg = match where with
+        | None -> str "Conclusion" ++ on_the_bodies ids
+        | Some id -> str "Hypothesis " ++ pr_id id ++ on_the_bodies ids
+        in
+        Tacticals.New.tclZEROMSG msg
     in
-    let check_concl =
-      let msg _ = Tacticals.New.tclZEROMSG
-        (str "Conclusion" ++ on_the_bodies ids)
-      in
-      check_is_type env concl msg
-    in
-    check_hyps <*> check_concl <*>
+    check <*>
     Refine.refine ~unsafe:true { run = begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true concl
     end }

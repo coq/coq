@@ -241,10 +241,25 @@ let compile_files () =
 (** Options for proof general *)
 
 let set_emacs () =
+  if not (Option.is_empty !toploop) then
+    error "Flag -emacs is incompatible with a custom toplevel loop";
   Flags.print_emacs := true;
   Pp.make_pp_emacs ();
   Vernacentries.qed_display_script := false;
   color := `OFF
+
+(** Options for CoqIDE *)
+
+let set_ideslave () =
+  if !Flags.print_emacs then error "Flags -ideslave and -emacs are incompatible";
+  toploop := Some "coqidetop";
+  Flags.ide_slave := true
+
+(** Options for slaves *)
+
+let set_toploop name =
+  if !Flags.print_emacs then error "Flags -toploop and -emacs are incompatible";
+  toploop := Some name
 
 (** GC tweaking *)
 
@@ -498,7 +513,7 @@ let parse_args arglist =
     |"-main-channel" -> Spawned.main_channel := get_host_port opt (next())
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Vio2Vo
-    |"-toploop" -> toploop := Some (next ())
+    |"-toploop" -> set_toploop (next ())
     |"-w" -> set_warning (next ())
 
     (* Options with zero arg *)
@@ -519,7 +534,7 @@ let parse_args arglist =
     |"-emacs" -> set_emacs ()
     |"-filteropts" -> filter_opts := true
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ()
-    |"-ideslave" -> toploop := Some "coqidetop"; Flags.ide_slave := true
+    |"-ideslave" -> set_ideslave ()
     |"-impredicative-set" -> set_impredicative_set ()
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
     |"-just-parsing" -> Vernac.just_parsing := true

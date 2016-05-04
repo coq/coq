@@ -810,7 +810,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
     let fold () =
       let () = if !debug_RAKAM then
 	  let open Pp in pp (str "<><><><><>" ++ fnl ()) in
-      if tactic_mode then (Stack.best_state s cst_l,Cst_stack.empty) else (s,cst_l)
+      (s,cst_l)
     in
     match kind_of_term x with
     | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
@@ -1001,7 +1001,9 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
     | Rel _ | Var _ | Const _ | LetIn _ | Proj _ -> fold ()
     | Sort _ | Ind _ | Prod _ -> fold ()
   in
-  whrec (Option.default Cst_stack.empty csts)
+  fun xs ->
+  let (s,cst_l as res) = whrec (Option.default Cst_stack.empty csts) xs in
+  if tactic_mode then (Stack.best_state s cst_l,Cst_stack.empty) else res
 
 (** reduction machine without global env and refold machinery *)
 let local_whd_state_gen flags sigma =
