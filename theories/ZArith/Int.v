@@ -451,4 +451,8 @@ Module Z_as_Int <: Int.
   Lemma i2z_ltb n p : ltb n p = Z.ltb (i2z n) (i2z p).
   Proof. reflexivity. Qed.
 
+  (** Compatibility notations for Coq v8.4 *)
+  Notation plus := Coq.ZArith.Int.Z_as_Int.add (compat "8.4").
+  Notation minus := Coq.ZArith.Int.Z_as_Int.sub (compat "8.4").
+  Notation mult := Coq.ZArith.Int.Z_as_Int.mul (compat "8.4").
 End Z_as_Int.
