@@ -27,7 +27,11 @@ open Printer
 
 let pr_global x = Nametab.pr_global_env Id.Set.empty x
 
-type grammar_terminals = Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list
+type 'a grammar_tactic_prod_item_expr =
+| TacTerm of string
+| TacNonTerm of Loc.t * 'a * Names.Id.t
+
+type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
 
 type pp_tactic = {
   pptac_level : int;
@@ -358,20 +362,32 @@ module Make
         with Not_found -> Genprint.generic_top_print (in_gen (topwit wit) x)
 
   let rec tacarg_using_rule_token pr_gen = function
-    | Egramml.GramTerminal s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
-    | Egramml.GramNonTerminal _ :: l, a :: al ->
+    | TacTerm s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
+    | TacNonTerm _ :: l, a :: al ->
       let r = tacarg_using_rule_token pr_gen (l,al) in
       pr_gen a :: r
     | [], [] -> []
     | _ -> failwith "Inconsistent arguments of extended tactic"
 
+  let rec argument_of_symbol = function
+  | Extend.Ulist1 s | Extend.Ulist0 s
+  | Extend.Ulist1sep (s, _) | Extend.Ulist0sep (s, _) ->
+    let ArgumentType t = argument_of_symbol s in
+    ArgumentType (ListArg t)
+  | Extend.Uopt s ->
+    let ArgumentType t = argument_of_symbol s in
+    ArgumentType (OptArg t)
+  | Extend.Uentry s | Extend.Uentryl (s, _) ->
+    let ArgT.Any tag = s in
+    ArgumentType (ExtraArg tag)
+
   let filter_arg = function
-  | Egramml.GramTerminal _ -> None
-  | Egramml.GramNonTerminal (_, Rawwit t, _) -> Some (ArgumentType t)
+  | TacTerm _ -> None
+  | TacNonTerm (_, s, _) -> Some (argument_of_symbol s)
 
   let pr_tacarg_using_rule pr_gen l =
     let l = match l with
-    | (Egramml.GramTerminal s :: l, al) ->
+    | (TacTerm s :: l, al) ->
       (** First terminal token should be considered as the name of the tactic,
           so we tag it differently than the other terminal tokens. *)
       primitive s :: (tacarg_using_rule_token pr_gen (l, al))

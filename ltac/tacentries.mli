@@ -18,7 +18,7 @@ val register_ltac : locality_flag -> Vernacexpr.tacdef_body list -> unit
 
 (** {5 Tactic Notations} *)
 
-type 'a grammar_tactic_prod_item_expr =
+type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
 | TacTerm of string
 | TacNonTerm of Loc.t * 'a * Names.Id.t
 
