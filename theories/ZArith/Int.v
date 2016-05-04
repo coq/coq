@@ -452,7 +452,7 @@ Module Z_as_Int <: Int.
   Proof. reflexivity. Qed.
 
   (** Compatibility notations for Coq v8.4 *)
-  Notation plus := Coq.ZArith.Int.Z_as_Int.add (compat "8.4").
-  Notation minus := Coq.ZArith.Int.Z_as_Int.sub (compat "8.4").
-  Notation mult := Coq.ZArith.Int.Z_as_Int.mul (compat "8.4").
+  Notation plus := add (compat "8.4").
+  Notation minus := sub (compat "8.4").
+  Notation mult := mul (compat "8.4").
 End Z_as_Int.
