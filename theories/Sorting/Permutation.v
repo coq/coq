@@ -318,7 +318,7 @@ Lemma Permutation_length_2_inv :
 Proof.
   intros a1 a2 l H; remember [a1;a2] as m in H.
   revert a1 a2 Heqm.
-  induction H; intros; try (injection Heqm; intros; subst; clear Heqm);
+  induction H; intros; try (injection Heqm; subst);
     discriminate || (try tauto).
   apply Permutation_length_1_inv in H as ->; left; auto.
   apply IHPermutation1 in Heqm as [H1|H1]; apply IHPermutation2 in H1 as [];

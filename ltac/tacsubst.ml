@@ -49,6 +49,7 @@ let subst_glob_with_bindings_arg subst (clear,c) =
 let rec subst_intro_pattern subst = function
   | loc,IntroAction p -> loc, IntroAction (subst_intro_pattern_action subst p)
   | loc, IntroNaming _ | loc, IntroForthcoming _ as x -> x
+  | loc, IntroApplyOnTop c -> loc, IntroApplyOnTop (subst_glob_constr subst c)
 
 and subst_intro_pattern_action subst = function
   | IntroApplyOn (t,pat) ->
@@ -137,7 +138,7 @@ let rec subst_match_goal_hyps subst = function
 
 let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Basic tactics *)
-  | TacIntroPattern l -> TacIntroPattern (List.map (subst_intro_pattern subst) l)
+  | TacIntroPattern (ev,l) -> TacIntroPattern (ev,List.map (subst_intro_pattern subst) l)
   | TacIntroMove _ as x -> x
   | TacExact c -> TacExact (subst_glob_constr subst c)
   | TacApply (a,ev,cb,cl) ->

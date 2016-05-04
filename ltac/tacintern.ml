@@ -236,6 +236,8 @@ let rec intern_intro_pattern lf ist = function
   | loc, IntroAction pat ->
       loc, IntroAction (intern_intro_pattern_action lf ist pat)
   | loc, IntroForthcoming _ as x -> x
+  | loc, IntroApplyOnTop c ->
+      loc, IntroApplyOnTop (intern_constr ist c)
 
 and intern_intro_pattern_naming lf ist = function
   | IntroIdentifier id ->
@@ -269,7 +271,7 @@ let intern_intro_pattern_naming_loc lf ist (loc,pat) =
   (loc,intern_intro_pattern_naming lf ist pat)
 
   (* TODO: catch ltac vars *)
-let intern_induction_arg ist = function
+let intern_destruction_arg ist = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (intern_constr_with_bindings ist c)
   | clear,ElimOnAnonHyp n as x -> x
   | clear,ElimOnIdent (loc,id) ->
@@ -482,8 +484,8 @@ let map_raw wit f ist x =
 let rec intern_atomic lf ist x =
   match (x:raw_atomic_tactic_expr) with
   (* Basic tactics *)
-  | TacIntroPattern l ->
-      TacIntroPattern (List.map (intern_intro_pattern lf ist) l)
+  | TacIntroPattern (ev,l) ->
+      TacIntroPattern (ev,List.map (intern_intro_pattern lf ist) l)
   | TacIntroMove (ido,hto) ->
       TacIntroMove (Option.map (intern_ident lf ist) ido,
                     intern_move_location ist hto)
@@ -518,7 +520,7 @@ let rec intern_atomic lf ist x =
   (* Derived basic tactics *)
   | TacInductionDestruct (ev,isrec,(l,el)) ->
       TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),cls) ->
-	      (intern_induction_arg ist c,
+	      (intern_destruction_arg ist c,
                (Option.map (intern_intro_pattern_naming_loc lf ist) ipato,
                Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
                Option.map (clause_app (intern_hyp_location ist)) cls)) l,
@@ -809,6 +811,7 @@ let () =
   Genintern.register_intern0 wit_bindings (lift intern_bindings);
   Genintern.register_intern0 wit_constr_with_bindings (lift intern_constr_with_bindings);
   Genintern.register_intern0 wit_constr_may_eval (lift intern_constr_may_eval);
+  Genintern.register_intern0 wit_destruction_arg (lift intern_destruction_arg);
   ()
 
 (***************************************************************************)

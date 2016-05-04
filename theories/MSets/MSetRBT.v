@@ -911,7 +911,7 @@ Proof.
      { inversion_clear O.
        assert (InT x l) by now apply min_elt_spec1. auto. }
      simpl. case X.compare_spec; try order.
-     destruct lc; injection E; clear E; intros; subst l s0; auto.
+     destruct lc; injection E; subst l s0; auto.
 Qed.
 
 Lemma remove_min_spec1 s x s' `{Ok s}:
@@ -1948,7 +1948,7 @@ Module Make (X: Orders.OrderedType) <:
  generalize (fun x s' => @Raw.remove_min_spec1 s x s' Hs).
  set (P := Raw.remove_min_ok s). clearbody P.
  destruct (Raw.remove_min s) as [(x0,s0)|]; try easy.
- intros H U. injection U. clear U; intros; subst. simpl.
+ intros H U. injection U. subst. simpl.
  destruct (H x s0); auto. subst; intuition.
  Qed.
 

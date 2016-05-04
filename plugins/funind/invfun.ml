@@ -364,7 +364,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	    observe_tac("h_intro_patterns ")  (let l = (List.nth intro_pats (pred i)) in 
 					       match l with 
 						 | [] -> tclIDTAC 
-						 | _ -> Proofview.V82.of_tactic (intro_patterns l));
+						 | _ -> Proofview.V82.of_tactic (intro_patterns false l));
 	    (* unfolding of all the defined variables introduced by this branch *)
 	    (* observe_tac "unfolding" pre_tac; *)
 	    (* $zeta$ normalizing of the conclusion *)

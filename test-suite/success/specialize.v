@@ -64,3 +64,11 @@ assert (H:=H I).
 match goal with H:_ |- _ => clear H end.
 match goal with H:_ |- _ => exact H end.
 Qed.
+
+(* Test specialize as *)
+
+Goal (forall x, x=0) -> 1=0.
+intros.
+specialize (H 1) as ->.
+reflexivity.
+Qed.

@@ -18,6 +18,7 @@ type patvar = Id.t
 
 type 'constr intro_pattern_expr =
   | IntroForthcoming of bool
+  | IntroApplyOnTop of 'constr
   | IntroNaming of intro_pattern_naming_expr
   | IntroAction of 'constr intro_pattern_action_expr
 and intro_pattern_naming_expr =

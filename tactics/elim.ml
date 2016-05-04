@@ -25,14 +25,14 @@ let introElimAssumsThen tac ba =
   (tclTHEN introElimAssums (elim_on_ba tac ba))
 
 (* Supposed to be called with a non-recursive scheme *)
-let introCaseAssumsThen tac ba =
+let introCaseAssumsThen with_evars tac ba =
   let n1 = List.length ba.Tacticals.branchsign in
   let n2 = List.length ba.Tacticals.branchnames in
   let (l1,l2),l3 =
     if n1 < n2 then List.chop n1 ba.Tacticals.branchnames, []
     else (ba.Tacticals.branchnames, []), List.make (n1-n2) false in
   let introCaseAssums =
-    tclTHEN (intro_patterns l1) (intros_clearing l3) in
+    tclTHEN (intro_patterns with_evars l1) (intros_clearing l3) in
   (tclTHEN introCaseAssums (case_on_ba (tac l2) ba))
 
 (* The following tactic Decompose repeatedly applies the

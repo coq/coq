@@ -318,10 +318,15 @@ module Tactic =
       make_gen_entry utactic "uconstr"
     let quantified_hypothesis =
       make_gen_entry utactic "quantified_hypothesis"
+    let destruction_arg = make_gen_entry utactic destruction_arg"
     let int_or_var = make_gen_entry utactic "int_or_var"
     let red_expr = make_gen_entry utactic "red_expr"
     let simple_intropattern =
       make_gen_entry utactic "simple_intropattern"
+    let intropatterns =
+      make_gen_entry utactic "intropatterns"
+    let ne_intropatterns =
+      make_gen_entry utactic "ne_intropatterns"
     let clause_dft_concl = 
       make_gen_entry utactic "clause"
 
@@ -726,6 +731,8 @@ let () =
   Grammar.register0 wit_pre_ident (Prim.preident);
   Grammar.register0 wit_int_or_var (Tactic.int_or_var);
   Grammar.register0 wit_intro_pattern (Tactic.simple_intropattern);
+  Grammar.register0 (wit_list wit_intro_pattern) (Tactic.intropatterns);
+  Grammar.register0 (wit_list wit_intro_pattern) (Tactic.ne_intropatterns);
   Grammar.register0 wit_ident (Prim.ident);
   Grammar.register0 wit_var (Prim.var);
   Grammar.register0 wit_ref (Prim.reference);

@@ -93,7 +93,11 @@ val try_intros_until :
 
 val onInductionArg :
   (clear_flag -> constr with_bindings -> unit Proofview.tactic) ->
-    constr with_bindings induction_arg -> unit Proofview.tactic
+    constr with_bindings destruction_arg -> unit Proofview.tactic
+
+val force_destruction_arg : env -> evar_map ->
+    delayed_open_constr_with_bindings destruction_arg ->
+    constr with_bindings destruction_arg
 
 (** Tell if a used hypothesis should be cleared by default or not *)
 
@@ -101,16 +105,16 @@ val use_clear_hyp_by_default : unit -> bool
 
 (** {6 Introduction tactics with eliminations. } *)
 
-val intro_patterns : intro_patterns -> unit Proofview.tactic
-val intro_patterns_to : Id.t move_location -> intro_patterns ->
+val intro_patterns : evars_flag -> intro_patterns -> unit Proofview.tactic
+val intro_patterns_to : evars_flag -> Id.t move_location -> intro_patterns ->
   unit Proofview.tactic
-val intro_patterns_bound_to : int -> Id.t move_location -> intro_patterns ->
+val intro_patterns_bound_to : evars_flag -> int -> Id.t move_location -> intro_patterns ->
   unit Proofview.tactic
-val intro_pattern_to : Id.t move_location -> delayed_open_constr intro_pattern_expr ->
+val intro_pattern_to : evars_flag -> Id.t move_location -> delayed_open_constr intro_pattern_expr ->
   unit Proofview.tactic
 
 (** Implements user-level "intros", with [] standing for "**" *)
-val intros_patterns : intro_patterns -> unit Proofview.tactic
+val intros_patterns : evars_flag -> intro_patterns -> unit Proofview.tactic
 
 (** {6 Exact tactics. } *)
 
@@ -169,7 +173,7 @@ val unfold_body   : Id.t -> unit Proofview.tactic
 val keep          : Id.t list -> unit Proofview.tactic
 val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 
-val specialize    : constr with_bindings -> unit Proofview.tactic
+val specialize    : constr with_bindings -> intro_pattern option -> unit Proofview.tactic
 
 val move_hyp      : Id.t -> Id.t move_location -> tactic
 val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
@@ -294,7 +298,7 @@ val destruct : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option
 (** Implements user-level "destruct" and "induction" *)
 
 val induction_destruct : rec_flag -> evars_flag ->
-  (delayed_open_constr_with_bindings induction_arg
+  (delayed_open_constr_with_bindings destruction_arg
    * (intro_pattern_naming option * or_and_intro_pattern option)
    * clause option) list *
   constr with_bindings option -> unit Proofview.tactic

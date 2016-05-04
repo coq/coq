@@ -522,7 +522,7 @@ let rec intropattern_ids (loc,pat) = match pat with
   | IntroAction (IntroApplyOn (c,pat)) -> intropattern_ids pat
   | IntroNaming (IntroAnonymous | IntroFresh _)
   | IntroAction (IntroWildcard | IntroRewrite _)
-  | IntroForthcoming _ -> []
+  | IntroForthcoming _ | IntroApplyOnTop _ -> []
 
 let extract_ids ids lfun =
   let fold id v accu =
@@ -905,6 +905,13 @@ let rec interp_intro_pattern ist env sigma = function
   | loc, IntroNaming pat ->
       sigma, (loc, IntroNaming (interp_intro_pattern_naming loc ist env sigma pat))
   | loc, IntroForthcoming _  as x -> sigma, x
+  | loc, IntroApplyOnTop c ->
+      let c = { delayed = fun env sigma ->
+        let sigma = Sigma.to_evar_map sigma in
+        let (sigma, c) = interp_open_constr ist env sigma c in
+        Sigma.Unsafe.of_pair (c, sigma)
+      } in
+      sigma, (loc, IntroApplyOnTop c)
 
 and interp_intro_pattern_naming loc ist env sigma = function
   | IntroFresh id -> IntroFresh (interp_ident ist env sigma id)
@@ -1030,7 +1037,7 @@ let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
   } in
     (loc,f)
 
-let interp_induction_arg ist gl arg =
+let interp_destruction_arg ist gl arg =
   match arg with
   | keep,ElimOnConstr c ->
       keep,ElimOnConstr { delayed = fun env sigma ->
@@ -1051,7 +1058,7 @@ let interp_induction_arg ist gl arg =
           (keep, ElimOnConstr { delayed = begin fun env sigma ->
           try Sigma.here (constr_of_id env id', NoBindings) sigma
           with Not_found ->
-            user_err_loc (loc, "interp_induction_arg",
+            user_err_loc (loc, "interp_destruction_arg",
             pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared nor a quantified hypothesis.")
           end })
       in
@@ -1656,17 +1663,17 @@ and name_atomic ?env tacexpr tac : unit Proofview.tactic =
 and interp_atomic ist tac : unit Proofview.tactic =
   match tac with
   (* Basic tactics *)
-  | TacIntroPattern l ->
+  | TacIntroPattern (ev,l) ->
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
-        Tacticals.New.tclWITHHOLES false 
+        Tacticals.New.tclWITHHOLES ev
         (name_atomic ~env
-          (TacIntroPattern l)
+          (TacIntroPattern (ev,l))
           (* spiwack: print uninterpreted, not sure if it is the
              expected behaviour. *)
-          (Tactics.intro_patterns l')) sigma
+          (Tactics.intro_patterns ev l')) sigma
       end }
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.enter { enter = begin fun gl ->
@@ -1829,7 +1836,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (* TODO: move sigma as a side-effect *)
              (* spiwack: the [*p] variants are for printing *)
             let cp = c in
-            let c = interp_induction_arg ist gl c in
+            let c = interp_destruction_arg ist gl c in
             let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
             let ipatsp = ipats in
             let sigma,ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
@@ -2102,6 +2109,10 @@ let interp_constr_with_bindings' ist c = Ftactic.return { delayed = fun env sigm
   Sigma.Unsafe.of_pair (c, sigma)
   }
 
+let interp_destruction_arg' ist c = Ftactic.nf_enter { enter = begin fun gl ->
+  Ftactic.return (interp_destruction_arg ist gl c)
+end }
+
 let () =
   Geninterp.register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
   Geninterp.register_interp0 wit_ref (lift interp_reference);
@@ -2118,6 +2129,7 @@ let () =
   Geninterp.register_interp0 wit_bindings interp_bindings';
   Geninterp.register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
   Geninterp.register_interp0 wit_constr_may_eval (lifts interp_constr_may_eval);
+  Geninterp.register_interp0 wit_destruction_arg interp_destruction_arg';
   ()
 
 let () =

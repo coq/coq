@@ -333,7 +333,7 @@ Ltac simplify_one_dep_elim_term c :=
       (let hyp := fresh in intros hyp ;
         move hyp before y ; revert_until hyp ; generalize dependent y ;
           refine (solution_right _ _ _ _)(*  ; intros until 0 *))
-    | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; injection H ; clear H)
+    | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; simple injection H; clear H)
     | ?t = ?u -> _ => let hyp := fresh in
       intros hyp ; exfalso ; discriminate
     | ?x = ?y -> _ => let hyp := fresh in

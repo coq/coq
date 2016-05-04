@@ -18,6 +18,8 @@ Tactics
 - Every generic argument type declares a tactic scope of the form "name:(...)"
   where name is the name of the argument. This generalizes the constr: and ltac:
   instances.
+- New non-introduction pattern "/constr" to apply a lemma on the next
+  hypothesis to be introduced.
 
 Program
 

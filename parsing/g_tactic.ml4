@@ -46,12 +46,26 @@ let test_lpar_id_coloneq =
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
-  Gram.Entry.of_parser "lpar_id_coloneq"
+  Gram.Entry.of_parser "lpar_id_rpar"
     (fun strm ->
       match get_tok (stream_nth 0 strm) with
         | KEYWORD "(" ->
             (match get_tok (stream_nth 1 strm) with
               | IDENT _ ->
+                  (match get_tok (stream_nth 2 strm) with
+	            | KEYWORD ")" -> ()
+	            | _ -> err ())
+	      | _ -> err ())
+	| _ -> err ())
+
+(* Hack to recognize "(1st)" and so on *)
+let test_lpar_index_rpar =
+  Gram.Entry.of_parser "lpar_id_index_rpar"
+    (fun strm ->
+      match get_tok (stream_nth 0 strm) with
+        | KEYWORD "(" ->
+            (match get_tok (stream_nth 1 strm) with
+              | INDEX _ ->
                   (match get_tok (stream_nth 2 strm) with
 	            | KEYWORD ")" -> ()
 	            | _ -> err ())
@@ -141,7 +155,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
   (id,CProdN(loc,bl,ty))
 
 (* Functions overloaded by quotifier *)
-let induction_arg_of_constr (c,lbind as clbind) = match lbind with
+let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
   | NoBindings ->
     begin
       try ElimOnIdent (Constrexpr_ops.constr_loc c,snd(Constrexpr_ops.coerce_to_id c))
@@ -216,7 +230,8 @@ let merge_occurrences loc cl = function
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
   bindings red_expr int_or_var open_constr uconstr
-  simple_intropattern clause_dft_concl hypident;
+  simple_intropattern intropatterns ne_intropatterns clause_dft_concl hypident
+  destruction_arg;
 
   int_or_var:
     [ [ n = integer  -> ArgArg n
@@ -236,11 +251,14 @@ GEXTEND Gram
   uconstr:
     [ [ c = constr -> c ] ]
   ;
-  induction_arg:
+  destruction_arg:
     [ [ n = natural -> (None,ElimOnAnonHyp n)
+      | n = index -> (None,ElimOnAnonHyp n)
+      | test_lpar_index_rpar; "("; n = index; ")" ->
+        (Some false,ElimOnAnonHyp n)
       | test_lpar_id_rpar; c = constr_with_bindings ->
-        (Some false,induction_arg_of_constr c)
-      | c = constr_with_bindings_arg -> on_snd induction_arg_of_constr c
+        (Some false,destruction_arg_of_constr c)
+      | c = constr_with_bindings_arg -> on_snd destruction_arg_of_constr c
     ] ]
   ;
   constr_with_bindings_arg:
@@ -249,7 +267,8 @@ GEXTEND Gram
   ;
   quantified_hypothesis:
     [ [ id = ident -> NamedHyp id
-      | n = natural -> AnonHyp n ] ]
+      | n = natural -> AnonHyp n
+      | n = index -> AnonHyp n ] ]
   ;
   conversion:
     [ [ c = constr -> (None, c)
@@ -311,6 +330,7 @@ GEXTEND Gram
   ;
   nonsimple_intropattern:
     [ [ l = simple_intropattern -> l
+      | "/"; c = constr -> !@loc, IntroApplyOnTop c
       | "*" -> !@loc, IntroForthcoming true
       | "**" -> !@loc, IntroForthcoming false ]]
   ;
@@ -331,7 +351,8 @@ GEXTEND Gram
   ;
   simple_binding:
     [ [ "("; id = ident; ":="; c = lconstr; ")" -> (!@loc, NamedHyp id, c)
-      | "("; n = natural; ":="; c = lconstr; ")" -> (!@loc, AnonHyp n, c) ] ]
+      | "("; n = natural; ":="; c = lconstr; ")" -> (!@loc, AnonHyp n, c)
+      | "("; n = index; ":="; c = lconstr; ")" -> (!@loc, AnonHyp n, c) ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
@@ -506,8 +527,8 @@ GEXTEND Gram
     [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ;
   induction_clause:
-    [ [ c = induction_arg; pat = as_or_and_ipat; eq = eqn_ipat; cl = opt_clause
-        -> (c,(eq,pat),cl) ] ]
+    [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
+        cl = opt_clause -> (c,(eq,pat),cl) ] ]
   ;
   induction_clause_list:
     [ [ ic = LIST1 induction_clause SEP ","; el = OPT eliminator;
@@ -528,9 +549,11 @@ GEXTEND Gram
     [ [
       (* Basic tactics *)
         IDENT "intros"; pl = ne_intropatterns ->
-          TacAtom (!@loc, TacIntroPattern pl)
+          TacAtom (!@loc, TacIntroPattern (false,pl))
       | IDENT "intros" ->
-          TacAtom (!@loc, TacIntroPattern [!@loc,IntroForthcoming false])
+          TacAtom (!@loc, TacIntroPattern (false,[!@loc,IntroForthcoming false]))
+      | IDENT "eintros"; pl = ne_intropatterns ->
+          TacAtom (!@loc, TacIntroPattern (true,pl))
       | IDENT "intro"; id = ident; hto = move_location ->
 	  TacAtom (!@loc, TacIntroMove (Some id, hto))
       | IDENT "intro"; hto = move_location -> TacAtom (!@loc, TacIntroMove (None, hto))

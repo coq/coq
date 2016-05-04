@@ -1040,10 +1040,24 @@ let onInductionArg tac = function
         (try_intros_until_id_check id)
         (tac clear_flag (mkVar id,NoBindings))
 
-let map_induction_arg f = function
+let map_destruction_arg f = function
   | clear_flag,ElimOnConstr g -> clear_flag,ElimOnConstr (f g)
   | clear_flag,ElimOnAnonHyp n as x -> x
   | clear_flag,ElimOnIdent id as x -> x
+
+let finish_delayed_evar_resolution env sigma f =
+  let ((c, lbind), sigma') = run_delayed env sigma f in
+  let pending = (sigma,sigma') in
+  let sigma' = Sigma.Unsafe.of_evar_map sigma' in
+  let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
+  (c, lbind)
+
+let with_no_bindings (c, lbind) =
+  if lbind != NoBindings then error "'with' clause not supported here.";
+  c
+
+let force_destruction_arg env sigma c =
+  map_destruction_arg (finish_delayed_evar_resolution env sigma) c
 
 (****************************************)
 (* tactic "cut" (actually modus ponens) *)
@@ -2190,6 +2204,7 @@ let prepare_naming loc = function
 
 let rec explicit_intro_names = function
 | (_, IntroForthcoming _) :: l -> explicit_intro_names l
+| (_, IntroApplyOnTop _) :: l -> explicit_intro_names l
 | (_, IntroNaming (IntroIdentifier id)) :: l -> id :: explicit_intro_names l
 | (_, IntroAction (IntroOrAndPattern l)) :: l' ->
     let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
@@ -2255,12 +2270,13 @@ let exceed_bound n = function
      [patl]: introduction patterns to interpret
   *)
 
-let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
+let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
+  function
   | [] when fit_bound n bound ->
       tac ids thin
   | [] ->
       (* Behave as IntroAnonymous *)
-      intro_patterns_core b avoid ids thin destopt bound n tac
+      intro_patterns_core with_evars b avoid ids thin destopt bound n tac
         [dloc,IntroNaming IntroAnonymous]
   | (loc,pat) :: l ->
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
@@ -2268,37 +2284,50 @@ let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
   | IntroForthcoming onlydeps ->
       intro_forthcoming_then_gen (NamingAvoid (avoid@explicit_intro_names l))
 	  destopt onlydeps n bound
-        (fun ids -> intro_patterns_core b avoid ids thin destopt bound
+        (fun ids -> intro_patterns_core with_evars b avoid ids thin destopt bound
           (n+List.length ids) tac l)
+  | IntroApplyOnTop f ->
+      let f = { delayed = fun env sigma ->
+        let Sigma (c, sigma, p) = f.delayed env sigma in
+        Sigma ((c, NoBindings), sigma, p)
+      } in
+      intro_then_gen (NamingAvoid avoid) MoveLast true false
+        (fun id -> apply_in_delayed_once false true true with_evars
+          (NamingMustBe (loc,id)) id (None,(loc,f))
+          (fun id -> Tacticals.New.tclTHENLIST
+            [revert [id]; 
+             intro_patterns_core with_evars b avoid ids thin destopt
+               bound n tac l]))
   | IntroAction pat ->
       intro_then_gen (make_tmp_naming avoid l pat)
 	destopt true false
-        (intro_pattern_action loc (b || not (List.is_empty l)) false pat thin
-          destopt
-          (fun thin bound' -> intro_patterns_core b avoid ids thin destopt bound' 0
+        (intro_pattern_action loc with_evars (b || not (List.is_empty l)) false
+          pat thin destopt
+          (fun thin bound' -> intro_patterns_core with_evars b avoid ids thin destopt bound' 0
             (fun ids thin ->
-              intro_patterns_core b avoid ids thin destopt bound (n+1) tac l)))
+              intro_patterns_core with_evars b avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
-      intro_pattern_naming loc b avoid ids pat thin destopt bound (n+1) tac l
+      intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound (n+1) tac l
 
   (* Pi-introduction rule, used backwards *)
-and intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l =
+and intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound n tac l =
   match pat with
   | IntroIdentifier id ->
       check_thin_clash_then id thin avoid (fun thin ->
         intro_then_gen (NamingMustBe (loc,id)) destopt true false
-          (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l))
+          (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l))
   | IntroAnonymous ->
       intro_then_gen (NamingAvoid (avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l)
+        (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
   | IntroFresh id ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
       intro_then_gen (NamingBasedOn (id, avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l)
+        (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
 
-and intro_pattern_action loc b style pat thin destopt tac id = match pat with
+and intro_pattern_action loc with_evars b style pat thin destopt tac id =
+  match pat with
   | IntroWildcard ->
       tac ((loc,id)::thin) None []
   | IntroOrAndPattern ll ->
@@ -2309,7 +2338,7 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
       rewrite_hyp_then style thin l2r id (fun thin -> tac thin None [])
   | IntroApplyOn (f,(loc,pat)) ->
       let naming,tac_ipat =
-        prepare_intros_loc loc (IntroIdentifier id) destopt pat in
+        prepare_intros_loc loc with_evars (IntroIdentifier id) destopt pat in
       let doclear =
         if naming = NamingMustBe (loc,id) then
           Proofview.tclUNIT () (* apply_in_once do a replacement *)
@@ -2319,47 +2348,48 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
         let Sigma (c, sigma, p) = f.delayed env sigma in
         Sigma ((c, NoBindings), sigma, p)
       } in
-      apply_in_delayed_once false true true true naming id (None,(loc,f))
+      apply_in_delayed_once false true true with_evars naming id (None,(loc,f))
         (fun id -> Tacticals.New.tclTHENLIST [doclear; tac_ipat id; tac thin None []])
 
-and prepare_intros_loc loc dft destopt = function
+and prepare_intros_loc loc with_evars dft destopt = function
   | IntroNaming ipat ->
       prepare_naming loc ipat,
       (fun id -> Proofview.V82.tactic (move_hyp id destopt))
   | IntroAction ipat ->
       prepare_naming loc dft,
       (let tac thin bound =
-        intro_patterns_core true [] [] thin destopt bound 0
+        intro_patterns_core with_evars true [] [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
-      fun id -> intro_pattern_action loc true true ipat [] destopt tac id)
-  | IntroForthcoming _ -> user_err_loc
+      fun id ->
+        intro_pattern_action loc with_evars true true ipat [] destopt tac id)
+  | IntroForthcoming _ | IntroApplyOnTop _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected.")
 
-let intro_patterns_bound_to n destopt =
-  intro_patterns_core true [] [] [] destopt
+let intro_patterns_bound_to with_evars n destopt =
+  intro_patterns_core with_evars true [] [] [] destopt
     (Some (true,n)) 0 (fun _ l -> clear_wildcards l)
 
-let intro_patterns_to destopt =
-  intro_patterns_core (use_bracketing_last_or_and_intro_pattern ())
+let intro_patterns_to with_evars destopt =
+  intro_patterns_core with_evars (use_bracketing_last_or_and_intro_pattern ())
     [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
 
-let intro_pattern_to destopt pat =
-  intro_patterns_to destopt [dloc,pat]
+let intro_pattern_to with_evars destopt pat =
+  intro_patterns_to with_evars destopt [dloc,pat]
 
-let intro_patterns = intro_patterns_to MoveLast
+let intro_patterns with_evars = intro_patterns_to with_evars MoveLast
 
 (* Implements "intros" *)
-let intros_patterns = function
+let intros_patterns with_evars = function
   | [] -> intros
-  | l -> intro_patterns_to MoveLast l
+  | l -> intro_patterns_to with_evars MoveLast l
 
 (**************************)
 (*   Forward reasoning    *)
 (**************************)
 
-let prepare_intros dft destopt = function
+let prepare_intros with_evars dft destopt = function
   | None -> prepare_naming dloc dft, (fun _id -> Proofview.tclUNIT ())
-  | Some (loc,ipat) -> prepare_intros_loc loc dft destopt ipat
+  | Some (loc,ipat) -> prepare_intros_loc loc with_evars dft destopt ipat
 
 let ipat_of_name = function
   | Anonymous -> None
@@ -2370,7 +2400,7 @@ let head_ident c =
    if isVar c then Some (destVar c) else None
 
 let assert_as first hd ipat t =
-  let naming,tac = prepare_intros IntroAnonymous MoveLast ipat in
+  let naming,tac = prepare_intros false IntroAnonymous MoveLast ipat in
   let repl = do_replace hd naming in
   let tac = if repl then (fun id -> Proofview.tclUNIT ()) else tac in
   if first then assert_before_then_gen repl naming t tac
@@ -2387,7 +2417,8 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
   let destopt =
     if with_evars then MoveLast (* evars would depend on the whole context *)
     else get_previous_hyp_position id gl in
-  let naming,ipat_tac = prepare_intros (IntroIdentifier id) destopt ipat in
+  let naming,ipat_tac =
+    prepare_intros with_evars (IntroIdentifier id) destopt ipat in
   let lemmas_target, last_lemma_target =
     let last,first = List.sep_last lemmas in
     List.map (fun lem -> (NamingMustBe (dloc,id),lem)) first, (naming,last)
@@ -2721,7 +2752,7 @@ let quantify lconstr =
 
 (* Modifying/Adding an hypothesis  *)
 
-let specialize (c,lbind) =
+let specialize (c,lbind) ipat =
   Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
@@ -2742,24 +2773,36 @@ let specialize (c,lbind) =
       let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
       if occur_meta term then
 	errorlabstrm "" (str "Cannot infer an instance for " ++
+
           pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
 	  str ".");
       clause.evd, term in
   let typ = Retyping.get_type_of env sigma term in
-  match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
-  | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
-      Tacticals.New.tclTHEN
-        (Proofview.Unsafe.tclEVARS sigma)
-	(Tacticals.New.tclTHENFIRST
-	   (assert_before_replacing id typ)
-	   (new_exact_no_check term))
-  | _ ->
-      (* To deprecate in favor of generalize? *)
-      Tacticals.New.tclTHEN
-        (Proofview.Unsafe.tclEVARS sigma)
-	(Tacticals.New.tclTHENLAST
-           (cut typ)
-           (new_exact_no_check term))
+  let tac =
+    match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
+    | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
+      (* Like assert (id:=id args) but with the concept of specialization *)
+      let naming,tac =
+        prepare_intros false (IntroIdentifier id) MoveLast ipat in
+      let repl = do_replace (Some id) naming in
+      Tacticals.New.tclTHENFIRST
+        (assert_before_then_gen repl naming typ tac)
+	(new_exact_no_check term)
+    | _ ->
+      match ipat with
+      | None ->
+        (* Like generalize with extra support for "with" bindings *)
+        (* even though the "with" bindings forces full application *)
+        Tacticals.New.tclTHENLAST (cut typ) (new_exact_no_check term)
+      | Some (loc,ipat) ->
+        (* Like pose proof with extra support for "with" bindings *)
+        (* even though the "with" bindings forces full application *)
+        let naming,tac = prepare_intros_loc loc false IntroAnonymous MoveLast ipat in
+        Tacticals.New.tclTHENFIRST
+          (assert_before_then_gen false naming typ tac)
+	  (new_exact_no_check term)
+  in
+  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end }
 
 (*****************************)
@@ -2861,19 +2904,19 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
     (intros_move rstatus)
     (intros_move newlstatus)
 
-let dest_intro_patterns avoid thin dest pat tac =
-  intro_patterns_core true avoid [] thin dest None 0 tac pat
+let dest_intro_patterns with_evars avoid thin dest pat tac =
+  intro_patterns_core with_evars true avoid [] thin dest None 0 tac pat
 
-let safe_dest_intro_patterns avoid thin dest pat tac =
+let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
   Proofview.tclORELSE
-    (dest_intro_patterns avoid thin dest pat tac)
+    (dest_intro_patterns with_evars avoid thin dest pat tac)
     begin function (e, info) -> match e with
       | UserError ("move_hyp",_) ->
        (* May happen e.g. with "destruct x using s" with an hypothesis
           which is morally an induction hypothesis to be "MoveLast" if
           known as such but which is considered instead as a subterm of
           a constructor to be move at the place of x. *)
-          dest_intro_patterns avoid thin MoveLast pat tac
+          dest_intro_patterns with_evars avoid thin MoveLast pat tac
       | e -> Proofview.tclZERO ~info e
     end
 
@@ -2905,7 +2948,7 @@ let get_recarg_dest (recargdests,tophyp) =
    had to be introduced at the top of the context).
 *)
 
-let induct_discharge dests avoid' tac (avoid,ra) names =
+let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
   let avoid = avoid @ avoid' in
   let rec peel_tac ra dests names thin =
     match ra with
@@ -2918,12 +2961,12 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 	      (pat, [dloc, IntroNaming (IntroIdentifier id')])
           | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
-        dest_intro_patterns avoid thin dest [recpat] (fun ids thin ->
+        dest_intro_patterns with_evars avoid thin dest [recpat] (fun ids thin ->
         Proofview.Goal.enter { enter = begin fun gl ->
           let (hyprec,names) =
             consume_pattern avoid (Name hyprecname) depind gl names
           in
-	  dest_intro_patterns avoid thin MoveLast [hyprec] (fun ids' thin ->
+	  dest_intro_patterns with_evars avoid thin MoveLast [hyprec] (fun ids' thin ->
 	    peel_tac ra' (update_dest dests ids') names thin)
         end })
         end }
@@ -2932,7 +2975,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names =
           consume_pattern avoid (Name hyprecname) dep gl names in
-	dest_intro_patterns avoid thin MoveLast [pat] (fun ids thin ->
+	dest_intro_patterns with_evars avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end }
     | (RecArg,_,dep,recvarname) :: ra' ->
@@ -2940,14 +2983,14 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
         let (pat,names) =
           consume_pattern avoid (Name recvarname) dep gl names in
         let dest = get_recarg_dest dests in
-	dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
+	dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end }
     | (OtherArg,_,dep,_) :: ra' ->
         Proofview.Goal.enter { enter = begin fun gl ->
         let (pat,names) = consume_pattern avoid Anonymous dep gl names in
         let dest = get_recarg_dest dests in
-	safe_dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
+	safe_dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end }
     | [] ->
@@ -3934,7 +3977,7 @@ let induction_tac with_evars params indvars elim gl =
    hypotheses from the context, replacing the main hypothesis on which
    induction applies with the induction hypotheses *)
 
-let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
+let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_tac =
   let open Context.Named.Declaration in
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
@@ -3964,7 +4007,8 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
         Tacticals.New.tclMAP expand_hyp toclear;
       ])
       (Array.map2
-         (induct_discharge lhyp0 avoid (re_intro_dependent_hypotheses statuslists))
+         (induct_discharge with_evars lhyp0 avoid
+            (re_intro_dependent_hypotheses statuslists))
          indsign names)
     in
     Sigma.Unsafe.of_pair (tac, sigma)
@@ -3974,7 +4018,7 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyp
   Proofview.Goal.enter { enter = begin fun gl ->
   let elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
   atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
-    apply_induction_in_context (Some hyp0) inhyps (pi3 elim_info) indvars names
+    apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
       (fun elim -> Proofview.V82.tactic (induction_tac with_evars [] [hyp0] elim)))
   end }
 
@@ -4023,7 +4067,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     induction_tac with_evars params realindvars elim
   ]) in
   let elim = ElimUsing (({elimindex = Some (-1); elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
-  apply_induction_in_context None [] elim indvars names induct_tac
+  apply_induction_in_context with_evars None [] elim indvars names induct_tac
   end }
 
 (* assume that no occurrences are selected *)
@@ -4278,19 +4322,11 @@ let induction_destruct isrec with_evars (lc,elim) =
       (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       if not (Option.is_empty cls) then error "'in' clause not supported here.";
-      let finish_evar_resolution f =
-        let ((c, lbind), sigma') = run_delayed env sigma f in
-        let pending = (sigma,sigma') in
-        let sigma' = Sigma.Unsafe.of_evar_map sigma' in
-        let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
-        (c, lbind)
-      in
-      let c = map_induction_arg finish_evar_resolution c in
+      let c = force_destruction_arg env sigma c in
       onInductionArg
-	(fun _clear_flag (c,lbind) ->
-	  if lbind != NoBindings then
-	    error "'with' clause not supported here.";
-	  induction_gen_l isrec with_evars elim names [c,eqname]) c
+	(fun _clear_flag c ->
+	  induction_gen_l isrec with_evars elim names
+            [with_no_bindings c,eqname]) c
     | _ ->
       (* standard induction *)
       onOpenInductionArg env sigma
@@ -4321,23 +4357,14 @@ let induction_destruct isrec with_evars (lc,elim) =
           end }) l)
     | Some elim ->
       (* Several induction hyps with induction scheme *)
-      let finish_evar_resolution f =
-        let ((c, lbind), sigma') = run_delayed env sigma f in
-        let pending = (sigma,sigma') in
-	if lbind != NoBindings then
-	  error "'with' clause not supported here.";
-	let sigma' = Sigma.Unsafe.of_evar_map sigma' in
-        let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
-        c
-      in
-      let lc = List.map (on_pi1 (map_induction_arg finish_evar_resolution)) lc in
+      let lc = List.map (on_pi1 (force_destruction_arg env sigma)) lc in
       let newlc =
         List.map (fun (x,(eqn,names),cls) ->
           if cls != None then error "'in' clause not yet supported here.";
 	  match x with (* FIXME: should we deal with ElimOnIdent? *)
           | _clear_flag,ElimOnConstr x ->
               if eqn <> None then error "'eqn' clause not supported here.";
-              (x,names)
+              (with_no_bindings x,names)
 	  | _ -> error "Don't know where to find some argument.")
 	  lc in
       (* Check that "as", if any, is given only on the last argument *)

@@ -29,6 +29,7 @@ open Equality
 open Misctypes
 open Sigma.Notations
 open Proofview.Notations
+open Constrarg
 
 DECLARE PLUGIN "extratactics"
 
@@ -84,48 +85,38 @@ let induction_arg_of_quantified_hyp = function
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a
    ElimOnIdent and not as "constr" *)
 
+let mytclWithHoles tac with_evars c =
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let env = Tacmach.New.pf_env gl in
+    let sigma = Tacmach.New.project gl in
+    let c = force_destruction_arg env sigma c in
+    Tacticals.New.tclWITHHOLES with_evars (tac with_evars (Some c)) sigma
+  end }
+
 let elimOnConstrWithHoles tac with_evars c =
   Tacticals.New.tclDELAYEDWITHHOLES with_evars c
     (fun c -> tac with_evars (Some (None,ElimOnConstr c)))
 
-TACTIC EXTEND simplify_eq_main
-| [ "simplify_eq" constr_with_bindings(c) ] ->
-    [ elimOnConstrWithHoles dEq false c ]
-END
 TACTIC EXTEND simplify_eq
   [ "simplify_eq" ] -> [ dEq false None ]
-| [ "simplify_eq" quantified_hypothesis(h) ] ->
-    [ dEq false (Some (induction_arg_of_quantified_hyp h)) ]
-END
-TACTIC EXTEND esimplify_eq_main
-| [ "esimplify_eq" constr_with_bindings(c) ] ->
-    [ elimOnConstrWithHoles dEq true c ]
+| [ "simplify_eq" destruction_arg(c) ] -> [ mytclWithHoles dEq false c ]
 END
 TACTIC EXTEND esimplify_eq
 | [ "esimplify_eq" ] -> [ dEq true None ]
-| [ "esimplify_eq" quantified_hypothesis(h) ] ->
-    [ dEq true (Some (induction_arg_of_quantified_hyp h)) ]
+| [ "esimplify_eq" destruction_arg(c) ] -> [ mytclWithHoles dEq true c ]
 END
 
 let discr_main c = elimOnConstrWithHoles discr_tac false c
 
-TACTIC EXTEND discriminate_main
-| [ "discriminate" constr_with_bindings(c) ] ->
-    [ discr_main c ]
-END
 TACTIC EXTEND discriminate
 | [ "discriminate" ] -> [ discr_tac false None ]
-| [ "discriminate" quantified_hypothesis(h) ] ->
-    [ discr_tac false (Some (induction_arg_of_quantified_hyp h)) ]
-END
-TACTIC EXTEND ediscriminate_main
-| [ "ediscriminate" constr_with_bindings(c) ] ->
-    [ elimOnConstrWithHoles discr_tac true c ]
+| [ "discriminate" destruction_arg(c) ] ->
+    [ mytclWithHoles discr_tac false c ]
 END
 TACTIC EXTEND ediscriminate
 | [ "ediscriminate" ] -> [ discr_tac true None ]
-| [ "ediscriminate" quantified_hypothesis(h) ] ->
-    [ discr_tac true (Some (induction_arg_of_quantified_hyp h)) ]
+| [ "ediscriminate" destruction_arg(c) ] ->
+    [ mytclWithHoles discr_tac true c ]
 END
 
 open Proofview.Notations
@@ -133,50 +124,37 @@ let discrHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
   discr_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
 
-let injection_main c =
- elimOnConstrWithHoles (injClause None) false c
+let injection_main with_evars c =
+ elimOnConstrWithHoles (injClause None) with_evars c
 
-TACTIC EXTEND injection_main
-| [ "injection" constr_with_bindings(c) ] ->
-    [ injection_main c ]
-END
 TACTIC EXTEND injection
 | [ "injection" ] -> [ injClause None false None ]
-| [ "injection" quantified_hypothesis(h) ] ->
-    [ injClause None false (Some (induction_arg_of_quantified_hyp h)) ]
-END
-TACTIC EXTEND einjection_main
-| [ "einjection" constr_with_bindings(c) ] ->
-    [ elimOnConstrWithHoles (injClause None) true c ]
+| [ "injection" destruction_arg(c) ] -> [ mytclWithHoles (injClause None) false c ]
 END
 TACTIC EXTEND einjection
 | [ "einjection" ] -> [ injClause None true None ]
-| [ "einjection" quantified_hypothesis(h) ] -> [ injClause None true (Some (induction_arg_of_quantified_hyp h)) ]
-END
-TACTIC EXTEND injection_as_main
-| [ "injection" constr_with_bindings(c) "as" intropattern_list(ipat)] ->
-    [ elimOnConstrWithHoles (injClause (Some ipat)) false c ]
+| [ "einjection" destruction_arg(c) ] -> [ mytclWithHoles (injClause None) true c ]
 END
 TACTIC EXTEND injection_as
 | [ "injection" "as" intropattern_list(ipat)] ->
     [ injClause (Some ipat) false None ]
-| [ "injection" quantified_hypothesis(h) "as" intropattern_list(ipat) ] ->
-    [ injClause (Some ipat) false (Some (induction_arg_of_quantified_hyp h)) ]
-END
-TACTIC EXTEND einjection_as_main
-| [ "einjection" constr_with_bindings(c) "as" intropattern_list(ipat)] ->
-    [ elimOnConstrWithHoles (injClause (Some ipat)) true c ]
+| [ "injection" destruction_arg(c) "as" intropattern_list(ipat)] ->
+    [ mytclWithHoles (injClause (Some ipat)) false c ]
 END
 TACTIC EXTEND einjection_as
 | [ "einjection" "as" intropattern_list(ipat)] ->
     [ injClause (Some ipat) true None ]
-| [ "einjection" quantified_hypothesis(h) "as" intropattern_list(ipat) ] ->
-    [ injClause (Some ipat) true (Some (induction_arg_of_quantified_hyp h)) ]
+| [ "einjection" destruction_arg(c) "as" intropattern_list(ipat)] ->
+    [ mytclWithHoles (injClause (Some ipat)) true c ]
+END
+TACTIC EXTEND simple_injection
+| [ "simple" "injection" ] -> [ simpleInjClause false None ]
+| [ "simple" "injection" destruction_arg(c) ] -> [ mytclWithHoles simpleInjClause false c ]
 END
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  injection_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
+  injection_main false { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]

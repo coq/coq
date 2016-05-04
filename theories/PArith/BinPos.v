@@ -201,7 +201,6 @@ Proof.
 Qed.
 
 (** ** No neutral elements for addition *)
-
 Lemma add_no_neutral p q : q + p <> p.
 Proof.
   revert q.
@@ -508,7 +507,7 @@ Qed.
 Lemma mul_xO_discr p q : p~0 * q <> q.
 Proof.
   induction q; try discriminate.
-  rewrite mul_xO_r; injection; assumption.
+  rewrite mul_xO_r; injection; auto.
 Qed.
 
 (** ** Simplification properties of multiplication *)
