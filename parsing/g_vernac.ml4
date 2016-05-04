@@ -1090,6 +1090,8 @@ GEXTEND Gram
         lev = level -> SetItemLevel (x::l,lev)
       | x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
+      | str = STRING; IDENT "not"; IDENT "a"; IDENT "keyword" ->
+          SetNotAKeyword str
     ] ]
   ;
   syntax_extension_type:

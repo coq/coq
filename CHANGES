@@ -182,6 +182,11 @@ solved by the automatic tactic.
 - Documented the Hint Cut command that allows control of the
   proof-search during typeclass resolution (see reference manual).
 
+Notations
+
+- Added a new modifier: "ident" not a keyword which specifies the quoted
+identifier to be parsed as an identifier and not as a keyword.
+
 API
 
 - Some functions from pretyping/typing.ml and their derivatives were potential

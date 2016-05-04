@@ -480,7 +480,8 @@ Locate "exists _ .. _ , _".
   & $|$ & {\ident} {\tt global} \\
   & $|$ & {\ident} {\tt bigint} \\
   & $|$ & {\tt only parsing} \\
-  & $|$ & {\tt format} {\str} 
+  & $|$ & {\tt format} {\str} \\
+  & $|$ & {\str} {\tt not a keyword}
 \end{tabular}
 \end{centerframe}
 \end{small}
@@ -631,6 +632,42 @@ Notation "'mylet' f x .. y :=  t 'in' u":=
   (let f := fun x => .. (fun y => t) .. in u)
   (x closed binder, y closed binder, at level 200, right associativity).
 \end{coq_example*}
+
+\subsection{Notes on keywords}
+
+When an identifier is used in a notation (such identifiers are surrounded by
+simple quotes), {\Coq} may decide heuristically to turn it into a keyword.
+This heuristic has good properties except for some cases. For instance, if
+you want to define the following notation:
+\begin{coq_example*}
+Notation "'intro' x" := (fun x => x) (at level 99).
+
+Goal forall (p : Prop), p = p.
+Proof.
+\end{coq_example*}
+\begin{coq_example}
+  intro.
+\end{coq_example}
+% (********** The above produces **********)
+% (**** Syntax error: illegal begin of vernac:tactic_command. ********)
+\begin{coq_eval}
+Abort.
+Reset Initial.
+\end{coq_eval}
+
+you cannot use the {\tt intro} tactic anymore. Even if you delimit the scope of
+the notation the problem remains because {\tt intro} is parsed as a keyword and
+not as an identifier.
+
+As simple fix is to add the following modifier to the notation:
+\begin{coq_example*}
+Notation "'intro' x" := (fun x => x) (at level 99, "intro" not a keyword).
+\end{coq_example*}
+
+then, the {\tt intro} tactic can be used as specified above without any
+problems.
+
+\Rem This feature is available only since Coq 8.5.
 
 \subsection{Summary}
 

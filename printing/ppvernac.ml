@@ -366,6 +366,7 @@ module Make
     | SetOnlyParsing v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")
     | SetFormat("text",s) -> keyword "format " ++ pr_located qs s
     | SetFormat(k,s) -> keyword "format " ++ qs k ++ spc() ++ pr_located qs s
+    | SetNotAKeyword s -> qs s ++ spc() ++ keyword "not a keyword"
 
   let pr_syntax_modifiers = function
     | [] -> mt()
