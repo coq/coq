@@ -172,7 +172,7 @@ let cook_notation df sc =
   (* - all single quotes in terminal tokens are doubled                       *)
   (* - characters < 32 are represented by '^A, '^B, '^C, etc                  *)
   (* The output is decoded in function Index.prepare_entry of coqdoc          *)
-  let ntn = String.make (String.length df * 3) '_' in
+  let ntn = String.make (String.length df * 5) '_' in
   let j = ref 0 in
   let l = String.length df - 1 in
   let i = ref 0 in
