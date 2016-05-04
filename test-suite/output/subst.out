@@ -10,7 +10,7 @@
   HB : True
   H4 : z = 4
   ============================
-   True
+  True
 1 subgoal
   
   x, z : nat
@@ -23,7 +23,7 @@
   HB : True
   H4 : z = 4
   ============================
-   True
+  True
 1 subgoal
   
   x, y : nat
@@ -36,7 +36,7 @@
   HB : True
   H4 : 0 = 4
   ============================
-   True
+  True
 1 subgoal
   
   H1 : 0 = 1
@@ -46,7 +46,7 @@
   HB : True
   H4 : 0 = 4
   ============================
-   True
+  True
 1 subgoal
   
   y, z : nat
@@ -59,7 +59,7 @@
   H1 : 0 = 1
   H2 : 0 = 2
   ============================
-   True
+  True
 1 subgoal
   
   x, z : nat
@@ -72,7 +72,7 @@
   H4 : z = 4
   H3 : 0 = 3
   ============================
-   True
+  True
 1 subgoal
   
   x, y : nat
@@ -85,7 +85,7 @@
   HB : True
   H4 : 0 = 4
   ============================
-   True
+  True
 1 subgoal
   
   HA, HB : True
@@ -94,4 +94,4 @@
   H1 : 0 = 1
   H2 : 0 = 2
   ============================
-   True
+  True
