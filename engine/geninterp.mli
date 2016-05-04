@@ -31,9 +31,9 @@ sig
   val repr : 'a typ -> string
   val pr : 'a typ -> Pp.std_ppcmds
 
-  val list_tag : t list typ
-  val opt_tag : t option typ
-  val pair_tag : (t * t) typ
+  val typ_list : t list typ
+  val typ_opt : t option typ
+  val typ_pair : (t * t) typ
 
   val inject : 'a tag -> 'a -> t
 

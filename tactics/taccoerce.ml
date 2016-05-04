@@ -84,11 +84,11 @@ let to_int v =
     Some (out_gen (topwit wit_int) v)
   else None
 
-let to_list v = prj Val.list_tag v
+let to_list v = prj Val.typ_list v
 
-let to_option v = prj Val.opt_tag v
+let to_option v = prj Val.typ_opt v
 
-let to_pair v = prj Val.pair_tag v
+let to_pair v = prj Val.typ_pair v
 
 end
 

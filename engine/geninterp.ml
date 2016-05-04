@@ -34,16 +34,16 @@ struct
 
   let rec pr : type a. a typ -> Pp.std_ppcmds = fun t -> Pp.str (repr t)
 
-  let list_tag = ValT.create "list"
-  let opt_tag = ValT.create "option"
-  let pair_tag = ValT.create "pair"
+  let typ_list = ValT.create "list"
+  let typ_opt = ValT.create "option"
+  let typ_pair = ValT.create "pair"
 
   let rec inject : type a. a tag -> a -> t = fun tag x -> match tag with
   | Base t -> Dyn (t, x)
-  | List tag -> Dyn (list_tag, List.map (fun x -> inject tag x) x)
-  | Opt tag -> Dyn (opt_tag, Option.map (fun x -> inject tag x) x)
+  | List tag -> Dyn (typ_list, List.map (fun x -> inject tag x) x)
+  | Opt tag -> Dyn (typ_opt, Option.map (fun x -> inject tag x) x)
   | Pair (tag1, tag2) ->
-    Dyn (pair_tag, (inject tag1 (fst x), inject tag2 (snd x)))
+    Dyn (typ_pair, (inject tag1 (fst x), inject tag2 (snd x)))
 
 end
 

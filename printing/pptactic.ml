@@ -108,12 +108,12 @@ module Make
   | Some Refl -> x
 
   let rec pr_value lev v : std_ppcmds =
-    if has_type v Val.list_tag then
-      pr_sequence (fun x -> pr_value lev x) (unbox v Val.list_tag)
-    else if has_type v Val.opt_tag then
-      pr_opt_no_spc (fun x -> pr_value lev x) (unbox v Val.opt_tag)
-    else if has_type v Val.pair_tag then
-      let (v1, v2) = unbox v Val.pair_tag in
+    if has_type v Val.typ_list then
+      pr_sequence (fun x -> pr_value lev x) (unbox v Val.typ_list)
+    else if has_type v Val.typ_opt then
+      pr_opt_no_spc (fun x -> pr_value lev x) (unbox v Val.typ_opt)
+    else if has_type v Val.typ_pair then
+      let (v1, v2) = unbox v Val.typ_pair in
       str "(" ++ pr_value lev v1 ++ str ", " ++ pr_value lev v2 ++ str ")"
     else
       let Val.Dyn (tag, x) = v in

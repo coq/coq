@@ -65,7 +65,7 @@ let prj : type a. a Val.typ -> Val.t -> a option = fun t v ->
 
 let in_list tag v =
   let tag = match tag with Val.Base tag -> tag | _ -> assert false in
-  Val.Dyn (Val.list_tag, List.map (fun x -> Val.Dyn (tag, x)) v)
+  Val.Dyn (Val.typ_list, List.map (fun x -> Val.Dyn (tag, x)) v)
 let in_gen wit v =
   let t = match val_tag wit with
   | Val.Base t -> t
@@ -179,10 +179,10 @@ module Value = struct
   | Some x -> x
 
   let rec prj : type a. a Val.tag -> Val.t -> a = fun tag v -> match tag with
-  | Val.List tag -> List.map (fun v -> prj tag v) (unbox Val.list_tag v (to_list v))
-  | Val.Opt tag -> Option.map (fun v -> prj tag v) (unbox Val.opt_tag v (to_option v))
+  | Val.List tag -> List.map (fun v -> prj tag v) (unbox Val.typ_list v (to_list v))
+  | Val.Opt tag -> Option.map (fun v -> prj tag v) (unbox Val.typ_opt v (to_option v))
   | Val.Pair (tag1, tag2) ->
-    let (x, y) = unbox Val.pair_tag v (to_pair v) in
+    let (x, y) = unbox Val.typ_pair v (to_pair v) in
     (prj tag1 x, prj tag2 y)
   | Val.Base t ->
     let Val.Dyn (t', x) = v in
@@ -1548,19 +1548,19 @@ and interp_genarg ist x : Val.t Ftactic.t =
     | ListArg wit ->
       let map x = interp_genarg ist (Genarg.in_gen (glbwit wit) x) in
       Ftactic.List.map map x >>= fun l ->
-      Ftactic.return (Val.Dyn (Val.list_tag, l))
+      Ftactic.return (Val.Dyn (Val.typ_list, l))
     | OptArg wit ->
       begin match x with
-      | None -> Ftactic.return (Val.Dyn (Val.opt_tag, None))
+      | None -> Ftactic.return (Val.Dyn (Val.typ_opt, None))
       | Some x ->
         interp_genarg ist (Genarg.in_gen (glbwit wit) x) >>= fun x ->
-        Ftactic.return (Val.Dyn (Val.opt_tag, Some x))
+        Ftactic.return (Val.Dyn (Val.typ_opt, Some x))
       end
     | PairArg (wit1, wit2) ->
       let (p, q) = x in
       interp_genarg ist (Genarg.in_gen (glbwit wit1) p) >>= fun p ->
       interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
-      Ftactic.return (Val.Dyn (Val.pair_tag, (p, q)))
+      Ftactic.return (Val.Dyn (Val.typ_pair, (p, q)))
     | ExtraArg s ->
       Geninterp.interp wit ist x
 
