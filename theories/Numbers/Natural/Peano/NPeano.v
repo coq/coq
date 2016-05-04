@@ -12,4 +12,4 @@ Require Import PeanoNat NAxioms.
 
 (** * [PeanoNat.Nat] already implements [NAxiomSig] *)
 
-Module Nat <: NAxiomsSig := Nat.
+Module Export Nat <: NAxiomsSig := Nat.
