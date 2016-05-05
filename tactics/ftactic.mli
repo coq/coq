@@ -37,6 +37,11 @@ val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
     the tactic has not focussed, then the continuation is evaluated once.
     Otherwise it is called in each of the currently focussed goals. *)
 
+val apply : Environ.env -> 'a t -> Proofview.proofview -> 'a list
+                                                          * Proofview.proofview
+                                                          * (bool*Goal.goal list*Goal.goal list)
+                                                          * Proofview_monad.Info.tree
+
 (** {5 Focussing} *)
 
 val nf_enter : ([ `NF ], 'a t) enter -> 'a t

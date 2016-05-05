@@ -68,6 +68,18 @@ Notation "x <= y <= z" := (x<=y /\ y<=z) : bigN_scope.
 Notation "[ i ]" := (BigN.to_Z i) : bigN_scope.
 Infix "mod" := BigN.modulo (at level 40, no associativity) : bigN_scope.
 
+(** Parsing and Printing digits strings as type bigN *)
+
+Definition bigN_of_Z' z' :=
+  match z' with
+  | Z'0 | Z'pos _ => Some (BigN.N_of_Z (Z_of_Z' z'))
+  | Z'neg _ => None
+  end.
+
+Definition Z'_of_bigN n := Some (Z'_of_Z (BigN.to_Z n)).
+
+Numeral Notation BigN.t' bigN_of_Z' Z'_of_bigN : bigN_scope.
+
 (** Example of reasoning about [BigN] *)
 
 Theorem succ_pred: forall q : bigN,

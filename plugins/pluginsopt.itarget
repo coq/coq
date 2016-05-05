@@ -12,10 +12,6 @@ cc/cc_plugin.cmxa
 nsatz/nsatz_plugin.cmxa
 funind/recdef_plugin.cmxa
 syntax/ascii_syntax_plugin.cmxa
-syntax/nat_syntax_plugin.cmxa
-syntax/numbers_syntax_plugin.cmxa
-syntax/r_syntax_plugin.cmxa
 syntax/string_syntax_plugin.cmxa
-syntax/z_syntax_plugin.cmxa
 quote/quote_plugin.cmxa
 derive/derive_plugin.cmxa

@@ -12,10 +12,6 @@ cc/cc_plugin.cma
 nsatz/nsatz_plugin.cma
 funind/recdef_plugin.cma
 syntax/ascii_syntax_plugin.cma
-syntax/nat_syntax_plugin.cma
-syntax/numbers_syntax_plugin.cma
-syntax/r_syntax_plugin.cma
 syntax/string_syntax_plugin.cma
-syntax/z_syntax_plugin.cma
 quote/quote_plugin.cma
 derive/derive_plugin.cma

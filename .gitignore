@@ -130,6 +130,7 @@ tactics/hipattern.ml
 ltac/coretactics.ml
 ltac/extratactics.ml
 ltac/extraargs.ml
+ltac/numeral.ml
 ide/coqide_main.ml
 
 # other auto-generated files

@@ -212,6 +212,17 @@ Definition phi_inv2 n :=
 Definition phi2 nh nl :=
   ((phi nh)*base+(phi nl))%Z.
 
+(** Parsing and Printing digits strings as type int31 *)
+
+Definition int31_of_Z' z' :=
+  match z' with
+  | Z'0 | Z'pos _ => Some (phi_inv (Z_of_Z' z'))
+  | Z'neg _ => None
+  end.
+Definition Z'_of_int31 n := Some (Z'_of_Z (phi n)).
+
+Numeral Notation int31 int31_of_Z' Z'_of_int31 : int31_scope.
+
 (** * Addition *)
 
 (** Addition modulo [2^31] *)

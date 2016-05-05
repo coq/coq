@@ -187,11 +187,7 @@ FOCMA:=plugins/firstorder/ground_plugin.cma
 CCCMA:=plugins/cc/cc_plugin.cma
 BTAUTOCMA:=plugins/btauto/btauto_plugin.cma
 RTAUTOCMA:=plugins/rtauto/rtauto_plugin.cma
-NATSYNTAXCMA:=plugins/syntax/nat_syntax_plugin.cma
 OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
-        z_syntax_plugin.cma \
-        numbers_syntax_plugin.cma \
-        r_syntax_plugin.cma \
 	ascii_syntax_plugin.cma \
         string_syntax_plugin.cma )
 DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
@@ -201,13 +197,13 @@ PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
         $(QUOTECMA) $(RINGCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) \
         $(CCCMA)  $(FOCMA) $(RTAUTOCMA) $(BTAUTOCMA) \
-        $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA) \
+        $(FUNINDCMA) $(NSATZCMA) $(OTHERSYNTAXCMA) \
 	$(DERIVECMA)
 
 ifneq ($(HASNATDYNLINK),false)
  STATICPLUGINS:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) \
-	$(FUNINDCMA) $(NATSYNTAXCMA)
+	$(FUNINDCMA)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
  PLUGINS:=$(PLUGINSCMA)
  PLUGINSOPT:=$(PLUGINSCMA:.cma=.cmxs)
@@ -215,7 +211,7 @@ else
 ifeq ($(BEST),byte)
  STATICPLUGINS:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) \
-	$(FUNINDCMA) $(NATSYNTAXCMA)
+	$(FUNINDCMA)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
  PLUGINS:=$(PLUGINSCMA)
  PLUGINSOPT:=$(PLUGINSCMA:.cma=.cmxs)

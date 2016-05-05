@@ -15,10 +15,6 @@ cc/cc_plugin.cmxs
 nsatz/nsatz_plugin.cmxs
 funind/recdef_plugin.cmxs
 syntax/ascii_syntax_plugin.cmxs
-syntax/nat_syntax_plugin.cmxs
-syntax/numbers_syntax_plugin.cmxs
-syntax/r_syntax_plugin.cmxs
 syntax/string_syntax_plugin.cmxs
-syntax/z_syntax_plugin.cmxs
 quote/quote_plugin.cmxs
 derive/derive_plugin.cmxs
