@@ -17,23 +17,23 @@ TACTIC EXTEND stop_profiling
 END;;
 
 
-VERNAC COMMAND EXTEND StartProfiling
+VERNAC COMMAND EXTEND StartProfiling CLASSIFIED AS SIDEFF
  [ "Start" "Profiling" ] -> [ reset_profile(); set_profiling true ]
 END
 
-VERNAC COMMAND EXTEND StopProfiling
+VERNAC COMMAND EXTEND StopProfiling CLASSIFIED AS SIDEFF
  [ "Stop" "Profiling" ] -> [ set_profiling false ]
  END
 
-VERNAC COMMAND EXTEND ResetProfiling
+VERNAC COMMAND EXTEND ResetProfiling CLASSIFIED AS SIDEFF
  [ "Reset" "Profile" ] -> [ reset_profile() ]
 END
 
-VERNAC COMMAND EXTEND ShowProfile
+VERNAC COMMAND EXTEND ShowProfile CLASSIFIED AS QUERY
  [ "Show" "Profile" ] -> [ print_results() ]
 END
 
 
-VERNAC COMMAND EXTEND ShowProfileTactic
+VERNAC COMMAND EXTEND ShowProfileTactic CLASSIFIED AS QUERY
  [ "Show" "Profile" string(s) ] -> [ print_results_tactic s ]
 END
