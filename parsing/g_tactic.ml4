@@ -604,9 +604,6 @@ GEXTEND Gram
       | IDENT "edestruct";  icl = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct(false,true,icl))
 
-      (* Context management *)
-      | IDENT "rename"; l = LIST1 rename SEP "," -> TacAtom (!@loc, TacRename l)
-
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";
 	  cl = clause_dft_concl; t=opt_by_tactic -> TacAtom (!@loc, TacRewrite (false,l,cl,t))

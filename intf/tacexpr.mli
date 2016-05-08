@@ -156,9 +156,6 @@ type 'a gen_atomic_tactic_expr =
   | TacInductionDestruct of
       rec_flag * evars_flag * ('trm,'dtrm,'nam) induction_clause_list
 
-  (* Context management *)
-  | TacRename of ('nam *'nam) list
-
   (* Conversion *)
   | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
   | TacChange of 'pat option * 'dtrm * 'nam clause_expr

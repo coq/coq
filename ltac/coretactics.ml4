@@ -223,6 +223,12 @@ TACTIC EXTEND move
 | [ "move" hyp(id) "before" hyp(h) ] -> [ Tactics.move_hyp id (MoveBefore h) ]
 END
 
+(** Rename *)
+
+TACTIC EXTEND rename
+| [ "rename" ne_rename_list_sep(ids, ",") ] -> [ Tactics.rename_hyp ids ]
+END
+
 (** Revert *)
 
 TACTIC EXTEND revert

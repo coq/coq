@@ -1800,20 +1800,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         Sigma.Unsafe.of_pair (tac, sigma)
       end }
-  (* Context management *)
-  | TacRename l ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = pf_env gl in
-        let sigma = project gl in
-        let l =
-          List.map (fun (id1,id2) ->
-	    interp_hyp ist env sigma id1,
-	    interp_ident ist env sigma (snd id2)) l
-        in
-        name_atomic ~env
-          (TacRename l)
-          (Tactics.rename_hyp l)
-      end }
 
   (* Conversion *)
   | TacReduce (r,cl) ->

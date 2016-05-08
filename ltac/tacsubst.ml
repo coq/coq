@@ -161,9 +161,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       let el' = Option.map (subst_glob_with_bindings subst) el in
       TacInductionDestruct (isrec,ev,(l',el'))
 
-  (* Context management *)
-  | TacRename l as x -> x
-
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
   | TacChange (op,c,cl) ->

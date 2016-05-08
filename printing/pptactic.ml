@@ -900,17 +900,6 @@ module Make
               pr_opt pr_eliminator el
           )
 
-        (* Context management *)
-        | TacRename l ->
-          hov 1 (
-            primitive "rename" ++ brk (1,1)
-            ++ prlist_with_sep
-              (fun () -> str "," ++ brk (1,1))
-              (fun (i1,i2) ->
-                pr.pr_name i1 ++ spc () ++ str "into" ++ spc () ++ pr.pr_name i2)
-              l
-          )
-
         (* Conversion *)
         | TacReduce (r,h) ->
           hov 1 (

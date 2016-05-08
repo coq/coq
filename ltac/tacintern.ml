@@ -516,12 +516,6 @@ let rec intern_atomic lf ist x =
                Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
                Option.map (clause_app (intern_hyp_location ist)) cls)) l,
                Option.map (intern_constr_with_bindings ist) el))
-  (* Context management *)
-  | TacRename l ->
-      TacRename (List.map (fun (id1,id2) ->
-			     intern_hyp ist id1,
-			     intern_hyp ist id2) l)
-
   (* Conversion *)
   | TacReduce (r,cl) ->
       dump_glob_red_expr r;

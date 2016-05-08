@@ -236,6 +236,14 @@ ARGUMENT EXTEND hloc
 
  END
 
+let pr_rename _ _ _ (n, m) = Nameops.pr_id n ++ str " into " ++ Nameops.pr_id m
+
+ARGUMENT EXTEND rename
+  TYPED AS ident * ident
+  PRINTED BY pr_rename
+| [ ident(n) "into" ident(m) ] -> [ (n, m) ]
+END
+
 (* Julien: Mise en commun des differentes version de replace with in by *)
 
 let pr_by_arg_tac _prc _prlc prtac opt_c =
