@@ -340,40 +340,22 @@ module Make
         with Not_found -> Genprint.generic_glb_print (in_gen (glbwit wit) x)
 
   let rec tacarg_using_rule_token pr_gen = function
-    | TacTerm s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
-    | TacNonTerm _ :: l, a :: al ->
-      let r = tacarg_using_rule_token pr_gen (l,al) in
-      pr_gen a :: r
-    | [], [] -> []
-    | _ -> failwith "Inconsistent arguments of extended tactic"
-
-  let rec argument_of_symbol = function
-  | Extend.Ulist1 s | Extend.Ulist0 s
-  | Extend.Ulist1sep (s, _) | Extend.Ulist0sep (s, _) ->
-    let ArgumentType t = argument_of_symbol s in
-    ArgumentType (ListArg t)
-  | Extend.Uopt s ->
-    let ArgumentType t = argument_of_symbol s in
-    ArgumentType (OptArg t)
-  | Extend.Uentry s | Extend.Uentryl (s, _) ->
-    let ArgT.Any tag = s in
-    ArgumentType (ExtraArg tag)
-
-  let filter_arg = function
-  | TacTerm _ -> None
-  | TacNonTerm (_, s, _) -> Some (argument_of_symbol s)
+    | [] -> []
+    | TacTerm s :: l -> keyword s :: tacarg_using_rule_token pr_gen l
+    | TacNonTerm (_, (symb, arg), _) :: l  ->
+      pr_gen symb arg :: tacarg_using_rule_token pr_gen l
 
   let pr_tacarg_using_rule pr_gen l =
     let l = match l with
-    | (TacTerm s :: l, al) ->
+    | TacTerm s :: l ->
       (** First terminal token should be considered as the name of the tactic,
           so we tag it differently than the other terminal tokens. *)
-      primitive s :: (tacarg_using_rule_token pr_gen (l, al))
+      primitive s :: tacarg_using_rule_token pr_gen l
     | _ -> tacarg_using_rule_token pr_gen l
     in
     pr_sequence (fun x -> x) l
 
-  let pr_extend_gen check pr_gen lev { mltac_name = s; mltac_index = i } l =
+  let pr_extend_gen pr_gen lev { mltac_name = s; mltac_index = i } l =
       let name =
         str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic ++
         str "@" ++ int i
@@ -384,31 +366,82 @@ module Make
       in
       str "<" ++ name ++ str ">" ++ args
 
-  let pr_alias_gen check pr_gen lev key l =
+  let pr_alias_gen pr_gen lev key l =
     try
       let pp = KNmap.find key !prnotation_tab in
-      let args = List.map_filter filter_arg pp.pptac_prods in
-      let () = if not (List.for_all2eq check args l) then raise Not_found in
-      let p = pr_tacarg_using_rule pr_gen (pp.pptac_prods, l) in
+      let rec pack prods args = match prods, args with
+      | [], [] -> []
+      | TacTerm s :: prods, args -> TacTerm s :: pack prods args
+      | TacNonTerm (loc, symb, id) :: prods, arg :: args ->
+        TacNonTerm (loc, (symb, arg), id) :: pack prods args
+      | _ -> raise Not_found
+      in
+      let prods = pack pp.pptac_prods l in
+      let p = pr_tacarg_using_rule pr_gen prods in
       if pp.pptac_level > lev then surround p else p
     with Not_found ->
-      KerName.print key ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
-
-  let check_type t arg = match arg with
-  | TacGeneric arg -> argument_type_eq t (genarg_tag arg)
-  | _ -> argument_type_eq t (ArgumentType wit_tactic)
+      let pr arg = str "_" in
+      KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
 
   let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.ghost, arg))
 
-  let pr_raw_extend_rec prc prlc prtac prpat =
-    pr_extend_gen check_type (pr_farg prtac)
-  let pr_glob_extend_rec prc prlc prtac prpat =
-    pr_extend_gen check_type (pr_farg prtac)
+  let is_genarg tag wit =
+    let ArgT.Any tag = tag in
+    argument_type_eq (ArgumentType (ExtraArg tag)) wit
 
-  let pr_raw_alias prc prlc prtac prpat =
-    pr_alias_gen check_type (pr_farg prtac)
-  let pr_glob_alias prc prlc prtac prpat =
-    pr_alias_gen check_type (pr_farg prtac)
+  let get_list : type l. l generic_argument -> l generic_argument list option =
+  function (GenArg (wit, arg)) -> match wit with
+  | Rawwit (ListArg wit) -> Some (List.map (in_gen (rawwit wit)) arg)
+  | Glbwit (ListArg wit) -> Some (List.map (in_gen (glbwit wit)) arg)
+  | _ -> None
+
+  let get_opt : type l. l generic_argument -> l generic_argument option option =
+  function (GenArg (wit, arg)) -> match wit with
+  | Rawwit (OptArg wit) -> Some (Option.map (in_gen (rawwit wit)) arg)
+  | Glbwit (OptArg wit) -> Some (Option.map (in_gen (glbwit wit)) arg)
+  | _ -> None
+
+  let rec pr_any_arg : type l. (_ -> l generic_argument -> std_ppcmds) -> _ -> l generic_argument -> std_ppcmds =
+  fun prtac symb arg -> match symb with
+  | Extend.Uentry tag when is_genarg tag (genarg_tag arg) -> prtac (1, Any) arg
+  | Extend.Ulist1 s | Extend.Ulist0 s ->
+    begin match get_list arg with
+    | None -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+    | Some l -> pr_sequence (pr_any_arg prtac s) l
+    end
+  | Extend.Ulist1sep (s, sep) | Extend.Ulist0sep (s, sep) ->
+    begin match get_list arg with
+    | None -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+    | Some l -> prlist_with_sep (fun () -> str sep) (pr_any_arg prtac s) l
+    end
+  | Extend.Uopt s ->
+    begin match get_opt arg with
+    | None -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+    | Some l -> pr_opt (pr_any_arg prtac s) l
+    end
+  | Extend.Uentry _ | Extend.Uentryl _ ->
+    str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+
+  let rec pr_targ prtac symb arg = match symb with
+  | Extend.Uentry tag when is_genarg tag (ArgumentType wit_tactic) ->
+    prtac (1, Any) arg
+  | Extend.Uentryl (_, l) -> prtac (l, Any) arg
+  | _ ->
+    match arg with
+    | TacGeneric arg ->
+      let pr l arg = prtac l (TacGeneric arg) in
+      pr_any_arg pr symb arg
+    | _ -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+
+  let pr_raw_extend_rec prc prlc prtac prpat =
+    pr_extend_gen (pr_farg prtac)
+  let pr_glob_extend_rec prc prlc prtac prpat =
+    pr_extend_gen (pr_farg prtac)
+
+  let pr_raw_alias prc prlc prtac prpat lev key args =
+    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))) lev key args
+  let pr_glob_alias prc prlc prtac prpat lev key args =
+    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))) lev key args
 
   (**********************************************************************)
   (* The tactic printer                                                 *)
@@ -1279,20 +1312,11 @@ module Make
     (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
     (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
 
-  let check_val_type t arg =
-    let ArgumentType t = t in
-(*     let t = Genarg.val_tag (Obj.magic t) in *)
-(*     let Val.Dyn (t', _) = arg in *)
-(*     match Genarg.Val.eq t t' with *)
-(*     | None -> false *)
-(*     | Some _ -> true *)
-    true (** FIXME *)
-
   let pr_alias pr lev key args =
-    pr_alias_gen check_val_type pr lev key args
+    pr_alias_gen (fun _ arg -> pr arg) lev key args
 
   let pr_extend pr lev ml args =
-    pr_extend_gen check_val_type pr lev ml args
+    pr_extend_gen pr lev ml args
 
   let pr_atomic_tactic env = pr_atomic_tactic_level env ltop
 
