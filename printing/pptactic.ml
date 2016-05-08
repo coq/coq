@@ -339,28 +339,6 @@ module Make
         try pi2 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (glbwit wit) x)
         with Not_found -> Genprint.generic_glb_print (in_gen (glbwit wit) x)
 
-  let rec pr_top_generic_rec prc prlc prtac prpat (GenArg (Topwit wit, x)) =
-    match wit with
-      | ListArg wit ->
-        let map x = pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x) in
-        let ans = pr_sequence map x in
-        hov_if_not_empty 0 ans
-      | OptArg wit ->
-        let ans = match x with
-          | None -> mt ()
-          | Some x -> pr_top_generic_rec prc prlc prtac prpat (in_gen (topwit wit) x)
-        in
-        hov_if_not_empty 0 ans
-      | PairArg (wit1, wit2) ->
-        let p, q = x in
-        let p = in_gen (topwit wit1) p in
-        let q = in_gen (topwit wit2) q in
-        let ans = pr_sequence (pr_top_generic_rec prc prlc prtac prpat) [p; q] in
-        hov_if_not_empty 0 ans
-      | ExtraArg s ->
-        try pi3 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (topwit wit) x)
-        with Not_found -> Genprint.generic_top_print (in_gen (topwit wit) x)
-
   let rec tacarg_using_rule_token pr_gen = function
     | TacTerm s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
     | TacNonTerm _ :: l, a :: al ->
@@ -1293,10 +1271,6 @@ module Make
   let pr_glb_generic env = pr_glb_generic_rec
     (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
     (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
-
-  let pr_top_generic env = pr_top_generic_rec
-    (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
-    pr_value pr_constr_pattern
 
   let pr_raw_extend env = pr_raw_extend_rec
     pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr
