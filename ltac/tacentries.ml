@@ -12,6 +12,7 @@ open Util
 open Names
 open Libobject
 open Genarg
+open Extend
 open Pcoq
 open Egramml
 open Egramcoq
@@ -19,7 +20,7 @@ open Vernacexpr
 open Libnames
 open Nameops
 
-type 'a grammar_tactic_prod_item_expr =
+type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
 | TacTerm of string
 | TacNonTerm of Loc.t * 'a * Names.Id.t
 
@@ -42,7 +43,6 @@ let coincide s pat off =
   !break
 
 let atactic n =
-  let open Extend in
   if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
   else Aentryl (name_of_entry Tactic.tactic_expr, n)
 
@@ -51,7 +51,6 @@ type entry_name = EntryName :
 
 (** Quite ad-hoc *)
 let get_tacentry n m =
-  let open Extend in
   let check_lvl n =
     Int.equal m n
     && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
@@ -66,7 +65,6 @@ let get_separator = function
 | Some sep -> sep
 
 let rec parse_user_entry s sep =
-  let open Extend in
   let l = String.length s in
   if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
     let entry = parse_user_entry (String.sub s 3 (l-8)) None in
@@ -94,25 +92,14 @@ let arg_list = function Rawwit t -> Rawwit (ListArg t)
 let arg_opt = function Rawwit t -> Rawwit (OptArg t)
 
 let interp_entry_name interp symb =
-  let open Extend in
   let rec eval = function
-  | Ulist1 e ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Alist1 g)
-  | Ulist1sep (e, sep) ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Alist1sep (g, sep))
-  | Ulist0 e ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Alist0 g)
-  | Ulist0sep (e, sep) ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_list t, Alist0sep (g, sep))
-  | Uopt e ->
-    let EntryName (t, g) = eval e in
-    EntryName (arg_opt t, Aopt g)
-  | Uentry s -> interp s None
-  | Uentryl (s, n) -> interp s (Some n)
+  | Ulist1 e -> Ulist1 (eval e)
+  | Ulist1sep (e, sep) -> Ulist1sep (eval e, sep)
+  | Ulist0 e -> Ulist0 (eval e)
+  | Ulist0sep (e, sep) -> Ulist0sep (eval e, sep)
+  | Uopt e -> Uopt (eval e)
+  | Uentry s -> Uentry (interp s None)
+  | Uentryl (s, n) -> Uentryl (interp s (Some n), n)
   in
   eval symb
 
@@ -134,14 +121,39 @@ let get_tactic_entry n =
 
 type tactic_grammar = {
   tacgram_level : int;
-  tacgram_prods : Tacexpr.raw_tactic_expr grammar_prod_item list;
+  tacgram_prods : Pptactic.grammar_terminals;
 }
 
 (* Declaration of the tactic grammar rule *)
 
 let head_is_ident tg = match tg.tacgram_prods with
-| GramTerminal _::_ -> true
+| TacTerm _ :: _ -> true
 | _ -> false
+
+let rec prod_item_of_symbol lev = function
+| Extend.Ulist1 s ->
+  let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
+  EntryName (Rawwit (ListArg typ), Alist1 e)
+| Extend.Ulist0 s ->
+  let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
+  EntryName (Rawwit (ListArg typ), Alist0 e)
+| Extend.Ulist1sep (s, sep) ->
+  let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
+  EntryName (Rawwit (ListArg typ), Alist1sep (e, sep))
+| Extend.Ulist0sep (s, sep) ->
+  let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
+  EntryName (Rawwit (ListArg typ), Alist0sep (e, sep))
+| Extend.Uopt s ->
+  let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
+  EntryName (Rawwit (OptArg typ), Aopt e)
+| Extend.Uentry arg ->
+  let ArgT.Any tag = arg in
+  let wit = ExtraArg tag in
+  EntryName (Rawwit wit, Extend.Aentry (name_of_entry (genarg_grammar wit)))
+| Extend.Uentryl (s, n) ->
+  let ArgT.Any tag = s in
+  assert (coincide (ArgT.repr tag) "tactic" 0);
+  get_tacentry n lev
 
 (** Tactic grammar extensions *)
 
@@ -164,7 +176,14 @@ let add_tactic_entry (kn, ml, tg) =
     if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
       error "Notation for simple tactic must start with an identifier."
   in
-  let rules = make_rule mkact tg.tacgram_prods in
+  let map = function
+  | TacTerm s -> GramTerminal s
+  | TacNonTerm (loc, s, _) ->
+    let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
+    GramNonTerminal (loc, typ, e)
+  in
+  let prods = List.map map tg.tacgram_prods in
+  let rules = make_rule mkact prods in
   synchronize_level_positions ();
   grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
   1
@@ -186,28 +205,27 @@ let register_tactic_notation_entry name entry =
   in
   entry_names := String.Map.add name entry !entry_names
 
-let interp_prod_item lev = function
-  | TacTerm s -> GramTerminal s
-  | TacNonTerm (loc, (nt, sep), _) ->
+let interp_prod_item = function
+  | TacTerm s -> TacTerm s
+  | TacNonTerm (loc, (nt, sep), id) ->
     let symbol = parse_user_entry nt sep in
     let interp s = function
     | None ->
-      let ArgT.Any arg =
-        if String.Map.mem s !entry_names then
-          String.Map.find s !entry_names
-        else match ArgT.name s with
-        | None -> error ("Unknown entry "^s^".")
-        | Some arg -> arg
-      in
-      let wit = ExtraArg arg in
-      EntryName (Rawwit wit, Extend.Aentry (name_of_entry (genarg_grammar wit)))
+      if String.Map.mem s !entry_names then String.Map.find s !entry_names
+      else begin match ArgT.name s with
+      | None -> error ("Unknown entry "^s^".")
+      | Some arg -> arg
+      end
     | Some n ->
       (** FIXME: do better someday *)
       assert (String.equal s "tactic");
-      get_tacentry n lev
+      begin match Constrarg.wit_tactic with
+      | ExtraArg tag -> ArgT.Any tag
+      | _ -> assert false
+      end
     in
-    let EntryName (etyp, e) = interp_entry_name interp symbol in
-    GramNonTerminal (loc, etyp, e)
+    let symbol = interp_entry_name interp symbol in
+    TacNonTerm (loc, symbol, id)
 
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
@@ -300,7 +318,7 @@ let add_glob_tactic_notation local n prods forml ids tac =
 
 let add_tactic_notation local n prods e =
   let ids = List.map_filter cons_production_parameter prods in
-  let prods = List.map (interp_prod_item n) prods in
+  let prods = List.map interp_prod_item prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
   add_glob_tactic_notation local n prods false ids tac
 
@@ -315,12 +333,13 @@ let extend_atomic_tactic name entries =
   let open Tacexpr in
   let map_prod prods =
     let (hd, rem) = match prods with
-    | GramTerminal s :: rem -> (s, rem)
+    | TacTerm s :: rem -> (s, rem)
     | _ -> assert false (** Not handled by the ML extension syntax *)
     in
     let empty_value = function
-    | GramTerminal s -> raise NonEmptyArgument
-    | GramNonTerminal (_, typ, e) ->
+    | TacTerm s -> raise NonEmptyArgument
+    | TacNonTerm (_, symb, _) ->
+      let EntryName (typ, e) = prod_item_of_symbol 0 symb in
       let Genarg.Rawwit wit = typ in
       let inj x = TacArg (Loc.ghost, TacGeneric (Genarg.in_gen typ x)) in
       let default = epsilon_value inj e in
@@ -342,33 +361,21 @@ let extend_atomic_tactic name entries =
   List.iteri add_atomic entries
 
 let add_ml_tactic_notation name prods =
-  let interp_prods = function
-  | TacTerm s -> None, GramTerminal s
-  | TacNonTerm (loc, symb, id) ->
-    let interp (ArgT.Any tag) lev = match lev with
-    | None ->
-      let wit = ExtraArg tag in
-      EntryName (Rawwit wit, Extend.Aentry (Pcoq.name_of_entry (Pcoq.genarg_grammar wit)))
-    | Some lev ->
-      assert (coincide (ArgT.repr tag) "tactic" 0);
-      EntryName (Rawwit Constrarg.wit_tactic, atactic lev)
-    in
-    let EntryName (etyp, e) = interp_entry_name interp symb in
-    Some id, GramNonTerminal (loc, etyp, e)
-  in
-  let prods = List.map (fun p -> List.map interp_prods p) prods in
   let len = List.length prods in
   let iter i prods =
     let open Tacexpr in
-    let (ids, prods) = List.split prods in
-    let ids = List.map_filter (fun x -> x) ids in
+    let get_id = function
+    | TacTerm s -> None
+    | TacNonTerm (_, _, id) -> Some id
+    in
+    let ids = List.map_filter get_id prods in
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
     let map id = Reference (Misctypes.ArgVar (Loc.ghost, id)) in
     let tac = TacML (Loc.ghost, entry, List.map map ids) in
     add_glob_tactic_notation false 0 prods true ids tac
   in
   List.iteri iter (List.rev prods);
-  extend_atomic_tactic name (List.map (fun p -> List.map snd p) prods)
+  extend_atomic_tactic name prods
 
 (**********************************************************************)
 (** Ltac quotations                                                   *)
@@ -376,7 +383,6 @@ let add_ml_tactic_notation name prods =
 let ltac_quotations = ref String.Set.empty
 
 let create_ltac_quotation name cast (e, l) =
-  let open Extend in
   let () =
     if String.Set.mem name !ltac_quotations then
       failwith ("Ltac quotation " ^ name ^ " already registered")

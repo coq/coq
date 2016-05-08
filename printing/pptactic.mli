@@ -17,6 +17,9 @@ open Constrexpr
 open Tacexpr
 open Ppextend
 
+type 'a grammar_tactic_prod_item_expr =
+| TacTerm of string
+| TacNonTerm of Loc.t * 'a * Names.Id.t
 
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->
@@ -42,7 +45,7 @@ val declare_extra_genarg_pprule :
   'b glob_extra_genarg_printer ->
   'c extra_genarg_printer -> unit
 
-type grammar_terminals = Tacexpr.raw_tactic_expr Egramml.grammar_prod_item list
+type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
 
 type pp_tactic = {
   pptac_level : int;

@@ -36,8 +36,6 @@ module type Pp = sig
 
   val pr_glb_generic : env -> glevel generic_argument -> std_ppcmds
 
-  val pr_top_generic : env -> tlevel generic_argument -> std_ppcmds
-
   val pr_raw_extend: env -> int ->
     ml_tactic_entry -> raw_tactic_arg list -> std_ppcmds
 
