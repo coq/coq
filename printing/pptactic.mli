@@ -11,6 +11,7 @@
 
 open Pp
 open Genarg
+open Geninterp
 open Names
 open Constrexpr
 open Tacexpr

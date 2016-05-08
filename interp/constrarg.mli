@@ -38,14 +38,7 @@ val wit_ref : (reference, global_reference located or_var, global_reference) gen
 
 val wit_quant_hyp : quantified_hypothesis uniform_genarg_type
 
-val wit_sort : (glob_sort, glob_sort, sorts) genarg_type
-
 val wit_constr : (constr_expr, glob_constr_and_expr, constr) genarg_type
-
-val wit_constr_may_eval :
-  ((constr_expr,reference or_by_notation,constr_expr) may_eval,
-  (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) may_eval,
-  constr) genarg_type
 
 val wit_uconstr : (constr_expr , glob_constr_and_expr, Glob_term.closed_glob_constr) genarg_type
 
@@ -62,14 +55,12 @@ val wit_bindings :
   glob_constr_and_expr bindings,
   constr bindings delayed_open) genarg_type
 
-val wit_hyp_location_flag : Locus.hyp_location_flag uniform_genarg_type
-
 val wit_red_expr :
   ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
   (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
 
-val wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type
+val wit_tactic : (raw_tactic_expr, glob_tactic_expr, Geninterp.Val.t) genarg_type
 
 (** [wit_ltac] is subtly different from [wit_tactic]: they only change for their
     toplevel interpretation. The one of [wit_ltac] forces the tactic and

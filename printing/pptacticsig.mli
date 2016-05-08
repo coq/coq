@@ -8,6 +8,7 @@
 
 open Pp
 open Genarg
+open Geninterp
 open Tacexpr
 open Ppextend
 open Environ

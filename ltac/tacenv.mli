@@ -9,6 +9,7 @@
 open Genarg
 open Names
 open Tacexpr
+open Geninterp
 
 (** This module centralizes the various ways of registering tactics. *)
 

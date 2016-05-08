@@ -106,9 +106,9 @@ let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = List.map (fun h -> 
   let tac = match h.rew_tac with
   | None -> Proofview.tclUNIT ()
-  | Some tac ->
+  | Some (Genarg.GenArg (Genarg.Glbwit wit, tac)) ->
     let ist = { Geninterp.lfun = Id.Map.empty; extra = Geninterp.TacStore.empty } in
-    Ftactic.run (Geninterp.generic_interp ist tac) (fun _ -> Proofview.tclUNIT ())
+    Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())
   in
     (h.rew_ctx,h.rew_lemma,h.rew_l2r,tac)) lrul in
     Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS (List.fold_left (fun tac (ctx,csr,dir,tc) ->

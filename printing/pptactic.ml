@@ -14,6 +14,7 @@ open Util
 open Constrexpr
 open Tacexpr
 open Genarg
+open Geninterp
 open Constrarg
 open Libnames
 open Ppextend
@@ -97,23 +98,38 @@ module Make
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
 
-  let rec pr_value lev (Val.Dyn (tag, x)) : std_ppcmds = match tag with
-  | Val.List tag ->
-    pr_sequence (fun x -> pr_value lev (Val.Dyn (tag, x))) x
-  | Val.Opt tag -> pr_opt_no_spc (fun x -> pr_value lev (Val.Dyn (tag, x))) x
-  | Val.Pair (tag1, tag2) ->
-    str "(" ++ pr_value lev (Val.Dyn (tag1, fst x)) ++ str ", " ++
-      pr_value lev (Val.Dyn (tag1, fst x)) ++ str ")"
-  | Val.Base t ->
-    let name = Val.repr t in
-    let default = str "<" ++ str name ++ str ">" in
-    match ArgT.name name with
-    | None -> default
-    | Some (ArgT.Any arg) ->
-      let wit = ExtraArg arg in
-      match Val.eq (val_tag (Topwit wit)) (Val.Base t) with
+  let has_type (Val.Dyn (tag, x)) t = match Val.eq tag t with
+  | None -> false
+  | Some _ -> true
+
+  let unbox : type a. Val.t -> a Val.typ -> a= fun (Val.Dyn (tag, x)) t ->
+  match Val.eq tag t with
+  | None -> assert false
+  | Some Refl -> x
+
+  let rec pr_value lev v : std_ppcmds =
+    if has_type v Val.typ_list then
+      pr_sequence (fun x -> pr_value lev x) (unbox v Val.typ_list)
+    else if has_type v Val.typ_opt then
+      pr_opt_no_spc (fun x -> pr_value lev x) (unbox v Val.typ_opt)
+    else if has_type v Val.typ_pair then
+      let (v1, v2) = unbox v Val.typ_pair in
+      str "(" ++ pr_value lev v1 ++ str ", " ++ pr_value lev v2 ++ str ")"
+    else
+      let Val.Dyn (tag, x) = v in
+      let name = Val.repr tag in
+      let default = str "<" ++ str name ++ str ">" in
+      match ArgT.name name with
       | None -> default
-      | Some Refl -> Genprint.generic_top_print (in_gen (Topwit wit) x)
+      | Some (ArgT.Any arg) ->
+        let wit = ExtraArg arg in
+        match val_tag (Topwit wit) with
+        | Val.Base t ->
+          begin match Val.eq t tag with
+          | None -> default
+          | Some Refl -> Genprint.generic_top_print (in_gen (Topwit wit) x)
+          end
+        | _ -> default
 
   let pr_with_occurrences pr (occs,c) =
     match occs with
@@ -1349,8 +1365,6 @@ let () =
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) (fun id -> pr_lident (Loc.ghost,id)))
   ;
-  Genprint.register_print0 Constrarg.wit_sort
-    pr_glob_sort pr_glob_sort (pr_sort Evd.empty);
   Genprint.register_print0
     Constrarg.wit_constr
     Ppconstr.pr_constr_expr
@@ -1378,11 +1392,6 @@ let () =
     (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_bindings_no_with pr_constr pr_lconstr (fst (run_delayed it)));
-  Genprint.register_print0 Constrarg.wit_constr_may_eval
-    (pr_may_eval pr_constr_expr pr_lconstr_expr (pr_or_by_notation pr_reference) pr_constr_pattern_expr)
-    (pr_may_eval (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr)
-      (pr_or_var (pr_and_short_name pr_evaluable_reference)) (pr_pat_and_constr_expr pr_glob_constr))
-    pr_constr;
   Genprint.register_print0 Constrarg.wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))

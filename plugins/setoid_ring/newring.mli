@@ -45,7 +45,7 @@ val ic : constr_expr -> Evd.evar_map * constr
 val from_name : ring_info Spmap.t ref
 
 val ring_lookup :
-  Genarg.Val.t ->
+  Geninterp.Val.t ->
   constr list ->
   constr list -> constr -> unit Proofview.tactic
 
@@ -73,6 +73,6 @@ val add_field_theory :
 val field_from_name : field_info Spmap.t ref
 
 val field_lookup :
-  Genarg.Val.t ->
+  Geninterp.Val.t ->
   constr list ->
   constr list -> constr -> unit Proofview.tactic

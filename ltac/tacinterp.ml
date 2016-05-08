@@ -30,6 +30,7 @@ open Term
 open Termops
 open Tacexpr
 open Genarg
+open Geninterp
 open Stdarg
 open Constrarg
 open Printer
@@ -48,18 +49,35 @@ let ltac_trace_info = Tactic_debug.ltac_trace_info
 
 let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
   let Val.Dyn (t, _) = v in
-  match Val.eq t (val_tag wit) with
+  let t' = match val_tag wit with
+  | Val.Base t' -> t'
+  | _ -> assert false (** not used in this module *)
+  in
+  match Val.eq t t' with
   | None -> false
   | Some Refl -> true
 
-let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
+let prj : type a. a Val.typ -> Val.t -> a option = fun t v ->
   let Val.Dyn (t', x) = v in
   match Val.eq t t' with
   | None -> None
   | Some Refl -> Some x
 
-let in_gen wit v = Val.Dyn (val_tag wit, v)
-let out_gen wit v = match prj (val_tag wit) v with None -> assert false | Some x -> x
+let in_list tag v =
+  let tag = match tag with Val.Base tag -> tag | _ -> assert false in
+  Val.Dyn (Val.typ_list, List.map (fun x -> Val.Dyn (tag, x)) v)
+let in_gen wit v =
+  let t = match val_tag wit with
+  | Val.Base t -> t
+  | _ -> assert false (** not used in this module *)
+  in
+  Val.Dyn (t, v)
+let out_gen wit v =
+  let t = match val_tag wit with
+  | Val.Base t -> t
+  | _ -> assert false (** not used in this module *)
+  in
+  match prj t v with None -> assert false | Some x -> x
 
 let val_tag wit = val_tag (topwit wit)
 
@@ -109,7 +127,9 @@ type tacvalue =
   | VRec of value Id.Map.t ref * glob_tactic_expr
 
 let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
-  Genarg.create_arg "tacvalue"
+  let wit = Genarg.create_arg "tacvalue" in
+  let () = register_val0 wit None in
+  wit
 
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v
@@ -152,47 +172,31 @@ module Value = struct
     let Val.Dyn (tag, _) = v in
     let tag = Val.pr tag in
     errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ tag
-      ++ str " while type " ++ Genarg.pr_argument_type (unquote (rawwit wit)) ++ str " was expected.")
+      ++ str " while type " ++ Val.pr wit ++ str " was expected.")
 
-  let prj : type a. a Val.tag -> Val.t -> a option = fun t v ->
-    let Val.Dyn (t', x) = v in
-    match Val.eq t t' with
-    | None -> None
-    | Some Refl -> Some x
-
-  let try_prj wit v = match prj (val_tag wit) v with
+  let unbox wit v ans = match ans with
   | None -> cast_error wit v
   | Some x -> x
 
-  let rec val_cast : type a b c. (a, b, c) genarg_type -> Val.t -> c =
-  fun wit v -> match wit with
-  | ExtraArg _ -> try_prj wit v
-  | ListArg t ->
-    let Val.Dyn (tag, v) = v in
-    begin match tag with
-    | Val.List tag ->
-      let map x = val_cast t (Val.Dyn (tag, x)) in
-      List.map map v
-    | _ -> cast_error wit (Val.Dyn (tag, v))
-    end
-  | OptArg t ->
-    let Val.Dyn (tag, v) = v in
-    begin match tag with
-    | Val.Opt tag ->
-      let map x = val_cast t (Val.Dyn (tag, x)) in
-      Option.map map v
-    | _ -> cast_error wit (Val.Dyn (tag, v))
-    end
-  | PairArg (t1, t2) ->
-    let Val.Dyn (tag, v) = v in
-    begin match tag with
-    | Val.Pair (tag1, tag2) ->
-      let (v1, v2) = v in
-      let v1 = Val.Dyn (tag1, v1) in
-      let v2 = Val.Dyn (tag2, v2) in
-      (val_cast t1 v1, val_cast t2 v2)
-    | _ -> cast_error wit (Val.Dyn (tag, v))
-    end
+  let rec prj : type a. a Val.tag -> Val.t -> a = fun tag v -> match tag with
+  | Val.List tag -> List.map (fun v -> prj tag v) (unbox Val.typ_list v (to_list v))
+  | Val.Opt tag -> Option.map (fun v -> prj tag v) (unbox Val.typ_opt v (to_option v))
+  | Val.Pair (tag1, tag2) ->
+    let (x, y) = unbox Val.typ_pair v (to_pair v) in
+    (prj tag1 x, prj tag2 y)
+  | Val.Base t ->
+    let Val.Dyn (t', x) = v in
+    match Val.eq t t' with
+    | None -> cast_error t v
+    | Some Refl -> x
+
+  let rec tag_of_arg : type a b c. (a, b, c) genarg_type -> c Val.tag = fun wit -> match wit with
+  | ExtraArg _ -> val_tag wit
+  | ListArg t -> Val.List (tag_of_arg t)
+  | OptArg t -> Val.Opt (tag_of_arg t)
+  | PairArg (t1, t2) -> Val.Pair (tag_of_arg t1, tag_of_arg t2)
+
+  let rec val_cast arg v = prj (tag_of_arg arg) v
 
   let cast (Topwit wit) v = val_cast wit v
 
@@ -1144,17 +1148,6 @@ let rec read_match_rule lfun ist env sigma = function
   | [] -> []
 
 
-(* misc *)
-
-let interp_focussed wit f v =
-  Ftactic.nf_enter { enter = begin fun gl ->
-    let v = Genarg.out_gen (glbwit wit) v in
-    let env = Proofview.Goal.env gl in
-    let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
-    let v = in_gen (topwit wit) (f env sigma v) in
-    Ftactic.return v
-  end }
-
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftactic.t =
   (* The name [appl] of applied top-level Ltac names is ignored in
@@ -1553,30 +1546,23 @@ and interp_genarg ist x : Val.t Ftactic.t =
     let GenArg (Glbwit wit, x) = x in
     match wit with
     | ListArg wit ->
-      let map x =
-        interp_genarg ist (Genarg.in_gen (glbwit wit) x) >>= fun x ->
-        Ftactic.return (Value.cast (topwit wit) x)
-      in
+      let map x = interp_genarg ist (Genarg.in_gen (glbwit wit) x) in
       Ftactic.List.map map x >>= fun l ->
-      Ftactic.return (Value.of_list (val_tag wit) l)
+      Ftactic.return (Val.Dyn (Val.typ_list, l))
     | OptArg wit ->
-      let ans = match x with
-      | None -> Ftactic.return (Value.of_option (val_tag wit) None)
+      begin match x with
+      | None -> Ftactic.return (Val.Dyn (Val.typ_opt, None))
       | Some x ->
         interp_genarg ist (Genarg.in_gen (glbwit wit) x) >>= fun x ->
-        let x = Value.cast (topwit wit) x in
-        Ftactic.return (Value.of_option (val_tag wit) (Some x))
-      in
-      ans
+        Ftactic.return (Val.Dyn (Val.typ_opt, Some x))
+      end
     | PairArg (wit1, wit2) ->
       let (p, q) = x in
       interp_genarg ist (Genarg.in_gen (glbwit wit1) p) >>= fun p ->
       interp_genarg ist (Genarg.in_gen (glbwit wit2) q) >>= fun q ->
-      let p = Value.cast (topwit wit1) p in
-      let q = Value.cast (topwit wit2) q in
-      Ftactic.return (Val.Dyn (Val.Pair (val_tag wit1, val_tag wit2), (p, q)))
+      Ftactic.return (Val.Dyn (Val.typ_pair, (p, q)))
     | ExtraArg s ->
-      Geninterp.generic_interp ist (Genarg.in_gen (glbwit wit) x)
+      Geninterp.interp wit ist x
 
 (** returns [true] for genargs which have the same meaning
     independently of goals. *)
@@ -1587,7 +1573,7 @@ and interp_genarg_constr_list ist x =
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let lc = Genarg.out_gen (glbwit (wit_list wit_constr)) x in
   let (sigma,lc) = interp_constr_list ist env sigma lc in
-  let lc = Value.of_list (val_tag wit_constr) lc in
+  let lc = in_list (val_tag wit_constr) lc in
   Sigma.Unsafe.of_pair (Ftactic.return lc, sigma)
   end }
 
@@ -1597,7 +1583,8 @@ and interp_genarg_var_list ist x =
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let lc = Genarg.out_gen (glbwit (wit_list wit_var)) x in
   let lc = interp_hyp_list ist env sigma lc in
-  Ftactic.return (Value.of_list (val_tag wit_var) lc)
+  let lc = in_list (val_tag wit_var) lc in
+  Ftactic.return lc
   end }
 
 (* Interprets tactic expressions : returns a "constr" *)
@@ -2055,6 +2042,13 @@ let hide_interp global t ot =
 (***************************************************************************)
 (** Register standard arguments *)
 
+let register_interp0 wit f =
+  let open Ftactic.Notations in
+  let interp ist v =
+    f ist v >>= fun v -> Ftactic.return (Val.inject (val_tag wit) v)
+  in
+  Geninterp.register_interp0 wit interp
+
 let def_intern ist x = (ist, x)
 let def_subst _ x = x
 let def_interp ist x = Ftactic.return x
@@ -2062,7 +2056,7 @@ let def_interp ist x = Ftactic.return x
 let declare_uniform t =
   Genintern.register_intern0 t def_intern;
   Genintern.register_subst0 t def_subst;
-  Geninterp.register_interp0 t def_interp
+  register_interp0 t def_interp
 
 let () =
   declare_uniform wit_unit
@@ -2103,33 +2097,31 @@ let interp_constr_with_bindings' ist c = Ftactic.return { delayed = fun env sigm
   }
 
 let () =
-  Geninterp.register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
-  Geninterp.register_interp0 wit_ref (lift interp_reference);
-  Geninterp.register_interp0 wit_ident (lift interp_ident);
-  Geninterp.register_interp0 wit_var (lift interp_hyp);
-  Geninterp.register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
-  Geninterp.register_interp0 wit_clause_dft_concl (lift interp_clause);
-  Geninterp.register_interp0 wit_constr (lifts interp_constr);
-  Geninterp.register_interp0 wit_sort (lifts (fun _ _ evd s -> interp_sort evd s));
-  Geninterp.register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
-  Geninterp.register_interp0 wit_red_expr (lifts interp_red_expr);
-  Geninterp.register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
-  Geninterp.register_interp0 wit_open_constr (lifts interp_open_constr);
-  Geninterp.register_interp0 wit_bindings interp_bindings';
-  Geninterp.register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
-  Geninterp.register_interp0 wit_constr_may_eval (lifts interp_constr_may_eval);
+  register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
+  register_interp0 wit_ref (lift interp_reference);
+  register_interp0 wit_ident (lift interp_ident);
+  register_interp0 wit_var (lift interp_hyp);
+  register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
+  register_interp0 wit_clause_dft_concl (lift interp_clause);
+  register_interp0 wit_constr (lifts interp_constr);
+  register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
+  register_interp0 wit_red_expr (lifts interp_red_expr);
+  register_interp0 wit_quant_hyp (lift interp_declared_or_quantified_hypothesis);
+  register_interp0 wit_open_constr (lifts interp_open_constr);
+  register_interp0 wit_bindings interp_bindings';
+  register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
   ()
 
 let () =
   let interp ist tac = Ftactic.return (Value.of_closure ist tac) in
-  Geninterp.register_interp0 wit_tactic interp
+  register_interp0 wit_tactic interp
 
 let () =
   let interp ist tac = interp_tactic ist tac >>= fun () -> Ftactic.return () in
-  Geninterp.register_interp0 wit_ltac interp
+  register_interp0 wit_ltac interp
 
 let () =
-  Geninterp.register_interp0 wit_uconstr (fun ist c -> Ftactic.nf_enter { enter = begin fun gl ->
+  register_interp0 wit_uconstr (fun ist c -> Ftactic.nf_enter { enter = begin fun gl ->
     Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) c)
   end })
 

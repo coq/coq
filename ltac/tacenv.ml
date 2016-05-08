@@ -11,6 +11,7 @@ open Genarg
 open Pp
 open Names
 open Tacexpr
+open Geninterp
 
 (** Tactic notations (TacAlias) *)
 
@@ -32,7 +33,7 @@ let check_alias key = KNmap.mem key !alias_map
 (** ML tactic extensions (TacML) *)
 
 type ml_tactic =
-  Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic
+  Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic
 
 module MLName =
 struct

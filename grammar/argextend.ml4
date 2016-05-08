@@ -88,6 +88,7 @@ let check_type prefix s = function
 | Some _ -> warning_redundant prefix s
 
 let declare_tactic_argument loc s (typ, f, g, h) cl =
+  let se = mlexpr_of_string s in
   let rawtyp, rawpr, globtyp, globpr, typ, pr = match typ with
     | `Uniform (typ, pr) ->
       let typ = get_type "" s typ in
@@ -118,19 +119,21 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
   let interp = match f with
     | None ->
       begin match globtyp with
-      | None -> <:expr< fun ist v -> Ftactic.return v >>
+      | None ->
+        let typ = match globtyp with None -> ExtraArgType s | Some typ -> typ in
+        <:expr< fun ist v -> Ftactic.return (Geninterp.Val.inject (Geninterp.val_tag $make_topwit loc typ$) v) >>
       | Some globtyp ->
         <:expr< fun ist x ->
-          Ftactic.bind
-            (Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x))
-            (fun v -> Ftactic.return (Tacinterp.Value.cast $make_topwit loc globtyp$ v)) >>
+          Tacinterp.interp_genarg ist (Genarg.in_gen $make_globwit loc globtyp$ x) >>
       end
     | Some f ->
       (** Compatibility layer, TODO: remove me *)
+      let typ = match globtyp with None -> ExtraArgType s | Some typ -> typ in
       <:expr<
         let f = $lid:f$ in
         fun ist v -> Ftactic.nf_s_enter { Proofview.Goal.s_enter = fun gl ->
           let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
+          let v = Geninterp.Val.inject (Geninterp.val_tag $make_topwit loc typ$) v in
           Sigma.Unsafe.of_pair (Ftactic.return v, sigma)
         }
       >> in
@@ -147,20 +150,15 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
     | Some f -> <:expr< $lid:f$>> in
   let dyn = match typ with
   | None -> <:expr< None >>
-  | Some typ ->
-    if is_self s typ then <:expr< None >>
-    else <:expr< Some (Genarg.val_tag $make_topwit loc typ$) >>
+  | Some typ -> <:expr< Some (Geninterp.val_tag $make_topwit loc typ$) >>
   in
-  let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
   declare_str_items loc
-   [ <:str_item<
-      value ($lid:"wit_"^s$) =
-        let dyn = $dyn$ in
-        Genarg.make0 ?dyn $se$ >>;
+   [ <:str_item< value ($lid:"wit_"^s$) = Genarg.make0 $se$ >>;
      <:str_item< Genintern.register_intern0 $wit$ $glob$ >>;
      <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
      <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
+     <:str_item< Geninterp.register_val0 $wit$ $dyn$ >>;
      make_extend loc s cl wit;
      <:str_item< do {
       Pptactic.declare_extra_genarg_pprule

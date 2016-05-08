@@ -258,7 +258,7 @@ END
 (**********************************************************************)
 (* Rewrite star                                                       *)
 
-let rewrite_star ist clause orient occs c (tac : Val.t option) =
+let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
   let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
     (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
@@ -392,6 +392,12 @@ open Inv
 open Leminv
 
 let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
+
+VERNAC ARGUMENT EXTEND sort
+| [ "Set" ] -> [ GSet ]
+| [ "Prop" ] -> [ GProp ]
+| [ "Type" ] -> [ GType [] ]
+END
 
 VERNAC COMMAND EXTEND DeriveInversionClear
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
@@ -938,10 +944,6 @@ type cmp =
 type 'i test =
   | Test of cmp * 'i * 'i
 
-let wit_cmp : (cmp,cmp,cmp) Genarg.genarg_type = Genarg.make0 "cmp"
-let wit_test : (int or_var test,int or_var test,int test) Genarg.genarg_type =
-  Genarg.make0 "tactest"
-
 let pr_cmp = function
   | Eq -> Pp.str"="
   | Lt -> Pp.str"<"
@@ -964,7 +966,7 @@ let pr_itest' _prc _prlc _prt = pr_itest
 
 
 
-ARGUMENT EXTEND comparison TYPED AS cmp PRINTED BY pr_cmp'
+ARGUMENT EXTEND comparison PRINTED BY pr_cmp'
 | [ "="  ] -> [ Eq ]
 | [ "<"  ] -> [ Lt ]
 | [ "<=" ] -> [ Le ]

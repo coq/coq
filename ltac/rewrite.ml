@@ -613,8 +613,10 @@ let solve_remaining_by env sigma holes by =
     (** Only solve independent holes *)
     let indep = List.map_filter map holes in
     let ist = { Geninterp.lfun = Id.Map.empty; extra = Geninterp.TacStore.empty } in
-    let solve_tac = Geninterp.generic_interp ist tac in
-    let solve_tac = Ftactic.run solve_tac (fun _ -> Proofview.tclUNIT ()) in
+    let solve_tac = match tac with
+    | Genarg.GenArg (Genarg.Glbwit tag, tac) ->
+      Ftactic.run (Geninterp.interp tag ist tac) (fun _ -> Proofview.tclUNIT ())
+    in
     let solve_tac = Tacticals.New.tclCOMPLETE solve_tac in
     let solve sigma evk =
       let evi =
