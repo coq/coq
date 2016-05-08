@@ -14,9 +14,7 @@ open Extend
 open Constrexpr
 open Notation_term
 open Libnames
-open Tacexpr
 open Names
-open Egramml
 
 (**************************************************************************)
 (*

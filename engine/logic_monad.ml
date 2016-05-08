@@ -340,7 +340,6 @@ struct
   let lift = BackState.lift
   let once = BackState.once
   let break = BackState.break
-  let reflect = BackState.reflect
   let split = BackState.split
   let repr = BackState.repr
 

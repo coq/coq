@@ -21,7 +21,6 @@ open Libnames
 open Globnames
 open Nametab
 open Pfedit
-open Proof_type
 open Refiner
 open Tacmach.New
 open Tactic_debug
@@ -35,8 +34,6 @@ open Stdarg
 open Constrarg
 open Printer
 open Pretyping
-module Monad_ = Monad
-open Evd
 open Misctypes
 open Locus
 open Tacintern
@@ -196,7 +193,7 @@ module Value = struct
   | OptArg t -> Val.Opt (tag_of_arg t)
   | PairArg (t1, t2) -> Val.Pair (tag_of_arg t1, tag_of_arg t2)
 
-  let rec val_cast arg v = prj (tag_of_arg arg) v
+  let val_cast arg v = prj (tag_of_arg arg) v
 
   let cast (Topwit wit) v = val_cast wit v
 
@@ -694,13 +691,6 @@ let pf_interp_casted_constr ist gl c =
 (* Interprets a constr expression *)
 let pf_interp_constr ist gl =
   interp_constr ist (pf_env gl) (project gl)
-
-let new_interp_constr ist c k =
-  let open Proofview in
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
-    let (sigma, c) = interp_constr ist (Goal.env gl) (project gl) c in
-    Sigma.Unsafe.of_pair (k c, sigma)
-  end }
 
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
   let try_expand_ltac_var sigma x =
@@ -1290,7 +1280,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 
   | TacML (loc,opn,l) ->
-      let open Ftactic.Notations in
       let trace = push_trace (loc,LtacMLCall tac) ist in
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       let tac = Tacenv.interp_ml_tactic opn in

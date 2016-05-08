@@ -12,7 +12,6 @@ open Pp
 open Errors
 open Util
 open Flags
-open System
 open Vernacexpr
 
 (* The functions in this module may raise (unexplainable!) exceptions.

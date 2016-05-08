@@ -287,7 +287,7 @@ let completion = new Wg_Completion.complete_model ct view#buffer in
 let popup = new Wg_Completion.complete_popup completion (view :> GText.view) in
 
 object (self)
-  inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
+  inherit GSourceView2.source_view (Gobject.unsafe_cast tv)
 
   val undo_manager = new undo_manager view#buffer
 

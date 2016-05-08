@@ -7,7 +7,6 @@
 (************************************************************************)
 open Errors
 open Names
-open Univ
 open Nativelib
 open Reduction
 open Util

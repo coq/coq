@@ -10,17 +10,12 @@ open Term
 open Hipattern
 open Names
 open Pp
-open Genarg
 open Geninterp
-open Stdarg
 open Misctypes
 open Tacexpr
 open Tacinterp
-open Tactics
-open Errors
 open Util
 open Tacticals.New
-open Proofview.Notations
 
 let tauto_plugin = "tauto"
 let () = Mltop.add_known_module tauto_plugin

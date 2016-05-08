@@ -44,12 +44,9 @@ module SentenceId : sig
   val mk_sentence :
     start:GText.mark -> stop:GText.mark -> flag list -> sentence
 
-  val set_flags : sentence -> flag list -> unit
   val add_flag : sentence -> flag -> unit
   val has_flag : sentence -> mem_flag -> bool
   val remove_flag : sentence -> mem_flag -> unit
-  val same_sentence : sentence -> sentence -> bool
-  val hidden_edit_id : unit -> int
   val find_all_tooltips : sentence -> int -> string list
   val add_tooltip : sentence -> int -> int -> string -> unit
   val set_index : sentence -> int -> unit
@@ -87,18 +84,15 @@ end = struct
     index = -1;
     changed_sig = new GUtil.signal ();
   }
-  let hidden_edit_id () = decr id; !id
 
   let changed s =
     s.changed_sig#call (s.index, List.map mem_flag_of_flag s.flags)
 
-  let set_flags s f = s.flags <- f; changed s
   let add_flag s f = s.flags <- CList.add_set (=) f s.flags; changed s
   let has_flag s mf =
     List.exists (fun f -> mem_flag_of_flag f = mf) s.flags
   let remove_flag s mf =
     s.flags <- List.filter (fun f -> mem_flag_of_flag f <> mf) s.flags; changed s
-  let same_sentence s1 s2 = s1.edit_id = s2.edit_id
   let find_all_tooltips s off =
     CList.map_filter (fun (start,stop,t) ->
       if start <= off && off <= stop then Some t else None)

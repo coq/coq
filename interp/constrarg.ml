@@ -8,7 +8,6 @@
 
 open Loc
 open Tacexpr
-open Term
 open Misctypes
 open Genarg
 open Geninterp
@@ -49,9 +48,6 @@ let wit_quant_hyp = make0 "quant_hyp"
 let wit_constr =
   make0 "constr"
 
-let wit_constr_may_eval =
-  make0 ~dyn:(val_tag (topwit wit_constr)) "constr_may_eval"
-
 let wit_uconstr = make0 "uconstr"
 
 let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
@@ -59,9 +55,6 @@ let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
 let wit_constr_with_bindings = make0 "constr_with_bindings"
 
 let wit_bindings = make0 "bindings"
-
-let wit_hyp_location_flag : 'a Genarg.uniform_genarg_type =
-  make0 "hyp_location_flag"
 
 let wit_red_expr = make0 "redexpr"
 

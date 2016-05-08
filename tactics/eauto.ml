@@ -17,12 +17,10 @@ open Proof_type
 open Tacticals
 open Tacmach
 open Tactics
-open Patternops
 open Clenv
 open Auto
 open Genredexpr
 open Tacexpr
-open Misctypes
 open Locus
 open Locusops
 open Hints
@@ -51,16 +49,6 @@ let registered_e_assumption =
   Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
               (Tacmach.New.pf_ids_of_hyps gl))
   end }
-
-let eval_uconstrs ist cs =
-  let flags = {
-    Pretyping.use_typeclasses = false;
-    use_unif_heuristics = true;
-    use_hook = Some Pfedit.solve_by_implicit_tactic;
-    fail_evar = false;
-    expand_evars = true
-  } in
-  List.map (fun c -> Pretyping.type_uconstr ~flags ist c) cs
 
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
@@ -114,7 +102,6 @@ let prolog_tac l n =
   end
 
 open Auto
-open Unification
 
 (***************************************************************************)
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)

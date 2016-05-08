@@ -1343,7 +1343,6 @@ end = struct (* {{{ *)
   let set_perspective idl =
     ProofTask.set_perspective idl;
     TaskQueue.broadcast (Option.get !queue);
-    let open Stateid in
     let open ProofTask in
     let overlap s1 s2 =
       List.exists (fun x -> CList.mem_f Stateid.equal x s2) s1 in

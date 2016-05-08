@@ -386,14 +386,6 @@ let processing_color =
 let _ = attach_bg processing_color Tags.Script.to_process
 let _ = attach_bg processing_color Tags.Script.incomplete
 
-let default_tag = {
-  tag_fg_color = None;
-  tag_bg_color = None;
-  tag_bold = false;
-  tag_italic = false;
-  tag_underline = false;
-}
-
 let tags = ref Util.String.Map.empty
 
 let list_tags () = !tags

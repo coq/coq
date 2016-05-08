@@ -12,7 +12,6 @@
 (*                           by Eduardo Gimenez                        *)
 (************************************************************************)
 
-open Errors
 open Util
 open Names
 open Namegen
@@ -27,7 +26,6 @@ open Hipattern
 open Pretyping
 open Tacmach.New
 open Coqlib
-open Proofview.Notations
 
 (* This file containts the implementation of the tactics ``Decide
    Equality'' and ``Compare''. They can be used to decide the

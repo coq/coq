@@ -13,7 +13,6 @@ open Flags
 open Term
 open Vars
 open Termops
-open Entries
 open Environ
 open Redexpr
 open Declare

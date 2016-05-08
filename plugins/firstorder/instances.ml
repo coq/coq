@@ -12,7 +12,6 @@ open Errors
 open Util
 open Term
 open Vars
-open Glob_term
 open Tacmach
 open Tactics
 open Tacticals
@@ -97,8 +96,6 @@ let rec collect_quantified seq=
   with Heap.EmptyHeap -> [],seq
 
 (* open instances processor *)
-
-let dummy_constr=mkMeta (-1)
 
 let dummy_bvid=Id.of_string "x"
 

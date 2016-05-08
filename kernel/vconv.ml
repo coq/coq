@@ -1,13 +1,9 @@
 open Util
 open Names
-open Term
 open Environ
-open Conv_oracle
 open Reduction
-open Closure
 open Vm
 open Csymtable
-open Univ
 
 let val_of_constr env c =
   val_of_constr (pre_env env) c

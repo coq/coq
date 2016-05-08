@@ -13,14 +13,9 @@ open Names
 open Locus
 open Misctypes
 open Genredexpr
-open Stdarg
 open Constrarg
 open Extraargs
-open Pcoq.Constr
-open Pcoq.Prim
-open Pcoq.Tactic
 
-open Proofview.Notations
 open Sigma.Notations
 
 DECLARE PLUGIN "coretactics"

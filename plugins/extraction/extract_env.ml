@@ -19,7 +19,6 @@ open Table
 open Extraction
 open Modutil
 open Common
-open Mod_subst
 
 (***************************************)
 (*S Part I: computing Coq environment. *)

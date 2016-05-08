@@ -26,7 +26,6 @@ open Constrexpr_ops
 open Goptions
 open Sigma.Notations
 open Context.Rel.Declaration
-open Entries
 
 (********** definition d'un record (structure) **************)
 

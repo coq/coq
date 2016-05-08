@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Util
-open Proofview_monad
 open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration

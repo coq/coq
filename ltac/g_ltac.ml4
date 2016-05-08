@@ -307,7 +307,6 @@ GEXTEND Gram
   ;
   END
 
-open Stdarg
 open Constrarg
 open Vernacexpr
 open Vernac_classifier

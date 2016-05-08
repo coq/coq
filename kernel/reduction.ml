@@ -20,7 +20,6 @@ open Util
 open Names
 open Term
 open Vars
-open Univ
 open Environ
 open Closure
 open Esubst

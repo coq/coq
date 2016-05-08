@@ -25,7 +25,7 @@ let get_typeclasses_unique_solutions () = !typeclasses_unique_solutions
 
 open Goptions
 
-let set_typeclasses_unique_solutions =
+let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;

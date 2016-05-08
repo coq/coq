@@ -8,7 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Util
 open Compat
 open Pp
 open Decl_expr

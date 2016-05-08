@@ -4652,7 +4652,6 @@ let rec shrink ctx sign c t accu =
 | _ -> assert false
 
 let shrink_entry sign const =
-  let open Context.Named.Declaration in
   let open Entries in
   let typ = match const.const_entry_type with
   | None -> assert false

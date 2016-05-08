@@ -65,7 +65,6 @@ let get_new_id locals id =
 
 (** Inductive declarations *)
 
-open Termops
 open Reduction
 
 let print_params env sigma params =

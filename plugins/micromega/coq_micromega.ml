@@ -18,9 +18,7 @@
 
 open Pp
 open Mutils
-open Proofview
 open Goptions
-open Proofview.Notations
 
 (**
   * Debug flag 

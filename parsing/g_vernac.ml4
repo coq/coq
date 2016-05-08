@@ -20,7 +20,6 @@ open Misctypes
 open Tok (* necessary for camlp4 *)
 
 open Pcoq
-open Pcoq.Tactic
 open Pcoq.Prim
 open Pcoq.Constr
 open Pcoq.Vernac_

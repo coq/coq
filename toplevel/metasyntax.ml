@@ -23,7 +23,6 @@ open Vernacexpr
 open Pcoq
 open Libnames
 open Tok
-open Egramml
 open Egramcoq
 open Notation
 open Nameops

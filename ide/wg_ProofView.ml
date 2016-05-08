@@ -91,7 +91,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
       let () = proof#buffer#insert head_str in
       let () = insert_hyp hyps_hints hyps in
       let () =
-        let tags = Tags.Proof.goal :: if goal_hints <> [] then
+        let _ = if goal_hints <> [] then
           let tag = proof#buffer#create_tag [] in
           let () = hook_tag_cb tag goal_hints sel_cb on_hover in
           [tag]

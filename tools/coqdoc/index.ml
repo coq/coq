@@ -77,32 +77,6 @@ let find m l = Hashtbl.find reftable (m, l)
 
 let find_string m s = let (m,s,t) = Hashtbl.find byidtable s in Ref (m,s,t)
 
-(*s Manipulating path prefixes *)
-
-type stack = string list
-
-let rec string_of_stack st =
-  match st with
-    | [] -> ""
-    | x::[] -> x
-    | x::tl -> (string_of_stack tl) ^ "." ^ x
-
-let empty_stack = []
-
-let module_stack = ref empty_stack
-let section_stack = ref empty_stack
-
-let push st p = st := p::!st
-let pop st =
-  match !st with
-    | [] -> ()
-    | _::tl -> st := tl
-
-let head st =
-  match st with
-    | [] -> ""
-    | x::_ -> x
-
 (* Coq modules *)
 
 let split_sp s =

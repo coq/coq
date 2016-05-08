@@ -15,7 +15,6 @@
 
 open Util
 open Names
-open Univ
 open Term
 open Declarations
 open Context.Named.Declaration

@@ -9,7 +9,6 @@
 open Pp
 open Errors
 open Util
-open System
 open Flags
 open Names
 open Libnames

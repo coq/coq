@@ -11,7 +11,6 @@ open Errors
 open Util
 open Term
 open Vars
-open Entries
 open Declarations
 open Cooking
 open Entries

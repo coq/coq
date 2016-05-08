@@ -363,7 +363,6 @@ open Misctypes
 type t
 
 val empty : t
-val add_name_newly_undefined : intro_pattern_naming_expr -> Evar.t -> evar_info -> t -> t
 val add_name_undefined : intro_pattern_naming_expr -> Evar.t -> evar_info -> t -> t
 val remove_name_defined : Evar.t -> t -> t
 val rename : Evar.t -> Id.t -> t -> t

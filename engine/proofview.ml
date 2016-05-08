@@ -925,8 +925,6 @@ end
 module UnsafeRepr = Proof.Unsafe
 
 let (>>=) = tclBIND
-let (<*>) = tclTHEN
-let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
 
 (** {6 Goal-dependent tactics} *)
 

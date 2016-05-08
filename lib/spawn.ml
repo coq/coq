@@ -78,20 +78,6 @@ let accept (sr,sw) =
   set_binary_mode_out cout true;
   (csr, csw), cin, cout
 
-let handshake cin cout =
-  try
-    output_value cout (Hello (proto_version,Unix.getpid ())); flush cout;
-    match input_value cin with
-    | Hello(v, pid) when v = proto_version ->
-        prerr_endline (Printf.sprintf "Handshake with %d OK" pid);
-        pid
-    | _ -> raise (Failure "handshake protocol")
-  with
-  | Failure s | Invalid_argument s | Sys_error s ->
-      pr_err ("Handshake failed: "  ^ s); raise (Failure "handshake")
-  | End_of_file ->
-      pr_err "Handshake failed: End_of_file"; raise (Failure "handshake")
-
 let spawn_sock env prog args =
   let main_sock, main_sock_name = mk_socket_channel () in
   let extra = [| prog; "-main-channel"; main_sock_name |] in

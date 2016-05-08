@@ -7,8 +7,6 @@
 (************************************************************************)
 
 open Util
-open Compat
-open Names
 open Extend
 open Pcoq
 open Genarg

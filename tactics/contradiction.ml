@@ -6,14 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
 open Term
 open Hipattern
 open Tactics
 open Coqlib
 open Reductionops
 open Misctypes
-open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 

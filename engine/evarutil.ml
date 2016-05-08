@@ -8,7 +8,6 @@
 
 open Errors
 open Util
-open Pp
 open Names
 open Term
 open Vars

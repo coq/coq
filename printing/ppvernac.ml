@@ -99,11 +99,6 @@ module Make
     | ETBinder false -> str "closed binder"
     | ETBinderList _ | ETConstrList _ -> failwith "Internal entry type"
 
-  let strip_meta id =
-    let s = Id.to_string id in
-    if s.[0] == '$' then Id.of_string (String.sub s 1 (String.length s - 1))
-    else id
-
   let pr_comment pr_c = function
     | CommentConstr c -> pr_c c
     | CommentString s -> qs s

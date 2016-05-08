@@ -11,8 +11,6 @@
 open Cctac
 open Stdarg
 open Constrarg
-open Pcoq.Prim
-open Pcoq.Constr
 
 DECLARE PLUGIN "cc_plugin"
 

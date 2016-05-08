@@ -18,7 +18,6 @@ open Inductive
 open Util
 open Nativecode
 open Nativevalues
-open Nativelambda
 open Context.Rel.Declaration
 
 (** This module implements normalization by evaluation to OCaml code *)

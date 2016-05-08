@@ -208,7 +208,7 @@ let (declare_f : Id.t -> logical_kind -> constr list -> global_reference -> glob
 (* Debugging mechanism *)
 let debug_queue = Stack.create ()
 
-let rec print_debug_queue b e = 
+let print_debug_queue b e = 
   if  not (Stack.is_empty debug_queue) 
   then
     begin

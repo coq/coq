@@ -16,7 +16,6 @@ open Term
 open Tactics
 open Names
 open Globnames
-open Tacmach
 open Fourier
 open Contradiction
 open Proofview.Notations

@@ -86,7 +86,7 @@ let signals = [
   end_s#disconnect;
 ] in
 object (self : 'a)
-  inherit GUtil.ml_signals signals as super
+  inherit GUtil.ml_signals signals
   method start_completion = start_s#connect ~after
   method update_completion = update_s#connect ~after
   method end_completion = end_s#connect ~after

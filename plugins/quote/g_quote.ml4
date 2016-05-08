@@ -14,9 +14,6 @@ open Tacexpr
 open Geninterp
 open Quote
 open Constrarg
-open Pcoq.Prim
-open Pcoq.Constr
-open Pcoq.Tactic
 
 DECLARE PLUGIN "quote_plugin"
 

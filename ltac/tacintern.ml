@@ -475,9 +475,6 @@ let clause_app f = function
   | { onhyps=Some l; concl_occs=nl } ->
       { onhyps=Some(List.map f l); concl_occs=nl}
 
-let map_raw wit f ist x =
-  in_gen (glbwit wit) (f ist (out_gen (rawwit wit) x))
-
 (* Globalizes tactics : raw_tactic_expr -> glob_tactic_expr *)
 let rec intern_atomic lf ist x =
   match (x:raw_atomic_tactic_expr) with

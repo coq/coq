@@ -14,13 +14,11 @@ open Stdarg
 open Constrarg
 open Extraargs
 open Pcoq.Prim
-open Pcoq.Constr
 open Pcoq.Tactic
 open Mod_subst
 open Names
 open Tacexpr
 open Glob_ops
-open Tactics
 open Errors
 open Util
 open Evd
@@ -128,7 +126,6 @@ TACTIC EXTEND ediscriminate
     [ discr_tac true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-open Proofview.Notations
 let discrHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
   discr_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
@@ -457,8 +454,6 @@ TACTIC EXTEND evar
   [ "evar" "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name id) typ ]
 | [ "evar" constr(typ) ] -> [ let_evar Anonymous typ ]
 END
-
-open Tacticals
 
 TACTIC EXTEND instantiate
   [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->

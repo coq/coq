@@ -15,10 +15,8 @@ open Term
 open Termops
 open Errors
 open Util
-open Tacexpr
 open Mod_subst
 open Locus
-open Sigma.Notations
 open Proofview.Notations
 
 (* Rewriting rules *)

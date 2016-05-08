@@ -5,7 +5,6 @@ open Term
 open Vars
 open Namegen
 open Names
-open Declarations
 open Pp
 open Tacmach
 open Termops

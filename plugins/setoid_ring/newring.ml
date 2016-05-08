@@ -153,11 +153,6 @@ let ic_unsafe c = (*FIXME remove *)
   let sigma = Evd.from_env env in
     fst (Constrintern.interp_constr env sigma c)
 
-let ty c =
-  let env = Global.env() in
-  let sigma = Evd.from_env env in
-    Typing.unsafe_type_of env sigma c
-
 let decl_constant na ctx c =
   let vars = Universes.universes_of_constr c in
   let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context ctx) vars in
@@ -184,9 +179,6 @@ let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
   let lfun = Id.Map.add (Id.of_string "F") f lfun in
   let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun = lfun; } in
   Tacinterp.eval_tactic_ist ist (ltac_lcall "F" args)
-
-let ltac_record flds =
-  TacFun([Some(Id.of_string"proj")], ltac_lcall "proj" flds)
 
 let dummy_goal env sigma =
   let (gl,_,sigma) = 
@@ -290,8 +282,6 @@ let my_reference c =
 
 let new_ring_path =
   DirPath.make (List.map Id.of_string ["Ring_tac";plugin_dir;"Coq"])
-let ltac s =
-  lazy(make_kn (MPfile new_ring_path) DirPath.empty (Label.make s))
 let znew_ring_path =
   DirPath.make (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
 let zltac s =
@@ -318,21 +308,12 @@ let coq_mk_reqe = my_constant "mk_reqe"
 let coq_semi_ring_theory = my_constant "semi_ring_theory"
 let coq_mk_seqe = my_constant "mk_seqe"
 
-let ltac_inv_morph_gen = zltac"inv_gen_phi"
-let ltac_inv_morphZ = zltac"inv_gen_phiZ"
-let ltac_inv_morphN = zltac"inv_gen_phiN"
-let ltac_inv_morphNword = zltac"inv_gen_phiNword"
 let coq_abstract = my_constant"Abstract"
 let coq_comp = my_constant"Computational"
 let coq_morph = my_constant"Morphism"
 
-(* morphism *)
-let coq_ring_morph = my_constant "ring_morph"
-let coq_semi_morph = my_constant "semi_morph"
-
 (* power function *)
 let ltac_inv_morph_nothing = zltac"inv_morph_nothing"
-let coq_pow_N_pow_N = my_constant "pow_N_pow_N"
 
 (* hypothesis *)
 let coq_mkhypo = my_reference "mkhypo"
@@ -582,18 +563,6 @@ let dest_ring env sigma th_spec =
         (Some false,r,zero,one,add,mul,Some sub,Some opp,req)
     | _ -> error "bad ring structure"
 
-
-let dest_morph env sigma m_spec =
-  let m_typ = Retyping.get_type_of env sigma m_spec in
-  match kind_of_term m_typ with
-      App(f,[|r;zero;one;add;mul;sub;opp;req;
-              c;czero;cone;cadd;cmul;csub;copp;ceqb;phi|])
-        when eq_constr_nounivs f (Lazy.force coq_ring_morph) ->
-          (c,czero,cone,cadd,cmul,Some csub,Some copp,ceqb,phi)
-    | App(f,[|r;zero;one;add;mul;req;c;czero;cone;cadd;cmul;ceqb;phi|])
-        when eq_constr_nounivs f (Lazy.force coq_semi_morph) ->
-        (c,czero,cone,cadd,cmul,None,None,ceqb,phi)
-    | _ -> error "bad morphism structure"
 
 let reflect_coeff rkind =
   (* We build an ill-typed terms on purpose... *)

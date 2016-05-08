@@ -953,7 +953,7 @@ module TeXmacs = struct
 
   (*s Latex preamble *)
 
-  let (preamble : string Queue.t) =
+  let (_ : string Queue.t) =
     in_doc := false; Queue.create ()
 
   let header () =
@@ -1122,7 +1122,6 @@ module Raw = struct
     for i = 0 to String.length s - 1 do char s.[i] done
 
   let start_module () = ()
-  let end_module () = ()
 
   let start_latex_math () = ()
   let stop_latex_math () = ()

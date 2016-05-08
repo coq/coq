@@ -16,7 +16,6 @@ open Globnames
 open Term
 open Genredexpr
 open Patternops
-open Pretyping
 
 (** Substitution of tactics at module closing time *)
 

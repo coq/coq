@@ -13,7 +13,6 @@ open Pp
 open Bigint
 open Names
 open Term
-open Nametab
 open Libnames
 open Globnames
 open Constrexpr

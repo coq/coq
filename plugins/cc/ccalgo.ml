@@ -154,11 +154,6 @@ let rec term_equal t1 t2 =
 
 open Hashset.Combine
 
-let hash_sorts_family = function
-| InProp -> 0
-| InSet -> 1
-| InType -> 2
-
 let rec hash_term = function
   | Symb c -> combine 1 (hash_constr c)
   | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)

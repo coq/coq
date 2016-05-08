@@ -7,8 +7,6 @@
 (************************************************************************)
 
 open Constrarg
-open Pcoq.Prim
-open Pcoq.Constr
 
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 

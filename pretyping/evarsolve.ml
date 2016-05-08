@@ -20,7 +20,6 @@ open Reductionops
 open Evarutil
 open Pretype_errors
 open Sigma.Notations
-open Context.Rel.Declaration
 
 let normalize_evar evd ev =
   match kind_of_term (whd_evar evd (mkEvar ev)) with

@@ -12,7 +12,6 @@ open Errors
 open Util
 open Extend
 open Genarg
-open Tok (* necessary for camlp4 *)
 
 (** The parser of Coq *)
 

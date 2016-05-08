@@ -16,7 +16,6 @@ open Newring_ast
 open Newring
 open Stdarg
 open Constrarg
-open Pcoq.Prim
 open Pcoq.Constr
 open Pcoq.Tactic
 

@@ -7,11 +7,9 @@
 (************************************************************************)
 
 open Util
-open Genarg
 open Pp
 open Names
 open Tacexpr
-open Geninterp
 
 (** Tactic notations (TacAlias) *)
 

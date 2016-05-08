@@ -341,7 +341,7 @@ module ModPath = struct
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
       | MPdot (md,l) -> MPdot (hashcons hfuns md, hstr l)
-    let rec eq d1 d2 =
+    let eq d1 d2 =
       d1 == d2 ||
       match d1,d2 with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
