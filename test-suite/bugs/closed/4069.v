@@ -49,3 +49,42 @@ Lemma bar {A} n m (x : A) :
   skipn n (replicate m x) = replicate (m - n) x.
 Proof. intros. f_equal.
 (* 8.5: one goal, n = m - n *)
+Abort.
+
+Variable F : nat -> Set.
+Variable X : forall n, F (n + 1).
+
+Definition sequator{X Y: Set}{eq:X=Y}(x:X) : Y := eq_rec _ _ x _ eq.
+Definition tequator{X Y}{eq:X=Y}(x:X) : Y := eq_rect _ _ x _ eq.
+Polymorphic Definition pequator{X Y}{eq:X=Y}(x:X) : Y := eq_rect _ _ x _ eq.
+
+Goal {n:nat & F (S n)}.
+eexists.
+unshelve eapply (sequator (X _)).
+f_equal. (*behaves*)
+Undo 2.
+unshelve eapply (pequator (X _)).
+f_equal. (*behaves*)
+Undo 2.
+unshelve eapply (tequator (X _)).
+f_equal. (*behaves now *)
+Focus 2. exact 0.
+simpl.
+reflexivity.
+Defined.
+
+(* Part 2: modulo casts introduced by refine due to reductions in goals *)
+
+Goal {n:nat & F (S n)}.
+eexists.
+(*misbehaves, although same goal as above*)
+Set Printing All.
+unshelve refine (sequator (X _)); revgoals.
+2:exact 0. reflexivity.
+Undo 3. 
+unshelve refine (pequator (X _)); revgoals.
+f_equal.
+Undo 2.
+unshelve refine (tequator (X _)); revgoals.
+f_equal.
+Admitted.

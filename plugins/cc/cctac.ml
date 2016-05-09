@@ -245,10 +245,10 @@ let build_projection intype outtype (cstr:pconstructor) special default gls=
 
 let _M =mkMeta
 
-let app_global f args k = 
+let app_global f args k =
   Tacticals.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
 
-let new_app_global f args k = 
+let new_app_global f args k =
   Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
 
 let new_refine c = Proofview.V82.tactic (refine c)
@@ -258,7 +258,19 @@ let assert_before n c =
     let evm, _ = Tacmach.New.pf_apply type_of gl c in
       Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm)) (assert_before n c)
   end
-    
+
+let refresh_type env evm ty =
+  Evarsolve.refresh_universes ~status:Evd.univ_flexible ~propset:true
+			      (Some false) env evm ty
+
+let refresh_universes ty k =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let evm = Proofview.Goal.sigma gl in
+    let evm, ty = refresh_type env evm ty in
+    Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm)) (k ty)
+  end
+
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.nf_enter begin fun gl ->
   let type_of t = Tacmach.New.pf_unsafe_type_of gl t in
@@ -268,35 +280,31 @@ let rec proof_tac p : unit Proofview.tactic =
     | SymAx c ->
 	let l=constr_of_term p.p_lhs and
 	    r=constr_of_term p.p_rhs in
-        let typ = (* Termops.refresh_universes *) type_of l in
-        new_app_global _sym_eq [|typ;r;l;c|] exact_check
+	refresh_universes (type_of l) (fun typ ->
+        new_app_global _sym_eq [|typ;r;l;c|] exact_check)
     | Refl t ->
 	let lr = constr_of_term t in
-	let typ = (* Termops.refresh_universes *) type_of lr in
-        new_app_global _refl_equal [|typ;constr_of_term t|] exact_check
+	refresh_universes (type_of lr) (fun typ ->
+        new_app_global _refl_equal [|typ;constr_of_term t|] exact_check)
     | Trans (p1,p2)->
 	let t1 = constr_of_term p1.p_lhs and
 	    t2 = constr_of_term p1.p_rhs and
 	    t3 = constr_of_term p2.p_rhs in
-	let typ = (* Termops.refresh_universes *) (type_of t2) in
+	refresh_universes (type_of t2) (fun typ ->
 	let prf = new_app_global _trans_eq [|typ;t1;t2;t3;_M 1;_M 2|] in
-          Tacticals.New.tclTHENS (prf new_refine) [(proof_tac p1);(proof_tac p2)]
+          Tacticals.New.tclTHENS (prf new_refine) [(proof_tac p1);(proof_tac p2)])
     | Congr (p1,p2)->
 	let tf1=constr_of_term p1.p_lhs
 	and tx1=constr_of_term p2.p_lhs
 	and tf2=constr_of_term p1.p_rhs
 	and tx2=constr_of_term p2.p_rhs in
-	let typf = (* Termops.refresh_universes  *)(type_of tf1) in
-	let typx = (* Termops.refresh_universes *) (type_of tx1) in
-	let typfx = (* Termops.refresh_universes *) (type_of (mkApp (tf1,[|tx1|]))) in
+	refresh_universes (type_of tf1) (fun typf ->
+	refresh_universes (type_of tx1) (fun typx ->
+	refresh_universes (type_of (mkApp (tf1,[|tx1|]))) (fun typfx ->
         let id = Tacmach.New.of_old (fun gls -> pf_get_new_id (Id.of_string "f") gls) gl in
 	let appx1 = mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
-	let lemma1 =
-	  app_global _f_equal
-		[|typf;typfx;appx1;tf1;tf2;_M 1|] in
-	let lemma2=
-	  app_global _f_equal
-		[|typx;typfx;tf2;tx1;tx2;_M 1|] in
+	let lemma1 = app_global _f_equal [|typf;typfx;appx1;tf1;tf2;_M 1|] in
+	let lemma2 = app_global _f_equal [|typx;typfx;tf2;tx1;tx2;_M 1|] in
 	let prf =
 	  app_global _trans_eq
 		[|typfx;
@@ -310,53 +318,51 @@ let rec proof_tac p : unit Proofview.tactic =
 		reflexivity;
                 Tacticals.New.tclZEROMSG
 		    (Pp.str
-		       "I don't know how to handle dependent equality")]]
+		       "I don't know how to handle dependent equality")]])))
   | Inject (prf,cstr,nargs,argind) ->
 	 let ti=constr_of_term prf.p_lhs in
 	 let tj=constr_of_term prf.p_rhs in
 	 let default=constr_of_term p.p_lhs in
-	 let intype = (* Termops.refresh_universes *) (type_of ti) in
-	 let outtype = (* Termops.refresh_universes *) (type_of default) in
 	 let special=mkRel (1+nargs-argind) in
-         let proj =
+	 refresh_universes (type_of ti) (fun intype ->
+         refresh_universes (type_of default) (fun outtype ->
+	 let proj =
            Tacmach.New.of_old (build_projection intype outtype cstr special default) gl
          in
 	 let injt=
            app_global _f_equal [|intype;outtype;proj;ti;tj;_M 1|] in
-	   Tacticals.New.tclTHEN (Proofview.V82.tactic (injt refine)) (proof_tac prf)
+	   Tacticals.New.tclTHEN (Proofview.V82.tactic (injt refine)) (proof_tac prf)))
   with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
 let refute_tac c t1 t2 p =
   Proofview.Goal.nf_enter begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let intype =
-    Tacmach.New.of_old (fun gls -> (* Termops.refresh_universes *) (pf_unsafe_type_of gls tt1)) gl
-  in
-  let neweq= new_app_global _eq [|intype;tt1;tt2|] in
   let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
   let false_t=mkApp (c,[|mkVar hid|]) in
+  let k intype =
+    let neweq= new_app_global _eq [|intype;tt1;tt2|] in
     Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
       [proof_tac p; simplest_elim false_t]
+  in refresh_universes (Tacmach.New.pf_unsafe_type_of gl tt1) k
   end
 
 let refine_exact_check c gl =
   let evm, _ = pf_apply type_of gl c in
     Tacticals.tclTHEN (Refiner.tclEVARS evm) (Proofview.V82.of_tactic (exact_check c)) gl
 
-let convert_to_goal_tac c t1 t2 p = 
+let convert_to_goal_tac c t1 t2 p =
   Proofview.Goal.nf_enter begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let sort =
-    Tacmach.New.of_old (fun gls -> (* Termops.refresh_universes *) (pf_unsafe_type_of gls tt2)) gl
-  in
-  let neweq= new_app_global _eq [|sort;tt1;tt2|] in
-  let e = Tacmach.New.of_old (pf_get_new_id (Id.of_string "e")) gl in
-  let x = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
-  let identity=mkLambda (Name x,sort,mkRel 1) in
-  let endt=app_global _eq_rect [|sort;tt1;identity;c;tt2;mkVar e|] in
+  let k sort =
+    let neweq= new_app_global _eq [|sort;tt1;tt2|] in
+    let e = Tacmach.New.of_old (pf_get_new_id (Id.of_string "e")) gl in
+    let x = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
+    let identity=mkLambda (Name x,sort,mkRel 1) in
+    let endt=app_global _eq_rect [|sort;tt1;identity;c;tt2;mkVar e|] in
     Tacticals.New.tclTHENS (neweq (assert_before (Name e)))
-      [proof_tac p; Proofview.V82.tactic (endt refine_exact_check)]
+			   [proof_tac p; Proofview.V82.tactic (endt refine_exact_check)]
+  in refresh_universes (Tacmach.New.pf_unsafe_type_of gl tt2) k
   end
 
 let convert_to_hyp_tac c1 t1 c2 t2 p =
@@ -372,33 +378,28 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
 let discriminate_tac (cstr,u as cstru) p =
   Proofview.Goal.nf_enter begin fun gl ->
     let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
-    let intype =
-      Tacmach.New.of_old (fun gls -> (* Termops.refresh_universes *) (pf_unsafe_type_of gls t1)) gl
-    in
+    let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
-    (* let evm,outsort = Evd.new_sort_variable Evd.univ_rigid (project gls) in  *)
-    (* let outsort = mkSort outsort in *)
     let xid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
-    (* let tid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) gl in *)
-    (* let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in *)
     let identity = Universes.constr_of_global (Lazy.force _I) in
-    (* let trivial=pf_unsafe_type_of gls identity in *)
     let trivial = Universes.constr_of_global (Lazy.force _True) in
-    let evm, outtype = Evd.new_sort_variable Evd.univ_flexible (Proofview.Goal.sigma gl) in 
+    let evm = Proofview.Goal.sigma gl in
+    let evm, intype = refresh_type env evm (Tacmach.New.pf_unsafe_type_of gl t1) in
+    let evm, outtype = Evd.new_sort_variable Evd.univ_flexible evm in
     let outtype = mkSort outtype in
-    let pred=mkLambda(Name xid,outtype,mkRel 1) in
+    let pred = mkLambda(Name xid,outtype,mkRel 1) in
     let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
     let proj = Tacmach.New.of_old (build_projection intype outtype cstru trivial concl) gl in
     let injt=app_global _f_equal
-                    [|intype;outtype;proj;t1;t2;mkVar hid|] in
+			[|intype;outtype;proj;t1;t2;mkVar hid|] in
     let endt k =
       injt (fun injt ->
-        app_global _eq_rect
-          [|outtype;trivial;pred;identity;concl;injt|] k) in
+            app_global _eq_rect
+		       [|outtype;trivial;pred;identity;concl;injt|] k) in
     let neweq=new_app_global _eq [|intype;t1;t2|] in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evm)
-      (Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
-        [proof_tac p; Proofview.V82.tactic (endt refine_exact_check)])
+			  (Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
+      [proof_tac p; Proofview.V82.tactic (endt refine_exact_check)])
   end
 
 (* wrap everything *)
@@ -482,7 +483,7 @@ let congruence_tac depth l =
    This isn't particularly related with congruence, apart from
    the fact that congruence is called internally.
 *)
-    
+
 let mk_eq f c1 c2 k =
   Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc ->
   Proofview.Goal.enter begin
@@ -495,7 +496,7 @@ let mk_eq f c1 c2 k =
     Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm))
 			  (k term)
     end)
-    
+
 let f_equal =
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
