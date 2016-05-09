@@ -335,7 +335,7 @@ let args_options = Arg.align [
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
     " URL of the coq website";
   "-force-caml-version", Arg.Set Prefs.force_caml_version,
-    "Force OCaml version";
+    " Force OCaml version";
 ]
 
 let parse_args () =
