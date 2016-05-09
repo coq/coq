@@ -93,14 +93,15 @@ Polymorphic CoInductive foo@{i} (T : Type@{i}) : Type@{i} :=
 | A : foo T -> foo T.
 
 Polymorphic CoFixpoint cg@{i} (t : Type@{i}) : foo@{i} t :=
-  @A@{i} t (cg@{i} t).
+  @A@{i} t (cg t).
 
 Print cg.
 
 Polymorphic CoFixpoint ca@{i} (t : Type@{i}) : foo@{i} t :=
-  @A@{i} t (@cb@{i} t)
+  @A@{i} t (cb t)
 with cb@{i} (t : Type@{i}) : foo@{i} t :=
-  @A@{i} t (@ca@{i} t).
+  @A@{i} t (ca t).
 
 Print ca.
 Print cb.
+  
