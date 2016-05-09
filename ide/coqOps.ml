@@ -12,7 +12,9 @@ open Ideutils
 open Interface
 open Feedback
 
-type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string ]
+let b2c = byte_offset_to_char_offset
+
+type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of Loc.t * string ]
 type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR ]
 let mem_flag_of_flag : flag -> mem_flag = function
   | `ERROR _ -> `ERROR
@@ -397,8 +399,8 @@ object(self)
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
     let pre_chars, post_chars =
       if Loc.is_ghost loc then 0, String.length phrase else Loc.unloc loc in
-    let pre = Ideutils.glib_utf8_pos_to_offset phrase ~off:pre_chars in
-    let post = Ideutils.glib_utf8_pos_to_offset phrase ~off:post_chars in
+    let pre = b2c phrase pre_chars in
+    let post = b2c phrase post_chars in
     let start = start_sentence#forward_chars pre in
     let stop = start_sentence#forward_chars post in
     let markup = Glib.Markup.escape_text text in
@@ -462,7 +464,7 @@ object(self)
       | ErrorMsg(loc, msg), Some (id,sentence) ->
           log "ErrorMsg" id;
           remove_flag sentence `PROCESSING;
-          add_flag sentence (`ERROR msg);
+          add_flag sentence (`ERROR (loc, msg));
           self#mark_as_needed sentence;
           self#attach_tooltip sentence loc msg;
           if not (Loc.is_ghost loc) then
@@ -501,8 +503,8 @@ object(self)
     | None -> ()
     | Some (start, stop) ->
         buffer#apply_tag Tags.Script.error
-          ~start:(iter#forward_chars (byte_offset_to_char_offset phrase start))
-          ~stop:(iter#forward_chars (byte_offset_to_char_offset phrase stop))
+          ~start:(iter#forward_chars (b2c phrase start))
+          ~stop:(iter#forward_chars (b2c phrase stop))
 
   method private position_error_tag_at_sentence sentence loc =
     let start, _, phrase = self#get_sentence sentence in
@@ -653,7 +655,15 @@ object(self)
   method get_errors =
     let extract_error s =
       match List.find (function `ERROR _ -> true | _ -> false) s.flags with
-      | `ERROR msg -> (buffer#get_iter_at_mark s.start)#line + 1, msg
+      | `ERROR (loc, msg) ->
+         let iter =
+           if Loc.is_ghost loc then
+             buffer#get_iter_at_mark s.start
+           else
+             let (iter, _, phrase) = self#get_sentence s in
+             let (start, _) = Loc.unloc loc in
+             iter#forward_chars (b2c phrase start) in
+         iter#line + 1, msg
       | _ -> assert false in
     List.rev
       (Doc.fold_all document [] (fun acc _ _ s ->
