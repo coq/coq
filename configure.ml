@@ -251,7 +251,6 @@ module Prefs = struct
   let debug = ref false
   let profile = ref false
   let annotate = ref false
-  let makecmd = ref "make"
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
   let force_caml_version = ref false
@@ -329,14 +328,14 @@ let args_options = Arg.align [
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Set Prefs.annotate,
     " Dumps ml annotation files while compiling Coq";
-  "-makecmd", Arg.Set_string Prefs.makecmd,
-    "<command> Name of GNU Make command";
+  "-makecmd", Arg.String (fun _ -> printf "Warning: obsolete -makecmd option\n"),
+    "<command> Obsolete: name of GNU Make command";
   "-native-compiler", arg_bool Prefs.nativecompiler,
     "(yes|no) Compilation to native code for conversion and normalization";
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
     " URL of the coq website";
   "-force-caml-version", Arg.Set Prefs.force_caml_version,
-    "Force OCaml version";
+    " Force OCaml version";
 ]
 
 let parse_args () =
@@ -422,18 +421,6 @@ let vcs =
   else if Sys.file_exists ".svn/entries" then "svn"
   else if dir_exists "{arch}" then "gnuarch"
   else "none"
-
-(** * The make command *)
-
-let make =
-  try
-    let version_line, _ = run !Prefs.makecmd ["-v"] in
-    let version = List.nth (string_split ' ' version_line) 2 in
-    match string_split '.' version with
-    | major::minor::_ when (s2i major, s2i minor) >= (3,81) ->
-      printf "You have GNU Make %s. Good!\n" version
-    | _ -> failwith "bad version"
-  with _ -> die "Error: Cannot find GNU Make >= 3.81."
 
 (** * Browser command *)
 
@@ -834,7 +821,7 @@ let strip =
 (** * md5sum command *)
 
 let md5sum =
-  if arch = "Darwin" then "md5 -q" else "md5sum"
+  if arch = "Darwin" || arch = "FreeBSD" then "md5 -q" else "md5sum"
 
 
 (** * Documentation : do we have latex, hevea, ... *)

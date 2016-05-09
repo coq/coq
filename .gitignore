@@ -125,7 +125,7 @@ grammar/q_constr.ml
 grammar/tacextend.ml
 grammar/vernacextend.ml
 grammar/argextend.ml
-parsing/lexer.ml
+parsing/cLexer.ml
 tactics/hipattern.ml
 ltac/coretactics.ml
 ltac/extratactics.ml

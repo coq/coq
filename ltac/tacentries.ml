@@ -397,11 +397,11 @@ let create_ltac_quotation name cast (e, l) =
   let assoc = None in
   let rule =
     Next (Next (Next (Next (Next (Stop,
-      Atoken (Lexer.terminal name)),
-      Atoken (Lexer.terminal ":")),
-      Atoken (Lexer.terminal "(")),
+      Atoken (CLexer.terminal name)),
+      Atoken (CLexer.terminal ":")),
+      Atoken (CLexer.terminal "(")),
       entry),
-      Atoken (Lexer.terminal ")"))
+      Atoken (CLexer.terminal ")"))
   in
   let action _ v _ _ _ loc = cast (loc, v) in
   let gram = (level, assoc, [Rule (rule, action)]) in

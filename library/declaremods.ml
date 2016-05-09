@@ -642,7 +642,11 @@ let declare_module interp_modast id args res mexpr_o fs =
   let env = Global.env () in
   let mty_entry_o, subs, inl_res = match res with
     | Enforce (mty,ann) ->
-        Some (fst (interp_modast env ModType mty)), [], inl2intopt ann
+        let inl = inl2intopt ann in
+        let mte, _ = interp_modast env ModType mty in
+        (* We check immediately that mte is well-formed *)
+        let _ = Mod_typing.translate_mse env None inl mte in
+        Some mte, [], inl
     | Check mtys ->
 	None, build_subtypes interp_modast env mp arg_entries_r mtys,
         default_inline ()

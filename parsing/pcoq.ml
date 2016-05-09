@@ -15,14 +15,14 @@ open Genarg
 
 (** The parser of Coq *)
 
-module G = GrammarMake (Lexer)
+module G = GrammarMake (CLexer)
 
 let warning_verbose = Compat.warning_verbose
 
 module Symbols = GramextMake(G)
 
 let gram_token_of_token = Symbols.stoken
-let gram_token_of_string s = gram_token_of_token (Lexer.terminal s)
+let gram_token_of_string s = gram_token_of_token (CLexer.terminal s)
 
 let camlp4_verbosity silent f x =
   let a = !warning_verbose in

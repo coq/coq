@@ -265,9 +265,9 @@ let recover_constr_grammar ntn prec =
 (* Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
-type frozen_t = (int * GrammarCommand.t) list * Lexer.frozen_t
+type frozen_t = (int * GrammarCommand.t) list * CLexer.frozen_t
 
-let freeze _ : frozen_t = (!grammar_state, Lexer.freeze ())
+let freeze _ : frozen_t = (!grammar_state, CLexer.freeze ())
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
@@ -283,7 +283,7 @@ let unfreeze (grams, lex) =
   remove_grammars n;
   remove_levels n;
   grammar_state := common;
-  Lexer.unfreeze lex;
+  CLexer.unfreeze lex;
   List.iter extend_dyn_grammar (List.rev_map snd redo)
 
 (** No need to provide an init function : the grammar state is
