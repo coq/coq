@@ -106,7 +106,7 @@ let make_prod_item = function
   | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
   | ExtNonTerminal (g, id) ->
     let nt = type_of_user_symbol g in
-    let base s = <:expr< Pcoq.name_of_entry (Pcoq.genarg_grammar $mk_extraarg loc s$) >> in
+    let base s = <:expr< Pcoq.genarg_grammar ($mk_extraarg loc s$) >> in
       <:expr< Egramml.GramNonTerminal $default_loc$ $make_rawwit loc nt$
       $mlexpr_of_prod_entry_key base g$ >>
 

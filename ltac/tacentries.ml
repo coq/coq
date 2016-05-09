@@ -43,8 +43,8 @@ let coincide s pat off =
   !break
 
 let atactic n =
-  if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
-  else Aentryl (name_of_entry Tactic.tactic_expr, n)
+  if n = 5 then Aentry Tactic.binder_tactic
+  else Aentryl (Tactic.tactic_expr, n)
 
 type entry_name = EntryName :
   'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) Extend.symbol -> entry_name
@@ -149,7 +149,7 @@ let rec prod_item_of_symbol lev = function
 | Extend.Uentry arg ->
   let ArgT.Any tag = arg in
   let wit = ExtraArg tag in
-  EntryName (Rawwit wit, Extend.Aentry (name_of_entry (genarg_grammar wit)))
+  EntryName (Rawwit wit, Extend.Aentry (genarg_grammar wit))
 | Extend.Uentryl (s, n) ->
   let ArgT.Any tag = s in
   assert (coincide (ArgT.repr tag) "tactic" 0);
@@ -389,8 +389,8 @@ let create_ltac_quotation name cast (e, l) =
   in
   let () = ltac_quotations := String.Set.add name !ltac_quotations in
   let entry = match l with
-  | None -> Aentry (name_of_entry e)
-  | Some l -> Aentryl (name_of_entry e, l)
+  | None -> Aentry e
+  | Some l -> Aentryl (e, l)
   in
 (*   let level = Some "1" in *)
   let level = None in

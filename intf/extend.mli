@@ -8,6 +8,8 @@
 
 (** Entry keys for constr notations *)
 
+type 'a entry = 'a Compat.GrammarMake(CLexer).entry
+
 type side = Left | Right
 
 type gram_assoc = NonA | RightA | LeftA
@@ -84,8 +86,8 @@ type ('self, 'a) symbol =
 | Aopt : ('self, 'a) symbol -> ('self, 'a option) symbol
 | Aself : ('self, 'self) symbol
 | Anext : ('self, 'self) symbol
-| Aentry : 'a Entry.t -> ('self, 'a) symbol
-| Aentryl : 'a Entry.t * int -> ('self, 'a) symbol
+| Aentry : 'a entry -> ('self, 'a) symbol
+| Aentryl : 'a entry * int -> ('self, 'a) symbol
 | Arules : 'a rules -> ('self, 'a index) symbol
 
 and ('self, _, 'r) rule =

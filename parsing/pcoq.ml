@@ -215,18 +215,9 @@ let get_univ u =
 (** A table associating grammar to entries *)
 let gtable : Obj.t Gram.entry String.Map.t ref = ref String.Map.empty
 
-let get_grammar (e : 'a Entry.t) : 'a Gram.entry =
-  Obj.magic (String.Map.find (Entry.repr e) !gtable)
-
-let set_grammar (e : 'a Entry.t) (g : 'a Gram.entry) =
-  assert (not (String.Map.mem (Entry.repr e) !gtable));
-  gtable := String.Map.add (Entry.repr e) (Obj.magic g) !gtable
-
 let new_entry u s =
   let ename = u ^ ":" ^ s in
-  let entry = Entry.create ename in
   let e = Gram.entry_create ename in
-  let () = set_grammar entry e in
   e
 
 let make_gen_entry u s = new_entry u s
@@ -689,10 +680,8 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Aself -> Symbols.sself
   | Anext -> Symbols.snext
   | Aentry e ->
-    let e = get_grammar e in
     Symbols.snterm (Gram.Entry.obj (weaken_entry e))
   | Aentryl (e, n) ->
-    let e = get_grammar e in
     Symbols.snterml (Gram.Entry.obj (weaken_entry e), string_of_int n)
   | Arules rs -> Gram.srules' (symbol_of_rules rs [] (fun x -> I0 x))
 
@@ -725,8 +714,6 @@ let of_coq_extend_statement (pos, st) =
 let grammar_extend e reinit ext =
   let ext = of_coq_extend_statement ext in
   unsafe_grammar_extend e reinit ext
-
-let name_of_entry e = Entry.unsafe_of_name (Gram.Entry.name e)
 
 let list_entry_names () = []
 

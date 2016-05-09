@@ -42,7 +42,7 @@ let make_act loc act pil =
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Extend.Atoken (CLexer.terminal $mlexpr_of_string s$) >>
   | ExtNonTerminal (g, _) ->
-    let base s = <:expr< Pcoq.name_of_entry $lid:s$ >> in
+    let base s = <:expr< $lid:s$ >> in
     mlexpr_of_prod_entry_key base g
 
 let rec make_prod = function

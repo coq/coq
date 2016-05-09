@@ -19,7 +19,7 @@ open Genredexpr
 
 (** The parser of Coq *)
 
-module Gram : Compat.GrammarSig
+module Gram : module type of Compat.GrammarMake(CLexer)
 
 (** The parser of Coq is built from three kinds of rule declarations:
 
@@ -128,7 +128,6 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
-val set_grammar : 'a Entry.t -> 'a Gram.entry -> unit
 val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
 val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
 
@@ -233,8 +232,6 @@ val main_entry : (Loc.t * vernac_expr) option Gram.entry
 (** Handling of the proof mode entry *)
 val get_command_entry : unit -> vernac_expr Gram.entry
 val set_command_entry : vernac_expr Gram.entry -> unit
-
-val name_of_entry : 'a Gram.entry -> 'a Entry.t
 
 val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
