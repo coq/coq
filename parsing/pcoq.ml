@@ -423,9 +423,6 @@ let default_pattern_levels =
    1,Extend.LeftA,false;
    0,Extend.RightA,false]
 
-let level_stack =
-  ref [(default_levels, default_pattern_levels)]
-
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
 (* In case, several associativity exists for a level, we make two levels, *)
 (* first LeftA, then RightA and NoneA together *)
@@ -453,12 +450,10 @@ let create_pos = function
   | None -> Extend.First
   | Some lev -> Extend.After (constr_level lev)
 
-let find_position_gen forpat ensure assoc lev =
-  let ccurrent,pcurrent as current = List.hd !level_stack in
+let find_position_gen current ensure assoc lev =
   match lev with
   | None ->
-      level_stack := current :: !level_stack;
-      None, None, None, None
+      current, (None, None, None, None)
   | Some n ->
       let after = ref None in
       let init = ref None in
@@ -475,25 +470,24 @@ let find_position_gen forpat ensure assoc lev =
 	| l -> after := q; (n,create_assoc assoc,ensure)::l
       in
       try
-	let updated =
-	  if forpat then (ccurrent, add_level None pcurrent)
-	  else (add_level None ccurrent, pcurrent) in
-        level_stack := updated:: !level_stack;
+	let updated = add_level None current in
 	let assoc = create_assoc assoc in
         begin match !init with
         | None ->
 	  (* Create the entry *)
-	   Some (create_pos !after), Some assoc, Some (constr_level n), None
+	   updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
         | _ ->
 	  (* The reinit flag has been updated *)
-	   Some (Extend.Level (constr_level n)), None, None, !init
+	   updated, (Some (Extend.Level (constr_level n)), None, None, !init)
         end
       with
 	  (* Nothing has changed *)
           Exit ->
-            level_stack := current :: !level_stack;
 	    (* Just inherit the existing associativity and name (None) *)
-	    Some (Extend.Level (constr_level n)), None, None, None
+	    current, (Some (Extend.Level (constr_level n)), None, None, None)
+
+let level_stack =
+  ref [(default_levels, default_pattern_levels)]
 
 let remove_levels n =
   level_stack := List.skipn n !level_stack
@@ -502,23 +496,43 @@ let rec list_mem_assoc_triple x = function
   | [] -> false
   | (a,b,c) :: l -> Int.equal a x || list_mem_assoc_triple x l
 
+type gram_level =
+  gram_position option * gram_assoc option * string option *
+  (** for reinitialization: *) gram_reinit option
+
+let top = function
+| [] -> assert false
+| h :: _ -> h
+
 let register_empty_levels forpat levels =
-  let filter n =
-    try
-      let levels = (if forpat then snd else fst) (List.hd !level_stack) in
-      if not (list_mem_assoc_triple n levels) then
-        Some (find_position_gen forpat true None (Some n))
-      else None
-    with Failure _ -> None
+  let rec filter accu = function
+  | [] -> ([], accu)
+  | n :: rem ->
+    let rem, accu = filter accu rem in
+    let (clev, plev) = top accu in
+    let levels = if forpat then plev else clev in
+    if not (list_mem_assoc_triple n levels) then
+      let nlev, ans = find_position_gen levels true None (Some n) in
+      let nlev = if forpat then (clev, nlev) else (nlev, plev) in
+      ans :: rem, nlev :: accu
+    else rem, accu
   in
-  List.map_filter filter levels
+  let ans, accu = filter !level_stack levels in
+  let () = level_stack := accu in
+  ans
 
 let find_position forpat assoc level =
-  find_position_gen forpat false assoc level
+  let (clev, plev) = top !level_stack in
+  let levels = if forpat then plev else clev in
+  let nlev, ans = find_position_gen levels false assoc level in
+  let nlev = if forpat then (clev, nlev) else (nlev, plev) in
+  level_stack := nlev :: !level_stack;
+  ans
 
 (* Synchronise the stack of level updates *)
 let synchronize_level_positions () =
-  let _ = find_position true None None in ()
+  let lev = top !level_stack in
+  level_stack := lev :: !level_stack
 
 (**********************************************************************)
 (* Binding constr entry keys to entries                               *)

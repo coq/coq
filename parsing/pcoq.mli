@@ -242,17 +242,16 @@ val list_entry_names : unit -> (string * argument_type) list
 
 (** Registering/resetting the level of a constr entry *)
 
+type gram_level =
+  gram_position option * gram_assoc option * string option * gram_reinit option
+
 val find_position :
   bool (** true if for creation in pattern entry; false if in constr entry *) ->
-  Extend.gram_assoc option -> int option ->
-    Extend.gram_position option * Extend.gram_assoc option * string option *
-    (** for reinitialization: *) gram_reinit option
+  Extend.gram_assoc option -> int option -> gram_level
 
 val synchronize_level_positions : unit -> unit
 
-val register_empty_levels : bool -> int list ->
-    (Extend.gram_position option * Extend.gram_assoc option *
-     string option * gram_reinit option) list
+val register_empty_levels : bool -> int list -> gram_level list
 
 val remove_levels : int -> unit
 

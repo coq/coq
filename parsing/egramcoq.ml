@@ -182,15 +182,18 @@ let pure_sublevels level symbs =
   List.map_filter filter symbs
 
 let extend_constr (entry,level) (n,assoc) mkact forpat rules =
-  List.fold_left (fun nb pt ->
-  let symbs = make_constr_prod_item assoc n forpat pt in
-  let pure_sublevels = pure_sublevels level symbs in
-  let needed_levels = register_empty_levels forpat pure_sublevels in
-  let pos,p4assoc,name,reinit = find_position forpat assoc level in
-  let nb_decls = List.length needed_levels + 1 in
-  List.iter (prepare_empty_levels forpat) needed_levels;
-  unsafe_grammar_extend entry reinit (pos, [(name, p4assoc, [symbs, mkact pt])]);
-  nb_decls) 0 rules
+  let fold nb pt =
+    let symbs = make_constr_prod_item assoc n forpat pt in
+    let pure_sublevels = pure_sublevels level symbs in
+    let needed_levels = register_empty_levels forpat pure_sublevels in
+    let pos,p4assoc,name,reinit = find_position forpat assoc level in
+    let nb_decls = List.length needed_levels + 1 in
+    let () = List.iter (prepare_empty_levels forpat) needed_levels in
+    let rule = (name, p4assoc, [symbs, mkact pt]) in
+    let () = unsafe_grammar_extend entry reinit (pos, [rule]) in
+    nb_decls
+  in
+  List.fold_left fold 0 rules
 
 type notation_grammar = {
   notgram_level : int;
