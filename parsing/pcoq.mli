@@ -96,27 +96,10 @@ module Gram : Compat.GrammarSig
 
 *)
 
-val gram_token_of_token : Tok.t -> Gram.symbol
-val gram_token_of_string : string -> Gram.symbol
-
-(** The superclass of all grammar entries *)
-type grammar_object
+(** {5 Grammar extension API} *)
 
 (** Type of reinitialization data *)
 type gram_reinit = gram_assoc * gram_position
-
-(** General entry keys *)
-
-(** This intermediate abstract representation of entries can
-   both be reified into mlexpr for the ML extensions and
-   dynamically interpreted as entries for the Coq level extensions
-*)
-
-(** Add one extension at some camlp4 position of some camlp4 entry *)
-val unsafe_grammar_extend :
-  grammar_object Gram.entry ->
-  gram_reinit option (** for reinitialization if ever needed *) ->
-  Gram.extend_statment -> unit
 
 val grammar_extend :
   'a Gram.entry ->
@@ -251,17 +234,6 @@ val main_entry : (Loc.t * vernac_expr) option Gram.entry
 val get_command_entry : unit -> vernac_expr Gram.entry
 val set_command_entry : vernac_expr Gram.entry -> unit
 
-(** Mapping formal entries into concrete ones *)
-
-(** Binding constr entry keys to entries and symbols *)
-
-val interp_constr_entry_key : bool (** true for cases_pattern *) ->
-  int -> grammar_object Gram.entry * int option
-
-val symbol_of_constr_prod_entry_key : gram_assoc option ->
-  constr_entry_key -> bool -> constr_prod_entry_key ->
-    Gram.symbol
-
 val name_of_entry : 'a Gram.entry -> 'a Entry.t
 
 val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
@@ -287,9 +259,38 @@ val register_empty_levels : bool -> int list ->
 
 val remove_levels : int -> unit
 
+(** {5 Unsafe grammar extension API}
+
+For compatibility purpose only. Do not use in newly written code.
+
+*)
+
+val gram_token_of_token : Tok.t -> Gram.symbol
+val gram_token_of_string : string -> Gram.symbol
 val level_of_snterml : Gram.symbol -> int
 
-(** TODO: remove me *)
+(** The superclass of all grammar entries *)
+type grammar_object
 
-val of_coq_position :  Extend.gram_position -> Compat.CompatGramext.position
-val of_coq_assoc :  Extend.gram_assoc -> Compat.CompatGramext.assoc
+(** Binding constr entry keys to entries and symbols *)
+
+val interp_constr_entry_key : bool (** true for cases_pattern *) ->
+  int -> grammar_object Gram.entry * int option
+
+val symbol_of_constr_prod_entry_key : gram_assoc option ->
+  constr_entry_key -> bool -> constr_prod_entry_key ->
+    Gram.symbol
+
+type unsafe_single_extend_statment =
+  string option *
+  gram_assoc option *
+  Gram.production_rule list
+
+type unsafe_extend_statment =
+  gram_position option *
+  unsafe_single_extend_statment list
+
+val unsafe_grammar_extend :
+  grammar_object Gram.entry ->
+  gram_reinit option (** for reinitialization if ever needed *) ->
+  unsafe_extend_statment -> unit

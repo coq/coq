@@ -189,8 +189,7 @@ let extend_constr (entry,level) (n,assoc) mkact forpat rules =
   let pos,p4assoc,name,reinit = find_position forpat assoc level in
   let nb_decls = List.length needed_levels + 1 in
   List.iter (prepare_empty_levels forpat) needed_levels;
-  unsafe_grammar_extend entry reinit (Option.map of_coq_position pos,
-    [(name, Option.map of_coq_assoc p4assoc, [symbs, mkact pt])]);
+  unsafe_grammar_extend entry reinit (pos, [(name, p4assoc, [symbs, mkact pt])]);
   nb_decls) 0 rules
 
 type notation_grammar = {

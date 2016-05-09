@@ -135,7 +135,18 @@ module Gram =
 
 (** This extension command is used by the Grammar constr *)
 
-let unsafe_grammar_extend e reinit ext =
+type unsafe_single_extend_statment =
+  string option *
+  gram_assoc option *
+  Gram.production_rule list
+
+type unsafe_extend_statment =
+  gram_position option *
+  unsafe_single_extend_statment list
+
+let unsafe_grammar_extend e reinit (pos, st) =
+  let map_s (lvl, assoc, rule) = (lvl, Option.map of_coq_assoc assoc, rule) in
+  let ext =  (Option.map of_coq_position pos, List.map map_s st) in
   camlp4_state := ByGrammar (weaken_entry e,reinit,ext) :: !camlp4_state;
   camlp4_verbose (maybe_uncurry (G.extend e)) ext
 
@@ -706,10 +717,10 @@ let of_coq_production_rule : type a. a Extend.production_rule -> _ = function
 | Rule (toks, act) -> (symbol_of_rule toks [], of_coq_action toks act)
 
 let of_coq_single_extend_statement (lvl, assoc, rule) =
-  (lvl, Option.map of_coq_assoc assoc, List.map of_coq_production_rule rule)
+  (lvl, assoc, List.map of_coq_production_rule rule)
 
 let of_coq_extend_statement (pos, st) =
-  (Option.map of_coq_position pos, List.map of_coq_single_extend_statement st)
+  (pos, List.map of_coq_single_extend_statement st)
 
 let grammar_extend e reinit ext =
   let ext = of_coq_extend_statement ext in
