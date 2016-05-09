@@ -14,3 +14,11 @@ Notation qux := (nat -> nat).
 
 Fail Check qux@{i}.
 
+Axiom TruncType@{i} : nat -> Type@{i}.
+
+Notation "n -Type" := (TruncType n) (at level 1) : type_scope.
+Notation hProp := (0)-Type.
+
+Check hProp.
+Check hProp@{i}.
+

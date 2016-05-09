@@ -777,9 +777,12 @@ let intern_qualid loc qid intern env lvar us args =
       let c = match us, c with
       | None, _ -> c
       | Some _, GRef (loc, ref, None) -> GRef (loc, ref, us)
+      | Some _, GApp (loc, GRef (loc', ref, None), arg) ->
+         GApp (loc, GRef (loc', ref, us), arg)
       | Some _, _ ->
         user_err_loc (loc, "", str "Notation " ++ pr_qualid qid ++
-          str " cannot have a universe instance")
+          str " cannot have a universe instance, its expanded head
+               does not start with a reference")
       in
       c, projapp, args2
 
