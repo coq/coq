@@ -459,7 +459,7 @@ let subst_deps_obl obls obl =
   let t' = subst_deps true obls obl.obl_deps obl.obl_type in
     { obl with obl_type = t' }
 
-module ProgMap = Map.Make(Id)
+module ProgMap = Id.Map
 
 let map_replace k v m = ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
 
@@ -706,11 +706,13 @@ let get_prog name =
 	     match n with
 		 0 -> raise (NoObligations None)
 	       | 1 -> get_info (map_first prg_infos)
-	       | _ -> 
-                   error ("More than one program with unsolved obligations: "^
-                    String.concat ", " 
-                     (List.map string_of_id
-                      (ProgMap.fold (fun k _ s -> k::s) prg_infos []))))
+	       | _ ->
+                let progs = Id.Set.elements (ProgMap.domain prg_infos) in
+                let prog = List.hd progs in
+                let progs = prlist_with_sep pr_comma Nameops.pr_id progs in
+                errorlabstrm ""
+                  (str "More than one program with unsolved obligations: " ++ progs
+                  ++ str "; use the \"of\" clause to specify, as in \"Obligation 1 of " ++ Nameops.pr_id prog ++ str "\""))
 
 let get_any_prog () =
   let prg_infos = !from_prg in
