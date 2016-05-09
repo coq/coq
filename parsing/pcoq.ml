@@ -19,6 +19,18 @@ module G = GrammarMake (CLexer)
 
 let warning_verbose = Compat.warning_verbose
 
+let of_coq_assoc = function
+| Extend.RightA -> CompatGramext.RightA
+| Extend.LeftA -> CompatGramext.LeftA
+| Extend.NonA -> CompatGramext.NonA
+
+let of_coq_position = function
+| Extend.First -> CompatGramext.First
+| Extend.Last -> CompatGramext.Last
+| Extend.Before s -> CompatGramext.Before s
+| Extend.After s -> CompatGramext.After s
+| Extend.Level s -> CompatGramext.Level s
+
 module Symbols = GramextMake(G)
 
 let gram_token_of_token = Symbols.stoken
@@ -86,8 +98,10 @@ let grammar_delete e reinit (pos,rls) =
     (List.rev rls);
   match reinit with
   | Some (a,ext) ->
-    let lev = match Option.map Compat.to_coq_position pos with
-    | Some (Level n) -> n
+    let a = of_coq_assoc a in
+    let ext = of_coq_position ext in
+    let lev = match pos with
+    | Some (CompatGramext.Level n) -> n
     | _ -> assert false
     in
     maybe_uncurry (G.extend e) (Some ext, [Some lev,Some a,[]])
@@ -135,8 +149,7 @@ let rec remove_grammars n =
     (match !camlp4_state with
        | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove")
        | ByGrammar(g,reinit,ext)::t ->
-           let f (a,b) = (of_coq_assoc a, of_coq_position b) in
-           grammar_delete g (Option.map f reinit) ext;
+           grammar_delete g reinit ext;
            camlp4_state := t;
            remove_grammars (n-1)
        | ByEXTEND (undo,redo)::t ->

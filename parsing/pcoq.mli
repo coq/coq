@@ -288,3 +288,8 @@ val register_empty_levels : bool -> int list ->
 val remove_levels : int -> unit
 
 val level_of_snterml : Gram.symbol -> int
+
+(** TODO: remove me *)
+
+val of_coq_position :  Extend.gram_position -> Compat.CompatGramext.position
+val of_coq_assoc :  Extend.gram_assoc -> Compat.CompatGramext.assoc
