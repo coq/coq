@@ -230,11 +230,11 @@ let compile_files () =
     | [vf] -> compile_file vf (* One compilation : no need to save init state *)
     | l ->
       let init_state = States.freeze ~marshallable:`No in
-      let coqdoc_init_state = Lexer.location_table () in
+      let coqdoc_init_state = CLexer.location_table () in
       List.iter
         (fun vf ->
 	  States.unfreeze init_state;
-	  Lexer.restore_location_table coqdoc_init_state;
+	  CLexer.restore_location_table coqdoc_init_state;
           compile_file vf)
         (List.rev l)
 

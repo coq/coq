@@ -287,7 +287,7 @@ EXTEND
 	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
-	    Lexer.add_keyword s;
+	    CLexer.add_keyword s;
           GramTerminal s
     ] ]
   ;

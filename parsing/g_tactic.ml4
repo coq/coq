@@ -25,7 +25,7 @@ open Pcoq
 let all_with delta = Redops.make_red_flag [FBeta;FIota;FZeta;delta]
 
 let tactic_kw = [ "->"; "<-" ; "by" ]
-let _ = List.iter Lexer.add_keyword tactic_kw
+let _ = List.iter CLexer.add_keyword tactic_kw
 
 let err () = raise Stream.Failure
 
