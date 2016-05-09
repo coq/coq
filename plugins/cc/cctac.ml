@@ -80,8 +80,10 @@ let rec decompose_term env sigma t=
     | Proj (p, c) -> 
 	let canon_const kn = constant_of_kn (canonical_con kn) in 
 	let p' = Projection.map canon_const p in
-	  (Appli (Symb (mkConst (Projection.constant p')), decompose_term env sigma c))
-    | _ ->if closed0 t then (Symb t) else raise Not_found
+	(Appli (Symb (mkConst (Projection.constant p')), decompose_term env sigma c))
+    | _ ->
+       let t = strip_outer_cast t in
+       if closed0 t then Symb t else raise Not_found
 
 (* decompose equality in members and type *)
 open Globnames
