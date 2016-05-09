@@ -37,7 +37,7 @@ val evar_define : conv_fun -> ?choose:bool -> env -> evar_map ->
 val refresh_universes :
   ?status:Evd.rigid ->
   ?onlyalg:bool (* Only algebraic universes *) ->
-  ?propset:bool ->
+  ?refreshset:bool ->
   (* Also refresh Prop and Set universes, so that the returned type can be any supertype
      of the original type *)
   bool option (* direction: true for levels lower than the existing levels *) ->

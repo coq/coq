@@ -262,7 +262,7 @@ let assert_before n c =
   end
 
 let refresh_type env evm ty =
-  Evarsolve.refresh_universes ~status:Evd.univ_flexible ~propset:true
+  Evarsolve.refresh_universes ~status:Evd.univ_flexible ~refreshset:true
 			      (Some false) env evm ty
 
 let refresh_universes ty k =
