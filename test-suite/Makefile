@@ -242,7 +242,6 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(coqc) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
-	    -async-proofs-private-flags fallback-to-lazy-if-marshal-error=no,fallback-to-lazy-if-slave-dies=no \
 	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \

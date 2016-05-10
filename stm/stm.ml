@@ -154,7 +154,7 @@ type branch_type =
       proof_mode * Stateid.t * Stateid.t  * vernac_qed_type * Vcs_.Branch.t ]
 type cmd_t = {
   ctac : bool; (* is a tactic, needed by the 8.4 semantics of Undo *)
-  ceff : bool; (* is a side-effecting command *)
+  ceff : bool; (* is a side-effecting command in the middle of a proof *)
   cast : ast;
   cids : Id.t list;
   cqueue : [ `MainQueue | `TacQueue of cancel_switch | `QueryQueue of cancel_switch | `SkipQueue ] }
@@ -313,7 +313,7 @@ module VCS : sig
 
   val proof_nesting : unit -> int
   val checkout_shallowest_proof_branch : unit -> unit
-  val propagate_sideff : ast option -> unit
+  val propagate_sideff : replay:ast option -> unit
 
   val gc : unit -> unit
 
@@ -485,7 +485,7 @@ end = struct (* {{{ *)
         Proof_global.disactivate_proof_mode "Classic"
 
   (* copies the transaction on every open branch *)
-  let propagate_sideff t =
+  let propagate_sideff ~replay:t =
     List.iter (fun b ->
       checkout b;
       let id = new_node () in
@@ -2126,7 +2126,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
     let head = VCS.current_branch () in
     VCS.checkout head;
     let rc = begin
-      prerr_endline (fun () -> "  classified as: " ^ string_of_vernac_classification c);
+      prerr_endline (fun () ->
+        "  classified as: " ^ string_of_vernac_classification c);
       match c with
       (* PG stuff *)    
       | VtStm(VtPG,false), VtNow -> vernac_interp Stateid.dummy x; `Ok
@@ -2192,7 +2193,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
                     may_pierce_opaque x
                  then `SkipQueue 
             else `MainQueue in
-          VCS.commit id (Cmd {ctac=false;ceff=false;cast = x; cids = []; cqueue = queue });
+          VCS.commit id (Cmd {
+            ctac=false;ceff=false;cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
@@ -2215,7 +2217,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           anomaly(str"VtProofMode must be executed VtNow")
       | VtProofMode mode, VtNow ->
           let id = VCS.new_node ~id:newtip () in
-          VCS.commit id (Cmd {ctac=false;ceff=false;cast = x;cids=[];cqueue = `MainQueue});
+          VCS.commit id (Cmd {
+            ctac=false;ceff=false;cast = x;cids=[];cqueue = `MainQueue});
           List.iter
             (fun bn -> match VCS.get_branch bn with
             | { VCS.root; kind = `Master; pos } -> ()
@@ -2233,7 +2236,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtProofStep paral, w ->
           let id = VCS.new_node ~id:newtip () in
           let queue = if paral then `TacQueue (ref false) else `MainQueue in
-          VCS.commit id (Cmd {ctac = true;ceff = false;cast = x;cids = [];cqueue = queue });
+          VCS.commit id (Cmd {
+            ctac = true;ceff = false;cast = x;cids = [];cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
           let valid = if tty then Some(VCS.get_branch_pos head) else None in
@@ -2247,20 +2251,23 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           vernac_interp (VCS.get_branch_pos head) x; `Ok
 
       | VtSideff l, w ->
-	  let ceff_in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
+          let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
+          VCS.commit id (Cmd {
+            ctac=false;ceff=in_proof;cast=x;cids=l;cqueue=`MainQueue });
+          (* We can't replay a Definition since universes may be differently
+           * inferred.  This holds in Coq >= 8.5 *)
 	  let replay = match x.expr with
 	    | VernacDefinition(_, _, DefineBody _) -> None
-	    | _ -> Some x
-	  in
-          VCS.commit id (Cmd {ctac=false;ceff=ceff_in_proof;cast=x;cids=l;cqueue=`MainQueue});
-	  VCS.propagate_sideff replay;
+	    | _ -> Some x in
+	  VCS.propagate_sideff ~replay;
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish (); `Ok
 
       (* Unknown: we execute it, check for open goals and propagate sideeff *)
       | VtUnknown, VtNow ->
+          let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
           let id = VCS.new_node ~id:newtip () in
           let head_id = VCS.get_branch_pos head in
           Reach.known_state ~cache:`Yes head_id; (* ensure it is ok *)
@@ -2270,21 +2277,22 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
             Reach.known_state ~cache:(interactive ()) mid;
             vernac_interp id x;
             (* Vernac x may or may not start a proof *)
-            if VCS.Branch.equal head VCS.Branch.master &&
-               Proof_global.there_are_pending_proofs ()
-            then begin
+            if not in_proof && Proof_global.there_are_pending_proofs () then
+            begin
               let bname = VCS.mk_branch_name x in
               let opacity_of_produced_term =
                 match x.expr with
+                (* This AST is ambiguous, hence we check it dynamically *)
                 | VernacInstance (false, _,_ , None, _) -> GuaranteesOpacity
                 | _ -> Doesn'tGuaranteeOpacity in
               VCS.commit id (Fork (x,bname,opacity_of_produced_term,[]));
               VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode "Classic";
             end else begin
-	      VCS.commit id (Cmd {ctac = false; ceff = true;
-				    cast = x; cids = []; cqueue = `MainQueue});
-              VCS.propagate_sideff (Some x);
+	      VCS.commit id (Cmd {
+                ctac=false;ceff=in_proof;cast=x;cids=[];cqueue=`MainQueue });
+              (* We hope it can be replayed, but we can't really know *)
+              VCS.propagate_sideff ~replay:(Some x);
               VCS.checkout_shallowest_proof_branch ();
             end in
           State.define ~safe_id:head_id ~cache:`Yes step id;
