@@ -683,10 +683,10 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Atoken t -> Symbols.stoken t
   | Alist1 s -> Symbols.slist1 (symbol_of_prod_entry_key s)
   | Alist1sep (s,sep) ->
-      Symbols.slist1sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
+      Symbols.slist1sep (symbol_of_prod_entry_key s, symbol_of_prod_entry_key sep)
   | Alist0 s -> Symbols.slist0 (symbol_of_prod_entry_key s)
   | Alist0sep (s,sep) ->
-      Symbols.slist0sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
+      Symbols.slist0sep (symbol_of_prod_entry_key s, symbol_of_prod_entry_key sep)
   | Aopt s -> Symbols.sopt (symbol_of_prod_entry_key s)
   | Aself -> Symbols.sself
   | Anext -> Symbols.snext

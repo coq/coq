@@ -61,11 +61,13 @@ let mlexpr_of_option f = function
 let mlexpr_of_ident id =
   <:expr< Names.Id.of_string $str:id$ >>
 
+let symbol_of_string s = <:expr< Extend.Atoken (CLexer.terminal $str:s$) >>
+
 let rec mlexpr_of_prod_entry_key f = function
   | Ulist1 s -> <:expr< Extend.Alist1 $mlexpr_of_prod_entry_key f s$ >>
-  | Ulist1sep (s,sep) -> <:expr< Extend.Alist1sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
+  | Ulist1sep (s,sep) -> <:expr< Extend.Alist1sep $mlexpr_of_prod_entry_key f s$ $symbol_of_string sep$ >>
   | Ulist0 s -> <:expr< Extend.Alist0 $mlexpr_of_prod_entry_key f s$ >>
-  | Ulist0sep (s,sep) -> <:expr< Extend.Alist0sep $mlexpr_of_prod_entry_key f s$ $str:sep$ >>
+  | Ulist0sep (s,sep) -> <:expr< Extend.Alist0sep $mlexpr_of_prod_entry_key f s$ $symbol_of_string sep$ >>
   | Uopt s -> <:expr< Extend.Aopt $mlexpr_of_prod_entry_key f s$ >>
   | Uentry e -> <:expr< Extend.Aentry $f e$ >>
   | Uentryl (e, l) ->

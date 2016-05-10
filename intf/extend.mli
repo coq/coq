@@ -69,9 +69,9 @@ type 'a user_symbol =
 type ('self, 'a) symbol =
 | Atoken : Tok.t -> ('self, string) symbol
 | Alist1 : ('self, 'a) symbol -> ('self, 'a list) symbol
-| Alist1sep : ('self, 'a) symbol * string -> ('self, 'a list) symbol
+| Alist1sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
 | Alist0 : ('self, 'a) symbol -> ('self, 'a list) symbol
-| Alist0sep : ('self, 'a) symbol * string -> ('self, 'a list) symbol
+| Alist0sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
 | Aopt : ('self, 'a) symbol -> ('self, 'a option) symbol
 | Aself : ('self, 'self) symbol
 | Anext : ('self, 'self) symbol
