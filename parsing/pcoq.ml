@@ -675,12 +675,9 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
 
 (** Binding general entry keys to symbol *)
 
-let tuplify l =
-  List.fold_left (fun accu x -> Obj.repr (x, accu)) (Obj.repr ()) l
-
-let rec adj : type a b c. (a, b, Loc.t -> Loc.t * c) adj -> _ = function
-| Adj0 -> Obj.magic (fun accu f loc -> f (Obj.repr (to_coqloc loc, tuplify accu)))
-| AdjS e -> Obj.magic (fun accu f x -> adj e (x :: accu) f)
+let rec of_coq_action : type a r. (r, a, Loc.t -> r) Extend.rule -> a -> Gram.action = function
+| Stop -> fun f -> Gram.action (fun loc -> f (to_coqloc loc))
+| Next (r, _) -> fun f -> Gram.action (fun x -> of_coq_action r (f x))
 
 let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
   | Atoken t -> Symbols.stoken t
@@ -697,24 +694,20 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
     Symbols.snterm (Gram.Entry.obj (weaken_entry e))
   | Aentryl (e, n) ->
     Symbols.snterml (Gram.Entry.obj (weaken_entry e), string_of_int n)
-  | Arules rs -> Gram.srules' (symbol_of_rules rs [] (fun x -> I0 x))
+  | Arules rs ->
+    Gram.srules' (List.map symbol_of_rules rs)
 
 and symbol_of_rule : type s a r. (s, a, r) Extend.rule -> _ = function
 | Stop -> fun accu -> accu
 | Next (r, s) -> fun accu -> symbol_of_rule r (symbol_of_prod_entry_key s :: accu)
 
 and symbol_of_rules : type a. a Extend.rules -> _ = function
-| Rule0 -> fun accu _ -> accu
-| RuleS (r, e, rs) -> fun accu f ->
-  let symb = symbol_of_rule r [] in
-  let act = adj e [] f in
-  symbol_of_rules rs ((symb, act) :: accu) (fun x -> IS (f x))
+| Rules (r, act) ->
+  let symb = symbol_of_rule r.norec_rule [] in
+  let act = of_coq_action r.norec_rule act in
+  (symb, act)
 
 let level_of_snterml e = int_of_string (Symbols.snterml_level e)
-
-let rec of_coq_action : type a r. (r, a, Loc.t -> r) Extend.rule -> a -> Gram.action = function
-| Stop -> fun f -> Gram.action (fun loc -> f (to_coqloc loc))
-| Next (r, _) -> fun f -> Gram.action (fun x -> of_coq_action r (f x))
 
 let of_coq_production_rule : type a. a Extend.production_rule -> _ = function
 | Rule (toks, act) -> (symbol_of_rule toks [], of_coq_action toks act)
