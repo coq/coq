@@ -235,11 +235,6 @@ val set_command_entry : vernac_expr Gram.entry -> unit
 
 val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
-(** Binding general entry keys to symbols *)
-
-(** Recover the list of all known tactic notation entries. *)
-val list_entry_names : unit -> (string * argument_type) list
-
 (** Registering/resetting the level of a constr entry *)
 
 type gram_level =

@@ -41,26 +41,6 @@ let camlp4_verbosity silent f x =
 
 let camlp4_verbose f x = camlp4_verbosity (Flags.is_verbose ()) f x
 
-
-(** [grammar_object] is the superclass of all grammar entries *)
-
-module type Gramobj =
-sig
-  type grammar_object
-  val weaken_entry : 'a G.entry -> grammar_object G.entry
-end
-
-module Gramobj : Gramobj =
-struct
-  type grammar_object = Obj.t
-  let weaken_entry e = Obj.magic e
-end
-
-(** Grammar entries with associated types *)
-
-type grammar_object = Gramobj.grammar_object
-let weaken_entry x = Gramobj.weaken_entry x
-
 (** Grammar extensions *)
 
 (** NB: [extend_statment =
@@ -72,19 +52,67 @@ let weaken_entry x = Gramobj.weaken_entry x
     In [single_extend_statement], first two parameters are name and
     assoc iff a level is created *)
 
+(** Binding general entry keys to symbol *)
+
+let rec of_coq_action : type a r. (r, a, Loc.t -> r) Extend.rule -> a -> G.action = function
+| Stop -> fun f -> G.action (fun loc -> f (to_coqloc loc))
+| Next (r, _) -> fun f -> G.action (fun x -> of_coq_action r (f x))
+
+let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
+  | Atoken t -> Symbols.stoken t
+  | Alist1 s -> Symbols.slist1 (symbol_of_prod_entry_key s)
+  | Alist1sep (s,sep) ->
+      Symbols.slist1sep (symbol_of_prod_entry_key s, symbol_of_prod_entry_key sep)
+  | Alist0 s -> Symbols.slist0 (symbol_of_prod_entry_key s)
+  | Alist0sep (s,sep) ->
+      Symbols.slist0sep (symbol_of_prod_entry_key s, symbol_of_prod_entry_key sep)
+  | Aopt s -> Symbols.sopt (symbol_of_prod_entry_key s)
+  | Aself -> Symbols.sself
+  | Anext -> Symbols.snext
+  | Aentry e ->
+    Symbols.snterm (G.Entry.obj e)
+  | Aentryl (e, n) ->
+    Symbols.snterml (G.Entry.obj e, string_of_int n)
+  | Arules rs ->
+    G.srules' (List.map symbol_of_rules rs)
+
+and symbol_of_rule : type s a r. (s, a, r) Extend.rule -> _ = function
+| Stop -> fun accu -> accu
+| Next (r, s) -> fun accu -> symbol_of_rule r (symbol_of_prod_entry_key s :: accu)
+
+and symbol_of_rules : type a. a Extend.rules -> _ = function
+| Rules (r, act) ->
+  let symb = symbol_of_rule r.norec_rule [] in
+  let act = of_coq_action r.norec_rule act in
+  (symb, act)
+
+let of_coq_production_rule : type a. a Extend.production_rule -> _ = function
+| Rule (toks, act) -> (symbol_of_rule toks [], of_coq_action toks act)
+
+let of_coq_single_extend_statement (lvl, assoc, rule) =
+  (lvl, Option.map of_coq_assoc assoc, List.map of_coq_production_rule rule)
+
+let of_coq_extend_statement (pos, st) =
+  (Option.map of_coq_position pos, List.map of_coq_single_extend_statement st)
+
 (** Type of reinitialization data *)
 type gram_reinit = gram_assoc * gram_position
 
 type ext_kind =
-  | ByGrammar of
-      grammar_object G.entry
+  | ByGrammar :
+      'a G.entry
       * gram_reinit option (** for reinitialization if ever needed *)
-      * G.extend_statment
+      * 'a Extend.extend_statment -> ext_kind
   | ByEXTEND of (unit -> unit) * (unit -> unit)
 
 (** The list of extensions *)
 
 let camlp4_state = ref []
+
+let grammar_extend e reinit ext =
+  camlp4_state := ByGrammar (e,reinit,ext) :: !camlp4_state;
+  let ext = of_coq_extend_statement ext in
+  camlp4_verbose (maybe_uncurry (G.extend e)) ext
 
 (** Deletion *)
 
@@ -130,14 +158,6 @@ module Gram =
       G.delete_rule e pil
   end
 
-(** This extension command is used by the Grammar constr *)
-
-let unsafe_grammar_extend e reinit (pos, st) =
-  let map_s (lvl, assoc, rule) = (lvl, Option.map of_coq_assoc assoc, rule) in
-  let ext =  (Option.map of_coq_position pos, List.map map_s st) in
-  camlp4_state := ByGrammar (weaken_entry e,reinit,ext) :: !camlp4_state;
-  camlp4_verbose (maybe_uncurry (G.extend e)) ext
-
 (** Remove extensions
 
    [n] is the number of extended entries (not the number of Grammar commands!)
@@ -148,7 +168,7 @@ let rec remove_grammars n =
     (match !camlp4_state with
        | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove")
        | ByGrammar(g,reinit,ext)::t ->
-           grammar_delete g reinit ext;
+           grammar_delete g reinit (of_coq_extend_statement ext);
            camlp4_state := t;
            remove_grammars (n-1)
        | ByEXTEND (undo,redo)::t ->
@@ -518,55 +538,6 @@ let find_position forpat assoc level =
 let synchronize_level_positions () =
   let lev = top !level_stack in
   level_stack := lev :: !level_stack
-
-(** Binding general entry keys to symbol *)
-
-let rec of_coq_action : type a r. (r, a, Loc.t -> r) Extend.rule -> a -> Gram.action = function
-| Stop -> fun f -> Gram.action (fun loc -> f (to_coqloc loc))
-| Next (r, _) -> fun f -> Gram.action (fun x -> of_coq_action r (f x))
-
-let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
-  | Atoken t -> Symbols.stoken t
-  | Alist1 s -> Symbols.slist1 (symbol_of_prod_entry_key s)
-  | Alist1sep (s,sep) ->
-      Symbols.slist1sep (symbol_of_prod_entry_key s, symbol_of_prod_entry_key sep)
-  | Alist0 s -> Symbols.slist0 (symbol_of_prod_entry_key s)
-  | Alist0sep (s,sep) ->
-      Symbols.slist0sep (symbol_of_prod_entry_key s, symbol_of_prod_entry_key sep)
-  | Aopt s -> Symbols.sopt (symbol_of_prod_entry_key s)
-  | Aself -> Symbols.sself
-  | Anext -> Symbols.snext
-  | Aentry e ->
-    Symbols.snterm (Gram.Entry.obj (weaken_entry e))
-  | Aentryl (e, n) ->
-    Symbols.snterml (Gram.Entry.obj (weaken_entry e), string_of_int n)
-  | Arules rs ->
-    Gram.srules' (List.map symbol_of_rules rs)
-
-and symbol_of_rule : type s a r. (s, a, r) Extend.rule -> _ = function
-| Stop -> fun accu -> accu
-| Next (r, s) -> fun accu -> symbol_of_rule r (symbol_of_prod_entry_key s :: accu)
-
-and symbol_of_rules : type a. a Extend.rules -> _ = function
-| Rules (r, act) ->
-  let symb = symbol_of_rule r.norec_rule [] in
-  let act = of_coq_action r.norec_rule act in
-  (symb, act)
-
-let of_coq_production_rule : type a. a Extend.production_rule -> _ = function
-| Rule (toks, act) -> (symbol_of_rule toks [], of_coq_action toks act)
-
-let of_coq_single_extend_statement (lvl, assoc, rule) =
-  (lvl, assoc, List.map of_coq_production_rule rule)
-
-let of_coq_extend_statement (pos, st) =
-  (pos, List.map of_coq_single_extend_statement st)
-
-let grammar_extend e reinit ext =
-  let ext = of_coq_extend_statement ext in
-  unsafe_grammar_extend e reinit ext
-
-let list_entry_names () = []
 
 let epsilon_value f e =
   let r = Rule (Next (Stop, e), fun x _ -> f x) in
