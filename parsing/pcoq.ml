@@ -572,7 +572,7 @@ let epsilon_value f e =
   let r = Rule (Next (Stop, e), fun x _ -> f x) in
   let ext = of_coq_extend_statement (None, [None, None, [r]]) in
   let entry = G.entry_create "epsilon" in
-  let () = maybe_uncurry (Gram.extend entry) ext in
+  let () = maybe_uncurry (G.extend entry) ext in
   try Some (parse_string entry "") with _ -> None
 
 (** Registering grammar of generic arguments *)
