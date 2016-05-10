@@ -83,6 +83,8 @@ let async_proofs_workers_extra_env = ref [||]
 type ast = { verbose : bool; loc : Loc.t; mutable expr : vernac_expr }
 let pr_ast { expr } = pr_vernac expr
 
+let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
+
 (* Commands piercing opaque *)
 let may_pierce_opaque = function
   | { expr = VernacPrint (PrintName _) } -> true
@@ -482,7 +484,7 @@ end = struct (* {{{ *)
         Proof_global.activate_proof_mode mode
       with Failure _ ->
         checkout Branch.master;
-        Proof_global.disactivate_proof_mode "Classic"
+        Proof_global.disactivate_current_proof_mode ()
 
   (* copies the transaction on every open branch *)
   let propagate_sideff ~replay:t =
@@ -2286,8 +2288,9 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
                 | VernacInstance (false, _,_ , None, _) -> GuaranteesOpacity
                 | _ -> Doesn'tGuaranteeOpacity in
               VCS.commit id (Fork (x,bname,opacity_of_produced_term,[]));
-              VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
-              Proof_global.activate_proof_mode "Classic";
+              let proof_mode = default_proof_mode () in
+              VCS.branch bname (`Proof (proof_mode, VCS.proof_nesting () + 1));
+              Proof_global.activate_proof_mode proof_mode;
             end else begin
 	      VCS.commit id (Cmd {
                 ctac=false;ceff=in_proof;cast=x;cids=[];cqueue=`MainQueue });

@@ -10,6 +10,8 @@ open Vernacexpr
 open Errors
 open Pp
 
+let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
+
 let string_of_in_script b = if b then " (inside script)" else ""
 
 let string_of_vernac_type = function
@@ -115,27 +117,27 @@ let rec classify_vernac e =
     (* StartProof *)
     | VernacDefinition (
        (Some Decl_kinds.Discharge,Decl_kinds.Definition),((_,i),_),ProveBody _) ->
-        VtStartProof("Classic",Doesn'tGuaranteeOpacity,[i]), VtLater
+        VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity,[i]), VtLater
     | VernacDefinition (_,((_,i),_),ProveBody _) ->
-        VtStartProof("Classic",GuaranteesOpacity,[i]), VtLater
+        VtStartProof(default_proof_mode (),GuaranteesOpacity,[i]), VtLater
     | VernacStartTheoremProof (_,l,_) ->
         let ids = 
           CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
-        VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
-    | VernacGoal _ -> VtStartProof ("Classic",GuaranteesOpacity,[]), VtLater
+        VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
+    | VernacGoal _ -> VtStartProof (default_proof_mode (),GuaranteesOpacity,[]), VtLater
     | VernacFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) ((((_,id),_),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
+        then VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
         else VtSideff ids, VtLater
     | VernacCoFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) ((((_,id),_),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
+        then VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->

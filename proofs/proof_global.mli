@@ -16,8 +16,9 @@
     - A function [reset] to reset the *standard mode* from it 
 
 *)
+type proof_mode_name = string
 type proof_mode = {
-  name : string ;
+  name : proof_mode_name ;
   set : unit -> unit ;
   reset : unit -> unit
 }
@@ -27,6 +28,7 @@ type proof_mode = {
     One mode is already registered - the standard mode - named "No",
     It corresponds to Coq default setting are they are set when coqtop starts. *)
 val register_proof_mode : proof_mode -> unit
+val get_default_proof_mode_name : unit -> proof_mode_name
 
 val there_are_pending_proofs : unit -> bool
 val check_no_pending_proof : unit -> unit
@@ -40,7 +42,7 @@ val discard_all : unit -> unit
 
 (** [set_proof_mode] sets the proof mode to be used after it's called. It is
     typically called by the Proof Mode command. *)
-val set_proof_mode : string -> unit
+val set_proof_mode : proof_mode_name -> unit
 
 exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
@@ -153,8 +155,8 @@ val get_universe_binders : unit -> universe_binders option
 (**********************************************************)
 
 
-val activate_proof_mode : string -> unit
-val disactivate_proof_mode : string -> unit
+val activate_proof_mode : proof_mode_name -> unit
+val disactivate_current_proof_mode : unit -> unit
 
 (**********************************************************)
 (*                                                        *)

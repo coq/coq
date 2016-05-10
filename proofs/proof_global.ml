@@ -23,8 +23,9 @@ open Names
 (* Type of proof modes :
     - A function [set] to set it *from standard mode*
     - A function [reset] to reset the *standard mode* from it *)
+type proof_mode_name = string
 type proof_mode = {
-  name : string ;
+  name : proof_mode_name ;
   set : unit -> unit ;
   reset : unit -> unit
 }
@@ -44,6 +45,9 @@ let _ = register_proof_mode standard
 
 (* Default proof mode, to be set at the beginning of proofs. *)
 let default_proof_mode = ref (find_proof_mode "No")
+
+let get_default_proof_mode_name () =
+  (CEphemeron.default !default_proof_mode standard).name
 
 let _ =
   Goptions.declare_string_option {Goptions.
@@ -219,8 +223,8 @@ let set_proof_mode mn =
 
 let activate_proof_mode mode =
   CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
-let disactivate_proof_mode mode =
-  CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
+let disactivate_current_proof_mode () =
+  CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ())
 
 (** [start_proof sigma id str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
