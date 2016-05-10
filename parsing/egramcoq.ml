@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
 open Errors
 open Util
 open Pcoq
@@ -43,6 +42,159 @@ open Names
 (**********************************************************************)
 (** Declare Notations grammar rules                                   *)
 
+(**********************************************************************)
+(* Binding constr entry keys to entries                               *)
+
+(* Camlp4 levels do not treat NonA: use RightA with a NEXT on the left *)
+let camlp4_assoc = function
+  | Some NonA | Some RightA -> RightA
+  | None | Some LeftA -> LeftA
+
+let assoc_eq al ar = match al, ar with
+| NonA, NonA
+| RightA, RightA
+| LeftA, LeftA -> true
+| _, _ -> false
+
+(* [adjust_level assoc from prod] where [assoc] and [from] are the name
+   and associativity of the level where to add the rule; the meaning of
+   the result is
+
+     None = SELF
+     Some None = NEXT
+     Some (Some (n,cur)) = constr LEVEL n
+         s.t. if [cur] is set then [n] is the same as the [from] level *)
+let adjust_level assoc from = function
+(* Associativity is None means force the level *)
+  | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
+(* Compute production name on the right side *)
+  (* If NonA or LeftA on the right-hand side, set to NEXT *)
+  | (NumLevel n,BorderProd (Right,Some (NonA|LeftA))) ->
+      Some None
+  (* If RightA on the right-hand side, set to the explicit (current) level *)
+  | (NumLevel n,BorderProd (Right,Some RightA)) ->
+      Some (Some (n,true))
+(* Compute production name on the left side *)
+  (* If NonA on the left-hand side, adopt the current assoc ?? *)
+  | (NumLevel n,BorderProd (Left,Some NonA)) -> None
+  (* If the expected assoc is the current one, set to SELF *)
+  | (NumLevel n,BorderProd (Left,Some a)) when assoc_eq a (camlp4_assoc assoc) ->
+      None
+  (* Otherwise, force the level, n or n-1, according to expected assoc *)
+  | (NumLevel n,BorderProd (Left,Some a)) ->
+    begin match a with
+    | LeftA -> Some (Some (n, true))
+    | _ -> Some None
+    end
+  (* None means NEXT *)
+  | (NextLevel,_) -> Some None
+(* Compute production name elsewhere *)
+  | (NumLevel n,InternalProd) ->
+    if from = n + 1 then Some None else Some (Some (n, Int.equal n from))
+
+type _ target =
+| ForConstr : constr_expr target
+| ForPattern : cases_pattern_expr target
+
+type prod_info = production_level * production_position
+
+type (_, _) entry =
+| TTName : ('self, Name.t Loc.located) entry
+| TTReference : ('self, reference) entry
+| TTBigint : ('self, Bigint.bigint) entry
+| TTBinder : bool -> ('self, local_binder list) entry
+| TTConstr : prod_info * 'r target -> ('r, 'r) entry
+| TTPattern : ('self, cases_pattern_expr) entry
+| TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
+| TTBinderListT : ('self, local_binder list) entry
+| TTBinderListF : Tok.t list -> ('self, local_binder list list) entry
+
+type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
+
+(* This computes the name of the level where to add a new rule *)
+let interp_constr_entry_key : type r. r target -> int -> r Gram.entry * int option =
+  fun forpat level -> match forpat with
+  | ForConstr ->
+    if level = 200 then Constr.binder_constr, None
+    else Constr.operconstr, Some level
+  | ForPattern -> Constr.pattern, Some level
+
+let compute_entry : type s r. (s, r) entry -> r Gram.entry = function
+| TTConstr (_, ForConstr) -> Constr.operconstr
+| TTConstr (_, ForPattern) -> Constr.pattern
+| TTName -> Prim.name
+| TTBinder true -> anomaly (Pp.str "Should occur only as part of BinderList")
+| TTBinder false -> Constr.binder
+| TTBinderListT -> Constr.open_binders
+| TTBinderListF _ -> anomaly (Pp.str "List of entries cannot be registered.")
+| TTBigint -> Prim.bigint
+| TTReference -> Constr.global
+| TTPattern -> Constr.pattern
+| TTConstrList _ -> anomaly (Pp.str "List of entries cannot be registered.")
+
+let is_self from e = match e with
+| (NumLevel n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
+| (NumLevel n, BorderProd (Left, _)) -> Int.equal from n
+| _ -> false
+
+let is_binder_level from e = match e with
+| (NumLevel 200, (BorderProd (Right, _) | InternalProd)) -> from = 200
+| _ -> false
+
+let make_sep_rules tkl =
+  let rec mkrule : Tok.t list -> unit rules = function
+  | [] -> Rules ({ norec_rule = Stop }, ignore)
+  | tkn :: rem ->
+    let Rules ({ norec_rule = r }, f) = mkrule rem in
+    let r = { norec_rule = Next (r, Atoken tkn) } in
+    Rules (r, fun _ -> f)
+  in
+  let r = mkrule (List.rev tkl) in
+  Arules [r]
+
+let rec symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) symbol = fun assoc from typ -> match typ with
+| TTConstr (p, forpat) ->
+  if is_binder_level from p then match forpat with
+  | ForConstr -> Aentryl (Constr.operconstr, 200)
+  | ForPattern -> Aentryl (Constr.pattern, 200)
+  else if is_self from p then Aself
+  else
+    let g = compute_entry (TTConstr (p, forpat)) in
+    let lev = adjust_level assoc from p in
+    begin match lev with
+    | None -> Aentry g
+    | Some None -> Anext
+    | Some (Some (lev, cur)) -> Aentryl (g, lev)
+    end
+| TTConstrList (typ', [], forpat) ->
+  let symb = symbol_of_entry assoc from (TTConstr (typ', forpat)) in
+  Alist1 symb
+| TTConstrList (typ', tkl, forpat) ->
+  let symb = symbol_of_entry assoc from (TTConstr (typ', forpat)) in
+  Alist1sep (symb, make_sep_rules tkl)
+| TTBinderListF [] ->
+  let symb = symbol_of_entry assoc from (TTBinder false) in
+  Alist1 (symb)
+| TTBinderListF tkl ->
+  let symb = symbol_of_entry assoc from (TTBinder false) in
+  Alist1sep (symb, make_sep_rules tkl)
+| _ ->
+  let g = compute_entry typ in
+  Aentry g
+
+let interp_entry forpat e = match e with
+| ETName -> TTAny TTName
+| ETReference -> TTAny TTReference
+| ETBigint -> TTAny TTBigint
+| ETBinder b  -> TTAny (TTBinder b)
+| ETConstr p -> TTAny (TTConstr (p, forpat))
+| ETPattern -> TTAny TTPattern
+| ETOther _ -> assert false (** not used *)
+| ETConstrList (p, tkl) -> TTAny (TTConstrList (p, tkl, forpat))
+| ETBinderList (true, []) -> TTAny TTBinderListT
+| ETBinderList (true, _) -> assert false
+| ETBinderList (false, tkl) -> TTAny (TTBinderListF tkl)
+
 let constr_expr_of_name (loc,na) = match na with
   | Anonymous -> CHole (loc,None,Misctypes.IntroAnonymous,None)
   | Name id -> CRef (Ident (loc,id), None)
@@ -58,139 +210,138 @@ type grammar_constr_prod_item =
     (* tells action rule to make a list of the n previous parsed items;
        concat with last parsed list if true *)
 
-let make_constr_action
-  (f : Loc.t -> constr_notation_substitution -> constr_expr) pil =
-  let rec make (constrs,constrlists,binders as fullsubst) = function
-  | [] ->
-      Gram.action (fun (loc:CompatLoc.t) -> f (!@loc) fullsubst)
-  | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
-      (* parse a non-binding item *)
-      Gram.action (fun _ -> make fullsubst tl)
-  | GramConstrNonTerminal (typ, Some _) :: tl ->
-      (* parse a binding non-terminal *)
-    (match typ with
-    | (ETConstr _| ETOther _) ->
-	Gram.action (fun (v:constr_expr) ->
-	  make (v :: constrs, constrlists, binders) tl)
-    | ETReference ->
-        Gram.action (fun (v:reference) ->
-	  make (CRef (v,None) :: constrs, constrlists, binders) tl)
-    | ETName ->
-        Gram.action (fun (na:Loc.t * Name.t) ->
-	  make (constr_expr_of_name na :: constrs, constrlists, binders) tl)
-    | ETBigint ->
-        Gram.action (fun (v:Bigint.bigint) ->
-	  make (CPrim(Loc.ghost,Numeral v) :: constrs, constrlists, binders) tl)
-    | ETConstrList (_,n) ->
-	Gram.action (fun (v:constr_expr list) ->
-	  make (constrs, v::constrlists, binders) tl)
-    | ETBinder _ | ETBinderList (true,_) ->
-	Gram.action (fun (v:local_binder list) ->
-	  make (constrs, constrlists, v::binders) tl)
-    | ETBinderList (false,_) ->
-	Gram.action (fun (v:local_binder list list) ->
-	  make (constrs, constrlists, List.flatten v::binders) tl)
-    | ETPattern ->
-	failwith "Unexpected entry of type cases pattern")
-  | GramConstrListMark (n,b) :: tl ->
-      (* Rebuild expansions of ConstrList *)
-      let heads,constrs = List.chop n constrs in
-      let constrlists =
-	if b then (heads@List.hd constrlists)::List.tl constrlists
-	else heads::constrlists
-      in make (constrs, constrlists, binders) tl
+type 'r env = {
+  constrs : 'r list;
+  constrlists : 'r list list;
+  binders : (local_binder list * bool) list;
+}
+
+let push_constr subst v = { subst with constrs = v :: subst.constrs }
+
+let push_item : type s r. s target -> (s, r) entry -> s env -> r -> s env = fun forpat e subst v ->
+match e with
+| TTConstr _ -> push_constr subst v
+| TTName ->
+  begin match forpat with
+  | ForConstr -> push_constr subst (constr_expr_of_name v)
+  | ForPattern -> push_constr subst (cases_pattern_expr_of_name v)
+  end
+| TTBinder _ -> { subst with binders = (v, true) :: subst.binders }
+| TTBinderListT -> { subst with binders = (v, true) :: subst.binders }
+| TTBinderListF _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
+| TTBigint ->
+  begin match forpat with
+  | ForConstr -> push_constr subst (CPrim (Loc.ghost, Numeral v))
+  | ForPattern -> push_constr subst (CPatPrim (Loc.ghost, Numeral v))
+  end
+| TTReference ->
+  begin match forpat with
+  | ForConstr -> push_constr subst (CRef (v, None))
+  | ForPattern -> push_constr subst (CPatAtom (Loc.ghost, Some v))
+  end
+| TTPattern -> anomaly (Pp.str "Unexpected entry of type cases pattern or other")
+| TTConstrList _ -> { subst with constrlists = v :: subst.constrlists }
+
+type (_, _) ty_symbol =
+| TyTerm : Tok.t -> ('s, string) ty_symbol
+| TyNonTerm : 's target * ('s, 'a) entry * ('s, 'a) symbol * bool -> ('s, 'a) ty_symbol
+
+type ('self, _, 'r) ty_rule =
+| TyStop : ('self, 'r, 'r) ty_rule
+| TyNext : ('self, 'a, 'r) ty_rule * ('self, 'b) ty_symbol -> ('self, 'b -> 'a, 'r) ty_rule
+| TyMark : int * bool * ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
+
+type 'r gen_eval = Loc.t -> 'r env -> 'r
+
+let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env -> a = function
+| TyStop ->
+  fun f env loc -> f loc env
+| TyNext (rem, TyTerm _) ->
+  fun f env _ -> ty_eval rem f env
+| TyNext (rem, TyNonTerm (_, _, _, false)) ->
+  fun f env _ -> ty_eval rem f env
+| TyNext (rem, TyNonTerm (forpat, e, _, true)) ->
+  fun f env v ->
+    ty_eval rem f (push_item forpat e env v)
+| TyMark (n, b, rem) ->
+  fun f env ->
+    let heads, constrs = List.chop n env.constrs in
+    let constrlists =
+      if b then (heads @ List.hd env.constrlists) :: List.tl env.constrlists
+      else heads :: env.constrlists
+    in
+    ty_eval rem f { env with constrs; constrlists; } 
+
+let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) Extend.rule = function
+| TyStop -> Stop
+| TyMark (_, _, r) -> ty_erase r
+| TyNext (rem, TyTerm tok) -> Next (ty_erase rem, Atoken tok)
+| TyNext (rem, TyNonTerm (_, _, s, _)) -> Next (ty_erase rem, s)
+
+type ('self, 'r) any_ty_rule =
+| AnyTyRule : ('self, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule
+
+let make_ty_rule assoc from forpat prods =
+  let rec make_ty_rule = function
+  | [] -> AnyTyRule TyStop
+  | GramConstrTerminal tok :: rem ->
+    let AnyTyRule r = make_ty_rule rem in
+    AnyTyRule (TyNext (r, TyTerm tok))
+  | GramConstrNonTerminal (e, var) :: rem ->
+    let AnyTyRule r = make_ty_rule rem in
+    let TTAny e = interp_entry forpat e in
+    let s = symbol_of_entry assoc from e in
+    let bind = match var with None -> false | Some _ -> true in
+    AnyTyRule (TyNext (r, TyNonTerm (forpat, e, s, bind)))
+  | GramConstrListMark (n, b) :: rem ->
+    let AnyTyRule r = make_ty_rule rem in
+    AnyTyRule (TyMark (n, b, r))
   in
-  make ([],[],[]) (List.rev pil)
+  make_ty_rule (List.rev prods)
 
-let check_cases_pattern_env loc (env,envlist,hasbinders) =
-  if hasbinders then Topconstr.error_invalid_pattern_notation loc
-  else (env,envlist)
-
-let make_cases_pattern_action
-  (f : Loc.t -> cases_pattern_notation_substitution -> cases_pattern_expr) pil =
-  let rec make (env,envlist,hasbinders as fullenv) = function
-  | [] ->
-      Gram.action
-	(fun (loc:CompatLoc.t) ->
-	  let loc = !@loc in
-	  f loc (check_cases_pattern_env loc fullenv))
-  | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
-      (* parse a non-binding item *)
-      Gram.action (fun _ -> make fullenv tl)
-  | GramConstrNonTerminal (typ, Some _) :: tl ->
-      (* parse a binding non-terminal *)
-    (match typ with
-    | ETConstr _ -> (* pattern non-terminal *)
-        Gram.action (fun (v:cases_pattern_expr) ->
-          make (v::env, envlist, hasbinders) tl)
-    | ETReference ->
-        Gram.action (fun (v:reference) ->
-	  make (CPatAtom (Loc.ghost,Some v) :: env, envlist, hasbinders) tl)
-    | ETName ->
-        Gram.action (fun (na:Loc.t * Name.t) ->
-	  make (cases_pattern_expr_of_name na :: env, envlist, hasbinders) tl)
-    | ETBigint ->
-        Gram.action (fun (v:Bigint.bigint) ->
-	  make (CPatPrim (Loc.ghost,Numeral v) :: env, envlist, hasbinders) tl)
-    | ETConstrList (_,_) ->
-        Gram.action  (fun (vl:cases_pattern_expr list) ->
-	  make (env, vl :: envlist, hasbinders) tl)
-    | ETBinder _ | ETBinderList (true,_) ->
-	Gram.action (fun (v:local_binder list) ->
-	  make (env, envlist, hasbinders) tl)
-    | ETBinderList (false,_) ->
-	Gram.action (fun (v:local_binder list list) ->
-	  make (env, envlist, true) tl)
-    | (ETPattern | ETOther _) ->
-        anomaly (Pp.str "Unexpected entry of type cases pattern or other"))
-  | GramConstrListMark (n,b) :: tl ->
-      (* Rebuild expansions of ConstrList *)
-      let heads,env = List.chop n env in
-      if b then
-        make (env,(heads@List.hd envlist)::List.tl envlist,hasbinders) tl
-      else
-        make (env,heads::envlist,hasbinders) tl
-  in
-  make ([],[],false) (List.rev pil)
-
-let rec make_constr_prod_item assoc from forpat = function
-  | GramConstrTerminal tok :: l ->
-      gram_token_of_token tok :: make_constr_prod_item assoc from forpat l
-  | GramConstrNonTerminal (nt, ovar) :: l ->
-      symbol_of_constr_prod_entry_key assoc from forpat nt
-      :: make_constr_prod_item assoc from forpat l
-  | GramConstrListMark _ :: l ->
-      make_constr_prod_item assoc from forpat l
-  | [] ->
-      []
+let target_to_bool : type r. r target -> bool = function
+| ForConstr -> false
+| ForPattern -> true
 
 let prepare_empty_levels forpat (pos,p4assoc,name,reinit) =
   let empty = (pos, [(name, p4assoc, [])]) in
   if forpat then grammar_extend Constr.pattern reinit empty
   else grammar_extend Constr.operconstr reinit empty
 
-let pure_sublevels level symbs =
-  let filter s =
-    try
-      let i = level_of_snterml s in
-      begin match level with
-      | Some j when Int.equal i j -> None
-      | _ -> Some i
-      end
-    with Failure _ -> None
-  in
-  List.map_filter filter symbs
+let rec pure_sublevels : type a b c. int option -> (a, b, c) rule -> int list = fun level r -> match r with
+| Stop -> []
+| Next (rem, Aentryl (_, i)) ->
+  let rem = pure_sublevels level rem in
+  begin match level with
+  | Some j when Int.equal i j -> rem
+  | _ -> i :: rem
+  end
+| Next (rem, _) -> pure_sublevels level rem
 
-let extend_constr (entry,level) (n,assoc) mkact forpat rules =
+let make_act : type r. r target -> _ -> r gen_eval = function
+| ForConstr -> fun notation loc env ->
+  let env = (env.constrs, env.constrlists, List.map fst env.binders) in
+  CNotation (loc, notation , env)
+| ForPattern -> fun notation loc env ->
+  let invalid = List.exists (fun (_, b) -> not b) env.binders in
+  let () = if invalid then Topconstr.error_invalid_pattern_notation loc in
+  let env = (env.constrs, env.constrlists) in
+  CPatNotation (loc, notation, env, [])
+
+let extend_constr (entry,level) (n,assoc) forpat notation rules =
   let fold nb pt =
-    let symbs = make_constr_prod_item assoc n forpat pt in
+    let AnyTyRule r = make_ty_rule assoc n forpat pt in
+    let symbs = ty_erase r in
     let pure_sublevels = pure_sublevels level symbs in
-    let needed_levels = register_empty_levels forpat pure_sublevels in
-    let pos,p4assoc,name,reinit = find_position forpat assoc level in
+    let isforpat = target_to_bool forpat in
+    let needed_levels = register_empty_levels isforpat pure_sublevels in
+    let pos,p4assoc,name,reinit = find_position isforpat assoc level in
     let nb_decls = List.length needed_levels + 1 in
-    let () = List.iter (prepare_empty_levels forpat) needed_levels in
-    let rule = (name, p4assoc, [symbs, mkact pt]) in
-    let () = unsafe_grammar_extend entry reinit (pos, [rule]) in
+    let () = List.iter (prepare_empty_levels isforpat) needed_levels in
+    let empty = { constrs = []; constrlists = []; binders = [] } in
+    let act = ty_eval r (make_act forpat notation) empty in
+    let rule = (name, p4assoc, [Rule (symbs, act)]) in
+    let () = grammar_extend entry reinit (pos, [rule]) in
     nb_decls
   in
   List.fold_left fold 0 rules
@@ -205,17 +356,15 @@ type notation_grammar = {
 
 let extend_constr_constr_notation ng =
   let level = ng.notgram_level in
-  let mkact loc env = CNotation (loc, ng.notgram_notation, env) in
-  let e = interp_constr_entry_key false level in
-  let ext = (ETConstr (level, ()), ng.notgram_assoc) in
-  extend_constr e ext (make_constr_action mkact) false ng.notgram_prods
+  let e = interp_constr_entry_key ForConstr level in
+  let ext = (level, ng.notgram_assoc) in
+  extend_constr e ext ForConstr ng.notgram_notation ng.notgram_prods
 
 let extend_constr_pat_notation ng =
   let level = ng.notgram_level in
-  let mkact loc env = CPatNotation (loc, ng.notgram_notation, env, []) in
-  let e = interp_constr_entry_key true level in
-  let ext = ETConstr (level, ()), ng.notgram_assoc in
-  extend_constr e ext (make_cases_pattern_action mkact) true ng.notgram_prods
+  let e = interp_constr_entry_key ForPattern level in
+  let ext = (level, ng.notgram_assoc) in
+  extend_constr e ext ForPattern ng.notgram_notation ng.notgram_prods
 
 let extend_constr_notation (_, ng) =
   (* Add the notation in constr *)

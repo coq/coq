@@ -33,9 +33,6 @@ let of_coq_position = function
 
 module Symbols = GramextMake(G)
 
-let gram_token_of_token = Symbols.stoken
-let gram_token_of_string s = gram_token_of_token (CLexer.terminal s)
-
 let camlp4_verbosity silent f x =
   let a = !warning_verbose in
   warning_verbose := silent;
@@ -135,15 +132,6 @@ module Gram =
 
 (** This extension command is used by the Grammar constr *)
 
-type unsafe_single_extend_statment =
-  string option *
-  gram_assoc option *
-  Gram.production_rule list
-
-type unsafe_extend_statment =
-  gram_position option *
-  unsafe_single_extend_statment list
-
 let unsafe_grammar_extend e reinit (pos, st) =
   let map_s (lvl, assoc, rule) = (lvl, Option.map of_coq_assoc assoc, rule) in
   let ext =  (Option.map of_coq_position pos, List.map map_s st) in
@@ -211,9 +199,6 @@ let uvernac = create_universe "vernac"
 let get_univ u =
   if Hashtbl.mem utables u then u
   else raise Not_found
-
-(** A table associating grammar to entries *)
-let gtable : Obj.t Gram.entry String.Map.t ref = ref String.Map.empty
 
 let new_entry u s =
   let ename = u ^ ":" ^ s in
@@ -534,145 +519,6 @@ let synchronize_level_positions () =
   let lev = top !level_stack in
   level_stack := lev :: !level_stack
 
-(**********************************************************************)
-(* Binding constr entry keys to entries                               *)
-
-(* Camlp4 levels do not treat NonA: use RightA with a NEXT on the left *)
-let camlp4_assoc = function
-  | Some Extend.NonA | Some Extend.RightA -> Extend.RightA
-  | None | Some Extend.LeftA -> Extend.LeftA
-
-let assoc_eq al ar = match al, ar with
-| Extend.NonA, Extend.NonA
-| Extend.RightA, Extend.RightA
-| Extend.LeftA, Extend.LeftA -> true
-| _, _ -> false
-
-(* [adjust_level assoc from prod] where [assoc] and [from] are the name
-   and associativity of the level where to add the rule; the meaning of
-   the result is
-
-     None = SELF
-     Some None = NEXT
-     Some (Some (n,cur)) = constr LEVEL n
-         s.t. if [cur] is set then [n] is the same as the [from] level *)
-let adjust_level assoc from = function
-(* Associativity is None means force the level *)
-  | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
-(* Compute production name on the right side *)
-  (* If NonA or LeftA on the right-hand side, set to NEXT *)
-  | (NumLevel n,BorderProd (Right,Some (Extend.NonA|Extend.LeftA))) ->
-      Some None
-  (* If RightA on the right-hand side, set to the explicit (current) level *)
-  | (NumLevel n,BorderProd (Right,Some Extend.RightA)) ->
-      Some (Some (n,true))
-(* Compute production name on the left side *)
-  (* If NonA on the left-hand side, adopt the current assoc ?? *)
-  | (NumLevel n,BorderProd (Left,Some Extend.NonA)) -> None
-  (* If the expected assoc is the current one, set to SELF *)
-  | (NumLevel n,BorderProd (Left,Some a)) when assoc_eq a (camlp4_assoc assoc) ->
-      None
-  (* Otherwise, force the level, n or n-1, according to expected assoc *)
-  | (NumLevel n,BorderProd (Left,Some a)) ->
-    begin match a with
-    | Extend.LeftA -> Some (Some (n, true))
-    | _ -> Some None
-    end
-  (* None means NEXT *)
-  | (NextLevel,_) -> Some None
-(* Compute production name elsewhere *)
-  | (NumLevel n,InternalProd) ->
-      match from with
-	| ETConstr (p,()) when Int.equal p (n + 1) -> Some None
-	| ETConstr (p,()) -> Some (Some (n, Int.equal n p))
-	| _ -> Some (Some (n,false))
-
-let compute_entry adjust forpat = function
-  | ETConstr (n,q) ->
-      (if forpat then weaken_entry Constr.pattern
-       else weaken_entry Constr.operconstr),
-      adjust (n,q), false
-  | ETName -> weaken_entry Prim.name, None, false
-  | ETBinder true -> anomaly (Pp.str "Should occur only as part of BinderList")
-  | ETBinder false -> weaken_entry Constr.binder, None, false
-  | ETBinderList (true,tkl) ->
-    let () = match tkl with [] -> () | _ -> assert false in
-    weaken_entry Constr.open_binders, None, false
-  | ETBinderList (false,_) -> anomaly (Pp.str "List of entries cannot be registered.")
-  | ETBigint -> weaken_entry Prim.bigint, None, false
-  | ETReference -> weaken_entry Constr.global, None, false
-  | ETPattern -> weaken_entry Constr.pattern, None, false
-  | ETConstrList _ -> anomaly (Pp.str "List of entries cannot be registered.")
-  | ETOther (u,n) -> assert false
-
-(* This computes the name of the level where to add a new rule *)
-let interp_constr_entry_key forpat level =
-  if level = 200 && not forpat then weaken_entry Constr.binder_constr, None
-  else if forpat then weaken_entry Constr.pattern, Some level
-  else weaken_entry Constr.operconstr, Some level
-
-(* This computes the name to give to a production knowing the name and
-   associativity of the level where it must be added *)
-let interp_constr_prod_entry_key ass from forpat en =
-  compute_entry (adjust_level ass from) forpat en
-
-(**********************************************************************)
-(* Binding constr entry keys to symbols                               *)
-
-let is_self from e =
-  match from, e with
-      ETConstr(n,()), ETConstr(NumLevel n',
-        BorderProd(Right, _ (* Some(NonA|LeftA) *))) -> false
-    | ETConstr(n,()), ETConstr(NumLevel n',BorderProd(Left,_)) -> Int.equal n n'
-    | (ETName,ETName | ETReference, ETReference | ETBigint,ETBigint
-      | ETPattern, ETPattern) -> true
-    | ETOther(s1,s2), ETOther(s1',s2') ->
-      String.equal s1 s1' && String.equal s2 s2'
-    | _ -> false
-
-let is_binder_level from e =
-  match from, e with
-      ETConstr(200,()),
-      ETConstr(NumLevel 200,(BorderProd(Right,_)|InternalProd)) -> true
-    | _ -> false
-
-let make_sep_rules tkl =
-  Gram.srules'
-    [List.map gram_token_of_token tkl,
-     List.fold_right (fun _ v -> Gram.action (fun _ -> v)) tkl
-       (Gram.action (fun loc -> ()))]
-
-let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
-  if is_binder_level from typ then
-    if forpat then
-      Symbols.snterml (Gram.Entry.obj Constr.pattern,"200")
-    else
-      Symbols.snterml (Gram.Entry.obj Constr.operconstr,"200")
-  else if is_self from typ then
-      Symbols.sself
-  else
-    match typ with
-    | ETConstrList (typ',[]) ->
-        Symbols.slist1 (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
-    | ETConstrList (typ',tkl) ->
-        Symbols.slist1sep
-          (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'),
-          make_sep_rules tkl)
-    | ETBinderList (false,[]) ->
-        Symbols.slist1
-	  (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false))
-    | ETBinderList (false,tkl) ->
-        Symbols.slist1sep
-          (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false),
-          make_sep_rules tkl)
-
-    | _ ->
-    match interp_constr_prod_entry_key assoc from forpat typ with
-      | (eobj,None,_) -> Symbols.snterm (Gram.Entry.obj eobj)
-      | (eobj,Some None,_) -> Symbols.snext
-      | (eobj,Some (Some (lev,cur)),_) ->
-          Symbols.snterml (Gram.Entry.obj eobj,constr_level lev)
-
 (** Binding general entry keys to symbol *)
 
 let rec of_coq_action : type a r. (r, a, Loc.t -> r) Extend.rule -> a -> Gram.action = function
@@ -706,8 +552,6 @@ and symbol_of_rules : type a. a Extend.rules -> _ = function
   let symb = symbol_of_rule r.norec_rule [] in
   let act = of_coq_action r.norec_rule act in
   (symb, act)
-
-let level_of_snterml e = int_of_string (Symbols.snterml_level e)
 
 let of_coq_production_rule : type a. a Extend.production_rule -> _ = function
 | Rule (toks, act) -> (symbol_of_rule toks [], of_coq_action toks act)

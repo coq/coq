@@ -254,39 +254,3 @@ val synchronize_level_positions : unit -> unit
 val register_empty_levels : bool -> int list -> gram_level list
 
 val remove_levels : int -> unit
-
-(** {5 Unsafe grammar extension API}
-
-For compatibility purpose only. Do not use in newly written code.
-
-*)
-
-val gram_token_of_token : Tok.t -> Gram.symbol
-val gram_token_of_string : string -> Gram.symbol
-val level_of_snterml : Gram.symbol -> int
-
-(** The superclass of all grammar entries *)
-type grammar_object
-
-(** Binding constr entry keys to entries and symbols *)
-
-val interp_constr_entry_key : bool (** true for cases_pattern *) ->
-  int -> grammar_object Gram.entry * int option
-
-val symbol_of_constr_prod_entry_key : gram_assoc option ->
-  constr_entry_key -> bool -> constr_prod_entry_key ->
-    Gram.symbol
-
-type unsafe_single_extend_statment =
-  string option *
-  gram_assoc option *
-  Gram.production_rule list
-
-type unsafe_extend_statment =
-  gram_position option *
-  unsafe_single_extend_statment list
-
-val unsafe_grammar_extend :
-  grammar_object Gram.entry ->
-  gram_reinit option (** for reinitialization if ever needed *) ->
-  unsafe_extend_statment -> unit
