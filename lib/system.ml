@@ -35,7 +35,7 @@ let all_subdirs ~unix_path:root =
     Array.iter (fun f ->
       if ok_dirname f then
 	let file = Filename.concat dir f in
-        if Sys.is_directory file then begin
+        if exists_dir file then begin
           let newrel = rel @ [f] in
 	  add file newrel;
 	  traverse file newrel
