@@ -96,16 +96,6 @@ module Gram : module type of Compat.GrammarMake(CLexer)
 
 *)
 
-(** {5 Grammar extension API} *)
-
-(** Type of reinitialization data *)
-type gram_reinit = gram_assoc * gram_position
-
-val grammar_extend :
-  'a Gram.entry ->
-  gram_reinit option (** for reinitialization if ever needed *) ->
-  'a Extend.extend_statment -> unit
-
 (** Temporary activate camlp4 verbosity *)
 
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
@@ -232,7 +222,18 @@ val set_command_entry : vernac_expr Gram.entry -> unit
 
 val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
-(** {5 Extending the parser with Summary-synchronized commands} *)
+(** {5 Extending the parser without synchronization} *)
+
+type gram_reinit = gram_assoc * gram_position
+(** Type of reinitialization data *)
+
+val grammar_extend : 'a Gram.entry -> gram_reinit option ->
+  'a Extend.extend_statment -> unit
+(** Extend the grammar of Coq, without synchronizing it with the bactracking
+    mechanism. This means that grammar extensions defined this way will survive
+    an undo. *)
+
+(** {5 Extending the parser with summary-synchronized commands} *)
 
 module GramState : Store.S
 (** Auxilliary state of the grammar. Any added data must be marshallable. *)

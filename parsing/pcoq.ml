@@ -109,11 +109,6 @@ type ext_kind =
 
 let camlp4_state = ref []
 
-let grammar_extend e reinit ext =
-  camlp4_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp4_state;
-  let ext = of_coq_extend_statement ext in
-  camlp4_verbose (maybe_uncurry (G.extend e)) ext
-
 (** Deletion *)
 
 let grammar_delete e reinit (pos,rls) =
@@ -131,6 +126,19 @@ let grammar_delete e reinit (pos,rls) =
     in
     maybe_uncurry (G.extend e) (Some ext, [Some lev,Some a,[]])
   | None -> ()
+
+(** Extension *)
+
+let grammar_extend e reinit ext =
+  let ext = of_coq_extend_statement ext in
+  let undo () = grammar_delete e reinit ext in
+  let redo () = camlp4_verbose (maybe_uncurry (G.extend e)) ext in
+  camlp4_state := ByEXTEND (undo, redo) :: !camlp4_state;
+  redo ()
+
+let grammar_extend_sync e reinit ext =
+  camlp4_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp4_state;
+  camlp4_verbose (maybe_uncurry (G.extend e)) (of_coq_extend_statement ext)
 
 (** The apparent parser of Coq; encapsulate G to keep track
     of the extensions. *)
@@ -429,7 +437,7 @@ let extend_grammar_command tag g =
   | (_, _, st) :: _ -> st
   in
   let (rules, st) = modify g grammar_state in
-  let iter (ExtendRule (e, reinit, ext)) = grammar_extend e reinit ext in
+  let iter (ExtendRule (e, reinit, ext)) = grammar_extend_sync e reinit ext in
   let () = List.iter iter rules in
   let nb = List.length rules in
   grammar_stack := (nb, GrammarCommand.Dyn (tag, g), st) :: !grammar_stack
