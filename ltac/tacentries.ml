@@ -43,8 +43,8 @@ let coincide s pat off =
   !break
 
 let atactic n =
-  if n = 5 then Aentry (name_of_entry Tactic.binder_tactic)
-  else Aentryl (name_of_entry Tactic.tactic_expr, n)
+  if n = 5 then Aentry Tactic.binder_tactic
+  else Aentryl (Tactic.tactic_expr, n)
 
 type entry_name = EntryName :
   'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) Extend.symbol -> entry_name
@@ -139,17 +139,17 @@ let rec prod_item_of_symbol lev = function
   EntryName (Rawwit (ListArg typ), Alist0 e)
 | Extend.Ulist1sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Alist1sep (e, sep))
+  EntryName (Rawwit (ListArg typ), Alist1sep (e, Atoken (CLexer.terminal sep)))
 | Extend.Ulist0sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Alist0sep (e, sep))
+  EntryName (Rawwit (ListArg typ), Alist0sep (e, Atoken (CLexer.terminal sep)))
 | Extend.Uopt s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
   EntryName (Rawwit (OptArg typ), Aopt e)
 | Extend.Uentry arg ->
   let ArgT.Any tag = arg in
   let wit = ExtraArg tag in
-  EntryName (Rawwit wit, Extend.Aentry (name_of_entry (genarg_grammar wit)))
+  EntryName (Rawwit wit, Extend.Aentry (genarg_grammar wit))
 | Extend.Uentryl (s, n) ->
   let ArgT.Any tag = s in
   assert (coincide (ArgT.repr tag) "tactic" 0);
@@ -157,7 +157,7 @@ let rec prod_item_of_symbol lev = function
 
 (** Tactic grammar extensions *)
 
-let add_tactic_entry (kn, ml, tg) =
+let add_tactic_entry (kn, ml, tg) state =
   let open Tacexpr in
   let entry, pos = get_tactic_entry tg.tacgram_level in
   let mkact loc l =
@@ -184,14 +184,13 @@ let add_tactic_entry (kn, ml, tg) =
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
-  synchronize_level_positions ();
-  grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
-  1
+  let r = ExtendRule (entry, None, (pos, [(None, None, [rules])])) in
+  ([r], state)
 
 let tactic_grammar =
   create_grammar_command "TacticGrammar" add_tactic_entry
 
-let extend_tactic_grammar kn ml ntn = extend_grammar tactic_grammar (kn, ml, ntn)
+let extend_tactic_grammar kn ml ntn = extend_grammar_command tactic_grammar (kn, ml, ntn)
 
 (**********************************************************************)
 (* Tactic Notation                                                    *)
@@ -389,8 +388,8 @@ let create_ltac_quotation name cast (e, l) =
   in
   let () = ltac_quotations := String.Set.add name !ltac_quotations in
   let entry = match l with
-  | None -> Aentry (name_of_entry e)
-  | Some l -> Aentryl (name_of_entry e, l)
+  | None -> Aentry e
+  | Some l -> Aentryl (e, l)
   in
 (*   let level = Some "1" in *)
   let level = None in

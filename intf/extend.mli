@@ -8,6 +8,8 @@
 
 (** Entry keys for constr notations *)
 
+type 'a entry = 'a Compat.GrammarMake(CLexer).entry
+
 type side = Left | Right
 
 type gram_assoc = NonA | RightA | LeftA
@@ -64,40 +66,27 @@ type 'a user_symbol =
 
 (** {5 Type-safe grammar extension} *)
 
-(** (a, b, r) adj => [a = x₁ -> ... xₙ -> r] & [b = x₁ * (... (xₙ * unit))]. *)
-type (_, _, _) adj =
-| Adj0 : ('r, unit, 'r) adj
-| AdjS : ('s, 'b, 'r) adj -> ('a -> 's, 'a * 'b, 'r) adj
-
-type _ index =
-| I0 : 'a -> ('a * 'r) index
-| IS : 'a index -> ('b * 'a) index
-
-(** This type should be marshallable, this is why we use a convoluted
-    representation in the [Arules] constructor instead of putting a function. *)
 type ('self, 'a) symbol =
 | Atoken : Tok.t -> ('self, string) symbol
 | Alist1 : ('self, 'a) symbol -> ('self, 'a list) symbol
-| Alist1sep : ('self, 'a) symbol * string -> ('self, 'a list) symbol
+| Alist1sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
 | Alist0 : ('self, 'a) symbol -> ('self, 'a list) symbol
-| Alist0sep : ('self, 'a) symbol * string -> ('self, 'a list) symbol
+| Alist0sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
 | Aopt : ('self, 'a) symbol -> ('self, 'a option) symbol
 | Aself : ('self, 'self) symbol
 | Anext : ('self, 'self) symbol
-| Aentry : 'a Entry.t -> ('self, 'a) symbol
-| Aentryl : 'a Entry.t * int -> ('self, 'a) symbol
-| Arules : 'a rules -> ('self, 'a index) symbol
+| Aentry : 'a entry -> ('self, 'a) symbol
+| Aentryl : 'a entry * int -> ('self, 'a) symbol
+| Arules : 'a rules list -> ('self, 'a) symbol
 
 and ('self, _, 'r) rule =
 | Stop : ('self, 'r, 'r) rule
 | Next : ('self, 'a, 'r) rule * ('self, 'b) symbol -> ('self, 'b -> 'a, 'r) rule
 
+and ('a, 'r) norec_rule = { norec_rule : 's. ('s, 'a, 'r) rule }
+
 and 'a rules =
-| Rule0 : unit rules
-| RuleS :
-  ('any, 'act, Loc.t -> Loc.t * 'a) rule *
-  ('act, 'a, Loc.t -> Loc.t * 'a) adj *
-  'b rules -> ((Loc.t * 'a) * 'b) rules
+| Rules : ('act, Loc.t -> 'a) norec_rule * 'act -> 'a rules
 
 type 'a production_rule =
 | Rule : ('a, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule

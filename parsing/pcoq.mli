@@ -19,7 +19,7 @@ open Genredexpr
 
 (** The parser of Coq *)
 
-module Gram : Compat.GrammarSig
+module Gram : module type of Compat.GrammarMake(CLexer)
 
 (** The parser of Coq is built from three kinds of rule declarations:
 
@@ -96,36 +96,6 @@ module Gram : Compat.GrammarSig
 
 *)
 
-val gram_token_of_token : Tok.t -> Gram.symbol
-val gram_token_of_string : string -> Gram.symbol
-
-(** The superclass of all grammar entries *)
-type grammar_object
-
-(** Type of reinitialization data *)
-type gram_reinit = gram_assoc * gram_position
-
-(** General entry keys *)
-
-(** This intermediate abstract representation of entries can
-   both be reified into mlexpr for the ML extensions and
-   dynamically interpreted as entries for the Coq level extensions
-*)
-
-(** Add one extension at some camlp4 position of some camlp4 entry *)
-val unsafe_grammar_extend :
-  grammar_object Gram.entry ->
-  gram_reinit option (** for reinitialization if ever needed *) ->
-  Gram.extend_statment -> unit
-
-val grammar_extend :
-  'a Gram.entry ->
-  gram_reinit option (** for reinitialization if ever needed *) ->
-  'a Extend.extend_statment -> unit
-
-(** Remove the last n extensions *)
-val remove_grammars : int -> unit
-
 (** Temporary activate camlp4 verbosity *)
 
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
@@ -145,7 +115,6 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
-val set_grammar : 'a Entry.t -> 'a Gram.entry -> unit
 val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
 val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
 
@@ -251,40 +220,45 @@ val main_entry : (Loc.t * vernac_expr) option Gram.entry
 val get_command_entry : unit -> vernac_expr Gram.entry
 val set_command_entry : vernac_expr Gram.entry -> unit
 
-(** Mapping formal entries into concrete ones *)
-
-(** Binding constr entry keys to entries and symbols *)
-
-val interp_constr_entry_key : bool (** true for cases_pattern *) ->
-  int -> grammar_object Gram.entry * int option
-
-val symbol_of_constr_prod_entry_key : gram_assoc option ->
-  constr_entry_key -> bool -> constr_prod_entry_key ->
-    Gram.symbol
-
-val name_of_entry : 'a Gram.entry -> 'a Entry.t
-
 val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
-(** Binding general entry keys to symbols *)
+(** {5 Extending the parser without synchronization} *)
 
-(** Recover the list of all known tactic notation entries. *)
-val list_entry_names : unit -> (string * argument_type) list
+type gram_reinit = gram_assoc * gram_position
+(** Type of reinitialization data *)
 
-(** Registering/resetting the level of a constr entry *)
+val grammar_extend : 'a Gram.entry -> gram_reinit option ->
+  'a Extend.extend_statment -> unit
+(** Extend the grammar of Coq, without synchronizing it with the bactracking
+    mechanism. This means that grammar extensions defined this way will survive
+    an undo. *)
 
-val find_position :
-  bool (** true if for creation in pattern entry; false if in constr entry *) ->
-  Extend.gram_assoc option -> int option ->
-    Extend.gram_position option * Extend.gram_assoc option * string option *
-    (** for reinitialization: *) gram_reinit option
+(** {5 Extending the parser with summary-synchronized commands} *)
 
-val synchronize_level_positions : unit -> unit
+module GramState : Store.S
+(** Auxilliary state of the grammar. Any added data must be marshallable. *)
 
-val register_empty_levels : bool -> int list ->
-    (Extend.gram_position option * Extend.gram_assoc option *
-     string option * gram_reinit option) list
+type 'a grammar_command
+(** Type of synchronized parsing extensions. The ['a] type should be
+    marshallable. *)
 
-val remove_levels : int -> unit
+type extend_rule =
+| ExtendRule : 'a Gram.entry * gram_reinit option * 'a extend_statment -> extend_rule
 
-val level_of_snterml : Gram.symbol -> int
+type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
+(** Grammar extension entry point. Given some ['a] and a current grammar state,
+    such a function must produce the list of grammar extensions that will be
+    applied in the same order and kept synchronized w.r.t. the summary, together
+    with a new state. It should be pure. *)
+
+val create_grammar_command : string -> 'a grammar_extension -> 'a grammar_command
+(** Create a new grammar-modifying command with the given name. The extension
+    function is called to generate the rules for a given data. *)
+
+val extend_grammar_command : 'a grammar_command -> 'a -> unit
+(** Extend the grammar of Coq with the given data. *)
+
+val recover_grammar_command : 'a grammar_command -> 'a list
+(** Recover the current stack of grammar extensions. *)
+
+val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b

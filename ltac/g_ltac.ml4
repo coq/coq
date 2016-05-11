@@ -43,8 +43,6 @@ let tactic_mode = Gram.entry_create "vernac:tactic_command"
 
 let new_entry name =
   let e = Gram.entry_create name in
-  let entry = Entry.create name in
-  let () = Pcoq.set_grammar entry e in
   e
 
 let selector = new_entry "vernac:selector"

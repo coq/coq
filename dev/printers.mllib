@@ -194,7 +194,6 @@ Proof_global
 Pfedit
 Decl_mode
 Ppconstr
-Entry
 Pcoq
 Printer
 Pptactic

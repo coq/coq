@@ -21,16 +21,10 @@ end
 exception Exc_located = Ploc.Exc
 
 IFDEF CAMLP5_6_00 THEN
-let ploc_make_loc fname lnb pos bpep = Ploc.make_loc fname lnb pos bpep ""
 let ploc_file_name = Ploc.file_name
 ELSE
-let ploc_make_loc fname lnb pos bpep = Ploc.make lnb pos bpep
 let ploc_file_name _ = ""
 END
-
-let of_coqloc loc =
-  let (fname, lnb, pos, bp, ep) = Loc.represent loc in
-  ploc_make_loc fname lnb pos (bp,ep)
 
 let to_coqloc loc =
   Loc.create (ploc_file_name loc) (Ploc.line_nb loc)
@@ -43,10 +37,6 @@ ELSE
 module CompatLoc = Camlp4.PreCast.Loc
 
 exception Exc_located = CompatLoc.Exc_located
-
-let of_coqloc loc =
-  let (fname, lnb, pos, bp, ep) = Loc.represent loc in
-  CompatLoc.of_tuple (fname, 0, 0, bp, 0, 0, ep, false)
 
 let to_coqloc loc =
   Loc.create (CompatLoc.file_name loc) (CompatLoc.start_line loc)
@@ -65,6 +55,7 @@ IFDEF CAMLP5 THEN
 
 module PcamlSig = struct end
 module Token = Token
+module CompatGramext = struct include Gramext type assoc = g_assoc end
 
 ELSE
 
@@ -73,67 +64,9 @@ module Ast = Camlp4.PreCast.Ast
 module Pcaml = Camlp4.PreCast.Syntax
 module MLast = Ast
 module Token = struct exception Error of string end
+module CompatGramext = Camlp4.Sig.Grammar
 
 END
-
-
-(** Grammar auxiliary types *)
-
-IFDEF CAMLP5 THEN
-
-let to_coq_assoc = function
-| Gramext.RightA -> Extend.RightA
-| Gramext.LeftA -> Extend.LeftA
-| Gramext.NonA -> Extend.NonA
-
-let of_coq_assoc = function
-| Extend.RightA -> Gramext.RightA
-| Extend.LeftA -> Gramext.LeftA
-| Extend.NonA -> Gramext.NonA
-
-let of_coq_position = function
-| Extend.First -> Gramext.First
-| Extend.Last -> Gramext.Last
-| Extend.Before s -> Gramext.Before s
-| Extend.After s -> Gramext.After s
-| Extend.Level s -> Gramext.Level s
-
-let to_coq_position = function
-| Gramext.First -> Extend.First
-| Gramext.Last -> Extend.Last
-| Gramext.Before s -> Extend.Before s
-| Gramext.After s -> Extend.After s
-| Gramext.Level s -> Extend.Level s
-| Gramext.Like _ -> assert false (** dont use it, not in camlp4 *)
-
-ELSE
-
-let to_coq_assoc = function
-| PcamlSig.Grammar.RightA -> Extend.RightA
-| PcamlSig.Grammar.LeftA -> Extend.LeftA
-| PcamlSig.Grammar.NonA -> Extend.NonA
-
-let of_coq_assoc = function
-| Extend.RightA -> PcamlSig.Grammar.RightA
-| Extend.LeftA -> PcamlSig.Grammar.LeftA
-| Extend.NonA -> PcamlSig.Grammar.NonA
-
-let of_coq_position = function
-| Extend.First -> PcamlSig.Grammar.First
-| Extend.Last -> PcamlSig.Grammar.Last
-| Extend.Before s -> PcamlSig.Grammar.Before s
-| Extend.After s -> PcamlSig.Grammar.After s
-| Extend.Level s -> PcamlSig.Grammar.Level s
-
-let to_coq_position = function
-| PcamlSig.Grammar.First -> Extend.First
-| PcamlSig.Grammar.Last -> Extend.Last
-| PcamlSig.Grammar.Before s -> Extend.Before s
-| PcamlSig.Grammar.After s -> Extend.After s
-| PcamlSig.Grammar.Level s -> Extend.Level s
-
-END
-
 
 (** Signature of CLexer *)
 
