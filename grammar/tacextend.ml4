@@ -12,7 +12,7 @@
 
 open Q_util
 open Argextend
-open Compat
+open GramCompat
 
 let dloc = <:expr< Loc.ghost >>
 
@@ -47,7 +47,7 @@ let make_clause (pt,_,e) =
    make_let false e pt)
 
 let make_fun_clauses loc s l =
-  let map c = Compat.make_fun loc [make_clause c] in
+  let map c = GramCompat.make_fun loc [make_clause c] in
   mlexpr_of_list map l
 
 let get_argt e = <:expr< match $e$ with [ Genarg.ExtraArg tag -> tag | _ -> assert False ] >>
@@ -102,7 +102,7 @@ let declare_tactic loc s c cl = match cl with
         whole-prof tactics like [shelve_unifiable]. *)
       <:expr< fun _ $lid:"ist"$ -> $tac$ >>
   | _ ->
-      let f = Compat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
+      let f = GramCompat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
       <:expr< Tacinterp.lift_constr_tac_to_ml_tac $vars$ $f$ >>
   in
   (** Arguments are not passed directly to the ML tactic in the TacML node,

@@ -8,7 +8,7 @@
 
 (* This file defines standard combinators to build ml expressions *)
 
-open Compat
+open GramCompat
 
 type argument_type =
 | ListArgType of argument_type
@@ -87,7 +87,7 @@ let coincide s pat off =
   while !break && !i < len do
     let c = Char.code s.[off + !i] in
     let d = Char.code pat.[!i] in
-    break := Int.equal c d;
+    break := c = d;
     incr i
   done;
   !break
@@ -110,7 +110,7 @@ let rec parse_user_entry s sep =
   else if l > 4 && coincide s "_opt" (l-4) then
     let entry = parse_user_entry (String.sub s 0 (l-4)) "" in
     Uopt entry
-  else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
+  else if l = 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
     let n = Char.code s.[6] - 48 in
     Uentryl ("tactic", n)
   else

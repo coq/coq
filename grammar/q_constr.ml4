@@ -9,7 +9,7 @@
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
 open Q_util
-open Compat
+open GramCompat
 open Pcaml
 open PcamlSig (* necessary for camlp4 *)
 
@@ -26,11 +26,6 @@ EXTEND
   expr:
     [ [ "PATTERN"; "["; c = constr; "]" ->
       <:expr< snd (Patternops.pattern_of_glob_constr $c$) >> ] ]
-  ;
-  sort:
-    [ [ "Set"  -> Misctypes.GSet
-      | "Prop" -> Misctypes.GProp
-      | "Type" -> Misctypes.GType [] ] ]
   ;
   ident:
     [ [ s = string -> <:expr< Names.Id.of_string $str:s$ >> ] ]
@@ -68,8 +63,7 @@ EXTEND
         let args = mlexpr_of_list (fun x -> x) args in
         <:expr< Glob_term.GApp ($dloc$,$f$,$args$) >> ]
     | "0"
-      [ s = sort -> <:expr< Glob_term.GSort ($dloc$,s) >>
-      | id = ident -> <:expr< Glob_term.GVar ($dloc$,$id$) >>
+      [ id = ident -> <:expr< Glob_term.GVar ($dloc$,$id$) >>
       | "_" -> <:expr< Glob_term.GHole ($dloc$,Evar_kinds.QuestionMark (Evar_kinds.Define False),Misctypes.IntroAnonymous,None) >>
       | "?"; id = ident -> <:expr< Glob_term.GPatVar($dloc$,(False,$id$)) >>
       | "{"; c1 = constr; "}"; "+"; "{"; c2 = constr; "}" ->

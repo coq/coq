@@ -1,12 +1,4 @@
-Coq_config
-
-Store
-Exninfo
-Loc
-
-Tok
-Compat
-
+GramCompat
 Q_util
 Argextend
 Tacextend

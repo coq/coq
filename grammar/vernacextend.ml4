@@ -13,7 +13,7 @@
 open Q_util
 open Argextend
 open Tacextend
-open Compat
+open GramCompat
 
 type rule = {
   r_head : string option;
@@ -93,13 +93,13 @@ let make_fun_clauses loc s l =
     | None -> false
     | Some () -> true
     in
-    let cl = Compat.make_fun loc [make_clause c] in
+    let cl = GramCompat.make_fun loc [make_clause c] in
     <:expr< ($mlexpr_of_bool depr$, $cl$)>>
   in
   mlexpr_of_list map l
 
 let make_fun_classifiers loc s c l =
-  let cl = List.map (fun x -> Compat.make_fun loc [make_clause_classifier c s x]) l in
+  let cl = List.map (fun x -> GramCompat.make_fun loc [make_clause_classifier c s x]) l in
   mlexpr_of_list (fun x -> x) cl
 
 let make_prod_item = function

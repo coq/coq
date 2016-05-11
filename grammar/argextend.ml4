@@ -9,7 +9,7 @@
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
 open Q_util
-open Compat
+open GramCompat
 
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
