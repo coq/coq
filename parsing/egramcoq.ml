@@ -421,8 +421,8 @@ let target_to_bool : type r. r target -> bool = function
 
 let prepare_empty_levels forpat (pos,p4assoc,name,reinit) =
   let empty = (pos, [(name, p4assoc, [])]) in
-  if forpat then grammar_extend Constr.pattern reinit empty
-  else grammar_extend Constr.operconstr reinit empty
+  if forpat then ExtendRule (Constr.pattern, reinit, empty)
+  else ExtendRule (Constr.operconstr, reinit, empty)
 
 let rec pure_sublevels : type a b c. int option -> (a, b, c) rule -> int list = fun level r -> match r with
 | Stop -> []
@@ -456,7 +456,7 @@ let extend_constr state forpat ng =
   let n = ng.notgram_level in
   let assoc = ng.notgram_assoc in
   let (entry, level) = interp_constr_entry_key forpat n in
-  let fold (nb, state) pt =
+  let fold (accu, state) pt =
     let AnyTyRule r = make_ty_rule assoc n forpat pt in
     let symbs = ty_erase r in
     let pure_sublevels = pure_sublevels level symbs in
@@ -464,14 +464,14 @@ let extend_constr state forpat ng =
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
     let (pos,p4assoc,name,reinit), state = find_position state isforpat assoc level in
     let nb_decls = List.length needed_levels + 1 in
-    let () = List.iter (prepare_empty_levels isforpat) needed_levels in
+    let empty_rules = List.map (prepare_empty_levels isforpat) needed_levels in
     let empty = { constrs = []; constrlists = []; binders = [] } in
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
     let rule = (name, p4assoc, [Rule (symbs, act)]) in
-    let () = grammar_extend entry reinit (pos, [rule]) in
-    (nb + nb_decls, state)
+    let r = ExtendRule (entry, reinit, (pos, [rule])) in
+    (accu @ empty_rules @ [r], state)
   in
-  List.fold_left fold (0, state) ng.notgram_prods
+  List.fold_left fold ([], state) ng.notgram_prods
 
 let constr_levels = GramState.field ()
 
@@ -481,11 +481,11 @@ let extend_constr_notation (_, ng) state =
   | Some lev -> lev
   in
   (* Add the notation in constr *)
-  let (nb, levels) = extend_constr levels ForConstr ng in
+  let (r, levels) = extend_constr levels ForConstr ng in
   (* Add the notation in cases_pattern *)
-  let (nb', levels) = extend_constr levels ForPattern ng in
+  let (r', levels) = extend_constr levels ForPattern ng in
   let state = GramState.set state constr_levels levels in
-  (nb + nb', state)
+  (r @ r', state)
 
 let constr_grammar : (Notation.level * notation_grammar) grammar_command =
   create_grammar_command "Notation" extend_constr_notation

@@ -241,12 +241,18 @@ type 'a grammar_command
 (** Type of synchronized parsing extensions. The ['a] type should be
     marshallable. *)
 
-type 'a grammar_extension = 'a -> GramState.t -> int * GramState.t
+type extend_rule =
+| ExtendRule : 'a Gram.entry * gram_reinit option * 'a extend_statment -> extend_rule
+
+type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
+(** Grammar extension entry point. Given some ['a] and a current grammar state,
+    such a function must produce the list of grammar extensions that will be
+    applied in the same order and kept synchronized w.r.t. the summary, together
+    with a new state. It should be pure. *)
 
 val create_grammar_command : string -> 'a grammar_extension -> 'a grammar_command
-(** Create a new grammar-modifying command with the given name. The function
-    should modify the parser state and return the number of grammar extensions
-    performed. *)
+(** Create a new grammar-modifying command with the given name. The extension
+    function is called to generate the rules for a given data. *)
 
 val extend_grammar_command : 'a grammar_command -> 'a -> unit
 (** Extend the grammar of Coq with the given data. *)

@@ -184,8 +184,8 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
-  grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
-  (1, state)
+  let r = ExtendRule (entry, None, (pos, [(None, None, [rules])])) in
+  ([r], state)
 
 let tactic_grammar =
   create_grammar_command "TacticGrammar" add_tactic_entry

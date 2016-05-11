@@ -98,11 +98,11 @@ let of_coq_extend_statement (pos, st) =
 (** Type of reinitialization data *)
 type gram_reinit = gram_assoc * gram_position
 
+type extend_rule =
+| ExtendRule : 'a G.entry * gram_reinit option * 'a extend_statment -> extend_rule
+
 type ext_kind =
-  | ByGrammar :
-      'a G.entry
-      * gram_reinit option (** for reinitialization if ever needed *)
-      * 'a Extend.extend_statment -> ext_kind
+  | ByGrammar of extend_rule
   | ByEXTEND of (unit -> unit) * (unit -> unit)
 
 (** The list of extensions *)
@@ -110,7 +110,7 @@ type ext_kind =
 let camlp4_state = ref []
 
 let grammar_extend e reinit ext =
-  camlp4_state := ByGrammar (e,reinit,ext) :: !camlp4_state;
+  camlp4_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp4_state;
   let ext = of_coq_extend_statement ext in
   camlp4_verbose (maybe_uncurry (G.extend e)) ext
 
@@ -167,7 +167,7 @@ let rec remove_grammars n =
   if n>0 then
     (match !camlp4_state with
        | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove")
-       | ByGrammar(g,reinit,ext)::t ->
+       | ByGrammar (ExtendRule (g, reinit, ext)) :: t ->
            grammar_delete g reinit (of_coq_extend_statement ext);
            camlp4_state := t;
            remove_grammars (n-1)
@@ -405,7 +405,7 @@ let epsilon_value f e =
 
 module GramState = Store.Make(struct end)
 
-type 'a grammar_extension = 'a -> GramState.t -> int * GramState.t
+type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
 
 module GrammarCommand = Dyn.Make(struct end)
 module GrammarInterp = struct type 'a t = 'a grammar_extension end
@@ -428,7 +428,10 @@ let extend_grammar_command tag g =
   | [] -> GramState.empty
   | (_, _, st) :: _ -> st
   in
-  let (nb, st) = modify g grammar_state in
+  let (rules, st) = modify g grammar_state in
+  let iter (ExtendRule (e, reinit, ext)) = grammar_extend e reinit ext in
+  let () = List.iter iter rules in
+  let nb = List.length rules in
   grammar_stack := (nb, GrammarCommand.Dyn (tag, g), st) :: !grammar_stack
 
 let recover_grammar_command (type a) (tag : a grammar_command) : a list =
