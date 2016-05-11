@@ -157,7 +157,7 @@ let rec prod_item_of_symbol lev = function
 
 (** Tactic grammar extensions *)
 
-let add_tactic_entry (kn, ml, tg) =
+let add_tactic_entry (kn, ml, tg) state =
   let open Tacexpr in
   let entry, pos = get_tactic_entry tg.tacgram_level in
   let mkact loc l =
@@ -186,7 +186,7 @@ let add_tactic_entry (kn, ml, tg) =
   let rules = make_rule mkact prods in
   synchronize_level_positions ();
   grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
-  1
+  (1, state)
 
 let tactic_grammar =
   create_grammar_command "TacticGrammar" add_tactic_entry

@@ -234,11 +234,16 @@ val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
 (** {5 Extending the parser with Summary-synchronized commands} *)
 
+module GramState : Store.S
+(** Auxilliary state of the grammar. Any added data must be marshallable. *)
+
 type 'a grammar_command
 (** Type of synchronized parsing extensions. The ['a] type should be
     marshallable. *)
 
-val create_grammar_command : string -> ('a -> int) -> 'a grammar_command
+type 'a grammar_extension = 'a -> GramState.t -> int * GramState.t
+
+val create_grammar_command : string -> 'a grammar_extension -> 'a grammar_command
 (** Create a new grammar-modifying command with the given name. The function
     should modify the parser state and return the number of grammar extensions
     performed. *)

@@ -343,12 +343,12 @@ let extend_constr forpat ng =
   in
   List.fold_left fold 0 ng.notgram_prods
 
-let extend_constr_notation (_, ng) =
+let extend_constr_notation (_, ng) state =
   (* Add the notation in constr *)
   let nb = extend_constr ForConstr ng in
   (* Add the notation in cases_pattern *)
   let nb' = extend_constr ForPattern ng in
-  nb + nb'
+  (nb + nb', state)
 
 let constr_grammar : (Notation.level * notation_grammar) grammar_command =
   create_grammar_command "Notation" extend_constr_notation

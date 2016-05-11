@@ -548,13 +548,17 @@ let epsilon_value f e =
 
 (** Synchronized grammar extensions *)
 
+module GramState = Store.Make(struct end)
+
+type 'a grammar_extension = 'a -> GramState.t -> int * GramState.t
+
 module GrammarCommand = Dyn.Make(struct end)
-module GrammarInterp = struct type 'a t = 'a -> int end
+module GrammarInterp = struct type 'a t = 'a grammar_extension end
 module GrammarInterpMap = GrammarCommand.Map(GrammarInterp)
 
 let grammar_interp = ref GrammarInterpMap.empty
 
-let (grammar_state : (int * GrammarCommand.t) list ref) = ref []
+let (grammar_stack : (int * GrammarCommand.t * GramState.t) list ref) = ref []
 
 type 'a grammar_command = 'a GrammarCommand.tag
 
@@ -564,25 +568,30 @@ let create_grammar_command name interp : _ grammar_command =
   obj
 
 let extend_grammar_command tag g =
-  let nb = GrammarInterpMap.find tag !grammar_interp g in
-  grammar_state := (nb, GrammarCommand.Dyn (tag, g)) :: !grammar_state
+  let modify = GrammarInterpMap.find tag !grammar_interp in
+  let grammar_state = match !grammar_stack with
+  | [] -> GramState.empty
+  | (_, _, st) :: _ -> st
+  in
+  let (nb, st) = modify g grammar_state in
+  grammar_stack := (nb, GrammarCommand.Dyn (tag, g), st) :: !grammar_stack
 
 let recover_grammar_command (type a) (tag : a grammar_command) : a list =
-  let filter : _ -> a option = fun (_, GrammarCommand.Dyn (tag', v)) ->
+  let filter : _ -> a option = fun (_, GrammarCommand.Dyn (tag', v), _) ->
     match GrammarCommand.eq tag tag' with
     | None -> None
     | Some Refl -> Some v
   in
-  List.map_filter filter !grammar_state
+  List.map_filter filter !grammar_stack
 
 let extend_dyn_grammar (GrammarCommand.Dyn (tag, g)) = extend_grammar_command tag g
 
 (* Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
-type frozen_t = (int * GrammarCommand.t) list * CLexer.frozen_t
+type frozen_t = (int * GrammarCommand.t * GramState.t) list * CLexer.frozen_t
 
-let freeze _ : frozen_t = (!grammar_state, CLexer.freeze ())
+let freeze _ : frozen_t = (!grammar_stack, CLexer.freeze ())
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
@@ -590,16 +599,16 @@ let factorize_grams l1 l2 =
   if l1 == l2 then ([], [], l1) else List.share_tails l1 l2
 
 let number_of_entries gcl =
-  List.fold_left (fun n (p,_) -> n + p) 0 gcl
+  List.fold_left (fun n (p,_,_) -> n + p) 0 gcl
 
 let unfreeze (grams, lex) =
-  let (undo, redo, common) = factorize_grams !grammar_state grams in
+  let (undo, redo, common) = factorize_grams !grammar_stack grams in
   let n = number_of_entries undo in
   remove_grammars n;
   remove_levels n;
-  grammar_state := common;
+  grammar_stack := common;
   CLexer.unfreeze lex;
-  List.iter extend_dyn_grammar (List.rev_map snd redo)
+  List.iter extend_dyn_grammar (List.rev_map pi2 redo)
 
 (** No need to provide an init function : the grammar state is
     statically available, and already empty initially, while
