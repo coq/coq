@@ -106,9 +106,6 @@ val grammar_extend :
   gram_reinit option (** for reinitialization if ever needed *) ->
   'a Extend.extend_statment -> unit
 
-(** Remove the last n extensions *)
-val remove_grammars : int -> unit
-
 (** Temporary activate camlp4 verbosity *)
 
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
@@ -235,6 +232,25 @@ val set_command_entry : vernac_expr Gram.entry -> unit
 
 val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
+(** {5 Extending the parser with Summary-synchronized commands} *)
+
+type 'a grammar_command
+(** Type of synchronized parsing extensions. The ['a] type should be
+    marshallable. *)
+
+val create_grammar_command : string -> ('a -> int) -> 'a grammar_command
+(** Create a new grammar-modifying command with the given name. The function
+    should modify the parser state and return the number of grammar extensions
+    performed. *)
+
+val extend_grammar_command : 'a grammar_command -> 'a -> unit
+(** Extend the grammar of Coq with the given data. *)
+
+val recover_grammar_command : 'a grammar_command -> 'a list
+(** Recover the current stack of grammar extensions. *)
+
+val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
+
 (** Registering/resetting the level of a constr entry *)
 
 type gram_level =
@@ -247,5 +263,3 @@ val find_position :
 val synchronize_level_positions : unit -> unit
 
 val register_empty_levels : bool -> int list -> gram_level list
-
-val remove_levels : int -> unit

@@ -350,85 +350,16 @@ let extend_constr_notation (_, ng) =
   let nb' = extend_constr ForPattern ng in
   nb + nb'
 
-module GrammarCommand = Dyn.Make(struct end)
-module GrammarInterp = struct type 'a t = 'a -> int end
-module GrammarInterpMap = GrammarCommand.Map(GrammarInterp)
-
-let grammar_interp = ref GrammarInterpMap.empty
-
-let (grammar_state : (int * GrammarCommand.t) list ref) = ref []
-
-type 'a grammar_command = 'a GrammarCommand.tag
-
-let create_grammar_command name interp : _ grammar_command =
-  let obj = GrammarCommand.create name in
-  let () = grammar_interp := GrammarInterpMap.add obj interp !grammar_interp in
-  obj
-
-let extend_grammar tag g =
-  let nb = GrammarInterpMap.find tag !grammar_interp g in
-  grammar_state := (nb, GrammarCommand.Dyn (tag, g)) :: !grammar_state
-
-let extend_dyn_grammar (GrammarCommand.Dyn (tag, g)) = extend_grammar tag g
-
-let constr_grammar : (Notation.level * notation_grammar) GrammarCommand.tag =
+let constr_grammar : (Notation.level * notation_grammar) grammar_command =
   create_grammar_command "Notation" extend_constr_notation
 
-let extend_constr_grammar pr ntn = extend_grammar constr_grammar (pr, ntn)
+let extend_constr_grammar pr ntn = extend_grammar_command constr_grammar (pr, ntn)
 
 let recover_constr_grammar ntn prec =
-  let filter (_, gram) : notation_grammar option = match gram with
-  | GrammarCommand.Dyn (tag, obj) ->
-    match GrammarCommand.eq tag constr_grammar with
-    | None -> None
-    | Some Refl ->
-      let (prec', ng) = obj in
-      if Notation.level_eq prec prec' && String.equal ntn ng.notgram_notation then Some ng
-      else None
+  let filter (prec', ng) =
+    if Notation.level_eq prec prec' && String.equal ntn ng.notgram_notation then Some ng
+    else None
   in
-  match List.map_filter filter !grammar_state with
+  match List.map_filter filter (recover_grammar_command constr_grammar) with
   | [x] -> x
   | _ -> assert false
-
-(* Summary functions: the state of the lexer is included in that of the parser.
-   Because the grammar affects the set of keywords when adding or removing
-   grammar rules. *)
-type frozen_t = (int * GrammarCommand.t) list * CLexer.frozen_t
-
-let freeze _ : frozen_t = (!grammar_state, CLexer.freeze ())
-
-(* We compare the current state of the grammar and the state to unfreeze,
-   by computing the longest common suffixes *)
-let factorize_grams l1 l2 =
-  if l1 == l2 then ([], [], l1) else List.share_tails l1 l2
-
-let number_of_entries gcl =
-  List.fold_left (fun n (p,_) -> n + p) 0 gcl
-
-let unfreeze (grams, lex) =
-  let (undo, redo, common) = factorize_grams !grammar_state grams in
-  let n = number_of_entries undo in
-  remove_grammars n;
-  remove_levels n;
-  grammar_state := common;
-  CLexer.unfreeze lex;
-  List.iter extend_dyn_grammar (List.rev_map snd redo)
-
-(** No need to provide an init function : the grammar state is
-    statically available, and already empty initially, while
-    the lexer state should not be resetted, since it contains
-    keywords declared in g_*.ml4 *)
-
-let _ =
-  Summary.declare_summary "GRAMMAR_LEXER"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = Summary.nop }
-
-let with_grammar_rule_protection f x =
-  let fs = freeze false in
-  try let a = f x in unfreeze fs; a
-  with reraise ->
-    let reraise = Errors.push reraise in
-    let () = unfreeze fs in
-    iraise reraise

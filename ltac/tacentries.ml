@@ -191,7 +191,7 @@ let add_tactic_entry (kn, ml, tg) =
 let tactic_grammar =
   create_grammar_command "TacticGrammar" add_tactic_entry
 
-let extend_tactic_grammar kn ml ntn = extend_grammar tactic_grammar (kn, ml, ntn)
+let extend_tactic_grammar kn ml ntn = extend_grammar_command tactic_grammar (kn, ml, ntn)
 
 (**********************************************************************)
 (* Tactic Notation                                                    *)
