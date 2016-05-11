@@ -255,16 +255,3 @@ val recover_grammar_command : 'a grammar_command -> 'a list
 (** Recover the current stack of grammar extensions. *)
 
 val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
-
-(** Registering/resetting the level of a constr entry *)
-
-type gram_level =
-  gram_position option * gram_assoc option * string option * gram_reinit option
-
-val find_position :
-  bool (** true if for creation in pattern entry; false if in constr entry *) ->
-  Extend.gram_assoc option -> int option -> gram_level
-
-val synchronize_level_positions : unit -> unit
-
-val register_empty_levels : bool -> int list -> gram_level list

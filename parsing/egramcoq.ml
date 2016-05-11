@@ -15,6 +15,136 @@ open Notation_term
 open Libnames
 open Names
 
+(**********************************************************************)
+(* This determines (depending on the associativity of the current
+   level and on the expected associativity) if a reference to constr_n is
+   a reference to the current level (to be translated into "SELF" on the
+   left border and into "constr LEVEL n" elsewhere), to the level below
+   (to be translated into "NEXT") or to an below wrt associativity (to be
+   translated in camlp4 into "constr" without level) or to another level
+   (to be translated into "constr LEVEL n")
+
+   The boolean is true if the entry was existing _and_ empty; this to
+   circumvent a weakness of camlp4/camlp5 whose undo mechanism is not the
+   converse of the extension mechanism *)
+
+let constr_level = string_of_int
+
+let default_levels =
+  [200,Extend.RightA,false;
+   100,Extend.RightA,false;
+   99,Extend.RightA,true;
+   10,Extend.RightA,false;
+   9,Extend.RightA,false;
+   8,Extend.RightA,true;
+   1,Extend.LeftA,false;
+   0,Extend.RightA,false]
+
+let default_pattern_levels =
+  [200,Extend.RightA,true;
+   100,Extend.RightA,false;
+   99,Extend.RightA,true;
+   11,Extend.LeftA,false;
+   10,Extend.RightA,false;
+   1,Extend.LeftA,false;
+   0,Extend.RightA,false]
+
+let default_constr_levels = (default_levels, default_pattern_levels)
+
+(* At a same level, LeftA takes precedence over RightA and NoneA *)
+(* In case, several associativity exists for a level, we make two levels, *)
+(* first LeftA, then RightA and NoneA together *)
+
+let admissible_assoc = function
+  | Extend.LeftA, Some (Extend.RightA | Extend.NonA) -> false
+  | Extend.RightA, Some Extend.LeftA -> false
+  | _ -> true
+
+let create_assoc = function
+  | None -> Extend.RightA
+  | Some a -> a
+
+let error_level_assoc p current expected =
+  let open Pp in
+  let pr_assoc = function
+    | Extend.LeftA -> str "left"
+    | Extend.RightA -> str "right"
+    | Extend.NonA -> str "non" in
+  errorlabstrm ""
+    (str "Level " ++ int p ++ str " is already declared " ++
+     pr_assoc current ++ str " associative while it is now expected to be " ++
+     pr_assoc expected ++ str " associative.")
+
+let create_pos = function
+  | None -> Extend.First
+  | Some lev -> Extend.After (constr_level lev)
+
+type gram_level =
+  gram_position option * gram_assoc option * string option *
+  (** for reinitialization: *) gram_reinit option
+
+let find_position_gen current ensure assoc lev =
+  match lev with
+  | None ->
+      current, (None, None, None, None)
+  | Some n ->
+      let after = ref None in
+      let init = ref None in
+      let rec add_level q = function
+        | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
+        | (p,a,reinit)::l when Int.equal p n ->
+            if reinit then
+	      let a' = create_assoc assoc in
+              (init := Some (a',create_pos q); (p,a',false)::l)
+	    else if admissible_assoc (a,assoc) then
+	      raise Exit
+            else
+	      error_level_assoc p a (Option.get assoc)
+	| l -> after := q; (n,create_assoc assoc,ensure)::l
+      in
+      try
+	let updated = add_level None current in
+	let assoc = create_assoc assoc in
+        begin match !init with
+        | None ->
+	  (* Create the entry *)
+	   updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
+        | _ ->
+	  (* The reinit flag has been updated *)
+	   updated, (Some (Extend.Level (constr_level n)), None, None, !init)
+        end
+      with
+	  (* Nothing has changed *)
+          Exit ->
+	    (* Just inherit the existing associativity and name (None) *)
+	    current, (Some (Extend.Level (constr_level n)), None, None, None)
+
+let rec list_mem_assoc_triple x = function
+  | [] -> false
+  | (a,b,c) :: l -> Int.equal a x || list_mem_assoc_triple x l
+
+let register_empty_levels accu forpat levels =
+  let rec filter accu = function
+  | [] -> ([], accu)
+  | n :: rem ->
+    let rem, accu = filter accu rem in
+    let (clev, plev) = accu in
+    let levels = if forpat then plev else clev in
+    if not (list_mem_assoc_triple n levels) then
+      let nlev, ans = find_position_gen levels true None (Some n) in
+      let nlev = if forpat then (clev, nlev) else (nlev, plev) in
+      ans :: rem, nlev
+    else rem, accu
+  in
+  filter accu levels
+
+let find_position accu forpat assoc level =
+  let (clev, plev) = accu in
+  let levels = if forpat then plev else clev in
+  let nlev, ans = find_position_gen levels false assoc level in
+  let nlev = if forpat then (clev, nlev) else (nlev, plev) in
+  (ans, nlev)
+
 (**************************************************************************)
 (*
  * --- Note on the mapping of grammar productions to camlp4 actions ---
@@ -322,32 +452,39 @@ type notation_grammar = {
   notgram_typs : notation_var_internalization_type list;
 }
 
-let extend_constr forpat ng =
+let extend_constr state forpat ng =
   let n = ng.notgram_level in
   let assoc = ng.notgram_assoc in
   let (entry, level) = interp_constr_entry_key forpat n in
-  let fold nb pt =
+  let fold (nb, state) pt =
     let AnyTyRule r = make_ty_rule assoc n forpat pt in
     let symbs = ty_erase r in
     let pure_sublevels = pure_sublevels level symbs in
     let isforpat = target_to_bool forpat in
-    let needed_levels = register_empty_levels isforpat pure_sublevels in
-    let pos,p4assoc,name,reinit = find_position isforpat assoc level in
+    let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
+    let (pos,p4assoc,name,reinit), state = find_position state isforpat assoc level in
     let nb_decls = List.length needed_levels + 1 in
     let () = List.iter (prepare_empty_levels isforpat) needed_levels in
     let empty = { constrs = []; constrlists = []; binders = [] } in
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
     let rule = (name, p4assoc, [Rule (symbs, act)]) in
     let () = grammar_extend entry reinit (pos, [rule]) in
-    nb_decls
+    (nb + nb_decls, state)
   in
-  List.fold_left fold 0 ng.notgram_prods
+  List.fold_left fold (0, state) ng.notgram_prods
+
+let constr_levels = GramState.field ()
 
 let extend_constr_notation (_, ng) state =
+  let levels = match GramState.get state constr_levels with
+  | None -> default_constr_levels
+  | Some lev -> lev
+  in
   (* Add the notation in constr *)
-  let nb = extend_constr ForConstr ng in
+  let (nb, levels) = extend_constr levels ForConstr ng in
   (* Add the notation in cases_pattern *)
-  let nb' = extend_constr ForPattern ng in
+  let (nb', levels) = extend_constr levels ForPattern ng in
+  let state = GramState.set state constr_levels levels in
   (nb + nb', state)
 
 let constr_grammar : (Notation.level * notation_grammar) grammar_command =

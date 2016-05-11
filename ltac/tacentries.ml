@@ -184,7 +184,6 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
-  synchronize_level_positions ();
   grammar_extend entry None (pos, [(None, None, List.rev [rules])]);
   (1, state)
 
