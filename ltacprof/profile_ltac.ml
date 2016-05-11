@@ -107,22 +107,17 @@ let string_of_call ck =
   let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
   CString.strip s
 
-let exit_tactic option_start_time_add_total c =
-  (match option_start_time_add_total with
-    | Some (start_time, add_total) -> begin
-      try
-        let node :: stack' = !stack in
-        let parent = List.hd stack' in
-        stack := stack';
-        if add_total then Hashtbl.remove on_stack (string_of_call c);
-        let diff = time() -. start_time in
-        parent.entry.local <- parent.entry.local -. diff;
-        add_entry node.entry add_total {total = diff; local = diff; ncalls = 1; max_total = diff};
-      with Failure("hd") -> (* oops, our stack is invalid *)
-	encounter_multi_success_backtracking()
-    end
-    | None -> ()
-  )
+let exit_tactic start_time add_total c =
+  try
+    let node :: stack' = !stack in
+    let parent = List.hd stack' in
+    stack := stack';
+    if add_total then Hashtbl.remove on_stack (string_of_call c);
+    let diff = time() -. start_time in
+    parent.entry.local <- parent.entry.local -. diff;
+    add_entry node.entry add_total {total = diff; local = diff; ncalls = 1; max_total = diff};
+  with Failure("hd") -> (* oops, our stack is invalid *)
+    encounter_multi_success_backtracking()
 
 let tclFINALLY tac (finally : unit Proofview.tactic) =
   let open Proofview.Notations in
@@ -151,14 +146,16 @@ let do_profile s call_trace tac =
           Some (start_time, add_total)
 	)
       | [] -> None
-  else None)) >>= fun option_start_time_add_total ->
-  tclFINALLY
-    tac
-    (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-      (match call_trace with
-      | (_, c) :: _ ->
-        exit_tactic option_start_time_add_total c
-      | [] -> ()))))
+  else None)) >>= function
+  | Some (start_time, add_total) ->
+    tclFINALLY
+      tac
+      (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+	(match call_trace with
+	| (_, c) :: _ ->
+          exit_tactic start_time add_total c
+	| [] -> ()))))
+  | None -> tac
 
 
 
