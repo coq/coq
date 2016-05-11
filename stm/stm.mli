@@ -122,7 +122,7 @@ type state = {
   proof : Proof_global.state;
   shallow : bool
 }
-val state_of_id : Stateid.t -> [ `Valid of state option | `Expired ]
+val state_of_id : Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
 
 (** read-eval-print loop compatible interface ****************************** **)
 
