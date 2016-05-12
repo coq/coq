@@ -127,8 +127,7 @@ let finish_proof dynamic_infos g =
 let refine c =
   Tacmach.refine c
 
-let thin l =
-  Tacmach.thin_no_check l
+let thin l = Proofview.V82.of_tactic (Tactics.clear l)
 
 let eq_constr u v = eq_constr_nounivs u v
 
@@ -1565,7 +1564,7 @@ let prove_principle_for_gen
     Nameops.out_name (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
   in
   let revert l =
-    tclTHEN (Tactics.generalize (List.map mkVar l)) (clear l)
+    tclTHEN (Tactics.generalize (List.map mkVar l)) (Proofview.V82.of_tactic (clear l))
   in
   let fix_id = Nameops.out_name (fresh_id (Name hrec_id)) in
   let prove_rec_arg_acc g =

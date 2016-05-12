@@ -247,7 +247,7 @@ END
 TACTIC EXTEND clear
   [ "clear" hyp_list(ids) ] -> [
     if List.is_empty ids then Tactics.keep []
-    else Proofview.V82.tactic (Tactics.clear ids)
+    else Tactics.clear ids
   ]
 | [ "clear" "-" ne_hyp_list(ids) ] -> [ Tactics.keep ids ]
 END

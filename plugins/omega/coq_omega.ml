@@ -1122,7 +1122,7 @@ let replay_history tactic_normalisation =
 		  Proofview.V82.tactic (generalize_tac
 		    [mkApp (Lazy.force coq_OMEGA1,
 		      [| eq1; rhs; mkVar aux; mkVar id |])]);
-		  Proofview.V82.tactic (clear [aux;id]);
+		  (clear [aux;id]);
 		  (intros_using [id]);
 		  (cut (mk_gt kk dd)) ])
 	        [ Tacticals.New.tclTHENS
@@ -1132,7 +1132,7 @@ let replay_history tactic_normalisation =
 		        (Proofview.V82.tactic (generalize_tac
 			  [mkApp (Lazy.force coq_Zmult_le_approx,
 			    [| kk;eq2;dd;mkVar aux1;mkVar aux2; mkVar id |])]));
-		        Proofview.V82.tactic (clear [aux1;aux2;id]);
+		        (clear [aux1;aux2;id]);
 		        (intros_using [id]);
 		        (loop l) ];
 		      Tacticals.New.tclTHENLIST [
@@ -1160,7 +1160,7 @@ let replay_history tactic_normalisation =
 		  Proofview.V82.tactic (generalize_tac
 		    [mkApp (Lazy.force coq_OMEGA4,
                       [| dd;kk;eq2;mkVar aux1; mkVar aux2 |])]);
-		  Proofview.V82.tactic (clear [aux1;aux2]);
+		  (clear [aux1;aux2]);
 		  unfold sp_not;
 		  (intros_using [aux]);
 		  Proofview.V82.tactic (resolve_id aux);
@@ -1190,7 +1190,7 @@ let replay_history tactic_normalisation =
 		Proofview.V82.tactic (generalize_tac
 		  [mkApp (Lazy.force coq_OMEGA18,
                     [| eq1;eq2;kk;mkVar aux1; mkVar id |])]);
-		Proofview.V82.tactic (clear [aux1;id]);
+		(clear [aux1;id]);
 		(intros_using [id]);
 		(loop l) ];
 	       Tacticals.New.tclTHEN (Proofview.V82.tactic (mk_then tac)) reflexivity ]
@@ -1205,7 +1205,7 @@ let replay_history tactic_normalisation =
 		   Proofview.V82.tactic (generalize_tac
 		     [mkApp (Lazy.force coq_OMEGA3,
 		       [| eq1; eq2; kk; mkVar aux2; mkVar aux1;mkVar id|])]);
-		   Proofview.V82.tactic (clear [aux1;aux2;id]);
+		   (clear [aux1;aux2;id]);
 		   (intros_using [id]);
 		   (loop l) ];
 		  Tacticals.New.tclTHENLIST [
@@ -1231,7 +1231,7 @@ let replay_history tactic_normalisation =
 	      (intros_using [aux]);
 	      Proofview.V82.tactic (generalize_tac [mkApp (Lazy.force coq_OMEGA8,
 	        [| eq1;eq2;mkVar id1;mkVar id2; mkVar aux|])]);
-	      Proofview.V82.tactic (clear [id1;id2;aux]);
+	      (clear [id1;id2;aux]);
 	      (intros_using [id]);
 	      (loop l) ];
             Tacticals.New.tclTHEN (Proofview.V82.tactic (mk_then tac)) reflexivity]
@@ -1263,13 +1263,13 @@ let replay_history tactic_normalisation =
 	    [Tacticals.New.tclTHENLIST [
 	      (intros_using [aux]);
 	      (elim_id aux);
-	      Proofview.V82.tactic (clear [aux]);
+	      (clear [aux]);
 	      (intros_using [vid; aux]);
 	      Proofview.V82.tactic (generalize_tac
 		[mkApp (Lazy.force coq_OMEGA9,
 		  [| mkVar vid;eq2;eq1;mm; mkVar id2;mkVar aux |])]);
 	      Proofview.V82.tactic (mk_then tac);
-	      Proofview.V82.tactic (clear [aux]);
+	      (clear [aux]);
 	      (intros_using [id]);
 	      (loop l) ];
             Tacticals.New.tclTHEN (exists_tac eq1) reflexivity ]
@@ -1325,7 +1325,7 @@ let replay_history tactic_normalisation =
 		       eq1;eq2;kk1;kk2;
 		       mkVar aux1;mkVar aux2;
 		       mkVar id1;mkVar id2 |])]);
-		   Proofview.V82.tactic (clear [aux1;aux2]);
+		   (clear [aux1;aux2]);
 		   Proofview.V82.tactic (mk_then tac);
 		   (intros_using [id]);
 		   (loop l) ];
@@ -1367,7 +1367,7 @@ let normalize_equation id flag theorem pos t t1 t2 (tactic,defs) =
   let shift_left =
     tclTHEN
       (generalize_tac [mkApp (theorem, [| t1; t2; mkVar id |]) ])
-      (tclTRY (clear [id]))
+      (tclTRY (Proofview.V82.of_tactic (clear [id])))
   in
   if not (List.is_empty tac) then
     let id' = new_identifier () in
@@ -1412,7 +1412,7 @@ let destructure_omega gl tac_def (id,c) =
 
 let reintroduce id =
   (* [id] cannot be cleared if dependent: protect it by a try *)
-  Tacticals.New.tclTHEN (Proofview.V82.tactic (tclTRY (clear [id]))) (intro_using id)
+  Tacticals.New.tclTHEN (Tacticals.New.tclTRY (clear [id])) (intro_using id)
 
 
 open Proofview.Notations
@@ -1435,7 +1435,7 @@ let coq_omega =
 	     (simplest_elim (applist (Lazy.force coq_intro_Z, [t])));
 	     (intros_using [v; id]);
 	     (elim_id id);
-	     Proofview.V82.tactic (clear [id]);
+	     (clear [id]);
 	     (intros_using [th;id]);
 	     tac ]),
            {kind = INEQ;
@@ -1674,7 +1674,7 @@ let onClearedName id tac =
   (* We cannot ensure that hyps can be cleared (because of dependencies), *)
   (* so renaming may be necessary *)
   Tacticals.New.tclTHEN
-    (Proofview.V82.tactic (tclTRY (clear [id])))
+    (Tacticals.New.tclTRY (clear [id]))
     (Proofview.Goal.nf_enter { enter = begin fun gl ->
      let id = Tacmach.New.of_old (fresh_id [] id) gl in
      Tacticals.New.tclTHEN (introduction id) (tac id)
@@ -1682,7 +1682,7 @@ let onClearedName id tac =
 
 let onClearedName2 id tac =
   Tacticals.New.tclTHEN
-    (Proofview.V82.tactic (tclTRY (clear [id])))
+    (Tacticals.New.tclTRY (clear [id]))
     (Proofview.Goal.nf_enter { enter = begin fun gl ->
      let id1 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_left")) gl in
      let id2 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_right")) gl in

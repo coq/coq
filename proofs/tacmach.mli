@@ -86,7 +86,6 @@ val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 val refiner                   : rule -> tactic
 val internal_cut_no_check     : bool -> Id.t -> types -> tactic
 val refine_no_check           : constr -> tactic
-val thin_no_check             : Id.t list -> tactic
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
 val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> tactic
@@ -96,7 +95,6 @@ val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> tactic
 val internal_cut     : bool -> Id.t -> types -> tactic
 val internal_cut_rev : bool -> Id.t -> types -> tactic
 val refine           : constr -> tactic
-val thin             : Id.t list -> tactic
 val move_hyp         : Id.t -> Id.t move_location -> tactic
 
 (** {6 Pretty-printing functions (debug only). } *)

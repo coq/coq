@@ -94,6 +94,7 @@ let nf_zeta =
     Environ.empty_env
     Evd.empty
 
+let thin ids gl = Proofview.V82.of_tactic (Tactics.clear ids) gl
 
 (* (\* [id_to_constr id] finds the term associated to [id] in the global environment *\) *)
 (* let id_to_constr id = *)

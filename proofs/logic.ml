@@ -636,16 +636,6 @@ let prim_refiner r sigma goal =
 	let sigma = Goal.V82.partial_solution sigma goal oterm in
 	  (sgl, sigma)
 
-    (* And now the structural rules *)
-    | Thin ids ->
-        let ids = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty ids in
-	let (hyps,concl,nsigma) = clear_hyps env sigma ids sign cl in
-	let (gl,ev,sigma) =
-	  Goal.V82.mk_goal nsigma hyps concl (Goal.V82.extra nsigma goal)
-	in
-	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
-	  ([gl], sigma)
-
     | Move (hfrom, hto) ->
   	let (left,right,declfrom,toleft) =
 	  split_sign hfrom hto (named_context_of_val sign) in

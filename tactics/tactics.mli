@@ -35,7 +35,6 @@ val convert_concl   : ?check:bool -> types -> cast_kind -> unit Proofview.tactic
 val convert_hyp     : ?check:bool -> Context.Named.Declaration.t -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
 val convert_hyp_no_check : Context.Named.Declaration.t -> unit Proofview.tactic
-val thin            : Id.t list -> tactic
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
 val fix             : Id.t option -> int -> tactic
@@ -163,7 +162,7 @@ val unfold_constr     : global_reference -> unit Proofview.tactic
 
 (** {6 Modification of the local context. } *)
 
-val clear         : Id.t list -> tactic
+val clear         : Id.t list -> unit Proofview.tactic
 val clear_body    : Id.t list -> unit Proofview.tactic
 val unfold_body   : Id.t -> unit Proofview.tactic
 val keep          : Id.t list -> unit Proofview.tactic

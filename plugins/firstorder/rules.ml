@@ -52,7 +52,7 @@ let basename_of_global=function
   | _->assert false
 
 let clear_global=function
-    VarRef id->clear [id]
+    VarRef id-> Proofview.V82.of_tactic (clear [id])
   | _->tclIDTAC
 
 (* connection rules *)
@@ -192,7 +192,7 @@ let ll_forall_tac prod backtrack id continue seq=
 	   (fun gls->
 	      let id0=pf_nth_hyp_id gls 1 in
               let term=mkApp(idc,[|mkVar(id0)|]) in
-		tclTHEN (generalize [term]) (clear [id0]) gls));
+		tclTHEN (generalize [term]) (Proofview.V82.of_tactic (clear [id0])) gls));
 	   clear_global id;
 	   Proofview.V82.of_tactic intro;
 	   tclCOMPLETE (wrap 1 false continue (deepen seq))];

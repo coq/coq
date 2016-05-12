@@ -271,25 +271,45 @@ let replacing_dependency_msg env sigma id = function
 let error_replacing_dependency env sigma id err =
   errorlabstrm "" (replacing_dependency_msg env sigma id err)
 
-let thin l gl =
-  try Tacmach.thin l gl
-  with Evarutil.ClearDependencyError (id,err) ->
-    error_clear_dependency (pf_env gl) (project gl) id err
+(* This tactic enables the user to remove hypotheses from the signature.
+ * Some care is taken to prevent him from removing variables that are
+ * subsequently used in other hypotheses or in the conclusion of the
+ * goal. *)
 
-let thin_for_replacing l gl =
-  try Tacmach.thin l gl
-  with Evarutil.ClearDependencyError (id,err) ->
-    error_replacing_dependency (pf_env gl) (project gl) id err
+let clear_gen fail = function
+| [] -> Proofview.tclUNIT ()
+| ids ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+    let ids = List.fold_right Id.Set.add ids Id.Set.empty in
+    (** clear_hyps_in_evi does not require nf terms *)
+    let gl = Proofview.Goal.assume gl in
+    let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.New.project gl in
+    let concl = Proofview.Goal.concl gl in
+    let evdref = ref sigma in
+    let (hyps, concl) =
+      try clear_hyps_in_evi env evdref (named_context_val env) concl ids
+      with Evarutil.ClearDependencyError (id,err) -> fail env sigma id err
+    in
+    let env = reset_with_named_context hyps env in
+    let tac = Refine.refine ~unsafe:true { run = fun sigma ->
+      Evarutil.new_evar env sigma ~principal:true concl
+    } in
+    Sigma.Unsafe.of_pair (tac, !evdref)
+  end }
+
+let clear ids = clear_gen error_clear_dependency ids
+let clear_for_replacing ids = clear_gen error_replacing_dependency ids
 
 let apply_clear_request clear_flag dft c =
   let check_isvar c =
     if not (isVar c) then
       error "keep/clear modifiers apply only to hypothesis names." in
-  let clear = match clear_flag with
+  let doclear = match clear_flag with
     | None -> dft && isVar c
     | Some true -> check_isvar c; true
     | Some false -> false in
-  if clear then Proofview.V82.tactic (thin [destVar c])
+  if doclear then clear [destVar c]
   else Tacticals.New.tclIDTAC
 
 (* Moving hypotheses *)
@@ -890,7 +910,7 @@ let intro_replacing id =
   Proofview.Goal.enter { enter = begin fun gl ->
   let next_hyp = get_next_hyp_position id gl in
   Tacticals.New.tclTHENLIST [
-    Proofview.V82.tactic (thin_for_replacing [id]);
+    clear_for_replacing [id];
     introduction id;
     Proofview.V82.tactic (move_hyp id next_hyp);
   ]
@@ -910,7 +930,7 @@ let intros_possibly_replacing ids =
     let posl = List.map (fun id -> (id, get_next_hyp_position id gl)) ids in
     Tacticals.New.tclTHEN
       (Tacticals.New.tclMAP (fun id -> 
-	Tacticals.New.tclTRY (Proofview.V82.tactic (thin_for_replacing [id])))
+	Tacticals.New.tclTRY (clear_for_replacing [id]))
 	 (if suboptimal then ids else List.rev ids))
       (Tacticals.New.tclMAP (fun (id,pos) ->
         Tacticals.New.tclORELSE (intro_move (Some id) pos) (intro_using id))
@@ -922,7 +942,7 @@ let intros_replacing ids =
   Proofview.Goal.enter { enter = begin fun gl ->
     let posl = List.map (fun id -> (id, get_next_hyp_position id gl)) ids in
     Tacticals.New.tclTHEN
-      (Proofview.V82.tactic (thin_for_replacing ids))
+      (clear_for_replacing ids)
       (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
   end }
 
@@ -1563,7 +1583,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
               (fun b id ->
                 Tacticals.New.tclTHEN
                   (try_main_apply b (mkVar id))
-                  (Proofview.V82.tactic (thin [id])))
+                  (clear [id]))
               (exn0, info) c
           else
             Proofview.tclZERO ~info exn0 in
@@ -1690,7 +1710,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
         (fun id ->
           Tacticals.New.tclTHENLIST [
             apply_clear_request clear_flag false c;
-            Proofview.V82.tactic (thin idstoclear);
+            clear idstoclear;
             tac id
           ])
     with e when with_destruct && Errors.noncritical e ->
@@ -1823,14 +1843,6 @@ let assumption =
 (*          Modification of a local context                      *)
 (*****************************************************************)
 
-(* This tactic enables the user to remove hypotheses from the signature.
- * Some care is taken to prevent him from removing variables that are
- * subsequently used in other hypotheses or in the conclusion of the
- * goal. *)
-
-let clear ids = (* avant seul dyn_clear n'echouait pas en [] *)
-  if List.is_empty ids then tclIDTAC else thin ids
-
 let on_the_bodies = function
 | [] -> assert false
 | [id] -> str " depends on the body of " ++ pr_id id
@@ -1912,13 +1924,7 @@ let clear_body ids =
   end }
 
 let clear_wildcards ids =
-  Proofview.V82.tactic (tclMAP (fun (loc,id) gl ->
-    try with_check (Tacmach.thin_no_check [id]) gl
-    with ClearDependencyError (id,err) ->
-      (* Intercept standard [thin] error message *)
-      Loc.raise loc
-        (error_clear_dependency (pf_env gl) (project gl) (Id.of_string "_") err))
-    ids)
+  Tacticals.New.tclMAP (fun (loc, id) -> clear [id]) ids
 
 (*   Takes a list of booleans, and introduces all the variables
  *  quantified in the goal which are associated with a value
@@ -1929,7 +1935,7 @@ let rec intros_clearing = function
   | (false::tl) -> Tacticals.New.tclTHEN intro (intros_clearing tl)
   | (true::tl)  ->
       Tacticals.New.tclTHENLIST
-        [ intro; Tacticals.New.onLastHypId (fun id -> Proofview.V82.tactic (clear [id])); intros_clearing tl]
+        [ intro; Tacticals.New.onLastHypId (fun id -> clear [id]); intros_clearing tl]
 
 (* Keeping only a few hypotheses *)
 
@@ -1948,7 +1954,7 @@ let keep hyps =
       else (hyp::clear,keep))
       ~init:([],[]) (Proofview.Goal.env gl)
   in
-  Proofview.V82.tactic (fun gl -> thin cl gl)
+  clear cl
   end }
 
 (*********************************)
@@ -1995,7 +2001,7 @@ let revert hyps =
   Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
     let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
-      (bring_hyps ctx) <*> (Proofview.V82.tactic (clear hyps))
+      (bring_hyps ctx) <*> (clear hyps)
   end }
 
 (************************)
@@ -2137,7 +2143,7 @@ let intro_or_and_pattern loc bracketed ll thin tac id =
   let ll = fix_empty_or_and_pattern (Array.length branchsigns) ll in
   let ll = get_and_check_or_and_pattern loc ll branchsigns in
   Tacticals.New.tclTHENLASTn
-    (Tacticals.New.tclTHEN (simplest_case c) (Proofview.V82.tactic (clear [id])))
+    (Tacticals.New.tclTHEN (simplest_case c) (clear [id]))
     (Array.map2 (fun n l -> tac thin (Some (bracketed,n)) l)
        nv_with_let ll)
   end }
@@ -2164,20 +2170,20 @@ let rewrite_hyp_then assert_style thin l2r id tac =
           let id' = destVar rhs in
           subst_on l2r id' lhs, early_clear id' thin
         else
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id])),
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (clear [id]),
           thin
     | Some (hdcncl,[c]) ->
         let l2r = not l2r in (* equality of the form eq_true *)
         if isVar c then
           let id' = destVar c in
           Tacticals.New.tclTHEN (rew_on l2r allHypsAndConcl) 
-	    (Proofview.V82.tactic (clear_var_and_eq id')),
+	    (clear_var_and_eq id'),
           early_clear id' thin
         else
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id])),
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (clear [id]),
           thin
     | _ ->
-        Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id])),
+        Tacticals.New.tclTHEN (rew_on l2r onConcl) (clear [id]),
         thin in
     (* Skip the side conditions of the rewriting step *)
     Tacticals.New.tclTHENFIRST eqtac (tac thin)
@@ -2314,7 +2320,7 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
         if naming = NamingMustBe (loc,id) then
           Proofview.tclUNIT () (* apply_in_once do a replacement *)
         else
-          Proofview.V82.tactic (clear [id]) in
+          clear [id] in
       let f = { delayed = fun env sigma ->
         let Sigma (c, sigma, p) = f.delayed env sigma in
         Sigma ((c, NoBindings), sigma, p)
@@ -2653,7 +2659,7 @@ let generalize_dep ?(with_let=false) c gl =
   tclTHENLIST
     [tclEVARS evd;
      Proofview.V82.of_tactic (apply_type cl'' (if Option.is_empty body then c::args else args));
-     thin (List.rev tothin')]
+     Proofview.V82.of_tactic (clear (List.rev tothin'))]
     gl
 
 (**  *)
@@ -2789,7 +2795,7 @@ let unfold_body x =
   end }
 
 (* Either unfold and clear if defined or simply clear if not a definition *)
-let expand_hyp id = Tacticals.New.tclTHEN (Tacticals.New.tclTRY (unfold_body id)) (Proofview.V82.tactic (clear [id]))
+let expand_hyp id = Tacticals.New.tclTRY (unfold_body id) <*> clear [id]
 
 (*****************************)
 (* High-level induction      *)
@@ -3523,7 +3529,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
 		 Proofview.V82.tactic (generalize_dep ~with_let:true (mkVar oldid))]
             else Tacticals.New.tclTHENLIST [
                     tac;
-		    Proofview.V82.tactic (clear [id]);
+		    clear [id];
 		    Tacticals.New.tclDO n intro]
 	  in
 	    if List.is_empty vars then tac
@@ -3590,7 +3596,7 @@ let specialize_eqs id gl =
 
 let specialize_eqs id gl =
   if
-    (try ignore(clear [id] gl); false
+    (try ignore(Proofview.V82.of_tactic (clear [id]) gl); false
      with e when Errors.noncritical e -> true)
   then
     tclFAIL 0 (str "Specialization not allowed on dependent hypotheses") gl
@@ -4044,7 +4050,7 @@ let clear_unselected_context id inhyps cls gl =
 	  let test id = occur_var_in_decl (pf_env gl) id d in
 	  if List.exists test (id::inhyps) then Some id' else None in
       let ids = List.map_filter to_erase (pf_hyps gl) in
-      thin ids gl
+      Proofview.V82.of_tactic (clear ids) gl
   | None -> tclIDTAC gl
 
 let use_bindings env sigma elim must_be_closed (c,lbind) typ =
@@ -4148,7 +4154,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
         end };
         if with_evars then Proofview.shelve_unifiable else guard_no_unifiable;
         if is_arg_pure_hyp
-        then Tacticals.New.tclTRY (Proofview.V82.tactic (thin [destVar c0]))
+        then Tacticals.New.tclTRY (clear [destVar c0])
         else Proofview.tclUNIT ();
         if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()
       ])

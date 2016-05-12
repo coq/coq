@@ -102,7 +102,7 @@ let assert_ ?by c =
 
 let apply c = Tactics.apply c
 
-let clear id = Proofview.V82.tactic (fun gl -> Tactics.clear [id] gl)
+let clear id = Tactics.clear [id]
 
 let assumption = Tactics.assumption
 

@@ -861,7 +861,7 @@ let vernac_set_used_variables e =
   Proof_global.with_current_proof begin fun _ p ->
     if List.is_empty to_clear then (p, ())
     else
-      let tac = Proofview.V82.tactic (Tactics.clear to_clear) in
+      let tac = Tactics.clear to_clear in
       fst (solve SelectAll None tac p), ()
   end
 

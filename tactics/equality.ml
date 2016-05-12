@@ -79,8 +79,6 @@ let _ =
 
 (* Rewriting tactics *)
 
-let clear ids = Proofview.V82.tactic (clear ids)
-
 let tclNOTSAMEGOAL tac =
   Proofview.V82.tactic (Tacticals.tclNOTSAMEGOAL (Proofview.V82.of_tactic tac))
 

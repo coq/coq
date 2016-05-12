@@ -30,8 +30,6 @@ open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 
-let clear hyps = Proofview.V82.tactic (clear hyps)
-
 let var_occurs_in_pf gl id =
   let env = Proofview.Goal.env gl in
   occur_var env id (Proofview.Goal.concl gl) ||

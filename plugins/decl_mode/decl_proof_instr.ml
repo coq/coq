@@ -34,6 +34,22 @@ open Context.Named.Declaration
 
 (* Strictness option *)
 
+let clear ids { it = goal; sigma } =
+  let ids = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty ids in
+  let env = Goal.V82.env sigma goal in
+  let sign = Goal.V82.hyps sigma goal in
+  let cl = Goal.V82.concl sigma goal in
+  let evdref = ref (Evd.clear_metas sigma) in
+  let (hyps, concl) =
+    try Evarutil.clear_hyps_in_evi env evdref sign cl ids
+    with Evarutil.ClearDependencyError (id, _) ->
+      errorlabstrm "" (str "Cannot clear " ++ pr_id id)
+  in
+  let sigma = !evdref in
+  let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
+  let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
+  { it = [gl]; sigma }
+
 let get_its_info gls = get_info gls.sigma gls.it
 
 let get_strictness,set_strictness =
