@@ -184,8 +184,7 @@ type inference_flags = {
 }
 
 let frozen_holes (sigma, sigma') =
-  let fold evk _ accu = Evar.Set.add evk accu in
-  Evd.fold_undefined fold sigma Evar.Set.empty
+  (); fun ev -> Evar.Map.mem ev (Evd.undefined_map sigma)
 
 let pending_holes (sigma, sigma') =
   let fold evk _ accu =
@@ -194,7 +193,7 @@ let pending_holes (sigma, sigma') =
   Evd.fold_undefined fold sigma' Evar.Set.empty
 
 let apply_typeclasses env evdref frozen fail_evar =
-  let filter_frozen evk = Evar.Set.mem evk frozen in
+  let filter_frozen = frozen in
   evdref := Typeclasses.resolve_typeclasses
      ~filter:(if Flags.is_program_mode () 
 	      then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && not (filter_frozen evk))
