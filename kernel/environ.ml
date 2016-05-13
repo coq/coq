@@ -328,6 +328,9 @@ let polymorphic_pconstant (cst,u) env =
   if Univ.Instance.is_empty u then false
   else polymorphic_constant cst env
 
+let type_in_type_constant cst env =
+  not (lookup_constant cst env).const_typing_flags.check_universes
+
 let template_polymorphic_constant cst env =
   match (lookup_constant cst env).const_type with 
   | TemplateArity _ -> true
@@ -356,6 +359,9 @@ let polymorphic_ind (mind,i) env =
 let polymorphic_pind (ind,u) env =
   if Univ.Instance.is_empty u then false
   else polymorphic_ind ind env
+
+let type_in_type_ind (mind,i) env =
+  (lookup_mind mind env).mind_unsafe_universes
 
 let template_polymorphic_ind (mind,i) env =
   match (lookup_mind mind env).mind_packets.(i).mind_arity with 

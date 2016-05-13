@@ -73,6 +73,7 @@ type constant_universes = Univ.universe_context
 type typing_flags = {
   check_guarded : bool; (** If [false] then fixed points and co-fixed
                             points are assumed to be total. *)
+  check_universes : bool; (** If [false] universe constraints are not checked *)
 }
 
 (* some contraints are in constant_constraints, some other may be in
@@ -192,6 +193,9 @@ type mutual_inductive_body = {
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
   
     mind_checked_positive : bool; (** [false] when the mutual-inductive was assumed to be well-founded, bypassing the positivity checker.  *)
+
+    mind_unsafe_universes : bool; (** generated with the type-in-type flag *)
+
 }
 
 (** {6 Module declarations } *)

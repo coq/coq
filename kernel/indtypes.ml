@@ -923,6 +923,7 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
       mind_universes = ctx;
       mind_private = prv;
       mind_checked_positive = is_checked;
+      mind_unsafe_universes = type_in_type env;
     }
 
 (************************************************************************)

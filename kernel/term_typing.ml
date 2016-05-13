@@ -269,6 +269,7 @@ let suggest_proof_using = ref (fun _ _ _ _ _ -> "")
 let set_suggest_proof_using f = suggest_proof_using := f
 
 let build_constant_declaration ~flags kn env (def,typ,proj,poly,univs,inline_code,ctx) =
+  let flags = { flags with check_universes = flags.check_universes && not (type_in_type env) } in
   let open Context.Named.Declaration in
   let check declared inferred =
     let mk_set l = List.fold_right Id.Set.add (List.map get_id l) Id.Set.empty in

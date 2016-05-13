@@ -244,6 +244,14 @@ let is_template_polymorphic r =
   | IndRef ind -> Environ.template_polymorphic_ind ind env
   | ConstructRef cstr -> Environ.template_polymorphic_ind (inductive_of_constructor cstr) env
 
+let is_type_in_type r =
+  let env = env() in
+  match r with
+  | VarRef id -> false
+  | ConstRef c -> Environ.type_in_type_constant c env
+  | IndRef ind -> Environ.type_in_type_ind ind env
+  | ConstructRef cstr -> Environ.type_in_type_ind (inductive_of_constructor cstr) env
+
 let current_dirpath () = 
   Safe_typing.current_dirpath (safe_env ())
 

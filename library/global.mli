@@ -116,6 +116,7 @@ val is_joined_environment : unit -> bool
 
 val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool
+val is_type_in_type : Globnames.global_reference -> bool
 
 val type_of_global_in_context : Environ.env -> 
   Globnames.global_reference -> Constr.types Univ.in_universe_context
