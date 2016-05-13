@@ -57,12 +57,8 @@ module Dyn = Dyn.Make(struct end)
 type t = Dyn.t
 type 'a key = 'a Dyn.tag
 let create = Dyn.create
-let inj x k = Dyn.Dyn (k, x)
-let prj : type a. t -> a key -> a option = fun dyn k ->
-  let Dyn.Dyn (k', x) = dyn in
-  match Dyn.eq k k' with
-  | None -> None
-  | Some CSig.Refl -> Some x
+let inj = Dyn.Easy.inj
+let prj = Dyn.Easy.prj
 
 end
 

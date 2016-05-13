@@ -6,7 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Dynamics. Use with extreme care. Not for kids. *)
+(** Dynamically typed values *)
+
 module type TParam =
 sig
   type 'a t
@@ -45,6 +46,16 @@ sig
 end
 
 val dump : unit -> (int * string) list
+
+module Easy : sig
+
+  (* To create a dynamic type on the fly *)
+  val make_dyn : string -> ('a -> t) * (t -> 'a)
+
+  (* For types declared with the [create] function above *)
+  val inj : 'a -> 'a tag -> t
+  val prj : t -> 'a tag -> 'a option
+end
 
 end
 

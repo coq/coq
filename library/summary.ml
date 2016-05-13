@@ -22,19 +22,8 @@ let summaries = ref Int.Map.empty
 
 let mangle id = id ^ "-SUMMARY"
 
-let make_dyn (type a) (tag : a Dyn.tag) =
-  let infun x = Dyn.Dyn (tag, x) in
-  let outfun : (Dyn.t -> a) = fun dyn ->
-    let Dyn.Dyn (t, x) = dyn in
-    match Dyn.eq t tag with
-    | None -> assert false
-    | Some Refl -> x
-  in
-  (infun, outfun)
-
 let internal_declare_summary hash sumname sdecl =
-  let tag = Dyn.create (mangle sumname) in
-  let (infun, outfun) = make_dyn tag in
+  let (infun, outfun) = Dyn.Easy.make_dyn (mangle sumname) in
   let dyn_freeze b = infun (sdecl.freeze_function b)
   and dyn_unfreeze sum = sdecl.unfreeze_function (outfun sum)
   and dyn_init = sdecl.init_function in

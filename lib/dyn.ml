@@ -11,7 +11,7 @@ sig
   type 'a t
 end
 
-module type S =
+module type PreS =
 sig
 type 'a tag
 type t = Dyn : 'a tag * 'a -> t
@@ -44,10 +44,23 @@ sig
 end
 
 val dump : unit -> (int * string) list
+
 end
 
-module Make(M : CSig.EmptyS) =
-struct
+module type S =
+sig
+  include PreS
+
+  module Easy : sig
+    val make_dyn : string -> ('a -> t) * (t -> 'a)
+    val inj : 'a -> 'a tag -> t
+    val prj : t -> 'a tag -> 'a option
+  end
+
+end
+
+module Make(M : CSig.EmptyS) = struct
+module Self : PreS = struct
 (* Dynamics, programmed with DANGER !!! *)
 
 type 'a tag = int
@@ -108,3 +121,28 @@ let fold f m accu = Int.Map.fold (fun k v accu -> f (Any (k, v)) accu) m accu
 end
 
 end
+include Self
+
+module Easy = struct
+(* now tags are opaque, we can do the trick *)
+let make_dyn (s : string) =
+ (fun (type a) (tag : a tag) ->
+  let infun : (a -> t) = fun x -> Dyn (tag, x) in
+  let outfun : (t -> a) = fun (Dyn (t, x)) ->
+    match eq tag t with
+    | None -> assert false
+    | Some CSig.Refl -> x
+  in
+  (infun, outfun))
+ (create s)
+
+let inj x tag = Dyn(tag,x)
+let prj : type a. t -> a tag -> a option =
+    fun (Dyn(tag',x)) tag ->
+    match eq tag tag' with
+    | None -> None
+    | Some CSig.Refl -> Some x
+end
+
+end
+

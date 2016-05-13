@@ -78,20 +78,9 @@ let object_tag (Dyn.Dyn (t, _)) = Dyn.repr t
 let cache_tab =
   (Hashtbl.create 17 : (string,dynamic_object_declaration) Hashtbl.t)
 
-let make_dyn (type a) (tag : a Dyn.tag) =
-  let infun x = Dyn.Dyn (tag, x) in
-  let outfun : (Dyn.t -> a) = fun dyn ->
-    let Dyn.Dyn (t, x) = dyn in
-    match Dyn.eq t tag with
-    | None -> assert false
-    | Some Refl -> x
-  in
-  (infun, outfun)
-
 let declare_object_full odecl =
   let na = odecl.object_name in
-  let tag = Dyn.create na in
-  let (infun, outfun) = make_dyn tag in
+  let (infun, outfun) = Dyn.Easy.make_dyn na in
   let cacher (oname,lobj) = odecl.cache_function (oname,outfun lobj)
   and loader i (oname,lobj) = odecl.load_function i (oname,outfun lobj)
   and opener i (oname,lobj) = odecl.open_function i (oname,outfun lobj)
