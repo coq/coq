@@ -76,8 +76,14 @@ let interactive () =
 
 let async_proofs_workers_extra_env = ref [||]
 
-type ast = { verbose : bool; loc : Loc.t; mutable expr : vernac_expr }
-let pr_ast { expr } = pr_vernac expr
+type aast = {
+  verbose : bool;
+  loc : Loc.t;
+  indentation : int;
+  strlen : int;
+  mutable expr : vernac_expr; (* mutable: Proof using hinted by aux file *)
+}
+let pr_ast { expr; indentation } = int indentation ++ str " " ++ pr_vernac expr
 
 let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
 
@@ -114,17 +120,31 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
-let vernac_parse ?newtip ?route eid s =
+let indentation_of_string s =
+  let len = String.length s in
+  let rec aux n i precise =
+    if i >= len then 0, precise, len
+    else
+      match s.[i] with
+      | ' ' | '\t' -> aux (succ n) (succ i) precise
+      | '\n' | '\r' -> aux 0 (succ i) true
+      | _ -> n, precise, len in
+  aux 0 0 false
+
+let vernac_parse ?(indlen_prev=fun() -> 0) ?newtip ?route eid s =
   let feedback_id = 
     if Option.is_empty newtip then Edit eid
     else State (Option.get newtip) in
+  let indentation, precise, strlen = indentation_of_string s in
+  let indentation =
+    if precise then indentation else indlen_prev () + indentation in
   set_id_for_feedback ?route feedback_id;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   Flags.with_option Flags.we_are_parsing (fun () ->
     try
       match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
       | None -> raise (Invalid_argument "vernac_parse")
-      | Some ast -> ast
+      | Some (loc, ast) -> indentation, strlen, loc, ast
     with e when Errors.noncritical e ->
       let (e, info) = Errors.push e in
       let loc = Option.default Loc.ghost (Loc.get_loc info) in
@@ -153,19 +173,22 @@ type branch_type =
 type cmd_t = {
   ctac : bool; (* is a tactic, needed by the 8.4 semantics of Undo *)
   ceff : bool; (* is a side-effecting command in the middle of a proof *)
-  cast : ast;
+  cast : aast;
   cids : Id.t list;
-  cqueue : [ `MainQueue | `TacQueue of cancel_switch | `QueryQueue of cancel_switch | `SkipQueue ] }
-type fork_t = ast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Id.t list
+  cqueue : [ `MainQueue
+           | `TacQueue of cancel_switch
+           | `QueryQueue of cancel_switch
+           | `SkipQueue ] }
+type fork_t = aast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Id.t list
 type qed_t = {
-  qast : ast;
+  qast : aast;
   keep : vernac_qed_type;
   mutable fproof : (future_proof * cancel_switch) option;
   brname : Vcs_.Branch.t;
   brinfo : branch_type Vcs_.branch_info
 }
-type seff_t = ast option
-type alias_t = Stateid.t * ast
+type seff_t = aast option
+type alias_t = Stateid.t * aast
 type transaction =
   | Cmd    of cmd_t
   | Fork   of fork_t
@@ -177,7 +200,7 @@ type step =
   [ `Cmd    of cmd_t
   | `Fork   of fork_t * Stateid.t option
   | `Qed    of qed_t * Stateid.t
-  | `Sideff of [ `Ast of ast * Stateid.t | `Id of Stateid.t ]
+  | `Sideff of [ `Ast of aast * Stateid.t | `Id of Stateid.t ]
   | `Alias  of alias_t ]
 type visit = { step : step; next : Stateid.t }
 
@@ -186,15 +209,15 @@ type visit = { step : step; next : Stateid.t }
 let summary_pstate = [ Evarutil.meta_counter_summary_name;
                        Evd.evar_counter_summary_name;
                        "program-tcc-table" ]
-type state = {
-  system : States.state;       (* summary + libstack *)
-  proof : Proof_global.state;  (* proof state *)
-  shallow : bool               (* is the state trimmed down (libstack) *)
-}
 type cached_state =
   | Empty
   | Error of Exninfo.iexn
   | Valid of state
+and state = { (* TODO: inline records in OCaml 4.03 *)
+  system : States.state;       (* summary + libstack *)
+  proof : Proof_global.state;  (* proof state *)
+  shallow : bool               (* is the state trimmed down (libstack) *)
+}
 type branch = Vcs_.Branch.t * branch_type Vcs_.branch_info
 type backup = { mine : branch; others : branch list }
 type 'vcs state_info = { (* TODO: Make this record private to VCS *)
@@ -305,7 +328,7 @@ module VCS : sig
   val rewrite_merge : id -> ours:transaction -> at:id -> Branch.t -> unit
   val delete_branch : Branch.t -> unit
   val commit : id -> transaction -> unit
-  val mk_branch_name : ast -> Branch.t
+  val mk_branch_name : aast -> Branch.t
   val edit_branch : Branch.t
   val branch : ?root:id -> ?pos:id -> Branch.t -> branch_type -> unit
   val reset_branch : Branch.t -> id -> unit
@@ -330,7 +353,7 @@ module VCS : sig
 
   val proof_nesting : unit -> int
   val checkout_shallowest_proof_branch : unit -> unit
-  val propagate_sideff : replay:ast option -> unit
+  val propagate_sideff : replay:aast option -> unit
 
   val gc : unit -> unit
 
@@ -1199,7 +1222,7 @@ end = struct (* {{{ *)
             Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
           vernac_interp stop
             ~proof:(pobject, terminator)
-            { verbose = false; loc;
+            { verbose = false; loc; indentation = 0; strlen = 0;
               expr = (VernacEndProof (Proved (Opaque None,None))) }) in
         ignore(Future.join checked_proof);
       end;
@@ -1340,7 +1363,7 @@ end = struct (* {{{ *)
        * looking at the ones that happen to be present in the current env *)
       Reach.known_state ~cache:`No start;
       vernac_interp stop ~proof
-        { verbose = false; loc;
+        { verbose = false; loc; indentation = 0; strlen = 0;
           expr = (VernacEndProof (Proved (Opaque None,None))) };
       `OK proof
       end
@@ -1493,7 +1516,7 @@ and TacTask : sig
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
     t_assign   : output Future.assignement -> unit;
-    t_ast      : int * ast;
+    t_ast      : int * aast;
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;
     t_name     : string }  
@@ -1510,7 +1533,7 @@ end = struct (* {{{ *)
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
     t_assign   : output Future.assignement -> unit;
-    t_ast      : int * ast;
+    t_ast      : int * aast;
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;
     t_name     : string }  
@@ -1519,7 +1542,7 @@ end = struct (* {{{ *)
     r_state    : Stateid.t;
     r_state_fb : Stateid.t;
     r_document : VCS.vcs option;
-    r_ast      : int * ast;
+    r_ast      : int * aast;
     r_goal     : Goal.goal;
     r_name     : string }
 
@@ -1605,13 +1628,15 @@ end (* }}} *)
 and Partac : sig
 
   val vernac_interp :
-    cancel_switch -> int -> Stateid.t -> Stateid.t -> ast -> unit
+    cancel_switch -> int -> Stateid.t -> Stateid.t -> aast -> unit
 
 end = struct (* {{{ *)
     
   module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask)
 
-  let vernac_interp cancel nworkers safe_id id { verbose; loc; expr = e } =
+  let vernac_interp cancel nworkers safe_id id
+    { indentation; verbose; loc; expr = e; strlen }
+  =
     let e, time, fail =
       let rec find time fail = function
         | VernacTime (_,e) | VernacRedirect (_,(_,e)) -> find true fail e
@@ -1628,7 +1653,7 @@ end = struct (* {{{ *)
           Future.create_delegate
             ~name:(Printf.sprintf "subgoal %d" i)
             (State.exn_on id ~valid:safe_id) in
-        let t_ast = (i, { verbose; loc; expr = e }) in
+        let t_ast = (i, { indentation; verbose; loc; expr = e; strlen }) in
         let t_name = Goal.uid g in
         TaskQueue.enqueue_task queue
           ({ t_state = safe_id; t_state_fb = id;
@@ -1662,16 +1687,16 @@ end (* }}} *)
 
 and QueryTask : sig
 
-  type task = { t_where : Stateid.t; t_for : Stateid.t ; t_what : ast }
+  type task = { t_where : Stateid.t; t_for : Stateid.t ; t_what : aast }
   include AsyncTaskQueue.Task with type task := task
 
 end = struct (* {{{ *)
   
   type task =
-    { t_where : Stateid.t; t_for : Stateid.t ; t_what : ast }
+    { t_where : Stateid.t; t_for : Stateid.t ; t_what : aast }
   
   type request =
-    { r_where : Stateid.t ; r_for : Stateid.t ; r_what : ast; r_doc : VCS.vcs }
+    { r_where : Stateid.t ; r_for : Stateid.t ; r_what : aast; r_doc : VCS.vcs }
   type response = unit
 
   let name = ref "queryworker"
@@ -1717,7 +1742,7 @@ end (* }}} *)
 and Query : sig 
 
   val init : unit -> unit
-  val vernac_interp : cancel_switch -> Stateid.t ->  Stateid.t -> ast -> unit
+  val vernac_interp : cancel_switch -> Stateid.t ->  Stateid.t -> aast -> unit
 
 end = struct (* {{{ *)
 
@@ -2194,10 +2219,11 @@ let snapshot_vio ldir long_f_dot_v =
 let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
-let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
+let process_transaction ?(newtip=Stateid.fresh ()) ~tty
+  ({ verbose; loc; expr } as x) c
+ =
   let warn_if_pos a b =
     if b then msg_warning(pr_ast a ++ str" should not be part of a script") in
-  let v, x = expr, { verbose = verbose; loc; expr } in
   prerr_endline (fun () -> "{{{ processing: "^ string_of_ppcmds (pr_ast x));
   let vcs = VCS.backup () in
   try
@@ -2252,7 +2278,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtQuery (false,(report_id,route)), VtNow when tty = true ->
           finish ();
           (try Future.purify (vernac_interp report_id ~route)
-                  { verbose = true; loc; expr }
+            {x with verbose = true }
            with e when Errors.noncritical e ->
              let e = Errors.push e in
              iraise (State.exn_on report_id e)); `Ok
@@ -2381,11 +2407,11 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           anomaly(str"classifier: VtUnknown must imply VtNow")
     end in
     (* Proof General *)
-    begin match v with 
+    begin match expr with 
       | VernacStm (PGLast _) ->
         if not (VCS.Branch.equal head VCS.Branch.master) then
           vernac_interp Stateid.dummy
-            { verbose = true; loc = Loc.ghost;
+            { verbose = true; loc = Loc.ghost; indentation = 0; strlen = 0;
               expr = VernacShow (ShowGoal OpenSubgoals) }
       | _ -> ()
     end;
@@ -2406,19 +2432,30 @@ let get_ast id =
 
 let stop_worker n = Slaves.cancel_worker n
 
+(* You may need to know the len + indentation of previous command to compute
+ * the indentation of the current one.
+ *  Eg.   foo. bar.
+ * Here bar is indented of the indentation of foo + its strlen (4) *)
+let ind_len_of id =
+  if Stateid.equal id Stateid.initial then 0
+  else match (VCS.visit id).step with
+  | `Cmd { ctac = true; cast = { indentation; strlen } } ->
+       indentation + strlen
+  | _ -> 0
+
 let add ~ontop ?newtip ?(check=ignore) verb eid s =
   let cur_tip = VCS.cur_tip () in
-  if Stateid.equal ontop cur_tip then begin
-    let _, ast as loc_ast = vernac_parse ?newtip eid s in
-    check(loc_ast);
-    let clas = classify_vernac ast in
-    match process_transaction ?newtip ~tty:false verb clas loc_ast with
-    | `Ok -> VCS.cur_tip (), `NewTip
-    | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
-  end else begin
+  if not (Stateid.equal ontop cur_tip) then
     (* For now, arbitrary edits should be announced with edit_at *)
-    anomaly(str"Not yet implemented, the GUI should not try this")
-  end
+    anomaly(str"Not yet implemented, the GUI should not try this");
+  let indentation, strlen, loc, ast =
+    vernac_parse ~indlen_prev:(fun () -> ind_len_of ontop) ?newtip eid s in
+  check(loc,ast);
+  let clas = classify_vernac ast in
+  let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
+  match process_transaction ?newtip ~tty:false aast clas with
+  | `Ok -> VCS.cur_tip (), `NewTip
+  | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
 
 let set_perspective id_list = Slaves.set_perspective id_list
 
@@ -2433,15 +2470,15 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
     let newtip, route = report_with in
-    let _, ast as loc_ast = vernac_parse ~newtip ~route 0 s in
+    let indentation, strlen, loc, ast = vernac_parse ~newtip ~route 0 s in
     let clas = classify_vernac ast in
+    let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
     match clas with
     | VtStm (w,_), _ ->
-       ignore(process_transaction
-         ~tty:false true (VtStm (w,false), VtNow) loc_ast)
+       ignore(process_transaction ~tty:false aast (VtStm (w,false), VtNow))
     | _ ->
        ignore(process_transaction
-         ~tty:false true (VtQuery (false,report_with), VtNow) loc_ast))
+         ~tty:false aast (VtQuery (false,report_with), VtNow)))
   s
 
 let edit_at id =
@@ -2573,9 +2610,10 @@ let restore d = VCS.restore d
 (*********************** TTY API (PG, coqtop, coqc) ***************************)
 (******************************************************************************)
 
-let interp verb (_,e as lexpr) =
+let interp verb (loc,e) =
   let clas = classify_vernac e in
-  let rc = process_transaction ~tty:true verb clas lexpr in
+  let aast = { verbose = verb; indentation = 0; strlen = 0; loc; expr = e } in
+  let rc = process_transaction ~tty:true aast clas in
   if rc <> `Ok then anomaly(str"tty loop can't be mixed with the STM protocol");
   if interactive () = `Yes ||
      (!Flags.async_proofs_mode = Flags.APoff &&
