@@ -389,9 +389,12 @@ let pretype_id pretype k0 loc env evdref lvar id =
     with Not_found ->
         (* Check if [id] is a ltac variable not bound to a term *)
 	(* and build a nice error message *)
-      if Id.Map.mem id lvar.ltac_genargs then
+      if Id.Map.mem id lvar.ltac_genargs then begin
+        let Geninterp.Val.Dyn (typ, _) = Id.Map.find id lvar.ltac_genargs in
 	user_err_loc (loc,"",
-          str "Variable " ++ pr_id id ++ str " should be bound to a term.");
+          str "Variable " ++ pr_id id ++ str " should be bound to a term but is \
+          bound to a " ++ Geninterp.Val.pr typ ++ str ".")
+      end;
       (* Check if [id] is a section or goal variable *)
       try
 	  { uj_val  = mkVar id; uj_type = (get_type (lookup_named id env)) }
