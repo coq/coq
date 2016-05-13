@@ -293,7 +293,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
           let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (Guarded kn, l)) Constr.mkProp accu
       in
-    if not (Declareops.constant_has_body cb) then
+    if not (Declareops.constant_has_body cb) || not cb.const_typing_flags.check_universes then
       let t = type_of_constant cb in
       let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
       ContextObjectMap.add (Axiom (Constant kn,l)) t accu
