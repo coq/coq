@@ -423,7 +423,7 @@ let intern_hyp_location ist ((occs,id),hl) =
 (* Reads a pattern *)
 let intern_pattern ist ?(as_type=false) ltacvars = function
   | Subterm (b,ido,pc) ->
-      let (metas,pc) = intern_constr_pattern ist ~as_type ~ltacvars pc in
+      let (metas,pc) = intern_constr_pattern ist ~as_type:false ~ltacvars pc in
       ido, metas, Subterm (b,ido,pc)
   | Term pc ->
       let (metas,pc) = intern_constr_pattern ist ~as_type ~ltacvars pc in
@@ -445,7 +445,7 @@ let opt_cons accu = function
 | Some id -> Id.Set.add id accu
 
 (* Reads the hypotheses of a "match goal" rule *)
-let rec intern_match_goal_hyps ist lfun = function
+let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
   | (Hyp ((_,na) as locna,mp))::tl ->
       let ido, metas1, pat = intern_pattern ist ~as_type:true lfun mp in
       let lfun, metas2, hyps = intern_match_goal_hyps ist lfun tl in
@@ -454,7 +454,7 @@ let rec intern_match_goal_hyps ist lfun = function
   | (Def ((_,na) as locna,mv,mp))::tl ->
       let ido, metas1, patv = intern_pattern ist ~as_type:false lfun mv in
       let ido', metas2, patt = intern_pattern ist ~as_type:true lfun mp in
-      let lfun, metas3, hyps = intern_match_goal_hyps ist lfun tl in
+      let lfun, metas3, hyps = intern_match_goal_hyps ist ~as_type lfun tl in
       let lfun' = name_cons (opt_cons (opt_cons lfun ido) ido') na in
       lfun', metas1@metas2@metas3, Def (locna,patv,patt)::hyps
   | [] -> lfun, [], []
@@ -600,7 +600,7 @@ and intern_tactic_seq onlytac ist = function
       ist.ltacvars, TacLetIn (isrec,l,intern_tactic onlytac ist' u)
 
   | TacMatchGoal (lz,lr,lmr) ->
-      ist.ltacvars, TacMatchGoal(lz,lr, intern_match_rule onlytac ist lmr)
+      ist.ltacvars, TacMatchGoal(lz,lr, intern_match_rule onlytac ist ~as_type:true lmr)
   | TacMatch (lz,c,lmr) ->
       ist.ltacvars,
       TacMatch (lz,intern_tactic_or_tacarg ist c,intern_match_rule onlytac ist lmr)
@@ -718,18 +718,18 @@ and intern_tacarg strict onlytac ist = function
       anomaly ~loc (str "Unknown dynamic: <" ++ str tag ++ str ">")
 
 (* Reads the rules of a Match Context or a Match *)
-and intern_match_rule onlytac ist = function
+and intern_match_rule onlytac ist ?(as_type=false) = function
   | (All tc)::tl ->
-      All (intern_tactic onlytac ist tc) :: (intern_match_rule onlytac ist tl)
+      All (intern_tactic onlytac ist tc) :: (intern_match_rule onlytac ist ~as_type tl)
   | (Pat (rl,mp,tc))::tl ->
       let {ltacvars=lfun; genv=env} = ist in
-      let lfun',metas1,hyps = intern_match_goal_hyps ist lfun rl in
-      let ido,metas2,pat = intern_pattern ist lfun mp in
+      let lfun',metas1,hyps = intern_match_goal_hyps ist ~as_type lfun rl in
+      let ido,metas2,pat = intern_pattern ist ~as_type lfun mp in
       let fold accu x = Id.Set.add x accu in
       let ltacvars = List.fold_left fold (opt_cons lfun' ido) metas1 in
       let ltacvars = List.fold_left fold ltacvars metas2 in
       let ist' = { ist with ltacvars } in
-      Pat (hyps,pat,intern_tactic onlytac ist' tc) :: (intern_match_rule onlytac ist tl)
+      Pat (hyps,pat,intern_tactic onlytac ist' tc) :: (intern_match_rule onlytac ist ~as_type tl)
   | [] -> []
 
 and intern_genarg ist x =
