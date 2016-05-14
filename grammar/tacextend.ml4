@@ -18,6 +18,11 @@ let dloc = <:expr< Loc.ghost >>
 
 let plugin_name = <:expr< __coq_plugin_name >>
 
+let mlexpr_of_ident id =
+  (** Workaround for badly-designed generic arguments lacking a closure *)
+  let id = "$" ^ id in
+  <:expr< Names.Id.of_string_soft $str:id$ >>
+
 let rec make_patt = function
   | [] -> <:patt< [] >>
   | ExtNonTerminal (_, p) :: l ->
