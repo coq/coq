@@ -8,32 +8,32 @@ let tclSET_PROFILING b =
    Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
    set_profiling b))
 
-TACTIC EXTEND start_profiling
-  | [ "start" "profiling" ] -> [ tclSET_PROFILING true  ]
+TACTIC EXTEND start_ltac_profiling
+  | [ "start" "ltac" "profiling" ] -> [ tclSET_PROFILING true  ]
 END
 
 TACTIC EXTEND stop_profiling
-  | [ "stop" "profiling" ] ->  [ tclSET_PROFILING false ]
+  | [ "stop" "ltac" "profiling" ] ->  [ tclSET_PROFILING false ]
 END;;
 
+let _ =
+  Goptions.declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "Ltac Profiling";
+      optkey   = ["Ltac"; "Profiling"];
+      optread  = get_profiling;
+      optwrite = set_profiling }
 
-VERNAC COMMAND EXTEND StartProfiling CLASSIFIED AS SIDEFF
- [ "Start" "Profiling" ] -> [ set_profiling true ]
+VERNAC COMMAND EXTEND ResetLtacProfiling CLASSIFIED AS SIDEFF
+ [ "Reset" "Ltac" "Profile" ] -> [ reset_profile() ]
 END
 
-VERNAC COMMAND EXTEND StopProfiling CLASSIFIED AS SIDEFF
- [ "Stop" "Profiling" ] -> [ set_profiling false ]
- END
-
-VERNAC COMMAND EXTEND ResetProfiling CLASSIFIED AS SIDEFF
- [ "Reset" "Profile" ] -> [ reset_profile() ]
-END
-
-VERNAC COMMAND EXTEND ShowProfile CLASSIFIED AS QUERY
- [ "Show" "Profile" ] -> [ print_results() ]
+VERNAC COMMAND EXTEND ShowLtacProfile CLASSIFIED AS QUERY
+ [ "Show" "Ltac" "Profile" ] -> [ print_results() ]
 END
 
 
-VERNAC COMMAND EXTEND ShowProfileTactic CLASSIFIED AS QUERY
- [ "Show" "Profile" string(s) ] -> [ print_results_tactic s ]
+VERNAC COMMAND EXTEND ShowLtacProfileTactic CLASSIFIED AS QUERY
+ [ "Show" "Ltac" "Profile" string(s) ] -> [ print_results_tactic s ]
 END
