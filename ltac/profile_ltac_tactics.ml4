@@ -19,7 +19,7 @@ END;;
 
 
 VERNAC COMMAND EXTEND StartProfiling CLASSIFIED AS SIDEFF
- [ "Start" "Profiling" ] -> [ reset_profile(); set_profiling true ]
+ [ "Start" "Profiling" ] -> [ set_profiling true ]
 END
 
 VERNAC COMMAND EXTEND StopProfiling CLASSIFIED AS SIDEFF
