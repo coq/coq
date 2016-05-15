@@ -3,7 +3,8 @@ open Printer
 open Util
 
 
-let is_profiling = ref false
+(** [is_profiling] and the profiling info ([stack]) should be synchronized with the document; the rest of the ref cells are either local to individual tactic invocations, or global flags, and need not be synchronized, since no document-level backtracking happens within tactics. *)
+let is_profiling = Summary.ref false ~name:"is-profiling-ltac"
 let set_profiling b = is_profiling := b
 
 let should_display_profile_at_close = ref false
@@ -36,7 +37,21 @@ let add_entry e add_total {total; local; ncalls; max_total} =
   if add_total then e.max_total <- max e.max_total max_total
 
 type treenode = {entry : entry; children : (string, treenode) Hashtbl.t}
-let stack = ref [{entry=empty_entry(); children=Hashtbl.create 20}]
+
+(** Tobias Tebbi wrote some tricky code involving mutation.  Rather than rewriting it in a functional style, we simply freeze the state when we need to by issuing a deep copy of the profiling data. *)
+let deepcopy_entry {total; local; ncalls; max_total} =
+  {total; local; ncalls; max_total}
+
+let rec deepcopy_treenode {entry; children} =
+  {entry = deepcopy_entry entry;
+   children =
+      (let children' = Hashtbl.create (Hashtbl.length children) in
+       Hashtbl.iter
+	 (fun key subtree -> Hashtbl.add children' key (deepcopy_treenode subtree))
+	 children;
+       children')}
+
+let stack = Summary.ref ~freeze:(fun _ -> List.map deepcopy_treenode) [{entry=empty_entry(); children=Hashtbl.create 20}] ~name:"LtacProf-stack"
 
 let on_stack = Hashtbl.create 5
 
