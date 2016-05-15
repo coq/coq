@@ -1197,27 +1197,27 @@ r $n$: & advance $n$ steps further\\
 r {\qstring}: & advance up to the next call to ``{\tt idtac} {\qstring}''\\
 \end{tabular}
 
-\subsection[Profiling {\ltac} tactics]{Profiling {\ltac} tactics\comindex{Start Profiling}\comindex{Stop Profiling}\comindex{Show Profile}\comindex{Reset Profile}}
+\subsection[Profiling {\ltac} tactics]{Profiling {\ltac} tactics\optindex{Ltac Profiling}\comindex{Show Ltac Profile}\comindex{Reset Ltac Profile}}
 
 It is possible to measure the time spent in invocations of primitive tactics as well as tactics defined in {\ltac} and their inner invocations. The primary use is the development of complex tactics, which can sometimes be so slow as to impede interactive usage. The reasons for the performence degradation can be intricate, like a slowly performing {\ltac} match or a sub-tactic whose performance only degrades in certain situations. The profiler generates a call tree and indicates the time spent in a tactic depending its calling context. Thus it allows to locate the part of a tactic definition that contains the performance bug.
 
 \begin{quote}
-{\tt Start Profiling}.
+{\tt Set Ltac Profiling}.
 \end{quote}
 Enables the profiler
 
 \begin{quote}
-{\tt Stop Profiling}.
+{\tt Unset Ltac Profiling}.
 \end{quote}
 Disables the profiler
 
 \begin{quote}
-{\tt Show Profile}.
+{\tt Show Ltac Profile}.
 \end{quote}
 Prints the profile
 
 \begin{quote}
-{\tt Show Profile} {\qstring}.
+{\tt Show Ltac Profile} {\qstring}.
 \end{quote}
 Prints a profile for all tactics that start with {\qstring}. Append a period (.) to the string if you only want exactly that name.
 
@@ -1245,34 +1245,34 @@ Goal forall x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z,
 Proof.
 \end{coq_example*}
 \begin{coq_example}
-  Start Profiling.
+  Set Ltac Profiling.
   tac.
 \end{coq_example}
 {\let\textit\texttt% use tt mode for the output of ltacprof
 \begin{coq_example}
-  Show Profile.
+  Show Ltac Profile.
 \end{coq_example}
 \begin{coq_example}
-  Show Profile "omega".
+  Show Ltac Profile "omega".
 \end{coq_example}
 }
 \begin{coq_example*}
 Abort.
-Stop Profiling.
+Unset Ltac Profiling.
 \end{coq_example*}
 
-\tacindex{start profiling}\tacindex{stop profiling}
+\tacindex{start ltac profiling}\tacindex{stop ltac profiling}
 The following two tactics behave like {\tt idtac} but enable and disable the profiling. They allow you to exclude parts of a proof script from profiling.
 
 \begin{quote}
-{\tt start profiling}.
+{\tt start ltac profiling}.
 \end{quote}
 
 \begin{quote}
-{\tt stop profiling}.
+{\tt stop ltac profiling}.
 \end{quote}
 
-You can also pass the {\tt -profile-ltac} command line option to {\tt coqc}, which performs a {\tt Start Profiling} at the beginning of each document, and a {\tt Show Profile} at the end.
+You can also pass the {\tt -profile-ltac} command line option to {\tt coqc}, which performs a {\tt Set Ltac Profiling} at the beginning of each document, and a {\tt Show Ltac Profile} at the end.
 
 Note that the profiler currently does not handle backtracking into multi-success tactics, and issues a warning to this effect in many cases when such backtracking occurs.
 

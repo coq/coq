@@ -3,9 +3,11 @@ open Printer
 open Util
 
 
-(** [is_profiling] and the profiling info ([stack]) should be synchronized with the document; the rest of the ref cells are either local to individual tactic invocations, or global flags, and need not be synchronized, since no document-level backtracking happens within tactics. *)
-let is_profiling = Summary.ref false ~name:"is-profiling-ltac"
+(** [is_profiling] and the profiling info ([stack]) should be synchronized with the document; the rest of the ref cells are either local to individual tactic invocations, or global flags, and need not be synchronized, since no document-level backtracking happens within tactics.  We synchronize is_profiling via an option. *)
+let is_profiling = ref false
+
 let set_profiling b = is_profiling := b
+let get_profiling () = !is_profiling
 
 let should_display_profile_at_close = ref false
 let set_display_profile_at_close b = should_display_profile_at_close := b
