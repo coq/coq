@@ -58,7 +58,7 @@ let clear_global=function
 (* connection rules *)
 
 let axiom_tac t seq=
-  try pf_constr_of_global (find_left t seq) exact_no_check
+  try pf_constr_of_global (find_left t seq) (fun c -> Proofview.V82.of_tactic (exact_no_check c))
   with Not_found->tclFAIL 0 (Pp.str "No axiom link")
 
 let ll_atom_tac a backtrack id continue seq=
@@ -151,7 +151,7 @@ let ll_arrow_tac a b c backtrack id continue seq=
 	     clear_global id;
 	     wrap 1 false continue seq];
 	  tclTHENS (Proofview.V82.of_tactic (cut cc))
-            [pf_constr_of_global id exact_no_check;
+            [pf_constr_of_global id (fun c -> Proofview.V82.of_tactic (exact_no_check c));
 	     tclTHENLIST
 	       [pf_constr_of_global id (fun idc -> generalize [d idc]);
 		clear_global id;

@@ -316,7 +316,7 @@ let rtauto_tac gls=
     if !check then
       Proofview.V82.of_tactic (Tactics.exact_check term) gls
     else
-      Tactics.exact_no_check term gls in
+      Proofview.V82.of_tactic (Tactics.exact_no_check term) gls in
   let tac_end_time = System.get_time () in
   let _ =
     if !check then msg_info (str "Proof term type-checking is on");

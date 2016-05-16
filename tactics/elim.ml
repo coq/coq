@@ -84,7 +84,7 @@ let general_decompose recognizer c =
          (onLastHypId
 	    (ifOnHyp recognizer (general_decompose_aux recognizer)
 	      (fun id -> clear [id])));
-       Proofview.V82.tactic (exact_no_check c) ]
+       exact_no_check c ]
   end }
 
 let head_in indl t gl =

@@ -1833,7 +1833,7 @@ let cut_and_apply c =
 (* let refine_no_checkkey = Profile.declare_profile "refine_no_check";; *)
 (* let refine_no_check = Profile.profile2 refine_no_checkkey refine_no_check *)
 
-let new_exact_no_check c =
+let exact_no_check c =
   Refine.refine ~unsafe:true { run = fun h -> Sigma.here c h }
 
 let exact_check c =
@@ -1845,12 +1845,10 @@ let exact_check c =
   let sigma = Sigma.to_evar_map sigma in
   let sigma, ct = Typing.type_of env sigma c in
   let tac =
-      Tacticals.New.tclTHEN (convert_leq ct concl) (new_exact_no_check c)
+      Tacticals.New.tclTHEN (convert_leq ct concl) (exact_no_check c)
   in
   Sigma.Unsafe.of_pair (tac, sigma)
   end }
-
-let exact_no_check = Tacmach.refine_no_check
 
 let vm_cast_no_check c gl =
   let concl = Tacmach.pf_concl gl in
@@ -2626,8 +2624,7 @@ let forward b usetac ipat c =
       Proofview.Goal.enter { enter = begin fun gl ->
       let t = Tacmach.New.pf_unsafe_type_of gl c in
       let hd = head_ident c in
-      Tacticals.New.tclTHENFIRST (assert_as true hd ipat t)
-	(Proofview.V82.tactic (exact_no_check c))
+      Tacticals.New.tclTHENFIRST (assert_as true hd ipat t) (exact_no_check c)
       end }
   | Some tac ->
       if b then
@@ -2820,14 +2817,14 @@ let specialize (c,lbind) =
         (Proofview.Unsafe.tclEVARS sigma)
 	(Tacticals.New.tclTHENFIRST
 	   (assert_before_replacing id typ)
-	   (new_exact_no_check term))
+	   (exact_no_check term))
   | _ ->
       (* To deprecate in favor of generalize? *)
       Tacticals.New.tclTHEN
         (Proofview.Unsafe.tclEVARS sigma)
 	(Tacticals.New.tclTHENLAST
            (cut typ)
-           (new_exact_no_check term))
+           (exact_no_check term))
   end }
 
 (*****************************)
@@ -3652,7 +3649,7 @@ let specialize_eqs id gl =
   let ty' = Evarutil.nf_evar !evars ty' in
     if worked then
       tclTHENFIRST (Tacmach.internal_cut true id ty')
-	(exact_no_check ((* refresh_universes_strict *) acc')) gl
+	(Proofview.V82.of_tactic (exact_no_check ((* refresh_universes_strict *) acc'))) gl
     else tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id) gl
 
 
@@ -4798,7 +4795,7 @@ let abstract_subproof id gk tac =
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
     Proofview.tclEFFECTS effs <*>
-    new_exact_no_check (applist (lem, args))
+    exact_no_check (applist (lem, args))
   in
   let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
   Sigma.Unsafe.of_pair (tac, evd)

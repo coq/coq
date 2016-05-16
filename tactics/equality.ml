@@ -1582,7 +1582,7 @@ let substClause l2r c cls =
   Proofview.Goal.enter { enter = begin fun gl ->
   let eq = pf_apply get_type_of gl c in
   tclTHENS (cutSubstClause l2r eq cls)
-    [Proofview.tclUNIT (); Proofview.V82.tactic (exact_no_check c)]
+    [Proofview.tclUNIT (); exact_no_check c]
   end }
 
 let rewriteClause l2r c cls = try_rewrite (substClause l2r c cls)

@@ -164,7 +164,7 @@ let e_give_exact flags poly (c,clenv) gl =
     else c, gl
   in
   let t1 = pf_unsafe_type_of gl c in
-    tclTHEN (Proofview.V82.of_tactic (Clenvtac.unify ~flags t1)) (exact_no_check c) gl
+  Proofview.V82.of_tactic (Clenvtac.unify ~flags t1 <*> exact_no_check c) gl
 
 let unify_e_resolve poly flags = { enter = begin fun gls (c,clenv) ->
   let clenv', c = connect_hint_clenv poly c clenv gls in

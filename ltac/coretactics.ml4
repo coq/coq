@@ -39,7 +39,7 @@ TACTIC EXTEND cut
 END
 
 TACTIC EXTEND exact_no_check
-  [ "exact_no_check" constr(c) ] -> [ Proofview.V82.tactic (Tactics.exact_no_check c) ]
+  [ "exact_no_check" constr(c) ] -> [ Tactics.exact_no_check c ]
 END
 
 TACTIC EXTEND vm_cast_no_check

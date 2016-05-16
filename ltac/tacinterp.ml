@@ -1659,7 +1659,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Trace.name_tactic (fun () -> Pp.str"<exact>") begin
       Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
         let (sigma, c_interp) = pf_interp_casted_constr ist gl c in
-        Sigma.Unsafe.of_pair (Proofview.V82.tactic (Tactics.exact_no_check c_interp), sigma)
+        Sigma.Unsafe.of_pair (Tactics.exact_no_check c_interp, sigma)
       end }
       end
   | TacApply (a,ev,cb,cl) ->

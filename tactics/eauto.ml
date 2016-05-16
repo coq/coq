@@ -33,7 +33,7 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t2 = Tacmach.New.pf_concl gl in
   if occur_existential t1 || occur_existential t2 then
-     Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (Proofview.V82.tactic (exact_no_check c))
+     Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
   else exact_check c
   end }
 
