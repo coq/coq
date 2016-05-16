@@ -3698,13 +3698,12 @@ let specialize_eqs id gl =
     else tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id) gl
 
 
-let specialize_eqs id gl =
-  if
-    (try ignore(Proofview.V82.of_tactic (clear [id]) gl); false
-     with e when Errors.noncritical e -> true)
-  then
-    tclFAIL 0 (str "Specialization not allowed on dependent hypotheses") gl
-  else specialize_eqs id gl
+let specialize_eqs id = Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let msg = str "Specialization not allowed on dependent hypotheses" in
+  Proofview.tclOR (clear [id])
+    (fun _ -> Tacticals.New.tclZEROMSG msg) >>= fun () ->
+    Proofview.V82.tactic (specialize_eqs id)
+end }
 
 let occur_rel n c =
   let res = not (noccurn n c) in

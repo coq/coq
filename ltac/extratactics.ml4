@@ -582,7 +582,7 @@ END
     during dependent induction. For internal use. *)
 
 TACTIC EXTEND specialize_eqs
-[ "specialize_eqs" hyp(id) ] -> [ Proofview.V82.tactic (specialize_eqs id) ]
+[ "specialize_eqs" hyp(id) ] -> [ specialize_eqs id ]
 END
 
 (**********************************************************************)

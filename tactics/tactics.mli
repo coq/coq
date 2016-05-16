@@ -397,7 +397,7 @@ val unify           : ?state:Names.transparent_state -> constr -> constr -> unit
 val tclABSTRACT : Id.t option -> unit Proofview.tactic -> unit Proofview.tactic
 
 val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> Id.t -> unit Proofview.tactic
-val specialize_eqs : Id.t -> tactic
+val specialize_eqs : Id.t -> unit Proofview.tactic
 
 val general_rewrite_clause :
   (bool -> evars_flag -> constr with_bindings -> clause -> unit Proofview.tactic) Hook.t
