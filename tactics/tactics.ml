@@ -1806,9 +1806,16 @@ let native_cast_no_check c gl =
   Tacmach.refine_no_check (Term.mkCast(c,Term.NATIVEcast,concl)) gl
 
 
-let exact_proof c gl =
-  let c,ctx = Constrintern.interp_casted_constr (Tacmach.pf_env gl) (Tacmach.project gl) c (Tacmach.pf_concl gl)
-  in tclTHEN (tclEVARUNIVCONTEXT ctx) (Tacmach.refine_no_check c) gl
+let exact_proof c =
+  let open Tacmach.New in
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Refine.refine { run = begin fun sigma ->
+    let sigma = Sigma.to_evar_map sigma in
+    let (c, ctx) = Constrintern.interp_casted_constr (pf_env gl) sigma c (pf_concl gl) in
+    let sigma = Evd.merge_universe_context sigma ctx in
+    Sigma.Unsafe.of_pair (c, sigma)
+  end }
+  end }
 
 let assumption =
   let open Context.Named.Declaration in
@@ -4802,7 +4809,7 @@ end
 module New = struct
   open Proofview.Notations
 
-  let exact_proof c = Proofview.V82.tactic (exact_proof c)
+  let exact_proof c = exact_proof c
 
   open Genredexpr
   open Locus

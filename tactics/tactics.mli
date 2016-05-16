@@ -118,7 +118,7 @@ val exact_no_check   : constr -> tactic
 val vm_cast_no_check : constr -> tactic
 val native_cast_no_check : constr -> tactic
 val exact_check      : constr -> unit Proofview.tactic
-val exact_proof      : Constrexpr.constr_expr -> tactic
+val exact_proof      : Constrexpr.constr_expr -> unit Proofview.tactic
 
 (** {6 Reduction tactics. } *)
 
@@ -436,6 +436,4 @@ module New : sig
   val reduce_after_refine : unit Proofview.tactic
   (** The reducing tactic called after {!refine}. *)
 
-  open Proofview
-  val exact_proof : Constrexpr.constr_expr -> unit tactic
 end
