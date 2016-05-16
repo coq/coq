@@ -2727,7 +2727,7 @@ let generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
   let sigma, t = Typing.type_of env sigma c in
   generalize_goal_gen env sigma ids i o t cl
 
-let generalize_dep ?(with_let=false) c gl =
+let old_generalize_dep ?(with_let=false) c gl =
   let open Context.Named.Declaration in
   let env = pf_env gl in
   let sign = pf_hyps gl in
@@ -2764,6 +2764,9 @@ let generalize_dep ?(with_let=false) c gl =
      Proofview.V82.of_tactic (apply_type cl'' (if Option.is_empty body then c::args else args));
      Proofview.V82.of_tactic (clear (List.rev tothin'))]
     gl
+
+let generalize_dep ?(with_let = false) c =
+  Proofview.V82.tactic (old_generalize_dep ~with_let c)
 
 (**  *)
 let generalize_gen_let lconstr = Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
@@ -3627,7 +3630,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
               Tacticals.New.tclTHENLIST [
                 tac;
 		 rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
-		 Proofview.V82.tactic (generalize_dep ~with_let:true (mkVar oldid))]
+		 generalize_dep ~with_let:true (mkVar oldid)]
             else Tacticals.New.tclTHENLIST [
                     tac;
 		    clear [id];
@@ -3638,7 +3641,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
               (Tacticals.New.tclFIRST
                 [revert vars ;
 		 Proofview.V82.tactic (fun gl -> tclMAP (fun id ->
-		      tclTRY (generalize_dep ~with_let:true (mkVar id))) vars gl)])
+		      tclTRY (Proofview.V82.of_tactic (generalize_dep ~with_let:true (mkVar id)))) vars gl)])
   end }
 
 let rec compare_upto_variables x y =

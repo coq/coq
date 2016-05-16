@@ -388,7 +388,7 @@ val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> unit Proo
 
 val new_generalize_gen  : ((occurrences * constr) * Name.t) list -> unit Proofview.tactic
 
-val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> tactic
+val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> unit Proofview.tactic
 
 (** {6 Other tactics. } *)
 
