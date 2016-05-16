@@ -1385,7 +1385,7 @@ let end_tac et2 gls =
 		      let c_id =
 			pf_get_new_id (Id.of_string "_main_arg") gls0 in
 			tclTHENLIST
-			  [fix (Some fix_id) (succ nargs);
+			  [Proofview.V82.of_tactic (fix (Some fix_id) (succ nargs));
 			   tclDO nargs (Proofview.V82.of_tactic introf);
 			   Proofview.V82.of_tactic (intro_mustbe_force c_id);
 			   execute_cases (Name fix_id) pi

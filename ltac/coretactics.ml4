@@ -231,8 +231,8 @@ END
 (* Fix *)
 
 TACTIC EXTEND fix
-  [ "fix" natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix None n) ]
-| [ "fix" ident(id) natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix (Some id) n) ]
+  [ "fix" natural(n) ] -> [ Tactics.fix None n ]
+| [ "fix" ident(id) natural(n) ] -> [ Tactics.fix (Some id) n ]
 END
 
 (* Cofix *)

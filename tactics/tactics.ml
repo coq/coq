@@ -472,14 +472,69 @@ let assert_after_replacing id = assert_after_gen true (NamingMustBe (dloc,id))
 (*          Fixpoints and CoFixpoints                         *)
 (**************************************************************)
 
-(* Refine as a fixpoint *)
-let mutual_fix = Tacmach.mutual_fix
+let rec check_mutind env sigma k cl = match kind_of_term (strip_outer_cast cl) with
+| Prod (na, c1, b) ->
+  if Int.equal k 1 then
+    try
+      let ((sp, _), u), _ = find_inductive env sigma c1 in
+      (sp, u)
+    with Not_found -> error "Cannot do a fixpoint on a non inductive type."
+  else
+    let open Context.Rel.Declaration in
+    check_mutind (push_rel (LocalAssum (na, c1)) env) sigma (pred k) b
+| _ -> error "Not enough products."
 
-let fix ido n gl = match ido with
+(* Refine as a fixpoint *)
+let mutual_fix f n rest j = Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.New.project gl in
+  let concl = Proofview.Goal.concl gl in
+  let (sp, u) = check_mutind env sigma n concl in
+  let firsts, lasts = List.chop j rest in
+  let all = firsts @ (f, n, concl) :: lasts in
+  let rec mk_sign sign = function
+  | [] -> sign
+  | (f, n, ar) :: oth ->
+    let open Context.Named.Declaration in
+    let (sp', u')  = check_mutind env sigma n ar in
+    if not (eq_mind sp sp') then
+      error "Fixpoints should be on the same mutual inductive declaration.";
+    if mem_named_context f (named_context_of_val sign) then
+      errorlabstrm "Logic.prim_refiner"
+        (str "Name " ++ pr_id f ++ str " already used in the environment");
+    mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
+  in
+  let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
+  Refine.refine { run = begin fun sigma ->
+    let rec map : type r s. r Sigma.t -> (s, r) Sigma.le -> _ -> (_, s) Sigma.sigma =
+    fun sigma p -> function
+    | [] -> Sigma ([], sigma, p)
+    | (_, _, arg) :: rem ->
+      let Sigma (arg, sigma, q) = Evarutil.new_evar nenv sigma arg in
+      let Sigma (rem, sigma, r) = map sigma (p +> q) rem in
+      Sigma (arg :: rem, sigma, r)
+    in
+    let Sigma (evs, sigma, p) = map sigma Sigma.refl all in
+    let ids = List.map pi1 all in
+    let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
+    let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
+    let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
+    let typarray = Array.of_list (List.map pi3 all) in
+    let bodies = Array.of_list evs in
+    let oterm = Term.mkFix ((indxs,0),(funnames,typarray,bodies)) in
+    Sigma (oterm, sigma, p)
+  end }
+end }
+
+let fix ido n = match ido with
   | None ->
-      mutual_fix (fresh_id [] (Pfedit.get_current_proof_name ()) gl) n [] 0 gl
+    Proofview.Goal.enter { enter = begin fun gl ->
+      let name = Pfedit.get_current_proof_name () in
+      let id = new_fresh_id [] name gl in
+      mutual_fix id n [] 0
+    end }
   | Some id ->
-      mutual_fix id n [] 0 gl
+    mutual_fix id n [] 0
 
 (* Refine as a cofixpoint *)
 let mutual_cofix = Tacmach.mutual_cofix

@@ -543,51 +543,6 @@ let prim_refiner r sigma goal =
 	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
-    | FixRule (f,n,rest,j) ->
-     	let rec check_ind env k cl =
-          match kind_of_term (strip_outer_cast cl) with
-            | Prod (na,c1,b) ->
-            	if Int.equal k 1 then
-		  try
-		    fst (find_inductive env sigma c1)
-		  with Not_found ->
-		    error "Cannot do a fixpoint on a non inductive type."
-            	else
-                  let open Context.Rel.Declaration in
-		  check_ind (push_rel (LocalAssum (na,c1)) env) (k-1) b
-            | _ -> error "Not enough products."
-	in
-	let ((sp,_),u) = check_ind env n cl in
-	let firsts,lasts = List.chop j rest in
-	let all = firsts@(f,n,cl)::lasts in
-     	let rec mk_sign sign = function
-	  | (f,n,ar)::oth ->
-	      let ((sp',_),u')  = check_ind env n ar in
-	      if not (eq_mind sp sp') then
-		error "Fixpoints should be on the same mutual inductive declaration.";
-	      if !check && mem_named_context f (named_context_of_val sign) then
-		errorlabstrm "Logic.prim_refiner"
-		  (str "Name " ++ pr_id f ++ str " already used in the environment");
-	      mk_sign (push_named_context_val (LocalAssum (f,ar)) sign) oth
-	  | [] ->
-	      Evd.Monad.List.map (fun (_,_,c) sigma ->
-                let gl,ev,sig' =
-                  Goal.V82.mk_goal sigma sign c (Goal.V82.extra sigma goal) in
-                (gl,ev),sig')
-              all sigma
-	in
-	let (gls_evs,sigma) =  mk_sign sign all in
-	let (gls,evs) = List.split gls_evs in
-	let ids = List.map pi1 all in
-	let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
-	let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
-	let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
-	let typarray = Array.of_list (List.map pi3 all) in
-	let bodies = Array.of_list evs in
-	let oterm = Term.mkFix ((indxs,0),(funnames,typarray,bodies)) in
-	let sigma = Goal.V82.partial_solution sigma goal oterm in
-	(gls,sigma)
-
     | Cofix (f,others,j) ->
      	let rec check_is_coind env cl =
 	  let b = whd_betadeltaiota env sigma cl in

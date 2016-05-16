@@ -124,9 +124,6 @@ let refine_no_check c gl =
 let move_hyp_no_check id1 id2 gl =
   refiner (Move (id1,id2)) gl
 
-let mutual_fix f n others j gl =
-  with_check (refiner (FixRule (f,n,others,j))) gl
-
 let mutual_cofix f others j gl =
   with_check (refiner (Cofix (f,others,j))) gl
 

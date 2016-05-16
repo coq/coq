@@ -385,7 +385,7 @@ let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_
 let rec_tac_initializer finite guard thms snl =
   if finite then
     match List.map (fun ((id,_),(t,_)) -> (id,t)) thms with
-    | (id,_)::l -> Tactics.mutual_cofix id l 0
+    | (id,_)::l -> Proofview.V82.tactic (Tactics.mutual_cofix id l 0)
     | _ -> assert false
   else
     (* nl is dummy: it will be recomputed at Qed-time *)
@@ -403,7 +403,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
     | Anonymous -> Tactics.intro) (List.rev ids) in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
-      let rec_tac = Proofview.V82.tactic (rec_tac_initializer finite guard thms snl) in
+      let rec_tac = rec_tac_initializer finite guard thms snl in
       Some (match init_tac with
         | None -> 
             if Flags.is_auto_intros () then 

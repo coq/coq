@@ -1714,7 +1714,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
-        let tac = Proofview.V82.tactic (Tactics.mutual_fix (interp_ident ist env sigma id) n l_interp 0) in
+        let tac = Tactics.mutual_fix (interp_ident ist env sigma id) n l_interp 0 in
         Sigma.Unsafe.of_pair (tac, sigma)
       end }
       end

@@ -36,8 +36,8 @@ val convert_hyp     : ?check:bool -> Context.Named.Declaration.t -> unit Proofvi
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
 val convert_hyp_no_check : Context.Named.Declaration.t -> unit Proofview.tactic
 val mutual_fix      :
-  Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
-val fix             : Id.t option -> int -> tactic
+  Id.t -> int -> (Id.t * int * constr) list -> int -> unit Proofview.tactic
+val fix             : Id.t option -> int -> unit Proofview.tactic
 val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> tactic
 val cofix           : Id.t option -> tactic
 
