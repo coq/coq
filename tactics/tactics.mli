@@ -154,7 +154,7 @@ val unfold_in_hyp     :
 val unfold_option     :
   (occurrences * evaluable_global_reference) list -> goal_location -> unit Proofview.tactic
 val change            :
-  constr_pattern option -> change_arg -> clause -> tactic
+  constr_pattern option -> change_arg -> clause -> unit Proofview.tactic
 val pattern_option    :
   (occurrences * constr) list -> goal_location -> unit Proofview.tactic
 val reduce            : red_expr -> clause -> unit Proofview.tactic

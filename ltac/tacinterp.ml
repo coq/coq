@@ -1879,7 +1879,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           in
           Sigma.Unsafe.of_pair (c, sigma)
         end } in
-        Proofview.V82.tactic (Tactics.change None c_interp (interp_clause ist (pf_env gl) (project gl) cl))
+        Tactics.change None c_interp (interp_clause ist (pf_env gl) (project gl) cl)
       end }
       end
   | TacChange (Some op,c,cl) ->
@@ -1889,25 +1889,22 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        Proofview.V82.tactic begin fun gl -> 
-          let op = interp_typed_pattern ist env sigma op in
-          let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
-          let c_interp patvars = { Sigma.run = begin fun sigma ->
-	    let lfun' = Id.Map.fold (fun id c lfun ->
-	      Id.Map.add id (Value.of_constr c) lfun) 
-	      patvars ist.lfun
-	    in
-	    let ist = { ist with lfun = lfun' } in
-	      try
-                let sigma = Sigma.to_evar_map sigma in
-                let (sigma, c) = interp_constr ist env sigma c in
-                Sigma.Unsafe.of_pair (c, sigma)
-	      with e when to_catch e (* Hack *) ->
-		errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
-          end } in
-	    (Tactics.change (Some op) c_interp (interp_clause ist env sigma cl))
-	      gl
-        end
+        let op = interp_typed_pattern ist env sigma op in
+        let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
+        let c_interp patvars = { Sigma.run = begin fun sigma ->
+          let lfun' = Id.Map.fold (fun id c lfun ->
+            Id.Map.add id (Value.of_constr c) lfun) 
+            patvars ist.lfun
+          in
+          let ist = { ist with lfun = lfun' } in
+            try
+              let sigma = Sigma.to_evar_map sigma in
+              let (sigma, c) = interp_constr ist env sigma c in
+              Sigma.Unsafe.of_pair (c, sigma)
+            with e when to_catch e (* Hack *) ->
+              errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
+        end } in
+        Tactics.change (Some op) c_interp (interp_clause ist env sigma cl)
       end }
       end
 

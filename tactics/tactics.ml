@@ -825,14 +825,16 @@ let change_option occl t = function
   | Some id -> change_in_hyp occl t id
   | None -> change_in_concl occl t
 
-let change chg c cls gl =
-  let cls = concrete_clause_of (fun () -> Tacmach.pf_ids_of_hyps gl) cls in
-  Proofview.V82.of_tactic (Tacticals.New.tclMAP (function
+let change chg c cls =
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let cls = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cls in
+    Tacticals.New.tclMAP (function
     | OnHyp (id,occs,where) ->
        change_option (bind_change_occurrences occs chg) c (Some (id,where))
     | OnConcl occs ->
        change_option (bind_change_occurrences occs chg) c None)
-    cls) gl
+    cls
+  end }
 
 let change_concl t = 
   change_in_concl None (make_change_arg t)
