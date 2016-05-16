@@ -1850,14 +1850,16 @@ let exact_check c =
   Sigma.Unsafe.of_pair (tac, sigma)
   end }
 
-let vm_cast_no_check c gl =
-  let concl = Tacmach.pf_concl gl in
-  Tacmach.refine_no_check (Term.mkCast(c,Term.VMcast,concl)) gl
+let cast_no_check cast c =
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+    Refine.refine ~unsafe:true { run = begin fun sigma ->
+      Sigma.here (Term.mkCast (c, cast, concl)) sigma
+    end }
+  end }
 
-let native_cast_no_check c gl =
-  let concl = Tacmach.pf_concl gl in
-  Tacmach.refine_no_check (Term.mkCast(c,Term.NATIVEcast,concl)) gl
-
+let vm_cast_no_check c = cast_no_check Term.VMcast c
+let native_cast_no_check c = cast_no_check Term.NATIVEcast c
 
 let exact_proof c =
   let open Tacmach.New in

@@ -115,8 +115,8 @@ val intros_patterns : intro_patterns -> unit Proofview.tactic
 
 val assumption       : unit Proofview.tactic
 val exact_no_check   : constr -> unit Proofview.tactic
-val vm_cast_no_check : constr -> tactic
-val native_cast_no_check : constr -> tactic
+val vm_cast_no_check : constr -> unit Proofview.tactic
+val native_cast_no_check : constr -> unit Proofview.tactic
 val exact_check      : constr -> unit Proofview.tactic
 val exact_proof      : Constrexpr.constr_expr -> unit Proofview.tactic
 
