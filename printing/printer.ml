@@ -685,16 +685,6 @@ let pr_prim_rule = function
        (str"cut " ++ pr_constr t ++
         str ";[" ++ cl ++ str"intro " ++ pr_id id ++ str"|idtac]")
 
-  | Cofix (f,[],_) ->
-      (str"cofix " ++ pr_id f)
-
-  | Cofix (f,others,j) ->
-      if not (Int.equal j 0) then msg_warning (strbrk "Unsupported printing of \"fix\"");
-      let rec print_mut = function
-	| (f,ar)::oth ->
-	  (pr_id f ++ str" : " ++ pr_lconstr ar ++ print_mut oth)
-        | [] -> mt () in
-      (str"cofix " ++ pr_id f ++  str" with " ++ print_mut others)
   | Refine c ->
       str(if Termops.occur_meta c then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c

@@ -238,8 +238,8 @@ END
 (* Cofix *)
 
 TACTIC EXTEND cofix
-  [ "cofix" ] -> [ Proofview.V82.tactic (Tactics.cofix None) ]
-| [ "cofix" ident(id) ] -> [ Proofview.V82.tactic (Tactics.cofix (Some id)) ]
+  [ "cofix" ] -> [ Tactics.cofix None ]
+| [ "cofix" ident(id) ] -> [ Tactics.cofix (Some id) ]
 END
 
 (* Clear *)

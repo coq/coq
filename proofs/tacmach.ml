@@ -124,9 +124,6 @@ let refine_no_check c gl =
 let move_hyp_no_check id1 id2 gl =
   refiner (Move (id1,id2)) gl
 
-let mutual_cofix f others j gl =
-  with_check (refiner (Cofix (f,others,j))) gl
-
 (* Versions with consistency checks *)
 
 let internal_cut b d t = with_check (internal_cut_no_check b d t)

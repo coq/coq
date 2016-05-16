@@ -543,47 +543,6 @@ let prim_refiner r sigma goal =
 	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
-    | Cofix (f,others,j) ->
-     	let rec check_is_coind env cl =
-	  let b = whd_betadeltaiota env sigma cl in
-          match kind_of_term b with
-            | Prod (na,c1,b) -> let open Context.Rel.Declaration in
-                                check_is_coind (push_rel (LocalAssum (na,c1)) env) b
-            | _ ->
-		try
-		  let _ = find_coinductive env sigma b in ()
-                with Not_found ->
-		  error "All methods must construct elements in coinductive types."
-	in
-	let firsts,lasts = List.chop j others in
-	let all = firsts@(f,cl)::lasts in
-     	List.iter (fun (_,c) -> check_is_coind env c) all;
-        let rec mk_sign sign = function
-          | (f,ar)::oth ->
-	      (try
-                (let _ = lookup_named_val f sign in
-                error "Name already used in the environment.")
-              with
-              |	Not_found ->
-                  mk_sign (push_named_context_val (LocalAssum (f,ar)) sign) oth)
-	  | [] -> 
-              Evd.Monad.List.map (fun (_,c) sigma ->
-                let gl,ev,sigma =
-                  Goal.V82.mk_goal sigma sign c (Goal.V82.extra sigma goal) in
-                (gl,ev),sigma)
-              all sigma
-     	in
-	let (gls_evs,sigma) =  mk_sign sign all in
-	let (gls,evs) = List.split gls_evs in
-	let (ids,types) = List.split all in
-	let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
-	let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
-	let typarray = Array.of_list types in
-	let bodies = Array.of_list evs in
-	let oterm = Term.mkCoFix (0,(funnames,typarray,bodies)) in
-	let sigma = Goal.V82.partial_solution sigma goal oterm in
-        (gls,sigma)
-
     | Refine c ->
 	check_meta_variables c;
 	let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl c in
