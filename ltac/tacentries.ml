@@ -228,18 +228,19 @@ let interp_prod_item = function
 
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
-  fun () ->
+  fun prods ->
     let cur = incr id; !id in
-    let lbl = Id.of_string ("_" ^ string_of_int cur) in
-    let kn = Lib.make_kn lbl in
-    let (mp, dir, _) = KerName.repr kn in
-    (** We embed the full path of the kernel name in the label so that the
-        identifier should be unique. This ensures that including two modules
-        together won't confuse the corresponding labels. *)
-    let lbl = Id.of_string_soft (Printf.sprintf "%s#%s#%i"
-      (ModPath.to_string mp) (DirPath.to_string dir) cur)
+    let map = function
+    | TacTerm s -> s
+    | TacNonTerm _ -> "#"
     in
-    KerName.make mp dir (Label.of_id lbl)
+    let prods = String.concat "_" (List.map map prods) in
+    (** We embed the hash of the kernel name in the label so that the identifier
+        should be mostly unique. This ensures that including two modules
+        together won't confuse the corresponding labels. *)
+    let hash = (cur lxor (ModPath.hash (Lib.current_mp ()))) land 0x7FFFFFFF in
+    let lbl = Id.of_string_soft (Printf.sprintf "%s_%08X" prods hash) in
+    Lib.make_kn lbl
 
 type tactic_grammar_obj = {
   tacobj_key : KerName.t;
@@ -307,7 +308,7 @@ let add_glob_tactic_notation local n prods forml ids tac =
     tacgram_prods = prods;
   } in
   let tacobj = {
-    tacobj_key = make_fresh_key ();
+    tacobj_key = make_fresh_key prods;
     tacobj_local = local;
     tacobj_tacgram = parule;
     tacobj_body = (ids, tac);
