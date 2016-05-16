@@ -64,7 +64,7 @@ let choose_noteq eqonleft =
 
 let mkBranches c1 c2 =
   tclTHENLIST
-    [Proofview.V82.tactic (generalize [c2]);
+    [generalize [c2];
      Simple.elim c1;
      intros;
      onLastHyp Simple.case;

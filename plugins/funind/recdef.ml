@@ -689,7 +689,7 @@ let mkDestructEq :
            to_revert_constr in
     pf_typel new_hyps (fun _ ->
     observe_tclTHENLIST (str "mkDestructEq")
-     [generalize new_hyps;
+     [Proofview.V82.of_tactic (generalize new_hyps);
       (fun g2 ->
         let changefun patvars = { run = fun sigma ->
           let redfun = pattern_occs [Locus.AllOccurrencesBut [1], expr] in
@@ -1116,7 +1116,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 	       [observe_tac (str "generalize")
 		  (onNLastHypsId (nargs+1)
 		     (tclMAP (fun id ->
-			tclTHEN (Tactics.generalize [mkVar id]) (Proofview.V82.of_tactic (clear [id])))
+			tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (Proofview.V82.of_tactic (clear [id])))
 		     ))
 	       ;
 		observe_tac (str "fix") (Proofview.V82.of_tactic (fix (Some hrec) (nargs+1)));
@@ -1306,7 +1306,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   observe_tclTHENLIST (str "")
 	     [
-	       generalize [lemma];
+	       Proofview.V82.of_tactic (generalize [lemma]);
 	       Proofview.V82.of_tactic (Simple.intro hid);
 	       (fun g ->
 		  let ids = pf_ids_of_hyps g in

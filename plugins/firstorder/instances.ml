@@ -135,9 +135,9 @@ let left_instance_tac (inst,id) continue seq=
 	    [tclTHENLIST
 	       [Proofview.V82.of_tactic introf;
                 pf_constr_of_global id (fun idc ->
-		(fun gls->generalize
+		(fun gls-> Proofview.V82.of_tactic (generalize
 		   [mkApp(idc,
-			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls));
+			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])]) gls));
 		Proofview.V82.of_tactic introf;
 		tclSOLVE [wrap 1 false continue
 			    (deepen (record (id,None) seq))]];
@@ -158,10 +158,10 @@ let left_instance_tac (inst,id) continue seq=
 		    try Typing.type_of (pf_env gl) evmap gt
 		    with e when Errors.noncritical e ->
 		      error "Untypable instance, maybe higher-order non-prenex quantification" in
-		    tclTHEN (Refiner.tclEVARS evmap) (generalize [gt]) gl)
+		    tclTHEN (Refiner.tclEVARS evmap) (Proofview.V82.of_tactic (generalize [gt])) gl)
 	    else
 	      pf_constr_of_global id (fun idc ->
-		generalize [mkApp(idc,[|t|])])
+		Proofview.V82.of_tactic (generalize [mkApp(idc,[|t|])]))
 	  in
 	    tclTHENLIST
 	      [special_generalize;

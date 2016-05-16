@@ -465,7 +465,7 @@ let generalize_dependent_of x hyp g =
   tclMAP
     (function
        | LocalAssum (id,t) when not (Id.equal id hyp) &&
-	   (Termops.occur_var (pf_env g) x t) -> tclTHEN (Tactics.generalize [mkVar id]) (thin [id])
+	   (Termops.occur_var (pf_env g) x t) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
        | _ -> tclIDTAC
     )
     (pf_hyps g)
@@ -715,7 +715,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	       })
 	    Locusops.onConcl)
 	  ;
-	  generalize (List.map mkVar ids);
+	  Proofview.V82.of_tactic (generalize (List.map mkVar ids));
 	  thin ids
 	]
       else
@@ -754,7 +754,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     tclTHENSEQ
       [ tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) (args_names@[res;hres]);
 	observe_tac "h_generalize"
-	(generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]);
+	(Proofview.V82.of_tactic (generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]));
 	Proofview.V82.of_tactic (Simple.intro graph_principle_id);
 	observe_tac "" (tclTHEN_i
 	  (observe_tac "elim" (Proofview.V82.of_tactic (elim false None (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
@@ -937,7 +937,7 @@ let revert_graph kn post_tac hid g =
 		  let f_args,res = Array.chop (Array.length args - 1) args in
 		  tclTHENSEQ
 		    [
-		      generalize [applist(mkConst f_complete,(Array.to_list f_args)@[res.(0);mkVar hid])];
+		      Proofview.V82.of_tactic (generalize [applist(mkConst f_complete,(Array.to_list f_args)@[res.(0);mkVar hid])]);
 		      thin [hid];
 		      Proofview.V82.of_tactic (Simple.intro hid);
 		      post_tac hid
@@ -981,7 +981,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 	  in
 	  tclTHENSEQ[
 	    pre_tac hid;
-	    generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])];
+	    Proofview.V82.of_tactic (generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])]);
 	    thin [hid];
 	    Proofview.V82.of_tactic (Simple.intro hid);
 	    Proofview.V82.of_tactic (Inv.inv FullInversion None (NamedHyp hid));

@@ -383,10 +383,9 @@ val letin_pat_tac : (bool * intro_pattern_naming) option ->
 
 (** {6 Generalize tactics. } *)
 
-val generalize      : constr list -> tactic
-val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> tactic
+val generalize      : constr list -> unit Proofview.tactic
+val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> unit Proofview.tactic
 
-val new_generalize  : constr list -> unit Proofview.tactic
 val new_generalize_gen  : ((occurrences * constr) * Name.t) list -> unit Proofview.tactic
 
 val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> tactic

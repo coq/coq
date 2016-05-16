@@ -1289,7 +1289,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 		       (fun id ->
 			  hrec_for (out_name fix_name) per_info gls1 id)
 		       recs in
-		     generalize hrecs gls1
+		     Proofview.V82.of_tactic (generalize hrecs) gls1
 	       end;
 	       match bro with
 		   None ->
@@ -1365,7 +1365,7 @@ let end_tac et2 gls =
 		(default_justification (List.map mkVar clauses))
 	  | ET_Induction,EK_nodep ->
 	      tclTHENLIST
-		[generalize (pi.per_args@[pi.per_casee]);
+		[Proofview.V82.of_tactic (generalize (pi.per_args@[pi.per_casee]));
 		 Proofview.V82.of_tactic (simple_induct (AnonHyp (succ (List.length pi.per_args))));
 		 default_justification (List.map mkVar clauses)]
 	  | ET_Case_analysis,EK_dep tree ->
@@ -1377,7 +1377,7 @@ let end_tac et2 gls =
 		   (initial_instance_stack clauses) [pi.per_casee] 0 tree
 	  | ET_Induction,EK_dep tree ->
 	      let nargs = (List.length pi.per_args) in
-		tclTHEN (generalize (pi.per_args@[pi.per_casee]))
+		tclTHEN (Proofview.V82.of_tactic (generalize (pi.per_args@[pi.per_casee])))
 		  begin
 		    fun gls0 ->
 		      let fix_id =

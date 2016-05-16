@@ -1464,7 +1464,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
       ]
       (Tacmach.pf_concl gl))
    ;
-   Tactics.new_generalize env ;
+   Tactics.generalize env ;
    Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
   ] 
   end }
@@ -1726,7 +1726,7 @@ let micromega_gen
      | Some (ids,ff',res') -> 
       (Tacticals.New.tclTHENLIST
 	[
-	 Tactics.new_generalize (List.map Term.mkVar ids) ;
+	 Tactics.generalize (List.map Term.mkVar ids) ;
 	 micromega_order_change  spec res' 
 	  (Term.mkApp(Lazy.force coq_list, [|spec.proof_typ|])) env ff'
 	])
@@ -1774,7 +1774,7 @@ let micromega_order_changer cert env ff  =
          ("__wit", cert, cert_typ)
         ]
         (Tacmach.pf_concl gl)));
-      Tactics.new_generalize env ;
+      Tactics.generalize env ;
       Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
      ]
   end }
@@ -1812,7 +1812,7 @@ let micromega_genr prover =
 	     (List.filter (fun (n,_) -> List.mem n ids) hyps) concl in
            (Tacticals.New.tclTHENLIST
               [
-                Tactics.new_generalize (List.map Term.mkVar ids) ;
+                Tactics.generalize (List.map Term.mkVar ids) ;
                 micromega_order_changer res' env (abstract_wrt_formula ff' ff)
               ])
   with

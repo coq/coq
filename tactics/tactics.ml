@@ -2766,14 +2766,15 @@ let generalize_dep ?(with_let=false) c gl =
     gl
 
 (**  *)
-let generalize_gen_let lconstr gl =
+let generalize_gen_let lconstr = Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let newcl, evd =
-    List.fold_right_i (generalize_goal gl) 0 lconstr
-      (Tacmach.pf_concl gl,Tacmach.project gl)
+    List.fold_right_i (Tacmach.New.of_old generalize_goal gl) 0 lconstr
+      (Tacmach.New.pf_concl gl,Tacmach.New.project gl)
   in
-  Proofview.V82.of_tactic (Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd)
-    (apply_type newcl (List.map_filter (fun ((_,c,b),_) ->
-      if Option.is_empty b then Some c else None) lconstr))) gl
+  let map ((_, c, b),_) = if Option.is_empty b then Some c else None in
+  let tac = apply_type newcl (List.map_filter map lconstr) in
+  Sigma.Unsafe.of_pair (tac, evd)
+end }
 
 let new_generalize_gen_let lconstr =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
@@ -2809,11 +2810,8 @@ let generalize_gen lconstr =
 let new_generalize_gen lconstr =
   new_generalize_gen_let (List.map (fun ((occs,c),na) ->
     (occs,c,None),na) lconstr)
-    
-let generalize l =
-  generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
 
-let new_generalize l =
+let generalize l =
   new_generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
 
 (* Faudra-t-il une version avec plusieurs args de generalize_dep ?
