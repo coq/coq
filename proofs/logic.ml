@@ -77,10 +77,10 @@ let with_check = Flags.with_option check
 
 (* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
    returns [tail::(f head (id,_,_) (rev tail))] *)
-let apply_to_hyp sign id f =
+let apply_to_hyp check sign id f =
   try apply_to_hyp sign id f
   with Hyp_not_found ->
-    if !check then error_no_such_hypothesis id
+    if check then error_no_such_hypothesis id
     else sign
 
 let check_typability env sigma c =
@@ -493,7 +493,7 @@ let convert_hyp check sign sigma d =
   let env = Global.env() in
   let reorder = ref [] in
   let sign' =
-    apply_to_hyp sign id
+    apply_to_hyp check sign id
       (fun _ d' _ ->
         let _,c,ct = to_tuple d' in
         let env = Global.env_of_context sign in
