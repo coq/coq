@@ -275,7 +275,16 @@ let catchable = function
 
 let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) evs (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
 
-let pr_depth l = prlist_with_sep (fun () -> str ".") int (List.rev l)
+(* alternate separators in debug search path output *)
+let debug_seps = [| "." ; "-" |]
+let next_sep seps = 
+  let num_seps = Array.length seps in
+  let sep_index = ref 0 in
+  fun () ->
+    let sep = seps.(!sep_index) in
+    sep_index := (!sep_index + 1) mod num_seps;
+    str sep
+let pr_depth l = prlist_with_sep (next_sep debug_seps) int (List.rev l)
 
 type autoinfo = { hints : hint_db; is_evar: existential_key option;
 		  only_classes: bool; unique : bool;
