@@ -1801,14 +1801,10 @@ let build_inversion_problem loc env sigma tms t =
 	          it = None } } ] in
   (* [pb] is the auxiliary pattern-matching serving as skeleton for the
       return type of the original problem Xi *)
-  (* let sigma, s = Evd.new_sort_variable sigma in *)
-(*FIXME TRY *)
-  (* let sigma, s = Evd.new_sort_variable univ_flexible sigma in *)
   let s' = Retyping.get_sort_of env sigma t in
   let sigma, s = Evd.new_sort_variable univ_flexible_alg sigma in
   let sigma = Evd.set_leq_sort env sigma s' s in
   let evdref = ref sigma in
-  (* let ty = evd_comb1 (refresh_universes false) evdref ty in *)
   let pb =
     { env       = pb_env;
       evdref    = evdref;
@@ -1944,7 +1940,7 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
   let preds =
     match pred, tycon with
-    (* No type annotation *)
+    (* No return clause *)
     | None, Some t when not (noccur_with_meta 0 max_int t) ->
 	(* If the tycon is not closed w.r.t real variables, we try *)
         (* two different strategies *)
@@ -1981,12 +1977,6 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
       let evdref = ref sigma in
       let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
       let sigma = !evdref in
-      (* let sigma = Option.cata (fun tycon -> *)
-      (*     let na = Name (Id.of_string "x") in *)
-      (*     let tms = List.map (fun tm -> Pushed(tm,[],na)) tomatchs in *)
-      (*     let predinst = extract_predicate predcclj.uj_val tms in *)
-      (*     Coercion.inh_conv_coerce_to loc env !evdref predinst tycon) *)
-      (*   !evdref tycon in *)
       let predccl = (j_nf_evar sigma predcclj).uj_val in
       [sigma, predccl]
   in
@@ -2436,7 +2426,7 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
     match tycon' with
     | None -> let ev = mkExistential env evdref in ev, ev
     | Some t ->
-	let pred = 
+	let pred =
 	  match prepare_predicate_from_arsign_tycon env !evdref loc tomatchs sign t with
 	  | Some (evd, pred) -> evdref := evd; pred
 	  | None ->
@@ -2515,11 +2505,11 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
 (* Main entry of the matching compilation                                 *)
 
 let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, eqns) =
-  if predopt == None && Flags.is_program_mode () then
-    compile_program_cases loc style (typing_fun, evdref) 
+  if predopt == None && Flags.is_program_mode () && Program.is_program_cases () then
+    compile_program_cases loc style (typing_fun, evdref)
       tycon env (predopt, tomatchl, eqns)
   else
-      
+
   (* We build the matrix of patterns and right-hand side *)
   let matx = matx_of_eqns env eqns in
 

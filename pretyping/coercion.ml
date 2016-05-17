@@ -192,7 +192,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	  let term = co x in
 	    Typing.e_solve_evars env evdref term)
       in
-	if isEvar c || isEvar c' then
+	if isEvar c || isEvar c' || not (Program.is_program_generalized_coercion ()) then
 	  (* Second-order unification needed. *)
 	  raise NoSubtacCoercion;
 	aux [] typ typ' 0 (fun x -> x)
@@ -280,7 +280,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		     let c1 = coerce_unify env a a' in
 		     let c2 = coerce_unify env b b' in
 		       match c1, c2 with
-		       None, None -> None
+		       | None, None -> None
 		       | _, _ ->
 			   Some
 			     (fun x ->

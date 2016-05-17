@@ -121,4 +121,3 @@ val prepare_predicate :            Loc.t ->
            Context.Rel.t list ->
            Constr.constr option ->
            'a option -> (Evd.evar_map * Names.name list * Term.constr) list
-

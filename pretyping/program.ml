@@ -70,18 +70,40 @@ let mk_coq_and l =
 
 (* true = transparent by default, false = opaque if possible *)
 let proofs_transparency = ref true
+let program_cases = ref true
+let program_generalized_coercion = ref true
 
 let set_proofs_transparency = (:=) proofs_transparency
 let get_proofs_transparency () = !proofs_transparency
+
+let is_program_generalized_coercion () = !program_generalized_coercion
+let is_program_cases () = !program_cases
 
 open Goptions
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "preferred transparency of Program obligations";
-      optkey   = ["Transparent";"Obligations"];
-      optread  = get_proofs_transparency;
-      optwrite = set_proofs_transparency; }
-      
+  { optsync  = true;
+    optdepr  = false;
+    optname  = "preferred transparency of Program obligations";
+    optkey   = ["Transparent";"Obligations"];
+    optread  = get_proofs_transparency;
+    optwrite = set_proofs_transparency; }
+
+let _ =
+  declare_bool_option
+  { optsync  = true;
+    optdepr  = false;
+    optname  = "program cases";
+    optkey   = ["Program";"Cases"];
+    optread  = (fun () -> !program_cases);
+    optwrite = (:=) program_cases }
+
+let _ =
+  declare_bool_option
+  { optsync  = true;
+    optdepr  = false;
+    optname  = "program generalized coercion";
+    optkey   = ["Program";"Generalized";"Coercion"];
+    optread  = (fun () -> !program_generalized_coercion);
+    optwrite = (:=) program_generalized_coercion }
