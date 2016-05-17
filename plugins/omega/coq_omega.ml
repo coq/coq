@@ -150,7 +150,7 @@ let exists_tac c = constructor_tac false (Some 1) 1 (ImplicitBindings [c])
 
 let generalize_tac t = generalize t
 let elim t = simplest_elim t
-let exact t = Tactics.refine t
+let exact t = Tacmach.refine t
 let unfold s = Tactics.unfold_in_concl [Locus.AllOccurrences, Lazy.force s]
 
 let rev_assoc k =
@@ -1847,7 +1847,7 @@ let destructure_goal =
 	    try
 	      let dec = decidability t in
 	      Tacticals.New.tclTHEN
-                (Proofview.V82.tactic (Tactics.refine
+                (Proofview.V82.tactic (Tacmach.refine
 		                         (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |]))))
 	        intro
 	    with Undecidable -> Tactics.elim_type (build_coq_False ())

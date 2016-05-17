@@ -485,7 +485,7 @@ let thus_tac c ctyp submetas gls =
     Proofview.V82.of_tactic (exact_check proof) gls
   else
     let refiner = concl_refiner list proof gls in
-      Tactics.refine refiner gls
+      Tacmach.refine refiner gls
 
 (* general forward step *)
 
