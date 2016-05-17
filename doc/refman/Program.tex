@@ -70,19 +70,19 @@ will be first rewritten to:
 
 \end{itemize}
 
-There are global options to control the generation of equalities
+There are options to control the generation of equalities
 and coercions.
 
 \begin{itemize}
 \item {\tt Unset Program Cases}\optindex{Program Cases} This deactivates
   the special treatment of pattern-matching generating equalities and
-  inequalities when using Program (it is on by default). All
+  inequalities when using \Program\ (it is on by default). All
   pattern-matchings and let-patterns are handled using the standard
-  algorithm of Coq (see Section~\ref{Caseexpr}) when this options is
+  algorithm of Coq (see Section~\ref{Mult-match-full}) when this option is
   deactivated.
 \item {\tt Unset Program Generalized Coercion}\optindex{Program
     Generalized Coercion} This deactivates the coercion of general
-  inductive types when using Program (the option is on by default).
+  inductive types when using \Program\ (the option is on by default).
   Coercion of subset types and pairs is still active in this case.
 \end{itemize}
 
