@@ -313,7 +313,7 @@ let apply_clear_request clear_flag dft c =
   else Tacticals.New.tclIDTAC
 
 (* Moving hypotheses *)
-let move_hyp id dest gl = Tacmach.move_hyp id dest gl
+let move_hyp id dest = Proofview.V82.tactic (Tacmach.move_hyp id dest)
 
 (* Renaming hypotheses *)
 let rename_hyp repl =
@@ -908,9 +908,8 @@ let find_intro_names ctxt gl =
 let build_intro_tac id dest tac = match dest with
   | MoveLast -> Tacticals.New.tclTHEN (introduction id) (tac id)
   | dest -> Tacticals.New.tclTHENLIST 
-    [introduction id; 
-     Proofview.V82.tactic (move_hyp id dest); tac id]
-    
+    [introduction id; move_hyp id dest; tac id]
+
 let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter { enter = begin fun gl ->
@@ -1011,7 +1010,7 @@ let intro_replacing id =
   Tacticals.New.tclTHENLIST [
     clear_for_replacing [id];
     introduction id;
-    Proofview.V82.tactic (move_hyp id next_hyp);
+    move_hyp id next_hyp;
   ]
   end }
 
@@ -2437,7 +2436,7 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
 and prepare_intros_loc loc dft destopt = function
   | IntroNaming ipat ->
       prepare_naming loc ipat,
-      (fun id -> Proofview.V82.tactic (move_hyp id destopt))
+      (fun id -> move_hyp id destopt)
   | IntroAction ipat ->
       prepare_naming loc dft,
       (let tac thin bound =
