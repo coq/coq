@@ -121,25 +121,14 @@ let internal_cut_rev_no_check replace id t gl =
 let refine_no_check c gl =
   refiner (Refine c) gl
 
-(* This does not check dependencies *)
-let thin_no_check ids gl =
-  if List.is_empty ids then tclIDTAC gl else refiner (Thin ids) gl
-
 let move_hyp_no_check id1 id2 gl =
   refiner (Move (id1,id2)) gl
-
-let mutual_fix f n others j gl =
-  with_check (refiner (FixRule (f,n,others,j))) gl
-
-let mutual_cofix f others j gl =
-  with_check (refiner (Cofix (f,others,j))) gl
 
 (* Versions with consistency checks *)
 
 let internal_cut b d t = with_check (internal_cut_no_check b d t)
 let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)
-let thin c             = with_check (thin_no_check c)
 let move_hyp id id'  = with_check (move_hyp_no_check id id')
 
 (* Pretty-printers *)

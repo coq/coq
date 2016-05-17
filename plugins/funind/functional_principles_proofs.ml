@@ -127,8 +127,7 @@ let finish_proof dynamic_infos g =
 let refine c =
   Tacmach.refine c
 
-let thin l =
-  Tacmach.thin_no_check l
+let thin l = Proofview.V82.of_tactic (Tactics.clear l)
 
 let eq_constr u v = eq_constr_nounivs u v
 
@@ -705,7 +704,7 @@ let build_proof
 		  in
 		  tclTHENSEQ
 		    [
-		      generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
+		      Proofview.V82.of_tactic (generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps)));
 		      thin dyn_infos.rec_hyps;
 		      Proofview.V82.of_tactic (pattern_option [Locus.AllOccurrencesBut [1],t] None);
 		      (fun g -> observe_tac "toto" (
@@ -935,7 +934,7 @@ let generalize_non_dep hyp g =
   in
 (*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
   tclTHEN
-    ((* observe_tac "h_generalize" *) (generalize  (List.map mkVar to_revert) ))
+    ((* observe_tac "h_generalize" *) (Proofview.V82.of_tactic (generalize  (List.map mkVar to_revert) )))
     ((* observe_tac "thin" *) (thin to_revert))
     g
 
@@ -943,7 +942,7 @@ let id_of_decl decl = Nameops.out_name (get_name decl)
 let var_of_decl decl = mkVar (id_of_decl decl)
 let revert idl =
   tclTHEN
-    (generalize (List.map mkVar idl))
+    (Proofview.V82.of_tactic (generalize (List.map mkVar idl)))
     (thin idl)
 
 let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num =
@@ -1228,10 +1227,10 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	      if this_fix_info.idx + 1 = 0
 	      then tclIDTAC (* Someone  tries to defined a principle on a fully parametric definition declared as a fixpoint (strange but ....) *)
 	      else
-		observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (fix (Some this_fix_info.name) (this_fix_info.idx +1))
+		observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (Proofview.V82.of_tactic (fix (Some this_fix_info.name) (this_fix_info.idx +1)))
 	    else
-	      Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
-		other_fix_infos 0
+	      Proofview.V82.of_tactic (Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
+		other_fix_infos 0)
 	| _ -> anomaly (Pp.str "Not a valid information")
     in
     let first_tac : tactic = (* every operations until fix creations *)
@@ -1565,7 +1564,7 @@ let prove_principle_for_gen
     Nameops.out_name (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
   in
   let revert l =
-    tclTHEN (Tactics.generalize (List.map mkVar l)) (clear l)
+    tclTHEN (Proofview.V82.of_tactic (Tactics.generalize (List.map mkVar l))) (Proofview.V82.of_tactic (clear l))
   in
   let fix_id = Nameops.out_name (fresh_id (Name hrec_id)) in
   let prove_rec_arg_acc g =
@@ -1611,7 +1610,7 @@ let prove_principle_for_gen
       in
       tclTHENSEQ
 	[
-	  generalize [lemma];
+	  Proofview.V82.of_tactic (generalize [lemma]);
 	  Proofview.V82.of_tactic (Simple.intro hid);
 	  Proofview.V82.of_tactic (Elim.h_decompose_and (mkVar hid));
 	  (fun g ->
@@ -1643,7 +1642,7 @@ let prove_principle_for_gen
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
 (* 			   str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
-      (* observe_tac "h_fix " *) (fix (Some fix_id) (List.length args_ids + 1));
+      (* observe_tac "h_fix " *) (Proofview.V82.of_tactic (fix (Some fix_id) (List.length args_ids + 1)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_unsafe_type_of g (mkVar fix_id) )); tclIDTAC g); *)
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));

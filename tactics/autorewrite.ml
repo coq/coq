@@ -151,7 +151,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
                begin
                 let gl'' =
                   if !to_be_cleared then
-                   tclTHEN (fun _ -> gl') (tclTRY (clear [!id])) gl
+                   tclTHEN (fun _ -> gl') (tclTRY (Proofview.V82.of_tactic (clear [!id]))) gl
                   else gl' in
                 id := lastid ;
                 to_be_cleared := true ;

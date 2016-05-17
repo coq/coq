@@ -1280,8 +1280,8 @@ let resolution env full_reified_goal systems_list =
     CCHyp{o_hyp=id_concl;o_path=[]} :: hyp_stated_vars @ initial_context in
   let decompose_tactic = decompose_tree env context solution_tree in
 
-  Tactics.generalize
-    (l_generalize_arg @ List.map Term.mkVar (List.tl l_hyps)) >>
+  Proofview.V82.of_tactic (Tactics.generalize
+    (l_generalize_arg @ List.map Term.mkVar (List.tl l_hyps))) >>
   Proofview.V82.of_tactic (Tactics.change_concl reified) >>
   Proofview.V82.of_tactic (Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
   show_goal >>

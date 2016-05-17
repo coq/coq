@@ -52,13 +52,13 @@ let basename_of_global=function
   | _->assert false
 
 let clear_global=function
-    VarRef id->clear [id]
+    VarRef id-> Proofview.V82.of_tactic (clear [id])
   | _->tclIDTAC
 
 (* connection rules *)
 
 let axiom_tac t seq=
-  try pf_constr_of_global (find_left t seq) exact_no_check
+  try pf_constr_of_global (find_left t seq) (fun c -> Proofview.V82.of_tactic (exact_no_check c))
   with Not_found->tclFAIL 0 (Pp.str "No axiom link")
 
 let ll_atom_tac a backtrack id continue seq=
@@ -67,7 +67,7 @@ let ll_atom_tac a backtrack id continue seq=
       tclTHENLIST
 	[pf_constr_of_global (find_left a seq) (fun left ->
 	  pf_constr_of_global id (fun id -> 
-	    generalize [mkApp(id, [|left|])]));
+	    Proofview.V82.of_tactic (generalize [mkApp(id, [|left|])])));
 	 clear_global id;
 	 Proofview.V82.of_tactic intro]
     with Not_found->tclFAIL 0 (Pp.str "No link"))
@@ -135,7 +135,7 @@ let ll_ind_tac (ind,u as indu) largs backtrack id continue seq gl=
        let newhyps idc =List.init lp (myterm idc) in
 	 tclIFTHENELSE
 	   (tclTHENLIST
-	      [pf_constr_of_global id (fun idc -> generalize (newhyps idc));
+	      [pf_constr_of_global id (fun idc -> Proofview.V82.of_tactic (generalize (newhyps idc)));
 	       clear_global id;
 	       tclDO lp (Proofview.V82.of_tactic intro)])
 	   (wrap lp false continue seq) backtrack gl
@@ -151,9 +151,9 @@ let ll_arrow_tac a b c backtrack id continue seq=
 	     clear_global id;
 	     wrap 1 false continue seq];
 	  tclTHENS (Proofview.V82.of_tactic (cut cc))
-            [pf_constr_of_global id exact_no_check;
+            [pf_constr_of_global id (fun c -> Proofview.V82.of_tactic (exact_no_check c));
 	     tclTHENLIST
-	       [pf_constr_of_global id (fun idc -> generalize [d idc]);
+	       [pf_constr_of_global id (fun idc -> Proofview.V82.of_tactic (generalize [d idc]));
 		clear_global id;
 		Proofview.V82.of_tactic introf;
 		Proofview.V82.of_tactic introf;
@@ -192,7 +192,7 @@ let ll_forall_tac prod backtrack id continue seq=
 	   (fun gls->
 	      let id0=pf_nth_hyp_id gls 1 in
               let term=mkApp(idc,[|mkVar(id0)|]) in
-		tclTHEN (generalize [term]) (clear [id0]) gls));
+		tclTHEN (Proofview.V82.of_tactic (generalize [term])) (Proofview.V82.of_tactic (clear [id0])) gls));
 	   clear_global id;
 	   Proofview.V82.of_tactic intro;
 	   tclCOMPLETE (wrap 1 false continue (deepen seq))];

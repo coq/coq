@@ -582,7 +582,7 @@ END
     during dependent induction. For internal use. *)
 
 TACTIC EXTEND specialize_eqs
-[ "specialize_eqs" hyp(id) ] -> [ Proofview.V82.tactic (specialize_eqs id) ]
+[ "specialize_eqs" hyp(id) ] -> [ specialize_eqs id ]
 END
 
 (**********************************************************************)
@@ -728,7 +728,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g a) gl in
        Tacticals.New.tclTHENLIST
-         [Proofview.V82.tactic (Tactics.generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
+         [Tactics.generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
           Proofview.Goal.nf_enter { enter = begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in

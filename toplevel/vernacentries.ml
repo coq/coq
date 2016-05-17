@@ -504,7 +504,7 @@ let vernac_end_proof ?proof = function
 let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
-  let status = by (Tactics.New.exact_proof c) in
+  let status = by (Tactics.exact_proof c) in
   save_proof (Vernacexpr.(Proved(Opaque None,None)));
   if not status then Pp.feedback Feedback.AddedAxiom
 
@@ -861,7 +861,7 @@ let vernac_set_used_variables e =
   Proof_global.with_current_proof begin fun _ p ->
     if List.is_empty to_clear then (p, ())
     else
-      let tac = Proofview.V82.tactic (Tactics.clear to_clear) in
+      let tac = Tactics.clear to_clear in
       fst (solve SelectAll None tac p), ()
   end
 

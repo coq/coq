@@ -49,7 +49,6 @@ open Coqlib
    Eduardo Gimenez (30/3/98).
 *)
 
-let clear ids = Proofview.V82.tactic (clear ids)
 let clear_last = (onLastHyp (fun c -> (clear [destVar c])))
 
 let choose_eq eqonleft =
@@ -65,7 +64,7 @@ let choose_noteq eqonleft =
 
 let mkBranches c1 c2 =
   tclTHENLIST
-    [Proofview.V82.tactic (generalize [c2]);
+    [generalize [c2];
      Simple.elim c1;
      intros;
      onLastHyp Simple.case;

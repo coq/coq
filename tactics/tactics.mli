@@ -30,17 +30,15 @@ val is_quantified_hypothesis : Id.t -> ([`NF],'b) Proofview.Goal.t -> bool
 (** {6 Primitive tactics. } *)
 
 val introduction    : ?check:bool -> Id.t -> unit Proofview.tactic
-val refine          : constr -> tactic
 val convert_concl   : ?check:bool -> types -> cast_kind -> unit Proofview.tactic
 val convert_hyp     : ?check:bool -> Context.Named.Declaration.t -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
 val convert_hyp_no_check : Context.Named.Declaration.t -> unit Proofview.tactic
-val thin            : Id.t list -> tactic
 val mutual_fix      :
-  Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
-val fix             : Id.t option -> int -> tactic
-val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> tactic
-val cofix           : Id.t option -> tactic
+  Id.t -> int -> (Id.t * int * constr) list -> int -> unit Proofview.tactic
+val fix             : Id.t option -> int -> unit Proofview.tactic
+val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> unit Proofview.tactic
+val cofix           : Id.t option -> unit Proofview.tactic
 
 val convert         : constr -> constr -> unit Proofview.tactic
 val convert_leq     : constr -> constr -> unit Proofview.tactic
@@ -115,11 +113,11 @@ val intros_patterns : intro_patterns -> unit Proofview.tactic
 (** {6 Exact tactics. } *)
 
 val assumption       : unit Proofview.tactic
-val exact_no_check   : constr -> tactic
-val vm_cast_no_check : constr -> tactic
-val native_cast_no_check : constr -> tactic
+val exact_no_check   : constr -> unit Proofview.tactic
+val vm_cast_no_check : constr -> unit Proofview.tactic
+val native_cast_no_check : constr -> unit Proofview.tactic
 val exact_check      : constr -> unit Proofview.tactic
-val exact_proof      : Constrexpr.constr_expr -> tactic
+val exact_proof      : Constrexpr.constr_expr -> unit Proofview.tactic
 
 (** {6 Reduction tactics. } *)
 
@@ -155,7 +153,7 @@ val unfold_in_hyp     :
 val unfold_option     :
   (occurrences * evaluable_global_reference) list -> goal_location -> unit Proofview.tactic
 val change            :
-  constr_pattern option -> change_arg -> clause -> tactic
+  constr_pattern option -> change_arg -> clause -> unit Proofview.tactic
 val pattern_option    :
   (occurrences * constr) list -> goal_location -> unit Proofview.tactic
 val reduce            : red_expr -> clause -> unit Proofview.tactic
@@ -163,7 +161,7 @@ val unfold_constr     : global_reference -> unit Proofview.tactic
 
 (** {6 Modification of the local context. } *)
 
-val clear         : Id.t list -> tactic
+val clear         : Id.t list -> unit Proofview.tactic
 val clear_body    : Id.t list -> unit Proofview.tactic
 val unfold_body   : Id.t -> unit Proofview.tactic
 val keep          : Id.t list -> unit Proofview.tactic
@@ -171,7 +169,7 @@ val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 
 val specialize    : constr with_bindings -> unit Proofview.tactic
 
-val move_hyp      : Id.t -> Id.t move_location -> tactic
+val move_hyp      : Id.t -> Id.t move_location -> unit Proofview.tactic
 val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
 
 val revert        : Id.t list -> unit Proofview.tactic
@@ -384,13 +382,12 @@ val letin_pat_tac : (bool * intro_pattern_naming) option ->
 
 (** {6 Generalize tactics. } *)
 
-val generalize      : constr list -> tactic
-val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> tactic
+val generalize      : constr list -> unit Proofview.tactic
+val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> unit Proofview.tactic
 
-val new_generalize  : constr list -> unit Proofview.tactic
 val new_generalize_gen  : ((occurrences * constr) * Name.t) list -> unit Proofview.tactic
 
-val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> tactic
+val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> unit Proofview.tactic
 
 (** {6 Other tactics. } *)
 
@@ -399,7 +396,7 @@ val unify           : ?state:Names.transparent_state -> constr -> constr -> unit
 val tclABSTRACT : Id.t option -> unit Proofview.tactic -> unit Proofview.tactic
 
 val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> Id.t -> unit Proofview.tactic
-val specialize_eqs : Id.t -> tactic
+val specialize_eqs : Id.t -> unit Proofview.tactic
 
 val general_rewrite_clause :
   (bool -> evars_flag -> constr with_bindings -> clause -> unit Proofview.tactic) Hook.t
@@ -437,6 +434,4 @@ module New : sig
   val reduce_after_refine : unit Proofview.tactic
   (** The reducing tactic called after {!refine}. *)
 
-  open Proofview
-  val exact_proof : Constrexpr.constr_expr -> unit tactic
 end

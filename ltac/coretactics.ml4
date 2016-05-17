@@ -39,15 +39,15 @@ TACTIC EXTEND cut
 END
 
 TACTIC EXTEND exact_no_check
-  [ "exact_no_check" constr(c) ] -> [ Proofview.V82.tactic (Tactics.exact_no_check c) ]
+  [ "exact_no_check" constr(c) ] -> [ Tactics.exact_no_check c ]
 END
 
 TACTIC EXTEND vm_cast_no_check
-  [ "vm_cast_no_check" constr(c) ] -> [ Proofview.V82.tactic (Tactics.vm_cast_no_check c) ]
+  [ "vm_cast_no_check" constr(c) ] -> [ Tactics.vm_cast_no_check c ]
 END
 
 TACTIC EXTEND native_cast_no_check
-  [ "native_cast_no_check" constr(c) ] -> [ Proofview.V82.tactic (Tactics.native_cast_no_check c) ]
+  [ "native_cast_no_check" constr(c) ] -> [ Tactics.native_cast_no_check c ]
 END
 
 TACTIC EXTEND casetype
@@ -200,10 +200,10 @@ END
 (** Move *)
 
 TACTIC EXTEND move
-  [ "move" hyp(id) "at" "top" ] -> [ Proofview.V82.tactic (Tactics.move_hyp id MoveFirst) ]
-| [ "move" hyp(id) "at" "bottom" ] -> [ Proofview.V82.tactic (Tactics.move_hyp id MoveLast) ]
-| [ "move" hyp(id) "after" hyp(h) ] -> [ Proofview.V82.tactic (Tactics.move_hyp id (MoveAfter h)) ]
-| [ "move" hyp(id) "before" hyp(h) ] -> [ Proofview.V82.tactic (Tactics.move_hyp id (MoveBefore h)) ]
+  [ "move" hyp(id) "at" "top" ] -> [ Tactics.move_hyp id MoveFirst ]
+| [ "move" hyp(id) "at" "bottom" ] -> [ Tactics.move_hyp id MoveLast ]
+| [ "move" hyp(id) "after" hyp(h) ] -> [ Tactics.move_hyp id (MoveAfter h) ]
+| [ "move" hyp(id) "before" hyp(h) ] -> [ Tactics.move_hyp id (MoveBefore h) ]
 END
 
 (** Revert *)
@@ -231,15 +231,15 @@ END
 (* Fix *)
 
 TACTIC EXTEND fix
-  [ "fix" natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix None n) ]
-| [ "fix" ident(id) natural(n) ] -> [ Proofview.V82.tactic (Tactics.fix (Some id) n) ]
+  [ "fix" natural(n) ] -> [ Tactics.fix None n ]
+| [ "fix" ident(id) natural(n) ] -> [ Tactics.fix (Some id) n ]
 END
 
 (* Cofix *)
 
 TACTIC EXTEND cofix
-  [ "cofix" ] -> [ Proofview.V82.tactic (Tactics.cofix None) ]
-| [ "cofix" ident(id) ] -> [ Proofview.V82.tactic (Tactics.cofix (Some id)) ]
+  [ "cofix" ] -> [ Tactics.cofix None ]
+| [ "cofix" ident(id) ] -> [ Tactics.cofix (Some id) ]
 END
 
 (* Clear *)
@@ -247,7 +247,7 @@ END
 TACTIC EXTEND clear
   [ "clear" hyp_list(ids) ] -> [
     if List.is_empty ids then Tactics.keep []
-    else Proofview.V82.tactic (Tactics.clear ids)
+    else Tactics.clear ids
   ]
 | [ "clear" "-" ne_hyp_list(ids) ] -> [ Tactics.keep ids ]
 END
@@ -261,7 +261,7 @@ END
 (* Generalize dependent *)
 
 TACTIC EXTEND generalize_dependent
-  [ "generalize" "dependent" constr(c) ] -> [ Proofview.V82.tactic (Tactics.generalize_dep c) ]
+  [ "generalize" "dependent" constr(c) ] -> [ Tactics.generalize_dep c ]
 END
 
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)

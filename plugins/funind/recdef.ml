@@ -267,8 +267,8 @@ let observe_tclTHENLIST s tacl =
 let tclUSER tac is_mes l g =
   let clear_tac =
     match l with
-      | None -> clear []
-      | Some l -> tclMAP (fun id -> tclTRY (clear [id])) (List.rev l)
+      | None -> tclIDTAC
+      | Some l -> tclMAP (fun id -> tclTRY (Proofview.V82.of_tactic (clear [id]))) (List.rev l)
   in
   observe_tclTHENLIST (str "tclUSER1")
     [
@@ -399,7 +399,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 	Proofview.V82.of_tactic (intro_using teq_id);
 	onLastHypId (fun heq -> 
 	  observe_tclTHENLIST (str "treat_case2")[
-	    thin to_intros;
+	    Proofview.V82.of_tactic (clear to_intros);
 	    h_intros to_intros;
 	    (fun g' -> 
 	      let ty_teq = pf_unsafe_type_of g' (mkVar heq) in
@@ -560,7 +560,7 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
 			       Proofview.V82.of_tactic (simplest_elim(mkApp(delayed_force lt_n_O,[|s_max|])));
 			       Proofview.V82.of_tactic default_full_auto];
 		   observe_tclTHENLIST (str "destruct_bounds_aux2")[
-		     observe_tac (str "clearing k ") (clear [id]);
+		     observe_tac (str "clearing k ") (Proofview.V82.of_tactic (clear [id]));
 		     h_intros [k;h';def];
 		     observe_tac (str "simple_iter") (Proofview.V82.of_tactic (simpl_iter Locusops.onConcl));
 		     observe_tac (str "unfold functional")
@@ -589,7 +589,7 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
       | (_,v_bound)::l -> 
       observe_tclTHENLIST (str "destruct_bounds_aux3")[
 	Proofview.V82.of_tactic (simplest_elim (mkVar v_bound));
-	clear [v_bound];
+	Proofview.V82.of_tactic (clear [v_bound]);
 	tclDO 2 (Proofview.V82.of_tactic intro);
 	onNthHypId 1 
 	  (fun p_hyp -> 
@@ -689,7 +689,7 @@ let mkDestructEq :
            to_revert_constr in
     pf_typel new_hyps (fun _ ->
     observe_tclTHENLIST (str "mkDestructEq")
-     [generalize new_hyps;
+     [Proofview.V82.of_tactic (generalize new_hyps);
       (fun g2 ->
         let changefun patvars = { run = fun sigma ->
           let redfun = pattern_occs [Locus.AllOccurrencesBut [1], expr] in
@@ -948,7 +948,7 @@ let rec destruct_hex expr_info acc l =
     | (v,hex)::l -> 
       observe_tclTHENLIST (str "destruct_hex")[
 	Proofview.V82.of_tactic (simplest_case (mkVar hex));
-	clear [hex];
+	Proofview.V82.of_tactic (clear [hex]);
 	tclDO 2 (Proofview.V82.of_tactic intro);
 	onNthHypId 1 (fun hp -> 
 	  onNthHypId 2 (fun p -> 
@@ -1116,10 +1116,10 @@ let termination_proof_header is_mes input_type ids args_id relation
 	       [observe_tac (str "generalize")
 		  (onNLastHypsId (nargs+1)
 		     (tclMAP (fun id ->
-			tclTHEN (Tactics.generalize [mkVar id]) (clear [id]))
+			tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (Proofview.V82.of_tactic (clear [id])))
 		     ))
 	       ;
-		observe_tac (str "fix") (fix (Some hrec) (nargs+1));
+		observe_tac (str "fix") (Proofview.V82.of_tactic (fix (Some hrec) (nargs+1)));
 		h_intros args_id;
 		Proofview.V82.of_tactic (Simple.intro wf_rec_arg);
 		observe_tac (str "tac") (tac wf_rec_arg hrec wf_rec_arg acc_inv)
@@ -1306,7 +1306,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   observe_tclTHENLIST (str "")
 	     [
-	       generalize [lemma];
+	       Proofview.V82.of_tactic (generalize [lemma]);
 	       Proofview.V82.of_tactic (Simple.intro hid);
 	       (fun g ->
 		  let ids = pf_ids_of_hyps g in

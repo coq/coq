@@ -63,7 +63,7 @@ and general_decompose_aux recognizer id =
   elimHypThen
     (introElimAssumsThen
        (fun bas ->
-	  tclTHEN (Proofview.V82.tactic (clear [id]))
+	  tclTHEN (clear [id])
 	    (tclMAP (general_decompose_on_hyp recognizer)
                (ids_of_named_context bas.Tacticals.assums))))
     id
@@ -83,8 +83,8 @@ let general_decompose recognizer c =
     [ tclTHEN (intro_using tmphyp_name)
          (onLastHypId
 	    (ifOnHyp recognizer (general_decompose_aux recognizer)
-	      (fun id -> Proofview.V82.tactic (clear [id]))));
-       Proofview.V82.tactic (exact_no_check c) ]
+	      (fun id -> clear [id])));
+       exact_no_check c ]
   end }
 
 let head_in indl t gl =

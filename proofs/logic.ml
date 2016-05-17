@@ -77,10 +77,10 @@ let with_check = Flags.with_option check
 
 (* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
    returns [tail::(f head (id,_,_) (rev tail))] *)
-let apply_to_hyp sign id f =
+let apply_to_hyp check sign id f =
   try apply_to_hyp sign id f
   with Hyp_not_found ->
-    if !check then error_no_such_hypothesis id
+    if check then error_no_such_hypothesis id
     else sign
 
 let check_typability env sigma c =
@@ -493,7 +493,7 @@ let convert_hyp check sign sigma d =
   let env = Global.env() in
   let reorder = ref [] in
   let sign' =
-    apply_to_hyp sign id
+    apply_to_hyp check sign id
       (fun _ d' _ ->
         let _,c,ct = to_tuple d' in
         let env = Global.env_of_context sign in
@@ -543,108 +543,12 @@ let prim_refiner r sigma goal =
 	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
-    | FixRule (f,n,rest,j) ->
-     	let rec check_ind env k cl =
-          match kind_of_term (strip_outer_cast cl) with
-            | Prod (na,c1,b) ->
-            	if Int.equal k 1 then
-		  try
-		    fst (find_inductive env sigma c1)
-		  with Not_found ->
-		    error "Cannot do a fixpoint on a non inductive type."
-            	else
-                  let open Context.Rel.Declaration in
-		  check_ind (push_rel (LocalAssum (na,c1)) env) (k-1) b
-            | _ -> error "Not enough products."
-	in
-	let ((sp,_),u) = check_ind env n cl in
-	let firsts,lasts = List.chop j rest in
-	let all = firsts@(f,n,cl)::lasts in
-     	let rec mk_sign sign = function
-	  | (f,n,ar)::oth ->
-	      let ((sp',_),u')  = check_ind env n ar in
-	      if not (eq_mind sp sp') then
-		error "Fixpoints should be on the same mutual inductive declaration.";
-	      if !check && mem_named_context f (named_context_of_val sign) then
-		errorlabstrm "Logic.prim_refiner"
-		  (str "Name " ++ pr_id f ++ str " already used in the environment");
-	      mk_sign (push_named_context_val (LocalAssum (f,ar)) sign) oth
-	  | [] ->
-	      Evd.Monad.List.map (fun (_,_,c) sigma ->
-                let gl,ev,sig' =
-                  Goal.V82.mk_goal sigma sign c (Goal.V82.extra sigma goal) in
-                (gl,ev),sig')
-              all sigma
-	in
-	let (gls_evs,sigma) =  mk_sign sign all in
-	let (gls,evs) = List.split gls_evs in
-	let ids = List.map pi1 all in
-	let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
-	let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
-	let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
-	let typarray = Array.of_list (List.map pi3 all) in
-	let bodies = Array.of_list evs in
-	let oterm = Term.mkFix ((indxs,0),(funnames,typarray,bodies)) in
-	let sigma = Goal.V82.partial_solution sigma goal oterm in
-	(gls,sigma)
-
-    | Cofix (f,others,j) ->
-     	let rec check_is_coind env cl =
-	  let b = whd_betadeltaiota env sigma cl in
-          match kind_of_term b with
-            | Prod (na,c1,b) -> let open Context.Rel.Declaration in
-                                check_is_coind (push_rel (LocalAssum (na,c1)) env) b
-            | _ ->
-		try
-		  let _ = find_coinductive env sigma b in ()
-                with Not_found ->
-		  error "All methods must construct elements in coinductive types."
-	in
-	let firsts,lasts = List.chop j others in
-	let all = firsts@(f,cl)::lasts in
-     	List.iter (fun (_,c) -> check_is_coind env c) all;
-        let rec mk_sign sign = function
-          | (f,ar)::oth ->
-	      (try
-                (let _ = lookup_named_val f sign in
-                error "Name already used in the environment.")
-              with
-              |	Not_found ->
-                  mk_sign (push_named_context_val (LocalAssum (f,ar)) sign) oth)
-	  | [] -> 
-              Evd.Monad.List.map (fun (_,c) sigma ->
-                let gl,ev,sigma =
-                  Goal.V82.mk_goal sigma sign c (Goal.V82.extra sigma goal) in
-                (gl,ev),sigma)
-              all sigma
-     	in
-	let (gls_evs,sigma) =  mk_sign sign all in
-	let (gls,evs) = List.split gls_evs in
-	let (ids,types) = List.split all in
-	let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
-	let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
-	let typarray = Array.of_list types in
-	let bodies = Array.of_list evs in
-	let oterm = Term.mkCoFix (0,(funnames,typarray,bodies)) in
-	let sigma = Goal.V82.partial_solution sigma goal oterm in
-        (gls,sigma)
-
     | Refine c ->
 	check_meta_variables c;
 	let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in
 	let sigma = Goal.V82.partial_solution sigma goal oterm in
 	  (sgl, sigma)
-
-    (* And now the structural rules *)
-    | Thin ids ->
-        let ids = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty ids in
-	let (hyps,concl,nsigma) = clear_hyps env sigma ids sign cl in
-	let (gl,ev,sigma) =
-	  Goal.V82.mk_goal nsigma hyps concl (Goal.V82.extra nsigma goal)
-	in
-	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
-	  ([gl], sigma)
 
     | Move (hfrom, hto) ->
   	let (left,right,declfrom,toleft) =

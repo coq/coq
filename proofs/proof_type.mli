@@ -19,10 +19,7 @@ open Misctypes
 
 type prim_rule =
   | Cut of bool * bool * Id.t * types
-  | FixRule of Id.t * int * (Id.t * int * constr) list * int
-  | Cofix of Id.t * (Id.t * constr) list * int
   | Refine of constr
-  | Thin of Id.t list
   | Move of Id.t * Id.t move_location
 
 (** Nowadays, the only rules we'll consider are the primitive rules *)
