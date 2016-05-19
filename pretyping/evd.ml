@@ -476,9 +476,6 @@ let add_universe_constraints_context ctx cstrs =
       uctx_univ_variables = vars;
       uctx_universes = UGraph.merge_constraints local' ctx.uctx_universes }
 
-(* let addunivconstrkey = Profile.declare_profile "add_universe_constraints_context";; *)
-(* let add_universe_constraints_context =  *)
-(*   Profile.profile2 addunivconstrkey add_universe_constraints_context;; *)
 (*******************************************************************)
 (* Metamaps *)
 
@@ -1233,11 +1230,8 @@ let set_eq_sort env d s1 s2 =
       d
 
 let has_lub evd u1 u2 =
-  (* let normalize = Universes.normalize_universe_opt_subst (ref univs.uctx_univ_variables) in *)
-  (* (\* let dref, norm = memo_normalize_universe d in *\) *)
-  (* let u1 = normalize u1 and u2 = normalize u2 in *)
-    if Univ.Universe.equal u1 u2 then evd
-    else add_universe_constraints evd
+  if Univ.Universe.equal u1 u2 then evd
+  else add_universe_constraints evd
       (Universes.Constraints.singleton (u1,Universes.ULub,u2))
 
 let set_eq_level d u1 u2 =
@@ -1256,16 +1250,10 @@ let set_leq_sort env evd s1 s2 =
   match is_eq_sort s1 s2 with
   | None -> evd
   | Some (u1, u2) ->
-    (* if Univ.is_type0_univ u2 then *)
-    (*   if Univ.is_small_univ u1 then evd *)
-    (*   else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])) *)
-    (* else if Univ.is_type0m_univ u2 then  *)
-    (*   raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])) *)
-    (* else  *)
       if not (type_in_type env) then
       add_universe_constraints evd (Universes.Constraints.singleton (u1,Universes.ULe,u2))
       else evd
-	    
+
 let check_eq evd s s' =
   UGraph.check_eq evd.universes.uctx_universes s s'
 
@@ -1285,10 +1273,6 @@ let normalize_evar_universe_context_variables uctx =
       uctx_univ_variables = normalized_variables;
       uctx_universes = univs }
 
-(* let normvarsconstrkey = Profile.declare_profile "normalize_evar_universe_context_variables";; *)
-(* let normalize_evar_universe_context_variables = *)
-(*   Profile.profile1 normvarsconstrkey normalize_evar_universe_context_variables;; *)
-    
 let abstract_undefined_variables uctx =
   let vars' = 
     Univ.LMap.fold (fun u v acc ->
@@ -1340,23 +1324,21 @@ let refresh_undefined_universes evd =
     evd', subst
 
 let normalize_evar_universe_context uctx = 
-  let rec fixpoint uctx = 
-    let ((vars',algs'), us') = 
-      Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
-        uctx.uctx_univ_algebraic
+  let ((vars',algs'), us') = 
+    Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
+				    uctx.uctx_univ_algebraic
+  in
+  if Univ.ContextSet.equal us' uctx.uctx_local then uctx
+  else
+    let us', universes =
+      Universes.refresh_constraints uctx.uctx_initial_universes us'
     in
-      if Univ.ContextSet.equal us' uctx.uctx_local then uctx
-      else
-	let us', universes = Universes.refresh_constraints uctx.uctx_initial_universes us' in
-	let uctx' = 
-	  { uctx_names = uctx.uctx_names;
-	    uctx_local = us'; 
-	    uctx_univ_variables = vars'; 
-	    uctx_univ_algebraic = algs';
-	    uctx_universes = universes;
-	    uctx_initial_universes = uctx.uctx_initial_universes }
-	in fixpoint uctx'
-  in fixpoint uctx
+      { uctx_names = uctx.uctx_names;
+        uctx_local = us'; 
+        uctx_univ_variables = vars'; 
+        uctx_univ_algebraic = algs';
+        uctx_universes = universes;
+        uctx_initial_universes = uctx.uctx_initial_universes }
 
 let nf_univ_variables evd = 
   let subst, uctx' = normalize_evar_universe_context_variables evd.universes in
@@ -1367,12 +1349,6 @@ let nf_constraints evd =
   let subst, uctx' = normalize_evar_universe_context_variables evd.universes in
   let uctx' = normalize_evar_universe_context uctx' in
     {evd with universes = uctx'}
-
-let nf_constraints = 
-  if Flags.profile then
-    let nfconstrkey = Profile.declare_profile "nf_constraints" in
-      Profile.profile1 nfconstrkey nf_constraints
-  else nf_constraints
 
 let universe_of_name evd s = 
   UNameMap.find s (fst evd.universes.uctx_names)
