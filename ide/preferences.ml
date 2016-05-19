@@ -116,6 +116,7 @@ type pref =
       mutable modifier_for_templates : string;
       mutable modifier_for_tactics : string;
       mutable modifier_for_display : string;
+      mutable modifier_for_queries : string;
       mutable modifiers_valid : string;
 
       mutable cmd_browse : string;
@@ -196,6 +197,7 @@ let current = {
     modifier_for_templates = "<Control><Shift>";
     modifier_for_tactics = "<Control><Alt>";
     modifier_for_display = "<Alt><Shift>";
+    modifier_for_queries = "<Control><Shift>";
     modifiers_valid = "<Alt><Control><Shift>";
 
 
@@ -281,6 +283,7 @@ let save_pref () =
     add "modifier_for_templates" [p.modifier_for_templates] ++
     add "modifier_for_tactics" [p.modifier_for_tactics] ++
     add "modifier_for_display" [p.modifier_for_display] ++
+    add "modifier_for_queries" [p.modifier_for_queries] ++
     add "modifiers_valid" [p.modifiers_valid] ++
     add "cmd_browse" [p.cmd_browse] ++
     add "cmd_editor" [p.cmd_editor] ++
@@ -362,6 +365,8 @@ let load_pref () =
       (fun v -> np.modifier_for_tactics <- v);
     set_hd "modifier_for_display"
       (fun v -> np.modifier_for_display <- v);
+    set_hd "modifier_for_queries"
+      (fun v -> np.modifier_for_queries <- v);
     set_hd "modifiers_valid"
       (fun v ->
 	np.modifiers_valid <- v);
@@ -758,6 +763,14 @@ let configure ?(apply=(fun () -> ())) () =
       "Modifiers for View Menu"
       (str_to_mod_list current.modifier_for_display)
   in
+  let modifier_for_queries =
+    modifiers
+      ~allow:the_valid_mod
+      ~f:(fun l -> current.modifier_for_queries <- mod_list_to_str l)
+      ~help:help_string
+      "Modifiers for Queries Menu"
+      (str_to_mod_list current.modifier_for_queries)
+  in
   let modifiers_valid =
     modifiers
       ~f:(fun l ->
@@ -897,8 +910,8 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
-        modifier_for_templates; modifier_for_display; modifier_for_navigation; modifier_notice;
-        user_queries]);
+        modifier_for_templates; modifier_for_display; modifier_for_navigation;
+        modifier_for_queries; user_queries; modifier_notice]);
      Section("Misc", Some `ADD,
        misc)]
   in
