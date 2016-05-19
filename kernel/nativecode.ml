@@ -1486,8 +1486,8 @@ let optimize_stk stk =
 (** Printing to ocaml **)
 (* Redefine a bunch of functions in module Names to generate names
    acceptable to OCaml. *)
-let string_of_id s = Unicode.ascii_of_ident (string_of_id s)
-let string_of_label l = Unicode.ascii_of_ident (string_of_label l)
+let string_of_id s = Unicode.ascii_of_ident (Id.to_string s)
+let string_of_label l = string_of_id (Label.to_id l)
 
 let string_of_dirpath = function
   | [] -> "_"
@@ -1560,8 +1560,7 @@ let pp_gname fmt g =
   Format.fprintf fmt "%s" (string_of_gname g)
 
 let pp_lname fmt ln =
-  let s = Unicode.ascii_of_ident (string_of_name ln.lname) in
-  Format.fprintf fmt "x_%s_%i" s ln.luid
+  Format.fprintf fmt "x_%s_%i" (string_of_name ln.lname) ln.luid
 
 let pp_ldecls fmt ids =
   let len = Array.length ids in
