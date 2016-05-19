@@ -20,7 +20,7 @@ Require Import ZArith.
 Require Import Rdefinitions.
 Require Import RingMicromega.
 Require Import VarMap.
-Require Tauto.
+Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
 Ltac preprocess := 

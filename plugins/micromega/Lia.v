@@ -16,7 +16,7 @@ Require Import ZMicromega.
 Require Import ZArith.
 Require Import RingMicromega.
 Require Import VarMap.
-Require Tauto.
+Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
 Ltac preprocess :=

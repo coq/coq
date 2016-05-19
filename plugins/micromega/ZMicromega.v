@@ -198,7 +198,7 @@ Definition xnormalise (t:Formula Z) : list (NFormula Z)  :=
       | OpLe => (psub lhs (padd rhs (Pc 1)),NonStrict) :: nil
     end.
 
-Require Import Tauto BinNums.
+Require Import Coq.micromega.Tauto BinNums.
 
 Definition normalise (t:Formula Z) : cnf (NFormula Z) :=
   List.map  (fun x => x::nil) (xnormalise t).
