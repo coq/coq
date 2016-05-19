@@ -45,6 +45,7 @@ let print_usage_channel co command =
 \n  -require path          load Coq library path and import it (Require Import path.)\
 \n  -compile f.v           compile Coq file f.v (implies -batch)\
 \n  -compile-verbose f.v   verbosely compile Coq file f.v (implies -batch)\
+\n  -o f.vo                use f.vo as the output file name\            
 \n  -quick                 quickly compile .v files to .vio files (skip proofs)\
 \n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
 \n                         into fi.vo\

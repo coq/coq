@@ -17,7 +17,8 @@ module H : Map.S with type key = int * int
 module M : Map.S with type key = string
 val contents : aux_file -> string M.t H.t
 
-val start_aux_file_for : string -> unit
+val aux_file_name_for : string -> string
+val start_aux_file : aux_file:string -> v_file:string -> unit
 val stop_aux_file : unit -> unit 
 val recording : unit -> bool
 

@@ -14,6 +14,7 @@ val load_init : bool ref
 val batch_mode : bool ref
 type compilation_mode = BuildVo | BuildVio | Vio2Vo
 val compilation_mode : compilation_mode ref
+val compilation_output_name : string option ref
 
 val test_mode : bool ref
 

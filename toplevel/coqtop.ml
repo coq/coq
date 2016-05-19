@@ -514,6 +514,7 @@ let parse_args arglist =
     |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Vio2Vo
     |"-toploop" -> set_toploop (next ())
     |"-w" -> set_warning (next ())
+    |"-o" -> Flags.compilation_output_name := Some (next())
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"

@@ -291,12 +291,35 @@ let load_vernac verb file =
     if !Flags.beautify_file then close_out !chan_beautify;
     raise_with_file file (disable_drop e, info)
 
-let ensure_v f =
-  if Filename.check_suffix f ".v" then f
+let ensure_ext ext f =
+  if Filename.check_suffix f ext then f
   else begin
     msg_warning (str "File \"" ++ str f ++ strbrk "\" has been implicitly \
-    expanded to \"" ++ str f ++ str ".v\"");
-    f ^ ".v"
+    expanded to \"" ++ str f ++ str ext ++ str "\"");
+    f ^ ext
+  end
+
+let ensure_bname src tgt =
+  let src, tgt = Filename.basename src, Filename.basename tgt in
+  let src, tgt = Filename.chop_extension src, Filename.chop_extension tgt in
+  if src <> tgt then begin
+    msg_error (str "Source and target file names must coincide, directories can differ");
+    msg_error (str "Source: " ++ str src);
+    msg_error (str "Target: " ++ str tgt);
+    flush_all ();
+    exit 1
+  end
+
+let ensure ext src tgt = ensure_bname src tgt; ensure_ext ext tgt
+
+let ensure_v v = ensure ".v" v v
+let ensure_vo v vo = ensure ".vo" v vo
+let ensure_vio v vio = ensure ".vio" v vio
+
+let ensure_exists f =
+  if not (Sys.file_exists f) then begin
+    msg_error (hov 0 (str "Can't find file" ++ spc () ++ str f));
+    exit 1
   end
 
 (* Compile a vernac file *)
@@ -308,9 +331,16 @@ let compile verbosely f =
   match !Flags.compilation_mode with
   | BuildVo ->
       let long_f_dot_v = ensure_v f in
-      let ldir = Flags.verbosely Library.start_library long_f_dot_v in
-      Stm.set_compilation_hints long_f_dot_v;
-      Aux_file.start_aux_file_for long_f_dot_v;
+      ensure_exists long_f_dot_v;
+      let long_f_dot_vo =
+        match !Flags.compilation_output_name with
+        | None -> long_f_dot_v ^ "o"
+        | Some f -> ensure_vo long_f_dot_v f in
+      let ldir = Flags.verbosely Library.start_library long_f_dot_vo in
+      Stm.set_compilation_hints long_f_dot_vo;
+      Aux_file.(start_aux_file
+        ~aux_file:(aux_file_name_for long_f_dot_vo)
+        ~v_file:long_f_dot_v);
       Dumpglob.start_dump_glob long_f_dot_v;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       if !Flags.xml_export then Hook.get f_xml_start_library ();
@@ -319,7 +349,7 @@ let compile verbosely f =
       Stm.join ();
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
-      Library.save_library_to ldir long_f_dot_v (Global.opaque_tables ());
+      Library.save_library_to ldir long_f_dot_vo (Global.opaque_tables ());
       Aux_file.record_in_aux_at Loc.ghost "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
@@ -327,13 +357,18 @@ let compile verbosely f =
       Dumpglob.end_dump_glob ()
   | BuildVio ->
       let long_f_dot_v = ensure_v f in
-      let ldir = Flags.verbosely Library.start_library long_f_dot_v in
+      ensure_exists long_f_dot_v;
+      let long_f_dot_vio =
+        match !Flags.compilation_output_name with
+        | None -> long_f_dot_v ^ "io"
+        | Some f -> ensure_vio long_f_dot_v f in
+      let ldir = Flags.verbosely Library.start_library long_f_dot_vio in
       Dumpglob.noglob ();
-      Stm.set_compilation_hints long_f_dot_v;
+      Stm.set_compilation_hints long_f_dot_vio;
       let _ = load_vernac verbosely long_f_dot_v in
       Stm.finish ();
       check_pending_proofs ();
-      Stm.snapshot_vio ldir long_f_dot_v;
+      Stm.snapshot_vio ldir long_f_dot_vio;
       Stm.reset_task_queue ()
   | Vio2Vo ->
       let open Filename in
