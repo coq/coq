@@ -17,8 +17,8 @@ open Table
 open Miniml
 open Mlutil
 
-let string_of_id id =
-  let s = Names.Id.to_string id in
+let ascii_of_id id =
+  let s = Id.to_string id in
   for i = 0 to String.length s - 2 do
     if s.[i] == '_' && s.[i+1] == '_' then warning_id s
   done;
@@ -109,9 +109,9 @@ let pseudo_qualify = qualify "__"
 let is_upper s = match s.[0] with 'A' .. 'Z' -> true | _ -> false
 let is_lower s = match s.[0] with 'a' .. 'z' | '_' -> true | _ -> false
 
-let lowercase_id id = Id.of_string (String.uncapitalize (string_of_id id))
+let lowercase_id id = Id.of_string (String.uncapitalize (ascii_of_id id))
 let uppercase_id id =
-  let s = string_of_id id in
+  let s = ascii_of_id id in
   assert (not (String.is_empty s));
   if s.[0] == '_' then Id.of_string ("Coq_"^s)
   else Id.of_string (String.capitalize s)
@@ -331,7 +331,7 @@ let reset_renaming_tables flag =
    existing. *)
 
 let modular_rename k id =
-  let s = string_of_id id in
+  let s = ascii_of_id id in
   let prefix,is_ok =
     if upperkind k then "Coq_",is_upper else "coq_",is_lower
   in
@@ -353,9 +353,9 @@ let modfstlev_rename =
       let coqset = get_prefixes id in
       let nextcoq = next_ident_away coqid coqset in
       add_prefixes id (nextcoq::coqset);
-      (string_of_id nextcoq)^"_"^(string_of_id id)
+      (Id.to_string nextcoq)^"_"^(ascii_of_id id)
     with Not_found ->
-      let s = string_of_id id in
+      let s = ascii_of_id id in
       if is_lower s || begins_with_CoqXX s then
 	(add_prefixes id [coqid]; "Coq_"^s)
       else
@@ -404,7 +404,7 @@ let ref_renaming_fun (k,r) =
     | [""] -> (* this happens only at toplevel of the monolithic case *)
       let globs = Id.Set.elements (get_global_ids ()) in
       let id = next_ident_away (kindcase_id k idg) globs in
-      string_of_id id
+      Id.to_string id
     | _ -> modular_rename k idg
   in
   add_global_ids (Id.of_string s);
