@@ -27,14 +27,15 @@ val ident_refutation : string -> (bool * string) option
     @raise Assert_failure if the input string is empty. *)
 val lowercase_first_char : string -> string
 
-(** Return [true] if all UTF-8 characters in the input string are just plain ASCII characters.
-    Returns [false] otherwise. *)
+(** Return [true] if all UTF-8 characters in the input string are just plain
+    ASCII characters. Returns [false] otherwise. *)
 val is_basic_ascii : string -> bool
 
-(** [ascii_of_ident s] maps UTF-8 string to a string composed solely from ASCII characters.
-    Those UTF-8 characters which do not have their ASCII counterparts are
-    translated to ["__Uxxxx_"] where {i xxxx} are four hexadecimal digits.
-    @raise Unsupported if the input string contains unsupported UTF-8 characters. *)
+(** [ascii_of_ident s] maps UTF-8 string to a string composed solely from ASCII
+    characters. The non-ASCII characters are translated to ["_UUxxxx_"] where
+    {i xxxx} is the Unicode index of the character in hexadecimal (from four
+    to six hex digits). To avoid potential name clashes, any preexisting
+    substring ["_UU"] is turned into ["_UUU"]. *)
 val ascii_of_ident : string -> string
 
 (** Validate an UTF-8 string *)
