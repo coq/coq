@@ -6,6 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* TODO: 
+
+  - Have two modes for debugging changes:
+    - In unification (clenv_unify vs evar_conv)
+    - In resolution (new vs old engines)
+  - Add verbosity option
+  - unique solutions
+ *)
+
 open Pp
 open Errors
 open Util
@@ -43,6 +52,28 @@ let typeclasses_iterative_deepening = ref false
 let set_typeclasses_iterative_deepening d = (:=) typeclasses_iterative_deepening d
 let get_typeclasses_iterative_deepening () = !typeclasses_iterative_deepening
 
+let get_compat_version d =
+  match d with
+  | "8.5" -> Flags.V8_5
+  | _ -> Flags.Current
+
+let typeclasses_unif_compat = ref Flags.V8_5
+let set_typeclasses_unif_compat d = (:=) typeclasses_unif_compat d
+let get_typeclasses_unif_compat () = !typeclasses_unif_compat
+let set_typeclasses_unif_compat_string d =
+  set_typeclasses_unif_compat (get_compat_version d)
+let get_typeclasses_unif_compat_string () =
+  Flags.pr_version (get_typeclasses_unif_compat ())
+          
+let typeclasses_compat = ref Flags.Current
+let set_typeclasses_compat d = (:=) typeclasses_compat d
+let get_typeclasses_compat () = !typeclasses_compat
+let set_typeclasses_compat_string d =
+  set_typeclasses_compat (get_compat_version d)
+
+let get_typeclasses_compat_string () =
+  Flags.pr_version (get_typeclasses_compat ())
+     
 open Goptions
 
 let _ =
@@ -72,6 +103,24 @@ let _ =
       optread  = get_typeclasses_iterative_deepening;
       optwrite = set_typeclasses_iterative_deepening; }
 
+let _ =
+  declare_string_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "compat";
+      optkey   = ["Typeclasses";"Compatibility"];
+      optread  = get_typeclasses_compat_string;
+      optwrite = set_typeclasses_compat_string; }
+
+let _ =
+  declare_string_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "compat";
+      optkey   = ["Typeclasses";"Unification";"Compatibility"];
+      optread  = get_typeclasses_unif_compat_string;
+      optwrite = set_typeclasses_unif_compat_string; }
+    
 (** We transform the evars that are concerned by this resolution
     (according to predicate p) into goals.
     Invariant: function p only manipulates and returns undefined evars *)
@@ -231,6 +280,22 @@ let with_prods nprods poly (c, clenv) f =
   | Some (diff, clenv') -> f.enter gl (c, diff, clenv')
   end }
 
+let matches_pattern concl pat =
+  let matches env sigma =
+    match pat with
+    | None -> Proofview.tclUNIT ()
+    | Some pat ->
+       let sigma = Sigma.to_evar_map sigma in
+       if Constr_matching.is_matching env sigma pat concl then
+	 Proofview.tclUNIT ()
+       else 
+         Tacticals.New.tclZEROMSG (str "conclPattern")
+  in
+   Proofview.Goal.enter { enter = fun gl ->
+     let env = Proofview.Goal.env gl in
+     let sigma = Proofview.Goal.sigma gl in
+       matches env sigma }
+                          
 (** Hack to properly solve dependent evars that are typeclasses *)
 
 let rec e_trivial_fail_db db_list local_db =
@@ -286,13 +351,34 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
   let tac_of_hint =
     fun (flags, {pri = b; pat = p; poly = poly; code = t; name = name}) ->
       let tac = function
-        | Res_pf (term,cl) -> Tacticals.New.tclTHEN
-          (with_prods nprods poly (term,cl) (unify_resolve_newcl poly flags))
-          Proofview.shelve_unifiable
-        | ERes_pf (term,cl) -> Tacticals.New.tclTHEN (with_prods nprods poly (term,cl)
-                                         (unify_resolve_newcl poly flags))
-                                                   Proofview.shelve_unifiable
-
+        | Res_pf (term,cl) ->
+           let tac = 
+             if get_typeclasses_unif_compat () = Flags.Current then
+               (with_prods nprods poly (term,cl)
+                   ({ enter = fun gl clenv ->
+                              (matches_pattern concl p) <*>
+                                ((unify_resolve_newcl poly flags).enter gl clenv)}))
+             else
+               let tac =
+                 with_prods nprods poly (term,cl) (unify_resolve poly flags) in
+               Proofview.tclBIND (Proofview.with_shelf tac)
+                                 (fun (gls, ()) ->
+                                   Proofview.Unsafe.tclNEWGOALS gls)
+           in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
+        | ERes_pf (term,cl) ->
+           let tac = 
+             if get_typeclasses_unif_compat () = Flags.Current then
+               (with_prods nprods poly (term,cl)
+                  ({ enter = fun gl clenv ->
+                             (matches_pattern concl p) <*>
+                               ((unify_resolve_newcl poly flags).enter gl clenv)}))
+           else 
+             let tac =
+               with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
+             Proofview.tclBIND (Proofview.with_shelf tac)
+                               (fun (gls, ()) ->
+                                 Proofview.Unsafe.tclNEWGOALS gls)
+           in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
       | Give_exact c -> Proofview.V82.tactic (e_give_exact flags poly c)
       | Res_pf_THEN_trivial_fail (term,cl) ->
          let fst = with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
@@ -306,9 +392,15 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
       in
       let tac = run_hint t tac in
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
+      let pp =
+        match p with
+        | Some pat when get_typeclasses_unif_compat () = Flags.Current ->
+           str " with pattern " ++ Printer.pr_constr_pattern pat
+        | _ -> mt ()
+      in
 	match repr_hint t with
-	| Extern _ -> (tac, b, true, name, lazy (pr_hint t))
-	| _ -> (tac, b, false, name, lazy (pr_hint t))
+	| Extern _ -> (tac, b, true, name, lazy (pr_hint t ++ pp))
+	| _ -> (tac, b, false, name, lazy (pr_hint t ++ pp))
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db sigma concl =
@@ -524,34 +616,6 @@ let make_autogoal' ?(st=full_transparent_state) only_classes cut i g =
                search_cut = cut } in
   info
                  
-    (*                       
-           (* Do we need topological sorting on the dependent subgoals ? *)
-	   (* let gls = top_sort s' evm in *)
-		  (* (List.map (fun ev -> Some ev, ev) gls, s') *)
-	   let gls' = List.map_i
-	                (fun j (evar, g) ->
-		in g, info) 1 newgls in
-	    let glsv = {it = gls'; sigma = s';} in
-	    let fk' =
-	      (fun e ->
-		let do_backtrack =
-		  if unique then occur_existential concl
-		  else if info.unique then true
-		  else if List.is_empty gls' then 
-		    needs_backtrack env s' info.is_evar concl
-		  else true
-		in
-		let e' = match foundone with None -> e | Some e' -> merge_failures e e' in
-		  if !typeclasses_debug then
-		    msg_debug 
-		      ((if do_backtrack then str"Backtracking after "
-			else str "Not backtracking after ")
-		       ++ Lazy.force pp);
-		  if do_backtrack then aux (succ i) (Some e') tl
-		  else fk e')
-	    in
-	    sk glsv fk') *)
-
 let needs_backtrack' env evd unique concl =
   if unique || is_Prop env evd concl then
     occur_existential concl
@@ -581,11 +645,12 @@ let new_hints_tac_gl only_classes hints info kont gl
   let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
   let idx = ref 1 in
   let rec aux foundone e = function
-    | (tac, _, b, name, pp) :: tl ->
+    | (tac, pat, b, name, pp) :: tl ->
        let derivs = path_derivate info.search_cut name in
        (if !typeclasses_debug then
 	  msg_debug (pr_depth (!idx :: info.search_depth) ++ str": trying " ++
-                       Lazy.force pp++ str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)));
+                       Lazy.force pp ++
+                       str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)));
        let tac_of i j = 
          Goal.nf_enter { enter = fun gl' ->
            let sigma' = Goal.sigma gl' in
@@ -690,16 +755,6 @@ let new_eauto_tac_gl ?st only_classes hints limit i (gl : ([`NF],'c) Proofview.G
   let info = make_autogoal' ?st only_classes (cut_of_hints hints) i gl in
   eauto_tac' only_classes hints limit 1 info
 
-let count_tac t =
-  let open Proofview in
-  let rec aux n =
-    tclBIND (tclCASE (t n))
-            (fun c ->
-              match c with
-              | Fail (e, ie) -> tclZERO ~info:ie e 
-              | Next (_, fk) -> tclOR (tclUNIT ()) (fun _ -> aux (succ n)))
-  in aux 1
-             
 let new_eauto_tac ?(st=full_transparent_state) only_classes hints limit : unit Proofview.tactic =
   let eautotac i =
     Proofview.Goal.nf_enter
@@ -1149,7 +1204,11 @@ let resolve_all_evars debug m unique env p oevd do_split fail =
     | comp :: comps ->
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
-	 let evd' = resolve_all_evars_once' debug m unique p evd in
+	let evd' =
+          if get_typeclasses_compat () = Flags.Current then
+            resolve_all_evars_once' debug m unique p evd
+          else resolve_all_evars_once debug m unique p evd
+        in
 	 if has_undefined p oevd evd' then raise Unresolved;
 	 docomp evd' comps
       with Unresolved | Not_found ->
