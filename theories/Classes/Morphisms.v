@@ -483,7 +483,7 @@ Ltac partial_application_tactic :=
      let n := fresh in evar (n:nat) ;
      let v := eval compute in n in clear n ;
       let H := fresh in
-        assert(H:Params m' v) by typeclasses eauto ;
+        assert(H:Params m' v) by (subst m'; typeclasses eauto) ;
           let v' := eval compute in v in subst m';
             (sk H v' || fail 1))
     || fk
