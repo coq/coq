@@ -28,7 +28,7 @@ let keywords =
   List.fold_right (fun s -> Id.Set.add (Id.of_string s))
   [ "Any"; "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
     "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance";
-    "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_"; "__";
+    "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_";
     "as"; "qualified"; "hiding" ; "unit" ; "unsafeCoerce" ]
   Id.Set.empty
 
@@ -86,8 +86,8 @@ let preamble mod_name comment used_modules usf =
   ++
   (if not usf.mldummy then mt ()
    else
-     str "__ :: any" ++ fnl () ++
-     str "__ = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())
+     str !extraction_magic_name ++ str " :: any" ++ fnl () ++
+     str !extraction_magic_name ++ str " = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())
 
 let pp_abst = function
   | [] -> (mt ())
@@ -146,7 +146,10 @@ let rec pp_expr par env args =
 	let id = get_db_name n env in
         (* Try to survive to the occurrence of a Dummy rel.
            TODO: we should get rid of this hack (cf. #592) *)
-        let id = if Id.equal id dummy_name then Id.of_string "__" else id in
+        let id =
+          if Id.equal id dummy_name then
+            Id.of_string !extraction_magic_name
+          else id in
         apply (pr_id id)
     | MLapp (f,args') ->
 	let stl = List.map (pp_expr true env []) args' in
@@ -210,8 +213,8 @@ let rec pp_expr par env args =
     | MLdummy k ->
         (* An [MLdummy] may be applied, but I don't really care. *)
         (match msg_of_implicit k with
-         | "" -> str "__"
-         | s -> str "__" ++ spc () ++ pp_bracket_comment (str s))
+         | "" -> str !extraction_magic_name
+         | s -> str !extraction_magic_name ++ spc () ++ pp_bracket_comment (str s))
     | MLmagic a ->
 	pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")

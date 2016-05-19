@@ -367,9 +367,10 @@ let check_inside_section () =
     err (str "You can't do that within a section." ++ fnl () ++
 	 str "Close it and try again.")
 
-let warning_id s =
-  msg_warning (str ("The identifier "^s^
-		    " contains __ which is reserved for the extraction"))
+let warning_id bad s =
+  msg_warning (str "The identifier " ++ str s ++
+               str " contains " ++ str bad ++
+               str " which is reserved for the extraction")
 
 let error_constant r =
   err (safe_pr_global r ++ str " is not a constant.")
@@ -413,11 +414,15 @@ let error_not_visible r =
 
 let error_MPfile_as_mod mp b =
   let s1 = if b then "asked" else "required" in
-  let s2 = if b then "extract some objects of this module or\n" else "" in
-  err (str ("Extraction of file "^(raw_string_of_modfile mp)^
-	    ".v as a module is "^s1^".\n"^
-	    "Monolithic Extraction cannot deal with this situation.\n"^
-	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
+  let s2 = if b then str "extract some objects of this module or" ++ fnl ()
+           else spc ()
+  in
+  err (   str "Extraction of file" ++ spc () ++ str (raw_string_of_modfile mp)
+       ++ str ".v as a module is " ++ str s1 ++ str "." ++ fnl ()
+       ++ str "Monolithic Extraction cannot deal with this situation."
+       ++ fnl ()
+       ++ str "Please " ++ s2 ++ str "use (Recursive) Extraction Library instead."
+       ++ fnl ())
 
 let argnames_of_global r =
   let typ = Global.type_of_global_unsafe r in

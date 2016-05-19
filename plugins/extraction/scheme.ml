@@ -23,7 +23,7 @@ let keywords =
   List.fold_right (fun s -> Id.Set.add (Id.of_string s))
     [ "define"; "let"; "lambda"; "lambdas"; "match";
       "apply"; "car"; "cdr";
-      "error"; "delay"; "force"; "_"; "__"]
+      "error"; "delay"; "force"; "_"]
     Id.Set.empty
 
 let pp_comment s = str";; "++h 0 s++fnl ()
@@ -37,7 +37,10 @@ let preamble _ comment _ usf =
   str ";; This extracted scheme code relies on some additional macros\n" ++
   str ";; available at http://www.pps.univ-paris-diderot.fr/~letouzey/scheme\n" ++
   str "(load \"macros_extr.scm\")\n\n" ++
-  (if usf.mldummy then str "(define __ (lambda (_) __))\n\n" else mt ())
+  (if usf.mldummy then
+     str "(define " ++ str !extraction_magic_name ++ str " (lambda (_) " ++
+     str !extraction_magic_name ++ str "))\n\n"
+   else mt ())
 
 let pr_id id =
   let s = Id.to_string id in
@@ -127,7 +130,8 @@ let rec pp_expr env args =
 	(* An [MLexn] may be applied, but I don't really care. *)
 	paren (str "error" ++ spc () ++ qs s)
     | MLdummy _ ->
-	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
+      (* An [MLdummy] may be applied, but I don't really care. *)
+      str !extraction_magic_name
     | MLmagic a ->
 	pp_expr env args a
     | MLaxiom -> paren (str "error \"AXIOM TO BE REALIZED\"")

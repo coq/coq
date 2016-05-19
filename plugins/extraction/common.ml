@@ -17,12 +17,35 @@ open Table
 open Miniml
 open Mlutil
 
+let extraction_magic_name =
+  let value = ref "__" in
+  let _ = Goptions.(declare_string_option
+      { optsync = true
+      ; optdepr = false
+      ; optname = "The name of the \"magic\" symbol used for extracting terms"
+      ; optkey = ["Extraction";"Magic";"Name"]
+      ; optread = (fun () -> !value)
+      ; optwrite = (:=) value
+      })
+  in value
+
 let string_of_id id =
-  let s = Names.Id.to_string id in
-  for i = 0 to String.length s - 2 do
-    if s.[i] == '_' && s.[i+1] == '_' then warning_id s
-  done;
-  Unicode.ascii_of_ident s
+  let s = Unicode.ascii_of_ident (Names.Id.to_string id) in
+  let _ =
+    try
+      Str.search_forward (Str.regexp (Str.quote !extraction_magic_name)) s 0 ;
+      if s = !extraction_magic_name then
+        Errors.errorlabstrm "Extraction"
+          (str "You can not have an identifier exactly matching the magic name \
+                for extraction." ++ fnl ()
+           ++ str "The magic name is currently set to '"
+           ++ str !extraction_magic_name ++ str "'." ++ fnl ()
+           ++ str "You can change the magic name using \
+                   'Set Extraction Magic Name \"...\"'.")
+      else warning_id !extraction_magic_name s
+    with Not_found -> ()
+  in
+  s
 
 let is_mp_bound = function MPbound _ -> true | _ -> false
 
