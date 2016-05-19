@@ -235,14 +235,24 @@ let is_basic_ascii s =
   !ok
 
 let ascii_of_ident s =
-  if is_basic_ascii s then s else
-    let i = ref 0 and out = ref "" in
-    begin try while true do
+  let len = String.length s in
+  let has_UU i =
+    i+2 < len && s.[i]='_' && s.[i+1]='U' && s.[i+2]='U'
+  in
+  let i = ref 0 in
+  while !i < len && Char.code s.[!i] < 128 && not (has_UU !i) do
+    incr i
+  done;
+  if !i = len then s else
+    let out = Buffer.create (2*len) in
+    Buffer.add_substring out s 0 !i;
+    while !i < len do
       let j, n = next_utf8 s !i in
-      out :=
-        if n >= 128
-        then Printf.sprintf "%s__U%04x_" !out n
-        else Printf.sprintf "%s%c" !out s.[!i];
-      i := !i + j
-    done with End_of_input -> () end;
-    !out
+      if n >= 128 then
+        (Printf.bprintf out "_UU%04x_" n; i := !i + j)
+      else if has_UU !i then
+        (Buffer.add_string out "_UUU"; i := !i + 3)
+      else
+        (Buffer.add_char out s.[!i]; incr i)
+    done;
+    Buffer.contents out
