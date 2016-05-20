@@ -36,6 +36,7 @@ val autoapply : constr -> Hints.hint_db_name -> tactic
 type newautoinfo =
   { search_depth : int list;
     last_tac : Pp.std_ppcmds Lazy.t;
+    search_dep : bool;
     search_cut : Hints.hints_path;
     search_hints : Hints.Hint_db.t }
 
@@ -43,8 +44,8 @@ val new_hints_tac : bool -> Hints.hint_db list ->
                     newautoinfo ->
                     (newautoinfo -> unit Proofview.tactic) -> unit Proofview.tactic
 
-val make_autogoal' :            ?st:Names.transparent_state ->
-           bool ->
+val make_autogoal' : ?st:Names.transparent_state ->
+           bool -> bool ->
            Hints.hints_path -> int -> ([ `NF ], 'c) Proofview.Goal.t -> newautoinfo
 
 val new_eauto_tac : ?st:Names.transparent_state ->
