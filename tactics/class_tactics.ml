@@ -7,7 +7,8 @@
 (************************************************************************)
 
 (* TODO: 
-
+  - Find an interface allowing eauto to backtrack when shelved goals remain,
+   e.g. to force instantiations. 
   - unique solutions
  *)
 
@@ -379,7 +380,8 @@ let matches_pattern concl pat =
  *)
 
 let pr_gls sigma gls =
-  prlist_with_sep spc (fun ev -> int (Evar.repr ev) ++ pr_ev sigma ev) gls
+  prlist_with_sep spc
+   (fun ev -> int (Evar.repr ev) ++ spc () ++ pr_ev sigma ev) gls
 
 (** Ensure the dependent subgoals are shelved after an apply/eapply. *)
 let shelve_dependencies gls =
@@ -807,30 +809,34 @@ let new_hints_tac_gl only_classes hints info kont gl
            let filter ev =
              try
                let evi = Evd.find_undefined sigma ev in
-               if only_classes then 
-                 is_class_type sigma (Evd.evar_concl evi)
-               else true
-             with Not_found -> false
+               if only_classes then
+                 Some (ev, is_class_type sigma (Evd.evar_concl evi))
+               else Some (ev, true)
+             with Not_found -> None
            in
-           let remaining = List.filter filter shelf in
+           let remaining = CList.map_filter filter shelf in
            if !typeclasses_debug > 1 then
-             Feedback.msg_debug (pr_depth (i :: info.search_depth) ++
-                          str": after " ++ Lazy.force pp ++ str" finished, " ++
-                          int (List.length remaining) ++
-                          str " goals are shelved and unsolved (" ++
-                          prlist_with_sep spc
-                                          (fun ev -> int (Evar.repr ev) ++ spc () ++
-                                                    pr_ev sigma ev) shelf ++ str")");
-           if List.is_empty remaining then tclUNIT ()
-           else begin
-               (* Some existentials produced by the original tactic were not solved
-                       in the subgoals, turn them into subgoals now. *)
-               if !typeclasses_debug > 1 then
-                 Feedback.msg_debug (str"Adding shelved subgoals to the search: " ++
-                              prlist_with_sep spc (pr_ev sigma) remaining);
-               (with_shelf (Unsafe.tclNEWGOALS remaining)) >>=
-                 fun s -> result s i (Some (Option.default 0 k + j))
-             end
+             Feedback.msg_debug
+               (pr_depth (i :: info.search_depth) ++
+                  str": after " ++ Lazy.force pp ++ str" finished, " ++
+                  int (List.length remaining) ++
+                  str " goals are shelved and unsolved ( " ++
+                  prlist_with_sep spc
+                    (fun ev -> int (Evar.repr ev) ++ spc () ++
+                              pr_ev sigma ev) (List.map fst remaining) ++ str")");
+           begin
+             (* Some existentials produced by the original tactic were not solved
+                in the subgoals, turn them into subgoals now. *)
+             let shelved, goals = List.split_when (fun (ev, s) -> s) remaining in
+             let shelved = List.map fst shelved and goals = List.map fst goals in
+             if !typeclasses_debug > 1 then
+               Feedback.msg_debug (str"Adding shelved subgoals to the search: " ++
+                            prlist_with_sep spc (pr_ev sigma) goals);
+             shelve_goals shelved <*>
+               (if List.is_empty goals then tclUNIT ()
+                else with_shelf (Unsafe.tclNEWGOALS goals) >>=
+                       fun s -> result s i (Some (Option.default 0 k + j)))
+           end
          in res <*> finish
        in
        if path_matches derivs [] then aux e tl
@@ -846,8 +852,10 @@ let new_hints_tac_gl only_classes hints info kont gl
        match e with
        | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
        | (_,ie) -> Proofview.tclZERO ~info:ie NotApplicableEx
-  in aux (NotApplicableEx,Exninfo.null) poss
-
+  in
+  if backtrack then aux (NotApplicableEx,Exninfo.null) poss
+  else tclONCE (aux (NotApplicableEx,Exninfo.null) poss)
+                    
 let new_hints_tac cl hints info kont : unit Proofview.tactic =
   Proofview.Goal.nf_enter
     { enter = fun gl -> new_hints_tac_gl cl hints info kont gl }
@@ -913,20 +921,18 @@ let new_eauto_tac ?(st=full_transparent_state) only_classes hints limit : unit P
     function Fail (e,ie) -> tclZERO ~info:ie e
            | Next ((shelf,()), cont) ->
               Proofview.tclEVARMAP >>= fun sigma ->
-              if List.for_all (fun ev -> Evd.is_defined sigma ev) shelf then
-                (if !typeclasses_debug > 0 then
-                   Feedback.msg_debug
-                     (str"Proof found with solved shelved goals:" ++
-                        prlist_with_sep spc (pr_ev sigma) shelf);
-                 tclUNIT ())
-              else
-                (if !typeclasses_debug > 0 then
-                   Feedback.msg_debug
-                     (str"Proof found but with unsolved shelved goals:" ++
-                        prlist_with_sep spc (pr_ev sigma)
-                           (List.filter (Evd.is_undefined sigma) shelf) ++
-                        str", trying another proof");
-                 tclCASE (cont (HasShelvedGoals, Exninfo.null)) >>= finish)
+              (* if List.for_all (fun ev -> Evd.is_defined sigma ev) shelf then *)
+              (*   (if !typeclasses_debug > 0 then *)
+              (*      msg_debug (str"Proof found with solved shelved goals:" ++ *)
+              (*                   prlist_with_sep spc (pr_ev sigma) shelf); *)
+              shelve_goals shelf
+              (* else *)
+              (*   (if !typeclasses_debug > 0 then *)
+              (*       msg_debug (str"Proof found but with unsolved shelved goals:" ++ *)
+              (*                    prlist_with_sep spc (pr_ev sigma) *)
+              (*                    (List.filter (Evd.is_undefined sigma) shelf) ++ *)
+              (*                str", trying another proof"); *)
+              (*    tclCASE (cont (HasShelvedGoals, Exninfo.null)) >>= finish) *)
   in Proofview.Unsafe.tclGETGOALS >>= fun gls ->
      Proofview.tclEVARMAP >>= fun sigma ->
      let j = List.length gls in
@@ -990,15 +996,16 @@ let run_on_evars ?(unique=false) p evm tac =
       let (), pv', (unsafe, shelved, gaveup), _ =
         Proofview.apply (Global.env ()) tac pv
       in
-      assert(List.is_empty shelved);
       if Proofview.finished pv' then
         let evm' = Proofview.return pv' in
         assert(Evd.fold_undefined (fun ev _ acc ->
-                   if not (Evd.mem evm ev) then
+                   let okev = Evd.mem evm ev || List.mem ev shelved in
+                   if not okev then
                      Feedback.msg_debug
-                       (str "leaking evar " ++ int (Evar.repr ev) ++  pr_ev evm' ev);
-                   acc && Evd.mem evm ev) evm' true);
-        let evm' = Evd.restore_future_goals evm' fgoals pgoal in
+                       (str "leaking evar " ++ int (Evar.repr ev) ++
+                          spc () ++ pr_ev evm' ev);
+                   acc && okev) evm' true);
+        let evm' = Evd.restore_future_goals evm' (shelved @ fgoals) pgoal in
         let evm' = evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm in
         Some evm'
       else raise Not_found
