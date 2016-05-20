@@ -37,12 +37,16 @@ open Hints
 
 (** Hint database named "typeclass_instances", now created directly in Auto *)
 
-let typeclasses_debug = ref false
+let typeclasses_debug = ref 0
 let typeclasses_depth = ref None
 
 let typeclasses_modulo_eta = ref false
 let set_typeclasses_modulo_eta d = (:=) typeclasses_modulo_eta d
 let get_typeclasses_modulo_eta () = !typeclasses_modulo_eta
+
+let typeclasses_limit_intros = ref false
+let set_typeclasses_limit_intros d = (:=) typeclasses_limit_intros d
+let get_typeclasses_limit_intros () = !typeclasses_limit_intros
 
 let typeclasses_dependency_order = ref false
 let set_typeclasses_dependency_order d = (:=) typeclasses_dependency_order d
@@ -58,7 +62,11 @@ let get_compat_version d =
   | _ -> Flags.Current
 
 let typeclasses_unif_compat = ref Flags.V8_5
-let set_typeclasses_unif_compat d = (:=) typeclasses_unif_compat d
+let set_typeclasses_unif_compat d =
+  if d == Flags.Current then set_typeclasses_limit_intros false
+  else set_typeclasses_limit_intros true;
+  (:=) typeclasses_unif_compat d
+
 let get_typeclasses_unif_compat () = !typeclasses_unif_compat
 let set_typeclasses_unif_compat_string d =
   set_typeclasses_unif_compat (get_compat_version d)
@@ -73,9 +81,21 @@ let set_typeclasses_compat_string d =
 
 let get_typeclasses_compat_string () =
   Flags.pr_version (get_typeclasses_compat ())
-     
-open Goptions
 
+let set_typeclasses_debug d = (:=) typeclasses_debug (if d then 1 else 0)
+let get_typeclasses_debug () = if !typeclasses_debug > 0 then true else false
+
+let set_typeclasses_verbose =
+  function None -> typeclasses_debug := 0
+         | Some n -> (:=) typeclasses_debug n
+let get_typeclasses_verbose () =
+  if !typeclasses_debug = 0 then None else Some !typeclasses_debug
+
+let set_typeclasses_depth d = (:=) typeclasses_depth d
+let get_typeclasses_depth () = !typeclasses_depth
+
+open Goptions
+     
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -85,6 +105,16 @@ let _ =
       optread  = get_typeclasses_modulo_eta;
       optwrite = set_typeclasses_modulo_eta; }
 
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "do typeclass search avoiding eta-expansions " ^
+                   " in proof terms (expensive)";
+      optkey   = ["Typeclasses";"Limit";"Intros"];
+      optread  = get_typeclasses_limit_intros;
+      optwrite = set_typeclasses_limit_intros; }
+    
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -120,6 +150,44 @@ let _ =
       optkey   = ["Typeclasses";"Unification";"Compatibility"];
       optread  = get_typeclasses_unif_compat_string;
       optwrite = set_typeclasses_unif_compat_string; }
+
+let set_typeclasses_debug =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "debug output for typeclasses proof search";
+      optkey   = ["Typeclasses";"Debug"];
+      optread  = get_typeclasses_debug;
+      optwrite = set_typeclasses_debug; }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "debug output for typeclasses proof search";
+      optkey   = ["Debug";"Typeclasses"];
+      optread  = get_typeclasses_debug;
+      optwrite = set_typeclasses_debug; }
+
+let _ =
+  declare_int_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "verbosity of debug output for typeclasses proof search";
+      optkey   = ["Typeclasses";"Debug";"Verbosity"];
+      optread  = get_typeclasses_verbose;
+      optwrite = set_typeclasses_verbose; }
+
+let set_typeclasses_depth =
+  declare_int_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "depth for typeclasses proof search";
+      optkey   = ["Typeclasses";"Depth"];
+      optread  = get_typeclasses_depth;
+      optwrite = set_typeclasses_depth; }
+
+let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) evs (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
     
 (** We transform the evars that are concerned by this resolution
     (according to predicate p) into goals.
@@ -235,7 +303,7 @@ let unify_resolve_newcl poly flags =
   { enter = begin fun gls ((c, t, ctx),n,clenv) ->
     let env = Proofview.Goal.env gls in
     let concl = Proofview.Goal.concl gls in
-    Proofview.Refine.refine ~unsafe:true { Sigma.run = fun sigma ->
+    Refine.refine ~unsafe:true { Sigma.run = fun sigma ->
       let sigma = Sigma.to_evar_map sigma in
       let sigma, term, ty = 
         if poly then
@@ -274,12 +342,16 @@ let clenv_of_prods poly nprods (c, clenv) gl =
       else None
 
 let with_prods nprods poly (c, clenv) f =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-  match clenv_of_prods poly nprods (c, clenv) gl with
-  | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
-  | Some (diff, clenv') -> f.enter gl (c, diff, clenv')
-  end }
-
+  if get_typeclasses_limit_intros () then
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
+     match clenv_of_prods poly nprods (c, clenv) gl with
+     | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
+     | Some (diff, clenv') -> f.enter gl (c, diff, clenv') end }
+  else Proofview.Goal.nf_enter
+         { enter = begin fun gl ->
+                   if Int.equal nprods 0 then f.enter gl (c, None, clenv)
+                   else Tacticals.New.tclZEROMSG (str"Not enough premisses") end }
+                                                              
 let matches_pattern concl pat =
   let matches env sigma =
     match pat with
@@ -636,8 +708,8 @@ let new_hints_tac_gl only_classes hints info kont gl
   let concl = Goal.concl gl in
   let sigma = Goal.sigma gl in
   let s = Sigma.to_evar_map sigma in
-  if !typeclasses_debug then
-    msg_debug (pr_depth info.search_depth ++ str": looking for " ++
+  if !typeclasses_debug > 0 then
+    Feedback.msg_debug (pr_depth info.search_depth ++ str": looking for " ++
 	         Printer.pr_constr_env (Goal.env gl) s concl);
   let poss = e_possible_resolve hints info.search_hints s concl in
   let unique = is_unique env concl in
@@ -647,10 +719,11 @@ let new_hints_tac_gl only_classes hints info kont gl
   let rec aux foundone e = function
     | (tac, pat, b, name, pp) :: tl ->
        let derivs = path_derivate info.search_cut name in
-       (if !typeclasses_debug then
-	  msg_debug (pr_depth (!idx :: info.search_depth) ++ str": trying " ++
-                       Lazy.force pp ++
-                       str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)));
+       (if !typeclasses_debug > 0 then
+	  Feedback.msg_debug
+            (pr_depth (!idx :: info.search_depth) ++ str": trying " ++
+               Lazy.force pp ++
+               str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)));
        let tac_of i j = 
          Goal.nf_enter { enter = fun gl' ->
            let sigma' = Goal.sigma gl' in
@@ -670,19 +743,21 @@ let new_hints_tac_gl only_classes hints info kont gl
 	       search_hints = hints';
 	       search_cut = derivs }
            in
-           if !typeclasses_debug then
-	     msg_debug (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
-                          pr_ev s' (Proofview.Goal.goal gl'));
+           if !typeclasses_debug > 0 then
+	     Feedback.msg_debug
+               (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
+                  pr_ev s' (Proofview.Goal.goal gl'));
            kont info' }
        in
        let result () =
          let i = !idx in
            incr idx;
            Proofview.numgoals >>= fun j ->
-           (if !typeclasses_debug then
-	     msg_debug (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
-			++ str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
-                        ++ str", " ++ int j ++ str" subgoals");
+           (if !typeclasses_debug > 0 then
+	      Feedback.msg_debug
+                (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
+		 ++ str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
+                 ++ str", " ++ int j ++ str" subgoals");
            if j = 0 then
              Proofview.tclUNIT ()
            else Proofview.tclDISPATCH (List.init j (tac_of i)))
@@ -691,11 +766,12 @@ let new_hints_tac_gl only_classes hints info kont gl
        else ortac (Proofview.tclBIND tac result)
                   (fun e' -> aux foundone (merge_exceptions e e') tl)
     | [] ->
-       if foundone == None && !typeclasses_debug then
-	 msg_debug (pr_depth info.search_depth ++ str": no match for " ++
-		      Printer.pr_constr_env (Goal.env gl) s concl ++
-		      spc () ++ str ", " ++ int (List.length poss) ++
-                      str" possibilities");
+       if foundone == None && !typeclasses_debug > 0 then
+	 Feedback.msg_debug
+           (pr_depth info.search_depth ++ str": no match for " ++
+	      Printer.pr_constr_env (Goal.env gl) s concl ++
+	      spc () ++ str ", " ++ int (List.length poss) ++
+              str" possibilities");
        match e with
        | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
        | (_,ie) -> Proofview.tclZERO ~info:ie NotApplicableEx
@@ -736,9 +812,10 @@ let intro_tac' only_classes info kont =
 let rec eauto_tac' only_classes hints limit depth =
   let kont info =
     Proofview.numgoals >>= fun i ->
-    if !typeclasses_debug then
-      msg_debug (str"calling eauto recursively at depth " ++ int (succ depth)
-                 ++ str" on " ++ int i ++ str" subgoals");
+    if !typeclasses_debug > 1 then
+      Feedback.msg_debug
+        (str"calling eauto recursively at depth " ++ int (succ depth)
+         ++ str" on " ++ int i ++ str" subgoals");
     eauto_tac' only_classes hints limit (succ depth) info
   in
   fun info ->
@@ -863,7 +940,7 @@ let hints_tac hints =
 	  (match res with
 	  | None -> aux i foundone tl
 	  | Some {it = gls; sigma = s';} ->
-	    if !typeclasses_debug then
+	    if !typeclasses_debug > 0 then
 	      Feedback.msg_debug (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
 			 ++ str" on" ++ spc () ++ pr_ev s gl);
 	    let sgls =
@@ -891,13 +968,15 @@ let hints_tac hints =
 	    let gls' = List.map_i
 	      (fun j (evar, g) ->
 		let info =
-		  { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
+		  { info with
+                    auto_depth = j :: i :: info.auto_depth;
+                    auto_last_tac = pp;
 		    is_evar = evar;
 		    hints =
 		      if b && not (Environ.eq_named_context_val (Goal.V82.hyps s' g) 
-				     (Goal.V82.hyps s' gl))
+				                             (Goal.V82.hyps s' gl))
 		      then make_autogoal_hints info.only_classes
-			~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s';}
+			                       ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s';}
 		      else info.hints;
 		    auto_cut = derivs }
 		in g, info) 1 newgls in
@@ -912,7 +991,7 @@ let hints_tac hints =
 		  else true
 		in
 		let e' = match foundone with None -> e | Some e' -> merge_failures e e' in
-		  if !typeclasses_debug then
+		  if !typeclasses_debug > 0 then
 		    Feedback.msg_debug 
 		      ((if do_backtrack then str"Backtracking after "
 			else str "Not backtracking after ")
@@ -922,7 +1001,7 @@ let hints_tac hints =
 	    in
 	      sk glsv fk')
       | [] ->
-	if foundone == None && !typeclasses_debug then
+	if foundone == None && !typeclasses_debug > 0 then
 	  Feedback.msg_debug (pr_depth info.auto_depth ++ str": no match for " ++
 		       Printer.pr_constr_env (Goal.V82.env s gl) s concl ++
 		       spc () ++ str ", " ++ int (List.length poss) ++ str" possibilities");
@@ -995,10 +1074,12 @@ let fix_iterative_limit limit (t : 'a tac) : 'a tac =
     else or_tac (fix_limit depth t) { skft = fun sk fk -> (aux (succ depth)).skft sk fk }
   in aux 1
 
-let make_autogoal ?(only_classes=true) ?(unique=false) ?(st=full_transparent_state) cut ev g =
+let make_autogoal ?(only_classes=true) ?(unique=false) ?(st=full_transparent_state)
+                  cut ev g =
   let hints = make_autogoal_hints only_classes ~st g in
     (g.it, { hints = hints ; is_evar = ev; unique = unique;
-	     only_classes = only_classes; auto_depth = []; auto_last_tac = lazy (str"none");
+	     only_classes = only_classes; auto_depth = [];
+             auto_last_tac = lazy (str"none");
 	     auto_path = []; auto_cut = cut })
 
 
@@ -1062,7 +1143,8 @@ let resolve_all_evars_once debug limit unique p evd =
     real_eauto ?limit unique (Hint_db.transparent_state db) [db] p evd
 
 let eauto ?(only_classes=true) ?st ?limit hints g =
-  let gl = { it = make_autogoal ~only_classes ?st (cut_of_hints hints) None g; sigma = project g; } in
+  let gl = { it = make_autogoal ~only_classes ?st
+                    (cut_of_hints hints) None g; sigma = project g; } in
     match run_tac (eauto_tac ?limit hints) gl with
     | None -> raise Not_found
     | Some {it = goals; sigma = s; } ->
@@ -1233,51 +1315,14 @@ let resolve_typeclass_evars debug m unique env evd filter split fail =
   in
     resolve_all_evars debug m unique env (initial_select_evars filter) evd split fail
 
-let solve_inst debug depth env evd filter unique split fail =
-  resolve_typeclass_evars debug depth unique env evd filter split fail
+let solve_inst env evd filter unique split fail =
+  resolve_typeclass_evars
+    (get_typeclasses_debug ())
+    (get_typeclasses_depth ())
+    unique env evd filter split fail
 
 let _ =
-  Typeclasses.solve_instantiations_problem :=
-    solve_inst false !typeclasses_depth
-
-let set_typeclasses_debug d = (:=) typeclasses_debug d;
-  Typeclasses.solve_instantiations_problem := solve_inst d !typeclasses_depth
-
-let get_typeclasses_debug () = !typeclasses_debug
-
-let set_typeclasses_depth d = (:=) typeclasses_depth d;
-  Typeclasses.solve_instantiations_problem := solve_inst !typeclasses_debug !typeclasses_depth
-
-let get_typeclasses_depth () = !typeclasses_depth
-
-open Goptions
-
-let set_typeclasses_debug =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "debug output for typeclasses proof search";
-      optkey   = ["Typeclasses";"Debug"];
-      optread  = get_typeclasses_debug;
-      optwrite = set_typeclasses_debug; }
-
-let set_typeclasses_debug =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "debug output for typeclasses proof search";
-      optkey   = ["Debug";"Typeclasses"];
-      optread  = get_typeclasses_debug;
-      optwrite = set_typeclasses_debug; }
-
-let set_typeclasses_depth =
-  declare_int_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "depth for typeclasses proof search";
-      optkey   = ["Typeclasses";"Depth"];
-      optread  = get_typeclasses_depth;
-      optwrite = set_typeclasses_depth; }
+  Typeclasses.solve_instantiations_problem := solve_inst
 
 let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl =
   try
