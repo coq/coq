@@ -618,6 +618,13 @@ let shelve =
   InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve")) >>
   Shelf.modify (fun gls -> gls @ initial)
 
+let shelve_goals l =
+  let open Proof in
+  Comb.get >>= fun initial ->
+  let comb = CList.filter (fun g -> not (CList.mem g l)) initial in
+  Comb.set comb >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve_goals")) >>
+  Shelf.modify (fun gls -> gls @ l)
 
 (** [contained_in_info e evi] checks whether the evar [e] appears in
     the hypotheses, the conclusion or the body of the evar_info

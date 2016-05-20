@@ -300,6 +300,16 @@ val tclINDEPENDENT : unit tactic -> unit tactic
     shelf for later use (or being solved by side-effects). *)
 val shelve : unit tactic
 
+(** Shelves the given list of goals, which might include some that are
+    under focus and some that aren't. All the goals are placed on the
+    shelf for later use (or being solved by side-effects). *)
+val shelve_goals : Goal.goal list -> unit tactic
+
+(** [unifiable sigma g l] checks whether [g] appears in another
+    subgoal of [l]. The list [l] may contain [g], but it does not
+    affect the result. Used by [shelve_unifiable]. *)
+val unifiable : Evd.evar_map -> Goal.goal -> Goal.goal list -> bool
+
 (** Shelves the unifiable goals under focus, i.e. the goals which
     appear in other goals under focus (the unfocused goals are not
     considered). *)
