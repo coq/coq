@@ -73,18 +73,19 @@ let fnl2 () = fnl () ++ fnl ()
 
 let space_if = function true -> str " " | false -> mt ()
 
-let is_digit = function
-  | '0'..'9' -> true
-  | _ -> false
+let begins_with s prefix =
+  let len = String.length prefix in
+  String.length s >= len && String.equal (String.sub s 0 len) prefix
 
 let begins_with_CoqXX s =
   let n = String.length s in
   n >= 4 && s.[0] == 'C' && s.[1] == 'o' && s.[2] == 'q' &&
   let i = ref 3 in
   try while !i < n do
-    if s.[!i] == '_' then i:=n (*Stop*)
-    else if is_digit s.[!i] then incr i
-    else raise Not_found
+    match s.[!i] with
+    | '_' -> i:=n (*Stop*)
+    | '0'..'9' -> incr i
+    | _ -> raise Not_found
   done; true
   with Not_found -> false
 
@@ -332,12 +333,9 @@ let reset_renaming_tables flag =
 
 let modular_rename k id =
   let s = ascii_of_id id in
-  let prefix,is_ok =
-    if upperkind k then "Coq_",is_upper else "coq_",is_lower
+  let prefix,is_ok = if upperkind k then "Coq_",is_upper else "coq_",is_lower
   in
-  if not (is_ok s) ||
-    (Id.Set.mem id (get_keywords ())) ||
-    (String.length s >= 4 && String.equal (String.sub s 0 4) prefix)
+  if not (is_ok s) || Id.Set.mem id (get_keywords ()) || begins_with s prefix
   then prefix ^ s
   else s
 
@@ -345,21 +343,20 @@ let modular_rename k id =
     with unique numbers *)
 
 let modfstlev_rename =
-  let add_prefixes,get_prefixes,_ = mktable_id true in
+  let add_index,get_index,_ = mktable_id true in
   fun l ->
-    let coqid = Id.of_string "Coq" in
     let id = Label.to_id l in
     try
-      let coqset = get_prefixes id in
-      let nextcoq = next_ident_away coqid coqset in
-      add_prefixes id (nextcoq::coqset);
-      (Id.to_string nextcoq)^"_"^(ascii_of_id id)
+      let n = get_index id in
+      add_index id (n+1);
+      let s = if n == 0 then "" else string_of_int (n-1) in
+      "Coq"^s^"_"^(ascii_of_id id)
     with Not_found ->
       let s = ascii_of_id id in
       if is_lower s || begins_with_CoqXX s then
-	(add_prefixes id [coqid]; "Coq_"^s)
+	(add_index id 1; "Coq_"^s)
       else
-	(add_prefixes id []; s)
+	(add_index id 0; s)
 
 (*s Creating renaming for a [module_path] : first, the real function ... *)
 
@@ -562,7 +559,7 @@ let pp_ocaml_extern k base rls = match rls with
 	(* Standard situation : object in an opened file *)
 	dottify rls'
 
-(* [pp_ocaml_gen] : choosing between [pp_ocaml_extern] or [pp_ocaml_extern] *)
+(* [pp_ocaml_gen] : choosing between [pp_ocaml_local] or [pp_ocaml_extern] *)
 
 let pp_ocaml_gen k mp rls olab =
   match common_prefix_from_list mp (get_visible_mps ()) with
@@ -579,8 +576,7 @@ let pp_haskell_gen k mp rls = match rls with
   | s::rls' ->
     let str = pseudo_qualify rls' in
     let str = if is_upper str && not (upperkind k) then ("_"^str) else str in
-    let prf = if not (ModPath.equal (base_mp mp) (top_visible_mp ())) then s ^ "." else "" in
-    prf ^ str
+    if ModPath.equal (base_mp mp) (top_visible_mp ()) then str else s^"."^str
 
 (* Main name printing function for a reference *)
 
