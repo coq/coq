@@ -665,11 +665,12 @@ let with_shelf tac =
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
     interval [[0,m-1]].*)
 let goodmod p m =
-  let p' = p mod m in
-  (* if [n] is negative [n mod l] is negative of absolute value less
-     than [l], so [(n mod l)+l] is the representative of [n] in the
-     interval [[0,l-1]].*)
-  if p' < 0 then p'+m else p'
+  if m = 0 then 0 else
+    let p' = p mod m in
+    (* if [n] is negative [n mod l] is negative of absolute value less
+      than [l], so [(n mod l)+l] is the representative of [n] in the
+      interval [[0,l-1]].*)
+    if p' < 0 then p'+m else p'
 
 let cycle n =
   let open Proof in

@@ -1,6 +1,43 @@
 Potential sources of incompatibilities between Coq V8.4 and V8.5
 ----------------------------------------------------------------
 
+* List of typical changes to be done to adapt files from Coq 8.4 *
+* to Coq 8.5 when not using compatibility option "-compat 8.4".  *
+
+Symptom: "The reference omega was not found in the current environment".
+Cause: "Require Omega" does not import the tactic "omega" any more
+Possible solutions:
+- use "Require Import OmegaTactic" (not compatible with 8.4)
+- use "Require Import Omega" (compatible with 8.4)
+- add definition "Ltac omega := Coq.omega.Omega.omega."
+  
+Symptom: "intuition" cannot solve a goal (not working anymore on non standard connective)
+Cause: "intuition" had an accidental non uniform behavior fixed on non standard connectives
+Possible solutions:
+- use "dintuition" instead; it is stronger than "intuition" and works
+  uniformly on non standard connectives, such as n-ary conjunctions or disjunctions
+  (not compatible with 8.4)
+- do the script differently
+
+Symptom: The constructor foo (in type bar) expects n arguments.
+Cause: parameters must now be given in patterns
+Possible solutions:
+- use option "Set Asymmetric Patterns" (compatible with 8.4)
+- add "_" for the parameters (not compatible with 8.4)
+- turn the parameters into implicit arguments (compatible with 8.4)
+
+Symptom: "NPeano.Nat.foo" not existing anymore
+Possible solutions:
+- use "Nat.foo" instead
+
+Symptom: typing problems with proj1_sig or similar
+Cause: coercion from sig to sigT and similar coercions have been
+  removed so as to make the initial state easier to understand for
+  beginners
+Solution: change proj1_sig into projT1 and similarly (compatible with 8.4)
+
+* Other detailed changes *
+
 (see also file CHANGES)
 
 - options for *coq* compilation (see below for ocaml).
@@ -30,7 +67,6 @@ Potential sources of incompatibilities between Coq V8.4 and V8.5
 
   for more details: file CHANGES or section "Customization at launch
   time" of the reference manual.
-  
 
 - Universe Polymorphism.
 
