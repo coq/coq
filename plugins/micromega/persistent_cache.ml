@@ -212,9 +212,11 @@ let find t k =
 	res
 
 let memo cache f =
-  let tbl = lazy (open_in cache) in
-    fun x ->
-      let tbl = Lazy.force tbl in
+  let tbl = lazy (try Some (open_in cache) with _ -> None) in
+  fun x ->
+  match Lazy.force tbl with
+  | None -> f x
+  | Some tbl ->
 	try
 	  find tbl x
 	with
