@@ -125,7 +125,7 @@ val state_of_id : Stateid.t -> [ `Valid of state option | `Expired ]
 (** read-eval-print loop compatible interface ****************************** **)
 
 (* Adds a new line to the document.  It replaces the core of Vernac.interp.
-   [finish] is called as the last bit of this function is the system
+   [finish] is called as the last bit of this function if the system
    is running interactively (-emacs or coqtop). *)
 val interp : bool -> vernac_expr located -> unit
 
@@ -135,7 +135,7 @@ val get_all_proof_names : unit -> Id.t list
 val get_current_proof_name : unit -> Id.t option
 val show_script : ?proof:Proof_global.closed_proof -> unit -> unit
 
-(** Reverse dependency hooks *)
+(* Hooks to be set by other Coq components in order to break file cycles *)
 val process_error_hook : Future.fix_exn Hook.t
 val interp_hook : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
   Loc.t * Vernacexpr.vernac_expr -> unit) Hook.t
