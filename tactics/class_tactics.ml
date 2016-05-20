@@ -770,21 +770,11 @@ let new_hints_tac_gl only_classes hints info kont gl
 	   Feedback.msg_debug
              (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
                 pr_ev s' (Proofview.Goal.goal gl'));
-         (* if only_classes && not (is_class_type s' concl) then *)
-         (*   (\* Proofview.shelve *\) *)
-         (*   (msg_warning (Lazy.force pp ++ *)
-         (*                   str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl) *)
-         (*                 ++ str" generated a non-class goal " ++ *)
-                                 (*                   Printer.pr_constr_env (Goal.env gl') s' concl ++ *)
-         (*                   str", failing"); *)
-         (*    Tacticals.New.tclFAIL 0 (str"Not a class goal")) *)
-         (* else *)
          let hints' =
            if b && not (Context.Named.equal (Goal.hyps gl') (Goal.hyps gl))
-	   then make_autogoal_hints
-                  (*FIXME use ' *) only_classes
-                                   ~st:(Hint_db.transparent_state info.search_hints)
-                                   {it = Goal.goal gl'; sigma = s';}
+	   then
+             let st = Hint_db.transparent_state info.search_hints in
+             make_autogoal_hints' only_classes ~st gl'
 	   else info.search_hints
          in
          let dep' = info.search_dep || Proofview.unifiable s' (Goal.goal gl') gls in
@@ -864,13 +854,6 @@ let new_hints_tac cl hints info kont : unit Proofview.tactic =
 
 let cut_of_hints h =
   List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
-
-(* let make_autogoals ?(only_classes=true) ?(unique=false)  *)
-(*     ?(st=full_transparent_state) hints gs evm' = *)
-(*   let cut = cut_of_hints hints in *)
-(*   List.map_i (fun i g -> *)
-(*       let dep = Proofview.unifiable evm' (Goal.goal g) gs in *)
-(*       make_autogoal' ~st only_classes dep cut i g) 1 gs *)
 
 let intro_tac'' only_classes info kont gl =
   let open Proofview in
@@ -1027,13 +1010,7 @@ let real_new_eauto ?limit unique st hints p evd =
     match res with
     | None -> evd
     | Some evd' -> evd'
-
-    (* , fk) ->  *)
-    (*   if unique then *)
-    (*     (match get_result (fk NotApplicable) with *)
-    (*     | Some (evd'', fk') -> error "Typeclass resolution gives multiple solutions" *)
-    (*     | None -> evd') *)
-    (*   else evd' *)
+    (* TODO treat unique classes, with exactlyonce *)
     
 let resolve_all_evars_once' debug limit unique p evd =
   let db = searchtable_map typeclasses_db in
