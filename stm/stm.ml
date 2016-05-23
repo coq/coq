@@ -1653,8 +1653,7 @@ end = struct (* {{{ *)
     match resp with
     | RespBuiltSubProof o -> t_assign (`Val o); `Stay ((),[])
     | RespError msg ->
-        let info = Stateid.add ~valid:t_state Exninfo.null t_state_fb in
-        let e = (RemoteException msg, info) in
+        let e = (RemoteException msg, Exninfo.null) in
         t_assign (`Exn e);
         t_kill ();
         `Stay ((),[])
