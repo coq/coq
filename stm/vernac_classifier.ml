@@ -108,12 +108,19 @@ let rec classify_vernac e =
         VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
     (* ProofStep *)
     | VernacProof _ 
-    | VernacBullet _ 
     | VernacFocus _ | VernacUnfocus
-    | VernacSubproof _ | VernacEndSubproof
+    | VernacSubproof _
     | VernacCheckGuard
     | VernacUnfocused
-    | VernacSolveExistential _ -> VtProofStep { parallel = false; proof_block_detection = None }, VtLater
+    | VernacSolveExistential _ ->
+        VtProofStep { parallel = false; proof_block_detection = None }, VtLater
+    | VernacBullet _ ->
+        VtProofStep { parallel = false; proof_block_detection = Some "bullet" },
+        VtLater
+    | VernacEndSubproof -> 
+        VtProofStep { parallel = false;
+                      proof_block_detection = Some "proof-block" },
+        VtLater
     (* Options changing parser *)
     | VernacUnsetOption (["Default";"Proof";"Using"])
     | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow

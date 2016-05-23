@@ -303,6 +303,9 @@ val guard_no_unifiable : Names.Name.t list option tactic
     goals of p *)
 val unshelve : Goal.goal list -> proofview -> proofview
 
+(** [depends_on g1 g2 sigma] checks if g1 occurs in the type/ctx of g2 *)
+val depends_on : Evd.evar_map -> Goal.goal -> Goal.goal -> bool
+
 (** [with_shelf tac] executes [tac] and returns its result together with the set
     of goals shelved by [tac]. The current shelf is unchanged. *)
 val with_shelf : 'a tactic -> (Goal.goal list * 'a) tactic
