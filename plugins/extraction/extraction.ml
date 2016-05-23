@@ -974,7 +974,10 @@ let extract_constant env kn cb =
     | (Info,TypeScheme) ->
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_typ_ax ()
-	  | Def c -> mk_typ (Mod_subst.force_constr c)
+	  | Def c ->
+	     (match cb.const_proj with
+	      | None -> mk_typ (Mod_subst.force_constr c)
+	      | Some pb -> mk_typ pb.proj_body)
 	  | OpaqueDef c ->
 	    add_opaque r;
 	    if access_opaque () then
@@ -983,7 +986,10 @@ let extract_constant env kn cb =
     | (Info,Default) ->
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_ax ()
-	  | Def c -> mk_def (Mod_subst.force_constr c)
+	  | Def c ->
+	     (match cb.const_proj with
+	      | None -> mk_def (Mod_subst.force_constr c)
+	      | Some pb -> mk_def pb.proj_body)
 	  | OpaqueDef c ->
 	    add_opaque r;
 	    if access_opaque () then
