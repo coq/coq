@@ -872,7 +872,7 @@ END;;
    mode. *)
 VERNAC COMMAND EXTEND GrabEvars
 [ "Grab" "Existential" "Variables" ]
-  => [ Vernacexpr.VtProofStep false, Vernacexpr.VtLater ]
+  => [ Vernac_classifier.classify_as_proofstep ]
   -> [ Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) ]
 END
 
@@ -903,7 +903,7 @@ END
 (* Command to add every unshelved variables to the focus *)
 VERNAC COMMAND EXTEND Unshelve
 [ "Unshelve" ]
-  => [ Vernacexpr.VtProofStep false, Vernacexpr.VtLater ]
+  => [ Vernac_classifier.classify_as_proofstep ]
   -> [ Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p) ]
 END
 

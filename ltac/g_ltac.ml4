@@ -366,7 +366,8 @@ VERNAC tactic_mode EXTEND VernacSolve
     vernac_solve g n t def
   ]
 | [ - "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
-    [ VtProofStep true, VtLater ] -> [
+    [ VtProofStep{ parallel = true; proof_block_detection = None },
+      VtLater ] -> [
     vernac_solve SelectAll n t def
   ]
 END

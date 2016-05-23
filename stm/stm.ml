@@ -171,7 +171,7 @@ type branch_type =
   | `Edit of
       proof_mode * Stateid.t * Stateid.t  * vernac_qed_type * Vcs_.Branch.t ]
 type cmd_t = {
-  ctac : bool; (* is a tactic, needed by the 8.4 semantics of Undo *)
+  ctac : bool; (* is a tactic *)
   ceff : bool; (* is a side-effecting command in the middle of a proof *)
   cast : aast;
   cids : Id.t list;
@@ -229,17 +229,22 @@ type 'vcs state_info = { (* TODO: Make this record private to VCS *)
 let default_info () =
   { n_reached = 0; n_goals = 0; state = Empty; vcs_backup = None,None }
 
+module DynBlockData : Dyn.S = Dyn.Make(struct end)
+
 (* Clusters of nodes implemented as Dag properties.  While Dag and Vcs impose
  * no constraint on properties, here we impose boxes to be non overlapping. *)
 type box =
   | ProofTask of pt
-  | ErrorBound of eb
+  | ErrorBound of static_block_declaration * proof_block_name
 and pt = { (* TODO: inline records in OCaml 4.03 *)
-  start : Stateid.t;
+  lemma : Stateid.t;
   qed   : Stateid.t;
 }
-and eb = {
-  stuff : unit;
+and static_block_declaration = {
+  start : Stateid.t;
+  stop : Stateid.t;
+  dynamic_switch : Stateid.t;
+  carry_on_data : DynBlockData.t;
 }
 
 (* Functions that work on a Vcs with a specific branch type *)
@@ -346,9 +351,9 @@ module VCS : sig
   val nodes_in_slice : start:id -> stop:id -> Stateid.t list
   
   val create_proof_task_box : id list -> qed:id -> start:id -> unit
-  val create_error_bound_box : id list -> switch:id -> unit
+  val create_error_bound_box : static_block_declaration -> string -> unit
   val box_of : id -> box list
-  val delete_proof_task_box_of : id -> unit
+  val delete_boxes_of : id -> unit
   val proof_task_box_of : id -> pt option
 
   val proof_nesting : unit -> int
@@ -465,7 +470,12 @@ end = struct (* {{{ *)
           nodefmt oc id
         end)
         (Dag.Property.having_it b);
-      fprintf oc "color=blue; }\n" in
+      match Dag.Property.data b with
+      | ErrorBound ({ dynamic_switch = id }, lbl) ->
+          fprintf oc "label=\"%s (test:%s)\";\n" lbl (Stateid.to_string id);
+          fprintf oc "color=red; }\n"
+      | ProofTask _ -> fprintf oc "color=blue; }\n"
+      in
     List.iter rec_print (outerboxes !boxes);
     Stateid.Set.iter (nodefmt oc) !ids;
 
@@ -576,6 +586,17 @@ end = struct (* {{{ *)
         { (get_info id) with state = Empty; vcs_backup = None,None } in
     let copy_info_w_state v id =
       Vcs_.set_info v id { (get_info id) with vcs_backup = None,None } in
+    let copy_error_bound_boxes v =
+      let nodes = Vcs_.Dag.all_nodes (Vcs_.dag v) in
+      let props =
+        Stateid.Set.fold (fun n pl -> Vcs_.property_of !vcs n @ pl) nodes [] in
+      let props = CList.sort_uniquize Vcs_.Dag.Property.compare props in
+      (* XXX check if par: works here, since we copy a single node *)
+      List.fold_left (fun v p ->
+        Vcs_.create_property v
+          (Stateid.Set.elements (Vcs_.Dag.Property.having_it p))
+          (Vcs_.Dag.Property.data p)) v props
+    in
     let v = Vcs_.empty start in
     let v = copy_info v start in
     let v = List.fold_right (fun (id,tr) v ->
@@ -592,7 +613,8 @@ end = struct (* {{{ *)
     let v = fill stop in
     (* We put in the new dag the first state (since Qed shall run on it,
      * see check_task_aux) *)
-    copy_info_w_state v start
+    let v = copy_info_w_state v start in
+    copy_error_bound_boxes v
 
   let nodes_in_slice ~start ~stop =
     List.rev (List.map fst (nodes_in_slice ~start ~stop))
@@ -606,18 +628,16 @@ end = struct (* {{{ *)
          List.for_all (fun s -> Stateid.Set.(subset s all || subset all s)) sets)
       l
 
-  let create_proof_task_box l ~qed ~start =
+  let create_proof_task_box l ~qed ~start:lemma =
     if not (topo_invariant l) then anomaly (str "overlapping boxes");
-    vcs := create_property !vcs l (ProofTask { qed; start })
-  let create_error_bound_box l ~switch =
-    vcs := create_property !vcs l
-      (ErrorBound { stuff = () })
+    vcs := create_property !vcs l (ProofTask { qed; lemma })
+  let create_error_bound_box ({ start; stop} as decl) name =
+    let l = nodes_in_slice ~start ~stop in
+    if not (topo_invariant l) then anomaly (str "overlapping boxes");
+    vcs := create_property !vcs l (ErrorBound (decl, name))
   let box_of id = List.map Dag.Property.data (property_of !vcs id)
-  let delete_proof_task_box_of id =
-    List.iter (fun x -> vcs := delete_property !vcs x)
-      (List.filter (fun x ->
-          match Dag.Property.data x with ProofTask _ -> true | _ -> false)
-        (Vcs_.property_of !vcs id))
+  let delete_boxes_of id =
+    List.iter (fun x -> vcs := delete_property !vcs x) (property_of !vcs id)
   let proof_task_box_of id =
     match
       CList.map_filter (function ProofTask x -> Some x | _ -> None) (box_of id)
@@ -1045,6 +1065,66 @@ exception RemoteException of std_ppcmds
 let _ = Errors.register_handler (function
   | RemoteException ppcmd -> ppcmd
   | _ -> raise Unhandled)
+
+(****************** proof structure for error recovery ************************)
+(******************************************************************************)
+
+type document_node = {
+  indentation : int;
+  ast : Vernacexpr.vernac_expr;
+  id : Stateid.t;
+}
+
+type document_view = {
+  entry_point : document_node;
+  prev_node : document_node -> document_node option;
+}
+
+type static_block_detection =
+  document_view -> static_block_declaration option
+
+type recovery_action = {
+  base_state : Stateid.t;
+  goals_to_admit : Goal.goal list;
+  recovery_command : Vernacexpr.vernac_expr option;
+}
+
+type dynamic_block_error_recovery =
+  static_block_declaration -> [ `ValidBlock of recovery_action | `Leaks ]
+
+let proof_block_delimiters = ref []
+
+let register_proof_block_delimiter name static dynamic =
+  if List.mem_assoc name !proof_block_delimiters then
+    Errors.errorlabstrm "STM" (str "Duplicate block delimiter " ++ str name);
+  proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
+
+let mk_doc_node id = function
+  | { step = `Cmd { ctac; cast = { indentation; expr }}; next } when ctac ->
+       Some { indentation; ast = expr; id }
+  | { step = `Sideff (`Ast ({ indentation; expr }, _)); next } ->
+       Some { indentation; ast = expr; id }
+  | _ -> None
+let prev_node { id } =
+  let id = (VCS.visit id).next in
+  mk_doc_node id (VCS.visit id)
+let cur_node id = mk_doc_node id (VCS.visit id)
+
+let detect_proof_block id = function
+  | None -> ()
+  | Some name ->
+      match cur_node id with
+      | None -> ()
+      | Some entry_point -> try
+          let static, _ = List.assoc name !proof_block_delimiters in
+          begin match static { prev_node; entry_point } with
+          | None -> ()
+          | Some ({ start; stop } as decl) ->
+              VCS.create_error_bound_box decl name
+          end
+        with Not_found ->
+          Errors.errorlabstrm "STM"
+            (str "Unknown proof block delimiter " ++ str name)
 
 (****************************** THE SCHEDULER *********************************)
 (******************************************************************************)
@@ -1601,7 +1681,7 @@ end = struct (* {{{ *)
          List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0))
                       Evd.(evar_context g))
        then
-         Errors.errorlabstrm "Stm" (strbrk("the par: goal selector supports ground "^
+         Errors.errorlabstrm "STM" (strbrk("the par: goal selector supports ground "^
            "goals only"))
        else begin
         let (i, ast) = r_ast in
@@ -1609,12 +1689,12 @@ end = struct (* {{{ *)
         vernac_interp r_state_fb ast;
         let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
-        | Evd.Evar_empty -> Errors.errorlabstrm "Stm" (str "no progress")
+        | Evd.Evar_empty -> Errors.errorlabstrm "STM" (str "no progress")
         | Evd.Evar_defined t ->
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               t, Evd.evar_universe_context sigma
-            else Errors.errorlabstrm "Stm" (str"The solution is not ground")
+            else Errors.errorlabstrm "STM" (str"The solution is not ground")
        end) ()
      in
        RespBuiltSubProof (t,uc)
@@ -1897,6 +1977,53 @@ let log_processing_sync id name reason = log_string Printf.(sprintf
 let wall_clock_last_fork = ref 0.0
 
 let known_state ?(redefine_qed=false) ~cache id =
+ 
+  let error_absorbing_tactic id exn =
+    let boxes = VCS.box_of id in
+    let valid_boxes = CList.map_filter (function
+      | ErrorBound ({ stop } as decl, name) when Stateid.equal stop id ->
+          Some (decl, name)
+      | _ -> None) boxes in
+    assert(List.length valid_boxes < 2);
+    if valid_boxes = [] then iraise exn
+    else
+      let decl, name = List.hd valid_boxes in
+      try
+        let _, dynamic_check = List.assoc name !proof_block_delimiters in
+        match dynamic_check decl with
+        | `Leaks -> iraise exn
+        | `ValidBlock { base_state; goals_to_admit; recovery_command } -> begin
+           let tac =
+             let open Proofview.Notations in
+             Proofview.Unsafe.tclSETGOALS goals_to_admit <*>
+             Proofview.give_up in
+           match (VCS.get_info base_state).state with
+           | Valid { proof } ->
+               Proof_global.unfreeze proof;
+               Proof_global.with_current_proof (fun _ p ->
+                 Pp.feedback ~state_id:id Feedback.AddedAxiom;
+                 fst (Pfedit.solve Vernacexpr.SelectAll None tac p), ());
+               Option.iter (fun expr -> vernac_interp id {
+                  verbose = true; loc = Loc.ghost; expr; indentation = 0;
+                  strlen = 0 })
+               recovery_command
+           | _ -> assert false
+        end
+      with Not_found ->
+          Errors.errorlabstrm "STM"
+            (str "Unknown proof block delimiter " ++ str name)
+  in
+
+  (* Absorb tactic errors from f () *)
+  let resilient_tactic id f =
+    try f ()
+    with e when Errors.noncritical e ->
+      let ie = Errors.push e in
+      error_absorbing_tactic id ie in
+  (* Absorb errors from f x *)
+  let resilient_command f x =
+    try f x
+    with e when Errors.noncritical e -> () in
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
@@ -1928,25 +2055,34 @@ let known_state ?(redefine_qed=false) ~cache id =
       | `Cmd { cast = x; cqueue = `SkipQueue } -> (fun () ->
             reach view.next), cache, true
       | `Cmd { cast = x; cqueue = `TacQueue cancel } -> (fun () ->
-            reach ~cache:`Shallow view.next;
-            Hooks.(call tactic_being_run true); 
-            Partac.vernac_interp
-              cancel !Flags.async_proofs_n_tacworkers view.next id x;
-            Hooks.(call tactic_being_run false)
+            resilient_tactic id (fun () ->
+              reach ~cache:`Shallow view.next;
+              Hooks.(call tactic_being_run true); 
+              Partac.vernac_interp
+                cancel !Flags.async_proofs_n_tacworkers view.next id x;
+              Hooks.(call tactic_being_run false))
           ), cache, true
       | `Cmd { cast = x; cqueue = `QueryQueue cancel }
         when Flags.async_proofs_is_master () -> (fun () ->
             reach view.next;
             Query.vernac_interp cancel view.next id x
           ), cache, false
-      | `Cmd { cast = x; ceff = eff; ctac } -> (fun () ->
-            reach view.next;
-            if ctac then Hooks.(call tactic_being_run true); 
+      | `Cmd { cast = x; ceff = eff; ctac = true } -> (fun () ->
+            resilient_tactic id (fun () ->
+              reach view.next;
+              Hooks.(call tactic_being_run true); 
+              vernac_interp id x;
+              Hooks.(call tactic_being_run false)); 
+	    if eff then update_global_env ()
+          ), (if eff then `Yes else cache), true
+      | `Cmd { cast = x; ceff = eff } -> (fun () ->
+            resilient_command reach view.next;
             vernac_interp id x;
-            if ctac then Hooks.(call tactic_being_run false); 
-	    if eff then update_global_env ()), (if eff then `Yes else cache), true
+	    if eff then update_global_env ()
+          ), (if eff then `Yes else cache), true
       | `Fork ((x,_,_,_), None) -> (fun () ->
-            reach view.next; vernac_interp id x;
+            resilient_command reach view.next;
+            vernac_interp id x;
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes, true
       | `Fork ((x,_,_,_), Some prev) -> (fun () -> (* nested proof *)
@@ -2337,11 +2473,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           Backtrack.record ();
           finish ();
           `Ok
-      | VtProofStep paral, w ->
+      | VtProofStep { parallel; proof_block_detection }, w ->
           let id = VCS.new_node ~id:newtip () in
-          let queue = if paral then `TacQueue (ref false) else `MainQueue in
+          let queue = if parallel then `TacQueue (ref false) else `MainQueue in
           VCS.commit id (Cmd {
             ctac = true;ceff = false;cast = x;cids = [];cqueue = queue });
+          detect_proof_block id proof_block_detection;
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
           let valid = if tty then Some(VCS.get_branch_pos head) else None in
@@ -2524,7 +2661,7 @@ let edit_at id =
       | _ -> anomaly (str "ProofTask not ending with Qed") in
     VCS.branch ~root:master_id ~pos:id
       VCS.edit_branch (`Edit (mode, qed_id, master_id, keep, old_branch));
-    VCS.delete_proof_task_box_of id;
+    VCS.delete_boxes_of id;
     cancel_switch := true;
     Reach.known_state ~cache:(interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
@@ -2545,7 +2682,7 @@ let edit_at id =
     VCS.branch ~root:brinfo.VCS.root ~pos:brinfo.VCS.pos
       (Option.default brname bn)
       (no_edit brinfo.VCS.kind);
-    VCS.delete_proof_task_box_of id;
+    VCS.delete_boxes_of id;
     VCS.gc ();
     VCS.print ();
     if not !Flags.async_proofs_full then
@@ -2562,7 +2699,7 @@ let edit_at id =
         | _ -> None in
       match focused, VCS.proof_task_box_of id, branch_info with
       | _, Some _, None -> assert false
-      | false, Some { qed = qed_id ; start }, Some(mode,bn) ->
+      | false, Some { qed = qed_id ; lemma = start }, Some(mode,bn) ->
           let tip = VCS.cur_tip () in
           if has_failed qed_id && is_pure qed_id && not !Flags.async_proofs_never_reopen_branch
           then reopen_branch start id mode qed_id tip bn

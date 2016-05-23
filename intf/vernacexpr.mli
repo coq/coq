@@ -454,7 +454,7 @@ type vernac_type =
   | VtStartProof of vernac_start
   | VtSideff of vernac_sideff_type
   | VtQed of vernac_qed_type
-  | VtProofStep of bool (* parallelize *)
+  | VtProofStep of proof_step
   | VtProofMode of string
   | VtQuery of vernac_part_of_script * report_with
   | VtStm of vernac_control * vernac_part_of_script
@@ -476,6 +476,11 @@ and vernac_control =
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
+and proof_step = { (* TODO: inline with OCaml 4.03 *)
+  parallel : bool;
+  proof_block_detection : proof_block_name option
+}
+and proof_block_name = string (* open type of delimiters *)
 type vernac_when =
   | VtNow
   | VtLater
