@@ -29,7 +29,13 @@ let get exn = Exninfo.get exn state_id_info
 let equal = Int.equal
 let compare = Int.compare
 
-module Set = Set.Make(struct type t = int let compare = compare end)
+module Self = struct
+ type t = int
+ let compare = compare
+ let equal = equal
+end
+
+module Set = Set.Make(Self)
 
 type ('a,'b) request = {
   exn_info : t * t;

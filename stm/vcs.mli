@@ -19,10 +19,11 @@
    As a consequence, "checkout" just updates the current branch.
 
    The type [id] is the type of commits (a node in the dag)
-   The type [Vcs.t] has 3 parameters:
+   The type [Vcs.t] has 4 parameters:
     ['info] data attached to a node (like a system state)
     ['diff] data attached to an edge (the commit content, a "patch")
     ['kind] extra data attached to a branch (like being the master branch)
+    ['cdata] extra data hold by dag properties
 *)
 
 module type S = sig
@@ -45,46 +46,51 @@ module type S = sig
     pos  : id;
   }
   
-  type ('kind,'diff,'info) t constraint 'kind = [> `Master ]
+  type ('kind,'diff,'info,'property_data) t constraint 'kind = [> `Master ]
   
-  val empty : id -> ('kind,'diff,'info) t
+  val empty : id -> ('kind,'diff,'info,'property_data) t
   
-  val current_branch : ('k,'e,'i) t -> Branch.t
-  val branches : ('k,'e,'i) t -> Branch.t list
+  val current_branch : ('k,'e,'i,'c) t -> Branch.t
+  val branches : ('k,'e,'i,'c) t -> Branch.t list
   
-  val get_branch : ('k,'e,'i) t -> Branch.t -> 'k branch_info
-  val reset_branch : ('k,'e,'i) t -> Branch.t -> id -> ('k,'e,'i) t
+  val get_branch : ('k,'e,'i,'c) t -> Branch.t -> 'k branch_info
+  val reset_branch : ('k,'e,'i,'c) t -> Branch.t -> id -> ('k,'e,'i,'c) t
   val branch :
-    ('kind,'e,'i) t -> ?root:id -> ?pos:id ->
-        Branch.t -> 'kind -> ('kind,'e,'i) t
-  val delete_branch : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
+    ('kind,'e,'i,'c) t -> ?root:id -> ?pos:id ->
+        Branch.t -> 'kind -> ('kind,'e,'i,'c) t
+  val delete_branch : ('k,'e,'i,'c) t -> Branch.t -> ('k,'e,'i,'c) t
   val merge :
-    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
-            Branch.t -> ('k,'diff,'i) t
-  val commit : ('k,'diff,'i) t -> id -> 'diff -> ('k,'diff,'i) t
+    ('k,'diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
+            Branch.t -> ('k,'diff,'i,'c) t
+  val commit : ('k,'diff,'i,'c) t -> id -> 'diff -> ('k,'diff,'i,'c) t
   val rewrite_merge :
-    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
-            Branch.t -> ('k,'diff,'i) t
-  val checkout : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
+    ('k,'diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
+            Branch.t -> ('k,'diff,'i,'c) t
+  val checkout : ('k,'e,'i,'c) t -> Branch.t -> ('k,'e,'i,'c) t
   
-  val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
-  val get_info : ('k,'e,'info) t -> id -> 'info option
+  val set_info : ('k,'e,'info,'c) t -> id -> 'info -> ('k,'e,'info,'c) t
+  val get_info : ('k,'e,'info,'c) t -> id -> 'info option
 
-  module NodeSet : Set.S with type elt = id
-  
-  (* Removes all unreachable nodes and returns them *)
-  val gc : ('k,'e,'info) t -> ('k,'e,'info) t * NodeSet.t
-
-  val reachable : ('k,'e,'info) t -> id -> NodeSet.t
-
-  (* read only dag *)
+  (* Read only dag *)
   module Dag : Dag.S with type node = id
-  val dag : ('kind,'diff,'info) t -> ('diff,'info,id * id) Dag.t
- 
-  val create_cluster : ('k,'e,'i) t -> id list -> (id * id) -> ('k,'e,'i) t
-  val cluster_of : ('k,'e,'i) t -> id -> (id * id) Dag.Cluster.t option
-  val delete_cluster : ('k,'e,'i) t -> (id * id) Dag.Cluster.t -> ('k,'e,'i) t 
+  val dag : ('kind,'diff,'info,'cdata) t -> ('diff,'info,'cdata) Dag.t
+  
+  (* Properties are not a concept typical of a VCS, but a useful metadata
+   * of a DAG (or graph). *)
+  val create_property : ('k,'e,'i,'c) t -> id list -> 'c -> ('k,'e,'i,'c) t
+  val property_of : ('k,'e,'i,'c) t -> id -> 'c Dag.Property.t list
+  val delete_property : ('k,'e,'i,'c) t -> 'c Dag.Property.t -> ('k,'e,'i,'c) t 
 
+  (* Removes all unreachable nodes and returns them *)
+  val gc : ('k,'e,'info,'c) t -> ('k,'e,'info,'c) t * Dag.NodeSet.t
+  val reachable : ('k,'e,'info,'c) t -> id -> Dag.NodeSet.t
+
+ 
 end
 
-module Make(OT : Map.OrderedType) : S with type id = OT.t
+module Make(OT : Map.OrderedType) : S
+with type id = OT.t
+and type Dag.node = OT.t
+and type Dag.NodeSet.t = Set.Make(OT).t
+and type Dag.NodeSet.elt = OT.t
+

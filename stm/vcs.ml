@@ -22,51 +22,49 @@ module type S = sig
   end
 
   type id
-
-  (* Branches have [branch_info] attached to them. *)
+  
   type ('kind) branch_info = {
     kind : [> `Master] as 'kind;
     root : id;
     pos  : id;
   }
-
-  type ('kind,'diff,'info) t constraint 'kind = [> `Master ]
-
-  val empty : id -> ('kind,'diff,'info) t
-
-  val current_branch : ('k,'e,'i) t -> Branch.t
-  val branches : ('k,'e,'i) t -> Branch.t list
-
-  val get_branch : ('k,'e,'i) t -> Branch.t -> 'k branch_info
-  val reset_branch : ('k,'e,'i) t -> Branch.t -> id -> ('k,'e,'i) t
-  val branch :
-    ('kind,'e,'i) t -> ?root:id -> ?pos:id ->
-        Branch.t -> 'kind -> ('kind,'e,'i) t
-  val delete_branch : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
-  val merge :
-    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
-            Branch.t -> ('k,'diff,'i) t
-  val commit : ('k,'diff,'i) t -> id -> 'diff -> ('k,'diff,'i) t
-  val rewrite_merge :
-    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
-            Branch.t -> ('k,'diff,'i) t
-  val checkout : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
-
-  val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
-  val get_info : ('k,'e,'info) t -> id -> 'info option
   
-  module NodeSet : Set.S with type elt = id
+  type ('kind,'diff,'info,'property_data) t constraint 'kind = [> `Master ]
+  
+  val empty : id -> ('kind,'diff,'info,'property_data) t
+  
+  val current_branch : ('k,'e,'i,'c) t -> Branch.t
+  val branches : ('k,'e,'i,'c) t -> Branch.t list
+  
+  val get_branch : ('k,'e,'i,'c) t -> Branch.t -> 'k branch_info
+  val reset_branch : ('k,'e,'i,'c) t -> Branch.t -> id -> ('k,'e,'i,'c) t
+  val branch :
+    ('kind,'e,'i,'c) t -> ?root:id -> ?pos:id ->
+        Branch.t -> 'kind -> ('kind,'e,'i,'c) t
+  val delete_branch : ('k,'e,'i,'c) t -> Branch.t -> ('k,'e,'i,'c) t
+  val merge :
+    ('k,'diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
+            Branch.t -> ('k,'diff,'i,'c) t
+  val commit : ('k,'diff,'i,'c) t -> id -> 'diff -> ('k,'diff,'i,'c) t
+  val rewrite_merge :
+    ('k,'diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
+            Branch.t -> ('k,'diff,'i,'c) t
+  val checkout : ('k,'e,'i,'c) t -> Branch.t -> ('k,'e,'i,'c) t
+  
+  val set_info : ('k,'e,'info,'c) t -> id -> 'info -> ('k,'e,'info,'c) t
+  val get_info : ('k,'e,'info,'c) t -> id -> 'info option
 
-  val gc : ('k,'e,'info) t -> ('k,'e,'info) t * NodeSet.t
-
-  val reachable : ('k,'e,'info) t -> id -> NodeSet.t
-
+  (* Read only dag *)
   module Dag : Dag.S with type node = id
-  val dag : ('kind,'diff,'info) t -> ('diff,'info,id*id) Dag.t
+  val dag : ('kind,'diff,'info,'cdata) t -> ('diff,'info,'cdata) Dag.t
 
-  val create_cluster : ('k,'e,'i) t -> id list -> (id * id) -> ('k,'e,'i) t
-  val cluster_of : ('k,'e,'i) t -> id -> (id * id) Dag.Cluster.t option
-  val delete_cluster : ('k,'e,'i) t -> (id * id) Dag.Cluster.t -> ('k,'e,'i) t 
+  val create_property : ('k,'e,'i,'c) t -> id list -> 'c -> ('k,'e,'i,'c) t
+  val property_of : ('k,'e,'i,'c) t -> id -> 'c Dag.Property.t list
+  val delete_property : ('k,'e,'i,'c) t -> 'c Dag.Property.t -> ('k,'e,'i,'c) t 
+
+  (* Removes all unreachable nodes and returns them *)
+  val gc : ('k,'e,'info,'c) t -> ('k,'e,'info,'c) t * Dag.NodeSet.t
+  val reachable : ('k,'e,'info,'c) t -> id -> Dag.NodeSet.t
 
 end
 
@@ -77,7 +75,6 @@ module Dag = Dag.Make(OT)
 type id = OT.t
 
 module NodeSet = Dag.NodeSet
-
 
 module Branch =
 struct
@@ -99,10 +96,10 @@ type 'kind branch_info = {
   pos  : id;
 }
 
-type ('kind,'edge,'info) t = {
+type ('kind,'edge,'info,'property_data) t = {
   cur_branch   : Branch.t;
   heads        : 'kind branch_info BranchMap.t;
-  dag          : ('edge,'info,id*id) Dag.t;
+  dag          : ('edge,'info,'property_data) Dag.t;
 }
 
 let empty root = {
@@ -167,9 +164,9 @@ let checkout vcs name = { vcs with cur_branch = name }
 let set_info vcs id info = { vcs with dag = Dag.set_info vcs.dag id info }
 let get_info vcs id = Dag.get_info vcs.dag id
 
-let create_cluster vcs l i = { vcs with dag = Dag.create_cluster vcs.dag l i }
-let cluster_of vcs i = Dag.cluster_of vcs.dag i
-let delete_cluster vcs c = { vcs with dag = Dag.del_cluster vcs.dag c }
+let create_property vcs l i = { vcs with dag = Dag.create_property vcs.dag l i }
+let property_of vcs i = Dag.property_of vcs.dag i
+let delete_property vcs c = { vcs with dag = Dag.del_property vcs.dag c }
 
 let branches vcs = BranchMap.fold (fun x _ accu -> x :: accu) vcs.heads []
 let dag vcs = vcs.dag

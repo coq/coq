@@ -140,7 +140,7 @@ let update_global_env () =
   if Proof_global.there_are_pending_proofs () then
     Proof_global.update_global_env ()
 
-module Vcs_ = Vcs.Make(Stateid)
+module Vcs_ = Vcs.Make(Stateid.Self)
 type future_proof = Proof_global.closed_proof_output Future.computation
 type proof_mode = string
 type depth = int
@@ -206,15 +206,28 @@ type 'vcs state_info = { (* TODO: Make this record private to VCS *)
 let default_info () =
   { n_reached = 0; n_goals = 0; state = Empty; vcs_backup = None,None }
 
+(* Clusters of nodes implemented as Dag properties.  While Dag and Vcs impose
+ * no constraint on properties, here we impose boxes to be non overlapping. *)
+type box =
+  | ProofTask of pt
+  | ErrorBound of eb
+and pt = { (* TODO: inline records in OCaml 4.03 *)
+  start : Stateid.t;
+  qed   : Stateid.t;
+}
+and eb = {
+  stuff : unit;
+}
+
 (* Functions that work on a Vcs with a specific branch type *)
 module Vcs_aux : sig
 
-  val proof_nesting : (branch_type, 't,'i) Vcs_.t -> int
+  val proof_nesting : (branch_type, 't,'i,'c) Vcs_.t -> int
   val find_proof_at_depth :
-    (branch_type, 't, 'i) Vcs_.t -> int ->
+          (branch_type, 't, 'i,'c) Vcs_.t -> int ->
       Vcs_.Branch.t * branch_type Vcs_.branch_info
   exception Expired
-  val visit : (branch_type, transaction,'i) Vcs_.t -> Vcs_.Dag.node -> visit
+  val visit : (branch_type, transaction,'i,'c) Vcs_.t -> Vcs_.Dag.node -> visit
 
 end = struct (* {{{ *)
 
@@ -278,7 +291,7 @@ module VCS : sig
     pos  : id;
   }
 
-  type vcs = (branch_type, transaction, vcs state_info) Vcs_.t
+  type vcs = (branch_type, transaction, vcs state_info, box) Vcs_.t
 
   val init : id -> unit
 
@@ -296,7 +309,7 @@ module VCS : sig
   val edit_branch : Branch.t
   val branch : ?root:id -> ?pos:id -> Branch.t -> branch_type -> unit
   val reset_branch : Branch.t -> id -> unit
-  val reachable : id -> Vcs_.NodeSet.t
+  val reachable : id -> Stateid.Set.t
   val cur_tip : unit -> id
 
   val get_info : id -> vcs state_info
@@ -309,9 +322,11 @@ module VCS : sig
   val slice : start:id -> stop:id -> vcs
   val nodes_in_slice : start:id -> stop:id -> Stateid.t list
   
-  val create_cluster : id list -> qed:id -> start:id -> unit
-  val cluster_of : id -> (id * id) option
-  val delete_cluster_of : id -> unit
+  val create_proof_task_box : id list -> qed:id -> start:id -> unit
+  val create_error_bound_box : id list -> switch:id -> unit
+  val box_of : id -> box list
+  val delete_proof_task_box_of : id -> unit
+  val proof_task_box_of : id -> pt option
 
   val proof_nesting : unit -> int
   val checkout_shallowest_proof_branch : unit -> unit
@@ -331,7 +346,6 @@ end = struct (* {{{ *)
   include Vcs_
   exception Expired = Vcs_aux.Expired
 
-  module StateidSet = Set.Make(Stateid)
   open Printf
 
   let print_dag vcs () =
@@ -373,8 +387,6 @@ end = struct (* {{{ *)
     let edge tr =
       sprintf "<<FONT POINT-SIZE=\"12\" FACE=\"sans\">%s</FONT>>"
         (quote (string_of_transaction tr)) in
-    let ids = ref StateidSet.empty in
-    let clus = Hashtbl.create 13 in
     let node_info id =
       match get_info vcs id with
       | None -> ""
@@ -387,39 +399,66 @@ end = struct (* {{{ *)
     let nodefmt oc id =
       fprintf oc "%s [label=%s,style=filled,fillcolor=%s];\n"
         (node id) (node_info id) (color id) in
-    let add_to_clus_or_ids from cf =
-      match cf with
-      | None -> ids := StateidSet.add from !ids; false
-      | Some c -> Hashtbl.replace clus c
-         (try let n = Hashtbl.find clus c in from::n
-         with Not_found -> [from]); true in
+
+    let ids = ref Stateid.Set.empty in
+    let boxes = ref [] in
+    (* Fill in *)
+    Dag.iter graph (fun from _ _ l ->
+      ids := Stateid.Set.add from !ids;
+      List.iter (fun box -> boxes := box :: !boxes)
+        (Dag.property_of graph from);
+      List.iter (fun (dest, _) ->
+        ids := Stateid.Set.add dest !ids;
+        List.iter (fun box -> boxes := box :: !boxes)
+          (Dag.property_of graph dest))
+      l);
+    boxes := CList.sort_uniquize Dag.Property.compare !boxes;
+
     let oc = open_out fname_dot in
     output_string oc "digraph states {\n";
     Dag.iter graph (fun from cf _ l ->
-      let c1 = add_to_clus_or_ids from cf in
       List.iter (fun (dest, trans) ->
-       let c2 = add_to_clus_or_ids dest (Dag.cluster_of graph dest) in
-       fprintf oc "%s -> %s [xlabel=%s,labelfloat=%b];\n"
-           (node from) (node dest) (edge trans) (c1 && c2)) l
+       fprintf oc "%s -> %s [xlabel=%s,labelfloat=true];\n"
+           (node from) (node dest) (edge trans)) l
     );
-    StateidSet.iter (nodefmt oc) !ids;
-    Hashtbl.iter (fun c nodes ->
-       fprintf oc "subgraph cluster_%s {\n" (Dag.Cluster.to_string c);
-       List.iter (nodefmt oc) nodes;
-       fprintf oc "color=blue; }\n"
-    ) clus;
+
+    let contains b1 b2 =
+      Stateid.Set.subset
+        (Dag.Property.having_it b2) (Dag.Property.having_it b1) in
+    let same_box = Dag.Property.equal in
+    let outerboxes boxes =
+       List.filter (fun b ->
+         not (List.exists (fun b1 ->
+           not (same_box b1 b) && contains b1 b) boxes)           
+         ) boxes in
+    let rec rec_print b =
+      boxes := CList.remove same_box b !boxes;
+      let sub_boxes = List.filter (contains b) (outerboxes !boxes) in
+      fprintf oc "subgraph cluster_%s {\n" (Dag.Property.to_string b);
+      List.iter rec_print sub_boxes;
+      Stateid.Set.iter (fun id ->
+        if Stateid.Set.mem id !ids then begin
+          ids := Stateid.Set.remove id !ids;
+          nodefmt oc id
+        end)
+        (Dag.Property.having_it b);
+      fprintf oc "color=blue; }\n" in
+    List.iter rec_print (outerboxes !boxes);
+    Stateid.Set.iter (nodefmt oc) !ids;
+
     List.iteri (fun i (b,id) ->
       let shape = if Branch.equal head b then "box3d" else "box" in
       fprintf oc "b%d -> %s;\n" i (node id);
       fprintf oc "b%d [shape=%s,label=\"%s\"];\n" i shape
         (Branch.to_string b);
     ) heads;
+
     output_string oc "}\n";
     close_out oc;
     ignore(Sys.command
       ("dot -Tpdf -Gcharset=latin1 " ^ fname_dot ^ " -o" ^ fname_ps))
 
-  type vcs = (branch_type, transaction, vcs state_info) t
+  type vcs = (branch_type, transaction, vcs state_info, box) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
   let init id =
@@ -535,15 +574,39 @@ end = struct (* {{{ *)
   let nodes_in_slice ~start ~stop =
     List.rev (List.map fst (nodes_in_slice ~start ~stop))
 
-  let create_cluster l ~qed ~start = vcs := create_cluster !vcs l (qed,start)
-  let cluster_of id = Option.map Dag.Cluster.data (cluster_of !vcs id)
-  let delete_cluster_of id =
-    Option.iter (fun x -> vcs := delete_cluster !vcs x) (Vcs_.cluster_of !vcs id)
+  let topo_invariant l =
+    let all = List.fold_right Stateid.Set.add l Stateid.Set.empty in
+    List.for_all
+      (fun x ->
+         let props = property_of !vcs x in
+         let sets = List.map Dag.Property.having_it props in
+         List.for_all (fun s -> Stateid.Set.(subset s all || subset all s)) sets)
+      l
+
+  let create_proof_task_box l ~qed ~start =
+    if not (topo_invariant l) then anomaly (str "overlapping boxes");
+    vcs := create_property !vcs l (ProofTask { qed; start })
+  let create_error_bound_box l ~switch =
+    vcs := create_property !vcs l
+      (ErrorBound { stuff = () })
+  let box_of id = List.map Dag.Property.data (property_of !vcs id)
+  let delete_proof_task_box_of id =
+    List.iter (fun x -> vcs := delete_property !vcs x)
+      (List.filter (fun x ->
+          match Dag.Property.data x with ProofTask _ -> true | _ -> false)
+        (Vcs_.property_of !vcs id))
+  let proof_task_box_of id =
+    match
+      CList.map_filter (function ProofTask x -> Some x | _ -> None) (box_of id)
+    with
+    | [] -> None
+    | [x] -> Some x
+    | _ -> anomaly (str "node with more than 1 proof task box")
 
   let gc () =
     let old_vcs = !vcs in
     let new_vcs, erased_nodes = gc old_vcs in
-    Vcs_.NodeSet.iter (fun id ->
+    Stateid.Set.iter (fun id ->
         match (Vcs_aux.visit old_vcs id).step with
         | `Qed ({ fproof = Some (_, cancel_switch) }, _)
         | `Cmd { cqueue = `TacQueue cancel_switch }
@@ -1878,7 +1941,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 let drop_pt = keep == VtKeepAsAxiom in
                 let stop, exn_info, loc = eop, (id, eop), x.loc in
                 log_processing_async id name;
-                VCS.create_cluster nodes ~qed:id ~start;
+                VCS.create_proof_task_box nodes ~qed:id ~start;
                 begin match brinfo, qed.fproof with
                 | { VCS.kind = `Edit _ }, None -> assert false
                 | { VCS.kind = `Edit (_,_,_, okeep, _) }, Some (ofp, cancel) ->
@@ -2403,7 +2466,7 @@ let edit_at id =
     | _ -> assert false
   in
   let is_ancestor_of_cur_branch id =
-    Vcs_.NodeSet.mem id
+    Stateid.Set.mem id
       (VCS.reachable (VCS.get_branch_pos (VCS.current_branch ()))) in
   let has_failed qed_id =
     match VCS.visit qed_id with
@@ -2418,13 +2481,13 @@ let edit_at id =
       | { next } -> master_for_br root next in
   let reopen_branch start at_id mode qed_id tip old_branch =
     let master_id, cancel_switch, keep =
-      (* Hum, this should be the real start_id in the clusted and not next *)
+      (* Hum, this should be the real start_id in the cluster and not next *)
       match VCS.visit qed_id with
       | { step = `Qed ({ fproof = Some (_,cs); keep },_) } -> start, cs, keep
-      | _ -> anomaly (str "Cluster not ending with Qed") in
+      | _ -> anomaly (str "ProofTask not ending with Qed") in
     VCS.branch ~root:master_id ~pos:id
       VCS.edit_branch (`Edit (mode, qed_id, master_id, keep, old_branch));
-    VCS.delete_cluster_of id;
+    VCS.delete_proof_task_box_of id;
     cancel_switch := true;
     Reach.known_state ~cache:(interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
@@ -2438,14 +2501,14 @@ let edit_at id =
     let { mine = brname, brinfo; others } = Backtrack.branches_of id in
     List.iter (fun (name,{ VCS.kind = k; root; pos }) ->
       if not(VCS.Branch.equal name VCS.Branch.master) &&
-         Vcs_.NodeSet.mem root ancestors then
+         Stateid.Set.mem root ancestors then
         VCS.branch ~root ~pos name k)
       others;
     VCS.reset_branch VCS.Branch.master (master_for_br brinfo.VCS.root id);
     VCS.branch ~root:brinfo.VCS.root ~pos:brinfo.VCS.pos
       (Option.default brname bn)
       (no_edit brinfo.VCS.kind);
-    VCS.delete_cluster_of id;
+    VCS.delete_proof_task_box_of id;
     VCS.gc ();
     VCS.print ();
     if not !Flags.async_proofs_full then
@@ -2460,14 +2523,14 @@ let edit_at id =
         | Some{ mine = bn, { VCS.kind = `Proof(m,_) }} -> Some(m,bn)
         | Some{ mine = _, { VCS.kind = `Edit(m,_,_,_,bn) }} -> Some (m,bn)
         | _ -> None in
-      match focused, VCS.cluster_of id, branch_info with
+      match focused, VCS.proof_task_box_of id, branch_info with
       | _, Some _, None -> assert false
-      | false, Some (qed_id,start), Some(mode,bn) ->
+      | false, Some { qed = qed_id ; start }, Some(mode,bn) ->
           let tip = VCS.cur_tip () in
           if has_failed qed_id && is_pure qed_id && not !Flags.async_proofs_never_reopen_branch
           then reopen_branch start id mode qed_id tip bn
           else backto id (Some bn)
-      | true, Some (qed_id,_), Some(mode,bn) ->
+      | true, Some { qed = qed_id }, Some(mode,bn) ->
           if on_cur_branch id then begin
             assert false
           end else if is_ancestor_of_cur_branch id then begin

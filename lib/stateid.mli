@@ -11,7 +11,8 @@ type t
 val equal : t -> t -> bool
 val compare : t -> t -> int
 
-module Set : Set.S with type elt = t
+module Self : Map.OrderedType with type t = t
+module Set : Set.S with type elt = t and type t = Set.Make(Self).t
 
 val initial : t
 val dummy : t
