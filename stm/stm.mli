@@ -130,7 +130,7 @@ module QueryTask : AsyncTaskQueue.Task
    Declaration of block  [-------------------------------------------]
 
       start = 5            the first state_id that could fail in the block
-      stop = 6             the node that may absorb the error
+      stop = 7             the node that may absorb the error
       dynamic_switch = 4   dynamic check on this node
       carry_on_data = ()   no need to carry extra data from static to dynamic
                            checks

@@ -1111,9 +1111,9 @@ let prev_node { id } =
 let cur_node id = mk_doc_node id (VCS.visit id)
 
 let detect_proof_block id = function
-  | None -> ()
-  | Some name ->
-      match cur_node id with
+  | Some name when !Flags.async_proofs_tac_error_resilience &&
+                   !Flags.async_proofs_mode != Flags.APoff ->
+      begin match cur_node id with
       | None -> ()
       | Some entry_point -> try
           let static, _ = List.assoc name !proof_block_delimiters in
@@ -1124,7 +1124,8 @@ let detect_proof_block id = function
           end
         with Not_found ->
           Errors.errorlabstrm "STM"
-            (str "Unknown proof block delimiter " ++ str name)
+            (str "Unknown proof block delimiter " ++ str name) end
+  | _ -> ()
 
 (****************************** THE SCHEDULER *********************************)
 (******************************************************************************)
@@ -2016,14 +2017,24 @@ let known_state ?(redefine_qed=false) ~cache id =
 
   (* Absorb tactic errors from f () *)
   let resilient_tactic id f =
-    try f ()
-    with e when Errors.noncritical e ->
-      let ie = Errors.push e in
-      error_absorbing_tactic id ie in
+    if not !Flags.async_proofs_tac_error_resilience ||
+       (Flags.async_proofs_is_master () &&
+        !Flags.async_proofs_mode = Flags.APoff)
+    then f ()
+    else
+      try f ()
+      with e when Errors.noncritical e ->
+        let ie = Errors.push e in
+        error_absorbing_tactic id ie in
   (* Absorb errors from f x *)
   let resilient_command f x =
-    try f x
-    with e when Errors.noncritical e -> () in
+    if not !Flags.async_proofs_cmd_error_resilience ||
+       (Flags.async_proofs_is_master () &&
+        !Flags.async_proofs_mode = Flags.APoff)
+    then f x
+    else
+      try f x
+      with e when Errors.noncritical e -> () in
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)

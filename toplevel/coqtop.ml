@@ -492,6 +492,10 @@ let parse_args arglist =
         Flags.async_proofs_worker_priority := get_priority opt (next ())
     |"-async-proofs-private-flags" ->
         Flags.async_proofs_private_flags := Some (next ());
+    |"-async-proofs-tactic-error-resilience" ->
+        Flags.async_proofs_tac_error_resilience := get_bool opt (next ())
+    |"-async-proofs-command-error-resilience" ->
+        Flags.async_proofs_cmd_error_resilience := get_bool opt (next ())
     |"-worker-id" -> set_worker_id opt (next ())
     |"-compat" -> let v = get_compat_version (next ()) in Flags.compat_version := v; add_compat_require v
     |"-compile" -> add_compile false (next ())
