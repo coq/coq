@@ -26,8 +26,8 @@ val default_search_depth : int ref
 val auto_flags_of_state : transparent_state -> Unification.unify_flags
 
 val connect_hint_clenv : polymorphic -> raw_hint -> clausenv ->
-			 [ `NF ] Proofview.Goal.t -> clausenv * constr
-						
+			 'a Proofview.Goal.t -> clausenv * constr
+
 (** Try unification with the precompiled clause, then use registered Apply *)
 val unify_resolve_nodelta : polymorphic -> (raw_hint * clausenv) -> unit Proofview.tactic
 
