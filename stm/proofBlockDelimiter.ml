@@ -125,3 +125,25 @@ let dynamic_curly_brace { dynamic_switch = id } =
 
 let () = register_proof_block_delimiter
   "proof-block" static_curly_brace dynamic_curly_brace
+
+(* ***************** par: ************************************************* *)
+
+let static_par { entry_point; prev_node } =
+  match prev_node entry_point with
+  | None -> None
+  | Some { id = pid } ->
+      Some { stop = entry_point.id; start = pid;
+             dynamic_switch = pid; carry_on_data = unit_val }
+
+let dynamic_par { dynamic_switch = id } =
+  match is_focused_goal_simple id with
+  | `Simple focused ->
+      `ValidBlock {
+         base_state = id;
+         goals_to_admit = focused;
+         recovery_command = None;
+      }
+  | `Not -> `Leaks
+
+let () = register_proof_block_delimiter "par" static_par dynamic_par
+

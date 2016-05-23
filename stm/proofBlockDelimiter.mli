@@ -9,6 +9,7 @@
 (* This file implements proof block detection for:
    - blocks delimited by { and }
    - bullets with indentation
+   - par: terminator
 
    It exports utility functions to ease the development of other proof block
    detection code.
@@ -37,3 +38,4 @@ val unit_val : Stm.DynBlockData.t
 (* Bullets *)
 val of_bullet_val : Vernacexpr.bullet -> Stm.DynBlockData.t
 val to_bullet_val : Stm.DynBlockData.t -> Vernacexpr.bullet
+
