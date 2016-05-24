@@ -212,11 +212,20 @@ let try_declare_beq_scheme kn =
 
 let declare_beq_scheme = declare_beq_scheme_with []
 
+let is_primitive_record_without_eta mib =
+  match mib.mind_record with
+  | Some (Some _) -> mib.mind_finite <> BiFinite
+  | _ -> false
+
 (* Case analysis schemes *)
 let declare_one_case_analysis_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
-  let dep = if kind == InProp then case_scheme_kind_from_prop else case_dep_scheme_kind_from_type in
+  let dep =
+    if kind == InProp then case_scheme_kind_from_prop
+    else if is_primitive_record_without_eta mib then
+      case_scheme_kind_from_type
+    else case_dep_scheme_kind_from_type in
   let kelim = elim_sorts (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
@@ -236,15 +245,23 @@ let kinds_from_type =
    InProp,ind_dep_scheme_kind_from_type;
    InSet,rec_dep_scheme_kind_from_type]
 
+let nondep_kinds_from_type =
+  [InType,rect_scheme_kind_from_type;
+   InProp,ind_scheme_kind_from_type;
+   InSet,rec_scheme_kind_from_type]
+
 let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
   let from_prop = kind == InProp in
+  let primwithouteta = is_primitive_record_without_eta mib in
   let kelim = elim_sorts (mib,mip) in
   let elims =
     List.map_filter (fun (sort,kind) ->
       if Sorts.List.mem sort kelim then Some kind else None)
-      (if from_prop then kinds_from_prop else kinds_from_type) in
+      (if from_prop then kinds_from_prop
+       else if primwithouteta then nondep_kinds_from_type
+       else kinds_from_type) in
   List.iter (fun kind -> ignore (define_individual_scheme kind UserAutomaticRequest None ind))
     elims
 
@@ -497,7 +514,11 @@ let declare_default_schemes kn =
   let mib = Global.lookup_mind kn in
   let n = Array.length mib.mind_packets in
   if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag) then
-    declare_induction_schemes kn;
+    (if is_primitive_record_without_eta mib then
+       msg_warning (str"Defining non dependent induction schemes for " ++
+		    Names.MutInd.print kn ++
+		    str" which is a recursive record without eta conversion.");
+     declare_induction_schemes kn);
   if !case_flag then map_inductive_block declare_one_case_analysis_scheme kn n;
   if is_eq_flag() then try_declare_beq_scheme kn;
   if !eq_dec_flag then try_declare_eq_decidability kn;
