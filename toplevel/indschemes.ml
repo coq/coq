@@ -219,7 +219,7 @@ let declare_one_case_analysis_scheme ind =
   let kind = inductive_sort_family mip in
   let dep =
     if kind == InProp then case_scheme_kind_from_prop
-    else if Inductiveops.is_primitive_record_without_eta mib then
+    else if not (Inductiveops.has_dependent_elim mib) then
       case_scheme_kind_from_type
     else case_dep_scheme_kind_from_type in
   let kelim = elim_sorts (mib,mip) in
@@ -250,14 +250,14 @@ let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
   let from_prop = kind == InProp in
-  let primwithouteta = Inductiveops.is_primitive_record_without_eta mib in
+  let depelim = Inductiveops.has_dependent_elim mib in
   let kelim = elim_sorts (mib,mip) in
   let elims =
     List.map_filter (fun (sort,kind) ->
       if Sorts.List.mem sort kelim then Some kind else None)
       (if from_prop then kinds_from_prop
-       else if primwithouteta then nondep_kinds_from_type
-       else kinds_from_type) in
+       else if depelim then kinds_from_type
+       else nondep_kinds_from_type) in
   List.iter (fun kind -> ignore (define_individual_scheme kind UserAutomaticRequest None ind))
     elims
 
