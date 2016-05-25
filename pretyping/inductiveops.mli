@@ -180,6 +180,14 @@ val type_case_branches_with_names :
 (** Annotation for cases *)
 val make_case_info : env -> inductive -> case_style -> case_info
 
+(** Make a case or substitute projections if the inductive type is a record
+    with primitive projections.
+    Fail with an error if the elimination is dependent while the
+    inductive type does not allow dependent elimination. *)
+val make_case_or_project :
+  env -> inductive_family -> case_info ->
+  (* pred *) constr -> (* term *) constr -> (* branches *) constr array -> constr
+
 (*i Compatibility
 val make_default_case_info : env -> case_style -> inductive -> case_info
 i*)
