@@ -123,14 +123,16 @@ val inductive_has_local_defs : inductive -> bool
 
 val allowed_sorts : env -> inductive -> sorts_family list
 
+(** (Co)Inductive records with primitive projections do not have eta-conversion,
+    hence no dependent elimination. *)
+val has_dependent_elim : mutual_inductive_body -> bool
+
 (** Primitive projections *)
 val projection_nparams : projection -> int
 val projection_nparams_env : env -> projection -> int
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
 				     constr -> types -> types
 
-(** Recursive records with primitive projections do not have eta-conversion *)
-val is_primitive_record_without_eta : mutual_inductive_body -> bool
 
 (** Extract information from an inductive family *)
 
