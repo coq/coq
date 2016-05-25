@@ -212,18 +212,13 @@ let try_declare_beq_scheme kn =
 
 let declare_beq_scheme = declare_beq_scheme_with []
 
-let is_primitive_record_without_eta mib =
-  match mib.mind_record with
-  | Some (Some _) -> mib.mind_finite <> BiFinite
-  | _ -> false
-
 (* Case analysis schemes *)
 let declare_one_case_analysis_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
   let dep =
     if kind == InProp then case_scheme_kind_from_prop
-    else if is_primitive_record_without_eta mib then
+    else if Inductiveops.is_primitive_record_without_eta mib then
       case_scheme_kind_from_type
     else case_dep_scheme_kind_from_type in
   let kelim = elim_sorts (mib,mip) in
@@ -254,7 +249,7 @@ let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
   let from_prop = kind == InProp in
-  let primwithouteta = is_primitive_record_without_eta mib in
+  let primwithouteta = Inductiveops.is_primitive_record_without_eta mib in
   let kelim = elim_sorts (mib,mip) in
   let elims =
     List.map_filter (fun (sort,kind) ->
@@ -268,7 +263,7 @@ let declare_one_induction_scheme ind =
 let declare_induction_schemes kn =
   let mib = Global.lookup_mind kn in
   if mib.mind_finite <> Decl_kinds.CoFinite then begin
-    if is_primitive_record_without_eta mib then
+    if Inductiveops.is_primitive_record_without_eta mib then
       msg_warning (str"Defining non dependent induction schemes for " ++
 		   Names.MutInd.print kn ++
 		   str" which is a recursive record without eta conversion.");
@@ -407,7 +402,6 @@ let do_mutual_induction_scheme lnamedepindsort =
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma decl in
-    (* let decltype = refresh_universes decltype in *)
     let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
     let cst = define fi UserIndividualRequest sigma proof_output (Some decltype) in
     ConstRef cst :: lrecref
