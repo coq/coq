@@ -126,7 +126,10 @@ val allowed_sorts : env -> inductive -> sorts_family list
 val projection_nparams : projection -> int
 val projection_nparams_env : env -> projection -> int
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
-  constr -> types -> types
+				     constr -> types -> types
+
+(** Recursive records with primitive projections do not have eta-conversion *)
+val is_primitive_record_without_eta : mutual_inductive_body -> bool
 
 (** Extract information from an inductive family *)
 

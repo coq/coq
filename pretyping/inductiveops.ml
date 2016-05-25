@@ -269,6 +269,11 @@ let projection_nparams_env env p =
 
 let projection_nparams p = projection_nparams_env (Global.env ()) p
 
+let is_primitive_record_without_eta mib =
+  match mib.mind_record with
+  | Some (Some _) -> mib.mind_finite <> Decl_kinds.BiFinite
+  | _ -> false
+
 (* Annotation for cases *)
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in

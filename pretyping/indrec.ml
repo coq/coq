@@ -36,6 +36,7 @@ type dep_flag = bool
 type recursion_scheme_error =
   | NotAllowedCaseAnalysis of (*isrec:*) bool * sorts * pinductive
   | NotMutualInScheme of inductive * inductive
+  | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
 exception RecursionSchemeError of recursion_scheme_error
 
@@ -483,6 +484,8 @@ let mis_make_indrec env sigma listdepkind mib u =
 
 let build_case_analysis_scheme env sigma pity dep kind =
   let (mib,mip) = lookup_mind_specif env (fst pity) in
+  if dep && Inductiveops.is_primitive_record_without_eta mib then
+    raise (RecursionSchemeError (NotAllowedDependentAnalysis (false, fst pity)));
   mis_make_case_com dep env sigma pity (mib,mip) kind
 
 let is_in_prop mip =
@@ -492,7 +495,7 @@ let is_in_prop mip =
 
 let build_case_analysis_scheme_default env sigma pity kind =
   let (mib,mip) = lookup_mind_specif env (fst pity) in
-  let dep = not (is_in_prop mip) in
+  let dep = not (is_in_prop mip || Inductiveops.is_primitive_record_without_eta mib) in
   mis_make_case_com dep env sigma pity (mib,mip) kind
 
 (**********************************************************************)
@@ -553,6 +556,8 @@ let check_arities env listdepkind =
 let build_mutual_induction_scheme env sigma = function
   | ((mind,u),dep,s)::lrecspec ->
       let (mib,mip) = lookup_mind_specif env mind in
+      if dep && Inductiveops.is_primitive_record_without_eta mib then
+        raise (RecursionSchemeError (NotAllowedDependentAnalysis (true, mind)));
       let (sp,tyi) = mind in
       let listdepkind =
 	((mind,u),mib,mip,dep,s)::
@@ -572,6 +577,8 @@ let build_mutual_induction_scheme env sigma = function
 
 let build_induction_scheme env sigma pind dep kind =
   let (mib,mip) = lookup_mind_specif env (fst pind) in
+  if dep && Inductiveops.is_primitive_record_without_eta mib then
+    raise (RecursionSchemeError (NotAllowedDependentAnalysis (true, fst pind)));
   let sigma, l = mis_make_indrec env sigma [(pind,mib,mip,dep,kind)] mib (snd pind) in
     sigma, List.hd l
 
