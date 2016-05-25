@@ -268,6 +268,10 @@ let declare_one_induction_scheme ind =
 let declare_induction_schemes kn =
   let mib = Global.lookup_mind kn in
   if mib.mind_finite <> Decl_kinds.CoFinite then begin
+    if is_primitive_record_without_eta mib then
+      msg_warning (str"Defining non dependent induction schemes for " ++
+		   Names.MutInd.print kn ++
+		   str" which is a recursive record without eta conversion.");
     for i = 0 to Array.length mib.mind_packets - 1 do
       declare_one_induction_scheme (kn,i);
     done;
@@ -514,11 +518,7 @@ let declare_default_schemes kn =
   let mib = Global.lookup_mind kn in
   let n = Array.length mib.mind_packets in
   if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag) then
-    (if is_primitive_record_without_eta mib then
-       msg_warning (str"Defining non dependent induction schemes for " ++
-		    Names.MutInd.print kn ++
-		    str" which is a recursive record without eta conversion.");
-     declare_induction_schemes kn);
+     declare_induction_schemes kn;
   if !case_flag then map_inductive_block declare_one_case_analysis_scheme kn n;
   if is_eq_flag() then try_declare_beq_scheme kn;
   if !eq_dec_flag then try_declare_eq_decidability kn;
