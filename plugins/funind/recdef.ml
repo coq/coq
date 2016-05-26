@@ -1510,13 +1510,13 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
   let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx:(snd (Evd.universe_context evm)) res in
+  (* Refresh the global universes, now including those of _F *)
+  let evm = Evd.from_env (Global.env ()) in
   let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
-  let relation =
-    fst (*FIXME*)(interp_constr
-      env_with_pre_rec_args
-      (Evd.from_env env_with_pre_rec_args)
-      r)
+  let relation, evuctx =
+    interp_constr env_with_pre_rec_args evm r
   in
+  let evm = Evd.from_ctx evuctx in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref None in
   (* let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
