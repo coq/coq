@@ -485,9 +485,7 @@ let ppist ist =
 (* Vernac-level debugging commands                                    *)
 
 let in_current_context f c =
-  let (evmap,sign) =
-    try Pfedit.get_current_goal_context ()
-    with e when Logic.catchable_exception e -> (Evd.empty, Global.env()) in
+  let (evmap,sign) = Pfedit.get_current_context () in
   f (fst (Constrintern.interp_constr sign evmap c))(*FIXME*)
 
 (* We expand the result of preprocessing to be independent of camlp4
