@@ -12,6 +12,19 @@
   open Printf
   open Lexing
 
+  module type S = sig
+
+  module OutB : Output.S
+
+  val coq_file        : string -> Cdglobals.coq_module -> unit
+
+  end
+
+  (* Output Back End *)
+  module Make (Out : Output.S) = struct
+
+  module OutB = Out
+
   (* A list function we need *)
   let rec take n ls =
     if n = 0 then [] else
@@ -75,8 +88,8 @@
     let stop_env () = if !r then stop (); r := false in
       (fun x -> !r), start_env, stop_env
       
-  let in_emph, start_emph, stop_emph = in_env Output.start_emph Output.stop_emph
-  let in_quote, start_quote, stop_quote = in_env Output.start_quote Output.stop_quote
+  let in_emph, start_emph, stop_emph = in_env OutB.start_emph OutB.stop_emph
+  let in_quote, start_quote, stop_quote = in_env OutB.start_quote OutB.stop_quote
 
   let url_buffer = Buffer.create 40
   let url_name_buffer = Buffer.create 40
@@ -191,18 +204,6 @@
           List n_spaces
         else
           Neither
-
-   (* examine a string for subtitleness *)
-  let subtitle m s =
-    match Str.split_delim (Str.regexp ":") s with
-    | [] -> false
-    | (name::_) ->
-        if (cut_head_tail_spaces name) = m then
-          true
-        else
-          false
-
-
   (* tokens pretty-print *)
 
   let token_buffer = Buffer.create 1024
@@ -241,9 +242,9 @@
 
   let output_indented_keyword s lexbuf =
     let nbsp,isp = count_spaces s in
-    Output.indentation nbsp;
+    OutB.indentation nbsp;
     let s = String.sub s isp (String.length s - isp) in
-    Output.keyword s (lexeme_start lexbuf + isp)
+    OutB.keyword s (lexeme_start lexbuf + isp)
 
 }
 
@@ -441,16 +442,16 @@ let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 rule coq_bol = parse
   | space* nl+
       { if not (!in_proof <> None && (!Cdglobals.gallina || !Cdglobals.light))
-        then Output.empty_line_of_code ();
+        then OutB.empty_line_of_code ();
         coq_bol lexbuf }
   | space* "(**" space_nl
-      { Output.end_coq (); Output.start_doc ();
+      { OutB.end_coq (); OutB.start_doc ();
 	let eol = doc_bol lexbuf in
-	  Output.end_doc (); Output.start_coq ();
+	  OutB.end_doc (); OutB.start_coq ();
 	  if eol then coq_bol lexbuf else coq lexbuf }
   | space* "Comments" space_nl
-      { Output.end_coq (); Output.start_doc (); comments lexbuf; Output.end_doc ();
-	Output.start_coq (); coq lexbuf }
+      { OutB.end_coq (); OutB.start_doc (); comments lexbuf; OutB.end_doc ();
+	OutB.start_coq (); coq lexbuf }
   | space* begin_hide
       { skip_hide lexbuf; coq_bol lexbuf }
   | space* begin_show
@@ -538,8 +539,8 @@ rule coq_bol = parse
 	if !Cdglobals.parse_comments then begin
 	  let s = lexeme lexbuf in
 	  let nbsp,isp = count_spaces s in
-	    Output.indentation nbsp;
-	    Output.start_comment ();
+	    OutB.indentation nbsp;
+	    OutB.start_comment ();
 	end;
 	let eol = comment lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
@@ -558,19 +559,19 @@ rule coq_bol = parse
 
 and coq = parse
   | nl
-      { if not (!in_proof <> None && !Cdglobals.gallina) then Output.line_break(); coq_bol lexbuf }
+      { if not (!in_proof <> None && !Cdglobals.gallina) then OutB.line_break(); coq_bol lexbuf }
   | "(**" space_nl
-      { Output.end_coq (); Output.start_doc ();
+      { OutB.end_coq (); OutB.start_doc ();
 	let eol = doc_bol lexbuf in
-	  Output.end_doc (); Output.start_coq ();
+	  OutB.end_doc (); OutB.start_coq ();
 	  if eol then coq_bol lexbuf else coq lexbuf }
   | "(*"
       { comment_level := 1;
 	if !Cdglobals.parse_comments then begin
 	  let s = lexeme lexbuf in
 	  let nbsp,isp = count_spaces s in
-	    Output.indentation nbsp;
-	    Output.start_comment ();
+	    OutB.indentation nbsp;
+	    OutB.start_comment ();
 	end;
 	let eol = comment lexbuf in
 	  if eol then coq_bol lexbuf
@@ -583,10 +584,10 @@ and coq = parse
 	  let s = lexeme lexbuf in
 	  let nlsp,s = remove_newline s in
 	  let nbsp,isp = count_spaces s in
-	  Output.indentation nbsp;
+	  OutB.indentation nbsp;
 	  let loc = lexeme_start lexbuf + isp + nlsp in
-	  Output.sublexer ']' loc;
-	  Output.sublexer ']' (loc+1);
+	  OutB.sublexer ']' loc;
+	  OutB.sublexer ']' (loc+1);
 	  coq lexbuf
 	end }
   | eof
@@ -600,7 +601,7 @@ and coq = parse
 	    end
 	  else
 	    begin
-	      Output.ident s None;
+	      OutB.ident s None;
 	      let eol=body lexbuf in
 		if eol then coq_bol lexbuf else coq lexbuf
 	    end }
@@ -623,27 +624,27 @@ and coq = parse
 	else
 	  let eol = skip_to_dot lexbuf in
 	    if !in_proof <> Some true && eol then
-	      Output.line_break ();
+	      OutB.line_break ();
 	    eol
       in
 	in_proof := None;
 	if eol then coq_bol lexbuf else coq lexbuf }
   | gallina_kw
       { let s = lexeme lexbuf in
-	  Output.ident s None;
+	  OutB.ident s None;
 	let eol = body lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
   | notation_kw
       { let s = lexeme lexbuf in
-	Output.ident s None;
+	OutB.ident s None;
 	let eol= start_notation_string lexbuf in
 	if eol then coq_bol lexbuf else coq lexbuf }
   | prog_kw
       { let s = lexeme lexbuf in
-	  Output.ident s None;
+	  OutB.ident s None;
 	let eol = body lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
-  | space+ { Output.char ' '; coq lexbuf }
+  | space+ { OutB.char ' '; coq lexbuf }
   | eof
       { () }
   | _ {	let eol =
@@ -659,13 +660,9 @@ and coq = parse
 and doc_bol = parse
   | space* section space+ ([^'\n' '*'] | '*'+ [^'\n' ')' '*'])* ('*'+ '\n')?
       { let eol, lex = strip_eol (lexeme lexbuf) in
-        let lev, s = sec_title lex in
-          if (!Cdglobals.lib_subtitles) &&
-             (subtitle (Output.get_module false) s) then
-            ()
-          else
-            Output.section lev (fun () -> ignore (doc None (from_string s)));
-	    if eol then doc_bol lexbuf else doc None lexbuf }
+        let lev, s   = sec_title lex             in
+        OutB.section lev (fun () -> ignore (doc None (from_string s)));
+	if eol then doc_bol lexbuf else doc None lexbuf }
   | space_nl* '-'+
       { let buf' = lexeme lexbuf in
         let bufs = Str.split_delim (Str.regexp "['\n']") buf' in
@@ -678,18 +675,18 @@ and doc_bol = parse
         in
           match check_start_list line with
           | Neither -> backtrack_past_newline lexbuf; doc None lexbuf
-          | List n -> Output.paragraph ();
-                      Output.item 1; doc (Some [n]) lexbuf
-          | Rule -> Output.rule (); doc None lexbuf
+          | List n -> OutB.paragraph ();
+                      OutB.item 1; doc (Some [n]) lexbuf
+          | Rule -> OutB.rule (); doc None lexbuf
       }
   | space* nl+
-      { Output.paragraph (); doc_bol lexbuf }
+      { OutB.paragraph (); doc_bol lexbuf }
   | "<<" space*
-      { Output.start_verbatim false; verbatim false lexbuf; doc_bol lexbuf }
+      { OutB.start_verbatim false; verbatim false lexbuf; doc_bol lexbuf }
   | eof
       { true }
   | '_'
-      { if !Cdglobals.plain_comments then Output.char '_' else start_emph ();
+      { if !Cdglobals.plain_comments then OutB.char '_' else start_emph ();
         doc None lexbuf }
   | _
       { backtrack lexbuf; doc None lexbuf }
@@ -700,23 +697,23 @@ and doc_list_bol indents = parse
       { let (n_spaces,_) = count_spaces (lexeme lexbuf) in
         match find_level indents n_spaces with
         | Before -> backtrack lexbuf; doc_bol lexbuf
-        | StartLevel n -> Output.item n; doc (Some (take n indents)) lexbuf
+        | StartLevel n -> OutB.item n; doc (Some (take n indents)) lexbuf
         | InLevel (n,true) ->
             let items = List.length indents in
-              Output.item (items+1);
+              OutB.item (items+1);
               doc (Some (List.append indents [n_spaces])) lexbuf
         | InLevel (_,false) ->
             backtrack lexbuf; doc_bol lexbuf
       }
   | "<<" space*
-      { Output.start_verbatim false;
+      { OutB.start_verbatim false;
         verbatim false lexbuf;
         doc_list_bol indents lexbuf }
   | "[[" nl
       { formatted := true;
-        Output.start_inline_coq_block ();
+        OutB.start_inline_coq_block ();
         ignore(body_bol lexbuf);
-        Output.end_inline_coq_block ();
+        OutB.end_inline_coq_block ();
         formatted := false;
         doc_list_bol indents lexbuf }
   | "[[[" nl
@@ -724,7 +721,7 @@ and doc_list_bol indents = parse
   | space* nl space* '-'
       { (* Like in the doc_bol production, these two productions
            exist only to deal properly with whitespace *)
-        Output.paragraph ();
+        OutB.paragraph ();
         backtrack_past_newline lexbuf;
         doc_list_bol indents lexbuf }
   | space* nl space* _
@@ -740,19 +737,19 @@ and doc_list_bol indents = parse
         let (n_spaces,_) = count_spaces buf in
         match find_level indents n_spaces with
         | InLevel _ ->
-            Output.paragraph ();
+            OutB.paragraph ();
             backtrack_past_newline lexbuf;
             doc_list_bol indents lexbuf
         | StartLevel n ->
             if n = 1 then
               begin
-                Output.stop_item ();
+                OutB.stop_item ();
                 backtrack_past_newline lexbuf;
                 doc_bol lexbuf
               end
             else
               begin
-                Output.paragraph ();
+                OutB.paragraph ();
                 backtrack_past_newline lexbuf;
                 doc_list_bol indents lexbuf
               end
@@ -762,8 +759,8 @@ and doc_list_bol indents = parse
            a paragraph for the empty line, rewind to whatever's just
            after the newline, then toss over to doc_bol for whatever
            comes next. *)
-            Output.stop_item ();
-            Output.paragraph ();
+            OutB.stop_item ();
+            OutB.paragraph ();
             backtrack_past_newline lexbuf;
             doc_bol lexbuf
 
@@ -771,17 +768,17 @@ and doc_list_bol indents = parse
   | space* _
       { let (n_spaces,_) = count_spaces (lexeme lexbuf) in
         match find_level indents n_spaces with
-        | Before -> Output.stop_item (); backtrack lexbuf;
+        | Before -> OutB.stop_item (); backtrack lexbuf;
                     doc_bol lexbuf
         | StartLevel n ->
             (if n = 1 then
-               Output.stop_item ()
+               OutB.stop_item ()
              else
-               Output.reach_item_level (n-1));
+               OutB.reach_item_level (n-1));
             backtrack lexbuf;
             doc (Some (take (n-1) indents)) lexbuf
         | InLevel (n,_) ->
-            Output.reach_item_level n;
+            OutB.reach_item_level n;
             backtrack lexbuf;
             doc (Some (take n indents)) lexbuf
       }
@@ -789,17 +786,17 @@ and doc_list_bol indents = parse
 (*s Scanning documentation elsewhere *)
 and doc indents = parse
   | nl
-      { Output.char '\n';
+      { OutB.char '\n';
         match indents with
         | Some ls -> doc_list_bol ls lexbuf
         | None -> doc_bol lexbuf }
   | "[[" nl
       { if !Cdglobals.plain_comments
-        then (Output.char '['; Output.char '['; doc indents lexbuf)
+        then (OutB.char '['; OutB.char '['; doc indents lexbuf)
         else (formatted := true;
-              Output.start_inline_coq_block ();
+              OutB.start_inline_coq_block ();
 	      let eol = body_bol lexbuf in
-	        Output.end_inline_coq_block (); formatted := false;
+	        OutB.end_inline_coq_block (); formatted := false;
 	        if eol then
 		  match indents with
 		  | Some ls -> doc_list_bol ls lexbuf
@@ -808,12 +805,12 @@ and doc indents = parse
   | "[[[" nl
       { inf_rules indents lexbuf }
   | "[]"
-      { Output.proofbox (); doc indents lexbuf }
+      { OutB.proofbox (); doc indents lexbuf }
   | "{{" { url lexbuf; doc indents lexbuf }
   | "["
-      { if !Cdglobals.plain_comments then Output.char '['
-        else (brackets := 1;  Output.start_inline_coq (); escaped_coq lexbuf;
-              Output.end_inline_coq ()); doc indents lexbuf }
+      { if !Cdglobals.plain_comments then OutB.char '['
+        else (brackets := 1;  OutB.start_inline_coq (); escaped_coq lexbuf;
+              OutB.end_inline_coq ()); doc indents lexbuf }
   | "(*"
       { backtrack lexbuf ;
         let bol_parse = match indents with
@@ -825,14 +822,14 @@ and doc indents = parse
       }
   | '*'* "*)" space_nl* "(**"
       {(match indents with
-        | Some _ -> Output.stop_item ()
+        | Some _ -> OutB.stop_item ()
         | None -> ());
        (* this says - if there is a blank line between the two comments,
           insert one in the output too *)
        let lines = List.length (Str.split_delim (Str.regexp "['\n']") 
                                                 (lexeme lexbuf))
        in 
-         if lines > 2 then Output.paragraph ();
+         if lines > 2 then OutB.paragraph ();
        doc_bol lexbuf
       }
   | '*'* "*)" space* nl
@@ -840,40 +837,40 @@ and doc indents = parse
   | '*'* "*)"
       { false }
   | "$"
-      { if !Cdglobals.plain_comments then Output.char '$'
-        else (Output.start_latex_math (); escaped_math_latex lexbuf);
+      { if !Cdglobals.plain_comments then OutB.char '$'
+        else (OutB.start_latex_math (); escaped_math_latex lexbuf);
         doc indents lexbuf }
   | "$$"
-      { if !Cdglobals.plain_comments then Output.char '$';
-        Output.char '$'; doc indents lexbuf }
+      { if !Cdglobals.plain_comments then OutB.char '$';
+        OutB.char '$'; doc indents lexbuf }
   | "%"
-      { if !Cdglobals.plain_comments then Output.char '%'
+      { if !Cdglobals.plain_comments then OutB.char '%'
         else escaped_latex lexbuf; doc indents lexbuf }
   | "%%"
-      { if !Cdglobals.plain_comments then Output.char '%';
-        Output.char '%'; doc indents lexbuf }
+      { if !Cdglobals.plain_comments then OutB.char '%';
+        OutB.char '%'; doc indents lexbuf }
   | "#"
-      { if !Cdglobals.plain_comments then Output.char '#'
+      { if !Cdglobals.plain_comments then OutB.char '#'
         else escaped_html lexbuf; doc indents lexbuf }
   | "##"
-      { if !Cdglobals.plain_comments then Output.char '#';
-        Output.char '#'; doc indents lexbuf }
+      { if !Cdglobals.plain_comments then OutB.char '#';
+        OutB.char '#'; doc indents lexbuf }
   | nonidentchar '_' nonidentchar
-      { List.iter (fun x -> Output.char (lexeme_char lexbuf x)) [0;1;2];
+      { List.iter (fun x -> OutB.char (lexeme_char lexbuf x)) [0;1;2];
         doc indents lexbuf}
   | nonidentchar '_'
-      { Output.char (lexeme_char lexbuf 0);
-        if !Cdglobals.plain_comments then Output.char '_' else  start_emph () ;
+      { OutB.char (lexeme_char lexbuf 0);
+        if !Cdglobals.plain_comments then OutB.char '_' else  start_emph () ;
         doc indents lexbuf }
   | '_' nonidentchar
-      { if !Cdglobals.plain_comments then Output.char '_' else stop_emph () ;
-        Output.char (lexeme_char lexbuf 1);
+      { if !Cdglobals.plain_comments then OutB.char '_' else stop_emph () ;
+        OutB.char (lexeme_char lexbuf 1);
         doc indents lexbuf }
   | "<<" space*
-      { Output.start_verbatim true; verbatim true lexbuf; doc_bol lexbuf }
+      { OutB.start_verbatim true; verbatim true lexbuf; doc_bol lexbuf }
   | '"'
       { if !Cdglobals.plain_comments 
-	then Output.char '"' 
+	then OutB.char '"' 
 	else if in_quote ()
 	then stop_quote () 
 	else start_quote ();
@@ -881,50 +878,50 @@ and doc indents = parse
   | eof
       { false }
   | _
-      { Output.char (lexeme_char lexbuf 0); doc indents lexbuf }
+      { OutB.char (lexeme_char lexbuf 0); doc indents lexbuf }
 
 (*s Various escapings *)
 
 and escaped_math_latex = parse
-  | "$" { Output.stop_latex_math () }
-  | eof { Output.stop_latex_math () }
+  | "$" { OutB.stop_latex_math () }
+  | eof { OutB.stop_latex_math () }
   | "*)"
-        { Output.stop_latex_math (); backtrack lexbuf }
-  | _   { Output.latex_char (lexeme_char lexbuf 0); escaped_math_latex lexbuf }
+        { OutB.stop_latex_math (); backtrack lexbuf }
+  | _   { OutB.latex_char (lexeme_char lexbuf 0); escaped_math_latex lexbuf }
 
 and escaped_latex = parse
   | "%" { () }
   | eof { () }
   | "*)"
         { backtrack lexbuf }
-  | _   { Output.latex_char (lexeme_char lexbuf 0); escaped_latex lexbuf }
+  | _   { OutB.latex_char (lexeme_char lexbuf 0); escaped_latex lexbuf }
 
 and escaped_html = parse
   | "#" { () }
   | "&#"
-        { Output.html_char '&'; Output.html_char '#'; escaped_html lexbuf }
+        { OutB.html_char '&'; OutB.html_char '#'; escaped_html lexbuf }
   | "##"
-        { Output.html_char '#'; escaped_html lexbuf }
+        { OutB.html_char '#'; escaped_html lexbuf }
   | eof { () }
   | "*)"
         { backtrack lexbuf }
-  | _   { Output.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
+  | _   { OutB.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
 and verbatim inline = parse
-  | nl ">>" space* nl { Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
-  | nl ">>" { Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
-  | ">>" { Output.stop_verbatim inline }
-  | "*)" { Output.stop_verbatim inline; backtrack lexbuf }
-  | eof { Output.stop_verbatim inline }
-  | _ { Output.verbatim_char inline (lexeme_char lexbuf 0); verbatim inline lexbuf }
+  | nl ">>" space* nl { OutB.verbatim_char inline '\n'; OutB.stop_verbatim inline }
+  | nl ">>" { OutB.verbatim_char inline '\n'; OutB.stop_verbatim inline }
+  | ">>" { OutB.stop_verbatim inline }
+  | "*)" { OutB.stop_verbatim inline; backtrack lexbuf }
+  | eof { OutB.stop_verbatim inline }
+  | _ { OutB.verbatim_char inline (lexeme_char lexbuf 0); verbatim inline lexbuf }
 
 and url = parse
-  | "}}" { Output.url (Buffer.contents url_buffer) None; Buffer.clear url_buffer }
+  | "}}" { OutB.url (Buffer.contents url_buffer) None; Buffer.clear url_buffer }
   | "}" { url_name lexbuf }
   | _ { Buffer.add_char url_buffer (lexeme_char lexbuf 0); url lexbuf }
 
 and url_name = parse
-  | "}" { Output.url (Buffer.contents url_buffer) (Some (Buffer.contents url_name_buffer));
+  | "}" { OutB.url (Buffer.contents url_buffer) (Some (Buffer.contents url_name_buffer));
 	  Buffer.clear url_buffer; Buffer.clear url_name_buffer }
   | _ { Buffer.add_char url_name_buffer (lexeme_char lexbuf 0); url_name lexbuf }
 
@@ -934,11 +931,11 @@ and escaped_coq = parse
   | "]"
       { decr brackets;
 	if !brackets > 0 then
-	  (Output.sublexer_in_doc ']'; escaped_coq lexbuf)
+	  (OutB.sublexer_in_doc ']'; escaped_coq lexbuf)
 	else Tokens.flush_sublexer () }
   | "["
       { incr brackets;
-        Output.sublexer_in_doc '['; escaped_coq lexbuf }
+        OutB.sublexer_in_doc '['; escaped_coq lexbuf }
   | "(*"
       { Tokens.flush_sublexer (); comment_level := 1;
         ignore (comment lexbuf); escaped_coq lexbuf }
@@ -948,26 +945,26 @@ and escaped_coq = parse
       { Tokens.flush_sublexer () }
   | (identifier '.')* identifier
       { Tokens.flush_sublexer();
-        Output.ident (lexeme lexbuf) None;
+        OutB.ident (lexeme lexbuf) None;
         escaped_coq lexbuf }
   | space_nl*
       { let str = lexeme lexbuf in
           Tokens.flush_sublexer();
           (if !Cdglobals.inline_notmono then () 
-                                        else Output.end_inline_coq ()); 
-          String.iter Output.char str; 
+                                        else OutB.end_inline_coq ()); 
+          String.iter OutB.char str; 
           (if !Cdglobals.inline_notmono then () 
-                                        else Output.start_inline_coq ());
+                                        else OutB.start_inline_coq ());
           escaped_coq lexbuf }
   | _ 
-      { Output.sublexer_in_doc (lexeme_char lexbuf 0);
+      { OutB.sublexer_in_doc (lexeme_char lexbuf 0);
         escaped_coq lexbuf }
 
 (*s Coq "Comments" command. *)
 
 and comments = parse
   | space_nl+
-      { Output.char ' '; comments lexbuf }
+      { OutB.char ' '; comments lexbuf }
   | '"' [^ '"']* '"'
       { let s = lexeme lexbuf in
 	let s = String.sub s 1 (String.length s - 2) in
@@ -979,72 +976,72 @@ and comments = parse
   | eof
       { () }
   | _
-      { Output.char (lexeme_char lexbuf 0); comments lexbuf }
+      { OutB.char (lexeme_char lexbuf 0); comments lexbuf }
 
 (*s Skip comments *)
 
 and comment = parse
   | "(*" { incr comment_level;
-	   if !Cdglobals.parse_comments then Output.start_comment ();
+	   if !Cdglobals.parse_comments then OutB.start_comment ();
 	   comment lexbuf }
   | "*)" space* nl {
       if !Cdglobals.parse_comments then
-	(Output.end_comment (); Output.line_break ());
+	(OutB.end_comment (); OutB.line_break ());
       decr comment_level; if !comment_level > 0 then comment lexbuf else true }
   | "*)" {
-      if !Cdglobals.parse_comments then (Output.end_comment ());
+      if !Cdglobals.parse_comments then (OutB.end_comment ());
       decr comment_level; if !comment_level > 0 then comment lexbuf else false }
   | "[" {
       if !Cdglobals.parse_comments then
-	if !Cdglobals.plain_comments then Output.char '['
-        else (brackets := 1; Output.start_inline_coq ();
-              escaped_coq lexbuf; Output.end_inline_coq ());
+	if !Cdglobals.plain_comments then OutB.char '['
+        else (brackets := 1; OutB.start_inline_coq ();
+              escaped_coq lexbuf; OutB.end_inline_coq ());
       comment lexbuf }
   | "[[" nl {
       if !Cdglobals.parse_comments then
-        if !Cdglobals.plain_comments then (Output.char '['; Output.char '[')
+        if !Cdglobals.plain_comments then (OutB.char '['; OutB.char '[')
         else (formatted := true;
-              Output.start_inline_coq_block ();
+              OutB.start_inline_coq_block ();
               let _ = body_bol lexbuf in
-                Output.end_inline_coq_block (); formatted := false);
+                OutB.end_inline_coq_block (); formatted := false);
       comment lexbuf}
   | "$"
       { if !Cdglobals.parse_comments then
-          if !Cdglobals.plain_comments then Output.char '$'
-          else (Output.start_latex_math (); escaped_math_latex lexbuf);
+          if !Cdglobals.plain_comments then OutB.char '$'
+          else (OutB.start_latex_math (); escaped_math_latex lexbuf);
         comment lexbuf }
   | "$$"
       { if !Cdglobals.parse_comments
         then
-          (if !Cdglobals.plain_comments then Output.char '$'; Output.char '$');
+          (if !Cdglobals.plain_comments then OutB.char '$'; OutB.char '$');
         doc None lexbuf }
   | "%"
       { if !Cdglobals.parse_comments
           then
-            if !Cdglobals.plain_comments then Output.char '%'
+            if !Cdglobals.plain_comments then OutB.char '%'
             else escaped_latex lexbuf; comment lexbuf }
   | "%%"
       { if !Cdglobals.parse_comments
         then
-          (if !Cdglobals.plain_comments then Output.char '%'; Output.char '%');
+          (if !Cdglobals.plain_comments then OutB.char '%'; OutB.char '%');
         comment lexbuf }
   | "#"
       { if !Cdglobals.parse_comments
         then
-          if !Cdglobals.plain_comments then Output.char '$'
+          if !Cdglobals.plain_comments then OutB.char '$'
           else escaped_html lexbuf; comment lexbuf }
   | "##"
       { if !Cdglobals.parse_comments
         then
-          (if !Cdglobals.plain_comments then Output.char '#'; Output.char '#');
+          (if !Cdglobals.plain_comments then OutB.char '#'; OutB.char '#');
         comment lexbuf }
   | eof  { false }
   | space+ { if !Cdglobals.parse_comments
-             then Output.indentation (fst (count_spaces (lexeme lexbuf)));
+             then OutB.indentation (fst (count_spaces (lexeme lexbuf)));
              comment lexbuf }
   | nl   { if !Cdglobals.parse_comments
-           then Output.line_break (); comment lexbuf }
-  | _    { if !Cdglobals.parse_comments then Output.char (lexeme_char lexbuf 0);
+           then OutB.line_break (); comment lexbuf }
+  | _    { if !Cdglobals.parse_comments then OutB.char (lexeme_char lexbuf 0);
            comment lexbuf }
 
 and skip_to_dot = parse
@@ -1055,11 +1052,11 @@ and skip_to_dot = parse
 
 and body_bol = parse
   | space+
-      { Output.indentation (fst (count_spaces (lexeme lexbuf))); body lexbuf }
-  | _ { backtrack lexbuf; Output.indentation 0; body lexbuf }
+      { OutB.indentation (fst (count_spaces (lexeme lexbuf))); body lexbuf }
+  | _ { backtrack lexbuf; OutB.indentation 0; body lexbuf }
 
 and body = parse
-  | nl {Tokens.flush_sublexer(); Output.line_break(); Lexing.new_line lexbuf; body_bol lexbuf}
+  | nl {Tokens.flush_sublexer(); OutB.line_break(); Lexing.new_line lexbuf; body_bol lexbuf}
   | nl+ space* "]]" space* nl
       { Tokens.flush_sublexer();
         if not !formatted then
@@ -1068,14 +1065,14 @@ and body = parse
             let nlsp,s = remove_newline s in
             let _,isp = count_spaces s in
             let loc = lexeme_start lexbuf + nlsp + isp in
-            Output.sublexer ']' loc;
-            Output.sublexer ']' (loc+1);
+            OutB.sublexer ']' loc;
+            OutB.sublexer ']' (loc+1);
             Tokens.flush_sublexer();
             body lexbuf
           end
         else
           begin
-            Output.paragraph ();
+            OutB.paragraph ();
             true
           end }
   | "]]" space* nl
@@ -1083,23 +1080,23 @@ and body = parse
         if not !formatted then
           begin
 	    let loc = lexeme_start lexbuf in
-	    Output.sublexer ']' loc;
-	    Output.sublexer ']' (loc+1);
+	    OutB.sublexer ']' loc;
+	    OutB.sublexer ']' (loc+1);
 	    Tokens.flush_sublexer();
-	    Output.line_break();
+	    OutB.line_break();
             body lexbuf
           end
         else
           begin
-            Output.paragraph ();
+            OutB.paragraph ();
             true
           end }
   | eof { Tokens.flush_sublexer(); false }
   | '.' space* nl | '.' space* eof
-	{ Tokens.flush_sublexer(); Output.char '.'; Output.line_break();
+	{ Tokens.flush_sublexer(); OutB.char '.'; OutB.line_break();
 	  if not !formatted then true else body_bol lexbuf }
   | '.' space* nl "]]" space* nl
-	{ Tokens.flush_sublexer(); Output.char '.';
+	{ Tokens.flush_sublexer(); OutB.char '.';
         if not !formatted then
           begin
             eprintf "Error: stray ]] at %d\n"  (lexeme_start lexbuf);
@@ -1108,52 +1105,52 @@ and body = parse
           end
 	  else
           begin
-            Output.paragraph ();
+            OutB.paragraph ();
             true
           end
       }
   | '.' space+
-        { Tokens.flush_sublexer(); Output.char '.'; Output.char ' ';
+        { Tokens.flush_sublexer(); OutB.char '.'; OutB.char ' ';
 	  if not !formatted then false else body lexbuf }
   | "(**" space_nl
-      { Tokens.flush_sublexer(); Output.end_coq (); Output.start_doc ();
+      { Tokens.flush_sublexer(); OutB.end_coq (); OutB.start_doc ();
 	let eol = doc_bol lexbuf in
-	  Output.end_doc (); Output.start_coq ();
+	  OutB.end_doc (); OutB.start_coq ();
 	  if eol then body_bol lexbuf else body lexbuf }
   | "(*" { Tokens.flush_sublexer(); comment_level := 1;
-	   if !Cdglobals.parse_comments then Output.start_comment ();
+	   if !Cdglobals.parse_comments then OutB.start_comment ();
 	   let eol = comment lexbuf in
 	     if eol
-	     then begin if not !Cdglobals.parse_comments then Output.line_break(); body_bol lexbuf end
+	     then begin if not !Cdglobals.parse_comments then OutB.line_break(); body_bol lexbuf end
 	     else body lexbuf }
   | "where" 
       { Tokens.flush_sublexer();
-        Output.ident (lexeme lexbuf) None;
+        OutB.ident (lexeme lexbuf) None;
 	start_notation_string lexbuf }
   | identifier
       { Tokens.flush_sublexer();
-        Output.ident (lexeme lexbuf) (Some (lexeme_start lexbuf));
+        OutB.ident (lexeme lexbuf) (Some (lexeme_start lexbuf));
 	body lexbuf }
   | ".."
-      { Tokens.flush_sublexer(); Output.char '.'; Output.char '.';
+      { Tokens.flush_sublexer(); OutB.char '.'; OutB.char '.';
         body lexbuf }
   | '"'
-      { Tokens.flush_sublexer(); Output.char '"';
+      { Tokens.flush_sublexer(); OutB.char '"';
         string lexbuf;
         body lexbuf }
   | space
-      { Tokens.flush_sublexer(); Output.char (lexeme_char lexbuf 0);
+      { Tokens.flush_sublexer(); OutB.char (lexeme_char lexbuf 0);
         body lexbuf }
 
   | _ { let c = lexeme_char lexbuf 0 in
-	Output.sublexer c (lexeme_start lexbuf);
+	OutB.sublexer c (lexeme_start lexbuf);
         body lexbuf }
 
 and start_notation_string = parse
-  | space { Tokens.flush_sublexer(); Output.char (lexeme_char lexbuf 0);
+  | space { Tokens.flush_sublexer(); OutB.char (lexeme_char lexbuf 0);
 	    start_notation_string lexbuf }
   | '"' (* a true notation *)
-      { Output.sublexer '"' (lexeme_start lexbuf);
+      { OutB.sublexer '"' (lexeme_start lexbuf);
         notation_string lexbuf;
 	body lexbuf }
   | _ (* an abbreviation *)
@@ -1161,18 +1158,18 @@ and start_notation_string = parse
 
 and notation_string = parse
   | "\"\""
-      { Output.char '"'; Output.char '"'; (* Unlikely! *)
+      { OutB.char '"'; OutB.char '"'; (* Unlikely! *)
         notation_string lexbuf }
   | '"'
-      { Tokens.flush_sublexer(); Output.char '"' }
+      { Tokens.flush_sublexer(); OutB.char '"' }
   | _ { let c = lexeme_char lexbuf 0 in
-        Output.sublexer c (lexeme_start lexbuf);
+        OutB.sublexer c (lexeme_start lexbuf);
         notation_string lexbuf }
 
 and string = parse
-  | "\"\"" { Output.char '"'; Output.char '"'; string lexbuf }
-  | '"'    { Output.char '"' }
-  | _      { let c = lexeme_char lexbuf 0 in Output.char c; string lexbuf }
+  | "\"\"" { OutB.char '"'; OutB.char '"'; string lexbuf }
+  | '"'    { OutB.char '"' }
+  | _      { let c = lexeme_char lexbuf 0 in OutB.char c; string lexbuf }
 
 and skip_hide = parse
   | eof | end_hide { () }
@@ -1221,7 +1218,7 @@ and inf_rules_assumptions indents assumptions = parse
                in
                  (d, Some n))
           with _ -> (dashes_and_name, None)
-            
+
         in
           inf_rules_conclusion indents (List.rev assumptions) 
                                (spaces, dashes, name) [] lexbuf }
@@ -1241,7 +1238,7 @@ and inf_rules_assumptions indents assumptions = parse
 and inf_rules_conclusion indents assumptions middle conclusions = parse
   | space* nl | space* "]]]" nl (* end of conclusions. *)
       { backtrack lexbuf;
-        Output.inf_rule assumptions middle (List.rev conclusions);
+        OutB.inf_rule assumptions middle (List.rev conclusions);
         inf_rules indents lexbuf }
   | space* [^ '\n']+ nl (* this is a line in the conclusion *)
       { let line = lexeme lexbuf in
@@ -1253,52 +1250,18 @@ and inf_rules_conclusion indents assumptions middle conclusions = parse
                                ((spaces,conc) :: conclusions) lexbuf
       }
 
-(*s A small scanner to support the chapter subtitle feature *)
-and st_start m = parse
-  | "(*" "*"+ space+ "*" space+
-      { st_modname m lexbuf }
-  | _
-      { None }
-
-and st_modname m = parse
-  | identifier space* ":" space*
-      { if subtitle m (lexeme lexbuf) then
-          st_subtitle lexbuf
-        else
-          None
-      }
-  | _
-      { None }
-
-and st_subtitle = parse
-  | [^ '\n']* '\n'
-      { let st = lexeme lexbuf in
-        let i = try Str.search_forward (Str.regexp "\\**)") st 0 with
-                   Not_found ->
-                     (eprintf "unterminated comment at beginning of file\n";
-                      exit 1)
-        in
-          Some (cut_head_tail_spaces (String.sub st 0 i))
-      }
-  | _
-      { None }
 (*s Applying the scanners to files *)
-
 {
   let coq_file f m =
     reset ();
-    let c = open_in f in
+    let c  = open_in f      in
     let lb = from_channel c in
-      (Index.current_library := m;
-       Output.initialize ();
-       Output.start_module ();
-       Output.start_coq (); coq_bol lb; Output.end_coq ();
-       close_in c)
+    Index.current_library := m;
+    OutB.start_module m;
+    OutB.start_coq ();
+    coq_bol lb;
+    OutB.end_coq ();
+    close_in c
 
-  let detect_subtitle f m =
-    let c = open_in f in
-    let lb = from_channel c in
-    let sub = st_start m lb in
-      close_in c;
-      sub
+end
 }

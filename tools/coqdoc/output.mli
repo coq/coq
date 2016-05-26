@@ -9,21 +9,49 @@
 open Cdglobals
 open Index
 
-val initialize : unit -> unit
-
-val add_printing_token : string -> string option * string option -> unit
+(* Common primitives: should be moved to out_common? *)
+val add_printing_token    : string -> string option * string option -> unit
 val remove_printing_token : string -> unit
 
-val set_module : coq_module -> string option -> unit
-val get_module : bool -> string
+(* This interface should be improved. *)
+type toc_entry =
+  | Toc_library of string * string option
+  | Toc_section of int * (unit -> unit) * string
 
-val header : unit -> unit
-val trailer : unit -> unit
+val add_toc_entry : toc_entry -> unit
+val toc_q : toc_entry Queue.t
 
+val is_keyword : string -> bool
+val is_tactic  : string -> bool
+
+(* Backend printer *)
+module type S = sig
+
+(** XXX move to start_file  *)
 val push_in_preamble : string -> unit
 
-val start_module : unit -> unit
+(** [support_files] List of support files to be copied along the output. *)
+val support_files    : string list
 
+(** [appendix toc index split_index standalone] Backend-specific
+    function that outputs additional files. *)
+val appendix : toc:bool -> index:bool -> split_index:bool -> standalone:bool -> unit
+
+(** [start_file fmt toc index split_index standalone] Start a logical
+    output file to formatter [fmt]. [toc], [index], and [standalone]
+    control whether the backend will generate a TOC, index, and
+    header/trailers for the file.
+*)
+val start_file : Format.formatter -> toc:bool -> index:bool ->
+                 split_index:bool -> standalone:bool -> unit
+
+(** [end_file] Ends the file *)
+val end_file : unit -> unit
+
+(** [start_module mod] Starts a coq module. *)
+val start_module : coq_module -> unit
+
+(** [start_doc] Moves the backend to "document" mode. *)
 val start_doc : unit -> unit
 val end_doc : unit -> unit
 
@@ -35,9 +63,6 @@ val end_comment : unit -> unit
 
 val start_coq : unit -> unit
 val end_coq : unit -> unit
-
-val start_code : unit -> unit
-val end_code : unit -> unit
 
 val start_inline_coq : unit -> unit
 val end_inline_coq : unit -> unit
@@ -59,19 +84,22 @@ val reach_item_level : int -> unit
 val rule : unit -> unit
 
 val nbsp : unit -> unit
-val char : char -> unit
+
+val char    : char -> unit
 val keyword : string -> loc -> unit
-val ident : string -> loc option -> unit
+val ident   : string -> loc option -> unit
+
 val sublexer : char -> loc -> unit
 val sublexer_in_doc : char -> unit
-val initialize : unit -> unit
 
 val proofbox : unit -> unit
 
 val latex_char : char -> unit
 val latex_string : string -> unit
+
 val html_char : char -> unit
 val html_string : string -> unit
+
 val verbatim_char : bool -> char -> unit
 val hard_verbatim_char : char -> unit
 
@@ -97,10 +125,13 @@ val url : string -> string option -> unit
    something smart we can just format the rule verbatim like the user did
 *)
 val inf_rule :  (int * string) list
-             -> (int * string * (string option)) 
+             -> (int * string * (string option))
              -> (int * string) list
              -> unit
 
-val make_multi_index : unit -> unit
-val make_index : unit -> unit
-val make_toc : unit -> unit
+end
+
+module Latex   : S
+module Html    : S
+module TeXmacs : S
+module Raw     : S

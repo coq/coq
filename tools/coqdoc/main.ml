@@ -28,6 +28,8 @@ let usage () =
   prerr_endline "  --latex              produce a LaTeX document";
   prerr_endline "  --texmacs            produce a TeXmacs document";
   prerr_endline "  --raw                produce a text document";
+  prerr_endline "  --backend=jscoq      produce a jscoq document";
+  prerr_endline "  --backend=debug      produce a debug document";
   prerr_endline "  --dvi                output the DVI";
   prerr_endline "  --ps                 output the PostScript";
   prerr_endline "  --pdf                output the Pdf";
@@ -46,7 +48,6 @@ let usage () =
   prerr_endline "  --index <string>     set index name (default is index)";
   prerr_endline "  --toc                output a table of contents";
   prerr_endline "  --vernac <file>      consider <file> as a .v file";
-  prerr_endline "  --tex <file>         consider <file> as a .tex file";
   prerr_endline "  -p <string>          insert <string> in LaTeX preamble";
   prerr_endline "  --files-from <file>  read file names to process in <file>";
   prerr_endline "  --glob-from <file>   read globalization information from <file>";
@@ -71,7 +72,6 @@ let usage () =
   prerr_endline "  --toc-depth <int>    don't include TOC entries for sections below level <int>";
   prerr_endline "  --no-lib-name        don't display \"Library\" before library names in the toc";
   prerr_endline "  --lib-name <string>  call top level toc entries <string> instead of \"Library\"";
-  prerr_endline "  --lib-subtitles      first line comments of the form (** * ModuleName : text *) will be interpreted as subtitles";
   prerr_endline "  --inline-notmono     use a proportional width font for inline code (possibly with a different color)";
   prerr_endline "";
   exit 1
@@ -91,9 +91,12 @@ let banner () =
 
 let target_full_name f =
   match !Cdglobals.target_language with
-    | HTML -> f ^ ".html"
-    | Raw -> f ^ ".txt"
-    | _ -> f ^ ".tex"
+    | HTML  -> f ^ ".html"
+    | TeXmacs
+    | LaTeX -> f ^ ".tex"
+    | Raw   -> f ^ ".txt"
+    | JsCoq -> f ^ ".html"
+    | Debug -> f ^ ".txt"
 
 (*s \textbf{Separation of files.} Files given on the command line are
     separated according to their type, which is determined by their
@@ -105,7 +108,6 @@ let check_if_file_exists f =
     eprintf "coqdoc: %s: no such file\n" f;
     exit 1
   end
-
 
 (* [paths] maps a physical path to a name *)
 let paths = ref []
@@ -122,7 +124,9 @@ let rec name_of_path p name dirname suffix =
     if subdir = dirname then raise Not_found
     else name_of_path p name subdir (Filename.basename dirname::suffix)
 
-let coq_module filename =
+(** [coq_module filename] Try to guess the coq module name from the
+    filename *)
+let coq_module (filename : string) : coq_module =
   let bfname = Filename.chop_extension filename in
   let dirname, fname = normalize_filename bfname in
   let rec change_prefix = function
@@ -139,10 +143,12 @@ let what_file f =
   check_if_file_exists f;
   if Filename.check_suffix f ".v" || Filename.check_suffix f ".g" then
     Vernac_file (f, coq_module f)
+  (* EG: We still don't entirely remove this snippet to help users *)
   else if Filename.check_suffix f ".tex" then
-    Latex_file f
+    (eprintf "\ncoqdoc: passing a latex file to CoqDoc used to do nothing and is not supported anymore\n";
+     exit 1)
   else
-     (eprintf "\ncoqdoc: don't know what to do with %s\n" f; exit 1)
+    (eprintf "\ncoqdoc: don't know what to do with %s\n" f; exit 1)
 
 (*s \textbf{Reading file names from a file.}
  *  File names may be given
@@ -181,8 +187,10 @@ let files_from_file f =
 (*s \textbf{Parsing of the command line.} *)
 
 let dvi = ref false
-let ps = ref false
+let ps  = ref false
 let pdf = ref false
+
+let preamble = ref []
 
 let parse () =
   let files = ref [] in
@@ -202,7 +210,7 @@ let parse () =
     | ("-with-footer" | "--with-footer") :: [] ->
 	usage ()
     | ("-p" | "--preamble") :: s :: rem ->
-	Output.push_in_preamble s; parse_rec rem
+        preamble := s :: !preamble; parse_rec rem
     | ("-p" | "--preamble") :: [] ->
 	usage ()
     | ("-noindex" | "--noindex" | "--no-index") :: rem ->
@@ -249,6 +257,10 @@ let parse () =
 	Cdglobals.target_language := TeXmacs; parse_rec rem
     | ("-raw" | "--raw") :: rem ->
 	Cdglobals.target_language := Raw; parse_rec rem
+    | ("--backend=jscoq") :: rem ->
+	Cdglobals.target_language := JsCoq; parse_rec rem
+    | ("--backend=debug") :: rem ->
+	Cdglobals.target_language := Debug; parse_rec rem
     | ("-charset" | "--charset") :: s :: rem ->
 	Cdglobals.charset := s; parse_rec rem
     | ("-charset" | "--charset") :: [] ->
@@ -282,7 +294,7 @@ let parse () =
       Cdglobals.lib_name := ds;
       parse_rec rem
     | ("-lib-subtitles" | "--lib-subtitles") :: rem ->
-      Cdglobals.lib_subtitles := true;
+      eprintf "Warning: the -lib-subtitles option has been removed\n";
       parse_rec rem
     | ("-inline-notmono" | "--inline-notmono") :: rem ->
       Cdglobals.inline_notmono := true;
@@ -309,7 +321,8 @@ let parse () =
     | ("-vernac-file" | "--vernac-file") :: [] ->
 	usage ()
     | ("-tex-file" | "--tex-file") :: f :: rem ->
-	add_file (Latex_file f); parse_rec rem
+      (eprintf "\ncoqdoc: passing a latex file to CoqDoc used to do nothing and is not supported anymore\n";
+       exit 1)
     | ("-tex-file" | "--tex-file") :: [] ->
 	usage ()
     | ("-files" | "--files" | "--files-from") :: f :: rem ->
@@ -336,7 +349,7 @@ let parse () =
     | ("--external" | "-external") :: u :: logicalpath :: rem ->
 	Index.add_external_library logicalpath u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: u :: rem ->
-	Cdglobals.coqlib := u; parse_rec rem
+	Cdglobals.coqlib_url := u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: [] ->
 	usage ()
     | ("--boot" | "-boot") :: rem ->
@@ -389,6 +402,7 @@ let cat file =
     with End_of_file ->
       close_in c
 
+(* XXX: Uh *)
 let copy src dst =
   let cin = open_in src in
   try
@@ -402,55 +416,45 @@ let copy src dst =
     eprintf "%s\n" e;
     exit 1
 
+(*s Backend Selection *)
+
+let output_factory tl =
+  let open Output in
+  match tl with
+  | LaTeX     -> (module Latex   : S)
+  | HTML      -> (module Html    : S)
+  | TeXmacs   -> (module TeXmacs : S)
+  | Raw       -> (module Raw     : S)
+  | JsCoq     -> (module Out_jscoq.JsCoq : S)
+  | Debug     -> (module Out_debug.Debug : S)
+
 (*s Functions for generating output files *)
 
-let gen_one_file l =
-  let file = function
-    | Vernac_file (f,m) ->
-        let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
-          Output.set_module m sub;
-          Cpretty.coq_file f m
-    | Latex_file _ -> ()
+(** gen_one_file [l] *)
+let gen_one_file (module OutB : Output.S) (module Cpretty : Cpretty.S)
+                 out (l : file list) =
+  let out_module (Vernac_file (f, m)) =
+    Cpretty.coq_file f m
   in
-    if (!header_trailer) then Output.header ();
-    if !toc then Output.make_toc ();
-    List.iter file l;
-    if !index then Output.make_index();
-    if (!header_trailer) then Output.trailer ()
+  OutB.start_file out ~toc:!toc ~index:!index ~split_index:!multi_index ~standalone:!header_trailer;
+  List.iter out_module l;
+  OutB.end_file ()
 
-let gen_mult_files l =
-  let file = function
-    | Vernac_file (f,m) ->
-      let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
-	let hf = target_full_name m in
-        Output.set_module m sub;
-	  open_out_file hf;
-	  if (!header_trailer) then Output.header ();
-	  Cpretty.coq_file f m;
-	  if (!header_trailer) then Output.trailer ();
-	  close_out_file()
-    | Latex_file _ -> ()
+let gen_mult_files (module OutB : Output.S) (module Cpretty : Cpretty.S)
+                   (l : file list) =
+
+  (* XXX: subtitle functionality has been removed. *)
+  let out_module (Vernac_file (f, m)) =
+    let hf  = target_full_name m                                         in
+    with_outfile hf (fun out ->
+        (* Disable index and TOC for each file *)
+        OutB.start_file out ~toc:false ~index:false ~split_index:false ~standalone:!header_trailer;
+        Cpretty.coq_file f m;
+        OutB.end_file ()
+      )
   in
-    List.iter file l;
-    if (!index && !target_language=HTML) then begin
-      if (!multi_index) then Output.make_multi_index ();
-      open_out_file (!index_name^".html");
-      page_title := (if !title <> "" then !title else "Index");
-      if (!header_trailer) then Output.header ();
-      Output.make_index ();
-      if (!header_trailer) then Output.trailer ();
-      close_out_file()
-    end;
-    if (!toc && !target_language=HTML) then begin
-      open_out_file "toc.html";
-      page_title := (if !title <> "" then !title else "Table of contents");
-      if (!header_trailer) then Output.header ();
-      if !title <> "" then printf "<h1>%s</h1>\n" !title;
-      Output.make_toc ();
-      if (!header_trailer) then Output.trailer ();
-      close_out_file()
-    end
-    (* NB: for latex and texmacs, a separated toc or index is meaningless... *)
+    List.iter out_module l;
+    OutB.appendix ~toc:!toc ~index:!index ~split_index:!multi_index ~standalone:!header_trailer
 
 let read_glob_file vfile f =
   try Index.read_glob vfile f
@@ -459,46 +463,56 @@ let read_glob_file vfile f =
 let read_glob_file_of = function
   | Vernac_file (f,_) ->
       read_glob_file (Some f) (Filename.chop_extension f ^ ".glob")
-  | Latex_file _ -> ()
 
 let index_module = function
   | Vernac_file (f,m) ->
       Index.add_module m
-  | Latex_file _ -> ()
 
-let copy_style_file file =
-  let src =
-    List.fold_left
-      Filename.concat !Cdglobals.coqlib_path ["tools";"coqdoc";file] in
-  let dst = coqdoc_out file in
-  if Sys.file_exists src then copy src dst
-  else eprintf "Warning: file %s does not exist\n" src
+(** [copy_style_file files] Copy support files to output. *)
+let copy_style_files (files : string list) : unit =
+  let copy_file file =
+    let src = List.fold_left
+              Filename.concat !Cdglobals.coqlib_path ["tools"; "coqdoc"; file] in
+    let dst = coqdoc_out file                                                  in
+    if Sys.file_exists src then copy src dst
+    else eprintf "Warning: file %s does not exist\n" src
+  in List.iter copy_file files
 
-let produce_document l =
-  if !target_language=HTML then copy_style_file "coqdoc.css";
-  if !target_language=LaTeX then copy_style_file "coqdoc.sty";
-  (match !Cdglobals.glob_source with
-    | NoGlob -> ()
-    | DotGlob -> List.iter read_glob_file_of l
-    | GlobFile f -> read_glob_file None f);
+(** [produce_document l] produces a document from list of files [l] *)
+let produce_document (l : file list) =
+
+  let module OutB    = (val output_factory !target_language) in
+  let module Cpretty = Cpretty.Make(OutB)                    in
+
+  copy_style_files OutB.support_files;
+
+  (* Preload index. *)
+  begin match !Cdglobals.glob_source with
+    | NoGlob     -> ()
+    | DotGlob    -> List.iter read_glob_file_of l
+    | GlobFile f -> read_glob_file None f
+  end;
   List.iter index_module l;
+
+  (* XXX: Preload the preamble. *)
+  List.iter (OutB.push_in_preamble) (List.rev !preamble);
+
   match !out_to with
     | StdOut ->
-	Cdglobals.out_channel := stdout;
-	gen_one_file l
+      gen_one_file (module OutB) (module Cpretty) (Format.formatter_of_out_channel stdout) l
     | File f ->
-	open_out_file f;
-	gen_one_file l;
-	close_out_file()
+      with_outfile f (fun fmt ->
+          gen_one_file (module OutB) (module Cpretty) fmt l
+        )
     | MultFiles ->
-	gen_mult_files l
+      gen_mult_files (module OutB) (module Cpretty) l
 
 let produce_output fl =
   if not (!dvi || !ps || !pdf) then
     produce_document fl
   else
     begin
-      let texfile = Filename.temp_file "coqdoc" ".tex" in
+      let texfile  = Filename.temp_file "coqdoc" ".tex" in
       let basefile = Filename.chop_suffix texfile ".tex" in
       let final_out_to = !out_to in
 	out_to := File texfile;

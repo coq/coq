@@ -10,7 +10,7 @@
 
 (*s Output options *)
 
-type target_language = LaTeX | HTML | TeXmacs | Raw
+type target_language = LaTeX | HTML | TeXmacs | Raw | JsCoq | Debug
 
 let target_language = ref HTML
 
@@ -20,10 +20,7 @@ type output_t =
   | File of string
 
 let output_dir = ref ""
-
-let out_to = ref MultFiles
-
-let out_channel = ref stdout
+let out_to     = ref MultFiles
 
 let ( / ) = Filename.concat
 
@@ -36,13 +33,12 @@ let coqdoc_out f =
   else
     f
 
-let open_out_file f =
-  out_channel :=
-    try open_out (coqdoc_out f)
-    with Sys_error s -> Printf.eprintf "%s\n" s; exit 1
-
-let close_out_file () = close_out !out_channel
-
+let with_outfile file f =
+  try
+    let out = open_out (coqdoc_out file) in
+    f (Format.formatter_of_out_channel out);
+    close_out out
+  with | Sys_error s -> Printf.eprintf "%s\n" s; exit 1
 
 type glob_source_t =
     | NoGlob
@@ -69,6 +65,8 @@ let normalize_filename f =
   let basename = Filename.basename f in
   let dirname = Filename.dirname f in
   normalize_path dirname, basename
+
+
 
 (** A weaker analog of the function in Envars *)
 
@@ -101,17 +99,15 @@ let index = ref true
 let multi_index = ref false
 let index_name = ref "index"
 let toc = ref false
-let page_title = ref ""
 let title = ref ""
 let externals = ref true
-let coqlib = ref Coq_config.wwwstdlib
+let coqlib_url  = ref Coq_config.wwwstdlib
 let coqlib_path = ref (guess_coqlib ())
 let raw_comments = ref false
 let parse_comments = ref false
 let plain_comments = ref false
 let toc_depth = (ref None : int option ref)
 let lib_name = ref "Library"
-let lib_subtitles = ref false
 let interpolate = ref false
 let inline_notmono = ref false
 
@@ -136,4 +132,3 @@ type coq_module = string
 
 type file =
   | Vernac_file of string * coq_module
-  | Latex_file of string

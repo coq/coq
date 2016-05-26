@@ -22,7 +22,7 @@ let norm_char_latin1 c = match Char.uppercase c with
 let norm_char_utf8 c = Char.uppercase c
 
 let norm_char c =
-  if !utf8 then norm_char_utf8 c else
+  if !utf8   then norm_char_utf8   c else
   if !latin1 then norm_char_latin1 c else
   Char.uppercase c
 
