@@ -263,13 +263,11 @@ let universe_context ?names ctx =
        if not (Univ.LSet.is_empty left) then
          let n = Univ.LSet.cardinal left in
          let loc =
-           if n == 1 then
-             try
-               let info =
-                 Univ.LMap.find (Univ.LSet.choose left) (snd ctx.uctx_names) in
-               Option.default Loc.ghost info.uloc
-             with Not_found -> Loc.ghost
-           else Loc.ghost
+           try
+             let info =
+               Univ.LMap.find (Univ.LSet.choose left) (snd ctx.uctx_names) in
+             Option.default Loc.ghost info.uloc
+           with Not_found -> Loc.ghost
          in
            user_err_loc (loc, "universe_context",
 			(str(CString.plural n "Universe") ++ spc () ++
