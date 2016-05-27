@@ -66,8 +66,9 @@ VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
 END
 
 TACTIC EXTEND typeclasses_eauto
-| [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ Proofview.V82.tactic (typeclasses_eauto l) ]
-| [ "typeclasses" "eauto" ] -> [ Proofview.V82.tactic (typeclasses_eauto ~only_classes:true [Hints.typeclasses_db]) ]
+| [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ typeclasses_eauto l ]
+| [ "typeclasses" "eauto" ] -> [
+    typeclasses_eauto ~only_classes:true [Hints.typeclasses_db] ]
 END
 
 TACTIC EXTEND head_of_constr
@@ -93,16 +94,16 @@ TACTIC EXTEND fulleauto
     let dbs = match dbnames with [] -> ["typeclass_instances"]
                                | l -> l in
     let dbs = List.map Hints.searchtable_map dbs in
-    Class_tactics.new_eauto_tac false ?limit:depth dbs 
+    Class_tactics.new_eauto_tac false ?limit:depth true dbs
   ]
 | ["fulleauto" depth(depth) ] -> [
     let dbs = ["typeclass_instances"] in
     let dbs = List.map Hints.searchtable_map dbs in
-    Class_tactics.new_eauto_tac false ?limit:depth dbs 
+    Class_tactics.new_eauto_tac false ?limit:depth true dbs
   ]
 | ["fulleauto" ] -> [
     let dbs = ["typeclass_instances"] in
     let dbs = List.map Hints.searchtable_map dbs in
-    Class_tactics.new_eauto_tac false dbs 
+    Class_tactics.new_eauto_tac false true dbs
   ]
 END

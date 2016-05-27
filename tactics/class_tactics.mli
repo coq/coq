@@ -23,7 +23,7 @@ val get_typeclasses_depth : unit -> int option
 val progress_evars : unit Proofview.tactic -> unit Proofview.tactic
 
 val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state ->
-  Hints.hint_db_name list -> tactic
+  Hints.hint_db_name list -> unit Proofview.tactic
 
 val head_of_constr : Id.t -> Term.constr -> unit Proofview.tactic
 
@@ -49,6 +49,8 @@ val make_autogoal' : ?st:Names.transparent_state ->
            Hints.hints_path -> int -> ([ `NF ], 'c) Proofview.Goal.t -> newautoinfo
 
 val new_eauto_tac : ?st:Names.transparent_state ->
-           bool -> ?limit:Int.t -> 
-           Hints.hint_db list -> unit Proofview.tactic
+  bool -> ?limit:Int.t ->
+  bool -> (* Should the tactic be made backtracking, whatever the dependencies
+            betwwen initial goals are *)
+  Hints.hint_db list -> unit Proofview.tactic
 

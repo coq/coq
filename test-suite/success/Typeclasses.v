@@ -1,3 +1,41 @@
+Module bt.
+Require Import Equivalence.
+
+Record Equ (A : Type) (R : A -> A -> Prop).
+Definition equiv {A} R (e : Equ A R) := R.
+Record Refl (A : Type) (R : A -> A -> Prop).
+Axiom equ_refl : forall A R (e : Equ A R), Refl _ (@equiv A R e).
+Hint Extern 0 (Refl _ _) => unshelve class_apply @equ_refl; [|shelve|] : foo.
+
+Variable R : nat -> nat -> Prop.
+Lemma bas : Equ nat R.
+Admitted.
+Hint Resolve bas : foo.
+Hint Extern 1 => match goal with |- (_ -> _ -> Prop) => shelve end : foo.
+
+Goal exists R, @Refl nat R.
+  eexists.
+  Set Typeclasses Debug.
+  (* Fail solve [unshelve eauto with foo]. *)
+  Set Typeclasses Debug Verbosity 1.
+  solve [typeclasses eauto with foo].
+Qed.
+
+(* Set Typeclasses Compatibility "8.5". *)
+Parameter f : nat -> Prop.
+Parameter g : nat -> nat -> Prop.
+Parameter h : nat -> nat -> nat -> Prop.
+Axiom a : forall x y, g x y -> f x -> f y.
+Axiom b : forall x (y : Empty_set), g (fst (x,y)) x.
+Axiom c : forall x y z, h x y z -> f x -> f y.
+Hint Resolve a b c : mybase.
+Goal forall x y z, h x y z -> f x -> f y.
+  intros.
+  Set Typeclasses Debug.
+  typeclasses eauto with mybase.
+  Unshelve.
+Abort.
+End bt.
 Generalizable All Variables.
 
 Module mon.

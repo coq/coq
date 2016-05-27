@@ -900,44 +900,28 @@ let rec eauto_tac' only_classes hints limit depth =
             Proofview.tclZERO ~info e))
                                                     
    
-let new_eauto_tac_gl ?st only_classes hints limit i sigma gls gl :
+let new_eauto_tac_gl ?st only_classes dep hints limit i sigma gls gl :
       unit Proofview.tactic =
   let open Proofview in
   let open Proofview.Notations in
-  let dep = Proofview.unifiable sigma (Goal.goal gl) gls in
+  let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
   let info = make_autogoal' ?st only_classes dep (cut_of_hints hints) i gl in
   eauto_tac' only_classes hints limit 1 info
 
 exception HasShelvedGoals
              
-let new_eauto_tac ?(st=full_transparent_state) only_classes hints limit : unit Proofview.tactic =
+let new_eauto_tac ?(st=full_transparent_state) only_classes dep hints limit : unit Proofview.tactic =
   let open Proofview in
   let eautotac sigma gls i =
     Goal.nf_enter
-      { enter = fun gl -> new_eauto_tac_gl ~st only_classes
-                                        hints limit (succ i) sigma gls gl }
+      { enter = fun gl ->
+                new_eauto_tac_gl ~st only_classes dep hints limit (succ i) sigma gls gl }
   in
-  let rec finish =
-    function Fail (e,ie) -> tclZERO ~info:ie e
-           | Next ((shelf,()), cont) ->
-              Proofview.tclEVARMAP >>= fun sigma ->
-              (* if List.for_all (fun ev -> Evd.is_defined sigma ev) shelf then *)
-              (*   (if !typeclasses_debug > 0 then *)
-              (*      msg_debug (str"Proof found with solved shelved goals:" ++ *)
-              (*                   prlist_with_sep spc (pr_ev sigma) shelf); *)
-              shelve_goals shelf
-              (* else *)
-              (*   (if !typeclasses_debug > 0 then *)
-              (*       msg_debug (str"Proof found but with unsolved shelved goals:" ++ *)
-              (*                    prlist_with_sep spc (pr_ev sigma) *)
-              (*                    (List.filter (Evd.is_undefined sigma) shelf) ++ *)
-              (*                str", trying another proof"); *)
-              (*    tclCASE (cont (HasShelvedGoals, Exninfo.null)) >>= finish) *)
-  in Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+  Proofview.Unsafe.tclGETGOALS >>= fun gls ->
      Proofview.tclEVARMAP >>= fun sigma ->
      let j = List.length gls in
-     tclCASE (with_shelf (tclDISPATCH
-                            (List.init j (fun i -> eautotac sigma gls i)))) >>= finish
+     (tclDISPATCH
+        (List.init j (fun i -> eautotac sigma gls i)))
        
 let fix_iterative t =
   let rec aux depth =
@@ -956,17 +940,17 @@ let fix_iterative_limit limit t =
                
   in aux 1
 
-let new_eauto_tac ?(st=full_transparent_state) only_classes ?limit hints =
+let new_eauto_tac ?(st=full_transparent_state) only_classes ?limit dep hints =
   let tac =
     if get_typeclasses_iterative_deepening () then
       match limit with
       | None ->
-         fix_iterative (new_eauto_tac ~st only_classes hints)
+         fix_iterative (new_eauto_tac ~st only_classes dep hints)
       | Some l ->
-         fix_iterative_limit l (new_eauto_tac ~st only_classes hints)
+         fix_iterative_limit l (new_eauto_tac ~st only_classes dep hints)
     else
       let limit = match limit with None -> -1 | Some d -> d in
-      new_eauto_tac ~st only_classes hints limit
+      new_eauto_tac ~st only_classes dep hints limit
   in
   let error (e, ie) =
     match e with
@@ -1012,7 +996,7 @@ let run_on_evars ?(unique=false) p evm tac =
     with Logic_monad.TacticFailure _ -> raise Not_found
 
 let real_new_eauto ?limit unique st hints p evd =
-  let eauto_tac = new_eauto_tac ~st true ?limit hints in
+  let eauto_tac = new_eauto_tac ~st true ?limit false hints in
   let res = run_on_evars ~unique p evd eauto_tac in
     match res with
     | None -> evd
@@ -1244,7 +1228,7 @@ let resolve_all_evars_once debug limit unique p evd =
   let db = searchtable_map typeclasses_db in
     real_eauto ?limit unique (Hint_db.transparent_state db) [db] p evd
 
-let eauto ?(only_classes=true) ?st ?limit hints g =
+let eauto85 ?(only_classes=true) ?st ?limit hints g =
   let gl = { it = make_autogoal ~only_classes ?st
                     (cut_of_hints hints) None g; sigma = project g; } in
     match run_tac (eauto_tac ?limit hints) gl with
@@ -1278,7 +1262,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
     Goal.V82.mk_goal sigma nc gl Store.empty in
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
-  let gls' = eauto ?limit:!typeclasses_depth ~st:(Hint_db.transparent_state hints) [hints] gls in
+  let gls' = eauto85 ?limit:!typeclasses_depth ~st:(Hint_db.transparent_state hints) [hints] gls in
   let evd = sig_sig gls' in
   let t' = let (ev, inst) = destEvar t in
     mkEvar (ev, Array.of_list subst)
@@ -1426,16 +1410,22 @@ let solve_inst env evd filter unique split fail =
 let _ =
   Typeclasses.solve_instantiations_problem := solve_inst
 
-let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl =
-  try
-    let dbs = List.map_filter
-      (fun db -> try Some (searchtable_map db)
-        with e when Errors.noncritical e -> None)
-      dbs
-    in
-    let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
-      eauto ?limit:!typeclasses_depth ~only_classes ~st dbs gl
-   with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl
+let eauto ?limit ~only_classes ~st dbs =
+  new_eauto_tac ~st only_classes ?limit dbs
+
+let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs =
+  let dbs = List.map_filter
+              (fun db -> try Some (searchtable_map db)
+                      with e when Errors.noncritical e -> None)
+              dbs
+  in
+  let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
+  if get_typeclasses_compat () = Flags.V8_5 then
+    Tacticals.New.tclORELSE (Proofview.V82.tactic (eauto85 ?limit:!typeclasses_depth ~only_classes ~st dbs))
+     (Proofview.Goal.nf_enter ({ enter = fun gl ->
+       Tacticals.New.tclFAIL 0 (str" typeclasses eauto failed on: " ++
+                    Goal.pr_goal (Proofview.Goal.goal gl))}))
+  else eauto ?limit:!typeclasses_depth ~only_classes ~st true dbs
 
 (** Take the head of the arity of a constr.
     Used in the partial application tactic. *)
