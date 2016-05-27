@@ -1087,7 +1087,7 @@ let interp_recursive isfix fixl notations =
         | Some ls , Some us ->
 	   if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) ls us) then
 	     error "(co)-recursive definitions should all have the same universe binders";
-	   Some (ls @ us)) fixl None in
+	   Some us) fixl None in
   let ctx = Evd.make_evar_universe_context env all_universes in
   let evdref = ref (Evd.from_ctx ctx) in
   let fixctxs, fiximppairs, fixannots =
