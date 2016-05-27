@@ -511,6 +511,7 @@ val normalize_evar_universe_context : evar_universe_context ->
 val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe_level
 val new_univ_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe
 val new_sort_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * sorts
+
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 											   
 val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
@@ -568,8 +569,8 @@ val fresh_constant_instance : ?loc:Loc.t -> env -> evar_map -> constant -> evar_
 val fresh_inductive_instance : ?loc:Loc.t -> env -> evar_map -> inductive -> evar_map * pinductive
 val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor -> evar_map * pconstructor
 
-val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env -> evar_map -> 
-  Globnames.global_reference -> evar_map * constr
+val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env ->
+  evar_map -> Globnames.global_reference -> evar_map * constr
 
 (********************************************************************
   Conversion w.r.t. an evar map, not unifying universes. See 
