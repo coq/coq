@@ -157,9 +157,8 @@ Hint Extern 0 { x : _ & _ } => simple refine (existT _ _ _) : typeclass_instance
 
 Definition trivial a (H : Foo a) : {b : myType & Qux b}. 
 Proof.
-  Fail typeclasses eauto with typeclass_instances.
-  fulleauto 4.
+  Time fulleauto 10.
   Undo. Set Typeclasses Iterative Deepening.
-  fulleauto.
+  Time fulleauto.
 Defined.
 
