@@ -926,9 +926,7 @@ let normalize_context_set ctx us algs =
      mentionning other variables remain in noneqs. *)
   let noneqs, ucstrsl, ucstrsr = 
     Constraint.fold (fun (l,d,r as cstr) (noneq, ucstrsl, ucstrsr) -> 
-      let lus = LMap.mem l us 
-      and rus = LMap.mem r us
-      in
+      let lus = LMap.mem l us and rus = LMap.mem r us in
       let ucstrsl' = 
 	if lus then add_list_map l (d, r) ucstrsl
 	else ucstrsl
@@ -1090,13 +1088,6 @@ let solve_constraints_system levels level_bounds level_min =
     for j=0 to nind-1 do
       if not (Int.equal i j) && Int.Set.mem j clos.(i) then
 	(v.(i) <- Universe.sup v.(i) level_bounds.(j));
-	 (* level_min.(i) <- Universe.sup level_min.(i) level_min.(j)) *)
     done;
-    (* for j=0 to nind-1 do *)
-    (*   match levels.(j) with *)
-    (*   | Some u when not (Univ.Level.is_small u) -> *)
-    (* 	 v.(i) <- univ_level_rem u v.(i) level_min.(i) *)
-    (*   | _ -> () *)
-    (* done *)
   done;
   v
