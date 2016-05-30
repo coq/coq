@@ -391,9 +391,15 @@ let error_no_module_expr mp =
        ++ str "some Declare Module outside any Module Type.\n"
        ++ str "This situation is currently unsupported by the extraction.")
 
-let error_singleton_become_prop id =
+let error_singleton_become_prop id og =
+  let loc =
+    match og with
+    | Some g -> fnl () ++ str "in " ++ safe_pr_global g ++
+                str " (or in its mutual block)"
+    | None -> mt ()
+  in
   err (str "The informative inductive type " ++ pr_id id ++
-       str " has a Prop instance.\n" ++
+       str " has a Prop instance" ++ loc ++ str "." ++ fnl () ++
        str "This happens when a sort-polymorphic singleton inductive type\n" ++
        str "has logical parameters, such as (I,I) : (True * True) : Prop.\n" ++
        str "The Ocaml extraction cannot handle this situation yet.\n" ++
