@@ -143,10 +143,20 @@ GEXTEND Gram
       | n = natural -> (n, n) ] ]
   ;
 
+  (* We unfold a range selectors list once so that we can make a special case
+   * for a unique SelectNth selector. *)
+  range_selector_or_nth:
+    [ [ n = natural ; "-" ; m = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          SelectList ((n, m) :: Option.default [] l)
+      | n = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l ] ]
+  ;
+
   selector:
-    [ [ n=natural; ":" -> SelectNth n
+    [ [ l = range_selector_or_nth; ":" -> l
       | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id
-      | "[" ; l = LIST1 range_selector SEP "," ; "]" ; ":" -> SelectList l
       | IDENT "all" ; ":" -> SelectAll
       | IDENT "par" ; ":" -> SelectAllParallel ] ]
   ;
