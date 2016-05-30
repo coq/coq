@@ -35,17 +35,18 @@ let current_fixpoints = ref ([] : constant list)
 
 let none = Evd.empty
 
+(* NB: In OCaml, [type_of] and [get_of] might raise
+   [SingletonInductiveBecomeProp]. this exception will be catched
+   in late wrappers around the exported functions of this file,
+   in order to display the location of the issue. *)
+
 let type_of env c =
-  try
-    let polyprop = (lang() == Haskell) in
-    Retyping.get_type_of ~polyprop env none (strip_outer_cast c)
-  with SingletonInductiveBecomesProp id -> error_singleton_become_prop id
+  let polyprop = (lang() == Haskell) in
+  Retyping.get_type_of ~polyprop env none (strip_outer_cast c)
 
 let sort_of env c =
-  try
-    let polyprop = (lang() == Haskell) in
-    Retyping.get_sort_family_of ~polyprop env none (strip_outer_cast c)
-  with SingletonInductiveBecomesProp id -> error_singleton_become_prop id
+  let polyprop = (lang() == Haskell) in
+  Retyping.get_sort_family_of ~polyprop env none (strip_outer_cast c)
 
 (*S Generation of flags and signatures. *)
 
@@ -328,11 +329,22 @@ and extract_type_scheme env db c p =
 
 (*S Extraction of an inductive type. *)
 
+(* First, a version with cache *)
+
 and extract_ind env kn = (* kn is supposed to be in long form *)
   let mib = Environ.lookup_mind kn env in
   match lookup_ind kn mib with
   | Some ml_ind -> ml_ind
   | None ->
+     try
+       extract_really_ind env kn mib
+     with SingletonInductiveBecomesProp id ->
+       (* TODO : which inductive is concerned in the block ? *)
+       error_singleton_become_prop id (Some (IndRef (kn,0)))
+
+(* Then the real function *)
+
+and extract_really_ind env kn mib =
     (* First, if this inductive is aliased via a Module,
        we process the original inductive if possible.
        When at toplevel of the monolithic case, we cannot do much
@@ -934,11 +946,13 @@ let extract_fixpoint env vkn (fi,ti,ci) =
   (* for replacing recursive calls [Rel ..] by the corresponding [Const]: *)
   let sub = List.rev_map mkConst kns in
   for i = 0 to n-1 do
-    if sort_of env ti.(i) != InProp then begin
-      let e,t = extract_std_constant env vkn.(i) (substl sub ci.(i)) ti.(i) in
-      terms.(i) <- e;
-      types.(i) <- t;
-    end
+    if sort_of env ti.(i) != InProp then
+      try
+        let e,t = extract_std_constant env vkn.(i) (substl sub ci.(i)) ti.(i) in
+        terms.(i) <- e;
+        types.(i) <- t;
+      with SingletonInductiveBecomesProp id ->
+        error_singleton_become_prop id (Some (ConstRef vkn.(i)))
   done;
   current_fixpoints := [];
   Dfix (Array.map (fun kn -> ConstRef kn) vkn, terms, types)
@@ -968,7 +982,8 @@ let extract_constant env kn cb =
     let e,t = extract_std_constant env kn c typ in
     Dterm (r,e,t)
   in
-  match flag_of_type env typ with
+  try
+    match flag_of_type env typ with
     | (Logic,TypeScheme) -> warn_log (); Dtype (r, [], Tdummy Ktype)
     | (Logic,Default) -> warn_log (); Dterm (r, MLdummy Kprop, Tdummy Kprop)
     | (Info,TypeScheme) ->
@@ -989,11 +1004,14 @@ let extract_constant env kn cb =
 	    if access_opaque () then
               mk_def (Opaqueproof.force_proof (Environ.opaque_tables env) c)
             else mk_ax ())
+  with SingletonInductiveBecomesProp id ->
+    error_singleton_become_prop id (Some (ConstRef kn))
 
 let extract_constant_spec env kn cb =
   let r = ConstRef kn in
   let typ = Typeops.type_of_constant_type env cb.const_type in
-  match flag_of_type env typ with
+  try
+    match flag_of_type env typ with
     | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))
     | (Logic, Default) -> Sval (r, Tdummy Kprop)
     | (Info, TypeScheme) ->
@@ -1008,26 +1026,34 @@ let extract_constant_spec env kn cb =
     | (Info, Default) ->
 	let t = snd (record_constant_type env kn (Some typ)) in
 	Sval (r, type_expunge env t)
+  with SingletonInductiveBecomesProp id ->
+    error_singleton_become_prop id (Some (ConstRef kn))
 
 let extract_with_type env c =
-  let typ = type_of env c in
-  match flag_of_type env typ with
+  try
+    let typ = type_of env c in
+    match flag_of_type env typ with
     | (Info, TypeScheme) ->
 	let s,vl = type_sign_vl env typ in
 	let db = db_from_sign s in
 	let t = extract_type_scheme env db c (List.length s) in
 	Some (vl, t)
     | _ -> None
+  with SingletonInductiveBecomesProp id ->
+    error_singleton_become_prop id None
 
 let extract_constr env c =
   reset_meta_count ();
-  let typ = type_of env c in
-  match flag_of_type env typ with
+  try
+    let typ = type_of env c in
+    match flag_of_type env typ with
     | (_,TypeScheme) -> MLdummy Ktype, Tdummy Ktype
     | (Logic,_) -> MLdummy Kprop, Tdummy Kprop
     | (Info,Default) ->
-      let mlt = extract_type env [] 1 typ [] in
-      extract_term env Mlenv.empty mlt c [], mlt
+       let mlt = extract_type env [] 1 typ [] in
+       extract_term env Mlenv.empty mlt c [], mlt
+  with SingletonInductiveBecomesProp id ->
+    error_singleton_become_prop id None
 
 let extract_inductive env kn =
   let ind = extract_ind env kn in
