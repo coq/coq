@@ -114,14 +114,19 @@ let typecheck_params_and_fields def id pl t ps nots fs =
   let t', template = match t with 
     | Some t -> 
        let env = push_rel_context newps env0 in
+       let poly =
+         match t with
+         | CSort (_, Misctypes.GType []) -> true | _ -> false in
        let s = interp_type_evars env evars ~impls:empty_internalization_env t in
        let sred = Reductionops.whd_betadeltaiota env !evars s in
 	 (match kind_of_term sred with
 	 | Sort s' -> 
-	   (match Evd.is_sort_variable !evars s' with
-	   | Some l -> evars := Evd.make_flexible_variable !evars true l; 
-	     sred, true
-	   | None -> s, false)
+	    (if poly then
+               match Evd.is_sort_variable !evars s' with
+	       | Some l -> evars := Evd.make_flexible_variable !evars true l; 
+	                  sred, true
+	       | None -> s, false
+             else s, false)
 	 | _ -> user_err_loc (constr_loc t,"", str"Sort expected."))
     | None -> 
       let uvarkind = Evd.univ_flexible_alg in
