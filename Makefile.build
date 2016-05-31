@@ -611,6 +611,16 @@ tools: $(TOOLS) $(DEBUGPRINTERS) $(OCAMLLIBDEP)
 # to avoid using implicit rules and hence .ml.d files that would need
 # coqdep_boot.
 
+COQDEPBOOTSRC := \
+ lib/minisys.ml \
+ tools/coqdep_lexer.mli tools/coqdep_lexer.ml \
+ tools/coqdep_common.mli tools/coqdep_common.ml \
+ tools/coqdep_boot.ml
+
+$(COQDEPBOOT): $(COQDEPBOOTSRC)
+	$(SHOW)'OCAMLBEST -o $@'
+	$(HIDE)$(call bestocaml, -I tools, unix)
+
 OCAMLLIBDEPSRC:= tools/ocamllibdep.ml
 
 $(OCAMLLIBDEP): $(OCAMLLIBDEPSRC)
@@ -1093,9 +1103,9 @@ dev/%.mllib.d: $(D_DEPEND_BEFORE_SRC) dev/%.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLL
 	$(SHOW)'OCAMLLIBDEP  $<'
 	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
 
-%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP) $(GENVFILES)
+%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEP) -boot $(DEPNATDYN) "$<" $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) -boot $(DEPNATDYN) "$<" $(TOTARGET)
 
 %_stubs.c.d: $(D_DEPEND_BEFORE_SRC) %_stubs.c $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'CCDEP	$<'

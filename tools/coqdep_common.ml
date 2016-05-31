@@ -9,11 +9,11 @@
 open Printf
 open Coqdep_lexer
 open Unix
-open System
+open Minisys
 
 (** [coqdep_boot] is a stripped-down version of [coqdep], whose
     behavior is the one of [coqdep -boot]. Its only dependencies
-    are [Coqdep_lexer] and [Unix], and it should stay so.
+    are [Coqdep_lexer], [Unix] and [Minisys], and it should stay so.
     If it need someday some additional information, pass it via
     options (see for instance [option_natdynlk] below).
 *)
@@ -526,7 +526,7 @@ let rec add_directory recur add_file phys_dir log_dir =
     | FileRegular f ->
         add_file phys_dir log_dir f
   in
-  System.check_unix_dir (fun s -> eprintf "*** Warning: %s\n" s) phys_dir;
+  check_unix_dir (fun s -> eprintf "*** Warning: %s\n" s) phys_dir;
   if exists_dir phys_dir then
     process_directory f phys_dir
   else

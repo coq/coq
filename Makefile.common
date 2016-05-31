@@ -85,6 +85,7 @@ CHKSRCDIRS:= config lib checker
 ###########################################################################
 
 COQDEP:=bin/coqdep$(EXE)
+COQDEPBOOT:=bin/coqdep_boot$(EXE)
 OCAMLLIBDEP:=bin/ocamllibdep$(EXE)
 COQMAKEFILE:=bin/coq_makefile$(EXE)
 GALLINA:=bin/gallina$(EXE)
@@ -258,7 +259,7 @@ CSDPCERTCMO:=$(addprefix plugins/micromega/, \
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
-COQDEPCMO:=$(COQENVCMO) lib/system.cmo tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
+COQDEPCMO:=$(COQENVCMO) lib/minisys.cmo lib/system.cmo tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
 
 COQDOCCMO:=lib/clib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
