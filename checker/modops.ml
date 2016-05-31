@@ -28,7 +28,7 @@ let error_not_match l _ =
 let error_no_such_label l = error ("No such label "^Label.to_string l)
 
 let error_no_such_label_sub l l1 =
-  let l1 = string_of_mp l1 in
+  let l1 = ModPath.to_string l1 in
   error ("The field "^
          Label.to_string l^" is missing in "^l1^".")
 

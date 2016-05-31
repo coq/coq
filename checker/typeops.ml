@@ -92,7 +92,7 @@ let judge_of_constant_knowing_parameters env (kn,u as cst) paramstyp =
   let _cb =
     try lookup_constant kn env
     with Not_found ->
-      failwith ("Cannot find constant: "^string_of_con kn)
+      failwith ("Cannot find constant: "^Constant.to_string kn)
   in
   let ty, cu = type_of_constant_knowing_parameters env cst paramstyp in
   let () = check_constraints cu env in
@@ -178,7 +178,7 @@ let judge_of_inductive_knowing_parameters env (ind,u) (paramstyp:constr array) =
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find inductive: "^string_of_mind (fst ind))
+      failwith ("Cannot find inductive: "^MutInd.to_string (fst ind))
   in
   type_of_inductive_knowing_parameters env (specif,u) paramstyp
 
@@ -192,7 +192,7 @@ let judge_of_constructor env (c,u) =
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find inductive: "^string_of_mind (fst ind))
+      failwith ("Cannot find inductive: "^MutInd.to_string (fst ind))
   in
   type_of_constructor (c,u) specif
 
@@ -223,7 +223,7 @@ let judge_of_projection env p c ct =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (c, ct)
   in
-    assert(eq_mind pb.proj_ind (fst ind));
+    assert(MutInd.equal pb.proj_ind (fst ind));
     let ty = subst_instance_constr u pb.proj_type in
       substl (c :: List.rev args) ty
 

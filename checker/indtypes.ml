@@ -32,11 +32,11 @@ let string_of_mp mp =
   if !Flags.debug then debug_string_of_mp mp else string_of_mp mp
 
 let prkn kn =
-  let (mp,_,l) = repr_kn kn in
+  let (mp,_,l) = KerName.repr kn in
   str(string_of_mp mp ^ "." ^ Label.to_string l)
 let prcon c =
-  let ck = canonical_con c in
-  let uk = user_con c in
+  let ck = Constant.canonical c in
+  let uk = Constant.user c in
   if KerName.equal ck uk then prkn uk else (prkn uk ++str"(="++prkn ck++str")")
 
 (* Same as noccur_between but may perform reductions.
@@ -528,7 +528,7 @@ let check_positivity env_ar mind params nrecp inds =
 (************************************************************************)
 
 let check_inductive env kn mib =
-  Flags.if_verbose ppnl (str "  checking ind: " ++ pr_mind kn); pp_flush ();
+  Flags.if_verbose ppnl (str "  checking ind: " ++ MutInd.print kn); pp_flush ();
   (* check mind_constraints: should be consistent with env *)
   let env = add_constraints (Univ.UContext.constraints mib.mind_universes) env in
   (* check mind_record : TODO ? check #constructor = 1 ? *)

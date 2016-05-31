@@ -18,7 +18,7 @@ let refresh_arity ar =
   let ctxt, hd = decompose_prod_assum ar in
   match hd with
       Sort (Type u) when not (Univ.is_univ_variable u) ->
-      let ul = Univ.Level.make empty_dirpath 1 in
+      let ul = Univ.Level.make DirPath.empty 1 in
       let u' = Univ.Universe.make ul in
       let cst = Univ.enforce_leq u u' Univ.empty_constraint in
       let ctx = Univ.ContextSet.make (Univ.LSet.singleton ul) cst in
@@ -70,7 +70,7 @@ let check_constant_declaration env kn cb =
 let lookup_module mp env =
   try Environ.lookup_module mp env
   with Not_found ->
-    failwith ("Unknown module: "^string_of_mp mp)
+    failwith ("Unknown module: "^ModPath.to_string mp)
 
 let mk_mtb mp sign delta =
   { mod_mp = mp;

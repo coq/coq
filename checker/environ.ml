@@ -112,7 +112,7 @@ let anomaly s = anomaly (Pp.str s)
 let add_constant kn cs env =
   if Cmap_env.mem kn env.env_globals.env_constants then
     Printf.ksprintf anomaly ("Constant %s is already defined")
-      (string_of_con kn);
+      (Constant.to_string kn);
   let new_constants =
     Cmap_env.add kn cs env.env_globals.env_constants in
   let new_globals =
@@ -172,12 +172,14 @@ let lookup_projection p env =
 let scrape_mind env kn=
   try
     KNmap.find kn env.env_globals.env_inductives_eq
-  with 
-      Not_found -> kn
+  with
+    Not_found -> kn
 
 let mind_equiv env (kn1,i1) (kn2,i2) =
   Int.equal i1 i2 &&
-  KerName.equal (scrape_mind env (user_mind kn1)) (scrape_mind env (user_mind kn2))
+  KerName.equal
+    (scrape_mind env (MutInd.user kn1))
+    (scrape_mind env (MutInd.user kn2))
 
 
 let lookup_mind kn env =
@@ -186,9 +188,9 @@ let lookup_mind kn env =
 let add_mind kn mib env =
   if Mindmap_env.mem kn env.env_globals.env_inductives then
     Printf.ksprintf anomaly ("Inductive %s is already defined")
-      (string_of_mind kn);
+      (MutInd.to_string kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
-  let kn1,kn2 =  user_mind kn,canonical_mind kn in
+  let kn1,kn2 =  MutInd.user kn, MutInd.canonical kn in
   let new_inds_eq = if KerName.equal kn1 kn2 then
     env.env_globals.env_inductives_eq
   else
@@ -205,7 +207,7 @@ let add_mind kn mib env =
 let add_modtype ln mtb env =
   if MPmap.mem ln env.env_globals.env_modtypes then
     Printf.ksprintf anomaly ("Module type %s is already defined")
-      (string_of_mp ln);
+      (ModPath.to_string ln);
   let new_modtypes = MPmap.add ln mtb env.env_globals.env_modtypes in
   let new_globals =
     { env.env_globals with
@@ -215,7 +217,7 @@ let add_modtype ln mtb env =
 let shallow_add_module mp mb env =
   if MPmap.mem mp env.env_globals.env_modules then
     Printf.ksprintf anomaly ("Module %s is already defined")
-      (string_of_mp mp);
+      (ModPath.to_string mp);
   let new_mods = MPmap.add mp mb env.env_globals.env_modules in
   let new_globals =
     { env.env_globals with
@@ -225,7 +227,7 @@ let shallow_add_module mp mb env =
 let shallow_remove_module mp env =
   if not (MPmap.mem mp env.env_globals.env_modules) then
     Printf.ksprintf anomaly ("Module %s is unknown")
-      (string_of_mp mp);
+      (ModPath.to_string mp);
   let new_mods = MPmap.remove mp env.env_globals.env_modules in
   let new_globals =
     { env.env_globals with

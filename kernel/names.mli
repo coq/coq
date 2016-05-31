@@ -766,7 +766,7 @@ val mind_of_kn : KerName.t -> mutual_inductive
 (** @deprecated Same as [MutInd.make1] *)
 
 val mind_of_kn_equiv : KerName.t -> KerName.t -> mutual_inductive
-(** @deprecated Same as [MutInd.make2] *)
+(** @deprecated Same as [MutInd.make] *)
 
 val make_mind : ModPath.t -> DirPath.t -> Label.t -> mutual_inductive
 (** @deprecated Same as [MutInd.make3] *)

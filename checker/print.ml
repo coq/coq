@@ -122,7 +122,7 @@ let print_pure_constr csr =
 	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
-      print_string (debug_string_of_mind sp)
+      print_string (MutInd.debug_to_string sp)
   and sp_con_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
@@ -131,7 +131,7 @@ let print_pure_constr csr =
 	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
-      print_string (debug_string_of_con sp)
+      print_string (Constant.debug_to_string sp)
 
   in
     try
