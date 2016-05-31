@@ -135,7 +135,7 @@ let to_coq_position = function
 END
 
 
-(** Signature of CLexer *)
+(** Signature of Lexer *)
 
 IFDEF CAMLP5 THEN
 

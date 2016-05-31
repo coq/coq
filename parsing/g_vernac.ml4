@@ -27,7 +27,7 @@ open Pcoq.Vernac_
 open Pcoq.Module
 
 let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at" ]
-let _ = List.iter CLexer.add_keyword vernac_kw
+let _ = List.iter Lexer.add_keyword vernac_kw
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)

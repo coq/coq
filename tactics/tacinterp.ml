@@ -491,7 +491,7 @@ let interp_fresh_id ist env sigma l =
 	String.concat "" (List.map (function
 	  | ArgArg s -> s
 	  | ArgVar (_,id) -> Id.to_string (interp_ident ist env sigma id)) l) in
-      let s = if CLexer.is_keyword s then s^"0" else s in
+      let s = if Lexer.is_keyword s then s^"0" else s in
       Id.of_string s in
   Tactics.fresh_id_in_env avoid id env
 

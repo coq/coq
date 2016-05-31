@@ -151,7 +151,7 @@ States
 
 Genprint
 Tok
-CLexer
+Lexer
 Ppextend
 Pputils
 Ppannotation

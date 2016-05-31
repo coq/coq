@@ -288,7 +288,7 @@ let rec discard_to_dot () =
   try
     Gram.entry_parse parse_to_dot top_buffer.tokens
   with
-    | Compat.Token.Error _ | CLexer.Error.E _ -> discard_to_dot ()
+    | Compat.Token.Error _ | Lexer.Error.E _ -> discard_to_dot ()
     | End_of_input -> raise End_of_input
     | e when Errors.noncritical e -> ()
 

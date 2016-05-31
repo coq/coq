@@ -29,7 +29,7 @@ let constr_kw =
     "Prop"; "Set"; "Type"; ".("; "_"; "..";
     "`{"; "`("; "{|"; "|}" ]
 
-let _ = List.iter CLexer.add_keyword constr_kw
+let _ = List.iter Lexer.add_keyword constr_kw
 
 let mk_cast = function
     (c,(_,None)) -> c
