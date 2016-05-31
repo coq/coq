@@ -473,10 +473,10 @@ GEXTEND Gram
     [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> Some (!@loc, pat)
       | IDENT "_eqn"; ":"; pat = naming_intropattern ->
         let msg = "Obsolete syntax \"_eqn:H\" could be replaced by \"eqn:H\"" in
-        msg_warning (strbrk msg); Some (!@loc, pat)
+        Feedback.msg_warning (strbrk msg); Some (!@loc, pat)
       | IDENT "_eqn" ->
         let msg = "Obsolete syntax \"_eqn\" could be replaced by \"eqn:?\"" in
-        msg_warning (strbrk msg); Some (!@loc, IntroAnonymous)
+        Feedback.msg_warning (strbrk msg); Some (!@loc, IntroAnonymous)
       | -> None ] ]
   ;
   as_name:

@@ -13,6 +13,8 @@ open Flags
 open Vernac
 open Pcoq
 
+let top_stderr x = msg_with !Pp_control.err_ft x
+
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
 
@@ -59,7 +61,7 @@ let prompt_char ic ibuf count =
     | ll::_ -> Int.equal ibuf.len ll
     | [] -> Int.equal ibuf.len 0
   in
-  if bol && not !print_emacs then msgerr (str (ibuf.prompt()));
+  if bol && not !print_emacs then top_stderr (str (ibuf.prompt()));
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
@@ -310,23 +312,23 @@ let read_sentence () =
 *)
 
 let do_vernac () =
-  msgerrnl (mt ());
-  if !print_emacs then msgerr (str (top_buffer.prompt()));
+  top_stderr (fnl());
+  if !print_emacs then top_stderr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
     Vernac.eval_expr (read_sentence ())
   with
     | End_of_input | Errors.Quit ->
-        msgerrnl (mt ()); pp_flush(); raise Errors.Quit
+        top_stderr (fnl ()); raise Errors.Quit
     | Errors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise Errors.Drop
-        else ppnl (str"Error: There is no ML toplevel." ++ fnl ())
+        else Feedback.msg_error (str"There is no ML toplevel.")
     | any ->
         let any = Errors.push any in
         Format.set_formatter_out_channel stdout;
         let msg = print_toplevel_error any ++ fnl () in
         pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
-        pp_flush ()
+        flush_all ()
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -354,7 +356,7 @@ let rec loop () =
     | Errors.Drop -> ()
     | Errors.Quit -> exit 0
     | any ->
-      msgerrnl (str"Anomaly: main loop exited with exception: " ++
+      Feedback.msg_error (str"Anomaly: main loop exited with exception: " ++
                 str (Printexc.to_string any) ++
                 fnl() ++ str"Please report.");
       loop ()

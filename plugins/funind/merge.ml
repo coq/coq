@@ -504,19 +504,19 @@ let rec merge_app c1 c2 id1 id2 shift filter_shift_stable =
   let lnk = Array.append shift.lnk1 shift.lnk2 in
   match c1 , c2 with
     | GApp(_,f1, arr1), GApp(_,f2,arr2) when isVarf id1 f1 && isVarf id2 f2 ->
-        let _ = prstr "\nICI1!\n";Pp.flush_all() in
+        let _ = prstr "\nICI1!\n" in
         let args = filter_shift_stable lnk (arr1 @ arr2) in
         GApp (Loc.ghost,GVar (Loc.ghost,shift.ident) , args)
     | GApp(_,f1, arr1), GApp(_,f2,arr2)  -> raise NoMerge
     | GLetIn(_,nme,bdy,trm) , _ ->
-        let _ = prstr "\nICI2!\n";Pp.flush_all() in
+        let _ = prstr "\nICI2!\n" in
         let newtrm = merge_app trm c2 id1 id2 shift filter_shift_stable in
         GLetIn(Loc.ghost,nme,bdy,newtrm)
     | _, GLetIn(_,nme,bdy,trm) ->
-        let _ = prstr "\nICI3!\n";Pp.flush_all() in
+        let _ = prstr "\nICI3!\n" in
         let newtrm = merge_app c1 trm id1 id2 shift filter_shift_stable in
         GLetIn(Loc.ghost,nme,bdy,newtrm)
-    | _ -> let _ = prstr "\nICI4!\n";Pp.flush_all() in
+    | _ -> let _ = prstr "\nICI4!\n" in
            raise NoMerge
 
 let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
@@ -527,14 +527,14 @@ let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
         GApp (Loc.ghost,GVar(Loc.ghost,shift.ident) , args)
           (* FIXME: what if the function appears in the body of the let? *)
     | GLetIn(_,nme,bdy,trm) , _ ->
-        let _ = prstr "\nICI2 '!\n";Pp.flush_all() in
+      let _ = prstr "\nICI2 '!\n" in
         let newtrm = merge_app_unsafe trm c2 shift filter_shift_stable in
         GLetIn(Loc.ghost,nme,bdy,newtrm)
     | _, GLetIn(_,nme,bdy,trm) ->
-        let _ = prstr "\nICI3 '!\n";Pp.flush_all() in
+        let _ = prstr "\nICI3 '!\n" in
         let newtrm = merge_app_unsafe c1 trm shift filter_shift_stable in
         GLetIn(Loc.ghost,nme,bdy,newtrm)
-    | _ -> let _ = prstr "\nICI4 '!\n";Pp.flush_all() in raise NoMerge
+    | _ -> let _ = prstr "\nICI4 '!\n" in raise NoMerge
 
 
 

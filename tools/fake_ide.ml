@@ -36,10 +36,10 @@ let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
-    if Pp.is_message xml then
-      let message = Pp.to_message xml in
-      let level = message.Pp.message_level in
-      let content = message.Pp.message_content in
+    if Feedback.is_message xml then
+      let message = Feedback.to_message xml in
+      let level = message.Feedback.message_level in
+      let content = message.Feedback.message_content in
       logger level content;
       loop ()
     else if Feedback.is_feedback xml then

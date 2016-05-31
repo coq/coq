@@ -50,11 +50,11 @@ type bound_ident_map = Id.t Id.Map.t
 exception PatternMatchingFailure
 
 let warn_bound_meta name =
-  msg_warning (str "Collision between bound variable " ++ pr_id name ++
+  Feedback.msg_warning (str "Collision between bound variable " ++ pr_id name ++
     str " and a metavariable of same name.")
 
 let warn_bound_bound name =
-  msg_warning (str "Collision between bound variables of name " ++ pr_id name)
+  Feedback.msg_warning (str "Collision between bound variables of name " ++ pr_id name)
 
 let constrain n (ids, m as x) (names, terms as subst) =
   try

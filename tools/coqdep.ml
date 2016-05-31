@@ -502,7 +502,7 @@ let coqdep () =
     let user = coqlib//"user-contrib" in
     if Sys.file_exists user then add_rec_dir_no_import add_coqlib_known user [];
     List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s [])
-      (Envars.xdg_dirs (fun x -> Pp.msg_warning (Pp.str x)));
+      (Envars.xdg_dirs (fun x -> Feedback.msg_warning (Pp.str x)));
     List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s []) Envars.coqpath;
   end;
   List.iter (fun (f,d) -> add_mli_known f d ".mli") !mliAccu;
@@ -527,4 +527,4 @@ let _ =
     coqdep ()
   with Errors.UserError(s,p) ->
     let pp = if s <> "_" then Pp.(str s ++ str ": " ++ p) else p in
-    Pp.msgerrnl pp
+    Feedback.msg_error pp

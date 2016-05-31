@@ -184,7 +184,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
                   (match dest_recarg ra with
 	            | Mrec (_,j) when is_rec -> (depPvect.(j),rest)
 	            | Imbr _  ->
-		        msg_warning (strbrk "Ignoring recursive call");
+		        Feedback.msg_warning (strbrk "Ignoring recursive call");
 		        (None,rest)
                     | _ -> (None, rest))
 	  in

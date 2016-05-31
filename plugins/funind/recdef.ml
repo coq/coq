@@ -214,17 +214,17 @@ let print_debug_queue b e =
     begin
       let lmsg,goal = Stack.pop debug_queue in 
       if b then 
-	Pp.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal" ++ fnl() ++ goal))
+	Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal" ++ fnl() ++ goal))
       else
 	begin
-	  Pp.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal));
+	  Feedback.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal));
 	end;
       (* print_debug_queue false e; *)
     end
 
 let observe strm =
   if do_observe ()
-  then Pp.msg_debug strm
+  then Feedback.msg_debug strm
   else ()
 
 
@@ -1537,7 +1537,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       with e when Errors.noncritical e ->
 	begin
 	  if do_observe ()
-	  then msg_debug (str "Cannot create equation Lemma " ++ Errors.print e)
+	  then Feedback.msg_debug (str "Cannot create equation Lemma " ++ Errors.print e)
 	  else anomaly (Pp.str "Cannot create equation Lemma")
 	  ;
 	  true

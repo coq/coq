@@ -72,7 +72,7 @@ let add_load_path phys_path coq_path ~implicit =
         let () =
           (* Do not warn when overriding the default "-I ." path *)
           if not (DirPath.equal old_path Nameops.default_root_prefix) then
-            msg_warning
+            Feedback.msg_warning
               (str phys_path ++ strbrk " was previously bound to " ++
                  pr_dirpath old_path ++ strbrk "; it is remapped to " ++
                  pr_dirpath coq_path) in

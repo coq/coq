@@ -54,7 +54,7 @@ let register_ml_tactic ?(overwrite = false) s (t : ml_tactic array) =
     if MLTacMap.mem s !tac_tab then
       if overwrite then
         let () = tac_tab := MLTacMap.remove s !tac_tab in
-        msg_warning (str "Overwriting definition of tactic " ++ pr_tacname s)
+        Feedback.msg_warning (str "Overwriting definition of tactic " ++ pr_tacname s)
       else
         Errors.anomaly (str "Cannot redeclare tactic " ++ pr_tacname s ++ str ".")
   in

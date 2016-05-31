@@ -128,7 +128,7 @@ let suggest_Proof_using name env vars ids_typ context_ids =
   if S.equal all_needed fwd_typ then valid (str "Type*");
   if S.equal all all_needed then valid(str "All");
   valid (pr_set false needed);
-  msg_info (
+  Feedback.msg_info (
     str"The proof of "++ str name ++ spc() ++
     str "should start with one of the following commands:"++spc()++
     v 0 (

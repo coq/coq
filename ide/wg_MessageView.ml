@@ -73,8 +73,8 @@ let message_view () : message_view =
 
     method push level msg =
       let tags = match level with
-      | Pp.Error -> [Tags.Message.error]
-      | Pp.Warning -> [Tags.Message.warning]
+      | Feedback.Error -> [Tags.Message.error]
+      | Feedback.Warning -> [Tags.Message.warning]
       | _ -> []
       in
       let rec non_empty = function
@@ -88,7 +88,7 @@ let message_view () : message_view =
         push#call (level, msg)
       end
 
-    method add msg = self#push Pp.Notice msg
+    method add msg = self#push Feedback.Notice msg
 
     method add_string s = self#add (Richpp.richpp_of_string s)
 

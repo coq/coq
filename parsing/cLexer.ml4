@@ -199,7 +199,7 @@ let check_keyword str =
 let check_keyword_to_add s =
   try check_keyword s
   with Error.E (UnsupportedUnicode unicode) ->
-    Flags.if_verbose msg_warning
+    Flags.if_verbose Feedback.msg_warning
       (strbrk (Printf.sprintf "Token '%s' contains unicode character 0x%x \
                                which will not be parsable." s unicode))
 
@@ -322,7 +322,7 @@ let rec string in_comments bp len = parser
         | [< '')'; s >] ->
             let () = match in_comments with
             | Some 0 ->
-                msg_warning
+                Feedback.msg_warning
                   (strbrk
                      "Not interpreting \"*)\" as the end of current \
                       non-terminated comment because it occurs in a \
@@ -389,9 +389,10 @@ let comment_stop ep =
     let bp = match !comment_begin with
         Some bp -> bp
       | None ->
-          msgerrnl(str "No begin location for comment '"
-                   ++ str current_s ++str"' ending at  "
-                   ++ int ep);
+          Feedback.msg_notice
+            (str "No begin location for comment '"
+             ++ str current_s ++str"' ending at  "
+             ++ int ep);
           ep-1 in
     Pp.comments := ((bp,ep),current_s) :: !Pp.comments);
   Buffer.clear current;

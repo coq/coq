@@ -1307,7 +1307,7 @@ let enforce_prop_bound_names rename tac =
             mkProd (Anonymous,t,aux (push_rel (LocalAssum (Anonymous,t)) env) sigma (i-1) t')
         | LetIn (na,c,t,t') ->
             mkLetIn (na,c,t,aux (push_rel (LocalDef (na,c,t)) env) sigma (i-1) t')
-        | _ -> print_int i; Pp.msg (print_constr t); assert false in
+        | _ -> print_int i; Feedback.msg_notice (print_constr t); assert false in
       let rename_branch i =
         Proofview.Goal.nf_enter { enter = begin fun gl ->
           let env = Proofview.Goal.env gl in
@@ -2939,7 +2939,7 @@ let expand_hyp id = Tacticals.New.tclTRY (unfold_body id) <*> clear [id]
 
 let check_unused_names names =
   if not (List.is_empty names) && Flags.is_verbose () then
-    msg_warning
+    Feedback.msg_warning
       (str"Unused introduction " ++ str (String.plural (List.length names) "pattern")
        ++ str": " ++ prlist_with_sep spc 
 	 (Miscprint.pr_intro_pattern 

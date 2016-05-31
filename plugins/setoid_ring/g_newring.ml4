@@ -60,9 +60,9 @@ VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
       let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
       add_theory id (ic t) set k cst (pre,post) power sign div]
   | [ "Print" "Rings" ] => [Vernac_classifier.classify_as_query] -> [
-    msg_notice (strbrk "The following ring structures have been declared:");
+    Feedback.msg_notice (strbrk "The following ring structures have been declared:");
     Spmap.iter (fun fn fi ->
-      msg_notice (hov 2
+      Feedback.msg_notice (hov 2
         (Ppconstr.pr_id (Libnames.basename fn)++spc()++
           str"with carrier "++ pr_constr fi.ring_carrier++spc()++
           str"and equivalence relation "++ pr_constr fi.ring_req))
@@ -89,9 +89,9 @@ VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
     let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods l in
     add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign div]
 | [ "Print" "Fields" ] => [Vernac_classifier.classify_as_query] -> [
-    msg_notice (strbrk "The following field structures have been declared:");
+    Feedback.msg_notice (strbrk "The following field structures have been declared:");
     Spmap.iter (fun fn fi ->
-      msg_notice (hov 2
+      Feedback.msg_notice (hov 2
         (Ppconstr.pr_id (Libnames.basename fn)++spc()++
           str"with carrier "++ pr_constr fi.field_carrier++spc()++
           str"and equivalence relation "++ pr_constr fi.field_req))

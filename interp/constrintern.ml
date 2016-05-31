@@ -1069,7 +1069,7 @@ let alias_of als = match als.alias_ids with
 | id :: _ -> Name id
 
 let message_redundant_alias id1 id2 =
-  msg_warning
+  Feedback.msg_warning
     (str "Alias variable " ++ pr_id id1 ++ str " is merged with " ++ pr_id id2)
 
 (** {6 Expanding notations }

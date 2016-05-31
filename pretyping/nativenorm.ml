@@ -389,16 +389,16 @@ let native_norm env sigma c ty =
   let code, upd = mk_norm_code penv sigma prefix c in
   match Nativelib.compile ml_filename code with
     | true, fn ->
-        if !Flags.debug then Pp.msg_debug (Pp.str "Running norm ...");
+        if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
         let t0 = Sys.time () in
         Nativelib.call_linker ~fatal:true prefix fn (Some upd);
         let t1 = Sys.time () in
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
-        if !Flags.debug then Pp.msg_debug (Pp.str time_info);
+        if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         let res = nf_val env !Nativelib.rt1 ty in
         let t2 = Sys.time () in
         let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
-        if !Flags.debug then Pp.msg_debug (Pp.str time_info);
+        if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         res
     | _ -> anomaly (Pp.str "Compilation failure") 
 

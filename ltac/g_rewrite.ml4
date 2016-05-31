@@ -262,5 +262,5 @@ TACTIC EXTEND setoid_transitivity
 END
 
 VERNAC COMMAND EXTEND PrintRewriteHintDb CLASSIFIED AS QUERY
-  [ "Print" "Rewrite" "HintDb" preident(s) ] -> [ Pp.msg_notice (Autorewrite.print_rewrite_hintdb s) ]
+  [ "Print" "Rewrite" "HintDb" preident(s) ] -> [ Feedback.msg_notice (Autorewrite.print_rewrite_hintdb s) ]
 END

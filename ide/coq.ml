@@ -291,17 +291,17 @@ let rec check_errors = function
 | `OUT :: _ -> raise (TubeError "OUT")
 
 let handle_intermediate_message handle xml =
-  let message = Pp.to_message xml in
-  let level = message.Pp.message_level in
-  let content = message.Pp.message_content in
+  let message = Feedback.to_message xml in
+  let level = message.Feedback.message_level in
+  let content = message.Feedback.message_content in
   let logger = match handle.waiting_for with
     | Some (_, l) -> l 
     | None -> function
-        | Pp.Error -> fun s -> Minilib.log ~level:`ERROR (xml_to_string s)
-        | Pp.Info -> fun s -> Minilib.log ~level:`INFO  (xml_to_string s)
-        | Pp.Notice -> fun s -> Minilib.log ~level:`NOTICE  (xml_to_string s)
-        | Pp.Warning -> fun s -> Minilib.log ~level:`WARNING  (xml_to_string s)
-        | Pp.Debug _ -> fun s -> Minilib.log ~level:`DEBUG (xml_to_string s)
+        | Feedback.Error   -> fun s -> Minilib.log ~level:`ERROR   (xml_to_string s)
+        | Feedback.Info    -> fun s -> Minilib.log ~level:`INFO    (xml_to_string s)
+        | Feedback.Notice  -> fun s -> Minilib.log ~level:`NOTICE  (xml_to_string s)
+        | Feedback.Warning -> fun s -> Minilib.log ~level:`WARNING (xml_to_string s)
+        | Feedback.Debug _ -> fun s -> Minilib.log ~level:`DEBUG   (xml_to_string s)
   in
   logger level (Richpp.richpp_of_xml content)
 
@@ -335,7 +335,7 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
-    if Pp.is_message xml then begin
+    if Feedback.is_message xml then begin
       handle_intermediate_message handle xml;
       loop ()
     end else if Feedback.is_feedback xml then begin

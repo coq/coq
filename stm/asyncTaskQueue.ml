@@ -104,7 +104,8 @@ module Make(T : Task) = struct
       marshal_err ("unmarshal_more_data: "^s)
 
   let report_status ?(id = !Flags.async_proofs_worker_id) s =
-    Pp.feedback ~state_id:Stateid.initial (Feedback.WorkerStatus(id, s))
+    let open Feedback in
+    feedback ~id:(State Stateid.initial) (WorkerStatus(id, s))
 
   module Worker = Spawn.Sync(struct end)
 
@@ -302,8 +303,8 @@ module Make(T : Task) = struct
   let main_loop () =
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback fb) []; flush oc in
-    Pp.set_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
-    Pp.log_via_feedback (fun msg -> Richpp.repr (Richpp.richpp_of_pp msg));
+    Feedback.set_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
+    Feedback.set_logger Feedback.feedback_logger;
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
       match unmarshal_more_data (Option.get !slave_ic) with

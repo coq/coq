@@ -117,7 +117,7 @@ let declare_tactic loc s c cl = match cl with
         Tacenv.register_ml_tactic $se$ [|$tac$|];
         Mltop.declare_cache_obj obj $plugin_name$; }
       with [ e when Errors.noncritical e ->
-        Pp.msg_warning
+        Feedback.msg_warning
           (Pp.app
             (Pp.str ("Exception in tactic extend " ^ $entry$ ^": "))
             (Errors.print e)) ]; } >>
@@ -135,7 +135,7 @@ let declare_tactic loc s c cl = match cl with
         Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc s cl$);
         Mltop.declare_cache_obj $obj$ $plugin_name$; }
       with [ e when Errors.noncritical e ->
-        Pp.msg_warning
+        Feedback.msg_warning
           (Pp.app
             (Pp.str ("Exception in tactic extend " ^ $entry$ ^": "))
             (Errors.print e)) ]; } >>

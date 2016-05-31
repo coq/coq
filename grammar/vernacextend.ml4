@@ -128,7 +128,7 @@ let declare_command loc s c nt cl =
           CList.iteri (fun i (depr, f) -> Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
           CList.iteri (fun i f -> Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$ }
 	with [ e when Errors.noncritical e ->
-	  Pp.msg_warning
+	  Feedback.msg_warning
 	    (Pp.app
 	       (Pp.str ("Exception in vernac extend " ^ $se$ ^": "))
 	       (Errors.print e)) ];

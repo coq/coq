@@ -67,6 +67,7 @@
 "pretyping": include
 "printing": include
 "proofs": include
+"stm": include
 "tactics": include
 "theories": include
 "tools": include

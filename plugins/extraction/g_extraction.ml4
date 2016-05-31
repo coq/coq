@@ -101,7 +101,7 @@ END
 
 VERNAC COMMAND EXTEND PrintExtractionInline CLASSIFIED AS QUERY
 | [ "Print" "Extraction" "Inline" ]
-  -> [ msg_info (print_extraction_inline ()) ]
+  -> [Feedback. msg_info (print_extraction_inline ()) ]
 END
 
 VERNAC COMMAND EXTEND ResetExtractionInline CLASSIFIED AS SIDEFF
@@ -123,7 +123,7 @@ END
 
 VERNAC COMMAND EXTEND PrintExtractionBlacklist CLASSIFIED AS QUERY
 | [ "Print" "Extraction" "Blacklist" ]
-  -> [ msg_info (print_extraction_blacklist ()) ]
+  -> [ Feedback.msg_info (print_extraction_blacklist ()) ]
 END
 
 VERNAC COMMAND EXTEND ResetExtractionBlacklist CLASSIFIED AS SIDEFF
