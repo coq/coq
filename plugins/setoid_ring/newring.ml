@@ -34,15 +34,6 @@ open Proofview.Notations
 (****************************************************************************)
 (* controlled reduction *)
 
-(** ppedrot: something dubious here, we're obviously using evars the wrong
-    way. FIXME! *)
-
-let mark_arg i c = mkEvar(Evar.unsafe_of_int i,[|c|])
-let unmark_arg f c =
-  match destEvar c with
-    | (i,[|c|]) -> f (Evar.repr i) c
-    | _ -> assert false
-
 type protect_flag = Eval|Prot|Rec
 
 let tag_arg tag_rec map subs i c =
@@ -75,12 +66,10 @@ and mk_clos_app_but f_map subs f args n =
     let fargs, args' = Array.chop n args in
     let f' = mkApp(f,fargs) in
     match f_map (global_of_constr_nofail f') with
-        Some map ->
-          mk_clos_deep
-            (fun s' -> unmark_arg (tag_arg (mk_clos_but f_map s') map s'))
-            subs
-            (mkApp (mark_arg (-1) f', Array.mapi mark_arg args'))
-      | None -> mk_clos_app_but f_map subs f args (n+1)
+    | Some map ->
+       let f i t = tag_arg (mk_clos_but f_map subs) map subs i t in
+       mk_red (FApp (f (-1) f', Array.mapi f args'))
+    | None -> mk_atom (mkApp (f, args))
 
 let interp_map l t =
   try Some(List.assoc_f eq_gr t l) with Not_found -> None
