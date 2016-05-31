@@ -100,7 +100,7 @@ let deactivate_notation_printing ntn scopt =
   | Some _ ->
      let nr = NotationRule (scopt, ntn) in
      if List.mem nr !print_non_active_notations then
-       Pp.msg_warning (str "Notation" ++ spc () ++ str ntn ++ spc ()
+       Feedback.msg_warning (str "Notation" ++ spc () ++ str ntn ++ spc ()
                        ++ str "is already inactive" ++ show_scope scopt ++ str ".")
      else print_non_active_notations := nr :: !print_non_active_notations
 
@@ -111,14 +111,14 @@ let reactivate_notation_printing ntn scopt =
       (fun x -> x = (NotationRule (scopt, ntn)))
       !print_non_active_notations
   with Not_found ->
-    Pp.msg_warning (str "Notation" ++ spc () ++ str ntn ++ spc ()
+    Feedback.msg_warning (str "Notation" ++ spc () ++ str ntn ++ spc ()
                     ++ str "is already activated" ++ show_scope scopt ++ str ".")
 
 let show_printing_inactive_notations () =
-  let _ = Pp.msg_notice (str "Inactive notations:") in
+  let _ = Feedback.msg_notice (str "Inactive notations:") in
   List.iter
     (function
-    | NotationRule (scopt, ntn) -> Pp.msg_notice (str ntn ++ show_scope scopt)
+    | NotationRule (scopt, ntn) -> Feedback.msg_notice (str ntn ++ show_scope scopt)
     | SynDefRule _ -> ())
     !print_non_active_notations
 
@@ -497,7 +497,7 @@ let is_projection nargs = function
 	 else None
      with Not_found -> None)
   | _ -> None
-	
+
 let is_hole = function CHole _ | CEvar _ -> true | _ -> false
 
 let is_significant_implicit a =
