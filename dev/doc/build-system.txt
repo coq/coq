@@ -113,15 +113,20 @@ Targets for cleaning various parts:
 
  - docclean: clean documentation
 
-.ml4 files
-----------
+.ml4/.mlp files
+---------------
 
-If a .ml4 file uses a grammar extension from Coq (such as grammar.cma
-or q_constr.cmo), it must contain a line like:
+There is now two kinds of preprocessed files : 
+ - a .mlp do not need grammar.cma (they are in grammar/ and tools/compat5*.mlp)
+ - a .ml4 is now always preprocessed with grammar.cma (and q_constr.cmo),
+   except coqide_main.ml4 and its specific rule
+
+This classification replaces the old mechanism of declaring the use
+of a grammar extension via a line of the form:
  (*i camlp4deps: "grammar.cma q_constr.cmo" i*)
 
 The use of (*i camlp4use: ... i*) to mention uses of standard
-extension such as IFDEF has been discontinued, the Makefile now
+extension such as IFDEF has also been discontinued, the Makefile now
 always calls camlp4 with pa_macros.cmo and a few others by default.
 
 For debugging a Coq grammar extension, it could be interesting

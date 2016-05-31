@@ -63,7 +63,7 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 CORESRCDIRS:=\
   config 	lib		kernel		kernel/byterun	library \
   proofs 	tactics 	pretyping	interp		stm \
-  toplevel	parsing	printing	grammar	        intf	engine	ltac
+  toplevel	parsing 	printing	intf	engine	ltac
 
 PLUGINS:=\
   omega		romega 		micromega 	quote \

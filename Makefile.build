@@ -25,29 +25,23 @@ world: revision coq coqide documentation
 include Makefile.common
 include Makefile.doc
 
-# In a first phase, we restrict to the basic .ml4 (the ones without grammar.cma)
+MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
+DEPENDENCIES := \
+ $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(CFILES) $(VFILES))
 
-ifdef BUILDGRAMMAR
- MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4BASEFILES:.ml4=.ml)
- CURFILES := $(MLFILES) $(MLIFILES) $(ML4BASEFILES) grammar/grammar.mllib
-else
- MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
- CURFILES := $(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(CFILES) $(VFILES)
-endif
+# This include below will lauch the build of all concerned .d.
+# The - at front is for disabling warnings about currently missing ones.
+# For creating the missing .d, make will recursively build things like
+# coqdep_boot (for the .v.d files) or grammar.cma (for .ml4 -> .ml -> .ml.d).
 
-CURDEPS:=$(addsuffix .d, $(CURFILES))
+-include $(DEPENDENCIES)
 
 # All dependency includes must be declared secondary, otherwise make will
 # delete them if it decided to build them by dependency instead of because
 # of include, and they will then be automatically deleted, leading to an
 # infinite loop.
 
-.SECONDARY: $(CURDEPS) $(GENFILES) $(ML4FILES:.ml4=.ml)
-
-# This include below will lauch the build of all concerned .d.
-# The - at front is for disabling warnings about currently missing ones.
-
--include $(CURDEPS)
+.SECONDARY: $(DEPENDENCIES) $(GENFILES) $(ML4FILES:.ml4=.ml)
 
 
 ###########################################################################
@@ -117,7 +111,7 @@ $(if $(findstring $@,$(PRIVATEBINARIES)),\
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
-CAMLP4DEPS=$(shell LC_ALL=C sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $(1) \#))
+CAMLP4DEPS:=tools/compat5.cmo grammar/grammar.cma grammar/q_constr.cmo
 ifeq ($(CAMLP4),camlp5)
 CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 else
@@ -138,7 +132,6 @@ P4CMA:=gramlib.cma
 else
 P4CMA:=camlp4lib.cma
 endif
-
 
 ###########################################################################
 # Infrastructure for the rest of the Makefile
@@ -202,6 +195,74 @@ kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
 kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' $< | \
 	awk -f kernel/make-opcodes $(TOTARGET)
+
+
+###########################################################################
+#  grammar/grammar.cma
+###########################################################################
+
+## In this part, we compile grammar/grammar.cma (and grammar/q_constr.cmo)
+## without relying on .d dependency files, for bootstraping the creation
+## and inclusion of these .d files
+
+## Explicit dependencies for grammar stuff
+
+GRAMBASEDEPS := grammar/gramCompat.cmo grammar/q_util.cmi
+GRAMCMO := \
+ grammar/gramCompat.cmo grammar/q_util.cmo \
+ grammar/argextend.cmo grammar/tacextend.cmo grammar/vernacextend.cmo
+
+grammar/q_util.cmi : grammar/gramCompat.cmo
+grammar/argextend.cmo : $(GRAMBASEDEPS)
+grammar/q_constr.cmo : $(GRAMBASEDEPS)
+grammar/q_util.cmo : $(GRAMBASEDEPS)
+grammar/tacextend.cmo : $(GRAMBASEDEPS) grammar/argextend.cmo
+grammar/vernacextend.cmo : $(GRAMBASEDEPS) grammar/tacextend.cmo \
+ grammar/argextend.cmo
+
+## Ocaml compiler with the right options and -I for grammar
+
+GRAMC := $(OCAMLFIND) ocamlc $(CAMLFLAGS) $(CAMLDEBUG) $(USERFLAGS) \
+ -I $(MYCAMLP4LIB) -I grammar
+
+## Specific rules for grammar.cma
+
+grammar/grammar.cma : $(GRAMCMO)
+	$(SHOW)'Testing $@'
+	@touch test.mlp
+	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $^ -impl test.mlp -o test.ml
+	$(HIDE)$(GRAMC) test.ml -o test-grammar
+	@rm -f test-grammar test.*
+	$(SHOW)'OCAMLC -a $@'   
+	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
+
+## Support of Camlp5 and Camlp5
+
+# NB: compatibility modules for camlp4:
+# - tools/compat5.cmo changes GEXTEND into EXTEND. Safe, always loaded
+# - tools/compat5b.cmo changes EXTEND into EXTEND Gram. Interact badly with
+#    syntax such that VERNAC EXTEND, we only load it in grammar/
+
+ifeq ($(CAMLP4),camlp4)
+ COMPATCMO:=tools/compat5.cmo tools/compat5b.cmo
+ GRAMP4USE:=$(COMPATCMO) -D$(CAMLVERSION)
+ GRAMPP:=$(CAMLP4O) -I $(MYCAMLP4LIB) $(GRAMP4USE) $(CAMLP4COMPAT) -impl
+else
+ COMPATCMO:=
+ GRAMP4USE:=$(COMPATCMO) pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
+ GRAMPP:=$(CAMLP4O) -I $(MYCAMLP4LIB) $(GRAMP4USE) $(CAMLP4COMPAT) -impl
+endif
+
+## Rules for standard .mlp and .mli files in grammar/
+
+grammar/%.cmo: grammar/%.mlp | $(COMPATCMO)
+	$(SHOW)'OCAMLC -c -pp $<'
+	$(HIDE)$(GRAMC) -c -pp '$(GRAMPP)' -impl $<
+
+grammar/%.cmi: grammar/%.mli
+	$(SHOW)'OCAMLC -c $<'
+	$(HIDE)$(GRAMC) -c $<
+
 
 ###########################################################################
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
@@ -608,8 +669,8 @@ tools: $(TOOLS) $(DEBUGPRINTERS) $(OCAMLLIBDEP)
 # coqdep_boot : a basic version of coqdep, with almost no dependencies.
 
 # Here it is important to mention .ml files instead of .cmo in order
-# to avoid using implicit rules and hence .ml.d files that would need
-# coqdep_boot.
+# to avoid using implicit rules : at the time coqdep_boot is being built,
+# some .ml.d files may still be missing or not taken in account yet by make.
 
 COQDEPBOOTSRC := \
  lib/minisys.ml \
@@ -621,13 +682,13 @@ $(COQDEPBOOT): $(COQDEPBOOTSRC)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I tools, unix)
 
-OCAMLLIBDEPSRC:= tools/ocamllibdep.ml
+# Same for ocamllibdep
 
-$(OCAMLLIBDEP): $(OCAMLLIBDEPSRC)
+$(OCAMLLIBDEP): tools/ocamllibdep.ml
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I tools, unix)
 
-# the full coqdep
+# The full coqdep (unused by this build, but distributed by make install)
 
 $(COQDEP): $(patsubst %.cma,%$(BESTLIB),$(COQDEPCMO:.cmo=$(BESTOBJ)))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -680,8 +741,6 @@ tools/compat5b.cmo: tools/compat5b.mlp
 	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) $(CAMLP4FLAGS) -impl' -impl $<
 else
 tools/compat5.cmo: tools/compat5.ml
-	$(OCAMLC) -c $<
-tools/compat5b.cmo: tools/compat5b.ml
 	$(OCAMLC) -c $<
 endif
 
@@ -901,15 +960,6 @@ dev/printers.cma: | dev/printers.mllib.d
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $^ -linkall -a -o $@
 
-grammar/grammar.cma: | grammar/grammar.mllib.d
-	$(SHOW)'Testing $@'
-	@touch test.ml4
-	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $^ -impl test.ml4 -o test.ml
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) test.ml -o test-grammar
-	@rm -f test-grammar test.*
-	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $^ -linkall -a -o $@
-
 ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
 	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
@@ -1039,15 +1089,10 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)sed -e "s/\([^ ]\{1,\}\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
 	$(HIDE)echo "let _=Mltop.add_known_module\"$(notdir $*)\"" >> $@
 
-# NB: compatibility modules for camlp4: 
-# - tools/compat5.cmo changes GEXTEND into EXTEND. Safe, always loaded
-# - tools/compat5b.cmo changes EXTEND into EXTEND Gram. Interact badly with
-#    syntax such that VERNAC EXTEND, we only load it for a few files via camlp4deps
-
-%.ml: %.ml4 | %.ml4.d tools/compat5.cmo tools/compat5b.cmo
+%.ml: %.ml4 | $(CAMLP4DEPS)
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) tools/compat5.cmo \
-	  $(call CAMLP4DEPS,$<) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) \
+	  $(CAMLP4DEPS) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
 
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
 	$(SHOW)'COQC      $<'
@@ -1062,13 +1107,6 @@ endif
 ###########################################################################
 # Dependencies
 ###########################################################################
-
-# .ml4.d contains the dependencies to generate the .ml from the .ml4
-# NOT to generate object code.
-
-%.ml4.d: $(D_DEPEND_BEFORE_SRC) %.ml4
-	$(SHOW)'CAMLP4DEPS $<'
-	$(HIDE)echo "$*.ml: $(if $(NO_RECOMPILE_ML4),$(ORDER_ONLY_SEP)) $(call CAMLP4DEPS,$<)" $(TOTARGET)
 
 # Since OCaml 3.12.1, we could use again ocamldep directly, thanks to
 # the option -ml-synonym
