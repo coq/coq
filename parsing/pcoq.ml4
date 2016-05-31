@@ -404,6 +404,9 @@ module Tactic =
     (* For Ltac definition *)
     let tacdef_body = Gram.entry_create "tactic:tacdef_body"
 
+    (* For goal selector *)
+    let selector = Gram.entry_create "tactic:selector"
+
   end
 
 module Vernac_ =

@@ -34,8 +34,22 @@ Qed.
 
 Goal True -> True.
 Proof.
-  intros y.
+  intros y; 1-2 : repeat idtac.
+  1-1:match goal with y : _ |- _ => let x := y in idtac x end.
   Fail 1-1:let x := y in idtac x.
   1:let x := y in idtac x.
   exact I.
+Qed.
+
+Goal True /\ (True /\ True).
+Proof.
+  dup.
+  - split; 2: (split; exact I).
+    exact I.
+  - split; 2: split; exact I.
+Qed.
+
+Goal True -> exists (x : Prop), x.
+Proof.
+  intro H; eexists ?[x]; ?[x]: exact True; assumption.
 Qed.

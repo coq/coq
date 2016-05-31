@@ -34,6 +34,13 @@ type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use 
 
 type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
 
+type goal_selector =
+  | SelectNth of int
+  | SelectList of (int * int) list
+  | SelectId of Id.t
+  | SelectAll
+  | SelectAllParallel
+
 type 'a core_induction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of Id.t located
@@ -290,6 +297,7 @@ and 'a gen_tactic_expr =
       ('p,'a gen_tactic_expr) match_rule list
   | TacFun of 'a gen_tactic_fun_ast
   | TacArg of 'a gen_tactic_arg located
+  | TacSelect of goal_selector * 'a gen_tactic_expr
   (* For ML extensions *)
   | TacML of Loc.t * ml_tactic_name * 'l generic_argument list
   (* For syntax extensions *)
