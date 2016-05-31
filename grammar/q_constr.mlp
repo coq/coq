@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "tools/compat5b.cmo" i*)
-
 open Q_util
 open GramCompat
 open Pcaml

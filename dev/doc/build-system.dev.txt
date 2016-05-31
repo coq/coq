@@ -30,6 +30,11 @@ HISTORY:
     restricted set of .ml4 (see variable BUILDGRAMMAR).
   - then on the true target asked by the user.
 
+* June 2016 (Pierre Letouzey)
+  The files in grammar/ are now self-contained, we could compile
+  grammar.cma (and q_constr.cmo) directly, no need for a separate
+  subcall to make nor awkward include-failed-and-retry.
+
     
 ---------------------------------------------------------------------------
 
@@ -59,29 +64,14 @@ Cons:
 Makefiles hierachy
 ------------------
 
-Le Makefile a été séparé en plusieurs fichiers :
+The Makefile is separated in several files :
 
-- Makefile: coquille vide qui lançant Makefile.build sauf pour
-  clean et quelques petites choses ne nécessitant par de calculs
-  de dépendances.
-- Makefile.common : définitions des variables (essentiellement des
-  listes de fichiers)
-- Makefile.build : contient les regles de compilation, ainsi que
-  le "include" des dépendances (restreintes ou non selon la variable
-  BUILDGRAMMAR).
-- Makefile.doc : regles specifiques à la compilation de la documentation.
-
-
-Parallélisation
----------------
-
-Il y a actuellement un double appel interne à "make -f Makefile.build",
-d'abord pour construire grammar.cma/q_constr.cmo, puis le reste.
-Cela signifie que ce makefile est un petit peu moins parallélisable
-que strictement possible en théorie: par exemple, certaines choses
-faites lors du second make pourraient être faites en parallèle avec
-le premier. En pratique, ce premier make va suffisemment vite pour
-que cette limitation soit peu gênante.
+- Makefile: wrapper that triggers a call to Makefile.build, except for
+  clean and a few other little things doable without dependency analysis.
+- Makefile.common : variable definitions (mostly lists of files or
+  directories)
+- Makefile.build : contains compilation rules, and the "include" of dependencies
+- Makefile.doc : specific rules for compiling the documentation.
 
 
 FIND_VCS_CLAUSE

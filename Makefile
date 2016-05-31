@@ -63,15 +63,10 @@ define findx
  $(shell find . $(FIND_VCS_CLAUSE) '(' -name $(1) ')' -exec $(2) {} \; | sed 's|^\./||')
 endef
 
-# We now discriminate .ml4 files according to their need of grammar.cma
-# or q_constr.cmo
-USEGRAMMAR := '(\*.*camlp4deps.*grammar'
-
 ## Files in the source tree
 
 LEXFILES := $(call find, '*.mll')
 export MLLIBFILES := $(call find, '*.mllib')
-export ML4BASEFILES := $(call findx, '*.ml4', grep -L -e $(USEGRAMMAR))
 export ML4FILES := $(call find, '*.ml4')
 export CFILES := $(call find, '*.c')
 
@@ -150,10 +145,7 @@ endif
 
 MAKE_OPTS := --warn-undefined-variable --no-builtin-rules
 
-GRAM_TARGETS := grammar/grammar.cma grammar/q_constr.cmo
-
 submake:
-	$(MAKE) $(MAKE_OPTS) -f Makefile.build BUILDGRAMMAR=1 $(GRAM_TARGETS)
 	$(MAKE) $(MAKE_OPTS) -f Makefile.build $(MAKECMDGOALS)
 
 noconfig:
