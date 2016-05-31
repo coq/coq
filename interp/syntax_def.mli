@@ -18,8 +18,5 @@ val declare_syntactic_definition : bool -> Id.t ->
 
 val search_syntactic_definition : kernel_name -> syndef_interpretation
 
-(** Options concerning verbose display of compatibility notations
-    or their deactivation *)
-
+(** Option concerning verbose display of compatibility notations  *)
 val set_verbose_compat_notations : bool -> unit
-val set_compat_notations : bool -> unit

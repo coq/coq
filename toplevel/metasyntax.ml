@@ -864,16 +864,23 @@ let check_rule_productivity l =
   if (match l with SProdList _ :: _ -> true | _ -> false) then
     error "A recursive notation must start with at least one symbol."
 
+let warn_notation_bound_to_variable =
+  CWarnings.create ~name:"notation-bound-to-variable" ~category:"parsing"
+         (fun () ->
+          strbrk "This notation will not be used for printing as it is bound to a single variable.")
+
+let warn_non_reversible_notation =
+  CWarnings.create ~name:"non-reversible-notation" ~category:"parsing"
+         (fun () ->
+          strbrk "This notation will not be used for printing as it is not reversible.")
+
 let is_not_printable onlyparse noninjective = function
 | NVar _ ->
-  let () = if not onlyparse then
-    Feedback.msg_warning (strbrk "This notation will not be used for printing as it is bound to a single variable.")
-  in
+  if not onlyparse then warn_notation_bound_to_variable ();
   true
 | _ ->
-  if not onlyparse && noninjective then
-    let () = Feedback.msg_warning (strbrk "This notation will not be used for printing as it is not reversible.") in
-    true
+   if not onlyparse && noninjective then
+     (warn_non_reversible_notation (); true)
   else onlyparse
 
 let find_precedence lev etyps symbols =
@@ -928,6 +935,10 @@ let check_curly_brackets_notation_exists () =
     error "Notations involving patterns of the form \"{ _ }\" are treated \n\
 specially and require that the notation \"{ _ }\" is already reserved."
 
+let warn_skip_spaces_curly =
+  CWarnings.create ~name:"skip-spaces-curly" ~category:"parsing"
+      (fun () ->strbrk "Skipping spaces inside curly brackets")
+
 (* Remove patterns of the form "{ _ }", unless it is the "{ _ }" notation *)
 let remove_curly_brackets l =
   let rec skip_break acc = function
@@ -942,9 +953,10 @@ let remove_curly_brackets l =
             let br',next' = skip_break [] l' in
             (match next' with
               | Terminal "}" as t2 :: l'' as l1 ->
-                  if not (List.equal Notation.symbol_eq l l0) || not (List.equal Notation.symbol_eq l' l1) then
-                    Feedback.msg_warning (strbrk "Skipping spaces inside curly brackets");
-                  if deb && List.is_empty l'' then [t1;x;t2] else begin
+                 if not (List.equal Notation.symbol_eq l l0) ||
+		      not (List.equal Notation.symbol_eq l' l1) then
+		  warn_skip_spaces_curly ();
+		  if deb && List.is_empty l'' then [t1;x;t2] else begin
                     check_curly_brackets_notation_exists ();
                     x :: aux false l''
                   end
@@ -988,12 +1000,12 @@ let compute_pure_syntax_data df mods =
   let (msgs,(onlyparse,onlyprint,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
   let msgs =
     if onlyparse then
-      (Feedback.msg_warning,
+      ((fun x -> Feedback.msg_warning x),
       strbrk "The only parsing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
   let msgs =
     if onlyprint then
-      (Feedback.msg_warning,
+      ((fun x -> Feedback.msg_warning x),
       strbrk "The only printing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
   msgs, sy_data, extra

@@ -87,8 +87,7 @@ let load_aux_file_for vfile =
   | End_of_file -> !h
   | Sys_error s | Scanf.Scan_failure s
   | Failure s | Invalid_argument s ->
-     Flags.if_verbose
-       Feedback.msg_warning Pp.(str"Loading file "++str aux_fname++str": "++str s);
+    Flags.if_verbose Feedback.msg_info Pp.(str"Loading file "++str aux_fname++str": "++str s);
      empty_aux_file
 
 let set h loc k v = set h (Loc.unloc loc) k v

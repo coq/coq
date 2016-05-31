@@ -304,7 +304,7 @@ let default_logger level message =
   | Feedback.Debug _ -> `DEBUG
   | Feedback.Info -> `INFO
   | Feedback.Notice -> `NOTICE
-  | Feedback.Warning -> `WARNING
+  | Feedback.Warning _ -> `WARNING
   | Feedback.Error -> `ERROR
   in
   Minilib.log ~level (xml_to_string message)

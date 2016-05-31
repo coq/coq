@@ -82,6 +82,12 @@ let red_constant_entry n ce sigma = function
       { ce with const_entry_body = Future.chain ~greedy:true ~pure:true proof_out
         (fun ((body,ctx),eff) -> (under_binders env sigma redfun n body,ctx),eff) }
 
+let warn_implicits_in_term =
+  CWarnings.create ~name:"implicits-in-term" ~category:"implicits"
+         (fun () ->
+          strbrk "Implicit arguments declaration relies on type." ++ spc () ++
+            strbrk "The term declares more implicits than the type here.")
+        
 let interp_definition pl bl p red_option c ctypopt =
   let env = Global.env() in
   let ctx = Evd.make_evar_universe_context env pl in
@@ -119,9 +125,7 @@ let interp_definition pl bl p red_option c ctypopt =
           impl_eq (List.assoc_f Pervasives.(=) key impsty) va (* FIXME *)
         in
 	if not (try List.for_all chk imps2 with Not_found -> false)
-	then Feedback.msg_warning
-          (strbrk "Implicit arguments declaration relies on type." ++ spc () ++
-	   strbrk "The term declares more implicits than the type here.");
+	then warn_implicits_in_term ();
         let vars = Univ.LSet.union (Universes.universes_of_constr body) 
           (Universes.universes_of_constr typ) in
         let ctx = Evd.restrict_universe_context !evdref vars in
@@ -136,11 +140,15 @@ let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd (Evd.empty,evd);
   ce
 
+let warn_local_let_definition =
+  CWarnings.create ~name:"local-let-definition" ~category:"scope"
+         (fun id ->
+          pr_id id ++ strbrk " is declared as a local definition")
+
 let get_locality id = function
 | Discharge ->
   (** If a Let is defined outside a section, then we consider it as a local definition *)
-  let msg = pr_id id ++ strbrk " is declared as a local definition" in
-  let () = Feedback.msg_warning msg in
+   warn_local_let_definition id;
   true
 | Local -> true
 | Global -> false
@@ -158,6 +166,12 @@ let declare_definition_hook = ref ignore
 let set_declare_definition_hook = (:=) declare_definition_hook
 let get_declare_definition_hook () = !declare_definition_hook
 
+let warn_definition_not_visible =
+  CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
+         (fun ident ->
+          strbrk "Section definition " ++
+            pr_id ident ++ strbrk " is not visible from current goals")
+
 let declare_definition ident (local, p, k) ce pl imps hook =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let () = !declare_definition_hook ce in
@@ -169,9 +183,7 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     let gr = VarRef ident in
     let () = maybe_declare_manual_implicits false gr imps in
     let () = if Pfedit.refining () then
-      let msg = strbrk "Section definition " ++
-        pr_id ident ++ strbrk " is not visible from current goals" in
-      Feedback.msg_warning msg
+	       warn_definition_not_visible ident
     in
     gr
   | Discharge | Local | Global ->
@@ -217,7 +229,7 @@ match local with
   let () = assumption_message ident in
   let () =
     if is_verbose () && Pfedit.refining () then
-    Feedback.msg_warning (str"Variable" ++ spc () ++ pr_id ident ++
+    Feedback.msg_info (str"Variable" ++ spc () ++ pr_id ident ++
     strbrk " is not visible from current goals")
   in
   let r = VarRef ident in
@@ -779,19 +791,24 @@ let rec partial_order cmp = function
 let non_full_mutual_message x xge y yge isfix rest =
   let reason =
     if Id.List.mem x yge then
-      pr_id y ++ str " depends on " ++ pr_id x ++ str " but not conversely"
+      pr_id y ++ str " depends on " ++ pr_id x ++ strbrk " but not conversely"
     else if Id.List.mem y xge then
-      pr_id x ++ str " depends on " ++ pr_id y ++ str " but not conversely"
+      pr_id x ++ str " depends on " ++ pr_id y ++ strbrk " but not conversely"
     else
-      pr_id y ++ str " and " ++ pr_id x ++ str " are not mutually dependent" in
-  let e = if List.is_empty rest then reason else str "e.g., " ++ reason in
+      pr_id y ++ str " and " ++ pr_id x ++ strbrk " are not mutually dependent" in
+  let e = if List.is_empty rest then reason else strbrk "e.g., " ++ reason in
   let k = if isfix then "fixpoint" else "cofixpoint" in
   let w =
     if isfix
-    then str "Well-foundedness check may fail unexpectedly." ++ fnl()
+    then strbrk "Well-foundedness check may fail unexpectedly." ++ fnl()
     else mt () in
-  str "Not a fully mutually defined " ++ str k ++ fnl () ++
+  strbrk "Not a fully mutually defined " ++ str k ++ fnl () ++
   str "(" ++ e ++ str ")." ++ fnl () ++ w
+
+let warn_non_full_mutual =
+  CWarnings.create ~name:"non-full-mutual" ~category:"fixpoints"
+         (fun (x,xge,y,yge,isfix,rest) ->
+          non_full_mutual_message x xge y yge isfix rest)
 
 let check_mutuality env isfix fixl =
   let names = List.map fst fixl in
@@ -802,7 +819,7 @@ let check_mutuality env isfix fixl =
   let po = partial_order Id.equal preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::rest ->
-	Feedback.msg_warning (non_full_mutual_message x xge y yge isfix rest)
+       warn_non_full_mutual (x,xge,y,yge,isfix,rest)
     | _ -> ()
 
 type structured_fixpoint_expr = {

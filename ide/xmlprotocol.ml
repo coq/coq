@@ -773,16 +773,16 @@ let of_message_level = function
       Serialize.constructor "message_level" "debug" [Xml_datatype.PCData s]
   | Info -> Serialize.constructor "message_level" "info" []
   | Notice -> Serialize.constructor "message_level" "notice" []
-  | Warning -> Serialize.constructor "message_level" "warning" []
+  | Warning loc -> Serialize.constructor "message_level" "warning" [of_loc loc]
   | Error -> Serialize.constructor "message_level" "error" []
 let to_message_level =
-  Serialize.do_match "message_level" (fun s args -> match s with
-  | "debug" -> Debug (Serialize.raw_string args)
-  | "info" -> Info
-  | "notice" -> Notice
-  | "warning" -> Warning
-  | "error" -> Error
-  | x -> raise Serialize.(Marshal_error("error level",PCData x)))
+  Serialize.do_match "message_level" (fun s args -> match s,args with
+  | "debug",_ -> Debug (Serialize.raw_string args)
+  | "info",[] -> Info
+  | "notice",[] -> Notice
+  | "warning",[loc] -> Warning (to_loc loc)
+  | "error",[] -> Error
+  | x,_ -> raise Serialize.(Marshal_error("error level",PCData x)))
 
 let of_message lvl msg =
   let lvl     = of_message_level lvl in
@@ -810,6 +810,7 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "globdef", [loc; ident; secpath; ty] ->
        GlobDef(to_loc loc, to_string ident, to_string secpath, to_string ty)
   | "errormsg", [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
+  | "warningmsg", [loc;  s] -> WarningMsg (to_loc loc, to_string s)
   | "inprogress", [n] -> InProgress (to_int n)
   | "workerstatus", [ns] ->
        let n, s = to_pair to_string to_string ns in
@@ -845,6 +846,8 @@ let of_feedback_content = function
         of_string ty ]
   | ErrorMsg(loc, s) ->
       constructor "feedback_content" "errormsg" [of_loc loc; of_string s]
+  | WarningMsg(loc, s) ->
+      constructor "feedback_content" "warningmsg" [of_loc loc; of_string s]
   | InProgress n -> constructor "feedback_content" "inprogress" [of_int n]
   | WorkerStatus(n,s) ->
       constructor "feedback_content" "workerstatus"

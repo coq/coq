@@ -283,6 +283,10 @@ let register_automation_tac tac = my_automation_tac:= tac
 
 let automation_tac = Proofview.tclBIND (Proofview.tclUNIT ()) (fun () -> !my_automation_tac)
 
+let warn_insufficient_justification =
+  CWarnings.create ~name:"declmode-insufficient-justification" ~category:"declmode"
+    (fun () -> strbrk "Insufficient justification.")
+
 let justification tac gls=
     tclORELSE
       (tclSOLVE [tclTHEN tac (Proofview.V82.of_tactic assumption)])
@@ -291,7 +295,7 @@ let justification tac gls=
 	   error "Insufficient justification."
 	 else
 	   begin
-	     Feedback.msg_warning (str "Insufficient justification.");
+             warn_insufficient_justification ();
 	     daimon_tac gls
 	   end) gls
 
@@ -1219,6 +1223,9 @@ let hrec_for fix_id per_info gls obj_id =
   let hd2 = applist (mkVar fix_id,args@[obj]) in
     compose_lam rc (Reductionops.whd_beta gls.sigma hd2)
 
+let warn_missing_case =
+  CWarnings.create ~name:"declmode-missing-case" ~category:"declmode"
+    (fun () -> strbrk "missing case")
 
 let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
   match tree, objs  with
@@ -1293,8 +1300,8 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	       end;
 	       match bro with
 		   None ->
-		     Feedback.msg_warning (str "missing case");
-		     tacnext (mkMeta 1)
+                     warn_missing_case ();
+                     tacnext (mkMeta 1)
 		 | Some (sub_ids,tree) ->
 		     let br_args =
 		       List.filter

@@ -233,6 +233,11 @@ with Not_found ->
 open Libobject
 open Lib
 
+let warn_deprecated_option =
+  CWarnings.create ~name:"deprecated-option" ~category:"deprecated"
+         (fun key -> str "Option" ++ spc () ++ str (nickname key) ++
+                       strbrk " is deprecated")
+
 let declare_option cast uncast
   { optsync=sync; optdepr=depr; optname=name; optkey=key; optread=read; optwrite=write } =
   check_key key;
@@ -270,10 +275,7 @@ let declare_option cast uncast
     begin fun v -> add_anonymous_leaf (gdecl_obj v) end
   else write,write,write
   in
-  let warn () =
-    if depr then
-      Feedback.msg_warning (str "Option " ++ str (nickname key) ++ str " is deprecated")
-  in
+  let warn () = if depr then warn_deprecated_option key in
   let cread () = cast (read ()) in
   let cwrite v = warn (); write (uncast v) in
   let clwrite v = warn (); lwrite (uncast v) in
@@ -304,19 +306,22 @@ let declare_stringopt_option =
 
 (* Setting values of options *)
 
+let warn_unknown_option =
+  CWarnings.create ~name:"unknown-option" ~category:"option"
+                   (fun key -> strbrk "There is no option " ++
+                                 str (nickname key) ++ str ".")
+
 let set_option_value locality check_and_cast key v =
-  let (name, depr, (_,read,write,lwrite,gwrite)) =
-    try get_option key
-    with Not_found ->
-      errorlabstrm "Goptions.set_option_value"
-        (str "There is no option " ++ str (nickname key) ++ str ".")
-  in
-  let write = match locality with
-    | None -> write
-    | Some true -> lwrite
-    | Some false -> gwrite
-  in
-  write (check_and_cast v (read ()))
+  let opt = try Some (get_option key) with Not_found -> None in
+  match opt with
+  | None -> warn_unknown_option key
+  | Some (name, depr, (_,read,write,lwrite,gwrite)) ->
+    let write = match locality with
+      | None -> write
+      | Some true -> lwrite
+      | Some false -> gwrite
+    in
+    write (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option."
 
@@ -346,13 +351,11 @@ let check_unset_value v = function
 let set_int_option_value_gen locality =
   set_option_value locality check_int_value
 let set_bool_option_value_gen locality key v =
-  try set_option_value locality check_bool_value key v
-  with UserError (_,s) -> Feedback.msg_warning s
+  set_option_value locality check_bool_value key v
 let set_string_option_value_gen locality =
   set_option_value locality check_string_value
 let unset_option_value_gen locality key =
-  try set_option_value locality check_unset_value key ()
-  with UserError (_,s) -> Feedback.msg_warning s
+  set_option_value locality check_unset_value key ()
 
 let set_int_option_value = set_int_option_value_gen None
 let set_bool_option_value = set_bool_option_value_gen None

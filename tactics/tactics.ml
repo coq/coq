@@ -2977,13 +2977,17 @@ let expand_hyp id = Tacticals.New.tclTRY (unfold_body id) <*> clear [id]
 
  *)
 
+let warn_unused_intro_pattern =
+  CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
+         (fun names ->
+          strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern")
+          ++ str": " ++ prlist_with_sep spc 
+         (Miscprint.pr_intro_pattern 
+	 (fun c -> Printer.pr_constr (fst (run_delayed (Global.env()) Evd.empty c)))) names)
+
 let check_unused_names names =
   if not (List.is_empty names) && Flags.is_verbose () then
-    Feedback.msg_warning
-      (str"Unused introduction " ++ str (String.plural (List.length names) "pattern")
-       ++ str": " ++ prlist_with_sep spc 
-	 (Miscprint.pr_intro_pattern 
-	    (fun c -> Printer.pr_constr (fst (run_delayed (Global.env()) Evd.empty c)))) names)
+    warn_unused_intro_pattern names
 
 let intropattern_of_name gl avoid = function
   | Anonymous -> IntroNaming IntroAnonymous

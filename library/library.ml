@@ -271,6 +271,12 @@ exception LibUnmappedDir
 exception LibNotFound
 type library_location = LibLoaded | LibInPath
 
+let warn_several_object_files =
+  CWarnings.create ~name:"several-object-files" ~category:"require"
+         (fun (vi, vo) -> str"Loading" ++ spc () ++ str vi ++
+                            strbrk " instead of " ++ str vo ++
+                            strbrk " because it is more recent")
+
 let locate_absolute_library dir =
   (* Search in loadpath *)
   let pref, base = split_dirpath dir in
@@ -287,9 +293,8 @@ let locate_absolute_library dir =
   | [] -> raise LibNotFound
   | [file] -> file
   | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-       Feedback.msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
-         str vo ++ str " because it is more recent");
-       vi
+    warn_several_object_files (vi, vo);
+    vi
   | [vo;vi] -> vo
   | _ -> assert false
 
@@ -311,8 +316,7 @@ let locate_qualified_library ?root ?(warn = true) qid =
     | [lpath, file] -> lpath, file
     | [lpath_vo, vo; lpath_vi, vi]
       when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-       Feedback.msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
-         str vo ++ str " because it is more recent");
+      warn_several_object_files (vi, vo);
        lpath_vi, vi
     | [lpath_vo, vo; _ ] -> lpath_vo, vo
     | _ -> assert false
@@ -753,7 +757,7 @@ let save_library_to ?todo dir f otab =
 	error "Could not compile the library to native code."
    with reraise ->
     let reraise = Errors.push reraise in
-    let () = Feedback.msg_warning (str "Removed file " ++ str f') in
+    let () = Feedback.msg_notice (str "Removed file " ++ str f') in
     let () = close_out ch in
     let () = Sys.remove f' in
     iraise reraise
