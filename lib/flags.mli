@@ -34,6 +34,7 @@ type priority = Low | High
 val async_proofs_worker_priority : priority ref
 val string_of_priority : priority -> string
 val priority_of_string : string -> priority
+val async_proofs_delegation_threshold : float ref
 
 val debug : bool ref
 val in_debugger : bool ref
