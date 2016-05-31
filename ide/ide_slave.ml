@@ -393,6 +393,15 @@ let interp ((_raw, verbose), s) =
 
 let quit = ref false
 
+(** Serializes the output of Stm.get_ast  *)
+let print_ast id =
+  match Stm.get_ast id with
+  | Some (expr, loc) -> begin
+      try  Texmacspp.tmpp expr loc
+      with e -> Xml_datatype.PCData ("ERROR " ^ Printexc.to_string e)
+    end
+  | None     -> Xml_datatype.PCData "ERROR"
+
 (** Grouping all call handlers together + error handling *)
 
 let eval_call xml_oc log c =
@@ -423,7 +432,7 @@ let eval_call xml_oc log c =
     Interface.interp = interruptible interp;
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;
-    Interface.print_ast = Stm.print_ast;
+    Interface.print_ast = print_ast;
     Interface.annotate = interruptible annotate;
   } in
   Xmlprotocol.abstract_eval_call handler c
