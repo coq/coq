@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Xml_datatype
-
 type t = int
 let initial = 1
 let dummy = 0
@@ -15,19 +13,13 @@ let fresh, in_range =
   let cur = ref initial in
   (fun () -> incr cur; !cur), (fun id -> id >= 0 && id <= !cur)
 let to_string = string_of_int
-let of_int id = assert(in_range id); id
+let of_int id =
+  (* Coqide too to parse ids too, but cannot check if they are valid.
+   * Hence we check for validity only if we are an ide slave. *)
+  if !Flags.ide_slave then assert (in_range id);
+  id
 let to_int id = id
 let newer_than id1 id2 = id1 > id2
-
-let of_xml = function
-  | Element ("state_id",["val",i],[]) ->
-      let id = int_of_string i in
-      (* Coqide too to parse ids too, but cannot check if they are valid.
-       * Hence we check for validity only if we are an ide slave. *)
-      if !Flags.ide_slave then assert(in_range id);
-      id
-  | _ -> raise (Invalid_argument "to_state_id")
-let to_xml i = Element ("state_id",["val",string_of_int i],[])
 
 let state_id_info : (t * t) Exninfo.t = Exninfo.make ()
 let add exn ?(valid = initial) id =

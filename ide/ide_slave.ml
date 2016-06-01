@@ -453,16 +453,12 @@ let print_xml =
 let slave_logger xml_oc level message =
   (* convert the message into XML *)
   let msg = hov 0 message in
-  let message = {
-    Feedback.message_level = level;
-    Feedback.message_content = (Richpp.repr (Richpp.richpp_of_pp msg));
-  } in
-  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg)) in
-  let xml = Feedback.of_message message in
+  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg))    in
+  let xml = Xmlprotocol.of_message level (Richpp.richpp_of_pp message) in
   print_xml xml_oc xml
 
 let slave_feeder xml_oc msg =
-  let xml = Feedback.of_feedback msg in
+  let xml = Xmlprotocol.of_feedback msg in
   print_xml xml_oc xml
 
 (** The main loop *)

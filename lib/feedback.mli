@@ -16,20 +16,12 @@ type level =
   | Warning
   | Error
 
-type message = {
-  message_level : level;
-  message_content : xml;
-}
-
-val of_message : message -> xml
-val to_message : xml -> message
-val is_message : xml -> bool
-
 
 (** Coq "semantic" infos obtained during parsing/execution *)
 type edit_id = int
 type state_id = Stateid.t
 type edit_or_state_id = Edit of edit_id | State of state_id
+
 type route_id = int
 
 val default_route : route_id
@@ -54,17 +46,13 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t * string * xml
   (* Old generic messages *)
-  | Message of message
+  | Message of level * Richpp.richpp
 
 type feedback = {
-  id : edit_or_state_id;       (* The document part concerned *)
+  id       : edit_or_state_id;  (* The document part concerned *)
   contents : feedback_content;  (* The payload *)
-  route : route_id;            (* Extra routing info *)
+  route    : route_id;          (* Extra routing info *)
 }
-
-val of_feedback : feedback -> xml
-val to_feedback : xml -> feedback
-val is_feedback : xml -> bool
 
 (** {6 Feedback sent, even asynchronously, to the user interface} *)
 

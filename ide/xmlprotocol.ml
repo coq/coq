@@ -84,6 +84,18 @@ let to_option_state = function
       opt_value = to_option_value value }
   | _ -> raise Marshal_error
 
+let to_stateid = function
+  | Element ("state_id",["val",i],[]) ->
+      let id = int_of_string i in
+      Stateid.of_int id
+  | _ -> raise (Invalid_argument "to_state_id")
+
+let of_stateid i = Element ("state_id",["val",string_of_int (Stateid.to_int i)],[])
+
+let of_richpp x = Element ("richpp", [], [Richpp.repr x])
+let to_richpp xml = match xml with
+  | Element ("richpp", [], [x]) -> Richpp.richpp_of_xml x
+  | _ -> raise Serialize.Marshal_error
 
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
@@ -91,8 +103,9 @@ let of_value f = function
   let loc = match loc with
   | None -> []
   | Some (s, e) -> [("loc_s", string_of_int s); ("loc_e", string_of_int e)] in
-  let id = Stateid.to_xml id in
-  Element ("value", ["val", "fail"] @ loc, [id; Richpp.of_richpp msg])
+  let id = of_stateid id in
+  Element ("value", ["val", "fail"] @ loc, [id; of_richpp msg])
+
 let to_value f = function
 | Element ("value", attrs, l) ->
   let ans = massoc "val" attrs in
@@ -106,8 +119,8 @@ let to_value f = function
       with Marshal_error | Failure _ -> None
     in
     let (id, msg) = match l with [id; msg] -> (id, msg) | _ -> raise Marshal_error in
-    let id = Stateid.of_xml id in
-    let msg = Richpp.to_richpp msg in
+    let id = to_stateid id in
+    let msg = to_richpp msg in
     Fail (id, loc, msg)
   else raise Marshal_error
 | _ -> raise Marshal_error
@@ -134,14 +147,14 @@ let to_evar = function
   | _ -> raise Marshal_error
 
 let of_goal g =
-  let hyp = of_list Richpp.of_richpp g.goal_hyp in
-  let ccl = Richpp.of_richpp g.goal_ccl in
+  let hyp = of_list of_richpp g.goal_hyp in
+  let ccl = of_richpp g.goal_ccl in
   let id = of_string g.goal_id in
   Element ("goal", [], [id; hyp; ccl])
 let to_goal = function
   | Element ("goal", [], [id; hyp; ccl]) ->
-    let hyp = to_list Richpp.to_richpp hyp in
-    let ccl = Richpp.to_richpp ccl in
+    let hyp = to_list to_richpp hyp in
+    let ccl = to_richpp ccl in
     let id = to_string id in
     { goal_hyp = hyp; goal_ccl = ccl; goal_id = id; }
   | _ -> raise Marshal_error
@@ -286,7 +299,7 @@ end = struct
       | Coq_object t  -> (of_coq_object (convert t))
       | Pair (t1,t2)  -> (of_pair (convert t1) (convert t2))
       | Union (t1,t2) -> (of_union (convert t1) (convert t2))
-      | State_id      -> Stateid.to_xml
+      | State_id      -> of_stateid
       | Search_cst    -> of_search_cst
     in
       convert ty
@@ -309,7 +322,7 @@ end = struct
       | Coq_object t  -> (to_coq_object (convert t))
       | Pair (t1,t2)  -> (to_pair (convert t1) (convert t2))
       | Union (t1,t2) -> (to_union (convert t1) (convert t2))
-      | State_id      -> Stateid.of_xml
+      | State_id      -> to_stateid
       | Search_cst    -> to_search_cst
     in
       convert ty
@@ -422,7 +435,7 @@ end = struct
       (pr_xml (of_bool true)) (pr_xml (of_bool false));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t String) (pr_xml (of_string "hello"));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t Int) (pr_xml (of_int 256));
-    Printf.printf "%s:\n\n%s\n\n" (print_val_t State_id) (pr_xml (Stateid.to_xml Stateid.initial));
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t State_id) (pr_xml (of_stateid Stateid.initial));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t (List Int)) (pr_xml (of_list of_int [3;4;5]));
     Printf.printf "%s:\n\n%s\n%s\n\n" (print_val_t (Option Int))
       (pr_xml (of_option of_int (Some 3))) (pr_xml (of_option of_int None));
@@ -750,4 +763,128 @@ let document to_string_fmt =
       (Fail (Stateid.initial,Some (15,34),Richpp.richpp_of_string "error message"))));
   document_type_encoding to_string_fmt
 
+(* Moved from feedback.mli : This is IDE specific and we don't want to
+   pollute the core with it *)
+
+open Feedback
+
+let of_message_level = function
+  | Debug s ->
+      Serialize.constructor "message_level" "debug" [Xml_datatype.PCData s]
+  | Info -> Serialize.constructor "message_level" "info" []
+  | Notice -> Serialize.constructor "message_level" "notice" []
+  | Warning -> Serialize.constructor "message_level" "warning" []
+  | Error -> Serialize.constructor "message_level" "error" []
+let to_message_level =
+  Serialize.do_match "message_level" (fun s args -> match s with
+  | "debug" -> Debug (Serialize.raw_string args)
+  | "info" -> Info
+  | "notice" -> Notice
+  | "warning" -> Warning
+  | "error" -> Error
+  | _ -> raise Serialize.Marshal_error)
+
+let of_message lvl msg =
+  let lvl     = of_message_level lvl in
+  let content = of_richpp msg        in
+  Xml_datatype.Element ("message", [], [lvl; content])
+
+let is_message = function
+  | Xml_datatype.Element ("message", [], [lvl; content]) ->
+    Some (to_message_level lvl, to_richpp content)
+  | _ -> None
+
+let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
+  | "addedaxiom", _ -> AddedAxiom
+  | "processed", _ -> Processed
+  | "processingin", [where] -> ProcessingIn (to_string where)
+  | "incomplete", _ -> Incomplete
+  | "complete", _ -> Complete
+  | "globref", [loc; filepath; modpath; ident; ty] ->
+       GlobRef(to_loc loc, to_string filepath,
+         to_string modpath, to_string ident, to_string ty)
+  | "globdef", [loc; ident; secpath; ty] ->
+       GlobDef(to_loc loc, to_string ident, to_string secpath, to_string ty)
+  | "errormsg", [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
+  | "inprogress", [n] -> InProgress (to_int n)
+  | "workerstatus", [ns] ->
+       let n, s = to_pair to_string to_string ns in
+       WorkerStatus(n,s)
+  | "goals", [loc;s] -> Goals (to_loc loc, to_string s)
+  (* | "custom", [loc;name;x]-> Custom (to_loc loc, to_string name, x) *)
+  | "filedependency", [from; dep] ->
+      FileDependency (to_option to_string from, to_string dep)
+  | "fileloaded", [dirpath; filename] ->
+      FileLoaded (to_string dirpath, to_string filename)
+  | "message", [lvl; content] ->
+     Message (to_message_level lvl, to_richpp content)
+
+  | _ -> raise Marshal_error)
+
+let of_feedback_content = function
+  | AddedAxiom -> constructor "feedback_content" "addedaxiom" []
+  | Processed -> constructor "feedback_content" "processed" []
+  | ProcessingIn where ->
+      constructor "feedback_content" "processingin" [of_string where]
+  | Incomplete -> constructor "feedback_content" "incomplete" []
+  | Complete -> constructor "feedback_content" "complete" []
+  | GlobRef(loc, filepath, modpath, ident, ty) ->
+      constructor "feedback_content" "globref" [
+        of_loc loc;
+        of_string filepath;
+        of_string modpath;
+        of_string ident;
+        of_string ty ]
+  | GlobDef(loc, ident, secpath, ty) ->
+      constructor "feedback_content" "globdef" [
+        of_loc loc;
+        of_string ident;
+        of_string secpath;
+        of_string ty ]
+  | ErrorMsg(loc, s) ->
+      constructor "feedback_content" "errormsg" [of_loc loc; of_string s]
+  | InProgress n -> constructor "feedback_content" "inprogress" [of_int n]
+  | WorkerStatus(n,s) ->
+      constructor "feedback_content" "workerstatus"
+        [of_pair of_string of_string (n,s)]
+  | Goals (loc,s) ->
+      constructor "feedback_content" "goals" [of_loc loc;of_string s]
+  (* | Custom (loc, name, x) -> *)
+  (*     constructor "feedback_content" "custom" [of_loc loc; of_string name; x] *)
+  | FileDependency (from, depends_on) ->
+      constructor "feedback_content" "filedependency" [
+        of_option of_string from;
+        of_string depends_on]
+  | FileLoaded (dirpath, filename) ->
+      constructor "feedback_content" "fileloaded" [
+        of_string dirpath;
+        of_string filename ]
+  | Message (l,m) -> constructor "feedback_content" "message" [ of_message l m ]
+
+let of_edit_or_state_id = function
+  | Edit id -> ["object","edit"], of_edit_id id
+  | State id -> ["object","state"], of_stateid id
+
+let of_feedback msg =
+  let content = of_feedback_content msg.contents in
+  let obj, id = of_edit_or_state_id msg.id in
+  let route = string_of_int msg.route in
+  Element ("feedback", obj @ ["route",route], [id;content])
+
+let to_feedback xml = match xml with
+  | Element ("feedback", ["object","edit";"route",route], [id;content]) -> {
+      id = Edit(to_edit_id id);
+      route = int_of_string route;
+      contents = to_feedback_content content }
+  | Element ("feedback", ["object","state";"route",route], [id;content]) -> { 
+      id = State(to_stateid id);
+      route = int_of_string route;
+      contents = to_feedback_content content }
+  | _ -> raise Marshal_error
+
+let is_feedback = function
+  | Element ("feedback", _, _) -> true
+  | _ -> false
+
 (* vim: set foldmethod=marker: *)
+

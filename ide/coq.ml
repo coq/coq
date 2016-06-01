@@ -290,12 +290,9 @@ let rec check_errors = function
 | `NVAL :: _ -> raise (TubeError "NVAL")
 | `OUT :: _ -> raise (TubeError "OUT")
 
-let handle_intermediate_message handle xml =
-  let message = Feedback.to_message xml in
-  let level = message.Feedback.message_level in
-  let content = message.Feedback.message_content in
-  let logger = match handle.waiting_for with
-    | Some (_, l) -> l 
+let handle_intermediate_message handle level content =
+  let logger  = match handle.waiting_for with
+    | Some (_, l) -> l
     | None -> function
         | Feedback.Error   -> fun s -> Minilib.log ~level:`ERROR   (xml_to_string s)
         | Feedback.Info    -> fun s -> Minilib.log ~level:`INFO    (xml_to_string s)
@@ -303,10 +300,10 @@ let handle_intermediate_message handle xml =
         | Feedback.Warning -> fun s -> Minilib.log ~level:`WARNING (xml_to_string s)
         | Feedback.Debug _ -> fun s -> Minilib.log ~level:`DEBUG   (xml_to_string s)
   in
-  logger level (Richpp.richpp_of_xml content)
+  logger level content
 
 let handle_feedback feedback_processor xml =
-  let feedback = Feedback.to_feedback xml in
+  let feedback = Xmlprotocol.to_feedback xml in
   feedback_processor feedback
 
 let handle_final_answer handle xml =
@@ -335,15 +332,18 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
-    if Feedback.is_message xml then begin
-      handle_intermediate_message handle xml;
+    match Xmlprotocol.is_message xml with
+    | Some (lvl, msg) ->
+      handle_intermediate_message handle lvl msg;
       loop ()
-    end else if Feedback.is_feedback xml then begin
-      handle_feedback feedback_processor xml;
-      loop ()
-    end else begin
-      ignore (handle_final_answer handle xml)
-    end
+    | None ->
+      if Xmlprotocol.is_feedback xml then begin
+        handle_feedback feedback_processor xml;
+        loop ()
+      end else
+        begin
+          ignore (handle_final_answer handle xml)
+        end
   in
   try loop ()
   with Xml_parser.Error _ as e ->

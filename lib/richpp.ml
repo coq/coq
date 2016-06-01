@@ -194,7 +194,3 @@ let raw_print xml =
   let () = print xml in
   Buffer.contents buf
 
-let of_richpp x = Element ("richpp", [], [x])
-let to_richpp xml = match xml with
-| Element ("richpp", [], [x]) -> x
-| _ -> raise Serialize.Marshal_error
