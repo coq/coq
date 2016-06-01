@@ -153,6 +153,8 @@ TACTIC EXTEND gintuition
 END
 
 open Proofview.Notations
+open Cc_plugin
+open Decl_mode_plugin
 
 let default_declarative_automation =
   Proofview.tclUNIT () >>= fun () -> (* delay for [congruence_depth] *)

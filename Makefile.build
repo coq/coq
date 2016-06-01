@@ -502,6 +502,16 @@ endif
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
+# For plugin packs :
+
+%.cmo: %.mlpack
+	$(SHOW)'OCAMLC -pack -o $@'
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
+
+%.cmx: %.mlpack
+	$(SHOW)'OCAMLOPT -pack -o $@'
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
+
 COND_BYTEFLAGS= \
  $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(BYTEFLAGS)
 
@@ -537,17 +547,21 @@ $(MLWITHOUTMLI:.ml=.cmx): %.cmx: %.cmi  # for .ml with .mli this is already the 
 
 $(MLWITHOUTMLI:.ml=.cmi): %.cmi: %.cmo
 
+# NB: the *_FORPACK variables are generated in *.mlpack.d by ocamllibdep
+# The only exceptions are the sources of the csdpcert binary.
+# To avoid warnings, we set them manually here:
+plugins/micromega/sos_lib_FORPACK:=
+plugins/micromega/sos_FORPACK:=
+plugins/micromega/sos_print_FORPACK:=
+plugins/micromega/csdpcert_FORPACK:=
+
+plugins/%.cmx: plugins/%.ml
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -c $<
+
 %.cmx: %.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) -c $<
-
-%.cmxs: %.cmxa
-	$(SHOW)'OCAMLOPT -shared -o $@'
-ifeq ($(HASNATDYNLINK),os5fixme)
-	$(HIDE)dev/ocamlopt_shared_os5fix.sh "$(OCAMLOPT)" $@
-else
-	$(HIDE)$(OCAMLOPT) -linkall -shared -o $@ $<
-endif
 
 %.cmxs: %.cmx
 	$(SHOW)'OCAMLOPT -shared -o $@'
@@ -556,11 +570,6 @@ endif
 %.ml: %.mll
 	$(SHOW)'OCAMLLEX  $<'
 	$(HIDE)$(OCAMLLEX) -o $@ "$*.mll"
-
-plugins/%_mod.ml: plugins/%.mllib
-	$(SHOW)'ECHO... > $@'
-	$(HIDE)sed -e "s/\([^ ]\{1,\}\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
-	$(HIDE)echo "let _=Mltop.add_known_module\"$(notdir $*)\"" >> $@
 
 %.ml: %.ml4 | $(CAMLP4DEPS)
 	$(SHOW)'CAMLP4O   $<'
@@ -573,7 +582,7 @@ plugins/%_mod.ml: plugins/%.mllib
 ###########################################################################
 
 # Ocamldep is now used directly again (thanks to -ml-synonym in OCaml >= 3.12)
-OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4
+OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
 
 %.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
@@ -584,6 +593,10 @@ OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4
 	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" $(TOTARGET)
 
 %.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  $<'
+	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+
+%.mlpack.d: $(D_DEPEND_BEFORE_SRC) %.mlpack $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
 	$(SHOW)'OCAMLLIBDEP  $<'
 	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
 

@@ -97,28 +97,28 @@ OBJSMOD:=$(shell cat $(CORECMA:.cma=.mllib))
 # plugins object files
 ###########################################################################
 
-OMEGACMA:=plugins/omega/omega_plugin.cma
-ROMEGACMA:=plugins/romega/romega_plugin.cma
-MICROMEGACMA:=plugins/micromega/micromega_plugin.cma
-QUOTECMA:=plugins/quote/quote_plugin.cma
-RINGCMA:=plugins/setoid_ring/newring_plugin.cma
-NSATZCMA:=plugins/nsatz/nsatz_plugin.cma
-FOURIERCMA:=plugins/fourier/fourier_plugin.cma
-EXTRACTIONCMA:=plugins/extraction/extraction_plugin.cma
-FUNINDCMA:=plugins/funind/recdef_plugin.cma
-FOCMA:=plugins/firstorder/ground_plugin.cma
-CCCMA:=plugins/cc/cc_plugin.cma
-BTAUTOCMA:=plugins/btauto/btauto_plugin.cma
-RTAUTOCMA:=plugins/rtauto/rtauto_plugin.cma
-NATSYNTAXCMA:=plugins/syntax/nat_syntax_plugin.cma
+OMEGACMA:=plugins/omega/omega_plugin.cmo
+ROMEGACMA:=plugins/romega/romega_plugin.cmo
+MICROMEGACMA:=plugins/micromega/micromega_plugin.cmo
+QUOTECMA:=plugins/quote/quote_plugin.cmo
+RINGCMA:=plugins/setoid_ring/newring_plugin.cmo
+NSATZCMA:=plugins/nsatz/nsatz_plugin.cmo
+FOURIERCMA:=plugins/fourier/fourier_plugin.cmo
+EXTRACTIONCMA:=plugins/extraction/extraction_plugin.cmo
+FUNINDCMA:=plugins/funind/recdef_plugin.cmo
+FOCMA:=plugins/firstorder/ground_plugin.cmo
+CCCMA:=plugins/cc/cc_plugin.cmo
+BTAUTOCMA:=plugins/btauto/btauto_plugin.cmo
+RTAUTOCMA:=plugins/rtauto/rtauto_plugin.cmo
+NATSYNTAXCMA:=plugins/syntax/nat_syntax_plugin.cmo
 OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
-        z_syntax_plugin.cma \
-        numbers_syntax_plugin.cma \
-        r_syntax_plugin.cma \
-	ascii_syntax_plugin.cma \
-        string_syntax_plugin.cma )
-DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
-DERIVECMA:=plugins/derive/derive_plugin.cma
+        z_syntax_plugin.cmo \
+        numbers_syntax_plugin.cmo \
+        r_syntax_plugin.cmo \
+	ascii_syntax_plugin.cmo \
+        string_syntax_plugin.cmo )
+DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cmo
+DERIVECMA:=plugins/derive/derive_plugin.cmo
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
         $(QUOTECMA) $(RINGCMA) \
@@ -131,17 +131,17 @@ ifneq ($(HASNATDYNLINK),false)
  STATICPLUGINS:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) \
 	$(FUNINDCMA) $(NATSYNTAXCMA)
- INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
+ INITPLUGINSOPT:=$(INITPLUGINS:.cmo=.cmxs)
  PLUGINS:=$(PLUGINSCMA)
- PLUGINSOPT:=$(PLUGINSCMA:.cma=.cmxs)
+ PLUGINSOPT:=$(PLUGINSCMA:.cmo=.cmxs)
 else
 ifeq ($(BEST),byte)
  STATICPLUGINS:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) \
 	$(FUNINDCMA) $(NATSYNTAXCMA)
- INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
+ INITPLUGINSOPT:=$(INITPLUGINS:.cmo=.cmxs)
  PLUGINS:=$(PLUGINSCMA)
- PLUGINSOPT:=$(PLUGINSCMA:.cma=.cmxs)
+ PLUGINSOPT:=$(PLUGINSCMA:.cmo=.cmxs)
 else
  STATICPLUGINS:=$(PLUGINSCMA)
  INITPLUGINS:=
@@ -152,7 +152,7 @@ endif
 endif
 
 LINKCMO:=$(CORECMA) $(STATICPLUGINS)
-LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
+LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
 
 ###########################################################################
 # vo files

@@ -9,7 +9,7 @@
 open Pp
 open Util
 open Const_omega
-module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
+module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
 
 (* \section{Useful functions and flags} *)
