@@ -21,18 +21,49 @@ open Decl_kinds
 open Misctypes
 (*i*)
 
-module Make (Taggers : sig
-  val tag_keyword     : std_ppcmds -> std_ppcmds
-  val tag_evar     : std_ppcmds -> std_ppcmds
-  val tag_type     : std_ppcmds -> std_ppcmds
-  val tag_path     : std_ppcmds -> std_ppcmds
-  val tag_ref     : std_ppcmds -> std_ppcmds
-  val tag_var     : std_ppcmds -> std_ppcmds
-  val tag_constr_expr : constr_expr -> std_ppcmds -> std_ppcmds
-  val tag_unparsing   : unparsing -> std_ppcmds -> std_ppcmds
-end) = struct
+module Tag =
+struct
+  let keyword =
+    let style = Terminal.make ~bold:true () in
+    Ppstyle.make ~style ["constr"; "keyword"]
 
-  open Taggers
+  let evar =
+    let style = Terminal.make ~fg_color:`LIGHT_BLUE () in
+    Ppstyle.make ~style ["constr"; "evar"]
+
+  let univ =
+    let style = Terminal.make ~bold:true ~fg_color:`YELLOW () in
+    Ppstyle.make ~style ["constr"; "type"]
+
+  let notation =
+    let style = Terminal.make ~fg_color:`WHITE () in
+    Ppstyle.make ~style ["constr"; "notation"]
+
+  let variable =
+    Ppstyle.make ["constr"; "variable"]
+
+  let reference =
+    let style = Terminal.make ~fg_color:`LIGHT_GREEN () in
+    Ppstyle.make ~style ["constr"; "reference"]
+
+  let path =
+    let style = Terminal.make ~fg_color:`LIGHT_MAGENTA () in
+    Ppstyle.make ~style ["constr"; "path"]
+end
+
+let do_not_tag _ x = x
+let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
+let tag_keyword     = tag Tag.keyword
+let tag_evar        = tag Tag.evar
+let tag_type        = tag Tag.univ
+let tag_unparsing   = function
+| UnpTerminal s -> tag Tag.notation
+| _ -> do_not_tag ()
+let tag_constr_expr = do_not_tag
+let tag_path = tag Tag.path
+let tag_ref = tag Tag.reference
+let tag_var = tag Tag.variable
+
 
   let keyword s = tag_keyword (str s)
   let sep_v = fun _ -> str"," ++ spc()
@@ -763,87 +794,4 @@ end) = struct
   let pr_record_body = pr_record_body_gen pr
 
   let pr_binders = pr_undelimited_binders spc (pr ltop)
-
-end
-
-module Tag =
-struct
-  let keyword =
-    let style = Terminal.make ~bold:true () in
-    Ppstyle.make ~style ["constr"; "keyword"]
-
-  let evar =
-    let style = Terminal.make ~fg_color:`LIGHT_BLUE () in
-    Ppstyle.make ~style ["constr"; "evar"]
-
-  let univ =
-    let style = Terminal.make ~bold:true ~fg_color:`YELLOW () in
-    Ppstyle.make ~style ["constr"; "type"]
-
-  let notation =
-    let style = Terminal.make ~fg_color:`WHITE () in
-    Ppstyle.make ~style ["constr"; "notation"]
-
-  let variable =
-    Ppstyle.make ["constr"; "variable"]
-
-  let reference =
-    let style = Terminal.make ~fg_color:`LIGHT_GREEN () in
-    Ppstyle.make ~style ["constr"; "reference"]
-
-  let path =
-    let style = Terminal.make ~fg_color:`LIGHT_MAGENTA () in
-    Ppstyle.make ~style ["constr"; "path"]
-
-end
-
-let do_not_tag _ x = x
-
-let split_token tag s =
-  let len = String.length s in
-  let rec parse_string off i =
-    if Int.equal i len then
-      if Int.equal off i then mt () else tag (str (String.sub s off (i - off)))
-    else if s.[i] == ' ' then
-      if Int.equal off i then parse_space 1 (succ i)
-      else tag (str (String.sub s off (i - off))) ++ parse_space 1 (succ i)
-    else parse_string off (succ i)
-  and parse_space spc i =
-    if Int.equal i len then str (String.make spc ' ')
-    else if s.[i] == ' ' then parse_space (succ spc) (succ i)
-    else str (String.make spc ' ') ++ parse_string i (succ i)
-  in
-  parse_string 0 0
-
-(** Instantiating Make with tagging functions that only add style
-    information. *)
-include Make (struct
-    let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
-    let tag_keyword     = tag Tag.keyword
-    let tag_evar        = tag Tag.evar
-    let tag_type        = tag Tag.univ
-    let tag_unparsing   = function
-    | UnpTerminal s -> fun _ -> split_token (fun pp -> tag Tag.notation pp) s
-    | _ -> do_not_tag ()
-    let tag_constr_expr = do_not_tag
-    let tag_path = tag Tag.path
-    let tag_ref = tag Tag.reference
-    let tag_var = tag Tag.variable
-end)
-
-module Richpp = struct
-
-  include Make (struct
-    open Ppannotation
-    let tag_keyword       = Pp.tag (Pp.Tag.inj AKeyword tag)
-    let tag_type          = Pp.tag (Pp.Tag.inj AKeyword tag)
-    let tag_evar          = do_not_tag ()
-    let tag_unparsing unp = Pp.tag (Pp.Tag.inj (AUnparsing unp) tag)
-    let tag_constr_expr e = Pp.tag (Pp.Tag.inj (AConstrExpr e) tag)
-    let tag_path = do_not_tag ()
-    let tag_ref = do_not_tag ()
-    let tag_var = do_not_tag ()
-  end)
-
-end
 

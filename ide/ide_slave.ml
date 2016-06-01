@@ -114,11 +114,8 @@ let annotate phrase =
     let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
     Vernac.parse_sentence (pa,None)
   in
-  let (_, xml) =
-    Richprinter.richpp_vernac ast
-  in
-  xml
-
+  Richpp.repr (Richpp.richpp_of_pp (Ppvernac.pr_vernac ast))
+    
 (** Goal display *)
 
 let hyp_next_tac sigma env decl =
