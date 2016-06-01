@@ -105,7 +105,6 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
   | NCast (c,k) -> GCast (loc,f e c,Miscops.map_cast_type (f e) k)
   | NSort x -> GSort (loc,x)
   | NHole (x, naming, arg)  -> GHole (loc, x, naming, arg)
-  | NPatVar n -> GPatVar (loc,(false,n))
   | NRef x -> GRef (loc,x,None)
 
 let glob_constr_of_notation_constr loc x =
@@ -224,13 +223,11 @@ let rec eq_notation_constr t1 t2 = match t1, t2 with
   Array.equal eq_notation_constr rs1 rs2
 | NSort s1, NSort s2 ->
   Miscops.glob_sort_eq s1 s2
-| NPatVar p1, NPatVar p2 ->
-  Id.equal p1 p2
 | NCast (t1, c1), NCast (t2, c2) ->
   eq_notation_constr t1 t2 && cast_type_eq eq_notation_constr c1 c2
 | (NRef _ | NVar _ | NApp _ | NHole _ | NList _ | NLambda _ | NProd _
   | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
-  | NRec _ | NSort _ | NPatVar _ | NCast _), _ -> false
+  | NRec _ | NSort _ | NCast _), _ -> false
 
 
 let subtract_loc loc1 loc2 = Loc.make_loc (fst (Loc.unloc loc1),fst (Loc.unloc loc2)-1)
@@ -352,8 +349,7 @@ let notation_constr_and_vars_of_glob_constr a =
   | GSort (_,s) -> NSort s
   | GHole (_,w,naming,arg) -> NHole (w, naming, arg)
   | GRef (_,r,_) -> NRef r
-  | GPatVar (_,(_,n)) -> NPatVar n
-  | GEvar _ ->
+  | GEvar _ | GPatVar _ ->
       error "Existential variables not allowed in notations."
 
   in
@@ -526,7 +522,7 @@ let rec subst_notation_constr subst bound raw =
       if dll' == dll && tl' == tl && bl' == bl then raw else
 	  NRec (fk,idl,dll',tl',bl')
 
-  | NPatVar _ | NSort _ -> raw
+  | NSort _ -> raw
 
   | NHole (knd, naming, solve) ->
     let nknd = match knd with
@@ -782,7 +778,6 @@ let rec match_ inner u alp metas sigma a1 a2 =
   (* Matching compositionally *)
   | GVar (_,id1), NVar id2 when alpha_var id1 id2 (fst alp) -> sigma
   | GRef (_,r1,_), NRef r2 when (eq_gr r1 r2) -> sigma
-  | GPatVar (_,(_,n1)), NPatVar n2 when Id.equal n1 n2 -> sigma
   | GApp (loc,f1,l1), NApp (f2,l2) ->
       let n1 = List.length l1 and n2 = List.length l2 in
       let f1,l1,f2,l2 =
