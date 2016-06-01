@@ -332,25 +332,33 @@ $(COQC):  $(patsubst %.cma,%$(BESTLIB),$(COQCCMO:.cmo=$(BESTOBJ)))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
-# target for libraries
+# Target for libraries .cma and .cmxa
 
-%.cma: | %.mllib.d
+# The dependency over the .mllib is somewhat artificial, since
+# ocamlc -a won't use this file, hence the $(filter-out ...) below.
+# But this ensures that the .cm(x)a is rebuilt when needed,
+# (especially when removing a module in the .mllib).
+# We used to have a "order-only" dependency over .mllib.d here,
+# but the -include mechanism should already ensure that we have
+# up-to-date dependencies.
+
+%.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $^
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
-%.cmxa: | %.mllib.d
+%.cmxa: %.mllib
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $^
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
 # For the checker, different flags may be used
 
-checker/check.cma: | md5chk checker/check.mllib.d
+checker/check.cma: checker/check.mllib | md5chk
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -a -o $@ $^
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
-checker/check.cmxa: | md5chk checker/check.mllib.d
+checker/check.cmxa: checker/check.mllib | md5chk
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -a -o $@ $^
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
 ###########################################################################
 # Csdp to micromega special targets
@@ -648,7 +656,7 @@ pluginsbyte: $(PLUGINS)
 # rules to make theories and plugins
 ###########################################################################
 
-theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP) | theories/Init/%.v.d
+theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
 	$(SHOW)'COQC $(COQ_XML) -noinit $<'
 	$(HIDE)rm -f theories/Init/$*.glob
 	$(HIDE)$(BOOTCOQC) $< $(COQ_XML) -noinit -R theories Coq
@@ -1035,11 +1043,11 @@ COND_OPTFLAGS= \
 	$(SHOW)'WINDRES    $<'
 	$(HIDE)i686-w64-mingw32-windres -i $< -o $@
 
-%.cmi: %.mli | %.mli.d
+%.cmi: %.mli
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
 
-%.cmo: %.ml | %.ml.d
+%.cmo: %.ml
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
 
