@@ -1,0 +1,30 @@
+Ocamlbuild & Coq
+----------------
+
+A quick note in case someone else gets interested someday in compiling
+Coq via ocamlbuild : such an experimental build system has existed
+in the past (more or less maintained from 2009 to 2013), in addition
+to the official build system via gnu make. But this build via
+ocamlbuild has been severly broken since early 2014 (and don't work
+in 8.5, for instance). This experiment has attracted very limited
+interest from other developers over the years, and has been quite
+cumbersome to maintain, so it is now officially discontinued.
+If you want to have a look at the files of this build system
+(especially myocamlbuild.ml), you can fetch :
+ - my last effort at repairing this build system (up to coqtop.native) :
+   https://github.com/letouzey/coq-wip/tree/ocamlbuild-partial-repair
+ - coq official v8.5 branch (recent but broken)
+ - coq v8.4 branch(less up-to-date, but works).
+
+For the record, the three main drawbacks of this experiments were:
+ - recurrent issues with circularities reported by ocamlbuild
+   (even though make was happy) during the evolution of Coq sources
+ - no proper support of parallel build
+ - quite slow re-traversal of already built things
+See the two corresponding bug reports on Mantis, or
+https://github.com/ocaml/ocamlbuild/issues/52
+
+As an interesting feature, I successfully used this to cross-compile
+Coq 8.4 from linux to win32 via mingw.
+
+Pierre Letouzey, june 2016
