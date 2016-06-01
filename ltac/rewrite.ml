@@ -1825,10 +1825,10 @@ let declare_projection n instance_id r =
   let poly = Global.is_polymorphic r in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let evd,c = Evd.fresh_global env sigma r in
+  let sigma,c = Evd.fresh_global env sigma r in
   let ty = Retyping.get_type_of env sigma c in
   let term = proper_projection c ty in
-  let typ = Typing.unsafe_type_of env sigma term in
+  let sigma, typ = Typing.type_of env sigma term in
   let ctx, typ = decompose_prod_assum typ in
   let typ =
     let n =
@@ -1857,9 +1857,7 @@ let declare_projection n instance_id r =
     ignore(Declare.declare_constant n 
 	   (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
 
-let build_morphism_signature m =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
+let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
   let sigma = Evd.from_ctx ctx in
   let t = Typing.unsafe_type_of env sigma m in
@@ -1884,8 +1882,10 @@ let build_morphism_signature m =
   in
   let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
   let evd = solve_constraints env !evd in
-  let m = Evarutil.nf_evar evd morph in
-    Pretyping.check_evars env Evd.empty evd m; m
+  let evd = Evd.nf_constraints evd in
+  let m = Evarutil.nf_evars_universes evd morph in
+  Pretyping.check_evars env Evd.empty evd m;
+  Evd.evar_universe_context evd, m
 
 let default_morphism sign m =
   let env = Global.env () in
@@ -1922,12 +1922,13 @@ let add_morphism_infer glob m n =
   init_setoid ();
   let poly = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in
-  let instance = build_morphism_signature m in
-  let evd = Evd.from_env (Global.env ()) in
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  let uctx, instance = build_morphism_signature env evd m in
     if Lib.is_modtype () then
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 
-				 (None,poly,(instance,Univ.UContext.empty),None), 
+				 (None,poly,(instance,Evd.evar_context_universe_context uctx),None), 
 				 Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
 	add_instance (Typeclasses.new_instance 
@@ -1950,7 +1951,7 @@ let add_morphism_infer glob m n =
       let hook = Lemmas.mk_hook hook in
 	Flags.silently
 	  (fun () ->
-	    Lemmas.start_proof instance_id kind evd instance hook;
+	    Lemmas.start_proof instance_id kind (Evd.from_ctx uctx) instance hook;
 	    ignore (Pfedit.by (Tacinterp.interp tac))) ()
 
 let add_morphism glob binders m s n =

@@ -707,10 +707,43 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
    c is a constr
    cty is the type of constr *)
 
+let pr_hint_term env sigma ctx = function
+  | IsGlobRef gr -> pr_global gr
+  | IsConstr (c, ctx) ->
+     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
+     pr_constr_env env sigma c
+
+(** We need an object to record the side-effect of registering
+  global universes associated with a hint. *)
+let cache_context_set (_,c) =
+  Global.push_context_set false c
+
+let input_context_set : Univ.ContextSet.t -> Libobject.obj =
+  let open Libobject in
+    declare_object
+    { (default_object "Global universe context") with
+      cache_function = cache_context_set;
+      load_function = (fun _ -> cache_context_set);
+      discharge_function = (fun (_,a) -> Some a);
+      classify_function = (fun a -> Keep a) }
+
 let fresh_global_or_constr env sigma poly cr =
-  match cr with
-  | IsGlobRef gr -> Universes.fresh_global_instance env gr
-  | IsConstr (c, ctx) -> (c, ctx)
+  let isgr, (c, ctx) =
+    match cr with
+    | IsGlobRef gr ->
+       true, Universes.fresh_global_instance env gr
+    | IsConstr (c, ctx) -> false, (c, ctx)
+  in
+    if poly then (c, ctx)
+    else if Univ.ContextSet.is_empty ctx then (c, ctx)
+    else begin
+      if isgr then
+        Feedback.msg_warning (str"Using polymorphic hint " ++
+		     pr_hint_term env sigma ctx cr ++ str" monomorphically" ++
+		     str" use Polymorphic Hint to use it polymorphically.");
+      Lib.add_anonymous_leaf (input_context_set ctx);
+      (c, Univ.ContextSet.empty)
+    end
 
 let make_resolves env sigma flags pri poly ?name cr =
   let c, ctx = fresh_global_or_constr env sigma poly cr in
@@ -1077,7 +1110,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     if poly then IsConstr (c', diff)
     else if local then IsConstr (c', diff)
-    else (Global.push_context_set false diff;
+    else (Lib.add_anonymous_leaf (input_context_set diff);
 	  IsConstr (c', Univ.ContextSet.empty))
 
 let interp_hints poly =
@@ -1152,18 +1185,24 @@ let expand_constructor_hints env sigma lems =
     match kind_of_term lem with
     | Ind (ind,u) ->
 	List.init (nconstructors ind) 
-	  (fun i -> IsConstr (mkConstructU ((ind,i+1),u), 
-			      Univ.ContextSet.empty))
+		  (fun i ->
+		   let ctx = Univ.ContextSet.diff (Evd.universe_context_set evd)
+						  (Evd.universe_context_set sigma) in
+		   not (Univ.ContextSet.is_empty ctx),
+		   IsConstr (mkConstructU ((ind,i+1),u),ctx))
     | _ ->
-	[prepare_hint false (false,true) env sigma (evd,lem)]) lems
-
+       [match prepare_hint false (false,true) env sigma (evd,lem) with
+	| IsConstr (c, ctx) ->
+	   not (Univ.ContextSet.is_empty ctx), IsConstr (c, ctx)
+	| IsGlobRef _ -> assert false (* Impossible return value *) ]) lems
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
 let add_hint_lemmas env sigma eapply lems hint_db =
   let lems = expand_constructor_hints env sigma lems in
   let hintlist' =
-    List.map_append (make_resolves env sigma (eapply,true,false) None false) lems in
+    List.map_append (fun (poly, lem) ->
+		     make_resolves env sigma (eapply,true,false) None poly lem) lems in
   Hint_db.add_list env sigma hintlist' hint_db
 
 let make_local_hint_db env sigma ts eapply lems =
@@ -1181,12 +1220,6 @@ let make_local_hint_db env sigma ts eapply lems =
   let hintlist = List.map_append (make_resolve_hyp env sigma) sign in
   add_hint_lemmas env sigma eapply lems
     (Hint_db.add_list env sigma hintlist (Hint_db.empty ts false))
-
-let make_local_hint_db = 
-  if Flags.profile then
-    let key = Profile.declare_profile "make_local_hint_db" in
-      Profile.profile4 key make_local_hint_db
-  else make_local_hint_db
 
 let make_local_hint_db env sigma ?ts eapply lems =
   make_local_hint_db env sigma ts eapply lems

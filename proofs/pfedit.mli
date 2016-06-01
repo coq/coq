@@ -93,6 +93,14 @@ val get_goal_context : int -> Evd.evar_map * env
 
 val get_current_goal_context : unit -> Evd.evar_map * env
 
+(** [get_current_context ()] returns the context of the
+  current focused goal. If there is no focused goal but there
+  is a proof in progress, it returns the corresponding evar_map.
+  If there is no pending proof then it returns the current global
+  environment and empty evar_map. *)
+
+val get_current_context : unit -> Evd.evar_map * env
+
 (** [current_proof_statement] *)
 
 val current_proof_statement :

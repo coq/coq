@@ -71,22 +71,33 @@ let get_nth_V82_goal i =
   with Failure _ -> raise NoSuchGoal
     
 let get_goal_context_gen i =
-  try
-let { it=goal ; sigma=sigma; } =  get_nth_V82_goal i in
-(sigma, Refiner.pf_env { it=goal ; sigma=sigma; })
-  with Proof_global.NoCurrentProof -> Errors.error "No focused proof."
+  let { it=goal ; sigma=sigma; } =  get_nth_V82_goal i in
+  (sigma, Refiner.pf_env { it=goal ; sigma=sigma; })
 
 let get_goal_context i =
   try get_goal_context_gen i
-  with NoSuchGoal -> Errors.error "No such goal."
+  with Proof_global.NoCurrentProof -> Errors.error "No focused proof."
+     | NoSuchGoal -> Errors.error "No such goal."
 
 let get_current_goal_context () =
   try get_goal_context_gen 1
-  with NoSuchGoal ->
+  with Proof_global.NoCurrentProof -> Errors.error "No focused proof."
+     | NoSuchGoal -> 
     (* spiwack: returning empty evar_map, since if there is no goal, under focus,
         there is no accessible evar either *)
     let env = Global.env () in
     (Evd.from_env env, env)
+
+let get_current_context () =
+  try get_goal_context_gen 1
+  with Proof_global.NoCurrentProof ->
+    let env = Global.env () in
+    (Evd.from_env env, env)
+     | NoSuchGoal ->
+        (* No more focused goals ? *)
+        let p = get_pftreestate () in
+        let evd = Proof.in_proof p (fun x -> x) in
+        (evd, Global.env ())
 
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with

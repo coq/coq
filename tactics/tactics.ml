@@ -1377,6 +1377,8 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let elimtac = elimination_clause_scheme with_evars in
   let indclause  = make_clenv_binding env sigma (c, t) lbindc in
+  let sigma = meta_merge sigma (clear_metas indclause.evd) in
+  Proofview.Unsafe.tclEVARS sigma <*>
   Tacticals.New.tclTHEN
     (general_elim_clause_gen elimtac indclause elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c)
