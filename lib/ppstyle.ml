@@ -8,32 +8,38 @@
 
 module String = CString
 
-type t = string
-(** We use the concatenated string, with dots separating each string. We
-    forbid the use of dots in the strings. *)
+type t = Pp.pp_tag
 
 let tags : Terminal.style option String.Map.t ref = ref String.Map.empty
 
-let make ?style tag =
-  let check s = if String.contains s '.' then invalid_arg "Ppstyle.make" in
-  let () = List.iter check tag in
-  let name = String.concat "." tag in
-  let () = assert (not (String.Map.mem name !tags)) in
-  let () = tags := String.Map.add name style !tags in
-  name
+let to_format tag = String.concat "." tag
+let of_format tag = String.split  '.' tag
 
-let repr t = String.split '.' t
+let make ?style tag =
+  let name = to_format tag                          in
+  let () = assert (not (String.Map.mem name !tags)) in
+  let () = tags := String.Map.add name style !tags  in
+  tag
+
+let repr t = t
 
 let get_style tag =
-  try String.Map.find tag !tags with Not_found -> assert false
+  try String.Map.find (to_format tag) !tags
+  with Not_found -> assert false
+
+let get_style_format tag =
+  try String.Map.find tag !tags
+  with Not_found -> assert false
 
 let set_style tag st =
-  try tags := String.Map.update tag st !tags with Not_found -> assert false
+  try tags := String.Map.update (to_format tag) st !tags
+  with Not_found -> assert false
 
 let clear_styles () =
   tags := String.Map.map (fun _ -> None) !tags
 
-let dump () = String.Map.bindings !tags
+let dump () =
+  List.map (fun (s,b) -> (String.split '.' s, b)) (String.Map.bindings !tags)
 
 let parse_config s =
   let styles = Terminal.parse s in
@@ -41,8 +47,6 @@ let parse_config s =
     try String.Map.update name (Some st) accu with Not_found -> accu
   in
   tags := List.fold_left set !tags styles
-
-let tag = Pp.Tag.create "ppstyle"
 
 (** Default tag is to reset everything *)
 let default = Terminal.({
@@ -67,7 +71,3 @@ let warning_tag =
 let debug_tag =
   let style = Terminal.make ~bold:true ~fg_color:`WHITE ~bg_color:`MAGENTA () in
   make ~style ["message"; "debug"]
-
-let pp_tag t = match Pp.Tag.prj t tag with
-| None -> ""
-| Some key -> key

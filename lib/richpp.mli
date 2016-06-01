@@ -22,7 +22,7 @@ type 'annotation located = {
     The [get_annotations] function is used to convert tags into the desired
     annotation. *)
 val rich_pp :
-  (Pp.Tag.t -> 'annotation option) -> Pp.std_ppcmds ->
+  (Pp.pp_tag -> 'annotation option) -> Pp.std_ppcmds ->
   'annotation located Xml_datatype.gxml
 
 (** [annotations_positions ssdoc] returns a list associating each

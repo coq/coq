@@ -11,7 +11,11 @@
 
 (** {5 Style tags} *)
 
-type t = string
+(** This API is provisional and will likely be refined. *)
+type t = Pp.pp_tag
+
+val to_format : t -> Format.tag
+val of_format : Format.tag -> t
 
 (** Style tags *)
 
@@ -23,13 +27,14 @@ val repr : t -> string list
 (** Gives back the original name of the style tag where each string has been
     concatenated and separated with a dot. *)
 
-val tag : t Pp.Tag.key
-(** An annotation for styles *)
-
 (** {5 Manipulating global styles} *)
 
 val get_style : t -> Terminal.style option
 (** Get the style associated to a tag. *)
+
+val get_style_format : Format.tag -> Terminal.style option
+(** Get the style associated to a tag from a format tag. *)
+
 
 val set_style : t -> Terminal.style option -> unit
 (** Set a style associated to a tag. *)
@@ -43,13 +48,6 @@ val parse_config : string -> unit
 
 val dump : unit -> (t * Terminal.style option) list
 (** Recover the list of known tags together with their current style. *)
-
-(** {5 Color output} *)
-
-val pp_tag : Pp.tag_handler
-(** Returns the name of a style tag that is understandable by the formatters
-    that have been inititialized through {!init_color_output}. To be used with
-    {!Pp.pp_with}. *)
 
 (** {5 Tags} *)
 
