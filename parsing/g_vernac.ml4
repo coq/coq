@@ -127,8 +127,13 @@ GEXTEND Gram
     [ [ c = subgoal_command -> c None] ]
   ;
 
+  vernac_selector:
+    [ [ s = Tactic.selector -> s
+      | IDENT "par" ; ":" -> Tacexpr.SelectAllParallel ] ]
+  ;
+
   tactic_mode:
-  [ [ gln = OPT Tactic.selector;
+  [ [ gln = OPT vernac_selector;
       tac = subgoal_command -> tac gln ] ]
   ;
 
