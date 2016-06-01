@@ -338,9 +338,6 @@ GEXTEND Gram
           ExplicitBindings bl
       | bl = LIST1 constr -> ImplicitBindings bl ] ]
   ;
-  opt_bindings:
-    [ [ bl = LIST1 bindings SEP "," -> bl | -> [NoBindings] ] ]
-  ;
   constr_with_bindings:
     [ [ c = constr; l = with_bindings -> (c, l) ] ]
   ;
