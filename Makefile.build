@@ -1160,9 +1160,13 @@ dev/%.mllib.d: $(D_DEPEND_BEFORE_SRC) dev/%.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLL
 .PHONY: devel otags
 devel: $(DEBUGPRINTERS)
 
+# NOTA : otags only accepts camlp4 as preprocessor, so the following rule
+# won't build tags of .ml4 when compiling with camlp5
 otags:
-	otags $(MLIFILES) $(MLSTATICFILES) \
-	$(foreach i,$(ML4FILES),-pc -pa tools/compat5.cmo -pa op -pa g -pa m -pa rq $(patsubst %,-pa %,$(call CAMLP4DEPS,$i)) -impl $i)
+	otags $(MLIFILES) $(filter-out configure.ml, $(MLSTATICFILES)) \
+	$(if $(filter camlp5,$(CAMLP4)), , \
+          -pa op -pa g -pa m -pa rq $(addprefix -pa , $(CAMLP4DEPS)) \
+          $(addprefix -impl , $(ML4FILES)))
 
 
 ###########################################################################
