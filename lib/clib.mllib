@@ -21,7 +21,6 @@ Control
 Loc
 CList
 CString
-Serialize
 Deque
 CObj
 CArray
@@ -33,9 +32,6 @@ Ppstyle
 Xml_datatype
 Richpp
 Feedback
-Xml_lexer
-Xml_parser
-Xml_printer
 CUnix
 Envars
 Aux_file
