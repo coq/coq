@@ -73,10 +73,10 @@ end
 
 open Emacs
 
-let  dbg_str = tag Ppstyle.(Tag.inj debug_tag   tag) (str "Debug:")   ++ spc ()
+let  dbg_str = tag Ppstyle.debug_tag   (str "Debug:")   ++ spc ()
 let info_str = mt ()
-let warn_str = tag Ppstyle.(Tag.inj warning_tag tag) (str "Warning:") ++ spc ()
-let  err_str = tag Ppstyle.(Tag.inj error_tag   tag) (str "Error:"  ) ++ spc ()
+let warn_str = tag Ppstyle.warning_tag (str "Warning:") ++ spc ()
+let  err_str = tag Ppstyle.error_tag   (str "Error:"  ) ++ spc ()
 
 let make_body quoter info ?loc s =
   let loc = Option.cata Pp.pr_loc (Pp.mt ()) loc in
@@ -132,7 +132,7 @@ let make_style_stack () =
   | st :: _ -> st
   in
   let push tag =
-    let style = match Ppstyle.get_style tag with
+    let style = match Ppstyle.get_style_format tag with
       | None    -> empty
       | Some st -> st
     in
@@ -156,7 +156,7 @@ let init_color_output () =
   let open Pp_control in
   let push_tag, pop_tag, clear_tag = make_style_stack () in
   std_logger_cleanup := clear_tag;
-  std_logger_tag     := Some Ppstyle.pp_tag;
+  std_logger_tag     := Some Ppstyle.to_format;
   let tag_handler = {
     Format.mark_open_tag   = push_tag;
     Format.mark_close_tag  = pop_tag;

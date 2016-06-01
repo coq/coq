@@ -22,7 +22,7 @@ exception Anomaly of string option * std_ppcmds (* System errors *)
  * Anyways, tagging should not happen here, but in the specific
  * listener to the msg_* stuff.
  *)
-let tag_err_str s = tag Ppstyle.(Tag.inj error_tag tag) (str s) ++ spc ()
+let tag_err_str s = tag Ppstyle.error_tag (str s) ++ spc ()
 let err_str       = tag_err_str "Error:"
 let ann_str       = tag_err_str "Anomaly:"
 
@@ -154,6 +154,6 @@ let handled e =
 
 let fatal_error info anomaly =
   let msg = info ++ fnl () in
-  pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft msg;
+  pp_with !Pp_control.err_ft msg;
   Format.pp_print_flush !Pp_control.err_ft ();
   exit (if anomaly then 129 else 1)

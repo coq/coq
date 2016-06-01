@@ -177,10 +177,7 @@ let richpp_of_xml xml = xml
 let richpp_of_string s = PCData s
 
 let richpp_of_pp pp =
-  let annotate t = match Pp.Tag.prj t Ppstyle.tag with
-  | None -> None
-  | Some key -> Some (Ppstyle.repr key)
-  in
+  let annotate t = Some (Ppstyle.repr t)    in
   let rec drop = function
   | PCData s -> [PCData s]
   | Element (_, annotation, cs) ->

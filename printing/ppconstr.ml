@@ -52,7 +52,7 @@ struct
 end
 
 let do_not_tag _ x = x
-let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
+let tag t s = Pp.tag t s
 let tag_keyword     = tag Tag.keyword
 let tag_evar        = tag Tag.evar
 let tag_type        = tag Tag.univ

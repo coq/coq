@@ -13,7 +13,7 @@ open Flags
 open Vernac
 open Pcoq
 
-let top_stderr x = msg_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft x
+let top_stderr x = msg_with ~pp_tag:Ppstyle.to_format !Pp_control.err_ft x
 
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
@@ -309,7 +309,7 @@ let do_vernac () =
     | any ->
         let any = CErrors.push any in
         let msg = print_toplevel_error any ++ fnl () in
-        pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
+        pp_with !Pp_control.std_ft msg;
         Format.pp_print_flush !Pp_control.std_ft ()
 
 (** Main coq loop : read vernacular expressions until Drop is entered.

@@ -67,27 +67,11 @@ val close : unit -> std_ppcmds
 
 (** {6 Opening and closing of tags} *)
 
-module Tag :
-sig
-  type t
-  (** Type of tags. Tags are dynamic types comparable to {Dyn.t}. *)
+(* XXX: Improve and add attributes *)
+type pp_tag = string list
 
-  type 'a key
-  (** Keys used to inject tags *)
-
-  val create : string -> 'a key
-  (** Create a key with the given name. Two keys cannot share the same name, if
-      ever this is the case this function raises an assertion failure. *)
-
-  val inj : 'a -> 'a key -> t
-  (** Inject an object into a tag. *)
-
-  val prj : t -> 'a key -> 'a option
-  (** Project an object from a tag. *)
-end
-
-val tag : Tag.t -> std_ppcmds -> std_ppcmds
-val open_tag : Tag.t -> std_ppcmds
+val tag : pp_tag -> std_ppcmds -> std_ppcmds
+val open_tag : pp_tag -> std_ppcmds
 val close_tag : unit -> std_ppcmds
 
 (** {6 Utilities} *)
@@ -165,7 +149,7 @@ val pr_loc : Loc.t -> std_ppcmds
 (** {6 Low-level pretty-printing functions with and without flush} *)
 
 (** FIXME: These ignore the logging settings and call [Format] directly *)
-type tag_handler = Tag.t -> Format.tag
+type tag_handler = pp_tag -> Format.tag
 
 (** [msg_with ?pp_tag fmt pp] Print [pp] to [fmt] and flush [fmt]  *)
 val msg_with : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit

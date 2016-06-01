@@ -26,6 +26,20 @@ open Goptions
     the "short" mode or (Some env) in the "rich" one.
 *)
 
+module Tag =
+struct
+  let definition =
+    let style = Terminal.make ~bold:true ~fg_color:`LIGHT_RED () in
+    Ppstyle.make ~style ["module"; "definition"]
+  let keyword =
+    let style = Terminal.make ~bold:true () in
+    Ppstyle.make ~style ["module"; "keyword"]
+end
+
+let tag t s = Pp.tag t s
+let tag_definition s = tag Tag.definition s
+let tag_keyword s = tag Tag.keyword s
+
 let short = ref false
 
 let _ =
@@ -44,14 +58,8 @@ let mk_fake_top =
   let r = ref 0 in
   fun () -> incr r; Id.of_string ("FAKETOP"^(string_of_int !r))
 
-module Make (Taggers : sig
-  val tag_definition : std_ppcmds -> std_ppcmds
-  val tag_keyword : std_ppcmds -> std_ppcmds
-end) =
-struct
-
-let def s = Taggers.tag_definition (str s)
-let keyword s = Taggers.tag_keyword (str s)
+let def s = tag_definition (str s)
+let keyword s = tag_keyword (str s)
 
 let get_new_id locals id =
   let rec get_id l id =
@@ -441,20 +449,4 @@ let print_modtype kn =
       with e when CErrors.noncritical e ->
 	print_signature' true None kn mtb.mod_type))
 
-end
 
-module Tag =
-struct
-  let definition =
-    let style = Terminal.make ~bold:true ~fg_color:`LIGHT_RED () in
-    Ppstyle.make ~style ["module"; "definition"]
-  let keyword =
-    let style = Terminal.make ~bold:true () in
-    Ppstyle.make ~style ["module"; "keyword"]
-end
-
-include Make(struct
-  let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
-  let tag_definition s = tag Tag.definition s
-  let tag_keyword s = tag Tag.keyword s
-end)

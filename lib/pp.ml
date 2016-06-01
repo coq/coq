@@ -42,25 +42,7 @@ end = struct
 
 end
 
-module Tag :
-sig
-  type t 
-  type 'a key
-  val create : string -> 'a key
-  val inj : 'a -> 'a key -> t
-  val prj : t -> 'a key -> 'a option
-end =
-struct
-
-module Dyn = Dyn.Make(struct end)
-
-type t = Dyn.t
-type 'a key = 'a Dyn.tag
-let create = Dyn.create
-let inj = Dyn.Easy.inj
-let prj = Dyn.Easy.prj
-
-end
+type pp_tag = string list
 
 open Pp_control
 
@@ -95,7 +77,7 @@ type 'a ppcmd_token =
   | Ppcmd_open_box of block_type
   | Ppcmd_close_box
   | Ppcmd_comment of string list
-  | Ppcmd_open_tag of Tag.t
+  | Ppcmd_open_tag of pp_tag
   | Ppcmd_close_tag
 
 type 'a ppdir_token =
@@ -243,7 +225,7 @@ let rec pr_com ft s =
       Some s2 -> Format.pp_force_newline ft (); pr_com ft s2
     | None -> ()
 
-type tag_handler = Tag.t -> Format.tag
+type tag_handler = pp_tag -> Format.tag
 
 (* pretty printing functions *)
 let pp_dirs ?pp_tag ft =

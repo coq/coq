@@ -47,7 +47,7 @@ let _ = CErrors.register_handler explain_exn_default
 
 let wrap_vernac_error with_header (exn, info) strm =
   if with_header then
-    let header = Pp.tag (Pp.Tag.inj Ppstyle.error_tag Ppstyle.tag) (str "Error:") in
+    let header = Pp.tag Ppstyle.error_tag (str "Error:") in
     let e = EvaluatedError (hov 0 (header ++ spc () ++ strm), None) in
     (e, info)
   else
