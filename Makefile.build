@@ -961,12 +961,12 @@ $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 ### Special rules
 ###########################################################################
 
-dev/printers.cma: | dev/printers.mllib.d
+dev/printers.cma: dev/printers.mllib
 	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $^ -o test-printer
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -linkall -a -o $@
 
 ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
@@ -1072,7 +1072,7 @@ $(MLWITHOUTMLI:.ml=.cmx): %.cmx: %.cmi  # for .ml with .mli this is already the 
 
 $(MLWITHOUTMLI:.ml=.cmi): %.cmi: %.cmo
 
-%.cmx: %.ml | %.ml.d
+%.cmx: %.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) -c $<
 
@@ -1102,7 +1102,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) \
 	  $(CAMLP4DEPS) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
 
-%.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
+%.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP)
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob 
 	$(HIDE)$(BOOTCOQC) $<
