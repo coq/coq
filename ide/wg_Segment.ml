@@ -60,6 +60,8 @@ object (self)
   val mutable default : color = `WHITE
   val mutable pixmap : GDraw.pixmap = GDraw.pixmap ~width:1 ~height:1 ()
   val clicked = new GUtil.signal ()
+  val mutable need_refresh = false
+  val refresh_timer = Ideutils.mktimer ()
 
   initializer
     box#misc#set_size_request ~height ();
@@ -88,13 +90,15 @@ object (self)
     let cb show = if show then self#misc#show () else self#misc#hide () in
     stick show_progress_bar self cb;
     (** Initial pixmap *)
-    draw#set_pixmap pixmap
+    draw#set_pixmap pixmap;
+    refresh_timer.Ideutils.run ~ms:300
+      ~callback:(fun () -> if need_refresh then self#refresh (); true)
 
   method set_model md =
     model <- Some md;
     let changed_cb = function
     | `INSERT | `REMOVE ->
-      if self#misc#visible then self#refresh ()
+      if self#misc#visible then need_refresh <- true
     | `SET (i, color) ->
       if self#misc#visible then self#fill_range color i (i + 1)
     in
@@ -125,6 +129,7 @@ object (self)
   method private refresh () = match model with
   | None -> ()
   | Some md ->
+    need_refresh <- false;
     pixmap#set_foreground default;
     pixmap#rectangle ~x:0 ~y:0 ~width ~height ~filled:true ();
     let make (k, cur, accu) v = match cur with
