@@ -144,6 +144,18 @@ object
   method into s = Some s
 end
 
+let string_pair_list (sep : char) : (string * string) list repr =
+object
+  val sep' = String.make 1 sep
+  method from = CList.map (fun (s1, s2) -> CString.concat sep' [s1; s2])
+  method into l =
+    try
+      Some (CList.map (fun s ->
+        let split = CString.split sep s in
+        CList.nth split 0, CList.nth split 1) l)
+    with Failure _ -> None
+end
+
 let bool : bool repr =
 object
   method from s = [string_of_bool s]
@@ -506,6 +518,9 @@ let highlight_current_line =
 
 let nanoPG =
   new preference ~name:["nanoPG"] ~init:false ~repr:Repr.(bool)
+
+let user_queries =
+  new preference ~name:["user_queries"] ~init:[] ~repr:Repr.(string_pair_list '$')
 
 class tag_button (box : Gtk.box Gtk.obj) =
 object (self)
@@ -908,6 +923,25 @@ let configure ?(apply=(fun () -> ())) () =
   let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in
 
+  let edit_user_query (q, k) =
+    let q = Configwin_ihm.edit_string "User query" q in
+    let k = Configwin_ihm.edit_string "Shortcut key" k in
+      q, k
+  in
+
+  let user_queries =
+    list
+      ~f:user_queries#set
+      ~eq:(fun (q1, _) (q2, _) -> q1 = q2)
+      ~edit:edit_user_query
+      ~add:(fun () -> ["<user query>", "<shortcut key>"])
+      ~titles:["User query"; "Shortcut key"]
+      "User queries"
+      (fun (q, s) -> [q; s])
+      user_queries#get
+
+  in
+
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
    (shame on Benjamin) *)
   let cmds =
@@ -939,7 +973,9 @@ let configure ?(apply=(fun () -> ())) () =
 	     [modifiers_valid; modifier_for_tactics;
 	      modifier_for_templates; modifier_for_display; modifier_for_navigation]);
      Section("Misc", Some `ADD,
-	     misc)]
+       misc);
+     Section("User queries", None,
+       [user_queries])]
   in
 (*
   Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string current.text_font);

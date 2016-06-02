@@ -681,10 +681,6 @@ let doquery query sn =
   sn.messages#clear;
   Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
 
-let showproof () =
-  let query = "Show Proof." in
-  on_current_term (doquery query)
-
 let otherquery command sn =
   let word = get_current_word sn in
   if word <> "" then
@@ -696,9 +692,9 @@ let otherquery command = cb_on_current_term (otherquery command)
 let query command _ =
   if command = "Search" || command = "SearchAbout"
   then searchabout ()
-  else if command = "Show Proof"
-  then showproof ()
   else otherquery command ()
+
+let simplequery query = cb_on_current_term (doquery query)
 
 end
 
@@ -868,12 +864,12 @@ let toggle_items menu_name l =
   in
   List.iter f l
 
+let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
+
 (** Create alphabetical menu items with elements in sub-items.
     [l] is a list of lists, one per initial letter *)
 
 let alpha_items menu_name item_name l =
-  let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
-  in
   let mk_item text =
     let text' =
       let last = String.length text - 1 in
@@ -919,6 +915,24 @@ let template_item (text, offset, len, key) =
     end
   in
   item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
+
+(** Create menu items for pairs (query, shortcut key).
+    If the shortcut key is not in the range 'a'-'z','A'-'Z', it will be ignored.  *)
+
+let user_queries_items menu_name item_name l modifier =
+  let valid_key k = Int.equal (CString.length k) 1 && Util.is_letter k.[0] in
+  let mk_item (query, key) =
+    let query' =
+      let last = CString.length query - 1 in
+      if query.[last] = '.'
+      then query
+      else query ^ "."
+    in
+    let callback = Query.simplequery query' in
+    let accel = if valid_key key then Some (modifier^key) else None in
+    item (item_name^" "^(no_under query)) ~label:query ?accel ~callback menu_name
+  in
+  List.iter mk_item l
 
 let emit_to_focus window sgn =
   let focussed_widget = GtkWindow.Window.get_focus window#as_window in
@@ -1120,6 +1134,7 @@ let build_ui () =
     qitem "Print Assumptions" (Some "<Ctrl><Shift>N");
     qitem "Show Proof" (Some "<Ctrl><Shift>R");
   ];
+  user_queries_items queries_menu "Query" user_queries#get "<Ctrl><Shift>";
 
   menu tools_menu [
     item "Tools" ~label:"_Tools";
