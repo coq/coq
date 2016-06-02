@@ -65,6 +65,7 @@ val modifier_for_navigation : string preference
 val modifier_for_templates : string preference
 val modifier_for_tactics : string preference
 val modifier_for_display : string preference
+val modifier_for_queries : string preference
 val modifiers_valid : string preference
 val cmd_browse : string preference
 val cmd_editor : string preference

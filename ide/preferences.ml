@@ -315,6 +315,9 @@ let modifier_for_tactics =
 let modifier_for_display =
   new preference ~name:["modifier_for_display"] ~init:"<Alt><Shift>" ~repr:Repr.(string)
 
+let modifier_for_queries =
+  new preference ~name:["modifier_for_queries"] ~init:"<Control><Shift>" ~repr:Repr.(string)
+
 let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/"
 let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/"
 let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/"
@@ -852,6 +855,9 @@ let configure ?(apply=(fun () -> ())) () =
   let modifier_for_display =
     pmodifiers "Modifiers for View Menu" modifier_for_display
   in
+  let modifier_for_queries =
+    pmodifiers "Modifiers for Queries Menu" modifier_for_queries
+  in
   let modifiers_valid =
     pmodifiers ~all:true "Allowed modifiers" modifiers_valid
   in
@@ -977,7 +983,7 @@ let configure ?(apply=(fun () -> ())) () =
      Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
         modifier_for_templates; modifier_for_display; modifier_for_navigation;
-        user_queries]);
+        modifier_for_queries; user_queries]);
      Section("Misc", Some `ADD,
        misc)]
   in

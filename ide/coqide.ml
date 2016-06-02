@@ -919,7 +919,7 @@ let template_item (text, offset, len, key) =
 (** Create menu items for pairs (query, shortcut key).
     If the shortcut key is not in the range 'a'-'z','A'-'Z', it will be ignored.  *)
 
-let user_queries_items menu_name item_name l modifier =
+let user_queries_items menu_name item_name l =
   let valid_key k = Int.equal (CString.length k) 1 && Util.is_letter k.[0] in
   let mk_item (query, key) =
     let query' =
@@ -929,7 +929,7 @@ let user_queries_items menu_name item_name l modifier =
       else query ^ "."
     in
     let callback = Query.simplequery query' in
-    let accel = if valid_key key then Some (modifier^key) else None in
+    let accel = if valid_key key then Some (modifier_for_queries#get^key) else None in
     item (item_name^" "^(no_under query)) ~label:query ?accel ~callback menu_name
   in
   List.iter mk_item l
@@ -1123,17 +1123,21 @@ let build_ui () =
   ];
   alpha_items templates_menu "Template" Coq_commands.commands;
 
-  let qitem s accel = item s ~label:("_"^s) ?accel ~callback:(Query.query s) in
+  let qitem s sc =
+    item s ~label:("_"^s)
+      ~accel:(modifier_for_queries#get^sc)
+      ~callback:(Query.query s)
+  in
   menu queries_menu [
     item "Queries" ~label:"_Queries";
-    qitem "Search" (Some "<Ctrl><Shift>K");
-    qitem "Check" (Some "<Ctrl><Shift>C");
-    qitem "Print" (Some "<Ctrl><Shift>P");
-    qitem "About" (Some "<Ctrl><Shift>A");
-    qitem "Locate" (Some "<Ctrl><Shift>L");
-    qitem "Print Assumptions" (Some "<Ctrl><Shift>N");
+    qitem "Search" "K";
+    qitem "Check" "C";
+    qitem "Print" "P";
+    qitem "About" "A";
+    qitem "Locate" "L";
+    qitem "Print Assumptions" "N";
   ];
-  user_queries_items queries_menu "Query" user_queries#get "<Ctrl><Shift>";
+  user_queries_items queries_menu "Query" user_queries#get;
 
   menu tools_menu [
     item "Tools" ~label:"_Tools";
