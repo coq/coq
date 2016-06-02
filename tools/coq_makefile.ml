@@ -379,36 +379,63 @@ let header_includes () = ()
 let implicit () =
     section "Implicit rules.";
   let mli_rules () =
-    print "$(MLIFILES:.mli=.cmi): %.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "$(MLIFILES:.mli=.cmi): %.cmi: %.mli\n";
+    print "\t$(SHOW)'CAMLC -c $<'\n";
+    print "\t$(HIDE)$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli\n";
-    print "\t$(CAMLDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(SHOW)'CAMLDEP $<'\n";
+    print "\t$(HIDE)$(CAMLDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+  in
   let ml4_rules () =
-    print "$(ML4FILES:.ml4=.cmo): %.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "$(ML4FILES:.ml4=.cmo): %.cmo: %.ml4\n";
+    print "\t$(SHOW)'CAMLC -pp -c $<'\n";
+    print "\t$(HIDE)$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "$(filter-out $(addsuffix .cmx,$(foreach lib,$(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(ML4FILES:.ml4=.cmx)): %.cmx: %.ml4\n";
-    print "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "\t$(SHOW)'CAMLOPT -pp -c $<'\n";
+    print "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "$(addsuffix .d,$(ML4FILES)): %.ml4.d: %.ml4\n";
-    print "\t$(CAMLDEP) $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(SHOW)'CAMLDEP -pp $<'\n";
+    print "\t$(HIDE)$(CAMLDEP) $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml_rules () =
-    print "$(MLFILES:.ml=.cmo): %.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "$(MLFILES:.ml=.cmo): %.cmo: %.ml\n";
+    print "\t$(SHOW)'CAMLC -c $<'\n";
+    print "\t$(HIDE)$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(filter-out $(addsuffix .cmx,$(foreach lib,$(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(MLFILES:.ml=.cmx)): %.cmx: %.ml\n";
-    print "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "\t$(SHOW)'CAMLOPT -c $<'\n";
+    print "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(addsuffix .d,$(MLFILES)): %.ml.d: %.ml\n";
-    print "\t$(CAMLDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(SHOW)'CAMLDEP $<'\n";
+    print "\t$(HIDE)$(CAMLDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let cmxs_rules () = (* order is important here when there is foo.ml and foo.mllib *)
-    print "$(filter-out $(MLLIBFILES:.mllib=.cmxs),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLPACKFILES:.mlpack=.cmxs)): %.cmxs: %.cmx
-\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
-    print "$(MLLIBFILES:.mllib=.cmxs): %.cmxs: %.cmxa\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n" in
+    print "$(filter-out $(MLLIBFILES:.mllib=.cmxs),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLPACKFILES:.mlpack=.cmxs)): %.cmxs: %.cmx\n";
+    print "\t$(SHOW)'CAMLOPT -shared -o $@'\n";
+    print "\t$(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
+    print "$(MLLIBFILES:.mllib=.cmxs): %.cmxs: %.cmxa\n";
+    print "\t$(SHOW)'CAMLOPT -shared -o $@'\n";
+    print "\t(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n"
+  in
   let mllib_rules () =
-    print "$(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
-    print "$(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
+    print "$(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib\n";
+    print "\t$(SHOW)'CAMLC -a -o $@'\n";
+    print "\t$(HIDE)$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
+    print "$(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib\n";
+    print "\t$(SHOW)'CAMLOPT -a -o $@'\n";
+    print "\t$(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
     print "$(addsuffix .d,$(MLLIBFILES)): %.mllib.d: %.mllib\n";
-    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(SHOW)'COQDEP $<'\n";
+    print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+  in
   let mlpack_rules () =
-    print "$(MLPACKFILES:.mlpack=.cmo): %.cmo: | %.mlpack\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
-    print "$(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
+    print "$(MLPACKFILES:.mlpack=.cmo): %.cmo: | %.mlpack\n";
+    print "\t$(SHOW)'CAMLC -pack -o $@'\n";
+    print "\t$(HIDE)$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
+    print "$(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack\n";
+    print "\t$(SHOW)'CAMLOPT -pack -o $@'\n";
+    print "\t$(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
     print "$(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack\n";
-    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
-in
+    print "\t$(SHOW)'COQDEP $<'\n";
+    print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+  in
   let v_rules () =
     print "$(VOFILES): %.vo: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(GLOBFILES): %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -516,7 +543,11 @@ let parameters () =
   print "# TIMECMD set a command to log .v compilation time;\n";
   print "# TIMED if non empty, use the default time command as TIMECMD;\n";
   print "# ZDEBUG/COQDEBUG to specify debug flags for ocamlc&ocamlopt/coqc;\n";
-  print "# DSTROOT to specify a prefix to install path.\n\n";
+  print "# DSTROOT to specify a prefix to install path.\n";
+  print "# VERBOSE to disable the short display of compilation rules.\n\n";
+  print "VERBOSE?=\n";
+  print "SHOW := $(if $(VERBOSE),@true \"\",@echo \"\")\n";
+  print "HIDE := $(if $(VERBOSE),,@)\n\n";
   print "# Here is a hack to make $(eval $(shell works:\n";
   print "define donewline\n\n\nendef\n";
   print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr -d '\\r' | tr '\\n' '@'; })))\n";
@@ -579,10 +610,13 @@ let forpacks l =
   let () = if l <> [] then section "Ad-hoc implicit rules for mlpack." in
   List.iter (fun it ->
     let h = Filename.chop_extension it in
+    let pk = String.capitalize (Filename.basename h) in
     printf "$(addsuffix .cmx,$(filter $(basename $(MLFILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml\n" h;
-    printf "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $<\n\n" (String.capitalize (Filename.basename h));
+    printf "\t$(SHOW)'CAMLOPT -c -for-pack %s $<'\n" pk;
+    printf "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $<\n\n" pk;
     printf "$(addsuffix .cmx,$(filter $(basename $(ML4FILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml4\n" h;
-    printf "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $(PP) -impl $<\n\n" (String.capitalize (Filename.basename h))
+    printf "\t$(SHOW)'CAMLOPT -c -pp -for-pack %s $<'\n" pk;
+    printf "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $(PP) -impl $<\n\n" pk
   ) l
 
 let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other_targets inc =
