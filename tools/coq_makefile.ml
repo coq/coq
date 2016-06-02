@@ -381,19 +381,19 @@ let implicit () =
   let mli_rules () =
     print "$(MLIFILES:.mli=.cmi): %.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli\n";
-    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(CAMLDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml4_rules () =
     print "$(ML4FILES:.ml4=.cmo): %.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "$(filter-out $(addsuffix .cmx,$(foreach lib,$(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(ML4FILES:.ml4=.cmx)): %.cmx: %.ml4\n";
     print "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "$(addsuffix .d,$(ML4FILES)): %.ml4.d: %.ml4\n";
-    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(CAMLDEP) $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml_rules () =
     print "$(MLFILES:.ml=.cmo): %.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(filter-out $(addsuffix .cmx,$(foreach lib,$(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(MLFILES:.ml=.cmx)): %.cmx: %.ml\n";
     print "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(addsuffix .d,$(MLFILES)): %.ml.d: %.ml\n";
-    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(CAMLDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let cmxs_rules () = (* order is important here when there is foo.ml and foo.mllib *)
     print "$(filter-out $(MLLIBFILES:.mllib=.cmxs),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLPACKFILES:.mlpack=.cmxs)): %.cmxs: %.cmx
 \t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
@@ -471,6 +471,7 @@ let variables is_install opt (args,defs) =
     print "CAMLOPTC?=$(OCAMLFIND) opt -c -rectypes -thread\n";
     print "CAMLLINK?=$(OCAMLFIND) ocamlc -rectypes -thread\n";
     print "CAMLOPTLINK?=$(OCAMLFIND) opt -rectypes -thread\n";
+    print "CAMLDEP?=$(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack\n";
     print "CAMLLIB?=$(shell $(OCAMLFIND) printconf stdlib)\n";
     print "GRAMMARS?=grammar.cma\n";
     print "ifeq ($(CAMLP4),camlp5)
