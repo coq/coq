@@ -227,7 +227,8 @@ let ineq1_of_constr (h,t) =
 			   hstrict=false}]
               |_-> raise NoIneq)
           | Ind ((kn,i),_) ->
-            if not (eq_gr (IndRef(kn,i)) Coqlib.glob_eq) then raise NoIneq;
+            if not (eq_gr (IndRef(kn,i))
+                      (Coqlib.lib_ref "core.eq.type")) then raise NoIneq;
             let t0= args.(0) in
             let t1= args.(1) in
             let t2= args.(2) in
@@ -281,14 +282,15 @@ let fourier_lineq lineq1 =
 (* Defined constants *)
 
 let get = Lazy.force
-let constant = Coqlib.gen_constant "Fourier"
+let constant path s = Universes.constr_of_global @@
+  Coqlib.coq_reference "Fourier" path s
 
 (* Standard library *)
 open Coqlib
-let coq_sym_eqT = lazy (build_coq_eq_sym ())
-let coq_False = lazy (build_coq_False ())
-let coq_not = lazy (build_coq_not ())
-let coq_eq = lazy (build_coq_eq ())
+let coq_eq      = lazy (lib_constr "core.eq.type")
+let coq_sym_eqT = lazy (lib_ref "core.eq.sym")
+let coq_False   = lazy (lib_constr "core.False.type")
+let coq_not     = lazy (lib_constr "core.not.type")
 
 (* Rdefinitions *)
 let constant_real = constant ["Reals";"Rdefinitions"]

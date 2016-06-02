@@ -244,11 +244,8 @@ let mk_result ctxt value avoid =
   Some functions to deal with overlapping patterns
 **************************************************)
 
-let coq_True_ref =
-  lazy  (Coqlib.gen_reference "" ["Init";"Logic"] "True")
-
-let coq_False_ref =
-  lazy  (Coqlib.gen_reference "" ["Init";"Logic"] "False")
+let coq_True_ref  = lazy (Coqlib.lib_ref "core.True.type")
+let coq_False_ref = lazy (Coqlib.lib_ref "core.False.type")
 
 (*
   [make_discr_match_el \[e1,...en\]] builds match e1,...,en with
@@ -908,7 +905,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			assert false
 		end
 	    | GApp(loc1,GRef(loc2,eq_as_ref,_),[ty;GVar(loc3,id);rt])
-		when Globnames.eq_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref)  && n == Anonymous
+		when Globnames.eq_gr eq_as_ref (Coqlib.lib_ref "core.eq.type")  && n == Anonymous
 		  ->
 		begin
 		  try
@@ -1027,7 +1024,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		     else new_b, Id.Set.add id id_to_exclude
 		  *)
 	    | GApp(loc1,GRef(loc2,eq_as_ref,_),[ty;rt1;rt2])
-		when Globnames.eq_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref) && n == Anonymous
+		when Globnames.eq_gr eq_as_ref (Coqlib.lib_ref "core.eq.type") && n == Anonymous
 		  ->
 	      begin
 		try 

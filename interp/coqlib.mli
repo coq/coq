@@ -15,6 +15,38 @@ open Util
 (** This module collects the global references, constructions and
     patterns of the standard library used in ocaml files *)
 
+(** The idea is to migrate to rebindable name-based approach, thus the
+    only function this FILE will provide will be:
+
+    [lib_ref : string -> global_reference]
+
+    such that [find_reference "core.eq.type"]
+    returns the proper [global_reference]
+
+    [bind_ref : string -> global_reference -> unit]
+
+    will bind a reference.
+
+    A feature based approach would be possible too.
+
+    Contrary to the old approach of raising an anomaly, we expect
+    tactics to gracefully fail in the absence of some primitive.
+
+    This is work in progress, see below.
+*)
+
+val lib_ref    : string -> global_reference
+val lib_constr : string -> constr
+
+val add_ref    : string -> global_reference -> unit
+
+(** Non-lazy, fixed equalities *)
+val glob_eq       : global_reference
+val glob_identity : global_reference
+val glob_jmeq     : global_reference
+
+(** The rest below is ready to go... *)
+
 (** {6 ... } *)
 (** [find_reference caller_message [dir;subdir;...] s] returns a global
    reference to the name dir.subdir.(...).s; the corresponding module
@@ -26,79 +58,43 @@ type message = string
 
 val find_reference : message -> string list -> string -> global_reference
 
-(** [coq_reference caller_message [dir;subdir;...] s] returns a
-   global reference to the name Coq.dir.subdir.(...).s *)
-
-val coq_reference : message -> string list -> string -> global_reference
-
-(** idem but return a term *)
-
-val coq_constant : message -> string list -> string -> constr
-
-(** Synonyms of [coq_constant] and [coq_reference] *)
-
-val gen_constant : message -> string list -> string -> constr
-val gen_reference :  message -> string list -> string -> global_reference
-
-(** Search in several modules (not prefixed by "Coq") *)
-val gen_constant_in_modules : string->string list list-> string -> constr
-val gen_reference_in_modules : string->string list list-> string -> global_reference
-val arith_modules : string list list
-val zarith_base_modules : string list list
-val init_modules : string list list
+(** This just prefixes find_reference with Coq... *)
+val coq_reference  : message -> string list -> string -> global_reference
 
 (** For tactics/commands requiring vernacular libraries *)
 val check_required_library : string list -> unit
 
+(** Search in several modules (not prefixed by "Coq") *)
+val gen_constant_in_modules  : string -> string list list -> string -> constr
+val gen_reference_in_modules : string -> string list list -> string -> global_reference
+
 (** {6 Global references } *)
 
 (** Modules *)
-val prelude_module : DirPath.t
+val prelude_module    : DirPath.t
+val jmeq_module       : DirPath.t
 
-val logic_module : DirPath.t
-val logic_module_name : string list
-
-val logic_type_module : DirPath.t
-
-val jmeq_module : DirPath.t
-val jmeq_module_name : string list
-
+val logic_module_name     : string list
 val datatypes_module_name : string list
+val jmeq_module_name      : string list
+
+(** Used in omega/ring: XXX: They must query their particular theory omega.obj.prop *)
+val arith_modules       : string list list
+val zarith_base_modules : string list list
+val init_modules        : string list list
 
 (** Natural numbers *)
-val nat_path : full_path
-val glob_nat : global_reference
+val nat_path  : full_path
+val glob_nat  : global_reference
 val path_of_O : constructor
 val path_of_S : constructor
-val glob_O : global_reference
-val glob_S : global_reference
-
-(** Booleans *)
-val glob_bool : global_reference
-val path_of_true : constructor
-val path_of_false : constructor
-val glob_true : global_reference
-val glob_false : global_reference
-
-
-(** Equality *)
-val glob_eq : global_reference
-val glob_identity : global_reference
-val glob_jmeq : global_reference
+val glob_O    : global_reference
+val glob_S    : global_reference
 
 (** {6 ... } *)
 (** Constructions and patterns related to Coq initial state are unknown
-   at compile time. Therefore, we can only provide methods to build
-   them at runtime. This is the purpose of the [constr delayed] and
-   [constr_pattern delayed] types. Objects of this time needs to be
-   forced with [delayed_force] to get the actual constr or pattern 
-   at runtime. *)
-
-type coq_bool_data = {
-  andb : constr;
-  andb_prop : constr;
-  andb_true_intro : constr}
-val build_bool_type : coq_bool_data delayed
+   at compile time.
+  *)
 
 (** {6 For Equality tactics } *)
 type coq_sigma_data = {
@@ -108,17 +104,9 @@ type coq_sigma_data = {
   intro : global_reference;
   typ   : global_reference }
 
-val build_sigma_set : coq_sigma_data delayed
+val build_prod       : coq_sigma_data delayed
 val build_sigma_type : coq_sigma_data delayed
-val build_sigma : coq_sigma_data delayed
-
-(* val build_sigma_type_in : Environ.env -> coq_sigma_data Univ.in_universe_context_set *)
-(* val build_sigma_in : Environ.env -> coq_sigma_data Univ.in_universe_context_set *)
-(* val build_prod_in : Environ.env -> coq_sigma_data Univ.in_universe_context_set *)
-(* val build_coq_eq_data_in : Environ.env -> coq_eq_data Univ.in_universe_context_set *)
-
-(** Non-dependent pairs in Set from Datatypes *)
-val build_prod : coq_sigma_data delayed
+val build_sigma      : coq_sigma_data delayed
 
 type coq_eq_data = {
   eq   : global_reference;
@@ -128,15 +116,9 @@ type coq_eq_data = {
   trans: global_reference;
   congr: global_reference }
 
-val build_coq_eq_data : coq_eq_data delayed
-
+val build_coq_eq_data       : coq_eq_data delayed
 val build_coq_identity_data : coq_eq_data delayed
-val build_coq_jmeq_data : coq_eq_data delayed
-
-val build_coq_eq       : global_reference delayed (** = [(build_coq_eq_data()).eq] *)
-val build_coq_eq_refl  : global_reference delayed (** = [(build_coq_eq_data()).refl] *)
-val build_coq_eq_sym   : global_reference delayed (** = [(build_coq_eq_data()).sym] *)
-val build_coq_f_equal2 : global_reference delayed
+val build_coq_jmeq_data     : coq_eq_data delayed
 
 (** Data needed for discriminate and injection *)
 
@@ -148,51 +130,6 @@ type coq_inversion_data = {
 			 f params = f args *)
 }
 
-val build_coq_inversion_eq_data : coq_inversion_data delayed
+val build_coq_inversion_eq_data       : coq_inversion_data delayed
 val build_coq_inversion_identity_data : coq_inversion_data delayed
-val build_coq_inversion_jmeq_data : coq_inversion_data delayed
-val build_coq_inversion_eq_true_data : coq_inversion_data delayed
-
-(** Specif *)
-val build_coq_sumbool : constr delayed
-
-(** {6 ... } *)
-(** Connectives 
-   The False proposition *)
-val build_coq_False : constr delayed
-
-(** The True proposition and its unique proof *)
-val build_coq_True : constr delayed
-val build_coq_I : constr delayed
-
-(** Negation *)
-val build_coq_not : constr delayed
-
-(** Conjunction *)
-val build_coq_and : constr delayed
-val build_coq_conj : constr delayed
-val build_coq_iff : constr delayed
-
-val build_coq_iff_left_proj : constr delayed
-val build_coq_iff_right_proj : constr delayed
-
-(** Disjunction *)
-val build_coq_or : constr delayed
-
-(** Existential quantifier *)
-val build_coq_ex : constr delayed
-
-val coq_eq_ref : global_reference lazy_t
-val coq_identity_ref : global_reference lazy_t
-val coq_jmeq_ref : global_reference lazy_t
-val coq_eq_true_ref : global_reference lazy_t
-val coq_existS_ref : global_reference lazy_t
-val coq_existT_ref : global_reference lazy_t
-val coq_exist_ref : global_reference lazy_t
-val coq_not_ref : global_reference lazy_t
-val coq_False_ref : global_reference lazy_t
-val coq_sumbool_ref : global_reference lazy_t
-val coq_sig_ref : global_reference lazy_t
-
-val coq_or_ref : global_reference lazy_t
-val coq_iff_ref : global_reference lazy_t
+val build_coq_inversion_jmeq_data     : coq_inversion_data delayed

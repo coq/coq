@@ -1,18 +1,6 @@
 
 let contrib_name = "btauto"
 
-let init_constant dir s =
-  let find_constant contrib dir s =
-    Universes.constr_of_global (Coqlib.find_reference contrib dir s)
-  in
-  find_constant contrib_name dir s
-
-let get_constant dir s = lazy (Coqlib.gen_constant contrib_name dir s)
-
-let get_inductive dir s =
-  let glob_ref () = Coqlib.find_reference contrib_name ("Coq" :: dir) s in
-  Lazy.lazy_from_fun (fun () -> Globnames.destIndRef (glob_ref ()))
-
 let decomp_term (c : Term.constr) =
   Term.kind_of_term (Term.strip_outer_cast c)
 
@@ -20,11 +8,11 @@ let lapp c v  = Term.mkApp (Lazy.force c, v)
 
 let (===) = Term.eq_constr
 
+
 module CoqList = struct
-  let path = ["Init"; "Datatypes"]
-  let typ = get_constant path "list"
-  let _nil = get_constant path "nil"
-  let _cons = get_constant path "cons"
+  let typ  =  lazy (Coqlib.lib_constr "core.list.type")
+  let _nil =  lazy (Coqlib.lib_constr "core.list.nil")
+  let _cons = lazy (Coqlib.lib_constr "core.list.cons")
 
   let cons ty h t = lapp _cons [|ty; h ; t|]
   let nil ty = lapp _nil [|ty|]
@@ -36,11 +24,10 @@ module CoqList = struct
 end
 
 module CoqPositive = struct
-  let path = ["Numbers"; "BinNums"]
-  let typ = get_constant path "positive"
-  let _xH = get_constant path "xH"
-  let _xO = get_constant path "xO"
-  let _xI = get_constant path "xI"
+  let typ = lazy (Coqlib.lib_constr "num.pos.type")
+  let _xH = lazy (Coqlib.lib_constr "num.pos.xH")
+  let _xO = lazy (Coqlib.lib_constr "num.pos.xO")
+  let _xI = lazy (Coqlib.lib_constr "num.pos.xI")
 
   (* A coq nat from an int *)
   let rec of_int n =
@@ -57,7 +44,7 @@ module Env = struct
   module ConstrHashed = struct
     type t = Term.constr
     let equal = Term.eq_constr
-    let hash = Term.hash_constr
+    let hash  = Term.hash_constr
   end
 
   module ConstrHashtbl = Hashtbl.Make (ConstrHashed)
@@ -86,14 +73,14 @@ end
 
 module Bool = struct
 
-  let typ = get_constant ["Init"; "Datatypes"] "bool"
-  let ind = get_inductive ["Init"; "Datatypes"] "bool"
-  let trueb = get_constant ["Init"; "Datatypes"] "true"
-  let falseb = get_constant ["Init"; "Datatypes"] "false"
-  let andb = get_constant ["Init"; "Datatypes"] "andb"
-  let orb = get_constant ["Init"; "Datatypes"] "orb"
-  let xorb = get_constant ["Init"; "Datatypes"] "xorb"
-  let negb = get_constant ["Init"; "Datatypes"] "negb"
+  let ind    = lazy (Globnames.destIndRef (Coqlib.lib_ref "core.bool.type"))
+  let typ    = lazy (Coqlib.lib_constr "core.bool.type")
+  let trueb  = lazy (Coqlib.lib_constr "core.bool.true")
+  let falseb = lazy (Coqlib.lib_constr "core.bool.false")
+  let andb   = lazy (Coqlib.lib_constr "core.bool.andb")
+  let orb    = lazy (Coqlib.lib_constr "core.bool.orb")
+  let xorb   = lazy (Coqlib.lib_constr "core.bool.xorb")
+  let negb   = lazy (Coqlib.lib_constr "core.bool.negb")
 
   type t =
   | Var of int
@@ -105,12 +92,12 @@ module Bool = struct
   | Ifb of t * t * t
 
   let quote (env : Env.t) (c : Term.constr) : t =
-    let trueb = Lazy.force trueb in
+    let trueb  = Lazy.force trueb in
     let falseb = Lazy.force falseb in
-    let andb = Lazy.force andb in
-    let orb = Lazy.force orb in
-    let xorb = Lazy.force xorb in
-    let negb = Lazy.force negb in
+    let andb   = Lazy.force andb in
+    let orb    = Lazy.force orb in
+    let xorb   = Lazy.force xorb in
+    let negb   = Lazy.force negb in
 
     let rec aux c = match decomp_term c with
     | Term.App (head, args) ->
@@ -145,7 +132,9 @@ module Btauto = struct
 
   open Pp
 
-  let eq = get_constant ["Init"; "Logic"]  "eq"
+  let eq = lazy (Coqlib.lib_constr "core.eq.type")
+
+  let get_constant dir s = lazy (Universes.constr_of_global @@ Coqlib.coq_reference contrib_name dir s)
 
   let f_var = get_constant ["btauto"; "Reflect"] "formula_var"
   let f_btm = get_constant ["btauto"; "Reflect"] "formula_btm"
@@ -156,7 +145,7 @@ module Btauto = struct
   let f_xor = get_constant ["btauto"; "Reflect"] "formula_xor"
   let f_ifb = get_constant ["btauto"; "Reflect"] "formula_ifb"
 
-  let eval = get_constant ["btauto"; "Reflect"] "formula_eval"
+  let eval    = get_constant ["btauto"; "Reflect"] "formula_eval"
   let witness = get_constant ["btauto"; "Reflect"] "boolean_witness"
 
   let soundness = get_constant ["btauto"; "Reflect"] "reduce_poly_of_formula_sound_alt"

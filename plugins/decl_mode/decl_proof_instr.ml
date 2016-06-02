@@ -281,27 +281,19 @@ let default_justification elems gls=
 
 (* code for conclusion refining *)
 
-let constant dir s = lazy (Coqlib.gen_constant "Declarative" dir s)
 
-let _and       = constant ["Init";"Logic"] "and"
-
-let _and_rect  = constant ["Init";"Logic"] "and_rect"
-
-let _prod      = constant ["Init";"Datatypes"] "prod"
-
-let _prod_rect = constant ["Init";"Datatypes"] "prod_rect"
-
-let _ex        = constant ["Init";"Logic"] "ex"
-
-let _ex_ind    = constant ["Init";"Logic"] "ex_ind"
-
-let _sig       = constant ["Init";"Specif"] "sig"
-
-let _sig_rect  = constant ["Init";"Specif"] "sig_rect"
-
-let _sigT      = constant ["Init";"Specif"] "sigT"
-
-let _sigT_rect = constant ["Init";"Specif"] "sigT_rect"
+(* iterated equality *)
+let _eq        = lazy (Coqlib.lib_constr "core.eq.type")
+let _and       = lazy (Coqlib.lib_constr "core.and.type")
+let _and_rect  = lazy (Coqlib.lib_constr "core.and.ind")
+let _prod      = lazy (Coqlib.lib_constr "core.prod.type")
+let _prod_rect = lazy (Coqlib.lib_constr "core.prod.rect")
+let _ex        = lazy (Coqlib.lib_constr "core.ex.type")
+let _ex_ind    = lazy (Coqlib.lib_constr "core.ex.ind")
+let _sig       = lazy (Coqlib.lib_constr "core.sig.type")
+let _sig_rect  = lazy (Coqlib.lib_constr "core.sig.rect")
+let _sigT      = lazy (Coqlib.lib_constr "core.sigT.type")
+let _sigT_rect = lazy (Coqlib.lib_constr "core.sigT.rect")
 
 type stackd_elt =
 {se_meta:metavariable;
@@ -511,9 +503,6 @@ let instr_cut mkstat _thus _then cut gls0 =
       [tclTHEN tcl_erase_info (just_tac _then cut info);
        thus_tac] gls0
 
-
-(* iterated equality *)
-let _eq = lazy (Universes.constr_of_global (Coqlib.glob_eq))
 
 let decompose_eq id gls =
   let typ = pf_get_hyp_typ gls id in

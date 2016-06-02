@@ -55,7 +55,7 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let try_find_global_reference dir s =
   let sp = Libnames.make_path (make_dir ("Coq"::dir)) (Id.of_string s) in
     try Nametab.global_of_path sp
-    with Not_found -> 
+    with Not_found ->
       anomaly (str "Global reference " ++ str s ++ str " not found in generalized rewriting")
 
 let find_reference dir s =
@@ -66,7 +66,7 @@ type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
 let find_global dir s =
   let gr = lazy (try_find_global_reference dir s) in
-    fun (evd,cstrs) -> 
+    fun (evd,cstrs) ->
       let evd, c = Evarutil.new_global evd (Lazy.force gr) in
 	(evd, cstrs), c
 
@@ -74,13 +74,13 @@ let find_global dir s =
 
 (** Global constants. *)
 
-let coq_eq_ref = find_reference ["Init"; "Logic"] "eq"
-let coq_eq = find_global ["Init"; "Logic"] "eq"
-let coq_f_equal = find_global ["Init"; "Logic"] "f_equal"
-let coq_all = find_global ["Init"; "Logic"] "all"
-let impl = find_global ["Program"; "Basics"] "impl"
+let coq_eq_ref  = find_reference ["Init"; "Logic"] "eq"
+let coq_eq      = find_global    ["Init"; "Logic"] "eq"
+let coq_f_equal = find_global    ["Init"; "Logic"] "f_equal"
+let coq_all     = find_global    ["Init"; "Logic"] "all"
+let impl        = find_global    ["Program"; "Basics"] "impl"
 
-(** Bookkeeping which evars are constraints so that we can 
+(** Bookkeeping which evars are constraints so that we can
     remove them at the end of the tactic. *)
 
 let goalevars evars = fst evars
@@ -138,7 +138,7 @@ end) = struct
 
   let reflexive_type = find_global relation_classes "Reflexive"
   let reflexive_proof = find_global relation_classes "reflexivity"
-    
+
   let symmetric_type = find_global relation_classes "Symmetric"
   let symmetric_proof = find_global relation_classes "symmetry"
 
@@ -723,9 +723,9 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
 let make_eq () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
+(*FIXME*) Coqlib.lib_constr "core.eq.type"
 let make_eq_refl () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
+(*FIXME*) Coqlib.lib_constr "core.eq.refl"
 
 let get_rew_prf r = match r.rew_prf with
   | RewPrf (rel, prf) -> rel, prf 

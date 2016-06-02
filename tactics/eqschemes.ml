@@ -80,7 +80,7 @@ let my_it_mkLambda_or_LetIn_name s c =
 
 let get_coq_eq ctx =
   try
-    let eq = Globnames.destIndRef Coqlib.glob_eq in
+    let eq = Globnames.destIndRef (Coqlib.lib_ref "core.eq.type") in
     (* Do not force the lazy if they are not defined *)
     let eq, ctx = with_context_set ctx 
       (Universes.fresh_inductive_instance (Global.env ()) eq) in

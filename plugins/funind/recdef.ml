@@ -43,8 +43,8 @@ open Indfun_common
 
 (* Ugly things which should not be here *)
 
-let coq_constant m s =
-  Coqlib.coq_constant "RecursiveDefinition" m s
+let coq_constant m s = Universes.constr_of_global @@
+  Coqlib.coq_reference "RecursiveDefinition" m s
 
 let arith_Nat = ["Arith";"PeanoNat";"Nat"]
 let arith_Lt = ["Arith";"Lt"]
@@ -133,6 +133,7 @@ let iter_ref () =
   try find_reference ["Recdef"] "iter" 
   with Not_found -> error "module Recdef not loaded"
 let iter = function () -> (constr_of_global (delayed_force iter_ref))
+
 let eq = function () -> (coq_init_constant "eq")
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
 let le_lt_n_Sm = function () -> (coq_constant arith_Lt "le_lt_n_Sm")
@@ -1199,7 +1200,7 @@ let get_current_subgoals_types () =
     sigma, List.map (Goal.V82.abstract_type sigma) sgs
 
 let build_and_l l =
-  let and_constr =  Coqlib.build_coq_and () in
+  let and_constr =  Coqlib.lib_constr "core.and.type" in
   let conj_constr = coq_conj () in
   let mk_and p1 p2 =
     Term.mkApp(and_constr,[|p1;p2|]) in

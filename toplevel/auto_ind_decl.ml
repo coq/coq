@@ -59,28 +59,18 @@ exception DecidabilityMutualNotSupported
 
 let dl = Loc.ghost
 
-let constr_of_global g = lazy (Universes.constr_of_global g)
-
 (* Some pre declaration of constant we are going to use *)
-let bb = constr_of_global Coqlib.glob_bool
+let andb_prop       () = Coqlib.lib_constr "core.bool.andb_prop"
+let andb_true_intro () = Coqlib.lib_constr "core.bool.andb_true_intro"
+let bb              () = Coqlib.lib_constr "core.bool.type"
+let tt              () = Coqlib.lib_constr "core.bool.true"
+let ff              () = Coqlib.lib_constr "core.bool.false"
+let eq              () = Coqlib.lib_constr "core.eq.type"
 
-let andb_prop = fun _ -> (Coqlib.build_bool_type()).Coqlib.andb_prop
+let sumbool () = Coqlib.lib_constr "core.sumbool.type"
+let andb    () = Coqlib.lib_constr "core.bool.andb"
 
-let andb_true_intro = fun _ ->
-    (Coqlib.build_bool_type()).Coqlib.andb_true_intro
-
-let tt = constr_of_global Coqlib.glob_true
-
-let ff = constr_of_global Coqlib.glob_false
-
-let eq = constr_of_global Coqlib.glob_eq
-
-let sumbool = Coqlib.build_coq_sumbool
-
-let andb = fun _ -> (Coqlib.build_bool_type()).Coqlib.andb
-
-let induct_on c = induction false None c None None
-
+let induct_on  c = induction false None c None None
 let destruct_on c = destruct false None c None None
 
 let destruct_on_using c id =
@@ -106,7 +96,7 @@ let mkFullInd (ind,u) n =
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
-  try let _ = Global.type_of_global_unsafe Coqlib.glob_bool in ()
+  try let _ = Global.type_of_global_unsafe (Coqlib.lib_ref "core.bool.type") in ()
   with e when Errors.noncritical e -> raise (UndefinedCst "bool")
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
@@ -142,7 +132,7 @@ let build_beq_scheme mode kn =
       let eqs_typ = List.map (fun aa ->
                                 let a = lift !lift_cnt aa in
                                   incr lift_cnt;
-                                  myArrow a (myArrow a (Lazy.force bb))
+                                  myArrow a (myArrow a (bb ()))
                              ) ext_rel_list in
 
         let eq_input = List.fold_left2
@@ -225,7 +215,7 @@ let build_beq_scheme mode kn =
      List.fold_left (fun a b -> mkLambda(Anonymous,b,a))
       (mkLambda (Anonymous,
                  mkFullInd ind (n+3+(List.length rettyp_l)+nb_ind-1),
-                 (Lazy.force bb)))
+                 (bb ())))
       (List.rev rettyp_l) in
   (* make_one_eq *)
   (* do the [| C1 ... =>  match Y with ... end
@@ -236,17 +226,17 @@ let build_beq_scheme mode kn =
       extended_rel_list (n+nb_ind-1) mib.mind_params_ctxt)) in
     let constrsi = constrs (3+nparrec) in
     let n = Array.length constrsi in
-    let ar = Array.make n (Lazy.force ff) in
+    let ar = Array.make n (ff ()) in
     let eff = ref Safe_typing.empty_private_constants in
 	for i=0 to n-1 do
 	  let nb_cstr_args = List.length constrsi.(i).cs_args in
-	  let ar2 = Array.make n (Lazy.force ff) in
+	  let ar2 = Array.make n (ff ()) in
           let constrsj = constrs (3+nparrec+nb_cstr_args) in
 	    for j=0 to n-1 do
 	      if Int.equal i j then
 		ar2.(j) <- let cc = (match nb_cstr_args with
-                    | 0 -> Lazy.force tt
-                    | _ -> let eqs = Array.make nb_cstr_args (Lazy.force tt) in
+                    | 0 -> tt ()
+                    | _ -> let eqs = Array.make nb_cstr_args (tt ()) in
                       for ndx = 0 to nb_cstr_args-1 do
                         let _,_,cc = List.nth constrsi.(i).cs_args ndx in
                           let eqA, eff' = compute_A_equality rel_list
@@ -271,7 +261,7 @@ let build_beq_scheme mode kn =
                     (constrsj.(j).cs_args)
 		)
 	      else ar2.(j) <- (List.fold_left (fun a (p,q,r) ->
-			mkLambda (p,r,a)) (Lazy.force ff) (constrsj.(j).cs_args) )
+			mkLambda (p,r,a)) (ff ()) (constrsj.(j).cs_args) )
 	    done;
 
 	  ar.(i) <- (List.fold_left (fun a (p,q,r) -> mkLambda (p,r,a))
@@ -292,7 +282,7 @@ let build_beq_scheme mode kn =
     for i=0 to (nb_ind-1) do
         names.(i) <- Name (Id.of_string (rec_name i));
 	types.(i) <- mkArrow (mkFullInd ((kn,i),u) 0)
-                     (mkArrow (mkFullInd ((kn,i),u) 1) (Lazy.force bb));
+                     (mkArrow (mkFullInd ((kn,i),u) 1) (bb ()));
         let c, eff' = make_one_eq i in
         cores.(i) <- c;
         eff := Safe_typing.concat_private eff' !eff
@@ -522,15 +512,15 @@ let compute_bl_goal ind lnamesparrec nparrec =
         mkNamedProd x (mkVar s) (
             mkNamedProd y (mkVar s) (
               mkArrow
-               ( mkApp(Lazy.force eq,[|(Lazy.force bb);mkApp(mkVar seq,[|mkVar x;mkVar y|]);(Lazy.force tt)|]))
-               ( mkApp(Lazy.force eq,[|mkVar s;mkVar x;mkVar y|]))
+               ( mkApp(eq (),[|bb (); mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt () |]))
+               ( mkApp(eq (),[|mkVar s;mkVar x;mkVar y|]))
           ))
         ) list_id in
       let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
         mkNamedProd sbl b a
       ) c (List.rev list_id) (List.rev bl_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,(Lazy.force bb)))
+          mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,(bb ())))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
         mkNamedProd seq b a
@@ -546,8 +536,8 @@ let compute_bl_goal ind lnamesparrec nparrec =
         mkNamedProd n (mkFullInd (ind,u) nparrec) (
           mkNamedProd m (mkFullInd (ind,u) (nparrec+1)) (
             mkArrow
-              (mkApp(Lazy.force eq,[|(Lazy.force bb);mkApp(eqI,[|mkVar n;mkVar m|]);(Lazy.force tt)|]))
-              (mkApp(Lazy.force eq,[|mkFullInd (ind,u) (nparrec+3);mkVar n;mkVar m|]))
+              (mkApp(eq (),[|bb ();mkApp(eqI,[|mkVar n;mkVar m|]);tt ()|]))
+              (mkApp(eq (),[|mkFullInd (ind,u) (nparrec+3);mkVar n;mkVar m|]))
         ))), eff
 
 let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
@@ -604,7 +594,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                         | App (c,ca) -> (
                           match (kind_of_term c) with
                           | Ind (indeq, u) ->
-                              if eq_gr (IndRef indeq) Coqlib.glob_eq
+                              if eq_gr (IndRef indeq) (Coqlib.lib_ref "core.eq.type")
                               then
                                 Tacticals.New.tclTHEN
                                   (do_replace_bl mode bl_scheme_key ind
@@ -656,7 +646,7 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 
 let compute_lb_goal ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
-  let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
+  let eq = eq () and tt = tt () and bb = bb () in
   let eqI, eff = eqI ind lnamesparrec in
     let create_input c =
       let x = Id.of_string "x" and
@@ -778,13 +768,13 @@ let _ = lb_scheme_kind_aux := fun () -> lb_scheme_kind
 (* Decidable equality *)
 
 let check_not_is_defined () =
-  try ignore (Coqlib.build_coq_not ())
+  try ignore (Coqlib.lib_constr "core.not.type")
   with e when Errors.noncritical e -> raise (UndefinedCst "not")
 
 (* {n=m}+{n<>m}  part  *)
 let compute_dec_goal ind lnamesparrec nparrec =
   check_not_is_defined ();
-  let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
+  let eq = eq () and tt = tt () and bb = bb () in
   let list_id = list_id lnamesparrec in
     let create_input c =
       let x = Id.of_string "x" and
@@ -829,14 +819,14 @@ let compute_dec_goal ind lnamesparrec nparrec =
         create_input (
           mkNamedProd n (mkFullInd ind (2*nparrec)) (
             mkNamedProd m (mkFullInd ind (2*nparrec+1)) (
-              mkApp(sumbool(),[|eqnm;mkApp (Coqlib.build_coq_not(),[|eqnm|])|])
+              mkApp(sumbool(), [|eqnm;mkApp (Coqlib.lib_constr "core.not.type",[|eqnm|])|])
           )
         )
       )
 
 let compute_dec_tact ind lnamesparrec nparrec =
-  let eq = Lazy.force eq and tt = Lazy.force tt 
-  and ff = Lazy.force ff and bb = Lazy.force bb in
+  let eq = eq () and tt = tt ()
+  and ff = ff () and bb = bb () in
   let list_id = list_id lnamesparrec in
   let eqI, eff = eqI ind lnamesparrec in
   let avoid = ref [] in
@@ -901,7 +891,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
             let freshH3 = fresh_id (Id.of_string "H") gl in
             Tacticals.New.tclTHENLIST [
 	      simplest_right ;
-              Proofview.V82.tactic (unfold_constr (Lazy.force Coqlib.coq_not_ref));
+              Proofview.V82.tactic (unfold_constr (Coqlib.lib_ref "core.not.type"));
               intro;
               Equality.subst_all ();
               assert_by (Name freshH3)

@@ -59,10 +59,10 @@ EXTEND
         <:expr< Glob_term.GProd ($dloc$,Anonymous,Decl_kinds.Explicit,$c1$,$c2$) >> ]
     | "75" RIGHTA
       [ "~"; c = constr ->
-        apply_ref <:expr< coq_not_ref >> [c] ]
+        apply_ref <:expr< lazy (lib_ref "core.not.type") >> [c] ]
     | "70" RIGHTA
       [ c1 = constr; "="; c2 = NEXT; ":>"; t = NEXT ->
-        apply_ref <:expr< coq_eq_ref >> [t;c1;c2] ]
+        apply_ref <:expr< lazy (lib_ref "core.eq.type") >> [t;c1;c2] ]
     | "10" LEFTA
       [ f = constr; args = LIST1 NEXT ->
         let args = mlexpr_of_list (fun x -> x) args in

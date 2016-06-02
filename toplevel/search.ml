@@ -172,13 +172,13 @@ let search_pattern gopt pat mods =
 
 (** SearchRewrite *)
 
-let eq = Coqlib.glob_eq
+let eq () = Coqlib.lib_ref "core.eq.type"
 
 let rewrite_pat1 pat =
-  PApp (PRef eq, [| PMeta None; pat; PMeta None |])
+  PApp (PRef (eq ()), [| PMeta None; pat; PMeta None |])
 
 let rewrite_pat2 pat =
-  PApp (PRef eq, [| PMeta None; PMeta None; pat |])
+  PApp (PRef (eq ()), [| PMeta None; PMeta None; pat |])
 
 let search_rewrite gopt pat mods =
   let pat1 = rewrite_pat1 pat in

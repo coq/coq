@@ -33,11 +33,14 @@ let glob_Ascii = lazy (make_reference "Ascii")
 
 open Lazy
 
+let glob_true  () = lib_ref "core.bool.true"
+let glob_false () = lib_ref "core.bool.false"
+
 let interp_ascii dloc p =
   let rec aux n p =
      if Int.equal n 0 then [] else
      let mp = p mod 2 in
-     GRef (dloc,(if Int.equal mp 0 then glob_false else glob_true),None)
+     GRef (dloc,(if Int.equal mp 0 then glob_false () else glob_true () ), None)
      :: (aux (n-1) (p/2)) in
   GApp (dloc,GRef(dloc,force glob_Ascii,None), aux 8 p)
 
@@ -55,8 +58,8 @@ let interp_ascii_string dloc s =
 let uninterp_ascii r =
   let rec uninterp_bool_list n = function
     | [] when Int.equal n 0 -> 0
-    | GRef (_,k,_)::l when Globnames.eq_gr k glob_true  -> 1+2*(uninterp_bool_list (n-1)  l)
-    | GRef (_,k,_)::l when Globnames.eq_gr k glob_false -> 2*(uninterp_bool_list (n-1) l)
+    | GRef (_,k,_)::l when Globnames.eq_gr k (glob_true  ()) -> 1+2*(uninterp_bool_list (n-1)  l)
+    | GRef (_,k,_)::l when Globnames.eq_gr k (glob_false ()) -> 2*(uninterp_bool_list (n-1) l)
     | _ -> raise Non_closed_ascii in
   try
     let aux = function

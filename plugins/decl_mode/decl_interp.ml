@@ -156,7 +156,7 @@ let special_whd env =
   let infos=Closure.create_clos_infos Closure.betadeltaiota env in
     (fun t -> Closure.whd_val infos (Closure.inject t))
 
-let _eq = lazy (Universes.constr_of_global (Coqlib.glob_eq))
+let _eq = lazy (Coqlib.lib_constr "core.eq.type")
 
 let decompose_eq env id =
   let typ = Environ.named_type id env in

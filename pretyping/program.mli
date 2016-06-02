@@ -11,20 +11,20 @@ open Globnames
 
 (** A bunch of Coq constants used by Progam *)
 
-val sig_typ : unit -> global_reference
-val sig_intro : unit -> global_reference
-val sig_proj1 : unit -> global_reference
-val sigT_typ : unit -> global_reference
+val sig_typ    : unit -> global_reference
+val sig_intro  : unit -> global_reference
+val sig_proj1  : unit -> global_reference
+val sigT_typ   : unit -> global_reference
 val sigT_intro : unit -> global_reference
 val sigT_proj1 : unit -> global_reference
 val sigT_proj2 : unit -> global_reference
 
-val prod_typ : unit -> global_reference
+val prod_typ   : unit -> global_reference
 val prod_intro : unit -> global_reference
 val prod_proj1 : unit -> global_reference
 val prod_proj2 : unit -> global_reference
 
-val coq_eq_ind : unit -> global_reference
+val coq_eq_ind  : unit -> global_reference
 val coq_eq_refl : unit -> global_reference
 val coq_eq_refl_ref : unit -> global_reference
 val coq_eq_rect : unit -> global_reference
