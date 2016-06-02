@@ -322,6 +322,7 @@ let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/"
 let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/"
 let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/"
 let _ = attach_modifiers modifier_for_display "<Actions>/View/"
+let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/"
 
 let modifiers_valid =
   new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
@@ -938,7 +939,8 @@ let configure ?(apply=(fun () -> ())) () =
     let q = input_string "User query" "Your query" in
     let k = input_string "Shortcut key" "Shortcut (a single letter)" in
     let last = CString.length q - 1 in
-    let q =  if q.[last] = '.' then CString.sub q 0 last else q in
+    let q = if last > 0 && q.[last] = '.' then CString.sub q 0 last else q in
+    let q = CString.map (fun c -> if c = '$' then ' ' else c) q in
     (* Anything that is not a simple letter will be ignored. *)
     let k =
       if Int.equal (CString.length k) 1 && Util.is_letter k.[0] then k
@@ -950,7 +952,8 @@ let configure ?(apply=(fun () -> ())) () =
   let user_queries =
     list
       ~f:user_queries#set
-      ~eq:(fun (_, k1) (_, k2) -> k1 = k2) (* Disallow same key. *)
+      (* Disallow same key or empty query. *)
+      ~eq:(fun (q1, k1) (q2, k2) -> k1 = k2 || q1 = "" || q2 = "")
       ~add:add_user_query
       ~titles:["User query"; "Shortcut key"]
       "User queries"
