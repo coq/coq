@@ -916,20 +916,12 @@ let template_item (text, offset, len, key) =
   in
   item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
 
-(** Create menu items for pairs (query, shortcut key).
-    If the shortcut key is not in the range 'a'-'z','A'-'Z', it will be ignored.  *)
-
+(** Create menu items for pairs (query, shortcut key). *)
 let user_queries_items menu_name item_name l =
-  let valid_key k = Int.equal (CString.length k) 1 && Util.is_letter k.[0] in
   let mk_item (query, key) =
-    let query' =
-      let last = CString.length query - 1 in
-      if query.[last] = '.'
-      then query
-      else query ^ "."
-    in
-    let callback = Query.simplequery query' in
-    let accel = if valid_key key then Some (modifier_for_queries#get^key) else None in
+    let callback = Query.simplequery (query ^ ".") in
+    let accel = if not (CString.is_empty key) then
+      Some (modifier_for_queries#get^key) else None in
     item (item_name^" "^(no_under query)) ~label:query ?accel ~callback menu_name
   in
   List.iter mk_item l

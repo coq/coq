@@ -929,23 +929,29 @@ let configure ?(apply=(fun () -> ())) () =
   let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in
 
-  let edit_user_query (q, k) =
-    let input_string l s v =
-      match GToolbox.input_string ~title:l ~text:s v with
-      | None -> s
+  let add_user_query () =
+    let input_string l v =
+      match GToolbox.input_string ~title:l v with
+      | None -> ""
       | Some s -> s
     in
-    let q = input_string "User query" q "Your query" in
-    let k = input_string "Shortcut key" k "Shortcut (a single letter)" in
-      q, k
+    let q = input_string "User query" "Your query" in
+    let k = input_string "Shortcut key" "Shortcut (a single letter)" in
+    let last = CString.length q - 1 in
+    let q =  if q.[last] = '.' then CString.sub q 0 last else q in
+    (* Anything that is not a simple letter will be ignored. *)
+    let k =
+      if Int.equal (CString.length k) 1 && Util.is_letter k.[0] then k
+      else "" in
+    let k = CString.uppercase k in
+      [q, k]
   in
 
   let user_queries =
     list
       ~f:user_queries#set
-      ~eq:(fun (q1, _) (q2, _) -> q1 = q2)
-      ~edit:edit_user_query
-      ~add:(fun () -> ["<user query>", "<shortcut key>"])
+      ~eq:(fun (_, k1) (_, k2) -> k1 = k2) (* Disallow same key. *)
+      ~add:add_user_query
       ~titles:["User query"; "Shortcut key"]
       "User queries"
       (fun (q, s) -> [q; s])
