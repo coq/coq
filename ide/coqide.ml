@@ -682,10 +682,13 @@ let doquery query sn =
   Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
 
 let otherquery command sn =
-  let word = get_current_word sn in
-  if word <> "" then
-    let query = command ^ " " ^ word ^ "." in
-    doquery query sn
+  Option.iter (fun query -> doquery (query ^ ".") sn)
+    begin try
+      let i = CString.string_index_from command 0 "..." in
+      let word = get_current_word sn in
+      if word = "" then None
+      else Some (CString.sub command 0 i ^ " " ^ word)
+    with Not_found -> Some command end
 
 let otherquery command = cb_on_current_term (otherquery command)
 
@@ -693,8 +696,6 @@ let query command _ =
   if command = "Search" || command = "SearchAbout"
   then searchabout ()
   else otherquery command ()
-
-let simplequery query = cb_on_current_term (doquery query)
 
 end
 
@@ -919,7 +920,7 @@ let template_item (text, offset, len, key) =
 (** Create menu items for pairs (query, shortcut key). *)
 let user_queries_items menu_name item_name l =
   let mk_item (query, key) =
-    let callback = Query.simplequery (query ^ ".") in
+    let callback = Query.query query in
     let accel = if not (CString.is_empty key) then
       Some (modifier_for_queries#get^key) else None in
     item (item_name^" "^(no_under query)) ~label:query ?accel ~callback menu_name
@@ -1115,21 +1116,22 @@ let build_ui () =
   ];
   alpha_items templates_menu "Template" Coq_commands.commands;
 
-  let qitem s sc =
+  let qitem s sc ?(dots = true) =
+    let query = if dots then s ^ "..." else s in
     item s ~label:("_"^s)
       ~accel:(modifier_for_queries#get^sc)
-      ~callback:(Query.query s)
+      ~callback:(Query.query query)
   in
   menu queries_menu [
     item "Queries" ~label:"_Queries";
-    qitem "Search" "K";
+    qitem "Search" "K" ~dots:false;
     qitem "Check" "C";
     qitem "Print" "P";
     qitem "About" "A";
     qitem "Locate" "L";
     qitem "Print Assumptions" "N";
   ];
-  user_queries_items queries_menu "Query" user_queries#get;
+  user_queries_items queries_menu "User-Query" user_queries#get;
 
   menu tools_menu [
     item "Tools" ~label:"_Tools";

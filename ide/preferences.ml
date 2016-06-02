@@ -938,8 +938,6 @@ let configure ?(apply=(fun () -> ())) () =
     in
     let q = input_string "User query" "Your query" in
     let k = input_string "Shortcut key" "Shortcut (a single letter)" in
-    let last = CString.length q - 1 in
-    let q = if last > 0 && q.[last] = '.' then CString.sub q 0 last else q in
     let q = CString.map (fun c -> if c = '$' then ' ' else c) q in
     (* Anything that is not a simple letter will be ignored. *)
     let k =
@@ -952,8 +950,8 @@ let configure ?(apply=(fun () -> ())) () =
   let user_queries =
     list
       ~f:user_queries#set
-      (* Disallow same key or empty query. *)
-      ~eq:(fun (q1, k1) (q2, k2) -> k1 = k2 || q1 = "" || q2 = "")
+      (* Disallow same query, key or empty query. *)
+      ~eq:(fun (q1, k1) (q2, k2) -> k1 = k2 || q1 = "" || q2 = "" || q1 = q2)
       ~add:add_user_query
       ~titles:["User query"; "Shortcut key"]
       "User queries"
