@@ -127,7 +127,7 @@ let init_ocaml_path () =
       [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ];
 	[ "engine" ]; [ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
 	[ "tactics" ]; [ "toplevel" ]; [ "printing" ]; [ "intf" ];
-        [ "grammar" ]; [ "ide" ] ]
+        [ "grammar" ]; [ "ide" ]; [ "ltac" ]; ]
 
 let get_compat_version = function
   | "8.5" -> Flags.Current
