@@ -976,11 +976,10 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_display; modifier_for_navigation]);
+        modifier_for_templates; modifier_for_display; modifier_for_navigation;
+        user_queries]);
      Section("Misc", Some `ADD,
-       misc);
-     Section("User queries", None,
-       [user_queries])]
+       misc)]
   in
 (*
   Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string current.text_font);

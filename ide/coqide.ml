@@ -1132,7 +1132,6 @@ let build_ui () =
     qitem "About" (Some "<Ctrl><Shift>A");
     qitem "Locate" (Some "<Ctrl><Shift>L");
     qitem "Print Assumptions" (Some "<Ctrl><Shift>N");
-    qitem "Show Proof" (Some "<Ctrl><Shift>R");
   ];
   user_queries_items queries_menu "Query" user_queries#get "<Ctrl><Shift>";
 
