@@ -277,7 +277,6 @@ GEXTEND Gram
 
   selector:
     [ [ l = range_selector_or_nth; ":" -> l
-      | "?"; "["; id = ident; "]"; ":" -> SelectId id
       | IDENT "all" ; ":" -> SelectAll ] ]
   ;
   END

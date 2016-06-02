@@ -106,7 +106,7 @@ Goal exists x, S 0 = S x.
 eexists ?[x].
 destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
 change (0 = S ?x).
-?[x]: exact 0. (* Incidentally test applying a tactic to a goal on the shelve *)
+[x]: exact 0. (* Incidentally test applying a tactic to a goal on the shelve *)
 Abort.
 
 Goal exists n p:nat, (S n,S n) = (S p,S p) /\ p = n.
