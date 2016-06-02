@@ -98,7 +98,7 @@ COQWORKMGR:=bin/coqworkmgr$(EXE)
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
 	$(COQWORKMGR)
 
-PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP)
+PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP) $(COQDEPBOOT)
 
 ###########################################################################
 # Documentation
