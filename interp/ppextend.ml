@@ -23,12 +23,9 @@ type ppbox =
   | PpHOVB of int
   | PpHVB of int
   | PpVB of int
-  | PpTB
 
 type ppcut =
   | PpBrk of int * int
-  | PpTbrk of int * int
-  | PpTab
   | PpFnl
 
 let ppcmd_of_box = function
@@ -36,13 +33,10 @@ let ppcmd_of_box = function
   | PpHOVB n -> hov n
   | PpHVB n -> hv n
   | PpVB n -> v n
-  | PpTB   -> t
 
 let ppcmd_of_cut = function
-  | PpTab -> tab ()
   | PpFnl -> fnl ()
   | PpBrk(n1,n2) -> brk(n1,n2)
-  | PpTbrk(n1,n2) -> tbrk(n1,n2)
 
 type unparsing =
   | UnpMetaVar of int * parenRelation

@@ -23,12 +23,9 @@ type ppbox =
   | PpHOVB of int
   | PpHVB of int
   | PpVB of int
-  | PpTB
 
 type ppcut =
   | PpBrk of int * int
-  | PpTbrk of int * int
-  | PpTab
   | PpFnl
 
 val ppcmd_of_box : ppbox -> std_ppcmds -> std_ppcmds

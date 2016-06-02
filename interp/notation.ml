@@ -929,19 +929,19 @@ let locate_notation prglob ntn scope =
   match ntns with
   | [] -> str "Unknown notation"
   | _ ->
-    t (str "Notation            " ++
-    tab () ++ str "Scope     " ++ tab () ++ fnl () ++
+    str "Notation" ++ fnl () ++
     prlist (fun (ntn,l) ->
       let scope = find_default ntn scopes in
       prlist
 	(fun (sc,r,(_,df)) ->
 	  hov 0 (
-	    pr_notation_info prglob df r ++ tbrk (1,2) ++
-	    (if String.equal sc default_scope then mt () else (str ": " ++ str sc)) ++
-	    tbrk (1,2) ++
-	    (if Option.equal String.equal (Some sc) scope then str "(default interpretation)" else mt ())
+	    pr_notation_info prglob df r ++
+	    (if String.equal sc default_scope then mt ()
+             else (spc () ++ str ": " ++ str sc)) ++
+	    (if Option.equal String.equal (Some sc) scope
+             then spc () ++ str "(default interpretation)" else mt ())
 	    ++ fnl ()))
-	l) ntns)
+	l) ntns
 
 let collect_notation_in_scope scope sc known =
   assert (not (String.equal scope default_scope));
