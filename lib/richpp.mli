@@ -57,10 +57,7 @@ val richpp_of_string : string -> richpp
 val repr : richpp -> Xml_datatype.xml
 (** Observe the styled text as XML *)
 
-(** {5 Serialization} *)
-
-val of_richpp : richpp -> Xml_datatype.xml
-val to_richpp : Xml_datatype.xml -> richpp
+(** {5 Debug/Compat} *)
 
 (** Represent the semi-structured document as a string, dropping any additional
     information. *)

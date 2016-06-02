@@ -56,3 +56,17 @@ val document : (xml -> string) -> unit
 val pr_call : 'a call -> string
 val pr_value : 'a value -> string
 val pr_full_value : 'a call -> 'a value -> string
+
+(** * Serialization of rich documents *)
+val of_richpp : Richpp.richpp -> Xml_datatype.xml
+val to_richpp : Xml_datatype.xml -> Richpp.richpp
+
+(** * Serializaiton of feedback  *)
+val of_feedback : Feedback.feedback -> xml
+val to_feedback : xml -> Feedback.feedback
+val is_feedback : xml -> bool
+
+val is_message : xml -> (Feedback.level * Richpp.richpp) option
+val of_message : Feedback.level -> Richpp.richpp -> xml
+(* val to_message : xml -> Feedback.message *)
+

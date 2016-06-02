@@ -393,6 +393,15 @@ let interp ((_raw, verbose), s) =
 
 let quit = ref false
 
+(** Serializes the output of Stm.get_ast  *)
+let print_ast id =
+  match Stm.get_ast id with
+  | Some (expr, loc) -> begin
+      try  Texmacspp.tmpp expr loc
+      with e -> Xml_datatype.PCData ("ERROR " ^ Printexc.to_string e)
+    end
+  | None     -> Xml_datatype.PCData "ERROR"
+
 (** Grouping all call handlers together + error handling *)
 
 let eval_call xml_oc log c =
@@ -423,7 +432,7 @@ let eval_call xml_oc log c =
     Interface.interp = interruptible interp;
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;
-    Interface.print_ast = Stm.print_ast;
+    Interface.print_ast = print_ast;
     Interface.annotate = interruptible annotate;
   } in
   Xmlprotocol.abstract_eval_call handler c
@@ -444,16 +453,12 @@ let print_xml =
 let slave_logger xml_oc level message =
   (* convert the message into XML *)
   let msg = hov 0 message in
-  let message = {
-    Feedback.message_level = level;
-    Feedback.message_content = (Richpp.repr (Richpp.richpp_of_pp msg));
-  } in
-  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg)) in
-  let xml = Feedback.of_message message in
+  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg))    in
+  let xml = Xmlprotocol.of_message level (Richpp.richpp_of_pp message) in
   print_xml xml_oc xml
 
 let slave_feeder xml_oc msg =
-  let xml = Feedback.of_feedback msg in
+  let xml = Xmlprotocol.of_feedback msg in
   print_xml xml_oc xml
 
 (** The main loop *)

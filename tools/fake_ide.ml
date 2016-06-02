@@ -28,7 +28,8 @@ let error_xml s =
   Printf.eprintf "fake_id: error: %a\n%!" print_xml s;
   exit 1
 
-let logger level content = Printf.eprintf "%a\n%! " print_xml content
+let logger level content =
+  Printf.eprintf "%a\n%! " print_xml (Richpp.repr content)
 
 let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   if print then prerr_endline (Xmlprotocol.pr_call call);
@@ -36,15 +37,14 @@ let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
-    if Feedback.is_message xml then
-      let message = Feedback.to_message xml in
-      let level = message.Feedback.message_level in
-      let content = message.Feedback.message_content in
+    match Xmlprotocol.is_message xml with
+    | Some (level, content) ->
       logger level content;
       loop ()
-    else if Feedback.is_feedback xml then
-      loop ()
-    else (Xmlprotocol.to_answer call xml)
+    | None ->
+      if Xmlprotocol.is_feedback xml then
+        loop ()
+      else Xmlprotocol.to_answer call xml
   in
   let res = loop () in
   if print then prerr_endline (Xmlprotocol.pr_full_value call res);

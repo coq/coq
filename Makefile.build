@@ -729,7 +729,12 @@ $(COQWORKMGR): $(addsuffix $(BESTOBJ), stm/coqworkmgrApi tools/coqworkmgr) \
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-$(FAKEIDE): lib/clib$(BESTLIB) lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) lib/xml_printer$(BESTOBJ) lib/errors$(BESTOBJ) lib/spawn$(BESTOBJ) ide/document$(BESTOBJ) ide/xmlprotocol$(BESTOBJ) tools/fake_ide$(BESTOBJ) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
+$(FAKEIDE): lib/clib$(BESTLIB) lib/errors$(BESTOBJ)			\
+	    lib/spawn$(BESTOBJ) ide/document$(BESTOBJ)			\
+	    ide/serialize$(BESTOBJ) ide/xml_lexer$(BESTOBJ)		\
+	    ide/xml_parser$(BESTOBJ) ide/xml_printer$(BESTOBJ)		\
+	    ide/xmlprotocol$(BESTOBJ) tools/fake_ide$(BESTOBJ) |	\
+	    $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,-I ide,str unix threads)
 
