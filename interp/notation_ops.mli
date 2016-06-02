@@ -10,7 +10,20 @@ open Names
 open Notation_term
 open Glob_term
 
-(** Utilities about [notation_constr] *)
+(** {5 Utilities about [notation_constr]} *)
+
+val eq_notation_constr : notation_constr -> notation_constr -> bool
+
+(** Substitution of kernel names in interpretation data                *)
+
+val subst_interpretation :
+  Mod_subst.substitution -> interpretation -> interpretation
+                                                
+(** Name of the special identifier used to encode recursive notations  *)
+
+val ldots_var : Id.t
+
+(** {5 Translation back and forth between [glob_constr] and [notation_constr] *)
 
 (** Translate a [glob_constr] into a notation given the list of variables
     bound by the notation; also interpret recursive patterns           *)
@@ -18,16 +31,7 @@ open Glob_term
 val notation_constr_of_glob_constr : notation_interp_env ->
   glob_constr -> notation_constr
 
-(** Name of the special identifier used to encode recursive notations  *)
-val ldots_var : Id.t
-
-(** Equality of [glob_constr] (warning: only partially implemented) *)
-(** FIXME: nothing to do here *)
-val eq_glob_constr : glob_constr -> glob_constr -> bool
-
-val eq_notation_constr : notation_constr -> notation_constr -> bool
-
-(** Re-interpret a notation as a [glob_constr], taking care of binders     *)
+(** Re-interpret a notation as a [glob_constr], taking care of binders *)
 
 val glob_constr_of_notation_constr_with_binders : Loc.t ->
   ('a -> Name.t -> 'a * Name.t) ->
@@ -35,6 +39,8 @@ val glob_constr_of_notation_constr_with_binders : Loc.t ->
   'a -> notation_constr -> glob_constr
 
 val glob_constr_of_notation_constr : Loc.t -> notation_constr -> glob_constr
+
+(** {5 Matching a notation pattern against a [glob_constr] *)
 
 (** [match_notation_constr] matches a [glob_constr] against a notation
     interpretation; raise [No_match] if the matching fails   *)
@@ -55,9 +61,5 @@ val match_notation_constr_ind_pattern :
   ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) *
     (int * cases_pattern list)
 
-(** Substitution of kernel names in interpretation data                *)
+(** {5 Matching a notation pattern against a [glob_constr] *)
 
-val subst_interpretation :
-  Mod_subst.substitution -> interpretation -> interpretation
-
-val add_patterns_for_params : inductive -> cases_pattern list -> cases_pattern list

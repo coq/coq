@@ -2,6 +2,10 @@
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 
+** Notation_ops **
+
+Use Glob_ops.glob_constr_eq instead of Notation_ops.eq_glob_constr.
+
 ** Logging and Pretty Printing: **
 
 * Printing functions have been removed from `Pp.mli`, which is now a

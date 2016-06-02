@@ -175,6 +175,10 @@ let add_patt_for_params ind l =
   if !Flags.in_debugger then l else
     Util.List.addn (Inductiveops.inductive_nparamdecls ind) (CPatAtom (Loc.ghost,None)) l
 
+let add_cpatt_for_params ind l =
+  if !Flags.in_debugger then l else
+    Util.List.addn  (Inductiveops.inductive_nparamdecls ind) (PatVar (Loc.ghost,Anonymous)) l
+
 let drop_implicits_in_patt cst nb_expl args =
   let impl_st = (implicits_of_global cst) in
   let impl_data = extract_impargs_data impl_st in
@@ -299,7 +303,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   with No_match ->
     try
       if !Flags.raw_print || !print_no_symbol then raise No_match;
-      extern_symbol_pattern scopes vars pat
+      extern_notation_pattern scopes vars pat
 	(uninterp_cases_pattern_notations pat)
     with No_match ->
       match pat with
@@ -382,7 +386,7 @@ and apply_notation_to_pattern loc gr ((subst,substlist),(nb_to_drop,more_args))
       in
       assert (List.is_empty substlist);
       mkPat loc qid (List.rev_append l1 l2')
-and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
+and extern_notation_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
@@ -395,9 +399,9 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 	| PatVar (loc,Anonymous) -> CPatAtom (loc, None)
 	| PatVar (loc,Name id) -> CPatAtom (loc, Some (Ident (loc,id)))
     with
-	No_match -> extern_symbol_pattern allscopes vars t rules
+	No_match -> extern_notation_pattern allscopes vars t rules
 
-let rec extern_symbol_ind_pattern allscopes vars ind args = function
+let rec extern_notation_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
@@ -405,7 +409,7 @@ let rec extern_symbol_ind_pattern allscopes vars ind args = function
       apply_notation_to_pattern Loc.ghost (IndRef ind)
 	(match_notation_constr_ind_pattern ind args pat) allscopes vars keyrule
     with
-	No_match -> extern_symbol_ind_pattern allscopes vars ind args rules
+	No_match -> extern_notation_ind_pattern allscopes vars ind args rules
 
 let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
   (* pboutill: There are letins in pat which is incompatible with notations and
@@ -425,7 +429,7 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
     with No_match ->
       try
 	if !Flags.raw_print || !print_no_symbol then raise No_match;
-	extern_symbol_ind_pattern scopes vars ind args
+	extern_notation_ind_pattern scopes vars ind args
 	  (uninterp_ind_pattern_notations ind)
     with No_match ->
       let c = extern_reference Loc.ghost vars (IndRef ind) in
@@ -622,7 +626,7 @@ let rec extern inctx scopes vars r =
   try
     let r'' = flatten_application r' in
     if !Flags.raw_print || !print_no_symbol then raise No_match;
-    extern_symbol scopes vars r'' (uninterp_notations r'')
+    extern_notation scopes vars r'' (uninterp_notations r'')
   with No_match -> match r' with
   | GRef (loc,ref,us) ->
       extern_global loc (select_stronger_impargs (implicits_of_global ref))
@@ -730,9 +734,7 @@ let rec extern inctx scopes vars r =
                   na',
                   Option.map (fun (loc,ind,nal) ->
                               let args = List.map (fun x -> PatVar (Loc.ghost, x)) nal in
-                              let fullargs =
-                                if !Flags.in_debugger then args else
-                                  Notation_ops.add_patterns_for_params ind args in
+                              let fullargs = add_cpatt_for_params ind args in
                               extern_ind_pattern_in_scope scopes vars ind fullargs
                              ) x))
                 tml
@@ -842,7 +844,7 @@ and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,[loc,List.map (extern_cases_pattern_in_scope scopes vars) pl],
    extern inctx scopes vars c)
 
-and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
+and extern_notation (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
       let loc = Glob_ops.loc_of_glob_constr t in
@@ -917,7 +919,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	  let args = extern_args (extern true) scopes vars args argsscopes in
 	  explicitize loc false argsimpls (None,e) args
       with
-	  No_match -> extern_symbol allscopes vars t rules
+	  No_match -> extern_notation allscopes vars t rules
 
 and extern_recursion_order scopes vars = function
     GStructRec -> CStructRec

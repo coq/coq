@@ -526,7 +526,7 @@ let rec subst_iterator y t = function
   | GVar (_,id) as x -> if Id.equal id y then t else x
   | x -> map_glob_constr (subst_iterator y t) x
 
-let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
+let instantiate_notation_constr loc intern (_,ntnvars as lvar) subst infos c =
   let (terms,termlists,binders) = subst in
   (* when called while defining a notation, avoid capturing the private binders
      of the expression by variables bound by the notation (see #3892) *)
@@ -649,7 +649,7 @@ let intern_notation intern env lvar loc ntn fullargs =
   let terms = make_subst ids args in
   let termlists = make_subst idsl argslist in
   let binders = make_subst idsbl bll in
-  subst_aconstr_in_glob_constr loc intern lvar
+  instantiate_notation_constr loc intern lvar
     (terms, termlists, binders) (Id.Map.empty, env) c
 
 (**********************************************************************)
@@ -759,7 +759,7 @@ let intern_qualid loc qid intern env lvar us args =
       let subst = (terms, Id.Map.empty, Id.Map.empty) in
       let infos = (Id.Map.empty, env) in
       let projapp = match c with NRef _ -> true | _ -> false in
-      let c = subst_aconstr_in_glob_constr loc intern lvar subst infos c in
+      let c = instantiate_notation_constr loc intern lvar subst infos c in
       let c = match us, c with
       | None, _ -> c
       | Some _, GRef (loc, ref, None) -> GRef (loc, ref, us)
