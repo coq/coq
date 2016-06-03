@@ -83,6 +83,7 @@ FunctionEnd
 Section "Coq" Sec1
 
   SetOutPath "$INSTDIR\"
+  File ${COQ_SRC_PATH}\LICENSE
 
   SetOutPath "$INSTDIR\bin"
   File ${COQ_SRC_PATH}\bin\*.exe
