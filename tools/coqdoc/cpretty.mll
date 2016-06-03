@@ -239,6 +239,12 @@
     let s = String.sub s isp (String.length s - isp) in
     Output.keyword s (lexeme_start lexbuf + isp)
 
+  let only_gallina () =
+    !Cdglobals.gallina && !in_proof <> None
+
+  let parse_comments () =
+    !Cdglobals.parse_comments && not (only_gallina ())
+
 }
 
 (*s Regular expressions *)
@@ -480,7 +486,7 @@ rule coq_bol = parse
 	in if eol then coq_bol lexbuf else coq lexbuf }
   | space* end_kw {
       let eol =
-	if not (!in_proof <> None && !Cdglobals.gallina) then
+	if not (only_gallina ()) then
 	  begin backtrack lexbuf; body_bol lexbuf end
 	else skip_to_dot lexbuf
       in
@@ -529,14 +535,15 @@ rule coq_bol = parse
 	coq_bol lexbuf }
   | space* "(*"
       { comment_level := 1;
-	if !Cdglobals.parse_comments then begin
-	  let s = lexeme lexbuf in
-	  let nbsp,isp = count_spaces s in
-	    Output.indentation nbsp;
-	    Output.start_comment ();
-	end;
-	let eol = comment lexbuf in
-	  if eol then coq_bol lexbuf else coq lexbuf }
+        let eol =
+          if parse_comments () then begin
+            let s = lexeme lexbuf in
+            let nbsp, isp = count_spaces s in
+            Output.indentation nbsp;
+            Output.start_comment ();
+            comment lexbuf
+          end else skipped_comment lexbuf in
+        if eol then coq_bol lexbuf else coq lexbuf }
   | eof
       { () }
   | _
@@ -544,7 +551,7 @@ rule coq_bol = parse
 	  if not !Cdglobals.gallina then
 	    begin backtrack lexbuf; body_bol lexbuf end
 	  else
-	    skip_to_dot lexbuf
+	    skip_to_dot_or_brace lexbuf
 	in
 	  if eol then coq_bol lexbuf else coq lexbuf }
 
@@ -552,7 +559,7 @@ rule coq_bol = parse
 
 and coq = parse
   | nl
-      { if not (!in_proof <> None && !Cdglobals.gallina) then Output.line_break(); coq_bol lexbuf }
+      { if not (only_gallina ()) then Output.line_break(); coq_bol lexbuf }
   | "(**" space_nl
       { Output.end_coq (); Output.start_doc ();
 	let eol = doc_bol lexbuf in
@@ -560,16 +567,12 @@ and coq = parse
 	  if eol then coq_bol lexbuf else coq lexbuf }
   | "(*"
       { comment_level := 1;
-	if !Cdglobals.parse_comments then begin
-	  let s = lexeme lexbuf in
-	  let nbsp,isp = count_spaces s in
-	    Output.indentation nbsp;
-	    Output.start_comment ();
-	end;
-	let eol = comment lexbuf in
-	  if eol then coq_bol lexbuf
-          else coq lexbuf
-      }
+        let eol =
+          if parse_comments () then begin
+            Output.start_comment ();
+            comment lexbuf
+          end else skipped_comment lexbuf in
+        if eol then coq_bol lexbuf else coq lexbuf }
   | nl+ space* "]]"
       { if not !formatted then
 	begin
@@ -644,7 +647,7 @@ and coq = parse
 	  if not !Cdglobals.gallina then
 	    begin backtrack lexbuf; body lexbuf end
 	  else
-	    skip_to_dot lexbuf
+	    skip_to_dot_or_brace lexbuf
 	in
 	  if eol then coq_bol lexbuf else coq lexbuf}
 
@@ -814,9 +817,10 @@ and doc indents = parse
                         | Some is -> doc_list_bol is
                         | None   -> doc_bol
         in
-        let eol = comment lexbuf in
-          if eol then bol_parse lexbuf else doc indents lexbuf
-      }
+        let eol =
+          if !Cdglobals.parse_comments then comment lexbuf
+          else skipped_comment lexbuf in
+        if eol then bol_parse lexbuf else doc indents lexbuf }
   | '*'* "*)" space_nl* "(**"
       {(match indents with
         | Some _ -> Output.stop_item ()
@@ -935,7 +939,9 @@ and escaped_coq = parse
         Output.sublexer_in_doc '['; escaped_coq lexbuf }
   | "(*"
       { Tokens.flush_sublexer (); comment_level := 1;
-        ignore (comment lexbuf); escaped_coq lexbuf }
+        ignore (if !Cdglobals.parse_comments then comment lexbuf
+                else skipped_comment lexbuf);
+        escaped_coq lexbuf }
   | "*)"
       { (* likely to be a syntax error: we escape *) backtrack lexbuf }
   | eof
@@ -975,76 +981,101 @@ and comments = parse
   | _
       { Output.char (lexeme_char lexbuf 0); comments lexbuf }
 
-(*s Skip comments *)
+and skipped_comment = parse
+  | "(*"
+      { incr comment_level;
+	skipped_comment lexbuf }
+  | "*)" space* nl
+      { decr comment_level;
+        if !comment_level > 0 then skipped_comment lexbuf else true }
+  | "*)"
+      { decr comment_level;
+        if !comment_level > 0 then skipped_comment lexbuf else false }
+  | eof { false }
+  | _ { skipped_comment lexbuf }
 
 and comment = parse
-  | "(*" { incr comment_level;
-	   if !Cdglobals.parse_comments then Output.start_comment ();
-	   comment lexbuf }
-  | "*)" space* nl {
-      if !Cdglobals.parse_comments then
-	(Output.end_comment (); Output.line_break ());
-      decr comment_level; if !comment_level > 0 then comment lexbuf else true }
-  | "*)" {
-      if !Cdglobals.parse_comments then (Output.end_comment ());
-      decr comment_level; if !comment_level > 0 then comment lexbuf else false }
-  | "[" {
-      if !Cdglobals.parse_comments then
-	if !Cdglobals.plain_comments then Output.char '['
+  | "(*"
+      { incr comment_level;
+        Output.start_comment ();
+        comment lexbuf }
+  | "*)" space* nl
+      { Output.end_comment ();
+        Output.line_break ();
+        decr comment_level;
+        if !comment_level > 0 then comment lexbuf else true }
+  | "*)"
+      { Output.end_comment ();
+        decr comment_level;
+        if !comment_level > 0 then comment lexbuf else false }
+  | "["
+      { if !Cdglobals.plain_comments then Output.char '['
         else (brackets := 1; Output.start_inline_coq ();
               escaped_coq lexbuf; Output.end_inline_coq ());
-      comment lexbuf }
-  | "[[" nl {
-      if !Cdglobals.parse_comments then
-        if !Cdglobals.plain_comments then (Output.char '['; Output.char '[')
+        comment lexbuf }
+  | "[[" nl
+      { if !Cdglobals.plain_comments then (Output.char '['; Output.char '[')
         else (formatted := true;
               Output.start_inline_coq_block ();
               let _ = body_bol lexbuf in
                 Output.end_inline_coq_block (); formatted := false);
-      comment lexbuf}
+        comment lexbuf }
   | "$"
-      { if !Cdglobals.parse_comments then
-          if !Cdglobals.plain_comments then Output.char '$'
-          else (Output.start_latex_math (); escaped_math_latex lexbuf);
+      { if !Cdglobals.plain_comments then Output.char '$'
+        else (Output.start_latex_math (); escaped_math_latex lexbuf);
         comment lexbuf }
   | "$$"
-      { if !Cdglobals.parse_comments
-        then
-          (if !Cdglobals.plain_comments then Output.char '$'; Output.char '$');
-        doc None lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '$';
+        Output.char '$';
+        comment lexbuf }
   | "%"
-      { if !Cdglobals.parse_comments
-          then
-            if !Cdglobals.plain_comments then Output.char '%'
-            else escaped_latex lexbuf; comment lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '%'
+        else escaped_latex lexbuf;
+        comment lexbuf }
   | "%%"
-      { if !Cdglobals.parse_comments
-        then
-          (if !Cdglobals.plain_comments then Output.char '%'; Output.char '%');
+      { if !Cdglobals.plain_comments then Output.char '%';
+        Output.char '%';
         comment lexbuf }
   | "#"
-      { if !Cdglobals.parse_comments
-        then
-          if !Cdglobals.plain_comments then Output.char '$'
-          else escaped_html lexbuf; comment lexbuf }
+      { if !Cdglobals.plain_comments then Output.char '#'
+        else escaped_html lexbuf;
+        comment lexbuf }
   | "##"
-      { if !Cdglobals.parse_comments
-        then
-          (if !Cdglobals.plain_comments then Output.char '#'; Output.char '#');
+      { if !Cdglobals.plain_comments then Output.char '#';
+        Output.char '#';
         comment lexbuf }
   | eof  { false }
-  | space+ { if !Cdglobals.parse_comments
-             then Output.indentation (fst (count_spaces (lexeme lexbuf)));
-             comment lexbuf }
-  | nl   { if !Cdglobals.parse_comments
-           then Output.line_break (); comment lexbuf }
-  | _    { if !Cdglobals.parse_comments then Output.char (lexeme_char lexbuf 0);
-           comment lexbuf }
+  | space+
+      { Output.indentation (fst (count_spaces (lexeme lexbuf)));
+        comment lexbuf }
+  | nl
+      { Output.line_break ();
+        comment lexbuf }
+  | _ { Output.char (lexeme_char lexbuf 0);
+        comment lexbuf }
 
 and skip_to_dot = parse
   | '.' space* nl { true }
   | eof | '.' space+ { false }
-  | "(*" { comment_level := 1; ignore (comment lexbuf); skip_to_dot lexbuf }
+  | "(*"
+      { comment_level := 1;
+        ignore (skipped_comment lexbuf);
+        skip_to_dot lexbuf }
+  | _ { skip_to_dot lexbuf }
+
+and skip_to_dot_or_brace = parse
+  | '.' space* nl { true }
+  | eof | '.' space+ { false }
+  | "(*"
+      { comment_level := 1;
+        ignore (skipped_comment lexbuf);
+        skip_to_dot_or_brace lexbuf }
+  | "}" space* nl
+      { true }
+  | "}"
+      { false }
+  | space*
+      { skip_to_dot_or_brace lexbuf }
   | _ { skip_to_dot lexbuf }
 
 and body_bol = parse
@@ -1114,12 +1145,18 @@ and body = parse
 	let eol = doc_bol lexbuf in
 	  Output.end_doc (); Output.start_coq ();
 	  if eol then body_bol lexbuf else body lexbuf }
-  | "(*" { Tokens.flush_sublexer(); comment_level := 1;
-	   if !Cdglobals.parse_comments then Output.start_comment ();
-	   let eol = comment lexbuf in
-	     if eol
-	     then begin if not !Cdglobals.parse_comments then Output.line_break(); body_bol lexbuf end
-	     else body lexbuf }
+  | "(*"
+      { Tokens.flush_sublexer(); comment_level := 1;
+        let eol =
+          if parse_comments () then begin
+            Output.start_comment ();
+            comment lexbuf
+          end else begin
+            let eol = skipped_comment lexbuf in
+            if eol then Output.line_break();
+            eol
+          end in
+	if eol then body_bol lexbuf else body lexbuf }
   | "where" 
       { Tokens.flush_sublexer();
         Output.ident (lexeme lexbuf) None;
