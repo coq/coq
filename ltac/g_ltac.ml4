@@ -300,10 +300,19 @@ GEXTEND Gram
     [ [ n = natural ; "-" ; m = natural -> (n, m)
       | n = natural -> (n, n) ] ]
   ;
+  (* We unfold a range selectors list once so that we can make a special case
+   * for a unique SelectNth selector. *)
+  range_selector_or_nth:
+    [ [ n = natural ; "-" ; m = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          Vernacexpr.SelectList ((n, m) :: Option.default [] l)
+      | n = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          Option.cata (fun l -> Vernacexpr.SelectList ((n, n) :: l)) (Vernacexpr.SelectNth n) l ] ]
+  ;
   selector:
-    [ [ n=natural; ":" -> Vernacexpr.SelectNth n
+    [ [ l = range_selector_or_nth; ":" -> l
       | test_bracket_ident; "["; id = ident; "]"; ":" -> Vernacexpr.SelectId id
-      | "[" ; l = LIST1 range_selector SEP "," ; "]" ; ":" -> Vernacexpr.SelectList l
       | IDENT "all" ; ":" -> Vernacexpr.SelectAll ] ]
   ;
   tactic_mode:
@@ -331,7 +340,7 @@ let _ = declare_int_option {
 let vernac_solve n info tcom b =
   let status = Proof_global.with_current_proof (fun etac p ->
     let with_end_tac = if b then Some etac else None in
-    let global = match n with SelectAll -> true | _ -> false in
+    let global = match n with SelectAll | SelectList _ -> true | _ -> false in
     let info = Option.append info !print_info_trace in
     let (p,status) =
       Pfedit.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
