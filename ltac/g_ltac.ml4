@@ -46,6 +46,7 @@ let new_entry name =
   e
 
 let selector = new_entry "vernac:selector"
+let toplevel_selector = new_entry "vernac:toplevel_selector"
 let tacdef_body = new_entry "tactic:tacdef_body"
 
 (* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
@@ -73,7 +74,7 @@ let test_bracket_ident =
 
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
-          tactic_mode constr_may_eval constr_eval selector;
+          tactic_mode constr_may_eval constr_eval selector toplevel_selector;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
@@ -313,11 +314,14 @@ GEXTEND Gram
   ;
   selector:
     [ [ l = range_selector_or_nth; ":" -> l
-      | "?" ; test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id
       | IDENT "all" ; ":" -> SelectAll ] ]
   ;
+  toplevel_selector:
+    [ [ s = selector -> s
+      | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id ] ]
+  ;
   tactic_mode:
-    [ [ g = OPT selector; tac = G_vernac.subgoal_command -> tac g ] ]
+    [ [ g = OPT toplevel_selector; tac = G_vernac.subgoal_command -> tac g ] ]
   ;
   END
 
@@ -364,7 +368,7 @@ let pr_ltac_selector = function
 | SelectAll -> str "all" ++ str ":"
 
 VERNAC ARGUMENT EXTEND ltac_selector PRINTED BY pr_ltac_selector
-| [ selector(s) ] -> [ s ]
+| [ toplevel_selector(s) ] -> [ s ]
 END
 
 let pr_ltac_info n = str "Info" ++ spc () ++ int n

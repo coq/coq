@@ -51,5 +51,5 @@ Qed.
 
 Goal True -> exists (x : Prop), x.
 Proof.
-  intro H; eexists ?[x]; ?[x]: exact True; assumption.
+  intro H; eexists ?[x]. [x]: exact True. 1: assumption.
 Qed.
