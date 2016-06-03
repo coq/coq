@@ -401,17 +401,16 @@ let tclFOCUSLIST l t =
       else Some ((max i 1), (min j n))
     in
     let l = CList.map_filter sanitize l in
-    (* Sort the list to get the left-most goal to focus. This goal won't
-       move, and we will then place all the other goals to focus to the
-       right. *)
-    let l = CList.sort compare l in
     match l with
       | [] -> tclZERO (NoSuchGoals 0)
       | (mi, _) :: _ ->
+          (* Get the left-most goal to focus. This goal won't move, and we
+             will then place all the other goals to focus to the right. *)
+          let mi = CList.fold_left (fun m (i, _) -> min m i) mi l in
           (* [CList.goto] returns a zipper, so that
              [(rev left) @ sub_right = comb]. *)
           let left, sub_right = CList.goto (mi-1) comb in
-          let p x _ = CList.exists (fun (i, j) -> i <= x +mi && x + mi <= j) l in
+          let p x _ = CList.exists (fun (i, j) -> i <= x + mi && x + mi <= j) l in
           let sub, right = CList.partitioni p sub_right in
           let mj = mi - 1 + CList.length sub in
             Comb.set (CList.rev_append left (sub @ right)) >>

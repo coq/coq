@@ -343,7 +343,7 @@ let vernac_solve n info tcom b =
     if not status then Feedback.feedback Feedback.AddedAxiom
 
 let pr_range_selector (i, j) =
-  if i = j then int i
+  if Int.equal i j then int i
   else int i ++ str "-" ++ int j
 
 let pr_ltac_selector = function
