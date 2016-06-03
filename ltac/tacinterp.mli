@@ -72,6 +72,9 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map 
 val interp_hyp : interp_sign -> Environ.env -> Evd.evar_map ->
   Id.t Loc.located -> Id.t
 
+val interp_constr_gen : Pretyping.typing_constraint -> interp_sign ->
+  Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Evd.evar_map * constr
+
 val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
  glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
 

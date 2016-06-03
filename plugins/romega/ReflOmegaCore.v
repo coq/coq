@@ -1074,16 +1074,19 @@ Qed.
    avait utilisé le test précédent et fait une elimination dessus. *)
 
 Ltac elim_eq_term t1 t2 :=
+  let Aux := fresh "Aux" in
   pattern (eq_term t1 t2); apply bool_eq_ind; intro Aux;
    [ generalize (eq_term_true t1 t2 Aux); clear Aux
    | generalize (eq_term_false t1 t2 Aux); clear Aux ].
 
 Ltac elim_beq t1 t2 :=
+  let Aux := fresh "Aux" in
   pattern (beq t1 t2); apply bool_eq_ind; intro Aux;
    [ generalize (beq_true t1 t2 Aux); clear Aux
    | generalize (beq_false t1 t2 Aux); clear Aux ].
 
 Ltac elim_bgt t1 t2 :=
+  let Aux := fresh "Aux" in
   pattern (bgt t1 t2); apply bool_eq_ind; intro Aux;
   [ generalize (bgt_true t1 t2 Aux); clear Aux
   | generalize (bgt_false t1 t2 Aux); clear Aux ].

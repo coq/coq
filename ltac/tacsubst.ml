@@ -137,8 +137,6 @@ let rec subst_match_goal_hyps subst = function
 let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Basic tactics *)
   | TacIntroPattern l -> TacIntroPattern (List.map (subst_intro_pattern subst) l)
-  | TacIntroMove _ as x -> x
-  | TacExact c -> TacExact (subst_glob_constr subst c)
   | TacApply (a,ev,cb,cl) ->
       TacApply (a,ev,List.map (subst_glob_with_bindings_arg subst) cb,cl)
   | TacElim (ev,cb,cbo) ->
@@ -162,10 +160,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
         subst_induction_arg subst c, ids, cls) l in
       let el' = Option.map (subst_glob_with_bindings subst) el in
       TacInductionDestruct (isrec,ev,(l',el'))
-  | TacDoubleInduction (h1,h2) as x -> x
-
-  (* Context management *)
-  | TacRename l as x -> x
 
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)

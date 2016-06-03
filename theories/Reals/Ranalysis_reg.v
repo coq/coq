@@ -109,6 +109,7 @@ Ltac intro_hyp_glob trm :=
     | Rabs => idtac
     | ?X1 =>
       let p := constr:(X1) in
+      let HYPPD := fresh "HYPPD" in
         match goal with
           | _:(derivable p) |- _ => idtac
           |  |- (derivable p) => idtac
@@ -250,6 +251,7 @@ Ltac intro_hyp_pt trm pt :=
       end
     | ?X1 =>
       let p := constr:(X1) in
+      let HYPPD := fresh "HYPPD" in
         match goal with
           | _:(derivable_pt p pt) |- _ => idtac
           |  |- (derivable_pt p pt) => idtac
@@ -341,8 +343,10 @@ Ltac is_diff_pt :=
     | _:(derivable_pt ?X1 ?X2) |- (derivable_pt ?X1 ?X2) =>
       assumption
     | _:(derivable ?X1) |- (derivable_pt ?X1 ?X2) =>
+      let HypDDPT := fresh "HypDDPT" in
       cut (derivable X1); [ intro HypDDPT; apply HypDDPT | assumption ]
     |  |- (True -> derivable_pt _ _) =>
+      let HypTruE := fresh "HypTruE" in
       intro HypTruE; clear HypTruE; is_diff_pt
     | _ =>
       try
@@ -411,6 +415,7 @@ Ltac is_diff_glob :=
       apply (derivable_comp X2 X1); is_diff_glob
     | _:(derivable ?X1) |- (derivable ?X1) => assumption
     |  |- (True -> derivable _) =>
+      let HypTruE := fresh "HypTruE" in
       intro HypTruE; clear HypTruE; is_diff_glob
     | _ =>
       try
@@ -490,14 +495,17 @@ Ltac is_cont_pt :=
     | _:(continuity_pt ?X1 ?X2) |- (continuity_pt ?X1 ?X2) =>
       assumption
     | _:(continuity ?X1) |- (continuity_pt ?X1 ?X2) =>
+      let HypDDPT := fresh "HypDDPT" in
       cut (continuity X1); [ intro HypDDPT; apply HypDDPT | assumption ]
     | _:(derivable_pt ?X1 ?X2) |- (continuity_pt ?X1 ?X2) =>
       apply derivable_continuous_pt; assumption
     | _:(derivable ?X1) |- (continuity_pt ?X1 ?X2) =>
+      let HypDDPT := fresh "HypDDPT" in
       cut (continuity X1);
         [ intro HypDDPT; apply HypDDPT
           | apply derivable_continuous; assumption ]
     |  |- (True -> continuity_pt _ _) =>
+      let HypTruE := fresh "HypTruE" in
       intro HypTruE; clear HypTruE; is_cont_pt
     | _ =>
       try
@@ -567,6 +575,7 @@ Ltac is_cont_glob :=
       apply (continuity_comp X2 X1); try is_cont_glob || assumption
     | _:(continuity ?X1) |- (continuity ?X1) => assumption
     |  |- (True -> continuity _) =>
+      let HypTruE := fresh "HypTruE" in
       intro HypTruE; clear HypTruE; is_cont_glob
     | _:(derivable ?X1) |- (continuity ?X1) =>
       apply derivable_continuous; assumption

@@ -18,6 +18,9 @@ Tactics
 - Every generic argument type declares a tactic scope of the form "name:(...)"
   where name is the name of the argument. This generalizes the constr: and ltac:
   instances.
+- When in strict mode (i.e. in a Ltac definition) the "intro" tactic cannot use
+  a locally free identifier anymore. It must use e.g. the "fresh" primitive
+  instead (potential source of incompatibilities).
 
 Program
 

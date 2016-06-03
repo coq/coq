@@ -139,8 +139,6 @@ type intro_pattern_naming = intro_pattern_naming_expr located
 type 'a gen_atomic_tactic_expr =
   (* Basic tactics *)
   | TacIntroPattern of 'dtrm intro_pattern_expr located list
-  | TacIntroMove of Id.t option * 'nam move_location
-  | TacExact of 'trm
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
       ('nam * 'dtrm intro_pattern_expr located option) option
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
@@ -157,10 +155,6 @@ type 'a gen_atomic_tactic_expr =
   (* Derived basic tactics *)
   | TacInductionDestruct of
       rec_flag * evars_flag * ('trm,'dtrm,'nam) induction_clause_list
-  | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
-
-  (* Context management *)
-  | TacRename of ('nam *'nam) list
 
   (* Conversion *)
   | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr

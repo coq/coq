@@ -16,6 +16,8 @@ val wit_orient : bool Genarg.uniform_genarg_type
 val orient : bool Pcoq.Gram.entry
 val pr_orient : bool -> Pp.std_ppcmds
 
+val wit_rename : (Id.t * Id.t) Genarg.uniform_genarg_type
+
 val occurrences : (int list or_var) Pcoq.Gram.entry
 val wit_occurrences : (int list or_var, int list or_var, int list) Genarg.genarg_type
 val pr_occurrences : int list or_var -> Pp.std_ppcmds
@@ -34,6 +36,11 @@ val wit_lglob :
   Tacinterp.interp_sign * glob_constr) Genarg.genarg_type
 
 val wit_lconstr :
+  (constr_expr,
+  Tacexpr.glob_constr_and_expr,
+  Constr.t) Genarg.genarg_type
+
+val wit_casted_constr :
   (constr_expr,
   Tacexpr.glob_constr_and_expr,
   Constr.t) Genarg.genarg_type

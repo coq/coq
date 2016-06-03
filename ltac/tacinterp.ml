@@ -684,10 +684,6 @@ let interp_typed_pattern ist env sigma (_,c,_) =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
   pattern_of_constr env sigma c
 
-(* Interprets a constr expression casted by the current goal *)
-let pf_interp_casted_constr ist gl c =
-  interp_constr_gen (OfType (pf_concl gl)) ist (pf_env gl) (project gl) c
-
 (* Interprets a constr expression *)
 let pf_interp_constr ist gl =
   interp_constr ist (pf_env gl) (project gl)
@@ -1644,24 +1640,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
              expected behaviour. *)
           (Tactics.intro_patterns l')) sigma
       end }
-  | TacIntroMove (ido,hto) ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = project gl in
-        let mloc = interp_move_location ist env sigma hto in
-        let ido = Option.map (interp_ident ist env sigma) ido in
-        name_atomic ~env
-          (TacIntroMove(ido,mloc))
-          (Tactics.intro_move ido mloc)
-      end }
-  | TacExact c ->
-      (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<exact>") begin
-      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
-        let (sigma, c_interp) = pf_interp_casted_constr ist gl c in
-        Sigma.Unsafe.of_pair (Tactics.exact_no_check c_interp, sigma)
-      end }
-      end
   | TacApply (a,ev,cb,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<apply>") begin
@@ -1821,26 +1799,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (Tactics.induction_destruct isrec ev (l,el))
         in
         Sigma.Unsafe.of_pair (tac, sigma)
-      end }
-  | TacDoubleInduction (h1,h2) ->
-      let h1 = interp_quantified_hypothesis ist h1 in
-      let h2 = interp_quantified_hypothesis ist h2 in
-      name_atomic
-        (TacDoubleInduction (h1,h2))
-        (Elim.h_double_induction h1 h2)
-  (* Context management *)
-  | TacRename l ->
-      Proofview.Goal.enter { enter = begin fun gl ->
-        let env = pf_env gl in
-        let sigma = project gl in
-        let l =
-          List.map (fun (id1,id2) ->
-	    interp_hyp ist env sigma id1,
-	    interp_ident ist env sigma (snd id2)) l
-        in
-        name_atomic ~env
-          (TacRename l)
-          (Tactics.rename_hyp l)
       end }
 
   (* Conversion *)

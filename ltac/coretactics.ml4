@@ -26,6 +26,10 @@ TACTIC EXTEND reflexivity
   [ "reflexivity" ] -> [ Tactics.intros_reflexivity ]
 END
 
+TACTIC EXTEND exact
+  [ "exact" casted_constr(c) ] -> [ Tactics.exact_no_check c ]
+END
+
 TACTIC EXTEND assumption
   [ "assumption" ] -> [ Tactics.assumption ]
 END
@@ -197,6 +201,19 @@ TACTIC EXTEND intros_until
   [ "intros" "until" quantified_hypothesis(h) ] -> [ Tactics.intros_until h ]
 END
 
+TACTIC EXTEND intro
+| [ "intro" ] -> [ Tactics.intro_move None MoveLast ]
+| [ "intro" ident(id) ] -> [ Tactics.intro_move (Some id) MoveLast ]
+| [ "intro" ident(id) "at" "top" ] -> [ Tactics.intro_move (Some id) MoveFirst ]
+| [ "intro" ident(id) "at" "bottom" ] -> [ Tactics.intro_move (Some id) MoveLast ]
+| [ "intro" ident(id) "after" hyp(h) ] -> [ Tactics.intro_move (Some id) (MoveAfter h) ]
+| [ "intro" ident(id) "before" hyp(h) ] -> [ Tactics.intro_move (Some id) (MoveBefore h) ]
+| [ "intro" "at" "top" ] -> [ Tactics.intro_move None MoveFirst ]
+| [ "intro" "at" "bottom" ] -> [ Tactics.intro_move None MoveLast ]
+| [ "intro" "after" hyp(h) ] -> [ Tactics.intro_move None (MoveAfter h) ]
+| [ "intro" "before" hyp(h) ] -> [ Tactics.intro_move None (MoveBefore h) ]
+END
+
 (** Move *)
 
 TACTIC EXTEND move
@@ -204,6 +221,12 @@ TACTIC EXTEND move
 | [ "move" hyp(id) "at" "bottom" ] -> [ Tactics.move_hyp id MoveLast ]
 | [ "move" hyp(id) "after" hyp(h) ] -> [ Tactics.move_hyp id (MoveAfter h) ]
 | [ "move" hyp(id) "before" hyp(h) ] -> [ Tactics.move_hyp id (MoveBefore h) ]
+END
+
+(** Rename *)
+
+TACTIC EXTEND rename
+| [ "rename" ne_rename_list_sep(ids, ",") ] -> [ Tactics.rename_hyp ids ]
 END
 
 (** Revert *)
@@ -220,6 +243,13 @@ END
 
 TACTIC EXTEND simple_destruct
   [ "simple" "destruct" quantified_hypothesis(h) ] -> [ Tactics.simple_destruct h ]
+END
+
+(** Double induction *)
+
+TACTIC EXTEND double_induction
+  [ "double" "induction" quantified_hypothesis(h1) quantified_hypothesis(h2) ] ->
+  [ Elim.h_double_induction h1 h2 ]
 END
 
 (* Admit *)
@@ -280,7 +310,6 @@ let initial_atomic () =
         "hnf", TacReduce(Hnf,nocl);
         "simpl", TacReduce(Simpl (Redops.all_flags,None),nocl);
         "compute", TacReduce(Cbv Redops.all_flags,nocl);
-        "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];
       ]
   in

@@ -15,6 +15,7 @@ open Constrarg
 open Pcoq.Prim
 open Pcoq.Constr
 open Names
+open Tacmach
 open Tacexpr
 open Taccoerce
 open Tacinterp
@@ -175,6 +176,16 @@ ARGUMENT EXTEND lglob
   [ lconstr(c) ] -> [ c ]
 END
 
+let interp_casted_constr ist gl c =
+  interp_constr_gen (Pretyping.OfType (pf_concl gl)) ist (pf_env gl) (project gl) c
+
+ARGUMENT EXTEND casted_constr
+  TYPED AS constr
+  PRINTED BY pr_gen
+  INTERPRETED BY interp_casted_constr
+  [ constr(c) ] -> [ c ]
+END
+
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 
 type loc_place = Id.t Loc.located gen_place
@@ -224,6 +235,14 @@ ARGUMENT EXTEND hloc
     [ HypLocation ((Loc.ghost,id),InHypValueOnly) ]
 
  END
+
+let pr_rename _ _ _ (n, m) = Nameops.pr_id n ++ str " into " ++ Nameops.pr_id m
+
+ARGUMENT EXTEND rename
+  TYPED AS ident * ident
+  PRINTED BY pr_rename
+| [ ident(n) "into" ident(m) ] -> [ (n, m) ]
+END
 
 (* Julien: Mise en commun des differentes version de replace with in by *)
 

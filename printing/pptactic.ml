@@ -816,7 +816,6 @@ module Make
       (* Printing tactics as arguments *)
       let rec pr_atom0 a = tag_atom a (match a with
         | TacIntroPattern [] -> primitive "intros"
-        | TacIntroMove (None,MoveLast) -> primitive "intro"
         | t -> str "(" ++ pr_atom1 t ++ str ")"
       )
 
@@ -828,15 +827,6 @@ module Make
         | TacIntroPattern (_::_ as p) ->
           hov 1 (primitive "intros" ++ spc () ++
                     prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
-        | TacIntroMove (None,MoveLast) as t ->
-          pr_atom0 t
-        | TacIntroMove (Some id,MoveLast) ->
-          primitive "intro" ++ spc () ++ pr_id id
-        | TacIntroMove (ido,hto) ->
-          hov 1 (primitive "intro" ++ pr_opt pr_id ido ++
-                    Miscprint.pr_move_location pr.pr_name hto)
-        | TacExact c ->
-          hov 1 (primitive "exact" ++ pr_constrarg c)
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (
             (if a then mt() else primitive "simple ") ++
@@ -908,23 +898,6 @@ module Make
                 pr_with_induction_names pr.pr_dconstr ids ++
                 pr_opt (pr_clauses None pr.pr_name) cl) l ++
               pr_opt pr_eliminator el
-          )
-        | TacDoubleInduction (h1,h2) ->
-          hov 1 (
-            primitive "double induction"
-            ++ pr_arg pr_quantified_hypothesis h1
-            ++ pr_arg pr_quantified_hypothesis h2
-          )
-
-        (* Context management *)
-        | TacRename l ->
-          hov 1 (
-            primitive "rename" ++ brk (1,1)
-            ++ prlist_with_sep
-              (fun () -> str "," ++ brk (1,1))
-              (fun (i1,i2) ->
-                pr.pr_name i1 ++ spc () ++ str "into" ++ spc () ++ pr.pr_name i2)
-              l
           )
 
         (* Conversion *)
