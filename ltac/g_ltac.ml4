@@ -295,9 +295,15 @@ GEXTEND Gram
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
   ;
+
+  range_selector:
+    [ [ n = natural ; "-" ; m = natural -> (n, m)
+      | n = natural -> (n, n) ] ]
+  ;
   selector:
     [ [ n=natural; ":" -> Vernacexpr.SelectNth n
       | test_bracket_ident; "["; id = ident; "]"; ":" -> Vernacexpr.SelectId id
+      | "[" ; l = LIST1 range_selector SEP "," ; "]" ; ":" -> Vernacexpr.SelectList l
       | IDENT "all" ; ":" -> Vernacexpr.SelectAll ] ]
   ;
   tactic_mode:
@@ -336,8 +342,15 @@ let vernac_solve n info tcom b =
     p,status) in
     if not status then Feedback.feedback Feedback.AddedAxiom
 
+let pr_range_selector (i, j) =
+  if i = j then int i
+  else int i ++ str "-" ++ int j
+
 let pr_ltac_selector = function
 | SelectNth i -> int i ++ str ":"
+(* Special case to distinguish between 1: and 1-1: *)
+| SelectList [(i, j)] when i = j -> int i ++ str "-" ++ int j
+| SelectList l -> prlist_with_sep (fun () -> str ", ") pr_range_selector l
 | SelectId id -> str "[" ++ Nameops.pr_id id ++ str "]" ++ str ":"
 | SelectAll -> str "all" ++ str ":"
 
