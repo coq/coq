@@ -27,9 +27,6 @@ let rec print_list sep = function
   | x :: l -> print x; print sep; print_list sep l
   | [] -> ()
 
-let list_iter_i f =
-  let rec aux i = function [] -> () | a::l -> f i a; aux (i+1) l in aux 1
-
 let section s =
   let l = String.length s in
   let print_com s =
@@ -154,7 +151,7 @@ let classify_files_by_root var files (inc_ml,inc_i,inc_r) =
 	    printf "\n";
 	  end;
       (* Files in the scope of a -R option (assuming they are disjoint) *)
-	list_iter_i (fun i (pdir,_,abspdir) ->
+	List.iteri (fun i (pdir,_,abspdir) ->
 		       if List.exists (is_prefix abspdir) absdir_of_files then
 			 printf "%s%d=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
 			   var i pdir pdir var)
