@@ -557,7 +557,7 @@ rule coq_bol = parse
 	  if not !Cdglobals.gallina then
 	    begin backtrack lexbuf; body_bol lexbuf end
 	  else
-	    skip_to_dot lexbuf
+	    skip_to_dot_or_brace lexbuf
 	in
 	  if eol then coq_bol lexbuf else coq lexbuf }
 
@@ -653,7 +653,7 @@ and coq = parse
 	  if not !Cdglobals.gallina then
 	    begin backtrack lexbuf; body lexbuf end
 	  else
-	    skip_to_dot lexbuf
+	    skip_to_dot_or_brace lexbuf
 	in
 	  if eol then coq_bol lexbuf else coq lexbuf}
 
@@ -1063,7 +1063,25 @@ and comment = parse
 and skip_to_dot = parse
   | '.' space* nl { true }
   | eof | '.' space+ { false }
-  | "(*" { comment_level := 1; ignore (comment lexbuf); skip_to_dot lexbuf }
+  | "(*"
+      { comment_level := 1;
+        ignore (skipped_comment lexbuf);
+        skip_to_dot lexbuf }
+  | _ { skip_to_dot lexbuf }
+
+and skip_to_dot_or_brace = parse
+  | '.' space* nl { true }
+  | eof | '.' space+ { false }
+  | "(*"
+      { comment_level := 1;
+        ignore (skipped_comment lexbuf);
+        skip_to_dot_or_brace lexbuf }
+  | "}" space* nl
+      { true }
+  | "}"
+      { false }
+  | space*
+      { skip_to_dot_or_brace lexbuf }
   | _ { skip_to_dot lexbuf }
 
 and body_bol = parse
