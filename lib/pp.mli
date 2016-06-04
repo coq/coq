@@ -170,5 +170,9 @@ val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 (** FIXME: These ignore the logging settings and call [Format] directly *)
 type tag_handler = Tag.t -> Format.tag
+
+(** [msg_with fmt pp] Print [pp] to [fmt] and flush [fmt]  *)
 val msg_with :                        Format.formatter -> std_ppcmds -> unit
+
+(** [msg_with fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
 val pp_with  : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
