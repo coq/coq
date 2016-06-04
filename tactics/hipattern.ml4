@@ -243,9 +243,36 @@ type equation_kind =
 
 exception NoEquationFound
 
-let coq_refl_leibniz1_pattern = PATTERN [ forall x:_, _ x x ]
-let coq_refl_leibniz2_pattern = PATTERN [ forall A:_, forall x:A, _ A x x ]
-let coq_refl_jm_pattern       = PATTERN [ forall A:_, forall x:A, _ A x A x ]
+open Glob_term
+open Decl_kinds
+open Evar_kinds
+
+let mkPattern c = snd (Patternops.pattern_of_glob_constr c)
+let mkGApp f args = GApp (Loc.ghost, f, args)
+let mkGHole =
+  GHole (Loc.ghost, QuestionMark (Define false), Misctypes.IntroAnonymous, None)
+let mkGProd id c1 c2 =
+  GProd (Loc.ghost, Name (Id.of_string id), Explicit, c1, c2)
+let mkGArrow c1 c2 =
+  GProd (Loc.ghost, Anonymous, Explicit, c1, c2)
+let mkGVar id = GVar (Loc.ghost, Id.of_string id)
+let mkGPatVar id = GPatVar(Loc.ghost, (false, Id.of_string id))
+let mkGRef r = GRef (Loc.ghost, Lazy.force r, None)
+let mkGAppRef r args = mkGApp (mkGRef r) args
+
+(** forall x : _, _ x x *)
+let coq_refl_leibniz1_pattern =
+  mkPattern (mkGProd "x" mkGHole (mkGApp mkGHole [mkGVar "x"; mkGVar "x";]))
+
+(** forall A:_, forall x:A, _ A x x *)
+let coq_refl_leibniz2_pattern =
+  mkPattern (mkGProd "A" mkGHole (mkGProd "x" (mkGVar "A")
+    (mkGApp mkGHole [mkGVar "A"; mkGVar "x"; mkGVar "x";])))
+
+(** forall A:_, forall x:A, _ A x A x *)
+let coq_refl_jm_pattern       =
+  mkPattern (mkGProd "A" mkGHole (mkGProd "x" (mkGVar "A")
+    (mkGApp mkGHole [mkGVar "A"; mkGVar "x"; mkGVar "A"; mkGVar "x";])))
 
 open Globnames
 
@@ -301,7 +328,8 @@ let is_equality_type t = op2bool (match_with_equality_type t)
 
 (* Arrows/Implication/Negation *)
 
-let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
+(** X1 -> X2 **)
+let coq_arrow_pattern = mkPattern (mkGArrow (mkGPatVar "X1") (mkGPatVar "X2"))
 
 let match_arrow_pattern t =
   let result = matches coq_arrow_pattern t in
@@ -381,10 +409,15 @@ let rec first_match matcher = function
 (*** Equality *)
 
 (* Patterns "(eq ?1 ?2 ?3)" and "(identity ?1 ?2 ?3)" *)
-let coq_eq_pattern_gen eq = lazy PATTERN [ %eq ?X1 ?X2 ?X3 ]
+(** %eq ?X1 ?X2 ?X3 *)
+let coq_eq_pattern_gen eq =
+  lazy (mkPattern (mkGAppRef eq (List.map mkGPatVar ["X1"; "X2"; "X3";])))
 let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
 let coq_identity_pattern = coq_eq_pattern_gen coq_identity_ref
-let coq_jmeq_pattern = lazy PATTERN [ %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 ]
+(** %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 *)
+let coq_jmeq_pattern =
+  lazy (mkPattern
+    (mkGAppRef coq_jmeq_ref (List.map mkGPatVar ["X1"; "X2"; "X3"; "X4"])))
 
 let match_eq eqn eq_pat =
   let pat =
@@ -464,7 +497,8 @@ let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
   match_sigma ex
 
 (* Pattern "(sig ?1 ?2)" *)
-let coq_sig_pattern = lazy PATTERN [ %coq_sig_ref ?X1 ?X2 ]
+let coq_sig_pattern =
+  lazy (mkPattern (mkGAppRef coq_sig_ref [mkGPatVar "X1"; mkGPatVar "X2"]))
 
 let match_sigma t =
   match Id.Map.bindings (matches (Lazy.force coq_sig_pattern) t) with
@@ -480,17 +514,25 @@ let is_matching_sigma t = is_matching (Lazy.force coq_sig_pattern) t
 (* Pattern "{<?1>x=y}+{~(<?1>x=y)}" *)
 (* i.e. "(sumbool (eq ?1 x y) ~(eq ?1 x y))" *)
 
-let coq_eqdec_inf_pattern =
- lazy PATTERN [ { ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 } ]
+let coq_eqdec ~sum ~rev =
+  lazy (
+    let eqn = mkGAppRef coq_eq_ref (List.map mkGPatVar ["X1"; "X2"; "X3"]) in
+    let args = [eqn; mkGAppRef coq_not_ref [eqn]] in
+    let args = if rev then List.rev args else args in
+    mkPattern (mkGAppRef sum [eqn; mkGAppRef coq_not_ref [eqn]])
+  )
 
-let coq_eqdec_inf_rev_pattern =
- lazy PATTERN [ { ~ ?X2 = ?X3 :> ?X1 } + { ?X2 = ?X3 :> ?X1 } ]
+(** { ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 } *)
+let coq_eqdec_inf_pattern = coq_eqdec ~sum:coq_sumbool_ref ~rev:false
 
-let coq_eqdec_pattern =
- lazy PATTERN [ %coq_or_ref (?X2 = ?X3 :> ?X1) (~ ?X2 = ?X3 :> ?X1) ]
+(** { ~ ?X2 = ?X3 :> ?X1 } + { ?X2 = ?X3 :> ?X1 } *)
+let coq_eqdec_inf_rev_pattern = coq_eqdec ~sum:coq_sumbool_ref ~rev:true
 
-let coq_eqdec_rev_pattern =
- lazy PATTERN [ %coq_or_ref (~ ?X2 = ?X3 :> ?X1) (?X2 = ?X3 :> ?X1) ]
+(** %coq_or_ref (?X2 = ?X3 :> ?X1) (~ ?X2 = ?X3 :> ?X1) *)
+let coq_eqdec_pattern = coq_eqdec ~sum:coq_or_ref ~rev:false
+
+(** %coq_or_ref (~ ?X2 = ?X3 :> ?X1) (?X2 = ?X3 :> ?X1) *)
+let coq_eqdec_rev_pattern = coq_eqdec ~sum:coq_or_ref ~rev:true
 
 let op_or = coq_or_ref
 let op_sum = coq_sumbool_ref
@@ -510,8 +552,8 @@ let match_eqdec t =
   | _ -> anomaly (Pp.str "Unexpected pattern")
 
 (* Patterns "~ ?" and "? -> False" *)
-let coq_not_pattern = lazy PATTERN [ ~ _ ]
-let coq_imp_False_pattern = lazy PATTERN [ _ -> %coq_False_ref ]
+let coq_not_pattern = lazy (mkPattern (mkGAppRef coq_not_ref [mkGHole]))
+let coq_imp_False_pattern = lazy (mkPattern (mkGArrow mkGHole (mkGRef coq_False_ref)))
 
 let is_matching_not t = is_matching (Lazy.force coq_not_pattern) t
 let is_matching_imp_False t = is_matching (Lazy.force coq_imp_False_pattern) t
