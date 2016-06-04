@@ -35,12 +35,10 @@
 "parsing/g_obligations.ml4": use_grammar
 
 "grammar/argextend.ml4": use_compat5b
-"grammar/q_constr.ml4": use_compat5b
 "grammar/tacextend.ml4": use_compat5b
 "grammar/vernacextend.ml4": use_compat5b
 
 <tactics/*.ml4>: use_grammar
-"tactics/hipattern.ml4": use_constr
 
 <plugins/**/*.ml4>: use_grammar
 "plugins/decl_mode/g_decl_mode.ml4": use_compat5
