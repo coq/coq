@@ -399,15 +399,6 @@ module Make
     | None -> mt ()
     | Some i -> spc () ++ str "|" ++ spc () ++ int i
 
-  let pr_assume ?(positive=false) ?(guarded=false) () =
-    let assumed =
-      (if guarded then [str"Guarded"] else []) @
-      (if positive then [str"Positive"] else [])
-    in
-    match assumed with
-    | [] -> mt ()
-    | l -> keyword"Assume" ++ spc() ++ str"[" ++ prlist (fun x->x) l ++ str"]" ++ spc()
-
 (**************************************)
 (* Pretty printer for vernac commands *)
 (**************************************)
@@ -770,7 +761,7 @@ module Make
               (pr_assumption_token (n > 1) stre ++ spc() ++
                  pr_ne_params_list pr_lconstr_expr l)
           )
-        | VernacInductive (chk,p,f,l) ->
+        | VernacInductive (p,f,l) ->
           let pr_constructor (coe,(id,c)) =
             hov 2 (pr_lident id ++ str" " ++
                      (if coe then str":>" else str":") ++
@@ -806,7 +797,7 @@ module Make
               (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
           )
 
-        | VernacFixpoint (flags,local, recs) ->
+        | VernacFixpoint (local, recs) ->
           let local = match local with
             | Some Discharge -> "Let "
             | Some Local -> "Local "
@@ -821,11 +812,11 @@ module Make
                 prlist (pr_decl_notation pr_constr) ntn
           in
           return (
-            hov 0 (pr_assume ~guarded:flags.Declarations.check_guarded ()++str local ++ keyword "Fixpoint" ++ spc () ++
+            hov 0 (str local ++ keyword "Fixpoint" ++ spc () ++
                      prlist_with_sep (fun _ -> fnl () ++ keyword "with" ++ spc ()) pr_onerec recs)
           )
 
-        | VernacCoFixpoint (flags,local, corecs) ->
+        | VernacCoFixpoint (local, corecs) ->
           let local = match local with
             | Some Discharge -> keyword "Let" ++ spc ()
             | Some Local -> keyword "Local" ++ spc ()
@@ -838,7 +829,7 @@ module Make
               prlist (pr_decl_notation pr_constr) ntn
           in
           return (
-            hov 0 (pr_assume ~guarded:flags.Declarations.check_guarded ()++local ++ keyword "CoFixpoint" ++ spc() ++
+            hov 0 (local ++ keyword "CoFixpoint" ++ spc() ++
                      prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onecorec corecs)
           )
         | VernacScheme l ->

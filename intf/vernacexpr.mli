@@ -303,14 +303,10 @@ type vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *
       inline * simple_binder with_coercion list
-  | VernacInductive of
-      bool (*[false] => assume positive*) *
-      private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
-      Declarations.typing_flags *
       locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of
-      Declarations.typing_flags *
       locality option * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list

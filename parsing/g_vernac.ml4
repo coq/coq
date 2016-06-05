@@ -71,19 +71,6 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
-type nl_assumption =
-  | Positive
-  | Guarded
-let eq_nl_assumption x y =
-  match x,y with
-  | Positive,Positive -> true
-  | Guarded,Guarded -> true
-  | _ , _ -> false
-let check_positivity l =
-  not (List.mem_f eq_nl_assumption Positive l)
-let check_guardedness l =
-  not (List.mem_f eq_nl_assumption Guarded l)
-
 let default_command_entry =
   Gram.Entry.of_parser "command_entry"
     (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
@@ -213,19 +200,19 @@ GEXTEND Gram
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((Some Discharge, Definition), id, b)
       (* Gallina inductive declarations *)
-      | priv = private_token; a = assume_token; f = finite_token;
+      | priv = private_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
 	  let (k,f) = f in
 	  let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
-          VernacInductive (check_positivity a,priv,f,indl)
-      | "Fixpoint"; a=assume_token; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint ({Declarations.check_guarded=check_guardedness a},None, recs)
-      | IDENT "Let"; "Fixpoint"; a=assume_token; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint ({Declarations.check_guarded=check_guardedness a},Some Discharge, recs)
-      | "CoFixpoint"; a=assume_token; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint ({Declarations.check_guarded=check_guardedness a},None, corecs)
-      | IDENT "Let"; "CoFixpoint"; a=assume_token; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint ({Declarations.check_guarded=check_guardedness a},Some Discharge, corecs)
+          VernacInductive (priv,f,indl)
+      | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+          VernacFixpoint (None, recs)
+      | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+          VernacFixpoint (Some Discharge, recs)
+      | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+          VernacCoFixpoint (None, corecs)
+      | IDENT "Let"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+          VernacCoFixpoint (Some Discharge, corecs)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
 	      l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l)
@@ -281,13 +268,6 @@ GEXTEND Gram
       | IDENT "Record" -> (Record,BiFinite)
       | IDENT "Structure" -> (Structure,BiFinite)
       | IDENT "Class" -> (Class true,BiFinite) ] ]
-  ;
-  assume_token:
-    [ [ IDENT "Assume"; "[" ; l=LIST1 nl_assumption ; "]" -> l | -> [] ] ]
-  ;
-  nl_assumption:
-    [ [ IDENT "Positive" -> Positive
-      | IDENT "Guarded" -> Guarded ] ]
   ;
   private_token:
     [ [ IDENT "Private" -> true | -> false ] ]

@@ -1856,6 +1856,7 @@ let vernac_load interp fname =
   try while true do interp (snd (parse_sentence input)) done
   with End_of_input -> ()
 
+let all_checks = { Declarations.check_guarded = true }
 
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
@@ -1894,9 +1895,9 @@ let interp ?proof locality poly c =
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
-  | VernacInductive (chk,priv,finite,l) -> vernac_inductive chk poly priv finite l
-  | VernacFixpoint (flags,local, l) -> vernac_fixpoint ~flags locality poly local l
-  | VernacCoFixpoint (flags,local, l) -> vernac_cofixpoint ~flags locality poly local l
+  | VernacInductive (priv,finite,l) -> vernac_inductive true poly priv finite l
+  | VernacFixpoint (local, l) -> vernac_fixpoint locality ~flags:all_checks poly local l
+  | VernacCoFixpoint (local, l) -> vernac_cofixpoint ~flags:all_checks locality poly local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
   | VernacUniverse l -> vernac_universe l

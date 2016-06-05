@@ -29,13 +29,12 @@
     <define-regex id="qualit">(\%{ident}\.)*\%{ident}</define-regex>
     <define-regex id="dot_sep">\.(\s|\z)</define-regex>
     <define-regex id="bullet">([-+*]+|{)(\s|\z)|}(\s*})*</define-regex>
-    <define-regex id="assume">(?'gal0'Assume)\%{space}\[\%{ident}*\]\%{space}</define-regex>
     <define-regex id="single_decl">Definition|Let|Example|SubClass|(Co)?Fixpoint|Function|Conjecture|(Co)?Inductive|Record|Structure|Ltac|Instance|Class|Existing\%{space}Instance|Canonical\%{space}Structure|Coercion</define-regex>
     <define-regex id="mult_decl">Hypothes[ie]s|Axiom(s)?|Variable(s)?|Parameter(s)?|Context|Implicit\%{space}Type(s)?</define-regex>
     <define-regex id="locality">((Local|Global)\%{space})?</define-regex>
     <define-regex id="begin_proof">Theorem|Lemma|Fact|Remark|Corollary|Proposition|Property</define-regex>
     <define-regex id="end_proof">Qed|Defined|Admitted|Abort|Save</define-regex>
-    <define-regex id="decl_head">((\%{assume})?(?'gal'\%{locality}(Program\%{space})?(\%{single_decl}|\%{begin_proof}))\%{space}(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}\%{ident})*))|(?'gal2'Goal)</define-regex>
+    <define-regex id="decl_head">((?'gal'\%{locality}(Program\%{space})?(\%{single_decl}|\%{begin_proof}))\%{space}(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}\%{ident})*))|(?'gal2'Goal)</define-regex>
 
     <!-- Strings, with '""' an escape sequence -->
     <context id="string" style-ref="string" class="string">
@@ -107,7 +106,6 @@
           <end>\%{dot_sep}</end>
           <include>
             <context sub-pattern="id" where="start" style-ref="identifier"/>
-            <context sub-pattern="gal0" where="start" style-ref="gallina-keyword"/>
             <context sub-pattern="gal" where="start" style-ref="gallina-keyword"/>
             <context sub-pattern="gal2" where="start" style-ref="gallina-keyword"/>
             <context sub-pattern="id_list" where="start" style-ref="identifier"/>

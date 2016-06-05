@@ -125,14 +125,14 @@ let rec classify_vernac e =
           CList.map_filter (function (Some(_,i), _) -> Some i | _ -> None) l in
         VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
     | VernacGoal _ -> VtStartProof ("Classic",GuaranteesOpacity,[]), VtLater
-    | VernacFixpoint (_,_,l) ->
+    | VernacFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) (((_,id),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
         then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
         else VtSideff ids, VtLater
-    | VernacCoFixpoint (_,_,l) ->
+    | VernacCoFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) (((_,id),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
@@ -144,7 +144,7 @@ let rec classify_vernac e =
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map snd l) l) in
         VtSideff ids, VtLater    
     | VernacDefinition (_,(_,id),DefineBody _) -> VtSideff [id], VtLater
-    | VernacInductive (_,_,_,l) ->
+    | VernacInductive (_,_,l) ->
         let ids = List.map (fun (((_,(_,id)),_,_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,((_,id),_)) -> id) l
         | RecordDecl (oid,l) -> (match oid with Some (_,x) -> [x] | _ -> []) @

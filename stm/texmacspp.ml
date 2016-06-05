@@ -580,7 +580,7 @@ let rec tmpp v loc =
       let l = match l with Some x -> x | None -> Decl_kinds.Global in
       let kind = string_of_assumption_kind l a many in
       xmlAssumption kind loc exprs
-  | VernacInductive (_,_, _, iednll) ->
+  | VernacInductive (_, _, iednll) ->
       let kind =
         let (_, _, _, k, _),_ = List.hd iednll in
 	  begin
@@ -598,14 +598,14 @@ let rec tmpp v loc =
             (fun (ie, dnl) -> (pp_inductive_expr ie) @
                               (List.map pp_decl_notation dnl)) iednll) in
       xmlInductive kind loc exprs
-  | VernacFixpoint (_,_, fednll) ->
+  | VernacFixpoint (_, fednll) ->
       let exprs =
         List.flatten (* should probably not be flattened *)
           (List.map
             (fun (fe, dnl) -> (pp_fixpoint_expr fe) @
                               (List.map pp_decl_notation dnl)) fednll) in
       xmlFixpoint exprs
-  | VernacCoFixpoint (_,_, cfednll) ->
+  | VernacCoFixpoint (_, cfednll) ->
       (* Nota: it is like VernacFixpoint without so could be merged *)
       let exprs =
         List.flatten (* should probably not be flattened *)
