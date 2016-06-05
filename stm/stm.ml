@@ -2001,7 +2001,7 @@ let known_state ?(redefine_qed=false) ~cache id =
            | Valid { proof } ->
                Proof_global.unfreeze proof;
                Proof_global.with_current_proof (fun _ p ->
-                 Pp.feedback ~state_id:id Feedback.AddedAxiom;
+                 feedback ~id:(State id) Feedback.AddedAxiom;
                  fst (Pfedit.solve Vernacexpr.SelectAll None tac p), ());
                Option.iter (fun expr -> vernac_interp id {
                   verbose = true; loc = Loc.ghost; expr; indentation = 0;
