@@ -480,3 +480,32 @@ let register_ltac local tacl =
     Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
   in
   List.iter iter defs
+
+(** Queries *)
+
+let print_ltacs () =
+  let entries = KNmap.bindings (Tacenv.ltac_entries ()) in
+  let sort (kn1, _) (kn2, _) = KerName.compare kn1 kn2 in
+  let entries = List.sort sort entries in
+  let map (kn, entry) =
+    let qid =
+      try Some (Nametab.shortest_qualid_of_tactic kn)
+      with Not_found -> None
+    in
+    match qid with
+    | None -> None
+    | Some qid -> Some (qid, entry.Tacenv.tac_body)
+  in
+  let entries = List.map_filter map entries in
+  let pr_entry (qid, body) =
+    let (l, t) = match body with
+    | Tacexpr.TacFun (l, t) -> (l, t)
+    | _ -> ([], body)
+    in
+    let pr_ltac_fun_arg = function
+    | None -> spc () ++ str "_"
+    | Some id -> spc () ++ pr_id id
+    in
+    hov 2 (pr_qualid qid ++ prlist pr_ltac_fun_arg l)
+  in
+  Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)

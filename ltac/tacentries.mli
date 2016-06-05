@@ -57,3 +57,8 @@ val create_ltac_quotation : string ->
 (** [create_ltac_quotation name f e] adds a quotation rule to Ltac, that is,
     Ltac grammar now accepts arguments of the form ["name" ":" "(" <e> ")"], and
     generates an argument using [f] on the entry parsed by [e]. *)
+
+(** {5 Queries} *)
+
+val print_ltacs : unit -> unit
+(** Display the list of ltac definitions currently available. *)
