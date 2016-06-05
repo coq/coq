@@ -445,3 +445,7 @@ VERNAC COMMAND EXTEND VernacDeclareTacticDefinition
     Tacentries.register_ltac (Locality.make_module_locality lc) l
   ]
 END
+
+VERNAC COMMAND EXTEND VernacPrintLtacs CLASSIFIED AS QUERY
+| [ "Print" "Ltac" "Signatures" ] -> [ Tacentries.print_ltacs () ]
+END
