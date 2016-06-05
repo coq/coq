@@ -68,7 +68,8 @@ let priority_of_string = function
   | "low" -> Low
   | "high" -> High
   | _ -> raise (Invalid_argument "priority_of_string")
-let async_proofs_tac_error_resilience = ref true
+type tac_error_filter = [ `None | `Only of string list | `All ]
+let async_proofs_tac_error_resilience = ref (`Only [ "par" ; "proof-block" ])
 let async_proofs_cmd_error_resilience = ref true
 
 let async_proofs_is_worker () =

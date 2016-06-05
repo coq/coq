@@ -1115,9 +1115,15 @@ let prev_node { id } =
   mk_doc_node id (VCS.visit id)
 let cur_node id = mk_doc_node id (VCS.visit id)
 
+let is_block_name_enabled name =
+  match !Flags.async_proofs_tac_error_resilience with
+  | `None -> false
+  | `All -> true
+  | `Only l -> List.mem name l
+
 let detect_proof_block id name =
   let name = match name with None -> "indent" | Some x -> x in   
-  if !Flags.async_proofs_tac_error_resilience &&
+  if is_block_name_enabled name &&
      (if Flags.async_proofs_is_master () then
       !Flags.async_proofs_mode != Flags.APoff else true)
   then
@@ -2031,7 +2037,7 @@ let known_state ?(redefine_qed=false) ~cache id =
 
   (* Absorb tactic errors from f () *)
   let resilient_tactic id blockname f =
-    if not !Flags.async_proofs_tac_error_resilience ||
+    if !Flags.async_proofs_tac_error_resilience = `None ||
        (Flags.async_proofs_is_master () &&
         !Flags.async_proofs_mode = Flags.APoff)
     then f ()

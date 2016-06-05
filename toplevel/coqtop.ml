@@ -379,6 +379,11 @@ let get_host_port opt s =
      prerr_endline ("Error: host:port or stdfds expected after option "^opt);
      exit 1
 
+let get_error_resilience opt = function
+  | "on" | "all" | "yes" -> `All
+  | "off" | "no" -> `None
+  | s -> `Only (String.split ',' s)
+
 let get_task_list s = List.map int_of_string (Str.split (Str.regexp ",") s)
 
 let vio_tasks = ref []
@@ -493,7 +498,7 @@ let parse_args arglist =
     |"-async-proofs-private-flags" ->
         Flags.async_proofs_private_flags := Some (next ());
     |"-async-proofs-tactic-error-resilience" ->
-        Flags.async_proofs_tac_error_resilience := get_bool opt (next ())
+        Flags.async_proofs_tac_error_resilience := get_error_resilience opt (next ())
     |"-async-proofs-command-error-resilience" ->
         Flags.async_proofs_cmd_error_resilience := get_bool opt (next ())
     |"-worker-id" -> set_worker_id opt (next ())
