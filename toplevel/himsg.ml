@@ -1243,10 +1243,9 @@ let explain_reduction_tactic_error = function
 
 let is_defined_ltac trace =
   let rec aux = function
-  | (_, Proof_type.LtacNameCall f) :: tail ->
-      not (Tacenv.is_ltac_for_ml_tactic f)
-  | (_, Proof_type.LtacAtomCall _) :: tail ->
-      false
+  | (_, Proof_type.LtacNameCall f) :: tail -> not (Tacenv.is_ltac_for_ml_tactic f)
+  | (_, Proof_type.LtacNotationCall f) :: _ -> true
+  | (_, Proof_type.LtacAtomCall _) :: tail -> false
   | _ :: tail -> aux tail
   | [] -> false in
   aux (List.rev trace)
@@ -1254,7 +1253,7 @@ let is_defined_ltac trace =
 let explain_ltac_call_trace last trace loc =
   let calls = last :: List.rev_map snd trace in
   let pr_call ck = match ck with
-  | Proof_type.LtacNotationCall kn -> quote (KerName.print kn)
+  | Proof_type.LtacNotationCall kn -> quote (Pptactic.pr_alias_key kn)
   | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
   | Proof_type.LtacMLCall t ->
       quote (Pptactic.pr_glob_tactic (Global.env()) t)
@@ -1276,6 +1275,7 @@ let explain_ltac_call_trace last trace loc =
   in
   match calls with
   | [] -> mt ()
+  | [a] -> hov 0 (str "Ltac call to " ++ pr_call a ++ str " failed.")
   | _ ->
     let kind_of_last_call = match List.last calls with
     | Proof_type.LtacConstrInterp _ -> ", last term evaluation failed."

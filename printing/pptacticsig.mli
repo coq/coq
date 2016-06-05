@@ -73,6 +73,8 @@ module type Pp = sig
     (constr_pattern -> std_ppcmds) -> int ->
     ml_tactic_name -> typed_generic_argument list -> std_ppcmds
 
+  val pr_alias_key : Names.KerName.t -> std_ppcmds
+
   val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
 
   val pr_raw_tactic : raw_tactic_expr -> std_ppcmds

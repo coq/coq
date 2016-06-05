@@ -428,6 +428,16 @@ module Make
       in
       str "<" ++ name ++ str ">" ++ args
 
+  let pr_alias_key key =
+    try
+      let _,prods = (KNmap.find key !prnotation_tab).pptac_prods in
+      (* First printing strategy: only the head symbol *)
+      match prods with
+      | Some s :: _ -> str s
+      | _ -> raise Exit
+    with Not_found | Exit ->
+      KerName.print key
+
   let pr_alias_gen pr_gen lev key l =
     try
       let pp = KNmap.find key !prnotation_tab in
