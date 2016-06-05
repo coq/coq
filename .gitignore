@@ -121,12 +121,10 @@ g_*.ml
 ide/project_file.ml
 parsing/compat.ml
 grammar/q_util.ml
-grammar/q_constr.ml
 grammar/tacextend.ml
 grammar/vernacextend.ml
 grammar/argextend.ml
 parsing/cLexer.ml
-tactics/hipattern.ml
 ltac/coretactics.ml
 ltac/extratactics.ml
 ltac/extraargs.ml

@@ -110,7 +110,7 @@ $(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) $(LINKMETADATA) -o $@ $(1) $(addsuffix .cm
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
-CAMLP4DEPS:=tools/compat5.cmo grammar/grammar.cma grammar/q_constr.cmo
+CAMLP4DEPS:=tools/compat5.cmo grammar/grammar.cma
 ifeq ($(CAMLP4),camlp5)
 CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 else
@@ -200,7 +200,7 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 #  grammar/grammar.cma
 ###########################################################################
 
-## In this part, we compile grammar/grammar.cma (and grammar/q_constr.cmo)
+## In this part, we compile grammar/grammar.cma
 ## without relying on .d dependency files, for bootstraping the creation
 ## and inclusion of these .d files
 
@@ -213,7 +213,6 @@ GRAMCMO := \
 
 grammar/q_util.cmi : grammar/gramCompat.cmo
 grammar/argextend.cmo : $(GRAMBASEDEPS)
-grammar/q_constr.cmo : $(GRAMBASEDEPS)
 grammar/q_util.cmo : $(GRAMBASEDEPS)
 grammar/tacextend.cmo : $(GRAMBASEDEPS) grammar/argextend.cmo
 grammar/vernacextend.cmo : $(GRAMBASEDEPS) grammar/tacextend.cmo \

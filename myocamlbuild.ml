@@ -277,7 +277,6 @@ let extra_rules () = begin
 	      A"-o"; Px ml; A"-impl"; P ml4]));
 
   flag_and_dep ["p4mod"; "use_grammar"] (P "grammar/grammar.cma");
-  flag_and_dep ["p4mod"; "use_constr"] (P "grammar/q_constr.cmo");
 
   flag_and_dep ["p4mod"; "use_compat5"] (P "tools/compat5.cmo");
   flag_and_dep ["p4mod"; "use_compat5b"] (P "tools/compat5b.cmo");
