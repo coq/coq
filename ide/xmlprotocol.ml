@@ -39,7 +39,7 @@ let to_search_cst = do_match "search_cst" (fun s args -> match s with
   | "subtype_pattern" -> SubType_Pattern (to_string (singleton args))
   | "in_module" -> In_Module (to_list to_string (singleton args))
   | "include_blacklist" -> Include_Blacklist
-  | _ -> raise Marshal_error)
+  | x -> raise (Marshal_error("search",PCData x)))
 
 let of_coq_object f ans =
   let prefix = of_list of_string ans.coq_object_prefix in
@@ -56,7 +56,7 @@ let to_coq_object f = function
     coq_object_qualid = qualid;
     coq_object_object = obj;
   }
-| _ -> raise Marshal_error
+| x -> raise (Marshal_error("coq_object",x))
 
 let of_option_value = function
   | IntValue i -> constructor "option_value" "intvalue" [of_option of_int i]
@@ -68,7 +68,7 @@ let to_option_value = do_match "option_value" (fun s args -> match s with
   | "boolvalue" -> BoolValue (to_bool (singleton args))
   | "stringvalue" -> StringValue (to_string (singleton args))
   | "stringoptvalue" -> StringOptValue (to_option to_string (singleton args))
-  | _ -> raise Marshal_error)
+  | x -> raise (Marshal_error("*value",PCData x)))
 
 let of_option_state s =
   Element ("option_state", [], [
@@ -82,7 +82,7 @@ let to_option_state = function
       opt_depr = to_bool depr;
       opt_name = to_string name;
       opt_value = to_option_value value }
-  | _ -> raise Marshal_error
+  | x -> raise (Marshal_error("option_state",x))
 
 let to_stateid = function
   | Element ("state_id",["val",i],[]) ->
@@ -95,7 +95,7 @@ let of_stateid i = Element ("state_id",["val",string_of_int (Stateid.to_int i)],
 let of_richpp x = Element ("richpp", [], [Richpp.repr x])
 let to_richpp xml = match xml with
   | Element ("richpp", [], [x]) -> Richpp.richpp_of_xml x
-  | _ -> raise Serialize.Marshal_error
+  | x -> raise Serialize.(Marshal_error("richpp",x))
 
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
@@ -116,14 +116,14 @@ let to_value f = function
         let loc_s = int_of_string (Serialize.massoc "loc_s" attrs) in
         let loc_e = int_of_string (Serialize.massoc "loc_e" attrs) in
         Some (loc_s, loc_e)
-      with Marshal_error | Failure _ -> None
+      with Marshal_error _ | Failure _ -> None
     in
-    let (id, msg) = match l with [id; msg] -> (id, msg) | _ -> raise Marshal_error in
+    let (id, msg) = match l with [id; msg] -> (id, msg) | _ -> raise (Marshal_error("val",PCData "no id attribute")) in
     let id = to_stateid id in
     let msg = to_richpp msg in
     Fail (id, loc, msg)
-  else raise Marshal_error
-| _ -> raise Marshal_error
+  else raise (Marshal_error("good or fail",PCData ans))
+| x -> raise (Marshal_error("value",x))
 
 let of_status s =
   let of_so = of_option of_string in
@@ -139,12 +139,12 @@ let to_status = function
       status_proofname = to_option to_string name;
       status_allproofs = to_list to_string prfs;
       status_proofnum = to_int pnum; }
-  | _ -> raise Marshal_error
+  | x -> raise (Marshal_error("status",x))
 
 let of_evar s = Element ("evar", [], [PCData s.evar_info])
 let to_evar = function
   | Element ("evar", [], data) -> { evar_info = raw_string data; }
-  | _ -> raise Marshal_error
+  | x -> raise (Marshal_error("evar",x))
 
 let of_goal g =
   let hyp = of_list of_richpp g.goal_hyp in
@@ -157,7 +157,7 @@ let to_goal = function
     let ccl = to_richpp ccl in
     let id = to_string id in
     { goal_hyp = hyp; goal_ccl = ccl; goal_id = id; }
-  | _ -> raise Marshal_error
+  | x -> raise (Marshal_error("goal",x))
 
 let of_goals g =
   let of_glist = of_list of_goal in
@@ -175,7 +175,7 @@ let to_goals = function
     let given_up = to_list to_goal given_up in
     { fg_goals = fg; bg_goals = bg; shelved_goals = shelf;
       given_up_goals = given_up }
-  | _ -> raise Marshal_error
+  | x -> raise (Marshal_error("goals",x))
 
 let of_coq_info info =
   let version = of_string info.coqtop_version in
@@ -189,7 +189,7 @@ let to_coq_info = function
       protocol_version = to_string protocol;
       release_date = to_string release;
       compile_date = to_string compile; }
-  | _ -> raise Marshal_error
+  | x -> raise (Marshal_error("coq_info",x))
 
 end
 include Xml_marshalling
@@ -695,7 +695,7 @@ let to_call : xml -> unknown_call =
     | "StopWorker" -> Unknown (StopWorker (mkCallArg stop_worker_sty_t a))
     | "PrintAst"   -> Unknown (PrintAst   (mkCallArg print_ast_sty_t   a))
     | "Annotate"   -> Unknown (Annotate   (mkCallArg annotate_sty_t    a))
-    | _ -> raise Marshal_error)
+    | x -> raise (Marshal_error("call",PCData x)))
 
 (** Debug printing *)
 
@@ -782,7 +782,7 @@ let to_message_level =
   | "notice" -> Notice
   | "warning" -> Warning
   | "error" -> Error
-  | _ -> raise Serialize.Marshal_error)
+  | x -> raise Serialize.(Marshal_error("error level",PCData x)))
 
 let of_message lvl msg =
   let lvl     = of_message_level lvl in
@@ -818,8 +818,7 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
       FileLoaded (to_string dirpath, to_string filename)
   | "message", [lvl; content] ->
      Message (to_message_level lvl, to_richpp content)
-
-  | _ -> raise Marshal_error)
+  | x,l -> raise (Marshal_error("feedback_content",PCData (x ^ " with attributes " ^ string_of_int (List.length l)))))
 
 let of_feedback_content = function
   | AddedAxiom -> constructor "feedback_content" "addedaxiom" []
@@ -880,7 +879,7 @@ let to_feedback xml = match xml with
       id = State(to_stateid id);
       route = int_of_string route;
       contents = to_feedback_content content }
-  | _ -> raise Marshal_error
+  | x -> raise (Marshal_error("feedback",x))
 
 let is_feedback = function
   | Element ("feedback", _, _) -> true

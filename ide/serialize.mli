@@ -8,7 +8,7 @@
 
 open Xml_datatype
 
-exception Marshal_error
+exception Marshal_error of string * xml
 
 val massoc: string -> (string * string) list -> string
 val constructor: string -> string -> xml list -> xml

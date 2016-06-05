@@ -357,7 +357,9 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
 
 let print_exception = function
   | Xml_parser.Error e -> Xml_parser.error e
-  | Serialize.Marshal_error -> "Protocol violation"
+  | Serialize.Marshal_error(expected,actual) ->
+      "Protocol violation. Expected: " ^ expected ^ " Actual: "
+        ^ Xml_printer.to_string actual
   | e -> Printexc.to_string e
 
 let input_watch handle respawner feedback_processor =

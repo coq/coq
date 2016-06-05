@@ -499,7 +499,7 @@ let loop () =
       | Xml_parser.Error (err, loc) ->
         pr_debug ("Syntax error in query: " ^ Xml_parser.error_msg err);
         exit 1
-      | Serialize.Marshal_error ->
+      | Serialize.Marshal_error _ ->
         pr_debug "Incorrect query.";
         exit 1
       | any ->
