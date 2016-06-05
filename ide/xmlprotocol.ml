@@ -788,6 +788,10 @@ let of_message lvl msg =
   let lvl     = of_message_level lvl in
   let content = of_richpp msg        in
   Xml_datatype.Element ("message", [], [lvl; content])
+let to_message xml = match xml with
+  | Xml_datatype.Element ("message", [], [lvl; content]) ->
+      Message(to_message_level lvl, to_richpp content)
+  | x -> raise (Marshal_error("message",x))
 
 let is_message = function
   | Xml_datatype.Element ("message", [], [lvl; content]) ->
@@ -816,8 +820,7 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
       FileDependency (to_option to_string from, to_string dep)
   | "fileloaded", [dirpath; filename] ->
       FileLoaded (to_string dirpath, to_string filename)
-  | "message", [lvl; content] ->
-     Message (to_message_level lvl, to_richpp content)
+  | "message", [x] -> to_message x
   | x,l -> raise (Marshal_error("feedback_content",PCData (x ^ " with attributes " ^ string_of_int (List.length l)))))
 
 let of_feedback_content = function
