@@ -25,3 +25,21 @@ Ltac f x y z :=
   generalize dependent z.
 
 Print Ltac f.
+
+(* Error messages *)
+
+Ltac g1 x := refine x.
+Tactic Notation "g2" constr(x) := g1 x.
+Tactic Notation "f1" constr(x) := refine x.
+Ltac f2 x := f1 x.
+Goal False.
+Fail g1 I.
+Fail f1 I.
+Fail g2 I.
+Fail f2 I.
+
+Ltac h x := injection x.
+Goal True -> False.
+Fail h I.
+intro H.
+Fail h H.

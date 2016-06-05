@@ -366,6 +366,24 @@ module Make
       in
       str "<" ++ name ++ str ">" ++ args
 
+
+  let pr_alias_key key =
+    try
+      let prods = (KNmap.find key !prnotation_tab).pptac_prods in
+      (* First printing strategy: only the head symbol *)
+      match prods with
+      | TacTerm s :: prods -> str s
+      | _ ->
+      (* Second printing strategy; if ever Tactic Notation is eventually *)
+      (* accepting notations not starting with an identifier *)
+      let rec pr = function
+      | [] -> []
+      | TacTerm s :: prods -> s :: pr prods
+      | TacNonTerm (_,_,id) :: prods -> ".." :: pr prods in
+      str (String.concat " " (pr prods))
+    with Not_found ->
+      KerName.print key
+    
   let pr_alias_gen pr_gen lev key l =
     try
       let pp = KNmap.find key !prnotation_tab in

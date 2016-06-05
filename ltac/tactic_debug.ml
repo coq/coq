@@ -330,10 +330,9 @@ let db_breakpoint debug s =
 
 let is_defined_ltac trace =
   let rec aux = function
-  | (_, Tacexpr.LtacNameCall f) :: tail ->
-      not (Tacenv.is_ltac_for_ml_tactic f)
-  | (_, Tacexpr.LtacAtomCall _) :: tail ->
-      false
+  | (_, Tacexpr.LtacNameCall f) :: _ -> not (Tacenv.is_ltac_for_ml_tactic f)
+  | (_, Tacexpr.LtacNotationCall f) :: _ -> true
+  | (_, Tacexpr.LtacAtomCall _) :: _ -> false
   | _ :: tail -> aux tail
   | [] -> false in
   aux (List.rev trace)
@@ -341,7 +340,7 @@ let is_defined_ltac trace =
 let explain_ltac_call_trace last trace loc =
   let calls = last :: List.rev_map snd trace in
   let pr_call ck = match ck with
-  | Tacexpr.LtacNotationCall kn -> quote (KerName.print kn)
+    | Tacexpr.LtacNotationCall kn -> quote (Pptactic.pr_alias_key kn)
   | Tacexpr.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
   | Tacexpr.LtacMLCall t ->
       quote (Pptactic.pr_glob_tactic (Global.env()) t)
@@ -363,6 +362,7 @@ let explain_ltac_call_trace last trace loc =
   in
   match calls with
   | [] -> mt ()
+  | [a] -> hov 0 (str "Ltac call to " ++ pr_call a ++ str " failed.")
   | _ ->
     let kind_of_last_call = match List.last calls with
     | Tacexpr.LtacConstrInterp _ -> ", last term evaluation failed."
@@ -373,10 +373,13 @@ let explain_ltac_call_trace last trace loc =
 
 let skip_extensions trace =
   let rec aux = function
-  | (_,Tacexpr.LtacNameCall f as tac) :: _ 
-      when Tacenv.is_ltac_for_ml_tactic f -> [tac]
-  | (_,(Tacexpr.LtacNotationCall _ | Tacexpr.LtacMLCall _) as tac)
-      :: _ -> [tac]
+  | (_,Tacexpr.LtacNameCall f as tac) :: _
+       when Tacenv.is_ltac_for_ml_tactic f -> [tac]
+  | (_,Tacexpr.LtacNotationCall _ as tac) :: (_,Tacexpr.LtacMLCall _) :: _ ->
+     (* Case of an ML defined tactic with entry of the form <<"foo" args>> *)
+     (* see tacextend.mlp *)
+     [tac]
+  | (_,Tacexpr.LtacMLCall _ as tac) :: _ -> [tac]
   | t :: tail -> t :: aux tail
   | [] -> [] in
   List.rev (aux (List.rev trace))

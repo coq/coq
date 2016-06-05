@@ -45,6 +45,8 @@ module type Pp = sig
   val pr_extend :
     (Val.t -> std_ppcmds) -> int -> ml_tactic_entry -> Val.t list -> std_ppcmds
 
+  val pr_alias_key : Names.KerName.t -> std_ppcmds
+
   val pr_alias : (Val.t -> std_ppcmds) ->
     int -> Names.KerName.t -> Val.t list -> std_ppcmds
 
