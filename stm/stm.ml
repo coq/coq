@@ -241,7 +241,7 @@ module DynBlockData : Dyn.S = Dyn.Make(struct end)
  * no constraint on properties, here we impose boxes to be non overlapping. *)
 type box =
   | ProofTask of pt
-  | ErrorBound of static_block_declaration * proof_block_name
+  | ProofBlock of static_block_declaration * proof_block_name
 and pt = { (* TODO: inline records in OCaml 4.03 *)
   lemma : Stateid.t;
   qed   : Stateid.t;
@@ -357,7 +357,7 @@ module VCS : sig
   val nodes_in_slice : start:id -> stop:id -> Stateid.t list
   
   val create_proof_task_box : id list -> qed:id -> start:id -> unit
-  val create_error_bound_box : static_block_declaration -> string -> unit
+  val create_proof_block : static_block_declaration -> string -> unit
   val box_of : id -> box list
   val delete_boxes_of : id -> unit
   val proof_task_box_of : id -> pt option
@@ -477,7 +477,7 @@ end = struct (* {{{ *)
         end)
         (Dag.Property.having_it b);
       match Dag.Property.data b with
-      | ErrorBound ({ dynamic_switch = id }, lbl) ->
+      | ProofBlock ({ dynamic_switch = id }, lbl) ->
           fprintf oc "label=\"%s (test:%s)\";\n" lbl (Stateid.to_string id);
           fprintf oc "color=red; }\n"
       | ProofTask _ -> fprintf oc "color=blue; }\n"
@@ -592,7 +592,7 @@ end = struct (* {{{ *)
         { (get_info id) with state = Empty; vcs_backup = None,None } in
     let copy_info_w_state v id =
       Vcs_.set_info v id { (get_info id) with vcs_backup = None,None } in
-    let copy_error_bound_boxes v =
+    let copy_proof_blockes v =
       let nodes = Vcs_.Dag.all_nodes (Vcs_.dag v) in
       let props =
         Stateid.Set.fold (fun n pl -> Vcs_.property_of !vcs n @ pl) nodes [] in
@@ -619,7 +619,7 @@ end = struct (* {{{ *)
     (* We put in the new dag the first state (since Qed shall run on it,
      * see check_task_aux) *)
     let v = copy_info_w_state v start in
-    copy_error_bound_boxes v
+    copy_proof_blockes v
 
   let nodes_in_slice ~start ~stop =
     List.rev (List.map fst (nodes_in_slice ~start ~stop))
@@ -636,10 +636,10 @@ end = struct (* {{{ *)
   let create_proof_task_box l ~qed ~start:lemma =
     if not (topo_invariant l) then anomaly (str "overlapping boxes");
     vcs := create_property !vcs l (ProofTask { qed; lemma })
-  let create_error_bound_box ({ start; stop} as decl) name =
+  let create_proof_block ({ start; stop} as decl) name =
     let l = nodes_in_slice ~start ~stop in
     if not (topo_invariant l) then anomaly (str "overlapping boxes");
-    vcs := create_property !vcs l (ErrorBound (decl, name))
+    vcs := create_property !vcs l (ProofBlock (decl, name))
   let box_of id = List.map Dag.Property.data (property_of !vcs id)
   let delete_boxes_of id =
     List.iter (fun x -> vcs := delete_property !vcs x) (property_of !vcs id)
@@ -1134,7 +1134,7 @@ let detect_proof_block id name =
       begin match static { prev_node; entry_point } with
       | None -> ()
       | Some ({ start; stop } as decl) ->
-          VCS.create_error_bound_box decl name
+          VCS.create_proof_block decl name
       end
     with Not_found ->
       Errors.errorlabstrm "STM"
@@ -1999,7 +1999,7 @@ let known_state ?(redefine_qed=false) ~cache id =
 
     let boxes = VCS.box_of id in
     let valid_boxes = CList.map_filter (function
-      | ErrorBound ({ stop } as decl, name) when Stateid.equal stop id ->
+      | ProofBlock ({ stop } as decl, name) when Stateid.equal stop id ->
           Some (decl, name)
       | _ -> None) boxes in
     assert(List.length valid_boxes < 2);
