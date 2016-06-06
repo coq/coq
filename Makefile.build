@@ -207,8 +207,7 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 ## Explicit dependencies for grammar stuff
 
 GRAMBASEDEPS := grammar/gramCompat.cmo grammar/q_util.cmi
-GRAMCMO := \
- grammar/gramCompat.cmo grammar/q_util.cmo \
+GRAMCMO := grammar/gramCompat.cmo grammar/q_util.cmo \
  grammar/argextend.cmo grammar/tacextend.cmo grammar/vernacextend.cmo
 
 grammar/q_util.cmi : grammar/gramCompat.cmo
@@ -227,10 +226,9 @@ GRAMC := $(OCAMLFIND) ocamlc $(CAMLFLAGS) $(CAMLDEBUG) $(USERFLAGS) \
 
 grammar/grammar.cma : $(GRAMCMO)
 	$(SHOW)'Testing $@'
-	@touch test.mlp
-	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $^ -impl test.mlp -o test.ml
-	$(HIDE)$(GRAMC) test.ml -o test-grammar
-	@rm -f test-grammar test.*
+	@touch grammar/test.mlp
+	$(HIDE)$(GRAMC) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) $^ -impl' -impl grammar/test.mlp -o grammar/test
+	@rm -f grammar/test.* grammar/test
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
 
