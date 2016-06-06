@@ -23,6 +23,8 @@ val crawl :
 val unit_val : Stm.DynBlockData.t
 val of_bullet_val : Vernacexpr.bullet -> Stm.DynBlockData.t
 val to_bullet_val : Stm.DynBlockData.t -> Vernacexpr.bullet
+val of_vernac_expr_val : Vernacexpr.vernac_expr -> Stm.DynBlockData.t
+val to_vernac_expr_val : Stm.DynBlockData.t -> Vernacexpr.vernac_expr
 
 end = struct
 
@@ -30,6 +32,7 @@ let unit_tag = DynBlockData.create "unit"
 let unit_val = DynBlockData.Easy.inj () unit_tag
 
 let of_bullet_val, to_bullet_val = DynBlockData.Easy.make_dyn "bullet"
+let of_vernac_expr_val, to_vernac_expr_val = DynBlockData.Easy.make_dyn "vernac_expr"
 
 let simple_goal sigma g gs =
   let open Evar in

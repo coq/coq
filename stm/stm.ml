@@ -170,11 +170,13 @@ type branch_type =
   | `Proof of proof_mode * depth
   | `Edit of
       proof_mode * Stateid.t * Stateid.t  * vernac_qed_type * Vcs_.Branch.t ]
+(* TODO 8.7 : split commands and tactics, since this type is too messy now *)
 type cmd_t = {
   ctac : bool; (* is a tactic *)
   ceff : bool; (* is a side-effecting command in the middle of a proof *)
   cast : aast;
   cids : Id.t list;
+  cblock : proof_block_name option;
   cqueue : [ `MainQueue
            | `TacQueue of cancel_switch
            | `QueryQueue of cancel_switch
@@ -204,6 +206,10 @@ type step =
   | `Alias  of alias_t ]
 type visit = { step : step; next : Stateid.t }
 
+let mkTransTac cast cblock cqueue =
+  Cmd { ctac = true; cast; cblock; cqueue; cids = []; ceff = false }
+let mkTransCmd cast cids ceff cqueue =
+  Cmd { ctac = false; cast; cblock = None; cqueue; cids; ceff }
 
 (* Parts of the system state that are morally part of the proof state *)
 let summary_pstate = [ Evarutil.meta_counter_summary_name;
@@ -591,7 +597,6 @@ end = struct (* {{{ *)
       let props =
         Stateid.Set.fold (fun n pl -> Vcs_.property_of !vcs n @ pl) nodes [] in
       let props = CList.sort_uniquize Vcs_.Dag.Property.compare props in
-      (* XXX check if par: works here, since we copy a single node *)
       List.fold_left (fun v p ->
         Vcs_.create_property v
           (Stateid.Set.elements (Vcs_.Dag.Property.having_it p))
@@ -1110,22 +1115,24 @@ let prev_node { id } =
   mk_doc_node id (VCS.visit id)
 let cur_node id = mk_doc_node id (VCS.visit id)
 
-let detect_proof_block id = function
-  | Some name when !Flags.async_proofs_tac_error_resilience &&
-                   !Flags.async_proofs_mode != Flags.APoff ->
-      begin match cur_node id with
+let detect_proof_block id name =
+  let name = match name with None -> "indent" | Some x -> x in   
+  if !Flags.async_proofs_tac_error_resilience &&
+     (if Flags.async_proofs_is_master () then
+      !Flags.async_proofs_mode != Flags.APoff else true)
+  then
+  match cur_node id with
+  | None -> ()
+  | Some entry_point -> try
+      let static, _ = List.assoc name !proof_block_delimiters in
+      begin match static { prev_node; entry_point } with
       | None -> ()
-      | Some entry_point -> try
-          let static, _ = List.assoc name !proof_block_delimiters in
-          begin match static { prev_node; entry_point } with
-          | None -> ()
-          | Some ({ start; stop } as decl) ->
-              VCS.create_error_bound_box decl name
-          end
-        with Not_found ->
-          Errors.errorlabstrm "STM"
-            (str "Unknown proof block delimiter " ++ str name) end
-  | _ -> ()
+      | Some ({ start; stop } as decl) ->
+          VCS.create_error_bound_box decl name
+      end
+    with Not_found ->
+      Errors.errorlabstrm "STM"
+        (str "Unknown proof block delimiter " ++ str name)
 
 (****************************** THE SCHEDULER *********************************)
 (******************************************************************************)
@@ -1978,7 +1985,12 @@ let wall_clock_last_fork = ref 0.0
 
 let known_state ?(redefine_qed=false) ~cache id =
  
-  let error_absorbing_tactic id exn =
+  let error_absorbing_tactic id blockname exn =
+    (* We keep the static/dynamic part of block detection separate, since
+       the static part could be performed earlier.  As of today there is
+       no advantage in doing so since no UI can exploit such piece of info *)
+    detect_proof_block id blockname;
+
     let boxes = VCS.box_of id in
     let valid_boxes = CList.map_filter (function
       | ErrorBound ({ stop } as decl, name) when Stateid.equal stop id ->
@@ -1995,8 +2007,11 @@ let known_state ?(redefine_qed=false) ~cache id =
         | `ValidBlock { base_state; goals_to_admit; recovery_command } -> begin
            let tac =
              let open Proofview.Notations in
-             Proofview.Unsafe.tclSETGOALS goals_to_admit <*>
-             Proofview.give_up in
+             Proofview.Goal.nf_enter { enter = fun gl ->
+               if CList.mem_f Evar.equal
+                 (Proofview.Goal.goal gl) goals_to_admit then
+             Proofview.give_up else Proofview.tclUNIT ()
+               } in
            match (VCS.get_info base_state).state with
            | Valid { proof } ->
                Proof_global.unfreeze proof;
@@ -2015,7 +2030,7 @@ let known_state ?(redefine_qed=false) ~cache id =
   in
 
   (* Absorb tactic errors from f () *)
-  let resilient_tactic id f =
+  let resilient_tactic id blockname f =
     if not !Flags.async_proofs_tac_error_resilience ||
        (Flags.async_proofs_is_master () &&
         !Flags.async_proofs_mode = Flags.APoff)
@@ -2024,7 +2039,7 @@ let known_state ?(redefine_qed=false) ~cache id =
       try f ()
       with e when Errors.noncritical e ->
         let ie = Errors.push e in
-        error_absorbing_tactic id ie in
+        error_absorbing_tactic id blockname ie in
   (* Absorb errors from f x *)
   let resilient_command f x =
     if not !Flags.async_proofs_cmd_error_resilience ||
@@ -2064,8 +2079,8 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache, true
       | `Cmd { cast = x; cqueue = `SkipQueue } -> (fun () ->
             reach view.next), cache, true
-      | `Cmd { cast = x; cqueue = `TacQueue cancel } -> (fun () ->
-            resilient_tactic id (fun () ->
+      | `Cmd { cast = x; cqueue = `TacQueue cancel; cblock } -> (fun () ->
+            resilient_tactic id cblock (fun () ->
               reach ~cache:`Shallow view.next;
               Hooks.(call tactic_being_run true); 
               Partac.vernac_interp
@@ -2077,8 +2092,8 @@ let known_state ?(redefine_qed=false) ~cache id =
             reach view.next;
             Query.vernac_interp cancel view.next id x
           ), cache, false
-      | `Cmd { cast = x; ceff = eff; ctac = true } -> (fun () ->
-            resilient_tactic id (fun () ->
+      | `Cmd { cast = x; ceff = eff; ctac = true; cblock } -> (fun () ->
+            resilient_tactic id cblock (fun () ->
               reach view.next;
               Hooks.(call tactic_being_run true); 
               vernac_interp id x;
@@ -2443,8 +2458,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
                     may_pierce_opaque x
                  then `SkipQueue 
             else `MainQueue in
-          VCS.commit id (Cmd {
-            ctac=false;ceff=false;cast = x; cids = []; cqueue = queue });
+          VCS.commit id (mkTransCmd x [] false queue);
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
@@ -2467,8 +2481,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           anomaly(str"VtProofMode must be executed VtNow")
       | VtProofMode mode, VtNow ->
           let id = VCS.new_node ~id:newtip () in
-          VCS.commit id (Cmd {
-            ctac=false;ceff=false;cast = x;cids=[];cqueue = `MainQueue});
+          VCS.commit id (mkTransCmd x [] false `MainQueue);
           List.iter
             (fun bn -> match VCS.get_branch bn with
             | { VCS.root; kind = `Master; pos } -> ()
@@ -2483,12 +2496,14 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           Backtrack.record ();
           finish ();
           `Ok
-      | VtProofStep { parallel; proof_block_detection }, w ->
+      | VtProofStep { parallel; proof_block_detection = cblock }, w ->
           let id = VCS.new_node ~id:newtip () in
           let queue = if parallel then `TacQueue (ref false) else `MainQueue in
-          VCS.commit id (Cmd {
-            ctac = true;ceff = false;cast = x;cids = [];cqueue = queue });
-          detect_proof_block id proof_block_detection;
+          VCS.commit id (mkTransTac x cblock queue);
+          (* Static proof block detection delayed until an error really occurs.
+             If/when and UI will make something useful with this piece of info,
+             detection should occur here.
+          detect_proof_block id cblock; *)
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
           let valid = if tty then Some(VCS.get_branch_pos head) else None in
@@ -2505,8 +2520,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
-          VCS.commit id (Cmd {
-            ctac=false;ceff=in_proof;cast=x;cids=l;cqueue=`MainQueue });
+          VCS.commit id (mkTransCmd x l in_proof `MainQueue);
           (* We can't replay a Definition since universes may be differently
            * inferred.  This holds in Coq >= 8.5 *)
 	  let replay = match x.expr with
@@ -2541,8 +2555,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
               VCS.branch bname (`Proof (proof_mode, VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode proof_mode;
             end else begin
-	      VCS.commit id (Cmd {
-                ctac=false;ceff=in_proof;cast=x;cids=[];cqueue=`MainQueue });
+              VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
               (* We hope it can be replayed, but we can't really know *)
               VCS.propagate_sideff ~replay:(Some x);
               VCS.checkout_shallowest_proof_branch ();

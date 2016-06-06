@@ -1,3 +1,13 @@
+Goal False /\ True.
+Proof.
+split.
+  idtac.
+  idtac.
+  exact I.
+idtac.
+idtac.
+exact I.
+Qed.
 
 Lemma baz :  (exists n, n = 3 /\ n = 3) /\ True.
 Proof.
@@ -26,7 +36,7 @@ Qed.
 Lemma foo1 : False /\ True.
 Proof.
 split.
-  exact I.
+  { exact I. }
   { exact I. }
 Qed.
 
