@@ -147,3 +147,35 @@ let dynamic_par { dynamic_switch = id } =
 
 let () = register_proof_block_delimiter "par" static_par dynamic_par
 
+(* ***************** simple indentation *********************************** *)
+
+let static_indent ({ entry_point; prev_node } as view) =
+   Printf.eprintf "@%d\n" (Stateid.to_int entry_point.id);
+   match prev_node entry_point with
+   | None -> None
+   | Some last_tac ->
+      if last_tac.indentation <= entry_point.indentation then None
+      else
+        crawl view ~init:(Some last_tac) (fun prev node ->
+        if node.indentation >= last_tac.indentation then `Cont node
+        else 
+          `Found { stop = entry_point.id; start = node.id;
+                   dynamic_switch = node.id;
+                   carry_on_data = of_vernac_expr_val entry_point.ast }
+        ) last_tac
+
+let dynamic_indent { dynamic_switch = id; carry_on_data = e } =
+  Printf.eprintf "%s\n" (Stateid.to_string id);
+  match is_focused_goal_simple id with
+  | `Simple [] -> `Leaks
+  | `Simple focused ->
+      let but_last = List.tl (List.rev focused) in 
+      `ValidBlock {
+         base_state = id;
+         goals_to_admit = but_last;
+         recovery_command = Some (to_vernac_expr_val e);
+      }
+  | `Not -> `Leaks
+
+let () = register_proof_block_delimiter "indent" static_indent dynamic_indent
+
