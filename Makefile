@@ -236,6 +236,7 @@ distclean: clean cleanconfig cacheclean
 
 voclean:
 	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -delete
+	find theories plugins test-suite -name .coq-native -empty -delete
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
