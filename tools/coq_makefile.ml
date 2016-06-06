@@ -100,8 +100,10 @@ let is_genrule r = (* generic rule (like bar%foo: ...) *)
       Str.string_match genrule r 0
 
 let string_prefix a b =
-  let rec aux i = try if a.[i] = b.[i] then aux (i+1) else i with |Invalid_argument _ -> i in
-    String.sub a 0 (aux 0)
+  let rec aux i =
+    try if a.[i] = b.[i] then aux (i+1) else i with Invalid_argument _ -> i
+  in
+  String.sub a 0 (aux 0)
 
 let is_prefix dir1 dir2 =
   let l1 = String.length dir1 in
@@ -116,7 +118,10 @@ let is_prefix dir1 dir2 =
 
 let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
-  let pdir = if le >= 0 && ldir.[le] = '.' then String.sub ldir 0 (le - 1) else String.copy ldir in
+  let pdir =
+    if le >= 0 && ldir.[le] = '.' then String.sub ldir 0 (le - 1)
+    else String.copy ldir
+  in
   for i = 0 to le - 1 do
     if pdir.[i] = '.' then pdir.[i] <- '/';
   done;
@@ -131,62 +136,74 @@ let standard opt =
   print "\"\n\n"
 
 let classify_files_by_root var files (inc_ml,inc_i,inc_r) =
-  if not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_r)
-    && not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_i) then
-    begin
-      let absdir_of_files = List.rev_map
+  if List.exists (fun (pdir,_,_) -> pdir = ".") inc_r
+    || List.exists (fun (pdir,_,_) -> pdir = ".") inc_i
+  then ()
+  else
+    let absdir_of_files =List.rev_map
 	(fun x -> CUnix.canonical_path_name (Filename.dirname x))
-	files in
-	(* files in scope of a -I option (assuming they are no overlapping) *)
-      let has_inc_i = List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_ml in
-	if has_inc_i then
-	  begin
-	    printf "%sINC=" var;
-	    List.iter (fun (pdir,absdir) ->
-			 if List.mem absdir absdir_of_files
-			 then printf
-			   "$(filter $(wildcard %s/*),$(%s)) "
-			   pdir var
-		      ) inc_ml;
-	    printf "\n";
-	  end;
-      (* Files in the scope of a -R option (assuming they are disjoint) *)
-	List.iteri (fun i (pdir,_,abspdir) ->
-		       if List.exists (is_prefix abspdir) absdir_of_files then
-			 printf "%s%d=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
-			   var i pdir pdir var)
-	  (inc_i@inc_r);
-    end
+	files
+    in
+    (* files in scope of a -I option (assuming they are no overlapping) *)
+    if List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_ml then
+      begin
+	printf "%sINC=" var;
+	List.iter (fun (pdir,absdir) ->
+		   if List.mem absdir absdir_of_files
+		   then printf "$(filter $(wildcard %s/*),$(%s)) " pdir var)
+		  inc_ml;
+	printf "\n";
+      end;
+    (* Files in the scope of a -R option (assuming they are disjoint) *)
+    List.iteri (fun i (pdir,_,abspdir) ->
+		if List.exists (is_prefix abspdir) absdir_of_files then
+		  printf "%s%d=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
+			 var i pdir pdir var)
+	       (inc_i@inc_r)
 
 let vars_to_put_by_root var_x_files_l (inc_ml,inc_i,inc_r) =
-  let var_x_absdirs_l = List.rev_map
-    (fun (v,l) -> (v,List.rev_map (fun x -> CUnix.canonical_path_name (Filename.dirname x)) l))
-    var_x_files_l in
-  let var_filter f g = List.fold_left (fun acc (var,dirs) ->
-    if f dirs
-    then (g var)::acc else acc) [] var_x_absdirs_l in
-    (* All files caught by a -R . option (assuming it is the only one) *)
+  let var_x_absdirs_l =
+    List.rev_map
+      (fun (v,l) ->
+       (v,List.rev_map
+            (fun x -> CUnix.canonical_path_name (Filename.dirname x)) l))
+      var_x_files_l
+  in
+  let var_filter f g =
+    List.fold_left
+      (fun acc (var,dirs) -> if f dirs then (g var)::acc else acc)
+      [] var_x_absdirs_l
+  in
+  (* All files caught by a -R . option (assuming it is the only one) *)
   match inc_i@inc_r with
-  |[(".",t,_)] -> (None,[".",physical_dir_of_logical_dir t,List.rev_map fst var_x_files_l])
+  |[(".",t,_)] ->
+    (None,[".",physical_dir_of_logical_dir t,List.rev_map fst var_x_files_l])
   |l ->
     try
       let out = List.assoc "." (List.rev_map (fun (p,l,_) -> (p,l)) l) in
-      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option\n" in
+      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option\n"
+      in
       (None,[".",physical_dir_of_logical_dir out,List.rev_map fst var_x_files_l])
     with Not_found ->
-      (
       (* vars for -Q options *)
-	Some (var_filter (fun l -> List.exists (fun (_,a) -> List.mem a l) inc_ml) (fun x -> x)),
+      let varq = var_filter
+                   (fun l -> List.exists (fun (_,a) -> List.mem a l) inc_ml)
+                   (fun x -> x)
+      in
       (* (physical dir, physical dir of logical path,vars) for -R options
 	 (assuming physical dirs are disjoint) *)
-      if l = [] then
-	[".","$(INSTALLDEFAULTROOT)",[]]
-      else
-	Util.List.fold_left_i (fun i out (pdir,ldir,abspdir) ->
-	  let vars_r = var_filter (List.exists (is_prefix abspdir)) (fun x -> x^string_of_int i) in
-	  let pdir' = physical_dir_of_logical_dir ldir in
-	  (pdir,pdir',vars_r)::out) 1 [] l
-      )
+      let other =
+        if l = [] then
+	  [".","$(INSTALLDEFAULTROOT)",[]]
+        else
+	  Util.List.fold_left_i (fun i out (pdir,ldir,abspdir) ->
+	    let vars_r = var_filter
+                           (List.exists (is_prefix abspdir))
+                           (fun x -> x^string_of_int i)
+            in
+	    let pdir' = physical_dir_of_logical_dir ldir in
+	    (pdir,pdir',vars_r)::out) 1 [] l
+      in (Some varq, other)
 
 let install_include_by_root perms =
   let install_dir for_i (pdir,pdir',vars) =
@@ -262,33 +279,38 @@ let where_put_doc = function
  install-doc will put anything in $INSTALLDEFAULTROOT\n" in
 	"$(INSTALLDEFAULTROOT)"
 
-let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) inc = function
+let install (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,sds) inc = function
   |Project_file.NoInstall -> ()
   |is_install ->
     let not_empty = function |[] -> false |_::_ -> true in
-    let cmofiles = List.rev_append mlpackfiles (List.rev_append mlfiles ml4files) in
-    let cmifiles = List.rev_append mlifiles cmofiles in
-    let cmxsfiles = List.rev_append cmofiles mllibfiles in
-    let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxsfiles)] inc in
+    let cmos = List.rev_append mlpacks (List.rev_append mls ml4s) in
+    let cmis = List.rev_append mlis cmos in
+    let cmxss = List.rev_append cmos mllibs in
+    let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxss)] inc in
     let where_what_oth = vars_to_put_by_root
-      [("VOFILES",vfiles);("VFILES",vfiles);("GLOBFILES",vfiles);("NATIVEFILES",vfiles);("CMOFILES",cmofiles);("CMIFILES",cmifiles);("CMAFILES",mllibfiles)]
+      [("VOFILES",vfiles);("VFILES",vfiles);
+       ("GLOBFILES",vfiles);("NATIVEFILES",vfiles);
+       ("CMOFILES",cmos);("CMIFILES",cmis);("CMAFILES",mllibs)]
       inc in
     let doc_dir = where_put_doc inc in
-    let () = if is_install = Project_file.UnspecInstall then
-	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n" in
-    if (not_empty cmxsfiles) then begin
+    if is_install = Project_file.UnspecInstall then begin
+	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n"
+    end;
+    if not_empty cmxss then begin
       print "install-natdynlink:\n";
       install_include_by_root "0755" where_what_cmxs;
       print "\n";
     end;
-    if (not_empty cmxsfiles) then begin
+    if not_empty cmxss then begin
       print "install-toploop: $(MLLIBFILES:.mllib=.cmxs)\n";
       printf "\t install -d \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
       printf "\t install -m 0755 $?  \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
       print "\n";
     end;
     print "install:";
-    if (not_empty cmxsfiles) then print "$(if $(HASNATDYNLINK_OR_EMPTY),install-natdynlink)";
+    if not_empty cmxss then begin
+      print "$(if $(HASNATDYNLINK_OR_EMPTY),install-natdynlink)";
+    end;
     print "\n";
     install_include_by_root "0644" where_what_oth;
     List.iter
@@ -303,7 +325,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
       print "\tdone\n" in
     print "install-doc:\n";
     if not_empty vfiles then install_one_kind "html" doc_dir;
-    if not_empty mlifiles then install_one_kind "mlihtml" doc_dir;
+    if not_empty mlis then install_one_kind "mlihtml" doc_dir;
     print "\n";
     let uninstall_one_kind kind dir =
       printf "\tprintf 'cd \"$${DSTROOT}\"$(COQDOCINSTALL)/%s \\\\\\n' >> \"$@\"\n" dir;
@@ -313,10 +335,10 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     in
     printf "uninstall_me.sh: %s\n" !makefile_name;
     print "\techo '#!/bin/sh' > $@\n";
-    if (not_empty cmxsfiles) then uninstall_by_root where_what_cmxs;
+    if not_empty cmxss then uninstall_by_root where_what_cmxs;
     uninstall_by_root where_what_oth;
     if not_empty vfiles then uninstall_one_kind "html" doc_dir;
-    if not_empty mlifiles then uninstall_one_kind "mlihtml" doc_dir;
+    if not_empty mlis then uninstall_one_kind "mlihtml" doc_dir;
     print "\tchmod +x $@\n";
     print "\n";
     print "uninstall: uninstall_me.sh\n";
@@ -335,11 +357,14 @@ let make_makefile sds =
 
 let clean sds sps =
   print "clean::\n";
-  if !some_mlfile || !some_mlifile || !some_ml4file || !some_mllibfile || !some_mlpackfile then begin
-    print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
-    print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
-    print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
-  end;
+  if !some_mlfile || !some_mlifile || !some_ml4file
+     || !some_mllibfile || !some_mlpackfile
+  then
+    begin
+      print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
+      print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
+      print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
+    end;
   if !some_vfile then
     begin
       print "\trm -f $(OBJFILES) $(OBJFILES:.o=.native) $(NATIVEFILES)\n";
@@ -805,22 +830,24 @@ let command_line args =
   print_list args;
   print "\n#\n\n"
 
-let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((ml_inc,i_inc,r_inc) as l) =
+let ensure_root_dir (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,_) inc =
+  let (ml_inc,i_inc,r_inc) = inc in
   let here = Sys.getcwd () in
-  let not_tops =List.for_all (fun s -> s <> Filename.basename s) in
+  let not_tops =  List.for_all (fun s -> s <> Filename.basename s) in
   if List.exists (fun (_,_,x) -> x = here) i_inc
     || List.exists (fun (_,_,x) -> is_prefix x here) r_inc
-    || (not_tops v && not_tops mli && not_tops ml4 && not_tops ml
-	&& not_tops mllib && not_tops mlpack) then
-    l
+    || (not_tops vfiles && not_tops mlis && not_tops ml4s && not_tops mls
+	&& not_tops mllibs && not_tops mlpacks)
+  then
+    inc
   else
     ((".",here)::ml_inc,i_inc,(".","Top",here)::r_inc)
 
-let warn_install_at_root_directory
-    (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_ml,inc_i,inc_r) =
+let warn_install_at_root_directory (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,_) inc =
+  let (inc_ml,inc_i,inc_r) = inc in
   let inc_top = List.filter (fun (_,ldir,_) -> ldir = "") (inc_r@inc_i) in
   let inc_top_p = List.map (fun (p,_,_) -> p) inc_top in
-  let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles @ mlpackfiles in
+  let files = vfiles @ mlis @ ml4s @ mls @ mllibs @ mlpacks in
   if List.exists (fun f -> List.mem (Filename.dirname f) inc_top_p) files
   then
     Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R or -Q %sis recommended\n"
@@ -858,7 +885,9 @@ let do_makefile args =
     |[] -> var := false
     |_::_ -> var := true in
   let (project_file,makefile,is_install,opt),l =
-    try Project_file.process_cmd_line Filename.current_dir_name (None,None,Project_file.UnspecInstall,true) [] args
+    try
+      Project_file.process_cmd_line Filename.current_dir_name
+       (None,None,Project_file.UnspecInstall,true) [] args
     with Project_file.Parsing_error -> usage () in
   let (v_f,(mli_f,ml4_f,ml_f,mllib_f,mlpack_f),sps,sds as targets), inc, defs =
     Project_file.split_arguments l in
@@ -882,7 +911,9 @@ let do_makefile args =
     List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies)) sps;
 
   let inc = ensure_root_dir targets inc in
-  if is_install <> Project_file.NoInstall then warn_install_at_root_directory targets inc;
+  if is_install <> Project_file.NoInstall then begin
+    warn_install_at_root_directory targets inc;
+  end;
   check_overlapping_include inc;
   banner ();
   header_includes ();
