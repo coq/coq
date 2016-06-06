@@ -60,6 +60,7 @@ Tactic Notation "symmetry" := symmetry.
 Tactic Notation "split" := split.
 Tactic Notation "esplit" := esplit.
 
+Global Unset Bracketing Last Introduction Pattern.
 Global Unset Regular Subst Tactic.
 
 (** Many things now import [PeanoNat] rather than [NPeano], so we require it so that the old absolute names in [NPeano.Nat] are available. *)

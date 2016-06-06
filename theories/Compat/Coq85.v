@@ -12,5 +12,5 @@
    behave as "intros [H|H]" but leave instead hypotheses quantified in
    the goal, here producing subgoals A->C and B->C. *)
 
-Unset Bracketing Last Introduction Pattern.
+Global Unset Bracketing Last Introduction Pattern.
 Global Unset Regular Subst Tactic.
