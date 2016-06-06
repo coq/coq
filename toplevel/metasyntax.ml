@@ -1223,11 +1223,20 @@ let add_notation local c ((loc,df),modifiers) sc =
   Dumpglob.dump_notation (loc,df') sc true
 
 let add_notation_extra_printing_rule df k v =
-  let notk = 
+  let notk =
     let dfs = split_notation_string df in
     let _,_, symbs = analyze_notation_tokens dfs in
     make_notation_key symbs in
   Notation.add_notation_extra_printing_rule notk k v
+
+let deactivate_single_notation_printing ntn sc =
+  Constrextern.deactivate_single_notation_printing ntn sc
+let reactivate_single_notation_printing ntn sc =
+  Constrextern.reactivate_single_notation_printing ntn sc
+let deactivate_notation_scope_printing sc =
+  Constrextern.deactivate_notation_scope_printing sc
+let reactivate_notation_scope_printing sc =
+  Constrextern.reactivate_notation_scope_printing sc
 
 (* Infix notations *)
 

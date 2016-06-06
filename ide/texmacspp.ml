@@ -513,6 +513,15 @@ let rec tmpp v loc =
       xmlScope loc "delimit" name ~attr:["delimiter",tag] []
   | VernacDelimiters (name,None) ->
       xmlScope loc "undelimit" name ~attr:[] []
+  | VernacNotationActivation (Some name,_,true) ->
+      xmlScope loc "activate" name ~attr:[] []
+  | VernacNotationActivation (Some name,_,false) ->
+      xmlScope loc "deactivate" name ~attr:[] []
+  | VernacNotationActivation (None,Some name,true) ->
+      xmlScope loc "activate" name ~attr:[] []
+  | VernacNotationActivation (None,Some name,false) ->
+      xmlScope loc "deactivate" name ~attr:[] []
+  | VernacNotationActivation (None,None,_) -> assert false
   | VernacInfix (_,((_,name),sml),ce,sn) ->
       let attrs = List.flatten (List.map attribute_of_syntax_modifier sml) in
       let sc_attr =

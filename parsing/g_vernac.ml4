@@ -1022,6 +1022,19 @@ GEXTEND Gram
      | IDENT "Undelimit"; IDENT "Scope"; sc = IDENT ->
 	 VernacDelimiters (sc, None)
 
+     | IDENT "Reactivate"; IDENT "Notation"; IDENT "Scope"; sc = IDENT ->
+	 VernacNotationActivation (None, Some sc, true)
+     | IDENT "Deactivate"; IDENT "Notation"; IDENT "Scope"; sc = IDENT ->
+	 VernacNotationActivation (None, Some sc, false)
+     | IDENT "Reactivate"; IDENT "Notation"; ntn = STRING ->
+	 VernacNotationActivation (Some ntn, None, true)
+     | IDENT "Deactivate"; IDENT "Notation"; ntn = STRING ->
+	 VernacNotationActivation (Some ntn, None, false)
+     | IDENT "Reactivate"; IDENT "Notation"; ntn = STRING; IDENT "From"; IDENT "Scope"; sc = IDENT ->
+	 VernacNotationActivation (Some ntn, Some sc, true)
+     | IDENT "Deactivate"; IDENT "Notation"; ntn = STRING; IDENT "From"; IDENT "Scope"; sc = IDENT ->
+	 VernacNotationActivation (Some ntn, Some sc, false)
+
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
        refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 

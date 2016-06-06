@@ -76,8 +76,10 @@ val with_universes : ('a -> 'b) -> 'a -> 'b
 val without_symbols : ('a -> 'b) -> 'a -> 'b
 
 (** This suppresses printing of specific notations only *)
-val deactivate_notation_printing : notation -> scope_name option -> unit
-val reactivate_notation_printing : notation -> scope_name option -> unit
+val deactivate_single_notation_printing : notation -> scope_name option -> unit
+val reactivate_single_notation_printing : notation -> scope_name option -> unit
+val deactivate_notation_scope_printing : scope_name -> unit
+val reactivate_notation_scope_printing : scope_name -> unit
 val without_specific_symbols : interp_rule list -> ('a -> 'b) -> 'a -> 'b
 
 (** This prints all notations with inactive printing *)
