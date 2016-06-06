@@ -13,4 +13,4 @@
    the goal, here producing subgoals A->C and B->C. *)
 
 Unset Bracketing Last Introduction Pattern.
-
+Global Unset Regular Subst Tactic.
