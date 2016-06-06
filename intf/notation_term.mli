@@ -78,3 +78,18 @@ type notation_interp_env = {
   ninterp_rec_vars : Id.t Id.Map.t;
   mutable ninterp_only_parse : bool;
 }
+
+type grammar_constr_prod_item =
+  | GramConstrTerminal of Tok.t
+  | GramConstrNonTerminal of Extend.constr_prod_entry_key * Id.t option
+  | GramConstrListMark of int * bool
+    (* tells action rule to make a list of the n previous parsed items;
+       concat with last parsed list if true *)
+
+type notation_grammar = {
+  notgram_level : int;
+  notgram_assoc : Extend.gram_assoc option;
+  notgram_notation : Constrexpr.notation;
+  notgram_prods : grammar_constr_prod_item list list;
+  notgram_typs : notation_var_internalization_type list;
+}

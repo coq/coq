@@ -688,9 +688,9 @@ let cache_one_syntax_extension se =
     Notation.declare_notation_level ntn prec;
     (* Declare the parsing rule *)
     Egramcoq.extend_constr_grammar prec se.synext_notgram;
-    (* Declare the printing rule *)
-    Notation.declare_notation_printing_rule ntn
-      ~extra:se.synext_extra (se.synext_unparsing, fst prec)
+    (* Declare the notation rule *)
+    Notation.declare_notation_rule ntn
+      ~extra:se.synext_extra (se.synext_unparsing, fst prec) se.synext_notgram
 
 let cache_syntax_extension (_, (_, sy)) =
   List.iter cache_one_syntax_extension sy
@@ -1063,7 +1063,7 @@ let recover_syntax ntn =
     let prec = Notation.level_of_notation ntn in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
     let pp_extra_rules = Notation.find_notation_extra_printing_rules ntn in
-    let pa_rule = Egramcoq.recover_constr_grammar ntn prec in
+    let pa_rule = Notation.find_notation_parsing_rules ntn in
     { synext_level = prec;
       synext_notation = ntn;
       synext_notgram = pa_rule;
