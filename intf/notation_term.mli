@@ -92,4 +92,5 @@ type notation_grammar = {
   notgram_notation : Constrexpr.notation;
   notgram_prods : grammar_constr_prod_item list list;
   notgram_typs : notation_var_internalization_type list;
+  notgram_onlyprinting : bool;
 }

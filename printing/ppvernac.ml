@@ -357,6 +357,7 @@ module Make
     | SetAssoc RightA -> keyword "right associativity"
     | SetAssoc NonA -> keyword "no associativity"
     | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
+    | SetOnlyPrinting -> keyword "only printing"
     | SetOnlyParsing Flags.Current -> keyword "only parsing"
     | SetOnlyParsing v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")
     | SetFormat("text",s) -> keyword "format " ++ pr_located qs s

@@ -680,6 +680,7 @@ type syntax_extension_obj = locality_flag * syntax_extension list
 let cache_one_syntax_extension se =
   let ntn = se.synext_notation in
   let prec = se.synext_level in
+  let onlyprint = se.synext_notgram.notgram_onlyprinting in
   try
     let oldprec = Notation.level_of_notation ntn in
     if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec
@@ -687,7 +688,7 @@ let cache_one_syntax_extension se =
     (* Reserve the notation level *)
     Notation.declare_notation_level ntn prec;
     (* Declare the parsing rule *)
-    Egramcoq.extend_constr_grammar prec se.synext_notgram;
+    if not onlyprint then Egramcoq.extend_constr_grammar prec se.synext_notgram;
     (* Declare the notation rule *)
     Notation.declare_notation_rule ntn
       ~extra:se.synext_extra (se.synext_unparsing, fst prec) se.synext_notgram
@@ -723,9 +724,10 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
 
 let interp_modifiers modl =
   let onlyparsing = ref false in
+  let onlyprinting = ref false in
   let rec interp assoc level etyps format extra = function
     | [] ->
-	(assoc,level,etyps,!onlyparsing,format,extra)
+	(assoc,level,etyps,!onlyparsing,!onlyprinting,format,extra)
     | SetEntryType (s,typ) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
@@ -750,6 +752,9 @@ let interp_modifiers modl =
     | SetOnlyParsing _ :: l ->
 	onlyparsing := true;
 	interp assoc level etyps format extra l
+    | SetOnlyPrinting :: l ->
+	onlyprinting := true;
+	interp assoc level etyps format extra l
     | SetFormat ("text",s) :: l ->
 	if not (Option.is_empty format) then error "A format is given more than once.";
 	interp assoc level etyps (Some s) extra l
@@ -758,7 +763,7 @@ let interp_modifiers modl =
   in interp None None [] None [] modl
 
 let check_infix_modifiers modifiers =
-  let (assoc,level,t,b,fmt,extra) = interp_modifiers modifiers in
+  let (_, _, t, _, _, _, _) = interp_modifiers modifiers in
   if not (List.is_empty t) then
     error "Explicit entry level or type unexpected in infix notation."
 
@@ -769,13 +774,20 @@ let check_useless_entry_types recvars mainvars etyps =
                   (pr_id x ++ str " is unbound in the notation.")
   | _ -> ()
 
-let no_syntax_modifiers = function
-  | [] | [SetOnlyParsing _] -> true
-  | _ -> false
+let not_a_syntax_modifier = function
+| SetOnlyParsing _ -> true
+| SetOnlyPrinting -> true
+| _ -> false
 
-let is_only_parsing = function
-  | [SetOnlyParsing _] -> true
-  | _ -> false
+let no_syntax_modifiers mods = List.for_all not_a_syntax_modifier mods
+
+let is_only_parsing mods =
+  let test = function SetOnlyParsing _ -> true | _ -> false in
+  List.exists test mods
+
+let is_only_printing mods =
+  let test = function SetOnlyPrinting -> true | _ -> false in
+  List.exists test mods
 
 (* Compute precedences from modifiers (or find default ones) *)
 
@@ -942,7 +954,7 @@ let remove_curly_brackets l =
   in aux true l
 
 let compute_syntax_data df modifiers =
-  let (assoc,n,etyps,onlyparse,fmt,extra) = interp_modifiers modifiers in
+  let (assoc,n,etyps,onlyparse,onlyprint,fmt,extra) = interp_modifiers modifiers in
   let assoc = match assoc with None -> (* default *) Some NonA | a -> a in
   let toks = split_notation_string df in
   let (recvars,mainvars,symbols) = analyze_notation_tokens toks in
@@ -968,16 +980,21 @@ let compute_syntax_data df modifiers =
   let sy_data = (n,sy_typs,symbols',fmt) in
   let sy_fulldata = (i_typs,ntn_for_grammar,prec,need_squash,sy_data) in
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
-  let i_data = (onlyparse,recvars,mainvars,(ntn_for_interp,df')) in
+  let i_data = (onlyparse,onlyprint,recvars,mainvars,(ntn_for_interp,df')) in
   (* Return relevant data for interpretation and for parsing/printing *)
   (msgs,i_data,i_typs,sy_fulldata,extra)
 
 let compute_pure_syntax_data df mods =
-  let (msgs,(onlyparse,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
+  let (msgs,(onlyparse,onlyprint,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
   let msgs =
     if onlyparse then
       (Feedback.msg_warning,
       strbrk "The only parsing modifier has no effect in Reserved Notation.")::msgs
+    else msgs in
+  let msgs =
+    if onlyprint then
+      (Feedback.msg_warning,
+      strbrk "The only printing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
   msgs, sy_data, extra
 
@@ -1086,22 +1103,24 @@ let recover_notation_syntax rawntn =
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
 
-let make_pa_rule i_typs (n,typs,symbols,_) ntn =
+let make_pa_rule i_typs (n,typs,symbols,_) ntn onlyprint =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
   { notgram_level = n;
     notgram_assoc = assoc;
     notgram_notation = ntn;
     notgram_prods = prod;
-    notgram_typs = i_typs; }
+    notgram_typs = i_typs;
+    notgram_onlyprinting = onlyprint;
+  }
 
 let make_pp_rule (n,typs,symbols,fmt) =
   match fmt with
   | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
   | Some fmt -> hunks_of_format (n, List.split typs) (symbols, parse_format fmt)
 
-let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) extra =
-  let pa_rule = make_pa_rule i_typs sy_data ntn in
+let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) extra onlyprint =
+  let pa_rule = make_pa_rule i_typs sy_data ntn onlyprint in
   let pp_rule = make_pp_rule sy_data in
   let sy = {
     synext_level = prec;
@@ -1124,10 +1143,10 @@ let to_map l =
 
 let add_notation_in_scope local df c mods scope =
   let (msgs,i_data,i_typs,sy_data,extra) = compute_syntax_data df mods in
-  (* Prepare the parsing and printing rules *)
-  let sy_rules = make_syntax_rules sy_data extra in
   (* Prepare the interpretation *)
-  let (onlyparse, recvars,mainvars, df') = i_data in
+  let (onlyparse, onlyprint, recvars,mainvars, df') = i_data in
+  (* Prepare the parsing and printing rules *)
+  let sy_rules = make_syntax_rules sy_data extra onlyprint in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
   let nenv = {
     ninterp_var_type = to_map i_vars;
@@ -1188,7 +1207,7 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
 
 let add_syntax_extension local ((loc,df),mods) =
   let msgs, sy_data, extra = compute_pure_syntax_data df mods in
-  let sy_rules = make_syntax_rules sy_data extra in
+  let sy_rules = make_syntax_rules sy_data extra false in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 
@@ -1200,7 +1219,7 @@ let add_notation_interpretation ((loc,df),c,sc) =
 
 let set_notation_for_interpretation impls ((_,df),c,sc) =
   (try ignore
-    (silently (add_notation_interpretation_core false df ~impls c sc) false);
+    (silently (fun () -> add_notation_interpretation_core false df ~impls c sc false) ());
   with NoSyntaxRule ->
     error "Parsing rule for this notation has to be previously declared.");
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
