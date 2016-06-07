@@ -27,9 +27,6 @@ let rec print_list sep = function
   | x :: l -> print x; print sep; print_list sep l
   | [] -> ()
 
-let list_iter_i f =
-  let rec aux i = function [] -> () | a::l -> f i a; aux (i+1) l in aux 1
-
 let section s =
   let l = String.length s in
   let print_com s =
@@ -103,8 +100,10 @@ let is_genrule r = (* generic rule (like bar%foo: ...) *)
       Str.string_match genrule r 0
 
 let string_prefix a b =
-  let rec aux i = try if a.[i] = b.[i] then aux (i+1) else i with |Invalid_argument _ -> i in
-    String.sub a 0 (aux 0)
+  let rec aux i =
+    try if a.[i] = b.[i] then aux (i+1) else i with Invalid_argument _ -> i
+  in
+  String.sub a 0 (aux 0)
 
 let is_prefix dir1 dir2 =
   let l1 = String.length dir1 in
@@ -119,7 +118,10 @@ let is_prefix dir1 dir2 =
 
 let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
-  let pdir = if le >= 0 && ldir.[le] = '.' then String.sub ldir 0 (le - 1) else String.copy ldir in
+  let pdir =
+    if le >= 0 && ldir.[le] = '.' then String.sub ldir 0 (le - 1)
+    else String.copy ldir
+  in
   for i = 0 to le - 1 do
     if pdir.[i] = '.' then pdir.[i] <- '/';
   done;
@@ -134,62 +136,74 @@ let standard opt =
   print "\"\n\n"
 
 let classify_files_by_root var files (inc_ml,inc_i,inc_r) =
-  if not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_r)
-    && not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_i) then
-    begin
-      let absdir_of_files = List.rev_map
+  if List.exists (fun (pdir,_,_) -> pdir = ".") inc_r
+    || List.exists (fun (pdir,_,_) -> pdir = ".") inc_i
+  then ()
+  else
+    let absdir_of_files =List.rev_map
 	(fun x -> CUnix.canonical_path_name (Filename.dirname x))
-	files in
-	(* files in scope of a -I option (assuming they are no overlapping) *)
-      let has_inc_i = List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_ml in
-	if has_inc_i then
-	  begin
-	    printf "%sINC=" var;
-	    List.iter (fun (pdir,absdir) ->
-			 if List.mem absdir absdir_of_files
-			 then printf
-			   "$(filter $(wildcard %s/*),$(%s)) "
-			   pdir var
-		      ) inc_ml;
-	    printf "\n";
-	  end;
-      (* Files in the scope of a -R option (assuming they are disjoint) *)
-	list_iter_i (fun i (pdir,_,abspdir) ->
-		       if List.exists (is_prefix abspdir) absdir_of_files then
-			 printf "%s%d=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
-			   var i pdir pdir var)
-	  (inc_i@inc_r);
-    end
+	files
+    in
+    (* files in scope of a -I option (assuming they are no overlapping) *)
+    if List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_ml then
+      begin
+	printf "%sINC=" var;
+	List.iter (fun (pdir,absdir) ->
+		   if List.mem absdir absdir_of_files
+		   then printf "$(filter $(wildcard %s/*),$(%s)) " pdir var)
+		  inc_ml;
+	printf "\n";
+      end;
+    (* Files in the scope of a -R option (assuming they are disjoint) *)
+    List.iteri (fun i (pdir,_,abspdir) ->
+		if List.exists (is_prefix abspdir) absdir_of_files then
+		  printf "%s%d=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
+			 var i pdir pdir var)
+	       (inc_i@inc_r)
 
 let vars_to_put_by_root var_x_files_l (inc_ml,inc_i,inc_r) =
-  let var_x_absdirs_l = List.rev_map
-    (fun (v,l) -> (v,List.rev_map (fun x -> CUnix.canonical_path_name (Filename.dirname x)) l))
-    var_x_files_l in
-  let var_filter f g = List.fold_left (fun acc (var,dirs) ->
-    if f dirs
-    then (g var)::acc else acc) [] var_x_absdirs_l in
-    (* All files caught by a -R . option (assuming it is the only one) *)
+  let var_x_absdirs_l =
+    List.rev_map
+      (fun (v,l) ->
+       (v,List.rev_map
+            (fun x -> CUnix.canonical_path_name (Filename.dirname x)) l))
+      var_x_files_l
+  in
+  let var_filter f g =
+    List.fold_left
+      (fun acc (var,dirs) -> if f dirs then (g var)::acc else acc)
+      [] var_x_absdirs_l
+  in
+  (* All files caught by a -R . option (assuming it is the only one) *)
   match inc_i@inc_r with
-  |[(".",t,_)] -> (None,[".",physical_dir_of_logical_dir t,List.rev_map fst var_x_files_l])
+  |[(".",t,_)] ->
+    (None,[".",physical_dir_of_logical_dir t,List.rev_map fst var_x_files_l])
   |l ->
     try
       let out = List.assoc "." (List.rev_map (fun (p,l,_) -> (p,l)) l) in
-      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option\n" in
+      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option\n"
+      in
       (None,[".",physical_dir_of_logical_dir out,List.rev_map fst var_x_files_l])
     with Not_found ->
-      (
       (* vars for -Q options *)
-	Some (var_filter (fun l -> List.exists (fun (_,a) -> List.mem a l) inc_ml) (fun x -> x)),
+      let varq = var_filter
+                   (fun l -> List.exists (fun (_,a) -> List.mem a l) inc_ml)
+                   (fun x -> x)
+      in
       (* (physical dir, physical dir of logical path,vars) for -R options
 	 (assuming physical dirs are disjoint) *)
-      if l = [] then
-	[".","$(INSTALLDEFAULTROOT)",[]]
-      else
-	Util.List.fold_left_i (fun i out (pdir,ldir,abspdir) ->
-	  let vars_r = var_filter (List.exists (is_prefix abspdir)) (fun x -> x^string_of_int i) in
-	  let pdir' = physical_dir_of_logical_dir ldir in
-	  (pdir,pdir',vars_r)::out) 1 [] l
-      )
+      let other =
+        if l = [] then
+	  [".","$(INSTALLDEFAULTROOT)",[]]
+        else
+	  Util.List.fold_left_i (fun i out (pdir,ldir,abspdir) ->
+	    let vars_r = var_filter
+                           (List.exists (is_prefix abspdir))
+                           (fun x -> x^string_of_int i)
+            in
+	    let pdir' = physical_dir_of_logical_dir ldir in
+	    (pdir,pdir',vars_r)::out) 1 [] l
+      in (Some varq, other)
 
 let install_include_by_root perms =
   let install_dir for_i (pdir,pdir',vars) =
@@ -265,33 +279,38 @@ let where_put_doc = function
  install-doc will put anything in $INSTALLDEFAULTROOT\n" in
 	"$(INSTALLDEFAULTROOT)"
 
-let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) inc = function
+let install (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,sds) inc = function
   |Project_file.NoInstall -> ()
   |is_install ->
     let not_empty = function |[] -> false |_::_ -> true in
-    let cmofiles = List.rev_append mlpackfiles (List.rev_append mlfiles ml4files) in
-    let cmifiles = List.rev_append mlifiles cmofiles in
-    let cmxsfiles = List.rev_append cmofiles mllibfiles in
-    let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxsfiles)] inc in
+    let cmos = List.rev_append mlpacks (List.rev_append mls ml4s) in
+    let cmis = List.rev_append mlis cmos in
+    let cmxss = List.rev_append cmos mllibs in
+    let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxss)] inc in
     let where_what_oth = vars_to_put_by_root
-      [("VOFILES",vfiles);("VFILES",vfiles);("GLOBFILES",vfiles);("NATIVEFILES",vfiles);("CMOFILES",cmofiles);("CMIFILES",cmifiles);("CMAFILES",mllibfiles)]
+      [("VOFILES",vfiles);("VFILES",vfiles);
+       ("GLOBFILES",vfiles);("NATIVEFILES",vfiles);
+       ("CMOFILES",cmos);("CMIFILES",cmis);("CMAFILES",mllibs)]
       inc in
     let doc_dir = where_put_doc inc in
-    let () = if is_install = Project_file.UnspecInstall then
-	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n" in
-    if (not_empty cmxsfiles) then begin
+    if is_install = Project_file.UnspecInstall then begin
+	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n"
+    end;
+    if not_empty cmxss then begin
       print "install-natdynlink:\n";
       install_include_by_root "0755" where_what_cmxs;
       print "\n";
     end;
-    if (not_empty cmxsfiles) then begin
+    if not_empty cmxss then begin
       print "install-toploop: $(MLLIBFILES:.mllib=.cmxs)\n";
       printf "\t install -d \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
       printf "\t install -m 0755 $?  \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
       print "\n";
     end;
     print "install:";
-    if (not_empty cmxsfiles) then print "$(if $(HASNATDYNLINK_OR_EMPTY),install-natdynlink)";
+    if not_empty cmxss then begin
+      print "$(if $(HASNATDYNLINK_OR_EMPTY),install-natdynlink)";
+    end;
     print "\n";
     install_include_by_root "0644" where_what_oth;
     List.iter
@@ -306,7 +325,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
       print "\tdone\n" in
     print "install-doc:\n";
     if not_empty vfiles then install_one_kind "html" doc_dir;
-    if not_empty mlifiles then install_one_kind "mlihtml" doc_dir;
+    if not_empty mlis then install_one_kind "mlihtml" doc_dir;
     print "\n";
     let uninstall_one_kind kind dir =
       printf "\tprintf 'cd \"$${DSTROOT}\"$(COQDOCINSTALL)/%s \\\\\\n' >> \"$@\"\n" dir;
@@ -316,10 +335,10 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     in
     printf "uninstall_me.sh: %s\n" !makefile_name;
     print "\techo '#!/bin/sh' > $@\n";
-    if (not_empty cmxsfiles) then uninstall_by_root where_what_cmxs;
+    if not_empty cmxss then uninstall_by_root where_what_cmxs;
     uninstall_by_root where_what_oth;
     if not_empty vfiles then uninstall_one_kind "html" doc_dir;
-    if not_empty mlifiles then uninstall_one_kind "mlihtml" doc_dir;
+    if not_empty mlis then uninstall_one_kind "mlihtml" doc_dir;
     print "\tchmod +x $@\n";
     print "\n";
     print "uninstall: uninstall_me.sh\n";
@@ -338,11 +357,14 @@ let make_makefile sds =
 
 let clean sds sps =
   print "clean::\n";
-  if !some_mlfile || !some_mlifile || !some_ml4file || !some_mllibfile || !some_mlpackfile then begin
-    print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
-    print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
-    print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
-  end;
+  if !some_mlfile || !some_mlifile || !some_ml4file
+     || !some_mllibfile || !some_mlpackfile
+  then
+    begin
+      print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
+      print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
+      print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
+    end;
   if !some_vfile then
     begin
       print "\trm -f $(OBJFILES) $(OBJFILES:.o=.native) $(NATIVEFILES)\n";
@@ -379,36 +401,63 @@ let header_includes () = ()
 let implicit () =
     section "Implicit rules.";
   let mli_rules () =
-    print "$(MLIFILES:.mli=.cmi): %.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "$(MLIFILES:.mli=.cmi): %.cmi: %.mli\n";
+    print "\t$(SHOW)'CAMLC -c $<'\n";
+    print "\t$(HIDE)$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli\n";
-    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(SHOW)'CAMLDEP $<'\n";
+    print "\t$(HIDE)$(CAMLDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+  in
   let ml4_rules () =
-    print "$(ML4FILES:.ml4=.cmo): %.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "$(ML4FILES:.ml4=.cmo): %.cmo: %.ml4\n";
+    print "\t$(SHOW)'CAMLC -pp -c $<'\n";
+    print "\t$(HIDE)$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "$(filter-out $(addsuffix .cmx,$(foreach lib,$(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(ML4FILES:.ml4=.cmx)): %.cmx: %.ml4\n";
-    print "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "\t$(SHOW)'CAMLOPT -pp -c $<'\n";
+    print "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "$(addsuffix .d,$(ML4FILES)): %.ml4.d: %.ml4\n";
-    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(SHOW)'CAMLDEP -pp $<'\n";
+    print "\t$(HIDE)$(CAMLDEP) $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml_rules () =
-    print "$(MLFILES:.ml=.cmo): %.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "$(MLFILES:.ml=.cmo): %.cmo: %.ml\n";
+    print "\t$(SHOW)'CAMLC -c $<'\n";
+    print "\t$(HIDE)$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(filter-out $(addsuffix .cmx,$(foreach lib,$(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(MLFILES:.ml=.cmx)): %.cmx: %.ml\n";
-    print "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "\t$(SHOW)'CAMLOPT -c $<'\n";
+    print "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(addsuffix .d,$(MLFILES)): %.ml.d: %.ml\n";
-    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(SHOW)'CAMLDEP $<'\n";
+    print "\t$(HIDE)$(CAMLDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let cmxs_rules () = (* order is important here when there is foo.ml and foo.mllib *)
-    print "$(filter-out $(MLLIBFILES:.mllib=.cmxs),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLPACKFILES:.mlpack=.cmxs)): %.cmxs: %.cmx
-\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
-    print "$(MLLIBFILES:.mllib=.cmxs): %.cmxs: %.cmxa\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n" in
+    print "$(filter-out $(MLLIBFILES:.mllib=.cmxs),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLPACKFILES:.mlpack=.cmxs)): %.cmxs: %.cmx\n";
+    print "\t$(SHOW)'CAMLOPT -shared -o $@'\n";
+    print "\t$(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
+    print "$(MLLIBFILES:.mllib=.cmxs): %.cmxs: %.cmxa\n";
+    print "\t$(SHOW)'CAMLOPT -shared -o $@'\n";
+    print "\t(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n"
+  in
   let mllib_rules () =
-    print "$(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
-    print "$(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
+    print "$(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib\n";
+    print "\t$(SHOW)'CAMLC -a -o $@'\n";
+    print "\t$(HIDE)$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
+    print "$(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib\n";
+    print "\t$(SHOW)'CAMLOPT -a -o $@'\n";
+    print "\t$(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
     print "$(addsuffix .d,$(MLLIBFILES)): %.mllib.d: %.mllib\n";
-    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(SHOW)'COQDEP $<'\n";
+    print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+  in
   let mlpack_rules () =
-    print "$(MLPACKFILES:.mlpack=.cmo): %.cmo: | %.mlpack\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
-    print "$(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
+    print "$(MLPACKFILES:.mlpack=.cmo): %.cmo: | %.mlpack\n";
+    print "\t$(SHOW)'CAMLC -pack -o $@'\n";
+    print "\t$(HIDE)$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
+    print "$(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack\n";
+    print "\t$(SHOW)'CAMLOPT -pack -o $@'\n";
+    print "\t$(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
     print "$(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack\n";
-    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
-in
+    print "\t$(SHOW)'COQDEP $<'\n";
+    print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+  in
   let v_rules () =
     print "$(VOFILES): %.vo: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(GLOBFILES): %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -471,6 +520,7 @@ let variables is_install opt (args,defs) =
     print "CAMLOPTC?=$(OCAMLFIND) opt -c -rectypes -thread\n";
     print "CAMLLINK?=$(OCAMLFIND) ocamlc -rectypes -thread\n";
     print "CAMLOPTLINK?=$(OCAMLFIND) opt -rectypes -thread\n";
+    print "CAMLDEP?=$(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack\n";
     print "CAMLLIB?=$(shell $(OCAMLFIND) printconf stdlib)\n";
     print "GRAMMARS?=grammar.cma\n";
     print "ifeq ($(CAMLP4),camlp5)
@@ -515,7 +565,11 @@ let parameters () =
   print "# TIMECMD set a command to log .v compilation time;\n";
   print "# TIMED if non empty, use the default time command as TIMECMD;\n";
   print "# ZDEBUG/COQDEBUG to specify debug flags for ocamlc&ocamlopt/coqc;\n";
-  print "# DSTROOT to specify a prefix to install path.\n\n";
+  print "# DSTROOT to specify a prefix to install path.\n";
+  print "# VERBOSE to disable the short display of compilation rules.\n\n";
+  print "VERBOSE?=\n";
+  print "SHOW := $(if $(VERBOSE),@true \"\",@echo \"\")\n";
+  print "HIDE := $(if $(VERBOSE),,@)\n\n";
   print "# Here is a hack to make $(eval $(shell works:\n";
   print "define donewline\n\n\nendef\n";
   print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr -d '\\r' | tr '\\n' '@'; })))\n";
@@ -578,10 +632,13 @@ let forpacks l =
   let () = if l <> [] then section "Ad-hoc implicit rules for mlpack." in
   List.iter (fun it ->
     let h = Filename.chop_extension it in
+    let pk = String.capitalize (Filename.basename h) in
     printf "$(addsuffix .cmx,$(filter $(basename $(MLFILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml\n" h;
-    printf "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $<\n\n" (String.capitalize (Filename.basename h));
+    printf "\t$(SHOW)'CAMLOPT -c -for-pack %s $<'\n" pk;
+    printf "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $<\n\n" pk;
     printf "$(addsuffix .cmx,$(filter $(basename $(ML4FILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml4\n" h;
-    printf "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $(PP) -impl $<\n\n" (String.capitalize (Filename.basename h))
+    printf "\t$(SHOW)'CAMLOPT -c -pp -for-pack %s $<'\n" pk;
+    printf "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $(PP) -impl $<\n\n" pk
   ) l
 
 let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other_targets inc =
@@ -773,22 +830,24 @@ let command_line args =
   print_list args;
   print "\n#\n\n"
 
-let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((ml_inc,i_inc,r_inc) as l) =
+let ensure_root_dir (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,_) inc =
+  let (ml_inc,i_inc,r_inc) = inc in
   let here = Sys.getcwd () in
-  let not_tops =List.for_all (fun s -> s <> Filename.basename s) in
+  let not_tops =  List.for_all (fun s -> s <> Filename.basename s) in
   if List.exists (fun (_,_,x) -> x = here) i_inc
     || List.exists (fun (_,_,x) -> is_prefix x here) r_inc
-    || (not_tops v && not_tops mli && not_tops ml4 && not_tops ml
-	&& not_tops mllib && not_tops mlpack) then
-    l
+    || (not_tops vfiles && not_tops mlis && not_tops ml4s && not_tops mls
+	&& not_tops mllibs && not_tops mlpacks)
+  then
+    inc
   else
     ((".",here)::ml_inc,i_inc,(".","Top",here)::r_inc)
 
-let warn_install_at_root_directory
-    (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_ml,inc_i,inc_r) =
+let warn_install_at_root_directory (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,_) inc =
+  let (inc_ml,inc_i,inc_r) = inc in
   let inc_top = List.filter (fun (_,ldir,_) -> ldir = "") (inc_r@inc_i) in
   let inc_top_p = List.map (fun (p,_,_) -> p) inc_top in
-  let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles @ mlpackfiles in
+  let files = vfiles @ mlis @ ml4s @ mls @ mllibs @ mlpacks in
   if List.exists (fun f -> List.mem (Filename.dirname f) inc_top_p) files
   then
     Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R or -Q %sis recommended\n"
@@ -826,7 +885,9 @@ let do_makefile args =
     |[] -> var := false
     |_::_ -> var := true in
   let (project_file,makefile,is_install,opt),l =
-    try Project_file.process_cmd_line Filename.current_dir_name (None,None,Project_file.UnspecInstall,true) [] args
+    try
+      Project_file.process_cmd_line Filename.current_dir_name
+       (None,None,Project_file.UnspecInstall,true) [] args
     with Project_file.Parsing_error -> usage () in
   let (v_f,(mli_f,ml4_f,ml_f,mllib_f,mlpack_f),sps,sds as targets), inc, defs =
     Project_file.split_arguments l in
@@ -850,7 +911,9 @@ let do_makefile args =
     List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies)) sps;
 
   let inc = ensure_root_dir targets inc in
-  if is_install <> Project_file.NoInstall then warn_install_at_root_directory targets inc;
+  if is_install <> Project_file.NoInstall then begin
+    warn_install_at_root_directory targets inc;
+  end;
   check_overlapping_include inc;
   banner ();
   header_includes ();
