@@ -75,7 +75,7 @@ let search_guard loc env possible_indexes fixdefs =
   if List.for_all is_singleton possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
-    (try check_fix env ~chk:true fix
+    (try check_fix env ~flags:{Declarations.check_guarded=true} fix
      with reraise ->
        let (e, info) = Errors.push reraise in
        let info = Loc.add_loc info loc in
@@ -88,7 +88,7 @@ let search_guard loc env possible_indexes fixdefs =
 	 (fun l ->
 	    let indexes = Array.of_list l in
 	    let fix = ((indexes, 0),fixdefs) in
-	    try check_fix env ~chk:true fix; raise (Found indexes)
+            try check_fix env ~flags:{Declarations.check_guarded=true} fix; raise (Found indexes)
 	    with TypeError _ -> ())
 	 (List.combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
@@ -537,7 +537,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	    make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	| GCoFix i ->
 	  let cofix = (i,(names,ftys,fdefs)) in
-	    (try check_cofix env ~chk:true cofix
+            (try check_cofix env ~flags:{Declarations.check_guarded=true} cofix
              with reraise ->
                let (e, info) = Errors.push reraise in
                let info = Loc.add_loc info loc in

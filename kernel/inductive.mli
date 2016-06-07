@@ -98,8 +98,8 @@ val check_case_info : env -> pinductive -> case_info -> unit
 
 (** When [chk] is false, the guard condition is not actually
     checked. *)
-val check_fix : env -> chk:bool -> fixpoint -> unit
-val check_cofix : env -> chk:bool -> cofixpoint -> unit
+val check_fix : env -> flags:typing_flags -> fixpoint -> unit
+val check_cofix : env -> flags:typing_flags -> cofixpoint -> unit
 
 (** {6 Support for sort-polymorphic inductive types } *)
 

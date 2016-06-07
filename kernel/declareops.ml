@@ -133,7 +133,7 @@ let subst_const_body sub cb =
         const_polymorphic = cb.const_polymorphic;
         const_universes = cb.const_universes;
         const_inline_code = cb.const_inline_code;
-        const_checked_guarded = cb.const_checked_guarded }
+        const_typing_flags = cb.const_typing_flags }
 
 (** {7 Hash-consing of constants } *)
 

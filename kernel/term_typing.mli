@@ -12,10 +12,10 @@ open Environ
 open Declarations
 open Entries
 
-val translate_local_def : chkguard:bool -> env -> Id.t -> definition_entry ->
+val translate_local_def : flags:typing_flags -> env -> Id.t -> definition_entry ->
   constant_def * types * constant_universes
 
-val translate_local_assum : chkguard:bool -> env -> types -> types
+val translate_local_assum : flags:typing_flags -> env -> types -> types
 
 val mk_pure_proof : constr -> proof_output
 
@@ -28,7 +28,7 @@ val handle_entry_side_effects : env -> definition_entry -> definition_entry
     {!Entries.const_entry_body} field. It is meant to get a term out of a not
     yet type checked proof. *)
 
-val translate_constant : chkguard:bool -> env -> constant -> constant_entry -> constant_body
+val translate_constant : flags:typing_flags -> env -> constant -> constant_entry -> constant_body
 
 val translate_mind :
   env -> mutual_inductive -> mutual_inductive_entry -> mutual_inductive_body
@@ -37,11 +37,11 @@ val translate_recipe : env -> constant -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : chkguard:bool -> env -> constant option -> 
+val infer_declaration : flags:typing_flags -> env -> constant option ->
   constant_entry -> Cooking.result
 
 val build_constant_declaration :
-  chkguard:bool -> constant -> env -> Cooking.result -> constant_body
+  flags:typing_flags -> constant -> env -> Cooking.result -> constant_body
 
 val set_suggest_proof_using :
   (constant -> env -> Id.Set.t -> Id.Set.t -> Id.t list -> unit) -> unit

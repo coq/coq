@@ -77,8 +77,8 @@ let globalize_with_summary fs f =
 
 let i2l = Label.of_id
 
-let push_named_assum ~chkguard a = globalize0 (Safe_typing.push_named_assum ~chkguard a)
-let push_named_def ~chkguard d = globalize0 (Safe_typing.push_named_def ~chkguard d)
+let push_named_assum ~flags a = globalize0 (Safe_typing.push_named_assum ~flags a)
+let push_named_def ~flags d = globalize0 (Safe_typing.push_named_def ~flags d)
 let add_constraints c = globalize0 (Safe_typing.add_constraints c)
 let push_context_set c = globalize0 (Safe_typing.push_context_set c)
 let push_context c = globalize0 (Safe_typing.push_context c)

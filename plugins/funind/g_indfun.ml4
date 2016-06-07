@@ -166,7 +166,7 @@ VERNAC COMMAND EXTEND Function
            | _,((_,(_,CStructRec),_,_,_),_) -> false) recsl in
          match
            Vernac_classifier.classify_vernac
-             (Vernacexpr.VernacFixpoint(true,None, List.map snd recsl))
+             (Vernacexpr.VernacFixpoint({Declarations.check_guarded=true},None, List.map snd recsl))
          with
          | Vernacexpr.VtSideff ids, _ when hard ->
              Vernacexpr.(VtStartProof ("Classic", GuaranteesOpacity, ids), VtLater)

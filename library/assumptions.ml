@@ -227,7 +227,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
   | ConstRef kn ->
       let cb = lookup_constant kn in
       let accu =
-        if cb.const_checked_guarded then accu
+        if cb.const_typing_flags.check_guarded then accu
         else ContextObjectMap.add (Axiom (Guarded kn)) Constr.mkProp accu
       in
     if not (Declareops.constant_has_body cb) then

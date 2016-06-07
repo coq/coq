@@ -23,18 +23,18 @@ open Entries
 open Typeops
 open Fast_typeops
 
-let constrain_type ~chkguard env j poly subst = function
+let constrain_type ~flags env j poly subst = function
   | `None -> 
     if not poly then (* Old-style polymorphism *)
       make_polymorphic_if_constant_for_ind env j
     else RegularArity (Vars.subst_univs_level_constr subst j.uj_type)
   | `Some t ->
-      let tj = infer_type ~chkguard env t in
+      let tj = infer_type ~flags env t in
       let _ = judge_of_cast env j DEFAULTcast tj in
 	assert (eq_constr t tj.utj_val);
 	RegularArity (Vars.subst_univs_level_constr subst t)
   | `SomeWJ (t, tj) ->
-      let tj = infer_type ~chkguard env t in
+      let tj = infer_type ~flags env t in
       let _ = judge_of_cast env j DEFAULTcast tj in
 	assert (eq_constr t tj.utj_val);
 	RegularArity (Vars.subst_univs_level_constr subst t)
@@ -101,11 +101,11 @@ let hcons_j j =
 let feedback_completion_typecheck =
   Option.iter (fun state_id -> Pp.feedback ~state_id Feedback.Complete)
 
-let infer_declaration ~chkguard env kn dcl =
+let infer_declaration ~flags env kn dcl =
   match dcl with
   | ParameterEntry (ctx,poly,(t,uctx),nl) ->
       let env = push_context uctx env in
-      let j = infer ~chkguard env t in
+      let j = infer ~flags env t in
       let abstract = poly && not (Option.is_empty kn) in
       let usubst, univs = Univ.abstract_universes abstract uctx in
       let c = Typeops.assumption_of_judgment env j in
@@ -122,7 +122,7 @@ let infer_declaration ~chkguard env kn dcl =
         Future.chain ~greedy:true ~pure:true body (fun ((body, ctx),side_eff) ->
           let body = handle_side_effects env body side_eff in
 	  let env' = push_context_set ctx env in
-          let j = infer ~chkguard env' body in
+          let j = infer ~flags env' body in
           let j = hcons_j j in
 	  let subst = Univ.LMap.empty in
           let _typ = constrain_type env' j c.const_entry_polymorphic subst
@@ -143,8 +143,8 @@ let infer_declaration ~chkguard env kn dcl =
       let body = handle_side_effects env body side_eff in
       let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
       let usubst, univs = Univ.abstract_universes abstract c.const_entry_universes in
-      let j = infer ~chkguard env body in
-      let typ = constrain_type ~chkguard env j c.const_entry_polymorphic usubst (map_option_typ typ) in
+      let j = infer ~flags env body in
+      let typ = constrain_type ~flags env j c.const_entry_polymorphic usubst (map_option_typ typ) in
       let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
 	if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
@@ -186,7 +186,7 @@ let record_aux env s1 s2 =
 let suggest_proof_using = ref (fun _ _ _ _ _ -> ())
 let set_suggest_proof_using f = suggest_proof_using := f
 
-let build_constant_declaration ~chkguard kn env (def,typ,proj,poly,univs,inline_code,ctx) =
+let build_constant_declaration ~flags kn env (def,typ,proj,poly,univs,inline_code,ctx) =
   let check declared inferred =
     let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
@@ -262,25 +262,25 @@ let build_constant_declaration ~chkguard kn env (def,typ,proj,poly,univs,inline_
     const_polymorphic = poly;
     const_universes = univs;
     const_inline_code = inline_code;
-    const_checked_guarded = chkguard }
+    const_typing_flags = flags }
 
 
 (*s Global and local constant declaration. *)
 
-let translate_constant ~chkguard env kn ce =
-  build_constant_declaration ~chkguard kn env (infer_declaration ~chkguard env (Some kn) ce)
+let translate_constant ~flags env kn ce =
+  build_constant_declaration ~flags kn env (infer_declaration ~flags env (Some kn) ce)
 
-let translate_local_assum ~chkguard env t =
-  let j = infer ~chkguard env t in
+let translate_local_assum ~flags env t =
+  let j = infer ~flags env t in
   let t = Typeops.assumption_of_judgment env j in
     t
 
 let translate_recipe env kn r =
-  build_constant_declaration ~chkguard:true kn env (Cooking.cook_constant env r)
+  build_constant_declaration ~flags:{check_guarded=true} kn env (Cooking.cook_constant env r)
 
-let translate_local_def ~chkguard env id centry =
+let translate_local_def ~flags env id centry =
   let def,typ,proj,poly,univs,inline_code,ctx =
-    infer_declaration ~chkguard env None (DefinitionEntry centry) in
+    infer_declaration ~flags env None (DefinitionEntry centry) in
   let typ = type_of_constant_type env typ in
   def, typ, univs
 

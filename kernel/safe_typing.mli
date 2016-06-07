@@ -57,16 +57,16 @@ val is_joined_environment : safe_environment -> bool
 (** Insertion of local declarations (Local or Variables) *)
 
 val push_named_assum :
-  chkguard:bool ->
+  flags:Declarations.typing_flags ->
   (Id.t * Term.types) Univ.in_universe_context_set -> safe_transformer0
 val push_named_def :
-  chkguard:bool ->
+  flags:Declarations.typing_flags ->
   Id.t * Entries.definition_entry -> safe_transformer0
 
 (** Insertion of global axioms or definitions *)
 
 type global_declaration =
-  | ConstantEntry of Entries.constant_entry * bool (* chkguard *)
+  | ConstantEntry of Entries.constant_entry * Declarations.typing_flags
   | GlobalRecipe of Cooking.recipe
 
 val add_constant :

@@ -50,11 +50,11 @@ let cache_variable ((sp,_),o) =
 
   let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ((ty,ctx),poly,impl) ->
-      let () = Global.push_named_assum ~chkguard:true ((id,ty),ctx) in
+      let () = Global.push_named_assum ~flags:{check_guarded=true} ((id,ty),ctx) in
       let impl = if impl then Implicit else Explicit in
 	impl, true, poly, ctx
     | SectionLocalDef (de) ->
-      let () = Global.push_named_def ~chkguard:true (id,de) in
+      let () = Global.push_named_def ~flags:{check_guarded=true} (id,de) in
         Explicit, de.const_entry_opaque, de.const_entry_polymorphic, 
 	(Univ.ContextSet.of_context de.const_entry_universes) in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
@@ -156,7 +156,7 @@ let discharge_constant ((sp, kn), obj) =
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = 
-  ConstantEntry (ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None), true)
+  ConstantEntry (ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None), {check_guarded=true})
 
 let dummy_constant cst = {
   cst_decl = dummy_constant_entry;
@@ -232,7 +232,7 @@ let declare_sideff env fix_exn se =
         const_entry_feedback = None;
 	const_entry_polymorphic = cb.const_polymorphic;
 	const_entry_universes = univs;
-      }, true);
+      }, {check_guarded=true});
     cst_hyps = [] ;
     cst_kind =  Decl_kinds.IsDefinition Decl_kinds.Definition;
     cst_locl = true;
@@ -253,7 +253,7 @@ let declare_sideff env fix_exn se =
                if Constant.equal c c' then Some (x,kn) else None) inds_consts)
            knl))
 
-let declare_constant ?(chkguard=true) ?(internal = UserVerbose) ?(local = false) id ?(export_seff=false) (cd, kind) =
+let declare_constant ?(flags={check_guarded=true}) ?(internal = UserVerbose) ?(local = false) id ?(export_seff=false) (cd, kind) =
   let cd = (* We deal with side effects *)
     match cd with
     | Entries.DefinitionEntry de ->
@@ -275,7 +275,7 @@ let declare_constant ?(chkguard=true) ?(internal = UserVerbose) ?(local = false)
     | _ -> cd
   in
   let cst = {
-    cst_decl = ConstantEntry (cd,chkguard);
+    cst_decl = ConstantEntry (cd,flags);
     cst_hyps = [] ;
     cst_kind = kind;
     cst_locl = local;
@@ -283,13 +283,13 @@ let declare_constant ?(chkguard=true) ?(internal = UserVerbose) ?(local = false)
   let kn = declare_constant_common id cst in
   kn
 
-let declare_definition ?chkguard ?(internal=UserVerbose) 
+let declare_definition ?flags ?(internal=UserVerbose)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
   ?(poly=false) id ?types (body,ctx) =
   let cb = 
     definition_entry ?types ~poly ~univs:(Univ.ContextSet.to_context ctx) ~opaque body
   in
-    declare_constant ?chkguard ~internal ~local id
+    declare_constant ?flags ~internal ~local id
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
 
 (** Declaration of inductive blocks *)
@@ -387,7 +387,7 @@ let declare_projections mind =
       Array.iteri (fun i kn -> 
 	let id = Label.to_id (Constant.label kn) in
 	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
-	let kn' = declare_constant ~chkguard:true id (ProjectionEntry entry,
+        let kn' = declare_constant ~flags:{check_guarded=true} id (ProjectionEntry entry,
 				       IsDefinition StructureComponent) 
 	in
 	  assert(eq_constant kn kn')) kns; true

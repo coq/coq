@@ -307,10 +307,10 @@ type vernac_expr =
       bool (*[false] => assume positive*) *
       private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
-      bool * (* [false] => assume guarded *)
+      Declarations.typing_flags *
       locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of
-      bool * (* [false] => assume guarded *)
+      Declarations.typing_flags *
       locality option * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list

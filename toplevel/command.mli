@@ -34,7 +34,7 @@ val interp_definition :
   local_binder list -> polymorphic -> red_expr option -> constr_expr ->
   constr_expr option -> definition_entry * Evd.evar_map * Impargs.manual_implicits
 
-val declare_definition : chkguard:bool ->
+val declare_definition : flags:Declarations.typing_flags ->
   Id.t -> definition_kind ->
   definition_entry -> Impargs.manual_implicits ->
     Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
@@ -147,14 +147,14 @@ val interp_cofixpoint :
 (** Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
-  chkguard:bool ->
+  flags:Declarations.typing_flags ->
   locality -> polymorphic ->
   recursive_preentry * Evd.evar_universe_context * 
   (Name.t list * Impargs.manual_implicits * int option) list ->
   lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint :
-  chkguard:bool -> locality -> polymorphic ->
+  flags:Declarations.typing_flags -> locality -> polymorphic ->
   recursive_preentry * Evd.evar_universe_context * 
   (Name.t list * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit
@@ -162,11 +162,11 @@ val declare_cofixpoint :
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint :
-  chkguard:bool -> (* When [false], assume guarded. *)
+  flags:Declarations.typing_flags -> (* When [false], assume guarded. *)
   locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint :
-  chkguard:bool -> (* When [false], assume guarded. *)
+  flags:Declarations.typing_flags -> (* When [false], assume guarded. *)
   locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (** Utils *)
@@ -174,6 +174,6 @@ val do_cofixpoint :
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
 val declare_fix :
-  chkguard:bool ->
+  flags:Declarations.typing_flags ->
   ?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
   Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

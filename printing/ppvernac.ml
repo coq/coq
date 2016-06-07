@@ -806,7 +806,7 @@ module Make
               (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
           )
 
-        | VernacFixpoint (chkguard,local, recs) ->
+        | VernacFixpoint (flags,local, recs) ->
           let local = match local with
             | Some Discharge -> "Let "
             | Some Local -> "Local "
@@ -821,11 +821,11 @@ module Make
                 prlist (pr_decl_notation pr_constr) ntn
           in
           return (
-            hov 0 (pr_assume ~guarded:chkguard ()++str local ++ keyword "Fixpoint" ++ spc () ++
+            hov 0 (pr_assume ~guarded:flags.Declarations.check_guarded ()++str local ++ keyword "Fixpoint" ++ spc () ++
                      prlist_with_sep (fun _ -> fnl () ++ keyword "with" ++ spc ()) pr_onerec recs)
           )
 
-        | VernacCoFixpoint (chkguard,local, corecs) ->
+        | VernacCoFixpoint (flags,local, corecs) ->
           let local = match local with
             | Some Discharge -> keyword "Let" ++ spc ()
             | Some Local -> keyword "Local" ++ spc ()
@@ -838,7 +838,7 @@ module Make
               prlist (pr_decl_notation pr_constr) ntn
           in
           return (
-            hov 0 (pr_assume ~guarded:chkguard ()++local ++ keyword "CoFixpoint" ++ spc() ++
+            hov 0 (pr_assume ~guarded:flags.Declarations.check_guarded ()++local ++ keyword "CoFixpoint" ++ spc() ++
                      prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onecorec corecs)
           )
         | VernacScheme l ->

@@ -53,11 +53,11 @@ val definition_entry : ?opaque:bool -> ?inline:bool -> ?types:types ->
   constr -> definition_entry
 
 val declare_constant :
-  ?chkguard:bool -> (** default [true] (check guardedness) *)
+  ?flags:Declarations.typing_flags -> (** default [check_guarded=true] *)
  ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> constant
 
 val declare_definition : 
-  ?chkguard:bool -> (** default [true] (check guardedness) *)
+  ?flags:Declarations.typing_flags -> (** default [check_guarded=true] *)
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:bool -> ?poly:polymorphic -> Id.t -> ?types:constr -> 
   constr Univ.in_universe_context_set -> constant

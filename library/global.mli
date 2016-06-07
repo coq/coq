@@ -32,9 +32,9 @@ val set_type_in_type : unit -> unit
 (** Variables, Local definitions, constants, inductive types *)
 
 val push_named_assum : 
-  chkguard:bool -> (Id.t * Constr.types) Univ.in_universe_context_set -> unit
+  flags:Declarations.typing_flags -> (Id.t * Constr.types) Univ.in_universe_context_set -> unit
 val push_named_def   :
-  chkguard:bool -> (Id.t * Entries.definition_entry) -> unit
+  flags:Declarations.typing_flags -> (Id.t * Entries.definition_entry) -> unit
 
 val add_constant :
   DirPath.t -> Id.t -> Safe_typing.global_declaration -> constant

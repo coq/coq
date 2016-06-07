@@ -1065,8 +1065,8 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   (Array.map fst rv, Array.map snd rv)
 
 
-let check_fix env ~chk ((nvect,_),(names,_,bodies as recdef) as fix) =
-  if chk then
+let check_fix env ~flags ((nvect,_),(names,_,bodies as recdef) as fix) =
+  if flags.check_guarded then
     let (minds, rdef) = inductive_of_mutfix env fix in
     let get_tree (kn,i) =
       let mib = Environ.lookup_mind kn env in
@@ -1193,8 +1193,8 @@ let check_one_cofix env nbfix def deftype =
 (* The  function which checks that the whole block of definitions
    satisfies the guarded condition *)
 
-let check_cofix env ~chk (bodynum,(names,types,bodies as recdef)) =
-  if chk then
+let check_cofix env ~flags (bodynum,(names,types,bodies as recdef)) =
+  if flags.check_guarded then
     let nbfix = Array.length bodies in
     for i = 0 to nbfix-1 do
       let fixenv = push_rec_types recdef env in
