@@ -10,29 +10,39 @@
 # some variables.
 
 ###########################################################################
-# Starting rule
+# Default starting rule
 ###########################################################################
 
-# build the different subsystems: coq, coqide
-world: revision coq coqide documentation
+# build the different subsystems:
 
-.PHONY: world
+world: coq coqide documentation revision
+
+coq: coqlib coqbinaries tools printers
+
+.PHONY: world coq
 
 ###########################################################################
 # Includes
 ###########################################################################
 
-include Makefile.common
-include Makefile.doc
-
+# This list of ml files used to be in the main Makefile, we moved it here
+# to avoid exhausting the variable env in Win32
 MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
-DEPENDENCIES := \
- $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(CFILES) $(VFILES))
 
-# This include below will lauch the build of all concerned .d.
+include Makefile.common
+include Makefile.doc      ## provides the 'documentation' rule
+include Makefile.checker
+include Makefile.ide      ## provides the 'coqide' rule
+include Makefile.install
+include Makefile.dev      ## provides the 'printers' and 'revision' rules
+
+# This include below will lauch the build of all .d.
 # The - at front is for disabling warnings about currently missing ones.
 # For creating the missing .d, make will recursively build things like
 # coqdep_boot (for the .v.d files) or grammar.cma (for .ml4 -> .ml -> .ml.d).
+
+DEPENDENCIES := \
+ $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(CFILES) $(VFILES))
 
 -include $(DEPENDENCIES)
 
@@ -42,7 +52,6 @@ DEPENDENCIES := \
 # infinite loop.
 
 .SECONDARY: $(DEPENDENCIES) $(GENFILES) $(ML4FILES:.ml4=.ml)
-
 
 ###########################################################################
 # Compilation options
@@ -56,7 +65,6 @@ NO_RECALC_DEPS=
 READABLE_ML4=	# non-empty means .ml of .ml4 will be ascii instead of binary
 VALIDATE=
 COQ_XML=	# is "-xml" when building XML library
-VM=		# is "-no-vm" to not use the vm"
 
 TIMED=          # non-empty will activate a default time command
                 # when compiling .v (see $(STDTIME) below)
@@ -75,7 +83,7 @@ TIMECMD=	# if you prefer a specific time command instead of $(STDTIME)
 STDTIME=/usr/bin/time -f "$* (user: %U mem: %M ko)"
 TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 
-COQOPTS=$(COQ_XML) $(VM) $(NATIVECOMPUTE)
+COQOPTS=$(COQ_XML) $(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
 
 # The SHOW and HIDE variables control whether make will echo complete commands 
@@ -104,11 +112,31 @@ LINKMETADATA=
 CODESIGN=true
 endif
 
+# Best OCaml compiler, used in a generic way
+
+ifeq ($(BEST),opt)
+OPT:=opt
+BESTOBJ:=.cmx
+BESTLIB:=.cmxa
+BESTDYN:=.cmxs
+else
+OPT:=
+BESTOBJ:=.cmo
+BESTLIB:=.cma
+BESTDYN:=.cma
+endif
+
+define bestobj
+$(patsubst %.cma,%$(BESTLIB),$(patsubst %.cmo,%$(BESTOBJ),$(1)))
+endef
+
 define bestocaml
 $(if $(OPT),\
 $(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) $(LINKMETADATA) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@ && $(CODESIGN) $@,\
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
+
+# Camlp4 / Camlp5 settings
 
 CAMLP4DEPS:=tools/compat5.cmo grammar/grammar.cma
 ifeq ($(CAMLP4),camlp5)
@@ -172,12 +200,10 @@ endif
 TOTARGET = > "$@" || (RV=$$?; rm -f "$@"; exit $${RV})
 
 ###########################################################################
-# Compilation option for .c files
+# Compilation of .c files
 ###########################################################################
 
 CINCLUDES= -I $(CAMLHLIB)
-
-# libcoqrun.a, dllcoqrun.so
 
 # NB: We used to do a ranlib after ocamlmklib, but it seems that
 # ocamlmklib is already doing it
@@ -186,7 +212,6 @@ $(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN)
 	cd $(dir $(LIBCOQRUN)) && \
 	$(OCAMLFIND) ocamlmklib -oc $(COQRUN) $(foreach u,$(BYTERUN),$(notdir $(u)))
 
-#coq_jumptbl.h is required only if you have GCC 2.0 or later
 kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&coq_lbl_\1/gp' \
                -e '/^}/q' $< $(TOTARGET)
@@ -195,6 +220,17 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' $< | \
 	awk -f kernel/make-opcodes $(TOTARGET)
 
+%.o: %.c
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)cd $(dir $<) && $(OCAMLC) -ccopt "$(CFLAGS)" -c $(notdir $<)
+
+%_stubs.c.d: $(D_DEPEND_BEFORE_SRC) %_stubs.c $(D_DEPEND_AFTER_SRC)
+	$(SHOW)'CCDEP	$<'
+	$(HIDE)echo "$@ $(@:.c.d=.o): $(@:.c.d=.c)" > $@
+
+%.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
+	$(SHOW)'CCDEP     $<'
+	$(HIDE)$(OCAMLC) -ccopt "-MM -MQ $@ -MQ $(<:.c=.o) -isystem $(CAMLHLIB)" $< $(TOTARGET)
 
 ###########################################################################
 #  grammar/grammar.cma
@@ -264,25 +300,16 @@ grammar/%.cmi: grammar/%.mli
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
-.PHONY: coqbinaries coq coqlib coqlight states
+.PHONY: coqbinaries
 
-coqbinaries: ${COQBINARIES} ${CSDPCERT} ${FAKEIDE}
+coqbinaries: $(COQMKTOP) $(COQTOPEXE) $(COQTOPBYTE) \
+ $(CHICKEN) $(CHICKENBYTE) $(CSDPCERT) $(FAKEIDE)
 
-coq: coqlib tools coqbinaries
-
-coqlib: theories plugins
-
-coqlight: theories-light tools coqbinaries
-
-states: theories/Init/Prelude.vo
-
-miniopt: $(COQTOPEXE) pluginsopt
-minibyte: $(COQTOPBYTE) pluginsbyte
 
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) $(LINKMETADATA) -thread -o $@
+	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) $(LINKMETADATA) -o $@
 	$(STRIP) $@
 	$(CODESIGN) $@
 else
@@ -292,28 +319,13 @@ endif
 
 $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -thread -o $@
-
-LOCALCHKLIBS:=$(addprefix -I , $(CHKSRCDIRS) )
-CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
-
-ifeq ($(BEST),opt)
-$(CHICKEN): checker/check.cmxa checker/main.ml
-	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -thread -o $@ $(SYSCMXA) $^
-	$(STRIP) $@
-	$(CODESIGN) $@
-else
-$(CHICKEN): $(CHICKENBYTE)
-	cp $< $@
-endif
-
-$(CHICKENBYTE): checker/check.cma checker/main.ml
-	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) $(CUSTOM) -thread -o $@ $(SYSCMA) $^
+	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@
 
 # coqmktop
-$(COQMKTOP): $(patsubst %.cma,%$(BESTLIB),$(COQMKTOPCMO:.cmo=$(BESTOBJ)))
+
+COQMKTOPCMO:=lib/clib.cma lib/errors.cmo tools/tolink.cmo tools/coqmktop.cmo
+
+$(COQMKTOP): $(call bestobj, $(COQMKTOPCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
@@ -324,351 +336,19 @@ tools/tolink.ml: Makefile.build Makefile.common
 	$(HIDE)echo "let core_objs = \""$(OBJSMOD)"\"" >> $@
 
 # coqc
-$(COQC):  $(patsubst %.cma,%$(BESTLIB),$(COQCCMO:.cmo=$(BESTOBJ)))
+
+COQCCMO:=lib/clib.cma lib/errors.cmo toplevel/usage.cmo tools/coqc.cmo
+
+$(COQC): $(call bestobj, $(COQCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
-# Target for libraries .cma and .cmxa
-
-# The dependency over the .mllib is somewhat artificial, since
-# ocamlc -a won't use this file, hence the $(filter-out ...) below.
-# But this ensures that the .cm(x)a is rebuilt when needed,
-# (especially when removing a module in the .mllib).
-# We used to have a "order-only" dependency over .mllib.d here,
-# but the -include mechanism should already ensure that we have
-# up-to-date dependencies.
-
-%.cma: %.mllib
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
-
-%.cmxa: %.mllib
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
-
-# For the checker, different flags may be used
-
-checker/check.cma: checker/check.mllib | md5chk
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
-
-checker/check.cmxa: checker/check.mllib | md5chk
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
-
 ###########################################################################
-# Csdp to micromega special targets
+# other tools
 ###########################################################################
 
-plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))  \
-		$(addsuffix $(BESTLIB), lib/clib)
-	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,nums unix clib)
-
-###########################################################################
-# CoqIde special targets
-###########################################################################
-
-.PHONY: coqide coqide-binaries coqide-no coqide-byte coqide-opt coqide-files
-
-# target to build CoqIde
-coqide: coqide-files coqide-binaries theories/Init/Prelude.vo
-
-COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
-
-.SUFFIXES:.vo
-
-IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map
-
-coqide-binaries: coqide-$(HASCOQIDE) ide-toploop
-coqide-no:
-coqide-byte: $(COQIDEBYTE) $(COQIDE)
-coqide-opt:  $(COQIDEBYTE) $(COQIDE)
-coqide-files: $(IDEFILES)
-ifeq ($(BEST),opt)
-ide-toploop: $(IDETOPLOOPCMA) $(IDETOPLOOPCMA:.cma=.cmxs)
-else
-ide-toploop: $(IDETOPLOOPCMA)
-endif
-
-ifeq ($(HASCOQIDE),opt)
-$(COQIDE): $(LINKIDEOPT)
-	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa \
-		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $^
-	$(STRIP) $@
-else
-$(COQIDE): $(COQIDEBYTE)
-	cp $< $@
-endif
-
-$(COQIDEBYTE): $(LINKIDE)
-	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma \
-	        lablgtksourceview2.cma str.cma $(IDEFLAGS) $(IDECDEPSFLAGS) $^
-
-# install targets
-
-.PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
-
-ifeq ($(HASCOQIDE),no)
-install-coqide: install-ide-toploop
-else
-install-coqide: install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
-endif
-
-install-ide-bin:
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQIDE) $(FULLBINDIR)
-
-install-ide-toploop:
-	$(MKDIR) $(FULLCOQLIB)/toploop
-	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
-ifeq ($(BEST),opt)
-	$(INSTALLBIN) $(IDETOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
-endif
-
-install-ide-devfiles:
-	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA) \
-	  $(foreach lib,$(IDECMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .cmi,$($(lib))))
-ifeq ($(BEST),opt)
-	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA:.cma=.cmxa) $(IDECMA:.cma=.a)
-endif
-
-install-ide-files: #Please update $(COQIDEAPP)/Contents/Resources/ at the same time
-	$(MKDIR) $(FULLDATADIR)
-	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(FULLDATADIR)
-	$(MKDIR) $(FULLCONFIGDIR)
-	if [ $(IDEINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLCONFIGDIR)/coqide.keys ; fi
-
-install-ide-info:
-	$(MKDIR) $(FULLDOCDIR)
-	$(INSTALLLIB) ide/FAQ $(FULLDOCDIR)/FAQ-CoqIde
-
-###########################################################################
-# CoqIde MacOS special targets
-###########################################################################
-
-.PHONY: $(COQIDEAPP)/Contents
-
-$(COQIDEAPP)/Contents:
-	rm -rdf $@
-	$(MKDIR) $@
-	sed -e "s/VERSION/$(VERSION4MACOS)/g" ide/MacOS/Info.plist.template > $@/Info.plist
-	$(MKDIR) "$@/MacOS"
-
-$(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
-	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-		unix.cmxa lablgtk.cmxa lablgtksourceview2.cmxa str.cmxa \
-		threads.cmxa $(IDEFLAGS:.cma=.cmxa) $^
-	$(STRIP) $@
-
-$(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
-	$(MKDIR) $@/coq/
-	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $@/coq/
-	$(MKDIR) $@/gtksourceview-2.0/{language-specs,styles}
-	$(INSTALLLIB) "$(GTKSHARE)/"gtksourceview-2.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-2.0/language-specs/
-	$(INSTALLLIB) "$(GTKSHARE)/"gtksourceview-2.0/styles/{styles.rng,classic.xml} $@/gtksourceview-2.0/styles/
-	cp -R "$(GTKSHARE)/"locale $@
-	cp -R "$(GTKSHARE)/"icons $@
-	cp -R "$(GTKSHARE)/"themes $@
-
-$(COQIDEAPP)/Contents/Resources/loaders: $(COQIDEAPP)/Contents
-	$(MKDIR) $@
-	$(INSTALLLIB) $$("$(GTKBIN)/gdk-pixbuf-query-loaders" | sed -n -e '5 s!.*= \(.*\)$$!\1!p')/libpixbufloader-png.so $@
-
-$(COQIDEAPP)/Contents/Resources/immodules: $(COQIDEAPP)/Contents
-	$(MKDIR) $@
-	$(INSTALLLIB) "$(GTKLIBS)/gtk-2.0/2.10.0/immodules/"*.so $@
-
-
-$(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
-	$(MKDIR) $@/xdg/coq
-	$(INSTALLLIB) ide/MacOS/default_accel_map $@/xdg/coq/coqide.keys
-	$(MKDIR) $@/gtk-2.0
-	{ "$(GTKBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
-	 sed -e "s!/.*\(/loaders/.*.so\)!@executable_path/../Resources/\1!"; } \
-	> $@/gtk-2.0/gdk-pixbuf.loaders
-	{ "$(GTKBIN)/gtk-query-immodules-2.0" $@/../immodules/*.so |\
-	 sed -e "s!/.*\(/immodules/.*.so\)!@executable_path/../Resources/\1!" |\
-	 sed -e "s!/.*\(/share/locale\)!@executable_path/../Resources/\1!"; } \
-	> $@/gtk-2.0/gtk-immodules.loaders
-	$(MKDIR) $@/pango
-	echo "[Pango]" > $@/pango/pangorc
-
-$(COQIDEAPP)/Contents/Resources/lib: $(COQIDEAPP)/Contents/Resources/immodules $(COQIDEAPP)/Contents/Resources/loaders $(COQIDEAPP)/Contents $(COQIDEINAPP)
-	$(MKDIR) $@
-	$(INSTALLLIB) $(GTKLIBS)/charset.alias $@/
-	$(MKDIR) $@/pango/1.8.0/modules
-	$(INSTALLLIB) "$(GTKLIBS)/pango/1.8.0/modules/"*.so $@/pango/1.8.0/modules/
-	{ "$(GTKBIN)/pango-querymodules" $@/pango/1.8.0/modules/*.so |\
-	 sed -e "s!/.*\(/pango/1.8.0/modules/.*.so\)!@executable_path/../Resources/lib\1!"; } \
-	> $@/pango/1.8.0/modules.cache
-
-	for i in $$(otool -L $(COQIDEINAPP) |sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-	    do cp $$i $@/; \
-	    ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$i) $(GTKLIBS) $@; \
-	done
-	for i in $@/../loaders/*.so $@/../immodules/*.so $@/pango/1.8.0/modules/*.so; \
-	    do \
-		for j in $$(otool -L $$i | sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-		do cp $$j $@/; ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$j) $(GTKLIBS) $@; done; \
-		ide/MacOS/relatify_with-respect-to_.sh $$i $(GTKLIBS) $@; \
-	    done
-	EXTRAWORK=1; \
-	while [ $${EXTRAWORK} -eq 1 ]; \
-	do EXTRAWORK=0; \
-	    for i in $@/*.dylib; \
-	    do for j in $$(otool -L $$i | sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-		do EXTRAWORK=1; cp $$j $@/; ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$j) $(GTKLIBS) $@; done; \
-	    done; \
-	done
-	ide/MacOS/relatify_with-respect-to_.sh $(COQIDEINAPP) $(GTKLIBS) $@
-
-$(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)/Contents/Resources/share
-	$(INSTALLLIB) ide/MacOS/*.icns $@
-
-$(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
-	$(CODESIGN) $@
-
-###########################################################################
-# tests
-###########################################################################
-
-.PHONY: validate check test-suite $(ALLSTDLIB).v md5chk
-
-md5chk:
-	$(SHOW)'MD5SUM cic.mli'
-	$(HIDE)if grep -q `$(MD5SUM) checker/cic.mli` checker/values.ml; \
-	       then true; else echo "Error: outdated checker/values.ml"; false; fi
-
-VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m
-
-validate: $(CHICKEN) | $(ALLVO)
-	$(SHOW)'COQCHK <theories & plugins>'
-	$(HIDE)$(CHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
-
-$(ALLSTDLIB).v:
-	$(SHOW)'MAKE $(notdir $@)'
-	$(HIDE)echo "Require $(ALLMODS)." > $@
-
-MAKE_TSOPTS=-C test-suite -s VERBOSE=$(VERBOSE)
-
-check: validate test-suite
-
-test-suite: world $(ALLSTDLIB).v
-	$(MAKE) $(MAKE_TSOPTS) clean
-	$(MAKE) $(MAKE_TSOPTS) all
-	$(MAKE) $(MAKE_TSOPTS) report
-
-##################################################################
-# partial targets: 1) core ML parts
-##################################################################
-
-.PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
-.PHONY: engine highparsing stm toplevel ltac
-
-lib: lib/clib.cma lib/lib.cma
-kernel: kernel/kernel.cma
-byterun: $(BYTERUN)
-library: library/library.cma
-engine: engine/engine.cma
-proofs: proofs/proofs.cma
-tactics: tactics/tactics.cma
-interp: interp/interp.cma
-parsing: parsing/parsing.cma
-pretyping: pretyping/pretyping.cma
-highparsing: parsing/highparsing.cma
-stm: stm/stm.cma
-toplevel: toplevel/toplevel.cma
-ltac: ltac/ltac.cma
-
-###########################################################################
-# 2) theories and plugins files
-###########################################################################
-
-.PHONY: init theories theories-light
-.PHONY: logic arith bool narith zarith qarith lists strings sets
-.PHONY: fsets relations wellfounded reals setoids sorting numbers noreal
-.PHONY: msets mmaps compat
-
-init: $(INITVO)
-
-theories: $(THEORIESVO)
-theories-light: $(THEORIESLIGHTVO)
-
-logic: $(LOGICVO)
-arith: $(ARITHVO)
-bool: $(BOOLVO)
-narith: $(NARITHVO)
-zarith: $(ZARITHVO)
-qarith: $(QARITHVO)
-lists: $(LISTSVO)
-strings: $(STRINGSVO)
-sets: $(SETSVO)
-fsets: $(FSETSVO)
-relations: $(RELATIONSVO)
-wellfounded: $(WELLFOUNDEDVO)
-reals: $(REALSVO)
-setoids: $(SETOIDSVO)
-sorting: $(SORTINGVO)
-numbers: $(NUMBERSVO)
-unicode: $(UNICODEVO)
-classes: $(CLASSESVO)
-program: $(PROGRAMVO)
-structures: $(STRUCTURESVO)
-vectors: $(VECTORSVO)
-msets: $(MSETSVO)
-compat: $(COMPATVO)
-
-noreal: unicode logic arith bool zarith qarith lists sets fsets \
-	relations wellfounded setoids sorting
-
-###########################################################################
-# 3) plugins
-###########################################################################
-
-.PHONY: plugins omega micromega setoid_ring nsatz extraction
-.PHONY: fourier funind cc rtauto btauto pluginsopt pluginsbyte
-
-plugins: $(PLUGINSVO)
-omega: $(OMEGAVO) $(OMEGACMA) $(ROMEGAVO) $(ROMEGACMA)
-micromega: $(MICROMEGAVO) $(MICROMEGACMA) $(CSDPCERT)
-setoid_ring: $(RINGVO) $(RINGCMA)
-nsatz: $(NSATZVO) $(NSATZCMA)
-extraction: $(EXTRACTIONCMA)
-fourier: $(FOURIERVO) $(FOURIERCMA)
-funind: $(FUNINDCMA) $(FUNINDVO)
-cc: $(CCVO) $(CCCMA)
-rtauto: $(RTAUTOVO) $(RTAUTOCMA)
-btauto: $(BTAUTOVO) $(BTAUTOCMA)
-
-pluginsopt: $(PLUGINSOPT)
-pluginsbyte: $(PLUGINS)
-
-###########################################################################
-# rules to make theories and plugins
-###########################################################################
-
-theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
-	$(SHOW)'COQC $(COQ_XML) -noinit $<'
-	$(HIDE)rm -f theories/Init/$*.glob
-	$(HIDE)$(BOOTCOQC) $< $(COQ_XML) -noinit -R theories Coq
-
-theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
-	$(OCAML) $< $(TOTARGET)
-
-###########################################################################
-# tools
-###########################################################################
-
-.PHONY: printers tools
-
-printers: $(DEBUGPRINTERS)
-
-tools: $(TOOLS) $(DEBUGPRINTERS) $(OCAMLLIBDEP)
+.PHONY:
+tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEPBOOT)
 
 # coqdep_boot : a basic version of coqdep, with almost no dependencies.
 
@@ -694,52 +374,99 @@ $(OCAMLLIBDEP): tools/ocamllibdep.ml
 
 # The full coqdep (unused by this build, but distributed by make install)
 
-$(COQDEP): $(patsubst %.cma,%$(BESTLIB),$(COQDEPCMO:.cmo=$(BESTOBJ)))
+COQDEPCMO:=lib/clib.cma lib/errors.cmo lib/minisys.cmo lib/system.cmo \
+  tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
+
+$(COQDEP): $(call bestobj, $(COQDEPCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
-$(GALLINA): $(addsuffix $(BESTOBJ), tools/gallina_lexer tools/gallina)
+$(GALLINA): $(call bestobj, tools/gallina_lexer.cmo tools/gallina.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,)
 
-$(COQMAKEFILE):  $(patsubst %.cma,%$(BESTLIB),$(COQMAKEFILECMO:.cmo=$(BESTOBJ)))
+COQMAKEFILECMO:=lib/clib.cma ide/project_file.cmo tools/coq_makefile.cmo
+
+$(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,str unix threads)
 
-$(COQTEX): tools/coq_tex$(BESTOBJ)
+$(COQTEX): $(call bestobj, tools/coq_tex.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,str)
 
-$(COQWC): tools/coqwc$(BESTOBJ)
+$(COQWC): $(call bestobj, tools/coqwc.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,)
 
-$(COQDOC): $(patsubst %.cma,%$(BESTLIB),$(COQDOCCMO:.cmo=$(BESTOBJ)))
+COQDOCCMO:=lib/clib.cma $(addprefix tools/coqdoc/, \
+  cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
+
+$(COQDOC): $(call bestobj, $(COQDOCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,str unix)
 
-$(COQWORKMGR): $(addsuffix $(BESTOBJ), stm/coqworkmgrApi tools/coqworkmgr) \
-		$(addsuffix $(BESTLIB), lib/clib)
+$(COQWORKMGR): $(call bestobj, lib/clib.cma stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,, $(SYSMOD) clib)
+	$(HIDE)$(call bestocaml,, $(SYSMOD))
 
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-$(FAKEIDE): lib/clib$(BESTLIB) lib/errors$(BESTOBJ)			\
-	    lib/spawn$(BESTOBJ) ide/document$(BESTOBJ)			\
-	    ide/serialize$(BESTOBJ) ide/xml_lexer$(BESTOBJ)		\
-	    ide/xml_parser$(BESTOBJ) ide/xml_printer$(BESTOBJ)		\
-	    ide/xmlprotocol$(BESTOBJ) tools/fake_ide$(BESTOBJ) |	\
-	    $(IDETOPLOOPCMA:.cma=$(BESTDYN))
+FAKEIDECMO:= lib/clib.cma lib/errors.cmo lib/spawn.cmo ide/document.cmo \
+ ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo ide/xml_printer.cmo \
+ ide/xmlprotocol.cmo tools/fake_ide.cmo
+
+$(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,-I ide,str unix threads)
 
 # votour: a small vo explorer (based on the checker)
 
-bin/votour: lib/cObj$(BESTOBJ) checker/analyze$(BESTOBJ) checker/values$(BESTOBJ) checker/votour.ml
+bin/votour: $(call bestobj, lib/cObj.cmo checker/analyze.cmo checker/values.cmo) checker/votour.ml
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I checker,)
+
+###########################################################################
+# Csdp to micromega special targets
+###########################################################################
+
+CSDPCERTCMO:=lib/clib.cma $(addprefix plugins/micromega/, \
+  mutils.cmo 	micromega.cmo \
+  sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
+
+$(CSDPCERT): $(call bestobj, $(CSDPCERTCMO))
+	$(SHOW)'OCAMLBEST -o $@'
+	$(HIDE)$(call bestocaml,,nums unix)
+
+###########################################################################
+# tests
+###########################################################################
+
+.PHONY: validate check test-suite $(ALLSTDLIB).v
+
+VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m
+
+validate: $(CHICKEN) | $(ALLVO)
+	$(SHOW)'COQCHK <theories & plugins>'
+	$(HIDE)$(CHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
+
+$(ALLSTDLIB).v:
+	$(SHOW)'MAKE $(notdir $@)'
+	$(HIDE)echo "Require $(ALLMODS)." > $@
+
+MAKE_TSOPTS=-C test-suite -s VERBOSE=$(VERBOSE)
+
+check: validate test-suite
+
+test-suite: world $(ALLSTDLIB).v
+	$(MAKE) $(MAKE_TSOPTS) clean
+	$(MAKE) $(MAKE_TSOPTS) all
+	$(MAKE) $(MAKE_TSOPTS) report
+
+###########################################################################
+### Special rules (Camlp5 / Camlp4)
+###########################################################################
 
 # Special rule for the compatibility-with-camlp5 extension for camlp4
 
@@ -754,295 +481,32 @@ tools/compat5.cmo: tools/compat5.ml
 endif
 
 ###########################################################################
-# Documentation : cf Makefile.doc
+# Default rules for compiling ML code
 ###########################################################################
 
-documentation: doc-$(WITHDOC)
-doc-all: doc
-doc-no:
+# Target for libraries .cma and .cmxa
 
-.PHONY: documentation doc-all doc-no
+# The dependency over the .mllib is somewhat artificial, since
+# ocamlc -a won't use this file, hence the $(filter-out ...) below.
+# But this ensures that the .cm(x)a is rebuilt when needed,
+# (especially when removing a module in the .mllib).
+# We used to have a "order-only" dependency over .mllib.d here,
+# but the -include mechanism should already ensure that we have
+# up-to-date dependencies.
 
-###########################################################################
-# Installation
-###########################################################################
+%.cma: %.mllib
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
-ifeq ($(LOCAL),true)
-install:
-	@echo "Nothing to install in a local build!"
-else
-install: install-coq install-coqide install-doc-$(WITHDOC)
-endif
-
-install-doc-all: install-doc
-install-doc-no:
-
-.PHONY: install install-doc-all install-doc-no
-
-#These variables are intended to be set by the caller to make
-#COQINSTALLPREFIX=
-#OLDROOT=
-
-  # Can be changed for a local installation (to make packages).
-  # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
-
-ifdef COQINSTALLPREFIX
-FULLBINDIR=$(BINDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLCOQLIB=$(COQLIBINSTALL:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLCONFIGDIR=$(CONFIGDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLDATADIR=$(DATADIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLMANDIR=$(MANDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLEMACSLIB=$(EMACSLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLCOQDOCDIR=$(COQDOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-FULLDOCDIR=$(DOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
-else
-FULLBINDIR=$(BINDIR)
-FULLCOQLIB=$(COQLIBINSTALL)
-FULLCONFIGDIR=$(CONFIGDIR)
-FULLDATADIR=$(DATADIR)
-FULLMANDIR=$(MANDIR)
-FULLEMACSLIB=$(EMACSLIB)
-FULLCOQDOCDIR=$(COQDOCDIR)
-FULLDOCDIR=$(DOCDIR)
-endif
-
-.PHONY: install-coq install-coqlight install-binaries install-byte install-opt
-.PHONY: install-tools install-library install-library-light install-devfiles
-.PHONY: install-coq-info install-coq-manpages install-emacs install-latex
-
-install-coq: install-binaries install-library install-coq-info install-devfiles
-install-coqlight: install-binaries install-library-light
-
-install-binaries: install-tools
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQC) $(COQTOPBYTE) $(COQTOPEXE) $(CHICKEN) $(FULLBINDIR)
-	$(MKDIR) $(FULLCOQLIB)/toploop
-	$(INSTALLBIN) $(TOPLOOPCMA) $(FULLCOQLIB)/toploop/
-ifeq ($(BEST),opt)
-	$(INSTALLBIN) $(TOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
-endif
-
-
-install-tools:
-	$(MKDIR) $(FULLBINDIR)
-	# recopie des fichiers de style pour coqide
-	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
-	touch $(FULLCOQLIB)/tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc/coqdoc.css # to have the mode according to umask (bug #1715)
-	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
-	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
-
-# The list of .cmi to install, including the ones obtained
-# from .mli without .ml, and the ones obtained from .ml without .mli
-
-INSTALLCMI = $(sort \
-	$(filter-out checker/% ide/% tools/%, $(MLIFILES:.mli=.cmi)) \
-	$(foreach lib,$(CORECMA) $(PLUGINSCMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES)))))
-
-install-devfiles:
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQMKTOP) $(FULLBINDIR)
-	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMO) $(GRAMMARCMA)
-	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
-ifeq ($(BEST),opt)
-	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
-endif
-
-install-library:
-	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS)
-	$(MKDIR) $(FULLCOQLIB)/user-contrib
-ifndef CUSTOM
-	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
-endif
-ifeq ($(BEST),opt)
-	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)
-endif
-# csdpcert is not meant to be directly called by the user; we install
-# it with libraries
-	-$(MKDIR) $(FULLCOQLIB)/plugins/micromega
-	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/plugins/micromega
-	rm -f $(FULLCOQLIB)/revision
-	-$(INSTALLLIB) revision $(FULLCOQLIB)
-
-install-library-light:
-	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILESLIGHT) $(INITPLUGINS)
-	rm -f $(FULLCOQLIB)/revision
-	-$(INSTALLLIB) revision $(FULLCOQLIB)
-ifndef CUSTOM
-	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
-endif
-ifeq ($(BEST),opt)
-	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
-	$(INSTALLSH)  $(FULLCOQLIB) $(INITPLUGINSOPT)
-endif
-
-install-coq-info: install-coq-manpages install-emacs install-latex
-
-install-coq-manpages:
-	$(MKDIR) $(FULLMANDIR)/man1
-	$(INSTALLLIB) $(MANPAGES) $(FULLMANDIR)/man1
-
-install-emacs:
-	$(MKDIR) $(FULLEMACSLIB)
-	$(INSTALLLIB) tools/gallina-db.el tools/coq-font-lock.el tools/gallina-syntax.el tools/gallina.el tools/coq-inferior.el $(FULLEMACSLIB)
-
-# command to update TeX' kpathsea database
-#UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
-
-install-latex:
-	$(MKDIR) $(FULLCOQDOCDIR)
-	$(INSTALLLIB) tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)	
-#	-$(UPDATETEX)
-
-###########################################################################
-# Documentation of the source code (using ocamldoc)
-###########################################################################
-
-.PHONY: source-doc mli-doc ml-doc
-
-source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
-
-$(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
-	$(SHOW)'OCAMLDOC -latex -o $@'
-	$(HIDE)$(OCAMLFIND) ocamldoc -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
-	$(DOCMLIS) -noheader -t "Coq mlis documentation" \
-	-intro $(OCAMLDOCDIR)/docintro -o $@.tmp
-	$(SHOW)'OCAMLDOC utf8 fix'
-	$(HIDE)$(OCAMLDOCDIR)/fix-ocamldoc-utf8 $@.tmp
-	$(HIDE)cat $(OCAMLDOCDIR)/header.tex $@.tmp > $@
-	rm $@.tmp
-
-mli-doc: $(DOCMLIS:.mli=.cmi)
-	$(SHOW)'OCAMLDOC -html'
-	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads -I $(MYCAMLP4LIB) $(MLINCLUDES) \
-	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
-	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
-	-css-style style.css
-
-ml-dot: $(MLFILES)
-	$(OCAMLFIND) ocamldoc -dot -dot-reduce -rectypes -I +threads -I $(CAMLLIB) -I $(MYCAMLP4LIB) $(MLINCLUDES) \
-	$(filter $(addsuffix /%.ml,$(CORESRCDIRS)),$(MLFILES)) -o $(OCAMLDOCDIR)/coq.dot
-
-%_dep.png: %.dot
-	$(DOT) -Tpng $< -o $@
-
-%_types.dot: %.mli
-	$(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $<
-
-OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
-  $(foreach lib,$(|:.mllib.d=_MLLIB_DEPENDENCIES),$(addsuffix .ml,$($(lib))))
-
-%.dot: | %.mllib.d
-	$(OCAMLDOC_MLLIBD)
-
-ml-doc:
-	$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(MLSTATICFILES)
-
-parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
-	$(OCAMLDOC_MLLIBD)
-
-grammar/grammar.dot : | grammar/grammar.mllib.d
-	$(OCAMLDOC_MLLIBD)
-
-tactics/tactics.dot: | tactics/tactics.mllib.d ltac/ltac.mllib.d
-	$(OCAMLDOC_MLLIBD)
-
-%.dot: %.mli
-	$(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $<
-
-$(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
-	$(SHOW)'PDFLATEX $*.tex'
-	$(HIDE)(cd $(OCAMLDOCDIR) ; pdflatex -interaction=batchmode $*.tex && pdflatex -interaction=batchmode $*.tex)
-	$(HIDE)(cd doc/tools/; show_latex_messages -no-overfull ../../$(OCAMLDOCDIR)/$*.log)
-
-###########################################################################
-### Special rules
-###########################################################################
-
-dev/printers.cma: dev/printers.mllib
-	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -o test-printer
-	@rm -f test-printer
-	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -linkall -a -o $@
-
-ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
-	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
-
-# pretty printing of the revision number when compiling a checked out
-# source tree
-.PHONY: revision
-
-revision:
-	$(SHOW)'CHECK revision'
-	$(HIDE)rm -f revision.new
-ifeq ($(CHECKEDOUT),svn)
-	$(HIDE)set -e; \
-        if test -x "`which svn`"; then \
-	  export LC_ALL=C;\
-	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/\1/p' > revision.new; \
-	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/\1/p'>> revision.new; \
-	fi
-endif
-ifeq ($(CHECKEDOUT),gnuarch)
-	$(HIDE)set -e; \
-        if test -x "`which tla`"; then \
-	  LANG=C; export LANG; \
-	  tla tree-version  >  revision.new ; \
-	  tla tree-revision | sed -ne 's|.*--||p' >> revision.new ; \
-	fi
-endif
-ifeq ($(CHECKEDOUT),git)
-	$(HIDE)set -e; \
-	if test -x "`which git`"; then \
-	  LANG=C; export LANG; \
-	  GIT_BRANCH=$$(git branch -a | sed -ne '/^\* /s/^\* \(.*\)/\1/p'); \
-	  GIT_HOST=$$(hostname); \
-	  GIT_PATH=$$(pwd); \
-	  (echo "$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}") > revision.new; \
-	  (echo "$$(git log -1 --pretty='format:%H')") >> revision.new; \
-	fi
-endif
-	$(HIDE)set -e; \
-	if test -e revision.new; then \
-          if test -e revision; then \
-	    if test "`cat revision`" = "`cat revision.new`" ; then \
-	       rm -f revision.new; \
-            else \
-               mv -f revision.new revision; \
-            fi; \
-          else \
-            mv -f revision.new revision; \
-          fi \
-	fi
-
-###########################################################################
-# Default rules
-###########################################################################
-
-## Three flavor of flags: checker/* ide/* and normal files
+%.cmxa: %.mllib
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
 COND_BYTEFLAGS= \
- $(if $(filter checker/%,$<), $(CHKLIBS) -thread, \
-   $(if $(filter ide/%,$<), $(COQIDEFLAGS), \
-     $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) -thread)) $(BYTEFLAGS)
+ $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(BYTEFLAGS)
 
 COND_OPTFLAGS= \
- $(if $(filter checker/%,$<), $(CHKLIBS) -thread, \
-   $(if $(filter ide/%,$<), $(COQIDEFLAGS), \
-     $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) -thread)) $(OPTFLAGS)
-
-%.o: %.c
-	$(SHOW)'OCAMLC    $<'
-	$(HIDE)cd $(dir $<) && $(OCAMLC) -ccopt "$(CFLAGS)" -c $(notdir $<)
-
-%.o: %.rc
-	$(SHOW)'WINDRES    $<'
-	$(HIDE)i686-w64-mingw32-windres -i $< -o $@
+ $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(OPTFLAGS)
 
 %.cmi: %.mli
 	$(SHOW)'OCAMLC    $<'
@@ -1103,9 +567,57 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) \
 	  $(CAMLP4DEPS) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
 
+
+###########################################################################
+# Dependencies of ML code
+###########################################################################
+
+# Ocamldep is now used directly again (thanks to -ml-synonym in OCaml >= 3.12)
+OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4
+
+%.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(GENFILES)
+	$(SHOW)'OCAMLDEP  $<'
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+
+%.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES)
+	$(SHOW)'OCAMLDEP  $<'
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+
+%.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  $<'
+	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+
+###########################################################################
+# Compilation of .v files
+###########################################################################
+
+# NB: for make world, no need to mention explicitly the .cmxs of the plugins,
+# since they are all mentioned in at least one Declare ML Module in some .v
+
+coqlib: theories plugins
+
+theories: $(THEORIESVO)
+plugins: $(PLUGINSVO)
+
+.PHONY: coqlib theories plugins
+
+# One of the .v files is macro-generated
+
+theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
+	$(OCAML) $< $(TOTARGET)
+
+# The .vo files in Init are built with the -noinit option
+
+theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
+	$(SHOW)'COQC $(COQ_XML) -noinit $<'
+	$(HIDE)rm -f theories/Init/$*.glob
+	$(HIDE)$(BOOTCOQC) $< $(COQ_XML) -noinit -R theories Coq
+
+# The general rule for building .vo files :
+
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP)
 	$(SHOW)'COQC      $<'
-	$(HIDE)rm -f $*.glob 
+	$(HIDE)rm -f $*.glob
 	$(HIDE)$(BOOTCOQC) $<
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
@@ -1113,77 +625,17 @@ ifdef VALIDATE
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 endif
 
-###########################################################################
-# Dependencies
-###########################################################################
-
-# Since OCaml 3.12.1, we could use again ocamldep directly, thanks to
-# the option -ml-synonym
-
-OCAMLDEP_NG = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4
-
-checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC) $(GENFILES)
-	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP_NG) $(LOCALCHKLIBS) "$<" $(TOTARGET)
-
-checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC) $(GENFILES)
-	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP_NG) $(LOCALCHKLIBS) "$<" $(TOTARGET)
-
-%.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(GENFILES)
-	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP_NG) $(DEPFLAGS) "$<" $(TOTARGET)
-
-%.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES)
-	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP_NG) $(DEPFLAGS) "$<" $(TOTARGET)
-
-checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
-	$(SHOW)'OCAMLLIBDEP  $<'
-	$(HIDE)$(OCAMLLIBDEP) $(LOCALCHKLIBS) "$<" $(TOTARGET)
-
-dev/%.mllib.d: $(D_DEPEND_BEFORE_SRC) dev/%.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
-	$(SHOW)'OCAMLLIBDEP  $<'
-	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) -I dev "$<" $(TOTARGET)
-
-%.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
-	$(SHOW)'OCAMLLIBDEP  $<'
-	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
+# Dependencies of .v files
 
 %.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
 	$(HIDE)$(COQDEPBOOT) -boot $(DEPNATDYN) "$<" $(TOTARGET)
 
-%_stubs.c.d: $(D_DEPEND_BEFORE_SRC) %_stubs.c $(D_DEPEND_AFTER_SRC)
-	$(SHOW)'CCDEP	$<'
-	$(HIDE)echo "$@ $(@:.c.d=.o): $(@:.c.d=.c)" > $@
-
-%.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
-	$(SHOW)'CCDEP     $<'
-	$(HIDE)$(OCAMLC) -ccopt "-MM -MQ $@ -MQ $(<:.c=.o) -isystem $(CAMLHLIB)" $< $(TOTARGET)
-
-###########################################################################
-# this sets up developper supporting stuff
-###########################################################################
-
-.PHONY: devel otags
-devel: $(DEBUGPRINTERS)
-
-# NOTA : otags only accepts camlp4 as preprocessor, so the following rule
-# won't build tags of .ml4 when compiling with camlp5
-otags:
-	otags $(MLIFILES) $(filter-out configure.ml, $(MLSTATICFILES)) \
-	$(if $(filter camlp5,$(CAMLP4)), , \
-          -pa op -pa g -pa m -pa rq $(addprefix -pa , $(CAMLP4DEPS)) \
-          $(addprefix -impl , $(ML4FILES)))
-
-
 ###########################################################################
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
-Makefile Makefile.build Makefile.common config/Makefile : ;
-
+Makefile $(wildcard Makefile.*) config/Makefile : ;
 
 # For emacs: 
 # Local Variables: 

@@ -1,0 +1,86 @@
+#######################################################################
+#  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
+# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
+#   \VV/  #############################################################
+#    //   #      This file is distributed under the terms of the      #
+#         #       GNU Lesser General Public License Version 2.1       #
+#######################################################################
+
+## Makefile rules for building Coqchk
+
+## NB: For the moment, the build system of Coqchk is part of
+## the one of Coq. In particular, this Makefile.checker is included in
+## Makefile.build. Please ensure that the rules define here are
+## indeed specific to files of the form checker/*
+
+# The binaries
+
+CHICKENBYTE:=bin/coqchk.byte$(EXE)
+CHICKEN:=bin/coqchk$(EXE)
+
+# The sources
+
+CHKLIBS:= -I config -I lib -I checker
+
+## NB: currently, both $(OPTFLAGS) and $(BYTEFLAGS) contain -thread
+
+# The rules
+
+ifeq ($(BEST),opt)
+$(CHICKEN): checker/check.cmxa checker/main.ml
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(SYSCMXA) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -o $@ $^
+	$(STRIP) $@
+	$(CODESIGN) $@
+else
+$(CHICKEN): $(CHICKENBYTE)
+	cp $< $@
+endif
+
+$(CHICKENBYTE): checker/check.cma checker/main.ml
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(SYSCMA) $(CHKLIBS) $(BYTEFLAGS) $(CUSTOM) -o $@ $^
+
+checker/check.cma: checker/check.mllib | md5chk
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
+
+checker/check.cmxa: checker/check.mllib | md5chk
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
+
+checker/%.ml.d: checker/%.ml
+	$(SHOW)'OCAMLDEP  $<'
+	$(HIDE)$(OCAMLFIND) ocamldep -slash $(CHKLIBS) "$<" $(TOTARGET)
+
+checker/%.mli.d: checker/%.mli
+	$(SHOW)'OCAMLDEP  $<'
+	$(HIDE)$(OCAMLFIND) ocamldep -slash $(CHKLIBS) "$<" $(TOTARGET)
+
+checker/%.mllib.d: checker/%.mllib | $(OCAMLLIBDEP)
+	$(SHOW)'OCAMLLIBDEP  $<'
+	$(HIDE)$(OCAMLLIBDEP) $(CHKLIBS) "$<" $(TOTARGET)
+
+checker/%.cmi: checker/%.mli
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -c $<
+
+checker/%.cmo: checker/%.ml
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -c $<
+
+checker/%.cmx: checker/%.ml
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) $(HACKMLI) -c $<
+
+md5chk:
+	$(SHOW)'MD5SUM cic.mli'
+	$(HIDE)if grep -q `$(MD5SUM) checker/cic.mli` checker/values.ml; \
+	       then true; else echo "Error: outdated checker/values.ml"; false; fi
+
+.PHONY: md5chk
+
+# For emacs:
+# Local Variables:
+# mode: makefile
+# End:
