@@ -263,28 +263,6 @@ type search_constraint =
   | In_Module of Names.DirPath.t
   | Include_Blacklist
 
-let pattern_of_string ?env s =
-  let env =
-    match env with
-    | None -> Global.env ()
-    | Some e -> e
-  in
-  let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-  let (_, pat) = Constrintern.intern_constr_pattern env constr in
-  pat
-
-let dirpath_of_string_list s =
-  let path = String.concat "." s in
-  let m = Pcoq.parse_string Pcoq.Constr.global path in
-  let (_, qid) = Libnames.qualid_of_reference m in
-  let id =
-    try Nametab.full_name_module qid
-    with Not_found ->
-      Errors.errorlabstrm "Search.interface_search"
-        (str "Module " ++ str path ++ str " not found.")
-  in
-  id
-
 type 'a coq_object = {
   coq_object_prefix : string list;
   coq_object_qualid : string list;

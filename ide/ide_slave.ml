@@ -281,11 +281,33 @@ let export_coq_object t = {
   Interface.coq_object_object = t.Search.coq_object_object
 }
 
+let pattern_of_string ?env s =
+  let env =
+    match env with
+    | None -> Global.env ()
+    | Some e -> e
+  in
+  let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
+  let (_, pat) = Constrintern.intern_constr_pattern env constr in
+  pat
+
+let dirpath_of_string_list s =
+  let path = String.concat "." s in
+  let m = Pcoq.parse_string Pcoq.Constr.global path in
+  let (_, qid) = Libnames.qualid_of_reference m in
+  let id =
+    try Nametab.full_name_module qid
+    with Not_found ->
+      Errors.errorlabstrm "Search.interface_search"
+        (str "Module " ++ str path ++ str " not found.")
+  in
+  id
+
 let import_search_constraint = function
   | Interface.Name_Pattern s    -> Search.Name_Pattern (Str.regexp s)
-  | Interface.Type_Pattern s    -> Search.Type_Pattern (Search.pattern_of_string s)
-  | Interface.SubType_Pattern s -> Search.SubType_Pattern (Search.pattern_of_string s)
-  | Interface.In_Module ms      -> Search.In_Module (Search.dirpath_of_string_list ms)
+  | Interface.Type_Pattern s    -> Search.Type_Pattern (pattern_of_string s)
+  | Interface.SubType_Pattern s -> Search.SubType_Pattern (pattern_of_string s)
+  | Interface.In_Module ms      -> Search.In_Module (dirpath_of_string_list ms)
   | Interface.Include_Blacklist -> Search.Include_Blacklist
 
 let search flags =

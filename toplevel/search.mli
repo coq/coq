@@ -57,10 +57,6 @@ type search_constraint =
   (** Bypass the Search blacklist *)
   | Include_Blacklist
 
-val pattern_of_string : ?env:Environ.env -> string -> Pattern.constr_pattern
-
-val dirpath_of_string_list : string list -> Names.DirPath.t
-
 type 'a coq_object = {
   coq_object_prefix : string list;
   coq_object_qualid : string list;
