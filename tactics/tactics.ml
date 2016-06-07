@@ -2453,9 +2453,10 @@ let intro_patterns_bound_to n destopt =
   intro_patterns_core true [] [] [] destopt
     (Some (true,n)) 0 (fun _ l -> clear_wildcards l)
 
-let intro_patterns_to destopt =
+let intro_patterns_to destopt l =
+  (* Eta-expansion because of a side-effect *)
   intro_patterns_core (use_bracketing_last_or_and_intro_pattern ())
-    [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
+    [] [] [] destopt None 0 (fun _ l -> clear_wildcards l) l
 
 let intro_pattern_to destopt pat =
   intro_patterns_to destopt [dloc,pat]
