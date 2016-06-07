@@ -484,15 +484,15 @@ let explicitize loc inctx impl (cf,f) args =
           (!print_implicits && !print_implicits_explicit_args) ||
           (is_needed_for_correct_partial_application tail imp) ||
 	  (!print_implicits_defensive &&
-	   is_significant_implicit a &&
-	   not (is_inferable_implicit inctx n imp))
+	   not (is_inferable_implicit inctx n imp) &&
+	   is_significant_implicit (Lazy.force a))
 	in
         if visible then
-	  (a,Some (Loc.ghost, ExplByName (name_of_implicit imp))) :: tail
+	  (Lazy.force a,Some (Loc.ghost, ExplByName (name_of_implicit imp))) :: tail
 	else
 	  tail
-    | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
-    | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
+    | a::args, _::impl -> (Lazy.force a,None) :: exprec (q+1) (args,impl)
+    | args, [] -> List.map (fun a -> (Lazy.force a,None)) args (*In case of polymorphism*)
     | [], (imp :: _) when is_status_implicit imp && maximal_insertion_of imp -> 
       (* The non-explicit application cannot be parsed back with the same type *)
       raise Expl
@@ -519,7 +519,7 @@ let explicitize loc inctx impl (cf,f) args =
     with Expl -> 
       let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
       let ip = if !print_projections then ip else None in
-	CAppExpl (loc, (ip, f', us), args)
+	CAppExpl (loc, (ip, f', us), List.map Lazy.force args)
 
 let is_start_implicit = function
   | imp :: _ -> is_status_implicit imp && maximal_insertion_of imp
@@ -541,19 +541,21 @@ let extern_app loc inctx impl (cf,f) us args =
       (!print_implicits && not !print_implicits_explicit_args)) &&
      List.exists is_status_implicit impl)
   then
+    let args = List.map Lazy.force args in
     CAppExpl (loc, (is_projection (List.length args) cf,f,us), args)
   else
     explicitize loc inctx impl (cf,CRef (f,us)) args
 
-let rec extern_args extern scopes env args subscopes =
-  match args with
-    | [] -> []
-    | a::args ->
-	let argscopes, subscopes = match subscopes with
-	  | [] -> (None,scopes), []
-	  | scopt::subscopes -> (scopt,scopes), subscopes in
-	extern argscopes env a :: extern_args extern scopes env args subscopes
+let rec fill_arg_scopes args subscopes scopes = match args, subscopes with
+| [], _ -> []
+| a :: args, scopt :: subscopes ->
+  (a, (scopt, scopes)) :: fill_arg_scopes args subscopes scopes
+| a :: args, [] ->
+  (a, (None, scopes)) :: fill_arg_scopes args [] scopes
 
+let extern_args extern env args =
+  let map (arg, argscopes) = lazy (extern argscopes env arg) in
+  List.map map args
 
 let match_coercion_app = function
   | GApp (loc,GRef (_,r,_),args) -> Some (loc, r, 0, args)
@@ -650,8 +652,7 @@ let rec extern inctx scopes vars r =
       (match f with
 	 | GRef (rloc,ref,us) ->
 	     let subscopes = find_arguments_scope ref in
-	     let args =
-	       extern_args (extern true) (snd scopes) vars args subscopes in
+	     let args = fill_arg_scopes args subscopes (snd scopes) in
 	     begin
 	       try
                  if !Flags.raw_print then raise Exit;
@@ -686,12 +687,14 @@ let rec extern inctx scopes vars r =
 			       match args with
 				 | [] -> raise No_match
 				     (* we give up since the constructor is not complete *)
-				 | head :: tail -> ip q locs' tail
-				     ((extern_reference loc Id.Set.empty (ConstRef c), head) :: acc)
+				 | (arg, scopes) :: tail ->
+                                     let head = extern true scopes vars arg in
+				     ip q locs' tail ((extern_reference loc Id.Set.empty (ConstRef c), head) :: acc)
 		   in
 		 CRecord (loc, None, List.rev (ip projs locals args []))
 	       with
 		 | Not_found | No_match | Exit ->
+                    let args = extern_args (extern true) vars args in
 		     extern_app loc inctx
 		       (select_stronger_impargs (implicits_of_global ref))
 		       (Some ref,extern_reference rloc vars ref) (extern_universes us) args
@@ -699,7 +702,7 @@ let rec extern inctx scopes vars r =
 	       
 	 | _       ->
 	   explicitize loc inctx [] (None,sub_extern false scopes vars f)
-             (List.map (sub_extern true scopes vars) args))
+             (List.map (fun c -> lazy (sub_extern true scopes vars c)) args))
 
   | GLetIn (loc,na,t,c) ->
       CLetIn (loc,(loc,na),sub_extern false scopes vars t,
@@ -918,7 +921,8 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	      if List.is_empty l then a else CApp (loc,(None,a),l) in
  	if List.is_empty args then e
 	else
-	  let args = extern_args (extern true) scopes vars args argsscopes in
+	  let args = fill_arg_scopes args argsscopes scopes in
+	  let args = extern_args (extern true) vars args in
 	  explicitize loc false argsimpls (None,e) args
       with
 	  No_match -> extern_symbol allscopes vars t rules
