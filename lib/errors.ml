@@ -144,5 +144,5 @@ let handled e =
 let fatal_error info anomaly =
   let msg = info ++ fnl () in
   pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft msg;
-  flush_all ();
+  Format.pp_print_flush !Pp_control.err_ft ();
   exit (if anomaly then 129 else 1)
