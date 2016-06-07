@@ -27,6 +27,10 @@ let rec print_list sep = function
   | x :: l -> print x; print sep; print_list sep l
   | [] -> ()
 
+let rec print_prefix_list sep = function
+  | x :: l -> print sep; print x; print_prefix_list sep l
+  | [] -> ()
+
 let list_iter_i f =
   let rec aux i = function [] -> () | a::l -> f i a; aux (i+1) l in aux 1
 
@@ -525,28 +529,35 @@ let parameters () =
   print "  $(filter-out Warning: Error:,\\\n";
   print "  $(shell $(COQBIN)coqtop -q -noinit -batch -quiet -print-mod-uid $(1))))\n\n"
 
-let include_dirs (inc_ml,inc_i,inc_r) =
+let include_dirs (inc_ml,inc_q,inc_r) =
   let parse_ml_includes l = List.map (fun (x,_) -> "-I \"" ^ x ^ "\"") l in
-  let parse_includes l = List.map (fun (x,l,_) ->
-				   let l' = if l = "" then "\"\"" else l in
-				   "-Q \"" ^ x ^ "\" " ^ l' ^"") l in
-  let parse_rec_includes l = List.map (fun (p,l,_) ->
-				       let l' = if l = "" then "\"\"" else l in
-				       "-R \"" ^ p ^ "\" " ^ l' ^"") l in
+  let includes =
+    List.map (fun (p,l,_) ->
+              let l' = if l = "" then "\"\"" else l in
+              " \"" ^ p ^ "\" " ^ l' ^"") in
   let str_ml = parse_ml_includes inc_ml in
-  let str_i = parse_includes inc_i in
-  let str_r = parse_rec_includes inc_r in
-    section "Libraries definitions.";
-    if !some_ml4file || !some_mlfile || !some_mlifile then begin
-      print "OCAMLLIBS?="; print_list "\\\n  " str_ml; print "\n";
-    end;
-    if !some_vfile || !some_mllibfile || !some_mlpackfile then begin
-      print "COQLIBS?="; print_list "\\\n  " str_i;
-      List.iter (fun x -> print "\\\n  "; print x) str_r;
-      List.iter (fun x -> print "\\\n  "; print x) str_ml; print "\n";
-      print "COQDOCLIBS?="; print_list "\\\n  " str_i;
-      List.iter (fun x -> print "\\\n  "; print x) str_r; print "\n\n";
-    end
+  section "Libraries definitions.";
+  if !some_ml4file || !some_mlfile || !some_mlifile then begin
+    print "OCAMLLIBS?="; print_list "\\\n  " str_ml; print "\n";
+  end;
+  if !some_vfile || !some_mllibfile || !some_mlpackfile then begin
+    print "COQLIBS?=";
+    print_prefix_list "\\\n  -Q" (includes inc_q);
+    print_prefix_list "\\\n  -R" (includes inc_r);
+    print_prefix_list "\\\n  " str_ml;
+    print "\n";
+  end;
+  if !some_vfile then begin
+    print "COQCHKLIBS?=";
+    print_prefix_list "\\\n  -R" (includes inc_q);
+    print_prefix_list "\\\n  -R" (includes inc_r);
+    print "\n";
+    print "COQDOCLIBS?=";
+    print_prefix_list "\\\n  -R" (includes inc_q);
+    print_prefix_list "\\\n  -R" (includes inc_r);
+    print "\n";
+  end;
+  print "\n"
 
 let double_colon = ["clean"; "cleanall"; "archclean"]
 
@@ -719,7 +730,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "all-gal.pdf: $(VFILES)\n";
       print "\t$(COQDOC) -toc $(COQDOCFLAGS) -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "validate: $(VOFILES)\n";
-      print "\t$(COQCHK) $(COQCHKFLAGS) $(COQLIBS) $(notdir $(^:.vo=))\n\n";
+      print "\t$(COQCHK) $(COQCHKFLAGS) $(COQCHKLIBS) $(notdir $(^:.vo=))\n\n";
       print "beautify: $(VFILES:=.beautified)\n";
       print "\tfor file in $^; do mv $${file%.beautified} $${file%beautified}old && mv $${file} $${file%.beautified}; done\n";
       print "\t@echo \'Do not do \"make clean\" until you are sure that everything went well!\'\n";

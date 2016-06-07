@@ -179,10 +179,7 @@ let print_usage_channel co command =
   output_string co command;
   output_string co "coqchk options are:\n";
   output_string co
-"  -I dir -as coqdir      map physical dir to logical coqdir\
-\n  -I dir                 map directory dir to the empty logical path\
-\n  -include dir           (idem)\
-\n  -R dir coqdir          recursively map physical dir to logical coqdir\
+"  -R dir coqdir          map physical dir to logical coqdir\
 \n\
 \n  -admit module          load module and dependencies without checking\
 \n  -norec module          check module but admit dependencies without checking\
