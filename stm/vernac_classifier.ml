@@ -119,7 +119,7 @@ let rec classify_vernac e =
         VtLater
     | VernacEndSubproof -> 
         VtProofStep { parallel = false;
-                      proof_block_detection = Some "proof-block" },
+                      proof_block_detection = Some "curly" },
         VtLater
     (* Options changing parser *)
     | VernacUnsetOption (["Default";"Proof";"Using"])

@@ -238,7 +238,10 @@ let default_info () =
 module DynBlockData : Dyn.S = Dyn.Make(struct end)
 
 (* Clusters of nodes implemented as Dag properties.  While Dag and Vcs impose
- * no constraint on properties, here we impose boxes to be non overlapping. *)
+ * no constraint on properties, here we impose boxes to be non overlapping.
+ * Such invariant makes sense for the current kinds of boxes (proof blocks and
+ * entire proofs) but may make no sense and dropped/refined in the future.
+ * Such invariant is useful to detect broken proof block detection code *)
 type box =
   | ProofTask of pt
   | ProofBlock of static_block_declaration * proof_block_name

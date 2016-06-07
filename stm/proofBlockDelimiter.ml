@@ -127,7 +127,7 @@ let dynamic_curly_brace { dynamic_switch = id } =
   | `Not -> `Leaks
 
 let () = register_proof_block_delimiter
-  "proof-block" static_curly_brace dynamic_curly_brace
+  "curly" static_curly_brace dynamic_curly_brace
 
 (* ***************** par: ************************************************* *)
 
