@@ -257,10 +257,10 @@ let search_about gopt items mods =
   format_display !ans
 
 type search_constraint =
-  | Name_Pattern of string
-  | Type_Pattern of string
-  | SubType_Pattern of string
-  | In_Module of string list
+  | Name_Pattern of Str.regexp
+  | Type_Pattern of Pattern.constr_pattern
+  | SubType_Pattern of Pattern.constr_pattern
+  | In_Module of Names.DirPath.t
   | Include_Blacklist
 
 type 'a coq_object = {
@@ -269,40 +269,21 @@ type 'a coq_object = {
   coq_object_object : 'a;
 }
 
-let interface_search flags =
-  let env = Global.env () in
+let interface_search =
   let rec extract_flags name tpe subtpe mods blacklist = function
   | [] -> (name, tpe, subtpe, mods, blacklist)
-  | (Name_Pattern s, b) :: l ->
-    let regexp =
-      try Str.regexp s
-      with e when Errors.noncritical e ->
-        Errors.errorlabstrm "Search.interface_search"
-          (str "Invalid regexp: " ++ str s)
-    in
+  | (Name_Pattern regexp, b) :: l ->
     extract_flags ((regexp, b) :: name) tpe subtpe mods blacklist l
-  | (Type_Pattern s, b) :: l ->
-    let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-    let (_, pat) = Constrintern.intern_constr_pattern env constr in
+  | (Type_Pattern pat, b) :: l ->
     extract_flags name ((pat, b) :: tpe) subtpe mods blacklist l
-  | (SubType_Pattern s, b) :: l ->
-    let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-    let (_, pat) = Constrintern.intern_constr_pattern env constr in
+  | (SubType_Pattern pat, b) :: l ->
     extract_flags name tpe ((pat, b) :: subtpe) mods blacklist l
-  | (In_Module m, b) :: l ->
-    let path = String.concat "." m in
-    let m = Pcoq.parse_string Pcoq.Constr.global path in
-    let (_, qid) = Libnames.qualid_of_reference m in
-    let id =
-      try Nametab.full_name_module qid
-      with Not_found ->
-        Errors.errorlabstrm "Search.interface_search"
-          (str "Module " ++ str path ++ str " not found.")
-    in
+  | (In_Module id, b) :: l ->
     extract_flags name tpe subtpe ((id, b) :: mods) blacklist l
   | (Include_Blacklist, b) :: l ->
     extract_flags name tpe subtpe mods b l
   in
+  fun ?glnum flags ->
   let (name, tpe, subtpe, mods, blacklist) =
     extract_flags [] [] [] [] false flags
   in
@@ -359,5 +340,5 @@ let interface_search flags =
   let iter ref env typ =
     if filter_function ref env typ then print_function ref env typ
   in
-  let () = generic_search None iter in (* TODO: chose a goal number? *)
+  let () = generic_search glnum iter in
   !ans
