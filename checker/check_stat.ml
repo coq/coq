@@ -18,7 +18,7 @@ let print_memory_stat () =
   if !memory_stat then begin
     Format.printf "total heap size = %d kbytes\n" (CObj.heap_size_kb ());
     Format.print_newline();
-    flush_all()
+    Format.print_flush()
   end
 
 let output_context = ref false

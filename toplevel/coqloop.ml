@@ -345,13 +345,21 @@ let feed_emacs = function
   | _  -> ()
 *)
 
+(* Flush in a compatible order with 8.5 *)
+(* This mimics the semantics of the old Pp.flush_all *)
+let loop_flush_all () =
+  Pervasives.flush stderr;
+  Pervasives.flush stdout;
+  Format.pp_print_flush !Pp_control.std_ft ();
+  Format.pp_print_flush !Pp_control.err_ft ()
+
 let rec loop () =
   Sys.catch_break true;
   if !Flags.print_emacs then Vernacentries.qed_display_script := false;
   Flags.coqtop_ui := true;
   try
     reset_input_buffer stdin top_buffer;
-    while true do do_vernac(); flush_all() done
+    while true do do_vernac(); loop_flush_all () done
   with
     | Errors.Drop -> ()
     | Errors.Quit -> exit 0
