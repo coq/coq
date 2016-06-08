@@ -1,0 +1,76 @@
+# How to profile Coq?
+
+I (Pierre-Marie Pédrot) mainly use two OCaml branches to profile Coq, whether I
+want to profile time or memory consumption. AFAIK, this only works for Linux.
+
+## Time
+
+In Coq source folder:
+
+opam switch 4.02.1+fp
+./configure -local -debug
+make
+perf record -g bin/coqtop -compile file.v
+perf report -g fractal,callee --no-children
+
+To profile only part of a file, first load it using
+
+bin/coqtop -l file.v
+
+and plug into the process
+
+perf record -g -p PID
+
+## Memory
+
+You first need a few commits atop trunk for this to work.
+
+git remote add ppedrot https://github.com/ppedrot/coq.git
+git fetch ppedrot
+git checkout ppedrot/allocation-profiling
+git rebase master
+
+Then:
+
+opam switch 4.00.1+alloc-profiling
+./configure -local -debug
+make
+
+Note that linking the coqtop binary takes quite an amount of time with this
+branch, so do not worry too much. There are more recent branches of
+alloc-profiling on mshinwell's repo which can be found at:
+
+https://github.com/mshinwell/opam-repo-dev
+
+### For memory dump:
+
+CAMLRUNPARAM=T,mj bin/coqtop -compile file.v
+
+In another terminal:
+
+pkill -SIGUSR1 $COQTOPPID
+...
+pkill -SIGUSR1 $COQTOPPID
+dev/decode-major-heap.sh heap.$COQTOPPID.$N bin/coqtop
+
+where $COQTOPPID is coqtop pid and $N the index of the call to pkill.
+
+First column is the memory taken by the objects (in words), second one is the
+number of objects and third is the place where the objects where allocated.
+
+### For complete memory graph:
+
+CAMLRUNPARAM=T,gr bin/coqtop -compile file.v
+
+In another terminal:
+
+pkill -SIGUSR1 $COQTOPPID
+...
+pkill -SIGUSR1 $COQTOPPID
+ocaml dev/decodegraph.ml edge.$COQTOPPID.$N bin/coqtop > memory.dot
+dot -Tpdf -o memory.pdf memory.dot
+
+where $COQTOPPID is coqtop pid and $N the index of the call to pkill.
+
+The pdf produced by the last command gives a compact graphical representation of
+the various objects allocated.
