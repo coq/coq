@@ -434,7 +434,7 @@ let implicit () =
     print "\t$(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
     print "$(MLLIBFILES:.mllib=.cmxs): %.cmxs: %.cmxa\n";
     print "\t$(SHOW)'CAMLOPT -shared -o $@'\n";
-    print "\t(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n"
+    print "\t$(HIDE)$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n"
   in
   let mllib_rules () =
     print "$(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib\n";
