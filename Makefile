@@ -153,7 +153,7 @@ noconfig:
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
-Makefile Makefile.build Makefile.common config/Makefile : ;
+Makefile $(wildcard Makefile.*) config/Makefile : ;
 
 ###########################################################################
 # Cleaning
@@ -173,7 +173,7 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(CHICKENBYTE) $(FAKEIDE)
+	rm -f $(COQTOPBYTE) $(CHICKENBYTE)
 	find . \( -name '*~' -o -name '*.cm[ioat]' -o -name '*.cmti' \) -delete
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
@@ -206,8 +206,8 @@ archclean: clean-ide optclean voclean
 	rm -f $(ALLSTDLIB).*
 
 optclean:
-	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN) $(COQDEPBOOT)
-	rm -f $(TOOLS) $(CSDPCERT)
+	rm -f $(COQTOPEXE) $(COQMKTOP) $(CHICKEN)
+	rm -f $(TOOLS) $(PRIVATEBINARIES) $(CSDPCERT)
 	find . -name '*.cmx' -o -name '*.cmxs' -o -name '*.cmxa' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 
 clean-ide:
@@ -236,6 +236,7 @@ distclean: clean cleanconfig cacheclean
 
 voclean:
 	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -delete
+	find theories plugins test-suite -name .coq-native -empty -delete
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
