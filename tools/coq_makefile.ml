@@ -463,7 +463,9 @@ let implicit () =
     print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
   in
   let v_rules () =
-    print "$(VOFILES): %.vo: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "$(VOFILES): %.vo: %.v\n"
+    print "\t$(SHOW)COQC $*\n";
+    print "\t$(HIDE)$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(GLOBFILES): %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(VFILES:.v=.vio): %.vio: %.v\n\t$(COQC) -quick $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(GFILES): %.g: %.v\n\t$(GALLINA) $<\n\n";
@@ -472,7 +474,8 @@ let implicit () =
     print "$(VFILES:.v=.g.tex): %.g.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex -g $< -o $@\n\n";
     print "$(GHTMLFILES): %.g.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS)  -html -g $< -o $@\n\n";
     print "$(addsuffix .d,$(VFILES)): %.v.d: %.v\n";
-    print "\t$(COQDEP) $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
+    print "\t$(SHOW)'COQDEP $<'\n";
+    print "\t$(HIDE)$(COQDEP) $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
     print "$(addsuffix .beautified,$(VFILES)): %.v.beautified:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $*\n\n"
   in
     if !some_mlifile then mli_rules ();
