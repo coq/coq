@@ -189,7 +189,6 @@ Logic
 Refiner
 Clenv
 Evar_refiner
-Proof_errors
 Refine
 Proof
 Proof_global
