@@ -150,6 +150,36 @@ define_evar_* mostly used internally in the unification engine.
 
     Proofview.Refine.* --->  Refine.*
 
+- A statically monotonous evarmap type was introduced in Sigma. Not all the API
+  has been converted, so that the user may want to use compatibility functions
+  Sigma.to_evar_map and Sigma.Unsafe.of_evar_map or Sigma.Unsafe.of_pair when
+  needed. Code can be straightforwardly adapted in the following way:
+
+  let (sigma, x1) = ... in
+  ...
+  let (sigma, xn) = ... in
+  (sigma, ans)
+
+  should be turned into:
+
+  open Sigma.Notations
+
+  let Sigma (x1, sigma, p1) = ... in
+  ...
+  let Sigma (xn, sigma, pn) = ... in
+  Sigma (ans, sigma, p1 +> ... +> pn)
+
+- The Proofview.Goal.*enter family of functions now takes a polymorphic
+  continuation given as a record as an argument.
+
+  Proofview.Goal.enter begin fun gl -> ... end
+
+  should be turned into
+
+  open Proofview.Notations
+
+  Proofview.Goal.enter { enter = begin fun gl -> ... end }
+
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================
