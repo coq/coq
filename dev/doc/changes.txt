@@ -148,6 +148,8 @@ define_evar_* mostly used internally in the unification engine.
 
 - The Refine module was move out of Proofview.
 
+    Proofview.Refine.* --->  Refine.*
+
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================
