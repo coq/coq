@@ -29,6 +29,10 @@ Tactics
   instead (potential source of incompatibilities).
 - New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac (DOC TODO).
 
+Hints
+
+- Revised the syntax of [Hint Cut] to follow standard notation for regexps.
+  
 Program
 
 - The "Shrink Obligations" flag now applies to all obligations, not only those

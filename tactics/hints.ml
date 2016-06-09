@@ -317,6 +317,12 @@ let rec is_empty = function
   | PathEmpty -> true
   | PathEpsilon -> false
 
+let path_seq p p' =
+  match p, p' with
+  | PathEpsilon, p' -> p'
+  | p, PathEpsilon -> p
+  | p, p' -> PathSeq (p, p')
+                    
 let rec path_derivate hp hint =
   let rec derivate_atoms hints hints' =
     match hints, hints' with
@@ -324,26 +330,26 @@ let rec path_derivate hp hint =
     | [], [] -> PathEpsilon
     | [], hints -> PathEmpty
     | grs, [] -> PathAtom (PathHints grs)
-    | _, _ -> PathEmpty 
+    | _, _ -> PathEmpty
   in
-    match hp with
-    | PathAtom PathAny -> PathEpsilon
-    | PathAtom (PathHints grs) -> 
-      (match grs, hint with
-       | h :: hints, PathAny -> PathEmpty
-       | hints, PathHints hints' -> derivate_atoms hints hints'
-       | _, _ -> assert false)
-    | PathStar p -> if path_matches p [hint] then hp else PathEpsilon
-    | PathSeq (hp, hp') ->
-      let hpder = path_derivate hp hint in
-	if matches_epsilon hp then 
-	  PathOr (PathSeq (hpder, hp'), path_derivate hp' hint)
-	else if is_empty hpder then PathEmpty 
-	else PathSeq (hpder, hp')
-    | PathOr (hp, hp') ->
-      PathOr (path_derivate hp hint, path_derivate hp' hint)
-    | PathEmpty -> PathEmpty
-    | PathEpsilon -> PathEmpty
+  match hp with
+  | PathAtom PathAny -> PathEpsilon
+  | PathAtom (PathHints grs) -> 
+     (match grs, hint with
+      | h :: _, PathAny -> PathEmpty
+      | hints, PathHints hints' -> derivate_atoms hints hints'
+      | _, _ -> assert false)
+  | PathStar p -> if path_matches p [hint] then hp else PathEpsilon
+  | PathSeq (hp, hp') ->
+     let hpder = path_derivate hp hint in
+     if matches_epsilon hp then 
+       PathOr (path_seq hpder hp', path_derivate hp' hint)
+     else if is_empty hpder then PathEmpty 
+     else path_seq hpder hp'
+  | PathOr (hp, hp') ->
+     PathOr (path_derivate hp hint, path_derivate hp' hint)
+  | PathEmpty -> PathEmpty
+  | PathEpsilon -> PathEmpty
 
 let rec normalize_path h =
   match h with
@@ -365,15 +371,17 @@ let path_derivate hp hint = normalize_path (path_derivate hp hint)
 
 let pp_hints_path_atom a =
   match a with
-  | PathAny -> str"*"
+  | PathAny -> str"_"
   | PathHints grs -> pr_sequence pr_global grs
 					   
 let rec pp_hints_path = function
   | PathAtom pa -> pp_hints_path_atom pa
-  | PathStar p -> str "!(" ++ pp_hints_path p ++ str")"
-  | PathSeq (p, p') -> pp_hints_path p ++ str" ; " ++ pp_hints_path p'
+  | PathStar (PathAtom PathAny) -> str"_*"
+  | PathStar p -> str "(" ++ pp_hints_path p ++ str")*"
+  | PathSeq (p, p') -> pp_hints_path p ++ spc () ++ pp_hints_path p'
   | PathOr (p, p') -> 
-    str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ spc () ++ pp_hints_path p' ++ str ")"
+     str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ cut () ++ spc () ++
+       pp_hints_path p' ++ str ")"
   | PathEmpty -> str"emp"
   | PathEpsilon -> str"eps"
 

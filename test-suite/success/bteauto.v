@@ -50,9 +50,10 @@ End Backtracking.
 
 
 Hint Resolve 100 eq_sym eq_trans : core.
-Hint Cut [!*; eq_sym; eq_sym] : core.
-Hint Cut [!*; eq_trans; eq_trans] : core.
-Hint Cut [!*; eq_trans; eq_sym; eq_trans] : core.
+Hint Cut [(_)* eq_sym eq_sym] : core.
+Hint Cut [_* eq_trans eq_trans] : core.
+Hint Cut [_* eq_trans eq_sym eq_trans] : core.
+
 
 Goal forall x y z : nat, x = y -> z = y -> x = z.
 Proof.
@@ -73,7 +74,7 @@ Module Hierarchies.
 
   Fail Timeout 1 Definition makeA' : A := _.
 
-  Hint Cut [!*; mkB; aofb] : typeclass_instances.
+  Hint Cut [_* mkB aofb] : typeclass_instances.
   Fail Definition makeA' : A := _.
   Fail Definition makeB' : B := _.
 End Hierarchies.

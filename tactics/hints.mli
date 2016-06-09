@@ -40,6 +40,7 @@ type raw_hint = constr * types * Univ.universe_context_set
 
 type hints_path_atom = 
   | PathHints of global_reference list
+  (* For forward hints, their names is the list of projections *)
   | PathAny
 
 type 'a with_metadata = private {
