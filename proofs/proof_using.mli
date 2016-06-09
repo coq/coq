@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Utility code for section variables handling in Proof using... *)
+
 val process_expr :
   Environ.env -> Vernacexpr.section_subset_expr -> Constr.types list ->
     Names.Id.t list

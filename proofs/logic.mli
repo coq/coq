@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Legacy proof engine. Do not use in newly written code. *)
+
 open Names
 open Term
 open Evd

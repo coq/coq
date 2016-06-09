@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Global proof state. A quite redundant wrapper on {!Proof_global}. *)
+
 open Loc
 open Names
 open Term

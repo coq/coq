@@ -6,6 +6,20 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This file defines a lot of different notions of names used pervasively in
+    the kernel as well as in other places. The essential datatypes exported by
+    this API are:
+
+    - Id.t is the type of identifiers, that is morally a subset of strings which
+      only contains Unicode characters of the Letter kind (and a few more).
+    - Name.t is an ad-hoc variant of Id.t option allowing to handle optionally
+      named objects.
+    - DirPath.t represents generic paths as sequences of identifiers.
+    - Label.t is an equivalent of Id.t made distinct for semantical purposes.
+    - ModPath.t are module paths.
+    - KerName.t are absolute names of objects in Coq.
+*)
+
 open Util
 
 (** {6 Identifiers } *)

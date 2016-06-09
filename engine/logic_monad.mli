@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** This file defines the low-level monadic operations used by the
+(** This file implements the low-level monadic operations used by the
     tactic monad. The monad is divided into two layers: a non-logical
     layer which consists in operations which will not (or cannot) be
     backtracked in case of failure (input/output or persistent state)

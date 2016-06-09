@@ -8,7 +8,9 @@
 
 open Proofview.Notations
 
-(** Potentially focussing tactics *)
+(** This module defines potentially focussing tactics. They are used by Ltac to
+    emulate the historical behaviour of always-focussed tactics while still
+    allowing to remain global when the goal is not needed. *)
 
 type +'a focus
 

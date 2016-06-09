@@ -11,7 +11,7 @@ open Term
 open Evd
 open Environ
 
-(** {5 This modules provides useful functions for unification modulo evars } *)
+(** This module provides useful higher-level functions for evar manipulation. *)
 
 (** {6 Metas} *)
 

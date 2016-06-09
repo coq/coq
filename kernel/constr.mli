@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This file defines the most important datatype of Coq, namely kernel terms,
+    as well as a handful of generic manipulation functions. *)
+
 open Names
 
 (** {6 Value under universe substitution } *)

@@ -6,6 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** The primitive refine tactic used to fill the holes in partial proofs. This
+    is the recommanded way to write tactics when the proof term is easy to
+    write down. Note that this is not the user-level refine tactic defined
+    in Ltac which is actually based on the one below. *)
+
 open Proofview
 
 (** {6 The refine tactic} *)

@@ -6,7 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Interpretation functions for generic arguments. *)
+(** Interpretation functions for generic arguments and interpreted Ltac
+    values. *)
 
 open Names
 open Genarg

@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This files implements typeclasses eauto *)
+
 open Names
 open Constr
 open Tacmach

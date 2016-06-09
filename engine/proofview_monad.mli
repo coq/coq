@@ -7,7 +7,8 @@
 (************************************************************************)
 
 (** This file defines the datatypes used as internal states by the
-    tactic monad, and specialises the [Logic_monad] to these type. *)
+    tactic monad, and specialises the [Logic_monad] to these types. It should
+    not be used directly. Consider using {!Proofview} instead. *)
 
 (** {6 Traces} *)
 

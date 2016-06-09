@@ -6,14 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This files implements auto and related automation tactics *)
+
 open Names
 open Term
 open Clenv
 open Pattern
 open Decl_kinds
 open Hints
-
-(** Auto and related automation tactics *)
 
 val priority : ('a * full_hint) list -> ('a * full_hint) list
 

@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This file defines clausenv, which is a deprecated way to handle open terms
+    in the proof engine. Most of the API here is legacy except for the
+    evar-based clauses. *)
+
 open Names
 open Term
 open Environ

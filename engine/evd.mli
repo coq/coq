@@ -12,7 +12,10 @@ open Names
 open Term
 open Environ
 
-(** {5 Existential variables and unification states}
+(** This file defines the pervasive unification state used everywhere in Coq
+    tactic engine. It is very low-level and most of the functions exported here
+    are irrelevant to the standard API user. Consider using {!Evarutil},
+    {!Sigma} or {!Proofview} instead.
 
     A unification state (of type [evar_map]) is primarily a finite mapping
     from existential variables to records containing the type of the evar
@@ -22,6 +25,8 @@ open Environ
 
     It also contains conversion constraints, debugging information and
     information about meta variables. *)
+
+(** {5 Existential variables and unification states} *)
 
 (** {6 Evars} *)
 
@@ -342,7 +347,6 @@ val on_sig : 'a sigma -> (evar_map -> evar_map * 'b) -> 'a sigma * 'b
 
 module MonadR : Monad.S with type +'a t = evar_map -> evar_map * 'a
 module Monad  : Monad.S with type +'a t = evar_map -> 'a * evar_map
-
 
 (** {5 Meta machinery}
 

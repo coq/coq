@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This file defines various utilities for term manipulation that are not
+    needed in the kernel. *)
+
 open Pp
 open Names
 open Term

@@ -6,7 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* This module implements the abstract interface to goals *)
+(** This module implements the abstract interface to goals. Most of the code
+    here is useless and should be eventually removed. Consider using
+    {!Proofview.Goal} instead. *)
 
 type goal = Evar.t
 

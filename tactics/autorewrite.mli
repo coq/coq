@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This files implements the autorewrite tactic. *)
+
 open Term
 open Tacexpr
 open Equality

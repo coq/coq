@@ -6,7 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Universe unification states *)
+(** This file defines universe unification states which are part of evarmaps.
+    Most of the API below is reexported in {!Evd}. Consider using higher-level
+    primitives when needed. *)
 
 open Names
 

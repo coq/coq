@@ -12,7 +12,9 @@ open Constr
 (** Monotonous state enforced by typing.
 
     This module allows to constrain uses of evarmaps in a monotonous fashion,
-    and in particular statically suppress evar leaks and the like.
+    and in particular statically suppress evar leaks and the like. To this
+    ends, it defines a type of indexed evarmaps whose phantom typing ensures
+    monotonous use.
 *)
 
 (** {5 Stages} *)
@@ -32,7 +34,7 @@ val (+>) : ('a, 'b) le -> ('b, 'c) le -> ('a, 'c) le
 (** {5 Monotonous evarmaps} *)
 
 type 'r t
-(** Stage-indexed evarmaps.  *)
+(** Stage-indexed evarmaps. This is just a plain evarmap with a phantom type. *)
 
 type ('a, 'r) sigma = Sigma : 'a * 's t * ('r, 's) le -> ('a, 'r) sigma
 (** Return values at a later stage *)

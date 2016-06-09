@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Generic arguments used by the extension mechanisms of several Coq ASTs. *)
+
 (** The route of a generic argument, from parsing to evaluation.
 In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.
 
@@ -34,36 +36,10 @@ In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.
 effective use
 {% \end{%}verbatim{% }%}
 
-To distinguish between the uninterpreted (raw), globalized and
+To distinguish between the uninterpreted, globalized and
 interpreted worlds, we annotate the type [generic_argument] by a
-phantom argument which is either [constr_expr], [glob_constr] or
-[constr].
+phantom argument.
 
-Transformation for each type :
-{% \begin{%}verbatim{% }%}
-tag                            raw open type            cooked closed type
-
-BoolArgType                    bool                      bool
-IntArgType                     int                       int
-IntOrVarArgType                int or_var                int
-StringArgType                  string (parsed w/ "")     string
-PreIdentArgType                string (parsed w/o "")    (vernac only)
-IdentArgType true              identifier                identifier
-IdentArgType false             identifier (pattern_ident) identifier
-IntroPatternArgType            intro_pattern_expr        intro_pattern_expr
-VarArgType                     identifier located        identifier
-RefArgType                     reference                 global_reference
-QuantHypArgType                quantified_hypothesis     quantified_hypothesis
-ConstrArgType                  constr_expr               constr
-ConstrMayEvalArgType           constr_expr may_eval      constr
-OpenConstrArgType              open_constr_expr          open_constr
-ConstrWithBindingsArgType      constr_expr with_bindings constr with_bindings
-BindingsArgType                constr_expr bindings      constr bindings
-List0ArgType of argument_type
-List1ArgType of argument_type
-OptArgType of argument_type
-ExtraArgType of string         '_a                      '_b
-{% \end{%}verbatim{% }%}
 *)
 
 (** {5 Generic types} *)
@@ -77,14 +53,14 @@ sig
   val name : string -> any option
 end
 
+(** Generic types. The first parameter is the OCaml lowest level, the second one
+    is the globalized level, and third one the internalized level. *)
 type (_, _, _) genarg_type =
 | ExtraArg : ('a, 'b, 'c) ArgT.tag -> ('a, 'b, 'c) genarg_type
 | ListArg : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
 | OptArg : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
 | PairArg : ('a1, 'b1, 'c1) genarg_type * ('a2, 'b2, 'c2) genarg_type ->
   ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
-(** Generic types. ['raw] is the OCaml lowest level, ['glob] is the globalized
-    one, and ['top] the internalized one. *)
 
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision when the three types agree. *)
@@ -99,21 +75,18 @@ val create_arg : string -> ('raw, 'glob, 'top) genarg_type
 (** {5 Specialized types} *)
 
 (** All of [rlevel], [glevel] and [tlevel] must be non convertible
-   to ensure the injectivity of the type inference from type
-   ['co generic_argument] to [('a,'co) abstract_argument_type];
-   this guarantees that, for 'co fixed, the type of
-   out_gen is monomorphic over 'a, hence type-safe
-*)
+    to ensure the injectivity of the GADT type inference. *)
 
 type rlevel = [ `rlevel ]
 type glevel = [ `glevel ]
 type tlevel = [ `tlevel ]
 
+(** Generic types at a fixed level. The first parameter embeds the OCaml type
+    and the second one the level. *)
 type (_, _) abstract_argument_type =
 | Rawwit : ('a, 'b, 'c) genarg_type -> ('a, rlevel) abstract_argument_type
 | Glbwit : ('a, 'b, 'c) genarg_type -> ('b, glevel) abstract_argument_type
 | Topwit : ('a, 'b, 'c) genarg_type -> ('c, tlevel) abstract_argument_type
-(** Type at level ['co] represented by an OCaml value of type ['a]. *)
 
 type 'a raw_abstract_argument_type = ('a, rlevel) abstract_argument_type
 (** Specialized type at raw level. *)
@@ -207,9 +180,11 @@ sig
 
 end
 
-(** {5 Basic generic type constructors} *)
+(** {5 Compatibility layer}
 
-(** {6 Parameterized types} *)
+The functions below are aliases for generic_type constructors.
+
+*)
 
 val wit_list : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
 val wit_opt : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type

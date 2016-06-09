@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This file features facilities to generate fresh names. *)
+
 open Names
 open Term
 open Environ
