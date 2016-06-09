@@ -3862,25 +3862,33 @@ is to set the cut expression to $c | e$, the initial cut expression
 being \texttt{emp}.
 
 
-\item \texttt{Mode} {\tt (+ | -)}$^*$ {\qualid}
+\item \texttt{Mode} {\tt (+ | ! | -)}$^*$ {\qualid}
 \label{HintMode}
 \comindex{Hint Mode}
 
 This sets an optional mode of use of the identifier {\qualid}.  When
 proof-search faces a goal that ends in an application of {\qualid} to
 arguments {\tt \term$_1$ \mbox{\dots} \term$_n$}, the mode tells if the
-hints associated to qualid can be applied or not. A mode specification 
-is a list of $n$ {\tt +} or {\tt -} items that specify if an argument is
-to be treated as an input {\tt +} or an output {\tt -} of the
-identifier. For a mode to match a list of arguments, input terms \emph{must
-not} contain existential variables, while outputs can be any term.
-Multiple modes can be declared for a single identifier, in that case 
-only one mode needs to match the arguments for the hints to be applied.
+hints associated to qualid can be applied or not. A mode specification
+is a list of $n$ {\tt +}, {\tt !} or {\tt -} items that specify if an
+argument of the identifier is to be treated as an input ({\tt +}), if
+its head only is an input ({\tt !}) or an output ({\tt -}) of the
+identifier. For a mode to match a list of arguments, input terms and
+input heads \emph{must not} contain existential variables or be
+existential variables respectively, while outputs can be any
+term. Multiple modes can be declared for a single identifier, in that
+case only one mode needs to match the arguments for the hints to be
+applied.
+
+The head of a term is understood here as the applicative head, or the
+match or projection scrutinee's head, recursively, casts being ignored.
 
 {\tt Hint Mode} is especially useful for typeclasses, when one does not
 want to support default instances and avoid ambiguity in
 general. Setting a parameter of a class as an input forces proof-search
-to be driven by that index of the class.
+to be driven by that index of the class, with {\tt !} giving more
+flexibility by allowing existentials to still appear deeper in the index
+but not at its head.
 
 \end{itemize}
 
