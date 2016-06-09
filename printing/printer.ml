@@ -471,7 +471,38 @@ let default_pr_subgoal n sigma =
 
 let pr_internal_existential_key ev = str (string_of_existential ev)
 
-let emacs_print_dependent_evars sigma seeds =
+let print_evar_constraints gl sigma cstrs =
+  let pr_env =
+    match gl with
+    | None -> fun e' -> pr_context_of e' sigma
+    | Some g ->
+       let env = Goal.V82.env sigma g in fun e' ->
+       begin
+         if Context.Named.equal (named_context env) (named_context e') then
+           if Context.Rel.equal (rel_context env) (rel_context e') then mt ()
+           else pr_rel_context_of e' sigma ++ str " |-" ++ spc ()
+         else pr_context_of e' sigma ++ str " |-" ++ spc ()
+       end
+  in
+  let pr_evconstr (pbty,env,t1,t2) =
+    let t1 = Evarutil.nf_evar sigma t1
+    and t2 = Evarutil.nf_evar sigma t2 in
+    str" " ++
+      hov 2 (pr_env env ++ pr_lconstr_env env sigma t1 ++ spc () ++
+             str (match pbty with
+                  | Reduction.CONV -> "=="
+                  | Reduction.CUMUL -> "<=") ++
+             spc () ++ pr_lconstr_env env sigma t2)
+  in
+  prlist_with_sep fnl pr_evconstr cstrs
+
+let print_dependent_evars gl sigma seeds =
+  let constraints =
+    let _, cstrs = Evd.extract_all_conv_pbs sigma in
+    if List.is_empty cstrs then mt ()
+    else fnl () ++ str (String.plural (List.length cstrs) "unification constraint")
+         ++ str":" ++ fnl () ++ hov 0 (print_evar_constraints gl sigma cstrs)
+  in
   let evars () =
     let evars = Evarutil.gather_dependent_evars sigma seeds in
     let evars =
@@ -489,7 +520,7 @@ let emacs_print_dependent_evars sigma seeds =
     fnl () ++
     str "(dependent evars:" ++ evars ++ str ")" ++ fnl ()
   in
-  delayed_emacs_cmd evars
+  constraints ++ delayed_emacs_cmd evars
 
 (* Print open subgoals. Checks for uninstantiated existential variables *)
 (* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
@@ -557,12 +588,12 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
 	let exl = Evarutil.non_instantiated sigma in
 	if Evar.Map.is_empty exl then
 	  (str"No more subgoals."
-	   ++ emacs_print_dependent_evars sigma seeds)
+	   ++ print_dependent_evars None sigma seeds)
 	else
 	  let pei = pr_evars_int sigma 1 exl in
 	  (str "No more subgoals, but there are non-instantiated existential variables:"
 	   ++ fnl () ++ (hov 0 pei)
-	   ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
+	   ++ print_dependent_evars None sigma seeds ++ fnl () ++
            str "You can use Grab Existential Variables.")
       end
   | [g] when not !Flags.print_emacs && pr_first ->
@@ -570,7 +601,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
       v 0 (
 	str "1" ++ focused_if_needed ++ str"subgoal" ++ print_extra
         ++ pr_goal_tag g ++ pr_goal_name sigma g ++ cut () ++ pg
-	++ emacs_print_dependent_evars sigma seeds
+	++ print_dependent_evars (Some g) sigma seeds
       )
   | g1::rest ->
       let goals = print_multiple_goals g1 rest in
@@ -582,7 +613,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
         ++ pr_goal_tag g1
         ++ pr_goal_name sigma g1 ++ cut ()
 	++ goals
-	++ emacs_print_dependent_evars sigma seeds
+	++ print_dependent_evars (Some g1) sigma seeds
       )
 
 (**********************************************************************)
