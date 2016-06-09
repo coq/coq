@@ -50,6 +50,8 @@ module type Pp = sig
   val pr_alias : (Val.t -> std_ppcmds) ->
     int -> Names.KerName.t -> Val.t list -> std_ppcmds
 
+  val pr_alias_key : Names.KerName.t -> std_ppcmds
+
   val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
 
   val pr_raw_tactic : raw_tactic_expr -> std_ppcmds

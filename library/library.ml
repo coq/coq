@@ -35,7 +35,7 @@ module Delayed :
 sig
 
 type 'a delayed
-val in_delayed : string -> in_channel -> 'a delayed
+val in_delayed : string -> in_channel -> 'a delayed * Digest.t
 val fetch_delayed : 'a delayed -> 'a
 
 end =
@@ -50,7 +50,7 @@ type 'a delayed = {
 let in_delayed f ch =
   let pos = pos_in ch in
   let _, digest = System.skip_in_segment f ch in
-  { del_file = f; del_digest = digest; del_off = pos; }
+  ({ del_file = f; del_digest = digest; del_off = pos; }, digest)
 
 (** Fetching a table of opaque terms at position [pos] in file [f],
     expecting to find first a copy of [digest]. *)
@@ -427,23 +427,23 @@ let mk_summary m = {
 let intern_from_file f =
   let ch = raw_intern_library f in
   let (lsd : seg_sum), _, digest_lsd = System.marshal_in_segment f ch in
-  let (lmd : seg_lib delayed) = in_delayed f ch in
+  let ((lmd : seg_lib delayed), digest_lmd) = in_delayed f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
   let _ = System.skip_in_segment f ch in
   let _ = System.skip_in_segment f ch in
-  let (del_opaque : seg_proofs delayed) = in_delayed f ch in
+  let ((del_opaque : seg_proofs delayed),_) = in_delayed f ch in
   close_in ch;
   register_library_filename lsd.md_name f;
   add_opaque_table lsd.md_name (ToFetch del_opaque);
   let open Safe_typing in
   match univs with
-  | None -> mk_library lsd lmd (Dvo_or_vi digest_lsd) Univ.ContextSet.empty
+  | None -> mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
   | Some (utab,uall,true) ->
       add_univ_table lsd.md_name (Fetched utab);
-      mk_library lsd lmd (Dvivo (digest_lsd,digest_u)) uall
+      mk_library lsd lmd (Dvivo (digest_lmd,digest_u)) uall
   | Some (utab,_,false) ->
       add_univ_table lsd.md_name (Fetched utab);
-      mk_library lsd lmd (Dvo_or_vi digest_lsd) Univ.ContextSet.empty
+      mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
 
 module DPMap = Map.Make(DirPath)
 

@@ -366,7 +366,6 @@ module Make
       in
       str "<" ++ name ++ str ">" ++ args
 
-
   let pr_alias_key key =
     try
       let prods = (KNmap.find key !prnotation_tab).pptac_prods in
@@ -383,7 +382,7 @@ module Make
       str (String.concat " " (pr prods))
     with Not_found ->
       KerName.print key
-    
+
   let pr_alias_gen pr_gen lev key l =
     try
       let pp = KNmap.find key !prnotation_tab in

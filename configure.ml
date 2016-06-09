@@ -513,43 +513,32 @@ exception NoCamlp5
 
 let check_camlp5 testcma = match !Prefs.camlp5dir with
   | Some dir ->
-    if Sys.file_exists (dir/testcma) then dir
+    if Sys.file_exists (dir/testcma) then
+      let camlp5o =
+        try which_camlpX "camlp5o"
+        with Not_found -> die "Error: cannot find Camlp5 binaries in path.\n" in
+      dir, camlp5o
     else
       let msg =
         sprintf "Cannot find camlp5 libraries in '%s' (%s not found)."
           dir testcma
       in die msg
   | None ->
-    let dir,_ = tryrun "camlp5" ["-where"] in
-    let dir2 =
-      if Sys.file_exists (camllib/"camlp5"/testcma) then
-        camllib/"camlp5"
-      else if Sys.file_exists (camllib/"site-lib"/"camlp5"/testcma) then
-        camllib/"site-lib"/"camlp5"
-      else ""
-    in
-    (* if the two values are different then camlp5 has been relocated
-     * and will not be able to find its own files, so we prefer the
-     * path where the files actually do exist *)
-    if dir2 = "" then
-      if dir = "" then
-        let () = printf "No Camlp5 installation found." in
-        let () = printf "Looking for Camlp4 instead...\n" in
-        raise NoCamlp5
-      else dir
-    else dir2
+    try
+      let camlp5o = which_camlpX "camlp5o" in
+      let dir,_ = tryrun camlp5o ["-where"] in
+      dir, camlp5o
+    with Not_found ->
+      let () = printf "No Camlp5 installation found." in
+      let () = printf "Looking for Camlp4 instead...\n" in
+      raise NoCamlp5
 
-let check_camlp5_version () =
-  try
-    let camlp5o = which_camlpX "camlp5o" in
-    let version_line, _ = run ~err:StdOut camlp5o ["-v"] in
-    let version = List.nth (string_split ' ' version_line) 2 in
-    match string_split '.' version with
-    | major::minor::_ when s2i major > 5 || (s2i major, s2i minor) >= (5,1) ->
-      printf "You have Camlp5 %s. Good!\n" version; camlp5o, version
-    | _ -> failwith "bad version"
-  with
-  | Not_found -> die "Error: cannot find Camlp5 binaries in path.\n"
+let check_camlp5_version camlp5o =
+  let version_line, _ = run ~err:StdOut camlp5o ["-v"] in
+  let version = List.nth (string_split ' ' version_line) 2 in
+  match string_split '.' version with
+  | major::minor::_ when s2i major > 5 || (s2i major, s2i minor) >= (5,1) ->
+    printf "You have Camlp5 %s. Good!\n" version; version
   | _ -> die "Error: unsupported Camlp5 (version < 5.01 or unrecognized).\n"
 
 let check_caml_version_for_camlp4 () =
@@ -563,8 +552,8 @@ let config_camlpX () =
   try
     if not !Prefs.usecamlp5 then raise NoCamlp5;
     let camlp5mod = "gramlib" in
-    let camlp5libdir = check_camlp5 (camlp5mod^".cma") in
-    let camlp5o, camlp5_version = check_camlp5_version () in
+    let camlp5libdir, camlp5o = check_camlp5 (camlp5mod^".cma") in
+    let camlp5_version = check_camlp5_version camlp5o in
     "camlp5", camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod, camlp5_version
   with NoCamlp5 ->
     (* We now try to use Camlp4, either by explicit choice or
