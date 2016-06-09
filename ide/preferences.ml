@@ -144,6 +144,18 @@ object
   method into s = Some s
 end
 
+let string_pair_list (sep : char) : (string * string) list repr =
+object
+  val sep' = String.make 1 sep
+  method from = CList.map (fun (s1, s2) -> CString.concat sep' [s1; s2])
+  method into l =
+    try
+      Some (CList.map (fun s ->
+        let split = CString.split sep s in
+        CList.nth split 0, CList.nth split 1) l)
+    with Failure _ -> None
+end
+
 let bool : bool repr =
 object
   method from s = [string_of_bool s]
@@ -303,10 +315,14 @@ let modifier_for_tactics =
 let modifier_for_display =
   new preference ~name:["modifier_for_display"] ~init:"<Alt><Shift>" ~repr:Repr.(string)
 
+let modifier_for_queries =
+  new preference ~name:["modifier_for_queries"] ~init:"<Control><Shift>" ~repr:Repr.(string)
+
 let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/"
 let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/"
 let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/"
 let _ = attach_modifiers modifier_for_display "<Actions>/View/"
+let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/"
 
 let modifiers_valid =
   new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
@@ -506,6 +522,9 @@ let highlight_current_line =
 
 let nanoPG =
   new preference ~name:["nanoPG"] ~init:false ~repr:Repr.(bool)
+
+let user_queries =
+  new preference ~name:["user_queries"] ~init:[] ~repr:Repr.(string_pair_list '$')
 
 class tag_button (box : Gtk.box Gtk.obj) =
 object (self)
@@ -837,6 +856,9 @@ let configure ?(apply=(fun () -> ())) () =
   let modifier_for_display =
     pmodifiers "Modifiers for View Menu" modifier_for_display
   in
+  let modifier_for_queries =
+    pmodifiers "Modifiers for Queries Menu" modifier_for_queries
+  in
   let modifiers_valid =
     pmodifiers ~all:true "Allowed modifiers" modifiers_valid
   in
@@ -908,6 +930,36 @@ let configure ?(apply=(fun () -> ())) () =
   let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in
 
+  let add_user_query () =
+    let input_string l v =
+      match GToolbox.input_string ~title:l v with
+      | None -> ""
+      | Some s -> s
+    in
+    let q = input_string "User query" "Your query" in
+    let k = input_string "Shortcut key" "Shortcut (a single letter)" in
+    let q = CString.map (fun c -> if c = '$' then ' ' else c) q in
+    (* Anything that is not a simple letter will be ignored. *)
+    let k =
+      if Int.equal (CString.length k) 1 && Util.is_letter k.[0] then k
+      else "" in
+    let k = CString.uppercase k in
+      [q, k]
+  in
+
+  let user_queries =
+    list
+      ~f:user_queries#set
+      (* Disallow same query, key or empty query. *)
+      ~eq:(fun (q1, k1) (q2, k2) -> k1 = k2 || q1 = "" || q2 = "" || q1 = q2)
+      ~add:add_user_query
+      ~titles:["User query"; "Shortcut key"]
+      "User queries"
+      (fun (q, s) -> [q; s])
+      user_queries#get
+
+  in
+
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
    (shame on Benjamin) *)
   let cmds =
@@ -937,9 +989,10 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_display; modifier_for_navigation]);
+        modifier_for_templates; modifier_for_display; modifier_for_navigation;
+        modifier_for_queries; user_queries]);
      Section("Misc", Some `ADD,
-	     misc)]
+       misc)]
   in
 (*
   Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string current.text_font);

@@ -677,12 +677,18 @@ let searchabout sn =
 
 let searchabout () = on_current_term searchabout
 
+let doquery query sn =
+  sn.messages#clear;
+  Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
+
 let otherquery command sn =
-  let word = get_current_word sn in
-  if word <> "" then
-    let query = command ^ " " ^ word ^ "." in
-    sn.messages#clear;
-    Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
+  Option.iter (fun query -> doquery (query ^ ".") sn)
+    begin try
+      let i = CString.string_index_from command 0 "..." in
+      let word = get_current_word sn in
+      if word = "" then None
+      else Some (CString.sub command 0 i ^ " " ^ word)
+    with Not_found -> Some command end
 
 let otherquery command = cb_on_current_term (otherquery command)
 
@@ -859,12 +865,12 @@ let toggle_items menu_name l =
   in
   List.iter f l
 
+let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
+
 (** Create alphabetical menu items with elements in sub-items.
     [l] is a list of lists, one per initial letter *)
 
 let alpha_items menu_name item_name l =
-  let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
-  in
   let mk_item text =
     let text' =
       let last = String.length text - 1 in
@@ -910,6 +916,16 @@ let template_item (text, offset, len, key) =
     end
   in
   item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
+
+(** Create menu items for pairs (query, shortcut key). *)
+let user_queries_items menu_name item_name l =
+  let mk_item (query, key) =
+    let callback = Query.query query in
+    let accel = if not (CString.is_empty key) then
+      Some (modifier_for_queries#get^key) else None in
+    item (item_name^" "^(no_under query)) ~label:query ?accel ~callback menu_name
+  in
+  List.iter mk_item l
 
 let emit_to_focus window sgn =
   let focussed_widget = GtkWindow.Window.get_focus window#as_window in
@@ -1100,16 +1116,22 @@ let build_ui () =
   ];
   alpha_items templates_menu "Template" Coq_commands.commands;
 
-  let qitem s accel = item s ~label:("_"^s) ?accel ~callback:(Query.query s) in
+  let qitem s sc ?(dots = true) =
+    let query = if dots then s ^ "..." else s in
+    item s ~label:("_"^s)
+      ~accel:(modifier_for_queries#get^sc)
+      ~callback:(Query.query query)
+  in
   menu queries_menu [
     item "Queries" ~label:"_Queries";
-    qitem "Search" (Some "<Ctrl><Shift>K");
-    qitem "Check" (Some "<Ctrl><Shift>C");
-    qitem "Print" (Some "<Ctrl><Shift>P");
-    qitem "About" (Some "<Ctrl><Shift>A");
-    qitem "Locate" (Some "<Ctrl><Shift>L");
-    qitem "Print Assumptions" (Some "<Ctrl><Shift>N");
+    qitem "Search" "K" ~dots:false;
+    qitem "Check" "C";
+    qitem "Print" "P";
+    qitem "About" "A";
+    qitem "Locate" "L";
+    qitem "Print Assumptions" "N";
   ];
+  user_queries_items queries_menu "User-Query" user_queries#get;
 
   menu tools_menu [
     item "Tools" ~label:"_Tools";

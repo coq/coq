@@ -65,6 +65,7 @@ val modifier_for_navigation : string preference
 val modifier_for_templates : string preference
 val modifier_for_tactics : string preference
 val modifier_for_display : string preference
+val modifier_for_queries : string preference
 val modifiers_valid : string preference
 val cmd_browse : string preference
 val cmd_editor : string preference
@@ -95,6 +96,7 @@ val spaces_instead_of_tabs : bool preference
 val tab_length : int preference
 val highlight_current_line : bool preference
 val nanoPG : bool preference
+val user_queries : (string * string) list preference
 
 val save_pref : unit -> unit
 val load_pref : unit -> unit
