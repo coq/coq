@@ -82,6 +82,8 @@ Bugfixes
   typechecked using only those universes (after minimization of the other,
   flexible universes), or raise an error (fixed scripts can be made forward
   compatible).
+- #4726: treat user-provided sorts of universe polymorphic records as rigid
+  (i.e. non-minimizable).
 
 Changes from V8.5 to V8.5pl1
 ============================
