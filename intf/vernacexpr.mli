@@ -118,12 +118,17 @@ type reference_or_constr =
   | HintsReference of reference
   | HintsConstr of constr_expr
 
+type hint_mode =
+  | ModeInput (* No evars *)
+  | ModeNoHeadEvar (* No evar at the head *)
+  | ModeOutput (* Anything *)
+
 type hints_expr =
   | HintsResolve of (int option * bool * reference_or_constr) list
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
-  | HintsMode of reference * bool list
+  | HintsMode of reference * hint_mode list
   | HintsConstructors of reference list
   | HintsExtern of int * constr_expr option * raw_tactic_expr
 

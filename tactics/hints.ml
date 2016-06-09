@@ -189,7 +189,7 @@ type search_entry = {
   sentry_nopat : stored_data list;
   sentry_pat : stored_data list;
   sentry_bnet : Bounded_net.t;
-  sentry_mode : bool array list;
+  sentry_mode : hint_mode array list;
 }
 
 let empty_se = {
@@ -442,9 +442,17 @@ module Hint_db = struct
  
   let realize_tac (id,tac) = tac
 
+  let match_mode m arg =
+    match m with
+    | ModeInput -> not (occur_existential arg)
+    | ModeNoHeadEvar ->
+       Evarutil.(try ignore(head_evar arg); false
+                 with NoHeadEvar -> true)
+    | ModeOutput -> true
+                               
   let matches_mode args mode =
-    Array.length args == Array.length mode &&
-      Array.for_all2 (fun arg m -> not (m && occur_existential arg)) args mode
+    Array.length mode == Array.length args &&
+      Array.for_all2 match_mode mode args
       
   let matches_modes args modes =
     if List.is_empty modes then true
@@ -872,7 +880,7 @@ type hint_action =
   | AddHints of hint_entry list
   | RemoveHints of global_reference list
   | AddCut of hints_path
-  | AddMode of global_reference * bool array
+  | AddMode of global_reference * hint_mode array
 
 let add_cut dbname path =
   let db = get_db dbname in
@@ -1078,7 +1086,7 @@ type hints_entry =
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
-  | HintsModeEntry of global_reference * bool list
+  | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
       int * (patvar list * constr_pattern) option * glob_tactic_expr
 
@@ -1324,9 +1332,14 @@ let pr_applicable_hint () =
   | g::_ ->
     pr_hint_term (Goal.V82.concl glss.Evd.sigma g)
 
+let pp_hint_mode = function
+  | ModeInput -> str"+"
+  | ModeNoHeadEvar -> str"!"
+  | ModeOutput -> str"-"
+
 (* displays the whole hint database db *)
 let pr_hint_db db =
-  let pr_mode = prvect_with_sep spc (fun x -> if x then str"+" else str"-") in
+  let pr_mode = prvect_with_sep spc pp_hint_mode in
   let pr_modes l = 
     if List.is_empty l then mt ()
     else str" (modes " ++ prlist_with_sep pr_comma pr_mode l ++ str")"

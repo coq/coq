@@ -161,6 +161,11 @@ module Make
     | HintsReference r -> pr_reference r
     | HintsConstr c -> pr_c c
 
+  let pr_hint_mode = function
+    | ModeInput -> str"+"
+    | ModeNoHeadEvar -> str"!"
+    | ModeOutput -> str"-"
+
   let pr_hints db h pr_c pr_pat =
     let opth = pr_opt_hintbases db  in
     let pph =
@@ -182,8 +187,8 @@ module Make
         | HintsMode (m, l) ->
           keyword "Mode"
           ++ spc ()
-          ++ pr_reference m ++ spc() ++ prlist_with_sep spc
-            (fun b -> if b then str"+" else str"-") l
+          ++ pr_reference m ++ spc() ++
+            prlist_with_sep spc pr_hint_mode l
         | HintsConstructors c ->
           keyword "Constructors"
           ++ spc() ++ prlist_with_sep spc pr_reference c
