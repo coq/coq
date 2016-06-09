@@ -958,7 +958,6 @@ TACTIC EXTEND revgoals
 | [ "revgoals" ] -> [ Proofview.revgoals ]
 END
 
-
 type cmp =
   | Eq
   | Lt | Le

@@ -18,6 +18,7 @@ Goal exists R, @Refl nat R.
   Set Typeclasses Debug.
   (* Fail solve [unshelve eauto with foo]. *)
   Set Typeclasses Debug Verbosity 1.
+  Test Typeclasses Depth.
   solve [typeclasses eauto with foo].
 Qed.
 
@@ -117,15 +118,14 @@ Module IterativeDeepening.
   Goal C -> A.
     intros.
     Set Typeclasses Debug.
-    Fail Timeout 1 fulleauto.
+    Fail Timeout 1 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
-    Fail fulleauto 1.
-    fulleauto 2.
+    Fail typeclasses eauto 1.
+    typeclasses eauto 2.
     Undo.
     Unset Typeclasses Iterative Deepening.
     Fail Timeout 1 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
-    Typeclasses eauto := 3.
     typeclasses eauto.
   Qed.
 

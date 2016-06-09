@@ -16,10 +16,6 @@ open Constrarg
 
 DECLARE PLUGIN "g_class"
 
-TACTIC EXTEND progress_evars
-  [ "progress_evars" tactic(t) ] -> [ progress_evars (Tacinterp.tactic_of_value ist t) ]
-END
-
 (** Options: depth, debug and transparency settings. *)
 
 let set_transparency cl b =
@@ -65,10 +61,12 @@ VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
    ]
 END
 
+(** Compatibility: typeclasses eauto has 8.5 and 8.6 modes *)
 TACTIC EXTEND typeclasses_eauto
-| [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ typeclasses_eauto l ]
-| [ "typeclasses" "eauto" ] -> [
-    typeclasses_eauto ~only_classes:true [Hints.typeclasses_db] ]
+ | [ "typeclasses" "eauto" depth(d) "with" ne_preident_list(l) ] ->
+    [ typeclasses_eauto d l ]
+ | [ "typeclasses" "eauto" depth(d) ] -> [
+     typeclasses_eauto ~only_classes:true ~depth:d [Hints.typeclasses_db] ]
 END
 
 TACTIC EXTEND head_of_constr
@@ -87,23 +85,30 @@ TACTIC EXTEND autoapply
   [ "autoapply" constr(c) "using" preident(i) ] -> [ Proofview.V82.tactic (autoapply c i) ]
 END
 
-open G_auto
-       
-TACTIC EXTEND fulleauto
-| ["fulleauto" depth(depth) "with" ne_preident_list(dbnames) ] -> [
-    let dbs = match dbnames with [] -> ["typeclass_instances"]
-                               | l -> l in
-    let dbs = List.map Hints.searchtable_map dbs in
-    Class_tactics.new_eauto_tac false ?limit:depth true dbs
-  ]
-| ["fulleauto" depth(depth) ] -> [
-    let dbs = ["typeclass_instances"] in
-    let dbs = List.map Hints.searchtable_map dbs in
-    Class_tactics.new_eauto_tac false ?limit:depth true dbs
-  ]
-| ["fulleauto" ] -> [
-    let dbs = ["typeclass_instances"] in
-    let dbs = List.map Hints.searchtable_map dbs in
-    Class_tactics.new_eauto_tac false true dbs
-  ]
+(** TODO: DEPRECATE *)
+(* A progress test that allows to see if the evars have changed *)
+open Term
+open Proofview.Goal
+open Proofview.Notations
+
+let rec eq_constr_mod_evars x y =
+  match kind_of_term x, kind_of_term y with
+  | Evar (e1, l1), Evar (e2, l2) when not (Evar.equal e1 e2) -> true
+  | _, _ -> compare_constr eq_constr_mod_evars x y
+
+let progress_evars t =
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    let check =
+      Proofview.Goal.nf_enter { enter = begin fun gl' ->
+        let newconcl = Proofview.Goal.concl gl' in
+        if eq_constr_mod_evars concl newconcl
+        then Tacticals.New.tclFAIL 0 (Pp.str"No progress made (modulo evars)")
+        else Proofview.tclUNIT ()
+      end }
+    in t <*> check
+  end }
+
+TACTIC EXTEND progress_evars
+  [ "progress_evars" tactic(t) ] -> [ progress_evars (Tacinterp.tactic_of_value ist t) ]
 END

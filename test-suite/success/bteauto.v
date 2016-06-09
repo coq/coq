@@ -38,3 +38,69 @@ Goal exists n, n = 42.
   (* Does backtrack between individual goals *)
   all:(typeclasses eauto).
 Qed.
+
+Fail Timeout 1 Check prf.
+
+Hint Mode SomeProp + + : typeclass_instances.
+Check prf.
+Check (fun H : SomeProp plus => _ : SomeProp (flip plus)).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(** Iterative deepening / breadth-first search *)
+
+Module IterativeDeepening.
+
+  Class A.
+  Class B.
+  Class C.
+
+  Instance: B -> A | 0.
+  Instance: C -> A | 0.
+  Instance: C -> B -> A | 0.
+  Instance: A -> A | 0.
+  
+  Goal C -> A.
+    intros.
+    Set Typeclasses Debug.
+    Fail Timeout 1 typeclasses eauto.
+    Set Typeclasses Iterative Deepening.
+    Fail typeclasses eauto 1.
+    typeclasses eauto 2.
+    Undo.
+    Unset Typeclasses Iterative Deepening.
+    Fail Timeout 1 typeclasses eauto.
+    Set Typeclasses Iterative Deepening.
+    Typeclasses eauto := debug 3.
+    typeclasses eauto.
+  Qed.
+
+End IterativeDeepening.

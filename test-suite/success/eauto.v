@@ -16,30 +16,30 @@ Instance bn1: B nat 1.
 
 Goal A nat.
 Proof.
-  fulleauto.
+  typeclasses eauto.
 Qed.
 
 Goal B nat 2.
 Proof.
-  Fail fulleauto.
+  Fail typeclasses eauto.
 Abort.
 
 Goal exists T : Type, A T.
 Proof.
-  eexists. fulleauto.
+  eexists. typeclasses eauto.
 Defined.
 
 Hint Extern 0 (_ /\ _) => constructor : typeclass_instances.
 
 Goal exists (T : Type) (t : T), A T /\ B T t.
 Proof.
-  eexists. eexists. fulleauto.
+  eexists. eexists. typeclasses eauto.
 Defined.
 
 Instance ab: A bool. (* Backtrack on A instance *)
 Goal exists (T : Type) (t : T), A T /\ B T t.
 Proof.
-  eexists. eexists. fulleauto.
+  eexists. eexists. typeclasses eauto.
 Defined.
 
 Class C {T} `(a : A T) (t : T). 
@@ -52,14 +52,14 @@ Instance can: C an 0.
 (* Backtrack on instance implementation *)
 Goal exists (T : Type) (t : T), { x : A T & C x t }.
 Proof.
-  eexists. eexists. fulleauto.
+  eexists. eexists. typeclasses eauto.
 Defined.
 
 Class D T `(a: A T).
   Instance: D _ an.
 Goal exists (T : Type), { x : A T & D T x }.
 Proof.
-  eexists. fulleauto.
+  eexists. typeclasses eauto.
 Defined.
   
 
@@ -115,11 +115,11 @@ Lemma simpl_plus_l_rr1 :
   apply H0. apply f_equal_nat.
   Time info_eauto.
   Undo.
-  Unset Typeclasses Debug.
+  Set Typeclasses Debug.
   Set Typeclasses Iterative Deepening.
-  Time fulleauto 5. Show Proof.
+  Time typeclasses eauto 2 with nocore. Show Proof.
   Undo.
-  eauto. (* does EApply H *)
+  Time eauto. (* does EApply H *)
 Qed.
 
 (* Example from Nicolas Tabareau on coq-club - Feb 2016. 
@@ -155,10 +155,11 @@ Hint Extern 1 myType => unshelve refine (barToqux _ _).1 : typeclass_instances.
 
 Hint Extern 0 { x : _ & _ } => simple refine (existT _ _ _) : typeclass_instances.
 
+Unset Typeclasses Debug.
 Definition trivial a (H : Foo a) : {b : myType & Qux b}. 
 Proof.
-  Time fulleauto 10.
+  Time typeclasses eauto 10.
   Undo. Set Typeclasses Iterative Deepening.
-  Time fulleauto.
+  Time typeclasses eauto.
 Defined.
 

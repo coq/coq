@@ -20,10 +20,9 @@ val get_typeclasses_debug : unit -> bool
 val set_typeclasses_depth : int option -> unit
 val get_typeclasses_depth : unit -> int option
 
-val progress_evars : unit Proofview.tactic -> unit Proofview.tactic
-
 val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state ->
-  Hints.hint_db_name list -> unit Proofview.tactic
+                        depth:(Int.t option) ->
+                        Hints.hint_db_name list -> unit Proofview.tactic
 
 val head_of_constr : Id.t -> Term.constr -> unit Proofview.tactic
 
@@ -33,24 +32,18 @@ val is_ground : constr -> tactic
 
 val autoapply : constr -> Hints.hint_db_name -> tactic
        
-type newautoinfo =
-  { search_depth : int list;
-    last_tac : Pp.std_ppcmds Lazy.t;
-    search_dep : bool;
-    search_cut : Hints.hints_path;
-    search_hints : Hints.Hint_db.t }
-
-val new_hints_tac : bool -> Hints.hint_db list ->
-                    newautoinfo ->
-                    (newautoinfo -> unit Proofview.tactic) -> unit Proofview.tactic
-
-val make_autogoal' : ?st:Names.transparent_state ->
-           bool -> bool ->
-           Hints.hints_path -> int -> ([ `NF ], 'c) Proofview.Goal.t -> newautoinfo
-
-val new_eauto_tac : ?st:Names.transparent_state ->
-  bool -> ?limit:Int.t ->
-  bool -> (* Should the tactic be made backtracking, whatever the dependencies
-            betwwen initial goals are *)
-  Hints.hint_db list -> unit Proofview.tactic
-
+module Search : sig
+  val eauto_tac :
+    ?st:Names.transparent_state ->
+    (** The transparent_state used when working with local hypotheses  *)
+    only_classes:bool ->
+    (** Should non-class goals be shelved and resolved at the end *)
+    depth:Int.t option ->
+    (** Bounded or unbounded search *)
+    dep:bool ->
+    (** Should the tactic be made backtracking on the initial goals, 
+       whatever their internal dependencies are. *)
+    Hints.hint_db list ->
+    (** The list of hint databases to use *)
+    unit Proofview.tactic
+end
