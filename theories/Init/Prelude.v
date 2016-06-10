@@ -23,4 +23,4 @@ Declare ML Module "cc_plugin".
 Declare ML Module "ground_plugin".
 Declare ML Module "recdef_plugin".
 (* Default substrings not considered by queries like SearchAbout *)
-Add Search Blacklist "_subproof" "Private_".
+Add Search Blacklist "_subproof" "_subterm" "Private_".

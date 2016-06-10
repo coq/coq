@@ -815,6 +815,19 @@ TACTIC EXTEND destauto
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 
+(**********************************************************************)
+
+(**********************************************************************)
+(* A version of abstract constructing transparent terms               *)
+(* Introduced by Jason Gross and Benjamin Delaware in June 2016       *)
+(**********************************************************************)
+
+TACTIC EXTEND transparent_abstract
+| [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.nf_enter { enter = fun gl ->
+      Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) } ]
+| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.nf_enter { enter = fun gl ->
+      Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) } ]
+END
 
 (* ********************************************************************* *)
 
