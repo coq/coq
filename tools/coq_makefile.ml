@@ -463,7 +463,7 @@ let implicit () =
     print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
   in
   let v_rules () =
-    print "$(VOFILES): %.vo: %.v\n"
+    print "$(VOFILES): %.vo: %.v\n";
     print "\t$(SHOW)COQC $*\n";
     print "\t$(HIDE)$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(GLOBFILES): %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
