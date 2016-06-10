@@ -10,6 +10,10 @@ open Util
 open Names
 open Globnames
 
+(* Poor's man DECLARE PLUGIN *)
+let __coq_plugin_name = "r_syntax_plugin"
+let () = Mltop.add_known_module __coq_plugin_name
+
 exception Non_closed_number
 
 (**********************************************************************)

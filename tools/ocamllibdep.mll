@@ -33,10 +33,6 @@ rule mllib_list = parse
 open Printf
 open Unix
 
-(** [coqdep_boot] is a stripped-down version of [coqdep] used to treat
-    with mllib files.
-*)
-
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
    other special characters are escaped by backslash prefixing while
    backslashes themselves must be escaped only if part of a sequence
@@ -132,6 +128,7 @@ let add_ml_known, search_ml_known = mkknown ()
 let add_mlpack_known, search_mlpack_known = mkknown ()
 
 let mllibAccu = ref ([] : (string * dir) list)
+let mlpackAccu = ref ([] : (string * dir) list)
 
 let add_caml_known phys_dir f =
   let basename,suff = get_extension f [".ml";".ml4";".mlpack"] in
@@ -148,18 +145,15 @@ let traite_fichier_modules md ext =
     let chan = open_in (md ^ ext) in
     let list = mllib_list (Lexing.from_channel chan) in
     List.fold_left
-      (fun a_faire str -> match search_mlpack_known str with
-	| Some mldir ->
-	  let file = file_name str mldir in
-	  a_faire^" "^file
-	| None ->
+      (fun acc str ->
+       match search_mlpack_known str with
+       | Some mldir -> (file_name str mldir) :: acc
+       | None ->
 	  match search_ml_known str with
-	    | Some mldir ->
-	      let file = file_name str mldir in
-	      a_faire^" "^file
-	    | None -> a_faire) "" list
+	  | Some mldir -> (file_name str mldir) :: acc
+	  | None -> acc) [] (List.rev list)
   with
-    | Sys_error _ -> ""
+    | Sys_error _ -> []
     | Syntax_error (i,j) -> error_cannot_parse (md^ext) (i,j)
 
 let addQueue q v = q := v :: !q
@@ -167,21 +161,42 @@ let addQueue q v = q := v :: !q
 let treat_file old_name =
   let name = Filename.basename old_name in
   let dirname = Some (Filename.dirname old_name) in
-  match get_extension name [".mllib"] with
+  match get_extension name [".mllib";".mlpack"] with
   | (base,".mllib") -> addQueue mllibAccu (base,dirname)
+  | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
   | _ -> ()
 
 let mllib_dependencies () =
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
-       let dep = traite_fichier_modules fullname ".mllib" in
+       let deps = traite_fichier_modules fullname ".mllib" in
+       let sdeps = String.concat " " deps in
        let efullname = escape fullname in
-       printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname dep;
-       printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
-       printf "%s.cmxa %s.cmxs:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname efullname;
+       printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname sdeps;
+       printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n"
+         efullname efullname;
+       printf "%s.cmxa %s.cmxs:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n"
+         efullname efullname efullname;
        flush Pervasives.stdout)
     (List.rev !mllibAccu)
+
+let mlpack_dependencies () =
+  List.iter
+    (fun (name,dirname) ->
+       let fullname = file_name name dirname in
+       let modname = String.capitalize name in
+       let deps = traite_fichier_modules fullname ".mlpack" in
+       let sdeps = String.concat " " deps in
+       let efullname = escape fullname in
+       printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname sdeps;
+       List.iter (fun d -> printf "%s_FORPACK:= -for-pack %s\n" d modname) deps;
+       printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n"
+         efullname efullname;
+       printf "%s.cmx %s.cmxs:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n"
+         efullname efullname efullname;
+       flush Pervasives.stdout)
+    (List.rev !mlpackAccu)
 
 let rec parse = function
   | "-I" :: r :: ll ->
@@ -192,10 +207,11 @@ let rec parse = function
   | f :: ll -> treat_file f; parse ll
   | [] -> ()
 
-let coqdep_boot () =
+let main () =
   if Array.length Sys.argv < 2 then exit 1;
   parse (List.tl (Array.to_list Sys.argv));
-  mllib_dependencies ()
+  mllib_dependencies ();
+  mlpack_dependencies ()
 
-let _ = Printexc.catch coqdep_boot ()
+let _ = Printexc.catch main ()
 }

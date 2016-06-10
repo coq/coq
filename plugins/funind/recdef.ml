@@ -1529,7 +1529,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let hook _ _ = 
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
-    let _ = Table.extraction_inline true [Ident (Loc.ghost,term_id)] in 
+    let _ = Extraction_plugin.Table.extraction_inline true [Ident (Loc.ghost,term_id)] in
     (*     message "start second proof"; *)
     let stop = 
       try com_eqn (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);

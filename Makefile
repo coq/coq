@@ -66,7 +66,7 @@ endef
 ## Files in the source tree
 
 LEXFILES := $(call find, '*.mll')
-export MLLIBFILES := $(call find, '*.mllib')
+export MLLIBFILES := $(call find, '*.mllib') $(call find, '*.mlpack')
 export ML4FILES := $(call find, '*.ml4')
 export CFILES := $(call find, '*.c')
 
@@ -80,9 +80,7 @@ EXISTINGMLI := $(call find, '*.mli')
 ## Files that will be generated
 
 GENML4FILES:= $(ML4FILES:.ml4=.ml)
-GENPLUGINSMOD:=$(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
-export GENMLFILES:=$(LEXFILES:.mll=.ml) $(GENPLUGINSMOD) \
-  tools/tolink.ml kernel/copcodes.ml
+export GENMLFILES:=$(LEXFILES:.mll=.ml) tools/tolink.ml kernel/copcodes.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENVFILES:=theories/Numbers/Natural/BigN/NMake_gen.v
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES)

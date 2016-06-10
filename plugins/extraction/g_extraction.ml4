@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+DECLARE PLUGIN "extraction_plugin"
+
 (* ML names *)
 
 open Genarg

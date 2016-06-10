@@ -106,6 +106,7 @@ let protect_tac_in map id =
 (****************************************************************************)
 
 let closed_term t l =
+  let open Quote_plugin in
   let l = List.map Universes.constr_of_global l in
   let cs = List.fold_right Quote.ConstrSet.add l Quote.ConstrSet.empty in
   if Quote.closed_under cs t then tclIDTAC else tclFAIL 0 (mt())

@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Poor's man DECLARE PLUGIN *)
+let __coq_plugin_name = "nat_syntax_plugin"
+let () = Mltop.add_known_module __coq_plugin_name
+
 (* This file defines the printer for natural numbers in [nat] *)
 
 (*i*)

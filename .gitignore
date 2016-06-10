@@ -44,7 +44,6 @@ TAGS
 .pc
 bin/
 _build
-plugins/*/*_mod.ml
 myocamlbuild_config.ml
 config/Makefile
 config/coq_config.ml
@@ -114,7 +113,7 @@ tools/ocamllibdep.ml
 tools/coqdoc/cpretty.ml
 ide/xml_lexer.ml
 
-# .ml4 files
+# .ml4 / .mlp files
 
 g_*.ml
 

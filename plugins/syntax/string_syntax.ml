@@ -7,9 +7,13 @@
 (***********************************************************************)
 
 open Globnames
-open Ascii_syntax
+open Ascii_syntax_plugin.Ascii_syntax
 open Glob_term
 open Coqlib
+
+(* Poor's man DECLARE PLUGIN *)
+let __coq_plugin_name = "string_syntax_plugin"
+let () = Mltop.add_known_module __coq_plugin_name
 
 exception Non_closed_string
 

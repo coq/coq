@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Poor's man DECLARE PLUGIN *)
+let __coq_plugin_name = "numbers_syntax_plugin"
+let () = Mltop.add_known_module __coq_plugin_name
+
 (* digit-based syntax for int31, bigN bigZ and bigQ *)
 
 open Bigint
@@ -180,7 +184,7 @@ let bigN_of_pos_bigint dloc n =
   let word = word_of_pos_bigint dloc h n in
   let args =
     if h < n_inlined then [word]
-    else [Nat_syntax.nat_of_int dloc (of_int (h-n_inlined));word]
+    else [Nat_syntax_plugin.Nat_syntax.nat_of_int dloc (of_int (h-n_inlined));word]
   in
   GApp (dloc, ref_constructor, args)
 

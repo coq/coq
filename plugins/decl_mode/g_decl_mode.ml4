@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+DECLARE PLUGIN "decl_mode_plugin"
+
 open Compat
 open Pp
 open Decl_expr
