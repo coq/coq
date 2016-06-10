@@ -4907,7 +4907,7 @@ let shrink_entry sign const =
   } in
   (const, args)
 
-let abstract_subproof id gk tac =
+let cache_term_by_tactic_then id gk ?(opaque=true) tac tacK =
   let open Tacticals.New in
   let open Tacmach.New in
   let open Proofview.Notations in
@@ -4957,8 +4957,8 @@ let abstract_subproof id gk tac =
     else (const, List.rev (Context.Named.to_instance Constr.mkVar sign))
   in
   let args = List.map EConstr.of_constr args in
-  let cd = Entries.DefinitionEntry const in
-  let decl = (cd, IsProof Lemma) in
+  let cd = Entries.DefinitionEntry { const with Entries.const_entry_opaque = opaque } in
+  let decl = (cd, if opaque then IsProof Lemma else IsDefinition Definition) in
   let cst () =
     (** do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
@@ -4976,18 +4976,21 @@ let abstract_subproof id gk tac =
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
     Proofview.tclEFFECTS effs <*>
-    exact_no_check (applist (lem, args))
+    tacK lem args
   in
   let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
   Sigma.Unsafe.of_pair (tac, evd)
   end }
 
+let abstract_subproof id gk tac ?(opaque=true) =
+  cache_term_by_tactic_then id gk ~opaque:opaque tac (fun lem args -> exact_no_check (applist (lem, args)))
+
 let anon_id = Id.of_string "anonymous"
 
-let tclABSTRACT name_op tac =
+let name_op_to_name name_op object_kind suffix =
   let open Proof_global in
-  let default_gk = (Global, false, Proof Theorem) in
-  let s, gk = match name_op with
+  let default_gk = (Global, false, object_kind) in
+  match name_op with
     | Some s ->
       (try let _, gk, _ = current_proof_statement () in s, gk
        with NoCurrentProof -> s, default_gk)
@@ -4995,9 +4998,14 @@ let tclABSTRACT name_op tac =
       let name, gk =
 	try let name, gk, _ = current_proof_statement () in name, gk
 	with NoCurrentProof -> anon_id, default_gk in
-      add_suffix name "_subproof", gk
-  in
-  abstract_subproof s gk tac
+      add_suffix name suffix, gk
+
+let tclABSTRACT ?(opaque=true) name_op tac =
+  let open Proof_global in
+  let s, gk = if opaque
+    then name_op_to_name name_op (Proof Theorem) "_subproof"
+    else name_op_to_name name_op (DefinitionBody Definition) "_subterm" in
+  abstract_subproof s gk tac ~opaque:opaque
 
 let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
