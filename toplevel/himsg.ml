@@ -67,10 +67,10 @@ let rec contract3' env a b c = function
   | NotSameArgSize | NotSameHead | NoCanonicalStructure
   | MetaOccurInBody _ | InstanceNotSameType _
   | UnifUnivInconsistency _ as x -> contract3 env a b c, x
-  | CannotSolveConstraint ((pb,env,t,u),x) ->
-      let env,t,u = contract2 env t u in
+  | CannotSolveConstraint ((pb,env',t,u),x) ->
+      let env',t,u = contract2 env' t u in
       let y,x = contract3' env a b c x in
-      y,CannotSolveConstraint ((pb,env,t,u),x)
+      y,CannotSolveConstraint ((pb,env',t,u),x)
 
 (** Printers *)
 
