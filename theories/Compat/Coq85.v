@@ -32,6 +32,7 @@ Require Coq.Vectors.VectorDef.
 Module Export Coq.
 Module Export Vectors.
 Module VectorDef.
+Export Coq.Vectors.VectorDef.
 Module VectorNotations.
 Export Coq.Vectors.VectorDef.VectorNotations.
 Notation "[]" := (VectorDef.nil _) : vector_scope.
@@ -39,5 +40,3 @@ End VectorNotations.
 End VectorDef.
 End Vectors.
 End Coq.
-Export Vectors.VectorDef.VectorNotations.
-Close Scope vector_scope. (* vector_scope is not opened by default *)

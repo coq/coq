@@ -1,4 +1,8 @@
-Require Import Coq.Lists.List Coq.Vectors.Vector.
+Require Coq.Lists.List Coq.Vectors.Vector.
+Require Coq.Compat.Coq85.
+
+Module A.
+Import Coq.Lists.List Coq.Vectors.Vector.
 Import ListNotations.
 Check [ ]%list : list _.
 Import VectorNotations ListNotations.
@@ -7,6 +11,10 @@ Check [ ]%vector : Vector.t _ _.
 Check []%vector : Vector.t _ _.
 Check [ ]%list : list _.
 Check []%list : list _.
+
+Goal True.
+  idtac; []. (* Check that vector notations don't break the [ | .. | ] syntax of Ltac *)
+Abort.
 
 Inductive mylist A := mynil | mycons (x : A) (xs : mylist A).
 Delimit Scope mylist_scope with mylist.
@@ -18,9 +26,20 @@ Notation " [ ] " := mynil (format "[ ]") : mylist_scope.
 Notation " [ x ] " := (mycons x nil) : mylist_scope.
 Notation " [ x ; y ; .. ; z ] " :=  (mycons x (mycons y .. (mycons z nil) ..)) : mylist_scope.
 
-Require Import Coq.Compat.Coq85.
+Import Coq.Compat.Coq85.
+Locate Module VectorNotations.
+Import VectorDef.VectorNotations.
 
 Check []%vector : Vector.t _ _.
 Check []%mylist : mylist _.
 Check [ ]%mylist : mylist _.
 Check [ ]%list : list _.
+End A.
+
+Module B.
+Import Coq.Compat.Coq85.
+
+Goal True.
+  idtac; []. (* Check that importing the compat file doesn't break the [ | .. | ] syntax of Ltac *)
+Abort.
+End B.
