@@ -1501,7 +1501,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
         if n<0 then error "Applied theorem has not enough premisses.";
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
         Clenvtac.res_pf clause ~with_evars ~flags
-      with UserError _ as exn ->
+      with exn when catchable_exception exn ->
         Proofview.tclZERO exn
     in
     let rec try_red_apply thm_ty (exn0, info) =
