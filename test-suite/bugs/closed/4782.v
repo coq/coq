@@ -6,3 +6,4 @@ Inductive p : Prop := consp : forall (e : r) (x : type e), cond e x -> p.
 
 Goal p.
 Fail apply consp with (fun _ : bool => mk_r unit (fun x => True)) nil.
+ 
