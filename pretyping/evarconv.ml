@@ -462,10 +462,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
     let switch f a b = if on_left then f a b else f b a in
     let eta evd =
-             match kind_of_term termR with
-	     | Lambda _ -> eta env evd false skR termR skF termF
-	     | Construct u -> eta_constructor ts env evd skR u skF termF
-	     | _ -> UnifFailure (evd,NotSameHead)
+      match kind_of_term termR with
+      | Lambda _ when (* if ever problem is ill-typed: *) List.is_empty skR ->
+         eta env evd false skR termR skF termF
+      | Construct u -> eta_constructor ts env evd skR u skF termF
+      | _ -> UnifFailure (evd,NotSameHead)
     in
     match Stack.list_of_app_stack skF with
     | None ->
@@ -741,10 +742,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  ise_try evd [f3; f4]
 
     (* Eta-expansion *)
-    | Rigid, _ when isLambda term1 ->
+    | Rigid, _ when isLambda term1 && (* if ever ill-typed: *) List.is_empty sk1 ->
         eta env evd true sk1 term1 sk2 term2
 
-    | _, Rigid when isLambda term2 ->
+    | _, Rigid when isLambda term2 && (* if ever ill-typed: *) List.is_empty sk2 ->
         eta env evd false sk2 term2 sk1 term1
 
     | Rigid, Rigid -> begin
@@ -1094,7 +1095,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   abstract_free_holes evd subst, true
   with TypingFailed evd -> evd, false
 
-let second_order_matching_with_args ts env evd ev l t =
+let second_order_matching_with_args ts env evd pbty ev l t =
 (*
   let evd,ev = evar_absorb_arguments env evd ev l in
   let argoccs = Array.map_to_list (fun _ -> None) (snd ev) in
@@ -1102,8 +1103,9 @@ let second_order_matching_with_args ts env evd ev l t =
   if b then Success evd
   else UnifFailure (evd, ConversionFailed (env,mkApp(mkEvar ev,l),t))
   if b then Success evd else
-*)
-  UnifFailure (evd, ConversionFailed (env,mkApp(mkEvar ev,l),t))
+ *)
+  let pb = (pbty,env,mkApp(mkEvar ev,l),t) in
+  UnifFailure (evd, CannotSolveConstraint (pb,ProblemBeyondCapabilities))
 
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t1 = apprec_nohdbeta ts env evd (whd_head_evar evd t1) in
@@ -1119,7 +1121,9 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
          type inference *)
       (match choose_less_dependent_instance evk1 evd term2 args1 with
       | Some evd -> Success evd
-      | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
+      | None ->
+         let reason = ProblemBeyondCapabilities in
+         UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
   | (Rel _|Var _), Evar (evk2,args2) when app_empty
       && List.for_all (fun a -> Term.eq_constr a term1 || isEvar a)
         (remove_instance_local_defs evd evk2 args2) ->
@@ -1127,7 +1131,9 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
          type inference *)
       (match choose_less_dependent_instance evk2 evd term1 args2 with
       | Some evd -> Success evd
-      | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
+      | None ->
+         let reason = ProblemBeyondCapabilities in
+         UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
   | Evar (evk1,args1), Evar (evk2,args2) when Evar.equal evk1 evk2 ->
       let f env evd pbty x y = is_trans_fconv pbty ts env evd x y in
       Success (solve_refl ~can_drop:true f env evd
@@ -1142,20 +1148,20 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       ise_try evd
         [(fun evd -> first_order_unification ts env evd (ev1,l1) appr2);
          (fun evd ->
-           second_order_matching_with_args ts env evd ev1 l1 t2)]
+           second_order_matching_with_args ts env evd pbty ev1 l1 t2)]
   | _,Evar ev2 when Array.length l2 <= Array.length l1 ->
       (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
         [(fun evd -> first_order_unification ts env evd (ev2,l2) appr1);
          (fun evd ->
-           second_order_matching_with_args ts env evd ev2 l2 t1)]
+           second_order_matching_with_args ts env evd pbty ev2 l2 t1)]
   | Evar ev1,_ ->
       (* Try second-order pattern-matching *)
-      second_order_matching_with_args ts env evd ev1 l1 t2
+      second_order_matching_with_args ts env evd pbty ev1 l1 t2
   | _,Evar ev2 ->
       (* Try second-order pattern-matching *)
-      second_order_matching_with_args ts env evd ev2 l2 t1
+      second_order_matching_with_args ts env evd pbty ev2 l2 t1
   | _ ->
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x ts env evd pbty t1 t2
