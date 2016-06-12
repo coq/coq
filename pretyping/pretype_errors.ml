@@ -14,15 +14,16 @@ open Type_errors
 
 type unification_error =
   | OccurCheck of existential_key * constr
-  | NotClean of existential * env * constr
+  | NotClean of existential * env * constr (* Constr is a variable not in scope *)
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure
-  | ConversionFailed of env * constr * constr
+  | ConversionFailed of env * constr * constr (* Non convertible closed terms *)
   | MetaOccurInBody of existential_key
   | InstanceNotSameType of existential_key * env * types * types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
+  | ProblemBeyondCapabilities
 
 type position = (Id.t * Locus.hyp_location_flag) option
 

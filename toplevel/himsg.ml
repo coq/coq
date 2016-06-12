@@ -65,7 +65,7 @@ let rec contract3' env a b c = function
       let (env',t1,t2) = contract2 env' t1 t2 in
       contract3 env a b c, ConversionFailed (env',t1,t2)
   | NotSameArgSize | NotSameHead | NoCanonicalStructure
-  | MetaOccurInBody _ | InstanceNotSameType _
+  | MetaOccurInBody _ | InstanceNotSameType _ | ProblemBeyondCapabilities
   | UnifUnivInconsistency _ as x -> contract3 env a b c, x
   | CannotSolveConstraint ((pb,env',t,u),x) ->
       let env',t,u = contract2 env' t u in
@@ -310,6 +310,8 @@ let rec explain_unification_error env sigma p1 p2 = function
         (strbrk "cannot satisfy constraint " ++ pr_lconstr_env env sigma t ++
         str " == " ++ pr_lconstr_env env sigma u)
         :: aux t u e
+     | ProblemBeyondCapabilities ->
+        []
      in
      match aux p1 p2 e with
      | [] -> mt ()
