@@ -18,11 +18,9 @@ type level =
 
 
 (** Coq "semantic" infos obtained during parsing/execution *)
-type edit_id = int
-type state_id = Stateid.t
-type edit_or_state_id = Edit of edit_id | State of state_id
-
+type edit_id  = int
 type route_id = int
+type state_id = Stateid.t
 
 val default_route : route_id
 
@@ -49,7 +47,7 @@ type feedback_content =
   | Message of level * Richpp.richpp
 
 type feedback = {
-  id       : edit_or_state_id;  (* The document part concerned *)
+  id       : state_id;          (* The document part concerned *)
   contents : feedback_content;  (* The payload *)
   route    : route_id;          (* Extra routing info *)
 }
@@ -91,10 +89,10 @@ val set_feeder : (feedback -> unit) -> unit
     [id] set appropiatedly, if absent, it will use the defaults set by
     [set_id_for_feedback] *)
 val feedback :
-  ?id:edit_or_state_id -> ?route:route_id -> feedback_content -> unit
+  ?id:state_id -> ?route:route_id -> feedback_content -> unit
 
 (** [set_id_for_feedback route id] Set the defaults for feedback *)
-val set_id_for_feedback : ?route:route_id -> edit_or_state_id -> unit
+val set_id_for_feedback : ?route:route_id -> state_id -> unit
 
 (** [with_output_to_file file f x] executes [f x] with logging
     redirected to a file [file] *)

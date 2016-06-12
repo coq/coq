@@ -183,7 +183,7 @@ val register_proof_block_delimiter :
 
 val state_computed_hook : (Stateid.t -> in_cache:bool -> unit) Hook.t
 val parse_error_hook :
-  (Feedback.edit_or_state_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
+  (Feedback.state_id -> Feedback.edit_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val execution_error_hook : (Stateid.t -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val unreachable_state_hook : (Stateid.t -> Exninfo.iexn -> unit) Hook.t
 (* ready means that master has it at hand *)

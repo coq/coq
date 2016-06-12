@@ -169,7 +169,7 @@ let hcons_j j =
 let feedback_completion_typecheck =
   let open Feedback in
   Option.iter (fun state_id ->
-      feedback ~id:(State state_id) Feedback.Complete)
+      feedback ~id:state_id Feedback.Complete)
 
 let infer_declaration ~trust env kn dcl =
   match dcl with

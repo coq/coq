@@ -6,6 +6,16 @@
 
 Use Glob_ops.glob_constr_eq instead of Notation_ops.eq_glob_constr.
 
+** Feedback Messages **
+
+The format of feedback messages has been changed. In particular:
+
+- Feedback messages now carry a `state_id` instead of the old `edit_or_state_id`.
+  Thus, feedback always refers to a parseable part of the document.
+  Parsing errors are reported differently, as it was the case before.
+
+- The content of the `Message` feedback is `richpp` instead of a `string`.
+
 ** Logging and Pretty Printing: **
 
 * Printing functions have been removed from `Pp.mli`, which is now a
@@ -59,15 +69,17 @@ val msg_debug   : Pp.std_ppcmds -> unit
 
 ```` ocaml
 val set_feeder : (feedback -> unit) -> unit
-val feedback : ?id:edit_or_state_id -> ?route:route_id -> feedback_content -> unit
-val set_id_for_feedback : ?route:route_id -> edit_or_state_id -> unit
+val feedback : ?id:state_id -> ?route:route_id -> feedback_content -> unit
+val set_id_for_feedback : ?route:route_id -> state_id -> unit
 ````
   Note that `feedback` doesn't take two parameters anymore. After
   refactoring the following function has been removed:
 
 ```` ocaml
-val get_id_for_feedback : unit -> edit_or_state_id * route_id
+val get_id_for_feedback : unit -> state_id * route_id
 ````
+
+** Context interface **
 
 - The interface of the Context module was changed.
   Related types and functions were put in separate submodules.
