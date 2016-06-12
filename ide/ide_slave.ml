@@ -109,8 +109,9 @@ let coqide_cmd_checks (loc,ast) =
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
 let add ((s,eid),(sid,verbose)) =
-  let newid, rc = Stm.add ~ontop:sid verbose ~check:coqide_cmd_checks eid s in
-  let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
+  let pa = Pcoq.Gram.parsable (Stream.of_string s)                                 in
+  let newid, _loc, rc = Stm.add ~ontop:sid verbose ~check:coqide_cmd_checks eid pa in
+  let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id       in
   newid, (rc, read_stdout ())
 
 let edit_at id =
@@ -118,7 +119,9 @@ let edit_at id =
   | `NewTip -> CSig.Inl ()
   | `Focus { Stm.start; stop; tip} -> CSig.Inr (start, (stop, tip))
 
-let query (s,id) = Stm.query ~at:id s; read_stdout ()
+let query (s,id) =
+  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+  Stm.query ~at:id pa; read_stdout ()
 
 let annotate phrase =
   let (loc, ast) =
@@ -387,11 +390,14 @@ let init =
      | Some file ->
          let dir = Filename.dirname file in
          let open Loadpath in let open CUnix in
-         let initial_id, _ =
+         let initial_id, _loc, _ =
            if not (is_in_load_paths (physical_path_of_string dir)) then
-             Stm.add false ~ontop:(Stm.get_current_state ())
-               0 (Printf.sprintf "Add LoadPath \"%s\". " dir)
-           else Stm.get_current_state (), `NewTip in
+             begin
+               let cmd = Printf.sprintf "Add LoadPath \"%s\". " dir in
+               let pa  = Pcoq.Gram.parsable (Stream.of_string cmd)  in
+               Stm.add false ~ontop:(Stm.get_current_state ()) 0 pa
+             end
+           else Stm.get_current_state (), Loc.ghost, `NewTip in
          Stm.set_compilation_hints file;
          Stm.finish ();
          initial_id

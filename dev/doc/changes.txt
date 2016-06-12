@@ -62,6 +62,14 @@ FCofix. Similarly, rIota was replaced by rMatch, rFix and rCofix.
 
 Use Glob_ops.glob_constr_eq instead of Notation_ops.eq_glob_constr.
 
+** Stm **
+
+- `Stm.add` and `Stm.query` now take a `Pcoq.Gram.parsable` instead of
+  a `string`, giving more control over the input to the caller.
+
+- `Stm.add` return type is extended to include the location of the end
+  of the parsed sentence.
+
 ** Logging and Pretty Printing: **
 
 * Printing functions have been removed from `Pp.mli`, which is now a

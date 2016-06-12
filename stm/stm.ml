@@ -85,11 +85,9 @@ let async_proofs_workers_extra_env = ref [||]
 type aast = {
   verbose : bool;
   loc : Loc.t;
-  indentation : int;
-  strlen : int;
   mutable expr : vernac_expr; (* mutable: Proof using hinted by aux file *)
 }
-let pr_ast { expr; indentation } = int indentation ++ str " " ++ pr_vernac expr
+let pr_ast { expr; } = pr_vernac expr
 
 let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
 
@@ -126,31 +124,16 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
-let indentation_of_string s =
-  let len = String.length s in
-  let rec aux n i precise =
-    if i >= len then 0, precise, len
-    else
-      match s.[i] with
-      | ' ' | '\t' -> aux (succ n) (succ i) precise
-      | '\n' | '\r' -> aux 0 (succ i) true
-      | _ -> n, precise, len in
-  aux 0 0 false
-
-let vernac_parse ?(indlen_prev=fun() -> 0) ?newtip ?route eid s =
-  let feedback_id = 
+let vernac_parse ?newtip ?route eid pa =
+  let feedback_id =
     if Option.is_empty newtip then Edit eid
     else State (Option.get newtip) in
-  let indentation, precise, strlen = indentation_of_string s in
-  let indentation =
-    if precise then indentation else indlen_prev () + indentation in
   set_id_for_feedback ?route feedback_id;
-  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   Flags.with_option Flags.we_are_parsing (fun () ->
     try
       match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
       | None -> raise (Invalid_argument "vernac_parse")
-      | Some (loc, ast) -> indentation, strlen, loc, ast
+      | Some (loc, ast) -> loc, ast
     with e when CErrors.noncritical e ->
       let (e, info) = CErrors.push e in
       let loc = Option.default Loc.ghost (Loc.get_loc info) in
@@ -1112,10 +1095,10 @@ let register_proof_block_delimiter name static dynamic =
   proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
 
 let mk_doc_node id = function
-  | { step = `Cmd { ctac; cast = { indentation; expr }}; next } when ctac ->
-       Some { indentation; ast = expr; id }
-  | { step = `Sideff (`Ast ({ indentation; expr }, _)); next } ->
-       Some { indentation; ast = expr; id }
+  | { step = `Cmd { ctac; cast = { loc; expr }}; next } when ctac ->
+       Some { indentation = loc.Loc.bol_pos; ast = expr; id }
+  | { step = `Sideff (`Ast ({ loc; expr }, _)); next } ->
+       Some { indentation = loc.Loc.bol_pos; ast = expr; id }
   | _ -> None
 let prev_node { id } =
   let id = (VCS.visit id).next in
@@ -1322,7 +1305,7 @@ end = struct (* {{{ *)
             Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
           vernac_interp stop
             ~proof:(pobject, terminator)
-            { verbose = false; loc; indentation = 0; strlen = 0;
+            { verbose = false; loc;
               expr = (VernacEndProof (Proved (Opaque None,None))) }) in
         ignore(Future.join checked_proof);
       end;
@@ -1463,7 +1446,7 @@ end = struct (* {{{ *)
        * looking at the ones that happen to be present in the current env *)
       Reach.known_state ~cache:`No start;
       vernac_interp stop ~proof
-        { verbose = false; loc; indentation = 0; strlen = 0;
+        { verbose = false; loc;
           expr = (VernacEndProof (Proved (Opaque None,None))) };
       `OK proof
       end
@@ -1742,7 +1725,7 @@ end = struct (* {{{ *)
   module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask)
 
   let vernac_interp ~solve ~abstract cancel nworkers safe_id id
-    { indentation; verbose; loc; expr = e; strlen }
+    { verbose; loc; expr = e }
   =
     let e, time, fail =
       let rec find time fail = function
@@ -1760,7 +1743,7 @@ end = struct (* {{{ *)
           Future.create_delegate
             ~name:(Printf.sprintf "subgoal %d" i)
             (State.exn_on id ~valid:safe_id) in
-        let t_ast = (i, { indentation; verbose; loc; expr = e; strlen }) in
+        let t_ast = (i, { verbose; loc; expr = e }) in
         let t_name = Goal.uid g in
         TaskQueue.enqueue_task queue
           ({ t_state = safe_id; t_state_fb = id;
@@ -2052,8 +2035,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                  feedback ~id:(State id) Feedback.AddedAxiom;
                  fst (Pfedit.solve Vernacexpr.SelectAll None tac p), ());
                Option.iter (fun expr -> vernac_interp id {
-                  verbose = true; loc = Loc.ghost; expr; indentation = 0;
-                  strlen = 0 })
+                  verbose = true; loc = Loc.ghost; expr; })
                recovery_command
            | _ -> assert false
         end
@@ -2608,7 +2590,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
       | VernacStm (PGLast _) ->
         if not (VCS.Branch.equal head VCS.Branch.master) then
           vernac_interp Stateid.dummy
-            { verbose = true; loc = Loc.ghost; indentation = 0; strlen = 0;
+            { verbose = true; loc = Loc.ghost;
               expr = VernacShow (ShowGoal OpenSubgoals) }
       | _ -> ()
     end;
@@ -2629,31 +2611,18 @@ let get_ast id =
 
 let stop_worker n = Slaves.cancel_worker n
 
-(* You may need to know the len + indentation of previous command to compute
- * the indentation of the current one.
- *  Eg.   foo. bar.
- * Here bar is indented of the indentation of foo + its strlen (4) *)
-let ind_len_of id =
-  if Stateid.equal id Stateid.initial then 0
-  else match (VCS.visit id).step with
-  | `Cmd { ctac = true; cast = { indentation; strlen } } ->
-       indentation + strlen
-  | _ -> 0
-
-let add ~ontop ?newtip ?(check=ignore) verb eid s =
+let add ~ontop ?newtip ?(check=ignore) verb eid pa =
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
     (* For now, arbitrary edits should be announced with edit_at *)
     anomaly(str"Not yet implemented, the GUI should not try this");
-  let indentation, strlen, loc, ast =
-    vernac_parse ~indlen_prev:(fun () -> ind_len_of ontop) ?newtip eid s in
-  CWarnings.set_current_loc loc;
+  let loc, ast = vernac_parse ?newtip eid pa in
   check(loc,ast);
   let clas = classify_vernac ast in
-  let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
+  let aast = { verbose = verb; loc; expr = ast } in
   match process_transaction ?newtip ~tty:false aast clas with
-  | `Ok -> VCS.cur_tip (), `NewTip
-  | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
+  | `Ok -> VCS.cur_tip (), loc, `NewTip
+  | `Unfocus qed_id -> qed_id, loc, `Unfocus (VCS.cur_tip ())
 
 let set_perspective id_list = Slaves.set_perspective id_list
 
@@ -2663,22 +2632,21 @@ type focus = {
   tip : Stateid.t
 }
 
-let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
-  Future.purify (fun s ->
+let query ~at ?(report_with=(Stateid.dummy,default_route)) pa_ =
+  Future.purify (fun pa ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
     let newtip, route = report_with in
-    let indentation, strlen, loc, ast = vernac_parse ~newtip ~route 0 s in
-    CWarnings.set_current_loc loc;
+    let loc, ast = vernac_parse ~newtip ~route 0 pa in
     let clas = classify_vernac ast in
-    let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
+    let aast = { verbose = true; loc; expr = ast } in
     match clas with
     | VtStm (w,_), _ ->
        ignore(process_transaction ~tty:false aast (VtStm (w,false), VtNow))
     | _ ->
        ignore(process_transaction
          ~tty:false aast (VtQuery (false,report_with), VtNow)))
-  s
+  pa_
 
 let edit_at id =
   if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy") else
@@ -2811,7 +2779,7 @@ let restore d = VCS.restore d
 
 let interp verb (loc,e) =
   let clas = classify_vernac e in
-  let aast = { verbose = verb; indentation = 0; strlen = 0; loc; expr = e } in
+  let aast = { verbose = verb; loc; expr = e } in
   let rc = process_transaction ~tty:true aast clas in
   if rc <> `Ok then anomaly(str"tty loop can't be mixed with the STM protocol");
   if interactive () = `Yes ||
