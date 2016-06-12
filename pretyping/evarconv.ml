@@ -362,8 +362,6 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     ((term1,sk1 as appr1),csts1) ((term2,sk2 as appr2),csts2) =
-  let default_fail i = (* costly *)
-    UnifFailure (i,ConversionFailed (env, Stack.zip appr1, Stack.zip appr2)) in
   let quick_fail i = (* not costly, loses info *)
     UnifFailure (i, NotSameHead)
   in
@@ -415,7 +413,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let not_only_app = Stack.not_purely_applicative skM in
     let f1 i =
       match Stack.list_of_app_stack skF with
-      | None -> default_fail evd
+      | None -> quick_fail evd
       | Some lF -> 
         let tM = Stack.zip apprM in
 	  miller_pfenning on_left
