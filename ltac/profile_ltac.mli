@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Ltac profiling primitives *)
+
 val do_profile : string -> ('a * Tacexpr.ltac_call_kind) list -> 'b Proofview.tactic -> 'b Proofview.tactic
 
 val set_profiling : bool -> unit
