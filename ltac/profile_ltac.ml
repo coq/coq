@@ -211,25 +211,24 @@ let padr_with c n s =
   str (utf8_sub s 0 n) ++ str (String.make (max 0 (n - ulength)) c)
 
 let rec list_iter_is_last f = function
-  | []      -> ()
-  | [x]     -> f true x
-  | x :: xs -> f false x; list_iter_is_last f xs
+  | []      -> []
+  | [x]     -> [f true x]
+  | x :: xs -> f false x :: list_iter_is_last f xs
 
-let header () =
-  msgnl (str" tactic                                    self  total   calls       max");
-  msgnl (str"────────────────────────────────────────┴──────┴──────┴───────┴─────────┘")
+let header =
+  str " tactic                                    self  total   calls       max" ++
+  fnl () ++
+  str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘"
 
 let rec print_node all_total indent prefix (s, n) =
   let e = n.entry in
-  msgnl (
-    h 0 (
-      padr_with '-' 40 (prefix ^ s ^ " ")
-      ++ padl 7 (format_ratio (e.local /. all_total))
-      ++ padl 7 (format_ratio (e.total /. all_total))
-      ++ padl 8 (string_of_int e.ncalls)
-      ++ padl 10 (format_sec (e.max_total))
-    )
-    );
+  h 0 (
+    padr_with '-' 40 (prefix ^ s ^ " ")
+    ++ padl 7 (format_ratio (e.local /. all_total))
+    ++ padl 7 (format_ratio (e.total /. all_total))
+    ++ padl 8 (string_of_int e.ncalls)
+    ++ padl 10 (format_sec (e.max_total))
+  ) ++
   print_table all_total indent false n.children
 
 and print_table all_total indent first_level table =
@@ -245,7 +244,7 @@ and print_table all_total indent first_level table =
       let sep1 = if first_level then "─" else if is_last then " └─" else " ├─" in
       print_node all_total (indent ^ sep0) (indent ^ sep1)
     in
-    list_iter_is_last iter ls
+    prlist_with_sep fnl (fun pr -> pr) (list_iter_is_last iter ls)
 
 let print_results () =
   let tree = (List.hd !stack).children in
@@ -261,17 +260,16 @@ let print_results () =
   in
   cumulate tree;
   warn_encountered_multi_success_backtracking ();
-  msgnl (str"");
-  msgnl (h 0 (
-      str"total time: "++padl 11 (format_sec (all_total))
-    )
-       );
-  msgnl (str"");
-  header ();
-  print_table all_total "" true global;
-  msgnl (str"");
-  header ();
-  print_table all_total "" true tree
+  let msg =
+    h 0 (str "total time: " ++ padl 11 (format_sec (all_total))) ++
+    fnl () ++
+    header ++
+    print_table all_total "" true global ++
+    fnl () ++
+    header ++
+    print_table all_total "" true tree
+  in
+  Feedback.msg_notice msg
   (* FOR DEBUGGING *)
   (* ;
      msgnl (str"");
@@ -296,18 +294,14 @@ let print_results_tactic tactic =
       (fun _ node all_total -> node.entry.total +. all_total)
       table_tactic 0. in
   warn_encountered_multi_success_backtracking ();
-  msgnl (str"");
-   msgnl (h 0 (
-      str"total time:           "++padl 11 (format_sec (all_total))
-    )
-        );
-   msgnl (h 0 (
-      str"time spent in tactic: "++padl 11 (format_sec (tactic_total))
-    )
-       );
-  msgnl (str"");
-  header ();
-  print_table tactic_total "" true table_tactic
+  let msg =
+    h 0 (str"total time:           " ++ padl 11 (format_sec (all_total))) ++
+    h 0 (str"time spent in tactic: " ++ padl 11 (format_sec (tactic_total))) ++
+    fnl () ++
+    header ++
+    print_table tactic_total "" true table_tactic
+  in
+  Feedback.msg_notice msg
 
 let reset_profile () =
   stack := [empty_treenode 20];
