@@ -25,10 +25,6 @@ let new_call = ref false
 let entered_call () = new_call := true
 let is_new_call () = let b = !new_call in new_call := false; b
 
-(** Local versions of the old Pp.msgnl *)
-let msgnl_with fmt strm = msg_with fmt (strm ++ fnl ())
-let msgnl          strm = msgnl_with !Pp_control.std_ft strm
-
 (** LtacProf cannot yet handle backtracking into multi-success tactics.
     To properly support this, we'd have to somehow recreate our location in the
     call-stack, and stop/restart the intervening timers. This is tricky and
@@ -106,6 +102,10 @@ let time () =
   let times = Unix.times () in
   times.Unix.tms_utime +. times.Unix.tms_stime
 
+(*
+let msgnl_with fmt strm = msg_with fmt (strm ++ fnl ())
+let msgnl          strm = msgnl_with !Pp_control.std_ft strm
+
 let rec print_treenode indent (tn : treenode) =
   msgnl (str (indent^"{ entry = {"));
   Feedback.msg_notice (str (indent^"total = "));
@@ -129,6 +129,7 @@ let rec print_treenode indent (tn : treenode) =
 let rec print_stack (st : treenode list) = match st with
 | [] -> msgnl (str "[]")
 | x :: xs -> print_treenode "" x; msgnl (str ("::")); print_stack xs
+*)
 
 let string_of_call ck =
   let s =
