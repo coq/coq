@@ -17,15 +17,6 @@ TACTIC EXTEND stop_profiling
   | [ "stop" "ltac" "profiling" ] ->  [ tclSET_PROFILING false ]
 END;;
 
-let _ =
-  Goptions.declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "Ltac Profiling";
-      optkey   = ["Ltac"; "Profiling"];
-      optread  = get_profiling;
-      optwrite = set_profiling }
-
 VERNAC COMMAND EXTEND ResetLtacProfiling CLASSIFIED AS SIDEFF
  [ "Reset" "Ltac" "Profile" ] -> [ reset_profile() ]
 END

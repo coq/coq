@@ -5,14 +5,10 @@ open Util
 
 
 (** [is_profiling] and the profiling info ([stack]) should be synchronized with the document; the rest of the ref cells are either local to individual tactic invocations, or global flags, and need not be synchronized, since no document-level backtracking happens within tactics.  We synchronize is_profiling via an option. *)
-let is_profiling = ref false
+let is_profiling = Flags.profile_ltac
 
 let set_profiling b = is_profiling := b
 let get_profiling () = !is_profiling
-
-let should_display_profile_at_close = ref false
-let set_display_profile_at_close b = should_display_profile_at_close := b
-
 
 let new_call = ref false
 let entered_call() = new_call := true
@@ -293,9 +289,16 @@ let reset_profile() =
   stack := [{entry=empty_entry(); children=Hashtbl.create 20}];
   encountered_multi_success_backtracking := false
 
-let do_print_results_at_close () =
-  if !should_display_profile_at_close
-  then print_results ()
-  else ()
+let do_print_results_at_close () = if get_profiling () then print_results ()
 
 let _ = Declaremods.append_end_library_hook do_print_results_at_close
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "Ltac Profiling";
+      optkey   = ["Ltac"; "Profiling"];
+      optread  = get_profiling;
+      optwrite = set_profiling }

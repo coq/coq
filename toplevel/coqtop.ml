@@ -549,7 +549,7 @@ let parse_args arglist =
       else native_compiler := true
     |"-notop" -> unset_toplevel_name ()
     |"-output-context" -> output_context := true
-    |"-profile-ltac" -> Profile_ltac.set_profiling true; Profile_ltac.set_display_profile_at_close true
+    |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> no_load_rc ()
     |"-quiet"|"-silent" -> Flags.make_silent true; Flags.make_warn false
     |"-quick" -> Flags.compilation_mode := BuildVio

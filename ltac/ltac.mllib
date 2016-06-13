@@ -3,6 +3,7 @@ Tacenv
 Tactic_debug
 Tacintern
 Tacentries
+Profile_ltac
 Tacinterp
 Evar_tactics
 Tactic_option

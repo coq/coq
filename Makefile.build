@@ -570,7 +570,7 @@ test-suite: world $(ALLSTDLIB).v
 ##################################################################
 
 .PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
-.PHONY: engine highparsing stm toplevel ltac ltacprof
+.PHONY: engine highparsing stm toplevel ltac
 
 lib: lib/clib.cma lib/lib.cma
 kernel: kernel/kernel.cma

@@ -4,8 +4,6 @@ val set_profiling : bool -> unit
 
 val get_profiling : unit -> bool
 
-val set_display_profile_at_close : bool -> unit
-
 val entered_call : unit -> unit
 
 val print_results : unit -> unit
