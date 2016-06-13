@@ -19,7 +19,7 @@ val is_set_minimization : unit -> bool
 
 (** Global universe name <-> level mapping *)
 type universe_names = 
-  Univ.universe_level Idmap.t * Id.t Univ.LMap.t
+  (Decl_kinds.polymorphic * Univ.universe_level) Idmap.t * Id.t Univ.LMap.t
 
 val global_universe_names : unit -> universe_names
 val set_global_universe_names : universe_names -> unit

@@ -440,8 +440,9 @@ let cache_universes (p, l) =
   let glob = Universes.global_universe_names () in
   let glob', ctx =
     List.fold_left (fun ((idl,lid),ctx) (id, lev) ->
-		    ((Idmap.add id lev idl, Univ.LMap.add lev id lid),
-		     Univ.ContextSet.add_universe lev ctx))
+        ((Idmap.add id (p, lev) idl,
+          Univ.LMap.add lev id lid),
+         Univ.ContextSet.add_universe lev ctx))
       (glob, Univ.ContextSet.empty) l
   in
     Global.push_context_set p ctx;
@@ -457,6 +458,12 @@ let input_universes : universe_decl -> Libobject.obj =
       classify_function = (fun a -> Keep a) }
 
 let do_universe poly l =
+  let in_section = Lib.sections_are_opened () in
+  let () =
+    if poly && not in_section then
+      user_err_loc (Loc.ghost, "Constraint",
+                    str"Cannot declare polymorphic universes outside sections")
+  in
   let l =
     List.map (fun (l, id) ->
 	      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
@@ -485,14 +492,30 @@ let input_constraints : constraint_decl -> Libobject.obj =
 let do_constraint poly l =
   let u_of_id =
     let names, _ = Universes.global_universe_names () in
-      fun (loc, id) ->
-	try Idmap.find id names
-	with Not_found ->
-	  user_err_loc (loc, "Constraint", str "Undeclared universe " ++ pr_id id)
+    fun (loc, id) ->
+    try Idmap.find id names
+    with Not_found ->
+      user_err_loc (loc, "Constraint", str "Undeclared universe " ++ pr_id id)
+  in
+  let in_section = Lib.sections_are_opened () in
+  let () =
+    if poly && not in_section then
+      user_err_loc (Loc.ghost, "Constraint",
+                    str"Cannot declare polymorphic constraints outside sections")
+  in
+  let check_poly loc p loc' p' =
+    if poly then ()
+    else if p || p' then
+      let loc = if p then loc else loc' in
+      user_err_loc (loc, "Constraint",
+                    str "Cannot declare a global constraint on " ++
+                    str "a polymorphic universe, use "
+                    ++ str "Polymorphic Constraint instead")
   in
   let constraints = List.fold_left (fun acc (l, d, r) ->
-    let lu = u_of_id l and ru = u_of_id r in
-      Univ.Constraint.add (lu, d, ru) acc)
+     let p, lu = u_of_id l and p', ru = u_of_id r in
+     check_poly (fst l) p (fst r) p';
+     Univ.Constraint.add (lu, d, ru) acc)
     Univ.Constraint.empty l
   in
     Lib.add_anonymous_leaf (input_constraints (poly, constraints))

@@ -13,10 +13,11 @@ open Term
 open Environ
 open Univ
 open Globnames
+open Decl_kinds
 
 (** Global universe names *)
 type universe_names = 
-    Univ.universe_level Idmap.t * Id.t Univ.LMap.t
+  (polymorphic * Univ.universe_level) Idmap.t * Id.t Univ.LMap.t
 
 let global_universes =
   Summary.ref ~name:"Global universe names"
