@@ -40,3 +40,9 @@ val ascii_of_ident : string -> string
 
 (** Validate an UTF-8 string *)
 val is_utf8 : string -> bool
+
+(** Return the length of a valid UTF-8 string. *)
+val utf8_length : string -> int
+
+(** Variant of {!String.sub} for UTF-8 strings. *)
+val utf8_sub : string -> int -> int -> string

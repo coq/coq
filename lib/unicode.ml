@@ -261,3 +261,73 @@ let ascii_of_ident s =
         (Buffer.add_char out s.[!i]; incr i)
     done;
     Buffer.contents out
+
+(* Compute length of an UTF-8 encoded string
+   Rem 1 : utf8_length <= String.length (equal if pure ascii)
+   Rem 2 : if used for an iso8859_1 encoded string, the result is
+   wrong in very rare cases. Such a wrong case corresponds to any
+   sequence of a character in range 192..253 immediately followed by a
+   character in range 128..191 (typical case in french is "déçu" which
+   is counted 3 instead of 4); then no real harm to use always
+   utf8_length even if using an iso8859_1 encoding *)
+
+(** FIXME: duplicate code with Pp *)
+
+let utf8_length s =
+  let len = String.length s
+  and cnt = ref 0
+  and nc = ref 0
+  and p = ref 0 in
+  while !p < len do
+    begin
+      match s.[!p] with
+      | '\000'..'\127' -> nc := 0 (* ascii char *)
+      | '\128'..'\191' -> nc := 0 (* cannot start with a continuation byte *)
+      | '\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
+      | '\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
+      | '\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
+      | '\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
+      | '\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
+      | '\254'..'\255' -> nc := 0 (* invalid byte *)
+    end ;
+    incr p ;
+    while !p < len && !nc > 0 do
+      match s.[!p] with
+      | '\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
+      | _ (* not a continuation byte *) -> nc := 0
+    done ;
+    incr cnt
+  done ;
+  !cnt
+
+(* Variant of String.sub for UTF8 character positions *)
+let utf8_sub s start_u len_u =
+  let len_b = String.length s
+  and end_u = start_u + len_u
+  and cnt = ref 0
+  and nc = ref 0
+  and p = ref 0 in
+  let start_b = ref len_b in
+  while !p < len_b && !cnt < end_u do
+    if !cnt <= start_u then start_b := !p ;
+    begin
+      match s.[!p] with
+      | '\000'..'\127' -> nc := 0 (* ascii char *)
+      | '\128'..'\191' -> nc := 0 (* cannot start with a continuation byte *)
+      |	'\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
+      |	'\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
+      |	'\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
+      |	'\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
+      |	'\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
+      |	'\254'..'\255' -> nc := 0 (* invalid byte *)
+    end ;
+    incr p ;
+    while !p < len_b && !nc > 0 do
+      match s.[!p] with
+      |	'\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
+      |	_ (* not a continuation byte *) -> nc := 0
+    done ;
+    incr cnt
+  done ;
+  let end_b = !p in
+  String.sub s !start_b (end_b - !start_b)

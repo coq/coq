@@ -1,3 +1,4 @@
+open Unicode
 open Pp
 open Printer
 open Util
