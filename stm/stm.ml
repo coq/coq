@@ -99,7 +99,7 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
     | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
-    | VernacTime (_,e) | VernacRedirect (_,(_,e)) -> internal_command e
+    | VernacTime (_,e) | VernacTimeout (_,e) | VernacRedirect (_,(_,e)) -> internal_command e
     | _ -> false in
   if internal_command expr then begin
     prerr_endline (fun () -> "ignoring " ^ Pp.string_of_ppcmds(pr_vernac expr))
