@@ -12,7 +12,7 @@
 # Executables
 ###########################################################################
 
-COQMKTOP:=bin/coqmktop$(EXE)
+COQMKTOP:=bin/coqmktop$(EXE) 
 
 COQC:=bin/coqc$(EXE)
 
@@ -35,7 +35,7 @@ else
 endif
 
 INSTALLBIN:=install
-INSTALLLIB:=install -m 644
+INSTALLLIB:=install -m 644 
 INSTALLSH:=./install.sh
 MKDIR:=install -d
 
@@ -119,7 +119,7 @@ HTMLSTYLE:=simple
 export TEXINPUTS:=$(HEVEALIB):
 COQTEXOPTS:=-boot -n 72 -sl -small
 
-DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
+DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex 
 
 REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
   RefMan-gal.v.tex RefMan-ext.v.tex \
@@ -149,7 +149,7 @@ REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
 
 
 ###########################################################################
-# Object and Source files
+# Object and Source files 
 ###########################################################################
 
 COQRUN := coqrun
@@ -394,7 +394,7 @@ GTKBIN=$(shell pkg-config --variable=prefix gtk+-2.0)/bin
 GTKLIBS=$(shell pkg-config --variable=libdir gtk+-2.0)
 
 
-# For emacs:
-# Local Variables:
-# mode: makefile
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
 # End:

@@ -44,7 +44,7 @@ end
 
 module Tag :
 sig
-  type t
+  type t 
   type 'a key
   val create : string -> 'a key
   val inj : 'a -> 'a key -> t

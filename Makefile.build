@@ -78,8 +78,8 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 COQOPTS=$(COQ_XML) $(VM) $(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
 
-# The SHOW and HIDE variables control whether make will echo complete commands
-# or only abbreviated versions.
+# The SHOW and HIDE variables control whether make will echo complete commands 
+# or only abbreviated versions. 
 # Quiet mode is ON by default except if VERBOSE=1 option is given to make
 
 SHOW := $(if $(VERBOSE),@true "",@echo "")
@@ -231,7 +231,7 @@ grammar/grammar.cma : $(GRAMCMO)
 	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $^ -impl test.mlp -o test.ml
 	$(HIDE)$(GRAMC) test.ml -o test-grammar
 	@rm -f test-grammar test.*
-	$(SHOW)'OCAMLC -a $@'
+	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
 
 ## Support of Camlp5 and Camlp5
@@ -283,7 +283,7 @@ minibyte: $(COQTOPBYTE) pluginsbyte
 
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs)
-	$(SHOW)'COQMKTOP -o $@'
+	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) $(LINKMETADATA) -thread -o $@
 	$(STRIP) $@
 	$(CODESIGN) $@
@@ -293,7 +293,7 @@ $(COQTOPEXE): $(COQTOPBYTE)
 endif
 
 $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA)
-	$(SHOW)'COQMKTOP -o $@'
+	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -thread -o $@
 
 LOCALCHKLIBS:=$(addprefix -I , $(CHKSRCDIRS) )
@@ -896,7 +896,7 @@ install-emacs:
 
 install-latex:
 	$(MKDIR) $(FULLCOQDOCDIR)
-	$(INSTALLLIB) tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)
+	$(INSTALLLIB) tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)	
 #	-$(UPDATETEX)
 
 ###########################################################################
@@ -968,7 +968,7 @@ dev/printers.cma: dev/printers.mllib
 	$(SHOW)'Testing $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -o test-printer
 	@rm -f test-printer
-	$(SHOW)'OCAMLC -a $@'
+	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -linkall -a -o $@
 
 ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
@@ -1107,7 +1107,7 @@ plugins/%_mod.ml: plugins/%.mllib
 
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP)
 	$(SHOW)'COQC      $<'
-	$(HIDE)rm -f $*.glob
+	$(HIDE)rm -f $*.glob 
 	$(HIDE)$(BOOTCOQC) $<
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
@@ -1187,7 +1187,7 @@ otags:
 Makefile Makefile.build Makefile.common config/Makefile : ;
 
 
-# For emacs:
-# Local Variables:
-# mode: makefile
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
 # End:
