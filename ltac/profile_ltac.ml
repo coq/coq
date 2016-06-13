@@ -150,18 +150,17 @@ let string_of_call ck =
   let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
   CString.strip s
 
-let exit_tactic start_time add_total c =
-  try
-    let node :: stack' = !stack in
-    let parent = List.hd stack' in
-    stack := stack';
-    if add_total then Hashtbl.remove on_stack (string_of_call c);
-    let diff = time () -. start_time in
-    parent.entry.local <- parent.entry.local -. diff;
-    let node' = { total = diff; local = diff; ncalls = 1; max_total = diff } in
-    add_entry node.entry add_total node';
-  with Failure ("hd") -> (* oops, our stack is invalid *)
-    encounter_multi_success_backtracking ()
+let exit_tactic start_time add_total c = match !stack with
+| [] | [_] ->
+  (* oops, our stack is invalid *)
+  encounter_multi_success_backtracking ()
+| node :: (parent :: _ as stack') ->
+  stack := stack';
+  if add_total then Hashtbl.remove on_stack (string_of_call c);
+  let diff = time () -. start_time in
+  parent.entry.local <- parent.entry.local -. diff;
+  let node' = { total = diff; local = diff; ncalls = 1; max_total = diff } in
+  add_entry node.entry add_total node'
 
 let tclFINALLY tac (finally : unit Proofview.tactic) =
   let open Proofview.Notations in
