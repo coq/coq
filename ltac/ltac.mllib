@@ -3,6 +3,7 @@ Tacenv
 Tactic_debug
 Tacintern
 Tacentries
+Profile_ltac
 Tacinterp
 Evar_tactics
 Tactic_option
@@ -10,6 +11,7 @@ Extraargs
 G_obligations
 Coretactics
 Extratactics
+Profile_ltac_tactics
 G_auto
 G_class
 Rewrite

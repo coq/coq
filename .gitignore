@@ -127,6 +127,7 @@ parsing/cLexer.ml
 ltac/coretactics.ml
 ltac/extratactics.ml
 ltac/extraargs.ml
+ltac/profile_ltac_tactics.ml
 ide/coqide_main.ml
 
 # other auto-generated files

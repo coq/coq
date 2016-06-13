@@ -220,6 +220,7 @@ let native_compiler = ref false
 let print_mod_uid = ref false
 
 let tactic_context_compat = ref false
+let profile_ltac = ref false
 
 let dump_bytecode = ref false
 let set_dump_bytecode = (:=) dump_bytecode

@@ -77,6 +77,7 @@ let print_usage_channel co command =
 \n                         the directory $COQ_XML_LIBRARY_ROOT (if set) or to\
 \n                         stdout (if unset)\
 \n  -time                  display the time taken by each command\
+\n  -profile-ltac           display the time taken by each (sub)tactic\
 \n  -m, --memory           display total heap size at program exit\
 \n                         (use environment variable\
 \n                          OCAML_GC_STATS=\"/tmp/gclog.txt\"\

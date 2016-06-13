@@ -143,6 +143,8 @@ val tactic_context_compat : bool ref
 (** Set to [true] to trigger the compatibility bugged context matching (old
     context vs. appcontext) is set. *)
 
+val profile_ltac : bool ref
+
 (** Dump the bytecode after compilation (for debugging purposes) *)
 val dump_bytecode : bool ref
 val set_dump_bytecode : bool -> unit

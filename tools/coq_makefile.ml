@@ -50,8 +50,9 @@ let section s =
 let lib_dirs =
   ["kernel"; "lib"; "library"; "parsing";
    "pretyping"; "interp"; "printing"; "intf";
-   "proofs"; "tactics"; "tools"; "toplevel";
-   "stm"; "grammar"; "config"; "ltac"; "engine"]
+   "proofs"; "tactics"; "tools"; "ltacprof";
+   "toplevel"; "stm"; "grammar"; "config";
+   "ltac"; "engine"]
 
 
 let usage () =
