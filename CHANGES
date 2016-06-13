@@ -36,8 +36,12 @@ Changes from V8.5pl1 to V8.5pl2
 
 Bugfixes
 
-- #4677: fix alpha-conversion in notations needing eta-expansion
+- #4677: fix alpha-conversion in notations needing eta-expansion.
 - Fully preserve initial order of hypotheses in "Regular Subst Tactic" mode.
+- #4644: a regression in unification.
+- #4777: printing inefficiency with implicit arguments
+- #4752: CoqIDE crash on files not ended by ".v".
+- #4398: type_scope used consistently in "match goal".
 
 Changes from V8.5 to V8.5pl1
 ============================

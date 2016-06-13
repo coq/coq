@@ -24,6 +24,7 @@ type unification_error =
   | InstanceNotSameType of existential_key * env * types * types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
+  | ProblemBeyondCapabilities
 
 type position = (Id.t * Locus.hyp_location_flag) option
 

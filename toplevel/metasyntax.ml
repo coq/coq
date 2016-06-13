@@ -827,7 +827,7 @@ let make_interpretation_type isrec isonlybinding = function
   | NtnInternTypeConstr | NtnInternTypeIdent ->
      if isonlybinding then NtnTypeOnlyBinder else NtnTypeConstr
   | NtnInternTypeBinder when isrec -> NtnTypeBinderList
-  | NtnInternTypeBinder -> error "Type not allowed in recursive notation."
+   | NtnInternTypeBinder -> error "Type binder is only for use in recursive notations for binders."
 
 let make_interpretation_vars recvars allvars =
   let eq_subscope (sc1, l1) (sc2, l2) =
