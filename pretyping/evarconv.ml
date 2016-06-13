@@ -97,8 +97,7 @@ let position_problem l2r = function
   | CUMUL -> Some l2r
 
 let occur_rigidly ev evd t = 
-  let (l, app) = decompose_app_vect t in 
-  let rec aux t = 
+  let rec aux t =
     match kind_of_term (whd_evar evd t) with
     | App (f, c) -> if aux f then Array.exists aux c else false
     | Construct _ | Ind _ | Sort _ | Meta _ | Fix _ | CoFix _ -> true
@@ -110,7 +109,7 @@ let occur_rigidly ev evd t =
     | Prod (_, b, t) -> ignore(aux b || aux t); true
     | Rel _ | Var _ -> false
     | Case _ -> false
-  in Array.exists (fun t -> try ignore(aux t); false with Occur -> true) app
+  in try ignore(aux t); false with Occur -> true
 
 (* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose 
    the problem (t1 stack1) = (t2 stack2) into a problem
