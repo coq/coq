@@ -164,6 +164,9 @@ val inject : constr -> fconstr
 (** mk_atom: prevents a term from being evaluated *)
 val mk_atom : constr -> fconstr
 
+(** mk_red: makes a reducible term (used in newring) *)
+val mk_red : fterm -> fconstr
+
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val destFLambda :
