@@ -363,6 +363,7 @@ let set_norm v = v.norm <- Norm
 let is_val v = match v.norm with Norm -> true | _ -> false
 
 let mk_atom c = {norm=Norm;term=FAtom c}
+let mk_red f = {norm=Red;term=f}
 
 (* Could issue a warning if no is still Red, pointing out that we loose
    sharing. *)
