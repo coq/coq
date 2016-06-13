@@ -83,7 +83,7 @@ let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
 
 (* Commands piercing opaque *)
 let may_pierce_opaque = function
-  | { expr = VernacPrint (PrintName _) } -> true
+  | { expr = VernacPrint _ } -> true
   | { expr = VernacExtend (("Extraction",_), _) } -> true
   | { expr = VernacExtend (("SeparateExtraction",_), _) } -> true
   | { expr = VernacExtend (("ExtractionLibrary",_), _) } -> true
