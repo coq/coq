@@ -1489,3 +1489,12 @@ let not_evar c = match kind_of_term c with
 let is_ground c gl =
   if Evarutil.is_ground_term (project gl) c then tclIDTAC gl
   else tclFAIL 0 (str"Not ground") gl
+
+let autoapply c i gl =
+  let flags = auto_unif_flags Evar.Set.empty
+    (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
+  let cty = pf_unsafe_type_of gl c in
+  let ce = mk_clenv_from gl (c,cty) in
+  let tac = { enter = fun gl -> (unify_e_resolve false flags).enter gl
+    ((c,cty,Univ.ContextSet.empty),0,ce) } in
+  Proofview.V82.of_tactic (Proofview.Goal.nf_enter tac) gl
