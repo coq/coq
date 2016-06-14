@@ -567,6 +567,14 @@ plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLOPT -shared -o $@'
 	$(HIDE)$(OCAMLOPT) -shared -o $@ $<
 
+%.cmxs: %.cmxa
+	$(SHOW)'OCAMLOPT -shared -o $@'
+ifeq ($(HASNATDYNLINK),os5fixme)
+	$(HIDE)dev/ocamlopt_shared_os5fix.sh "$(OCAMLOPT)" $@
+else
+	$(HIDE)$(OCAMLOPT) -linkall -shared -o $@ $<
+endif
+
 %.ml: %.mll
 	$(SHOW)'OCAMLLEX  $<'
 	$(HIDE)$(OCAMLLEX) -o $@ "$*.mll"
