@@ -1097,10 +1097,12 @@ exception Found of constr * types
 
 let prepare_hint check (poly,local) env init (sigma,c) =
   let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
-  (* We re-abstract over uninstantiated evars.
+  (* We re-abstract over uninstantiated evars and universes.
      It is actually a bit stupid to generalize over evars since the first
      thing make_resolves will do is to re-instantiate the products *)
-  let c = drop_extra_implicit_args (Evarutil.nf_evar sigma c) in
+  let sigma, subst = Evd.nf_univ_variables sigma in
+  let c = Vars.subst_univs_constr subst (Evarutil.nf_evar sigma c) in
+  let c = drop_extra_implicit_args c in
   let vars = ref (collect_vars c) in
   let subst = ref [] in
   let rec find_next_evar c = match kind_of_term c with

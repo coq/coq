@@ -117,7 +117,7 @@ open Unification
 (***************************************************************************)
 
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
-			  
+
 let unify_e_resolve poly flags (c,clenv) =
   Proofview.Goal.nf_enter begin
       fun gl ->
@@ -138,12 +138,14 @@ let hintmap_of hdc concl =
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact poly flags (c,clenv) =
-  let (c, _, _) = c in
-  let clenv', subst = 
-    if poly then Clenv.refresh_undefined_univs clenv 
-    else clenv, Univ.empty_level_subst
-  in e_give_exact (* ~flags *) (Vars.subst_univs_level_constr subst c)
-    
+  Proofview.Goal.enter begin
+    fun gl ->
+    let clenv', c = connect_hint_clenv poly c clenv gl in
+    Tacticals.New.tclTHEN
+    (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
+    (Proofview.V82.tactic (e_give_exact c))
+  end
+
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =
     registered_e_assumption ::
@@ -174,7 +176,7 @@ and e_my_find_search db_list local_db hdc concl =
         let tac = function
         | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
         | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
-        | Give_exact (c,cl) -> Proofview.V82.tactic (e_exact poly st (c,cl))
+        | Give_exact (c,cl) -> e_exact poly st (c,cl)
         | Res_pf_THEN_trivial_fail (term,cl) ->
           Proofview.V82.tactic (tclTHEN (Proofview.V82.of_tactic (unify_e_resolve poly st (term,cl)))
             (e_trivial_fail_db db_list local_db))
