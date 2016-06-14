@@ -3,7 +3,7 @@
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
-let frozen_lexer = Lexer.freeze () ;;
+let frozen_lexer = CLexer.freeze () ;;
 
 (*i camlp4use: "pa_extend.cmo" i*)
 (*i camlp4deps: "grammar/grammar.cma" i*)
@@ -56,11 +56,12 @@ type loc = Loc.t
 let dummy_loc = Loc.ghost
 let errorstrm = Errors.errorlabstrm "ssrmatching"
 let loc_error loc msg = Errors.user_err_loc (loc, msg, str msg)
+let ppnl = Feedback.msg_info
 
 (* 0 cost pp function. Active only if env variable SSRDEBUG is set *)
 (* or if SsrDebug is Set                                                  *)
 let pp_ref = ref (fun _ -> ())
-let ssr_pp s = pperrnl (str"SSR: "++Lazy.force s)
+let ssr_pp s = Feedback.msg_error (str"SSR: "++Lazy.force s)
 let _ =
   try ignore(Sys.getenv "SSRMATCHINGDEBUG"); pp_ref := ssr_pp
   with Not_found -> ()
@@ -124,14 +125,16 @@ let prl_term (k, c) = pr_guarded (guard_term k) prl_glob_constr_and_expr c
 
 (** Adding a new uninterpreted generic argument type *)
 let add_genarg tag pr =
-  let wit = Genarg.make0 None tag in
+  let wit = Genarg.make0 tag in
+  let tag = Geninterp.Val.create tag in
   let glob ist x = (ist, x) in
   let subst _ x = x in
-  let interp ist x = Ftactic.return x in
+  let interp ist x = Ftactic.return (Geninterp.Val.Dyn (tag, x)) in
   let gen_pr _ _ _ = pr in
   let () = Genintern.register_intern0 wit glob in
   let () = Genintern.register_subst0 wit subst in
   let () = Geninterp.register_interp0 wit interp in
+  let () = Geninterp.register_val0 wit (Some (Geninterp.Val.Base tag)) in
   Pptactic.declare_extra_genarg_pprule wit gen_pr gen_pr gen_pr;
   wit
 
@@ -1017,6 +1020,7 @@ GEXTEND Gram
 END
 
 ARGUMENT EXTEND lcpattern
+     TYPED AS cpattern
      PRINTED BY pr_ssrterm
      INTERPRETED BY interp_ssrterm
      GLOBALIZED BY glob_cpattern SUBSTITUTED BY subst_ssrterm
@@ -1031,6 +1035,23 @@ GEXTEND Gram
     let pattern = mk_term k c in
     if loc_ofCG pattern <> !@loc && k = '(' then mk_term 'x' c else pattern ]];
 END
+
+let thin id sigma goal =
+  let ids = Id.Set.singleton id in
+  let env = Goal.V82.env sigma goal in
+  let cl = Goal.V82.concl sigma goal in
+  let evdref = ref (Evd.clear_metas sigma) in
+  let ans =
+    try Some (Evarutil.clear_hyps_in_evi env evdref (Environ.named_context_val env) cl ids)
+    with Evarutil.ClearDependencyError _ -> None
+  in
+  match ans with
+  | None -> sigma
+  | Some (hyps, concl) ->
+    let sigma = !evdref in
+    let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
+    let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
+    sigma
 
 let interp_pattern ist gl red redty =
   pp(lazy(str"interpreting: " ++ pr_pattern red));
@@ -1072,8 +1093,7 @@ let interp_pattern ist gl red redty =
         if Option.is_empty !to_clean then sigma else
         let name = Option.get !to_clean in
         pp(lazy(pr_id name));
-        try snd(Logic.prim_refiner (Proof_type.Thin [name]) sigma e)
-        with Evarutil.ClearDependencyError _ -> sigma)
+        thin name sigma e)
       sigma new_evars in
     sigma in
   let red = match red with
@@ -1356,6 +1376,6 @@ END
 (* The user is supposed to Require Import ssreflect or Require ssreflect   *)
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
-let () = Lexer.unfreeze frozen_lexer ;;
+let () = CLexer.unfreeze frozen_lexer ;;
 
 (* vim: set filetype=ocaml foldmethod=marker: *)
