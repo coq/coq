@@ -370,6 +370,11 @@ let get_int opt n =
   with Failure _ ->
     prerr_endline ("Error: integer expected after option "^opt); exit 1
 
+let get_float opt n =
+  try float_of_string n
+  with Failure _ ->
+    prerr_endline ("Error: float expected after option "^opt); exit 1
+
 let get_host_port opt s =
   match CString.split ':' s with
   | [host; portr; portw] ->
@@ -501,6 +506,8 @@ let parse_args arglist =
         Flags.async_proofs_tac_error_resilience := get_error_resilience opt (next ())
     |"-async-proofs-command-error-resilience" ->
         Flags.async_proofs_cmd_error_resilience := get_bool opt (next ())
+    |"-async-proofs-delegation-threshold" ->
+        Flags.async_proofs_delegation_threshold:= get_float opt (next ())
     |"-worker-id" -> set_worker_id opt (next ())
     |"-compat" -> let v = get_compat_version (next ()) in Flags.compat_version := v; add_compat_require v
     |"-compile" -> add_compile false (next ())

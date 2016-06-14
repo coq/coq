@@ -1875,9 +1875,9 @@ let async_policy () =
     (!compilation_mode = BuildVio || !async_proofs_mode <> APoff)
 
 let delegate name =
-  let time = get_hint_bp_time name in
-  time >= 1.0 || !Flags.compilation_mode = Flags.BuildVio
-              || !Flags.async_proofs_full
+     get_hint_bp_time name >= !Flags.async_proofs_delegation_threshold
+  || !Flags.compilation_mode = Flags.BuildVio
+  || !Flags.async_proofs_full
  
 let collect_proof keep cur hd brkind id =
  prerr_endline (fun () -> "Collecting proof ending at "^Stateid.to_string id);
