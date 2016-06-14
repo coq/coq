@@ -122,6 +122,9 @@ reduce the reactivity of the master process to user commands.
 To disable this feature, one can pass the \texttt{-async-proofs off} flag to
 CoqIDE.
 
+Proofs that are known to take little time to process are not delegated to a
+worker process.  The threshold can be configure with \texttt{-async-proofs-delegation-threshold}.  Default is 0.03 seconds.
+
 \section{Batch mode}
 
 When Coq is used as a batch compiler by running \texttt{coqc} or
