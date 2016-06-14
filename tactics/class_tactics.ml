@@ -276,7 +276,7 @@ let unify_resolve_refine poly flags =
   end }
 
 (** Dealing with goals of the form A -> B and hints of the form
-  C -> A -> B. In the
+  C -> A -> B.
 *)
 let clenv_of_prods poly nprods (c, clenv) gl =
   let (c, _, _) = c in
@@ -681,7 +681,7 @@ module V85 = struct
     let poss = e_possible_resolve hints info.hints info.only_classes s concl in
     let unique = is_unique env concl in
     let rec aux i foundone = function
-      | (tac, _, b, name, pp) :: tl ->
+      | (tac, _, extern, name, pp) :: tl ->
          let derivs = path_derivate info.auto_cut name in
          let res =
            try
@@ -718,23 +718,28 @@ module V85 = struct
                     let gls = top_sort s' evm in
                     (List.map (fun ev -> Some ev, ev) gls, s')
              in
-             let gls' =
-               List.map_i
-                 (fun j (evar, g) ->
-                   let info =
-                     { info with
-                       auto_depth = j :: i :: info.auto_depth;
-                       auto_last_tac = pp;
-                       is_evar = evar;
-                       hints =
-                         if b && not (Environ.eq_named_context_val (Goal.V82.hyps s' g)
-                                                                (Goal.V82.hyps s' gl))
-                         then make_autogoal_hints info.only_classes
-                              ~st:(Hint_db.transparent_state info.hints)
-                                                  {it = g; sigma = s';}
-                         else info.hints;
-                       auto_cut = derivs }
-                   in g, info) 1 newgls in
+             let reindex g =
+               let open Goal.V82 in
+               extern && not (Environ.eq_named_context_val
+                             (hyps s' g) (hyps s' gl))
+             in
+             let gl' j (evar, g) =
+               let hints' =
+                 if reindex g then
+                   make_autogoal_hints
+                     info.only_classes
+                     ~st:(Hint_db.transparent_state info.hints)
+                     {it = g; sigma = s';}
+                 else info.hints
+               in
+               { info with
+                 auto_depth = j :: i :: info.auto_depth;
+                 auto_last_tac = pp;
+                 is_evar = evar;
+                 hints = hints';
+                 auto_cut = derivs }
+             in
+             let gls' = List.map_i (fun i g -> snd g, gl' i g) 1 newgls in
              let glsv = {it = gls'; sigma = s';} in
              let fk' =
                (fun e ->
@@ -926,6 +931,7 @@ module Search = struct
       search_cut : hints_path;
       search_hints : hint_db; }
 
+  (** Local hints *)
   let autogoal_cache = ref (DirPath.empty, true, Context.Named.empty,
                             Hint_db.empty full_transparent_state true)
 
@@ -954,21 +960,32 @@ module Search = struct
       search_only_classes = only_classes;
       search_cut = cut }
 
-  let needs_backtrack env evd unique concl =
-    if unique || is_Prop env evd concl then
-      occur_existential concl
-    else true
-
   (** In the proof engine failures are represented as exceptions *)
   exception ReachedLimitEx
   exception NotApplicableEx
 
+  (** ReachedLimitEx has priority over NotApplicableEx to handle
+      iterative deepening: it should fail when no hints are applicable,
+      but go to a deeper depth otherwise. *)
   let merge_exceptions e e' =
     match fst e, fst e' with
     | ReachedLimitEx, _ -> e
     | _, ReachedLimitEx -> e'
     | _, _ -> e
 
+  (** Determine if backtracking is needed for this goal.
+      If the type class is unique or in Prop
+      and there are no evars in the goal then we do
+      NOT backtrack. *)
+  let needs_backtrack env evd unique concl =
+    if unique || is_Prop env evd concl then
+      occur_existential concl
+    else true
+
+  (** The general hint application tactic.
+      tac1 + tac2 .... The choice of OR or ORELSE is determined
+      depending on the dependencies of the goal and the unique/Prop
+      status *)
   let hints_tac_gl hints info kont gl : unit Proofview.tactic =
     let open Proofview in
     let open Proofview.Notations in
@@ -979,10 +996,11 @@ module Search = struct
     let unique = not info.search_dep || is_unique env concl in
     let backtrack = needs_backtrack env s unique concl in
     if !typeclasses_debug > 0 then
-      Feedback.msg_debug (pr_depth info.search_depth ++ str": looking for " ++
-                   Printer.pr_constr_env (Goal.env gl) s concl ++
-                   (if backtrack then str" with backtracking"
-                    else str" without backtracking"));
+      Feedback.msg_debug
+        (pr_depth info.search_depth ++ str": looking for " ++
+           Printer.pr_constr_env (Goal.env gl) s concl ++
+           (if backtrack then str" with backtracking"
+            else str" without backtracking"));
     let poss =
       e_possible_resolve hints info.search_hints info.search_only_classes s concl in
     (* If no goal depends on the solution of this one or the
@@ -993,101 +1011,106 @@ module Search = struct
     let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
     let idx = ref 1 in
     let foundone = ref false in
-    let rec aux e = function
-      | (tac, pat, b, name, pp) :: tl ->
-         let derivs = path_derivate info.search_cut name in
-         (if !typeclasses_debug > 1 then
-            Feedback.msg_debug (pr_depth (!idx :: info.search_depth) ++ str": trying " ++
-                         Lazy.force pp ++
-                         (if !foundone != true then
-                            str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
-                          else mt ())));
-         let tac_of gls i j = Goal.nf_enter { enter = fun gl' ->
-            begin
-              let sigma' = Goal.sigma gl' in
-              let s' = Sigma.to_evar_map sigma' in
-              let _concl = Goal.concl gl' in
-              if !typeclasses_debug > 0 then
-                Feedback.msg_debug (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
-                             pr_ev s' (Proofview.Goal.goal gl'));
-              let hints' =
-                if b && not (Context.Named.equal (Goal.hyps gl') (Goal.hyps gl))
-                then
-                  let st = Hint_db.transparent_state info.search_hints in
-                  make_autogoal_hints info.search_only_classes ~st gl'
-                else info.search_hints
-              in
-              let dep' = info.search_dep || Proofview.unifiable s' (Goal.goal gl') gls in
-              let info' =
-                { search_depth = succ j :: i :: info.search_depth;
-                  last_tac = pp;
-                  search_dep = dep';
-                  search_only_classes = info.search_only_classes;
-                  search_hints = hints';
-                  search_cut = derivs }
-              in
-              kont info' end }
-         in
-         let rec result (shelf, ()) i k =
-           foundone := true;
-           Proofview.Unsafe.tclGETGOALS >>= fun gls ->
-           let j = List.length gls in
-           (if !typeclasses_debug > 0 then
+    let rec onetac e (tac, pat, b, name, pp) tl =
+      let derivs = path_derivate info.search_cut name in
+      (if !typeclasses_debug > 1 then
+         Feedback.msg_debug
+           (pr_depth (!idx :: info.search_depth) ++ str": trying " ++
+              Lazy.force pp ++
+              (if !foundone != true then
+                 str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
+               else mt ())));
+      let tac_of gls i j = Goal.nf_enter { enter = fun gl' ->
+        let sigma' = Goal.sigma gl' in
+        let s' = Sigma.to_evar_map sigma' in
+        let _concl = Goal.concl gl' in
+        if !typeclasses_debug > 0 then
+          Feedback.msg_debug
+            (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
+               pr_ev s' (Proofview.Goal.goal gl'));
+        let hints' =
+          if b && not (Context.Named.equal (Goal.hyps gl') (Goal.hyps gl))
+          then
+            let st = Hint_db.transparent_state info.search_hints in
+            make_autogoal_hints info.search_only_classes ~st gl'
+          else info.search_hints
+        in
+        let dep' = info.search_dep || Proofview.unifiable s' (Goal.goal gl') gls in
+        let info' =
+          { search_depth = succ j :: i :: info.search_depth;
+            last_tac = pp;
+            search_dep = dep';
+            search_only_classes = info.search_only_classes;
+            search_hints = hints';
+            search_cut = derivs }
+        in kont info' }
+      in
+      let rec result (shelf, ()) i k =
+        foundone := true;
+        Proofview.Unsafe.tclGETGOALS >>= fun gls ->
+        let j = List.length gls in
+        (if !typeclasses_debug > 0 then
+           Feedback.msg_debug
+             (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
+              ++ str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
+              ++ str", " ++ int j ++ str" subgoal(s)" ++
+                (Option.cata (fun k -> str " in addition to the first " ++ int k)
+                             (mt()) k)));
+        let res =
+          if j = 0 then tclUNIT ()
+          else tclDISPATCH
+                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j))))
+        in
+        let finish sigma =
+          let filter ev =
+            try
+              let evi = Evd.find_undefined sigma ev in
+              if info.search_only_classes then
+                Some (ev, is_class_type sigma (Evd.evar_concl evi))
+              else Some (ev, true)
+            with Not_found -> None
+          in
+          let remaining = CList.map_filter filter shelf in
+          (if !typeclasses_debug > 1 then
+             let prunsolved (ev, _) =
+               int (Evar.repr ev) ++ spc () ++ pr_ev sigma ev in
+             let unsolved = prlist_with_sep spc prunsolved remaining in
+             Feedback.msg_debug
+               (pr_depth (i :: info.search_depth) ++
+                  str": after " ++ Lazy.force pp ++ str" finished, " ++
+                  int (List.length remaining) ++
+                  str " goals are shelved and unsolved ( " ++
+                  unsolved ++ str")"));
+          begin
+            (* Some existentials produced by the original tactic were not solved
+               in the subgoals, turn them into subgoals now. *)
+            let shelved, goals = List.split_when (fun (ev, s) -> s) remaining in
+            let shelved = List.map fst shelved and goals = List.map fst goals in
+            if !typeclasses_debug > 1 then
               Feedback.msg_debug
-                (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
-                 ++ str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
-                 ++ str", " ++ int j ++ str" subgoal(s)" ++
-                   (Option.cata (fun k -> str " in addition to the first " ++ int k)
-                                (mt()) k)));
-           let res =
-             if j = 0 then tclUNIT ()
-             else tclDISPATCH
-                    (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j))))
-           in
-           let finish =
-             tclEVARMAP >>= fun sigma ->
-             let filter ev =
-               try
-                 let evi = Evd.find_undefined sigma ev in
-                 if info.search_only_classes then
-                   Some (ev, is_class_type sigma (Evd.evar_concl evi))
-                 else Some (ev, true)
-               with Not_found -> None
-             in
-             let remaining = CList.map_filter filter shelf in
-             if !typeclasses_debug > 1 then
-               Feedback.msg_debug (pr_depth (i :: info.search_depth) ++
-                            str": after " ++ Lazy.force pp ++ str" finished, " ++
-                            int (List.length remaining) ++
-                            str " goals are shelved and unsolved ( " ++
-                            prlist_with_sep spc
-                                            (fun ev -> int (Evar.repr ev) ++ spc () ++
-                                                      pr_ev sigma ev)
-                                            (List.map fst remaining) ++ str")");
-             begin
-               (* Some existentials produced by the original tactic were not solved
-                in the subgoals, turn them into subgoals now. *)
-               let shelved, goals = List.split_when (fun (ev, s) -> s) remaining in
-               let shelved = List.map fst shelved and goals = List.map fst goals in
-               if !typeclasses_debug > 1 then
-                 Feedback.msg_debug (str"Adding shelved subgoals to the search: " ++
-                              prlist_with_sep spc (pr_ev sigma) goals);
-               shelve_goals shelved <*>
-                 (if List.is_empty goals then tclUNIT ()
-                  else with_shelf (Unsafe.tclNEWGOALS goals) >>=
-                         fun s -> result s i (Some (Option.default 0 k + j)))
-             end
-           in res <*> finish
-         in
-         if path_matches derivs [] then aux e tl
-         else ortac (with_shelf tac >>= fun s -> let i = !idx in incr idx; result s i None)
-                    (fun e' -> aux (merge_exceptions e e') tl)
+                (str"Adding shelved subgoals to the search: " ++
+                   prlist_with_sep spc (pr_ev sigma) goals);
+            shelve_goals shelved <*>
+              (if List.is_empty goals then tclUNIT ()
+               else with_shelf (Unsafe.tclNEWGOALS goals) >>=
+                      fun s -> result s i (Some (Option.default 0 k + j)))
+          end
+        in res <*> tclEVARMAP >>= finish
+      in
+      if path_matches derivs [] then aux e tl
+      else ortac
+             (with_shelf tac >>= fun s ->
+              let i = !idx in incr idx; result s i None)
+             (fun e' -> aux (merge_exceptions e e') tl)
+    and aux e = function
+      | x :: xs -> onetac e x xs
       | [] ->
          if !foundone == false && !typeclasses_debug > 0 then
-           Feedback.msg_debug (pr_depth info.search_depth ++ str": no match for " ++
-                        Printer.pr_constr_env (Goal.env gl) s concl ++
-                        spc () ++ str ", " ++ int (List.length poss) ++
-                        str" possibilities");
+           Feedback.msg_debug
+             (pr_depth info.search_depth ++ str": no match for " ++
+                Printer.pr_constr_env (Goal.env gl) s concl ++
+                spc () ++ str ", " ++ int (List.length poss) ++
+                str" possibilities");
          match e with
          | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
          | (_,ie) -> Proofview.tclZERO ~info:ie NotApplicableEx
@@ -1122,8 +1145,9 @@ module Search = struct
     let kont info =
       Proofview.numgoals >>= fun i ->
       if !typeclasses_debug > 1 then
-        Feedback.msg_debug (str"calling eauto recursively at depth " ++ int (succ depth)
-                   ++ str" on " ++ int i ++ str" subgoals");
+        Feedback.msg_debug
+          (str"calling eauto recursively at depth " ++ int (succ depth)
+           ++ str" on " ++ int i ++ str" subgoals");
       search_tac hints limit (succ depth) info
     in
     fun info ->
@@ -1158,10 +1182,11 @@ module Search = struct
 
   let fix_iterative t =
     let rec aux depth =
-      Proofview.tclOR (t depth)
-                      (function
-                       | (ReachedLimitEx,_) -> aux (succ depth)
-                       | (e,ie) -> Proofview.tclZERO ~info:ie e)
+      Proofview.tclOR
+        (t depth)
+        (function
+         | (ReachedLimitEx,_) -> aux (succ depth)
+         | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
 
   let fix_iterative_limit limit t =
@@ -1386,7 +1411,8 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
         let evd' =
           if get_typeclasses_compat () = Flags.Current then
             Search.typeclasses_resolve debug depth unique p evd
-          else V85.resolve_all_evars_once debug depth unique p evd
+          else
+            V85.resolve_all_evars_once debug depth unique p evd
         in
          if has_undefined p oevd evd' then raise Unresolved;
          docomp evd' comps

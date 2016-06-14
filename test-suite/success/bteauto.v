@@ -58,7 +58,7 @@ Hint Cut [_* eq_trans eq_sym eq_trans] : core.
 Goal forall x y z : nat, x = y -> z = y -> x = z.
 Proof.
   intros.
-  Fail Timeout 1 eauto 1000.
+  Fail Timeout 1 eauto 10000.
 
   typeclasses eauto with core.
 Qed.
@@ -94,11 +94,11 @@ Check (eqp 0%nat 0).
 
 (* Defaulting *)
 Check (fun x y => eqp x y).
-
-Hint Mode Equality + : typeclass_instances.
-
 (* No more defaulting, reduce "trigger-happiness" *)
-Fail Definition ambiguous x y := eqp x y.
+Definition ambiguous x y := eqp x y.
+
+Hint Mode Equality ! : typeclass_instances.
+Fail Definition ambiguous' x y := eqp x y.
 Definition nonambiguous (x y : nat) := eqp x y.
 
 (** Typical looping instances with defaulting: *)
@@ -119,36 +119,6 @@ Hint Mode SomeProp + + : typeclass_instances.
 Check prf.
 Check (fun H : SomeProp plus => _ : SomeProp (flip plus)).
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 (** Iterative deepening / breadth-first search *)
 
 Module IterativeDeepening.
@@ -164,7 +134,6 @@ Module IterativeDeepening.
   
   Goal C -> A.
     intros.
-    Set Typeclasses Debug.
     Fail Timeout 1 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
     Fail typeclasses eauto 1.
