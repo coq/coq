@@ -1061,6 +1061,16 @@ let write_configml f =
 
 let _ = write_configml "config/coq_config.ml"
 
+(** * Symlinks or copies for the checker *)
+
+let _ =
+  let prog, args, prf = 
+    if arch = "win32" then "cp", [], ""
+    else "ln", ["-s"], "../" in
+  List.iter (fun file ->
+    ignore(run "rm" ["-f"; "checker/"^file]);
+    ignore(run ~fatal:true prog (args @ [prf^"kernel/"^file;"checker/"^file])))
+  [ "esubst.ml"; "esubst.mli"; "names.ml"; "names.mli" ]
 
 (** * Build the config/Makefile file *)
 
