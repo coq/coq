@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Toplevel Exception *)
+exception EvaluatedError of Pp.std_ppcmds * exn option
+
 (** Error report. *)
 
 val print_loc : Loc.t -> Pp.std_ppcmds
