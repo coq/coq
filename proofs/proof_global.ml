@@ -678,7 +678,7 @@ let print_goal_selector = function
 let parse_goal_selector = function
   | "all" -> Vernacexpr.SelectAll
   | i ->
-      let err_msg = "A selector must be \"all\" or a natural number." in
+      let err_msg = "The default selector must be \"all\" or a natural number." in
       begin try
               let i = int_of_string i in
               if i < 0 then Errors.error err_msg;
