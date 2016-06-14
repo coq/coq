@@ -741,7 +741,7 @@ object(self)
           self#cleanup (Doc.cut_at document to_id);
           conclusion ()
       | Fail (safe_id, loc, msg) ->
-          if loc <> None then messages#push Feedback.Error (Richpp.richpp_of_string "Fixme LOC");
+(*           if loc <> None then messages#push Feedback.Error (Richpp.richpp_of_string "Fixme LOC"); *)
           messages#push Feedback.Error msg;
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
           else undo safe_id

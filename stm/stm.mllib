@@ -8,4 +8,5 @@ Lemmas
 CoqworkmgrApi
 AsyncTaskQueue
 Stm
+ProofBlockDelimiter
 Vio_checking

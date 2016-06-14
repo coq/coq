@@ -46,6 +46,43 @@ proof does not begin with \texttt{Proof using}, the system records in an
 auxiliary file, produced along with the \texttt{.vo} file, the list of
 section variables used.
 
+\section{Proof blocks and error resilience}
+
+Coq 8.6 introduces a mechanism for error resiliency: in interactive mode Coq
+is able to completely check a document containing errors instead of bailing
+out at the first failure.
+
+Two kind of errors are supported: errors occurring in vernacular commands and
+errors occurring in proofs.
+
+To properly recover from a failing tactic, Coq needs to recognize the structure of
+the proof in order to confine the error to a sub proof.  Proof block detection
+is performed by looking at the syntax of the proof script (i.e. also looking at indentation).
+Coq comes with four kind of proof blocks, and an ML API to add new ones.
+
+\begin{description}
+\item[curly] blocks are delimited by \texttt{\{} and \texttt{\}}, see \ref{Proof-handling}
+\item[par] blocks are atomic, i.e. just one tactic introduced by the \texttt{par:} goal selector
+\item[indent] blocks end with a tactic indented less than the previous one
+\item[bullet] blocks are delimited by two equal bullet signs at the same indentation level
+\end{description}
+
+\subsection{Caveats}
+
+When a vernacular command fails the subsequent error messages may be bogus, i.e. caused by
+the first error.  Error resiliency for vernacular commands can be switched off passing
+\texttt{-async-proofs-command-error-resilience off} to CoqIDE.
+
+An incorrect proof block detection can result into an incorrect error recovery and
+hence in bogus errors.  Proof block detection cannot be precise for bullets or
+any other non well parenthesized proof structure.  Error resiliency can be
+turned off or selectively activated for any set of block kind passing to
+CoqIDE one of the following options:
+\texttt{-async-proofs-tactic-error-resilience off},
+\texttt{-async-proofs-tactic-error-resilience all},
+\texttt{-async-proofs-tactic-error-resilience $blocktype_1$,..., $blocktype_n$}.
+Valid proof block types are: ``curly'', ``par'', ``indent'', ``bullet''. 
+
 \subsubsection{Automatic suggestion of proof annotations}
 
 The command \texttt{Set Suggest Proof Using} makes Coq suggest, when a

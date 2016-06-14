@@ -34,6 +34,9 @@ type priority = Low | High
 val async_proofs_worker_priority : priority ref
 val string_of_priority : priority -> string
 val priority_of_string : string -> priority
+type tac_error_filter = [ `None | `Only of string list | `All ]
+val async_proofs_tac_error_resilience : tac_error_filter ref
+val async_proofs_cmd_error_resilience : bool ref
 
 val debug : bool ref
 val in_debugger : bool ref

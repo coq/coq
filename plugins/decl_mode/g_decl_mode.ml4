@@ -100,7 +100,7 @@ let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
 
 let classify_proof_instr = function
   | { instr = Pescape |Pend B_proof } -> VtProofMode "Classic", VtNow
-  | _ -> VtProofStep false, VtLater
+  | _ -> Vernac_classifier.classify_as_proofstep
 
 (* We use the VERNAC EXTEND facility with a custom non-terminal
     to populate [proof_mode] with a new toplevel interpreter.

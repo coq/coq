@@ -21,8 +21,9 @@ let string_of_vernac_type = function
   | VtQed VtKeep -> "Qed(keep)"
   | VtQed VtKeepAsAxiom -> "Qed(admitted)"
   | VtQed VtDrop -> "Qed(drop)"
-  | VtProofStep false -> "ProofStep"
-  | VtProofStep true -> "ProofStep (parallel)"
+  | VtProofStep { parallel; proof_block_detection } ->
+      "ProofStep " ^ if parallel then "par " else "" ^ 
+        Option.default "" proof_block_detection
   | VtProofMode s -> "ProofMode " ^ s
   | VtQuery (b,(id,route)) ->
       "Query " ^ string_of_in_script b ^ " report " ^ Stateid.to_string id ^
@@ -93,7 +94,9 @@ let rec classify_vernac e =
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
           | VtStm _ | VtProofMode _ ), _ as x -> x
-        | VtQed _, _ -> VtProofStep false, VtNow
+        | VtQed _, _ ->
+            VtProofStep { parallel = false; proof_block_detection = None },
+            VtNow
         | (VtStartProof _ | VtUnknown), _ -> VtUnknown, VtNow)
     (* Qed *)
     | VernacAbort _ -> VtQed VtDrop, VtLater
@@ -105,12 +108,19 @@ let rec classify_vernac e =
         VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
     (* ProofStep *)
     | VernacProof _ 
-    | VernacBullet _ 
     | VernacFocus _ | VernacUnfocus
-    | VernacSubproof _ | VernacEndSubproof
+    | VernacSubproof _
     | VernacCheckGuard
     | VernacUnfocused
-    | VernacSolveExistential _ -> VtProofStep false, VtLater
+    | VernacSolveExistential _ ->
+        VtProofStep { parallel = false; proof_block_detection = None }, VtLater
+    | VernacBullet _ ->
+        VtProofStep { parallel = false; proof_block_detection = Some "bullet" },
+        VtLater
+    | VernacEndSubproof -> 
+        VtProofStep { parallel = false;
+                      proof_block_detection = Some "curly" },
+        VtLater
     (* Options changing parser *)
     | VernacUnsetOption (["Default";"Proof";"Using"])
     | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
@@ -219,4 +229,4 @@ let rec classify_vernac e =
 let classify_as_query =
   VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
 let classify_as_sideeff = VtSideff [], VtLater
-let classify_as_proofstep = VtProofStep false, VtLater
+let classify_as_proofstep = VtProofStep { parallel = false; proof_block_detection = None}, VtLater
