@@ -628,17 +628,14 @@ let check_module_name s =
         done
     | c -> err c
 
-let start_library f =
-  let () = if not (Sys.file_exists f) then
-    errorlabstrm "" (hov 0 (str "Can't find file" ++ spc () ++ str f))
-  in
+let start_library fo =
   let ldir0 =
     try
-      let lp = Loadpath.find_load_path (Filename.dirname f) in
+      let lp = Loadpath.find_load_path (Filename.dirname fo) in
       Loadpath.logical lp
     with Not_found -> Nameops.default_root_prefix
   in
-  let file = Filename.chop_extension (Filename.basename f) in
+  let file = Filename.chop_extension (Filename.basename fo) in
   let id = Id.of_string file in
   check_module_name file;
   check_coq_overwriting ldir0 id;
@@ -693,12 +690,13 @@ let error_recursively_dependent_library dir =
    writing the content and computing the checksum... *)
 
 let save_library_to ?todo dir f otab =
-  let f, except = match todo with
+  let except = match todo with
     | None ->
         assert(!Flags.compilation_mode = Flags.BuildVo);
-        f ^ "o", Future.UUIDSet.empty
+        assert(Filename.check_suffix f ".vo");
+        Future.UUIDSet.empty
     | Some (l,_) ->
-        f ^ "io",
+        assert(Filename.check_suffix f ".vio");
         List.fold_left (fun e (r,_) -> Future.UUIDSet.add r.Stateid.uuid e)
           Future.UUIDSet.empty l in
   let cenv, seg, ast = Declaremods.end_library ~except dir in

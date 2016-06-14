@@ -25,9 +25,9 @@ let mk_absolute vfile =
   if Filename.is_relative vfile then CUnix.correct_path vfile (Sys.getcwd ())
   else vfile
 
-let start_aux_file_for vfile =
-  let vfile = mk_absolute vfile in
-  oc := Some (open_out (aux_file_name_for vfile));
+let start_aux_file ~aux_file:output_file ~v_file =
+  let vfile = mk_absolute v_file in
+  oc := Some (open_out output_file);
   Printf.fprintf (Option.get !oc) "COQAUX%d %s %s\n"
     version (Digest.to_hex (Digest.file vfile)) vfile
 

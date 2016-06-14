@@ -2379,11 +2379,11 @@ let handle_failure (e, info) vcs tty =
       VCS.print ();
       iraise (e, info)
 
-let snapshot_vio ldir long_f_dot_v =
+let snapshot_vio ldir long_f_dot_vo =
   finish ();
   if List.length (VCS.branches ()) > 1 then
     Errors.errorlabstrm "stm" (str"Cannot dump a vio with open proofs");
-  Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_v
+  Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_vo
     (Global.opaque_tables ())
 
 let reset_task_queue = Slaves.reset_task_queue

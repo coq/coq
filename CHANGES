@@ -31,6 +31,10 @@ Notations
 
 - "Bind Scope" can once again bind "Funclass" and "Sortclass".
 
+Tools
+
+- coqc accepts a -o option to specify the output file name
+
 Changes from V8.5pl1 to V8.5pl2
 ===============================
 
