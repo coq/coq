@@ -1579,7 +1579,7 @@ and interp_genarg_constr_list ist x =
   end }
 
 and interp_genarg_var_list ist x =
-  Ftactic.nf_enter { enter = begin fun gl ->
+  Ftactic.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let lc = Genarg.out_gen (glbwit (wit_list wit_var)) x in
@@ -2033,7 +2033,7 @@ let () =
 let () =
   declare_uniform wit_pre_ident
 
-let lift f = (); fun ist x -> Ftactic.nf_enter { enter = begin fun gl ->
+let lift f = (); fun ist x -> Ftactic.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   Ftactic.return (f ist env sigma x)
