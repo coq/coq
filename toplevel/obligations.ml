@@ -582,7 +582,8 @@ let declare_mutual_definition l =
 	    List.map3 compute_possible_guardness_evidences
               wfl fixdefs fixtypes in
 	  let indexes = 
-            Pretyping.search_guard Loc.ghost (Global.env())
+              Pretyping.search_guard ~tflags:{Declarations.check_guarded=true}
+              Loc.ghost (Global.env())
               possible_indexes fixdecls in
           Some indexes, 
           List.map_i (fun i _ ->

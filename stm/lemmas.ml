@@ -76,7 +76,7 @@ let adjust_guardness_conditions const = function
                     List.fold_left (fun e (_,c,cb,_) -> add c cb e) env l)
                 env (Declareops.uniquize_side_effects eff) in
               let indexes =
-	        search_guard Loc.ghost env
+                search_guard ~tflags:{Declarations.check_guarded=true} Loc.ghost env
                   possible_indexes fixdecls in
 		(mkFix ((indexes,0),fixdecls), ctx), eff
           | _ -> (body, ctx), eff) }

@@ -68,14 +68,17 @@ open Inductiveops
 
 exception Found of int array
 
-let search_guard loc env possible_indexes fixdefs =
+(* spiwack: I chose [tflags] rather than [flags], like in the rest of
+   the code, for the argument name to avoid interference with the
+   argument for [inference_flags] also used in this module. *)
+let search_guard ~tflags loc env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
   (* We treat it separately in order to get proper error msg. *)
   let is_singleton = function [_] -> true | _ -> false in
   if List.for_all is_singleton possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
-    (try check_fix env ~flags:{Declarations.check_guarded=true} fix
+    (try check_fix env ~flags:tflags fix
      with reraise ->
        let (e, info) = Errors.push reraise in
        let info = Loc.add_loc info loc in
@@ -87,7 +90,13 @@ let search_guard loc env possible_indexes fixdefs =
        List.iter
 	 (fun l ->
 	    let indexes = Array.of_list l in
-	    let fix = ((indexes, 0),fixdefs) in
+            let fix = ((indexes, 0),fixdefs) in
+            (* spiwack: We search for a unspecified structural
+               argument under the assumption that we need to check the
+               guardedness condition (otherwise the first inductive argument
+               will be chosen). A more robust solution may be to raise an
+               error when totality is assumed but the strutural argument is
+               not specified. *)
             try check_fix env ~flags:{Declarations.check_guarded=true} fix; raise (Found indexes)
 	    with TypeError _ -> ())
 	 (List.combinations possible_indexes);
@@ -533,7 +542,11 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 			     vn)
 	  in
 	  let fixdecls = (names,ftys,fdefs) in
-	  let indexes = search_guard loc env possible_indexes fixdecls in
+          let indexes =
+            search_guard
+              ~tflags:{Declarations.check_guarded=true}
+              loc env possible_indexes fixdecls
+          in
 	    make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	| GCoFix i ->
 	  let cofix = (i,(names,ftys,fdefs)) in

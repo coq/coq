@@ -1065,7 +1065,7 @@ let declare_fixpoint ~flags local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps)
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let env = Global.env() in
-    let indexes = search_guard Loc.ghost env indexes fixdecls in
+    let indexes = search_guard ~tflags:flags Loc.ghost env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
@@ -1169,7 +1169,9 @@ let do_program_recursive local p fixkind fixl ntns =
 	Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
       let indexes = 
-	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
+        Pretyping.search_guard
+          ~tflags:{Declarations.check_guarded=true}
+          Loc.ghost (Global.env ()) possible_indexes fixdecls in
       List.iteri (fun i _ ->
           Inductive.check_fix env
                               ~flags:{Declarations.check_guarded=true}
