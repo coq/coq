@@ -1454,8 +1454,14 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
     Goal.V82.mk_goal sigma nc gl Store.empty in
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
-  let gls' = V85.eauto85 !typeclasses_depth
-                         ~st:(Hint_db.transparent_state hints) [hints] gls in
+  let st = Hint_db.transparent_state hints in
+  let depth = get_typeclasses_depth () in
+  let gls' =
+    if get_typeclasses_compat () = Flags.Current then
+      Proofview.V82.of_tactic
+        (Search.eauto_tac ~st ~only_classes:true ~depth [hints] ~dep:false) gls
+    else V85.eauto85 depth ~st [hints] gls
+  in
   let evd = sig_sig gls' in
   let t' = let (ev, inst) = destEvar t in
     mkEvar (ev, Array.of_list subst)
