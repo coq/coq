@@ -1458,8 +1458,10 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   let depth = get_typeclasses_depth () in
   let gls' =
     if get_typeclasses_compat () = Flags.Current then
-      Proofview.V82.of_tactic
-        (Search.eauto_tac ~st ~only_classes:true ~depth [hints] ~dep:false) gls
+      try
+        Proofview.V82.of_tactic
+        (Search.eauto_tac ~st ~only_classes:true ~depth [hints] ~dep:true) gls
+      with Refiner.FailError _ -> raise Not_found
     else V85.eauto85 depth ~st [hints] gls
   in
   let evd = sig_sig gls' in
