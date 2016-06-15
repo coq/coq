@@ -1446,7 +1446,7 @@ let solve_inst env evd filter unique split fail =
     unique env evd filter split fail
 
 let _ =
-  Typeclasses.solve_instantiations_problem := solve_inst
+  Hook.set Typeclasses.solve_all_instances_hook solve_inst
 
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   let nc, gl, subst, _, _ = Evarutil.push_rel_context_to_named_context env gl in
@@ -1472,7 +1472,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
     evd, term
 
 let _ =
-  Typeclasses.solve_instantiation_problem :=
+  Hook.set Typeclasses.solve_one_instance_hook
     (fun x y z w -> resolve_one_typeclass x ~sigma:y z w)
 
 (** Take the head of the arity of a constr.

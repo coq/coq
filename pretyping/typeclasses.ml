@@ -46,10 +46,10 @@ let set_typeclass_transparency gr local c = Hook.get set_typeclass_transparency 
 let (classes_transparent_state, classes_transparent_state_hook) = Hook.make ()
 let classes_transparent_state () = Hook.get classes_transparent_state ()
 
-let solve_instantiation_problem = ref (fun _ _ _ _ -> assert false)
+let get_solve_one_instance, solve_one_instance_hook = Hook.make ()
 
 let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =
-  !solve_instantiation_problem env evm t unique
+  Hook.get get_solve_one_instance env evm t unique
 
 type direction = Forward | Backward
 
@@ -539,10 +539,10 @@ let has_typeclasses filter evd =
   in
   Evar.Map.exists check (Evd.undefined_map evd)
 
-let solve_instantiations_problem = ref (fun _ _ _ _ _ _ -> assert false)
+let get_solve_all_instances, solve_all_instances_hook = Hook.make ()
 
-let solve_problem env evd filter unique split fail =
-  !solve_instantiations_problem env evd filter unique split fail
+let solve_all_instances env evd filter unique split fail =
+  Hook.get get_solve_all_instances env evd filter unique split fail
 
 (** Profiling resolution of typeclasses *)
 (* let solve_classeskey = Profile.declare_profile "solve_typeclasses" *)
@@ -551,4 +551,4 @@ let solve_problem env evd filter unique split fail =
 let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(split=true) ?(fail=true) env evd =
   if not (has_typeclasses filter evd) then evd
-  else solve_problem env evd filter unique split fail
+  else solve_all_instances env evd filter unique split fail

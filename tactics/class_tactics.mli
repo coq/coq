@@ -31,7 +31,7 @@ val not_evar : constr -> unit Proofview.tactic
 val is_ground : constr -> tactic
 
 val autoapply : constr -> Hints.hint_db_name -> tactic
-       
+
 module Search : sig
   val eauto_tac :
     ?st:Names.transparent_state ->
@@ -41,7 +41,7 @@ module Search : sig
     depth:Int.t option ->
     (** Bounded or unbounded search *)
     dep:bool ->
-    (** Should the tactic be made backtracking on the initial goals, 
+    (** Should the tactic be made backtracking on the initial goals,
        whatever their internal dependencies are. *)
     Hints.hint_db list ->
     (** The list of hint databases to use *)
