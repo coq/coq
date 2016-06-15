@@ -895,7 +895,36 @@ let pr_ssrpattern_roundp  _ _ _ = pr_pattern_roundp
 
 let wit_rpatternty = add_genarg "rpatternty" pr_pattern
 
-ARGUMENT EXTEND rpattern TYPED AS rpatternty PRINTED BY pr_rpattern
+let glob_ssrterm gs = function
+  | k, (_, Some c) as x -> k, 
+      let x = Tacintern.intern_constr gs c in
+      fst x, Some c
+  | ct -> ct
+
+let glob_rpattern s p =
+  match p with
+  | T t -> T (glob_ssrterm s t)
+  | In_T t -> In_T (glob_ssrterm s t)
+  | X_In_T(x,t) -> X_In_T (x,glob_ssrterm s t)
+  | In_X_In_T(x,t) -> In_X_In_T (x,glob_ssrterm s t)
+  | E_In_X_In_T(e,x,t) -> E_In_X_In_T (glob_ssrterm s e,x,glob_ssrterm s t)
+  | E_As_X_In_T(e,x,t) -> E_As_X_In_T (glob_ssrterm s e,x,glob_ssrterm s t)
+
+let subst_ssrterm s (k, c) = k, Tacsubst.subst_glob_constr_and_expr s c
+
+let subst_rpattern s = function
+  | T t -> T (subst_ssrterm s t)
+  | In_T t -> In_T (subst_ssrterm s t)
+  | X_In_T(x,t) -> X_In_T (x,subst_ssrterm s t)
+  | In_X_In_T(x,t) -> In_X_In_T (x,subst_ssrterm s t)
+  | E_In_X_In_T(e,x,t) -> E_In_X_In_T (subst_ssrterm s e,x,subst_ssrterm s t)
+  | E_As_X_In_T(e,x,t) -> E_As_X_In_T (subst_ssrterm s e,x,subst_ssrterm s t)
+
+ARGUMENT EXTEND rpattern
+  TYPED AS rpatternty
+  PRINTED BY pr_rpattern
+  GLOBALIZED BY glob_rpattern
+  SUBSTITUTED BY subst_rpattern
   | [ lconstr(c) ] -> [ T (mk_lterm c) ]
   | [ "in" lconstr(c) ] -> [ In_T (mk_lterm c) ]
   | [ lconstr(x) "in" lconstr(c) ] -> 
@@ -907,6 +936,8 @@ ARGUMENT EXTEND rpattern TYPED AS rpatternty PRINTED BY pr_rpattern
   | [ lconstr(e) "as" lconstr(x) "in" lconstr(c) ] -> 
     [ E_As_X_In_T (mk_lterm e, mk_lterm x, mk_lterm c) ]
 END
+
+
 
 type cpattern = char * glob_constr_and_expr
 let tag_of_cpattern = fst
@@ -950,10 +981,6 @@ let interp_open_constr ist gl gc =
   interp_wit wit_open_constr ist gl gc
 let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) c
 let interp_term ist gl (_, c) = (interp_open_constr ist gl c)
-let glob_ssrterm gs = function
-  | k, (_, Some c) -> k, Tacintern.intern_constr gs c
-  | ct -> ct
-let subst_ssrterm s (k, c) = k, Tacsubst.subst_glob_constr_and_expr s c
 let pr_ssrterm _ _ _ = pr_term
 let input_ssrtermkind strm = match Compat.get_tok (stream_nth 0 strm) with
   | Tok.KEYWORD "(" -> '('
@@ -1053,17 +1080,30 @@ let thin id sigma goal =
     let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
     sigma
 
-let interp_pattern ist gl red redty =
+let pr_ist { lfun= lfun } =
+  prlist_with_sep spc
+    (fun (id, Geninterp.Val.Dyn(ty,_)) ->
+        pr_id id ++ str":" ++ Geninterp.Val.pr ty) (Id.Map.bindings lfun)
+
+let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   pp(lazy(str"interpreting: " ++ pr_pattern red));
+  pp(lazy(str" in ist: " ++ pr_ist ist));
   let xInT x y = X_In_T(x,y) and inXInT x y = In_X_In_T(x,y) in
   let inT x = In_T x and eInXInT e x t = E_In_X_In_T(e,x,t) in
   let eAsXInT e x t = E_As_X_In_T(e,x,t) in
   let mkG ?(k=' ') x = k,(x,None) in
-  let decode t f g =
+  let decode ist t ?reccall f g =
     try match (pf_intern_term ist gl t) with
     | GCast(_,GHole _,CastConv(GLambda(_,Name x,_,_,c))) -> f x (' ',(c,None))
-    | it -> g t with _ -> g t in
-  let decodeG t f g = decode (mkG t) f g in
+    | GVar(_,id)
+      when Id.Map.mem id ist.lfun &&
+           not(Option.is_empty reccall) &&
+           not(Option.is_empty wit_ssrpatternarg) ->
+        let v = Id.Map.find id ist.lfun in
+        Option.get reccall
+          (Value.cast (topwit (Option.get wit_ssrpatternarg)) v)
+    | it -> g t with e when Errors.noncritical e -> g t in
+  let decodeG t f g = decode ist (mkG t) f g in
   let bad_enc id _ = Errors.anomaly (str"bad encoding for pattern "++str id) in
   let cleanup_XinE h x rp sigma =
     let h_k = match kind_of_term h with Evar (k,_) -> k | _ -> assert false in
@@ -1096,7 +1136,7 @@ let interp_pattern ist gl red redty =
         thin name sigma e)
       sigma new_evars in
     sigma in
-  let red = match red with
+  let red = let rec decode_red (ist,red) = match red with
     | T(k,(GCast (_,GHole _,(CastConv(GLambda (_,Name id,_,_,t)))),None))
         when let id = string_of_id id in let len = String.length id in
         (len > 8 && String.sub id 0 8 = "_ssrpat_") ->
@@ -1109,12 +1149,13 @@ let interp_pattern ist gl red redty =
               (fun _ -> decodeG e_in_t xInT (fun _ -> assert false))
         | "As", GApp(_, _, [e; t]) -> decodeG t (eAsXInT (mkG e)) (bad_enc id)
         | _ -> bad_enc id ())
-    | T t -> decode t xInT (fun x -> T x)
-    | In_T t -> decode t inXInT inT
-    | X_In_T (e,t) -> decode t (eInXInT e) (fun x -> xInT (id_of_Cterm e) x)
+    | T t -> decode ist ~reccall:decode_red t xInT (fun x -> T x)
+    | In_T t -> decode ist t inXInT inT
+    | X_In_T (e,t) -> decode ist t (eInXInT e) (fun x -> xInT (id_of_Cterm e) x)
     | In_X_In_T (e,t) -> inXInT (id_of_Cterm e) t
     | E_In_X_In_T (e,x,rp) -> eInXInT e (id_of_Cterm x) rp
     | E_As_X_In_T (e,x,rp) -> eAsXInT e (id_of_Cterm x) rp in
+    decode_red (ist,red) in
   pp(lazy(str"decoded as: " ++ pr_pattern_w_ids red));
   let red = match redty with None -> red | Some ty -> let ty = ' ', ty in
   match red with
@@ -1156,7 +1197,7 @@ let interp_pattern ist gl red redty =
     sigma, mk e h rp
 ;;
 let interp_cpattern ist gl red redty = interp_pattern ist gl (T red) redty;;
-let interp_rpattern ist gl red = interp_pattern ist gl red None;;
+let interp_rpattern ~wit_ssrpatternarg ist gl red = interp_pattern ~wit_ssrpatternarg ist gl red None;;
 
 let id_of_pattern = function
   | _, T t -> (match kind_of_term t with Var id -> Some id | _ -> None)
@@ -1310,11 +1351,16 @@ let is_wildcard = function
   | _ -> false
 
 (* "ssrpattern" *)
-let pr_ssrpatternarg _ _ _ cpat = pr_rpattern cpat
+let pr_ssrpatternarg _ _ _ (_,cpat) = pr_rpattern cpat
+let pr_ssrpatternarg_glob _ _ _ cpat = pr_rpattern cpat
+let interp_ssrpatternarg ist gl p = project gl, (ist, p)
 
 ARGUMENT EXTEND ssrpatternarg
-  TYPED AS rpattern
   PRINTED BY pr_ssrpatternarg
+  INTERPRETED BY interp_ssrpatternarg
+  GLOBALIZED BY glob_rpattern
+  RAW_PRINTED BY pr_ssrpatternarg_glob
+  GLOB_PRINTED BY pr_ssrpatternarg_glob
 | [ rpattern(pat) ] -> [ pat ]
 END
   
@@ -1324,8 +1370,10 @@ let pf_merge_uc uc gl =
 let pf_unsafe_merge_uc uc gl =
   re_sig (sig_it gl) (Evd.set_universe_context (project gl) uc)
 
-let ssrpatterntac ist arg gl =
-  let pat = interp_rpattern ist gl arg in
+let interp_rpattern ist gl red = interp_rpattern ~wit_ssrpatternarg ist gl red
+
+let ssrpatterntac _ist (arg_ist,arg) gl =
+  let pat = interp_rpattern arg_ist gl arg in
   let sigma0 = project gl in
   let concl0 = pf_concl gl in
   let (t, uc), concl_x =
@@ -1338,13 +1386,13 @@ let ssrpatterntac ist arg gl =
 let () =
   let mltac _ ist =
     let arg =
-      let v = Id.Map.find (Names.Id.of_string "ssrpatternarg") ist.lfun in
+      let v = Id.Map.find (Names.Id.of_string "pattern") ist.lfun in
       Value.cast (topwit wit_ssrpatternarg) v in
     Proofview.V82.tactic (ssrpatterntac ist arg) in
   let name = { mltac_plugin = "ssrmatching_plugin"; mltac_tactic = "ssrpattern"; } in
   let () = Tacenv.register_ml_tactic name [|mltac|] in
   let tac =
-    TacFun ([Some (Id.of_string "ssrpatternarg")],
+    TacFun ([Some (Id.of_string "pattern")],
       TacML (Loc.ghost, { mltac_name = name; mltac_index = 0 }, [])) in
   let obj () =
     Tacenv.register_ltac true false (Id.of_string "ssrpattern") tac in
