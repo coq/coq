@@ -20,14 +20,8 @@ end
 
 exception Exc_located = Ploc.Exc
 
-IFDEF CAMLP5_6_00 THEN
-let ploc_file_name = Ploc.file_name
-ELSE
-let ploc_file_name _ = ""
-END
-
 let to_coqloc loc =
-  Loc.create (ploc_file_name loc) (Ploc.line_nb loc)
+  Loc.create (Ploc.file_name loc) (Ploc.line_nb loc)
     (Ploc.bol_pos loc) (Ploc.first_pos loc, Ploc.last_pos loc)
 
 let make_loc = Ploc.make_unlined
@@ -131,11 +125,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
       let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
       Loc.raise loc e
 
-IFDEF CAMLP5_6_02_1 THEN
   let entry_print ft x = Entry.print ft x
-ELSE
-  let entry_print _ x = Entry.print x
-END
   let srules' = Gramext.srules
   let parse_tokens_after_filter = Entry.parse_token
 end
@@ -216,13 +206,8 @@ ELSE
   | tok -> Gramext.Stoken (Tok.equal tok, G.Token.to_string tok)
 END
 
-IFDEF CAMLP5_6_00 THEN
   let slist0sep (x, y) = Gramext.Slist0sep (x, y, false)
   let slist1sep (x, y) = Gramext.Slist1sep (x, y, false)
-ELSE
-  let slist0sep (x, y) = Gramext.Slist0sep (x, y)
-  let slist1sep (x, y) = Gramext.Slist1sep (x, y)
-END
 
   let snterml (x, y) = Gramext.Snterml (x, y)
   let snterm x = Gramext.Snterm x
