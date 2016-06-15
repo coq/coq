@@ -61,7 +61,7 @@ let ppnl = Feedback.msg_info
 (* 0 cost pp function. Active only if env variable SSRDEBUG is set *)
 (* or if SsrDebug is Set                                                  *)
 let pp_ref = ref (fun _ -> ())
-let ssr_pp s = Feedback.msg_error (str"SSR: "++Lazy.force s)
+let ssr_pp s = Feedback.msg_debug (str"SSR: "++Lazy.force s)
 let _ =
   try ignore(Sys.getenv "SSRMATCHINGDEBUG"); pp_ref := ssr_pp
   with Not_found -> ()
