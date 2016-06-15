@@ -347,7 +347,7 @@ $(COQC): $(call bestobj, $(COQCCMO))
 # other tools
 ###########################################################################
 
-.PHONY:
+.PHONY: tools
 tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEPBOOT)
 
 # coqdep_boot : a basic version of coqdep, with almost no dependencies.
@@ -657,6 +657,14 @@ endif
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
 Makefile $(wildcard Makefile.*) config/Makefile : ;
+
+# Final catch-all rule.
+# Usually, 'make' would display such an error itself.
+# But if the target has some declared dependencies (e.g. in a .d)
+# but no building rule, 'make' succeeds silently (see bug #4812).
+
+%:
+	@echo "Error: no rule to make target $@ (or missing .PHONY)" && false
 
 # For emacs: 
 # Local Variables: 
