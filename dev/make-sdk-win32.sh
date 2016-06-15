@@ -19,7 +19,7 @@ then
 fi
 
 # Resources
-ocaml=ocaml-4.02.3-i686-mingw64-installer3.exe
+ocaml=ocaml-4.01.0-i686-mingw64-installer3.exe
 glib=base-windows-0.18.1.1.13.356@BUILD_ec06e9.txz
 gtk=base-gtk-2.24.18.1.58@BUILD_594ca8.txz
 lablgtk=lablgtk-2.18.0.tar.gz
