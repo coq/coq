@@ -71,7 +71,7 @@ let _ =
   Goptions.declare_bool_option
     { Goptions.optsync  = false;
       Goptions.optname  = "ssrmatching debugging";
-      Goptions.optkey   = ["SsrMatchingDebug"];
+      Goptions.optkey   = ["Debug";"SsrMatching"];
       Goptions.optdepr  = false;
       Goptions.optread  = (fun _ -> !pp_ref == ssr_pp);
       Goptions.optwrite = debug }
