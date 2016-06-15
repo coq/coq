@@ -33,6 +33,9 @@ val stop_worker : stop_worker_sty -> stop_worker_rty call
 val interp      : interp_sty      -> interp_rty call
 val print_ast   : print_ast_sty   -> print_ast_rty call
 val annotate    : annotate_sty    -> annotate_rty call
+(* Ltac Profiler *)
+val ltacprof_set     : ltacprof_set_sty -> ltacprof_set_rty call
+val ltacprof_results : ltacprof_results_sty -> ltacprof_results_rty call
 
 val abstract_eval_call : handler -> 'a call -> 'a value
 

@@ -321,3 +321,18 @@ let _ =
       optkey   = ["Ltac"; "Profiling"];
       optread  = get_profiling;
       optwrite = set_profiling }
+
+
+
+(* public-facing datastructures *)
+type ltacprof_entry = {total : float; local : float; ncalls : int; max_total : float}
+type ltacprof_treenode = {entry : ltacprof_entry; children : (string * ltacprof_treenode) list }
+let to_ltacprof_entry (e: entry) : ltacprof_entry =
+    {total=e.total; local=e.local; ncalls=e.ncalls; max_total=e.max_total}
+let rec to_ltacprof_treenode (t: treenode) : ltacprof_treenode =
+  let children' = Hashtbl.fold (fun key value c -> (key, to_ltacprof_treenode value)::c) t.children [] in
+    {entry = to_ltacprof_entry t.entry; children = children' }
+
+let get_profiling_results() : ltacprof_treenode =
+    to_ltacprof_treenode (List.hd !stack)
+

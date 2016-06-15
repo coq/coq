@@ -23,3 +23,9 @@ val print_results_tactic : string -> unit
 val reset_profile : unit -> unit
 
 val do_print_results_at_close : unit -> unit
+
+type ltacprof_entry = {total : float; local : float; ncalls : int; max_total : float}
+type ltacprof_treenode = {entry : ltacprof_entry; children : (string * ltacprof_treenode) list }
+
+val get_profiling_results : unit -> ltacprof_treenode
+

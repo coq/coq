@@ -422,6 +422,13 @@ let print_ast id =
     end
   | None     -> Xml_datatype.PCData "ERROR"
 
+(** Ltac Profiling *)
+let ltacprof_reset () =
+  Profile_ltac.reset_profile()
+let ltacprof_results() =
+  Profile_ltac.get_profiling_results()
+
+
 (** Grouping all call handlers together + error handling *)
 
 let eval_call xml_oc log c =
@@ -454,6 +461,8 @@ let eval_call xml_oc log c =
     Interface.stop_worker = Stm.stop_worker;
     Interface.print_ast = print_ast;
     Interface.annotate = interruptible annotate;
+    Interface.ltacprof_reset = ltacprof_reset;
+    Interface.ltacprof_results = ltacprof_results;
   } in
   Xmlprotocol.abstract_eval_call handler c
 
