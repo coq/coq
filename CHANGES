@@ -32,7 +32,7 @@ Tactics
 Hints
 
 - Revised the syntax of [Hint Cut] to follow standard notation for regexps.
-- Hint Mode now accepts	"!" which means that the mode matches only if the
+- Hint Mode now accepts "!" which means that the mode matches only if the
   argument's head is not an evar (it goes under applications, casts, and
   scrutinees of matches and projections).
 
