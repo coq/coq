@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 6f563f1f75706b28e5d3e3ef59e1681c  checker/cic.mli
+MD5 27a5893c01d6f80e7a8741ef98874e63  checker/cic.mli
 
 *)
 
@@ -208,6 +208,9 @@ let v_projbody =
   v_tuple "projection_body" [|v_cst;Int;Int;v_constr;v_tuple "proj_eta" [|v_constr;v_constr|];
 			      v_constr|]
 
+let v_typing_flags =
+  v_tuple "typing_flags" [|v_bool|]
+
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_cst_def;
@@ -216,7 +219,8 @@ let v_cb = v_tuple "constant_body"
     v_bool;
     v_context;
     Opt v_projbody;
-    v_bool|]
+    v_bool;
+    v_typing_flags|]
 
 let v_recarg = v_sum "recarg" 1 (* Norec *)
   [|[|v_ind|] (* Mrec *);[|v_ind|] (* Imbr *)|]
