@@ -14,6 +14,10 @@ open Context.Rel.Declaration
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
+let safe_flags = {
+  check_guarded = true;
+}
+
 (** {6 Arities } *)
 
 let subst_decl_arity f g sub ar = 

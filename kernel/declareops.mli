@@ -69,6 +69,11 @@ val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_
 val inductive_instance : mutual_inductive_body -> universe_instance
 val inductive_context : mutual_inductive_body -> universe_context
 
+(** {6 Kernel flags} *)
+
+(** A default, safe set of flags for kernel type-checking *)
+val safe_flags : typing_flags
+
 (** {6 Hash-consing} *)
 
 (** Here, strictly speaking, we don't perform true hash-consing

@@ -179,7 +179,7 @@ let declare_definition ~flags ident (local, p, k) ce pl imps hook =
   Lemmas.call_hook fix_exn hook local r
 
 let _ = Obligations.declare_definition_ref :=
-       (fun i k c imps hook -> declare_definition ~flags:{Declarations.check_guarded=true} i k c [] imps hook)
+       (fun i k c imps hook -> declare_definition ~flags:Declareops.safe_flags i k c [] imps hook)
 
 let do_definition ident k pl bl red_option c ctypopt hook =
   let (ce, evd, pl', imps as def) =
@@ -203,7 +203,7 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 	ignore(Obligations.add_definition
           ident ~term:c cty ctx ?pl ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
-      ignore(declare_definition ~flags:{Declarations.check_guarded=true} ident k ce pl' imps
+      ignore(declare_definition ~flags:Declareops.safe_flags ident k ce pl' imps
         (Lemmas.mk_hook
           (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
 
@@ -838,7 +838,7 @@ let declare_fix ~flags ?(opaque = false) (_,poly,_ as kind) pl ctx f ((def,_),ef
   declare_definition ~flags f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
 
 let _ = Obligations.declare_fix_ref :=
-  (fun ?opaque k ctx f d t imps -> declare_fix ~flags:{Declarations.check_guarded=true} ?opaque k [] ctx f d t imps)
+  (fun ?opaque k ctx f d t imps -> declare_fix ~flags:Declareops.safe_flags ?opaque k [] ctx f d t imps)
 
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
@@ -1269,11 +1269,11 @@ let do_program_recursive local p fixkind fixl ntns =
       in
       let indexes = 
         Pretyping.search_guard
-          ~tflags:{Declarations.check_guarded=true}
+          ~tflags:Declareops.safe_flags
           Loc.ghost (Global.env ()) possible_indexes fixdecls in
       List.iteri (fun i _ ->
           Inductive.check_fix env
-                              ~flags:{Declarations.check_guarded=true}
+                              ~flags:Declareops.safe_flags
                               ((indexes,i),fixdecls))
         fixl
   end in
