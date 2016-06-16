@@ -229,6 +229,7 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacSolve l -> TacSolve (List.map (subst_tactic subst) l)
   | TacComplete tac -> TacComplete (subst_tactic subst tac)
   | TacArg (_,a) -> TacArg (dloc,subst_tacarg subst a)
+  | TacSelect (s, tac) -> TacSelect (s, subst_tactic subst tac)
 
   (* For extensions *)
   | TacAlias (_,s,l) ->

@@ -630,6 +630,17 @@ module Make
     | FullInversion -> primitive "inversion"
     | FullInversionClear -> primitive "inversion_clear"
 
+  let pr_range_selector (i, j) =
+    if Int.equal i j then int i
+    else int i ++ str "-" ++ int j
+
+  let pr_goal_selector = function
+    | SelectNth i -> int i ++ str ":"
+    | SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
+        str "]" ++ str ":"
+    | SelectId id -> str "[" ++ Nameops.pr_id id ++ str "]" ++ str ":"
+    | SelectAll -> str "all" ++ str ":"
+
   let pr_lazy = function
     | General -> keyword "multi"
     | Select -> keyword "lazy"
@@ -1135,6 +1146,7 @@ module Make
               keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
             | TacComplete t ->
               pr_tac (lcomplete,E) t, lcomplete
+            | TacSelect (s, tac) -> pr_goal_selector s ++ spc () ++ pr_tac ltop tac, latom
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
             | TacAtom (loc,t) ->
