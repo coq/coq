@@ -101,7 +101,7 @@ let search_guard ~tflags loc env possible_indexes fixdefs =
                will be chosen). A more robust solution may be to raise an
                error when totality is assumed but the strutural argument is
                not specified. *)
-            try check_fix env ~flags:{Declarations.check_guarded=true} fix; raise (Found indexes)
+            try check_fix env ~flags:Declareops.safe_flags fix; raise (Found indexes)
 	    with TypeError _ -> ())
 	 (List.combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
@@ -617,13 +617,13 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	  let fixdecls = (names,ftys,fdefs) in
           let indexes =
             search_guard
-              ~tflags:{Declarations.check_guarded=true}
+              ~tflags:Declareops.safe_flags
               loc env possible_indexes fixdecls
           in
 	    make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	| GCoFix i ->
 	  let cofix = (i,(names,ftys,fdefs)) in
-            (try check_cofix env ~flags:{Declarations.check_guarded=true} cofix
+            (try check_cofix env ~flags:Declareops.safe_flags cofix
              with reraise ->
                let (e, info) = Errors.push reraise in
                let info = Loc.add_loc info loc in

@@ -1731,7 +1731,7 @@ let vernac_load interp fname =
   try while true do interp (snd (parse_sentence input)) done
   with End_of_input -> ()
 
-let all_checks = { Declarations.check_guarded = true }
+let all_checks = Declareops.safe_flags
 
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands

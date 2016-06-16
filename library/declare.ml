@@ -58,11 +58,11 @@ let cache_variable ((sp,_),o) =
 
   let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ((ty,ctx),poly,impl) ->
-      let () = Global.push_named_assum ~flags:{check_guarded=true} ((id,ty,poly),ctx) in
+      let () = Global.push_named_assum ~flags:Declareops.safe_flags ((id,ty,poly),ctx) in
       let impl = if impl then Implicit else Explicit in
 	impl, true, poly, ctx
     | SectionLocalDef (de) ->
-      let univs = Global.push_named_def ~flags:{check_guarded=true} (id,de) in
+      let univs = Global.push_named_def ~flags:Declareops.safe_flags (id,de) in
       Explicit, de.const_entry_opaque,
       de.const_entry_polymorphic, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
@@ -180,7 +180,7 @@ let discharge_constant ((sp, kn), obj) =
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = 
   ConstantEntry
-    (false, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None), {check_guarded=true})
+    (false, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None), Declareops.safe_flags)
 
 let dummy_constant cst = {
   cst_decl = dummy_constant_entry;
@@ -246,7 +246,7 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     const_entry_feedback = None;
     const_entry_inline_code = inline}
 
-let declare_constant ?(flags={check_guarded=true}) ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
+let declare_constant ?(flags=Declareops.safe_flags) ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
   let export = (* We deal with side effects *)
     match cd with
     | DefinitionEntry de when
@@ -374,7 +374,7 @@ let declare_projections mind =
       Array.iteri (fun i kn ->
 	let id = Label.to_id (Constant.label kn) in
 	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
-	let kn' = declare_constant ~flags:{check_guarded=true} id (ProjectionEntry entry,
+	let kn' = declare_constant ~flags:Declareops.safe_flags id (ProjectionEntry entry,
 				       IsDefinition StructureComponent)
 	in
 	  assert(eq_constant kn kn')) kns; true,true

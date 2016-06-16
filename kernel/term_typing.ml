@@ -471,7 +471,7 @@ let translate_local_assum ~flags env t =
     t
 
 let translate_recipe env kn r =
-  build_constant_declaration ~flags:{check_guarded=true} kn env (Cooking.cook_constant env r)
+  build_constant_declaration ~flags:Declareops.safe_flags kn env (Cooking.cook_constant env r)
 
 let translate_local_def ~flags mb env id centry =
   let def,typ,proj,poly,univs,inline_code,ctx =
