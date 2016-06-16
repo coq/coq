@@ -1,4 +1,5 @@
 (************************************************************************)
+
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
@@ -47,6 +48,7 @@ let init_stdout, read_stdout =
 
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
+let pr_error s = pr_with_pid s
 let pr_debug s =
   if !Flags.debug then pr_with_pid s
 let pr_debug_call q =
@@ -517,11 +519,11 @@ let loop () =
         pr_debug "End of input, exiting gracefully.";
         exit 0
       | Xml_parser.Error (err, loc) ->
-        pr_debug ("Syntax error in query: " ^ Xml_parser.error_msg err);
-        exit 1
-      | Serialize.Marshal_error _ ->
-        pr_debug "Incorrect query.";
-        exit 1
+        pr_error ("XML syntax error: " ^ Xml_parser.error_msg err)
+      | Serialize.Marshal_error (msg,node) ->
+        pr_error "Unexpected XML message";
+        pr_error ("Expected XML node: " ^ msg);
+        pr_error ("XML tree received: " ^ Xml_printer.to_string_fmt node)
       | any ->
         pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
         exit 1
