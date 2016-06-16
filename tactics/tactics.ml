@@ -119,12 +119,12 @@ let _ =
 
 (* Shrinking of abstract proofs. *)
 
-let shrink_abstract = ref false
+let shrink_abstract = ref true
 
 let _ =
   declare_bool_option
     { optsync  = true;
-      optdepr  = false;
+      optdepr  = true;
       optname  = "shrinking of abstracted proofs";
       optkey   = ["Shrink"; "Abstract"];
       optread  = (fun () -> !shrink_abstract) ;

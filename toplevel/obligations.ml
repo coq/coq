@@ -357,7 +357,7 @@ let _ =
       optread  = get_hide_obligations;
       optwrite = set_hide_obligations; }
 
-let shrink_obligations = ref false
+let shrink_obligations = ref true
 
 let set_shrink_obligations = (:=) shrink_obligations
 let get_shrink_obligations () = !shrink_obligations
@@ -365,7 +365,7 @@ let get_shrink_obligations () = !shrink_obligations
 let _ =
   declare_bool_option
     { optsync  = true;
-      optdepr  = false;
+      optdepr  = true;
       optname  = "Shrinking of Program obligations";
       optkey   = ["Shrink";"Obligations"];
       optread  = get_shrink_obligations;
@@ -373,36 +373,35 @@ let _ =
 
 let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
-let get_body obl = 
+let get_body obl =
   match obl.obl_body with
-  | None -> assert false
+  | None -> None
   | Some (DefinedObl c) ->
     let ctx = Environ.constant_context (Global.env ()) c in
     let pc = (c, Univ.UContext.instance ctx) in
-      DefinedObl pc
-  | Some (TermObl c) -> 
-      TermObl c
+      Some (DefinedObl pc)
+  | Some (TermObl c) ->
+      Some (TermObl c)
 
 let get_obligation_body expand obl =
-  let c = get_body obl in
-  let c' = 
-    if expand && obl.obl_status == Evar_kinds.Expand then
-      (match c with
-      | DefinedObl pc -> constant_value_in (Global.env ()) pc
-      | TermObl c -> c)
-    else (match c with
-    | DefinedObl pc -> mkConstU pc
-    | TermObl c -> c)
-  in c'
+  match get_body obl with
+  | None -> None
+  | Some c ->
+     if expand && obl.obl_status == Evar_kinds.Expand then
+       match c with
+       | DefinedObl pc -> Some (constant_value_in (Global.env ()) pc)
+       | TermObl c -> Some c
+     else (match c with
+	   | DefinedObl pc -> Some (mkConstU pc)
+	   | TermObl c -> Some c)
 
 let obl_substitution expand obls deps =
   Int.Set.fold
     (fun x acc ->
        let xobl = obls.(x) in
-       let oblb =
-	 try get_obligation_body expand xobl
-	 with e when Errors.noncritical e -> assert false
-       in (xobl.obl_name, (xobl.obl_type, oblb)) :: acc)
+       match get_obligation_body expand xobl with
+       | None -> acc
+       | Some oblb -> (xobl.obl_name, (xobl.obl_type, oblb)) :: acc)
     deps []
 
 let subst_deps expand obls deps t =
@@ -594,9 +593,9 @@ let declare_mutual_definition l =
 let shrink_body c =
   let open Context.Rel.Declaration in
   let ctx, b = decompose_lam_assum c in
-  let b', n, args = 
+  let b', n, args =
     List.fold_left (fun (b, i, args) decl ->
-      if noccurn 1 b then 
+      if noccurn 1 b then
 	subst1 mkProp b, succ i, args
       else
 	let args = if is_local_assum decl then mkRel i :: args else args in
@@ -617,12 +616,12 @@ let declare_obligation prg obl body ty uctx =
   | Evar_kinds.Define opaque ->
       let opaque = if get_proofs_transparency () then false else opaque in
       let poly = pi2 prg.prg_kind in
-      let ctx, body, args = 
+      let ctx, body, args =
 	if get_shrink_obligations () && not poly then
-	  shrink_body body else [], body, [||] 
+	  shrink_body body else [], body, [||]
       in
       let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-      let ce = 
+      let ce =
         { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
 	  const_entry_type = if List.is_empty ctx then ty else None;
@@ -632,21 +631,21 @@ let declare_obligation prg obl body ty uctx =
           const_entry_inline_code = false;
           const_entry_feedback = None;
       } in
-    (** ppedrot: seems legit to have obligations as local *)
+      (** ppedrot: seems legit to have obligations as local *)
       let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
 	if not opaque then add_hint false prg constant;
 	definition_message obl.obl_name;
 	true, { obl with obl_body =
-	    if poly then 
+	    if poly then
 	      Some (DefinedObl constant)
 	    else
 	      Some (TermObl (it_mkLambda_or_LetIn (mkApp (mkConst constant, args)) ctx)) }
 
 let init_prog_info ?(opaque = false) sign n pl b t ctx deps fixkind
 		   notations obls impls kind reduce hook =
-  let obls', b = 
+  let obls', b =
     match b with
     | None ->
 	assert(Int.equal (Array.length obls) 0);
@@ -810,7 +809,7 @@ let solve_by_tac name evi t poly ctx =
   Inductiveops.control_only_guard (Global.env ()) (fst body);
   (fst body), entry.const_entry_type, Evd.evar_universe_context ctx'
 
-let obligation_terminator name num guard hook pf =
+let obligation_terminator name num guard hook auto pf =
   let open Proof_global in
   let term = Lemmas.universe_proof_terminator guard hook in
   match pf with
@@ -824,18 +823,28 @@ let obligation_terminator name num guard hook pf =
       let ty = entry.Entries.const_entry_type  in
       let (body, cstr), eff = Future.force entry.Entries.const_entry_body in
       assert(Safe_typing.empty_private_constants = eff);
-      assert(Univ.ContextSet.is_empty cstr);
+      let sigma = Evd.from_ctx (fst uctx) in
+      let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
       Inductiveops.control_only_guard (Global.env ()) body;
       (** Declare the obligation ourselves and drop the hook *)
       let prg = get_info (ProgMap.find name !from_prg) in
-      let prg = { prg with prg_ctx = fst uctx } in
+      let ctx = Evd.evar_universe_context sigma in
+      let prg = { prg with prg_ctx = ctx } in
       let obls, rem = prg.prg_obligations in
       let obl = obls.(num) in
-      let ctx = Evd.evar_context_universe_context (fst uctx) in
-      let (_, obl) = declare_obligation prg obl body ty ctx in
+      let uctx = Evd.evar_context_universe_context ctx in
+      let (def, obl) = declare_obligation prg obl body ty uctx in
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in
-      try ignore (update_obls prg obls (pred rem))
+      try
+      ignore (update_obls prg obls (pred rem));
+      if def then
+        if pred rem > 0 then
+          begin
+	    let deps = dependencies obls num in
+	    if not (Int.Set.is_empty deps) then
+	    ignore (auto (Some name) None deps)
+	  end
       with e when Errors.noncritical e ->
         let e = Errors.push e in
         pperror (Errors.iprint (Cerrors.process_vernac_interp_error e))
@@ -892,7 +901,9 @@ let rec solve_obligation prg num tac =
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
-  let terminator guard hook = Proof_global.make_terminator (obligation_terminator prg.prg_name num guard hook) in
+  let terminator guard hook =
+    Proof_global.make_terminator
+      (obligation_terminator prg.prg_name num guard hook auto) in
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
   let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd obl.obl_type ~terminator hook in
   let () = trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
@@ -915,7 +926,7 @@ and obligation (user_num, name, typ) tac =
 and solve_obligation_by_tac prg obls i tac =
   let obl = obls.(i) in
     match obl.obl_body with
-    | Some _ -> false
+    | Some _ -> None
     | None ->
 	try
 	  if List.is_empty (deps_remaining obls obl.obl_deps) then
@@ -928,30 +939,30 @@ and solve_obligation_by_tac prg obls i tac =
 		  | Some t -> t
 		  | None -> !default_tactic
 	    in
-	    let evd = Evd.from_ctx !prg.prg_ctx in
+	    let evd = Evd.from_ctx prg.prg_ctx in
 	    let evd = Evd.update_sigma_env evd (Global.env ()) in
-	    let t, ty, ctx = 
-	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac 
-	        (pi2 !prg.prg_kind) (Evd.evar_universe_context evd)
+	    let t, ty, ctx =
+	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac
+	        (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
 	    in
 	    let uctx = Evd.evar_context_universe_context ctx in
-	    let () = prg := {!prg with prg_ctx = ctx} in
-	    let def, obl' = declare_obligation !prg obl t ty uctx in
+	    let prg = {prg with prg_ctx = ctx} in
+	    let def, obl' = declare_obligation prg obl t ty uctx in
 	      obls.(i) <- obl';
-	      if def && not (pi2 !prg.prg_kind) then (
+	      if def && not (pi2 prg.prg_kind) then (
 	        (* Declare the term constraints with the first obligation only *)
 	        let evd = Evd.from_env (Global.env ()) in
 	        let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
 		let ctx' = Evd.evar_universe_context evd in
-		  prg := {!prg with prg_ctx = ctx'});
-	      true
-	  else false
+		  Some {prg with prg_ctx = ctx'})
+	      else Some prg
+	  else None
 	with e when Errors.noncritical e ->
           let (e, _) = Errors.push e in
           match e with
 	  | Refiner.FailError (_, s) ->
 	      user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
-          | e -> false
+          | e -> None (* FIXME really ? *)
 
 and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in
@@ -963,16 +974,20 @@ and solve_prg_obligations prg ?oblset tac =
     | Some s -> set := s;
       (fun i -> Int.Set.mem i !set)
   in
-  let prg = ref prg in
+  let prgref = ref prg in
   let _ =
     Array.iteri (fun i x ->
-      if p i && solve_obligation_by_tac prg obls' i tac then
- 	let deps = dependencies obls i in
- 	  (set := Int.Set.union !set deps;
- 	   decr rem))
+      if p i then
+        match solve_obligation_by_tac !prgref obls' i tac with
+	| None -> ()
+ 	| Some prg' ->
+	   prgref := prg';
+	   let deps = dependencies obls i in
+ 	   (set := Int.Set.union !set deps;
+ 	    decr rem))
       obls'
   in
-    update_obls !prg obls' !rem
+    update_obls !prgref obls' !rem
 
 and solve_obligations n tac =
   let prg = get_prog_err n in
@@ -985,9 +1000,9 @@ and try_solve_obligation n prg tac =
   let prg = get_prog prg in
   let obls, rem = prg.prg_obligations in
   let obls' = Array.copy obls in
-  let prgref = ref prg in
-    if solve_obligation_by_tac prgref obls' n tac then
-      ignore(update_obls !prgref obls' (pred rem));
+    match solve_obligation_by_tac prg obls' n tac with
+    | Some prg' -> ignore(update_obls prg' obls' (pred rem))
+    | None -> ()
 
 and try_solve_obligations n tac =
   try ignore (solve_obligations n tac) with NoObligations _ -> ()
@@ -1006,7 +1021,8 @@ let show_obligations_of_prg ?(msg=true) prg =
 		   match x.obl_body with
 		   | None ->
 		       if !showed > 0 then (
-			 decr showed;
+		         decr showed;
+			 let x = subst_deps_obl obls x in
 			 Feedback.msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
 				   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
 				   hov 1 (Printer.pr_constr_env (Global.env ()) Evd.empty x.obl_type ++
