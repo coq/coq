@@ -42,14 +42,12 @@ language will be described in Chapter~\ref{TacticLanguage}.
 \index{tactic@{\tac}}}
 
 A tactic is applied as an ordinary command. It may be preceded by a
-goal selector: {\tt all} if the tactic is to be applied to every
-focused goal simultaneously, or a natural number $n$ if it is to be
-applied to the $n$-th goal. If no selector is specified, the default
+goal selector (see Section \ref{ltac:selector}).
+If no selector is specified, the default
 selector (see Section \ref{default-selector}) is used.
 
 \newcommand{\selector}{\nterm{selector}}
 \begin{tabular}{lcl}
-{\selector} & := & {\tt all} | {\num}\\
 {\commandtac} & ::= & {\selector} {\tt :} {\tac} {\tt .}\\
  & $|$ & {\tac} {\tt .}
 \end{tabular}
@@ -63,7 +61,9 @@ initial value is $1$, hence the tactics are, by default, applied to
 the first goal. Using {\tt Set Default Goal Selector ``all''} will
 make is so that tactics are, by default, applied to every goal
 simultaneously. Then, to apply a tactic {\tt tac} to the first goal
-only, you can write {\tt 1:tac}.
+only, you can write {\tt 1:tac}. Although more selectors are available,
+only {\tt ``all''} or a single natural number are valid default
+goal selectors.
 
 \subsection[\tt Test Default Goal Selector.]
            {\tt Test Default Goal Selector.}

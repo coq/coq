@@ -89,6 +89,7 @@ sig
   val map4 : ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list ->
     'd list -> 'e list
   val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
+  val partitioni : (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
 
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
   (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i

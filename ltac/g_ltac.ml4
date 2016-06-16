@@ -46,6 +46,7 @@ let new_entry name =
   e
 
 let selector = new_entry "vernac:selector"
+let toplevel_selector = new_entry "vernac:toplevel_selector"
 let tacdef_body = new_entry "tactic:tacdef_body"
 
 (* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
@@ -73,7 +74,7 @@ let test_bracket_ident =
 
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
-          tactic_mode constr_may_eval constr_eval selector;
+          tactic_mode constr_may_eval constr_eval selector toplevel_selector;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
@@ -119,7 +120,8 @@ GEXTEND Gram
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = NEXT -> TacAbstract (tc,None)
       | IDENT "abstract"; tc = NEXT; "using";  s = ident ->
-          TacAbstract (tc,Some s) ]
+          TacAbstract (tc,Some s)
+      | sel = selector; ta = tactic_expr -> TacSelect (sel, ta) ]
 (*End of To do*)
     | "2" RIGHTA
       [ ta0 = tactic_expr; "+"; ta1 = binder_tactic -> TacOr (ta0,ta1)
@@ -295,13 +297,31 @@ GEXTEND Gram
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
   ;
+
+  range_selector:
+    [ [ n = natural ; "-" ; m = natural -> (n, m)
+      | n = natural -> (n, n) ] ]
+  ;
+  (* We unfold a range selectors list once so that we can make a special case
+   * for a unique SelectNth selector. *)
+  range_selector_or_nth:
+    [ [ n = natural ; "-" ; m = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          SelectList ((n, m) :: Option.default [] l)
+      | n = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l ] ]
+  ;
   selector:
-    [ [ n=natural; ":" -> Vernacexpr.SelectNth n
-      | test_bracket_ident; "["; id = ident; "]"; ":" -> Vernacexpr.SelectId id
-      | IDENT "all" ; ":" -> Vernacexpr.SelectAll ] ]
+    [ [ l = range_selector_or_nth; ":" -> l
+      | IDENT "all" ; ":" -> SelectAll ] ]
+  ;
+  toplevel_selector:
+    [ [ s = selector -> s
+      | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id ] ]
   ;
   tactic_mode:
-    [ [ g = OPT selector; tac = G_vernac.subgoal_command -> tac g ] ]
+    [ [ g = OPT toplevel_selector; tac = G_vernac.subgoal_command -> tac g ] ]
   ;
   END
 
@@ -325,7 +345,7 @@ let _ = declare_int_option {
 let vernac_solve n info tcom b =
   let status = Proof_global.with_current_proof (fun etac p ->
     let with_end_tac = if b then Some etac else None in
-    let global = match n with SelectAll -> true | _ -> false in
+    let global = match n with SelectAll | SelectList _ -> true | _ -> false in
     let info = Option.append info !print_info_trace in
     let (p,status) =
       Pfedit.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
@@ -336,13 +356,19 @@ let vernac_solve n info tcom b =
     p,status) in
     if not status then Feedback.feedback Feedback.AddedAxiom
 
+let pr_range_selector (i, j) =
+  if Int.equal i j then int i
+  else int i ++ str "-" ++ int j
+
 let pr_ltac_selector = function
 | SelectNth i -> int i ++ str ":"
+| SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
+    str "]" ++ str ":"
 | SelectId id -> str "[" ++ Nameops.pr_id id ++ str "]" ++ str ":"
 | SelectAll -> str "all" ++ str ":"
 
 VERNAC ARGUMENT EXTEND ltac_selector PRINTED BY pr_ltac_selector
-| [ selector(s) ] -> [ s ]
+| [ toplevel_selector(s) ] -> [ s ]
 END
 
 let pr_ltac_info n = str "Info" ++ spc () ++ int n
