@@ -17,6 +17,9 @@ type location_table
 val location_table : unit -> location_table
 val restore_location_table : location_table -> unit
 
+(** [set_current_file fname] sets the filename in locations emitted by the lexer *)
+val set_current_file : fname:string -> unit
+
 val check_ident : string -> unit
 val is_ident : string -> bool
 val check_keyword : string -> unit

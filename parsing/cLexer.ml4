@@ -9,6 +9,7 @@
 open Pp
 open Util
 open Tok
+open Compat
 
 (* Dictionaries: trees annotated with string options, each node being a map
    from chars to dictionaries (the subtrees). A trie, in other words. *)
@@ -110,7 +111,12 @@ module Error = struct
 end
 open Error
 
-let err loc str = Loc.raise (Loc.make_loc loc) (Error.E str)
+let current_file = ref ""
+
+let set_current_file ~fname =
+  current_file := fname
+
+let err loc str = Loc.raise (Compat.to_coqloc loc) (Error.E str)
 
 let bad_token str = raise (Error.E (Bad_token str))
 
@@ -121,64 +127,68 @@ type token_kind =
   | AsciiChar
   | EmptyStream
 
-let error_unsupported_unicode_character n unicode cs =
+let error_unsupported_unicode_character loc n unicode cs =
   let bp = Stream.count cs in
-  err (bp,bp+n) (UnsupportedUnicode unicode)
+  let loc = set_loc_pos loc bp (bp+n) in
+  err loc (UnsupportedUnicode unicode)
 
-let error_utf8 cs =
+let error_utf8 loc cs =
   let bp = Stream.count cs in
   Stream.junk cs; (* consume the char to avoid read it and fail again *)
-  err (bp, bp+1) Illegal_character
+  let loc = set_loc_pos loc bp (bp+1) in
+  err loc Illegal_character
 
-let utf8_char_size cs = function
+let utf8_char_size loc cs = function
   (* Utf8 leading byte *)
   | '\x00'..'\x7F' -> 1
   | '\xC0'..'\xDF' -> 2
   | '\xE0'..'\xEF' -> 3
   | '\xF0'..'\xF7' -> 4
-  | _ (* '\x80'..\xBF'|'\xF8'..'\xFF' *) -> error_utf8 cs
+  | _ (* '\x80'..\xBF'|'\xF8'..'\xFF' *) -> error_utf8 loc cs
 
 let njunk n = Util.repeat n Stream.junk
 
-let check_utf8_trailing_byte cs c =
-  if not (Int.equal (Char.code c land 0xC0) 0x80) then error_utf8 cs
+let check_utf8_trailing_byte loc cs c =
+  if not (Int.equal (Char.code c land 0xC0) 0x80) then error_utf8 loc cs
 
 (* Recognize utf8 blocks (of length less than 4 bytes) *)
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
-let lookup_utf8_tail c cs =
+let lookup_utf8_tail loc c cs =
   let c1 = Char.code c in
-  if Int.equal (c1 land 0x40) 0 || Int.equal (c1 land 0x38) 0x38 then error_utf8 cs
+  if Int.equal (c1 land 0x40) 0 || Int.equal (c1 land 0x38) 0x38 then error_utf8 loc cs
   else
     let n, unicode =
       if Int.equal (c1 land 0x20) 0 then
       match Stream.npeek 2 cs with
       | [_;c2] ->
-          check_utf8_trailing_byte cs c2;
+          check_utf8_trailing_byte loc cs c2;
           2, (c1 land 0x1F) lsl 6 + (Char.code c2 land 0x3F)
-      | _ -> error_utf8 cs
+      | _ -> error_utf8 loc cs
       else if Int.equal (c1 land 0x10) 0 then
       match Stream.npeek 3 cs with
       | [_;c2;c3] ->
-          check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
+          check_utf8_trailing_byte loc cs c2;
+	  check_utf8_trailing_byte loc cs c3;
           3, (c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 +
           (Char.code c3 land 0x3F)
-      | _ -> error_utf8 cs
+      | _ -> error_utf8 loc cs
       else match Stream.npeek 4 cs with
       | [_;c2;c3;c4] ->
-          check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
-          check_utf8_trailing_byte cs c4;
+          check_utf8_trailing_byte loc cs c2;
+	  check_utf8_trailing_byte loc cs c3;
+          check_utf8_trailing_byte loc cs c4;
           4, (c1 land 0x07) lsl 18 + (Char.code c2 land 0x3F) lsl 12 +
           (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
-      | _ -> error_utf8 cs
+      | _ -> error_utf8 loc cs
     in
     try Unicode.classify unicode, n
     with Unicode.Unsupported ->
-      njunk n cs; error_unsupported_unicode_character n unicode cs
+      njunk n cs; error_unsupported_unicode_character loc n unicode cs
 
-let lookup_utf8 cs =
+let lookup_utf8 loc cs =
   match Stream.peek cs with
     | Some ('\x00'..'\x7F') -> AsciiChar
-    | Some ('\x80'..'\xFF' as c) -> Utf8Token (lookup_utf8_tail c cs)
+    | Some ('\x80'..'\xFF' as c) -> Utf8Token (lookup_utf8_tail loc c cs)
     | None -> EmptyStream
 
 let unlocated f x = f x
@@ -189,7 +199,7 @@ let check_keyword str =
   let rec loop_symb = parser
     | [< ' (' ' | '\n' | '\r' | '\t' | '"') >] -> bad_token str
     | [< s >] ->
-        match unlocated lookup_utf8 s with
+        match unlocated lookup_utf8 Compat.CompatLoc.ghost s with
         | Utf8Token (_,n) -> njunk n s; loop_symb s
         | AsciiChar -> Stream.junk s; loop_symb s
         | EmptyStream -> ()
@@ -210,7 +220,7 @@ let check_ident str =
     | [< ' ('0'..'9' | ''') when intail; s >] ->
         loop_id true s
     | [< s >] ->
-        match unlocated lookup_utf8 s with
+        match unlocated lookup_utf8 Compat.CompatLoc.ghost s with
         | Utf8Token (Unicode.Letter, n) -> njunk n s; loop_id true s
         | Utf8Token (Unicode.IdentPart, n) when intail ->
           njunk n s;
@@ -263,13 +273,13 @@ let get_buff len = String.sub !buff 0 len
 
 (* The classical lexer: idents, numbers, quoted strings, comments *)
 
-let rec ident_tail len = parser
+let rec ident_tail loc len = parser
   | [< ' ('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_' as c); s >] ->
-      ident_tail (store len c) s
+      ident_tail loc (store len c) s
   | [< s >] ->
-      match lookup_utf8 s with
+      match lookup_utf8 loc s with
       | Utf8Token ((Unicode.IdentPart | Unicode.Letter), n) ->
-          ident_tail (nstore n len s) s
+          ident_tail loc (nstore n len s) s
       | _ -> len
 
 let check_no_char s =
@@ -287,40 +297,43 @@ let is_gt3 = function
   | c::_ when c == '1' || c == '2' || c == '3' -> false
   | _ -> true
 
-let check_gt3 l loc len =
+let check_gt3 loc l len =
   if not (l == ['0']) && (is_teen l || is_gt3 l) then (false, len)
   else err loc (IncorrectIndex l)
 
-let check_n n l loc len =
+let check_n loc n l len =
   if List.hd l == n && not (is_teen l) then (false, len)
   else err loc (IncorrectIndex l)
 
-let rec number_or_index bp l len = parser
-  | [< ' ('0'..'9' as c); s >] -> number_or_index bp (c::l) (store len c) s
+let rec number_or_index loc bp l len = parser
+  | [< ' ('0'..'9' as c); s >] -> number_or_index loc bp (c::l) (store len c) s
   | [< s >] ep ->
+     let loc = set_loc_pos loc bp ep in
       match Stream.npeek 2 s with
-      | ['s';'t'] when check_no_char s -> njunk 2 s; check_n '1' l (bp,ep) len
-      | ['n';'d'] when check_no_char s -> njunk 2 s; check_n '2' l (bp,ep) len
-      | ['r';'d'] when check_no_char s -> njunk 2 s; check_n '3' l (bp,ep) len
-      | ['t';'h'] when check_no_char s -> njunk 2 s; check_gt3 l (bp,ep) len
+      | ['s';'t'] when check_no_char s -> njunk 2 s; check_n loc '1' l len
+      | ['n';'d'] when check_no_char s -> njunk 2 s; check_n loc '2' l len
+      | ['r';'d'] when check_no_char s -> njunk 2 s; check_n loc '3' l len
+      | ['t';'h'] when check_no_char s -> njunk 2 s; check_gt3 loc l len
       | _ -> true, len
 
-let rec string in_comments bp len = parser
+(* If the string being lexed is in a comment, [comm_level] is Some i with i the
+   current level of comments nesting. Otherwise, [comm_level] is None. *)
+let rec string loc ~comm_level bp len = parser
   | [< ''"'; esc=(parser [<''"' >] -> true | [< >] -> false); s >] ->
-      if esc then string in_comments bp (store len '"') s else len
+      if esc then string loc ~comm_level bp (store len '"') s else (loc, len)
   | [< ''('; s >] ->
       (parser
         | [< ''*'; s >] ->
-            string
-              (Option.map succ in_comments)
+            string loc
+              (Option.map succ comm_level)
               bp (store (store len '(') '*')
               s
         | [< >] ->
-            string in_comments bp (store len '(') s) s
+            string loc comm_level bp (store len '(') s) s
   | [< ''*'; s >] ->
       (parser
         | [< '')'; s >] ->
-            let () = match in_comments with
+            let () = match comm_level with
             | Some 0 ->
                 Feedback.msg_warning
                   (strbrk
@@ -329,12 +342,23 @@ let rec string in_comments bp len = parser
                       non-terminated string of the comment.")
             | _ -> ()
             in
-            let in_comments = Option.map pred in_comments in
-            string in_comments bp (store (store len '*') ')') s
+            let comm_level = Option.map pred comm_level in
+            string loc comm_level bp (store (store len '*') ')') s
         | [< >] ->
-            string in_comments bp (store len '*') s) s
-  | [< 'c; s >] -> string in_comments bp (store len c) s
-  | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
+            string loc comm_level bp (store len '*') s) s
+  | [< ''\n' as c; s >] ep ->
+     (* If we are parsing a comment, the string if not part of a token so we
+     update the first line of the location. Otherwise, we update the last
+     line. *)
+     let loc =
+       if Option.has_some comm_level then bump_loc_line loc ep
+       else bump_loc_line_last loc ep
+     in
+     string loc comm_level bp (store len c) s
+  | [< 'c; s >] -> string loc comm_level bp (store len c) s
+  | [< _ = Stream.empty >] ep ->
+     let loc = set_loc_pos loc bp ep in
+     err loc Unterminated_string
 
 (* Hook for exporting comment into xml theory files *)
 let (f_xml_output_comment, xml_output_comment) = Hook.make ~default:ignore ()
@@ -400,98 +424,109 @@ let comment_stop ep =
   between_com := false
 
 (* Does not unescape!!! *)
-let rec comm_string bp = parser
-  | [< ''"' >] -> push_string "\""
-  | [< ''\\'; _ =
+let rec comm_string loc bp = parser
+  | [< ''"' >] ep -> push_string "\""; loc
+  | [< ''\\'; loc =
            (parser [< ' ('"' | '\\' as c) >] ->
               let () = match c with
               | '"' -> real_push_char c
               | _ -> ()
               in
-              real_push_char c
-                 | [< >] -> real_push_char '\\'); s >]
-     -> comm_string bp s
-  | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
-  | [< 'c; s >] -> real_push_char c; comm_string bp s
+              real_push_char c; loc
+                 | [< >] -> real_push_char '\\'; loc); s >]
+     -> comm_string loc bp s
+  | [< _ = Stream.empty >] ep ->
+      let loc = set_loc_pos loc bp ep in
+      err loc Unterminated_string
+  | [< ''\n' as c; s >] ep -> real_push_char c; comm_string (bump_loc_line loc ep) bp s
+  | [< 'c; s >] -> real_push_char c; comm_string loc bp s
 
-let rec comment bp = parser bp2
+let rec comment loc bp = parser bp2
   | [< ''(';
-       _ = (parser
-              | [< ''*'; s >] -> push_string "(*"; comment bp s
-              | [< >] -> push_string "(" );
-       s >] -> comment bp s
+       loc = (parser
+              | [< ''*'; s >] -> push_string "(*"; comment loc bp s
+              | [< >] -> push_string "("; loc );
+       s >] -> comment loc bp s
   | [< ''*';
-       _ = parser
-         | [< '')' >] -> push_string "*)";
-         | [< s >] -> real_push_char '*'; comment bp s >] -> ()
+       loc = parser
+         | [< '')' >] -> push_string "*)"; loc
+         | [< s >] -> real_push_char '*'; comment loc bp s >] -> loc
   | [< ''"'; s >] ->
-      if Flags.do_beautify() then (push_string"\"";comm_string bp2 s)
-      else ignore (string (Some 0) bp2 0 s);
-      comment bp s
-  | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_comment
-  | [< 'z; s >] -> real_push_char z; comment bp s
+      let loc =
+	(* In beautify mode, the lexing differs between strings in comments and
+	   regular strings (e.g. escaping). It seems wrong. *)
+	if Flags.do_beautify() then (push_string"\""; comm_string loc bp2 s)
+	else fst (string loc ~comm_level:(Some 0) bp2 0 s)
+      in
+      comment loc bp s
+  | [< _ = Stream.empty >] ep ->
+      let loc = set_loc_pos loc bp ep in
+      err loc Unterminated_comment
+  | [< ''\n' as z; s >] ep -> real_push_char z; comment (bump_loc_line loc ep) bp s
+  | [< 'z; s >] -> real_push_char z; comment loc bp s
 
 (* Parse a special token, using the [token_tree] *)
 
 (* Peek as much utf-8 lexemes as possible *)
 (* and retain the longest valid special token obtained *)
-let rec progress_further last nj tt cs =
-  try progress_from_byte last nj tt cs (List.nth (Stream.npeek (nj+1) cs) nj)
+let rec progress_further loc last nj tt cs =
+  try progress_from_byte loc last nj tt cs (List.nth (Stream.npeek (nj+1) cs) nj)
   with Failure _ -> last
 
-and update_longest_valid_token last nj tt cs =
+and update_longest_valid_token loc last nj tt cs =
   match tt.node with
   | Some _ as last' ->
     stream_njunk nj cs;
-    progress_further last' 0 tt cs
+    progress_further loc last' 0 tt cs
   | None ->
-    progress_further last nj tt cs
+    progress_further loc last nj tt cs
 
 (* nj is the number of char peeked since last valid token *)
 (* n the number of char in utf8 block *)
-and progress_utf8 last nj n c tt cs =
+and progress_utf8 loc last nj n c tt cs =
   try
     let tt = CharMap.find c tt.branch in
     if Int.equal n 1 then
-      update_longest_valid_token last (nj+n) tt cs
+      update_longest_valid_token loc last (nj+n) tt cs
     else
       match Util.List.skipn (nj+1) (Stream.npeek (nj+n) cs) with
       | l when Int.equal (List.length l) (n - 1) ->
-         List.iter (check_utf8_trailing_byte cs) l;
+         List.iter (check_utf8_trailing_byte loc cs) l;
          let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
-         update_longest_valid_token last (nj+n) tt cs
+         update_longest_valid_token loc last (nj+n) tt cs
       | _ ->
-          error_utf8 cs
+          error_utf8 loc cs
   with Not_found ->
     last
 
-and progress_from_byte last nj tt cs c =
-  progress_utf8 last nj (utf8_char_size cs c) c tt cs
+and progress_from_byte loc last nj tt cs c =
+  progress_utf8 loc last nj (utf8_char_size loc cs c) c tt cs
 
-let find_keyword id s =
+let find_keyword loc id s =
   let tt = ttree_find !token_tree id in
-  match progress_further tt.node 0 tt s with
+  match progress_further loc tt.node 0 tt s with
   | None -> raise Not_found
   | Some c -> KEYWORD c
 
-let process_sequence bp c cs =
+let process_sequence loc bp c cs =
   let rec aux n cs =
     match Stream.peek cs with
     | Some c' when c == c' -> Stream.junk cs; aux (n+1) cs
-    | _ -> BULLET (String.make n c), (bp, Stream.count cs)
+    | _ -> BULLET (String.make n c), set_loc_pos loc bp (Stream.count cs)
   in
   aux 1 cs
 
 (* Must be a special token *)
-let process_chars bp c cs =
-  let t = progress_from_byte None (-1) !token_tree cs c in
+let process_chars loc bp c cs =
+  let t = progress_from_byte loc None (-1) !token_tree cs c in
   let ep = Stream.count cs in
   match t with
-    | Some t -> (KEYWORD t, (bp, ep))
+    | Some t -> (KEYWORD t, set_loc_pos loc bp ep)
     | None ->
-        let ep' = bp + utf8_char_size cs c in
+        let ep' = bp + utf8_char_size loc cs c in
         njunk (ep' - ep) cs;
-        err (bp, ep') Undefined_token
+	let loc = set_loc_pos loc bp ep' in
+        err loc Undefined_token
 
 let token_of_special c s = match c with
   | '.' -> FIELD s
@@ -499,27 +534,27 @@ let token_of_special c s = match c with
 
 (* Parse what follows a dot / a dollar *)
 
-let parse_after_special c bp =
+let parse_after_special loc c bp =
   parser
-  | [< ' ('a'..'z' | 'A'..'Z' | '_' as d); len = ident_tail (store 0 d) >] ->
+  | [< ' ('a'..'z' | 'A'..'Z' | '_' as d); len = ident_tail loc (store 0 d) >] ->
       token_of_special c (get_buff len)
   | [< s >] ->
-      match lookup_utf8 s with
+      match lookup_utf8 loc s with
       | Utf8Token (Unicode.Letter, n) ->
-          token_of_special c (get_buff (ident_tail (nstore n 0 s) s))
-      | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp c s)
+          token_of_special c (get_buff (ident_tail loc (nstore n 0 s) s))
+      | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars loc bp c s)
 
 (* Parse what follows a question mark *)
 
-let parse_after_qmark bp s =
+let parse_after_qmark loc bp s =
   match Stream.peek s with
     | Some ('a'..'z' | 'A'..'Z' | '_') -> LEFTQMARK
     | None -> KEYWORD "?"
     | _ ->
-        match lookup_utf8 s with
+        match lookup_utf8 loc s with
           | Utf8Token (Unicode.Letter, _) -> LEFTQMARK
           | AsciiChar | Utf8Token _ | EmptyStream ->
-            fst (process_chars bp '?' s)
+            fst (process_chars loc bp '?' s)
 
 let blank_or_eof cs =
   match Stream.peek cs with
@@ -529,69 +564,72 @@ let blank_or_eof cs =
 
 (* Parse a token in a char stream *)
 
-let rec next_token = parser bp
-  | [< '' ' | '\t' | '\n' |'\r' as c; s >] ->
-      comm_loc bp; push_char c; next_token s
-  | [< ''.' as c; t = parse_after_special c bp; s >] ep ->
+let rec next_token loc = parser bp
+  | [< ''\n' as c; s >] ep ->
+      comm_loc bp; push_char c; next_token (bump_loc_line loc ep) s
+  | [< '' ' | '\t' | '\r' as c; s >] ->
+      comm_loc bp; push_char c; next_token loc s
+  | [< ''.' as c; t = parse_after_special loc c bp; s >] ep ->
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
          for instance ".(", or followed by a blank or eof. *)
       let () = match t with
       | KEYWORD ("." | "...") ->
-        if not (blank_or_eof s) then err (bp,ep+1) Undefined_token;
-        between_com := true;
+        if not (blank_or_eof s) then
+	  err (set_loc_pos loc bp (ep+1)) Undefined_token;
+	between_com := true;
       | _ -> ()
       in
-      (t, (bp,ep))
+      (t, set_loc_pos loc bp ep)
   | [< ' ('-'|'+'|'*' as c); s >] ->
       let t,new_between_com =
-        if !between_com then process_sequence bp c s,true
-        else process_chars bp c s,false
+        if !between_com then process_sequence loc bp c s, true
+        else process_chars loc bp c s,false
       in
       comment_stop bp; between_com := new_between_com; t
   | [< ''?'; s >] ep ->
-      let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
+      let t = parse_after_qmark loc bp s in
+      comment_stop bp; (t, set_loc_pos loc ep bp)
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
-       len = ident_tail (store 0 c); s >] ep ->
+       len = ident_tail loc (store 0 c); s >] ep ->
       let id = get_buff len in
       comment_stop bp;
-      (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
-  | [< ' ('0'..'9' as c); (b,len) = number_or_index bp [c] (store 0 c) >] ep ->
+      (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
+  | [< ' ('0'..'9' as c); (b,len) = number_or_index loc bp [c] (store 0 c) >] ep ->
       comment_stop bp;
-      (if b then INT (get_buff len) else INDEX (get_buff len)), (bp, ep)
-  | [< ''\"'; len = string None bp 0 >] ep ->
+      (if b then INT (get_buff len) else INDEX (get_buff len)), set_loc_pos loc bp ep
+  | [< ''\"'; (loc,len) = string loc None bp 0 >] ep ->
       comment_stop bp;
-      (STRING (get_buff len), (bp, ep))
+      (STRING (get_buff len), set_loc_pos loc bp ep)
   | [< ' ('(' as c);
       t = parser
         | [< ''*'; s >] ->
             comm_loc bp;
             push_string "(*";
-            comment bp s;
-            next_token s
-        | [< t = process_chars bp c >] -> comment_stop bp; t >] ->
+            let loc = comment loc bp s in next_token loc s
+        | [< t = process_chars loc bp c >] -> comment_stop bp; t >] ->
       t
   | [< s >] ->
-      match lookup_utf8 s with
+      match lookup_utf8 loc s with
         | Utf8Token (Unicode.Letter, n) ->
-            let len = ident_tail (nstore n 0 s) s in
+            let len = ident_tail loc (nstore n 0 s) s in
             let id = get_buff len in
             let ep = Stream.count s in
             comment_stop bp;
-            (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
+            (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
         | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart), _) ->
-            let t = process_chars bp (Stream.next s) s in
+            let t = process_chars loc bp (Stream.next s) s in
             let new_between_com = match t with
               (KEYWORD ("{"|"}"),_) -> !between_com | _ -> false in
             comment_stop bp; between_com := new_between_com; t
         | EmptyStream ->
-            comment_stop bp; (EOI, (bp, bp + 1))
+            comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
 
 (* (* Debug: uncomment this for tracing tokens seen by coq...*)
-let next_token s =
-  let (t,(bp,ep)) = next_token s in Printf.eprintf "[%s]\n%!" (Tok.to_string t);
-  (t,(bp,ep))
-*)
+let next_token loc s =
+  let (t,loc as r) = next_token loc s in
+  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" (Ploc.line_nb loc) (Ploc.first_pos loc) (Ploc.last_pos loc) (Tok.to_string t);
+  r *)
 
 (* Location table system for creating tables associating a token count
    to its location in a char stream (the source) *)
@@ -640,11 +678,13 @@ let token_text = function
 
 let func cs =
   let loct = loct_create () in
+  let cur_loc = ref (Compat.make_loc !current_file 1 0 0 0) in
   let ts =
     Stream.from
       (fun i ->
-         let (tok, loc) = next_token cs in
-         loct_add loct i (Compat.make_loc loc); Some tok)
+         let (tok, loc) = next_token !cur_loc cs in
+	 cur_loc := Compat.after loc;
+         loct_add loct i loc; Some tok)
   in
   current_location_table := loct;
   (ts, loct_func loct)
@@ -680,16 +720,19 @@ module Token = struct
   end
 end
 
-let mk () _init_loc(*FIXME*) cs =
+let mk () =
   let loct = loct_create () in
-  let rec self =
+  let cur_loc = ref (Compat.make_loc !current_file 1 0 0 0) in
+  current_location_table := loct; 
+  let rec self init_loc (* FIXME *) =
     parser i
-       [< (tok, loc) = next_token; s >] ->
-          let loc = Compat.make_loc loc in
-            loct_add loct i loc;
-            [< '(tok, loc); self s >]
+       [< (tok, loc) = next_token !cur_loc; s >] ->
+            cur_loc := Compat.set_loc_file loc !current_file;
+	    loct_add loct i loc;
+            [< '(tok, loc); self init_loc s >]
       | [< >] -> [< >]
-  in current_location_table := loct; self cs
+  in
+  self
 
 END
 
