@@ -120,7 +120,7 @@ OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
         string_syntax_plugin.cmo )
 DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cmo
 DERIVECMA:=plugins/derive/derive_plugin.cmo
-SSRMATCHINGCMA:=plugins/ssrmatching/ssrmatching.cmo
+SSRMATCHINGCMA:=plugins/ssrmatching/ssrmatching_plugin.cmo
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
         $(QUOTECMA) $(RINGCMA) \
