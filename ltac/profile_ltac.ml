@@ -231,6 +231,7 @@ let rec print_node all_total indent prefix (s, n) =
     ++ padl 8 (string_of_int e.ncalls)
     ++ padl 10 (format_sec (e.max_total))
   ) ++
+  fnl () ++
   print_table all_total indent false n.children
 
 and print_table all_total indent first_level table =
