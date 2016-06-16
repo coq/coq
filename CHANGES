@@ -34,6 +34,8 @@ Notations
 Tools
 
 - coqc accepts a -o option to specify the output file name
+- coqtop accepts --print-version to print Coq and OCaml versions in
+  easy to parse format
 
 Changes from V8.5pl1 to V8.5pl2
 ===============================
