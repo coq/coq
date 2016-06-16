@@ -219,7 +219,8 @@ let rec list_iter_is_last f = function
 let header =
   str " tactic                                    self  total   calls       max" ++
   fnl () ++
-  str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘"
+  str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
+  fnl ()
 
 let rec print_node all_total indent prefix (s, n) =
   let e = n.entry in
