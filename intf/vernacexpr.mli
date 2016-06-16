@@ -206,6 +206,7 @@ type syntax_modifier =
   | SetAssoc of Extend.gram_assoc
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing of Flags.compat_version
+  | SetOnlyPrinting
   | SetFormat of string * string located
 
 type proof_end =
