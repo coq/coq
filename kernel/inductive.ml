@@ -1067,21 +1067,24 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   (Array.map fst rv, Array.map snd rv)
 
 
-let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
-  let (minds, rdef) = inductive_of_mutfix env fix in
-  let get_tree (kn,i) =
-    let mib = Environ.lookup_mind kn env in
-    mib.mind_packets.(i).mind_recargs
-  in
-  let trees = Array.map (fun (mind,_) -> get_tree mind) minds in
-  for i = 0 to Array.length bodies - 1 do
-    let (fenv,body) = rdef.(i) in
-    let renv = make_renv fenv nvect.(i) trees.(i) in
-    try check_one_fix renv nvect trees body
-    with FixGuardError (fixenv,err) ->
-      error_ill_formed_rec_body fixenv err names i
-	(push_rec_types recdef env) (judgment_of_fixpoint recdef)
-  done
+let check_fix env ~flags ((nvect,_),(names,_,bodies as recdef) as fix) =
+  if flags.check_guarded then
+    let (minds, rdef) = inductive_of_mutfix env fix in
+    let get_tree (kn,i) =
+      let mib = Environ.lookup_mind kn env in
+      mib.mind_packets.(i).mind_recargs
+    in
+    let trees = Array.map (fun (mind,_) -> get_tree mind) minds in
+    for i = 0 to Array.length bodies - 1 do
+      let (fenv,body) = rdef.(i) in
+      let renv = make_renv fenv nvect.(i) trees.(i) in
+      try check_one_fix renv nvect trees body
+      with FixGuardError (fixenv,err) ->
+        error_ill_formed_rec_body fixenv err names i
+	  (push_rec_types recdef env) (judgment_of_fixpoint recdef)
+    done
+  else
+    ()
 
 (*
 let cfkey = Profile.declare_profile "check_fix";;
@@ -1192,12 +1195,15 @@ let check_one_cofix env nbfix def deftype =
 (* The  function which checks that the whole block of definitions
    satisfies the guarded condition *)
 
-let check_cofix env (bodynum,(names,types,bodies as recdef)) =
-  let nbfix = Array.length bodies in
-  for i = 0 to nbfix-1 do
-    let fixenv = push_rec_types recdef env in
-    try check_one_cofix fixenv nbfix bodies.(i) types.(i)
-    with CoFixGuardError (errenv,err) ->
-      error_ill_formed_rec_body errenv err names i
-	fixenv (judgment_of_fixpoint recdef)
-  done
+let check_cofix env ~flags (bodynum,(names,types,bodies as recdef)) =
+  if flags.check_guarded then
+    let nbfix = Array.length bodies in
+    for i = 0 to nbfix-1 do
+      let fixenv = push_rec_types recdef env in
+      try check_one_cofix fixenv nbfix bodies.(i) types.(i)
+      with CoFixGuardError (errenv,err) ->
+        error_ill_formed_rec_body errenv err names i
+	  fixenv (judgment_of_fixpoint recdef)
+    done
+  else
+    ()

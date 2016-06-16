@@ -66,6 +66,15 @@ type constant_def =
 
 type constant_universes = Univ.universe_context
 
+(** The [typing_flags] are instructions to the type-checker which
+    modify its behaviour. The typing flags used in the type-checking
+    of a constant are tracked in their {!constant_body} so that they
+    can be displayed to the user. *)
+type typing_flags = {
+  check_guarded : bool; (** If [false] then fixed points and co-fixed
+                            points are assumed to be total. *)
+}
+
 (* some contraints are in constant_constraints, some other may be in
  * the OpaueDef *)
 type constant_body = {
@@ -76,7 +85,11 @@ type constant_body = {
     const_polymorphic : bool; (** Is it polymorphic or not *)
     const_universes : constant_universes;
     const_proj : projection_body option;
-    const_inline_code : bool }
+    const_inline_code : bool;
+    const_typing_flags : typing_flags; (** The typing options which
+                                           were used for
+                                           type-checking. *)
+}
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 
@@ -178,6 +191,7 @@ type mutual_inductive_body = {
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
   
+    mind_checked_positive : bool; (** [false] when the mutual-inductive was assumed to be well-founded, bypassing the positivity checker.  *)
 }
 
 (** {6 Module declarations } *)

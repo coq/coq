@@ -286,11 +286,17 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
     if is_local_assum decl then ContextObjectMap.add (Variable id) t accu
     else accu
   | ConstRef kn ->
-    let cb = lookup_constant kn in
+      let cb = lookup_constant kn in
+      let accu =
+        if cb.const_typing_flags.check_guarded then accu
+        else
+          let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (Guarded kn, l)) Constr.mkProp accu
+      in
     if not (Declareops.constant_has_body cb) then
       let t = type_of_constant cb in
       let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
-      ContextObjectMap.add (Axiom (kn,l)) t accu
+      ContextObjectMap.add (Axiom (Constant kn,l)) t accu
     else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
       let t = type_of_constant cb in
       ContextObjectMap.add (Opaque kn) t accu
@@ -299,6 +305,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       ContextObjectMap.add (Transparent kn) t accu
     else
       accu
-  | IndRef _ | ConstructRef _ -> accu
+  | IndRef (m,_) | ConstructRef ((m,_),_) ->
+      let mind = Global.lookup_mind m in
+      if mind.mind_checked_positive then
+        accu
+      else
+        let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
+        ContextObjectMap.add (Axiom (Positive m, l)) Constr.mkProp accu
   in
   Refmap_env.fold fold graph ContextObjectMap.empty

@@ -58,11 +58,11 @@ let cache_variable ((sp,_),o) =
 
   let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ((ty,ctx),poly,impl) ->
-      let () = Global.push_named_assum ((id,ty,poly),ctx) in
+      let () = Global.push_named_assum ~flags:{check_guarded=true} ((id,ty,poly),ctx) in
       let impl = if impl then Implicit else Explicit in
 	impl, true, poly, ctx
     | SectionLocalDef (de) ->
-      let univs = Global.push_named_def (id,de) in
+      let univs = Global.push_named_def ~flags:{check_guarded=true} (id,de) in
       Explicit, de.const_entry_opaque,
       de.const_entry_polymorphic, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
@@ -180,7 +180,7 @@ let discharge_constant ((sp, kn), obj) =
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = 
   ConstantEntry
-    (false, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None))
+    (false, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None), {check_guarded=true})
 
 let dummy_constant cst = {
   cst_decl = dummy_constant_entry;
@@ -205,7 +205,7 @@ let (inConstant, outConstant : (constant_obj -> obj) * (obj -> constant_obj)) =
 let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
 
-let declare_constant_common id cst =
+let declare_constant_common ~flags id cst =
   let update_tables c =
 (*  Printf.eprintf "tables: %s\n%!" (Names.Constant.to_string c); *)
     declare_constant_implicits c;
@@ -216,7 +216,7 @@ let declare_constant_common id cst =
   List.iter (fun (c,ce,role) ->
       (* handling of private_constants just exported *)
       let o = inConstant {
-        cst_decl = ConstantEntry (false, ce);
+        cst_decl = ConstantEntry (false, ce, flags);
         cst_hyps = [] ;
         cst_kind = IsProof Theorem;
         cst_locl = false;
@@ -246,7 +246,7 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     const_entry_feedback = None;
     const_entry_inline_code = inline}
 
-let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
+let declare_constant ?(flags={check_guarded=true}) ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
   let export = (* We deal with side effects *)
     match cd with
     | DefinitionEntry de when
@@ -259,24 +259,24 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
     | _ -> false
   in
   let cst = {
-    cst_decl = ConstantEntry (export,cd);
+    cst_decl = ConstantEntry (export,cd,flags);
     cst_hyps = [] ;
     cst_kind = kind;
     cst_locl = local;
     cst_exported = [];
     cst_was_seff = false;
   } in
-  let kn = declare_constant_common id cst in
+  let kn = declare_constant_common id cst ~flags in
   let () = if_xml (Hook.get f_xml_declare_constant) (internal, kn) in
   kn
 
-let declare_definition ?(internal=UserIndividualRequest)
+let declare_definition ?flags ?(internal=UserIndividualRequest)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
   ?(poly=false) id ?types (body,ctx) =
   let cb =
     definition_entry ?types ~poly ~univs:(Univ.ContextSet.to_context ctx) ~opaque body
   in
-    declare_constant ~internal ~local id
+    declare_constant ?flags ~internal ~local id
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
 
 (** Declaration of inductive blocks *)
@@ -353,7 +353,8 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
   mind_entry_polymorphic = false;
   mind_entry_universes = Univ.UContext.empty;
-  mind_entry_private = None })
+  mind_entry_private = None;
+  mind_entry_check_positivity = true; })
 
 type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
 
@@ -373,7 +374,7 @@ let declare_projections mind =
       Array.iteri (fun i kn ->
 	let id = Label.to_id (Constant.label kn) in
 	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
-	let kn' = declare_constant id (ProjectionEntry entry,
+	let kn' = declare_constant ~flags:{check_guarded=true} id (ProjectionEntry entry,
 				       IsDefinition StructureComponent)
 	in
 	  assert(eq_constant kn kn')) kns; true,true

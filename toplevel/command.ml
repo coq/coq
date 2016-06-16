@@ -145,9 +145,9 @@ let get_locality id = function
 | Local -> true
 | Global -> false
 
-let declare_global_definition ident ce local k pl imps =
+let declare_global_definition ~flags ident ce local k pl imps =
   let local = get_locality ident local in
-  let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
+  let kn = declare_constant ~flags ident ~local (DefinitionEntry ce, IsDefinition k) in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Universes.register_universe_binders gr pl in
@@ -158,7 +158,7 @@ let declare_definition_hook = ref ignore
 let set_declare_definition_hook = (:=) declare_definition_hook
 let get_declare_definition_hook () = !declare_definition_hook
 
-let declare_definition ident (local, p, k) ce pl imps hook =
+let declare_definition ~flags ident (local, p, k) ce pl imps hook =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let () = !declare_definition_hook ce in
   let r = match local with
@@ -175,11 +175,11 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     in
     gr
   | Discharge | Local | Global ->
-    declare_global_definition ident ce local k pl imps in
+    declare_global_definition ~flags ident ce local k pl imps in
   Lemmas.call_hook fix_exn hook local r
 
 let _ = Obligations.declare_definition_ref :=
-       (fun i k c imps hook -> declare_definition i k c [] imps hook)
+       (fun i k c imps hook -> declare_definition ~flags:{Declarations.check_guarded=true} i k c [] imps hook)
 
 let do_definition ident k pl bl red_option c ctypopt hook =
   let (ce, evd, pl', imps as def) =
@@ -203,7 +203,7 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 	ignore(Obligations.add_definition
           ident ~term:c cty ctx ?pl ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
-      ignore(declare_definition ident k ce pl' imps
+      ignore(declare_definition ~flags:{Declarations.check_guarded=true} ident k ce pl' imps
         (Lemmas.mk_hook
           (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
 
@@ -549,7 +549,7 @@ let check_param = function
 | LocalRawAssum (nas, Default _, _) -> List.iter check_named nas
 | LocalRawAssum (nas, Generalized _, _) -> ()
 
-let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
+let interp_mutual_inductive chk (paramsl,indl) notations poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
   let env0 = Global.env() in
@@ -630,7 +630,8 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
     mind_entry_inds = entries;
     mind_entry_polymorphic = poly;
     mind_entry_private = if prv then Some false else None;
-    mind_entry_universes = uctx },
+    mind_entry_universes = uctx;
+    mind_entry_check_positivity = chk; },
     pl, impls
 
 (* Very syntactical equality *)
@@ -715,17 +716,20 @@ type one_inductive_impls =
   Impargs.manual_explicitation list (* for inds *)*
   Impargs.manual_explicitation list list (* for constrs *)
 
-let do_mutual_inductive indl poly prv finite =
+let do_mutual_inductive chk indl poly prv finite =
   let indl,coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
-  let mie,pl,impls = interp_mutual_inductive indl ntns poly prv finite in
+  let mie,pl,impls = interp_mutual_inductive chk indl ntns poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)
   List.iter Metasyntax.add_notation_interpretation ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) false poly) coes
-	    
+  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) false poly) coes;
+  (* If [chk] is [false] (i.e. positivity is assumed) declares itself
+     as unsafe. *)
+  if not chk then Feedback.feedback Feedback.AddedAxiom else ()
+
 (* 3c| Fixpoints and co-fixpoints *)
 
 (* An (unoptimized) function that maps preorders to partial orders...
@@ -829,12 +833,12 @@ let interp_fix_body env_rec evdref impls (_,ctx) fix ccl =
 
 let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
-let declare_fix ?(opaque = false) (_,poly,_ as kind) pl ctx f ((def,_),eff) t imps =
+let declare_fix ~flags ?(opaque = false) (_,poly,_ as kind) pl ctx f ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~poly ~univs:ctx ~eff def in
-  declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
+  declare_definition ~flags f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
 
 let _ = Obligations.declare_fix_ref :=
-	  (fun ?opaque k ctx f d t imps -> declare_fix ?opaque k [] ctx f d t imps)
+  (fun ?opaque k ctx f d t imps -> declare_fix ~flags:{Declarations.check_guarded=true} ?opaque k [] ctx f d t imps)
 
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
@@ -1135,7 +1139,7 @@ let interp_cofixpoint l ntns =
   check_recursive false  env evd fix;
   (fix,pl,Evd.evar_universe_context evd,info)
     
-let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
+let declare_fixpoint ~flags local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -1155,7 +1159,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let env = Global.env() in
-    let indexes = search_guard Loc.ghost env indexes fixdecls in
+    let indexes = search_guard ~tflags:flags Loc.ghost env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
@@ -1164,7 +1168,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let evd = Evd.restrict_universe_context evd vars in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     let pl, ctx = Evd.universe_context ?names:pl evd in
-    ignore (List.map4 (declare_fix (local, poly, Fixpoint) pl ctx)
+    ignore (List.map4 (declare_fix ~flags (local, poly, Fixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
@@ -1172,7 +1176,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
   (* Declare notations *)
   List.iter Metasyntax.add_notation_interpretation ntns
 
-let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
+let declare_cofixpoint ~flags local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -1198,7 +1202,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
     let pl, ctx = Evd.universe_context ?names:pl evd in
-    ignore (List.map4 (declare_fix (local, poly, CoFixpoint) pl ctx) 
+    ignore (List.map4 (declare_fix ~flags (local, poly, CoFixpoint) pl ctx) 
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames
@@ -1264,8 +1268,14 @@ let do_program_recursive local p fixkind fixl ntns =
 	Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
       let indexes = 
-	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
-	List.iteri (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
+        Pretyping.search_guard
+          ~tflags:{Declarations.check_guarded=true}
+          Loc.ghost (Global.env ()) possible_indexes fixdecls in
+      List.iteri (fun i _ ->
+          Inductive.check_fix env
+                              ~flags:{Declarations.check_guarded=true}
+                              ((indexes,i),fixdecls))
+        fixl
   end in
   let ctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
@@ -1299,19 +1309,21 @@ let do_program_fixpoint local poly l =
 	errorlabstrm "do_program_fixpoint"
 	  (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
-let do_fixpoint local poly l =
+let do_fixpoint ~flags local poly l =
   if Flags.is_program_mode () then do_program_fixpoint local poly l
   else
     let fixl, ntns = extract_fixpoint_components true l in
     let (_, _, _, info as fix) = interp_fixpoint fixl ntns in
     let possible_indexes =
       List.map compute_possible_guardness_evidences info in
-    declare_fixpoint local poly fix possible_indexes ntns
+    declare_fixpoint ~flags local poly fix possible_indexes ntns;
+    if not flags.Declarations.check_guarded then Feedback.feedback Feedback.AddedAxiom else ()
 
-let do_cofixpoint local poly l =
+let do_cofixpoint ~flags local poly l =
   let fixl,ntns = extract_cofixpoint_components l in
     if Flags.is_program_mode () then
       do_program_recursive local poly Obligations.IsCoFixpoint fixl ntns
     else
       let cofix = interp_cofixpoint fixl ntns in
-	declare_cofixpoint local poly cofix ntns
+      declare_cofixpoint ~flags local poly cofix ntns;
+      if not flags.Declarations.check_guarded then Feedback.feedback Feedback.AddedAxiom else ()

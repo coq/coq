@@ -54,9 +54,11 @@ val definition_entry : ?fix_exn:Future.fix_exn ->
   ?eff:Safe_typing.private_constants -> constr -> Safe_typing.private_constants definition_entry
 
 val declare_constant :
+  ?flags:Declarations.typing_flags -> (** default [check_guarded=true] *)
  ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> constant
 
 val declare_definition : 
+  ?flags:Declarations.typing_flags -> (** default [check_guarded=true] *)
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:bool -> ?poly:polymorphic -> Id.t -> ?types:constr -> 
   constr Univ.in_universe_context_set -> constant

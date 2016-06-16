@@ -697,9 +697,14 @@ let prterm = pr_lconstr
 (* Printer function for sets of Assumptions.assumptions.
    It is used primarily by the Print Assumptions command. *)
 
+type axiom =
+  | Constant of constant (* An axiom or a constant. *)
+  | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
+  | Guarded of constant (* a constant whose (co)fixpoints have been assumed to be guarded *)
+
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
-  | Axiom of constant * (Label.t * Context.Rel.t * types) list
+  | Axiom of axiom * (Label.t * Context.Rel.t * types) list
   | Opaque of constant     (* An opaque constant. *)
   | Transparent of constant
 
@@ -707,12 +712,25 @@ type context_object =
 module OrderedContextObject =
 struct
   type t = context_object
+
+  let compare_axiom x y =
+    match x,y with
+    | Constant k1 , Constant k2 ->
+        con_ord k1 k2
+    | Positive m1 , Positive m2 ->
+        MutInd.CanOrd.compare m1 m2
+    | Guarded k1 , Guarded k2 ->
+        con_ord k1 k2
+    | _ , Constant _ -> 1
+    | _ , Positive _ -> 1
+    | _ -> -1
+
   let compare x y =
     match x , y with
     | Variable i1 , Variable i2 -> Id.compare i1 i2
     | Variable _ , _ -> -1
     | _ , Variable _ -> 1
-    | Axiom (k1,_) , Axiom (k2, _) -> con_ord k1 k2
+    | Axiom (k1,_) , Axiom (k2, _) -> compare_axiom k1 k2
     | Axiom _ , _ -> -1
     | _ , Axiom _ -> 1
     | Opaque k1 , Opaque k2 -> con_ord k1 k2
@@ -745,17 +763,26 @@ let pr_assumptionset env s =
       try str " " ++ pr_ltype_env env sigma typ
       with e when Errors.noncritical e -> mt ()
     in
+    let pr_axiom env ax typ =
+      match ax with
+      | Constant kn ->
+          safe_pr_constant env kn ++ safe_pr_ltype typ
+      | Positive m ->
+          hov 2 (MutInd.print m ++ spc () ++ strbrk"is positive.")
+      | Guarded kn ->
+          hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
+    in
     let fold t typ accu =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
         let var = pr_id id ++ str " : " ++ pr_ltype typ in
         (var :: v, a, o, tr)
-      | Axiom (kn,[]) ->
-        let ax = safe_pr_constant env kn ++ safe_pr_ltype typ in
+      | Axiom (axiom, []) ->
+        let ax = pr_axiom env axiom typ in
         (v, ax :: a, o, tr)
-      | Axiom (kn,l) ->
-        let ax = safe_pr_constant env kn ++ safe_pr_ltype typ ++
+      | Axiom (axiom,l) ->
+        let ax = pr_axiom env axiom typ ++
           cut() ++
           prlist_with_sep cut (fun (lbl, ctx, ty) ->
             str " used in " ++ pr_label lbl ++

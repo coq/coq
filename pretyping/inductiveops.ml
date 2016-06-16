@@ -592,9 +592,9 @@ let type_of_projection_knowing_arg env sigma p c ty =
 let control_only_guard env c =
   let check_fix_cofix e c = match kind_of_term c with
     | CoFix (_,(_,_,_) as cofix) ->
-	Inductive.check_cofix e cofix
+      Inductive.check_cofix ~flags:{check_guarded=true} e cofix
     | Fix (_,(_,_,_) as fix) ->
-	Inductive.check_fix e fix
+      Inductive.check_fix ~flags:{check_guarded=true} e fix
     | _ -> ()
   in
   let rec iter env c =
