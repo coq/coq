@@ -887,6 +887,13 @@ TACTIC EXTEND is_proj
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a primitive projection") ]
 END;;
 
+TACTIC EXTEND is_const
+| [ "is_const" constr(x) ] ->
+  [ match kind_of_term x with
+    | Const _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant") ]
+END;;
+
 (* Command to grab the evars left unresolved at the end of a proof. *)
 (* spiwack: I put it in extratactics because it is somewhat tied with
    the semantics of the LCF-style tactics, hence with the classic tactic
