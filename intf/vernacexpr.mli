@@ -232,7 +232,32 @@ type section_subset_expr =
   | SsSubstr of section_subset_expr * section_subset_expr
   | SsFwdClose of section_subset_expr
 
-(** Extension identifiers for the VERNAC EXTEND mechanism. *)
+(** Extension identifiers for the VERNAC EXTEND mechanism.
+
+    {b ("Extraction", 0} indicates {b Extraction {i qualid}} command.
+
+    {b ("Extraction", 1} indicates {b Recursive Extraction {i qualid}} command.
+
+    {b ("Extraction", 2)} indicates {b Extraction "{i filename}" {i qualid{_ 1}} ... {i qualid{_ n}}} command.
+
+    {b ("ExtractionLibrary", 0)} indicates {b Extraction Library {i ident}} command.
+
+    {b ("RecursiveExtractionLibrary", 0)} indicates {b Recursive Extraction Library {i ident}} command.
+
+    {b ("SeparateExtraction", 0)} indicates {b Separate Extraction {i qualid{_ 1}} ... {i qualid{_ n}}} command.
+
+    {b ("ExtractionLanguage", 0)} indicates {b Extraction Language Ocaml} or {b Extraction Language Haskell} or {b Extraction Language Scheme} or {b Extraction Language JSON} commands.
+
+    {b ("ExtractionImplicit", 0)} indicates {b Extraction Implicit {i qualid} \[ {i ident{_1}} ... {i ident{_n} } \] } command.
+
+    {b ("ExtractionConstant", 0)} indicates {b Extract Constant {i qualid} => {i string}} command.
+
+    {b ("ExtractionInlinedConstant", 0)} indicates {b Extract Inlined Constant {i qualid} => {i string}} command.
+
+    {b ("ExtractionInductive", 0)} indicates {b Extract Inductive {i qualid} => {i string} [ {i string} ... {string} ] {i optstring}} command.
+
+    {b ("ExtractionBlacklist", 0)} indicates {b Extraction Blacklist {i ident{_1}} ... {i ident{_n}}} command.
+ *)
 type extend_name =
   (** Name of the vernac entry where the tactic is defined, typically found
       after the VERNAC EXTEND statement in the source. *)
