@@ -58,8 +58,6 @@ Hint Cut [_* eq_trans eq_sym eq_trans] : core.
 Goal forall x y z : nat, x = y -> z = y -> x = z.
 Proof.
   intros.
-  Fail Timeout 1 eauto 10000.
-
   typeclasses eauto with core.
 Qed.
 
