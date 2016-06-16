@@ -21,6 +21,7 @@ Tactics
 - When in strict mode (i.e. in a Ltac definition) the "intro" tactic cannot use
   a locally free identifier anymore. It must use e.g. the "fresh" primitive
   instead (potential source of incompatibilities).
+- New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac (DOC TODO).
 
 Program
 
