@@ -219,7 +219,8 @@ let rec list_iter_is_last f = function
 let header =
   str " tactic                                    self  total   calls       max" ++
   fnl () ++
-  str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘"
+  str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
+  fnl ()
 
 let rec print_node all_total indent prefix (s, n) =
   let e = n.entry in
@@ -230,6 +231,7 @@ let rec print_node all_total indent prefix (s, n) =
     ++ padl 8 (string_of_int e.ncalls)
     ++ padl 10 (format_sec (e.max_total))
   ) ++
+  fnl () ++
   print_table all_total indent false n.children
 
 and print_table all_total indent first_level table =
