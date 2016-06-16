@@ -321,6 +321,20 @@ Sometimes, a notation is expected only for the parser.
 To do so, the option {\em only parsing} is allowed in the list of modifiers of
 \texttt{Notation}.
 
+\paragraph{Deactivating some printing notations}
+In addition \verb=Unset Printing Notations=, it is possible to deactivate notations in a more fine-grain way, either individually or by scopes, using the following syntax:
+\begin{quote}
+  Deactivate Notation "expression" From Scope {\scope}.
+  Reactivate Notation "expression" From Scope {\scope}.
+
+  Deactivate Notation Scope {\scope}.
+  Reactivate Notation Scope {\scope}.
+\end{quote}
+where "expression" represents the notation with variables replaced by underscores.
+\begin{coq_example*}
+Deactivate Notation "_ + _" From Scope nat_scope.
+\end{coq_example*}
+
 \subsection{The \texttt{Infix} command
 \comindex{Infix}}
 

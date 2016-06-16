@@ -635,6 +635,33 @@ module Make
           return (
             keyword "Undelimit Scope" ++ spc () ++ str sc
           )
+        | VernacNotationActivation (None,Some sc,true) ->
+          return (
+            keyword "Activate Notation Scope" ++ spc () ++ str sc
+          )
+        | VernacNotationActivation (None,Some sc,false) ->
+          return (
+            keyword "Deactivate Notation Scope" ++ spc () ++ str sc
+          )
+        | VernacNotationActivation (Some ntn,None,true) ->
+          return (
+            keyword "Activate Notation" ++ spc () ++ str ntn
+          )
+        | VernacNotationActivation (Some ntn,None,false) ->
+          return (
+            keyword "Deactivate Notation" ++ spc () ++ str ntn
+          )
+        | VernacNotationActivation (Some ntn,Some sc,true) ->
+          return (
+            keyword "Activate Notation" ++ spc () ++ str ntn ++
+            keyword "From Scope" ++ spc () ++ str sc
+          )
+        | VernacNotationActivation (Some ntn,Some sc,false) ->
+          return (
+            keyword "Deactivate Notation" ++ spc () ++ str ntn ++
+            keyword "From Scope" ++ spc () ++ str sc
+          )
+        | VernacNotationActivation (None,None,_) -> assert false
         | VernacBindScope (sc,cll) ->
           return (
             keyword "Bind Scope" ++ spc () ++ str sc ++

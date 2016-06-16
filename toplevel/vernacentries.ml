@@ -412,6 +412,7 @@ let dump_global r =
     let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Constrarg.loc_of_or_by_notation loc_of_reference r) gr
   with e when Errors.noncritical e -> ()
+
 (**********)
 (* Syntax *)
 
@@ -441,6 +442,14 @@ let vernac_infix locality local =
 let vernac_notation locality local =
   let local = enforce_module_locality locality local in
   Metasyntax.add_notation local
+
+let vernac_notation_activation ntn sc b =
+  match ntn, sc, b with
+  | Some ntn, scopt, true -> Metasyntax.reactivate_single_notation_printing ntn scopt
+  | Some ntn, scopt, false -> Metasyntax.deactivate_single_notation_printing ntn scopt
+  | None, Some sc, true -> Metasyntax.reactivate_notation_scope_printing sc
+  | None, Some sc, false -> Metasyntax.deactivate_notation_scope_printing sc
+  | None, None, _ -> assert false
 
 (***********)
 (* Gallina *)
@@ -1748,6 +1757,7 @@ let interp ?proof ~loc locality poly c =
   | VernacSyntaxExtension (local,sl) ->
       vernac_syntax_extension locality local sl
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
+  | VernacNotationActivation (ntn, sc, b) -> vernac_notation_activation ntn sc b
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
   | VernacOpenCloseScope (local, s) -> vernac_open_close_scope locality local s
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope locality qid scl

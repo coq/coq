@@ -27,6 +27,13 @@ val add_notation_extra_printing_rule : string -> string -> string -> unit
 
 (** Declaring delimiter keys and default scopes *)
 
+val deactivate_single_notation_printing : string -> scope_name option -> unit
+val reactivate_single_notation_printing : string -> scope_name option -> unit
+val deactivate_notation_scope_printing : scope_name -> unit
+val reactivate_notation_scope_printing : scope_name -> unit
+
+(** Declaring delimiter keys and default scopes *)
+
 val add_delimiters : scope_name -> string -> unit
 val remove_delimiters : scope_name -> unit
 val add_class_scope : scope_name -> scope_class list -> unit
