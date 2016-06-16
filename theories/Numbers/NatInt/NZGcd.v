@@ -60,10 +60,6 @@ Proof.
  intros n. exists 0. now nzsimpl.
 Qed.
 
-(* MS: These rewrites apply to any subterm of type Z, do not try
-  them automatically *)
-(* Hint Rewrite divide_1_l divide_0_r : nz. *)
-
 Lemma divide_0_l : forall n, (0 | n) -> n==0.
 Proof.
  intros n (m,Hm). revert Hm. now nzsimpl.
