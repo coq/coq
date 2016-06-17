@@ -1,6 +1,12 @@
 Changes beyond V8.5
 ===================
 
+Specification language
+
+- Giving implicit arguments explicitly to a constant with multiple
+  choices of implicit arguments does not break any more insertion of
+  further maximal implicit arguments.
+
 Tactics
 
 - Flag "Bracketing Last Introduction Pattern" is now on by default.
@@ -21,6 +27,14 @@ Tactics
 - When in strict mode (i.e. in a Ltac definition) the "intro" tactic cannot use
   a locally free identifier anymore. It must use e.g. the "fresh" primitive
   instead (potential source of incompatibilities).
+- New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac (DOC TODO).
+
+Hints
+
+- Revised the syntax of [Hint Cut] to follow standard notation for regexps.
+- Hint Mode now accepts "!" which means that the mode matches only if the
+  argument's head is not an evar (it goes under applications, casts, and
+  scrutinees of matches and projections).
 
 Program
 
@@ -34,6 +48,8 @@ Notations
 Tools
 
 - coqc accepts a -o option to specify the output file name
+- coqtop accepts --print-version to print Coq and OCaml versions in
+  easy to parse format
 
 Changes from V8.5pl1 to V8.5pl2
 ===============================

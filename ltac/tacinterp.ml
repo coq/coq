@@ -168,7 +168,7 @@ module Value = struct
     let pr_v = Pptactic.pr_value Pptactic.ltop v in
     let Val.Dyn (tag, _) = v in
     let tag = Val.pr tag in
-    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str "is a " ++ tag
+    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
       ++ str " while type " ++ Val.pr wit ++ str " was expected.")
 
   let unbox wit v ans = match ans with
@@ -385,7 +385,7 @@ let interp_ltac_var coerce ist env locid =
   with Not_found -> anomaly (str "Detected '" ++ Id.print (snd locid) ++ str "' as ltac var at interning time")
 
 let interp_ident ist env sigma id =
-  try try_interp_ltac_var (coerce_to_ident false env) ist (Some (env,sigma)) (dloc,id)
+  try try_interp_ltac_var (coerce_var_to_ident false env) ist (Some (env,sigma)) (dloc,id)
   with Not_found -> id
 
 let pf_interp_ident id gl = interp_ident id (pf_env gl) (project gl)
@@ -541,6 +541,10 @@ let extract_ids ids lfun =
 let default_fresh_id = Id.of_string "H"
 
 let interp_fresh_id ist env sigma l =
+  let extract_ident ist env sigma id =
+    try try_interp_ltac_var (coerce_to_ident_not_fresh sigma env)
+			    ist (Some (env,sigma)) (dloc,id)
+    with Not_found -> id in
   let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in
   let avoid = match TacStore.get ist.extra f_avoid_ids with
   | None -> []
@@ -553,7 +557,7 @@ let interp_fresh_id ist env sigma l =
       let s =
 	String.concat "" (List.map (function
 	  | ArgArg s -> s
-	  | ArgVar (_,id) -> Id.to_string (interp_ident ist env sigma id)) l) in
+	  | ArgVar (_,id) -> Id.to_string (extract_ident ist env sigma id)) l) in
       let s = if CLexer.is_keyword s then s^"0" else s in
       Id.of_string s in
   Tactics.fresh_id_in_env avoid id env
@@ -570,7 +574,7 @@ let extract_ltac_constr_context ist env =
     with CannotCoerceTo _ -> map
   in
   let add_ident id env v map =
-    try Id.Map.add id (coerce_to_ident false env v) map
+    try Id.Map.add id (coerce_var_to_ident false env v) map
     with CannotCoerceTo _ -> map
   in
   let fold id v {idents;typed;untyped} =
@@ -1252,6 +1256,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
            strbrk "There is an \"Info\" command to replace it." ++fnl () ++
 	   strbrk "Some specific verbose tactics may also exist, such as info_eauto.");
       eval_tactic ist tac
+  | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
   | TacAlias (loc,s,l) ->
       let (ids, body) = Tacenv.interp_alias s in
@@ -1730,10 +1735,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (if Option.is_empty t then interp_constr else interp_type) ist env sigma c
         in
         let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
-        let tac = Option.map (interp_tactic ist) t in
+        let tac = Option.map (Option.map (interp_tactic ist)) t in
         Tacticals.New.tclWITHHOLES false
         (name_atomic ~env
-          (TacAssert(b,Option.map ignore t,ipat,c))
+          (TacAssert(b,Option.map (Option.map ignore) t,ipat,c))
           (Tactics.forward b tac ipat' c)) sigma
       end }
   | TacGeneralize cl ->

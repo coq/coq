@@ -188,6 +188,7 @@ match sm with
       | LeftA -> ["associativity", "left"]
       end
   | SetEntryType (s, _) -> ["entrytype", s]
+  | SetOnlyPrinting -> ["onlyprinting", ""]
   | SetOnlyParsing v -> ["compat", Flags.pr_version v]
   | SetFormat (system, (loc, s)) ->
       let start, stop = unlock loc in

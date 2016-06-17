@@ -575,6 +575,7 @@ let parse_args arglist =
     |"-type-in-type" -> set_type_in_type ()
     |"-unicode" -> add_require "Utf8_core"
     |"-v"|"--version" -> Usage.version (exitcode ())
+    |"--print-version" -> Usage.machine_readable_version (exitcode ())
     |"-verbose-compat-notations" -> verb_compat_ntn := true
     |"-where" -> print_where := true
     |"-xml" -> Flags.xml_export := true

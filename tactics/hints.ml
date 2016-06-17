@@ -189,7 +189,7 @@ type search_entry = {
   sentry_nopat : stored_data list;
   sentry_pat : stored_data list;
   sentry_bnet : Bounded_net.t;
-  sentry_mode : bool array list;
+  sentry_mode : hint_mode array list;
 }
 
 let empty_se = {
@@ -317,6 +317,12 @@ let rec is_empty = function
   | PathEmpty -> true
   | PathEpsilon -> false
 
+let path_seq p p' =
+  match p, p' with
+  | PathEpsilon, p' -> p'
+  | p, PathEpsilon -> p
+  | p, p' -> PathSeq (p, p')
+                    
 let rec path_derivate hp hint =
   let rec derivate_atoms hints hints' =
     match hints, hints' with
@@ -324,26 +330,26 @@ let rec path_derivate hp hint =
     | [], [] -> PathEpsilon
     | [], hints -> PathEmpty
     | grs, [] -> PathAtom (PathHints grs)
-    | _, _ -> PathEmpty 
+    | _, _ -> PathEmpty
   in
-    match hp with
-    | PathAtom PathAny -> PathEpsilon
-    | PathAtom (PathHints grs) -> 
-      (match grs, hint with
-       | h :: hints, PathAny -> PathEmpty
-       | hints, PathHints hints' -> derivate_atoms hints hints'
-       | _, _ -> assert false)
-    | PathStar p -> if path_matches p [hint] then hp else PathEpsilon
-    | PathSeq (hp, hp') ->
-      let hpder = path_derivate hp hint in
-	if matches_epsilon hp then 
-	  PathOr (PathSeq (hpder, hp'), path_derivate hp' hint)
-	else if is_empty hpder then PathEmpty 
-	else PathSeq (hpder, hp')
-    | PathOr (hp, hp') ->
-      PathOr (path_derivate hp hint, path_derivate hp' hint)
-    | PathEmpty -> PathEmpty
-    | PathEpsilon -> PathEmpty
+  match hp with
+  | PathAtom PathAny -> PathEpsilon
+  | PathAtom (PathHints grs) -> 
+     (match grs, hint with
+      | h :: _, PathAny -> PathEmpty
+      | hints, PathHints hints' -> derivate_atoms hints hints'
+      | _, _ -> assert false)
+  | PathStar p -> if path_matches p [hint] then hp else PathEpsilon
+  | PathSeq (hp, hp') ->
+     let hpder = path_derivate hp hint in
+     if matches_epsilon hp then 
+       PathOr (path_seq hpder hp', path_derivate hp' hint)
+     else if is_empty hpder then PathEmpty 
+     else path_seq hpder hp'
+  | PathOr (hp, hp') ->
+     PathOr (path_derivate hp hint, path_derivate hp' hint)
+  | PathEmpty -> PathEmpty
+  | PathEpsilon -> PathEmpty
 
 let rec normalize_path h =
   match h with
@@ -365,15 +371,17 @@ let path_derivate hp hint = normalize_path (path_derivate hp hint)
 
 let pp_hints_path_atom a =
   match a with
-  | PathAny -> str"*"
+  | PathAny -> str"_"
   | PathHints grs -> pr_sequence pr_global grs
 					   
 let rec pp_hints_path = function
   | PathAtom pa -> pp_hints_path_atom pa
-  | PathStar p -> str "!(" ++ pp_hints_path p ++ str")"
-  | PathSeq (p, p') -> pp_hints_path p ++ str" ; " ++ pp_hints_path p'
+  | PathStar (PathAtom PathAny) -> str"_*"
+  | PathStar p -> str "(" ++ pp_hints_path p ++ str")*"
+  | PathSeq (p, p') -> pp_hints_path p ++ spc () ++ pp_hints_path p'
   | PathOr (p, p') -> 
-    str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ spc () ++ pp_hints_path p' ++ str ")"
+     str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ cut () ++ spc () ++
+       pp_hints_path p' ++ str ")"
   | PathEmpty -> str"emp"
   | PathEpsilon -> str"eps"
 
@@ -434,9 +442,17 @@ module Hint_db = struct
  
   let realize_tac (id,tac) = tac
 
+  let match_mode m arg =
+    match m with
+    | ModeInput -> not (occur_existential arg)
+    | ModeNoHeadEvar ->
+       Evarutil.(try ignore(head_evar arg); false
+                 with NoHeadEvar -> true)
+    | ModeOutput -> true
+                               
   let matches_mode args mode =
-    Array.length args == Array.length mode &&
-      Array.for_all2 (fun arg m -> not (m && occur_existential arg)) args mode
+    Array.length mode == Array.length args &&
+      Array.for_all2 match_mode mode args
       
   let matches_modes args modes =
     if List.is_empty modes then true
@@ -864,7 +880,7 @@ type hint_action =
   | AddHints of hint_entry list
   | RemoveHints of global_reference list
   | AddCut of hints_path
-  | AddMode of global_reference * bool array
+  | AddMode of global_reference * hint_mode array
 
 let add_cut dbname path =
   let db = get_db dbname in
@@ -1070,7 +1086,7 @@ type hints_entry =
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
-  | HintsModeEntry of global_reference * bool list
+  | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
       int * (patvar list * constr_pattern) option * glob_tactic_expr
 
@@ -1316,9 +1332,14 @@ let pr_applicable_hint () =
   | g::_ ->
     pr_hint_term (Goal.V82.concl glss.Evd.sigma g)
 
+let pp_hint_mode = function
+  | ModeInput -> str"+"
+  | ModeNoHeadEvar -> str"!"
+  | ModeOutput -> str"-"
+
 (* displays the whole hint database db *)
 let pr_hint_db db =
-  let pr_mode = prvect_with_sep spc (fun x -> if x then str"+" else str"-") in
+  let pr_mode = prvect_with_sep spc pp_hint_mode in
   let pr_modes l = 
     if List.is_empty l then mt ()
     else str" (modes " ++ prlist_with_sep pr_comma pr_mode l ++ str")"

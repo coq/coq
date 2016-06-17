@@ -119,8 +119,8 @@ val add_instance_hint : global_reference_or_constr -> global_reference list ->
   bool -> int option -> Decl_kinds.polymorphic -> unit
 val remove_instance_hint : global_reference -> unit
 
-val solve_instantiations_problem : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) ref
-val solve_instantiation_problem : (env -> evar_map -> types -> bool -> open_constr) ref
+val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
+val solve_one_instance_hook : (env -> evar_map -> types -> bool -> open_constr) Hook.t
 
 val declare_instance : int option -> bool -> global_reference -> unit
 

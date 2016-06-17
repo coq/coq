@@ -519,7 +519,7 @@ let vernac_assumption locality poly (local, kind) l nl =
   let status = do_assumptions kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_record k poly finite struc binders sort nameopt cfs =
+let vernac_record chk k poly finite struc binders sort nameopt cfs =
   let const = match nameopt with
     | None -> add_prefix "Build_" (snd (fst (snd struc)))
     | Some (_,id as lid) ->
@@ -530,9 +530,14 @@ let vernac_record k poly finite struc binders sort nameopt cfs =
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
-    ignore(Record.definition_structure (k,poly,finite,struc,binders,cfs,const,sort))
+    ignore(Record.definition_structure chk (k,poly,finite,struc,binders,cfs,const,sort))
 
-let vernac_inductive poly lo finite indl =
+(** When [chk] is false, positivity is assumed. When [poly] is true
+    the type is declared polymorphic. When [lo] is true, then the type
+    is declared private (as per the [Private] keyword). [finite]
+    indicates whether the type is inductive, co-inductive or
+    neither. *)
+let vernac_inductive chk poly lo finite indl =
   if Dumpglob.dump () then
     List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
@@ -548,14 +553,14 @@ let vernac_inductive poly lo finite indl =
   | [ (_ , _ , _ ,Variant, RecordDecl _),_ ] ->
       Errors.error "The Variant keyword cannot be used to define a record type. Use Record instead."
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
-      vernac_record (match b with Class true -> Class false | _ -> b)
+      vernac_record chk (match b with Class true -> Class false | _ -> b)
        poly finite id bl c oc fs
   | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
 	let coe' = if coe then Some true else None in
   	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
-      in vernac_record (Class true) poly finite id bl c None [f]
+      in vernac_record chk (Class true) poly finite id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
       Errors.error "Definitional classes must have a single method"
   | [ ( id , bl , c , Class false, Constructors _), _ ] ->
@@ -569,19 +574,19 @@ let vernac_inductive poly lo finite indl =
       | _ -> Errors.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl poly lo finite
+    do_mutual_inductive chk indl poly lo finite
 
-let vernac_fixpoint locality poly local l =
+let vernac_fixpoint ~flags locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_fixpoint local poly l
+  do_fixpoint ~flags local poly l
 
-let vernac_cofixpoint locality poly local l =
+let vernac_cofixpoint ~flags locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_cofixpoint local poly l
+  do_cofixpoint ~flags local poly l
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -1726,6 +1731,7 @@ let vernac_load interp fname =
   try while true do interp (snd (parse_sentence input)) done
   with End_of_input -> ()
 
+let all_checks = Declareops.safe_flags
 
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
@@ -1763,9 +1769,9 @@ let interp ?proof ~loc locality poly c =
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
-  | VernacInductive (priv,finite,l) -> vernac_inductive poly priv finite l
-  | VernacFixpoint (local, l) -> vernac_fixpoint locality poly local l
-  | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
+  | VernacInductive (priv,finite,l) -> vernac_inductive true poly priv finite l
+  | VernacFixpoint (local, l) -> vernac_fixpoint locality ~flags:all_checks poly local l
+  | VernacCoFixpoint (local, l) -> vernac_cofixpoint ~flags:all_checks locality poly local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
   | VernacUniverse l -> vernac_universe loc poly l

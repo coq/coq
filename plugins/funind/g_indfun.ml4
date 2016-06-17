@@ -123,12 +123,12 @@ TACTIC EXTEND snewfunind
 END
 
 
-let pr_constr_coma_sequence prc _ _ = prlist_with_sep pr_comma prc
+let pr_constr_comma_sequence prc _ _ = prlist_with_sep pr_comma prc
 
-ARGUMENT EXTEND constr_coma_sequence'
+ARGUMENT EXTEND constr_comma_sequence'
   TYPED AS constr_list
-  PRINTED BY pr_constr_coma_sequence
-| [ constr(c) "," constr_coma_sequence'(l) ] -> [ c::l ]
+  PRINTED BY pr_constr_comma_sequence
+| [ constr(c) "," constr_comma_sequence'(l) ] -> [ c::l ]
 | [ constr(c) ] -> [ [c] ]
 END
 
@@ -137,7 +137,7 @@ let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using prc
 ARGUMENT EXTEND auto_using'
   TYPED AS constr_list
   PRINTED BY pr_auto_using
-| [ "using" constr_coma_sequence'(l) ] -> [ l ]
+| [ "using" constr_comma_sequence'(l) ] -> [ l ]
 | [ ] -> [ [] ]
 END
 
@@ -161,6 +161,11 @@ GEXTEND Gram
     ;
 
 END
+
+let () =
+  let raw_printer _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
+  let printer _ _ _ _ = str "<Unavailable printer for rec_definition>" in
+  Pptactic.declare_extra_genarg_pprule wit_function_rec_definition_loc raw_printer printer printer
 
 (* TASSI: n'importe quoi ! *)
 VERNAC COMMAND EXTEND Function

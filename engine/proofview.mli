@@ -63,7 +63,7 @@ val dependent_init  : telescope -> entry * proofview
 
 (** [finished pv] is [true] if and only if [pv] is complete. That is,
     if it has an empty list of focused goals. There could still be
-    unsolved subgoaled, but they would then be out of focus. *)
+    unsolved subgoals, but they would then be out of focus. *)
 val finished : proofview -> bool
 
 (** Returns the current [evar] state. *)
@@ -239,6 +239,16 @@ val set_nosuchgoals_hook: (int -> Pp.std_ppcmds) -> unit
 
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 
+(** [tclFOCUSLIST li t] applies [t] on the list of focused goals
+    described by [li]. Each element of [li] is a pair [(i, j)] denoting
+    the goals numbered from [i] to [j] (inclusive, starting from 1).
+    It will try to apply [t] to all the valid goals in any of these
+    intervals. If the set of such goals is not a single range, then it
+    will move goals such that it is a single range. (So, for
+    instance, [[1, 3-5]; idtac.] is not the identity.)
+    If the set of such goals is empty, it will fail. *)
+val tclFOCUSLIST : (int * int) list -> 'a tactic -> 'a tactic
+
 (** [tclFOCUSID x t] applies [t] on a (single) focused goal like
     {!tclFOCUS}. The goal is found by its name rather than its
     number.*)
@@ -289,6 +299,16 @@ val tclINDEPENDENT : unit tactic -> unit tactic
 (** Shelves all the goals under focus. The goals are placed on the
     shelf for later use (or being solved by side-effects). *)
 val shelve : unit tactic
+
+(** Shelves the given list of goals, which might include some that are
+    under focus and some that aren't. All the goals are placed on the
+    shelf for later use (or being solved by side-effects). *)
+val shelve_goals : Goal.goal list -> unit tactic
+
+(** [unifiable sigma g l] checks whether [g] appears in another
+    subgoal of [l]. The list [l] may contain [g], but it does not
+    affect the result. Used by [shelve_unifiable]. *)
+val unifiable : Evd.evar_map -> Goal.goal -> Goal.goal list -> bool
 
 (** Shelves the unifiable goals under focus, i.e. the goals which
     appear in other goals under focus (the unfocused goals are not

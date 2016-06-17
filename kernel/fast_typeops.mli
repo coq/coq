@@ -8,6 +8,7 @@
 
 open Term
 open Environ
+open Declarations
 
 (** {6 Typing functions (not yet tagged as safe) }
     
@@ -18,6 +19,6 @@ open Environ
  *)
 
 
-val infer      : env -> constr       -> unsafe_judgment
-val infer_v    : env -> constr array -> unsafe_judgment array
-val infer_type : env -> types        -> unsafe_type_judgment
+val infer      : flags:typing_flags -> env -> constr       -> unsafe_judgment
+val infer_v    : flags:typing_flags -> env -> constr array -> unsafe_judgment array
+val infer_type : flags:typing_flags -> env -> types        -> unsafe_type_judgment

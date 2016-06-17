@@ -100,8 +100,8 @@ Instance foo f :
 Proof.
   Fail Timeout 1 apply _. (* 3.7s *)
   
-Hint Cut [!*; (a_is_b | b_is_c | c_is_d | d_is_e) ;
-  (a_compose | b_compose | c_compose | d_compose | e_compose)] : typeclass_instances.
+Hint Cut [_* (a_is_b | b_is_c | c_is_d | d_is_e)
+                 (a_compose | b_compose | c_compose | d_compose | e_compose)] : typeclass_instances.
 
   Timeout 1 Fail apply _. (* 0.06s *)
 Abort.

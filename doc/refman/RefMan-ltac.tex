@@ -25,6 +25,7 @@ problems.
 \def\contexthyp{\textrm{\textsl{context\_hyp}}}
 \def\tacarg{\nterm{tacarg}}
 \def\cpattern{\nterm{cpattern}}
+\def\selector{\textrm{\textsl{selector}}}
 
 The syntax of the tactic language is given Figures~\ref{ltac}
 and~\ref{ltac-aux}. See Chapter~\ref{BNF-syntax} for a description of
@@ -104,6 +105,7 @@ is understood as
 & | & {\tt exactly\_once} {\tacexprpref}\\
 & | & {\tt timeout} {\it (}{\naturalnumber} {\it |} {\ident}{\it )} {\tacexprpref}\\
 & | & {\tt time} \zeroone{\qstring} {\tacexprpref}\\
+& | & {\selector} {\tt :} {\tacexprpref}\\
 & | & {\tacexprinf} \\
 \\
 {\tacexprinf} & ::= &
@@ -203,7 +205,13 @@ is understood as
 & $|$ & {\integer} {\tt \,<\,} {\integer}\\
 & $|$ & {\integer} {\tt <=} {\integer}\\
 & $|$ & {\integer} {\tt \,>\,} {\integer}\\
-& $|$ & {\integer} {\tt >=} {\integer}
+& $|$ & {\integer} {\tt >=} {\integer}\\
+\\
+\selector & ::= &
+        [{\ident}]\\
+& $|$ & {\integer}\\
+& $|$ & \nelist{{\it (}{\integer} {\it |} {\integer} {\tt -} {\integer}{\it )}}
+          {\tt ,}
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of the tactic language (continued)}
@@ -358,7 +366,36 @@ for $=1,...,n$. It fails if the number of focused goals is not exactly $n$.
 
 \end{Variants}
 
+\subsubsection[Goal selectors]{Goal selectors\label{ltac:selector}
+\tacindex{\tt :}\index{Tacticals!:@{\tt :}}}
 
+We can restrict the application of a tactic to a subset of
+the currently focused goals with:
+\begin{quote}
+{\selector} {\tt :} {\tacexpr}
+\end{quote}
+When selecting several goals, the tactic {\tacexpr} is applied globally to
+all selected goals.
+
+\begin{Variants}
+  \item{} [{\ident}] {\tt :} {\tacexpr}
+
+    In this variant, {\tacexpr} is applied locally to a goal
+    previously named by the user.
+
+  \item {\num} {\tt :} {\tacexpr}
+
+    In this variant, {\tacexpr} is applied locally to the
+    {\num}-th goal.
+
+  \item $n_1$-$m_1$, \dots, $n_k$-$m_k$ {\tt :} {\tacexpr}
+
+    In this variant, {\tacexpr} is applied globally to the subset
+    of goals described by the given ranges. You can write a single
+    $n$ as a shortcut for $n$-$n$ when specifying multiple ranges.
+\end{Variants}
+
+\ErrMsg \errindex{No such goal}
 
 \subsubsection[For loop]{For loop\tacindex{do}
 \index{Tacticals!do@{\tt do}}}

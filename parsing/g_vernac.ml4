@@ -1076,6 +1076,7 @@ GEXTEND Gram
       | IDENT "left"; IDENT "associativity" -> SetAssoc LeftA
       | IDENT "right"; IDENT "associativity" -> SetAssoc RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc NonA
+      | IDENT "only"; IDENT "printing" -> SetOnlyPrinting
       | IDENT "only"; IDENT "parsing" ->
         SetOnlyParsing Flags.Current
       | IDENT "compat"; s = STRING ->

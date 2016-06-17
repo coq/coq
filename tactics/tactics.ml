@@ -2676,6 +2676,9 @@ let forward b usetac ipat c =
       Tacticals.New.tclTHENFIRST (assert_as true hd ipat t) (exact_no_check c)
       end }
   | Some tac ->
+      let tac = match tac with
+        | None -> Tacticals.New.tclIDTAC
+        | Some tac -> Tacticals.New.tclCOMPLETE tac in
       if b then
         Tacticals.New.tclTHENFIRST (assert_as b None ipat c) tac
       else
@@ -2683,8 +2686,8 @@ let forward b usetac ipat c =
           (assert_as b None ipat c) [||] tac [|Tacticals.New.tclIDTAC|]
 
 let pose_proof na c = forward true None (ipat_of_name na) c
-let assert_by na t tac = forward true (Some tac) (ipat_of_name na) t
-let enough_by na t tac = forward false (Some tac) (ipat_of_name na) t
+let assert_by na t tac = forward true (Some (Some tac)) (ipat_of_name na) t
+let enough_by na t tac = forward false (Some (Some tac)) (ipat_of_name na) t
 
 (***************************)
 (*  Generalization tactics *)

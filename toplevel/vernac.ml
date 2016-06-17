@@ -228,7 +228,9 @@ let rec vernac_com verbose checknav (loc,com) =
       if do_beautify () then pr_new_syntax loc (Some com);
       if !Flags.time then display_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
-      interp com
+      let a = CLexer.com_state () in
+      interp com;
+      CLexer.restore_com_state a
     with reraise ->
       let (reraise, info) = Errors.push reraise in
       Format.set_formatter_out_channel stdout;

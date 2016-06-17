@@ -176,8 +176,8 @@ let mllib_dependencies () =
        printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname sdeps;
        printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n"
          efullname efullname;
-       printf "%s.cmxa %s.cmxs:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n"
-         efullname efullname efullname;
+       printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n"
+         efullname efullname;
        flush Pervasives.stdout)
     (List.rev !mllibAccu)
 
@@ -193,8 +193,8 @@ let mlpack_dependencies () =
        List.iter (fun d -> printf "%s_FORPACK:= -for-pack %s\n" d modname) deps;
        printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n"
          efullname efullname;
-       printf "%s.cmx %s.cmxs:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n"
-         efullname efullname efullname;
+       printf "%s.cmx:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n"
+         efullname efullname;
        flush Pervasives.stdout)
     (List.rev !mlpackAccu)
 

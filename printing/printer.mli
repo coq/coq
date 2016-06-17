@@ -161,12 +161,16 @@ val prterm                 : constr -> std_ppcmds (** = pr_lconstr *)
 
 
 (** Declarations for the "Print Assumption" command *)
+type axiom =
+  | Constant of constant (* An axiom or a constant. *)
+  | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
+  | Guarded of constant (* a constant whose (co)fixpoints have been assumed to be guarded *)
+
 type context_object =
-  | Variable of Id.t  (** A section variable or a Let definition *)
-  (** An axiom and the type it inhabits (if an axiom of the empty type) *)
-  | Axiom of constant * (Label.t * Context.Rel.t * types) list
-  | Opaque of constant      (** An opaque constant. *)
-  | Transparent of constant (** A transparent constant *)
+  | Variable of Id.t (* A section variable or a Let definition *)
+  | Axiom of axiom * (Label.t * Context.Rel.t * types) list
+  | Opaque of constant     (* An opaque constant. *)
+  | Transparent of constant
 
 module ContextObjectSet : Set.S with type elt = context_object
 module ContextObjectMap : CMap.ExtS

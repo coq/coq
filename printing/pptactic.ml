@@ -270,8 +270,10 @@ module Make
     | NoBindings -> mt ()
 
   let pr_clear_flag clear_flag pp x =
-    (match clear_flag with Some false -> str "!" | Some true -> str ">" | None -> mt())
-    ++ pp x
+    match clear_flag with
+    | Some false -> surround (pp x)
+    | Some true -> str ">" ++ pp x
+    | None -> pp x
 
   let pr_with_bindings prc prlc (c,bl) =
     prc c ++ pr_bindings prc prlc bl
@@ -523,10 +525,9 @@ module Make
 
   let pr_with_induction_names prc = function
     | None, None -> mt ()
-    | Some eqpat, None -> spc () ++ hov 1 (pr_eqn_ipat eqpat)
-    | None, Some ipat -> spc () ++ hov 1 (pr_as_disjunctive_ipat prc ipat)
+    | Some eqpat, None -> hov 1 (pr_eqn_ipat eqpat)
+    | None, Some ipat -> hov 1 (pr_as_disjunctive_ipat prc ipat)
     | Some eqpat, Some ipat ->
-      spc () ++
         hov 1 (pr_as_disjunctive_ipat prc ipat ++ spc () ++ pr_eqn_ipat eqpat)
 
   let pr_as_intro_pattern prc ipat =
@@ -567,8 +568,9 @@ module Make
     | ipat ->
       spc() ++ prc c ++ pr_as_ipat prdc ipat
 
-  let pr_by_tactic prt tac =
-    spc() ++ keyword "by" ++ spc () ++ prt tac
+  let pr_by_tactic prt = function
+    | Some tac -> keyword "by" ++ spc () ++ prt tac
+    | None -> mt()
 
   let pr_hyp_location pr_id = function
     | occs, InHyp -> spc () ++ pr_with_occurrences pr_id occs
@@ -623,10 +625,21 @@ module Make
     | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
     | ElimOnAnonHyp n -> int n
 
-  let pr_induction_kind = function
+  let pr_inversion_kind = function
     | SimpleInversion -> primitive "simple inversion"
     | FullInversion -> primitive "inversion"
     | FullInversionClear -> primitive "inversion_clear"
+
+  let pr_range_selector (i, j) =
+    if Int.equal i j then int i
+    else int i ++ str "-" ++ int j
+
+  let pr_goal_selector = function
+    | SelectNth i -> int i ++ str ":"
+    | SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
+        str "]" ++ str ":"
+    | SelectId id -> str "[" ++ Nameops.pr_id id ++ str "]" ++ str ":"
+    | SelectAll -> str "all" ++ str ":"
 
   let pr_lazy = function
     | General -> keyword "multi"
@@ -871,7 +884,7 @@ module Make
           hov 1 (
             primitive (if b then "assert" else "enough") ++
               pr_assumption pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c ++
-              pr_by_tactic (pr.pr_tactic ltop) tac
+              pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
           )
         | TacAssert (_,None,ipat,c) ->
           hov 1 (
@@ -912,7 +925,7 @@ module Make
             ++ spc ()
             ++ prlist_with_sep pr_comma (fun ((clear_flag,h),ids,cl) ->
               pr_clear_flag clear_flag (pr_induction_arg pr.pr_dconstr pr.pr_dconstr) h ++
-                pr_with_induction_names pr.pr_dconstr ids ++
+                pr_non_empty_arg (pr_with_induction_names pr.pr_dconstr) ids ++
                 pr_opt (pr_clauses None pr.pr_name) cl) l ++
               pr_opt pr_eliminator el
           )
@@ -937,7 +950,7 @@ module Make
           )
 
         (* Equality and inversion *)
-        | TacRewrite (ev,l,cl,by) ->
+        | TacRewrite (ev,l,cl,tac) ->
           hov 1 (
             primitive (with_evars ev "rewrite") ++ spc ()
             ++ prlist_with_sep
@@ -947,24 +960,20 @@ module Make
                   pr_with_bindings_arg_full pr.pr_dconstr pr.pr_dconstr c)
               l
             ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) cl
-            ++ (
-              match by with
-                | Some by -> pr_by_tactic (pr.pr_tactic ltop) by
-                | None -> mt()
-            )
+            ++ pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
           )
         | TacInversion (DepInversion (k,c,ids),hyp) ->
           hov 1 (
-            primitive "dependent " ++ pr_induction_kind k ++ spc ()
+            primitive "dependent " ++ pr_inversion_kind k ++ spc ()
             ++ pr_quantified_hypothesis hyp
             ++ pr_with_inversion_names pr.pr_dconstr ids
             ++ pr_with_constr pr.pr_constr c
           )
         | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
           hov 1 (
-            pr_induction_kind k ++ spc ()
+            pr_inversion_kind k ++ spc ()
             ++ pr_quantified_hypothesis hyp
-            ++ pr_with_inversion_names pr.pr_dconstr ids
+            ++ pr_non_empty_arg (pr_with_inversion_names pr.pr_dconstr) ids
             ++ pr_non_empty_arg (pr_simple_hyp_clause pr.pr_name) cl
           )
         | TacInversion (InversionUsing (c,cl),hyp) ->
@@ -1137,6 +1146,7 @@ module Make
               keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
             | TacComplete t ->
               pr_tac (lcomplete,E) t, lcomplete
+            | TacSelect (s, tac) -> pr_goal_selector s ++ spc () ++ pr_tac ltop tac, latom
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
             | TacAtom (loc,t) ->

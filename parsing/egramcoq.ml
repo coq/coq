@@ -9,9 +9,10 @@
 open Errors
 open Util
 open Pcoq
-open Extend
 open Constrexpr
+open Notation
 open Notation_term
+open Extend
 open Libnames
 open Names
 
@@ -320,13 +321,6 @@ let cases_pattern_expr_of_name (loc,na) = match na with
   | Anonymous -> CPatAtom (loc,None)
   | Name id -> CPatAtom (loc,Some (Ident (loc,id)))
 
-type grammar_constr_prod_item =
-  | GramConstrTerminal of Tok.t
-  | GramConstrNonTerminal of constr_prod_entry_key * Id.t option
-  | GramConstrListMark of int * bool
-    (* tells action rule to make a list of the n previous parsed items;
-       concat with last parsed list if true *)
-
 type 'r env = {
   constrs : 'r list;
   constrlists : 'r list list;
@@ -444,14 +438,6 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   let env = (env.constrs, env.constrlists) in
   CPatNotation (loc, notation, env, [])
 
-type notation_grammar = {
-  notgram_level : int;
-  notgram_assoc : gram_assoc option;
-  notgram_notation : notation;
-  notgram_prods : grammar_constr_prod_item list list;
-  notgram_typs : notation_var_internalization_type list;
-}
-
 let extend_constr state forpat ng =
   let n = ng.notgram_level in
   let assoc = ng.notgram_assoc in
@@ -491,12 +477,3 @@ let constr_grammar : (Notation.level * notation_grammar) grammar_command =
   create_grammar_command "Notation" extend_constr_notation
 
 let extend_constr_grammar pr ntn = extend_grammar_command constr_grammar (pr, ntn)
-
-let recover_constr_grammar ntn prec =
-  let filter (prec', ng) =
-    if Notation.level_eq prec prec' && String.equal ntn ng.notgram_notation then Some ng
-    else None
-  in
-  match List.map_filter filter (recover_grammar_command constr_grammar) with
-  | [x] -> x
-  | _ -> assert false

@@ -107,7 +107,7 @@ let coerce_to_constr_context v =
   else raise (CannotCoerceTo "a term context")
 
 (* Interprets an identifier which must be fresh *)
-let coerce_to_ident fresh env v =
+let coerce_var_to_ident fresh env v =
   let v = Value.normalize v in
   let fail () = raise (CannotCoerceTo "a fresh identifier") in
   if has_type v (topwit wit_intro_pattern) then
@@ -123,6 +123,52 @@ let coerce_to_ident fresh env v =
     if isVar c && not (fresh && is_variable env (destVar c)) then
       destVar c
     else fail ()
+
+
+(* Interprets, if possible, a constr to an identifier which may not
+   be fresh but suitable to be given to the fresh tactic. Works for
+   vars, constants, inductive, constructors and sorts. *)
+let coerce_to_ident_not_fresh g env v =
+let id_of_name = function
+  | Names.Anonymous -> Id.of_string "x"
+  | Names.Name x -> x in
+  let v = Value.normalize v in
+  let fail () = raise (CannotCoerceTo "an identifier") in
+  if has_type v (topwit wit_intro_pattern) then
+    match out_gen (topwit wit_intro_pattern) v with
+    | _, IntroNaming (IntroIdentifier id) -> id
+    | _ -> fail ()
+  else if has_type v (topwit wit_var) then
+    out_gen (topwit wit_var) v
+  else
+    match Value.to_constr v with
+    | None -> fail ()
+    | Some c ->
+       match Constr.kind c with
+       | Var id -> id 
+       | Meta m -> id_of_name (Evd.meta_name g m)
+       | Evar (kn,_) ->
+        begin match Evd.evar_ident kn g with
+        | None -> fail ()
+        | Some id -> id
+        end
+       | Const (cst,_) -> Label.to_id (Constant.label cst)
+       | Construct (cstr,_) ->
+	  let ref = Globnames.ConstructRef cstr in
+	  let basename = Nametab.basename_of_global ref in
+	  basename
+       | Ind (ind,_) ->
+	  let ref = Globnames.IndRef ind in
+	  let basename = Nametab.basename_of_global ref in
+	  basename
+       | Sort s ->
+	  begin
+	    match s with
+	    | Prop _ -> Label.to_id (Label.make "Prop")
+	    | Type _ -> Label.to_id (Label.make "Type")
+	  end
+       | _ -> fail()
+
 
 let coerce_to_intro_pattern env v =
   let v = Value.normalize v in

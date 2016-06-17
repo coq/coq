@@ -27,8 +27,9 @@ type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
    to print a goal that is out of focus (or already solved) it doesn't
    make sense to apply a tactic to it. Hence it the types may look very
    similar, they do not seem to mean the same thing. *)
-type goal_selector =
+type goal_selector = Tacexpr.goal_selector =
   | SelectNth of int
+  | SelectList of (int * int) list
   | SelectId of Id.t
   | SelectAll
 
@@ -117,12 +118,17 @@ type reference_or_constr =
   | HintsReference of reference
   | HintsConstr of constr_expr
 
+type hint_mode =
+  | ModeInput (* No evars *)
+  | ModeNoHeadEvar (* No evar at the head *)
+  | ModeOutput (* Anything *)
+
 type hints_expr =
   | HintsResolve of (int option * bool * reference_or_constr) list
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
-  | HintsMode of reference * bool list
+  | HintsMode of reference * hint_mode list
   | HintsConstructors of reference list
   | HintsExtern of int * constr_expr option * raw_tactic_expr
 
@@ -206,6 +212,7 @@ type syntax_modifier =
   | SetAssoc of Extend.gram_assoc
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing of Flags.compat_version
+  | SetOnlyPrinting
   | SetFormat of string * string located
 
 type proof_end =

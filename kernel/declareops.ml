@@ -14,6 +14,10 @@ open Context.Rel.Declaration
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
+let safe_flags = {
+  check_guarded = true;
+}
+
 (** {6 Arities } *)
 
 let subst_decl_arity f g sub ar = 
@@ -131,7 +135,8 @@ let subst_const_body sub cb =
           Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_polymorphic = cb.const_polymorphic;
         const_universes = cb.const_universes;
-        const_inline_code = cb.const_inline_code }
+        const_inline_code = cb.const_inline_code;
+        const_typing_flags = cb.const_typing_flags }
 
 (** {7 Hash-consing of constants } *)
 
@@ -254,7 +259,9 @@ let subst_mind_body sub mib =
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes;
-    mind_private = mib.mind_private }
+    mind_private = mib.mind_private;
+    mind_checked_positive = mib.mind_checked_positive;
+  }
 
 let inductive_instance mib =
   if mib.mind_polymorphic then

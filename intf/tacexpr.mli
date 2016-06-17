@@ -34,6 +34,12 @@ type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use 
 
 type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
 
+type goal_selector =
+  | SelectNth of int
+  | SelectList of (int * int) list
+  | SelectId of Id.t
+  | SelectAll
+
 type 'a core_induction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of Id.t located
@@ -146,7 +152,7 @@ type 'a gen_atomic_tactic_expr =
   | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
   | TacMutualCofix of Id.t * (Id.t * 'trm) list
   | TacAssert of
-      bool * 'tacexpr option *
+      bool * 'tacexpr option option *
       'dtrm intro_pattern_expr located option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *
@@ -269,6 +275,7 @@ and 'a gen_tactic_expr =
       ('p,'a gen_tactic_expr) match_rule list
   | TacFun of 'a gen_tactic_fun_ast
   | TacArg of 'a gen_tactic_arg located
+  | TacSelect of goal_selector * 'a gen_tactic_expr
   (* For ML extensions *)
   | TacML of Loc.t * ml_tactic_entry * 'a gen_tactic_arg list
   (* For syntax extensions *)

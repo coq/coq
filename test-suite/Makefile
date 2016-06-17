@@ -421,7 +421,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -async-proofs on -async-proofs-tactic-error-resiliency off -async-proofs-command-error-resiliency off" 2>&1; \
+	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

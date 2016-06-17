@@ -30,8 +30,8 @@ val set_engagement : Declarations.engagement -> unit
 
 (** Variables, Local definitions, constants, inductive types *)
 
-val push_named_assum : (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
-val push_named_def   : (Id.t * Safe_typing.private_constants Entries.definition_entry) -> Univ.universe_context_set
+val push_named_assum : flags:Declarations.typing_flags -> (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
+val push_named_def   : flags:Declarations.typing_flags -> (Id.t * Safe_typing.private_constants Entries.definition_entry) -> Univ.universe_context_set
 
 val add_constant :
   DirPath.t -> Id.t -> Safe_typing.global_declaration ->

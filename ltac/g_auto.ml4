@@ -175,8 +175,8 @@ let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom
 
 ARGUMENT EXTEND hints_path_atom
   PRINTED BY pr_hints_path_atom
-| [ global_list(g) ] -> [ Hints.PathHints (List.map Nametab.global g) ]
-| [ "*" ] -> [ Hints.PathAny ]
+| [ ne_global_list(g) ] -> [ Hints.PathHints (List.map Nametab.global g) ]
+| [ "_" ] -> [ Hints.PathAny ]
 END
 
 let pr_hints_path prc prx pry c = Hints.pp_hints_path c
@@ -184,12 +184,12 @@ let pr_hints_path prc prx pry c = Hints.pp_hints_path c
 ARGUMENT EXTEND hints_path
   PRINTED BY pr_hints_path
 | [ "(" hints_path(p) ")"  ] -> [ p ]
-| [ "!" hints_path(p)  ] -> [ Hints.PathStar p ]
+| [ hints_path(p) "*" ] -> [ Hints.PathStar p ]
 | [ "emp" ] -> [ Hints.PathEmpty ]
 | [ "eps" ] -> [ Hints.PathEpsilon ]
-| [ hints_path_atom(a) ] -> [ Hints.PathAtom a ]
 | [ hints_path(p) "|" hints_path(q) ] -> [ Hints.PathOr (p, q) ]
-| [ hints_path(p) ";" hints_path(q) ] -> [ Hints.PathSeq (p, q) ]
+| [ hints_path_atom(a) ] -> [ Hints.PathAtom a ]
+| [ hints_path(p) hints_path(q) ] -> [ Hints.PathSeq (p, q) ]
 END
 
 let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
@@ -207,3 +207,4 @@ VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
     Hints.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
       (match dbnames with None -> ["core"] | Some l -> l) entry ]
 END
+

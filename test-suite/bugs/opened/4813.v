@@ -2,4 +2,4 @@
 
 Record T := BT { t : Set }.
 Record U (x : T) := BU { u : t x -> Prop }.
-Definition A (H : unit -> Prop) : U (BT unit) := BU _ H.
+Fail Definition A (H : unit -> Prop) : U (BT unit) := BU _ H.

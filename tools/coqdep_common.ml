@@ -445,7 +445,7 @@ let mL_dependencies () =
        let efullname = escape fullname in
        printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname dep;
        printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
-       printf "%s.cmxa %s.cmxs:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname efullname;
+       printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
        flush stdout)
     (List.rev !mllibAccu);
   List.iter
@@ -455,7 +455,7 @@ let mL_dependencies () =
        let efullname = escape fullname in
        printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname dep;
        printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
-       printf "%s.cmx %s.cmxs:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname efullname;
+       printf "%s.cmx:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
        flush stdout)
     (List.rev !mlpackAccu)
 

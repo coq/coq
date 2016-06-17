@@ -111,8 +111,8 @@ let check_for_coloneq =
       | KEYWORD "(" -> skip_binders 2
       | _ -> err ())
 
-let lookup_at_as_coma =
-  Gram.Entry.of_parser "lookup_at_as_coma"
+let lookup_at_as_comma =
+  Gram.Entry.of_parser "lookup_at_as_comma"
     (fun strm ->
       match get_tok (stream_nth 0 strm) with
 	| KEYWORD (","|"at"|"as") -> ()
@@ -480,10 +480,6 @@ GEXTEND Gram
     [ [ "as"; id = ident -> Names.Name id | -> Names.Anonymous ] ]
   ;
   by_tactic:
-    [ [ "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
-      | -> TacId [] ] ]
-  ;
-  opt_by_tactic:
     [ [ "by"; tac = tactic_expr LEVEL "3" -> Some tac
     | -> None ] ]
   ;
@@ -589,7 +585,7 @@ GEXTEND Gram
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
 	  let gen_everywhere c = ((AllOccurrences,c),Names.Anonymous) in
           TacAtom (!@loc, TacGeneralize (List.map gen_everywhere (c::l)))
-      | IDENT "generalize"; c = constr; lookup_at_as_coma; nl = occs;
+      | IDENT "generalize"; c = constr; lookup_at_as_comma; nl = occs;
           na = as_name;
           l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->
           TacAtom (!@loc, TacGeneralize (((nl,c),na)::l))
@@ -606,9 +602,9 @@ GEXTEND Gram
 
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=opt_by_tactic -> TacAtom (!@loc, TacRewrite (false,l,cl,t))
+	  cl = clause_dft_concl; t=by_tactic -> TacAtom (!@loc, TacRewrite (false,l,cl,t))
       | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=opt_by_tactic -> TacAtom (!@loc, TacRewrite (true,l,cl,t))
+	  cl = clause_dft_concl; t=by_tactic -> TacAtom (!@loc, TacRewrite (true,l,cl,t))
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion

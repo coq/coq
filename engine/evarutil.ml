@@ -192,6 +192,7 @@ let head_evar =
     | Case (_,_,c,_) -> hrec c
     | App (c,_)      -> hrec c
     | Cast (c,_,_)   -> hrec c
+    | Proj (p, c)    -> hrec c
     | _              -> raise NoHeadEvar
   in
   hrec

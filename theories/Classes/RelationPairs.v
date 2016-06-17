@@ -43,6 +43,9 @@ Generalizable Variables A B RA RB Ri Ro f.
 Definition RelCompFun {A} {B : Type}(R:relation B)(f:A->B) : relation A :=
  fun a a' => R (f a) (f a').
 
+(** Instances on RelCompFun must match syntactically *)
+Typeclasses Opaque RelCompFun. 
+
 Infix "@@" := RelCompFun (at level 30, right associativity) : signature_scope.
 
 Notation "R @@1" := (R @@ Fst)%signature (at level 30) : signature_scope.
@@ -64,6 +67,8 @@ Instance snd_measure : @Measure (A * B) B Snd.
 
 Definition RelProd {A : Type} {B : Type} (RA:relation A)(RB:relation B) : relation (A*B) :=
  relation_conjunction (@RelCompFun (A * B) A RA fst) (RB @@2).
+
+Typeclasses Opaque RelProd.
 
 Infix "*" := RelProd : signature_scope.
 

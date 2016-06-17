@@ -62,6 +62,7 @@ GTKLIBS=$(shell pkg-config --variable=libdir gtk+-2.0)
 ###########################################################################
 
 .PHONY: coqide coqide-binaries coqide-no coqide-byte coqide-opt coqide-files
+.PHONY: ide-toploop
 
 # target to build CoqIde
 coqide: coqide-files coqide-binaries theories/Init/Prelude.vo

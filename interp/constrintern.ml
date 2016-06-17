@@ -1731,7 +1731,7 @@ let internalize globalenv env allow_patvar lvar c =
     in aux 1 l subscopes eargs rargs
 
   and apply_impargs c env imp subscopes l loc = 
-    let imp = select_impargs_size (List.length l) imp in
+    let imp = select_impargs_size (List.length (List.filter (fun (_,x) -> x == None) l)) imp in
     let l = intern_impargs c env imp subscopes l in
       smart_gapp c loc l
 

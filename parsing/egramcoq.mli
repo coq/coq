@@ -19,28 +19,7 @@ open Egramml
 (** This is the part specific to Coq-level Notation and Tactic Notation.
     For the ML-level tactic and vernac extensions, see Egramml. *)
 
-(** For constr notations *)
-
-type grammar_constr_prod_item =
-  | GramConstrTerminal of Tok.t
-  | GramConstrNonTerminal of constr_prod_entry_key * Id.t option
-  | GramConstrListMark of int * bool
-    (* tells action rule to make a list of the n previous parsed items;
-       concat with last parsed list if true *)
-
-type notation_grammar = {
-  notgram_level : int;
-  notgram_assoc : gram_assoc option;
-  notgram_notation : notation;
-  notgram_prods : grammar_constr_prod_item list list;
-  notgram_typs : notation_var_internalization_type list;
-}
-
 (** {5 Adding notations} *)
 
-val extend_constr_grammar : Notation.level -> notation_grammar -> unit
+val extend_constr_grammar : Notation.level -> Notation_term.notation_grammar -> unit
 (** Add a term notation rule to the parsing system. *)
-
-val recover_constr_grammar : notation -> Notation.level -> notation_grammar
-(** For a declared grammar, returns the rule + the ordered entry types
-    of variables in the rule (for use in the interpretation) *)

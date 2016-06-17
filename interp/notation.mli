@@ -196,10 +196,11 @@ val pr_visibility: (glob_constr -> std_ppcmds) -> scope_name option -> std_ppcmd
 (** Declare and look for the printing rule for symbolic notations *)
 type unparsing_rule = unparsing list * precedence
 type extra_unparsing_rules = (string * string) list
-val declare_notation_printing_rule :
-  notation -> extra:extra_unparsing_rules -> unparsing_rule -> unit
+val declare_notation_rule :
+  notation -> extra:extra_unparsing_rules -> unparsing_rule -> notation_grammar -> unit
 val find_notation_printing_rule : notation -> unparsing_rule
 val find_notation_extra_printing_rules : notation -> extra_unparsing_rules
+val find_notation_parsing_rules : notation -> notation_grammar
 val add_notation_extra_printing_rule : notation -> string -> string -> unit
 
 (** Rem: printing rules for primitive token are canonical *)
