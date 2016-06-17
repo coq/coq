@@ -190,11 +190,8 @@ type mutual_inductive_body = {
     mind_universes : Univ.universe_context; (** Local universe variables and constraints *)
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
-  
-    mind_checked_positive : bool; (** [false] when the mutual-inductive was assumed to be well-founded, bypassing the positivity checker.  *)
 
-    mind_unsafe_universes : bool; (** generated with the type-in-type flag *)
-
+    mind_typing_flags : typing_flags; (** typing flags at the time of the inductive creation *)
 }
 
 (** {6 Module declarations } *)

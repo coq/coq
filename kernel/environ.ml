@@ -53,6 +53,7 @@ let is_impredicative_set env =
   | _ -> false
 
 let type_in_type env = not (typing_flags env).check_universes
+let deactivated_guard env = not (typing_flags env).check_guarded
 
 let universes env = env.env_stratification.env_universes
 let named_context env = env.env_named_context
@@ -362,7 +363,7 @@ let polymorphic_pind (ind,u) env =
   else polymorphic_ind ind env
 
 let type_in_type_ind (mind,i) env =
-  (lookup_mind mind env).mind_unsafe_universes
+  not (lookup_mind mind env).mind_typing_flags.check_universes
 
 let template_polymorphic_ind (mind,i) env =
   match (lookup_mind mind env).mind_packets.(i).mind_arity with 

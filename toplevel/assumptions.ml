@@ -307,7 +307,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       accu
   | IndRef (m,_) | ConstructRef ((m,_),_) ->
       let mind = Global.lookup_mind m in
-      if mind.mind_checked_positive then
+      if mind.mind_typing_flags.check_guarded then
         accu
       else
         let l = try Refmap_env.find obj ax2ty with Not_found -> [] in

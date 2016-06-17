@@ -354,7 +354,7 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_polymorphic = false;
   mind_entry_universes = Univ.UContext.empty;
   mind_entry_private = None;
-  mind_entry_check_positivity = true; })
+})
 
 type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
 

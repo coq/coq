@@ -53,6 +53,7 @@ val engagement    : env -> engagement
 val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
 val type_in_type : env -> bool
+val deactivated_guard : env -> bool
 
 (** is the local context empty *)
 val empty_context : env -> bool
