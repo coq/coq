@@ -472,7 +472,7 @@ let print_xml =
     with e -> let e = Errors.push e in Mutex.unlock m; iraise e
 
 
-let slave_logger xml_oc level message =
+let slave_logger xml_oc ?loc level message =
   (* convert the message into XML *)
   let msg = hov 0 message in
   let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg))    in

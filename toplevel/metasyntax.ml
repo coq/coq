@@ -898,7 +898,7 @@ let find_precedence lev etyps symbols =
 	| ETName | ETBigint | ETReference ->
             begin match lev with
             | None ->
-	      ([Feedback.msg_info,strbrk "Setting notation at level 0."],0)
+	      ([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."],0)
             | Some 0 ->
               ([],0)
             | _ ->
@@ -916,7 +916,7 @@ let find_precedence lev etyps symbols =
 	else [],Option.get lev)
   | Terminal _ when last_is_terminal () ->
       if Option.is_empty lev then
-	([Feedback.msg_info,strbrk "Setting notation at level 0."], 0)
+	([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."], 0)
       else [],Option.get lev
   | _ ->
       if Option.is_empty lev then error "Cannot determine the level.";
@@ -988,12 +988,12 @@ let compute_pure_syntax_data df mods =
   let (msgs,(onlyparse,onlyprint,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
   let msgs =
     if onlyparse then
-      (Feedback.msg_warning,
+      (Feedback.msg_warning ?loc:None,
       strbrk "The only parsing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
   let msgs =
     if onlyprint then
-      (Feedback.msg_warning,
+      (Feedback.msg_warning ?loc:None,
       strbrk "The only printing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
   msgs, sy_data, extra

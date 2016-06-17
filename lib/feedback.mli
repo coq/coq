@@ -65,7 +65,7 @@ type feedback = {
  * Only one among state_id and edit_id can be provided. *)
 
 (** A [logger] takes a level plus a pretty printing doc and logs it *)
-type logger = level -> Pp.std_ppcmds -> unit
+type logger = ?loc:Loc.t -> level -> Pp.std_ppcmds -> unit
 
 (** [set_logger l] makes the [msg_*] to use [l] for logging *)
 val set_logger : logger -> unit
@@ -110,22 +110,22 @@ relaxed. *)
 (* Should we advertise these functions more? Should they be the ONLY
    allowed way to output something? *)
 
-val msg_info : Pp.std_ppcmds -> unit
+val msg_info : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 (** Message that displays information, usually in verbose mode, such as [Foobar
     is defined] *)
 
-val msg_notice : Pp.std_ppcmds -> unit
+val msg_notice : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 (** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
 
-val msg_warning : Pp.std_ppcmds -> unit
+val msg_warning : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 (** Message indicating that something went wrong, but without serious
     consequences. *)
 
-val msg_error : Pp.std_ppcmds -> unit
+val msg_error : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 (** Message indicating that something went really wrong, though still
     recoverable; otherwise an exception would have been raised. *)
 
-val msg_debug : Pp.std_ppcmds -> unit
+val msg_debug : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 (** For debugging purposes *)
 
 

@@ -30,6 +30,9 @@ val message     : string -> unit
   proper `Feedback.msg_*` function. Clients also have no control over
   flushing, the back end takes care of it.
 
+  Also, the `msg_*` functions now take an optional `?loc` parameter
+  for relaying location to the client.
+
 * Feedback related functions and definitions have been moved to the
   `Feedback` module. `message_level` has been renamed to
   level. Functions moved from Pp to Feedback are:
