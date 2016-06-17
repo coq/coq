@@ -424,13 +424,22 @@ let print_ast id =
     end
   | None     -> Xml_datatype.PCData "ERROR"
 
-(** Ltac Profiling *)
+(** Ltac Profiling
+ * Returns the results of profiling for the specified state_id. If given
+ * Stateid.dummy, this will return results for the currently focused state.
+ * This function will force/observe processing of the given state.
+ *
+ * See ltac/profile_ltac.mli for details on the returned structure
+ *)
 let ltacprof_results id =
+  (* Future.purify allows us to temporarily focus on another state_id *)
   Future.purify (fun () ->
     if Stateid.equal id Stateid.dummy then
-      Stm.finish ()
+      Stm.finish () (* finish processing the focused state *)
     else
+      (* focus on state id and block until it is processed *)
       Stm.observe id;
+    (* return the profiling results for the focused state *)
     Profile_ltac.get_profiling_results()) ()
 
 
