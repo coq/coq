@@ -194,27 +194,42 @@ let to_coq_info = function
 end
 
 
-let rec of_ltacprof_treenode t =
+let rec of_ltacprof_tactic t =
   let open Profile_ltac in
-  let total = string_of_float t.entry.total in
-  let local = string_of_float t.entry.local in
-  let ncalls = string_of_int t.entry.ncalls in
-  let max_total = string_of_float t.entry.max_total in
-  let children = of_list (of_pair of_string of_ltacprof_treenode) t.children in
-  Element ("ltacprof", [("total",total); ("local",local); ("ncalls",ncalls); ("max_total",max_total)], [children])
-let rec to_ltacprof_treenode = function
+  let total = string_of_float t.statistics.total in
+  let self = string_of_float t.statistics.self in
+  let num_calls = string_of_int t.statistics.num_calls in
+  let max_total = string_of_float t.statistics.max_total in
+  let children = of_list of_ltacprof_tactic t.tactics in
+  Element ("ltacprof_tactic", [("name", t.name); ("total",total); ("self",self); ("num_calls",num_calls); ("max_total",max_total)], [children])
+let rec to_ltacprof_tactic = function
+  | Element ("ltacprof_tactic", attrs, [children]) ->
+    let open Profile_ltac in
+    let get_attr key f default = try f (Serialize.massoc key attrs) with Marshal_error _ | Failure _ -> default in
+    let name = get_attr "name" (fun x -> x) "???" in
+    let stats =
+        { total = get_attr "total" float_of_string nan
+        ; self = get_attr "self" float_of_string nan
+        ; num_calls = get_attr "num_calls" int_of_string (-1)
+        ; max_total = get_attr "max_total" float_of_string nan
+        } in
+    let children' = to_list to_ltacprof_tactic children in
+    {name= name; statistics = stats; tactics = children' }
+  | x -> raise (Marshal_error("ltacprof_tactic",x))
+
+let rec of_ltacprof_results t =
+  let open Profile_ltac in
+  let children = of_list of_ltacprof_tactic t.tactics in
+  Element ("ltacprof", [("total_time", string_of_float t.total_time)], [children])
+let rec to_ltacprof_results = function
   | Element ("ltacprof", attrs, [children]) ->
     let open Profile_ltac in
     let get_attr key f default = try f (Serialize.massoc key attrs) with Marshal_error _ | Failure _ -> default in
-    let entry =
-        { total = get_attr "total" float_of_string nan
-        ; local = get_attr "local" float_of_string nan
-        ; ncalls = get_attr "ncalls" int_of_string (-1)
-        ; max_total = get_attr "max_total" float_of_string nan
-        } in
-    let children' = to_list (to_pair to_string to_ltacprof_treenode) children in
-    {entry = entry; children = children' }
+    let total_time = get_attr "total_time" float_of_string nan in
+    let children' = to_list to_ltacprof_tactic children in
+    {total_time = total_time; tactics = children' }
   | x -> raise (Marshal_error("ltacprof",x))
+
 
 include Xml_marshalling
 
@@ -245,7 +260,8 @@ module ReifType : sig
   val state_id_t     : state_id val_t
   val search_cst_t   : search_constraint val_t
 
-  val ltacprof_treenode_t : Profile_ltac.ltacprof_treenode val_t
+  val ltacprof_tactic_t : Profile_ltac.ltacprof_tactic val_t
+  val ltacprof_results_t : Profile_ltac.ltacprof_results val_t
 
   val of_value_type : 'a val_t -> 'a -> xml
   val to_value_type : 'a val_t -> xml -> 'a
@@ -282,7 +298,8 @@ end = struct
     | State_id : state_id val_t
     | Search_cst : search_constraint val_t
     (* Ltac Profiling *)
-    | LtacProfTreenode : Profile_ltac.ltacprof_treenode val_t
+    | LtacProfTactic : Profile_ltac.ltacprof_tactic val_t
+    | LtacProfResults : Profile_ltac.ltacprof_results val_t
 
   type value_type = Value_type : 'a val_t -> value_type
 
@@ -309,53 +326,56 @@ end = struct
   let state_id_t     = State_id
   let search_cst_t   = Search_cst
   
-  let ltacprof_treenode_t = LtacProfTreenode
+  let ltacprof_tactic_t = LtacProfTactic
+  let ltacprof_results_t = LtacProfResults
 
   let of_value_type (ty : 'a val_t) : 'a -> xml =
     let rec convert : type a. a val_t -> a -> xml = function
-      | Unit             -> of_unit
-      | Bool             -> of_bool
-      | Xml              -> (fun x -> x)
-      | String           -> of_string
-      | Int              -> of_int
-      | State            -> of_status
-      | Option_state     -> of_option_state
-      | Option_value     -> of_option_value
-      | Coq_info         -> of_coq_info
-      | Goals            -> of_goals
-      | Evar             -> of_evar
-      | List t           -> (of_list (convert t))
-      | Option t         -> (of_option (convert t))
-      | Coq_object t     -> (of_coq_object (convert t))
-      | Pair (t1,t2)     -> (of_pair (convert t1) (convert t2))
-      | Union (t1,t2)    -> (of_union (convert t1) (convert t2))
-      | State_id         -> of_stateid
-      | Search_cst       -> of_search_cst
-      | LtacProfTreenode -> of_ltacprof_treenode
+      | Unit            -> of_unit
+      | Bool            -> of_bool
+      | Xml             -> (fun x -> x)
+      | String          -> of_string
+      | Int             -> of_int
+      | State           -> of_status
+      | Option_state    -> of_option_state
+      | Option_value    -> of_option_value
+      | Coq_info        -> of_coq_info
+      | Goals           -> of_goals
+      | Evar            -> of_evar
+      | List t          -> (of_list (convert t))
+      | Option t        -> (of_option (convert t))
+      | Coq_object t    -> (of_coq_object (convert t))
+      | Pair (t1,t2)    -> (of_pair (convert t1) (convert t2))
+      | Union (t1,t2)   -> (of_union (convert t1) (convert t2))
+      | State_id        -> of_stateid
+      | Search_cst      -> of_search_cst
+      | LtacProfTactic  -> of_ltacprof_tactic
+      | LtacProfResults -> of_ltacprof_results
     in
       convert ty
 
   let to_value_type (ty : 'a val_t) : xml -> 'a =
     let rec convert : type a. a val_t -> xml -> a = function
-      | Unit             -> to_unit
-      | Bool             -> to_bool
-      | Xml              -> (fun x -> x)
-      | String           -> to_string
-      | Int              -> to_int
-      | State            -> to_status
-      | Option_state     -> to_option_state
-      | Option_value     -> to_option_value
-      | Coq_info         -> to_coq_info
-      | Goals            -> to_goals
-      | Evar             -> to_evar
-      | List t           -> (to_list (convert t))
-      | Option t         -> (to_option (convert t))
-      | Coq_object t     -> (to_coq_object (convert t))
-      | Pair (t1,t2)     -> (to_pair (convert t1) (convert t2))
-      | Union (t1,t2)    -> (to_union (convert t1) (convert t2))
-      | State_id         -> to_stateid
-      | Search_cst       -> to_search_cst
-      | LtacProfTreenode -> to_ltacprof_treenode
+      | Unit            -> to_unit
+      | Bool            -> to_bool
+      | Xml             -> (fun x -> x)
+      | String          -> to_string
+      | Int             -> to_int
+      | State           -> to_status
+      | Option_state    -> to_option_state
+      | Option_value    -> to_option_value
+      | Coq_info        -> to_coq_info
+      | Goals           -> to_goals
+      | Evar            -> to_evar
+      | List t          -> (to_list (convert t))
+      | Option t        -> (to_option (convert t))
+      | Coq_object t    -> (to_coq_object (convert t))
+      | Pair (t1,t2)    -> (to_pair (convert t1) (convert t2))
+      | Union (t1,t2)   -> (to_union (convert t1) (convert t2))
+      | State_id        -> to_stateid
+      | Search_cst      -> to_search_cst
+      | LtacProfTactic  -> to_ltacprof_tactic
+      | LtacProfResults -> to_ltacprof_results
     in
       convert ty
 
@@ -405,12 +425,15 @@ end = struct
   let pr_pair pr1 pr2 (a,b) = "("^pr1 a^","^pr2 b^")"
   let pr_union pr1 pr2 = function Inl x -> "Inl "^pr1 x | Inr x -> "Inr "^pr2 x
   let pr_state_id = Stateid.to_string
-  let pr_ltacprof_treenode_entry e =
+  let pr_ltacprof_statistics e =
     let open Profile_ltac in
-    Printf.sprintf "{total=%f;local=%f;ncalls=%i;max_total=%f}" e.total e.local e.ncalls e.max_total
-  let rec pr_ltacprof_treenode t =
+    Printf.sprintf "{total=%f;self=%f;num_calls=%i;max_total=%f}" e.total e.self e.num_calls e.max_total
+  let rec pr_ltacprof_tactic t =
     let open Profile_ltac in
-    Printf.sprintf "{entry=%s;children=%s}" (pr_ltacprof_treenode_entry t.entry) (pr_list (pr_pair pr_string pr_ltacprof_treenode) t.children)
+    Printf.sprintf "{name=%s;statistics=%s;tactics=%s}" t.name (pr_ltacprof_statistics t.statistics) (pr_list pr_ltacprof_tactic t.tactics)
+  let rec pr_ltacprof_results t =
+    let open Profile_ltac in
+    Printf.sprintf "{total_time=%f;tactics=%s}" t.total_time (pr_list pr_ltacprof_tactic t.tactics)
 
   let pr_search_cst = function
     | Name_Pattern s -> "Name_Pattern " ^ s
@@ -420,25 +443,26 @@ end = struct
     | Include_Blacklist -> "Include_Blacklist"
 
   let rec print : type a. a val_t -> a -> string = function
-  | Unit             -> pr_unit
-  | Bool             -> pr_bool
-  | String           -> pr_string
-  | Xml              -> Xml_printer.to_string_fmt
-  | Int              -> pr_int
-  | State            -> pr_status
-  | Option_state     -> pr_option_state
-  | Option_value     -> pr_option_value
-  | Search_cst       -> pr_search_cst
-  | Coq_info         -> pr_coq_info
-  | Goals            -> pr_goal
-  | Evar             -> pr_evar
-  | List t           -> (pr_list (print t))
-  | Option t         -> (pr_option (print t))
-  | Coq_object t     -> pr_coq_object
-  | Pair (t1,t2)     -> (pr_pair (print t1) (print t2))
-  | Union (t1,t2)    -> (pr_union (print t1) (print t2))
-  | State_id         -> pr_state_id
-  | LtacProfTreenode -> pr_ltacprof_treenode
+  | Unit            -> pr_unit
+  | Bool            -> pr_bool
+  | String          -> pr_string
+  | Xml             -> Xml_printer.to_string_fmt
+  | Int             -> pr_int
+  | State           -> pr_status
+  | Option_state    -> pr_option_state
+  | Option_value    -> pr_option_value
+  | Search_cst      -> pr_search_cst
+  | Coq_info        -> pr_coq_info
+  | Goals           -> pr_goal
+  | Evar            -> pr_evar
+  | List t          -> (pr_list (print t))
+  | Option t        -> (pr_option (print t))
+  | Coq_object t    -> pr_coq_object
+  | Pair (t1,t2)    -> (pr_pair (print t1) (print t2))
+  | Union (t1,t2)   -> (pr_union (print t1) (print t2))
+  | State_id        -> pr_state_id
+  | LtacProfTactic  -> pr_ltacprof_tactic
+  | LtacProfResults -> pr_ltacprof_results
 
   (* This is to break if a rename/refactoring makes the strings below outdated *)
   type 'a exists = bool
@@ -460,11 +484,12 @@ end = struct
   | Option t          -> Printf.sprintf "(%s option)" (print_val_t t)
   | Coq_object t      -> assert(true : 'a coq_object exists);
                          Printf.sprintf "(%s Interface.coq_object)" (print_val_t t)
-  | Pair (t1,t2)  -> Printf.sprintf "(%s * %s)" (print_val_t t1) (print_val_t t2)
-  | Union (t1,t2) -> assert(true : ('a,'b) CSig.union exists);
+  | Pair (t1,t2)    -> Printf.sprintf "(%s * %s)" (print_val_t t1) (print_val_t t2)
+  | Union (t1,t2)   -> assert(true : ('a,'b) CSig.union exists);
                      Printf.sprintf "((%s, %s) CSig.union)" (print_val_t t1) (print_val_t t2)
-  | State_id      -> assert(true : Stateid.t exists); "Stateid.t"
-  | LtacProfTreenode -> "ltacprof_treenode"
+  | State_id        -> assert(true : Stateid.t exists); "Stateid.t"
+  | LtacProfTactic  -> "ltacprof_tactic"
+  | LtacProfResults -> "ltacprof_results"
 
   let print_type = function Value_type ty -> print_val_t ty
 
@@ -477,22 +502,26 @@ end = struct
     Printf.printf "%s:\n\n%s\n\n" (print_val_t Int) (pr_xml (of_int 256));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t State_id) (pr_xml (of_stateid Stateid.initial));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t (List Int)) (pr_xml (of_list of_int [3;4;5]));
-    Printf.printf "%s:\n\n%s\n%s\n\n" (print_val_t (Option Int));
+    Printf.printf "%s:\n\n%s\n%s\n\n" (print_val_t (Option Int))
+      (pr_xml (of_option of_int (Some 3))) (pr_xml (of_option of_int None));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t (Pair (Bool,Int)))
       (pr_xml (of_pair of_bool of_int (false,3)));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t (Union (Bool,Int)))
       (pr_xml (of_union of_bool of_int (Inl false)));
+    let example_children = 
+      let open Profile_ltac in
+      [{name="foo"; statistics={total=0.2;self=0.1;num_calls=3;max_total=0.5}; tactics=[
+        {name="auto"; statistics={total=0.1;self=0.1;num_calls=10;max_total=0.3}; tactics=[]};
+        {name="discriminate"; statistics={total=0.1;self=0.1;num_calls=2;max_total=0.1}; tactics=[]}
+      ]}] in
+    Printf.printf "%s:\n\n%s\n\n" (print_val_t LtacProfResults)
+      (let open Profile_ltac in
+      pr_xml (of_ltacprof_results {total_time=0.2; tactics=example_children} ));
     print_endline ("All other types are records represented by a node named like the OCaml\n"^
                    "type which contains a flattened n-tuple.  We provide one example.\n");
     Printf.printf "%s:\n\n%s\n\n" (print_val_t Option_state)
       (pr_xml (of_option_state { opt_sync = true; opt_depr = false;
         opt_name = "name1"; opt_value = IntValue (Some 37) }));
-    let example_children = 
-      let open Profile_ltac in
-      [("auto", {entry={total=0.1;local=0.2;ncalls=3;max_total=0.5}; children=[]})] in
-    Printf.printf "%s:\n\n%s\n\n" (print_val_t LtacProfTreenode)
-      (let open Profile_ltac in
-        pr_xml (of_ltacprof_treenode {entry={total=0.1;local=0.2;ncalls=3;max_total=0.5}; children=example_children} ));
 
 end
 open ReifType
@@ -547,7 +576,7 @@ let print_ast_rty_t : print_ast_rty val_t = xml_t
 let annotate_rty_t : annotate_rty val_t = xml_t
 
 let ltacprof_reset_rty_t : ltacprof_reset_rty val_t = unit_t
-let ltacprof_results_rty_t : ltacprof_results_rty val_t = ltacprof_treenode_t
+let ltacprof_results_rty_t : ltacprof_results_rty val_t = ltacprof_results_t
 
 let ($) x = erase x
 let calls = [|
@@ -640,7 +669,7 @@ let init x        : init_rty call        = Init x
 let interp x      : interp_rty call      = Interp x
 let stop_worker x : stop_worker_rty call = StopWorker x
 let print_ast   x : print_ast_rty call   = PrintAst x
-let annotate   x : annotate_rty call    = Annotate x
+let annotate    x : annotate_rty call    = Annotate x
 let ltacprof_reset   x : ltacprof_reset_rty call   = LtacProfReset x
 let ltacprof_results x : ltacprof_results_rty call = LtacProfResults x
 

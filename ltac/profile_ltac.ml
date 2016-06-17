@@ -325,14 +325,19 @@ let _ =
 
 
 (* public-facing datastructures *)
-type ltacprof_entry = {total : float; local : float; ncalls : int; max_total : float}
-type ltacprof_treenode = {entry : ltacprof_entry; children : (string * ltacprof_treenode) list }
-let to_ltacprof_entry (e: entry) : ltacprof_entry =
-    {total=e.total; local=e.local; ncalls=e.ncalls; max_total=e.max_total}
-let rec to_ltacprof_treenode (t: treenode) : ltacprof_treenode =
-  let children' = Hashtbl.fold (fun key value c -> (key, to_ltacprof_treenode value)::c) t.children [] in
-    {entry = to_ltacprof_entry t.entry; children = children' }
+type ltacprof_entry = {total : float; self : float; num_calls : int; max_total : float}
+type ltacprof_tactic = {name: string; statistics : ltacprof_entry; tactics : ltacprof_tactic list }
+type ltacprof_results = {total_time : float; tactics : ltacprof_tactic list }
 
-let get_profiling_results() : ltacprof_treenode =
-    to_ltacprof_treenode (List.hd !stack)
+let to_ltacprof_entry (e: entry) : ltacprof_entry =
+  {total=e.total; self=e.local; num_calls=e.ncalls; max_total=e.max_total}
+
+let rec to_ltacprof_tactic (name: string) (t: treenode) : ltacprof_tactic =
+  { name = name; statistics = to_ltacprof_entry t.entry; tactics = to_ltacprof_treenode t.children }
+and to_ltacprof_treenode (table: (string, treenode) Hashtbl.t) : ltacprof_tactic list =
+  Hashtbl.fold (fun name' t' c -> to_ltacprof_tactic name' t'::c) table []
+
+let get_profiling_results() : ltacprof_results =
+  let tree = List.hd !stack in
+  { total_time = -. tree.entry.local; tactics = to_ltacprof_treenode tree.children }
 

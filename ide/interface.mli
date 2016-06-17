@@ -135,7 +135,7 @@ type ltacprof_reset_rty = unit
     x = Some x. The response [tree] is a tree of tactics, each containing a
     name, profiling data, and possibly children. *)
 type ltacprof_results_sty = unit
-type ltacprof_results_rty = Profile_ltac.ltacprof_treenode
+type ltacprof_results_rty = Profile_ltac.ltacprof_results
 
 
 (**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
