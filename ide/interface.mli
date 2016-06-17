@@ -134,7 +134,7 @@ type ltacprof_reset_rty = unit
     profiling Ltac for all tactics if x is None or else for tactic s when
     x = Some x. The response [tree] is a tree of tactics, each containing a
     name, profiling data, and possibly children. *)
-type ltacprof_results_sty = unit
+type ltacprof_results_sty = state_id
 type ltacprof_results_rty = Profile_ltac.ltacprof_results
 
 

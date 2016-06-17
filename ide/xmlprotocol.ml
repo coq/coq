@@ -549,7 +549,7 @@ let print_ast_sty_t : print_ast_sty val_t = state_id_t
 let annotate_sty_t : annotate_sty val_t = string_t
 
 let ltacprof_reset_sty_t : ltacprof_reset_sty val_t = unit_t
-let ltacprof_results_sty_t : ltacprof_results_sty val_t = unit_t
+let ltacprof_results_sty_t : ltacprof_results_sty val_t = state_id_t
 
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)

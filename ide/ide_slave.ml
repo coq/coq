@@ -427,8 +427,13 @@ let print_ast id =
 (** Ltac Profiling *)
 let ltacprof_reset () =
   Profile_ltac.reset_profile()
-let ltacprof_results() =
-  Profile_ltac.get_profiling_results()
+let ltacprof_results id =
+  Future.purify (fun () ->
+    if Stateid.equal id Stateid.dummy then
+      Stm.finish ()
+    else
+      Stm.observe id;
+    Profile_ltac.get_profiling_results()) ()
 
 
 (** Grouping all call handlers together + error handling *)
