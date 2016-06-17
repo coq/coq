@@ -425,8 +425,6 @@ let print_ast id =
   | None     -> Xml_datatype.PCData "ERROR"
 
 (** Ltac Profiling *)
-let ltacprof_reset () =
-  Profile_ltac.reset_profile()
 let ltacprof_results id =
   Future.purify (fun () ->
     if Stateid.equal id Stateid.dummy then
@@ -468,7 +466,6 @@ let eval_call xml_oc log c =
     Interface.stop_worker = Stm.stop_worker;
     Interface.print_ast = print_ast;
     Interface.annotate = interruptible annotate;
-    Interface.ltacprof_reset = ltacprof_reset;
     Interface.ltacprof_results = ltacprof_results;
   } in
   Xmlprotocol.abstract_eval_call handler c

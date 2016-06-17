@@ -126,10 +126,6 @@ type ('a, 'b) union = ('a, 'b) Util.union
 (* Request/Reply message protocol between Coq and CoqIde *)
 
 
-(**  [ltacprof_set (enable)] enables (and resets) or disables ltac profiling. *)
-type ltacprof_reset_sty = unit
-type ltacprof_reset_rty = unit
-
 (**  [ltacprof_results x] queries the current accumulated results of
     profiling Ltac for all tactics if x is None or else for tactic s when
     x = Some x. The response [tree] is a tree of tactics, each containing a
@@ -254,7 +250,6 @@ type handler = {
   (* Retrocompatibility stuff *)
   interp      : interp_sty      -> interp_rty;
   (* Ltac Profiling*)
-  ltacprof_reset   : ltacprof_reset_sty   -> ltacprof_reset_rty;
   ltacprof_results : ltacprof_results_sty -> ltacprof_results_rty;
 }
 

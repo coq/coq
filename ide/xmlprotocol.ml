@@ -548,7 +548,6 @@ let stop_worker_sty_t : stop_worker_sty val_t = string_t
 let print_ast_sty_t : print_ast_sty val_t = state_id_t
 let annotate_sty_t : annotate_sty val_t = string_t
 
-let ltacprof_reset_sty_t : ltacprof_reset_sty val_t = unit_t
 let ltacprof_results_sty_t : ltacprof_results_sty val_t = state_id_t
 
 let add_rty_t : add_rty val_t =
@@ -575,7 +574,6 @@ let stop_worker_rty_t : stop_worker_rty val_t = unit_t
 let print_ast_rty_t : print_ast_rty val_t = xml_t
 let annotate_rty_t : annotate_rty val_t = xml_t
 
-let ltacprof_reset_rty_t : ltacprof_reset_rty val_t = unit_t
 let ltacprof_results_rty_t : ltacprof_results_rty val_t = ltacprof_results_t
 
 let ($) x = erase x
@@ -598,7 +596,6 @@ let calls = [|
   "StopWorker",      ($)stop_worker_sty_t,      ($)stop_worker_rty_t;
   "PrintAst",        ($)print_ast_sty_t,        ($)print_ast_rty_t;
   "Annotate",        ($)annotate_sty_t,         ($)annotate_rty_t;
-  "LtacProfReset",   ($)ltacprof_reset_sty_t,   ($)ltacprof_reset_rty_t;
   "LtacProfResults", ($)ltacprof_results_sty_t, ($)ltacprof_results_rty_t;
 |]
 
@@ -623,7 +620,6 @@ type 'a call =
   | PrintAst        : print_ast_sty -> print_ast_rty call
   | Annotate        : annotate_sty -> annotate_rty call
   (* Ltac Profiler *)
-  | LtacProfReset   : ltacprof_reset_sty -> ltacprof_reset_rty call
   | LtacProfResults : ltacprof_results_sty -> ltacprof_results_rty call
 
 let id_of_call : type a. a call -> int = function
@@ -645,8 +641,7 @@ let id_of_call : type a. a call -> int = function
   | StopWorker _      -> 15
   | PrintAst _        -> 16
   | Annotate _        -> 17
-  | LtacProfReset _   -> 18
-  | LtacProfResults _ -> 19
+  | LtacProfResults _ -> 18
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -670,7 +665,6 @@ let interp x      : interp_rty call      = Interp x
 let stop_worker x : stop_worker_rty call = StopWorker x
 let print_ast   x : print_ast_rty call   = PrintAst x
 let annotate    x : annotate_rty call    = Annotate x
-let ltacprof_reset   x : ltacprof_reset_rty call   = LtacProfReset x
 let ltacprof_results x : ltacprof_results_rty call = LtacProfResults x
 
 let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
@@ -695,7 +689,6 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | StopWorker x      -> mkGood (handler.stop_worker x)
     | PrintAst x        -> mkGood (handler.print_ast x)
     | Annotate x        -> mkGood (handler.annotate x)
-    | LtacProfReset x   -> mkGood (handler.ltacprof_reset x)
     | LtacProfResults x -> mkGood (handler.ltacprof_results x)
   with any ->
     let any = Errors.push any in
@@ -721,7 +714,6 @@ let of_answer : type a. a call -> a value -> xml = function
   | StopWorker _      -> of_value (of_value_type stop_worker_rty_t     )
   | PrintAst _        -> of_value (of_value_type print_ast_rty_t       )
   | Annotate _        -> of_value (of_value_type annotate_rty_t        )
-  | LtacProfReset _   -> of_value (of_value_type ltacprof_reset_rty_t  )
   | LtacProfResults _ -> of_value (of_value_type ltacprof_results_rty_t)
 
 let to_answer : type a. a call -> xml -> a value = function
@@ -743,7 +735,6 @@ let to_answer : type a. a call -> xml -> a value = function
   | StopWorker _      -> to_value (to_value_type stop_worker_rty_t     )
   | PrintAst _        -> to_value (to_value_type print_ast_rty_t       )
   | Annotate _        -> to_value (to_value_type annotate_rty_t        )
-  | LtacProfReset _   -> to_value (to_value_type ltacprof_reset_rty_t  )
   | LtacProfResults _ -> to_value (to_value_type ltacprof_results_rty_t)
 
 let of_call : type a. a call -> xml = fun q ->
@@ -767,7 +758,6 @@ let of_call : type a. a call -> xml = fun q ->
   | StopWorker x      -> mkCall (of_value_type stop_worker_sty_t      x)
   | PrintAst x        -> mkCall (of_value_type print_ast_sty_t        x)
   | Annotate x        -> mkCall (of_value_type annotate_sty_t         x)
-  | LtacProfReset x   -> mkCall (of_value_type ltacprof_reset_sty_t   x)
   | LtacProfResults x -> mkCall (of_value_type ltacprof_results_sty_t x)
 
 let to_call : xml -> unknown_call =
@@ -792,7 +782,6 @@ let to_call : xml -> unknown_call =
     | "StopWorker"      -> Unknown (StopWorker      (mkCallArg stop_worker_sty_t      a))
     | "PrintAst"        -> Unknown (PrintAst        (mkCallArg print_ast_sty_t        a))
     | "Annotate"        -> Unknown (Annotate        (mkCallArg annotate_sty_t         a))
-    | "LtacProfReset"   -> Unknown (LtacProfReset   (mkCallArg ltacprof_reset_sty_t   a))
     | "LtacProfResults" -> Unknown (LtacProfResults (mkCallArg ltacprof_results_sty_t a))
     | x -> raise (Marshal_error("call",PCData x)))
 
@@ -824,7 +813,6 @@ let to_call : xml -> unknown_call =
     | StopWorker _      -> pr_value_gen (print stop_worker_rty_t      ) value
     | PrintAst _        -> pr_value_gen (print print_ast_rty_t        ) value
     | Annotate _        -> pr_value_gen (print annotate_rty_t         ) value
-    | LtacProfReset _   -> pr_value_gen (print ltacprof_reset_rty_t   ) value
     | LtacProfResults _ -> pr_value_gen (print ltacprof_results_rty_t ) value
   let pr_call : type a. a call -> string = fun call ->
     let return what x = str_of_call call ^ " " ^ print what x in
@@ -847,7 +835,6 @@ let to_call : xml -> unknown_call =
     | StopWorker x      -> return stop_worker_sty_t x
     | PrintAst x        -> return print_ast_sty_t x
     | Annotate x        -> return annotate_sty_t x
-    | LtacProfReset x   -> return ltacprof_reset_sty_t x
     | LtacProfResults x -> return ltacprof_results_sty_t x
 
 let document to_string_fmt =
