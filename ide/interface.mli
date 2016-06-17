@@ -126,13 +126,14 @@ type ('a, 'b) union = ('a, 'b) Util.union
 (* Request/Reply message protocol between Coq and CoqIde *)
 
 
-(**  [ltacprof_results x] queries the current accumulated results of
-    profiling Ltac for all tactics if x is None or else for tactic s when
-    x = Some x. The response [tree] is a tree of tactics, each containing a
-    name, profiling data, and possibly children. 
-    If the given state_id is Stateid.dummy, then the results for the currently
+(**  [ltacprof_results sid] queries the current accumulated results of
+    profiling Ltac for all tactics at state sid. The response is a 
+    a root node that contains the total time taken (seconds) and a list of
+    tactics that have run at the top level. Each entry is a tree of tactics,
+    each containing a name, profiling data, and possibly child tactics.
+    If the given sid is Stateid.dummy, then the results for the currently
     focused state are returned.
-    Thus function forces/observes processing of the specified state.
+    This function forces/observes processing of the specified state.
     *)
 type ltacprof_results_sty = state_id
 type ltacprof_results_rty = Profile_ltac.ltacprof_results
