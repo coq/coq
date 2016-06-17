@@ -209,6 +209,8 @@ is understood as
 \\
 \selector & ::= &
         [{\ident}]\\
+& $|$ & {\tt all}\\
+& $|$ & {\tt par}\\
 & $|$ & {\integer}\\
 & $|$ & \nelist{{\it (}{\integer} {\it |} {\integer} {\tt -} {\integer}{\it )}}
           {\tt ,}
@@ -393,6 +395,22 @@ all selected goals.
     In this variant, {\tacexpr} is applied globally to the subset
     of goals described by the given ranges. You can write a single
     $n$ as a shortcut for $n$-$n$ when specifying multiple ranges.
+
+  \item {\tt all: } {\tacexpr}
+
+    In this variant, {\tacexpr} is applied to all focused goals.
+
+  \item {\tt par: } {\tacexpr}
+
+    In this variant, {\tacexpr} is applied to all focused goals
+    in parallel.  The number of workers can be controlled via the
+    command line option {\tt -async-proofs-tac-j} taking as argument
+    the desired number of workers.  Limitations:  {\tt par: } only works
+    on goals containing no existential variables and {\tacexpr} must
+    either solve the goal completely or do nothing (i.e. it cannot make
+    some progress).
+    {\tt par: } can only be used at the top level of a tactic expression.
+
 \end{Variants}
 
 \ErrMsg \errindex{No such goal}

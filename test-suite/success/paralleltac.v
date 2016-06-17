@@ -1,3 +1,17 @@
+Lemma test_nofail_like_all1 :
+  True /\ False.
+Proof.
+split.
+all: trivial.
+Admitted.
+
+Lemma test_nofail_like_all2 :
+  True /\ False.
+Proof.
+split.
+par: trivial.
+Admitted.
+
 Fixpoint fib n := match n with
   | O => 1
   | S m => match m with
@@ -19,28 +33,28 @@ Lemma test_old x : P (S x) /\ P (S x) /\ P (S x) /\ P (S x).
 Proof.
 repeat split.
 idtac "T1: linear".
-Time all: solve_P.
+Time all: solve [solve_P].
 Qed.
 
 Lemma test_ok x : P (S x) /\ P (S x) /\ P (S x) /\ P (S x).
 Proof.
 repeat split.
 idtac "T2: parallel".
-Time par: solve_P.
+Time par: solve [solve_P].
 Qed.
 
 Lemma test_fail x : P (S x) /\ P x /\ P (S x) /\ P (S x).
 Proof.
 repeat split.
 idtac "T3: linear failure".
-Fail Time all: solve_P.
-all: apply (P_triv Type).
+Fail Time all: solve solve_P.
+all: solve [apply (P_triv Type)].
 Qed.
 
 Lemma test_fail2 x : P (S x) /\ P x /\ P (S x) /\ P (S x).
 Proof.
 repeat split.
 idtac "T4: parallel failure".
-Fail Time par: solve_P.
-all: apply (P_triv Type).
+Fail Time par: solve [solve_P].
+all: solve [apply (P_triv Type)].
 Qed.

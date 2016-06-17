@@ -484,9 +484,11 @@ and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
 and proof_step = { (* TODO: inline with OCaml 4.03 *)
-  parallel : bool;
+  parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
   proof_block_detection : proof_block_name option
 }
+and solving_tac = bool (* a terminator *)
+and anon_abstracting_tac = bool (* abstracting anonymously its result *)
 and proof_block_name = string (* open type of delimiters *)
 type vernac_when =
   | VtNow

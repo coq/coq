@@ -384,6 +384,16 @@ VERNAC ARGUMENT EXTEND ltac_use_default PRINTED BY pr_ltac_use_default
 | [ "..." ] -> [ true ]
 END
 
+let is_anonymous_abstract = function
+  | TacAbstract (_,None) -> true
+  | TacSolve [TacAbstract (_,None)] -> true
+  | _ -> false
+let rm_abstract = function
+  | TacAbstract (t,_) -> t
+  | TacSolve [TacAbstract (t,_)] -> TacSolve [t]
+  | x -> x
+let is_explicit_terminator = function TacSolve _ -> true | _ -> false
+
 VERNAC tactic_mode EXTEND VernacSolve
 | [ - ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     [ classify_as_proofstep ] -> [
@@ -391,10 +401,17 @@ VERNAC tactic_mode EXTEND VernacSolve
     vernac_solve g n t def
   ]
 | [ - "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
-    [ VtProofStep{ parallel = true; proof_block_detection = Some "par" },
-      VtLater ] -> [
-    vernac_solve SelectAll n t def
-  ]
+    [
+      let anon_abstracting_tac = is_anonymous_abstract t in
+      let solving_tac = is_explicit_terminator t in
+      let parallel = `Yes (solving_tac,anon_abstracting_tac) in
+      let pbr = if solving_tac then Some "par" else None in
+      VtProofStep{ parallel = parallel; proof_block_detection = pbr },
+      VtLater
+    ] -> [
+      let t = rm_abstract t in
+      vernac_solve SelectAll n t def
+    ]
 END
 
 let pr_ltac_tactic_level n = str "(at level " ++ int n ++ str ")"
