@@ -178,7 +178,7 @@ type cmd_t = {
   cids : Id.t list;
   cblock : proof_block_name option;
   cqueue : [ `MainQueue
-           | `TacQueue of cancel_switch
+           | `TacQueue of solving_tac * anon_abstracting_tac * cancel_switch
            | `QueryQueue of cancel_switch
            | `SkipQueue ] }
 type fork_t = aast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Id.t list
@@ -660,7 +660,7 @@ end = struct (* {{{ *)
     Stateid.Set.iter (fun id ->
         match (Vcs_aux.visit old_vcs id).step with
         | `Qed ({ fproof = Some (_, cancel_switch) }, _)
-        | `Cmd { cqueue = `TacQueue cancel_switch }
+        | `Cmd { cqueue = `TacQueue (_,_,cancel_switch) }
         | `Cmd { cqueue = `QueryQueue cancel_switch } ->
              cancel_switch := true
         | _ -> ())
@@ -1127,9 +1127,8 @@ let is_block_name_enabled name =
 let detect_proof_block id name =
   let name = match name with None -> "indent" | Some x -> x in   
   if is_block_name_enabled name &&
-     (if Flags.async_proofs_is_master () then
-      !Flags.async_proofs_mode != Flags.APoff else true)
-  then
+     (Flags.async_proofs_is_master () || Flags.async_proofs_is_worker ())
+  then (
   match cur_node id with
   | None -> ()
   | Some entry_point -> try
@@ -1142,7 +1141,7 @@ let detect_proof_block id name =
     with Not_found ->
       Errors.errorlabstrm "STM"
         (str "Unknown proof block delimiter " ++ str name)
-
+  )
 (****************************** THE SCHEDULER *********************************)
 (******************************************************************************)
 
@@ -1617,6 +1616,7 @@ and TacTask : sig
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;
     t_name     : string }  
+  exception NoProgress
 
   include AsyncTaskQueue.Task with type task := task
 
@@ -1646,6 +1646,8 @@ end = struct (* {{{ *)
   type response =
     | RespBuiltSubProof of output
     | RespError of std_ppcmds
+    | RespNoProgress
+  exception NoProgress
 
   let name = ref "tacworker"
   let extra_env () = [||]
@@ -1668,6 +1670,11 @@ end = struct (* {{{ *)
   let use_response _ { t_assign; t_state; t_state_fb; t_kill } resp =
     match resp with
     | RespBuiltSubProof o -> t_assign (`Val o); `Stay ((),[])
+    | RespNoProgress ->
+        let e = (NoProgress, Exninfo.null) in
+        t_assign (`Exn e);
+        t_kill ();
+        `Stay ((),[])
     | RespError msg ->
         let e = (RemoteException msg, Exninfo.null) in
         t_assign (`Exn e);
@@ -1689,7 +1696,7 @@ end = struct (* {{{ *)
     Option.iter VCS.restore vcs;
     try
       Reach.known_state ~cache:`No id;
-      let t, uc = Future.purify (fun () ->
+      Future.purify (fun () ->
        let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
        if not (
@@ -1705,15 +1712,13 @@ end = struct (* {{{ *)
         vernac_interp r_state_fb ast;
         let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
-        | Evd.Evar_empty -> Errors.errorlabstrm "STM" (str "no progress")
+        | Evd.Evar_empty -> RespNoProgress
         | Evd.Evar_defined t ->
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
-              t, Evd.evar_universe_context sigma
+              RespBuiltSubProof (t, Evd.evar_universe_context sigma)
             else Errors.errorlabstrm "STM" (str"The solution is not ground")
        end) ()
-     in
-       RespBuiltSubProof (t,uc)
     with e when Errors.noncritical e -> RespError (Errors.print e)
 
   let name_of_task { t_name } = t_name
@@ -1724,13 +1729,15 @@ end (* }}} *)
 and Partac : sig
 
   val vernac_interp :
-    cancel_switch -> int -> Stateid.t -> Stateid.t -> aast -> unit
+    solve:bool -> abstract:bool -> cancel_switch ->
+    int -> Stateid.t -> Stateid.t -> aast ->
+      unit
 
 end = struct (* {{{ *)
     
   module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask)
 
-  let vernac_interp cancel nworkers safe_id id
+  let vernac_interp ~solve ~abstract cancel nworkers safe_id id
     { indentation; verbose; loc; expr = e; strlen }
   =
     let e, time, fail =
@@ -1754,29 +1761,37 @@ end = struct (* {{{ *)
         TaskQueue.enqueue_task queue
           ({ t_state = safe_id; t_state_fb = id;
             t_assign = assign; t_ast; t_goal = g; t_name;
-            t_kill = (fun () -> TaskQueue.cancel_all queue) }, cancel);
-        Goal.uid g,f)
+            t_kill = (fun () -> if solve then TaskQueue.cancel_all queue) },
+           cancel);
+        g,f)
         1 goals in
       TaskQueue.join queue;
       let assign_tac : unit Proofview.tactic =
-        Proofview.V82.tactic (fun gl ->
-          let open Tacmach in
-          let sigma, g = project gl, sig_it gl in
-          let gid = Goal.uid g in
-          let f =
-            try List.assoc gid res
-            with Not_found -> Errors.anomaly(str"Partac: wrong focus") in
-          if Future.is_over f then
+        Proofview.(Goal.nf_enter { Goal.enter = fun g ->
+        let gid = Goal.goal g in
+        let f =
+          try List.assoc gid res
+          with Not_found -> Errors.anomaly(str"Partac: wrong focus") in
+        if not (Future.is_over f) then
+          (* One has failed and cancelled the others, but not this one *)
+          if solve then Tacticals.New.tclZEROMSG
+            (str"Interrupted by the failure of another goal")
+          else tclUNIT ()
+        else
+          let open Notations in
+          try
             let pt, uc = Future.join f in
             prerr_endline (fun () -> string_of_ppcmds(hov 0 (
-              str"g=" ++ str gid ++ spc () ++
+              str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
               str"uc=" ++ Evd.pr_evar_universe_context uc)));
-            let sigma = Goal.V82.partial_solution sigma g pt in
-            let sigma = Evd.merge_universe_context sigma uc in
-            re_sig [] sigma
-          else (* One has failed and cancelled the others, but not this one *)
-            re_sig [g] sigma) in
+            (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
+              (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
+              Tactics.exact_no_check pt)
+          with TacTask.NoProgress ->
+            if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
+        })
+      in
       Proof.run_tactic (Global.env()) assign_tac p)))) ())
   
 end (* }}} *)
@@ -2088,11 +2103,12 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache, true
       | `Cmd { cast = x; cqueue = `SkipQueue } -> (fun () ->
             reach view.next), cache, true
-      | `Cmd { cast = x; cqueue = `TacQueue cancel; cblock } -> (fun () ->
+      | `Cmd { cast = x; cqueue = `TacQueue (solve,abstract,cancel); cblock } ->
+          (fun () ->
             resilient_tactic id cblock (fun () ->
               reach ~cache:`Shallow view.next;
               Hooks.(call tactic_being_run true); 
-              Partac.vernac_interp
+              Partac.vernac_interp ~solve ~abstract
                 cancel !Flags.async_proofs_n_tacworkers view.next id x;
               Hooks.(call tactic_being_run false))
           ), cache, true
@@ -2507,7 +2523,10 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           `Ok
       | VtProofStep { parallel; proof_block_detection = cblock }, w ->
           let id = VCS.new_node ~id:newtip () in
-          let queue = if parallel then `TacQueue (ref false) else `MainQueue in
+          let queue =
+            match parallel with
+            | `Yes(solve,abstract) -> `TacQueue (solve, abstract, ref false)
+            | `No -> `MainQueue in
           VCS.commit id (mkTransTac x cblock queue);
           (* Static proof block detection delayed until an error really occurs.
              If/when and UI will make something useful with this piece of info,

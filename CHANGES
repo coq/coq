@@ -28,6 +28,8 @@ Tactics
   a locally free identifier anymore. It must use e.g. the "fresh" primitive
   instead (potential source of incompatibilities).
 - New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac (DOC TODO).
+- New goal selectors.  Sets of goals can be selected by select by listing
+  integers ranges. Example: "1,4-7,24: tac" focuses "tac" on goals 1,4,5,6,7,24.
 
 Hints
 
