@@ -45,16 +45,14 @@ let empty_named_context_val = empty_named_context_val
 let empty_env = empty_env
 
 let engagement env = env.env_stratification.env_engagement
+let typing_flags env = env.env_typing_flags
 
 let is_impredicative_set env = 
-  match fst (engagement env) with
+  match engagement env with
   | ImpredicativeSet -> true
   | _ -> false
 
-let type_in_type env =
-  match snd (engagement env) with
-  | TypeInType -> true
-  | _ -> false
+let type_in_type env = not (typing_flags env).check_universes
 
 let universes env = env.env_stratification.env_universes
 let named_context env = env.env_named_context
@@ -210,6 +208,9 @@ let push_context_set ?(strict=false) ctx env =
 let set_engagement c env = (* Unsafe *)
   { env with env_stratification =
     { env.env_stratification with env_engagement = c } }
+
+let set_typing_flags c env = (* Unsafe *)
+  { env with env_typing_flags = c }
 
 (* Global constants *)
 

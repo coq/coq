@@ -14,9 +14,8 @@ open Term
    inductive definitions, modules and module types *)
 
 type set_predicativity = ImpredicativeSet | PredicativeSet
-type type_hierarchy = TypeInType | StratifiedType
 
-type engagement = set_predicativity * type_hierarchy
+type engagement = set_predicativity
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 

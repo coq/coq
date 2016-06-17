@@ -576,17 +576,17 @@ let vernac_inductive chk poly lo finite indl =
     let indl = List.map unpack indl in
     do_mutual_inductive chk indl poly lo finite
 
-let vernac_fixpoint ~flags locality poly local l =
+let vernac_fixpoint locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_fixpoint ~flags local poly l
+  do_fixpoint local poly l
 
-let vernac_cofixpoint ~flags locality poly local l =
+let vernac_cofixpoint locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_cofixpoint ~flags local poly l
+  do_cofixpoint local poly l
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -1731,8 +1731,6 @@ let vernac_load interp fname =
   try while true do interp (snd (parse_sentence input)) done
   with End_of_input -> ()
 
-let all_checks = Declareops.safe_flags
-
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
@@ -1770,8 +1768,8 @@ let interp ?proof ~loc locality poly c =
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
   | VernacInductive (priv,finite,l) -> vernac_inductive true poly priv finite l
-  | VernacFixpoint (local, l) -> vernac_fixpoint locality ~flags:all_checks poly local l
-  | VernacCoFixpoint (local, l) -> vernac_cofixpoint ~flags:all_checks locality poly local l
+  | VernacFixpoint (local, l) -> vernac_fixpoint locality poly local l
+  | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
   | VernacUniverse l -> vernac_universe loc poly l
