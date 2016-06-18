@@ -36,7 +36,7 @@ val interp_definition :
   constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * 
       Universes.universe_binders * Impargs.manual_implicits
 
-val declare_definition : flags:Declarations.typing_flags -> Id.t -> definition_kind ->
+val declare_definition : Id.t -> definition_kind ->
   Safe_typing.private_constants definition_entry -> Universes.universe_binders -> Impargs.manual_implicits ->
     Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
 
@@ -91,7 +91,6 @@ type one_inductive_impls =
   Impargs.manual_implicits list (** for constrs *)
 
 val interp_mutual_inductive :
-  bool -> (* if [false], then positivity is assumed *)
   structured_inductive_expr -> decl_notation list -> polymorphic ->
     private_flag -> Decl_kinds.recursivity_kind ->
     mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
@@ -106,7 +105,6 @@ val declare_mutual_inductive_with_eliminations :
 (** Entry points for the vernacular commands Inductive and CoInductive *)
 
 val do_mutual_inductive :
-  bool -> (* if [false], then positivity is assumed *)
   (one_inductive_expr * decl_notation list) list -> polymorphic -> 
   private_flag -> Decl_kinds.recursivity_kind -> unit
 
@@ -150,13 +148,12 @@ val interp_cofixpoint :
 (** Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
-  flags:Declarations.typing_flags ->
   locality -> polymorphic ->
   recursive_preentry * lident list option * Evd.evar_universe_context * 
   (Name.t list * Impargs.manual_implicits * int option) list ->
   lemma_possible_guards -> decl_notation list -> unit
 
-val declare_cofixpoint : flags:Declarations.typing_flags -> locality -> polymorphic -> 
+val declare_cofixpoint : locality -> polymorphic -> 
   recursive_preentry * lident list option * Evd.evar_universe_context * 
   (Name.t list * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit
@@ -164,16 +161,16 @@ val declare_cofixpoint : flags:Declarations.typing_flags -> locality -> polymorp
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint :
-  flags:Declarations.typing_flags -> (* When [false], assume guarded. *)
+  (* When [false], assume guarded. *)
   locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint :
-  flags:Declarations.typing_flags -> (* When [false], assume guarded. *)
+  (* When [false], assume guarded. *)
   locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (** Utils *)
 
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
-val declare_fix : flags:Declarations.typing_flags -> ?opaque:bool -> definition_kind -> Universes.universe_binders -> Univ.universe_context -> Id.t ->
+val declare_fix : ?opaque:bool -> definition_kind -> Universes.universe_binders -> Univ.universe_context -> Id.t ->
   Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

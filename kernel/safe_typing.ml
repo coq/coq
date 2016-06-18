@@ -180,20 +180,17 @@ let set_engagement c senv =
     env = Environ.set_engagement c senv.env;
     engagement = Some c }
 
+let set_typing_flags c senv =
+  { senv with env = Environ.set_typing_flags c senv.env }
+
 (** Check that the engagement [c] expected by a library matches
     the current (initial) one *)
-let check_engagement env (expected_impredicative_set,expected_type_in_type) =
-  let impredicative_set,type_in_type = Environ.engagement env in
+let check_engagement env expected_impredicative_set =
+  let impredicative_set = Environ.engagement env in
   begin
     match impredicative_set, expected_impredicative_set with
     | PredicativeSet, ImpredicativeSet ->
         Errors.error "Needs option -impredicative-set."
-    | _ -> ()
-  end;
-  begin
-    match type_in_type, expected_type_in_type with
-    | StratifiedType, TypeInType ->
-        Errors.error "Needs option -type-in-type."
     | _ -> ()
   end
 
@@ -373,8 +370,8 @@ let safe_push_named d env =
   Environ.push_named d env
 
 
-let push_named_def ~flags (id,de) senv =
-  let c,typ,univs = Term_typing.translate_local_def ~flags senv.revstruct senv.env id de in
+let push_named_def (id,de) senv =
+  let c,typ,univs = Term_typing.translate_local_def senv.revstruct senv.env id de in
   let poly = de.Entries.const_entry_polymorphic in
   let univs = Univ.ContextSet.of_context univs in
   let c, univs = match c with
@@ -388,9 +385,9 @@ let push_named_def ~flags (id,de) senv =
   let env'' = safe_push_named (LocalDef (id,c,typ)) senv'.env in
     univs, {senv' with env=env''}
 
-let push_named_assum ~flags ((id,t,poly),ctx) senv =
+let push_named_assum ((id,t,poly),ctx) senv =
   let senv' = push_context_set poly ctx senv in
-  let t = Term_typing.translate_local_assum ~flags senv'.env t in
+  let t = Term_typing.translate_local_assum senv'.env t in
   let env'' = safe_push_named (LocalAssum (id,t)) senv'.env in
     {senv' with env=env''}
 
@@ -479,7 +476,7 @@ let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 (** Insertion of constants and parameters in environment *)
 type global_declaration =
-  | ConstantEntry of bool * private_constants Entries.constant_entry * Declarations.typing_flags
+  | ConstantEntry of bool * private_constants Entries.constant_entry
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
@@ -512,10 +509,10 @@ let add_constant dir l decl senv =
   let no_section = DirPath.is_empty dir in
   let seff_to_export, decl =
     match decl with
-    | ConstantEntry (true, ce, flags) ->
+    | ConstantEntry (true, ce) ->
         let exports, ce =
-          Term_typing.export_side_effects ~flags senv.revstruct senv.env ce in
-        exports, ConstantEntry (false, ce, flags)
+          Term_typing.export_side_effects senv.revstruct senv.env ce in
+        exports, ConstantEntry (false, ce)
     | _ -> [], decl
   in
   let senv =
@@ -524,8 +521,8 @@ let add_constant dir l decl senv =
   let senv =
     let cb = 
       match decl with
-      | ConstantEntry (export_seff,ce,flags) ->
-        Term_typing.translate_constant ~flags senv.revstruct senv.env kn ce
+      | ConstantEntry (export_seff,ce) ->
+        Term_typing.translate_constant senv.revstruct senv.env kn ce
       | GlobalRecipe r ->
         let cb = Term_typing.translate_recipe senv.env kn r in
         if no_section then Declareops.hcons_const_body cb else cb in

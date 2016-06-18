@@ -77,21 +77,19 @@ val is_joined_environment : safe_environment -> bool
 (** Insertion of local declarations (Local or Variables) *)
 
 val push_named_assum :
-  flags:Declarations.typing_flags ->
   (Id.t * Term.types * bool (* polymorphic *))
     Univ.in_universe_context_set -> safe_transformer0
 
 (** Returns the full universe context necessary to typecheck the definition
   (futures are forced) *)
 val push_named_def :
-  flags:Declarations.typing_flags ->
   Id.t * private_constants Entries.definition_entry -> Univ.universe_context_set safe_transformer
 
 (** Insertion of global axioms or definitions *)
 
 type global_declaration =
                   (* bool: export private constants *)
-  | ConstantEntry of bool * private_constants Entries.constant_entry * Declarations.typing_flags
+  | ConstantEntry of bool * private_constants Entries.constant_entry
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
@@ -134,6 +132,7 @@ val add_constraints :
 
 (** Setting the type theory flavor *)
 val set_engagement : Declarations.engagement -> safe_transformer0
+val set_typing_flags : Declarations.typing_flags -> safe_transformer0
 
 (** {6 Interactive module functions } *)
 

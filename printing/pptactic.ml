@@ -620,11 +620,14 @@ module Make
     | RepeatStar -> str "?"
     | RepeatPlus -> str "!"
 
-  let pr_induction_arg prc prlc = function
+  let pr_core_destruction_arg prc prlc = function
     | ElimOnConstr c -> pr_with_bindings prc prlc c
     | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
     | ElimOnAnonHyp n -> int n
 
+  let pr_destruction_arg prc prlc (clear_flag,h) =
+    pr_clear_flag clear_flag (pr_core_destruction_arg prc prlc) h
+                               
   let pr_inversion_kind = function
     | SimpleInversion -> primitive "simple inversion"
     | FullInversion -> primitive "inversion"
@@ -845,17 +848,18 @@ module Make
 
       (* Printing tactics as arguments *)
       let rec pr_atom0 a = tag_atom a (match a with
-        | TacIntroPattern [] -> primitive "intros"
+        | TacIntroPattern (false,[]) -> primitive "intros"
+        | TacIntroPattern (true,[]) -> primitive "eintros"
         | t -> str "(" ++ pr_atom1 t ++ str ")"
       )
 
       (* Main tactic printer *)
       and pr_atom1 a = tag_atom a (match a with
         (* Basic tactics *)
-        | TacIntroPattern [] as t ->
+        | TacIntroPattern (ev,[]) as t ->
           pr_atom0 t
-        | TacIntroPattern (_::_ as p) ->
-          hov 1 (primitive "intros" ++ spc () ++
+        | TacIntroPattern (ev,(_::_ as p)) ->
+           hov 1 (primitive (if ev then "eintros" else "intros") ++ spc () ++
                     prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (
@@ -923,8 +927,8 @@ module Make
           hov 1 (
             primitive (with_evars ev (if isrec then "induction" else "destruct"))
             ++ spc ()
-            ++ prlist_with_sep pr_comma (fun ((clear_flag,h),ids,cl) ->
-              pr_clear_flag clear_flag (pr_induction_arg pr.pr_dconstr pr.pr_dconstr) h ++
+            ++ prlist_with_sep pr_comma (fun (h,ids,cl) ->
+              pr_destruction_arg pr.pr_dconstr pr.pr_dconstr h ++
                 pr_non_empty_arg (pr_with_induction_names pr.pr_dconstr) ids ++
                 pr_opt (pr_clauses None pr.pr_name) cl) l ++
               pr_opt pr_eliminator el
@@ -1356,6 +1360,11 @@ end)
 let run_delayed c =
   Sigma.run Evd.empty { Sigma.run = fun sigma -> c.delayed (Global.env ()) sigma }
 
+let run_delayed_destruction_arg = function (* HH: Using Evd.empty looks suspicious *)
+  | clear_flag,ElimOnConstr g -> clear_flag,ElimOnConstr (fst (run_delayed g))
+  | clear_flag,ElimOnAnonHyp n as x -> x
+  | clear_flag,ElimOnIdent id as x -> x
+
 let () =
   let pr_bool b = if b then str "true" else str "false" in
   let pr_unit _ = str "()" in
@@ -1410,6 +1419,10 @@ let () =
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_with_bindings pr_constr pr_lconstr (fst (run_delayed it)));
+  Genprint.register_print0 Constrarg.wit_destruction_arg
+    (pr_destruction_arg pr_constr_expr pr_lconstr_expr)
+    (pr_destruction_arg (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    (fun it -> pr_destruction_arg pr_constr pr_lconstr (run_delayed_destruction_arg it));
   Genprint.register_print0 Stdarg.wit_int int int int;
   Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
   Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;

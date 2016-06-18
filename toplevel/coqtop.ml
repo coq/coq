@@ -115,10 +115,11 @@ let _ = at_exit print_memory_stat
 
 let impredicative_set = ref Declarations.PredicativeSet
 let set_impredicative_set c = impredicative_set := Declarations.ImpredicativeSet
-let type_in_type = ref Declarations.StratifiedType
-let set_type_in_type () = type_in_type := Declarations.TypeInType
+let set_type_in_type () =
+  let typing_flags = Environ.typing_flags (Global.env ()) in
+  Global.set_typing_flags { typing_flags with Declarations.check_universes = false }
 let engage () =
-  Global.set_engagement (!impredicative_set,!type_in_type)
+  Global.set_engagement !impredicative_set
 
 let set_batch_mode () = batch_mode := true
 

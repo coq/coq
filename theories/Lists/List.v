@@ -248,8 +248,7 @@ Section Facts.
     generalize (app_nil_r l); intros E.
     rewrite -> E; auto.
     intros.
-    injection H.
-    intro.
+    injection H as H H0.
     assert ([] = l ++ a0 :: l0) by auto.
     apply app_cons_not_nil in H1 as [].
   Qed.
@@ -335,7 +334,7 @@ Section Facts.
     absurd (length (x1 :: l1 ++ l) <= length l).
     simpl; rewrite app_length; auto with arith.
     rewrite H; auto with arith.
-    injection H; clear H; intros; f_equal; eauto.
+    injection H as H H0; f_equal; eauto.
   Qed.
 
 End Facts.
@@ -518,7 +517,7 @@ Section Elts.
   Proof.
     revert l.
     induction n as [|n IH]; intros [|x l] H; simpl in *; try easy.
-    - exists nil; exists l. injection H; clear H; intros; now subst.
+    - exists nil; exists l. now injection H as ->.
     - destruct (IH _ H) as (l1 & l2 & H1 & H2).
       exists (x::l1); exists l2; simpl; split; now f_equal.
   Qed.
@@ -1385,9 +1384,8 @@ End Fold_Right_Recursor.
     Lemma combine_split : forall (l:list A)(l':list B), length l = length l' ->
       split (combine l l') = (l,l').
     Proof.
-      induction l; destruct l'; simpl; intros; auto; try discriminate.
-      injection H; clear H; intros.
-      rewrite IHl; auto.
+      induction l, l'; simpl; trivial; try discriminate.
+      now intros [= ->%IHl].
     Qed.
 
     Lemma in_combine_l : forall (l:list A)(l':list B)(x:A)(y:B),
@@ -1471,7 +1469,7 @@ End Fold_Right_Recursor.
       destruct (in_app_or _ _ _ H); clear H.
       destruct (in_map_iff (fun y : B => (a, y)) l' (x,y)) as (H1,_).
       destruct (H1 H0) as (z,(H2,H3)); clear H0 H1.
-      injection H2; clear H2; intros; subst; intuition.
+      injection H2 as -> ->; intuition.
       intuition.
     Qed.
 

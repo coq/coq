@@ -500,13 +500,13 @@ let rec execute env cstr =
     | Fix ((vn,i as vni),recdef) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let fix = (vni,recdef') in
-        check_fix ~flags:Declareops.safe_flags env fix;
+        check_fix env fix;
 	make_judge (mkFix fix) fix_ty
 	  
     | CoFix (i,recdef) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let cofix = (i,recdef') in
-        check_cofix ~flags:Declareops.safe_flags env cofix;
+        check_cofix env cofix;
 	(make_judge (mkCoFix cofix) fix_ty)
 	  
     (* Partial proofs: unsupported by the kernel *)

@@ -327,7 +327,7 @@ let type_fixpoint env lna lar vdef vdeft =
     (* ATTENTION : faudra faire le typage du contexte des Const,
     Ind et Constructsi un jour cela devient des constructions
     arbitraires et non plus des variables *)
-let rec execute ~flags env cstr =
+let rec execute env cstr =
   let open Context.Rel.Declaration in
   match kind_of_term cstr with
     (* Atomic terms *)
@@ -347,12 +347,12 @@ let rec execute ~flags env cstr =
       judge_of_constant env c
 	
     | Proj (p, c) ->
-        let ct = execute ~flags env c in
+        let ct = execute env c in
           judge_of_projection env p c ct
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-        let argst = execute_array ~flags env args in
+        let argst = execute_array env args in
 	let ft =
 	  match kind_of_term f with
 	  | Ind ind when Environ.template_polymorphic_pind ind env ->
@@ -365,7 +365,7 @@ let rec execute ~flags env cstr =
 	      judge_of_constant_knowing_parameters env cst args
 	  | _ ->
 	    (* Full or no sort-polymorphism *)
-            execute ~flags env f
+            execute env f
 	in
 
 	  judge_of_apply env f ft args argst
@@ -373,25 +373,25 @@ let rec execute ~flags env cstr =
     | Lambda (name,c1,c2) ->
       let _ = execute_is_type env c1 in
       let env1 = push_rel (LocalAssum (name,c1)) env in
-      let c2t = execute ~flags env1 c2 in
+      let c2t = execute env1 c2 in
         judge_of_abstraction env name c1 c2t
 
     | Prod (name,c1,c2) ->
-      let vars = execute_is_type ~flags env c1 in
+      let vars = execute_is_type env c1 in
       let env1 = push_rel (LocalAssum (name,c1)) env in
-      let vars' = execute_is_type ~flags env1 c2 in
+      let vars' = execute_is_type env1 c2 in
 	judge_of_product env name vars vars'
 
     | LetIn (name,c1,c2,c3) ->
-      let c1t = execute ~flags env c1 in
+      let c1t = execute env c1 in
       let _c2s = execute_is_type env c2 in
       let _ = judge_of_cast env c1 c1t DEFAULTcast c2 in
       let env1 = push_rel (LocalDef (name,c1,c2)) env in
-      let c3t = execute ~flags env1 c3 in
+      let c3t = execute env1 c3 in
 	subst1 c1 c3t
 
     | Cast (c,k,t) ->
-      let ct = execute ~flags env c in
+      let ct = execute env c in
       let _ts = execute_type env t in
       let _ = judge_of_cast env c ct k t in
 	t
@@ -404,20 +404,20 @@ let rec execute ~flags env cstr =
       judge_of_constructor env c
 
     | Case (ci,p,c,lf) ->
-        let ct = execute ~flags env c in
-        let pt = execute ~flags env p in
-        let lft = execute_array ~flags env lf in
+        let ct = execute env c in
+        let pt = execute env p in
+        let lft = execute_array env lf in
           judge_of_case env ci p pt c ct lf lft
 
     | Fix ((vn,i as vni),recdef) ->
-      let (fix_ty,recdef') = execute_recdef ~flags env recdef i in
+      let (fix_ty,recdef') = execute_recdef env recdef i in
       let fix = (vni,recdef') in
-        check_fix env ~flags fix; fix_ty
+        check_fix env fix; fix_ty
 	  
     | CoFix (i,recdef) ->
-      let (fix_ty,recdef') = execute_recdef ~flags env recdef i in
+      let (fix_ty,recdef') = execute_recdef env recdef i in
       let cofix = (i,recdef') in
-        check_cofix env ~flags cofix; fix_ty
+        check_cofix env cofix; fix_ty
 	  
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
@@ -426,41 +426,38 @@ let rec execute ~flags env cstr =
     | Evar _ ->
 	anomaly (Pp.str "the kernel does not support existential variables")
 
-and execute_is_type ~flags env constr =
-  let t = execute ~flags env constr in
+and execute_is_type env constr =
+  let t = execute env constr in
     check_type env constr t
 
-and execute_type ~flags env constr =
-  let t = execute ~flags env constr in
+and execute_type env constr =
+  let t = execute env constr in
     type_judgment env constr t
 
-and execute_recdef ~flags env (names,lar,vdef) i =
-  let lart = execute_array ~flags env lar in
+and execute_recdef env (names,lar,vdef) i =
+  let lart = execute_array env lar in
   let lara = Array.map2 (assumption_of_judgment env) lar lart in
   let env1 = push_rec_types (names,lara,vdef) env in
-  let vdeft = execute_array ~flags env1 vdef in
+  let vdeft = execute_array env1 vdef in
   let () = type_fixpoint env1 names lara vdef vdeft in
     (lara.(i),(names,lara,vdef))
 
-and execute_array ~flags env = Array.map (execute ~flags env)
+and execute_array env = Array.map (execute env)
 
 (* Derived functions *)
-let infer ~flags env constr =
-  let t = execute ~flags env constr in
+let infer env constr =
+  let t = execute env constr in
     make_judge constr t
 
 let infer = 
   if Flags.profile then
     let infer_key = Profile.declare_profile "Fast_infer" in
-      Profile.profile3 infer_key (fun a b c -> infer ~flags:a b c)
-  else (fun a b c -> infer ~flags:a b c)
+      Profile.profile2 infer_key (fun b c -> infer b c)
+  else (fun b c -> infer b c)
 
-(* Restores the labels of [infer] lost to profiling. *)
-let infer ~flags env t = infer flags env t
+let infer_type env constr =
+  execute_type env constr
 
-let infer_type ~flags env constr =
-  execute_type ~flags env constr
-
-let infer_v ~flags env cv =
-  let jv = execute_array ~flags env cv in
+let infer_v env cv =
+  let jv = execute_array env cv in
     make_judgev cv jv

@@ -142,7 +142,10 @@ END
 
 TACTIC EXTEND specialize
   [ "specialize" constr_with_bindings(c) ] -> [
-    Tacticals.New.tclDELAYEDWITHHOLES false c Tactics.specialize
+    Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> Tactics.specialize c None)
+  ]
+| [ "specialize" constr_with_bindings(c) "as" intropattern(ipat) ] -> [
+    Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> Tactics.specialize c (Some ipat))
   ]
 END
 
@@ -310,7 +313,7 @@ let initial_atomic () =
         "hnf", TacReduce(Hnf,nocl);
         "simpl", TacReduce(Simpl (Redops.all_flags,None),nocl);
         "compute", TacReduce(Cbv Redops.all_flags,nocl);
-        "intros", TacIntroPattern [];
+        "intros", TacIntroPattern (false,[]);
       ]
   in
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in

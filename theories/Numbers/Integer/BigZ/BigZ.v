@@ -138,7 +138,7 @@ intros NEQ.
 generalize (BigZ.spec_div_eucl a b).
 generalize (Z_div_mod_full [a] [b] NEQ).
 destruct BigZ.div_eucl as (q,r), Z.div_eucl as (q',r').
-intros (EQ,_). injection 1. intros EQr EQq.
+intros (EQ,_). injection 1 as EQr EQq.
 BigZ.zify. rewrite EQr, EQq; auto.
 Qed.
 

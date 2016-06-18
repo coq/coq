@@ -33,24 +33,19 @@ let empty_env = {
   env_rel_context = [];
   env_stratification =
   { env_universes = Univ.initial_universes;
-    env_engagement = (PredicativeSet,StratifiedType)};
+    env_engagement = PredicativeSet };
   env_imports = MPmap.empty }
 
 let engagement env = env.env_stratification.env_engagement
 let universes env = env.env_stratification.env_universes
 let rel_context env = env.env_rel_context
 
-let set_engagement (impr_set,type_in_type as c) env =
-  let expected_impr_set,expected_type_in_type =
+let set_engagement (impr_set as c) env =
+  let expected_impr_set =
     env.env_stratification.env_engagement in
   begin
     match impr_set,expected_impr_set with
     | PredicativeSet, ImpredicativeSet -> error "Incompatible engagement"
-    | _ -> ()
-  end;
-  begin
-    match type_in_type,expected_type_in_type with
-    | StratifiedType, TypeInType -> error "Incompatible engagement"
     | _ -> ()
   end;
   { env with env_stratification =

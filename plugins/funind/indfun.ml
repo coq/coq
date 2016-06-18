@@ -400,7 +400,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
        in
        evd,List.rev rev_pconstants
     | _ ->
-       Command.do_fixpoint ~flags:Declareops.safe_flags Global (Flags.is_universe_polymorphism ()) fixpoint_exprl;
+       Command.do_fixpoint Global (Flags.is_universe_polymorphism ()) fixpoint_exprl;
        let evd,rev_pconstants =
 	 List.fold_left
 	   (fun (evd,l) ((((_,fname),_),_,_,_,_),_) ->

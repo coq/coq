@@ -50,8 +50,10 @@ val set_opaque_tables : env -> Opaqueproof.opaquetab -> env
 
 
 val engagement    : env -> engagement
+val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
 val type_in_type : env -> bool
+val deactivated_guard : env -> bool
 
 (** is the local context empty *)
 val empty_context : env -> bool
@@ -136,6 +138,7 @@ val evaluable_constant : constant -> env -> bool
 (** New-style polymorphism *)
 val polymorphic_constant  : constant -> env -> bool
 val polymorphic_pconstant : pconstant -> env -> bool
+val type_in_type_constant : constant -> env -> bool
 
 (** Old-style polymorphism *)
 val template_polymorphic_constant  : constant -> env -> bool
@@ -183,6 +186,7 @@ val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 (** New-style polymorphism *)
 val polymorphic_ind  : inductive -> env -> bool
 val polymorphic_pind : pinductive -> env -> bool
+val type_in_type_ind : inductive -> env -> bool
 
 (** Old-style polymorphism *)
 val template_polymorphic_ind : inductive -> env -> bool
@@ -212,6 +216,7 @@ val push_context_set : ?strict:bool -> Univ.universe_context_set -> env -> env
 val push_constraints_to_env : 'a Univ.constrained -> env -> env
 
 val set_engagement : engagement -> env -> env
+val set_typing_flags : typing_flags -> env -> env
 
 (** {6 Sets of referred section variables }
    [global_vars_set env c] returns the list of [id]'s occurring either

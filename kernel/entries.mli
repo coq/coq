@@ -52,8 +52,6 @@ type mutual_inductive_entry = {
   mind_entry_polymorphic : bool; 
   mind_entry_universes : Univ.universe_context;
   mind_entry_private : bool option;
-  mind_entry_check_positivity : bool;
-  (** [false] if positivity is to be assumed. *)
 }
 
 (** {6 Constants (Definition/Axiom) } *)

@@ -27,11 +27,12 @@ val named_context : unit -> Context.Named.t
 
 (** Changing the (im)predicativity of the system *)
 val set_engagement : Declarations.engagement -> unit
+val set_typing_flags : Declarations.typing_flags -> unit
 
 (** Variables, Local definitions, constants, inductive types *)
 
-val push_named_assum : flags:Declarations.typing_flags -> (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
-val push_named_def   : flags:Declarations.typing_flags -> (Id.t * Safe_typing.private_constants Entries.definition_entry) -> Univ.universe_context_set
+val push_named_assum : (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
+val push_named_def   : (Id.t * Safe_typing.private_constants Entries.definition_entry) -> Univ.universe_context_set
 
 val add_constant :
   DirPath.t -> Id.t -> Safe_typing.global_declaration ->
@@ -116,6 +117,7 @@ val is_joined_environment : unit -> bool
 
 val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool
+val is_type_in_type : Globnames.global_reference -> bool
 
 val type_of_global_in_context : Environ.env -> 
   Globnames.global_reference -> Constr.types Univ.in_universe_context

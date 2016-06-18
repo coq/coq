@@ -215,6 +215,12 @@ let print_polymorphism ref =
        else "not universe polymorphic") ]
   else []
 
+let print_type_in_type ref =
+  let unsafe = Global.is_type_in_type ref in
+  if unsafe then
+    [ pr_global ref ++ str " relies on an unsafe universe hierarchy"]
+  else []
+
 let print_primitive_record recflag mipv = function
   | Some (Some (_, ps,_)) ->
     let eta = match recflag with
@@ -244,6 +250,7 @@ let print_name_infos ref =
     else
       [] in
   print_polymorphism ref @
+  print_type_in_type ref @
   print_primitive ref @
   type_info_for_implicit @
   print_renames_list (mt()) renames @

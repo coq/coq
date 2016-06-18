@@ -23,16 +23,11 @@ let print_memory_stat () =
 
 let output_context = ref false
 
-let pr_engagement (impr_set,type_in_type) =
+let pr_engagement impr_set =
   begin
     match impr_set with
     | ImpredicativeSet -> str "Theory: Set is impredicative"
     | PredicativeSet -> str "Theory: Set is predicative"
-  end ++ fnl() ++
-  begin
-    match type_in_type with
-    | StratifiedType -> str "Theory: Stratified type hierarchy"
-    | TypeInType -> str "Theory: Type is of type Type"
   end
 
 let cst_filter f csts =

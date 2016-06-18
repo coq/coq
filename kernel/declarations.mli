@@ -14,9 +14,8 @@ open Term
    inductive definitions, modules and module types *)
 
 type set_predicativity = ImpredicativeSet | PredicativeSet
-type type_hierarchy = TypeInType | StratifiedType
 
-type engagement = set_predicativity * type_hierarchy
+type engagement = set_predicativity
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 
@@ -73,6 +72,7 @@ type constant_universes = Univ.universe_context
 type typing_flags = {
   check_guarded : bool; (** If [false] then fixed points and co-fixed
                             points are assumed to be total. *)
+  check_universes : bool; (** If [false] universe constraints are not checked *)
 }
 
 (* some contraints are in constant_constraints, some other may be in
@@ -190,8 +190,8 @@ type mutual_inductive_body = {
     mind_universes : Univ.universe_context; (** Local universe variables and constraints *)
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
-  
-    mind_checked_positive : bool; (** [false] when the mutual-inductive was assumed to be well-founded, bypassing the positivity checker.  *)
+
+    mind_typing_flags : typing_flags; (** typing flags at the time of the inductive creation *)
 }
 
 (** {6 Module declarations } *)

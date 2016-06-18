@@ -30,6 +30,11 @@ Tactics
 - New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac (DOC TODO).
 - New goal selectors.  Sets of goals can be selected by select by listing
   integers ranges. Example: "1,4-7,24: tac" focuses "tac" on goals 1,4,5,6,7,24.
+- For uniformity with "destruct"/"induction" and for a more natural
+  behavior, "injection" can now work in place by activating option
+  "Structural Injection". In this case, hypotheses are also put in the
+  context in the natural left-to-right order and the hypothesis on
+  which injection applies is cleared.
 
 Hints
 

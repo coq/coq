@@ -61,6 +61,9 @@ let wit_red_expr = make0 "redexpr"
 let wit_clause_dft_concl  =
   make0 "clause_dft_concl"
 
+let wit_destruction_arg =
+  make0 "destruction_arg"
+
 (** Aliases *)
 
 let wit_reference = wit_ref

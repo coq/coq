@@ -16,6 +16,7 @@ open Context.Rel.Declaration
 
 let safe_flags = {
   check_guarded = true;
+  check_universes = true;
 }
 
 (** {6 Arities } *)
@@ -260,7 +261,7 @@ let subst_mind_body sub mib =
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes;
     mind_private = mib.mind_private;
-    mind_checked_positive = mib.mind_checked_positive;
+    mind_typing_flags = mib.mind_typing_flags;
   }
 
 let inductive_instance mib =

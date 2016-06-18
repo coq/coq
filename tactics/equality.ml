@@ -72,10 +72,25 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "injection left-to-right pattern order";
+      optname  = "injection left-to-right pattern order and clear by default when with introduction pattern";
       optkey   = ["Injection";"L2R";"Pattern";"Order"];
       optread  = (fun () -> !injection_pattern_l2r_order) ;
       optwrite = (fun b -> injection_pattern_l2r_order := b) }
+
+let injection_in_context = ref false
+
+let use_injection_in_context () =
+  !injection_in_context
+  && Flags.version_strictly_greater Flags.V8_5
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "injection in context";
+      optkey   = ["Structural";"Injection"];
+      optread  = (fun () -> !injection_in_context) ;
+      optwrite = (fun b -> injection_in_context := b) }
 
 (* Rewriting tactics *)
 
@@ -1381,33 +1396,51 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
       inject_at_positions env sigma l2r u eq_clause posns
 	(tac (clenv_value eq_clause))
 
-let use_clear_hyp_by_default () = false
-
-let postInjEqTac clear_flag ipats c n =
-  match ipats with
-  | Some ipats ->
-      let clear_tac =
-        let dft =
-          use_injection_pattern_l2r_order () || use_clear_hyp_by_default () in
-        tclTRY (apply_clear_request clear_flag dft c) in
-      let intro_tac =
-        if use_injection_pattern_l2r_order ()
-        then intro_patterns_bound_to n MoveLast ipats
-        else intro_patterns_to MoveLast ipats in
-      tclTHEN clear_tac intro_tac
-  | None -> apply_clear_request clear_flag false c
-
-let injEq clear_flag ipats =
-  let l2r =
-    if use_injection_pattern_l2r_order () && not (Option.is_empty ipats) then true else false
+let get_previous_hyp_position id gl =
+  let rec aux dest = function
+  | [] -> raise (RefinerError (NoSuchHyp id))
+  | d :: right ->
+    let hyp = Context.Named.Declaration.get_id d in
+    if Id.equal hyp id then dest else aux (MoveAfter hyp) right
   in
-  injEqThen (fun c i -> postInjEqTac clear_flag ipats c i) l2r
+  aux MoveLast (Proofview.Goal.hyps (Proofview.Goal.assume gl))
 
-let inj ipats with_evars clear_flag = onEquality with_evars (injEq clear_flag ipats)
+let injEq ?(old=false) with_evars clear_flag ipats =
+  (* Decide which compatibility mode to use *)
+  let ipats_style, l2r, dft_clear_flag, bounded_intro = match ipats with
+    | None when not old && use_injection_in_context () ->
+      Some [], true, true, true
+    | None -> None, false, false, false
+    | _ -> let b = use_injection_pattern_l2r_order () in ipats, b, b, b in
+  (* Built the post tactic depending on compatibility mode *)
+  let post_tac c n =
+    match ipats_style with
+    | Some ipats ->
+      Proofview.Goal.enter { enter = begin fun gl ->
+        let destopt = match kind_of_term c with
+        | Var id -> get_previous_hyp_position id gl
+        | _ -> MoveLast in
+        let clear_tac =
+          tclTRY (apply_clear_request clear_flag dft_clear_flag c) in
+        (* Try should be removal if dependency were treated *)
+        let intro_tac =
+          if bounded_intro
+          then intro_patterns_bound_to with_evars n destopt ipats
+          else intro_patterns_to with_evars destopt ipats in
+        tclTHEN clear_tac intro_tac
+      end }
+    | None -> tclIDTAC in
+  injEqThen post_tac l2r
+
+let inj ipats with_evars clear_flag = onEquality with_evars (injEq with_evars clear_flag ipats)
 
 let injClause ipats with_evars = function
-  | None -> onNegatedEquality with_evars (injEq None ipats)
+  | None -> onNegatedEquality with_evars (injEq with_evars None ipats)
   | Some c -> onInductionArg (inj ipats with_evars) c
+
+let simpleInjClause with_evars = function
+  | None -> onNegatedEquality with_evars (injEq ~old:true with_evars None None)
+  | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (injEq ~old:true with_evars clear_flag None)) c
 
 let injConcl = injClause None false None
 let injHyp clear_flag id = injClause None false (Some (clear_flag,ElimOnIdent (Loc.ghost,id)))
@@ -1434,13 +1467,13 @@ let dEq with_evars =
   dEqThen with_evars (fun clear_flag c x ->
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
 
-let intro_decompe_eq tac data cl =
+let intro_decomp_eq tac data cl =
   Proofview.Goal.enter { enter = begin fun gl ->
     let cl = pf_apply make_clenv_binding gl cl NoBindings in
     decompEqThen (fun _ -> tac) data cl
   end }
 
-let _ = declare_intro_decomp_eq intro_decompe_eq
+let _ = declare_intro_decomp_eq intro_decomp_eq
 
 (* [subst_tuple_term dep_pair B]
 
