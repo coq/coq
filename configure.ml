@@ -935,7 +935,7 @@ let print_summary () =
   pr "\n";
   pr "  Architecture                : %s\n" arch;
   if operating_system <> "" then
-    pr "  Operating system          : %s\n" operating_system;
+    pr "  Operating system            : %s\n" operating_system;
   pr "  Coq VM bytecode link flags  : %s\n" (String.concat " " vmbyteflags);
   pr "  Other bytecode link flags   : %s\n" custom_flag;
   pr "  OS dependent libraries      : %s\n" osdeplibs;
