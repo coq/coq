@@ -128,7 +128,7 @@ let sort_of_product env domsort rangsort =
     | (Prop _,  Prop Pos) -> rangsort
     (* Product rule (Type,Set,?) *)
     | (Type u1, Prop Pos) ->
-        if fst (engagement env) = ImpredicativeSet then
+        if engagement env = ImpredicativeSet then
           (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
           rangsort
         else

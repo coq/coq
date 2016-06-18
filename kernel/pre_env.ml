@@ -71,6 +71,7 @@ type env = {
   env_rel_val       : lazy_val list;
   env_nb_rel        : int;
   env_stratification : stratification;
+  env_typing_flags  : typing_flags;
   env_conv_oracle   : Conv_oracle.oracle;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
@@ -93,7 +94,8 @@ let empty_env = {
   env_nb_rel = 0;
   env_stratification = {
     env_universes = UGraph.initial_universes;
-    env_engagement = (PredicativeSet,StratifiedType) };
+    env_engagement = PredicativeSet };
+  env_typing_flags = Declareops.safe_flags;
   env_conv_oracle = Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge;
   indirect_pterms = Opaqueproof.empty_opaquetab }
@@ -138,6 +140,7 @@ let push_named d env =
     env_rel_val = env.env_rel_val;
     env_nb_rel = env.env_nb_rel;
     env_stratification = env.env_stratification;
+    env_typing_flags = env.env_typing_flags;
     env_conv_oracle = env.env_conv_oracle;
     retroknowledge = env.retroknowledge;
     indirect_pterms = env.indirect_pterms;

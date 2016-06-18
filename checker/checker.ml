@@ -140,9 +140,7 @@ let set_debug () = Flags.debug := true
 
 let impredicative_set = ref Cic.PredicativeSet
 let set_impredicative_set () = impredicative_set := Cic.ImpredicativeSet
-let type_in_type = ref Cic.StratifiedType
-let set_type_in_type () = type_in_type := Cic.TypeInType
-let engage () = Safe_typing.set_engagement (!impredicative_set,!type_in_type)
+let engage () = Safe_typing.set_engagement (!impredicative_set)
 
 
 let admit_list = ref ([] : section_path list)
@@ -192,7 +190,6 @@ let print_usage_channel co command =
 \n  -silent                disable trace of constants being checked\
 \n\
 \n  -impredicative-set     set sort Set impredicative\
-\n  -type-in-type          collapse type hierarchy\
 \n\
 \n  -h, --help             print this list of options\
 \n"
@@ -313,8 +310,6 @@ let parse_args argv =
     | [] -> ()
     | "-impredicative-set" :: rem ->
       set_impredicative_set (); parse rem
-    | "-type-in-type" :: rem ->
-      set_type_in_type (); parse rem
 
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then 

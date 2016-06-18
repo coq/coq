@@ -12,10 +12,10 @@ open Environ
 open Declarations
 open Entries
 
-val translate_local_def : flags:typing_flags -> structure_body -> env -> Id.t -> side_effects definition_entry ->
+val translate_local_def : structure_body -> env -> Id.t -> side_effects definition_entry ->
   constant_def * types * constant_universes
 
-val translate_local_assum : flags:typing_flags -> env -> types -> types
+val translate_local_assum : env -> types -> types
 
 val mk_pure_proof : constr -> side_effects proof_output
 
@@ -32,7 +32,7 @@ val inline_entry_side_effects :
 val uniq_seff : side_effects -> side_effects
 
 val translate_constant :
-  flags:typing_flags -> structure_body -> env -> constant -> side_effects constant_entry ->
+  structure_body -> env -> constant -> side_effects constant_entry ->
     constant_body
 
 type side_effect_role =
@@ -47,7 +47,7 @@ type exported_side_effect =
  * be pushed in the safe_env by safe typing.  The main constant entry
  * needs to be translated as usual after this step. *)
 val export_side_effects :
-  flags:typing_flags -> structure_body -> env -> side_effects constant_entry ->
+  structure_body -> env -> side_effects constant_entry ->
     exported_side_effect list * side_effects constant_entry
 
 val constant_entry_of_side_effect :
@@ -60,11 +60,11 @@ val translate_recipe : env -> constant -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : flags:typing_flags -> trust:structure_body -> env -> constant option -> 
+val infer_declaration : trust:structure_body -> env -> constant option -> 
   side_effects constant_entry -> Cooking.result
 
 val build_constant_declaration :
-  flags:typing_flags -> constant -> env -> Cooking.result -> constant_body
+  constant -> env -> Cooking.result -> constant_body
 
 val set_suggest_proof_using :
   (string -> env -> Id.Set.t -> Id.Set.t -> Id.t list -> string) -> unit
