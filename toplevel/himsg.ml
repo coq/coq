@@ -1307,12 +1307,17 @@ let extract_ltac_trace trace eloc =
   else
     (* We entered a primitive tactic, we don't display trace but
        report on the finest location *)
+    let finer_loc loc1 loc2 = Loc.merge loc1 loc2 = loc2 in
     let best_loc =
-      if not (Loc.is_ghost eloc) then eloc else
-        (* trace is with innermost call coming first *)
-        let rec aux = function
-        | (loc,_)::tail when not (Loc.is_ghost loc) -> loc
-        | _::tail -> aux tail
-        | [] -> Loc.ghost in
-        aux trace in
+      (* trace is with innermost call coming first *)
+      let rec aux best_loc = function
+        | (loc,_)::tail ->
+           if Loc.is_ghost best_loc ||
+              not (Loc.is_ghost loc) && finer_loc loc best_loc
+           then
+             aux loc tail
+           else
+             aux best_loc tail
+        | [] -> best_loc in
+        aux eloc trace in
     None, best_loc
