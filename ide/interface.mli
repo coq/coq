@@ -126,18 +126,6 @@ type ('a, 'b) union = ('a, 'b) Util.union
 (* Request/Reply message protocol between Coq and CoqIde *)
 
 
-(**  [ltacprof_results sid] queries the current accumulated results of
-    profiling Ltac for all tactics at state sid. The response is a 
-    a root node that contains the total time taken (seconds) and a list of
-    tactics that have run at the top level. Each entry is a tree of tactics,
-    each containing a name, profiling data, and possibly child tactics.
-    If the given sid is Stateid.dummy, then the results for the currently
-    focused state are returned.
-    This function forces/observes processing of the specified state.
-    *)
-type ltacprof_results_sty = state_id
-type ltacprof_results_rty = Profile_ltac.ltacprof_results
-
 
 (**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
      on top of the current edit position (that is asserted to be [sid])
@@ -254,7 +242,5 @@ type handler = {
   quit        : quit_sty        -> quit_rty;
   (* Retrocompatibility stuff *)
   interp      : interp_sty      -> interp_rty;
-  (* Ltac Profiling*)
-  ltacprof_results : ltacprof_results_sty -> ltacprof_results_rty;
 }
 

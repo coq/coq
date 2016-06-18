@@ -194,43 +194,6 @@ let to_coq_info = function
 end
 
 
-let rec of_ltacprof_tactic t =
-  let open Profile_ltac in
-  let total = string_of_float t.statistics.total in
-  let self = string_of_float t.statistics.self in
-  let num_calls = string_of_int t.statistics.num_calls in
-  let max_total = string_of_float t.statistics.max_total in
-  let children = of_list of_ltacprof_tactic t.tactics in
-  Element ("ltacprof_tactic", [("name", t.name); ("total",total); ("self",self); ("num_calls",num_calls); ("max_total",max_total)], [children])
-let rec to_ltacprof_tactic = function
-  | Element ("ltacprof_tactic", attrs, [children]) ->
-    let open Profile_ltac in
-    let get_attr key f default = try f (Serialize.massoc key attrs) with Marshal_error _ | Failure _ -> default in
-    let name = get_attr "name" (fun x -> x) "???" in
-    let stats =
-        { total = get_attr "total" float_of_string nan
-        ; self = get_attr "self" float_of_string nan
-        ; num_calls = get_attr "num_calls" int_of_string (-1)
-        ; max_total = get_attr "max_total" float_of_string nan
-        } in
-    let children' = to_list to_ltacprof_tactic children in
-    {name= name; statistics = stats; tactics = children' }
-  | x -> raise (Marshal_error("ltacprof_tactic",x))
-
-let rec of_ltacprof_results t =
-  let open Profile_ltac in
-  let children = of_list of_ltacprof_tactic t.tactics in
-  Element ("ltacprof", [("total_time", string_of_float t.total_time)], [children])
-let rec to_ltacprof_results = function
-  | Element ("ltacprof", attrs, [children]) ->
-    let open Profile_ltac in
-    let get_attr key f default = try f (Serialize.massoc key attrs) with Marshal_error _ | Failure _ -> default in
-    let total_time = get_attr "total_time" float_of_string nan in
-    let children' = to_list to_ltacprof_tactic children in
-    {total_time = total_time; tactics = children' }
-  | x -> raise (Marshal_error("ltacprof",x))
-
-
 include Xml_marshalling
 
 (* Reification of basic types and type constructors, and functions
@@ -259,9 +222,6 @@ module ReifType : sig
   val coq_object_t   : 'a val_t -> 'a coq_object val_t
   val state_id_t     : state_id val_t
   val search_cst_t   : search_constraint val_t
-
-  val ltacprof_tactic_t : Profile_ltac.ltacprof_tactic val_t
-  val ltacprof_results_t : Profile_ltac.ltacprof_results val_t
 
   val of_value_type : 'a val_t -> 'a -> xml
   val to_value_type : 'a val_t -> xml -> 'a
@@ -297,9 +257,6 @@ end = struct
     | Coq_object : 'a val_t -> 'a coq_object val_t
     | State_id : state_id val_t
     | Search_cst : search_constraint val_t
-    (* Ltac Profiling *)
-    | LtacProfTactic : Profile_ltac.ltacprof_tactic val_t
-    | LtacProfResults : Profile_ltac.ltacprof_results val_t
 
   type value_type = Value_type : 'a val_t -> value_type
 
@@ -326,56 +283,49 @@ end = struct
   let state_id_t     = State_id
   let search_cst_t   = Search_cst
   
-  let ltacprof_tactic_t = LtacProfTactic
-  let ltacprof_results_t = LtacProfResults
-
   let of_value_type (ty : 'a val_t) : 'a -> xml =
     let rec convert : type a. a val_t -> a -> xml = function
-      | Unit            -> of_unit
-      | Bool            -> of_bool
-      | Xml             -> (fun x -> x)
-      | String          -> of_string
-      | Int             -> of_int
-      | State           -> of_status
-      | Option_state    -> of_option_state
-      | Option_value    -> of_option_value
-      | Coq_info        -> of_coq_info
-      | Goals           -> of_goals
-      | Evar            -> of_evar
-      | List t          -> (of_list (convert t))
-      | Option t        -> (of_option (convert t))
-      | Coq_object t    -> (of_coq_object (convert t))
-      | Pair (t1,t2)    -> (of_pair (convert t1) (convert t2))
-      | Union (t1,t2)   -> (of_union (convert t1) (convert t2))
-      | State_id        -> of_stateid
-      | Search_cst      -> of_search_cst
-      | LtacProfTactic  -> of_ltacprof_tactic
-      | LtacProfResults -> of_ltacprof_results
+      | Unit          -> of_unit
+      | Bool          -> of_bool
+      | Xml           -> (fun x -> x)
+      | String        -> of_string
+      | Int           -> of_int
+      | State         -> of_status
+      | Option_state  -> of_option_state
+      | Option_value  -> of_option_value
+      | Coq_info      -> of_coq_info
+      | Goals         -> of_goals
+      | Evar          -> of_evar
+      | List t        -> (of_list (convert t))
+      | Option t      -> (of_option (convert t))
+      | Coq_object t  -> (of_coq_object (convert t))
+      | Pair (t1,t2)  -> (of_pair (convert t1) (convert t2))
+      | Union (t1,t2) -> (of_union (convert t1) (convert t2))
+      | State_id      -> of_stateid
+      | Search_cst    -> of_search_cst
     in
       convert ty
 
   let to_value_type (ty : 'a val_t) : xml -> 'a =
     let rec convert : type a. a val_t -> xml -> a = function
-      | Unit            -> to_unit
-      | Bool            -> to_bool
-      | Xml             -> (fun x -> x)
-      | String          -> to_string
-      | Int             -> to_int
-      | State           -> to_status
-      | Option_state    -> to_option_state
-      | Option_value    -> to_option_value
-      | Coq_info        -> to_coq_info
-      | Goals           -> to_goals
-      | Evar            -> to_evar
-      | List t          -> (to_list (convert t))
-      | Option t        -> (to_option (convert t))
-      | Coq_object t    -> (to_coq_object (convert t))
-      | Pair (t1,t2)    -> (to_pair (convert t1) (convert t2))
-      | Union (t1,t2)   -> (to_union (convert t1) (convert t2))
-      | State_id        -> to_stateid
-      | Search_cst      -> to_search_cst
-      | LtacProfTactic  -> to_ltacprof_tactic
-      | LtacProfResults -> to_ltacprof_results
+      | Unit          -> to_unit
+      | Bool          -> to_bool
+      | Xml           -> (fun x -> x)
+      | String        -> to_string
+      | Int           -> to_int
+      | State         -> to_status
+      | Option_state  -> to_option_state
+      | Option_value  -> to_option_value
+      | Coq_info      -> to_coq_info
+      | Goals         -> to_goals
+      | Evar          -> to_evar
+      | List t        -> (to_list (convert t))
+      | Option t      -> (to_option (convert t))
+      | Coq_object t  -> (to_coq_object (convert t))
+      | Pair (t1,t2)  -> (to_pair (convert t1) (convert t2))
+      | Union (t1,t2) -> (to_union (convert t1) (convert t2))
+      | State_id      -> to_stateid
+      | Search_cst    -> to_search_cst
     in
       convert ty
 
@@ -425,15 +375,6 @@ end = struct
   let pr_pair pr1 pr2 (a,b) = "("^pr1 a^","^pr2 b^")"
   let pr_union pr1 pr2 = function Inl x -> "Inl "^pr1 x | Inr x -> "Inr "^pr2 x
   let pr_state_id = Stateid.to_string
-  let pr_ltacprof_statistics e =
-    let open Profile_ltac in
-    Printf.sprintf "{total=%f;self=%f;num_calls=%i;max_total=%f}" e.total e.self e.num_calls e.max_total
-  let rec pr_ltacprof_tactic t =
-    let open Profile_ltac in
-    Printf.sprintf "{name=%s;statistics=%s;tactics=%s}" t.name (pr_ltacprof_statistics t.statistics) (pr_list pr_ltacprof_tactic t.tactics)
-  let rec pr_ltacprof_results t =
-    let open Profile_ltac in
-    Printf.sprintf "{total_time=%f;tactics=%s}" t.total_time (pr_list pr_ltacprof_tactic t.tactics)
 
   let pr_search_cst = function
     | Name_Pattern s -> "Name_Pattern " ^ s
@@ -443,53 +384,49 @@ end = struct
     | Include_Blacklist -> "Include_Blacklist"
 
   let rec print : type a. a val_t -> a -> string = function
-  | Unit            -> pr_unit
-  | Bool            -> pr_bool
-  | String          -> pr_string
-  | Xml             -> Xml_printer.to_string_fmt
-  | Int             -> pr_int
-  | State           -> pr_status
-  | Option_state    -> pr_option_state
-  | Option_value    -> pr_option_value
-  | Search_cst      -> pr_search_cst
-  | Coq_info        -> pr_coq_info
-  | Goals           -> pr_goal
-  | Evar            -> pr_evar
-  | List t          -> (pr_list (print t))
-  | Option t        -> (pr_option (print t))
-  | Coq_object t    -> pr_coq_object
-  | Pair (t1,t2)    -> (pr_pair (print t1) (print t2))
-  | Union (t1,t2)   -> (pr_union (print t1) (print t2))
-  | State_id        -> pr_state_id
-  | LtacProfTactic  -> pr_ltacprof_tactic
-  | LtacProfResults -> pr_ltacprof_results
+  | Unit          -> pr_unit
+  | Bool          -> pr_bool
+  | String        -> pr_string
+  | Xml           -> Xml_printer.to_string_fmt
+  | Int           -> pr_int
+  | State         -> pr_status
+  | Option_state  -> pr_option_state
+  | Option_value  -> pr_option_value
+  | Search_cst    -> pr_search_cst
+  | Coq_info      -> pr_coq_info
+  | Goals         -> pr_goal
+  | Evar          -> pr_evar
+  | List t        -> (pr_list (print t))
+  | Option t      -> (pr_option (print t))
+  | Coq_object t  -> pr_coq_object
+  | Pair (t1,t2)  -> (pr_pair (print t1) (print t2))
+  | Union (t1,t2) -> (pr_union (print t1) (print t2))
+  | State_id      -> pr_state_id
 
   (* This is to break if a rename/refactoring makes the strings below outdated *)
   type 'a exists = bool
 
   let rec print_val_t : type a. a val_t -> string = function
-  | Unit              -> "unit"
-  | Bool              -> "bool"
-  | String            -> "string"
-  | Xml               -> "xml"
-  | Int               -> "int"
-  | State             -> assert(true : status exists); "Interface.status"
-  | Option_state      -> assert(true : option_state exists); "Interface.option_state"
-  | Option_value      -> assert(true : option_value exists); "Interface.option_value"
-  | Search_cst        -> assert(true : search_constraint exists); "Interface.search_constraint"
-  | Coq_info          -> assert(true : coq_info exists); "Interface.coq_info"
-  | Goals             -> assert(true : goals exists); "Interface.goals"
-  | Evar              -> assert(true : evar exists); "Interface.evar"
-  | List t            -> Printf.sprintf "(%s list)" (print_val_t t)
-  | Option t          -> Printf.sprintf "(%s option)" (print_val_t t)
-  | Coq_object t      -> assert(true : 'a coq_object exists);
+  | Unit          -> "unit"
+  | Bool          -> "bool"
+  | String        -> "string"
+  | Xml           -> "xml"
+  | Int           -> "int"
+  | State         -> assert(true : status exists); "Interface.status"
+  | Option_state  -> assert(true : option_state exists); "Interface.option_state"
+  | Option_value  -> assert(true : option_value exists); "Interface.option_value"
+  | Search_cst    -> assert(true : search_constraint exists); "Interface.search_constraint"
+  | Coq_info      -> assert(true : coq_info exists); "Interface.coq_info"
+  | Goals         -> assert(true : goals exists); "Interface.goals"
+  | Evar          -> assert(true : evar exists); "Interface.evar"
+  | List t        -> Printf.sprintf "(%s list)" (print_val_t t)
+  | Option t      -> Printf.sprintf "(%s option)" (print_val_t t)
+  | Coq_object t  -> assert(true : 'a coq_object exists);
                          Printf.sprintf "(%s Interface.coq_object)" (print_val_t t)
-  | Pair (t1,t2)    -> Printf.sprintf "(%s * %s)" (print_val_t t1) (print_val_t t2)
-  | Union (t1,t2)   -> assert(true : ('a,'b) CSig.union exists);
-                     Printf.sprintf "((%s, %s) CSig.union)" (print_val_t t1) (print_val_t t2)
-  | State_id        -> assert(true : Stateid.t exists); "Stateid.t"
-  | LtacProfTactic  -> "ltacprof_tactic"
-  | LtacProfResults -> "ltacprof_results"
+  | Pair (t1,t2)  -> Printf.sprintf "(%s * %s)" (print_val_t t1) (print_val_t t2)
+  | Union (t1,t2) -> assert(true : ('a,'b) CSig.union exists);
+                   Printf.sprintf "((%s, %s) CSig.union)" (print_val_t t1) (print_val_t t2)
+  | State_id      -> assert(true : Stateid.t exists); "Stateid.t"
 
   let print_type = function Value_type ty -> print_val_t ty
 
@@ -508,15 +445,6 @@ end = struct
       (pr_xml (of_pair of_bool of_int (false,3)));
     Printf.printf "%s:\n\n%s\n\n" (print_val_t (Union (Bool,Int)))
       (pr_xml (of_union of_bool of_int (Inl false)));
-    let example_children = 
-      let open Profile_ltac in
-      [{name="foo"; statistics={total=0.2;self=0.1;num_calls=3;max_total=0.5}; tactics=[
-        {name="auto"; statistics={total=0.1;self=0.1;num_calls=10;max_total=0.3}; tactics=[]};
-        {name="discriminate"; statistics={total=0.1;self=0.1;num_calls=2;max_total=0.1}; tactics=[]}
-      ]}] in
-    Printf.printf "%s:\n\n%s\n\n" (print_val_t LtacProfResults)
-      (let open Profile_ltac in
-      pr_xml (of_ltacprof_results {total_time=0.2; tactics=example_children} ));
     print_endline ("All other types are records represented by a node named like the OCaml\n"^
                    "type which contains a flattened n-tuple.  We provide one example.\n");
     Printf.printf "%s:\n\n%s\n\n" (print_val_t Option_state)
@@ -548,8 +476,6 @@ let stop_worker_sty_t : stop_worker_sty val_t = string_t
 let print_ast_sty_t : print_ast_sty val_t = state_id_t
 let annotate_sty_t : annotate_sty val_t = string_t
 
-let ltacprof_results_sty_t : ltacprof_results_sty val_t = state_id_t
-
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)
 let edit_at_rty_t : edit_at_rty val_t =
@@ -574,29 +500,27 @@ let stop_worker_rty_t : stop_worker_rty val_t = unit_t
 let print_ast_rty_t : print_ast_rty val_t = xml_t
 let annotate_rty_t : annotate_rty val_t = xml_t
 
-let ltacprof_results_rty_t : ltacprof_results_rty val_t = ltacprof_results_t
 
 let ($) x = erase x
 let calls = [|
-  "Add",             ($)add_sty_t,              ($)add_rty_t;
-  "Edit_at",         ($)edit_at_sty_t,          ($)edit_at_rty_t;
-  "Query",           ($)query_sty_t,            ($)query_rty_t;
-  "Goal",            ($)goals_sty_t,            ($)goals_rty_t;
-  "Evars",           ($)evars_sty_t,            ($)evars_rty_t;
-  "Hints",           ($)hints_sty_t,            ($)hints_rty_t;
-  "Status",          ($)status_sty_t,           ($)status_rty_t;
-  "Search",          ($)search_sty_t,           ($)search_rty_t;
-  "GetOptions",      ($)get_options_sty_t,      ($)get_options_rty_t;
-  "SetOptions",      ($)set_options_sty_t,      ($)set_options_rty_t;
-  "MkCases",         ($)mkcases_sty_t,          ($)mkcases_rty_t;
-  "Quit",            ($)quit_sty_t,             ($)quit_rty_t;
-  "About",           ($)about_sty_t,            ($)about_rty_t;
-  "Init",            ($)init_sty_t,             ($)init_rty_t;
-  "Interp",          ($)interp_sty_t,           ($)interp_rty_t;
-  "StopWorker",      ($)stop_worker_sty_t,      ($)stop_worker_rty_t;
-  "PrintAst",        ($)print_ast_sty_t,        ($)print_ast_rty_t;
-  "Annotate",        ($)annotate_sty_t,         ($)annotate_rty_t;
-  "LtacProfResults", ($)ltacprof_results_sty_t, ($)ltacprof_results_rty_t;
+  "Add",        ($)add_sty_t,         ($)add_rty_t;
+  "Edit_at",    ($)edit_at_sty_t,     ($)edit_at_rty_t;
+  "Query",      ($)query_sty_t,       ($)query_rty_t;
+  "Goal",       ($)goals_sty_t,       ($)goals_rty_t;
+  "Evars",      ($)evars_sty_t,       ($)evars_rty_t;
+  "Hints",      ($)hints_sty_t,       ($)hints_rty_t;
+  "Status",     ($)status_sty_t,      ($)status_rty_t;
+  "Search",     ($)search_sty_t,      ($)search_rty_t;
+  "GetOptions", ($)get_options_sty_t, ($)get_options_rty_t;
+  "SetOptions", ($)set_options_sty_t, ($)set_options_rty_t;
+  "MkCases",    ($)mkcases_sty_t,     ($)mkcases_rty_t;
+  "Quit",       ($)quit_sty_t,        ($)quit_rty_t;
+  "About",      ($)about_sty_t,       ($)about_rty_t;
+  "Init",       ($)init_sty_t,        ($)init_rty_t;
+  "Interp",     ($)interp_sty_t,      ($)interp_rty_t;
+  "StopWorker", ($)stop_worker_sty_t, ($)stop_worker_rty_t;
+  "PrintAst",   ($)print_ast_sty_t,   ($)print_ast_rty_t;
+  "Annotate",   ($)annotate_sty_t,    ($)annotate_rty_t;
 |]
 
 type 'a call =
@@ -619,8 +543,6 @@ type 'a call =
   | Interp          : interp_sty -> interp_rty call
   | PrintAst        : print_ast_sty -> print_ast_rty call
   | Annotate        : annotate_sty -> annotate_rty call
-  (* Ltac Profiler *)
-  | LtacProfResults : ltacprof_results_sty -> ltacprof_results_rty call
 
 let id_of_call : type a. a call -> int = function
   | Add _             -> 0
@@ -641,7 +563,6 @@ let id_of_call : type a. a call -> int = function
   | StopWorker _      -> 15
   | PrintAst _        -> 16
   | Annotate _        -> 17
-  | LtacProfResults _ -> 18
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -665,124 +586,118 @@ let interp x      : interp_rty call      = Interp x
 let stop_worker x : stop_worker_rty call = StopWorker x
 let print_ast   x : print_ast_rty call   = PrintAst x
 let annotate    x : annotate_rty call    = Annotate x
-let ltacprof_results x : ltacprof_results_rty call = LtacProfResults x
 
 let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
   let mkGood : type a. a -> a value = fun x -> Good x in
   try
     match c with
-    | Add x             -> mkGood (handler.add x)
-    | Edit_at x         -> mkGood (handler.edit_at x)
-    | Query x           -> mkGood (handler.query x)
-    | Goal x            -> mkGood (handler.goals x)
-    | Evars x           -> mkGood (handler.evars x)
-    | Hints x           -> mkGood (handler.hints x)
-    | Status x          -> mkGood (handler.status x)
-    | Search x          -> mkGood (handler.search x)
-    | GetOptions x      -> mkGood (handler.get_options x)
-    | SetOptions x      -> mkGood (handler.set_options x)
-    | MkCases x         -> mkGood (handler.mkcases x)
-    | Quit x            -> mkGood (handler.quit x)
-    | About x           -> mkGood (handler.about x)
-    | Init x            -> mkGood (handler.init x)
-    | Interp x          -> mkGood (handler.interp x)
-    | StopWorker x      -> mkGood (handler.stop_worker x)
-    | PrintAst x        -> mkGood (handler.print_ast x)
-    | Annotate x        -> mkGood (handler.annotate x)
-    | LtacProfResults x -> mkGood (handler.ltacprof_results x)
+    | Add x        -> mkGood (handler.add x)
+    | Edit_at x    -> mkGood (handler.edit_at x)
+    | Query x      -> mkGood (handler.query x)
+    | Goal x       -> mkGood (handler.goals x)
+    | Evars x      -> mkGood (handler.evars x)
+    | Hints x      -> mkGood (handler.hints x)
+    | Status x     -> mkGood (handler.status x)
+    | Search x     -> mkGood (handler.search x)
+    | GetOptions x -> mkGood (handler.get_options x)
+    | SetOptions x -> mkGood (handler.set_options x)
+    | MkCases x    -> mkGood (handler.mkcases x)
+    | Quit x       -> mkGood (handler.quit x)
+    | About x      -> mkGood (handler.about x)
+    | Init x       -> mkGood (handler.init x)
+    | Interp x     -> mkGood (handler.interp x)
+    | StopWorker x -> mkGood (handler.stop_worker x)
+    | PrintAst x   -> mkGood (handler.print_ast x)
+    | Annotate x   -> mkGood (handler.annotate x)
   with any ->
     let any = Errors.push any in
     Fail (handler.handle_exn any)
 
 (** brain dead code, edit if protocol messages are added/removed *)
 let of_answer : type a. a call -> a value -> xml = function
-  | Add _             -> of_value (of_value_type add_rty_t             )
-  | Edit_at _         -> of_value (of_value_type edit_at_rty_t         )
-  | Query _           -> of_value (of_value_type query_rty_t           )
-  | Goal _            -> of_value (of_value_type goals_rty_t           )
-  | Evars _           -> of_value (of_value_type evars_rty_t           )
-  | Hints _           -> of_value (of_value_type hints_rty_t           )
-  | Status _          -> of_value (of_value_type status_rty_t          )
-  | Search _          -> of_value (of_value_type search_rty_t          )
-  | GetOptions _      -> of_value (of_value_type get_options_rty_t     )
-  | SetOptions _      -> of_value (of_value_type set_options_rty_t     )
-  | MkCases _         -> of_value (of_value_type mkcases_rty_t         )
-  | Quit _            -> of_value (of_value_type quit_rty_t            )
-  | About _           -> of_value (of_value_type about_rty_t           )
-  | Init _            -> of_value (of_value_type init_rty_t            )
-  | Interp _          -> of_value (of_value_type interp_rty_t          )
-  | StopWorker _      -> of_value (of_value_type stop_worker_rty_t     )
-  | PrintAst _        -> of_value (of_value_type print_ast_rty_t       )
-  | Annotate _        -> of_value (of_value_type annotate_rty_t        )
-  | LtacProfResults _ -> of_value (of_value_type ltacprof_results_rty_t)
+  | Add _        -> of_value (of_value_type add_rty_t         )
+  | Edit_at _    -> of_value (of_value_type edit_at_rty_t     )
+  | Query _      -> of_value (of_value_type query_rty_t       )
+  | Goal _       -> of_value (of_value_type goals_rty_t       )
+  | Evars _      -> of_value (of_value_type evars_rty_t       )
+  | Hints _      -> of_value (of_value_type hints_rty_t       )
+  | Status _     -> of_value (of_value_type status_rty_t      )
+  | Search _     -> of_value (of_value_type search_rty_t      )
+  | GetOptions _ -> of_value (of_value_type get_options_rty_t )
+  | SetOptions _ -> of_value (of_value_type set_options_rty_t )
+  | MkCases _    -> of_value (of_value_type mkcases_rty_t     )
+  | Quit _       -> of_value (of_value_type quit_rty_t        )
+  | About _      -> of_value (of_value_type about_rty_t       )
+  | Init _       -> of_value (of_value_type init_rty_t        )
+  | Interp _     -> of_value (of_value_type interp_rty_t      )
+  | StopWorker _ -> of_value (of_value_type stop_worker_rty_t )
+  | PrintAst _   -> of_value (of_value_type print_ast_rty_t   )
+  | Annotate _   -> of_value (of_value_type annotate_rty_t    )
 
 let to_answer : type a. a call -> xml -> a value = function
-  | Add _             -> to_value (to_value_type add_rty_t             )
-  | Edit_at _         -> to_value (to_value_type edit_at_rty_t         )
-  | Query _           -> to_value (to_value_type query_rty_t           )
-  | Goal _            -> to_value (to_value_type goals_rty_t           )
-  | Evars _           -> to_value (to_value_type evars_rty_t           )
-  | Hints _           -> to_value (to_value_type hints_rty_t           )
-  | Status _          -> to_value (to_value_type status_rty_t          )
-  | Search _          -> to_value (to_value_type search_rty_t          )
-  | GetOptions _      -> to_value (to_value_type get_options_rty_t     )
-  | SetOptions _      -> to_value (to_value_type set_options_rty_t     )
-  | MkCases _         -> to_value (to_value_type mkcases_rty_t         )
-  | Quit _            -> to_value (to_value_type quit_rty_t            )
-  | About _           -> to_value (to_value_type about_rty_t           )
-  | Init _            -> to_value (to_value_type init_rty_t            )
-  | Interp _          -> to_value (to_value_type interp_rty_t          )
-  | StopWorker _      -> to_value (to_value_type stop_worker_rty_t     )
-  | PrintAst _        -> to_value (to_value_type print_ast_rty_t       )
-  | Annotate _        -> to_value (to_value_type annotate_rty_t        )
-  | LtacProfResults _ -> to_value (to_value_type ltacprof_results_rty_t)
+  | Add _        -> to_value (to_value_type add_rty_t         )
+  | Edit_at _    -> to_value (to_value_type edit_at_rty_t     )
+  | Query _      -> to_value (to_value_type query_rty_t       )
+  | Goal _       -> to_value (to_value_type goals_rty_t       )
+  | Evars _      -> to_value (to_value_type evars_rty_t       )
+  | Hints _      -> to_value (to_value_type hints_rty_t       )
+  | Status _     -> to_value (to_value_type status_rty_t      )
+  | Search _     -> to_value (to_value_type search_rty_t      )
+  | GetOptions _ -> to_value (to_value_type get_options_rty_t )
+  | SetOptions _ -> to_value (to_value_type set_options_rty_t )
+  | MkCases _    -> to_value (to_value_type mkcases_rty_t     )
+  | Quit _       -> to_value (to_value_type quit_rty_t        )
+  | About _      -> to_value (to_value_type about_rty_t       )
+  | Init _       -> to_value (to_value_type init_rty_t        )
+  | Interp _     -> to_value (to_value_type interp_rty_t      )
+  | StopWorker _ -> to_value (to_value_type stop_worker_rty_t )
+  | PrintAst _   -> to_value (to_value_type print_ast_rty_t   )
+  | Annotate _   -> to_value (to_value_type annotate_rty_t    )
 
 let of_call : type a. a call -> xml = fun q ->
   let mkCall x = constructor "call" (str_of_call q) [x] in
   match q with
-  | Add x             -> mkCall (of_value_type add_sty_t              x)
-  | Edit_at x         -> mkCall (of_value_type edit_at_sty_t          x)
-  | Query x           -> mkCall (of_value_type query_sty_t            x)
-  | Goal x            -> mkCall (of_value_type goals_sty_t            x)
-  | Evars x           -> mkCall (of_value_type evars_sty_t            x)
-  | Hints x           -> mkCall (of_value_type hints_sty_t            x)
-  | Status x          -> mkCall (of_value_type status_sty_t           x)
-  | Search x          -> mkCall (of_value_type search_sty_t           x)
-  | GetOptions x      -> mkCall (of_value_type get_options_sty_t      x)
-  | SetOptions x      -> mkCall (of_value_type set_options_sty_t      x)
-  | MkCases x         -> mkCall (of_value_type mkcases_sty_t          x)
-  | Quit x            -> mkCall (of_value_type quit_sty_t             x)
-  | About x           -> mkCall (of_value_type about_sty_t            x)
-  | Init x            -> mkCall (of_value_type init_sty_t             x)
-  | Interp x          -> mkCall (of_value_type interp_sty_t           x)
-  | StopWorker x      -> mkCall (of_value_type stop_worker_sty_t      x)
-  | PrintAst x        -> mkCall (of_value_type print_ast_sty_t        x)
-  | Annotate x        -> mkCall (of_value_type annotate_sty_t         x)
-  | LtacProfResults x -> mkCall (of_value_type ltacprof_results_sty_t x)
+  | Add x        -> mkCall (of_value_type add_sty_t         x)
+  | Edit_at x    -> mkCall (of_value_type edit_at_sty_t     x)
+  | Query x      -> mkCall (of_value_type query_sty_t       x)
+  | Goal x       -> mkCall (of_value_type goals_sty_t       x)
+  | Evars x      -> mkCall (of_value_type evars_sty_t       x)
+  | Hints x      -> mkCall (of_value_type hints_sty_t       x)
+  | Status x     -> mkCall (of_value_type status_sty_t      x)
+  | Search x     -> mkCall (of_value_type search_sty_t      x)
+  | GetOptions x -> mkCall (of_value_type get_options_sty_t x)
+  | SetOptions x -> mkCall (of_value_type set_options_sty_t x)
+  | MkCases x    -> mkCall (of_value_type mkcases_sty_t     x)
+  | Quit x       -> mkCall (of_value_type quit_sty_t        x)
+  | About x      -> mkCall (of_value_type about_sty_t       x)
+  | Init x       -> mkCall (of_value_type init_sty_t        x)
+  | Interp x     -> mkCall (of_value_type interp_sty_t      x)
+  | StopWorker x -> mkCall (of_value_type stop_worker_sty_t x)
+  | PrintAst x   -> mkCall (of_value_type print_ast_sty_t   x)
+  | Annotate x   -> mkCall (of_value_type annotate_sty_t    x)
 
 let to_call : xml -> unknown_call =
   do_match "call" (fun s a ->
     let mkCallArg vt a = to_value_type vt (singleton a) in
     match s with
-    | "Add"             -> Unknown (Add             (mkCallArg add_sty_t              a))
-    | "Edit_at"         -> Unknown (Edit_at         (mkCallArg edit_at_sty_t          a))
-    | "Query"           -> Unknown (Query           (mkCallArg query_sty_t            a))
-    | "Goal"            -> Unknown (Goal            (mkCallArg goals_sty_t            a))
-    | "Evars"           -> Unknown (Evars           (mkCallArg evars_sty_t            a))
-    | "Hints"           -> Unknown (Hints           (mkCallArg hints_sty_t            a))
-    | "Status"          -> Unknown (Status          (mkCallArg status_sty_t           a))
-    | "Search"          -> Unknown (Search          (mkCallArg search_sty_t           a))
-    | "GetOptions"      -> Unknown (GetOptions      (mkCallArg get_options_sty_t      a))
-    | "SetOptions"      -> Unknown (SetOptions      (mkCallArg set_options_sty_t      a))
-    | "MkCases"         -> Unknown (MkCases         (mkCallArg mkcases_sty_t          a))
-    | "Quit"            -> Unknown (Quit            (mkCallArg quit_sty_t             a))
-    | "About"           -> Unknown (About           (mkCallArg about_sty_t            a))
-    | "Init"            -> Unknown (Init            (mkCallArg init_sty_t             a))
-    | "Interp"          -> Unknown (Interp          (mkCallArg interp_sty_t           a))
-    | "StopWorker"      -> Unknown (StopWorker      (mkCallArg stop_worker_sty_t      a))
-    | "PrintAst"        -> Unknown (PrintAst        (mkCallArg print_ast_sty_t        a))
-    | "Annotate"        -> Unknown (Annotate        (mkCallArg annotate_sty_t         a))
-    | "LtacProfResults" -> Unknown (LtacProfResults (mkCallArg ltacprof_results_sty_t a))
+    | "Add"        -> Unknown (Add        (mkCallArg add_sty_t         a))
+    | "Edit_at"    -> Unknown (Edit_at    (mkCallArg edit_at_sty_t     a))
+    | "Query"      -> Unknown (Query      (mkCallArg query_sty_t       a))
+    | "Goal"       -> Unknown (Goal       (mkCallArg goals_sty_t       a))
+    | "Evars"      -> Unknown (Evars      (mkCallArg evars_sty_t       a))
+    | "Hints"      -> Unknown (Hints      (mkCallArg hints_sty_t       a))
+    | "Status"     -> Unknown (Status     (mkCallArg status_sty_t      a))
+    | "Search"     -> Unknown (Search     (mkCallArg search_sty_t      a))
+    | "GetOptions" -> Unknown (GetOptions (mkCallArg get_options_sty_t a))
+    | "SetOptions" -> Unknown (SetOptions (mkCallArg set_options_sty_t a))
+    | "MkCases"    -> Unknown (MkCases    (mkCallArg mkcases_sty_t     a))
+    | "Quit"       -> Unknown (Quit       (mkCallArg quit_sty_t        a))
+    | "About"      -> Unknown (About      (mkCallArg about_sty_t       a))
+    | "Init"       -> Unknown (Init       (mkCallArg init_sty_t        a))
+    | "Interp"     -> Unknown (Interp     (mkCallArg interp_sty_t      a))
+    | "StopWorker" -> Unknown (StopWorker (mkCallArg stop_worker_sty_t a))
+    | "PrintAst"   -> Unknown (PrintAst   (mkCallArg print_ast_sty_t   a))
+    | "Annotate"   -> Unknown (Annotate   (mkCallArg annotate_sty_t    a))
     | x -> raise (Marshal_error("call",PCData x)))
 
   (** Debug printing *)
@@ -795,47 +710,45 @@ let to_call : xml -> unknown_call =
           " ("^string_of_int i^","^string_of_int j^")["^Richpp.raw_print str^"]"
   let pr_value v = pr_value_gen (fun _ -> "FIXME") v
   let pr_full_value : type a. a call -> a value -> string = fun call value -> match call with
-    | Add _             -> pr_value_gen (print add_rty_t              ) value
-    | Edit_at _         -> pr_value_gen (print edit_at_rty_t          ) value
-    | Query _           -> pr_value_gen (print query_rty_t            ) value
-    | Goal _            -> pr_value_gen (print goals_rty_t            ) value
-    | Evars _           -> pr_value_gen (print evars_rty_t            ) value
-    | Hints _           -> pr_value_gen (print hints_rty_t            ) value
-    | Status _          -> pr_value_gen (print status_rty_t           ) value
-    | Search _          -> pr_value_gen (print search_rty_t           ) value
-    | GetOptions _      -> pr_value_gen (print get_options_rty_t      ) value
-    | SetOptions _      -> pr_value_gen (print set_options_rty_t      ) value
-    | MkCases _         -> pr_value_gen (print mkcases_rty_t          ) value
-    | Quit _            -> pr_value_gen (print quit_rty_t             ) value
-    | About _           -> pr_value_gen (print about_rty_t            ) value
-    | Init _            -> pr_value_gen (print init_rty_t             ) value
-    | Interp _          -> pr_value_gen (print interp_rty_t           ) value
-    | StopWorker _      -> pr_value_gen (print stop_worker_rty_t      ) value
-    | PrintAst _        -> pr_value_gen (print print_ast_rty_t        ) value
-    | Annotate _        -> pr_value_gen (print annotate_rty_t         ) value
-    | LtacProfResults _ -> pr_value_gen (print ltacprof_results_rty_t ) value
+    | Add _        -> pr_value_gen (print add_rty_t         ) value
+    | Edit_at _    -> pr_value_gen (print edit_at_rty_t     ) value
+    | Query _      -> pr_value_gen (print query_rty_t       ) value
+    | Goal _       -> pr_value_gen (print goals_rty_t       ) value
+    | Evars _      -> pr_value_gen (print evars_rty_t       ) value
+    | Hints _      -> pr_value_gen (print hints_rty_t       ) value
+    | Status _     -> pr_value_gen (print status_rty_t      ) value
+    | Search _     -> pr_value_gen (print search_rty_t      ) value
+    | GetOptions _ -> pr_value_gen (print get_options_rty_t ) value
+    | SetOptions _ -> pr_value_gen (print set_options_rty_t ) value
+    | MkCases _    -> pr_value_gen (print mkcases_rty_t     ) value
+    | Quit _       -> pr_value_gen (print quit_rty_t        ) value
+    | About _      -> pr_value_gen (print about_rty_t       ) value
+    | Init _       -> pr_value_gen (print init_rty_t        ) value
+    | Interp _     -> pr_value_gen (print interp_rty_t      ) value
+    | StopWorker _ -> pr_value_gen (print stop_worker_rty_t ) value
+    | PrintAst _   -> pr_value_gen (print print_ast_rty_t   ) value
+    | Annotate _   -> pr_value_gen (print annotate_rty_t    ) value
   let pr_call : type a. a call -> string = fun call ->
     let return what x = str_of_call call ^ " " ^ print what x in
     match call with
-    | Add x             -> return add_sty_t x
-    | Edit_at x         -> return edit_at_sty_t x
-    | Query x           -> return query_sty_t x
-    | Goal x            -> return goals_sty_t x
-    | Evars x           -> return evars_sty_t x
-    | Hints x           -> return hints_sty_t x
-    | Status x          -> return status_sty_t x
-    | Search x          -> return search_sty_t x
-    | GetOptions x      -> return get_options_sty_t x
-    | SetOptions x      -> return set_options_sty_t x
-    | MkCases x         -> return mkcases_sty_t x
-    | Quit x            -> return quit_sty_t x
-    | About x           -> return about_sty_t x
-    | Init x            -> return init_sty_t x
-    | Interp x          -> return interp_sty_t x
-    | StopWorker x      -> return stop_worker_sty_t x
-    | PrintAst x        -> return print_ast_sty_t x
-    | Annotate x        -> return annotate_sty_t x
-    | LtacProfResults x -> return ltacprof_results_sty_t x
+    | Add x        -> return add_sty_t x
+    | Edit_at x    -> return edit_at_sty_t x
+    | Query x      -> return query_sty_t x
+    | Goal x       -> return goals_sty_t x
+    | Evars x      -> return evars_sty_t x
+    | Hints x      -> return hints_sty_t x
+    | Status x     -> return status_sty_t x
+    | Search x     -> return search_sty_t x
+    | GetOptions x -> return get_options_sty_t x
+    | SetOptions x -> return set_options_sty_t x
+    | MkCases x    -> return mkcases_sty_t x
+    | Quit x       -> return quit_sty_t x
+    | About x      -> return about_sty_t x
+    | Init x       -> return init_sty_t x
+    | Interp x     -> return interp_sty_t x
+    | StopWorker x -> return stop_worker_sty_t x
+    | PrintAst x   -> return print_ast_sty_t x
+    | Annotate x   -> return annotate_sty_t x
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";
