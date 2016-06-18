@@ -1075,8 +1075,8 @@ Proof.
  apply vector_double_rect.
  simpl.
  destruct i; discriminate 1.
- destruct i; simpl;auto.
- injection 1; injection 1; subst a; subst b; auto.
+ destruct i; simpl;auto. 
+ injection 1 as ->; injection 1 as ->; auto.
 Qed.
 
  Set Implicit Arguments.
