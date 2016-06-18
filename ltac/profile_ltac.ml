@@ -249,7 +249,7 @@ and print_table all_total indent first_level table =
     in
     prlist_with_sep fnl (fun pr -> pr) (list_iter_is_last iter ls)
 
-let print_results () =
+let get_results_string () =
   let tree = (List.hd !stack).children in
   let all_total = -. (List.hd !stack).entry.local in
   let global = Hashtbl.create 20 in
@@ -272,7 +272,47 @@ let print_results () =
     header ++
     print_table all_total "" true tree
   in
-  Feedback.msg_notice msg
+  msg
+
+
+type ltacprof_entry = {total : float; self : float; num_calls : int; max_total : float}
+type ltacprof_tactic = {name: string; statistics : ltacprof_entry; tactics : ltacprof_tactic list}
+type ltacprof_results = {total_time : float; tactics : ltacprof_tactic list}
+
+let to_ltacprof_entry (e: entry) : ltacprof_entry =
+  {total=e.total; self=e.local; num_calls=e.ncalls; max_total=e.max_total}
+
+let rec to_ltacprof_tactic (name: string) (t: treenode) : ltacprof_tactic =
+  { name = name; statistics = to_ltacprof_entry t.entry; tactics = to_ltacprof_treenode t.children }
+and to_ltacprof_treenode (table: (string, treenode) Hashtbl.t) : ltacprof_tactic list =
+  Hashtbl.fold (fun name' t' c -> to_ltacprof_tactic name' t'::c) table []
+
+let get_profiling_results() : ltacprof_results =
+  let tree = List.hd !stack in
+  { total_time = -. tree.entry.local; tactics = to_ltacprof_treenode tree.children }
+
+let rec of_ltacprof_tactic t =
+  let open Xml_datatype in
+  let total = string_of_float t.statistics.total in
+  let self = string_of_float t.statistics.self in
+  let num_calls = string_of_int t.statistics.num_calls in
+  let max_total = string_of_float t.statistics.max_total in
+  let children = List.map of_ltacprof_tactic t.tactics in
+  Element ("ltacprof_tactic", [("name", t.name); ("total",total); ("self",self); ("num_calls",num_calls); ("max_total",max_total)], children)
+
+let rec of_ltacprof_results t =
+  let open Xml_datatype in
+  let children = List.map of_ltacprof_tactic t.tactics in
+  Element ("ltacprof", [("total_time", string_of_float t.total_time)], children)
+
+
+let get_profile_xml() =
+  of_ltacprof_results (get_profiling_results())
+
+let print_results () =
+  Feedback.msg_notice (get_results_string());
+  Feedback.feedback (Feedback.Custom (Loc.dummy_loc, "ltacprof_results", get_profile_xml()))
+
   (* FOR DEBUGGING *)
   (* ;
      msgnl (str"");
@@ -325,21 +365,4 @@ let _ =
       optwrite = set_profiling }
 
 
-
-(* public-facing datastructures *)
-type ltacprof_entry = {total : float; self : float; num_calls : int; max_total : float}
-type ltacprof_tactic = {name: string; statistics : ltacprof_entry; tactics : ltacprof_tactic list }
-type ltacprof_results = {total_time : float; tactics : ltacprof_tactic list }
-
-let to_ltacprof_entry (e: entry) : ltacprof_entry =
-  {total=e.total; self=e.local; num_calls=e.ncalls; max_total=e.max_total}
-
-let rec to_ltacprof_tactic (name: string) (t: treenode) : ltacprof_tactic =
-  { name = name; statistics = to_ltacprof_entry t.entry; tactics = to_ltacprof_treenode t.children }
-and to_ltacprof_treenode (table: (string, treenode) Hashtbl.t) : ltacprof_tactic list =
-  Hashtbl.fold (fun name' t' c -> to_ltacprof_tactic name' t'::c) table []
-
-let get_profiling_results() : ltacprof_results =
-  let tree = List.hd !stack in
-  { total_time = -. tree.entry.local; tactics = to_ltacprof_treenode tree.children }
 
