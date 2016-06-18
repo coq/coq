@@ -190,7 +190,7 @@ let win_aware_quote_executable str =
   else
     let _ = if contains_suspicious_characters str then
       printf "*Warning* The string %S contains suspicious characters; ocamlfind might fail\n" str in
-    str
+    Str.global_replace (Str.regexp "\\\\") "/" str
 
 (** * Date *)
 
