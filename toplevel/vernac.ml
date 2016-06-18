@@ -300,9 +300,12 @@ let ensure_ext ext f =
     f ^ ext
   end
 
+let chop_extension f =
+  try Filename.chop_extension f with _ -> f
+
 let ensure_bname src tgt =
   let src, tgt = Filename.basename src, Filename.basename tgt in
-  let src, tgt = Filename.chop_extension src, Filename.chop_extension tgt in
+  let src, tgt = chop_extension src, chop_extension tgt in
   if src <> tgt then begin
     Feedback.msg_error (str "Source and target file names must coincide, directories can differ");
     Feedback.msg_error (str "Source: " ++ str src);
