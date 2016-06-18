@@ -125,8 +125,6 @@ type ('a, 'b) union = ('a, 'b) Util.union
 
 (* Request/Reply message protocol between Coq and CoqIde *)
 
-
-
 (**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
      on top of the current edit position (that is asserted to be [sid])
      verbosely if [v] is true.  The response [(id,(rc,s)] is the new state

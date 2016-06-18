@@ -424,7 +424,6 @@ let print_ast id =
     end
   | None     -> Xml_datatype.PCData "ERROR"
 
-
 (** Grouping all call handlers together + error handling *)
 
 let eval_call xml_oc log c =
