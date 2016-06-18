@@ -167,8 +167,9 @@ let sort_cmp env univ pb s0 s1 =
             CUMUL -> ()
           | _ -> raise NotConvertible)
     | (Type u1, Type u2) ->
-        if snd (engagement env) == StratifiedType
-          && not
+        (** FIXME: handle type-in-type option here *)
+        if (* snd (engagement env) == StratifiedType && *)
+          not
 	  (match pb with
             | CONV -> Univ.check_eq univ u1 u2
 	    | CUMUL -> Univ.check_leq univ u1 u2)

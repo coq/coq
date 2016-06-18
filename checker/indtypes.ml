@@ -176,7 +176,7 @@ let typecheck_arity env params inds =
 (* Allowed eliminations *)
 
 let check_predicativity env s small level =
-  match s, fst (engagement env) with
+  match s, engagement env with
       Type u, _ ->
         (* let u' = fresh_local_univ () in *)
         (* let cst = *)
