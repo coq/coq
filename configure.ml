@@ -178,6 +178,19 @@ let which prog =
 let program_in_path prog =
   try let _ = which prog in true with Not_found -> false
 
+(** As per bug #4828, ocamlfind on Windows/Cygwin barfs if you pass it
+    a quoted path to camlpXo via -pp.  So we only quote camlpXo on not
+    Windows, and warn on Windows if the path contains spaces *)
+let contains_suspicious_characters str =
+  List.fold_left (fun b ch -> String.contains str ch || b) false [' '; '\t']
+
+let win_aware_quote_executable str =
+  if not (os_type_win32 || os_type_cygwin) then
+    sprintf "%S" str
+  else
+    let _ = if contains_suspicious_characters str then
+      printf "*Warning* The string %S contains suspicious characters; ocamlfind might fail\n" str in
+    Str.global_replace (Str.regexp "\\\\") "/" str
 
 (** * Date *)
 
@@ -1064,7 +1077,7 @@ let _ = write_configml "config/coq_config.ml"
 (** * Symlinks or copies for the checker *)
 
 let _ =
-  let prog, args, prf = 
+  let prog, args, prf =
     if arch = "win32" then "cp", [], ""
     else "ln", ["-s"], "../" in
   List.iter (fun file ->
@@ -1126,7 +1139,7 @@ let write_makefile f =
   pr "# Camlp4 : flavor, binaries, libraries ...\n";
   pr "# NB : avoid using CAMLP4LIB (conflict under Windows)\n";
   pr "CAMLP4=%s\n" camlpX;
-  pr "CAMLP4O=%S\n" camlpXo;
+  pr "CAMLP4O=%s\n" (win_aware_quote_executable camlpXo);
   pr "CAMLP4COMPAT=%s\n" camlp4compat;
   pr "MYCAMLP4LIB=%S\n\n" camlpXlibdir;
   pr "# Your architecture\n";
