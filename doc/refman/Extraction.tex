@@ -448,7 +448,7 @@ let dp x y f = Pair ((Obj.magic f () x), (Obj.magic f () y))
     happens when there is a quantification over types inside the type
     of a constructor; for example:
 \begin{verbatim}
-Inductive anything : Set := dummy : forall A:Set, A -> anything.
+Inductive anything : Type := dummy : forall A:Set, A -> anything.
 \end{verbatim}
 
 which corresponds to the definition of an ML dynamic type.
