@@ -15,3 +15,5 @@
 Global Unset Bracketing Last Introduction Pattern.
 Global Unset Regular Subst Tactic.
 Global Unset Structural Injection.
+Global Unset Shrink Abstract.
+Global Unset Shrink Obligations.
