@@ -2932,8 +2932,7 @@ let unfold_body x =
   in
   Tacticals.New.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun decl cl -> (get_id decl, InHyp) :: cl) aft [] in
-  let xvar = mkVar x in
-  let rfun _ _ c = replace_term xvar xval c in
+  let rfun _ _ c = replace_vars [x, xval] c in
   let reducth h = reduct_in_hyp rfun h in
   let reductc = reduct_in_concl (rfun, DEFAULTcast) in
   Tacticals.New.tclTHENLIST [Tacticals.New.tclMAP reducth hl; reductc]
