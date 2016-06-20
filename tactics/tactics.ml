@@ -2026,16 +2026,18 @@ let clear_body ids =
     let env = push_named_context ctx base_env in
     let check =
       try
-        let check (env, sigma) decl =
+        let check (env, sigma, seen) decl =
           (** Do no recheck hypotheses that do not depend *)
           let sigma =
-            if List.exists (fun id -> occur_var_in_decl env id decl) ids then
+            if not seen then sigma
+            else if List.exists (fun id -> occur_var_in_decl env id decl) ids then
               check_decl env sigma decl
             else sigma
           in
-          (push_named decl env, sigma)
+          let seen = seen || List.mem_f Id.equal (get_id decl) ids in
+          (push_named decl env, sigma, seen)
         in
-        let (env, sigma) = List.fold_left check (base_env, sigma) (List.rev ctx) in
+        let (env, sigma, _) = List.fold_left check (base_env, sigma, false) (List.rev ctx) in
         let sigma =
           if List.exists (fun id -> occur_var env id concl) ids then
             check_is_type env sigma concl
