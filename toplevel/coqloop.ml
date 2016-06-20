@@ -152,38 +152,21 @@ let print_highlight_location ib loc =
 
 (* Functions to report located errors in a file. *)
 
-let print_location_in_file {outer=s;inner=fname} loc =
-  let errstrm = str"Error while reading " ++ str s in
+let print_location_in_file loc =
+  let fname = loc.Loc.fname in
+  let errstrm = str"Error while reading " ++ str fname in
   if Loc.is_ghost loc then
     hov 1 (errstrm ++ spc() ++ str" (unknown location):") ++ fnl ()
   else
-    let errstrm =
-      if String.equal s fname then mt() else errstrm ++ str":" ++ fnl()
+    let errstrm = mt ()
+      (* if String.equal outer_fname fname then mt() else errstrm ++ str":" ++ fnl() *)
     in
-    let (bp,ep) = Loc.unloc loc in
-    let line_of_pos lin bol cnt =
-      try
-        let ic = open_in fname in
-        let rec line_of_pos lin bol cnt =
-          if cnt < bp then
-            if input_char ic == '\n'
-            then line_of_pos (lin + 1) (cnt +1) (cnt+1)
-            else line_of_pos lin bol (cnt+1)
-          else (lin, bol)
-        in
-        let rc = line_of_pos lin bol cnt in
-        close_in ic;
-        rc
-      with Sys_error _ -> 0, 0 in
-    try
-      let (line, bol) = line_of_pos 1 0 0 in
-      hov 0 (* No line break so as to follow emacs error message format *)
-        (errstrm ++ str"File " ++ str "\"" ++ str fname ++ str "\"" ++
-           str", line " ++ int line ++ str", characters " ++
-           Cerrors.print_loc (Loc.make_loc (bp-bol,ep-bol))) ++ str":" ++
-        fnl ()
-    with e when Errors.noncritical e ->
-       hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ()
+    let open Loc in
+    hov 0 (* No line break so as to follow emacs error message format *)
+	(errstrm ++ str"File " ++ str "\"" ++ str fname ++ str "\"" ++
+	   str", line " ++ int loc.line_nb ++ str", characters " ++
+	   Cerrors.print_loc (Loc.make_loc (loc.bp-loc.bol_pos,loc.ep-loc.bol_pos))) ++ str":" ++
+      fnl ()
 
 let valid_buffer_loc ib loc =
   not (Loc.is_ghost loc) &&
@@ -264,12 +247,13 @@ let locate_exn = function
 
 let print_toplevel_error (e, info) =
   let loc = Option.default Loc.ghost (Loc.get_loc info) in
-  let locmsg = match Vernac.get_exn_files info with
-    | Some files -> print_location_in_file files loc
-    | None ->
+  let fname = loc.Loc.fname in
+  let locmsg =
+    if String.equal fname "" then
       if locate_exn e && valid_buffer_loc top_buffer loc then
-        print_highlight_location top_buffer loc
+	print_highlight_location top_buffer loc
       else mt ()
+    else print_location_in_file loc
   in
   locmsg ++ Errors.iprint (e, info)
 

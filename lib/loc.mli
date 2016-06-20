@@ -8,7 +8,15 @@
 
 (** {5 Basic types} *)
 
-type t
+type t = {
+  fname : string; (** filename *)
+  line_nb : int; (** start line number *)
+  bol_pos : int; (** position of the beginning of start line *)
+  line_nb_last : int; (** end line number *)
+  bol_pos_last : int; (** position of the beginning of end line *)
+  bp : int; (** start position *)
+  ep : int; (** end position *)
+}
 
 type 'a located = t * 'a
 (** Embed a location in a type *)
@@ -17,9 +25,9 @@ type 'a located = t * 'a
 
 (** This is inherited from CAMPL4/5. *)
 
-val create : string -> int -> int -> (int * int) -> t
+val create : string -> int -> int -> int -> int -> t
 (** Create a location from a filename, a line number, a position of the
-    beginning of the line and a pair of start and end position *)
+    beginning of the line, a start and end position *)
 
 val unloc : t -> int * int
 (** Return the start and end position of a location *)
@@ -34,9 +42,6 @@ val is_ghost : t -> bool
 (** Test whether the location is meaningful *)
 
 val merge : t -> t -> t
-
-val represent : t -> (string * int * int * int * int)
-(** Return the arguments given in [create] *)
 
 (** {5 Located exceptions} *)
 

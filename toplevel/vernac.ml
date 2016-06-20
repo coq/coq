@@ -65,26 +65,6 @@ let _ =
       Goptions.optread  = (fun () -> !atomic_load);
       Goptions.optwrite = ((:=) atomic_load) }
 
-(* In case of error, register the file being currently Load'ed and the
-   inner file in which the error has been encountered. Any intermediate files
-   between the two are discarded. *)
-
-type location_files = { outer : string; inner : string }
-
-let files_of_exn : location_files Exninfo.t = Exninfo.make ()
-
-let get_exn_files e = Exninfo.get e files_of_exn
-
-let add_exn_files e f = Exninfo.add e files_of_exn f
-
-let enrich_with_file f (e, info) =
-  let inner = match get_exn_files info with None -> f | Some x -> x.inner in
-  (e, add_exn_files info { outer = f; inner })
-
-let raise_with_file f e = iraise (enrich_with_file f e)
-
-let cur_file = ref None
-
 let disable_drop = function
   | Drop -> Errors.error "Drop is forbidden."
   | e -> e
@@ -100,6 +80,7 @@ let open_file_twice_if verbosely longfname =
   let in_chan = open_utf8_file_in longfname in
   let verb_ch =
     if verbosely then Some (open_utf8_file_in longfname) else None in
+  CLexer.set_current_file longfname;
   let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
   (in_chan, longfname, (po, verb_ch))
 
@@ -244,7 +225,6 @@ and read_vernac_file verbosely s =
 	user_error loc "Navigation commands forbidden in files"
   in
   let (in_chan, fname, input) = open_file_twice_if verbosely s in
-  cur_file := Some fname;
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
@@ -258,10 +238,10 @@ and read_vernac_file verbosely s =
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
-          cur_file := None;
           if do_beautify () then
             pr_new_syntax (Loc.make_loc (max_int,max_int)) None
-      | _ -> raise_with_file fname (disable_drop e, info)
+      | reraise ->
+	 iraise (disable_drop e, info)
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
    It executes one vernacular command. By default the command is
@@ -290,7 +270,7 @@ let load_vernac verb file =
   with any ->
     let (e, info) = Errors.push any in
     if !Flags.beautify_file then close_out !chan_beautify;
-    raise_with_file file (disable_drop e, info)
+    iraise (disable_drop e, info)
 
 let ensure_ext ext f =
   if Filename.check_suffix f ext then f
@@ -389,8 +369,5 @@ let compile v f =
   compile v f;
   CoqworkmgrApi.giveback 1
 
-let () = Hook.set Stm.process_error_hook (fun e ->
-  match !cur_file with
-  | None -> Cerrors.process_vernac_interp_error e
-  | Some f -> enrich_with_file f (Cerrors.process_vernac_interp_error e)
-)
+let () = Hook.set Stm.process_error_hook
+  Cerrors.process_vernac_interp_error

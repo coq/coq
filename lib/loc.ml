@@ -8,7 +8,6 @@
 
 (* Locations management *)
 
-
 type t = {
   fname : string; (** filename *)
   line_nb : int; (** start line number *)
@@ -19,7 +18,7 @@ type t = {
   ep : int; (** end position *)
 }
 
-let create fname line_nb bol_pos (bp, ep) = {
+let create fname line_nb bol_pos bp ep = {
   fname = fname; line_nb = line_nb; bol_pos = bol_pos;
   line_nb_last = line_nb; bol_pos_last = bol_pos; bp = bp; ep = ep; }
 
@@ -53,8 +52,6 @@ let merge loc1 loc2 =
   else loc2
 
 let unloc loc = (loc.bp, loc.ep)
-
-let represent loc = (loc.fname, loc.line_nb, loc.bol_pos, loc.bp, loc.ep)
 
 let dummy_loc = ghost
 let join_loc = merge

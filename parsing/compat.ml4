@@ -20,17 +20,49 @@ end
 
 exception Exc_located = Ploc.Exc
 
-IFDEF CAMLP5_6_00 THEN
-let ploc_file_name = Ploc.file_name
-ELSE
-let ploc_file_name _ = ""
-END
-
 let to_coqloc loc =
-  Loc.create (ploc_file_name loc) (Ploc.line_nb loc)
-    (Ploc.bol_pos loc) (Ploc.first_pos loc, Ploc.last_pos loc)
+  { Loc.fname = Ploc.file_name loc;
+    Loc.line_nb = Ploc.line_nb loc;
+    Loc.bol_pos = Ploc.bol_pos loc;
+    Loc.bp = Ploc.first_pos loc;
+    Loc.ep = Ploc.last_pos loc;
+    Loc.line_nb_last = Ploc.line_nb_last loc;
+    Loc.bol_pos_last = Ploc.bol_pos_last loc; }
 
-let make_loc = Ploc.make_unlined
+let make_loc fname line_nb bol_pos bp ep = Ploc.make_loc fname line_nb bol_pos (bp, ep) ""
+
+(* Update a loc without allocating an intermediate pair *)
+let set_loc_pos loc bp ep =
+  let open Ploc in sub loc (bp - first_pos loc) (ep - bp)
+
+(* Increase line number by 1 and update position of beginning of line *)
+let bump_loc_line loc bol_pos =
+  Ploc.make_loc (Ploc.file_name loc) (Ploc.line_nb loc + 1) bol_pos
+		(Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
+
+(* Same as [bump_loc_line], but for the last line in location *)
+(* For an obscure reason, camlp5 does not give an easy way to set line_nb_stop,
+   so we have to resort to a hack merging two locations. *)
+(* Warning: [bump_loc_line_last] changes the end position. You may need to call
+   [set_loc_pos] to fix it. *)
+let bump_loc_line_last loc bol_pos =
+  let loc' =
+    Ploc.make_loc (Ploc.file_name loc) (Ploc.line_nb_last loc + 1) bol_pos
+		  (Ploc.first_pos loc + 1, Ploc.last_pos loc + 1) (Ploc.comment loc)
+  in
+  Ploc.encl loc loc'
+
+let set_loc_file loc fname =
+  Ploc.make_loc fname (Ploc.line_nb loc) (Ploc.bol_pos loc)
+		(Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
+
+(* For some reason, the [Ploc.after] function of Camlp5 does not update line
+   numbers, so we define our own function that does it. *)
+let after loc =
+  let line_nb = Ploc.line_nb_last loc in
+  let bol_pos = Ploc.bol_pos_last loc in
+  Ploc.make_loc (Ploc.file_name loc) line_nb bol_pos
+		(Ploc.last_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
 
 ELSE
 
@@ -39,11 +71,41 @@ module CompatLoc = Camlp4.PreCast.Loc
 exception Exc_located = CompatLoc.Exc_located
 
 let to_coqloc loc =
-  Loc.create (CompatLoc.file_name loc) (CompatLoc.start_line loc)
-    (CompatLoc.start_bol loc) (CompatLoc.start_off loc, CompatLoc.stop_off loc)
+  { Loc.fname = CompatLoc.file_name loc;
+    Loc.line_nb = CompatLoc.start_line loc;
+    Loc.bol_pos = CompatLoc.start_bol loc;
+    Loc.bp = CompatLoc.start_off loc;
+    Loc.ep = CompatLoc.stop_off loc;
+    Loc.line_nb_last = CompatLoc.stop_line loc;
+    Loc.bol_pos_last = CompatLoc.stop_bol loc; }
 
-let make_loc (start, stop) =
-  CompatLoc.of_tuple ("", 0, 0, start, 0, 0, stop, false)
+let make_loc fname line_nb bol_pos start stop =
+  CompatLoc.of_tuple (fname, line_nb, bol_pos, start, line_nb, bol_pos, stop, false)
+
+let set_loc_pos loc bp ep =
+  let open CompatLoc in
+  of_tuple (file_name loc, start_line loc, start_bol loc, bp,
+	    stop_line loc, stop_bol loc, ep, is_ghost loc)
+
+let bump_loc_line loc bol_pos =
+  let open CompatLoc in
+  of_tuple (file_name loc, start_line loc + 1, bol_pos, start_off loc,
+	    start_line loc + 1, bol_pos, stop_off loc, is_ghost loc)
+
+let bump_loc_line_last loc bol_pos =
+  let open CompatLoc in
+  of_tuple (file_name loc, start_line loc, start_bol loc, start_off loc,
+	    stop_line loc + 1, bol_pos, stop_off loc, is_ghost loc)
+
+let set_loc_file loc fname =
+  let open CompatLoc in
+  of_tuple (fname, start_line loc, start_bol loc, start_off loc,
+	    stop_line loc, stop_bol loc, stop_off loc, is_ghost loc)
+
+let after loc =
+  let open CompatLoc in
+  of_tuple (file_name loc, stop_line loc, stop_bol loc, stop_off loc,
+	    stop_line loc, stop_bol loc, stop_off loc, is_ghost loc)
 
 END
 
@@ -131,11 +193,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
       let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
       Loc.raise loc e
 
-IFDEF CAMLP5_6_02_1 THEN
   let entry_print ft x = Entry.print ft x
-ELSE
-  let entry_print _ x = Entry.print x
-END
   let srules' = Gramext.srules
   let parse_tokens_after_filter = Entry.parse_token
 end
@@ -216,13 +274,13 @@ ELSE
   | tok -> Gramext.Stoken (Tok.equal tok, G.Token.to_string tok)
 END
 
-IFDEF CAMLP5_6_00 THEN
-  let slist0sep (x, y) = Gramext.Slist0sep (x, y, false)
-  let slist1sep (x, y) = Gramext.Slist1sep (x, y, false)
-ELSE
-  let slist0sep (x, y) = Gramext.Slist0sep (x, y)
-  let slist1sep (x, y) = Gramext.Slist1sep (x, y)
-END
+  IFDEF CAMLP5 THEN
+     let slist0sep (x, y) = Gramext.Slist0sep (x, y, false)
+     let slist1sep (x, y) = Gramext.Slist1sep (x, y, false)
+  ELSE
+    let slist0sep (x, y) = Gramext.Slist0sep (x, y)
+    let slist1sep (x, y) = Gramext.Slist1sep (x, y)
+  END
 
   let snterml (x, y) = Gramext.Snterml (x, y)
   let snterm x = Gramext.Snterm x
