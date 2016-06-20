@@ -538,20 +538,21 @@ let insert_after_hyp (ctxt,vals) id d check =
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value (ctxt, vals) =
   let rec remove_hyps ctxt vals = match ctxt, vals with
-  | [], [] -> [], []
+  | [], [] -> ([], []), false
   | d :: rctxt, (nid, v) :: rvals ->
-    let ans = remove_hyps rctxt rvals in
-    if Id.Set.mem (get_id d) ids then ans
+    let (ans, seen) = remove_hyps rctxt rvals in
+    if Id.Set.mem (get_id d) ids then (ans, true)
+    else if not seen then (ctxt, vals), false
     else
       let (rctxt', rvals') = ans in
       let d' = check_context d in
       let v' = check_value v in
       if d == d' && v == v' && rctxt == rctxt' && rvals == rvals' then
-        ctxt, vals
-      else (d' :: rctxt', (nid, v') :: rvals')
+        (ctxt, vals), true
+      else (d' :: rctxt', (nid, v') :: rvals'), true
   | _ -> assert false
   in
-  remove_hyps ctxt vals
+  fst (remove_hyps ctxt vals)
 
 (*spiwack: the following functions assemble the pieces of the retroknowledge
    note that the "consistent" register function is available in the module
