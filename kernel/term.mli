@@ -315,7 +315,7 @@ val decompose_lam_n : int -> constr -> (Name.t * constr) list * constr
    "(xi:Ti) ... (xj:=cj:Tj) ..., T" where T is not a product nor a let *)
 val decompose_prod_assum : types -> Context.Rel.t * types
 
-(** Idem with lambda's *)
+(** Idem with lambda's and let's *)
 val decompose_lam_assum : constr -> Context.Rel.t * constr
 
 (** Idem but extract the first [n] premisses, counting let-ins. *)
