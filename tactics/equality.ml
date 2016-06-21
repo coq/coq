@@ -1730,7 +1730,7 @@ let subst_one_var dep_proof_ok x =
   end }
 
 let subst_gen dep_proof_ok ids =
-  tclTHEN Proofview.V82.nf_evar_goals (tclMAP (subst_one_var dep_proof_ok) ids)
+  tclMAP (subst_one_var dep_proof_ok) ids
 
 (* For every x, look for an hypothesis hyp of the form "x=rhs" or "rhs=x",
    rewrite it everywhere, and erase hyp and x; proceed by generalizing
