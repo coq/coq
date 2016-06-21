@@ -26,7 +26,7 @@ let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
 let trace s =
   if !Flags.debug then Feedback.msg_debug s
   else ()
-
+         
 let succfix (depth, fixrels) =
   (succ depth, List.map succ fixrels)
 
@@ -219,13 +219,17 @@ let eterm_obligations env name evm fs ?status t ty =
 	   | None -> evtyp, hyps, 0
 	 in
 	 let loc, k = evar_source id evm in
-	 let status = match k with Evar_kinds.QuestionMark o -> Some o | _ -> status in
-	 let status, chop = match status with
-	   | Some (Evar_kinds.Define true as stat) ->
-	       if not (Int.equal chop fs) then Evar_kinds.Define false, None
-	       else stat, Some chop
-	   | Some s -> s, None
-	   | None -> Evar_kinds.Define true, None
+	 let status = match k with
+           | Evar_kinds.QuestionMark o -> o
+           | _ -> match status with
+                 | Some o -> o
+                 | None -> Evar_kinds.Define (Program.get_proofs_transparency ())
+         in
+         let status, chop = match status with
+	   | Evar_kinds.Define true as stat ->
+	      if not (Int.equal chop fs) then Evar_kinds.Define false, None
+	      else stat, Some chop
+	   | s -> s, None
 	 in
 	 let info = { ev_name = (n, nstr);
 		      ev_hyps = hyps; ev_status = status; ev_chop = chop;
@@ -325,29 +329,13 @@ let assumption_message = Declare.assumption_message
 
 let default_tactic = ref (Proofview.tclUNIT ())
 
-(* true = All transparent, false = Opaque if possible *)
-let proofs_transparency = ref true
-
-let set_proofs_transparency = (:=) proofs_transparency
-let get_proofs_transparency () = !proofs_transparency
-
-open Goptions
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "transparency of Program obligations";
-      optkey   = ["Transparent";"Obligations"];
-      optread  = get_proofs_transparency;
-      optwrite = set_proofs_transparency; }
-
 (* true = hide obligations *)
 let hide_obligations = ref false
 
 let set_hide_obligations = (:=) hide_obligations
 let get_hide_obligations () = !hide_obligations
 
+open Goptions
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -614,7 +602,6 @@ let declare_obligation prg obl body ty uctx =
   match obl.obl_status with
   | Evar_kinds.Expand -> false, { obl with obl_body = Some (TermObl body) }
   | Evar_kinds.Define opaque ->
-      let opaque = if get_proofs_transparency () then false else opaque in
       let poly = pi2 prg.prg_kind in
       let ctx, body, args =
 	if get_shrink_obligations () && not poly then
@@ -820,7 +807,7 @@ let obligation_terminator name num guard hook auto pf =
       let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
       let env = Global.env () in
       let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
-      let ty = entry.Entries.const_entry_type  in
+      let ty = entry.Entries.const_entry_type in
       let (body, cstr), eff = Future.force entry.Entries.const_entry_body in
       assert(Safe_typing.empty_private_constants = eff);
       let sigma = Evd.from_ctx (fst uctx) in
@@ -832,6 +819,14 @@ let obligation_terminator name num guard hook auto pf =
       let prg = { prg with prg_ctx = ctx } in
       let obls, rem = prg.prg_obligations in
       let obl = obls.(num) in
+      let status =
+        match obl.obl_status, opq with
+        | Evar_kinds.Expand, Vernacexpr.Opaque _ -> err_not_transp ()
+        | Evar_kinds.Define false, Vernacexpr.Opaque _ -> err_not_transp ()
+        | Evar_kinds.Define true, Vernacexpr.Opaque _ -> obl.obl_status
+        | _, Vernacexpr.Transparent -> Evar_kinds.Define false
+      in
+      let obl = { obl with obl_status = status } in
       let uctx = Evd.evar_context_universe_context ctx in
       let (def, obl) = declare_obligation prg obl body ty uctx in
       let obls = Array.copy obls in

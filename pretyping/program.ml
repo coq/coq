@@ -67,3 +67,21 @@ let mk_coq_and l =
       (fun c conj ->
 	 mkApp (and_typ, [| c ; conj |]))
       l
+
+(* true = transparent by default, false = opaque if possible *)
+let proofs_transparency = ref true
+
+let set_proofs_transparency = (:=) proofs_transparency
+let get_proofs_transparency () = !proofs_transparency
+
+open Goptions
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "preferred transparency of Program obligations";
+      optkey   = ["Transparent";"Obligations"];
+      optread  = get_proofs_transparency;
+      optwrite = set_proofs_transparency; }
+      

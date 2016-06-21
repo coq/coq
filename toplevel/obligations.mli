@@ -57,9 +57,6 @@ type progress = (* Resolution status of a program *)
 
 val default_tactic : unit Proofview.tactic ref
 
-val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
-val get_proofs_transparency : unit -> bool
-
 val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types -> 
   Evd.evar_universe_context ->
   ?pl:(Id.t Loc.located list) -> (* Universe binders *)
