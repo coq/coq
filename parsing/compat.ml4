@@ -33,7 +33,7 @@ let make_loc fname line_nb bol_pos bp ep = Ploc.make_loc fname line_nb bol_pos (
 
 (* Update a loc without allocating an intermediate pair *)
 let set_loc_pos loc bp ep =
-  let open Ploc in sub loc (bp - first_pos loc) (ep - bp)
+  Ploc.sub loc (bp - Ploc.first_pos loc) (ep - bp)
 
 (* Increase line number by 1 and update position of beginning of line *)
 let bump_loc_line loc bol_pos =
@@ -82,28 +82,25 @@ let to_coqloc loc =
 let make_loc fname line_nb bol_pos start stop =
   CompatLoc.of_tuple (fname, line_nb, bol_pos, start, line_nb, bol_pos, stop, false)
 
+open CompatLoc
+
 let set_loc_pos loc bp ep =
-  let open CompatLoc in
   of_tuple (file_name loc, start_line loc, start_bol loc, bp,
 	    stop_line loc, stop_bol loc, ep, is_ghost loc)
 
 let bump_loc_line loc bol_pos =
-  let open CompatLoc in
   of_tuple (file_name loc, start_line loc + 1, bol_pos, start_off loc,
 	    start_line loc + 1, bol_pos, stop_off loc, is_ghost loc)
 
 let bump_loc_line_last loc bol_pos =
-  let open CompatLoc in
   of_tuple (file_name loc, start_line loc, start_bol loc, start_off loc,
 	    stop_line loc + 1, bol_pos, stop_off loc, is_ghost loc)
 
 let set_loc_file loc fname =
-  let open CompatLoc in
   of_tuple (fname, start_line loc, start_bol loc, start_off loc,
 	    stop_line loc, stop_bol loc, stop_off loc, is_ghost loc)
 
 let after loc =
-  let open CompatLoc in
   of_tuple (file_name loc, stop_line loc, stop_bol loc, stop_off loc,
 	    stop_line loc, stop_bol loc, stop_off loc, is_ghost loc)
 
