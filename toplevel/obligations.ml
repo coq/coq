@@ -40,7 +40,7 @@ let check_evars env evm =
 type oblinfo =
   { ev_name: int * Id.t;
     ev_hyps: Context.Named.t;
-    ev_status: Evar_kinds.obligation_definition_status;
+    ev_status: bool * Evar_kinds.obligation_definition_status;
     ev_chop: int option;
     ev_src: Evar_kinds.t Loc.located;
     ev_typ: types;
@@ -215,16 +215,20 @@ let eterm_obligations env name evm fs ?status t ty =
 	   | None -> evtyp, hyps, 0
 	 in
 	 let loc, k = evar_source id evm in
-	 let status = match k with Evar_kinds.QuestionMark o -> Some o | _ -> status in
-	 let status, chop = match status with
-	   | Some (Evar_kinds.Define true as stat) ->
-	       if not (Int.equal chop fs) then Evar_kinds.Define false, None
-	       else stat, Some chop
-	   | Some s -> s, None
-	   | None -> Evar_kinds.Define true, None
+	 let status = match k with
+           | Evar_kinds.QuestionMark o -> o
+           | _ -> match status with
+                 | Some o -> o
+                 | None -> Evar_kinds.Define (not (Program.get_proofs_transparency ()))
+         in
+         let force_status, status, chop = match status with
+	   | Evar_kinds.Define true as stat ->
+	      if not (Int.equal chop fs) then true, Evar_kinds.Define false, None
+	      else false, stat, Some chop
+	   | s -> false, s, None
 	 in
 	 let info = { ev_name = (n, nstr);
-		      ev_hyps = hyps; ev_status = status; ev_chop = chop;
+		      ev_hyps = hyps; ev_status = force_status, status; ev_chop = chop;
 		      ev_src = loc, k; ev_typ = evtyp ; ev_deps = deps; ev_tac = None }
 	 in (id, info) :: l)
       evn []
@@ -235,14 +239,14 @@ let eterm_obligations env name evm fs ?status t ty =
   let ty, _, _ = subst_evar_constr evts 0 mkVar ty in
   let evars = 
     List.map (fun (ev, info) ->
-      let { ev_name = (_, name); ev_status = status;
+      let { ev_name = (_, name); ev_status = force_status, status;
 	    ev_src = src; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
       in
-      let status = match status with
+      let force_status, status = match status with
 	| Evar_kinds.Define true when Id.Set.mem name transparent ->
-	  Evar_kinds.Define false
-	| _ -> status
-      in name, typ, src, status, deps, tac) evts
+	  true, Evar_kinds.Define false
+	| _ -> force_status, status
+      in name, typ, src, (force_status, status), deps, tac) evts
   in
   let evnames = List.map (fun (ev, info) -> ev, snd info.ev_name) evts in
   let evmap f c = pi1 (subst_evar_constr evts 0 f c) in
@@ -268,7 +272,8 @@ let explain_no_obligations = function
 
 type obligation_info =
     (Names.Id.t * Term.types * Evar_kinds.t Loc.located *
-     Evar_kinds.obligation_definition_status * Int.Set.t * unit Proofview.tactic option) array
+       (bool * Evar_kinds.obligation_definition_status)
+       * Int.Set.t * unit Proofview.tactic option) array
 
 type 'a obligation_body = 
   | DefinedObl of 'a
@@ -279,7 +284,7 @@ type obligation =
     obl_type : types;
     obl_location : Evar_kinds.t Loc.located;
     obl_body : constant obligation_body option;
-    obl_status : Evar_kinds.obligation_definition_status;
+    obl_status : bool * Evar_kinds.obligation_definition_status;
     obl_deps : Int.Set.t;
     obl_tac : unit Proofview.tactic option;
   }
@@ -321,29 +326,13 @@ let assumption_message = Declare.assumption_message
 
 let default_tactic = ref (Proofview.tclUNIT ())
 
-(* true = All transparent, false = Opaque if possible *)
-let proofs_transparency = ref true
-
-let set_proofs_transparency = (:=) proofs_transparency
-let get_proofs_transparency () = !proofs_transparency
-
-open Goptions
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "transparency of Program obligations";
-      optkey   = ["Transparent";"Obligations"];
-      optread  = get_proofs_transparency;
-      optwrite = set_proofs_transparency; }
-
 (* true = hide obligations *)
 let hide_obligations = ref false
 
 let set_hide_obligations = (:=) hide_obligations
 let get_hide_obligations () = !hide_obligations
 
+open Goptions
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -383,7 +372,7 @@ let get_obligation_body expand obl =
   match get_body obl with
   | None -> None
   | Some c ->
-     if expand && obl.obl_status == Evar_kinds.Expand then
+     if expand && snd obl.obl_status == Evar_kinds.Expand then
        match c with
        | DefinedObl pc -> Some (constant_value_in (Global.env ()) pc)
        | TermObl c -> Some c
@@ -608,9 +597,9 @@ let declare_obligation prg obl body ty uctx =
   let body = prg.prg_reduce body in
   let ty = Option.map prg.prg_reduce ty in
   match obl.obl_status with
-  | Evar_kinds.Expand -> false, { obl with obl_body = Some (TermObl body) }
-  | Evar_kinds.Define opaque ->
-      let opaque = if get_proofs_transparency () then false else opaque in
+  | _, Evar_kinds.Expand -> false, { obl with obl_body = Some (TermObl body) }
+  | force, Evar_kinds.Define opaque ->
+      let opaque = not force && opaque in
       let poly = pi2 prg.prg_kind in
       let ctx, body, args =
 	if get_shrink_obligations () && not poly then
@@ -648,7 +637,7 @@ let init_prog_info ?(opaque = false) sign n pl b t ctx deps fixkind
 	let n = Nameops.add_suffix n "_obligation" in
 	  [| { obl_name = n; obl_body = None;
 	       obl_location = Loc.ghost, Evar_kinds.InternalHole; obl_type = t;
-	       obl_status = Evar_kinds.Expand; obl_deps = Int.Set.empty;
+	       obl_status = false, Evar_kinds.Expand; obl_deps = Int.Set.empty;
 	       obl_tac = None } |],
 	mkVar n
     | Some b ->
@@ -816,7 +805,7 @@ let obligation_terminator name num guard hook auto pf =
       let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
       let env = Global.env () in
       let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
-      let ty = entry.Entries.const_entry_type  in
+      let ty = entry.Entries.const_entry_type in
       let (body, cstr), eff = Future.force entry.Entries.const_entry_body in
       assert(Safe_typing.empty_private_constants = eff);
       let sigma = Evd.from_ctx (fst uctx) in
@@ -828,6 +817,15 @@ let obligation_terminator name num guard hook auto pf =
       let prg = { prg with prg_ctx = ctx } in
       let obls, rem = prg.prg_obligations in
       let obl = obls.(num) in
+      let status =
+        match obl.obl_status, opq with
+        | (_, Evar_kinds.Expand), Vernacexpr.Opaque _ -> err_not_transp ()
+        | (true, _), Vernacexpr.Opaque _ -> err_not_transp ()
+        | (false, _), Vernacexpr.Opaque _ -> Evar_kinds.Define true
+        | (_, Evar_kinds.Define true), Vernacexpr.Transparent -> Evar_kinds.Define false
+        | (_, status), Vernacexpr.Transparent -> status
+      in
+      let obl = { obl with obl_status = false, status } in
       let uctx = Evd.evar_context_universe_context ctx in
       let (def, obl) = declare_obligation prg obl body ty uctx in
       let obls = Array.copy obls in
@@ -850,9 +848,11 @@ let obligation_hook prg obl num auto ctx' _ gr =
   let cst = match gr with ConstRef cst -> cst | _ -> assert false in
   let transparent = evaluable_constant cst (Global.env ()) in
   let () = match obl.obl_status with
-  | Evar_kinds.Expand -> if not transparent then err_not_transp ()
-  | Evar_kinds.Define op -> if not op && not transparent then err_not_transp ()
-  in
+      (true, Evar_kinds.Expand) 
+    | (true, Evar_kinds.Define true) ->
+       if not transparent then err_not_transp ()
+    | _ -> ()
+in
   let obl = { obl with obl_body = Some (DefinedObl cst) } in
   let () = if transparent then add_hint true prg cst in
   let obls = Array.copy obls in
@@ -893,7 +893,7 @@ let rec solve_obligation prg num tac =
         ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) remaining));
   in
   let obl = subst_deps_obl obls obl in
-  let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
+  let kind = kind_of_obligation (pi2 prg.prg_kind) (snd obl.obl_status) in
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in

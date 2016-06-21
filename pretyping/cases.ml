@@ -2032,7 +2032,9 @@ let mk_JMeq evdref typ x typ' y =
 let mk_JMeq_refl evdref typ x = 
   papp evdref coq_JMeq_refl [| typ; x |]
 
-let hole = GHole (Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define true), Misctypes.IntroAnonymous, None)
+let hole =
+  GHole (Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false),
+         Misctypes.IntroAnonymous, None)
 
 let constr_of_pat env evdref arsign pat avoid =
   let rec typ env (ty, realargs) pat avoid =
