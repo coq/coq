@@ -2928,7 +2928,7 @@ let unfold_body x =
   let xval = match Context.Named.lookup x hyps with
   | LocalAssum _ -> errorlabstrm "unfold_body"
     (pr_id x ++ str" is not a defined hypothesis.")
-  | LocalDef (_,xval,_) -> pf_nf_evar gl xval
+  | LocalDef (_,xval,_) -> xval
   in
   Tacticals.New.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun decl cl -> (get_id decl, InHyp) :: cl) aft [] in
