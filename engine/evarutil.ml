@@ -472,10 +472,11 @@ let cleared = Store.field ()
 
 exception Depends of Id.t
 
-let rec check_and_clear_in_constr env evdref err ids c =
+let rec check_and_clear_in_constr env evdref err ids global c =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
-     evars) *)
+     evars). [global] should be true iff there is some variable of [ids] which
+     is a section variable *)
   let check id' =
     if Id.Set.mem id' ids then
       raise (ClearDependencyError (id',err))
@@ -485,14 +486,14 @@ let rec check_and_clear_in_constr env evdref err ids c =
 	  check id'; c
 
       | ( Const _ | Ind _ | Construct _ ) ->
-          let vars = Environ.vars_of_global env c in
-            Id.Set.iter check vars; c
+        let () = if global then Id.Set.iter check (Environ.vars_of_global env c) in
+        c
 
       | Evar (evk,l as ev) ->
 	  if Evd.is_defined !evdref evk then
 	    (* If evk is already defined we replace it by its definition *)
 	    let nc = whd_evar !evdref c in
-	      (check_and_clear_in_constr env evdref err ids nc)
+	      (check_and_clear_in_constr env evdref err ids global nc)
 	  else
 	    (* We check for dependencies to elements of ids in the
 	       evar_info corresponding to e and in the instance of
@@ -527,7 +528,8 @@ let rec check_and_clear_in_constr env evdref err ids c =
 	    let _nconcl =
 	      try
                 let nids = Id.Map.domain rids in
-                check_and_clear_in_constr env evdref (EvarTypingBreak ev) nids (evar_concl evi)
+                let global = Id.Set.exists is_section_variable nids in
+                check_and_clear_in_constr env evdref (EvarTypingBreak ev) nids global (evar_concl evi)
 	      with ClearDependencyError (rid,err) ->
 		raise (ClearDependencyError (Id.Map.find rid rids,err)) in
 
@@ -548,19 +550,20 @@ let rec check_and_clear_in_constr env evdref err ids c =
 	    (* spiwack: /hacking session *)
               whd_evar !evdref c
 
-      | _ -> map_constr (check_and_clear_in_constr env evdref err ids) c
+      | _ -> map_constr (check_and_clear_in_constr env evdref err ids global) c
 
 let clear_hyps_in_evi_main env evdref hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occurring in evi *)
+  let global = Id.Set.exists is_section_variable ids in
   let terms =
-    List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids) terms in
+    List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids global) terms in
   let nhyps =
     let open Context.Named.Declaration in
     let check_context decl =
       let err = OccurHypInSimpleClause (Some (get_id decl)) in
-      map_constr (check_and_clear_in_constr env evdref err ids) decl
+      map_constr (check_and_clear_in_constr env evdref err ids global) decl
     in
     let check_value vk = match force_lazy_val vk with
     | None -> vk
