@@ -477,16 +477,18 @@ let rec check_and_clear_in_constr env evdref err ids global c =
      (ie the hypotheses ids have been removed from the contexts of
      evars). [global] should be true iff there is some variable of [ids] which
      is a section variable *)
-  let check id' =
-    if Id.Set.mem id' ids then
-      raise (ClearDependencyError (id',err))
-  in
     match kind_of_term c with
       | Var id' ->
-	  check id'; c
+      if Id.Set.mem id' ids then raise (ClearDependencyError (id', err)) else c
 
       | ( Const _ | Ind _ | Construct _ ) ->
-        let () = if global then Id.Set.iter check (Environ.vars_of_global env c) in
+        let () = if global then
+          let check id' =
+            if Id.Set.mem id' ids then
+              raise (ClearDependencyError (id',err))
+          in
+          Id.Set.iter check (Environ.vars_of_global env c)
+        in
         c
 
       | Evar (evk,l as ev) ->
