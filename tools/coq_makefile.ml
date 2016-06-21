@@ -532,11 +532,11 @@ let variables is_install opt (args,defs) =
     print "CAMLLIB?=$(shell $(OCAMLFIND) printconf stdlib)\n";
     print "GRAMMARS?=grammar.cma\n";
     print "ifeq ($(CAMLP4),camlp5)
-CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo unix.cma threads.cma
+CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo
 else
-CAMLP4EXTEND=threads.cma
+CAMLP4EXTEND=
 endif\n";
-    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(CAMLLIB)/threads/ $(COQSRCLIBS) compat5.cmo \\
+    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(COQLIB)/grammar compat5.cmo \\
   $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
     end;
     match is_install with

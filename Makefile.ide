@@ -96,7 +96,7 @@ $(COQIDEBYTE): $(LINKIDE)
 
 ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
+	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
 
 
 ide/%.cmi: ide/%.mli
