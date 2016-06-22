@@ -104,7 +104,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	  let csti = Univ.enforce_eq_instances cus newus cst in
 	  let csta = Univ.Constraint.union csti ccst in
 	  let env' = Environ.push_context ~strict:false (Univ.UContext.make (inst, csta)) env in
-	  let () = if not (Univ.check_constraints cst (Environ.universes env')) then
+	  let () = if not (UGraph.check_constraints cst (Environ.universes env')) then
 		     error_incorrect_with_constraint lab
 	  in
 	  let cst = match cb.const_body with

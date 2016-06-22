@@ -545,8 +545,8 @@ let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
 let eq_constr_univs univs m n =
   if m == n then true
   else 
-    let eq_universes _ = Univ.Instance.check_eq univs in
-    let eq_sorts s1 s2 = s1 == s2 || Univ.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+    let eq_universes _ = UGraph.check_eq_instances univs in
+    let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in compare_head_gen eq_universes eq_sorts eq_constr' m n
@@ -554,11 +554,11 @@ let eq_constr_univs univs m n =
 let leq_constr_univs univs m n =
   if m == n then true
   else 
-    let eq_universes _ = Univ.Instance.check_eq univs in
+    let eq_universes _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || 
-      Univ.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+      UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let leq_sorts s1 s2 = s1 == s2 || 
-      Univ.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+      UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
@@ -571,12 +571,12 @@ let eq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes strict = Univ.Instance.check_eq univs in
+    let eq_universes strict = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_eq univs u1 u2 then true
+	if UGraph.check_eq univs u1 u2 then true
 	else
 	  (cstrs := Univ.enforce_eq u1 u2 !cstrs;
 	   true)
@@ -591,12 +591,12 @@ let leq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes strict l l' = Univ.Instance.check_eq univs l l' in
+    let eq_universes strict l l' = UGraph.check_eq_instances univs l l' in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_eq univs u1 u2 then true
+	if UGraph.check_eq univs u1 u2 then true
 	else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
 	      true)
     in
@@ -604,7 +604,7 @@ let leq_constr_univs_infer univs m n =
       if Sorts.equal s1 s2 then true
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_leq univs u1 u2 then true
+	if UGraph.check_leq univs u1 u2 then true
 	else
 	  (cstrs := Univ.enforce_leq u1 u2 !cstrs; 
 	   true)

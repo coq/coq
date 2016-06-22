@@ -19,7 +19,7 @@ val env : unit -> Environ.env
 
 val env_is_initial : unit -> bool
 
-val universes : unit -> Univ.universes
+val universes : unit -> UGraph.t
 val named_context_val : unit -> Environ.named_context_val
 val named_context : unit -> Context.named_context
 

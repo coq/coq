@@ -135,7 +135,7 @@ let to_constraints g s =
       | _, ULe, Some l' -> enforce_leq x y acc
       | _, ULub, _ -> acc
       | _, d, _ -> 
-	let f = if d == ULe then check_leq else check_eq in
+	let f = if d == ULe then UGraph.check_leq else UGraph.check_eq in
 	  if f g x y then acc else 
 	    raise (Invalid_argument 
 		   "to_constraints: non-trivial algebraic constraint between universes")
@@ -145,12 +145,12 @@ let eq_constr_univs_infer univs m n =
   if m == n then true, Constraints.empty
   else 
     let cstrs = ref Constraints.empty in
-    let eq_universes strict = Univ.Instance.check_eq univs in
+    let eq_universes strict = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	  if Univ.check_eq univs u1 u2 then true
+	  if UGraph.check_eq univs u1 u2 then true
 	  else
 	    (cstrs := Constraints.add (u1, UEq, u2) !cstrs;
 	     true)
@@ -171,12 +171,12 @@ let eq_constr_univs_infer_with kind1 kind2 univs m n =
      [kind1,kind2], because [kind1] and [kind2] may be different,
      typically evaluating [m] and [n] in different evar maps. *)
   let cstrs = ref Constraints.empty in
-  let eq_universes strict = Univ.Instance.check_eq univs in
+  let eq_universes strict = UGraph.check_eq_instances univs in
   let eq_sorts s1 s2 = 
     if Sorts.equal s1 s2 then true
     else
       let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-      if Univ.check_eq univs u1 u2 then true
+      if UGraph.check_eq univs u1 u2 then true
       else
 	(cstrs := Constraints.add (u1, UEq, u2) !cstrs;
 	 true)
@@ -191,12 +191,12 @@ let leq_constr_univs_infer univs m n =
   if m == n then true, Constraints.empty
   else 
     let cstrs = ref Constraints.empty in
-    let eq_universes strict l l' = Univ.Instance.check_eq univs l l' in
+    let eq_universes strict l l' = UGraph.check_eq_instances univs l l' in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_eq univs u1 u2 then true
+	if UGraph.check_eq univs u1 u2 then true
 	else (cstrs := Constraints.add (u1, UEq, u2) !cstrs;
 	      true)
     in
@@ -204,7 +204,7 @@ let leq_constr_univs_infer univs m n =
       if Sorts.equal s1 s2 then true
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	  if Univ.check_leq univs u1 u2 then
+	  if UGraph.check_leq univs u1 u2 then
 	    ((if Univ.is_type0_univ u1 then
 		cstrs := Constraints.add (u1, ULe, u2) !cstrs);
 	     true)
@@ -869,27 +869,27 @@ let normalize_context_set ctx us algs =
   let csts = 
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
-    let g = Univ.LSet.fold (fun v g -> Univ.add_universe v false g)
-			   ctx Univ.empty_universes
+    let g = Univ.LSet.fold (fun v g -> UGraph.add_universe v false g)
+			   ctx UGraph.empty_universes
     in
     let g =
       Univ.Constraint.fold
 	(fun (l, d, r) g ->
 	 let g =
 	   if not (Level.is_small l || LSet.mem l ctx) then
-	     try Univ.add_universe l false g
-	     with Univ.AlreadyDeclared -> g
+	     try UGraph.add_universe l false g
+	     with UGraph.AlreadyDeclared -> g
 	   else g
 	 in
 	 let g =
 	   if not (Level.is_small r || LSet.mem r ctx) then
-	     try Univ.add_universe r false g
-	     with Univ.AlreadyDeclared -> g
+	     try UGraph.add_universe r false g
+	     with UGraph.AlreadyDeclared -> g
 	   else g
 	 in g) csts g
     in
-    let g = Univ.Constraint.fold Univ.enforce_constraint csts g in
-      Univ.constraints_of_universes g
+    let g = Univ.Constraint.fold UGraph.enforce_constraint csts g in
+      UGraph.constraints_of_universes g
   in
   let noneqs =
     Constraint.fold (fun (l,d,r as cstr) noneqs ->
@@ -1027,7 +1027,7 @@ let refresh_constraints univs (ctx, cstrs) =
     Univ.Constraint.fold (fun c (cstrs', univs as acc) -> 
       let c = translate_cstr c in
       if is_trivial_leq c then acc
-      else (Univ.Constraint.add c cstrs', Univ.enforce_constraint c univs))
+      else (Univ.Constraint.add c cstrs', UGraph.enforce_constraint c univs))
       cstrs (Univ.Constraint.empty, univs)
   in ((ctx, cstrs'), univs')
 

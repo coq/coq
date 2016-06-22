@@ -147,7 +147,7 @@ let betazeta_appvect n c v =
 (* Conversion utility functions *)
 type 'a conversion_function = env -> 'a -> 'a -> unit
 type 'a trans_conversion_function = Names.transparent_state -> 'a conversion_function
-type 'a universe_conversion_function = env -> Univ.universes -> 'a -> 'a -> unit
+type 'a universe_conversion_function = env -> UGraph.t -> 'a -> 'a -> unit
 type 'a trans_universe_conversion_function = 
   Names.transparent_state -> 'a universe_conversion_function
 
@@ -180,7 +180,7 @@ type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
+type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.constraints
 
 let sort_cmp_universes env pb s0 s1 (u, check) =
   (check.compare env pb s0 s1 u, check)
@@ -563,10 +563,10 @@ let clos_fconv trans cv_pb l2r evars env univs t1 t2 =
 
 
 let check_eq univs u u' = 
-  if not (check_eq univs u u') then raise NotConvertible
+  if not (UGraph.check_eq univs u u') then raise NotConvertible
 
 let check_leq univs u u' = 
-  if not (check_leq univs u u') then raise NotConvertible
+  if not (UGraph.check_leq univs u u') then raise NotConvertible
 
 let check_sort_cmp_universes env pb s0 s1 univs =
   match (s0,s1) with
@@ -593,7 +593,7 @@ let checked_sort_cmp_universes env pb s0 s1 univs =
   check_sort_cmp_universes env pb s0 s1 univs; univs
 
 let check_convert_instances ~flex u u' univs =
-  if Univ.Instance.check_eq univs u u' then univs
+  if UGraph.check_eq_instances univs u u' then univs
   else raise NotConvertible
 
 let checked_universes =
@@ -601,12 +601,12 @@ let checked_universes =
     compare_instances = check_convert_instances }
 
 let infer_eq (univs, cstrs as cuniv) u u' =
-  if Univ.check_eq univs u u' then cuniv
+  if UGraph.check_eq univs u u' then cuniv
   else
     univs, (Univ.enforce_eq u u' cstrs)
 
 let infer_leq (univs, cstrs as cuniv) u u' =
-  if Univ.check_leq univs u u' then cuniv
+  if UGraph.check_leq univs u u' then cuniv
   else
     let cstrs' = Univ.enforce_leq u u' cstrs in
       univs, cstrs'
@@ -635,7 +635,7 @@ let infer_cmp_universes env pb s0 s1 univs =
 let infer_convert_instances ~flex u u' (univs,cstrs) =
   (univs, Univ.enforce_eq_instances u u' cstrs)
 
-let inferred_universes : (Univ.universes * Univ.Constraint.t) universe_compare =
+let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare = 
   { compare = infer_cmp_universes;
     compare_instances = infer_convert_instances }
 
