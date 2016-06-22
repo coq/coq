@@ -15,10 +15,9 @@ type level =
   | Warning
   | Error
 
-type edit_id = int
-type state_id = Stateid.t
-type edit_or_state_id = Edit of edit_id | State of state_id
+type edit_id  = int
 type route_id = int
+type state_id = Stateid.t
 
 type feedback_content =
   | Processed
@@ -40,9 +39,9 @@ type feedback_content =
   | Message of level * Richpp.richpp
 
 type feedback = {
-  id : edit_or_state_id;
+  id       : state_id;
   contents : feedback_content;
-  route : route_id;
+  route    : route_id;
 }
 
 let default_route = 0
@@ -127,7 +126,7 @@ let msg_debug   x = !logger (Debug "_") x
 let feeder = ref ignore
 let set_feeder f = feeder := f
 
-let feedback_id    = ref (Edit 0)
+let feedback_id    = ref Stateid.initial
 let feedback_route = ref default_route
 
 let set_id_for_feedback ?(route=default_route) i =

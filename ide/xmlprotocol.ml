@@ -864,8 +864,7 @@ let of_feedback_content = function
   | Message (l,m) -> constructor "feedback_content" "message" [ of_message l m ]
 
 let of_edit_or_state_id = function
-  | Edit id -> ["object","edit"], of_edit_id id
-  | State id -> ["object","state"], of_stateid id
+  | id -> ["object","state"], of_stateid id
 
 let of_feedback msg =
   let content = of_feedback_content msg.contents in
@@ -874,13 +873,9 @@ let of_feedback msg =
   Element ("feedback", obj @ ["route",route], [id;content])
 
 let to_feedback xml = match xml with
-  | Element ("feedback", ["object","edit";"route",route], [id;content]) -> {
-      id = Edit(to_edit_id id);
-      route = int_of_string route;
-      contents = to_feedback_content content }
   | Element ("feedback", ["object","state";"route",route], [id;content]) -> { 
-      id = State(to_stateid id);
-      route = int_of_string route;
+      id       = to_stateid id;
+      route    = int_of_string route;
       contents = to_feedback_content content }
   | x -> raise (Marshal_error("feedback",x))
 
