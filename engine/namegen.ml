@@ -184,28 +184,36 @@ let rec to_avoid id = function
 | [] -> false
 | id' :: avoid -> Id.equal id id' || to_avoid id avoid
 
-let occur_rel p env id =
-  try
-    let name = lookup_name_of_rel p env in
-    begin match name with
-    | Name id' -> Id.equal id' id
-    | Anonymous -> false
-    end
-  with Not_found -> false (* Unbound indice : may happen in debug *)
-
-let visibly_occur_id id (nenv,c) =
-  let rec occur n c = match kind_of_term c with
-    | Const _ | Ind _ | Construct _ | Var _
-      when
-        let short = shortest_qualid_of_global Id.Set.empty (global_of_constr c) in
-        qualid_eq short (qualid_of_ident id) ->
-      raise Occur
-    | Rel p when p>n && occur_rel (p-n) nenv id -> raise Occur
-    | _ -> iter_constr_with_binders succ occur n c
+let visible_ids (nenv, c) =
+  let accu = ref (Refset_env.empty, Int.Set.empty, Id.Set.empty) in
+  let rec visible_ids n c = match kind_of_term c with
+  | Const _ | Ind _ | Construct _ | Var _ ->
+    let (gseen, vseen, ids) = !accu in
+    let g = global_of_constr c in
+    if not (Refset_env.mem g gseen) then
+      let gseen = Refset_env.add g gseen in
+      let short = shortest_qualid_of_global Id.Set.empty g in
+      let dir, id = repr_qualid short in
+      let ids = if DirPath.is_empty dir then Id.Set.add id ids else ids in
+      accu := (gseen, vseen, ids)
+  | Rel p ->
+    let (gseen, vseen, ids) = !accu in
+    if p > n && not (Int.Set.mem p vseen) then
+      let vseen = Int.Set.add p vseen in
+      let name =
+        try Some (lookup_name_of_rel (p - n) nenv)
+        with Not_found -> None (* Unbound indice : may happen in debug *)
+      in
+      let ids = match name with
+      | Some (Name id) -> Id.Set.add id ids
+      | _ -> ids
+      in
+      accu := (gseen, vseen, ids)
+  | _ -> Constr.iter_with_binders succ visible_ids n c
   in
-  try occur 1 c; false
-  with Occur -> true
-    | Not_found -> false (* Happens when a global is not in the env *)
+  let () = visible_ids 1 c in
+  let (_, _, ids) = !accu in
+  ids
 
 (* Now, there are different renaming strategies... *)
 
@@ -213,8 +221,9 @@ let visibly_occur_id id (nenv,c) =
 
 let next_name_away_in_cases_pattern env_t na avoid =
   let id = match na with Name id -> id | Anonymous -> default_dependent_ident in
+  let visible = visible_ids env_t in
   let bad id = to_avoid id avoid || is_constructor id
-                                 || visibly_occur_id id env_t in
+                                 || Id.Set.mem id visible in
   next_ident_away_from id bad
 
 (* 2- Looks for a fresh name for introduction in goal *)
@@ -291,7 +300,8 @@ let make_all_name_different env =
    subscript *)
 
 let next_ident_away_for_default_printing env_t id avoid =
-  let bad id = to_avoid id avoid || visibly_occur_id id env_t in
+  let visible = visible_ids env_t in
+  let bad id = to_avoid id avoid || Id.Set.mem id visible in
   next_ident_away_from id bad
 
 let next_name_away_for_default_printing env_t na avoid =
