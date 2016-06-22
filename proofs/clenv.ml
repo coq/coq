@@ -109,7 +109,7 @@ let clenv_environments evd bound t =
       | (n, Cast (t,_,_)) -> clrec (e,metas) n t
       | (n, Prod (na,t1,t2)) ->
 	  let mv = new_meta () in
-	  let dep = dependent (mkRel 1) t2 in
+	  let dep = not (noccurn 1 t2) in
 	  let na' = if dep then na else Anonymous in
 	  let e' = meta_declare mv t1 ~name:na' e in
 	  clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
