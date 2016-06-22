@@ -364,24 +364,25 @@ $(COQC): $(call bestobj, $(COQCCMO))
 tools: $(TOOLS) $(OCAMLLIBDEP) $(COQDEPBOOT)
 
 # coqdep_boot : a basic version of coqdep, with almost no dependencies.
+# We state these dependencies here explicitly, since some .ml.d files
+# may still be missing or not taken in account yet by make when coqdep_boot
+# is being built.
 
-# Here it is important to mention .ml files instead of .cmo in order
-# to avoid using implicit rules : at the time coqdep_boot is being built,
-# some .ml.d files may still be missing or not taken in account yet by make.
+COQDEPBOOTSRC := lib/minisys.cmo \
+ tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep_boot.cmo
 
-COQDEPBOOTSRC := \
- lib/minisys.ml \
- tools/coqdep_lexer.mli tools/coqdep_lexer.ml \
- tools/coqdep_common.mli tools/coqdep_common.ml \
- tools/coqdep_boot.ml
+tools/coqdep_lexer.cmo : tools/coqdep_lexer.cmi
+tools/coqdep_lexer.cmx : tools/coqdep_lexer.cmi
+tools/coqdep_common.cmo : lib/minisys.cmo tools/coqdep_lexer.cmi tools/coqdep_common.cmi
+tools/coqdep_common.cmx : lib/minisys.cmx tools/coqdep_lexer.cmx tools/coqdep_common.cmi
+tools/coqdep_boot.cmo : tools/coqdep_common.cmi
+tools/coqdep_boot.cmx : tools/coqdep_common.cmx
 
-$(COQDEPBOOT): $(COQDEPBOOTSRC)
+$(COQDEPBOOT): $(call bestobj, $(COQDEPBOOTSRC))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I tools, unix)
 
-# Same for ocamllibdep
-
-$(OCAMLLIBDEP): tools/ocamllibdep.ml
+$(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I tools, unix)
 
@@ -436,7 +437,7 @@ $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 
 # votour: a small vo explorer (based on the checker)
 
-bin/votour: $(call bestobj, lib/cObj.cmo checker/analyze.cmo checker/values.cmo) checker/votour.ml
+bin/votour: $(call bestobj, lib/cObj.cmo checker/analyze.cmo checker/values.cmo checker/votour.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I checker,)
 
