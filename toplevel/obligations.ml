@@ -593,7 +593,8 @@ let decompose_lam_prod c ty =
     | LetIn (x, b, t, c), _ ->
        let ctx' = Context.Rel.add (LocalDef (x,b,t)) ctx in
        aux ctx' c (lift 1 ty)
-    | Lambda (x, b, t), Prod (x', b', t') when eq_constr b b' ->
+    | Lambda (x, b, t), Prod (x', b', t')
+       (* By invariant, must be convertible *) ->
        let ctx' = Context.Rel.add (LocalAssum (x,b')) ctx in
        aux ctx' t t'
     | Cast (c, _, _), _ -> aux ctx c ty
