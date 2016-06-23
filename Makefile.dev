@@ -187,16 +187,16 @@ EXTRACTIONVO:=$(filter plugins/extraction/%, $(PLUGINSVO))
 CCVO:=
 DERIVEVO:=$(filter plugins/derive/%, $(PLUGINSVO))
 
-omega: $(OMEGAVO) $(OMEGACMA) $(ROMEGAVO) $(ROMEGACMA)
-micromega: $(MICROMEGAVO) $(MICROMEGACMA) $(CSDPCERT)
-setoid_ring: $(RINGVO) $(RINGCMA)
-nsatz: $(NSATZVO) $(NSATZCMA)
-extraction: $(EXTRACTIONCMA)
-fourier: $(FOURIERVO) $(FOURIERCMA)
-funind: $(FUNINDCMA) $(FUNINDVO)
-cc: $(CCVO) $(CCCMA)
-rtauto: $(RTAUTOVO) $(RTAUTOCMA)
-btauto: $(BTAUTOVO) $(BTAUTOCMA)
+omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
+micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
+setoid_ring: $(RINGVO) $(RINGCMO)
+nsatz: $(NSATZVO) $(NSATZCMO)
+extraction: $(EXTRACTIONCMO)
+fourier: $(FOURIERVO) $(FOURIERCMO)
+funind: $(FUNINDCMO) $(FUNINDVO)
+cc: $(CCVO) $(CCCMO)
+rtauto: $(RTAUTOVO) $(RTAUTOCMO)
+btauto: $(BTAUTOVO) $(BTAUTOCMO)
 
 .PHONY: omega micromega setoid_ring nsatz extraction
 .PHONY: fourier funind cc rtauto btauto

@@ -57,7 +57,7 @@ CORESRCDIRS:=\
   proofs 	tactics 	pretyping	interp		stm \
   toplevel	parsing 	printing	intf	engine	ltac
 
-PLUGINS:=\
+PLUGINDIRS:=\
   omega		romega 		micromega 	quote \
   setoid_ring 	extraction 	fourier \
   cc 		funind 		firstorder 	derive \
@@ -67,7 +67,7 @@ PLUGINS:=\
 SRCDIRS:=\
   $(CORESRCDIRS)  \
   tools 	tools/coqdoc	\
-  $(addprefix plugins/, $(PLUGINS))
+  $(addprefix plugins/, $(PLUGINDIRS))
 
 COQRUN := coqrun
 LIBCOQRUN:=kernel/byterun/lib$(COQRUN).a
@@ -98,60 +98,45 @@ OBJSMOD:=$(shell cat $(CORECMA:.cma=.mllib))
 # plugins object files
 ###########################################################################
 
-OMEGACMA:=plugins/omega/omega_plugin.cmo
-ROMEGACMA:=plugins/romega/romega_plugin.cmo
-MICROMEGACMA:=plugins/micromega/micromega_plugin.cmo
-QUOTECMA:=plugins/quote/quote_plugin.cmo
-RINGCMA:=plugins/setoid_ring/newring_plugin.cmo
-NSATZCMA:=plugins/nsatz/nsatz_plugin.cmo
-FOURIERCMA:=plugins/fourier/fourier_plugin.cmo
-EXTRACTIONCMA:=plugins/extraction/extraction_plugin.cmo
-FUNINDCMA:=plugins/funind/recdef_plugin.cmo
-FOCMA:=plugins/firstorder/ground_plugin.cmo
-CCCMA:=plugins/cc/cc_plugin.cmo
-BTAUTOCMA:=plugins/btauto/btauto_plugin.cmo
-RTAUTOCMA:=plugins/rtauto/rtauto_plugin.cmo
-NATSYNTAXCMA:=plugins/syntax/nat_syntax_plugin.cmo
-OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
+OMEGACMO:=plugins/omega/omega_plugin.cmo
+ROMEGACMO:=plugins/romega/romega_plugin.cmo
+MICROMEGACMO:=plugins/micromega/micromega_plugin.cmo
+QUOTECMO:=plugins/quote/quote_plugin.cmo
+RINGCMO:=plugins/setoid_ring/newring_plugin.cmo
+NSATZCMO:=plugins/nsatz/nsatz_plugin.cmo
+FOURIERCMO:=plugins/fourier/fourier_plugin.cmo
+EXTRACTIONCMO:=plugins/extraction/extraction_plugin.cmo
+FUNINDCMO:=plugins/funind/recdef_plugin.cmo
+FOCMO:=plugins/firstorder/ground_plugin.cmo
+CCCMO:=plugins/cc/cc_plugin.cmo
+BTAUTOCMO:=plugins/btauto/btauto_plugin.cmo
+RTAUTOCMO:=plugins/rtauto/rtauto_plugin.cmo
+NATSYNTAXCMO:=plugins/syntax/nat_syntax_plugin.cmo
+OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
         z_syntax_plugin.cmo \
         numbers_syntax_plugin.cmo \
         r_syntax_plugin.cmo \
 	ascii_syntax_plugin.cmo \
         string_syntax_plugin.cmo )
-DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cmo
-DERIVECMA:=plugins/derive/derive_plugin.cmo
-SSRMATCHINGCMA:=plugins/ssrmatching/ssrmatching_plugin.cmo
+DECLMODECMO:=plugins/decl_mode/decl_mode_plugin.cmo
+DERIVECMO:=plugins/derive/derive_plugin.cmo
+SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
 
-PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
-        $(QUOTECMA) $(RINGCMA) \
-        $(FOURIERCMA) $(EXTRACTIONCMA) \
-        $(CCCMA)  $(FOCMA) $(RTAUTOCMA) $(BTAUTOCMA) \
-        $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA) \
-	$(DERIVECMA) $(SSRMATCHINGCMA)
+PLUGINSCMO:=$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) $(DECLMODECMO) \
+        $(QUOTECMO) $(RINGCMO) \
+        $(FOURIERCMO) $(EXTRACTIONCMO) \
+        $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \
+        $(FUNINDCMO) $(NSATZCMO) $(NATSYNTAXCMO) $(OTHERSYNTAXCMO) \
+	$(DERIVECMO) $(SSRMATCHINGCMO)
 
-ifneq ($(HASNATDYNLINK),false)
- STATICPLUGINS:=
- INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) \
-	$(FUNINDCMA) $(NATSYNTAXCMA)
- INITPLUGINSOPT:=$(INITPLUGINS:.cmo=.cmxs)
- PLUGINS:=$(PLUGINSCMA)
- PLUGINSOPT:=$(PLUGINSCMA:.cmo=.cmxs)
-else
-ifeq ($(BEST),byte)
- STATICPLUGINS:=
- INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) \
-	$(FUNINDCMA) $(NATSYNTAXCMA)
- INITPLUGINSOPT:=$(INITPLUGINS:.cmo=.cmxs)
- PLUGINS:=$(PLUGINSCMA)
- PLUGINSOPT:=$(PLUGINSCMA:.cmo=.cmxs)
-else
- STATICPLUGINS:=$(PLUGINSCMA)
- INITPLUGINS:=
- INITPLUGINSOPT:=
+ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
+ STATICPLUGINS:=$(PLUGINSCMO)
  PLUGINS:=
- PLUGINSOPT:=
+else
+ STATICPLUGINS:=
+ PLUGINS:=$(PLUGINSCMO)
 endif
-endif
+PLUGINSOPT:=$(PLUGINSCMO:.cmo=.cmxs)
 
 LINKCMO:=$(CORECMA) $(STATICPLUGINS)
 LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)

@@ -9,12 +9,19 @@
 # This makefile regroups installation rules
 # It is included by Makefile.build
 
+# NOTA: currently, the install rules below assume that everything needed
+# has already been correctly built. In particular, this is *not* enforced
+# by dependencies between rules, so do *not* try overly clever things like
+# 'make world install' in one unique command
+
 ifeq ($(LOCAL),true)
 install:
 	@echo "Nothing to install in a local build!"
 else
 install: install-coq install-coqide install-doc-$(WITHDOC)
 endif
+
+# NOTA: for install-coqide, see Makefile.ide
 
 install-doc-all: install-doc
 install-doc-no:
@@ -72,12 +79,15 @@ install-tools:
 	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
 	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
 
-# The list of .cmi to install, including the ones obtained
-# from .mli without .ml, and the ones obtained from .ml without .mli
+# The list of .cmi to install, including in particular
+# - the ones obtained from .mli without .ml
+# - the ones of modules in core cma's
+# - the ones corresponding to packed plugins
 
 INSTALLCMI = $(sort \
 	$(filter-out checker/% ide/% tools/%, $(MLIFILES:.mli=.cmi)) \
-	$(foreach lib,$(CORECMA) $(PLUGINSCMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES)))))
+	$(foreach lib,$(CORECMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES))))) \
+	$(PLUGINS:.cmo:.cmi)
 
 install-devfiles:
 	$(MKDIR) $(FULLBINDIR)
