@@ -326,7 +326,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	    Some
 	      (fun x ->
 		 let cx = app_opt env evdref c x in
-		 let evar = make_existential ~opaque:true loc env evdref (mkApp (p, [| cx |]))
+		 let evar = make_existential loc env evdref (mkApp (p, [| cx |]))
 		 in
 		   (papp evdref sig_intro [| u; p; cx; evar |]))
 	| None ->
