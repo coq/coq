@@ -203,9 +203,7 @@ doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
 INDEXES:= doc/refman/html/command-index.html doc/refman/html/tactic-index.html
 ALLINDEXES:= doc/refman/html/index.html $(INDEXES)
 
-$(ALLINDEXES): refman-html-dir
-
-refman-html-dir: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
+refman-html-dir $(ALLINDEXES): doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	       doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
 	- rm -rf doc/refman/html
 	$(MKDIR) doc/refman/html
