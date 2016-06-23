@@ -1,6 +1,8 @@
 
 (** Examples of code elimination inside modules during extraction *)
 
+Require Coq.extraction.Extraction.
+
 (** NB: we should someday check the produced code instead of
     simply running the commands. *)
 

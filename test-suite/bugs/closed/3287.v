@@ -1,3 +1,5 @@
+Require Coq.extraction.Extraction.
+
 Module Foo.
 (* Definition foo := (I,I). *)
 Definition bar := true.

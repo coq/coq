@@ -1,5 +1,7 @@
 (** Extraction of [nat] into Haskell's [Int] *)
 
+Require Coq.extraction.Extraction.
+
 Require Import Arith.
 Require Import ExtrHaskellNatNum.
 

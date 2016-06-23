@@ -8,6 +8,8 @@
 
 (** Extraction of [nat] into Ocaml's [int] *)
 
+Require Coq.extraction.Extraction.
+
 Require Import Arith Even Div2 EqNat Euclid.
 Require Import ExtrOcamlBasic.
 

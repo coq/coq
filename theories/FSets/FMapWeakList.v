@@ -11,7 +11,7 @@
 (** This file proposes an implementation of the non-dependent interface
  [FMapInterface.WS] using lists of pairs, unordered but without redundancy. *)
 
-Require Import FMapInterface.
+Require Import FunInd FMapInterface.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -14,6 +14,7 @@
 
 (* Used to generate micromega.ml *)
 
+Require Extraction.
 Require Import ZMicromega.
 Require Import QMicromega.
 Require Import RMicromega.

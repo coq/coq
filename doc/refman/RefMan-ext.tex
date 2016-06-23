@@ -721,18 +721,20 @@ a given type. See Section~\ref{Show}.
 
 \section{Advanced recursive functions}
 
-The \emph{experimental} command 
+The following \emph{experimental} command is available
+when the {\tt FunInd} library has been loaded via {\tt Require Import FunInd}:
 \begin{center}
    \texttt{Function {\ident} {\binder$_1$}\ldots{\binder$_n$}
      \{decrease\_annot\} : type$_0$ := \term$_0$}
    \comindex{Function}
    \label{Function}
 \end{center}
-can be seen as a generalization of {\tt Fixpoint}.  It is actually a
-wrapper for several ways of defining a function \emph{and other useful
+This command can be seen as a generalization of {\tt Fixpoint}.  It is actually
+a wrapper for several ways of defining a function \emph{and other useful
   related objects}, namely: an induction principle that reflects the
 recursive structure of the function (see \ref{FunInduction}), and its
-fixpoint equality.  The meaning of this
+fixpoint equality.
+ The meaning of this
 declaration is to define a function {\it ident}, similarly to {\tt
   Fixpoint}. Like in {\tt Fixpoint}, the decreasing argument must be
 given (unless the function is not recursive), but it must not

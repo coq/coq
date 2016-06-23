@@ -34,3 +34,6 @@ Global Unset Typeclasses Filtered Unification.
 
 (** Allow silently letting unification constraints float after a "." *)
 Global Unset Solve Unification Constraints.
+
+Require Export Coq.extraction.Extraction.
+Require Export Coq.funind.FunInd.

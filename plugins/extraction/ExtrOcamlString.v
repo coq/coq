@@ -8,6 +8,8 @@
 
 (* Extraction to Ocaml : special handling of ascii and strings *)
 
+Require Coq.extraction.Extraction.
+
 Require Import Ascii String.
 
 Extract Inductive ascii => char

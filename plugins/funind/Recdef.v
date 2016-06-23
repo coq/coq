@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+Require Import Coq.funind.FunInd.
 Require Import PeanoNat.
-
 Require Compare_dec.
 Require Wf_nat.
 

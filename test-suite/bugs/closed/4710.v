@@ -1,3 +1,5 @@
+Require Coq.extraction.Extraction.
+
 Set Primitive Projections.
 Record Foo' := Foo { foo : nat }.
 Extraction foo.

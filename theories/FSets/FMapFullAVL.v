@@ -25,7 +25,7 @@
 
 *)
 
-Require Import Recdef FMapInterface FMapList ZArith Int FMapAVL ROmega.
+Require Import FunInd Recdef FMapInterface FMapList ZArith Int FMapAVL ROmega.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

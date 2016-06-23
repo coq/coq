@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+Require Coq.extraction.Extraction.
 Require Import Arith.
 Require Import List.
 

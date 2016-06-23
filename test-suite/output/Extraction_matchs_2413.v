@@ -1,5 +1,7 @@
 (** Extraction : tests of optimizations of pattern matching *)
 
+Require Coq.extraction.Extraction.
+
 (** First, a few basic tests *)
 
 Definition test1 b :=
