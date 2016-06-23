@@ -579,18 +579,48 @@ let declare_mutual_definition l =
     Lemmas.call_hook fix_exn first.prg_hook local gr first.prg_ctx;
     List.iter progmap_remove l; kn
 
-let shrink_body c =
+let decompose_lam_prod c ty =
   let open Context.Rel.Declaration in
-  let ctx, b = decompose_lam_assum c in
-  let b', n, args =
-    List.fold_left (fun (b, i, args) decl ->
-      if noccurn 1 b then
-	subst1 mkProp b, succ i, args
-      else
-	let args = if is_local_assum decl then mkRel i :: args else args in
-        mkLambda_or_LetIn decl b, succ i, args)
-     (b, 1, []) ctx
-  in ctx, b', Array.of_list args
+  let rec aux ctx c ty =
+    match kind_of_term c, kind_of_term ty with
+    | LetIn (x, b, t, c), LetIn (x', b', t', ty)
+	 when eq_constr b b' && eq_constr t t' ->
+       let ctx' = Context.Rel.add (LocalDef (x,b',t')) ctx in
+       aux ctx' c ty
+    | _, LetIn (x', b', t', ty) ->
+       let ctx' = Context.Rel.add (LocalDef (x',b',t')) ctx in
+       aux ctx' (lift 1 c) ty
+    | LetIn (x, b, t, c), _ ->
+       let ctx' = Context.Rel.add (LocalDef (x,b,t)) ctx in
+       aux ctx' c (lift 1 ty)
+    | Lambda (x, b, t), Prod (x', b', t') when eq_constr b b' ->
+       let ctx' = Context.Rel.add (LocalAssum (x,b')) ctx in
+       aux ctx' t t'
+    | Cast (c, _, _), _ -> aux ctx c ty
+    | _, _ -> ctx, c, ty
+  in aux Context.Rel.empty c ty
+
+let shrink_body c ty =
+  let open Context.Rel.Declaration in
+  let ctx, b, ty =
+    match ty with
+    | None ->
+       let ctx, b = decompose_lam_assum c in
+       ctx, b, None
+    | Some ty ->
+       let ctx, b, ty = decompose_lam_prod c ty in
+       ctx, b, Some ty
+  in
+  let b', ty', n, args =
+    List.fold_left (fun (b, ty, i, args) decl ->
+        if noccurn 1 b && Option.cata (noccurn 1) true ty then
+	  subst1 mkProp b, Option.map (subst1 mkProp) ty, succ i, args
+	else
+	  let args = if is_local_assum decl then mkRel i :: args else args in
+          mkLambda_or_LetIn decl b, Option.map (mkProd_or_LetIn decl) ty,
+	  succ i, args)
+     (b, ty, 1, []) ctx
+  in ctx, b', ty', Array.of_list args
 
 let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 
@@ -605,15 +635,15 @@ let declare_obligation prg obl body ty uctx =
   | force, Evar_kinds.Define opaque ->
       let opaque = not force && opaque in
       let poly = pi2 prg.prg_kind in
-      let ctx, body, args =
+      let ctx, body, ty, args =
 	if get_shrink_obligations () && not poly then
-	  shrink_body body else [], body, [||]
+	  shrink_body body ty else [], body, ty, [||]
       in
       let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
       let ce =
         { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
-	  const_entry_type = if List.is_empty ctx then ty else None;
+	  const_entry_type = ty;
 	  const_entry_polymorphic = poly;
 	  const_entry_universes = uctx;
 	  const_entry_opaque = opaque;
