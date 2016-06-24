@@ -9,7 +9,7 @@
 open Xml_datatype
 
 type level =
-  | Debug of string
+  | Debug
   | Info
   | Notice
   | Warning
@@ -85,7 +85,7 @@ let make_body quoter info s = quoter (hov 0 (info ++ s))
 
 (* Generic logger *)
 let gen_logger dbg err level msg = match level with
-  | Debug _ -> msgnl (make_body dbg  dbg_str msg)
+  | Debug   -> msgnl (make_body dbg  dbg_str msg)
   | Info    -> msgnl (make_body dbg info_str msg)
   | Notice  -> msgnl msg
   | Warning -> Flags.if_warn (fun () ->
@@ -99,7 +99,7 @@ let std_logger   = gen_logger (fun x -> x) (fun x -> x)
 let color_terminal_logger level strm =
   let msg = Ppstyle.color_msg in
   match level with
-  | Debug _ -> msg ~header:("Debug", Ppstyle.debug_tag) !std_ft strm
+  | Debug   -> msg ~header:("Debug", Ppstyle.debug_tag) !std_ft strm
   | Info    -> msg !std_ft strm
   | Notice  -> msg !std_ft strm
   | Warning ->
@@ -121,7 +121,7 @@ let msg_info    x = !logger Info x
 let msg_notice  x = !logger Notice x
 let msg_warning x = !logger Warning x
 let msg_error   x = !logger Error x
-let msg_debug   x = !logger (Debug "_") x
+let msg_debug   x = !logger Debug x
 
 (** Feeders *)
 let feeder = ref ignore
@@ -148,7 +148,7 @@ let feedback_logger lvl msg =
 let ft_logger old_logger ft level mesg =
   let id x = x in
   match level with
-  | Debug _ -> msgnl_with ft (make_body id  dbg_str mesg)
+  | Debug   -> msgnl_with ft (make_body id  dbg_str mesg)
   | Info    -> msgnl_with ft (make_body id info_str mesg)
   | Notice  -> msgnl_with ft mesg
   | Warning -> old_logger level mesg
