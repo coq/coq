@@ -590,8 +590,8 @@ module New = struct
   let onHyps find tac = Proofview.Goal.nf_enter { enter = begin fun gl -> tac (find.enter gl) end }
 
   let afterHyp id tac =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let hyps = Proofview.Goal.hyps gl in
+    Proofview.Goal.enter { enter = begin fun gl ->
+    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
     let rem, _ = List.split_when (Id.equal id % get_id) hyps in
     tac rem
     end }

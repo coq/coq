@@ -406,38 +406,27 @@ let rec first_match matcher = function
 
 (*** Equality *)
 
-(* Patterns "(eq ?1 ?2 ?3)" and "(identity ?1 ?2 ?3)" *)
-(** %eq ?X1 ?X2 ?X3 *)
-let coq_eq_pattern_gen eq =
-  lazy (mkPattern (mkGAppRef eq (List.map mkGPatVar ["X1"; "X2"; "X3";])))
-let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
-let coq_identity_pattern = coq_eq_pattern_gen coq_identity_ref
-(** %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 *)
-let coq_jmeq_pattern =
-  lazy (mkPattern
-    (mkGAppRef coq_jmeq_ref (List.map mkGPatVar ["X1"; "X2"; "X3"; "X4"])))
-
-let match_eq eqn eq_pat =
-  let pat =
-    try Lazy.force eq_pat
+let match_eq eqn (ref, hetero) =
+  let ref =
+    try Lazy.force ref
     with e when Errors.noncritical e -> raise PatternMatchingFailure
   in
-  match Id.Map.bindings (matches pat eqn) with
-    | [(m1,t);(m2,x);(m3,y)] ->
-	assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
-        PolymorphicLeibnizEq (t,x,y)
-    | [(m1,t);(m2,x);(m3,t');(m4,x')] ->
-        assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3 && Id.equal m4 meta4);
-	HeterogenousEq (t,x,t',x')
-    | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 or 4 terms")
+  match kind_of_term eqn with
+  | App (c, [|t; x; y|]) ->
+    if not hetero && is_global ref c then PolymorphicLeibnizEq (t, x, y)
+    else raise PatternMatchingFailure
+  | App (c, [|t; x; t'; x'|]) ->
+    if hetero && is_global ref c then HeterogenousEq (t, x, t', x')
+    else raise PatternMatchingFailure
+  | _ -> raise PatternMatchingFailure
 
 let no_check () = true
 let check_jmeq_loaded () = Library.library_is_loaded Coqlib.jmeq_module
 
 let equalities =
-  [coq_eq_pattern, no_check, build_coq_eq_data;
-   coq_jmeq_pattern, check_jmeq_loaded, build_coq_jmeq_data;
-   coq_identity_pattern, no_check, build_coq_identity_data]
+  [(coq_eq_ref, false), no_check, build_coq_eq_data;
+   (coq_jmeq_ref, true), check_jmeq_loaded, build_coq_jmeq_data;
+   (coq_identity_ref, false), no_check, build_coq_identity_data]
 
 let find_eq_data eqn = (* fails with PatternMatchingFailure *)
   let d,k = first_match (match_eq eqn) equalities in
@@ -468,8 +457,11 @@ let find_this_eq_data_decompose gl eqn =
       error "Don't know what to do with JMeq on arguments not of same type." in
   (lbeq,u,eq_args)
 
-let match_eq_nf gls eqn eq_pat =
-  match Id.Map.bindings (pf_matches gls (Lazy.force eq_pat) eqn) with
+let match_eq_nf gls eqn (ref, hetero) =
+  let n = if hetero then 4 else 3 in
+  let args = List.init n (fun i -> mkGPatVar ("X" ^ string_of_int (i + 1))) in
+  let pat = mkPattern (mkGAppRef ref args) in
+  match Id.Map.bindings (pf_matches gls pat eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
 	(t,pf_whd_betadeltaiota gls x,pf_whd_betadeltaiota gls y)

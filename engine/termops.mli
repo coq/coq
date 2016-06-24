@@ -96,6 +96,7 @@ val strip_head_cast : constr -> constr
 val drop_extra_implicit_args : constr -> constr
 
 (** occur checks *)
+
 exception Occur
 val occur_meta : types -> bool
 val occur_existential : types -> bool
@@ -105,6 +106,10 @@ val occur_var : env -> Id.t -> types -> bool
 val occur_var_in_decl :
   env ->
   Id.t -> Context.Named.Declaration.t -> bool
+
+(** As {!occur_var} but assume the identifier not to be a section variable *)
+val local_occur_var : Id.t -> types -> bool
+
 val free_rels : constr -> Int.Set.t
 
 (** [dependent m t] tests whether [m] is a subterm of [t] *)
