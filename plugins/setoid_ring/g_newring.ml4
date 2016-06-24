@@ -23,14 +23,14 @@ DECLARE PLUGIN "newring_plugin"
 
 TACTIC EXTEND protect_fv
   [ "protect_fv" string(map) "in" ident(id) ] ->
-    [ Proofview.V82.tactic (protect_tac_in map id) ]
+    [ protect_tac_in map id ]
 | [ "protect_fv" string(map) ] ->
-    [ Proofview.V82.tactic (protect_tac map) ]
+    [ protect_tac map ]
 END
 
 TACTIC EXTEND closed_term
   [ "closed_term" constr(t) "[" ne_reference_list(l) "]" ] ->
-    [ Proofview.V82.tactic (closed_term t l) ]
+    [ closed_term t l ]
 END
 
 open Pptactic

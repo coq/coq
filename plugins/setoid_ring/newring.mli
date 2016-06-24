@@ -15,11 +15,11 @@ open Tacexpr
 open Proof_type
 open Newring_ast
 
-val protect_tac_in : string -> Id.t -> tactic
+val protect_tac_in : string -> Id.t -> unit Proofview.tactic
 
-val protect_tac : string -> tactic
+val protect_tac : string -> unit Proofview.tactic
 
-val closed_term : constr -> global_reference list -> tactic
+val closed_term : constr -> global_reference list -> unit Proofview.tactic
 
 val process_ring_mods :
   constr_expr ring_mod list ->

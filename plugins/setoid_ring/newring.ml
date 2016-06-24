@@ -86,10 +86,10 @@ let protect_red map env sigma c =
     (mk_clos_but (lookup_map map c) (Esubst.subs_id 0) c);;
 
 let protect_tac map =
-  Proofview.V82.of_tactic (Tactics.reduct_option (protect_red map,DEFAULTcast) None);;
+  Tactics.reduct_option (protect_red map,DEFAULTcast) None
 
 let protect_tac_in map id =
-  Proofview.V82.of_tactic (Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Locus.InHyp)));;
+  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Locus.InHyp))
 
 
 (****************************************************************************)
@@ -98,8 +98,7 @@ let closed_term t l =
   let open Quote_plugin in
   let l = List.map Universes.constr_of_global l in
   let cs = List.fold_right Quote.ConstrSet.add l Quote.ConstrSet.empty in
-  if Quote.closed_under cs t then tclIDTAC else tclFAIL 0 (mt())
-;;
+  if Quote.closed_under cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
 
 (* TACTIC EXTEND echo
 | [ "echo" constr(t) ] ->
