@@ -15,7 +15,7 @@ open Minisys
     behavior is the one of [coqdep -boot]. Its only dependencies
     are [Coqdep_lexer], [Unix] and [Minisys], and it should stay so.
     If it need someday some additional information, pass it via
-    options (see for instance [option_natdynlk] below).
+    options (see for instance [option_dynlink] below).
 *)
 
 module StrSet = Set.Make(String)
@@ -26,9 +26,11 @@ module StrListMap = Map.Make(StrList)
 let stderr = Pervasives.stderr
 let stdout = Pervasives.stdout
 
+type dynlink = Opt | Byte | Both | No | Variable
+
 let option_c = ref false
 let option_noglob = ref false
-let option_natdynlk = ref true
+let option_dynlink = ref Both
 let option_boot = ref false
 let option_mldep = ref None
 
@@ -383,10 +385,16 @@ let rec traite_fichier_Coq suffixe verbose f =
        		end) strl
 	  | Declare sl ->
 	      let declare suff dir s =
-		let base = file_name s dir in
-		let opt = if !option_natdynlk then " "^base^".cmxs" else "" in
-		printf " %s%s%s" (escape base) suff opt
-	      in
+		let base = escape (file_name s dir) in
+                match !option_dynlink with
+                | No -> ()
+                | Byte -> printf " %s%s" base suff
+                | Opt -> printf " %s.cmxs" base
+                | Both -> printf " %s%s %s.cmxs" base suff base
+                | Variable ->
+                   printf " %s%s" base
+                    (if suff=".cmo" then "$(DYNOBJ)" else "$(DYNLIB)")
+              in
 	      let decl str =
                 let s = basename_noext str in
 		if not (StrSet.mem s !deja_vu_ml) then begin

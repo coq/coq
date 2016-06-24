@@ -41,10 +41,11 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 # Object and Source files
 ###########################################################################
 
-ifeq ($(HASNATDYNLINK)-$(BEST),true-opt)
-  DEPNATDYN:=
+ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
+ # static link of plugins, do not mention them in .v.d
+ DYNDEP:=-dyndep no
 else
-  DEPNATDYN:=-natdynlink no
+ DYNDEP:=-dyndep $(BEST)
 endif
 
 INSTALLBIN:=install
