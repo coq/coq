@@ -750,6 +750,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   (* Matching notation variable *)
   | r1, NVar id2 when is_term_meta id2 metas -> bind_term_env alp sigma id2 r1
+  | GVar (_,id1), NVar id2 when is_onlybinding_meta id2 metas -> snd (bind_binding_env alp sigma id2 (Name id1))
 
   (* Matching recursive notations for terms *)
   | r1, NList (x,_,iter,termin,lassoc) ->

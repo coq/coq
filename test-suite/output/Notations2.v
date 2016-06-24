@@ -106,3 +106,8 @@ Check fun x (H:le x 0) => exist (le x) 0 H.
 
 Parameters (A : Set) (x y : A) (Q : A -> A -> Prop) (conj : Q x y).
 Check (exist (Q x) y conj).
+
+(* Check bug #4854 *)
+Notation "% i" := (fun i : nat => i) (at level 0, i ident).
+Check %i.
+Check %j.
