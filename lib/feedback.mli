@@ -10,7 +10,7 @@ open Xml_datatype
 
 (* Old plain messages (used to be in Pp) *)
 type level =
-  | Debug of string
+  | Debug
   | Info
   | Notice
   | Warning

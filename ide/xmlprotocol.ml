@@ -769,15 +769,15 @@ let document to_string_fmt =
 open Feedback
 
 let of_message_level = function
-  | Debug s ->
-      Serialize.constructor "message_level" "debug" [Xml_datatype.PCData s]
+  | Debug ->
+      Serialize.constructor "message_level" "debug" []
   | Info -> Serialize.constructor "message_level" "info" []
   | Notice -> Serialize.constructor "message_level" "notice" []
   | Warning -> Serialize.constructor "message_level" "warning" []
   | Error -> Serialize.constructor "message_level" "error" []
 let to_message_level =
   Serialize.do_match "message_level" (fun s args -> match s with
-  | "debug" -> Debug (Serialize.raw_string args)
+  | "debug" -> Debug
   | "info" -> Info
   | "notice" -> Notice
   | "warning" -> Warning
