@@ -61,22 +61,29 @@ GTKLIBS=$(shell pkg-config --variable=libdir gtk+-2.0)
 # CoqIde special targets
 ###########################################################################
 
-.PHONY: coqide coqide-binaries coqide-no coqide-byte coqide-opt coqide-files
-.PHONY: ide-toploop
+.PHONY: coqide coqide-opt coqide-byte coqide-files
+.PHONY: ide-toploop ide-byteloop ide-optloop
 
 # target to build CoqIde
-coqide: coqide-files coqide-binaries theories/Init/Prelude.vo
+coqide: coqide-files coqide-opt theories/Init/Prelude.vo
 
-coqide-binaries: coqide-$(HASCOQIDE) ide-toploop
-coqide-no:
-coqide-byte: $(COQIDEBYTE) $(COQIDE)
-coqide-opt:  $(COQIDEBYTE) $(COQIDE)
-coqide-files: $(IDEFILES)
-ifeq ($(BEST),opt)
-ide-toploop: $(IDETOPLOOPCMA) $(IDETOPLOOPCMA:.cma=.cmxs)
+ifeq ($(HASCOQIDE),opt)
+coqide-opt: $(COQIDE) ide-toploop
 else
-ide-toploop: $(IDETOPLOOPCMA)
+coqide-opt: ide-toploop
 endif
+
+ifeq ($(HASCOQIDE),no)
+coqide-byte: ide-byteloop
+else
+coqide-byte: $(COQIDEBYTE) ide-byteloop
+endif
+
+coqide-files: $(IDEFILES)
+
+ide-byteloop: $(IDETOPLOOPCMA)
+ide-optloop: $(IDETOPLOOPCMA:.cma=.cmxs)
+ide-toploop: ide-$(BEST)loop
 
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
@@ -109,14 +116,14 @@ ide/%.cmo: ide/%.ml
 
 ide/%.cmx: ide/%.ml
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(HACKMLI) -c $<
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
 
 ####################
 ## Install targets
 ####################
 
-.PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
+.PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles install-ide-byte
 
 ifeq ($(HASCOQIDE),no)
 install-coqide: install-ide-toploop
@@ -124,20 +131,26 @@ else
 install-coqide: install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
 endif
 
+# Apparently, coqide.byte is not meant to be installed
+
+install-ide-byte:
+	$(MKDIR) $(FULLCOQLIB)
+	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA)
+	$(MKDIR) $(FULLCOQLIB)/toploop
+	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
+
 install-ide-bin:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQIDE) $(FULLBINDIR)
 
 install-ide-toploop:
-	$(MKDIR) $(FULLCOQLIB)/toploop
-	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
 ifeq ($(BEST),opt)
 	$(INSTALLBIN) $(IDETOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
 endif
 
 install-ide-devfiles:
 	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA) \
+	$(INSTALLSH) $(FULLCOQLIB) \
 	  $(foreach lib,$(IDECMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .cmi,$($(lib))))
 ifeq ($(BEST),opt)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA:.cma=.cmxa) $(IDECMA:.cma=.a)
