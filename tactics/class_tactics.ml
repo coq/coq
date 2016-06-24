@@ -982,6 +982,14 @@ module Search = struct
       occur_existential concl
     else true
 
+  let mark_unresolvables sigma goals =
+    List.fold_left
+      (fun sigma gl ->
+        let evi = Evd.find_undefined sigma gl in
+	let evi' = Typeclasses.mark_unresolvable evi in
+	Evd.add sigma gl evi')
+      sigma goals
+
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
       depending on the dependencies of the goal and the unique/Prop
@@ -1089,10 +1097,14 @@ module Search = struct
             if !typeclasses_debug > 1 then
               Feedback.msg_debug
                 (str"Adding shelved subgoals to the search: " ++
-                   prlist_with_sep spc (pr_ev sigma) goals);
+                 prlist_with_sep spc (pr_ev sigma) goals ++
+		 str" while shelving " ++
+		 prlist_with_sep spc (pr_ev sigma) shelved);
             shelve_goals shelved <*>
               (if List.is_empty goals then tclUNIT ()
-               else with_shelf (Unsafe.tclNEWGOALS goals) >>=
+               else
+	         let sigma' = mark_unresolvables sigma goals in
+	         with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS goals) >>=
                       fun s -> result s i (Some (Option.default 0 k + j)))
           end
         in res <*> tclEVARMAP >>= finish
