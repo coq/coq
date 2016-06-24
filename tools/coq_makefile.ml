@@ -141,8 +141,8 @@ let standard opt =
   print "\"\n\n"
 
 let classify_files_by_root var files (inc_ml,inc_i,inc_r) =
-  if List.exists (fun (pdir,_,_) -> pdir = ".") inc_r
-    || List.exists (fun (pdir,_,_) -> pdir = ".") inc_i
+  if List.exists (fun (pdir,_,_) -> pdir = ".") inc_r ||
+     List.exists (fun (pdir,_,_) -> pdir = ".") inc_i
   then ()
   else
     let absdir_of_files =List.rev_map
@@ -207,7 +207,7 @@ let vars_to_put_by_root var_x_files_l (inc_ml,inc_i,inc_r) =
                            (fun x -> x^string_of_int i)
             in
 	    let pdir' = physical_dir_of_logical_dir ldir in
-	    (pdir,pdir',vars_r)::out) 1 [] l
+	    (pdir,pdir',vars_r)::out) 0 [] l
       in (Some varq, other)
 
 let install_include_by_root perms =
