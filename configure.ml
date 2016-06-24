@@ -632,22 +632,8 @@ let best_compiler =
 
 let hasnatdynlink = !Prefs.natdynlink && best_compiler = "opt"
 
-(** OCaml 3.11.0 dynlink is buggy on MacOS 10.5, and possibly
-    also on 10.6.(0|1|2) for x86_64 and 10.6.x on x86_32 *)
-
-let needs_MacOS_fix () =
-  match hasnatdynlink, arch, caml_version_nums with
-  | true, "Darwin", 3::11::_ ->
-    (match string_split '.' (fst(run "uname" ["-r"])) with
-    | "9"::_ -> true
-    | "10"::("0"|"1"|"2")::_ -> true
-    | "10"::_ when Sys.word_size = 32 -> true
-    | _ -> false)
-  | _ -> false
-
 let natdynlinkflag =
-  if needs_MacOS_fix () then "os5fixme" else
-    if hasnatdynlink then "true" else "false"
+  if hasnatdynlink then "true" else "false"
 
 
 (** * OS dependent libraries *)
