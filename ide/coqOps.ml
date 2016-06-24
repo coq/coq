@@ -463,9 +463,9 @@ object(self)
       | ErrorMsg(loc, msg), Some (id,sentence) ->
           log "ErrorMsg" id;
           remove_flag sentence `PROCESSING;
-          add_flag sentence (`ERROR (loc, msg));
+          add_flag sentence (`ERROR (loc, Richpp.raw_print msg));
           self#mark_as_needed sentence;
-          self#attach_tooltip sentence loc msg;
+          self#attach_tooltip sentence loc (Richpp.raw_print msg);
           if not (Loc.is_ghost loc) then
             self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
       | InProgress n, _ ->

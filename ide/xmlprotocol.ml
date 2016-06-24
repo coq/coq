@@ -809,7 +809,7 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
          to_string modpath, to_string ident, to_string ty)
   | "globdef", [loc; ident; secpath; ty] ->
        GlobDef(to_loc loc, to_string ident, to_string secpath, to_string ty)
-  | "errormsg", [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
+  | "errormsg", [loc;  s] -> ErrorMsg (to_loc loc, to_richpp s)
   | "inprogress", [n] -> InProgress (to_int n)
   | "workerstatus", [ns] ->
        let n, s = to_pair to_string to_string ns in
@@ -844,7 +844,7 @@ let of_feedback_content = function
         of_string secpath;
         of_string ty ]
   | ErrorMsg(loc, s) ->
-      constructor "feedback_content" "errormsg" [of_loc loc; of_string s]
+      constructor "feedback_content" "errormsg" [of_loc loc; of_richpp s]
   | InProgress n -> constructor "feedback_content" "inprogress" [of_int n]
   | WorkerStatus(n,s) ->
       constructor "feedback_content" "workerstatus"

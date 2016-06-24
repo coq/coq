@@ -24,7 +24,7 @@ type feedback_content =
   | Processed
   | Incomplete
   | Complete
-  | ErrorMsg of Loc.t * string
+  | ErrorMsg of Loc.t * Richpp.richpp
   | ProcessingIn of string
   | InProgress of int
   | WorkerStatus of string * string

@@ -41,6 +41,13 @@ val emacs_logger    : logger
 val feedback_logger : logger
 ````
 
+* Changes in the feedback type:
+
+  - `Feedback.MsgError` now carries a richpp document instead of a
+    string.
+
+  - `Feedback.level = Debug` has lost its unused argument.
+
 * We now provide several loggers, `log_via_feedback` is removed in
   favor of `set_logger feedback_logger`. Output functions are:
 
