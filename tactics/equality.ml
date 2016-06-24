@@ -1663,10 +1663,14 @@ exception FoundHyp of (Id.t * constr * bool)
 let is_eq_x gl x d =
   let id = get_id d in
   try
+    let is_var id c = match kind_of_term c with
+    | Var id' -> Id.equal id id'
+    | _ -> false
+    in
     let c = pf_nf_evar gl (get_type d) in
     let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
-    if (Term.eq_constr x lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
-    if (Term.eq_constr x rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
+    if (is_var x lhs) && not (local_occur_var x rhs) then raise (FoundHyp (id,rhs,true));
+    if (is_var x rhs) && not (local_occur_var x lhs) then raise (FoundHyp (id,lhs,false))
   with Constr_matching.PatternMatchingFailure ->
     ()
 
@@ -1713,14 +1717,12 @@ let subst_one_var dep_proof_ok x =
     let xval = pf_get_hyp x gl |> get_value in
     (* If x has a body, simply replace x with body and clear x *)
     if not (Option.is_empty xval) then tclTHEN (unfold_body x) (clear [x]) else
-      (* x is a variable: *)
-      let varx = mkVar x in
       (* Find a non-recursive definition for x *)
       let res =
         try
           (** [is_eq_x] ensures nf_evar on its side *)
           let hyps = Proofview.Goal.hyps gl in
-          let test hyp _ = is_eq_x gl varx hyp in
+          let test hyp _ = is_eq_x gl x hyp in
           Context.Named.fold_outside test ~init:() hyps;
           errorlabstrm "Subst"
             (str "Cannot find any non-recursive equality over " ++ pr_id x ++

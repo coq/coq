@@ -564,7 +564,14 @@ let occur_var_in_decl env hyp decl =
         occur_var env hyp typ ||
         occur_var env hyp body
 
-(* returns the list of free debruijn indices in a term *)
+let local_occur_var id c =
+  let rec occur c = match kind_of_term c with
+  | Var id' -> if Id.equal id id' then raise Occur
+  | _ -> Constr.iter occur c
+  in
+  try occur c; false with Occur -> true
+
+  (* returns the list of free debruijn indices in a term *)
 
 let free_rels m =
   let rec frec depth acc c = match kind_of_term c with
