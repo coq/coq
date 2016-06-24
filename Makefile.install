@@ -87,7 +87,7 @@ install-tools:
 INSTALLCMI = $(sort \
 	$(filter-out checker/% ide/% tools/%, $(MLIFILES:.mli=.cmi)) \
 	$(foreach lib,$(CORECMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES))))) \
-	$(PLUGINS:.cmo:.cmi)
+	$(PLUGINS:.cmo=.cmi)
 
 install-devfiles:
 	$(MKDIR) $(FULLBINDIR)
