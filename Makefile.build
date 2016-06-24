@@ -500,15 +500,20 @@ test-suite: world $(ALLSTDLIB).v
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
-# For plugin packs :
+# For plugin packs
+
+# Note: both ocamlc -pack and ocamlopt -pack will create the same .cmi, and there's
+# apparently no way to avoid that (no -intf-suffix hack as below).
+# We at least ensure that these two commands won't run at the same time, by a fake
+# dependency from the packed .cmx to the packed .cmo.
 
 %.cmo: %.mlpack
 	$(SHOW)'OCAMLC -pack -o $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
 
-%.cmx: %.mlpack
+%.cmx: %.mlpack %.cmo
 	$(SHOW)'OCAMLOPT -pack -o $@'
-	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -pack -o $@ $(filter-out %.mlpack %.cmo, $^)
 
 COND_BYTEFLAGS= \
  $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(BYTEFLAGS)
