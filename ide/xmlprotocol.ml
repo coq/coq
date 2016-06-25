@@ -795,10 +795,11 @@ let to_message xml = match xml with
       Message(to_message_level lvl, to_option to_loc xloc, to_richpp content)
   | x -> raise (Marshal_error("message",x))
 
-let is_message = function
-  | Xml_datatype.Element ("message", [], [lvl; xloc; content]) ->
-    Some (to_message_level lvl, to_option to_loc xloc, to_richpp content)
-  | _ -> None
+let is_message xml =
+  try begin match to_message xml with
+    | Message(l,c,m) -> Some (l,c,m)
+    | _              -> None
+  end with | Marshal_error _ -> None
 
 let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "addedaxiom", _ -> AddedAxiom
