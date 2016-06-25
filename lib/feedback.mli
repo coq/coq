@@ -10,7 +10,7 @@ open Xml_datatype
 
 (* Old plain messages (used to be in Pp) *)
 type level =
-  | Debug of string
+  | Debug
   | Info
   | Notice
   | Warning
@@ -31,7 +31,7 @@ type feedback_content =
   | Processed
   | Incomplete
   | Complete
-  | ErrorMsg of Loc.t * string
+  | ErrorMsg of Loc.t * Richpp.richpp
   (* STM optional data *)
   | ProcessingIn of string
   | InProgress of int

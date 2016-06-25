@@ -11,6 +11,9 @@ let pr_err s = Printf.eprintf "%s] %s\n" (System.process_id ()) s; flush stderr
 let prerr_endline s = if false then begin pr_err (s ()) end else ()
 let prerr_debug s = if !Flags.debug then begin pr_err (s ()) end else ()
 
+(* XXX: Ppvernac alias of Richpp!! See PR#185 *)
+let to_richpp = Richpp.richpp_of_pp
+
 open Vernacexpr
 open Errors
 open Pp
@@ -40,11 +43,11 @@ let forward_feedback, forward_feedback_hook = Hook.make
 
 let parse_error, parse_error_hook = Hook.make
  ~default:(fun id loc msg ->
-        feedback ~id (ErrorMsg (loc, Pp.string_of_ppcmds msg))) ()
+        feedback ~id (ErrorMsg (loc, to_richpp msg))) ()
 
 let execution_error, execution_error_hook = Hook.make
  ~default:(fun state_id loc msg ->
-    feedback ~id:(State state_id) (ErrorMsg (loc, Pp.string_of_ppcmds msg))) ()
+    feedback ~id:(State state_id) (ErrorMsg (loc, to_richpp msg))) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun _ _ -> ()) ()
@@ -1842,7 +1845,7 @@ end = struct (* {{{ *)
       feedback ~id:(State r_for) Processed
     with e when Errors.noncritical e ->
       let e = Errors.push e in
-      let msg = string_of_ppcmds (iprint e) in
+      let msg = to_richpp (iprint e) in
       feedback ~id:(State r_for) (ErrorMsg (Loc.ghost, msg))
     
   let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
