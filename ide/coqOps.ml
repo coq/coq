@@ -460,7 +460,9 @@ object(self)
           log "GlobRef" id;
           self#attach_tooltip sentence loc
             (Printf.sprintf "%s %s %s" filepath ident ty)
-      | ErrorMsg(loc, msg), Some (id,sentence) ->
+      | Message(Error, loc, msg), Some (id,sentence) ->
+          let loc = Option.default Loc.ghost loc in
+          let msg = Richpp.raw_print msg         in
           log "ErrorMsg" id;
           remove_flag sentence `PROCESSING;
           add_flag sentence (`ERROR (loc, msg));

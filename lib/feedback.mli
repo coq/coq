@@ -31,7 +31,6 @@ type feedback_content =
   | Processed
   | Incomplete
   | Complete
-  | ErrorMsg of Loc.t * string
   (* STM optional data *)
   | ProcessingIn of string
   | InProgress of int
@@ -45,7 +44,7 @@ type feedback_content =
   | FileLoaded of string * string
   (* Extra metadata *)
   | Custom of Loc.t * string * xml
-  (* Old generic messages *)
+  (* Generic messages *)
   | Message of level * Loc.t option * Richpp.richpp
 
 type feedback = {
