@@ -14,15 +14,17 @@ open Feedback
 
 let b2c = byte_offset_to_char_offset
 
-type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of Loc.t * string ]
-type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR ]
+type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of Loc.t * string | `WARNING of Loc.t * string ]
+type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR | `WARNING ]
 let mem_flag_of_flag : flag -> mem_flag = function
   | `ERROR _ -> `ERROR
+  | `WARNING _ -> `WARNING
   | (`INCOMPLETE | `UNSAFE | `PROCESSING) as mem_flag -> mem_flag
 let str_of_flag = function
   | `UNSAFE -> "U"
   | `PROCESSING -> "P"
   | `ERROR _ -> "E"
+  | `WARNING _ -> "W"
   | `INCOMPLETE -> "I"
 
 class type signals =
@@ -468,6 +470,11 @@ object(self)
           self#attach_tooltip sentence loc msg;
           if not (Loc.is_ghost loc) then
             self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
+      | WarningMsg(loc, msg), Some (id,sentence) ->
+          log "WarningMsg" id;
+          add_flag sentence (`WARNING (loc, msg));
+          self#attach_tooltip sentence loc msg;
+          self#position_warning_tag_at_sentence sentence loc
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
           else to_process <- to_process + n
@@ -508,6 +515,18 @@ object(self)
   method private position_error_tag_at_sentence sentence loc =
     let start, _, phrase = self#get_sentence sentence in
     self#position_error_tag_at_iter start phrase loc
+
+  method private position_warning_tag_at_iter iter_start iter_stop phrase loc =
+    if Loc.is_ghost loc then
+        buffer#apply_tag Tags.Script.warning ~start:iter_start ~stop:iter_stop
+    else
+      buffer#apply_tag Tags.Script.warning
+	  ~start:(iter_start#forward_chars (b2c phrase loc.Loc.bp))
+          ~stop:(iter_stop#forward_chars (b2c phrase loc.Loc.ep))
+
+  method private position_warning_tag_at_sentence sentence loc =
+    let start, stop, phrase = self#get_sentence sentence in
+    self#position_warning_tag_at_iter start stop phrase loc
 
   method private process_interp_error queue sentence loc msg tip id =
     Coq.bind (Coq.return ()) (function () ->

@@ -29,10 +29,15 @@ let cbv_vm env sigma c =
     error "vm_compute does not support existential variables.";
   Vnorm.cbv_vm env c ctyp
 
+let warn_native_compute_disabled =
+  CWarnings.create ~name:"native-compute-disabled" ~category:"native-compiler"
+  (fun () ->
+   strbrk "native_compute disabled at configure time; falling back to vm_compute.")
+
 let cbv_native env sigma c =
   if Coq_config.no_native_compiler then
-    let () = Feedback.msg_warning (str "native_compute disabled at configure time; falling back to vm_compute.") in
-    cbv_vm env sigma c
+    (warn_native_compute_disabled ();
+     cbv_vm env sigma c)
   else
     let ctyp = Retyping.get_type_of env sigma c in
     Nativenorm.native_norm env sigma c ctyp
@@ -209,6 +214,11 @@ let contextualize f g = function
       e_red (contextually b (l,c) (fun _ -> h))
   | None -> e_red g
 
+let warn_simpl_unfolding_modifiers =
+  CWarnings.create ~name:"simpl-unfolding-modifiers" ~category:"tactics"
+         (fun () ->
+          Pp.strbrk "The legacy simpl ignores constant unfolding modifiers.")
+
 let reduction_of_red_expr env =
   let make_flag = make_flag env in
   let rec reduction_of_red_expr = function
@@ -221,7 +231,7 @@ let reduction_of_red_expr env =
      let am = if !simplIsCbn then strong_cbn (make_flag f) else simpl in
      let () =
        if not (!simplIsCbn || List.is_empty f.rConst) then
-	 Feedback.msg_warning (Pp.strbrk "The legacy simpl does not deal with delta flags.") in
+	 warn_simpl_unfolding_modifiers () in
      (contextualize (if head_style then whd_am else am) am o,DEFAULTcast)
   | Cbv f -> (e_red (cbv_norm_flags (make_flag f)),DEFAULTcast)
   | Cbn f ->

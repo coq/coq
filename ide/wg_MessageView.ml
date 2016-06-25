@@ -74,7 +74,7 @@ let message_view () : message_view =
     method push level msg =
       let tags = match level with
       | Feedback.Error -> [Tags.Message.error]
-      | Feedback.Warning -> [Tags.Message.warning]
+      | Feedback.Warning _ -> [Tags.Message.warning]
       | _ -> []
       in
       let rec non_empty = function

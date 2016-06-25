@@ -13,7 +13,7 @@ type level =
   | Debug of string
   | Info
   | Notice
-  | Warning
+  | Warning of Loc.t
   | Error
 
 
@@ -32,6 +32,7 @@ type feedback_content =
   | Incomplete
   | Complete
   | ErrorMsg of Loc.t * string
+  | WarningMsg of Loc.t * string
   (* STM optional data *)
   | ProcessingIn of string
   | InProgress of int
@@ -117,7 +118,7 @@ val msg_info : Pp.std_ppcmds -> unit
 val msg_notice : Pp.std_ppcmds -> unit
 (** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
 
-val msg_warning : Pp.std_ppcmds -> unit
+val msg_warning : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 (** Message indicating that something went wrong, but without serious
     consequences. *)
 

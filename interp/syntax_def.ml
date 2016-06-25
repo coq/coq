@@ -84,23 +84,26 @@ let declare_syntactic_definition local id onlyparse pat =
 
 let pr_syndef kn = pr_qualid (shortest_qualid_of_syndef Id.Set.empty kn)
 
-let allow_compat_notations = ref true
-let verbose_compat_notations = ref false
+let verbose_compat_notations = ref true
 
 let is_verbose_compat () =
-  !verbose_compat_notations || not !allow_compat_notations
+  !verbose_compat_notations
+
+let pr_compat_warning (kn, def, v) =
+  let pp_def = match def with
+    | [], NRef r -> spc () ++ str "is" ++ spc () ++ pr_global_env Id.Set.empty r
+    | _ -> strbrk " is a compatibility notation"
+  in
+  let since = strbrk " since Coq > " ++ str (Flags.pr_version v) ++ str "." in
+  pr_syndef kn ++ pp_def ++ since
+
+let warn_compatibility_notation =
+  CWarnings.create ~name:"compatibility-notation"
+                   ~category:"deprecated" pr_compat_warning
 
 let verbose_compat kn def = function
   | Some v when is_verbose_compat () && Flags.version_strictly_greater v ->
-    let act =
-      if !verbose_compat_notations then Feedback.msg_warning else errorlabstrm ""
-    in
-    let pp_def = match def with
-      | [], NRef r -> str " is " ++ pr_global_env Id.Set.empty r
-      | _ -> str " is a compatibility notation"
-    in
-    let since = str " since Coq > " ++ str (Flags.pr_version v) ++ str "." in
-    act (pr_syndef kn ++ pp_def ++ since)
+     warn_compatibility_notation (kn, def, v)
   | _ -> ()
 
 let search_syntactic_definition kn =
@@ -119,12 +122,3 @@ let set_verbose_compat_notations =
       optkey   = ["Verbose";"Compat";"Notations"];
       optread  = (fun () -> !verbose_compat_notations);
       optwrite = ((:=) verbose_compat_notations) }
-
-let set_compat_notations =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "accept compatibility notations";
-      optkey   = ["Compat"; "Notations"];
-      optread  = (fun () -> !allow_compat_notations);
-      optwrite = ((:=) allow_compat_notations) }

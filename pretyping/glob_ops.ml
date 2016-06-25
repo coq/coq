@@ -334,10 +334,14 @@ let glob_visible_short_qualid c =
         fold_glob_constr aux acc c
   in aux [] c
 
+let warn_variable_collision =
+  let open Pp in
+  CWarnings.create ~name:"variable-collision" ~category:"ltac"
+         (fun name ->
+          strbrk "Collision between bound variables of name " ++ pr_id name)
+
 let add_and_check_ident id set =
-  if Id.Set.mem id set then
-    Feedback.msg_warning
-      Pp.(str "Collision between bound variables of name " ++ Id.print id);
+  if Id.Set.mem id set then warn_variable_collision id;
   Id.Set.add id set
 
 let bound_glob_vars =

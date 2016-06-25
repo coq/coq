@@ -297,7 +297,7 @@ let handle_intermediate_message handle level content =
         | Feedback.Error   -> fun s -> Minilib.log ~level:`ERROR   (xml_to_string s)
         | Feedback.Info    -> fun s -> Minilib.log ~level:`INFO    (xml_to_string s)
         | Feedback.Notice  -> fun s -> Minilib.log ~level:`NOTICE  (xml_to_string s)
-        | Feedback.Warning -> fun s -> Minilib.log ~level:`WARNING (xml_to_string s)
+        | Feedback.Warning _ -> fun s -> Minilib.log ~level:`WARNING (xml_to_string s)
         | Feedback.Debug _ -> fun s -> Minilib.log ~level:`DEBUG   (xml_to_string s)
   in
   logger level content

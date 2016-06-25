@@ -26,14 +26,16 @@ open Errors
 
 let threshold = of_int 5000
 
+let warn_large_nat =
+  CWarnings.create ~name:"large-nat" ~category:"numbers"
+    (fun () -> strbrk "Stack overflow or segmentation fault happens when " ++
+                 strbrk "working with large numbers in nat (observed threshold " ++
+                 strbrk "may vary from 5000 to 70000 depending on your system " ++
+                 strbrk "limits and on the command executed).")
+
 let nat_of_int dloc n =
   if is_pos_or_zero n then begin
-      if less_than threshold n then
-	Feedback.msg_warning
-	  (strbrk "Stack overflow or segmentation fault happens when " ++
-	   strbrk "working with large numbers in nat (observed threshold " ++
-	   strbrk "may vary from 5000 to 70000 depending on your system " ++
-	   strbrk "limits and on the command executed).");
+      if less_than threshold n then warn_large_nat ();
       let ref_O = GRef (dloc, glob_O, None) in
       let ref_S = GRef (dloc, glob_S, None) in
       let rec mk_nat acc n =

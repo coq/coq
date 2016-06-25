@@ -12,7 +12,7 @@ type level =
   | Debug of string
   | Info
   | Notice
-  | Warning
+  | Warning of Loc.t
   | Error
 
 type edit_id = int
@@ -25,6 +25,7 @@ type feedback_content =
   | Incomplete
   | Complete
   | ErrorMsg of Loc.t * string
+  | WarningMsg of Loc.t * string
   | ProcessingIn of string
   | InProgress of int
   | WorkerStatus of string * string
@@ -78,7 +79,7 @@ open Emacs
 
 let  dbg_str = str "Debug:"   ++ spc ()
 let info_str = mt ()
-let warn_str = str "Warning:" ++ spc ()
+let warn_str loc = Pp.pr_loc ~print_ghost:false loc ++ str "Warning:" ++ spc ()
 let  err_str = str "Error:"   ++ spc ()
 
 let make_body quoter info s = quoter (hov 0 (info ++ s))
@@ -88,8 +89,8 @@ let gen_logger dbg err level msg = match level with
   | Debug _ -> msgnl (make_body dbg  dbg_str msg)
   | Info    -> msgnl (make_body dbg info_str msg)
   | Notice  -> msgnl msg
-  | Warning -> Flags.if_warn (fun () ->
-               msgnl_with !err_ft (make_body err warn_str msg)) ()
+  | Warning loc -> Flags.if_warn (fun () ->
+                   msgnl_with !err_ft (make_body err (warn_str loc) msg)) ()
   | Error   -> msgnl_with !err_ft (make_body err  err_str msg)
 
 (** Standard loggers *)
@@ -102,9 +103,9 @@ let color_terminal_logger level strm =
   | Debug _ -> msg ~header:("Debug", Ppstyle.debug_tag) !std_ft strm
   | Info    -> msg !std_ft strm
   | Notice  -> msg !std_ft strm
-  | Warning ->
+  | Warning loc ->
     let header = ("Warning", Ppstyle.warning_tag) in
-    Flags.if_warn (fun () -> msg ~header !err_ft strm) ()
+    Flags.if_warn (fun () -> msg ~loc ~header !err_ft strm) ()
   | Error -> msg ~header:("Error", Ppstyle.error_tag) !err_ft strm
 
 (* Rules for emacs:
@@ -119,7 +120,7 @@ let set_logger l = logger := l
 
 let msg_info    x = !logger Info x
 let msg_notice  x = !logger Notice x
-let msg_warning x = !logger Warning x
+let msg_warning ?(loc=Loc.ghost) x = !logger (Warning loc) x
 let msg_error   x = !logger Error x
 let msg_debug   x = !logger (Debug "_") x
 
@@ -151,7 +152,7 @@ let ft_logger old_logger ft level mesg =
   | Debug _ -> msgnl_with ft (make_body id  dbg_str mesg)
   | Info    -> msgnl_with ft (make_body id info_str mesg)
   | Notice  -> msgnl_with ft mesg
-  | Warning -> old_logger level mesg
+  | Warning _ -> old_logger level mesg
   | Error   -> old_logger level mesg
 
 let with_output_to_file fname func input =
