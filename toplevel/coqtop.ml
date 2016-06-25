@@ -61,8 +61,7 @@ let init_color () =
     match colors with
     | None ->
       (** Default colors *)
-      Ppstyle.init_color_output ();
-      Feedback.set_logger Feedback.color_terminal_logger
+      Feedback.init_color_output ()
     | Some "" ->
       (** No color output *)
       ()
@@ -70,8 +69,7 @@ let init_color () =
       (** Overwrite all colors *)
       Ppstyle.clear_styles ();
       Ppstyle.parse_config s;
-      Ppstyle.init_color_output ();
-      Feedback.set_logger Feedback.color_terminal_logger
+      Feedback.init_color_output ()
   end
 
 let toploop_init = ref begin fun x ->

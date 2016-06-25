@@ -56,41 +56,6 @@ let default = Terminal.({
 
 let empty = Terminal.make ()
 
-let make_style_stack style_tags =
-  (** Not thread-safe. We should put a lock somewhere if we print from
-      different threads. Do we? *)
-  let style_stack = ref [] in
-  let peek () = match !style_stack with
-  | [] -> default (** Anomalous case, but for robustness *)
-  | st :: _ -> st
-  in
-  let push tag =
-    let style =
-      try
-        begin match String.Map.find tag style_tags with
-        | None -> empty
-        | Some st -> st
-        end
-      with Not_found -> empty
-    in
-    (** Use the merging of the latest tag and the one being currently pushed.
-    This may be useful if for instance the latest tag changes the background and
-    the current one the foreground, so that the two effects are additioned. *)
-    let style = Terminal.merge (peek ()) style in
-    let () = style_stack := style :: !style_stack in
-    Terminal.eval style
-  in
-  let pop _ = match !style_stack with
-  | [] ->
-    (** Something went wrong, we fallback *)
-    Terminal.eval default
-  | _ :: rem ->
-    let () = style_stack := rem in
-    Terminal.eval (peek ())
-  in
-  let clear () = style_stack := [] in
-  push, pop, clear
-
 let error_tag =
   let style = Terminal.make ~bold:true ~fg_color:`WHITE ~bg_color:`RED () in
   make ~style ["message"; "error"]
@@ -106,37 +71,3 @@ let debug_tag =
 let pp_tag t = match Pp.Tag.prj t tag with
 | None -> ""
 | Some key -> key
-
-let clear_tag_fn = ref (fun () -> ())
-
-let init_color_output () =
-  let push_tag, pop_tag, clear_tag = make_style_stack !tags in
-  clear_tag_fn := clear_tag;
-  let tag_handler = {
-    Format.mark_open_tag = push_tag;
-    Format.mark_close_tag = pop_tag;
-    Format.print_open_tag = ignore;
-    Format.print_close_tag = ignore;
-  } in
-  let open Pp_control in
-  Format.pp_set_mark_tags !std_ft true;
-  Format.pp_set_mark_tags !err_ft true;
-  Format.pp_set_formatter_tag_functions !std_ft tag_handler;
-  Format.pp_set_formatter_tag_functions !err_ft tag_handler
-
-let color_msg ?loc ?header ft strm =
-  let pptag = tag in
-  let open Pp in
-  let ploc = Option.cata Pp.pr_loc (Pp.mt ()) loc in
-  let strm = match header with
-    | None -> hov 0 (ploc ++ strm)
-    | Some (h, t) ->
-      let tag = Pp.Tag.inj t pptag in
-      let h = Pp.tag tag (str h ++ str ":") in
-      hov 0 (ploc ++ h ++ spc () ++ strm)
-  in
-  pp_with ~pp_tag ft strm;
-  Format.pp_print_newline ft ();
-  Format.pp_print_flush ft ();
-  (** In case something went wrong, we reset the stack *)
-  !clear_tag_fn ()
