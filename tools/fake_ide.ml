@@ -38,7 +38,7 @@ let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
     match Xmlprotocol.is_message xml with
-    | Some (level, content) ->
+    | Some (level, _loc, content) ->
       logger level content;
       loop ()
     | None ->

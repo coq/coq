@@ -66,7 +66,7 @@ val of_feedback : Feedback.feedback -> xml
 val to_feedback : xml -> Feedback.feedback
 val is_feedback : xml -> bool
 
-val is_message : xml -> (Feedback.level * Richpp.richpp) option
-val of_message : Feedback.level -> Richpp.richpp -> xml
+val is_message : xml -> (Feedback.level * Loc.t option * Richpp.richpp) option
+val of_message : Feedback.level -> Loc.t option -> Richpp.richpp -> xml
 (* val to_message : xml -> Feedback.message *)
 

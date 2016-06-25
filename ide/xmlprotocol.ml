@@ -784,18 +784,20 @@ let to_message_level =
   | "error" -> Error
   | x -> raise Serialize.(Marshal_error("error level",PCData x)))
 
-let of_message lvl msg =
+let of_message lvl loc msg =
   let lvl     = of_message_level lvl in
+  let xloc    = of_option of_loc loc in
   let content = of_richpp msg        in
-  Xml_datatype.Element ("message", [], [lvl; content])
+  Xml_datatype.Element ("message", [], [lvl; xloc; content])
+
 let to_message xml = match xml with
-  | Xml_datatype.Element ("message", [], [lvl; content]) ->
-      Message(to_message_level lvl, to_richpp content)
+  | Xml_datatype.Element ("message", [], [lvl; xloc; content]) ->
+      Message(to_message_level lvl, to_option to_loc xloc, to_richpp content)
   | x -> raise (Marshal_error("message",x))
 
 let is_message = function
-  | Xml_datatype.Element ("message", [], [lvl; content]) ->
-    Some (to_message_level lvl, to_richpp content)
+  | Xml_datatype.Element ("message", [], [lvl; xloc; content]) ->
+    Some (to_message_level lvl, to_option to_loc xloc, to_richpp content)
   | _ -> None
 
 let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
@@ -861,7 +863,7 @@ let of_feedback_content = function
       constructor "feedback_content" "fileloaded" [
         of_string dirpath;
         of_string filename ]
-  | Message (l,m) -> constructor "feedback_content" "message" [ of_message l m ]
+  | Message (l,loc,m) -> constructor "feedback_content" "message" [ of_message l loc m ]
 
 let of_edit_or_state_id = function
   | Edit id -> ["object","edit"], of_edit_id id

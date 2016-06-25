@@ -475,8 +475,8 @@ let print_xml =
 let slave_logger xml_oc ?loc level message =
   (* convert the message into XML *)
   let msg = hov 0 message in
-  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg))    in
-  let xml = Xmlprotocol.of_message level (Richpp.richpp_of_pp message) in
+  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg))         in
+  let xml = Xmlprotocol.of_message level loc (Richpp.richpp_of_pp message) in
   print_xml xml_oc xml
 
 let slave_feeder xml_oc msg =

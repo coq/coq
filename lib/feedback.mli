@@ -46,7 +46,7 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t * string * xml
   (* Old generic messages *)
-  | Message of level * Richpp.richpp
+  | Message of level * Loc.t option * Richpp.richpp
 
 type feedback = {
   id       : edit_or_state_id;  (* The document part concerned *)

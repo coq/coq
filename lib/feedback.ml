@@ -36,8 +36,8 @@ type feedback_content =
   | FileLoaded of string * string
   (* Extra metadata *)
   | Custom of Loc.t * string * xml
-  (* Old generic messages *)
-  | Message of level * Richpp.richpp
+  (* Generic messages *)
+  | Message of level * Loc.t option * Richpp.richpp
 
 type feedback = {
   id : edit_or_state_id;
@@ -142,7 +142,7 @@ let feedback ?id ?route what =
 
 let feedback_logger ?loc lvl msg =
   feedback ~route:!feedback_route ~id:!feedback_id
-    (Message (lvl, Richpp.richpp_of_pp msg))
+    (Message (lvl, loc, Richpp.richpp_of_pp msg))
 
 (* Output to file *)
 let ft_logger old_logger ft ?loc level mesg =
