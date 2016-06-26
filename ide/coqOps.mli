@@ -15,7 +15,7 @@ object
   method tactic_wizard : string list -> unit task
   method process_next_phrase : unit task
   method process_until_end_or_error : unit task
-  method handle_reset_initial : Coq.reset_kind -> unit task
+  method handle_reset_initial : unit task
   method raw_coq_query : string -> unit task
   method show_goals : unit task
   method backtrack_last_phrase : unit task
