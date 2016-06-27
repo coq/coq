@@ -109,7 +109,7 @@ type interp_rule =
   | SynDefRule of kernel_name
 
 val declare_notation_interpretation : notation -> scope_name option ->
-      interpretation -> notation_location -> unit
+      interpretation -> notation_location -> onlyprint:bool -> unit
 
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 

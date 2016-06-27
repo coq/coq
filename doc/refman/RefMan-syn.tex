@@ -321,6 +321,10 @@ Sometimes, a notation is expected only for the parser.
 To do so, the option {\em only parsing} is allowed in the list of modifiers of
 \texttt{Notation}.
 
+Conversely, the {\em only printing} can be used to declare
+that a notation should only be used for printing and should not declare a
+parsing rule. In particular, such notations do not modify the parser.
+
 \subsection{The \texttt{Infix} command
 \comindex{Infix}}
 
@@ -480,6 +484,7 @@ Locate "exists _ .. _ , _".
   & $|$ & {\ident} {\tt global} \\
   & $|$ & {\ident} {\tt bigint} \\
   & $|$ & {\tt only parsing} \\
+  & $|$ & {\tt only printing} \\
   & $|$ & {\tt format} {\str} 
 \end{tabular}
 \end{centerframe}
