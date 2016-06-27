@@ -1039,8 +1039,8 @@ ARGUMENT EXTEND cpattern
      PRINTED BY pr_ssrterm
      INTERPRETED BY interp_ssrterm
      GLOBALIZED BY glob_cpattern SUBSTITUTED BY subst_ssrterm
-     RAW_TYPED AS cpattern RAW_PRINTED BY pr_ssrterm
-     GLOB_TYPED AS cpattern GLOB_PRINTED BY pr_ssrterm
+     RAW_PRINTED BY pr_ssrterm
+     GLOB_PRINTED BY pr_ssrterm
 | [ "Qed" constr(c) ] -> [ mk_lterm c ]
 END
 
@@ -1058,8 +1058,8 @@ ARGUMENT EXTEND lcpattern
      PRINTED BY pr_ssrterm
      INTERPRETED BY interp_ssrterm
      GLOBALIZED BY glob_cpattern SUBSTITUTED BY subst_ssrterm
-     RAW_TYPED AS cpattern RAW_PRINTED BY pr_ssrterm
-     GLOB_TYPED AS cpattern GLOB_PRINTED BY pr_ssrterm
+     RAW_PRINTED BY pr_ssrterm
+     GLOB_PRINTED BY pr_ssrterm
 | [ "Qed" lconstr(c) ] -> [ mk_lterm c ]
 END
 
