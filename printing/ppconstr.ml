@@ -136,8 +136,6 @@ end) = struct
 
   let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
 
-  let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
-
   let pr_univ l =
     match l with
       | [_,x] -> str x
@@ -153,11 +151,11 @@ end) = struct
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
-    let id = tag_ref (str (Id.to_string id)) in
+    let id = tag_ref (pr_id id) in
     let sl = match List.rev (DirPath.repr sl) with
     | [] -> mt ()
     | sl ->
-      let pr dir = tag_path (str (Id.to_string dir)) ++ str "." in
+      let pr dir = tag_path (pr_id dir) ++ str "." in
       prlist pr sl
     in
     sl ++ id
@@ -182,7 +180,7 @@ end) = struct
 
   let pr_reference = function
   | Qualid (_, qid) -> pr_qualid qid
-  | Ident (_, id) -> tag_var (str (Id.to_string id))
+  | Ident (_, id) -> tag_var (pr_id id)
 
   let pr_cref ref us =
     pr_reference ref ++ pr_universe_instance us
@@ -246,16 +244,16 @@ end) = struct
       | CPatAlias (_, p, id) ->
         pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
 
-      | CPatCstr (_,c, [], []) ->
+      | CPatCstr (_,c, None, []) ->
         pr_reference c, latom
 
-      | CPatCstr (_, c, [], args) ->
+      | CPatCstr (_, c, None, args) ->
         pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
 
-      | CPatCstr (_, c, args, []) ->
+      | CPatCstr (_, c, Some args, []) ->
         str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
 
-      | CPatCstr (_, c, expl_args, extra_args) ->
+      | CPatCstr (_, c, Some expl_args, extra_args) ->
         surround (str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) expl_args)
         ++ prlist (pr_patt spc (lapp,L)) extra_args, lapp
 
@@ -281,6 +279,8 @@ end) = struct
 
       | CPatDelimiters (_,k,p) ->
         pr_delimiters k (pr_patt mt lsimplepatt p), 1
+      | CPatCast _ ->
+        assert false
     in
     let loc = cases_pattern_expr_loc p in
     pr_with_comments loc
@@ -300,6 +300,7 @@ end) = struct
   let begin_of_binder = function
   LocalRawDef((loc,_),_) -> fst (Loc.unloc loc)
     | LocalRawAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
+    | LocalPattern(loc,_,_) -> fst (Loc.unloc loc)
     | _ -> assert false
 
   let begin_of_binders = function
@@ -348,6 +349,8 @@ end) = struct
         | _ -> c, CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
                   str":=" ++ cut() ++ pr_c c)
+    | LocalPattern _ ->
+      assert false
 
   let pr_undelimited_binders sep pr_c =
     prlist_with_sep sep (pr_binder_among_many pr_c)
@@ -359,6 +362,8 @@ end) = struct
         pr_com_at n ++ kw() ++ pr_binder false pr_c (nal,k,t)
       | LocalRawAssum _ :: _ as bdl ->
         pr_com_at n ++ kw() ++ pr_undelimited_binders sep pr_c bdl
+      | LocalPattern (loc,p,tyo) :: _ ->
+        str "'" ++ pr_patt ltop p
       | _ -> assert false
 
   let pr_binders_gen pr_c sep is_open =
@@ -432,6 +437,7 @@ end) = struct
             let names_of_binder = function
               | LocalRawAssum (nal,_,_) -> nal
               | LocalRawDef (_,_) -> []
+              | LocalPattern _ -> assert false
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
                  spc() ++ str "{" ++ keyword "struct" ++ spc () ++ pr_id id ++ str"}"
@@ -457,7 +463,7 @@ end) = struct
         (pr_decl true) dl ++
         fnl() ++ keyword "for" ++ spc () ++ pr_id id
 
-  let pr_asin pr (na,indnalopt) =
+  let pr_asin pr na indnalopt =
     (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
       | Some na -> spc () ++ keyword "as" ++ spc () ++  pr_lname na
       | None -> mt ()) ++
@@ -465,8 +471,8 @@ end) = struct
         | None -> mt ()
         | Some t -> spc () ++ keyword "in" ++ spc () ++ pr_patt lsimplepatt t)
 
-  let pr_case_item pr (tm,asin) =
-    hov 0 (pr (lcast,E) tm ++ pr_asin pr asin)
+  let pr_case_item pr (tm,as_clause, in_clause) =
+    hov 0 (pr (lcast,E) tm ++ pr_asin pr as_clause in_clause)
 
   let pr_case_type pr po =
     match po with
@@ -494,6 +500,11 @@ end) = struct
     hov 2 (
       pr (lapp,L) a  ++
         prlist (fun a -> spc () ++ pr_expl_args pr a) l)
+
+  let pr_record_body_gen pr l =
+    spc () ++
+    prlist_with_sep pr_semicolon
+      (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr ltop c)) l
 
   let pr_forall () = keyword "forall" ++ spc ()
 
@@ -527,6 +538,21 @@ end) = struct
                    (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) cofix),
           lfix
         )
+      | CProdN
+          (_,
+           [([(_,Name n)],_,_)],
+           CCases
+             (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
+              [(_,[(_,[p])],a)]))
+          when
+            Id.equal m n &&
+            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
+        return (
+          hov 0 (
+            keyword "forall" ++ spc () ++ str "'" ++ pr_patt ltop p ++
+            str "," ++ pr spc ltop a),
+          llambda
+        )
       | CProdN _ ->
         let (bl,a) = extract_prod_binders a in
         return (
@@ -535,6 +561,21 @@ end) = struct
                      (pr mt ltop) bl) ++
               str "," ++ pr spc ltop a),
           lprod
+        )
+      | CLambdaN
+          (_,
+           [([(_,Name n)],_,_)],
+           CCases
+             (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
+              [(_,[(_,[p])],a)]))
+          when
+            Id.equal m n &&
+            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
+        return (
+          hov 0 (
+            keyword "fun" ++ spc () ++ str "'" ++ pr_patt ltop p ++
+            pr_fun_sep ++ pr spc ltop a),
+          llambda
         )
       | CLambdaN _ ->
         let (bl,a) = extract_lam_binders a in
@@ -595,28 +636,17 @@ end) = struct
           return (p, lproj)
       | CApp (_,(None,a),l) ->
         return (pr_app (pr mt) a l, lapp)
-      | CRecord (_,w,l) ->
-        let beg =
-          match w with
-            | None ->
-              spc ()
-            | Some t ->
-              spc () ++ pr spc ltop t ++ spc ()
-              ++ keyword "with" ++ spc ()
-        in
+      | CRecord (_,l) ->
         return (
-          hv 0 (str"{|" ++ beg ++
-                  prlist_with_sep pr_semicolon
-                  (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr spc ltop c)) l
-                ++ str" |}"),
+          hv 0 (str"{|" ++ pr_record_body_gen (pr spc) l ++ str" |}"),
           latom
         )
-      | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
+      | CCases (_,LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,[(loc,[p])],b)]) ->
         return (
           hv 0 (
             keyword "let" ++ spc () ++ str"'" ++
               hov 0 (pr_patt ltop p ++
-                       pr_asin (pr_dangling_with_for mt pr) asin ++
+                       pr_asin (pr_dangling_with_for mt pr) as_clause in_clause ++
                        str " :=" ++ pr spc ltop c ++
                        pr_case_type (pr_dangling_with_for mt pr) rtntypopt ++
                        spc () ++ keyword "in" ++ pr spc ltop b)),
@@ -740,6 +770,8 @@ end) = struct
   let pr_lconstr_pattern_expr c = !term_pr.pr_lconstr_pattern_expr c
 
   let pr_cases_pattern_expr = pr_patt ltop
+
+  let pr_record_body = pr_record_body_gen pr
 
   let pr_binders = pr_undelimited_binders spc (pr ltop)
 

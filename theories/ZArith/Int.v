@@ -225,11 +225,11 @@ Module MoreInt (Import I:Int).
   (** [int] to [ExprI] *)
 
   Ltac i2ei trm :=
-    match constr:trm with
-      | 0 => constr:EI0
-      | 1 => constr:EI1
-      | 2 => constr:EI2
-      | 3 => constr:EI3
+    match constr:(trm) with
+      | 0 => constr:(EI0)
+      | 1 => constr:(EI1)
+      | 2 => constr:(EI2)
+      | 3 => constr:(EI3)
       | ?x + ?y => let ex := i2ei x with ey := i2ei y in constr:(EIadd ex ey)
       | ?x - ?y => let ex := i2ei x with ey := i2ei y in constr:(EIsub ex ey)
       | ?x * ?y => let ex := i2ei x with ey := i2ei y in constr:(EImul ex ey)
@@ -241,7 +241,7 @@ Module MoreInt (Import I:Int).
   (** [Z] to [ExprZ] *)
 
     with z2ez trm :=
-    match constr:trm with
+    match constr:(trm) with
       | (?x + ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZadd ex ey)
       | (?x - ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZsub ex ey)
       | (?x * ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZmul ex ey)
@@ -254,7 +254,7 @@ Module MoreInt (Import I:Int).
   (** [Prop] to [ExprP] *)
 
   Ltac p2ep trm :=
-    match constr:trm with
+    match constr:(trm) with
       | (?x <-> ?y) => let ex := p2ep x with ey := p2ep y in constr:(EPequiv ex ey)
       | (?x -> ?y) => let ex := p2ep x with ey := p2ep y in constr:(EPimpl ex ey)
       | (?x /\ ?y) => let ex := p2ep x with ey := p2ep y in constr:(EPand ex ey)

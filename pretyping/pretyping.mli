@@ -29,7 +29,7 @@ type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
 type var_map = Pattern.constr_under_binders Id.Map.t
 type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
-type unbound_ltac_var_map = Genarg.tlevel Genarg.generic_argument Id.Map.t
+type unbound_ltac_var_map = Geninterp.Val.t Id.Map.t
 
 type ltac_var_map = {
   ltac_constrs : var_map;
@@ -54,6 +54,9 @@ type inference_flags = {
   fail_evar : bool;
   expand_evars : bool
 }
+
+type 'a delayed_open =
+  { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
 
 val default_inference_flags : bool -> inference_flags
 
@@ -114,6 +117,11 @@ val understand_judgment : env -> evar_map ->
 val understand_judgment_tcc : env -> evar_map ref ->
   glob_constr -> unsafe_judgment
 
+val type_uconstr :
+  ?flags:inference_flags ->
+  ?expected_type:typing_constraint ->
+  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr delayed_open
+
 (** Trying to solve remaining evars and remaining conversion problems
     possibly using type classes, heuristics, external tactic solver
     hook depending on given flags. *)
@@ -129,6 +137,10 @@ val solve_remaining_evars : inference_flags ->
 
 val check_evars_are_solved :
   env -> (* current map: *) evar_map -> (* map to check: *) pending -> unit
+
+(** [check_evars env initial_sigma extended_sigma c] fails if some
+   new unresolved evar remains in [c] *)
+val check_evars : env -> evar_map -> evar_map -> constr -> unit
 
 (**/**)
 (** Internal of Pretyping... *)
@@ -148,12 +160,9 @@ val ise_pretype_gen :
 
 (** To embed constr in glob_constr *)
 
-val constr_in : constr -> Dyn.t
-val constr_out : Dyn.t -> constr
-
-val interp_sort : evar_map -> glob_sort -> evar_map * sorts
+val interp_sort : ?loc:Loc.t -> evar_map -> glob_sort -> evar_map * sorts
 val interp_elimination_sort : glob_sort -> sorts_family
 
 val genarg_interp_hook :
-  (types -> env -> evar_map -> Genarg.typed_generic_argument Id.Map.t ->
+  (types -> env -> evar_map -> unbound_ltac_var_map ->
     Genarg.glob_generic_argument -> constr * evar_map) Hook.t

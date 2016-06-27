@@ -8,8 +8,6 @@
 
 open Preferences
 
-let prefs = Preferences.current
-
 (** A session is a script buffer + proof + messages,
     interacting with a coqtop, and a few other elements around *)
 
@@ -18,7 +16,6 @@ class type ['a] page =
     inherit GObj.widget
     method update : 'a -> unit
     method on_update : callback:('a -> unit) -> unit
-    method refresh_color : unit -> unit
     method data : 'a
   end
 
@@ -51,8 +48,8 @@ let create_buffer () =
   let buffer = GSourceView2.source_buffer
     ~tag_table:Tags.Script.table
     ~highlight_matching_brackets:true
-    ?language:(lang_manager#language prefs.source_language)
-    ?style_scheme:(style_manager#style_scheme prefs.source_style)
+    ?language:(lang_manager#language source_language#get)
+    ?style_scheme:(style_manager#style_scheme source_style#get)
     ()
   in
   let _ = buffer#create_mark ~name:"start_of_input" buffer#start_iter in
@@ -255,10 +252,9 @@ let make_table_widget ?sort cd cb =
       ~model:store ~packing:frame#add () in
   let () = data#set_headers_visible true in
   let () = data#set_headers_clickable true in
-  let refresh () =
-    let clr = Tags.color_of_string current.background_color in
-    data#misc#modify_base [`NORMAL, `COLOR clr]
-  in
+  let refresh clr = data#misc#modify_base [`NORMAL, `NAME clr] in
+  let _ = background_color#connect#changed refresh in
+  let _ = data#misc#connect#realize (fun () -> refresh background_color#get) in
   let mk_rend c = GTree.cell_renderer_text [], ["text",c] in
   let cols =
     List.map2 (fun (_,c) (_,n,v) ->
@@ -286,10 +282,10 @@ let make_table_widget ?sort cd cb =
     data#connect#row_activated ~callback:(fun tp vc -> cb columns store tp vc)
   );
   let () = match sort with None -> () | Some (i, t) -> store#set_sort_column_id i t in
-  frame, (fun f -> f columns store), refresh
+  frame, (fun f -> f columns store)
 
 let create_errpage (script : Wg_ScriptView.script_view) : errpage =
-  let table, access, refresh =
+  let table, access =
     make_table_widget ~sort:(0, `ASCENDING)
       [`Int,"Line",true; `String,"Error message",true]
       (fun columns store tp vc ->
@@ -321,12 +317,11 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
           errs
       end
     method on_update ~callback:cb = callback := cb
-    method refresh_color () = refresh ()
     method data = !last_update
   end
 
 let create_jobpage coqtop coqops : jobpage =
-  let table, access, refresh =
+  let table, access =
     make_table_widget ~sort:(0, `ASCENDING)
       [`String,"Worker",true; `String,"Job name",true]
       (fun columns store tp vc ->
@@ -362,7 +357,6 @@ let create_jobpage coqtop coqops : jobpage =
           jobs
       end
     method on_update ~callback:cb = callback := cb
-    method refresh_color () = refresh ()
     method data = !last_update
   end
 

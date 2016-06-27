@@ -15,7 +15,7 @@ open Pcoq
 open Pcoq.Prim
 
 let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
-let _ = List.iter Lexer.add_keyword prim_kw
+let _ = List.iter CLexer.add_keyword prim_kw
 
 
 let local_make_qualid l id = make_qualid (DirPath.make l) id
@@ -32,7 +32,7 @@ let my_int_of_string loc s =
 
 GEXTEND Gram
   GLOBAL:
-    bigint natural integer identref name ident var preident
+    bigint natural index integer identref name ident var preident
     fullyqualid qualid reference dirpath ne_lstring
     ne_string string pattern_ident pattern_identref by_notation smart_global;
   preident:
@@ -112,6 +112,9 @@ GEXTEND Gram
   ;
   natural:
     [ [ i = INT -> my_int_of_string (!@loc) i ] ]
+  ;
+  index:
+    [ [ i = INDEX -> my_int_of_string (!@loc) i ] ]
   ;
   bigint: (* Negative numbers are dealt with specially *)
     [ [ i = INT -> (Bigint.of_string i) ] ]

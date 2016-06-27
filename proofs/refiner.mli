@@ -6,7 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Context
+(** Legacy proof engine. Do not use in newly written code. *)
+
 open Evd
 open Proof_type
 
@@ -16,7 +17,7 @@ val sig_it  : 'a sigma -> 'a
 val project : 'a sigma -> evar_map
 
 val pf_env  : goal sigma -> Environ.env
-val pf_hyps : goal sigma -> named_context
+val pf_hyps : goal sigma -> Context.Named.t
 
 val unpackage : 'a sigma -> evar_map ref * 'a
 val repackage : evar_map ref -> 'a -> 'a sigma

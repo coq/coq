@@ -22,10 +22,8 @@ val option_boot : bool ref
 val option_natdynlk : bool ref
 val option_mldep : string option ref
 val norec_dirs : StrSet.t ref
-val norec_dirnames : StrSet.t ref
 val suffixe : string ref
 type dir = string option
-val ( // ) : string -> string -> string
 val get_extension : string -> string list -> string * string
 val basename_noext : string -> string
 val mlAccu : (string * string * dir) list ref
@@ -51,9 +49,6 @@ val suffixes : 'a list -> 'a list list
 val add_known : bool -> string -> string list -> string -> unit
 val add_coqlib_known : bool -> string -> string list -> string -> unit
 val add_caml_known : string -> string list -> string -> unit
-val add_directory :
-  bool ->
-  (string -> string list -> string -> unit) -> string -> string list -> unit
 val add_caml_dir : string -> unit
 
 (** Simply add this directory and imports it, no subdirs. This is used
@@ -67,6 +62,9 @@ val add_rec_dir_no_import :
 
 (** -R semantic: go in subdirs and suffixes of logical paths are known. *)
 val add_rec_dir_import :
+  (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
+
+val add_rec_uppercase_subdirs :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
 
 val treat_file : dir -> string -> unit

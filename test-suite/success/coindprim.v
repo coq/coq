@@ -1,36 +1,75 @@
+Require Import Program.
+
 Set Primitive Projections.
 
-CoInductive stream A := { hd : A; tl : stream A }.
+CoInductive Stream (A : Type) := mkStream { hd : A; tl : Stream A}.
 
-CoFixpoint ticks : stream unit :=
-  {| hd := tt; tl := ticks |}.
+Arguments mkStream [A] hd tl.
+Arguments hd [A] s.
+Arguments tl [A] s.
 
-Arguments hd [ A ] s.
-Arguments tl [ A ] s.
+Definition eta {A} (s : Stream A) := {| hd := s.(hd); tl := s.(tl) |}.
 
-CoInductive bisim {A} : stream A -> stream A -> Prop :=
-  | bisims s s' : hd s = hd s' -> bisim (tl s) (tl s') -> bisim s s'.
+CoFixpoint ones := {| hd := 1; tl := ones |}.
+CoFixpoint ticks := {| hd := tt; tl := ticks |}.
 
-Lemma bisim_refl {A} (s : stream A) : bisim s s.
+CoInductive stream_equiv {A} {s : Stream A} {s' : Stream A} : Prop :=
+  mkStreamEq { hdeq : s.(hd) = s'.(hd); tleq : stream_equiv _ s.(tl) s'.(tl) }.
+Arguments stream_equiv {A} s s'.
+
+Program CoFixpoint ones_eq : stream_equiv ones ones.(tl) :=
+  {| hdeq := eq_refl; tleq := ones_eq |}.
+
+CoFixpoint stream_equiv_refl {A} (s : Stream A) : stream_equiv s s :=
+  {| hdeq := eq_refl; tleq := stream_equiv_refl (tl s) |}.
+
+CoFixpoint stream_equiv_sym {A} (s s' : Stream A) (H : stream_equiv s s') : stream_equiv s' s :=
+  {| hdeq := eq_sym H.(hdeq); tleq := stream_equiv_sym _ _ H.(tleq) |}.
+
+CoFixpoint stream_equiv_trans {A} {s s' s'' : Stream A}
+           (H : stream_equiv s s') (H' : stream_equiv s' s'') : stream_equiv s s'' :=
+  {| hdeq := eq_trans H.(hdeq) H'.(hdeq);
+     tleq := stream_equiv_trans H.(tleq) H'.(tleq) |}.
+
+Program Definition eta_eq {A} (s : Stream A) : stream_equiv s (eta s):=
+  {| hdeq := eq_refl; tleq := stream_equiv_refl (tl (eta s))|}.
+
+Section Parks.
+  Variable A : Type.
+
+  Variable R : Stream A -> Stream A -> Prop.
+  Hypothesis bisim1 : forall s1 s2:Stream A,
+      R s1 s2 -> hd s1 = hd s2.
+  Hypothesis bisim2 : forall s1 s2:Stream A,
+      R s1 s2 -> R (tl s1) (tl s2).
+  CoFixpoint park_ppl :
+    forall s1 s2:Stream A, R s1 s2 -> stream_equiv s1 s2 :=
+    fun s1 s2 (p : R s1 s2) =>
+      mkStreamEq _ _ _ (bisim1 s1 s2 p)
+      (park_ppl (tl s1)
+                (tl s2)
+                (bisim2 s1 s2 p)).
+End Parks.
+
+Program CoFixpoint iterate {A} (f : A -> A) (x : A) : Stream A :=
+  {| hd := x; tl := iterate f (f x) |}.
+
+Program CoFixpoint map {A B} (f : A -> B) (s : Stream A) : Stream B :=
+  {| hd := f s.(hd); tl := map f s.(tl) |}.
+
+Theorem map_iterate A (f : A -> A) (x : A) : stream_equiv (iterate f (f x))
+                                                         (map f (iterate f x)).
 Proof.
-  revert s.
-  cofix aux. intros. constructor. reflexivity. apply aux.
-Defined.
+apply park_ppl with
+(R:= fun s1 s2 => exists x : A, s1 = iterate f (f x) /\
+                        s2 = map f (iterate f x)).
+now intros s1 s2 (x0,(->,->)).
+intros s1 s2 (x0,(->,->)).
+now exists (f x0).
+now exists x. 
+Qed.
 
-Lemma constr : forall (A : Type) (s : stream A),
-    bisim s (Build_stream _ s.(hd) s.(tl)).
-Proof.
-  intros. constructor. reflexivity. simpl. apply bisim_refl.
-Defined.
-
-Lemma constr' : forall (A : Type) (s : stream A),
-  s = Build_stream _ s.(hd) s.(tl).
-Proof.
-  intros. 
-  Fail destruct s. 
-Abort.
-
-Eval compute in constr _ ticks.
+Fail Check (fun A (s : Stream A) => eq_refl : s = eta s).
 
 Notation convertible x y := (eq_refl x : x = y).
 

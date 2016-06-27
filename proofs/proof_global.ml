@@ -23,8 +23,9 @@ open Names
 (* Type of proof modes :
     - A function [set] to set it *from standard mode*
     - A function [reset] to reset the *standard mode* from it *)
+type proof_mode_name = string
 type proof_mode = {
-  name : string ;
+  name : proof_mode_name ;
   set : unit -> unit ;
   reset : unit -> unit
 }
@@ -44,6 +45,9 @@ let _ = register_proof_mode standard
 
 (* Default proof mode, to be set at the beginning of proofs. *)
 let default_proof_mode = ref (find_proof_mode "No")
+
+let get_default_proof_mode_name () =
+  (CEphemeron.default !default_proof_mode standard).name
 
 let _ =
   Goptions.declare_string_option {Goptions.
@@ -91,6 +95,9 @@ type pstate = {
   mode : proof_mode CEphemeron.key;
   universe_binders: universe_binders option;
 }
+
+let make_terminator f = f
+let apply_terminator f = f
 
 (* The head of [!pstates] is the actual current proof, the other ones are
    to be resumed when the current proof is closed or aborted. *)
@@ -216,8 +223,8 @@ let set_proof_mode mn =
 
 let activate_proof_mode mode =
   CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
-let disactivate_proof_mode mode =
-  CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
+let disactivate_current_proof_mode () =
+  CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ())
 
 (** [start_proof sigma id str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
@@ -264,18 +271,19 @@ let _ = Goptions.declare_bool_option
       Goptions.optwrite = (fun b -> proof_using_auto_clear := b) }
 
 let set_used_variables l =
+  let open Context.Named.Declaration in
   let env = Global.env () in
   let ids = List.fold_right Id.Set.add l Id.Set.empty in
   let ctx = Environ.keep_hyps env ids in
   let ctx_set =
-    List.fold_right Id.Set.add (List.map pi1 ctx) Id.Set.empty in
+    List.fold_right Id.Set.add (List.map get_id ctx) Id.Set.empty in
   let vars_of = Environ.global_vars_set in
   let aux env entry (ctx, all_safe, to_clear as orig) =
     match entry with
-    | (x,None,_) ->
+    | LocalAssum (x,_) ->
        if Id.Set.mem x all_safe then orig
        else (ctx, all_safe, (Loc.ghost,x)::to_clear) 
-    | (x,Some bo, ty) as decl ->
+    | LocalDef (x,bo, ty) as decl ->
        if Id.Set.mem x all_safe then orig else
        let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
        if Id.Set.subset vars all_safe
@@ -298,6 +306,11 @@ let get_open_goals () =
     List.fold_left (+) 0
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
+
+let constrain_variables init uctx =
+  let levels = Univ.Instance.levels (Univ.UContext.instance init) in
+  let cstrs = UState.constrain_variables levels uctx in
+  Univ.ContextSet.add_constraints cstrs (UState.context_set uctx)
 
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
   let { pid; section_vars; strength; proof; terminator; universe_binders } =
@@ -329,7 +342,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
         if keep_body_ucst_separate ||
            not (Safe_typing.empty_private_constants = eff) then
           let initunivs = Evd.evar_context_universe_context initial_euctx in
-          let ctx = Evd.evar_universe_context_set initunivs universes in
+          let ctx = constrain_variables initunivs universes in
           (* For vi2vo compilation proofs are computed now but we need to
            * complement the univ constraints of the typ with the ones of
            * the body.  So we keep the two sets distinct. *)
@@ -338,7 +351,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
           (initunivs, typ), ((body, ctx_body), eff)
         else
           let initunivs = Univ.UContext.empty in
-          let ctx = Evd.evar_universe_context_set initunivs universes in
+          let ctx = constrain_variables initunivs universes in
           (* Since the proof is computed now, we can simply have 1 set of
            * constraints in which we merge the ones for the body and the ones
            * for the typ *)
@@ -353,7 +366,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
         let initunivs = Evd.evar_context_universe_context initial_euctx in
         Future.from_val (initunivs, nf t),
         Future.chain ~pure:true p (fun (pt,eff) ->
-          (pt,Evd.evar_universe_context_set initunivs (Future.force univs)),eff)
+          (pt,constrain_variables initunivs (Future.force univs)),eff)
   in
   let entries =
     Future.map2 (fun p (_, t) ->
@@ -458,7 +471,7 @@ module Bullet = struct
   type behavior = {
     name : string;
     put : Proof.proof -> t -> Proof.proof;
-    suggest: Proof.proof -> string option
+    suggest: Proof.proof -> std_ppcmds
   }
 
   let behaviors = Hashtbl.create 4
@@ -468,7 +481,7 @@ module Bullet = struct
   let none = {
     name = "None";
     put = (fun x _ -> x);
-    suggest = (fun _ -> None)
+    suggest = (fun _ -> mt ())
   }
   let _ = register_behavior none
 
@@ -484,26 +497,20 @@ module Bullet = struct
     (* give a message only if more informative than the standard coq message *)
     let suggest_on_solved_goal sugg =
       match sugg with
-      | NeedClosingBrace -> Some "Try unfocusing with \"}\"."
-      | NoBulletInUse -> None
-      | ProofFinished -> None
-      | Suggest b -> Some ("Focus next goal with bullet "
-			   ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
-			   ^".")
-      | Unfinished b -> Some ("The current bullet "
-			      ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
-			      ^ " is unfinished.")
+      | NeedClosingBrace -> str"Try unfocusing with \"}\"."
+      | NoBulletInUse -> mt ()
+      | ProofFinished -> mt ()
+      | Suggest b -> str"Focus next goal with bullet " ++ pr_bullet b ++ str"."
+      | Unfinished b -> str"The current bullet " ++ pr_bullet b ++ str" is unfinished."
 
     (* give always a message. *)
     let suggest_on_error sugg =
       match sugg with
-      | NeedClosingBrace -> "Try unfocusing with \"}\"."
+      | NeedClosingBrace -> str"Try unfocusing with \"}\"."
       | NoBulletInUse -> assert false (* This should never raise an error. *)
-      | ProofFinished -> "No more subgoals."
-      | Suggest b -> ("Bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
-		      ^ " is mandatory here.")
-      | Unfinished b -> ("Current bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
-			 ^ " is not finished.")
+      | ProofFinished -> str"No more subgoals."
+      | Suggest b -> str"Bullet " ++ pr_bullet b ++ str" is mandatory here."
+      | Unfinished b -> str"Current bullet " ++ pr_bullet b ++ str" is not finished."
 
     exception FailedBullet of t * suggestion
 
@@ -511,8 +518,8 @@ module Bullet = struct
       Errors.register_handler
 	(function
 	| FailedBullet (b,sugg) ->
-	  let prefix = "Wrong bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b)) ^ " : " in
-	  Errors.errorlabstrm "Focus" (str prefix ++ str (suggest_on_error sugg))
+	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str" : " in
+	  Errors.errorlabstrm "Focus" (prefix ++ suggest_on_error sugg)
 	| _ -> raise Errors.Unhandled)
 
 
@@ -657,16 +664,21 @@ let _ =
 let default_goal_selector = ref (Vernacexpr.SelectNth 1)
 let get_default_goal_selector () = !default_goal_selector
 
+let print_range_selector (i, j) =
+  if i = j then string_of_int i
+  else string_of_int i ^ "-" ^ string_of_int j
+
 let print_goal_selector = function
   | Vernacexpr.SelectAll -> "all"
   | Vernacexpr.SelectNth i -> string_of_int i
+  | Vernacexpr.SelectList l -> "[" ^
+      String.concat ", " (List.map print_range_selector l) ^ "]"
   | Vernacexpr.SelectId id -> Id.to_string id
-  | Vernacexpr.SelectAllParallel -> "par"
 
 let parse_goal_selector = function
   | "all" -> Vernacexpr.SelectAll
   | i ->
-      let err_msg = "A selector must be \"all\" or a natural number." in
+      let err_msg = "The default selector must be \"all\" or a natural number." in
       begin try
               let i = int_of_string i in
               if i < 0 then Errors.error err_msg;

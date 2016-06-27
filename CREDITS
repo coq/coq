@@ -54,6 +54,9 @@ plugins/setoid_ring
   developed by Benjamin Grégoire (INRIA-Everest, 2005-2006),
   Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006)
   and Bruno Barras (INRIA LogiCal, 2005-2006),
+plugins/ssrmatching
+  developed by Georges Gonthier (Microsoft Research - Inria Joint Centre, 2007-2011),
+  and Enrico Tassi (Inria-Marelle, 2011-now)
 plugins/subtac
   developed by Matthieu Sozeau (LRI, 2005-2008)
 plugins/micromega

@@ -15,10 +15,9 @@
 
 open Util
 open Names
-open Context
-open Univ
 open Term
 open Declarations
+open Context.Named.Declaration
 
 (* The type of environments. *)
 
@@ -45,7 +44,7 @@ type globals = {
   env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
-  env_universes : universes;
+  env_universes : UGraph.t;
   env_engagement : engagement
 }
 
@@ -66,18 +65,19 @@ type named_vals = (Id.t * lazy_val) list
 
 type env = {
   env_globals       : globals;
-  env_named_context : named_context;
+  env_named_context : Context.Named.t;
   env_named_vals    : named_vals;
-  env_rel_context   : rel_context;
+  env_rel_context   : Context.Rel.t;
   env_rel_val       : lazy_val list;
   env_nb_rel        : int;
   env_stratification : stratification;
+  env_typing_flags  : typing_flags;
   env_conv_oracle   : Conv_oracle.oracle;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
 }
 
-type named_context_val = named_context * named_vals
+type named_context_val = Context.Named.t * named_vals
 
 let empty_named_context_val = [],[]
 
@@ -87,14 +87,15 @@ let empty_env = {
     env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
-  env_named_context = empty_named_context;
+  env_named_context = Context.Named.empty;
   env_named_vals = [];
-  env_rel_context = empty_rel_context;
+  env_rel_context = Context.Rel.empty;
   env_rel_val = [];
   env_nb_rel = 0;
   env_stratification = {
-    env_universes = initial_universes;
-    env_engagement = (PredicativeSet,StratifiedType) };
+    env_universes = UGraph.initial_universes;
+    env_engagement = PredicativeSet };
+  env_typing_flags = Declareops.safe_flags;
   env_conv_oracle = Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge;
   indirect_pterms = Opaqueproof.empty_opaquetab }
@@ -107,7 +108,7 @@ let nb_rel env = env.env_nb_rel
 let push_rel d env =
   let rval = ref VKnone in
     { env with
-      env_rel_context = add_rel_decl d env.env_rel_context;
+      env_rel_context = Context.Rel.add d env.env_rel_context;
       env_rel_val = rval :: env.env_rel_val;
       env_nb_rel = env.env_nb_rel + 1 }
 
@@ -125,22 +126,21 @@ let env_of_rel n env =
 (* Named context *)
 
 let push_named_context_val d (ctxt,vals) =
-  let id,_,_ = d in
   let rval = ref VKnone in
-    add_named_decl d ctxt, (id,rval)::vals
+    Context.Named.add d ctxt, (get_id d,rval)::vals
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
   assert (env.env_rel_context = []); *)
-  let id,body,_ = d in
   let rval = ref VKnone in
   { env_globals = env.env_globals;
-    env_named_context = Context.add_named_decl d env.env_named_context;
-    env_named_vals = (id, rval) :: env.env_named_vals;
+    env_named_context = Context.Named.add d env.env_named_context;
+    env_named_vals = (get_id d, rval) :: env.env_named_vals;
     env_rel_context = env.env_rel_context;
     env_rel_val = env.env_rel_val;
     env_nb_rel = env.env_nb_rel;
     env_stratification = env.env_stratification;
+    env_typing_flags = env.env_typing_flags;
     env_conv_oracle = env.env_conv_oracle;
     retroknowledge = env.retroknowledge;
     indirect_pterms = env.indirect_pterms;

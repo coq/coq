@@ -17,14 +17,14 @@ Set Implicit Arguments.
 Ltac Zcst t :=
   match isZcst t with
     true => t
-  | _ => constr:NotConstant
+  | _ => constr:(NotConstant)
   end.
 
 Ltac isZpow_coef t :=
   match t with
   | Zpos ?p => isPcst p
-  | Z0 => constr:true
-  | _ => constr:false
+  | Z0 => constr:(true)
+  | _ => constr:(false)
   end.
 
 Notation N_of_Z := Z.to_N (only parsing).
@@ -32,7 +32,7 @@ Notation N_of_Z := Z.to_N (only parsing).
 Ltac Zpow_tac t :=
  match isZpow_coef t with
  | true => constr:(N_of_Z t)
- | _ => constr:NotConstant
+ | _ => constr:(NotConstant)
  end.
 
 Ltac Zpower_neg :=

@@ -84,3 +84,47 @@ Qed.
 Goal forall x : nat, True.
 intros y%(fun x => x).
 Abort.
+
+(* Fixing a bug in the order of side conditions of a "->" step *)
+
+Goal (True -> 1=0) -> 1=1.
+intros ->.
+- reflexivity.
+- exact I.
+Qed.
+
+Goal forall x, (True -> x=0) -> 0=x.
+intros x ->.
+- reflexivity.
+- exact I.
+Qed.
+
+(* Fixing a bug when destructing a type with let-ins in the constructor *)
+
+Inductive I := C : let x:=1 in x=1 -> I.
+Goal I -> True.
+intros [x H]. (* Was failing in 8.5 *)
+Abort.
+
+(* Ensuring that the (pat1,...,patn) intropatterns has the expected size, up
+   to skipping let-ins *)
+
+Goal I -> 1=1.
+intros (H).  (* This skips x *)
+exact H.
+Qed.
+
+Goal I -> 1=1.
+Fail intros (x,H,H').
+Fail intros [|].
+intros (x,H).
+exact H.
+Qed.
+
+Goal Acc le 0 -> True.
+Fail induction 1 as (n,H). (* Induction hypothesis is missing *)
+induction 1 as (n,H,IH).
+exact Logic.I.
+Qed.
+
+

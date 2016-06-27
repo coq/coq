@@ -11,11 +11,11 @@
 #load "str.cma"
 open Printf
 
-let coq_version = "8.5pl1"
-let coq_macos_version = "8.5.1" (** "[...] should be a string comprised of
+let coq_version = "trunk"
+let coq_macos_version = "8.4.90" (** "[...] should be a string comprised of
 three non-negative, period-separed integers [...]" *)
-let vo_magic = 8500
-let state_magic = 58500
+let vo_magic = 8511
+let state_magic = 58511
 let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqmktop";"coqworkmgr";
 "coqdoc";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert";"coqdep"]
 
@@ -178,6 +178,19 @@ let which prog =
 let program_in_path prog =
   try let _ = which prog in true with Not_found -> false
 
+(** As per bug #4828, ocamlfind on Windows/Cygwin barfs if you pass it
+    a quoted path to camlpXo via -pp.  So we only quote camlpXo on not
+    Windows, and warn on Windows if the path contains spaces *)
+let contains_suspicious_characters str =
+  List.fold_left (fun b ch -> String.contains str ch || b) false [' '; '\t']
+
+let win_aware_quote_executable str =
+  if not (os_type_win32 || os_type_cygwin) then
+    sprintf "%S" str
+  else
+    let _ = if contains_suspicious_characters str then
+      printf "*Warning* The string %S contains suspicious characters; ocamlfind might fail\n" str in
+    Str.global_replace (Str.regexp "\\\\") "/" str
 
 (** * Date *)
 
@@ -236,7 +249,7 @@ module Prefs = struct
   let docdir = ref (None : string option)
   let emacslib = ref (None : string option)
   let coqdocdir = ref (None : string option)
-  let camldir = ref (None : string option)
+  let ocamlfindcmd = ref (None : string option)
   let lablgtkdir = ref (None : string option)
   let usecamlp5 = ref true
   let camlp5dir = ref (None : string option)
@@ -289,8 +302,8 @@ let args_options = Arg.align [
     "<dir> Obsolete: same as -emacslib";
   "-coqdocdir", arg_string_option Prefs.coqdocdir,
     "<dir> Where to install Coqdoc style files";
-  "-camldir", arg_string_option Prefs.camldir,
-    "<dir> Specifies the path to the OCaml binaries";
+  "-ocamlfind", arg_string_option Prefs.ocamlfindcmd,
+    "<dir> Specifies the ocamlfind command to use";
   "-lablgtkdir", arg_string_option Prefs.lablgtkdir,
     "<dir> Specifies the path to the Lablgtk library";
   "-usecamlp5", Arg.Set Prefs.usecamlp5,
@@ -351,42 +364,18 @@ let _ = parse_args ()
 (** Default OCaml binaries *)
 
 type camlexec =
- { mutable byte : string;
-   mutable opt : string;
+ { mutable find : string;
    mutable top : string;
-   mutable mklib : string;
-   mutable dep : string;
-   mutable doc : string;
-   mutable lex : string;
-   mutable yacc : string }
-
-(* TODO: autodetect .opt binaries ? *)
+   mutable lex : string; }
 
 let camlexec =
-  { byte = "ocamlc";
-    opt = "ocamlopt";
+  { find = "ocamlfind";
     top = "ocaml";
-    mklib = "ocamlmklib";
-    dep = "ocamldep";
-    doc = "ocamldoc";
-    lex = "ocamllex";
-    yacc = "ocamlyacc" }
+    lex = "ocamllex"; }
 
-let reset_caml_byte c o = c.byte <- o
-let reset_caml_opt c o = c.opt <- o
-let reset_caml_doc c o = c.doc <- o
 let reset_caml_lex c o = c.lex <- o
-let reset_caml_dep c o = c.dep <- o
-
-let rebase_camlexec dir c =
-  c.byte <- Filename.concat dir c.byte;
-  c.opt <- Filename.concat dir c.opt;
-  c.top <- Filename.concat dir c.top;
-  c.mklib <- Filename.concat dir c.mklib;
-  c.dep <- Filename.concat dir c.dep;
-  c.doc <- Filename.concat dir c.doc;
-  c.lex <- Filename.concat dir c.lex;
-  c.yacc <- Filename.concat dir c.yacc
+let reset_caml_top c o = c.top <- o
+let reset_caml_find c o = c.find <- o
 
 let coq_debug_flag = if !Prefs.debug then "-g" else ""
 let coq_profile_flag = if !Prefs.profile then "-p" else ""
@@ -458,32 +447,28 @@ let browser =
 (** * OCaml programs *)
 
 let camlbin, caml_version, camllib =
-  let camlbin, camlc = match !Prefs.camldir with
-  | Some dir ->
-    rebase_camlexec dir camlexec;
-    Filename.dirname camlexec.byte, camlexec.byte
-  | None ->
-    try let camlc = which camlexec.byte in
-        let dir = Filename.dirname camlc in
-        if not arch_win32 then rebase_camlexec dir camlexec; (* win32: TOCHECK *)
-        dir, camlc
-    with Not_found ->
-      die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.byte ^
-           "Please adjust your path or use the -camldir option of ./configure")
+  let () = match !Prefs.ocamlfindcmd with
+    | Some cmd -> reset_caml_find camlexec cmd
+    | None ->
+       try reset_caml_find camlexec (which camlexec.find)
+       with Not_found ->
+	 die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.find ^
+		"Please adjust your path or use the -ocamlfind option of ./configure")
   in
-  let camlcopt = camlc ^ ".opt" in
-  let camlc =
-    if is_executable camlcopt then begin
-      reset_caml_byte camlexec (camlexec.byte ^ ".opt");
-      camlcopt
-    end
-    else if is_executable camlc then
-      camlc
-    else
-      die ("Error: cannot find the executable '"^camlc^"'.") in
-  let caml_version, _ = run camlc ["-version"] in
-  let camllib, _ = run camlc ["-where"] in
-  camlbin, caml_version, camllib
+  if not (is_executable camlexec.find)
+  then die ("Error: cannot find the executable '"^camlexec.find^"'.")
+  else
+    let caml_version, _ = run camlexec.find ["ocamlc";"-version"] in
+    let camllib, _ = run camlexec.find ["printconf";"stdlib"] in
+    let camlbin = (* TODO beurk beurk beurk *)
+      Filename.dirname (Filename.dirname camllib) / "bin/" in
+    let () =
+      if is_executable (camlbin / "ocamllex")
+      then reset_caml_lex camlexec (camlbin / "ocamllex") in
+    let () =
+      if is_executable (camlbin / "ocaml")
+      then reset_caml_top camlexec (camlbin / "ocaml") in
+    camlbin, caml_version, camllib
 
 let camlp4compat = "-loc loc"
 
@@ -502,7 +487,7 @@ let caml_version_nums =
          "Is it installed properly?")
 
 let check_caml_version () =
-  if caml_version_nums >= [3;12;1] then
+  if caml_version_nums >= [4;1;0] then
     if caml_version_nums = [4;2;0] && not !Prefs.force_caml_version then
       die ("Your version of OCaml is 4.02.0 which suffers from a bug inducing\n" ^
         "very slow compilation times. If you still want to use it, use \n" ^
@@ -514,7 +499,7 @@ let check_caml_version () =
     if !Prefs.force_caml_version then
       printf "*Warning* Your version of OCaml is outdated.\n"
     else
-      die "You need OCaml 3.12.1 or later."
+      die "You need OCaml 4.01 or later."
 
 let _ = check_caml_version ()
 
@@ -531,12 +516,8 @@ let camltag = match caml_version_list with
 (* Convention: we use camldir as a prioritary location for camlpX, if given *)
 
 let which_camlpX base =
-  match !Prefs.camldir with
-  | Some dir ->
-    let file = Filename.concat dir base in
-    if is_executable file then file else which base
-  | None ->
-    which base
+  let file = Filename.concat camlbin base in
+  if is_executable file then file else which base
 
 (* TODO: camlp5dir should rather be the *binary* location, just as camldir *)
 (* TODO: remove the late attempts at finding gramlib.cma *)
@@ -569,9 +550,9 @@ let check_camlp5_version camlp5o =
   let version_line, _ = run ~err:StdOut camlp5o ["-v"] in
   let version = List.nth (string_split ' ' version_line) 2 in
   match string_split '.' version with
-  | major::minor::_ when s2i major > 5 || (s2i major, s2i minor) >= (5,1) ->
+  | major::minor::_ when s2i major > 6 || (s2i major, s2i minor) >= (6,6) ->
     printf "You have Camlp5 %s. Good!\n" version; version
-  | _ -> die "Error: unsupported Camlp5 (version < 5.01 or unrecognized).\n"
+  | _ -> die "Error: unsupported Camlp5 (version < 6.06 or unrecognized).\n"
 
 let check_caml_version_for_camlp4 () =
   if caml_version_nums = [4;1;0] && !Prefs.debug && not !Prefs.force_caml_version then
@@ -630,60 +611,29 @@ let msg_no_dynlink_cmxa () =
   printf "and then run ./configure -natdynlink no\n"
 
 let check_native () =
-  if !Prefs.byteonly then raise Not_found;
-  let camloptopt = camlexec.opt ^ ".opt" in
-  if (is_executable camloptopt || program_in_path camloptopt) then
-    reset_caml_opt camlexec camloptopt
-  else if not (is_executable camlexec.opt || program_in_path camlexec.opt) then
-    (msg_no_ocamlopt (); raise Not_found);
-  if not (Sys.file_exists (fullcamlpXlibdir/camlpXmod^".cmxa")) then
-    (msg_no_camlpX_cmxa (); raise Not_found);
-  if not (Sys.file_exists (camllib/"dynlink.cmxa")) then
-    (msg_no_dynlink_cmxa (); raise Not_found);
-  let version, _ = run camlexec.opt ["-version"] in
-  if version <> caml_version then
-    printf
-      "Warning: Native and bytecode compilers do not have the same version!\n";
-  printf "You have native-code compilation. Good!\n"
+  let () = if !Prefs.byteonly then raise Not_found in
+  let version, _ = tryrun camlexec.find ["opt";"-version"] in
+  if version = "" then let () = msg_no_ocamlopt () in raise Not_found
+  else if not (Sys.file_exists (fullcamlpXlibdir/camlpXmod^".cmxa"))
+  then let () = msg_no_camlpX_cmxa () in raise Not_found
+  else if fst (tryrun camlexec.find ["query";"dynlink"]) = ""
+  then let () = msg_no_dynlink_cmxa () in raise Not_found
+  else
+    let () =
+      if version <> caml_version then
+	printf
+	  "Warning: Native and bytecode compilers do not have the same version!\n"
+    in printf "You have native-code compilation. Good!\n"
 
 let best_compiler =
   try check_native (); "opt" with Not_found -> "byte"
-
-let _ =
-  let camllexopt = camlexec.lex ^ ".opt" in
-  if is_executable camllexopt || program_in_path camllexopt then
-    reset_caml_lex camlexec camllexopt
-
-let _ =
-  let camldepopt = camlexec.dep ^ ".opt" in
-  if is_executable camldepopt || program_in_path camldepopt then
-    reset_caml_dep camlexec camldepopt
-
-let _ =
-  let camldocopt = camlexec.doc ^ ".opt" in
-  if is_executable camldocopt || program_in_path camldocopt then
-    reset_caml_doc camlexec camldocopt
 
 (** * Native dynlink *)
 
 let hasnatdynlink = !Prefs.natdynlink && best_compiler = "opt"
 
-(** OCaml 3.11.0 dynlink is buggy on MacOS 10.5, and possibly
-    also on 10.6.(0|1|2) for x86_64 and 10.6.x on x86_32 *)
-
-let needs_MacOS_fix () =
-  match hasnatdynlink, arch, caml_version_nums with
-  | true, "Darwin", 3::11::_ ->
-    (match string_split '.' (fst(run "uname" ["-r"])) with
-    | "9"::_ -> true
-    | "10"::("0"|"1"|"2")::_ -> true
-    | "10"::_ when Sys.word_size = 32 -> true
-    | _ -> false)
-  | _ -> false
-
 let natdynlinkflag =
-  if needs_MacOS_fix () then "os5fixme" else
-    if hasnatdynlink then "true" else "false"
+  if hasnatdynlink then "true" else "false"
 
 
 (** * OS dependent libraries *)
@@ -703,10 +653,18 @@ let operating_system, osdeplibs =
 
 (** * lablgtk2 and CoqIDE *)
 
+type source = Manual | OCamlFind | Stdlib
+
+let get_source = function
+| Manual -> "manually provided"
+| OCamlFind -> "via ocamlfind"
+| Stdlib -> "in OCaml library"
+
 (** Is some location a suitable LablGtk2 installation ? *)
 
-let check_lablgtkdir ?(fatal=false) msg dir =
+let check_lablgtkdir ?(fatal=false) src dir =
   let yell msg = if fatal then die msg else (printf "%s\n" msg; false) in
+  let msg = get_source src in
   if not (dir_exists dir) then
     yell (sprintf "No such directory '%s' (%s)." dir msg)
   else if not (Sys.file_exists (dir/"gSourceView2.cmi")) then
@@ -720,11 +678,11 @@ let check_lablgtkdir ?(fatal=false) msg dir =
 let get_lablgtkdir () =
   match !Prefs.lablgtkdir with
   | Some dir ->
-    let msg = "manually provided" in
+    let msg = Manual in
     if check_lablgtkdir ~fatal:true msg dir then dir, msg
-    else "", ""
+    else "", msg
   | None ->
-    let msg = "via ocamlfind" in
+    let msg = OCamlFind in
     let d1,_ = tryrun "ocamlfind" ["query";"lablgtk2.sourceview2"] in
     if d1 <> "" && check_lablgtkdir msg d1 then d1, msg
     else
@@ -732,10 +690,34 @@ let get_lablgtkdir () =
       let d2,_ = tryrun "ocamlfind" ["query";"lablgtk2"] in
       if d2 <> "" && d2 <> d1 && check_lablgtkdir msg d2 then d2, msg
       else
-        let msg = "in OCaml library" in
+        let msg = Stdlib in
         let d3 = camllib^"/lablgtk2" in
         if check_lablgtkdir msg d3 then d3, msg
-        else "", ""
+        else "", msg
+
+(** Detect and/or verify the Lablgtk2 version *)
+
+let check_lablgtk_version src dir = match src with
+| Manual | Stdlib ->
+  let test accu f =
+    if accu then
+      let test = sprintf "grep -q -w %s %S/glib.mli" f dir in
+      Sys.command test = 0
+    else false
+  in
+  let heuristics = [
+    "convert_with_fallback";
+    "wrap_poll_func"; (** Introduced in lablgtk 2.16 *)
+  ] in
+  let ans = List.fold_left test true heuristics in
+  if ans then printf "Warning: could not check the version of lablgtk2.\n";
+  (ans, "an unknown version")
+| OCamlFind ->
+  let v, _ = tryrun "ocamlfind" ["query"; "-format"; "%v"; "lablgtk2"] in
+  try
+    let vi = List.map s2i (numeric_prefix_list v) in
+    ([2; 16] <= vi, v)
+  with _ -> (false, v)
 
 let pr_ide = function No -> "no" | Byte -> "only bytecode" | Opt -> "native"
 
@@ -759,9 +741,9 @@ let check_coqide () =
   if !Prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
   let dir, via = get_lablgtkdir () in
   if dir = "" then set_ide No "LablGtk2 not found";
-  let found = sprintf "LablGtk2 found (%s)" via in
-  let test = sprintf "grep -q -w convert_with_fallback %S/glib.mli" dir in
-  if Sys.command test <> 0 then set_ide No (found^" but too old");
+  let (ok, version) = check_lablgtk_version via dir in
+  let found = sprintf "LablGtk2 found (%s, %s)" (get_source via) version in
+  if not ok then set_ide No (found^", but too old (required >= 2.16, found " ^ version ^ ")");
   (* We're now sure to produce at least one kind of coqide *)
   lablgtkdir := shorten_camllib dir;
   if !Prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
@@ -814,14 +796,14 @@ let strip =
     if hasnatdynlink then "true" else "strip"
   else
     if !Prefs.profile || !Prefs.debug then "true" else begin
-    let _, all = run camlexec.byte ["-config"] in
+    let _, all = run camlexec.find ["ocamlc";"-config"] in
     let strip = String.concat "" (List.map (fun l ->
         match string_split ' ' l with
         | "ranlib:" :: cc :: _ -> (* on windows, we greb the right strip *)
              Str.replace_first (Str.regexp "ranlib") "strip" cc
         | _ -> ""
       ) all) in
-    if strip = "" then "stip" else strip
+    if strip = "" then "strip" else strip
     end
 
 (** * md5sum command *)
@@ -1009,7 +991,7 @@ let write_dbg_wrapper f =
 let _ = write_dbg_wrapper "dev/ocamldebug-coq"
 
 
-(** * Build the config/coq_config.ml file (+ link to myocamlbuild_config.ml) *)
+(** * Build the config/coq_config.ml file *)
 
 let write_configml f =
   safe_remove f;
@@ -1031,12 +1013,7 @@ let write_configml f =
   pr_o "datadir" datadir;
   pr_s "docdir" docdir;
   pr_s "ocaml" camlexec.top;
-  pr_s "ocamlc" camlexec.byte;
-  pr_s "ocamlopt" camlexec.opt;
-  pr_s "ocamlmklib" camlexec.mklib;
-  pr_s "ocamldep" camlexec.dep;
-  pr_s "ocamldoc" camlexec.doc;
-  pr_s "ocamlyacc" camlexec.yacc;
+  pr_s "ocamlfind" camlexec.find;
   pr_s "ocamllex" camlexec.lex;
   pr_s "camlbin" camlbin;
   pr_s "camllib" camllib;
@@ -1081,15 +1058,18 @@ let write_configml f =
   close_out o;
   Unix.chmod f 0o444
 
-let write_configml_my f f' =
-  write_configml f;
-  if os_type_win32 then
-    write_configml f'
-  else
-    (safe_remove f'; Unix.symlink f f')
+let _ = write_configml "config/coq_config.ml"
 
-let _ = write_configml_my "config/coq_config.ml" "myocamlbuild_config.ml"
+(** * Symlinks or copies for the checker *)
 
+let _ =
+  let prog, args, prf =
+    if arch = "win32" then "cp", [], ""
+    else "ln", ["-s"], "../" in
+  List.iter (fun file ->
+    ignore(run "rm" ["-f"; "checker/"^file]);
+    ignore(run ~fatal:true prog (args @ [prf^"kernel/"^file;"checker/"^file])))
+  [ "esubst.ml"; "esubst.mli"; "names.ml"; "names.mli" ]
 
 (** * Build the config/Makefile file *)
 
@@ -1120,13 +1100,8 @@ let write_makefile f =
   pr "VERSION4MACOS=%s\n\n" coq_macos_version;
   pr "# Objective-Caml compile command\n";
   pr "OCAML=%S\n" camlexec.top;
-  pr "OCAMLC=%S\n" camlexec.byte;
-  pr "OCAMLMKLIB=%S\n" camlexec.mklib;
-  pr "OCAMLOPT=%S\n" camlexec.opt;
-  pr "OCAMLDEP=%S\n" camlexec.dep;
-  pr "OCAMLDOC=%S\n" camlexec.doc;
+  pr "OCAMLFIND=%S\n" camlexec.find;
   pr "OCAMLLEX=%S\n" camlexec.lex;
-  pr "OCAMLYACC=%S\n\n" camlexec.yacc;
   pr "# The best compiler: native (=opt) or bytecode (=byte)\n";
   pr "BEST=%s\n\n" best_compiler;
   pr "# Ocaml version number\n";
@@ -1136,8 +1111,6 @@ let write_makefile f =
   pr "# Ocaml .h directory\n";
   pr "CAMLHLIB=%S\n\n" camllib;
   pr "# Caml link command and Caml make top command\n";
-  pr "CAMLLINK=%S\n" camlexec.byte;
-  pr "CAMLOPTLINK=%S\n\n" camlexec.opt;
   pr "# Caml flags\n";
   pr "CAMLFLAGS=-rectypes %s\n" coq_annotate_flag;
   pr "# User compilation flag\n";
@@ -1152,7 +1125,7 @@ let write_makefile f =
   pr "# Camlp4 : flavor, binaries, libraries ...\n";
   pr "# NB : avoid using CAMLP4LIB (conflict under Windows)\n";
   pr "CAMLP4=%s\n" camlpX;
-  pr "CAMLP4O=%S\n" camlpXo;
+  pr "CAMLP4O=%s\n" (win_aware_quote_executable camlpXo);
   pr "CAMLP4COMPAT=%s\n" camlp4compat;
   pr "MYCAMLP4LIB=%S\n\n" camlpXlibdir;
   pr "# Your architecture\n";

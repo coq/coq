@@ -794,7 +794,7 @@ Definition xnormalise (t:Formula C) : list (NFormula)  :=
       | OpLe => (psub lhs rhs ,Strict) :: nil
     end.
 
-Require Import Tauto.
+Require Import Coq.micromega.Tauto.
 
 Definition cnf_normalise (t:Formula C) : cnf (NFormula) :=
   List.map  (fun x => x::nil) (xnormalise t).

@@ -9,6 +9,8 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Cctac
+open Stdarg
+open Constrarg
 
 DECLARE PLUGIN "cc_plugin"
 

@@ -8,9 +8,14 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+DECLARE PLUGIN "extraction_plugin"
+
 (* ML names *)
 
 open Genarg
+open Stdarg
+open Constrarg
+open Pcoq.Prim
 open Pp
 open Names
 open Nameops
@@ -31,7 +36,6 @@ let pr_int_or_id _ _ _ = function
   | ArgId id -> pr_id id
 
 ARGUMENT EXTEND int_or_id
-  TYPED AS int_or_id
   PRINTED BY pr_int_or_id
 | [ preident(id) ] -> [ ArgId (Id.of_string id) ]
 | [ integer(i) ] -> [ ArgInt i ]
@@ -99,7 +103,7 @@ END
 
 VERNAC COMMAND EXTEND PrintExtractionInline CLASSIFIED AS QUERY
 | [ "Print" "Extraction" "Inline" ]
-  -> [ msg_info (print_extraction_inline ()) ]
+  -> [Feedback. msg_info (print_extraction_inline ()) ]
 END
 
 VERNAC COMMAND EXTEND ResetExtractionInline CLASSIFIED AS SIDEFF
@@ -121,7 +125,7 @@ END
 
 VERNAC COMMAND EXTEND PrintExtractionBlacklist CLASSIFIED AS QUERY
 | [ "Print" "Extraction" "Blacklist" ]
-  -> [ msg_info (print_extraction_blacklist ()) ]
+  -> [ Feedback.msg_info (print_extraction_blacklist ()) ]
 END
 
 VERNAC COMMAND EXTEND ResetExtractionBlacklist CLASSIFIED AS SIDEFF

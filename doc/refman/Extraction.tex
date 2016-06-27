@@ -3,7 +3,7 @@
 \aauthor{Jean-Christophe Filliâtre and Pierre Letouzey}
 \index{Extraction}
 
-We present here the \Coq\ extraction commands, used to build certified
+\noindent We present here the \Coq\ extraction commands, used to build certified
 and relatively efficient functional programs, extracting them from
 either \Coq\ functions or \Coq\ proofs of specifications. The
 functional languages available as output are currently \ocaml{},
@@ -30,7 +30,7 @@ The next two commands are meant to be used for rapid preview of
 extraction. They both display extracted term(s) inside \Coq.
 
 \begin{description}
-\item {\tt Extraction \qualid.} ~\par
+\item {\tt Extraction \qualid{}.} ~\par
   Extraction of a constant or module in the \Coq\ toplevel.
 
 \item {\tt Recursive Extraction} \qualid$_1$ \dots\ \qualid$_n$. ~\par
@@ -40,7 +40,7 @@ extraction. They both display extracted term(s) inside \Coq.
 
 %% TODO error messages
 
-All the following commands produce real ML files. User can choose to produce
+\noindent All the following commands produce real ML files. User can choose to produce
 one monolithic file or one file per \Coq\ library. 
 
 \begin{description}
@@ -76,7 +76,7 @@ one monolithic file or one file per \Coq\ library.
   using prefixes \verb!coq_!  or \verb!Coq_!.
 \end{description}
 
-The list of globals \qualid$_i$ does not need to be
+\noindent The list of globals \qualid$_i$ does not need to be
 exhaustive: it is automatically completed into a complete and minimal
 environment. 
 
@@ -215,7 +215,7 @@ arguments. In fact, an argument can also be referred by a number
 indicating its position, starting from 1.
 \end{description}
 
-When an actual extraction takes place, an error is normally raised if the
+\noindent When an actual extraction takes place, an error is normally raised if the
 {\tt Extraction Implicit}
 declarations cannot be honored, that is if any of the implicited
 variables still occurs in the final code. This behavior can be relaxed
@@ -260,7 +260,7 @@ what ML term corresponds to a given axiom.
   be inlined everywhere instead of being declared via a let.
 \end{description}
 
-Note that the {\tt Extract Inlined Constant} command is sugar
+\noindent Note that the {\tt Extract Inlined Constant} command is sugar
 for an {\tt Extract Constant} followed by a {\tt Extraction Inline}. 
 Hence a {\tt Reset Extraction Inline} will have an effect on the
 realized and inlined axiom.
@@ -279,7 +279,7 @@ Extract Constant X => "int".
 Extract Constant x => "0".
 \end{coq_example*}
 
-Notice that in the case of type scheme axiom (i.e. whose type is an
+\noindent Notice that in the case of type scheme axiom (i.e. whose type is an
 arity, that is a sequence of product finished by a sort), then some type
 variables have to be given. The syntax is then:
 
@@ -287,7 +287,7 @@ variables have to be given. The syntax is then:
 \item{\tt Extract Constant \qualid\ \str$_1$ \dots\ \str$_n$ => \str.}
 \end{description}
 
-The number of type variables is checked by the system. 
+\noindent The number of type variables is checked by the system. 
 
 \Example
 \begin{coq_example*}
@@ -295,7 +295,7 @@ Axiom Y : Set -> Set -> Set.
 Extract Constant Y "'a" "'b" => " 'a*'b ".
 \end{coq_example*}
 
-Realizing an axiom via {\tt Extract Constant} is only useful in the
+\noindent Realizing an axiom via {\tt Extract Constant} is only useful in the
 case of an informative axiom (of sort Type or Set). A logical axiom
 have no computational content and hence will not appears in extracted
 terms. But a warning is nonetheless issued if extraction encounters a
@@ -325,7 +325,7 @@ native boolean type instead of \Coq\ one.  The syntax is the following:
   pattern-matching of the language will be used.
 \end{description}
 
-For an inductive type with $k$ constructor, the function used to
+\noindent For an inductive type with $k$ constructor, the function used to
 emulate the match should expect $(k+1)$ arguments, first the $k$
 branches in functional form, and then the inductive element to
 destruct. For instance, the match branch \verb$| S n => foo$ gives the
@@ -365,7 +365,7 @@ Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
 \end{coq_example}
 
-If an inductive constructor or type has arity 2 and the corresponding 
+\noindent If an inductive constructor or type has arity 2 and the corresponding 
 string is enclosed by parenthesis, then the rest of the string is used
 as infix constructor or type. 
 \begin{coq_example}
@@ -373,7 +373,7 @@ Extract Inductive list => "list" [ "[]" "(::)" ].
 Extract Inductive prod => "(*)"  [ "(,)" ].
 \end{coq_example}
 
-As an example of translation to a non-inductive datatype, let's turn
+\noindent As an example of translation to a non-inductive datatype, let's turn
 {\tt nat} into Ocaml's {\tt int} (see caveat above):
 \begin{coq_example}
 Extract Inductive nat => int [ "0" "succ" ]
@@ -402,7 +402,7 @@ It is possible to instruct the extraction not to use particular filenames.
   Allow the extraction to use any filename.
 \end{description}
 
-For Ocaml, a typical use of these commands is
+\noindent For Ocaml, a typical use of these commands is
 {\tt Extraction Blacklist String List}.
 
 \asection{Differences between \Coq\ and ML type systems}
@@ -456,7 +456,7 @@ In Ocaml, we must cast any argument of the constructor dummy.
 
 \end{itemize}
 
-Even with those unsafe castings, you should never get error like
+\noindent Even with those unsafe castings, you should never get error like
 ``segmentation fault''. In fact even if your program may seem
 ill-typed to the Ocaml type-checker, it can't go wrong: it comes 
 from a Coq well-typed terms, so for example inductives will always 
@@ -489,7 +489,7 @@ Inductive nat : Set :=
   | S : nat -> nat.
 \end{coq_example*}
 
-This module contains a theorem {\tt eucl\_dev}, whose type is
+\noindent This module contains a theorem {\tt eucl\_dev}, whose type is
 \begin{verbatim}
 forall b:nat, b > 0 -> forall a:nat, diveucl a b
 \end{verbatim}
@@ -506,7 +506,7 @@ Extraction Inline gt_wf_rec lt_wf_rec induction_ltof2.
 Recursive Extraction eucl_dev.
 \end{coq_example}
 
-The inlining of {\tt gt\_wf\_rec} and others is not
+\noindent The inlining of {\tt gt\_wf\_rec} and others is not
 mandatory. It only enhances readability of extracted code.
 You can then copy-paste the output to a file {\tt euclid.ml} or let 
 \Coq\ do it for you with the following command: 
@@ -515,7 +515,7 @@ You can then copy-paste the output to a file {\tt euclid.ml} or let
 Extraction "euclid" eucl_dev.
 \end{verbatim}
 
-Let us play the resulting program:
+\noindent Let us play the resulting program:
 
 \begin{verbatim}
 # #use "euclid.ml";;
@@ -543,7 +543,7 @@ val div : int -> int -> int * int = <fun>
 - : int * int = (11, 8)
 \end{verbatim}
 
-Note that these {\tt nat\_of\_int} and {\tt int\_of\_nat} are now
+\noindent Note that these {\tt nat\_of\_int} and {\tt int\_of\_nat} are now
 available via a mere {\tt Require Import ExtrOcamlIntConv} and then
 adding these functions to the list of functions to extract. This file
 {\tt ExtrOcamlIntConv.v} and some others in {\tt plugins/extraction/}
@@ -551,7 +551,7 @@ are meant to help building concrete program via extraction.
 
 \asubsection{Extraction's horror museum}
 
-Some pathological examples of extraction are grouped in the file
+Some pathological examples of extraction are grouped in the file\\
 {\tt test-suite/success/extraction.v} of the sources of \Coq.
 
 \asubsection{Users' Contributions}
@@ -579,7 +579,7 @@ extraction test:
 \item {\tt stalmarck}
 \end{itemize}
 
-{\tt continuations} and {\tt multiplier} are a bit particular. They are
+\noindent {\tt continuations} and {\tt multiplier} are a bit particular. They are
 examples of developments where {\tt Obj.magic} are needed.  This is
 probably due to an heavy use of impredicativity. After compilation, those
 two examples run nonetheless, thanks to the correction of the

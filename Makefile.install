@@ -1,0 +1,146 @@
+#######################################################################
+#  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
+# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
+#   \VV/  #############################################################
+#    //   #      This file is distributed under the terms of the      #
+#         #       GNU Lesser General Public License Version 2.1       #
+#######################################################################
+
+# This makefile regroups installation rules
+# It is included by Makefile.build
+
+# NOTA: currently, the install rules below assume that everything needed
+# has already been correctly built. In particular, this is *not* enforced
+# by dependencies between rules, so do *not* try overly clever things like
+# 'make world install' in one unique command
+
+ifeq ($(LOCAL),true)
+install:
+	@echo "Nothing to install in a local build!"
+else
+install: install-coq install-coqide install-doc-$(WITHDOC)
+endif
+
+# NOTA: for install-coqide, see Makefile.ide
+
+install-doc-all: install-doc
+install-doc-no:
+
+.PHONY: install install-doc-all install-doc-no
+
+#These variables are intended to be set by the caller to make
+#COQINSTALLPREFIX=
+#OLDROOT=
+
+  # Can be changed for a local installation (to make packages).
+  # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
+
+ifdef COQINSTALLPREFIX
+FULLBINDIR=$(BINDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLCOQLIB=$(COQLIBINSTALL:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLCONFIGDIR=$(CONFIGDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLDATADIR=$(DATADIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLMANDIR=$(MANDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLEMACSLIB=$(EMACSLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLCOQDOCDIR=$(COQDOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLDOCDIR=$(DOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+else
+FULLBINDIR=$(BINDIR)
+FULLCOQLIB=$(COQLIBINSTALL)
+FULLCONFIGDIR=$(CONFIGDIR)
+FULLDATADIR=$(DATADIR)
+FULLMANDIR=$(MANDIR)
+FULLEMACSLIB=$(EMACSLIB)
+FULLCOQDOCDIR=$(COQDOCDIR)
+FULLDOCDIR=$(DOCDIR)
+endif
+
+.PHONY: install-coq install-binaries install-byte install-opt
+.PHONY: install-tools install-library install-devfiles
+.PHONY: install-coq-info install-coq-manpages install-emacs install-latex
+
+install-coq: install-binaries install-library install-coq-info install-devfiles
+
+install-binaries: install-tools
+	$(MKDIR) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQC) $(COQTOPBYTE) $(COQTOPEXE) $(CHICKEN) $(FULLBINDIR)
+	$(MKDIR) $(FULLCOQLIB)/toploop
+	$(INSTALLBIN) $(TOPLOOPCMA) $(FULLCOQLIB)/toploop/
+ifeq ($(BEST),opt)
+	$(INSTALLBIN) $(TOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
+endif
+
+
+install-tools:
+	$(MKDIR) $(FULLBINDIR)
+	# recopie des fichiers de style pour coqide
+	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
+	touch $(FULLCOQLIB)/tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc/coqdoc.css # to have the mode according to umask (bug #1715)
+	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
+	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
+
+# The list of .cmi to install, including in particular
+# - the ones obtained from .mli without .ml
+# - the ones of modules in core cma's
+# - the ones corresponding to packed plugins
+
+INSTALLCMI = $(sort \
+	$(filter-out checker/% ide/% tools/%, $(MLIFILES:.mli=.cmi)) \
+	$(foreach lib,$(CORECMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES))))) \
+	$(PLUGINS:.cmo=.cmi)
+
+install-devfiles:
+	$(MKDIR) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQMKTOP) $(FULLBINDIR)
+	$(MKDIR) $(FULLCOQLIB)
+	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMO) $(GRAMMARCMA)
+	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
+ifeq ($(BEST),opt)
+	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
+endif
+
+install-library:
+	$(MKDIR) $(FULLCOQLIB)
+	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS)
+	$(MKDIR) $(FULLCOQLIB)/user-contrib
+ifndef CUSTOM
+	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
+endif
+ifeq ($(BEST),opt)
+	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
+	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)
+endif
+# csdpcert is not meant to be directly called by the user; we install
+# it with libraries
+	-$(MKDIR) $(FULLCOQLIB)/plugins/micromega
+	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/plugins/micromega
+	rm -f $(FULLCOQLIB)/revision
+	-$(INSTALLLIB) revision $(FULLCOQLIB)
+
+install-coq-info: install-coq-manpages install-emacs install-latex
+
+MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
+	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
+	man/coqwc.1 man/coqdoc.1 man/coqide.1 \
+	man/coq_makefile.1 man/coqmktop.1 man/coqchk.1
+
+install-coq-manpages:
+	$(MKDIR) $(FULLMANDIR)/man1
+	$(INSTALLLIB) $(MANPAGES) $(FULLMANDIR)/man1
+
+install-emacs:
+	$(MKDIR) $(FULLEMACSLIB)
+	$(INSTALLLIB) tools/gallina-db.el tools/coq-font-lock.el tools/gallina-syntax.el tools/gallina.el tools/coq-inferior.el $(FULLEMACSLIB)
+
+# command to update TeX' kpathsea database
+#UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
+
+install-latex:
+	$(MKDIR) $(FULLCOQDOCDIR)
+	$(INSTALLLIB) tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)
+#	-$(UPDATETEX)
+
+# For emacs:
+# Local Variables:
+# mode: makefile
+# End:

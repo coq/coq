@@ -17,15 +17,23 @@
 
 DECLARE PLUGIN "omega_plugin"
 
+open Names
 open Coq_omega
+open Constrarg
+
+let eval_tactic name =
+  let dp = DirPath.make (List.map Id.of_string ["PreOmega"; "omega"; "Coq"]) in
+  let kn = KerName.make2 (MPfile dp) (Label.make name) in
+  let tac = Tacenv.interp_ltac kn in
+  Tacinterp.eval_tactic tac
 
 let omega_tactic l =
   let tacs = List.map
     (function
-       | "nat" -> Tacinterp.interp <:tactic<zify_nat>>
-       | "positive" -> Tacinterp.interp <:tactic<zify_positive>>
-       | "N" -> Tacinterp.interp <:tactic<zify_N>>
-       | "Z" -> Tacinterp.interp <:tactic<zify_op>>
+       | "nat" -> eval_tactic "zify_nat"
+       | "positive" -> eval_tactic "zify_positive"
+       | "N" -> eval_tactic "zify_N"
+       | "Z" -> eval_tactic "zify_op"
        | s -> Errors.error ("No Omega knowledge base for type "^s))
     (Util.List.sort_uniquize String.compare l)
   in

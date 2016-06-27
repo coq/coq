@@ -20,7 +20,6 @@ type t =
   | AGlobAtomicTacticExpr of glob_atomic_tactic_expr
   | ARawTacticExpr        of raw_tactic_expr
   | ARawAtomicTacticExpr  of raw_atomic_tactic_expr
-  | ATacticExpr           of tactic_expr
   | AAtomicTacticExpr     of atomic_tactic_expr
 
 let tag_of_annotation = function
@@ -32,7 +31,6 @@ let tag_of_annotation = function
   | AGlobAtomicTacticExpr _ -> "glob_atomic_tactic_expr"
   | ARawTacticExpr _        -> "raw_tactic_expr"
   | ARawAtomicTacticExpr _  -> "raw_atomic_tactic_expr"
-  | ATacticExpr _           -> "tactic_expr"
   | AAtomicTacticExpr _     -> "atomic_tactic_expr"
 
 let attributes_of_annotation a =

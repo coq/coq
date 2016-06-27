@@ -19,14 +19,15 @@ val env : unit -> Environ.env
 
 val env_is_initial : unit -> bool
 
-val universes : unit -> Univ.universes
+val universes : unit -> UGraph.t
 val named_context_val : unit -> Environ.named_context_val
-val named_context : unit -> Context.named_context
+val named_context : unit -> Context.Named.t
 
 (** {6 Enriching the global environment } *)
 
 (** Changing the (im)predicativity of the system *)
 val set_engagement : Declarations.engagement -> unit
+val set_typing_flags : Declarations.typing_flags -> unit
 
 (** Variables, Local definitions, constants, inductive types *)
 
@@ -73,7 +74,7 @@ val add_module_parameter :
 
 (** {6 Queries in the global environment } *)
 
-val lookup_named     : variable -> Context.named_declaration
+val lookup_named     : variable -> Context.Named.Declaration.t
 val lookup_constant  : constant -> Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
@@ -116,6 +117,7 @@ val is_joined_environment : unit -> bool
 
 val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool
+val is_type_in_type : Globnames.global_reference -> bool
 
 val type_of_global_in_context : Environ.env -> 
   Globnames.global_reference -> Constr.types Univ.in_universe_context

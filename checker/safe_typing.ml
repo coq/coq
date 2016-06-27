@@ -13,6 +13,8 @@ open Cic
 open Names
 open Environ
 
+let pr_dirpath dp = str (DirPath.to_string dp)
+
 (************************************************************************)
 (*
  * Global environment
@@ -33,28 +35,23 @@ let full_add_module dp mb univs digest =
   genv := add_digest env dp digest
 
 (* Check that the engagement expected by a library extends the initial one *)
-let check_engagement env (expected_impredicative_set,expected_type_in_type) =
-  let impredicative_set,type_in_type = Environ.engagement env in
+let check_engagement env expected_impredicative_set =
+  let impredicative_set = Environ.engagement env in
   begin
     match impredicative_set, expected_impredicative_set with
     | PredicativeSet, ImpredicativeSet ->
         Errors.error "Needs option -impredicative-set."
     | _ -> ()
   end;
-  begin
-    match type_in_type, expected_type_in_type with
-    | StratifiedType, TypeInType ->
-        Errors.error "Needs option -type-in-type."
-    | _ -> ()
-  end
+  ()
 
 (* Libraries = Compiled modules *)
 
 let report_clash f caller dir =
   let msg =
-    str "compiled library " ++ str(DirPath.to_string caller) ++
+    str "compiled library " ++ pr_dirpath caller ++
     spc() ++ str "makes inconsistent assumptions over library" ++ spc() ++
-    str(DirPath.to_string dir) ++ fnl() in
+    pr_dirpath dir ++ fnl() in
   f msg
 
 
@@ -79,7 +76,7 @@ let stamp_library file digest = ()
    warning is issued in case of mismatch *)
 let import file clib univs digest =
   let env = !genv in
-  check_imports msg_warning clib.comp_name env clib.comp_deps;
+  check_imports Feedback.msg_warning clib.comp_name env clib.comp_deps;
   check_engagement env clib.comp_enga;
   let mb = clib.comp_mod in
   Mod_checking.check_module
@@ -91,7 +88,7 @@ let import file clib univs digest =
 (* When the module is admitted, digests *must* match *)
 let unsafe_import file clib univs digest =
   let env = !genv in
-  if !Flags.debug then check_imports msg_warning clib.comp_name env clib.comp_deps
+  if !Flags.debug then check_imports Feedback.msg_warning clib.comp_name env clib.comp_deps
   else check_imports (errorlabstrm"unsafe_import") clib.comp_name env clib.comp_deps;
   check_engagement env clib.comp_enga;
   full_add_module clib.comp_name clib.comp_mod univs digest

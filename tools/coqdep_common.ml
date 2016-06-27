@@ -9,10 +9,11 @@
 open Printf
 open Coqdep_lexer
 open Unix
+open Minisys
 
 (** [coqdep_boot] is a stripped-down version of [coqdep], whose
     behavior is the one of [coqdep -boot]. Its only dependencies
-    are [Coqdep_lexer] and [Unix], and it should stay so.
+    are [Coqdep_lexer], [Unix] and [Minisys], and it should stay so.
     If it need someday some additional information, pass it via
     options (see for instance [option_natdynlk] below).
 *)
@@ -32,25 +33,10 @@ let option_boot = ref false
 let option_mldep = ref None
 
 let norec_dirs = ref StrSet.empty
-let norec_dirnames = ref (List.fold_right StrSet.add ["CVS"; "_darcs"] StrSet.empty)
 
 let suffixe = ref ".vo"
 
 type dir = string option
-
-(* Filename.concat but always with a '/' *)
-let is_dir_sep s i =
-  match Sys.os_type with
-  | "Unix" -> s.[i] = '/'
-  | "Cygwin" | "Win32" ->
-    let c = s.[i] in c = '/' || c = '\\' || c = ':'
-  | _ -> assert false
-
-let (//) dirname filename =
-  let l = String.length dirname in
-  if l = 0 || is_dir_sep dirname (l-1)
-  then dirname ^ filename
-  else dirname ^ "/" ^ filename
 
 (** [get_extension f l] checks whether [f] has one of the extensions
     listed in [l]. It returns [f] without its extension, alongside with
@@ -179,11 +165,6 @@ let warning_module_notfound f s =
   eprintf "*** Warning: in file %s, library %s is required and has not been found in the loadpath!\n%!"
     f (String.concat "." s)
 
-let warning_notfound f s =
-  eprintf "*** Warning: in file %s, the file " f;
-  eprintf "%s.v is required and has not been found!\n" s;
-  flush stderr
-
 let warning_declare f s =
   eprintf "*** Warning: in file %s, declared ML module " f;
   eprintf "%s has not been found!\n" s;
@@ -202,6 +183,10 @@ let warning_clash file dir =
       List.iter (fun s -> eprintf "%s, " s) dl;
       eprintf "%s and %s; used the latter)\n" d2 d1
   | _ -> assert false
+
+let warning_cannot_open_dir dir =
+  eprintf "*** Warning: cannot open %s\n" dir;
+  flush stderr
 
 let safe_assoc from verbose file k =
   if verbose && StrListMap.mem k !clash_v then warning_clash file k;
@@ -460,7 +445,7 @@ let mL_dependencies () =
        let efullname = escape fullname in
        printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname dep;
        printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
-       printf "%s.cmxa %s.cmxs:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname efullname;
+       printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
        flush stdout)
     (List.rev !mllibAccu);
   List.iter
@@ -470,7 +455,7 @@ let mL_dependencies () =
        let efullname = escape fullname in
        printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname dep;
        printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
-       printf "%s.cmx %s.cmxs:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname efullname;
+       printf "%s.cmx:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
        flush stdout)
     (List.rev !mlpackAccu)
 
@@ -527,31 +512,25 @@ let add_known recur phys_dir log_dir f =
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
-(** Visit directory [phys_dir] (recursively unless [recur=false]) and
-    apply function add_file to each regular file encountered.
-    [log_dir] is the logical name of the [phys_dir].
-    [add_file] takes both directory names and the file. *)
+(* Visits all the directories under [dir], including [dir] *)
+
+let is_not_seen_directory phys_f =
+  not (StrSet.mem phys_f !norec_dirs)
+
 let rec add_directory recur add_file phys_dir log_dir =
-  let dirh = opendir phys_dir in
   register_dir_logpath phys_dir log_dir;
-  try
-    while true do
-      let f = readdir dirh in
-      (* we avoid all files and subdirs starting by '.' (e.g. .svn),
-         plus CVS and _darcs and any subdirs given via -exclude-dirs *)
-      if f.[0] <> '.' then
-        let phys_f = if phys_dir = "." then f else phys_dir//f in
-	match try (stat phys_f).st_kind with _ -> S_BLK with
-	  | S_DIR when recur ->
-              if StrSet.mem f !norec_dirnames then ()
-              else
-	        if StrSet.mem phys_f !norec_dirs then ()
-	        else (* TODO: warn if already seen this physycal dir? *)
-		  add_directory recur add_file phys_f (log_dir@[f])
-	  | S_REG -> add_file phys_dir log_dir f
-	  | _ -> ()
-    done
-  with End_of_file -> closedir dirh
+  let f = function
+    | FileDir (phys_f,f) ->
+        if is_not_seen_directory phys_f && recur then
+          add_directory true add_file phys_f (log_dir @ [f])
+    | FileRegular f ->
+        add_file phys_dir log_dir f
+  in
+  check_unix_dir (fun s -> eprintf "*** Warning: %s\n" s) phys_dir;
+  if exists_dir phys_dir then
+    process_directory f phys_dir
+  else
+    warning_cannot_open_dir phys_dir
 
 (** Simply add this directory and imports it, no subdirs. This is used
     by the implicit adding of the current path (which is not recursive). *)
@@ -564,12 +543,18 @@ let add_rec_dir_no_import add_file phys_dir log_dir =
 
 (** -R semantic: go in subdirs and suffixes of logical paths are known. *)
 let add_rec_dir_import add_file phys_dir log_dir =
-  handle_unix_error (add_directory true (add_file true) phys_dir) log_dir
+  add_directory true (add_file true) phys_dir log_dir
+
+(** -R semantic but only on immediate capitalized subdirs *)
+
+let add_rec_uppercase_subdirs add_file phys_dir log_dir =
+  process_subdirectories (fun phys_dir f ->
+    add_directory true (add_file true) phys_dir (log_dir@[String.capitalize f]))
+    phys_dir
 
 (** -I semantic: do not go in subdirs. *)
 let add_caml_dir phys_dir =
-  handle_unix_error (add_directory false add_caml_known phys_dir) []
-
+  add_directory false add_caml_known phys_dir []
 
 let rec treat_file old_dirname old_name =
   let name = Filename.basename old_name
@@ -584,15 +569,12 @@ let rec treat_file old_dirname old_name =
   match try (stat complete_name).st_kind with _ -> S_BLK with
     | S_DIR ->
 	(if name.[0] <> '.' then
-	   let dir=opendir complete_name in
            let newdirname =
              match dirname with
                | None -> name
                | Some d -> d//name
 	   in
-	   try
-	     while true do treat_file (Some newdirname) (readdir dir) done
-	   with End_of_file -> closedir dir)
+           Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
     | S_REG ->
 	(match get_extension name [".v";".ml";".mli";".ml4";".mllib";".mlpack"] with
 	   | (base,".v") ->

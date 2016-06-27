@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Poor's man DECLARE PLUGIN *)
+let __coq_plugin_name = "nat_syntax_plugin"
+let () = Mltop.add_known_module __coq_plugin_name
+
 (* This file defines the printer for natural numbers in [nat] *)
 
 (*i*)
@@ -25,7 +29,7 @@ let threshold = of_int 5000
 let nat_of_int dloc n =
   if is_pos_or_zero n then begin
       if less_than threshold n then
-	msg_warning
+	Feedback.msg_warning
 	  (strbrk "Stack overflow or segmentation fault happens when " ++
 	   strbrk "working with large numbers in nat (observed threshold " ++
 	   strbrk "may vary from 5000 to 70000 depending on your system " ++

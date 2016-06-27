@@ -123,6 +123,7 @@ let head_of_constr_reference c = match kind_of_term c with
 
 let pattern_of_constr env sigma t =
   let rec pattern_of_constr env t =
+  let open Context.Rel.Declaration in
   match kind_of_term t with
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
@@ -132,11 +133,11 @@ let pattern_of_constr env sigma t =
     | Sort (Type _) -> PSort (GType [])
     | Cast (c,_,_)      -> pattern_of_constr env c
     | LetIn (na,c,t,b) -> PLetIn (na,pattern_of_constr env c,
-				  pattern_of_constr (push_rel (na,Some c,t) env) b)
+				  pattern_of_constr (push_rel (LocalDef (na,c,t)) env) b)
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr env c,
-				pattern_of_constr (push_rel (na, None, c) env) b)
+				pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
     | Lambda (na,c,b) -> PLambda (na,pattern_of_constr env c,
-				  pattern_of_constr (push_rel (na, None, c) env) b)
+				  pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
     | App (f,a) ->
         (match
           match kind_of_term f with
@@ -347,7 +348,7 @@ let rec pat_of_raw metas vars = function
   | GHole _ ->
       PMeta None
   | GCast (_,c,_) ->
-      Pp.msg_warning (strbrk "Cast not taken into account in constr pattern");
+      Feedback.msg_warning (strbrk "Cast not taken into account in constr pattern");
       pat_of_raw metas vars c
   | GIf (_,c,(_,None),b1,b2) ->
       PIf (pat_of_raw metas vars c,

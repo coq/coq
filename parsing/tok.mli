@@ -10,16 +10,17 @@
 
 type t =
   | KEYWORD of string
-  | METAIDENT of string
   | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string
   | INT of string
+  | INDEX of string
   | STRING of string
   | LEFTQMARK
   | BULLET of string
   | EOI
 
+val equal : t -> t -> bool
 val extract_string : t -> string
 val to_string : t -> string
 (* Needed to fit Camlp4 signature *)

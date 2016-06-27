@@ -13,6 +13,7 @@ open Util
 open Term
 open Tacmach
 open Proof_search
+open Context.Named.Declaration
 
 let force count lazc = incr count;Lazy.force lazc
 
@@ -128,9 +129,9 @@ let rec make_form atom_env gls term =
 
 let rec make_hyps atom_env gls lenv = function
     [] -> []
-  | (_,Some body,typ)::rest ->
+  | LocalDef (_,body,typ)::rest ->
       make_hyps atom_env gls (typ::body::lenv) rest
-  | (id,None,typ)::rest ->
+  | LocalAssum (id,typ)::rest ->
       let hrec=
 	make_hyps atom_env gls (typ::lenv) rest in
 	if List.exists (Termops.dependent (mkVar id)) lenv ||
@@ -275,7 +276,7 @@ let rtauto_tac gls=
     begin
       reset_info ();
       if !verbose then
-	msg_info (str "Starting proof-search ...");
+	Feedback.msg_info (str "Starting proof-search ...");
     end in
   let search_start_time = System.get_time () in
   let prf =
@@ -285,10 +286,10 @@ let rtauto_tac gls=
   let search_end_time = System.get_time () in
   let _ = if !verbose then
     begin
-      msg_info (str "Proof tree found in " ++
+      Feedback.msg_info (str "Proof tree found in " ++
 	     System.fmt_time_difference search_start_time search_end_time);
       pp_info ();
-      msg_info (str "Building proof term ... ")
+      Feedback.msg_info (str "Building proof term ... ")
     end in
   let build_start_time=System.get_time () in
   let _ = step_count := 0; node_count := 0 in
@@ -301,7 +302,7 @@ let rtauto_tac gls=
   let build_end_time=System.get_time () in
   let _ = if !verbose then
     begin
-      msg_info (str "Proof term built in " ++
+      Feedback.msg_info (str "Proof term built in " ++
 	     System.fmt_time_difference build_start_time build_end_time ++
 	     fnl () ++
 	     str "Proof size : " ++ int !step_count ++
@@ -315,12 +316,12 @@ let rtauto_tac gls=
     if !check then
       Proofview.V82.of_tactic (Tactics.exact_check term) gls
     else
-      Tactics.exact_no_check term gls in
+      Proofview.V82.of_tactic (Tactics.exact_no_check term) gls in
   let tac_end_time = System.get_time () in
   let _ =
-    if !check then msg_info (str "Proof term type-checking is on");
+    if !check then Feedback.msg_info (str "Proof term type-checking is on");
     if !verbose then
-      msg_info (str "Internal tactic executed in " ++
+      Feedback.msg_info (str "Internal tactic executed in " ++
 	     System.fmt_time_difference tac_start_time tac_end_time) in
     result
 

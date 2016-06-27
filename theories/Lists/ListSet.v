@@ -48,7 +48,11 @@ Section first_definitions.
         end
     end.
 
-  (** If [a] belongs to [x], removes [a] from [x]. If not, does nothing *)
+  (** If [a] belongs to [x], removes [a] from [x]. If not, does nothing.
+      Invariant: any element should occur at most once in [x], see for
+      instance [set_add]. We hence remove here only the first occurrence
+      of [a] in [x]. *)
+
   Fixpoint set_remove (a:A) (x:set) : set :=
     match x with
     | nil => empty_set
@@ -227,6 +231,68 @@ Section first_definitions.
     intros; elim (Aeq_dec a a0); intros; discriminate.
   Qed.
 
+  Lemma set_add_iff a b l : In a (set_add b l) <-> a = b \/ In a l.
+  Proof.
+  split. apply set_add_elim. apply set_add_intro.
+  Qed.
+
+  Lemma set_add_nodup a l : NoDup l -> NoDup (set_add a l).
+  Proof.
+   induction 1 as [|x l H H' IH]; simpl.
+   - constructor; [ tauto | constructor ].
+   - destruct (Aeq_dec a x) as [<-|Hax]; constructor; trivial.
+     rewrite set_add_iff. intuition.
+  Qed.
+
+  Lemma set_remove_1 (a b : A) (l : set) :
+    In a (set_remove b l) -> In a l.
+  Proof.
+    induction l as [|x xs Hrec].
+    - intros. auto.
+    - simpl. destruct (Aeq_dec b x).
+      * tauto.
+      * intro H. destruct H.
+        + rewrite H. apply in_eq.
+      + apply in_cons. apply Hrec. assumption.
+  Qed.
+
+  Lemma set_remove_2 (a b:A) (l : set) :
+    NoDup l -> In a (set_remove b l) -> a <> b.
+  Proof.
+    induction l as [|x l IH]; intro ND; simpl.
+    - tauto.
+    - inversion_clear ND.
+      destruct (Aeq_dec b x) as [<-|Hbx].
+      + congruence.
+      + destruct 1; subst; auto.
+  Qed.
+
+  Lemma set_remove_3 (a b : A) (l : set) :
+    In a l -> a <> b -> In a (set_remove b l).
+  Proof.
+    induction l as [|x xs Hrec].
+    - now simpl.
+    - simpl. destruct (Aeq_dec b x) as [<-|Hbx]; simpl; intuition.
+      congruence.
+  Qed.
+
+  Lemma set_remove_iff (a b : A) (l : set) :
+   NoDup l -> (In a (set_remove b l) <-> In a l /\ a <> b).
+  Proof.
+   split; try split.
+   - eapply set_remove_1; eauto.
+   - eapply set_remove_2; eauto.
+   - destruct 1; apply set_remove_3; auto.
+  Qed.
+
+  Lemma set_remove_nodup a l : NoDup l -> NoDup (set_remove a l).
+  Proof.
+   induction 1 as [|x l H H' IH]; simpl.
+   - constructor.
+   - destruct (Aeq_dec a x) as [<-|Hax]; trivial.
+     constructor; trivial.
+     rewrite set_remove_iff; trivial. intuition.
+  Qed.
 
   Lemma set_union_intro1 :
    forall (a:A) (x y:set), set_In a x -> set_In a (set_union x y).
@@ -264,17 +330,25 @@ Section first_definitions.
     tauto.
   Qed.
 
+  Lemma set_union_iff a l l': In a (set_union l l') <-> In a l \/ In a l'.
+  Proof.
+    split. apply set_union_elim. apply set_union_intro.
+  Qed.
+
+  Lemma set_union_nodup l l' : NoDup l -> NoDup l' -> NoDup (set_union l l').
+  Proof.
+   induction 2 as [|x' l' ? ? IH]; simpl; trivial. now apply set_add_nodup.
+  Qed.
+
   Lemma set_union_emptyL :
    forall (a:A) (x:set), set_In a (set_union empty_set x) -> set_In a x.
     intros a x H; case (set_union_elim _ _ _ H); auto || contradiction.
   Qed.
 
-
   Lemma set_union_emptyR :
    forall (a:A) (x:set), set_In a (set_union x empty_set) -> set_In a x.
     intros a x H; case (set_union_elim _ _ _ H); auto || contradiction.
   Qed.
-
 
   Lemma set_inter_intro :
    forall (a:A) (x y:set),
@@ -326,6 +400,21 @@ Section first_definitions.
     eauto with datatypes.
   Qed.
 
+  Lemma set_inter_iff a l l' : In a (set_inter l l') <-> In a l /\ In a l'.
+  Proof.
+    split.
+    - apply set_inter_elim.
+    - destruct 1. now apply set_inter_intro.
+  Qed.
+
+  Lemma set_inter_nodup l l' : NoDup l -> NoDup l' -> NoDup (set_inter l l').
+  Proof.
+   induction 1 as [|x l H H' IH]; intro Hl'; simpl.
+   - constructor.
+   - destruct (set_mem x l'); auto.
+     constructor; auto. rewrite set_inter_iff; tauto.
+  Qed.
+
   Lemma set_diff_intro :
    forall (a:A) (x y:set),
      set_In a x -> ~ set_In a y -> set_In a (set_diff x y).
@@ -358,6 +447,20 @@ Section first_definitions.
   apply set_mem_ind2; auto.
   intros H1 H2; case (set_add_elim _ _ _ H2); intros; auto.
   rewrite H; trivial.
+  Qed.
+
+  Lemma set_diff_iff a l l' : In a (set_diff l l') <-> In a l /\ ~In a l'.
+  Proof.
+  split.
+  - split; [eapply set_diff_elim1 | eapply set_diff_elim2]; eauto.
+  - destruct 1. now apply set_diff_intro.
+  Qed.
+
+  Lemma set_diff_nodup l l' : NoDup l -> NoDup l' -> NoDup (set_diff l l').
+  Proof.
+   induction 1 as [|x l H H' IH]; intro Hl'; simpl.
+   - constructor.
+   - destruct (set_mem x l'); auto using set_add_nodup.
   Qed.
 
   Lemma set_diff_trivial : forall (a:A) (x:set), ~ set_In a (set_diff x x).

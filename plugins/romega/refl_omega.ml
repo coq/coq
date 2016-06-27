@@ -9,7 +9,7 @@
 open Pp
 open Util
 open Const_omega
-module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
+module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
 
 (* \section{Useful functions and flags} *)
@@ -172,7 +172,7 @@ let print_env_reification env =
   in
   let prop_info = str "ENVIRONMENT OF PROPOSITIONS :" ++ fnl () ++ loop 'P' 0 env.props in
   let term_info = str "ENVIRONMENT OF TERMS :" ++ fnl () ++ loop 'V' 0 env.terms in
-  msg_debug (prop_info ++ fnl () ++ term_info)
+  Feedback.msg_debug (prop_info ++ fnl () ++ term_info)
 
 (* \subsection{Gestion des environnements de variable pour Omega} *)
 (* generation d'identifiant d'equation pour Omega *)
@@ -1280,12 +1280,12 @@ let resolution env full_reified_goal systems_list =
     CCHyp{o_hyp=id_concl;o_path=[]} :: hyp_stated_vars @ initial_context in
   let decompose_tactic = decompose_tree env context solution_tree in
 
-  Tactics.generalize
-    (l_generalize_arg @ List.map Term.mkVar (List.tl l_hyps)) >>
+  Proofview.V82.of_tactic (Tactics.generalize
+    (l_generalize_arg @ List.map Term.mkVar (List.tl l_hyps))) >>
   Proofview.V82.of_tactic (Tactics.change_concl reified) >>
   Proofview.V82.of_tactic (Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
   show_goal >>
-  Tactics.normalise_vm_in_concl >>
+  Proofview.V82.of_tactic (Tactics.normalise_vm_in_concl) >>
   (*i Alternatives to the previous line:
    - Normalisation without VM:
       Tactics.normalise_in_concl

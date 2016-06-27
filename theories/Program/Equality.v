@@ -238,8 +238,8 @@ Ltac inject_left H :=
 Ltac inject_right H :=
   progress (inversion H ; subst_right_no_fail ; clear_dups) ; clear H.
 
-Ltac autoinjections_left := repeat autoinjection ltac:inject_left.
-Ltac autoinjections_right := repeat autoinjection ltac:inject_right.
+Ltac autoinjections_left := repeat autoinjection ltac:(inject_left).
+Ltac autoinjections_right := repeat autoinjection ltac:(inject_right).
 
 Ltac simpl_depind := subst_no_fail ; autoinjections ; try discriminates ; 
   simpl_JMeq ; simpl_existTs ; simplify_IH_hyps.
@@ -333,7 +333,7 @@ Ltac simplify_one_dep_elim_term c :=
       (let hyp := fresh in intros hyp ;
         move hyp before y ; revert_until hyp ; generalize dependent y ;
           refine (solution_right _ _ _ _)(*  ; intros until 0 *))
-    | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; injection H ; clear H)
+    | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; simple injection H; clear H)
     | ?t = ?u -> _ => let hyp := fresh in
       intros hyp ; exfalso ; discriminate
     | ?x = ?y -> _ => let hyp := fresh in

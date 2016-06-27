@@ -29,7 +29,7 @@ let reset () =
   beta := 0; delta := 0; zeta := 0; evar := 0; iota := 0; prune := 0
 
 let stop() =
-  msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
+  Feedback.msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
 	 str" zeta=" ++ int !zeta ++ str" evar=" ++ int !evar ++
          str" iota=" ++ int !iota ++ str" prune=" ++ int !prune ++ str"]")
 
@@ -217,10 +217,10 @@ let ref_value_cache info ref =
 let defined_rels flags env =
 (*  if red_local_const (snd flags) then*)
   fold_rel_context
-      (fun (id,b,t) (i,subs) ->
-	 match b with
-	   | None -> (i+1, subs)
-	   | Some body -> (i+1, (i,body) :: subs))
+      (fun decl (i,subs) ->
+	 match decl with
+	   | LocalAssum _ -> (i+1, subs)
+	   | LocalDef (_,body,_) -> (i+1, (i,body) :: subs))
       (rel_context env) ~init:(0,[])
 (*  else (0,[])*)
 

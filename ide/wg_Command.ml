@@ -85,9 +85,11 @@ object(self)
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
     let result = GText.view ~packing:r_bin#add () in
     views <- (frame#coerce, result, combo#entry) :: views;
-    result#misc#modify_font current.text_font;
-    let clr = Tags.color_of_string current.background_color in
-    result#misc#modify_base [`NORMAL, `COLOR clr];
+    let cb clr = result#misc#modify_base [`NORMAL, `NAME clr] in
+    let _ = background_color#connect#changed cb in
+    let _ = result#misc#connect#realize (fun () -> cb background_color#get) in
+    let cb ft = result#misc#modify_font (Pango.Font.from_string ft) in
+    stick text_font result cb;
     result#misc#set_can_focus true; (* false causes problems for selection *)
     result#set_editable false;
     let callback () =
@@ -98,11 +100,14 @@ object(self)
         if Str.string_match (Str.regexp "\\. *$") com 0 then com
         else com ^ " " ^ arg ^" . "
       in
-      let log level message = result#buffer#insert (message^"\n") in
+      let log level message =
+        Ideutils.insert_xml result#buffer message;
+        result#buffer#insert "\n";
+      in
       let process =
 	Coq.bind (Coq.query ~logger:log (phrase,Stateid.dummy)) (function
           | Interface.Fail (_,l,str) ->
-            result#buffer#insert str;
+            Ideutils.insert_xml result#buffer str;
             notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;
 	    Coq.return ()
           | Interface.Good res ->
@@ -144,13 +149,9 @@ object(self)
 
   method visible =
     frame#visible
-  
-  method refresh_font () =
-    let iter (_,view,_) = view#misc#modify_font current.text_font in
-    List.iter iter views
 
-  method refresh_color () =
-    let clr = Tags.color_of_string current.background_color in
+  method private refresh_color clr =
+    let clr = Tags.color_of_string clr in
     let iter (_,view,_) = view#misc#modify_base [`NORMAL, `COLOR clr] in
     List.iter iter views
 
@@ -158,6 +159,8 @@ object(self)
     self#new_page_maker;
     self#new_query_aux ~grab_now:false ();
     frame#misc#hide ();
+    let _ = background_color#connect#changed self#refresh_color in
+    self#refresh_color background_color#get;
     ignore(notebook#event#connect#key_press ~callback:(fun ev ->
       if GdkEvent.Key.keyval ev = GdkKeysyms._Escape then (self#hide; true)
       else false

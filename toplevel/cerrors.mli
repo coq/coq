@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Toplevel Exception *)
+exception EvaluatedError of Pp.std_ppcmds * exn option
+
 (** Error report. *)
 
 val print_loc : Loc.t -> Pp.std_ppcmds
@@ -19,3 +22,4 @@ val process_vernac_interp_error : ?allow_uncaught:bool -> ?with_header:bool -> U
 
 val explain_exn_default : exn -> Pp.std_ppcmds
 
+val register_additional_error_info : (Util.iexn -> (Pp.std_ppcmds option * Loc.t) option) -> unit

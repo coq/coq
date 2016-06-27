@@ -51,36 +51,18 @@ sig
   val prj : t -> 'a key -> 'a option
 end =
 struct
-  (** See module {Dyn} for more details. *)
 
-  type t = int * Obj.t
+module Dyn = Dyn.Make(struct end)
 
-  type 'a key = int
-
-  let dyntab = ref (Int.Map.empty : string Int.Map.t)
-
-  let create (s : string) =
-    let hash = Hashtbl.hash s in
-    let () = assert (not (Int.Map.mem hash !dyntab)) in
-    let () = dyntab := Int.Map.add hash s !dyntab in
-    hash
-
-  let inj x h = (h, Obj.repr x)
-
-  let prj (nh, rv) h =
-    if Int.equal h nh then Some (Obj.magic rv)
-    else None
+type t = Dyn.t
+type 'a key = 'a Dyn.tag
+let create = Dyn.create
+let inj = Dyn.Easy.inj
+let prj = Dyn.Easy.prj
 
 end
 
 open Pp_control
-
-(* This should not be used outside of this file. Use
-   Flags.print_emacs instead. This one is updated when reading
-   command line options. This was the only way to make [Pp] depend on
-   an option without creating a circularity: [Flags] -> [Util] ->
-   [Pp] -> [Flags] *)
-let print_emacs = ref false
 
 (* The different kinds of blocks are:
    \begin{description}
@@ -268,7 +250,7 @@ let rec pr_com ft s =
       let n = String.index s '\n' in
       String.sub s 0 n, Some (String.sub s (n+1) (String.length s - n - 1))
     with Not_found -> s,None in
-  com_if ft (Lazy.lazy_from_val());
+  com_if ft (Lazy.from_val());
 (*  let s1 =
     if String.length s1 <> 0 && s1.[0] = ' ' then
       (Format.pp_print_space ft (); String.sub s1 1 (String.length s1 - 1))
@@ -297,29 +279,29 @@ let pp_dirs ?pp_tag ft =
         begin match tok with
         | Str_def s ->
           let n = utf8_length s in
-          com_if ft (Lazy.lazy_from_val()); Format.pp_print_as ft n s
+          com_if ft (Lazy.from_val()); Format.pp_print_as ft n s
         | Str_len (s, n) ->
-          com_if ft (Lazy.lazy_from_val()); Format.pp_print_as ft n s
+          com_if ft (Lazy.from_val()); Format.pp_print_as ft n s
         end
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
-        com_if ft (Lazy.lazy_from_val());
+        com_if ft (Lazy.from_val());
         pp_open_box bty ;
         if not (Format.over_max_boxes ()) then Glue.iter pp_cmd ss;
         Format.pp_close_box ft ()
-    | Ppcmd_open_box bty      -> com_if ft (Lazy.lazy_from_val()); pp_open_box bty
+    | Ppcmd_open_box bty      -> com_if ft (Lazy.from_val()); pp_open_box bty
     | Ppcmd_close_box         -> Format.pp_close_box ft ()
     | Ppcmd_close_tbox        -> Format.pp_close_tbox ft ()
     | Ppcmd_white_space n     ->
-        com_if ft (Lazy.lazy_from_fun (fun()->Format.pp_print_break ft n 0))
+        com_if ft (Lazy.from_fun (fun()->Format.pp_print_break ft n 0))
     | Ppcmd_print_break(m,n)  ->
-        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_break ft m n))
+        com_if ft (Lazy.from_fun(fun()->Format.pp_print_break ft m n))
     | Ppcmd_set_tab           -> Format.pp_set_tab ft ()
     | Ppcmd_print_tbreak(m,n) ->
-        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_tbreak ft m n))
+        com_if ft (Lazy.from_fun(fun()->Format.pp_print_tbreak ft m n))
     | Ppcmd_force_newline     ->
         com_brk ft; Format.pp_force_newline ft ()
     | Ppcmd_print_if_broken   ->
-        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_if_newline ft ()))
+        com_if ft (Lazy.from_fun(fun()->Format.pp_print_if_newline ft ()))
     | Ppcmd_comment i         ->
         let coms = split_com [] [] i !comments in
 (*        Format.pp_open_hvbox ft 0;*)
@@ -350,174 +332,22 @@ let pp_dirs ?pp_tag ft =
       let () = Format.pp_print_flush ft () in
       Exninfo.iraise reraise
 
-
-
-(* pretty print on stdout and stderr *)
-
-(* Special chars for emacs, to detect warnings inside goal output *)
-let emacs_quote_start = String.make 1 (Char.chr 254)
-let emacs_quote_end = String.make 1 (Char.chr 255)
-
-let emacs_quote_info_start = "<infomsg>"
-let emacs_quote_info_end = "</infomsg>"
-
-let emacs_quote g =
-  if !print_emacs then hov 0 (str emacs_quote_start ++ g ++ str emacs_quote_end)
-  else hov 0 g
-
-let emacs_quote_info g =
-  if !print_emacs then hov 0 (str emacs_quote_info_start++ brk(0,0) ++ g ++ brk(0,0) ++ str emacs_quote_info_end)
-  else hov 0 g
-
-
 (* pretty printing functions WITHOUT FLUSH *)
 let pp_with ?pp_tag ft strm =
   pp_dirs ?pp_tag ft (Glue.atom (Ppdir_ppcmds strm))
-
-let ppnl_with ft strm =
-  pp_dirs ft (Glue.atom (Ppdir_ppcmds (strm ++ fnl ())))
 
 (* pretty printing functions WITH FLUSH *)
 let msg_with ft strm =
   pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))
 
-let msgnl_with ft strm =
-  pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_newline))
-
-(* pretty printing functions WITHOUT FLUSH *)
-let pp        x = pp_with   !std_ft x
-let ppnl      x = ppnl_with !std_ft x
-let pperr     x = pp_with   !err_ft x
-let pperrnl   x = ppnl_with !err_ft x
-let message   s = ppnl      (str s)
-let pp_flush  x = Format.pp_print_flush !std_ft x
-let pperr_flush x = Format.pp_print_flush !err_ft x
-let flush_all () =
-  flush stderr; flush stdout; pp_flush (); pperr_flush ()
-
-(* pretty printing functions WITH FLUSH *)
-let msg x = msg_with !std_ft x
-let msgnl x = msgnl_with !std_ft x
-let msgerr x = msg_with !err_ft x
-let msgerrnl x = msgnl_with !err_ft x
-
-(* Logging management *)
-
-type message_level =  Feedback.message_level =
-  | Debug of string
-  | Info
-  | Notice
-  | Warning
-  | Error
-
-type message = Feedback.message = {
-  message_level : message_level;
-  message_content : string;
-}
-
-let of_message = Feedback.of_message
-let to_message = Feedback.to_message
-let is_message = Feedback.is_message
-
-type logger = message_level -> std_ppcmds -> unit
-
-let make_body info s =
-  emacs_quote (hov 0 (info ++ spc () ++ s))
-
-let debugbody strm = emacs_quote_info (hov 0 (str "Debug:" ++ spc () ++ strm))
-let warnbody strm = make_body (str "Warning:") strm
-let errorbody strm = make_body (str "Error:") strm
-let infobody strm = emacs_quote_info strm
-
-let std_logger ~id:_ level msg = match level with
-| Debug _ -> msgnl (debugbody msg)
-| Info -> msgnl (hov 0 msg)
-| Notice -> msgnl msg
-| Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
-| Error -> msgnl_with !err_ft (errorbody msg)
-
-let emacs_logger ~id:_ level mesg = match level with
-| Debug _ -> msgnl (debugbody mesg)
-| Info -> msgnl (infobody mesg)
-| Notice -> msgnl mesg
-| Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody mesg)) ()
-| Error -> msgnl_with !err_ft (errorbody mesg)
-
-let logger = ref std_logger
-
-let make_pp_emacs() = print_emacs:=true; logger:=emacs_logger
-let make_pp_nonemacs() = print_emacs:=false; logger := std_logger
-
-let ft_logger old_logger ft ~id level mesg = match level with
-  | Debug _ -> msgnl_with ft (debugbody mesg)
-  | Info -> msgnl_with ft (infobody mesg)
-  | Notice -> msgnl_with ft mesg
-  | Warning -> old_logger ~id:id level mesg
-  | Error -> old_logger ~id:id level mesg
-
-let with_output_to_file fname func input =
-  let old_logger = !logger in
-  let channel = open_out (String.concat "." [fname; "out"]) in
-  logger := ft_logger old_logger (Format.formatter_of_out_channel channel);
-  try
-    let output = func input in
-    logger := old_logger;
-    close_out channel;
-    output
-  with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
-    logger := old_logger;
-    close_out channel;
-    Exninfo.iraise reraise
-
-let feedback_id = ref (Feedback.Edit 0)
-let feedback_route = ref Feedback.default_route
-
 (* If mixing some output and a goal display, please use msg_warning,
    so that interfaces (proofgeneral for example) can easily dispatch
    them to different windows. *)
 
-let msg_info x = !logger ~id:!feedback_id Info x
-let msg_notice x = !logger ~id:!feedback_id Notice x
-let msg_warning x = !logger ~id:!feedback_id Warning x
-let msg_error x = !logger ~id:!feedback_id Error x
-let msg_debug x = !logger ~id:!feedback_id (Debug "_") x
-
-let set_logger l = logger := (fun ~id:_ lvl msg -> l lvl msg)
-
-let std_logger lvl msg = std_logger ~id:!feedback_id lvl msg
-
-(** Feedback *)
-
-let feeder = ref ignore
-let set_id_for_feedback ?(route=Feedback.default_route) i =
-  feedback_id := i; feedback_route := route
-let feedback ?state_id ?edit_id ?route what =
-  !feeder {
-     Feedback.contents = what;
-     Feedback.route = Option.default !feedback_route route;
-     Feedback.id =
-       match state_id, edit_id with
-       | Some id, _ -> Feedback.State id
-       | None, Some eid -> Feedback.Edit eid
-       | None, None -> !feedback_id;
-  }
-let set_feeder f = feeder := f
-let get_id_for_feedback () = !feedback_id, !feedback_route
-
-(** Utility *)
-
+(** Output to a string formatter *)
 let string_of_ppcmds c =
-  msg_with Format.str_formatter c;
+  Format.fprintf Format.str_formatter "@[%a@]" msg_with c;
   Format.flush_str_formatter ()
-
-let log_via_feedback () = logger := (fun ~id lvl msg ->
-  !feeder {
-     Feedback.contents = Feedback.Message {
-       message_level = lvl;
-       message_content = string_of_ppcmds msg };
-     Feedback.route = !feedback_route;
-     Feedback.id = id })
 
 (* Copy paste from Util *)
 
@@ -525,6 +355,7 @@ let pr_comma () = str "," ++ spc ()
 let pr_semicolon () = str ";" ++ spc ()
 let pr_bar () = str "|" ++ spc ()
 let pr_arg pr x = spc () ++ pr x
+let pr_non_empty_arg pr x = let pp = pr x in if ismt pp then mt () else spc () ++ pr x
 let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
 let pr_opt_no_spc pr = function None -> mt () | Some x -> pr x
 
@@ -607,3 +438,4 @@ let prvect_with_sep sep elem v = prvecti_with_sep sep (fun _ -> elem) v
 let prvect elem v = prvect_with_sep mt elem v
 
 let surround p = hov 1 (str"(" ++ p ++ str")")
+

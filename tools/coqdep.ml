@@ -9,6 +9,7 @@
 open Printf
 open Coqdep_lexer
 open Coqdep_common
+open System
 
 (** The basic parts of coqdep (i.e. the parts used by [coqdep -boot])
     are now in [Coqdep_common]. The code that remains here concerns
@@ -459,21 +460,14 @@ let rec parse = function
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
   | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
-  | "-I" :: r :: "-as" :: ln :: ll ->
-     add_rec_dir_no_import add_known r [];
-     add_rec_dir_no_import add_known r (split_period ln);
-     parse ll
-  | "-I" :: r :: "-as" :: [] -> usage ()
   | "-I" :: r :: ll -> add_caml_dir r; parse ll
   | "-I" :: [] -> usage ()
-  | "-R" :: r :: "-as" :: ln :: ll -> add_rec_dir_import add_known r (split_period ln); parse ll
-  | "-R" :: r :: "-as" :: [] -> usage ()
   | "-R" :: r :: ln :: ll -> add_rec_dir_import add_known r (split_period ln); parse ll
   | "-Q" :: r :: ln :: ll -> add_rec_dir_no_import add_known r (split_period ln); parse ll
   | "-R" :: ([] | [_]) -> usage ()
   | "-dumpgraph" :: f :: ll -> option_dump := Some (false, f); parse ll
   | "-dumpgraphbox" :: f :: ll -> option_dump := Some (true, f); parse ll
-  | "-exclude-dir" :: r :: ll -> norec_dirnames := StrSet.add r !norec_dirnames; parse ll
+  | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
   | "-exclude-dir" :: [] -> usage ()
   | "-coqlib" :: r :: ll -> Flags.coqlib_spec := true; Flags.coqlib := r; parse ll
   | "-coqlib" :: [] -> usage ()
@@ -497,6 +491,7 @@ let coqdep () =
   if !option_boot then begin
     add_rec_dir_import add_known "theories" ["Coq"];
     add_rec_dir_import add_known "plugins" ["Coq"];
+    add_caml_dir "tactics";
     add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
     add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
   end else begin
@@ -507,7 +502,7 @@ let coqdep () =
     let user = coqlib//"user-contrib" in
     if Sys.file_exists user then add_rec_dir_no_import add_coqlib_known user [];
     List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s [])
-      (Envars.xdg_dirs (fun x -> Pp.msg_warning (Pp.str x)));
+      (Envars.xdg_dirs (fun x -> Feedback.msg_warning (Pp.str x)));
     List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s []) Envars.coqpath;
   end;
   List.iter (fun (f,d) -> add_mli_known f d ".mli") !mliAccu;
@@ -532,4 +527,4 @@ let _ =
     coqdep ()
   with Errors.UserError(s,p) ->
     let pp = if s <> "_" then Pp.(str s ++ str ": " ++ p) else p in
-    Pp.msgerrnl pp
+    Feedback.msg_error pp

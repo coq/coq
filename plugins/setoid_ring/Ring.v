@@ -36,9 +36,9 @@ Qed.
 Ltac bool_cst t :=
   let t := eval hnf in t in
   match t with
-    true => constr:true
-  | false => constr:false
-  | _ => constr:NotConstant
+    true => constr:(true)
+  | false => constr:(false)
+  | _ => constr:(NotConstant)
   end.
 
 Add Ring bool_ring : BoolTheory (decidable bool_eq_ok, constants [bool_cst]).

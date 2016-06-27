@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This file defines clausenv, which is a deprecated way to handle open terms
+    in the proof engine. Most of the API here is legacy except for the
+    evar-based clauses. *)
+
 open Names
 open Term
 open Environ
@@ -49,7 +53,6 @@ val refresh_undefined_univs : clausenv -> clausenv * Univ.universe_level_subst
 
 (** {6 linking of clenvs } *)
 
-val connect_clenv : Goal.goal sigma -> clausenv -> clausenv
 val clenv_fchain :
   ?with_univs:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
 

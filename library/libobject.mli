@@ -99,7 +99,6 @@ val declare_object :
   'a object_declaration -> ('a -> obj)
 
 val object_tag : obj -> string
-val object_has_tag : obj -> string -> bool
 
 val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
@@ -109,3 +108,7 @@ val classify_object : obj -> obj substitutivity
 val discharge_object : object_name * obj -> obj option
 val rebuild_object : obj -> obj
 val relax : bool -> unit
+
+(** {6 Debug} *)
+
+val dump : unit -> (int * string) list

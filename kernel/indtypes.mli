@@ -42,6 +42,6 @@ val enforce_indices_matter : unit -> unit
 val is_indices_matter : unit -> bool
 
 val compute_projections : pinductive -> Id.t -> Id.t ->
-  int -> Context.rel_context -> int array -> int array -> 
-  Context.rel_context -> Context.rel_context -> 
+  int -> Context.Rel.t -> int array -> int array -> 
+  Context.Rel.t -> Context.Rel.t -> 
   (constant array * projection_body array)

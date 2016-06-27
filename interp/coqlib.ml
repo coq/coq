@@ -87,7 +87,7 @@ let check_required_library d =
 *)
 (* or failing ...*)
       errorlabstrm "Coqlib.check_required_library"
-        (str "Library " ++ str (DirPath.to_string dir) ++ str " has to be required first.")
+        (str "Library " ++ pr_dirpath dir ++ str " has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects *)

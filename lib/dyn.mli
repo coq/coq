@@ -6,12 +6,58 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Dynamics. Use with extreme care. Not for kids. *)
+(** Dynamically typed values *)
 
-type t
+module type TParam =
+sig
+  type 'a t
+end
 
-val create : string -> ('a -> t) * (t -> 'a)
-val tag : t -> string
-val has_tag : t -> string -> bool
-val pointer_equal : t -> t -> bool
+module type S =
+sig
+type 'a tag
+type t = Dyn : 'a tag * 'a -> t
+
+val create : string -> 'a tag
+val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
+val repr : 'a tag -> string
+
+type any = Any : 'a tag -> any
+
+val name : string -> any option
+
+module Map(M : TParam) :
+sig
+  type t
+  val empty : t
+  val add : 'a tag -> 'a M.t -> t -> t
+  val remove : 'a tag -> t -> t
+  val find : 'a tag -> t -> 'a M.t
+  val mem : 'a tag -> t -> bool
+
+  type any = Any : 'a tag * 'a M.t -> any
+
+  type map = { map : 'a. 'a tag -> 'a M.t -> 'a M.t }
+  val map : map -> t -> t
+
+  val iter : (any -> unit) -> t -> unit
+  val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
+
+end
+
 val dump : unit -> (int * string) list
+
+module Easy : sig
+
+  (* To create a dynamic type on the fly *)
+  val make_dyn : string -> ('a -> t) * (t -> 'a)
+
+  (* For types declared with the [create] function above *)
+  val inj : 'a -> 'a tag -> t
+  val prj : t -> 'a tag -> 'a option
+end
+
+end
+
+(** FIXME: use OCaml 4.02 generative functors when available *)
+module Make(M : CSig.EmptyS) : S

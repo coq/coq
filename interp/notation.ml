@@ -13,7 +13,6 @@ open Pp
 open Bigint
 open Names
 open Term
-open Nametab
 open Libnames
 open Globnames
 open Constrexpr
@@ -65,11 +64,9 @@ let empty_scope = {
 }
 
 let default_scope = "" (* empty name, not available from outside *)
-let type_scope = "type_scope" (* special scope used for interpreting types *)
 
 let init_scope_map () =
-  scope_map := String.Map.add default_scope empty_scope !scope_map;
-  scope_map := String.Map.add type_scope empty_scope !scope_map
+  scope_map := String.Map.add default_scope empty_scope !scope_map
 
 (**********************************************************************)
 (* Operations on scopes *)
@@ -187,7 +184,7 @@ let declare_delimiters scope key =
     | None -> scope_map := String.Map.add scope newsc !scope_map
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
-	msg_warning
+	Feedback.msg_warning
 	  (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
 	scope_map := String.Map.add scope newsc !scope_map
   end;
@@ -195,7 +192,7 @@ let declare_delimiters scope key =
     let oldscope = String.Map.find key !delimiters_map in
     if String.equal oldscope scope then ()
     else begin
-      msg_warning (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
+      Feedback.msg_warning (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
       delimiters_map := String.Map.add key scope !delimiters_map
     end
   with Not_found -> delimiters_map := String.Map.add key scope !delimiters_map
@@ -204,7 +201,7 @@ let remove_delimiters scope =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = None } in
   match sc.delimiters with
-    | None -> msg_warning (str "No bound key for scope " ++ str scope ++ str ".")
+    | None -> Feedback.msg_warning (str "No bound key for scope " ++ str scope ++ str ".")
     | Some key ->
        scope_map := String.Map.add scope newsc !scope_map;
        try
@@ -391,7 +388,7 @@ let declare_notation_interpretation ntn scopt pat df =
     let which_scope = match scopt with
     | None -> mt ()
     | Some _ -> str " in scope " ++ str scope in
-    msg_warning (str "Notation " ++ str ntn ++ str " was already used" ++ which_scope)
+    Feedback.msg_warning (str "Notation " ++ str ntn ++ str " was already used" ++ which_scope)
   in
   let sc = { sc with notations = String.Map.add ntn (pat,df) sc.notations } in
   let () = scope_map := String.Map.add scope sc !scope_map in
@@ -531,9 +528,10 @@ let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
 let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeConstr, NtnTypeConstr -> true
+| NtnTypeOnlyBinder, NtnTypeOnlyBinder -> true
 | NtnTypeConstrList, NtnTypeConstrList -> true
 | NtnTypeBinderList, NtnTypeBinderList -> true
-| (NtnTypeConstr | NtnTypeConstrList | NtnTypeBinderList), _ -> false
+| (NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList), _ -> false
 
 
 let vars_eq (id1, (sc1, tp1)) (id2, (sc2, tp2)) =
@@ -558,23 +556,16 @@ let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
 (**********************************************************************)
 (* Mapping classes to scopes *)
 
-type scope_class = ScopeRef of global_reference | ScopeSort
+open Classops
 
-let scope_class_compare sc1 sc2 = match sc1, sc2 with
-| ScopeRef gr1, ScopeRef gr2 -> RefOrdered.compare gr1 gr2
-| ScopeRef _, ScopeSort -> -1
-| ScopeSort, ScopeRef _ -> 1
-| ScopeSort, ScopeSort -> 0
+type scope_class = cl_typ
 
-let scope_class_of_reference x = ScopeRef x
+let scope_class_compare : scope_class -> scope_class -> int =
+  cl_typ_ord
 
 let compute_scope_class t =
-  let t', _ = decompose_appvect (Reductionops.whd_betaiotazeta Evd.empty t) in
-  match kind_of_term t' with
-  | Var _ | Const _ | Ind _ -> ScopeRef (global_of_constr t')
-  | Proj (p, c) -> ScopeRef (ConstRef (Projection.constant p))
-  | Sort _ -> ScopeSort
-  |  _ -> raise Not_found
+  let (cl,_,_) = find_class_type Evd.empty t in
+  cl
 
 module ScopeClassOrd =
 struct
@@ -585,7 +576,7 @@ end
 module ScopeClassMap = Map.Make(ScopeClassOrd)
 
 let initial_scope_class_map : scope_name ScopeClassMap.t =
-  ScopeClassMap.add ScopeSort "type_scope" ScopeClassMap.empty
+  ScopeClassMap.empty
 
 let scope_class_map = ref initial_scope_class_map
 
@@ -619,8 +610,11 @@ let compute_arguments_scope t = fst (compute_arguments_scope_full t)
 let compute_type_scope t =
   find_scope_class_opt (try Some (compute_scope_class t) with Not_found -> None)
 
-let compute_scope_of_global ref =
-  find_scope_class_opt (Some (ScopeRef ref))
+let current_type_scope_name () =
+   find_scope_class_opt (Some CL_SORT)
+
+let scope_class_of_class (x : cl_typ) : scope_class =
+  x
 
 (** Updating a scope list, thanks to a list of argument classes
     and the current Bind Scope base. When some current scope
@@ -652,12 +646,8 @@ let load_arguments_scope _ (_,(_,r,scl,cls)) =
 let cache_arguments_scope o =
   load_arguments_scope 1 o
 
-let subst_scope_class subst cs = match cs with
-  | ScopeSort -> Some cs
-  | ScopeRef t ->
-      let (t',c) = subst_global subst t in
-      if t == t' then Some cs
-      else try Some (compute_scope_class c) with Not_found -> None
+let subst_scope_class subst cs =
+  try Some (subst_cl_typ subst cs) with Not_found -> None
 
 let subst_arguments_scope (subst,(req,r,scl,cls)) =
   let r' = fst (subst_global subst r) in
@@ -790,9 +780,7 @@ let pr_delimiters_info = function
 let classes_of_scope sc =
   ScopeClassMap.fold (fun cl sc' l -> if String.equal sc sc' then cl::l else l) !scope_class_map []
 
-let pr_scope_class = function
-  | ScopeSort -> str "Sort"
-  | ScopeRef t -> pr_global_env Id.Set.empty t
+let pr_scope_class = pr_class
 
 let pr_scope_classes sc =
   let l = classes_of_scope sc in
@@ -979,23 +967,27 @@ let pr_visibility prglob = function
 type unparsing_rule = unparsing list * precedence
 type extra_unparsing_rules = (string * string) list
 (* Concrete syntax for symbolic-extension table *)
-let printing_rules =
-  ref (String.Map.empty : (unparsing_rule * extra_unparsing_rules) String.Map.t)
+let notation_rules =
+  ref (String.Map.empty : (unparsing_rule * extra_unparsing_rules * notation_grammar) String.Map.t)
 
-let declare_notation_printing_rule ntn ~extra unpl =
-  printing_rules := String.Map.add ntn (unpl,extra) !printing_rules
+let declare_notation_rule ntn ~extra unpl gram =
+  notation_rules := String.Map.add ntn (unpl,extra,gram) !notation_rules
 
 let find_notation_printing_rule ntn =
-  try fst (String.Map.find ntn !printing_rules)
+  try pi1 (String.Map.find ntn !notation_rules)
   with Not_found -> anomaly (str "No printing rule found for " ++ str ntn)
 let find_notation_extra_printing_rules ntn =
-  try snd (String.Map.find ntn !printing_rules)
+  try pi2 (String.Map.find ntn !notation_rules)
   with Not_found -> []
+let find_notation_parsing_rules ntn =
+  try pi3 (String.Map.find ntn !notation_rules)
+  with Not_found -> anomaly (str "No parsing rule found for " ++ str ntn)
+
 let add_notation_extra_printing_rule ntn k v =
   try
-    printing_rules := 
-      let p, pp = String.Map.find ntn !printing_rules in
-      String.Map.add ntn (p, (k,v) :: pp) !printing_rules
+    notation_rules :=
+      let p, pp, gr = String.Map.find ntn !notation_rules in
+      String.Map.add ntn (p, (k,v) :: pp, gr) !notation_rules
   with Not_found ->
     user_err_loc (Loc.ghost,"add_notation_extra_printing_rule",
       str "No such Notation.")
@@ -1005,7 +997,7 @@ let add_notation_extra_printing_rule ntn k v =
 
 let freeze _ =
  (!scope_map, !notation_level_map, !scope_stack, !arguments_scope,
-  !delimiters_map, !notations_key_table, !printing_rules,
+  !delimiters_map, !notations_key_table, !notation_rules,
   !scope_class_map)
 
 let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules,clsc) =
@@ -1015,7 +1007,7 @@ let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules,clsc) =
   delimiters_map := dlm;
   arguments_scope := asc;
   notations_key_table := fkm;
-  printing_rules := pprules;
+  notation_rules := pprules;
   scope_class_map := clsc
 
 let init () =
@@ -1023,7 +1015,7 @@ let init () =
   notation_level_map := String.Map.empty;
   delimiters_map := String.Map.empty;
   notations_key_table := KeyMap.empty;
-  printing_rules := String.Map.empty;
+  notation_rules := String.Map.empty;
   scope_class_map := initial_scope_class_map
 
 let _ =

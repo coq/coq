@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Univ
 open Declarations
 open Environ
@@ -35,7 +34,7 @@ val lookup_mind_specif : env -> inductive -> mind_specif
 (** {6 Functions to build standard types related to inductive } *)
 val ind_subst : mutual_inductive -> mutual_inductive_body -> universe_instance -> constr list
 
-val inductive_paramdecls : mutual_inductive_body puniverses -> rel_context
+val inductive_paramdecls : mutual_inductive_body puniverses -> Context.Rel.t
 
 val instantiate_inductive_constraints : 
   mutual_inductive_body -> universe_instance -> constraints
@@ -86,7 +85,7 @@ val build_branches_type :
     constr list -> constr -> types array
 
 (** Return the arity of an inductive type *)
-val mind_arity : one_inductive_body -> rel_context * sorts_family
+val mind_arity : one_inductive_body -> Context.Rel.t * sorts_family
 
 val inductive_sort_family : one_inductive_body -> sorts_family
 
@@ -95,6 +94,9 @@ val inductive_sort_family : one_inductive_body -> sorts_family
 val check_case_info : env -> pinductive -> case_info -> unit
 
 (** {6 Guard conditions for fix and cofix-points. } *)
+
+(** When [chk] is false, the guard condition is not actually
+    checked. *)
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
 
@@ -111,8 +113,8 @@ exception SingletonInductiveBecomesProp of Id.t
 
 val max_inductive_sort : sorts array -> universe
 
-val instantiate_universes : env -> rel_context ->
-  template_arity -> constr Lazy.t array -> rel_context * sorts
+val instantiate_universes : env -> Context.Rel.t ->
+  template_arity -> constr Lazy.t array -> Context.Rel.t * sorts
 
 (** {6 Debug} *)
 

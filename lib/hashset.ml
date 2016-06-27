@@ -162,7 +162,7 @@ module Make (E : EqType) =
         t.hashes.(index) <- newhashes;
         if sz <= t.limit && newsz > t.limit then begin
           t.oversize <- t.oversize + 1;
-          for i = 0 to over_limit do test_shrink_bucket t done;
+          for _i = 0 to over_limit do test_shrink_bucket t done;
         end;
         if t.oversize > Array.length t.table / over_limit then resize t
       end else if Weak.check bucket i then begin

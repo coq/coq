@@ -16,7 +16,6 @@ open Errors
 open Util
 open Names
 open Term
-open Context
 open Declarations
 open Environ
 open Entries
@@ -139,16 +138,17 @@ let check_signatures curmb sl =
 
 let skip_trusted_seff sl b e =
   let rec aux sl b e acc =
+    let open Context.Rel.Declaration in
     match sl, kind_of_term b with
     | (None|Some 0), _ -> b, e, acc
     | Some sl, LetIn (n,c,ty,bo) ->
        aux (Some (sl-1)) bo
-         (Environ.push_rel (n,Some c,ty) e) (`Let(n,c,ty)::acc)
+         (Environ.push_rel (LocalDef (n,c,ty)) e) (`Let(n,c,ty)::acc)
     | Some sl, App(hd,arg) ->
        begin match kind_of_term hd with
        | Lambda (n,ty,bo) ->
            aux (Some (sl-1)) bo
-             (Environ.push_rel (n,None,ty) e) (`Cut(n,ty,arg)::acc)
+             (Environ.push_rel (LocalAssum (n,ty)) e) (`Cut(n,ty,arg)::acc)
        | _ -> assert false
        end
     | _ -> assert false
@@ -167,8 +167,10 @@ let hcons_j j =
   { uj_val = hcons_constr j.uj_val; uj_type = hcons_constr j.uj_type} 
 
 let feedback_completion_typecheck =
-  Option.iter (fun state_id -> Pp.feedback ~state_id Feedback.Complete)
-	      
+  let open Feedback in
+  Option.iter (fun state_id ->
+      feedback ~id:(State state_id) Feedback.Complete)
+
 let infer_declaration ~trust env kn dcl =
   match dcl with
   | ParameterEntry (ctx,poly,(t,uctx),nl) ->
@@ -246,17 +248,19 @@ let infer_declaration ~trust env kn dcl =
 let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t
   | TemplateArity (ctx,_) ->
-      Context.fold_rel_context
-        (fold_rel_declaration
+      Context.Rel.fold_outside
+        (Context.Rel.Declaration.fold
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 
 let record_aux env s_ty s_bo suggested_expr =
+  let open Context.Named.Declaration in
   let in_ty = keep_hyps env s_ty in
   let v =
     String.concat " "
-      (CList.map_filter (fun (id, _,_) ->
-          if List.exists (fun (id',_,_) -> Id.equal id id') in_ty then None
+      (CList.map_filter (fun decl ->
+          let id = get_id decl in
+          if List.exists (Id.equal id % get_id) in_ty then None
           else Some (Id.to_string id))
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" (v ^ ";" ^ suggested_expr)
@@ -265,8 +269,9 @@ let suggest_proof_using = ref (fun _ _ _ _ _ -> "")
 let set_suggest_proof_using f = suggest_proof_using := f
 
 let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) =
+  let open Context.Named.Declaration in
   let check declared inferred =
-    let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
+    let mk_set l = List.fold_right Id.Set.add (List.map get_id l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
     if not (Id.Set.subset inferred_set declared_set) then
       let l = Id.Set.elements (Idset.diff inferred_set declared_set) in
@@ -277,12 +282,13 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
         str " used but not declared:" ++
         fnl () ++ pr_sequence Id.print (List.rev l) ++ str ".")) in
   let sort evn l =
-    List.filter (fun (id,_,_) ->
-      List.exists (fun (id',_,_) -> Names.Id.equal id id') l)
+    List.filter (fun decl ->
+      let id = get_id decl in
+      List.exists (Names.Id.equal id % get_id) l)
     (named_context env) in
   (* We try to postpone the computation of used section variables *)
   let hyps, def =
-    let context_ids = List.map pi1 (named_context env) in
+    let context_ids = List.map get_id (named_context env) in
     match ctx with
     | None when not (List.is_empty context_ids) -> 
         (* No declared section vars, and non-empty section context:
@@ -346,7 +352,9 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
 	    const_body_code = None;
 	    const_polymorphic = poly;
 	    const_universes = univs;
-	    const_inline_code = inline_code }
+	    const_inline_code = inline_code;
+	    const_typing_flags = Environ.typing_flags env;
+	    }
 	in
 	let env = add_constant kn cb env in
 	compile_constant_body env comp_univs def
@@ -359,7 +367,8 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
     const_body_code = tps;
     const_polymorphic = poly;
     const_universes = univs;
-    const_inline_code = inline_code }
+    const_inline_code = inline_code;
+    const_typing_flags = Environ.typing_flags env }
 
 (*s Global and local constant declaration. *)
 
@@ -473,7 +482,8 @@ let translate_local_def mb env id centry =
     | Undef _ -> ()
     | Def _ -> ()
     | OpaqueDef lc ->
-       let context_ids = List.map pi1 (named_context env) in
+       let open Context.Named.Declaration in
+       let context_ids = List.map get_id (named_context env) in
        let ids_typ = global_vars_set env typ in
        let ids_def = global_vars_set env
          (Opaqueproof.force_proof (opaque_tables env) lc) in

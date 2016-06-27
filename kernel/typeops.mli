@@ -9,7 +9,6 @@
 open Names
 open Univ
 open Term
-open Context
 open Environ
 open Entries
 open Declarations
@@ -28,7 +27,7 @@ val infer_v    : env -> constr array -> unsafe_judgment array
 val infer_type : env -> types        -> unsafe_type_judgment
 
 val infer_local_decls :
-  env -> (Id.t * local_entry) list -> (env * rel_context)
+  env -> (Id.t * local_entry) list -> (env * Context.Rel.t)
 
 (** {6 Basic operations of the typing machine. } *)
 
@@ -128,4 +127,4 @@ val make_polymorphic_if_constant_for_ind : env -> unsafe_judgment ->
   constant_type
 
 (** Check that hyps are included in env and fails with error otherwise *)
-val check_hyps_inclusion : env -> constr -> section_context -> unit
+val check_hyps_inclusion : env -> constr -> Context.section_context -> unit

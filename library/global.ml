@@ -84,6 +84,7 @@ let push_context_set b c = globalize0 (Safe_typing.push_context_set b c)
 let push_context b c = globalize0 (Safe_typing.push_context b c)
 
 let set_engagement c = globalize0 (Safe_typing.set_engagement c)
+let set_typing_flags c = globalize0 (Safe_typing.set_typing_flags c)
 let add_constant dir id d = globalize (Safe_typing.add_constant dir (i2l id) d)
 let add_mind dir id mie = globalize (Safe_typing.add_mind dir (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
@@ -243,6 +244,14 @@ let is_template_polymorphic r =
   | ConstRef c -> Environ.template_polymorphic_constant c env
   | IndRef ind -> Environ.template_polymorphic_ind ind env
   | ConstructRef cstr -> Environ.template_polymorphic_ind (inductive_of_constructor cstr) env
+
+let is_type_in_type r =
+  let env = env() in
+  match r with
+  | VarRef id -> false
+  | ConstRef c -> Environ.type_in_type_constant c env
+  | IndRef ind -> Environ.type_in_type_ind ind env
+  | ConstructRef cstr -> Environ.type_in_type_ind (inductive_of_constructor cstr) env
 
 let current_dirpath () = 
   Safe_typing.current_dirpath (safe_env ())

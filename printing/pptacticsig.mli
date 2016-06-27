@@ -8,11 +8,10 @@
 
 open Pp
 open Genarg
-open Constrexpr
+open Geninterp
 open Tacexpr
 open Ppextend
 open Environ
-open Pattern
 open Misctypes
 
 module type Pp = sig
@@ -32,46 +31,24 @@ module type Pp = sig
 
   val pr_clauses :  bool option ->
     ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
-  val pr_raw_generic :
-    (constr_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) ->
-    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) ->
-    (Libnames.reference -> std_ppcmds) -> rlevel generic_argument ->
-    std_ppcmds
 
-  val pr_glb_generic :
-    (glob_constr_and_expr -> Pp.std_ppcmds) ->
-    (glob_constr_and_expr -> Pp.std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    (glob_constr_pattern_and_expr -> std_ppcmds) ->
-    glevel generic_argument -> std_ppcmds
+  val pr_raw_generic : env -> rlevel generic_argument -> std_ppcmds
 
-  val pr_top_generic :
-    (Term.constr -> std_ppcmds) ->
-    (Term.constr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    (Pattern.constr_pattern -> std_ppcmds) ->
-    tlevel generic_argument ->
-    std_ppcmds
+  val pr_glb_generic : env -> glevel generic_argument -> std_ppcmds
 
-  val pr_raw_extend:
-    (constr_expr -> std_ppcmds) -> (constr_expr -> std_ppcmds) ->
-    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) -> int ->
-    ml_tactic_name -> raw_generic_argument list -> std_ppcmds
+  val pr_raw_extend: env -> int ->
+    ml_tactic_entry -> raw_tactic_arg list -> std_ppcmds
 
-  val pr_glob_extend:
-    (glob_constr_and_expr -> std_ppcmds) -> (glob_constr_and_expr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    (glob_constr_pattern_and_expr -> std_ppcmds) -> int ->
-    ml_tactic_name -> glob_generic_argument list -> std_ppcmds
+  val pr_glob_extend: env -> int ->
+    ml_tactic_entry -> glob_tactic_arg list -> std_ppcmds
 
   val pr_extend :
-    (Term.constr -> std_ppcmds) -> (Term.constr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    (constr_pattern -> std_ppcmds) -> int ->
-    ml_tactic_name -> typed_generic_argument list -> std_ppcmds
+    (Val.t -> std_ppcmds) -> int -> ml_tactic_entry -> Val.t list -> std_ppcmds
+
+  val pr_alias_key : Names.KerName.t -> std_ppcmds
+
+  val pr_alias : (Val.t -> std_ppcmds) ->
+    int -> Names.KerName.t -> Val.t list -> std_ppcmds
 
   val pr_alias_key : Names.KerName.t -> std_ppcmds
 
@@ -83,7 +60,7 @@ module type Pp = sig
 
   val pr_glob_tactic : env -> glob_tactic_expr -> std_ppcmds
 
-  val pr_tactic : env -> tactic_expr -> std_ppcmds
+  val pr_atomic_tactic : env -> atomic_tactic_expr -> std_ppcmds
 
   val pr_hintbases : string list option -> std_ppcmds
 
@@ -92,5 +69,12 @@ module type Pp = sig
   val pr_bindings :
     ('constr -> std_ppcmds) ->
     ('constr -> std_ppcmds) -> 'constr bindings -> std_ppcmds
+
+  val pr_match_pattern : ('a -> std_ppcmds) -> 'a match_pattern -> std_ppcmds
+
+  val pr_match_rule : bool -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
+    ('b, 'a) match_rule -> std_ppcmds
+
+  val pr_value : tolerability -> Val.t -> std_ppcmds
 
 end

@@ -14,12 +14,7 @@ val datadir : string option (* where extra data files are installed *)
 val docdir : string     (* where the doc is installed *)
 
 val ocaml : string      (* names of ocaml binaries *)
-val ocamlc : string
-val ocamlopt : string
-val ocamlmklib : string
-val ocamldoc : string
-val ocamldep : string
-val ocamlyacc : string
+val ocamlfind : string
 val ocamllex : string
 
 val camlbin : string    (* base directory of OCaml binaries *)

@@ -8,6 +8,7 @@
 
 open Term
 open Environ
+open Declarations
 
 (** {6 Typing functions (not yet tagged as safe) }
     

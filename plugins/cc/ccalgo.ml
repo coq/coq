@@ -25,7 +25,7 @@ let init_size=5
 let cc_verbose=ref false
 
 let debug x =
-  if !cc_verbose then msg_debug (x ())
+  if !cc_verbose then Feedback.msg_debug (x ())
 
 let _=
   let gdopt=
@@ -153,11 +153,6 @@ let rec term_equal t1 t2 =
     | _ -> false
 
 open Hashset.Combine
-
-let hash_sorts_family = function
-| InProp -> 0
-| InSet -> 1
-| InType -> 2
 
 let rec hash_term = function
   | Symb c -> combine 1 (hash_constr c)
@@ -824,7 +819,7 @@ let __eps__ = Id.of_string "_eps_"
 let new_state_var typ state =
   let id = pf_get_new_id __eps__ state.gls in
   let {it=gl ; sigma=sigma} = state.gls in
-  let gls = Goal.V82.new_goal_with sigma gl [id,None,typ] in
+  let gls = Goal.V82.new_goal_with sigma gl [Context.Named.Declaration.LocalAssum (id,typ)] in
     state.gls<- gls;
     id
 

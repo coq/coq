@@ -10,6 +10,7 @@ open Names
 open Environ
 open Util
 open Vernacexpr
+open Context.Named.Declaration
 
 let to_string e =
   let rec aux = function
@@ -33,7 +34,8 @@ let in_nameset =
 
 let rec close_fwd e s =
   let s' =
-    List.fold_left (fun s (id,b,ty) ->      
+    List.fold_left (fun s decl ->
+      let (id,b,ty) = Context.Named.Declaration.to_tuple decl in
       let vb = Option.(default Id.Set.empty (map (global_vars_set e) b)) in
       let vty = global_vars_set e ty in
       let vbty = Id.Set.union vb vty in
@@ -61,13 +63,13 @@ and set_of_id env ty id =
         Id.Set.union (global_vars_set env ty) acc)
       Id.Set.empty ty
   else if Id.to_string id = "All" then
-    List.fold_right Id.Set.add (List.map pi1 (named_context env)) Id.Set.empty
+    List.fold_right Id.Set.add (List.map get_id (named_context env)) Id.Set.empty
   else if CList.mem_assoc_f Id.equal id !known_names then
     process_expr env (CList.assoc_f Id.equal id !known_names) []
   else Id.Set.singleton id
 
 and full_set env =
-  List.fold_right Id.Set.add (List.map pi1 (named_context env)) Id.Set.empty
+  List.fold_right Id.Set.add (List.map get_id (named_context env)) Id.Set.empty
 
 let process_expr env e ty =
   let ty_expr = SsSingl(Loc.ghost, Id.of_string "Type") in
@@ -126,7 +128,7 @@ let suggest_Proof_using name env vars ids_typ context_ids =
   if S.equal all_needed fwd_typ then valid (str "Type*");
   if S.equal all all_needed then valid(str "All");
   valid (pr_set false needed);
-  msg_info (
+  Feedback.msg_info (
     str"The proof of "++ str name ++ spc() ++
     str "should start with one of the following commands:"++spc()++
     v 0 (

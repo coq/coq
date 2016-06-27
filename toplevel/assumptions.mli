@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Util
 open Names
 open Term
 open Globnames
@@ -22,7 +21,7 @@ open Printer
 val traverse :
   Label.t -> constr ->
     (Refset_env.t * Refset_env.t Refmap_env.t *
-     (label * Context.rel_context * types) list Refmap_env.t)
+     (label * Context.Rel.t * types) list Refmap_env.t)
 
 (** Collects all the assumptions (optionally including opaque definitions)
    on which a term relies (together with their type). The above warning of

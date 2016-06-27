@@ -12,7 +12,6 @@ open Errors
 open Util
 open Term
 open Vars
-open Glob_term
 open Tacmach
 open Tactics
 open Tacticals
@@ -22,6 +21,8 @@ open Formula
 open Sequent
 open Names
 open Misctypes
+open Sigma.Notations
+open Context.Rel.Declaration
 
 let compare_instance inst1 inst2=
 	match inst1,inst2 with
@@ -96,8 +97,6 @@ let rec collect_quantified seq=
 
 (* open instances processor *)
 
-let dummy_constr=mkMeta (-1)
-
 let dummy_bvid=Id.of_string "x"
 
 let mk_open_instance id idc gl m t=
@@ -116,8 +115,10 @@ let mk_open_instance id idc gl m t=
   let rec aux n avoid env evmap decls =
     if Int.equal n 0 then evmap, decls else
       let nid=(fresh_id avoid var_id gl) in
-      let evmap, (c, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
-      let decl = (Name nid,None,c) in
+      let evmap = Sigma.Unsafe.of_evar_map evmap in
+      let Sigma ((c, _), evmap, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
+      let evmap = Sigma.to_evar_map evmap in
+      let decl = LocalAssum (Name nid, c) in
 	aux (n-1) (nid::avoid) (Environ.push_rel decl env) evmap (decl::decls) in
   let evmap, decls = aux m [] env evmap [] in
     evmap, decls, revt
@@ -134,9 +135,9 @@ let left_instance_tac (inst,id) continue seq=
 	    [tclTHENLIST
 	       [Proofview.V82.of_tactic introf;
                 pf_constr_of_global id (fun idc ->
-		(fun gls->generalize
+		(fun gls-> Proofview.V82.of_tactic (generalize
 		   [mkApp(idc,
-			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls));
+			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])]) gls));
 		Proofview.V82.of_tactic introf;
 		tclSOLVE [wrap 1 false continue
 			    (deepen (record (id,None) seq))]];
@@ -157,10 +158,10 @@ let left_instance_tac (inst,id) continue seq=
 		    try Typing.type_of (pf_env gl) evmap gt
 		    with e when Errors.noncritical e ->
 		      error "Untypable instance, maybe higher-order non-prenex quantification" in
-		    tclTHEN (Refiner.tclEVARS evmap) (generalize [gt]) gl)
+		    tclTHEN (Refiner.tclEVARS evmap) (Proofview.V82.of_tactic (generalize [gt])) gl)
 	    else
 	      pf_constr_of_global id (fun idc ->
-		generalize [mkApp(idc,[|t|])])
+		Proofview.V82.of_tactic (generalize [mkApp(idc,[|t|])]))
 	  in
 	    tclTHENLIST
 	      [special_generalize;

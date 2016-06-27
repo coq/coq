@@ -163,4 +163,34 @@ let xml_of_rich_pp tag_of_annotation attributes_of_annotation xml =
   in
   node xml
 
+type richpp = xml
+
+let repr xml = xml
+let richpp_of_xml xml = xml
+let richpp_of_string s = PCData s
+
+let richpp_of_pp pp =
+  let annotate t = match Pp.Tag.prj t Ppstyle.tag with
+  | None -> None
+  | Some key -> Some (Ppstyle.repr key)
+  in
+  let rec drop = function
+  | PCData s -> [PCData s]
+  | Element (_, annotation, cs) ->
+    let cs = List.concat (List.map drop cs) in
+    match annotation.annotation with
+    | None -> cs
+    | Some s -> [Element (String.concat "." s, [], cs)]
+  in
+  let xml = rich_pp annotate pp in
+  Element ("_", [], drop xml)
+
+let raw_print xml =
+  let buf = Buffer.create 1024 in
+  let rec print = function
+  | PCData s -> Buffer.add_string buf s
+  | Element (_, _, cs) -> List.iter print cs
+  in
+  let () = print xml in
+  Buffer.contents buf
 

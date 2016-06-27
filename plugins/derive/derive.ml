@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Context.Named.Declaration
+
 let map_const_entry_body (f:Term.constr->Term.constr) (x:Safe_typing.private_constants Entries.const_entry_body)
     : Safe_typing.private_constants Entries.const_entry_body =
   Future.chain ~pure:true x begin fun ((b,ctx),fx) ->
@@ -32,7 +34,7 @@ let start_deriving f suchthat lemma =
     let open Proofview in
         TCons ( env , sigma , f_type_type , (fun sigma f_type ->
         TCons ( env , sigma , f_type , (fun sigma ef ->
-        let env' = Environ.push_named (f , (Some ef) , f_type) env in
+        let env' = Environ.push_named (LocalDef (f, ef, f_type)) env in
         let evdref = ref sigma in
         let suchthat = Constrintern.interp_type_evars env' evdref suchthat in
         TCons ( env' , !evdref , suchthat , (fun sigma _ ->
@@ -93,6 +95,7 @@ let start_deriving f suchthat lemma =
       ignore (Declare.declare_constant lemma lemma_def)
       in
 
+  let terminator = Proof_global.make_terminator terminator in
   let () = Proof_global.start_dependent_proof lemma kind goals terminator in
   let _ = Proof_global.with_current_proof begin fun _ p ->
     Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p

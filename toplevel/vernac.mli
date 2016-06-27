@@ -38,9 +38,3 @@ val load_vernac : bool -> string -> unit
 val compile : bool -> string -> unit
 
 val is_navigation_vernac : Vernacexpr.vernac_expr -> bool
-
-(** Has an exception been annotated with some file locations ? *)
-
-type location_files = { outer : string; inner : string }
-
-val get_exn_files : Exninfo.info -> location_files option

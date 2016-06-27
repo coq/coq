@@ -96,7 +96,7 @@ Section ZMORPHISM.
  Proof.
   constructor.
   destruct c;intros;try discriminate.
-  injection H;clear H;intros H1;subst c'.
+  injection H as <-.
   simpl. unfold Zeq_bool. rewrite Z.compare_refl. trivial.
  Qed.
 
@@ -612,32 +612,32 @@ End GEN_DIV.
  Ltac inv_gen_phi_pos rI add mul t :=
    let rec inv_cst t :=
    match t with
-     rI => constr:1%positive
-   | (add rI rI) => constr:2%positive
-   | (add rI (add rI rI)) => constr:3%positive
+     rI => constr:(1%positive)
+   | (add rI rI) => constr:(2%positive)
+   | (add rI (add rI rI)) => constr:(3%positive)
    | (mul (add rI rI) ?p) => (* 2p *)
        match inv_cst p with
-         NotConstant => constr:NotConstant
-       | 1%positive => constr:NotConstant (* 2*1 is not convertible to 2 *)
+         NotConstant => constr:(NotConstant)
+       | 1%positive => constr:(NotConstant) (* 2*1 is not convertible to 2 *)
        | ?p => constr:(xO p)
        end
    | (add rI (mul (add rI rI) ?p)) => (* 1+2p *)
        match inv_cst p with
-         NotConstant => constr:NotConstant
-       | 1%positive => constr:NotConstant
+         NotConstant => constr:(NotConstant)
+       | 1%positive => constr:(NotConstant)
        | ?p => constr:(xI p)
        end
-   | _ => constr:NotConstant
+   | _ => constr:(NotConstant)
    end in
    inv_cst t.
 
 (* The (partial) inverse of gen_phiNword *)
  Ltac inv_gen_phiNword rO rI add mul opp t :=
    match t with
-     rO => constr:NwO
+     rO => constr:(NwO)
    | _ =>
      match inv_gen_phi_pos rI add mul t with
-       NotConstant => constr:NotConstant
+       NotConstant => constr:(NotConstant)
      | ?p => constr:(Npos p::nil)
      end
    end.
@@ -646,10 +646,10 @@ End GEN_DIV.
 (* The inverse of gen_phiN *)
  Ltac inv_gen_phiN rO rI add mul t :=
    match t with
-     rO => constr:0%N
+     rO => constr:(0%N)
    | _ =>
      match inv_gen_phi_pos rI add mul t with
-       NotConstant => constr:NotConstant
+       NotConstant => constr:(NotConstant)
      | ?p => constr:(Npos p)
      end
    end.
@@ -657,15 +657,15 @@ End GEN_DIV.
 (* The inverse of gen_phiZ *)
  Ltac inv_gen_phiZ rO rI add mul opp t :=
    match t with
-     rO => constr:0%Z
+     rO => constr:(0%Z)
    | (opp ?p) =>
      match inv_gen_phi_pos rI add mul p with
-       NotConstant => constr:NotConstant
+       NotConstant => constr:(NotConstant)
      | ?p => constr:(Zneg p)
      end
    | _ =>
      match inv_gen_phi_pos rI add mul t with
-       NotConstant => constr:NotConstant
+       NotConstant => constr:(NotConstant)
      | ?p => constr:(Zpos p)
      end
    end.
@@ -681,7 +681,7 @@ Ltac inv_gen_phi rO rI cO cI t :=
   end.
 
 (* A simple tactic recognizing no constant *)
- Ltac inv_morph_nothing t := constr:NotConstant.
+ Ltac inv_morph_nothing t := constr:(NotConstant).
 
 Ltac coerce_to_almost_ring set ext rspec :=
   match type of rspec with
@@ -825,31 +825,31 @@ Ltac ring_elements set ext rspec pspec sspec dspec rk :=
 (* Tactic for constant *)
 Ltac isnatcst t :=
   match t with
-    O => constr:true
+    O => constr:(true)
   | S ?p => isnatcst p
-  | _ => constr:false
+  | _ => constr:(false)
   end.
 
 Ltac isPcst t :=
   match t with
   | xI ?p => isPcst p
   | xO ?p => isPcst p
-  | xH => constr:true
+  | xH => constr:(true)
   (* nat -> positive *)
   | Pos.of_succ_nat ?n => isnatcst n
-  | _ => constr:false
+  | _ => constr:(false)
   end.
 
 Ltac isNcst t :=
   match t with
-    N0 => constr:true
+    N0 => constr:(true)
   | Npos ?p => isPcst p
-  | _ => constr:false
+  | _ => constr:(false)
   end.
 
 Ltac isZcst t :=
   match t with
-    Z0 => constr:true
+    Z0 => constr:(true)
   | Zpos ?p => isPcst p
   | Zneg ?p => isPcst p
   (* injection nat -> Z *)
@@ -857,7 +857,7 @@ Ltac isZcst t :=
   (* injection N -> Z *)
   | Z.of_N ?n => isNcst n
   (* *)
-  | _ => constr:false
+  | _ => constr:(false)
   end.
 
 

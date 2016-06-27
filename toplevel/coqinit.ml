@@ -36,7 +36,7 @@ let load_rcfile() =
         else raise (Sys_error ("Cannot read rcfile: "^ !rcfile))
       else
 	try
-	  let warn x = msg_warning (str x) in
+	  let warn x = Feedback.msg_warning (str x) in
 	  let inferedrc = List.find CUnix.file_readable_p [
 	    Envars.xdg_config_home warn / rcdefaultname^"."^Coq_config.version;
 	    Envars.xdg_config_home warn / rcdefaultname;
@@ -52,10 +52,10 @@ let load_rcfile() =
 	*)
     with reraise ->
       let reraise = Errors.push reraise in
-      let () = msg_info (str"Load of rcfile failed.") in
+      let () = Feedback.msg_info (str"Load of rcfile failed.") in
       iraise reraise
   else
-    Flags.if_verbose msg_info (str"Skipping rcfile loading.")
+    Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.")
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let add_stdlib_path ~unix_path ~coq_root ~with_ml =
@@ -78,7 +78,7 @@ let push_ml_include s = ml_includes := s :: !ml_includes
 let init_load_path () =
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
-  let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> msg_warning (str x)) in
+  let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
   let coqpath = Envars.coqpath in
   let coq_root = Names.DirPath.make [Nameops.coq_root] in
     (* NOTE: These directories are searched from last to first *)
@@ -125,9 +125,9 @@ let init_ocaml_path () =
     Mltop.add_ml_dir (Envars.coqlib ());
     List.iter add_subdir
       [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ];
-	[ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
+	[ "engine" ]; [ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
 	[ "tactics" ]; [ "toplevel" ]; [ "printing" ]; [ "intf" ];
-        [ "grammar" ]; [ "ide" ] ]
+        [ "grammar" ]; [ "ide" ]; [ "ltac" ]; ]
 
 let get_compat_version = function
   | "8.5" -> Flags.Current
@@ -135,6 +135,6 @@ let get_compat_version = function
   | "8.3" -> Flags.V8_3
   | "8.2" -> Flags.V8_2
   | ("8.1" | "8.0") as s ->
-    msg_warning (str "Compatibility with version " ++ str s ++ str " not supported.");
+    Feedback.msg_warning (str "Compatibility with version " ++ str s ++ str " not supported.");
     Flags.V8_2
   | s -> Errors.errorlabstrm "get_compat_version" (str "Unknown compatibility version \"" ++ str s ++ str "\".")

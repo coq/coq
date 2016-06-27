@@ -353,7 +353,8 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
   mind_entry_polymorphic = false;
   mind_entry_universes = Univ.UContext.empty;
-  mind_entry_private = None })
+  mind_entry_private = None;
+})
 
 type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
 
@@ -398,7 +399,7 @@ let declare_mind mie =
 let pr_rank i = pr_nth (i+1)
 
 let fixpoint_message indexes l =
-  Flags.if_verbose msg_info (match l with
+  Flags.if_verbose Feedback.msg_info (match l with
   | [] -> anomaly (Pp.str "no recursive definition")
   | [id] -> pr_id id ++ str " is recursively defined" ++
       (match indexes with
@@ -413,7 +414,7 @@ let fixpoint_message indexes l =
 		    | None -> mt ()))
 
 let cofixpoint_message l =
-  Flags.if_verbose msg_info (match l with
+  Flags.if_verbose Feedback.msg_info (match l with
   | [] -> anomaly (Pp.str "No corecursive definition.")
   | [id] -> pr_id id ++ str " is corecursively defined"
   | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
@@ -423,15 +424,15 @@ let recursive_message isfix i l =
   (if isfix then fixpoint_message i else cofixpoint_message) l
 
 let definition_message id =
-  Flags.if_verbose msg_info (pr_id id ++ str " is defined")
+  Flags.if_verbose Feedback.msg_info (pr_id id ++ str " is defined")
 
 let assumption_message id =
-  Flags.if_verbose msg_info (pr_id id ++ str " is assumed")
+  (* Changing "assumed" to "declared", "assuming" referring more to
+  the type of the object than to the name of the object (see
+  discussion on coqdev: "Chapter 4 of the Reference Manual", 8/10/2015) *)
+  Flags.if_verbose Feedback.msg_info (pr_id id ++ str " is declared")
 
 (** Global universe names, in a different summary *)
-
-type universe_names =
-    (Univ.universe_level Idmap.t * Id.t Univ.LMap.t)
 
 (* Discharged or not *)
 type universe_decl = polymorphic * (Id.t * Univ.universe_level) list
@@ -440,8 +441,9 @@ let cache_universes (p, l) =
   let glob = Universes.global_universe_names () in
   let glob', ctx =
     List.fold_left (fun ((idl,lid),ctx) (id, lev) ->
-		    ((Idmap.add id lev idl, Univ.LMap.add lev id lid),
-		     Univ.ContextSet.add_universe lev ctx))
+        ((Idmap.add id (p, lev) idl,
+          Univ.LMap.add lev id lid),
+         Univ.ContextSet.add_universe lev ctx))
       (glob, Univ.ContextSet.empty) l
   in
     Global.push_context_set p ctx;
@@ -457,6 +459,12 @@ let input_universes : universe_decl -> Libobject.obj =
       classify_function = (fun a -> Keep a) }
 
 let do_universe poly l =
+  let in_section = Lib.sections_are_opened () in
+  let () =
+    if poly && not in_section then
+      user_err_loc (Loc.ghost, "Constraint",
+                    str"Cannot declare polymorphic universes outside sections")
+  in
   let l =
     List.map (fun (l, id) ->
 	      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
@@ -485,14 +493,30 @@ let input_constraints : constraint_decl -> Libobject.obj =
 let do_constraint poly l =
   let u_of_id =
     let names, _ = Universes.global_universe_names () in
-      fun (loc, id) ->
-	try Idmap.find id names
-	with Not_found ->
-	  user_err_loc (loc, "Constraint", str "Undeclared universe " ++ pr_id id)
+    fun (loc, id) ->
+    try Idmap.find id names
+    with Not_found ->
+      user_err_loc (loc, "Constraint", str "Undeclared universe " ++ pr_id id)
+  in
+  let in_section = Lib.sections_are_opened () in
+  let () =
+    if poly && not in_section then
+      user_err_loc (Loc.ghost, "Constraint",
+                    str"Cannot declare polymorphic constraints outside sections")
+  in
+  let check_poly loc p loc' p' =
+    if poly then ()
+    else if p || p' then
+      let loc = if p then loc else loc' in
+      user_err_loc (loc, "Constraint",
+                    str "Cannot declare a global constraint on " ++
+                    str "a polymorphic universe, use "
+                    ++ str "Polymorphic Constraint instead")
   in
   let constraints = List.fold_left (fun acc (l, d, r) ->
-    let lu = u_of_id l and ru = u_of_id r in
-      Univ.Constraint.add (lu, d, ru) acc)
+     let p, lu = u_of_id l and p', ru = u_of_id r in
+     check_poly (fst l) p (fst r) p';
+     Univ.Constraint.add (lu, d, ru) acc)
     Univ.Constraint.empty l
   in
     Lib.add_anonymous_leaf (input_constraints (poly, constraints))

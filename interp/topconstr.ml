@@ -19,14 +19,14 @@ open Constrexpr_ops
 (*i*)
 
 
-let oldfashion_patterns = ref (false)
+let asymmetric_patterns = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optsync = true; Goptions.optdepr = false;
   Goptions.optname =
     "Constructors in patterns require all their arguments but no parameters instead of explicit parameters and arguments";
   Goptions.optkey = ["Asymmetric";"Patterns"];
-  Goptions.optread = (fun () -> !oldfashion_patterns);
-  Goptions.optwrite = (fun a -> oldfashion_patterns:=a);
+  Goptions.optread = (fun () -> !asymmetric_patterns);
+  Goptions.optwrite = (fun a -> asymmetric_patterns:=a);
 }
 
 (**********************************************************************)
@@ -52,13 +52,14 @@ let rec cases_pattern_fold_names f a = function
       List.fold_left (cases_pattern_fold_names f) a patl
   | CPatCstr (_,_,patl1,patl2) ->
     List.fold_left (cases_pattern_fold_names f)
-      (List.fold_left (cases_pattern_fold_names f) a patl1) patl2
+      (Option.fold_left (List.fold_left (cases_pattern_fold_names f)) a patl1) patl2
   | CPatNotation (_,_,(patl,patll),patl') ->
       List.fold_left (cases_pattern_fold_names f)
 	(List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'
   | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f a pat
   | CPatAtom (_,Some (Ident (_,id))) when not (is_constructor id) -> f id a
   | CPatPrim _ | CPatAtom _ -> a
+  | CPatCast _ -> assert false
 
 let ids_of_pattern_list =
   List.fold_left
@@ -67,11 +68,11 @@ let ids_of_pattern_list =
     Id.Set.empty
 
 let ids_of_cases_indtype p =
-  Id.Set.elements (cases_pattern_fold_names Id.Set.add Id.Set.empty p)
+  cases_pattern_fold_names Id.Set.add Id.Set.empty p
 
 let ids_of_cases_tomatch tms =
   List.fold_right
-    (fun (_,(ona,indnal)) l ->
+    (fun (_, ona, indnal) l ->
       Option.fold_right (fun t ids -> cases_pattern_fold_names Id.Set.add ids t)
       indnal
         (Option.fold_right (Loc.down_located (name_fold Id.Set.add)) ona l))
@@ -92,6 +93,8 @@ let rec fold_local_binders g f n acc b = function
       f n (fold_local_binders g f n' acc b l) t
   | LocalRawDef ((_,na),t)::l ->
       f n (fold_local_binders g f (name_fold g na n) acc b l) t
+  | LocalPattern _::l ->
+      assert false
   | [] ->
       f n acc b
 
@@ -111,11 +114,11 @@ let fold_constr_expr_with_binders g f n acc = function
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
-  | CRecord (loc,_,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
+  | CRecord (loc,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
   | CCases (loc,sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (Id.Set.fold g ids n)) acc rtnpo in
-      let acc = List.fold_left (f n) acc (List.map fst al) in
+      let acc = List.fold_left (f n) acc (List.map (fun (fst,_,_) -> fst) al) in
       List.fold_right (fun (loc,patl,rhs) acc ->
 	let ids = ids_of_pattern_list patl in
 	f (Id.Set.fold g ids n) acc rhs) bl acc
@@ -132,7 +135,7 @@ let fold_constr_expr_with_binders g f n acc = function
 	fold_local_binders g f n'
 	  (fold_local_binders g f n acc t lb) c lb) l acc
   | CCoFix (loc,_,_) ->
-      msg_warning (strbrk "Capture check in multiple binders not done"); acc
+      Feedback.msg_warning (strbrk "Capture check in multiple binders not done"); acc
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
@@ -170,6 +173,7 @@ let split_at_annot bl na =
               (List.rev ans, LocalRawAssum (r, k, t) :: rest)
             end
 	| LocalRawDef _ as x :: rest -> aux (x :: acc) rest
+        | LocalPattern _ :: rest -> assert false
 	| [] ->
             user_err_loc(loc,"",
 			 str "No parameter named " ++ Nameops.pr_id id ++ str".")
@@ -191,7 +195,9 @@ let map_local_binders f g e bl =
       LocalRawAssum(nal,k,ty) ->
         (map_binder g e nal, LocalRawAssum(nal,k,f e ty)::bl)
     | LocalRawDef((loc,na),ty) ->
-        (name_fold g na e, LocalRawDef((loc,na),f e ty)::bl) in
+        (name_fold g na e, LocalRawDef((loc,na),f e ty)::bl)
+    | LocalPattern _ ->
+        assert false in
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
 
@@ -213,14 +219,14 @@ let map_constr_expr_with_binders g f e = function
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _
   | CPrim _ | CRef _ as x -> x
-  | CRecord (loc,p,l) -> CRecord (loc,p,List.map (fun (id, c) -> (id, f e c)) l)
+  | CRecord (loc,l) -> CRecord (loc,List.map (fun (id, c) -> (id, f e c)) l)
   | CCases (loc,sty,rtnpo,a,bl) ->
       let bl = List.map (fun (loc,patl,rhs) ->
         let ids = ids_of_pattern_list patl in
         (loc,patl,f (Id.Set.fold g ids e) rhs)) bl in
       let ids = ids_of_cases_tomatch a in
       let po = Option.map (f (Id.Set.fold g ids e)) rtnpo in
-      CCases (loc, sty, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
+      CCases (loc, sty, po, List.map (fun (tm,x,y) -> f e tm,x,y) a,bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let e' = List.fold_right (Loc.down_located (name_fold g)) nal e in
       let e'' = Option.fold_right (Loc.down_located (name_fold g)) ona e in

@@ -66,6 +66,15 @@ let all_sym_pairs f l =
       | e::l -> xpairs (pair_with acc e l) l in
     xpairs [] l
 
+let all_pairs f l = 
+  let pair_with acc e l = List.fold_left (fun acc x -> (f e x) ::acc) acc l in
+
+  let rec xpairs acc l = 
+    match l with
+      | [] -> acc
+      | e::lx -> xpairs (pair_with acc e l) lx in
+    xpairs [] l
+
 
 
 let rec map3 f l1 l2 l3 =

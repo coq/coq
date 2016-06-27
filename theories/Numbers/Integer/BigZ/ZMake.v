@@ -427,13 +427,13 @@ Module Make (NN:NType) <: ZType.
  (* Pos Neg *)
  generalize (NN.spec_div_eucl x y); destruct (NN.div_eucl x y) as (q,r).
  break_nonneg x px EQx; break_nonneg y py EQy;
- try (injection 1; intros Hr Hq; rewrite NN.spec_eqb, NN.spec_0, Hr;
+ try (injection 1 as Hq Hr; rewrite NN.spec_eqb, NN.spec_0, Hr;
       simpl; rewrite Hq, NN.spec_0; auto).
  change (- Zpos py) with (Zneg py).
  assert (GT : Zpos py > 0) by (compute; auto).
  generalize (Z_div_mod (Zpos px) (Zpos py) GT).
  unfold Z.div_eucl. destruct (Z.pos_div_eucl px (Zpos py)) as (q',r').
- intros (EQ,MOD). injection 1. intros Hr' Hq'.
+ intros (EQ,MOD). injection 1 as Hq' Hr'.
  rewrite NN.spec_eqb, NN.spec_0, Hr'.
  break_nonneg r pr EQr.
  subst; simpl. rewrite NN.spec_0; auto.
@@ -442,13 +442,13 @@ Module Make (NN:NType) <: ZType.
  (* Neg Pos *)
  generalize (NN.spec_div_eucl x y); destruct (NN.div_eucl x y) as (q,r).
  break_nonneg x px EQx; break_nonneg y py EQy;
- try (injection 1; intros Hr Hq; rewrite NN.spec_eqb, NN.spec_0, Hr;
+ try (injection 1 as Hq Hr; rewrite NN.spec_eqb, NN.spec_0, Hr;
       simpl; rewrite Hq, NN.spec_0; auto).
  change (- Zpos px) with (Zneg px).
  assert (GT : Zpos py > 0) by (compute; auto).
  generalize (Z_div_mod (Zpos px) (Zpos py) GT).
  unfold Z.div_eucl. destruct (Z.pos_div_eucl px (Zpos py)) as (q',r').
- intros (EQ,MOD). injection 1. intros Hr' Hq'.
+ intros (EQ,MOD). injection 1 as Hq' Hr'.
  rewrite NN.spec_eqb, NN.spec_0, Hr'.
  break_nonneg r pr EQr.
  subst; simpl. rewrite NN.spec_0; auto.
@@ -457,7 +457,7 @@ Module Make (NN:NType) <: ZType.
  (* Neg Neg *)
  generalize (NN.spec_div_eucl x y); destruct (NN.div_eucl x y) as (q,r).
  break_nonneg x px EQx; break_nonneg y py EQy;
- try (injection 1; intros Hr Hq; rewrite Hr, Hq; auto).
+ try (injection 1 as -> ->; auto).
  simpl. intros <-; auto.
  Qed.
 

@@ -12,7 +12,7 @@ open Constrexpr
 
 (** Topconstr *)
 
-val oldfashion_patterns : bool ref
+val asymmetric_patterns : bool ref
 
 (** Utilities on constr_expr *)
 
@@ -23,7 +23,7 @@ val free_vars_of_constr_expr : constr_expr -> Id.Set.t
 val occur_var_constr_expr : Id.t -> constr_expr -> bool
 
 (** Specific function for interning "in indtype" syntax of "match" *)
-val ids_of_cases_indtype : cases_pattern_expr -> Id.t list
+val ids_of_cases_indtype : cases_pattern_expr -> Id.Set.t
 
 val split_at_annot : local_binder list -> Id.t located option -> local_binder list * local_binder list
 

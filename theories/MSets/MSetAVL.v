@@ -417,6 +417,7 @@ Local Open Scope Int_scope.
     Let's do its job by hand: *)
 
 Ltac join_tac :=
+ let l := fresh "l" in
  intro l; induction l as [| lh ll _ lx lr Hlr];
    [ | intros x r; induction r as [| rh rl Hrl rx rr _]; unfold join;
      [ | destruct ((rh+2) <? lh) eqn:LT;

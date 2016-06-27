@@ -266,7 +266,7 @@ Qed.
 
 Lemma push_not_empty: forall a S, (push a S) <> empty.
 intros a [ind cont];unfold push,empty.
-simpl;intro H;injection H; intros _ ; apply Pos.succ_not_1.
+intros [= H%Pos.succ_not_1]. assumption.
 Qed.
 
 Fixpoint In (x:A) (S:Store) (F:Full S) {struct F}: Prop :=

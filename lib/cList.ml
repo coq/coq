@@ -47,7 +47,11 @@ sig
     ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list -> 'd list -> 'e list
   val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
+  val partitioni :
+    (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
+  val extend : bool list -> 'a -> 'a list -> 'a list
+  val count : ('a -> bool) -> 'a list -> int
   val index : 'a eq -> 'a -> 'a list -> int
   val index0 : 'a eq -> 'a -> 'a list -> int
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
@@ -61,6 +65,7 @@ sig
   val except : 'a eq -> 'a -> 'a list -> 'a list
   val remove : 'a eq -> 'a -> 'a list -> 'a list
   val remove_first : ('a -> bool) -> 'a list -> 'a list
+  val extract_first : ('a -> bool) -> 'a list -> 'a list * 'a
   val insert : ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val sep_last : 'a list -> 'a * 'a list
@@ -375,6 +380,18 @@ let rec smartfilter f l = match l with
           else h :: tl'
         else tl'
 
+let rec extend l a l' = match l,l' with
+  | true::l, b::l' -> b :: extend l a l'
+  | false::l, l' -> a :: extend l a l'
+  | [], [] -> []
+  | _ -> invalid_arg "extend"
+
+let count f l =
+  let rec aux acc = function
+    | [] -> acc
+    | h :: t -> if f h then aux (acc + 1) t else aux acc t in
+  aux 0 l
+
 let rec index_f f x l n = match l with
 | [] -> raise Not_found
 | y :: l -> if f x y then n else index_f f x l (succ n)
@@ -445,6 +462,14 @@ let rec remove_first p = function
   | b::l -> b::remove_first p l
   | [] -> raise Not_found
 
+let extract_first p li =
+  let rec loop rev_left = function
+    | [] -> raise Not_found
+    | x::right ->
+       if p x then List.rev_append rev_left right, x
+       else loop (x :: rev_left) right
+  in loop [] li
+
 let insert p v l =
   let rec insrec = function
     | [] -> [v]
@@ -471,6 +496,15 @@ let filteri p =
     | x::l -> let l' = filter_i_rec (succ i) l in if p i x then x::l' else l'
   in
   filter_i_rec 0
+
+let partitioni p =
+  let rec aux i = function
+    | [] -> [], []
+    | x :: l ->
+        let (l1, l2) = aux (succ i) l in
+        if p i x then (x :: l1, l2)
+        else (l1, x :: l2)
+  in aux 0
 
 let rec sep_last = function
   | [] -> failwith "sep_last"
@@ -638,12 +672,13 @@ let rec split3 = function
       let (rx, ry, rz) = split3 l in (x::rx, y::ry, z::rz)
 
 let firstn n l =
-  let rec aux acc = function
-    | (0, l) -> List.rev acc
-    | (n, (h::t)) -> aux (h::acc) (pred n, t)
+  let rec aux acc n l =
+    match n, l with
+    | 0, _ -> List.rev acc
+    | n, h::t -> aux (h::acc) (pred n) t
     | _ -> failwith "firstn"
   in
-  aux [] (n,l)
+  aux [] n l
 
 let rec last = function
   | [] -> failwith "List.last"

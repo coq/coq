@@ -14,6 +14,7 @@ val load_init : bool ref
 val batch_mode : bool ref
 type compilation_mode = BuildVo | BuildVio | Vio2Vo
 val compilation_mode : compilation_mode ref
+val compilation_output_name : string option ref
 
 val test_mode : bool ref
 
@@ -34,6 +35,10 @@ type priority = Low | High
 val async_proofs_worker_priority : priority ref
 val string_of_priority : priority -> string
 val priority_of_string : string -> priority
+type tac_error_filter = [ `None | `Only of string list | `All ]
+val async_proofs_tac_error_resilience : tac_error_filter ref
+val async_proofs_cmd_error_resilience : bool ref
+val async_proofs_delegation_threshold : float ref
 
 val debug : bool ref
 val in_debugger : bool ref
@@ -57,7 +62,7 @@ val raw_print : bool ref
 val record_print : bool ref
 val univ_print : bool ref
 
-type compat_version = V8_2 | V8_3 | V8_4 | Current
+type compat_version = V8_2 | V8_3 | V8_4 | V8_5 | Current
 val compat_version : compat_version ref
 val version_strictly_greater : compat_version -> bool
 val version_less_or_equal : compat_version -> bool
@@ -123,8 +128,8 @@ val coqlib_spec : bool ref
 val coqlib : string ref
 
 (** Options for specifying where OCaml binaries reside *)
-val camlbin_spec : bool ref
-val camlbin : string ref
+val ocamlfind_spec : bool ref
+val ocamlfind : string ref
 val camlp4bin_spec : bool ref
 val camlp4bin : string ref
 
@@ -142,6 +147,8 @@ val print_mod_uid : bool ref
 val tactic_context_compat : bool ref
 (** Set to [true] to trigger the compatibility bugged context matching (old
     context vs. appcontext) is set. *)
+
+val profile_ltac : bool ref
 
 (** Dump the bytecode after compilation (for debugging purposes) *)
 val dump_bytecode : bool ref

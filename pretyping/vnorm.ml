@@ -15,6 +15,7 @@ open Environ
 open Inductive
 open Reduction
 open Vm
+open Context.Rel.Declaration
 
 (*******************************************)
 (* Calcul de la forme normal d'un terme    *)
@@ -45,13 +46,7 @@ let invert_tag cst tag reloc_tbl =
   with Find_at j -> (j+1)
              (* Argggg, ces constructeurs de ... qui commencent a 1*)
 
-let find_rectype_a env c =
-  let (t, l) =
-    let t = whd_betadeltaiota env c in
-    try destApp t with DestKO -> (t,[||]) in
-  match kind_of_term t with
-  | Ind ind -> (ind, l)
-  | _ -> raise Not_found
+let find_rectype_a env c = Inductiveops.find_mrectype_vect env Evd.empty c
 
 (* Instantiate inductives and parameters in constructor type *)
 
@@ -59,11 +54,11 @@ let type_constructor mind mib u typ params =
   let s = ind_subst mind mib u in
   let ctyp = substl s typ in
   let ctyp = subst_instance_constr u ctyp in
-  let ndecls = Context.rel_context_length mib.mind_params_ctxt in
+  let ndecls = Context.Rel.length mib.mind_params_ctxt in
   if Int.equal ndecls 0 then ctyp
   else
     let _,ctyp = decompose_prod_n_assum ndecls ctyp in
-    substl (List.rev (Termops.adjust_subst_to_rel_context mib.mind_params_ctxt (Array.to_list params)))
+    substl (List.rev (adjust_subst_to_rel_context mib.mind_params_ctxt (Array.to_list params)))
       ctyp
 
 
@@ -140,7 +135,7 @@ and nf_whd env whd typ =
       let dom = nf_vtype env (dom p) in
       let name = Name (Id.of_string "x") in
       let vc = body_of_vfun (nb_rel env) (codom p) in
-      let codom = nf_vtype (push_rel (name,None,dom) env) vc  in
+      let codom = nf_vtype (push_rel (LocalAssum (name,dom)) env) vc  in
       mkProd(name,dom,codom)
   | Vfun f -> nf_fun env f typ
   | Vfix(f,None) -> nf_fix env f
@@ -208,11 +203,12 @@ and constr_type_of_idkey env (idkey : Vars.id_key) stk =
      in
      nf_univ_args ~nb_univs mk env stk
    | VarKey id ->
-      let (_,_,ty) = lookup_named id env in
+      let open Context.Named.Declaration in
+      let ty = get_type (lookup_named id env) in
       nf_stk env (mkVar id) ty stk
   | RelKey i ->
       let n = (nb_rel env - i) in
-      let (_,_,ty) = lookup_rel n env in
+      let ty = get_type (lookup_rel n env) in
       nf_stk env (mkRel n) (lift n ty) stk
 
 and nf_stk ?from:(from=0) env c t stk  =
@@ -266,7 +262,7 @@ and nf_predicate env ind mip params v pT =
       let vb = body_of_vfun k f in
       let name,dom,codom = decompose_prod env pT in
       let dep,body =
-	nf_predicate (push_rel (name,None,dom) env) ind mip params vb codom in
+	nf_predicate (push_rel (LocalAssum (name,dom)) env) ind mip params vb codom in
       dep, mkLambda(name,dom,body)
   | Vfun f, _ ->
       let k = nb_rel env in
@@ -276,7 +272,7 @@ and nf_predicate env ind mip params v pT =
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
-      let body = nf_vtype (push_rel (name,None,dom) env) vb in
+      let body = nf_vtype (push_rel (LocalAssum (name,dom)) env) vb in
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_val env v crazy_type
 
@@ -312,7 +308,7 @@ and nf_fun env f typ =
       Errors.anomaly
         (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
   in
-  let body = nf_val (push_rel (name,None,dom) env) vb codom in
+  let body = nf_val (push_rel (LocalAssum (name,dom)) env) vb codom in
   mkLambda(name,dom,body)
 
 and nf_fix env f =

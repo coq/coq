@@ -62,8 +62,6 @@ module Functional(X : Ordered) = struct
 
   let empty = Leaf
 
-  let is_empty t = t = Leaf
-
   let rec add x = function
     | Leaf ->
         Node (Leaf, x, Leaf)

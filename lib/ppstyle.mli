@@ -11,7 +11,8 @@
 
 (** {5 Style tags} *)
 
-type t
+type t = string
+
 (** Style tags *)
 
 val make : ?style:Terminal.style -> string list -> t
@@ -46,12 +47,11 @@ val dump : unit -> (t * Terminal.style option) list
 (** {5 Setting color output} *)
 
 val init_color_output : unit -> unit
-(** Once called, all tags defined here will use their current style when
-    printed. To this end, this function redefines the loggers used when sending
-    messages to the user. The program will in particular use the formatters
-    {!Pp_control.std_ft} and {!Pp_control.err_ft} to display those messages,
-    with additional syle information provided by this module. Be careful this is
-    not compatible with the Emacs mode! *)
+
+val color_msg : ?header:string * Format.tag ->
+  Format.formatter -> Pp.std_ppcmds -> unit
+(** {!color_msg ?header fmt pp} will format according to the tags
+     defined in this file *)
 
 val pp_tag : Pp.tag_handler
 (** Returns the name of a style tag that is understandable by the formatters

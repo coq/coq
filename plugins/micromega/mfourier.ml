@@ -98,12 +98,12 @@ module PSet = ISet
 
 module System = Hashtbl.Make(Vect)
 
-  type proof =
-      | Hyp of int
-      | Elim of  var * proof * proof
-      | And of proof * proof
+type proof =
+| Hyp of int
+| Elim of  var * proof * proof
+| And of proof * proof
 
-
+let max_nb_cstr = ref max_int
 
 type system = {
   sys : cstr_info ref System.t ;
@@ -120,7 +120,7 @@ and cstr_info = {
 (** A system of constraints has the form [\{sys = s ; vars = v\}].
     [s] is a hashtable mapping a normalised vector to a [cstr_info] record where
     - [bound] is an interval
-    - [prf_idx] is the set of hypothese indexes (i.e. constraints in the initial system) used to obtain the current constraint.
+    - [prf_idx] is the set of hypothesis indexes (i.e. constraints in the initial system) used to obtain the current constraint.
        In the initial system, each constraint is given an unique singleton proof_idx.
        When a new constraint c is computed by a function f(c1,...,cn), its proof_idx is ISet.fold union (List.map (fun x -> x.proof_idx) [c1;...;cn]
     - [pos] is the number of positive values of the vector
@@ -208,8 +208,7 @@ let merge_cstr_info i1 i2 =
 *)
 
 let xadd_cstr vect cstr_info sys =
-  if debug && Int.equal (System.length sys mod 1000) 0 then (print_string "*" ; flush stdout) ;
-  try
+ try
     let info = System.find sys vect in
       match merge_cstr_info cstr_info !info with
 	  | None       -> raise (SystemContradiction  (And(cstr_info.prf, (!info).prf)))
@@ -217,6 +216,13 @@ let xadd_cstr vect cstr_info sys =
       with
 	| Not_found -> System.replace  sys vect (ref cstr_info)
 
+exception TimeOut
+         
+let xadd_cstr vect cstr_info sys = 
+  if debug && Int.equal (System.length sys mod 1000) 0 then (print_string "*" ; flush stdout) ;
+ if System.length sys < !max_nb_cstr
+ then xadd_cstr vect cstr_info sys
+ else raise TimeOut
 
 type cstr_ext =
     | Contradiction (** The constraint is contradictory.
@@ -866,7 +872,7 @@ let  mk_proof hyps prf =
       | Elim(v,prf1,prf2) ->
           let prfsl = mk_proof prf1
           and prfsr = mk_proof prf2 in
-            (* I take only the pairs for which the elimination is meaningfull *)
+            (* I take only the pairs for which the elimination is meaningful *)
             forall_pairs (pivot v) prfsl prfsr
       | And(prf1,prf2) ->
           let prfsl1 = mk_proof prf1

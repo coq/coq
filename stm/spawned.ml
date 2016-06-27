@@ -13,19 +13,6 @@ let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
 
 type chandescr = AnonPipe | Socket of string * int * int
 
-let handshake cin cout =
-  try
-    match input_value cin with
-    | Hello(v, pid) when v = proto_version ->
-        prerr_endline (Printf.sprintf "Handshake with %d OK" pid);
-        output_value cout (Hello (proto_version,Unix.getpid ())); flush cout
-    | _ -> raise (Failure "handshake protocol")
-  with
-  | Failure s | Invalid_argument s | Sys_error s ->
-      pr_err ("Handshake failed: "  ^ s); raise (Failure "handshake")
-  | End_of_file ->
-      pr_err "Handshake failed: End_of_file"; raise (Failure "handshake")
-
 let open_bin_connection h pr pw =
   let open Unix in
   let _, cout = open_connection (ADDR_INET (inet_addr_of_string h,pr)) in

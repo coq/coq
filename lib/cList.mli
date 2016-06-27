@@ -89,10 +89,16 @@ sig
   val map4 : ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list ->
     'd list -> 'e list
   val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
+  val partitioni : (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
 
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
   (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
     [f ai = true], then [smartfilter f l == l] *)
+
+  val extend : bool list -> 'a -> 'a list -> 'a list
+(** [extend l a [a1..an]] assumes that the number of [true] in [l] is [n];
+    it extends [a1..an] by inserting [a] at the position of [false] in [l] *)
+  val count : ('a -> bool) -> 'a list -> int
 
   val index : 'a eq -> 'a -> 'a list -> int
   (** [index] returns the 1st index of an element in a list (counting from 1). *)
@@ -118,6 +124,10 @@ sig
 
   val remove_first : ('a -> bool) -> 'a list -> 'a list
   (** Remove the first element satisfying a predicate, or raise [Not_found] *)
+
+  val extract_first : ('a -> bool) -> 'a list -> 'a list * 'a
+  (** Remove and return the first element satisfying a predicate,
+      or raise [Not_found] *)
 
   val insert : ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
   (** Insert at the (first) position so that if the list is ordered wrt to the

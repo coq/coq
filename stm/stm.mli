@@ -9,6 +9,7 @@
 open Vernacexpr
 open Names
 open Feedback
+open Loc
 
 (** state-transaction-machine interface *)
 
@@ -19,7 +20,9 @@ open Feedback
    The sentence [s] is parsed in the state [ontop].
    If [newtip] is provided, then the returned state id is guaranteed to be
    [newtip] *)
-val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(located_vernac_expr -> unit) ->
+val add :
+  ontop:Stateid.t -> ?newtip:Stateid.t ->
+  ?check:(vernac_expr located -> unit) ->
   bool -> edit_id -> string ->
     Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
@@ -75,7 +78,9 @@ val get_current_state : unit -> Stateid.t
 
 (* Misc *)
 val init : unit -> unit
-val print_ast : Stateid.t -> Xml_datatype.xml
+
+(* This returns the node at that position *)
+val get_ast : Stateid.t -> (Vernacexpr.vernac_expr * Loc.t) option
 
 (* Filename *)
 val set_compilation_hints : string -> unit
@@ -92,6 +97,82 @@ val restore : document -> unit
 module ProofTask : AsyncTaskQueue.Task
 module TacTask   : AsyncTaskQueue.Task
 module QueryTask : AsyncTaskQueue.Task
+
+(** document structure customization *************************************** **)
+
+(* A proof block delimiter defines a syntactic delimiter for sub proofs
+   that, when contain an error, do not impact the rest of the proof.
+   While checking a proof, if an error occurs in a (valid) block then
+   processing can skip the entire block and go on to give feedback
+   on the rest of the proof.
+  
+   static_block_detection and dynamic_block_validation are run when
+   the closing block marker is parsed/executed respectively.
+  
+   static_block_detection is for example called when "}" is parsed and
+   declares a block containing all proof steps between it and the matching
+   "{".
+  
+   dynamic_block_validation is called when an error "crosses" the "}" statement.
+   Depending on the nature of the goal focused by "{" the block may absorb the
+   error or not.  For example if the focused goal occurs in the type of
+   another goal, then the block is leaky.
+   Note that one can design proof commands that need no dynamic validation.
+  
+   Example of document:
+
+      .. { tac1. tac2. } ..
+
+   Corresponding DAG:
+
+      .. (3) <-- { -- (4) <-- tac1 -- (5) <-- tac2 -- (6) <-- } -- (7) ..
+                       
+   Declaration of block  [-------------------------------------------]
+
+      start = 5            the first state_id that could fail in the block
+      stop = 7             the node that may absorb the error
+      dynamic_switch = 4   dynamic check on this node
+      carry_on_data = ()   no need to carry extra data from static to dynamic
+                           checks
+*)
+
+module DynBlockData : Dyn.S
+
+type static_block_declaration = {
+  start : Stateid.t;
+  stop : Stateid.t;
+  dynamic_switch : Stateid.t;
+  carry_on_data : DynBlockData.t;
+}
+
+type document_node = {
+  indentation : int;
+  ast : Vernacexpr.vernac_expr;
+  id : Stateid.t;
+}
+
+type document_view = {
+  entry_point : document_node;
+  prev_node : document_node -> document_node option;
+}
+
+type static_block_detection =
+  document_view -> static_block_declaration option
+
+type recovery_action = {
+  base_state : Stateid.t;
+  goals_to_admit : Goal.goal list;
+  recovery_command : Vernacexpr.vernac_expr option;
+}
+
+type dynamic_block_error_recovery =
+  static_block_declaration -> [ `ValidBlock of recovery_action | `Leaks ]
+
+val register_proof_block_delimiter :
+  Vernacexpr.proof_block_name ->
+  static_block_detection ->
+  dynamic_block_error_recovery ->
+    unit
 
 (** customization ********************************************************** **)
 
@@ -119,14 +200,15 @@ type state = {
   proof : Proof_global.state;
   shallow : bool
 }
-val state_of_id : Stateid.t -> [ `Valid of state option | `Expired ]
+val state_of_id :
+  Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
 
 (** read-eval-print loop compatible interface ****************************** **)
 
 (* Adds a new line to the document.  It replaces the core of Vernac.interp.
-   [finish] is called as the last bit of this function is the system
+   [finish] is called as the last bit of this function if the system
    is running interactively (-emacs or coqtop). *)
-val interp : bool -> located_vernac_expr -> unit
+val interp : bool -> vernac_expr located -> unit
 
 (* Queries for backward compatibility *)
 val current_proof_depth : unit -> int
@@ -134,7 +216,7 @@ val get_all_proof_names : unit -> Id.t list
 val get_current_proof_name : unit -> Id.t option
 val show_script : ?proof:Proof_global.closed_proof -> unit -> unit
 
-(** Reverse dependency hooks *)
+(* Hooks to be set by other Coq components in order to break file cycles *)
 val process_error_hook : Future.fix_exn Hook.t
 val interp_hook : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
   Loc.t * Vernacexpr.vernac_expr -> unit) Hook.t

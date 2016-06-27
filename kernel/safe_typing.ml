@@ -60,6 +60,7 @@
 open Util
 open Names
 open Declarations
+open Context.Named.Declaration
 
 (** {6 Safe environments }
 
@@ -179,20 +180,17 @@ let set_engagement c senv =
     env = Environ.set_engagement c senv.env;
     engagement = Some c }
 
+let set_typing_flags c senv =
+  { senv with env = Environ.set_typing_flags c senv.env }
+
 (** Check that the engagement [c] expected by a library matches
     the current (initial) one *)
-let check_engagement env (expected_impredicative_set,expected_type_in_type) =
-  let impredicative_set,type_in_type = Environ.engagement env in
+let check_engagement env expected_impredicative_set =
+  let impredicative_set = Environ.engagement env in
   begin
     match impredicative_set, expected_impredicative_set with
     | PredicativeSet, ImpredicativeSet ->
         Errors.error "Needs option -impredicative-set."
-    | _ -> ()
-  end;
-  begin
-    match type_in_type, expected_type_in_type with
-    | StratifiedType, TypeInType ->
-        Errors.error "Needs option -type-in-type."
     | _ -> ()
   end
 
@@ -221,13 +219,6 @@ let mk_pure_proof = Term_typing.mk_pure_proof
 let inline_private_constants_in_constr = Term_typing.inline_side_effects
 let inline_private_constants_in_definition_entry = Term_typing.inline_entry_side_effects
 let side_effects_of_private_constants x = Term_typing.uniq_seff (List.rev x)
-
-let constant_entry_of_private_constant = function
-  | { Entries.eff = Entries.SEsubproof (kn, cb, eff_env) } ->
-      [ kn, Term_typing.constant_entry_of_side_effect cb eff_env ]
-  | { Entries.eff = Entries.SEscheme (l,_) } ->
-      List.map (fun (_,kn,cb,eff_env) ->
-        kn, Term_typing.constant_entry_of_side_effect cb eff_env) l
 
 let private_con_of_con env c =
   let cbo = Environ.lookup_constant c env.env in
@@ -369,7 +360,8 @@ let check_required current_libs needed =
     hypothesis many many times, and the check performed here would
     cost too much. *)
 
-let safe_push_named (id,_,_ as d) env =
+let safe_push_named d env =
+  let id = get_id d in
   let _ =
     try
       let _ = Environ.lookup_named id env in
@@ -390,13 +382,13 @@ let push_named_def (id,de) senv =
 	(Opaqueproof.force_constraints (Environ.opaque_tables senv.env) o)
     | _ -> assert false in
   let senv' = push_context_set poly univs senv in
-  let env'' = safe_push_named (id,Some c,typ) senv'.env in
+  let env'' = safe_push_named (LocalDef (id,c,typ)) senv'.env in
     univs, {senv' with env=env''}
 
 let push_named_assum ((id,t,poly),ctx) senv =
   let senv' = push_context_set poly ctx senv in
   let t = Term_typing.translate_local_assum senv'.env t in
-  let env'' = safe_push_named (id,None,t) senv'.env in
+  let env'' = safe_push_named (LocalAssum (id,t)) senv'.env in
     {senv' with env=env''}
 
 

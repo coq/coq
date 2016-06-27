@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Term
-open Context
 open Globnames
 
 val qflag : bool ref
@@ -27,7 +26,7 @@ type counter = bool -> metavariable
 val construct_nhyps : pinductive -> Proof_type.goal Tacmach.sigma -> int array
 
 val ind_hyps : int -> pinductive -> constr list ->
-  Proof_type.goal Tacmach.sigma -> rel_context array
+  Proof_type.goal Tacmach.sigma -> Context.Rel.t array
 
 type atoms = {positive:constr list;negative:constr list}
 

@@ -11,6 +11,10 @@ let version ret =
     Coq_config.version Coq_config.date;
   Printf.printf "compiled on %s with OCaml %s\n" Coq_config.compile_date Coq_config.caml_version;
   exit ret
+let machine_readable_version ret =
+  Printf.printf "%s %s\n"
+    Coq_config.version Coq_config.caml_version;
+  exit ret
 
 (* print the usage of coqtop (or coqc) on channel co *)
 
@@ -45,6 +49,7 @@ let print_usage_channel co command =
 \n  -require path          load Coq library path and import it (Require Import path.)\
 \n  -compile f.v           compile Coq file f.v (implies -batch)\
 \n  -compile-verbose f.v   verbosely compile Coq file f.v (implies -batch)\
+\n  -o f.vo                use f.vo as the output file name\
 \n  -quick                 quickly compile .v files to .vio files (skip proofs)\
 \n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
 \n                         into fi.vo\
@@ -77,6 +82,7 @@ let print_usage_channel co command =
 \n                         the directory $COQ_XML_LIBRARY_ROOT (if set) or to\
 \n                         stdout (if unset)\
 \n  -time                  display the time taken by each command\
+\n  -profile-ltac           display the time taken by each (sub)tactic\
 \n  -m, --memory           display total heap size at program exit\
 \n                         (use environment variable\
 \n                          OCAML_GC_STATS=\"/tmp/gclog.txt\"\
@@ -117,12 +123,7 @@ let print_config () =
   if Coq_config.local then Printf.printf "LOCAL=1\n" else Printf.printf "LOCAL=0\n";
   Printf.printf "COQLIB=%s/\n" (Envars.coqlib ());
   Printf.printf "DOCDIR=%s/\n" (Envars.docdir ());
-  Printf.printf "OCAMLDEP=%s\n" Coq_config.ocamldep;
-  Printf.printf "OCAMLC=%s\n" Coq_config.ocamlc;
-  Printf.printf "OCAMLOPT=%s\n" Coq_config.ocamlopt;
-  Printf.printf "OCAMLDOC=%s\n" Coq_config.ocamldoc;
-  Printf.printf "CAMLBIN=%s/\n" (Envars.camlbin ());
-  Printf.printf "CAMLLIB=%s/\n" (Envars.camllib ());
+  Printf.printf "OCAMLFIND=%s\n" (Envars.ocamlfind ());
   Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
   Printf.printf "CAMLP4O=%s\n" Coq_config.camlp4o;
   Printf.printf "CAMLP4BIN=%s/\n" (Envars.camlp4bin ());

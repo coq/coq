@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This file defines the most important datatype of Coq, namely kernel terms,
+    as well as a handful of generic manipulation functions. *)
+
 open Names
 
 (** {6 Value under universe substitution } *)
@@ -30,13 +33,23 @@ type case_printing =
     cstr_tags : bool list array; (** tell whether letin or lambda in the signature of each constructor *)
     style     : case_style }
 
-(** the integer is the number of real args, needed for reduction *)
+(* INVARIANT:
+ * - Array.length ci_cstr_ndecls = Array.length ci_cstr_nargs
+ * - forall (i : 0 .. pred (Array.length ci_cstr_ndecls)),
+ *          ci_cstr_ndecls.(i) >= ci_cstr_nargs.(i)
+ *)
 type case_info =
-  { ci_ind        : inductive;
-    ci_npar       : int;
-    ci_cstr_ndecls : int array; (* number of pattern vars of each constructor (with let's)*)
-    ci_cstr_nargs : int array; (* number of pattern vars of each constructor (w/o let's) *)
-    ci_pp_info    : case_printing (** not interpreted by the kernel *)
+  { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
+    ci_npar       : int;            (* number of parameters of the above inductive type *)
+    ci_cstr_ndecls : int array;     (* For each constructor, the corresponding integer determines
+                                       the number of values that can be bound in a match-construct.
+                                       NOTE: parameters of the inductive type are therefore excluded from the count *)
+    ci_cstr_nargs : int array;      (* for each constructor, the corresponding integers determines
+                                       the number of values that can be applied to the constructor,
+                                       in addition to the parameters of the related inductive type
+                                       NOTE: "lets" are therefore excluded from the count
+                                       NOTE: parameters of the inductive type are also excluded from the count *)
+    ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
 (** {6 The type of constructions } *)
@@ -93,8 +106,9 @@ val mkLambda : Name.t * types * constr -> constr
 (** Constructs the product [let x = t1 : t2 in t3] *)
 val mkLetIn : Name.t * constr * types * constr -> constr
 
-(** [mkApp (f,[| t_1; ...; t_n |]] constructs the application
-   {% $(f~t_1~\dots~t_n)$ %}. *)
+(** [mkApp (f, [|t1; ...; tN|]] constructs the application
+    {%html:(f t<sub>1</sub> ... t<sub>n</sub>)%}
+    {%latex:$(f~t_1\dots f_n)$%}. *)
 val mkApp : constr * constr array -> constr
 
 val map_puniverses : ('a -> 'b) -> 'a puniverses -> 'b puniverses
@@ -181,10 +195,13 @@ type ('constr, 'types) kind_of_term =
   | Evar      of 'constr pexistential
   | Sort      of Sorts.t
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t * 'types * 'types
-  | Lambda    of Name.t * 'types * 'constr
-  | LetIn     of Name.t * 'constr * 'types * 'constr
-  | App       of 'constr * 'constr array
+  | Prod      of Name.t * 'types * 'types             (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
+  | Lambda    of Name.t * 'types * 'constr            (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
+  | LetIn     of Name.t * 'constr * 'types * 'constr  (** Concrete syntax ["let A:B := C in D"] is represented as [LetIn (A,B,C,D)]. *)
+  | App       of 'constr * 'constr array              (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
+                                                          The {!mkApp} constructor also enforces the following invariant:
+                                                          - [F] itself is not {!App}
+                                                          - and [[|P1;..;Pn|]] is not empty. *)
   | Const     of constant puniverses
   | Ind       of inductive puniverses
   | Construct of constructor puniverses
@@ -205,19 +222,19 @@ val equal : constr -> constr -> bool
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
-val eq_constr_univs : constr Univ.check_function
+val eq_constr_univs : constr UGraph.check_function
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
     alpha, casts, application grouping and the universe inequalities in [u]. *)
-val leq_constr_univs : constr Univ.check_function
+val leq_constr_univs : constr UGraph.check_function
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
-val eq_constr_univs_infer : Univ.universes -> constr -> constr -> bool Univ.constrained
+val eq_constr_univs_infer : UGraph.t -> constr -> constr -> bool Univ.constrained
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
     alpha, casts, application grouping and the universe inequalities in [u]. *)
-val leq_constr_univs_infer : Univ.universes -> constr -> constr -> bool Univ.constrained
+val leq_constr_univs_infer : UGraph.t -> constr -> constr -> bool Univ.constrained
 
 (** [eq_constr_univs a b] [true, c] if [a] equals [b] modulo alpha, casts,
    application grouping and ignoring universe instances. *)

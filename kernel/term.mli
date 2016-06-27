@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Context
 
 (** {5 Redeclaration of types from module Constr and Sorts}
 
@@ -203,7 +202,7 @@ val destCoFix : constr -> cofixpoint
 
 (** non-dependent product [t1 -> t2], an alias for
    [forall (_:t1), t2]. Beware [t_2] is NOT lifted.
-   Eg: in context [A:Prop], [A->A] is built by [(mkArrow (mkRel 0) (mkRel 1))]
+   Eg: in context [A:Prop], [A->A] is built by [(mkArrow (mkRel 1) (mkRel 2))]
 *)
 val mkArrow : types -> types -> constr
 
@@ -213,14 +212,14 @@ val mkNamedLetIn : Id.t -> constr -> types -> constr -> constr
 val mkNamedProd : Id.t -> types -> types -> types
 
 (** Constructs either [(x:t)c] or [[x=b:t]c] *)
-val mkProd_or_LetIn : rel_declaration -> types -> types
-val mkProd_wo_LetIn : rel_declaration -> types -> types
-val mkNamedProd_or_LetIn : named_declaration -> types -> types
-val mkNamedProd_wo_LetIn : named_declaration -> types -> types
+val mkProd_or_LetIn : Context.Rel.Declaration.t -> types -> types
+val mkProd_wo_LetIn : Context.Rel.Declaration.t -> types -> types
+val mkNamedProd_or_LetIn : Context.Named.Declaration.t -> types -> types
+val mkNamedProd_wo_LetIn : Context.Named.Declaration.t -> types -> types
 
 (** Constructs either [[x:t]c] or [[x=b:t]c] *)
-val mkLambda_or_LetIn : rel_declaration -> constr -> constr
-val mkNamedLambda_or_LetIn : named_declaration -> constr -> constr
+val mkLambda_or_LetIn : Context.Rel.Declaration.t -> constr -> constr
+val mkNamedLambda_or_LetIn : Context.Named.Declaration.t -> constr -> constr
 
 (** {5 Other term constructors. } *)
 
@@ -262,14 +261,34 @@ val to_lambda : int -> constr -> constr
    where [l] is [fun (x_1:T_1)...(x_n:T_n) => T] *)
 val to_prod : int -> constr -> constr
 
+val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr
+val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
+
+(** In [lambda_applist c args], [c] is supposed to have the form
+    [λΓ.c] with [Γ] without let-in; it returns [c] with the variables
+    of [Γ] instantiated by [args]. *)
+val lambda_applist : constr -> constr list -> constr
+val lambda_appvect : constr -> constr array -> constr
+
+(** In [lambda_applist_assum n c args], [c] is supposed to have the
+    form [λΓ.c] with [Γ] of length [m] and possibly with let-ins; it
+    returns [c] with the assumptions of [Γ] instantiated by [args] and
+    the local definitions of [Γ] expanded. *)
+val lambda_applist_assum : int -> constr -> constr list -> constr
+val lambda_appvect_assum : int -> constr -> constr array -> constr
+
 (** pseudo-reduction rule *)
 
 (** [prod_appvect] [forall (x1:B1;...;xn:Bn), B] [a1...an] @return [B[a1...an]] *)
 val prod_appvect : constr -> constr array -> constr
 val prod_applist : constr -> constr list -> constr
 
-val it_mkLambda_or_LetIn : constr -> rel_context -> constr
-val it_mkProd_or_LetIn : types -> rel_context -> types
+(** In [prod_appvect_assum n c args], [c] is supposed to have the
+    form [∀Γ.c] with [Γ] of length [m] and possibly with let-ins; it
+    returns [c] with the assumptions of [Γ] instantiated by [args] and
+    the local definitions of [Γ] expanded. *)
+val prod_appvect_assum : int -> constr -> constr array -> constr
+val prod_applist_assum : int -> constr -> constr list -> constr
 
 (** {5 Other term destructors. } *)
 
@@ -294,36 +313,29 @@ val decompose_lam_n : int -> constr -> (Name.t * constr) list * constr
 
 (** Extract the premisses and the conclusion of a term of the form
    "(xi:Ti) ... (xj:=cj:Tj) ..., T" where T is not a product nor a let *)
-val decompose_prod_assum : types -> rel_context * types
+val decompose_prod_assum : types -> Context.Rel.t * types
 
-(** Idem with lambda's *)
-val decompose_lam_assum : constr -> rel_context * constr
+(** Idem with lambda's and let's *)
+val decompose_lam_assum : constr -> Context.Rel.t * constr
 
 (** Idem but extract the first [n] premisses, counting let-ins. *)
-val decompose_prod_n_assum : int -> types -> rel_context * types
+val decompose_prod_n_assum : int -> types -> Context.Rel.t * types
 
 (** Idem for lambdas, _not_ counting let-ins *)
-val decompose_lam_n_assum : int -> constr -> rel_context * constr
+val decompose_lam_n_assum : int -> constr -> Context.Rel.t * constr
 
 (** Idem, counting let-ins *)
-val decompose_lam_n_decls : int -> constr -> rel_context * constr
-
-(** [nb_lam] {% $ %}[x_1:T_1]...[x_n:T_n]c{% $ %} where {% $ %}c{% $ %} is not an abstraction
-   gives {% $ %}n{% $ %} (casts are ignored) *)
-val nb_lam : constr -> int
-
-(** Similar to [nb_lam], but gives the number of products instead *)
-val nb_prod : constr -> int
+val decompose_lam_n_decls : int -> constr -> Context.Rel.t * constr
 
 (** Return the premisses/parameters of a type/term (let-in included) *)
-val prod_assum : types -> rel_context
-val lam_assum : constr -> rel_context
+val prod_assum : types -> Context.Rel.t
+val lam_assum : constr -> Context.Rel.t
 
 (** Return the first n-th premisses/parameters of a type (let included and counted) *)
-val prod_n_assum : int -> types -> rel_context
+val prod_n_assum : int -> types -> Context.Rel.t
 
 (** Return the first n-th premisses/parameters of a term (let included but not counted) *)
-val lam_n_assum : int -> constr -> rel_context
+val lam_n_assum : int -> constr -> Context.Rel.t
 
 (** Remove the premisses/parameters of a type/term *)
 val strip_prod : types -> types
@@ -356,7 +368,7 @@ val under_outer_cast : (constr -> constr) -> constr -> constr
     Such a term can canonically be seen as the pair of a context of types
     and of a sort *)
 
-type arity = rel_context * sorts
+type arity = Context.Rel.t * sorts
 
 (** Build an "arity" from its canonical form *)
 val mkArity : arity -> types
@@ -436,11 +448,11 @@ val eq_constr : constr -> constr -> bool
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe constraints in [u]. *)
-val eq_constr_univs : constr Univ.check_function
+val eq_constr_univs : constr UGraph.check_function
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
     alpha, casts, application grouping and the universe constraints in [u]. *)
-val leq_constr_univs : constr Univ.check_function
+val leq_constr_univs : constr UGraph.check_function
 
 (** [eq_constr_univs a b] [true, c] if [a] equals [b] modulo alpha, casts,
    application grouping and ignoring universe instances. *)

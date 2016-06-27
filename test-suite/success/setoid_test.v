@@ -166,3 +166,16 @@ Proof. intros. setoid_rewrite <- foo_prf. change (beq_nat x 0 = y). Abort.
 Goal forall (x : nat) (y : bool), beq_nat (foo_neg x) 0 = foo_neg y.
 Proof. intros. setoid_rewrite <- @foo_prf at 1. change (beq_nat x 0 = foo_neg y). Abort.
 
+(* This should not raise an anomaly as it did for some time in early 2016 *)
+
+Definition t := nat -> bool.
+Definition h (a b : t) := forall n, a n = b n.
+
+Instance subrelh : subrelation h (Morphisms.pointwise_relation nat eq).
+Proof. intros x y H; assumption. Qed.
+
+Goal forall a b, h a b -> a 0 = b 0.
+intros.
+setoid_rewrite H. (* Fallback on ordinary rewrite without anomaly *)
+reflexivity.
+Qed.

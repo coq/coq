@@ -14,6 +14,8 @@ type ('a, 'b) union = Inl of 'a | Inr of 'b
 type 'a until = Stop of 'a | Cont of 'a
 (** Used for browsable-until structures. *)
 
+type (_, _) eq = Refl : ('a, 'a) eq
+
 module type SetS =
 sig
     type elt
@@ -45,6 +47,8 @@ sig
 end
 (** Redeclaration of OCaml set signature, to preserve compatibility. See OCaml
     documentation for more information. *)
+
+module type EmptyS = sig end
 
 module type MapS =
 sig

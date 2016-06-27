@@ -369,7 +369,7 @@ Section ZModulo.
  assert (Z.div_eucl ([|x|]*[|y|]) wB = (([|x|]*[|y|])/wB,([|x|]*[|y|]) mod wB)).
   unfold Z.modulo, Z.div; destruct Z.div_eucl; auto.
  generalize (Z_div_mod ([|x|]*[|y|]) wB wB_pos); destruct Z.div_eucl as (h,l).
- destruct 1; injection H; clear H; intros.
+ destruct 1; injection H as ? ?.
  rewrite H0.
  assert ([|l|] = l).
   apply Zmod_small; auto.
@@ -411,7 +411,7 @@ Section ZModulo.
   unfold Z.modulo, Z.div; destruct Z.div_eucl; auto.
  generalize (Z_div_mod [|a|] [|b|] H0).
  destruct Z.div_eucl as (q,r); destruct 1; intros.
- injection H1; clear H1; intros.
+ injection H1 as ? ?.
  assert ([|r|]=r).
   apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|];
    auto with zarith.
@@ -522,7 +522,7 @@ Section ZModulo.
   unfold Z.modulo, Z.div; destruct Z.div_eucl; auto.
  generalize (Z_div_mod a [|b|] H3).
  destruct Z.div_eucl as (q,r); destruct 1; intros.
- injection H4; clear H4; intros.
+ injection H4 as ? ?.
  assert ([|r|]=r).
   apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|];
    auto with zarith.

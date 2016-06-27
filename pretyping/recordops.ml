@@ -216,7 +216,7 @@ let compute_canonical_projections (con,ind) =
                    if Flags.is_verbose () then
                      (let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con)
                       and proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
-		      msg_warning (strbrk "No global reference exists for projection value"
+		      Feedback.msg_warning (strbrk "No global reference exists for projection value"
                                    ++ Termops.print_constr t ++ strbrk " in instance "  
                                    ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it."));
 		   l
@@ -250,7 +250,7 @@ let open_canonical_structure i (_,o) =
               and new_can_s = (Termops.print_constr s.o_DEF) in
               let prj = (Nametab.pr_global_env Id.Set.empty proj)
               and hd_val = (pr_cs_pattern cs_pat) in
-              msg_warning (strbrk "Ignoring canonical projection to " ++ hd_val
+              Feedback.msg_warning (strbrk "Ignoring canonical projection to " ++ hd_val
                              ++ strbrk " by " ++ prj ++ strbrk " in "
                              ++ new_can_s ++ strbrk ": redundant with " ++ old_can_s)) lo
 
@@ -299,7 +299,7 @@ let check_and_decompose_canonical_structure ref =
     | Construct ((indsp,1),u) -> indsp
     | _ -> error_not_structure ref in
   let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
-  let ntrue_projs = List.length (List.filter (fun (_, x) -> x) s.s_PROJKIND) in
+  let ntrue_projs = List.count snd s.s_PROJKIND in
   if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
     error_not_structure ref;
   (sp,indsp)

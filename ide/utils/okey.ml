@@ -52,33 +52,6 @@ let int_of_modifier = function
   | `RELEASE -> 1 lsl 30
   | `SUPER -> 1 lsl 21
 
-let print_modifier l =
-  List.iter
-    (fun m ->
-      print_string
-	(((function
-	    `SHIFT -> "SHIFT"
-	  | `LOCK -> "LOCK"
-	  | `CONTROL -> "CONTROL"
-	  | `MOD1 -> "MOD1"
-	  | `MOD2 -> "MOD2"
-	  | `MOD3 -> "MOD3"
-	  | `MOD4 -> "MOD4"
-	  | `MOD5 -> "MOD5"
-	  | `BUTTON1 -> "B1"
-	  | `BUTTON2 -> "B2"
-	  | `BUTTON3 -> "B3"
-	  | `BUTTON4 -> "B4"
-	  | `BUTTON5 -> "B5"
-          | `HYPER -> "HYPER"                                                                                                     
-          | `META -> "META"                                                                                                       
-          | `RELEASE -> ""                                                                                                        
-          | `SUPER -> "SUPER")
-	    m)^" ")
-    )
-    l;
-  print_newline ()
-
 let int_of_modifiers l =
   List.fold_left (fun acc -> fun m -> acc + (int_of_modifier m)) 0 l
 

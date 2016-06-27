@@ -8,6 +8,7 @@
 #directory "toplevel";;
 #directory "library";;
 #directory "kernel";;
+#directory "engine";;
 #directory "pretyping";;
 #directory "lib";;
 #directory "proofs";;
@@ -16,6 +17,7 @@
 #directory "grammar";;
 #directory "intf";;
 #directory "stm";;
+#directory "ltac";;
 
 #directory "+camlp4";; (* lazy solution: add both of camlp4/5 so that *)
 #directory "+camlp5";; (* Gramext is found in top_printers.ml *)

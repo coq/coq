@@ -48,7 +48,7 @@ let pr_lconstr_core goal_concl_style env sigma t =
 
 let pr_lconstr_env env = pr_lconstr_core false env
 let pr_constr_env env = pr_constr_core false env
-let _ = Hook.set Proofview.Refine.pr_constr pr_constr_env
+let _ = Hook.set Refine.pr_constr pr_constr_env
 
 let pr_lconstr_goal_style_env env = pr_lconstr_core true env
 let pr_constr_goal_style_env env = pr_constr_core true env
@@ -260,16 +260,19 @@ let pr_var_decl_skel pr_id env sigma (id,c,typ) =
   let ptyp = (str" : " ++ pt) in
   (pr_id id ++ hov 0 (pbody ++ ptyp))
 
-let pr_var_decl env sigma (id,c,typ) =
-  pr_var_decl_skel pr_id env sigma (id,c,typ)
+let pr_var_decl env sigma d =
+  pr_var_decl_skel pr_id env sigma (Context.Named.Declaration.to_tuple d)
 
 let pr_var_list_decl env sigma (l,c,typ) =
   hov 0 (pr_var_decl_skel (fun ids -> prlist_with_sep pr_comma pr_id ids) env sigma (l,c,typ))
 
-let pr_rel_decl env sigma (na,c,typ) =
-  let pbody = match c with
-    | None -> mt ()
-    | Some c ->
+let pr_rel_decl env sigma decl =
+  let open Context.Rel.Declaration in
+  let na = get_name decl in
+  let typ = get_type decl in
+  let pbody = match decl with
+    | LocalAssum _ -> mt ()
+    | LocalDef (_,c,_) ->
 	(* Force evaluation *)
 	let pb = pr_lconstr_env env sigma c in
 	let pb = if isCast c then surround pb else pb in
@@ -291,7 +294,7 @@ let pr_named_context_of env sigma =
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
 let pr_named_context env sigma ne_context =
-  hv 0 (Context.fold_named_context
+  hv 0 (Context.Named.fold_outside
 	  (fun d pps -> pps ++ ws 2 ++ pr_var_decl env sigma d)
           ne_context ~init:(mt ()))
 
@@ -304,7 +307,7 @@ let pr_rel_context_of env sigma =
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env sigma =
   let sign_env =
-    Context.fold_named_list_context
+    Context.NamedList.fold
       (fun d pps ->
          let pidt =  pr_var_list_decl env sigma d in
          (pps ++ fnl () ++ pidt))
@@ -331,7 +334,7 @@ let pr_context_limit n env sigma =
   else
     let k = lgsign-n in
     let _,sign_env =
-      Context.fold_named_list_context
+      Context.NamedList.fold
         (fun d (i,pps) ->
            if i < k then
 	     (i+1, (pps ++str "."))
@@ -414,7 +417,8 @@ let pr_evgl_sign sigma evi =
   | None -> [], []
   | Some f -> List.filter2 (fun b c -> not b) f (evar_context evi)
   in
-  let ids = List.rev_map pi1 l in
+  let open Context.Named.Declaration in
+  let ids = List.rev_map get_id l in
   let warn =
     if List.is_empty ids then mt () else
       (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
@@ -467,7 +471,38 @@ let default_pr_subgoal n sigma =
 
 let pr_internal_existential_key ev = str (string_of_existential ev)
 
-let emacs_print_dependent_evars sigma seeds =
+let print_evar_constraints gl sigma cstrs =
+  let pr_env =
+    match gl with
+    | None -> fun e' -> pr_context_of e' sigma
+    | Some g ->
+       let env = Goal.V82.env sigma g in fun e' ->
+       begin
+         if Context.Named.equal (named_context env) (named_context e') then
+           if Context.Rel.equal (rel_context env) (rel_context e') then mt ()
+           else pr_rel_context_of e' sigma ++ str " |-" ++ spc ()
+         else pr_context_of e' sigma ++ str " |-" ++ spc ()
+       end
+  in
+  let pr_evconstr (pbty,env,t1,t2) =
+    let t1 = Evarutil.nf_evar sigma t1
+    and t2 = Evarutil.nf_evar sigma t2 in
+    str" " ++
+      hov 2 (pr_env env ++ pr_lconstr_env env sigma t1 ++ spc () ++
+             str (match pbty with
+                  | Reduction.CONV -> "=="
+                  | Reduction.CUMUL -> "<=") ++
+             spc () ++ pr_lconstr_env env sigma t2)
+  in
+  prlist_with_sep fnl pr_evconstr cstrs
+
+let print_dependent_evars gl sigma seeds =
+  let constraints =
+    let _, cstrs = Evd.extract_all_conv_pbs sigma in
+    if List.is_empty cstrs then mt ()
+    else fnl () ++ str (String.plural (List.length cstrs) "unification constraint")
+         ++ str":" ++ fnl () ++ hov 0 (print_evar_constraints gl sigma cstrs)
+  in
   let evars () =
     let evars = Evarutil.gather_dependent_evars sigma seeds in
     let evars =
@@ -485,7 +520,7 @@ let emacs_print_dependent_evars sigma seeds =
     fnl () ++
     str "(dependent evars:" ++ evars ++ str ")" ++ fnl ()
   in
-  delayed_emacs_cmd evars
+  constraints ++ delayed_emacs_cmd evars
 
 (* Print open subgoals. Checks for uninstantiated existential variables *)
 (* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
@@ -544,7 +579,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
   (* Side effect! This has to be made more robust *)
   let () =
     match close_cmd with
-    | Some cmd -> msg_info cmd
+    | Some cmd -> Feedback.msg_info cmd
     | None -> ()
   in
   match goals with
@@ -553,12 +588,12 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
 	let exl = Evarutil.non_instantiated sigma in
 	if Evar.Map.is_empty exl then
 	  (str"No more subgoals."
-	   ++ emacs_print_dependent_evars sigma seeds)
+	   ++ print_dependent_evars None sigma seeds)
 	else
 	  let pei = pr_evars_int sigma 1 exl in
 	  (str "No more subgoals, but there are non-instantiated existential variables:"
 	   ++ fnl () ++ (hov 0 pei)
-	   ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
+	   ++ print_dependent_evars None sigma seeds ++ fnl () ++
            str "You can use Grab Existential Variables.")
       end
   | [g] when not !Flags.print_emacs && pr_first ->
@@ -566,7 +601,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
       v 0 (
 	str "1" ++ focused_if_needed ++ str"subgoal" ++ print_extra
         ++ pr_goal_tag g ++ pr_goal_name sigma g ++ cut () ++ pg
-	++ emacs_print_dependent_evars sigma seeds
+	++ print_dependent_evars (Some g) sigma seeds
       )
   | g1::rest ->
       let goals = print_multiple_goals g1 rest in
@@ -578,7 +613,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
         ++ pr_goal_tag g1
         ++ pr_goal_name sigma g1 ++ cut ()
 	++ goals
-	++ emacs_print_dependent_evars sigma seeds
+	++ print_dependent_evars (Some g1) sigma seeds
       )
 
 (**********************************************************************)
@@ -622,19 +657,19 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
           begin match bgoals,shelf,given_up with
 	  | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack goals
           | [] , [] , _ ->
-	     msg_info (str "No more subgoals, but there are some goals you gave up:");
+	     Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
 	     fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] given_up
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
-	    msg_info (str "All the remaining goals are on the shelf.");
+	    Feedback.msg_info (str "All the remaining goals are on the shelf.");
 	    fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
 	  | _ , _, _ ->
             let end_cmd =
               str "This subproof is complete, but there are some unfocused goals." ++
-	      (match Proof_global.Bullet.suggest p
-              with None  -> str"" | Some s -> fnl () ++ str s) ++
+              (let s = Proof_global.Bullet.suggest p in
+               if Pp.is_empty s then s else fnl () ++ s) ++
               fnl ()
             in
 	    pr_subgoals ~pr_first:false (Some end_cmd) bsigma seeds shelf [] bgoals
@@ -678,34 +713,9 @@ let pr_prim_rule = function
        (str"cut " ++ pr_constr t ++
         str ";[" ++ cl ++ str"intro " ++ pr_id id ++ str"|idtac]")
 
-  | FixRule (f,n,[],_) ->
-      (str"fix " ++ pr_id f ++ str"/" ++ int n)
-
-  | FixRule (f,n,others,j) ->
-      if not (Int.equal j 0) then msg_warning (strbrk "Unsupported printing of \"fix\"");
-      let rec print_mut = function
-	| (f,n,ar)::oth ->
-           pr_id f ++ str"/" ++ int n ++ str" : " ++ pr_lconstr ar ++ print_mut oth
-        | [] -> mt () in
-      (str"fix " ++ pr_id f ++ str"/" ++ int n ++
-         str" with " ++ print_mut others)
-
-  | Cofix (f,[],_) ->
-      (str"cofix " ++ pr_id f)
-
-  | Cofix (f,others,j) ->
-      if not (Int.equal j 0) then msg_warning (strbrk "Unsupported printing of \"fix\"");
-      let rec print_mut = function
-	| (f,ar)::oth ->
-	  (pr_id f ++ str" : " ++ pr_lconstr ar ++ print_mut oth)
-        | [] -> mt () in
-      (str"cofix " ++ pr_id f ++  str" with " ++ print_mut others)
   | Refine c ->
       str(if Termops.occur_meta c then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c
-
-  | Thin ids ->
-      (str"clear "  ++ pr_sequence pr_id ids)
 
   | Move (id1,id2) ->
       (str"move "  ++ pr_id id1 ++ Miscprint.pr_move_location pr_id id2)
@@ -718,9 +728,14 @@ let prterm = pr_lconstr
 (* Printer function for sets of Assumptions.assumptions.
    It is used primarily by the Print Assumptions command. *)
 
+type axiom =
+  | Constant of constant (* An axiom or a constant. *)
+  | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
+  | Guarded of constant (* a constant whose (co)fixpoints have been assumed to be guarded *)
+
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
-  | Axiom of constant * (Label.t * Context.rel_context * types) list
+  | Axiom of axiom * (Label.t * Context.Rel.t * types) list
   | Opaque of constant     (* An opaque constant. *)
   | Transparent of constant
 
@@ -728,19 +743,31 @@ type context_object =
 module OrderedContextObject =
 struct
   type t = context_object
+
+  let compare_axiom x y =
+    match x,y with
+    | Constant k1 , Constant k2 ->
+        con_ord k1 k2
+    | Positive m1 , Positive m2 ->
+        MutInd.CanOrd.compare m1 m2
+    | Guarded k1 , Guarded k2 ->
+        con_ord k1 k2
+    | _ , Constant _ -> 1
+    | _ , Positive _ -> 1
+    | _ -> -1
+
   let compare x y =
-      match x , y with
-      | Variable i1 , Variable i2 -> Id.compare i1 i2
-      | Axiom (k1,_) , Axiom (k2, _) -> con_ord k1 k2
-      | Opaque k1 , Opaque k2 -> con_ord k1 k2
-      | Transparent k1 , Transparent k2 -> con_ord k1 k2
-      | Axiom _ , Variable _ -> 1
-      | Opaque _ , Variable _
-      | Opaque _ , Axiom _ -> 1
-      | Transparent _ , Variable _
-      | Transparent _ , Axiom _
-      | Transparent _ , Opaque _ -> 1
-      | _ , _ -> -1
+    match x , y with
+    | Variable i1 , Variable i2 -> Id.compare i1 i2
+    | Variable _ , _ -> -1
+    | _ , Variable _ -> 1
+    | Axiom (k1,_) , Axiom (k2, _) -> compare_axiom k1 k2
+    | Axiom _ , _ -> -1
+    | _ , Axiom _ -> 1
+    | Opaque k1 , Opaque k2 -> con_ord k1 k2
+    | Opaque _ , _ -> -1
+    | _ , Opaque _ -> 1
+    | Transparent k1 , Transparent k2 -> con_ord k1 k2
 end
 
 module ContextObjectSet = Set.Make (OrderedContextObject)
@@ -748,7 +775,7 @@ module ContextObjectMap = Map.Make (OrderedContextObject)
 
 let pr_assumptionset env s =
   if ContextObjectMap.is_empty s &&
-       engagement env = (PredicativeSet, StratifiedType) then
+       engagement env = PredicativeSet then
     str "Closed under the global context"
   else
     let safe_pr_constant env kn =
@@ -767,20 +794,29 @@ let pr_assumptionset env s =
       try str " " ++ pr_ltype_env env sigma typ
       with e when Errors.noncritical e -> mt ()
     in
+    let pr_axiom env ax typ =
+      match ax with
+      | Constant kn ->
+          safe_pr_constant env kn ++ safe_pr_ltype typ
+      | Positive m ->
+          hov 2 (MutInd.print m ++ spc () ++ strbrk"is positive.")
+      | Guarded kn ->
+          hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
+    in
     let fold t typ accu =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
-        let var = str (Id.to_string id) ++ str " : " ++ pr_ltype typ in
+        let var = pr_id id ++ str " : " ++ pr_ltype typ in
         (var :: v, a, o, tr)
-      | Axiom (kn,[]) ->
-        let ax = safe_pr_constant env kn ++ safe_pr_ltype typ in
+      | Axiom (axiom, []) ->
+        let ax = pr_axiom env axiom typ in
         (v, ax :: a, o, tr)
-      | Axiom (kn,l) ->
-        let ax = safe_pr_constant env kn ++ safe_pr_ltype typ ++
+      | Axiom (axiom,l) ->
+        let ax = pr_axiom env axiom typ ++
           cut() ++
           prlist_with_sep cut (fun (lbl, ctx, ty) ->
-            str " used in " ++ str (Names.Label.to_string lbl) ++
+            str " used in " ++ pr_label lbl ++
             str " to prove:" ++ safe_pr_ltype_relctx (ctx,ty))
           l in
         (v, ax :: a, o, tr)

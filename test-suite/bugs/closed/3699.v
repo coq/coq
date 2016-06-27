@@ -65,7 +65,7 @@ Module NonPrim.
     set (fibermap := fun a0p : hfiber f (f a)
                      => let (a0, p) := a0p in transport P p (d a0)).
     Set Printing Implicit.
-    let G := match goal with |- ?G => constr:G end in
+    let G := match goal with |- ?G => constr:(G) end in
     first [ match goal with
               | [ |- (@isconnected_elim n (@hfiber A B f (f a))
                                         (@isconnected_hfiber_conn_map n A B f H (f a))
@@ -142,7 +142,7 @@ Module Prim.
     set (fibermap := fun a0p : hfiber f (f a)
                      => let (a0, p) := a0p in transport P p (d a0)).
     Set Printing Implicit.
-    let G := match goal with |- ?G => constr:G end in
+    let G := match goal with |- ?G => constr:(G) end in
     first [ match goal with
               | [ |- (@isconnected_elim n (@hfiber A B f (f a))
                                         (@isconnected_hfiber_conn_map n A B f H (f a))

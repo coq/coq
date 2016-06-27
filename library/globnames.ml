@@ -14,10 +14,10 @@ open Libnames
 
 (*s Global reference is a kernel side type for all references together *)
 type global_reference =
-  | VarRef of variable
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
+  | VarRef of variable           (** A reference to the section-context. *)
+  | ConstRef of constant         (** A reference to the environment. *)
+  | IndRef of inductive          (** A reference to an inductive type. *)
+  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
 
 let isVarRef = function VarRef _ -> true | _ -> false
 let isConstRef = function ConstRef _ -> true | _ -> false
@@ -107,17 +107,16 @@ let global_eq_gen eq_cst eq_ind eq_cons x y =
 let global_ord_gen ord_cst ord_ind ord_cons x y =
   if x == y then 0
   else match x, y with
-  | ConstRef cx, ConstRef cy -> ord_cst cx cy
-  | IndRef indx, IndRef indy -> ord_ind indx indy
-  | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
   | VarRef v1, VarRef v2 -> Id.compare v1 v2
-
-  | VarRef _, (ConstRef _ | IndRef _ | ConstructRef _) -> -1
-  | ConstRef _, VarRef _ -> 1
-  | ConstRef _, (IndRef _ | ConstructRef _) -> -1
-  | IndRef _, (VarRef _ | ConstRef _) -> 1
-  | IndRef _, ConstructRef _ -> -1
-  | ConstructRef _, (VarRef _ | ConstRef _ | IndRef _) -> 1
+  | VarRef _, _ -> -1
+  | _, VarRef _ -> 1
+  | ConstRef cx, ConstRef cy -> ord_cst cx cy
+  | ConstRef _, _ -> -1
+  | _, ConstRef _ -> 1
+  | IndRef indx, IndRef indy -> ord_ind indx indy
+  | IndRef _, _ -> -1
+  | _ , IndRef _ -> 1
+  | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
 
 let global_hash_gen hash_cst hash_ind hash_cons gr =
   let open Hashset.Combine in

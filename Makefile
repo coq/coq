@@ -63,16 +63,10 @@ define findx
  $(shell find . $(FIND_VCS_CLAUSE) '(' -name $(1) ')' -exec $(2) {} \; | sed 's|^\./||')
 endef
 
-# We now discriminate .ml4 files according to their need of grammar.cma
-# or q_constr.cmo
-USEGRAMMAR := '(\*.*camlp4deps.*grammar'
-
 ## Files in the source tree
 
-YACCFILES:=$(call find, '*.mly')
 LEXFILES := $(call find, '*.mll')
-export MLLIBFILES := $(call find, '*.mllib')
-export ML4BASEFILES := $(call findx, '*.ml4', grep -L -e $(USEGRAMMAR))
+export MLLIBFILES := $(call find, '*.mllib') $(call find, '*.mlpack')
 export ML4FILES := $(call find, '*.ml4')
 export CFILES := $(call find, '*.c')
 
@@ -86,10 +80,7 @@ EXISTINGMLI := $(call find, '*.mli')
 ## Files that will be generated
 
 GENML4FILES:= $(ML4FILES:.ml4=.ml)
-GENMLIFILES:=$(YACCFILES:.mly=.mli)
-GENPLUGINSMOD:=$(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
-export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
-  tools/tolink.ml kernel/copcodes.ml $(GENPLUGINSMOD)
+export GENMLFILES:=$(LEXFILES:.mll=.ml) tools/tolink.ml kernel/copcodes.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENVFILES:=theories/Numbers/Natural/BigN/NMake_gen.v
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES)
@@ -152,10 +143,7 @@ endif
 
 MAKE_OPTS := --warn-undefined-variable --no-builtin-rules
 
-GRAM_TARGETS := grammar/grammar.cma grammar/q_constr.cmo
-
 submake:
-	$(MAKE) $(MAKE_OPTS) -f Makefile.build BUILDGRAMMAR=1 $(GRAM_TARGETS)
 	$(MAKE) $(MAKE_OPTS) -f Makefile.build $(MAKECMDGOALS)
 
 noconfig:
@@ -163,7 +151,7 @@ noconfig:
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
-Makefile Makefile.build Makefile.common config/Makefile : ;
+Makefile $(wildcard Makefile.*) config/Makefile : ;
 
 ###########################################################################
 # Cleaning
@@ -183,7 +171,7 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(CHICKENBYTE) $(FAKEIDE)
+	rm -f $(COQTOPBYTE) $(CHICKENBYTE)
 	find . \( -name '*~' -o -name '*.cm[ioat]' -o -name '*.cmti' \) -delete
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
@@ -216,8 +204,8 @@ archclean: clean-ide optclean voclean
 	rm -f $(ALLSTDLIB).*
 
 optclean:
-	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN) $(COQDEPBOOT)
-	rm -f $(TOOLS) $(CSDPCERT)
+	rm -f $(COQTOPEXE) $(COQMKTOP) $(CHICKEN)
+	rm -f $(TOOLS) $(PRIVATEBINARIES) $(CSDPCERT)
 	find . -name '*.cmx' -o -name '*.cmxs' -o -name '*.cmxa' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 
 clean-ide:
@@ -246,6 +234,7 @@ distclean: clean cleanconfig cacheclean
 
 voclean:
 	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -delete
+	find theories plugins test-suite -name .coq-native -empty -delete
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f

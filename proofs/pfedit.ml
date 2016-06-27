@@ -115,16 +115,15 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     let tac = match gi with
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
+      | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
       | Vernacexpr.SelectAll -> tac
-      | Vernacexpr.SelectAllParallel ->
-          Errors.anomaly(str"SelectAllParallel not handled by Stm")
     in
     let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
     let () =
       match info_lvl with
       | None -> ()
-      | Some i -> Pp.msg_info (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
+      | Some i -> Feedback.msg_info (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
     in
     (p,status)
   with
@@ -150,7 +149,8 @@ let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
   let evd = Evd.from_ctx ctx in
-  start_proof id goal_kind evd sign typ (fun _ -> ());
+  let terminator = Proof_global.make_terminator (fun _ -> ()) in
+  start_proof id goal_kind evd sign typ terminator;
   try
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in
@@ -226,7 +226,7 @@ let solve_by_implicit_tactic env sigma evk =
   match (!implicit_tactic, snd (evar_source evk sigma)) with
   | Some tac, (Evar_kinds.ImplicitArg _ | Evar_kinds.QuestionMark _)
       when
-	Context.named_context_equal (Environ.named_context_of_val evi.evar_hyps)
+	Context.Named.equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) []) in
       (try

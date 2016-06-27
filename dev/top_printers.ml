@@ -29,7 +29,8 @@ let _ = set_bool_option_value ["Printing";"Matching"] false
 let _ = Detyping.set_detype_anonymous (fun _ _ -> raise Not_found)
 
 (* std_ppcmds *)
-let pppp x = pp x
+let pp   x = Feedback.msg_notice x
+let pppp x = Feedback.msg_notice x
 
 (** Future printer *)
 
@@ -40,10 +41,10 @@ let ppid id = pp (pr_id id)
 let pplab l = pp (pr_lab l)
 let ppmbid mbid = pp (str (MBId.debug_to_string mbid))
 let ppdir dir = pp (pr_dirpath dir)
-let ppmp mp = pp(str (string_of_mp mp))
+let ppmp mp = pp(str (ModPath.debug_to_string mp))
 let ppcon con = pp(debug_pr_con con)
 let ppproj con = pp(debug_pr_con (Projection.constant con))
-let ppkn kn = pp(pr_kn kn)
+let ppkn kn = pp(str (KerName.to_string kn))
 let ppmind kn = pp(debug_pr_mind kn)
 let ppind (kn,i) = pp(debug_pr_mind kn ++ str"," ++int i)
 let ppsp sp = pp(pr_path sp)
@@ -221,7 +222,7 @@ let ppuniverseconstraints c = pp (Universes.Constraints.pr c)
 let ppuniverse_context_future c = 
   let ctx = Future.force c in
     ppuniverse_context ctx
-let ppuniverses u = pp (Univ.pr_universes Level.pr u)
+let ppuniverses u = pp (UGraph.pr_universes Level.pr u)
 let ppnamedcontextval e =
   pp (pr_named_context (Global.env ()) Evd.empty (named_context_of_val e))
 
@@ -315,7 +316,7 @@ let constr_display csr =
     | Anonymous -> "Anonymous"
 
   in
-  Pp.pp (str (term_display csr) ++fnl ()); Pp.pp_flush ()
+  Feedback.msg_notice (str (term_display csr) ++fnl ())
 
 open Format;;
 
@@ -467,12 +468,13 @@ let pp_generic_argument arg =
   pp(str"<genarg:"++pr_argument_type(genarg_tag arg)++str">")
 
 let prgenarginfo arg =
-  let tpe = pr_argument_type (genarg_tag arg) in
-  let pr_gtac _ x = Pptactic.pr_glob_tactic (Global.env()) x in
-  try
-    let data = Pptactic.pr_top_generic pr_constr pr_lconstr pr_gtac pr_constr_pattern arg in
-    str "<genarg:" ++ tpe ++ str " := [ " ++ data ++ str " ] >"
-  with _any ->
+  let Geninterp.Val.Dyn (tag, _) = arg in
+  let tpe = Geninterp.Val.pr tag in
+  (** FIXME *)
+(*   try *)
+(*     let data = Pptactic.pr_top_generic (Global.env ()) arg in *)
+(*     str "<genarg:" ++ tpe ++ str " := [ " ++ data ++ str " ] >" *)
+(*   with _any -> *)
     str "<genarg:" ++ tpe ++ str ">"
 
 let ppgenarginfo arg = pp (prgenarginfo arg)
@@ -507,35 +509,33 @@ let _ =
   try
     Vernacinterp.vinterp_add false ("PrintConstr", 0)
       (function
-         [c] when genarg_tag c = ConstrArgType && true ->
+         [c] when genarg_tag c = unquote (topwit wit_constr) && true ->
            let c = out_gen (rawwit wit_constr) c in
            (fun () -> in_current_context constr_display c)
        | _ -> failwith "Vernac extension: cannot occur")
   with
-    e -> Pp.pp (Errors.print e)
+    e -> Feedback.msg_notice (Errors.print e)
 let _ =
   extend_vernac_command_grammar ("PrintConstr", 0) None
     [GramTerminal "PrintConstr";
       GramNonTerminal
-        (Loc.ghost,ConstrArgType,Aentry ("constr","constr"),
-	 Some (Names.Id.of_string "c"))]
+        (Loc.ghost,rawwit wit_constr,Extend.Aentry Pcoq.Constr.constr)]
 
 let _ =
   try
     Vernacinterp.vinterp_add false ("PrintPureConstr", 0)
       (function
-         [c] when genarg_tag c = ConstrArgType && true ->
+         [c] when genarg_tag c = unquote (topwit wit_constr) && true ->
            let c = out_gen (rawwit wit_constr) c in
            (fun () -> in_current_context print_pure_constr c)
        | _ -> failwith "Vernac extension: cannot occur")
   with
-    e -> Pp.pp (Errors.print e)
+    e -> Feedback.msg_notice (Errors.print e)
 let _ =
   extend_vernac_command_grammar ("PrintPureConstr", 0) None
     [GramTerminal "PrintPureConstr";
       GramNonTerminal
-        (Loc.ghost,ConstrArgType,Aentry ("constr","constr"),
-	 Some (Names.Id.of_string "c"))]
+        (Loc.ghost,rawwit wit_constr,Extend.Aentry Pcoq.Constr.constr)]
 
 (* Setting printer of unbound global reference *)
 open Names

@@ -9,8 +9,6 @@
 open Names
 open Term
 open Decl_kinds
-open Constrexpr
-open Vernacexpr
 open Pfedit
 
 type 'a declaration_hook
@@ -24,11 +22,13 @@ val call_hook :
 val set_start_hook : (types -> unit) -> unit
 
 val start_proof : Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_map ->
+  ?terminator:(lemma_possible_guards -> unit declaration_hook -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val -> types ->
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
    unit declaration_hook -> unit
 
 val start_proof_univs : Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_map ->
+  ?terminator:(lemma_possible_guards -> (Evd.evar_universe_context option -> unit declaration_hook) -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val -> types ->
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
   (Evd.evar_universe_context option -> unit declaration_hook) -> unit
@@ -42,6 +42,11 @@ val start_proof_with_initialization :
   ((Id.t * universe_binders option) *
      (types * (Name.t list * Impargs.manual_explicitation list))) list
   -> int list option -> unit declaration_hook -> unit
+
+val universe_proof_terminator :
+  Proof_global.lemma_possible_guards ->
+    (Evd.evar_universe_context option -> unit declaration_hook) ->
+    Proof_global.proof_terminator
 
 val standard_proof_terminator :
   Proof_global.lemma_possible_guards -> unit declaration_hook ->

@@ -168,7 +168,7 @@ Proof.
   exact H.
 Qed.
 
-Require Import Tauto.
+Require Import Coq.micromega.Tauto.
 
 Definition Qnormalise := @cnf_normalise Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
 Definition Qnegate := @cnf_negate Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.

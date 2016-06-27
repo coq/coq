@@ -25,6 +25,7 @@ open Tactics
 open Ind_tables
 open Misctypes
 open Proofview.Notations
+open Context.Rel.Declaration
 
 let out_punivs = Univ.out_punivs
 
@@ -85,7 +86,7 @@ let destruct_on c = destruct false None c None None
 
 let destruct_on_using c id =
   destruct false None c
-    (Some (dl,[[dl,IntroNaming IntroAnonymous];
+    (Some (dl,IntroOrPattern [[dl,IntroNaming IntroAnonymous];
                [dl,IntroNaming (IntroIdentifier id)]]))
     None
 
@@ -102,7 +103,7 @@ let mkFullInd (ind,u) n =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   if nparrec > 0
     then mkApp (mkIndU (ind,u),
-      Array.of_list(extended_rel_list (nparrec+n) lnamesparrec))
+      Array.of_list(Context.Rel.to_extended_list (nparrec+n) lnamesparrec))
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
@@ -137,7 +138,7 @@ let build_beq_scheme mode kn =
         | Name s -> Id.of_string ("eq_"^(Id.to_string s))
         | Anonymous -> Id.of_string "eq_A"
     in
-    let ext_rel_list = extended_rel_list 0 lnamesparrec in
+    let ext_rel_list = Context.Rel.to_extended_list 0 lnamesparrec in
       let lift_cnt = ref 0 in
       let eqs_typ = List.map (fun aa ->
                                 let a = lift !lift_cnt aa in
@@ -146,17 +147,17 @@ let build_beq_scheme mode kn =
                              ) ext_rel_list in
 
         let eq_input = List.fold_left2
-          ( fun a b (n,_,_) -> (* mkLambda(n,b,a) ) *)
+          ( fun a b decl -> (* mkLambda(n,b,a) ) *)
                 (* here I leave the Naming thingy so that the type of
                   the function is more readable for the user *)
-                mkNamedLambda (eqName n) b a )
+                mkNamedLambda (eqName (get_name decl)) b a )
                 c (List.rev eqs_typ) lnamesparrec
        in
-        List.fold_left (fun a (n,_,t) ->(* mkLambda(n,t,a)) eq_input rel_list *)
+        List.fold_left (fun a decl ->(* mkLambda(n,t,a)) eq_input rel_list *)
           (* Same here , hoping the auto renaming will do something good ;)  *)
           mkNamedLambda
-                (match n with Name s -> s | Anonymous ->  Id.of_string "A")
-                t  a) eq_input lnamesparrec
+                (match get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (get_type decl)  a) eq_input lnamesparrec
  in
  let make_one_eq cur =
   let u = Univ.Instance.empty in
@@ -233,7 +234,7 @@ let build_beq_scheme mode kn =
                Cn => match Y with ... end |]  part *)
     let ci = make_case_info env (fst ind) MatchStyle in
     let constrs n = get_constructors env (make_ind_family (ind,
-      extended_rel_list (n+nb_ind-1) mib.mind_params_ctxt)) in
+      Context.Rel.to_extended_list (n+nb_ind-1) mib.mind_params_ctxt)) in
     let constrsi = constrs (3+nparrec) in
     let n = Array.length constrsi in
     let ar = Array.make n (Lazy.force ff) in
@@ -248,7 +249,7 @@ let build_beq_scheme mode kn =
                     | 0 -> Lazy.force tt
                     | _ -> let eqs = Array.make nb_cstr_args (Lazy.force tt) in
                       for ndx = 0 to nb_cstr_args-1 do
-                        let _,_,cc = List.nth constrsi.(i).cs_args ndx in
+                        let cc = get_type (List.nth constrsi.(i).cs_args ndx) in
                           let eqA, eff' = compute_A_equality rel_list
                                           nparrec
                                           (nparrec+3+2*nb_cstr_args)
@@ -267,14 +268,14 @@ let build_beq_scheme mode kn =
                           (Array.sub eqs 1 (nb_cstr_args - 1))
                   )
    		  in
-		    (List.fold_left (fun a (p,q,r) -> mkLambda (p,r,a)) cc
+		    (List.fold_left (fun a decl -> mkLambda (get_name decl, get_type decl, a)) cc
                     (constrsj.(j).cs_args)
 		)
-	      else ar2.(j) <- (List.fold_left (fun a (p,q,r) ->
-			mkLambda (p,r,a)) (Lazy.force ff) (constrsj.(j).cs_args) )
+	      else ar2.(j) <- (List.fold_left (fun a decl ->
+			mkLambda (get_name decl, get_type decl, a)) (Lazy.force ff) (constrsj.(j).cs_args) )
 	    done;
 
-	  ar.(i) <- (List.fold_left (fun a (p,q,r) -> mkLambda (p,r,a))
+	  ar.(i) <- (List.fold_left (fun a decl -> mkLambda (get_name decl, get_type decl, a))
 			(mkCase (ci,do_predicate rel_list nb_cstr_args,
 				  mkVar (Id.of_string "Y") ,ar2))
 			 (constrsi.(i).cs_args))
@@ -354,7 +355,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
         )))
       )
   in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let type_of_pq = Tacmach.New.of_old (fun gl -> pf_unsafe_type_of gl p) gl in
     let u,v = destruct_ind type_of_pq
     in let lb_type_of_p =
@@ -384,7 +385,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
            Tacticals.New.tclTHENLIST [
              Proofview.tclEFFECTS eff;
              Equality.replace p q ; apply app ; Auto.default_auto]
-  end
+  end }
 
 (* used in the bool -> leib side *)
 let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
@@ -416,7 +417,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   let rec aux l1 l2 =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
-        Proofview.Goal.enter begin fun gl ->
+        Proofview.Goal.enter { enter = begin fun gl ->
         let tt1 = Tacmach.New.pf_unsafe_type_of gl t1 in
         if eq_constr t1 t2 then aux q1 q2
         else (
@@ -457,7 +458,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                   aux q1 q2 ]
               )
         )
-        end
+        end }
     | ([],[]) -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclZEROMSG (str "Both side of the equality must have the same arity.")
   in
@@ -487,8 +488,8 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   create, from a list of ids [i1,i2,...,in] the list
   [(in,eq_in,in_bl,in_al),,...,(i1,eq_i1,i1_bl_i1_al  )]
 *)
-let list_id l = List.fold_left ( fun a (n,_,t) -> let s' =
-      match n with
+let list_id l = List.fold_left ( fun a decl -> let s' =
+      match get_name decl with
         Name s -> Id.to_string s
       | Anonymous -> "A" in
           (Id.of_string s',Id.of_string ("eq_"^s'),
@@ -535,9 +536,9 @@ let compute_bl_goal ind lnamesparrec nparrec =
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
-      List.fold_left (fun a (n,_,t) -> mkNamedProd
-                (match n with Name s -> s | Anonymous ->  Id.of_string "A")
-                t  a) eq_input lnamesparrec
+      List.fold_left (fun a decl -> mkNamedProd
+                (match get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (get_type decl) a) eq_input lnamesparrec
     in
       let n = Id.of_string "x" and
           m = Id.of_string "y" in
@@ -564,7 +565,7 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
           avoid := fresh::(!avoid); fresh
         end gl
       in
-      Proofview.Goal.nf_enter begin fun gl ->
+      Proofview.Goal.nf_enter { enter = begin fun gl ->
       let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
       let freshn = fresh_id (Id.of_string "x") gl in
       let freshm = fresh_id (Id.of_string "y") gl in
@@ -580,25 +581,25 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
                      Tacticals.New.tclTRY (
                       Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Proofview.V82.tactic (simpl_in_hyp (freshz,Locus.InHyp));
+                     simpl_in_hyp (freshz,Locus.InHyp);
 (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
                     Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [
                          Simple.apply_in freshz (andb_prop());
-                         Proofview.Goal.nf_enter begin fun gl ->
+                         Proofview.Goal.nf_enter { enter = begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
-                            (destruct_on_as (mkVar freshz)
-                                  [[dl,IntroNaming (IntroIdentifier fresht);
+                            destruct_on_as (mkVar freshz)
+                                  (IntroOrPattern [[dl,IntroNaming (IntroIdentifier fresht);
                                     dl,IntroNaming (IntroIdentifier freshz)]])
-                         end
+                         end }
                         ]);
 (*
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                      Proofview.Goal.nf_enter begin fun gls ->
+                      Proofview.Goal.nf_enter { enter = begin fun gls ->
                         let gl = Proofview.Goal.concl gls in
                         match (kind_of_term gl) with
                         | App (c,ca) -> (
@@ -617,10 +618,10 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                           | _ -> Tacticals.New.tclZEROMSG (str" Failure while solving Boolean->Leibniz.")
                         )
                         | _ -> Tacticals.New.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
-                      end
+                      end }
 
                     ]
-      end
+      end }
 
 let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
@@ -678,9 +679,9 @@ let compute_lb_goal ind lnamesparrec nparrec =
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
         mkNamedProd seq b a
       ) lb_input (List.rev list_id) (List.rev eqs_typ) in
-      List.fold_left (fun a (n,_,t) -> mkNamedProd
-                (match n with Name s -> s | Anonymous ->  Id.of_string "A")
-                t  a) eq_input lnamesparrec
+      List.fold_left (fun a decl -> mkNamedProd
+                (match (get_name decl) with Name s -> s | Anonymous ->  Id.of_string "A")
+                (get_type decl)  a) eq_input lnamesparrec
     in
       let n = Id.of_string "x" and
           m = Id.of_string "y" in
@@ -707,7 +708,7 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
           avoid := fresh::(!avoid); fresh
         end gl
       in
-      Proofview.Goal.nf_enter begin fun gl ->
+      Proofview.Goal.nf_enter { enter = begin fun gl ->
       let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
       let freshn = fresh_id (Id.of_string "x") gl in
       let freshm = fresh_id (Id.of_string "y") gl in
@@ -724,13 +725,13 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                       Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
                      Equality.inj None false None (mkVar freshz,NoBindings);
-		     intros; (Proofview.V82.tactic simpl_in_concl);
+		     intros; simpl_in_concl;
                      Auto.default_auto;
                      Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [apply (andb_true_intro());
                                   simplest_split ;Auto.default_auto ]
                       );
-                      Proofview.Goal.nf_enter begin fun gls ->
+                      Proofview.Goal.nf_enter { enter = begin fun gls ->
                         let gl = Proofview.Goal.concl gls in
                         (* assume the goal to be eq (eq_type ...) = true *)
                         match (kind_of_term gl) with
@@ -746,9 +747,9 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                         )
                         | _ ->
                             Tacticals.New.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
-                      end
+                      end }
                     ]
-      end
+      end }
 
 let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
@@ -819,9 +820,9 @@ let compute_dec_goal ind lnamesparrec nparrec =
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
-      List.fold_left (fun a (n,_,t) -> mkNamedProd
-                (match n with Name s -> s | Anonymous ->  Id.of_string "A")
-                t  a) eq_input lnamesparrec
+      List.fold_left (fun a decl -> mkNamedProd
+                (match get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (get_type decl) a) eq_input lnamesparrec
     in
       let n = Id.of_string "x" and
           m = Id.of_string "y" in
@@ -854,7 +855,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
       avoid := fresh::(!avoid); fresh
     end gl
   in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
   let freshn = fresh_id (Id.of_string "x") gl in
   let freshm = fresh_id (Id.of_string "y") gl in
@@ -885,7 +886,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 	)
 	  (Tacticals.New.tclTHEN (destruct_on eqbnm) Auto.default_auto);
 
-        Proofview.Goal.nf_enter begin fun gl ->
+        Proofview.Goal.nf_enter { enter = begin fun gl ->
           let freshH2 = fresh_id (Id.of_string "H") gl in
 	  Tacticals.New.tclTHENS (destruct_on_using (mkVar freshH) freshH2) [
 	    (* left *)
@@ -897,11 +898,11 @@ let compute_dec_tact ind lnamesparrec nparrec =
             ;
 
 	    (*right *)
-            Proofview.Goal.nf_enter begin fun gl ->
+            Proofview.Goal.nf_enter { enter = begin fun gl ->
             let freshH3 = fresh_id (Id.of_string "H") gl in
             Tacticals.New.tclTHENLIST [
 	      simplest_right ;
-              Proofview.V82.tactic (unfold_constr (Lazy.force Coqlib.coq_not_ref));
+              unfold_constr (Lazy.force Coqlib.coq_not_ref);
               intro;
               Equality.subst_all ();
               assert_by (Name freshH3)
@@ -919,11 +920,11 @@ let compute_dec_tact ind lnamesparrec nparrec =
                               true;
               Equality.discr_tac false None
 	    ]
-            end
+            end }
 	  ]
-        end
+        end }
   ]
-  end
+  end }
 
 let make_eq_decidability mode mind =
   let mib = Global.lookup_mind mind in

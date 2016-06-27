@@ -9,15 +9,16 @@
 open Compat
 open Util
 open Term
-open Vars
-open Names
 open Pp
 open Constrexpr
 open Indfun_common
 open Indfun
 open Genarg
-open Tacticals
+open Constrarg
 open Misctypes
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Tactic
 
 DECLARE PLUGIN "recdef_plugin"
 
@@ -55,10 +56,13 @@ let pr_with_bindings_typed prc prlc (c,bl) =
 let pr_fun_ind_using_typed prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
-    | Some b -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc b.Evd.it)
+    | Some b ->
+      let (b, _) = Tactics.run_delayed (Global.env ()) Evd.empty b in
+      spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc b)
 
 
 ARGUMENT EXTEND fun_ind_using
+  TYPED AS constr_with_bindings option
   PRINTED BY pr_fun_ind_using_typed
   RAW_TYPED AS constr_with_bindings_opt
   RAW_PRINTED BY pr_fun_ind_using
@@ -88,7 +92,7 @@ let out_disjunctive = function
   | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)
   | _ -> Errors.error "Disjunctive or conjunctive intro pattern expected."
 
-ARGUMENT EXTEND with_names TYPED AS simple_intropattern_opt PRINTED BY pr_intro_as_pat
+ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 |   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ]
 | []  ->[ None ]
 END
@@ -119,12 +123,12 @@ TACTIC EXTEND snewfunind
 END
 
 
-let pr_constr_coma_sequence prc _ _ = prlist_with_sep pr_comma prc
+let pr_constr_comma_sequence prc _ _ = prlist_with_sep pr_comma prc
 
-ARGUMENT EXTEND constr_coma_sequence'
+ARGUMENT EXTEND constr_comma_sequence'
   TYPED AS constr_list
-  PRINTED BY pr_constr_coma_sequence
-| [ constr(c) "," constr_coma_sequence'(l) ] -> [ c::l ]
+  PRINTED BY pr_constr_comma_sequence
+| [ constr(c) "," constr_comma_sequence'(l) ] -> [ c::l ]
 | [ constr(c) ] -> [ [c] ]
 END
 
@@ -133,7 +137,7 @@ let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using prc
 ARGUMENT EXTEND auto_using'
   TYPED AS constr_list
   PRINTED BY pr_auto_using
-| [ "using" constr_coma_sequence'(l) ] -> [ l ]
+| [ "using" constr_comma_sequence'(l) ] -> [ l ]
 | [ ] -> [ [] ]
 END
 
@@ -144,10 +148,10 @@ module Tactic = Pcoq.Tactic
 type function_rec_definition_loc_argtype = (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located
 
 let (wit_function_rec_definition_loc : function_rec_definition_loc_argtype Genarg.uniform_genarg_type) =
-  Genarg.create_arg None "function_rec_definition_loc"
+  Genarg.create_arg "function_rec_definition_loc"
 
 let function_rec_definition_loc =
-  Pcoq.create_generic_entry "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
+  Pcoq.create_generic_entry Pcoq.utactic "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
 
 GEXTEND Gram
   GLOBAL: function_rec_definition_loc ;
@@ -157,6 +161,11 @@ GEXTEND Gram
     ;
 
 END
+
+let () =
+  let raw_printer _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
+  let printer _ _ _ _ = str "<Unavailable printer for rec_definition>" in
+  Pptactic.declare_extra_genarg_pprule wit_function_rec_definition_loc raw_printer printer printer
 
 (* TASSI: n'importe quoi ! *)
 VERNAC COMMAND EXTEND Function
@@ -189,12 +198,12 @@ let warning_error names e =
   let (e, _) = Cerrors.process_vernac_interp_error (e, Exninfo.null) in
   match e with
     | Building_graph e ->
-	Pp.msg_warning
+	Feedback.msg_warning
 	  (str "Cannot define graph(s) for " ++
 	     h 1 (pr_enum Libnames.pr_reference names) ++
 	     if do_observe () then (spc () ++ Errors.print e) else mt ())
     | Defining_principle e ->
-	Pp.msg_warning
+	Feedback.msg_warning
 	  (str "Cannot define principle(s) for "++
 	     h 1 (pr_enum Libnames.pr_reference names) ++
 	     if do_observe () then Errors.print e else mt ())

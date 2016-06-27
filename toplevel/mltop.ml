@@ -146,7 +146,7 @@ let dir_ml_load s =
 let dir_ml_use s =
   match !load with
     | WithTop t -> t.use_file s
-    | _ -> msg_warning (str "Cannot access the ML compiler")
+    | _ -> Feedback.msg_warning (str "Cannot access the ML compiler")
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
@@ -155,7 +155,7 @@ let add_ml_dir s =
     | WithoutTop when has_dynlink -> keep_copy_mlpath s
     | _ -> ()
 
-(* For Rec Add ML Path *)
+(* For Rec Add ML Path (-R) *)
 let add_rec_ml_dir unix_path =
   List.iter (fun (lp,_) -> add_ml_dir lp) (all_subdirs ~unix_path)
 
@@ -164,7 +164,7 @@ let add_rec_ml_dir unix_path =
 let convert_string d =
   try Names.Id.of_string d
   with UserError _ ->
-    msg_warning (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
+    Feedback.msg_warning (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise Exit
 
 let add_rec_path ~unix_path ~coq_root ~implicit =
@@ -184,7 +184,7 @@ let add_rec_path ~unix_path ~coq_root ~implicit =
     let () = List.iter add dirs in
     Loadpath.add_load_path unix_path ~implicit coq_root
   else
-    msg_warning (str "Cannot open " ++ str unix_path)
+    Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
 (* convertit un nom quelconque en nom de fichier ou de module *)
 let mod_of_name name =
@@ -324,10 +324,10 @@ let if_verbose_load verb f name ?path fname =
     let info = str "[Loading ML file " ++ str fname ++ str " ..." in
     try
       let path = f name ?path fname in
-      msg_info (info ++ str " done]");
+      Feedback.msg_info (info ++ str " done]");
       path
     with reraise ->
-      msg_info (info ++ str " failed]");
+      Feedback.msg_info (info ++ str " failed]");
       raise reraise
 
 (** Load a module for the first time (i.e. dynlink it)

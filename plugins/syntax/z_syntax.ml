@@ -12,6 +12,10 @@ open Util
 open Names
 open Bigint
 
+(* Poor's man DECLARE PLUGIN *)
+let __coq_plugin_name = "z_syntax_plugin"
+let () = Mltop.add_known_module __coq_plugin_name
+
 exception Non_closed_number
 
 (**********************************************************************)

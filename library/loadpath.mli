@@ -42,7 +42,7 @@ val find_load_path : CUnix.physical_path -> t
 val is_in_load_paths : CUnix.physical_path -> bool
 (** Whether a physical path is currently bound. *)
 
-val expand_path : DirPath.t -> (CUnix.physical_path * DirPath.t) list
+val expand_path : ?root:DirPath.t -> DirPath.t -> (CUnix.physical_path * DirPath.t) list
 (** Given a relative logical path, associate the list of absolute physical and
     logical paths which are possible matches of it. *)
 

@@ -7,6 +7,6 @@ Vernac_classifier
 Lemmas
 CoqworkmgrApi
 AsyncTaskQueue
-Texmacspp
 Stm
+ProofBlockDelimiter
 Vio_checking

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Util
+module String = CString
 
 type t = string
 (** We use the concatenated string, with dots separating each string. We
@@ -107,8 +107,11 @@ let pp_tag t = match Pp.Tag.prj t tag with
 | None -> ""
 | Some key -> key
 
+let clear_tag_fn = ref (fun () -> ())
+
 let init_color_output () =
   let push_tag, pop_tag, clear_tag = make_style_stack !tags in
+  clear_tag_fn := clear_tag;
   let tag_handler = {
     Format.mark_open_tag = push_tag;
     Format.mark_close_tag = pop_tag;
@@ -116,34 +119,23 @@ let init_color_output () =
     Format.print_close_tag = ignore;
   } in
   let open Pp_control in
-  let () = Format.pp_set_mark_tags !std_ft true in
-  let () = Format.pp_set_mark_tags !err_ft true in
-  let () = Format.pp_set_formatter_tag_functions !std_ft tag_handler in
-  let () = Format.pp_set_formatter_tag_functions !err_ft tag_handler in
+  Format.pp_set_mark_tags !std_ft true;
+  Format.pp_set_mark_tags !err_ft true;
+  Format.pp_set_formatter_tag_functions !std_ft tag_handler;
+  Format.pp_set_formatter_tag_functions !err_ft tag_handler
+
+let color_msg ?header ft strm =
   let pptag = tag in
   let open Pp in
-  let msg ?header ft strm =
-    let strm = match header with
+  let strm = match header with
     | None -> hov 0 strm
     | Some (h, t) ->
       let tag = Pp.Tag.inj t pptag in
       let h = Pp.tag tag (str h ++ str ":") in
       hov 0 (h ++ spc () ++ strm)
-    in
-    pp_with ~pp_tag ft strm;
-    Format.pp_print_newline ft ();
-    Format.pp_print_flush ft ();
-    (** In case something went wrong, we reset the stack *)
-    clear_tag ();
   in
-  let logger level strm = match level with
-  | Debug _ -> msg ~header:("Debug", debug_tag) !std_ft strm
-  | Info -> msg !std_ft strm
-  | Notice -> msg !std_ft strm
-  | Warning ->
-    let header = ("Warning", warning_tag) in
-    Flags.if_warn (fun () -> msg ~header !err_ft strm) ()
-  | Error -> msg ~header:("Error", error_tag) !err_ft strm
-  in
-  let () = set_logger logger in
-  ()
+  pp_with ~pp_tag ft strm;
+  Format.pp_print_newline ft ();
+  Format.pp_print_flush ft ();
+  (** In case something went wrong, we reset the stack *)
+  !clear_tag_fn ()

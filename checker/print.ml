@@ -10,7 +10,7 @@ open Format
 open Cic
 open Names
 
-let print_instance i = Pp.pp (Univ.Instance.pr i)
+let print_instance i = Feedback.msg_notice (Univ.Instance.pr i)
 
 let print_pure_constr csr =
   let rec term_display c = match  c with
@@ -108,7 +108,7 @@ let print_pure_constr csr =
   and sort_display = function
     | Prop(Pos) -> print_string "Set"
     | Prop(Null) -> print_string "Prop"
-    | Type u -> print_string "Type("; Pp.pp (Univ.pr_uni u); print_string ")"
+    | Type u -> print_string "Type("; Feedback.msg_notice (Univ.pr_uni u); print_string ")"
 
   and name_display = function
     | Name id -> print_string (Id.to_string id)
@@ -122,7 +122,7 @@ let print_pure_constr csr =
 	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
-      print_string (debug_string_of_mind sp)
+      print_string (MutInd.debug_to_string sp)
   and sp_con_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
@@ -131,7 +131,7 @@ let print_pure_constr csr =
 	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
-      print_string (debug_string_of_con sp)
+      print_string (Constant.debug_to_string sp)
 
   in
     try

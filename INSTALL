@@ -29,11 +29,17 @@ WHAT DO YOU NEED ?
 
    To compile Coq V8.5 yourself, you need:
 
-   - Objective Caml version 3.12.1 or later
+   - Objective Caml version 4.01.0 or later
      (available at http://caml.inria.fr/)
 
-   - Camlp5 (version >= 6.02) (Coq compiles with Camlp4 but might be less
-     well supported)
+   - Findlib (included in OCaml binary distribution under windows,
+     probably available in your distribution and for sure at
+     http://projects.camlcity.org/projects/findlib.html)
+
+   - Camlp5 (version >= 6.02) (Coq compiles with Camlp4 but might be
+     less well supported, for instance, Objective Caml version 4.02.1
+     is then needed or a patched version of 4.01.0 as e.g. version
+     4.01.0-4 in Debian Jessie)
 
    - GNU Make version 3.81 or later
 
@@ -59,7 +65,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    computer and that "ocamlc" (or, better, its native code version
    "ocamlc.opt") lies in a directory which is present in your $PATH
    environment variable. At the time of writing this sentence, all
-   versions of Objective Caml later or equal to 3.12.1 are
+   versions of Objective Caml later or equal to 4.01.0 are
    supported to the exception of Objective Caml 4.02.0.
 
    To get Coq in native-code, (it runs 4 to 10 times faster than

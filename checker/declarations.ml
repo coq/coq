@@ -73,32 +73,32 @@ let solve_delta_kn resolve kn =
       | Equiv kn1 -> kn1
       | Inline _ -> raise Not_found
   with Not_found ->
-    let mp,dir,l = repr_kn kn in
+    let mp,dir,l = KerName.repr kn in
     let new_mp = find_prefix resolve mp in
     if mp == new_mp then
       kn
     else
-      make_kn new_mp dir l
+      KerName.make new_mp dir l
 
 let gen_of_delta resolve x kn fix_can =
   let new_kn = solve_delta_kn resolve kn in
   if kn == new_kn then x else fix_can new_kn
 
 let constant_of_delta resolve con =
-  let kn = user_con con in
-  gen_of_delta resolve con kn (constant_of_kn_equiv kn)
+  let kn = Constant.user con in
+  gen_of_delta resolve con kn (Constant.make kn)
 
 let constant_of_delta2 resolve con =
-  let kn, kn' = canonical_con con, user_con con in
-  gen_of_delta resolve con kn (constant_of_kn_equiv kn')
+  let kn, kn' = Constant.canonical con, Constant.user con in
+  gen_of_delta resolve con kn (Constant.make kn')
 
 let mind_of_delta resolve mind =
-  let kn = user_mind mind in
-  gen_of_delta resolve mind kn (mind_of_kn_equiv kn)
+  let kn = MutInd.user mind in
+  gen_of_delta resolve mind kn (MutInd.make kn)
 
 let mind_of_delta2 resolve mind =
-  let kn, kn' = canonical_mind mind, user_mind mind in
-  gen_of_delta resolve mind kn (mind_of_kn_equiv kn')
+  let kn, kn' = MutInd.canonical mind, MutInd.user mind in
+  gen_of_delta resolve mind kn (MutInd.make kn')
 
 let find_inline_of_delta kn resolve =
   match Deltamap.find_kn kn resolve with
@@ -106,7 +106,7 @@ let find_inline_of_delta kn resolve =
     | _ -> raise Not_found
 
 let constant_of_delta_with_inline resolve con =
-  let kn1,kn2 = canonical_con con,user_con con in
+  let kn1,kn2 = Constant.canonical con, Constant.user con in
   try find_inline_of_delta kn2 resolve
   with Not_found ->
     try find_inline_of_delta kn1 resolve
@@ -137,17 +137,17 @@ let subst_mp sub mp =
   | Some (mp',_) -> mp'
 
 let subst_kn_delta sub kn =
- let mp,dir,l = repr_kn kn in
+ let mp,dir,l = KerName.repr kn in
   match subst_mp0 sub mp with
      Some (mp',resolve) ->
-      solve_delta_kn resolve (make_kn mp' dir l)
+      solve_delta_kn resolve (KerName.make mp' dir l)
    | None -> kn
 
 let subst_kn sub kn =
- let mp,dir,l = repr_kn kn in
+ let mp,dir,l = KerName.repr kn in
   match subst_mp0 sub mp with
      Some (mp',_) ->
-      make_kn mp' dir l
+      KerName.make mp' dir l
    | None -> kn
 
 exception No_subst
@@ -165,14 +165,14 @@ let gen_subst_mp f sub mp1 mp2 =
     | Some (mp1',_), Some (mp2',resolve2) -> Canonical, (f mp1' mp2'), resolve2
 
 let make_mind_equiv mpu mpc dir l =
-  let knu = make_kn mpu dir l in
-  if mpu == mpc then mind_of_kn knu
-  else mind_of_kn_equiv knu (make_kn mpc dir l)
+  let knu = KerName.make mpu dir l in
+  if mpu == mpc then MutInd.make1 knu
+  else MutInd.make knu (KerName.make mpc dir l)
 
 let subst_ind sub mind =
-  let kn1,kn2 = user_mind mind, canonical_mind mind in
-  let mp1,dir,l = repr_kn kn1 in
-  let mp2,_,_ = repr_kn kn2 in
+  let kn1,kn2 = MutInd.user mind, MutInd.canonical mind in
+  let mp1,dir,l = KerName.repr kn1 in
+  let mp2,_,_ = KerName.repr kn2 in
   let rebuild_mind mp1 mp2 = make_mind_equiv mp1 mp2 dir l in
   try
     let side,mind',resolve = gen_subst_mp rebuild_mind sub mp1 mp2 in
@@ -182,14 +182,14 @@ let subst_ind sub mind =
   with No_subst -> mind
 
 let make_con_equiv mpu mpc dir l =
-  let knu = make_kn mpu dir l in
-  if mpu == mpc then constant_of_kn knu
-  else constant_of_kn_equiv knu (make_kn mpc dir l)
+  let knu = KerName.make mpu dir l in
+  if mpu == mpc then Constant.make1 knu
+  else Constant.make knu (KerName.make mpc dir l)
 
 let subst_con0 sub con u =
-  let kn1,kn2 = user_con con,canonical_con con in
-  let mp1,dir,l = repr_kn kn1 in
-  let mp2,_,_ = repr_kn kn2 in
+  let kn1,kn2 = Constant.user con, Constant.canonical con in
+  let mp1,dir,l = KerName.repr kn1 in
+  let mp2,_,_ = KerName.repr kn2 in
   let rebuild_con mp1 mp2 = make_con_equiv mp1 mp2 dir l in
   let dup con = con, Const (con, u) in
   let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
@@ -304,7 +304,9 @@ let subset_prefixed_by mp resolver =
     match hint with
       | Inline _ -> rslv
       | Equiv _ ->
-	if mp_in_mp mp (modpath kn) then Deltamap.add_kn kn hint rslv else rslv
+	if mp_in_mp mp (KerName.modpath kn)
+        then Deltamap.add_kn kn hint rslv
+        else rslv
   in
   Deltamap.fold mp_prefix kn_prefix resolver empty_delta_resolver
 
@@ -517,11 +519,8 @@ let map_decl_arity f g = function
   | RegularArity a -> RegularArity (f a)
   | TemplateArity a -> TemplateArity (g a)
 
-
-let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = Option.smartmap (subst_mps sub) copt in
-  let t' = subst_mps sub t in
-  if copt == copt' && t == t' then x else (id,copt',t')
+let subst_rel_declaration sub =
+  Term.map_rel_decl (subst_mps sub)
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 

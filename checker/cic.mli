@@ -111,7 +111,8 @@ type cofixpoint = constr pcofixpoint
 
 (** {6 Type of assumptions and contexts}  *)
 
-type rel_declaration = Name.t * constr option * constr
+type rel_declaration = LocalAssum of Name.t * constr          (* name, type *)
+                     | LocalDef of Name.t * constr * constr   (* name, value, type *)
 type rel_context = rel_declaration list
 
 (** The declarations below in .vo should be outside sections,
@@ -166,9 +167,8 @@ type action
 (** Engagements *)
 
 type set_predicativity = ImpredicativeSet | PredicativeSet
-type type_hierarchy = TypeInType | StratifiedType
 
-type engagement = set_predicativity * type_hierarchy
+type engagement = set_predicativity
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 
@@ -211,6 +211,16 @@ type constant_def =
 
 type constant_universes = Univ.universe_context
 
+(** The [typing_flags] are instructions to the type-checker which
+    modify its behaviour. The typing flags used in the type-checking
+    of a constant are tracked in their {!constant_body} so that they
+    can be displayed to the user. *)
+type typing_flags = {
+  check_guarded : bool; (** If [false] then fixed points and co-fixed
+                            points are assumed to be total. *)
+  check_universes : bool; (** If [false] universe constraints are not checked *)
+}
+
 type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
     const_body : constant_def;
@@ -219,7 +229,9 @@ type constant_body = {
     const_polymorphic : bool; (** Is it polymorphic or not *)
     const_universes : constant_universes;
     const_proj : projection_body option;
-    const_inline_code : bool }
+    const_inline_code : bool;
+    const_typing_flags : typing_flags;
+}
 
 (** {6 Representation of mutual inductive types } *)
 
@@ -315,9 +327,7 @@ type mutual_inductive_body = {
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
 
-(** {8 Data for native compilation } *)
-
-    mind_native_name : native_name ref; (** status of the code (linked or not, and where) *)
+    mind_typing_flags : typing_flags; (** typing flags at the time of the inductive creation *)
   }
 
 (** {6 Module declarations } *)

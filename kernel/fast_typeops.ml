@@ -73,8 +73,8 @@ let judge_of_type u =
 
 let judge_of_relative env n =
   try
-    let (_,_,typ) = lookup_rel n env in
-      lift n typ
+    let open Context.Rel.Declaration in
+    env |> lookup_rel n |> get_type |> lift n
   with Not_found ->
     error_unbound_rel env n
 
@@ -90,8 +90,11 @@ let judge_of_variable env id =
    variables of the current env *)
 (* TODO: check order? *)
 let check_hyps_inclusion env f c sign =
-  Context.fold_named_context
-    (fun (id,_,ty1) () ->
+  Context.Named.fold_outside
+    (fun decl () ->
+      let open Context.Named.Declaration in
+      let id = get_id decl in
+      let ty1 = get_type decl in
       try
         let ty2 = named_type id env in
         if not (eq_constr ty2 ty1) then raise Exit
@@ -325,6 +328,7 @@ let type_fixpoint env lna lar vdef vdeft =
     Ind et Constructsi un jour cela devient des constructions
     arbitraires et non plus des variables *)
 let rec execute env cstr =
+  let open Context.Rel.Declaration in
   match kind_of_term cstr with
     (* Atomic terms *)
     | Sort (Prop c) ->
@@ -361,20 +365,20 @@ let rec execute env cstr =
 	      judge_of_constant_knowing_parameters env cst args
 	  | _ ->
 	    (* Full or no sort-polymorphism *)
-	    execute env f
+            execute env f
 	in
 
 	  judge_of_apply env f ft args argst
 
     | Lambda (name,c1,c2) ->
       let _ = execute_is_type env c1 in
-      let env1 = push_rel (name,None,c1) env in
+      let env1 = push_rel (LocalAssum (name,c1)) env in
       let c2t = execute env1 c2 in
         judge_of_abstraction env name c1 c2t
 
     | Prod (name,c1,c2) ->
       let vars = execute_is_type env c1 in
-      let env1 = push_rel (name,None,c1) env in
+      let env1 = push_rel (LocalAssum (name,c1)) env in
       let vars' = execute_is_type env1 c2 in
 	judge_of_product env name vars vars'
 
@@ -382,7 +386,7 @@ let rec execute env cstr =
       let c1t = execute env c1 in
       let _c2s = execute_is_type env c2 in
       let _ = judge_of_cast env c1 c1t DEFAULTcast c2 in
-      let env1 = push_rel (name,Some c1,c2) env in
+      let env1 = push_rel (LocalDef (name,c1,c2)) env in
       let c3t = execute env1 c3 in
 	subst1 c1 c3t
 
@@ -448,8 +452,8 @@ let infer env constr =
 let infer = 
   if Flags.profile then
     let infer_key = Profile.declare_profile "Fast_infer" in
-      Profile.profile2 infer_key infer
-  else infer
+      Profile.profile2 infer_key (fun b c -> infer b c)
+  else (fun b c -> infer b c)
 
 let infer_type env constr =
   execute_type env constr

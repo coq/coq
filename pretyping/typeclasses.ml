@@ -12,11 +12,11 @@ open Globnames
 open Decl_kinds
 open Term
 open Vars
-open Context
 open Evd
 open Util
 open Typeclasses_errors
 open Libobject
+open Context.Rel.Declaration
 (*i*)
 
 let typeclasses_unique_solutions = ref false
@@ -25,7 +25,7 @@ let get_typeclasses_unique_solutions () = !typeclasses_unique_solutions
 
 open Goptions
 
-let set_typeclasses_unique_solutions =
+let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
@@ -46,10 +46,10 @@ let set_typeclass_transparency gr local c = Hook.get set_typeclass_transparency 
 let (classes_transparent_state, classes_transparent_state_hook) = Hook.make ()
 let classes_transparent_state () = Hook.get classes_transparent_state ()
 
-let solve_instantiation_problem = ref (fun _ _ _ _ -> assert false)
+let get_solve_one_instance, solve_one_instance_hook = Hook.make ()
 
 let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =
-  !solve_instantiation_problem env evm t unique
+  Hook.get get_solve_one_instance env evm t unique
 
 type direction = Forward | Backward
 
@@ -59,10 +59,10 @@ type typeclass = {
   cl_impl : global_reference;
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : (global_reference * bool) option list * rel_context;
+  cl_context : (global_reference * bool) option list * Context.Rel.t;
 
   (* Context of definitions and properties on defs, will not be shared *)
-  cl_props : rel_context;
+  cl_props : Context.Rel.t;
 
   (* The method implementaions as projections. *)
   cl_projs : (Name.t * (direction * int option) option * constant option) list;
@@ -127,7 +127,7 @@ let typeclass_univ_instance (cl,u') =
     in Array.fold_left2 (fun subst u u' -> Univ.LMap.add u u' subst) 
       Univ.LMap.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
   in
-  let subst_ctx = Context.map_rel_context (subst_univs_level_constr subst) in
+  let subst_ctx = Context.Rel.map (subst_univs_level_constr subst) in
     { cl with cl_context = fst cl.cl_context, subst_ctx (snd cl.cl_context);
       cl_props = subst_ctx cl.cl_props}, u'
 
@@ -181,9 +181,7 @@ let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
-  let do_subst_ctx ctx = List.smartmap
-    (fun (na, b, t) -> (na, Option.smartmap do_subst b, do_subst t))
-    ctx in
+  let do_subst_ctx = List.smartmap (map_constr do_subst) in
   let do_subst_context (grs,ctx) =
     List.smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
     do_subst_ctx ctx in
@@ -200,15 +198,19 @@ let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
     ( fun (n,_,b,t) (ctx', subst) ->
-	let decl = (Name n, Option.map (substn_vars 1 subst) b, substn_vars 1 subst t) in
+        let decl = match b with
+                   | None -> LocalAssum (Name n, substn_vars 1 subst t)
+		   | Some b -> LocalDef (Name n, substn_vars 1 subst b, substn_vars 1 subst t)
+	in
 	(decl :: ctx', n :: subst)
     ) ctx ([], []) in
   let discharge_rel_context subst n rel =
-    let rel = map_rel_context (Cooking.expmod_constr repl) rel in
+    let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
     let ctx, _ =
       List.fold_right
-	(fun (id, b, t) (ctx, k) ->
-	   (id, Option.smartmap (substn_vars k subst) b, substn_vars k subst t) :: ctx, succ k)
+	(fun decl (ctx, k) ->
+	   map_constr (substn_vars k subst) decl :: ctx, succ k
+	)
 	rel ([], n)
     in ctx
   in
@@ -218,15 +220,15 @@ let discharge_class (_,cl) =
       | ConstRef cst -> Lib.section_segment_of_constant cst
       | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind in
   let discharge_context ctx' subst (grs, ctx) =
-    let grs' = 
-      let newgrs = List.map (fun (_, _, t) -> 
-	match class_of_constr t with
-	| None -> None
-	| Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
-	ctx' 
+    let grs' =
+      let newgrs = List.map (fun decl ->
+			     match decl |> get_type |> class_of_constr with
+			     | None -> None
+			     | Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
+			    ctx'
       in
-	List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
-	  @ newgrs
+      List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
+      @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
   if cl_impl' == cl.cl_impl then cl else
@@ -287,7 +289,7 @@ let build_subclasses ~check env sigma glob pri =
       | None -> []
       | Some (rels, ((tc,u), args)) ->
 	let instapp = 
-	  Reductionops.whd_beta sigma (appvectc c (Termops.extended_rel_vect 0 rels)) 
+	  Reductionops.whd_beta sigma (appvectc c (Context.Rel.to_extended_vect 0 rels))
 	in
 	let projargs = Array.of_list (args @ [instapp]) in
 	let projs = List.map_filter 
@@ -432,11 +434,7 @@ let add_class cl =
  *)
 
 let instance_constructor (cl,u) args =
-  let filter (_, b, _) = match b with
-  | None -> true
-  | Some _ -> false
-  in
-  let lenpars = List.length (List.filter filter (snd cl.cl_context)) in
+  let lenpars = List.count is_local_assum (snd cl.cl_context) in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
       | IndRef ind -> 
@@ -492,7 +490,7 @@ let is_instance = function
    Nota: we will only check the resolvability status of undefined evars.
  *)
 
-let resolvable = Store.field ()
+let resolvable = Proofview.Unsafe.typeclass_resolvable
 
 let set_resolvable s b =
   if b then Store.remove s resolvable
@@ -541,10 +539,10 @@ let has_typeclasses filter evd =
   in
   Evar.Map.exists check (Evd.undefined_map evd)
 
-let solve_instantiations_problem = ref (fun _ _ _ _ _ _ -> assert false)
+let get_solve_all_instances, solve_all_instances_hook = Hook.make ()
 
-let solve_problem env evd filter unique split fail =
-  !solve_instantiations_problem env evd filter unique split fail
+let solve_all_instances env evd filter unique split fail =
+  Hook.get get_solve_all_instances env evd filter unique split fail
 
 (** Profiling resolution of typeclasses *)
 (* let solve_classeskey = Profile.declare_profile "solve_typeclasses" *)
@@ -553,4 +551,4 @@ let solve_problem env evd filter unique split fail =
 let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(split=true) ?(fail=true) env evd =
   if not (has_typeclasses filter evd) then evd
-  else solve_problem env evd filter unique split fail
+  else solve_all_instances env evd filter unique split fail

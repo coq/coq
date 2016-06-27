@@ -12,35 +12,31 @@ open Globnames
 open Term
 open Libobject
 
-type key = 
+type key =
   | KGlob of global_reference
-  | KLam 
+  | KLam
   | KLet
   | KProd
   | KSort
-  | KEvar
-  | KCase 
-  | KFix 
+  | KCase
+  | KFix
   | KCoFix
-  | KRel 
-  | KMeta
+  | KRel
 
 module KeyOrdered = struct
   type t = key
 
   let hash gr =
     match gr with
-    | KGlob gr -> 10 + RefOrdered.hash gr
+    | KGlob gr -> 8 + RefOrdered.hash gr
     | KLam -> 0
     | KLet -> 1
     | KProd -> 2
     | KSort -> 3
-    | KEvar -> 4
-    | KCase -> 5
-    | KFix -> 6
-    | KCoFix -> 7
-    | KRel -> 8
-    | KMeta -> 9
+    | KCase -> 4
+    | KFix -> 5
+    | KCoFix -> 6
+    | KRel -> 7
 
   let compare gr1 gr2 =
     match gr1, gr2 with
@@ -61,8 +57,6 @@ module Keymap = HMap.Make(KeyOrdered)
 module Keyset = Keymap.Set
 
 (* Mapping structure for references to be considered equivalent *)
-
-type keys = Keyset.t Keymap.t
 
 let keys = Summary.ref Keymap.empty ~name:"Keys_decl"
 
@@ -153,12 +147,10 @@ let pr_key pr_global = function
   | KLet -> str"Let"
   | KProd -> str"Product"
   | KSort -> str"Sort"
-  | KEvar -> str"Evar"
   | KCase -> str"Case"
   | KFix -> str"Fix"
   | KCoFix -> str"CoFix"
   | KRel -> str"Rel"
-  | KMeta -> str"Meta"
 
 let pr_keyset pr_global v = 
   prlist_with_sep spc (pr_key pr_global) (Keyset.elements v)

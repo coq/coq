@@ -11,11 +11,11 @@ open Util
 open Names
 open Term
 open Vars
-open Context
 open Termops
 open Univ
 open Evd
 open Environ
+open Context.Rel.Declaration
 
 exception Elimconst
 
@@ -573,7 +573,7 @@ type state = constr * constr Stack.t
 type  contextual_reduction_function = env ->  evar_map -> constr -> constr
 type  reduction_function =  contextual_reduction_function
 type local_reduction_function = evar_map -> constr -> constr
-type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
+type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> constr -> (constr, 'r) Sigma.sigma }
 
 type  contextual_stack_reduction_function =
     env ->  evar_map -> constr -> constr * constr list
@@ -594,9 +594,7 @@ let pr_state (tm,sk) =
 (*** Reduction Functions Operators ***)
 (*************************************)
 
-let safe_evar_value sigma ev =
-  try Some (Evd.existential_value sigma ev)
-  with NotInstantiatedEvar | Not_found -> None
+let safe_evar_value = Evarutil.safe_evar_value
 
 let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
@@ -608,7 +606,7 @@ let strong whdfun env sigma t =
   strongrec env t
 
 let local_strong whdfun sigma =
-  let rec strongrec t = map_constr strongrec (whdfun sigma t) in
+  let rec strongrec t = Constr.map strongrec (whdfun sigma t) in
   strongrec
 
 let rec strong_prodspine redfun sigma c =
@@ -800,27 +798,29 @@ let equal_stacks (x, l) (y, l') =
     | Some (lft1,lft2) -> f_equal (x, lft1) (y, lft2) 
 
 let rec whd_state_gen ?csts tactic_mode flags env sigma =
+  let open Context.Named.Declaration in
   let rec whrec cst_l (x, stack as s) =
     let () = if !debug_RAKAM then
 	let open Pp in
-	pp (h 0 (str "<<" ++ Termops.print_constr x ++
+	Feedback.msg_notice
+             (h 0 (str "<<" ++ Termops.print_constr x ++
 		   str "|" ++ cut () ++ Cst_stack.pr cst_l ++
 		   str "|" ++ cut () ++ Stack.pr Termops.print_constr stack ++
 		   str ">>") ++ fnl ())
     in
     let fold () =
       let () = if !debug_RAKAM then
-	  let open Pp in pp (str "<><><><><>" ++ fnl ()) in
+	  let open Pp in Feedback.msg_notice (str "<><><><><>" ++ fnl ()) in
       (s,cst_l)
     in
     match kind_of_term x with
     | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
       (match lookup_rel n env with
-      | (_,Some body,_) -> whrec Cst_stack.empty (lift n body, stack)
+      | LocalDef (_,body,_) -> whrec Cst_stack.empty (lift n body, stack)
       | _ -> fold ())
     | Var id when Closure.RedFlags.red_set flags (Closure.RedFlags.fVAR id) ->
       (match lookup_named id env with
-      | (_,Some body,_) -> whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
+      | LocalDef (_,body,_) -> whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
       | _ -> fold ())
     | Evar ev ->
       (match safe_evar_value sigma ev with
@@ -923,7 +923,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       | Some _ when Closure.RedFlags.red_set flags Closure.RedFlags.fBETA ->
 	apply_subst whrec [] cst_l x stack
       | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
-	let env' = push_rel (na,None,t) env in
+	let env' = push_rel (LocalAssum (na,t)) env in
 	let whrec' = whd_state_gen tactic_mode flags env' sigma in
         (match kind_of_term (Stack.zip ~refold:true (fst (whrec' (c, Stack.empty)))) with
         | App (f,cl) ->
@@ -1184,30 +1184,8 @@ let whd_zeta c = Stack.zip (local_whd_state_gen zeta Evd.empty (c,Stack.empty))
 (****************************************************************************)
 
 (* Replacing defined evars for error messages *)
-let rec whd_evar sigma c =
-  match kind_of_term c with
-    | Evar ev ->
-        let (evk, args) = ev in
-        let args = Array.map (fun c -> whd_evar sigma c) args in
-        (match safe_evar_value sigma (evk, args) with
-            Some c -> whd_evar sigma c
-          | None -> c)
-    | Sort (Type u) -> 
-      let u' = Evd.normalize_universe sigma u in
-	if u' == u then c else mkSort (Sorts.sort_of_univ u')
-    | Const (c', u) when not (Univ.Instance.is_empty u) -> 
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkConstU (c', u')
-    | Ind (i, u) when not (Univ.Instance.is_empty u) -> 
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkIndU (i, u')
-    | Construct (co, u) when not (Univ.Instance.is_empty u) ->
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkConstructU (co, u')
-    | _ -> c
-
-let nf_evar =
-  local_strong whd_evar
+let whd_evar = Evarutil.whd_evar
+let nf_evar = Evarutil.nf_evar
 
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add
@@ -1258,28 +1236,26 @@ let report_anomaly _ =
   let e = Errors.push e in
   iraise e
 
-let test_trans_conversion (f: ?l2r:bool-> ?evars:'a->'b) reds env sigma x y =
+let test_trans_conversion (f: constr Reduction.extended_conversion_function) reds env sigma x y =
   try
     let evars ev = safe_evar_value sigma ev in
-    let _ = f ~evars reds env (Evd.universes sigma) x y in
+    let _ = f ~reds env ~evars:(evars, Evd.universes sigma) x y in
     true
   with Reduction.NotConvertible -> false
     | e when is_anomaly e -> report_anomaly e
 
-let is_trans_conv reds env sigma = test_trans_conversion Reduction.trans_conv_universes reds env sigma
-let is_trans_conv_leq reds env sigma = test_trans_conversion Reduction.trans_conv_leq_universes reds env sigma
-let is_trans_fconv = function Reduction.CONV -> is_trans_conv | Reduction.CUMUL -> is_trans_conv_leq
-
-let is_conv = is_trans_conv full_transparent_state
-let is_conv_leq = is_trans_conv_leq full_transparent_state
-let is_fconv = function | Reduction.CONV -> is_conv | Reduction.CUMUL -> is_conv_leq
+let is_conv ?(reds=full_transparent_state) env sigma = test_trans_conversion Reduction.conv reds env sigma
+let is_conv_leq ?(reds=full_transparent_state) env sigma = test_trans_conversion Reduction.conv_leq reds env sigma
+let is_fconv ?(reds=full_transparent_state) = function
+  | Reduction.CONV -> is_conv ~reds
+  | Reduction.CUMUL -> is_conv_leq ~reds
 
 let check_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y = 
   let f = match pb with
-    | Reduction.CONV -> Reduction.trans_conv_universes
-    | Reduction.CUMUL -> Reduction.trans_conv_leq_universes 
+    | Reduction.CONV -> Reduction.conv
+    | Reduction.CUMUL -> Reduction.conv_leq
   in
-    try f ~evars:(safe_evar_value sigma) ts env (Evd.universes sigma) x y; true
+    try f ~reds:ts env ~evars:(safe_evar_value sigma, Evd.universes sigma) x y; true
     with Reduction.NotConvertible -> false
     | Univ.UniverseInconsistency _ -> false
     | e when is_anomaly e -> report_anomaly e
@@ -1301,18 +1277,21 @@ let sigma_univ_state =
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =
-  try 
+  try
+    let fold cstr sigma =
+      try Some (Evd.add_universe_constraints sigma cstr)
+      with Univ.UniverseInconsistency _ | Evd.UniversesDiffer -> None
+    in
     let b, sigma = 
-      let b, cstrs = 
+      let ans =
 	if pb == Reduction.CUMUL then 
-	  Universes.leq_constr_univs_infer (Evd.universes sigma) x y 
+	  Universes.leq_constr_univs_infer (Evd.universes sigma) fold x y sigma
 	else
-	  Universes.eq_constr_univs_infer (Evd.universes sigma) x y 
+	  Universes.eq_constr_univs_infer (Evd.universes sigma) fold x y sigma
       in
-	if b then 
-	  try true, Evd.add_universe_constraints sigma cstrs
-	  with Univ.UniverseInconsistency _ | Evd.UniversesDiffer -> false, sigma
-	else false, sigma
+      match ans with
+      | None -> false, sigma
+      | Some sigma -> true, sigma
     in
       if b then sigma, true
       else
@@ -1444,7 +1423,7 @@ let splay_prod env sigma =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
       | Prod (n,a,c0) ->
-	  decrec (push_rel (n,None,a) env)
+	  decrec (push_rel (LocalAssum (n,a)) env)
 	    ((n,a)::m) c0
       | _ -> m,t
   in
@@ -1455,7 +1434,7 @@ let splay_lam env sigma =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
       | Lambda (n,a,c0) ->
-	  decrec (push_rel (n,None,a) env)
+	  decrec (push_rel (LocalAssum (n,a)) env)
 	    ((n,a)::m) c0
       | _ -> m,t
   in
@@ -1466,18 +1445,18 @@ let splay_prod_assum env sigma =
     let t = whd_betadeltaiota_nolet env sigma c in
     match kind_of_term t with
     | Prod (x,t,c)  ->
-	prodec_rec (push_rel (x,None,t) env)
-	  (add_rel_decl (x, None, t) l) c
+	prodec_rec (push_rel (LocalAssum (x,t)) env)
+	  (Context.Rel.add (LocalAssum (x,t)) l) c
     | LetIn (x,b,t,c) ->
-	prodec_rec (push_rel (x, Some b, t) env)
-	  (add_rel_decl (x, Some b, t) l) c
+	prodec_rec (push_rel (LocalDef (x,b,t)) env)
+	  (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> 
       let t' = whd_betadeltaiota env sigma t in
 	if Term.eq_constr t t' then l,t
 	else prodec_rec env l t'
   in
-  prodec_rec env empty_rel_context
+  prodec_rec env Context.Rel.empty
 
 let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in
@@ -1491,21 +1470,21 @@ let splay_prod_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Prod (n,a,c0) ->
-	  decrec (push_rel (n,None,a) env)
-	    (m-1) (add_rel_decl (n,None,a) ln) c0
+	  decrec (push_rel (LocalAssum (n,a)) env)
+	    (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
       | _                      -> invalid_arg "splay_prod_n"
   in
-  decrec env n empty_rel_context
+  decrec env n Context.Rel.empty
 
 let splay_lam_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Lambda (n,a,c0) ->
-	  decrec (push_rel (n,None,a) env)
-	    (m-1) (add_rel_decl (n,None,a) ln) c0
+	  decrec (push_rel (LocalAssum (n,a)) env)
+	    (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
       | _                      -> invalid_arg "splay_lam_n"
   in
-  decrec env n empty_rel_context
+  decrec env n Context.Rel.empty
 
 let is_sort env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
@@ -1540,8 +1519,8 @@ let find_conclusion env sigma =
   let rec decrec env c =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
-      | Prod (x,t,c0) -> decrec (push_rel (x,None,t) env) c0
-      | Lambda (x,t,c0) -> decrec (push_rel (x,None,t) env) c0
+      | Prod (x,t,c0) -> decrec (push_rel (LocalAssum (x,t)) env) c0
+      | Lambda (x,t,c0) -> decrec (push_rel (LocalAssum (x,t)) env) c0
       | t -> t
   in
   decrec env
@@ -1625,7 +1604,7 @@ let meta_reducible_instance evd b =
 	  with
 	    | Some g -> irec (mkProj (p,g))
 	    | None -> mkProj (p,c))
-    | _ -> map_constr irec u
+    | _ -> Constr.map irec u
   in
   if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
   else irec b.rebus

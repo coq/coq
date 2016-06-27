@@ -9,7 +9,6 @@
 open Names
 open Globnames
 open Term
-open Context
 open Evd
 open Environ
 
@@ -24,10 +23,10 @@ type typeclass = {
   (** Context in which the definitions are typed. Includes both typeclass parameters and superclasses.
      The boolean indicates if the typeclass argument is a direct superclass and the global reference
      gives a direct link to the class itself. *)
-  cl_context : (global_reference * bool) option list * rel_context;
+  cl_context : (global_reference * bool) option list * Context.Rel.t;
 
   (** Context of definitions and properties on defs, will not be shared *)
-  cl_props : rel_context;
+  cl_props : Context.Rel.t;
 
   (** The methods implementations of the typeclass as projections. 
       Some may be undefinable due to sorting restrictions or simply undefined if 
@@ -68,7 +67,7 @@ val dest_class_app : env -> constr -> typeclass puniverses * constr list
 val typeclass_univ_instance : typeclass puniverses -> typeclass puniverses
 
 (** Just return None if not a class *)
-val class_of_constr : constr -> (rel_context * (typeclass puniverses * constr list)) option
+val class_of_constr : constr -> (Context.Rel.t * (typeclass puniverses * constr list)) option
   
 val instance_impl : instance -> global_reference
 
@@ -120,8 +119,8 @@ val add_instance_hint : global_reference_or_constr -> global_reference list ->
   bool -> int option -> Decl_kinds.polymorphic -> unit
 val remove_instance_hint : global_reference -> unit
 
-val solve_instantiations_problem : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) ref
-val solve_instantiation_problem : (env -> evar_map -> types -> bool -> open_constr) ref
+val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
+val solve_one_instance_hook : (env -> evar_map -> types -> bool -> open_constr) Hook.t
 
 val declare_instance : int option -> bool -> global_reference -> unit
 

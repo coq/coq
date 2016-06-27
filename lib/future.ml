@@ -7,8 +7,9 @@
 (************************************************************************)
 
 (* To deal with side effects we have to save/restore the system state *)
-let freeze = ref (fun () -> assert false : unit -> Dyn.t)
-let unfreeze = ref (fun _ -> () : Dyn.t -> unit)
+type freeze
+let freeze = ref (fun () -> assert false : unit -> freeze)
+let unfreeze = ref (fun _ -> () : freeze -> unit)
 let set_freeze f g = freeze := f; unfreeze := g
 
 let not_ready_msg = ref (fun name ->
@@ -58,7 +59,7 @@ type 'a assignement = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computat
 and 'a comp =
   | Delegated of (unit -> unit)
   | Closure of (unit -> 'a)
-  | Val of 'a * Dyn.t option
+  | Val of 'a * freeze option
   | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
 
 and 'a comput =

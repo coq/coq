@@ -15,6 +15,7 @@ open Environ
 open Globnames
 open Libobject
 open Lib
+open Context.Named.Declaration
 
 (** Characterization of the head of a term *)
 
@@ -63,9 +64,9 @@ let kind_of_head env t =
       (try on_subterm k l b (variable_head id)
        with Not_found ->
         (* a goal variable *)
-        match pi2 (lookup_named id env) with
-        | Some c -> aux k l c b
-        | None -> NotImmediatelyComputableHead)
+        match lookup_named id env with
+        | LocalDef (_,c,_) -> aux k l c b
+        | LocalAssum _ -> NotImmediatelyComputableHead)
   | Const (cst,_) ->
       (try on_subterm k l b (constant_head cst)
        with Not_found ->
@@ -132,8 +133,8 @@ let compute_head = function
      | None -> RigidHead (RigidParameter cst)
      | Some c -> kind_of_head env c)
 | EvalVarRef id ->
-    (match pi2 (Global.lookup_named id) with
-     | Some c when not (Decls.variable_opacity id) ->
+    (match Global.lookup_named id with
+     | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->
            kind_of_head (Global.env()) c
      | _ ->
            RigidHead (RigidVar id))

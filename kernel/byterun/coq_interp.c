@@ -22,18 +22,10 @@
 #include "coq_memory.h" 
 #include "coq_values.h" 
 
-/*spiwack : imports support functions for 64-bit integers */
-#include <caml/config.h>
-#ifdef ARCH_INT64_TYPE
-#include "int64_native.h"
-#else
-#include "int64_emul.h"
-#endif
-
 /* spiwack: I append here a few macros for value/number manipulation */
 #define uint32_of_value(val) (((uint32_t)val >> 1))
 #define value_of_uint32(i)   ((value)(((uint32_t)(i) << 1) | 1))
-#define UI64_of_uint32(lo)  ((uint64_t)(I64_literal(0,(uint32_t)(lo))))
+#define UI64_of_uint32(lo) ((uint64_t)(lo))
 #define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
 /* /spiwack */
 
@@ -1203,8 +1195,8 @@ value coq_interprete
         print_instr("MULCINT31");
 	uint64_t p;
         /*accu = 2v+1, *sp=2w+1 ==> p = 2v*w */
-        p = I64_mul (UI64_of_value (accu), UI64_of_uint32 ((*sp++)^1));
-	if ( I64_is_zero(p) ) {
+        p = UI64_of_value (accu) * UI64_of_uint32 ((*sp++)^1);
+	if (p == 0) {
 	  accu = (value)1;
 	}
 	else {
@@ -1213,8 +1205,8 @@ value coq_interprete
 	     of the non-constant constructor is then 1 */
 	  Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
 	  /*unsigned shift*/
-	  Field(accu, 0) = (value)(I64_lsr(p,31)|1) ;  /*higher part*/
-	  Field(accu, 1) = (value)(I64_to_int32(p)|1); /*lower part*/
+	  Field(accu, 0) = (value)((p >> 31)|1) ;  /*higher part*/
+	  Field(accu, 1) = (value)((int32_t)p|1); /*lower part*/
 	}
 	Next;
       }
@@ -1226,19 +1218,20 @@ value coq_interprete
                     int62 by the int31 */
         uint64_t bigint;
         bigint = UI64_of_value(accu);
-        bigint = I64_or(I64_lsl(bigint, 31),UI64_of_value(*sp++));
+        bigint = (bigint << 31) | UI64_of_value(*sp++);
         uint64_t divisor;
         divisor = UI64_of_value(*sp++);
         Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
-        if (I64_is_zero (divisor)) {
+        if (divisor == 0) {
           Field(accu, 0) = 1; /* 2*0+1 */
           Field(accu, 1) = 1; /* 2*0+1 */
 	}
 	else {
 	  uint64_t quo, mod;
-          I64_udivmod(bigint, divisor, &quo, &mod);
-          Field(accu, 0) = value_of_uint32(I64_to_int32(quo));
-	  Field(accu, 1) = value_of_uint32(I64_to_int32(mod));
+	  quo = bigint / divisor;
+	  mod = bigint % divisor;
+          Field(accu, 0) = value_of_uint32((uint32_t)(quo));
+	  Field(accu, 1) = value_of_uint32((uint32_t)(mod));
 	}
 	Next;
       }

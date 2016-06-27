@@ -14,13 +14,12 @@ open Genarg
 open Constrexpr
 open Tacexpr
 open Libnames
-open Compat
 open Misctypes
 open Genredexpr
 
 (** The parser of Coq *)
 
-module Gram : GrammarSig
+module Gram : module type of Compat.GrammarMake(CLexer)
 
 (** The parser of Coq is built from three kinds of rule declarations:
 
@@ -97,37 +96,6 @@ module Gram : GrammarSig
 
 *)
 
-val gram_token_of_token : Tok.t -> Gram.symbol
-val gram_token_of_string : string -> Gram.symbol
-
-(** The superclass of all grammar entries *)
-type grammar_object
-
-(** Type of reinitialization data *)
-type gram_reinit = gram_assoc * gram_position
-
-(** Add one extension at some camlp4 position of some camlp4 entry *)
-val grammar_extend :
-  grammar_object Gram.entry ->
-  gram_reinit option (** for reinitialization if ever needed *) ->
-  Gram.extend_statment -> unit
-
-(** Remove the last n extensions *)
-val remove_grammars : int -> unit
-
-
-
-
-(** The type of typed grammar objects *)
-type typed_entry
-
-(** The possible types for extensible grammars *)
-type entry_type = argument_type
-
-val type_of_typed_entry : typed_entry -> entry_type
-val object_of_typed_entry : typed_entry -> grammar_object Gram.entry
-val weaken_entry : 'a Gram.entry -> grammar_object Gram.entry
-
 (** Temporary activate camlp4 verbosity *)
 
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
@@ -138,11 +106,7 @@ val parse_string : 'a Gram.entry -> string -> 'a
 val eoi_entry : 'a Gram.entry -> 'a Gram.entry
 val map_entry : ('a -> 'b) -> 'a Gram.entry -> 'b Gram.entry
 
-(** Table of Coq statically defined grammar entries *)
-
 type gram_universe
-
-(** There are four predefined universes: "prim", "constr", "tactic", "vernac" *)
 
 val get_univ : string -> gram_universe
 
@@ -151,9 +115,11 @@ val uconstr : gram_universe
 val utactic : gram_universe
 val uvernac : gram_universe
 
-val create_entry : gram_universe -> string -> entry_type -> typed_entry
-val create_generic_entry : string -> ('a, rlevel) abstract_argument_type ->
-  'a Gram.entry
+val register_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry -> unit
+val genarg_grammar : ('raw, 'glb, 'top) genarg_type -> 'raw Gram.entry
+
+val create_generic_entry : gram_universe -> string ->
+  ('a, rlevel) abstract_argument_type -> 'a Gram.entry
 
 module Prim :
   sig
@@ -168,6 +134,7 @@ module Prim :
     val pattern_identref : Id.t located Gram.entry
     val base_ident : Id.t Gram.entry
     val natural : int Gram.entry
+    val index : int Gram.entry
     val bigint : Bigint.bigint Gram.entry
     val integer : int Gram.entry
     val string : string Gram.entry
@@ -213,7 +180,7 @@ module Module :
 
 module Tactic :
   sig
-    val open_constr : open_constr_expr Gram.entry
+    val open_constr : constr_expr Gram.entry
     val constr_with_bindings : constr_expr with_bindings Gram.entry
     val bindings : constr_expr bindings Gram.entry
     val hypident : (Id.t located * Locus.hyp_location_flag) Gram.entry
@@ -221,6 +188,7 @@ module Tactic :
     val constr_eval : (constr_expr,reference or_by_notation,constr_expr) may_eval Gram.entry
     val uconstr : constr_expr Gram.entry
     val quantified_hypothesis : quantified_hypothesis Gram.entry
+    val destruction_arg : constr_expr with_bindings destruction_arg Gram.entry
     val int_or_var : int or_var Gram.entry
     val red_expr : raw_red_expr Gram.entry
     val simple_tactic : raw_tactic_expr Gram.entry
@@ -231,7 +199,6 @@ module Tactic :
     val binder_tactic : raw_tactic_expr Gram.entry
     val tactic : raw_tactic_expr Gram.entry
     val tactic_eoi : raw_tactic_expr Gram.entry
-    val tacdef_body : (reference * bool * raw_tactic_expr) Gram.entry
   end
 
 module Vernac_ :
@@ -243,69 +210,56 @@ module Vernac_ :
     val vernac : vernac_expr Gram.entry
     val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
     val vernac_eoi : vernac_expr Gram.entry
+    val noedit_mode : vernac_expr Gram.entry
+    val command_entry : vernac_expr Gram.entry
   end
 
 (** The main entry: reads an optional vernac command *)
 val main_entry : (Loc.t * vernac_expr) option Gram.entry
 
-(** Mapping formal entries into concrete ones *)
+(** Handling of the proof mode entry *)
+val get_command_entry : unit -> vernac_expr Gram.entry
+val set_command_entry : vernac_expr Gram.entry -> unit
 
-(** Binding constr entry keys to entries and symbols *)
+val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
-val interp_constr_entry_key : bool (** true for cases_pattern *) ->
-  constr_entry_key -> grammar_object Gram.entry * int option
+(** {5 Extending the parser without synchronization} *)
 
-val symbol_of_constr_prod_entry_key : gram_assoc option ->
-  constr_entry_key -> bool -> constr_prod_entry_key ->
-    Gram.symbol
+type gram_reinit = gram_assoc * gram_position
+(** Type of reinitialization data *)
 
-(** General entry keys *)
+val grammar_extend : 'a Gram.entry -> gram_reinit option ->
+  'a Extend.extend_statment -> unit
+(** Extend the grammar of Coq, without synchronizing it with the bactracking
+    mechanism. This means that grammar extensions defined this way will survive
+    an undo. *)
 
-(** This intermediate abstract representation of entries can
-   both be reified into mlexpr for the ML extensions and
-   dynamically interpreted as entries for the Coq level extensions
-*)
+(** {5 Extending the parser with summary-synchronized commands} *)
 
-type prod_entry_key =
-  | Alist1 of prod_entry_key
-  | Alist1sep of prod_entry_key * string
-  | Alist0 of prod_entry_key
-  | Alist0sep of prod_entry_key * string
-  | Aopt of prod_entry_key
-  | Amodifiers of prod_entry_key
-  | Aself
-  | Anext
-  | Atactic of int
-  | Agram of string
-  | Aentry of string * string
+module GramState : Store.S
+(** Auxilliary state of the grammar. Any added data must be marshallable. *)
 
-(** Binding general entry keys to symbols *)
+type 'a grammar_command
+(** Type of synchronized parsing extensions. The ['a] type should be
+    marshallable. *)
 
-val symbol_of_prod_entry_key :
-  prod_entry_key -> Gram.symbol
+type extend_rule =
+| ExtendRule : 'a Gram.entry * gram_reinit option * 'a extend_statment -> extend_rule
 
-(** Interpret entry names of the form "ne_constr_list" as entry keys   *)
+type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
+(** Grammar extension entry point. Given some ['a] and a current grammar state,
+    such a function must produce the list of grammar extensions that will be
+    applied in the same order and kept synchronized w.r.t. the summary, together
+    with a new state. It should be pure. *)
 
-val interp_entry_name : bool (** true to fail on unknown entry *) ->
-  int option -> string -> string -> entry_type * prod_entry_key
+val create_grammar_command : string -> 'a grammar_extension -> 'a grammar_command
+(** Create a new grammar-modifying command with the given name. The extension
+    function is called to generate the rules for a given data. *)
 
-(** Recover the list of all known tactic notation entries. *)
-val list_entry_names : unit -> (string * entry_type) list
+val extend_grammar_command : 'a grammar_command -> 'a -> unit
+(** Extend the grammar of Coq with the given data. *)
 
-(** Registering/resetting the level of a constr entry *)
+val recover_grammar_command : 'a grammar_command -> 'a list
+(** Recover the current stack of grammar extensions. *)
 
-val find_position :
-  bool (** true if for creation in pattern entry; false if in constr entry *) ->
-  Extend.gram_assoc option -> int option ->
-    Extend.gram_position option * Extend.gram_assoc option * string option *
-    (** for reinitialization: *) gram_reinit option
-
-val synchronize_level_positions : unit -> unit
-
-val register_empty_levels : bool -> int list ->
-    (Extend.gram_position option * Extend.gram_assoc option *
-     string option * gram_reinit option) list
-
-val remove_levels : int -> unit
-
-val level_of_snterml : Gram.symbol -> int
+val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b

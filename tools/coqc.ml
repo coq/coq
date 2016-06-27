@@ -70,17 +70,6 @@ let parse_args () =
     | "-byte" :: rem -> binary := "coqtop.byte"; parse (cfiles,args) rem
     | "-opt" :: rem -> binary := "coqtop"; parse (cfiles,args) rem
 
-(* Obsolete options *)
-
-    | "-libdir" :: _ :: rem ->
-        print_string "Warning: option -libdir deprecated and ignored\n";
-        flush stdout;
-        parse (cfiles,args) rem
-    | ("-db"|"-debugger") :: rem ->
-        print_string "Warning: option -db/-debugger deprecated and ignored\n";
-        flush stdout;
-        parse (cfiles,args) rem
-
 (* Informative options *)
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
@@ -99,7 +88,7 @@ let parse_args () =
 
 (* Options for coqtop : a) options with 0 argument *)
 
-    | ("-notactics"|"-bt"|"-debug"|"-nolib"|"-boot"|"-time"
+    | ("-notactics"|"-bt"|"-debug"|"-nolib"|"-boot"|"-time"|"-profile-ltac"
       |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
@@ -118,27 +107,18 @@ let parse_args () =
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
+      |"-o"
       as o) :: rem ->
 	begin
 	  match rem with
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
 	    | []        -> usage ()
 	end
+    | ("-I"|"-include" as o) :: s :: rem -> parse (cfiles,s::o::args) rem
 
 (* Options for coqtop : c) options with 1 argument and possibly more *)
 
-    | ("-I"|"-include" as o) :: rem ->
-	begin
-	  match rem with
-	  | s :: "-as" :: t :: rem' -> parse (cfiles,t::"-as"::s::o::args) rem'
-	  | s :: "-as" :: [] -> usage ()
-	  | s :: rem' -> parse (cfiles,s::o::args) rem'
-	  | []        -> usage ()
-	end
-    | "-R" :: s :: "-as" :: t :: rem ->	parse (cfiles,t::"-as"::s::"-R"::args) rem
-    | "-R" :: s :: "-as" :: [] -> usage ()
-    | "-R" :: s :: t :: rem -> parse (cfiles,t::s::"-R"::args) rem
-    | "-Q" :: s :: t :: rem -> parse (cfiles,t::s::"-Q"::args) rem
+    | ("-R"|"-Q" as o) :: s :: t :: rem -> parse (cfiles,t::s::o::args) rem
     | ("-schedule-vio-checking"
       |"-check-vio-tasks" | "-schedule-vio2vo" as o) :: s :: rem ->
         let nodash, rem =

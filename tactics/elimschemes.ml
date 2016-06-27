@@ -18,6 +18,7 @@ open Indrec
 open Declarations
 open Typeops
 open Ind_tables
+open Sigma.Notations
 
 (* Induction/recursion schemes *)
 
@@ -102,10 +103,10 @@ let rec_dep_scheme_kind_from_type =
 
 let build_case_analysis_scheme_in_type dep sort ind =
   let env = Global.env () in
-  let sigma = Evd.from_env env in
-  let sigma, indu = Evd.fresh_inductive_instance env sigma ind in
-  let sigma, c = build_case_analysis_scheme env sigma indu dep sort in 
-    c, Evd.evar_universe_context sigma
+  let sigma = Sigma.Unsafe.of_evar_map (Evd.from_env env) in
+  let Sigma (indu, sigma, _) = Sigma.fresh_inductive_instance env sigma ind in
+  let Sigma (c, sigma, _) = build_case_analysis_scheme env sigma indu dep sort in
+    c, Evd.evar_universe_context (Sigma.to_evar_map sigma)
 
 let case_scheme_kind_from_type =
   declare_individual_scheme_object "_case_nodep"

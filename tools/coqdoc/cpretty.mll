@@ -75,7 +75,7 @@
     let stop_env () = if !r then stop (); r := false in
       (fun x -> !r), start_env, stop_env
       
-  let in_emph, start_emph, stop_emph = in_env Output.start_emph Output.stop_emph
+  let _, start_emph, stop_emph = in_env Output.start_emph Output.stop_emph
   let in_quote, start_quote, stop_quote = in_env Output.start_quote Output.stop_quote
 
   let url_buffer = Buffer.create 40
@@ -110,12 +110,6 @@
     let s = Stack.pop state_stack in
     Cdglobals.gallina := s.st_gallina;
     Cdglobals.light := s.st_light
-
-  let without_ref r f x = save_state (); r := false; f x; restore_state ()
-
-  let without_gallina = without_ref Cdglobals.gallina
-
-  let without_light = without_ref Cdglobals.light
 
   let begin_show () = save_state (); Cdglobals.gallina := false; Cdglobals.light := false
   let end_show () = restore_state ()

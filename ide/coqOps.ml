@@ -46,12 +46,9 @@ module SentenceId : sig
   val mk_sentence :
     start:GText.mark -> stop:GText.mark -> flag list -> sentence
 
-  val set_flags : sentence -> flag list -> unit
   val add_flag : sentence -> flag -> unit
   val has_flag : sentence -> mem_flag -> bool
   val remove_flag : sentence -> mem_flag -> unit
-  val same_sentence : sentence -> sentence -> bool
-  val hidden_edit_id : unit -> int
   val find_all_tooltips : sentence -> int -> string list
   val add_tooltip : sentence -> int -> int -> string -> unit
   val set_index : sentence -> int -> unit
@@ -89,18 +86,15 @@ end = struct
     index = -1;
     changed_sig = new GUtil.signal ();
   }
-  let hidden_edit_id () = decr id; !id
 
   let changed s =
     s.changed_sig#call (s.index, List.map mem_flag_of_flag s.flags)
 
-  let set_flags s f = s.flags <- f; changed s
   let add_flag s f = s.flags <- CList.add_set (=) f s.flags; changed s
   let has_flag s mf =
     List.exists (fun f -> mem_flag_of_flag f = mf) s.flags
   let remove_flag s mf =
     s.flags <- List.filter (fun f -> mem_flag_of_flag f <> mf) s.flags; changed s
-  let same_sentence s1 s2 = s1.edit_id = s2.edit_id
   let find_all_tooltips s off =
     CList.map_filter (fun (start,stop,t) ->
       if start <= off && off <= stop then Some t else None)
@@ -132,8 +126,6 @@ end = struct
 end
 open SentenceId
 
-let prefs = Preferences.current
-
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
 
@@ -162,12 +154,19 @@ object
 end
 
 let flags_to_color f =
-  let of_col c = `NAME (Tags.string_of_color c) in
   if List.mem `PROCESSING f then `NAME "blue"
   else if List.mem `ERROR f then `NAME "red"
   else if List.mem `UNSAFE f then `NAME "orange"
   else if List.mem `INCOMPLETE f then `NAME "gray"
-  else of_col (Tags.get_processed_color ())
+  else `NAME Preferences.processed_color#get
+
+let validate s =
+  let open Xml_datatype in
+  let rec validate = function
+  | PCData s -> Glib.Utf8.validate s
+  | Element (_, _, children) -> List.for_all validate children
+  in
+  validate (Richpp.repr s)
 
 module Doc = Document
 
@@ -359,7 +358,7 @@ object(self)
   method raw_coq_query phrase =
     let action = log "raw_coq_query starting now" in
     let display_error s =
-      if not (Glib.Utf8.validate s) then
+      if not (validate s) then
         flash_info "This error is so nasty that I can't even display it."
       else messages#add s;
     in
@@ -368,7 +367,7 @@ object(self)
     let next = function
     | Fail (_, _, err) -> display_error err; Coq.return ()
     | Good msg ->
-      messages#add msg; Coq.return ()
+      messages#add_string msg; Coq.return ()
     in
     Coq.bind (Coq.seq action query) next
 
@@ -461,7 +460,9 @@ object(self)
           log "GlobRef" id;
           self#attach_tooltip sentence loc
             (Printf.sprintf "%s %s %s" filepath ident ty)
-      | ErrorMsg(loc, msg), Some (id,sentence) ->
+      | Message(Error, loc, msg), Some (id,sentence) ->
+          let loc = Option.default Loc.ghost loc in
+          let msg = Richpp.raw_print msg         in
           log "ErrorMsg" id;
           remove_flag sentence `PROCESSING;
           add_flag sentence (`ERROR (loc, msg));
@@ -520,7 +521,7 @@ object(self)
       self#position_error_tag_at_iter start phrase loc;
       buffer#place_cursor ~where:stop;
       messages#clear;
-      messages#push Pp.Error msg;
+      messages#push Feedback.Error msg;
       self#show_goals
     end else
       self#show_goals_aux ~move_insert:true ()
@@ -596,7 +597,8 @@ object(self)
         if Queue.is_empty queue then conclude topstack else
         match Queue.pop queue, topstack with
         | `Skip(start,stop), [] ->
-            logger Pp.Error "You must close the proof with Qed or Admitted";
+
+            logger Feedback.Error (Richpp.richpp_of_string "You must close the proof with Qed or Admitted");
             self#discard_command_queue queue;
             conclude [] 
         | `Skip(start,stop), (_,s) :: topstack ->
@@ -612,7 +614,7 @@ object(self)
             let handle_answer = function
               | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
                   Doc.assign_tip_id document id;
-                  logger Pp.Notice msg;
+                  logger Feedback.Notice (Richpp.richpp_of_string msg);
                   self#commit_queue_transaction sentence;
                   loop id []
               | Good (id, (Util.Inr (* Unfocus *) tip, msg)) ->
@@ -620,7 +622,7 @@ object(self)
                   let topstack, _ = Doc.context document in
                   self#exit_focus;
                   self#cleanup (Doc.cut_at document tip);
-                  logger Pp.Notice msg;
+                  logger Feedback.Notice (Richpp.richpp_of_string msg);
                   self#mark_as_needed sentence;
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
@@ -639,7 +641,7 @@ object(self)
    let next = function
      | Good _ ->
          messages#clear;
-         messages#push Pp.Info "All proof terms checked by the kernel";
+         messages#push Feedback.Info (Richpp.richpp_of_string "All proof terms checked by the kernel");
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
@@ -675,7 +677,7 @@ object(self)
 
   method private process_until_iter iter =
     let until _ start stop =
-      if prefs.Preferences.stop_before then stop#compare iter > 0
+      if Preferences.stop_before#get then stop#compare iter > 0
       else start#compare iter >= 0
     in
     self#process_until until false
@@ -741,8 +743,8 @@ object(self)
           self#cleanup (Doc.cut_at document to_id);
           conclusion ()
       | Fail (safe_id, loc, msg) ->
-          if loc <> None then messages#push Pp.Error "Fixme LOC";
-          messages#push Pp.Error msg;
+(*           if loc <> None then messages#push Feedback.Error (Richpp.richpp_of_string "Fixme LOC"); *)
+          messages#push Feedback.Error msg;
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
           else undo safe_id
                  (Doc.focused document && Doc.is_in_focus document safe_id))
@@ -760,7 +762,7 @@ object(self)
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
     messages#clear;
-    messages#push Pp.Error msg;
+    messages#push Feedback.Error msg;
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
     else
@@ -817,7 +819,7 @@ object(self)
       self#show_goals
     in
     let display_error (loc, s) =
-      if not (Glib.Utf8.validate s) then
+      if not (validate s) then
         flash_info "This error is so nasty that I can't even display it."
       else messages#add s
     in
@@ -827,10 +829,10 @@ object(self)
       let next = function
       | Fail (_, l, str) -> (* FIXME: check *)
         display_error (l, str);
-        messages#add ("Unsuccessfully tried: "^phrase);
+        messages#add (Richpp.richpp_of_string ("Unsuccessfully tried: "^phrase));
         more
       | Good msg ->
-        messages#add msg;
+        messages#add_string msg;
         stop Tags.Script.processed
       in
       Coq.bind (Coq.seq action query) next
@@ -873,7 +875,7 @@ object(self)
     let get_initial_state =
       let next = function
       | Fail (_, _, message) ->
-        let message = "Couldn't initialize coqtop\n\n" ^ message in
+        let message = "Couldn't initialize coqtop\n\n" ^ (Richpp.raw_print message) in
         let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok ~message_type:`ERROR ~message () in
         ignore (popup#run ()); exit 1
       | Good id -> initial_state <- id; Coq.return () in

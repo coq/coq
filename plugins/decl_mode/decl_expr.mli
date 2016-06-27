@@ -99,4 +99,4 @@ type proof_instr =
     (Term.constr statement,
      Term.constr,
      proof_pattern,
-     Tacexpr.glob_tactic_expr) gen_proof_instr
+     Geninterp.Val.t) gen_proof_instr

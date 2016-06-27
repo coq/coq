@@ -19,6 +19,7 @@ open Evd
 open Reduction
 open Reductionops
 open Evarutil
+open Evardefine
 open Evarsolve
 open Pretype_errors
 open Retyping
@@ -27,6 +28,8 @@ open Recordops
 open Locus
 open Locusops
 open Find_subterm
+open Sigma.Notations
+open Context.Named.Declaration
 
 let keyed_unification = ref (false)
 let _ = Goptions.declare_bool_option {
@@ -57,7 +60,7 @@ let occur_meta_or_undefined_evar evd c =
         | Evar_defined c ->
             occrec c; Array.iter occrec args
         | Evar_empty -> raise Occur)
-    | _ -> iter_constr occrec c
+    | _ -> Constr.iter occrec c
   in try occrec c; false with Occur | Not_found -> true
 
 let occur_meta_evd sigma mv c =
@@ -66,7 +69,7 @@ let occur_meta_evd sigma mv c =
     let c = whd_evar sigma (whd_meta sigma c) in
     match kind_of_term c with
     | Meta mv' when Int.equal mv mv' -> raise Occur
-    | _ -> iter_constr occrec c
+    | _ -> Constr.iter occrec c
   in try occrec c; false with Occur -> true
 
 (* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
@@ -74,7 +77,10 @@ let occur_meta_evd sigma mv c =
 
 let abstract_scheme env evd c l lname_typ =
   List.fold_left2
-    (fun (t,evd) (locc,a) (na,_,ta) ->
+    (fun (t,evd) (locc,a) decl ->
+       let open Context.Rel.Declaration in
+       let na = get_name decl in
+       let ta = get_type decl in
        let na = match kind_of_term a with Var id -> Name id | _ -> na in
 (* [occur_meta ta] test removed for support of eelim/ecase but consequences
    are unclear...
@@ -107,7 +113,9 @@ let set_occurrences_of_last_arg args =
   Some AllOccurrences :: List.tl (Array.map_to_list (fun _ -> None) args)
 
 let abstract_list_all_with_dependencies env evd typ c l =
-  let evd,ev = new_evar env evd typ in
+  let evd = Sigma.Unsafe.of_evar_map evd in
+  let Sigma (ev, evd, _) = new_evar env evd typ in
+  let evd = Sigma.to_evar_map evd in
   let evd,ev' = evar_absorb_arguments env evd (destEvar ev) l in
   let n = List.length l in
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
@@ -143,7 +151,7 @@ let rec subst_meta_instances bl c =
     | Meta i ->
       let select (j,_,_) = Int.equal i j in
       (try pi2 (List.find select bl) with Not_found -> c)
-    | _ -> map_constr (subst_meta_instances bl) c
+    | _ -> Constr.map (subst_meta_instances bl) c
 
 (** [env] should be the context in which the metas live *)
 
@@ -161,7 +169,7 @@ let pose_all_metas_as_evars env evd t =
         evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
         ev)
   | _ ->
-      map_constr aux t in
+      Constr.map aux t in
   let c = aux t in
   (* side-effect *)
   (!evdref, c)
@@ -573,6 +581,19 @@ let isAllowedEvar flags c = match kind_of_term c with
   | Evar (evk,_) -> not (Evar.Set.mem evk flags.frozen_evars)
   | _ -> false
 
+
+let subst_defined_metas_evars (bl,el) c =
+  let rec substrec c = match kind_of_term c with
+    | Meta i ->
+      let select (j,_,_) = Int.equal i j in
+      substrec (pi2 (List.find select bl))
+    | Evar (evk,args) ->
+      let select (_,(evk',args'),_) = Evar.equal evk evk' && Array.equal Constr.equal args args' in
+      (try substrec (pi3 (List.find select el))
+       with Not_found -> Constr.map substrec c)
+    | _ -> Constr.map substrec c
+  in try Some (substrec c) with Not_found -> None
+
 let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
   match subst_defined_metas_evars (metasubst,[]) tyM with
   | None -> sigma
@@ -636,7 +657,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     and cN = Evarutil.whd_head_evar sigma curn in
     let () = 
       if !debug_unification then
-	msg_debug (Termops.print_constr_env curenv cM ++ str" ~= " ++ Termops.print_constr_env curenv cN)
+	Feedback.msg_debug (Termops.print_constr_env curenv cM ++ str" ~= " ++ Termops.print_constr_env curenv cN)
     in 
       match (kind_of_term cM,kind_of_term cN) with
 	| Meta k1, Meta k2 ->
@@ -1033,12 +1054,14 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
   in
     
-  if !debug_unification then msg_debug (str "Starting unification");
+  if !debug_unification then Feedback.msg_debug (str "Starting unification");
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
   try
   let res = 
-    if occur_meta_or_undefined_evar sigma m || occur_meta_or_undefined_evar sigma n
-      || subterm_restriction opt flags then None
+    if subterm_restriction opt flags ||
+      occur_meta_or_undefined_evar sigma m || occur_meta_or_undefined_evar sigma n
+    then
+      None
     else 
       let sigma, b = match flags.modulo_conv_on_closed_terms with
 	| Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
@@ -1054,10 +1077,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     let a = match res with 
     | Some sigma -> sigma, ms, es
     | None -> unirec_rec (env,0) cv_pb opt subst m n in
-    if !debug_unification then msg_debug (str "Leaving unification with success");
+    if !debug_unification then Feedback.msg_debug (str "Leaving unification with success");
     a
   with e ->
-    if !debug_unification then msg_debug (str "Leaving unification with failure");
+    if !debug_unification then Feedback.msg_debug (str "Leaving unification with failure");
     raise e
 
 
@@ -1171,20 +1194,20 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
  * close it off.  But this might not always work,
  * since other metavars might also need to be resolved. *)
 
-let applyHead env evd n c  =
-  let rec apprec n c cty evd =
+let applyHead env (type r) (evd : r Sigma.t) n c =
+  let rec apprec : type s. _ -> _ -> _ -> (r, s) Sigma.le -> s Sigma.t -> (constr, r) Sigma.sigma =
+    fun n c cty p evd ->
     if Int.equal n 0 then
-      (evd, c)
+      Sigma (c, evd, p)
     else
-      match kind_of_term (whd_betadeltaiota env evd cty) with
+      match kind_of_term (whd_betadeltaiota env (Sigma.to_evar_map evd) cty) with
       | Prod (_,c1,c2) ->
-        let (evd',evar) =
-	  Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
-	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
+        let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
+	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
       | _ -> error "Apply_Head_Then"
   in
-    apprec n c (Typing.unsafe_type_of env evd c) evd
-    
+    apprec n c (Typing.unsafe_type_of env (Sigma.to_evar_map evd) c) Sigma.refl evd
+
 let is_mimick_head ts f =
   match kind_of_term f with
   | Const (c,u) -> not (Closure.is_transparent_constant ts c)
@@ -1344,7 +1367,9 @@ let w_merge env with_types flags (evd,metas,evars) =
   and mimick_undefined_evar evd flags hdc nargs sp =
     let ev = Evd.find_undefined evd sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
-    let (evd', c) = applyHead sp_env evd nargs hdc in
+    let evd = Sigma.Unsafe.of_evar_map evd in
+    let Sigma (c, evd', _) = applyHead sp_env evd nargs hdc in
+    let evd' = Sigma.to_evar_map evd' in
     let (evd'',mc,ec) =
       unify_0 sp_env evd' CUMUL flags
         (get_type_of sp_env evd' c) ev.evar_concl in
@@ -1447,15 +1472,16 @@ let indirectly_dependent c d decls =
        it is needed otherwise, as e.g. when abstracting over "2" in
        "forall H:0=2, H=H:>(0=1+1) -> 0=2." where there is now obvious
        way to see that the second hypothesis depends indirectly over 2 *)
-    List.exists (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls
+    List.exists (fun d' -> dependent_in_decl (mkVar (get_id d')) d) decls
 
 let indirect_dependency d decls =
-  pi1 (List.hd (List.filter (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls))
+  decls  |>  List.filter (fun d' -> dependent_in_decl (mkVar (get_id d')) d)  |>  List.hd  |>  get_id
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
+  let current_sigma = Sigma.to_evar_map current_sigma in
   let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in
   let sigma, subst = nf_univ_variables sigma in
-  sigma, subst_univs_constr subst (nf_evar sigma c)
+  Sigma.Unsafe.of_pair (subst_univs_constr subst (nf_evar sigma c), sigma)
 
 let default_matching_core_flags sigma =
   let ts = Names.full_transparent_state in {
@@ -1567,7 +1593,8 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   in
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = mkVar id in
-  let compute_dependency _ (hyp,_,_ as d) (sign,depdecls) =
+  let compute_dependency _ d (sign,depdecls) =
+    let hyp = get_id d in
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
         if indirectly_dependent c d depdecls then
@@ -1581,7 +1608,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     | AllOccurrences, InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
-        if Context.eq_named_declaration d newdecl
+        if Context.Named.Declaration.equal d newdecl
            && not (indirectly_dependent c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)
@@ -1604,8 +1631,12 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
           replace_term_occ_modulo occ test mkvarid concl
     in
     let lastlhyp =
-      if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in
-    (id,sign,depdecls,lastlhyp,ccl,out test)
+      if List.is_empty depdecls then None else Some (get_id (List.last depdecls)) in
+    let res = match out test with
+    | None -> None
+    | Some (sigma, c) -> Some (Sigma.Unsafe.of_pair (c, sigma))
+    in
+    (id,sign,depdecls,lastlhyp,ccl,res)
   with
     SubtermUnificationError e ->
       raise (PretypeError (env,sigma,CannotUnifyOccurrences e))
@@ -1627,12 +1658,13 @@ type abstraction_request =
 | AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * pending_constr * clause * bool
 | AbstractExact of Name.t * constr * types option * clause * bool
 
-type abstraction_result =
+type 'r abstraction_result =
   Names.Id.t * named_context_val *
-    Context.named_declaration list * Names.Id.t option *
-    types * (Evd.evar_map * constr) option
+    Context.Named.Declaration.t list * Names.Id.t option *
+    types * (constr, 'r) Sigma.sigma option
 
 let make_abstraction env evd ccl abs =
+  let evd = Sigma.to_evar_map evd in
   match abs with
   | AbstractPattern (from_prefix,check,name,c,occs,check_occs) ->
       make_abstraction_core name

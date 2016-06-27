@@ -273,6 +273,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 {\binder} & ::= &   {\name} & (\ref{Binders}) \\
  & $|$ & {\tt (} \nelist{\name}{} {\tt :} {\term} {\tt )} &\\  
  & $|$ & {\tt (} {\name} {\typecstr} {\tt :=} {\term} {\tt )} &\\
+ & $|$ & {\tt '} {\pattern} &\\
 & & &\\
 {\name} & ::= & {\ident} &\\
  & $|$ & {\tt \_} &\\
@@ -410,7 +411,8 @@ bound variable cannot be synthesized by the system, it can be
 specified with the notation {\tt (}\,{\ident}\,{\tt :}\,{\type}\,{\tt
 )}. There is also a notation for a sequence of binding variables
 sharing the same type: {\tt (}\,{\ident$_1$}\ldots{\ident$_n$}\,{\tt
-:}\,{\type}\,{\tt )}.
+:}\,{\type}\,{\tt )}. A binder can also be any pattern prefixed by a quote,
+e.g. {\tt '(x,y)}.
 
 Some constructions allow the binding of a variable to value. This is
 called a ``let-binder''. The entry {\binder} of the grammar accepts

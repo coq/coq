@@ -8,7 +8,6 @@
 
 open Term
 open Environ
-open Evd
 
 (** {6 Reduction functions } *)
 val cbv_vm : env -> constr -> types -> constr

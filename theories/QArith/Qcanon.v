@@ -21,37 +21,30 @@ Bind Scope Qc_scope with Qc.
 Arguments Qcmake this%Q _.
 Open Scope Qc_scope.
 
+(** An alternative statement of [Qred q = q] via [Z.gcd] *)
+
 Lemma Qred_identity :
   forall q:Q, Z.gcd (Qnum q) (QDen q) = 1%Z -> Qred q = q.
 Proof.
-  unfold Qred; intros (a,b); simpl.
-  generalize (Z.ggcd_gcd a ('b)) (Z.ggcd_correct_divisors a ('b)).
-  intros.
-  rewrite H1 in H; clear H1.
-  destruct (Z.ggcd a ('b)) as (g,(aa,bb)); simpl in *; subst.
-  destruct H0.
-  rewrite Z.mul_1_l in H, H0.
-  subst; simpl; auto.
+  intros (a,b) H; simpl in *.
+  rewrite <- Z.ggcd_gcd in H.
+  generalize (Z.ggcd_correct_divisors a ('b)).
+  destruct Z.ggcd as (g,(aa,bb)); simpl in *; subst.
+  rewrite !Z.mul_1_l. now intros (<-,<-).
 Qed.
 
 Lemma Qred_identity2 :
   forall q:Q, Qred q = q -> Z.gcd (Qnum q) (QDen q) = 1%Z.
 Proof.
-  unfold Qred; intros (a,b); simpl.
-  generalize (Z.ggcd_gcd a ('b)) (Z.ggcd_correct_divisors a ('b)) (Z.gcd_nonneg a ('b)).
-  intros.
-  rewrite <- H; rewrite <- H in H1; clear H.
-  destruct (Z.ggcd a ('b)) as (g,(aa,bb)); simpl in *; subst.
-  injection H2; intros; clear H2.
-  destruct H0.
-  clear H0 H3.
-  destruct g as [|g|g]; destruct bb as [|bb|bb]; simpl in *; try discriminate.
-  f_equal.
-  apply Pos.mul_reg_r with bb.
-  injection H2; intros.
-  rewrite <- H0.
-  rewrite H; simpl; auto.
-  elim H1; auto.
+  intros (a,b) H; simpl in *.
+  generalize (Z.gcd_nonneg a ('b)) (Z.ggcd_correct_divisors a ('b)).
+  rewrite <- Z.ggcd_gcd.
+  destruct Z.ggcd as (g,(aa,bb)); simpl in *.
+  injection H as <- <-. intros H (_,H').
+  destruct g as [|g|g]; [ discriminate | | now elim H ].
+  destruct bb as [|b|b]; simpl in *; try discriminate.
+  injection H' as H'. f_equal.
+  apply Pos.mul_reg_r with b. now rewrite Pos.mul_1_l.
 Qed.
 
 Lemma Qred_iff : forall q:Q, Qred q = q <-> Z.gcd (Qnum q) (QDen q) = 1%Z.
@@ -61,6 +54,23 @@ Proof.
   apply Qred_identity; auto.
 Qed.
 
+(** Coercion from [Qc] to [Q] and equality *)
+
+Lemma Qc_is_canon : forall q q' : Qc, q == q' -> q = q'.
+Proof.
+  intros (q,hq) (q',hq') H. simpl in *.
+  assert (H' := Qred_complete _ _ H).
+  rewrite hq, hq' in H'. subst q'. f_equal.
+  apply eq_proofs_unicity. intros.  repeat decide equality.
+Qed.
+Hint Resolve Qc_is_canon.
+
+Theorem Qc_decomp: forall q q': Qc, (q:Q) = q' -> q = q'.
+Proof.
+  intros. apply Qc_is_canon. now rewrite H.
+Qed.
+
+(** [Q2Qc] : a conversion from [Q] to [Qc]. *)
 
 Lemma Qred_involutive : forall q:Q, Qred (Qred q) = Qred q.
 Proof.
@@ -71,20 +81,12 @@ Qed.
 Definition Q2Qc (q:Q) : Qc := Qcmake (Qred q) (Qred_involutive q).
 Arguments Q2Qc q%Q.
 
-Lemma Qc_is_canon : forall q q' : Qc, q == q' -> q = q'.
+Lemma Q2Qc_eq_iff (q q' : Q) : Q2Qc q = Q2Qc q' <-> q == q'.
 Proof.
-  intros (q,proof_q) (q',proof_q').
-  simpl.
-  intros H.
-  assert (H0:=Qred_complete _ _ H).
-  assert (q = q') by congruence.
-  subst q'.
-  assert (proof_q = proof_q').
-  apply eq_proofs_unicity; auto; intros.
-  repeat decide equality.
-  congruence.
+ split; intro H.
+ - now injection H as H%Qred_eq_iff.
+ - apply Qc_is_canon. simpl. now rewrite H.
 Qed.
-Hint Resolve Qc_is_canon.
 
 Notation " 0 " := (Q2Qc 0) : Qc_scope.
 Notation " 1 " := (Q2Qc 1) : Qc_scope.
@@ -107,8 +109,7 @@ Lemma Qceq_alt : forall p q, (p = q) <-> (p ?= q) = Eq.
 Proof.
   unfold Qccompare.
   intros; rewrite <- Qeq_alt.
-  split; auto.
-  intro H; rewrite H; auto with qarith.
+  split; auto. now intros <-.
 Qed.
 
 Lemma Qclt_alt : forall p q, (p<q) <-> (p?=q = Lt).
@@ -121,12 +122,12 @@ Proof.
   intros; exact (Qgt_alt p q).
 Qed.
 
-Lemma Qle_alt : forall p q, (p<=q) <-> (p?=q <> Gt).
+Lemma Qcle_alt : forall p q, (p<=q) <-> (p?=q <> Gt).
 Proof.
   intros; exact (Qle_alt p q).
 Qed.
 
-Lemma Qge_alt : forall p q, (p>=q) <-> (p?=q <> Lt).
+Lemma Qcge_alt : forall p q, (p>=q) <-> (p?=q <> Lt).
 Proof.
   intros; exact (Qge_alt p q).
 Qed.
@@ -166,7 +167,7 @@ Qed.
 
 Ltac qc := match goal with
  | q:Qc |- _ => destruct q; qc
- | _ => apply Qc_is_canon; simpl; repeat rewrite Qred_correct
+ | _ => apply Qc_is_canon; simpl; rewrite !Qred_correct
 end.
 
 Opaque Qred.
@@ -216,6 +217,18 @@ Proof.
   intros; qc; apply Qmult_assoc.
 Qed.
 
+(** [0] is absorbing for multiplication: *)
+
+Lemma Qcmult_0_l : forall n, 0*n = 0.
+Proof.
+  intros; qc; split.
+Qed.
+
+Theorem Qcmult_0_r : forall n, n*0=0.
+Proof.
+  intros; qc; rewrite Qmult_comm; split.
+Qed.
+
 (** [1] is a neutral element for multiplication: *)
 
 Lemma Qcmult_1_l : forall n, 1*n = n.
@@ -253,7 +266,7 @@ Theorem Qcmult_integral : forall x y, x*y=0 -> x=0 \/ y=0.
 Proof.
   intros.
   destruct (Qmult_integral x y); try qc; auto.
-  injection H; clear H; intros.
+  injection H as H.
   rewrite <- (Qred_correct (x*y)).
   rewrite <- (Qred_correct 0).
   rewrite H; auto with qarith.
@@ -303,7 +316,7 @@ Proof.
   apply Qcmult_1_l.
 Qed.
 
-(** Properties of order upon Q. *)
+(** Properties of order upon Qc. *)
 
 Lemma Qcle_refl : forall x, x<=x.
 Proof.
@@ -372,9 +385,11 @@ Proof.
   unfold Qcle, Qclt; intros; apply Qle_not_lt; auto.
 Qed.
 
-Lemma Qcle_lt_or_eq : forall x y, x<=y -> x<y \/ x==y.
+Lemma Qcle_lt_or_eq : forall x y, x<=y -> x<y \/ x=y.
 Proof.
-  unfold Qcle, Qclt; intros; apply Qle_lt_or_eq; auto.
+  unfold Qcle, Qclt; intros x y H.
+  destruct (Qle_lt_or_eq _ _ H); [left|right]; trivial.
+  now apply Qc_is_canon.
 Qed.
 
 (** Some decidability results about orders. *)
@@ -459,13 +474,13 @@ Proof.
   induction n; simpl; auto with qarith.
   rewrite IHn; auto with qarith.
 Qed.
-Transparent Qred.
+
 Lemma Qcpower_0 : forall n, n<>O -> 0^n = 0.
 Proof.
   destruct n; simpl.
   destruct 1; auto.
   intros.
-  now apply Qc_is_canon. 
+  now apply Qc_is_canon.
 Qed.
 
 Lemma Qcpower_pos : forall p n, 0 <= p -> 0 <= p^n.
@@ -524,17 +539,4 @@ Proof.
 intros.
 field.
 auto.
-Qed.
-
-
-Theorem Qc_decomp: forall x y: Qc,
-  (Qred x = x -> Qred y = y -> (x:Q) = y)-> x = y.
-Proof.
-  intros (q, Hq) (q', Hq'); simpl; intros H.
-  assert (H1 := H Hq Hq').
-  subst q'.
-  assert (Hq = Hq').
-  apply Eqdep_dec.eq_proofs_unicity; auto; intros.
-  repeat decide equality.
-  congruence.
 Qed.

@@ -14,11 +14,11 @@ type 'a node = ('a,'a t) u
 
 and 'a t = 'a node Lazy.t
 
-let empty = Lazy.lazy_from_val Nil
+let empty = Lazy.from_val Nil
 
-let cons x s = Lazy.lazy_from_val (Cons (x, s))
+let cons x s = Lazy.from_val (Cons (x, s))
 
-let thunk = Lazy.lazy_from_fun
+let thunk = Lazy.from_fun
 
 let rec make_node f s = match f s with
 | Nil -> Nil

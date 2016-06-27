@@ -131,12 +131,6 @@ let context d =
   let pair _ x y = try Option.get x, y with Option.IsNone -> assert false in
   List.map (flat pair true) top, List.map (flat pair true) bot
 
-let iter d f =
-  let a, s, b = to_lists d in
-  List.iter (flat f false) a;
-  List.iter (flat f true)  s;
-  List.iter (flat f false) b
-  
 let stateid_opt_equal = Option.equal Stateid.equal
 
 let is_in_focus d id =
@@ -161,7 +155,7 @@ let cut_at d id =
     if stateid_opt_equal state_id (Some id) then CSig.Stop (n, zone)
     else CSig.Cont (n + 1, data :: zone) in
   let n, zone = CList.fold_left_until aux (0, []) d.stack in
-  for i = 1 to n do ignore(pop d) done;
+  for _i = 1 to n do ignore(pop d) done;
   List.rev zone
 
 let find_id d f =

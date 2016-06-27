@@ -1,0 +1,44 @@
+When you start byte-compiled Coq toplevel:
+
+  rlwrap bin/coqtop.byte
+
+then if you type:
+
+  Drop.
+
+you will decend from Coq toplevel down to Ocaml toplevel.
+So if you want to learn:
+- the current values of some global variables you are interested in
+- or see what happens when you invoke certain functions
+this is the place where you can do that.
+
+When you try to print values belonging to abstract data types:
+
+  # let sigma, env = Lemmas.get_current_context ();;
+  
+  val sigma : Evd.evar_map = <abstr>
+  val env : Environ.env = <abstr>
+
+  # Typeops.infer env (snd (Pretyping.understand_tcc env sigma (Constrintern.intern_constr env (Pcoq.parse_string Pcoq.Constr.lconstr "plus"))));;
+
+  - : Environ.unsafe_judgment = {Environ.uj_val = <abstr>; uj_type = <abstr>}
+
+the printed values are not very helpful.
+
+One way how to deal with that is to load the corresponding printers:
+
+  # #use "dev/include";;
+
+Consequently, the result of:
+
+  # Typeops.infer env (snd (Pretyping.understand_tcc env sigma (Constrintern.intern_constr env (Pcoq.parse_string Pcoq.Constr.lconstr "plus"))));;
+
+will be printed as:
+
+  - : Environ.unsafe_judgment = Nat.add : nat -> nat -> nat
+
+which makes more sense.
+
+To be able to understand the meaning of the data types,
+sometimes the best option is to turn those data types from abstract to concrete
+and look at them without any kind of pretty printing.

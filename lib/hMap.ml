@@ -286,6 +286,8 @@ struct
     let m = Int.Map.find h s in
     Map.find k m
 
+  let get k s = try find k s with Not_found -> assert false
+
   let split k s = assert false (** Cannot be implemented efficiently *)
 
   let map f s =
@@ -327,6 +329,19 @@ struct
     let map f s =
       let fs m = Map.Unsafe.map f m in
       Int.Map.map fs s
+  end
+
+  module Monad(M : CMap.MonadS) =
+  struct
+    module IntM = Int.Map.Monad(M)
+    module ExtM = Map.Monad(M)
+
+    let fold f s accu =
+      let ff _ m accu = ExtM.fold f m accu in
+      IntM.fold ff s accu
+
+    let fold_left _ _ _ = assert false
+    let fold_right _ _ _ = assert false
   end
 
 end

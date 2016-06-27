@@ -33,24 +33,19 @@ let empty_env = {
   env_rel_context = [];
   env_stratification =
   { env_universes = Univ.initial_universes;
-    env_engagement = (PredicativeSet,StratifiedType)};
+    env_engagement = PredicativeSet };
   env_imports = MPmap.empty }
 
 let engagement env = env.env_stratification.env_engagement
 let universes env = env.env_stratification.env_universes
 let rel_context env = env.env_rel_context
 
-let set_engagement (impr_set,type_in_type as c) env =
-  let expected_impr_set,expected_type_in_type =
+let set_engagement (impr_set as c) env =
+  let expected_impr_set =
     env.env_stratification.env_engagement in
   begin
     match impr_set,expected_impr_set with
     | PredicativeSet, ImpredicativeSet -> error "Incompatible engagement"
-    | _ -> ()
-  end;
-  begin
-    match type_in_type,expected_type_in_type with
-    | StratifiedType, TypeInType -> error "Incompatible engagement"
     | _ -> ()
   end;
   { env with env_stratification =
@@ -80,7 +75,7 @@ let push_rel d env =
 let push_rel_context ctxt x = fold_rel_context push_rel ctxt ~init:x
 
 let push_rec_types (lna,typarray,_) env =
-  let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
+  let ctxt = Array.map2_i (fun i na t -> LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
 (* Universe constraints *)
@@ -112,7 +107,7 @@ let anomaly s = anomaly (Pp.str s)
 let add_constant kn cs env =
   if Cmap_env.mem kn env.env_globals.env_constants then
     Printf.ksprintf anomaly ("Constant %s is already defined")
-      (string_of_con kn);
+      (Constant.to_string kn);
   let new_constants =
     Cmap_env.add kn cs env.env_globals.env_constants in
   let new_globals =
@@ -172,12 +167,14 @@ let lookup_projection p env =
 let scrape_mind env kn=
   try
     KNmap.find kn env.env_globals.env_inductives_eq
-  with 
-      Not_found -> kn
+  with
+    Not_found -> kn
 
 let mind_equiv env (kn1,i1) (kn2,i2) =
   Int.equal i1 i2 &&
-  KerName.equal (scrape_mind env (user_mind kn1)) (scrape_mind env (user_mind kn2))
+  KerName.equal
+    (scrape_mind env (MutInd.user kn1))
+    (scrape_mind env (MutInd.user kn2))
 
 
 let lookup_mind kn env =
@@ -186,9 +183,9 @@ let lookup_mind kn env =
 let add_mind kn mib env =
   if Mindmap_env.mem kn env.env_globals.env_inductives then
     Printf.ksprintf anomaly ("Inductive %s is already defined")
-      (string_of_mind kn);
+      (MutInd.to_string kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
-  let kn1,kn2 =  user_mind kn,canonical_mind kn in
+  let kn1,kn2 =  MutInd.user kn, MutInd.canonical kn in
   let new_inds_eq = if KerName.equal kn1 kn2 then
     env.env_globals.env_inductives_eq
   else
@@ -205,7 +202,7 @@ let add_mind kn mib env =
 let add_modtype ln mtb env =
   if MPmap.mem ln env.env_globals.env_modtypes then
     Printf.ksprintf anomaly ("Module type %s is already defined")
-      (string_of_mp ln);
+      (ModPath.to_string ln);
   let new_modtypes = MPmap.add ln mtb env.env_globals.env_modtypes in
   let new_globals =
     { env.env_globals with
@@ -215,7 +212,7 @@ let add_modtype ln mtb env =
 let shallow_add_module mp mb env =
   if MPmap.mem mp env.env_globals.env_modules then
     Printf.ksprintf anomaly ("Module %s is already defined")
-      (string_of_mp mp);
+      (ModPath.to_string mp);
   let new_mods = MPmap.add mp mb env.env_globals.env_modules in
   let new_globals =
     { env.env_globals with
@@ -225,7 +222,7 @@ let shallow_add_module mp mb env =
 let shallow_remove_module mp env =
   if not (MPmap.mem mp env.env_globals.env_modules) then
     Printf.ksprintf anomaly ("Module %s is unknown")
-      (string_of_mp mp);
+      (ModPath.to_string mp);
   let new_mods = MPmap.remove mp env.env_globals.env_modules in
   let new_globals =
     { env.env_globals with

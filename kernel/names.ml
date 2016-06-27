@@ -23,6 +23,7 @@ open Util
 
 (** {6 Identifiers } *)
 
+(** Representation and operations on identifiers. *)
 module Id =
 struct
   type t = string
@@ -35,7 +36,7 @@ struct
 
   let check_soft ?(warn = true) x =
     let iter (fatal, x) =
-      if fatal then Errors.error x else if warn then Pp.msg_warning (str x)
+      if fatal then Errors.error x else if warn then Feedback.msg_warning (str x)
     in
     Option.iter iter (Unicode.ident_refutation x)
 
@@ -74,10 +75,18 @@ struct
 
 end
 
-
+(** Representation and operations on identifiers that are allowed to be anonymous
+    (i.e. "_" in concrete syntax). *)
 module Name =
 struct
-  type t = Name of Id.t | Anonymous
+  type t = Anonymous     (** anonymous identifier *)
+	 | Name of Id.t  (** non-anonymous identifier *)
+
+  let is_anonymous = function
+    | Anonymous -> true
+    | Name _ -> false
+
+  let is_name = not % is_anonymous
 
   let compare n1 n2 = match n1, n2 with
     | Anonymous, Anonymous -> 0
@@ -117,8 +126,8 @@ struct
 
 end
 
-type name = Name.t = Name of Id.t | Anonymous
 (** Alias, to import constructors. *)
+type name = Name.t = Anonymous | Name of Id.t
 
 (** {6 Various types based on identifiers } *)
 
@@ -204,7 +213,7 @@ struct
     DirPath.to_string p ^ "." ^ s
 
   let debug_to_string (i, s, p) =
-    "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
+    "<"^DirPath.to_string p ^"#" ^ s ^"#"^ string_of_int i^">"
 
   let compare (x : t) (y : t) =
     if x == y then 0
@@ -282,6 +291,11 @@ module ModPath = struct
     | MPbound uid -> MBId.to_string uid
     | MPdot (mp,l) -> to_string mp ^ "." ^ Label.to_string l
 
+  let rec debug_to_string = function
+    | MPfile sl -> DirPath.to_string sl
+    | MPbound uid -> MBId.debug_to_string uid
+    | MPdot (mp,l) -> debug_to_string mp ^ "." ^ Label.to_string l
+
   (** we compare labels first if both are MPdots *)
   let rec compare mp1 mp2 =
     if mp1 == mp2 then 0
@@ -327,7 +341,7 @@ module ModPath = struct
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
       | MPdot (md,l) -> MPdot (hashcons hfuns md, hstr l)
-    let rec eq d1 d2 =
+    let eq d1 d2 =
       d1 == d2 ||
       match d1,d2 with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
@@ -375,12 +389,16 @@ module KerName = struct
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
 
-  let to_string kn =
+  let to_string_gen mp_to_string kn =
     let dp =
       if DirPath.is_empty kn.dirpath then "."
       else "#" ^ DirPath.to_string kn.dirpath ^ "#"
     in
-    ModPath.to_string kn.modpath ^ dp ^ Label.to_string kn.knlabel
+    mp_to_string kn.modpath ^ dp ^ Label.to_string kn.knlabel
+
+  let to_string kn = to_string_gen ModPath.to_string kn
+
+  let debug_to_string kn = to_string_gen ModPath.debug_to_string kn
 
   let print kn = str (to_string kn)
 
@@ -500,9 +518,9 @@ module KerPair = struct
   let print kp = str (to_string kp)
 
   let debug_to_string = function
-    | Same kn -> "(" ^ KerName.to_string kn ^ ")"
+    | Same kn -> "(" ^ KerName.debug_to_string kn ^ ")"
     | Dual (knu,knc) ->
-      "(" ^ KerName.to_string knu ^ "," ^ KerName.to_string knc ^ ")"
+      "(" ^ KerName.debug_to_string knu ^ "," ^ KerName.debug_to_string knc ^ ")"
 
   let debug_print kp = str (debug_to_string kp)
 
@@ -590,11 +608,16 @@ module Mindmap = HMap.Make(MutInd.CanOrd)
 module Mindset = Mindmap.Set
 module Mindmap_env = HMap.Make(MutInd.UserOrd)
 
-(** Beware: first inductive has index 0 *)
-(** Beware: first constructor has index 1 *)
+(** Designation of a (particular) inductive type. *)
+type inductive = MutInd.t      (* the name of the inductive type *)
+               * int           (* the position of this inductive type
+                                  within the block of mutually-recursive inductive types.
+                                  BEWARE: indexing starts from 0. *)
 
-type inductive = MutInd.t * int
-type constructor = inductive * int
+(** Designation of a (particular) constructor of a (particular) inductive type. *)
+type constructor = inductive   (* designates the inductive type *)
+                 * int         (* the index of the constructor
+                                  BEWARE: indexing starts from 1. *)
 
 let ind_modpath (mind,_) = MutInd.modpath mind
 let constr_modpath (ind,_) = ind_modpath ind

@@ -8,15 +8,6 @@
 
 module type S = sig
 
-  module Cluster :
-  sig
-    type 'd t
-    val equal : 'd t -> 'd t -> bool
-    val compare : 'd t -> 'd t -> int
-    val to_string : 'd t -> string
-    val data : 'd t -> 'd
-  end
-
   type node
   module NodeSet : Set.S with type elt = node
 
@@ -31,45 +22,57 @@ module type S = sig
   val del_nodes : ('e,'i,'d) t -> NodeSet.t  -> ('e,'i,'d) t
   val all_nodes : ('e,'i,'d) t -> NodeSet.t
 
-  val iter : ('e,'i,'d) t ->
-    (node -> 'd Cluster.t option -> 'i option ->
-      (node * 'e) list -> unit) -> unit
-
-  val create_cluster : ('e,'i,'d) t -> node list -> 'd -> ('e,'i,'d) t
-  val cluster_of : ('e,'i,'d) t -> node -> 'd Cluster.t option
-  val del_cluster : ('e,'i,'d) t -> 'd Cluster.t -> ('e,'i,'d) t
-
   val get_info : ('e,'i,'d) t -> node -> 'i option
   val set_info : ('e,'i,'d) t -> node -> 'i -> ('e,'i,'d) t
   val clear_info : ('e,'i,'d) t -> node -> ('e,'i,'d) t
+
+  module Property :
+  sig
+    type 'd t
+    val equal : 'd t -> 'd t -> bool
+    val compare : 'd t -> 'd t -> int
+    val to_string : 'd t -> string
+    val data : 'd t -> 'd
+    val having_it : 'd t -> NodeSet.t
+  end
+
+  val create_property : ('e,'i,'d) t -> node list -> 'd -> ('e,'i,'d) t
+  val property_of : ('e,'i,'d) t -> node -> 'd Property.t list
+  val del_property : ('e,'i,'d) t -> 'd Property.t -> ('e,'i,'d) t
+
+  val iter : ('e,'i,'d) t ->
+    (node -> 'd Property.t list -> 'i option ->
+      (node * 'e) list -> unit) -> unit
 
 end
 
 module Make(OT : Map.OrderedType) = struct
 
-module Cluster =
+module NodeSet = Set.Make(OT)
+
+module Property =
 struct
-  type 'd t = 'd * int
-  let equal (_,i1) (_,i2) = Int.equal i1 i2
-  let compare (_,i1) (_,i2) = Int.compare i1 i2
-  let to_string (_,i) = string_of_int i
-  let data (d,_) = d
+  type 'd t = { data : 'd; uid : int; having_it : NodeSet.t }
+  let equal { uid = i1 } { uid = i2 } = Int.equal i1 i2
+  let compare { uid = i1 } { uid = i2 } = Int.compare i1 i2
+  let to_string { uid = i } = string_of_int i
+  let data { data = d } = d
+  let having_it { having_it } = having_it
 end
 
 type node = OT.t
 
 module NodeMap = CMap.Make(OT)
-module NodeSet = Set.Make(OT)
 
 type ('edge,'info,'data) t = {
   graph : (node * 'edge) list NodeMap.t;
-  clusters : 'data Cluster.t NodeMap.t;
+  properties : 'data Property.t list NodeMap.t;
   infos : 'info NodeMap.t;
 }
 
 let empty = {
   graph = NodeMap.empty;
-  clusters = NodeMap.empty;
+  properties = NodeMap.empty;
   infos = NodeMap.empty;
 }
 
@@ -94,7 +97,7 @@ let del_edge dag id tgt = { dag with
 
 let del_nodes dag s = {
   infos = NodeMap.filter (fun n _ -> not(NodeSet.mem n s)) dag.infos;
-  clusters = NodeMap.filter (fun n _ -> not(NodeSet.mem n s)) dag.clusters;
+  properties = NodeMap.filter (fun n _ -> not(NodeSet.mem n s)) dag.properties;
   graph = NodeMap.filter (fun n l ->
       let drop = NodeSet.mem n s in
       if not drop then
@@ -102,20 +105,31 @@ let del_nodes dag s = {
       not drop)
     dag.graph }
 
+let map_add_list k v m =
+  try
+    let l = NodeMap.find k m in
+    NodeMap.add k (v::l) m
+  with Not_found -> NodeMap.add k [v] m
+
 let clid = ref 1
-let create_cluster dag l data =
+let create_property dag l data =
   incr clid;
-  { dag with clusters =
-     List.fold_right (fun x clusters ->
-       NodeMap.add x (data, !clid) clusters) l dag.clusters }
+  let having_it = List.fold_right NodeSet.add l NodeSet.empty in
+  let property = { Property.data; uid = !clid; having_it } in
+  { dag with properties =
+     List.fold_right (fun x ps -> map_add_list x property ps) l dag.properties }
 
-let cluster_of dag id =
-  try Some (NodeMap.find id dag.clusters)
-  with Not_found -> None
+let property_of dag id =
+  try NodeMap.find id dag.properties
+  with Not_found -> []
 
-let del_cluster dag c =
-  { dag with clusters =
-     NodeMap.filter (fun _ c' -> not (Cluster.equal c' c)) dag.clusters }
+let del_property dag c =
+  { dag with properties =
+     NodeMap.filter (fun _ cl -> cl <> [])
+       (NodeMap.map (fun cl ->
+          List.filter (fun c' ->
+            not (Property.equal c' c)) cl)
+          dag.properties) }
 
 let get_info dag id =
   try Some (NodeMap.find id dag.infos)
@@ -126,7 +140,7 @@ let set_info dag id info = { dag with infos = NodeMap.add id info dag.infos }
 let clear_info dag id = { dag with infos = NodeMap.remove id dag.infos }
 
 let iter dag f =
-  NodeMap.iter (fun k v -> f k (cluster_of dag k) (get_info dag k) v) dag.graph
+  NodeMap.iter (fun k v -> f k (property_of dag k) (get_info dag k) v) dag.graph
 
 let all_nodes dag = NodeMap.domain dag.graph
 

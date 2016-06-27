@@ -18,7 +18,7 @@ open Inductive
 open Util
 open Nativecode
 open Nativevalues
-open Nativelambda
+open Context.Rel.Declaration
 
 (** This module implements normalization by evaluation to OCaml code *)
 
@@ -121,9 +121,8 @@ let build_case_type dep p realargs c =
   else mkApp(p, realargs)
 
 (* TODO move this function *)
-let type_of_rel env n = 
-  let (_,_,ty) = lookup_rel n env in
-  lift n ty
+let type_of_rel env n =
+  lookup_rel n env |> get_type |> lift n
 
 let type_of_prop = mkSort type1_sort
 
@@ -132,8 +131,9 @@ let type_of_sort s =
   | Prop _ -> type_of_prop
   | Type u -> mkType (Univ.super u)
 
-let type_of_var env id = 
-  try let (_,_,ty) = lookup_named id env in ty
+let type_of_var env id =
+  let open Context.Named.Declaration in
+  try lookup_named id env |> get_type
   with Not_found ->
     anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound")
 
@@ -181,7 +181,7 @@ let rec nf_val env v typ =
           Errors.anomaly
             (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
-      let env = push_rel (name,None,dom) env in
+      let env = push_rel (LocalAssum (name,dom)) env in
       let body = nf_val env (f (mk_rel_accu lvl)) codom in
       mkLambda(name,dom,body)
   | Vconst n -> construct_of_constr_const env n typ
@@ -257,7 +257,7 @@ and nf_atom env atom =
   | Aprod(n,dom,codom) ->
       let dom = nf_type env dom in
       let vn = mk_rel_accu (nb_rel env) in
-      let env = push_rel (n,None,dom) env in
+      let env = push_rel (LocalAssum (n,dom)) env in
       let codom = nf_type env (codom vn) in
       mkProd(n,dom,codom)
   | Ameta (mv,_) -> mkMeta mv
@@ -328,7 +328,7 @@ and nf_atom_type env atom =
   | Aprod(n,dom,codom) ->
       let dom,s1 = nf_type_sort env dom in
       let vn = mk_rel_accu (nb_rel env) in
-      let env = push_rel (n,None,dom) env in
+      let env = push_rel (LocalAssum (n,dom)) env in
       let codom,s2 = nf_type_sort env (codom vn) in
       mkProd(n,dom,codom), mkSort (sort_of_product env s1 s2)
   | Aevar(ev,ty) ->
@@ -356,7 +356,7 @@ and  nf_predicate env ind mip params v pT =
 	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let dep,body = 
-	nf_predicate (push_rel (name,None,dom) env) ind mip params vb codom in
+	nf_predicate (push_rel (LocalAssum (name,dom)) env) ind mip params vb codom in
       dep, mkLambda(name,dom,body)
   | Vfun f, _ -> 
       let k = nb_rel env in
@@ -366,7 +366,7 @@ and  nf_predicate env ind mip params v pT =
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
-      let body = nf_type (push_rel (name,None,dom) env) vb in
+      let body = nf_type (push_rel (LocalAssum (name,dom)) env) vb in
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_type env v
 
@@ -389,16 +389,16 @@ let native_norm env sigma c ty =
   let code, upd = mk_norm_code penv sigma prefix c in
   match Nativelib.compile ml_filename code with
     | true, fn ->
-        if !Flags.debug then Pp.msg_debug (Pp.str "Running norm ...");
+        if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
         let t0 = Sys.time () in
         Nativelib.call_linker ~fatal:true prefix fn (Some upd);
         let t1 = Sys.time () in
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
-        if !Flags.debug then Pp.msg_debug (Pp.str time_info);
+        if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         let res = nf_val env !Nativelib.rt1 ty in
         let t2 = Sys.time () in
         let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
-        if !Flags.debug then Pp.msg_debug (Pp.str time_info);
+        if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         res
     | _ -> anomaly (Pp.str "Compilation failure") 
 

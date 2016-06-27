@@ -110,7 +110,7 @@ intros NEQ.
 generalize (BigN.spec_div_eucl a b).
 generalize (Z_div_mod_full [a] [b] NEQ).
 destruct BigN.div_eucl as (q,r), Z.div_eucl as (q',r').
-intros (EQ,_). injection 1. intros EQr EQq.
+intros (EQ,_). injection 1 as EQr EQq.
 BigN.zify. rewrite EQr, EQq; auto.
 Qed.
 
@@ -119,10 +119,10 @@ Qed.
 
 Ltac isStaticWordCst t :=
  match t with
- | W0 => constr:true
+ | W0 => constr:(true)
  | WW ?t1 ?t2 =>
    match isStaticWordCst t1 with
-   | false => constr:false
+   | false => constr:(false)
    | true => isStaticWordCst t2
    end
  | _ => isInt31cst t
@@ -139,30 +139,30 @@ Ltac isBigNcst t :=
  | BigN.N6 ?t => isStaticWordCst t
  | BigN.Nn ?n ?t => match isnatcst n with
    | true => isStaticWordCst t
-   | false => constr:false
+   | false => constr:(false)
    end
- | BigN.zero => constr:true
- | BigN.one => constr:true
- | BigN.two => constr:true
- | _ => constr:false
+ | BigN.zero => constr:(true)
+ | BigN.one => constr:(true)
+ | BigN.two => constr:(true)
+ | _ => constr:(false)
  end.
 
 Ltac BigNcst t :=
  match isBigNcst t with
- | true => constr:t
- | false => constr:NotConstant
+ | true => constr:(t)
+ | false => constr:(NotConstant)
  end.
 
 Ltac BigN_to_N t :=
  match isBigNcst t with
  | true => eval vm_compute in (BigN.to_N t)
- | false => constr:NotConstant
+ | false => constr:(NotConstant)
  end.
 
 Ltac Ncst t :=
  match isNcst t with
- | true => constr:t
- | false => constr:NotConstant
+ | true => constr:(t)
+ | false => constr:(NotConstant)
  end.
 
 (** Registration for the "ring" tactic *)

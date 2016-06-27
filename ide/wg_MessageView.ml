@@ -6,11 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Preferences
+
 class type message_view_signals =
 object
   inherit GObj.misc_signals
   inherit GUtil.add_ml_signals
-  method pushed : callback:(Pp.message_level -> string -> unit) -> GtkSignal.id
+  method pushed : callback:Ideutils.logger -> GtkSignal.id
 end
 
 class message_view_signals_impl obj (pushed : 'a GUtil.signal) : message_view_signals =
@@ -26,14 +28,13 @@ class type message_view =
     inherit GObj.widget
     method connect : message_view_signals
     method clear : unit
-    method add : string -> unit
-    method set : string -> unit
-    method push : Pp.message_level -> string -> unit
+    method add : Richpp.richpp -> unit
+    method add_string : string -> unit
+    method set : Richpp.richpp -> unit
+    method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
       (** for more advanced text edition *)
-    method modify_font : Pango.font_description -> unit
-    method refresh_color : unit -> unit
   end
 
 let message_view () : message_view =
@@ -53,6 +54,12 @@ let message_view () : message_view =
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
   let () = view#set_left_margin 2 in
+  view#misc#show ();
+  let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
+  let _ = background_color#connect#changed cb in
+  let _ = view#misc#connect#realize (fun () -> cb background_color#get) in
+  let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
+  stick text_font view cb;
   object (self)
     inherit GObj.widget box#as_widget
 
@@ -66,27 +73,27 @@ let message_view () : message_view =
 
     method push level msg =
       let tags = match level with
-      | Pp.Error -> [Tags.Message.error]
-      | Pp.Warning -> [Tags.Message.warning]
+      | Feedback.Error -> [Tags.Message.error]
+      | Feedback.Warning -> [Tags.Message.warning]
       | _ -> []
       in
-      if msg <> "" then begin
-        buffer#insert ~tags msg;
-        buffer#insert ~tags "\n";
+      let rec non_empty = function
+      | Xml_datatype.PCData "" -> false
+      | Xml_datatype.PCData _ -> true
+      | Xml_datatype.Element (_, _, children) -> List.exists non_empty children
+      in
+      if non_empty (Richpp.repr msg) then begin
+        Ideutils.insert_xml buffer ~tags msg;
+        buffer#insert (*~tags*) "\n";
         push#call (level, msg)
       end
 
-    method add msg = self#push Pp.Notice msg
+    method add msg = self#push Feedback.Notice msg
+
+    method add_string s = self#add (Richpp.richpp_of_string s)
 
     method set msg = self#clear; self#add msg
 
     method buffer = text_buffer
-
-    method modify_font fd = view#misc#modify_font fd
-
-    method refresh_color () =
-      let open Preferences in
-      let clr = Tags.color_of_string current.background_color in
-      view#misc#modify_base [`NORMAL, `COLOR clr]
 
   end

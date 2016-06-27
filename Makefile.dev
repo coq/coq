@@ -1,0 +1,223 @@
+#######################################################################
+#  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
+# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
+#   \VV/  #############################################################
+#    //   #      This file is distributed under the terms of the      #
+#         #       GNU Lesser General Public License Version 2.1       #
+#######################################################################
+
+# Extra targets for developpers :
+# debug printers, revision, partial targets ...
+
+#########################
+# Debug printers in dev/
+#########################
+
+.PHONY: devel printers
+
+DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
+
+devel: printers
+printers: $(DEBUGPRINTERS)
+
+dev/printers.cma: dev/printers.mllib
+	$(SHOW)'Testing $@'
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -o test-printer
+	@rm -f test-printer
+	$(SHOW)'OCAMLC -a $@'
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -linkall -a -o $@
+
+dev/%.mllib.d: dev/%.mllib | $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  $<'
+	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) -I dev "$<" $(TOTARGET)
+
+############
+# revision
+############
+
+# display the revision number when compiling a checked out source tree
+
+revision:
+	$(SHOW)'CHECK revision'
+	$(HIDE)rm -f revision.new
+ifeq ($(CHECKEDOUT),svn)
+	$(HIDE)set -e; \
+        if test -x "`which svn`"; then \
+	  export LC_ALL=C;\
+	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/\1/p' > revision.new; \
+	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/\1/p'>> revision.new; \
+	fi
+endif
+ifeq ($(CHECKEDOUT),gnuarch)
+	$(HIDE)set -e; \
+        if test -x "`which tla`"; then \
+	  LANG=C; export LANG; \
+	  tla tree-version  >  revision.new ; \
+	  tla tree-revision | sed -ne 's|.*--||p' >> revision.new ; \
+	fi
+endif
+ifeq ($(CHECKEDOUT),git)
+	$(HIDE)set -e; \
+	if test -x "`which git`"; then \
+	  LANG=C; export LANG; \
+	  GIT_BRANCH=$$(git branch -a | sed -ne '/^\* /s/^\* \(.*\)/\1/p'); \
+	  GIT_HOST=$$(hostname); \
+	  GIT_PATH=$$(pwd); \
+	  (echo "$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}") > revision.new; \
+	  (echo "$$(git log -1 --pretty='format:%H')") >> revision.new; \
+	fi
+endif
+	$(HIDE)set -e; \
+	if test -e revision.new; then \
+          if test -e revision; then \
+	    if test "`cat revision`" = "`cat revision.new`" ; then \
+	       rm -f revision.new; \
+            else \
+               mv -f revision.new revision; \
+            fi; \
+          else \
+            mv -f revision.new revision; \
+          fi \
+	fi
+
+.PHONY: revision
+
+###################
+# Partial builds
+###################
+
+# The following partial targets are normally not necessary
+# for a complete build of coq, see instead 'make world' for that.
+# But these partial targets could be quite handy for quick builds
+# of specific components of Coq.
+
+###############################
+### 1) general-purpose targets
+###############################
+
+coqlight: theories-light tools coqbinaries
+
+states: theories/Init/Prelude.vo
+
+miniopt: $(COQTOPEXE) pluginsopt
+minibyte: $(COQTOPBYTE) pluginsbyte
+
+pluginsopt: $(PLUGINSOPT)
+pluginsbyte: $(PLUGINS)
+
+.PHONY: coqlight states miniopt minibyte pluginsopt pluginsbyte
+
+##########################
+### 2) core ML components
+##########################
+
+lib: lib/clib.cma lib/lib.cma
+kernel: kernel/kernel.cma
+byterun: $(BYTERUN)
+library: library/library.cma
+engine: engine/engine.cma
+proofs: proofs/proofs.cma
+tactics: tactics/tactics.cma
+interp: interp/interp.cma
+parsing: parsing/parsing.cma
+pretyping: pretyping/pretyping.cma
+highparsing: parsing/highparsing.cma
+stm: stm/stm.cma
+toplevel: toplevel/toplevel.cma
+ltac: ltac/ltac.cma
+
+.PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
+.PHONY: engine highparsing stm toplevel ltac
+
+######################
+### 3) theories files
+######################
+
+init: $(filter theories/Init/%, $(THEORIESVO))
+logic: $(filter theories/Logic/%, %(THEORIESVO))
+arith: $(filter theories/Arith/%, $(THEORIESVO))
+bool: $(filter theories/Bool/%, $(THEORIESVO))
+parith: $(filter theories/PArith/%, $(THEORIESVO))
+narith: $(filter theories/NArith/%, $(THEORIESVO))
+zarith: $(filter theories/ZArith/%, $(THEORIESVO))
+qarith: $(filter theories/QArith/%, $(THEORIESVO))
+lists: $(filter theories/Lists/%, $(THEORIESVO))
+strings: $(filter theories/Strings/%, $(THEORIESVO))
+sets: $(filter theories/Sets/%, $(THEORIESVO))
+fsets: $(filter theories/FSets/%, $(THEORIESVO))
+relations: $(filter theories/Relations/%, $(THEORIESVO))
+wellfounded: $(filter theories/Wellfounded/%, $(THEORIESVO))
+reals: $(filter theories/Reals/%, $(THEORIESVO))
+setoids: $(filter theories/Setoids/%, $(THEORIESVO))
+sorting: $(filter theories/Sorting/%, $(THEORIESVO))
+numbers: $(filter theories/Numbers/%, $(THEORIESVO))
+unicode: $(filter theories/Unicode/%, $(THEORIESVO))
+classes: $(filter theories/Classes/%, $(THEORIESVO))
+program: $(filter theories/Program/%, $(THEORIESVO))
+structures: $(filter theories/Structures/%, $(THEORIESVO))
+vectors: $(filter theories/Vectors/%, $(THEORIESVO))
+msets: $(filter theories/MSets/%, $(THEORIESVO))
+compat: $(filter theories/Compat/%, $(THEORIESVO))
+
+theories-light: $(THEORIESLIGHTVO)
+
+noreal: unicode logic arith bool zarith qarith lists sets fsets \
+	relations wellfounded setoids sorting
+
+.PHONY: init theories-light noreal
+.PHONY: logic arith bool narith zarith qarith lists strings sets
+.PHONY: fsets relations wellfounded reals setoids sorting numbers
+.PHONY: msets mmaps compat
+
+################
+### 4) plugins
+################
+
+OMEGAVO:=$(filter plugins/omega/%, $(PLUGINSVO))
+ROMEGAVO:=$(filter plugins/romega/%, $(PLUGINSVO))
+MICROMEGAVO:=$(filter plugins/micromega/%, $(PLUGINSVO))
+QUOTEVO:=$(filter plugins/quote/%, $(PLUGINSVO))
+RINGVO:=$(filter plugins/setoid_ring/%, $(PLUGINSVO))
+NSATZVO:=$(filter plugins/nsatz/%, $(PLUGINSVO))
+FOURIERVO:=$(filter plugins/fourier/%, $(PLUGINSVO))
+FUNINDVO:=$(filter plugins/funind/%, $(PLUGINSVO))
+BTAUTOVO:=$(filter plugins/btauto/%, $(PLUGINSVO))
+RTAUTOVO:=$(filter plugins/rtauto/%, $(PLUGINSVO))
+EXTRACTIONVO:=$(filter plugins/extraction/%, $(PLUGINSVO))
+CCVO:=
+DERIVEVO:=$(filter plugins/derive/%, $(PLUGINSVO))
+
+omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
+micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
+setoid_ring: $(RINGVO) $(RINGCMO)
+nsatz: $(NSATZVO) $(NSATZCMO)
+extraction: $(EXTRACTIONCMO)
+fourier: $(FOURIERVO) $(FOURIERCMO)
+funind: $(FUNINDCMO) $(FUNINDVO)
+cc: $(CCVO) $(CCCMO)
+rtauto: $(RTAUTOVO) $(RTAUTOCMO)
+btauto: $(BTAUTOVO) $(BTAUTOCMO)
+
+.PHONY: omega micromega setoid_ring nsatz extraction
+.PHONY: fourier funind cc rtauto btauto
+
+#################################
+### Misc other development rules
+#################################
+
+# NOTA : otags only accepts camlp4 as preprocessor, so the following rule
+# won't build tags of .ml4 when compiling with camlp5
+
+otags:
+	otags $(MLIFILES) $(filter-out configure.ml, $(MLSTATICFILES)) \
+	$(if $(filter camlp5,$(CAMLP4)), , \
+          -pa op -pa g -pa m -pa rq $(addprefix -pa , $(CAMLP4DEPS)) \
+          $(addprefix -impl , $(ML4FILES)))
+
+.PHONY: otags
+
+
+# For emacs:
+# Local Variables:
+# mode: makefile
+# End:

@@ -8,7 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Util
+DECLARE PLUGIN "decl_mode_plugin"
+
 open Compat
 open Pp
 open Decl_expr
@@ -84,7 +85,7 @@ let vernac_proof_instr instr =
 
 (* Only declared at raw level, because only used in vernac commands. *)
 let wit_proof_instr : (raw_proof_instr, glob_proof_instr, proof_instr) Genarg.genarg_type =
-  Genarg.make0 None "proof_instr"
+  Genarg.make0 "proof_instr"
 
 (* We create a new parser entry [proof_mode]. The Declarative proof mode
     will replace the normal parser entry for tactics with this one. *)
@@ -92,14 +93,14 @@ let proof_mode : vernac_expr Gram.entry =
   Gram.entry_create "vernac:proof_command"
 (* Auxiliary grammar entry. *)
 let proof_instr : raw_proof_instr Gram.entry =
-  Pcoq.create_generic_entry "proof_instr" (Genarg.rawwit wit_proof_instr)
+  Pcoq.create_generic_entry Pcoq.utactic "proof_instr" (Genarg.rawwit wit_proof_instr)
 
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr
 
 let classify_proof_instr = function
   | { instr = Pescape |Pend B_proof } -> VtProofMode "Classic", VtNow
-  | _ -> VtProofStep false, VtLater
+  | _ -> Vernac_classifier.classify_as_proofstep
 
 (* We use the VERNAC EXTEND facility with a custom non-terminal
     to populate [proof_mode] with a new toplevel interpreter.
@@ -132,7 +133,7 @@ let _ =
 				       set = begin fun () ->
 					 (* We set the command non terminal to
 					     [proof_mode] (which we just defined). *)
-					 G_vernac.set_command_entry proof_mode ;
+					 Pcoq.set_command_entry proof_mode ;
 					 (* We substitute the goal printer, by the one we built
 					     for the proof mode. *)
 					 Printer.set_printer_pr { Printer.default_printer_pr with
@@ -144,7 +145,7 @@ let _ =
 				       reset = begin fun () ->
 					 (* We restore the command non terminal to
 					      [noedit_mode]. *)
-					 G_vernac.set_command_entry G_vernac.noedit_mode ;
+					 Pcoq.set_command_entry Pcoq.Vernac_.noedit_mode ;
 					 (* We restore the goal printer to default *)
 					 Printer.set_printer_pr Printer.default_printer_pr
 				       end

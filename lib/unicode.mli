@@ -10,17 +10,21 @@
 
 type status = Letter | IdentPart | Symbol
 
+(** This exception is raised when UTF-8 the input string contains unsupported UTF-8 characters. *)
 exception Unsupported
 
-(** Classify a unicode char into 3 classes, or raise [Unsupported] *)
+(** Classify a unicode char into 3 classes.
+    @raise Unsupported if the input string contains unsupported UTF-8 characters. *)
 val classify : int -> status
 
-(** Check whether a given string be used as a legal identifier.
-    - [None] means yes
-    - [Some (b,s)] means no, with explanation [s] and severity [b] *)
+(** Return [None] if a given string can be used as a (Coq) identifier.
+    Return [Some (b,s)] otherwise, where [s] is an explanation and [b] is severity.
+    @raise Unsupported if the input string contains unsupported UTF-8 characters. *)
 val ident_refutation : string -> (bool * string) option
 
-(** First char of a string, converted to lowercase *)
+(** First char of a string, converted to lowercase
+    @raise Unsupported if the input string contains unsupported UTF-8 characters.
+    @raise Assert_failure if the input string is empty. *)
 val lowercase_first_char : string -> string
 
 (** Return [true] if all UTF-8 characters in the input string are just plain
@@ -36,3 +40,9 @@ val ascii_of_ident : string -> string
 
 (** Validate an UTF-8 string *)
 val is_utf8 : string -> bool
+
+(** Return the length of a valid UTF-8 string. *)
+val utf8_length : string -> int
+
+(** Variant of {!String.sub} for UTF-8 strings. *)
+val utf8_sub : string -> int -> int -> string

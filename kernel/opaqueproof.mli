@@ -48,7 +48,7 @@ type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
 
 type cooking_info = { 
   modlist : work_list; 
-  abstract : Context.named_context * Univ.universe_level_subst * Univ.UContext.t } 
+  abstract : Context.Named.t * Univ.universe_level_subst * Univ.UContext.t } 
 
 (* The type has two caveats:
    1) cook_constr is defined after

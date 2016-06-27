@@ -21,6 +21,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Init/Peano.v
     theories/Init/Specif.v
     theories/Init/Tactics.v
+    theories/Init/Tauto.v
     theories/Init/Wf.v
     (theories/Init/Prelude.v)
   </dd>
@@ -59,6 +60,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/WeakFan.v
     theories/Logic/WKL.v
     theories/Logic/FinFun.v
+    theories/Logic/PropFacts.v
   </dd>
 
   <dt> <b>Structures</b>:
@@ -202,6 +204,7 @@ through the <tt>Require Import</tt> command.</p>
     (theories/QArith/QArith.v)
     theories/QArith/Qreals.v
     theories/QArith/Qcanon.v
+    theories/QArith/Qcabs.v
     theories/QArith/Qround.v
     theories/QArith/QOrderedType.v
     theories/QArith/Qminmax.v

@@ -72,7 +72,7 @@ let add_load_path phys_path coq_path ~implicit =
         let () =
           (* Do not warn when overriding the default "-I ." path *)
           if not (DirPath.equal old_path Nameops.default_root_prefix) then
-            msg_warning
+            Feedback.msg_warning
               (str phys_path ++ strbrk " was previously bound to " ++
                  pr_dirpath old_path ++ strbrk "; it is remapped to " ++
                  pr_dirpath coq_path) in
@@ -84,10 +84,6 @@ let add_load_path phys_path coq_path ~implicit =
       end
   | _ -> anomaly_too_many_paths phys_path
 
-let extend_path_with_dirpath p dir =
-  List.fold_left Filename.concat p
-    (List.rev_map Id.to_string (DirPath.repr dir))
-
 let filter_path f =
   let rec aux = function
   | [] -> []
@@ -97,18 +93,19 @@ let filter_path f =
   in
   aux !load_paths
 
-let expand_path dir =
+let expand_path ?root dir =
   let rec aux = function
   | [] -> []
-  | { path_physical = ph; path_logical = lg; path_implicit = implicit }  :: l ->
-    match implicit with
-    | true ->
-      (** The path is implicit, so that we only want match the logical suffix *)
-      if is_dirpath_suffix_of dir lg then (ph, lg) :: aux l else aux l
-    | false ->
-      (** Otherwise we must match exactly *)
-      if DirPath.equal dir lg then (ph, lg) :: aux l else aux l
-  in
+  | { path_physical = ph; path_logical = lg; path_implicit = implicit } :: l ->
+    let success =
+      match root with
+      | None ->
+        if implicit then is_dirpath_suffix_of dir lg
+        else DirPath.equal dir lg
+      | Some root ->
+        is_dirpath_prefix_of root lg &&
+          is_dirpath_suffix_of dir (drop_dirpath_prefix root lg) in
+    if success then (ph, lg) :: aux l else aux l in
   aux !load_paths
 
 let locate_file fname =

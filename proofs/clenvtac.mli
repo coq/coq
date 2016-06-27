@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Legacy components of the previous proof engine. *)
+
 open Term
 open Clenv
 open Tacexpr

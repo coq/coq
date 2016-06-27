@@ -8,6 +8,9 @@
 
 open Libnames
 open Pp
+open Util
+
+module Dyn = Dyn.Make(struct end)
 
 (* The relax flag is used to make it possible to load files while ignoring
    failures to incorporate some objects.  This can be useful when one
@@ -70,15 +73,14 @@ type dynamic_object_declaration = {
   dyn_discharge_function : object_name * obj -> obj option;
   dyn_rebuild_function : obj -> obj }
 
-let object_tag = Dyn.tag
-let object_has_tag = Dyn.has_tag
+let object_tag (Dyn.Dyn (t, _)) = Dyn.repr t
 
 let cache_tab =
   (Hashtbl.create 17 : (string,dynamic_object_declaration) Hashtbl.t)
 
 let declare_object_full odecl =
   let na = odecl.object_name in
-  let (infun,outfun) = Dyn.create na in
+  let (infun, outfun) = Dyn.Easy.make_dyn na in
   let cacher (oname,lobj) = odecl.cache_function (oname,outfun lobj)
   and loader i (oname,lobj) = odecl.load_function i (oname,outfun lobj)
   and opener i (oname,lobj) = odecl.open_function i (oname,outfun lobj)
@@ -131,7 +133,7 @@ let apply_dyn_fun deflt f lobj =
     Failure "local to_apply_dyn_fun" ->
       if not (!relax_flag || Hashtbl.mem missing_tab tag) then
         begin
-          Pp.msg_warning
+          Feedback.msg_warning
 	    (Pp.str ("Cannot find library functions for an object with tag "
                       ^ tag ^ " (a plugin may be missing)"));
           Hashtbl.add missing_tab tag ()
@@ -158,3 +160,5 @@ let discharge_object ((_,lobj) as node) =
 
 let rebuild_object lobj =
   apply_dyn_fun lobj (fun d -> d.dyn_rebuild_function lobj) lobj
+
+let dump = Dyn.dump

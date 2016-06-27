@@ -14,6 +14,13 @@ sig
   val compare : t -> t -> int
 end
 
+module type MonadS =
+sig
+  type +'a t
+  val return : 'a -> 'a t
+  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+end
+
 module type S = Map.S
 
 module type ExtS =
@@ -23,6 +30,9 @@ sig
 
   module Set : CSig.SetS with type elt = key
   (** Sets used by the domain function *)
+
+  val get : key -> 'a t -> 'a
+  (** Same as {!find} but fails an assertion instead of raising [Not_found] *)
 
   val update : key -> 'a -> 'a t -> 'a t
   (** Same as [add], but expects the key to be present, and thus faster.
@@ -58,6 +68,14 @@ sig
         It is required that the mapping function [f] preserves key equality,
         i.e.: for all (k : key) (x : 'a), compare (fst (f k x)) k = 0. *)
   end
+
+  module Monad(M : MonadS) :
+  sig
+    val fold : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+    val fold_left : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+    val fold_right : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+  end
+  (** Fold operators parameterized by any monad. *)
 
 end
 

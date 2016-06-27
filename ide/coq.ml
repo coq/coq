@@ -99,9 +99,6 @@ let display_coqtop_answer cmd lines =
      "Command was: "^cmd^"\n"^
      "Answer was: "^(String.concat "\n  " lines))
 
-let check_remaining_opt arg =
-  if arg <> "" && arg.[0] = '-' then fatal_error_popup ("Illegal option: "^arg)
-
 let rec filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
   let cmd = Filename.quote (coqtop_path ()) ^" -nois -filteropts " ^ argstr in
@@ -125,7 +122,7 @@ and asks_for_coqtop args =
     ~message_type:`QUESTION ~buttons:GWindow.Buttons.yes_no () in
   match pb_mes#run () with
     | `YES ->
-      let () = current.cmd_coqtop  <- None in
+      let () = cmd_coqtop#set None in
       let () = custom_coqtop := None in
       let () = pb_mes#destroy () in
       filter_coq_opts args
@@ -200,8 +197,6 @@ module GlibMainLoop = struct
   let read_all = Ideutils.io_read_all
   let async_chan_of_file fd = Glib.Io.channel_of_descr fd
   let async_chan_of_socket s = !gio_channel_of_descr_socket s
-  let add_timeout ~sec callback =
-    ignore(Glib.Timeout.add ~ms:(sec * 1000) ~callback)
 end
 
 module CoqTop = Spawn.Async(GlibMainLoop)
@@ -295,23 +290,20 @@ let rec check_errors = function
 | `NVAL :: _ -> raise (TubeError "NVAL")
 | `OUT :: _ -> raise (TubeError "OUT")
 
-let handle_intermediate_message handle xml =
-  let message = Pp.to_message xml in
-  let level = message.Pp.message_level in
-  let content = message.Pp.message_content in
-  let logger = match handle.waiting_for with
-    | Some (_, l) -> l 
+let handle_intermediate_message handle level content =
+  let logger  = match handle.waiting_for with
+    | Some (_, l) -> l
     | None -> function
-        | Pp.Error -> Minilib.log ~level:`ERROR
-        | Pp.Info -> Minilib.log ~level:`INFO
-        | Pp.Notice -> Minilib.log ~level:`NOTICE
-        | Pp.Warning -> Minilib.log ~level:`WARNING
-        | Pp.Debug _ -> Minilib.log ~level:`DEBUG
+        | Feedback.Error   -> fun s -> Minilib.log ~level:`ERROR   (xml_to_string s)
+        | Feedback.Info    -> fun s -> Minilib.log ~level:`INFO    (xml_to_string s)
+        | Feedback.Notice  -> fun s -> Minilib.log ~level:`NOTICE  (xml_to_string s)
+        | Feedback.Warning -> fun s -> Minilib.log ~level:`WARNING (xml_to_string s)
+        | Feedback.Debug   -> fun s -> Minilib.log ~level:`DEBUG   (xml_to_string s)
   in
   logger level content
 
 let handle_feedback feedback_processor xml =
-  let feedback = Feedback.to_feedback xml in
+  let feedback = Xmlprotocol.to_feedback xml in
   feedback_processor feedback
 
 let handle_final_answer handle xml =
@@ -336,19 +328,22 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
   let lex = Lexing.from_string s in
   let p = Xml_parser.make (Xml_parser.SLexbuf lex) in
   let rec loop () =
-    let xml = Xml_parser.parse p in
+    let xml = Xml_parser.parse ~do_not_canonicalize:true p in
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
-    if Pp.is_message xml then begin
-      handle_intermediate_message handle xml;
+    match Xmlprotocol.is_message xml with
+    | Some (lvl, _loc, msg) ->
+      handle_intermediate_message handle lvl msg;
       loop ()
-    end else if Feedback.is_feedback xml then begin
-      handle_feedback feedback_processor xml;
-      loop ()
-    end else begin
-      ignore (handle_final_answer handle xml)
-    end
+    | None ->
+      if Xmlprotocol.is_feedback xml then begin
+        handle_feedback feedback_processor xml;
+        loop ()
+      end else
+        begin
+          ignore (handle_final_answer handle xml)
+        end
   in
   try loop ()
   with Xml_parser.Error _ as e ->
@@ -362,7 +357,9 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
 
 let print_exception = function
   | Xml_parser.Error e -> Xml_parser.error e
-  | Serialize.Marshal_error -> "Protocol violation"
+  | Serialize.Marshal_error(expected,actual) ->
+      "Protocol violation. Expected: " ^ expected ^ " Actual: "
+        ^ Xml_printer.to_string actual
   | e -> Printexc.to_string e
 
 let input_watch handle respawner feedback_processor =

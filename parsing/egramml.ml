@@ -7,41 +7,60 @@
 (************************************************************************)
 
 open Util
-open Compat
-open Names
+open Extend
 open Pcoq
 open Genarg
 open Vernacexpr
 
-(** Making generic actions in type generic_argument *)
-
-let make_generic_action
-  (f:Loc.t -> ('b * raw_generic_argument) list -> 'a) pil =
-  let rec make env = function
-    | [] ->
-	Gram.action (fun loc -> f (to_coqloc loc) env)
-    | None :: tl -> (* parse a non-binding item *)
-        Gram.action (fun _ -> make env tl)
-    | Some (p, t) :: tl -> (* non-terminal *)
-        Gram.action (fun v -> make ((p, Unsafe.inj t v) :: env) tl) in
-  make [] (List.rev pil)
-
 (** Grammar extensions declared at ML level *)
 
-type grammar_prod_item =
+type 's grammar_prod_item =
   | GramTerminal of string
-  | GramNonTerminal of
-      Loc.t * argument_type * prod_entry_key * Id.t option
+  | GramNonTerminal :
+      Loc.t * 'a raw_abstract_argument_type * ('s, 'a) symbol -> 's grammar_prod_item
 
-let make_prod_item = function
-  | GramTerminal s -> (gram_token_of_string s, None)
-  | GramNonTerminal (_,t,e,po) ->
-      (symbol_of_prod_entry_key e, Option.map (fun p -> (p,t)) po)
+type 'a ty_arg = ('a -> raw_generic_argument)
 
-let make_rule mkact pt =
-  let (symbs,ntl) = List.split (List.map make_prod_item pt) in
-  let act = make_generic_action mkact ntl in
-  (symbs, act)
+type ('self, _, 'r) ty_rule =
+| TyStop : ('self, 'r, 'r) ty_rule
+| TyNext : ('self, 'a, 'r) ty_rule * ('self, 'b) Extend.symbol * 'b ty_arg option ->
+  ('self, 'b -> 'a, 'r) ty_rule
+
+type ('self, 'r) any_ty_rule =
+| AnyTyRule : ('self, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule
+
+let rec ty_rule_of_gram = function
+| [] -> AnyTyRule TyStop
+| GramTerminal s :: rem ->
+  let AnyTyRule rem = ty_rule_of_gram rem in
+  let tok = Atoken (CLexer.terminal s) in
+  let r = TyNext (rem, tok, None) in
+  AnyTyRule r
+| GramNonTerminal (_, t, tok) :: rem ->
+  let AnyTyRule rem = ty_rule_of_gram rem in
+  let inj = Some (fun obj -> Genarg.in_gen t obj) in
+  let r = TyNext (rem, tok, inj) in
+  AnyTyRule r
+
+let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) Extend.rule = function
+| TyStop -> Extend.Stop
+| TyNext (rem, tok, _) -> Extend.Next (ty_erase rem, tok)
+
+type 'r gen_eval = Loc.t -> raw_generic_argument list -> 'r
+
+let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> a = function
+| TyStop -> fun f loc -> f loc []
+| TyNext (rem, tok, None) -> fun f _ -> ty_eval rem f
+| TyNext (rem, tok, Some inj) -> fun f x ->
+  let f loc args = f loc (inj x :: args) in
+  ty_eval rem f
+
+let make_rule f prod =
+  let AnyTyRule ty_rule = ty_rule_of_gram (List.rev prod) in
+  let symb = ty_erase ty_rule in
+  let f loc l = f loc (List.rev l) in
+  let act = ty_eval ty_rule f in
+  Extend.Rule (symb, act)
 
 (** Vernac grammar extensions *)
 
@@ -58,6 +77,6 @@ let get_extend_vernac_rule (s, i) =
 let extend_vernac_command_grammar s nt gl =
   let nt = Option.default Vernac_.command nt in
   vernac_exts := (s,gl) :: !vernac_exts;
-  let mkact loc l = VernacExtend (s,List.map snd l) in
+  let mkact loc l = VernacExtend (s, l) in
   let rules = [make_rule mkact gl] in
-  maybe_uncurry (Gram.extend nt) (None,[(None, None, List.rev rules)])
+  grammar_extend nt None (None, [None, None, rules])

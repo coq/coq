@@ -17,7 +17,19 @@ type coqtop = {
   xml_parser : Xml_parser.t;
 }
 
-let logger level content = prerr_endline content
+let print_xml chan xml =
+  let rec print = function
+  | Xml_datatype.PCData s -> output_string chan s
+  | Xml_datatype.Element (_, _, children) -> List.iter print children
+  in
+  print xml
+
+let error_xml s =
+  Printf.eprintf "fake_id: error: %a\n%!" print_xml s;
+  exit 1
+
+let logger level content =
+  Printf.eprintf "%a\n%! " print_xml (Richpp.repr content)
 
 let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   if print then prerr_endline (Xmlprotocol.pr_call call);
@@ -25,21 +37,20 @@ let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
-    if Pp.is_message xml then
-      let message = Pp.to_message xml in
-      let level = message.Pp.message_level in
-      let content = message.Pp.message_content in
+    match Xmlprotocol.is_message xml with
+    | Some (level, _loc, content) ->
       logger level content;
       loop ()
-    else if Feedback.is_feedback xml then
-      loop ()
-    else (Xmlprotocol.to_answer call xml)
+    | None ->
+      if Xmlprotocol.is_feedback xml then
+        loop ()
+      else Xmlprotocol.to_answer call xml
   in
   let res = loop () in
   if print then prerr_endline (Xmlprotocol.pr_full_value call res);
   match res with
-  | Interface.Fail (_,_,s) when fail -> error s
-  | Interface.Fail (_,_,s) as x -> prerr_endline s; x
+  | Interface.Fail (_,_,s) when fail -> error_xml (Richpp.repr s)
+  | Interface.Fail (_,_,s) as x -> Printf.eprintf "%a\n%!" print_xml (Richpp.repr s); x
   | x -> x
 
 let eval_call c q = ignore(base_eval_call c q)
@@ -188,7 +199,7 @@ let print_document () =
 module GUILogic = struct
 
   let after_add = function
-    | Interface.Fail (_,_,s) -> error s
+    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s)
     | Interface.Good (id, (Util.Inl (), _)) ->
         Document.assign_tip_id doc id
     | Interface.Good (id, (Util.Inr tip, _)) ->
@@ -200,7 +211,7 @@ module GUILogic = struct
   let at id id' _ = Stateid.equal id' id
   
   let after_edit_at (id,need_unfocus) = function
-    | Interface.Fail (_,_,s) -> error s
+    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s)
     | Interface.Good (Util.Inl ()) ->
         if need_unfocus then Document.unfocus doc;
         ignore(Document.cut_at doc id);
@@ -323,7 +334,7 @@ let main =
   let finish () =
     match base_eval_call (Xmlprotocol.status true) coq with
     | Interface.Good _ -> exit 0
-    | Interface.Fail (_,_,s) -> error s in
+    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s) in
   (* The main loop *)
   init ();
   while true do

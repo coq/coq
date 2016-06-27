@@ -12,7 +12,6 @@ open Util
 open Names
 open Term
 open Vars
-open Context
 open Inductiveops
 open Environ
 open Glob_term
@@ -25,6 +24,7 @@ open Nametab
 open Mod_subst
 open Misctypes
 open Decl_kinds
+open Context.Named.Declaration
 
 let dl = Loc.ghost
 
@@ -34,8 +34,15 @@ let print_universes = Flags.univ_print
 (** If true, prints local context of evars, whatever print_arguments *)
 let print_evar_arguments = ref false
 
-let add_name na b t (nenv, env) = add_name na nenv, push_rel (na, b, t) env
-let add_name_opt na b t (nenv, env) = 
+let add_name na b t (nenv, env) =
+  let open Context.Rel.Declaration in
+  add_name na nenv, push_rel (match b with
+			      | None -> LocalAssum (na,t)
+			      | Some b -> LocalDef (na,b,t)
+			     )
+			     env
+
+let add_name_opt na b t (nenv, env) =
   match t with
   | None -> Termops.add_name na nenv, env
   | Some t -> add_name na b t (nenv, env)
@@ -199,7 +206,7 @@ let computable p k =
        engendrera un prédicat non dépendant) *)
 
   let sign,ccl = decompose_lam_assum p in
-  Int.equal (rel_context_length sign) (k + 1)
+  Int.equal (Context.Rel.length sign) (k + 1)
   &&
   noccur_between 1 (k+1) ccl
 
@@ -315,7 +322,7 @@ let is_nondep_branch c l =
   try
     (* FIXME: do better using tags from l *)
     let sign,ccl = decompose_lam_n_decls (List.length l) c in
-    noccur_between 1 (rel_context_length sign) ccl
+    noccur_between 1 (Context.Rel.length sign) ccl
   with e when Errors.noncritical e -> (* Not eta-expanded or not reduced *)
     false
 
@@ -511,11 +518,14 @@ let rec detype flags avoid env sigma t =
 	  else noparams ()
 
     | Evar (evk,cl) ->
-        let bound_to_itself_or_letin (id,b,_) c =
-          b != None ||
-	  try let n = List.index Name.equal (Name id) (fst env) in 
-	      isRelN n c
-	  with Not_found -> isVarId id c in
+        let bound_to_itself_or_letin decl c =
+          match decl with
+          | LocalDef _ -> true
+          | LocalAssum (id,_) ->
+	     try let n = List.index Name.equal (Name id) (fst env) in
+	         isRelN n c
+	     with Not_found -> isVarId id c
+        in
       let id,l =
         try
           let id = match Evd.evar_ident evk sigma with
@@ -610,7 +620,7 @@ and share_names flags n l avoid env sigma c t =
         share_names flags (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
     (* If built with the f/n notation: we renounce to share names *)
     | _ ->
-        if n>0 then msg_warning (strbrk "Detyping.detype: cannot factorize fix enough");
+        if n>0 then Feedback.msg_warning (strbrk "Detyping.detype: cannot factorize fix enough");
         let c = detype flags avoid env sigma c in
         let t = detype flags avoid env sigma t in
         (List.rev l,c,t)
@@ -676,23 +686,36 @@ and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
   match bk with
   | BProd -> GProd (dl, na',Explicit,detype (lax,false) avoid env sigma ty, r)
   | BLambda -> GLambda (dl, na',Explicit,detype (lax,false) avoid env sigma ty, r)
-  | BLetIn -> GLetIn (dl, na',detype (lax,false) avoid env sigma (Option.get body), r)
+  | BLetIn ->
+      let c = detype (lax,false) avoid env sigma (Option.get body) in
+      (* Heuristic: we display the type if in Prop *)
+      let s = Retyping.get_sort_family_of (snd env) sigma ty in
+      let c = if s != InProp then c else
+          GCast (dl, c, CastConv (detype (lax,false) avoid env sigma ty)) in
+      GLetIn (dl, na', c, r)
 
 let detype_rel_context ?(lax=false) where avoid env sigma sign =
   let where = Option.map (fun c -> it_mkLambda_or_LetIn c sign) where in
   let rec aux avoid env = function
   | [] -> []
-  | (na,b,t)::rest ->
+  | decl::rest ->
+      let open Context.Rel.Declaration in
+      let na = get_name decl in
+      let t = get_type decl in
       let na',avoid' =
 	match where with
 	| None -> na,avoid
 	| Some c ->
-	    if b != None then
+	    if is_local_def decl then
 	      compute_displayed_let_name_in
                 (RenamingElsewhereFor (fst env,c)) avoid na c
 	    else
 	      compute_displayed_name_in
                 (RenamingElsewhereFor (fst env,c)) avoid na c in
+      let b = match decl with
+	      | LocalAssum _ -> None
+	      | LocalDef (_,b,_) -> Some b
+      in
       let b' = Option.map (detype (lax,false) avoid env sigma) b in
       let t' = detype (lax,false) avoid env sigma t in
       (na',Explicit,b',t') :: aux avoid' (add_name na' b t env) rest

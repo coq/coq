@@ -1,3 +1,5 @@
+Unset Structural Injection.
+
 Inductive nCk : nat -> nat -> Type :=
   |zz : nCk 0 0
   | incl { m n : nat } : nCk m n -> nCk (S m) (S n)

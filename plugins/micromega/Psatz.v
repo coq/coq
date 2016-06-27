@@ -20,7 +20,7 @@ Require Import ZArith.
 Require Import Rdefinitions.
 Require Import RingMicromega.
 Require Import VarMap.
-Require Tauto.
+Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
 Ltac preprocess := 
@@ -69,7 +69,7 @@ Ltac xpsatz dom d :=
   end in tac.
 
 Tactic Notation "psatz" constr(dom) int_or_var(n) := xpsatz dom n.
-Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:-1.
+Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:(-1).
 
 Ltac psatzl dom :=
   let tac := lazymatch dom with
@@ -96,6 +96,14 @@ Ltac psatzl dom :=
 Ltac lra := 
   first [ psatzl R | psatzl Q ].
 
+Ltac nra := 
+  unfold Rdiv in * ; 
+  xnra ;     
+  abstract 
+    (intros __wit __varmap __ff ;
+     change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
+     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
+                                                                       
 
 
 (* Local Variables: *)

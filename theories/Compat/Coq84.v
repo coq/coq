@@ -7,6 +7,10 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.4 *)
+
+(** Any compatibility changes to make future versions of Coq behave like Coq 8.5 are likely needed to make them behave like Coq 8.4. *)
+Require Export Coq.Compat.Coq85.
+
 (** See https://coq.inria.fr/bugs/show_bug.cgi?id=4319 for updates *)
 (** This is required in Coq 8.5 to use the [omega] tactic; in Coq 8.4, it's automatically available.  But ZArith_base puts infix ~ at level 7, and we don't want that, so we don't [Import] it. *)
 Require Coq.omega.Omega.

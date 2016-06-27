@@ -10,7 +10,6 @@ open Pp
 open Util
 open Names
 open Term
-open Context
 open Environ
 open Globnames
 open Decl_kinds
@@ -34,13 +33,14 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of Tacexpr.glob_tactic_expr       (* Hint Extern *)
+  | Extern     of Genarg.glob_generic_argument       (* Hint Extern *)
 
 type hint
 type raw_hint = constr * types * Univ.universe_context_set
 
 type hints_path_atom = 
   | PathHints of global_reference list
+  (* For forward hints, their names is the list of projections *)
   | PathAny
 
 type 'a with_metadata = private {
@@ -72,6 +72,7 @@ val path_matches : hints_path -> hints_path_atom list -> bool
 val path_derivate : hints_path -> hints_path_atom -> hints_path
 val pp_hints_path_atom : hints_path_atom -> Pp.std_ppcmds
 val pp_hints_path : hints_path -> Pp.std_ppcmds
+val pp_hint_mode : hint_mode -> Pp.std_ppcmds
 
 module Hint_db :
   sig
@@ -99,7 +100,8 @@ module Hint_db :
     val add_list : env -> evar_map -> hint_entry list -> t -> t
     val remove_one : global_reference -> t -> t
     val remove_list : global_reference list -> t -> t
-    val iter : (global_reference option -> bool array list -> full_hint list -> unit) -> t -> unit
+    val iter : (global_reference option ->
+                hint_mode array list -> full_hint list -> unit) -> t -> unit
 
     val use_dn : t -> bool
     val transparent_state : t -> transparent_state
@@ -128,7 +130,7 @@ type hints_entry =
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
-  | HintsModeEntry of global_reference * bool list      
+  | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
       int * (patvar list * constr_pattern) option * Tacexpr.glob_tactic_expr
 
@@ -192,7 +194,7 @@ val make_resolves :
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
 val make_resolve_hyp :
-  env -> evar_map -> named_declaration -> hint_entry list
+  env -> evar_map -> Context.Named.Declaration.t -> hint_entry list
 
 (** [make_extern pri pattern tactic_expr] *)
 
@@ -214,7 +216,7 @@ val extern_intern_tac :
    Useful to take the current goal hypotheses as hints;
    Boolean tells if lemmas with evars are allowed *)
 
-val make_local_hint_db : env -> evar_map -> ?ts:transparent_state -> bool -> open_constr list -> hint_db
+val make_local_hint_db : env -> evar_map -> ?ts:transparent_state -> bool -> Tacexpr.delayed_open_constr list -> hint_db
 
 val make_db_list : hint_db_name list -> hint_db list
 

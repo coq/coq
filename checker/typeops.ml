@@ -62,7 +62,7 @@ let judge_of_type u = Sort (Type (Univ.super u))
 
 let judge_of_relative env n =
   try
-    let (_,_,typ) = lookup_rel n env in
+    let LocalAssum (_,typ) | LocalDef (_,_,typ) = lookup_rel n env in
     lift n typ
   with Not_found ->
     error_unbound_rel env n
@@ -92,7 +92,7 @@ let judge_of_constant_knowing_parameters env (kn,u as cst) paramstyp =
   let _cb =
     try lookup_constant kn env
     with Not_found ->
-      failwith ("Cannot find constant: "^string_of_con kn)
+      failwith ("Cannot find constant: "^Constant.to_string kn)
   in
   let ty, cu = type_of_constant_knowing_parameters env cst paramstyp in
   let () = check_constraints cu env in
@@ -128,7 +128,7 @@ let sort_of_product env domsort rangsort =
     | (Prop _,  Prop Pos) -> rangsort
     (* Product rule (Type,Set,?) *)
     | (Type u1, Prop Pos) ->
-        if fst (engagement env) = ImpredicativeSet then
+        if engagement env = ImpredicativeSet then
           (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
           rangsort
         else
@@ -178,7 +178,7 @@ let judge_of_inductive_knowing_parameters env (ind,u) (paramstyp:constr array) =
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find inductive: "^string_of_mind (fst ind))
+      failwith ("Cannot find inductive: "^MutInd.to_string (fst ind))
   in
   type_of_inductive_knowing_parameters env (specif,u) paramstyp
 
@@ -192,7 +192,7 @@ let judge_of_constructor env (c,u) =
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
-      failwith ("Cannot find inductive: "^string_of_mind (fst ind))
+      failwith ("Cannot find inductive: "^MutInd.to_string (fst ind))
   in
   type_of_constructor (c,u) specif
 
@@ -223,7 +223,7 @@ let judge_of_projection env p c ct =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (c, ct)
   in
-    assert(eq_mind pb.proj_ind (fst ind));
+    assert(MutInd.equal pb.proj_ind (fst ind));
     let ty = subst_instance_constr u pb.proj_type in
       substl (c :: List.rev args) ty
 
@@ -296,13 +296,13 @@ let rec execute env cstr =
 
     | Lambda (name,c1,c2) ->
         let _ = execute_type env c1 in
-	let env1 = push_rel (name,None,c1) env in
+	let env1 = push_rel (LocalAssum (name,c1)) env in
         let j' = execute env1 c2 in
         Prod(name,c1,j')
 
     | Prod (name,c1,c2) ->
         let varj = execute_type env c1 in
-	let env1 = push_rel (name,None,c1) env in
+	let env1 = push_rel (LocalAssum (name,c1)) env in
         let varj' = execute_type env1 c2 in
 	Sort (sort_of_product env varj varj')
 
@@ -314,7 +314,7 @@ let rec execute env cstr =
           let env',c2' = (* refresh_arity env *) env, c2 in
           let _ = execute_type env' c2' in
           judge_of_cast env' (c1,j1) DEFAULTcast c2' in
-        let env1 = push_rel (name,Some c1,c2) env in
+        let env1 = push_rel (LocalDef (name,c1,c2)) env in
         let j' = execute env1 c3 in
         subst1 c1 j'
 
@@ -378,10 +378,10 @@ let infer_type env constr = execute_type env constr
 let check_ctxt env rels =
   fold_rel_context (fun d env ->
     match d with
-        (_,None,ty) ->
+      | LocalAssum (_,ty) ->
           let _ = infer_type env ty in
           push_rel d env
-      | (_,Some bd,ty) ->
+      | LocalDef (_,bd,ty) ->
           let j1 = infer env bd in
           let _ = infer env ty in
           conv_leq env j1 ty;
@@ -399,9 +399,9 @@ let check_polymorphic_arity env params par =
   let pl = par.template_param_levels in
   let rec check_p env pl params =
     match pl, params with
-        Some u::pl, (na,None,ty)::params ->
+        Some u::pl, LocalAssum (na,ty)::params ->
           check_kind env ty u;
-          check_p (push_rel (na,None,ty) env) pl params
+          check_p (push_rel (LocalAssum (na,ty)) env) pl params
       | None::pl,d::params -> check_p (push_rel d env) pl params
       | [], _ -> ()
       | _ -> failwith "check_poly: not the right number of params" in

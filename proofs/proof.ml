@@ -334,22 +334,24 @@ let compact p =
 (*** Tactics ***)
 
 let run_tactic env tac pr =
+  let open Proofview.Notations in
   let sp = pr.proofview in
-  let (_,tacticced_proofview,(status,to_shelve,give_up),info_trace) =
+  let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
+  let tac =
+    tac >>= fun () ->
+    Proofview.tclEVARMAP >>= fun sigma ->
+    (* Already solved goals are not to be counted as shelved. Nor are
+      they to be marked as unresolvable. *)
+    let retrieved = undef sigma (List.rev (Evd.future_goals sigma)) in
+    let sigma = List.fold_left Proofview.Unsafe.mark_as_goal sigma retrieved in
+    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+    Proofview.tclUNIT retrieved
+  in
+  let (retrieved,proofview,(status,to_shelve,give_up),info_trace) =
     Proofview.apply env tac sp
   in
-  let sigma = Proofview.return tacticced_proofview in
-  (* Already solved goals are not to be counted as shelved. Nor are
-     they to be marked as unresolvable. *)
-  let undef l = List.filter (fun g -> Evd.is_undefined sigma g) l in
-  let retrieved = undef (List.rev (Evd.future_goals sigma)) in
-  let shelf = (undef pr.shelf)@retrieved@(undef to_shelve) in
-  let proofview =
-    List.fold_left
-      Proofview.Unsafe.mark_as_goal
-      tacticced_proofview
-      retrieved
-  in
+  let sigma = Proofview.return proofview in
+  let shelf = (undef sigma pr.shelf)@retrieved@(undef sigma to_shelve) in
   let given_up = pr.given_up@give_up in
   let proofview = Proofview.Unsafe.reset_future_goals proofview in
   { pr with proofview ; shelf ; given_up },(status,info_trace)
@@ -387,9 +389,27 @@ module V82 = struct
       { p with proofview = Proofview.V82.grab p.proofview }
 
 
+  (* Main component of vernac command Existential *)
   let instantiate_evar n com pr =
-    let sp = pr.proofview in
-    let proofview = Proofview.V82.instantiate_evar n com sp in
+    let tac =
+      Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
+      let (evk, evi) =
+        let evl = Evarutil.non_instantiated sigma in
+        let evl = Evar.Map.bindings evl in
+        if (n <= 0) then
+          Errors.error "incorrect existential variable index"
+        else if CList.length evl < n then
+          Errors.error "not so many uninstantiated existential variables"
+        else
+          CList.nth evl (n-1)
+      in
+      let env = Evd.evar_filtered_env evi in
+      let rawc = Constrintern.intern_constr env com in
+      let ltac_vars = Pretyping.empty_lvar in
+      let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) sigma in
+      Proofview.Unsafe.tclEVARS sigma
+    end in
+    let ((), proofview, _, _) = Proofview.apply (Global.env ()) tac pr.proofview in
     let shelf =
       List.filter begin fun g ->
         Evd.is_undefined (Proofview.return proofview) g

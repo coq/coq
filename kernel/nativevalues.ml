@@ -78,8 +78,6 @@ let accumulate_code (k:accumulator) (x:t) =
 let rec accumulate (x:t) =
   accumulate_code (Obj.magic accumulate) x
 
-let raccumulate = ref accumulate
-
 let mk_accu_gen rcode (a:atom) =
 (*  Format.eprintf "size rcode =%i\n" (Obj.size (Obj.magic rcode)); *)
   let r = Obj.new_block 0 3 in
@@ -159,31 +157,6 @@ let args_of_accu (k:accumulator) =
 let is_accu x =
   let o = Obj.repr x in
   Obj.is_block o && Int.equal (Obj.tag o) accumulate_tag
-
-(*let accumulate_fix_code (k:accumulator) (a:t) =
-  match atom_of_accu k with
-  | Afix(frec,_,rec_pos,_,_) ->
-      let nargs = accu_nargs k in
-      if nargs <> rec_pos || is_accu a then
-	accumulate_code k a
-      else
-        let r = ref frec in
-        for i = 0 to nargs - 1 do
-	  r := !r (arg_of_accu k i)
-        done;
-        !r a
-  | _ -> assert false
-
-
-let rec accumulate_fix (x:t) =
-  accumulate_fix_code (Obj.magic accumulate_fix) x
-
-let raccumulate_fix = ref accumulate_fix *)
-
-let is_atom_fix (a:atom) =
-  match a with
-  | Afix _ -> true
-  | _ -> false
 
 let mk_fix_accu rec_pos pos types bodies =
   mk_accu_gen accumulate (Afix(types,bodies,rec_pos, pos))

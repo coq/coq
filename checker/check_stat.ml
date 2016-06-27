@@ -18,21 +18,16 @@ let print_memory_stat () =
   if !memory_stat then begin
     Format.printf "total heap size = %d kbytes\n" (CObj.heap_size_kb ());
     Format.print_newline();
-    flush_all()
+    Format.print_flush()
   end
 
 let output_context = ref false
 
-let pr_engagement (impr_set,type_in_type) =
+let pr_engagement impr_set =
   begin
     match impr_set with
     | ImpredicativeSet -> str "Theory: Set is impredicative"
     | PredicativeSet -> str "Theory: Set is predicative"
-  end ++ fnl() ++
-  begin
-    match type_in_type with
-    | StratifiedType -> str "Theory: Stratified type hierarchy"
-    | TypeInType -> str "Theory: Type is of type Type"
   end
 
 let cst_filter f csts =
@@ -57,12 +52,13 @@ let print_context env =
          env_modules=mods; env_modtypes=mtys};
        env_stratification=
         {env_universes=univ; env_engagement=engt}} = env in
-    ppnl(hov 0
+    Feedback.msg_notice
+      (hov 0
       (fnl() ++ str"CONTEXT SUMMARY" ++ fnl() ++
       str"===============" ++ fnl() ++ fnl() ++
       str "* " ++ hov 0 (pr_engagement engt ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_ax csts) ++
-      fnl())); pp_flush()
+       fnl()));
   end
 
 let stats () =

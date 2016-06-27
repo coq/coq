@@ -20,23 +20,49 @@ end
 
 exception Exc_located = Ploc.Exc
 
-IFDEF CAMLP5_6_00 THEN
-let ploc_make_loc fname lnb pos bpep = Ploc.make_loc fname lnb pos bpep ""
-let ploc_file_name = Ploc.file_name
-ELSE
-let ploc_make_loc fname lnb pos bpep = Ploc.make lnb pos bpep
-let ploc_file_name _ = ""
-END
-
-let of_coqloc loc =
-  let (fname, lnb, pos, bp, ep) = Loc.represent loc in
-  ploc_make_loc fname lnb pos (bp,ep)
-
 let to_coqloc loc =
-  Loc.create (ploc_file_name loc) (Ploc.line_nb loc)
-    (Ploc.bol_pos loc) (Ploc.first_pos loc, Ploc.last_pos loc)
+  { Loc.fname = Ploc.file_name loc;
+    Loc.line_nb = Ploc.line_nb loc;
+    Loc.bol_pos = Ploc.bol_pos loc;
+    Loc.bp = Ploc.first_pos loc;
+    Loc.ep = Ploc.last_pos loc;
+    Loc.line_nb_last = Ploc.line_nb_last loc;
+    Loc.bol_pos_last = Ploc.bol_pos_last loc; }
 
-let make_loc = Ploc.make_unlined
+let make_loc fname line_nb bol_pos bp ep = Ploc.make_loc fname line_nb bol_pos (bp, ep) ""
+
+(* Update a loc without allocating an intermediate pair *)
+let set_loc_pos loc bp ep =
+  Ploc.sub loc (bp - Ploc.first_pos loc) (ep - bp)
+
+(* Increase line number by 1 and update position of beginning of line *)
+let bump_loc_line loc bol_pos =
+  Ploc.make_loc (Ploc.file_name loc) (Ploc.line_nb loc + 1) bol_pos
+		(Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
+
+(* Same as [bump_loc_line], but for the last line in location *)
+(* For an obscure reason, camlp5 does not give an easy way to set line_nb_stop,
+   so we have to resort to a hack merging two locations. *)
+(* Warning: [bump_loc_line_last] changes the end position. You may need to call
+   [set_loc_pos] to fix it. *)
+let bump_loc_line_last loc bol_pos =
+  let loc' =
+    Ploc.make_loc (Ploc.file_name loc) (Ploc.line_nb_last loc + 1) bol_pos
+		  (Ploc.first_pos loc + 1, Ploc.last_pos loc + 1) (Ploc.comment loc)
+  in
+  Ploc.encl loc loc'
+
+let set_loc_file loc fname =
+  Ploc.make_loc fname (Ploc.line_nb loc) (Ploc.bol_pos loc)
+		(Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
+
+(* For some reason, the [Ploc.after] function of Camlp5 does not update line
+   numbers, so we define our own function that does it. *)
+let after loc =
+  let line_nb = Ploc.line_nb_last loc in
+  let bol_pos = Ploc.bol_pos_last loc in
+  Ploc.make_loc (Ploc.file_name loc) line_nb bol_pos
+		(Ploc.last_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
 
 ELSE
 
@@ -44,16 +70,39 @@ module CompatLoc = Camlp4.PreCast.Loc
 
 exception Exc_located = CompatLoc.Exc_located
 
-let of_coqloc loc =
-  let (fname, lnb, pos, bp, ep) = Loc.represent loc in
-  CompatLoc.of_tuple (fname, 0, 0, bp, 0, 0, ep, false)
-
 let to_coqloc loc =
-  Loc.create (CompatLoc.file_name loc) (CompatLoc.start_line loc)
-    (CompatLoc.start_bol loc) (CompatLoc.start_off loc, CompatLoc.stop_off loc)
+  { Loc.fname = CompatLoc.file_name loc;
+    Loc.line_nb = CompatLoc.start_line loc;
+    Loc.bol_pos = CompatLoc.start_bol loc;
+    Loc.bp = CompatLoc.start_off loc;
+    Loc.ep = CompatLoc.stop_off loc;
+    Loc.line_nb_last = CompatLoc.stop_line loc;
+    Loc.bol_pos_last = CompatLoc.stop_bol loc; }
 
-let make_loc (start, stop) =
-  CompatLoc.of_tuple ("", 0, 0, start, 0, 0, stop, false)
+let make_loc fname line_nb bol_pos start stop =
+  CompatLoc.of_tuple (fname, line_nb, bol_pos, start, line_nb, bol_pos, stop, false)
+
+open CompatLoc
+
+let set_loc_pos loc bp ep =
+  of_tuple (file_name loc, start_line loc, start_bol loc, bp,
+	    stop_line loc, stop_bol loc, ep, is_ghost loc)
+
+let bump_loc_line loc bol_pos =
+  of_tuple (file_name loc, start_line loc + 1, bol_pos, start_off loc,
+	    start_line loc + 1, bol_pos, stop_off loc, is_ghost loc)
+
+let bump_loc_line_last loc bol_pos =
+  of_tuple (file_name loc, start_line loc, start_bol loc, start_off loc,
+	    stop_line loc + 1, bol_pos, stop_off loc, is_ghost loc)
+
+let set_loc_file loc fname =
+  of_tuple (fname, start_line loc, start_bol loc, start_off loc,
+	    stop_line loc, stop_bol loc, stop_off loc, is_ghost loc)
+
+let after loc =
+  of_tuple (file_name loc, stop_line loc, stop_bol loc, stop_off loc,
+	    stop_line loc, stop_bol loc, stop_off loc, is_ghost loc)
 
 END
 
@@ -65,6 +114,7 @@ IFDEF CAMLP5 THEN
 
 module PcamlSig = struct end
 module Token = Token
+module CompatGramext = struct include Gramext type assoc = g_assoc end
 
 ELSE
 
@@ -73,69 +123,11 @@ module Ast = Camlp4.PreCast.Ast
 module Pcaml = Camlp4.PreCast.Syntax
 module MLast = Ast
 module Token = struct exception Error of string end
+module CompatGramext = Camlp4.Sig.Grammar
 
 END
 
-
-(** Grammar auxiliary types *)
-
-IFDEF CAMLP5 THEN
-
-let to_coq_assoc = function
-| Gramext.RightA -> Extend.RightA
-| Gramext.LeftA -> Extend.LeftA
-| Gramext.NonA -> Extend.NonA
-
-let of_coq_assoc = function
-| Extend.RightA -> Gramext.RightA
-| Extend.LeftA -> Gramext.LeftA
-| Extend.NonA -> Gramext.NonA
-
-let of_coq_position = function
-| Extend.First -> Gramext.First
-| Extend.Last -> Gramext.Last
-| Extend.Before s -> Gramext.Before s
-| Extend.After s -> Gramext.After s
-| Extend.Level s -> Gramext.Level s
-
-let to_coq_position = function
-| Gramext.First -> Extend.First
-| Gramext.Last -> Extend.Last
-| Gramext.Before s -> Extend.Before s
-| Gramext.After s -> Extend.After s
-| Gramext.Level s -> Extend.Level s
-| Gramext.Like _ -> assert false (** dont use it, not in camlp4 *)
-
-ELSE
-
-let to_coq_assoc = function
-| PcamlSig.Grammar.RightA -> Extend.RightA
-| PcamlSig.Grammar.LeftA -> Extend.LeftA
-| PcamlSig.Grammar.NonA -> Extend.NonA
-
-let of_coq_assoc = function
-| Extend.RightA -> PcamlSig.Grammar.RightA
-| Extend.LeftA -> PcamlSig.Grammar.LeftA
-| Extend.NonA -> PcamlSig.Grammar.NonA
-
-let of_coq_position = function
-| Extend.First -> PcamlSig.Grammar.First
-| Extend.Last -> PcamlSig.Grammar.Last
-| Extend.Before s -> PcamlSig.Grammar.Before s
-| Extend.After s -> PcamlSig.Grammar.After s
-| Extend.Level s -> PcamlSig.Grammar.Level s
-
-let to_coq_position = function
-| PcamlSig.Grammar.First -> Extend.First
-| PcamlSig.Grammar.Last -> Extend.Last
-| PcamlSig.Grammar.Before s -> Extend.Before s
-| PcamlSig.Grammar.After s -> Extend.After s
-| PcamlSig.Grammar.Level s -> Extend.Level s
-
-END
-
-
-(** Signature of Lexer *)
+(** Signature of CLexer *)
 
 IFDEF CAMLP5 THEN
 
@@ -198,11 +190,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
       let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
       Loc.raise loc e
 
-IFDEF CAMLP5_6_02_1 THEN
   let entry_print ft x = Entry.print ft x
-ELSE
-  let entry_print _ x = Entry.print x
-END
   let srules' = Gramext.srules
   let parse_tokens_after_filter = Entry.parse_token
 end
@@ -241,6 +229,69 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
 end
 
 END
+
+(** Some definitions are grammar-specific in Camlp4, so we use a functor to
+    depend on it while taking a dummy argument in Camlp5. *)
+
+module GramextMake (G : GrammarSig) :
+sig
+  val stoken : Tok.t -> G.symbol
+  val sself : G.symbol
+  val snext : G.symbol
+  val slist0 : G.symbol -> G.symbol
+  val slist0sep : G.symbol * G.symbol -> G.symbol
+  val slist1 : G.symbol -> G.symbol
+  val slist1sep : G.symbol * G.symbol -> G.symbol
+  val sopt : G.symbol -> G.symbol
+  val snterml : G.internal_entry * string -> G.symbol
+  val snterm : G.internal_entry -> G.symbol
+  val snterml_level : G.symbol -> string
+end =
+struct
+
+IFDEF CAMLP5 THEN
+  let stoken tok =
+    let pattern = match tok with
+    | Tok.KEYWORD s -> "", s
+    | Tok.IDENT s -> "IDENT", s
+    | Tok.PATTERNIDENT s -> "PATTERNIDENT", s
+    | Tok.FIELD s -> "FIELD", s
+    | Tok.INT s -> "INT", s
+    | Tok.INDEX s -> "INDEX", s
+    | Tok.STRING s -> "STRING", s
+    | Tok.LEFTQMARK -> "LEFTQMARK", ""
+    | Tok.BULLET s -> "BULLET", s
+    | Tok.EOI -> "EOI", ""
+    in
+    Gramext.Stoken pattern
+ELSE
+  module Gramext = G
+  let stoken tok = match tok with
+  | Tok.KEYWORD s -> Gramext.Skeyword s
+  | tok -> Gramext.Stoken (Tok.equal tok, G.Token.to_string tok)
+END
+
+  IFDEF CAMLP5 THEN
+     let slist0sep (x, y) = Gramext.Slist0sep (x, y, false)
+     let slist1sep (x, y) = Gramext.Slist1sep (x, y, false)
+  ELSE
+    let slist0sep (x, y) = Gramext.Slist0sep (x, y)
+    let slist1sep (x, y) = Gramext.Slist1sep (x, y)
+  END
+
+  let snterml (x, y) = Gramext.Snterml (x, y)
+  let snterm x = Gramext.Snterm x
+  let sself = Gramext.Sself
+  let snext = Gramext.Snext
+  let slist0 x = Gramext.Slist0 x
+  let slist1 x = Gramext.Slist1 x
+  let sopt x = Gramext.Sopt x
+
+  let snterml_level = function
+  | Gramext.Snterml (_, l) -> l
+  | _ -> failwith "snterml_level"
+
+end
 
 
 (** Misc functional adjustments *)
@@ -307,23 +358,10 @@ let make_fun loc cl =
 
 END
 
-(** Explicit antiquotation $anti:... $ *)
-
 IFDEF CAMLP5 THEN
-let expl_anti loc e = <:expr< $anti:e$ >>
+let warning_verbose = Gramext.warning_verbose
 ELSE
-let expl_anti _loc e = e (* FIXME: understand someday if we can do better *)
-END
-
-(** Qualified names in OCaml *)
-
-IFDEF CAMLP5 THEN
-let qualified_name loc path name =
-  let fold dir accu = <:expr< $uid:dir$.$accu$ >> in
-  List.fold_right fold path <:expr< $lid:name$ >>
-ELSE
-let qualified_name loc path name =
-  let fold dir accu = Ast.IdAcc (loc, Ast.IdUid (loc, dir), accu) in
-  let path = List.fold_right fold path (Ast.IdLid (loc, name)) in
-  Ast.ExId (loc, path)
+(* TODO: this is a workaround, since there isn't such
+   [warning_verbose] in new camlp4. *)
+let warning_verbose = ref true
 END

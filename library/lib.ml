@@ -428,8 +428,10 @@ let add_section_context ctx =
        sectab := (Context ctx :: vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
+  let open Context.Named.Declaration in
   let rec aux = function
-    | (Variable (id,impl,poly,ctx)::idl,(id',b,t)::hyps) when Names.Id.equal id id' ->
+    | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (get_id decl) ->
+      let (id',b,t) = to_tuple decl in
       let l, r = aux (idl,hyps) in 
 	(id',impl,b,t) :: l, if poly then Univ.ContextSet.union r ctx else r
     | (Variable (_,_,poly,ctx)::idl,hyps) ->
@@ -448,7 +450,10 @@ let instance_from_variable_context sign =
     | [] -> [] in
   Array.of_list (inst_rec sign)
 
-let named_of_variable_context ctx = List.map (fun (id,_,b,t) -> (id,b,t)) ctx
+let named_of_variable_context ctx = let open Context.Named.Declaration in
+                                    List.map (function id,_,None,t -> LocalAssum (id,t)
+                                                     | id,_,Some b,t -> LocalDef (id,b,t))
+                                             ctx
   
 let add_section_replacement f g poly hyps =
   match !sectab with

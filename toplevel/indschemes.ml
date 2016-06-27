@@ -38,6 +38,7 @@ open Ind_tables
 open Auto_ind_decl
 open Eqschemes
 open Elimschemes
+open Context.Rel.Declaration
 
 (* Flags governing automatic synthesis of schemes *)
 
@@ -149,7 +150,7 @@ let alarm what internal msg =
   | UserAutomaticRequest
   | InternalTacticRequest ->
     (if debug then
-      msg_warning
+      Feedback.msg_warning
 	(hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
   | _ -> Some msg
 
@@ -302,7 +303,7 @@ let declare_congr_scheme ind =
     then
       ignore (define_individual_scheme congr_scheme_kind UserAutomaticRequest None ind)
     else
-      msg_warning (strbrk "Cannot build congruence scheme because eq is not found")
+      Feedback.msg_warning (strbrk "Cannot build congruence scheme because eq is not found")
   end
 
 let declare_sym_scheme ind =
@@ -470,7 +471,7 @@ let build_combined_scheme env schemes =
   in
   let ctx, _ =
     list_split_rev_at prods
-      (List.rev_map (fun (x, y) -> x, None, y) ctx) in
+      (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
   let typ = it_mkProd_wo_LetIn concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
   (body, typ)
@@ -496,7 +497,7 @@ let map_inductive_block f kn n = for i=0 to n-1 do f (kn,i) done
 let declare_default_schemes kn =
   let mib = Global.lookup_mind kn in
   let n = Array.length mib.mind_packets in
-  if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag) then
+  if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag) && mib.mind_typing_flags.check_guarded then
     declare_induction_schemes kn;
   if !case_flag then map_inductive_block declare_one_case_analysis_scheme kn n;
   if is_eq_flag() then try_declare_beq_scheme kn;

@@ -47,17 +47,8 @@ val coqroot : string
     the order it gets added to the search path. *)
 val coqpath : string list
 
-(** [camlbin ()] is the path to the ocaml binaries. *)
-val camlbin : unit -> string
-
-(** [camllib ()] is the path to the ocaml standard library. *)
-val camllib : unit -> string
-
-(** [ocamlc ()] is the ocaml bytecode compiler that compiled this Coq. *)
-val ocamlc   : unit -> string
-
-(** [ocamlc ()] is the ocaml native compiler that compiled this Coq. *)
-val ocamlopt : unit -> string
+(** [camlbin ()] is the path to the ocamlfind binary. *)
+val ocamlfind : unit -> string
 
 (** [camlp4bin ()] is the path to the camlp4 binary. *)
 val camlp4bin : unit -> string

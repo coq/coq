@@ -22,7 +22,7 @@ Else, read the rest of this document to compile your own CoqIde.
 
 COMPILATION REQUIREMENTS
 
-- OCaml >= 3.12.1 with native threads support.
+- OCaml >= 4.01 with native threads support.
 - make world must succeed.
 - The graphical toolkit GTK+ 2.x. See http://www.gtk.org.
   The official supported version is at least 2.24.x.
@@ -39,7 +39,7 @@ COMPILATION REQUIREMENTS
   install GTK+ 2.x, should you need to force it for one reason
   or another.)
 - The OCaml bindings for GTK+ 2.x, lablgtk2 with support for gtksourceview2.
-  You need at least version 2.14.2.
+  You need at least version 2.16.
 
   Your distribution may contain precompiled packages. For example, for
   Debian, run

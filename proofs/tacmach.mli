@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Environ
 open Evd
 open Proof_type
@@ -34,18 +33,18 @@ val apply_sig_tac :
 
 val pf_concl              : goal sigma -> types
 val pf_env                : goal sigma -> env
-val pf_hyps               : goal sigma -> named_context
+val pf_hyps               : goal sigma -> Context.Named.t
 (*i val pf_untyped_hyps       : goal sigma -> (Id.t * constr) list i*)
 val pf_hyps_types         : goal sigma -> (Id.t * types) list
 val pf_nth_hyp_id         : goal sigma -> int -> Id.t
-val pf_last_hyp           : goal sigma -> named_declaration
+val pf_last_hyp           : goal sigma -> Context.Named.Declaration.t
 val pf_ids_of_hyps        : goal sigma -> Id.t list
 val pf_global             : goal sigma -> Id.t -> constr
 val pf_unsafe_type_of            : goal sigma -> constr -> types
 val pf_type_of            : goal sigma -> constr -> evar_map * types
 val pf_hnf_type_of        : goal sigma -> constr -> types
 
-val pf_get_hyp            : goal sigma -> Id.t -> named_declaration
+val pf_get_hyp            : goal sigma -> Id.t -> Context.Named.Declaration.t
 val pf_get_hyp_typ        : goal sigma -> Id.t -> types
 
 val pf_get_new_id  : Id.t      -> goal sigma -> Id.t
@@ -87,17 +86,12 @@ val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 val refiner                   : rule -> tactic
 val internal_cut_no_check     : bool -> Id.t -> types -> tactic
 val refine_no_check           : constr -> tactic
-val thin_no_check             : Id.t list -> tactic
-val mutual_fix      :
-  Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
-val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> tactic
 
 (** {6 The most primitive tactics with consistency and type checking } *)
 
 val internal_cut     : bool -> Id.t -> types -> tactic
 val internal_cut_rev : bool -> Id.t -> types -> tactic
 val refine           : constr -> tactic
-val thin             : Id.t list -> tactic
 val move_hyp         : Id.t -> Id.t move_location -> tactic
 
 (** {6 Pretty-printing functions (debug only). } *)
@@ -106,36 +100,38 @@ val pr_glls   : goal list sigma -> Pp.std_ppcmds
 
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig
-  val pf_apply : (env -> evar_map -> 'a) -> 'b Proofview.Goal.t -> 'a
-  val pf_global : identifier -> 'a Proofview.Goal.t -> constr
-  val of_old : (Proof_type.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
+  val pf_apply : (env -> evar_map -> 'a) -> ('b, 'r) Proofview.Goal.t -> 'a
+  val pf_global : identifier -> ('a, 'r) Proofview.Goal.t -> constr
+  (** FIXME: encapsulate the level in an existential type. *)
+  val of_old : (Proof_type.goal Evd.sigma -> 'a) -> ([ `NF ], 'r) Proofview.Goal.t -> 'a
 
-  val pf_env : 'a Proofview.Goal.t -> Environ.env
-  val pf_concl : [ `NF ] Proofview.Goal.t -> types
+  val project : ('a, 'r) Proofview.Goal.t -> Evd.evar_map
+  val pf_env : ('a, 'r) Proofview.Goal.t -> Environ.env
+  val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> types
 
-  val pf_unsafe_type_of : 'a Proofview.Goal.t -> Term.constr -> Term.types
-  val pf_type_of : 'a Proofview.Goal.t -> Term.constr -> evar_map * Term.types
-  val pf_conv_x : 'a Proofview.Goal.t -> Term.constr -> Term.constr -> bool
+  val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.types
+  val pf_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> evar_map * Term.types
+  val pf_conv_x : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.constr -> bool
 
-  val pf_get_new_id  : identifier -> [ `NF ] Proofview.Goal.t -> identifier
-  val pf_ids_of_hyps : 'a Proofview.Goal.t -> identifier list
-  val pf_hyps_types : 'a Proofview.Goal.t -> (identifier * types) list
+  val pf_get_new_id  : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> identifier
+  val pf_ids_of_hyps : ('a, 'r) Proofview.Goal.t -> identifier list
+  val pf_hyps_types : ('a, 'r) Proofview.Goal.t -> (identifier * types) list
 
-  val pf_get_hyp : identifier -> [ `NF ] Proofview.Goal.t -> named_declaration
-  val pf_get_hyp_typ        : identifier -> [ `NF ] Proofview.Goal.t -> types
-  val pf_last_hyp           : [ `NF ] Proofview.Goal.t -> named_declaration
+  val pf_get_hyp : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> Context.Named.Declaration.t
+  val pf_get_hyp_typ        : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> types
+  val pf_last_hyp           : ([ `NF ], 'r) Proofview.Goal.t -> Context.Named.Declaration.t
 
-  val pf_nf_concl : [ `LZ ] Proofview.Goal.t -> types
-  val pf_reduce_to_quantified_ind : 'a Proofview.Goal.t -> types -> pinductive * types
+  val pf_nf_concl : ([ `LZ ], 'r) Proofview.Goal.t -> types
+  val pf_reduce_to_quantified_ind : ('a, 'r) Proofview.Goal.t -> types -> pinductive * types
 
-  val pf_hnf_constr : 'a Proofview.Goal.t -> constr -> types
-  val pf_hnf_type_of : 'a Proofview.Goal.t -> constr -> types
+  val pf_hnf_constr : ('a, 'r) Proofview.Goal.t -> constr -> types
+  val pf_hnf_type_of : ('a, 'r) Proofview.Goal.t -> constr -> types
 
-  val pf_whd_betadeltaiota : 'a Proofview.Goal.t -> constr -> constr
-  val pf_compute : 'a Proofview.Goal.t -> constr -> constr
+  val pf_whd_betadeltaiota : ('a, 'r) Proofview.Goal.t -> constr -> constr
+  val pf_compute : ('a, 'r) Proofview.Goal.t -> constr -> constr
 
-  val pf_matches : 'a Proofview.Goal.t -> constr_pattern -> constr -> patvar_map
+  val pf_matches : ('a, 'r) Proofview.Goal.t -> constr_pattern -> constr -> patvar_map
 
-  val pf_nf_evar : 'a Proofview.Goal.t -> constr -> constr
+  val pf_nf_evar : ('a, 'r) Proofview.Goal.t -> constr -> constr
 
 end

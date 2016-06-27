@@ -13,7 +13,7 @@ open Evd
 open Environ
 open Proof_type
 open Logic
-
+open Context.Named.Declaration
 
 let sig_it x = x.it
 let project x = x.sigma
@@ -57,7 +57,7 @@ let tclIDTAC gls = goal_goal_list gls
 
 (* the message printing identity tactic *)
 let tclIDTAC_MESSAGE s gls =
-  Pp.msg_info (hov 0 s); pp_flush (); tclIDTAC gls
+  Feedback.msg_info (hov 0 s); tclIDTAC gls
 
 (* General failure tactic *)
 let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" (str s)
@@ -197,12 +197,12 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
    destruct), this is not detected by this tactical. *)
 let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
     :Proof_type.goal list Evd.sigma =
-  let oldhyps:Context.named_context = pf_hyps goal in
+  let oldhyps:Context.Named.t = pf_hyps goal in
   let rslt:Proof_type.goal list Evd.sigma = tac goal in
   let { it = gls; sigma = sigma; } = rslt in
-  let hyps:Context.named_context list =
+  let hyps:Context.Named.t list =
     List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; }) gls in
-  let cmp (i1, c1, t1) (i2, c2, t2) = Names.Id.equal i1 i2 in
+  let cmp d1 d2 = Names.Id.equal (get_id d1) (get_id d2) in
   let newhyps =
     List.map
       (fun hypl -> List.subtract cmp hypl oldhyps)
@@ -215,10 +215,11 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
     List.fold_left
     (fun acc lh -> acc ^ (if !frst then (frst:=false;"") else " | ")
       ^ (List.fold_left
-	   (fun acc (nm,_,_) -> (Names.Id.to_string nm) ^ " " ^ acc)
+	   (fun acc d -> (Names.Id.to_string (get_id d)) ^ " " ^ acc)
 	   "" lh))
     "" newhyps in
-  pp (str (emacs_str "<infoH>")
+  Feedback.msg_notice
+    (str (emacs_str "<infoH>")
       ++  (hov 0 (str s))
       ++  (str (emacs_str "</infoH>")) ++ fnl());
   tclIDTAC goal;;

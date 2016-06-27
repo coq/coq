@@ -42,7 +42,6 @@ type notation_constr =
       (Name.t * notation_constr option * notation_constr) list array *
       notation_constr array * notation_constr array
   | NSort of glob_sort
-  | NPatVar of patvar
   | NCast of notation_constr * notation_constr cast_type
 
 (** Note concerning NList: first constr is iterator, second is terminator;
@@ -61,7 +60,7 @@ type subscopes = tmp_scope_name option * scope_name list
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
 type notation_var_instance_type =
-  | NtnTypeConstr | NtnTypeConstrList | NtnTypeBinderList
+  | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
 
 (** Type of variables when interpreting a constr_expr as an notation_constr:
     in a recursive pattern x..y, both x and y carry the individual type
@@ -78,4 +77,20 @@ type notation_interp_env = {
   ninterp_var_type : notation_var_internalization_type Id.Map.t;
   ninterp_rec_vars : Id.t Id.Map.t;
   mutable ninterp_only_parse : bool;
+}
+
+type grammar_constr_prod_item =
+  | GramConstrTerminal of Tok.t
+  | GramConstrNonTerminal of Extend.constr_prod_entry_key * Id.t option
+  | GramConstrListMark of int * bool
+    (* tells action rule to make a list of the n previous parsed items;
+       concat with last parsed list if true *)
+
+type notation_grammar = {
+  notgram_level : int;
+  notgram_assoc : Extend.gram_assoc option;
+  notgram_notation : Constrexpr.notation;
+  notgram_prods : grammar_constr_prod_item list list;
+  notgram_typs : notation_var_internalization_type list;
+  notgram_onlyprinting : bool;
 }

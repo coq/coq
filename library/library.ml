@@ -132,7 +132,7 @@ let try_find_library dir =
   try find_library dir
   with Not_found ->
     errorlabstrm "Library.find_library"
-      (str "Unknown library " ++ str (DirPath.to_string dir))
+      (str "Unknown library " ++ pr_dirpath dir)
 
 let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
@@ -285,28 +285,18 @@ let locate_absolute_library dir =
     with Not_found -> [] in
   match find ".vo" @ find ".vio" with
   | [] -> raise LibNotFound
-  | [file] -> dir, file
+  | [file] -> file
   | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-       msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
+       Feedback.msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
          str vo ++ str " because it is more recent");
-       dir, vi
-  | [vo;vi] -> dir, vo
+       vi
+  | [vo;vi] -> vo
   | _ -> assert false
 
 let locate_qualified_library ?root ?(warn = true) qid =
   (* Search library in loadpath *)
   let dir, base = repr_qualid qid in
-  let loadpath = match root with
-  | None -> Loadpath.expand_path dir
-  | Some root ->
-    let filter path =
-      if is_dirpath_prefix_of root path then
-        let path = drop_dirpath_prefix root path in
-        is_dirpath_suffix_of dir path
-      else false
-    in
-    Loadpath.filter_path filter
-  in
+  let loadpath = Loadpath.expand_path ?root dir in
   let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
   let find ext =
     try
@@ -321,7 +311,7 @@ let locate_qualified_library ?root ?(warn = true) qid =
     | [lpath, file] -> lpath, file
     | [lpath_vo, vo; lpath_vi, vi]
       when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-       msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
+       Feedback.msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
          str vo ++ str " because it is more recent");
        lpath_vi, vi
     | [lpath_vo, vo; _ ] -> lpath_vo, vo
@@ -380,7 +370,7 @@ let access_table what tables dp i =
     | Fetched t -> t
     | ToFetch f ->
       let dir_path = Names.DirPath.to_string dp in
-      Flags.if_verbose msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
+      Flags.if_verbose Feedback.msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
       let t =
         try fetch_delayed f
         with Faulty f ->
@@ -458,7 +448,7 @@ let intern_from_file f =
 module DPMap = Map.Make(DirPath)
 
 let rec intern_library (needed, contents) (dir, f) from =
-  Pp.feedback(Feedback.FileDependency (from, f));
+  Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
@@ -466,13 +456,14 @@ let rec intern_library (needed, contents) (dir, f) from =
   try (DPMap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
+  let f = match f with Some f -> f | None -> try_locate_absolute_library dir in
   let m = intern_from_file f in
   if not (DirPath.equal dir m.library_name) then
     errorlabstrm "load_physical_library"
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
-  Pp.feedback(Feedback.FileLoaded(DirPath.to_string dir, f));
+  Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
   m.library_digests, intern_library_deps (needed, contents) dir m (Some f)
 
 and intern_library_deps libs dir m from =
@@ -480,13 +471,13 @@ and intern_library_deps libs dir m from =
   (dir :: needed, DPMap.add dir m contents )
 
 and intern_mandatory_library caller from libs (dir,d) =
-  let digest, libs = intern_library libs (try_locate_absolute_library dir) from in
+  let digest, libs = intern_library libs (dir, None) from in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    errorlabstrm "" (str "Compiled library " ++ str (DirPath.to_string caller) ++ str ".vo makes inconsistent assumptions over library " ++ str (DirPath.to_string dir));
+    errorlabstrm "" (str "Compiled library " ++ pr_dirpath caller ++ str ".vo makes inconsistent assumptions over library " ++ pr_dirpath dir);
   libs
 
-let rec_intern_library libs mref =
-  let _, libs = intern_library libs mref None in
+let rec_intern_library libs (dir, f) =
+  let _, libs = intern_library libs (dir, Some f) None in
   libs
 
 let native_name_from_filename f =
@@ -578,7 +569,7 @@ let safe_locate_module (loc,qid) =
   try Nametab.locate_module qid
   with Not_found ->
     user_err_loc
-      (loc,"import_library", str (string_of_qualid qid) ++ str " is not a module")
+      (loc,"import_library", pr_qualid qid ++ str " is not a module")
 
 let import_module export modl =
   (* Optimization: libraries in a raw in the list are imported
@@ -603,7 +594,7 @@ let import_module export modl =
             try Declaremods.import_module export mp; aux [] l
             with Not_found ->
               user_err_loc (loc,"import_library",
-                str (string_of_qualid dir) ++ str " is not a module"))
+                pr_qualid dir ++ str " is not a module"))
     | [] -> flush acc
   in aux [] modl
 
@@ -613,9 +604,9 @@ let import_module export modl =
 let check_coq_overwriting p id =
   let l = DirPath.repr p in
   let is_empty = match l with [] -> true | _ -> false in
-  if not !Flags.boot && not is_empty && String.equal (Id.to_string (List.last l)) "Coq" then
+  if not !Flags.boot && not is_empty && Id.equal (List.last l) coq_root then
     errorlabstrm ""
-      (str "Cannot build module " ++ str (DirPath.to_string p) ++ str "." ++ pr_id id ++ str "." ++ spc () ++
+      (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ pr_id id ++ str "." ++ spc () ++
       str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
 
 (* Verifies that a string starts by a letter and do not contain
@@ -637,17 +628,14 @@ let check_module_name s =
         done
     | c -> err c
 
-let start_library f =
-  let () = if not (Sys.file_exists f) then
-    errorlabstrm "" (hov 0 (str "Can't find file" ++ spc () ++ str f))
-  in
+let start_library fo =
   let ldir0 =
     try
-      let lp = Loadpath.find_load_path (Filename.dirname f) in
+      let lp = Loadpath.find_load_path (Filename.dirname fo) in
       Loadpath.logical lp
     with Not_found -> Nameops.default_root_prefix
   in
-  let file = Filename.chop_extension (Filename.basename f) in
+  let file = Filename.chop_extension (Filename.basename fo) in
   let id = Id.of_string file in
   check_module_name file;
   check_coq_overwriting ldir0 id;
@@ -702,12 +690,13 @@ let error_recursively_dependent_library dir =
    writing the content and computing the checksum... *)
 
 let save_library_to ?todo dir f otab =
-  let f, except = match todo with
+  let except = match todo with
     | None ->
         assert(!Flags.compilation_mode = Flags.BuildVo);
-        f ^ "o", Future.UUIDSet.empty
+        assert(Filename.check_suffix f ".vo");
+        Future.UUIDSet.empty
     | Some (l,_) ->
-        f ^ "io",
+        assert(Filename.check_suffix f ".vio");
         List.fold_left (fun e (r,_) -> Future.UUIDSet.add r.Stateid.uuid e)
           Future.UUIDSet.empty l in
   let cenv, seg, ast = Declaremods.end_library ~except dir in
@@ -764,7 +753,7 @@ let save_library_to ?todo dir f otab =
 	error "Could not compile the library to native code."
    with reraise ->
     let reraise = Errors.push reraise in
-    let () = msg_warning (str "Removed file " ++ str f') in
+    let () = Feedback.msg_warning (str "Removed file " ++ str f') in
     let () = close_out ch in
     let () = Sys.remove f' in
     iraise reraise
@@ -779,13 +768,6 @@ let save_library_raw f sum lib univs proofs =
   System.marshal_out_segment f' ch (None       : 'tasks option);
   System.marshal_out_segment f' ch (proofs     : seg_proofs);
   close_out ch
-
-(************************************************************************)
-(*s Display the memory use of a library. *)
-
-open Printf
-
-let mem s = Pp.mt ()
 
 module StringOrd = struct type t = string let compare = String.compare end
 module StringSet = Set.Make(StringOrd)

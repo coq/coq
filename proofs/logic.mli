@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Legacy proof engine. Do not use in newly written code. *)
+
 open Names
 open Term
 open Evd
@@ -53,4 +55,4 @@ exception RefinerError of refiner_error
 val catchable_exception : exn -> bool
 
 val convert_hyp : bool -> Environ.named_context_val -> evar_map ->
-  Context.named_declaration -> Environ.named_context_val
+  Context.Named.Declaration.t -> Environ.named_context_val

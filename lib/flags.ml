@@ -47,6 +47,7 @@ let batch_mode = ref false
 
 type compilation_mode = BuildVo | BuildVio | Vio2Vo
 let compilation_mode = ref BuildVo
+let compilation_output_name = ref None
 
 let test_mode = ref false
 
@@ -68,11 +69,15 @@ let priority_of_string = function
   | "low" -> Low
   | "high" -> High
   | _ -> raise (Invalid_argument "priority_of_string")
+type tac_error_filter = [ `None | `Only of string list | `All ]
+let async_proofs_tac_error_resilience = ref (`Only [ "par" ; "curly" ])
+let async_proofs_cmd_error_resilience = ref true
 
 let async_proofs_is_worker () =
   !async_proofs_worker_id <> "master"
 let async_proofs_is_master () =
   !async_proofs_mode = APon && !async_proofs_worker_id = "master"
+let async_proofs_delegation_threshold = ref 0.03
 
 let debug = ref false
 let in_debugger = ref false
@@ -103,18 +108,20 @@ let we_are_parsing = ref false
 (* Current means no particular compatibility consideration.
    For correct comparisons, this constructor should remain the last one. *)
 
-type compat_version = V8_2 | V8_3 | V8_4 | Current
+type compat_version = V8_2 | V8_3 | V8_4 | V8_5 | Current
 
 let compat_version = ref Current
 
 let version_strictly_greater v = match !compat_version, v with
-| V8_2, (V8_2 | V8_3 | V8_4 | Current) -> false
-| V8_3, (V8_3 | V8_4 | Current) -> false
-| V8_4, (V8_4 | Current) -> false
+| V8_2, (V8_2 | V8_3 | V8_4 | V8_5 | Current) -> false
+| V8_3, (V8_3 | V8_4 | V8_5 | Current) -> false
+| V8_4, (V8_4 | V8_5 | Current) -> false
+| V8_5, (V8_5 | Current) -> false
 | Current, Current -> false
 | V8_3, V8_2 -> true
 | V8_4, (V8_2 | V8_3) -> true
-| Current, (V8_2 | V8_3 | V8_4) -> true
+| V8_5, (V8_2 | V8_3 | V8_4) -> true
+| Current, (V8_2 | V8_3 | V8_4 | V8_5) -> true
 
 let version_less_or_equal v = not (version_strictly_greater v)
 
@@ -122,6 +129,7 @@ let pr_version = function
   | V8_2 -> "8.2"
   | V8_3 -> "8.3"
   | V8_4 -> "8.4"
+  | V8_5 -> "8.5"
   | Current -> "current"
 
 (* Translate *)
@@ -195,9 +203,9 @@ let is_standard_doc_url url =
 let coqlib_spec = ref false
 let coqlib = ref "(not initialized yet)"
 
-(* Options for changing camlbin (used by coqmktop) *)
-let camlbin_spec = ref false
-let camlbin = ref Coq_config.camlbin
+(* Options for changing ocamlfind (used by coqmktop) *)
+let ocamlfind_spec = ref false
+let ocamlfind = ref Coq_config.camlbin
 
 (* Options for changing camlp4bin (used by coqmktop) *)
 let camlp4bin_spec = ref false
@@ -217,6 +225,7 @@ let native_compiler = ref false
 let print_mod_uid = ref false
 
 let tactic_context_compat = ref false
+let profile_ltac = ref false
 
 let dump_bytecode = ref false
 let set_dump_bytecode = (:=) dump_bytecode

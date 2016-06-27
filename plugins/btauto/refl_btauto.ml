@@ -1,3 +1,4 @@
+open Proofview.Notations
 
 let contrib_name = "btauto"
 
@@ -11,7 +12,7 @@ let get_constant dir s = lazy (Coqlib.gen_constant contrib_name dir s)
 
 let get_inductive dir s =
   let glob_ref () = Coqlib.find_reference contrib_name ("Coq" :: dir) s in
-  Lazy.lazy_from_fun (fun () -> Globnames.destIndRef (glob_ref ()))
+  Lazy.from_fun (fun () -> Globnames.destIndRef (glob_ref ()))
 
 let decomp_term (c : Term.constr) =
   Term.kind_of_term (Term.strip_outer_cast c)
@@ -216,7 +217,7 @@ module Btauto = struct
     Tacticals.tclFAIL 0 msg gl
 
   let try_unification env =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let eq = Lazy.force eq in
       let t = decomp_term concl in
@@ -228,10 +229,10 @@ module Btauto = struct
       | _ ->
           let msg = str "Btauto: Internal error" in
           Tacticals.New.tclFAIL 0 msg
-    end
+    end }
 
   let tac =
-    Proofview.Goal.nf_enter begin fun gl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let eq = Lazy.force eq in
       let bool = Lazy.force Bool.typ in
@@ -249,12 +250,12 @@ module Btauto = struct
           Tacticals.New.tclTHENLIST [
             Tactics.change_concl changed_gl;
             Tactics.apply (Lazy.force soundness);
-            Proofview.V82.tactic (Tactics.normalise_vm_in_concl);
+            Tactics.normalise_vm_in_concl;
             try_unification env
           ]
       | _ ->
           let msg = str "Cannot recognize a boolean equality" in
           Tacticals.New.tclFAIL 0 msg
-    end
+    end }
 
 end

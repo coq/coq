@@ -86,7 +86,7 @@ let signals = [
   end_s#disconnect;
 ] in
 object (self : 'a)
-  inherit GUtil.ml_signals signals as super
+  inherit GUtil.ml_signals signals
   method start_completion = start_s#connect ~after
   method update_completion = update_s#connect ~after
   method end_completion = end_s#connect ~after
@@ -258,7 +258,7 @@ object (self)
 
   method private refresh_style () =
     let (renderer, _) = renderer in
-    let font = Preferences.current.Preferences.text_font in
+    let font = Pango.Font.from_string Preferences.text_font#get in
     renderer#set_properties [`FONT_DESC font; `XPAD 10]
 
   method private coordinates pos =

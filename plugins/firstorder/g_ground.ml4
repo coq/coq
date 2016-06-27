@@ -15,6 +15,9 @@ open Goptions
 open Tacticals
 open Tacinterp
 open Libnames
+open Constrarg
+open Stdarg
+open Pcoq.Prim
 
 DECLARE PLUGIN "ground_plugin"
 
@@ -52,8 +55,15 @@ let _=
   in
     declare_int_option gdopt
 
+let default_intuition_tac =
+  let tac _ _ = Auto.h_auto None [] None in
+  let name = { Tacexpr.mltac_plugin = "ground_plugin"; mltac_tactic = "auto_with"; } in
+  let entry = { Tacexpr.mltac_name = name; mltac_index = 0 } in
+  Tacenv.register_ml_tactic name [| tac |];
+  Tacexpr.TacML (Loc.ghost, entry, [])
+
 let (set_default_solver, default_solver, print_default_solver) = 
-  Tactic_option.declare_tactic_option ~default:(<:tactic<auto with *>>) "Firstorder default solver"
+  Tactic_option.declare_tactic_option ~default:default_intuition_tac "Firstorder default solver"
 
 VERNAC COMMAND EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
 | [ "Set" "Firstorder" "Solver" tactic(t) ] -> [
@@ -64,7 +74,7 @@ END
 
 VERNAC COMMAND EXTEND Firstorder_Print_Solver CLASSIFIED AS QUERY
 | [ "Print" "Firstorder" "Solver" ] -> [
-    Pp.msg_info
+    Feedback.msg_info
       (Pp.(++) (Pp.str"Firstorder solver tactic is ") (print_default_solver ())) ]
 END
 
@@ -111,6 +121,7 @@ let pr_firstorder_using_glob _ _ _ l = str "using " ++ prlist_with_sep pr_comma 
 let pr_firstorder_using_typed _ _ _ l = str "using " ++ prlist_with_sep pr_comma pr_global l
 
 ARGUMENT EXTEND firstorder_using
+  TYPED AS reference_list
   PRINTED BY pr_firstorder_using_typed
   RAW_TYPED AS reference_list
   RAW_PRINTED BY pr_firstorder_using_raw
@@ -120,7 +131,7 @@ ARGUMENT EXTEND firstorder_using
 | [ "using" reference(a) "," ne_reference_list_sep(l,",") ] -> [ a::l ]
 | [ "using" reference(a) reference(b) reference_list(l) ] -> [
     Flags.if_verbose
-      Pp.msg_warning (Pp.str "Deprecated syntax; use \",\" as separator");
+      Feedback.msg_warning (Pp.str "Deprecated syntax; use \",\" as separator");
     a::b::l
   ]
 | [ ] -> [ [] ]
@@ -128,20 +139,22 @@ END
 
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) l []) ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) l []) ]
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) [] l) ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) [] l) ]
 |   [ "firstorder" tactic_opt(t) firstorder_using(l)
        "with" ne_preident_list(l') ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) l l') ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) l l') ]
 END
 
 TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
-     [ Proofview.V82.tactic (gen_ground_tac false (Option.map eval_tactic t) [] []) ]
+     [ Proofview.V82.tactic (gen_ground_tac false (Option.map (tactic_of_value ist) t) [] []) ]
 END
 
 open Proofview.Notations
+open Cc_plugin
+open Decl_mode_plugin
 
 let default_declarative_automation =
   Proofview.tclUNIT () >>= fun () -> (* delay for [congruence_depth] *)

@@ -201,7 +201,8 @@ universes and explicitly instantiate polymorphic definitions.
 In the monorphic case, this command declares a new global universe named
 {\ident}. It supports the polymorphic flag only in sections, meaning the
 universe quantification will be discharged on each section definition
-independently.
+independently. One cannot mix polymorphic and monomorphic declarations
+in the same section.
 
 \subsection{\tt Constraint {\ident} {\textit{ord}} {\ident}.
   \comindex{Constraint}
@@ -212,6 +213,7 @@ The order relation can be one of $<$, $\le$ or $=$. If consistent,
 the constraint is then enforced in the global environment. Like
 \texttt{Universe}, it can be used with the \texttt{Polymorphic} prefix
 in sections only to declare constraints discharged at section closing time.
+One cannot declare a global constraint on polymorphic universes.
 
 \begin{ErrMsgs}
 \item \errindex{Undeclared universe {\ident}}.

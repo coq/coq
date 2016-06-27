@@ -25,9 +25,9 @@ let mk_absolute vfile =
   if Filename.is_relative vfile then CUnix.correct_path vfile (Sys.getcwd ())
   else vfile
 
-let start_aux_file_for vfile =
-  let vfile = mk_absolute vfile in
-  oc := Some (open_out (aux_file_name_for vfile));
+let start_aux_file ~aux_file:output_file ~v_file =
+  let vfile = mk_absolute v_file in
+  oc := Some (open_out output_file);
   Printf.fprintf (Option.get !oc) "COQAUX%d %s %s\n"
     version (Digest.to_hex (Digest.file vfile)) vfile
 
@@ -88,7 +88,7 @@ let load_aux_file_for vfile =
   | Sys_error s | Scanf.Scan_failure s
   | Failure s | Invalid_argument s ->
      Flags.if_verbose
-       Pp.msg_warning Pp.(str"Loading file "++str aux_fname++str": "++str s);
+       Feedback.msg_warning Pp.(str"Loading file "++str aux_fname++str": "++str s);
      empty_aux_file
 
 let set h loc k v = set h (Loc.unloc loc) k v

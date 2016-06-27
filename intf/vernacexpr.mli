@@ -19,7 +19,6 @@ open Libnames
 type lident = Id.t located
 type lname = Name.t located
 type lstring = string located
-type lreference = reference
 
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
@@ -28,11 +27,11 @@ type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
    to print a goal that is out of focus (or already solved) it doesn't
    make sense to apply a tactic to it. Hence it the types may look very
    similar, they do not seem to mean the same thing. *)
-type goal_selector =
+type goal_selector = Tacexpr.goal_selector =
   | SelectNth of int
+  | SelectList of (int * int) list
   | SelectId of Id.t
   | SelectAll
-  | SelectAllParallel
 
 type goal_identifier = string
 type scope_name = string
@@ -62,7 +61,6 @@ type printable =
   | PrintClasses
   | PrintTypeClasses
   | PrintInstances of reference or_by_notation
-  | PrintLtac of reference
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions
@@ -70,7 +68,6 @@ type printable =
   | PrintHint of reference or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string
-  | PrintRewriteHintDbName of string
   | PrintHintDb
   | PrintScopes
   | PrintScope of string
@@ -121,12 +118,17 @@ type reference_or_constr =
   | HintsReference of reference
   | HintsConstr of constr_expr
 
+type hint_mode =
+  | ModeInput (* No evars *)
+  | ModeNoHeadEvar (* No evar at the head *)
+  | ModeOutput (* Anything *)
+
 type hints_expr =
   | HintsResolve of (int option * bool * reference_or_constr) list
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
-  | HintsMode of reference * bool list
+  | HintsMode of reference * hint_mode list
   | HintsConstructors of reference list
   | HintsExtern of int * constr_expr option * raw_tactic_expr
 
@@ -204,16 +206,13 @@ type one_inductive_expr =
 type proof_expr =
   plident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
 
-type grammar_tactic_prod_item_expr =
-  | TacTerm of string
-  | TacNonTerm of Loc.t * string * (Names.Id.t * string) option
-
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
   | SetLevel of int
   | SetAssoc of Extend.gram_assoc
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing of Flags.compat_version
+  | SetOnlyPrinting
   | SetFormat of string * string located
 
 type proof_end =
@@ -233,7 +232,32 @@ type section_subset_expr =
   | SsSubstr of section_subset_expr * section_subset_expr
   | SsFwdClose of section_subset_expr
 
-(** Extension identifiers for the VERNAC EXTEND mechanism. *)
+(** Extension identifiers for the VERNAC EXTEND mechanism.
+
+    {b ("Extraction", 0} indicates {b Extraction {i qualid}} command.
+
+    {b ("Extraction", 1} indicates {b Recursive Extraction {i qualid}} command.
+
+    {b ("Extraction", 2)} indicates {b Extraction "{i filename}" {i qualid{_ 1}} ... {i qualid{_ n}}} command.
+
+    {b ("ExtractionLibrary", 0)} indicates {b Extraction Library {i ident}} command.
+
+    {b ("RecursiveExtractionLibrary", 0)} indicates {b Recursive Extraction Library {i ident}} command.
+
+    {b ("SeparateExtraction", 0)} indicates {b Separate Extraction {i qualid{_ 1}} ... {i qualid{_ n}}} command.
+
+    {b ("ExtractionLanguage", 0)} indicates {b Extraction Language Ocaml} or {b Extraction Language Haskell} or {b Extraction Language Scheme} or {b Extraction Language JSON} commands.
+
+    {b ("ExtractionImplicit", 0)} indicates {b Extraction Implicit {i qualid} \[ {i ident{_1}} ... {i ident{_n} } \] } command.
+
+    {b ("ExtractionConstant", 0)} indicates {b Extract Constant {i qualid} => {i string}} command.
+
+    {b ("ExtractionInlinedConstant", 0)} indicates {b Extract Inlined Constant {i qualid} => {i string}} command.
+
+    {b ("ExtractionInductive", 0)} indicates {b Extract Inductive {i qualid} => {i string} [ {i string} ... {string} ] {i optstring}} command.
+
+    {b ("ExtractionBlacklist", 0)} indicates {b Extraction Blacklist {i ident{_1}} ... {i ident{_n}}} command.
+ *)
 type extend_name =
   (** Name of the vernac entry where the tactic is defined, typically found
       after the VERNAC EXTEND statement in the source. *)
@@ -287,20 +311,18 @@ type module_binder = bool option * lident list * module_ast_inl
 type vernac_expr =
   (* Control *)
   | VernacLoad of verbose_flag * string
-  | VernacTime of vernac_list
-  | VernacRedirect of string * vernac_list
+  | VernacTime of vernac_expr located
+  | VernacRedirect of string * vernac_expr located
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
   | VernacError of exn (* always fails *)
 
   (* Syntax *)
-  | VernacTacticNotation of
-      int * grammar_tactic_prod_item_expr list * raw_tactic_expr
   | VernacSyntaxExtension of
       obsolete_locality * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
   | VernacDelimiters of scope_name * string option
-  | VernacBindScope of scope_name * reference or_by_notation list
+  | VernacBindScope of scope_name * class_rawexpr list
   | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *
       constr_expr * scope_name option
   | VernacNotation of
@@ -330,8 +352,8 @@ type vernac_expr =
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
-      lreference option * export_flag option * lreference list
-  | VernacImport of export_flag * lreference list
+      reference option * export_flag option * reference list
+  | VernacImport of export_flag * reference list
   | VernacCanonical of reference or_by_notation
   | VernacCoercion of obsolete_locality * reference or_by_notation *
       class_rawexpr * class_rawexpr
@@ -365,7 +387,6 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of goal_selector * int option * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
@@ -386,8 +407,6 @@ type vernac_expr =
   | VernacBackTo of int
 
   (* Commands *)
-  | VernacDeclareTacticDefinition of
-      (rec_flag * (reference * bool * raw_tactic_expr) list)
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * reference list
   | VernacHints of obsolete_locality * string list * hints_expr
@@ -421,7 +440,6 @@ type vernac_expr =
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
-  | VernacNop
 
   (* Stm backdoor *)
   | VernacStm of vernac_expr stm_vernac
@@ -455,9 +473,9 @@ type vernac_expr =
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
 
-and vernac_list = located_vernac_expr list
-
-and located_vernac_expr = Loc.t * vernac_expr
+and tacdef_body =
+  | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
+  | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
 
 (* A vernac classifier has to tell if a command:
    vernac_when: has to be executed now (alters the parser) or later
@@ -468,7 +486,7 @@ type vernac_type =
   | VtStartProof of vernac_start
   | VtSideff of vernac_sideff_type
   | VtQed of vernac_qed_type
-  | VtProofStep of bool (* parallelize *)
+  | VtProofStep of proof_step
   | VtProofMode of string
   | VtQuery of vernac_part_of_script * report_with
   | VtStm of vernac_control * vernac_part_of_script
@@ -490,6 +508,13 @@ and vernac_control =
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
+and proof_step = { (* TODO: inline with OCaml 4.03 *)
+  parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
+  proof_block_detection : proof_block_name option
+}
+and solving_tac = bool (* a terminator *)
+and anon_abstracting_tac = bool (* abstracting anonymously its result *)
+and proof_block_name = string (* open type of delimiters *)
 type vernac_when =
   | VtNow
   | VtLater

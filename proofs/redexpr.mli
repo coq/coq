@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Interpretation layer of redexprs such as hnf, cbv, etc. *)
+
 open Names
 open Term
 open Pattern

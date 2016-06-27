@@ -75,15 +75,15 @@ type abstraction_request =
 | AbstractExact of Names.Name.t * constr * types option * Locus.clause * bool
 
 val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
-  env -> Evd.evar_map -> pending_constr -> Evd.evar_map * constr
+  env -> 'r Sigma.t -> pending_constr -> (constr, 'r) Sigma.sigma
 
-type abstraction_result =
+type 'r abstraction_result =
   Names.Id.t * named_context_val *
-    Context.named_declaration list * Names.Id.t option *
-    types * (Evd.evar_map * constr) option
+    Context.Named.Declaration.t list * Names.Id.t option *
+    types * (constr, 'r) Sigma.sigma option
 
-val make_abstraction : env -> Evd.evar_map -> constr ->
-  abstraction_request -> abstraction_result
+val make_abstraction : env -> 'r Sigma.t -> constr ->
+  abstraction_request -> 'r abstraction_result
 
 val pose_all_metas_as_evars : env -> evar_map -> constr -> evar_map * constr
 

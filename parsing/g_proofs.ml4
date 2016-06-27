@@ -134,6 +134,8 @@ GEXTEND Gram
       | ":"; t = lconstr; ":="; c = lconstr -> CCast(!@loc,c,CastConv t) ] ]
   ;
   mode:
-    [ [ l = LIST1 ["+" -> true | "-" -> false] -> l ] ]
+    [ [ l = LIST1 [ "+" -> ModeInput
+                  | "!" -> ModeNoHeadEvar
+                  | "-" -> ModeOutput ] -> l ] ]
   ;
 END

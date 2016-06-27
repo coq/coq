@@ -31,6 +31,7 @@ open Reductionops
 open Constrexpr
 open Constrintern
 open Impargs
+open Context.Rel.Declaration
 
 type 'a declaration_hook = Decl_kinds.locality -> Globnames.global_reference -> 'a
 let mk_hook hook = hook
@@ -44,7 +45,8 @@ let call_hook fix_exn hook l c =
 
 let retrieve_first_recthm = function
   | VarRef id ->
-      (pi2 (Global.lookup_named id),variable_opacity id)
+      let open Context.Named.Declaration in
+      (get_value (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
       (Global.body_of_constant_body cb, is_opaque cb)
@@ -77,7 +79,7 @@ let adjust_guardness_conditions const = function
                     List.fold_left (fun e (_,c,cb,_) -> add c cb e) env l)
                 env (Safe_typing.side_effects_of_private_constants eff) in
               let indexes =
-	        search_guard Loc.ghost env
+                search_guard Loc.ghost env
                   possible_indexes fixdecls in
 		(mkFix ((indexes,0),fixdecls), ctx), eff
           | _ -> (body, ctx), eff) }
@@ -107,11 +109,12 @@ let find_mutually_recursive_statements thms =
         (fun env c -> fst (whd_betadeltaiota_stack env Evd.empty c))
         (Global.env()) hyps in
       let ind_hyps =
-        List.flatten (List.map_i (fun i (_,b,t) ->
+        List.flatten (List.map_i (fun i decl ->
+          let t = get_type decl in
           match kind_of_term t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
-                mind.mind_finite <> Decl_kinds.CoFinite && Option.is_empty b ->
+                mind.mind_finite <> Decl_kinds.CoFinite && is_local_assum decl ->
               [ind,x,i]
           | _ ->
               []) 0 (List.rev whnf_hyp_hds)) in
@@ -147,7 +150,7 @@ let find_mutually_recursive_statements thms =
 	  assert (List.is_empty rest);
           (* One occ. of common coind ccls and no common inductive hyps *)
 	  if not (List.is_empty common_same_indhyp) then
-	    if_verbose msg_info (str "Assuming mutual coinductive statements.");
+	    if_verbose Feedback.msg_info (str "Assuming mutual coinductive statements.");
 	  flush_all ();
           indccl, true, []
       | [], _::_ ->
@@ -155,7 +158,7 @@ let find_mutually_recursive_statements thms =
           | ind :: _ ->
             if List.distinct_f ind_ord (List.map pi1 ind)
             then
-              if_verbose msg_info
+              if_verbose Feedback.msg_info
                 (strbrk
                    ("Coinductive statements do not follow the order of "^
                     "definition, assuming the proof to be by induction."));
@@ -303,7 +306,7 @@ let admit (id,k,e) pl hook () =
   let () = match k with
   | Global, _, _ -> ()
   | Local, _, _ | Discharge, _, _ ->
-    msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
+    Feedback.msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
       str "declared as an axiom.")
   in
   let () = assumption_message id in
@@ -329,10 +332,11 @@ let check_exist =
   )
 
 let universe_proof_terminator compute_guard hook =
-  let open Proof_global in function
+  let open Proof_global in
+  make_terminator begin function
   | Admitted (id,k,pe,(ctx,pl)) ->
       admit (id,k,pe) pl (hook (Some ctx)) ();
-      Pp.feedback Feedback.AddedAxiom
+      Feedback.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
       let is_opaque, export_seff, exports = match opaque with
         | Vernacexpr.Transparent -> false, true, []
@@ -347,12 +351,16 @@ let universe_proof_terminator compute_guard hook =
           save_anonymous_with_strength ~export_seff proof kind id
       end;
       check_exist exports
+  end
 
 let standard_proof_terminator compute_guard hook =
   universe_proof_terminator compute_guard (fun _ -> hook)
 
-let start_proof id ?pl kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
-  let terminator = standard_proof_terminator compute_guard hook in
+let start_proof id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
+  let terminator = match terminator with
+  | None -> standard_proof_terminator compute_guard hook
+  | Some terminator -> terminator compute_guard hook
+  in
   let sign = 
     match sign with
     | Some sign -> sign
@@ -361,8 +369,11 @@ let start_proof id ?pl kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
   !start_hook c;
   Pfedit.start_proof id ?pl kind sigma sign c ?init_tac terminator
 
-let start_proof_univs id ?pl kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
-  let terminator = universe_proof_terminator compute_guard hook in
+let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
+  let terminator = match terminator with
+  | None -> universe_proof_terminator compute_guard hook
+  | Some terminator -> terminator compute_guard hook
+  in
   let sign = 
     match sign with
     | Some sign -> sign
@@ -392,7 +403,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
     | Anonymous -> Tactics.intro) (List.rev ids) in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
-      let rec_tac = Proofview.V82.tactic (rec_tac_initializer finite guard thms snl) in
+      let rec_tac = rec_tac_initializer finite guard thms snl in
       Some (match init_tac with
         | None -> 
             if Flags.is_auto_intros () then 
@@ -422,7 +433,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
             let body,opaq = retrieve_first_recthm ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
-	    let ctx = Evd.evar_universe_context_set (*FIXME*) Univ.UContext.empty ctx in
+	    let ctx = UState.context_set (*FIXME*) ctx in
 	    let body = Option.map norm body in
             List.map_i (save_remaining_recthms kind norm ctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
@@ -442,7 +453,7 @@ let start_proof_com kind thms hook =
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
     evdref := solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref);
-    let ids = List.map pi1 ctx in
+    let ids = List.map get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),
@@ -451,6 +462,11 @@ let start_proof_com kind thms hook =
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
+  let () =
+    match levels with
+    | None -> ()
+    | Some l -> ignore (Evd.universe_context evd ?names:l)
+  in
   let evd =
     if pi2 kind then evd
     else (* We fix the variables to ensure they won't be lowered to Set *)
@@ -497,7 +513,7 @@ let save_proof ?proof = function
             Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None),
 		     (universes, Some binders))
       in
-      Proof_global.get_terminator() pe
+      Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
   | Vernacexpr.Proved (is_opaque,idopt) ->
       let (proof_obj,terminator) =
         match proof with
@@ -507,7 +523,7 @@ let save_proof ?proof = function
       in
       (* if the proof is given explicitly, nothing has to be deleted *)
       if Option.is_empty proof then Pfedit.delete_current_proof ();
-      terminator (Proof_global.Proved (is_opaque,idopt,proof_obj))
+      Proof_global.(apply_terminator terminator (Proved (is_opaque,idopt,proof_obj)))
 
 (* Miscellaneous *)
 

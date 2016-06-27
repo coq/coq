@@ -44,8 +44,6 @@ open Session
 
 (** {2 Some static elements } *)
 
-let prefs = Preferences.current
-
 (** The arguments that will be passed to coqtop. No quoting here, since
     no /bin/sh when using create_process instead of open_process. *)
 let custom_project_files = ref []
@@ -87,9 +85,9 @@ let make_coqtop_args = function
   |None -> "", !sup_args
   |Some the_file ->
     let get_args f = Project_file.args_from_project f
-      !custom_project_files prefs.project_file_name
+      !custom_project_files project_file_name#get
     in
-    match prefs.read_project with
+    match read_project#get with
       |Ignore_args -> "", !sup_args
       |Append_args ->
          let fname, args = get_args the_file in fname, args @ !sup_args
@@ -164,7 +162,6 @@ let load_file ?(maycreate=false) f =
       input_buffer#place_cursor ~where:input_buffer#start_iter;
       Sentence.tag_all input_buffer;
       session.script#clear_undo ();
-      !refresh_editor_hook ();
       Minilib.log "Loading: success";
     end
   with e -> flash_info ("Load failed: "^(Printexc.to_string e))
@@ -250,7 +247,6 @@ module File = struct
 let newfile _ =
   let session = create_session None in
   let index = notebook#append_term session in
-  !refresh_editor_hook ();
   notebook#goto_page index
 
 let load _ =
@@ -319,13 +315,13 @@ let export kind sn =
           | _ -> assert false
       in
       let cmd =
-        local_cd f ^ prefs.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^
+        local_cd f ^ cmd_coqdoc#get ^ " --" ^ kind ^ " -o " ^
         (Filename.quote output) ^ " " ^ (Filename.quote basef) ^ " 2>&1"
       in
-      sn.messages#set ("Running: "^cmd);
+      sn.messages#set (Richpp.richpp_of_string ("Running: "^cmd));
       let finally st = flash_info (cmd ^ pr_exit_status st)
       in
-      run_command sn.messages#add finally cmd
+      run_command (fun msg -> sn.messages#add_string msg) finally cmd
 
 let export kind = cb_on_current_term (export kind)
 
@@ -334,8 +330,8 @@ let print sn =
     |None -> flash_info "Cannot print: this buffer has no name"
     |Some f_name ->
       let cmd =
-        local_cd f_name ^ prefs.cmd_coqdoc ^ " -ps " ^
-        Filename.quote (Filename.basename f_name) ^ " | " ^ prefs.cmd_print
+        local_cd f_name ^ cmd_coqdoc#get ^ " -ps " ^
+        Filename.quote (Filename.basename f_name) ^ " | " ^ cmd_print#get
       in
       let w = GWindow.window ~title:"Print" ~modal:true
         ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE" ()
@@ -378,17 +374,17 @@ end
 
 let reset_revert_timer () =
   FileOps.revert_timer.kill ();
-  if prefs.global_auto_revert then
+  if global_auto_revert#get then
     FileOps.revert_timer.run
-      ~ms:prefs.global_auto_revert_delay
+      ~ms:global_auto_revert_delay#get
       ~callback:(fun () -> File.revert_all (); true)
 
 let reset_autosave_timer () =
   let autosave sn = try sn.fileops#auto_save with _ -> () in
   let autosave_all () = List.iter autosave notebook#pages; true in
   FileOps.autosave_timer.kill ();
-  if prefs.auto_save then
-    FileOps.autosave_timer.run ~ms:prefs.auto_save_delay ~callback:autosave_all
+  if auto_save#get then
+    FileOps.autosave_timer.run ~ms:auto_save_delay#get ~callback:autosave_all
 
 (** Export of functions used in [coqide_main] : *)
 
@@ -408,8 +404,8 @@ let coq_makefile sn =
   match sn.fileops#filename with
     |None -> flash_info "Cannot make makefile: this buffer has no name"
     |Some f ->
-      let cmd = local_cd f ^ prefs.cmd_coqmakefile in
-      let finally st = flash_info (current.cmd_coqmakefile ^ pr_exit_status st)
+      let cmd = local_cd f ^ cmd_coqmakefile#get in
+      let finally st = flash_info (cmd_coqmakefile#get ^ pr_exit_status st)
       in
       run_command ignore finally cmd
 
@@ -421,7 +417,7 @@ let editor sn =
     |Some f ->
       File.save ();
       let f = Filename.quote f in
-      let cmd = Util.subst_command_placeholder prefs.cmd_editor f in
+      let cmd = Util.subst_command_placeholder cmd_editor#get f in
       run_command ignore (fun _ -> sn.fileops#revert) cmd
 
 let editor = cb_on_current_term editor
@@ -431,13 +427,13 @@ let compile sn =
   match sn.fileops#filename with
     |None -> flash_info "Active buffer has no name"
     |Some f ->
-      let cmd = prefs.cmd_coqc ^ " -I " ^ (Filename.quote (Filename.dirname f))
+      let cmd = cmd_coqc#get ^ " -I " ^ (Filename.quote (Filename.dirname f))
 	^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
-      sn.messages#set ("Running: "^cmd);
+      sn.messages#set (Richpp.richpp_of_string ("Running: "^cmd));
       let display s =
-        sn.messages#add s;
+        sn.messages#add_string s;
         Buffer.add_string buf s
       in
       let finally st =
@@ -445,8 +441,8 @@ let compile sn =
           flash_info (f ^ " successfully compiled")
         else begin
           flash_info (f ^ " failed to compile");
-          sn.messages#set "Compilation output:\n";
-          sn.messages#add (Buffer.contents buf);
+          sn.messages#set (Richpp.richpp_of_string "Compilation output:\n");
+          sn.messages#add (Richpp.richpp_of_string (Buffer.contents buf));
         end
       in
       run_command display finally cmd
@@ -467,17 +463,17 @@ let make sn =
     |None -> flash_info "Cannot make: this buffer has no name"
     |Some f ->
       File.saveall ();
-      let cmd = local_cd f ^ prefs.cmd_make ^ " 2>&1" in
-      sn.messages#set "Compilation output:\n";
+      let cmd = local_cd f ^ cmd_make#get ^ " 2>&1" in
+      sn.messages#set (Richpp.richpp_of_string "Compilation output:\n");
       Buffer.reset last_make_buf;
       last_make := "";
       last_make_index := 0;
       last_make_dir := Filename.dirname f;
       let display s =
-        sn.messages#add s;
+        sn.messages#add_string s;
         Buffer.add_string last_make_buf s
       in
-      let finally st = flash_info (current.cmd_make ^ pr_exit_status st)
+      let finally st = flash_info (cmd_make#get ^ pr_exit_status st)
       in
       run_command display finally cmd
 
@@ -512,11 +508,11 @@ let next_error sn =
     let stopi = b#get_iter_at_byte ~line:(line-1) stop in
     b#apply_tag Tags.Script.error ~start:starti ~stop:stopi;
     b#place_cursor ~where:starti;
-    sn.messages#set error_msg;
+    sn.messages#set (Richpp.richpp_of_string error_msg);
     sn.script#misc#grab_focus ()
   with Not_found ->
     last_make_index := 0;
-    sn.messages#set "No more errors.\n"
+    sn.messages#set (Richpp.richpp_of_string "No more errors.\n")
 
 let next_error = cb_on_current_term next_error
 
@@ -537,7 +533,7 @@ let update_status sn =
       | None -> ""
       | Some n -> ", proving " ^ n
     in
-    display ("Ready"^ (if current.nanoPG then ", [μPG]" else "") ^ path ^ name);
+    display ("Ready"^ (if nanoPG#get then ", [μPG]" else "") ^ path ^ name);
     Coq.return ()
   in
   Coq.bind (Coq.status ~logger:sn.messages#push false) next
@@ -681,12 +677,18 @@ let searchabout sn =
 
 let searchabout () = on_current_term searchabout
 
+let doquery query sn =
+  sn.messages#clear;
+  Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
+
 let otherquery command sn =
-  let word = get_current_word sn in
-  if word <> "" then
-    let query = command ^ " " ^ word ^ "." in
-    sn.messages#clear;
-    Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
+  Option.iter (fun query -> doquery (query ^ ".") sn)
+    begin try
+      let i = CString.string_index_from command 0 "..." in
+      let word = get_current_word sn in
+      if word = "" then None
+      else Some (CString.sub command 0 i ^ " " ^ word)
+    with Not_found -> Some command end
 
 let otherquery command = cb_on_current_term (otherquery command)
 
@@ -722,7 +724,7 @@ let initial_about () =
     else ""
   in
   let msg = initial_string ^ version_info ^ log_file_message () in
-  on_current_term (fun term -> term.messages#add msg)
+  on_current_term (fun term -> term.messages#add_string msg)
 
 let coq_icon () =
   (* May raise Nof_found *)
@@ -787,7 +789,7 @@ let coqtop_arguments sn =
         let args = String.concat " " args in
         let msg = Printf.sprintf "Invalid arguments: %s" args in
         let () = sn.messages#clear in
-        sn.messages#push Pp.Error msg
+        sn.messages#push Feedback.Error (Richpp.richpp_of_string msg)
     else dialog#destroy ()
   in
   let _ = entry#connect#activate ok_cb in
@@ -809,69 +811,19 @@ let zoom_fit sn =
   let cols = script#right_margin_position in
   let pango_ctx = script#misc#pango_context in
   let layout = pango_ctx#create_layout in
-  let fsize = Pango.Font.get_size current.text_font in
+  let fsize = Pango.Font.get_size (Pango.Font.from_string text_font#get) in
   Pango.Layout.set_text layout (String.make cols 'X');
   let tlen = fst (Pango.Layout.get_pixel_size layout) in
-  Pango.Font.set_size current.text_font
+  Pango.Font.set_size (Pango.Font.from_string text_font#get)
     (fsize * space / tlen / Pango.scale * Pango.scale);
-  save_pref ();
-  !refresh_editor_hook ()
+  save_pref ()
 
 end
 
 (** Refresh functions *)
 
-let refresh_editor_prefs () =
-  let wrap_mode = if prefs.dynamic_word_wrap then `WORD else `NONE in
-  let show_spaces =
-    if prefs.show_spaces then 0b1001011 (* SPACE, TAB, NBSP, TRAILING *)
-    else 0
-  in
-  let fd = prefs.text_font in
-  let clr = Tags.color_of_string prefs.background_color
-  in
-  let iter_session sn =
-    (* Editor settings *)
-    sn.script#set_wrap_mode wrap_mode;
-    sn.script#set_show_line_numbers prefs.show_line_number;
-    sn.script#set_auto_indent prefs.auto_indent;
-    sn.script#set_highlight_current_line prefs.highlight_current_line;
-
-    (* Hack to handle missing binding in lablgtk *)
-    let conv = { Gobject.name = "draw-spaces"; Gobject.conv = Gobject.Data.int }
-    in
-    Gobject.set conv sn.script#as_widget show_spaces;
-
-    sn.script#set_show_right_margin prefs.show_right_margin;
-    if prefs.show_progress_bar then sn.segment#misc#show () else sn.segment#misc#hide ();
-    sn.script#set_insert_spaces_instead_of_tabs
-      prefs.spaces_instead_of_tabs;
-    sn.script#set_tab_width prefs.tab_length;
-    sn.script#set_auto_complete prefs.auto_complete;
-
-    (* Fonts *)
-    sn.script#misc#modify_font fd;
-    sn.proof#misc#modify_font fd;
-    sn.messages#modify_font fd;
-    sn.command#refresh_font ();
-
-    (* Colors *)
-    Tags.set_processing_color (Tags.color_of_string current.processing_color);
-    Tags.set_processed_color (Tags.color_of_string current.processed_color);
-    Tags.set_error_color (Tags.color_of_string current.error_color);
-    Tags.set_error_fg_color (Tags.color_of_string current.error_fg_color);
-    sn.script#misc#modify_base [`NORMAL, `COLOR clr];
-    sn.proof#misc#modify_base [`NORMAL, `COLOR clr];
-    sn.messages#refresh_color ();
-    sn.command#refresh_color ();
-    sn.errpage#refresh_color ();
-    sn.jobpage#refresh_color ();
-
-  in
-  List.iter iter_session notebook#pages
-
 let refresh_notebook_pos () =
-  let pos = match prefs.vertical_tabs, prefs.opposite_tabs with
+  let pos = match vertical_tabs#get, opposite_tabs#get with
     | false, false -> `TOP
     | false, true  -> `BOTTOM
     | true , false -> `LEFT
@@ -906,19 +858,19 @@ let toggle_items menu_name l =
   let f d =
     let label = d.Opt.label in
     let k, name = get_shortcut label in
-    let accel = Option.map ((^) prefs.modifier_for_display) k in
+    let accel = Option.map ((^) modifier_for_display#get) k in
     toggle_item name ~label ?accel ~active:d.Opt.init
       ~callback:(printopts_callback d.Opt.opts)
       menu_name
   in
   List.iter f l
 
+let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
+
 (** Create alphabetical menu items with elements in sub-items.
     [l] is a list of lists, one per initial letter *)
 
 let alpha_items menu_name item_name l =
-  let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
-  in
   let mk_item text =
     let text' =
       let last = String.length text - 1 in
@@ -948,7 +900,7 @@ let alpha_items menu_name item_name l =
     Caveat: the offset is now from the start of the text. *)
 
 let template_item (text, offset, len, key) =
-  let modifier = prefs.modifier_for_templates in
+  let modifier = modifier_for_templates#get in
   let idx = String.index text ' ' in
   let name = String.sub text 0 idx in
   let label = "_"^name^" __" in
@@ -965,6 +917,16 @@ let template_item (text, offset, len, key) =
   in
   item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
 
+(** Create menu items for pairs (query, shortcut key). *)
+let user_queries_items menu_name item_name l =
+  let mk_item (query, key) =
+    let callback = Query.query query in
+    let accel = if not (CString.is_empty key) then
+      Some (modifier_for_queries#get^key) else None in
+    item (item_name^" "^(no_under query)) ~label:query ?accel ~callback menu_name
+  in
+  List.iter mk_item l
+
 let emit_to_focus window sgn =
   let focussed_widget = GtkWindow.Window.get_focus window#as_window in
   let obj = Gobject.unsafe_cast focussed_widget in
@@ -976,7 +938,7 @@ let build_ui () =
   let w = GWindow.window
     ~wm_class:"CoqIde" ~wm_name:"CoqIde"
     ~allow_grow:true ~allow_shrink:true
-    ~width:prefs.window_width ~height:prefs.window_height
+    ~width:window_width#get ~height:window_height#get
     ~title:"CoqIde" ()
   in
   let () =
@@ -1074,77 +1036,60 @@ let build_ui () =
       ~callback:(fun _ -> notebook#next_page ());
     item "Zoom in" ~label:"_Zoom in" ~accel:("<Control>plus")
         ~stock:`ZOOM_IN ~callback:(fun _ ->
-          Pango.Font.set_size current.text_font
-            (Pango.Font.get_size current.text_font + Pango.scale);
-          save_pref ();
-          !refresh_editor_hook ());
+          let ft = Pango.Font.from_string text_font#get in
+          Pango.Font.set_size ft (Pango.Font.get_size ft + Pango.scale);
+          text_font#set (Pango.Font.to_string ft);
+          save_pref ());
     item "Zoom out" ~label:"_Zoom out" ~accel:("<Control>minus")
         ~stock:`ZOOM_OUT ~callback:(fun _ ->
-          Pango.Font.set_size current.text_font
-            (Pango.Font.get_size current.text_font - Pango.scale);
-          save_pref ();
-          !refresh_editor_hook ());
+          let ft = Pango.Font.from_string text_font#get in
+          Pango.Font.set_size ft (Pango.Font.get_size ft - Pango.scale);
+          text_font#set (Pango.Font.to_string ft);
+          save_pref ());
     item "Zoom fit" ~label:"_Zoom fit" ~accel:("<Control>0")
         ~stock:`ZOOM_FIT ~callback:(cb_on_current_term MiscMenu.zoom_fit);
     toggle_item "Show Toolbar" ~label:"Show _Toolbar"
-      ~active:(prefs.show_toolbar)
-      ~callback:(fun _ ->
-        prefs.show_toolbar <- not prefs.show_toolbar;
-        !refresh_toolbar_hook ());
+      ~active:(show_toolbar#get)
+      ~callback:(fun _ -> show_toolbar#set (not show_toolbar#get));
     item "Query Pane" ~label:"_Query Pane"
       ~accel:"F1"
       ~callback:(cb_on_current_term MiscMenu.show_hide_query_pane)
   ];
   toggle_items view_menu Coq.PrintOpt.bool_items;
 
-  menu navigation_menu [
-    item "Navigation" ~label:"_Navigation";
-    item "Forward" ~label:"_Forward" ~stock:`GO_DOWN ~callback:Nav.forward_one
-      ~tooltip:"Forward one command"
-      ~accel:(prefs.modifier_for_navigation^"Down");
-    item "Backward" ~label:"_Backward" ~stock:`GO_UP ~callback:Nav.backward_one
-      ~tooltip:"Backward one command"
-      ~accel:(prefs.modifier_for_navigation^"Up");
-    item "Go to" ~label:"_Go to" ~stock:`JUMP_TO ~callback:Nav.goto
-      ~tooltip:"Go to cursor"
-      ~accel:(prefs.modifier_for_navigation^"Right");
-    item "Start" ~label:"_Start" ~stock:`GOTO_TOP ~callback:Nav.restart
-      ~tooltip:"Restart coq"
-      ~accel:(prefs.modifier_for_navigation^"Home");
-    item "End" ~label:"_End" ~stock:`GOTO_BOTTOM  ~callback:Nav.goto_end
-      ~tooltip:"Go to end"
-      ~accel:(prefs.modifier_for_navigation^"End");
-    item "Interrupt" ~label:"_Interrupt" ~stock:`STOP ~callback:Nav.interrupt
-      ~tooltip:"Interrupt computations"
-      ~accel:(prefs.modifier_for_navigation^"Break");
-(* wait for this available in GtkSourceView !
-      item "Hide" ~label:"_Hide" ~stock:`MISSING_IMAGE
-	~callback:(fun _ -> let sess = notebook#current_term in
-		     toggle_proof_visibility sess.buffer
-		       sess.analyzed_view#get_insert) ~tooltip:"Hide proof"
-	~accel:(prefs.modifier_for_navigation^"h");*)
-    item "Previous" ~label:"_Previous" ~stock:`GO_BACK
-      ~callback:Nav.previous_occ
-      ~tooltip:"Previous occurrence"
-      ~accel:(prefs.modifier_for_navigation^"less");
-    item "Next" ~label:"_Next" ~stock:`GO_FORWARD ~callback:Nav.next_occ
-      ~tooltip:"Next occurrence"
-      ~accel:(prefs.modifier_for_navigation^"greater");
-    item "Force" ~label:"_Force" ~stock:`EXECUTE ~callback:Nav.join_document
-      ~tooltip:"Fully check the document" 
-      ~accel:(current.modifier_for_navigation^"f"); 
-  ];
+  let navitem (text, label, stock, callback, tooltip, accel) =
+    let accel = modifier_for_navigation#get ^ accel in
+    item text ~label ~stock ~callback ~tooltip ~accel
+  in
+  menu navigation_menu begin
+  [
+    (fun e -> item "Navigation" ~label:"_Navigation" e);
+  ] @ List.map navitem [
+    ("Forward", "_Forward", `GO_DOWN, Nav.forward_one, "Forward one command", "Down");
+    ("Backward", "_Backward", `GO_UP, Nav.backward_one, "Backward one command", "Up");
+    ("Go to", "_Go to", `JUMP_TO, Nav.goto, "Go to cursor", "Right");
+    ("Start", "_Start", `GOTO_TOP, Nav.restart, "Restart coq", "Home");
+    ("End", "_End", `GOTO_BOTTOM, Nav.goto_end, "Go to end", "End");
+    ("Interrupt", "_Interrupt", `STOP, Nav.interrupt, "Interrupt computations", "Break");
+    (* wait for this available in GtkSourceView !
+    ("Hide", "_Hide", `MISSING_IMAGE,
+        ~callback:(fun _ -> let sess = notebook#current_term in
+          toggle_proof_visibility sess.buffer sess.analyzed_view#get_insert), "Hide proof", "h"); *)
+    ("Previous", "_Previous", `GO_BACK, Nav.previous_occ, "Previous occurrence", "less");
+    ("Next", "_Next", `GO_FORWARD, Nav.next_occ, "Next occurrence", "greater");
+    ("Force", "_Force", `EXECUTE, Nav.join_document, "Fully check the document", "f");
+  ] end;
 
   let tacitem s sc =
     item s ~label:("_"^s)
-      ~accel:(prefs.modifier_for_tactics^sc)
+      ~accel:(modifier_for_tactics#get^sc)
       ~callback:(tactic_wizard_callback [s])
   in
   menu tactics_menu [
     item "Try Tactics" ~label:"_Try Tactics";
     item "Wizard" ~label:"<Proof Wizard>" ~stock:`DIALOG_INFO
-      ~tooltip:"Proof Wizard" ~accel:(prefs.modifier_for_tactics^"dollar")
-      ~callback:(tactic_wizard_callback prefs.automatic_tactics);
+      ~tooltip:"Proof Wizard" ~accel:(modifier_for_tactics#get^"dollar")
+      ~callback:(tactic_wizard_callback automatic_tactics#get);
     tacitem "auto" "a";
     tacitem "auto with *" "asterisk";
     tacitem "eauto" "e";
@@ -1166,21 +1111,27 @@ let build_ui () =
     template_item ("Fixpoint ident (_ : _) {struct _} : _ :=\n.\n", 9,5, "F");
     template_item ("Scheme new_scheme := Induction for _ Sort _\n" ^
                    "with _ := Induction for _ Sort _.\n", 7,10, "S");
-    item "match" ~label:"match ..." ~accel:(prefs.modifier_for_templates^"M")
+    item "match" ~label:"match ..." ~accel:(modifier_for_templates#get^"M")
       ~callback:match_callback
   ];
   alpha_items templates_menu "Template" Coq_commands.commands;
 
-  let qitem s accel = item s ~label:("_"^s) ?accel ~callback:(Query.query s) in
+  let qitem s sc ?(dots = true) =
+    let query = if dots then s ^ "..." else s in
+    item s ~label:("_"^s)
+      ~accel:(modifier_for_queries#get^sc)
+      ~callback:(Query.query query)
+  in
   menu queries_menu [
     item "Queries" ~label:"_Queries";
-    qitem "Search" (Some "<Ctrl><Shift>K");
-    qitem "Check" (Some "<Ctrl><Shift>C");
-    qitem "Print" (Some "<Ctrl><Shift>P");
-    qitem "About" (Some "<Ctrl><Shift>A");
-    qitem "Locate" (Some "<Ctrl><Shift>L");
-    qitem "Print Assumptions" (Some "<Ctrl><Shift>N");
+    qitem "Search" "K" ~dots:false;
+    qitem "Check" "C";
+    qitem "Print" "P";
+    qitem "About" "A";
+    qitem "Locate" "L";
+    qitem "Print Assumptions" "N";
   ];
+  user_queries_items queries_menu "User-Query" user_queries#get;
 
   menu tools_menu [
     item "Tools" ~label:"_Tools";
@@ -1211,17 +1162,17 @@ let build_ui () =
     item "Help" ~label:"_Help";
     item "Browse Coq Manual" ~label:"Browse Coq _Manual"
       ~callback:(fun _ ->
-        browse notebook#current_term.messages#add (doc_url ()));
+        browse notebook#current_term.messages#add_string (doc_url ()));
     item "Browse Coq Library" ~label:"Browse Coq _Library"
       ~callback:(fun _ ->
-        browse notebook#current_term.messages#add prefs.library_url);
+        browse notebook#current_term.messages#add_string library_url#get);
     item "Help for keyword" ~label:"Help for _keyword" ~stock:`HELP
       ~callback:(fun _ -> on_current_term (fun sn ->
-        browse_keyword sn.messages#add (get_current_word sn)));
+        browse_keyword sn.messages#add_string (get_current_word sn)));
     item "Help for μPG mode" ~label:"Help for μPG mode"
       ~callback:(fun _ -> on_current_term (fun sn ->
          sn.messages#clear;
-         sn.messages#add (NanoPG.get_documentation ())));
+         sn.messages#add_string (NanoPG.get_documentation ())));
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];
@@ -1259,7 +1210,7 @@ let build_ui () =
 
   (* Reset on tab switch *)
   let _ = notebook#connect#switch_page ~callback:(fun _ ->
-    if prefs.reset_on_tab_switch then Nav.restart ())
+    if reset_on_tab_switch#get then Nav.restart ())
   in
 
   (* Vertical Separator between Scripts and Goals *)
@@ -1267,7 +1218,7 @@ let build_ui () =
   let () = refresh_notebook_pos () in
   let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
   let () = lower_hbox#pack ~expand:true status#coerce in
-  let () = push_info ("Ready"^ if current.nanoPG then ", [μPG]" else "")  in
+  let () = push_info ("Ready"^ if nanoPG#get then ", [μPG]" else "")  in
 
   (* Location display *)
   let l = GMisc.label
@@ -1310,41 +1261,31 @@ let build_ui () =
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
   (* Initializing hooks *)
-  let refresh_toolbar () =
-    if prefs.show_toolbar
-    then toolbar#misc#show ()
-    else toolbar#misc#hide ()
-  in
-  let refresh_style () =
-    let style =  style_manager#style_scheme prefs.source_style in
+  let refresh_style style =
+    let style = style_manager#style_scheme style in
     let iter_session v = v.script#source_buffer#set_style_scheme style in
     List.iter iter_session notebook#pages
   in
-  let refresh_language () =
-    let lang =  lang_manager#language prefs.source_language in
+  let refresh_language lang =
+    let lang = lang_manager#language lang in
     let iter_session v = v.script#source_buffer#set_language lang in
     List.iter iter_session notebook#pages
   in
-  let resize_window () =
-    w#resize ~width:prefs.window_width ~height:prefs.window_height
+  let refresh_toolbar b =
+    if b then toolbar#misc#show () else toolbar#misc#hide ()
   in
-  refresh_toolbar ();
-  refresh_toolbar_hook := refresh_toolbar;
-  refresh_style_hook := refresh_style;
-  refresh_language_hook := refresh_language;
-  refresh_editor_hook := refresh_editor_prefs;
-  resize_window_hook := resize_window;
-  refresh_tabs_hook := refresh_notebook_pos;
+  stick show_toolbar toolbar refresh_toolbar;
+  let _ = source_style#connect#changed refresh_style in
+  let _ = source_language#connect#changed refresh_language in
 
   (* Color configuration *)
   Tags.Script.incomplete#set_property
     (`BACKGROUND_STIPPLE
       (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
-  Tags.Script.incomplete#set_property
-    (`BACKGROUND_GDK (Tags.get_processed_color ())); 
 
   (* Showtime ! *)
   w#show ()
+
 
 
 (** {2 Coqide main function } *)
@@ -1356,7 +1297,7 @@ let make_file_buffer f =
 let make_scratch_buffer () =
   let session = create_session None in
   let _ = notebook#append_term session in
-  !refresh_editor_hook ()
+  ()
 
 let main files =
   build_ui ();

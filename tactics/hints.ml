@@ -33,6 +33,8 @@ open Pfedit
 open Tacred
 open Printer
 open Vernacexpr
+open Sigma.Notations
+open Context.Named.Declaration
 
 (****************************************)
 (* General functions                    *)
@@ -74,7 +76,7 @@ type 'a hint_ast =
   | Give_exact of 'a
   | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
-  | Extern     of glob_tactic_expr       (* Hint Extern *)
+  | Extern     of Genarg.glob_generic_argument (* Hint Extern *)
 
 type hints_path_atom = 
   | PathHints of global_reference list
@@ -153,27 +155,6 @@ let fresh_key =
     in
     KerName.make mp dir (Label.of_id lbl)
 
-let eq_hints_path_atom p1 p2 = match p1, p2 with
-| PathHints gr1, PathHints gr2 -> List.equal eq_gr gr1 gr2
-| PathAny, PathAny -> true
-| (PathHints _ | PathAny), _ -> false
-
-let eq_auto_tactic t1 t2 = match t1, t2 with
-| Res_pf (c1, _), Res_pf (c2, _) -> Constr.equal c1 c2
-| ERes_pf (c1, _), ERes_pf (c2, _) -> Constr.equal c1 c2
-| Give_exact (c1, _), Give_exact (c2, _) -> Constr.equal c1 c2
-| Res_pf_THEN_trivial_fail (c1, _), Res_pf_THEN_trivial_fail (c2, _) -> Constr.equal c1 c2
-| Unfold_nth gr1, Unfold_nth gr2 -> eq_egr gr1 gr2
-| Extern tac1, Extern tac2 -> tac1 == tac2 (** May cause redundancy in addkv *)
-| (Res_pf _ | ERes_pf _ | Give_exact _ | Res_pf_THEN_trivial_fail _
-  | Unfold_nth _ | Extern _), _ -> false
-
-let eq_hint_metadata t1 t2 =
-  Int.equal t1.pri t2.pri &&
-  Option.equal constr_pattern_eq t1.pat t2.pat &&
-  eq_hints_path_atom t1.name t2.name &&
-  eq_auto_tactic t1.code t2.code
-
 let pri_order_int (id1, {pri=pri1}) (id2, {pri=pri2}) =
   let d = pri1 - pri2 in
     if Int.equal d 0 then id2 - id1
@@ -208,7 +189,7 @@ type search_entry = {
   sentry_nopat : stored_data list;
   sentry_pat : stored_data list;
   sentry_bnet : Bounded_net.t;
-  sentry_mode : bool array list;
+  sentry_mode : hint_mode array list;
 }
 
 let empty_se = {
@@ -336,6 +317,12 @@ let rec is_empty = function
   | PathEmpty -> true
   | PathEpsilon -> false
 
+let path_seq p p' =
+  match p, p' with
+  | PathEpsilon, p' -> p'
+  | p, PathEpsilon -> p
+  | p, p' -> PathSeq (p, p')
+                    
 let rec path_derivate hp hint =
   let rec derivate_atoms hints hints' =
     match hints, hints' with
@@ -343,26 +330,26 @@ let rec path_derivate hp hint =
     | [], [] -> PathEpsilon
     | [], hints -> PathEmpty
     | grs, [] -> PathAtom (PathHints grs)
-    | _, _ -> PathEmpty 
+    | _, _ -> PathEmpty
   in
-    match hp with
-    | PathAtom PathAny -> PathEpsilon
-    | PathAtom (PathHints grs) -> 
-      (match grs, hint with
-       | h :: hints, PathAny -> PathEmpty
-       | hints, PathHints hints' -> derivate_atoms hints hints'
-       | _, _ -> assert false)
-    | PathStar p -> if path_matches p [hint] then hp else PathEpsilon
-    | PathSeq (hp, hp') ->
-      let hpder = path_derivate hp hint in
-	if matches_epsilon hp then 
-	  PathOr (PathSeq (hpder, hp'), path_derivate hp' hint)
-	else if is_empty hpder then PathEmpty 
-	else PathSeq (hpder, hp')
-    | PathOr (hp, hp') ->
-      PathOr (path_derivate hp hint, path_derivate hp' hint)
-    | PathEmpty -> PathEmpty
-    | PathEpsilon -> PathEmpty
+  match hp with
+  | PathAtom PathAny -> PathEpsilon
+  | PathAtom (PathHints grs) -> 
+     (match grs, hint with
+      | h :: _, PathAny -> PathEmpty
+      | hints, PathHints hints' -> derivate_atoms hints hints'
+      | _, _ -> assert false)
+  | PathStar p -> if path_matches p [hint] then hp else PathEpsilon
+  | PathSeq (hp, hp') ->
+     let hpder = path_derivate hp hint in
+     if matches_epsilon hp then 
+       PathOr (path_seq hpder hp', path_derivate hp' hint)
+     else if is_empty hpder then PathEmpty 
+     else path_seq hpder hp'
+  | PathOr (hp, hp') ->
+     PathOr (path_derivate hp hint, path_derivate hp' hint)
+  | PathEmpty -> PathEmpty
+  | PathEpsilon -> PathEmpty
 
 let rec normalize_path h =
   match h with
@@ -384,15 +371,17 @@ let path_derivate hp hint = normalize_path (path_derivate hp hint)
 
 let pp_hints_path_atom a =
   match a with
-  | PathAny -> str"*"
+  | PathAny -> str"_"
   | PathHints grs -> pr_sequence pr_global grs
 					   
 let rec pp_hints_path = function
   | PathAtom pa -> pp_hints_path_atom pa
-  | PathStar p -> str "!(" ++ pp_hints_path p ++ str")"
-  | PathSeq (p, p') -> pp_hints_path p ++ str" ; " ++ pp_hints_path p'
+  | PathStar (PathAtom PathAny) -> str"_*"
+  | PathStar p -> str "(" ++ pp_hints_path p ++ str")*"
+  | PathSeq (p, p') -> pp_hints_path p ++ spc () ++ pp_hints_path p'
   | PathOr (p, p') -> 
-    str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ spc () ++ pp_hints_path p' ++ str ")"
+     str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ cut () ++ spc () ++
+       pp_hints_path p' ++ str ")"
   | PathEmpty -> str"emp"
   | PathEpsilon -> str"eps"
 
@@ -453,9 +442,17 @@ module Hint_db = struct
  
   let realize_tac (id,tac) = tac
 
+  let match_mode m arg =
+    match m with
+    | ModeInput -> not (occur_existential arg)
+    | ModeNoHeadEvar ->
+       Evarutil.(try ignore(head_evar arg); false
+                 with NoHeadEvar -> true)
+    | ModeOutput -> true
+                               
   let matches_mode args mode =
-    Array.length args == Array.length mode &&
-      Array.for_all2 (fun arg m -> not (m && occur_existential arg)) args mode
+    Array.length mode == Array.length args &&
+      Array.for_all2 match_mode mode args
       
   let matches_modes args modes =
     if List.is_empty modes then true
@@ -711,7 +708,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	else begin
 	  if not eapply then failwith "make_apply_entry";
           if verbose then
-	    msg_warning (str "the hint: eapply " ++ pr_lconstr c ++
+	    Feedback.msg_warning (str "the hint: eapply " ++ pr_lconstr c ++
 	    str " will only be used by eauto");
           (Some hd,
            { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
@@ -757,7 +754,7 @@ let fresh_global_or_constr env sigma poly cr =
     else if Univ.ContextSet.is_empty ctx then (c, ctx)
     else begin
       if isgr then
-        msg_warning (str"Using polymorphic hint " ++
+        Feedback.msg_warning (str"Using polymorphic hint " ++
 		     pr_hint_term env sigma ctx cr ++ str" monomorphically" ++
 		     str" use Polymorphic Hint to use it polymorphically.");
       Lib.add_anonymous_leaf (input_context_set ctx);
@@ -780,11 +777,12 @@ let make_resolves env sigma flags pri poly ?name cr =
   ents
 
 (* used to add an hypothesis to the local hint database *)
-let make_resolve_hyp env sigma (hname,_,htyp) =
+let make_resolve_hyp env sigma decl =
+  let hname = get_id decl in
   try
     [make_apply_entry env sigma (true, true, false) None false
        ~name:(PathHints [VarRef hname])
-       (mkVar hname, htyp, Univ.ContextSet.empty)]
+       (mkVar hname, get_type decl, Univ.ContextSet.empty)]
   with
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly (Pp.str "make_resolve_hyp")
@@ -800,6 +798,7 @@ let make_unfold eref =
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
+  let tacast = Genarg.in_gen (Genarg.glbwit Constrarg.wit_ltac) tacast in
   let hdconstr = Option.map try_head_pattern pat in
   (hdconstr,
    { pri = pri;
@@ -881,7 +880,7 @@ type hint_action =
   | AddHints of hint_entry list
   | RemoveHints of global_reference list
   | AddCut of hints_path
-  | AddMode of global_reference * bool array
+  | AddMode of global_reference * hint_mode array
 
 let add_cut dbname path =
   let db = get_db dbname in
@@ -951,7 +950,7 @@ let subst_autohint (subst, obj) =
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code.obj else Unfold_nth ref'
       | Extern tac ->
-	  let tac' = Tacsubst.subst_tactic subst tac in
+	  let tac' = Genintern.generic_substitute subst tac in
 	  if tac==tac' then data.code.obj else Extern tac'
     in
     let name' = subst_path_atom subst data.name in
@@ -1087,7 +1086,7 @@ type hints_entry =
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
-  | HintsModeEntry of global_reference * bool list
+  | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
       int * (patvar list * constr_pattern) option * glob_tactic_expr
 
@@ -1116,7 +1115,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
 	(* Not clever enough to construct dependency graph of evars *)
 	error "Not clever enough to deal with evars dependent in other evars.";
       raise (Found (c,t))
-    | _ -> iter_constr find_next_evar c in
+    | _ -> Constr.iter find_next_evar c in
   let rec iter c =
     try find_next_evar c; c
     with Found (evar,t) ->
@@ -1125,7 +1124,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
       subst := (evar,mkVar id)::!subst;
       mkNamedLambda id t (iter (replace_term evar (mkVar id) c)) in
   let c' = iter c in
-    if check then Evarutil.check_evars (Global.env()) Evd.empty sigma c';
+    if check then Pretyping.check_evars (Global.env()) Evd.empty sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     if poly then IsConstr (c', diff)
     else if local then IsConstr (c', diff)
@@ -1225,6 +1224,12 @@ let add_hint_lemmas env sigma eapply lems hint_db =
   Hint_db.add_list env sigma hintlist' hint_db
 
 let make_local_hint_db env sigma ts eapply lems =
+  let map c =
+    let sigma = Sigma.Unsafe.of_evar_map sigma in
+    let Sigma (c, sigma, _) = c.delayed env sigma in
+    (Sigma.to_evar_map sigma, c)
+  in
+  let lems = List.map map lems in
   let sign = Environ.named_context env in
   let ts = match ts with
     | None -> Hint_db.transparent_state (searchtable_map "core") 
@@ -1266,7 +1271,7 @@ let pr_hint h = match h.obj with
           env
         with e when Errors.noncritical e -> Global.env ()
       in
-      (str "(*external*) " ++ Pptactic.pr_glob_tactic env tac)
+      (str "(*external*) " ++ Pptactic.pr_glb_generic env tac)
 
 let pr_id_hint (id, v) =
   (pr_hint v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())
@@ -1329,9 +1334,14 @@ let pr_applicable_hint () =
   | g::_ ->
     pr_hint_term (Goal.V82.concl glss.Evd.sigma g)
 
+let pp_hint_mode = function
+  | ModeInput -> str"+"
+  | ModeNoHeadEvar -> str"!"
+  | ModeOutput -> str"-"
+
 (* displays the whole hint database db *)
 let pr_hint_db db =
-  let pr_mode = prvect_with_sep spc (fun x -> if x then str"+" else str"-") in
+  let pr_mode = prvect_with_sep spc pp_hint_mode in
   let pr_modes l = 
     if List.is_empty l then mt ()
     else str" (modes " ++ prlist_with_sep pr_comma pr_mode l ++ str")"
@@ -1382,7 +1392,7 @@ let is_imported h = try KNmap.find h.uid !statustable with Not_found -> true
 let warn h x =
   let hint = pr_hint h in
   let (mp, _, _) = KerName.repr h.uid in
-  let () = msg_warning (str "Hint used but not imported: " ++ hint ++ print_mp mp) in
+  let () = Feedback.msg_warning (str "Hint used but not imported: " ++ hint ++ print_mp mp) in
   Proofview.tclUNIT x
 
 let run_hint tac k = match !warn_hint with

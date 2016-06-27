@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Context
 open Univ
 open Evd
 open Environ
@@ -109,7 +108,7 @@ type contextual_reduction_function = env -> evar_map -> constr -> constr
 type reduction_function = contextual_reduction_function
 type local_reduction_function = evar_map -> constr -> constr
 
-type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
+type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> constr -> (constr, 'r) Sigma.sigma }
 
 type contextual_stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
@@ -218,11 +217,10 @@ val splay_prod : env ->  evar_map -> constr -> (Name.t * constr) list * constr
 val splay_lam : env ->  evar_map -> constr -> (Name.t * constr) list * constr
 val splay_arity : env ->  evar_map -> constr -> (Name.t * constr) list * sorts
 val sort_of_arity : env -> evar_map -> constr -> sorts
-val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
-val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
+val splay_prod_n : env ->  evar_map -> int -> constr -> Context.Rel.t * constr
+val splay_lam_n : env ->  evar_map -> int -> constr -> Context.Rel.t * constr
 val splay_prod_assum :
-  env ->  evar_map -> constr -> rel_context * constr
-val is_sort : env -> evar_map -> types -> bool
+  env ->  evar_map -> constr -> Context.Rel.t * constr
 
 type 'a miota_args = {
   mP      : constr;     (** the result type *)
@@ -251,13 +249,9 @@ type conversion_test = constraints -> constraints
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
-val is_conv : env ->  evar_map -> constr -> constr -> bool
-val is_conv_leq : env ->  evar_map -> constr -> constr -> bool
-val is_fconv : conv_pb -> env ->  evar_map -> constr -> constr -> bool
-
-val is_trans_conv : transparent_state -> env -> evar_map -> constr -> constr -> bool
-val is_trans_conv_leq : transparent_state -> env ->  evar_map -> constr -> constr -> bool
-val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr -> constr -> bool
+val is_conv : ?reds:transparent_state -> env -> evar_map -> constr -> constr -> bool
+val is_conv_leq : ?reds:transparent_state -> env ->  evar_map -> constr -> constr -> bool
+val is_fconv : ?reds:transparent_state -> conv_pb -> env ->  evar_map -> constr -> constr -> bool
 
 (** [check_conv] Checks universe constraints only.
     pb defaults to CUMUL and ts to a full transparent state.

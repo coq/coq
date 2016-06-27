@@ -20,6 +20,8 @@ open Libnames
 open Globnames
 open Constrintern
 open Constrexpr
+open Sigma.Notations
+open Context.Rel.Declaration
 (*i*)
 
 open Decl_kinds
@@ -74,14 +76,14 @@ let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
 let type_ctx_instance evars env ctx inst subst =
   let rec aux (subst, instctx) l = function
-    (na, b, t) :: ctx ->
-      let t' = substl subst t in
+    decl :: ctx ->
+      let t' = substl subst (get_type decl) in
       let c', l =
-	match b with
-	| None -> interp_casted_constr_evars env evars (List.hd l) t', List.tl l
-	| Some b -> substl subst b, l
+	match decl with
+	| LocalAssum _ -> interp_casted_constr_evars env evars (List.hd l) t', List.tl l
+	| LocalDef (_,b,_) -> substl subst b, l
       in
-      let d = na, Some c', t' in
+      let d = get_name decl, Some c', t' in
 	aux (c' :: subst, d :: instctx) l ctx
     | [] -> subst
   in aux (subst, []) inst (List.rev ctx)
@@ -130,7 +132,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     match bk with
     | Implicit ->
 	Implicit_quantifiers.implicit_application Id.Set.empty ~allow_partial:false
-	  (fun avoid (clname, (id, _, t)) ->
+	  (fun avoid (clname, _) ->
 	    match clname with
 	    | Some (cl, b) ->
 		let t = CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
@@ -153,10 +155,11 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     let k, args = Typeclasses.dest_class_app (push_rel_context ctx'' env) c in
     let cl, u = Typeclasses.typeclass_univ_instance k in
     let _, args = 
-      List.fold_right (fun (na, b, t) (args, args') ->
-	match b with
-	| None -> (List.tl args, List.hd args :: args')
-	| Some b -> (args, substl args' b :: args'))
+      List.fold_right (fun decl (args, args') ->
+        let open Context.Rel.Declaration in
+	match decl with
+	| LocalAssum _ -> (List.tl args, List.hd args :: args')
+	| LocalDef (_,b,_) -> (args, substl args' b :: args'))
 	(snd cl.cl_context) (args, [])
     in
       cl, u, c', ctx', ctx, len, imps, args
@@ -179,7 +182,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     if abstract then
       begin
 	let subst = List.fold_left2
-	  (fun subst' s (_, b, _) -> if Option.is_empty b then s :: subst' else subst')
+	  (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
 	  [] subst (snd k.cl_context)
 	in
 	let (_, ty_constr) = instance_constructor (k,u) subst in
@@ -188,19 +191,19 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
 	    nf t
 	in
-	Evarutil.check_evars env Evd.empty !evars termtype;
+	Pretyping.check_evars env Evd.empty !evars termtype;
 	let pl, ctx = Evd.universe_context ?names:pl !evars in
 	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
 	  (ParameterEntry 
             (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in
 	  Universes.register_universe_binders (ConstRef cst) pl;
-	  instance_hook k None global imps ?hook (ConstRef cst); id
+	  instance_hook k pri global imps ?hook (ConstRef cst); id
       end
     else (
       let props =
 	match props with
-	| Some (true, CRecord (loc, _, fs)) ->
+	| Some (true, CRecord (loc, fs)) ->
 	    if List.length fs > List.length k.cl_props then
 	      mismatched_props env' (List.map snd fs) k.cl_props;
 	    Some (Inl fs)
@@ -223,10 +226,10 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	    in
 	    let props, rest =
 	      List.fold_left
-		(fun (props, rest) (id,b,_) ->
-		  if Option.is_empty b then 
+		(fun (props, rest) decl ->
+		  if is_local_assum decl then
 		    try
-		      let is_id (id', _) = match id, get_id id' with
+		      let is_id (id', _) = match get_name decl, get_id id' with
 			| Name id, (_, id') -> Id.equal id id'
 			| Anonymous, _ -> false
                       in
@@ -260,7 +263,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	    None, termtype
 	| Some (Inl subst) ->
 	  let subst = List.fold_left2
-	    (fun subst' s (_, b, _) -> if Option.is_empty b then s :: subst' else subst')
+	    (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
 	    [] subst (k.cl_props @ snd k.cl_context)
 	  in
 	  let (app, ty_constr) = instance_constructor (k,u) subst in
@@ -284,7 +287,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
       let evm, nf = Evarutil.nf_evar_map_universes !evars in
       let termtype = nf termtype in
       let _ = (* Check that the type is free of evars now. *)
-	Evarutil.check_evars env Evd.empty evm termtype
+	Pretyping.check_evars env Evd.empty evm termtype
       in
       let term = Option.map nf term in
 	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
@@ -327,7 +330,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 		if not (Option.is_empty term) then
                   let init_refine =
                     Tacticals.New.tclTHENLIST [
-                      Proofview.Refine.refine (fun evm -> evm, Option.get term);
+                      Refine.refine { run = fun evm -> Sigma (Option.get term, evm, Sigma.refl) };
                       Proofview.Unsafe.tclNEWGOALS gls;
                       Tactics.New.reduce_after_refine;
                     ]
@@ -343,9 +346,11 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 let named_of_rel_context l =
   let acc, ctx =
     List.fold_right
-      (fun (na, b, t) (subst, ctx) ->
-	let id = match na with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
-	let d = (id, Option.map (substl subst) b, substl subst t) in
+      (fun decl (subst, ctx) ->
+        let id = match get_name decl with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
+	let d = match decl with
+	  | LocalAssum (_,t) -> id, None, substl subst t
+	  | LocalDef (_,b,t) -> id, Some (substl subst b), substl subst t in
 	  (mkVar id :: subst, d :: ctx))
       l ([], [])
   in ctx
@@ -355,9 +360,9 @@ let context poly l =
   let evars = ref (Evd.from_env env) in
   let _, ((env', fullctx), impls) = interp_context_evars env evars l in
   let subst = Evarutil.evd_comb0 Evarutil.nf_evars_and_universes evars in
-  let fullctx = Context.map_rel_context subst fullctx in
-  let ce t = Evarutil.check_evars env Evd.empty !evars t in
-  let () = List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx in
+  let fullctx = Context.Rel.map subst fullctx in
+  let ce t = Pretyping.check_evars env Evd.empty !evars t in
+  let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) fullctx in
   let ctx =
     try named_of_rel_context fullctx
     with e when Errors.noncritical e ->

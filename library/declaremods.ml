@@ -371,7 +371,7 @@ let rec replace_module_object idl mp0 objs0 mp1 objs1 =
   match idl, objs0 with
   | _,[] -> []
   | id::idl,(id',obj)::tail when Id.equal id id' ->
-    assert (object_has_tag obj "MODULE");
+    assert (String.equal (object_tag obj) "MODULE");
     let mp_id = MPdot(mp0, Label.of_id id) in
     let objs = match idl with
       | [] -> Lib.subst_objects (map_mp mp1 mp_id empty_delta_resolver) objs1
@@ -897,7 +897,13 @@ let start_library dir =
   Lib.start_compilation dir mp;
   Lib.add_frozen_state ()
 
+let end_library_hook = ref ignore
+let append_end_library_hook f =
+  let old_f = !end_library_hook in
+  end_library_hook := fun () -> old_f(); f ()
+
 let end_library ?except dir =
+  !end_library_hook();
   let oname = Lib.end_compilation_checks dir in
   let mp,cenv,ast = Global.export ?except dir in
   let prefix, lib_stack = Lib.end_compilation oname in

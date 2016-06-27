@@ -12,7 +12,7 @@ open Reduction
 
 (**********************************************************************
   s conversion functions *)
-val vm_conv : conv_pb -> types conversion_function
+val vm_conv : conv_pb -> types kernel_conversion_function
 
 (** A conversion function parametrized by a universe comparator. Used outside of
     the kernel. *)

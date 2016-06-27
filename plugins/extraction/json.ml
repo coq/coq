@@ -1,8 +1,6 @@
 open Pp
-open Errors
 open Util
 open Names
-open Nameops
 open Globnames
 open Table
 open Miniml
@@ -17,9 +15,6 @@ let json_int i =
 
 let json_bool b =
   if b then str "true" else str "false"
-
-let json_null =
-  str "null"
 
 let json_global typ ref =
   json_str (Common.pp_global typ ref)

@@ -9,6 +9,7 @@ This product includes also software developed by
   Claudio Sacerdoti Coen, HELM, University of Bologna, (plugins/xml)
   Pierre Corbineau, Radboud University, Nijmegen (declarative mode)
   John Harrison, University of Cambridge (csdp wrapper)
+  Georges Gonthier, Microsoft Research - Inria Joint Centre (plugins/ssrmatching)
 
 The file CREDITS contains a list of contributors.
 The credits section in the Reference Manual details contributions.

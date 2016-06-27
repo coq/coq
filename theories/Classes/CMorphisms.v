@@ -452,7 +452,7 @@ Ltac partial_application_tactic :=
   let rec do_partial_apps H m cont := 
     match m with
       | ?m' ?x => class_apply @Reflexive_partial_app_morphism ; 
-        [(do_partial_apps H m' ltac:idtac)|clear H]
+        [(do_partial_apps H m' ltac:(idtac))|clear H]
       | _ => cont
     end
   in

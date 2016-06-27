@@ -252,7 +252,7 @@ Ltac autoinjection tac :=
 
 Ltac inject H := progress (inversion H ; subst*; clear_dups) ; clear H.
 
-Ltac autoinjections := repeat (clear_dups ; autoinjection ltac:inject).
+Ltac autoinjections := repeat (clear_dups ; autoinjection ltac:(inject)).
 
 (** Destruct an hypothesis by first copying it to avoid dependencies. *)
 

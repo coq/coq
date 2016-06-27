@@ -20,22 +20,19 @@ open Misctypes
 open Tok (* necessary for camlp4 *)
 
 open Pcoq
-open Pcoq.Tactic
 open Pcoq.Prim
 open Pcoq.Constr
 open Pcoq.Vernac_
 open Pcoq.Module
 
 let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at" ]
-let _ = List.iter Lexer.add_keyword vernac_kw
+let _ = List.iter CLexer.add_keyword vernac_kw
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
 let query_command = Gram.entry_create "vernac:query_command"
 
-let tactic_mode = Gram.entry_create "vernac:tactic_command"
-let noedit_mode = Gram.entry_create "vernac:noedit_command"
 let subprf = Gram.entry_create "vernac:subprf"
 
 let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
@@ -48,21 +45,6 @@ let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
 let instance_name = Gram.entry_create "vernac:instance_name"
 let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
 
-let command_entry = ref noedit_mode
-let set_command_entry e = command_entry := e
-let get_command_entry () = !command_entry
-
-
-(* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
-    proof editing and changes nothing else). Then sets it as the default proof mode. *)
-let set_tactic_mode () = set_command_entry tactic_mode
-let set_noedit_mode () = set_command_entry noedit_mode
-let _ = Proof_global.register_proof_mode {Proof_global.
-					    name = "Classic" ;
-					    set = set_tactic_mode ;
-					    reset = set_noedit_mode
-					 }
-
 let make_bullet s =
   let n = String.length s in
   match s.[0] with
@@ -71,26 +53,11 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
-(* Hack to parse "[ id" without dropping [ *)
-let test_bracket_ident =
-  Gram.Entry.of_parser "test_bracket_ident"
-    (fun strm ->
-      match get_tok (stream_nth 0 strm) with
-        | KEYWORD "[" ->
-            (match get_tok (stream_nth 1 strm) with
-              | IDENT _ -> ()
-	      | _ -> raise Stream.Failure)
-	| _ -> raise Stream.Failure)
-
-let default_command_entry =
-  Gram.Entry.of_parser "command_entry"
-    (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
-
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext tactic_mode noedit_mode subprf subgoal_command;
+  GLOBAL: vernac gallina_ext noedit_mode subprf subgoal_command;
   vernac: FIRST
-    [ [ IDENT "Time"; l = vernac_list -> VernacTime l
-      | IDENT "Redirect"; s = ne_string; l = vernac_list -> VernacRedirect (s, l)
+    [ [ IDENT "Time"; c = located_vernac -> VernacTime c
+      | IDENT "Redirect"; s = ne_string; c = located_vernac -> VernacRedirect (s, c)
       | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)
       | IDENT "Fail"; v = vernac -> VernacFail v
 
@@ -128,26 +95,11 @@ GEXTEND Gram
       | c = subprf -> c
     ] ]
   ;
-  vernac_list:
-    [ [ c = located_vernac -> [c] ] ]
-  ;
   vernac_aux: LAST
-    [ [ prfcom = default_command_entry -> prfcom ] ]
+    [ [ prfcom = command_entry -> prfcom ] ]
   ;
   noedit_mode:
     [ [ c = subgoal_command -> c None] ]
-  ;
-
-  selector:
-    [ [ n=natural; ":" -> SelectNth n
-      | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id
-      | IDENT "all" ; ":" -> SelectAll
-      | IDENT "par" ; ":" -> SelectAllParallel ] ]
-  ;
-
-  tactic_mode:
-  [ [ gln = OPT selector;
-      tac = subgoal_command -> tac gln ] ]
   ;
 
   subprf:
@@ -164,30 +116,30 @@ GEXTEND Gram
                     | None -> c None
                     | _ ->
                         VernacError (UserError ("",str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
-                  end
-      | info = OPT [IDENT "Info";n=natural -> n];
-        tac = Tactic.tactic;
-        use_dft_tac = [ "." -> false | "..." -> true ] ->
-        (fun g ->
-            let g = Option.default (Proof_global.get_default_goal_selector ()) g in
-            VernacSolve(g,info,tac,use_dft_tac)) ] ]
+                  end ] ]
   ;
   located_vernac:
     [ [ v = vernac -> !@loc, v ] ]
   ;
 END
 
-let test_plurial_form = function
+let test_plural_form = function
   | [(_,([_],_))] ->
-      Flags.if_verbose msg_warning
+      Flags.if_verbose Feedback.msg_warning
    (strbrk "Keywords Variables/Hypotheses/Parameters expect more than one assumption")
   | _ -> ()
 
-let test_plurial_form_types = function
+let test_plural_form_types = function
   | [([_],_)] ->
-      Flags.if_verbose msg_warning
+      Flags.if_verbose Feedback.msg_warning
    (strbrk "Keywords Implicit Types expect more than one type")
   | _ -> ()
+
+let fresh_var env c =
+  Namegen.next_ident_away (Id.of_string "pat")
+    (env @ Id.Set.elements (Topconstr.free_vars_of_constr_expr c))
+
+let _ = Hook.set Constrexpr_ops.fresh_var_hook fresh_var
 
 (* Gallina declarations *)
 GEXTEND Gram
@@ -204,7 +156,7 @@ GEXTEND Gram
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | stre = assumptions_token; nl = inline; bl = assum_list ->
-	  test_plurial_form bl;
+	  test_plural_form bl;
 	  VernacAssumption (stre, nl, bl)
       | d = def_token; id = pidentref; b = def_body ->
           VernacDefinition (d, id, b)
@@ -289,11 +241,19 @@ GEXTEND Gram
   (* Simple definitions *)
   def_body:
     [ [ bl = binders; ":="; red = reduce; c = lconstr ->
+      let (bl, c) = expand_pattern_binders mkCLambdaN bl c in
       (match c with
           CCast(_,c, CastConv t) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
-	DefineBody (bl, red, c, Some t)
+        let ((bl, c), tyo) =
+          if List.exists (function LocalPattern _ -> true | _ -> false) bl
+          then
+            let c = CCast (!@loc, c, CastConv t) in
+            (expand_pattern_binders mkCLambdaN bl c, None)
+          else ((bl, c), Some t)
+        in
+	DefineBody (bl, red, c, tyo)
     | bl = binders; ":"; t = lconstr ->
         ProveBody (bl, t) ] ]
   ;
@@ -502,7 +462,7 @@ GEXTEND Gram
 	  VernacInclude(e::l)
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
 	  Flags.if_verbose
-            msg_warning (strbrk "Include Type is deprecated; use Include instead");
+            Feedback.msg_warning (strbrk "Include Type is deprecated; use Include instead");
           VernacInclude(e::l) ] ]
   ;
   export_token:
@@ -721,7 +681,7 @@ GEXTEND Gram
      (* moved there so that camlp5 factors it with the previous rule *)
      | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 [ "_" -> None | sc = IDENT -> Some sc ]; "]" ->
-        msg_warning (strbrk "Arguments Scope is deprecated; use Arguments instead");
+       Feedback. msg_warning (strbrk "Arguments Scope is deprecated; use Arguments instead");
         VernacArgumentsScope (qid,scl)
 
       (* Implicit *)
@@ -729,14 +689,14 @@ GEXTEND Gram
 	   pos = LIST0 [ "["; l = LIST0 implicit_name; "]" ->
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
 	   Flags.if_verbose
-             msg_warning (strbrk "Implicit Arguments is deprecated; use Arguments instead");
+            Feedback.msg_warning (strbrk "Implicit Arguments is deprecated; use Arguments instead");
 	   VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
 	   VernacReserve bl
 
       | IDENT "Implicit"; IDENT "Types"; bl = reserv_list ->
-          test_plurial_form_types bl;
+          test_plural_form_types bl;
            VernacReserve bl
 
       | IDENT "Generalizable"; 
@@ -804,11 +764,7 @@ GEXTEND Gram
   GLOBAL: command query_command class_rawexpr;
 
   command:
-    [ [ IDENT "Ltac";
-        l = LIST1 tacdef_body SEP "with" ->
-          VernacDeclareTacticDefinition (true, l)
-
-      | IDENT "Comments"; l = LIST0 comment -> VernacComments l
+    [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
 
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
@@ -943,7 +899,6 @@ GEXTEND Gram
       | IDENT "Classes" ->  PrintClasses
       | IDENT "TypeClasses" -> PrintTypeClasses
       | IDENT "Instances"; qid = smart_global -> PrintInstances qid
-      | IDENT "Ltac"; qid = global -> PrintLtac qid
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)
@@ -954,7 +909,6 @@ GEXTEND Gram
       | IDENT "Hint"; qid = smart_global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
-      | "Rewrite"; IDENT "HintDb"; s = IDENT -> PrintRewriteHintDbName s
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
       | IDENT "Visibility"; s = OPT [x = IDENT -> x ] -> PrintVisibility s
@@ -1083,7 +1037,7 @@ GEXTEND Gram
 	 VernacDelimiters (sc, None)
 
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
-       refl = LIST1 smart_global -> VernacBindScope (sc,refl)
+       refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 
      | IDENT "Infix"; local = obsolete_locality;
 	 op = ne_lstring; ":="; p = constr;
@@ -1101,10 +1055,6 @@ GEXTEND Gram
            VernacNotation (local,c,(s,modl),sc)
      | IDENT "Format"; IDENT "Notation"; n = STRING; s = STRING; fmt = STRING ->
            VernacNotationAddFormat (n,s,fmt)
-
-     | IDENT "Tactic"; IDENT "Notation"; n = tactic_level;
-	 pil = LIST1 production_item; ":="; t = Tactic.tactic
-         -> VernacTacticNotation (n,pil,t)
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
@@ -1131,9 +1081,6 @@ GEXTEND Gram
   obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]
   ;
-  tactic_level:
-    [ [ "("; "at"; IDENT "level"; n = natural; ")" -> n | -> 0 ] ]
-  ;
   level:
     [ [ IDENT "level"; n = natural -> NumLevel n
       | IDENT "next"; IDENT "level" -> NextLevel ] ]
@@ -1143,6 +1090,7 @@ GEXTEND Gram
       | IDENT "left"; IDENT "associativity" -> SetAssoc LeftA
       | IDENT "right"; IDENT "associativity" -> SetAssoc RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc NonA
+      | IDENT "only"; IDENT "printing" -> SetOnlyPrinting
       | IDENT "only"; IDENT "parsing" ->
         SetOnlyParsing Flags.Current
       | IDENT "compat"; s = STRING ->
@@ -1164,11 +1112,5 @@ GEXTEND Gram
       | IDENT "binder" -> ETBinder true
       | IDENT "closed"; IDENT "binder" -> ETBinder false
     ] ]
-  ;
-  production_item:
-    [ [ s = ne_string -> TacTerm s
-      | nt = IDENT;
-        po = OPT [ "("; p = ident; sep = [ -> "" | ","; sep = STRING -> sep ];
-                   ")" -> (p,sep) ] -> TacNonTerm (!@loc,nt,po) ] ]
   ;
 END

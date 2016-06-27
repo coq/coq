@@ -1,3 +1,4 @@
+open Context.Rel.Declaration
 open Errors
 open Util
 open Names
@@ -10,12 +11,13 @@ open Glob_term
 open Declarations
 open Misctypes
 open Decl_kinds
+open Sigma.Notations
 
 let is_rec_info scheme_info =
-  let test_branche min acc (_,_,br) =
+  let test_branche min acc decl =
     acc || (
       let new_branche =
-	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum br)) in
+	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum (get_type decl))) in
       let free_rels_in_br = Termops.free_rels new_branche in
       let max = min + scheme_info.Tactics.npredicates in
       Int.Set.exists (fun i -> i >= min && i< max) free_rels_in_br
@@ -85,7 +87,7 @@ let functional_induction with_clean c princl pat =
       in
       let encoded_pat_as_patlist =
         List.make (List.length args + List.length c_list - 1) None @ [pat] in
-      List.map2 (fun c pat -> ((None,Tacexpr.ElimOnConstr (fun env sigma -> sigma,(c,NoBindings))),(None,pat),None))
+      List.map2 (fun c pat -> ((None,Tacexpr.ElimOnConstr ({ Tacexpr.delayed = fun env sigma -> Sigma ((c,NoBindings), sigma, Sigma.refl) })),(None,pat),None))
         (args@c_list) encoded_pat_as_patlist
     in
     let princ' = Some (princ,bindings) in
@@ -112,7 +114,7 @@ let functional_induction with_clean c princl pat =
 	in
 	Tacticals.tclTHEN
 	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Proofview.V82.of_tactic (Equality.subst_gen (do_rewrite_dependent ()) [id]))) idl )
-	  (Tactics.reduce flag Locusops.allHypsAndConcl)
+	  (Proofview.V82.of_tactic (Tactics.reduce flag Locusops.allHypsAndConcl))
 	  g
       else Tacticals.tclIDTAC g
     in
@@ -130,6 +132,7 @@ let rec abstract_glob_constr c = function
   | Constrexpr.LocalRawAssum (idl,k,t)::bl ->
       List.fold_right (fun x b -> Constrexpr_ops.mkLambdaC([x],k,t,b)) idl
         (abstract_glob_constr c bl)
+  | Constrexpr.LocalPattern _::bl -> assert false
 
 let interp_casted_constr_with_implicits env sigma impls c  =
   Constrintern.intern_gen Pretyping.WithoutTypeConstraint env ~impls
@@ -152,7 +155,8 @@ let build_newrecursive
 	let evdref = ref (Evd.from_env env0) in
 	let _, (_, impls') = Constrintern.interp_context_evars env evdref bl in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity impls' in
-        (Environ.push_named (recname,None,arity) env, Id.Map.add recname impl impls))
+        let open Context.Named.Declaration in
+        (Environ.push_named (LocalAssum (recname,arity)) env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
     (* Declare local notations *)
@@ -212,6 +216,7 @@ let rec local_binders_length = function
   | [] -> 0
   | Constrexpr.LocalRawDef _::bl -> 1 + local_binders_length bl
   | Constrexpr.LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
+  | Constrexpr.LocalPattern _::bl -> assert false
 
 let prepare_body ((name,_,args,types,_),_) rt =
   let n = local_binders_length args in
@@ -264,12 +269,12 @@ let derive_inversion fix_names =
 	lind;
       with e when Errors.noncritical e ->
       let e' = process_vernac_interp_error e in
-      msg_warning
+      Feedback.msg_warning
 	(str "Cannot build inversion information" ++
 	   if do_observe () then (fnl() ++ Errors.print e') else mt ())
   with e when Errors.noncritical e ->
       let e' = process_vernac_interp_error e in
-      msg_warning
+      Feedback.msg_warning
 	(str "Cannot build inversion information (early)" ++
 	   if do_observe () then (fnl() ++ Errors.print e') else mt ())       
 
@@ -289,12 +294,12 @@ let warning_error names e =
   in
   match e with
     | Building_graph e ->
-      Pp.msg_warning
+      Feedback.msg_warning
 	(str "Cannot define graph(s) for " ++
 	   h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
 	   e_explain e)
     | Defining_principle e ->
-      Pp.msg_warning
+      Feedback.msg_warning
 	(str "Cannot define principle(s) for "++
 	   h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
 	   e_explain e)
@@ -727,9 +732,9 @@ let rec add_args id new_args b =
 	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
   | CCases(loc,sty,b_option,cel,cal) ->
       CCases(loc,sty,Option.map (add_args id new_args) b_option,
-	     List.map (fun (b,(na,b_option)) ->
+	     List.map (fun (b,na,b_option) ->
 			 add_args id new_args b,
-			 (na, b_option)) cel,
+			 na, b_option) cel,
 	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
 	    )
   | CLetTuple(loc,nal,(na,b_option),b1,b2) ->
@@ -751,10 +756,8 @@ let rec add_args id new_args b =
   | CCast(loc,b1,b2)  ->
       CCast(loc,add_args id new_args b1,
 	    Miscops.map_cast_type (add_args id new_args) b2)
-  | CRecord (loc, w, pars) ->
-      CRecord (loc,
-	       (match w with Some w -> Some (add_args id new_args w) | _ -> None),
-	       List.map (fun (e,o) -> e, add_args id new_args o) pars)
+  | CRecord (loc, pars) ->
+      CRecord (loc, List.map (fun (e,o) -> e, add_args id new_args o) pars)
   | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation")
   | CGeneralization _ -> anomaly ~label:"add_args " (Pp.str "CGeneralization")
   | CPrim _ -> b
@@ -860,6 +863,7 @@ let make_graph (f_ref:global_reference) =
 					(fun (loc,n) ->
 					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
 					nal
+                                  | Constrexpr.LocalPattern _ -> assert false
 			       )
 			       nal_tas
 			    )

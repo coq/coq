@@ -16,8 +16,9 @@
     - A function [reset] to reset the *standard mode* from it 
 
 *)
+type proof_mode_name = string
 type proof_mode = {
-  name : string ;
+  name : proof_mode_name ;
   set : unit -> unit ;
   reset : unit -> unit
 }
@@ -27,6 +28,7 @@ type proof_mode = {
     One mode is already registered - the standard mode - named "No",
     It corresponds to Coq default setting are they are set when coqtop starts. *)
 val register_proof_mode : proof_mode -> unit
+val get_default_proof_mode_name : unit -> proof_mode_name
 
 val there_are_pending_proofs : unit -> bool
 val check_no_pending_proof : unit -> unit
@@ -40,7 +42,7 @@ val discard_all : unit -> unit
 
 (** [set_proof_mode] sets the proof mode to be used after it's called. It is
     typically called by the Proof Mode command. *)
-val set_proof_mode : string -> unit
+val set_proof_mode : proof_mode_name -> unit
 
 exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
@@ -70,8 +72,11 @@ type proof_ending =
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
-type proof_terminator = proof_ending -> unit
+type proof_terminator
 type closed_proof = proof_object * proof_terminator
+
+val make_terminator : (proof_ending -> unit) -> proof_terminator
+val apply_terminator : proof_terminator -> proof_ending -> unit
 
 (** [start_proof id str goals terminator] starts a proof of name [id]
     with goals [goals] (a list of pairs of environment and
@@ -150,8 +155,8 @@ val get_universe_binders : unit -> universe_binders option
 (**********************************************************)
 
 
-val activate_proof_mode : string -> unit
-val disactivate_proof_mode : string -> unit
+val activate_proof_mode : proof_mode_name -> unit
+val disactivate_current_proof_mode : unit -> unit
 
 (**********************************************************)
 (*                                                        *)
@@ -169,7 +174,7 @@ module Bullet : sig
   type behavior = {
     name : string;
     put : Proof.proof -> t -> Proof.proof;
-    suggest: Proof.proof -> string option
+    suggest: Proof.proof -> Pp.std_ppcmds
   }
 
   (** A registered behavior can then be accessed in Coq
@@ -186,7 +191,7 @@ module Bullet : sig
   (** Handles focusing/defocusing with bullets:
        *)
   val put : Proof.proof -> t -> Proof.proof
-  val suggest : Proof.proof -> string option
+  val suggest : Proof.proof -> Pp.std_ppcmds
 end
 
 

@@ -14,8 +14,13 @@ Config_lexer
 Utf8_convert
 Preferences
 Project_file
-Ideutils
+Serialize
+Richprinter
+Xml_lexer
+Xml_parser
+Xml_printer
 Xmlprotocol
+Ideutils
 Coq
 Coq_lex
 Sentence

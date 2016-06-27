@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Setoid.
-Require Import PeanoNat Le Gt Minus Bool.
+Require Import PeanoNat Le Gt Minus Bool Lt.
 
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -248,8 +248,7 @@ Section Facts.
     generalize (app_nil_r l); intros E.
     rewrite -> E; auto.
     intros.
-    injection H.
-    intro.
+    injection H as H H0.
     assert ([] = l ++ a0 :: l0) by auto.
     apply app_cons_not_nil in H1 as [].
   Qed.
@@ -335,7 +334,7 @@ Section Facts.
     absurd (length (x1 :: l1 ++ l) <= length l).
     simpl; rewrite app_length; auto with arith.
     rewrite H; auto with arith.
-    injection H; clear H; intros; f_equal; eauto.
+    injection H as H H0; f_equal; eauto.
   Qed.
 
 End Facts.
@@ -518,7 +517,7 @@ Section Elts.
   Proof.
     revert l.
     induction n as [|n IH]; intros [|x l] H; simpl in *; try easy.
-    - exists nil; exists l. injection H; clear H; intros; now subst.
+    - exists nil; exists l. now injection H as ->.
     - destruct (IH _ H) as (l1 & l2 & H1 & H2).
       exists (x::l1); exists l2; simpl; split; now f_equal.
   Qed.
@@ -1385,9 +1384,8 @@ End Fold_Right_Recursor.
     Lemma combine_split : forall (l:list A)(l':list B), length l = length l' ->
       split (combine l l') = (l,l').
     Proof.
-      induction l; destruct l'; simpl; intros; auto; try discriminate.
-      injection H; clear H; intros.
-      rewrite IHl; auto.
+      induction l, l'; simpl; trivial; try discriminate.
+      now intros [= ->%IHl].
     Qed.
 
     Lemma in_combine_l : forall (l:list A)(l':list B)(x:A)(y:B),
@@ -1471,7 +1469,7 @@ End Fold_Right_Recursor.
       destruct (in_app_or _ _ _ H); clear H.
       destruct (in_map_iff (fun y : B => (a, y)) l' (x,y)) as (H1,_).
       destruct (H1 H0) as (z,(H2,H3)); clear H0 H1.
-      injection H2; clear H2; intros; subst; intuition.
+      injection H2 as -> ->; intuition.
       intuition.
     Qed.
 
@@ -1633,6 +1631,80 @@ Section Cutting.
 		 | a::l => a::(firstn n l)
 	       end
     end.
+
+  Lemma firstn_nil n: firstn n [] = [].
+  Proof. induction n; now simpl. Qed.
+
+  Lemma firstn_cons n a l: firstn (S n) (a::l) = a :: (firstn n l).
+  Proof. now simpl. Qed.
+
+  Lemma firstn_all l: firstn (length l) l = l.
+  Proof. induction l as [| ? ? H]; simpl; [reflexivity | now rewrite H]. Qed.
+
+  Lemma firstn_all2 n: forall (l:list A), (length l) <= n -> firstn n l = l.
+  Proof. induction n as [|k iHk].
+    - intro. inversion 1 as [H1|?].
+      rewrite (length_zero_iff_nil l) in H1. subst. now simpl.
+    - destruct l as [|x xs]; simpl.
+      * now reflexivity.
+      * simpl. intro H. apply Peano.le_S_n in H. f_equal. apply iHk, H.
+  Qed.
+
+  Lemma firstn_O l: firstn 0 l = [].
+  Proof. now simpl. Qed.
+
+  Lemma firstn_le_length n: forall l:list A, length (firstn n l) <= n.
+  Proof.
+    induction n as [|k iHk]; simpl; [auto | destruct l as [|x xs]; simpl].
+    - auto with arith.
+    - apply Peano.le_n_S, iHk.
+  Qed.
+
+  Lemma firstn_length_le: forall l:list A, forall n:nat,
+    n <= length l -> length (firstn n l) = n.
+  Proof. induction l as [|x xs Hrec].
+    - simpl. intros n H. apply le_n_0_eq in H. rewrite <- H. now simpl.
+    - destruct n.
+      * now simpl.
+      * simpl. intro H. apply le_S_n in H. now rewrite (Hrec n H).
+  Qed.
+
+  Lemma firstn_app n:
+    forall l1 l2,
+    firstn n (l1 ++ l2) = (firstn n l1) ++ (firstn (n - length l1) l2).
+  Proof. induction n as [|k iHk]; intros l1 l2.
+    - now simpl.
+    - destruct l1 as [|x xs].
+      * unfold firstn at 2, length. now rewrite 2!app_nil_l, <- minus_n_O.
+      * rewrite <- app_comm_cons. simpl. f_equal. apply iHk.
+  Qed.
+
+  Lemma firstn_app_2 n:
+    forall l1 l2,
+    firstn ((length l1) + n) (l1 ++ l2) = l1 ++ firstn n l2.
+  Proof. induction n as [| k iHk];intros l1 l2.
+    - unfold firstn at 2. rewrite <- plus_n_O, app_nil_r.
+      rewrite firstn_app. rewrite <- minus_diag_reverse.
+      unfold firstn at 2. rewrite app_nil_r. apply firstn_all.
+    - destruct l2 as [|x xs].
+      * simpl. rewrite app_nil_r. apply firstn_all2. auto with arith.
+      * rewrite firstn_app. assert (H0 : (length l1 + S k - length l1) = S k).
+        auto with arith.
+        rewrite H0, firstn_all2; [reflexivity | auto with arith].
+  Qed.
+
+  Lemma firstn_firstn:
+    forall l:list A,
+    forall i j : nat,
+    firstn i (firstn j l) = firstn (min i j) l.
+  Proof. induction l as [|x xs Hl].
+    - intros. simpl. now rewrite ?firstn_nil.
+    - destruct i.
+      * intro. now simpl.
+      * destruct j.
+        + now simpl.
+        + simpl. f_equal. apply Hl.
+  Qed.
 
   Fixpoint skipn (n:nat)(l:list A) : list A :=
     match n with

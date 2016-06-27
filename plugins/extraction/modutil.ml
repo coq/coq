@@ -380,14 +380,6 @@ let rec depcheck_struct = function
       let lse' = depcheck_se lse in
       if List.is_empty lse' then struc' else (mp,lse')::struc'
 
-let is_prefix pre s =
-  let len = String.length pre in
-  let rec is_prefix_aux i =
-    if Int.equal i len then true
-    else pre.[i] == s.[i] && is_prefix_aux (succ i)
-  in
-  is_prefix_aux 0
-
 exception RemainingImplicit of kill_reason
 
 let check_for_remaining_implicits struc =

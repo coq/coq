@@ -300,7 +300,7 @@ let warning_axioms () =
   if List.is_empty info_axioms then ()
   else begin
     let s = if Int.equal (List.length info_axioms) 1 then "axiom" else "axioms" in
-    msg_warning
+    Feedback.msg_warning
       (str ("The following "^s^" must be realized in the extracted code:")
        ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global info_axioms)
        ++ str "." ++ fnl ())
@@ -310,7 +310,7 @@ let warning_axioms () =
   else begin
     let s = if Int.equal (List.length log_axioms) 1 then "axiom was" else "axioms were"
     in
-    msg_warning
+    Feedback.msg_warning
       (str ("The following logical "^s^" encountered:") ++
        hov 1
          (spc () ++ prlist_with_sep spc safe_pr_global log_axioms ++ str ".\n")
@@ -326,12 +326,12 @@ let warning_opaques accessed =
   else
     let lst = hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques) in
     if accessed then
-      msg_warning
+      Feedback.msg_warning
 	(str "The extraction is currently set to bypass opacity,\n" ++
 	 str "the following opaque constant bodies have been accessed :" ++
 	 lst ++ str "." ++ fnl ())
     else
-      msg_warning
+      Feedback.msg_warning
 	(str "The extraction now honors the opacity constraints by default,\n" ++
 	 str "the following opaque constants have been extracted as axioms :" ++
 	 lst ++ str "." ++ fnl () ++
@@ -339,7 +339,7 @@ let warning_opaques accessed =
 	 ++ fnl ())
 
 let warning_both_mod_and_cst q mp r =
- msg_warning
+ Feedback.msg_warning
    (str "The name " ++ pr_qualid q ++ str " is ambiguous, " ++
     str "do you mean module " ++
     pr_long_mp mp ++
@@ -358,7 +358,7 @@ let check_inside_module () =
     err (str "You can't do that within a Module Type." ++ fnl () ++
 	 str "Close it and try again.")
   else if Lib.is_module () then
-    msg_warning
+    Feedback.msg_warning
       (str "Extraction inside an opened module is experimental.\n" ++
        str "In case of problem, close it first.\n")
 
@@ -368,7 +368,7 @@ let check_inside_section () =
 	 str "Close it and try again.")
 
 let warning_id s =
-  msg_warning (str ("The identifier "^s^
+  Feedback.msg_warning (str ("The identifier "^s^
 		    " contains __ which is reserved for the extraction"))
 
 let error_constant r =
@@ -449,7 +449,7 @@ let error_remaining_implicit k =
 
 let warning_remaining_implicit k =
   let s = msg_of_implicit k in
-  msg_warning
+  Feedback.msg_warning
     (str ("At least an implicit occurs after extraction : "^s^".") ++ fnl () ++
      str "Extraction SafeImplicits is unset, extracting nonetheless," ++ fnl ()
      ++ str "but this code is potentially unsafe, please review it manually.")
@@ -459,13 +459,13 @@ let check_loaded_modfile mp = match base_mp mp with
       if not (Library.library_is_loaded dp) then begin
 	match base_mp (Lib.current_mp ()) with
 	  | MPfile dp' when not (DirPath.equal dp dp') ->
-	      err (str ("Please load library "^(DirPath.to_string dp^" first.")))
+	      err (str "Please load library " ++ pr_dirpath dp ++ str " first.")
 	  | _ -> ()
       end
   | _ -> ()
 
 let info_file f =
-  Flags.if_verbose msg_info
+  Flags.if_verbose Feedback.msg_info
     (str ("The file "^f^" has been created by extraction."))
 
 

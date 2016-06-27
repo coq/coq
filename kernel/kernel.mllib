@@ -1,6 +1,7 @@
 Names
 Uint31
 Univ
+UGraph
 Esubst
 Sorts
 Evar
@@ -14,7 +15,6 @@ Copcodes
 Cemitcodes
 Nativevalues
 Primitives
-Nativeinstr
 Opaqueproof
 Declareops
 Retroknowledge

@@ -15,7 +15,6 @@
 open Util
 open Names
 open Term
-open Context
 open Vm
 open Cemitcodes
 open Cbytecodes
@@ -190,35 +189,31 @@ and slot_for_fv env fv =
       let nv = Pre_env.lookup_named_val id env in
       begin match force_lazy_val nv with
       | None ->
-          let _, b, _ = Context.lookup_named id env.env_named_context in
-          fill_fv_cache nv id val_of_named idfun b
+         let open Context.Named in
+         let open Declaration in
+	 env.env_named_context |> lookup id |> get_value |> fill_fv_cache nv id val_of_named idfun
       | Some (v, _) -> v
       end
   | FVrel i ->
       let rv = Pre_env.lookup_rel_val i env in
       begin match force_lazy_val rv with
       | None ->
-          let _, b, _ = lookup_rel i env.env_rel_context in
-          fill_fv_cache rv i val_of_rel env_of_rel b
+         let open Context.Rel in
+         let open Declaration in
+	 env.env_rel_context |> lookup i |> get_value |> fill_fv_cache rv i val_of_rel env_of_rel
       | Some (v, _) -> v
       end
   | FVuniv_var idu ->
     assert false
 
 and eval_to_patch env (buff,pl,fv) =
-  (* copy code *before* patching because of nested evaluations:
-     the code we are patching might be called (and thus "concurrently" patched)
-     and results in wrong results. Side-effects... *)
-  let buff = Cemitcodes.copy buff in
   let patch = function
-    | Reloc_annot a, pos -> patch_int buff pos (slot_for_annot a)
-    | Reloc_const sc, pos -> patch_int buff pos (slot_for_str_cst sc)
-    | Reloc_getglobal kn, pos ->
-(*      Pp.msgnl (str"patching global: "++str(debug_string_of_con kn));*)
-	patch_int buff pos (slot_for_getglobal env kn);
-(*      Pp.msgnl (str"patch done: "++str(debug_string_of_con kn))*)
+    | Reloc_annot a, pos -> (pos, slot_for_annot a)
+    | Reloc_const sc, pos -> (pos, slot_for_str_cst sc)
+    | Reloc_getglobal kn, pos -> (pos, slot_for_getglobal env kn)
   in
-  List.iter patch pl;
+  let patches = List.map_left patch pl in
+  let buff = patch_int buff patches in
   let vm_env = Array.map (slot_for_fv env) fv in
   let tc = tcode_of_code buff (length buff) in
   eval_tcode tc vm_env

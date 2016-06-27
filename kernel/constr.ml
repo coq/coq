@@ -41,12 +41,24 @@ type case_printing =
   { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
     cstr_tags : bool list array; (* whether each pattern var of each constructor is a let-in (true) or not (false) *)
     style     : case_style }
+
+(* INVARIANT:
+ * - Array.length ci_cstr_ndecls = Array.length ci_cstr_nargs
+ * - forall (i : 0 .. pred (Array.length ci_cstr_ndecls)),
+ *          ci_cstr_ndecls.(i) >= ci_cstr_nargs.(i)
+ *)
 type case_info =
-  { ci_ind        : inductive;
-    ci_npar       : int;
-    ci_cstr_ndecls : int array; (* number of pattern vars of each constructor (with let's)*)
-    ci_cstr_nargs : int array; (* number of pattern vars of each constructor (w/o let's) *)
-    ci_pp_info    : case_printing (* not interpreted by the kernel *)
+  { ci_ind        : inductive;      (* inductive type to which belongs the value that is being matched *)
+    ci_npar       : int;            (* number of parameters of the above inductive type *)
+    ci_cstr_ndecls : int array;     (* For each constructor, the corresponding integer determines
+                                       the number of values that can be bound in a match-construct.
+                                       NOTE: parameters of the inductive type are therefore excluded from the count *)
+    ci_cstr_nargs : int array;      (* for each constructor, the corresponding integers determines
+                                       the number of values that can be applied to the constructor,
+                                       in addition to the parameters of the related inductive type
+                                       NOTE: "lets" are therefore excluded from the count
+                                       NOTE: parameters of the inductive type are also excluded from the count *)
+    ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
 (********************************************************************)
@@ -545,8 +557,8 @@ let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
 let eq_constr_univs univs m n =
   if m == n then true
   else 
-    let eq_universes _ = Univ.Instance.check_eq univs in
-    let eq_sorts s1 s2 = s1 == s2 || Univ.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+    let eq_universes _ = UGraph.check_eq_instances univs in
+    let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in compare_head_gen eq_universes eq_sorts eq_constr' m n
@@ -554,11 +566,11 @@ let eq_constr_univs univs m n =
 let leq_constr_univs univs m n =
   if m == n then true
   else 
-    let eq_universes _ = Univ.Instance.check_eq univs in
+    let eq_universes _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || 
-      Univ.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+      UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let leq_sorts s1 s2 = s1 == s2 || 
-      Univ.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+      UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
@@ -571,12 +583,12 @@ let eq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes strict = Univ.Instance.check_eq univs in
+    let eq_universes strict = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_eq univs u1 u2 then true
+	if UGraph.check_eq univs u1 u2 then true
 	else
 	  (cstrs := Univ.enforce_eq u1 u2 !cstrs;
 	   true)
@@ -591,12 +603,12 @@ let leq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
   else 
     let cstrs = ref Constraint.empty in
-    let eq_universes strict l l' = Univ.Instance.check_eq univs l l' in
+    let eq_universes strict l l' = UGraph.check_eq_instances univs l l' in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_eq univs u1 u2 then true
+	if UGraph.check_eq univs u1 u2 then true
 	else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
 	      true)
     in
@@ -604,7 +616,7 @@ let leq_constr_univs_infer univs m n =
       if Sorts.equal s1 s2 then true
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_leq univs u1 u2 then true
+	if UGraph.check_leq univs u1 u2 then true
 	else
 	  (cstrs := Univ.enforce_leq u1 u2 !cstrs; 
 	   true)

@@ -8,8 +8,6 @@
 
 open Ideutils
 
-let prefs = Preferences.current
-
 let revert_timer = mktimer ()
 let autosave_timer = mktimer ()
 
@@ -87,7 +85,7 @@ object(self)
                 flash_info "Could not overwrite file"
             | _ ->
               Minilib.log "Auto revert set to false";
-              prefs.Preferences.global_auto_revert <- false;
+              Preferences.global_auto_revert#set false;
               revert_timer.kill ()
 
   method save f =
@@ -120,9 +118,9 @@ object(self)
       | None -> None
       | Some f ->
         let dir = Filename.dirname f in
-        let base = (fst prefs.Preferences.auto_save_name) ^
+        let base = (fst Preferences.auto_save_name#get) ^
           (Filename.basename f) ^
-          (snd prefs.Preferences.auto_save_name)
+          (snd Preferences.auto_save_name#get)
         in Some (Filename.concat dir base)
 
   method private need_auto_save =

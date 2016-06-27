@@ -485,7 +485,7 @@ module Renv =
     let pop env = Vect.pop env.name_rel
 	    
     let popn env n =
-      for i = 1 to n do pop env done
+      for _i = 1 to n do pop env done
 
     let get env n =
       Lrel (Vect.get_last env.name_rel (n-1), n)
@@ -727,7 +727,8 @@ let optimize lam =
 let lambda_of_constr env sigma c =
   set_global_env env;
   let env = Renv.make () in
-  let ids = List.rev_map (fun (id, _, _) -> id) !global_env.env_rel_context in
+  let open Context.Rel.Declaration in
+  let ids = List.rev_map get_name !global_env.env_rel_context in
   Renv.push_rels env (Array.of_list ids);
   let lam = lambda_of_constr env sigma c in
 (*  if Flags.vm_draw_opt () then begin

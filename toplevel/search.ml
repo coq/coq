@@ -18,9 +18,27 @@ open Printer
 open Libnames
 open Globnames
 open Nametab
+open Goptions
 
 type filter_function = global_reference -> env -> constr -> bool
 type display_function = global_reference -> env -> constr -> unit
+
+(* This option restricts the output of [SearchPattern ...],
+[SearchAbout ...], etc. to the names of the symbols matching the
+query, separated by a newline. This type of output is useful for
+editors (like emacs), to generate a list of completion candidates
+without having to parse thorugh the types of all symbols. *)
+
+let search_output_name_only = ref false
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "output-name-only search";
+      optkey   = ["Search";"Output";"Name";"Only"];
+      optread  = (fun () -> !search_output_name_only);
+      optwrite = (:=) search_output_name_only }
 
 type glob_search_about_item =
   | GlobSearchSubPattern of constr_pattern
@@ -49,7 +67,9 @@ let iter_constructors indsp u fn env nconstr =
     fn (ConstructRef (indsp, i)) env typ
   done
 
-let iter_named_context_name_type f = List.iter (fun (nme,_,typ) -> f nme typ) 
+let iter_named_context_name_type f =
+  let open Context.Named.Declaration in
+  List.iter (fun decl -> f (get_id decl) (get_type decl))
 
 (* General search over hypothesis of a goal *)
 let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
@@ -61,12 +81,13 @@ let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
 
 (* General search over declarations *)
 let iter_declarations (fn : global_reference -> env -> constr -> unit) =
+  let open Context.Named.Declaration in
   let env = Global.env () in
   let iter_obj (sp, kn) lobj = match object_tag lobj with
   | "VARIABLE" ->
     begin try
-      let (id, _, typ) = Global.lookup_named (basename sp) in
-      fn (VarRef id) env typ
+      let decl = Global.lookup_named (basename sp) in
+      fn (VarRef (get_id decl)) env (get_type decl)
     with Not_found -> (* we are in a section *) () end
   | "CONSTANT" ->
     let cst = Global.constant_of_delta_kn kn in
@@ -98,11 +119,14 @@ let generic_search glnumopt fn =
   iter_declarations fn
 
 (** Standard display *)
-
 let plain_display accu ref env c =
-  let pc = pr_lconstr_env env Evd.empty c in
   let pr = pr_global ref in
-  accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
+  if !search_output_name_only then
+    accu := pr :: !accu
+  else begin
+    let pc = pr_lconstr_env env Evd.empty c in
+    accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
+  end
 
 let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
 
@@ -233,10 +257,10 @@ let search_about gopt items mods =
   format_display !ans
 
 type search_constraint =
-  | Name_Pattern of string
-  | Type_Pattern of string
-  | SubType_Pattern of string
-  | In_Module of string list
+  | Name_Pattern of Str.regexp
+  | Type_Pattern of Pattern.constr_pattern
+  | SubType_Pattern of Pattern.constr_pattern
+  | In_Module of Names.DirPath.t
   | Include_Blacklist
 
 type 'a coq_object = {
@@ -245,40 +269,21 @@ type 'a coq_object = {
   coq_object_object : 'a;
 }
 
-let interface_search flags =
-  let env = Global.env () in
+let interface_search =
   let rec extract_flags name tpe subtpe mods blacklist = function
   | [] -> (name, tpe, subtpe, mods, blacklist)
-  | (Name_Pattern s, b) :: l ->
-    let regexp =
-      try Str.regexp s
-      with e when Errors.noncritical e ->
-        Errors.errorlabstrm "Search.interface_search"
-          (str "Invalid regexp: " ++ str s)
-    in
+  | (Name_Pattern regexp, b) :: l ->
     extract_flags ((regexp, b) :: name) tpe subtpe mods blacklist l
-  | (Type_Pattern s, b) :: l ->
-    let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-    let (_, pat) = Constrintern.intern_constr_pattern env constr in
+  | (Type_Pattern pat, b) :: l ->
     extract_flags name ((pat, b) :: tpe) subtpe mods blacklist l
-  | (SubType_Pattern s, b) :: l ->
-    let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-    let (_, pat) = Constrintern.intern_constr_pattern env constr in
+  | (SubType_Pattern pat, b) :: l ->
     extract_flags name tpe ((pat, b) :: subtpe) mods blacklist l
-  | (In_Module m, b) :: l ->
-    let path = String.concat "." m in
-    let m = Pcoq.parse_string Pcoq.Constr.global path in
-    let (_, qid) = Libnames.qualid_of_reference m in
-    let id =
-      try Nametab.full_name_module qid
-      with Not_found ->
-        Errors.errorlabstrm "Search.interface_search"
-          (str "Module " ++ str path ++ str " not found.")
-    in
+  | (In_Module id, b) :: l ->
     extract_flags name tpe subtpe ((id, b) :: mods) blacklist l
   | (Include_Blacklist, b) :: l ->
     extract_flags name tpe subtpe mods b l
   in
+  fun ?glnum flags ->
   let (name, tpe, subtpe, mods, blacklist) =
     extract_flags [] [] [] [] false flags
   in
@@ -335,5 +340,5 @@ let interface_search flags =
   let iter ref env typ =
     if filter_function ref env typ then print_function ref env typ
   in
-  let () = generic_search None iter in (* TODO: chose a goal number? *)
+  let () = generic_search glnum iter in
   !ans

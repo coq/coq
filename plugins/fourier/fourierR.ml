@@ -16,9 +16,9 @@ open Term
 open Tactics
 open Names
 open Globnames
-open Tacmach
 open Fourier
 open Contradiction
+open Proofview.Notations
 
 (******************************************************************************
 Opérations sur les combinaisons linéaires affines.
@@ -412,13 +412,6 @@ let tac_zero_infeq_false gl (n,d) =
 	      (tac_zero_inf_pos gl (-n,d)))
 ;;
 
-let create_meta () = mkMeta(Evarutil.new_meta());;
-
-let my_cut c gl=
-     let concl = pf_concl gl in
-       apply_type (mkProd(Anonymous,c,concl)) [create_meta()] gl
-;;
-
 let exact = exact_check;;
 
 let tac_use h =
@@ -451,7 +444,11 @@ let is_ineq (h,t) =
 ;;
 *)
 
-let list_of_sign s = List.map (fun (x,_,z)->(x,z)) s;;
+let list_of_sign s =
+  let open Context.Named.Declaration in
+  List.map (function LocalAssum (name, typ) -> name, typ
+                   | LocalDef (name, _, typ) -> name, typ)
+           s;;
 
 let mkAppL a =
    let l = Array.to_list a in
@@ -462,7 +459,7 @@ exception GoalDone
 
 (* Résolution d'inéquations linéaires dans R *)
 let rec fourier () =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
     let goal = strip_outer_cast concl in
@@ -586,7 +583,7 @@ let rec fourier () =
                       then tac_zero_inf_false gl (rational_to_fraction cres)
                       else tac_zero_infeq_false gl (rational_to_fraction cres)
            in
-           tac:=(Tacticals.New.tclTHENS (Proofview.V82.tactic (my_cut ineq))
+           tac:=(Tacticals.New.tclTHENS (cut ineq)
                      [Tacticals.New.tclTHEN (change_concl
 			       (mkAppL [| get coq_not; ineq|]
 				       ))
@@ -622,7 +619,7 @@ let rec fourier () =
 (*    ((tclTHEN !tac (tclFAIL 1 (* 1 au hasard... *))) gl) *)
       !tac
 (*      ((tclABSTRACT None !tac) gl) *)
-  end
+  end }
 ;;
 
 (*

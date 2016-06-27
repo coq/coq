@@ -12,6 +12,7 @@ open Term
 open Misctypes
 open Pattern
 open Genarg
+open Geninterp
 
 (** Coercions from highest level generic arguments to actual data used by Ltac
     interpretation. Those functions examinate dynamic types and try to return
@@ -29,8 +30,7 @@ exception CannotCoerceTo of string
 
 module Value :
 sig
-  type t = tlevel generic_argument
-  (** Tactics manipulate [tlevel generic_argument]. *)
+  type t = Val.t
 
   val normalize : t -> t
   (** Eliminated the leading dynamic type casts. *)
@@ -42,18 +42,19 @@ sig
   val of_int : int -> t
   val to_int : t -> int option
   val to_list : t -> t list option
+  val to_option : t -> t option option
+  val to_pair : t -> (t * t) option
 end
 
 (** {5 Coercion functions} *)
 
 val coerce_to_constr_context : Value.t -> constr
 
-val coerce_to_ident : bool -> Environ.env -> Value.t -> Id.t
+val coerce_var_to_ident : bool -> Environ.env -> Value.t -> Id.t
+
+val coerce_to_ident_not_fresh : Evd.evar_map -> Environ.env -> Value.t -> Id.t
 
 val coerce_to_intro_pattern : Environ.env -> Value.t -> Tacexpr.delayed_open_constr intro_pattern_expr
-
-val coerce_to_intro_pattern_naming :
-  Environ.env -> Value.t -> intro_pattern_naming_expr
 
 val coerce_to_intro_pattern_naming :
   Environ.env -> Value.t -> intro_pattern_naming_expr

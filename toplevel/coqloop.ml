@@ -13,6 +13,8 @@ open Flags
 open Vernac
 open Pcoq
 
+let top_stderr x = msg_with !Pp_control.err_ft x
+
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
 
@@ -59,7 +61,7 @@ let prompt_char ic ibuf count =
     | ll::_ -> Int.equal ibuf.len ll
     | [] -> Int.equal ibuf.len 0
   in
-  if bol && not !print_emacs then msgerr (str (ibuf.prompt()));
+  if bol && not !print_emacs then top_stderr (str (ibuf.prompt()));
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
@@ -150,38 +152,21 @@ let print_highlight_location ib loc =
 
 (* Functions to report located errors in a file. *)
 
-let print_location_in_file {outer=s;inner=fname} loc =
-  let errstrm = str"Error while reading " ++ str s in
+let print_location_in_file loc =
+  let fname = loc.Loc.fname in
+  let errstrm = str"Error while reading " ++ str fname in
   if Loc.is_ghost loc then
     hov 1 (errstrm ++ spc() ++ str" (unknown location):") ++ fnl ()
   else
-    let errstrm =
-      if String.equal s fname then mt() else errstrm ++ str":" ++ fnl()
+    let errstrm = mt ()
+      (* if String.equal outer_fname fname then mt() else errstrm ++ str":" ++ fnl() *)
     in
-    let (bp,ep) = Loc.unloc loc in
-    let line_of_pos lin bol cnt =
-      try
-        let ic = open_in fname in
-        let rec line_of_pos lin bol cnt =
-          if cnt < bp then
-            if input_char ic == '\n'
-            then line_of_pos (lin + 1) (cnt +1) (cnt+1)
-            else line_of_pos lin bol (cnt+1)
-          else (lin, bol)
-        in
-        let rc = line_of_pos lin bol cnt in
-        close_in ic;
-        rc
-      with Sys_error _ -> 0, 0 in
-    try
-      let (line, bol) = line_of_pos 1 0 0 in
-      hov 0 (* No line break so as to follow emacs error message format *)
-        (errstrm ++ str"File " ++ str "\"" ++ str fname ++ str "\"" ++
-           str", line " ++ int line ++ str", characters " ++
-           Cerrors.print_loc (Loc.make_loc (bp-bol,ep-bol))) ++ str":" ++
-        fnl ()
-    with e when Errors.noncritical e ->
-       hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ()
+    let open Loc in
+    hov 0 (* No line break so as to follow emacs error message format *)
+	(errstrm ++ str"File " ++ str "\"" ++ str fname ++ str "\"" ++
+	   str", line " ++ int loc.line_nb ++ str", characters " ++
+	   Cerrors.print_loc (Loc.make_loc (loc.bp-loc.bol_pos,loc.ep-loc.bol_pos))) ++ str":" ++
+      fnl ()
 
 let valid_buffer_loc ib loc =
   not (Loc.is_ghost loc) &&
@@ -262,12 +247,13 @@ let locate_exn = function
 
 let print_toplevel_error (e, info) =
   let loc = Option.default Loc.ghost (Loc.get_loc info) in
-  let locmsg = match Vernac.get_exn_files info with
-    | Some files -> print_location_in_file files loc
-    | None ->
+  let fname = loc.Loc.fname in
+  let locmsg =
+    if String.equal fname "" then
       if locate_exn e && valid_buffer_loc top_buffer loc then
-        print_highlight_location top_buffer loc
+	print_highlight_location top_buffer loc
       else mt ()
+    else print_location_in_file loc
   in
   locmsg ++ Errors.iprint (e, info)
 
@@ -288,7 +274,7 @@ let rec discard_to_dot () =
   try
     Gram.entry_parse parse_to_dot top_buffer.tokens
   with
-    | Compat.Token.Error _ | Lexer.Error.E _ -> discard_to_dot ()
+    | Compat.Token.Error _ | CLexer.Error.E _ -> discard_to_dot ()
     | End_of_input -> raise End_of_input
     | e when Errors.noncritical e -> ()
 
@@ -310,23 +296,23 @@ let read_sentence () =
 *)
 
 let do_vernac () =
-  msgerrnl (mt ());
-  if !print_emacs then msgerr (str (top_buffer.prompt()));
+  top_stderr (fnl());
+  if !print_emacs then top_stderr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
     Vernac.eval_expr (read_sentence ())
   with
     | End_of_input | Errors.Quit ->
-        msgerrnl (mt ()); pp_flush(); raise Errors.Quit
+        top_stderr (fnl ()); raise Errors.Quit
     | Errors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise Errors.Drop
-        else ppnl (str"Error: There is no ML toplevel." ++ fnl ())
+        else Feedback.msg_error (str"There is no ML toplevel.")
     | any ->
         let any = Errors.push any in
         Format.set_formatter_out_channel stdout;
         let msg = print_toplevel_error any ++ fnl () in
         pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
-        pp_flush ()
+        Format.pp_print_flush !Pp_control.std_ft ()
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -343,18 +329,26 @@ let feed_emacs = function
   | _  -> ()
 *)
 
+(* Flush in a compatible order with 8.5 *)
+(* This mimics the semantics of the old Pp.flush_all *)
+let loop_flush_all () =
+  Pervasives.flush stderr;
+  Pervasives.flush stdout;
+  Format.pp_print_flush !Pp_control.std_ft ();
+  Format.pp_print_flush !Pp_control.err_ft ()
+
 let rec loop () =
   Sys.catch_break true;
   if !Flags.print_emacs then Vernacentries.qed_display_script := false;
   Flags.coqtop_ui := true;
   try
     reset_input_buffer stdin top_buffer;
-    while true do do_vernac(); flush_all() done
+    while true do do_vernac(); loop_flush_all () done
   with
     | Errors.Drop -> ()
     | Errors.Quit -> exit 0
     | any ->
-      msgerrnl (str"Anomaly: main loop exited with exception: " ++
+      Feedback.msg_error (str"Anomaly: main loop exited with exception: " ++
                 str (Printexc.to_string any) ++
                 fnl() ++ str"Please report.");
       loop ()

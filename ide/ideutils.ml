@@ -9,8 +9,6 @@
 
 open Preferences
 
-exception Forbidden
-
 let warn_image () =
   let img = GMisc.image () in
   img#set_stock `DIALOG_WARNING;
@@ -31,13 +29,40 @@ let push_info,pop_info,clear_info =
   let size = ref 0 in
   (fun s -> incr size; ignore (status_context#push s)),
   (fun () -> decr size; status_context#pop ()),
-  (fun () -> for i = 1 to !size do status_context#pop () done; size := 0)
+  (fun () -> for _i = 1 to !size do status_context#pop () done; size := 0)
 
 let flash_info =
   let flash_context = status#new_context ~name:"Flash" in
     (fun ?(delay=5000) s -> flash_context#flash ~delay s)
 
+let xml_to_string xml =
+  let open Xml_datatype in
+  let buf = Buffer.create 1024 in
+  let rec iter = function
+  | PCData s -> Buffer.add_string buf s
+  | Element (_, _, children) ->
+    List.iter iter children
+  in
+  let () = iter (Richpp.repr xml) in
+  Buffer.contents buf
 
+let translate s = s
+
+let insert_xml ?(tags = []) (buf : #GText.buffer_skel) msg =
+  let open Xml_datatype in
+  let tag name =
+    let name = translate name in
+    match GtkText.TagTable.lookup buf#tag_table name with
+    | None -> raise Not_found
+    | Some tag -> new GText.tag tag
+  in
+  let rec insert tags = function
+  | PCData s -> buf#insert ~tags:(List.rev tags) s
+  | Element (t, _, children) ->
+    let tags = try tag t :: tags with Not_found -> tags in
+    List.iter (fun xml -> insert tags xml) children
+  in
+  insert tags (Richpp.repr msg)
 
 let set_location = ref  (function s -> failwith "not ready")
 
@@ -74,7 +99,7 @@ let do_convert s =
   in
   let s =
     if Glib.Utf8.validate s then (Minilib.log "Input is UTF-8"; s)
-    else match current.encoding with
+    else match encoding#get with
       |Preferences.Eutf8 | Preferences.Elocale -> from_loc ()
       |Emanual enc -> try from_manual enc with _ -> from_loc ()
   in
@@ -90,7 +115,7 @@ Please choose a correct encoding in the preference panel.*)";;
 
 let try_export file_name s =
   let s =
-    try match current.encoding with
+    try match encoding#get with
       |Eutf8 -> Minilib.log "UTF-8 is enforced" ; s
       |Elocale ->
 	let is_unicode,char_set = Glib.Convert.get_charset () in
@@ -140,7 +165,7 @@ let filter_coq_files () =  GFile.filter
   ~name:"Coq source code"
   ~patterns:[ "*.v"] ()
 
-let current_dir () = match current.project_path with
+let current_dir () = match project_path#get with
 | None -> ""
 | Some dir -> dir
 
@@ -164,7 +189,7 @@ let select_file_for_open ~title ?filename () =
 	match file_chooser#filename with
 	  | None -> None
 	  | Some _ as f ->
-            current.project_path <- file_chooser#current_folder; f
+            project_path#set file_chooser#current_folder; f
       end
     | `DELETE_EVENT | `CANCEL -> None in
   file_chooser#destroy ();
@@ -193,7 +218,7 @@ let select_file_for_save ~title ?filename () =
         file := file_chooser#filename;
         match !file with
             None -> ()
-          | Some s -> current.project_path <- file_chooser#current_folder
+          | Some s -> project_path#set file_chooser#current_folder
       end
     | `DELETE_EVENT | `CANCEL -> ()
   end ;
@@ -238,7 +263,7 @@ let coqtop_path () =
   let file = match !custom_coqtop with
     | Some s -> s
     | None ->
-      match current.cmd_coqtop with
+      match cmd_coqtop#get with
 	| Some s -> s
 	| None ->
 	  let prog = String.copy Sys.executable_name in
@@ -272,17 +297,17 @@ let textview_width (view : #GText.view_skel) =
   let char_width = GPango.to_pixels metrics#approx_char_width in
   pixel_width / char_width
 
-type logger = Pp.message_level -> string -> unit
+type logger = Feedback.level -> Richpp.richpp -> unit
 
 let default_logger level message =
   let level = match level with
-  | Pp.Debug _ -> `DEBUG
-  | Pp.Info -> `INFO
-  | Pp.Notice -> `NOTICE
-  | Pp.Warning -> `WARNING
-  | Pp.Error -> `ERROR
+  | Feedback.Debug -> `DEBUG
+  | Feedback.Info -> `INFO
+  | Feedback.Notice -> `NOTICE
+  | Feedback.Warning -> `WARNING
+  | Feedback.Error -> `ERROR
   in
-  Minilib.log ~level message
+  Minilib.log ~level (xml_to_string message)
 
 
 (** {6 File operations} *)
@@ -364,7 +389,7 @@ let run_command display finally cmd =
 (** Web browsing *)
 
 let browse prerr url =
-  let com = Util.subst_command_placeholder current.cmd_browse url in
+  let com = Util.subst_command_placeholder cmd_browse#get url in
   let finally = function
     | Unix.WEXITED 127 ->
       prerr
@@ -375,13 +400,13 @@ let browse prerr url =
   run_command (fun _ -> ()) finally com
 
 let doc_url () =
-  if current.doc_url = use_default_doc_url || current.doc_url = ""
+  if doc_url#get = use_default_doc_url || doc_url#get = ""
   then
     let addr = List.fold_left Filename.concat (Coq_config.docdir)
       ["html";"refman";"index.html"]
     in
     if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
-  else current.doc_url
+  else doc_url#get
 
 let url_for_keyword =
   let ht = Hashtbl.create 97 in

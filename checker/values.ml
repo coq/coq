@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 7c050ff1db22f14ee3a4c44aae533082 checker/cic.mli
+MD5 6466d8cc443b5896cb905776df0cc49e  checker/cic.mli
 
 *)
 
@@ -154,8 +154,8 @@ and v_prec = Tuple ("prec_declaration",
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
 
-
-let v_rdecl = v_tuple "rel_declaration" [|v_name;Opt v_constr;v_constr|]
+let v_rdecl = v_sum "rel_declaration" 0 [| [|v_name; v_constr|];               (* LocalAssum *)
+                                           [|v_name; v_constr; v_constr|] |]   (* LocalDef *)
 let v_rctxt = List v_rdecl
 
 let v_section_ctxt = v_enum "emptylist" 1
@@ -194,8 +194,7 @@ let v_lazy_constr =
 (** kernel/declarations *)
 
 let v_impredicative_set = v_enum "impr-set" 2
-let v_type_in_type = v_enum "type-in-type" 2
-let v_engagement = v_tuple "eng" [|v_impredicative_set; v_type_in_type|]
+let v_engagement = v_impredicative_set
 
 let v_pol_arity =
   v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
@@ -213,6 +212,9 @@ let v_projbody =
 	    v_tuple "proj_eta" [|v_constr;v_constr|];
 	    v_constr|]
 
+let v_typing_flags =
+  v_tuple "typing_flags" [|v_bool; v_bool|]
+
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_cst_def;
@@ -221,7 +223,8 @@ let v_cb = v_tuple "constant_body"
     v_bool;
     v_context;
     Opt v_projbody;
-    v_bool|]
+    v_bool;
+    v_typing_flags|]
 
 let v_recarg = v_sum "recarg" 1 (* Norec *)
   [|[|v_ind|] (* Mrec *);[|v_ind|] (* Imbr *)|]
@@ -270,7 +273,8 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_rctxt;
     v_bool;
     v_context;
-    Opt v_bool|]
+    Opt v_bool;
+    v_typing_flags|]
 
 let v_with =
   Sum ("with_declaration_body",0,

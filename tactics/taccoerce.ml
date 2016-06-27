@@ -14,25 +14,47 @@ open Misctypes
 open Genarg
 open Stdarg
 open Constrarg
+open Geninterp
 
 exception CannotCoerceTo of string
 
 let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
-  Genarg.create_arg None "constr_context"
+  let wit = Genarg.create_arg "constr_context" in
+  let () = register_val0 wit None in
+  wit
 
 (* includes idents known to be bound and references *)
 let (wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) Genarg.genarg_type) =
-  Genarg.create_arg None "constr_under_binders"
+  let wit = Genarg.create_arg "constr_under_binders" in
+  let () = register_val0 wit None in
+  wit
+
+(** All the types considered here are base types *)
+let val_tag wit = match val_tag wit with
+| Val.Base t -> t
+| _ -> assert false
+
+let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v wit ->
+  let Val.Dyn (t, _) = v in
+  match Val.eq t (val_tag wit) with
+  | None -> false
+  | Some Refl -> true
+
+let prj : type a. a Val.typ -> Val.t -> a option = fun t v ->
+  let Val.Dyn (t', x) = v in
+  match Val.eq t t' with
+  | None -> None
+  | Some Refl -> Some x
+
+let in_gen wit v = Val.Dyn (val_tag wit, v)
+let out_gen wit v = match prj (val_tag wit) v with None -> assert false | Some x -> x
 
 module Value =
 struct
 
-type t = tlevel generic_argument
+type t = Val.t
 
-let rec normalize v =
-  if has_type v (topwit wit_genarg) then
-    normalize (out_gen (topwit wit_genarg) v)
-  else v
+let normalize v = v
 
 let of_constr c = in_gen (topwit wit_constr) c
 
@@ -62,11 +84,11 @@ let to_int v =
     Some (out_gen (topwit wit_int) v)
   else None
 
-let to_list v =
-  let v = normalize v in
-  let list_unpacker wit l = List.map (fun v -> in_gen (topwit wit) v) (top l) in
-  try Some (list_unpack { list_unpacker } v)
-  with Failure _ -> None
+let to_list v = prj Val.typ_list v
+
+let to_option v = prj Val.typ_opt v
+
+let to_pair v = prj Val.typ_pair v
 
 end
 
@@ -85,7 +107,7 @@ let coerce_to_constr_context v =
   else raise (CannotCoerceTo "a term context")
 
 (* Interprets an identifier which must be fresh *)
-let coerce_to_ident fresh env v =
+let coerce_var_to_ident fresh env v =
   let v = Value.normalize v in
   let fail () = raise (CannotCoerceTo "a fresh identifier") in
   if has_type v (topwit wit_intro_pattern) then
@@ -101,6 +123,52 @@ let coerce_to_ident fresh env v =
     if isVar c && not (fresh && is_variable env (destVar c)) then
       destVar c
     else fail ()
+
+
+(* Interprets, if possible, a constr to an identifier which may not
+   be fresh but suitable to be given to the fresh tactic. Works for
+   vars, constants, inductive, constructors and sorts. *)
+let coerce_to_ident_not_fresh g env v =
+let id_of_name = function
+  | Names.Anonymous -> Id.of_string "x"
+  | Names.Name x -> x in
+  let v = Value.normalize v in
+  let fail () = raise (CannotCoerceTo "an identifier") in
+  if has_type v (topwit wit_intro_pattern) then
+    match out_gen (topwit wit_intro_pattern) v with
+    | _, IntroNaming (IntroIdentifier id) -> id
+    | _ -> fail ()
+  else if has_type v (topwit wit_var) then
+    out_gen (topwit wit_var) v
+  else
+    match Value.to_constr v with
+    | None -> fail ()
+    | Some c ->
+       match Constr.kind c with
+       | Var id -> id 
+       | Meta m -> id_of_name (Evd.meta_name g m)
+       | Evar (kn,_) ->
+        begin match Evd.evar_ident kn g with
+        | None -> fail ()
+        | Some id -> id
+        end
+       | Const (cst,_) -> Label.to_id (Constant.label cst)
+       | Construct (cstr,_) ->
+	  let ref = Globnames.ConstructRef cstr in
+	  let basename = Nametab.basename_of_global ref in
+	  basename
+       | Ind (ind,_) ->
+	  let ref = Globnames.IndRef ind in
+	  let basename = Nametab.basename_of_global ref in
+	  basename
+       | Sort s ->
+	  begin
+	    match s with
+	    | Prop _ -> Label.to_id (Label.make "Prop")
+	    | Type _ -> Label.to_id (Label.make "Type")
+	  end
+       | _ -> fail()
+
 
 let coerce_to_intro_pattern env v =
   let v = Value.normalize v in

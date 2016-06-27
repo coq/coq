@@ -19,7 +19,6 @@ open Table
 open Extraction
 open Modutil
 open Common
-open Mod_subst
 
 (***************************************)
 (*S Part I: computing Coq environment. *)
@@ -542,7 +541,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
     (if dry then None else si);
   (* Print the buffer content via Coq standard formatter (ok with coqide). *)
   if not (Int.equal (Buffer.length buf) 0) then begin
-    Pp.msg_notice (str (Buffer.contents buf));
+    Feedback.msg_notice (str (Buffer.contents buf));
     Buffer.reset buf
   end
 
@@ -636,7 +635,7 @@ let simple_extraction r =
       in
       let ans = flag ++ print_one_decl struc (modpath_of_r r) d in
       reset ();
-      Pp.msg_notice ans
+      Feedback.msg_notice ans
   | _ -> assert false
 
 

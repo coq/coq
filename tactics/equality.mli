@@ -72,16 +72,18 @@ val discrConcl   : unit Proofview.tactic
 val discrHyp     : Id.t -> unit Proofview.tactic
 val discrEverywhere : evars_flag -> unit Proofview.tactic
 val discr_tac    : evars_flag ->
-  constr with_bindings induction_arg option -> unit Proofview.tactic
+  constr with_bindings destruction_arg option -> unit Proofview.tactic
 val inj          : intro_patterns option -> evars_flag ->
   clear_flag -> constr with_bindings -> unit Proofview.tactic
 val injClause    : intro_patterns option -> evars_flag ->
-  constr with_bindings induction_arg option -> unit Proofview.tactic
+  constr with_bindings destruction_arg option -> unit Proofview.tactic
 val injHyp       : clear_flag -> Id.t -> unit Proofview.tactic
 val injConcl     : unit Proofview.tactic
+val simpleInjClause : evars_flag ->
+  constr with_bindings destruction_arg option -> unit Proofview.tactic
 
-val dEq : evars_flag -> constr with_bindings induction_arg option -> unit Proofview.tactic
-val dEqThen : evars_flag -> (clear_flag -> constr -> int -> unit Proofview.tactic) -> constr with_bindings induction_arg option -> unit Proofview.tactic
+val dEq : evars_flag -> constr with_bindings destruction_arg option -> unit Proofview.tactic
+val dEqThen : evars_flag -> (clear_flag -> constr -> int -> unit Proofview.tactic) -> constr with_bindings destruction_arg option -> unit Proofview.tactic
 
 val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> evar_map * (constr * constr * constr)
@@ -117,3 +119,8 @@ val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
 val replace_term : bool option -> constr -> clause -> unit Proofview.tactic
 
 val set_eq_dec_scheme_kind : mutual scheme_kind -> unit
+
+(* [build_selector env sigma i c t u v] matches on [c] of
+   type [t] and returns [u] in branch [i] and [v] on other branches *)
+val build_selector : env -> evar_map -> int -> constr -> types ->
+  constr -> constr -> constr

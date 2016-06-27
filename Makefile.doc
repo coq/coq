@@ -1,9 +1,72 @@
+#######################################################################
+#  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
+# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
+#   \VV/  #############################################################
+#    //   #      This file is distributed under the terms of the      #
+#         #       GNU Lesser General Public License Version 2.1       #
+#######################################################################
+
 # Makefile for the Coq documentation
 
 # To compile documentation, you need the following tools:
 # Dvi: latex (latex2e), bibtex, makeindex
 # Pdf: pdflatex
 # Html: hevea (http://hevea.inria.fr) >= 1.05
+
+# The main entry point :
+
+documentation: doc-$(WITHDOC)  ## see $(WITHDOC) in config/Makefile
+doc-all: doc
+doc-no:
+
+.PHONY: documentation doc-all doc-no
+
+######################################################################
+### Variables
+######################################################################
+
+LATEX:=latex
+BIBTEX:=BIBINPUTS=.: bibtex -min-crossrefs=10
+MAKEINDEX:=makeindex
+PDFLATEX:=pdflatex
+DVIPS:=dvips
+FIG2DEV:=fig2dev
+CONVERT:=convert
+HEVEA:=hevea
+HACHA:=hacha
+HEVEAOPTS:=-fix -exec xxdate.exe
+HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
+HTMLSTYLE:=simple
+export TEXINPUTS:=$(HEVEALIB):
+COQTEXOPTS:=-boot -n 72 -sl -small
+
+DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
+
+REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
+  RefMan-gal.v.tex RefMan-ext.v.tex \
+  RefMan-mod.v.tex RefMan-tac.v.tex \
+  RefMan-cic.v.tex RefMan-lib.v.tex \
+  RefMan-tacex.v.tex RefMan-syn.v.tex \
+  RefMan-oth.v.tex RefMan-ltac.v.tex \
+  RefMan-decl.v.tex RefMan-pro.v.tex RefMan-sch.v.tex \
+  Cases.v.tex Coercion.v.tex CanonicalStructures.v.tex Extraction.v.tex \
+  Program.v.tex Omega.v.tex Micromega.v.tex Polynom.v.tex Nsatz.v.tex \
+  Setoid.v.tex Classes.v.tex Universes.v.tex \
+  Misc.v.tex)
+
+REFMANTEXFILES:=$(addprefix doc/refman/, \
+  headers.sty Reference-Manual.tex \
+  RefMan-pre.tex RefMan-int.tex RefMan-com.tex \
+  RefMan-uti.tex RefMan-ide.tex RefMan-add.tex RefMan-modr.tex \
+  AsyncProofs.tex ) \
+  $(REFMANCOQTEXFILES) \
+
+REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps
+
+REFMANFILES:=$(REFMANTEXFILES) $(DOCCOMMON) $(REFMANEPSFILES) doc/refman/biblio.bib
+
+REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
+
 
 ######################################################################
 ### General rules
@@ -140,9 +203,7 @@ doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
 INDEXES:= doc/refman/html/command-index.html doc/refman/html/tactic-index.html
 ALLINDEXES:= doc/refman/html/index.html $(INDEXES)
 
-$(ALLINDEXES): refman-html-dir
-
-refman-html-dir: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
+refman-html-dir $(ALLINDEXES): doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	       doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
 	- rm -rf doc/refman/html
 	$(MKDIR) doc/refman/html
@@ -338,6 +399,80 @@ install-doc-printable:
 install-doc-index-urls:
 	$(MKDIR) $(FULLDATADIR)
 	$(INSTALLLIB) $(INDEXURLS) $(FULLDATADIR)
+
+
+###########################################################################
+# Documentation of the source code (using ocamldoc)
+###########################################################################
+
+OCAMLDOCDIR=dev/ocamldoc
+
+DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
+	./engine/*.mli ./pretyping/*.mli ./interp/*.mli printing/*.mli \
+	./parsing/*.mli ./proofs/*.mli \
+	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli ./ltac/*.mli)
+
+# Defining options to generate dependencies graphs
+DOT=dot
+ODOCDOTOPTS=-dot -dot-reduce
+
+.PHONY: source-doc mli-doc ml-doc
+
+source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
+
+$(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
+	$(SHOW)'OCAMLDOC -latex -o $@'
+	$(HIDE)$(OCAMLFIND) ocamldoc -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
+	$(DOCMLIS) -noheader -t "Coq mlis documentation" \
+	-intro $(OCAMLDOCDIR)/docintro -o $@.tmp
+	$(SHOW)'OCAMLDOC utf8 fix'
+	$(HIDE)$(OCAMLDOCDIR)/fix-ocamldoc-utf8 $@.tmp
+	$(HIDE)cat $(OCAMLDOCDIR)/header.tex $@.tmp > $@
+	rm $@.tmp
+
+mli-doc: $(DOCMLIS:.mli=.cmi)
+	$(SHOW)'OCAMLDOC -html'
+	$(HIDE)$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads -I $(MYCAMLP4LIB) $(MLINCLUDES) \
+	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
+	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
+	-css-style style.css
+
+ml-dot: $(MLFILES)
+	$(OCAMLFIND) ocamldoc -dot -dot-reduce -rectypes -I +threads -I $(CAMLLIB) -I $(MYCAMLP4LIB) $(MLINCLUDES) \
+	$(filter $(addsuffix /%.ml,$(CORESRCDIRS)),$(MLFILES)) -o $(OCAMLDOCDIR)/coq.dot
+
+%_dep.png: %.dot
+	$(DOT) -Tpng $< -o $@
+
+%_types.dot: %.mli
+	$(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $<
+
+OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
+  $(foreach lib,$(|:.mllib.d=_MLLIB_DEPENDENCIES),$(addsuffix .ml,$($(lib))))
+
+%.dot: | %.mllib.d
+	$(OCAMLDOC_MLLIBD)
+
+ml-doc:
+	$(OCAMLFIND) ocamldoc -charset utf-8 -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(MLSTATICFILES)
+
+parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
+	$(OCAMLDOC_MLLIBD)
+
+grammar/grammar.dot : | grammar/grammar.mllib.d
+	$(OCAMLDOC_MLLIBD)
+
+tactics/tactics.dot: | tactics/tactics.mllib.d ltac/ltac.mllib.d
+	$(OCAMLDOC_MLLIBD)
+
+%.dot: %.mli
+	$(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $<
+
+$(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
+	$(SHOW)'PDFLATEX $*.tex'
+	$(HIDE)(cd $(OCAMLDOCDIR) ; pdflatex -interaction=batchmode $*.tex && pdflatex -interaction=batchmode $*.tex)
+	$(HIDE)(cd doc/tools/; show_latex_messages -no-overfull ../../$(OCAMLDOCDIR)/$*.log)
+
 
 # For emacs:
 # Local Variables:

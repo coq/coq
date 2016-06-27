@@ -6,34 +6,51 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This file defines a lot of different notions of names used pervasively in
+    the kernel as well as in other places. The essential datatypes exported by
+    this API are:
+
+    - Id.t is the type of identifiers, that is morally a subset of strings which
+      only contains Unicode characters of the Letter kind (and a few more).
+    - Name.t is an ad-hoc variant of Id.t option allowing to handle optionally
+      named objects.
+    - DirPath.t represents generic paths as sequences of identifiers.
+    - Label.t is an equivalent of Id.t made distinct for semantical purposes.
+    - ModPath.t are module paths.
+    - KerName.t are absolute names of objects in Coq.
+*)
+
 open Util
 
 (** {6 Identifiers } *)
 
+(** Representation and operations on identifiers. *)
 module Id :
 sig
   type t
-  (** Type of identifiers *)
+  (** Values of this type represent (Coq) identifiers. *)
 
   val equal : t -> t -> bool
-  (** Equality over identifiers *)
+  (** Equality over identifiers. *)
 
   val compare : t -> t -> int
-  (** Comparison over identifiers *)
+  (** Comparison over identifiers. *)
 
   val hash : t -> int
-  (** Hash over identifiers *)
+  (** Hash over identifiers. *)
 
   val is_valid : string -> bool
-  (** Check that a string may be converted to an identifier. *)
+  (** Check that a string may be converted to an identifier.
+  @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val of_string : string -> t
-  (** Converts a string into an identifier. May raise [UserError _] if the
-      string is not valid, or echo a warning if it contains invalid identifier
-      characters. *)
+  (** Converts a string into an identifier.
+      @raise UserError if the string is not valid, or echo a warning if it contains invalid identifier characters.
+      @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val of_string_soft : string -> t
-  (** Same as {!of_string} except that no warning is ever issued. *)
+  (** Same as {!of_string} except that no warning is ever issued.
+      @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val to_string : t -> string
   (** Converts a identifier into an string. *)
@@ -58,10 +75,18 @@ sig
 
 end
 
+(** Representation and operations on identifiers that are allowed to be anonymous
+    (i.e. "_" in concrete syntax). *)
 module Name :
 sig
-  type t = Name of Id.t | Anonymous
-  (** A name is either undefined, either an identifier. *)
+  type t = Anonymous     (** anonymous identifier *)
+	 | Name of Id.t  (** non-anonymous identifier *)
+
+  val is_anonymous : t -> bool
+  (** Return [true] iff a given name is [Anonymous]. *)
+
+  val is_name : t -> bool
+  (** Return [true] iff a given name is [Name _]. *)
 
   val compare : t -> t -> int
   (** Comparison over names. *)
@@ -79,7 +104,7 @@ end
 
 (** {6 Type aliases} *)
 
-type name = Name.t = Name of Id.t | Anonymous
+type name = Name.t = Anonymous | Name of Id.t
 type variable = Id.t
 type module_ident = Id.t
 
@@ -219,6 +244,9 @@ sig
 
   val to_string : t -> string
 
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs information related to debug. *)
+
   val initial : t
   (** Name of the toplevel structure ([= MPfile initial_dir]) *)
 
@@ -246,6 +274,10 @@ sig
 
   (** Display *)
   val to_string : t -> string
+
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs information related to debug. *)
+
   val print : t -> Pp.std_ppcmds
 
   (** Comparisons *)
@@ -411,11 +443,16 @@ module Mindset : CSig.SetS with type elt = MutInd.t
 module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
 module Mindmap_env : CSig.MapS with type key = MutInd.t
 
-(** Beware: first inductive has index 0 *)
-type inductive = MutInd.t * int
+(** Designation of a (particular) inductive type. *)
+type inductive = MutInd.t      (* the name of the inductive type *)
+               * int           (* the position of this inductive type
+                                  within the block of mutually-recursive inductive types.
+                                  BEWARE: indexing starts from 0. *)
 
-(** Beware: first constructor has index 1 *)
-type constructor = inductive * int
+(** Designation of a (particular) constructor of a (particular) inductive type. *)
+type constructor = inductive   (* designates the inductive type *)
+                 * int         (* the index of the constructor
+                                  BEWARE: indexing starts from 1. *)
 
 module Indmap : CSig.MapS with type key = inductive
 module Constrmap : CSig.MapS with type key = constructor
@@ -743,7 +780,7 @@ val mind_of_kn : KerName.t -> mutual_inductive
 (** @deprecated Same as [MutInd.make1] *)
 
 val mind_of_kn_equiv : KerName.t -> KerName.t -> mutual_inductive
-(** @deprecated Same as [MutInd.make2] *)
+(** @deprecated Same as [MutInd.make] *)
 
 val make_mind : ModPath.t -> DirPath.t -> Label.t -> mutual_inductive
 (** @deprecated Same as [MutInd.make3] *)

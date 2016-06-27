@@ -184,9 +184,6 @@ let rec pp_struct_const = function
 
 let pp_lbl lbl = str "L" ++ int lbl
 
-let pp_pcon (id,u) =
-  pr_con id ++ str "@{" ++ Univ.Instance.pr Univ.Level.pr u ++ str "}"
-
 let pp_fv_elem = function
   | FVnamed id -> str "FVnamed(" ++ Id.print id ++ str ")"
   | FVrel i -> str "Rel(" ++ int i ++ str ")"

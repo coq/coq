@@ -56,24 +56,24 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
   | ("-full"|"-opt") :: r ->
     process_cmd_line orig_dir (project_file,makefile,install,true) l r
   | "-impredicative-set" :: r ->
-    Pp.msg_warning (Pp.str "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.");
+    Feedback.msg_warning (Pp.str "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.");
     process_cmd_line orig_dir opts (Arg "-impredicative-set" :: l) r
   | "-no-install" :: r ->
-    Pp.msg_warning (Pp.(++) (Pp.str "Option -no-install is deprecated.") (Pp.(++) (Pp.spc ()) (Pp.str "Use \"-install none\" instead")));
+    Feedback.msg_warning (Pp.(++) (Pp.str "Option -no-install is deprecated.") (Pp.(++) (Pp.spc ()) (Pp.str "Use \"-install none\" instead")));
     process_cmd_line orig_dir (project_file,makefile,NoInstall,opt) l r
   | "-install" :: d :: r ->
-    if install <> UnspecInstall then Pp.msg_warning (Pp.str "-install sets more than once.");
+    if install <> UnspecInstall then Feedback.msg_warning (Pp.str "-install sets more than once.");
     let install =
       match d with
 	| "user" -> UserInstall
 	| "none" -> NoInstall
 	| "global" -> TraditionalInstall
-	| _ -> Pp.msg_warning (Pp.(++) (Pp.str "invalid option '") (Pp.(++) (Pp.str d) (Pp.str "' passed to -install.")));
+	| _ -> Feedback.msg_warning (Pp.(++) (Pp.str "invalid option '") (Pp.(++) (Pp.str d) (Pp.str "' passed to -install.")));
           install
     in
     process_cmd_line orig_dir (project_file,makefile,install,opt) l r
   | "-custom" :: com :: dependencies :: file :: r ->
-    Pp.msg_warning (Pp.app
+    Feedback.msg_warning (Pp.app
     (Pp.str "Please now use \"-extra[-phony] result deps command\" instead of \"-custom command deps result\".")
     (Pp.pr_arg Pp.str "It follows makefile target declaration order and has a clearer semantic.")
     );
@@ -86,7 +86,6 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     process_cmd_line orig_dir opts ((Include (CUnix.correct_path d orig_dir, lp)) :: l) r
   | "-I" :: d :: r ->
     process_cmd_line orig_dir opts ((MLInclude (CUnix.correct_path d orig_dir)) :: l) r
-  | "-R" :: p :: "-as" :: lp :: r
   | "-R" :: p :: lp :: r ->
     process_cmd_line orig_dir opts (RInclude (CUnix.correct_path p orig_dir,lp) :: l) r
   | ("-Q"|"-R"|"-I"|"-custom"|"-extra"|"-extra-phony") :: _ ->
@@ -95,7 +94,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in
     let () = match project_file with
       | None -> ()
-      | Some _ -> Pp.msg_warning (Pp.str
+      | Some _ -> Feedback.msg_warning (Pp.str
 	"Several features will not work with multiple project files.")
     in
     let (opts',l') = process_cmd_line (Filename.dirname file) (Some file,makefile,install,opt) l (parse file) in
@@ -110,7 +109,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
 	let () = match makefile with
 	  |None -> ()
 	  |Some f ->
-	     Pp.msg_warning (Pp.(++) (Pp.str "Only one output file is genererated. ") (Pp.(++) (Pp.str f) (Pp.str " will not be.")))
+	     Feedback.msg_warning (Pp.(++) (Pp.str "Only one output file is genererated. ") (Pp.(++) (Pp.str f) (Pp.str " will not be.")))
 	in process_cmd_line orig_dir (project_file,Some file,install,opt) l r
       end
   | v :: "=" :: def :: r ->
@@ -139,48 +138,44 @@ let rec post_canonize f =
   else f
 
 (* Return: ((v,(mli,ml4,ml,mllib,mlpack),special,subdir),(ml_inc,q_inc,r_inc),(args,defs)) *)
-let split_arguments =
-  let rec aux = function
-  | V n :: r ->
-	let (v,m,o,s),i,d = aux r in ((CUnix.remove_path_dot n::v,m,o,s),i,d)
-  | ML n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,CUnix.remove_path_dot n::ml,mllib,mlpack),o,s),i,d)
-  | MLI n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(CUnix.remove_path_dot n::mli,ml4,ml,mllib,mlpack),o,s),i,d)
-  | ML4 n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,CUnix.remove_path_dot n::ml4,ml,mllib,mlpack),o,s),i,d)
-  | MLLIB n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,ml,CUnix.remove_path_dot n::mllib,mlpack),o,s),i,d)
-  | MLPACK n :: r ->
-      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,ml,mllib,CUnix.remove_path_dot n::mlpack),o,s),i,d)
-  | Special (n,dep,is_phony,c) :: r ->
-      let (v,m,o,s),i,d = aux r in ((v,m,(n,dep,is_phony,c)::o,s),i,d)
-  | Subdir n :: r ->
-      let (v,m,o,s),i,d = aux r in ((v,m,o,n::s),i,d)
-  | MLInclude p :: r ->
-      let t,(ml,q,r),d = aux r in (t,((CUnix.remove_path_dot (post_canonize p),
-                                   CUnix.canonical_path_name p)::ml,q,r),d)
-  | Include (p,l) :: r ->
-      let t,(ml,i,r),d = aux r in
-      let i_new = (CUnix.remove_path_dot (post_canonize p),l,
-		   CUnix.canonical_path_name p) in
-      (t,(ml,i_new::i,r),d)
-  | RInclude (p,l) :: r ->
-      let t,(ml,i,r),d = aux r in
-      let r_new = (CUnix.remove_path_dot (post_canonize p),l,
-		   CUnix.canonical_path_name p) in
-      (t,(ml,i,r_new::r),d)
-  | Def (v,def) :: r ->
-      let t,i,(args,defs) = aux r in (t,i,(args,(v,def)::defs))
-  | Arg a :: r ->
-      let t,i,(args,defs) = aux r in (t,i,(a::args,defs))
-  | [] -> ([],([],[],[],[],[]),[],[]),([],[],[]),([],[])
-  in aux
+let split_arguments args =
+  List.fold_right
+    (fun a ((v,(mli,ml4,ml,mllib,mlpack as m),o,s as t),
+            (ml_inc,q_inc,r_inc as i),(args,defs as d)) ->
+     match a with
+     | V n ->
+        ((CUnix.remove_path_dot n::v,m,o,s),i,d)
+     | ML n ->
+        ((v,(mli,ml4,CUnix.remove_path_dot n::ml,mllib,mlpack),o,s),i,d)
+     | MLI n ->
+        ((v,(CUnix.remove_path_dot n::mli,ml4,ml,mllib,mlpack),o,s),i,d)
+     | ML4 n ->
+        ((v,(mli,CUnix.remove_path_dot n::ml4,ml,mllib,mlpack),o,s),i,d)
+     | MLLIB n ->
+        ((v,(mli,ml4,ml,CUnix.remove_path_dot n::mllib,mlpack),o,s),i,d)
+     | MLPACK n ->
+        ((v,(mli,ml4,ml,mllib,CUnix.remove_path_dot n::mlpack),o,s),i,d)
+     | Special (n,dep,is_phony,c) ->
+        ((v,m,(n,dep,is_phony,c)::o,s),i,d)
+     | Subdir n ->
+        ((v,m,o,n::s),i,d)
+     | MLInclude p ->
+        let ml_new = (CUnix.remove_path_dot (post_canonize p),
+                      CUnix.canonical_path_name p) in
+        (t,(ml_new::ml_inc,q_inc,r_inc),d)
+     | Include (p,l) ->
+        let q_new = (CUnix.remove_path_dot (post_canonize p),l,
+		     CUnix.canonical_path_name p) in
+        (t,(ml_inc,q_new::q_inc,r_inc),d)
+     | RInclude (p,l) ->
+        let r_new = (CUnix.remove_path_dot (post_canonize p),l,
+		     CUnix.canonical_path_name p) in
+        (t,(ml_inc,q_inc,r_new::r_inc),d)
+     | Def (v,def) ->
+        (t,i,(args,(v,def)::defs))
+     | Arg a ->
+        (t,i,(a::args,defs)))
+    args (([],([],[],[],[],[]),[],[]),([],[],[]),([],[]))
 
 let read_project_file f =
   split_arguments

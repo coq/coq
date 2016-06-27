@@ -25,7 +25,7 @@ open Pcoq
 let all_with delta = Redops.make_red_flag [FBeta;FIota;FZeta;delta]
 
 let tactic_kw = [ "->"; "<-" ; "by" ]
-let _ = List.iter Lexer.add_keyword tactic_kw
+let _ = List.iter CLexer.add_keyword tactic_kw
 
 let err () = raise Stream.Failure
 
@@ -111,8 +111,8 @@ let check_for_coloneq =
       | KEYWORD "(" -> skip_binders 2
       | _ -> err ())
 
-let lookup_at_as_coma =
-  Gram.Entry.of_parser "lookup_at_as_coma"
+let lookup_at_as_comma =
+  Gram.Entry.of_parser "lookup_at_as_comma"
     (fun strm ->
       match get_tok (stream_nth 0 strm) with
 	| KEYWORD (","|"at"|"as") -> ()
@@ -141,7 +141,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
   (id,CProdN(loc,bl,ty))
 
 (* Functions overloaded by quotifier *)
-let induction_arg_of_constr (c,lbind as clbind) = match lbind with
+let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
   | NoBindings ->
     begin
       try ElimOnIdent (Constrexpr_ops.constr_loc c,snd(Constrexpr_ops.coerce_to_id c))
@@ -216,7 +216,7 @@ let merge_occurrences loc cl = function
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
   bindings red_expr int_or_var open_constr uconstr
-  simple_intropattern clause_dft_concl hypident;
+  simple_intropattern clause_dft_concl hypident destruction_arg;
 
   int_or_var:
     [ [ n = integer  -> ArgArg n
@@ -231,16 +231,16 @@ GEXTEND Gram
     [ [ id = identref -> id ] ]
   ;
   open_constr:
-    [ [ c = constr -> ((),c) ] ]
+    [ [ c = constr -> c ] ]
   ;
   uconstr:
     [ [ c = constr -> c ] ]
   ;
-  induction_arg:
+  destruction_arg:
     [ [ n = natural -> (None,ElimOnAnonHyp n)
       | test_lpar_id_rpar; c = constr_with_bindings ->
-        (Some false,induction_arg_of_constr c)
-      | c = constr_with_bindings -> (None,induction_arg_of_constr c)
+        (Some false,destruction_arg_of_constr c)
+      | c = constr_with_bindings_arg -> on_snd destruction_arg_of_constr c
     ] ]
   ;
   constr_with_bindings_arg:
@@ -281,19 +281,23 @@ GEXTEND Gram
   intropatterns:
     [ [ l = LIST0 nonsimple_intropattern -> l ]]
   ;
+  ne_intropatterns:
+    [ [ l = LIST1 nonsimple_intropattern -> l ]]
+  ;
   or_and_intropattern:
-    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> tc
-      | "()" -> [[]]
-      | "("; si = simple_intropattern; ")" -> [[si]]
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> IntroOrPattern tc
+      | "()" -> IntroAndPattern []
+      | "("; si = simple_intropattern; ")" -> IntroAndPattern [si]
       | "("; si = simple_intropattern; ",";
-             tc = LIST1 simple_intropattern SEP "," ; ")" -> [si::tc]
+             tc = LIST1 simple_intropattern SEP "," ; ")" ->
+             IntroAndPattern (si::tc)
       | "("; si = simple_intropattern; "&";
 	     tc = LIST1 simple_intropattern SEP "&" ; ")" ->
 	  (* (A & B & C) is translated into (A,(B,C)) *)
 	  let rec pairify = function
-	    | ([]|[_]|[_;_]) as l -> [l]
-	    | t::q -> [[t;(loc_of_ne_list q,IntroAction (IntroOrAndPattern (pairify q)))]]
-	  in pairify (si::tc) ] ]
+	    | ([]|[_]|[_;_]) as l -> l
+	    | t::q -> [t;(loc_of_ne_list q,IntroAction (IntroOrAndPattern (IntroAndPattern (pairify q))))]
+	  in IntroAndPattern (pairify (si::tc)) ] ]
   ;
   equality_intropattern:
     [ [ "->" -> IntroRewrite true
@@ -333,9 +337,6 @@ GEXTEND Gram
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
           ExplicitBindings bl
       | bl = LIST1 constr -> ImplicitBindings bl ] ]
-  ;
-  opt_bindings:
-    [ [ bl = LIST1 bindings SEP "," -> bl | -> [NoBindings] ] ]
   ;
   constr_with_bindings:
     [ [ c = constr; l = with_bindings -> (c, l) ] ]
@@ -450,15 +451,6 @@ GEXTEND Gram
     [ [ check_for_coloneq; "(";  id = ident; bl = LIST0 simple_binder;
         ":="; c = lconstr; ")" -> (id, mkCLambdaN_simple bl c) ] ]
   ;
-  hintbases:
-    [ [ "with"; "*" -> None
-      | "with"; l = LIST1 [ x = IDENT -> x] -> Some l
-      | -> Some [] ] ]
-  ;
-  auto_using:
-    [ [ "using"; l = LIST1 constr SEP "," -> l
-      | -> [] ] ]
-  ;
   eliminator:
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
@@ -478,20 +470,16 @@ GEXTEND Gram
     [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> Some (!@loc, pat)
       | IDENT "_eqn"; ":"; pat = naming_intropattern ->
         let msg = "Obsolete syntax \"_eqn:H\" could be replaced by \"eqn:H\"" in
-        msg_warning (strbrk msg); Some (!@loc, pat)
+        Feedback.msg_warning (strbrk msg); Some (!@loc, pat)
       | IDENT "_eqn" ->
         let msg = "Obsolete syntax \"_eqn\" could be replaced by \"eqn:?\"" in
-        msg_warning (strbrk msg); Some (!@loc, IntroAnonymous)
+        Feedback.msg_warning (strbrk msg); Some (!@loc, IntroAnonymous)
       | -> None ] ]
   ;
   as_name:
     [ [ "as"; id = ident -> Names.Name id | -> Names.Anonymous ] ]
   ;
   by_tactic:
-    [ [ "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
-      | -> TacId [] ] ]
-  ;
-  opt_by_tactic:
     [ [ "by"; tac = tactic_expr LEVEL "3" -> Some tac
     | -> None ] ]
   ;
@@ -499,20 +487,20 @@ GEXTEND Gram
     [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
   ;
   rewriter :
-    [ [ "!"; c = constr_with_bindings -> (RepeatPlus,(None,c))
+    [ [ "!"; c = constr_with_bindings_arg -> (RepeatPlus,c)
       | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (RepeatStar,c)
-      | n = natural; "!"; c = constr_with_bindings -> (Precisely n,(None,c))
+      | n = natural; "!"; c = constr_with_bindings_arg -> (Precisely n,c)
       |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (UpTo n,c)
       | n = natural; c = constr_with_bindings_arg -> (Precisely n,c)
-      | c = constr_with_bindings -> (Precisely 1, (None,c))
+      | c = constr_with_bindings_arg -> (Precisely 1, c)
       ] ]
   ;
   oriented_rewriter :
     [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ;
   induction_clause:
-    [ [ c = induction_arg; pat = as_or_and_ipat; eq = eqn_ipat; cl = opt_clause
-        -> (c,(eq,pat),cl) ] ]
+    [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
+        cl = opt_clause -> (c,(eq,pat),cl) ] ]
   ;
   induction_clause_list:
     [ [ ic = LIST1 induction_clause SEP ","; el = OPT eliminator;
@@ -532,14 +520,12 @@ GEXTEND Gram
   simple_tactic:
     [ [
       (* Basic tactics *)
-        IDENT "intros"; pl = intropatterns -> TacAtom (!@loc, TacIntroPattern pl)
-      | IDENT "intro"; id = ident; hto = move_location ->
-	  TacAtom (!@loc, TacIntroMove (Some id, hto))
-      | IDENT "intro"; hto = move_location -> TacAtom (!@loc, TacIntroMove (None, hto))
-      | IDENT "intro"; id = ident -> TacAtom (!@loc, TacIntroMove (Some id, MoveLast))
-      | IDENT "intro" -> TacAtom (!@loc, TacIntroMove (None, MoveLast))
-
-      | IDENT "exact"; c = constr -> TacAtom (!@loc, TacExact c)
+        IDENT "intros"; pl = ne_intropatterns ->
+          TacAtom (!@loc, TacIntroPattern (false,pl))
+      | IDENT "intros" ->
+          TacAtom (!@loc, TacIntroPattern (false,[!@loc,IntroForthcoming false]))
+      | IDENT "eintros"; pl = ne_intropatterns ->
+          TacAtom (!@loc, TacIntroPattern (true,pl))
 
       | IDENT "apply"; cl = LIST1 constr_with_bindings_arg SEP ",";
           inhyp = in_hyp_as -> TacAtom (!@loc, TacApply (true,false,cl,inhyp))
@@ -557,12 +543,8 @@ GEXTEND Gram
           TacAtom (!@loc, TacElim (true,cl,el))
       | IDENT "case"; icl = induction_clause_list -> TacAtom (!@loc, mkTacCase false icl)
       | IDENT "ecase"; icl = induction_clause_list -> TacAtom (!@loc, mkTacCase true icl)
-      | "fix"; n = natural -> TacAtom (!@loc, TacFix (None,n))
-      | "fix"; id = ident; n = natural -> TacAtom (!@loc, TacFix (Some id,n))
       | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
 	  TacAtom (!@loc, TacMutualFix (id,n,List.map mk_fix_tac fd))
-      | "cofix" -> TacAtom (!@loc, TacCofix None)
-      | "cofix"; id = ident -> TacAtom (!@loc, TacCofix (Some id))
       | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
 	  TacAtom (!@loc, TacMutualCofix (id,List.map mk_cofix_tac fd))
 
@@ -605,60 +587,26 @@ GEXTEND Gram
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
 	  let gen_everywhere c = ((AllOccurrences,c),Names.Anonymous) in
           TacAtom (!@loc, TacGeneralize (List.map gen_everywhere (c::l)))
-      | IDENT "generalize"; c = constr; lookup_at_as_coma; nl = occs;
+      | IDENT "generalize"; c = constr; lookup_at_as_comma; nl = occs;
           na = as_name;
           l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->
           TacAtom (!@loc, TacGeneralize (((nl,c),na)::l))
-      | IDENT "generalize"; IDENT "dependent"; c = constr -> TacAtom (!@loc, TacGeneralizeDep c)
 
       (* Derived basic tactics *)
       | IDENT "induction"; ic = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct (true,false,ic))
       | IDENT "einduction"; ic = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct(true,true,ic))
-      | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
-	  h2 = quantified_hypothesis -> TacAtom (!@loc, TacDoubleInduction (h1,h2))
       | IDENT "destruct"; icl = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct(false,false,icl))
       | IDENT "edestruct";  icl = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct(false,true,icl))
 
-      (* Automation tactic *)
-      | IDENT "trivial"; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacTrivial (Off, lems, db))
-      | IDENT "info_trivial"; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacTrivial (Info, lems, db))
-      | IDENT "debug"; IDENT "trivial"; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacTrivial (Debug, lems, db))
-      | IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacAuto (Off, n, lems, db))
-      | IDENT "info_auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacAuto (Info, n, lems, db))
-      | IDENT "debug"; IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
-          TacAtom (!@loc, TacAuto (Debug, n, lems, db))
-
-      (* Context management *)
-      | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacClear (true, l))
-      | IDENT "clear"; l = LIST0 id_or_meta ->
-        let is_empty = match l with [] -> true | _ -> false in
-        TacAtom (!@loc, TacClear (is_empty, l))
-      | IDENT "clearbody"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacClearBody l)
-      | IDENT "move"; hfrom = id_or_meta; hto = move_location ->
-	  TacAtom (!@loc, TacMove (hfrom,hto))
-      | IDENT "rename"; l = LIST1 rename SEP "," -> TacAtom (!@loc, TacRename l)
-
-      (* Constructors *)
-      | "exists"; bll = opt_bindings -> TacAtom (!@loc, TacSplit (false,bll))
-      | IDENT "eexists"; bll = opt_bindings ->
-	  TacAtom (!@loc, TacSplit (true,bll))
-      (* Equivalence relations *)
-      | IDENT "symmetry"; "in"; cl = in_clause -> TacAtom (!@loc, TacSymmetry cl)
-
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=opt_by_tactic -> TacAtom (!@loc, TacRewrite (false,l,cl,t))
+	  cl = clause_dft_concl; t=by_tactic -> TacAtom (!@loc, TacRewrite (false,l,cl,t))
       | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=opt_by_tactic -> TacAtom (!@loc, TacRewrite (true,l,cl,t))
+	  cl = clause_dft_concl; t=by_tactic -> TacAtom (!@loc, TacRewrite (true,l,cl,t))
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion

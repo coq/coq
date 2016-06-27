@@ -6,10 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Context
 open Declarations
 open Entries
 open Opaqueproof
 
 val process_inductive :
-  named_context Univ.in_universe_context -> work_list -> mutual_inductive_body -> mutual_inductive_entry
+  Context.Named.t Univ.in_universe_context -> work_list -> mutual_inductive_body -> mutual_inductive_entry

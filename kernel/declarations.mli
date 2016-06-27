@@ -8,16 +8,14 @@
 
 open Names
 open Term
-open Context
 
 (** This module defines the internal representation of global
    declarations. This includes global constants/axioms, mutual
    inductive definitions, modules and module types *)
 
 type set_predicativity = ImpredicativeSet | PredicativeSet
-type type_hierarchy = TypeInType | StratifiedType
 
-type engagement = set_predicativity * type_hierarchy
+type engagement = set_predicativity
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 
@@ -38,7 +36,7 @@ type ('a, 'b) declaration_arity =
   | RegularArity of 'a
   | TemplateArity of 'b
 
-type constant_type = (types, rel_context * template_arity) declaration_arity
+type constant_type = (types, Context.Rel.t * template_arity) declaration_arity
 
 (** Inlining level of parameters at functor applications.
     None means no inlining *)
@@ -67,6 +65,16 @@ type constant_def =
 
 type constant_universes = Univ.universe_context
 
+(** The [typing_flags] are instructions to the type-checker which
+    modify its behaviour. The typing flags used in the type-checking
+    of a constant are tracked in their {!constant_body} so that they
+    can be displayed to the user. *)
+type typing_flags = {
+  check_guarded : bool; (** If [false] then fixed points and co-fixed
+                            points are assumed to be total. *)
+  check_universes : bool; (** If [false] universe constraints are not checked *)
+}
+
 (* some contraints are in constant_constraints, some other may be in
  * the OpaueDef *)
 type constant_body = {
@@ -77,7 +85,11 @@ type constant_body = {
     const_polymorphic : bool; (** Is it polymorphic or not *)
     const_universes : constant_universes;
     const_proj : projection_body option;
-    const_inline_code : bool }
+    const_inline_code : bool;
+    const_typing_flags : typing_flags; (** The typing options which
+                                           were used for
+                                           type-checking. *)
+}
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 
@@ -117,7 +129,7 @@ type one_inductive_body = {
 
     mind_typename : Id.t; (** Name of the type: [Ii] *)
 
-    mind_arity_ctxt : rel_context; (** Arity context of [Ii] with parameters: [forall params, Ui] *)
+    mind_arity_ctxt : Context.Rel.t; (** Arity context of [Ii] with parameters: [forall params, Ui] *)
 
     mind_arity : inductive_arity; (** Arity sort and original user arity *)
 
@@ -171,14 +183,15 @@ type mutual_inductive_body = {
 
     mind_nparams_rec : int;  (** Number of recursively uniform (i.e. ordinary) parameters *)
 
-    mind_params_ctxt : rel_context;  (** The context of parameters (includes let-in declaration) *)
+    mind_params_ctxt : Context.Rel.t;  (** The context of parameters (includes let-in declaration) *)
 
     mind_polymorphic : bool; (** Is it polymorphic or not *)
 
     mind_universes : Univ.universe_context; (** Local universe variables and constraints *)
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
-  
+
+    mind_typing_flags : typing_flags; (** typing flags at the time of the inductive creation *)
 }
 
 (** {6 Module declarations } *)

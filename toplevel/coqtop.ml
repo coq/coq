@@ -9,7 +9,6 @@
 open Pp
 open Errors
 open Util
-open System
 open Flags
 open Names
 open Libnames
@@ -32,10 +31,10 @@ let get_version_date () =
 
 let print_header () =
   let (ver,rev) = get_version_date () in
-  ppnl (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
-  pp_flush ()
+  Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
+  flush_all ()
 
-let warning s = with_option Flags.warn msg_warning (strbrk s)
+let warning s = with_option Flags.warn Feedback.msg_warning (strbrk s)
 
 let toploop = ref None
 
@@ -62,7 +61,8 @@ let init_color () =
     match colors with
     | None ->
       (** Default colors *)
-      Ppstyle.init_color_output ()
+      Ppstyle.init_color_output ();
+      Feedback.set_logger Feedback.color_terminal_logger
     | Some "" ->
       (** No color output *)
       ()
@@ -70,7 +70,8 @@ let init_color () =
       (** Overwrite all colors *)
       Ppstyle.clear_styles ();
       Ppstyle.parse_config s;
-      Ppstyle.init_color_output ()
+      Ppstyle.init_color_output ();
+      Feedback.set_logger Feedback.color_terminal_logger
   end
 
 let toploop_init = ref begin fun x ->
@@ -96,8 +97,8 @@ let memory_stat = ref false
 let print_memory_stat () =
   begin (* -m|--memory from the command-line *)
     if !memory_stat then
-    ppnl
-      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes");
+    Feedback.msg_notice
+      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes" ++ fnl ());
   end;
   begin
     (* operf-macro interface:
@@ -114,10 +115,11 @@ let _ = at_exit print_memory_stat
 
 let impredicative_set = ref Declarations.PredicativeSet
 let set_impredicative_set c = impredicative_set := Declarations.ImpredicativeSet
-let type_in_type = ref Declarations.StratifiedType
-let set_type_in_type () = type_in_type := Declarations.TypeInType
+let set_type_in_type () =
+  let typing_flags = Environ.typing_flags (Global.env ()) in
+  Global.set_typing_flags { typing_flags with Declarations.check_universes = false }
 let engage () =
-  Global.set_engagement (!impredicative_set,!type_in_type)
+  Global.set_engagement !impredicative_set
 
 let set_batch_mode () = batch_mode := true
 
@@ -142,7 +144,7 @@ let remove_top_ml () = Mltop.remove ()
 
 let inputstate = ref ""
 let set_inputstate s =
-  let () = msg_warning (str "The inputstate option is deprecated and discouraged.") in
+  let () = Feedback.msg_warning (str "The inputstate option is deprecated and discouraged.") in
   inputstate:=s
 let inputstate () =
   if not (String.is_empty !inputstate) then
@@ -151,7 +153,7 @@ let inputstate () =
 
 let outputstate = ref ""
 let set_outputstate s =
-  let () = msg_warning (str "The outputstate option is deprecated and discouraged.") in
+  let () = Feedback.msg_warning (str "The outputstate option is deprecated and discouraged.") in
   outputstate:=s
 let outputstate () =
   if not (String.is_empty !outputstate) then
@@ -230,11 +232,11 @@ let compile_files () =
     | [vf] -> compile_file vf (* One compilation : no need to save init state *)
     | l ->
       let init_state = States.freeze ~marshallable:`No in
-      let coqdoc_init_state = Lexer.location_table () in
+      let coqdoc_init_state = CLexer.location_table () in
       List.iter
         (fun vf ->
 	  States.unfreeze init_state;
-	  Lexer.restore_location_table coqdoc_init_state;
+	  CLexer.restore_location_table coqdoc_init_state;
           compile_file vf)
         (List.rev l)
 
@@ -244,7 +246,7 @@ let set_emacs () =
   if not (Option.is_empty !toploop) then
     error "Flag -emacs is incompatible with a custom toplevel loop";
   Flags.print_emacs := true;
-  Pp.make_pp_emacs ();
+  Feedback.(set_logger emacs_logger);
   Vernacentries.qed_display_script := false;
   color := `OFF
 
@@ -272,18 +274,19 @@ let set_toploop name =
 *)
 
 let init_gc () =
-  let param =
-    try ignore (Sys.getenv "OCAMLRUNPARAM"); true
-    with Not_found -> false
-  in
-  let control = Gc.get () in
-  let tweaked_control = { control with
-    Gc.minor_heap_size = 33554432; (** 4M *)
-(*     Gc.major_heap_increment = 268435456; (** 32M *) *)
-    Gc.space_overhead = 120;
-  } in
-  if param then ()
-  else Gc.set tweaked_control
+  try
+    (* OCAMLRUNPARAM environment variable is set.
+     * In that case, we let ocamlrun to use the values provided by the user.
+     *)
+    ignore (Sys.getenv "OCAMLRUNPARAM")
+
+  with Not_found ->
+    (* OCAMLRUNPARAM environment variable is not set.
+     * In this case, we put in place our preferred configuration.
+     *)
+    Gc.set { (Gc.get ()) with
+             Gc.minor_heap_size = 33554432; (** 4M *)
+             Gc.space_overhead = 120}
 
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
@@ -368,6 +371,11 @@ let get_int opt n =
   with Failure _ ->
     prerr_endline ("Error: integer expected after option "^opt); exit 1
 
+let get_float opt n =
+  try float_of_string n
+  with Failure _ ->
+    prerr_endline ("Error: float expected after option "^opt); exit 1
+
 let get_host_port opt s =
   match CString.split ':' s with
   | [host; portr; portw] ->
@@ -376,6 +384,11 @@ let get_host_port opt s =
   | _ ->
      prerr_endline ("Error: host:port or stdfds expected after option "^opt);
      exit 1
+
+let get_error_resilience opt = function
+  | "on" | "all" | "yes" -> `All
+  | "off" | "no" -> `None
+  | s -> `Only (String.split ',' s)
 
 let get_task_list s = List.map int_of_string (Str.split (Str.regexp ",") s)
 
@@ -457,10 +470,6 @@ let parse_args arglist =
       end
     |"-R" ->
       begin match rem with
-      | d :: "-as" :: [] -> error_missing_arg opt
-      | d :: "-as" :: p :: rem ->
-        warning "option -R * -as * deprecated, remove the -as";
-        set_include d p true; args := rem
       | d :: p :: rem -> set_include d p true; args := rem
       | _ -> error_missing_arg opt
       end
@@ -494,13 +503,19 @@ let parse_args arglist =
         Flags.async_proofs_worker_priority := get_priority opt (next ())
     |"-async-proofs-private-flags" ->
         Flags.async_proofs_private_flags := Some (next ());
+    |"-async-proofs-tactic-error-resilience" ->
+        Flags.async_proofs_tac_error_resilience := get_error_resilience opt (next ())
+    |"-async-proofs-command-error-resilience" ->
+        Flags.async_proofs_cmd_error_resilience := get_bool opt (next ())
+    |"-async-proofs-delegation-threshold" ->
+        Flags.async_proofs_delegation_threshold:= get_float opt (next ())
     |"-worker-id" -> set_worker_id opt (next ())
     |"-compat" -> let v = get_compat_version (next ()) in Flags.compat_version := v; add_compat_require v
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())
     |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true
     |"-feedback-glob" -> Dumpglob.feedback_glob ()
-    |"-exclude-dir" -> exclude_search_in_dirname (next ())
+    |"-exclude-dir" -> System.exclude_directory (next ())
     |"-init-file" -> set_rcfile (next ())
     |"-inputstate"|"-is" -> set_inputstate (next ())
     |"-load-ml-object" -> Mltop.dir_ml_load (next ())
@@ -518,6 +533,7 @@ let parse_args arglist =
     |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Vio2Vo
     |"-toploop" -> set_toploop (next ())
     |"-w" -> set_warning (next ())
+    |"-o" -> Flags.compilation_output_name := Some (next())
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
@@ -551,6 +567,7 @@ let parse_args arglist =
       else native_compiler := true
     |"-notop" -> unset_toplevel_name ()
     |"-output-context" -> output_context := true
+    |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> no_load_rc ()
     |"-quiet"|"-silent" -> Flags.make_silent true; Flags.make_warn false
     |"-quick" -> Flags.compilation_mode := BuildVio
@@ -559,6 +576,7 @@ let parse_args arglist =
     |"-type-in-type" -> set_type_in_type ()
     |"-unicode" -> add_require "Utf8_core"
     |"-v"|"--version" -> Usage.version (exitcode ())
+    |"--print-version" -> Usage.machine_readable_version (exitcode ())
     |"-verbose-compat-notations" -> verb_compat_ntn := true
     |"-where" -> print_where := true
     |"-xml" -> Flags.xml_export := true
@@ -591,7 +609,7 @@ let parse_args arglist =
       else fatal_error (Errors.print e) false
     | any -> fatal_error (Errors.print any) (Errors.is_anomaly any)
 
-let init arglist =
+let init_toplevel arglist =
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   Lib.init();
@@ -650,12 +668,10 @@ let init arglist =
   if !batch_mode then begin
     flush_all();
     if !output_context then
-      Pp.ppnl (with_option raw_print Prettyp.print_full_pure_context ());
+      Feedback.msg_notice (with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
     Profile.print_profile ();
     exit 0
   end
-
-let init_toplevel = init
 
 let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in

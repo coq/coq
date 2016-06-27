@@ -7,24 +7,29 @@
 (************************************************************************)
 
 open Genarg
+open Geninterp
+
+let make0 ?dyn name =
+  let wit = Genarg.make0 name in
+  let () = register_val0 wit dyn in
+  wit
 
 let wit_unit : unit uniform_genarg_type =
-  make0 None "unit"
+  make0 "unit"
 
 let wit_bool : bool uniform_genarg_type =
-  make0 None "bool"
+  make0 "bool"
 
 let wit_int : int uniform_genarg_type =
-  make0 None "int"
+  make0 "int"
 
 let wit_string : string uniform_genarg_type =
-  make0 None "string"
+  make0 "string"
 
 let wit_pre_ident : string uniform_genarg_type =
-  make0 None "preident"
+  make0 ~dyn:(val_tag (topwit wit_string)) "preident"
 
-let () = register_name0 wit_unit "Stdarg.wit_unit"
-let () = register_name0 wit_bool "Stdarg.wit_bool"
-let () = register_name0 wit_int "Stdarg.wit_int"
-let () = register_name0 wit_string "Stdarg.wit_string"
-let () = register_name0 wit_pre_ident "Stdarg.wit_pre_ident"
+(** Aliases for compatibility *)
+
+let wit_integer = wit_int
+let wit_preident = wit_pre_ident

@@ -9,9 +9,15 @@
 open Declarations
 open Mod_subst
 open Util
+open Context.Rel.Declaration
 
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
+
+let safe_flags = {
+  check_guarded = true;
+  check_universes = true;
+}
 
 (** {6 Arities } *)
 
@@ -87,10 +93,8 @@ let is_opaque cb = match cb.const_body with
 
 (** {7 Constant substitutions } *)
 
-let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = Option.smartmap (subst_mps sub) copt in
-  let t' = subst_mps sub t in
-  if copt == copt' && t == t' then x else (id,copt',t')
+let subst_rel_declaration sub =
+  map_constr (subst_mps sub)
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
@@ -132,7 +136,8 @@ let subst_const_body sub cb =
           Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_polymorphic = cb.const_polymorphic;
         const_universes = cb.const_universes;
-        const_inline_code = cb.const_inline_code }
+        const_inline_code = cb.const_inline_code;
+        const_typing_flags = cb.const_typing_flags }
 
 (** {7 Hash-consing of constants } *)
 
@@ -140,11 +145,8 @@ let subst_const_body sub cb =
     share internal fields (e.g. constr), and not the records
     themselves. But would it really bring substantial gains ? *)
 
-let hcons_rel_decl ((n,oc,t) as d) =
-  let n' = Names.Name.hcons n
-  and oc' = Option.smartmap Term.hcons_constr oc
-  and t' = Term.hcons_types t
-  in if n' == n && oc' == oc && t' == t then d else (n',oc',t')
+let hcons_rel_decl =
+  map_type Term.hcons_types % map_value Term.hcons_constr % map_name Names.Name.hcons
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 
@@ -254,11 +256,13 @@ let subst_mind_body sub mib =
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
-      Context.map_rel_context (subst_mps sub) mib.mind_params_ctxt;
+      Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes;
-    mind_private = mib.mind_private }
+    mind_private = mib.mind_private;
+    mind_typing_flags = mib.mind_typing_flags;
+  }
 
 let inductive_instance mib =
   if mib.mind_polymorphic then
@@ -391,5 +395,3 @@ and hcons_module_body mb =
     mod_delta = delta';
     mod_retroknowledge = retroknowledge';
   }
-
-and hcons_module_type_body mtb = hcons_module_body mtb

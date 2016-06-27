@@ -3,22 +3,23 @@ open Errors
 open Util
 open Term
 open Vars
-open Context
 open Namegen
 open Names
 open Pp
 open Entries
 open Tactics
+open Context.Rel.Declaration
 open Indfun_common
 open Functional_principles_proofs
 open Misctypes
+open Sigma.Notations
 
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
 
 let observe s =
   if do_observe ()
-  then Pp.msg_debug s
+  then Feedback.msg_debug s
 
 (*
    Transform an inductive induction principle into
@@ -29,14 +30,16 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let env = Global.env () in
   let env_with_params = Environ.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
-  let rec change_predicates_names (avoid:Id.t list) (predicates:rel_context)  : rel_context =
+  let rec change_predicates_names (avoid:Id.t list) (predicates:Context.Rel.t)  : Context.Rel.t =
     match predicates with
     | [] -> []
-    |(Name x,v,t)::predicates ->
-       let id =  Namegen.next_ident_away x avoid in
-       Hashtbl.add tbl id x;
-       (Name id,v,t)::(change_predicates_names (id::avoid) predicates)
-    | (Anonymous,_,_)::_ -> anomaly (Pp.str "Anonymous property binder ")
+    | decl :: predicates ->
+       (match Context.Rel.Declaration.get_name decl with
+	| Name x ->
+	   let id = Namegen.next_ident_away x avoid in
+	   Hashtbl.add tbl id x;
+	   set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
+	| Anonymous -> anomaly (Pp.str "Anonymous property binder "))
   in
   let avoid = (Termops.ids_of_context env_with_params ) in
   let princ_type_info =
@@ -46,15 +49,16 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
 (*   observe (str "starting princ_type := " ++ pr_lconstr_env env princ_type); *)
 (*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
-  let change_predicate_sort i (x,_,t) =
+  let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
-    let args,_ = decompose_prod t in
+    let args,_ = decompose_prod (get_type decl) in
     let real_args =
       if princ_type_info.indarg_in_concl
       then List.tl args
       else args
     in
-    Nameops.out_name x,None,compose_prod real_args (mkSort new_sort)
+    Context.Named.Declaration.LocalAssum (Nameops.out_name (Context.Rel.Declaration.get_name decl),
+                                          compose_prod real_args (mkSort new_sort))
   in
   let new_predicates =
     List.map_i
@@ -69,7 +73,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	   | _ -> error "Not a valid predicate"
 	)
   in
-  let ptes_vars = List.map (fun (id,_,_) -> id) new_predicates in
+  let ptes_vars = List.map Context.Named.Declaration.get_id new_predicates in
   let is_pte =
     let set = List.fold_right Id.Set.add ptes_vars Id.Set.empty in
     fun t ->
@@ -114,7 +118,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Rel n ->
 	    begin
 	      try match Environ.lookup_rel n env with
-		| _,_,t when is_dom t -> raise Toberemoved
+		| LocalAssum (_,t) | LocalDef (_,_,t) when is_dom t -> raise Toberemoved
 		| _ -> pre_princ,[]
 	      with Not_found -> assert false
 	    end
@@ -159,7 +163,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       try
 	let new_t,binders_to_remove_from_t = compute_new_princ_type remove env t in
 	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
-	let new_env = Environ.push_rel (x,None,t) env in
+	let new_env = Environ.push_rel (LocalAssum (x,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	 if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
 	 then (Termops.pop new_b), filter_map (eq_constr (mkRel 1)) Termops.pop binders_to_remove_from_b
@@ -188,7 +192,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_t,binders_to_remove_from_t = compute_new_princ_type remove env t in
 	let new_v,binders_to_remove_from_v = compute_new_princ_type remove env v in
 	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
-	let new_env = Environ.push_rel (x,Some v,t) env in
+	let new_env = Environ.push_rel (LocalDef (x,v,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
 	then (Termops.pop new_b),filter_map (eq_constr (mkRel 1)) Termops.pop binders_to_remove_from_b
@@ -227,7 +231,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   it_mkProd_or_LetIn
     (it_mkProd_or_LetIn
-       pre_res (List.map (fun (id,t,b) -> Name(Hashtbl.find tbl id), t,b)
+       pre_res (List.map (function Context.Named.Declaration.LocalAssum (id,b)   -> LocalAssum (Name (Hashtbl.find tbl id), b)
+                                 | Context.Named.Declaration.LocalDef (id,t,b) -> LocalDef (Name (Hashtbl.find tbl id), t, b))
           	      new_predicates)
     )
     princ_type_info.params
@@ -235,10 +240,12 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 
 
 let change_property_sort evd toSort princ princName =
+  let open Context.Rel.Declaration in
   let princ_info = compute_elim_sig princ in
-  let change_sort_in_predicate (x,v,t) =
-    (x,None,
-     let args,ty = decompose_prod t in
+  let change_sort_in_predicate decl =
+    LocalAssum
+    (get_name decl,
+     let args,ty = decompose_prod (get_type decl) in
      let s = destSort ty in
        Global.add_constraints (Univ.enforce_leq (univ_of_sort toSort) (univ_of_sort s) Univ.Constraint.empty);
        compose_prod args (mkSort toSort)
@@ -648,12 +655,15 @@ let build_case_scheme fa =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     List.assoc_f Constant.equal (fst (destConst funs)) this_block_funs_indexes
   in
-  let ind_fun =
+  let (ind, sf) =
 	 let ind = first_fun_kn,funs_indexes in
 	   (ind,Univ.Instance.empty)(*FIXME*),prop_sort
   in
-  let sigma, scheme = 
-    (fun (ind,sf) -> Indrec.build_case_analysis_scheme_default env sigma ind sf)  ind_fun in
+  let sigma = Sigma.Unsafe.of_evar_map sigma in
+  let Sigma (scheme, sigma, _) = 
+      Indrec.build_case_analysis_scheme_default env sigma ind sf
+  in
+  let sigma = Sigma.to_evar_map sigma in
   let scheme_type =  (Typing.unsafe_type_of env sigma ) scheme in
   let sorts =
     (fun (_,_,x) ->

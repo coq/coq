@@ -1,4 +1,5 @@
 (************************************************************************)
+
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
 (*   \VV/  **************************************************************)
@@ -47,6 +48,7 @@ let init_stdout, read_stdout =
 
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
+let pr_error s = pr_with_pid s
 let pr_debug s =
   if !Flags.debug then pr_with_pid s
 let pr_debug_call q =
@@ -98,11 +100,11 @@ let coqide_cmd_checks (loc,ast) =
   if is_debug ast then
     user_error "Debug mode not available within CoqIDE";
   if is_known_option ast then
-    msg_warning (strbrk"This will not work. Use CoqIDE display menu instead");
+    Feedback.msg_warning (strbrk"This will not work. Use CoqIDE display menu instead");
   if Vernac.is_navigation_vernac ast || is_undo ast then
-    msg_warning (strbrk "Rather use CoqIDE navigation instead");
+    Feedback.msg_warning (strbrk "Rather use CoqIDE navigation instead");
   if is_query ast then
-    msg_warning (strbrk "Query commands should not be inserted in scripts")
+    Feedback.msg_warning (strbrk "Query commands should not be inserted in scripts")
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
@@ -130,7 +132,8 @@ let annotate phrase =
 
 (** Goal display *)
 
-let hyp_next_tac sigma env (id,_,ast) =
+let hyp_next_tac sigma env decl =
+  let (id,_,ast) = Context.Named.Declaration.to_tuple decl in
   let id_s = Names.Id.to_string id in
   let type_s = string_of_ppcmds (pr_ltype_env env sigma ast) in
   [
@@ -184,14 +187,19 @@ let process_goal sigma g =
   let id = Goal.uid g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-    string_of_ppcmds (pr_goal_concl_style_env env sigma norm_constr) in
+    Richpp.richpp_of_pp (pr_goal_concl_style_env env sigma norm_constr)
+  in
   let process_hyp d (env,l) =
-    let d = Context.map_named_list_declaration (Reductionops.nf_evar sigma) d in
-    let d' = List.map (fun x -> (x, pi2 d, pi3 d)) (pi1 d) in
+    let d = Context.NamedList.Declaration.map_constr (Reductionops.nf_evar sigma) d in
+    let d' = List.map (fun name -> let open Context.Named.Declaration in
+                                   match pi2 d with
+                                   | None -> LocalAssum (name, pi3 d)
+                                   | Some value -> LocalDef (name, value, pi3 d))
+                      (pi1 d) in
       (List.fold_right Environ.push_named d' env,
-       (string_of_ppcmds (pr_var_list_decl env sigma d)) :: l) in
+       (Richpp.richpp_of_pp (pr_var_list_decl env sigma d)) :: l) in
   let (_env, hyps) =
-    Context.fold_named_list_context process_hyp
+    Context.NamedList.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
@@ -206,7 +214,7 @@ let export_pre_goals pgs =
 let goals () =
   Stm.finish ();
   let s = read_stdout () in
-  if not (String.is_empty s) then msg_info (str s);
+  if not (String.is_empty s) then Feedback.msg_info (str s);
   try
     let pfts = Proof_global.give_me_the_proof () in
     Some (export_pre_goals (Proof.map_structured_proof pfts process_goal))
@@ -216,7 +224,7 @@ let evars () =
   try
     Stm.finish ();
     let s = read_stdout () in
-    if not (String.is_empty s) then msg_info (str s);
+    if not (String.is_empty s) then Feedback.msg_info (str s);
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
     let exl = Evar.Map.bindings (Evarutil.non_instantiated sigma) in
@@ -249,7 +257,7 @@ let status force =
   Stm.finish ();
   if force then Stm.join ();
   let s = read_stdout () in
-  if not (String.is_empty s) then msg_info (str s);
+  if not (String.is_empty s) then Feedback.msg_info (str s);
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
@@ -275,11 +283,33 @@ let export_coq_object t = {
   Interface.coq_object_object = t.Search.coq_object_object
 }
 
+let pattern_of_string ?env s =
+  let env =
+    match env with
+    | None -> Global.env ()
+    | Some e -> e
+  in
+  let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
+  let (_, pat) = Constrintern.intern_constr_pattern env constr in
+  pat
+
+let dirpath_of_string_list s =
+  let path = String.concat "." s in
+  let m = Pcoq.parse_string Pcoq.Constr.global path in
+  let (_, qid) = Libnames.qualid_of_reference m in
+  let id =
+    try Nametab.full_name_module qid
+    with Not_found ->
+      Errors.errorlabstrm "Search.interface_search"
+        (str "Module " ++ str path ++ str " not found.")
+  in
+  id
+
 let import_search_constraint = function
-  | Interface.Name_Pattern s    -> Search.Name_Pattern s
-  | Interface.Type_Pattern s    -> Search.Type_Pattern s
-  | Interface.SubType_Pattern s -> Search.SubType_Pattern s
-  | Interface.In_Module ms      -> Search.In_Module ms
+  | Interface.Name_Pattern s    -> Search.Name_Pattern (Str.regexp s)
+  | Interface.Type_Pattern s    -> Search.Type_Pattern (pattern_of_string s)
+  | Interface.SubType_Pattern s -> Search.SubType_Pattern (pattern_of_string s)
+  | Interface.In_Module ms      -> Search.In_Module (dirpath_of_string_list ms)
   | Interface.Include_Blacklist -> Search.Include_Blacklist
 
 let search flags =
@@ -333,10 +363,14 @@ let handle_exn (e, info) =
   let loc_of e = match Loc.get_loc e with
     | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
     | _ -> None in
-  let mk_msg () = read_stdout ()^"\n"^string_of_ppcmds (Errors.print ~info e) in
+  let mk_msg () =
+    let msg = read_stdout () in
+    let msg = str msg ++ fnl () ++ Errors.print ~info e in
+    Richpp.richpp_of_pp msg
+  in
   match e with
-  | Errors.Drop -> dummy, None, "Drop is not allowed by coqide!"
-  | Errors.Quit -> dummy, None, "Quit is not allowed by coqide!"
+  | Errors.Drop -> dummy, None, Richpp.richpp_of_string "Drop is not allowed by coqide!"
+  | Errors.Quit -> dummy, None, Richpp.richpp_of_string "Quit is not allowed by coqide!"
   | e ->
       match Stateid.get info with
       | Some (valid, _) -> valid, loc_of info, mk_msg ()
@@ -381,6 +415,15 @@ let interp ((_raw, verbose), s) =
 
 let quit = ref false
 
+(** Serializes the output of Stm.get_ast  *)
+let print_ast id =
+  match Stm.get_ast id with
+  | Some (expr, loc) -> begin
+      try  Texmacspp.tmpp expr loc
+      with e -> Xml_datatype.PCData ("ERROR " ^ Printexc.to_string e)
+    end
+  | None     -> Xml_datatype.PCData "ERROR"
+
 (** Grouping all call handlers together + error handling *)
 
 let eval_call xml_oc log c =
@@ -411,7 +454,7 @@ let eval_call xml_oc log c =
     Interface.interp = interruptible interp;
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;
-    Interface.print_ast = Stm.print_ast;
+    Interface.print_ast = print_ast;
     Interface.annotate = interruptible annotate;
   } in
   Xmlprotocol.abstract_eval_call handler c
@@ -429,19 +472,15 @@ let print_xml =
     with e -> let e = Errors.push e in Mutex.unlock m; iraise e
 
 
-let slave_logger xml_oc level message =
+let slave_logger xml_oc ?loc level message =
   (* convert the message into XML *)
-  let msg = string_of_ppcmds (hov 0 message) in
-  let message = {
-    Pp.message_level = level;
-    Pp.message_content = msg;
-  } in
-  let () = pr_debug (Printf.sprintf "-> %S" msg) in
-  let xml = Pp.of_message message in
+  let msg = hov 0 message in
+  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg))         in
+  let xml = Xmlprotocol.of_message level loc (Richpp.richpp_of_pp message) in
   print_xml xml_oc xml
 
 let slave_feeder xml_oc msg =
-  let xml = Feedback.of_feedback msg in
+  let xml = Xmlprotocol.of_feedback msg in
   print_xml xml_oc xml
 
 (** The main loop *)
@@ -459,8 +498,8 @@ let loop () =
     CThread.thread_friendly_read in_ch s ~off:0 ~len) in
   let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
-  set_logger (slave_logger xml_oc);
-  set_feeder (slave_feeder xml_oc);
+  Feedback.set_logger (slave_logger xml_oc);
+  Feedback.set_feeder (slave_feeder xml_oc);
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
@@ -468,9 +507,9 @@ let loop () =
     try
       let xml_query = Xml_parser.parse xml_ic in
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
-      let q = Xmlprotocol.to_call xml_query in
+      let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r = eval_call xml_oc (slave_logger xml_oc Pp.Notice) q in
+      let r = eval_call xml_oc (slave_logger xml_oc Feedback.Notice) q in
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
       print_xml xml_oc (Xmlprotocol.of_answer q r);
@@ -480,11 +519,11 @@ let loop () =
         pr_debug "End of input, exiting gracefully.";
         exit 0
       | Xml_parser.Error (err, loc) ->
-        pr_debug ("Syntax error in query: " ^ Xml_parser.error_msg err);
-        exit 1
-      | Serialize.Marshal_error ->
-        pr_debug "Incorrect query.";
-        exit 1
+        pr_error ("XML syntax error: " ^ Xml_parser.error_msg err)
+      | Serialize.Marshal_error (msg,node) ->
+        pr_error "Unexpected XML message";
+        pr_error ("Expected XML node: " ^ msg);
+        pr_error ("XML tree received: " ^ Xml_printer.to_string_fmt node)
       | any ->
         pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
         exit 1

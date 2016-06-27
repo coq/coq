@@ -34,6 +34,8 @@ Table of contents:
 
 3 3. Independence of general premises and drinker's paradox
 
+4. Classical logic and principle of unrestricted minimization
+
 *)
 
 (************************************************************************)
@@ -658,3 +660,79 @@ Proof.
     exists x; intro; exact Hx.
     exists x0; exact Hnot.
 Qed.
+
+(** ** Principle of unrestricted minimization *)
+
+Require Import Coq.Arith.PeanoNat.
+
+Definition Minimal (P:nat -> Prop) (n:nat) : Prop :=
+  P n /\ forall k, P k -> n<=k.
+
+Definition Minimization_Property (P : nat -> Prop) : Prop :=
+  forall n, P n -> exists m, Minimal P m.
+
+Section Unrestricted_minimization_entails_excluded_middle.
+
+  Hypothesis unrestricted_minimization: forall P, Minimization_Property P.
+
+  Theorem unrestricted_minimization_entails_excluded_middle : forall A, A\/~A.
+  Proof.
+    intros A.
+    pose (P := fun n:nat => n=0/\A \/ n=1).
+    assert (P 1) as h.
+    { unfold P. intuition. }
+    assert (P 0 <-> A) as p₀.
+    { split.
+      + intros [[_ h₀]|[=]]. assumption.
+      + unfold P. tauto. }
+    apply unrestricted_minimization in h as ([|[|m]] & hm & hmm).
+    + intuition.
+    + right.
+      intros HA. apply p₀, hmm, PeanoNat.Nat.nle_succ_0 in HA. assumption.
+    + destruct hm as [([=],_) | [=] ].
+  Qed.
+
+End Unrestricted_minimization_entails_excluded_middle.
+
+Require Import Wf_nat.
+
+Section Excluded_middle_entails_unrestricted_minimization.
+
+  Hypothesis em : forall A, A\/~A.
+
+  Theorem excluded_middle_entails_unrestricted_minimization : 
+    forall P, Minimization_Property P.
+  Proof.
+    intros P n HPn.
+    assert (dec : forall n, P n \/ ~ P n) by auto using em.
+    assert (ex : exists n, P n) by (exists n; assumption).
+    destruct (dec_inh_nat_subset_has_unique_least_element P dec ex) as (n' & HPn' & _).
+    exists n'. assumption.
+  Qed.
+
+End Excluded_middle_entails_unrestricted_minimization.
+
+(** However, minimization for a given predicate does not necessarily imply
+    decidability of this predicate *)
+
+Section Example_of_undecidable_predicate_with_the_minimization_property.
+
+  Variable s : nat -> bool.
+
+  Let P n := exists k, n<=k /\ s k = true.
+
+  Example undecidable_predicate_with_the_minimization_property : 
+    Minimization_Property P.
+  Proof.
+    unfold Minimization_Property.
+    intros h hn.
+    exists 0. split.
+    + unfold P in *. destruct hn as (k&hk₁&hk₂).
+      exists k. split.
+      * rewrite <- hk₁.
+        apply PeanoNat.Nat.le_0_l.
+      * assumption.
+    + intros **. apply PeanoNat.Nat.le_0_l.
+  Qed.
+
+End Example_of_undecidable_predicate_with_the_minimization_property.

@@ -12,37 +12,27 @@ open Pp
 open Errors
 open Util
 
-(* All subdirectories, recursively *)
+include Minisys
 
-let exists_dir dir =
-  try Sys.is_directory dir with Sys_error _ -> false
-
-let skipped_dirnames = ref ["CVS"; "_darcs"]
-
-let exclude_search_in_dirname f = skipped_dirnames := f :: !skipped_dirnames
-
-let ok_dirname f =
-  not (String.is_empty f) && f.[0] != '.' &&
-  not (String.List.mem f !skipped_dirnames) &&
-  (match Unicode.ident_refutation f with None -> true | _ -> false)
-
-let readdir dir = try Sys.readdir dir with any -> [||]
+(** Returns the list of all recursive subdirectories of [root] in
+    depth-first search, with sons ordered as on the file system;
+    warns if [root] does not exist *)
 
 let all_subdirs ~unix_path:root =
   let l = ref [] in
   let add f rel = l := (f, rel) :: !l in
-  let rec traverse dir rel =
-    Array.iter (fun f ->
-      if ok_dirname f then
-	let file = Filename.concat dir f in
-        if exists_dir file then begin
-          let newrel = rel @ [f] in
-	  add file newrel;
-	  traverse file newrel
-        end)
-      (readdir dir)
+  let rec traverse path rel =
+    let f = function
+      | FileDir (path,f) ->
+	  let newrel = rel @ [f] in
+	  add path newrel;
+	  traverse path newrel
+      | _ -> ()
+    in process_directory f path
   in
-  if exists_dir root then traverse root [];
+  check_unix_dir (fun s -> Feedback.msg_warning (str s)) root;
+  if exists_dir root then traverse root []
+  else Feedback.msg_warning (str ("Cannot open " ^ root));
   List.rev !l
 
 (* Caching directory contents for efficient syntactic equality of file
@@ -63,20 +53,22 @@ let make_dir_table dir =
   Array.fold_left filter_dotfiles StrSet.empty (readdir dir)
 
 let exists_in_dir_respecting_case dir bf =
-  let contents, cached =
-    try StrMap.find dir !dirmap, true with Not_found ->
+  let cache_dir dir =
     let contents = make_dir_table dir in
     dirmap := StrMap.add dir contents !dirmap;
-    contents, false in
+    contents in
+  let contents, fresh =
+    try
+      (* in batch mode, assume the directory content is still fresh *)
+      StrMap.find dir !dirmap, !Flags.batch_mode
+    with Not_found ->
+      (* in batch mode, we are not yet sure the directory exists *)
+      if !Flags.batch_mode && not (exists_dir dir) then StrSet.empty, true
+      else cache_dir dir, true in
   StrSet.mem bf contents ||
-    if cached then begin
+    not fresh &&
       (* rescan, there is a new file we don't know about *)
-      let contents = make_dir_table dir in
-      dirmap := StrMap.add dir contents !dirmap;
-      StrSet.mem bf contents
-    end
-    else
-      false
+      StrSet.mem bf (cache_dir dir)
 
 let file_exists_respecting_case path f =
   (* This function ensures that a file with expected lowercase/uppercase
@@ -86,7 +78,7 @@ let file_exists_respecting_case path f =
     let df = Filename.dirname f in
     (String.equal df "." || aux df)
     && exists_in_dir_respecting_case (Filename.concat path df) bf
-  in Sys.file_exists (Filename.concat path f) && aux f
+  in (!Flags.batch_mode || Sys.file_exists (Filename.concat path f)) && aux f
 
 let rec search paths test =
   match paths with
@@ -99,7 +91,7 @@ let where_in_path ?(warn=true) path filename =
   | (lpe, f) :: l' ->
     let () = match l' with
     | _ :: _ when warn ->
-      msg_warning
+      Feedback.msg_warning
         (str filename ++ str " has been found in" ++ spc () ++
           hov 0 (str "[ " ++
             hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
@@ -155,7 +147,7 @@ let is_in_system_path filename =
     let lpath = CUnix.path_to_list (Sys.getenv "PATH") in
     is_in_path lpath filename
   with Not_found ->
-    msg_warning (str "system variable PATH not found");
+    Feedback.msg_warning (str "system variable PATH not found");
     false
 
 let open_trapping_failure name =
@@ -166,7 +158,7 @@ let open_trapping_failure name =
 let try_remove filename =
   try Sys.remove filename
   with e when Errors.noncritical e ->
-    msg_warning
+    Feedback.msg_warning
       (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
 let error_corrupted file s =
@@ -295,13 +287,13 @@ let with_time time f x =
     let y = f x in
     let tend = get_time() in
     let msg2 = if time then "" else " (successful)" in
-    msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
+    Feedback.msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
     y
   with e ->
     let tend = get_time() in
     let msg = if time then "" else "Finished failing transaction in " in
     let msg2 = if time then "" else " (failure)" in
-    msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
+    Feedback.msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
     raise e
 
 let process_id () =

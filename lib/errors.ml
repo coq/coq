@@ -16,6 +16,13 @@ let push = Backtrace.add_backtrace
 
 exception Anomaly of string option * std_ppcmds (* System errors *)
 
+let _ =
+  let pr = function
+  | Anomaly (s, pp) -> Some ("\"Anomaly: " ^ string_of_ppcmds pp ^ "\"")
+  | _ -> None
+  in
+  Printexc.register_printer pr
+
 let make_anomaly ?label pp =
   Anomaly (label, pp)
 
@@ -137,5 +144,5 @@ let handled e =
 let fatal_error info anomaly =
   let msg = info ++ fnl () in
   pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft msg;
-  flush_all ();
+  Format.pp_print_flush !Pp_control.err_ft ();
   exit (if anomaly then 129 else 1)

@@ -92,7 +92,7 @@ SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk
 .PHONY: all run clean $(SUBSYSTEMS)
 
 all: run
-	$(MAKE) --quiet summary.log
+	$(MAKE) report
 
 run: $(SUBSYSTEMS)
 bugs: $(BUGS)
@@ -151,11 +151,11 @@ summary:
 	}
 
 summary.log:
-	$(SHOW) SUMMARY
+	$(SHOW) BUILDING SUMMARY FILE
 	$(HIDE)$(MAKE) --quiet summary > "$@"
 
 report: summary.log
-	$(HIDE)if grep -F 'Error!' summary.log ; then false; fi
+	$(HIDE)if grep -q -F 'Error!' summary.log ; then echo FAILURES; grep -F 'Error!' summary.log; false; else echo NO FAILURES; fi
 
 #######################################################################
 # Regression (and progression) tests
@@ -242,7 +242,6 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(coqc) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
-	    -async-proofs-private-flags fallback-to-lazy-if-marshal-error=no,fallback-to-lazy-if-slave-dies=no \
 	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
@@ -391,7 +390,7 @@ misc/deps-order.log:
 	} > "$@"
 
 # Sort universes for the whole standard library
-EXPECTED_UNIVERSES := 5
+EXPECTED_UNIVERSES := 4 # Prop is not counted
 universes: misc/universes.log
 misc/universes.log: misc/universes/all_stdlib.v
 	@echo "TEST      misc/universes"
@@ -422,7 +421,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -async-proofs on" 2>&1; \
+	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

@@ -13,7 +13,7 @@ open Xml_datatype
 
 type 'a call
 
-type unknown
+type unknown_call = Unknown : 'a call -> unknown_call
 
 val add         : add_sty         -> add_rty call
 val edit_at     : edit_at_sty     -> edit_at_rty call
@@ -43,7 +43,7 @@ val protocol_version : string
 (** * XML data marshalling *)
 
 val of_call : 'a call -> xml
-val to_call : xml -> unknown call
+val to_call : xml -> unknown_call
 
 val of_answer : 'a call -> 'a value -> xml
 val to_answer : 'a call -> xml -> 'a value
@@ -56,3 +56,17 @@ val document : (xml -> string) -> unit
 val pr_call : 'a call -> string
 val pr_value : 'a value -> string
 val pr_full_value : 'a call -> 'a value -> string
+
+(** * Serialization of rich documents *)
+val of_richpp : Richpp.richpp -> Xml_datatype.xml
+val to_richpp : Xml_datatype.xml -> Richpp.richpp
+
+(** * Serializaiton of feedback  *)
+val of_feedback : Feedback.feedback -> xml
+val to_feedback : xml -> Feedback.feedback
+val is_feedback : xml -> bool
+
+val is_message : xml -> (Feedback.level * Loc.t option * Richpp.richpp) option
+val of_message : Feedback.level -> Loc.t option -> Richpp.richpp -> xml
+(* val to_message : xml -> Feedback.message *)
+

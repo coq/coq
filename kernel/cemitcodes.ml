@@ -29,10 +29,18 @@ let patch_char4 buff pos c1 c2 c3 c4 =
   String.unsafe_set buff (pos + 2) c3;
   String.unsafe_set buff (pos + 3) c4 
   
-let patch_int buff pos n =
+let patch buff (pos, n) =
   patch_char4 buff pos 
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
+
+let patch_int buff patches =
+  (* copy code *before* patching because of nested evaluations:
+     the code we are patching might be called (and thus "concurrently" patched)
+     and results in wrong results. Side-effects... *)
+  let buff = String.copy buff in
+  let () = List.iter (fun p -> patch buff p) patches in
+  buff
 
 (* Buffering of bytecode *)
 
@@ -298,8 +306,6 @@ let init () =
 
 type emitcodes = string
 
-let copy = String.copy
-
 let length = String.length
 
 type to_patch = emitcodes * (patch list) * fv
@@ -323,8 +329,6 @@ let subst_patch s (ri,pos) =
 
 let subst_to_patch s (code,pl,fv) =
   code,List.rev_map (subst_patch s) pl,fv
-
-let subst_pconstant s (kn, u) = (fst (subst_con_kn s kn), u)
 
 type body_code =
   | BCdefined of to_patch
@@ -366,6 +370,8 @@ let to_memory (init_code, fun_code, fv) =
   emit fun_code;
   let code = String.create !out_position in
   String.unsafe_blit !out_buffer 0 code 0 !out_position;
+  (** Later uses of this string are all purely functional *)
+  let code = CString.hcons code in
   let reloc = List.rev !reloc_info in
   Array.iter (fun lbl ->
     (match lbl with

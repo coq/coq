@@ -23,6 +23,7 @@ open Reductionops
 open Cbv
 open Patternops
 open Locus
+open Sigma.Notations
 
 (* Errors *)
 
@@ -53,12 +54,13 @@ let is_evaluable env = function
   | EvalVarRef id -> is_evaluable_var env id
 
 let value_of_evaluable_ref env evref u =
+  let open Context.Named.Declaration in
   match evref with
   | EvalConstRef con -> 
     (try constant_value_in env (con,u)
     with NotEvaluableConst IsProj -> 
       raise (Invalid_argument "value_of_evaluable_ref"))
-  | EvalVarRef id -> Option.get (pi2 (lookup_named id env))
+  | EvalVarRef id -> lookup_named id env |> get_value |> Option.get
 
 let evaluable_of_global_reference env = function
   | ConstRef cst when is_evaluable_const env cst -> EvalConstRef cst
@@ -103,29 +105,29 @@ let destEvalRefU c = match kind_of_term c with
   | Evar ev -> (EvalEvar ev, Univ.Instance.empty)
   | _ -> anomaly (Pp.str "Not an unfoldable reference")
 
-let unsafe_reference_opt_value env sigma eval = 
+let unsafe_reference_opt_value env sigma eval =
   match eval with
   | EvalConst cst ->
     (match (lookup_constant cst env).Declarations.const_body with 
     | Declarations.Def c -> Some (Mod_subst.force_constr c)
     | _ -> None)
   | EvalVar id ->
-      let (_,v,_) = lookup_named id env in
-      v
+      let open Context.Named.Declaration in
+      lookup_named id env |> get_value
   | EvalRel n ->
-      let (_,v,_) = lookup_rel n env in
-      Option.map (lift n) v
+      let open Context.Rel.Declaration in
+      lookup_rel n env |> map_value (lift n) |> get_value
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 let reference_opt_value env sigma eval u = 
   match eval with
   | EvalConst cst -> constant_opt_value_in env (cst,u)
   | EvalVar id ->
-      let (_,v,_) = lookup_named id env in
-      v
+      let open Context.Named.Declaration in
+      lookup_named id env |> get_value
   | EvalRel n ->
-      let (_,v,_) = lookup_rel n env in
-      Option.map (lift n) v
+      let open Context.Rel.Declaration in
+      lookup_rel n env |> map_value (lift n) |> get_value
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 exception NotEvaluable
@@ -258,7 +260,8 @@ let compute_consteval_direct env sigma ref =
     let c',l = whd_betadelta_stack env sigma c in
     match kind_of_term c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
-	  srec (push_rel (id,None,t) env) (n+1) (t::labs) onlyproj g
+          let open Context.Rel.Declaration in
+	  srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) onlyproj g
       | Fix fix when not onlyproj ->
 	  (try check_fix_reversibility labs l fix
 	  with Elimconst -> NotAnElimination)
@@ -277,7 +280,8 @@ let compute_consteval_mutual_fix env sigma ref =
     let nargs = List.length l in
     match kind_of_term c' with
       | Lambda (na,t,g) when List.is_empty l ->
-	  srec (push_rel (na,None,t) env) (minarg+1) (t::labs) ref g
+          let open Context.Rel.Declaration in
+	  srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref g
       | Fix ((lv,i),(names,_,_)) ->
 	  (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
 	  (match compute_consteval_direct env sigma ref with
@@ -371,7 +375,8 @@ let make_elim_fun (names,(nbfix,lv,n)) u largs =
 let dummy = mkProp
 let vfx = Id.of_string "_expanded_fix_"
 let vfun = Id.of_string "_eliminator_function_"
-let venv = val_of_named_context [(vfx, None, dummy); (vfun, None, dummy)]
+let venv = let open Context.Named.Declaration in
+           val_of_named_context [LocalAssum (vfx, dummy); LocalAssum (vfun, dummy)]
 
 (* Mark every occurrence of substituted vars (associated to a function)
    as a problem variable: an evar that can be instantiated either by
@@ -385,7 +390,9 @@ let substl_with_function subst sigma constr =
     if i <= k + Array.length v then
       match v.(i-k-1) with
       | (fx, Some (min, ref)) ->
-        let (sigma, evk) = Evarutil.new_pure_evar venv !evd dummy in
+        let sigma = Sigma.Unsafe.of_evar_map !evd in
+        let Sigma (evk, sigma, _) = Evarutil.new_pure_evar venv sigma dummy in
+        let sigma = Sigma.to_evar_map sigma in
         evd := sigma;
         minargs := Evar.Map.add evk min !minargs;
         lift k (mkEvar (evk, [|fx;ref|]))
@@ -534,9 +541,11 @@ let match_eval_ref_value env sigma constr =
   | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
     Some (constant_value_in env (sp, u))
   | Var id when is_evaluable env (EvalVarRef id) -> 
-    let (_,v,_) = lookup_named id env in v
-  | Rel n -> let (_,v,_) = lookup_rel n env in
-	       Option.map (lift n) v
+     let open Context.Named.Declaration in
+     lookup_named id env |> get_value
+  | Rel n ->
+     let open Context.Rel.Declaration in
+     lookup_rel n env |> map_value (lift n) |> get_value
   | Evar ev -> Evd.existential_opt_value sigma ev
   | _ -> None
 
@@ -601,12 +610,14 @@ let whd_nothing_for_iota env sigma s =
   let rec whrec (x, stack as s) =
     match kind_of_term x with
       | Rel n ->
+          let open Context.Rel.Declaration in
 	  (match lookup_rel n env with
-	     | (_,Some body,_) -> whrec (lift n body, stack)
+	     | LocalDef (_,body,_) -> whrec (lift n body, stack)
 	     | _ -> s)
       | Var id ->
+          let open Context.Named.Declaration in
 	  (match lookup_named id env with
-	     | (_,Some body,_) -> whrec (body, stack)
+	     | LocalDef (_,body,_) -> whrec (body, stack)
 	     | _ -> s)
       | Evar ev ->
 	(try whrec (Evd.existential_value sigma ev, stack)
@@ -809,7 +820,9 @@ let try_red_product env sigma c =
                         simpfun (Stack.zip (f,stack')))
              | _ -> simpfun (appvect (redrec env f, l)))
       | Cast (c,_,_) -> redrec env c
-      | Prod (x,a,b) -> mkProd (x, a, redrec (push_rel (x,None,a) env) b)
+      | Prod (x,a,b) ->
+          let open Context.Rel.Declaration in
+	  mkProd (x, a, redrec (push_rel (LocalAssum (x,a)) env) b)
       | LetIn (x,a,b,t) -> redrec env (subst1 a t)
       | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
       | Proj (p, c) -> 
@@ -940,8 +953,6 @@ let matches_head env sigma c t =
     | Proj (p, _) -> Constr_matching.matches env sigma c (mkConst (Projection.constant p))
     | _ -> raise Constr_matching.PatternMatchingFailure
 
-let is_pattern_meta = function Pattern.PMeta _ -> true | _ -> false
-
 (** FIXME: Specific function to handle projections: it ignores what happens on the
     parameters. This is a temporary fix while rewrite etc... are not up to equivalence
     of the projection and its eta expanded form.
@@ -962,10 +973,12 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
       | _ -> mkApp (app', [| a' |]))
   | _ -> map_constr_with_binders_left_to_right g f acc c
 
-let e_contextually byhead (occs,c) f env sigma t =
+let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
+  let sigma = Sigma.to_evar_map sigma in
+  (** FIXME: we do suspicious things with this evarmap *)
   let evd = ref sigma in
   let rec traverse nested (env,c as envc) t =
     if nowhere_except_in && (!pos > maxocc) then (* Shortcut *) t
@@ -984,8 +997,8 @@ let e_contextually byhead (occs,c) f env sigma t =
         (* Skip inner occurrences for stable counting of occurrences *)
         if locs != [] then
           ignore (traverse_below (Some (!pos-1)) envc t);
-	let evm, t = f subst env !evd t in
-	(evd := evm; t)
+	let Sigma (t, evm, _) = (f subst).e_redfun env (Sigma.Unsafe.of_evar_map !evd) t in
+	(evd := Sigma.to_evar_map evm; t)
       end
       else
 	traverse_below nested envc t
@@ -1004,11 +1017,15 @@ let e_contextually byhead (occs,c) f env sigma t =
   in
   let t' = traverse None (env,c) t in
   if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
-  !evd, t'
+  Sigma.Unsafe.of_pair (t', !evd)
+  end }
 
 let contextually byhead occs f env sigma t =
-  let f' subst env sigma t = sigma, f subst env sigma t in
-    snd (e_contextually byhead occs f' env sigma t)
+  let f' subst = { e_redfun = begin fun env sigma t ->
+    Sigma.here (f subst env (Sigma.to_evar_map sigma) t) sigma
+  end } in
+  let Sigma (c, _, _) = (e_contextually byhead occs f').e_redfun env (Sigma.Unsafe.of_evar_map sigma) t in
+  c
 
 (* linear bindings (following pretty-printer) of the value of name in c.
  * n is the number of the next occurrence of name.
@@ -1054,10 +1071,6 @@ let unfold env sigma name =
     clos_norm_flags (unfold_red name) env sigma
   else
     error (string_of_evaluable_ref env name^" is opaque.")
-
-let is_projection env = function
-  | EvalVarRef _ -> false
-  | EvalConstRef c -> Environ.is_projection c env
 
 (* [unfoldoccs : (readable_constraints -> (int list * full_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
@@ -1131,13 +1144,15 @@ let abstract_scheme env (locc,a) (c, sigma) =
     let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in
       mkLambda (na,ta,c'), sigma'
 
-let pattern_occs loccs_trm env sigma c =
+let pattern_occs loccs_trm = { e_redfun = begin fun env sigma c ->
+  let sigma = Sigma.to_evar_map sigma in
   let abstr_trm, sigma = List.fold_right (abstract_scheme env) loccs_trm (c,sigma) in
   try
     let _ = Typing.unsafe_type_of env sigma abstr_trm in
-      sigma, applist(abstr_trm, List.map snd loccs_trm)
+    Sigma.Unsafe.of_pair (applist(abstr_trm, List.map snd loccs_trm), sigma)
   with Type_errors.TypeError (env',t) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
+  end }
 
 (* Used in several tactics. *)
 
@@ -1163,8 +1178,9 @@ let reduce_to_ind_gen allow_product env sigma t =
     match kind_of_term (fst (decompose_app t)) with
       | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
+	  let open Context.Rel.Declaration in
 	  if allow_product then
-	    elimrec (push_rel (n,None,ty) env) t' ((n,None,ty)::l)
+	    elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
 	  else
 	    errorlabstrm "" (str"Not an inductive definition.")
       | _ ->
@@ -1241,7 +1257,8 @@ let reduce_to_ref_gen allow_product env sigma ref t =
     match kind_of_term c with
       | Prod (n,ty,t') ->
           if allow_product then
-	    elimrec (push_rel (n,None,t) env) t' ((n,None,ty)::l)
+	    let open Context.Rel.Declaration in
+	    elimrec (push_rel (LocalAssum (n,t)) env) t' ((LocalAssum (n,ty))::l)
           else
             error_cannot_recognize ref
       | _ ->
