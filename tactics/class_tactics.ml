@@ -982,6 +982,14 @@ module Search = struct
       occur_existential concl
     else true
 
+  let mark_unresolvables sigma goals =
+    List.fold_left
+      (fun sigma gl ->
+        let evi = Evd.find_undefined sigma gl in
+	let evi' = Typeclasses.mark_unresolvable evi in
+	Evd.add sigma gl evi')
+      sigma goals
+
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
       depending on the dependencies of the goal and the unique/Prop
@@ -1089,10 +1097,14 @@ module Search = struct
             if !typeclasses_debug > 1 then
               Feedback.msg_debug
                 (str"Adding shelved subgoals to the search: " ++
-                   prlist_with_sep spc (pr_ev sigma) goals);
+                 prlist_with_sep spc (pr_ev sigma) goals ++
+		 str" while shelving " ++
+		 prlist_with_sep spc (pr_ev sigma) shelved);
             shelve_goals shelved <*>
               (if List.is_empty goals then tclUNIT ()
-               else with_shelf (Unsafe.tclNEWGOALS goals) >>=
+               else
+	         let sigma' = mark_unresolvables sigma goals in
+	         with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS goals) >>=
                       fun s -> result s i (Some (Option.default 0 k + j)))
           end
         in res <*> tclEVARMAP >>= finish
@@ -1165,8 +1177,6 @@ module Search = struct
     let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
     let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
     search_tac hints depth 1 info
-
-  exception HasShelvedGoals
 
   let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
     let open Proofview in
@@ -1284,11 +1294,11 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
   let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
   if get_typeclasses_compat () = Flags.V8_5 then
-    Tacticals.New.tclORELSE (Proofview.V82.tactic
-       (V85.eauto85 depth ~only_classes ~st dbs))
-     (Proofview.Goal.nf_enter ({ enter = fun gl ->
-       Tacticals.New.tclFAIL 0 (str" typeclasses eauto failed on: " ++
-                    Goal.pr_goal (Proofview.Goal.goal gl))}))
+    Proofview.V82.tactic
+    (fun gl ->
+      try V85.eauto85 depth ~only_classes ~st dbs gl
+      with Not_found ->
+	Refiner.tclFAIL 0 (str"Proof search failed") gl)
   else eauto depth ~only_classes ~st ~dep:true dbs
 
 (** We compute dependencies via a union-find algorithm.

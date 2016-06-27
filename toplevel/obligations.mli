@@ -33,7 +33,8 @@ val sort_dependencies : (Evar.t * evar_info * Evar.Set.t) list -> (Evar.t * evar
    evars contexts, object and type *)
 val eterm_obligations : env -> Id.t -> evar_map -> int ->
   ?status:Evar_kinds.obligation_definition_status -> constr -> types ->
-  (Id.t * types * Evar_kinds.t Loc.located * Evar_kinds.obligation_definition_status * Int.Set.t *
+  (Id.t * types * Evar_kinds.t Loc.located *
+     (bool * Evar_kinds.obligation_definition_status) * Int.Set.t *
       unit Proofview.tactic option) array
     (* Existential key, obl. name, type as product, 
        location of the original evar, associated tactic,
@@ -46,7 +47,7 @@ val eterm_obligations : env -> Id.t -> evar_map -> int ->
 
 type obligation_info =
   (Id.t * Term.types * Evar_kinds.t Loc.located *
-      Evar_kinds.obligation_definition_status * Int.Set.t * unit Proofview.tactic option) array
+      (bool * Evar_kinds.obligation_definition_status) * Int.Set.t * unit Proofview.tactic option) array
     (* ident, type, location, (opaque or transparent, expand or define),
        dependencies, tactic to solve it *)
 
@@ -56,9 +57,6 @@ type progress = (* Resolution status of a program *)
   | Defined of global_reference (* Defined as id *)
 
 val default_tactic : unit Proofview.tactic ref
-
-val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
-val get_proofs_transparency : unit -> bool
 
 val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types -> 
   Evd.evar_universe_context ->

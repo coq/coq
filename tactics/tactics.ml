@@ -119,12 +119,12 @@ let _ =
 
 (* Shrinking of abstract proofs. *)
 
-let shrink_abstract = ref false
+let shrink_abstract = ref true
 
 let _ =
   declare_bool_option
     { optsync  = true;
-      optdepr  = false;
+      optdepr  = true;
       optname  = "shrinking of abstracted proofs";
       optkey   = ["Shrink"; "Abstract"];
       optread  = (fun () -> !shrink_abstract) ;
@@ -4774,7 +4774,7 @@ let rec shrink ctx sign c t accu =
   match ctx, sign with
   | [], [] -> (c, t, accu)
   | p :: ctx, decl :: sign ->
-      if noccurn 1 c then
+      if noccurn 1 c && noccurn 1 t then
         let c = subst1 mkProp c in
         let t = subst1 mkProp t in
         shrink ctx sign c t accu
