@@ -8,6 +8,9 @@ Coq is compiled with -safe-string enabled and requires plugins to do
 the same. This means that code using `String` in an imperative way
 will fail to compile now. They should switch to `Bytes.t`
 
+Configure supports passing flambda options, use `-flambda-opts OPTS`
+with a flambda-enabled Ocaml to tweak the compilation to your taste.
+
 * ML API *
 
 Added two functions for declaring hooks to be executed in reduction

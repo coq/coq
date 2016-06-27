@@ -32,6 +32,8 @@ let supported_suffix f = match CUnix.get_extension f with
   | ".ml" | ".cmx" | ".cmo" | ".cmxa" | ".cma" | ".c" -> true
   | _ -> false
 
+let supported_flambda_option f = List.mem f Coq_config.flambda_flags
+
 (** From bytecode extension to native
 *)
 let native_suffix f = match CUnix.get_extension f with
@@ -187,6 +189,7 @@ let parse_args () =
 	end
 
     | ("-h"|"-help"|"--help") :: _ -> usage ()
+    | f :: rem when supported_flambda_option f -> parse (op,fl) rem
     | f :: rem when supported_suffix f -> parse (op,f::fl) rem
     | f :: _ -> prerr_endline ("Don't know what to do with " ^ f); exit 1
   in
@@ -275,7 +278,7 @@ let main () =
   let prog = if !opt then "opt" else "ocamlc" in
   (* Which arguments ? *)
   if !opt && !top then failwith "no custom toplevel in native code!";
-  let flags = if !opt then [] else Coq_config.vmbyteflags in
+  let flags = if !opt then Coq_config.flambda_flags else Coq_config.vmbyteflags in
   let topstart = if !top then [ "topstart.cmo" ] else [] in
   let (modules, tolink) = files_to_link userfiles in
   let main_file = create_tmp_main_file modules in

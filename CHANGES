@@ -1,3 +1,15 @@
+Changes from 8.7+beta2 to 8.7.0
+===============================
+
+OCaml
+
+- Users can pass specific flags to the OCaml optimizing compiler by
+  -using the flambda-opts configure-time option.
+
+  Beware that compiling Coq with a flambda-enabled compiler is
+  experimental and may require large amounts of RAM and CPU, see
+  INSTALL for more details.
+
 Changes from 8.7+beta1 to 8.7+beta2
 ===================================
 

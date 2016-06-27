@@ -69,6 +69,8 @@ val gtk_platform : [`QUARTZ | `WIN32 | `X11]
 val has_natdynlink : bool
 val natdynlinkflag : string (* special cases of natdynlink (e.g. MacOS 10.5) *)
 
+val flambda_flags : string list
+
 val wwwcoq : string
 val wwwrefman : string
 val wwwbugtracker : string
