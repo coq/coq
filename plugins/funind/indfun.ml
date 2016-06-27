@@ -225,7 +225,7 @@ let prepare_body ((name,_,args,types,_),_) rt =
   (fun_args,rt')
 
 let process_vernac_interp_error e =
-  fst (Cerrors.process_vernac_interp_error (e, Exninfo.null))
+  fst (ExplainErr.process_vernac_interp_error (e, Exninfo.null))
 
 let warn_funind_cannot_build_inversion =
   CWarnings.create ~name:"funind-cannot-build-inversion" ~category:"funind"

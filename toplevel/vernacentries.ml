@@ -2009,7 +2009,7 @@ let with_fail b f =
            | e ->
               let e = CErrors.push e in
               raise (HasFailed (CErrors.iprint
-                (Cerrors.process_vernac_interp_error ~allow_uncaught:false ~with_header:false e))))
+                (ExplainErr.process_vernac_interp_error ~allow_uncaught:false ~with_header:false e))))
         ()
     with e when CErrors.noncritical e ->
       let (e, _) = CErrors.push e in

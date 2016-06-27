@@ -27,7 +27,7 @@ let observe strm =
 let do_observe_tac s tac g =
  try let v = tac g in (* msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); *) v
  with e ->
-   let e = Cerrors.process_vernac_interp_error e in
+   let e = ExplainErr.process_vernac_interp_error e in
    let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
    msg_debug (str "observation "++ s++str " raised exception " ++
 	    Errors.print e ++ str " on goal " ++ goal );
@@ -76,7 +76,7 @@ let do_observe_tac s tac g =
   with reraise ->
     let reraise = CErrors.push reraise in
     if not (Stack.is_empty debug_queue)
-    then print_debug_queue (Some (fst (Cerrors.process_vernac_interp_error reraise)));
+    then print_debug_queue (Some (fst (ExplainErr.process_vernac_interp_error reraise)));
     iraise reraise
 
 let observe_tac_stream s tac g =
