@@ -1,5 +1,5 @@
 open Printer
-open Errors
+open CErrors
 open Util
 open Term
 open Vars
@@ -358,7 +358,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
      Don't forget to close the goal if an error is raised !!!!
   *)
   save false new_princ_name entry g_kind hook
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     begin
       begin
 	try
@@ -370,7 +370,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 	  then Pfedit.delete_current_proof ()
 	  else ()
 	  else ()
-	with e when Errors.noncritical e -> ()
+	with e when CErrors.noncritical e -> ()
       end;
       raise (Defining_principle e)
     end
@@ -510,7 +510,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
 	0
 	(prove_princ_for_struct evd false 0 (Array.of_list (List.map fst funs)))
 	(fun _ _ _ -> ())
-    with e when Errors.noncritical e ->
+    with e when CErrors.noncritical e ->
        begin
 	 begin
 	   try
@@ -522,7 +522,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
 		  then Pfedit.delete_current_proof ()
 		  else ()
 	     else ()
-	   with e when Errors.noncritical e -> ()
+	   with e when CErrors.noncritical e -> ()
 	 end;
 	 raise (Defining_principle e)
        end

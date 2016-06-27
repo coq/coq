@@ -9,7 +9,7 @@
 (*s Production of Ocaml syntax. *)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -203,7 +203,7 @@ let rec pp_expr par env args =
 	   let args = List.skipn (projection_arity r) args in
 	   let record = List.hd args in
 	   pp_apply (record ++ str "." ++ pp_global Term r) par (List.tl args)
-	 with e when Errors.noncritical e -> apply (pp_global Term r))
+	 with e when CErrors.noncritical e -> apply (pp_global Term r))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
 	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args

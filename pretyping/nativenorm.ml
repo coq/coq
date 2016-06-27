@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 open Pp
-open Errors
+open CErrors
 open Term
 open Vars
 open Environ
@@ -178,7 +178,7 @@ let rec nf_val env v typ =
       let name,dom,codom = 
 	try decompose_prod env typ
 	with DestKO ->
-          Errors.anomaly
+          CErrors.anomaly
             (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let env = push_rel (LocalAssum (name,dom)) env in
@@ -224,7 +224,7 @@ and nf_args env accu t =
     let _,dom,codom =
       try decompose_prod env t with
 	DestKO ->
-	Errors.anomaly
+	CErrors.anomaly
 	  (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
     in
     let c = nf_val env arg dom in
@@ -241,7 +241,7 @@ and nf_bargs env b t =
       let _,dom,codom =
 	try decompose_prod env !t with
 	  DestKO ->
-	  Errors.anomaly
+	  CErrors.anomaly
 	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let c = nf_val env (block_field b i) dom in
@@ -352,7 +352,7 @@ and  nf_predicate env ind mip params v pT =
       let name,dom,codom =
 	try decompose_prod env pT with
 	  DestKO ->
-	  Errors.anomaly
+	  CErrors.anomaly
 	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let dep,body = 

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (*i*)
-open Errors
+open CErrors
 open Util
 open Pp
 open Bigint
@@ -208,7 +208,7 @@ let remove_delimiters scope =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = None } in
   match sc.delimiters with
-    | None -> Errors.errorlabstrm "" (str "No bound key for scope " ++ str scope ++ str ".")
+    | None -> CErrors.errorlabstrm "" (str "No bound key for scope " ++ str scope ++ str ".")
     | Some key ->
        scope_map := String.Map.add scope newsc !scope_map;
        try
@@ -1056,6 +1056,6 @@ let with_notation_protection f x =
   let fs = freeze false in
   try let a = f x in unfreeze fs; a
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     let () = unfreeze fs in
     iraise reraise

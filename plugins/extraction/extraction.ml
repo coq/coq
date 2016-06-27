@@ -684,7 +684,7 @@ and extract_cst_app env mle mlt kn u args =
 	let l,l' = List.chop (projection_arity (ConstRef kn)) mla in
 	if not (List.is_empty l') then (List.map (fun _ -> MLexn "Proj Args") l) @ l'
 	else mla
-      with e when Errors.noncritical e -> mla
+      with e when CErrors.noncritical e -> mla
   in
   (* For strict languages, purely logical signatures lead to a dummy lam
      (except when [Kill Ktype] everywhere). So a [MLdummy] is left

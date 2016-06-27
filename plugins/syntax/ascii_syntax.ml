@@ -11,7 +11,7 @@ let __coq_plugin_name = "ascii_syntax_plugin"
 let () = Mltop.add_known_module __coq_plugin_name
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Glob_term

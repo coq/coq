@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Pp
 open Util
 open Names
@@ -742,7 +742,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 		 then Evd.set_leq_sort curenv sigma s1 s2 
 		 else Evd.set_eq_sort curenv sigma s1 s2
 	       in (sigma', metasubst, evarsubst)
-	     with e when Errors.noncritical e ->
+	     with e when CErrors.noncritical e ->
                error_cannot_unify curenv sigma (m,n))
 
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
@@ -1138,11 +1138,11 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
       else (right, st2, res)
   | (IsSuperType,IsSubType) ->
     (try (left, IsSubType, unify_0 env sigma CUMUL flags c2 c1)
-     with e when Errors.noncritical e ->
+     with e when CErrors.noncritical e ->
        (right, IsSubType, unify_0 env sigma CUMUL flags c1 c2))
   | (IsSubType,IsSuperType) ->
     (try (left, IsSuperType, unify_0 env sigma CUMUL flags c1 c2)
-     with e when Errors.noncritical e ->
+     with e when CErrors.noncritical e ->
        (right, IsSuperType, unify_0 env sigma CUMUL flags c2 c1))
     
 (* Unification
@@ -1353,7 +1353,7 @@ let w_merge env with_types flags (evd,metas,evars) =
 	let rec process_eqns failures = function
 	  | (mv,status,c)::eqns ->
               (match (try Inl (unify_type env evd flags mv status c)
-		      with e when Errors.noncritical e -> Inr e)
+		      with e when CErrors.noncritical e -> Inr e)
 	       with 
 	       | Inr e -> process_eqns (((mv,status,c),e)::failures) eqns
 	       | Inl (evd,metas,evars) ->
@@ -1555,7 +1555,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
         raise (NotUnifiable (Some (c1,c2,e)))
     (** MS: This is pretty bad, it catches Not_found for example *)
-    | e when Errors.noncritical e -> raise (NotUnifiable None) in
+    | e when CErrors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with
     | Some (evd,c1,x), Some (_,c2,_) ->

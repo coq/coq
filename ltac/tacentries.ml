@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Libobject
@@ -429,7 +429,7 @@ let register_ltac local tacl =
         let kn = Lib.make_kn id in
         let id_pp = pr_id id in
         let () = if is_defined_tac kn then
-          Errors.user_err_loc (loc, "",
+          CErrors.user_err_loc (loc, "",
             str "There is already an Ltac named " ++ id_pp ++ str".")
         in
         let is_shadowed =
@@ -437,7 +437,7 @@ let register_ltac local tacl =
             match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
             | Tacexpr.TacArg _ -> false
             | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
-          with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
+          with e when CErrors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
         in
         let () = if is_shadowed then warn_unusable_identifier id in
         NewTac id, body
@@ -446,7 +446,7 @@ let register_ltac local tacl =
         let kn =
           try Nametab.locate_tactic (snd (qualid_of_reference ident))
           with Not_found ->
-            Errors.user_err_loc (loc, "",
+            CErrors.user_err_loc (loc, "",
                         str "There is no Ltac named " ++ pr_reference ident ++ str ".")
         in
         UpdateTac kn, body

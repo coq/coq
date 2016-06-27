@@ -64,17 +64,17 @@ exception NoSuchGoals of int * int
 
 exception FullyUnfocused
 
-let _ = Errors.register_handler begin function
+let _ = CErrors.register_handler begin function
   | CannotUnfocusThisWay ->
-    Errors.error "This proof is focused, but cannot be unfocused this way"
+    CErrors.error "This proof is focused, but cannot be unfocused this way"
   | NoSuchGoals (i,j) when Int.equal i j ->
-      Errors.errorlabstrm "Focus" Pp.(str"No such goal (" ++ int i ++ str").")
+      CErrors.errorlabstrm "Focus" Pp.(str"No such goal (" ++ int i ++ str").")
   | NoSuchGoals (i,j) ->
-      Errors.errorlabstrm "Focus" Pp.(
+      CErrors.errorlabstrm "Focus" Pp.(
         str"Not every goal in range ["++ int i ++ str","++int j++str"] exist."
       )
-  | FullyUnfocused -> Errors.error "The proof is not focused"
-  | _ -> raise Errors.Unhandled
+  | FullyUnfocused -> CErrors.error "The proof is not focused"
+  | _ -> raise CErrors.Unhandled
 end
 
 let check_cond_kind c k =
@@ -300,12 +300,12 @@ exception UnfinishedProof
 exception HasShelvedGoals
 exception HasGivenUpGoals
 exception HasUnresolvedEvar
-let _ = Errors.register_handler begin function
-  | UnfinishedProof -> Errors.error "Some goals have not been solved."
-  | HasShelvedGoals -> Errors.error "Some goals have been left on the shelf."
-  | HasGivenUpGoals -> Errors.error "Some goals have been given up."
-  | HasUnresolvedEvar -> Errors.error "Some existential variables are uninstantiated."
-  | _ -> raise Errors.Unhandled
+let _ = CErrors.register_handler begin function
+  | UnfinishedProof -> CErrors.error "Some goals have not been solved."
+  | HasShelvedGoals -> CErrors.error "Some goals have been left on the shelf."
+  | HasGivenUpGoals -> CErrors.error "Some goals have been given up."
+  | HasUnresolvedEvar -> CErrors.error "Some existential variables are uninstantiated."
+  | _ -> raise CErrors.Unhandled
 end
 
 let return p =
@@ -397,9 +397,9 @@ module V82 = struct
         let evl = Evarutil.non_instantiated sigma in
         let evl = Evar.Map.bindings evl in
         if (n <= 0) then
-          Errors.error "incorrect existential variable index"
+          CErrors.error "incorrect existential variable index"
         else if CList.length evl < n then
-          Errors.error "not so many uninstantiated existential variables"
+          CErrors.error "not so many uninstantiated existential variables"
         else
           CList.nth evl (n-1)
       in

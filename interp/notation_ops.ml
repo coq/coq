@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -111,7 +111,7 @@ let rec eq_notation_constr t1 t2 = match t1, t2 with
 (* Re-interpret a notation as a glob_constr, taking care of binders   *)
 
 let name_to_ident = function
-  | Anonymous -> Errors.error "This expression should be a simple identifier."
+  | Anonymous -> CErrors.error "This expression should be a simple identifier."
   | Name id -> id
 
 let to_id g e id = let e,na = g e (Name id) in e,name_to_ident na

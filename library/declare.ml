@@ -9,7 +9,7 @@
 (** This module is about the low-level declaration of logical objects *)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Libnames
@@ -149,7 +149,7 @@ let cache_constant ((sp,kn), obj) =
       obj.cst_was_seff <- false;  
       if Global.exists_objlabel (Label.of_id (basename sp))
       then constant_of_kn kn
-      else Errors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp))
+      else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp))
     end else
       let () = check_exists sp in
       let kn', exported = Global.add_constant dir id obj.cst_decl in

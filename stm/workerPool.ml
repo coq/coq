@@ -52,7 +52,7 @@ let master_handshake worker_id ic oc =
       Printf.eprintf "Handshake with %s failed: protocol mismatch\n" worker_id;
       exit 1;
     end
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     Printf.eprintf "Handshake with %s failed: %s\n"
       worker_id (Printexc.to_string e);
     exit 1
@@ -65,7 +65,7 @@ let worker_handshake slave_ic slave_oc =
       exit 1;
     end;
     Marshal.to_channel slave_oc v []; flush slave_oc;
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     prerr_endline ("Handshake failed: " ^ Printexc.to_string e);
     exit 1
 

@@ -8,7 +8,7 @@
 
 open Pp
 open Compat
-open Errors
+open CErrors
 open Util
 open Names
 open Constrexpr

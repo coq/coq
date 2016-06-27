@@ -8,7 +8,7 @@
 
 open Names
 open Globnames
-open Errors
+open CErrors
 open Util
 open Miniml
 open Table

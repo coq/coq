@@ -50,9 +50,9 @@ let is_nowhere = function
 
 let simple_clause_of enum_hyps cl =
   let error_occurrences () =
-    Errors.error "This tactic does not support occurrences selection" in
+    CErrors.error "This tactic does not support occurrences selection" in
   let error_body_selection () =
-    Errors.error "This tactic does not support body selection" in
+    CErrors.error "This tactic does not support body selection" in
   let hyps =
     match cl.onhyps with
     | None ->
@@ -84,7 +84,7 @@ let concrete_clause_of enum_hyps cl =
 (** Miscellaneous functions *)
 
 let out_arg = function
-  | Misctypes.ArgVar _ -> Errors.anomaly (Pp.str "Unevaluated or_var variable")
+  | Misctypes.ArgVar _ -> CErrors.anomaly (Pp.str "Unevaluated or_var variable")
   | Misctypes.ArgArg x -> x
 
 let occurrences_of_hyp id cls =

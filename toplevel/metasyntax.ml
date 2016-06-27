@@ -8,7 +8,7 @@
 
 open Pp
 open Flags
-open Errors
+open CErrors
 open Util
 open Names
 open Constrexpr
@@ -184,7 +184,7 @@ let parse_format ((loc, str) : lstring) =
     else
       error "Empty format."
   with reraise ->
-    let (e, info) = Errors.push reraise in
+    let (e, info) = CErrors.push reraise in
     let info = Loc.add_loc info loc in
     iraise (e, info)
 
@@ -1057,7 +1057,7 @@ let with_lib_stk_protection f x =
   let fs = Lib.freeze `No in
   try let a = f x in Lib.unfreeze fs; a
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     let () = Lib.unfreeze fs in
     iraise reraise
 

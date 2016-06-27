@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -59,7 +59,7 @@ let is_unification_error = function
 | _ -> false
 
 let catchable_exception = function
-  | Errors.UserError _ | TypeError _
+  | CErrors.UserError _ | TypeError _
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _
   (* reduction errors *)

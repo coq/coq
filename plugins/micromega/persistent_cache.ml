@@ -92,7 +92,7 @@ let read_key_elem inch =
     Some (Marshal.from_channel inch)
   with
     | End_of_file -> None
-    | e when Errors.noncritical e -> raise InvalidTableFormat
+    | e when CErrors.noncritical e -> raise InvalidTableFormat
 
 (** 
     We used to only lock/unlock regions.

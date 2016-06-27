@@ -42,7 +42,7 @@ let () =
 
 let assert_not_parsing () =
   if !Flags.we_are_parsing then
-    Errors.anomaly (
+    CErrors.anomaly (
       Pp.strbrk"The global environment cannot be accessed during parsing")
 
 let safe_env () = assert_not_parsing(); !global_env

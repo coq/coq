@@ -90,7 +90,7 @@ let pr_intro_as_pat _prc _ _ pat =
 
 let out_disjunctive = function
   | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)
-  | _ -> Errors.error "Disjunctive or conjunctive intro pattern expected."
+  | _ -> CErrors.error "Disjunctive or conjunctive intro pattern expected."
 
 ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 |   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ]
@@ -199,11 +199,11 @@ let warning_error names e =
   match e with
     | Building_graph e ->
        let names = pr_enum Libnames.pr_reference names in
-       let error = if do_observe () then (spc () ++ Errors.print e) else mt () in
+       let error = if do_observe () then (spc () ++ CErrors.print e) else mt () in
        warn_cannot_define_graph (names,error)
     | Defining_principle e ->
        let names = pr_enum Libnames.pr_reference names in
-       let error = if do_observe () then Errors.print e else mt () in
+       let error = if do_observe () then CErrors.print e else mt () in
        warn_cannot_define_principle (names,error)
     | _ -> raise e
 
@@ -227,15 +227,15 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 		  ;
 		    try Functional_principles_types.build_scheme fas
 		    with Functional_principles_types.No_graph_found ->
-		      Errors.error ("Cannot generate induction principle(s)")
-		      | e when Errors.noncritical e ->
+		      CErrors.error ("Cannot generate induction principle(s)")
+		      | e when CErrors.noncritical e ->
 			  let names = List.map (fun (_,na,_) -> na) fas in
 			  warning_error names e
 
 		  end
 	      | _ -> assert false (* we can only have non empty  list *)
 	  end
-	  | e when Errors.noncritical e ->
+	  | e when CErrors.noncritical e ->
 	      let names = List.map (fun (_,na,_) -> na) fas in
 	      warning_error names e
       end

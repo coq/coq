@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -779,7 +779,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
 	let scopes = find_arguments_scope ref in
 	Dumpglob.dump_reference loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
 	GRef (loc, ref, None), impls, scopes, []
-      with e when Errors.noncritical e ->
+      with e when CErrors.noncritical e ->
 	(* [id] a goal variable *)
 	GVar (loc,id), [], [], []
 

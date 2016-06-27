@@ -309,9 +309,9 @@ let tclIFCATCH a s f =
 let tclONCE = Proof.once
 
 exception MoreThanOneSuccess
-let _ = Errors.register_handler begin function
-  | MoreThanOneSuccess -> Errors.error "This tactic has more than one success."
-  | _ -> raise Errors.Unhandled
+let _ = CErrors.register_handler begin function
+  | MoreThanOneSuccess -> CErrors.error "This tactic has more than one success."
+  | _ -> raise CErrors.Unhandled
 end
 
 (** [tclEXACTLY_ONCE e t] succeeds as [t] if [t] has exactly one
@@ -362,12 +362,12 @@ let set_nosuchgoals_hook f = nosuchgoals_hook := f
 
 
 (* This uses the hook above *)
-let _ = Errors.register_handler begin function
+let _ = CErrors.register_handler begin function
   | NoSuchGoals n ->
     let suffix = !nosuchgoals_hook n in
-    Errors.errorlabstrm ""
+    CErrors.errorlabstrm ""
       (str "No such " ++ str (String.plural n "goal") ++ str "." ++ suffix)
-  | _ -> raise Errors.Unhandled
+  | _ -> raise CErrors.Unhandled
 end
 
 (** [tclFOCUS_gen nosuchgoal i j t] applies [t] in a context where
@@ -443,15 +443,15 @@ let tclFOCUSID id t =
 (** {7 Dispatching on goals} *)
 
 exception SizeMismatch of int*int
-let _ = Errors.register_handler begin function
+let _ = CErrors.register_handler begin function
   | SizeMismatch (i,_) ->
       let open Pp in
       let errmsg =
         str"Incorrect number of goals" ++ spc() ++
         str"(expected "++int i++str(String.plural i " tactic") ++ str")."
       in
-      Errors.errorlabstrm "" errmsg
-  | _ -> raise Errors.Unhandled
+      CErrors.errorlabstrm "" errmsg
+  | _ -> raise CErrors.Unhandled
 end
 
 (** A variant of [Monad.List.iter] where we iter over the focused list
@@ -844,12 +844,12 @@ let tclPROGRESS t =
   if not test then
     tclUNIT res
   else
-    tclZERO (Errors.UserError ("Proofview.tclPROGRESS" , Pp.str"Failed to progress."))
+    tclZERO (CErrors.UserError ("Proofview.tclPROGRESS" , Pp.str"Failed to progress."))
 
 exception Timeout
-let _ = Errors.register_handler begin function
-  | Timeout -> Errors.errorlabstrm "Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
-  | _ -> Pervasives.raise Errors.Unhandled
+let _ = CErrors.register_handler begin function
+  | Timeout -> CErrors.errorlabstrm "Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
+  | _ -> Pervasives.raise CErrors.Unhandled
 end
 
 let tclTIMEOUT n t =
@@ -983,7 +983,7 @@ let goal_extra evars gl =
 
 let catchable_exception = function
   | Logic_monad.Exception _ -> false
-  | e -> Errors.noncritical e
+  | e -> CErrors.noncritical e
 
 
 module Goal = struct
@@ -1029,7 +1029,7 @@ module Goal = struct
         let (gl, sigma) = nf_gmake env sigma goal in
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f.enter gl))
       with e when catchable_exception e ->
-        let (e, info) = Errors.push e in
+        let (e, info) = CErrors.push e in
         tclZERO ~info e
     end
     end
@@ -1052,7 +1052,7 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try f (gmake env sigma goal)
       with e when catchable_exception e ->
-        let (e, info) = Errors.push e in
+        let (e, info) = CErrors.push e in
         tclZERO ~info e
     end
     end
@@ -1071,7 +1071,7 @@ module Goal = struct
         let sigma = Sigma.to_evar_map sigma in
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) tac)
       with e when catchable_exception e ->
-        let (e, info) = Errors.push e in
+        let (e, info) = CErrors.push e in
         tclZERO ~info e
     end
     end
@@ -1087,7 +1087,7 @@ module Goal = struct
         let sigma = Sigma.to_evar_map sigma in
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) tac)
       with e when catchable_exception e ->
-        let (e, info) = Errors.push e in
+        let (e, info) = CErrors.push e in
         tclZERO ~info e
     end
     end
@@ -1175,7 +1175,7 @@ module V82 = struct
       InfoL.leaf (Info.Tactic (fun () -> Pp.str"<unknown>")) >>
       Pv.set { ps with solution = evd; comb = sgs; }
     with e when catchable_exception e ->
-      let (e, info) = Errors.push e in
+      let (e, info) = CErrors.push e in
       tclZERO ~info e
 
 
@@ -1220,7 +1220,7 @@ module V82 = struct
       let (_,final,_,_) = apply (goal_env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
     with Logic_monad.TacticFailure e as src ->
-      let (_, info) = Errors.push src in
+      let (_, info) = CErrors.push src in
       iraise (e, info)
 
   let put_status = Status.put
@@ -1230,7 +1230,7 @@ module V82 = struct
   let wrap_exceptions f =
     try f ()
     with e when catchable_exception e ->
-      let (e, info) = Errors.push e in tclZERO ~info e
+      let (e, info) = CErrors.push e in tclZERO ~info e
 
 end
 

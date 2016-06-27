@@ -9,7 +9,7 @@
 (* Concrete syntax of the mathematical vernacular MV V2.6 *)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Flags
 open Names
@@ -353,7 +353,7 @@ let dump_universes_gen g s =
     close ();
     Feedback.msg_info (str "Universes written to file \"" ++ str s ++ str "\".")
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     close ();
     iraise reraise
 
@@ -411,7 +411,7 @@ let dump_global r =
   try
     let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Constrarg.loc_of_or_by_notation loc_of_reference r) gr
-  with e when Errors.noncritical e -> ()
+  with e when CErrors.noncritical e -> ()
 (**********)
 (* Syntax *)
 
@@ -548,9 +548,9 @@ let vernac_inductive poly lo finite indl =
       indl;
   match indl with
   | [ ( _ , _ , _ ,Record, Constructors _ ),_ ] ->
-      Errors.error "The Record keyword cannot be used to define a variant type. Use Variant instead."
+      CErrors.error "The Record keyword cannot be used to define a variant type. Use Variant instead."
   | [ (_ , _ , _ ,Variant, RecordDecl _),_ ] ->
-      Errors.error "The Variant keyword cannot be used to define a record type. Use Record instead."
+      CErrors.error "The Variant keyword cannot be used to define a record type. Use Record instead."
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record (match b with Class true -> Class false | _ -> b)
        poly finite id bl c oc fs
@@ -561,16 +561,16 @@ let vernac_inductive poly lo finite indl =
   	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
       in vernac_record (Class true) poly finite id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
-      Errors.error "Definitional classes must have a single method"
+      CErrors.error "Definitional classes must have a single method"
   | [ ( id , bl , c , Class false, Constructors _), _ ] ->
-      Errors.error "Inductive classes not supported"
+      CErrors.error "Inductive classes not supported"
   | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] ->
-      Errors.error "where clause not supported for (co)inductive records"
+      CErrors.error "where clause not supported for (co)inductive records"
   | _ -> let unpack = function
       | ( (false, id) , bl , c , _ , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
       | ( (true,_),_,_,_,Constructors _),_ ->
-          Errors.error "Variant types do not handle the \"> Name\" syntax, which is reserved for records. Use the \":>\" syntax on constructors instead."
-      | _ -> Errors.error "Cannot handle mutually (co)inductive records."
+          CErrors.error "Variant types do not handle the \"> Name\" syntax, which is reserved for records. Use the \":>\" syntax on constructors instead."
+      | _ -> CErrors.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
     do_mutual_inductive indl poly lo finite
@@ -900,7 +900,7 @@ let vernac_chdir = function
 	  (* Cd is typically used to control the output directory of
 	  extraction. A failed Cd could lead to overwriting .ml files
 	  so we make it an error. *)
-	  Errors.error ("Cd failed: " ^ err)
+	  CErrors.error ("Cd failed: " ^ err)
       end;
       if_verbose Feedback.msg_info (str (Sys.getcwd()))
 
@@ -1654,7 +1654,7 @@ let vernac_focus gln =
     match gln with
       | None -> Proof.focus focus_command_cond () 1 p
       | Some 0 ->
-         Errors.error "Invalid goal number: 0. Goal numbering starts with 1."
+         CErrors.error "Invalid goal number: 0. Goal numbering starts with 1."
       | Some n ->
          Proof.focus focus_command_cond () n p)
 
@@ -1878,12 +1878,12 @@ let interp ?proof ~loc locality poly c =
   | VernacComments l -> if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
-  | VernacAbort id -> Errors.errorlabstrm "" (str "Abort cannot be used through the Load command")
-  | VernacAbortAll -> Errors.errorlabstrm "" (str "AbortAll cannot be used through the Load command")
-  | VernacRestart -> Errors.errorlabstrm "" (str "Restart cannot be used through the Load command")
-  | VernacUndo _ -> Errors.errorlabstrm "" (str "Undo cannot be used through the Load command")
-  | VernacUndoTo _ -> Errors.errorlabstrm "" (str "UndoTo cannot be used through the Load command")
-  | VernacBacktrack _ -> Errors.errorlabstrm "" (str "Backtrack cannot be used through the Load command")
+  | VernacAbort id -> CErrors.errorlabstrm "" (str "Abort cannot be used through the Load command")
+  | VernacAbortAll -> CErrors.errorlabstrm "" (str "AbortAll cannot be used through the Load command")
+  | VernacRestart -> CErrors.errorlabstrm "" (str "Restart cannot be used through the Load command")
+  | VernacUndo _ -> CErrors.errorlabstrm "" (str "Undo cannot be used through the Load command")
+  | VernacUndoTo _ -> CErrors.errorlabstrm "" (str "UndoTo cannot be used through the Load command")
+  | VernacBacktrack _ -> CErrors.errorlabstrm "" (str "Backtrack cannot be used through the Load command")
   
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t,None)] false
@@ -1939,7 +1939,7 @@ let check_vernac_supports_locality c l =
     | VernacDeclareReduction _
     | VernacExtend _ 
     | VernacInductive _) -> ()
-  | Some _, _ -> Errors.error "This command does not support Locality"
+  | Some _, _ -> CErrors.error "This command does not support Locality"
 
 (* Vernaculars that take a polymorphism flag *)
 let check_vernac_supports_polymorphism c p =
@@ -1953,7 +1953,7 @@ let check_vernac_supports_polymorphism c p =
     | VernacInstance _ | VernacDeclareInstances _
     | VernacHints _ | VernacContext _
     | VernacExtend _ | VernacUniverse _ | VernacConstraint _) -> ()
-  | Some _, _ -> Errors.error "This command does not support Polymorphism"
+  | Some _, _ -> CErrors.error "This command does not support Polymorphism"
 
 let enforce_polymorphism = function
   | None -> Flags.is_universe_polymorphism ()
@@ -2007,12 +2007,12 @@ let with_fail b f =
            with
            | HasNotFailed as e -> raise e
            | e ->
-              let e = Errors.push e in
-              raise (HasFailed (Errors.iprint
+              let e = CErrors.push e in
+              raise (HasFailed (CErrors.iprint
                 (Cerrors.process_vernac_interp_error ~allow_uncaught:false ~with_header:false e))))
         ()
-    with e when Errors.noncritical e -> 
-      let (e, _) = Errors.push e in
+    with e when CErrors.noncritical e ->
+      let (e, _) = CErrors.push e in
       match e with
       | HasNotFailed ->
           errorlabstrm "Fail" (str "The command has not failed!")
@@ -2026,13 +2026,13 @@ let interp ?(verbosely=true) ?proof (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
   let rec aux ?locality ?polymorphism isprogcmd = function
     | VernacProgram c when not isprogcmd -> aux ?locality ?polymorphism true c
-    | VernacProgram _ -> Errors.error "Program mode specified twice"
+    | VernacProgram _ -> CErrors.error "Program mode specified twice"
     | VernacLocal (b, c) when Option.is_empty locality -> 
       aux ~locality:b ?polymorphism isprogcmd c
     | VernacPolymorphic (b, c) when polymorphism = None -> 
       aux ?locality ~polymorphism:b isprogcmd c
-    | VernacPolymorphic (b, c) -> Errors.error "Polymorphism specified twice"
-    | VernacLocal _ -> Errors.error "Locality specified twice"
+    | VernacPolymorphic (b, c) -> CErrors.error "Polymorphism specified twice"
+    | VernacLocal _ -> CErrors.error "Locality specified twice"
     | VernacStm (Command c) -> aux ?locality ?polymorphism isprogcmd c
     | VernacStm (PGLast c) -> aux ?locality ?polymorphism isprogcmd c
     | VernacStm _ -> assert false (* Done by Stm *)
@@ -2065,9 +2065,9 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         | reraise when
               (match reraise with
               | Timeout -> true
-              | e -> Errors.noncritical e)
+              | e -> CErrors.noncritical e)
           ->
-            let e = Errors.push reraise in
+            let e = CErrors.push reraise in
             let e = locate_if_not_already loc e in
             let () = restore_timeout () in
             Flags.program_mode := orig_program_mode;

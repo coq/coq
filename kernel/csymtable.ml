@@ -224,7 +224,7 @@ and val_of_constr env c =
 	| Some v -> v
 	| None -> assert false
     with reraise ->
-      let reraise = Errors.push reraise in
+      let reraise = CErrors.push reraise in
       let () = print_string "can not compile \n" in
       let () = Format.print_flush () in
       iraise reraise

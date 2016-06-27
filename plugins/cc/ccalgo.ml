@@ -10,7 +10,7 @@
 (* Downey,Sethi and Tarjan. *)
 (* Plus some e-matching and constructor handling by P. Corbineau *)
 
-open Errors
+open CErrors
 open Util
 open Pp
 open Goptions
@@ -484,7 +484,7 @@ let build_subst uf subst =
   Array.map
     (fun i ->
       try term uf i
-      with e when Errors.noncritical e ->
+      with e when CErrors.noncritical e ->
         anomaly (Pp.str "incomplete matching"))
     subst
 

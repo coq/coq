@@ -16,7 +16,7 @@ let pp_to_richpp  = Richpp.richpp_of_pp
 let str_to_richpp = Richpp.richpp_of_string
 
 open Vernacexpr
-open Errors
+open CErrors
 open Pp
 open Names
 open Util
@@ -119,7 +119,7 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
     prerr_endline (fun () -> "interpreting " ^ Pp.string_of_ppcmds(pr_vernac expr));
     try Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr))
     with e ->
-      let e = Errors.push e in
+      let e = CErrors.push e in
       iraise Hooks.(call_process_error_once e)
   end
 
@@ -149,8 +149,8 @@ let vernac_parse ?(indlen_prev=fun() -> 0) ?newtip ?route eid s =
       match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
       | None -> raise (Invalid_argument "vernac_parse")
       | Some (loc, ast) -> indentation, strlen, loc, ast
-    with e when Errors.noncritical e ->
-      let (e, info) = Errors.push e in
+    with e when CErrors.noncritical e ->
+      let (e, info) = CErrors.push e in
       let loc = Option.default Loc.ghost (Loc.get_loc info) in
       Hooks.(call parse_error feedback_id loc (iprint (e, info)));
       iraise (e, info))
@@ -892,7 +892,7 @@ end = struct (* {{{ *)
       if Proof_global.there_are_pending_proofs () then
         VCS.goals id (Proof_global.get_open_goals ())
     with e ->
-      let (e, info) = Errors.push e in
+      let (e, info) = CErrors.push e in
       let good_id = !cur_id in
       VCS.reached id;
       let ie =
@@ -1038,7 +1038,7 @@ end = struct (* {{{ *)
       | _ -> VtUnknown, VtNow
     with
     | Not_found ->
-       Errors.errorlabstrm "undo_vernac_classifier"
+       CErrors.errorlabstrm "undo_vernac_classifier"
         (str "Cannot undo")
 
 end (* }}} *)
@@ -1072,7 +1072,7 @@ let record_pb_time proof_name loc time =
   end
  
 exception RemoteException of std_ppcmds
-let _ = Errors.register_handler (function
+let _ = CErrors.register_handler (function
   | RemoteException ppcmd -> ppcmd
   | _ -> raise Unhandled)
 
@@ -1106,7 +1106,7 @@ let proof_block_delimiters = ref []
 
 let register_proof_block_delimiter name static dynamic =
   if List.mem_assoc name !proof_block_delimiters then
-    Errors.errorlabstrm "STM" (str "Duplicate block delimiter " ++ str name);
+    CErrors.errorlabstrm "STM" (str "Duplicate block delimiter " ++ str name);
   proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
 
 let mk_doc_node id = function
@@ -1141,7 +1141,7 @@ let detect_proof_block id name =
           VCS.create_proof_block decl name
       end
     with Not_found ->
-      Errors.errorlabstrm "STM"
+      CErrors.errorlabstrm "STM"
         (str "Unknown proof block delimiter " ++ str name)
   )
 (****************************** THE SCHEDULER *********************************)
@@ -1326,8 +1326,8 @@ end = struct (* {{{ *)
       end;
       RespBuiltProof(proof,time)
     with
-    | e when Errors.noncritical e || e = Stack_overflow ->
-        let (e, info) = Errors.push e in
+    | e when CErrors.noncritical e || e = Stack_overflow ->
+        let (e, info) = CErrors.push e in
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
         let e_error_at, e_safe_id = match Stateid.get info with
@@ -1466,7 +1466,7 @@ end = struct (* {{{ *)
       `OK proof
       end
     with e ->
-      let (e, info) = Errors.push e in
+      let (e, info) = CErrors.push e in
       (try match Stateid.get info with
       | None ->
           msg_error (
@@ -1706,7 +1706,7 @@ end = struct (* {{{ *)
          List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0))
                       Evd.(evar_context g))
        then
-         Errors.errorlabstrm "STM" (strbrk("the par: goal selector supports ground "^
+         CErrors.errorlabstrm "STM" (strbrk("the par: goal selector supports ground "^
            "goals only"))
        else begin
         let (i, ast) = r_ast in
@@ -1719,9 +1719,9 @@ end = struct (* {{{ *)
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               RespBuiltSubProof (t, Evd.evar_universe_context sigma)
-            else Errors.errorlabstrm "STM" (str"The solution is not ground")
+            else CErrors.errorlabstrm "STM" (str"The solution is not ground")
        end) ()
-    with e when Errors.noncritical e -> RespError (Errors.print e)
+    with e when CErrors.noncritical e -> RespError (CErrors.print e)
 
   let name_of_task { t_name } = t_name
   let name_of_request { r_name } = r_name
@@ -1773,7 +1773,7 @@ end = struct (* {{{ *)
         let gid = Goal.goal g in
         let f =
           try List.assoc gid res
-          with Not_found -> Errors.anomaly(str"Partac: wrong focus") in
+          with Not_found -> CErrors.anomaly(str"Partac: wrong focus") in
         if not (Future.is_over f) then
           (* One has failed and cancelled the others, but not this one *)
           if solve then Tacticals.New.tclZEROMSG
@@ -1842,8 +1842,8 @@ end = struct (* {{{ *)
     try
       vernac_interp r_for { r_what with verbose = true };
       feedback ~id:(State r_for) Processed
-    with e when Errors.noncritical e ->
-      let e = Errors.push e in
+    with e when CErrors.noncritical e ->
+      let e = CErrors.push e in
       let msg = pp_to_richpp (iprint e) in
       feedback ~id:(State r_for) (Message (Error, None, msg))
     
@@ -2056,7 +2056,7 @@ let known_state ?(redefine_qed=false) ~cache id =
            | _ -> assert false
         end
       with Not_found ->
-          Errors.errorlabstrm "STM"
+          CErrors.errorlabstrm "STM"
             (str "Unknown proof block delimiter " ++ str name)
   in
 
@@ -2068,8 +2068,8 @@ let known_state ?(redefine_qed=false) ~cache id =
     then f ()
     else
       try f ()
-      with e when Errors.noncritical e ->
-        let ie = Errors.push e in
+      with e when CErrors.noncritical e ->
+        let ie = CErrors.push e in
         error_absorbing_tactic id blockname ie in
   (* Absorb errors from f x *)
   let resilient_command f x =
@@ -2079,7 +2079,7 @@ let known_state ?(redefine_qed=false) ~cache id =
     then f x
     else
       try f x
-      with e when Errors.noncritical e -> () in
+      with e when CErrors.noncritical e -> () in
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
@@ -2146,8 +2146,8 @@ let known_state ?(redefine_qed=false) ~cache id =
             reach ~cache:`Shallow prev;
             reach view.next;
             (try vernac_interp id x;
-            with e when Errors.noncritical e ->
-              let (e, info) = Errors.push e in
+            with e when CErrors.noncritical e ->
+              let (e, info) = CErrors.push e in
               let info = Stateid.add info ~valid:prev id in
               iraise (e, info));
             wall_clock_last_fork := Unix.gettimeofday ()
@@ -2282,7 +2282,7 @@ let observe id =
     Reach.known_state ~cache:(interactive ()) id;
     VCS.print ()
   with e ->
-    let e = Errors.push e in
+    let e = CErrors.push e in
     VCS.print ();
     VCS.restore vcs;
     iraise e
@@ -2332,7 +2332,7 @@ let check_task name (tasks,rcbackup) i =
     let rc = Future.purify (Slaves.check_task name tasks) i in
     VCS.restore vcs;
     rc
-  with e when Errors.noncritical e -> VCS.restore vcs; false
+  with e when CErrors.noncritical e -> VCS.restore vcs; false
 let info_tasks (tasks,_) = Slaves.info_tasks tasks
 let finish_tasks name u d p (t,rcbackup as tasks) =
   RemoteCounter.restore rcbackup;
@@ -2345,7 +2345,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     let u, a, _ = List.fold_left finish_task u (info_tasks tasks) in
     (u,a,true), p
   with e ->
-    let e = Errors.push e in
+    let e = CErrors.push e in
     msg_error (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
@@ -2377,7 +2377,7 @@ let merge_proof_branch ?valid ?id qast keep brname =
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
 let handle_failure (e, info) vcs tty =
-  if e = Errors.Drop then iraise (e, info) else
+  if e = CErrors.Drop then iraise (e, info) else
   match Stateid.get info with
   | None ->
       VCS.restore vcs;
@@ -2389,7 +2389,7 @@ let handle_failure (e, info) vcs tty =
       end;
       VCS.print ();
       anomaly(str"error with no safe_id attached:" ++ spc() ++
-        Errors.iprint_no_report (e, info))
+        CErrors.iprint_no_report (e, info))
   | Some (safe_id, id) ->
       prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
       VCS.restore vcs;
@@ -2405,7 +2405,7 @@ let handle_failure (e, info) vcs tty =
 let snapshot_vio ldir long_f_dot_vo =
   finish ();
   if List.length (VCS.branches ()) > 1 then
-    Errors.errorlabstrm "stm" (str"Cannot dump a vio with open proofs");
+    CErrors.errorlabstrm "stm" (str"Cannot dump a vio with open proofs");
   Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_vo
     (Global.opaque_tables ())
 
@@ -2469,13 +2469,13 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           finish ();
           (try Future.purify (vernac_interp report_id ~route)
             {x with verbose = true }
-           with e when Errors.noncritical e ->
-             let e = Errors.push e in
+           with e when CErrors.noncritical e ->
+             let e = CErrors.push e in
              iraise (State.exn_on report_id e)); `Ok
       | VtQuery (false,(report_id,route)), VtNow ->
           (try vernac_interp report_id ~route x
            with e ->
-             let e = Errors.push e in
+             let e = CErrors.push e in
              iraise (State.exn_on report_id e)); `Ok
       | VtQuery (true,(report_id,_)), w ->
           assert(Stateid.equal report_id Stateid.dummy);
@@ -2611,7 +2611,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
     VCS.print ();
     rc
   with e ->
-    let e = Errors.push e in
+    let e = CErrors.push e in
     handle_failure e vcs tty
 
 let get_ast id =
@@ -2786,12 +2786,12 @@ let edit_at id =
     VCS.print ();
     rc
   with e ->
-    let (e, info) = Errors.push e in
+    let (e, info) = CErrors.push e in
     match Stateid.get info with
     | None ->
         VCS.print ();
         anomaly (str ("edit_at "^Stateid.to_string id^": ") ++
-          Errors.print_no_report e)
+          CErrors.print_no_report e)
     | Some (_, id) ->
         prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
         VCS.restore vcs;
@@ -2820,7 +2820,7 @@ let interp verb (loc,e) =
        | _ -> not !Flags.coqtop_ui in
     try finish ~print_goals ()
     with e ->
-      let e = Errors.push e in
+      let e = CErrors.push e in
       handle_failure e vcs true
 
 let finish () = finish ()

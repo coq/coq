@@ -9,7 +9,7 @@
 (* Created by Hugo Herbelin from contents related to lemma proofs in
    file command.ml, Aug 2009 *)
 
-open Errors
+open CErrors
 open Util
 open Flags
 open Pp
@@ -37,8 +37,8 @@ type 'a declaration_hook = Decl_kinds.locality -> Globnames.global_reference -> 
 let mk_hook hook = hook
 let call_hook fix_exn hook l c =
   try hook l c
-  with e when Errors.noncritical e ->
-    let e = Errors.push e in
+  with e when CErrors.noncritical e ->
+    let e = CErrors.push e in
     iraise (fix_exn e)
 
 (* Support for mutually proved theorems *)
@@ -210,8 +210,8 @@ let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
     definition_message id;
     Option.iter (Universes.register_universe_binders r) pl;
     call_hook (fun exn -> exn) hook l r
-  with e when Errors.noncritical e ->
-    let e = Errors.push e in
+  with e when CErrors.noncritical e ->
+    let e = CErrors.push e in
     iraise (fix_exn e)
 
 let default_thm_id = Id.of_string "Unnamed_thm"
