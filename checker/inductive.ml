@@ -59,16 +59,6 @@ let inductive_instance mib =
     UContext.instance mib.mind_universes
   else Instance.empty
 
-let inductive_context mib =
-  if mib.mind_polymorphic then 
-    instantiate_univ_context mib.mind_universes 
-  else UContext.empty
-
-let instantiate_inductive_constraints mib u =
-  if mib.mind_polymorphic then
-    subst_instance_constraints u (UContext.constraints mib.mind_universes)
-  else Constraint.empty
-
 (************************************************************************)
 
 (* Build the substitution that replaces Rels by the appropriate *)
@@ -190,8 +180,6 @@ let rec make_subst env =
   in
   make Univ.LMap.empty
 
-exception SingletonInductiveBecomesProp of Id.t
-
 let instantiate_universes env ctx ar argsorts =
   let args = Array.to_list argsorts in
   let subst = make_subst env (ctx,ar.template_param_levels,args) in
@@ -208,11 +196,7 @@ let instantiate_universes env ctx ar argsorts =
 
 (* Type of an inductive type *)
 
-let is_prop_sort = function
-  | Prop Null -> true
-  | _ -> false
-
-let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
+let type_of_inductive_gen env ((mib,mip),u) paramtyps =
   match mip.mind_arity with
   | RegularArity a ->
     if not mib.mind_polymorphic then a.mind_user_arity
@@ -220,25 +204,7 @@ let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in
     let ctx,s = instantiate_universes env ctx ar paramtyps in
-      (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
-         the situation where a non-Prop singleton inductive becomes Prop
-         when applied to Prop params *)
-      if not polyprop && not (Univ.is_type0m_univ ar.template_level) && is_prop_sort s
-      then raise (SingletonInductiveBecomesProp mip.mind_typename);
-      mkArity (List.rev ctx,s)
-
-let type_of_inductive env pind = 
-  type_of_inductive_gen env pind [||]
-
-let constrained_type_of_inductive env ((mib,mip),u as pind) =
-  let ty = type_of_inductive_gen env pind [||] in
-  let cst = instantiate_inductive_constraints mib u in
-    (ty, cst)
-
-let constrained_type_of_inductive_knowing_parameters env ((mib,mip),u as pind) args =
-  let ty = type_of_inductive_gen env pind args in
-  let cst = instantiate_inductive_constraints mib u in
-    (ty, cst)
+    mkArity (List.rev ctx,s)
 
 let type_of_inductive_knowing_parameters env mip args = 
   type_of_inductive_gen env mip args
@@ -274,16 +240,6 @@ let type_of_constructor_gen (cstr,u) (mib,mip as mspec) =
 
 let type_of_constructor cstru mspec = 
   type_of_constructor_gen cstru mspec
-
-let type_of_constructor_in_ctx cstr (mib,mip as mspec) =
-  let u = Univ.UContext.instance mib.mind_universes in
-  let c = type_of_constructor_gen (cstr, u) mspec in
-    (c, mib.mind_universes)
-
-let constrained_type_of_constructor (cstr,u as cstru) (mib,mip as ind) =
-  let ty = type_of_constructor_gen cstru ind in
-  let cst = instantiate_inductive_constraints mib u in
-    (ty, cst)
 
 let arities_of_specif (kn,u) (mib,mip) =
   let specif = mip.mind_nf_lc in

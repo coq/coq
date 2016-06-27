@@ -36,7 +36,7 @@ let current_fixpoints = ref ([] : constant list)
 let none = Evd.empty
 
 (* NB: In OCaml, [type_of] and [get_of] might raise
-   [SingletonInductiveBecomeProp]. this exception will be catched
+   [SingletonInductiveBecomeProp]. This exception will be caught
    in late wrappers around the exported functions of this file,
    in order to display the location of the issue. *)
 

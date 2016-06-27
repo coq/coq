@@ -417,7 +417,7 @@ let add_section_variable id impl poly ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-       check_same_poly poly vars;
+       List.iter (fun tab -> check_same_poly poly (pi1 tab)) !sectab;
        sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
 
 let add_section_context ctx =

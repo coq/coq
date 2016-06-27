@@ -227,7 +227,7 @@ type coqtop = {
   (* non quoted command-line arguments of coqtop *)
   mutable sup_args : string list;
   (* called whenever coqtop dies *)
-  mutable reset_handler : reset_kind -> unit task;
+  mutable reset_handler : unit task;
   (* called whenever coqtop sends a feedback message *)
   mutable feedback_handler : Feedback.feedback -> unit;
   (* actual coqtop process and its status *)
@@ -421,6 +421,7 @@ let mkready coqtop =
   fun () -> coqtop.status <- Ready; Void
 
 let rec respawn_coqtop ?(why=Unexpected) coqtop =
+  if why = Unexpected then warning "Coqtop died badly. Resetting.";
   clear_handle coqtop.handle;
   ignore_error (fun () ->
      coqtop.handle <-
@@ -432,7 +433,7 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
      If not, there isn't much we can do ... *)
   assert (coqtop.handle.alive = true);
   coqtop.status <- New;
-  ignore (coqtop.reset_handler why coqtop.handle (mkready coqtop))
+  ignore (coqtop.reset_handler coqtop.handle (mkready coqtop))
 
 let spawn_coqtop sup_args =
   bind_self_as (fun this -> {
@@ -440,7 +441,7 @@ let spawn_coqtop sup_args =
                (fun () -> respawn_coqtop (this ()))
                (fun msg -> (this ()).feedback_handler msg);
     sup_args = sup_args;
-    reset_handler = (fun _ _ k -> k ());
+    reset_handler = (fun _ k -> k ());
     feedback_handler = (fun _ -> ());
     status = New;
   })

@@ -487,9 +487,11 @@ let save_proof ?proof = function
             let ctx = Evd.evar_context_universe_context (fst universes) in
             Admitted(id, k, (const_entry_secctx, pi2 k, (typ, ctx), None), universes)
         | None ->
+            let pftree = Pfedit.get_pftreestate () in
             let id, k, typ = Pfedit.current_proof_statement () in
+            let universes = Proof.initial_euctx pftree in
             (* This will warn if the proof is complete *)
-            let pproofs, universes =
+            let pproofs, _univs =
               Proof_global.return_proof ~allow_partial:true () in
             let sec_vars =
               match  Pfedit.get_used_variables(), pproofs with
@@ -501,7 +503,8 @@ let save_proof ?proof = function
                   Some (Environ.keep_hyps env (Idset.union ids_typ ids_def))
               | _ -> None in
 	    let names = Pfedit.get_universe_binders () in
-            let binders, ctx = Evd.universe_context ?names (Evd.from_ctx universes) in
+            let evd = Evd.from_ctx universes in
+            let binders, ctx = Evd.universe_context ?names evd in
             Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None),
 		     (universes, Some binders))
       in

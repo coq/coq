@@ -94,7 +94,7 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
       let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
       { clenv with evd = evd ; env = Proofview.Goal.env gl }, c
   in clenv, c
-		     
+
 let unify_resolve poly flags ((c : raw_hint), clenv) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let clenv, c = connect_hint_clenv poly c clenv gl in
@@ -109,21 +109,11 @@ let unify_resolve_gen poly = function
   | Some flags -> unify_resolve poly flags
 
 let exact poly (c,clenv) =
-  let (c, _, _) = c in
-  let ctx, c' = 
-    if poly then
-      let evd', subst = Evd.refresh_undefined_universes clenv.evd in
-      let ctx = Evd.evar_universe_context evd' in
-	ctx, subst_univs_level_constr subst c 
-    else 
-      let ctx = Evd.evar_universe_context clenv.evd in
-	ctx, c
-  in
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
-    let sigma = Sigma.to_evar_map sigma in
-    let sigma = Evd.merge_universe_context sigma ctx in
-    Sigma.Unsafe.of_pair (exact_check c', sigma)
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let clenv', c = connect_hint_clenv poly c clenv gl in
+    Tacticals.New.tclTHEN
+    (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
+    (exact_check c)
   end }
 
 (* Util *)

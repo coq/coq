@@ -934,7 +934,6 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let rel, _ = interp_constr_evars_impls env evdref r in
-  let () = check_evars_are_solved env !evdref (Evd.empty,!evdref)  in
   let relty = Typing.unsafe_type_of env !evdref rel in
   let relargty =
     let error () =

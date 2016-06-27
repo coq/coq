@@ -15,3 +15,15 @@ Section Foo.
     Fail Constraint X <= Z.
   End Bar.
 End Foo.
+
+Require Coq.Classes.RelationClasses.
+
+Class PreOrder (A : Type) (r : A -> A -> Type) : Type :=
+{ refl : forall x, r x x }.
+
+Section qux.
+  Polymorphic Universes A.
+  Section bar.
+    Fail Context {A : Type@{A}} {rA : A -> A -> Prop} {PO : PreOrder A rA}.
+  End bar.
+End qux.

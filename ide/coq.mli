@@ -60,7 +60,7 @@ val is_computing : coqtop -> bool
 val spawn_coqtop : string list -> coqtop
 (** Create a coqtop process with some command-line arguments. *)
 
-val set_reset_handler : coqtop -> (reset_kind -> unit task) -> unit
+val set_reset_handler : coqtop -> unit task -> unit
 (** Register a handler called when a coqtop dies (badly or on purpose) *)
 
 val set_feedback_handler : coqtop -> (Feedback.feedback -> unit) -> unit

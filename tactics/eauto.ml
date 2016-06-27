@@ -108,7 +108,7 @@ open Auto
 (***************************************************************************)
 
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
-			  
+
 let unify_e_resolve poly flags (c,clenv) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
       let clenv', c = connect_hint_clenv poly c clenv gl in
@@ -128,11 +128,12 @@ let hintmap_of hdc concl =
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact poly flags (c,clenv) =
-  let (c, _, _) = c in
-  let clenv', subst = 
-    if poly then Clenv.refresh_undefined_univs clenv 
-    else clenv, Univ.empty_level_subst
-  in e_give_exact (* ~flags *) (Vars.subst_univs_level_constr subst c)
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let clenv', c = connect_hint_clenv poly c clenv gl in
+    Tacticals.New.tclTHEN
+    (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
+    (e_give_exact c)
+  end }
 
 let rec e_trivial_fail_db db_list local_db =
   let next = Proofview.Goal.nf_enter { enter = begin fun gl ->

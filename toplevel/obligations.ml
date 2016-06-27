@@ -23,10 +23,6 @@ open Util
 let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
 
-let trace s =
-  if !Flags.debug then Feedback.msg_debug s
-  else ()
-
 let succfix (depth, fixrels) =
   (succ depth, List.map succ fixrels)
 
@@ -895,8 +891,6 @@ let rec solve_obligation prg num tac =
   let terminator guard hook = Proof_global.make_terminator (obligation_terminator prg.prg_name num guard hook) in
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
   let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd obl.obl_type ~terminator hook in
-  let () = trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
-            Printer.pr_constr_env (Global.env ()) Evd.empty obl.obl_type) in
   let _ = Pfedit.by !default_tactic in
   Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
 
