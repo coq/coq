@@ -1217,7 +1217,7 @@ module Search = struct
                                     (if Option.is_empty depth then mt()
                                      else str" without reaching its limit"))
       | e -> Proofview.tclZERO ~info:ie e
-    in Proofview.tclORELSE tac error
+    in Proofview.tclOR tac error
 
   let run_on_evars ?(unique=false) p evm tac =
     match evars_to_goals p evm with
