@@ -692,12 +692,12 @@ let glue_letin_with_decls = true
 
 let rec match_iterated_binders islambda decls = function
   | GLambda (_,na,bk,t,b) when islambda ->
-      match_iterated_binders islambda ((na,bk,None,t)::decls) b
+      match_iterated_binders islambda ((Inl na,bk,None,t)::decls) b
   | GProd (_,(Name _ as na),bk,t,b) when not islambda ->
-      match_iterated_binders islambda ((na,bk,None,t)::decls) b
+      match_iterated_binders islambda ((Inl na,bk,None,t)::decls) b
   | GLetIn (loc,na,c,b) when glue_letin_with_decls ->
       match_iterated_binders islambda
-	((na,Explicit (*?*), Some c,GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None))::decls) b
+	((Inl na,Explicit (*?*), Some c,GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None))::decls) b
   | b -> (decls,b)
 
 let remove_sigma x (terms,onlybinders,termlists,binderlists) =
@@ -756,14 +756,27 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | r1, NList (x,_,iter,termin,lassoc) ->
       match_alist (match_hd u alp) metas sigma r1 x iter termin lassoc
 
+  (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
+  | GLambda (_,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],t)])),
+    NBinderList (x,_,NLambda (Name id2,_,b2),(NVar v as termin)) when p = e ->
+      let decls = [(Inr cp,bk,None,t1)] in
+      match_in u alp metas (add_bindinglist_env sigma x decls) t termin
+
   (* Matching recursive notations for binders: ad hoc cases supporting let-in *)
   | GLambda (_,na1,bk,t1,b1), NBinderList (x,_,NLambda (Name id2,_,b2),termin)->
-      let (decls,b) = match_iterated_binders true [(na1,bk,None,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [(Inl na1,bk,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Lambda itself *)
       match_in u alp metas (add_bindinglist_env sigma x decls) b termin
+
+  (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
+  | GProd (_,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],t)])),
+    NBinderList (x,_,NProd (Name id2,_,b2),(NVar v as termin)) when p = e ->
+      let decls = [(Inr cp,bk,None,t1)] in
+      match_in u alp metas (add_bindinglist_env sigma x decls) t termin
+
   | GProd (_,na1,bk,t1,b1), NBinderList (x,_,NProd (Name id2,_,b2),termin)
       when na1 != Anonymous ->
-      let (decls,b) = match_iterated_binders false [(na1,bk,None,t1)] b1 in
+      let (decls,b) = match_iterated_binders false [(Inl na1,bk,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Prod itself *)
       match_in u alp metas (add_bindinglist_env sigma x decls) b termin
   (* Matching recursive notations for binders: general case *)
@@ -773,10 +786,10 @@ let rec match_ inner u alp metas sigma a1 a2 =
   (* Matching individual binders as part of a recursive pattern *)
   | GLambda (_,na,bk,t,b1), NLambda (Name id,_,b2)
       when is_bindinglist_meta id metas ->
-      match_in u alp metas (add_bindinglist_env sigma id [(na,bk,None,t)]) b1 b2
+      match_in u alp metas (add_bindinglist_env sigma id [(Inl na,bk,None,t)]) b1 b2
   | GProd (_,na,bk,t,b1), NProd (Name id,_,b2)
       when is_bindinglist_meta id metas && na != Anonymous ->
-      match_in u alp metas (add_bindinglist_env sigma id [(na,bk,None,t)]) b1 b2
+      match_in u alp metas (add_bindinglist_env sigma id [(Inl na,bk,None,t)]) b1 b2
 
   (* Matching compositionally *)
   | GVar (_,id1), NVar id2 when alpha_var id1 id2 (fst alp) -> sigma
@@ -863,7 +876,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
       | _ -> assert false in
       let (alp,sigma) =
         if is_bindinglist_meta id metas then
-          alp, add_bindinglist_env sigma id [(Name id',Explicit,None,t1)]
+          alp, add_bindinglist_env sigma id [(Inl (Name id'),Explicit,None,t1)]
         else
           match_names metas (alp,sigma) (Name id') na in
       match_in u alp metas sigma (mkGApp Loc.ghost b1 (GVar (Loc.ghost,id'))) b2
@@ -890,6 +903,10 @@ and match_equations u alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
 let term_of_binder = function
   | Name id -> GVar (Loc.ghost,id)
   | Anonymous -> GHole (Loc.ghost,Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None)
+
+type glob_decl2 =
+    (name, cases_pattern) Util.union * Decl_kinds.binding_kind *
+      glob_constr option * glob_constr
 
 let match_notation_constr u c (metas,pat) =
   let terms,binders,termlists,binderlists =
