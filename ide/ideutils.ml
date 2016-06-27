@@ -301,7 +301,7 @@ type logger = Feedback.level -> Richpp.richpp -> unit
 
 let default_logger level message =
   let level = match level with
-  | Feedback.Debug _ -> `DEBUG
+  | Feedback.Debug -> `DEBUG
   | Feedback.Info -> `INFO
   | Feedback.Notice -> `NOTICE
   | Feedback.Warning -> `WARNING

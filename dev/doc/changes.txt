@@ -30,6 +30,9 @@ val message     : string -> unit
   proper `Feedback.msg_*` function. Clients also have no control over
   flushing, the back end takes care of it.
 
+  Also, the `msg_*` functions now take an optional `?loc` parameter
+  for relaying location to the client.
+
 * Feedback related functions and definitions have been moved to the
   `Feedback` module. `message_level` has been renamed to
   level. Functions moved from Pp to Feedback are:
@@ -41,16 +44,24 @@ val emacs_logger    : logger
 val feedback_logger : logger
 ````
 
+* Changes in the Feedback format/Protocol.
+
+- The `Message` feedback type now carries an optional location, the main
+  payload is encoded using the richpp document format.
+
+- The `ErrorMsg` feedback type is thus unified now with `Message` at
+  level `Error`.
+
 * We now provide several loggers, `log_via_feedback` is removed in
   favor of `set_logger feedback_logger`. Output functions are:
 
 ```` ocaml
 val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
-val msg_info    : Pp.std_ppcmds -> unit
-val msg_notice  : Pp.std_ppcmds -> unit
-val msg_warning : Pp.std_ppcmds -> unit
-val msg_error   : Pp.std_ppcmds -> unit
-val msg_debug   : Pp.std_ppcmds -> unit
+val msg_error   : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_warning : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_notice  : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_info    : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_debug   : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 ````
 
   with the `msg_*` functions being just an alias for `logger $Level`.
@@ -68,6 +79,8 @@ val set_id_for_feedback : ?route:route_id -> edit_or_state_id -> unit
 ```` ocaml
 val get_id_for_feedback : unit -> edit_or_state_id * route_id
 ````
+
+** Kernel API changes **
 
 - The interface of the Context module was changed.
   Related types and functions were put in separate submodules.

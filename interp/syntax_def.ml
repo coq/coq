@@ -93,7 +93,7 @@ let is_verbose_compat () =
 let verbose_compat kn def = function
   | Some v when is_verbose_compat () && Flags.version_strictly_greater v ->
     let act =
-      if !verbose_compat_notations then Feedback.msg_warning else errorlabstrm ""
+      if !verbose_compat_notations then Feedback.msg_warning ?loc:None else errorlabstrm ""
     in
     let pp_def = match def with
       | [], NRef r -> str " is " ++ pr_global_env Id.Set.empty r

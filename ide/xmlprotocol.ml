@@ -769,34 +769,37 @@ let document to_string_fmt =
 open Feedback
 
 let of_message_level = function
-  | Debug s ->
-      Serialize.constructor "message_level" "debug" [Xml_datatype.PCData s]
+  | Debug ->
+      Serialize.constructor "message_level" "debug" []
   | Info -> Serialize.constructor "message_level" "info" []
   | Notice -> Serialize.constructor "message_level" "notice" []
   | Warning -> Serialize.constructor "message_level" "warning" []
   | Error -> Serialize.constructor "message_level" "error" []
 let to_message_level =
   Serialize.do_match "message_level" (fun s args -> match s with
-  | "debug" -> Debug (Serialize.raw_string args)
+  | "debug" -> Debug
   | "info" -> Info
   | "notice" -> Notice
   | "warning" -> Warning
   | "error" -> Error
   | x -> raise Serialize.(Marshal_error("error level",PCData x)))
 
-let of_message lvl msg =
+let of_message lvl loc msg =
   let lvl     = of_message_level lvl in
+  let xloc    = of_option of_loc loc in
   let content = of_richpp msg        in
-  Xml_datatype.Element ("message", [], [lvl; content])
+  Xml_datatype.Element ("message", [], [lvl; xloc; content])
+
 let to_message xml = match xml with
-  | Xml_datatype.Element ("message", [], [lvl; content]) ->
-      Message(to_message_level lvl, to_richpp content)
+  | Xml_datatype.Element ("message", [], [lvl; xloc; content]) ->
+      Message(to_message_level lvl, to_option to_loc xloc, to_richpp content)
   | x -> raise (Marshal_error("message",x))
 
-let is_message = function
-  | Xml_datatype.Element ("message", [], [lvl; content]) ->
-    Some (to_message_level lvl, to_richpp content)
-  | _ -> None
+let is_message xml =
+  try begin match to_message xml with
+    | Message(l,c,m) -> Some (l,c,m)
+    | _              -> None
+  end with | Marshal_error _ -> None
 
 let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "addedaxiom", _ -> AddedAxiom
@@ -809,7 +812,6 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
          to_string modpath, to_string ident, to_string ty)
   | "globdef", [loc; ident; secpath; ty] ->
        GlobDef(to_loc loc, to_string ident, to_string secpath, to_string ty)
-  | "errormsg", [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
   | "inprogress", [n] -> InProgress (to_int n)
   | "workerstatus", [ns] ->
        let n, s = to_pair to_string to_string ns in
@@ -843,8 +845,6 @@ let of_feedback_content = function
         of_string ident;
         of_string secpath;
         of_string ty ]
-  | ErrorMsg(loc, s) ->
-      constructor "feedback_content" "errormsg" [of_loc loc; of_string s]
   | InProgress n -> constructor "feedback_content" "inprogress" [of_int n]
   | WorkerStatus(n,s) ->
       constructor "feedback_content" "workerstatus"
@@ -861,7 +861,7 @@ let of_feedback_content = function
       constructor "feedback_content" "fileloaded" [
         of_string dirpath;
         of_string filename ]
-  | Message (l,m) -> constructor "feedback_content" "message" [ of_message l m ]
+  | Message (l,loc,m) -> constructor "feedback_content" "message" [ of_message l loc m ]
 
 let of_edit_or_state_id = function
   | Edit id -> ["object","edit"], of_edit_id id

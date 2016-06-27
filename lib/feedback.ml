@@ -9,7 +9,7 @@
 open Xml_datatype
 
 type level =
-  | Debug of string
+  | Debug
   | Info
   | Notice
   | Warning
@@ -24,7 +24,6 @@ type feedback_content =
   | Processed
   | Incomplete
   | Complete
-  | ErrorMsg of Loc.t * string
   | ProcessingIn of string
   | InProgress of int
   | WorkerStatus of string * string
@@ -36,8 +35,8 @@ type feedback_content =
   | FileLoaded of string * string
   (* Extra metadata *)
   | Custom of Loc.t * string * xml
-  (* Old generic messages *)
-  | Message of level * Richpp.richpp
+  (* Generic messages *)
+  | Message of level * Loc.t option * Richpp.richpp
 
 type feedback = {
   id : edit_or_state_id;
@@ -51,7 +50,7 @@ let default_route = 0
 open Pp
 open Pp_control
 
-type logger = level -> std_ppcmds -> unit
+type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
 
 let msgnl_with fmt strm = msg_with fmt (strm ++ fnl ())
 let msgnl          strm = msgnl_with !std_ft strm
@@ -84,8 +83,8 @@ let  err_str = str "Error:"   ++ spc ()
 let make_body quoter info s = quoter (hov 0 (info ++ s))
 
 (* Generic logger *)
-let gen_logger dbg err level msg = match level with
-  | Debug _ -> msgnl (make_body dbg  dbg_str msg)
+let gen_logger dbg err ?loc level msg = match level with
+  | Debug   -> msgnl (make_body dbg  dbg_str msg)
   | Info    -> msgnl (make_body dbg info_str msg)
   | Notice  -> msgnl msg
   | Warning -> Flags.if_warn (fun () ->
@@ -93,13 +92,13 @@ let gen_logger dbg err level msg = match level with
   | Error   -> msgnl_with !err_ft (make_body err  err_str msg)
 
 (** Standard loggers *)
-let std_logger   = gen_logger (fun x -> x) (fun x -> x)
+let std_logger  = gen_logger (fun x -> x) (fun x -> x)
 
 (* Color logger *)
-let color_terminal_logger level strm =
+let color_terminal_logger ?loc level strm =
   let msg = Ppstyle.color_msg in
   match level with
-  | Debug _ -> msg ~header:("Debug", Ppstyle.debug_tag) !std_ft strm
+  | Debug   -> msg ~header:("Debug", Ppstyle.debug_tag) !std_ft strm
   | Info    -> msg !std_ft strm
   | Notice  -> msg !std_ft strm
   | Warning ->
@@ -117,11 +116,11 @@ let emacs_logger = gen_logger emacs_quote_info emacs_quote_err
 let logger       = ref std_logger
 let set_logger l = logger := l
 
-let msg_info    x = !logger Info x
-let msg_notice  x = !logger Notice x
-let msg_warning x = !logger Warning x
-let msg_error   x = !logger Error x
-let msg_debug   x = !logger (Debug "_") x
+let msg_info    ?loc x = !logger Info x
+let msg_notice  ?loc x = !logger Notice x
+let msg_warning ?loc x = !logger Warning x
+let msg_error   ?loc x = !logger Error x
+let msg_debug   ?loc x = !logger Debug x
 
 (** Feeders *)
 let feeder = ref ignore
@@ -140,19 +139,19 @@ let feedback ?id ?route what =
      id    = Option.default !feedback_id id;
   }
 
-let feedback_logger lvl msg =
+let feedback_logger ?loc lvl msg =
   feedback ~route:!feedback_route ~id:!feedback_id
-    (Message (lvl, Richpp.richpp_of_pp msg))
+    (Message (lvl, loc, Richpp.richpp_of_pp msg))
 
 (* Output to file *)
-let ft_logger old_logger ft level mesg =
+let ft_logger old_logger ft ?loc level mesg =
   let id x = x in
   match level with
-  | Debug _ -> msgnl_with ft (make_body id  dbg_str mesg)
+  | Debug   -> msgnl_with ft (make_body id  dbg_str mesg)
   | Info    -> msgnl_with ft (make_body id info_str mesg)
   | Notice  -> msgnl_with ft mesg
-  | Warning -> old_logger level mesg
-  | Error   -> old_logger level mesg
+  | Warning -> old_logger ?loc level mesg
+  | Error   -> old_logger ?loc level mesg
 
 let with_output_to_file fname func input =
   let old_logger = !logger in

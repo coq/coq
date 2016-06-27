@@ -298,7 +298,7 @@ let handle_intermediate_message handle level content =
         | Feedback.Info    -> fun s -> Minilib.log ~level:`INFO    (xml_to_string s)
         | Feedback.Notice  -> fun s -> Minilib.log ~level:`NOTICE  (xml_to_string s)
         | Feedback.Warning -> fun s -> Minilib.log ~level:`WARNING (xml_to_string s)
-        | Feedback.Debug _ -> fun s -> Minilib.log ~level:`DEBUG   (xml_to_string s)
+        | Feedback.Debug   -> fun s -> Minilib.log ~level:`DEBUG   (xml_to_string s)
   in
   logger level content
 
@@ -333,7 +333,7 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
     match Xmlprotocol.is_message xml with
-    | Some (lvl, msg) ->
+    | Some (lvl, _loc, msg) ->
       handle_intermediate_message handle lvl msg;
       loop ()
     | None ->

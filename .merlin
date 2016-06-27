@@ -1,4 +1,4 @@
-FLG -rectypes
+FLG -rectypes -thread
 
 S config
 B config
@@ -26,6 +26,8 @@ S printing
 B printing
 S parsing
 B parsing
+S stm
+B stm
 S toplevel
 B toplevel
 
@@ -35,3 +37,5 @@ S tools/coqdoc
 B tools/coqdoc
 S dev
 B dev
+
+PKG threads.posix
