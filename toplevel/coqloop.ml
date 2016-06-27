@@ -147,7 +147,7 @@ let print_highlight_location ib loc =
 	  (l1 ++ li ++ ln)
   in
   let loc = Loc.make_loc (bp,ep) in
-  (str"Toplevel input, characters " ++ Cerrors.print_loc loc ++ str":" ++ fnl () ++
+  (str"Toplevel input, characters " ++ ExplainErr.print_loc loc ++ str":" ++ fnl () ++
      highlight_lines ++ fnl ())
 
 (* Functions to report located errors in a file. *)
@@ -165,7 +165,7 @@ let print_location_in_file loc =
     hov 0 (* No line break so as to follow emacs error message format *)
 	(errstrm ++ str"File " ++ str "\"" ++ str fname ++ str "\"" ++
 	   str", line " ++ int loc.line_nb ++ str", characters " ++
-	   Cerrors.print_loc (Loc.make_loc (loc.bp-loc.bol_pos,loc.ep-loc.bol_pos))) ++ str":" ++
+	   ExplainErr.print_loc (Loc.make_loc (loc.bp-loc.bol_pos,loc.ep-loc.bol_pos))) ++ str":" ++
       fnl ()
 
 let valid_buffer_loc ib loc =

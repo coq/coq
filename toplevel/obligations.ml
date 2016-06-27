@@ -838,7 +838,7 @@ let obligation_terminator name num guard hook pf =
       try ignore (update_obls prg obls (pred rem))
       with e when CErrors.noncritical e ->
         let e = CErrors.push e in
-        pperror (CErrors.iprint (Cerrors.process_vernac_interp_error e))
+        pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
 
 let obligation_hook prg obl num auto ctx' _ gr =
   let obls, rem = prg.prg_obligations in
@@ -867,7 +867,7 @@ let obligation_hook prg obl num auto ctx' _ gr =
     try ignore (update_obls prg obls (pred rem))
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
-      pperror (CErrors.iprint (Cerrors.process_vernac_interp_error e))
+      pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
   in
   if pred rem > 0 then begin
     let deps = dependencies obls num in

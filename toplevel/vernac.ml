@@ -370,4 +370,4 @@ let compile v f =
   CoqworkmgrApi.giveback 1
 
 let () = Hook.set Stm.process_error_hook
-  Cerrors.process_vernac_interp_error
+  ExplainErr.process_vernac_interp_error

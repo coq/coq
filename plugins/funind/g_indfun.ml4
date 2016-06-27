@@ -195,7 +195,7 @@ END
 
 
 let warning_error names e =
-  let (e, _) = Cerrors.process_vernac_interp_error (e, Exninfo.null) in
+  let (e, _) = ExplainErr.process_vernac_interp_error (e, Exninfo.null) in
   match e with
     | Building_graph e ->
 	Feedback.msg_warning
