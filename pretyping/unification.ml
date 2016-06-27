@@ -460,7 +460,7 @@ let use_metas_pattern_unification flags nb l =
      Array.for_all (fun c -> isRel c && destRel c <= nb) l
 
 type key = 
-  | IsKey of Closure.table_key
+  | IsKey of CClosure.table_key
   | IsProj of projection * constr
 
 let expand_table_key env = function
@@ -1210,8 +1210,8 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
 
 let is_mimick_head ts f =
   match kind_of_term f with
-  | Const (c,u) -> not (Closure.is_transparent_constant ts c)
-  | Var id -> not (Closure.is_transparent_variable ts id)
+  | Const (c,u) -> not (CClosure.is_transparent_constant ts c)
+  | Var id -> not (CClosure.is_transparent_variable ts id)
   | (Rel _|Construct _|Ind _) -> true
   | _ -> false
 

@@ -12,7 +12,7 @@ open Util
 open Names
 open Term
 open Vars
-open Closure
+open CClosure
 open Environ
 open Libnames
 open Globnames

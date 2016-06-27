@@ -90,7 +90,7 @@ let observe_tac s tac g =
 
 (* [nf_zeta] $\zeta$-normalization of a term *)
 let nf_zeta =
-  Reductionops.clos_norm_flags  (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+  Reductionops.clos_norm_flags  (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
     Environ.empty_env
     Evd.empty
 

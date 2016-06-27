@@ -9,7 +9,7 @@
 open Names
 open Term
 open Environ
-open Closure
+open CClosure
 open Esubst
 
 (***********************************************************************

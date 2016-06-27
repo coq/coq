@@ -223,8 +223,8 @@ let isAppConstruct ?(env=Global.env ()) t =
 
 let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
   let clos_norm_flags flgs env sigma t =
-    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
-  clos_norm_flags Closure.betaiotazeta  Environ.empty_env Evd.empty
+    CClosure.norm_val (CClosure.create_clos_infos flgs env) (CClosure.inject (Reductionops.nf_evar sigma t)) in
+  clos_norm_flags CClosure.betaiotazeta  Environ.empty_env Evd.empty
 
 
 
@@ -1085,7 +1085,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
       match Global.body_of_constant const with
 	| Some body ->
 	     Tacred.cbv_norm_flags
-	       (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+	       (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 	       (Global.env ())
 	       (Evd.empty)
 	       body

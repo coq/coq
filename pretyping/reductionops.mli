@@ -134,15 +134,15 @@ val stack_reduction_of_reduction :
 i*)
 val stacklam : (state -> 'a) -> constr list -> constr -> constr Stack.t -> 'a
 
-val whd_state_gen : ?csts:Cst_stack.t -> bool -> Closure.RedFlags.reds ->
+val whd_state_gen : ?csts:Cst_stack.t -> bool -> CClosure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
 
-val iterate_whd_gen : bool -> Closure.RedFlags.reds ->
+val iterate_whd_gen : bool -> CClosure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> Term.constr -> Term.constr
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
 
-val clos_norm_flags : Closure.RedFlags.reds -> reduction_function
+val clos_norm_flags : CClosure.RedFlags.reds -> reduction_function
 
 (** Same as [(strong whd_beta[delta][iota])], but much faster on big terms *)
 val nf_beta : local_reduction_function
