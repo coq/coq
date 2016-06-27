@@ -17,7 +17,7 @@ open Vars
 open Names
 open Evd
 open Pp
-open Errors
+open CErrors
 open Util
 
 let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
@@ -258,7 +258,7 @@ let safe_init_constant md name () =
   Coqlib.gen_constant "Obligations" md name
 let hide_obligation = safe_init_constant tactics_module "obligation"
 
-let pperror cmd = Errors.errorlabstrm "Program" cmd
+let pperror cmd = CErrors.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 
 let reduce c =
@@ -319,7 +319,7 @@ type program_info = program_info_aux CEphemeron.key
 let get_info x =
   try CEphemeron.get x
   with CEphemeron.InvalidKey ->
-    Errors.anomaly Pp.(str "Program obligation can't be accessed by a worker")
+    CErrors.anomaly Pp.(str "Program obligation can't be accessed by a worker")
 
 let assumption_message = Declare.assumption_message
 
@@ -401,7 +401,7 @@ let obl_substitution expand obls deps =
        let xobl = obls.(x) in
        let oblb =
 	 try get_obligation_body expand xobl
-	 with e when Errors.noncritical e -> assert false
+	 with e when CErrors.noncritical e -> assert false
        in (xobl.obl_name, (xobl.obl_type, oblb)) :: acc)
     deps []
 
@@ -836,9 +836,9 @@ let obligation_terminator name num guard hook pf =
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in
       try ignore (update_obls prg obls (pred rem))
-      with e when Errors.noncritical e ->
-        let e = Errors.push e in
-        pperror (Errors.iprint (Cerrors.process_vernac_interp_error e))
+      with e when CErrors.noncritical e ->
+        let e = CErrors.push e in
+        pperror (CErrors.iprint (Cerrors.process_vernac_interp_error e))
 
 let obligation_hook prg obl num auto ctx' _ gr =
   let obls, rem = prg.prg_obligations in
@@ -865,9 +865,9 @@ let obligation_hook prg obl num auto ctx' _ gr =
   let prg = { prg with prg_ctx = ctx' } in
   let () =
     try ignore (update_obls prg obls (pred rem))
-    with e when Errors.noncritical e ->
-      let e = Errors.push e in
-      pperror (Errors.iprint (Cerrors.process_vernac_interp_error e))
+    with e when CErrors.noncritical e ->
+      let e = CErrors.push e in
+      pperror (CErrors.iprint (Cerrors.process_vernac_interp_error e))
   in
   if pred rem > 0 then begin
     let deps = dependencies obls num in
@@ -946,8 +946,8 @@ and solve_obligation_by_tac prg obls i tac =
 		  prg := {!prg with prg_ctx = ctx'});
 	      true
 	  else false
-	with e when Errors.noncritical e ->
-          let (e, _) = Errors.push e in
+	with e when CErrors.noncritical e ->
+          let (e, _) = CErrors.push e in
           match e with
 	  | Refiner.FailError (_, s) ->
 	      user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)

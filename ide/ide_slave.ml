@@ -8,7 +8,7 @@
 (************************************************************************)
 
 open Vernacexpr
-open Errors
+open CErrors
 open Util
 open Pp
 open Printer
@@ -96,7 +96,7 @@ let is_undo cmd = match cmd with
 (** Check whether a command is forbidden by CoqIDE *)
 
 let coqide_cmd_checks (loc,ast) =
-  let user_error s = Errors.user_err_loc (loc, "CoqIde", str s) in
+  let user_error s = CErrors.user_err_loc (loc, "CoqIde", str s) in
   if is_debug ast then
     user_error "Debug mode not available within CoqIDE";
   if is_known_option ast then
@@ -300,7 +300,7 @@ let dirpath_of_string_list s =
   let id =
     try Nametab.full_name_module qid
     with Not_found ->
-      Errors.errorlabstrm "Search.interface_search"
+      CErrors.errorlabstrm "Search.interface_search"
         (str "Module " ++ str path ++ str " not found.")
   in
   id
@@ -365,12 +365,12 @@ let handle_exn (e, info) =
     | _ -> None in
   let mk_msg () =
     let msg = read_stdout () in
-    let msg = str msg ++ fnl () ++ Errors.print ~info e in
+    let msg = str msg ++ fnl () ++ CErrors.print ~info e in
     Richpp.richpp_of_pp msg
   in
   match e with
-  | Errors.Drop -> dummy, None, Richpp.richpp_of_string "Drop is not allowed by coqide!"
-  | Errors.Quit -> dummy, None, Richpp.richpp_of_string "Quit is not allowed by coqide!"
+  | CErrors.Drop -> dummy, None, Richpp.richpp_of_string "Drop is not allowed by coqide!"
+  | CErrors.Quit -> dummy, None, Richpp.richpp_of_string "Quit is not allowed by coqide!"
   | e ->
       match Stateid.get info with
       | Some (valid, _) -> valid, loc_of info, mk_msg ()
@@ -469,7 +469,7 @@ let print_xml =
   fun oc xml ->
     Mutex.lock m;
     try Xml_printer.print oc xml; Mutex.unlock m
-    with e -> let e = Errors.push e in Mutex.unlock m; iraise e
+    with e -> let e = CErrors.push e in Mutex.unlock m; iraise e
 
 
 let slave_logger xml_oc level message =

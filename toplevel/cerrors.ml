@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Indtypes
 open Type_errors
 open Pretype_errors
@@ -43,11 +43,11 @@ let explain_exn_default = function
   | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
   (* Exceptions with pre-evaluated error messages *)
   | EvaluatedError (msg,None) -> msg
-  | EvaluatedError (msg,Some reraise) -> msg ++ Errors.print reraise
+  | EvaluatedError (msg,Some reraise) -> msg ++ CErrors.print reraise
   (* Otherwise, not handled here *)
-  | _ -> raise Errors.Unhandled
+  | _ -> raise CErrors.Unhandled
 
-let _ = Errors.register_handler explain_exn_default
+let _ = CErrors.register_handler explain_exn_default
 
 
 (** Pre-explain a vernac interpretation error *)
@@ -119,10 +119,10 @@ let process_vernac_interp_error ?(allow_uncaught=true) ?(with_header=true) (exc,
   let exc = strip_wrapping_exceptions exc in
   let e = process_vernac_interp_error with_header (exc, info) in
   let () =
-    if not allow_uncaught && not (Errors.handled (fst e)) then
+    if not allow_uncaught && not (CErrors.handled (fst e)) then
       let (e, info) = e in
       let msg = str "Uncaught exception " ++ str (Printexc.to_string e) in
-      let err = Errors.make_anomaly msg in
+      let err = CErrors.make_anomaly msg in
       Util.iraise (err, info)
   in
   let e' =

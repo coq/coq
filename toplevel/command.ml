@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Flags
 open Term
@@ -948,7 +948,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 	  | [LocalAssum (_,t); LocalAssum (_,u)], Sort (Prop Null)
 	      when Reductionops.is_conv env !evdref t u -> t
 	  | _, _ -> error ()
-      with e when Errors.noncritical e -> error ()
+      with e when CErrors.noncritical e -> error ()
   in
   let measure = interp_casted_constr_evars binders_env evdref measure relargty in
   let wf_rel, wf_rel_fun, measure_fn =
@@ -1092,7 +1092,7 @@ let interp_recursive isfix fixl notations =
 	     try 
 	       let app = mkApp (delayed_force fix_proto, [|sort; t|]) in
 		 Typing.e_solve_evars env evdref app
-	     with e  when Errors.noncritical e -> t
+	     with e  when CErrors.noncritical e -> t
 	   in
 	     LocalAssum (id,fixprot) :: env'
 	 else LocalAssum (id,t) :: env')

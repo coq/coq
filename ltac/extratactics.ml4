@@ -19,7 +19,7 @@ open Mod_subst
 open Names
 open Tacexpr
 open Glob_ops
-open Errors
+open CErrors
 open Util
 open Evd
 open Termops
@@ -622,7 +622,7 @@ let hResolve id c occ t =
       Pretyping.understand env sigma t_hole
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
-          let (e, info) = Errors.push e in
+          let (e, info) = CErrors.push e in
           let loc = match Loc.get_loc info with None -> Loc.ghost | Some loc -> loc in
           resolve_hole (subst_hole_with_term (fst (Loc.unloc loc)) c_raw t_hole)
   in
@@ -641,7 +641,7 @@ let hResolve_auto id c t =
       hResolve id c n t
     with
     | UserError _ as e -> raise e
-    | e when Errors.noncritical e -> resolve_auto (n+1)
+    | e when CErrors.noncritical e -> resolve_auto (n+1)
   in
   resolve_auto 1
 

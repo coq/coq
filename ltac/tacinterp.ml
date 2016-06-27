@@ -13,7 +13,7 @@ open Genredexpr
 open Glob_term
 open Glob_ops
 open Tacred
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -209,7 +209,7 @@ let catching_error call_trace fail (e, info) =
   in
   if List.is_empty call_trace && List.is_empty inner_trace then fail (e, info)
   else begin
-    assert (Errors.noncritical e); (* preserved invariant *)
+    assert (CErrors.noncritical e); (* preserved invariant *)
     let new_trace = inner_trace @ call_trace in
     let located_exc = (e, Exninfo.add info ltac_trace_info new_trace) in
     fail located_exc
@@ -217,8 +217,8 @@ let catching_error call_trace fail (e, info) =
 
 let catch_error call_trace f x =
   try f x
-  with e when Errors.noncritical e ->
-    let e = Errors.push e in
+  with e when CErrors.noncritical e ->
+    let e = CErrors.push e in
     catching_error call_trace iraise e
 
 let catch_error_tac call_trace tac =
@@ -813,7 +813,7 @@ let interp_may_eval f ist env sigma = function
      try
 	f ist env sigma c
      with reraise ->
-       let reraise = Errors.push reraise in
+       let reraise = CErrors.push reraise in
        (* spiwack: to avoid unnecessary modifications of tacinterp, as this
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
@@ -827,7 +827,7 @@ let interp_constr_may_eval ist env sigma c =
     try
       interp_may_eval interp_constr ist env sigma c
     with reraise ->
-      let reraise = Errors.push reraise in
+      let reraise = CErrors.push reraise in
       (* spiwack: to avoid unnecessary modifications of tacinterp, as this
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
@@ -1864,7 +1864,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let op = interp_typed_pattern ist env sigma op in
-        let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
+        let to_catch = function Not_found -> true | e -> CErrors.is_anomaly e in
         let c_interp patvars = { Sigma.run = begin fun sigma ->
           let lfun' = Id.Map.fold (fun id c lfun ->
             Id.Map.add id (Value.of_constr c) lfun) 

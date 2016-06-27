@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Util
 open Pp
 open Evd
@@ -277,7 +277,7 @@ let prepare_goal items gls =
        filter_hyps (let keep = !tokeep in fun id -> Id.Set.mem id keep)] gls
 
 let my_automation_tac = ref
-  (Proofview.tclZERO (Errors.make_anomaly (Pp.str"No automation registered")))
+  (Proofview.tclZERO (CErrors.make_anomaly (Pp.str"No automation registered")))
 
 let register_automation_tac tac = my_automation_tac:= tac
 
@@ -411,7 +411,7 @@ let find_subsubgoal c ctyp skip submetas gls =
 		  se.se_meta submetas se.se_meta_list}
 	  else
 	      dfs (pred n)
-      with e when Errors.noncritical e ->
+      with e when CErrors.noncritical e ->
 	begin
 	  enstack_subsubgoals env se stack gls;
 	  dfs n

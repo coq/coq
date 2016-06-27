@@ -51,7 +51,7 @@ let load_rcfile() =
 			 " found. Skipping rcfile loading."))
 	*)
     with reraise ->
-      let reraise = Errors.push reraise in
+      let reraise = CErrors.push reraise in
       let () = Feedback.msg_info (str"Load of rcfile failed.") in
       iraise reraise
   else
@@ -137,4 +137,4 @@ let get_compat_version = function
   | ("8.1" | "8.0") as s ->
     Feedback.msg_warning (str "Compatibility with version " ++ str s ++ str " not supported.");
     Flags.V8_2
-  | s -> Errors.errorlabstrm "get_compat_version" (str "Unknown compatibility version \"" ++ str s ++ str "\".")
+  | s -> CErrors.errorlabstrm "get_compat_version" (str "Unknown compatibility version \"" ++ str s ++ str "\".")

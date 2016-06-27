@@ -8,7 +8,7 @@
 
 open Pp
 open Util
-open Errors
+open CErrors
 open Names
 open Vars
 open Term
@@ -1267,7 +1267,7 @@ let pr_hint h = match h.obj with
         try
           let (_, env) = Pfedit.get_current_goal_context () in
           env
-        with e when Errors.noncritical e -> Global.env ()
+        with e when CErrors.noncritical e -> Global.env ()
       in
       (str "(*external*) " ++ Pptactic.pr_glb_generic env tac)
 
@@ -1328,7 +1328,7 @@ let pr_applicable_hint () =
   let pts = get_pftreestate () in
   let glss = Proof.V82.subgoals pts in
   match glss.Evd.it with
-  | [] -> Errors.error "No focused goal."
+  | [] -> CErrors.error "No focused goal."
   | g::_ ->
     pr_hint_term (Goal.V82.concl glss.Evd.sigma g)
 

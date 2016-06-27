@@ -20,7 +20,7 @@ open Typing
 open Ccalgo
 open Ccproof
 open Pp
-open Errors
+open CErrors
 open Util
 open Proofview.Notations
 open Context.Rel.Declaration

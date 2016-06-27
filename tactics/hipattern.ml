@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -409,7 +409,7 @@ let rec first_match matcher = function
 let match_eq eqn (ref, hetero) =
   let ref =
     try Lazy.force ref
-    with e when Errors.noncritical e -> raise PatternMatchingFailure
+    with e when CErrors.noncritical e -> raise PatternMatchingFailure
   in
   match kind_of_term eqn with
   | App (c, [|t; x; y|]) ->

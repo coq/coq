@@ -12,7 +12,7 @@ open Term
 open Vars
 open Environ
 open Nametab
-open Errors
+open CErrors
 open Util
 open Typeclasses_errors
 open Typeclasses
@@ -341,7 +341,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 		(match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ();
 	       id)
 	end
-      else Errors.error "Unsolved obligations remaining.")
+      else CErrors.error "Unsolved obligations remaining.")
 	
 let named_of_rel_context l =
   let acc, ctx =
@@ -365,7 +365,7 @@ let context poly l =
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) fullctx in
   let ctx =
     try named_of_rel_context fullctx
-    with e when Errors.noncritical e ->
+    with e when CErrors.noncritical e ->
       error "Anonymous variables not allowed in contexts."
   in
   let uctx = ref (Evd.universe_context_set !evars) in

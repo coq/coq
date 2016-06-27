@@ -22,7 +22,7 @@
 
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Evd
@@ -81,7 +81,7 @@ let search_guard loc env possible_indexes fixdefs =
     let fix = ((indexes, 0),fixdefs) in
     (try check_fix env fix
      with reraise ->
-       let (e, info) = Errors.push reraise in
+       let (e, info) = CErrors.push reraise in
        let info = Loc.add_loc info loc in
        iraise (e, info));
     indexes
@@ -228,8 +228,8 @@ let apply_heuristics env evdref fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
   try evdref := consider_remaining_unif_problems
 	~ts:(Typeclasses.classes_transparent_state ()) env !evdref
-  with e when Errors.noncritical e ->
-    let e = Errors.push e in if fail_evar then iraise e
+  with e when CErrors.noncritical e ->
+    let e = CErrors.push e in if fail_evar then iraise e
 
 let check_typeclasses_instances_are_solved env current_sigma frozen =
   (* Naive way, call resolution again with failure flag *)
@@ -624,7 +624,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	  let cofix = (i,(names,ftys,fdefs)) in
             (try check_cofix env cofix
              with reraise ->
-               let (e, info) = Errors.push reraise in
+               let (e, info) = CErrors.push reraise in
                let info = Loc.add_loc info loc in
                iraise (e, info));
 	    make_judge (mkCoFix cofix) ftys.(i)
@@ -757,7 +757,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       try
         judge_of_product env name j j'
       with TypeError _ as e ->
-        let (e, info) = Errors.push e in
+        let (e, info) = CErrors.push e in
         let info = Loc.add_loc info loc in
         iraise (e, info) in
       inh_conv_coerce_to_tycon loc env evdref resj tycon

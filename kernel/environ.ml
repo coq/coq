@@ -20,7 +20,7 @@
 (* This file defines the type of environments on which the
    type-checker works, together with simple related functions *)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Term

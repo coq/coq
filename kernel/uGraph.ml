@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Errors
 open Util
 open Univ
 
@@ -132,7 +131,7 @@ let change_node g n =
 let rec repr g u =
   let a =
     try UMap.find u g.entries
-    with Not_found -> anomaly ~label:"Univ.repr"
+    with Not_found -> CErrors.anomaly ~label:"Univ.repr"
         (str"Universe " ++ Level.pr u ++ str" undefined")
   in
   match a with

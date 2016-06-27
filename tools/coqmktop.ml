@@ -235,7 +235,7 @@ let declare_loading_string () =
 \n     Mltop.set_top\
 \n       {Mltop.load_obj=\
 \n         (fun f -> if not (Topdirs.load_file ppf f)\
-\n                   then Errors.error (\"Could not load plugin \"^f));\
+\n                   then CErrors.error (\"Could not load plugin \"^f));\
 \n        Mltop.use_file=Topdirs.dir_use ppf;\
 \n        Mltop.add_dir=Topdirs.dir_directory;\
 \n        Mltop.ml_loop=(fun () -> Toploop.loop ppf) };;\
@@ -265,7 +265,7 @@ let create_tmp_main_file modules =
 let main () =
   let (options, userfiles) = parse_args () in
   (* Directories: *)
-  let () = Envars.set_coqlib ~fail:Errors.error in
+  let () = Envars.set_coqlib ~fail:CErrors.error in
   let basedir = if !Flags.boot then None else Some (Envars.coqlib ()) in
   (* Which ocaml compiler to invoke *)
   let prog = if !opt then "opt" else "ocamlc" in

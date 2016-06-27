@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Term
-open Errors
+open CErrors
 open Util
 open Formula
 open Unify

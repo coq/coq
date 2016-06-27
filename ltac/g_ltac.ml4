@@ -36,7 +36,7 @@ let genarg_of_uconstr c = in_gen (rawwit Constrarg.wit_uconstr) c
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
   | Libnames.Qualid (loc,_) ->
-      Errors.user_err_loc (loc, "",
+      CErrors.user_err_loc (loc, "",
         str "This expression should be a simple identifier.")
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"

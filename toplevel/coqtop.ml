@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Flags
 open Names
@@ -26,7 +26,7 @@ let get_version_date () =
     let rev = input_line ch in
     let () = close_in ch in
     (ver,rev)
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     (Coq_config.version,Coq_config.date)
 
 let print_header () =
@@ -293,7 +293,7 @@ let init_gc () =
     between coqtop and coqc. *)
 
 let usage () =
-  Envars.set_coqlib Errors.error;
+  Envars.set_coqlib CErrors.error;
   init_load_path ();
   if !batch_mode then Usage.print_usage_coqc ()
   else begin
@@ -606,8 +606,8 @@ let parse_args arglist =
   with
     | UserError(_, s) as e ->
       if is_empty s then exit 1
-      else fatal_error (Errors.print e) false
-    | any -> fatal_error (Errors.print any) (Errors.is_anomaly any)
+      else fatal_error (CErrors.print e) false
+    | any -> fatal_error (CErrors.print any) (CErrors.is_anomaly any)
 
 let init_toplevel arglist =
   init_gc ();
@@ -621,7 +621,7 @@ let init_toplevel arglist =
       (* If we have been spawned by the Spawn module, this has to be done
        * early since the master waits us to connect back *)
       Spawned.init_channels ();
-      Envars.set_coqlib Errors.error;
+      Envars.set_coqlib CErrors.error;
       if !print_where then (print_endline(Envars.coqlib ()); exit(exitcode ()));
       if !print_config then (Usage.print_config (); exit (exitcode ()));
       if !print_tags then (print_style_tags (); exit (exitcode ()));
@@ -656,13 +656,13 @@ let init_toplevel arglist =
       check_vio_tasks ();
       outputstate ()
     with any ->
-      let any = Errors.push any in
+      let any = CErrors.push any in
       flush_all();
       let msg =
         if !batch_mode then mt ()
         else str "Error during initialization:" ++ fnl ()
       in
-      let is_anomaly e = Errors.is_anomaly e || not (Errors.handled e) in
+      let is_anomaly e = CErrors.is_anomaly e || not (CErrors.handled e) in
       fatal_error (msg ++ Coqloop.print_toplevel_error any) (is_anomaly (fst any))
   end;
   if !batch_mode then begin

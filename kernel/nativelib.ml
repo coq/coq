@@ -8,7 +8,7 @@
 open Util
 open Nativevalues
 open Nativecode
-open Errors
+open CErrors
 open Envars
 
 (** This file provides facilities to access OCaml compiler and dynamic linker,
@@ -119,7 +119,7 @@ let call_linker ?(fatal=true) prefix f upds =
   if not (Sys.file_exists f) then
     begin
       let msg = "Cannot find native compiler file " ^ f in
-      if fatal then Errors.error msg
+      if fatal then CErrors.error msg
       else if !Flags.debug then Feedback.msg_debug (Pp.str msg)
     end
   else
@@ -127,7 +127,7 @@ let call_linker ?(fatal=true) prefix f upds =
     if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;
     register_native_file prefix
    with Dynlink.Error e as exn ->
-     let exn = Errors.push exn in
+     let exn = CErrors.push exn in
      let msg = "Dynlink error, " ^ Dynlink.error_message e in
      if fatal then (Feedback.msg_error (Pp.str msg); iraise exn)
      else if !Flags.debug then Feedback.msg_debug (Pp.str msg));

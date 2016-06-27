@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -1233,7 +1233,7 @@ let pb_equal = function
 
 let report_anomaly _ =
   let e = UserError ("", Pp.str "Conversion test raised an anomaly") in
-  let e = Errors.push e in
+  let e = CErrors.push e in
   iraise e
 
 let test_trans_conversion (f: constr Reduction.extended_conversion_function) reds env sigma x y =

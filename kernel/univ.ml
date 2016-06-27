@@ -16,7 +16,7 @@
    Sozeau, Pierre-Marie Pédrot *)
 
 open Pp
-open Errors
+open CErrors
 open Util
 
 (* Universes are stratified by a partial ordering $\le$.

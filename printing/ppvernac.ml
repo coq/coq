@@ -9,7 +9,7 @@
 open Pp
 open Names
 
-open Errors
+open CErrors
 open Util
 open Extend
 open Vernacexpr
@@ -1082,7 +1082,7 @@ module Make
         )
       | VernacSetOpacity _ ->
         return (
-          Errors.anomaly (keyword "VernacSetOpacity used to set something else")
+          CErrors.anomaly (keyword "VernacSetOpacity used to set something else")
         )
       | VernacSetStrategy l ->
         let pr_lev = function
@@ -1219,7 +1219,7 @@ module Make
 
   let pr_vernac v =
     try pr_vernac_body v ++ sep_end v
-    with e -> Errors.print e
+    with e -> CErrors.print e
 
 end
 

@@ -26,10 +26,10 @@ let empty_opaquetab = Int.Map.empty, DirPath.initial
 
 (* hooks *)
 let default_get_opaque dp _ =
-  Errors.error
+  CErrors.error
     ("Cannot access opaque proofs in library " ^ DirPath.to_string dp)
 let default_get_univ dp _ =
-  Errors.error
+  CErrors.error
     ("Cannot access universe constraints of opaque proofs in library " ^
     DirPath.to_string dp)
 
@@ -45,8 +45,8 @@ let create cu = Direct ([],cu)
 let turn_indirect dp o (prfs,odp) = match o with
   | Indirect (_,_,i) ->
       if not (Int.Map.mem i prfs)
-      then Errors.anomaly (Pp.str "Indirect in a different table")
-      else Errors.anomaly (Pp.str "Already an indirect opaque")
+      then CErrors.anomaly (Pp.str "Indirect in a different table")
+      else CErrors.anomaly (Pp.str "Already an indirect opaque")
   | Direct (d,cu) ->
       let cu = Future.chain ~pure:true cu (fun (c, u) -> hcons_constr c, u) in
       let id = Int.Map.cardinal prfs in
@@ -54,21 +54,21 @@ let turn_indirect dp o (prfs,odp) = match o with
       let ndp =
         if DirPath.equal dp odp then odp
         else if DirPath.equal odp DirPath.initial then dp
-        else Errors.anomaly
+        else CErrors.anomaly
           (Pp.str "Using the same opaque table for multiple dirpaths") in
       Indirect ([],dp,id), (prfs, ndp)
 
 let subst_opaque sub = function
   | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
-  | Direct _ -> Errors.anomaly (Pp.str "Substituting a Direct opaque")
+  | Direct _ -> CErrors.anomaly (Pp.str "Substituting a Direct opaque")
 
 let iter_direct_opaque f = function
-  | Indirect _ -> Errors.anomaly (Pp.str "Not a direct opaque")
+  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque")
   | Direct (d,cu) ->
       Direct (d,Future.chain ~pure:true cu (fun (c, u) -> f c; c, u))
 
 let discharge_direct_opaque ~cook_constr ci = function
-  | Indirect _ -> Errors.anomaly (Pp.str "Not a direct opaque")
+  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque")
   | Direct (d,cu) ->
       Direct (ci::d,Future.chain ~pure:true cu (fun (c, u) -> cook_constr c, u))
 

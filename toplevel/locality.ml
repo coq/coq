@@ -18,7 +18,7 @@ let check_locality locality_flag =
   match locality_flag with
   | Some b ->
     let s = if b then "Local" else "Global" in
-    Errors.errorlabstrm "Locality.check_locality"
+    CErrors.errorlabstrm "Locality.check_locality"
       (str "This command does not support the \"" ++ str s ++ str "\" prefix.")
   | None -> ()
 
@@ -30,9 +30,9 @@ let enforce_locality_full locality_flag local =
   let local =
     match locality_flag with
     | Some false when local ->
-	Errors.error "Cannot be simultaneously Local and Global."
+	CErrors.error "Cannot be simultaneously Local and Global."
     | Some true when local ->
-	Errors.error "Use only prefix \"Local\"."
+	CErrors.error "Use only prefix \"Local\"."
     | None ->
 	if local then begin
           Feedback.msg_warning (Pp.str "Obsolete syntax: use \"Local\" as a prefix.");
@@ -61,7 +61,7 @@ let enforce_locality_exp locality_flag local =
   | None, Some local -> local
   | Some b, None -> local_of_bool b
   | None, None -> Decl_kinds.Global
-  | Some _, Some _ -> Errors.error "Local non allowed in this case"
+  | Some _, Some _ -> CErrors.error "Local non allowed in this case"
 
 (* For commands whose default is to not discharge but to export:
    Global in sections forces discharge, Global not in section is the default;
@@ -82,7 +82,7 @@ let enforce_section_locality locality_flag local =
 let make_module_locality = function
   | Some false ->
       if Lib.sections_are_opened () then
-	Errors.error
+	CErrors.error
 	  "This command does not support the Global option in sections.";
       false
   | Some true -> true

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Pp
 open Decl_expr
 open Names

@@ -14,7 +14,7 @@
    Corbineau, Feb 2008 *)
 (* Turned into an abstract compilation unit by Matthieu Sozeau, March 2006 *)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -369,7 +369,7 @@ let apply_coercion env sigma p hj typ_cl =
       (hj,typ_cl,sigma) p
     in evd, j
   with NoCoercion as e -> raise e
-  | e when Errors.noncritical e -> anomaly (Pp.str "apply_coercion")
+  | e when CErrors.noncritical e -> anomaly (Pp.str "apply_coercion")
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core env evd j =

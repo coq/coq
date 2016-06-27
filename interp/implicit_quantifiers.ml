@@ -9,7 +9,7 @@
 (*i*)
 open Names
 open Decl_kinds
-open Errors
+open CErrors
 open Util
 open Glob_term
 open Constrexpr
