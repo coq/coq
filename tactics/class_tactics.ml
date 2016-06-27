@@ -1178,8 +1178,6 @@ module Search = struct
     let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
     search_tac hints depth 1 info
 
-  exception HasShelvedGoals
-
   let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
     let open Proofview in
     let tac sigma gls i =
@@ -1296,11 +1294,11 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
   let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
   if get_typeclasses_compat () = Flags.V8_5 then
-    Tacticals.New.tclORELSE (Proofview.V82.tactic
-       (V85.eauto85 depth ~only_classes ~st dbs))
-     (Proofview.Goal.nf_enter ({ enter = fun gl ->
-       Tacticals.New.tclFAIL 0 (str" typeclasses eauto failed on: " ++
-                    Goal.pr_goal (Proofview.Goal.goal gl))}))
+    Proofview.V82.tactic
+    (fun gl ->
+      try V85.eauto85 depth ~only_classes ~st dbs gl
+      with Not_found ->
+	Refiner.tclFAIL 0 (str"Proof search failed") gl)
   else eauto depth ~only_classes ~st ~dep:true dbs
 
 (** We compute dependencies via a union-find algorithm.
