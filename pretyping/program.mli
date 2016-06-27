@@ -37,3 +37,5 @@ val mk_coq_not : constr -> constr
 
 (** Polymorphic application of delayed references *)
 val papp : Evd.evar_map ref -> (unit -> global_reference) -> constr array -> constr
+
+val get_proofs_transparency : unit -> bool
