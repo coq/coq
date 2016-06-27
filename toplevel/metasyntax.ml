@@ -1006,6 +1006,7 @@ type notation_obj = {
   notobj_scope : scope_name option;
   notobj_interp : interpretation;
   notobj_onlyparse : bool;
+  notobj_onlyprint : bool;
   notobj_notation : notation * notation_location;
 }
 
@@ -1018,7 +1019,8 @@ let open_notation i (_, nobj) =
   let pat = nobj.notobj_interp in
   if Int.equal i 1 && not (Notation.exists_notation_in_scope scope ntn pat) then begin
     (* Declare the interpretation *)
-    Notation.declare_notation_interpretation ntn scope pat df;
+    let onlyprint = nobj.notobj_onlyprint  in
+    let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint in
     (* Declare the uninterpretation *)
     if not nobj.notobj_onlyparse then
       Notation.declare_uninterpretation (NotationRule (scope, ntn)) pat
@@ -1098,7 +1100,7 @@ let recover_notation_syntax rawntn =
   let sy = recover_syntax ntn in
   let need_squash = not (String.equal ntn rawntn) in
   let rules = if need_squash then recover_squash_syntax sy else [sy] in
-  sy.synext_notgram.notgram_typs, rules
+  sy.synext_notgram.notgram_typs, rules, sy.synext_notgram.notgram_onlyprinting
 
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
@@ -1163,6 +1165,7 @@ let add_notation_in_scope local df c mods scope =
     notobj_interp = (List.map_filter map i_vars, ac);
     (** Order is important here! *)
     notobj_onlyparse = onlyparse;
+    notobj_onlyprint = onlyprint;
     notobj_notation = df';
   } in
   (* Ready to change the global state *)
@@ -1171,14 +1174,17 @@ let add_notation_in_scope local df c mods scope =
   Lib.add_anonymous_leaf (inNotation notation);
   df'
 
-let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse =
+let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse onlyprint =
   let dfs = split_notation_string df in
   let (recvars,mainvars,symbs) = analyze_notation_tokens dfs in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
-  let i_typs = if not (is_numeral symbs) then begin
-    let i_typs,sy_rules = recover_notation_syntax (make_notation_key symbs) in
-    Lib.add_anonymous_leaf (inSyntaxExtension (local,sy_rules)); i_typs
-  end else [] in
+  let i_typs, onlyprint = if not (is_numeral symbs) then begin
+    let i_typs,sy_rules,onlyprint' = recover_notation_syntax (make_notation_key symbs) in
+    let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy_rules)) in
+    (** If the only printing flag has been explicitly requested, put it back *)
+    let onlyprint = onlyprint || onlyprint' in
+    i_typs, onlyprint
+  end else [], false in
   (* Declare interpretation *)
   let path = (Lib.library_dp(),Lib.current_dirpath true) in
   let df' = (make_notation_key symbs,(path,df)) in
@@ -1198,6 +1204,7 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
     notobj_interp = (List.map_filter map i_vars, ac);
     (** Order is important here! *)
     notobj_onlyparse = onlyparse;
+    notobj_onlyprint = onlyprint;
     notobj_notation = df';
   } in
   Lib.add_anonymous_leaf (inNotation notation);
@@ -1214,12 +1221,12 @@ let add_syntax_extension local ((loc,df),mods) =
 (* Notations with only interpretation *)
 
 let add_notation_interpretation ((loc,df),c,sc) =
-  let df' = add_notation_interpretation_core false df c sc false in
+  let df' = add_notation_interpretation_core false df c sc false false in
   Dumpglob.dump_notation (loc,df') sc true
 
 let set_notation_for_interpretation impls ((_,df),c,sc) =
   (try ignore
-    (silently (fun () -> add_notation_interpretation_core false df ~impls c sc false) ());
+    (silently (fun () -> add_notation_interpretation_core false df ~impls c sc false false) ());
   with NoSyntaxRule ->
     error "Parsing rule for this notation has to be previously declared.");
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
@@ -1231,7 +1238,8 @@ let add_notation local c ((loc,df),modifiers) sc =
    if no_syntax_modifiers modifiers then
     (* No syntax data: try to rely on a previously declared rule *)
     let onlyparse = is_only_parsing modifiers in
-    try add_notation_interpretation_core local df c sc onlyparse
+    let onlyprint = is_only_printing modifiers in
+    try add_notation_interpretation_core local df c sc onlyparse onlyprint
     with NoSyntaxRule ->
       (* Try to determine a default syntax rule *)
       add_notation_in_scope local df c modifiers sc

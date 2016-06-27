@@ -44,8 +44,14 @@ type level = precedence * tolerability list
 type delimiters = string
 type notation_location = (DirPath.t * DirPath.t) * string
 
+type notation_data = {
+  not_interp : interpretation;
+  not_location : notation_location;
+  not_onlyprinting : bool;
+}
+
 type scope = {
-  notations: (interpretation * notation_location) String.Map.t;
+  notations: notation_data String.Map.t;
   delimiters: delimiters option
 }
 
@@ -380,7 +386,7 @@ let level_of_notation ntn =
 
 (* The mapping between notations and their interpretation *)
 
-let declare_notation_interpretation ntn scopt pat df =
+let declare_notation_interpretation ntn scopt pat df ~onlyprint =
   let scope = match scopt with Some s -> s | None -> default_scope in
   let sc = find_scope scope in
   let () =
@@ -390,7 +396,12 @@ let declare_notation_interpretation ntn scopt pat df =
     | Some _ -> str " in scope " ++ str scope in
     Feedback.msg_warning (str "Notation " ++ str ntn ++ str " was already used" ++ which_scope)
   in
-  let sc = { sc with notations = String.Map.add ntn (pat,df) sc.notations } in
+  let notdata = {
+    not_interp = pat;
+    not_location = df;
+    not_onlyprinting = onlyprint;
+  } in
+  let sc = { sc with notations = String.Map.add ntn notdata sc.notations } in
   let () = scope_map := String.Map.add scope sc !scope_map in
   begin match scopt with
   | None -> scope_stack := SingleNotation ntn :: !scope_stack
@@ -415,7 +426,9 @@ let rec find_interpretation ntn find = function
       find_interpretation ntn find scopes
 
 let find_notation ntn sc =
-  String.Map.find ntn (find_scope sc).notations
+  let n = String.Map.find ntn (find_scope sc).notations in
+  let () = if n.not_onlyprinting then raise Not_found in
+  (n.not_interp, n.not_location)
 
 let notation_of_prim_token = function
   | Numeral n when is_pos_or_zero n -> to_string n
@@ -547,8 +560,8 @@ let exists_notation_in_scope scopt ntn r =
   let scope = match scopt with Some s -> s | None -> default_scope in
   try
     let sc = String.Map.find scope !scope_map in
-    let (r',_) = String.Map.find ntn sc.notations in
-    interpretation_eq r' r
+    let n = String.Map.find ntn sc.notations in
+    interpretation_eq n.not_interp r
   with Not_found -> false
 
 let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
@@ -805,7 +818,7 @@ let pr_named_scope prglob scope sc =
   ++ fnl ()
   ++ pr_scope_classes scope
   ++ String.Map.fold
-       (fun ntn ((_,r),(_,df)) strm ->
+       (fun ntn { not_interp  = (_, r); not_location = (_, df) } strm ->
 	 pr_notation_info prglob df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
@@ -849,7 +862,7 @@ let browse_notation strict ntn map =
   let l =
     String.Map.fold
       (fun scope_name sc ->
-	String.Map.fold (fun ntn ((_,r),df) l ->
+	String.Map.fold (fun ntn { not_interp  = (_, r); not_location = df } l ->
 	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
       map [] in
   List.sort (fun x y -> String.compare (fst x) (fst y)) l
@@ -915,7 +928,7 @@ let locate_notation prglob ntn scope =
 let collect_notation_in_scope scope sc known =
   assert (not (String.equal scope default_scope));
   String.Map.fold
-    (fun ntn ((_,r),(_,df)) (l,known as acc) ->
+    (fun ntn { not_interp  = (_, r); not_location = (_, df) } (l,known as acc) ->
       if String.List.mem ntn known then acc else ((df,r)::l,ntn::known))
     sc.notations ([],known)
 
@@ -931,7 +944,7 @@ let collect_notations stack =
       | SingleNotation ntn ->
 	  if String.List.mem ntn knownntn then (all,knownntn)
 	  else
-	    let ((_,r),(_,df)) =
+	    let { not_interp  = (_, r); not_location = (_, df) } =
 	      String.Map.find ntn (find_scope default_scope).notations in
 	    let all' = match all with
 	      | (s,lonelyntn)::rest when String.equal s default_scope ->
