@@ -262,7 +262,7 @@ let pperror cmd = CErrors.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 
 let reduce c =
-  Reductionops.clos_norm_flags Closure.betaiota (Global.env ()) Evd.empty c
+  Reductionops.clos_norm_flags CClosure.betaiota (Global.env ()) Evd.empty c
 
 exception NoObligations of Id.t option
 

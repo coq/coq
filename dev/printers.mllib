@@ -86,7 +86,7 @@ Nativecode
 Nativelib
 Cbytegen
 Environ
-Closure
+CClosure
 Reduction
 Nativeconv
 Type_errors

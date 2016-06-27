@@ -1287,8 +1287,8 @@ let _ =
       optdepr  = false;
       optname  = "kernel term sharing";
       optkey   = ["Kernel"; "Term"; "Sharing"];
-      optread  = (fun () -> !Closure.share);
-      optwrite = (fun b -> Closure.share := b) }
+      optread  = (fun () -> !CClosure.share);
+      optwrite = (fun b -> CClosure.share := b) }
 
 (* No more undo limit in the new proof engine.
    The command still exists for compatibility (e.g. with ProofGeneral) *)

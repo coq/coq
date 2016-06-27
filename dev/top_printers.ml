@@ -80,7 +80,7 @@ let ppconstr_univ x = Constrextern.with_universes ppconstr x
 let ppglob_constr = (fun x -> pp(pr_lglob_constr x))
 let pppattern = (fun x -> pp(pr_constr_pattern x))
 let pptype = (fun x -> try pp(pr_ltype x) with e -> pp (str (Printexc.to_string e)))
-let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
+let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
 let ppbigint n = pp (str (Bigint.to_string n));;
 
@@ -457,7 +457,7 @@ let print_pure_constr csr =
 	print_string (Printexc.to_string e);print_flush ();
 	raise e
 
-let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
+let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
 let pploc x = let (l,r) = Loc.unloc x in
   print_string"(";print_int l;print_string",";print_int r;print_string")"

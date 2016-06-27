@@ -1466,7 +1466,7 @@ let solve_constraints env (evars,cstrs) =
       (Typeclasses.mark_resolvables ~filter evars)
       
 let nf_zeta =
-  Reductionops.clos_norm_flags (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+  Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 
 exception RewriteFailure of Pp.std_ppcmds
 

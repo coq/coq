@@ -400,7 +400,7 @@ let get_funs_constant mp dp =
       match Global.body_of_constant const with
 	| Some body ->
 	    let body = Tacred.cbv_norm_flags
-	      (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+	      (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 	      (Global.env ())
 	      (Evd.from_env (Global.env ()))
 	      body

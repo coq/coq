@@ -66,7 +66,7 @@ val pattern_occs : (occurrences * constr) list -> e_reduction_function
 (** Rem: Lazy strategies are defined in Reduction *)
 
 (** Call by value strategy (uses Closures) *)
-val cbv_norm_flags : Closure.RedFlags.reds ->  reduction_function
+val cbv_norm_flags : CClosure.RedFlags.reds ->  reduction_function
   val cbv_beta : local_reduction_function
   val cbv_betaiota : local_reduction_function
   val cbv_betadeltaiota :  reduction_function

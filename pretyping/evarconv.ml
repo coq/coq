@@ -11,7 +11,7 @@ open Util
 open Names
 open Term
 open Vars
-open Closure
+open CClosure
 open Reduction
 open Reductionops
 open Termops

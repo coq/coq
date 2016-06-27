@@ -619,7 +619,7 @@ let rec strong_prodspine redfun sigma c =
 (*** Reduction using bindingss ***)
 (*************************************)
 
-let eta = Closure.RedFlags.mkflags [Closure.RedFlags.fETA]
+let eta = CClosure.RedFlags.mkflags [CClosure.RedFlags.fETA]
 
 (* Beta Reduction tools *)
 
@@ -798,11 +798,11 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       (s,cst_l)
     in
     match kind_of_term x with
-    | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
+    | Rel n when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
       (match lookup_rel n env with
       | LocalDef (_,body,_) -> whrec Cst_stack.empty (lift n body, stack)
       | _ -> fold ())
-    | Var id when Closure.RedFlags.red_set flags (Closure.RedFlags.fVAR id) ->
+    | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
       | LocalDef (_,body,_) -> whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
       | _ -> fold ())
@@ -814,7 +814,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       (match safe_meta_value sigma ev with
       | Some body -> whrec cst_l (body, stack)
       | None -> fold ())
-    | Const (c,u as const) when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST c) ->
+    | Const (c,u as const) when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) ->
        (match constant_opt_value_in env const with
 	| None -> fold ()
 	| Some body ->
@@ -854,7 +854,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		      whrec Cst_stack.empty 
 			(arg,Stack.Cst(Stack.Cst_const const,curr,remains,bef,cst_l)::s')
        )
-    | Proj (p, c) when Closure.RedFlags.red_projection flags p ->
+    | Proj (p, c) when CClosure.RedFlags.red_projection flags p ->
       (let pb = lookup_projection p env in
        let kn = Projection.constant p in
        let npars = pb.Declarations.proj_npars 
@@ -895,7 +895,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		       (arg,Stack.Cst(Stack.Cst_proj p,curr,remains,
 				      Stack.append_app [|c|] bef,cst_l)::s'))
 
-    | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
+    | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
     | Cast (c,_,_) -> whrec cst_l (c, stack)
     | App (f,cl)  ->
@@ -904,9 +904,9 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	(f, Stack.append_app cl stack)
     | Lambda (na,t,c) ->
       (match Stack.decomp stack with
-      | Some _ when Closure.RedFlags.red_set flags Closure.RedFlags.fBETA ->
+      | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
 	apply_subst whrec [] cst_l x stack
-      | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
+      | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
 	let env' = push_rel (LocalAssum (na,t)) env in
 	let whrec' = whd_state_gen tactic_mode flags env' sigma in
         (match kind_of_term (Stack.zip ~refold:true (fst (whrec' (c, Stack.empty)))) with
@@ -934,8 +934,8 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	whrec Cst_stack.empty (arg, Stack.Fix(f,bef,cst_l)::s'))
 
     | Construct ((ind,c),u) ->
-      let use_match = Closure.RedFlags.red_set flags Closure.RedFlags.fMATCH in
-      let use_fix = Closure.RedFlags.red_set flags Closure.RedFlags.fFIX in
+      let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
+      let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
@@ -978,7 +978,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       else fold ()
 
     | CoFix cofix ->
-      if Closure.RedFlags.red_set flags Closure.RedFlags.fCOFIX then
+      if CClosure.RedFlags.red_set flags CClosure.RedFlags.fCOFIX then
 	match Stack.strip_app stack with
 	|args, ((Stack.Case _ |Stack.Proj _)::s') ->
 	  reduce_and_refold_cofix whrec env cst_l cofix stack
@@ -996,15 +996,15 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 let local_whd_state_gen flags sigma =
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-    | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
+    | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
       stacklam whrec [b] c stack
     | Cast (c,_,_) -> whrec (c, stack)
     | App (f,cl)  -> whrec (f, Stack.append_app cl stack)
     | Lambda (_,_,c) ->
       (match Stack.decomp stack with
-      | Some (a,m) when Closure.RedFlags.red_set flags Closure.RedFlags.fBETA ->
+      | Some (a,m) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
 	stacklam whrec [a] c m
-      | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
+      | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
         (match kind_of_term (Stack.zip (whrec (c, Stack.empty))) with
         | App (f,cl) ->
 	  let napp = Array.length cl in
@@ -1020,7 +1020,7 @@ let local_whd_state_gen flags sigma =
 	| _ -> s)
       | _ -> s)
 
-    | Proj (p,c) when Closure.RedFlags.red_projection flags p ->
+    | Proj (p,c) when CClosure.RedFlags.red_projection flags p ->
       (let pb = lookup_projection p (Global.env ()) in
 	 whrec (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
 			       p, Cst_stack.empty)
@@ -1045,8 +1045,8 @@ let local_whd_state_gen flags sigma =
       | None -> s)
 
     | Construct ((ind,c),u) ->
-      let use_match = Closure.RedFlags.red_set flags Closure.RedFlags.fMATCH in
-      let use_fix = Closure.RedFlags.red_set flags Closure.RedFlags.fFIX in
+      let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
+      let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
@@ -1061,7 +1061,7 @@ let local_whd_state_gen flags sigma =
       else s
 
     | CoFix cofix ->
-      if Closure.RedFlags.red_set flags Closure.RedFlags.fCOFIX then
+      if CClosure.RedFlags.red_set flags CClosure.RedFlags.fCOFIX then
 	match Stack.strip_app stack with
 	|args, ((Stack.Case _ | Stack.Proj _)::s') ->
 	  whrec (contract_cofix cofix, stack)
@@ -1093,27 +1093,27 @@ let red_of_state_red f sigma x =
 
 (* 0. No Reduction Functions *)
 
-let whd_nored_state = local_whd_state_gen Closure.nored
+let whd_nored_state = local_whd_state_gen CClosure.nored
 let whd_nored_stack = stack_red_of_state_red whd_nored_state
 let whd_nored = red_of_state_red whd_nored_state
 
 (* 1. Beta Reduction Functions *)
 
-let whd_beta_state = local_whd_state_gen Closure.beta
+let whd_beta_state = local_whd_state_gen CClosure.beta
 let whd_beta_stack = stack_red_of_state_red whd_beta_state
 let whd_beta = red_of_state_red whd_beta_state
 
-let whd_betalet_state = local_whd_state_gen Closure.betazeta
+let whd_betalet_state = local_whd_state_gen CClosure.betazeta
 let whd_betalet_stack = stack_red_of_state_red whd_betalet_state
 let whd_betalet = red_of_state_red whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
 
-let whd_delta_state e = raw_whd_state_gen Closure.delta e
+let whd_delta_state e = raw_whd_state_gen CClosure.delta e
 let whd_delta_stack env = stack_red_of_state_red (whd_delta_state env)
 let whd_delta env = red_of_state_red  (whd_delta_state env)
 
-let whd_betadeltazeta_state e = raw_whd_state_gen Closure.betadeltazeta e
+let whd_betadeltazeta_state e = raw_whd_state_gen CClosure.betadeltazeta e
 let whd_betadeltazeta_stack env =
   stack_red_of_state_red (whd_betadeltazeta_state env)
 let whd_betadeltazeta env =
@@ -1122,21 +1122,21 @@ let whd_betadeltazeta env =
 
 (* 3. Iota reduction Functions *)
 
-let whd_betaiota_state = local_whd_state_gen Closure.betaiota
+let whd_betaiota_state = local_whd_state_gen CClosure.betaiota
 let whd_betaiota_stack = stack_red_of_state_red whd_betaiota_state
 let whd_betaiota = red_of_state_red whd_betaiota_state
 
-let whd_betaiotazeta_state = local_whd_state_gen Closure.betaiotazeta
+let whd_betaiotazeta_state = local_whd_state_gen CClosure.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
 let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
 
-let whd_all_state env = raw_whd_state_gen Closure.all env
+let whd_all_state env = raw_whd_state_gen CClosure.all env
 let whd_all_stack env =
   stack_red_of_state_red (whd_all_state env)
 let whd_all env =
   red_of_state_red (whd_all_state env)
 
-let whd_allnolet_state env = raw_whd_state_gen Closure.allnolet env
+let whd_allnolet_state env = raw_whd_state_gen CClosure.allnolet env
 let whd_allnolet_stack env =
   stack_red_of_state_red (whd_allnolet_state env)
 let whd_allnolet env =
@@ -1148,7 +1148,7 @@ let shrink_eta c = Stack.zip (local_whd_state_gen eta Evd.empty (c,Stack.empty))
 
 (* 5. Zeta Reduction Functions *)
 
-let whd_zeta_state = local_whd_state_gen Closure.zeta
+let whd_zeta_state = local_whd_state_gen CClosure.zeta
 let whd_zeta_stack = stack_red_of_state_red whd_zeta_state
 let whd_zeta = red_of_state_red whd_zeta_state
 
@@ -1166,16 +1166,16 @@ let nf_evar = Evarutil.nf_evar
 let clos_norm_flags flgs env sigma t =
   try
     let evars ev = safe_evar_value sigma ev in
-    Closure.norm_val
-      (Closure.create_clos_infos ~evars flgs env)
-      (Closure.inject t)
+    CClosure.norm_val
+      (CClosure.create_clos_infos ~evars flgs env)
+      (CClosure.inject t)
   with e when is_anomaly e -> error "Tried to normalize ill-typed term"
 
-let nf_beta = clos_norm_flags Closure.beta (Global.env ())
-let nf_betaiota = clos_norm_flags Closure.betaiota (Global.env ())
-let nf_betaiotazeta = clos_norm_flags Closure.betaiotazeta (Global.env ())
+let nf_beta = clos_norm_flags CClosure.beta (Global.env ())
+let nf_betaiota = clos_norm_flags CClosure.betaiota (Global.env ())
+let nf_betaiotazeta = clos_norm_flags CClosure.betaiotazeta (Global.env ())
 let nf_all env sigma =
-  clos_norm_flags Closure.all env sigma
+  clos_norm_flags CClosure.all env sigma
 
 
 (********************************************************************)
@@ -1469,19 +1469,19 @@ let is_sort env sigma t =
 
 let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
   let rec whrec csts s =
-    let (t, stack as s),csts' = whd_state_gen ~csts false Closure.betaiota env sigma s in
+    let (t, stack as s),csts' = whd_state_gen ~csts false CClosure.betaiota env sigma s in
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
-	  (Closure.RedFlags.red_add_transparent Closure.all ts) env sigma (t,args) in
+	  (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
 	if reducible_mind_case t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
       |args, (Stack.Fix _ :: _ as stack') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
-	  (Closure.RedFlags.red_add_transparent Closure.all ts) env sigma (t,args) in
+	  (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
 	if isConstruct t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
       |args, (Stack.Proj (n,m,p,_) :: stack'') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
-	  (Closure.RedFlags.red_add_transparent Closure.all ts) env sigma (t,args) in
+	  (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
 	if isConstruct t_o then
 	  whrec Cst_stack.empty (Stack.nth stack_o (n+m), stack'')
 	else s,csts'
