@@ -13,7 +13,7 @@
 (* This module implements kernel-level discharching of local
    declarations over global constants and inductive types *)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Term

@@ -10,7 +10,7 @@ open Util
 open Names
 open Term
 open Vars
-open Closure
+open CClosure
 open Esubst
 
 (**** Call by value reduction ****)

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Tacexpr
 open Genredexpr
@@ -145,7 +145,7 @@ let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
   | NoBindings ->
     begin
       try ElimOnIdent (Constrexpr_ops.constr_loc c,snd(Constrexpr_ops.coerce_to_id c))
-      with e when Errors.noncritical e -> ElimOnConstr clbind
+      with e when CErrors.noncritical e -> ElimOnConstr clbind
     end
   | _ -> ElimOnConstr clbind
 

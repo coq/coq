@@ -34,7 +34,7 @@ let proof_modes = Hashtbl.create 6
 let find_proof_mode n =
   try Hashtbl.find proof_modes n
   with Not_found ->
-    Errors.error (Format.sprintf "No proof mode named \"%s\"." n)
+    CErrors.error (Format.sprintf "No proof mode named \"%s\"." n)
 
 let register_proof_mode ({name = n} as m) =
   Hashtbl.add proof_modes n (CEphemeron.create m)
@@ -122,15 +122,15 @@ let push a l = l := a::!l;
   update_proof_mode ()
 
 exception NoSuchProof
-let _ = Errors.register_handler begin function
-  | NoSuchProof -> Errors.error "No such proof."
-  | _ -> raise Errors.Unhandled
+let _ = CErrors.register_handler begin function
+  | NoSuchProof -> CErrors.error "No such proof."
+  | _ -> raise CErrors.Unhandled
 end
 
 exception NoCurrentProof
-let _ = Errors.register_handler begin function
-  | NoCurrentProof -> Errors.error "No focused proof (No proof-editing in progress)."
-  | _ -> raise Errors.Unhandled
+let _ = CErrors.register_handler begin function
+  | NoCurrentProof -> CErrors.error "No focused proof (No proof-editing in progress)."
+  | _ -> raise CErrors.Unhandled
 end
 
 (*** Proof Global manipulation ***)
@@ -190,7 +190,7 @@ let check_no_pending_proof () =
   if not (there_are_pending_proofs ()) then
     ()
   else begin
-    Errors.error (Pp.string_of_ppcmds
+    CErrors.error (Pp.string_of_ppcmds
       (str"Proof editing in progress" ++ msg_proofs () ++ fnl() ++
        str"Use \"Abort All\" first or complete proof(s)."))
   end
@@ -202,7 +202,7 @@ let discard (loc,id) =
   let n = List.length !pstates in
   discard_gen id;
   if Int.equal (List.length !pstates) n then
-    Errors.user_err_loc
+    CErrors.user_err_loc
       (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs ())
 
 let discard_current () =
@@ -296,7 +296,7 @@ let set_used_variables l =
   | [] -> raise NoCurrentProof
   | p :: rest ->
       if not (Option.is_empty p.section_vars) then
-        Errors.error "Used section variables can be declared only once";
+        CErrors.error "Used section variables can be declared only once";
       pstates := { p with section_vars = Some ctx} :: rest;
       ctx, to_clear
 
@@ -408,7 +408,7 @@ let return_proof ?(allow_partial=false) () =
   let evd =
     let error s =
       let prf = str " (in proof " ++ Id.print pid ++ str ")" in
-      raise (Errors.UserError("last tactic before Qed",s ++ prf))
+      raise (CErrors.UserError("last tactic before Qed",s ++ prf))
     in
     try Proof.return proof with
     | Proof.UnfinishedProof ->
@@ -515,12 +515,12 @@ module Bullet = struct
     exception FailedBullet of t * suggestion
 
     let _ =
-      Errors.register_handler
+      CErrors.register_handler
 	(function
 	| FailedBullet (b,sugg) ->
 	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str" : " in
-	  Errors.errorlabstrm "Focus" (prefix ++ suggest_on_error sugg)
-	| _ -> raise Errors.Unhandled)
+	  CErrors.errorlabstrm "Focus" (prefix ++ suggest_on_error sugg)
+	| _ -> raise CErrors.Unhandled)
 
 
     (* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
@@ -633,7 +633,7 @@ module Bullet = struct
 	current_behavior :=
           try Hashtbl.find behaviors n
           with Not_found ->
-            Errors.error ("Unknown bullet behavior: \"" ^ n ^ "\".")
+            CErrors.error ("Unknown bullet behavior: \"" ^ n ^ "\".")
       end
     }
 
@@ -681,9 +681,9 @@ let parse_goal_selector = function
       let err_msg = "The default selector must be \"all\" or a natural number." in
       begin try
               let i = int_of_string i in
-              if i < 0 then Errors.error err_msg;
+              if i < 0 then CErrors.error err_msg;
               Vernacexpr.SelectNth i
-        with Failure _ -> Errors.error err_msg
+        with Failure _ -> CErrors.error err_msg
       end
 
 let _ =
@@ -712,7 +712,7 @@ type state = pstate list
 let freeze ~marshallable =
   match marshallable with
   | `Yes ->
-      Errors.anomaly (Pp.str"full marshalling of proof state not supported")
+      CErrors.anomaly (Pp.str"full marshalling of proof state not supported")
   | `Shallow -> !pstates
   | `No -> !pstates
 let unfreeze s = pstates := s; update_proof_mode ()

@@ -9,7 +9,7 @@
 (* Parsing of vernacular. *)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Flags
 open Vernacexpr
@@ -66,10 +66,10 @@ let _ =
       Goptions.optwrite = ((:=) atomic_load) }
 
 let disable_drop = function
-  | Drop -> Errors.error "Drop is forbidden."
+  | Drop -> CErrors.error "Drop is forbidden."
   | e -> e
 
-let user_error loc s = Errors.user_err_loc (loc,"_",str s)
+let user_error loc s = CErrors.user_err_loc (loc,"_",str s)
 
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.
@@ -90,7 +90,7 @@ let close_input in_chan (_,verb) =
     match verb with
       | Some verb_ch -> close_in verb_ch
       | _ -> ()
-  with e when Errors.noncritical e -> ()
+  with e when CErrors.noncritical e -> ()
 
 let verbose_phrase verbch loc =
   let loc = Loc.unloc loc in
@@ -195,7 +195,7 @@ let rec vernac_com verbose checknav (loc,com) =
             read_vernac_file verbosely f;
 	    restore_translator_coqdoc st;
 	  with reraise ->
-            let reraise = Errors.push reraise in
+            let reraise = CErrors.push reraise in
 	    restore_translator_coqdoc st;
 	    iraise reraise
 	end
@@ -213,7 +213,7 @@ let rec vernac_com verbose checknav (loc,com) =
       interp com;
       CLexer.restore_com_state a
     with reraise ->
-      let (reraise, info) = Errors.push reraise in
+      let (reraise, info) = CErrors.push reraise in
       Format.set_formatter_out_channel stdout;
       let loc' = Option.default Loc.ghost (Loc.get_loc info) in
       if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
@@ -233,7 +233,7 @@ and read_vernac_file verbosely s =
       vernac_com verbosely checknav loc_ast
     done
   with any ->   (* whatever the exception *)
-    let (e, info) = Errors.push any in
+    let (e, info) = CErrors.push any in
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match e with
@@ -260,7 +260,7 @@ let eval_expr loc_ast = vernac_com (Flags.is_verbose()) checknav loc_ast
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
 let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
 
-(* Load a vernac file. Errors are annotated with file and location *)
+(* Load a vernac file. CErrors are annotated with file and location *)
 let load_vernac verb file =
   chan_beautify :=
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
@@ -268,7 +268,7 @@ let load_vernac verb file =
     Flags.silently (read_vernac_file verb) file;
     if !Flags.beautify_file then close_out !chan_beautify;
   with any ->
-    let (e, info) = Errors.push any in
+    let (e, info) = CErrors.push any in
     if !Flags.beautify_file then close_out !chan_beautify;
     iraise (disable_drop e, info)
 
@@ -370,4 +370,4 @@ let compile v f =
   CoqworkmgrApi.giveback 1
 
 let () = Hook.set Stm.process_error_hook
-  Cerrors.process_vernac_interp_error
+  ExplainErr.process_vernac_interp_error

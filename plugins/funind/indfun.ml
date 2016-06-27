@@ -1,5 +1,5 @@
 open Context.Rel.Declaration
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -225,7 +225,7 @@ let prepare_body ((name,_,args,types,_),_) rt =
   (fun_args,rt')
 
 let process_vernac_interp_error e =
-  fst (Cerrors.process_vernac_interp_error (e, Exninfo.null))
+  fst (ExplainErr.process_vernac_interp_error (e, Exninfo.null))
 
 let derive_inversion fix_names =
   try
@@ -267,16 +267,16 @@ let derive_inversion fix_names =
 	functional_induction
 	fix_names_as_constant
 	lind;
-      with e when Errors.noncritical e ->
+      with e when CErrors.noncritical e ->
       let e' = process_vernac_interp_error e in
       Feedback.msg_warning
 	(str "Cannot build inversion information" ++
-	   if do_observe () then (fnl() ++ Errors.print e') else mt ())
-  with e when Errors.noncritical e ->
+	   if do_observe () then (fnl() ++ CErrors.print e') else mt ())
+  with e when CErrors.noncritical e ->
       let e' = process_vernac_interp_error e in
       Feedback.msg_warning
 	(str "Cannot build inversion information (early)" ++
-	   if do_observe () then (fnl() ++ Errors.print e') else mt ())       
+	   if do_observe () then (fnl() ++ CErrors.print e') else mt ())
 
 let warning_error names e =
   let e = process_vernac_interp_error e in
@@ -284,12 +284,12 @@ let warning_error names e =
     match e with
       | ToShow e -> 
 	let e = process_vernac_interp_error e in
-	spc () ++ Errors.print e
+	spc () ++ CErrors.print e
       | _ -> 
 	if do_observe () 
 	then 
 	  let e = process_vernac_interp_error e in 
-	  (spc () ++ Errors.print e) 
+	  (spc () ++ CErrors.print e)
 	else mt ()
   in
   match e with
@@ -309,8 +309,8 @@ let error_error names e =
   let e = process_vernac_interp_error e in
   let e_explain e =
     match e with
-      | ToShow e -> spc () ++ Errors.print e
-      | _ -> if do_observe () then (spc () ++ Errors.print e) else mt ()
+      | ToShow e -> spc () ++ CErrors.print e
+      | _ -> if do_observe () then (spc () ++ CErrors.print e) else mt ()
   in
   match e with
     | Building_graph e ->
@@ -378,7 +378,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	Array.iter (add_Function is_general) funs_kn;
 	()
       end
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     on_error names e
 
 let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
@@ -468,7 +468,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	   functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
 	);
       derive_inversion [fname]
-    with e when Errors.noncritical e ->
+    with e when CErrors.noncritical e ->
       (* No proof done *)
       ()
   in

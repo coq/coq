@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -230,8 +230,8 @@ module SearchProblem = struct
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
 	      (lgls, cost, pptac) :: aux tacl
-	  with e when Errors.noncritical e ->
-            let e = Errors.push e in
+	  with e when CErrors.noncritical e ->
+            let e = CErrors.push e in
             Refiner.catch_failerror e; aux tacl
     in aux l
 

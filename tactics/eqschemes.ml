@@ -44,7 +44,7 @@
    natural expectation of the user.
 *)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Term

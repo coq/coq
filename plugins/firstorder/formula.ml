@@ -19,7 +19,7 @@ open Context.Rel.Declaration
 
 let qflag=ref true
 
-let red_flags=ref Closure.betaiotazeta
+let red_flags=ref CClosure.betaiotazeta
 
 let (=?) f g i1 i2 j1 j2=
   let c=f i1 i2 in
@@ -59,12 +59,12 @@ let ind_hyps nevar ind largs gls=
     Array.map myhyps types
 
 let special_nf gl=
-  let infos=Closure.create_clos_infos !red_flags (pf_env gl) in
-    (fun t -> Closure.norm_val infos (Closure.inject t))
+  let infos=CClosure.create_clos_infos !red_flags (pf_env gl) in
+    (fun t -> CClosure.norm_val infos (CClosure.inject t))
 
 let special_whd gl=
-  let infos=Closure.create_clos_infos !red_flags (pf_env gl) in
-    (fun t -> Closure.whd_val infos (Closure.inject t))
+  let infos=CClosure.create_clos_infos !red_flags (pf_env gl) in
+    (fun t -> CClosure.whd_val infos (CClosure.inject t))
 
 type kind_of_formula=
     Arrow of constr*constr

@@ -33,11 +33,11 @@ exception Timeout
     interrupts). *)
 exception TacticFailure of exn
 
-let _ = Errors.register_handler begin function
-  | Timeout -> Errors.errorlabstrm "Some timeout function" (Pp.str"Timeout!")
-  | Exception e -> Errors.print e
-  | TacticFailure e -> Errors.print e
-  | _ -> Pervasives.raise Errors.Unhandled
+let _ = CErrors.register_handler begin function
+  | Timeout -> CErrors.errorlabstrm "Some timeout function" (Pp.str"Timeout!")
+  | Exception e -> CErrors.print e
+  | TacticFailure e -> CErrors.print e
+  | _ -> Pervasives.raise CErrors.Unhandled
 end
 
 (** {6 Non-logical layer} *)
@@ -86,11 +86,11 @@ struct
   let catch = fun s h -> ();
     fun () -> try s ()
       with Exception e as src ->
-        let (src, info) = Errors.push src in
+        let (src, info) = CErrors.push src in
         h (e, info) ()
 
   let read_line = fun () -> try Pervasives.read_line () with e ->
-    let (e, info) = Errors.push e in raise ~info e ()
+    let (e, info) = CErrors.push e in raise ~info e ()
 
   let print_char = fun c -> (); fun () -> print_char c
 
@@ -99,8 +99,8 @@ struct
 
   let make f = (); fun () ->
     try f ()
-    with e when Errors.noncritical e ->
-      let (e, info) = Errors.push e in
+    with e when CErrors.noncritical e ->
+      let (e, info) = CErrors.push e in
       Util.iraise (Exception e, info)
 
   (** Use the current logger. The buffer is also flushed. *)
@@ -112,7 +112,7 @@ struct
 
   let run = fun x ->
     try x () with Exception e as src ->
-      let (src, info) = Errors.push src in
+      let (src, info) = CErrors.push src in
       Util.iraise (e, info)
 end
 

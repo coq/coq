@@ -13,7 +13,7 @@
  *)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -382,7 +382,7 @@ and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
         if cl.cl_strict then
           Evd.evars_of_term concl
         else Evar.Set.empty
-    with e when Errors.noncritical e -> Evar.Set.empty
+    with e when CErrors.noncritical e -> Evar.Set.empty
   in
   let hintl =
     List.map_append
@@ -485,7 +485,7 @@ let is_unique env concl =
   try
     let (cl,u), args = dest_class_app env concl in
     cl.cl_unique
-  with e when Errors.noncritical e -> false
+  with e when CErrors.noncritical e -> false
 
 (** Sort the undefined variables from the least-dependent to most dependent. *)
 let top_sort evm undefs =
@@ -1278,7 +1278,7 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
                       ~depth dbs =
   let dbs = List.map_filter
               (fun db -> try Some (searchtable_map db)
-                      with e when Errors.noncritical e -> None)
+                      with e when CErrors.noncritical e -> None)
               dbs
   in
   let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
@@ -1434,7 +1434,7 @@ let resolve_typeclass_evars debug depth unique env evd filter split fail =
   let evd =
     try Evarconv.consider_remaining_unif_problems
       ~ts:(Typeclasses.classes_transparent_state ()) env evd
-    with e when Errors.noncritical e -> evd
+    with e when CErrors.noncritical e -> evd
   in
     resolve_all_evars debug depth unique env
                       (initial_select_evars filter) evd split fail

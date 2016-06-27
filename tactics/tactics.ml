@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -350,7 +350,7 @@ let rename_hyp repl =
       let () =
         try
           let elt = Id.Set.choose (Id.Set.inter dst mods) in
-          Errors.errorlabstrm "" (pr_id elt ++ str " is already used")
+          CErrors.errorlabstrm "" (pr_id elt ++ str " is already used")
         with Not_found -> ()
       in
       (** All is well *)
@@ -1807,8 +1807,8 @@ let apply_in_once_main flags innerclause env sigma (d,lbind) =
   let thm = nf_betaiota sigma (Retyping.get_type_of env sigma d) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
-    with e when Errors.noncritical e ->
-    let e = Errors.push e in
+    with e when CErrors.noncritical e ->
+    let e = CErrors.push e in
     try aux (clenv_push_prod clause)
     with NotExtensibleClause -> iraise e
   in
@@ -1838,8 +1838,8 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
             clear idstoclear;
             tac id
           ])
-    with e when with_destruct && Errors.noncritical e ->
-      let (e, info) = Errors.push e in
+    with e when with_destruct && CErrors.noncritical e ->
+      let (e, info) = CErrors.push e in
         (descend_in_conjunctions [targetid]
            (fun b id -> aux (id::idstoclear) b (mkVar id))
            (e, info) c)
@@ -1987,7 +1987,7 @@ let check_is_type env sigma ty =
   try
     let _ = Typing.e_sort_of env evdref ty in
     !evdref
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     raise (DependsOnBody None)
 
 let check_decl env sigma decl =
@@ -2001,7 +2001,7 @@ let check_decl env sigma decl =
     | LocalDef (_,c,_) -> Typing.e_check env evdref c ty
     in
     !evdref
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     let id = get_id decl in
     raise (DependsOnBody (Some id))
 
@@ -3876,7 +3876,7 @@ let compute_elim_sig ?elimc elimt =
       | Some (LocalAssum (_,ind)) ->
 	  let indhd,indargs = decompose_app ind in
 	  try {!res with indref = Some (global_of_constr indhd) }
-	  with e when Errors.noncritical e ->
+	  with e when CErrors.noncritical e ->
             error "Cannot find the inductive type of the inductive scheme."
 
 let compute_scheme_signature scheme names_info ind_type_guess =
@@ -4847,7 +4847,7 @@ let abstract_subproof id gk tac =
        which is an error irrelevant to the proof system (in fact it
        means that [e] comes from [tac] failing to yield enough
        success). Hence it reraises [e]. *)
-    let (_, info) = Errors.push src in
+    let (_, info) = CErrors.push src in
     iraise (e, info)
   in
   let const, args =
@@ -4907,7 +4907,7 @@ let unify ?(state=full_transparent_state) x y =
     let sigma = Sigma.to_evar_map sigma in
     let sigma = w_unify (Tacmach.New.pf_env gl) sigma Reduction.CONV ~flags x y in
     Sigma.Unsafe.of_pair (Proofview.tclUNIT (), sigma)
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     Sigma.here (Tacticals.New.tclFAIL 0 (str"Not unifiable")) sigma
   end }
 

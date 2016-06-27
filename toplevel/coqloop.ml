@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Flags
 open Vernac
@@ -147,7 +147,7 @@ let print_highlight_location ib loc =
 	  (l1 ++ li ++ ln)
   in
   let loc = Loc.make_loc (bp,ep) in
-  (str"Toplevel input, characters " ++ Cerrors.print_loc loc ++ str":" ++ fnl () ++
+  (str"Toplevel input, characters " ++ ExplainErr.print_loc loc ++ str":" ++ fnl () ++
      highlight_lines ++ fnl ())
 
 (* Functions to report located errors in a file. *)
@@ -165,7 +165,7 @@ let print_location_in_file loc =
     hov 0 (* No line break so as to follow emacs error message format *)
 	(errstrm ++ str"File " ++ str "\"" ++ str fname ++ str "\"" ++
 	   str", line " ++ int loc.line_nb ++ str", characters " ++
-	   Cerrors.print_loc (Loc.make_loc (loc.bp-loc.bol_pos,loc.ep-loc.bol_pos))) ++ str":" ++
+	   ExplainErr.print_loc (Loc.make_loc (loc.bp-loc.bol_pos,loc.ep-loc.bol_pos))) ++ str":" ++
       fnl ()
 
 let valid_buffer_loc ib loc =
@@ -255,7 +255,7 @@ let print_toplevel_error (e, info) =
       else mt ()
     else print_location_in_file loc
   in
-  locmsg ++ Errors.iprint (e, info)
+  locmsg ++ CErrors.iprint (e, info)
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
@@ -276,12 +276,12 @@ let rec discard_to_dot () =
   with
     | Compat.Token.Error _ | CLexer.Error.E _ -> discard_to_dot ()
     | End_of_input -> raise End_of_input
-    | e when Errors.noncritical e -> ()
+    | e when CErrors.noncritical e -> ()
 
 let read_sentence () =
   try Vernac.parse_sentence (top_buffer.tokens, None)
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     discard_to_dot ();
     iraise reraise
 
@@ -302,13 +302,13 @@ let do_vernac () =
   try
     Vernac.eval_expr (read_sentence ())
   with
-    | End_of_input | Errors.Quit ->
-        top_stderr (fnl ()); raise Errors.Quit
-    | Errors.Drop ->  (* Last chance *)
-        if Mltop.is_ocaml_top() then raise Errors.Drop
+    | End_of_input | CErrors.Quit ->
+        top_stderr (fnl ()); raise CErrors.Quit
+    | CErrors.Drop ->  (* Last chance *)
+        if Mltop.is_ocaml_top() then raise CErrors.Drop
         else Feedback.msg_error (str"There is no ML toplevel.")
     | any ->
-        let any = Errors.push any in
+        let any = CErrors.push any in
         Format.set_formatter_out_channel stdout;
         let msg = print_toplevel_error any ++ fnl () in
         pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
@@ -345,8 +345,8 @@ let rec loop () =
     reset_input_buffer stdin top_buffer;
     while true do do_vernac(); loop_flush_all () done
   with
-    | Errors.Drop -> ()
-    | Errors.Quit -> exit 0
+    | CErrors.Drop -> ()
+    | CErrors.Quit -> exit 0
     | any ->
       Feedback.msg_error (str"Anomaly: main loop exited with exception: " ++
                 str (Printexc.to_string any) ++

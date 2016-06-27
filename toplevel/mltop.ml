@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Util
 open Pp
 open Flags
@@ -118,8 +118,8 @@ let ml_load s =
     | WithTop t ->
       (try t.load_obj s; s
        with
-       | e when Errors.noncritical e ->
-        let e = Errors.push e in
+       | e when CErrors.noncritical e ->
+        let e = CErrors.push e in
         match fst e with
         | (UserError _ | Failure _ | Not_found as u) -> Exninfo.iraise (u, snd e)
         | exc ->

@@ -13,7 +13,7 @@
 
 (* *)
 open Pp
-open Errors
+open CErrors
 open Libnames
 open Globnames
 open Misctypes

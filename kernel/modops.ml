@@ -264,7 +264,7 @@ let add_retroknowledge mp =
     |Retroknowledge.RKRegister (f, e) when (isConst e || isInd e) ->
       Environ.register env f e
     |_ ->
-      Errors.anomaly ~label:"Modops.add_retroknowledge"
+      CErrors.anomaly ~label:"Modops.add_retroknowledge"
         (Pp.str "had to import an unsupported kind of term")
   in
   fun lclrk env ->

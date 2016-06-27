@@ -1,5 +1,5 @@
 open Printer
-open Errors
+open CErrors
 open Util
 open Term
 open Vars
@@ -27,7 +27,7 @@ let observe strm =
 let do_observe_tac s tac g =
  try let v = tac g in (* msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); *) v
  with e ->
-   let e = Cerrors.process_vernac_interp_error e in
+   let e = ExplainErr.process_vernac_interp_error e in
    let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
    msg_debug (str "observation "++ s++str " raised exception " ++
 	    Errors.print e ++ str " on goal " ++ goal );
@@ -52,7 +52,7 @@ let rec print_debug_queue e =
       let _ =
 	match e with
 	| Some e ->
-	   Feedback.msg_debug (hov 0 (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal" ++ fnl() ++ goal))
+	   Feedback.msg_debug (hov 0 (lmsg ++ (str " raised exception " ++ CErrors.print e) ++ str " on goal" ++ fnl() ++ goal))
 	| None ->
 	   begin
 	     Feedback.msg_debug (str " from " ++ lmsg ++ str " on goal" ++ fnl() ++ goal);
@@ -74,9 +74,9 @@ let do_observe_tac s tac g =
     ignore(Stack.pop debug_queue);
     v
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     if not (Stack.is_empty debug_queue)
-    then print_debug_queue (Some (fst (Cerrors.process_vernac_interp_error reraise)));
+    then print_debug_queue (Some (fst (ExplainErr.process_vernac_interp_error reraise)));
     iraise reraise
 
 let observe_tac_stream s tac g =
@@ -141,7 +141,7 @@ let is_trivial_eq t =
 	    eq_constr t1 t2 && eq_constr a1 a2
 	| _ -> false
     end
-  with e when Errors.noncritical e -> false
+  with e when CErrors.noncritical e -> false
   in
 (*   observe (str "is_trivial_eq " ++ Printer.pr_lconstr t ++ (if res then str " true" else str " false")); *)
   res
@@ -167,7 +167,7 @@ let is_incompatible_eq t =
 	    (eq_constr u1 u2 &&
 	       incompatible_constructor_terms t1 t2)
 	| _ -> false
-    with e when Errors.noncritical e -> false
+    with e when CErrors.noncritical e -> false
   in
   if res then   observe (str "is_incompatible_eq " ++ Printer.pr_lconstr t);
   res
@@ -223,8 +223,8 @@ let isAppConstruct ?(env=Global.env ()) t =
 
 let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
   let clos_norm_flags flgs env sigma t =
-    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
-  clos_norm_flags Closure.betaiotazeta  Environ.empty_env Evd.empty
+    CClosure.norm_val (CClosure.create_clos_infos flgs env) (CClosure.inject (Reductionops.nf_evar sigma t)) in
+  clos_norm_flags CClosure.betaiotazeta  Environ.empty_env Evd.empty
 
 
 
@@ -254,7 +254,7 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
 	  then
 	    (jmeq_refl (),(args.(1),args.(0)),(args.(3),args.(2)),args.(0))
 	  else nochange "not an equality"
-      with e when Errors.noncritical e -> nochange "not an equality"
+      with e when CErrors.noncritical e -> nochange "not an equality"
     in
     if not ((closed0 (fst t1)) && (closed0 (snd t1)))then nochange "not a closed lhs";
     let rec compute_substitution sub t1 t2 =
@@ -625,8 +625,8 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 let my_orelse tac1 tac2 g =
   try
     tac1 g
-  with e when Errors.noncritical e ->
-(*     observe (str "using snd tac since : " ++ Errors.print e); *)
+  with e when CErrors.noncritical e ->
+(*     observe (str "using snd tac since : " ++ CErrors.print e); *)
     tac2 g
 
 let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
@@ -1025,7 +1025,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 		{finfos with
 		   equation_lemma = Some (match Nametab.locate (qualid_of_ident equation_lemma_id) with
 					      ConstRef c -> c
-					    | _ -> Errors.anomaly (Pp.str "Not a constant")
+					    | _ -> CErrors.anomaly (Pp.str "Not a constant")
 					 )
 		}
 	  | _ -> ()
@@ -1085,7 +1085,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
       match Global.body_of_constant const with
 	| Some body ->
 	     Tacred.cbv_norm_flags
-	       (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+	       (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 	       (Global.env ())
 	       (Evd.empty)
 	       body

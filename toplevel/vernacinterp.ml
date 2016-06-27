@@ -8,7 +8,7 @@
 
 open Util
 open Pp
-open Errors
+open CErrors
 
 type deprecation = bool
 type vernac_command = Genarg.raw_generic_argument list -> unit -> unit
@@ -66,7 +66,7 @@ let call ?locality (opn,converted_args) =
   with
     | Drop -> raise Drop
     | reraise ->
-        let reraise = Errors.push reraise in
+        let reraise = CErrors.push reraise in
         if !Flags.debug then
 	  Feedback.msg_debug (str"Vernac Interpreter " ++ str !loc);
         iraise reraise

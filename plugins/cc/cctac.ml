@@ -20,7 +20,7 @@ open Typing
 open Ccalgo
 open Ccproof
 open Pp
-open Errors
+open CErrors
 open Util
 open Proofview.Notations
 open Context.Rel.Declaration
@@ -38,12 +38,12 @@ let _True = reference ["Init";"Logic"] "True"
 let _I = reference ["Init";"Logic"] "I"
 
 let whd env=
-  let infos=Closure.create_clos_infos Closure.betaiotazeta env in
-    (fun t -> Closure.whd_val infos (Closure.inject t))
+  let infos=CClosure.create_clos_infos CClosure.betaiotazeta env in
+    (fun t -> CClosure.whd_val infos (CClosure.inject t))
 
 let whd_delta env=
-   let infos=Closure.create_clos_infos Closure.betadeltaiota env in
-    (fun t -> Closure.whd_val infos (Closure.inject t))
+   let infos=CClosure.create_clos_infos CClosure.betadeltaiota env in
+    (fun t -> CClosure.whd_val infos (CClosure.inject t))
 
 (* decompose member of equality in an applicative format *)
 

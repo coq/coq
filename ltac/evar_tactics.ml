@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Util
-open Errors
+open CErrors
 open Evar_refiner
 open Tacmach
 open Tacexpr

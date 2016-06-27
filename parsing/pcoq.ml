@@ -8,7 +8,7 @@
 
 open Pp
 open Compat
-open Errors
+open CErrors
 open Util
 open Extend
 open Genarg
@@ -491,7 +491,7 @@ let with_grammar_rule_protection f x =
   let fs = freeze false in
   try let a = f x in unfreeze fs; a
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     let () = unfreeze fs in
     iraise reraise
 

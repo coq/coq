@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -663,7 +663,7 @@ let evar_of_binder holes = function
   try
     let h = List.nth holes (pred n) in
     h.hole_evar
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     errorlabstrm "" (str "No such binder.")
 
 let define_with_type sigma env ev c =

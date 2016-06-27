@@ -496,7 +496,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
       let fixenv = make_all_name_different fixenv in
       let pvd = pr_lconstr_env fixenv sigma vdefj.(i).uj_val in
 	str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
-    with e when Errors.noncritical e -> mt ())
+    with e when CErrors.noncritical e -> mt ())
 
 let explain_ill_typed_rec_body env sigma i names vdefj vargs =
   let vdefj = Evarutil.jv_nf_evar sigma vdefj in

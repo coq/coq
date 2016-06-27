@@ -36,10 +36,11 @@ type debug_info =
 
 (* An exception handler *)
 let explain_logic_error e =
-  Errors.print (fst (Cerrors.process_vernac_interp_error (e, Exninfo.null)))
+  CErrors.print (fst (ExplainErr.process_vernac_interp_error (e, Exninfo.null)))
 
 let explain_logic_error_no_anomaly e =
-  Errors.print_no_report (fst (Cerrors.process_vernac_interp_error (e, Exninfo.null)))
+  CErrors.print_no_report
+    (fst (ExplainErr.process_vernac_interp_error (e, Exninfo.null)))
 
 let msg_tac_debug s = Proofview.NonLogical.print_debug (s++fnl())
 let msg_tac_notice s = Proofview.NonLogical.print_notice (s++fnl())
@@ -417,4 +418,4 @@ let get_ltac_trace (_, info) =
   | None -> None
   | Some trace -> Some (extract_ltac_trace trace loc)
 
-let () = Cerrors.register_additional_error_info get_ltac_trace
+let () = ExplainErr.register_additional_error_info get_ltac_trace

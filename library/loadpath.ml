@@ -8,7 +8,7 @@
 
 open Pp
 open Util
-open Errors
+open CErrors
 open Names
 open Libnames
 

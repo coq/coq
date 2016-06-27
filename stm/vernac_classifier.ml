@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Vernacexpr
-open Errors
+open CErrors
 open Pp
 
 let default_proof_mode () = Proof_global.get_default_proof_mode_name ()

@@ -11,7 +11,7 @@ open Globnames
 
 val qflag : bool ref
 
-val red_flags: Closure.RedFlags.reds ref
+val red_flags: CClosure.RedFlags.reds ref
 
 val (=?) : ('a -> 'a -> int) -> ('b -> 'b -> int) ->
   'a -> 'a -> 'b -> 'b -> int

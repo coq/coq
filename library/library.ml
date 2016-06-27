@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 
 open Names
@@ -64,7 +64,7 @@ let fetch_delayed del =
     let () = close_in ch in
     if not (String.equal digest digest') then raise (Faulty f);
     obj
-  with e when Errors.noncritical e -> raise (Faulty f)
+  with e when CErrors.noncritical e -> raise (Faulty f)
 
 end
 
@@ -720,7 +720,7 @@ let save_library_to ?todo dir f otab =
       except Int.Set.empty in
   let is_done_or_todo i x = Future.is_val x || Int.Set.mem i except in
   Array.iteri (fun i x ->
-    if not(is_done_or_todo i x) then Errors.errorlabstrm "library"
+    if not(is_done_or_todo i x) then CErrors.errorlabstrm "library"
       Pp.(str"Proof object "++int i++str" is not checked nor to be checked"))
     opaque_table;
   let sd = {
@@ -752,7 +752,7 @@ let save_library_to ?todo dir f otab =
       if not (Nativelib.compile_library dir ast fn) then
 	error "Could not compile the library to native code."
    with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     let () = Feedback.msg_warning (str "Removed file " ++ str f') in
     let () = close_out ch in
     let () = Sys.remove f' in

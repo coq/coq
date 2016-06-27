@@ -13,7 +13,7 @@ open Names
 open Libnames
 open Globnames
 open Pp
-open Errors
+open CErrors
 open Util
 open Table
 open Extraction

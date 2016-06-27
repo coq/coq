@@ -336,7 +336,7 @@ $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA)
 
 # coqmktop
 
-COQMKTOPCMO:=lib/clib.cma lib/errors.cmo tools/tolink.cmo tools/coqmktop.cmo
+COQMKTOPCMO:=lib/clib.cma lib/cErrors.cmo tools/tolink.cmo tools/coqmktop.cmo
 
 $(COQMKTOP): $(call bestobj, $(COQMKTOPCMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -350,7 +350,7 @@ tools/tolink.ml: Makefile.build Makefile.common
 
 # coqc
 
-COQCCMO:=lib/clib.cma lib/errors.cmo toplevel/usage.cmo tools/coqc.cmo
+COQCCMO:=lib/clib.cma lib/cErrors.cmo toplevel/usage.cmo tools/coqc.cmo
 
 $(COQC): $(call bestobj, $(COQCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -388,7 +388,7 @@ $(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 
 # The full coqdep (unused by this build, but distributed by make install)
 
-COQDEPCMO:=lib/clib.cma lib/errors.cmo lib/minisys.cmo lib/system.cmo \
+COQDEPCMO:=lib/clib.cma lib/cErrors.cmo lib/minisys.cmo lib/system.cmo \
   tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
 
 $(COQDEP): $(call bestobj, $(COQDEPCMO))
@@ -427,7 +427,7 @@ $(COQWORKMGR): $(call bestobj, lib/clib.cma stm/coqworkmgrApi.cmo tools/coqworkm
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-FAKEIDECMO:= lib/clib.cma lib/errors.cmo lib/spawn.cmo ide/document.cmo \
+FAKEIDECMO:= lib/clib.cma lib/cErrors.cmo lib/spawn.cmo ide/document.cmo \
  ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo ide/xml_printer.cmo \
  ide/xmlprotocol.cmo tools/fake_ide.cmo
 

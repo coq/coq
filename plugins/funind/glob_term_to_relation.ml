@@ -7,7 +7,7 @@ open Glob_term
 open Glob_ops
 open Globnames
 open Indfun_common
-open Errors
+open CErrors
 open Util
 open Glob_termops
 open Misctypes
@@ -921,7 +921,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    observe (str "computing new type for eq : " ++ pr_glob_constr rt);
 		    let t' =
 		      try fst (Pretyping.understand env (Evd.from_env env) t)(*FIXME*)
-                      with e when Errors.noncritical e -> raise Continue
+                      with e when CErrors.noncritical e -> raise Continue
 		    in
 		    let is_in_b = is_free_in id b in
 		    let _keep_eq =
@@ -1223,7 +1223,7 @@ let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * bool)
 	     l := param::!l
 	)
 	rels_params.(0)
-    with e when Errors.noncritical e ->
+    with e when CErrors.noncritical e ->
       ()
   in
   List.rev !l
@@ -1460,7 +1460,7 @@ let do_build_inductive
 	  str "while trying to define"++ spc () ++
 	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(false,Decl_kinds.Finite,repacked_rel_inds))
 	    ++ fnl () ++
-	    Errors.print reraise
+	    CErrors.print reraise
 	in
  	observe msg;
 	raise reraise
@@ -1476,7 +1476,7 @@ let build_inductive evd funconstants funsargs returned_types rtl =
     do_build_inductive evd funconstants funsargs returned_types rtl;
     Detyping.print_universes := pu;
     Constrextern.print_universes := cu
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
     Detyping.print_universes := pu;
     Constrextern.print_universes := cu;
     raise (Building_graph e)

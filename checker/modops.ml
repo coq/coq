@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (*i*)
-open Errors
+open CErrors
 open Util
 open Pp
 open Names

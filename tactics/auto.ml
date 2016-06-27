@@ -10,7 +10,7 @@
 *)
 open Pp
 open Util
-open Errors
+open CErrors
 open Names
 open Vars
 open Termops
@@ -232,7 +232,7 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
 	  out
 	with reraise ->
-          let reraise = Errors.push reraise in
+          let reraise = CErrors.push reraise in
 	  Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
 	  iraise reraise
       end
@@ -244,7 +244,7 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  trace := (depth, Some pp) :: !trace;
 	  out
 	with reraise ->
-          let reraise = Errors.push reraise in
+          let reraise = CErrors.push reraise in
 	  trace := (depth, None) :: !trace;
 	  iraise reraise
       end
