@@ -991,12 +991,7 @@ let compute_pure_syntax_data df mods =
       (Feedback.msg_warning ?loc:None,
       strbrk "The only parsing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
-  let msgs =
-    if onlyprint then
-      (Feedback.msg_warning ?loc:None,
-      strbrk "The only printing modifier has no effect in Reserved Notation.")::msgs
-    else msgs in
-  msgs, sy_data, extra
+  msgs, sy_data, extra, onlyprint
 
 (**********************************************************************)
 (* Registration of notations interpretation                            *)
@@ -1213,8 +1208,8 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
 (* Notations without interpretation (Reserved Notation) *)
 
 let add_syntax_extension local ((loc,df),mods) =
-  let msgs, sy_data, extra = compute_pure_syntax_data df mods in
-  let sy_rules = make_syntax_rules sy_data extra false in
+  let msgs, sy_data, extra, onlyprint = compute_pure_syntax_data df mods in
+  let sy_rules = make_syntax_rules sy_data extra onlyprint in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 
