@@ -428,7 +428,7 @@ let print_ast id =
 
 (** Grouping all call handlers together + error handling *)
 
-let eval_call xml_oc log c =
+let eval_call log c =
   let interruptible f x =
     catch_break := true;
     Control.check_for_interrupt ();
@@ -474,13 +474,6 @@ let print_xml =
     with e -> let e = CErrors.push e in Mutex.unlock m; iraise e
 
 
-let slave_logger xml_oc ?loc level message =
-  (* convert the message into XML *)
-  let msg = hov 0 message in
-  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg))         in
-  let xml = Xmlprotocol.of_message level loc (Richpp.richpp_of_pp message) in
-  print_xml xml_oc xml
-
 let slave_feeder xml_oc msg =
   let xml = Xmlprotocol.of_feedback msg in
   print_xml xml_oc xml
@@ -500,8 +493,9 @@ let loop () =
     CThread.thread_friendly_read in_ch s ~off:0 ~len) in
   let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
-  Feedback.set_logger (slave_logger xml_oc);
+  Feedback.set_logger Feedback.feedback_logger;
   Feedback.add_feeder (slave_feeder xml_oc);
+  let f_log str = Feedback.(feedback (Message(Notice, None, Richpp.richpp_of_pp str))) in
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
@@ -511,7 +505,7 @@ let loop () =
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r = eval_call xml_oc (slave_logger xml_oc Feedback.Notice) q in
+      let r = eval_call f_log q in
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
       print_xml xml_oc (Xmlprotocol.of_answer q r);

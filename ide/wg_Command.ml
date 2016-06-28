@@ -100,12 +100,8 @@ object(self)
         if Str.string_match (Str.regexp "\\. *$") com 0 then com
         else com ^ " " ^ arg ^" . "
       in
-      let log level message =
-        Ideutils.insert_xml result#buffer message;
-        result#buffer#insert "\n";
-      in
       let process =
-	Coq.bind (Coq.query ~logger:log (phrase,Stateid.dummy)) (function
+	Coq.bind (Coq.query (phrase,Stateid.dummy)) (function
           | Interface.Fail (_,l,str) ->
             Ideutils.insert_xml result#buffer str;
             notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;

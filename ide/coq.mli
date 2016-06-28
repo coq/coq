@@ -115,15 +115,11 @@ val try_grab : coqtop -> unit task -> (unit -> unit) -> unit
 type 'a query = 'a Interface.value task
 (** A type abbreviation for coqtop specific answers *)
 
-val add        : ?logger:Ideutils.logger ->
-                 Interface.add_sty        -> Interface.add_rty query
+val add        : Interface.add_sty        -> Interface.add_rty query
 val edit_at    : Interface.edit_at_sty    -> Interface.edit_at_rty query
-val query      : ?logger:Ideutils.logger ->
-                 Interface.query_sty      -> Interface.query_rty query
-val status     : ?logger:Ideutils.logger ->
-                 Interface.status_sty     -> Interface.status_rty query
-val goals      : ?logger:Ideutils.logger ->
-                 Interface.goals_sty      -> Interface.goals_rty query
+val query      : Interface.query_sty      -> Interface.query_rty query
+val status     : Interface.status_sty     -> Interface.status_rty query
+val goals      : Interface.goals_sty      -> Interface.goals_rty query
 val evars      : Interface.evars_sty      -> Interface.evars_rty query
 val hints      : Interface.hints_sty      -> Interface.hints_rty query
 val mkcases    : Interface.mkcases_sty    -> Interface.mkcases_rty query

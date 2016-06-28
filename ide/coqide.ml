@@ -536,7 +536,7 @@ let update_status sn =
     display ("Ready"^ (if nanoPG#get then ", [μPG]" else "") ^ path ^ name);
     Coq.return ()
   in
-  Coq.bind (Coq.status ~logger:sn.messages#push false) next
+  Coq.bind (Coq.status false) next
 
 let find_next_occurrence ~backward sn =
   (** go to the next occurrence of the current word, forward or backward *)

@@ -37,14 +37,9 @@ let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
-    match Xmlprotocol.is_message xml with
-    | Some (level, _loc, content) ->
-      logger level content;
+    if Xmlprotocol.is_feedback xml then
       loop ()
-    | None ->
-      if Xmlprotocol.is_feedback xml then
-        loop ()
-      else Xmlprotocol.to_answer call xml
+    else Xmlprotocol.to_answer call xml
   in
   let res = loop () in
   if print then prerr_endline (Xmlprotocol.pr_full_value call res);

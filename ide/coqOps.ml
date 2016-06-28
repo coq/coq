@@ -345,7 +345,7 @@ object(self)
         script#recenter_insert
       end
     end;
-    Coq.bind (Coq.goals ~logger:messages#push ()) (function
+    Coq.bind (Coq.goals ()) (function
     | Fail x -> self#handle_failure_aux ~move_insert x
     | Good goals ->
       Coq.bind (Coq.evars ()) (function
@@ -368,7 +368,7 @@ object(self)
       else messages#add s;
     in
     let query =
-      Coq.query ~logger:messages#push (phrase,Stateid.dummy) in
+      Coq.query (phrase,Stateid.dummy) in
     let next = function
     | Fail (_, _, err) -> display_error err; Coq.return ()
     | Good msg ->
@@ -476,13 +476,14 @@ object(self)
             self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
       | Message(Warning, loc, msg), Some (id,sentence) ->
           let loc = Option.default Loc.ghost loc in
-          let msg = Richpp.raw_print msg         in
+          let rmsg = Richpp.raw_print msg         in
           log "WarningMsg" id;
-          add_flag sentence (`WARNING (loc, msg));
-          self#attach_tooltip sentence loc msg;
-          self#position_warning_tag_at_sentence sentence loc
-      | Message((Info|Notice|Debug as lvl), _, msg), _ ->
-          messages#push lvl msg
+          add_flag sentence (`WARNING (loc, rmsg));
+          self#attach_tooltip sentence loc rmsg;
+          self#position_warning_tag_at_sentence sentence loc;
+          messages#push Warning msg
+      | Message(lvl, loc, msg), Some (id,sentence) ->
+        messages#push lvl msg
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
           else to_process <- to_process + n
@@ -641,7 +642,7 @@ object(self)
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
             let _, _, phrase = self#get_sentence sentence in
-            let coq_query = Coq.add ~logger ((phrase,edit_id),(tip,verbose)) in
+            let coq_query = Coq.add ((phrase,edit_id),(tip,verbose)) in
             let handle_answer = function
               | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
                   Doc.assign_tip_id document id;
@@ -675,7 +676,7 @@ object(self)
          messages#push Feedback.Info (Richpp.richpp_of_string "All proof terms checked by the kernel");
          Coq.return ()
      | Fail x -> self#handle_failure x in
-   Coq.bind (Coq.status ~logger:messages#push true) next
+   Coq.bind (Coq.status true) next
 
   method stop_worker n =
     Coq.bind (Coq.stop_worker n) (fun _ -> Coq.return ())
