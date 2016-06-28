@@ -6,16 +6,29 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Toplevel Exception *)
-exception EvaluatedError of Pp.std_ppcmds * exn option
+type status =
+  Disabled | Enabled | AsError
 
-(** Pre-explain a vernac interpretation error *)
+(*
+type 'a repr = {
+  print : 'a -> Pp.std_ppcmds;
+  kind : string;
+  enabled : bool;
+}
+ *)
 
-val process_vernac_interp_error : ?allow_uncaught:bool -> ?with_header:bool -> Util.iexn -> Util.iexn
+val set_current_loc : Loc.t -> unit
 
-(** General explain function. Should not be used directly now,
-    see instead function [Errors.print] and variants *)
+val create : name:string -> category:string -> ?default:status ->
+             ('a -> Pp.std_ppcmds) -> ?loc:Loc.t -> 'a -> unit
 
-val explain_exn_default : exn -> Pp.std_ppcmds
+(*
+val emit : 'a t -> 'a -> unit
 
-val register_additional_error_info : (Util.iexn -> (Pp.std_ppcmds option * Loc.t) option) -> unit
+type any = Any : string * string * 'a repr -> any
+
+val dump : unit -> any list
+ *)
+
+val get_flags : unit -> string
+val set_flags : string -> unit

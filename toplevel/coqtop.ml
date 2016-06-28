@@ -123,16 +123,6 @@ let engage () =
 
 let set_batch_mode () = batch_mode := true
 
-let user_warning = ref false
-(** User explicitly set warning *)
-
-let set_warning p =
-  let () = user_warning := true in
-  match p with
-  | "all" -> make_warn true
-  | "none" -> make_warn false
-  | _ -> prerr_endline ("Error: all/none expected after option w"); exit 1
-
 let toplevel_default_name = DirPath.make [Id.of_string "Top"]
 let toplevel_name = ref (Some toplevel_default_name)
 let set_toplevel_name dir =
@@ -142,18 +132,27 @@ let unset_toplevel_name () = toplevel_name := None
 
 let remove_top_ml () = Mltop.remove ()
 
+let warn_deprecated_inputstate =
+  CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
+         (fun () -> strbrk "The inputstate option is deprecated and discouraged.")
+
 let inputstate = ref ""
 let set_inputstate s =
-  let () = Feedback.msg_warning (str "The inputstate option is deprecated and discouraged.") in
+  warn_deprecated_inputstate ();
   inputstate:=s
 let inputstate () =
   if not (String.is_empty !inputstate) then
     let fname = Loadpath.locate_file (CUnix.make_suffix !inputstate ".coq") in
     intern_state fname
 
+let warn_deprecated_outputstate =
+  CWarnings.create ~name:"deprecated-outputstate" ~category:"deprecated"
+         (fun () ->
+          strbrk "The outputstate option is deprecated and discouraged.")
+
 let outputstate = ref ""
 let set_outputstate s =
-  let () = Feedback.msg_warning (str "The outputstate option is deprecated and discouraged.") in
+  warn_deprecated_outputstate ();
   outputstate:=s
 let outputstate () =
   if not (String.is_empty !outputstate) then
@@ -532,7 +531,7 @@ let parse_args arglist =
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Vio2Vo
     |"-toploop" -> set_toploop (next ())
-    |"-w" -> set_warning (next ())
+    |"-w" | "-W" -> CWarnings.set_flags (next ())
     |"-o" -> Flags.compilation_output_name := Some (next())
 
     (* Options with zero arg *)
@@ -640,7 +639,7 @@ let init_toplevel arglist =
       engage ();
       (* Be careful to set these variables after the inputstate *)
       Syntax_def.set_verbose_compat_notations !verb_compat_ntn;
-      Syntax_def.set_compat_notations (not !no_compat_ntn);
+(*       Syntax_def.set_compat_notations (not !no_compat_ntn); FIXME *)
       if (not !batch_mode || List.is_empty !compile_list)
          && Global.env_is_initial ()
       then Option.iter Declaremods.start_library !toplevel_name;
@@ -677,7 +676,6 @@ let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in
   (* In batch mode, Coqtop has already exited at this point. In interactive one,
      dump glob is nothing but garbage ...  *)
-  if not !user_warning then make_warn true;
   !toploop_run ();
   exit 1
 

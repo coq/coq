@@ -50,6 +50,13 @@ let remove_load_path dir =
   let filter p = not (String.equal p.path_physical dir) in
   load_paths := List.filter filter !load_paths
 
+let warn_overriding_logical_loadpath =
+  CWarnings.create ~name:"overriding-logical-loadpath" ~category:"loadpath"
+         (fun (phys_path, old_path, coq_path) ->
+          str phys_path ++ strbrk " was previously bound to " ++
+            pr_dirpath old_path ++ strbrk "; it is remapped to " ++
+            pr_dirpath coq_path)
+
 let add_load_path phys_path coq_path ~implicit =
   let phys_path = CUnix.canonical_path_name phys_path in
   let filter p = String.equal p.path_physical phys_path in
@@ -72,10 +79,8 @@ let add_load_path phys_path coq_path ~implicit =
         let () =
           (* Do not warn when overriding the default "-I ." path *)
           if not (DirPath.equal old_path Nameops.default_root_prefix) then
-            Feedback.msg_warning
-              (str phys_path ++ strbrk " was previously bound to " ++
-                 pr_dirpath old_path ++ strbrk "; it is remapped to " ++
-                 pr_dirpath coq_path) in
+          warn_overriding_logical_loadpath (phys_path, old_path, coq_path)
+        in
         true in
     if replace then
       begin

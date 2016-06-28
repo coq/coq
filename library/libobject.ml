@@ -12,18 +12,6 @@ open Util
 
 module Dyn = Dyn.Make(struct end)
 
-(* The relax flag is used to make it possible to load files while ignoring
-   failures to incorporate some objects.  This can be useful when one
-   wants to work with restricted Coq programs that have only parts of
-   the full capabilities, but may still be able to work correctly for
-   limited purposes.  One example is for the graphical interface, that uses
-   such a limited Coq process to do only parsing.  It loads .vo files, but
-   is only interested in loading the grammar rule definitions. *)
-
-let relax_flag = ref false;;
-
-let relax b = relax_flag := b;;
-
 type 'a substitutivity =
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
 
@@ -114,31 +102,16 @@ let declare_object_full odecl =
   try declare_object_full odecl
   with e -> Errors.fatal_error (Errors.print e) (Errors.is_anomaly e)
 
-let missing_tab = (Hashtbl.create 17 : (string, unit) Hashtbl.t)
-
 (* this function describes how the cache, load, open, and export functions
-   are triggered.  In relaxed mode, this function just return a meaningless
-   value instead of raising an exception when they fail. *)
+   are triggered. *)
 
 let apply_dyn_fun deflt f lobj =
   let tag = object_tag lobj in
-  try
-    let dodecl =
-      try
-        Hashtbl.find cache_tab tag
-      with Not_found ->
-        failwith "local to_apply_dyn_fun" in
-    f dodecl
-  with
-    Failure "local to_apply_dyn_fun" ->
-      if not (!relax_flag || Hashtbl.mem missing_tab tag) then
-        begin
-          Feedback.msg_warning
-	    (Pp.str ("Cannot find library functions for an object with tag "
-                      ^ tag ^ " (a plugin may be missing)"));
-          Hashtbl.add missing_tab tag ()
-        end;
-      deflt
+  let dodecl =
+    try Hashtbl.find cache_tab tag
+    with Not_found -> assert false
+  in
+  f dodecl
 
 let cache_object ((_,lobj) as node) =
   apply_dyn_fun () (fun d -> d.dyn_cache_function node) lobj

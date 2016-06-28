@@ -198,15 +198,13 @@ let warning_error names e =
   let (e, _) = Cerrors.process_vernac_interp_error (e, Exninfo.null) in
   match e with
     | Building_graph e ->
-	Feedback.msg_warning
-	  (str "Cannot define graph(s) for " ++
-	     h 1 (pr_enum Libnames.pr_reference names) ++
-	     if do_observe () then (spc () ++ Errors.print e) else mt ())
+       let names = pr_enum Libnames.pr_reference names in
+       let error = if do_observe () then (spc () ++ Errors.print e) else mt () in
+       warn_cannot_define_graph (names,error)
     | Defining_principle e ->
-	Feedback.msg_warning
-	  (str "Cannot define principle(s) for "++
-	     h 1 (pr_enum Libnames.pr_reference names) ++
-	     if do_observe () then Errors.print e else mt ())
+       let names = pr_enum Libnames.pr_reference names in
+       let error = if do_observe () then Errors.print e else mt () in
+       warn_cannot_define_principle (names,error)
     | _ -> raise e
 
 

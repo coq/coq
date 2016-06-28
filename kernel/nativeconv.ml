@@ -145,11 +145,16 @@ let native_conv_gen pb sigma env univs t1 t2 =
       end
   | _ -> anomaly (Pp.str "Compilation failure") 
 
+let warn_no_native_compiler =
+  let open Pp in
+  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
+         (fun () -> strbrk "Native compiler is disabled," ++
+                      strbrk " falling back to VM conversion test.")
+
 (* Wrapper for [native_conv] above *)
 let native_conv cv_pb sigma env t1 t2 =
   if Coq_config.no_native_compiler then begin
-    let msg = "Native compiler is disabled, falling back to VM conversion test." in
-    Feedback.msg_warning (Pp.str msg);
+    warn_no_native_compiler ();
     vm_conv cv_pb env t1 t2
   end
   else

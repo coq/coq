@@ -111,14 +111,8 @@ let declare_tactic loc s c cl = match cl with
   declare_str_items loc
     [ <:str_item< do {
       let obj () = Tacenv.register_ltac True False $name$ $body$ in
-      try do {
-        Tacenv.register_ml_tactic $se$ [|$tac$|];
-        Mltop.declare_cache_obj obj $plugin_name$; }
-      with [ e when Errors.noncritical e ->
-        Feedback.msg_warning
-          (Pp.app
-            (Pp.str ("Exception in tactic extend " ^ $entry$ ^": "))
-            (Errors.print e)) ]; } >>
+      Tacenv.register_ml_tactic $se$ [|$tac$|];
+      Mltop.declare_cache_obj obj $plugin_name$; } >>
     ]
 | _ ->
   (** Otherwise we add parsing and printing rules to generate a call to a
@@ -129,14 +123,8 @@ let declare_tactic loc s c cl = match cl with
   let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ $gl$ >> in
   declare_str_items loc
     [ <:str_item< do {
-      try do {
         Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc s cl$);
-        Mltop.declare_cache_obj $obj$ $plugin_name$; }
-      with [ e when Errors.noncritical e ->
-        Feedback.msg_warning
-          (Pp.app
-            (Pp.str ("Exception in tactic extend " ^ $entry$ ^": "))
-            (Errors.print e)) ]; } >>
+        Mltop.declare_cache_obj $obj$ $plugin_name$; } >>
     ]
 
 open Pcaml
