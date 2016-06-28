@@ -35,21 +35,6 @@ let init_signal_handler () =
 
 (** Redirection of standard output to a printable buffer *)
 
-let init_stdout, read_stdout =
-  let out_buff = Buffer.create 100 in
-  let out_ft = Format.formatter_of_buffer out_buff in
-  let deep_out_ft = Format.formatter_of_buffer out_buff in
-  let _ = Pp_control.set_gp deep_out_ft Pp_control.deep_gp in
-  (fun () ->
-     flush_all ();
-     Pp_control.std_ft := out_ft;
-     Pp_control.err_ft := out_ft;
-     Pp_control.deep_ft := deep_out_ft;
-  ),
-  (fun () -> Format.pp_print_flush out_ft ();
-             let r = Buffer.contents out_buff in
-             Buffer.clear out_buff; r)
-
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let pr_error s = pr_with_pid s
@@ -115,14 +100,14 @@ let coqide_cmd_checks (loc,ast) =
 let add ((s,eid),(sid,verbose)) =
   let newid, rc = Stm.add ~ontop:sid verbose ~check:coqide_cmd_checks eid s in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
-  newid, (rc, read_stdout ())
+  newid, (rc, "")
 
 let edit_at id =
   match Stm.edit_at id with
   | `NewTip -> CSig.Inl ()
   | `Focus { Stm.start; stop; tip} -> CSig.Inr (start, (stop, tip))
 
-let query (s,id) = Stm.query ~at:id s; read_stdout ()
+let query (s,id) = Stm.query ~at:id s; ""
 
 let annotate phrase =
   let (loc, ast) =
@@ -214,8 +199,6 @@ let export_pre_goals pgs =
 
 let goals () =
   Stm.finish ();
-  let s = read_stdout () in
-  if not (String.is_empty s) then Feedback.msg_info (str s);
   try
     let pfts = Proof_global.give_me_the_proof () in
     Some (export_pre_goals (Proof.map_structured_proof pfts process_goal))
@@ -224,8 +207,6 @@ let goals () =
 let evars () =
   try
     Stm.finish ();
-    let s = read_stdout () in
-    if not (String.is_empty s) then Feedback.msg_info (str s);
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
     let exl = Evar.Map.bindings (Evarutil.non_instantiated sigma) in
@@ -257,8 +238,6 @@ let status force =
       and display the other parts (opened sections and modules) *)
   Stm.finish ();
   if force then Stm.join ();
-  let s = read_stdout () in
-  if not (String.is_empty s) then Feedback.msg_info (str s);
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
@@ -365,8 +344,7 @@ let handle_exn (e, info) =
     | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
     | _ -> None in
   let mk_msg () =
-    let msg = read_stdout () in
-    let msg = str msg ++ fnl () ++ CErrors.print ~info e in
+    let msg = CErrors.print ~info e in
     Richpp.richpp_of_pp msg
   in
   match e with
@@ -409,7 +387,7 @@ let interp ((_raw, verbose), s) =
       | Some ast -> ast)
     () in
   Stm.interp verbose (vernac_parse s);
-  Stm.get_current_state (), CSig.Inl (read_stdout ())
+  Stm.get_current_state (), CSig.Inl ""
 
 (** When receiving the Quit call, we don't directly do an [exit 0],
     but rather set this reference, in order to send a final answer
@@ -428,14 +406,12 @@ let print_ast id =
 
 (** Grouping all call handlers together + error handling *)
 
-let eval_call log c =
+let eval_call c =
   let interruptible f x =
     catch_break := true;
     Control.check_for_interrupt ();
     let r = f x in
     catch_break := false;
-    let out = read_stdout () in
-    if not (String.is_empty out) then log (str out);
     r
   in
   let handler = {
@@ -487,15 +463,15 @@ let slave_feeder xml_oc msg =
 let loop () =
   init_signal_handler ();
   catch_break := false;
-  let in_ch, out_ch = Spawned.get_channels () in
-  let xml_oc = Xml_printer.make (Xml_printer.TChannel out_ch) in
-  let in_lb = Lexing.from_function (fun s len ->
-    CThread.thread_friendly_read in_ch s ~off:0 ~len) in
-  let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
+  let in_ch, out_ch = Spawned.get_channels ()                        in
+  let xml_oc        = Xml_printer.make (Xml_printer.TChannel out_ch) in
+  let in_lb         = Lexing.from_function (fun s len ->
+                      CThread.thread_friendly_read in_ch s ~off:0 ~len) in
+  (* SEXP parser make *)
+  let xml_ic        = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
   Feedback.set_logger Feedback.feedback_logger;
   Feedback.add_feeder (slave_feeder xml_oc);
-  let f_log str = Feedback.(feedback (Message(Notice, None, Richpp.richpp_of_pp str))) in
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
@@ -505,7 +481,7 @@ let loop () =
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r = eval_call f_log q in
+      let r = eval_call q in
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
       print_xml xml_oc (Xmlprotocol.of_answer q r);
@@ -536,7 +512,6 @@ let rec parse = function
 let () = Coqtop.toploop_init := (fun args ->
         let args = parse args in
         Flags.make_silent true;
-        init_stdout ();
         CoqworkmgrApi.(init Flags.High);
         args)
 
