@@ -620,7 +620,7 @@ and share_names flags n l avoid env sigma c t =
         share_names flags (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
     (* If built with the f/n notation: we renounce to share names *)
     | _ ->
-        if n>0 then Feedback.msg_debug (strbrk "Detyping.detype: cannot factorize fix enough");
+        if n>0 then Feedback.msg_warning (strbrk "Detyping.detype: cannot factorize fix enough");
         let c = detype flags avoid env sigma c in
         let t = detype flags avoid env sigma t in
         (List.rev l,c,t)

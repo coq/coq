@@ -11,7 +11,6 @@ sig
   val table : GText.tag_table
   val comment : GText.tag
   val error : GText.tag
-  val warning : GText.tag
   val error_bg : GText.tag
   val to_process : GText.tag
   val processed : GText.tag
@@ -21,7 +20,6 @@ sig
   val sentence : GText.tag
   val tooltip : GText.tag
   val edit_zone : GText.tag (* for debugging *)
-  val ephemere : GText.tag list
   val all : GText.tag list
 end
 

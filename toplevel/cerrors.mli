@@ -9,6 +9,10 @@
 (** Toplevel Exception *)
 exception EvaluatedError of Pp.std_ppcmds * exn option
 
+(** Error report. *)
+
+val print_loc : Loc.t -> Pp.std_ppcmds
+
 (** Pre-explain a vernac interpretation error *)
 
 val process_vernac_interp_error : ?allow_uncaught:bool -> ?with_header:bool -> Util.iexn -> Util.iexn

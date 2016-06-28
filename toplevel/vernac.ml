@@ -18,15 +18,14 @@ open Vernacexpr
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
-(* Navigation commands are allowed in a coqtop session but not in a .v file *)
+(* The navigation vernac commands will be handled separately *)
 
 let rec is_navigation_vernac = function
   | VernacResetInitial
   | VernacResetName _
   | VernacBacktrack _
   | VernacBackTo _
-  | VernacBack _
-  | VernacStm _ -> true
+  | VernacBack _ -> true
   | VernacRedirect (_, (_,c))
   | VernacTime (_,c) ->
       is_navigation_vernac c (* Time Back* is harmless *)
@@ -231,7 +230,6 @@ and read_vernac_file verbosely s =
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc_ast = parse_sentence input in
-      CWarnings.set_current_loc (fst loc_ast);
       vernac_com verbosely checknav loc_ast
     done
   with any ->   (* whatever the exception *)
@@ -274,17 +272,11 @@ let load_vernac verb file =
     if !Flags.beautify_file then close_out !chan_beautify;
     iraise (disable_drop e, info)
 
-let warn_file_no_extension =
-  CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
-         (fun (f,ext) ->
-          str "File \"" ++ str f ++
-            strbrk "\" has been implicitly expanded to \"" ++
-            str f ++ str ext ++ str "\"")
-
 let ensure_ext ext f =
   if Filename.check_suffix f ext then f
   else begin
-    warn_file_no_extension (f,ext);
+    Feedback.msg_warning (str "File \"" ++ str f ++ strbrk "\" has been implicitly \
+    expanded to \"" ++ str f ++ str ext ++ str "\"");
     f ^ ext
   end
 

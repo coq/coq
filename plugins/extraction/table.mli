@@ -21,7 +21,8 @@ val safe_basename_of_global : global_reference -> Id.t
 
 val warning_axioms : unit -> unit
 val warning_opaques : bool -> unit
-val warning_ambiguous_name : ?loc:Loc.t -> qualid * module_path * global_reference -> unit
+val warning_both_mod_and_cst :
+ qualid -> module_path -> global_reference -> unit
 val warning_id : string -> unit
 val error_axiom_scheme : global_reference -> int -> 'a
 val error_constant : global_reference -> 'a

@@ -187,13 +187,6 @@ let cs_pattern_of_constr t =
           with e when Errors.noncritical e -> raise Not_found
 	end
 
-let warn_projection_no_head_constant =
-  CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
-         (fun (t,con_pp,proji_sp_pp) ->
-          strbrk "Projection value has no head constant: "
-          ++ Termops.print_constr t ++ strbrk " in canonical instance "  
-          ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
-
 (* Intended to always succeed *)
 let compute_canonical_projections (con,ind) =
   let env = Global.env () in
@@ -220,10 +213,13 @@ let compute_canonical_projections (con,ind) =
 		   let patt, n , args = cs_pattern_of_constr t in
 		     ((ConstRef proji_sp, patt, t, n, args) :: l)
 		 with Not_found ->
-                     let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con)
+                   if Flags.is_verbose () then
+                     (let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con)
                       and proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
-                     warn_projection_no_head_constant (t,con_pp,proji_sp_pp);
-                   l
+		      Feedback.msg_warning (strbrk "No global reference exists for projection value"
+                                   ++ Termops.print_constr t ++ strbrk " in instance "  
+                                   ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it."));
+		   l
 	       end
 	   | _ -> l)
       [] lps in
@@ -239,13 +235,6 @@ let pr_cs_pattern = function
   | Default_cs -> str "_"
   | Sort_cs s -> Termops.pr_sort_family s
 
-let warn_redundant_canonical_projection =
-  CWarnings.create ~name:"redundant-canonical-projection" ~category:"typechecker"
-         (fun (hd_val,prj,new_can_s,old_can_s) ->
-          strbrk "Ignoring canonical projection to " ++ hd_val
-          ++ strbrk " by " ++ prj ++ strbrk " in "
-          ++ new_can_s ++ strbrk ": redundant with " ++ old_can_s)
-
 let open_canonical_structure i (_,o) =
   if Int.equal i 1 then
     let lo = compute_canonical_projections o in
@@ -256,12 +245,14 @@ let open_canonical_structure i (_,o) =
       in match ocs with
         | None -> object_table := Refmap.add proj ((pat,s)::l) !object_table;
         | Some (c, cs) ->
+            if Flags.is_verbose () then
               let old_can_s = (Termops.print_constr cs.o_DEF)
               and new_can_s = (Termops.print_constr s.o_DEF) in
               let prj = (Nametab.pr_global_env Id.Set.empty proj)
               and hd_val = (pr_cs_pattern cs_pat) in
-              warn_redundant_canonical_projection (hd_val,prj,new_can_s,old_can_s))
-          lo
+              Feedback.msg_warning (strbrk "Ignoring canonical projection to " ++ hd_val
+                             ++ strbrk " by " ++ prj ++ strbrk " in "
+                             ++ new_can_s ++ strbrk ": redundant with " ++ old_can_s)) lo
 
 let cache_canonical_structure o =
   open_canonical_structure 1 o

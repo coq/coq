@@ -120,11 +120,6 @@ let pr_firstorder_using_raw _ _ _ l = str "using " ++ prlist_with_sep pr_comma p
 let pr_firstorder_using_glob _ _ _ l = str "using " ++ prlist_with_sep pr_comma (pr_or_var (fun x -> (pr_global (snd x)))) l
 let pr_firstorder_using_typed _ _ _ l = str "using " ++ prlist_with_sep pr_comma pr_global l
 
-let warn_deprecated_syntax =
-  CWarnings.create ~name:"firstorder-deprecated-syntax" ~category:"deprecated"
-    (fun () -> Pp.strbrk "Deprecated syntax; use \",\" as separator")
-
-
 ARGUMENT EXTEND firstorder_using
   TYPED AS reference_list
   PRINTED BY pr_firstorder_using_typed
@@ -135,7 +130,8 @@ ARGUMENT EXTEND firstorder_using
 | [ "using" reference(a) ] -> [ [a] ]
 | [ "using" reference(a) "," ne_reference_list_sep(l,",") ] -> [ a::l ]
 | [ "using" reference(a) reference(b) reference_list(l) ] -> [
-    warn_deprecated_syntax ();
+    Flags.if_verbose
+      Feedback.msg_warning (Pp.str "Deprecated syntax; use \",\" as separator");
     a::b::l
   ]
 | [ ] -> [ [] ]

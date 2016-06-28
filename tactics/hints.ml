@@ -708,7 +708,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	else begin
 	  if not eapply then failwith "make_apply_entry";
           if verbose then
-	    Feedback.msg_info (str "the hint: eapply " ++ pr_lconstr c ++
+	    Feedback.msg_warning (str "the hint: eapply " ++ pr_lconstr c ++
 	    str " will only be used by eauto");
           (Some hd,
            { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
@@ -743,12 +743,6 @@ let input_context_set : Univ.ContextSet.t -> Libobject.obj =
       discharge_function = (fun (_,a) -> Some a);
       classify_function = (fun a -> Keep a) }
 
-let warn_polymorphic_hint =
-  CWarnings.create ~name:"polymorphic-hint" ~category:"automation"
-         (fun hint -> strbrk"Using polymorphic hint " ++ hint ++
-                        str" monomorphically" ++
-                        strbrk" use Polymorphic Hint to use it polymorphically.")
-
 let fresh_global_or_constr env sigma poly cr =
   let isgr, (c, ctx) =
     match cr with
@@ -760,7 +754,9 @@ let fresh_global_or_constr env sigma poly cr =
     else if Univ.ContextSet.is_empty ctx then (c, ctx)
     else begin
       if isgr then
-        warn_polymorphic_hint (pr_hint_term env sigma ctx cr);
+        Feedback.msg_warning (str"Using polymorphic hint " ++
+		     pr_hint_term env sigma ctx cr ++ str" monomorphically" ++
+		     str" use Polymorphic Hint to use it polymorphically.");
       Lib.add_anonymous_leaf (input_context_set ctx);
       (c, Univ.ContextSet.empty)
     end
@@ -1393,15 +1389,10 @@ let print_mp mp =
 
 let is_imported h = try KNmap.find h.uid !statustable with Not_found -> true
 
-let warn_non_imported_hint =
-  CWarnings.create ~name:"non-imported-hint" ~category:"automation"
-         (fun (hint,mp) ->
-          strbrk "Hint used but not imported: " ++ hint ++ print_mp mp)
-
 let warn h x =
   let hint = pr_hint h in
   let (mp, _, _) = KerName.repr h.uid in
-  warn_non_imported_hint (hint,mp);
+  let () = Feedback.msg_warning (str "Hint used but not imported: " ++ hint ++ print_mp mp) in
   Proofview.tclUNIT x
 
 let run_hint tac k = match !warn_hint with

@@ -18,7 +18,6 @@ struct
   let table = GText.tag_table ()
   let comment = make_tag table ~name:"comment" []
   let error = make_tag table ~name:"error" [`UNDERLINE `SINGLE]
-  let warning = make_tag table ~name:"warning" [`UNDERLINE `SINGLE; `FOREGROUND "blue"]
   let error_bg = make_tag table ~name:"error_bg" []
   let to_process = make_tag table ~name:"to_process" []
   let processed = make_tag table ~name:"processed" []
@@ -30,11 +29,9 @@ struct
   let sentence = make_tag table ~name:"sentence" []
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
 
-  let ephemere =
-    [error; warning; error_bg; tooltip; processed; to_process; incomplete; unjustified]
-
   let all =
-    comment :: found :: sentence :: ephemere
+    [comment; error; error_bg; to_process; processed; incomplete; unjustified;
+     found; sentence; tooltip]
 
   let edit_zone =
     let t = make_tag table ~name:"edit_zone" [`UNDERLINE `SINGLE] in

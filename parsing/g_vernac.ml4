@@ -123,18 +123,16 @@ GEXTEND Gram
   ;
 END
 
-let warn_plural_command =
-  CWarnings.create ~name:"plural-command" ~category:"pedantic" ~default:Disabled
-         (fun kwd -> strbrk (Printf.sprintf "Command \"%s\" expects more than one assumption." kwd))
-
-let test_plural_form loc kwd = function
+let test_plural_form = function
   | [(_,([_],_))] ->
-     warn_plural_command ~loc:!@loc kwd
+      Flags.if_verbose Feedback.msg_warning
+   (strbrk "Keywords Variables/Hypotheses/Parameters expect more than one assumption")
   | _ -> ()
 
-let test_plural_form_types loc kwd = function
+let test_plural_form_types = function
   | [([_],_)] ->
-     warn_plural_command ~loc:!@loc kwd
+      Flags.if_verbose Feedback.msg_warning
+   (strbrk "Keywords Implicit Types expect more than one type")
   | _ -> ()
 
 let fresh_var env c =
@@ -157,8 +155,8 @@ GEXTEND Gram
           VernacStartTheoremProof (thm, (Some id,(bl,c,None))::l, false)
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
-      | (kwd,stre) = assumptions_token; nl = inline; bl = assum_list ->
-	  test_plural_form loc kwd bl;
+      | stre = assumptions_token; nl = inline; bl = assum_list ->
+	  test_plural_form bl;
 	  VernacAssumption (stre, nl, bl)
       | d = def_token; id = pidentref; b = def_body ->
           VernacDefinition (d, id, b)
@@ -211,11 +209,11 @@ GEXTEND Gram
       | IDENT "Conjecture" -> (None, Conjectural) ] ]
   ;
   assumptions_token:
-    [ [ kwd = IDENT "Hypotheses" -> (kwd, (Some Discharge, Logical))
-      | kwd = IDENT "Variables" -> (kwd, (Some Discharge, Definitional))
-      | kwd = IDENT "Axioms" -> (kwd, (None, Logical))
-      | kwd = IDENT "Parameters" -> (kwd, (None, Definitional))
-      | kwd = IDENT "Conjectures" -> (kwd, (None, Conjectural)) ] ]
+    [ [ IDENT "Hypotheses" -> (Some Discharge, Logical)
+      | IDENT "Variables" -> (Some Discharge, Definitional)
+      | IDENT "Axioms" -> (None, Logical)
+      | IDENT "Parameters" -> (None, Definitional)
+      | IDENT "Conjectures" -> (None, Conjectural) ] ]
   ;
   inline:
     [ [ IDENT "Inline"; "("; i = INT; ")" -> InlineAt (int_of_string i)
@@ -424,10 +422,6 @@ let starredidentreflist_to_expr l =
   | [] -> SsEmpty
   | x :: xs -> List.fold_right (fun i acc -> SsUnion(i,acc)) xs x
 
-let warn_deprecated_include_type =
-  CWarnings.create ~name:"deprecated-include-type" ~category:"deprecated"
-         (fun () -> strbrk "Include Type is deprecated; use Include instead")
-
 (* Modules and Sections *)
 GEXTEND Gram
   GLOBAL: gallina_ext module_expr module_type section_subset_expr;
@@ -467,8 +461,9 @@ GEXTEND Gram
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
 	  VernacInclude(e::l)
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
-	 warn_deprecated_include_type ~loc:!@loc ();
-	 VernacInclude(e::l) ] ]
+	  Flags.if_verbose
+            Feedback.msg_warning (strbrk "Include Type is deprecated; use Include instead");
+          VernacInclude(e::l) ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> Some false
@@ -571,14 +566,6 @@ GEXTEND Gram
       | "("; e = ssexpr; ")"; "*" -> SsFwdClose e ] ]
   ;
 END
-
-let warn_deprecated_arguments_scope =
-  CWarnings.create ~name:"deprecated-arguments-scope" ~category:"deprecated"
-         (fun () -> strbrk "Arguments Scope is deprecated; use Arguments instead")
-
-let warn_deprecated_implicit_arguments =
-  CWarnings.create ~name:"deprecated-implicit-arguments" ~category:"deprecated"
-         (fun () -> strbrk "Implicit Arguments is deprecated; use Arguments instead")
 
 (* Extensions: implicits, coercions, etc. *)
 GEXTEND Gram
@@ -694,21 +681,22 @@ GEXTEND Gram
      (* moved there so that camlp5 factors it with the previous rule *)
      | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 [ "_" -> None | sc = IDENT -> Some sc ]; "]" ->
-	warn_deprecated_arguments_scope ~loc:!@loc ();
+       Feedback. msg_warning (strbrk "Arguments Scope is deprecated; use Arguments instead");
         VernacArgumentsScope (qid,scl)
 
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global;
 	   pos = LIST0 [ "["; l = LIST0 implicit_name; "]" ->
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
-	 warn_deprecated_implicit_arguments ~loc:!@loc ();
-	 VernacDeclareImplicits (qid,pos)
+	   Flags.if_verbose
+            Feedback.msg_warning (strbrk "Implicit Arguments is deprecated; use Arguments instead");
+	   VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
 	   VernacReserve bl
 
       | IDENT "Implicit"; IDENT "Types"; bl = reserv_list ->
-          test_plural_form_types loc "Implicit Types" bl;
+          test_plural_form_types bl;
            VernacReserve bl
 
       | IDENT "Generalizable"; 

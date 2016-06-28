@@ -583,8 +583,8 @@ let rec locate_ref = function
 	| None, Some r -> let refs,mps = locate_ref l in r::refs,mps
 	| Some mp, None -> let refs,mps = locate_ref l in refs,mp::mps
 	| Some mp, Some r ->
-           warning_ambiguous_name (q,mp,r);
-           let refs,mps = locate_ref l in refs,mp::mps
+	    warning_both_mod_and_cst q mp r;
+	    let refs,mps = locate_ref l in refs,mp::mps
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. Also used when

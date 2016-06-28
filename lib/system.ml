@@ -18,10 +18,6 @@ include Minisys
     depth-first search, with sons ordered as on the file system;
     warns if [root] does not exist *)
 
-let warn_cannot_open_dir =
-  CWarnings.create ~name:"cannot-open-dir" ~category:"filesystem"
-  (fun dir -> str ("Cannot open directory " ^ dir))
-
 let all_subdirs ~unix_path:root =
   let l = ref [] in
   let add f rel = l := (f, rel) :: !l in
@@ -36,7 +32,7 @@ let all_subdirs ~unix_path:root =
   in
   check_unix_dir (fun s -> Feedback.msg_warning (str s)) root;
   if exists_dir root then traverse root []
-  else warn_cannot_open_dir root;
+  else Feedback.msg_warning (str ("Cannot open " ^ root));
   List.rev !l
 
 (* Caching directory contents for efficient syntactic equality of file
@@ -89,22 +85,19 @@ let rec search paths test =
   | [] -> []
   | lpe :: rem -> test lpe @ search rem test
 
-let warn_ambiguous_file_name =
-  CWarnings.create ~name:"ambiguous-file-name" ~category:"filesystem"
-    (fun (filename,l,f) -> str filename ++ str " has been found in" ++ spc () ++
-                hov 0 (str "[ " ++
-                         hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
-                                               (fun (lpe,_) -> str lpe) l)
-                       ++ str " ];") ++ fnl () ++
-                str "loading " ++ str f)
-
-
 let where_in_path ?(warn=true) path filename =
   let check_and_warn l = match l with
   | [] -> raise Not_found
   | (lpe, f) :: l' ->
     let () = match l' with
-    | _ :: _ when warn -> warn_ambiguous_file_name (filename,l,f)
+    | _ :: _ when warn ->
+      Feedback.msg_warning
+        (str filename ++ str " has been found in" ++ spc () ++
+          hov 0 (str "[ " ++
+            hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
+              (fun (lpe,_) -> str lpe) l)
+            ++ str " ];") ++ fnl () ++
+          str "loading " ++ str f)
     | _ -> ()
     in
     (lpe, f)
@@ -149,16 +142,12 @@ let is_in_path lpath filename =
   try ignore (where_in_path ~warn:false lpath filename); true
   with Not_found -> false
 
-let warn_path_not_found =
-  CWarnings.create ~name:"path-not-found" ~category:"filesystem"
-  (fun () -> str "system variable PATH not found")
-
 let is_in_system_path filename =
   try
     let lpath = CUnix.path_to_list (Sys.getenv "PATH") in
     is_in_path lpath filename
   with Not_found ->
-    warn_path_not_found ();
+    Feedback.msg_warning (str "system variable PATH not found");
     false
 
 let open_trapping_failure name =
@@ -166,14 +155,11 @@ let open_trapping_failure name =
   with e when Errors.noncritical e ->
     errorlabstrm "System.open" (str "Can't open " ++ str name)
 
-let warn_cannot_remove_file =
-  CWarnings.create ~name:"cannot-remove-file" ~category:"filesystem"
-  (fun filename -> str"Could not remove file " ++ str filename ++ str" which is corrupted!")
-
 let try_remove filename =
   try Sys.remove filename
   with e when Errors.noncritical e ->
-    warn_cannot_remove_file filename
+    Feedback.msg_warning
+      (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
 let error_corrupted file s =
   errorlabstrm "System" (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")

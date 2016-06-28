@@ -295,94 +295,81 @@ let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 
 let err s = errorlabstrm "Extraction" s
 
-let warn_extraction_axiom_to_realize =
-  CWarnings.create ~name:"extraction-axiom-to-realize" ~category:"extraction"
-         (fun axioms ->
-          let s = if Int.equal (List.length axioms) 1 then "axiom" else "axioms" in
-          strbrk ("The following "^s^" must be realized in the extracted code:")
-                   ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global axioms)
-                   ++ str "." ++ fnl ())
-
-let warn_extraction_logical_axiom =
-  CWarnings.create ~name:"extraction-logical-axiom" ~category:"extraction"
-         (fun axioms ->
-          let s =
-            if Int.equal (List.length axioms) 1 then "axiom was" else "axioms were"
-          in
-          (strbrk ("The following logical "^s^" encountered:") ++
-             hov 1 (spc () ++ prlist_with_sep spc safe_pr_global axioms ++ str ".\n")
-           ++ strbrk "Having invalid logical axiom in the environment when extracting"
-           ++ spc () ++ strbrk "may lead to incorrect or non-terminating ML terms." ++
-             fnl ()))
-
 let warning_axioms () =
   let info_axioms = Refset'.elements !info_axioms in
-  if not (List.is_empty info_axioms) then
-    warn_extraction_axiom_to_realize info_axioms;
+  if List.is_empty info_axioms then ()
+  else begin
+    let s = if Int.equal (List.length info_axioms) 1 then "axiom" else "axioms" in
+    Feedback.msg_warning
+      (str ("The following "^s^" must be realized in the extracted code:")
+       ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global info_axioms)
+       ++ str "." ++ fnl ())
+  end;
   let log_axioms = Refset'.elements !log_axioms in
-  if not (List.is_empty log_axioms) then
-    warn_extraction_logical_axiom log_axioms
-
-let warn_extraction_opaque_accessed =
-  CWarnings.create ~name:"extraction-opaque-accessed" ~category:"extraction"
-    (fun lst -> strbrk "The extraction is currently set to bypass opacity, " ++
-                  strbrk "the following opaque constant bodies have been accessed :" ++
-                  lst ++ str "." ++ fnl ())
-
-let warn_extraction_opaque_as_axiom =
-  CWarnings.create ~name:"extraction-opaque-as-axiom" ~category:"extraction"
-    (fun lst -> strbrk "The extraction now honors the opacity constraints by default, " ++
-	 strbrk "the following opaque constants have been extracted as axioms :" ++
-	 lst ++ str "." ++ fnl () ++
-	 strbrk "If necessary, use \"Set Extraction AccessOpaque\" to change this."
-	 ++ fnl ())
+  if List.is_empty log_axioms then ()
+  else begin
+    let s = if Int.equal (List.length log_axioms) 1 then "axiom was" else "axioms were"
+    in
+    Feedback.msg_warning
+      (str ("The following logical "^s^" encountered:") ++
+       hov 1
+         (spc () ++ prlist_with_sep spc safe_pr_global log_axioms ++ str ".\n")
+       ++
+       str "Having invalid logical axiom in the environment when extracting" ++
+       spc () ++ str "may lead to incorrect or non-terminating ML terms." ++
+       fnl ())
+  end
 
 let warning_opaques accessed =
   let opaques = Refset'.elements !opaques in
-  if not (List.is_empty opaques) then
+  if List.is_empty opaques then ()
+  else
     let lst = hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques) in
-    if accessed then warn_extraction_opaque_accessed lst
-    else warn_extraction_opaque_as_axiom lst
+    if accessed then
+      Feedback.msg_warning
+	(str "The extraction is currently set to bypass opacity,\n" ++
+	 str "the following opaque constant bodies have been accessed :" ++
+	 lst ++ str "." ++ fnl ())
+    else
+      Feedback.msg_warning
+	(str "The extraction now honors the opacity constraints by default,\n" ++
+	 str "the following opaque constants have been extracted as axioms :" ++
+	 lst ++ str "." ++ fnl () ++
+	 str "If necessary, use \"Set Extraction AccessOpaque\" to change this."
+	 ++ fnl ())
 
-let warning_ambiguous_name =
-  CWarnings.create ~name:"extraction-ambiguous-name" ~category:"extraction"
-    (fun (q,mp,r) -> strbrk "The name " ++ pr_qualid q ++ strbrk " is ambiguous, " ++
-                       strbrk "do you mean module " ++
-                       pr_long_mp mp ++
-                       strbrk " or object " ++
-                       pr_long_global r ++ str " ?" ++ fnl () ++
-                       strbrk "First choice is assumed, for the second one please use " ++
-                       strbrk "fully qualified name." ++ fnl ())
+let warning_both_mod_and_cst q mp r =
+ Feedback.msg_warning
+   (str "The name " ++ pr_qualid q ++ str " is ambiguous, " ++
+    str "do you mean module " ++
+    pr_long_mp mp ++
+    str " or object " ++
+    pr_long_global r ++ str " ?" ++ fnl () ++
+    str "First choice is assumed, for the second one please use " ++
+    str "fully qualified name." ++ fnl ())
 
 let error_axiom_scheme r i =
   err (str "The type scheme axiom " ++ spc () ++
        safe_pr_global r ++ spc () ++ str "needs " ++ int i ++
        str " type variable(s).")
 
-let warn_extraction_inside_module =
-  CWarnings.create ~name:"extraction-inside-module" ~category:"extraction"
-      (fun () -> strbrk "Extraction inside an opened module is experimental." ++
-       strbrk "In case of problem, close it first.")
-
-
 let check_inside_module () =
   if Lib.is_modtype () then
     err (str "You can't do that within a Module Type." ++ fnl () ++
 	 str "Close it and try again.")
   else if Lib.is_module () then
-    warn_extraction_inside_module ()
+    Feedback.msg_warning
+      (str "Extraction inside an opened module is experimental.\n" ++
+       str "In case of problem, close it first.\n")
 
 let check_inside_section () =
   if Lib.sections_are_opened () then
     err (str "You can't do that within a section." ++ fnl () ++
 	 str "Close it and try again.")
 
-let warn_extraction_reserved_identifier =
-  CWarnings.create ~name:"extraction-reserved-identifier" ~category:"extraction"
-    (fun s -> strbrk ("The identifier "^s^
-                " contains __ which is reserved for the extraction"))
-
-let warning_id s = warn_extraction_reserved_identifier s
+let warning_id s =
+  Feedback.msg_warning (str ("The identifier "^s^
+		    " contains __ which is reserved for the extraction"))
 
 let error_constant r =
   err (safe_pr_global r ++ str " is not a constant.")
@@ -460,15 +447,12 @@ let error_remaining_implicit k =
        str "You might also try Unset Extraction SafeImplicits to force" ++
        fnl() ++ str "the extraction of unsafe code and review it manually.")
 
-let warn_extraction_remaining_implicit =
-  CWarnings.create ~name:"extraction-remaining-implicit" ~category:"extraction"
-    (fun s -> strbrk ("At least an implicit occurs after extraction : "^s^".") ++ fnl () ++
-     strbrk "Extraction SafeImplicits is unset, extracting nonetheless,"
-     ++ strbrk "but this code is potentially unsafe, please review it manually.")
-
 let warning_remaining_implicit k =
   let s = msg_of_implicit k in
-  warn_extraction_remaining_implicit s
+  Feedback.msg_warning
+    (str ("At least an implicit occurs after extraction : "^s^".") ++ fnl () ++
+     str "Extraction SafeImplicits is unset, extracting nonetheless," ++ fnl ()
+     ++ str "but this code is potentially unsafe, please review it manually.")
 
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp ->

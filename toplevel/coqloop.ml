@@ -146,8 +146,9 @@ let print_highlight_location ib loc =
                       str sn ++ str dn) in
 	  (l1 ++ li ++ ln)
   in
-  let loc  = Loc.make_loc (bp,ep) in
-  (Pp.pr_loc loc ++ highlight_lines ++ fnl ())
+  let loc = Loc.make_loc (bp,ep) in
+  (str"Toplevel input, characters " ++ Cerrors.print_loc loc ++ str":" ++ fnl () ++
+     highlight_lines ++ fnl ())
 
 (* Functions to report located errors in a file. *)
 
@@ -162,7 +163,10 @@ let print_location_in_file loc =
     in
     let open Loc in
     hov 0 (* No line break so as to follow emacs error message format *)
-	(errstrm ++ Pp.pr_loc loc)
+	(errstrm ++ str"File " ++ str "\"" ++ str fname ++ str "\"" ++
+	   str", line " ++ int loc.line_nb ++ str", characters " ++
+	   Cerrors.print_loc (Loc.make_loc (loc.bp-loc.bol_pos,loc.ep-loc.bol_pos))) ++ str":" ++
+      fnl ()
 
 let valid_buffer_loc ib loc =
   not (Loc.is_ghost loc) &&
@@ -245,7 +249,7 @@ let print_toplevel_error (e, info) =
   let loc = Option.default Loc.ghost (Loc.get_loc info) in
   let fname = loc.Loc.fname in
   let locmsg =
-    if Loc.is_ghost loc || String.equal fname "" then
+    if String.equal fname "" then
       if locate_exn e && valid_buffer_loc top_buffer loc then
 	print_highlight_location top_buffer loc
       else mt ()

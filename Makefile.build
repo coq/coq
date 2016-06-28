@@ -388,9 +388,8 @@ $(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 
 # The full coqdep (unused by this build, but distributed by make install)
 
-COQDEPCMO:=lib/clib.cma lib/errors.cmo lib/cWarnings.cmo lib/minisys.cmo \
-  lib/system.cmo tools/coqdep_lexer.cmo tools/coqdep_common.cmo \
-  tools/coqdep.cmo
+COQDEPCMO:=lib/clib.cma lib/errors.cmo lib/minisys.cmo lib/system.cmo \
+  tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
 
 $(COQDEP): $(call bestobj, $(COQDEPCMO))
 	$(SHOW)'OCAMLBEST -o $@'

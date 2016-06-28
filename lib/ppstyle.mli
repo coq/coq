@@ -48,7 +48,7 @@ val dump : unit -> (t * Terminal.style option) list
 
 val init_color_output : unit -> unit
 
-val color_msg : ?loc:Loc.t -> ?header:string * Format.tag ->
+val color_msg : ?header:string * Format.tag ->
   Format.formatter -> Pp.std_ppcmds -> unit
 (** {!color_msg ?header fmt pp} will format according to the tags
      defined in this file *)

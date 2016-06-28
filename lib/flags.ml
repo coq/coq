@@ -172,7 +172,7 @@ let make_polymorphic_flag b =
 let program_mode = ref false
 let is_program_mode () = !program_mode
 
-let warn = ref true
+let warn = ref false
 let make_warn flag = warn := flag;  ()
 let if_warn f x = if !warn then f x
 

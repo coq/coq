@@ -1144,12 +1144,6 @@ let rec read_match_rule lfun ist env sigma = function
       :: read_match_rule lfun ist env sigma tl
   | [] -> []
 
-let warn_deprecated_info =
-  CWarnings.create ~name:"deprecated-info-tactical" ~category:"deprecated"
-         (fun () ->
-          strbrk "The general \"info\" tactic is currently not working." ++ spc()++
-            strbrk "There is an \"Info\" command to replace it." ++fnl () ++
-            strbrk "Some specific verbose tactics may also exist, such as info_eauto.")
 
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftactic.t =
@@ -1257,7 +1251,10 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> interp_tactic ist (TacArg a)
   | TacInfo tac ->
-      warn_deprecated_info ();
+      Feedback.msg_warning
+	(strbrk "The general \"info\" tactic is currently not working." ++ spc()++
+           strbrk "There is an \"Info\" command to replace it." ++fnl () ++
+	   strbrk "Some specific verbose tactics may also exist, such as info_eauto.");
       eval_tactic ist tac
   | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)

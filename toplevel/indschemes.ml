@@ -150,7 +150,7 @@ let alarm what internal msg =
   | UserAutomaticRequest
   | InternalTacticRequest ->
     (if debug then
-      Feedback.msg_debug
+      Feedback.msg_warning
 	(hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
   | _ -> Some msg
 
@@ -295,11 +295,6 @@ let declare_rewriting_schemes ind =
       (define_individual_scheme rew_l2r_forward_dep_scheme_kind UserAutomaticRequest None) ind
   end
 
-let warn_cannot_build_congruence =
-  CWarnings.create ~name:"cannot-build-congruence" ~category:"schemes"
-         (fun () ->
-          strbrk "Cannot build congruence scheme because eq is not found")
-
 let declare_congr_scheme ind =
   if Hipattern.is_equality_type (mkInd ind) then begin
     if
@@ -308,7 +303,7 @@ let declare_congr_scheme ind =
     then
       ignore (define_individual_scheme congr_scheme_kind UserAutomaticRequest None ind)
     else
-      warn_cannot_build_congruence ()
+      Feedback.msg_warning (strbrk "Cannot build congruence scheme because eq is not found")
   end
 
 let declare_sym_scheme ind =

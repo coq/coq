@@ -206,16 +206,12 @@ let check_keyword str =
   in
   loop_symb (Stream.of_string str)
 
-let warn_unparsable_keyword =
-  CWarnings.create ~name:"unparsable-keyword" ~category:"parsing"
-         (fun (s,unicode) ->
-          strbrk (Printf.sprintf "Token '%s' contains unicode character 0x%x \
-                                  which will not be parsable." s unicode))
-            
 let check_keyword_to_add s =
   try check_keyword s
   with Error.E (UnsupportedUnicode unicode) ->
-    warn_unparsable_keyword (s,unicode)
+    Flags.if_verbose Feedback.msg_warning
+      (strbrk (Printf.sprintf "Token '%s' contains unicode character 0x%x \
+                               which will not be parsable." s unicode))
 
 let check_ident str =
   let rec loop_id intail = parser
@@ -320,14 +316,6 @@ let rec number_or_index loc bp l len = parser
       | ['t';'h'] when check_no_char s -> njunk 2 s; check_gt3 loc l len
       | _ -> true, len
 
-let warn_comment_terminator_in_string =
-  CWarnings.create ~name:"comment-terminator-in-string" ~category:"parsing"
-         (fun () ->
-          (strbrk
-             "Not interpreting \"*)\" as the end of current \
-              non-terminated comment because it occurs in a \
-              non-terminated string of the comment."))
-
 (* If the string being lexed is in a comment, [comm_level] is Some i with i the
    current level of comments nesting. Otherwise, [comm_level] is None. *)
 let rec string loc ~comm_level bp len = parser
@@ -347,7 +335,11 @@ let rec string loc ~comm_level bp len = parser
         | [< '')'; s >] ->
             let () = match comm_level with
             | Some 0 ->
-	       warn_comment_terminator_in_string ~loc:!@loc ()
+                Feedback.msg_warning
+                  (strbrk
+                     "Not interpreting \"*)\" as the end of current \
+                      non-terminated comment because it occurs in a \
+                      non-terminated string of the comment.")
             | _ -> ()
             in
             let comm_level = Option.map pred comm_level in

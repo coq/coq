@@ -32,6 +32,7 @@ type coercion_error_kind =
   | NotAFunction
   | NoSource of cl_typ option
   | ForbiddenSourceClass of cl_typ
+  | NotUniform
   | NoTarget
   | WrongTarget of cl_typ * cl_typ
   | NotAClass of global_reference
@@ -50,6 +51,9 @@ let explain_coercion_error g = function
       (str ": cannot find the source class of " ++ Printer.pr_global g)
   | ForbiddenSourceClass cl ->
       pr_class cl ++ str " cannot be a source class"
+  | NotUniform ->
+      (Printer.pr_global g ++
+         str" does not respect the uniform inheritance condition");
   | NoTarget ->
       (str"Cannot find the target class")
   | WrongTarget (clt,cl) ->
@@ -243,12 +247,6 @@ booleen "coercion identite'?"
 lorque source est None alors target est None aussi.
 *)
 
-let warn_uniform_inheritance =
-  CWarnings.create ~name:"uniform-inheritance" ~category:"typechecker"
-         (fun g ->
-          Printer.pr_global g ++
-            strbrk" does not respect the uniform inheritance condition")
-
 let add_new_coercion_core coef stre poly source target isid =
   check_source source;
   let t = Global.type_of_global_unsafe coef in
@@ -264,7 +262,7 @@ let add_new_coercion_core coef stre poly source target isid =
   in
   check_source (Some cls);
   if not (uniform_cond (llp-ind) lvs) then
-    warn_uniform_inheritance coef;
+    Feedback.msg_warning (explain_coercion_error coef NotUniform);
   let clt =
     try
       get_target tg ind

@@ -301,16 +301,13 @@ let save_anonymous_with_strength ?export_seff proof kind save_ident =
 
 (* Admitted *)
 
-let warn_let_as_axiom =
-  CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
-                   (fun id -> strbrk "Let definition" ++ spc () ++ pr_id id ++
-                                spc () ++ strbrk "declared as an axiom.")
-
 let admit (id,k,e) pl hook () =
   let kn = declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
   let () = match k with
   | Global, _, _ -> ()
-  | Local, _, _ | Discharge, _, _ -> warn_let_as_axiom id
+  | Local, _, _ | Discharge, _, _ ->
+    Feedback.msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
+      str "declared as an axiom.")
   in
   let () = assumption_message id in
   Option.iter (Universes.register_universe_binders (ConstRef kn)) pl;

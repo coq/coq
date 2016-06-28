@@ -32,14 +32,10 @@ let is_new_call () = let b = !new_call in new_call := false; b
     profiling results will be off. *)
 let encountered_multi_success_backtracking = ref false
 
-let warn_profile_backtracking =
-  CWarnings.create ~name:"profile-backtracking" ~category:"ltac"
-    (fun () -> strbrk "Ltac Profiler cannot yet handle backtracking \
-            into multi-success tactics; profiling results may be wildly inaccurate.")
-
 let warn_encountered_multi_success_backtracking () =
   if !encountered_multi_success_backtracking then
-    warn_profile_backtracking ()
+    Feedback.msg_warning (str "Ltac Profiler cannot yet handle backtracking \
+    into multi-success tactics; profiling results may be wildly inaccurate.")
 
 let encounter_multi_success_backtracking () =
   if not !encountered_multi_success_backtracking

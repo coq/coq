@@ -55,15 +55,6 @@ let write_ml_code fn ?(header=[]) code =
   List.iter (pp_global fmt) (header@code);
   close_out ch_out
 
-let warn_native_compiler_failed =
-  let print = function
-  | Inl (Unix.WEXITED n) -> Pp.(strbrk "Native compiler exited with status" ++ str" " ++ int n)
-  | Inl (Unix.WSIGNALED n) -> Pp.(strbrk "Native compiler killed by signal" ++ str" " ++ int n)
-  | Inl (Unix.WSTOPPED n) -> Pp.(strbrk "Native compiler stopped by signal" ++ str" " ++ int n)
-  | Inr e -> Pp.(strbrk "Native compiler failed with error: " ++ strbrk (Unix.error_message e))
-  in
-  CWarnings.create ~name:"native-compiler-failed" ~category:"native-compiler" print
-
 let call_compiler ml_filename =
   let load_path = !get_load_paths () in
   let load_path = List.map (fun dn -> dn / output_dir) load_path in
@@ -87,12 +78,15 @@ let call_compiler ml_filename =
     let res = CUnix.sys_command (ocamlfind ()) args in
     let res = match res with
       | Unix.WEXITED 0 -> true
-      | Unix.WEXITED n | Unix.WSIGNALED n | Unix.WSTOPPED n ->
-        warn_native_compiler_failed (Inl res); false
-    in
+      | Unix.WEXITED n ->
+         Feedback.msg_warning Pp.(str "command exited with status " ++ int n); false
+      | Unix.WSIGNALED n ->
+         Feedback.msg_warning Pp.(str "command killed by signal " ++ int n); false
+      | Unix.WSTOPPED n ->
+         Feedback.msg_warning Pp.(str "command stopped by signal " ++ int n); false in
     res, link_filename
   with Unix.Unix_error (e,_,_) ->
-    warn_native_compiler_failed (Inr e);
+    Feedback.msg_warning Pp.(str (Unix.error_message e));
     false, link_filename
 
 let compile fn code =

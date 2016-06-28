@@ -42,11 +42,6 @@ let vinterp_map s =
 
 let vinterp_init () = Hashtbl.clear vernac_tab
 
-let warn_deprecated_command =
-  let open CWarnings in
-  create ~name:"deprecated-command" ~category:"deprecated"
-         (fun pr -> str "Deprecated vernacular command: " ++ pr)
-
 (* Interpretation of a vernac command *)
 
 let call ?locality (opn,converted_args) =
@@ -60,7 +55,7 @@ let call ?locality (opn,converted_args) =
       | Egramml.GramNonTerminal _ -> str "_"
       in
       let pr = pr_sequence pr_gram rules in
-      warn_deprecated_command pr;
+      Feedback.msg_warning (str "Deprecated vernacular command: " ++ pr)
     in
     loc:= "Checking arguments";
     let hunk = callback converted_args in

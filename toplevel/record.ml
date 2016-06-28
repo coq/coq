@@ -173,13 +173,6 @@ type record_error =
   | MissingProj of Id.t * Id.t list
   | BadTypedProj of Id.t * env * Type_errors.type_error
 
-let warn_cannot_define_projection =
-  CWarnings.create ~name:"cannot-define-projection" ~category:"records"
-         (fun msg -> hov 0 msg)
-
-(* If a projection is not definable, we throw an error if the user
-asked it to be a coercion. Otherwise, we just print an info
-message. The user might still want to name the field of the record. *)
 let warning_or_error coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
@@ -204,7 +197,7 @@ let warning_or_error coe indsp err =
               (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
   in
   if coe then errorlabstrm "structure" st;
-  Flags.if_verbose Feedback.msg_info (hov 0 st)
+  Flags.if_verbose Feedback.msg_warning (hov 0 st)
 
 type field_status =
   | NoProjection of Name.t
@@ -247,12 +240,6 @@ let instantiate_possibly_recursive_type indu paramdecls fields =
   let subst = List.map_i (fun i _ -> mkRel i) 1 paramdecls in
   Termops.substl_rel_context (subst@[mkIndU indu]) fields
 
-let warn_non_primitive_record =
-  CWarnings.create ~name:"non-primitive-record" ~category:"record"
-         (fun (env,indsp) ->
-          (hov 0 (str "The record " ++ Printer.pr_inductive env indsp ++ 
-                    strbrk" could not be defined as a primitive record")))
-
 (* We build projections *)
 let declare_projections indsp ?(kind=StructureComponent) binder_name coers fieldimpls fields =
   let env = Global.env() in
@@ -276,7 +263,9 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 	| Some None | None -> false
       in
 	if not is_primitive then 
-	  warn_non_primitive_record (env,indsp);
+	  Flags.if_verbose Feedback.msg_warning
+	    (hov 0 (str "The record " ++ Printer.pr_inductive env indsp ++ 
+		      str" could not be defined as a primitive record"));
 	is_primitive
     else false
   in

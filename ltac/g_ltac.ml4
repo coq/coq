@@ -72,11 +72,6 @@ let test_bracket_ident =
 
 (* Tactics grammar rules *)
 
-let warn_deprecated_appcontext =
-  CWarnings.create ~name:"deprecated-appcontext" ~category:"deprecated"
-         (fun () -> strbrk "appcontext is deprecated and will be removed " ++
-                      strbrk "in a future version")
-
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
           tactic_mode constr_may_eval constr_eval selector toplevel_selector;
@@ -237,7 +232,7 @@ GEXTEND Gram
         Subterm (mode, oid, pc)
       | IDENT "appcontext";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
-        warn_deprecated_appcontext ~loc:!@loc ();
+        Feedback.msg_warning (strbrk "appcontext is deprecated");
         Subterm (true,oid, pc)
       | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;

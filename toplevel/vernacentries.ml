@@ -896,11 +896,7 @@ let vernac_chdir = function
   | Some path ->
       begin
 	try Sys.chdir (expand path)
-	with Sys_error err ->
-	  (* Cd is typically used to control the output directory of
-	  extraction. A failed Cd could lead to overwriting .ml files
-	  so we make it an error. *)
-	  Errors.error ("Cd failed: " ^ err)
+	with Sys_error err -> Feedback.msg_warning (str "Cd failed: " ++ str err)
       end;
       if_verbose Feedback.msg_info (str (Sys.getcwd()))
 
@@ -946,16 +942,6 @@ let vernac_declare_implicits locality r l =
   | _::_ as imps ->
       Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
 	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
-
-let warn_arguments_assert =
-  CWarnings.create ~name:"arguments-assert" ~category:"vernacular"
-         (fun sr ->
-          strbrk "This command is just asserting the number and names of arguments of " ++
-            pr_global sr ++ strbrk". If this is what you want add " ++
-            strbrk "': assert' to silence the warning. If you want " ++
-            strbrk "to clear implicit arguments add ': clear implicits'. " ++
-            strbrk "If you want to clear notation scopes add ': clear scopes'")
-         
 
 let vernac_declare_arguments locality r l nargs flags =
   let extra_scope_flag = List.mem `ExtraScopes flags in
@@ -1085,7 +1071,7 @@ let vernac_declare_arguments locality r l nargs flags =
           some_scopes_specified ||
           some_simpl_flags_specified) &&
      no_flags then
-    warn_arguments_assert sr
+    Feedback.msg_warning (strbrk "This command is just asserting the number and names of arguments of " ++ pr_global sr ++ strbrk". If this is what you want add ': assert' to silence the warning. If you want to clear implicit arguments add ': clear implicits'. If you want to clear notation scopes add ': clear scopes'")
 
 
 let default_env () = {
@@ -1355,15 +1341,6 @@ let _ =
       optkey   = ["Parsing";"Explicit"];
       optread  = (fun () -> !Constrintern.parsing_explicit);
       optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
-
-let _ =
-  declare_string_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "warnings display";
-      optkey   = ["Warnings"];
-      optread  = CWarnings.get_flags;
-      optwrite = CWarnings.set_flags }
 
 let vernac_set_strategy locality l =
   let local = make_locality locality in
@@ -1878,12 +1855,12 @@ let interp ?proof ~loc locality poly c =
   | VernacComments l -> if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
-  | VernacAbort id -> Errors.errorlabstrm "" (str "Abort cannot be used through the Load command")
-  | VernacAbortAll -> Errors.errorlabstrm "" (str "AbortAll cannot be used through the Load command")
-  | VernacRestart -> Errors.errorlabstrm "" (str "Restart cannot be used through the Load command")
-  | VernacUndo _ -> Errors.errorlabstrm "" (str "Undo cannot be used through the Load command")
-  | VernacUndoTo _ -> Errors.errorlabstrm "" (str "UndoTo cannot be used through the Load command")
-  | VernacBacktrack _ -> Errors.errorlabstrm "" (str "Backtrack cannot be used through the Load command")
+  | VernacAbort id -> Feedback.msg_warning (str "VernacAbort not handled by Stm")
+  | VernacAbortAll -> Feedback.msg_warning (str "VernacAbortAll not handled by Stm")
+  | VernacRestart -> Feedback.msg_warning (str "VernacRestart not handled by Stm")
+  | VernacUndo _ -> Feedback.msg_warning (str "VernacUndo not handled by Stm")
+  | VernacUndoTo _ -> Feedback.msg_warning (str "VernacUndoTo not handled by Stm")
+  | VernacBacktrack _ -> Feedback.msg_warning (str "VernacBacktrack not handled by Stm")
   
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t,None)] false

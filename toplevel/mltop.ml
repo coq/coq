@@ -146,12 +146,7 @@ let dir_ml_load s =
 let dir_ml_use s =
   match !load with
     | WithTop t -> t.use_file s
-    | _ ->
-       let moreinfo =
-	 if Dynlink.is_native then " Loading ML code works only in bytecode."
-	 else ""
-       in
-      errorlabstrm "Mltop.dir_ml_use" (str "Could not load ML code." ++ str moreinfo)
+    | _ -> Feedback.msg_warning (str "Cannot access the ML compiler")
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
@@ -166,21 +161,11 @@ let add_rec_ml_dir unix_path =
 
 (* Adding files to Coq and ML loadpath *)
 
-let warn_cannot_use_directory =
-  CWarnings.create ~name:"cannot-use-directory" ~category:"filesystem"
-         (fun d ->
-          str "Directory " ++ str d ++
-            strbrk " cannot be used as a Coq identifier (skipped)")
-
 let convert_string d =
   try Names.Id.of_string d
   with UserError _ ->
-    warn_cannot_use_directory d;
+    Feedback.msg_warning (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise Exit
-
-let warn_cannot_open_path =
-  CWarnings.create ~name:"cannot-open-path" ~category:"filesystem"
-      (fun unix_path -> str "Cannot open " ++ str unix_path)
 
 let add_rec_path ~unix_path ~coq_root ~implicit =
   if exists_dir unix_path then
@@ -199,7 +184,7 @@ let add_rec_path ~unix_path ~coq_root ~implicit =
     let () = List.iter add dirs in
     Loadpath.add_load_path unix_path ~implicit coq_root
   else
-    warn_cannot_open_path unix_path
+    Feedback.msg_warning (str "Cannot open " ++ str unix_path)
 
 (* convertit un nom quelconque en nom de fichier ou de module *)
 let mod_of_name name =

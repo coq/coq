@@ -26,11 +26,6 @@ let check_locality locality_flag =
 
 (* Commands which supported an inlined Local flag *)
 
-let warn_deprecated_local_syntax =
-  CWarnings.create ~name:"deprecated-local-syntax" ~category:"deprecated"
-         (fun () ->
-          Pp.strbrk "Deprecated syntax: use \"Local\" as a prefix.")
-
 let enforce_locality_full locality_flag local =
   let local =
     match locality_flag with
@@ -40,8 +35,8 @@ let enforce_locality_full locality_flag local =
 	Errors.error "Use only prefix \"Local\"."
     | None ->
 	if local then begin
-	    warn_deprecated_local_syntax ();
-	    Some true
+          Feedback.msg_warning (Pp.str "Obsolete syntax: use \"Local\" as a prefix.");
+	  Some true
 	end else
 	None
     | Some b -> Some b in
