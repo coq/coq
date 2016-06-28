@@ -989,8 +989,6 @@ end = struct (* {{{ *)
       | VernacResetInitial ->
           VtStm (VtBack Stateid.initial, true), VtNow
       | VernacResetName (_,name) ->
-          msg_warning
-            (str"Reset not implemented for automatically generated constants");
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           (try
             let oid =
@@ -1040,8 +1038,8 @@ end = struct (* {{{ *)
       | _ -> VtUnknown, VtNow
     with
     | Not_found ->
-       msg_warning(str"undo_vernac_classifier: going back to the initial state.");
-       VtStm (VtBack Stateid.initial, true), VtNow
+       Errors.errorlabstrm "undo_vernac_classifier"
+        (str "Cannot undo")
 
 end (* }}} *)
 
@@ -1368,7 +1366,7 @@ end = struct (* {{{ *)
         when is_tac expr && State.same_env o n -> (* A pure tactic *)
           Some (id, `Proof (prev, State.proof_part_of_frozen n))
       | Some _, Some s ->
-          msg_warning (str "STM: sending back a fat state");
+          msg_debug (str "STM: sending back a fat state");
           Some (id, `Full s)
       | _, Some s -> Some (id, `Full s) in
     let rec aux seen = function
@@ -1898,6 +1896,12 @@ let delegate name =
   || !Flags.compilation_mode = Flags.BuildVio
   || !Flags.async_proofs_full
  
+let warn_deprecated_nested_proofs =
+  CWarnings.create ~name:"deprecated-nested-proofs" ~category:"deprecated"
+         (fun () ->
+          strbrk ("Nested proofs are deprecated and will "^
+                    "stop working in a future Coq version"))
+
 let collect_proof keep cur hd brkind id =
  prerr_endline (fun () -> "Collecting proof ending at "^Stateid.to_string id);
  let no_name = "" in
@@ -1962,8 +1966,7 @@ let collect_proof keep cur hd brkind id =
         let name = name ids in
         `MaybeASync (parent last, None, accn, name, delegate name)
     | `Sideff _ ->
-        Pp.(msg_warning (strbrk ("Nested proofs are deprecated and will "^
-           "stop working in the next Coq version")));
+       warn_deprecated_nested_proofs ();
         `Sync (no_name,None,`NestedProof)
     | _ -> `Sync (no_name,None,`Unknown) in
  let make_sync why = function
@@ -2410,10 +2413,7 @@ let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
 let process_transaction ?(newtip=Stateid.fresh ()) ~tty
-  ({ verbose; loc; expr } as x) c
- =
-  let warn_if_pos a b =
-    if b then msg_warning(pr_ast a ++ str" should not be part of a script") in
+  ({ verbose; loc; expr } as x) c =
   prerr_endline (fun () -> "{{{ processing: "^ string_of_ppcmds (pr_ast x));
   let vcs = VCS.backup () in
   try
@@ -2427,12 +2427,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
       | VtStm(VtPG,false), VtNow -> vernac_interp Stateid.dummy x; `Ok
       | VtStm(VtPG,_), _ -> anomaly(str "PG command in script or VtLater")
       (* Joining various parts of the document *)
-      | VtStm (VtJoinDocument, b), VtNow -> warn_if_pos x b; join (); `Ok
-      | VtStm (VtFinish, b),       VtNow -> warn_if_pos x b; finish (); `Ok
-      | VtStm (VtWait, b),     VtNow -> warn_if_pos x b; finish (); wait (); `Ok
+      | VtStm (VtJoinDocument, b), VtNow -> join (); `Ok
+      | VtStm (VtFinish, b),       VtNow -> finish (); `Ok
+      | VtStm (VtWait, b),     VtNow -> finish (); wait (); `Ok
       | VtStm (VtPrintDag, b), VtNow ->
-          warn_if_pos x b; VCS.print ~now:true (); `Ok
-      | VtStm (VtObserve id, b),   VtNow -> warn_if_pos x b; observe id; `Ok
+          VCS.print ~now:true (); `Ok
+      | VtStm (VtObserve id, b),   VtNow -> observe id; `Ok
       | VtStm ((VtObserve _ | VtFinish | VtJoinDocument
                 |VtPrintDag |VtWait),_), VtLater ->
           anomaly(str"classifier: join actions cannot be classified as VtLater")

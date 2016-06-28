@@ -1166,10 +1166,6 @@ let alias_of als = match als.alias_ids with
 | [] -> Anonymous
 | id :: _ -> Name id
 
-let message_redundant_alias id1 id2 =
-  Feedback.msg_warning
-    (str "Alias variable " ++ pr_id id1 ++ str " is merged with " ++ pr_id id2)
-
 (** {6 Expanding notations }
 
     @returns a raw_case_pattern_expr :
@@ -1742,7 +1738,6 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
     let env_ids = List.fold_right Id.Set.add eqn_ids env.ids in
     List.map (fun (asubst,pl) ->
       let rhs = replace_vars_constr_expr asubst rhs in
-      Id.Map.iter message_redundant_alias asubst;
       let rhs' = intern {env with ids = env_ids} rhs in
       (loc,eqn_ids,pl,rhs')) pll
 

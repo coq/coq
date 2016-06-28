@@ -417,6 +417,11 @@ type tacdef_kind =
 let is_defined_tac kn =
   try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
 
+let warn_unusable_identifier =
+  CWarnings.create ~name:"unusable-identifier" ~category:"parsing"
+      (fun id -> strbrk "The Ltac name" ++ spc () ++ pr_id id ++ spc () ++
+        strbrk "may be unusable because of a conflict with a notation.")
+
 let register_ltac local tacl =
   let map tactic_body =
     match tactic_body with
@@ -427,17 +432,14 @@ let register_ltac local tacl =
           Errors.user_err_loc (loc, "",
             str "There is already an Ltac named " ++ id_pp ++ str".")
         in
-        let is_primitive =
+        let is_shadowed =
           try
             match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
             | Tacexpr.TacArg _ -> false
             | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
           with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
         in
-        let () = if is_primitive then
-          Feedback.msg_warning (str "The Ltac name " ++ id_pp ++
-            str " may be unusable because of a conflict with a notation.")
-        in
+        let () = if is_shadowed then warn_unusable_identifier id in
         NewTac id, body
     | TacticRedefinition (ident, body) ->
         let loc = loc_of_reference ident in
