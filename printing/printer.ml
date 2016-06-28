@@ -496,6 +496,18 @@ let print_evar_constraints gl sigma cstrs =
   in
   prlist_with_sep fnl pr_evconstr cstrs
 
+let should_print_dependent_evars = ref true
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "Printing Dependent Evars Line";
+      optkey   = ["Printing";"Dependent";"Evars";"Line"];
+      optread  = (fun () -> !should_print_dependent_evars);
+      optwrite = (fun v -> should_print_dependent_evars := v) }
+
 let print_dependent_evars gl sigma seeds =
   let constraints =
     let _, cstrs = Evd.extract_all_conv_pbs sigma in
@@ -504,21 +516,25 @@ let print_dependent_evars gl sigma seeds =
          ++ str":" ++ fnl () ++ hov 0 (print_evar_constraints gl sigma cstrs)
   in
   let evars () =
-    let evars = Evarutil.gather_dependent_evars sigma seeds in
-    let evars =
-      Evar.Map.fold begin fun e i s ->
-	let e' = pr_internal_existential_key e in
-	match i with
-	| None -> s ++ str" " ++ e' ++ str " open,"
-	| Some i ->
-	  s ++ str " " ++ e' ++ str " using " ++
-	    Evar.Set.fold begin fun d s ->
-	      pr_internal_existential_key d ++ str " " ++ s
-	    end i (str ",")
-      end evars (str "")
+    if !should_print_dependent_evars then
+      let evars = Evarutil.gather_dependent_evars sigma seeds in
+      let evars =
+	Evar.Map.fold begin fun e i s ->
+	  let e' = pr_internal_existential_key e in
+	  match i with
+	  | None -> s ++ str" " ++ e' ++ str " open,"
+	  | Some i ->
+	    s ++ str " " ++ e' ++ str " using " ++
+	      Evar.Set.fold begin fun d s ->
+		pr_internal_existential_key d ++ str " " ++ s
+	      end i (str ",")
+	end evars (str "")
     in
     fnl () ++
     str "(dependent evars:" ++ evars ++ str ")" ++ fnl ()
+    else
+      fnl () ++
+	str "(dependent evars: (printing disabled) )" ++ fnl ()
   in
   constraints ++ delayed_emacs_cmd evars
 
@@ -869,4 +885,3 @@ let pr_polymorphic b =
 let pr_universe_instance evd ctx =
   let inst = Univ.UContext.instance ctx in
     str"@{" ++ Univ.Instance.pr (Evd.pr_evd_level evd) inst ++ str"}"
-

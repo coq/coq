@@ -65,6 +65,9 @@ Tools
 - coqc accepts a -o option to specify the output file name
 - coqtop accepts --print-version to print Coq and OCaml versions in
   easy to parse format
+- Setting [Printing Dependent Evars Line] can be unset to disable the
+  computation associated with printing the "dependent evars: " line in
+  -emacs mode
 
 Changes from V8.5pl1 to V8.5pl2
 ===============================
@@ -507,8 +510,8 @@ Tactics
 - When given a reference as argument, simpl, vm_compute and
   native_compute now strictly interpret it as the head of a pattern
   starting with this reference.
-- The "change p with c" tactic semantics changed, now type-checking 
-  "c" at each matching occurrence "t" of the pattern "p", and 
+- The "change p with c" tactic semantics changed, now type-checking
+  "c" at each matching occurrence "t" of the pattern "p", and
   converting "t" with "c".
 - Now "appcontext" and "context" behave the same. The old buggy behavior of
   "context" can be retrieved at parse time by setting the
