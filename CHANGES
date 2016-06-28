@@ -9,6 +9,13 @@ Bugfixes
 - #4777: printing inefficiency with implicit arguments
 - #4752: CoqIDE crash on files not ended by ".v".
 - #4398: type_scope used consistently in "match goal".
+- #4097: more efficient occur-check in presence of primitive projections
+
+Universes:
+- Disallow silently dropping universe instances applied to variables
+  (forward compatible)
+- Allow explicit universe instances on notations, when they can apply
+  to the head reference of their expansion.
 
 Changes from V8.5 to V8.5pl1
 ============================

@@ -656,7 +656,13 @@ let string_of_ty = function
   | Method -> "meth"
   | Variable -> "var"
 
-let intern_var genv (ltacvars,ntnvars) namedctx loc id =
+let gvar (loc, id) us = match us with
+| None -> GVar (loc, id)
+| Some _ ->
+  user_err_loc (loc, "", str "Variable " ++ pr_id id ++
+    str " cannot have a universe instance")
+
+let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] an inductive type potentially with implicit *)
   try
     let ty,expl_impls,impls,argsc = Id.Map.find id genv.impls in
@@ -664,21 +670,21 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
       (fun id -> CRef (Ident (loc,id),None), Some (loc,ExplByName id)) expl_impls in
     let tys = string_of_ty ty in
     Dumpglob.dump_reference loc "<>" (Id.to_string id) tys;
-    GVar (loc,id), make_implicits_list impls, argsc, expl_impls
+    gvar (loc,id) us, make_implicits_list impls, argsc, expl_impls
   with Not_found ->
   (* Is [id] bound in current term or is an ltac var bound to constr *)
   if Id.Set.mem id genv.ids || Id.Set.mem id ltacvars.ltac_vars
   then
-    GVar (loc,id), [], [], []
+    gvar (loc,id) us, [], [], []
   (* Is [id] a notation variable *)
   else if Id.Map.mem id ntnvars
   then
-    (set_var_scope loc id true genv ntnvars; GVar (loc,id), [], [], [])
+    (set_var_scope loc id true genv ntnvars; gvar (loc,id) us, [], [], [])
   (* Is [id] the special variable for recursive notations *)
   else if Id.equal id ldots_var
   then if Id.Map.is_empty ntnvars
     then error_ldots_var loc
-    else GVar (loc,id), [], [], []
+    else gvar (loc,id) us, [], [], []
   else if Id.Set.mem id ltacvars.ltac_bound then
     (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
     user_err_loc (loc,"intern_var",
@@ -693,10 +699,10 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
 	let impls = implicits_of_global ref in
 	let scopes = find_arguments_scope ref in
 	Dumpglob.dump_reference loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
-	GRef (loc, ref, None), impls, scopes, []
+	GRef (loc, ref, us), impls, scopes, []
       with e when Errors.noncritical e ->
 	(* [id] a goal variable *)
-	GVar (loc,id), [], [], []
+	gvar (loc,id) us, [], [], []
 
 let proj_impls r impls =
   let env = Global.env () in
@@ -771,9 +777,12 @@ let intern_qualid loc qid intern env lvar us args =
       let c = match us, c with
       | None, _ -> c
       | Some _, GRef (loc, ref, None) -> GRef (loc, ref, us)
+      | Some _, GApp (loc, GRef (loc', ref, None), arg) ->
+         GApp (loc, GRef (loc', ref, us), arg)
       | Some _, _ ->
         user_err_loc (loc, "", str "Notation " ++ pr_qualid qid ++
-          str " cannot have a universe instance")
+          str " cannot have a universe instance, its expanded head
+               does not start with a reference")
       in
       c, projapp, args2
 
@@ -792,7 +801,7 @@ let intern_applied_reference intern env namedctx lvar us args = function
       let x, imp, scopes, l = find_appl_head_data r in
 	(x,imp,scopes,l), args2
   | Ident (loc, id) ->
-      try intern_var env lvar namedctx loc id, args
+      try intern_var env lvar namedctx loc id us, args
       with Not_found ->
       let qid = qualid_of_ident id in
       try
@@ -802,7 +811,7 @@ let intern_applied_reference intern env namedctx lvar us args = function
       with Not_found ->
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar || env.unb then
-	  (GVar (loc,id), [], [], []), args
+	  (gvar (loc,id) us, [], [], []), args
 	else error_global_not_found_loc loc qid
 
 let interp_reference vars r =
