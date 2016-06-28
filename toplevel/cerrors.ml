@@ -13,13 +13,6 @@ open Type_errors
 open Pretype_errors
 open Indrec
 
-let print_loc loc =
-  if Loc.is_ghost loc then
-    (str"<unknown>")
-  else
-    let loc = Loc.unloc loc in
-    (int (fst loc) ++ str"-" ++ int (snd loc))
-
 let guill s = str "\"" ++ str s ++ str "\""
 
 (** Invariant : exceptions embedded in EvaluatedError satisfy

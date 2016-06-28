@@ -124,15 +124,16 @@ let init_color_output () =
   Format.pp_set_formatter_tag_functions !std_ft tag_handler;
   Format.pp_set_formatter_tag_functions !err_ft tag_handler
 
-let color_msg ?header ft strm =
+let color_msg ?loc ?header ft strm =
   let pptag = tag in
   let open Pp in
+  let ploc = Option.cata Pp.pr_loc (Pp.mt ()) loc in
   let strm = match header with
-    | None -> hov 0 strm
+    | None -> hov 0 (ploc ++ strm)
     | Some (h, t) ->
       let tag = Pp.Tag.inj t pptag in
       let h = Pp.tag tag (str h ++ str ":") in
-      hov 0 (h ++ spc () ++ strm)
+      hov 0 (ploc ++ h ++ spc () ++ strm)
   in
   pp_with ~pp_tag ft strm;
   Format.pp_print_newline ft ();

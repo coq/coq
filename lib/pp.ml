@@ -197,6 +197,25 @@ let strbrk s =
     else if p = n then [] else [str (String.sub s p (n-p))]
   in List.fold_left (++) Glue.empty (aux 0 0)
 
+let pr_loc_pos loc =
+  if Loc.is_ghost loc then (str"<unknown>")
+  else
+    let loc = Loc.unloc loc in
+    int (fst loc) ++ str"-" ++ int (snd loc)
+
+let pr_loc loc =
+  if Loc.is_ghost loc then str"<unknown>"
+  else
+    let fname = loc.Loc.fname in
+    if CString.equal fname "" then
+      Loc.(str"Toplevel input, characters " ++ int loc.bp ++
+	   str"-" ++ int loc.ep ++ str":" ++ fnl ())
+    else
+      Loc.(str"File " ++ str "\"" ++ str fname ++ str "\"" ++
+	   str", line " ++ int loc.line_nb ++ str", characters " ++
+	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
+	   str":" ++ fnl())
+
 let ismt = is_empty
 
 (* boxing commands *)

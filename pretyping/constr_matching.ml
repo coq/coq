@@ -49,12 +49,12 @@ type bound_ident_map = Id.t Id.Map.t
 
 exception PatternMatchingFailure
 
-let warn_bound_meta name =
-  Feedback.msg_warning (str "Collision between bound variable " ++ pr_id name ++
-    str " and a metavariable of same name.")
+let warn_meta_collision =
+  CWarnings.create ~name:"meta-collision" ~category:"ltac"
+         (fun name ->
+          strbrk "Collision between bound variable " ++ pr_id name ++
+            strbrk " and a metavariable of same name.")
 
-let warn_bound_bound name =
-  Feedback.msg_warning (str "Collision between bound variables of name " ++ pr_id name)
 
 let constrain n (ids, m as x) (names, terms as subst) =
   try
@@ -62,18 +62,19 @@ let constrain n (ids, m as x) (names, terms as subst) =
     if List.equal Id.equal ids ids' && eq_constr m m' then subst
     else raise PatternMatchingFailure
   with Not_found ->
-    let () = if Id.Map.mem n names then warn_bound_meta n in
+    let () = if Id.Map.mem n names then warn_meta_collision n in
     (names, Id.Map.add n x terms)
 
 let add_binders na1 na2 binding_vars (names, terms as subst) =
   match na1, na2 with
   | Name id1, Name id2 when Id.Set.mem id1 binding_vars ->
     if Id.Map.mem id1 names then
-      let () = warn_bound_bound id1 in
+      let () = Glob_ops.warn_variable_collision id1 in
       (names, terms)
     else
       let names = Id.Map.add id1 id2 names in
-      let () = if Id.Map.mem id1 terms then warn_bound_meta id1 in
+      let () = if Id.Map.mem id1 terms then
+        warn_meta_collision id1 in
       (names, terms)
   | _ -> subst
 

@@ -80,31 +80,33 @@ let info_str = mt ()
 let warn_str = str "Warning:" ++ spc ()
 let  err_str = str "Error:"   ++ spc ()
 
-let make_body quoter info s = quoter (hov 0 (info ++ s))
+let make_body quoter info ?loc s =
+  let loc = Option.cata Pp.pr_loc (Pp.mt ()) loc in
+  quoter (hov 0 (loc ++ info ++ s))
 
 (* Generic logger *)
 let gen_logger dbg err ?loc level msg = match level with
-  | Debug   -> msgnl (make_body dbg  dbg_str msg)
-  | Info    -> msgnl (make_body dbg info_str msg)
+  | Debug   -> msgnl (make_body dbg  dbg_str ?loc msg)
+  | Info    -> msgnl (make_body dbg info_str ?loc msg)
+  (* XXX: What to do with loc here? *)
   | Notice  -> msgnl msg
   | Warning -> Flags.if_warn (fun () ->
-               msgnl_with !err_ft (make_body err warn_str msg)) ()
-  | Error   -> msgnl_with !err_ft (make_body err  err_str msg)
+               msgnl_with !err_ft (make_body err warn_str ?loc msg)) ()
+  | Error   -> msgnl_with !err_ft (make_body err  err_str ?loc msg)
 
 (** Standard loggers *)
 let std_logger  = gen_logger (fun x -> x) (fun x -> x)
 
 (* Color logger *)
 let color_terminal_logger ?loc level strm =
-  let msg = Ppstyle.color_msg in
+  let msg  = Ppstyle.color_msg in
   match level with
-  | Debug   -> msg ~header:("Debug", Ppstyle.debug_tag) !std_ft strm
-  | Info    -> msg !std_ft strm
-  | Notice  -> msg !std_ft strm
-  | Warning ->
-    let header = ("Warning", Ppstyle.warning_tag) in
-    Flags.if_warn (fun () -> msg ~header !err_ft strm) ()
-  | Error -> msg ~header:("Error", Ppstyle.error_tag) !err_ft strm
+  | Debug   -> msg ?loc ~header:("Debug", Ppstyle.debug_tag) !std_ft strm
+  | Info    -> msg ?loc !std_ft strm
+  | Notice  -> msg ?loc !std_ft strm
+  | Warning -> Flags.if_warn (fun () ->
+               msg ?loc ~header:("Warning", Ppstyle.warning_tag) !err_ft strm) ()
+  | Error   -> msg ?loc ~header:("Error",   Ppstyle.error_tag)   !err_ft strm
 
 (* Rules for emacs:
    - Debug/info: emacs_quote_info
@@ -116,11 +118,11 @@ let emacs_logger = gen_logger emacs_quote_info emacs_quote_err
 let logger       = ref std_logger
 let set_logger l = logger := l
 
-let msg_info    ?loc x = !logger Info x
-let msg_notice  ?loc x = !logger Notice x
-let msg_warning ?loc x = !logger Warning x
-let msg_error   ?loc x = !logger Error x
-let msg_debug   ?loc x = !logger Debug x
+let msg_info    ?loc x = !logger ?loc Info x
+let msg_notice  ?loc x = !logger ?loc Notice x
+let msg_warning ?loc x = !logger ?loc Warning x
+let msg_error   ?loc x = !logger ?loc Error x
+let msg_debug   ?loc x = !logger ?loc Debug x
 
 (** Feeders *)
 let feeder = ref ignore

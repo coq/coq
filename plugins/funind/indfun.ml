@@ -227,6 +227,11 @@ let prepare_body ((name,_,args,types,_),_) rt =
 let process_vernac_interp_error e =
   fst (Cerrors.process_vernac_interp_error (e, Exninfo.null))
 
+let warn_funind_cannot_build_inversion =
+  CWarnings.create ~name:"funind-cannot-build-inversion" ~category:"funind"
+    (fun e' -> strbrk "Cannot build inversion information" ++
+                 if do_observe () then (fnl() ++ Errors.print e') else mt ())
+
 let derive_inversion fix_names =
   try
     let evd' = Evd.from_env (Global.env ()) in 
@@ -269,14 +274,20 @@ let derive_inversion fix_names =
 	lind;
       with e when Errors.noncritical e ->
       let e' = process_vernac_interp_error e in
-      Feedback.msg_warning
-	(str "Cannot build inversion information" ++
-	   if do_observe () then (fnl() ++ Errors.print e') else mt ())
+      warn_funind_cannot_build_inversion e'
   with e when Errors.noncritical e ->
-      let e' = process_vernac_interp_error e in
-      Feedback.msg_warning
-	(str "Cannot build inversion information (early)" ++
-	   if do_observe () then (fnl() ++ Errors.print e') else mt ())       
+    let e' = process_vernac_interp_error e in
+    warn_funind_cannot_build_inversion e'
+
+let warn_cannot_define_graph =
+  CWarnings.create ~name:"funind-cannot-define-graph" ~category:"funind"
+    (fun (names,error) -> strbrk "Cannot define graph(s) for " ++
+      h 1 names ++ error)
+
+let warn_cannot_define_principle =
+  CWarnings.create ~name:"funind-cannot-define-principle" ~category:"funind"
+  (fun (names,error) -> strbrk "Cannot define induction principle(s) for "++
+      h 1 names ++ error)
 
 let warning_error names e =
   let e = process_vernac_interp_error e in
@@ -294,15 +305,11 @@ let warning_error names e =
   in
   match e with
     | Building_graph e ->
-      Feedback.msg_warning
-	(str "Cannot define graph(s) for " ++
-	   h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	   e_explain e)
+       let names = prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names in
+       warn_cannot_define_graph (names,e_explain e)
     | Defining_principle e ->
-      Feedback.msg_warning
-	(str "Cannot define principle(s) for "++
-	   h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	   e_explain e)
+       let names = prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names in
+       warn_cannot_define_principle (names,e_explain e)
     | _ -> raise e
 
 let error_error names e =
