@@ -470,7 +470,7 @@ Ltac partial_application_tactic :=
     end
   in
   let rec do_partial H ar m := 
-    match ar with
+    lazymatch ar with
       | 0%nat => do_partial_apps H m ltac:(fail 1)
       | S ?n' =>
         match m with
@@ -483,7 +483,7 @@ Ltac partial_application_tactic :=
      let n := fresh in evar (n:nat) ;
      let v := eval compute in n in clear n ;
       let H := fresh in
-        assert(H:Params m' v) by (subst m'; typeclasses eauto) ;
+        assert(H:Params m' v) by (subst m'; once typeclasses eauto) ;
           let v' := eval compute in v in subst m';
             (sk H v' || fail 1))
     || fk
