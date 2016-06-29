@@ -658,7 +658,7 @@ type arguments_scope_discharge_request =
   | ArgsScopeManual
   | ArgsScopeNoDischarge
 
-let load_arguments_scope _ (_,(_,r,scl,cls)) =
+let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
   List.iter (Option.iter check_scope) scl;
   let initial_stamp = ScopeClassMap.empty in
   arguments_scope := Refmap.add r (scl,cls,initial_stamp) !arguments_scope
@@ -669,7 +669,7 @@ let cache_arguments_scope o =
 let subst_scope_class subst cs =
   try Some (subst_cl_typ subst cs) with Not_found -> None
 
-let subst_arguments_scope (subst,(req,r,scl,cls)) =
+let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
   let r' = fst (subst_global subst r) in
   let subst_cl ocl = match ocl with
     | None -> ocl
@@ -678,34 +678,42 @@ let subst_arguments_scope (subst,(req,r,scl,cls)) =
         | Some cl'  as ocl' when cl' != cl -> ocl'
         | _ -> ocl in
   let cls' = List.smartmap subst_cl cls in
-  (ArgsScopeNoDischarge,r',scl,cls')
+  (ArgsScopeNoDischarge,r',n,scl,cls')
 
-let discharge_arguments_scope (_,(req,r,l,_)) =
+let discharge_arguments_scope (_,(req,r,n,l,_)) =
   if req == ArgsScopeNoDischarge || (isVarRef r && Lib.is_in_section r) then None
-  else Some (req,Lib.discharge_global r,l,[])
+  else
+    let n =
+      try
+        let vars = Lib.variable_section_segment_of_reference r in
+        List.length (List.filter (fun (_,_,b,_) -> b = None) vars)
+      with
+        Not_found (* Not a ref defined in this section *) -> 0 in
+    Some (req,Lib.discharge_global r,n,l,[])
 
-let classify_arguments_scope (req,_,_,_ as obj) =
+let classify_arguments_scope (req,_,_,_,_ as obj) =
   if req == ArgsScopeNoDischarge then Dispose else Substitute obj
 
-let rebuild_arguments_scope (req,r,l,_) =
+let rebuild_arguments_scope (req,r,n,l,_) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
         let scs,cls = compute_arguments_scope_full (fst(Universes.type_of_global r)(*FIXME?*)) in
-	(req,r,scs,cls)
+	(req,r,List.length scs,scs,cls)
     | ArgsScopeManual ->
 	(* Add to the manually given scopes the one found automatically
            for the extra parameters of the section. Discard the classes
            of the manually given scopes to avoid further re-computations. *)
-	let l',cls = compute_arguments_scope_full (Global.type_of_global_unsafe r) in
-        let nparams = List.length l' - List.length l in
-	let l1 = List.firstn nparams l' in
-        let cls1 = List.firstn nparams cls in
-	(req,r,l1@l,cls1)
+        let l',cls = compute_arguments_scope_full (Global.type_of_global_unsafe r) in
+	let l1 = List.firstn n l' in
+        let cls1 = List.firstn n cls in
+	(req,r,0,l1@l,cls1)
 
 type arguments_scope_obj =
     arguments_scope_discharge_request * global_reference *
-      scope_name option list * scope_class option list
+    (* Used to communicate information from discharge to rebuild *)
+    (* set to 0 otherwise *) int *
+    scope_name option list * scope_class option list
 
 let inArgumentsScope : arguments_scope_obj -> obj =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
@@ -718,16 +726,15 @@ let inArgumentsScope : arguments_scope_obj -> obj =
 
 let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
-let declare_arguments_scope_gen req r (scl,cls) =
-  Lib.add_anonymous_leaf (inArgumentsScope (req,r,scl,cls))
+let declare_arguments_scope_gen req r n (scl,cls) =
+  Lib.add_anonymous_leaf (inArgumentsScope (req,r,n,scl,cls))
 
 let declare_arguments_scope local r scl =
-  let req = if is_local local r then ArgsScopeNoDischarge else ArgsScopeManual
-  in
-  (* We empty the list of argument classes to disable futher scope
+  let req = if is_local local r then ArgsScopeNoDischarge else ArgsScopeManual in
+  (* We empty the list of argument classes to disable further scope
      re-computations and keep these manually given scopes. *)
-  declare_arguments_scope_gen req r (scl,[])
-
+  declare_arguments_scope_gen req r 0 (scl,[])
+                              
 let find_arguments_scope r =
   try
     let (scl,cls,stamp) = Refmap.find r !arguments_scope in
@@ -742,7 +749,8 @@ let find_arguments_scope r =
 
 let declare_ref_arguments_scope ref =
   let t = Global.type_of_global_unsafe ref in
-  declare_arguments_scope_gen ArgsScopeAuto ref (compute_arguments_scope_full t)
+  let (scs,cls as o) = compute_arguments_scope_full t in
+  declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o
 
 
 (********************************)
