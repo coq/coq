@@ -483,6 +483,12 @@ let section_segment_of_constant con =
 let section_segment_of_mutual_inductive kn =
   Names.Mindmap.find kn (snd (pi3 (List.hd !sectab)))
 
+let variable_section_segment_of_reference = function
+  | ConstRef con -> pi1 (section_segment_of_constant con)
+  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
+      pi1 (section_segment_of_mutual_inductive kn)
+  | _ -> []
+                     
 let section_instance = function
   | VarRef id ->
      let eq = function
