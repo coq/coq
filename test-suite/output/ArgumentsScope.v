@@ -11,11 +11,11 @@ About b.
 About negb''.
 About negb'.
 About negb.
-Global Arguments Scope negb'' [ _ ].
-Global Arguments Scope negb' [ _ ].
-Global Arguments Scope negb [ _ ].
-Global Arguments Scope a [ _ ].
-Global Arguments Scope b [ _ ].
+Global Arguments negb'' _ : clear scopes.
+Global Arguments negb' _ : clear scopes.
+Global Arguments negb _ : clear scopes.
+Global Arguments a _ : clear scopes.
+Global Arguments b _ : clear scopes.
 About a.
 About b.
 About negb.

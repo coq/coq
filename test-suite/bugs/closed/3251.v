@@ -1,4 +1,5 @@
 Goal True.
+idtac.
 Ltac foo := idtac.
 (* print out happens twice:
 foo is defined
