@@ -63,10 +63,27 @@ will be first rewritten to:
   previous one, an inequality is added in the context of the second
   branch. See for example the definition of {\tt div2} below, where the second
   branch is typed in a context where $\forall p, \_ <> S (S p)$.
-  
+
 \item Coercion. If the object being matched is coercible to an inductive
   type, the corresponding coercion will be automatically inserted. This also
   works with the previous mechanism.
+
+\end{itemize}
+
+There are options to control the generation of equalities
+and coercions.
+
+\begin{itemize}
+\item {\tt Unset Program Cases}\optindex{Program Cases} This deactivates
+  the special treatment of pattern-matching generating equalities and
+  inequalities when using \Program\ (it is on by default). All
+  pattern-matchings and let-patterns are handled using the standard
+  algorithm of Coq (see Section~\ref{Mult-match-full}) when this option is
+  deactivated.
+\item {\tt Unset Program Generalized Coercion}\optindex{Program
+    Generalized Coercion} This deactivates the coercion of general
+  inductive types when using \Program\ (the option is on by default).
+  Coercion of subset types and pairs is still active in this case.
 \end{itemize}
 
 \subsection{Syntactic control over equalities}

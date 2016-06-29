@@ -39,3 +39,5 @@ val mk_coq_not : constr -> constr
 val papp : Evd.evar_map ref -> (unit -> global_reference) -> constr array -> constr
 
 val get_proofs_transparency : unit -> bool
+val is_program_cases : unit -> bool
+val is_program_generalized_coercion : unit -> bool
