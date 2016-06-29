@@ -293,9 +293,8 @@ let install (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,sds) inc = function
     let cmxss = List.rev_append cmos mllibs in
     let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxss)] inc in
     let where_what_oth = vars_to_put_by_root
-      [("VOFILES",vfiles);("VFILES",vfiles);
-       ("GLOBFILES",vfiles);("NATIVEFILES",vfiles);
-       ("CMOFILES",cmos);("CMIFILES",cmis);("CMAFILES",mllibs)]
+      [("VOFILES",vfiles);("VFILES",vfiles);("GLOBFILES",vfiles);
+       ("NATIVEFILES",vfiles);("CMIFILES",cmis)]
       inc in
     let doc_dir = where_put_doc inc in
     if is_install = Project_file.UnspecInstall then begin
@@ -304,6 +303,12 @@ let install (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,sds) inc = function
     if not_empty cmxss then begin
       print "install-natdynlink:\n";
       install_include_by_root "0755" where_what_cmxs;
+      print "\n";
+    end;
+    if not_empty cmxss then begin
+      print "install-byte:\n";
+      install_include_by_root "0755"
+        (vars_to_put_by_root [("CMOFILES",cmos);("CMAFILES",mllibs)] inc);
       print "\n";
     end;
     if not_empty cmxss then begin
@@ -506,7 +511,7 @@ let variables is_install opt (args,defs) =
     end;
     (* Coq executables and relative variables *)
     if !some_vfile || !some_mlpackfile || !some_mllibfile then
-      print "COQDEP?=\"$(COQBIN)coqdep\" -c\n";
+      print "COQDEP?=\"$(COQBIN)coqdep\" -c -dyndep var\n";
     if !some_vfile then begin
     print "COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
     print "COQCHKFLAGS?=-silent -o\n";
@@ -537,7 +542,16 @@ else
 CAMLP4EXTEND=
 endif\n";
     print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(COQLIB)/grammar compat5.cmo \\
-  $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
+  $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n";
+    print "ifeq '$(OPT)' '-byte'\n";
+    print "USEBYTE:=true\n";
+    print "DYNOBJ:=.cmo\n";
+    print "DYNLIB:=.cma\n";
+    print "else\n";
+    print "USEBYTE:=\n";
+    print "DYNOBJ:=.cmxs\n";
+    print "DYNLIB:=.cmxs\n";
+    print "endif\n\n";
     end;
     match is_install with
       | Project_file.NoInstall -> ()
@@ -756,13 +770,19 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
   print "HASNATDYNLINK_OR_EMPTY :=\n";
   print "endif\n\n";
   section "Definition of the toplevel targets.";
-  print "all: ";
-  if !some_vfile then print "$(VOFILES) ";
-  if !some_mlfile || !some_ml4file || !some_mlpackfile then print "$(CMOFILES) ";
-  if !some_mllibfile then print "$(CMAFILES) ";
-  if !some_mlfile || !some_ml4file || !some_mllibfile || !some_mlpackfile
-  then print "$(if $(HASNATDYNLINK_OR_EMPTY),$(CMXSFILES)) ";
+  let has_cmo = !some_mlfile || !some_ml4file || !some_mlpackfile in
+  let has_ml = has_cmo || !some_mllibfile in
+  print "all:";
+  if !some_vfile then print " $(VOFILES)";
+  if has_ml then print " $(if $(USEBYTE),bytefiles,optfiles)";
   print_list "\\\n  " other_targets; print "\n\n";
+  print "bytefiles:";
+  if has_cmo then print " $(CMOFILES)";
+  if !some_mllibfile then print " $(CMAFILES)";
+  print "\n\n";
+  print "optfiles:";
+  if has_ml then print " $(if $(HASNATDYNLINK_OR_EMPTY),$(CMXSFILES))";
+  print "\n\n";
   if !some_mlifile then
     begin
       print "mlihtml: $(MLIFILES:.mli=.cmi)\n";
@@ -808,9 +828,11 @@ let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
   print ".PHONY: ";
   print_list
     " "
-    ("all" :: "archclean" :: "beautify" :: "byte" :: "clean" :: "cleanall"
-     :: "gallina" :: "gallinahtml" :: "html" :: "install" :: "install-doc"
-     :: "install-natdynlink" :: "install-toploop" :: "opt" :: "printenv"
+    ("all" :: "archclean" :: "beautify" :: "byte" :: "bytefiles"
+     :: "clean" :: "cleanall"
+     :: "gallina" :: "gallinahtml" :: "html" :: "install" :: "install-byte"
+     :: "install-doc" :: "install-natdynlink" :: "install-toploop"
+     :: "opt" :: "optfiles" :: "printenv"
      :: "quick" :: "uninstall" :: "userinstall" :: "validate" :: "vio2vo"
      :: (sds@(CList.map_filter
 		(fun (n,_,is_phony,_) ->
