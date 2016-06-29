@@ -190,7 +190,8 @@ let declare_delimiters scope key =
     | None -> scope_map := String.Map.add scope newsc !scope_map
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
-	Feedback.msg_warning
+        (** FIXME: implement multikey scopes? *)
+	Flags.if_verbose Feedback.msg_info
 	  (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
 	scope_map := String.Map.add scope newsc !scope_map
   end;
@@ -198,7 +199,7 @@ let declare_delimiters scope key =
     let oldscope = String.Map.find key !delimiters_map in
     if String.equal oldscope scope then ()
     else begin
-      Feedback.msg_warning (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
+      Flags.if_verbose Feedback.msg_info (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
       delimiters_map := String.Map.add key scope !delimiters_map
     end
   with Not_found -> delimiters_map := String.Map.add key scope !delimiters_map
@@ -207,7 +208,7 @@ let remove_delimiters scope =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = None } in
   match sc.delimiters with
-    | None -> Feedback.msg_warning (str "No bound key for scope " ++ str scope ++ str ".")
+    | None -> Errors.errorlabstrm "" (str "No bound key for scope " ++ str scope ++ str ".")
     | Some key ->
        scope_map := String.Map.add scope newsc !scope_map;
        try
@@ -386,6 +387,12 @@ let level_of_notation ntn =
 
 (* The mapping between notations and their interpretation *)
 
+let warn_notation_overridden =
+  CWarnings.create ~name:"notation-overridden" ~category:"parsing"
+                   (fun (ntn,which_scope) ->
+                    str "Notation" ++ spc () ++ str ntn ++ spc ()
+                    ++ strbrk "was already used" ++ which_scope)
+
 let declare_notation_interpretation ntn scopt pat df ~onlyprint =
   let scope = match scopt with Some s -> s | None -> default_scope in
   let sc = find_scope scope in
@@ -393,8 +400,8 @@ let declare_notation_interpretation ntn scopt pat df ~onlyprint =
     if String.Map.mem ntn sc.notations then
     let which_scope = match scopt with
     | None -> mt ()
-    | Some _ -> str " in scope " ++ str scope in
-    Feedback.msg_warning (str "Notation " ++ str ntn ++ str " was already used" ++ which_scope)
+    | Some _ -> spc () ++ strbrk "in scope" ++ spc () ++ str scope in
+    warn_notation_overridden (ntn,which_scope)
   in
   let notdata = {
     not_interp = pat;

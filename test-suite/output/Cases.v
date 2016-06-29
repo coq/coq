@@ -66,8 +66,8 @@ Print foo'.
 (* Was bug #3293 (eta-expansion at "match" printing time was failing because
    of let-in's interpreted as being part of the expansion)  *)
 
-Variable b : bool.
-Variable P : bool -> Prop.
+Axiom b : bool.
+Axiom P : bool -> Prop.
 Inductive B : Prop := AC : P b -> B.
 Definition f : B -> True.
 

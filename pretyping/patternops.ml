@@ -317,6 +317,10 @@ let rev_it_mkPLambda = List.fold_right mkPLambda
 
 let err loc pp = user_err_loc (loc,"pattern_of_glob_constr", pp)
 
+let warn_cast_in_pattern =
+  CWarnings.create ~name:"cast-in-pattern" ~category:"automation"
+    (fun () -> Pp.strbrk "Casts are ignored in patterns")
+
 let rec pat_of_raw metas vars = function
   | GVar (_,id) ->
       (try PRel (List.index Name.equal (Name id) vars)
@@ -348,7 +352,7 @@ let rec pat_of_raw metas vars = function
   | GHole _ ->
       PMeta None
   | GCast (_,c,_) ->
-      Feedback.msg_warning (strbrk "Cast not taken into account in constr pattern");
+      warn_cast_in_pattern ();
       pat_of_raw metas vars c
   | GIf (_,c,(_,None),b1,b2) ->
       PIf (pat_of_raw metas vars c,

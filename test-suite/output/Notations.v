@@ -133,8 +133,7 @@ Fail Notation "( x , y , .. , z )" := (pair x (pair y z)).
 Fail Notation "( x , y , .. , z )" := (pair x .. (pair y w) ..).
 
 (* Right-unbound variable *)
-(* Now allowed with an only parsing restriction *)
-Notation "( x , y , .. , z )" := (pair y .. (pair z 0) ..).
+Notation "( x , y , .. , z )" := (pair y .. (pair z 0) ..) (only parsing).
 
 (* Not the right kind of recursive pattern *)
 Fail Notation "( x , y , .. , z )" := (ex (fun z => .. (ex (fun y => x)) ..)).

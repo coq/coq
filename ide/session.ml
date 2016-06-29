@@ -195,12 +195,8 @@ let set_buffer_handlers
          to a point indicated by coq. *)
       if !no_coq_action_required then begin
         let start, stop = get_start (), get_stop () in
-        buffer#remove_tag Tags.Script.error ~start ~stop;
-        buffer#remove_tag Tags.Script.error_bg ~start ~stop;
-        buffer#remove_tag Tags.Script.tooltip ~start ~stop;
-        buffer#remove_tag Tags.Script.processed ~start ~stop;
-        buffer#remove_tag Tags.Script.to_process ~start ~stop;
-        buffer#remove_tag Tags.Script.incomplete ~start ~stop;
+	List.iter (fun tag -> buffer#remove_tag tag ~start ~stop)
+		  Tags.Script.ephemere;
         Sentence.tag_on_insert buffer
       end;
     end in

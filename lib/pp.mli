@@ -166,6 +166,8 @@ val surround : std_ppcmds -> std_ppcmds
 
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
+val pr_loc : Loc.t -> std_ppcmds
+
 (** {6 Low-level pretty-printing functions with and without flush} *)
 
 (** FIXME: These ignore the logging settings and call [Format] directly *)
