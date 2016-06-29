@@ -45,7 +45,22 @@ ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
  # static link of plugins, do not mention them in .v.d
  DYNDEP:=-dyndep no
 else
- DYNDEP:=-dyndep $(BEST)
+ DYNDEP:=-dyndep var
+endif
+
+# Which coqtop do we use to build .vo file ? The best ;-)
+# Note: $(BEST) could be overridden by the user if a byte build is desired
+# Note: coqdep -dyndep var will use $(DYNOBJ) and $(DYNLIB) extensions
+# for Declare ML Module files.
+
+ifeq ($(BEST),opt)
+COQTOPBEST:=$(COQTOPEXE)
+DYNOBJ:=.cmxs
+DYNLIB:=.cmxs
+else
+COQTOPBEST:=$(COQTOPBYTE)
+DYNOBJ:=.cmo
+DYNLIB:=.cma
 endif
 
 INSTALLBIN:=install
