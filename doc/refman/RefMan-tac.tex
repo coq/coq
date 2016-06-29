@@ -2872,6 +2872,9 @@ activated, {\tt subst} also deals with the following corner cases:
     subst} would be necessary to replace {\ident$_2$} by $t$ or $t'$
   respectively.
 
+\item The presence of a recursive equation which without the option
+  would be a cause of failure of {\tt subst}.
+  
 \item A context with cyclic dependencies as with hypotheses {\tt
   \ident$_1$ = f~\ident$_2$} and {\tt \ident$_2$ = g~\ident$_1$} which
   without the option would be a cause of failure of {\tt subst}.
