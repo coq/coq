@@ -49,7 +49,7 @@ let empty =
     uctx_univ_variables = Univ.LMap.empty;
     uctx_univ_algebraic = Univ.LSet.empty;
     uctx_universes = UGraph.initial_universes;
-    uctx_initial_universes = UGraph.initial_universes }
+    uctx_initial_universes = UGraph.initial_universes; }
 
 let make u =
     { empty with 
@@ -83,7 +83,7 @@ let union ctx ctx' =
           if local == ctx.uctx_local then ctx.uctx_universes
           else
             let cstrsr = Univ.ContextSet.constraints ctx'.uctx_local in
-              UGraph.merge_constraints cstrsr (declarenew ctx.uctx_universes) }
+            UGraph.merge_constraints cstrsr (declarenew ctx.uctx_universes) }
 
 let context_set ctx = ctx.uctx_local
 
@@ -263,13 +263,17 @@ let universe_context ?names ctx =
        if not (Univ.LSet.is_empty left) then
          let n = Univ.LSet.cardinal left in
          let loc =
-          let get_loc u = try (Univ.LMap.find u (snd ctx.uctx_names)).uloc with Not_found -> None in
-          try List.find_map get_loc (Univ.LSet.elements left) with Not_found -> Loc.ghost
+           try
+             let info =
+               Univ.LMap.find (Univ.LSet.choose left) (snd ctx.uctx_names) in
+             Option.default Loc.ghost info.uloc
+           with Not_found -> Loc.ghost
          in
            user_err_loc (loc, "universe_context",
-                        (str(CString.plural n "Universe") ++ spc () ++
-                             Univ.LSet.pr (pr_uctx_level ctx) left ++
-                             spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound."))
+			(str(CString.plural n "Universe") ++ spc () ++
+			     Univ.LSet.pr (pr_uctx_level ctx) left ++
+			   spc () ++ str (CString.conjugate_verb_to_be n) ++
+                           str" unbound."))
       else
         let inst = Univ.Instance.of_array (Array.of_list newinst) in
         let ctx = Univ.UContext.make (inst,
@@ -329,7 +333,8 @@ let merge ?loc sideff rigid uctx ctx' =
   let initial = declare uctx.uctx_initial_universes in
   let univs = declare uctx.uctx_universes in
   let uctx_universes = UGraph.merge_constraints (ContextSet.constraints ctx') univs in
-    { uctx with uctx_names; uctx_local; uctx_universes; uctx_initial_universes = initial }
+  { uctx with uctx_names; uctx_local; uctx_universes;
+              uctx_initial_universes = initial }
 
 let merge_subst uctx s =
   { uctx with uctx_univ_variables = Univ.LMap.subst_union uctx.uctx_univ_variables s }

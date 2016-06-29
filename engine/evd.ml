@@ -252,6 +252,7 @@ let instantiate_evar_array info c args =
   | _ -> replace_vars inst c
 
 type evar_universe_context = UState.t
+
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
 let empty_evar_universe_context = UState.empty
