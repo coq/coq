@@ -866,6 +866,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 	(t, combinesmall 16 n)
 
   and sh_rec t =
+    Control.check_for_interrupt ();
     let (y, h) = hash_term t in
     (* [h] must be positive. *)
     let h = h land 0x3FFFFFFF in
