@@ -187,9 +187,11 @@ val whd_delta :  reduction_function
 val whd_betadeltazeta_stack :  stack_reduction_function
 val whd_betadeltazeta_state :  state_reduction_function
 val whd_betadeltazeta :  reduction_function
+val whd_zeta_stack : local_stack_reduction_function
+val whd_zeta_state : local_state_reduction_function
+val whd_zeta : local_reduction_function
 
 val shrink_eta : constr -> constr
-val whd_zeta : constr -> constr
 
 (** Various reduction functions *)
 
