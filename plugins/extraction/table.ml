@@ -441,7 +441,7 @@ let error_MPfile_as_mod mp b =
 let argnames_of_global r =
   let typ = Global.type_of_global_unsafe r in
   let rels,_ =
-    decompose_prod (Reduction.whd_betadeltaiota (Global.env ()) typ) in
+    decompose_prod (Reduction.whd_all (Global.env ()) typ) in
   List.rev_map fst rels
 
 let msg_of_implicit = function
@@ -880,7 +880,7 @@ let extract_constant_inline inline r ids s =
     | ConstRef kn ->
 	let env = Global.env () in
 	let typ = Global.type_of_global_unsafe (ConstRef kn) in
-	let typ = Reduction.whd_betadeltaiota env typ in
+	let typ = Reduction.whd_all env typ in
 	if Reduction.is_arity env typ
 	  then begin
 	    let nargs = Hook.get use_type_scheme_nb_args env typ in

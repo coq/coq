@@ -417,7 +417,7 @@ let extract_mrectype t =
     | _ -> raise Not_found
 
 let find_mrectype_vect env sigma c =
-  let (t, l) = decompose_appvect (whd_betadeltaiota env sigma c) in
+  let (t, l) = decompose_appvect (whd_all env sigma c) in
   match kind_of_term t with
     | Ind ind -> (ind, l)
     | _ -> raise Not_found
@@ -426,7 +426,7 @@ let find_mrectype env sigma c =
   let (ind, v) = find_mrectype_vect env sigma c in (ind, Array.to_list v)
 
 let find_rectype env sigma c =
-  let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
+  let (t, l) = decompose_app (whd_all env sigma c) in
   match kind_of_term t with
     | Ind (ind,u as indu) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -436,7 +436,7 @@ let find_rectype env sigma c =
     | _ -> raise Not_found
 
 let find_inductive env sigma c =
-  let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
+  let (t, l) = decompose_app (whd_all env sigma c) in
   match kind_of_term t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> Decl_kinds.CoFinite ->
@@ -444,7 +444,7 @@ let find_inductive env sigma c =
     | _ -> raise Not_found
 
 let find_coinductive env sigma c =
-  let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
+  let (t, l) = decompose_app (whd_all env sigma c) in
   match kind_of_term t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == Decl_kinds.CoFinite ->
@@ -458,7 +458,7 @@ let find_coinductive env sigma c =
 
 let is_predicate_explicitly_dep env pred arsign =
   let rec srec env pval arsign =
-    let pv' = whd_betadeltaiota env Evd.empty pval in
+    let pv' = whd_all env Evd.empty pval in
     match kind_of_term pv', arsign with
       | Lambda (na,t,b), (LocalAssum _)::arsign ->
 	  srec (push_rel_assum (na,t) env) b arsign

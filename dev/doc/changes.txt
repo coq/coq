@@ -2,6 +2,52 @@
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 
+** Reduction functions **
+
+In closure.ml, we introduced the more precise reduction flags fMATCH, fFIX,
+fCOFIX.
+
+We renamed the following functions:
+
+Closure.betadeltaiota -> Closure.all
+Closure.betadeltaiotanolet -> Closure.allnolet
+Reductionops.beta -> Closure.beta
+Reductionops.zeta -> Closure.zeta
+Reductionops.betaiota -> Closure.betaiota
+Reductionops.betaiotazeta -> Closure.betaiotazeta
+Reductionops.delta -> Closure.delta
+Reductionops.betalet -> Closure.betazeta
+Reductionops.betadelta -> Closure.betadeltazeta
+Reductionops.betadeltaiota -> Closure.all
+Reductionops.betadeltaiotanolet -> Closure.allnolet
+Closure.no_red -> Closure.nored
+Reductionops.nored -> Closure.nored
+Reductionops.nf_betadeltaiota -> Reductionops.nf_all
+Reductionops.whd_betadelta -> Reductionops.whd_betadeltazeta
+Reductionops.whd_betadeltaiota -> Reductionops.whd_all
+Reductionops.whd_betadeltaiota_nolet -> Reductionops.whd_allnolet
+Reductionops.whd_betadelta_stack -> Reductionops.whd_betadeltazeta_stack
+Reductionops.whd_betadeltaiota_stack -> Reductionops.whd_all_stack
+Reductionops.whd_betadeltaiota_nolet_stack -> Reductionops.whd_allnolet_stack
+Reductionops.whd_betadelta_state -> Reductionops.whd_betadeltazeta_state
+Reductionops.whd_betadeltaiota_state -> Reductionops.whd_all_state
+Reductionops.whd_betadeltaiota_nolet_state -> Reductionops.whd_allnolet_state
+Reductionops.whd_eta -> Reductionops.shrink_eta
+Tacmach.pf_whd_betadeltaiota -> Tacmach.pf_whd_all
+Tacmach.New.pf_whd_betadeltaiota -> Tacmach.New.pf_whd_all
+
+And removed the following ones:
+
+Reductionops.whd_betaetalet
+Reductionops.whd_betaetalet_stack
+Reductionops.whd_betaetalet_state
+Reductionops.whd_betadeltaeta_stack
+Reductionops.whd_betadeltaeta_state
+Reductionops.whd_betadeltaeta
+Reductionops.whd_betadeltaiotaeta_stack
+Reductionops.whd_betadeltaiotaeta_state
+Reductionops.whd_betadeltaiotaeta
+
 ** Notation_ops **
 
 Use Glob_ops.glob_constr_eq instead of Notation_ops.eq_glob_constr.

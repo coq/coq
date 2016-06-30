@@ -1708,7 +1708,7 @@ let build_inversion_problem loc env sigma tms t =
     let id = next_name_away (named_hd env t Anonymous) avoid in
     PatVar (Loc.ghost,Name id), ((id,t)::subst, id::avoid) in
   let rec reveal_pattern t (subst,avoid as acc) =
-    match kind_of_term (whd_betadeltaiota env sigma t) with
+    match kind_of_term (whd_all env sigma t) with
     | Construct (cstr,u) -> PatCstr (Loc.ghost,cstr,[],Anonymous), acc
     | App (f,v) when isConstruct f ->
 	let cstr,u = destConstruct f in

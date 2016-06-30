@@ -1090,7 +1090,7 @@ let left = true
 let right = false
 
 let rec unify_with_eta keptside flags env sigma c1 c2 =
-(* Question: try whd_betadeltaiota on ci if not two lambdas? *)
+(* Question: try whd_all on ci if not two lambdas? *)
   match kind_of_term c1, kind_of_term c2 with
   | (Lambda (na,t1,c1'), Lambda (_,t2,c2')) ->
     let env' = push_rel_assum (na,t1) env in
@@ -1200,7 +1200,7 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
     if Int.equal n 0 then
       Sigma (c, evd, p)
     else
-      match kind_of_term (whd_betadeltaiota env (Sigma.to_evar_map evd) cty) with
+      match kind_of_term (whd_all env (Sigma.to_evar_map evd) cty) with
       | Prod (_,c1,c2) ->
         let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
@@ -1343,7 +1343,7 @@ let w_merge env with_types flags (evd,metas,evars) =
     	  else
             let evd' =
               if occur_meta_evd evd mv c then
-                if isMetaOf mv (whd_betadeltaiota env evd c) then evd
+                if isMetaOf mv (whd_all env evd c) then evd
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
 	        meta_assign mv (c,(status,TypeProcessed)) evd in

@@ -62,7 +62,7 @@ let contradiction_context =
       | d :: rest ->
           let id = get_id d in
           let typ = nf_evar sigma (get_type d) in
-	  let typ = whd_betadeltaiota env sigma typ in
+	  let typ = whd_all env sigma typ in
 	  if is_empty_type typ then
 	    simplest_elim (mkVar id)
 	  else match kind_of_term typ with
@@ -84,7 +84,7 @@ let contradiction_context =
   end }
 
 let is_negation_of env sigma typ t =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
+  match kind_of_term (whd_all env sigma t) with
     | Prod (na,t,u) ->
       let u = nf_evar sigma u in
       is_empty_type u && is_conv_leq env sigma typ t

@@ -35,13 +35,13 @@ let invert_tag cst tag reloc_tbl =
   with Find_at j -> (j+1)
 
 let decompose_prod env t =
-  let (name,dom,codom as res) = destProd (whd_betadeltaiota env t) in
+  let (name,dom,codom as res) = destProd (whd_all env t) in
   match name with
   | Anonymous -> (Name (id_of_string "x"),dom,codom)
   | _ -> res
 
 let app_type env c =
-  let t = whd_betadeltaiota env c in
+  let t = whd_all env c in
   try destApp t with DestKO -> (t,[||])
 
  
@@ -289,7 +289,7 @@ and nf_atom_type env atom =
       let pT = 
 	hnf_prod_applist env 
 	  (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
-      let pT = whd_betadeltaiota env pT in
+      let pT = whd_all env pT in
       let dep, p = nf_predicate env ind mip params p pT in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env (fst ind) mib mip u params dep p in

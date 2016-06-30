@@ -42,7 +42,7 @@ let whd env=
     (fun t -> Closure.whd_val infos (Closure.inject t))
 
 let whd_delta env=
-   let infos=Closure.create_clos_infos Closure.betadeltaiota env in
+   let infos=Closure.create_clos_infos Closure.all env in
     (fun t -> Closure.whd_val infos (Closure.inject t))
 
 (* decompose member of equality in an applicative format *)

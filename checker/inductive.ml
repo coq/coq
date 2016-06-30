@@ -31,20 +31,20 @@ let lookup_mind_specif env (kn,tyi) =
   (mib, mib.mind_packets.(tyi))
 
 let find_rectype env c =
-  let (t, l) = decompose_app (whd_betadeltaiota env c) in
+  let (t, l) = decompose_app (whd_all env c) in
   match t with
   | Ind ind -> (ind, l)
   | _ -> raise Not_found
 
 let find_inductive env c =
-  let (t, l) = decompose_app (whd_betadeltaiota env c) in
+  let (t, l) = decompose_app (whd_all env c) in
   match t with
     | Ind (ind,_)
         when (fst (lookup_mind_specif env ind)).mind_finite != CoFinite -> (ind, l)
     | _ -> raise Not_found
 
 let find_coinductive env c =
-  let (t, l) = decompose_app (whd_betadeltaiota env c) in
+  let (t, l) = decompose_app (whd_all env c) in
   match t with
     | Ind (ind,_)
         when (fst (lookup_mind_specif env ind)).mind_finite == CoFinite -> (ind, l)
@@ -299,7 +299,7 @@ let check_allowed_sort ksort specif =
 let is_correct_arity env c (p,pj) ind specif params =
   let arsign,_ = get_instantiated_arity ind specif params in
   let rec srec env pt ar =
-    let pt' = whd_betadeltaiota env pt in
+    let pt' = whd_all env pt in
     match pt', ar with
       | Prod (na1,a1,t), LocalAssum (_,a1')::ar' ->
           (try conv env a1 a1'
@@ -307,7 +307,7 @@ let is_correct_arity env c (p,pj) ind specif params =
           srec (push_rel (LocalAssum (na1,a1)) env) t ar'
       | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
 	 let env' = push_rel (LocalAssum (na1,a1)) env in
-     let ksort = match (whd_betadeltaiota env' a2) with
+     let ksort = match (whd_all env' a2) with
         | Sort s -> family_of_sort s
 	    | _ -> raise (LocalArity None) in
 	  let dep_ind = build_dependent_inductive ind specif params in
@@ -578,7 +578,7 @@ let check_inductive_codomain env p =
   let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
   let env = push_rel_context arctx env in
-  let i,l' = decompose_app (whd_betadeltaiota env s) in
+  let i,l' = decompose_app (whd_all env s) in
   match i with Ind _ -> true | _ -> false 
 
 (* The following functions are almost duplicated from indtypes.ml, except
@@ -602,7 +602,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
 
 let rec ienv_decompose_prod (env,_ as ienv) n c =
  if Int.equal n 0 then (ienv,c) else
-   let c' = whd_betadeltaiota env c in
+   let c' = whd_all env c in
    match c' with
    Prod(na,a,b) ->
      let ienv' = ienv_push_var ienv (na,a,mk_norec) in
@@ -632,7 +632,7 @@ close to check_positive in indtypes.ml, but does no positivy check and does not
 compute the number of recursive arguments. *)
 let get_recargs_approx env tree ind args =
   let rec build_recargs (env, ra_env as ienv) tree c =
-    let x,largs = decompose_app (whd_betadeltaiota env c) in
+    let x,largs = decompose_app (whd_all env c) in
     match x with
     | Prod (na,b,d) ->
        assert (List.is_empty largs);
@@ -691,7 +691,7 @@ let get_recargs_approx env tree ind args =
 
   and build_recargs_constructors ienv trees c =
     let rec recargs_constr_rec (env,ra_env as ienv) trees lrec c =
-      let x,largs = decompose_app (whd_betadeltaiota env c) in
+      let x,largs = decompose_app (whd_all env c) in
 	match x with
 
           | Prod (na,b,d) ->
@@ -720,7 +720,7 @@ let restrict_spec env spec p =
   let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
   let env = push_rel_context arctx env in
-  let i,args = decompose_app (whd_betadeltaiota env s) in
+  let i,args = decompose_app (whd_all env s) in
   match i with
   | Ind i ->
      begin match spec with
@@ -742,7 +742,7 @@ let restrict_spec env spec p =
 
 let rec subterm_specif renv stack t =
   (* maybe reduction is not always necessary! *)
-  let f,l = decompose_app (whd_betadeltaiota renv.env t) in
+  let f,l = decompose_app (whd_all renv.env t) in
     match f with
       | Rel k -> subterm_var k renv
 
@@ -856,11 +856,11 @@ let filter_stack_domain env ci p stack =
   if noccur_with_meta 1 (rel_context_length absctx) ar then stack
   else let env = push_rel_context absctx env in
   let rec filter_stack env ar stack =
-    let t = whd_betadeltaiota env ar in
+    let t = whd_all env ar in
     match stack, t with
     | elt :: stack', Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
-      let ty, args = decompose_app (whd_betadeltaiota env a) in
+      let ty, args = decompose_app (whd_all env a) in
       let elt = match ty with
       | Ind ind -> 
         let spec' = stack_element_specif elt in
@@ -1032,7 +1032,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
     (* check fi does not appear in the k+1 first abstractions,
        gives the type of the k+1-eme abstraction (must be an inductive)  *)
     let rec check_occur env n def =
-      match (whd_betadeltaiota env def) with
+      match (whd_all env def) with
         | Lambda (x,a,b) ->
 	    if noccur_with_meta n nbfix a then
 	      let env' = push_rel (LocalAssum (x,a)) env in
@@ -1081,7 +1081,7 @@ let anomaly_ill_typed () =
   anomaly ~label:"check_one_cofix" (Pp.str "too many arguments applied to constructor")
 
 let rec codomain_is_coind env c =
-  let b = whd_betadeltaiota env c in
+  let b = whd_all env c in
   match b with
     | Prod (x,a,b) ->
 	codomain_is_coind (push_rel (LocalAssum (x,a)) env) b
@@ -1093,7 +1093,7 @@ let rec codomain_is_coind env c =
 let check_one_cofix env nbfix def deftype =
   let rec check_rec_call env alreadygrd n tree vlra  t =
     if not (noccur_with_meta n nbfix t) then
-      let c,args = decompose_app (whd_betadeltaiota env t) in
+      let c,args = decompose_app (whd_all env t) in
       match c with
 	| Rel p when  n <= p && p < n+nbfix ->
 	    (* recursive call: must be guarded and no nested recursive

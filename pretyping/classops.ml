@@ -297,7 +297,7 @@ let lookup_path_to_sort_from env sigma s =
 
 let get_coercion_constructor env coe =
   let c, _ =
-    Reductionops.whd_betadeltaiota_stack env Evd.empty coe.coe_value
+    Reductionops.whd_all_stack env Evd.empty coe.coe_value
   in
   match kind_of_term c with
   | Construct (cstr,u) ->

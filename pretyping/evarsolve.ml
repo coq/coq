@@ -140,7 +140,7 @@ let recheck_applications conv_algo env evdref t =
        let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
        let rec aux i ty =
 	 if i < Array.length argsty then
-	 match kind_of_term (whd_betadeltaiota env !evdref ty) with
+	 match kind_of_term (whd_all env !evdref ty) with
 	 | Prod (na, dom, codom) ->
 	    (match conv_algo env !evdref Reduction.CUMUL argsty.(i) dom with
 	     | Success evd -> evdref := evd;
@@ -520,7 +520,7 @@ let solve_pattern_eqn env l c =
     l c in
   (* Warning: we may miss some opportunity to eta-reduce more since c'
      is not in normal form *)
-  whd_eta c'
+  shrink_eta c'
 
 (*****************************************)
 (* Refining/solving unification problems *)
@@ -797,7 +797,7 @@ let rec do_projection_effects define_fun env ty evd = function
       let evd = Evd.define evk (mkVar id) evd in
       (* TODO: simplify constraints involving evk *)
       let evd = do_projection_effects define_fun env ty evd p in
-      let ty = whd_betadeltaiota env evd (Lazy.force ty) in
+      let ty = whd_all env evd (Lazy.force ty) in
       if not (isSort ty) then
         (* Don't try to instantiate if a sort because if evar_concl is an
            evar it may commit to a univ level which is not the right
@@ -1553,7 +1553,7 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
         raise e
     | OccurCheckIn (evd,rhs) ->
         (* last chance: rhs actually reduces to ev *)
-        let c = whd_betadeltaiota env evd rhs in
+        let c = whd_all env evd rhs in
         match kind_of_term c with
         | Evar (evk',argsv2) when Evar.equal evk evk' ->
 	    solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma c c')

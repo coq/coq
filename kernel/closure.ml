@@ -37,17 +37,20 @@ let delta = ref 0
 let eta = ref 0
 let zeta = ref 0
 let evar = ref 0
-let iota = ref 0
+let nb_match = ref 0
+let fix = ref 0
+let cofix = ref 0
 let prune = ref 0
 
 let reset () =
-  beta := 0; delta := 0; zeta := 0; evar := 0; iota := 0; evar := 0;
-  prune := 0
+  beta := 0; delta := 0; zeta := 0; evar := 0; nb_match := 0; fix := 0;
+  cofix := 0; evar := 0; prune := 0
 
 let stop() =
   Feedback.msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
 	 str " eta=" ++ int !eta ++ str" zeta=" ++ int !zeta ++ str" evar=" ++
-	 int !evar ++ str" iota=" ++ int !iota ++ str" prune=" ++ int !prune ++
+	 int !evar ++ str" match=" ++ int !nb_match ++ str" fix=" ++ int !fix ++
+         str " cofix=" ++ int !cofix ++ str" prune=" ++ int !prune ++
 	 str"]")
 
 let incr_cnt red cnt =
@@ -78,7 +81,9 @@ module type RedFlagsSig = sig
   val fBETA : red_kind
   val fDELTA : red_kind
   val fETA : red_kind
-  val fIOTA : red_kind
+  val fMATCH : red_kind
+  val fFIX : red_kind
+  val fCOFIX : red_kind
   val fZETA : red_kind
   val fCONST : constant -> red_kind
   val fVAR : Id.t -> red_kind
@@ -103,14 +108,19 @@ module RedFlags = (struct
     r_eta : bool;
     r_const : transparent_state;
     r_zeta : bool;
-    r_iota : bool }
+    r_match : bool;
+    r_fix : bool;
+    r_cofix : bool }
 
-  type red_kind = BETA | DELTA | ETA | IOTA | ZETA
+  type red_kind = BETA | DELTA | ETA | MATCH | FIX
+              | COFIX | ZETA
 	      | CONST of constant | VAR of Id.t
   let fBETA = BETA
   let fDELTA = DELTA
   let fETA = ETA
-  let fIOTA = IOTA
+  let fMATCH = MATCH
+  let fFIX = FIX
+  let fCOFIX = COFIX
   let fZETA = ZETA
   let fCONST kn  = CONST kn
   let fVAR id  = VAR id
@@ -120,7 +130,9 @@ module RedFlags = (struct
     r_eta = false;
     r_const = all_opaque;
     r_zeta = false;
-    r_iota = false }
+    r_match = false;
+    r_fix = false;
+    r_cofix = false }
 
   let red_add red = function
     | BETA -> { red with r_beta = true }
@@ -129,7 +141,9 @@ module RedFlags = (struct
     | CONST kn ->
 	let (l1,l2) = red.r_const in
 	{ red with r_const = l1, Cpred.add kn l2 }
-    | IOTA -> { red with r_iota = true }
+    | MATCH -> { red with r_match = true }
+    | FIX -> { red with r_fix = true }
+    | COFIX -> { red with r_cofix = true }
     | ZETA -> { red with r_zeta = true }
     | VAR id ->
 	let (l1,l2) = red.r_const in
@@ -142,7 +156,9 @@ module RedFlags = (struct
     | CONST kn ->
  	let (l1,l2) = red.r_const in
 	{ red with r_const = l1, Cpred.remove kn l2 }
-    | IOTA -> { red with r_iota = false }
+    | MATCH -> { red with r_match = false }
+    | FIX -> { red with r_fix = false }
+    | COFIX -> { red with r_cofix = false }
     | ZETA -> { red with r_zeta = false }
     | VAR id ->
 	let (l1,l2) = red.r_const in
@@ -165,7 +181,9 @@ module RedFlags = (struct
 	let c = Id.Pred.mem id l in
 	incr_cnt c delta
     | ZETA -> incr_cnt red.r_zeta zeta
-    | IOTA -> incr_cnt red.r_iota iota
+    | MATCH -> incr_cnt red.r_match nb_match
+    | FIX -> incr_cnt red.r_fix fix
+    | COFIX -> incr_cnt red.r_cofix cofix
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
 
@@ -177,15 +195,20 @@ end : RedFlagsSig)
 
 open RedFlags
 
-let betadeltaiota = mkflags [fBETA;fDELTA;fZETA;fIOTA]
-let betadeltaiotanolet = mkflags [fBETA;fDELTA;fIOTA]
-let betaiota = mkflags [fBETA;fIOTA]
+let all = mkflags [fBETA;fDELTA;fZETA;fMATCH;fFIX;fCOFIX]
+let allnolet = mkflags [fBETA;fDELTA;fMATCH;fFIX;fCOFIX]
 let beta = mkflags [fBETA]
-let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
+let betadeltazeta = mkflags [fBETA;fDELTA;fZETA]
+let betaiota = mkflags [fBETA;fMATCH;fFIX;fCOFIX]
+let betaiotazeta = mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA]
+let betazeta = mkflags [fBETA;fZETA]
+let delta = mkflags [fDELTA]
+let zeta = mkflags [fZETA]
+let nored = no_red
 
 (* Removing fZETA for finer behaviour would break many developments *)
-let unfold_side_flags = [fBETA;fIOTA;fZETA]
-let unfold_side_red = mkflags [fBETA;fIOTA;fZETA]
+let unfold_side_flags = [fBETA;fMATCH;fFIX;fCOFIX;fZETA]
+let unfold_side_red = mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA]
 let unfold_red kn =
   let flag = match kn with
     | EvalVarRef id -> fVAR id
@@ -896,23 +919,27 @@ let rec knr info m stk =
       (match ref_value_cache info (RelKey k) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FConstruct((ind,c),u) when red_set info.i_flags fIOTA ->
+  | FConstruct((ind,c),u) ->
+     let use_match = red_set info.i_flags fMATCH in
+     let use_fix = red_set info.i_flags fFIX in
+     if use_match || use_fix then
       (match strip_update_shift_app m stk with
-        | (depth, args, ZcaseT(ci,_,br,e)::s) ->
+        | (depth, args, ZcaseT(ci,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
             let rargs = drop_parameters depth ci.ci_npar args in
             knit info e br.(c-1) (rargs@s)
-        | (_, cargs, Zfix(fx,par)::s) ->
+        | (_, cargs, Zfix(fx,par)::s) when use_fix ->
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
             knit info fxe fxbd stk'
-	| (depth, args, Zproj (n, m, cst)::s) ->
+	| (depth, args, Zproj (n, m, cst)::s) when use_match ->
 	    let rargs = drop_parameters depth n args in
 	    let rarg = project_nth_arg m rargs in
 	      kni info rarg s
         | (_,args,s) -> (m,args@s))
-  | FCoFix _ when red_set info.i_flags fIOTA ->
+     else (m,stk)
+  | FCoFix _ when red_set info.i_flags fCOFIX ->
       (match strip_update_shift_app m stk with
           (_, args, (((ZcaseT _|Zproj _)::_) as stk')) ->
             let (fxe,fxbd) = contract_fix_vect m.term in

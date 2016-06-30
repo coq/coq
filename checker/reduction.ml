@@ -92,13 +92,13 @@ let whd_betaiotazeta x =
        Prod _|Lambda _|Fix _|CoFix _) -> x
     | _ -> whd_val (create_clos_infos betaiotazeta empty_env) (inject x)
 
-let whd_betadeltaiota env t =
+let whd_all env t =
   match t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> t
     | _ -> whd_val (create_clos_infos betadeltaiota env) (inject t)
 
-let whd_betadeltaiota_nolet env t =
+let whd_allnolet env t =
   match t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _|LetIn _) -> t
@@ -477,7 +477,7 @@ let vm_conv cv_pb = fconv cv_pb true
  * error message. *)
 
 let hnf_prod_app env t n =
-  match whd_betadeltaiota env t with
+  match whd_all env t with
     | Prod (_,_,b) -> subst1 n b
     | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product")
 
@@ -488,7 +488,7 @@ let hnf_prod_applist env t nl =
 
 let dest_prod env =
   let rec decrec env m c =
-    let t = whd_betadeltaiota env c in
+    let t = whd_all env c in
     match t with
       | Prod (n,a,c0) ->
           let d = LocalAssum (n,a) in
@@ -500,7 +500,7 @@ let dest_prod env =
 (* The same but preserving lets in the context, not internal ones. *)
 let dest_prod_assum env =
   let rec prodec_rec env l ty =
-    let rty = whd_betadeltaiota_nolet env ty in
+    let rty = whd_allnolet env ty in
     match rty with
     | Prod (x,t,c)  ->
         let d = LocalAssum (x,t) in
@@ -510,7 +510,7 @@ let dest_prod_assum env =
 	prodec_rec (push_rel d env) (d::l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               ->
-      let rty' = whd_betadeltaiota env rty in
+      let rty' = whd_all env rty in
 	if Term.eq_constr rty' rty then l, rty
 	else prodec_rec env l rty'
   in
@@ -518,7 +518,7 @@ let dest_prod_assum env =
 
 let dest_lam_assum env =
   let rec lamec_rec env l ty =
-    let rty = whd_betadeltaiota_nolet env ty in
+    let rty = whd_allnolet env ty in
     match rty with
     | Lambda (x,t,c)  ->
         let d = LocalAssum (x,t) in

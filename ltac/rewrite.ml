@@ -218,7 +218,7 @@ end) = struct
       | Some (x, Some rel) -> evars, rel
     in
     let rec aux env evars ty l =
-      let t = Reductionops.whd_betadeltaiota env (goalevars evars) ty in
+      let t = Reductionops.whd_all env (goalevars evars) ty in
 	match kind_of_term t, l with
 	| Prod (na, ty, b), obj :: cstrs ->
           let b = Reductionops.nf_betaiota (goalevars evars) b in
@@ -321,7 +321,7 @@ end) = struct
     let rec aux evars env prod n = 
       if Int.equal n 0 then start evars env prod
       else
-	match kind_of_term (Reduction.whd_betadeltaiota env prod) with
+	match kind_of_term (Reduction.whd_all env prod) with
 	| Prod (na, ty, b) ->
 	  if noccurn 1 b then
 	    let b' = lift (-1) b in
@@ -339,7 +339,7 @@ end) = struct
 	try let evars, found = aux evars env ty (succ (List.length args)) in
 	      Some (evars, found, c, ty, arg :: args)
 	with Not_found ->
-	  let ty = whd_betadeltaiota env ty in
+	  let ty = whd_all env ty in
 	  find env (mkApp (c, [| arg |])) (prod_applist ty [arg]) args
     in find env c ty args
 

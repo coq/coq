@@ -537,7 +537,7 @@ let fix ido n = match ido with
     mutual_fix id n [] 0
 
 let rec check_is_mutcoind env sigma cl =
-  let b = whd_betadeltaiota env sigma cl in
+  let b = whd_all env sigma cl in
   match kind_of_term b with
   | Prod (na, c1, b) ->
     let open Context.Rel.Declaration in
@@ -774,15 +774,15 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
     let sigma, b = infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 in
     if not b then
       if
-        isSort (whd_betadeltaiota env sigma t1) &&
-        isSort (whd_betadeltaiota env sigma t2)
+        isSort (whd_all env sigma t1) &&
+        isSort (whd_all env sigma t2)
       then (mayneedglobalcheck := true; sigma)
       else
         errorlabstrm "convert-check-hyp" (str "Types are incompatible.")
     else sigma
   end
   else
-    if not (isSort (whd_betadeltaiota env sigma t1)) then
+    if not (isSort (whd_all env sigma t1)) then
       errorlabstrm "convert-check-hyp" (str "Not a type.")
     else sigma
 
@@ -1204,7 +1204,7 @@ let cut c =
       try
         (** Backward compat: ensure that [c] is well-typed. *)
         let typ = Typing.unsafe_type_of env sigma c in
-        let typ = whd_betadeltaiota env sigma typ in
+        let typ = whd_all env sigma typ in
         match kind_of_term typ with
         | Sort _ -> true
         | _ -> false
@@ -2293,8 +2293,8 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
-    let whd_betadeltaiota = Tacmach.New.pf_apply whd_betadeltaiota gl in
-    let t = whd_betadeltaiota (type_of (mkVar id)) in
+    let whd_all = Tacmach.New.pf_apply whd_all gl in
+    let t = whd_all (type_of (mkVar id)) in
     let eqtac, thin = match match_with_equality_type t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar lhs && not (occur_var env (destVar lhs) rhs) then
@@ -4253,7 +4253,7 @@ let check_enough_applied env sigma elim =
   | None ->
       (* No eliminator given *)
       fun u ->
-      let t,_ = decompose_app (whd_betadeltaiota env sigma u) in isInd t
+      let t,_ = decompose_app (whd_all env sigma u) in isInd t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (fst elimc) in
       let scheme = compute_elim_sig ~elimc elimt in
@@ -4573,7 +4573,7 @@ let maybe_betadeltaiota_concl allowred gl =
   if not allowred then concl
   else
     let env = Proofview.Goal.env gl in
-    whd_betadeltaiota env sigma concl
+    whd_all env sigma concl
 
 let reflexivity_red allowred =
   Proofview.Goal.enter { enter = begin fun gl ->

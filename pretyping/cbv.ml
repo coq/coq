@@ -156,7 +156,7 @@ let strip_appl head stack =
 
 (* Tests if fixpoint reduction is possible. *)
 let fixp_reducible flgs ((reci,i),_) stk =
-  if red_set flgs fIOTA then
+  if red_set flgs fFIX then
     match stk with
       | APP(appl,_) ->
           Array.length appl > reci.(i) &&
@@ -168,7 +168,7 @@ let fixp_reducible flgs ((reci,i),_) stk =
     false
 
 let cofixp_reducible flgs _ stk =
-  if red_set flgs fIOTA then
+  if red_set flgs fCOFIX then
     match stk with
       | (CASE _ | APP(_,CASE _)) -> true
       | _ -> false
@@ -296,19 +296,19 @@ and cbv_stack_value info env = function
 
     (* constructor in a Case -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,br,ci,env,stk)))
-            when red_set (info_flags info) fIOTA ->
+            when red_set (info_flags info) fMATCH ->
 	let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
         cbv_stack_term info (stack_app cargs stk) env br.(n-1)
 
     (* constructor of arity 0 in a Case -> IOTA *)
     | (CONSTR(((_,n),u),[||]), CASE(_,br,_,env,stk))
-            when red_set (info_flags info) fIOTA ->
+            when red_set (info_flags info) fMATCH ->
                     cbv_stack_term info stk env br.(n-1)
 
     (* constructor in a Projection -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,pi,stk)))
-        when red_set (info_flags info) fIOTA && Projection.unfolded p ->
+        when red_set (info_flags info) fMATCH && Projection.unfolded p ->
       let arg = args.(pi.Declarations.proj_npars + pi.Declarations.proj_arg) in
 	cbv_stack_value info env (strip_appl arg stk)
 
