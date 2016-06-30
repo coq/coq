@@ -400,7 +400,8 @@ let type_of_clause cls gl = match cls with
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
-  let isatomic = isProd (whd_zeta hdcncl) in
+  let evd = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
+  let isatomic = isProd (whd_zeta evd hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun c type_of_cls in

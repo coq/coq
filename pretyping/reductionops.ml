@@ -1148,7 +1148,9 @@ let shrink_eta c = Stack.zip (local_whd_state_gen eta Evd.empty (c,Stack.empty))
 
 (* 5. Zeta Reduction Functions *)
 
-let whd_zeta c = Stack.zip (local_whd_state_gen Closure.zeta Evd.empty (c,Stack.empty))
+let whd_zeta_state = local_whd_state_gen Closure.zeta
+let whd_zeta_stack = stack_red_of_state_red whd_zeta_state
+let whd_zeta = red_of_state_red whd_zeta_state
 
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
