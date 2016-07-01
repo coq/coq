@@ -345,11 +345,18 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
+let constr_flags = {
+  Pretyping.use_typeclasses = true;
+  Pretyping.use_unif_heuristics = true;
+  Pretyping.use_hook = Some Pfedit.solve_by_implicit_tactic;
+  Pretyping.fail_evar = false;
+  Pretyping.expand_evars = true }
+
 let refine_tac simple {Glob_term.closure=closure;term=term} =
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let flags = Pretyping.all_no_fail_flags in
+    let flags = constr_flags in
     let tycon = Pretyping.OfType concl in
     let lvar = { Pretyping.empty_lvar with
       Pretyping.ltac_constrs = closure.Glob_term.typed;
