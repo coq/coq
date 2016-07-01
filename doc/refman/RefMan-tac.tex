@@ -3033,8 +3033,10 @@ $\beta$ (reduction of functional application), $\delta$ (unfolding of
 transparent constants, see \ref{Transparent}), $\iota$ (reduction of
 pattern-matching over a constructed term, and unfolding of {\tt fix}
 and {\tt cofix} expressions) and $\zeta$ (contraction of local
-definitions), the flag are either {\tt beta}, {\tt delta}, {\tt iota}
-or {\tt zeta}. The {\tt delta} flag itself can be refined into {\tt
+definitions), the flags are either {\tt beta}, {\tt delta},
+{\tt match}, {\tt fix}, {\tt cofix}, {\tt iota} or {\tt zeta}.
+The {\tt iota} flag is a shorthand for {\tt match}, {\tt fix} and {\tt cofix}.
+The {\tt delta} flag itself can be refined into {\tt
 delta [\qualid$_1$\ldots\qualid$_k$]} or {\tt delta
 -[\qualid$_1$\ldots\qualid$_k$]}, restricting in the first case the
 constants to unfold to the constants listed, and restricting in the

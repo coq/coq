@@ -35,12 +35,12 @@ let check_constraints cst env =
 
 (* This should be a type (a priori without intention to be an assumption) *)
 let type_judgment env c t =
-  match kind_of_term(whd_betadeltaiota env t) with
+  match kind_of_term(whd_all env t) with
     | Sort s -> {utj_val = c; utj_type = s }
     | _ -> error_not_type env (make_judge c t)
 
 let check_type env c t =
-  match kind_of_term(whd_betadeltaiota env t) with
+  match kind_of_term(whd_all env t) with
   | Sort s -> s
   | _ -> error_not_type env (make_judge c t)
 
@@ -157,7 +157,7 @@ let judge_of_apply env func funt argsv argstv =
   let rec apply_rec i typ = 
     if Int.equal i len then typ
     else 
-      (match kind_of_term (whd_betadeltaiota env typ) with
+      (match kind_of_term (whd_all env typ) with
       | Prod (_,c1,c2) ->
 	let arg = argsv.(i) and argt = argstv.(i) in
 	  (try

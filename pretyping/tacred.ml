@@ -257,7 +257,7 @@ let invert_name labs l na0 env sigma ref = function
 
 let compute_consteval_direct env sigma ref =
   let rec srec env n labs onlyproj c =
-    let c',l = whd_betadelta_stack env sigma c in
+    let c',l = whd_betadeltazeta_stack env sigma c in
     match kind_of_term c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
           let open Context.Rel.Declaration in
@@ -870,7 +870,7 @@ let red_product env sigma c =
  *)
 
 let whd_simpl_orelse_delta_but_fix_old env sigma c =
-  let whd_all = whd_betadeltaiota_state env sigma in
+  let whd_all = whd_all_state env sigma in
   let rec redrec (x, stack as s) =
     match kind_of_term x with
       | Lambda (na,t,c) ->
@@ -1125,7 +1125,7 @@ let cbv_norm_flags flags env sigma t =
 
 let cbv_beta = cbv_norm_flags beta empty_env
 let cbv_betaiota = cbv_norm_flags betaiota empty_env
-let cbv_betadeltaiota env sigma =  cbv_norm_flags betadeltaiota env sigma
+let cbv_betadeltaiota env sigma =  cbv_norm_flags all env sigma
 
 let compute = cbv_betadeltaiota
 
@@ -1186,7 +1186,7 @@ let reduce_to_ind_gen allow_product env sigma t =
       | _ ->
 	  (* Last chance: we allow to bypass the Opaque flag (as it
 	     was partially the case between V5.10 and V8.1 *)
-	  let t' = whd_betadeltaiota env sigma t in
+	  let t' = whd_all env sigma t in
 	  match kind_of_term (fst (decompose_app t')) with
 	    | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
 	    | _ -> errorlabstrm "" (str"Not an inductive product.")

@@ -151,7 +151,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
   let nparams = List.length vargs in
   let process_pos env depK pk =
     let rec prec env i sign p =
-      let p',largs = whd_betadeltaiota_nolet_stack env sigma p in
+      let p',largs = whd_allnolet_stack env sigma p in
       match kind_of_term p' with
 	| Prod (n,t,c) ->
 	    let d = LocalAssum (n,t) in
@@ -168,7 +168,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
             else
 	      base
       	| _ ->
-	   let t' = whd_betadeltaiota env sigma p in
+	   let t' = whd_all env sigma p in
 	   if Term.eq_constr p' t' then assert false
 	   else prec env i sign t'
     in
@@ -227,7 +227,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
   let process_pos env fk  =
     let rec prec env i hyps p =
-      let p',largs = whd_betadeltaiota_nolet_stack env sigma p in
+      let p',largs = whd_allnolet_stack env sigma p in
       match kind_of_term p' with
 	| Prod (n,t,c) ->
 	    let d = LocalAssum (n,t) in
@@ -240,7 +240,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
             and arg = appvect (mkRel (i+1), Context.Rel.to_extended_vect 0 hyps) in
             applist(lift i fk,realargs@[arg])
      	| _ ->
-	   let t' = whd_betadeltaiota env sigma p in
+	   let t' = whd_all env sigma p in
 	     if Term.eq_constr t' p' then assert false
 	     else prec env i hyps t'
     in

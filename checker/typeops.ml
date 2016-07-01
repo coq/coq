@@ -33,7 +33,7 @@ let check_constraints cst env =
 
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env (c,ty as j) =
-  match whd_betadeltaiota env ty with
+  match whd_all env ty with
     | Sort s -> (c,s)
     | _ -> error_not_type env j
 
@@ -107,7 +107,7 @@ let judge_of_apply env (f,funj) argjv =
   let rec apply_rec n typ = function
     | [] -> typ
     | (h,hj)::restjl ->
-        (match whd_betadeltaiota env typ with
+        (match whd_all env typ with
           | Prod (_,c1,c2) ->
 	      (try conv_leq env hj c1
 	      with NotConvertible ->

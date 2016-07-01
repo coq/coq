@@ -146,7 +146,9 @@ let make_flag_constant = function
 let make_flag env f =
   let red = no_red in
   let red = if f.rBeta then red_add red fBETA else red in
-  let red = if f.rIota then red_add red fIOTA else red in
+  let red = if f.rMatch then red_add red fMATCH else red in
+  let red = if f.rFix then red_add red fFIX else red in
+  let red = if f.rCofix then red_add red fCOFIX else red in
   let red = if f.rZeta then red_add red fZETA else red in
   let red =
     if f.rDelta then (* All but rConst *)

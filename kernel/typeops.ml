@@ -37,7 +37,7 @@ let check_constraints cst env =
 
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env j =
-  match kind_of_term(whd_betadeltaiota env j.uj_type) with
+  match kind_of_term(whd_all env j.uj_type) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type env j
 
@@ -137,7 +137,7 @@ let make_polymorphic_if_constant_for_ind env {uj_val = c; uj_type = t} =
   let params, ccl = dest_prod_assum env t in
   match kind_of_term ccl with
   | Sort (Type u) ->
-     let ind, l = decompose_app (whd_betadeltaiota env c) in
+     let ind, l = decompose_app (whd_all env c) in
      if isInd ind && List.is_empty l then
        let mis = lookup_mind_specif env (fst (destInd ind)) in
        let nparams = Inductive.inductive_params mis in
@@ -233,7 +233,7 @@ let judge_of_apply env funj argjv =
 	{ uj_val  = mkApp (j_val funj, Array.map j_val argjv);
           uj_type = typ }
     | hj::restjl ->
-        (match kind_of_term (whd_betadeltaiota env typ) with
+        (match kind_of_term (whd_all env typ) with
           | Prod (_,c1,c2) ->
 	      (try
 		 let () = conv_leq false env hj.uj_type c1 in

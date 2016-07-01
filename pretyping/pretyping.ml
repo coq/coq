@@ -675,7 +675,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       | c::rest ->
 	let argloc = loc_of_glob_constr c in
 	let resj = evd_comb1 (Coercion.inh_app_fun resolve_tc env) evdref resj in
-        let resty = whd_betadeltaiota env !evdref resj.uj_type in
+        let resty = whd_all env !evdref resj.uj_type in
       	  match kind_of_term resty with
 	  | Prod (na,c1,c2) ->
 	    let tycon = Some c1 in
@@ -1017,7 +1017,7 @@ and pretype_type k0 resolve_tc valcon env evdref lvar = function
            let s =
 	     let sigma =  !evdref in
 	     let t = Retyping.get_type_of env sigma v in
-	       match kind_of_term (whd_betadeltaiota env sigma t) with
+	       match kind_of_term (whd_all env sigma t) with
                | Sort s -> s
                | Evar ev when is_Type (existential_type sigma ev) ->
 		   evd_comb1 (define_evar_as_sort env) evdref ev

@@ -463,7 +463,7 @@ and mk_hdgoals sigma goal goalacc trm =
 
 and mk_arggoals sigma goal goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
-    let t = whd_betadeltaiota (Goal.V82.env sigma goal) sigma funty in
+    let t = whd_all (Goal.V82.env sigma goal) sigma funty in
     let rec collapse t = match kind_of_term t with
     | LetIn (_, c1, _, b) -> collapse (subst1 c1 b)
     | _ -> t

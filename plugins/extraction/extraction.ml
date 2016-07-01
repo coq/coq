@@ -74,7 +74,7 @@ type flag = info * scheme
   Really important function. *)
 
 let rec flag_of_type env t : flag =
-  let t = whd_betadeltaiota env none t in
+  let t = whd_all env none t in
   match kind_of_term t with
     | Prod (x,t,c) -> flag_of_type (push_rel (LocalAssum (x,t)) env) c
     | Sort s when Sorts.is_prop s -> (Logic,TypeScheme)
@@ -102,14 +102,14 @@ let is_info_scheme env t = match flag_of_type env t with
 (*s [type_sign] gernerates a signature aimed at treating a type application. *)
 
 let rec type_sign env c =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	(if is_info_scheme env t then Keep else Kill Kprop)
 	:: (type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
 let rec type_scheme_nb_args env c =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	let n = type_scheme_nb_args (push_rel_assum (n,t) env) d in
 	if is_info_scheme env t then n+1 else n
@@ -135,7 +135,7 @@ let make_typvar n vl =
   next_ident_away id' vl
 
 let rec type_sign_vl env c =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in
 	if not (is_info_scheme env t) then Kill Kprop::s, vl
@@ -143,7 +143,7 @@ let rec type_sign_vl env c =
     | _ -> [],[]
 
 let rec nb_default_params env c =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	let n = nb_default_params (push_rel_assum (n,t) env) d in
 	if is_default env t then n+1 else n
@@ -489,7 +489,7 @@ and extract_really_ind env kn mib =
 *)
 
 and extract_type_cons env db dbmap c i =
-  match kind_of_term (whd_betadeltaiota env none c) with
+  match kind_of_term (whd_all env none c) with
     | Prod (n,t,d) ->
 	let env' = push_rel_assum (n,t) env in
 	let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in

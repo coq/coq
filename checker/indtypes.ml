@@ -44,7 +44,7 @@ let prcon c =
 let weaker_noccur_between env x nvars t =
   if noccur_between x nvars t then Some t
   else
-   let t' = whd_betadeltaiota env t in
+   let t' = whd_all env t in
    if noccur_between x nvars t' then Some t'
    else None
 
@@ -90,7 +90,7 @@ exception InductiveError of inductive_error
 (* Typing the arities and constructor types *)
 
 let rec sorts_of_constr_args env t =
-  let t = whd_betadeltaiota_nolet env t in
+  let t = whd_allnolet env t in
   match t with
     | Prod (name,c1,c2) ->
         let varj = infer_type env c1 in
@@ -321,7 +321,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
     | [] -> ()
     | LocalDef _ :: hyps -> check k (index+1) hyps
     | _::hyps ->
-        match whd_betadeltaiota env lpar.(k) with
+        match whd_all env lpar.(k) with
 	  | Rel w when w = index -> check (k-1) (index+1) hyps
 	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,index,l)))
   in check (nparams-1) (n-nhyps) hyps;
@@ -342,7 +342,7 @@ let check_rec_par (env,n,_,_) hyps nrecp largs =
           failwith "number of recursive parameters cannot be greater than the number of parameters."
       | (lp,LocalDef _ :: hyps) -> find (index-1) (lp,hyps)
       | (p::lp,_::hyps) ->
-          (match whd_betadeltaiota env p with
+          (match whd_all env p with
 	    | Rel w when w = index -> find (index-1) (lp,hyps)
             | _ -> failwith "bad number of recursive parameters")
   in find (n-1) (lpar,List.rev hyps)
@@ -388,7 +388,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lpar) =
 
 let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
   if n=0 then (ienv,c) else
-    let c' = whd_betadeltaiota env c in
+    let c' = whd_all env c in
     match c' with
 	Prod(na,a,b) ->
 	  let ienv' = ienv_push_var ienv (na,a,mk_norec) in
@@ -401,7 +401,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
   let lparams = rel_context_length hyps in
   (* check the inductive types occur positively in [c] *)
   let rec check_pos (env, n, ntypes, ra_env as ienv) c =
-    let x,largs = decompose_app (whd_betadeltaiota env c) in
+    let x,largs = decompose_app (whd_all env c) in
       match x with
 	| Prod (na,b,d) ->
 	    assert (List.is_empty largs);
@@ -470,7 +470,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
 
   and check_constructors ienv check_head c =
     let rec check_constr_rec (env,n,ntypes,ra_env as ienv) lrec c =
-      let x,largs = decompose_app (whd_betadeltaiota env c) in
+      let x,largs = decompose_app (whd_all env c) in
 	match x with
           | Prod (na,b,d) ->
 	      assert (List.is_empty largs);

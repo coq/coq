@@ -24,7 +24,7 @@ open Context.Rel.Declaration
 let crazy_type =  mkSet
 
 let decompose_prod env t =
-  let (name,dom,codom as res) = destProd (whd_betadeltaiota env t) in
+  let (name,dom,codom as res) = destProd (whd_all env t) in
   match name with
   | Anonymous -> (Name (Id.of_string "x"), dom, codom)
   | Name _ -> res
@@ -234,7 +234,7 @@ and nf_stk ?from:(from=0) env c t stk  =
       let params,realargs = Util.Array.chop nparams allargs in
       let pT =
 	hnf_prod_applist env (type_of_ind env (ind,u)) (Array.to_list params) in
-      let pT = whd_betadeltaiota env pT in
+      let pT = whd_all env pT in
       let dep, p = nf_predicate env (ind,u) mip params (type_of_switch sw) pT in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env ind mib mip u params dep p in

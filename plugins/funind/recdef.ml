@@ -161,7 +161,7 @@ let rec n_x_id ids n =
 let simpl_iter clause =
   reduce
     (Lazy
-       {rBeta=true;rIota=true;rZeta= true; rDelta=false;
+       {rBeta=true;rMatch=true;rFix=true;rCofix=true;rZeta=true;rDelta=false;
         rConst = [ EvalConstRef (const_of_ref (delayed_force iter_ref))]})
     clause
 

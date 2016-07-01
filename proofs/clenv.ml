@@ -72,7 +72,7 @@ let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 exception NotExtensibleClause
 
 let clenv_push_prod cl =
-  let typ = whd_betadeltaiota (cl_env cl) (cl_sigma cl) (clenv_type cl) in
+  let typ = whd_all (cl_env cl) (cl_sigma cl) (clenv_type cl) in
   let rec clrec typ = match kind_of_term typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->

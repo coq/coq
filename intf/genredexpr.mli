@@ -12,7 +12,9 @@
 
 type 'a red_atom =
   | FBeta
-  | FIota
+  | FMatch
+  | FFix
+  | FCofix
   | FZeta
   | FConst of 'a list
   | FDeltaBut of 'a list
@@ -21,7 +23,9 @@ type 'a red_atom =
 
 type 'a glob_red_flag = {
   rBeta : bool;
-  rIota : bool;
+  rMatch : bool;
+  rFix : bool;
+  rCofix : bool;
   rZeta : bool;
   rDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
   rConst : 'a list

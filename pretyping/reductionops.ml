@@ -619,23 +619,7 @@ let rec strong_prodspine redfun sigma c =
 (*** Reduction using bindingss ***)
 (*************************************)
 
-(* Local *)
-let nored = Closure.RedFlags.no_red
-let beta = Closure.beta
 let eta = Closure.RedFlags.mkflags [Closure.RedFlags.fETA]
-let zeta = Closure.RedFlags.mkflags [Closure.RedFlags.fZETA]
-let betaiota = Closure.betaiota
-let betaiotazeta = Closure.betaiotazeta
-
-(* Contextual *)
-let delta = Closure.RedFlags.mkflags [Closure.RedFlags.fDELTA]
-let betalet = Closure.RedFlags.mkflags [Closure.RedFlags.fBETA;Closure.RedFlags.fZETA]
-let betaetalet = Closure.RedFlags.red_add betalet Closure.RedFlags.fETA
-let betadelta = Closure.RedFlags.red_add betalet Closure.RedFlags.fDELTA
-let betadeltaeta = Closure.RedFlags.red_add betadelta Closure.RedFlags.fETA
-let betadeltaiota = Closure.RedFlags.red_add betadelta Closure.RedFlags.fIOTA
-let betadeltaiota_nolet = Closure.betadeltaiotanolet
-let betadeltaiotaeta = Closure.RedFlags.red_add betadeltaiota Closure.RedFlags.fETA
 
 (* Beta Reduction tools *)
 
@@ -950,13 +934,15 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	whrec Cst_stack.empty (arg, Stack.Fix(f,bef,cst_l)::s'))
 
     | Construct ((ind,c),u) ->
-      if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
+      let use_match = Closure.RedFlags.red_set flags Closure.RedFlags.fMATCH in
+      let use_fix = Closure.RedFlags.red_set flags Closure.RedFlags.fFIX in
+      if use_match || use_fix then
 	match Stack.strip_app stack with
-	|args, (Stack.Case(ci, _, lf,_)::s') ->
+	|args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
 	  whrec Cst_stack.empty (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
-	|args, (Stack.Proj (n,m,p,_)::s') ->
+	|args, (Stack.Proj (n,m,p,_)::s') when use_match ->
 	  whrec Cst_stack.empty (Stack.nth args (n+m), s')
-	|args, (Stack.Fix (f,s',cst_l)::s'') ->
+	|args, (Stack.Fix (f,s',cst_l)::s'') when use_fix ->
 	  let x' = Stack.zip(x,args) in
 	  let out_sk = s' @ (Stack.append_app [|x'|] s'') in
 	  reduce_and_refold_fix whrec env cst_l f out_sk
@@ -988,11 +974,11 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		 Stack.Cst (const,next,remains',s' @ (Stack.append_app [|x'|] bef),cst_l) :: s''')
 	  end
 	|_, (Stack.App _|Stack.Update _|Stack.Shift _)::_ -> assert false
-	|_, [] -> fold ()
+	|_, _ -> fold ()
       else fold ()
 
     | CoFix cofix ->
-      if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
+      if Closure.RedFlags.red_set flags Closure.RedFlags.fCOFIX then
 	match Stack.strip_app stack with
 	|args, ((Stack.Case _ |Stack.Proj _)::s') ->
 	  reduce_and_refold_cofix whrec env cst_l cofix stack
@@ -1059,21 +1045,23 @@ let local_whd_state_gen flags sigma =
       | None -> s)
 
     | Construct ((ind,c),u) ->
-      if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
+      let use_match = Closure.RedFlags.red_set flags Closure.RedFlags.fMATCH in
+      let use_fix = Closure.RedFlags.red_set flags Closure.RedFlags.fFIX in
+      if use_match || use_fix then
 	match Stack.strip_app stack with
-	|args, (Stack.Case(ci, _, lf,_)::s') ->
+	|args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
 	  whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
-	|args, (Stack.Proj (n,m,p,_) :: s') ->
+	|args, (Stack.Proj (n,m,p,_) :: s') when use_match ->
 	  whrec (Stack.nth args (n+m), s')
-	|args, (Stack.Fix (f,s',cst)::s'') ->
+	|args, (Stack.Fix (f,s',cst)::s'') when use_fix ->
 	  let x' = Stack.zip(x,args) in
 	  whrec (contract_fix f, s' @ (Stack.append_app [|x'|] s''))
 	|_, (Stack.App _|Stack.Update _|Stack.Shift _|Stack.Cst _)::_ -> assert false
-	|_, [] -> s
+	|_, _ -> s
       else s
 
     | CoFix cofix ->
-      if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
+      if Closure.RedFlags.red_set flags Closure.RedFlags.fCOFIX then
 	match Stack.strip_app stack with
 	|args, ((Stack.Case _ | Stack.Proj _)::s') ->
 	  whrec (contract_cofix cofix, stack)
@@ -1105,79 +1093,64 @@ let red_of_state_red f sigma x =
 
 (* 0. No Reduction Functions *)
 
-let whd_nored_state = local_whd_state_gen nored
+let whd_nored_state = local_whd_state_gen Closure.nored
 let whd_nored_stack = stack_red_of_state_red whd_nored_state
 let whd_nored = red_of_state_red whd_nored_state
 
 (* 1. Beta Reduction Functions *)
 
-let whd_beta_state = local_whd_state_gen beta
+let whd_beta_state = local_whd_state_gen Closure.beta
 let whd_beta_stack = stack_red_of_state_red whd_beta_state
 let whd_beta = red_of_state_red whd_beta_state
 
-(* Nouveau ! *)
-let whd_betaetalet_state = local_whd_state_gen betaetalet
-let whd_betaetalet_stack = stack_red_of_state_red whd_betaetalet_state
-let whd_betaetalet = red_of_state_red whd_betaetalet_state
-
-let whd_betalet_state = local_whd_state_gen betalet
+let whd_betalet_state = local_whd_state_gen Closure.betazeta
 let whd_betalet_stack = stack_red_of_state_red whd_betalet_state
 let whd_betalet = red_of_state_red whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
 
-let whd_delta_state e = raw_whd_state_gen delta e
+let whd_delta_state e = raw_whd_state_gen Closure.delta e
 let whd_delta_stack env = stack_red_of_state_red (whd_delta_state env)
 let whd_delta env = red_of_state_red  (whd_delta_state env)
 
-let whd_betadelta_state e = raw_whd_state_gen betadelta e
-let whd_betadelta_stack env =
-  stack_red_of_state_red (whd_betadelta_state env)
-let whd_betadelta env =
-  red_of_state_red (whd_betadelta_state env)
+let whd_betadeltazeta_state e = raw_whd_state_gen Closure.betadeltazeta e
+let whd_betadeltazeta_stack env =
+  stack_red_of_state_red (whd_betadeltazeta_state env)
+let whd_betadeltazeta env =
+  red_of_state_red (whd_betadeltazeta_state env)
 
-
-let whd_betadeltaeta_state e = raw_whd_state_gen betadeltaeta e
-let whd_betadeltaeta_stack env =
-  stack_red_of_state_red (whd_betadeltaeta_state env)
-let whd_betadeltaeta env =
-  red_of_state_red (whd_betadeltaeta_state env)
 
 (* 3. Iota reduction Functions *)
 
-let whd_betaiota_state = local_whd_state_gen betaiota
+let whd_betaiota_state = local_whd_state_gen Closure.betaiota
 let whd_betaiota_stack = stack_red_of_state_red whd_betaiota_state
 let whd_betaiota = red_of_state_red whd_betaiota_state
 
-let whd_betaiotazeta_state = local_whd_state_gen betaiotazeta
+let whd_betaiotazeta_state = local_whd_state_gen Closure.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
 let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
 
-let whd_betadeltaiota_state env = raw_whd_state_gen betadeltaiota env
-let whd_betadeltaiota_stack env =
-  stack_red_of_state_red (whd_betadeltaiota_state env)
-let whd_betadeltaiota env =
-  red_of_state_red (whd_betadeltaiota_state env)
+let whd_all_state env = raw_whd_state_gen Closure.all env
+let whd_all_stack env =
+  stack_red_of_state_red (whd_all_state env)
+let whd_all env =
+  red_of_state_red (whd_all_state env)
 
-let whd_betadeltaiotaeta_state env = raw_whd_state_gen betadeltaiotaeta env
-let whd_betadeltaiotaeta_stack env =
-  stack_red_of_state_red (whd_betadeltaiotaeta_state env)
-let whd_betadeltaiotaeta env =
-  red_of_state_red (whd_betadeltaiotaeta_state env)
+let whd_allnolet_state env = raw_whd_state_gen Closure.allnolet env
+let whd_allnolet_stack env =
+  stack_red_of_state_red (whd_allnolet_state env)
+let whd_allnolet env =
+  red_of_state_red (whd_allnolet_state env)
 
-let whd_betadeltaiota_nolet_state env = raw_whd_state_gen betadeltaiota_nolet env
-let whd_betadeltaiota_nolet_stack env =
-  stack_red_of_state_red (whd_betadeltaiota_nolet_state env)
-let whd_betadeltaiota_nolet env =
-  red_of_state_red (whd_betadeltaiota_nolet_state env)
+(* 4. Ad-hoc eta reduction, does not subsitute evars *)
 
-(* 4. Eta reduction Functions *)
-
-let whd_eta c = Stack.zip (local_whd_state_gen eta Evd.empty (c,Stack.empty))
+let shrink_eta c = Stack.zip (local_whd_state_gen eta Evd.empty (c,Stack.empty))
 
 (* 5. Zeta Reduction Functions *)
 
-let whd_zeta c = Stack.zip (local_whd_state_gen zeta Evd.empty (c,Stack.empty))
+let whd_zeta_state = local_whd_state_gen Closure.zeta
+let whd_zeta_stack = stack_red_of_state_red whd_zeta_state
+let whd_zeta = red_of_state_red whd_zeta_state
 
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
@@ -1201,8 +1174,8 @@ let clos_norm_flags flgs env sigma t =
 let nf_beta = clos_norm_flags Closure.beta (Global.env ())
 let nf_betaiota = clos_norm_flags Closure.betaiota (Global.env ())
 let nf_betaiotazeta = clos_norm_flags Closure.betaiotazeta (Global.env ())
-let nf_betadeltaiota env sigma =
-  clos_norm_flags Closure.betadeltaiota env sigma
+let nf_all env sigma =
+  clos_norm_flags Closure.all env sigma
 
 
 (********************************************************************)
@@ -1397,7 +1370,7 @@ let instance sigma s c =
  * error message. *)
 
 let hnf_prod_app env sigma t n =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
+  match kind_of_term (whd_all env sigma t) with
     | Prod (_,_,b) -> subst1 n b
     | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product")
 
@@ -1408,7 +1381,7 @@ let hnf_prod_applist env sigma t nl =
   List.fold_left (hnf_prod_app env sigma) t nl
 
 let hnf_lam_app env sigma t n =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
+  match kind_of_term (whd_all env sigma t) with
     | Lambda (_,_,b) -> subst1 n b
     | _ -> anomaly ~label:"hnf_lam_app" (Pp.str "Need an abstraction")
 
@@ -1420,7 +1393,7 @@ let hnf_lam_applist env sigma t nl =
 
 let splay_prod env sigma =
   let rec decrec env m c =
-    let t = whd_betadeltaiota env sigma c in
+    let t = whd_all env sigma c in
     match kind_of_term t with
       | Prod (n,a,c0) ->
 	  decrec (push_rel (LocalAssum (n,a)) env)
@@ -1431,7 +1404,7 @@ let splay_prod env sigma =
 
 let splay_lam env sigma =
   let rec decrec env m c =
-    let t = whd_betadeltaiota env sigma c in
+    let t = whd_all env sigma c in
     match kind_of_term t with
       | Lambda (n,a,c0) ->
 	  decrec (push_rel (LocalAssum (n,a)) env)
@@ -1442,7 +1415,7 @@ let splay_lam env sigma =
 
 let splay_prod_assum env sigma =
   let rec prodec_rec env l c =
-    let t = whd_betadeltaiota_nolet env sigma c in
+    let t = whd_allnolet env sigma c in
     match kind_of_term t with
     | Prod (x,t,c)  ->
 	prodec_rec (push_rel (LocalAssum (x,t)) env)
@@ -1452,7 +1425,7 @@ let splay_prod_assum env sigma =
 	  (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> 
-      let t' = whd_betadeltaiota env sigma t in
+      let t' = whd_all env sigma t in
 	if Term.eq_constr t t' then l,t
 	else prodec_rec env l t'
   in
@@ -1468,7 +1441,7 @@ let sort_of_arity env sigma c = snd (splay_arity env sigma c)
 
 let splay_prod_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
-    match kind_of_term (whd_betadeltaiota env sigma c) with
+    match kind_of_term (whd_all env sigma c) with
       | Prod (n,a,c0) ->
 	  decrec (push_rel (LocalAssum (n,a)) env)
 	    (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
@@ -1478,7 +1451,7 @@ let splay_prod_n env sigma n =
 
 let splay_lam_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
-    match kind_of_term (whd_betadeltaiota env sigma c) with
+    match kind_of_term (whd_all env sigma c) with
       | Lambda (n,a,c0) ->
 	  decrec (push_rel (LocalAssum (n,a)) env)
 	    (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
@@ -1487,7 +1460,7 @@ let splay_lam_n env sigma n =
   decrec env n Context.Rel.empty
 
 let is_sort env sigma t =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
+  match kind_of_term (whd_all env sigma t) with
   | Sort s -> true
   | _ -> false
 
@@ -1496,19 +1469,19 @@ let is_sort env sigma t =
 
 let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
   let rec whrec csts s =
-    let (t, stack as s),csts' = whd_state_gen ~csts false betaiota env sigma s in
+    let (t, stack as s),csts' = whd_state_gen ~csts false Closure.betaiota env sigma s in
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
-	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma (t,args) in
+	  (Closure.RedFlags.red_add_transparent Closure.all ts) env sigma (t,args) in
 	if reducible_mind_case t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
       |args, (Stack.Fix _ :: _ as stack') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
-	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma (t,args) in
+	  (Closure.RedFlags.red_add_transparent Closure.all ts) env sigma (t,args) in
 	if isConstruct t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
       |args, (Stack.Proj (n,m,p,_) :: stack'') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
-	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma (t,args) in
+	  (Closure.RedFlags.red_add_transparent Closure.all ts) env sigma (t,args) in
 	if isConstruct t_o then
 	  whrec Cst_stack.empty (Stack.nth stack_o (n+m), stack'')
 	else s,csts'
@@ -1517,7 +1490,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
 
 let find_conclusion env sigma =
   let rec decrec env c =
-    let t = whd_betadeltaiota env sigma c in
+    let t = whd_all env sigma c in
     match kind_of_term t with
       | Prod (x,t,c0) -> decrec (push_rel (LocalAssum (x,t)) env) c0
       | Lambda (x,t,c0) -> decrec (push_rel (LocalAssum (x,t)) env) c0

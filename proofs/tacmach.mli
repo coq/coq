@@ -63,7 +63,7 @@ val pf_e_reduce :
   (env -> evar_map -> constr -> evar_map * constr) ->
   goal sigma -> constr -> evar_map * constr
 
-val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
+val pf_whd_all       : goal sigma -> constr -> constr
 val pf_hnf_constr              : goal sigma -> constr -> constr
 val pf_nf                      : goal sigma -> constr -> constr
 val pf_nf_betaiota             : goal sigma -> constr -> constr
@@ -127,7 +127,7 @@ module New : sig
   val pf_hnf_constr : ('a, 'r) Proofview.Goal.t -> constr -> types
   val pf_hnf_type_of : ('a, 'r) Proofview.Goal.t -> constr -> types
 
-  val pf_whd_betadeltaiota : ('a, 'r) Proofview.Goal.t -> constr -> constr
+  val pf_whd_all : ('a, 'r) Proofview.Goal.t -> constr -> constr
   val pf_compute : ('a, 'r) Proofview.Goal.t -> constr -> constr
 
   val pf_matches : ('a, 'r) Proofview.Goal.t -> constr_pattern -> constr -> patvar_map

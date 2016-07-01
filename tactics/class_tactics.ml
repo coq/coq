@@ -533,7 +533,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
       | Ind (i,_) -> is_class (IndRef i)
       | _ ->
           let env' = Environ.push_rel_context ctx env in
-          let ty' = whd_betadeltaiota env' ar in
+          let ty' = whd_all env' ar in
                if not (Term.eq_constr ty' ar) then iscl env' ty'
                else false
   in

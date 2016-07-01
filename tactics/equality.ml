@@ -400,7 +400,8 @@ let type_of_clause cls gl = match cls with
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
-  let isatomic = isProd (whd_zeta hdcncl) in
+  let evd = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
+  let isatomic = isProd (whd_zeta evd hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun c type_of_cls in
@@ -720,8 +721,8 @@ let find_positions env sigma t1 t2 =
     then [(List.rev posn,t1,t2)] else []
   in
   let rec findrec sorts posn t1 t2 =
-    let hd1,args1 = whd_betadeltaiota_stack env sigma t1 in
-    let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
+    let hd1,args1 = whd_all_stack env sigma t1 in
+    let hd2,args2 = whd_all_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
       | Construct (sp1,_), Construct (sp2,_)
           when Int.equal (List.length args1) (constructor_nallargs_env env sp1)
@@ -1283,7 +1284,7 @@ let build_injector env sigma dflt c cpath =
 
 (*
 let try_delta_expand env sigma t =
-  let whdt = whd_betadeltaiota env sigma t  in
+  let whdt = whd_all env sigma t  in
   let rec hd_rec c  =
     match kind_of_term c with
       | Construct _ -> whdt
