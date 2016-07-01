@@ -39,11 +39,14 @@ val search_about_filter : glob_search_about_item -> filter_function
 goal and the global environment for things matching [pattern] and
 satisfying module exclude/include clauses of [modinout]. *)
 
-val search_by_head : int option -> constr_pattern -> DirPath.t list * bool -> std_ppcmds
-val search_rewrite : int option -> constr_pattern -> DirPath.t list * bool -> std_ppcmds
-val search_pattern : int option -> constr_pattern -> DirPath.t list * bool -> std_ppcmds
+val search_by_head : int option -> constr_pattern -> DirPath.t list * bool
+                  -> display_function -> unit
+val search_rewrite : int option -> constr_pattern -> DirPath.t list * bool
+                  -> display_function -> unit
+val search_pattern : int option -> constr_pattern -> DirPath.t list * bool
+                  -> display_function -> unit
 val search_about   : int option -> (bool * glob_search_about_item) list
-  -> DirPath.t list * bool -> std_ppcmds
+                  -> DirPath.t list * bool -> display_function -> unit
 
 type search_constraint =
   (** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)

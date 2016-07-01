@@ -97,15 +97,6 @@ let generic_search glnumopt fn =
   | Some glnum ->  iter_hypothesis glnum fn);
   iter_declarations fn
 
-(** Standard display *)
-
-let plain_display accu ref env c =
-  let pc = pr_lconstr_env env Evd.empty c in
-  let pr = pr_global ref in
-  accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
-
-let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
-
 (** Filters *)
 
 (** This function tries to see whether the conclusion matches a pattern. *)
@@ -156,8 +147,7 @@ let search_about_filter query gr env typ = match query with
 
 (** SearchPattern *)
 
-let search_pattern gopt pat mods =
-  let ans = ref [] in
+let search_pattern gopt pat mods pr_search =
   let filter ref env typ =
     let f_module = module_filter mods ref env typ in
     let f_blacklist = blacklist_filter ref env typ in
@@ -165,10 +155,9 @@ let search_pattern gopt pat mods =
     f_module && f_pattern () && f_blacklist
   in
   let iter ref env typ =
-    if filter ref env typ then plain_display ans ref env typ
+    if filter ref env typ then pr_search ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter
 
 (** SearchRewrite *)
 
@@ -180,10 +169,9 @@ let rewrite_pat1 pat =
 let rewrite_pat2 pat =
   PApp (PRef eq, [| PMeta None; PMeta None; pat |])
 
-let search_rewrite gopt pat mods =
+let search_rewrite gopt pat mods pr_search =
   let pat1 = rewrite_pat1 pat in
   let pat2 = rewrite_pat2 pat in
-  let ans = ref [] in
   let filter ref env typ =
     let f_module = module_filter mods ref env typ in
     let f_blacklist = blacklist_filter ref env typ in
@@ -194,15 +182,13 @@ let search_rewrite gopt pat mods =
     f_module && f_pattern () && f_blacklist
   in
   let iter ref env typ =
-    if filter ref env typ then plain_display ans ref env typ
+    if filter ref env typ then pr_search ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter
 
 (** Search *)
 
-let search_by_head gopt pat mods =
-  let ans = ref [] in
+let search_by_head gopt pat mods pr_search =
   let filter ref env typ =
     let f_module = module_filter mods ref env typ in
     let f_blacklist = blacklist_filter ref env typ in
@@ -210,15 +196,13 @@ let search_by_head gopt pat mods =
     f_module && f_pattern () && f_blacklist
   in
   let iter ref env typ =
-    if filter ref env typ then plain_display ans ref env typ
+    if filter ref env typ then pr_search ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter
 
 (** SearchAbout *)
 
-let search_about gopt items mods =
-  let ans = ref [] in
+let search_about gopt items mods pr_search =
   let filter ref env typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
     let f_module = module_filter mods ref env typ in
@@ -227,10 +211,9 @@ let search_about gopt items mods =
     f_module && List.for_all f_about items && f_blacklist
   in
   let iter ref env typ =
-    if filter ref env typ then plain_display ans ref env typ
+    if filter ref env typ then pr_search ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter
 
 type search_constraint =
   | Name_Pattern of string

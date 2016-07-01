@@ -1,4 +1,13 @@
 =========================================
+= CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
+=========================================
+
+** Search API **
+
+The main functions return now a list of `std_ppcmds` instead of a
+single, large one.
+
+=========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================
 
