@@ -14,7 +14,9 @@ let make_red_flag l =
   let rec add_flag red = function
     | [] -> red
     | FBeta :: lf -> add_flag { red with rBeta = true } lf
-    | FIota :: lf -> add_flag { red with rIota = true } lf
+    | FMatch :: lf -> add_flag { red with rMatch = true } lf
+    | FFix :: lf -> add_flag { red with rFix = true } lf
+    | FCofix :: lf -> add_flag { red with rCofix = true } lf
     | FZeta :: lf -> add_flag { red with rZeta = true } lf
     | FConst l :: lf ->
 	if red.rDelta then
@@ -30,9 +32,11 @@ let make_red_flag l =
           lf
   in
   add_flag
-    {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []}
+    {rBeta = false; rMatch = false; rFix = false; rCofix = false;
+     rZeta = false; rDelta = false; rConst = []}
     l
 
 
 let all_flags =
-  {rBeta = true; rIota = true; rZeta = true; rDelta = true; rConst = []}
+  {rBeta = true; rMatch = true; rFix = true; rCofix = true;
+   rZeta = true; rDelta = true; rConst = []}

@@ -22,7 +22,7 @@ open Decl_kinds
 open Pcoq
 
 
-let all_with delta = Redops.make_red_flag [FBeta;FIota;FZeta;delta]
+let all_with delta = Redops.make_red_flag [FBeta;FMatch;FFix;FCofix;FZeta;delta]
 
 let tactic_kw = [ "->"; "<-" ; "by" ]
 let _ = List.iter CLexer.add_keyword tactic_kw
@@ -348,11 +348,14 @@ GEXTEND Gram
   with_bindings:
     [ [ "with"; bl = bindings -> bl | -> NoBindings ] ]
   ;
-  red_flag:
-    [ [ IDENT "beta" -> FBeta
-      | IDENT "iota" -> FIota
-      | IDENT "zeta" -> FZeta
-      | IDENT "delta"; d = delta_flag -> d
+  red_flags:
+    [ [ IDENT "beta" -> [FBeta]
+      | IDENT "iota" -> [FMatch;FFix;FCofix]
+      | IDENT "match" -> [FMatch]
+      | IDENT "fix" -> [FFix]
+      | IDENT "cofix" -> [FCofix]
+      | IDENT "zeta" -> [FZeta]
+      | IDENT "delta"; d = delta_flag -> [d]
     ] ]
   ;
   delta_flag:
@@ -362,7 +365,7 @@ GEXTEND Gram
     ] ]
   ;
   strategy_flag:
-    [ [ s = LIST1 red_flag -> Redops.make_red_flag s
+    [ [ s = LIST1 red_flags -> Redops.make_red_flag (List.flatten s)
       | d = delta_flag -> all_with d
     ] ]
   ;

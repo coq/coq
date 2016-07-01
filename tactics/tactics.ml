@@ -4944,7 +4944,7 @@ module New = struct
 
   let reduce_after_refine =
     reduce
-      (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
+      (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;rZeta=false;rDelta=false;rConst=[]})
       {onhyps=None; concl_occs=AllOccurrences }
 
   let refine ?unsafe c =

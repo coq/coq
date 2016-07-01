@@ -48,6 +48,9 @@ Reductionops.whd_betadeltaiotaeta_stack
 Reductionops.whd_betadeltaiotaeta_state
 Reductionops.whd_betadeltaiotaeta
 
+In intf/genredexpr.mli, fIota was replaced by FMatch, FFix and
+FCofix. Similarly, rIota was replaced by rMatch, rFix and rCofix.
+
 ** Notation_ops **
 
 Use Glob_ops.glob_constr_eq instead of Notation_ops.eq_glob_constr.

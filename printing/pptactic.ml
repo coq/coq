@@ -151,7 +151,8 @@ module Make
   exception ComplexRedFlag
 
   let pr_short_red_flag pr r =
-    if not r.rBeta ||  not r.rIota ||  not r.rZeta then raise ComplexRedFlag
+    if not r.rBeta ||  not r.rMatch || not r.rFix || not r.rCofix || not r.rZeta then
+      raise ComplexRedFlag
     else if List.is_empty r.rConst then
       if r.rDelta then mt () else raise ComplexRedFlag
     else (if r.rDelta then str "-" else mt ()) ++
@@ -161,9 +162,12 @@ module Make
     try pr_short_red_flag pr r
     with complexRedFlags ->
       (if r.rBeta then pr_arg str "beta" else mt ()) ++
-	(if r.rIota then pr_arg str "iota" else mt ()) ++
-	(if r.rZeta then pr_arg str "zeta" else mt ()) ++
-	(if List.is_empty r.rConst then
+	(if r.rMatch && r.rFix && r.rCofix then pr_arg str "iota" else
+           (if r.rMatch then pr_arg str "match" else mt ()) ++
+           (if r.rFix then pr_arg str "fix" else mt ()) ++
+           (if r.rCofix then pr_arg str "cofix" else mt ())) ++
+        (if r.rZeta then pr_arg str "zeta" else mt ()) ++
+        (if List.is_empty r.rConst then
 	   if r.rDelta then pr_arg str "delta"
 	   else mt ()
 	 else
@@ -180,7 +184,8 @@ module Make
     | Simpl (f,o) -> keyword "simpl" ++ (pr_short_red_flag pr_ref f)
 		     ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
     | Cbv f ->
-      if f.rBeta && f.rIota && f.rZeta && f.rDelta && List.is_empty f.rConst then
+      if f.rBeta && f.rMatch && f.rFix && f.rCofix &&
+           f.rZeta && f.rDelta && List.is_empty f.rConst then
         keyword "compute"
       else
         hov 1 (keyword "cbv" ++ pr_red_flag pr_ref f)
