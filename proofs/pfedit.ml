@@ -215,7 +215,7 @@ let refine_by_tactic env sigma ty tac =
 (* Support for resolution of evars in tactic interpretation, including
    resolution by application of tactics *)
 
-let implicit_tactic = ref None
+let implicit_tactic = Summary.ref None ~name:"implicit-tactic"
 
 let declare_implicit_tactic tac = implicit_tactic := Some tac
 
