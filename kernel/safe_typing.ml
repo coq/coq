@@ -190,7 +190,7 @@ let check_engagement env expected_impredicative_set =
   begin
     match impredicative_set, expected_impredicative_set with
     | PredicativeSet, ImpredicativeSet ->
-        Errors.error "Needs option -impredicative-set."
+        CErrors.error "Needs option -impredicative-set."
     | _ -> ()
   end
 
@@ -344,10 +344,10 @@ let check_required current_libs needed =
     try
       let actual = DPMap.find id current_libs in
       if not(digest_match ~actual ~required) then
-        Errors.error
+        CErrors.error
           ("Inconsistent assumptions over module "^(DirPath.to_string id)^".")
     with Not_found ->
-      Errors.error ("Reference to unknown module "^(DirPath.to_string id)^".")
+      CErrors.error ("Reference to unknown module "^(DirPath.to_string id)^".")
   in
   Array.iter check needed
 
@@ -365,7 +365,7 @@ let safe_push_named d env =
   let _ =
     try
       let _ = Environ.lookup_named id env in
-      Errors.error ("Identifier "^Id.to_string id^" already defined.")
+      CErrors.error ("Identifier "^Id.to_string id^" already defined.")
     with Not_found -> () in
   Environ.push_named d env
 
@@ -815,8 +815,8 @@ let export ?except senv dir =
   let senv =
     try join_safe_environment ?except senv
     with e ->
-      let e = Errors.push e in
-      Errors.errorlabstrm "export" (Errors.iprint e)
+      let e = CErrors.push e in
+      CErrors.errorlabstrm "export" (CErrors.iprint e)
   in
   assert(senv.future_cst = []);
   let () = check_current_library dir senv in
@@ -900,7 +900,7 @@ let register_inline kn senv =
   let open Environ in
   let open Pre_env in
   if not (evaluable_constant kn senv.env) then
-    Errors.error "Register inline: an evaluable constant is expected";
+    CErrors.error "Register inline: an evaluable constant is expected";
   let env = pre_env senv.env in
   let (cb,r) = Cmap_env.find kn env.env_globals.env_constants in
   let cb = {cb with const_inline_code = true} in

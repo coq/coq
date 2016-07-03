@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -440,7 +440,7 @@ let raw_inversion inv_kind id status names =
       try pf_apply Tacred.reduce_to_atomic_ind gl (pf_unsafe_type_of gl c)
       with UserError _ ->
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
-        Errors.errorlabstrm "" msg
+        CErrors.errorlabstrm "" msg
     in
     let IndType (indf,realargs) = find_rectype env sigma t in
     let evdref = ref sigma in

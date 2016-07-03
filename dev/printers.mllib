@@ -37,7 +37,7 @@ Feedback
 Segmenttree
 Unicodetable
 Unicode
-Errors
+CErrors
 CWarnings
 Bigint
 CUnix
@@ -86,7 +86,7 @@ Nativecode
 Nativelib
 Cbytegen
 Environ
-Closure
+CClosure
 Reduction
 Nativeconv
 Type_errors
@@ -208,7 +208,7 @@ Dn
 Btermdn
 Hints
 Himsg
-Cerrors
+ExplainErr
 Locality
 Assumptions
 Vernacinterp

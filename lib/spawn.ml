@@ -43,7 +43,7 @@ module type MainLoopModel = sig
 end
 
 (* Common code *)
-let assert_ b s = if not b then Errors.anomaly (Pp.str s)
+let assert_ b s = if not b then CErrors.anomaly (Pp.str s)
 
 (* According to http://caml.inria.fr/mantis/view.php?id=5325
  * you can't use the same socket for both writing and reading (may change
@@ -192,7 +192,7 @@ let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ())
         let live = callback cl ~read_all:(fun () -> ML.read_all gchan) in
         if not live then kill p;
         live
-      with e when Errors.noncritical e ->
+      with e when CErrors.noncritical e ->
         pr_err ("Async reader raised: " ^ (Printexc.to_string e));
         kill p;
         false) gchan

@@ -17,7 +17,7 @@ open Glob_term
 open Bigint
 open Coqlib
 open Pp
-open Errors
+open CErrors
 (*i*)
 
 (**********************************************************************)

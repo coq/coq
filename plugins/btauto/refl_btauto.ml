@@ -212,7 +212,7 @@ module Btauto = struct
         let assign = List.map map_msg assign in
         let l = str "[" ++ (concat (str ";" ++ spc ()) assign) ++ str "]" in
         str "Not a tautology:" ++ spc () ++ l
-      with e when Errors.noncritical e -> (str "Not a tautology")
+      with e when CErrors.noncritical e -> (str "Not a tautology")
     in
     Tacticals.tclFAIL 0 msg gl
 

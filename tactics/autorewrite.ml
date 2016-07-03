@@ -13,7 +13,7 @@ open Tacticals
 open Tactics
 open Term
 open Termops
-open Errors
+open CErrors
 open Util
 open Mod_subst
 open Locus

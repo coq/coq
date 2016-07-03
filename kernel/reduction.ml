@@ -15,13 +15,13 @@
 (* Equal inductive types by Jacek Chrzaszcz as part of the module
    system, Aug 2002 *)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Term
 open Vars
 open Environ
-open Closure
+open CClosure
 open Esubst
 open Context.Rel.Declaration
 
@@ -318,7 +318,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	   convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible ->
            (* else the oracle tells which constant is to be expanded *)
-	 let oracle = Closure.oracle_of_infos infos in
+	 let oracle = CClosure.oracle_of_infos infos in
          let (app1,app2) =
            if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
 	     match unfold_reference infos fl1 with
@@ -537,7 +537,7 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
   else raise NotConvertible
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
-  let reds = Closure.RedFlags.red_add_transparent betaiotazeta trans in
+  let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
   let infos = create_clos_infos ~evars reds env in
   ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
 

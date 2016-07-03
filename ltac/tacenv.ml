@@ -24,7 +24,7 @@ let register_alias key tac =
 
 let interp_alias key =
   try KNmap.find key !alias_map
-  with Not_found -> Errors.anomaly (str "Unknown tactic alias: " ++ KerName.print key)
+  with Not_found -> CErrors.anomaly (str "Unknown tactic alias: " ++ KerName.print key)
 
 let check_alias key = KNmap.mem key !alias_map
 
@@ -55,7 +55,7 @@ let register_ml_tactic ?(overwrite = false) s (t : ml_tactic array) =
       if overwrite then
         tac_tab := MLTacMap.remove s !tac_tab
       else
-        Errors.anomaly (str "Cannot redeclare tactic " ++ pr_tacname s ++ str ".")
+        CErrors.anomaly (str "Cannot redeclare tactic " ++ pr_tacname s ++ str ".")
   in
   tac_tab := MLTacMap.add s t !tac_tab
 
@@ -65,7 +65,7 @@ let interp_ml_tactic { mltac_name = s; mltac_index = i } =
     let () = if Array.length tacs <= i then raise Not_found in
     tacs.(i)
   with Not_found ->
-    Errors.errorlabstrm ""
+    CErrors.errorlabstrm ""
       (str "The tactic " ++ pr_tacname s ++ str " is not installed.")
 
 (***************************************************************************)

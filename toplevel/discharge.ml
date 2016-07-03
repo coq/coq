@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Errors
+open CErrors
 open Util
 open Term
 open Vars

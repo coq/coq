@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Pp
 open Util
 
@@ -343,7 +343,7 @@ module Make(T : Task) = struct
   let with_n_workers n f =
     let q = create n in 
     try let rc = f q in destroy q; rc
-    with e -> let e = Errors.push e in destroy q; iraise e
+    with e -> let e = CErrors.push e in destroy q; iraise e
 
   let n_workers { active } = Pool.n_workers active
 

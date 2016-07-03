@@ -45,7 +45,7 @@ let create ~name ~category ?(default=Enabled) pp =
            | Disabled -> ()
            | AsError ->
               let loc = Option.default !current_loc loc in
-              Errors.user_err_loc (loc,"_",pp x)
+              CErrors.user_err_loc (loc,"_",pp x)
            | Enabled ->
               let msg =
                 pp x ++ str " [" ++ str name ++ str "," ++
@@ -80,7 +80,7 @@ let parse_flag s =
     | '+' -> (AsError, String.sub s 1 (String.length s - 1))
     | '-' -> (Disabled, String.sub s 1 (String.length s - 1))
     | _ -> (Enabled, s)
-  else Errors.error "Invalid warnings flag"
+  else CErrors.error "Invalid warnings flag"
 
 let rec do_all_keyword = function
   | [] -> []

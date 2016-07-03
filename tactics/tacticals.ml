@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -521,7 +521,7 @@ module New = struct
                 try
                   let () = check_evars env sigma_final sigma sigma_initial in
                   tclUNIT x
-                with e when Errors.noncritical e ->
+                with e when CErrors.noncritical e ->
                   tclZERO e
           else
             tclUNIT x
@@ -540,7 +540,7 @@ module New = struct
     Proofview.tclOR
       (Proofview.tclTIMEOUT n t)
       begin function (e, info) -> match e with
-        | Proofview.Timeout as e -> Proofview.tclZERO (Refiner.FailError (0,lazy (Errors.print e)))
+        | Proofview.Timeout as e -> Proofview.tclZERO (Refiner.FailError (0,lazy (CErrors.print e)))
         | e -> Proofview.tclZERO ~info e
       end
 
@@ -551,7 +551,7 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     try
       List.nth hyps (m-1)
-    with Failure _ -> Errors.error "No such assumption."
+    with Failure _ -> CErrors.error "No such assumption."
 
   let nLastDecls gl n =
     try List.firstn n (Proofview.Goal.hyps gl)

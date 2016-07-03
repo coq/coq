@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Cic
 open Names
@@ -40,7 +40,7 @@ let check_engagement env expected_impredicative_set =
   begin
     match impredicative_set, expected_impredicative_set with
     | PredicativeSet, ImpredicativeSet ->
-        Errors.error "Needs option -impredicative-set."
+        CErrors.error "Needs option -impredicative-set."
     | _ -> ()
   end;
   ()

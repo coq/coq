@@ -90,7 +90,7 @@ let occurrences_of = function
   | n::_ as nl when n < 0 -> AllOccurrencesBut (List.map abs nl)
   | nl ->
       if List.exists (fun n -> n < 0) nl then
-        Errors.error "Illegal negative occurrence number.";
+        CErrors.error "Illegal negative occurrence number.";
       OnlyOccurrences nl
 
 let coerce_to_int v = match Value.to_int v with

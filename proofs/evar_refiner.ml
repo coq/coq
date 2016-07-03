@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Evd
@@ -52,7 +52,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
       Pretyping.expand_evars = true } in
     try Pretyping.understand_ltac flags
       env sigma ltac_var (Pretyping.OfType evi.evar_concl) rawc
-    with e when Errors.noncritical e ->
+    with e when CErrors.noncritical e ->
       let loc = Glob_ops.loc_of_glob_constr rawc in
       user_err_loc
         (loc,"", str "Instance is not well-typed in the environment of " ++

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Evd
 open Environ
@@ -240,8 +240,8 @@ let tclORELSE0 t1 t2 g =
   try
     t1 g
   with (* Breakpoint *)
-    | e when Errors.noncritical e ->
-      let e = Errors.push e in catch_failerror e; t2 g
+    | e when CErrors.noncritical e ->
+      let e = CErrors.push e in catch_failerror e; t2 g
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress,
    then applies t2 *)
@@ -253,8 +253,8 @@ let tclORELSE t1 t2 = tclORELSE0 (tclPROGRESS t1) t2
 let tclORELSE_THEN t1 t2then t2else gls =
   match
     try Some(tclPROGRESS t1 gls)
-    with e when Errors.noncritical e ->
-      let e = Errors.push e in catch_failerror e; None
+    with e when CErrors.noncritical e ->
+      let e = CErrors.push e in catch_failerror e; None
   with
     | None -> t2else gls
     | Some sgl ->
@@ -284,12 +284,12 @@ let ite_gen tcal tac_if continue tac_else gl=
       try
         tac_else gl
       with
-        e' when Errors.noncritical e' -> iraise e in
+        e' when CErrors.noncritical e' -> iraise e in
   try
     tcal tac_if0 continue gl
   with (* Breakpoint *)
-  | e when Errors.noncritical e ->
-    let e = Errors.push e in catch_failerror e; tac_else0 e gl
+  | e when CErrors.noncritical e ->
+    let e = CErrors.push e in catch_failerror e; tac_else0 e gl
 
 (* Try the first tactic and, if it succeeds, continue with
    the second one, and if it fails, use the third one *)

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Pp
 open Util
 open Names
@@ -460,7 +460,7 @@ let use_metas_pattern_unification flags nb l =
      Array.for_all (fun c -> isRel c && destRel c <= nb) l
 
 type key = 
-  | IsKey of Closure.table_key
+  | IsKey of CClosure.table_key
   | IsProj of projection * constr
 
 let expand_table_key env = function
@@ -742,7 +742,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 		 then Evd.set_leq_sort curenv sigma s1 s2 
 		 else Evd.set_eq_sort curenv sigma s1 s2
 	       in (sigma', metasubst, evarsubst)
-	     with e when Errors.noncritical e ->
+	     with e when CErrors.noncritical e ->
                error_cannot_unify curenv sigma (m,n))
 
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
@@ -1138,11 +1138,11 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
       else (right, st2, res)
   | (IsSuperType,IsSubType) ->
     (try (left, IsSubType, unify_0 env sigma CUMUL flags c2 c1)
-     with e when Errors.noncritical e ->
+     with e when CErrors.noncritical e ->
        (right, IsSubType, unify_0 env sigma CUMUL flags c1 c2))
   | (IsSubType,IsSuperType) ->
     (try (left, IsSuperType, unify_0 env sigma CUMUL flags c1 c2)
-     with e when Errors.noncritical e ->
+     with e when CErrors.noncritical e ->
        (right, IsSuperType, unify_0 env sigma CUMUL flags c2 c1))
     
 (* Unification
@@ -1210,8 +1210,8 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
 
 let is_mimick_head ts f =
   match kind_of_term f with
-  | Const (c,u) -> not (Closure.is_transparent_constant ts c)
-  | Var id -> not (Closure.is_transparent_variable ts id)
+  | Const (c,u) -> not (CClosure.is_transparent_constant ts c)
+  | Var id -> not (CClosure.is_transparent_variable ts id)
   | (Rel _|Construct _|Ind _) -> true
   | _ -> false
 
@@ -1353,7 +1353,7 @@ let w_merge env with_types flags (evd,metas,evars) =
 	let rec process_eqns failures = function
 	  | (mv,status,c)::eqns ->
               (match (try Inl (unify_type env evd flags mv status c)
-		      with e when Errors.noncritical e -> Inr e)
+		      with e when CErrors.noncritical e -> Inr e)
 	       with 
 	       | Inr e -> process_eqns (((mv,status,c),e)::failures) eqns
 	       | Inl (evd,metas,evars) ->
@@ -1555,7 +1555,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
         raise (NotUnifiable (Some (c1,c2,e)))
     (** MS: This is pretty bad, it catches Not_found for example *)
-    | e when Errors.noncritical e -> raise (NotUnifiable None) in
+    | e when CErrors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with
     | Some (evd,c1,x), Some (_,c2,_) ->

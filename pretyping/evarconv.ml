@@ -6,12 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Term
 open Vars
-open Closure
+open CClosure
 open Reduction
 open Reductionops
 open Termops
@@ -766,7 +766,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	       in Success evd'
 	     with Univ.UniverseInconsistency p ->
                UnifFailure (evd,UnifUnivInconsistency p)
-	     | e when Errors.noncritical e -> UnifFailure (evd,NotSameHead))
+	     | e when CErrors.noncritical e -> UnifFailure (evd,NotSameHead))
 
 	| Prod (n1,c1,c'1), Prod (n2,c2,c'2) when app_empty ->
             ise_and evd

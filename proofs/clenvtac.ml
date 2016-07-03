@@ -125,5 +125,5 @@ let unify ?(flags=fail_quick_unif_flags) m =
     try
       let evd' = w_unify env evd CONV ~flags m n in
 	Proofview.Unsafe.tclEVARSADVANCE evd'
-    with e when Errors.noncritical e -> Proofview.tclZERO e
+    with e when CErrors.noncritical e -> Proofview.tclZERO e
   end }

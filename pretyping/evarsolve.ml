@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Util
-open Errors
+open CErrors
 open Names
 open Term
 open Vars
@@ -1460,7 +1460,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
                   map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
                     imitate envk t in
                 t::l
-              with e when Errors.noncritical e -> l in
+              with e when CErrors.noncritical e -> l in
             (match candidates with
             | [x] -> x
             | _ ->

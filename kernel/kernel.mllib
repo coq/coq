@@ -25,7 +25,7 @@ Nativelambda
 Nativecode
 Nativelib
 Environ
-Closure
+CClosure
 Reduction
 Nativeconv
 Type_errors

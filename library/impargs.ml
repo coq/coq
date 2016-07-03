@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Globnames
@@ -76,7 +76,7 @@ let with_implicits flags f x =
     implicit_args := oflags;
     rslt
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     let () = implicit_args := oflags in
     iraise reraise
 

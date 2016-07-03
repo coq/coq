@@ -16,7 +16,7 @@ open Names
 open Libnames
 open Globnames
 open Nameops
-open Errors
+open CErrors
 open Util
 open Tacticals
 open Tacmach
@@ -92,15 +92,15 @@ let const_of_ref = function
 
 
 let nf_zeta env =
-  Reductionops.clos_norm_flags  (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+  Reductionops.clos_norm_flags  (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
     env
     Evd.empty
 
 
 let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
   let clos_norm_flags flgs env sigma t =
-    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
-  clos_norm_flags Closure.betaiotazeta  Environ.empty_env Evd.empty
+    CClosure.norm_val (CClosure.create_clos_infos flgs env) (CClosure.inject (Reductionops.nf_evar sigma t)) in
+  clos_norm_flags CClosure.betaiotazeta  Environ.empty_env Evd.empty
 
 
 
@@ -214,7 +214,7 @@ let print_debug_queue b e =
     begin
       let lmsg,goal = Stack.pop debug_queue in 
       if b then 
-	Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal" ++ fnl() ++ goal))
+	Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ CErrors.print e) ++ str " on goal" ++ fnl() ++ goal))
       else
 	begin
 	  Feedback.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal));
@@ -238,9 +238,9 @@ let do_observe_tac s tac g =
     ignore(Stack.pop debug_queue);
     v
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     if not (Stack.is_empty debug_queue)
-    then print_debug_queue true (fst (Cerrors.process_vernac_interp_error reraise));
+    then print_debug_queue true (fst (ExplainErr.process_vernac_interp_error reraise));
     iraise reraise
 
 let observe_tac s tac g =
@@ -441,7 +441,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	try
 	  check_not_nested (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info
-	with e when Errors.noncritical e ->
+	with e when CErrors.noncritical e ->
 	  errorlabstrm "Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
       end
     | Lambda(n,t,b) -> 
@@ -449,7 +449,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	try
 	  check_not_nested (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info
-	with e when Errors.noncritical e ->
+	with e when CErrors.noncritical e ->
 	  errorlabstrm "Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
       end
     | Case(ci,t,a,l) -> 
@@ -645,7 +645,7 @@ let terminate_letin (na,b,t,e) expr_info continuation_tac info =
       try 
 	check_not_nested (expr_info.f_id::expr_info.forbidden_ids) b;
 	true
-      with e when Errors.noncritical e -> false
+      with e when CErrors.noncritical e -> false
     in
     if forbid 
     then 
@@ -704,7 +704,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
     try
       check_not_nested (expr_info.f_id::expr_info.forbidden_ids) a;
       false
-    with e when Errors.noncritical e ->
+    with e when CErrors.noncritical e ->
       true
   in
   let a' = infos.info in
@@ -1281,12 +1281,12 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
     | Some s -> s
     | None   ->
 	try add_suffix current_proof_name "_subproof"
-	with e when Errors.noncritical e ->
+	with e when CErrors.noncritical e ->
           anomaly (Pp.str "open_new_goal with an unamed theorem")
   in
   let na = next_global_ident_away name [] in
   if Termops.occur_existential gls_type then
-    Errors.error "\"abstract\" cannot handle existentials";
+    CErrors.error "\"abstract\" cannot handle existentials";
   let hook _ _ =
     let opacity =
       let na_ref = Libnames.Ident (Loc.ghost,na) in
@@ -1534,10 +1534,10 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     let stop = 
       try com_eqn (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);
 	  false
-      with e when Errors.noncritical e ->
+      with e when CErrors.noncritical e ->
 	begin
 	  if do_observe ()
-	  then Feedback.msg_debug (str "Cannot create equation Lemma " ++ Errors.print e)
+	  then Feedback.msg_debug (str "Cannot create equation Lemma " ++ CErrors.print e)
 	  else anomaly (Pp.str "Cannot create equation Lemma")
 	  ;
 	  true

@@ -58,7 +58,7 @@ let interp_proof_instr _ { Evd.it = gl ; sigma = sigma }=
 let vernac_decl_proof () = 
   let pf = Proof_global.give_me_the_proof () in
   if Proof.is_done pf then 
-    Errors.error "Nothing left to prove here."
+    CErrors.error "Nothing left to prove here."
   else
     begin
       Decl_proof_instr.go_to_proof_mode () ;
