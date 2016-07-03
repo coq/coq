@@ -464,10 +464,11 @@ let implicit () =
     print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
   in
   let v_rules () =
-    print "$(VOFILES): %.vo: %.v\n";
+    print "$(VOFILES) : %.vo : %.vo-and-glob ; @ true\n\n";
+    print "$(GLOBFILES) : %.glob : %.vo-and-glob ; @ true\n\n";
+    print "$(VOANDGLOBFILES) : %.vo-and-glob: %.v\n";
     print "\t$(SHOW)COQC $*\n";
     print "\t$(HIDE)$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
-    print "$(GLOBFILES): %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(VFILES:.v=.vio): %.vio: %.v\n\t$(COQC) -quick $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(GFILES): %.g: %.v\n\t$(GALLINA) $<\n\n";
     print "$(VFILES:.v=.tex): %.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex $< -o $@\n\n";
@@ -677,6 +678,8 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "VOFILES:=$(VFILES:.v=.$(VO))\n";
       classify_files_by_root "VOFILES" l inc;
       print "GLOBFILES:=$(VFILES:.v=.glob)\n";
+      print "VOANDGLOBFILES:=$(VFILES:.v=.vo-and-glob)\n";
+      print ".INTERMEDIATE : $(VOANDGLOBFILES)\n";
       print "GFILES:=$(VFILES:.v=.g)\n";
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
       print "GHTMLFILES:=$(VFILES:.v=.g.html)\n";
