@@ -18,7 +18,11 @@ val entered_call : unit -> unit
 
 val print_results : unit -> unit
 
+val print_results_unsync : unit -> unit
+
 val print_results_tactic : string -> unit
+
+val print_results_tactic_unsync : string -> unit
 
 val reset_profile : unit -> unit
 
@@ -50,4 +54,4 @@ type ltacprof_results = {total_time : float; tactics : ltacprof_tactic list}
 
 (* Returns the profiling results for the currently-focused state. *)
 val get_profiling_results : unit -> ltacprof_results
-
+val get_profiling_results_unsync : unit -> ltacprof_results

@@ -87,6 +87,9 @@ let stack =
   let freeze _ = List.map deepcopy_treenode in
   Summary.ref ~freeze [empty_treenode 20] ~name:"LtacProf-stack"
 
+let stack_unsync =
+  ref [empty_treenode 20]
+
 let on_stack = Hashtbl.create 5
 
 let get_node c table =
@@ -161,17 +164,20 @@ let string_of_call ck =
   let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
   CString.strip s
 
-let exit_tactic start_time add_total c = match !stack with
-| [] | [_] ->
+let exit_tactic start_time add_total c = match !stack, !stack_unsync with
+| [], _ | [_], _ | _, [] | _, [_] ->
   (* oops, our stack is invalid *)
   encounter_multi_success_backtracking ()
-| node :: (parent :: _ as stack') ->
+| node :: (parent :: _ as stack'), node_unsync :: (parent_unsync :: _ as stack_unsync') ->
   stack := stack';
+  stack_unsync := stack_unsync';
   if add_total then Hashtbl.remove on_stack (string_of_call c);
   let diff = time () -. start_time in
   parent.entry.local <- parent.entry.local -. diff;
+  if parent != parent_unsync then parent_unsync.entry.local <- parent_unsync.entry.local -. diff;
   let node' = { total = diff; local = diff; ncalls = 1; max_total = diff } in
-  add_entry node.entry add_total node'
+  add_entry node.entry add_total node';
+  if node.entry != node_unsync.entry then add_entry node_unsync.entry add_total node'
 
 let tclFINALLY tac (finally : unit Proofview.tactic) =
   let open Proofview.Notations in
@@ -188,14 +194,18 @@ let do_profile s call_trace tac =
       | (_, c) :: _ ->
         let s = string_of_call c in
         let parent = List.hd !stack in
+        let parent_unsync = List.hd !stack_unsync in
         let node, add_total = try Hashtbl.find on_stack s, false
                               with Not_found ->
                                    let node = get_node s parent.children in
+                                   if parent.children != parent_unsync.children
+                                   then Hashtbl.add parent_unsync.children s node;
                                    Hashtbl.add on_stack s node;
                                    node, true
         in
         if not add_total && node = List.hd !stack then None else (
           stack := node :: !stack;
+          stack_unsync := node :: !stack_unsync;
           let start_time = time () in
           Some (start_time, add_total)
         )
@@ -259,9 +269,9 @@ and print_table all_total indent first_level table =
     in
     prlist_with_sep fnl (fun pr -> pr) (list_iter_is_last iter ls)
 
-let get_results_string () =
-  let tree = (List.hd !stack).children in
-  let all_total = -. (List.hd !stack).entry.local in
+let get_results_string_for stackv =
+  let tree = (List.hd stackv).children in
+  let all_total = -. (List.hd stackv).entry.local in
   let global = Hashtbl.create 20 in
   let rec cumulate table =
     let iter s node =
@@ -284,6 +294,9 @@ let get_results_string () =
   in
   msg
 
+let get_results_string () = get_results_string_for !stack
+let get_results_string_unsync () = get_results_string_for !stack_unsync
+
 
 type ltacprof_entry = {total : float; self : float; num_calls : int; max_total : float}
 type ltacprof_tactic = {name: string; statistics : ltacprof_entry; tactics : ltacprof_tactic list}
@@ -297,9 +310,12 @@ let rec to_ltacprof_tactic (name: string) (t: treenode) : ltacprof_tactic =
 and to_ltacprof_treenode (table: (string, treenode) Hashtbl.t) : ltacprof_tactic list =
   Hashtbl.fold (fun name' t' c -> to_ltacprof_tactic name' t'::c) table []
 
-let get_profiling_results() : ltacprof_results =
-  let tree = List.hd !stack in
+let get_profiling_results_for stackv : ltacprof_results =
+  let tree = List.hd stackv in
   { total_time = -. tree.entry.local; tactics = to_ltacprof_treenode tree.children }
+
+let get_profiling_results () = get_profiling_results_for !stack
+let get_profiling_results_unsync () = get_profiling_results_for !stack_unsync
 
 let rec of_ltacprof_tactic t =
   let open Xml_datatype in
@@ -315,21 +331,23 @@ let rec of_ltacprof_results t =
   let children = List.map of_ltacprof_tactic t.tactics in
   Element ("ltacprof", [("total_time", string_of_float t.total_time)], children)
 
+let get_profile_xml_for stackv =
+  of_ltacprof_results (get_profiling_results_for stackv)
 
-let get_profile_xml() =
-  of_ltacprof_results (get_profiling_results())
-
-let print_results () =
-  Feedback.msg_notice (get_results_string());
-  Feedback.feedback (Feedback.Custom (Loc.dummy_loc, "ltacprof_results", get_profile_xml()))
+let print_results_for stackv =
+  Feedback.msg_notice (get_results_string_for stackv);
+  Feedback.feedback (Feedback.Custom (Loc.dummy_loc, "ltacprof_results", get_profile_xml_for stackv))
 
   (* FOR DEBUGGING *)
   (* ;
      print_all_stacks ()
   *)
 
-let print_results_tactic tactic =
-  let tree = (List.hd !stack).children in
+let print_results () = print_results_for !stack
+let print_results_unsync () = print_results_for !stack_unsync
+
+let print_results_tactic_for stackv tactic =
+  let tree = (List.hd stackv).children in
   let table_tactic = Hashtbl.create 20 in
   let rec cumulate table =
     let iter s node =
@@ -340,7 +358,7 @@ let print_results_tactic tactic =
     Hashtbl.iter iter table
   in
   cumulate tree;
-  let all_total = -. (List.hd !stack).entry.local in
+  let all_total = -. (List.hd stackv).entry.local in
   let tactic_total =
     Hashtbl.fold
       (fun _ node all_total -> node.entry.total +. all_total)
@@ -355,11 +373,17 @@ let print_results_tactic tactic =
   in
   Feedback.msg_notice msg
 
+let print_results_tactic tactic = print_results_tactic_for !stack tactic
+let print_results_tactic_unsync tactic = print_results_tactic_for !stack_unsync tactic
+
+
 let reset_profile () =
-  stack := [empty_treenode 20];
+  let root = empty_treenode 20 in
+  stack := [root];
+  stack_unsync := [root];
   encountered_multi_success_backtracking := false
 
-let do_print_results_at_close () = if get_profiling () then print_results ()
+let do_print_results_at_close () = if get_profiling () then print_results_unsync ()
 
 let _ = Declaremods.append_end_library_hook do_print_results_at_close
 
