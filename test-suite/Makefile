@@ -51,7 +51,8 @@ SINGLE_QUOTE="
 get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_args,$(1)), ($(call get_coq_prog_args,$(1)))))
 # get the command to use with this set of arguments; if there's -compile, use coqc, else use coqtop
 has_compile_flag = $(filter "-compile",$(call get_coq_prog_args,$(1)))
-get_command_based_on_flags = $(if $(call has_compile_flag,$(1)),$(coqc),$(command))
+has_profile_ltac_or_compile_flag = $(filter "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
+get_command_based_on_flags = $(if $(call has_profile_ltac_or_compile_flag,$(1)),$(coqc),$(command))
 
 
 bogomips:=
@@ -82,7 +83,7 @@ COMPLEXITY := $(if $(bogomips),complexity)
 BUGS := bugs/opened bugs/closed
 
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
-  interactive micromega $(COMPLEXITY) modules stm
+  output-modulo-time interactive micromega $(COMPLEXITY) modules stm
 
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk
@@ -136,6 +137,7 @@ summary:
 	  $(call summary_dir, "Failure tests", failure); \
 	  $(call summary_dir, "Bugs tests", bugs); \
 	  $(call summary_dir, "Output tests", output); \
+	  $(call summary_dir, "Output (modulo time changes) tests", output-modulo-time); \
 	  $(call summary_dir, "Interactive tests", interactive); \
 	  $(call summary_dir, "Micromega tests", micromega); \
 	  $(call summary_dir, "Miscellaneous tests", misc); \
@@ -289,6 +291,33 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out
 	    echo "    $<...Error! (unexpected output)"; \
 	  fi; \
 	  rm $$tmpoutput; \
+	} > "$@"
+
+$(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
+	  tmpexpected=`mktemp /tmp/coqcheck.XXXXXX`; \
+	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1 \
+	    | grep -v "Welcome to Coq" \
+	    | grep -v "\[Loading ML file" \
+	    | grep -v "Skipping rcfile loading" \
+	    | grep -v "^<W>" \
+	    | sed 's/\s*[0-9]*\.[0-9]\+\s*//g' \
+	    | sed 's/\s*0\.\s*//g' \
+	    > $$tmpoutput; \
+	  sed 's/\s*[0-9]*\.[0-9]\+\s*//g' $*.out | sed 's/\s*0\.\s*//g' > $$tmpexpected; \
+	  diff -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (unexpected output)"; \
+	  fi; \
+	  rm $$tmpoutput; \
+	  rm $$tmpexpected; \
 	} > "$@"
 
 $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
