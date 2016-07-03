@@ -14,7 +14,6 @@ type t =
   | IDENT of string
   | FIELD of string
   | INT of string
-  | INDEX of string
   | STRING of string
   | LEFTQMARK
   | BULLET of string

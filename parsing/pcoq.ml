@@ -264,7 +264,6 @@ module Prim =
     let preident = gec_gen "preident"
     let ident = gec_gen "ident"
     let natural = gec_gen "natural"
-    let index = gec_gen "index"
     let integer = gec_gen "integer"
     let bigint = Gram.entry_create "Prim.bigint"
     let string = gec_gen "string"
