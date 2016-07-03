@@ -107,32 +107,38 @@ let time () =
   times.Unix.tms_utime +. times.Unix.tms_stime
 
 (*
-let msgnl_with fmt strm = msg_with fmt (strm ++ fnl ())
-let msgnl          strm = msgnl_with !Pp_control.std_ft strm
-
 let rec print_treenode indent (tn : treenode) =
-  msgnl (str (indent^"{ entry = {"));
-  Feedback.msg_notice (str (indent^"total = "));
-  msgnl (str (indent^(string_of_float (tn.entry.total))));
-  Feedback.msg_notice (str (indent^"local = "));
-  msgnl (str (indent^(string_of_float tn.entry.local)));
-  Feedback.msg_notice (str (indent^"ncalls = "));
-  msgnl (str (indent^(string_of_int tn.entry.ncalls)));
-  Feedback.msg_notice (str (indent^"max_total = "));
-  msgnl (str (indent^(string_of_float tn.entry.max_total)));
-  msgnl (str (indent^"}"));
-  msgnl (str (indent^"children = {"));
-  Hashtbl.iter
-    (fun s node ->
-      msgnl (str (indent^" "^s^" |-> "));
+  str (indent^"{ entry = {") ++
+  str ((*indent^*)" total = ") ++
+  str ((*indent^*)(string_of_float (tn.entry.total))) ++
+  str ((*indent^*)"; local = ") ++
+  str ((*indent^*)(string_of_float tn.entry.local)) ++
+  str ((*indent^*)"; ncalls = ") ++
+  str ((*indent^*)(string_of_int tn.entry.ncalls)) ++
+  str ((*indent^*)"; max_total = ") ++
+  str ((*indent^*)(string_of_float tn.entry.max_total)) ++
+  str ((*indent^*)"}") ++
+  str ((*indent^*)"; children = {") ++ (if Hashtbl.length tn.children != 0 then fnl () else str "") ++
+  Hashtbl.fold
+    (fun s node v ->
+      v ++ fnl () ++
+      str (indent^" "^s^" |-> ") ++ fnl () ++
       print_treenode (indent^"  ") node
     )
-    tn.children;
-  msgnl (str (indent^"} }"))
+    tn.children
+    (str "") ++
+  str ((*indent^*)"} }")
 
 let rec print_stack (st : treenode list) = match st with
-| [] -> msgnl (str "[]")
-| x :: xs -> print_treenode "" x; msgnl (str ("::")); print_stack xs
+| [] -> str "[]" ++ fnl ()
+| x :: xs -> print_treenode "" x ++ str ("::") ++ (match xs with | [] -> str "" | _ -> fnl ()) ++ print_stack xs
+
+let print_all_stacks () : unit =
+  Feedback.msg_notice (
+    fnl () ++ str "stack:" ++ fnl() ++ print_stack (!stack)
+    ++
+    fnl () ++ str "stack_unsync:" ++ fnl () ++ print_stack (!stack_unsync)
+  )
 *)
 
 let string_of_call ck =
@@ -319,8 +325,7 @@ let print_results () =
 
   (* FOR DEBUGGING *)
   (* ;
-     msgnl (str"");
-     print_stack (!stack)
+     print_all_stacks ()
   *)
 
 let print_results_tactic tactic =
