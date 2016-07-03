@@ -2,6 +2,13 @@
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 
+** Files **
+
+To avoid clashes with OCaml's compiler libs, the following files were renamed:
+kernel/closure.ml{,i} -> kernel/cClosure.ml{,i}
+lib/errors.ml{,i} -> lib/cErrors.ml{,i}
+toplevel/cerror.ml{,i} -> toplevel/explainErr.mli{,i}
+
 ** Reduction functions **
 
 In closure.ml, we introduced the more precise reduction flags fMATCH, fFIX,
