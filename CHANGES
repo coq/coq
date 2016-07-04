@@ -1,21 +1,38 @@
 Changes from V8.5pl1 to V8.5pl2
 ===============================
 
-Bugfixes
+Critical bugfix
+- Checksums of .vo files dependencies were not correctly checked.
 
+Other bugfixes
+
+- #4097: more efficient occur-check in presence of primitive projections
+- #4398: type_scope used consistently in "match goal".
+- #4450: eauto does not work with polymorphic lemmas
 - #4677: fix alpha-conversion in notations needing eta-expansion.
 - Fully preserve initial order of hypotheses in "Regular Subst Tactic" mode.
 - #4644: a regression in unification.
-- #4777: printing inefficiency with implicit arguments
+- #4725: Function (Error: Conversion test raised an anomaly) and Program
+  (Error: Cannot infer this placeholder of type)
+- #4747: Problem building Coq 8.5pl1 with OCaml 4.03.0: Fatal warnings
 - #4752: CoqIDE crash on files not ended by ".v".
-- #4398: type_scope used consistently in "match goal".
-- #4097: more efficient occur-check in presence of primitive projections
+- #4777: printing inefficiency with implicit arguments
+- #4818: "Admitted" fails due to undefined universe anomaly after calling
+  "destruct"
+- #4823: remote counter: avoid thread race on sockets
+- #4881: synchronizing "Declare Implicit Tactic" with backtrack.
+- #4882: anomaly with Declare Implicit Tactic on hole of type with evars
+- Fix use of "Declare Implicit Tactic" in refine.
+  triggered by CoqIDE
 
-Universes:
+Universes
 - Disallow silently dropping universe instances applied to variables
   (forward compatible)
 - Allow explicit universe instances on notations, when they can apply
   to the head reference of their expansion.
+
+Build infrastructure
+- New update on how to find camlp5 binary and library at configure time.
 
 Changes from V8.5 to V8.5pl1
 ============================
