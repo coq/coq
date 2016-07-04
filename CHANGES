@@ -1,5 +1,14 @@
 Changes beyond V8.5
 ===================
+Bugfixes
+
+- #4527: when typechecking the statement of a lemma using universe polymorphic
+  definitions with explicit universe binders, check that the type can indeed be
+  typechecked using only those universes (after minimization of the other,
+  flexible universes), or raise an error (fixed scripts can be made forward
+  compatible).
+- #4726: treat user-provided sorts of universe polymorphic records as rigid
+  (i.e. non-minimizable).
 
 Specification language
 
@@ -81,13 +90,6 @@ Bugfixes
 - #4777: printing inefficiency with implicit arguments
 - #4752: CoqIDE crash on files not ended by ".v".
 - #4398: type_scope used consistently in "match goal".
-- #4527: when typechecking the statement of a lemma using universe polymorphic
-  definitions with explicit universe binders, check that the type can indeed be
-  typechecked using only those universes (after minimization of the other,
-  flexible universes), or raise an error (fixed scripts can be made forward
-  compatible).
-- #4726: treat user-provided sorts of universe polymorphic records as rigid
-  (i.e. non-minimizable).
 
 Changes from V8.5 to V8.5pl1
 ============================
