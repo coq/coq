@@ -754,7 +754,7 @@ let is_set_arc u = Level.is_set u.univ
 let is_prop_arc u = Level.is_prop u.univ
 
 exception AlreadyDeclared
-	    
+
 let add_universe vlev strict g =
   try
     let _arcv = UMap.find vlev g in
