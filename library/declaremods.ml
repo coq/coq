@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Declarations
@@ -822,7 +822,7 @@ let protect_summaries f =
   try f fs
   with reraise ->
     (* Something wrong: undo the whole process *)
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     let () = Summary.unfreeze_summaries fs in
     iraise reraise
 

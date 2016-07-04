@@ -112,7 +112,7 @@ let enforce_eq_instances_univs strict x y c =
   let d = if strict then ULub else UEq in
   let ax = Instance.to_array x and ay = Instance.to_array y in
     if Array.length ax != Array.length ay then
-      Errors.anomaly (Pp.str "Invalid argument: enforce_eq_instances_univs called with" ++
+      CErrors.anomaly (Pp.str "Invalid argument: enforce_eq_instances_univs called with" ++
 	       Pp.str " instances of different lengths");
     CArray.fold_right2
       (fun x y -> Constraints.add (Universe.make x, d, Universe.make y))
@@ -337,7 +337,7 @@ let existing_instance ctx inst =
     and a2 = Instance.to_array (UContext.instance ctx) in
     let len1 = Array.length a1 and len2 = Array.length a2 in 
       if not (len1 == len2) then
-	Errors.errorlabstrm "Universes"
+	CErrors.errorlabstrm "Universes"
 	  (str "Polymorphic constant expected " ++ int len2 ++ 
 	     str" levels but was given " ++ int len1)
       else ()

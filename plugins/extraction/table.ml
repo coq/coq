@@ -15,7 +15,7 @@ open Libobject
 open Goptions
 open Libnames
 open Globnames
-open Errors
+open CErrors
 open Util
 open Pp
 open Miniml

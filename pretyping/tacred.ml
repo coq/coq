@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -18,7 +18,7 @@ open Termops
 open Find_subterm
 open Namegen
 open Environ
-open Closure
+open CClosure
 open Reductionops
 open Cbv
 open Patternops

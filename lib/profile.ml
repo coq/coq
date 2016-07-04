@@ -260,7 +260,7 @@ let time_overhead_B_C () =
       let _dw = dummy_spent_alloc () in
       let _dt = get_time () in
       ()
-    with e when Errors.noncritical e -> assert false
+    with e when CErrors.noncritical e -> assert false
   done;
   let after = get_time () in
   let beforeloop =  get_time () in

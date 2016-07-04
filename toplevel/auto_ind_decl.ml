@@ -10,7 +10,7 @@
    decidable equality, created by Vincent Siles, Oct 2007 *)
 
 open Tacmach
-open Errors
+open CErrors
 open Util
 open Pp
 open Term
@@ -108,7 +108,7 @@ let mkFullInd (ind,u) n =
 
 let check_bool_is_defined () =
   try let _ = Global.type_of_global_unsafe Coqlib.glob_bool in ()
-  with e when Errors.noncritical e -> raise (UndefinedCst "bool")
+  with e when CErrors.noncritical e -> raise (UndefinedCst "bool")
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
@@ -344,7 +344,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
                    (str "Var " ++ pr_id s ++ str " seems unknown.")
       )
     in mkVar (find 1)
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
       (* if this happen then the args have to be already declared as a
               Parameter*)
       (
@@ -402,7 +402,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                    (str "Var " ++ pr_id s ++ str " seems unknown.")
       )
     in mkVar (find 1)
-  with e when Errors.noncritical e ->
+  with e when CErrors.noncritical e ->
       (* if this happen then the args have to be already declared as a
          Parameter*)
       (
@@ -423,7 +423,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
         else (
           let u,v = try  destruct_ind tt1
           (* trick so that the good sequence is returned*)
-                with e when Errors.noncritical e -> indu,[||]
+                with e when CErrors.noncritical e -> indu,[||]
           in if eq_ind (fst u) ind
              then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
@@ -780,7 +780,7 @@ let _ = lb_scheme_kind_aux := fun () -> lb_scheme_kind
 
 let check_not_is_defined () =
   try ignore (Coqlib.build_coq_not ())
-  with e when Errors.noncritical e -> raise (UndefinedCst "not")
+  with e when CErrors.noncritical e -> raise (UndefinedCst "not")
 
 (* {n=m}+{n<>m}  part  *)
 let compute_dec_goal ind lnamesparrec nparrec =

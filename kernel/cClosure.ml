@@ -19,7 +19,7 @@
 (* This file implements a lazy reduction for the Calculus of Inductive
    Constructions *)
 
-open Errors
+open CErrors
 open Util
 open Pp
 open Names
@@ -154,7 +154,7 @@ module RedFlags = (struct
     | ETA -> { red with r_eta = false }
     | DELTA -> { red with r_delta = false }
     | CONST kn ->
- 	let (l1,l2) = red.r_const in
+	let (l1,l2) = red.r_const in
 	{ red with r_const = l1, Cpred.remove kn l2 }
     | MATCH -> { red with r_match = false }
     | FIX -> { red with r_fix = false }
@@ -187,7 +187,7 @@ module RedFlags = (struct
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
 
-  let red_projection red p = 
+  let red_projection red p =
     if Projection.unfolded p then true
     else red_set red (fCONST (Projection.constant p))
 
@@ -238,7 +238,7 @@ type table_key = constant puniverses tableKey
 
 let eq_pconstant_key (c,u) (c',u') =
   eq_constant_key c c' && Univ.Instance.equal u u'
-  
+
 module IdKeyHash =
 struct
   open Hashset.Combine
@@ -261,7 +261,7 @@ type 'a infos_cache = {
   i_rels : constr option array;
   i_tab : 'a KeyTable.t }
 
-and 'a infos = { 
+and 'a infos = {
   i_flags : reds;
   i_cache : 'a infos_cache }
 
@@ -320,7 +320,7 @@ let defined_rels flags env =
 (*  else (0,[])*)
 
 let create mk_cl flgs env evars =
-  let cache = 
+  let cache =
     { i_repr = mk_cl;
       i_env = env;
       i_sigma = evars;
@@ -670,7 +670,7 @@ let rec zip m stk =
     | ZcaseT(ci,p,br,e)::s ->
         let t = FCaseT(ci, p, m, br, e) in
         zip {norm=neutr m.norm; term=t} s
-    | Zproj (i,j,cst) :: s -> 
+    | Zproj (i,j,cst) :: s ->
         zip {norm=neutr m.norm; term=FProj(Projection.make cst true,m)} s
     | Zfix(fx,par)::s ->
         zip fx (par @ append_stack [|m|] s)
@@ -777,7 +777,7 @@ let rec try_drop_parameters depth n argstk =
           let aft = Array.sub args n (q-n) in
           reloc_rargs depth (append_stack aft s)
     | Zshift(k)::s -> try_drop_parameters (depth-k) n s
-    | [] -> 
+    | [] ->
 	if Int.equal n 0 then []
 	else raise Not_found
     | _ -> assert false
@@ -786,23 +786,23 @@ let rec try_drop_parameters depth n argstk =
 let drop_parameters depth n argstk =
   try try_drop_parameters depth n argstk
   with Not_found ->
-  (* we know that n < stack_args_size(argstk) (if well-typed term) *) 
+  (* we know that n < stack_args_size(argstk) (if well-typed term) *)
   anomaly (Pp.str "ill-typed term: found a match on a partially applied constructor")
 
 (** [eta_expand_ind_stack env ind c s t] computes stacks corresponding
-    to the conversion of the eta expansion of t, considered as an inhabitant 
+    to the conversion of the eta expansion of t, considered as an inhabitant
     of ind, and the Constructor c of this inductive type applied to arguments
     s.
     @assumes [t] is an irreducible term, and not a constructor. [ind] is the inductive
-    of the constructor term [c] 
-    @raises Not_found if the inductive is not a primitive record, or if the 
+    of the constructor term [c]
+    @raises Not_found if the inductive is not a primitive record, or if the
     constructor is partially applied.
  *)
 let eta_expand_ind_stack env ind m s (f, s') =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
     | Some (Some (_,projs,pbs)) when
-	mib.Declarations.mind_finite == Decl_kinds.BiFinite -> 
+	mib.Declarations.mind_finite == Decl_kinds.BiFinite ->
 	(* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
 	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
       let pars = mib.Declarations.mind_nparams in
@@ -812,12 +812,12 @@ let eta_expand_ind_stack env ind m s (f, s') =
       let argss = try_drop_parameters depth pars args in
       let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
 					 term = FProj (Projection.make p true, right) }) projs in
-	argss, [Zapp hstack]	
+	argss, [Zapp hstack]
     | _ -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
 let rec project_nth_arg n argstk =
   match argstk with
-  | Zapp args :: s -> 
+  | Zapp args :: s ->
       let q = Array.length args in
 	if n >= q then project_nth_arg (n - q) s
 	else (* n < q *) args.(n)
@@ -872,7 +872,7 @@ let rec knh info m stk =
           (match try Some (lookup_projection p (info_env info)) with Not_found -> None with
 	  | None -> (m, stk)
 	  | Some pb ->
-	     knh info c (Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
+	     knh info c (Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg,
 				Projection.constant p)
 			 :: zupdate m stk))
 	else (m,stk)
@@ -974,8 +974,8 @@ let rec zip_term zfun m stk =
         let t = mkCase(ci, zfun (mk_clos e p), m,
 		       Array.map (fun b -> zfun (mk_clos e b)) br) in
         zip_term zfun t s
-    | Zproj(_,_,p)::s -> 
-        let t = mkProj (Projection.make p true, m) in 
+    | Zproj(_,_,p)::s ->
+        let t = mkProj (Projection.make p true, m) in
 	zip_term zfun t s
     | Zfix(fx,par)::s ->
         let h = mkApp(zip_term zfun (zfun fx) par,[|m|]) in
@@ -1055,18 +1055,17 @@ let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 
 let env_of_infos infos = infos.i_cache.i_env
 
-let infos_with_reds infos reds = 
+let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
-let unfold_reference info key = 
+let unfold_reference info key =
   match key with
   | ConstKey (kn,_) ->
     if red_set info.i_flags (fCONST kn) then
-      ref_value_cache info key  
+      ref_value_cache info key
     else None
-  | VarKey i -> 
+  | VarKey i ->
     if red_set info.i_flags (fVAR i) then
       ref_value_cache info key
     else None
   | _ -> ref_value_cache info key
-  

@@ -27,7 +27,7 @@ let romega_tactic l =
        | "positive" -> eval_tactic "zify_positive"
        | "N" -> eval_tactic "zify_N"
        | "Z" -> eval_tactic "zify_op"
-       | s -> Errors.error ("No ROmega knowledge base for type "^s))
+       | s -> CErrors.error ("No ROmega knowledge base for type "^s))
     (Util.List.sort_uniquize String.compare l)
   in
   Tacticals.New.tclTHEN

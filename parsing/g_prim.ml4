@@ -28,11 +28,11 @@ let my_int_of_string loc s =
     if n > 1024 * 2048 then raise Exit;
     n
   with Failure _ | Exit ->
-    Errors.user_err_loc (loc,"",Pp.str "Cannot support a so large number.")
+    CErrors.user_err_loc (loc,"",Pp.str "Cannot support a so large number.")
 
 GEXTEND Gram
   GLOBAL:
-    bigint natural index integer identref name ident var preident
+    bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath ne_lstring
     ne_string string pattern_ident pattern_identref by_notation smart_global;
   preident:
@@ -93,7 +93,7 @@ GEXTEND Gram
   ;
   ne_string:
     [ [ s = STRING ->
-        if s="" then Errors.user_err_loc(!@loc, "", Pp.str"Empty string."); s
+        if s="" then CErrors.user_err_loc(!@loc, "", Pp.str"Empty string."); s
     ] ]
   ;
   ne_lstring:
@@ -112,9 +112,6 @@ GEXTEND Gram
   ;
   natural:
     [ [ i = INT -> my_int_of_string (!@loc) i ] ]
-  ;
-  index:
-    [ [ i = INDEX -> my_int_of_string (!@loc) i ] ]
   ;
   bigint: (* Negative numbers are dealt with specially *)
     [ [ i = INT -> (Bigint.of_string i) ] ]

@@ -31,7 +31,7 @@ let default_object s = {
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ -> ());
   subst_function = (fun _ ->
-    Errors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
+    CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
   classify_function = (fun obj -> Keep obj);
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x)}
@@ -97,10 +97,10 @@ let declare_object_full odecl =
 
 let declare_object odecl =
   try fst (declare_object_full odecl)
-  with e -> Errors.fatal_error (Errors.print e) (Errors.is_anomaly e)
+  with e -> CErrors.fatal_error (CErrors.print e) (CErrors.is_anomaly e)
 let declare_object_full odecl =
   try declare_object_full odecl
-  with e -> Errors.fatal_error (Errors.print e) (Errors.is_anomaly e)
+  with e -> CErrors.fatal_error (CErrors.print e) (CErrors.is_anomaly e)
 
 (* this function describes how the cache, load, open, and export functions
    are triggered. *)

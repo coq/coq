@@ -734,7 +734,7 @@ struct
 	| Inl (s,_) ->
 	    try
 	      Some (bound_of_variable IMap.empty fresh s.sys)
-	    with x when Errors.noncritical x ->
+	    with x when CErrors.noncritical x ->
 	      Printf.printf "optimise Exception : %s" (Printexc.to_string x);
               None
 

@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Nameops
@@ -911,7 +911,7 @@ let rec transform p t =
     try
       let v,th,_ = find_constr t' in
       [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
-    with e when Errors.noncritical e ->
+    with e when CErrors.noncritical e ->
       let v = new_identifier_var ()
       and th = new_identifier () in
       hide_constr t' v th isnat;
@@ -951,7 +951,7 @@ let rec transform p t =
        end
    | Kapp((Zpos|Zneg|Z0),_) ->
        (try ([],Oz(recognize_number t))
-        with e when Errors.noncritical e -> default false t)
+        with e when CErrors.noncritical e -> default false t)
    | Kvar s -> [],Oatom s
    | Kapp(Zopp,[t]) ->
        let tac,t' = transform (P_APP 1 :: p) t in

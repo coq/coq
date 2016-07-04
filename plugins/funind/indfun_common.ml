@@ -49,7 +49,7 @@ let locate_constant ref =
 
 let locate_with_msg msg f x =
   try f x
-  with Not_found -> raise (Errors.UserError("", msg))
+  with Not_found -> raise (CErrors.UserError("", msg))
 
 
 let filter_map filter f =
@@ -73,7 +73,7 @@ let chop_rlambda_n  =
 	  | Glob_term.GLambda(_,name,k,t,b) -> chop_lambda_n ((name,t,false)::acc) (n-1) b
 	  | Glob_term.GLetIn(_,name,v,b) -> chop_lambda_n ((name,v,true)::acc) (n-1) b
 	  | _ ->
-	      raise (Errors.UserError("chop_rlambda_n",
+	      raise (CErrors.UserError("chop_rlambda_n",
 				    str "chop_rlambda_n: Not enough Lambdas"))
   in
   chop_lambda_n []
@@ -85,7 +85,7 @@ let chop_rprod_n  =
       else
 	match rt with
 	  | Glob_term.GProd(_,name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
-	  | _ -> raise (Errors.UserError("chop_rprod_n",str "chop_rprod_n: Not enough products"))
+	  | _ -> raise (CErrors.UserError("chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in
   chop_prod_n []
 
@@ -110,7 +110,7 @@ let const_of_id id =
   in
   try Constrintern.locate_reference princ_ref
   with Not_found ->
-    Errors.errorlabstrm "IndFun.const_of_id"
+    CErrors.errorlabstrm "IndFun.const_of_id"
       (str "cannot find " ++ Nameops.pr_id id)
 
 let def_of_const t =
@@ -344,7 +344,7 @@ let pr_info f_info =
   (try
      Printer.pr_lconstr
        (Global.type_of_global_unsafe (ConstRef f_info.function_constant))
-   with e when Errors.noncritical e -> mt ()) ++ fnl () ++
+   with e when CErrors.noncritical e -> mt ()) ++ fnl () ++
   str "equation_lemma := " ++ pr_ocst f_info.equation_lemma ++ fnl () ++
   str "completeness_lemma :=" ++ pr_ocst f_info.completeness_lemma ++ fnl () ++
   str "correctness_lemma := " ++ pr_ocst f_info.correctness_lemma ++ fnl () ++
@@ -371,7 +371,7 @@ let in_Function : function_info -> Libobject.obj =
 
 let find_or_none id =
   try Some
-    (match Nametab.locate (qualid_of_ident id) with ConstRef c -> c | _ -> Errors.anomaly (Pp.str "Not a constant")
+    (match Nametab.locate (qualid_of_ident id) with ConstRef c -> c | _ -> CErrors.anomaly (Pp.str "Not a constant")
     )
   with Not_found -> None
 
@@ -399,7 +399,7 @@ let add_Function is_general f =
   and prop_lemma = find_or_none (Nameops.add_suffix f_id "_ind")
   and graph_ind =
     match Nametab.locate (qualid_of_ident (mk_rel_id f_id))
-    with | IndRef ind -> ind | _ -> Errors.anomaly (Pp.str "Not an inductive")
+    with | IndRef ind -> ind | _ -> CErrors.anomaly (Pp.str "Not an inductive")
   in
   let finfos =
     { function_constant = f;
@@ -476,13 +476,13 @@ let jmeq () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
     Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq"
-  with e when Errors.noncritical e -> raise (ToShow e)
+  with e when CErrors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
     Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq_refl"
-  with e when Errors.noncritical e -> raise (ToShow e)
+  with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
   tclMAP (fun x -> Proofview.V82.of_tactic (Tactics.Simple.intro x)) l

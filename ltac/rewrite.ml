@@ -8,7 +8,7 @@
 
 open Names
 open Pp
-open Errors
+open CErrors
 open Util
 open Nameops
 open Namegen
@@ -365,7 +365,7 @@ end) = struct
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
 	   let _ = Typeclasses.resolve_one_typeclass env' (goalevars evars) inst in
 	     Some (it_mkProd_or_LetIn t rels)
-	   with e when Errors.noncritical e -> None)
+	   with e when CErrors.noncritical e -> None)
   | _ -> None
 
 
@@ -446,7 +446,7 @@ let evd_convertible env evd x y =
     let evd = Evarconv.consider_remaining_unif_problems env evd in
     let () = Evarconv.check_problems_are_solved env evd in
     Some evd
-  with e when Errors.noncritical e -> None
+  with e when CErrors.noncritical e -> None
 
 let convertible env evd x y =
   Reductionops.is_conv_leq env evd x y
@@ -1407,7 +1407,7 @@ module Strategies =
 	let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
 	let unfolded =
 	  try Tacred.try_red_product env sigma c
-	  with e when Errors.noncritical e ->
+	  with e when CErrors.noncritical e ->
             error "fold: the term is not unfoldable !"
 	in
 	  try
@@ -1416,7 +1416,7 @@ module Strategies =
 	      state, Success { rew_car = ty; rew_from = t; rew_to = c';
 				  rew_prf = RewCast DEFAULTcast;
 				  rew_evars = (sigma, snd evars) }
-	  with e when Errors.noncritical e -> state, Fail
+	  with e when CErrors.noncritical e -> state, Fail
 					 }
   
 
@@ -1466,7 +1466,7 @@ let solve_constraints env (evars,cstrs) =
       (Typeclasses.mark_resolvables ~filter evars)
       
 let nf_zeta =
-  Reductionops.clos_norm_flags (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+  Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 
 exception RewriteFailure of Pp.std_ppcmds
 
@@ -1631,7 +1631,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 
 let tactic_init_setoid () = 
   try init_setoid (); tclIDTAC
-  with e when Errors.noncritical e -> tclFAIL 0 (str"Setoid library not loaded")
+  with e when CErrors.noncritical e -> tclFAIL 0 (str"Setoid library not loaded")
 
 let cl_rewrite_clause_strat progress strat clause =
   tclTHEN (tactic_init_setoid ())

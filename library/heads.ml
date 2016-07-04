@@ -70,7 +70,7 @@ let kind_of_head env t =
   | Const (cst,_) ->
       (try on_subterm k l b (constant_head cst)
        with Not_found ->
-         Errors.anomaly
+         CErrors.anomaly
            Pp.(str "constant not found in kind_of_head: " ++
                str (Names.Constant.to_string cst)))
   | Construct _ | CoFix _ ->

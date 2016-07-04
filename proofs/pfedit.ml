@@ -39,7 +39,7 @@ let cook_this_proof p =
   match p with
   | { Proof_global.id;entries=[constr];persistence;universes } ->
       (id,(constr,universes,persistence))
-  | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
+  | _ -> CErrors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
 let cook_proof () =
   cook_this_proof (fst
@@ -59,9 +59,9 @@ let get_universe_binders () =
   Proof_global.get_universe_binders ()
 
 exception NoSuchGoal
-let _ = Errors.register_handler begin function
-  | NoSuchGoal -> Errors.error "No such goal."
-  | _ -> raise Errors.Unhandled
+let _ = CErrors.register_handler begin function
+  | NoSuchGoal -> CErrors.error "No such goal."
+  | _ -> raise CErrors.Unhandled
 end
 let get_nth_V82_goal i =
   let p = Proof_global.give_me_the_proof () in
@@ -76,12 +76,12 @@ let get_goal_context_gen i =
 
 let get_goal_context i =
   try get_goal_context_gen i
-  with Proof_global.NoCurrentProof -> Errors.error "No focused proof."
-     | NoSuchGoal -> Errors.error "No such goal."
+  with Proof_global.NoCurrentProof -> CErrors.error "No focused proof."
+     | NoSuchGoal -> CErrors.error "No such goal."
 
 let get_current_goal_context () =
   try get_goal_context_gen 1
-  with Proof_global.NoCurrentProof -> Errors.error "No focused proof."
+  with Proof_global.NoCurrentProof -> CErrors.error "No focused proof."
      | NoSuchGoal -> 
     (* spiwack: returning empty evar_map, since if there is no goal, under focus,
         there is no accessible evar either *)
@@ -102,7 +102,7 @@ let get_current_context () =
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
     | (id,([concl],strength)) -> id,strength,concl
-    | _ -> Errors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
+    | _ -> CErrors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
 
 let solve ?with_end_tac gi info_lvl tac pr =
   try 
@@ -127,11 +127,11 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     (p,status)
   with
-    | Proof_global.NoCurrentProof  -> Errors.error "No focused proof"
+    | Proof_global.NoCurrentProof  -> CErrors.error "No focused proof"
     | CList.IndexOutOfRange ->
         match gi with
 	| Vernacexpr.SelectNth i -> let msg = str "No such goal: " ++ int i ++ str "." in
-	                            Errors.errorlabstrm "" msg
+	                            CErrors.errorlabstrm "" msg
         | _ -> assert false
 
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)
@@ -157,7 +157,7 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
     delete_current_proof ();
     const, status, fst univs
   with reraise ->
-    let reraise = Errors.push reraise in
+    let reraise = CErrors.push reraise in
     delete_current_proof ();
     iraise reraise
 
@@ -188,7 +188,7 @@ let refine_by_tactic env sigma ty tac =
     try Proof.run_tactic env tac prf
     with Logic_monad.TacticFailure e as src ->
       (** Catch the inner error of the monad tactic *)
-      let (_, info) = Errors.push src in
+      let (_, info) = CErrors.push src in
       iraise (e, info)
   in
   (** Plug back the retrieved sigma *)
@@ -228,7 +228,7 @@ let solve_by_implicit_tactic env sigma evk =
       when
 	Context.Named.equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->
-      let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) []) in
+      let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError ("",Pp.str"Proof is not complete."))) []) in
       (try
         let (ans, _, _) = 
 	  build_by_tactic env (Evd.evar_universe_context sigma) evi.evar_concl tac in

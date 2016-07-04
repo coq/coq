@@ -31,7 +31,7 @@ open Typeops;;
 open Check;;
 
 open Pp;;
-open Errors;;
+open CErrors;;
 open Util;;
 open Names;;
 open Term;;

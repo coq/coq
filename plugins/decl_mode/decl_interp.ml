@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
+open CErrors
 open Util
 open Names
 open Constrexpr
@@ -153,8 +153,8 @@ let interp_constr check_sort env sigma c =
     fst (understand env sigma (fst c))
 
 let special_whd env =
-  let infos=Closure.create_clos_infos Closure.all env in
-    (fun t -> Closure.whd_val infos (Closure.inject t))
+  let infos=CClosure.create_clos_infos CClosure.all env in
+    (fun t -> CClosure.whd_val infos (CClosure.inject t))
 
 let _eq = lazy (Universes.constr_of_global (Coqlib.glob_eq))
 

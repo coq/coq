@@ -15,7 +15,7 @@
    Module-traversing code: Pierre Letouzey *)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Term

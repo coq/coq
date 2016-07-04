@@ -8,7 +8,7 @@
 
 open Util
 open Pp
-open Errors
+open CErrors
 open Names
 open Vars
 

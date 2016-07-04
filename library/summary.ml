@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 
 module Dyn = Dyn.Make(struct end)
@@ -105,10 +105,10 @@ let unfreeze_summaries fs =
   in
   let fold id decl state =
     try fold id decl state
-    with e when Errors.noncritical e ->
-      let e = Errors.push e in
+    with e when CErrors.noncritical e ->
+      let e = CErrors.push e in
       Printf.eprintf "Error unfrezing summay %s\n%s\n%!"
-        (name_of_summary id) (Pp.string_of_ppcmds (Errors.iprint e));
+        (name_of_summary id) (Pp.string_of_ppcmds (CErrors.iprint e));
       iraise e
   in
   (** We rely on the order of the frozen list, and the order of folding *)
@@ -149,7 +149,7 @@ let unfreeze_summary datas =
       let (name, summary) = Int.Map.find id !summaries in
       try summary.unfreeze_function data
       with e ->
-        let e = Errors.push e in
+        let e = CErrors.push e in
         prerr_endline ("Exception unfreezing " ^ name);
         iraise e)
   datas

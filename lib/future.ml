@@ -30,10 +30,10 @@ let customize_not_here_msg f = not_here_msg := f
 
 exception NotReady of string
 exception NotHere of string
-let _ = Errors.register_handler (function
+let _ = CErrors.register_handler (function
   | NotReady name -> !not_ready_msg name
   | NotHere name -> !not_here_msg name
-  | _ -> raise Errors.Unhandled)
+  | _ -> raise CErrors.Unhandled)
 
 type fix_exn = Exninfo.iexn -> Exninfo.iexn
 let id x = prerr_endline "Future: no fix_exn.\nYou have probably created a Future.computation from a value without passing the ~fix_exn argument.  You probably want to chain with an already existing future instead."; x
@@ -136,7 +136,7 @@ let rec compute ~pure ck : 'a value =
         let state = if pure then None else Some (!freeze ()) in
         c := Val (data, state); `Val data
       with e ->
-        let e = Errors.push e in
+        let e = CErrors.push e in
         let e = fix_exn e in
         match e with
         | (NotReady _, _) -> `Exn e
@@ -156,9 +156,9 @@ let chain ~pure ck f =
   | Val (v, Some state) -> Closure (fun () -> !unfreeze state; f v)
   | Val (v, None) ->
       match !ck with
-      | Finished _ -> Errors.anomaly(Pp.str
+      | Finished _ -> CErrors.anomaly(Pp.str
           "Future.chain ~pure:false call on an already joined computation")
-      | Ongoing _ -> Errors.anomaly(Pp.strbrk(
+      | Ongoing _ -> CErrors.anomaly(Pp.strbrk(
           "Future.chain ~pure:false call on a pure computation. "^
           "This can happen if the computation was initial created with "^
           "Future.from_val or if it was Future.chain ~pure:true with a "^
@@ -170,7 +170,7 @@ let replace kx y =
   let _, _, _, x = get kx in
   match !x with
   | Exn _ -> x := Closure (fun () -> force ~pure:false y)
-  | _ -> Errors.anomaly
+  | _ -> CErrors.anomaly
            (Pp.str "A computation can be replaced only if is_exn holds")
 
 let purify f x =
@@ -180,13 +180,13 @@ let purify f x =
     !unfreeze state;
     v
   with e ->
-    let e = Errors.push e in !unfreeze state; Exninfo.iraise e
+    let e = CErrors.push e in !unfreeze state; Exninfo.iraise e
 
 let transactify f x =
   let state = !freeze () in
   try f x
   with e ->
-    let e = Errors.push e in !unfreeze state; Exninfo.iraise e
+    let e = CErrors.push e in !unfreeze state; Exninfo.iraise e
 
 let purify_future f x = if is_over x then f x else purify f x
 let compute x = purify_future (compute ~pure:false) x
@@ -213,7 +213,7 @@ let map2 ?greedy f x l =
     let xi = chain ?greedy ~pure:true x (fun x ->
         try List.nth x i
         with Failure _ | Invalid_argument _ ->
-          Errors.anomaly (Pp.str "Future.map2 length mismatch")) in
+          CErrors.anomaly (Pp.str "Future.map2 length mismatch")) in
     f xi y) 0 l
 
 let print f kx =

@@ -8,7 +8,7 @@
 
 open Tacexpr
 open Declarations
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -65,16 +65,16 @@ let observe strm =
 let do_observe_tac s tac g =
   let goal =
     try Printer.pr_goal g
-    with e when Errors.noncritical e -> assert false
+    with e when CErrors.noncritical e -> assert false
   in
   try
     let v = tac g in
     msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
   with reraise ->
-    let reraise = Errors.push reraise in
-    let e = Cerrors.process_vernac_interp_error reraise in
+    let reraise = CErrors.push reraise in
+    let e = ExplainErr.process_vernac_interp_error reraise in
     observe (hov 0 (str "observation "++ s++str " raised exception " ++
-	     Errors.iprint e ++ str " on goal" ++ fnl() ++ goal ));
+	     CErrors.iprint e ++ str " on goal" ++ fnl() ++ goal ));
     iraise reraise;;
 
 
@@ -90,7 +90,7 @@ let observe_tac s tac g =
 
 (* [nf_zeta] $\zeta$-normalization of a term *)
 let nf_zeta =
-  Reductionops.clos_norm_flags  (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
+  Reductionops.clos_norm_flags  (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
     Environ.empty_env
     Evd.empty
 
@@ -585,7 +585,7 @@ let rec reflexivity_with_destruct_cases g =
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases
 	    ]
         | _ -> Proofview.V82.of_tactic reflexivity
-    with e when Errors.noncritical e -> Proofview.V82.of_tactic reflexivity
+    with e when CErrors.noncritical e -> Proofview.V82.of_tactic reflexivity
   in
   let eq_ind = make_eq () in
   let discr_inject =
@@ -998,7 +998,7 @@ let invfun qhyp f  =
   let f =
     match f with
       | ConstRef f -> f
-      | _ -> raise (Errors.UserError("",str "Not a function"))
+      | _ -> raise (CErrors.UserError("",str "Not a function"))
   in
   try
     let finfos = find_Function_infos f in

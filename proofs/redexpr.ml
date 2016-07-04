@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
+open CErrors
 open Util
 open Names
 open Term
@@ -17,7 +17,7 @@ open Genredexpr
 open Pattern
 open Reductionops
 open Tacred
-open Closure
+open CClosure
 open RedFlags
 open Libobject
 open Misctypes

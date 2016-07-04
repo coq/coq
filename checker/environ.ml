@@ -1,4 +1,4 @@
-open Errors
+open CErrors
 open Util
 open Names
 open Cic

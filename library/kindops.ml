@@ -25,7 +25,7 @@ let string_of_theorem_kind = function
 
 let string_of_definition_kind def =
   let (locality, poly, kind) = def in
-  let error () = Errors.anomaly (Pp.str "Internal definition kind") in
+  let error () = CErrors.anomaly (Pp.str "Internal definition kind") in
   match kind with
   | Definition ->
     begin match locality with
@@ -64,4 +64,4 @@ let string_of_definition_kind def =
     | Global -> "Global Instance"
     end
   | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
-    Errors.anomaly (Pp.str "Internal definition kind")
+    CErrors.anomaly (Pp.str "Internal definition kind")
