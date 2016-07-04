@@ -360,7 +360,7 @@ let make_case_or_project env indf ci pred c branches =
 		     str" on inductive type " ++ Names.MutInd.print (fst ind))
      in
      let branch = branches.(0) in
-     let ctx, br = decompose_lam_assum branch in
+     let ctx, br = decompose_lam_n_assum (Array.length ps) branch in
      let n, subst =
        List.fold_right
          (fun decl (i, subst) ->
