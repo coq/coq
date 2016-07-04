@@ -212,30 +212,29 @@ let restrict_instance evd evk filter argsv =
 open Context.Rel.Declaration
 let noccur_evar env evd evk c =
   let cache = ref Int.Set.empty (* cache for let-ins *) in
-  let rec occur_rec (k, env as acc) c =
+  let rec occur_rec check_types (k, env as acc) c =
   match kind_of_term c with
   | Evar (evk',args' as ev') ->
       (match safe_evar_value evd ev' with
-       | Some c -> occur_rec acc c
+       | Some c -> occur_rec check_types acc c
        | None ->
            if Evar.equal evk evk' then raise Occur
-           else Array.iter (occur_rec acc) args')
+           else (if check_types then
+                   occur_rec false acc (existential_type evd ev');
+                 Array.iter (occur_rec check_types acc) args'))
   | Rel i when i > k ->
-      if not (Int.Set.mem (i-k) !cache) then
-      (match Environ.lookup_rel i env with
-       | LocalAssum _ -> ()
-       | LocalDef (_,b,_) -> cache := Int.Set.add (i-k) !cache; occur_rec acc (lift i b))
-  | Proj (p,c) -> 
-    let c = 
-      try Retyping.expand_projection env evd p c []
-      with Retyping.RetypeError _ -> 
-	(* Can happen when called from w_unify which doesn't assign evars/metas 
-	   eagerly enough *) c
-    in occur_rec acc c
+     if not (Int.Set.mem (i-k) !cache) then
+       let decl = Environ.lookup_rel i env in
+       if check_types then
+         (cache := Int.Set.add (i-k) !cache; occur_rec false acc (lift i (get_type decl)));
+       (match decl with
+        | LocalAssum _ -> ()
+        | LocalDef (_,b,_) -> cache := Int.Set.add (i-k) !cache; occur_rec false acc (lift i b))
+  | Proj (p,c) -> occur_rec true acc c
   | _ -> iter_constr_with_full_binders (fun rd (k,env) -> (succ k, push_rel rd env))
-    occur_rec acc c
+    (occur_rec check_types) acc c
   in
-  try occur_rec (0,env) c; true with Occur -> false
+  try occur_rec false (0,env) c; true with Occur -> false
 
 (***************************************)
 (* Managing chains of local definitons *)

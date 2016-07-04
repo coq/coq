@@ -1,0 +1,1 @@
+Definition b := true.

@@ -337,11 +337,18 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
+let constr_flags = {
+  Pretyping.use_typeclasses = true;
+  Pretyping.use_unif_heuristics = true;
+  Pretyping.use_hook = Some Pfedit.solve_by_implicit_tactic;
+  Pretyping.fail_evar = false;
+  Pretyping.expand_evars = true }
+
 let refine_tac ist simple c =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let flags = Pretyping.all_no_fail_flags in
+    let flags = constr_flags in
     let expected_type = Pretyping.OfType concl in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma -> c.delayed env sigma } in
@@ -517,11 +524,29 @@ VERNAC COMMAND EXTEND AddStepr CLASSIFIED AS SIDEFF
     [ add_transitivity_lemma false t ]
 END
 
+let cache_implicit_tactic (_,tac) = match tac with
+  | Some tac -> Pfedit.declare_implicit_tactic (Tacinterp.eval_tactic tac)
+  | None -> Pfedit.clear_implicit_tactic ()
+
+let subst_implicit_tactic (subst,tac) =
+  Option.map (Tacsubst.subst_tactic subst) tac
+
+let inImplicitTactic : glob_tactic_expr option -> obj =
+  declare_object {(default_object "IMPLICIT-TACTIC") with
+       open_function = (fun i o -> if Int.equal i 1 then cache_implicit_tactic o);
+       cache_function = cache_implicit_tactic;
+       subst_function = subst_implicit_tactic;
+       classify_function = (fun o -> Dispose)}
+
+let declare_implicit_tactic tac =
+  Lib.add_anonymous_leaf (inImplicitTactic (Some (Tacintern.glob_tactic tac)))
+
+let clear_implicit_tactic () =
+  Lib.add_anonymous_leaf (inImplicitTactic None)
+
 VERNAC COMMAND EXTEND ImplicitTactic CLASSIFIED AS SIDEFF
-| [ "Declare" "Implicit" "Tactic" tactic(tac) ] ->
-    [ Pfedit.declare_implicit_tactic (Tacinterp.interp tac) ]
-| [ "Clear" "Implicit" "Tactic" ] ->
-    [ Pfedit.clear_implicit_tactic () ]
+| [ "Declare" "Implicit" "Tactic" tactic(tac) ] -> [ declare_implicit_tactic tac ]
+| [ "Clear" "Implicit" "Tactic" ] -> [ clear_implicit_tactic () ]
 END
 
 

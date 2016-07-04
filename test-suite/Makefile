@@ -360,7 +360,7 @@ modules/%.vo: modules/%.v
 # Miscellaneous tests
 #######################################################################
 
-misc: misc/deps-order.log misc/universes.log
+misc: misc/deps-order.log misc/universes.log misc/deps-checksum.log
 
 # Check that both coqdep and coqtop/coqc supports -R
 # Check that both coqdep and coqtop/coqc takes the later -R
@@ -388,6 +388,26 @@ misc/deps-order.log:
 	  fi; \
 	  rm $$tmpoutput; \
 	} > "$@"
+
+deps-checksum: misc/deps-checksum.log
+misc/deps-checksum.log:
+	@echo "TEST      misc/deps-checksum"
+	$(HIDE){ \
+	  echo $(call log_intro,deps-checksum); \
+	  rm -f misc/deps/*/*.vo; \
+	  $(bincoqc) -R misc/deps/A A misc/deps/A/A.v; \
+	  $(bincoqc) -R misc/deps/B A misc/deps/B/A.v; \
+	  $(bincoqc) -R misc/deps/B A misc/deps/B/B.v; \
+	  $(coqtop) -R misc/deps/B A -R misc/deps/A A -load-vernac-source misc/deps/checksum.v 2>&1; \
+	  if [ $$? = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    misc/deps-checksum...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    misc/deps-checksum...Error!"; \
+	  fi; \
+	} > "$@"
+
 
 # Sort universes for the whole standard library
 EXPECTED_UNIVERSES := 4 # Prop is not counted
