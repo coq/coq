@@ -859,6 +859,9 @@ let export ?except senv dir =
 let import lib cst vodigest senv =
   check_required senv.required lib.comp_deps;
   check_engagement senv.env lib.comp_enga;
+  if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
+    Errors.errorlabstrm "Safe_typing.import"
+     (Pp.strbrk "Cannot load a library with the same name as the current one.");
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let env = Environ.push_context_set ~strict:true
