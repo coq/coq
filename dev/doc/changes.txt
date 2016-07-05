@@ -190,8 +190,8 @@ val get_id_for_feedback : unit -> edit_or_state_id * route_id
 
   Now it is represented as:
 
-    Context.Rel.t = LocalAssum of Names.Name.t * Constr.t
-	          | LocalDef of Names.Name.t * Constr.t * Constr.t
+    Context.Rel.Declaration.t = LocalAssum of Names.Name.t * Constr.t
+	                      | LocalDef of Names.Name.t * Constr.t * Constr.t
  
 - Originally, named-context was represented as:
 
@@ -199,8 +199,8 @@ val get_id_for_feedback : unit -> edit_or_state_id * route_id
 
   Now it is represented as:
 
-    Context.Named.t = LocalAssum of Names.Id.t * Constr.t
-	            | LocalDef of Names.Id.t * Constr.t * Constr.t
+    Context.Named.Declaration.t = LocalAssum of Names.Id.t * Constr.t
+	                        | LocalDef of Names.Id.t * Constr.t * Constr.t
 
 - The various EXTEND macros do not handle specially the Coq-defined entries
   anymore. Instead, they just output a name that have to exist in the scope
