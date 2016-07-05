@@ -61,26 +61,15 @@ endif
 
 install-coq: install-binaries install-library install-coq-info install-devfiles
 
-ifeq ($(BEST),byte)
-install-coq: install-byte
-endif
-
 install-binaries: install-tools
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQC) $(COQTOPEXE) $(CHICKEN) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQC) $(COQTOPBYTE) $(COQTOPEXE) $(CHICKEN) $(FULLBINDIR)
 	$(MKDIR) $(FULLCOQLIB)/toploop
+	$(INSTALLBIN) $(TOPLOOPCMA) $(FULLCOQLIB)/toploop/
 ifeq ($(BEST),opt)
 	$(INSTALLBIN) $(TOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
 endif
 
-install-byte: install-ide-byte
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQTOPBYTE) $(FULLBINDIR)
-	$(INSTALLBIN) $(TOPLOOPCMA) $(FULLCOQLIB)/toploop/
-	$(INSTALLSH) $(FULLCOQLIB) $(LINKCMO) $(PLUGINS)
-ifndef CUSTOM
-	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
-endif
 
 install-tools:
 	$(MKDIR) $(FULLBINDIR)
@@ -104,7 +93,7 @@ install-devfiles:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQMKTOP) $(FULLBINDIR)
 	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH)  $(FULLCOQLIB) $(GRAMMARCMA)
+	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMO) $(GRAMMARCMA)
 	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
 ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
@@ -112,8 +101,11 @@ endif
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES)
+	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS)
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
+ifndef CUSTOM
+	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
+endif
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
 	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)

@@ -109,17 +109,14 @@ NOARG: world
 .PHONY: NOARG help noconfig submake
 
 help:
-	@echo "Please use either:"
+	@echo "Please use either"
 	@echo "   ./configure"
 	@echo "   make world"
 	@echo "   make install"
 	@echo "   make clean"
 	@echo "or make archclean"
+	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
-	@echo "Bytecode compilation is now a separate target:"
-	@echo "   make byte"
-	@echo "   make install-byte"
-	@echo "Please do mix bytecode and native targets in the same make -j"
 
 UNSAVED_FILES:=$(shell find . -name '.\#*v' -o -name '.\#*.ml' -o -name '.\#*.ml?')
 ifdef UNSAVED_FILES

@@ -16,11 +16,7 @@ open Coqdep_common
 *)
 
 let rec parse = function
-  | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
-  | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
-  | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
-  | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
-  | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
+  | "-natdynlink" :: "no" :: ll -> option_natdynlk := false; parse ll
   | "-c" :: ll -> option_c := true; parse ll
   | "-boot" :: ll -> parse ll (* We're already in boot mode by default *)
   | "-mldep" :: ocamldep :: ll ->

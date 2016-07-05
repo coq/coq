@@ -41,26 +41,10 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 # Object and Source files
 ###########################################################################
 
-ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
- # static link of plugins, do not mention them in .v.d
- DYNDEP:=-dyndep no
+ifeq ($(HASNATDYNLINK)-$(BEST),true-opt)
+  DEPNATDYN:=
 else
- DYNDEP:=-dyndep var
-endif
-
-# Which coqtop do we use to build .vo file ? The best ;-)
-# Note: $(BEST) could be overridden by the user if a byte build is desired
-# Note: coqdep -dyndep var will use $(DYNOBJ) and $(DYNLIB) extensions
-# for Declare ML Module files.
-
-ifeq ($(BEST),opt)
-COQTOPBEST:=$(COQTOPEXE)
-DYNOBJ:=.cmxs
-DYNLIB:=.cmxs
-else
-COQTOPBEST:=$(COQTOPBYTE)
-DYNOBJ:=.cmo
-DYNLIB:=.cma
+  DEPNATDYN:=-natdynlink no
 endif
 
 INSTALLBIN:=install
