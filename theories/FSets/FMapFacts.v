@@ -24,6 +24,8 @@ Hint Extern 1 (Equivalence _) => constructor; congruence.
 
 Module WFacts_fun (E:DecidableType)(Import M:WSfun E).
 
+Notation option_map := option_map (compat "8.4").
+
 Notation eq_dec := E.eq_dec.
 Definition eqb x y := if eq_dec x y then true else false.
 
@@ -436,8 +438,6 @@ Proof.
 intros; do 2 rewrite mem_find_b; rewrite remove_o; unfold eqb.
 destruct (eq_dec x y); auto.
 Qed.
-
-Notation option_map := option_map (compat "8.4").
 
 Lemma map_o : forall m x (f:elt->elt'),
  find x (map f m) = option_map f (find x m).
