@@ -88,3 +88,17 @@ Undo 2.
 unshelve refine (tequator (X _)); revgoals.
 f_equal.
 Admitted.
+
+Goal @eq Set nat nat.
+congruence.
+Qed.
+
+Goal @eq Type nat nat.
+congruence. 
+Qed.
+
+Variable T : Type.
+
+Goal @eq Type T T.
+congruence.
+Qed.

@@ -24,6 +24,7 @@ Other bugfixes
 - #4882: anomaly with Declare Implicit Tactic on hole of type with evars
 - Fix use of "Declare Implicit Tactic" in refine.
   triggered by CoqIDE
+- #4069, #4718: congruence fails when universes are involved.
 
 Universes
 - Disallow silently dropping universe instances applied to variables
