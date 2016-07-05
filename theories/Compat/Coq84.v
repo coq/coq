@@ -70,23 +70,5 @@ Coercion sig2_of_sigT2 : sigT2 >-> sig2.
 (** As per bug #4733 (https://coq.inria.fr/bugs/show_bug.cgi?id=4733), we want the user to be able to create custom list-like notatoins that work in both 8.4 and 8.5.  This is necessary.  These should become compat 8.4 notations in the relevant files, but these modify the parser (bug #4798), so this cannot happen until that bug is fixed. *)
 Require Coq.Lists.List.
 Require Coq.Vectors.VectorDef.
-Module Export Coq.
-Module Export Lists.
-Module List.
-Module ListNotations.
-Include Coq.Lists.List.ListNotations.
 Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
-End ListNotations.
-End List.
-End Lists.
-Module Export Vectors.
-Module VectorDef.
-Module VectorNotations.
-Import Coq.Vectors.VectorDef.VectorNotations.
 Notation " [ x ; .. ; y ] " := (VectorDef.cons _ x _ .. (VectorDef.cons _ y _ (nil _)) ..) : vector_scope.
-End VectorNotations.
-End VectorDef.
-End Vectors.
-End Coq.
-Export Vectors.VectorDef.VectorNotations.
-Export List.ListNotations.
