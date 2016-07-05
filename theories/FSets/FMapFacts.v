@@ -437,6 +437,8 @@ intros; do 2 rewrite mem_find_b; rewrite remove_o; unfold eqb.
 destruct (eq_dec x y); auto.
 Qed.
 
+Notation option_map := option_map (compat "8.4").
+
 Lemma map_o : forall m x (f:elt->elt'),
  find x (map f m) = option_map f (find x m).
 Proof.
