@@ -13,7 +13,7 @@ open Printf
 
 let coq_version = "8.5pl2"
 let coq_macos_version = "8.5.2" (** "[...] should be a string comprised of
-three non-negative, period-separed integers [...]" *)
+three non-negative, period-separated integers [...]" *)
 let vo_magic = 8500
 let state_magic = 58500
 let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqmktop";"coqworkmgr";
