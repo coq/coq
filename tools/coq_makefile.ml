@@ -464,8 +464,11 @@ let implicit () =
     print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
   in
   let v_rules () =
-    print "$(VOFILES) : %.vo : %.vo-and-glob ; @ true\n\n";
-    print "$(GLOBFILES) : %.glob : %.vo-and-glob ; @ true\n\n";
+    (* the semicolons at the ends of these two commands are not redundant; they
+       cause GNU "make" to check the timestamps again on the target files, which is
+       important if something depends on them *)
+    print "$(VOFILES) : %.vo : %.vo-and-glob ;\n\n";
+    print "$(GLOBFILES) : %.glob : %.vo-and-glob ;\n\n";
     print "$(VOANDGLOBFILES) : %.vo-and-glob: %.v\n";
     print "\t$(SHOW)COQC $*\n";
     print "\t$(HIDE)$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
