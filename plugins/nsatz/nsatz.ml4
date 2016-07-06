@@ -472,6 +472,43 @@ let theoremedeszeros lpol p =
 
 open Ideal
 
+(* Check if the polynomial p is in the list lp *)
+let rec in_pol p lp =
+  match lp with
+  | [] -> false
+  | p1 :: lp1 -> if equal p p1 then true else in_pol p lp1
+
+(* Remove zero polynomials and duplicates from the list of polynomials lp
+   Return (clp, lb)
+   where clp is the reduced list and lb is a list of booleans
+   that has the same size than lp and where true indicates an
+   element that has been removed
+ *)
+let rec clean_pol lp =
+  match lp with
+  | [] -> [], []
+  | p :: lp1 -> 
+      let clp, lb = clean_pol lp1 in
+      if equal p zeroP || in_pol p clp then clp, true::lb 
+       else p :: clp, false::lb
+
+(* Expand the list of polynomials lp putting zeros where the list of 
+   booleans lb indicates there is a missing element 
+   Warning:
+   the expansion is relative to the end of the list in reversed order
+   lp cannot have less elements than lb
+*)
+let expand_pol lb lp =
+ let rec aux lb lp = 
+   match lb with
+   | [] -> lp
+   | true :: lb1 ->  zeroP :: aux lb1 lp
+   | false :: lb1 ->
+     match lp with
+     [] -> assert false
+     | p :: lp1 -> p :: aux lb1 lp1 
+  in List.rev (aux lb (List.rev lp))
+
 let theoremedeszeros_termes lp =
   nvars:=0;(* mise a jour par term_pol_sparse *)
   List.iter set_nvars_term  lp;
@@ -522,20 +559,29 @@ let theoremedeszeros_termes lp =
       | [] -> assert false
       | p::lp1 ->
 	  let lpol = List.rev lp1 in
+          (* preprocessing :
+             we remove zero polynomials and duplicate that are not handled by in_ideal
+             lb is kept in order to fix the certificate in the post-processing 
+          *)
+	  let lpol, lb  = clean_pol lpol in
 	  let (cert,lp0,p,_lct) = theoremedeszeros lpol p in
           info "cert ok\n";
 	  let lc = cert.last_comb::List.rev cert.gb_comb in
 	  match remove_zeros (fun x -> equal x zeroP) lc with
 	  | [] -> assert false
 	  | (lq::lci) ->
+              (* post-processing : we apply the correction for the last line *)
+              let lq = expand_pol lb lq in
 	      (* lci commence par les nouveaux polynomes *)
-	      let m= !nvars in
+	      let m = !nvars in
 	      let c = pol_sparse_to_term m (polconst m cert.coef) in
 	      let r = Pow(Zero,cert.power) in
 	      let lci = List.rev lci in
+              (* post-processing we apply the correction for the other lines *)
+	      let lci = List.map (expand_pol lb) lci in
 	      let lci = List.map (List.map (pol_sparse_to_term m)) lci in
 	      let lq = List.map (pol_sparse_to_term m) lq in
-	      info ("number of parametres: "^string_of_int nparam^"\n");
+	      info ("number of parameters: "^string_of_int nparam^"\n");
 	      info "term computed\n";
 	      (c,r,lci,lq)
       )
