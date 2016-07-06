@@ -464,10 +464,17 @@ let implicit () =
     print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
   in
   let v_rules () =
+    (* this code works only with GNU make, but we already have code that works only with GNU make *)
     print "define vo-rule\n";
-    print "$1.glob $1.vo : $1.v\n";
+    print "$1.vo: $1.v\n";
     print "\t$$(SHOW)COQC $1\n";
     print "\t$$(HIDE)$$(COQC) $$(COQDEBUG) $$(COQFLAGS) $1\n";
+    (* the semicolon at the end of the next command is not redundant; it
+       causes GNU "make" to check the timestamps again on the target file, which is
+       important if something depends on it *)
+    (* making *.glob from *.vo by doing nothing is okay because we don't pass -no-glob to coqc, 
+       and thus it makes both simultaneously *)
+    print "$1.glob: $1.vo;\n";
     print "endef\n";
     print "$(foreach f,$(VOFILES),$(eval $(call vo-rule,$(f:.vo=))))\n\n";
     print "$(VFILES:.v=.vio): %.vio: %.v\n\t$(COQC) -quick $(COQDEBUG) $(COQFLAGS) $*\n\n";
