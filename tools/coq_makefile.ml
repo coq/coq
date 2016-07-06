@@ -464,14 +464,12 @@ let implicit () =
     print "\t$(HIDE)$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
   in
   let v_rules () =
-    (* the semicolons at the ends of these two commands are not redundant; they
-       cause GNU "make" to check the timestamps again on the target files, which is
-       important if something depends on them *)
-    print "$(VOFILES) : %.vo : %.vo-and-glob ;\n\n";
-    print "$(GLOBFILES) : %.glob : %.vo-and-glob ;\n\n";
-    print "$(VOANDGLOBFILES) : %.vo-and-glob: %.v\n";
-    print "\t$(SHOW)COQC $*\n";
-    print "\t$(HIDE)$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "define vo-rule\n";
+    print "$1.glob $1.vo : $1.v\n";
+    print "\t$$(SHOW)COQC $1\n";
+    print "\t$$(HIDE)$$(COQC) $$(COQDEBUG) $$(COQFLAGS) $1\n";
+    print "endef\n";
+    print "$(foreach f,$(VOFILES),$(eval $(call vo-rule,$(f:.vo=))))\n\n";
     print "$(VFILES:.v=.vio): %.vio: %.v\n\t$(COQC) -quick $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "$(GFILES): %.g: %.v\n\t$(GALLINA) $<\n\n";
     print "$(VFILES:.v=.tex): %.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex $< -o $@\n\n";
@@ -681,8 +679,6 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "VOFILES:=$(VFILES:.v=.$(VO))\n";
       classify_files_by_root "VOFILES" l inc;
       print "GLOBFILES:=$(VFILES:.v=.glob)\n";
-      print "VOANDGLOBFILES:=$(VFILES:.v=.vo-and-glob)\n";
-      print ".INTERMEDIATE : $(VOANDGLOBFILES)\n";
       print "GFILES:=$(VFILES:.v=.g)\n";
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
       print "GHTMLFILES:=$(VFILES:.v=.g.html)\n";
