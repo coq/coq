@@ -472,12 +472,6 @@ let theoremedeszeros lpol p =
 
 open Ideal
 
-(* Check if the polynomial p is in the list lp *)
-let rec in_pol p lp =
-  match lp with
-  | [] -> false
-  | p1 :: lp1 -> if equal p p1 then true else in_pol p lp1
-
 (* Remove zero polynomials and duplicates from the list of polynomials lp
    Return (clp, lb)
    where clp is the reduced list and lb is a list of booleans
@@ -485,12 +479,19 @@ let rec in_pol p lp =
    element that has been removed
  *)
 let rec clean_pol lp =
-  match lp with
-  | [] -> [], []
-  | p :: lp1 -> 
-      let clp, lb = clean_pol lp1 in
-      if equal p zeroP || in_pol p clp then clp, true::lb 
-       else p :: clp, false::lb
+  let t = Hashpol.create 12 in
+  let find p = try Hashpol.find t p 
+               with 
+                 Not_found -> Hashpol.add t p true; false in
+  let rec aux lp =
+    match lp with
+    | [] -> [], []
+    | p :: lp1 -> 
+      let clp, lb = aux lp1 in
+      if equal p zeroP ||  find p then clp, true::lb 
+       else
+        (p :: clp, false::lb) in
+     aux lp
 
 (* Expand the list of polynomials lp putting zeros where the list of 
    booleans lb indicates there is a missing element 
