@@ -38,8 +38,8 @@ Definition _4 : sumbool_copy x = x :=
 
 (* Polymorphic Inductive Types *)
 Polymorphic Inductive poption@{i} (T : Type@{i}) : Type@{i} :=
-| PSome : T -> poption@{i} T
-| PNone : poption@{i} T.
+| PSome : T -> poption T
+| PNone : poption T.
 
 Polymorphic Definition poption_default@{i} {T : Type@{i}} (p : poption@{i} T) (x : T) : T :=
   match p with
@@ -49,7 +49,7 @@ Polymorphic Definition poption_default@{i} {T : Type@{i}} (p : poption@{i} T) (x
 
 Polymorphic Inductive plist@{i} (T : Type@{i}) : Type@{i} :=
 | pnil
-| pcons : T -> plist@{i} T -> plist@{i} T.
+| pcons : T -> plist T -> plist T.
 
 Arguments pnil {_}.
 Arguments pcons {_} _ _.
@@ -59,7 +59,7 @@ Polymorphic Definition pmap@{i j}
   fix pmap (ls : plist@{i} T) : plist@{j} U :=
     match ls with
     | @pnil _ => @pnil _
-    | @pcons _ l ls => @pcons@{j} U (f l) (pmap@{i j} ls)
+    | @pcons _ l ls => @pcons@{j} U (f l) (pmap ls)
     end.
 
 Universe Ubool.
@@ -75,7 +75,7 @@ Eval vm_compute in pmap (fun x => x -> Type) (pcons tbool (pcons (plist tbool) p
 
 Polymorphic Inductive Tree@{i} (T : Type@{i}) : Type@{i} :=
 | Empty
-| Branch : plist@{i} (Tree@{i} T) -> Tree@{i} T.
+| Branch : plist@{i} (Tree T) -> Tree T.
 
 Polymorphic Definition pfold@{i u}
             {T : Type@{i}} {U : Type@{u}} (f : T -> U -> U) :=
@@ -111,7 +111,7 @@ Polymorphic Fixpoint repeat@{i} {T : Type@{i}} (n : nat@{i}) (v : T) : plist@{i}
 Polymorphic Fixpoint big_tree@{i} (n : nat@{i}) : Tree@{i} nat@{i} :=
   match n with
   | O => @Empty nat@{i}
-  | S n' => Branch@{i} nat@{i} (repeat@{i} n' (big_tree@{i} n'))
+  | S n' => Branch@{i} nat@{i} (repeat@{i} n' (big_tree n'))
   end.
 
 Eval compute in height (big_tree (S (S (S O)))).

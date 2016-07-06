@@ -564,7 +564,7 @@ and intern_tactic_seq onlytac ist = function
       ist.ltacvars, TacLetIn (isrec,l,intern_tactic onlytac ist' u)
 
   | TacMatchGoal (lz,lr,lmr) ->
-      ist.ltacvars, (TacMatchGoal(lz,lr, intern_match_rule onlytac ist ~as_type:true lmr))
+      ist.ltacvars, TacMatchGoal(lz,lr, intern_match_rule onlytac ist ~as_type:true lmr)
   | TacMatch (lz,c,lmr) ->
       ist.ltacvars,
       TacMatch (lz,intern_tactic_or_tacarg ist c,intern_match_rule onlytac ist lmr)

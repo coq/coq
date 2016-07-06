@@ -215,7 +215,7 @@ let refine_by_tactic env sigma ty tac =
 (* Support for resolution of evars in tactic interpretation, including
    resolution by application of tactics *)
 
-let implicit_tactic = ref None
+let implicit_tactic = Summary.ref None ~name:"implicit-tactic"
 
 let declare_implicit_tactic tac = implicit_tactic := Some tac
 
@@ -230,8 +230,10 @@ let solve_by_implicit_tactic env sigma evk =
 	(Environ.named_context env) ->
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError ("",Pp.str"Proof is not complete."))) []) in
       (try
+        let c = Evarutil.nf_evars_universes sigma evi.evar_concl in
+        if Evarutil.has_undefined_evars sigma c then raise Exit;
         let (ans, _, _) = 
-	  build_by_tactic env (Evd.evar_universe_context sigma) evi.evar_concl tac in
+	  build_by_tactic env (Evd.evar_universe_context sigma) c tac in
         ans
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit
