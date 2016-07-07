@@ -381,7 +381,7 @@ let get_host_port opt s =
        Some (Spawned.Socket(host, int_of_string portr, int_of_string portw))
   | ["stdfds"] -> Some Spawned.AnonPipe
   | _ ->
-     prerr_endline ("Error: host:port or stdfds expected after option "^opt);
+     prerr_endline ("Error: host:read-port:write-port or stdfds expected after option "^opt);
      exit 1
 
 let get_error_resilience opt = function
