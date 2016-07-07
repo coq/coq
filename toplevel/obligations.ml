@@ -858,18 +858,17 @@ let obligation_terminator name num guard hook auto pf =
       in
       let obl = { obl with obl_status = false, status } in
       let uctx = Evd.evar_context_universe_context ctx in
-      let (def, obl) = declare_obligation prg obl body ty uctx in
+      let (_, obl) = declare_obligation prg obl body ty uctx in
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in
       try
       ignore (update_obls prg obls (pred rem));
-      if def then
-        if pred rem > 0 then
-          begin
-	    let deps = dependencies obls num in
-	    if not (Int.Set.is_empty deps) then
+      if pred rem > 0 then
+        begin
+	  let deps = dependencies obls num in
+	  if not (Int.Set.is_empty deps) then
 	    ignore (auto (Some name) None deps)
-	  end
+	end
       with e when CErrors.noncritical e ->
         let e = CErrors.push e in
         pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
