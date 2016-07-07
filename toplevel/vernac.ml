@@ -213,7 +213,7 @@ let rec vernac_com checknav (loc,com) =
           end;
 	begin
 	  try
-            read_vernac_file verbosely f;
+            Flags.silently (read_vernac_file verbosely) f;
 	    restore_translator_coqdoc st;
 	  with reraise ->
             let reraise = Errors.push reraise in
