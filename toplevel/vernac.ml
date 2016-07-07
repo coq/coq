@@ -199,7 +199,7 @@ let display_cmd_header loc com =
 	 str " [" ++ str cmd ++ str "] ");
   Pp.flush_all ()
 
-let rec vernac_com verbose checknav (loc,com) =
+let rec vernac_com checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
@@ -223,7 +223,7 @@ let rec vernac_com verbose checknav (loc,com) =
 
     | v when !just_parsing -> ()
 
-    | v -> Stm.interp verbose (loc,v)
+    | v -> Stm.interp (Flags.is_verbose()) (loc,v)
   in
     try
       checknav loc com;
@@ -250,7 +250,7 @@ and read_vernac_file verbosely s =
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc_ast = parse_sentence input in
-      vernac_com verbosely checknav loc_ast;
+      vernac_com checknav loc_ast;
       pp_flush ()
     done
   with any ->   (* whatever the exception *)
@@ -275,7 +275,7 @@ let checknav loc ast =
   if is_deep_navigation_vernac ast then
     user_error loc "Navigation commands forbidden in nested commands"
 
-let eval_expr loc_ast = vernac_com (Flags.is_verbose()) checknav loc_ast
+let eval_expr loc_ast = vernac_com checknav loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
