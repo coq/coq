@@ -1609,11 +1609,13 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 	    (merge_impargs l args) loc
 
     | CRecord (loc, fs) ->
-	let fields =
-	  sort_fields ~complete:true loc fs
-	    (fun _idx -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true)), Misctypes.IntroAnonymous, None))
-	in
-	begin
+       let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
+       let fields =
+	 sort_fields ~complete:true loc fs
+	             (fun _idx -> CHole (loc, Some (Evar_kinds.QuestionMark st),
+                                                 Misctypes.IntroAnonymous, None))
+       in
+       begin
 	  match fields with
 	    | None -> user_err_loc (loc, "intern", str"No constructor inference.")
 	    | Some (n, constrname, args) ->
@@ -1683,7 +1685,9 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
         GIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k, naming, solve) ->
         let k = match k with
-        | None -> Evar_kinds.QuestionMark (Evar_kinds.Define true)
+        | None ->
+           let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
+           Evar_kinds.QuestionMark st
         | Some k -> k
         in
         let solve = match solve with
