@@ -2035,9 +2035,11 @@ let interp_rawcontext_evars env evdref k bl =
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
-	let t' = locate_if_hole (loc_of_glob_constr t) na t in
-	let t =
-          understand_tcc_evars env evdref ~expected_type:IsType t' in
+       let t' =
+	 if Option.is_empty b then locate_if_hole (loc_of_glob_constr t) na t
+	 else t
+       in
+       let t = understand_tcc_evars env evdref ~expected_type:IsType t' in
 	match b with
 	    None ->
 	      let d = LocalAssum (na,t) in
