@@ -47,7 +47,7 @@ Type@{Top.21} -> Type@{Top.23}
               Top.23 < Top.22
                *) *)
 Fail Check @qux@{Set Set}.
-Fail Check @qux@{Set Set Set}.
+Check @qux@{Type Type Type Type}.
 (* [qux] should only need two universes *)
-Check @qux@{i j k}.  (* Error: The command has not failed!, but I think this is suboptimal *)
+Check @qux@{i j k l}.  (* Error: The command has not failed!, but I think this is suboptimal *)
 Fail Check @qux@{i j}.

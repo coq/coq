@@ -953,14 +953,17 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       | CastConv t | CastVM t | CastNative t ->
 	let k = (match k with CastVM _ -> VMcast | CastNative _ -> NATIVEcast | _ -> DEFAULTcast) in
 	let tj = pretype_type empty_valcon env evdref lvar t in
-	let tval = nf_evar !evdref tj.utj_val in
-	let cj = match k with
+        let tval = evd_comb1 (Evarsolve.refresh_universes
+                             ~onlyalg:true ~status:Evd.univ_flexible (Some false) env)
+                          evdref tj.utj_val in
+	let tval = nf_evar !evdref tval in
+	let cj, tval = match k with
 	  | VMcast ->
  	    let cj = pretype empty_tycon env evdref lvar c in
-	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
+	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tval in
 	      if not (occur_existential cty || occur_existential tval) then
 		let (evd,b) = Reductionops.vm_infer_conv env !evdref cty tval in
-		if b then (evdref := evd; cj)
+		if b then (evdref := evd; cj, tval)
 		else
 		  error_actual_type_loc loc env !evdref cj tval 
                       (ConversionFailed (env,cty,tval))
@@ -968,16 +971,16 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 		str "unresolved arguments remain.")
 	  | NATIVEcast ->
  	    let cj = pretype empty_tycon env evdref lvar c in
-	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
+	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tval in
             begin
 	      let (evd,b) = Nativenorm.native_infer_conv env !evdref cty tval in
-	      if b then (evdref := evd; cj)
+	      if b then (evdref := evd; cj, tval)
 	      else
                 error_actual_type_loc loc env !evdref cj tval 
                   (ConversionFailed (env,cty,tval))
             end
 	  | _ -> 
- 	    pretype (mk_tycon tval) env evdref lvar c
+ 	    pretype (mk_tycon tval) env evdref lvar c, tval
 	in
 	let v = mkCast (cj.uj_val, k, tval) in
 	  { uj_val = v; uj_type = tval }

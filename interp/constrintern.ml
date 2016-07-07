@@ -481,9 +481,14 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
       let bl' = List.map (fun a -> BDRawDef a) bl' in
       env, bl' @ bl
   | LocalRawDef((loc,na as locna),def) ->
-      let indef = intern env def in
+     let indef = intern env def in
+     let term, ty =
+       match indef with
+       | GCast (loc, b, Misctypes.CastConv t) -> b, t
+       | _ -> indef, GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None)
+     in
       (push_name_env lvar (impls_term_list indef) env locna,
-       (BDRawDef ((loc,(na,Explicit,Some(indef),GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None)))))::bl)
+       (BDRawDef ((loc,(na,Explicit,Some(term),ty))))::bl)
   | LocalPattern (loc,p,ty) ->
       let tyc =
         match ty with
@@ -2034,11 +2039,13 @@ let interp_rawcontext_evars env evdref k bl =
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
+       let t' =
+	 if Option.is_empty b then locate_if_hole (loc_of_glob_constr t) na t
+	 else t
+       in
+       let t = understand_tcc_evars env evdref ~expected_type:IsType t' in
 	match b with
 	    None ->
-	      let t' = locate_if_hole (loc_of_glob_constr t) na t in
-	      let t =
-                understand_tcc_evars env evdref ~expected_type:IsType t' in
 	      let d = LocalAssum (na,t) in
 	      let impls =
 		if k == Implicit then
@@ -2048,8 +2055,8 @@ let interp_rawcontext_evars env evdref k bl =
 	      in
 		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
-	      let c = understand_judgment_tcc env evdref b in
-	      let d = LocalDef (na, c.uj_val, c.uj_type) in
+	      let c = understand_tcc_evars env evdref ~expected_type:(OfType t) b in
+	      let d = LocalDef (na, c, t) in
 		(push_rel d env, d::params, n, impls))
       (env,[],k+1,[]) (List.rev bl)
   in (env, par), impls
