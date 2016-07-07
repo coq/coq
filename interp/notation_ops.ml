@@ -233,8 +233,8 @@ let split_at_recursive_part c =
 let subtract_loc loc1 loc2 = Loc.make_loc (fst (Loc.unloc loc1),fst (Loc.unloc loc2)-1)
 
 let check_is_hole id = function GHole _ -> () | t ->
-  user_err_loc (loc_of_glob_constr t,"",
-    strbrk "In recursive notation with binders, " ++ pr_id id ++
+  user_err ~loc:(loc_of_glob_constr t) ""
+   (strbrk "In recursive notation with binders, " ++ pr_id id ++
     strbrk " is expected to come without type.")
 
 let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
@@ -283,8 +283,8 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	let loc1 = loc_of_glob_constr iterator in
 	let loc2 = loc_of_glob_constr (Option.get !terminator) in
 	(* Here, we would need a loc made of several parts ... *)
-	user_err_loc (subtract_loc loc1 loc2,"",
-          str "Both ends of the recursive pattern are the same.")
+	user_err ~loc:(subtract_loc loc1 loc2) ""
+          (str "Both ends of the recursive pattern are the same.")
     | Some (x,y,Some lassoc) ->
         let newfound,x,y,lassoc =
           if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
@@ -324,8 +324,8 @@ let notation_constr_and_vars_of_glob_constr a =
     | GApp (_,GVar (loc,f),[c]) when Id.equal f ldots_var ->
 	(* Fall on the second part of the recursive pattern w/o having
 	   found the first part *)
-	user_err_loc (loc,"",
-	str "Cannot find where the recursive pattern starts.")
+	user_err ~loc ""
+	(str "Cannot find where the recursive pattern starts.")
     | c ->
 	aux' c
   and aux' = function

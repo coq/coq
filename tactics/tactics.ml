@@ -423,7 +423,7 @@ let find_name mayrepl decl naming gl = match naming with
       let ids_of_hyps = Tacmach.New.pf_ids_of_hyps gl in
       let id' = next_ident_away id ids_of_hyps in
       if not mayrepl && not (Id.equal id' id) then
-        user_err_loc (loc,"",pr_id id ++ str" is already used.");
+        user_err ~loc "" (pr_id id ++ str" is already used.");
       id
 
 (**************************************************************)
@@ -2235,7 +2235,7 @@ let error_unexpected_extra_pattern loc bound pat =
   | IntroNaming (IntroIdentifier _) ->
       "name", (String.plural nb " introduction pattern"), "no"
   | _ -> "introduction pattern", "", "none" in
-  user_err_loc (loc,"",str "Unexpected " ++ str s1 ++ str " (" ++
+  user_err ~loc "" (str "Unexpected " ++ str s1 ++ str " (" ++
     (if Int.equal nb 0 then (str s3 ++ str s2) else
       (str "at most " ++ int nb ++ str s2)) ++ spc () ++
        str (if Int.equal nb 1 then "was" else "were") ++
@@ -2475,8 +2475,8 @@ and prepare_intros_loc loc with_evars dft destopt = function
           (fun _ l -> clear_wildcards l) in
       fun id ->
         intro_pattern_action loc with_evars true true ipat [] destopt tac id)
-  | IntroForthcoming _ -> user_err_loc
-      (loc,"",str "Introduction pattern for one hypothesis expected.")
+  | IntroForthcoming _ -> user_err ~loc ""
+      (str "Introduction pattern for one hypothesis expected.")
 
 let intro_patterns_bound_to with_evars n destopt =
   intro_patterns_core with_evars true [] [] [] destopt
@@ -2643,7 +2643,7 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       | IntroFresh heq_base -> fresh_id_in_env [id] heq_base env
       | IntroIdentifier id ->
           if List.mem id (ids_of_named_context (named_context env)) then
-            user_err_loc (loc,"",pr_id id ++ str" is already used.");
+            user_err ~loc "" (pr_id id ++ str" is already used.");
           id in
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
@@ -4392,7 +4392,7 @@ let induction_gen_l isrec with_evars elim names lc =
   let lc = List.map (function
     | (c,None) -> c
     | (c,Some(loc,eqname)) ->
-      user_err_loc (loc,"",str "Do not know what to do with " ++
+      user_err ~loc "" (str "Do not know what to do with " ++
                          Miscprint.pr_intro_pattern_naming eqname)) lc in
   let rec atomize_list l =
     match l with

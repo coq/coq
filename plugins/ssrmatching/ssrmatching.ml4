@@ -62,7 +62,7 @@ DECLARE PLUGIN "ssrmatching_plugin"
 type loc = Loc.t
 let dummy_loc = Loc.ghost
 let errorstrm = CErrors.errorlabstrm "ssrmatching"
-let loc_error loc msg = CErrors.user_err_loc (loc, msg, str msg)
+let loc_error loc msg = CErrors.user_err ~loc msg (str msg)
 let ppnl = Feedback.msg_info
 
 (* 0 cost pp function. Active only if env variable SSRDEBUG is set *)

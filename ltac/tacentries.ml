@@ -429,8 +429,8 @@ let register_ltac local tacl =
         let kn = Lib.make_kn id in
         let id_pp = pr_id id in
         let () = if is_defined_tac kn then
-          CErrors.user_err_loc (loc, "",
-            str "There is already an Ltac named " ++ id_pp ++ str".")
+          CErrors.user_err ~loc ""
+            (str "There is already an Ltac named " ++ id_pp ++ str".")
         in
         let is_shadowed =
           try
@@ -446,8 +446,8 @@ let register_ltac local tacl =
         let kn =
           try Nametab.locate_tactic (snd (qualid_of_reference ident))
           with Not_found ->
-            CErrors.user_err_loc (loc, "",
-                        str "There is no Ltac named " ++ pr_reference ident ++ str ".")
+            CErrors.user_err ~loc ""
+                       (str "There is no Ltac named " ++ pr_reference ident ++ str ".")
         in
         UpdateTac kn, body
   in

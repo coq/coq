@@ -64,43 +64,42 @@ let precatchable_exception = function
   | Nametab.GlobalizationError _ -> true
   | _ -> false
 
-let raise_pretype_error (loc,env,sigma,te) =
-  Loc.raise loc (PretypeError(env,sigma,te))
+let raise_pretype_error ?loc (env,sigma,te) =
+  Loc.raise ?loc (PretypeError(env,sigma,te))
 
-let raise_located_type_error (loc,env,sigma,te) =
-  Loc.raise loc (PretypeError(env,sigma,TypingError te))
+let raise_type_error ?loc (env,sigma,te) =
+  Loc.raise ?loc (PretypeError(env,sigma,TypingError te))
 
-
-let error_actual_type_loc loc env sigma {uj_val=c;uj_type=actty} expty reason =
+let error_actual_type ?loc env sigma {uj_val=c;uj_type=actty} expty reason =
   let j = {uj_val=c;uj_type=actty} in
-  raise_pretype_error
-    (loc, env, sigma, ActualTypeNotCoercible (j, expty, reason))
+  raise_pretype_error ?loc
+    (env, sigma, ActualTypeNotCoercible (j, expty, reason))
 
-let error_cant_apply_not_functional_loc loc env sigma rator randl =
-  raise_located_type_error
-    (loc, env, sigma, CantApplyNonFunctional (rator, Array.of_list randl))
+let error_cant_apply_not_functional ?loc env sigma rator randl =
+  raise_type_error ?loc
+    (env, sigma, CantApplyNonFunctional (rator, Array.of_list randl))
 
-let error_cant_apply_bad_type_loc loc env sigma (n,c,t) rator randl =
-  raise_located_type_error
-    (loc, env, sigma,
+let error_cant_apply_bad_type ?loc env sigma (n,c,t) rator randl =
+  raise_type_error ?loc
+    (env, sigma,
        CantApplyBadType ((n,c,t), rator, Array.of_list randl))
 
-let error_ill_formed_branch_loc loc env sigma c i actty expty =
-  raise_located_type_error
-    (loc, env, sigma, IllFormedBranch (c, i, actty, expty))
+let error_ill_formed_branch ?loc env sigma c i actty expty =
+  raise_type_error
+    ?loc (env, sigma, IllFormedBranch (c, i, actty, expty))
 
-let error_number_branches_loc loc env sigma cj expn =
-  raise_located_type_error (loc, env, sigma, NumberBranches (cj, expn))
+let error_number_branches ?loc env sigma cj expn =
+  raise_type_error ?loc (env, sigma, NumberBranches (cj, expn))
 
-let error_case_not_inductive_loc loc env sigma cj =
-  raise_located_type_error (loc, env, sigma, CaseNotInductive cj)
+let error_case_not_inductive ?loc env sigma cj =
+  raise_type_error ?loc (env, sigma, CaseNotInductive cj)
 
-let error_ill_typed_rec_body_loc loc env sigma i na jl tys =
-  raise_located_type_error
-    (loc, env, sigma, IllTypedRecBody (i, na, jl, tys))
+let error_ill_typed_rec_body ?loc env sigma i na jl tys =
+  raise_type_error ?loc
+    (env, sigma, IllTypedRecBody (i, na, jl, tys))
 
-let error_not_a_type_loc loc env sigma j =
-  raise_located_type_error (loc, env, sigma, NotAType j)
+let error_not_a_type ?loc env sigma j =
+  raise_type_error ?loc (env, sigma, NotAType j)
 
 (*s Implicit arguments synthesis errors. It is hard to find
     a precise location. *)
@@ -108,15 +107,12 @@ let error_not_a_type_loc loc env sigma j =
 let error_occur_check env sigma ev c =
   raise (PretypeError (env, sigma, UnifOccurCheck (ev,c)))
 
-let error_unsolvable_implicit loc env sigma evk explain =
-  Loc.raise loc
+let error_unsolvable_implicit ?loc env sigma evk explain =
+  Loc.raise ?loc
     (PretypeError (env, sigma, UnsolvableImplicit (evk, explain)))
 
-let error_cannot_unify_loc loc env sigma ?reason (m,n) =
-  Loc.raise loc (PretypeError (env, sigma,CannotUnify (m,n,reason)))
-
-let error_cannot_unify env sigma ?reason (m,n) =
-  raise (PretypeError (env, sigma,CannotUnify (m,n,reason)))
+let error_cannot_unify ?loc env sigma ?reason (m,n) =
+  Loc.raise ?loc (PretypeError (env, sigma,CannotUnify (m,n,reason)))
 
 let error_cannot_unify_local env sigma (m,n,sn) =
   raise (PretypeError (env, sigma,CannotUnifyLocal (m,n,sn)))
@@ -140,21 +136,21 @@ let error_non_linear_unification env sigma hdmeta t =
 
 (*s Ml Case errors *)
 
-let error_cant_find_case_type_loc loc env sigma expr =
-  raise_pretype_error (loc, env, sigma, CantFindCaseType expr)
+let error_cant_find_case_type ?loc env sigma expr =
+  raise_pretype_error ?loc (env, sigma, CantFindCaseType expr)
 
 (*s Pretyping errors *)
 
-let error_unexpected_type_loc loc env sigma actty expty =
-  raise_pretype_error (loc, env, sigma, UnexpectedType (actty, expty))
+let error_unexpected_type ?loc env sigma actty expty =
+  raise_pretype_error ?loc (env, sigma, UnexpectedType (actty, expty))
 
-let error_not_product_loc loc env sigma c =
-  raise_pretype_error (loc, env, sigma, NotProduct c)
+let error_not_product ?loc env sigma c =
+  raise_pretype_error ?loc (env, sigma, NotProduct c)
 
 (*s Error in conversion from AST to glob_constr *)
 
-let error_var_not_found_loc loc s =
-  raise_pretype_error (loc, empty_env, Evd.empty, VarNotFound s)
+let error_var_not_found ?loc s =
+  raise_pretype_error ?loc (empty_env, Evd.empty, VarNotFound s)
 
 (*s Typeclass errors *)
 
@@ -166,7 +162,7 @@ let unsatisfiable_constraints env evd ev comp =
   | Some ev ->
     let loc, kind = Evd.evar_source ev evd in
     let err = UnsatisfiableConstraints (Some (ev, kind), comp) in
-    Loc.raise loc (PretypeError (env,evd,err))
+    Loc.raise ~loc (PretypeError (env,evd,err))
 
 let unsatisfiable_exception exn =
   match exn with

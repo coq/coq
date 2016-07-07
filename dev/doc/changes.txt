@@ -1,4 +1,14 @@
 =========================================
+= CHANGES BETWEEN COQ V8.6 AND COQ V8.7 =
+=========================================
+
+** Error handling **
+
+All error functions now take an optional parameter `?loc:Loc.t`. For
+functions that used to carry a suffix `_loc`, such suffix has been
+dropped.
+
+=========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 

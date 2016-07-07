@@ -66,8 +66,8 @@ let existing_instance glob g pri =
     match class_of_constr r with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc pri glob 
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
-      | None -> user_err_loc (loc_of_reference g, "declare_instance",
-			     Pp.str "Constant does not build instances of a declared type class.")
+      | None -> user_err ~loc:(loc_of_reference g) "declare_instance"
+			    (Pp.str "Constant does not build instances of a declared type class.")
 
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m

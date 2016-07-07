@@ -36,12 +36,13 @@ val is_anomaly : exn -> bool
 exception UserError of string * std_ppcmds
 val error : string -> 'a
 val errorlabstrm : string -> std_ppcmds -> 'a
-val user_err_loc : Loc.t * string * std_ppcmds -> 'a
+
+val user_err     : ?loc:Loc.t -> string -> std_ppcmds -> 'a
 
 exception AlreadyDeclared of std_ppcmds
 val alreadydeclared : std_ppcmds -> 'a
 
-val invalid_arg_loc : Loc.t * string -> 'a
+val invalid_arg : ?loc:Loc.t -> string -> 'a
 
 (** [todo] is for running of an incomplete code its implementation is
    "do nothing" (or print a message), but this function should not be

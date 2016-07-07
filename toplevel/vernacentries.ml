@@ -380,9 +380,9 @@ let err_unmapped_library loc ?from qid =
   | Some from ->
     str " and prefix " ++ pr_dirpath from ++ str "."
   in
-  user_err_loc
-    (loc,"locate_library",
-     strbrk "Cannot find a physical path bound to logical path matching suffix " ++
+  user_err ~loc
+    "locate_library"
+    (strbrk "Cannot find a physical path bound to logical path matching suffix " ++
        pr_dirpath dir ++ prefix)
 
 let err_notfound_library loc ?from qid =
@@ -391,9 +391,8 @@ let err_notfound_library loc ?from qid =
   | Some from ->
     str " with prefix " ++ pr_dirpath from ++ str "."
   in
-  user_err_loc
-    (loc,"locate_library",
-     strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
+  user_err ~loc "locate_library"
+     (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
 
 let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
@@ -605,15 +604,15 @@ let vernac_combined_scheme lid l =
 
 let vernac_universe loc poly l =
   if poly && not (Lib.sections_are_opened ()) then
-    user_err_loc (loc, "vernac_universe",
-		  str"Polymorphic universes can only be declared inside sections, " ++
+    user_err ~loc "vernac_universe"
+		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
   do_universe poly l
 
 let vernac_constraint loc poly l =
   if poly && not (Lib.sections_are_opened ()) then
-    user_err_loc (loc, "vernac_constraint",
-		  str"Polymorphic universe constraints can only be declared"
+    user_err ~loc "vernac_constraint"
+		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
   do_constraint poly l
 
@@ -1575,8 +1574,8 @@ let global_module r =
   let (loc,qid) = qualid_of_reference r in
   try Nametab.full_name_module qid
   with Not_found ->
-    user_err_loc (loc, "global_module",
-      str "Module/section " ++ pr_qualid qid ++ str " not found.")
+    user_err ~loc "global_module"
+     (str "Module/section " ++ pr_qualid qid ++ str " not found.")
 
 let interp_search_restriction = function
   | SearchOutside l -> (List.map global_module l, true)

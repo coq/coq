@@ -96,7 +96,7 @@ let is_undo cmd = match cmd with
 (** Check whether a command is forbidden by CoqIDE *)
 
 let coqide_cmd_checks (loc,ast) =
-  let user_error s = CErrors.user_err_loc (loc, "CoqIde", str s) in
+  let user_error s = CErrors.user_err ~loc "CoqIde" (str s) in
   if is_debug ast then
     user_error "Debug mode not available within CoqIDE";
   if is_known_option ast then

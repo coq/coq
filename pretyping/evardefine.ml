@@ -135,7 +135,7 @@ let define_pure_evar_as_lambda env evd evk =
   let evd1,(na,dom,rng) = match kind_of_term typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd typ
-  | _ -> error_not_product_loc Loc.ghost env evd typ in
+  | _ -> error_not_product env evd typ in
   let avoid = ids_of_named_context (evar_context evi) in
   let id =
     next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd dom) in
@@ -191,7 +191,7 @@ let split_tycon loc env evd tycon =
 	| App (c,args) when isEvar c ->
 	    let (evd',lam) = define_evar_as_lambda env evd (destEvar c) in
 	    real_split evd' (mkApp (lam,args))
-	| _ -> error_not_product_loc loc env evd c
+	| _ -> error_not_product ~loc env evd c
   in
     match tycon with
       | None -> evd,(Anonymous,None,None)

@@ -202,8 +202,8 @@ let discard (loc,id) =
   let n = List.length !pstates in
   discard_gen id;
   if Int.equal (List.length !pstates) n then
-    CErrors.user_err_loc
-      (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs ())
+    CErrors.user_err ~loc
+      "Pfedit.delete_proof" (str"No such proof" ++ msg_proofs ())
 
 let discard_current () =
   if List.is_empty !pstates then raise NoCurrentProof else pstates := List.tl !pstates

@@ -26,9 +26,8 @@ let _ =
 let make_anomaly ?label pp =
   Anomaly (label, pp)
 
-let anomaly ?loc ?label pp = match loc with
-  | None -> raise (Anomaly (label, pp))
-  | Some loc -> Loc.raise loc (Anomaly (label, pp))
+let anomaly ?loc ?label pp =
+  Loc.raise ?loc (Anomaly (label, pp))
 
 let is_anomaly = function
 | Anomaly _ -> true
@@ -43,8 +42,8 @@ let alreadydeclared pps = raise (AlreadyDeclared(pps))
 
 let todo s = prerr_string ("TODO: "^s^"\n")
 
-let user_err_loc (loc,s,strm) = Loc.raise loc (UserError (s,strm))
-let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
+let user_err    ?loc s strm = Loc.raise ?loc (UserError (s,strm))
+let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
 
 exception Timeout
 exception Drop

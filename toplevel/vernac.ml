@@ -70,7 +70,7 @@ let disable_drop = function
   | Drop -> CErrors.error "Drop is forbidden."
   | e -> e
 
-let user_error loc s = CErrors.user_err_loc (loc,"_",str s)
+let user_error loc s = CErrors.user_err ~loc "_" (str s)
 
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.

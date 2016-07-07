@@ -175,7 +175,7 @@ let build_newrecursive l =
        match body_opt with 
 	 | Some body -> 
 	     (fixna,bll,ar,body)
-	 | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given")
+	 | None -> user_err "Function" (str "Body of Function must be given")
     ) l
   in
   build_newrecursive l'
@@ -391,7 +391,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
   match fixpoint_exprl with
     | [(((_,fname),pl),_,bl,ret_type,body),_] when not is_rec ->
-      let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
+      let body = match body with | Some body -> body | None -> user_err "Function" (str "Body of Function must be given") in 
       Command.do_definition
 	fname
 	(Decl_kinds.Global,(Flags.is_universe_polymorphism ()),Decl_kinds.Definition) pl
@@ -630,7 +630,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	      | _ -> assert false
 	  in 
 	  let fixpoint_exprl = [fixpoint_expr] in 
-	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
+	  let body = match body with | Some body -> body | None -> user_err "Function" (str "Body of Function must be given") in 
 	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in 
 	  let pre_hook pconstants =
@@ -656,7 +656,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	  let fixpoint_exprl = [fixpoint_expr] in 
 	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in
-	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
+	  let body = match body with | Some body -> body | None -> user_err "Function" (str "Body of Function must be given") in 
 	  let pre_hook pconstants =
 	    generate_principle
 	      (ref (Evd.from_env (Global.env ())))

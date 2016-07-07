@@ -172,14 +172,14 @@ let check_or_and_pattern_size check_and loc names branchsigns =
   let n = Array.length branchsigns in
   let msg p1 p2 = strbrk "a conjunctive pattern made of " ++ int p1 ++ (if p1 == p2 then mt () else str " or " ++ int p2) ++ str " patterns" in
   let err1 p1 p2 =
-    user_err_loc (loc,"",str "Expects " ++ msg p1 p2 ++ str ".") in
+    user_err ~loc "" (str "Expects " ++ msg p1 p2 ++ str ".") in
   let errn n =
-    user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n
+    user_err ~loc "" (str "Expects a disjunctive pattern with " ++ int n
 	++ str " branches.") in
   let err1' p1 p2 =
-    user_err_loc (loc,"",strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
+    user_err ~loc "" (strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
   let errforthcoming loc =
-    user_err_loc (loc,"",strbrk "Unexpected non atomic pattern.") in
+    user_err ~loc "" (strbrk "Unexpected non atomic pattern.") in
   match names with
   | IntroAndPattern l ->
       if not (Int.equal n 1) then errn n;
@@ -508,7 +508,7 @@ module New = struct
     | [] -> ()
     | (evk,evi) :: _ ->
       let (loc,_) = evi.Evd.evar_source in
-      Pretype_errors.error_unsolvable_implicit loc env sigma evk None
+      Pretype_errors.error_unsolvable_implicit ~loc env sigma evk None
 
   let tclWITHHOLES accept_unresolved_holes tac sigma =
     tclEVARMAP >>= fun sigma_initial ->

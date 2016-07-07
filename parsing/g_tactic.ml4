@@ -135,9 +135,9 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
   let _ = Option.map (fun (aloc,_) ->
-    user_err_loc
-      (aloc,"Constr:mk_cofix_tac",
-       Pp.str"Annotation forbidden in cofix expression.")) ann in
+    user_err ~loc:aloc
+      "Constr:mk_cofix_tac"
+      (Pp.str"Annotation forbidden in cofix expression.")) ann in
   (id,CProdN(loc,bl,ty))
 
 (* Functions overloaded by quotifier *)
@@ -192,7 +192,7 @@ let merge_occurrences loc cl = function
   | None ->
       if Locusops.clause_with_generic_occurrences cl then (None, cl)
       else
-	user_err_loc (loc,"",str "Found an \"at\" clause without \"with\" clause.")
+	user_err ~loc "" (str "Found an \"at\" clause without \"with\" clause.")
   | Some (occs, p) ->
     let ans = match occs with
     | AllOccurrences -> cl
@@ -204,9 +204,9 @@ let merge_occurrences loc cl = function
         { cl with onhyps = Some [(occs, id), l] }
       | _ ->
         if Locusops.clause_with_generic_occurrences cl then
-          user_err_loc (loc,"",str "Unable to interpret the \"at\" clause; move it in the \"in\" clause.")
+          user_err ~loc "" (str "Unable to interpret the \"at\" clause; move it in the \"in\" clause.")
         else
-          user_err_loc (loc,"",str "Cannot use clause \"at\" twice.")
+          user_err ~loc "" (str "Cannot use clause \"at\" twice.")
       end
     in
     (Some p, ans)

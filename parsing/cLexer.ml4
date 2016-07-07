@@ -106,7 +106,7 @@ let current_file = ref ""
 let set_current_file ~fname =
   current_file := fname
 
-let err loc str = Loc.raise (Compat.to_coqloc loc) (Error.E str)
+let err loc str = Loc.raise ~loc:(Compat.to_coqloc loc) (Error.E str)
 
 let bad_token str = raise (Error.E (Bad_token str))
 

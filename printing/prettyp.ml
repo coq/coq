@@ -700,7 +700,7 @@ let read_sec_context r =
   let dir =
     try Nametab.locate_section qid
     with Not_found ->
-      user_err_loc (loc,"read_sec_context", str "Unknown section.") in
+      user_err ~loc "read_sec_context" (str "Unknown section.") in
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
         if DirPath.equal dir dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest

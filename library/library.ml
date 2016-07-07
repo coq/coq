@@ -572,8 +572,8 @@ let require_library_from_dirpath modrefl export =
 let safe_locate_module (loc,qid) =
   try Nametab.locate_module qid
   with Not_found ->
-    user_err_loc
-      (loc,"import_library", pr_qualid qid ++ str " is not a module")
+    user_err ~loc "import_library"
+      (pr_qualid qid ++ str " is not a module")
 
 let import_module export modl =
   (* Optimization: libraries in a raw in the list are imported
@@ -597,8 +597,8 @@ let import_module export modl =
             flush acc;
             try Declaremods.import_module export mp; aux [] l
             with Not_found ->
-              user_err_loc (loc,"import_library",
-                pr_qualid dir ++ str " is not a module"))
+              user_err ~loc "import_library"
+                (pr_qualid dir ++ str " is not a module"))
     | [] -> flush acc
   in aux [] modl
 
