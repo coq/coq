@@ -136,3 +136,18 @@ Inductive I : nat -> Type := C : I 0 | D : I 0.
 Goal ~C=D.
 congruence.
 Qed.
+
+(* Example by Jonathan Leivant, congruence up to universes *)
+Section JLeivant.
+  Variables S1 S2 : Set.
+
+  Definition T1 : Type := S1.
+  Definition T2 : Type := S2.
+
+  Goal T1 = T1.
+    congruence.
+    Undo.
+    unfold T1.
+    congruence.
+  Qed.
+End JLeivant.
