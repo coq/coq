@@ -20,6 +20,12 @@ Other bugfixes
 - #4818: "Admitted" fails due to undefined universe anomaly after calling
   "destruct"
 - #4823: remote counter: avoid thread race on sockets
+- #4841: -verbose flag changed semantics in 8.5, is much harder to use
+- #4851: [nsatz] cannot handle duplicated hypotheses
+- #4858: Anomaly: Uncaught exception Failure("hd"). Please report. in variant
+  of nsatz
+- #4880: [nsatz_compute] generates invalid certificates if given redundant
+  hypotheses
 - #4881: synchronizing "Declare Implicit Tactic" with backtrack.
 - #4882: anomaly with Declare Implicit Tactic on hole of type with evars
 - Fix use of "Declare Implicit Tactic" in refine.
