@@ -164,7 +164,7 @@ Proof.
   split; auto using eq_sig_eq_dep, eq_dep_eq_sig.
 Qed.
 
-(** Dependent equality is equivalent tco a dependent pair of equalities *)
+(** Dependent equality is equivalent to a dependent pair of equalities *)
 
 Set Implicit Arguments.
 
