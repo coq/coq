@@ -195,7 +195,7 @@ let warn_projection_no_head_constant =
           ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
 
 (* Intended to always succeed *)
-let compute_canonical_projections (con,ind) =
+let compute_canonical_projections warn (con,ind) =
   let env = Global.env () in
   let ctx = Univ.instantiate_univ_context (Environ.constant_context env con) in
   let u = Univ.UContext.instance ctx in
@@ -222,7 +222,7 @@ let compute_canonical_projections (con,ind) =
 		 with Not_found ->
                      let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con)
                       and proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
-                     warn_projection_no_head_constant (t,con_pp,proji_sp_pp);
+                     if warn then warn_projection_no_head_constant (t,con_pp,proji_sp_pp);
                    l
 	       end
 	   | _ -> l)
@@ -246,9 +246,8 @@ let warn_redundant_canonical_projection =
           ++ strbrk " by " ++ prj ++ strbrk " in "
           ++ new_can_s ++ strbrk ": redundant with " ++ old_can_s)
 
-let open_canonical_structure i (_,o) =
-  if Int.equal i 1 then
-    let lo = compute_canonical_projections o in
+let add_canonical_structure warn o =
+    let lo = compute_canonical_projections warn o in
     List.iter (fun ((proj,(cs_pat,_ as pat)),s) ->
       let l = try Refmap.find proj !object_table with Not_found -> [] in
       let ocs = try Some (assoc_pat cs_pat l)
@@ -260,11 +259,14 @@ let open_canonical_structure i (_,o) =
               and new_can_s = (Termops.print_constr s.o_DEF) in
               let prj = (Nametab.pr_global_env Id.Set.empty proj)
               and hd_val = (pr_cs_pattern cs_pat) in
-              warn_redundant_canonical_projection (hd_val,prj,new_can_s,old_can_s))
+              if warn then warn_redundant_canonical_projection (hd_val,prj,new_can_s,old_can_s))
           lo
 
-let cache_canonical_structure o =
-  open_canonical_structure 1 o
+let open_canonical_structure i (_, o) =
+  if Int.equal i 1 then add_canonical_structure false o
+
+let cache_canonical_structure (_, o) =
+  add_canonical_structure true o
 
 let subst_canonical_structure (subst,(cst,ind as obj)) =
   (* invariant: cst is an evaluable reference. Thus we can take *)
