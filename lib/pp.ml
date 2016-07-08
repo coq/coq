@@ -204,7 +204,7 @@ let pr_loc_pos loc =
     int (fst loc) ++ str"-" ++ int (snd loc)
 
 let pr_loc loc =
-  if Loc.is_ghost loc then str"<unknown>"
+  if Loc.is_ghost loc then str"<unknown>" ++ fnl ()
   else
     let fname = loc.Loc.fname in
     if CString.equal fname "" then
