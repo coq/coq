@@ -59,7 +59,13 @@ DEPENDENCIES := \
 
 # Variables meant to be modifiable via the command-line of make
 
-VERBOSE=
+# If you do:
+#
+#   VERBOSE=1 make
+#
+# then instead of shortened version of the commands run by make
+# you will see the actual commands.
+
 NO_RECOMPILE_ML4=
 NO_RECALC_DEPS=
 READABLE_ML4=	# non-empty means .ml of .ml4 will be ascii instead of binary
@@ -90,8 +96,13 @@ BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
 # or only abbreviated versions. 
 # Quiet mode is ON by default except if VERBOSE=1 option is given to make
 
-SHOW := $(if $(VERBOSE),@true "",@echo "")
-HIDE := $(if $(VERBOSE),,@)
+ifdef VERBOSE
+SHOW := @true ""
+HIDE :=
+else
+SHOW := @echo ""
+HIDE := @
+endif
 
 LOCALINCLUDES=$(addprefix -I , $(SRCDIRS) )
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
