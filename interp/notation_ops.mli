@@ -23,7 +23,7 @@ val subst_interpretation :
 
 val ldots_var : Id.t
 
-(** {5 Translation back and forth between [glob_constr] and [notation_constr] *)
+(** {5 Translation back and forth between [glob_constr] and [notation_constr]} *)
 
 (** Translate a [glob_constr] into a notation given the list of variables
     bound by the notation; also interpret recursive patterns           *)
@@ -40,7 +40,7 @@ val glob_constr_of_notation_constr_with_binders : Loc.t ->
 
 val glob_constr_of_notation_constr : Loc.t -> notation_constr -> glob_constr
 
-(** {5 Matching a notation pattern against a [glob_constr] *)
+(** {5 Matching a notation pattern against a [glob_constr]} *)
 
 (** [match_notation_constr] matches a [glob_constr] against a notation
     interpretation; raise [No_match] if the matching fails   *)
@@ -64,5 +64,5 @@ val match_notation_constr_ind_pattern :
   ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) *
     (int * cases_pattern list)
 
-(** {5 Matching a notation pattern against a [glob_constr] *)
+(** {5 Matching a notation pattern against a [glob_constr]} *)
 
