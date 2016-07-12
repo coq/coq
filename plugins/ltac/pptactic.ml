@@ -768,15 +768,15 @@ type 'a extra_genarg_printer =
             primitive "cofix" ++ spc () ++ pr_id id ++ spc()
             ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_cofix_tac l
           )
-        | TacAssert (b,Some tac,ipat,c) ->
+        | TacAssert (ev,b,Some tac,ipat,c) ->
           hov 1 (
-            primitive (if b then "assert" else "enough") ++
+            primitive (if b then if ev then "eassert" else "assert" else if ev then "eenough" else "enough") ++
               pr_assumption pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c ++
               pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
           )
-        | TacAssert (_,None,ipat,c) ->
+        | TacAssert (ev,_,None,ipat,c) ->
           hov 1 (
-            primitive "pose proof"
+            primitive (if ev then "epose proof" else "pose proof")
             ++ pr_assertion pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c
           )
         | TacGeneralize l ->

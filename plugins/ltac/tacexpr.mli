@@ -141,7 +141,7 @@ type 'a gen_atomic_tactic_expr =
   | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
   | TacMutualCofix of Id.t * (Id.t * 'trm) list
   | TacAssert of
-      bool * 'tacexpr option option *
+      evars_flag * bool * 'tacexpr option option *
       'dtrm intro_pattern_expr located option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *

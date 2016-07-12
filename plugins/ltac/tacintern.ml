@@ -489,8 +489,8 @@ let rec intern_atomic lf ist x =
   | TacMutualCofix (id,l) ->
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
-  | TacAssert (b,otac,ipat,c) ->
-      TacAssert (b,Option.map (Option.map (intern_pure_tactic ist)) otac,
+  | TacAssert (ev,b,otac,ipat,c) ->
+      TacAssert (ev,b,Option.map (Option.map (intern_pure_tactic ist)) otac,
                  Option.map (intern_intro_pattern lf ist) ipat,
                  intern_constr_gen false (not (Option.is_empty otac)) ist c)
   | TacGeneralize cl ->
