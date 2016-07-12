@@ -118,7 +118,7 @@ help:
 	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
 	@echo
-	@echo "If you want camlp{4,5} to generate human-readable files, add NO_RECOMPILE_ML4=1"
+	@echo "If you want camlp{4,5} to generate human-readable files, add READABLE_ML4=1"
 
 UNSAVED_FILES:=$(shell find . -name '.\#*v' -o -name '.\#*.ml' -o -name '.\#*.ml?')
 ifdef UNSAVED_FILES
