@@ -497,9 +497,9 @@ let rec intern_atomic lf ist x =
       TacGeneralize (List.map (fun (c,na) ->
 	               intern_constr_with_occurrences ist c,
                        intern_name lf ist na) cl)
-  | TacLetTac (na,c,cls,b,eqpat) ->
+  | TacLetTac (ev,na,c,cls,b,eqpat) ->
       let na = intern_name lf ist na in
-      TacLetTac (na,intern_constr ist c,
+      TacLetTac (ev,na,intern_constr ist c,
                  (clause_app (intern_hyp_location ist) cls),b,
 		 (Option.map (intern_intro_pattern_naming_loc lf ist) eqpat))
 

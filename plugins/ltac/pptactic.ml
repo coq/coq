@@ -786,11 +786,11 @@ type 'a extra_genarg_printer =
               pr_with_occurrences pr.pr_constr cl ++ pr_as_name na)
               l
           )
-        | TacLetTac (na,c,cl,true,_) when Locusops.is_nowhere cl ->
-          hov 1 (primitive "pose" ++ pr_pose pr.pr_constr pr.pr_lconstr na c)
-        | TacLetTac (na,c,cl,b,e) ->
+        | TacLetTac (ev,na,c,cl,true,_) when Locusops.is_nowhere cl ->
+          hov 1 (primitive (if ev then "epose" else "pose") ++ pr_pose pr.pr_constr pr.pr_lconstr na c)
+        | TacLetTac (ev,na,c,cl,b,e) ->
           hov 1 (
-            (if b then primitive "set" else primitive "remember") ++
+            primitive (if b then if ev then "eset" else "set" else if ev then "eremember" else "remember") ++
               (if b then pr_pose pr.pr_constr pr.pr_lconstr na c
                 else pr_pose_as_style pr.pr_constr na c) ++
               pr_opt (fun p -> pr_eqn_ipat p ++ spc ()) e ++

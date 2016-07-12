@@ -1751,36 +1751,37 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (TacGeneralize cl)
           (Tactics.generalize_gen cl)) sigma
       end }
-  | TacLetTac (na,c,clp,b,eqpat) ->
+  | TacLetTac (ev,na,c,clp,b,eqpat) ->
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let clp = interp_clause ist env sigma clp in
         let eqpat = interp_intro_pattern_naming_option ist env sigma eqpat in
-        if Locusops.is_nowhere clp then
+        if Locusops.is_nowhere clp (* typically "pose" *) then
         (* We try to fully-typecheck the term *)
-          let (sigma,c_interp) = interp_constr ist env sigma c in
+          let flags = open_constr_use_classes_flags () in
+          let (sigma,c_interp) = interp_open_constr ~flags ist env sigma c in
           let let_tac b na c cl eqpat =
             let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_tac with_eq na c None cl
           in
           let na = interp_name ist env sigma na in
-          Tacticals.New.tclWITHHOLES false
+          Tacticals.New.tclWITHHOLES ev
           (name_atomic ~env
-            (TacLetTac(na,c_interp,clp,b,eqpat))
+            (TacLetTac(ev,na,c_interp,clp,b,eqpat))
             (let_tac b na c_interp clp eqpat)) sigma
         else
         (* We try to keep the pattern structure as much as possible *)
           let let_pat_tac b na c cl eqpat =
             let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_pat_tac with_eq na c cl
+            Tactics.letin_pat_tac ev with_eq na c cl
           in
           let (sigma',c) = interp_pure_open_constr ist env sigma c in
           name_atomic ~env
-            (TacLetTac(na,c,clp,b,eqpat))
-	    (Tacticals.New.tclWITHHOLES false (*in hope of a future "eset/epose"*)
+            (TacLetTac(ev,na,c,clp,b,eqpat))
+	    (Tacticals.New.tclWITHHOLES ev
                (let_pat_tac b (interp_name ist env sigma na)
                   (sigma,c) clp eqpat) sigma')
       end }

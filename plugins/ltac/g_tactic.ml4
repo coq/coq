@@ -538,16 +538,27 @@ GEXTEND Gram
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd))
 
       | IDENT "pose"; (id,b) = bindings_with_parameters ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (Names.Name id,b,Locusops.nowhere,true,None))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name id,b,Locusops.nowhere,true,None))
       | IDENT "pose"; b = constr; na = as_name ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (na,b,Locusops.nowhere,true,None))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,b,Locusops.nowhere,true,None))
+      | IDENT "epose"; (id,b) = bindings_with_parameters ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name id,b,Locusops.nowhere,true,None))
+      | IDENT "epose"; b = constr; na = as_name ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,b,Locusops.nowhere,true,None))
       | IDENT "set"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (Names.Name id,c,p,true,None))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name id,c,p,true,None))
       | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (na,c,p,true,None))
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,c,p,true,None))
+      | IDENT "eset"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name id,c,p,true,None))
+      | IDENT "eset"; c = constr; na = as_name; p = clause_dft_concl ->
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,c,p,true,None))
       | IDENT "remember"; c = constr; na = as_name; e = eqn_ipat;
           p = clause_dft_all ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (na,c,p,false,e))
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,c,p,false,e))
+      | IDENT "eremember"; c = constr; na = as_name; e = eqn_ipat;
+          p = clause_dft_all ->
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,c,p,false,e))
 
       (* Alternative syntax for "pose proof c as id" *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
