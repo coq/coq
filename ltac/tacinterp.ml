@@ -388,8 +388,6 @@ let interp_ident ist env sigma id =
   try try_interp_ltac_var (coerce_var_to_ident false env) ist (Some (env,sigma)) (dloc,id)
   with Not_found -> id
 
-let pf_interp_ident id gl = interp_ident id (pf_env gl) (project gl)
-
 (* Interprets an optional identifier, bound or fresh *)
 let interp_name ist env sigma = function
   | Anonymous -> Anonymous
@@ -696,9 +694,6 @@ let interp_typed_pattern ist env sigma (_,c,_) =
   pattern_of_constr env sigma c
 
 (* Interprets a constr expression *)
-let pf_interp_constr ist gl =
-  interp_constr ist (pf_env gl) (project gl)
-
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
   let try_expand_ltac_var sigma x =
     try match dest_fun x with
@@ -719,10 +714,6 @@ let interp_constr_list ist env sigma c =
 
 let interp_open_constr_list =
   interp_constr_in_compound_list (fun x -> x) (fun x -> x) interp_open_constr
-
-(* Interprets a type expression *)
-let pf_interp_type ist env sigma =
-  interp_type ist env sigma
 
 (* Interprets a reduction expression *)
 let interp_unfold ist env sigma (occs,qid) =
@@ -1220,7 +1211,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
          end
   | TacAbstract (tac,ido) ->
       Proofview.Goal.nf_enter { enter = begin fun gl -> Tactics.tclABSTRACT
-        (Option.map (pf_interp_ident ist gl) ido) (interp_tactic ist tac)
+        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist tac)
       end }
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
@@ -1706,7 +1697,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
         let env = pf_env gl in
         let f sigma (id,n,c) =
-          let (sigma,c_interp) = pf_interp_type ist env sigma c in
+          let (sigma,c_interp) = interp_type ist env sigma c in
 	  sigma , (interp_ident ist env sigma id,n,c_interp) in
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
@@ -1721,7 +1712,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
         let env = pf_env gl in
         let f sigma (id,c) =
-	  let (sigma,c_interp) = pf_interp_type ist env sigma c in
+	  let (sigma,c_interp) = interp_type ist env sigma c in
 	  sigma , (interp_ident ist env sigma id,c_interp) in
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
@@ -1763,7 +1754,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let eqpat = interp_intro_pattern_naming_option ist env sigma eqpat in
         if Locusops.is_nowhere clp then
         (* We try to fully-typecheck the term *)
-          let (sigma,c_interp) = pf_interp_constr ist gl c in
+          let (sigma,c_interp) = interp_constr ist env sigma c in
           let let_tac b na c cl eqpat =
             let id = Option.default (Loc.ghost,IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
@@ -1914,7 +1905,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           match c with
           | None -> sigma , None
           | Some c ->
-              let (sigma,c_interp) = pf_interp_constr ist gl c in
+              let (sigma,c_interp) = interp_constr ist env sigma c in
               sigma , Some c_interp
         in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
