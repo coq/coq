@@ -371,8 +371,7 @@ and extract_really_ind env kn mib =
     let packets =
       Array.mapi
 	(fun i mip ->
-	   let (ind,u), ctx = 
-	     Universes.fresh_inductive_instance env (kn,i) in
+	   let (_,u),_ = Universes.fresh_inductive_instance env (kn,i) in
 	   let ar = Inductive.type_of_inductive env ((mib,mip),u) in
 	   let info = (fst (flag_of_type env ar) = Info) in
 	   let s,v = if info then type_sign_vl env ar else [],[] in
@@ -591,10 +590,10 @@ let rec extract_term env mle mlt c args =
 	with NotDefault d ->
 	  let mle' = Mlenv.push_std_type mle (Tdummy d) in
 	  ast_pop (extract_term env' mle' mlt c2 args'))
-    | Const (kn,u) ->
-	extract_cst_app env mle mlt kn u args
-    | Construct (cp,u) ->
-	extract_cons_app env mle mlt cp u args
+    | Const (kn,_) ->
+	extract_cst_app env mle mlt kn args
+    | Construct (cp,_) ->
+	extract_cons_app env mle mlt cp args
     | Proj (p, c) ->
         let term = Retyping.expand_projection env (Evd.from_env env) p c [] in
 	  extract_term env mle mlt term args
@@ -645,7 +644,7 @@ and make_mlargs env e s args typs =
 
 (*s Extraction of a constant applied to arguments. *)
 
-and extract_cst_app env mle mlt kn u args =
+and extract_cst_app env mle mlt kn args =
   (* First, the [ml_schema] of the constant, in expanded version. *)
   let nb,t = record_constant_type env kn None in
   let schema = nb, expand env t in
@@ -718,7 +717,7 @@ and extract_cst_app env mle mlt kn u args =
    they are fixed, and thus are not used for the computation.
    \end{itemize} *)
 
-and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) u args =
+and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   (* First, we build the type of the constructor, stored in small pieces. *)
   let mi = extract_ind env kn in
   let params_nb = mi.ind_nparams in
