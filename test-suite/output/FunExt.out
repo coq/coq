@@ -1,0 +1,15 @@
+The command has indeed failed with message:
+Ltac call to "extensionality" failed.
+Tactic failure: Not a non-dependent hypothesis.
+The command has indeed failed with message:
+Ltac call to "extensionality" failed.
+Tactic failure: Not an extensional equality.
+The command has indeed failed with message:
+Ltac call to "extensionality" failed.
+Tactic failure: Not an extensional equality.
+The command has indeed failed with message:
+Ltac call to "extensionality" failed.
+Tactic failure: Not a non-dependent hypothesis.
+The command has indeed failed with message:
+Ltac call to "extensionality" failed.
+Tactic failure: Not an extensional equality.
