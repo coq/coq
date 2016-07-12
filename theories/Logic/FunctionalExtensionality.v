@@ -68,6 +68,25 @@ Tactic Notation "extensionality" ident(x) :=
      apply forall_extensionality) ; intro x
   end.
 
+(** Iteratively apply [functional_extensionality] on an hypothesis
+    until finding an equality statement *)
+
+Tactic Notation "extensionality" "in" hyp(H) :=
+  let rec iter_fun_ext :=
+    lazymatch type of H with
+    | _ = _ => exact H
+    | forall x, _ =>
+      eapply functional_extensionality_dep; intro x;
+      (specialize (H x) || fail "Not a non-dependent hypothesis"); iter_fun_ext
+    | _ => fail "Not an extensional equality"
+    end in
+  let H' := fresh "H" in
+  simple refine (let H' := _ in _);
+  [shelve|
+   iter_fun_ext|
+   clearbody H'; move H' before H;
+   (clear H; rename H' into H) || fail "Not a non-dependent hypothesis"].
+
 (** Eta expansion follows from extensionality. *)
 
 Lemma eta_expansion_dep {A} {B : A -> Type} (f : forall x : A, B x) :
