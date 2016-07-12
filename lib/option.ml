@@ -188,4 +188,14 @@ module List =
 	 |None -> find f t
 	 |x -> x
 
+  let map f l =
+    let rec aux f l = match l with
+    | [] -> []
+    | x :: l ->
+      match f x with
+      | None -> raise Exit
+      | Some y -> y :: aux f l
+    in
+    try Some (aux f l) with Exit -> None
+
 end

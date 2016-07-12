@@ -123,4 +123,10 @@ module List : sig
   val flatten : 'a option list -> 'a list
 
   val find : ('a -> 'b option) -> 'a list -> 'b option
+
+  (** [List.map f [a1;...;an]] is the list [Some [b1;...;bn]] if
+      for all i, there is a [bi] such that [f ai] is [Some bi]; it is
+      [None] if, for at least one i, [f ai] is [None]. *)
+  val map : ('a -> 'b option) -> 'a list -> 'b list option
+
 end
