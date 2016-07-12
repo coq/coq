@@ -159,7 +159,7 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean ml4depclean depclean cleanconfig distclean voclean devdocclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean devdocclean
 
 clean: objclean cruftclean depclean docclean devdocclean
 
@@ -219,9 +219,6 @@ clean-ide:
 
 ml4clean:
 	rm -f $(GENML4FILES)
-
-ml4depclean:
-	find . -name '*.ml4.d' | xargs rm -f
 
 depclean:
 	find . $(FIND_VCS_CLAUSE) '(' -name '*.d' ')' -print | xargs rm -f
