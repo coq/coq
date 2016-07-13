@@ -134,7 +134,7 @@ ltac: ltac/ltac.cma
 ######################
 
 init: $(filter theories/Init/%, $(THEORIESVO))
-logic: $(filter theories/Logic/%, %(THEORIESVO))
+logic: $(filter theories/Logic/%, $(THEORIESVO))
 arith: $(filter theories/Arith/%, $(THEORIESVO))
 bool: $(filter theories/Bool/%, $(THEORIESVO))
 parith: $(filter theories/PArith/%, $(THEORIESVO))
