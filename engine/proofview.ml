@@ -366,8 +366,9 @@ let _ = CErrors.register_handler begin function
   | NoSuchGoals n ->
     let suffix = !nosuchgoals_hook n in
     CErrors.errorlabstrm ""
-      (str "No such " ++ str (String.plural n "goal") ++ str "." ++ suffix)
-  | _ -> raise CErrors.Unhandled
+      (str "No such " ++ str (String.plural n "goal") ++ str "." ++
+       pr_non_empty_arg (fun x -> x) suffix)
+      | _ -> raise CErrors.Unhandled
 end
 
 (** [tclFOCUS_gen nosuchgoal i j t] applies [t] in a context where

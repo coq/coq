@@ -298,7 +298,9 @@ Ltac nsatz_call_n info nparam p rr lp kont :=
   match goal with
   | |- (?c::PEpow _ ?r::?lq0)::?lci0 = _ -> _ =>
     intros _;
+    let lci := fresh "lci" in
     set (lci:=lci0);
+    let lq := fresh "lq" in
     set (lq:=lq0);
     kont c rr lq lci
   end.
@@ -380,10 +382,13 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
     end in 
 
   SplitPolyList ltac:(fun p lp =>
+    let p21 := fresh "p21" in
+    let lp21 := fresh "lp21" in
     set (p21:=p) ;
     set (lp21:=lp);
 (*    idtac "nparam:"; idtac nparam; idtac "p:"; idtac p; idtac "lp:"; idtac lp; *)
     nsatz_call radicalmax info nparam p lp ltac:(fun c r lq lci => 
+      let q := fresh "q" in
       set (q := PEmul c (PEpow p21 r)); 
       let Hg := fresh "Hg" in 
       assert (Hg:check lp21 q (lci,lq) = true); 

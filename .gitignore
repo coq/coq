@@ -119,10 +119,6 @@ g_*.ml
 
 ide/project_file.ml
 parsing/compat.ml
-grammar/q_util.ml
-grammar/tacextend.ml
-grammar/vernacextend.ml
-grammar/argextend.ml
 parsing/cLexer.ml
 ltac/coretactics.ml
 ltac/extratactics.ml
@@ -162,3 +158,4 @@ dev/myinclude
 /doc/refman/Reference-Manual.optind
 
 user-contrib
+.*.sw*

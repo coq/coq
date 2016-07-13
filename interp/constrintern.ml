@@ -481,9 +481,14 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
       let bl' = List.map (fun a -> BDRawDef a) bl' in
       env, bl' @ bl
   | LocalRawDef((loc,na as locna),def) ->
-      let indef = intern env def in
+     let indef = intern env def in
+     let term, ty =
+       match indef with
+       | GCast (loc, b, Misctypes.CastConv t) -> b, t
+       | _ -> indef, GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None)
+     in
       (push_name_env lvar (impls_term_list indef) env locna,
-       (BDRawDef ((loc,(na,Explicit,Some(indef),GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None)))))::bl)
+       (BDRawDef ((loc,(na,Explicit,Some(term),ty))))::bl)
   | LocalPattern (loc,p,ty) ->
       let tyc =
         match ty with
@@ -1609,11 +1614,13 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 	    (merge_impargs l args) loc
 
     | CRecord (loc, fs) ->
-	let fields =
-	  sort_fields ~complete:true loc fs
-	    (fun _idx -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true)), Misctypes.IntroAnonymous, None))
-	in
-	begin
+       let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
+       let fields =
+	 sort_fields ~complete:true loc fs
+	             (fun _idx -> CHole (loc, Some (Evar_kinds.QuestionMark st),
+                                                 Misctypes.IntroAnonymous, None))
+       in
+       begin
 	  match fields with
 	    | None -> user_err_loc (loc, "intern", str"No constructor inference.")
 	    | Some (n, constrname, args) ->
@@ -1683,7 +1690,9 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
         GIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k, naming, solve) ->
         let k = match k with
-        | None -> Evar_kinds.QuestionMark (Evar_kinds.Define true)
+        | None ->
+           let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
+           Evar_kinds.QuestionMark st
         | Some k -> k
         in
         let solve = match solve with
@@ -2030,11 +2039,13 @@ let interp_rawcontext_evars env evdref k bl =
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
+       let t' =
+	 if Option.is_empty b then locate_if_hole (loc_of_glob_constr t) na t
+	 else t
+       in
+       let t = understand_tcc_evars env evdref ~expected_type:IsType t' in
 	match b with
 	    None ->
-	      let t' = locate_if_hole (loc_of_glob_constr t) na t in
-	      let t =
-                understand_tcc_evars env evdref ~expected_type:IsType t' in
 	      let d = LocalAssum (na,t) in
 	      let impls =
 		if k == Implicit then
@@ -2044,8 +2055,8 @@ let interp_rawcontext_evars env evdref k bl =
 	      in
 		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
-	      let c = understand_judgment_tcc env evdref b in
-	      let d = LocalDef (na, c.uj_val, c.uj_type) in
+	      let c = understand_tcc_evars env evdref ~expected_type:(OfType t) b in
+	      let d = LocalDef (na, c, t) in
 		(push_rel d env, d::params, n, impls))
       (env,[],k+1,[]) (List.rev bl)
   in (env, par), impls

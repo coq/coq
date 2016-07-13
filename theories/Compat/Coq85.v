@@ -8,6 +8,10 @@
 
 (** Compatibility file for making Coq act similar to Coq v8.5 *)
 
+(** Any compatibility changes to make future versions of Coq behave like Coq 8.6
+    are likely needed to make them behave like Coq 8.5. *)
+Require Export Coq.Compat.Coq86.
+
 (* In 8.5, "intros [|]", taken e.g. on a goal "A\/B->C", does not
    behave as "intros [H|H]" but leave instead hypotheses quantified in
    the goal, here producing subgoals A->C and B->C. *)

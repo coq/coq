@@ -179,7 +179,7 @@ let display_cmd_header loc com =
      str " [" ++ str cmd ++ str "] ")
 
 
-let rec vernac_com verbose checknav (loc,com) =
+let rec vernac_com checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
@@ -193,7 +193,7 @@ let rec vernac_com verbose checknav (loc,com) =
           end;
 	begin
 	  try
-            read_vernac_file verbosely f;
+            Flags.silently (read_vernac_file verbosely) f;
 	    restore_translator_coqdoc st;
 	  with reraise ->
             let reraise = CErrors.push reraise in
@@ -203,7 +203,7 @@ let rec vernac_com verbose checknav (loc,com) =
 
     | v when !just_parsing -> ()
 
-    | v -> Stm.interp verbose (loc,v)
+    | v -> Stm.interp (Flags.is_verbose()) (loc,v)
   in
     try
       checknav loc com;
@@ -232,7 +232,7 @@ and read_vernac_file verbosely s =
     while true do
       let loc_ast = parse_sentence input in
       CWarnings.set_current_loc (fst loc_ast);
-      vernac_com verbosely checknav loc_ast
+      vernac_com checknav loc_ast;
     done
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
@@ -256,7 +256,7 @@ let checknav loc ast =
   if is_deep_navigation_vernac ast then
     user_error loc "Navigation commands forbidden in nested commands"
 
-let eval_expr loc_ast = vernac_com (Flags.is_verbose()) checknav loc_ast
+let eval_expr loc_ast = vernac_com checknav loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()

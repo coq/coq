@@ -47,7 +47,8 @@ let refresh_level evd s =
   | None -> true
   | Some l -> not (Evd.is_flexible_level evd l)
 
-let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) pbty env evd t =
+let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
+		      pbty env evd t =
   let evdref = ref evd in
   let modified = ref false in
   let rec refresh status dir t = 
@@ -62,6 +63,10 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) pbty env evd t =
       else set_leq_sort env !evdref s s'
     in
       modified := true; evdref := evd; mkSort s'
+    | Sort (Prop Pos as s) when refreshset && not dir ->
+       let s' = evd_comb0 (new_sort_variable status) evdref in
+       let evd = set_leq_sort env !evdref s s' in
+       modified := true; evdref := evd; mkSort s'
     | Prod (na,u,v) -> 
       mkProd (na,u,refresh status dir v)
     | _ -> t

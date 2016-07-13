@@ -16,6 +16,7 @@ open Evd
 type recursion_scheme_error =
   | NotAllowedCaseAnalysis of (*isrec:*) bool * sorts * pinductive
   | NotMutualInScheme of inductive * inductive
+  | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
 exception RecursionSchemeError of recursion_scheme_error
 
@@ -28,13 +29,15 @@ type dep_flag = bool
 val build_case_analysis_scheme : env -> 'r Sigma.t -> pinductive ->
       dep_flag -> sorts_family -> (constr, 'r) Sigma.sigma
 
-(** Build a dependent case elimination predicate unless type is in Prop *)
+(** Build a dependent case elimination predicate unless type is in Prop
+   or is a recursive record with primitive projections. *)
 
 val build_case_analysis_scheme_default : env -> 'r Sigma.t -> pinductive ->
       sorts_family -> (constr, 'r) Sigma.sigma
 
 (** Builds a recursive induction scheme (Peano-induction style) in the same
-   sort family as the inductive family; it is dependent if not in Prop *)
+   sort family as the inductive family; it is dependent if not in Prop
+   or a recursive record with primitive projections.  *)
 
 val build_induction_scheme : env -> evar_map -> pinductive ->
       dep_flag -> sorts_family -> evar_map * constr

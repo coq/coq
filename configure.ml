@@ -13,7 +13,7 @@ open Printf
 
 let coq_version = "trunk"
 let coq_macos_version = "8.4.90" (** "[...] should be a string comprised of
-three non-negative, period-separed integers [...]" *)
+three non-negative, period-separated integers [...]" *)
 let vo_magic = 8511
 let state_magic = 58511
 let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqmktop";"coqworkmgr";
@@ -934,7 +934,7 @@ let print_summary () =
   pr "\n";
   pr "  Architecture                : %s\n" arch;
   if operating_system <> "" then
-    pr "  Operating system          : %s\n" operating_system;
+    pr "  Operating system            : %s\n" operating_system;
   pr "  Coq VM bytecode link flags  : %s\n" (String.concat " " vmbyteflags);
   pr "  Other bytecode link flags   : %s\n" custom_flag;
   pr "  OS dependent libraries      : %s\n" osdeplibs;

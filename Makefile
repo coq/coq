@@ -117,6 +117,8 @@ help:
 	@echo "or make archclean"
 	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
+	@echo
+	@echo "If you want camlp{4,5} to generate human-readable files, add READABLE_ML4=1"
 
 UNSAVED_FILES:=$(shell find . -name '.\#*v' -o -name '.\#*.ml' -o -name '.\#*.ml?')
 ifdef UNSAVED_FILES
@@ -157,7 +159,7 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean ml4depclean depclean cleanconfig distclean voclean devdocclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean devdocclean
 
 clean: objclean cruftclean depclean docclean devdocclean
 
@@ -217,9 +219,6 @@ clean-ide:
 
 ml4clean:
 	rm -f $(GENML4FILES)
-
-ml4depclean:
-	find . -name '*.ml4.d' | xargs rm -f
 
 depclean:
 	find . $(FIND_VCS_CLAUSE) '(' -name '*.d' ')' -print | xargs rm -f

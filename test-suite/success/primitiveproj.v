@@ -47,7 +47,9 @@ Check _.(next) : option Y.
 Lemma eta_ind (y : Y) : y = Build_Y y.(next).
 Proof. Fail reflexivity. Abort.
 
+Inductive Fdef := { Fa : nat ; Fb := Fa; Fc : Fdef }.
 
+Fail Scheme Fdef_rec := Induction for Fdef Sort Prop.
 
 (* 
   Rules for parsing and printing of primitive projections and their eta expansions.
