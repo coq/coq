@@ -220,7 +220,7 @@ CINCLUDES= -I $(CAMLHLIB)
 
 $(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN)
 	cd $(dir $(LIBCOQRUN)) && \
-	$(OCAMLFIND) ocamlmklib -oc $(COQRUN) $(foreach u,$(BYTERUN),$(notdir $(u)))
+	$(OCAMLFIND) ocamlmklib -oc $(COQRUN) $(notdir $(BYTERUN))
 
 kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&coq_lbl_\1/gp' \
