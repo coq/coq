@@ -517,27 +517,24 @@ let rec subordinate_letins letins = function
   | [] ->
       letins,[]
 
-let rec subst_iterator y t = function
-  | GVar (_,id) as x -> if Id.equal id y then t else x
-  | x -> map_glob_constr (subst_iterator y t) x
-
 let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
   let (terms,termlists,binders) = subst in
   (* when called while defining a notation, avoid capturing the private binders
      of the expression by variables bound by the notation (see #3892) *)
   let avoid = Id.Map.domain ntnvars in
-  let rec aux (terms,binderopt as subst') (renaming,env) c =
+  let rec aux (terms,binderopt,terminopt as subst') (renaming,env) c =
     let subinfos = renaming,{env with tmp_scope = None} in
     match c with
+    | NVar id when Id.equal id ldots_var -> Option.get terminopt
     | NVar id -> subst_var subst' (renaming, env) id
     | NList (x,_,iter,terminator,lassoc) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (l,(scopt,subscopes)) = Id.Map.find x termlists in
-        let termin = aux subst' subinfos terminator in
+        let termin = aux (terms,None,None) subinfos terminator in
         let fold a t =
           let nterms = Id.Map.add x (a, (scopt, subscopes)) terms in
-          subst_iterator ldots_var t (aux (nterms, binderopt) subinfos iter)
+          aux (nterms,None,Some t) subinfos iter
         in
 	List.fold_right fold (if lassoc then List.rev l else l) termin
       with Not_found ->
@@ -582,10 +579,9 @@ let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
 	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
 	let env,bl = List.fold_left (intern_local_binder_aux intern lvar) (env,[]) bl in
 	let letins,bl = subordinate_letins [] bl in
-        let termin = aux subst' (renaming,env) terminator in
+        let termin = aux (terms,None,None) (renaming,env) terminator in
 	let res = List.fold_left (fun t binder ->
-          subst_iterator ldots_var t
-	    (aux (terms,Some(x,binder)) subinfos iter))
+	    aux (terms,Some(x,binder),Some t) subinfos iter)
 	  termin bl in
 	make_letins letins res
       with Not_found ->
@@ -610,7 +606,7 @@ let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
     | t ->
       glob_constr_of_notation_constr_with_binders loc
         (traverse_binder subst avoid) (aux subst') subinfos t
-  and subst_var (terms, binderopt) (renaming, env) id =
+  and subst_var (terms, _binderopt, _terminopt) (renaming, env) id =
     (* subst remembers the delimiters stack in the interpretation *)
     (* of the notations *)
     try
@@ -623,7 +619,7 @@ let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
     with Not_found ->
       (* Happens for local notation joint with inductive/fixpoint defs *)
       GVar (loc,id)
-  in aux (terms,None) infos c
+  in aux (terms,None,None) infos c
 
 let split_by_type ids =
   List.fold_right (fun (x,(scl,typ)) (l1,l2,l3) ->

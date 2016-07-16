@@ -107,3 +107,6 @@ Notation traverse_var f l := (traverse (fun l => f l) l).
 
 Notation "'intros' x" := (S x) (at level 0).
 Goal True -> True. intros H. exact H. Qed.
+
+(* Check absence of collision on ".." in nested notations with ".." *)
+Notation "[ a , .. , b ]" := (a, (.. (b,tt) ..)).
