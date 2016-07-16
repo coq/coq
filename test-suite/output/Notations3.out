@@ -1,0 +1,8 @@
+[<0, 2 >]
+     : nat * nat * (nat * nat)
+[<0, 2 >]
+     : nat * nat * (nat * nat)
+(0, 2, (2, 2))
+     : nat * nat * (nat * nat)
+pair (pair O (S (S O))) (pair (S (S O)) O)
+     : prod (prod nat nat) (prod nat nat)

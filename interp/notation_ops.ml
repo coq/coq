@@ -284,7 +284,7 @@ let compare_recursive_parts found f (iterator,subc) =
 	user_err_loc (subtract_loc loc1 loc2,"",
           str "Both ends of the recursive pattern are the same.")
     | Some (x,y,Some lassoc) ->
-	let newfound = (pi1 !found, (x,y) :: pi2 !found, pi3 !found) in
+        let newfound = (pi1 !found, (x,y) :: pi2 !found, pi3 !found) in
 	let iterator =
 	  f (if lassoc then subst_glob_vars [y,GVar(Loc.ghost,x)] iterator
 	  else iterator) in
@@ -614,6 +614,9 @@ let add_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var v =
   (* TODO: handle the case of multiple occs in different scopes *)
   ((var,v)::terms,onlybinders,termlists,binderlists)
 
+let add_termlist_env (terms,onlybinders,termlists,binderlists) var vl =
+  (terms,onlybinders,(var,vl)::termlists,binderlists)
+
 let add_binding_env alp (terms,onlybinders,termlists,binderlists) var v =
   (* TODO: handle the case of multiple occs in different scopes *)
   (terms,(var,v)::onlybinders,termlists,binderlists)
@@ -641,6 +644,24 @@ let bind_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
         if glob_constr_eq v v' then sigma
         else raise No_match
   with Not_found -> add_env alp sigma var v
+
+let bind_termlist_env (terms,onlybinders,termlists,binderlists as sigma) var vl =
+  try
+    let vl' = Id.List.assoc var termlists in
+    let unify_term v v' =
+      match v, v' with
+      | GHole _, _ -> v'
+      | _, GHole _ -> v
+      | _, _ -> if glob_constr_eq v v' then v' else raise No_match in
+    let rec unify vl vl' =
+      match vl, vl' with
+      | [], [] -> []
+      | v :: vl, v' :: vl' -> unify_term v v' :: unify vl vl'
+      | _ -> raise No_match in
+    let vl = unify vl vl' in
+    let sigma = (terms,onlybinders,Id.List.remove_assoc var termlists,binderlists) in
+    add_termlist_env sigma var vl
+  with Not_found -> add_termlist_env sigma var vl
 
 let bind_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
   try
@@ -823,7 +844,7 @@ let match_alist match_fun metas sigma rest x iter termin lassoc =
     (* registered for binders *)
     bind_bindinglist_as_term_env sigma x (if lassoc then l else List.rev l)
   else
-    (terms,onlybinders,(x,if lassoc then l else List.rev l)::termlists, binderlists)
+    bind_termlist_env sigma x (if lassoc then l else List.rev l)
 
 let does_not_come_from_already_eta_expanded_var =
   (* This is hack to avoid looping on a rule with rhs of the form *)
