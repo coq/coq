@@ -589,6 +589,14 @@ Notation "[| t * ( x , y , .. , z ) ; ( a , b , .. , c )  * u |]" :=
   (t at level 39).
 \end{coq_example*}
 
+Recursive patterns can occur several times on the right-hand side.
+Here is an example:
+
+\begin{coq_example*}
+Notation "[> a , .. , b <]" :=
+  (cons a .. (cons b nil) .., cons b .. (cons a nil) ..).
+\end{coq_example*}
+
 Notations with recursive patterns can be reserved like standard
 notations, they can also be declared within interpretation scopes (see
 section \ref{scopes}).
@@ -634,7 +642,16 @@ empty. Here is an example of recursive notation with closed binders:
 \begin{coq_example*}
 Notation "'mylet' f x .. y :=  t 'in' u":=
   (let f := fun x => .. (fun y => t) .. in u)
-  (x closed binder, y closed binder, at level 200, right associativity).
+  (at level 200, x closed binder, y closed binder, right associativity).
+\end{coq_example*}
+
+A recursive pattern for binders can be used in position of a recursive
+pattern for terms. Here is an example:
+
+\begin{coq_example*}
+Notation ``'FUNAPP' x .. y , f'' :=
+  (fun x => .. (fun y => (.. (f x) ..) y ) ..)
+  (at level 200, x binder, y binder, right associativity).
 \end{coq_example*}
 
 \subsection{Summary}

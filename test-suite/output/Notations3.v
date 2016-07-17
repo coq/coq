@@ -32,3 +32,7 @@ Check ETA x y, Nat.add.
 Unset Printing Notations.
 Check ETA (x:nat) (y:nat), Nat.add.
 Set Printing Notations.
+Check ETA x y, le_S.
+
+Notation "'CURRY' x .. y , f" := (fun x => .. (fun y => f (x, .. (y,tt) ..)) ..) (at level 200, x binder, y binder).
+Check fun f => CURRY (x:nat) (y:bool), f.

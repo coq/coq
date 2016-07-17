@@ -25,3 +25,10 @@ ETA x y : nat, Nat.add
      : nat -> nat -> nat
 fun x y : nat => Nat.add x y
      : forall (_ : nat) (_ : nat), nat
+ETA x y : nat, le_S
+     : forall x y : nat, x <= y -> x <= S y
+fun f : forall x : nat * (bool * unit), ?T => CURRY (x : nat) (y : bool), f
+     : (forall x : nat * (bool * unit), ?T) ->
+       forall (x : nat) (y : bool), ?T@{x:=(x, (y, tt))}
+where
+?T : [x : nat * (bool * unit) |- Type] 
