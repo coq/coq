@@ -490,9 +490,6 @@ GEXTEND Gram
     [ [ "by"; tac = tactic_expr LEVEL "3" -> Some tac
     | -> None ] ]
   ;
-  rename :
-    [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
-  ;
   rewriter :
     [ [ "!"; c = constr_with_bindings_arg -> (RepeatPlus,c)
       | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (RepeatStar,c)
@@ -517,12 +514,6 @@ GEXTEND Gram
         | [c,pat,None],Some _,Some _ -> ([c,pat,cl_tolerance],el)
         | _,_,Some _ -> err ()
         | _,_,None -> (ic,el) ]]
-  ;
-  move_location:
-    [ [ IDENT "after"; id = id_or_meta -> MoveAfter id
-      | IDENT "before"; id = id_or_meta -> MoveBefore id
-      | "at"; IDENT "top" -> MoveFirst
-      | "at"; IDENT "bottom" -> MoveLast ] ]
   ;
   simple_tactic:
     [ [
