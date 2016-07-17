@@ -44,6 +44,8 @@ val bound_glob_vars : glob_constr -> Id.Set.t
 val loc_of_glob_constr : glob_constr -> Loc.t
 val glob_visible_short_qualid : glob_constr -> Id.t list
 
+val rename_glob_vars : (Id.t * Id.t) list -> glob_constr -> glob_constr
+
 (** [map_pattern_binders f m c] applies [f] to all the binding names
     in a pattern-matching expression ({!Glob_term.GCases}) represented
     here by its relevant components [m] and [c]. It is used to

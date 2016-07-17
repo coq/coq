@@ -616,7 +616,9 @@ let add_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var v =
      glob_constr_eq in bind_term_env to be postponed in match_notation_constr, and the
      choice of exact variable be done there; but again, this would be a non-trivial
      refinement *)
-  if alpmetas != [] then raise No_match;
+  let v =
+    if alpmetas == [] then v
+    else try rename_glob_vars alpmetas v with Not_found -> raise No_match in
   (* TODO: handle the case of multiple occs in different scopes *)
   ((var,v)::terms,onlybinders,termlists,binderlists)
 
@@ -668,6 +670,19 @@ let bind_termlist_env (terms,onlybinders,termlists,binderlists as sigma) var vl 
     let sigma = (terms,onlybinders,Id.List.remove_assoc var termlists,binderlists) in
     add_termlist_env sigma var vl
   with Not_found -> add_termlist_env sigma var vl
+
+let bind_term_as_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var id =
+  try
+    match Id.List.assoc var terms with
+    | GVar (_,id') ->
+       (if not (Id.equal id id') then (fst alp,(id,id')::snd alp) else alp),
+       sigma
+    | _ -> anomaly (str "A term which can be a binder has to be a variable")
+  with Not_found ->
+    (* The matching against a term allowing to find the instance has not been found yet *)
+    (* If it will be a different name, we shall unfortunately fail *)
+    (* TODO: look at the consequences for alp *)
+    alp, add_env alp sigma var (GVar (Loc.ghost,id))
 
 let bind_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
   try
@@ -772,8 +787,8 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
       bind_binding_env alp sigma id2 na1
   | (Name id1,Name id2) when is_term_meta id2 metas ->
       (* We let the non-binding occurrence define the rhs and hence reason up to *)
-      (* alpha-conversion for the given occurrence of the name (see #)) *)
-      (fst alp,(id1,id2)::snd alp), sigma
+      (* alpha-conversion for the given occurrence of the name (see #4592)) *)
+      bind_term_as_binding_env alp sigma id2 id1
   | (Anonymous,Name id2) when is_term_meta id2 metas ->
       (* We let the non-binding occurrence define the rhs *)
       alp, sigma

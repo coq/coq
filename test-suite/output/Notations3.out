@@ -32,3 +32,9 @@ fun f : forall x : nat * (bool * unit), ?T => CURRY (x : nat) (y : bool), f
        forall (x : nat) (y : bool), ?T@{x:=(x, (y, tt))}
 where
 ?T : [x : nat * (bool * unit) |- Type] 
+forall n : nat, {#n | 1 > n}
+     : Prop
+forall x : nat, {|x | x > 0|}
+     : Prop
+exists2 x : nat, x = 1 & x = 2
+     : Prop

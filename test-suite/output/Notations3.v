@@ -36,3 +36,16 @@ Check ETA x y, le_S.
 
 Notation "'CURRY' x .. y , f" := (fun x => .. (fun y => f (x, .. (y,tt) ..)) ..) (at level 200, x binder, y binder).
 Check fun f => CURRY (x:nat) (y:bool), f.
+
+(**********************************************************************)
+(* Notations with variables bound both as a term and as a binder      *)
+(* This is #4592 *)
+
+Notation "{# x | P }" := (ex2 (fun y => x = y) (fun x => P)).
+Check forall n:nat, {# n | 1 > n}.
+
+Parameter foo : forall {T}(x : T)(P : T -> Prop), Prop.
+Notation "{| x | P |}" := (foo x (fun x => P)).
+Check forall x:nat, {| x | x > 0 |}.
+
+Check ex2 (fun x => x=1) (fun x0 => x0=2).
