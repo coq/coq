@@ -5,6 +5,6 @@ intro.
 Fail
   let H :=
     match goal with
-    | [ H : appcontext G [@eq _ _] |- _ ] => let H' := context G[@plus 2] in H'
+    | [ H : context G [@eq _ _] |- _ ] => let H' := context G[@plus 2] in H'
     end
   in pose H.

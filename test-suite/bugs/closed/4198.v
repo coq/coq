@@ -11,7 +11,7 @@ Goal forall A (x x' : A) (xs xs' : list A) (H : x::xs = x'::xs'),
   simpl.
   intros.
   match goal with
-    | [ |- appcontext G[@hd] ] => idtac
+    | [ |- context G[@hd] ] => idtac
   end.
 
 (* This second example comes from CFGV where inspecting subterms of a

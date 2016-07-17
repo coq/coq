@@ -93,7 +93,7 @@ End S.
 Ltac jump_simpl :=
   repeat
     match goal with
-      | |- appcontext [jump xH] => rewrite (jump_simpl xH)
-      | |- appcontext [jump (xO ?p)] => rewrite (jump_simpl (xO p))
-      | |- appcontext [jump (xI ?p)] => rewrite (jump_simpl (xI p))
+      | |- context [jump xH] => rewrite (jump_simpl xH)
+      | |- context [jump (xO ?p)] => rewrite (jump_simpl (xO p))
+      | |- context [jump (xI ?p)] => rewrite (jump_simpl (xI p))
     end.

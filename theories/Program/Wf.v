@@ -211,7 +211,7 @@ Ltac fold_sub f :=
   match goal with
     | [ |- ?T ] =>
       match T with
-        appcontext C [ @Fix_sub _ _ _ _ _ ?arg ] =>
+        context C [ @Fix_sub _ _ _ _ _ ?arg ] =>
         let app := context C [ f arg ] in
           change app
       end

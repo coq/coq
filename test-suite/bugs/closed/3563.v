@@ -16,11 +16,11 @@ Goal forall (H H0 H1 : Type) (H2 : H1) (H3 : H1 -> H * H0)
        transport (fun y : H1 -> H * H0 => H5 (fst (y H2))) H4 H6 = H7.
   intros.
   match goal with
-    | [ |- appcontext ctx [transport (fun y => (?g (@fst ?C ?h (y H2)))) H4 H6] ]
+    | [ |- context ctx [transport (fun y => (?g (@fst ?C ?h (y H2)))) H4 H6] ]
       => set(foo:=h); idtac
   end.
   match goal with
-    | [ |- appcontext ctx [transport (fun y => (?g (fst (y H2))))] ]
+    | [ |- context ctx [transport (fun y => (?g (fst (y H2))))] ]
       => idtac
   end.
 Abort.
@@ -30,7 +30,7 @@ Goal forall (H H0 H1 : Type) (H2 : H1) (H3 : H1 -> (H1 -> H) * H0)
        transport (fun y : H1 -> (H1 -> H) * H0 => H5 (fst (y H2) H2)) H4 H6 = H7.
   intros.
   match goal with
-    | [ |- appcontext ctx [transport (fun y => (?g (@fst ?C ?D (y H2) ?X)))] ]
+    | [ |- context ctx [transport (fun y => (?g (@fst ?C ?D (y H2) ?X)))] ]
       => set(foo:=X)
   end.
 (* Anomaly: Uncaught exception Not_found(_). Please report. *)

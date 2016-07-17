@@ -95,10 +95,10 @@ Goal forall (T : Type) (T0 : T -> T -> Type)
                            | tt => idpath
                          end)) (x1; p) = (x1; p).
 intros.
-let F := match goal with |- appcontext[@transport _ (fun x0 => @?F x0) _ _ (@path_forall ?H ?X ?T ?f ?g ?e)] => constr:(F) end in
-let H := match goal with |- appcontext[@transport _ (fun x0 => @?F x0) _ _ (@path_forall ?H ?X ?T ?f ?g ?e)] => constr:(H) end in
-let X := match goal with |- appcontext[@transport _ (fun x0 => @?F x0) _ _ (@path_forall ?H ?X ?T ?f ?g ?e)] => constr:(X) end in
-let T := match goal with |- appcontext[@transport _ (fun x0 => @?F x0) _ _ (@path_forall ?H ?X ?T ?f ?g ?e)] => constr:(T) end in
+let F := match goal with |- context[@transport _ (fun x0 => @?F x0) _ _ (@path_forall ?H ?X ?T ?f ?g ?e)] => constr:(F) end in
+let H := match goal with |- context[@transport _ (fun x0 => @?F x0) _ _ (@path_forall ?H ?X ?T ?f ?g ?e)] => constr:(H) end in
+let X := match goal with |- context[@transport _ (fun x0 => @?F x0) _ _ (@path_forall ?H ?X ?T ?f ?g ?e)] => constr:(X) end in
+let T := match goal with |- context[@transport _ (fun x0 => @?F x0) _ _ (@path_forall ?H ?X ?T ?f ?g ?e)] => constr:(T) end in
 let t0 := fresh "t0" in
 let t1 := fresh "t1" in
 let T1 := lazymatch type of F with (?T -> _) -> _ => constr:(T) end in
@@ -116,7 +116,7 @@ let T1 := lazymatch type of F with (?T -> _) -> _ => constr:(T) end in
               let GL1' := fresh in
               set (GL0' := GL0);
 
-                let arg := match GL0 with appcontext[x0 ?arg] => constr:(arg) end in
+                let arg := match GL0 with context[x0 ?arg] => constr:(arg) end in
                 assert (t1 = arg) by (subst t1; reflexivity); subst t1;
                 pattern (x0 arg) in GL0';
                 match goal with
