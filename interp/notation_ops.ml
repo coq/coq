@@ -239,7 +239,7 @@ let check_is_hole id = function GHole _ -> () | t ->
 
 let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
 
-let compare_recursive_parts found f (iterator,subc) =
+let compare_recursive_parts found f f' (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
   let rec aux c1 c2 = match c1,c2 with
@@ -294,14 +294,14 @@ let compare_recursive_parts found f (iterator,subc) =
           else
             (pi1 !found, (x,y) :: pi2 !found, pi3 !found),x,y,lassoc in
 	let iterator =
-	  f (if lassoc then subst_glob_vars [y,GVar(Loc.ghost,x)] iterator
+	  f' (if lassoc then subst_glob_vars [y,GVar(Loc.ghost,x)] iterator
 	  else iterator) in
 	(* found have been collected by compare_constr *)
 	found := newfound;
 	NList (x,y,iterator,f (Option.get !terminator),lassoc)
     | Some (x,y,None) ->
 	let newfound = (pi1 !found, pi2 !found, (x,y) :: pi3 !found) in
-	let iterator = f iterator in
+	let iterator = f' iterator in
 	(* found have been collected by compare_constr *)
 	found := newfound;
 	NBinderList (x,y,iterator,f (Option.get !terminator))
@@ -313,7 +313,7 @@ let notation_constr_and_vars_of_glob_constr a =
   let rec aux c =
     let keepfound = !found in
     (* n^2 complexity but small and done only once per notation *)
-    try compare_recursive_parts found aux' (split_at_recursive_part c)
+    try compare_recursive_parts found aux aux' (split_at_recursive_part c)
     with Not_found ->
     found := keepfound;
     match c with

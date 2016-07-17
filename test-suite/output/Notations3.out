@@ -17,3 +17,11 @@ pair (pair O (S (S O))) (pair (S (S O)) O)
 pair (pair (pair O (S (S O))) (S (S (S (S O)))))
   (pair (S (S (S (S O)))) (pair (S (S O)) O))
      : prod (prod (prod nat nat) nat) (prod nat (prod nat nat))
+ETA x y : nat, Nat.add
+     : nat -> nat -> nat
+ETA x y : nat, Nat.add
+     : nat -> nat -> nat
+ETA x y : nat, Nat.add
+     : nat -> nat -> nat
+fun x y : nat => Nat.add x y
+     : forall (_ : nat) (_ : nat), nat

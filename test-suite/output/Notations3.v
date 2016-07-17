@@ -19,3 +19,16 @@ Check (((0,2),4),(0,(2,4))).
 Unset Printing Notations.
 Check <<0,2,4>>.
 Set Printing Notations.
+
+(**********************************************************************)
+(* Check notations with recursive notations both in binders and terms *)
+
+Notation "'ETA' x .. y , f" :=
+  (fun x => .. (fun y => (.. (f x) ..) y ) ..)
+  (at level 200, x binder, y binder).
+Check ETA (x:nat) (y:nat), Nat.add.
+Check ETA (x y:nat), Nat.add.
+Check ETA x y, Nat.add.
+Unset Printing Notations.
+Check ETA (x:nat) (y:nat), Nat.add.
+Set Printing Notations.
