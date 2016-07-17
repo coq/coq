@@ -237,6 +237,8 @@ let check_is_hole id = function GHole _ -> () | t ->
     strbrk "In recursive notation with binders, " ++ pr_id id ++
     strbrk " is expected to come without type.")
 
+let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
+
 let compare_recursive_parts found f (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
@@ -284,7 +286,13 @@ let compare_recursive_parts found f (iterator,subc) =
 	user_err_loc (subtract_loc loc1 loc2,"",
           str "Both ends of the recursive pattern are the same.")
     | Some (x,y,Some lassoc) ->
-        let newfound = (pi1 !found, (x,y) :: pi2 !found, pi3 !found) in
+        let newfound,x,y,lassoc =
+          if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) then
+            !found,x,y,lassoc
+          else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi2 !found) then
+            !found,y,x,not lassoc
+          else
+            (pi1 !found, (x,y) :: pi2 !found, pi3 !found),x,y,lassoc in
 	let iterator =
 	  f (if lassoc then subst_glob_vars [y,GVar(Loc.ghost,x)] iterator
 	  else iterator) in
@@ -356,8 +364,6 @@ let notation_constr_and_vars_of_glob_constr a =
   let t = aux a in
   (* Side effect *)
   t, !found
-
-let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
 
 let check_variables nenv (found,foundrec,foundrecbinding) =
   let recvars = nenv.ninterp_rec_vars in

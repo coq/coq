@@ -10,3 +10,12 @@ Check ((0,2),(2,2)).
 Unset Printing Notations.
 Check [<0,2>].
 Set Printing Notations.
+
+Notation "<< x , y , .. , z >>" := ((.. (x,y) .., z),(z, .. (y,x) ..)).
+Check <<0,2,4>>.
+Check (((0,2),4),(4,(2,0))).
+Check (((0,2),4),(2,(2,0))).
+Check (((0,2),4),(0,(2,4))).
+Unset Printing Notations.
+Check <<0,2,4>>.
+Set Printing Notations.
