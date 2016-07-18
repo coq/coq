@@ -112,6 +112,24 @@ let try_convert s =
     "(* Fatal error: wrong encoding in input. \
 Please choose a correct encoding in the preference panel.*)";;
 
+let export file_name s =
+  let oc = open_out_bin file_name in
+  let ending = line_ending#get in
+  let is_windows = ref false in
+  for i = 0 to String.length s - 1 do
+    match s.[i] with
+    | '\r' -> is_windows := true
+    | '\n' ->
+      begin match ending with
+      | `DEFAULT ->
+        if !is_windows then (output_char oc '\r'; output_char oc '\n')
+        else output_char oc '\n'
+      | `WINDOWS -> output_char oc '\r'; output_char oc '\n'
+      | `UNIX -> output_char oc '\n'
+      end
+    | c -> output_char oc c
+  done;
+  close_out oc
 
 let try_export file_name s =
   let s =
@@ -134,11 +152,7 @@ let try_export file_name s =
       Minilib.log ("Error ("^str^") in transcoding: falling back to UTF-8");
       s
   in
-  try
-    let oc = open_out file_name in
-    output_string oc s;
-    close_out oc;
-    true
+  try export file_name s; true
   with e -> Minilib.log (Printexc.to_string e);false
 
 type timer = { run : ms:int -> callback:(unit->bool) -> unit;
