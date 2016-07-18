@@ -631,7 +631,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
     match c with
     | NVar id when Id.equal id ldots_var -> Option.get terminopt
     | NVar id -> subst_var subst' (renaming, env) id
-    | NList (x,_,iter,terminator,lassoc) ->
+    | NList (x,y,iter,terminator,lassoc) ->
       let l,(scopt,subscopes) =
         (* All elements of the list are in scopes (scopt,subscopes) *)
         try
@@ -646,7 +646,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
           anomaly (Pp.str "Inconsistent substitution of recursive notation") in
       let termin = aux (terms,None,None) subinfos terminator in
       let fold a t =
-        let nterms = Id.Map.add x (a, (scopt, subscopes)) terms in
+        let nterms = Id.Map.add y (a, (scopt, subscopes)) terms in
         aux (nterms,None,Some t) subinfos iter
       in
       List.fold_right fold l termin
@@ -684,7 +684,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
         Some arg
       in
       GHole (loc, knd, naming, arg)
-    | NBinderList (x,_,iter,terminator) ->
+    | NBinderList (x,y,iter,terminator) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
@@ -692,7 +692,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
 	let letins,bl = subordinate_letins intern [] bl in
         let termin = aux (terms,None,None) (renaming,env) terminator in
 	let res = List.fold_left (fun t binder ->
-	    aux (terms,Some(x,binder),Some t) subinfos iter)
+	    aux (terms,Some(y,binder),Some t) subinfos iter)
 	  termin bl in
 	make_letins letins res
       with Not_found ->
@@ -1349,7 +1349,7 @@ let drop_notations_pattern looked_for =
       RCPatCstr (loc, g,
 		 List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl @
 		 List.map (in_pat false scopes) args, [])
-    | NList (x,_,iter,terminator,lassoc) ->
+    | NList (x,y,iter,terminator,lassoc) ->
       if not (List.is_empty args) then user_err_loc
         (loc,"",strbrk "Application of arguments to a recursive notation not supported in patterns.");
       (try
@@ -1357,7 +1357,7 @@ let drop_notations_pattern looked_for =
 	 let (l,(scopt,subscopes)) = Id.Map.find x substlist in
          let termin = in_not top loc scopes fullsubst [] terminator in
 	 List.fold_right (fun a t ->
-           let nsubst = Id.Map.add x (a, (scopt, subscopes)) subst in
+           let nsubst = Id.Map.add y (a, (scopt, subscopes)) subst in
            let u = in_not false loc scopes (nsubst, substlist) [] iter in
            subst_pat_iterator ldots_var t u)
            (if lassoc then List.rev l else l) termin
