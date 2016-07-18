@@ -29,8 +29,7 @@ let _ = set_bool_option_value ["Printing";"Matching"] false
 let _ = Detyping.set_detype_anonymous (fun _ _ -> raise Not_found)
 
 (* std_ppcmds *)
-let pp   x = Feedback.msg_notice x
-let pppp x = Feedback.msg_notice x
+let pp   x = Pp.pp_with !Pp_control.std_ft x
 
 (** Future printer *)
 
@@ -316,7 +315,7 @@ let constr_display csr =
     | Anonymous -> "Anonymous"
 
   in
-  Feedback.msg_notice (str (term_display csr) ++fnl ())
+  pp (str (term_display csr) ++fnl ())
 
 open Format;;
 
@@ -514,7 +513,7 @@ let _ =
            (fun () -> in_current_context constr_display c)
        | _ -> failwith "Vernac extension: cannot occur")
   with
-    e -> Feedback.msg_notice (CErrors.print e)
+    e -> pp (CErrors.print e)
 let _ =
   extend_vernac_command_grammar ("PrintConstr", 0) None
     [GramTerminal "PrintConstr";
@@ -530,7 +529,7 @@ let _ =
            (fun () -> in_current_context print_pure_constr c)
        | _ -> failwith "Vernac extension: cannot occur")
   with
-    e -> Feedback.msg_notice (CErrors.print e)
+    e -> pp (CErrors.print e)
 let _ =
   extend_vernac_command_grammar ("PrintPureConstr", 0) None
     [GramTerminal "PrintPureConstr";
