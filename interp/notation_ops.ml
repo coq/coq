@@ -287,9 +287,13 @@ let compare_recursive_parts found f f' (iterator,subc) =
           str "Both ends of the recursive pattern are the same.")
     | Some (x,y,Some lassoc) ->
         let newfound,x,y,lassoc =
-          if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) then
+          if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
+             List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi3 !found)
+          then
             !found,x,y,lassoc
-          else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi2 !found) then
+          else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi2 !found) ||
+                  List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi3 !found)
+          then
             !found,y,x,not lassoc
           else
             (pi1 !found, (x,y) :: pi2 !found, pi3 !found),x,y,lassoc in

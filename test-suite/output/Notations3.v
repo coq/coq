@@ -34,8 +34,21 @@ Check ETA (x:nat) (y:nat), Nat.add.
 Set Printing Notations.
 Check ETA x y, le_S.
 
-Notation "'CURRY' x .. y , f" := (fun x => .. (fun y => f (x, .. (y,tt) ..)) ..) (at level 200, x binder, y binder).
+Notation "'CURRY' x .. y , f" := (fun x => .. (fun y => f (x, .. (y,tt) ..)) ..)
+  (at level 200, x binder, y binder).
 Check fun f => CURRY (x:nat) (y:bool), f.
+
+Notation "'CURRYINV' x .. y , f" := (fun x => .. (fun y => f (y, .. (x,tt) ..)) ..)
+  (at level 200, x binder, y binder).
+Check fun f => CURRYINV (x:nat) (y:bool), f.
+
+Notation "'CURRYLEFT' x .. y , f" := (fun x => .. (fun y => f (.. (tt,x) .., y)) ..)
+  (at level 200, x binder, y binder).
+Check fun f => CURRYLEFT (x:nat) (y:bool), f.
+
+Notation "'CURRYINVLEFT' x .. y , f" := (fun x => .. (fun y => f (.. (tt,y) .., x)) ..)
+  (at level 200, x binder, y binder).
+Check fun f => CURRYINVLEFT (x:nat) (y:bool), f.
 
 (**********************************************************************)
 (* Notations with variables bound both as a term and as a binder      *)
@@ -101,3 +114,4 @@ Check fun n => foo4 n (fun x y z => (fun _ => x=0) z).
 (* Not printable: y, z not allowed to occur in P *)
 Check fun n => foo4 n (fun x y z => (fun _ => z=0) z).
 Check fun n => foo4 n (fun x y z => (fun _ => y=0) z).
+
