@@ -38,3 +38,44 @@ forall x : nat, {|x | x > 0|}
      : Prop
 exists2 x : nat, x = 1 & x = 2
      : Prop
+fun n : nat =>
+foo2 n (fun x y z : nat => (fun _ _ _ : nat => x + y + z = 0) z y x)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun a b c : nat => (fun _ _ _ : nat => a + b + c = 0) c b a)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun n0 y z : nat => (fun _ _ _ : nat => n0 + y + z = 0) z y n0)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun x n0 z : nat => (fun _ _ _ : nat => x + n0 + z = 0) z n0 x)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun x y n0 : nat => (fun _ _ _ : nat => x + y + n0 = 0) n0 y x)
+     : nat -> Prop
+fun n : nat => {|n, y | fun _ _ _ : nat => n + y = 0 |}_2
+     : nat -> Prop
+fun n : nat => {|n, y | fun _ _ _ : nat => n + y = 0 |}_2
+     : nat -> Prop
+fun n : nat => {|n, n0 | fun _ _ _ : nat => n + n0 = 0 |}_2
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun x y z : nat => (fun _ _ _ : nat => x + y + n = 0) z y x)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun x y z : nat => (fun _ _ _ : nat => x + y + n = 0) z y x)
+     : nat -> Prop
+fun n : nat => {|n, fun _ : nat => 0 = 0 |}_3
+     : nat -> Prop
+fun n : nat => {|n, fun _ : nat => n = 0 |}_3
+     : nat -> Prop
+fun n : nat => foo3 n (fun x _ : nat => ETA z : nat, (fun _ : nat => x = 0))
+     : nat -> Prop
+fun n : nat => {|n, fun _ : nat => 0 = 0 |}_4
+     : nat -> Prop
+fun n : nat => {|n, fun _ : nat => n = 0 |}_4
+     : nat -> Prop
+fun n : nat => foo4 n (fun _ _ : nat => ETA z : nat, (fun _ : nat => z = 0))
+     : nat -> Prop
+fun n : nat => foo4 n (fun _ y : nat => ETA z : nat, (fun _ : nat => y = 0))
+     : nat -> Prop

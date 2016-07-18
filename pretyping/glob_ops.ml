@@ -487,14 +487,24 @@ let update_subst na l =
      else na,l)
     na (na,l)
 
+exception UnsoundRenaming
+
+let rename_var l id =
+  try
+    let id' = Id.List.assoc id l in
+    (* Check that no other earlier binding hide the one found *)
+    let _,(id'',_) = List.extract_first (fun (_,id) -> Id.equal id id') l in
+    if Id.equal id id'' then id' else raise UnsoundRenaming
+  with Not_found ->
+    if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
+    else id
+
 let rec rename_glob_vars l = function
   | GVar (loc,id) as r ->
-     (try GVar (loc,Id.List.assoc id l)
-      with Not_found ->
-      if List.exists (fun (_,id') -> Id.equal id id') l then raise Not_found
-      else r)
+      let id' = rename_var l id in
+      if id == id' then r else GVar (loc,id')
   | GRef (_,VarRef id,_) as r ->
-      if List.exists (fun (_,id') -> Id.equal id id') l then raise Not_found
+      if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
       else r
   | GProd (loc,na,bk,t,c) ->
       let na',l' = update_subst na l in

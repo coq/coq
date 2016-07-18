@@ -49,3 +49,55 @@ Notation "{| x | P |}" := (foo x (fun x => P)).
 Check forall x:nat, {| x | x > 0 |}.
 
 Check ex2 (fun x => x=1) (fun x0 => x0=2).
+
+(* Other tests about alpha-conversions: the following notation
+   contains all three kinds of bindings:
+
+   - x is bound in the lhs as a term and a binder: its name is forced
+     by its position as a term; it can bind variables in P
+   - y is bound in the lhs as a binder only: its name is given by its
+     name as a binder in the term to display; it can bind variables in P
+   - z is a binder local to the rhs; it cannot bind a variable in P
+*)
+
+Parameter foo2 : forall {T}(x : T)(P : T -> T -> T -> Prop), Prop.
+Notation "{| x , y | P |}_2" := (foo2 x (fun x y z => P z y x)).
+
+(* Not printable: z (resp c, n) occurs in P *)
+Check fun n => foo2 n (fun x y z => (fun _ _ _ => x+y+z=0) z y x).
+Check fun n => foo2 n (fun a b c => (fun _ _ _ => a+b+c=0) c b a).
+Check fun n => foo2 n (fun n y z => (fun _ _ _ => n+y+z=0) z y n).
+Check fun n => foo2 n (fun x n z => (fun _ _ _ => x+n+z=0) z n x).
+Check fun n => foo2 n (fun x y n => (fun _ _ _ => x+y+n=0) n y x).
+
+(* Printable *)
+Check fun n => foo2 n (fun x y z => (fun _ _ _ => x+y=0) z y x).
+Check fun n => foo2 n (fun n y z => (fun _ _ _ => n+y=0) z y n).
+Check fun n => foo2 n (fun x n z => (fun _ _ _ => x+n=0) z n x).
+
+(* Not printable: renaming x into n would bind the 2nd occurrence of n *)
+Check fun n => foo2 n (fun x y z => (fun _ _ _ => x+y+n=0) z y x).
+Check fun n => foo2 n (fun x y z => (fun _ _ _ => x+y+n=0) z y x).
+
+(* Other tests *)
+Parameter foo3 : forall {T}(x : T)(P : T -> T -> T -> Prop), Prop.
+Notation "{| x , P |}_3" := (foo3 x (fun x x x => P x)).
+
+(* Printable *)
+Check fun n : nat => foo3 n (fun x y z => (fun _ => 0=0) z).
+Check fun n => foo3 n (fun x y z => (fun _ => z=0) z).
+
+(* Not printable: renaming z in n would hide the renaming of x into n *)
+Check fun n => foo3 n (fun x y z => (fun _ => x=0) z).
+
+(* Other tests *)
+Parameter foo4 : forall {T}(x : T)(P : T -> T -> T -> Prop), Prop.
+Notation "{| x , P |}_4" := (foo4 x (fun x _ z => P z)).
+
+(* Printable *)
+Check fun n : nat => foo4 n (fun x y z => (fun _ => 0=0) z).
+Check fun n => foo4 n (fun x y z => (fun _ => x=0) z).
+
+(* Not printable: y, z not allowed to occur in P *)
+Check fun n => foo4 n (fun x y z => (fun _ => z=0) z).
+Check fun n => foo4 n (fun x y z => (fun _ => y=0) z).

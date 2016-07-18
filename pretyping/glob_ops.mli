@@ -44,6 +44,14 @@ val bound_glob_vars : glob_constr -> Id.Set.t
 val loc_of_glob_constr : glob_constr -> Loc.t
 val glob_visible_short_qualid : glob_constr -> Id.t list
 
+(* Renaming free variables using a renaming map; fails with
+   [UnsoundRenaming] if applying the renaming would introduce
+   collision, as in, e.g., renaming [P x y] using substitution [(x,y)];
+   inner alpha-conversion done only for forall, fun, let but
+   not for cases and fix *)
+
+exception UnsoundRenaming
+val rename_var : (Id.t * Id.t) list -> Id.t -> Id.t
 val rename_glob_vars : (Id.t * Id.t) list -> glob_constr -> glob_constr
 
 (** [map_pattern_binders f m c] applies [f] to all the binding names

@@ -28,13 +28,17 @@ Check fun '((y,z):nat*nat) => pack (fr (fun '((y,z):nat*nat) => fb tt))
                                    (existT _ (y,z) tt).
 
 Example test := tele (t : Type) := tt.
-Check test nat.
+Example test' := test nat.
+Print test.
 
 Example test2 := tele (t : Type) (x:t) := tt.
-Check test2 nat 0.
+Example test2' := test2 nat 0.
+Print test2.
 
-Check tele (t : Type) (y:=0) (x:t) := tt.
-Check (tele (t : Type) (y:=0) (x:t) := tt) nat 0.
+Example test3 := tele (t : Type) (y:=0) (x:t) := tt.
+Example test3' := test3 nat 0.
+Print test3.
 
-Check tele (t : Type) '((y,z):nat*nat) (x:t) := tt.
-Check (tele (t : Type) '((y,z):nat*nat) (x:t) := tt) nat (1,2) 3.
+Example test4 := tele (t : Type) '((y,z):nat*nat) (x:t) := tt.
+Example test4' := test4 nat (1,2) 3.
+Print test4.

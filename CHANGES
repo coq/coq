@@ -1,5 +1,6 @@
 Changes beyond V8.5
 ===================
+
 Bugfixes
 
 - #4527: when typechecking the statement of a lemma using universe polymorphic
@@ -9,6 +10,8 @@ Bugfixes
   compatible).
 - #4726: treat user-provided sorts of universe polymorphic records as rigid
   (i.e. non-minimizable).
+- #4592, #4932: notations sharing recursive patterns or sharing
+  binders made more robust.
 
 Specification language
 
