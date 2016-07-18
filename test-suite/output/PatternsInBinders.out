@@ -4,12 +4,12 @@ fun '(x, y) => (y, x)
      : A * B -> B * A
 forall '(x, y), swap (x, y) = (y, x)
      : Prop
-proj_informative = fun 'exist _ x _ => x : A
+proj_informative = fun '(exist _ x _) => x : A
      : {x : A | P x} -> A
-foo = fun 'Bar n b tt p => if b then n + p else n - p
+foo = fun '(Bar n b tt p) => if b then n + p else n - p
      : Foo -> nat
 baz = 
-fun 'Bar n1 _ tt p1 => fun 'Bar _ _ tt _ => n1 + p1
+fun '(Bar n1 _ tt p1) => fun '(Bar _ _ tt _) => n1 + p1
      : Foo -> Foo -> nat
 λ '(x, y), (y, x)
      : A * B → B * A

@@ -549,7 +549,7 @@ end) = struct
             not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
         return (
           hov 0 (
-            keyword "forall" ++ spc () ++ str "'" ++ pr_patt ltop p ++
+            keyword "forall" ++ spc () ++ str "'" ++ pr_patt lsimplepatt p ++
             str "," ++ pr spc ltop a),
           llambda
         )
@@ -573,7 +573,7 @@ end) = struct
             not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
         return (
           hov 0 (
-            keyword "fun" ++ spc () ++ str "'" ++ pr_patt ltop p ++
+            keyword "fun" ++ spc () ++ str "'" ++ pr_patt lsimplepatt p ++
             pr_fun_sep ++ pr spc ltop a),
           llambda
         )
