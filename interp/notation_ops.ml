@@ -779,8 +779,8 @@ let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) 
     match bl, bl' with
     | [], [] -> alp, []
     | b :: bl, b' :: bl' ->
-       let alp,bl = unify alp bl bl' in
        let alp,b = unify_binder alp b b' in
+       let alp,bl = unify alp bl bl' in
        alp, b :: bl
     | _ -> raise No_match in
     let alp, bl = unify alp bl bl' in
