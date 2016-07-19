@@ -379,7 +379,9 @@ end) = struct
       if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
     | CProdN (loc,[],c) ->
       extract_prod_binders c
-    | CProdN (loc,[[_,Name id],bk,t],CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)])) ->
+    | CProdN (loc,[[_,Name id],bk,t],
+              CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)]))
+         when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_prod_binders b in
       LocalPattern (loc,p,None) :: bl, c
     | CProdN (loc,(nal,bk,t)::bl,c) ->
@@ -393,7 +395,9 @@ end) = struct
       if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
     | CLambdaN (loc,[],c) ->
       extract_lam_binders c
-    | CLambdaN (loc,[[_,Name id],bk,t],CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)])) ->
+    | CLambdaN (loc,[[_,Name id],bk,t],
+                CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)]))
+         when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_lam_binders b in
       LocalPattern (loc,p,None) :: bl, c
     | CLambdaN (loc,(nal,bk,t)::bl,c) ->
