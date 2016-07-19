@@ -115,3 +115,27 @@ Check fun n => foo4 n (fun x y z => (fun _ => x=0) z).
 Check fun n => foo4 n (fun x y z => (fun _ => z=0) z).
 Check fun n => foo4 n (fun x y z => (fun _ => y=0) z).
 
+(**********************************************************************)
+(* Test printing of #4932                                             *)
+
+Inductive ftele : Type :=
+| fb {T:Type} : T -> ftele
+| fr {T} : (T -> ftele) -> ftele.
+
+Fixpoint args ftele : Type :=
+  match ftele with
+    | fb _ => unit
+    | fr f => sigT (fun t => args (f t))
+  end.
+
+Definition fpack := sigT args.
+Definition pack fp fa : fpack := existT _ fp fa.
+
+Notation "'tele' x .. z := b" :=
+  (fun x => .. (fun z =>
+     pack (fr (fun x => .. ( fr (fun z => fb b) ) .. ) )
+          (existT _ x .. (existT _ z tt) .. )
+                ) ..)
+  (at level 85, x binder, z binder).
+
+Check tele (t:Type) '((y,z):nat*nat) (x:t) := tt.

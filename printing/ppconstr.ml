@@ -349,8 +349,8 @@ end) = struct
         | _ -> c, CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
                   str":=" ++ cut() ++ pr_c c)
-    | LocalPattern _ ->
-      assert false
+    | LocalPattern (loc,p,tyo) ->
+        str "'" ++ pr_patt lsimplepatt p
 
   let pr_undelimited_binders sep pr_c =
     prlist_with_sep sep (pr_binder_among_many pr_c)
@@ -360,10 +360,8 @@ end) = struct
     match bl with
       | [LocalRawAssum (nal,k,t)] ->
         pr_com_at n ++ kw() ++ pr_binder false pr_c (nal,k,t)
-      | LocalRawAssum _ :: _ as bdl ->
+      | (LocalRawAssum _ | LocalPattern _) :: _ as bdl ->
         pr_com_at n ++ kw() ++ pr_undelimited_binders sep pr_c bdl
-      | LocalPattern (loc,p,tyo) :: _ ->
-        str "'" ++ pr_patt ltop p
       | _ -> assert false
 
   let pr_binders_gen pr_c sep is_open =

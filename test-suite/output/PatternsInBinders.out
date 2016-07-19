@@ -23,7 +23,7 @@ Arguments A, B are implicit and maximally inserted
 Argument scopes are [type_scope type_scope _]
 forall (A B : Type) (pat : A * B), let '(x, y) := pat in swap (x, y) = (y, x)
      : Prop
-exists pat : A * A, let '(x, y) := pat in swap (x, y) = (y, x)
+exists '(x, y), swap (x, y) = (y, x)
      : Prop
 both_z = 
 fun pat : nat * nat =>
