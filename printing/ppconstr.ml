@@ -350,7 +350,12 @@ end) = struct
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
                   str":=" ++ cut() ++ pr_c c)
     | LocalPattern (loc,p,tyo) ->
-        str "'" ++ pr_patt lsimplepatt p
+      let p = pr_patt lsimplepatt p in
+      match tyo with
+        | None ->
+          str "'" ++ p
+        | Some ty ->
+          str "'" ++ surround (p ++ spc () ++ str ":" ++ ws 1 ++ pr_c ty)
 
   let pr_undelimited_binders sep pr_c =
     prlist_with_sep sep (pr_binder_among_many pr_c)
@@ -374,6 +379,9 @@ end) = struct
       if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
     | CProdN (loc,[],c) ->
       extract_prod_binders c
+    | CProdN (loc,[[_,Name id],bk,t],CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)])) ->
+      let bl,c = extract_prod_binders b in
+      LocalPattern (loc,p,None) :: bl, c
     | CProdN (loc,(nal,bk,t)::bl,c) ->
       let bl,c = extract_prod_binders (CProdN(loc,bl,c)) in
       LocalRawAssum (nal,bk,t) :: bl, c
@@ -385,6 +393,9 @@ end) = struct
       if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
     | CLambdaN (loc,[],c) ->
       extract_lam_binders c
+    | CLambdaN (loc,[[_,Name id],bk,t],CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)])) ->
+      let bl,c = extract_lam_binders b in
+      LocalPattern (loc,p,None) :: bl, c
     | CLambdaN (loc,(nal,bk,t)::bl,c) ->
       let bl,c = extract_lam_binders (CLambdaN(loc,bl,c)) in
       LocalRawAssum (nal,bk,t) :: bl, c
@@ -536,21 +547,6 @@ end) = struct
                    (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) cofix),
           lfix
         )
-      | CProdN
-          (_,
-           [([(_,Name n)],_,_)],
-           CCases
-             (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
-              [(_,[(_,[p])],a)]))
-          when
-            Id.equal m n &&
-            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
-        return (
-          hov 0 (
-            keyword "forall" ++ spc () ++ str "'" ++ pr_patt lsimplepatt p ++
-            str "," ++ pr spc ltop a),
-          llambda
-        )
       | CProdN _ ->
         let (bl,a) = extract_prod_binders a in
         return (
@@ -559,21 +555,6 @@ end) = struct
                      (pr mt ltop) bl) ++
               str "," ++ pr spc ltop a),
           lprod
-        )
-      | CLambdaN
-          (_,
-           [([(_,Name n)],_,_)],
-           CCases
-             (_,LetPatternStyle,None,[(CRef(Ident(_,m),None),None,None)],
-              [(_,[(_,[p])],a)]))
-          when
-            Id.equal m n &&
-            not (Id.Set.mem n (Topconstr.free_vars_of_constr_expr a)) ->
-        return (
-          hov 0 (
-            keyword "fun" ++ spc () ++ str "'" ++ pr_patt lsimplepatt p ++
-            pr_fun_sep ++ pr spc ltop a),
-          llambda
         )
       | CLambdaN _ ->
         let (bl,a) = extract_lam_binders a in

@@ -869,7 +869,7 @@ let rec match_iterated_binders islambda decls = function
       match_iterated_binders islambda ((Inr cp,bk,None,t)::decls) b
   | GLambda (_,na,bk,t,b) when islambda ->
       match_iterated_binders islambda ((Inl na,bk,None,t)::decls) b
-  | GLambda (_,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b)]))
+  | GProd (_,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b)]))
       when not islambda && Id.equal p e ->
       match_iterated_binders islambda ((Inr cp,bk,None,t)::decls) b
   | GProd (_,(Name _ as na),bk,t,b) when not islambda ->
