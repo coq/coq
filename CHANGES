@@ -83,6 +83,10 @@ Tools
   computation associated with printing the "dependent evars: " line in
   -emacs mode
 
+Changes from V8.5pl2 to V8.5pl3
+===============================
+- #4780: Induction with universe polymorphism on was creating ill-typed terms.
+
 Changes from V8.5pl1 to V8.5pl2
 ===============================
 
