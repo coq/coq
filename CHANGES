@@ -12,6 +12,7 @@ Bugfixes
   (i.e. non-minimizable).
 - #4592, #4932: notations sharing recursive patterns or sharing
   binders made more robust.
+- #4780: Induction with universe polymorphism on was creating ill-typed terms.
 
 Specification language
 
