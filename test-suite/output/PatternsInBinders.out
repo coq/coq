@@ -4,28 +4,36 @@ fun '(x, y) => (y, x)
      : A * B -> B * A
 forall '(x, y), swap (x, y) = (y, x)
      : Prop
-proj_informative = fun 'exist _ x _ => x : A
+proj_informative = fun '(exist _ x _) => x : A
      : {x : A | P x} -> A
-foo = fun 'Bar n b tt p => if b then n + p else n - p
+foo = fun '(Bar n b tt p) => if b then n + p else n - p
      : Foo -> nat
 baz = 
-fun 'Bar n1 _ tt p1 => fun 'Bar _ _ tt _ => n1 + p1
+fun '(Bar n1 _ tt p1) '(Bar _ _ tt _) => n1 + p1
      : Foo -> Foo -> nat
-λ '(x, y), (y, x)
-     : A * B → B * A
-∀ '(x, y), swap (x, y) = (y, x)
-     : Prop
 swap = 
-fun (A B : Type) (pat : A * B) => let '(x, y) := pat in (y, x)
+fun (A B : Type) '(x, y) => (y, x)
      : forall A B : Type, A * B -> B * A
 
 Arguments A, B are implicit and maximally inserted
 Argument scopes are [type_scope type_scope _]
-forall (A B : Type) (pat : A * B), let '(x, y) := pat in swap (x, y) = (y, x)
+fun (A B : Type) '(x, y) => swap (x, y) = (y, x)
+     : forall A B : Type, A * B -> Prop
+forall (A B : Type) '(x, y), swap (x, y) = (y, x)
      : Prop
-exists pat : A * A, let '(x, y) := pat in swap (x, y) = (y, x)
+exists '(x, y), swap (x, y) = (y, x)
+     : Prop
+exists '(x, y) '(z, w), swap (x, y) = (z, w)
+     : Prop
+λ '(x, y), (y, x)
+     : A * B → B * A
+∀ '(x, y), swap (x, y) = (y, x)
      : Prop
 both_z = 
 fun pat : nat * nat =>
 let '(n, p) as pat0 := pat return (F pat0) in (Z n, Z p) : F (n, p)
      : forall pat : nat * nat, F pat
+fun '(x, y) '(z, t) => swap (x, y) = (z, t)
+     : A * B -> B * A -> Prop
+forall '(x, y) '(z, t), swap (x, y) = (z, t)
+     : Prop

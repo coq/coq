@@ -604,31 +604,52 @@ let rec subordinate_letins intern letins = function
   | [] ->
       letins,[]
 
-let rec subst_iterator y t = function
-  | GVar (_,id) as x -> if Id.equal id y then t else x
-  | x -> map_glob_constr (subst_iterator y t) x
+let terms_of_binders bl =
+  let rec term_of_pat = function
+    | PatVar (loc,Name id) -> CRef (Ident (loc,id), None)
+    | PatVar (loc,Anonymous) -> error "Cannot turn \"_\" into a term."
+    | PatCstr (loc,c,l,_) ->
+       let r = Qualid (loc,qualid_of_path (path_of_global (ConstructRef c))) in
+       let hole = CHole (loc,None,Misctypes.IntroAnonymous,None) in
+       let params = List.make (Inductiveops.inductive_nparams (fst c)) hole in
+       CAppExpl (loc,(None,r,None),params @ List.map term_of_pat l) in
+  let rec extract_variables = function
+    | BDRawDef (loc,(Name id,_,None,_))::l -> CRef (Ident (loc,id), None) :: extract_variables l
+    | BDRawDef (loc,(Name id,_,Some _,_))::l -> extract_variables l
+    | BDRawDef (loc,(Anonymous,_,_,_))::l -> error "Cannot turn \"_\" into a term."
+    | BDPattern (loc,(u,_),lvar,env,tyc) :: l -> term_of_pat u :: extract_variables l
+    | [] -> [] in
+  extract_variables bl
 
 let instantiate_notation_constr loc intern ntnvars subst infos c =
   let (terms,termlists,binders) = subst in
   (* when called while defining a notation, avoid capturing the private binders
      of the expression by variables bound by the notation (see #3892) *)
   let avoid = Id.Map.domain ntnvars in
-  let rec aux (terms,binderopt as subst') (renaming,env) c =
+  let rec aux (terms,binderopt,terminopt as subst') (renaming,env) c =
     let subinfos = renaming,{env with tmp_scope = None} in
     match c with
+    | NVar id when Id.equal id ldots_var -> Option.get terminopt
     | NVar id -> subst_var subst' (renaming, env) id
-    | NList (x,_,iter,terminator,lassoc) ->
-      (try
+    | NList (x,y,iter,terminator,lassoc) ->
+      let l,(scopt,subscopes) =
         (* All elements of the list are in scopes (scopt,subscopes) *)
-	let (l,(scopt,subscopes)) = Id.Map.find x termlists in
-        let termin = aux subst' subinfos terminator in
-        let fold a t =
-          let nterms = Id.Map.add x (a, (scopt, subscopes)) terms in
-          subst_iterator ldots_var t (aux (nterms, binderopt) subinfos iter)
-        in
-	List.fold_right fold (if lassoc then List.rev l else l) termin
-      with Not_found ->
-          anomaly (Pp.str "Inconsistent substitution of recursive notation"))
+        try
+          let l,scopes = Id.Map.find x termlists in
+          (if lassoc then List.rev l else l),scopes
+        with Not_found ->
+        try
+	  let (bl,(scopt,subscopes)) = Id.Map.find x binders in
+	  let env,bl' = List.fold_left (intern_local_binder_aux intern ntnvars) (env,[]) bl in
+          terms_of_binders (if lassoc then bl' else List.rev bl'),(None,[])
+        with Not_found ->
+          anomaly (Pp.str "Inconsistent substitution of recursive notation") in
+      let termin = aux (terms,None,None) subinfos terminator in
+      let fold a t =
+        let nterms = Id.Map.add y (a, (scopt, subscopes)) terms in
+        aux (nterms,None,Some t) subinfos iter
+      in
+      List.fold_right fold l termin
     | NHole (knd, naming, arg) ->
       let knd = match knd with
       | Evar_kinds.BinderType (Name id as na) ->
@@ -663,16 +684,15 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
         Some arg
       in
       GHole (loc, knd, naming, arg)
-    | NBinderList (x,_,iter,terminator) ->
+    | NBinderList (x,y,iter,terminator) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
 	let env,bl = List.fold_left (intern_local_binder_aux intern ntnvars) (env,[]) bl in
 	let letins,bl = subordinate_letins intern [] bl in
-        let termin = aux subst' (renaming,env) terminator in
+        let termin = aux (terms,None,None) (renaming,env) terminator in
 	let res = List.fold_left (fun t binder ->
-          subst_iterator ldots_var t
-	    (aux (terms,Some(x,binder)) subinfos iter))
+	    aux (terms,Some(y,binder),Some t) subinfos iter)
 	  termin bl in
 	make_letins letins res
       with Not_found ->
@@ -700,7 +720,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
     | t ->
       glob_constr_of_notation_constr_with_binders loc
         (traverse_binder subst avoid) (aux subst') subinfos t
-  and subst_var (terms, binderopt) (renaming, env) id =
+  and subst_var (terms, _binderopt, _terminopt) (renaming, env) id =
     (* subst remembers the delimiters stack in the interpretation *)
     (* of the notations *)
     try
@@ -713,7 +733,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
     with Not_found ->
       (* Happens for local notation joint with inductive/fixpoint defs *)
       GVar (loc,id)
-  in aux (terms,None) infos c
+  in aux (terms,None,None) infos c
 
 let split_by_type ids =
   List.fold_right (fun (x,(scl,typ)) (l1,l2,l3) ->
@@ -1329,7 +1349,7 @@ let drop_notations_pattern looked_for =
       RCPatCstr (loc, g,
 		 List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl @
 		 List.map (in_pat false scopes) args, [])
-    | NList (x,_,iter,terminator,lassoc) ->
+    | NList (x,y,iter,terminator,lassoc) ->
       if not (List.is_empty args) then user_err_loc
         (loc,"",strbrk "Application of arguments to a recursive notation not supported in patterns.");
       (try
@@ -1337,7 +1357,7 @@ let drop_notations_pattern looked_for =
 	 let (l,(scopt,subscopes)) = Id.Map.find x substlist in
          let termin = in_not top loc scopes fullsubst [] terminator in
 	 List.fold_right (fun a t ->
-           let nsubst = Id.Map.add x (a, (scopt, subscopes)) subst in
+           let nsubst = Id.Map.add y (a, (scopt, subscopes)) subst in
            let u = in_not false loc scopes (nsubst, substlist) [] iter in
            subst_pat_iterator ldots_var t u)
            (if lassoc then List.rev l else l) termin

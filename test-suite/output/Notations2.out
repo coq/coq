@@ -12,7 +12,7 @@ let '(a, _, _) := (2, 3, 4) in a
      : nat
 exists myx y : bool, myx = y
      : Prop
-fun (P : nat -> nat -> Prop) (x : nat) => exists x0, P x x0
+fun (P : nat -> nat -> Prop) (x : nat) => exists y, P x y
      : (nat -> nat -> Prop) -> nat -> Prop
 ∃ n p : nat, n + p = 0
      : Prop

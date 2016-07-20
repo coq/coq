@@ -1,5 +1,6 @@
 Changes beyond V8.5
 ===================
+
 Bugfixes
 
 - #4527: when typechecking the statement of a lemma using universe polymorphic
@@ -9,6 +10,9 @@ Bugfixes
   compatible).
 - #4726: treat user-provided sorts of universe polymorphic records as rigid
   (i.e. non-minimizable).
+- #4592, #4932: notations sharing recursive patterns or sharing
+  binders made more robust.
+- #4780: Induction with universe polymorphism on was creating ill-typed terms.
 
 Specification language
 
@@ -78,6 +82,10 @@ Tools
 - Setting [Printing Dependent Evars Line] can be unset to disable the
   computation associated with printing the "dependent evars: " line in
   -emacs mode
+
+Changes from V8.5pl2 to V8.5pl3
+===============================
+- #4780: Induction with universe polymorphism on was creating ill-typed terms.
 
 Changes from V8.5pl1 to V8.5pl2
 ===============================

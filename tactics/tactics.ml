@@ -2665,10 +2665,15 @@ let letin_tac with_eq id c ty occs =
     let env = Proofview.Goal.env gl in
     let ccl = Proofview.Goal.concl gl in
     let abs = AbstractExact (id,c,ty,occs,true) in
-    let (id,_,depdecls,lastlhyp,ccl,_) = make_abstraction env sigma ccl abs in
-    (* We keep the original term to match *)
+    let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+    (* We keep the original term to match but record the potential side-effects
+       of unifying universes. *)
+    let Sigma (c, sigma, p) = match res with
+      | None -> Sigma.here c sigma
+      | Some (Sigma (_, sigma, p)) -> Sigma (c, sigma, p)
+    in
     let tac = letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty in
-    Sigma.here tac sigma
+    Sigma (tac, sigma, p)
   end }
 
 let letin_pat_tac with_eq id c occs =

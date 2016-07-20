@@ -237,7 +237,9 @@ let check_is_hole id = function GHole _ -> () | t ->
     strbrk "In recursive notation with binders, " ++ pr_id id ++
     strbrk " is expected to come without type.")
 
-let compare_recursive_parts found f (iterator,subc) =
+let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
+
+let compare_recursive_parts found f f' (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
   let rec aux c1 c2 = match c1,c2 with
@@ -284,16 +286,26 @@ let compare_recursive_parts found f (iterator,subc) =
 	user_err_loc (subtract_loc loc1 loc2,"",
           str "Both ends of the recursive pattern are the same.")
     | Some (x,y,Some lassoc) ->
-	let newfound = (pi1 !found, (x,y) :: pi2 !found, pi3 !found) in
+        let newfound,x,y,lassoc =
+          if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
+             List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi3 !found)
+          then
+            !found,x,y,lassoc
+          else if List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi2 !found) ||
+                  List.mem_f (pair_equal Id.equal Id.equal) (y,x) (pi3 !found)
+          then
+            !found,y,x,not lassoc
+          else
+            (pi1 !found, (x,y) :: pi2 !found, pi3 !found),x,y,lassoc in
 	let iterator =
-	  f (if lassoc then subst_glob_vars [y,GVar(Loc.ghost,x)] iterator
-	  else iterator) in
+	  f' (if lassoc then iterator
+	      else subst_glob_vars [x,GVar(Loc.ghost,y)] iterator) in
 	(* found have been collected by compare_constr *)
 	found := newfound;
 	NList (x,y,iterator,f (Option.get !terminator),lassoc)
     | Some (x,y,None) ->
 	let newfound = (pi1 !found, pi2 !found, (x,y) :: pi3 !found) in
-	let iterator = f iterator in
+	let iterator = f' (subst_glob_vars [x,GVar(Loc.ghost,y)] iterator) in
 	(* found have been collected by compare_constr *)
 	found := newfound;
 	NBinderList (x,y,iterator,f (Option.get !terminator))
@@ -305,7 +317,7 @@ let notation_constr_and_vars_of_glob_constr a =
   let rec aux c =
     let keepfound = !found in
     (* n^2 complexity but small and done only once per notation *)
-    try compare_recursive_parts found aux' (split_at_recursive_part c)
+    try compare_recursive_parts found aux aux' (split_at_recursive_part c)
     with Not_found ->
     found := keepfound;
     match c with
@@ -356,8 +368,6 @@ let notation_constr_and_vars_of_glob_constr a =
   let t = aux a in
   (* Side effect *)
   t, !found
-
-let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
 
 let check_variables nenv (found,foundrec,foundrecbinding) =
   let recvars = nenv.ninterp_rec_vars in
@@ -585,6 +595,10 @@ let rec alpha_var id1 id2 = function
   | _::idl -> alpha_var id1 id2 idl
   | [] -> Id.equal id1 id2
 
+let alpha_rename alpmetas v =
+  if alpmetas == [] then v
+  else try rename_glob_vars alpmetas v with UnsoundRenaming -> raise No_match
+
 let add_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var v =
   (* Check that no capture of binding variables occur *)
   (* [alp] is used when matching a pattern "fun x => ... x ... ?var ... x ..."
@@ -610,16 +624,29 @@ let add_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var v =
      glob_constr_eq in bind_term_env to be postponed in match_notation_constr, and the
      choice of exact variable be done there; but again, this would be a non-trivial
      refinement *)
-  if alpmetas != [] then raise No_match;
+  let v = alpha_rename alpmetas v in
   (* TODO: handle the case of multiple occs in different scopes *)
   ((var,v)::terms,onlybinders,termlists,binderlists)
+
+let add_termlist_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var vl =
+  if List.exists (fun (id,_) -> List.exists (occur_glob_constr id) vl) alp then raise No_match;
+  let vl = List.map (alpha_rename alpmetas) vl in
+  (terms,onlybinders,(var,vl)::termlists,binderlists)
 
 let add_binding_env alp (terms,onlybinders,termlists,binderlists) var v =
   (* TODO: handle the case of multiple occs in different scopes *)
   (terms,(var,v)::onlybinders,termlists,binderlists)
 
 let add_bindinglist_env (terms,onlybinders,termlists,binderlists) x bl =
-  (terms,onlybinders,termlists,(x,List.rev bl)::binderlists)
+  (terms,onlybinders,termlists,(x,bl)::binderlists)
+
+let rec pat_binder_of_term = function
+  | GVar (loc, id) -> PatVar (loc, Name id)
+  | GApp (loc, GRef (_,ConstructRef cstr,_), l) ->
+     let nparams = Inductiveops.inductive_nparams (fst cstr) in
+     let _,l = List.chop nparams l in
+     PatCstr (loc, cstr, List.map pat_binder_of_term l, Anonymous)
+  | _ -> raise No_match
 
 let bind_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
   try
@@ -630,9 +657,52 @@ let bind_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
         let sigma = Id.List.remove_assoc var terms,onlybinders,termlists,binderlists in
         add_env alp sigma var v
     | _, _ ->
-        if glob_constr_eq v v' then sigma
+        if glob_constr_eq (alpha_rename (snd alp) v) v' then sigma
         else raise No_match
   with Not_found -> add_env alp sigma var v
+
+let bind_termlist_env alp (terms,onlybinders,termlists,binderlists as sigma) var vl =
+  try
+    let vl' = Id.List.assoc var termlists in
+    let unify_term v v' =
+      match v, v' with
+      | GHole _, _ -> v'
+      | _, GHole _ -> v
+      | _, _ -> if glob_constr_eq (alpha_rename (snd alp) v) v' then v' else raise No_match in
+    let rec unify vl vl' =
+      match vl, vl' with
+      | [], [] -> []
+      | v :: vl, v' :: vl' -> unify_term v v' :: unify vl vl'
+      | _ -> raise No_match in
+    let vl = unify vl vl' in
+    let sigma = (terms,onlybinders,Id.List.remove_assoc var termlists,binderlists) in
+    add_termlist_env alp sigma var vl
+  with Not_found -> add_termlist_env alp sigma var vl
+
+let bind_term_as_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var id =
+  try
+    match Id.List.assoc var terms with
+    | GVar (_,id') ->
+       (if not (Id.equal id id') then (fst alp,(id,id')::snd alp) else alp),
+       sigma
+    | _ -> anomaly (str "A term which can be a binder has to be a variable")
+  with Not_found ->
+    (* The matching against a term allowing to find the instance has not been found yet *)
+    (* If it will be a different name, we shall unfortunately fail *)
+    (* TODO: look at the consequences for alp *)
+    alp, add_env alp sigma var (GVar (Loc.ghost,id))
+
+let bind_binding_as_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var id =
+  try
+    let v' = Id.List.assoc var onlybinders in
+    match v' with
+    | Anonymous ->
+        (* Should not occur, since the term has to be bound upwards *)
+        let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
+        add_binding_env alp sigma var (Name id)
+    | Name id' ->
+        if Id.equal (rename_var (snd alp) id) id' then sigma else raise No_match
+  with Not_found -> add_binding_env alp sigma var (Name id)
 
 let bind_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
   try
@@ -646,6 +716,109 @@ let bind_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var 
         if Id.equal id1 id2 then alp,sigma
         else (fst alp,(id1,id2)::snd alp),sigma
   with Not_found -> alp, add_binding_env alp sigma var v
+
+let rec map_cases_pattern_name_left f = function
+  | PatVar (loc,na) -> PatVar (loc,f na)
+  | PatCstr (loc,c,l,na) -> PatCstr (loc,c,List.map_left (map_cases_pattern_name_left f) l,f na)
+
+let rec fold_cases_pattern_eq f x p p' = match p, p' with
+  | PatVar (loc,na), PatVar (_,na') -> let x,na = f x na na' in x, PatVar (loc,na)
+  | PatCstr (loc,c,l,na), PatCstr (_,c',l',na') when eq_constructor c c' ->
+     let x,l = fold_cases_pattern_list_eq f x l l' in
+     let x,na = f x na na' in
+     x, PatCstr (loc,c,l,na)
+  | _ -> failwith "Not equal"
+
+and fold_cases_pattern_list_eq f x pl pl' = match pl, pl' with
+  | [], [] -> x, []
+  | p::pl, p'::pl' ->
+     let x, p = fold_cases_pattern_eq f x p p' in
+     let x, pl = fold_cases_pattern_list_eq f x pl pl' in
+     x, p :: pl
+  | _ -> assert false
+
+let rec cases_pattern_eq p1 p2 = match p1, p2 with
+| PatVar (_, na1), PatVar (_, na2) -> Name.equal na1 na2
+| PatCstr (_, c1, pl1, na1), PatCstr (_, c2, pl2, na2) ->
+  eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
+  Name.equal na1 na2
+| _ -> false
+
+let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) var bl =
+  let bl = List.rev bl in
+  try
+    let bl' = Id.List.assoc var binderlists in
+    let unify_name alp na na' =
+      match na, na' with
+      | Anonymous, na' -> alp, na'
+      | na, Anonymous -> alp, na
+      | Name id, Name id' ->
+         if Id.equal id id' then alp, na'
+         else (fst alp,(id,id')::snd alp), na' in
+    let unify_pat alp p p' =
+      try fold_cases_pattern_eq unify_name alp p p' with Failure _ -> raise No_match in
+    let unify_term alp v v' =
+      match v, v' with
+      | GHole _, _ -> v'
+      | _, GHole _ -> v
+      | _, _ -> if glob_constr_eq (alpha_rename (snd alp) v) v' then v else raise No_match in
+    let unify_binding_kind bk bk' = if bk == bk' then bk' else raise No_match in
+    let unify_binder alp b b' =
+      match b, b' with
+      | (Inl na, bk, None, t), (Inl na', bk', None, t') (* assum *) ->
+         let alp, na = unify_name alp na na' in
+         alp, (Inl na, unify_binding_kind bk bk', None, unify_term alp t t')
+      | (Inl na, bk, Some c, t), (Inl na', bk', Some c', t') (* let *) ->
+         let alp, na = unify_name alp na na' in
+         alp, (Inl na, unify_binding_kind bk bk', Some (unify_term alp c c'), unify_term alp t t')
+      | (Inr p, bk, None, t), (Inr p', bk', None, t') (* pattern *) ->
+         let alp, p = unify_pat alp p p' in
+         alp, (Inr p, unify_binding_kind bk bk', None, unify_term alp t t')
+      | _ -> raise No_match in
+    let rec unify alp bl bl' =
+    match bl, bl' with
+    | [], [] -> alp, []
+    | b :: bl, b' :: bl' ->
+       let alp,b = unify_binder alp b b' in
+       let alp,bl = unify alp bl bl' in
+       alp, b :: bl
+    | _ -> raise No_match in
+    let alp, bl = unify alp bl bl' in
+    let sigma = (terms,Id.List.remove_assoc var onlybinders,termlists,binderlists) in
+    alp, add_bindinglist_env sigma var bl
+  with Not_found ->
+    alp, add_bindinglist_env sigma var bl
+
+let bind_bindinglist_as_term_env alp (terms,onlybinders,termlists,binderlists) var cl =
+  try
+    let bl' = Id.List.assoc var binderlists in
+    let unify_id id na' =
+      match na' with
+      | Anonymous -> Name (rename_var (snd alp) id)
+      | Name id' ->
+         if Id.equal (rename_var (snd alp) id) id' then na' else raise No_match in
+    let unify_pat p p' =
+      if cases_pattern_eq (map_cases_pattern_name_left (name_app (rename_var (snd alp))) p) p' then p'
+      else raise No_match in
+    let unify_term_binder c b' =
+      match c, b' with
+      | GVar (_, id), (Inl na', bk', None, t') (* assum *) ->
+         (Inl (unify_id id na'), bk', None, t')
+      | c, (Inr p', bk', None, t') (* pattern *) ->
+         let p = pat_binder_of_term c in
+         (Inr (unify_pat p p'), bk', None, t')
+      | _ -> raise No_match in
+    let rec unify cl bl' =
+    match cl, bl' with
+    | [], [] -> []
+    | c :: cl, (Inl _, _, Some _,t) :: bl' -> unify cl bl'
+    | c :: cl, b' :: bl' -> unify_term_binder c b' :: unify cl bl'
+    | _ -> raise No_match in
+    let bl = unify cl bl' in
+    let sigma = (terms,onlybinders,termlists,Id.List.remove_assoc var binderlists) in
+    add_bindinglist_env sigma var bl
+  with Not_found ->
+    anomaly (str "There should be a binder list bindings this list of terms")
 
 let match_fix_kind fk1 fk2 =
   match (fk1,fk2) with
@@ -670,8 +843,8 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
       bind_binding_env alp sigma id2 na1
   | (Name id1,Name id2) when is_term_meta id2 metas ->
       (* We let the non-binding occurrence define the rhs and hence reason up to *)
-      (* alpha-conversion for the given occurrence of the name (see #)) *)
-      (fst alp,(id1,id2)::snd alp), sigma
+      (* alpha-conversion for the given occurrence of the name (see #4592)) *)
+      bind_term_as_binding_env alp sigma id2 id1
   | (Anonymous,Name id2) when is_term_meta id2 metas ->
       (* We let the non-binding occurrence define the rhs *)
       alp, sigma
@@ -691,8 +864,14 @@ let rec match_cases_pattern_binders metas acc pat1 pat2 =
 let glue_letin_with_decls = true
 
 let rec match_iterated_binders islambda decls = function
+  | GLambda (_,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b)]))
+      when islambda && Id.equal p e ->
+      match_iterated_binders islambda ((Inr cp,bk,None,t)::decls) b
   | GLambda (_,na,bk,t,b) when islambda ->
       match_iterated_binders islambda ((Inl na,bk,None,t)::decls) b
+  | GProd (_,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b)]))
+      when not islambda && Id.equal p e ->
+      match_iterated_binders islambda ((Inr cp,bk,None,t)::decls) b
   | GProd (_,(Name _ as na),bk,t,b) when not islambda ->
       match_iterated_binders islambda ((Inl na,bk,None,t)::decls) b
   | GLetIn (loc,na,c,b) when glue_letin_with_decls ->
@@ -703,35 +882,51 @@ let rec match_iterated_binders islambda decls = function
 let remove_sigma x (terms,onlybinders,termlists,binderlists) =
   (Id.List.remove_assoc x terms,onlybinders,termlists,binderlists)
 
+let remove_bindinglist_sigma x (terms,onlybinders,termlists,binderlists) =
+  (terms,onlybinders,termlists,Id.List.remove_assoc x binderlists)
+
 let add_ldots_var metas = (ldots_var,((None,[]),NtnTypeConstr))::metas
 
-let match_abinderlist_with_app match_fun metas sigma rest x iter termin =
-  let rec aux sigma acc rest =
+let add_meta_bindinglist x metas = (x,((None,[]),NtnTypeBinderList))::metas
+
+let match_binderlist_with_app match_fun alp metas sigma rest x y iter termin =
+  let rec aux sigma bl rest =
     try
-      let (terms,_,_,binderlists as sigma) = match_fun (add_ldots_var metas) sigma rest iter in
+      let metas = add_ldots_var (add_meta_bindinglist y metas) in
+      let (terms,_,_,binderlists as sigma) = match_fun alp metas sigma rest iter in
       let rest = Id.List.assoc ldots_var terms in
       let b =
-        match Id.List.assoc x binderlists with [b] -> b | _ ->assert false
+        match Id.List.assoc y binderlists with [b] -> b | _ ->assert false
       in
-      let sigma = remove_sigma x (remove_sigma ldots_var sigma) in
-      aux sigma (b::acc) rest
-    with No_match when not (List.is_empty acc) ->
-      acc, match_fun metas sigma rest termin in
-  let bl,sigma = aux sigma [] rest in
-  add_bindinglist_env sigma x bl
+      let sigma = remove_bindinglist_sigma y (remove_sigma ldots_var sigma) in
+      aux sigma (b::bl) rest
+    with No_match when not (List.is_empty bl) ->
+      bl, rest, sigma in
+  let bl,rest,sigma = aux sigma [] rest in
+  let alp,sigma = bind_bindinglist_env alp sigma x bl in
+  match_fun alp metas sigma rest termin
 
-let match_alist match_fun metas sigma rest x iter termin lassoc =
+let add_meta_term x metas = (x,((None,[]),NtnTypeConstr))::metas
+
+let match_termlist match_fun alp metas sigma rest x y iter termin lassoc =
   let rec aux sigma acc rest =
     try
-      let (terms,_,_,_ as sigma) = match_fun (add_ldots_var metas) sigma rest iter in
+      let metas = add_ldots_var (add_meta_term y metas) in
+      let (terms,_,_,_ as sigma) = match_fun metas sigma rest iter in
       let rest = Id.List.assoc ldots_var terms in
-      let t = Id.List.assoc x terms in
-      let sigma = remove_sigma x (remove_sigma ldots_var sigma) in
+      let t = Id.List.assoc y terms in
+      let sigma = remove_sigma y (remove_sigma ldots_var sigma) in
       aux sigma (t::acc) rest
     with No_match when not (List.is_empty acc) ->
       acc, match_fun metas sigma rest termin in
   let l,(terms,onlybinders,termlists,binderlists as sigma) = aux sigma [] rest in
-  (terms,onlybinders,(x,if lassoc then l else List.rev l)::termlists, binderlists)
+  let l = if lassoc then l else List.rev l in
+  if is_bindinglist_meta x metas then
+    (* This is a recursive pattern for both bindings and terms; it is *)
+    (* registered for binders *)
+    bind_bindinglist_as_term_env alp sigma x l
+  else
+    bind_termlist_env alp sigma x l
 
 let does_not_come_from_already_eta_expanded_var =
   (* This is hack to avoid looping on a rule with rhs of the form *)
@@ -750,46 +945,58 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   (* Matching notation variable *)
   | r1, NVar id2 when is_term_meta id2 metas -> bind_term_env alp sigma id2 r1
-  | GVar (_,id1), NVar id2 when is_onlybinding_meta id2 metas -> snd (bind_binding_env alp sigma id2 (Name id1))
+  | GVar (_,id1), NVar id2 when is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 id1
+  | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_term_env alp sigma id2 r1
 
   (* Matching recursive notations for terms *)
-  | r1, NList (x,_,iter,termin,lassoc) ->
-      match_alist (match_hd u alp) metas sigma r1 x iter termin lassoc
+  | r1, NList (x,y,iter,termin,lassoc) ->
+      match_termlist (match_hd u alp) alp metas sigma r1 x y iter termin lassoc
 
   (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
-  | GLambda (_,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],t)])),
-    NBinderList (x,_,NLambda (Name id2,_,b2),(NVar v as termin)) when p = e ->
-      let decls = [(Inr cp,bk,None,t1)] in
-      match_in u alp metas (add_bindinglist_env sigma x decls) t termin
+  | GLambda (_,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
+    NBinderList (x,_,NLambda (Name _id2,_,b2),termin) when Id.equal p e ->
+      let (decls,b) = match_iterated_binders true [(Inr cp,bk,None,t1)] b1 in
+      let alp,sigma = bind_bindinglist_env alp sigma x decls in
+      match_in u alp metas sigma b termin
 
   (* Matching recursive notations for binders: ad hoc cases supporting let-in *)
-  | GLambda (_,na1,bk,t1,b1), NBinderList (x,_,NLambda (Name id2,_,b2),termin)->
+  | GLambda (_,na1,bk,t1,b1), NBinderList (x,_,NLambda (Name _id2,_,b2),termin)->
       let (decls,b) = match_iterated_binders true [(Inl na1,bk,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Lambda itself *)
-      match_in u alp metas (add_bindinglist_env sigma x decls) b termin
+      let alp,sigma = bind_bindinglist_env alp sigma x decls in
+      match_in u alp metas sigma b termin
 
   (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
-  | GProd (_,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],t)])),
-    NBinderList (x,_,NProd (Name id2,_,b2),(NVar v as termin)) when p = e ->
-      let decls = [(Inr cp,bk,None,t1)] in
-      match_in u alp metas (add_bindinglist_env sigma x decls) t termin
+  | GProd (_,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
+    NBinderList (x,_,NProd (Name _id2,_,b2),(NVar v as termin)) when Id.equal p e ->
+      let (decls,b) = match_iterated_binders true [(Inr cp,bk,None,t1)] b1 in
+      let alp,sigma = bind_bindinglist_env alp sigma x decls in
+      match_in u alp metas sigma b termin
 
-  | GProd (_,na1,bk,t1,b1), NBinderList (x,_,NProd (Name id2,_,b2),termin)
+  | GProd (_,na1,bk,t1,b1), NBinderList (x,_,NProd (Name _id2,_,b2),termin)
       when na1 != Anonymous ->
       let (decls,b) = match_iterated_binders false [(Inl na1,bk,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Prod itself *)
-      match_in u alp metas (add_bindinglist_env sigma x decls) b termin
+      let alp,sigma = bind_bindinglist_env alp sigma x decls in
+      match_in u alp metas sigma b termin
   (* Matching recursive notations for binders: general case *)
-  | r, NBinderList (x,_,iter,termin) ->
-      match_abinderlist_with_app (match_hd u alp) metas sigma r x iter termin
+  | r, NBinderList (x,y,iter,termin) ->
+      match_binderlist_with_app (match_hd u) alp metas sigma r x y iter termin
 
   (* Matching individual binders as part of a recursive pattern *)
+  | GLambda (_,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
+    NLambda (Name id,_,b2)
+      when is_bindinglist_meta id metas ->
+      let alp,sigma = bind_bindinglist_env alp sigma id [(Inr cp,bk,None,t)] in
+      match_in u alp metas sigma b1 b2
   | GLambda (_,na,bk,t,b1), NLambda (Name id,_,b2)
       when is_bindinglist_meta id metas ->
-      match_in u alp metas (add_bindinglist_env sigma id [(Inl na,bk,None,t)]) b1 b2
+      let alp,sigma = bind_bindinglist_env alp sigma id [(Inl na,bk,None,t)] in
+      match_in u alp metas sigma b1 b2
   | GProd (_,na,bk,t,b1), NProd (Name id,_,b2)
       when is_bindinglist_meta id metas && na != Anonymous ->
-      match_in u alp metas (add_bindinglist_env sigma id [(Inl na,bk,None,t)]) b1 b2
+      let alp,sigma = bind_bindinglist_env alp sigma id [(Inl na,bk,None,t)] in
+      match_in u alp metas sigma b1 b2
 
   (* Matching compositionally *)
   | GVar (_,id1), NVar id2 when alpha_var id1 id2 (fst alp) -> sigma
@@ -876,7 +1083,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
       | _ -> assert false in
       let (alp,sigma) =
         if is_bindinglist_meta id metas then
-          alp, add_bindinglist_env sigma id [(Inl (Name id'),Explicit,None,t1)]
+          bind_bindinglist_env alp sigma id [(Inl (Name id'),Explicit,None,t1)]
         else
           match_names metas (alp,sigma) (Name id') na in
       match_in u alp metas sigma (mkGApp Loc.ghost b1 (GVar (Loc.ghost,id'))) b2
@@ -944,6 +1151,20 @@ let bind_env_cases_pattern (terms,x,termlists,y as sigma) var v =
     (* TODO: handle the case of multiple occs in different scopes *)
     (var,v)::terms,x,termlists,y
 
+let match_cases_pattern_list match_fun metas sigma rest x y iter termin lassoc =
+  let rec aux sigma acc rest =
+    try
+      let metas = add_ldots_var (add_meta_term y metas) in
+      let (terms,_,_,_ as sigma) = match_fun metas sigma rest iter in
+      let rest = Id.List.assoc ldots_var terms in
+      let t = Id.List.assoc y terms in
+      let sigma = remove_sigma y (remove_sigma ldots_var sigma) in
+      aux sigma (t::acc) rest
+    with No_match when not (List.is_empty acc) ->
+      acc, match_fun metas sigma rest termin in
+  let l,(terms,onlybinders,termlists,binderlists as sigma) = aux sigma [] rest in
+  (terms,onlybinders,(x,if lassoc then l else List.rev l)::termlists, binderlists)
+
 let rec match_cases_pattern metas (terms,x,termlists,y as sigma) a1 a2 =
  match (a1,a2) with
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
@@ -960,9 +1181,9 @@ let rec match_cases_pattern metas (terms,x,termlists,y as sigma) a1 a2 =
       else
 	let l1',more_args = Util.List.chop le2 l1 in
 	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(le2,more_args)
-  | r1, NList (x,_,iter,termin,lassoc) ->
-      (match_alist (match_cases_pattern_no_more_args)
-	metas (terms,(),termlists,()) r1 x iter termin lassoc),(0,[])
+  | r1, NList (x,y,iter,termin,lassoc) ->
+      (match_cases_pattern_list (match_cases_pattern_no_more_args)
+	metas (terms,(),termlists,()) r1 x y iter termin lassoc),(0,[])
   | _ -> raise No_match
 
 and match_cases_pattern_no_more_args metas sigma a1 a2 =

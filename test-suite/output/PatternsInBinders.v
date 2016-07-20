@@ -21,7 +21,20 @@ Print foo.
 Definition baz '(Bar n1 b1 tt p1) '(Bar n2 b2 tt p2) := n1+p1.
 Print baz.
 
-(** Some test involving unicode noations. *)
+Module WithParameters.
+
+Definition swap {A B} '((x,y) : A*B) := (y,x).
+Print swap.
+
+Check fun (A B:Type) '((x,y) : A*B) => swap (x,y) = (y,x).
+Check forall (A B:Type) '((x,y) : A*B), swap (x,y) = (y,x).
+
+Check exists '((x,y):A*A), swap (x,y) = (y,x).
+Check exists '((x,y):A*A) '(z,w), swap (x,y) = (z,w).
+
+End WithParameters.
+
+(** Some test involving unicode notations. *)
 Module WithUnicode.
 
   Require Import Coq.Unicode.Utf8.
@@ -31,24 +44,21 @@ Module WithUnicode.
 
 End WithUnicode.
 
-
 (** * Suboptimal printing *)
-
-(** These tests show examples which expose the [let] introduced by
-    the pattern notation in binders. *)
 
 Module Suboptimal.
 
-Definition swap {A B} '((x,y) : A*B) := (y,x).
-Print swap.
-
-Check forall (A B:Type) '((x,y) : A*B), swap (x,y) = (y,x).
-
-Check exists '((x,y):A*A), swap (x,y) = (y,x).
+(** This test shows an example which exposes the [let] introduced by
+    the pattern notation in binders. *)
 
 Inductive Fin (n:nat) := Z : Fin n.
 Definition F '(n,p) : Type := (Fin n * Fin p)%type.
 Definition both_z '(n,p) : F (n,p) := (Z _,Z _).
 Print both_z.
+
+(** These tests show examples which do not factorize binders *)
+
+Check fun '((x,y) : A*B) '(z,t) => swap (x,y) = (z,t).
+Check forall '(x,y) '((z,t) : B*A), swap (x,y) = (z,t).
 
 End Suboptimal.

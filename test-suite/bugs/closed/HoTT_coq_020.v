@@ -22,8 +22,8 @@ Polymorphic Record NaturalTransformation objC C objD D (F G : Functor (objC := o
 
 Ltac present_obj from to :=
   match goal with
-           | [ _ : appcontext[from ?obj ?C] |- _ ] => progress change (from obj C) with (to obj C) in *
-           | [ |- appcontext[from ?obj ?C] ] => progress change (from obj C) with (to obj C) in *
+           | [ _ : context[from ?obj ?C] |- _ ] => progress change (from obj C) with (to obj C) in *
+           | [ |- context[from ?obj ?C] ] => progress change (from obj C) with (to obj C) in *
          end.
 
 Section NaturalTransformationComposition.

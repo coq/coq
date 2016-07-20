@@ -470,6 +470,78 @@ let loc_of_glob_constr = function
   | GCast (loc,_,_) -> loc
 
 (**********************************************************************)
+(* Alpha-renaming                                                     *)
+
+let collide_id l id = List.exists (fun (id',id'') -> Id.equal id id' || Id.equal id id'') l
+let test_id l id = if collide_id l id then raise Not_found
+let test_na l na = name_iter (test_id l) na
+
+let update_subst na l =
+  let in_range id l = List.exists (fun (_,id') -> Id.equal id id') l in
+  let l' = name_fold Id.List.remove_assoc na l in
+  name_fold
+    (fun id _ ->
+     if in_range id l' then
+       let id' = Namegen.next_ident_away_from id (fun id' -> in_range id' l') in
+       Name id', (id,id')::l
+     else na,l)
+    na (na,l)
+
+exception UnsoundRenaming
+
+let rename_var l id =
+  try
+    let id' = Id.List.assoc id l in
+    (* Check that no other earlier binding hide the one found *)
+    let _,(id'',_) = List.extract_first (fun (_,id) -> Id.equal id id') l in
+    if Id.equal id id'' then id' else raise UnsoundRenaming
+  with Not_found ->
+    if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
+    else id
+
+let rec rename_glob_vars l = function
+  | GVar (loc,id) as r ->
+      let id' = rename_var l id in
+      if id == id' then r else GVar (loc,id')
+  | GRef (_,VarRef id,_) as r ->
+      if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
+      else r
+  | GProd (loc,na,bk,t,c) ->
+      let na',l' = update_subst na l in
+      GProd (loc,na,bk,rename_glob_vars l t,rename_glob_vars l' c)
+  | GLambda (loc,na,bk,t,c) ->
+      let na',l' = update_subst na l in
+      GLambda (loc,na',bk,rename_glob_vars l t,rename_glob_vars l' c)
+  | GLetIn (loc,na,b,c) ->
+      let na',l' = update_subst na l in
+      GLetIn (loc,na',rename_glob_vars l b,rename_glob_vars l' c)
+  (* Lazy strategy: we fail if a collision with renaming occurs, rather than renaming further *)
+  | GCases (loc,ci,po,tomatchl,cls) ->
+      let test_pred_pat (na,ino) =
+        test_na l na; Option.iter (fun (_,_,nal) -> List.iter (test_na l) nal) ino in
+      let test_clause idl = List.iter (test_id l) idl in
+      let po = Option.map (rename_glob_vars l) po in
+      let tomatchl = Util.List.map_left (fun (tm,x) -> test_pred_pat x; (rename_glob_vars l tm,x)) tomatchl in
+      let cls = Util.List.map_left (fun (loc,idl,p,c) -> test_clause idl; (loc,idl,p,rename_glob_vars l c)) cls in
+      GCases (loc,ci,po,tomatchl,cls)
+  | GLetTuple (loc,nal,(na,po),c,b) ->
+     List.iter (test_na l) (na::nal);
+     GLetTuple (loc,nal,(na,Option.map (rename_glob_vars l) po),
+                rename_glob_vars l c,rename_glob_vars l b)
+  | GIf (loc,c,(na,po),b1,b2) ->
+     test_na l na;
+     GIf (loc,rename_glob_vars l c,(na,Option.map (rename_glob_vars l) po),
+          rename_glob_vars l b1,rename_glob_vars l b2)
+  | GRec (loc,k,idl,decls,bs,ts) ->
+     Array.iter (test_id l) idl;
+     GRec (loc,k,idl,
+           Array.map (List.map (fun (na,k,bbd,bty) ->
+             test_na l na; (na,k,Option.map (rename_glob_vars l) bbd,rename_glob_vars l bty))) decls,
+           Array.map (rename_glob_vars l) bs,
+           Array.map (rename_glob_vars l) ts)
+  | r -> map_glob_constr (rename_glob_vars l) r
+
+(**********************************************************************)
 (* Conversion from glob_constr to cases pattern, if possible            *)
 
 let rec cases_pattern_of_glob_constr na = function

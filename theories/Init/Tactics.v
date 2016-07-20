@@ -55,12 +55,6 @@ Ltac contradict H :=
    | _ => (elim H;fail) || pos H
   end.
 
-(* Transforming a negative goal [ H:~A |- ~B ] into a positive one [ B |- A ]*)
-
-Ltac swap H :=
-  idtac "swap is OBSOLETE: use contradict instead.";
-  intro; apply H; clear H.
-
 (* To contradict an hypothesis without copying its type. *)
 
 Ltac absurd_hyp H :=

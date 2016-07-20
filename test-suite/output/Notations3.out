@@ -1,0 +1,100 @@
+[<0, 2 >]
+     : nat * nat * (nat * nat)
+[<0, 2 >]
+     : nat * nat * (nat * nat)
+(0, 2, (2, 2))
+     : nat * nat * (nat * nat)
+pair (pair O (S (S O))) (pair (S (S O)) O)
+     : prod (prod nat nat) (prod nat nat)
+<< 0, 2, 4 >>
+     : nat * nat * nat * (nat * (nat * nat))
+<< 0, 2, 4 >>
+     : nat * nat * nat * (nat * (nat * nat))
+(0, 2, 4, (2, (2, 0)))
+     : nat * nat * nat * (nat * (nat * nat))
+(0, 2, 4, (0, (2, 4)))
+     : nat * nat * nat * (nat * (nat * nat))
+pair (pair (pair O (S (S O))) (S (S (S (S O)))))
+  (pair (S (S (S (S O)))) (pair (S (S O)) O))
+     : prod (prod (prod nat nat) nat) (prod nat (prod nat nat))
+ETA x y : nat, Nat.add
+     : nat -> nat -> nat
+ETA x y : nat, Nat.add
+     : nat -> nat -> nat
+ETA x y : nat, Nat.add
+     : nat -> nat -> nat
+fun x y : nat => Nat.add x y
+     : forall (_ : nat) (_ : nat), nat
+ETA x y : nat, le_S
+     : forall x y : nat, x <= y -> x <= S y
+fun f : forall x : nat * (bool * unit), ?T => CURRY (x : nat) (y : bool), f
+     : (forall x : nat * (bool * unit), ?T) ->
+       forall (x : nat) (y : bool), ?T@{x:=(x, (y, tt))}
+where
+?T : [x : nat * (bool * unit) |- Type] 
+fun f : forall x : bool * (nat * unit), ?T =>
+CURRYINV (x : nat) (y : bool), f
+     : (forall x : bool * (nat * unit), ?T) ->
+       forall (x : nat) (y : bool), ?T@{x:=(y, (x, tt))}
+where
+?T : [x : bool * (nat * unit) |- Type] 
+fun f : forall x : unit * nat * bool, ?T => CURRYLEFT (x : nat) (y : bool), f
+     : (forall x : unit * nat * bool, ?T) ->
+       forall (x : nat) (y : bool), ?T@{x:=(tt, x, y)}
+where
+?T : [x : unit * nat * bool |- Type] 
+fun f : forall x : unit * bool * nat, ?T =>
+CURRYINVLEFT (x : nat) (y : bool), f
+     : (forall x : unit * bool * nat, ?T) ->
+       forall (x : nat) (y : bool), ?T@{x:=(tt, y, x)}
+where
+?T : [x : unit * bool * nat |- Type] 
+forall n : nat, {#n | 1 > n}
+     : Prop
+forall x : nat, {|x | x > 0|}
+     : Prop
+exists2 x : nat, x = 1 & x = 2
+     : Prop
+fun n : nat =>
+foo2 n (fun x y z : nat => (fun _ _ _ : nat => x + y + z = 0) z y x)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun a b c : nat => (fun _ _ _ : nat => a + b + c = 0) c b a)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun n0 y z : nat => (fun _ _ _ : nat => n0 + y + z = 0) z y n0)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun x n0 z : nat => (fun _ _ _ : nat => x + n0 + z = 0) z n0 x)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun x y n0 : nat => (fun _ _ _ : nat => x + y + n0 = 0) n0 y x)
+     : nat -> Prop
+fun n : nat => {|n, y | fun _ _ _ : nat => n + y = 0 |}_2
+     : nat -> Prop
+fun n : nat => {|n, y | fun _ _ _ : nat => n + y = 0 |}_2
+     : nat -> Prop
+fun n : nat => {|n, n0 | fun _ _ _ : nat => n + n0 = 0 |}_2
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun x y z : nat => (fun _ _ _ : nat => x + y + n = 0) z y x)
+     : nat -> Prop
+fun n : nat =>
+foo2 n (fun x y z : nat => (fun _ _ _ : nat => x + y + n = 0) z y x)
+     : nat -> Prop
+fun n : nat => {|n, fun _ : nat => 0 = 0 |}_3
+     : nat -> Prop
+fun n : nat => {|n, fun _ : nat => n = 0 |}_3
+     : nat -> Prop
+fun n : nat => foo3 n (fun x _ : nat => ETA z : nat, (fun _ : nat => x = 0))
+     : nat -> Prop
+fun n : nat => {|n, fun _ : nat => 0 = 0 |}_4
+     : nat -> Prop
+fun n : nat => {|n, fun _ : nat => n = 0 |}_4
+     : nat -> Prop
+fun n : nat => foo4 n (fun _ _ : nat => ETA z : nat, (fun _ : nat => z = 0))
+     : nat -> Prop
+fun n : nat => foo4 n (fun _ y : nat => ETA z : nat, (fun _ : nat => y = 0))
+     : nat -> Prop
+tele (t : Type) '(y, z) (x : t0) := tt
+     : forall t : Type, nat * nat -> t -> fpack

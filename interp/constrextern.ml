@@ -848,10 +848,11 @@ and extern_local_binder scopes vars = function
   | (Inr p,bk,Some bd,ty)::l -> assert false
 
   | (Inr p,bk,None,ty)::l ->
-      let ty = extern_typ scopes vars ty in
+      let ty =
+        if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
       let p = extern_cases_pattern vars p in
       let (assums,ids,l) = extern_local_binder scopes vars l in
-      (assums,ids, LocalPattern(Loc.ghost,p,Some ty) :: l)
+      (assums,ids, LocalPattern(Loc.ghost,p,ty) :: l)
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,[loc,List.map (extern_cases_pattern_in_scope scopes vars) pl],
