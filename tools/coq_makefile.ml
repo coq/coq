@@ -394,7 +394,7 @@ let clean sds sps =
     (fun x -> print "\t+cd "; print x; print " && $(MAKE) archclean\n")
     sds;
   print "\n";
-  print "printenv:\n\t@\"$(COQBIN)coqtop\" -config\n";
+  print "printenv::\n\t@\"$(COQBIN)coqtop\" -config\n";
   print "\t@echo 'OCAMLFIND =\t$(OCAMLFIND)'\n\t@echo 'PP =\t$(PP)'\n\t@echo 'COQFLAGS =\t$(COQFLAGS)'\n";
   print "\t@echo 'COQLIBINSTALL =\t$(COQLIBINSTALL)'\n\t@echo 'COQDOCINSTALL =\t$(COQDOCINSTALL)'\n\n"
 
