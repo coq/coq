@@ -581,7 +581,7 @@ let general_rewrite_unif_flags () =
   let core_flags =
     { rewrite_core_unif_flags with
       Unification.modulo_conv_on_closed_terms = Some ts;
-      Unification.use_evars_eagerly_in_conv_on_closed_terms = false;
+      Unification.use_evars_eagerly_in_conv_on_closed_terms = true;
       Unification.modulo_delta = ts;
       Unification.modulo_delta_types = ts;
       Unification.modulo_betaiota = true }
