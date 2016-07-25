@@ -7,6 +7,7 @@ Critical bugfix
 Other bugfixes
 
 - #4780: Induction with universe polymorphism on was creating ill-typed terms.
+- #4673: regression in setoid_rewrite, unfolding let-ins for type unification.
 - #4754: Regression in setoid_rewrite, allow postponed unification problems to remain.
 - #4769: Anomaly with universe polymorphic schemes defined inside sections.
 - #3886: Program: duplicate obligations of mutual fixpoints

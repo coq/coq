@@ -576,7 +576,7 @@ let general_rewrite_unif_flags () =
       Unification.modulo_conv_on_closed_terms = Some ts;
       Unification.use_evars_eagerly_in_conv_on_closed_terms = false;
       Unification.modulo_delta = ts;
-      Unification.modulo_delta_types = ts;
+      Unification.modulo_delta_types = full_transparent_state;
       Unification.modulo_betaiota = true }
   in {
     Unification.core_unify_flags = core_flags;
