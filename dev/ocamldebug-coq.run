@@ -12,11 +12,13 @@
 [ -z "$COQTOP" -a -d "$PWD/kernel" ] && COQTOP=$PWD
 [ -z "$COQTOP" -a -d "$PWD/../kernel" ] && COQTOP=`dirname $PWD`
 
+export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun:$CAML_LD_LIBRARY_PATH
+
 exec $OCAMLDEBUG \
-	-I $CAMLP4LIB \
+	-I $CAMLP4LIB -I +threads \
 	-I $COQTOP \
 	-I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar \
-	-I $COQTOP/lib -I $COQTOP/intf -I $COQTOP/kernel \
+	-I $COQTOP/lib -I $COQTOP/intf -I $COQTOP/kernel -I $COQTOP/kernel/byterun \
 	-I $COQTOP/library -I $COQTOP/engine \
 	-I $COQTOP/pretyping -I $COQTOP/parsing \
         -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics -I $COQTOP/stm \

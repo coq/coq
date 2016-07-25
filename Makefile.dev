@@ -15,21 +15,18 @@
 
 .PHONY: devel printers
 
-DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
+DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo
 
 devel: printers
-printers: $(DEBUGPRINTERS)
+printers: $(CORECMA) $(DEBUGPRINTERS) dev/camlp4.dbg
 
-dev/printers.cma: dev/printers.mllib
-	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -o test-printer
-	@rm -f test-printer
-	$(SHOW)'OCAMLC -a $@'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $(filter-out %.mllib, $^) -linkall -a -o $@
-
-dev/%.mllib.d: dev/%.mllib | $(OCAMLLIBDEP) $(GENFILES)
-	$(SHOW)'OCAMLLIBDEP  $<'
-	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) -I dev "$<" $(TOTARGET)
+ifeq ($(CAMLP4),camlp5)
+dev/camlp4.dbg:
+	echo "load_printer gramlib.cma" > $@
+else
+dev/camlp4.dbg:
+	echo "load_printer camlp4lib.cma" > $@
+endif
 
 ############
 # revision

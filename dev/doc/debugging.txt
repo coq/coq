@@ -51,8 +51,8 @@ Debugging from Caml debugger
      failure/error/anomaly has been raised
    - Alternatively, for an error or an anomaly, add breakpoints in the middle  
      of each of error* functions or anomaly* functions in lib/util.ml
-   - If "source db" fails, recompile printers.cma with
-     "make dev/printers.cma" and try again
+   - If "source db" fails, do a "make printers" and try again (it should build
+     top_printers.cmo and the core cma files).
 
 Global gprof-based profiling
 ============================

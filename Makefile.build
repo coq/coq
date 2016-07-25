@@ -505,6 +505,12 @@ test-suite: world $(ALLSTDLIB).v
 # but the -include mechanism should already ensure that we have
 # up-to-date dependencies.
 
+# Specific rule for kernel.cma, with $(VMBYTEFLAGS).
+# This helps loading dllcoqrun.so during an ocamldebug
+kernel/kernel.cma: kernel/kernel.mllib
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(VMBYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)
+
 %.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $(filter-out %.mllib, $^)

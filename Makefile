@@ -227,7 +227,7 @@ cacheclean:
 	find theories plugins test-suite -name '.*.aux' -delete
 
 cleanconfig:
-	rm -f config/Makefile config/coq_config.ml myocamlbuild_config.ml dev/ocamldebug-v7 config/Info-*.plist
+	rm -f config/Makefile config/coq_config.ml myocamlbuild_config.ml dev/ocamldebug-coq dev/camlp4.dbg config/Info-*.plist
 
 distclean: clean cleanconfig cacheclean
 

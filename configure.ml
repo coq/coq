@@ -1091,6 +1091,7 @@ let write_makefile f =
   pr "LOCAL=%B\n\n" !Prefs.local;
   pr "# Bytecode link flags : should we use -custom or not ?\n";
   pr "CUSTOM=%s\n" custom_flag;
+  pr "VMBYTEFLAGS=%s\n" (String.concat " " vmbyteflags);
   pr "%s\n\n" !build_loadpath;
   pr "# Paths for true installation\n";
   List.iter (fun (v,msg,_,_) -> pr "# %s: path for %s\n" v msg) install_dirs;
