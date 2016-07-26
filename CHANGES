@@ -1,6 +1,13 @@
 Changes from V8.5pl2 to V8.5pl3
 ===============================
+
+Critical bugfix
+- #4876: Guard checker incompleteness when using primitive projections
+
+Other bugfixes
+
 - #4780: Induction with universe polymorphism on was creating ill-typed terms.
+- #4754: Regression in setoid_rewrite, allow postponed unification problems to remain.
 
 Changes from V8.5pl1 to V8.5pl2
 ===============================
