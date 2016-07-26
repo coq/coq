@@ -111,8 +111,8 @@ let declare_tactic loc s c cl = match cl with
   declare_str_items loc
     [ <:str_item< do {
       let obj () = Tacenv.register_ltac True False $name$ $body$ in
-      Tacenv.register_ml_tactic $se$ [|$tac$|];
-      Mltop.declare_cache_obj obj $plugin_name$; } >>
+      let () = Tacenv.register_ml_tactic $se$ [|$tac$|] in
+      Mltop.declare_cache_obj obj $plugin_name$ } >>
     ]
 | _ ->
   (** Otherwise we add parsing and printing rules to generate a call to a
