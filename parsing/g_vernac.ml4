@@ -211,11 +211,11 @@ GEXTEND Gram
       | IDENT "Conjecture" -> (None, Conjectural) ] ]
   ;
   assumptions_token:
-    [ [ kwd = IDENT "Hypotheses" -> (kwd, (Some Discharge, Logical))
-      | kwd = IDENT "Variables" -> (kwd, (Some Discharge, Definitional))
-      | kwd = IDENT "Axioms" -> (kwd, (None, Logical))
-      | kwd = IDENT "Parameters" -> (kwd, (None, Definitional))
-      | kwd = IDENT "Conjectures" -> (kwd, (None, Conjectural)) ] ]
+    [ [ IDENT "Hypotheses" -> ("Hypotheses", (Some Discharge, Logical))
+      | IDENT "Variables" -> ("Variables", (Some Discharge, Definitional))
+      | IDENT "Axioms" -> ("Axioms", (None, Logical))
+      | IDENT "Parameters" -> ("Parameters", (None, Definitional))
+      | IDENT "Conjectures" -> ("Conjectures", (None, Conjectural)) ] ]
   ;
   inline:
     [ [ IDENT "Inline"; "("; i = INT; ")" -> InlineAt (int_of_string i)
