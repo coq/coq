@@ -1010,6 +1010,10 @@ let check_one_fix renv recpos trees def =
         | (Ind _ | Construct _) ->
             List.iter (check_rec_call renv []) l
 
+	| Proj (p, c) ->
+           List.iter (check_rec_call renv []) l;
+           check_rec_call renv [] c
+
         | Var id ->
             begin
               match pi2 (lookup_named id renv.env) with
@@ -1028,8 +1032,6 @@ let check_one_fix renv recpos trees def =
         | (Evar _ | Meta _) -> ()
 
         | (App _ | LetIn _ | Cast _) -> assert false (* beta zeta reduction *)
-	
-	| Proj (p, c) -> check_rec_call renv [] c
 
   and check_nested_fix_body renv decr recArgsDecrArg body =
     if Int.equal decr 0 then

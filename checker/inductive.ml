@@ -988,6 +988,10 @@ let check_one_fix renv recpos trees def =
         | (Ind _ | Construct _) ->
             List.iter (check_rec_call renv []) l
 
+	| Proj (p, c) ->
+            List.iter (check_rec_call renv []) l;
+            check_rec_call renv [] c
+
         | Var _ -> anomaly (Pp.str "Section variable in Coqchk !")
 
 	| Sort _ -> assert (l = [])
@@ -996,8 +1000,6 @@ let check_one_fix renv recpos trees def =
         | (Evar _ | Meta _) -> ()
 
         | (App _ | LetIn _ | Cast _) -> assert false (* beta zeta reduction *)
-
-	| Proj (p, c) -> check_rec_call renv [] c
 
   and check_nested_fix_body renv decr recArgsDecrArg body =
     if decr = 0 then
