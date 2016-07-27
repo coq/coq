@@ -293,12 +293,8 @@ let make_pure_subst evi args =
 let subst2 subst vsubst c =
   substl subst (replace_vars vsubst c)
 
-let push_rel_context_to_named_context env typ =
-  (* compute the instances relative to the named context and rel_context *)
+let push_rel_decl_to_named_context decl (subst, vsubst, avoid, env) =
   let open Context.Named.Declaration in
-  let ids = List.map get_id (named_context env) in
-  let inst_vars = List.map mkVar ids in
-  let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
   let replace_var_named_declaration id0 id decl =
     let id' = get_id decl in
     let id' = if Id.equal id0 id' then id else id' in
@@ -315,51 +311,56 @@ let push_rel_context_to_named_context env typ =
     | Name id' when id_ord id id' = 0 -> None
     | Name id' -> Some id'
   in
+  let open Context.Rel.Declaration in
+  let na = get_name decl in
+  let c = get_value decl in
+  let t = get_type decl in
+  let open Context.Named.Declaration in
+  let id =
+    (* ppedrot: we want to infer nicer names for the refine tactic, but
+        keeping at the same time backward compatibility in other code
+        using this function. For now, we only attempt to preserve the
+        old behaviour of Program, but ultimately, one should do something
+        about this whole name generation problem. *)
+    if Flags.is_program_mode () then next_name_away na avoid
+    else next_ident_away (id_of_name_using_hdchar env t na) avoid
+  in
+  match extract_if_neq id na with
+  | Some id0 when not (is_section_variable id0) ->
+      (* spiwack: if [id<>id0], rather than introducing a new
+          binding named [id], we will keep [id0] (the name given
+          by the user) and rename [id0] into [id] in the named
+          context. Unless [id] is a section variable. *)
+      let subst = List.map (replace_vars [id0,mkVar id]) subst in
+      let vsubst = (id0,mkVar id)::vsubst in
+      let d = match c with
+        | None -> LocalAssum (id0, subst2 subst vsubst t)
+        | Some c -> LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
+      in
+      let env = replace_var_named_context id0  id env in
+      (mkVar id0 :: subst, vsubst, id::avoid, push_named d env)
+  | _ ->
+      (* spiwack: if [id0] is a section variable renaming it is
+          incorrect. We revert to a less robust behaviour where
+          the new binder has name [id]. Which amounts to the same
+          behaviour than when [id=id0]. *)
+      let d = match c with
+        | None -> LocalAssum (id, subst2 subst vsubst t)
+        | Some c -> LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
+      in
+      (mkVar id :: subst, vsubst, id::avoid, push_named d env)
+
+let push_rel_context_to_named_context env typ =
+  (* compute the instances relative to the named context and rel_context *)
+  let open Context.Named.Declaration in
+  let ids = List.map get_id (named_context env) in
+  let inst_vars = List.map mkVar ids in
+  let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
   (* move the rel context to a named context and extend the named instance *)
   (* with vars of the rel context *)
   (* We do keep the instances corresponding to local definition (see above) *)
   let (subst, vsubst, _, env) =
-    Context.Rel.fold_outside
-      (fun decl (subst, vsubst, avoid, env) ->
-        let open Context.Rel.Declaration in
-        let na = get_name decl in
-	let c = get_value decl in
-	let t = get_type decl in
-        let open Context.Named.Declaration in
-        let id =
-          (* ppedrot: we want to infer nicer names for the refine tactic, but
-             keeping at the same time backward compatibility in other code
-             using this function. For now, we only attempt to preserve the
-             old behaviour of Program, but ultimately, one should do something
-             about this whole name generation problem. *)
-          if Flags.is_program_mode () then next_name_away na avoid
-          else next_ident_away (id_of_name_using_hdchar env t na) avoid
-        in
-        match extract_if_neq id na with
-        | Some id0 when not (is_section_variable id0) ->
-            (* spiwack: if [id<>id0], rather than introducing a new
-               binding named [id], we will keep [id0] (the name given
-               by the user) and rename [id0] into [id] in the named
-               context. Unless [id] is a section variable. *)
-            let subst = List.map (replace_vars [id0,mkVar id]) subst in
-            let vsubst = (id0,mkVar id)::vsubst in
-            let d = match c with
-              | None -> LocalAssum (id0, subst2 subst vsubst t)
-              | Some c -> LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
-            in
-            let env = replace_var_named_context id0  id env in
-            (mkVar id0 :: subst, vsubst, id::avoid, push_named d env)
-        | _ ->
-            (* spiwack: if [id0] is a section variable renaming it is
-               incorrect. We revert to a less robust behaviour where
-               the new binder has name [id]. Which amounts to the same
-               behaviour than when [id=id0]. *)
-            let d = match c with
-              | None -> LocalAssum (id, subst2 subst vsubst t)
-              | Some c -> LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
-            in
-	    (mkVar id :: subst, vsubst, id::avoid, push_named d env)
-      )
+    Context.Rel.fold_outside push_rel_decl_to_named_context
       (rel_context env) ~init:([], [], ids, env) in
   (named_context_val env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
