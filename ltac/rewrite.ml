@@ -438,14 +438,22 @@ let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
 
+let eq_pb (ty, env, x, y as pb) (ty', env', x', y' as pb') =
+  pb == pb' || (ty == ty' && Constr.equal x x' && Constr.equal y y')
+
+let problem_inclusion x y =
+  List.for_all (fun pb -> List.exists (fun pb' -> eq_pb pb pb') y) x
+
 let evd_convertible env evd x y =
   try
-    let evd = Evarconv.the_conv_x env x y evd in
     (* Unfortunately, the_conv_x might say they are unifiable even if some
-        unsolvable constraints remain, so we check them here *)
-    let evd = Evarconv.consider_remaining_unif_problems env evd in
-    let () = Evarconv.check_problems_are_solved env evd in
-    Some evd
+       unsolvable constraints remain, so we check that this unification
+       does not introduce any new problem. *)
+    let _, pbs = Evd.extract_all_conv_pbs evd in
+    let evd' = Evarconv.the_conv_x env x y evd in
+    let _, pbs' = Evd.extract_all_conv_pbs evd' in
+    if evd' == evd || problem_inclusion pbs' pbs then Some evd'
+    else None
   with e when CErrors.noncritical e -> None
 
 let convertible env evd x y =
