@@ -118,12 +118,29 @@ module ConstrPriority = struct
 
   type t = Globnames.global_reference * Environ.env * Constr.t
 
+  module ConstrSet = CSet.Make(Constr)
+
   (** A measure of the size of a term *)
   let rec size t =
     Constr.fold (fun s t -> 1 + s + size t) 0 t
 
+  (** Set of the "symbols" (definitions, inductives, constructors)
+      which appear in a term. *)
+  let rec symbols acc t =
+    let open Constr in
+    match kind t with
+    | Const _ | Ind _ | Construct _ -> ConstrSet.add t acc
+    | _ -> Constr.fold symbols acc t
+
+  (** The number of distinct "symbols" (see {!symbols}) which appear
+      in a term. *)
+  let num_symbols t =
+    ConstrSet.(cardinal (symbols empty t))
+
+    -(3*(num_symbols t) + size t)
+
   let compare (_,_,t1) (_,_,t2) =
-    -compare (size t1) (size t2)
+    compare (priority t1) (priority t2)
 end
 
 module PriorityQueue = Heap.Functional(ConstrPriority)
@@ -137,7 +154,9 @@ let rec iter_priority_queue q fn =
       with Heap.EmptyHeap -> None
   end in
   match next with
-  | Some (gref,env,t) -> fn gref env t; iter_priority_queue (PriorityQueue.remove q) fn
+  | Some (gref,env,t) ->
+    fn gref env t;
+    iter_priority_queue (PriorityQueue.remove q) fn
   | None -> ()
 
 let prioritize_search seq fn =
