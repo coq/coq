@@ -127,7 +127,11 @@ let generic_env_search glnumopt fn =
     required of a search. *)
 module ConstrPriority = struct
 
-  type t = Globnames.global_reference * Environ.env * Constr.t
+  (* The priority is memoised here. Because of the very localised use
+     of this module, it is not worth it making a convenient interface. *)
+  type t =
+    Globnames.global_reference * Environ.env * Constr.t * priority
+  and priority = int
 
   module ConstrSet = CSet.Make(Constr)
 
@@ -148,10 +152,11 @@ module ConstrPriority = struct
   let num_symbols t =
     ConstrSet.(cardinal (symbols empty t))
 
+  let priority t : priority =
     -(3*(num_symbols t) + size t)
 
-  let compare (_,_,t1) (_,_,t2) =
-    compare (priority t1) (priority t2)
+  let compare (_,_,_,p1) (_,_,_,p2) =
+    compare p1 p2
 end
 
 module PriorityQueue = Heap.Functional(ConstrPriority)
@@ -165,7 +170,7 @@ let rec iter_priority_queue q fn =
       with Heap.EmptyHeap -> None
   end in
   match next with
-  | Some (gref,env,t) ->
+  | Some (gref,env,t,_) ->
     fn gref env t;
     iter_priority_queue (PriorityQueue.remove q) fn
   | None -> ()
@@ -173,7 +178,8 @@ let rec iter_priority_queue q fn =
 let generic_search glnumopt fn =
   let acc = ref PriorityQueue.empty in
   let iter gref env t =
-    acc := PriorityQueue.add (gref,env,t) !acc
+    let p = ConstrPriority.priority t in
+    acc := PriorityQueue.add (gref,env,t,p) !acc
   in
   let () = generic_env_search glnumopt iter in
   iter_priority_queue !acc fn
