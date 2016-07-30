@@ -107,6 +107,47 @@ let generic_search glnumopt fn =
   | Some glnum ->  iter_hypothesis glnum fn);
   iter_declarations fn
 
+(** This module defines a preference on constrs in the form of a
+    [compare] function (preferred constr must be big for this
+    functions, so preferences such as small constr must use a reversed
+    order). This priority will be used to order search results and
+    propose first results which are more likely to be relevant to the
+    query, this is why the type [t] contains the other elements
+    required of a search. *)
+module ConstrPriority = struct
+
+  type t = Globnames.global_reference * Environ.env * Constr.t
+
+  (** A measure of the size of a term *)
+  let rec size t =
+    Constr.fold (fun s t -> 1 + s + size t) 0 t
+
+  let compare (_,_,t1) (_,_,t2) =
+    -compare (size t1) (size t2)
+end
+
+module PriorityQueue = Heap.Functional(ConstrPriority)
+
+let rec iter_priority_queue q fn =
+  (* use an option to make the function tail recursive. Will be
+     obsoleted with Ocaml 4.02 with the [match … with | exception …]
+     syntax. *)
+  let next = begin
+      try Some (PriorityQueue.maximum q)
+      with Heap.EmptyHeap -> None
+  end in
+  match next with
+  | Some (gref,env,t) -> fn gref env t; iter_priority_queue (PriorityQueue.remove q) fn
+  | None -> ()
+
+let prioritize_search seq fn =
+  let acc = ref PriorityQueue.empty in
+  let iter gref env t =
+    acc := PriorityQueue.add (gref,env,t) !acc
+  in
+  let () = seq iter in
+  iter_priority_queue !acc fn
+
 (** Filters *)
 
 (** This function tries to see whether the conclusion matches a pattern. *)
