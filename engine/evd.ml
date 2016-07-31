@@ -1258,6 +1258,12 @@ let pr_instance_status (sc,typ) =
   | TypeProcessed -> str " [type is checked]"
   end
 
+let protect f x =
+  try f x
+  with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
+
+let print_constr a = protect print_constr a
+
 let pr_meta_map mmap =
   let pr_name = function
       Name id -> str"[" ++ pr_id id ++ str"]"
