@@ -293,7 +293,7 @@ let make_pure_subst evi args =
 let subst2 subst vsubst c =
   substl subst (replace_vars vsubst c)
 
-let push_rel_decl_to_named_context decl (subst, vsubst, avoid, env) =
+let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
   let open Context.Named.Declaration in
   let replace_var_named_declaration id0 id decl =
     let id' = get_id decl in
@@ -301,20 +301,13 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, env) =
     let vsubst = [id0 , mkVar id] in
     decl |> set_id id' |> map_constr (replace_vars vsubst)
   in
-  let replace_var_named_context id0 id  env =
-    let nc = Environ.named_context env in
-    let nc' = List.map (replace_var_named_declaration id0 id) nc in
-    Environ.reset_with_named_context (val_of_named_context nc') env
-  in
   let extract_if_neq id = function
     | Anonymous -> None
     | Name id' when id_ord id id' = 0 -> None
     | Name id' -> Some id'
   in
   let open Context.Rel.Declaration in
-  let na = get_name decl in
-  let c = get_value decl in
-  let t = get_type decl in
+  let (na, c, t) = to_tuple decl in
   let open Context.Named.Declaration in
   let id =
     (* ppedrot: we want to infer nicer names for the refine tactic, but
@@ -323,7 +316,10 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, env) =
         old behaviour of Program, but ultimately, one should do something
         about this whole name generation problem. *)
     if Flags.is_program_mode () then next_name_away na avoid
-    else next_ident_away (id_of_name_using_hdchar env t na) avoid
+    else
+      (** id_of_name_using_hdchar only depends on the rel context which is empty
+          here *)
+      next_ident_away (id_of_name_using_hdchar empty_env t na) avoid
   in
   match extract_if_neq id na with
   | Some id0 when not (is_section_variable id0) ->
@@ -337,8 +333,8 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, env) =
         | None -> LocalAssum (id0, subst2 subst vsubst t)
         | Some c -> LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
       in
-      let env = replace_var_named_context id0  id env in
-      (mkVar id0 :: subst, vsubst, id::avoid, push_named d env)
+      let nc = List.map (replace_var_named_declaration id0 id) nc in
+      (mkVar id0 :: subst, vsubst, id::avoid, d :: nc)
   | _ ->
       (* spiwack: if [id0] is a section variable renaming it is
           incorrect. We revert to a less robust behaviour where
@@ -348,7 +344,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, env) =
         | None -> LocalAssum (id, subst2 subst vsubst t)
         | Some c -> LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
       in
-      (mkVar id :: subst, vsubst, id::avoid, push_named d env)
+      (mkVar id :: subst, vsubst, id::avoid, d :: nc)
 
 let push_rel_context_to_named_context env typ =
   (* compute the instances relative to the named context and rel_context *)
@@ -361,8 +357,8 @@ let push_rel_context_to_named_context env typ =
   (* We do keep the instances corresponding to local definition (see above) *)
   let (subst, vsubst, _, env) =
     Context.Rel.fold_outside push_rel_decl_to_named_context
-      (rel_context env) ~init:([], [], ids, env) in
-  (named_context_val env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
+      (rel_context env) ~init:([], [], ids, named_context env) in
+  (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
 (*------------------------------------*
  * Entry points to define new evars   *

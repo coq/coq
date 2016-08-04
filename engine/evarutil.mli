@@ -202,9 +202,9 @@ val clear_hyps2_in_evi : env -> evar_map ref -> named_context_val -> types -> ty
 val push_rel_decl_to_named_context :
   Context.Rel.Declaration.t ->
   Vars.substl * (Names.Id.t * Constr.constr) list *
-  Names.Id.t list * Environ.env ->
+  Names.Id.t list * Context.Named.t ->
   Term.constr list * (Names.Id.t * Constr.constr) list *
-  Names.Id.t list * Environ.env
+  Names.Id.t list * Context.Named.t
 
 val push_rel_context_to_named_context : Environ.env -> types ->
   named_context_val * types * constr list * constr list * (identifier*constr) list
