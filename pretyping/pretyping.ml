@@ -73,19 +73,51 @@ struct
 
 type t = {
   env : Environ.env;
+  extra : Evarutil.ext_named_context Lazy.t;
+  (** Delay the computation of the evar extended environment *)
 }
 
-let make_env env = { env = env }
+let get_extra env =
+  let open Context.Named.Declaration in
+  let ids = List.map get_id (named_context env) in
+  let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
+  Context.Rel.fold_outside push_rel_decl_to_named_context
+    (Environ.rel_context env) ~init:([], [], avoid, named_context env)
+
+let make_env env = { env = env; extra = lazy (get_extra env) }
 let rel_context env = rel_context env.env
-let push_rel d env = { env = push_rel d env.env }
-let pop_rel_context n env = { env = pop_rel_context n env.env }
-let push_rel_context ctx env = { env = push_rel_context ctx env.env }
+
+let push_rel d env = {
+  env = push_rel d env.env;
+  extra = lazy (push_rel_decl_to_named_context d (Lazy.force env.extra));
+}
+
+let pop_rel_context n env = make_env (pop_rel_context n env.env)
+
+let push_rel_context ctx env = {
+  env = push_rel_context ctx env.env;
+  extra = lazy (List.fold_right push_rel_decl_to_named_context ctx (Lazy.force env.extra));
+}
+
 let lookup_named id env = lookup_named id env.env
-let e_new_evar env evdref ?src ?naming typ = e_new_evar env.env evdref ?src ?naming typ
+
+let e_new_evar env evdref ?src ?naming typ =
+  let subst2 subst vsubst c = substl subst (replace_vars vsubst c) in
+  let open Context.Named.Declaration in
+  let inst_vars = List.map (fun d -> mkVar (get_id d)) (named_context env.env) in
+  let inst_rels = List.rev (rel_list 0 (nb_rel env.env)) in
+  let (subst, vsubst, _, nc) = Lazy.force env.extra in
+  let typ' = subst2 subst vsubst typ in
+  let instance = inst_rels @ inst_vars in
+  let sign = val_of_named_context nc in
+  let sigma = Sigma.Unsafe.of_evar_map !evdref in
+  let Sigma (e, sigma, _) = new_evar_instance sign sigma typ' ?src ?naming instance in
+  evdref := Sigma.to_evar_map sigma;
+  e
+
 let push_rec_types (lna,typarray,_) env =
   let ctxt = Array.map2_i (fun i na t -> Context.Rel.Declaration.LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
-let push_rel_assum v env = { env = push_rel_assum v env.env }
 
 end
 
@@ -772,7 +804,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
           { j with utj_val = lift 1 j.utj_val }
       | Name _ ->
         let var = (name,j.utj_val) in
-        let env' = push_rel_assum var env in
+        let env' = ExtraEnv.make_env (push_rel_assum var env.ExtraEnv.env) in
           pretype_type empty_valcon env' evdref lvar c2
     in
     let name = ltac_interp_name lvar name in

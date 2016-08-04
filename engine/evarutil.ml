@@ -302,6 +302,10 @@ let next_name_away na avoid =
   let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
   next_ident_away_from id avoid
 
+type ext_named_context =
+  Vars.substl * (Id.t * Constr.constr) list *
+  Id.Set.t * Context.Named.t
+
 let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
   let open Context.Named.Declaration in
   let replace_var_named_declaration id0 id decl =
