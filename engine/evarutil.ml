@@ -293,6 +293,15 @@ let make_pure_subst evi args =
 let subst2 subst vsubst c =
   substl subst (replace_vars vsubst c)
 
+let next_ident_away id avoid =
+  let avoid id = Id.Set.mem id avoid in
+  next_ident_away_from id avoid
+
+let next_name_away na avoid =
+  let avoid id = Id.Set.mem id avoid in
+  let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
+  next_ident_away_from id avoid
+
 let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
   let open Context.Named.Declaration in
   let replace_var_named_declaration id0 id decl =
@@ -334,7 +343,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
         | Some c -> LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
       in
       let nc = List.map (replace_var_named_declaration id0 id) nc in
-      (mkVar id0 :: subst, vsubst, id::avoid, d :: nc)
+      (mkVar id0 :: subst, vsubst, Id.Set.add id avoid, d :: nc)
   | _ ->
       (* spiwack: if [id0] is a section variable renaming it is
           incorrect. We revert to a less robust behaviour where
@@ -344,12 +353,13 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
         | None -> LocalAssum (id, subst2 subst vsubst t)
         | Some c -> LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
       in
-      (mkVar id :: subst, vsubst, id::avoid, d :: nc)
+      (mkVar id :: subst, vsubst, Id.Set.add id avoid, d :: nc)
 
 let push_rel_context_to_named_context env typ =
   (* compute the instances relative to the named context and rel_context *)
   let open Context.Named.Declaration in
   let ids = List.map get_id (named_context env) in
+  let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
   let inst_vars = List.map mkVar ids in
   let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
   (* move the rel context to a named context and extend the named instance *)
@@ -357,7 +367,7 @@ let push_rel_context_to_named_context env typ =
   (* We do keep the instances corresponding to local definition (see above) *)
   let (subst, vsubst, _, env) =
     Context.Rel.fold_outside push_rel_decl_to_named_context
-      (rel_context env) ~init:([], [], ids, named_context env) in
+      (rel_context env) ~init:([], [], avoid, named_context env) in
   (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
 (*------------------------------------*
