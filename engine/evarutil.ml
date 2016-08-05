@@ -290,8 +290,18 @@ let make_pure_subst evi args =
  *   we have the property that u and phi(t) are convertible in env.
  *)
 
+let csubst_subst (k, s) c =
+  let rec subst n c = match Constr.kind c with
+  | Rel m ->
+    if m <= n then c
+    else if m - n <= k then Int.Map.find (k - m + n) s
+    else mkRel (m - k)
+  | _ -> Constr.map_with_binders succ subst n c
+  in
+  if k = 0 then c else subst 0 c
+
 let subst2 subst vsubst c =
-  substl subst (replace_vars vsubst c)
+  csubst_subst subst (replace_vars vsubst c)
 
 let next_ident_away id avoid =
   let avoid id = Id.Set.mem id avoid in
@@ -302,9 +312,17 @@ let next_name_away na avoid =
   let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
   next_ident_away_from id avoid
 
+type csubst = int * Constr.t Int.Map.t
+
+let empty_csubst = (0, Int.Map.empty)
+
 type ext_named_context =
-  Vars.substl * (Id.t * Constr.constr) list *
+  csubst * (Id.t * Constr.constr) list *
   Id.Set.t * Context.Named.t
+
+let push_var id (n, s) =
+  let s = Int.Map.add n (mkVar id) s in
+  (succ n, s)
 
 let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
   let open Context.Named.Declaration in
@@ -340,14 +358,14 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
           binding named [id], we will keep [id0] (the name given
           by the user) and rename [id0] into [id] in the named
           context. Unless [id] is a section variable. *)
-      let subst = List.map (replace_vars [id0,mkVar id]) subst in
+      let subst = (fst subst, Int.Map.map (replace_vars [id0,mkVar id]) (snd subst)) in
       let vsubst = (id0,mkVar id)::vsubst in
       let d = match c with
         | None -> LocalAssum (id0, subst2 subst vsubst t)
         | Some c -> LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
       in
       let nc = List.map (replace_var_named_declaration id0 id) nc in
-      (mkVar id0 :: subst, vsubst, Id.Set.add id avoid, d :: nc)
+      (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc)
   | _ ->
       (* spiwack: if [id0] is a section variable renaming it is
           incorrect. We revert to a less robust behaviour where
@@ -357,7 +375,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
         | None -> LocalAssum (id, subst2 subst vsubst t)
         | Some c -> LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
       in
-      (mkVar id :: subst, vsubst, Id.Set.add id avoid, d :: nc)
+      (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc)
 
 let push_rel_context_to_named_context env typ =
   (* compute the instances relative to the named context and rel_context *)
@@ -371,7 +389,7 @@ let push_rel_context_to_named_context env typ =
   (* We do keep the instances corresponding to local definition (see above) *)
   let (subst, vsubst, _, env) =
     Context.Rel.fold_outside push_rel_decl_to_named_context
-      (rel_context env) ~init:([], [], avoid, named_context env) in
+      (rel_context env) ~init:(empty_csubst, [], avoid, named_context env) in
   (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
 (*------------------------------------*
