@@ -1165,7 +1165,7 @@ let match_cases_pattern_list match_fun metas sigma rest x y iter termin lassoc =
   let l,(terms,onlybinders,termlists,binderlists as sigma) = aux sigma [] rest in
   (terms,onlybinders,(x,if lassoc then l else List.rev l)::termlists, binderlists)
 
-let rec match_cases_pattern metas (terms,x,termlists,y as sigma) a1 a2 =
+let rec match_cases_pattern metas (terms,(),termlists,() as sigma) a1 a2 =
  match (a1,a2) with
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
   | PatVar (_,Anonymous), NHole _ -> sigma,(0,[])

@@ -310,7 +310,7 @@ let base_r = function
 let reset_needed, add_needed, add_needed_mp, found_needed, is_needed =
   let needed = ref Refset'.empty
   and needed_mps = ref MPset.empty in
-  ((fun l -> needed := Refset'.empty; needed_mps := MPset.empty),
+  ((fun () -> needed := Refset'.empty; needed_mps := MPset.empty),
    (fun r -> needed := Refset'.add (base_r r) !needed),
    (fun mp -> needed_mps := MPset.add mp !needed_mps),
    (fun r -> needed := Refset'.remove (base_r r) !needed),

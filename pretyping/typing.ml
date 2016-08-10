@@ -110,18 +110,18 @@ let e_type_case_branches env evdref (ind,largs) pj c =
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
-  let univ = e_is_correct_arity env evdref c pj ind specif params in
+  let () = e_is_correct_arity env evdref c pj ind specif params in
   let lc = build_branches_type ind specif params p in
   let n = (snd specif).Declarations.mind_nrealdecls in
   let ty = whd_betaiota !evdref (lambda_applist_assum (n+1) p (realargs@[c])) in
-  (lc, ty, univ)
+  (lc, ty)
 
 let e_judge_of_case env evdref ci pj cj lfj =
   let indspec =
     try find_mrectype env !evdref cj.uj_type
     with Not_found -> error_case_not_inductive env cj in
   let _ = check_case_info env (fst indspec) ci in
-  let (bty,rslty,univ) = e_type_case_branches env evdref indspec pj cj.uj_val in
+  let (bty,rslty) = e_type_case_branches env evdref indspec pj cj.uj_val in
   e_check_branch_types env evdref (fst indspec) cj (lfj,bty);
   { uj_val  = mkCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
     uj_type = rslty }
