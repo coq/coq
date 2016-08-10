@@ -116,14 +116,14 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
   | Atype _ , _ | _, Atype _ -> assert false
   | Aind _, _ | Aid _, _ -> raise NotConvertible
 
-and conv_stack env ?from:(from=0) k stk1 stk2 cu =
+and conv_stack env k stk1 stk2 cu =
   match stk1, stk2 with
   | [], [] -> cu
   | Zapp args1 :: stk1, Zapp args2 :: stk2 ->
-      conv_stack env k stk1 stk2 (conv_arguments env ~from:from k args1 args2 cu)
+      conv_stack env k stk1 stk2 (conv_arguments env k args1 args2 cu)
   | Zfix(f1,args1) :: stk1, Zfix(f2,args2) :: stk2 ->
       conv_stack env k stk1 stk2
-	(conv_arguments env ~from:from k args1 args2 (conv_fix env k f1 f2 cu))
+	(conv_arguments env k args1 args2 (conv_fix env k f1 f2 cu))
   | Zswitch sw1 :: stk1, Zswitch sw2 :: stk2 ->
       if check_switch sw1 sw2 then
 	let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
