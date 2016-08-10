@@ -790,16 +790,16 @@ let merge_universe_subst evd subst =
 let with_context_set ?loc rigid d (a, ctx) =
   (merge_context_set ?loc rigid d ctx, a)
 
-let new_univ_level_variable ?loc ?name ?(predicative=true) rigid evd =
+let new_univ_level_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, u)
 
-let new_univ_variable ?loc ?name ?(predicative=true) rigid evd =
+let new_univ_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?loc ?name ?(predicative=true) rigid d =
-  let (d', u) = new_univ_variable ?loc rigid ?name ~predicative d in
+let new_sort_variable ?loc ?name rigid d =
+  let (d', u) = new_univ_variable ?loc rigid ?name d in
     (d', Type u)
 
 let add_global_univ d u =
