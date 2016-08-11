@@ -340,6 +340,12 @@ struct
     let of_tuple = function
       | id, None, ty -> LocalAssum (id, ty)
       | id, Some v, ty -> LocalDef (id, v, ty)
+
+    let of_rel f = function
+      | Rel.Declaration.LocalAssum (na,t) ->
+          LocalAssum (f na, t)
+      | Rel.Declaration.LocalDef (na,v,t) ->
+          LocalDef (f na, v, t)
   end
 
   (** Named-context is represented as a list of declarations.
