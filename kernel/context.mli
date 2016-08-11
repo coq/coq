@@ -81,7 +81,6 @@ sig
     (** Reduce all terms in a given declaration to a single value. *)
     val fold : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
 
-    val to_tuple : t -> Name.t * Constr.t option * Constr.t
     val of_tuple : Name.t * Constr.t option * Constr.t -> t
   end
 

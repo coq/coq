@@ -143,10 +143,6 @@ struct
       | LocalAssum (n,ty) -> f ty acc
       | LocalDef (n,v,ty) -> f ty (f v acc)
 
-    let to_tuple = function
-      | LocalAssum (na, ty) -> na, None, ty
-      | LocalDef (na, v, ty) -> na, Some v, ty
-
     let of_tuple = function
       | n, None, ty -> LocalAssum (n,ty)
       | n, Some v, ty -> LocalDef (n,v,ty)
