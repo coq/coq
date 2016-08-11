@@ -142,10 +142,6 @@ struct
       match decl with
       | LocalAssum (n,ty) -> f ty acc
       | LocalDef (n,v,ty) -> f ty (f v acc)
-
-    let of_tuple = function
-      | n, None, ty -> LocalAssum (n,ty)
-      | n, Some v, ty -> LocalDef (n,v,ty)
   end
 
   (** Rel-context is represented as a list of declarations.
