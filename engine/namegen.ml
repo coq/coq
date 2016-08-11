@@ -114,9 +114,9 @@ let hdchar env c =
     | Rel n ->
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else
-	   try match Environ.lookup_rel (n-k) env |> to_tuple with
-	     | (Name id,_,_)   -> lowercase_first_char id
-	     | (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
+	   try match Environ.lookup_rel (n-k) env with
+	     | LocalAssum (Name id,_)   | LocalDef (Name id,_,_) -> lowercase_first_char id
+	     | LocalAssum (Anonymous,t) | LocalDef (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
 	   with Not_found -> "y")
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
 	let id = match lna.(i) with Name id -> id | _ -> assert false in
