@@ -821,9 +821,8 @@ let define_tac id args body gls =
 
 let cast_tac id_or_thesis typ gls =
   match id_or_thesis with
-      This id ->
-	let body = pf_get_hyp gls id |> get_value in
-	  Proofview.V82.of_tactic (convert_hyp (of_tuple (id,body,typ))) gls
+    | This id ->
+        Proofview.V82.of_tactic  (pf_get_hyp gls id |> set_id id |> set_type typ |> convert_hyp) gls
     | Thesis (For _ ) ->
 	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->

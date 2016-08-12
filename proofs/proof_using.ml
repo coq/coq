@@ -35,12 +35,14 @@ let in_nameset =
 let rec close_fwd e s =
   let s' =
     List.fold_left (fun s decl ->
-      let (id,b,ty) = Context.Named.Declaration.to_tuple decl in
-      let vb = Option.(default Id.Set.empty (map (global_vars_set e) b)) in
-      let vty = global_vars_set e ty in
+      let vb = match decl with
+               | LocalAssum _ -> Id.Set.empty
+               | LocalDef (_,b,_) -> global_vars_set e b
+      in
+      let vty = global_vars_set e (get_type decl) in
       let vbty = Id.Set.union vb vty in
       if Id.Set.exists (fun v -> Id.Set.mem v s) vbty
-      then Id.Set.add id (Id.Set.union s vbty) else s)
+      then Id.Set.add (get_id decl) (Id.Set.union s vbty) else s)
     s (named_context e)
     in
   if Id.Set.equal s s' then s else close_fwd e s'

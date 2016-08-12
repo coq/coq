@@ -213,7 +213,7 @@ let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
     | d :: right ->
-        let hyp,_,typ = to_tuple d in
+        let hyp = get_id d in
       	if Id.equal hyp hfrom then
 	  (left,right,d, toleft || move_location_eq hto MoveLast)
       	else
@@ -489,15 +489,16 @@ and mk_casegoals sigma goal goalacc p c =
 
 
 let convert_hyp check sign sigma d =
-  let id,b,bt = to_tuple d in
+  let id = get_id d in
+  let b = get_value d in
   let env = Global.env() in
   let reorder = ref [] in
   let sign' =
     apply_to_hyp check sign id
       (fun _ d' _ ->
-        let _,c,ct = to_tuple d' in
+        let c = get_value d' in
         let env = Global.env_of_context sign in
-        if check && not (is_conv env sigma bt ct) then
+        if check && not (is_conv env sigma (get_type d) (get_type d')) then
 	  errorlabstrm "Logic.convert_hyp"
             (str "Incorrect change of the type of " ++ pr_id id ++ str ".");
         if check && not (Option.equal (is_conv env sigma) b c) then

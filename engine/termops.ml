@@ -983,7 +983,10 @@ let rec mem_named_context id ctxt =
 
 let compact_named_context_reverse sign =
   let compact l decl =
-    let (i1,c1,t1) = NamedDecl.to_tuple decl in
+    let (i1,c1,t1) = match decl with
+                     | NamedDecl.LocalAssum (i,t) -> i,None,t
+                     | NamedDecl.LocalDef (i,c,t) -> i,Some c,t
+    in
     match l with
     | [] -> [[i1],c1,t1]
     | (l2,c2,t2)::q ->

@@ -1697,8 +1697,8 @@ let destructure_hyps =
     let rec loop = function
       | [] -> (Tacticals.New.tclTHEN nat_inject coq_omega)
       | decl::lit ->
-          let (i,_,t) = to_tuple decl in
-	  begin try match destructurate_prop t with
+          let i = get_id decl in
+	  begin try match destructurate_prop (get_type decl) with
 	  | Kapp(False,[]) -> elim_id i
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
           | Kapp(Or,[t1;t2]) ->
