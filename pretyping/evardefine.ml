@@ -19,21 +19,21 @@ open Evarutil
 open Pretype_errors
 open Sigma.Notations
 
+module RelDecl = Context.Rel.Declaration
+
 let new_evar_unsafe env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
   let evd = Sigma.Unsafe.of_evar_map evd in
   let Sigma (evk, evd, _) = new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ in
   (Sigma.to_evar_map evd, evk)
 
 let env_nf_evar sigma env =
-  let open Context.Rel.Declaration in
   process_rel_context
-    (fun d e -> push_rel (map_constr (nf_evar sigma) d) e) env
+    (fun d e -> push_rel (RelDecl.map_constr (nf_evar sigma) d) e) env
 
 let env_nf_betaiotaevar sigma env =
-  let open Context.Rel.Declaration in
   process_rel_context
     (fun d e ->
-      push_rel (map_constr (Reductionops.nf_betaiota sigma) d) e) env
+      push_rel (RelDecl.map_constr (Reductionops.nf_betaiota sigma) d) e) env
 
 (****************************************)
 (* Operations on value/type constraints *)

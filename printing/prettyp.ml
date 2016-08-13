@@ -27,6 +27,10 @@ open Recordops
 open Misctypes
 open Printer
 open Printmod
+open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 
 type object_pr = {
   print_inductive           : mutual_inductive -> std_ppcmds;
@@ -132,7 +136,6 @@ let print_renames_list prefix l =
 let need_expansion impl ref =
   let typ = Global.type_of_global_unsafe ref in
   let ctx = prod_assum typ in
-  let open Context.Rel.Declaration in
   let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
     let _,lastimpl = List.chop nprods impl in
@@ -170,9 +173,8 @@ type opacity =
   | TransparentMaybeOpacified of Conv_oracle.level
 
 let opacity env =
-  let open Context.Named.Declaration in
   function
-  | VarRef v when is_local_def (Environ.lookup_named v env) ->
+  | VarRef v when NamedDecl.is_local_def (Environ.lookup_named v env) ->
       Some(TransparentMaybeOpacified
         (Conv_oracle.get_strategy (Environ.oracle env) (VarKey v)))
   | ConstRef cst ->
@@ -733,8 +735,7 @@ let print_any_name = function
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
     if not (DirPath.is_empty dir) then raise Not_found;
-    let open Context.Named.Declaration in
-    str |> Global.lookup_named |> set_id str |> print_named_decl
+    str |> Global.lookup_named |> NamedDecl.set_id str |> print_named_decl
   with Not_found ->
     errorlabstrm
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
@@ -762,8 +763,7 @@ let print_opaque_name qid =
 	let ty = Universes.unsafe_type_of_global gr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
-        let open Context.Named.Declaration in
-        lookup_named id env |> set_id id |> print_named_decl
+        lookup_named id env |> NamedDecl.set_id id |> print_named_decl
 
 let print_about_any loc k =
   match k with

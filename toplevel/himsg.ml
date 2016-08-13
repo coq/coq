@@ -25,6 +25,8 @@ open Printer
 open Evd
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (* This simplifies the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)
 let contract env lc =
@@ -35,9 +37,9 @@ let contract env lc =
           l := (Vars.substl !l c') :: !l;
           env
       | _ ->
-          let t' = Vars.substl !l (get_type decl) in
-          let c' = Option.map (Vars.substl !l) (get_value decl) in
-          let na' = named_hd env t' (get_name decl) in
+          let t' = Vars.substl !l (RelDecl.get_type decl) in
+          let c' = Option.map (Vars.substl !l) (RelDecl.get_value decl) in
+          let na' = named_hd env t' (RelDecl.get_name decl) in
           l := (mkRel 1) :: List.map (Vars.lift 1) !l;
           match c' with
           | None -> push_rel (LocalAssum (na',t')) env

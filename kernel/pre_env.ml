@@ -17,7 +17,8 @@ open Util
 open Names
 open Term
 open Declarations
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (* The type of environments. *)
 
@@ -127,7 +128,7 @@ let env_of_rel n env =
 
 let push_named_context_val d (ctxt,vals) =
   let rval = ref VKnone in
-    Context.Named.add d ctxt, (get_id d,rval)::vals
+    Context.Named.add d ctxt, (NamedDecl.get_id d,rval)::vals
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
@@ -135,7 +136,7 @@ let push_named d env =
   let rval = ref VKnone in
   { env_globals = env.env_globals;
     env_named_context = Context.Named.add d env.env_named_context;
-    env_named_vals = (get_id d, rval) :: env.env_named_vals;
+    env_named_vals = (NamedDecl.get_id d, rval) :: env.env_named_vals;
     env_rel_context = env.env_rel_context;
     env_rel_val = env.env_rel_val;
     env_nb_rel = env.env_nb_rel;

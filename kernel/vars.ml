@@ -8,7 +8,8 @@
 
 open Names
 open Esubst
-open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
 
 (*********************)
 (*     Occurring     *)
@@ -160,14 +161,15 @@ let substnl laml n c = substn_many (make_subst laml) n c
 let substl laml c = substn_many (make_subst laml) 0 c
 let subst1 lam c = substn_many [|make_substituend lam|] 0 c
 
-let substnl_decl laml k r = map_constr (fun c -> substnl laml k c) r
-let substl_decl laml r = map_constr (fun c -> substnl laml 0 c) r
-let subst1_decl lam r = map_constr (fun c -> subst1 lam c) r
+let substnl_decl laml k r = RelDecl.map_constr (fun c -> substnl laml k c) r
+let substl_decl laml r = RelDecl.map_constr (fun c -> substnl laml 0 c) r
+let subst1_decl lam r = RelDecl.map_constr (fun c -> subst1 lam c) r
 
 (* Build a substitution from an instance, inserting missing let-ins *)
 
 let subst_of_rel_context_instance sign l =
   let rec aux subst sign l =
+    let open RelDecl in
     match sign, l with
     | LocalAssum _ :: sign', a::args' -> aux (a::subst) sign' args'
     | LocalDef (_,c,_)::sign', args' ->

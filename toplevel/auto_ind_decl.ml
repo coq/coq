@@ -25,7 +25,8 @@ open Tactics
 open Ind_tables
 open Misctypes
 open Proofview.Notations
-open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
 
 let out_punivs = Univ.out_punivs
 
@@ -150,14 +151,14 @@ let build_beq_scheme mode kn =
           ( fun a b decl -> (* mkLambda(n,b,a) ) *)
                 (* here I leave the Naming thingy so that the type of
                   the function is more readable for the user *)
-                mkNamedLambda (eqName (get_name decl)) b a )
+                mkNamedLambda (eqName (RelDecl.get_name decl)) b a )
                 c (List.rev eqs_typ) lnamesparrec
        in
         List.fold_left (fun a decl ->(* mkLambda(n,t,a)) eq_input rel_list *)
           (* Same here , hoping the auto renaming will do something good ;)  *)
           mkNamedLambda
-                (match get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
-                (get_type decl)  a) eq_input lnamesparrec
+                (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (RelDecl.get_type decl)  a) eq_input lnamesparrec
  in
  let make_one_eq cur =
   let u = Univ.Instance.empty in
@@ -249,7 +250,7 @@ let build_beq_scheme mode kn =
                     | 0 -> Lazy.force tt
                     | _ -> let eqs = Array.make nb_cstr_args (Lazy.force tt) in
                       for ndx = 0 to nb_cstr_args-1 do
-                        let cc = get_type (List.nth constrsi.(i).cs_args ndx) in
+                        let cc = RelDecl.get_type (List.nth constrsi.(i).cs_args ndx) in
                           let eqA, eff' = compute_A_equality rel_list
                                           nparrec
                                           (nparrec+3+2*nb_cstr_args)
@@ -268,14 +269,14 @@ let build_beq_scheme mode kn =
                           (Array.sub eqs 1 (nb_cstr_args - 1))
                   )
    		  in
-		    (List.fold_left (fun a decl -> mkLambda (get_name decl, get_type decl, a)) cc
+		    (List.fold_left (fun a decl -> mkLambda (RelDecl.get_name decl, RelDecl.get_type decl, a)) cc
                     (constrsj.(j).cs_args)
 		)
 	      else ar2.(j) <- (List.fold_left (fun a decl ->
-			mkLambda (get_name decl, get_type decl, a)) (Lazy.force ff) (constrsj.(j).cs_args) )
+			mkLambda (RelDecl.get_name decl, RelDecl.get_type decl, a)) (Lazy.force ff) (constrsj.(j).cs_args) )
 	    done;
 
-	  ar.(i) <- (List.fold_left (fun a decl -> mkLambda (get_name decl, get_type decl, a))
+	  ar.(i) <- (List.fold_left (fun a decl -> mkLambda (RelDecl.get_name decl, RelDecl.get_type decl, a))
 			(mkCase (ci,do_predicate rel_list nb_cstr_args,
 				  mkVar (Id.of_string "Y") ,ar2))
 			 (constrsi.(i).cs_args))
@@ -489,7 +490,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   [(in,eq_in,in_bl,in_al),,...,(i1,eq_i1,i1_bl_i1_al  )]
 *)
 let list_id l = List.fold_left ( fun a decl -> let s' =
-      match get_name decl with
+      match RelDecl.get_name decl with
         Name s -> Id.to_string s
       | Anonymous -> "A" in
           (Id.of_string s',Id.of_string ("eq_"^s'),
@@ -537,8 +538,8 @@ let compute_bl_goal ind lnamesparrec nparrec =
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
-                (match get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
-                (get_type decl) a) eq_input lnamesparrec
+                (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
       let n = Id.of_string "x" and
           m = Id.of_string "y" in
@@ -680,8 +681,8 @@ let compute_lb_goal ind lnamesparrec nparrec =
         mkNamedProd seq b a
       ) lb_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
-                (match (get_name decl) with Name s -> s | Anonymous ->  Id.of_string "A")
-                (get_type decl)  a) eq_input lnamesparrec
+                (match (RelDecl.get_name decl) with Name s -> s | Anonymous ->  Id.of_string "A")
+                (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
       let n = Id.of_string "x" and
           m = Id.of_string "y" in
@@ -821,8 +822,8 @@ let compute_dec_goal ind lnamesparrec nparrec =
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
-                (match get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
-                (get_type decl) a) eq_input lnamesparrec
+                (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
       let n = Id.of_string "x" and
           m = Id.of_string "y" in

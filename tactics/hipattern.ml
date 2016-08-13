@@ -19,6 +19,8 @@ open Declarations
 open Tacmach.New
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
    general disjunction, or a type with no constructors.
@@ -100,7 +102,7 @@ let match_with_one_constructor style onlybinary allow_rec t =
 	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
 	  if
 	    List.for_all
-	      (fun decl -> let c = get_type decl in
+	      (fun decl -> let c = RelDecl.get_type decl in
 	                   is_local_assum decl &&
 			   isRel c &&
                            Int.equal (destRel c) mib.mind_nparams) ctx
@@ -109,7 +111,7 @@ let match_with_one_constructor style onlybinary allow_rec t =
 	  else None
 	else
 	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
-	  let cargs = List.map get_type (prod_assum ctyp) in
+	  let cargs = List.map RelDecl.get_type (prod_assum ctyp) in
 	  if not (is_lax_conjunction style) || has_nodep_prod ctyp then
 	    (* Record or non strict conjunction *)
 	    Some (hdapp,List.rev cargs)

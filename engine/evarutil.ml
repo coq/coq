@@ -18,6 +18,9 @@ open Environ
 open Evd
 open Sigma.Notations
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 let safe_evar_value sigma ev =
   try Some (Evd.existential_value sigma ev)
   with NotInstantiatedEvar | Not_found -> None
@@ -161,11 +164,11 @@ let is_ground_term evd t =
   not (has_undefined_evars evd t)
 
 let is_ground_env evd env =
-  let open Context.Rel.Declaration in
+  let open RelDecl in
   let is_ground_rel_decl = function
     | LocalDef (_,b,_) -> is_ground_term evd b
     | _ -> true in
-  let open Context.Named.Declaration in
+  let open NamedDecl in
   let is_ground_named_decl = function
     | LocalDef (_,b,_) -> is_ground_term evd b
     | _ -> true in
@@ -249,11 +252,10 @@ let non_instantiated sigma =
 (************************)
 
 let make_pure_subst evi args =
-  let open Context.Named.Declaration in
   snd (List.fold_right
     (fun decl (args,l) ->
       match args with
-        | a::rest -> (rest, (get_id decl, a)::l)
+        | a::rest -> (rest, (NamedDecl.get_id decl, a)::l)
         | _ -> anomaly (Pp.str "Instance does not match its signature"))
     (evar_filtered_context evi) (Array.rev_to_list args,[]))
 
@@ -327,10 +329,10 @@ let push_var id (n, s) =
 let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
   let open Context.Named.Declaration in
   let replace_var_named_declaration id0 id decl =
-    let id' = get_id decl in
+    let id' = NamedDecl.get_id decl in
     let id' = if Id.equal id0 id' then id else id' in
     let vsubst = [id0 , mkVar id] in
-    decl |> set_id id' |> map_constr (replace_vars vsubst)
+    decl |> NamedDecl.set_id id' |> NamedDecl.map_constr (replace_vars vsubst)
   in
   let extract_if_neq id = function
     | Anonymous -> None
@@ -551,8 +553,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
                     let () = Id.Map.iter check ri in
                   (* No dependency at all, we can keep this ev's context hyp *)
                     (ri, true::filter)
-                  with Depends id -> let open Context.Named.Declaration in
-                                     (Id.Map.add (get_id h) id ri, false::filter))
+                  with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter))
 		ctxt (Array.to_list l) (Id.Map.empty,[]) in
 	    (* Check if some rid to clear in the context of ev has dependencies
 	       in the type of ev and adjust the source of the dependency *)
@@ -591,10 +592,9 @@ let clear_hyps_in_evi_main env evdref hyps terms ids =
   let terms =
     List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids global) terms in
   let nhyps =
-    let open Context.Named.Declaration in
     let check_context decl =
-      let err = OccurHypInSimpleClause (Some (get_id decl)) in
-      map_constr (check_and_clear_in_constr env evdref err ids global) decl
+      let err = OccurHypInSimpleClause (Some (NamedDecl.get_id decl)) in
+      NamedDecl.map_constr (check_and_clear_in_constr env evdref err ids global) decl
     in
     let check_value vk = match force_lazy_val vk with
     | None -> vk
@@ -633,8 +633,8 @@ let process_dependent_evar q acc evm is_dependent e =
      hypotheses), they are all dependent. *)
   queue_term q true evi.evar_concl;
   List.iter begin fun decl ->
-    let open Context.Named.Declaration in
-    queue_term q true (get_type decl);
+    let open NamedDecl in
+    queue_term q true (NamedDecl.get_type decl);
     match decl with
     | LocalAssum _ -> ()
     | LocalDef (_,b,_) -> queue_term q true b
@@ -688,9 +688,8 @@ let undefined_evars_of_term evd t =
   evrec Evar.Set.empty t
 
 let undefined_evars_of_named_context evd nc =
-  let open Context.Named.Declaration in
   Context.Named.fold_outside
-    (fold (fun c s -> Evar.Set.union s (undefined_evars_of_term evd c)))
+    (NamedDecl.fold (fun c s -> Evar.Set.union s (undefined_evars_of_term evd c)))
     nc
     ~init:Evar.Set.empty
 

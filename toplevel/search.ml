@@ -20,6 +20,8 @@ open Globnames
 open Nametab
 open Goptions
 
+module NamedDecl = Context.Named.Declaration
+
 type filter_function = global_reference -> env -> constr -> bool
 type display_function = global_reference -> env -> constr -> unit
 
@@ -68,8 +70,7 @@ let iter_constructors indsp u fn env nconstr =
   done
 
 let iter_named_context_name_type f =
-  let open Context.Named.Declaration in
-  List.iter (fun decl -> f (get_id decl) (get_type decl))
+  List.iter (fun decl -> f (NamedDecl.get_id decl) (NamedDecl.get_type decl))
 
 (* General search over hypothesis of a goal *)
 let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
@@ -81,13 +82,12 @@ let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
 
 (* General search over declarations *)
 let iter_declarations (fn : global_reference -> env -> constr -> unit) =
-  let open Context.Named.Declaration in
   let env = Global.env () in
   let iter_obj (sp, kn) lobj = match object_tag lobj with
   | "VARIABLE" ->
     begin try
       let decl = Global.lookup_named (basename sp) in
-      fn (VarRef (get_id decl)) env (get_type decl)
+      fn (VarRef (NamedDecl.get_id decl)) env (NamedDecl.get_type decl)
     with Not_found -> (* we are in a section *) () end
   | "CONSTANT" ->
     let cst = Global.constant_of_delta_kn kn in

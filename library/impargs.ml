@@ -22,6 +22,9 @@ open Constrexpr
 open Termops
 open Namegen
 open Decl_kinds
+open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (*s Flags governing the computation of implicit arguments *)
 
@@ -164,7 +167,6 @@ let update pos rig (na,st) =
 
 (* modified is_rigid_reference with a truncated env *)
 let is_flexible_reference env bound depth f =
-  let open Context.Named.Declaration in
   match kind_of_term f with
     | Rel n when n >= bound+depth -> (* inductive type *) false
     | Rel n when n >= depth -> (* previous argument *) true
@@ -449,8 +451,7 @@ let compute_all_mib_implicits flags manual kn =
 
 let compute_var_implicits flags manual id =
   let env = Global.env () in
-  let open Context.Named.Declaration in
-  compute_semi_auto_implicits env flags manual (get_type (lookup_named id env))
+  compute_semi_auto_implicits env flags manual (NamedDecl.get_type (lookup_named id env))
 
 (* Implicits of a global reference. *)
 
@@ -515,13 +516,11 @@ let subst_implicits (subst,(req,l)) =
   (ImplLocal,List.smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
-  let open Context.Named.Declaration in
   let map (decl, impl) = match impl with
-  | Implicit -> Some (get_id decl, Manual, (true, true))
+  | Implicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
   | _ -> None
   in
-  let is_set = is_local_assum % fst in
-  List.rev_map map (List.filter is_set ctx)
+  List.rev_map map (List.filter (is_local_assum % fst) ctx)
 
 let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)

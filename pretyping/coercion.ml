@@ -153,7 +153,6 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
   and coerce' env x y : (Term.constr -> Term.constr) option =
     let subco () = subset_coerce env evdref x y in
     let dest_prod c =
-      let open Context.Rel.Declaration in
       match Reductionops.splay_prod_n env ( !evdref) 1 c with
       | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na,t), c
       | _ -> raise NoSubtacCoercion

@@ -13,6 +13,8 @@ open Term
 open Environ
 open Util
 open Libobject
+
+module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let name_table =
@@ -48,8 +50,7 @@ let discharge_rename_args = function
      (try 
        let vars,_,_ = section_segment_of_reference c in
        let c' = pop_global_reference c in
-       let open Context.Named.Declaration in
-       let var_names = List.map (Name.mk_name % get_id % fst) vars in
+       let var_names = List.map (Name.mk_name % NamedDecl.get_id % fst) vars in
        let names' = List.map (fun l -> var_names @ l) names in
        Some (ReqGlobal (c', names), (c', names'))
      with Not_found -> Some req)

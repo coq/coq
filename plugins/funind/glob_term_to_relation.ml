@@ -366,7 +366,6 @@ let add_pat_variables pat typ env : Environ.env =
       Context.Rel.fold_outside
 	(fun decl (env,ctxt) ->
          let open Context.Rel.Declaration in
-         (*let _,v,t = Context.Rel.Declaration.to_tuple decl in*)
 	 match decl with
 	   | LocalAssum (Anonymous,_) | LocalDef (Anonymous,_,_) -> assert false
 	   | LocalAssum (Name id, t) ->
@@ -415,8 +414,7 @@ let rec pattern_to_term_and_type env typ  = function
       in
       let constructors = Inductiveops.get_constructors env indf in
       let constructor  = List.find (fun cs -> eq_constructor (fst cs.Inductiveops.cs_cstr) constr) (Array.to_list constructors) in
-      let open Context.Rel.Declaration in
-      let cs_args_types :types list = List.map get_type constructor.Inductiveops.cs_args in
+      let cs_args_types :types list = List.map RelDecl.get_type constructor.Inductiveops.cs_args in
       let _,cstl = Inductiveops.dest_ind_family indf in
       let csta = Array.of_list cstl in
       let implicit_args =
@@ -615,7 +613,6 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let v_as_constr,ctx = Pretyping.understand env (Evd.from_env env) v in
 	let v_type = Typing.unsafe_type_of env (Evd.from_env env) v_as_constr in
 	let new_env =
-          let open Context.Named.Declaration in
 	  match n with
 	      Anonymous -> env
 	    | Name id -> Environ.push_named (NamedDecl.LocalDef (id,v_as_constr,v_type)) env
@@ -989,8 +986,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			      (fun acc var_as_constr arg ->
 				 if isRel var_as_constr
 				 then
-                                   let open Context.Rel.Declaration in
-				   let na = get_name (Environ.lookup_rel (destRel var_as_constr) env) in
+				   let na = RelDecl.get_name (Environ.lookup_rel (destRel var_as_constr) env) in
 				   match na with
 				     | Anonymous -> acc
 				     | Name id' ->

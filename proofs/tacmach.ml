@@ -21,6 +21,8 @@ open Refiner
 open Sigma.Notations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 let re_sig it  gc = { it = it; sigma = gc; }
 
 (**************************************************************)
@@ -46,7 +48,7 @@ let pf_hyps_types gls  =
                    | LocalDef (id,_,x) -> id, x)
            sign
 
-let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> get_id
+let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> NamedDecl.get_id
 
 let pf_last_hyp gl = List.hd (pf_hyps gl)
 
@@ -57,7 +59,7 @@ let pf_get_hyp gls id =
     raise (RefinerError (NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
-  pf_get_hyp gls id |> get_type
+  pf_get_hyp gls id |> NamedDecl.get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
@@ -199,7 +201,7 @@ module New = struct
     sign
 
   let pf_get_hyp_typ id gl =
-    pf_get_hyp id gl |> get_type
+    pf_get_hyp id gl |> NamedDecl.get_type
 
   let pf_hyps_types gl =
     let env = Proofview.Goal.env gl in

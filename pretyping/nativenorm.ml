@@ -20,6 +20,8 @@ open Nativecode
 open Nativevalues
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (** This module implements normalization by evaluation to OCaml code *)
 
 exception Find_at of int
@@ -122,7 +124,7 @@ let build_case_type dep p realargs c =
 
 (* TODO move this function *)
 let type_of_rel env n =
-  lookup_rel n env |> get_type |> lift n
+  lookup_rel n env |> RelDecl.get_type |> lift n
 
 let type_of_prop = mkSort type1_sort
 

@@ -13,6 +13,9 @@ open Libnames
 open Globnames
 open Nameops
 open Libobject
+open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
@@ -428,9 +431,8 @@ let add_section_context ctx =
        sectab := (Context ctx :: vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
-  let open Context.Named.Declaration in
   let rec aux = function
-    | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (get_id decl) ->
+    | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
       (decl,impl) :: l, if poly then Univ.ContextSet.union r ctx else r
     | (Variable (_,_,poly,ctx)::idl,hyps) ->
@@ -443,8 +445,7 @@ let extract_hyps (secs,ohyps) =
   in aux (secs,ohyps)
 
 let instance_from_variable_context =
-  let open Context.Named.Declaration in
-  Array.of_list % List.map get_id % List.filter is_local_assum % List.map fst
+  Array.of_list % List.map NamedDecl.get_id % List.filter is_local_assum % List.map fst
 
 let named_of_variable_context =
   List.map fst

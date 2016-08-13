@@ -29,6 +29,8 @@ open Decl_kinds
 open Proofview.Notations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
      pr_lconstr_env env sigma constr ++
@@ -156,7 +158,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let revargs,ownsign =
 	fold_named_context
 	  (fun env d (revargs,hyps) ->
-             let id = get_id d in
+             let id = NamedDecl.get_id d in
              if Id.List.mem id ivars then
 	       ((mkVar id)::revargs, Context.Named.add d hyps)
 	     else
@@ -206,7 +208,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let ownSign = ref begin
     fold_named_context
       (fun env d sign ->
-         if mem_named_context (get_id d) global_named_context then sign
+         if mem_named_context (NamedDecl.get_id d) global_named_context then sign
 	 else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
   end in

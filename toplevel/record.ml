@@ -27,6 +27,8 @@ open Goptions
 open Sigma.Notations
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (********** definition d'un record (structure) **************)
 
 (** Flag governing use of primitive projections. Disabled by default. *)
@@ -82,7 +84,7 @@ let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
     let univ = 
       if is_local_assum d then
-	let s = Retyping.get_sort_of env evars (get_type d) in
+	let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
 	  Univ.sup (univ_of_sort s) univ 
       else univ
     in (push_rel d env, univ)) 
@@ -167,7 +169,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     Evd.universe_context ?names:pl evars, nf arity, template, imps, newps, impls, newfs
 
 let degenerate_decl decl =
-  let id = match get_name decl with
+  let id = match RelDecl.get_name decl with
     | Name id -> id
     | Anonymous -> anomaly (Pp.str "Unnamed record variable") in
   match decl with
@@ -288,8 +290,8 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
   let (_,_,kinds,sp_projs,_) =
     List.fold_left3
       (fun (nfi,i,kinds,sp_projs,subst) coe decl impls ->
-        let fi = get_name decl in
-        let ti = get_type decl in
+        let fi = RelDecl.get_name decl in
+        let ti = RelDecl.get_type decl in
 	let (sp_projs,i,subst) =
 	  match fi with
 	  | Anonymous ->
@@ -362,17 +364,17 @@ let structure_signature ctx =
       | [decl] ->
         let env = Environ.empty_named_context_val in
         let evm = Sigma.Unsafe.of_evar_map evm in
-        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (get_type decl) in
+        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (RelDecl.get_type decl) in
         let evm = Sigma.to_evar_map evm in
         evm
       | decl::tl ->
           let env = Environ.empty_named_context_val in
           let evm = Sigma.Unsafe.of_evar_map evm in
-          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (get_type decl) in
+          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (RelDecl.get_type decl) in
           let evm = Sigma.to_evar_map evm in
 	  let new_tl = Util.List.map_i
 	    (fun pos decl ->
-	       map_type (fun t -> Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) decl) 1 tl in
+	       RelDecl.map_type (fun t -> Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) decl) 1 tl in
 	  deps_to_evar evm new_tl in
   deps_to_evar Evd.empty (List.rev ctx)
 
@@ -422,7 +424,7 @@ let implicits_of_context ctx =
       | Name n -> Some n
       | Anonymous -> None
     in ExplByPos (i, explname), (true, true, true))
-    1 (List.rev (Anonymous :: (List.map get_name ctx)))
+    1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
 let declare_class finite def poly ctx id idbuild paramimpls params arity 
     template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities sign =
@@ -476,13 +478,13 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
 			      if b then Backward, pri else Forward, pri) coe)
 	  coers priorities
        in
-       let l = List.map3 (fun decl b y -> get_name decl, b, y)
+       let l = List.map3 (fun decl b y -> RelDecl.get_name decl, b, y)
          (List.rev fields) coers (Recordops.lookup_projections ind)
        in IndRef ind, l
   in
   let ctx_context =
     List.map (fun decl ->
-      match Typeclasses.class_of_constr (get_type decl) with
+      match Typeclasses.class_of_constr (RelDecl.get_type decl) with
       | Some (_, ((cl,_), _)) -> Some (cl.cl_impl, true)
       | None -> None)
       params, params

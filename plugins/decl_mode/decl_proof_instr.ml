@@ -32,6 +32,9 @@ open Misctypes
 open Sigma.Notations
 open Context.Named.Declaration
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 (* Strictness option *)
 
 let clear ids { it = goal; sigma } =
@@ -247,7 +250,7 @@ let close_previous_case pts =
 
 let filter_hyps f gls =
   let filter_aux id =
-    let id = get_id id in
+    let id = NamedDecl.get_id id in
     if f id then
       tclIDTAC
     else
@@ -357,8 +360,7 @@ let enstack_subsubgoals env se stack gls=
 		  let nlast=succ last in
 		  let (llast,holes,metas) =
 		    meta_aux nlast (mkMeta nlast :: lenv) q in
-                    let open Context.Rel.Declaration in
-		    (llast,holes,(nlast,special_nf gls (substl lenv (get_type decl)))::metas) in
+		    (llast,holes,(nlast,special_nf gls (substl lenv (RelDecl.get_type decl)))::metas) in
 	    let (nlast,holes,nmetas) =
 		meta_aux se.se_last_meta [] (List.rev rc) in
 	    let refiner = applist (appterm,List.rev holes) in
@@ -822,7 +824,7 @@ let define_tac id args body gls =
 let cast_tac id_or_thesis typ gls =
   match id_or_thesis with
     | This id ->
-        Proofview.V82.of_tactic  (pf_get_hyp gls id |> set_id id |> set_type typ |> convert_hyp) gls
+        Proofview.V82.of_tactic  (pf_get_hyp gls id |> NamedDecl.set_id id |> NamedDecl.set_type typ |> convert_hyp) gls
     | Thesis (For _ ) ->
 	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->

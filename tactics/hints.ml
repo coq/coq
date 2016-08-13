@@ -34,7 +34,8 @@ open Tacred
 open Printer
 open Vernacexpr
 open Sigma.Notations
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (****************************************)
 (* General functions                    *)
@@ -782,11 +783,11 @@ let make_resolves env sigma flags pri poly ?name cr =
 
 (* used to add an hypothesis to the local hint database *)
 let make_resolve_hyp env sigma decl =
-  let hname = get_id decl in
+  let hname = NamedDecl.get_id decl in
   try
     [make_apply_entry env sigma (true, true, false) None false
        ~name:(PathHints [VarRef hname])
-       (mkVar hname, get_type decl, Univ.ContextSet.empty)]
+       (mkVar hname, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly (Pp.str "make_resolve_hyp")

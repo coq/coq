@@ -21,6 +21,8 @@ open Declarations
 open Environ
 open Univ
 
+module NamedDecl = Context.Named.Declaration
+
 (*s Cooking the constants. *)
 
 let pop_dirpath p = match DirPath.repr p with
@@ -202,8 +204,7 @@ let cook_constant env { from = cb; info } =
   in
   let const_hyps =
     Context.Named.fold_outside (fun decl hyps ->
-      let open Context.Named.Declaration in
-      List.filter (fun decl' -> not (Id.equal (get_id decl) (get_id decl')))
+      List.filter (fun decl' -> not (Id.equal (NamedDecl.get_id decl) (NamedDecl.get_id decl')))
 		  hyps)
       hyps ~init:cb.const_hyps in
   let typ = match cb.const_type with

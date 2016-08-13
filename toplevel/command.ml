@@ -39,6 +39,8 @@ open Sigma.Notations
 open Context.Rel.Declaration
 open Entries
 
+module RelDecl = Context.Rel.Declaration
+
 let do_universe poly l = Declare.do_universe poly l
 let do_constraint poly l = Declare.do_constraint poly l
 
@@ -457,7 +459,7 @@ let sign_level env evd sign =
       | LocalDef _ -> lev, push_rel d env
       | LocalAssum _ ->
 	let s = destSort (Reduction.whd_all env 
-			    (nf_evar evd (Retyping.get_type_of env evd (get_type d))))
+			    (nf_evar evd (Retyping.get_type_of env evd (RelDecl.get_type d))))
 	in
 	let u = univ_of_sort s in
 	  (Univ.sup u lev, push_rel d env))
@@ -576,7 +578,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
       
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter is_local_assum ctx_params in
-  let params = List.map (fun decl -> out_name (get_name decl)) assums in
+  let params = List.map (fun decl -> out_name (RelDecl.get_name decl)) assums in
 
   (* Interpret the arities *)
   let arities = List.map (interp_ind_arity env_params evdref) indl in
@@ -909,8 +911,8 @@ let rec telescope = function
       let ty, tys, (k, constr) =
 	List.fold_left
 	  (fun (ty, tys, (k, constr)) decl ->
-            let t = get_type decl in
-            let pred = mkLambda (get_name decl, t, ty) in
+            let t = RelDecl.get_type decl in
+            let pred = mkLambda (RelDecl.get_name decl, t, ty) in
 	    let ty = Universes.constr_of_global (Lazy.force sigT).typ in
 	    let intro = Universes.constr_of_global (Lazy.force sigT).intro in
 	    let sigty = mkApp (ty, [|t; pred|]) in
@@ -920,7 +922,7 @@ let rec telescope = function
       in
       let (last, subst) = List.fold_right2
         (fun pred decl (prev, subst) ->
-          let t = get_type decl in
+          let t = RelDecl.get_type decl in
 	  let p1 = Universes.constr_of_global (Lazy.force sigT).proj1 in
 	  let p2 = Universes.constr_of_global (Lazy.force sigT).proj2 in
 	  let proj1 = applistc p1 [t; pred; prev] in
@@ -1133,7 +1135,7 @@ let interp_recursive isfix fixl notations =
   let evd, nf = nf_evars_and_universes evd in
   let fixdefs = List.map (Option.map nf) fixdefs in
   let fixtypes = List.map nf fixtypes in
-  let fixctxnames = List.map (fun (_,ctx) -> List.map get_name ctx) fixctxs in
+  let fixctxnames = List.map (fun (_,ctx) -> List.map RelDecl.get_name ctx) fixctxs in
 
   (* Build the fix declaration block *)
   (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots

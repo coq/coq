@@ -44,7 +44,8 @@ open Evarconv
 open Pattern
 open Misctypes
 open Sigma.Notations
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 type var_map = constr_under_binders Id.Map.t
@@ -460,7 +461,7 @@ let pretype_id pretype k0 loc env evdref lvar id =
       end;
       (* Check if [id] is a section or goal variable *)
       try
-	  { uj_val  = mkVar id; uj_type = (get_type (lookup_named id env)) }
+	  { uj_val  = mkVar id; uj_type = NamedDecl.get_type (lookup_named id env) }
       with Not_found ->
 	  (* [id] not found, standard error message *)
 	  error_var_not_found_loc loc id
@@ -505,7 +506,7 @@ let pretype_ref loc evdref env ref us =
   match ref with
   | VarRef id ->
       (* Section variable *)
-      (try make_judge (mkVar id) (get_type (lookup_named id env))
+      (try make_judge (mkVar id) (NamedDecl.get_type (lookup_named id env))
        with Not_found ->
          (* This may happen if env is a goal env and section variables have
             been cleared - section variables should be different from goal
@@ -1043,8 +1044,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 
 and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
   let f decl (subst,update) =
-    let id = get_id decl in
-    let t = replace_vars subst (get_type decl) in
+    let id = NamedDecl.get_id decl in
+    let t = replace_vars subst (NamedDecl.get_type decl) in
     let c, update =
       try
         let c = List.assoc id update in
@@ -1056,7 +1057,7 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
         if is_conv env.ExtraEnv.env !evdref t t' then mkRel n, update else raise Not_found
       with Not_found ->
       try
-        let t' = lookup_named id env |> get_type in
+        let t' = lookup_named id env |> NamedDecl.get_type in
         if is_conv env.ExtraEnv.env !evdref t t' then mkVar id, update else raise Not_found
       with Not_found ->
         user_err_loc (loc,"",str "Cannot interpret " ++

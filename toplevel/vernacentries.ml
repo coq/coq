@@ -33,6 +33,8 @@ open Misctypes
 open Locality
 open Sigma.Notations
 
+module NamedDecl = Context.Named.Declaration
+
 (** TODO: make this function independent of Ltac *)
 let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
 
@@ -848,14 +850,13 @@ let vernac_set_end_tac tac =
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
 let vernac_set_used_variables e =
-  let open Context.Named.Declaration in
   let env = Global.env () in
   let tys =
     List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
   List.iter (fun id -> 
-    if not (List.exists (Id.equal id % get_id) vars) then
+    if not (List.exists (Id.equal id % NamedDecl.get_id) vars) then
       errorlabstrm "vernac_set_used_variables"
         (str "Unknown variable: " ++ pr_id id))
     l;
@@ -1507,7 +1508,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    v 0 (pr_id id ++ str":" ++ pr_constr (get_type decl) ++ fnl() ++ fnl()
+    v 0 (pr_id id ++ str":" ++ pr_constr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found -> print_about ref_or_by_not

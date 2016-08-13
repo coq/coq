@@ -62,6 +62,8 @@ open Names
 open Declarations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 (** {6 Safe environments }
 
   Fields of [safe_environment] :
@@ -361,7 +363,7 @@ let check_required current_libs needed =
     cost too much. *)
 
 let safe_push_named d env =
-  let id = get_id d in
+  let id = NamedDecl.get_id d in
   let _ =
     try
       let _ = Environ.lookup_named id env in

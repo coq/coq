@@ -25,6 +25,8 @@ open Globnames
 open Printer
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 (** For a constant c in a module sealed by an interface (M:T and
     not M<:T), [Global.lookup_constant] may return a [constant_body]
     without body. We fix this by looking in the implementation
@@ -144,7 +146,7 @@ let label_of = function
 
 let rec traverse current ctx accu t = match kind_of_term t with
 | Var id ->
-  let body () = Global.lookup_named id |> get_value in
+  let body () = Global.lookup_named id |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)
 | Const (kn, _) ->
   let body () = Global.body_of_constant_body (lookup_constant kn) in

@@ -24,6 +24,7 @@ open Globnames
 open Evd
 open Pretype_errors
 open Sigma.Notations
+open Context.Named.Declaration
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -962,7 +963,7 @@ let apply_on_subterm env evdref f c t =
       match kind_of_term t with
       | Evar (evk,args) when Evd.is_undefined !evdref evk ->
           let ctx = evar_filtered_context (Evd.find_undefined !evdref evk) in
-          let g decl a = if NamedDecl.is_local_assum decl then applyrec acc a else a in
+          let g decl a = if is_local_assum decl then applyrec acc a else a in
           mkEvar (evk, Array.of_list (List.map2 g ctx (Array.to_list args)))
       | _ ->
         map_constr_with_binders_left_to_right

@@ -18,6 +18,9 @@ open Reduction
 open Inductive
 open Type_errors
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 let conv_leq l2r env x y = default_conv CUMUL ~l2r env x y
 
 let conv_leq_vecti env v1 v2 =
@@ -73,8 +76,7 @@ let judge_of_type u =
 
 let judge_of_relative env n =
   try
-    let open Context.Rel.Declaration in
-    env |> lookup_rel n |> get_type |> lift n
+    env |> lookup_rel n |> RelDecl.get_type |> lift n
   with Not_found ->
     error_unbound_rel env n
 
@@ -92,9 +94,8 @@ let judge_of_variable env id =
 let check_hyps_inclusion env f c sign =
   Context.Named.fold_outside
     (fun decl () ->
-      let open Context.Named.Declaration in
-      let id = get_id decl in
-      let ty1 = get_type decl in
+      let id = NamedDecl.get_id decl in
+      let ty1 = NamedDecl.get_type decl in
       try
         let ty2 = named_type id env in
         if not (eq_constr ty2 ty1) then raise Exit

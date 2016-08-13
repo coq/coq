@@ -16,7 +16,8 @@ open Declarations
 open Tacmach
 open Clenv
 open Sigma.Notations
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (************************************************************************)
 (* Tacticals re-exported from the Refiner module                        *)
@@ -70,7 +71,7 @@ let nthDecl m gl =
   try List.nth (pf_hyps gl) (m-1)
   with Failure _ -> error "No such assumption."
 
-let nthHypId m gl = nthDecl m gl |> get_id
+let nthHypId m gl = nthDecl m gl |> NamedDecl.get_id
 let nthHyp m gl   = mkVar (nthHypId m gl)
 
 let lastDecl gl   = nthDecl 1 gl
@@ -81,7 +82,7 @@ let nLastDecls n gl =
   try List.firstn n (pf_hyps gl)
   with Failure _ -> error "Not enough hypotheses in the goal."
 
-let nLastHypsId n gl = List.map get_id (nLastDecls n gl)
+let nLastHypsId n gl = List.map NamedDecl.get_id (nLastDecls n gl)
 let nLastHyps n gl   = List.map mkVar (nLastHypsId n gl)
 
 let onNthDecl m tac gl  = tac (nthDecl m gl) gl
@@ -99,7 +100,7 @@ let onNLastHypsId n tac = onHyps (nLastHypsId n) tac
 let onNLastHyps n tac   = onHyps (nLastHyps n) tac
 
 let afterHyp id gl =
-  fst (List.split_when (Id.equal id % get_id) (pf_hyps gl))
+  fst (List.split_when (Id.equal id % NamedDecl.get_id) (pf_hyps gl))
 
 (***************************************)
 (*           Clause Tacticals          *)
@@ -560,7 +561,7 @@ module New = struct
   let nthHypId m gl =
     (** We only use [id] *)
     let gl = Proofview.Goal.assume gl in
-    nthDecl m gl |> get_id
+    nthDecl m gl |> NamedDecl.get_id
   let nthHyp m gl = 
     mkVar (nthHypId m gl)
 
@@ -592,7 +593,7 @@ module New = struct
   let afterHyp id tac =
     Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let rem, _ = List.split_when (Id.equal id % get_id) hyps in
+    let rem, _ = List.split_when (Id.equal id % NamedDecl.get_id) hyps in
     tac rem
     end }
 

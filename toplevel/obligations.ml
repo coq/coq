@@ -20,6 +20,8 @@ open Pp
 open CErrors
 open Util
 
+module NamedDecl = Context.Named.Declaration
+
 let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
 
@@ -51,7 +53,6 @@ type oblinfo =
   where n binders were passed through. *)
 
 let subst_evar_constr evs n idf t =
-  let open Context.Named.Declaration in
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
@@ -74,6 +75,7 @@ let subst_evar_constr evs n idf t =
 	in
 	let args =
 	  let rec aux hyps args acc =
+             let open Context.Named.Declaration in
 	     match hyps, args with
 		 (LocalAssum _ :: tlh), (c :: tla) ->
 		   aux tlh tla ((substrec (depth, fixrels) c) :: acc)
@@ -116,9 +118,9 @@ let etype_of_evar evs hyps concl =
   let open Context.Named.Declaration in
   let rec aux acc n = function
       decl :: tl ->
-	let t', s, trans = subst_evar_constr evs n mkVar (get_type decl) in
+	let t', s, trans = subst_evar_constr evs n mkVar (NamedDecl.get_type decl) in
 	let t'' = subst_vars acc 0 t' in
-	let rest, s', trans' = aux (get_id decl :: acc) (succ n) tl in
+	let rest, s', trans' = aux (NamedDecl.get_id decl :: acc) (succ n) tl in
 	let s' = Int.Set.union s s' in
 	let trans' = Id.Set.union trans trans' in
 	  (match decl with
@@ -598,7 +600,6 @@ let decompose_lam_prod c ty =
   in aux Context.Rel.empty c ty
 
 let shrink_body c ty =
-  let open Context.Rel.Declaration in
   let ctx, b, ty =
     match ty with
     | None ->
@@ -613,6 +614,7 @@ let shrink_body c ty =
         if noccurn 1 b && Option.cata (noccurn 1) true ty then
 	  subst1 mkProp b, Option.map (subst1 mkProp) ty, succ i, args
 	else
+          let open Context.Rel.Declaration in
 	  let args = if is_local_assum decl then mkRel i :: args else args in
           mkLambda_or_LetIn decl b, Option.map (mkProd_or_LetIn decl) ty,
 	  succ i, args)

@@ -45,6 +45,8 @@ open Proofview.Notations
 open Unification
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 (* Options *)
 
 let discriminate_introduction = ref true
@@ -1662,13 +1664,13 @@ exception FoundHyp of (Id.t * constr * bool)
 
 (* tests whether hyp [c] is [x = t] or [t = x], [x] not occurring in [t] *)
 let is_eq_x gl x d =
-  let id = get_id d in
+  let id = NamedDecl.get_id d in
   try
     let is_var id c = match kind_of_term c with
     | Var id' -> Id.equal id id'
     | _ -> false
     in
-    let c = pf_nf_evar gl (get_type d) in
+    let c = pf_nf_evar gl (NamedDecl.get_type d) in
     let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
     if (is_var x lhs) && not (local_occur_var x rhs) then raise (FoundHyp (id,rhs,true));
     if (is_var x rhs) && not (local_occur_var x lhs) then raise (FoundHyp (id,lhs,false))
@@ -1686,7 +1688,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   (* The set of hypotheses using x *)
   let dephyps =
     List.rev (pi3 (List.fold_right (fun dcl (dest,deps,allhyps) ->
-      let id = get_id dcl in
+      let id = NamedDecl.get_id dcl in
       if not (Id.equal id hyp)
          && List.exists (fun y -> occur_var_in_decl env y dcl) deps
       then
@@ -1715,7 +1717,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
 let subst_one_var dep_proof_ok x =
   Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
-    let xval = pf_get_hyp x gl |> get_value in
+    let xval = pf_get_hyp x gl |> NamedDecl.get_value in
     (* If x has a body, simply replace x with body and clear x *)
     if not (Option.is_empty xval) then tclTHEN (unfold_body x) (clear [x]) else
       (* Find a non-recursive definition for x *)
@@ -1763,12 +1765,12 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let find_eq_data_decompose = find_eq_data_decompose gl in
     let test decl =
       try
-        let lbeq,u,(_,x,y) = find_eq_data_decompose (get_type decl) in
+        let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
         let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match kind_of_term x, kind_of_term y with
         | Var z, _ | _, Var z when not (is_evaluable env (EvalVarRef z))  ->
-            Some (get_id decl)
+            Some (NamedDecl.get_id decl)
         | _ ->
             None
       with Constr_matching.PatternMatchingFailure -> None
@@ -1782,7 +1784,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
-    let c = pf_get_hyp hyp gl |> get_type in
+    let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
     let _,_,(_,x,y) = find_eq_data_decompose c in
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
     if Term.eq_constr x y then Proofview.tclUNIT () else
@@ -1851,10 +1853,10 @@ let rewrite_assumption_cond cond_eq_term cl =
   let rec arec hyps gl = match hyps with
     | [] -> error "No such assumption."
     | hyp ::rest ->
-        let id = get_id hyp in
+        let id = NamedDecl.get_id hyp in
 	begin
 	  try
-            let dir = cond_eq_term (get_type hyp) gl in
+            let dir = cond_eq_term (NamedDecl.get_type hyp) gl in
 	    general_rewrite_clause dir false (mkVar id,NoBindings) cl
 	  with | Failure _ | UserError _ -> arec rest gl
 	end

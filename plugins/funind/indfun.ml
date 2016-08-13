@@ -1,4 +1,3 @@
-open Context.Rel.Declaration
 open CErrors
 open Util
 open Names
@@ -13,11 +12,13 @@ open Misctypes
 open Decl_kinds
 open Sigma.Notations
 
+module RelDecl = Context.Rel.Declaration
+
 let is_rec_info scheme_info =
   let test_branche min acc decl =
     acc || (
       let new_branche =
-	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum (get_type decl))) in
+	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum (RelDecl.get_type decl))) in
       let free_rels_in_br = Termops.free_rels new_branche in
       let max = min + scheme_info.Tactics.npredicates in
       Int.Set.exists (fun i -> i >= min && i< max) free_rels_in_br

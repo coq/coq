@@ -13,7 +13,8 @@ open Evd
 open Environ
 open Proof_type
 open Logic
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 let sig_it x = x.it
 let project x = x.sigma
@@ -202,7 +203,7 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
   let { it = gls; sigma = sigma; } = rslt in
   let hyps:Context.Named.t list =
     List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; }) gls in
-  let cmp d1 d2 = Names.Id.equal (get_id d1) (get_id d2) in
+  let cmp d1 d2 = Names.Id.equal (NamedDecl.get_id d1) (NamedDecl.get_id d2) in
   let newhyps =
     List.map
       (fun hypl -> List.subtract cmp hypl oldhyps)
@@ -215,7 +216,7 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
     List.fold_left
     (fun acc lh -> acc ^ (if !frst then (frst:=false;"") else " | ")
       ^ (List.fold_left
-	   (fun acc d -> (Names.Id.to_string (get_id d)) ^ " " ^ acc)
+	   (fun acc d -> (Names.Id.to_string (NamedDecl.get_id d)) ^ " " ^ acc)
 	   "" lh))
     "" newhyps in
   Feedback.msg_notice

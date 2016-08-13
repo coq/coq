@@ -12,6 +12,8 @@ open Util
 open Vernacexpr
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 let to_string e =
   let rec aux = function
     | SsEmpty -> "()"
@@ -39,10 +41,10 @@ let rec close_fwd e s =
                | LocalAssum _ -> Id.Set.empty
                | LocalDef (_,b,_) -> global_vars_set e b
       in
-      let vty = global_vars_set e (get_type decl) in
+      let vty = global_vars_set e (NamedDecl.get_type decl) in
       let vbty = Id.Set.union vb vty in
       if Id.Set.exists (fun v -> Id.Set.mem v s) vbty
-      then Id.Set.add (get_id decl) (Id.Set.union s vbty) else s)
+      then Id.Set.add (NamedDecl.get_id decl) (Id.Set.union s vbty) else s)
     s (named_context e)
     in
   if Id.Set.equal s s' then s else close_fwd e s'
@@ -65,13 +67,13 @@ and set_of_id env ty id =
         Id.Set.union (global_vars_set env ty) acc)
       Id.Set.empty ty
   else if Id.to_string id = "All" then
-    List.fold_right Id.Set.add (List.map get_id (named_context env)) Id.Set.empty
+    List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
   else if CList.mem_assoc_f Id.equal id !known_names then
     process_expr env (CList.assoc_f Id.equal id !known_names) []
   else Id.Set.singleton id
 
 and full_set env =
-  List.fold_right Id.Set.add (List.map get_id (named_context env)) Id.Set.empty
+  List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
 let process_expr env e ty =
   let ty_expr = SsSingl(Loc.ghost, Id.of_string "Type") in

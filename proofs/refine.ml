@@ -11,6 +11,8 @@ open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 let extract_prefix env info =
   let ctx1 = List.rev (Environ.named_context env) in
   let ctx2 = List.rev (Evd.evar_context info) in
@@ -26,7 +28,7 @@ let typecheck_evar ev env sigma =
   let info = Evd.find sigma ev in
   (** Typecheck the hypotheses. *)
   let type_hyp (sigma, env) decl =
-    let t = get_type decl in
+    let t = NamedDecl.get_type decl in
     let evdref = ref sigma in
     let _ = Typing.e_sort_of env evdref t in
     let () = match decl with

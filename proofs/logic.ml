@@ -24,6 +24,8 @@ open Retyping
 open Misctypes
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 type refiner_error =
 
   (* Errors raised by the refiner *)
@@ -162,7 +164,7 @@ let reorder_context env sign ord =
           (match ctxt_head with
             | [] -> error_no_such_hypothesis (List.hd ord)
             | d :: ctxt ->
-                let x = get_id d in
+                let x = NamedDecl.get_id d in
                 if Id.Set.mem x expected then
                   step ord (Id.Set.remove x expected)
                     ctxt (push_item x d moved_hyps) ctxt_tail
@@ -178,7 +180,7 @@ let reorder_val_context env sign ord =
 
 
 let check_decl_position env sign d =
-  let x = get_id d in
+  let x = NamedDecl.get_id d in
   let needed = global_vars_set_of_decl env d in
   let deps = dependency_closure env (named_context_of_val sign) needed in
   if Id.List.mem x deps then
@@ -204,8 +206,8 @@ let move_location_eq m1 m2 = match m1, m2 with
 let rec get_hyp_after h = function
   | [] -> error_no_such_hypothesis h
   | d :: right ->
-      if Id.equal (get_id d) h then
-	match right with d' ::_ -> MoveBefore (get_id d') | [] -> MoveFirst
+      if Id.equal (NamedDecl.get_id d) h then
+	match right with d' ::_ -> MoveBefore (NamedDecl.get_id d') | [] -> MoveFirst
       else
        get_hyp_after h right
 
@@ -213,7 +215,7 @@ let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
     | d :: right ->
-        let hyp = get_id d in
+        let hyp = NamedDecl.get_id d in
       	if Id.equal hyp hfrom then
 	  (left,right,d, toleft || move_location_eq hto MoveLast)
       	else
@@ -235,24 +237,24 @@ let move_hyp toleft (left,declfrom,right) hto =
   let env = Global.env() in
   let test_dep d d2 =
     if toleft
-    then occur_var_in_decl env (get_id d2) d
-    else occur_var_in_decl env (get_id d) d2
+    then occur_var_in_decl env (NamedDecl.get_id d2) d
+    else occur_var_in_decl env (NamedDecl.get_id d) d2
   in
   let rec moverec first middle = function
     | [] ->
 	if match hto with MoveFirst | MoveLast -> false | _ -> true then
 	  error_no_such_hypothesis (hyp_of_move_location hto);
 	List.rev first @ List.rev middle
-    | d :: _ as right when move_location_eq hto (MoveBefore (get_id d)) ->
+    | d :: _ as right when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
 	List.rev first @ List.rev middle @ right
     | d :: right ->
-        let hyp = get_id d in
+        let hyp = NamedDecl.get_id d in
 	let (first',middle') =
       	  if List.exists (test_dep d) middle then
 	    if not (move_location_eq hto (MoveAfter hyp)) then
 	      (first, d::middle)
             else
-	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id (get_id declfrom) ++
+	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id (NamedDecl.get_id declfrom) ++
 	        Miscprint.pr_move_location pr_id hto ++
 	        str (if toleft then ": it occurs in " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")
@@ -489,16 +491,16 @@ and mk_casegoals sigma goal goalacc p c =
 
 
 let convert_hyp check sign sigma d =
-  let id = get_id d in
-  let b = get_value d in
+  let id = NamedDecl.get_id d in
+  let b = NamedDecl.get_value d in
   let env = Global.env() in
   let reorder = ref [] in
   let sign' =
     apply_to_hyp check sign id
       (fun _ d' _ ->
-        let c = get_value d' in
+        let c = NamedDecl.get_value d' in
         let env = Global.env_of_context sign in
-        if check && not (is_conv env sigma (get_type d) (get_type d')) then
+        if check && not (is_conv env sigma (NamedDecl.get_type d) (NamedDecl.get_type d')) then
 	  errorlabstrm "Logic.convert_hyp"
             (str "Incorrect change of the type of " ++ pr_id id ++ str ".");
         if check && not (Option.equal (is_conv env sigma) b c) then

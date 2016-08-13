@@ -20,6 +20,9 @@ open Notation_term
 open Glob_term
 open Glob_ops
 open Ppextend
+open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 (*i*)
 
 (*s A scope is a set of notations; it includes
@@ -686,7 +689,6 @@ let discharge_arguments_scope (_,(req,r,n,l,_)) =
     let n =
       try
         let vars = Lib.variable_section_segment_of_reference r in
-        let open Context.Named.Declaration in
         vars |> List.map fst |> List.filter is_local_assum |> List.length
       with
         Not_found (* Not a ref defined in this section *) -> 0 in

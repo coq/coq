@@ -33,6 +33,9 @@ open Constrintern
 open Impargs
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 type 'a declaration_hook = Decl_kinds.locality -> Globnames.global_reference -> 'a
 let mk_hook hook = hook
 let call_hook fix_exn hook l c =
@@ -45,8 +48,7 @@ let call_hook fix_exn hook l c =
 
 let retrieve_first_recthm = function
   | VarRef id ->
-      let open Context.Named.Declaration in
-      (get_value (Global.lookup_named id),variable_opacity id)
+      (NamedDecl.get_value (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
       (Global.body_of_constant_body cb, is_opaque cb)
@@ -110,7 +112,7 @@ let find_mutually_recursive_statements thms =
         (Global.env()) hyps in
       let ind_hyps =
         List.flatten (List.map_i (fun i decl ->
-          let t = get_type decl in
+          let t = RelDecl.get_type decl in
           match kind_of_term t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
@@ -456,7 +458,7 @@ let start_proof_com kind thms hook =
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
     evdref := solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref);
-    let ids = List.map get_name ctx in
+    let ids = List.map RelDecl.get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),

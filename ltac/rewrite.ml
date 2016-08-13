@@ -36,6 +36,9 @@ open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+module RelDecl = Context.Rel.Declaration
+
 (** Typeclass-based generalized rewriting. *)
 
 (** Constants used by the tactic. *)
@@ -1527,7 +1530,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 let rec insert_dependent env decl accu hyps = match hyps with
 | [] -> List.rev_append accu [decl]
 | ndecl :: rem ->
-  if occur_var_in_decl env (get_id ndecl) decl then
+  if occur_var_in_decl env (NamedDecl.get_id ndecl) decl then
     List.rev_append accu (decl :: hyps)
   else
     insert_dependent env decl (ndecl :: accu) rem
@@ -1537,17 +1540,17 @@ let assert_replacing id newt tac =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let ctx = Environ.named_context env in
-    let after, before = List.split_when (Id.equal id % get_id) ctx in
+    let after, before = List.split_when (Id.equal id % NamedDecl.get_id) ctx in
     let nc = match before with
     | [] -> assert false
-    | d :: rem -> insert_dependent env (LocalAssum (get_id d, newt)) [] after @ rem
+    | d :: rem -> insert_dependent env (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Refine.refine ~unsafe:false { run = begin fun sigma ->
       let Sigma (ev, sigma, p) = Evarutil.new_evar env' sigma concl in
       let Sigma (ev', sigma, q) = Evarutil.new_evar env sigma newt in
       let map d =
-        let n = get_id d in
+        let n = NamedDecl.get_id d in
         if Id.equal n id then ev' else mkVar n
       in
       let (e, _) = destEvar ev in
@@ -2088,9 +2091,8 @@ let setoid_proof ty fn fallback =
       begin
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
-          let open Context.Rel.Declaration in
           let (sigma, t) = Typing.type_of env sigma rel in
-          let car = get_type (List.hd (fst (Reduction.dest_prod env t))) in
+          let car = RelDecl.get_type (List.hd (fst (Reduction.dest_prod env t))) in
 	    (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e

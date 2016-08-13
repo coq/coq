@@ -14,6 +14,8 @@ open Functional_principles_proofs
 open Misctypes
 open Sigma.Notations
 
+module RelDecl = Context.Rel.Declaration
+
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
 
@@ -38,7 +40,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Name x ->
 	   let id = Namegen.next_ident_away x avoid in
 	   Hashtbl.add tbl id x;
-	   set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
+	   RelDecl.set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
 	| Anonymous -> anomaly (Pp.str "Anonymous property binder "))
   in
   let avoid = (Termops.ids_of_context env_with_params ) in
@@ -51,7 +53,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 (*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
   let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
-    let args,_ = decompose_prod (get_type decl) in
+    let args,_ = decompose_prod (RelDecl.get_type decl) in
     let real_args =
       if princ_type_info.indarg_in_concl
       then List.tl args

@@ -21,6 +21,8 @@ open Libobject
 open Nameops
 open Misctypes
 open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
 (*i*)
 
 let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
@@ -198,7 +200,7 @@ let combine_params avoid fn applied needed =
     List.partition
       (function
 	  (t, Some (loc, ExplByName id)) ->
-            let is_id (_, decl) = match get_name decl with
+            let is_id (_, decl) = match RelDecl.get_name decl with
             | Name id' -> Id.equal id id'
             | Anonymous -> false
             in
@@ -242,7 +244,7 @@ let combine_params avoid fn applied needed =
 
 let combine_params_freevar =
   fun avoid (_, decl) ->
-    let id' = next_name_away_from (get_name decl) avoid in
+    let id' = next_name_away_from (RelDecl.get_name decl) avoid in
       (CRef (Ident (Loc.ghost, id'),None), Id.Set.add id' avoid)
 
 let destClassApp cl =

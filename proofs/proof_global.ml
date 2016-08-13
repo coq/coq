@@ -18,6 +18,8 @@ open Util
 open Pp
 open Names
 
+module NamedDecl = Context.Named.Declaration
+
 (*** Proof Modes ***)
 
 (* Type of proof modes :
@@ -276,7 +278,7 @@ let set_used_variables l =
   let ids = List.fold_right Id.Set.add l Id.Set.empty in
   let ctx = Environ.keep_hyps env ids in
   let ctx_set =
-    List.fold_right Id.Set.add (List.map get_id ctx) Id.Set.empty in
+    List.fold_right Id.Set.add (List.map NamedDecl.get_id ctx) Id.Set.empty in
   let vars_of = Environ.global_vars_set in
   let aux env entry (ctx, all_safe, to_clear as orig) =
     match entry with

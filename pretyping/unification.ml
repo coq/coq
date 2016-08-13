@@ -29,7 +29,9 @@ open Locus
 open Locusops
 open Find_subterm
 open Sigma.Notations
-open Context.Named.Declaration
+
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 
 let keyed_unification = ref (false)
 let _ = Goptions.declare_bool_option {
@@ -78,9 +80,8 @@ let occur_meta_evd sigma mv c =
 let abstract_scheme env evd c l lname_typ =
   List.fold_left2
     (fun (t,evd) (locc,a) decl ->
-       let open Context.Rel.Declaration in
-       let na = get_name decl in
-       let ta = get_type decl in
+       let na = RelDecl.get_name decl in
+       let ta = RelDecl.get_type decl in
        let na = match kind_of_term a with Var id -> Name id | _ -> na in
 (* [occur_meta ta] test removed for support of eelim/ecase but consequences
    are unclear...
@@ -1472,10 +1473,10 @@ let indirectly_dependent c d decls =
        it is needed otherwise, as e.g. when abstracting over "2" in
        "forall H:0=2, H=H:>(0=1+1) -> 0=2." where there is now obvious
        way to see that the second hypothesis depends indirectly over 2 *)
-    List.exists (fun d' -> dependent_in_decl (mkVar (get_id d')) d) decls
+    List.exists (fun d' -> dependent_in_decl (mkVar (NamedDecl.get_id d')) d) decls
 
 let indirect_dependency d decls =
-  decls  |>  List.filter (fun d' -> dependent_in_decl (mkVar (get_id d')) d)  |>  List.hd  |>  get_id
+  decls  |>  List.filter (fun d' -> dependent_in_decl (mkVar (NamedDecl.get_id d')) d)  |>  List.hd  |>  NamedDecl.get_id
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
   let current_sigma = Sigma.to_evar_map current_sigma in
@@ -1594,7 +1595,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = mkVar id in
   let compute_dependency _ d (sign,depdecls) =
-    let hyp = get_id d in
+    let hyp = NamedDecl.get_id d in
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
         if indirectly_dependent c d depdecls then
@@ -1631,7 +1632,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
           replace_term_occ_modulo occ test mkvarid concl
     in
     let lastlhyp =
-      if List.is_empty depdecls then None else Some (get_id (List.last depdecls)) in
+      if List.is_empty depdecls then None else Some (NamedDecl.get_id (List.last depdecls)) in
     let res = match out test with
     | None -> None
     | Some (sigma, c) -> Some (Sigma.Unsafe.of_pair (c, sigma))

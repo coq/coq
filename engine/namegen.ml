@@ -24,6 +24,8 @@ open Environ
 open Termops
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (**********************************************************************)
 (* Conventional names *)
 
@@ -295,10 +297,10 @@ let make_all_name_different env =
   let avoid = ref (ids_of_named_context (named_context env)) in
   process_rel_context
     (fun decl newenv ->
-       let na = named_hd newenv (get_type decl) (get_name decl) in
+       let na = named_hd newenv (RelDecl.get_type decl) (RelDecl.get_name decl) in
        let id = next_name_away na !avoid in
        avoid := id::!avoid;
-       push_rel (set_name (Name id) decl) newenv)
+       push_rel (RelDecl.set_name (Name id) decl) newenv)
     env
 
 (* 5- Looks for next fresh name outside a list; avoids also to use names that
