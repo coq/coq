@@ -334,7 +334,7 @@ let raw_push_named (na,raw_value,raw_typ) env =
     | Anonymous -> env
     | Name id ->
 	let value = Option.map (fun x-> fst (Pretyping.understand env (Evd.from_env env) x)) raw_value in
-	let typ,ctx = Pretyping.understand env (Evd.from_env env) ~expected_type:Pretyping.IsType raw_typ in
+	let typ,_ = Pretyping.understand env (Evd.from_env env) ~expected_type:Pretyping.IsType raw_typ in
         let open Context.Named.Declaration in
 	Environ.push_named (of_tuple (id,value,typ)) env
 
