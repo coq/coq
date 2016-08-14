@@ -154,7 +154,7 @@ type inline = bool
 type result =
   constant_def * constant_type * projection_body option * 
     bool * constant_universes * inline
-    * Context.section_context option
+    * Context.Named.t option
 
 let on_body ml hy f = function
   | Undef _ as x -> x

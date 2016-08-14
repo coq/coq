@@ -19,7 +19,7 @@ type inline = bool
 type result =
   constant_def * constant_type * projection_body option * 
     bool * constant_universes * inline
-    * Context.section_context option
+    * Context.Named.t option
 
 val cook_constant : env -> recipe -> result
 val cook_constr : Opaqueproof.cooking_info -> Term.constr -> Term.constr

@@ -91,7 +91,7 @@ type pstate = {
   pid : Id.t;
   terminator : proof_terminator CEphemeron.key;
   endline_tactic : Tacexpr.raw_tactic_expr option;
-  section_vars : Context.section_context option;
+  section_vars : Context.Named.t option;
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
   mode : proof_mode CEphemeron.key;

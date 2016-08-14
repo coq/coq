@@ -263,5 +263,3 @@ sig
 
   val fold : (Declaration.t -> 'a -> 'a) -> t -> init:'a -> 'a
 end
-
-type section_context = Named.t

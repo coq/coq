@@ -130,8 +130,8 @@ val set_end_tac : Tacexpr.raw_tactic_expr -> unit
 (** [set_used_variables l] declares that section variables [l] will be
     used in the proof *)
 val set_used_variables :
-  Id.t list -> Context.section_context * (Loc.t * Names.Id.t) list
-val get_used_variables : unit -> Context.section_context option
+  Id.t list -> Context.Named.t * (Loc.t * Names.Id.t) list
+val get_used_variables : unit -> Context.Named.t option
 
 (** {6 Universe binders } *)
 val get_universe_binders : unit -> universe_binders option

@@ -428,5 +428,3 @@ module NamedList =
 
     let fold f l ~init = List.fold_right f l init
   end
-
-type section_context = Named.t

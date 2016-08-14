@@ -127,4 +127,4 @@ val make_polymorphic_if_constant_for_ind : env -> unsafe_judgment ->
   constant_type
 
 (** Check that hyps are included in env and fails with error otherwise *)
-val check_hyps_inclusion : env -> constr -> Context.section_context -> unit
+val check_hyps_inclusion : env -> constr -> Context.Named.t -> unit
