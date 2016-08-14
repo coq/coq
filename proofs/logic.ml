@@ -297,9 +297,9 @@ let collect_meta_variables c =
   let rec collrec deep acc c = match kind_of_term c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
-    | (App _| Case _) -> fold_constr (collrec deep) acc c
+    | (App _| Case _) -> Term.fold_constr (collrec deep) acc c
     | Proj (_, c) -> collrec deep acc c
-    | _ -> fold_constr (collrec true) acc c
+    | _ -> Term.fold_constr (collrec true) acc c
   in
   List.rev (collrec false [] c)
 

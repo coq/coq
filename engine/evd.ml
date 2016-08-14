@@ -287,7 +287,7 @@ let metavars_of c =
   let rec collrec acc c =
     match kind_of_term c with
       | Meta mv -> Int.Set.add mv acc
-      | _         -> fold_constr collrec acc c
+      | _         -> Term.fold_constr collrec acc c
   in
   collrec Int.Set.empty c
 
@@ -734,20 +734,20 @@ let evar_list c =
   let rec evrec acc c =
     match kind_of_term c with
     | Evar (evk, _ as ev) -> ev :: acc
-    | _ -> fold_constr evrec acc c in
+    | _ -> Term.fold_constr evrec acc c in
   evrec [] c
 
 let evars_of_term c =
   let rec evrec acc c =
     match kind_of_term c with
     | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
-    | _ -> fold_constr evrec acc c
+    | _ -> Term.fold_constr evrec acc c
   in
   evrec Evar.Set.empty c
 
 let evars_of_named_context nc =
   Context.Named.fold_outside
-    (NamedDecl.fold (fun constr s -> Evar.Set.union s (evars_of_term constr)))
+    (NamedDecl.fold_constr (fun constr s -> Evar.Set.union s (evars_of_term constr)))
     nc
     ~init:Evar.Set.empty
 

@@ -377,7 +377,7 @@ type journey_info =
 let rec add_vars forbidden e = 
   match kind_of_term e with 
     | Var x -> x::forbidden 
-    | _ -> fold_constr add_vars forbidden e 
+    | _ -> Term.fold_constr add_vars forbidden e
 
 
 let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic = 

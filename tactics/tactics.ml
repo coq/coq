@@ -3470,8 +3470,8 @@ let ids_of_constr ?(all=false) vars c =
 	      Array.fold_left_from
 		(if all then 0 else mib.Declarations.mind_nparams)
 		aux vars args
-	| _ -> fold_constr aux vars c)
-    | _ -> fold_constr aux vars c
+	| _ -> Term.fold_constr aux vars c)
+    | _ -> Term.fold_constr aux vars c
   in aux vars c
 
 let decompose_indapp f args =

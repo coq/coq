@@ -22,6 +22,7 @@ open Entries
 open Typeops
 open Fast_typeops
 
+module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 let constrain_type env j poly subst = function
@@ -251,7 +252,7 @@ let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t
   | TemplateArity (ctx,_) ->
       Context.Rel.fold_outside
-        (Context.Rel.Declaration.fold
+        (RelDecl.fold_constr
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 

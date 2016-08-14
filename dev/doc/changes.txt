@@ -1,4 +1,13 @@
 =========================================
+= CHANGES BETWEEN COQ V8.6 AND COQ V8.7 =
+=========================================
+
+We renamed the following functions:
+
+  Context.Rel.Declaration.fold   -> Context.Rel.Declaration.fold_constr
+  Context.Named.Declaration.fold -> Context.Named.Declaration.fold_constr
+
+=========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 

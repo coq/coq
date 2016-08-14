@@ -138,7 +138,7 @@ struct
       | LocalDef (_,v,ty) -> f v; f ty
 
     (** Reduce all terms in a given declaration to a single value. *)
-    let fold f decl acc =
+    let fold_constr f decl acc =
       match decl with
       | LocalAssum (n,ty) -> f ty acc
       | LocalDef (n,v,ty) -> f ty (f v acc)
@@ -333,7 +333,7 @@ struct
       | LocalDef (_, v, ty) -> f v; f ty
 
     (** Reduce all terms in a given declaration to a single value. *)
-    let fold f decl a =
+    let fold_constr f decl a =
       match decl with
       | LocalAssum (_, ty) -> f ty a
       | LocalDef (_, v, ty) -> a |> f v |> f ty

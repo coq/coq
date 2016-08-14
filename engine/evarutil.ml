@@ -689,7 +689,7 @@ let undefined_evars_of_term evd t =
 
 let undefined_evars_of_named_context evd nc =
   Context.Named.fold_outside
-    (NamedDecl.fold (fun c s -> Evar.Set.union s (undefined_evars_of_term evd c)))
+    (NamedDecl.fold_constr (fun c s -> Evar.Set.union s (undefined_evars_of_term evd c)))
     nc
     ~init:Evar.Set.empty
 
