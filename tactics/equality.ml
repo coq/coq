@@ -1717,9 +1717,9 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
 let subst_one_var dep_proof_ok x =
   Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
-    let xval = pf_get_hyp x gl |> NamedDecl.get_value in
+    let decl = pf_get_hyp x gl in
     (* If x has a body, simply replace x with body and clear x *)
-    if not (Option.is_empty xval) then tclTHEN (unfold_body x) (clear [x]) else
+    if is_local_def decl then tclTHEN (unfold_body x) (clear [x]) else
       (* Find a non-recursive definition for x *)
       let res =
         try

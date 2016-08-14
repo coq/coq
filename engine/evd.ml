@@ -16,6 +16,7 @@ open Vars
 open Termops
 open Environ
 open Globnames
+open Context.Named.Declaration
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -745,11 +746,10 @@ let evars_of_term c =
   evrec Evar.Set.empty c
 
 let evars_of_named_context nc =
-  List.fold_right (fun decl s ->
-    Option.fold_left (fun s t ->
-      Evar.Set.union s (evars_of_term t))
-      (Evar.Set.union s (evars_of_term (NamedDecl.get_type decl))) (NamedDecl.get_value decl))
-    nc Evar.Set.empty
+  Context.Named.fold_outside
+    (NamedDecl.fold (fun constr s -> Evar.Set.union s (evars_of_term constr)))
+    nc
+    ~init:Evar.Set.empty
 
 let evars_of_filtered_evar_info evi =
   Evar.Set.union (evars_of_term evi.evar_concl)
@@ -1285,11 +1285,10 @@ let pr_meta_map mmap =
   prlist pr_meta_binding (metamap_to_list mmap)
 
 let pr_decl (decl,ok) =
-  let id = NamedDecl.get_id decl in
-  match NamedDecl.get_value decl with
-  | None -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
-  | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
-      print_constr c ++ str (if ok then ")" else "}")
+  match decl with
+  | LocalAssum (id,_) -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
+  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
+                           print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_source = function
   | Evar_kinds.QuestionMark _ -> str "underscore"
@@ -1400,11 +1399,11 @@ let pr_evar_universe_context ctx =
        h 0 (Universes.pr_universe_opt_subst (UState.subst ctx)) ++ fnl())
 
 let print_env_short env =
-  let pr_body n = function
-  | None -> pr_name n
-  | Some b -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")" in
-  let pr_named_decl decl = pr_body (Name (NamedDecl.get_id decl)) (NamedDecl.get_value decl) in
-  let pr_rel_decl decl = pr_body (RelDecl.get_name decl) (RelDecl.get_value decl) in
+  let pr_rel_decl = function
+    | RelDecl.LocalAssum (n,_) -> pr_name n
+    | RelDecl.LocalDef (n,b,_) -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")"
+  in
+  let pr_named_decl = pr_rel_decl % NamedDecl.to_rel in
   let nc = List.rev (named_context env) in
   let rc = List.rev (rel_context env) in
     str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++

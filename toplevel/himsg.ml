@@ -37,13 +37,10 @@ let contract env lc =
           l := (Vars.substl !l c') :: !l;
           env
       | _ ->
-          let t' = Vars.substl !l (RelDecl.get_type decl) in
-          let c' = Option.map (Vars.substl !l) (RelDecl.get_value decl) in
-          let na' = named_hd env t' (RelDecl.get_name decl) in
+          let t = Vars.substl !l (RelDecl.get_type decl) in
+          let decl = decl |> RelDecl.map_name (named_hd env t) |> RelDecl.map_value (Vars.substl !l) |> RelDecl.set_type t in
           l := (mkRel 1) :: List.map (Vars.lift 1) !l;
-          match c' with
-          | None -> push_rel (LocalAssum (na',t')) env
-          | Some c' -> push_rel (LocalDef (na',c',t')) env
+          push_rel decl env
   in
   let env = process_rel_context contract_context env in
   (env, List.map (Vars.substl !l) lc)
