@@ -255,8 +255,12 @@ module NamedList :
 sig
   module Declaration :
   sig
-    type t = Id.t list * Constr.t option * Constr.t
+    type t =
+      | LocalAssum of Id.t list * Constr.t
+      | LocalDef of Id.t list * Constr.t * Constr.t
+
     val map_constr : (Constr.t -> Constr.t) -> t -> t
+    val to_named_context : t -> Named.t
   end
 
   type t = Declaration.t list

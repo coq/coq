@@ -195,10 +195,7 @@ let process_goal sigma g =
   in
   let process_hyp d (env,l) =
     let d = Context.NamedList.Declaration.map_constr (Reductionops.nf_evar sigma) d in
-    let d' = List.map (fun name -> match pi2 d with
-                                   | None -> NamedDecl.LocalAssum (name, pi3 d)
-                                   | Some value -> NamedDecl.LocalDef (name, value, pi3 d))
-                      (pi1 d) in
+    let d' = Context.NamedList.Declaration.to_named_context d in
       (List.fold_right Environ.push_named d' env,
        (Richpp.richpp_of_pp (pr_var_list_decl env sigma d)) :: l) in
   let (_env, hyps) =

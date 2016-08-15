@@ -416,12 +416,24 @@ module NamedList =
   struct
     module Declaration =
       struct
-        type t = Id.t list * Constr.t option * Constr.t
+        type t =
+          | LocalAssum of Id.t list * Constr.t
+          | LocalDef of Id.t list * Constr.t * Constr.t
 
-        let map_constr f (ids, copt, ty as decl) =
-          let copt' = Option.map f copt in
-          let ty' = f ty in
-          if copt == copt' && ty == ty' then decl else (ids, copt', ty')
+        let map_constr f = function
+          | LocalAssum (ids, ty) as decl ->
+             let ty' = f ty in
+             if ty == ty' then decl else LocalAssum (ids, ty')
+          | LocalDef (ids, c, ty) as decl ->
+             let ty' = f ty in
+             let c' = f c in
+             if c == c' && ty == ty' then decl else LocalDef (ids,c',ty')
+
+        let to_named_context = function
+          | LocalAssum (ids, t) ->
+             List.map (fun id -> Named.Declaration.LocalAssum (id,t)) ids
+          | LocalDef (ids, v, t) ->
+             List.map (fun id -> Named.Declaration.LocalDef (id,v,t)) ids
       end
 
     type t = Declaration.t list

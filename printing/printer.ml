@@ -24,6 +24,7 @@ open Declarations
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
+module NamedListDecl = Context.NamedList.Declaration
 
 let emacs_str s =
   if !Flags.print_emacs then s else ""
@@ -251,27 +252,29 @@ let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
 (**********************************************************************)
 (* Contexts and declarations                                          *)
 
-let pr_var_decl_skel pr_id env sigma (id,c,typ) =
-  let pbody = match c with
-    | None ->  (mt ())
-    | Some c ->
-	(* Force evaluation *)
-	let pb = pr_lconstr_env env sigma c in
-	let pb = if isCast c then surround pb else pb in
-	(str" := " ++ pb ++ cut () ) in
+let pr_var_list_decl env sigma decl =
+  let ids, pbody, typ = match decl with
+    | NamedListDecl.LocalAssum (ids, typ) ->
+       ids, mt (), typ
+    | NamedListDecl.LocalDef (ids,c,typ) ->
+       (* Force evaluation *)
+       let pb = pr_lconstr_env env sigma c in
+       let pb = if isCast c then surround pb else pb in
+       ids, (str" := " ++ pb ++ cut ()), typ
+  in
+  let pids = prlist_with_sep pr_comma pr_id ids in
   let pt = pr_ltype_env env sigma typ in
   let ptyp = (str" : " ++ pt) in
-  (pr_id id ++ hov 0 (pbody ++ ptyp))
+  hov 0 (pids ++ pbody ++ ptyp)
 
-let pr_var_decl env sigma d =
-  let d = match d with
-          | NamedDecl.LocalAssum (id,typ) -> id, None, typ
-          | NamedDecl.LocalDef (id,c,typ) -> id, Some c, typ
+let pr_var_decl env sigma decl =
+  let decl = match decl with
+    | NamedDecl.LocalAssum (id, t) ->
+       NamedListDecl.LocalAssum ([id], t)
+    | NamedDecl.LocalDef (id,c,t) ->
+       NamedListDecl.LocalDef ([id],c,t)
   in
-  pr_var_decl_skel pr_id env sigma d
-
-let pr_var_list_decl env sigma (l,c,typ) =
-  hov 0 (pr_var_decl_skel (fun ids -> prlist_with_sep pr_comma pr_id ids) env sigma (l,c,typ))
+  pr_var_list_decl env sigma decl
 
 let pr_rel_decl env sigma decl =
   let na = RelDecl.get_name decl in
