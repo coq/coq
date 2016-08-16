@@ -114,9 +114,9 @@ let hdchar env c =
     | Rel n ->
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else
-	   try match Environ.lookup_rel (n-k) env |> to_tuple with
-	     | (Name id,_,_)   -> lowercase_first_char id
-	     | (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
+	   try match Environ.lookup_rel (n-k) env with
+	     | LocalAssum (Name id,_)   | LocalDef (Name id,_,_) -> lowercase_first_char id
+	     | LocalAssum (Anonymous,t) | LocalDef (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
 	   with Not_found -> "y")
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
 	let id = match lna.(i) with Name id -> id | _ -> assert false in
@@ -287,8 +287,7 @@ let make_all_name_different env =
   let avoid = ref (ids_of_named_context (named_context env)) in
   process_rel_context
     (fun decl newenv ->
-       let (na,_,t) = to_tuple decl in
-       let na = named_hd newenv t na in
+       let na = named_hd newenv (get_type decl) (get_name decl) in
        let id = next_name_away na !avoid in
        avoid := id::!avoid;
        push_rel (set_name (Name id) decl) newenv)

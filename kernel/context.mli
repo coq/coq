@@ -80,9 +80,6 @@ sig
 
     (** Reduce all terms in a given declaration to a single value. *)
     val fold : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
-
-    val to_tuple : t -> Name.t * Constr.t option * Constr.t
-    val of_tuple : Name.t * Constr.t option * Constr.t -> t
   end
 
   (** Rel-context is represented as a list of declarations.
@@ -197,6 +194,9 @@ sig
 
     val to_tuple : t -> Id.t * Constr.t option * Constr.t
     val of_tuple : Id.t * Constr.t option * Constr.t -> t
+
+    (** Convert [Rel.Declaration.t] value to the corresponding [Named.Declaration.t] value. *)
+    val of_rel : (Name.t -> Id.t) -> Rel.Declaration.t -> t
   end
 
   (** Rel-context is represented as a list of declarations.

@@ -142,14 +142,6 @@ struct
       match decl with
       | LocalAssum (n,ty) -> f ty acc
       | LocalDef (n,v,ty) -> f ty (f v acc)
-
-    let to_tuple = function
-      | LocalAssum (na, ty) -> na, None, ty
-      | LocalDef (na, v, ty) -> na, Some v, ty
-
-    let of_tuple = function
-      | n, None, ty -> LocalAssum (n,ty)
-      | n, Some v, ty -> LocalDef (n,v,ty)
   end
 
   (** Rel-context is represented as a list of declarations.
@@ -348,6 +340,12 @@ struct
     let of_tuple = function
       | id, None, ty -> LocalAssum (id, ty)
       | id, Some v, ty -> LocalDef (id, v, ty)
+
+    let of_rel f = function
+      | Rel.Declaration.LocalAssum (na,t) ->
+          LocalAssum (f na, t)
+      | Rel.Declaration.LocalDef (na,v,t) ->
+          LocalDef (f na, v, t)
   end
 
   (** Named-context is represented as a list of declarations.

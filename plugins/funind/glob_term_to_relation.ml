@@ -361,20 +361,29 @@ let add_pat_variables pat typ env : Environ.env =
     fst (
       Context.Rel.fold_outside
 	(fun decl (env,ctxt) ->
-         let _,v,t = Context.Rel.Declaration.to_tuple decl in
-	 match Context.Rel.Declaration.get_name decl with
-	   | Anonymous -> assert false
-	   | Name id ->
+         let open Context.Rel.Declaration in
+         (*let _,v,t = Context.Rel.Declaration.to_tuple decl in*)
+	 match decl with
+	   | LocalAssum (Anonymous,_) | LocalDef (Anonymous,_,_) -> assert false
+	   | LocalAssum (Name id, t) ->
 	       let new_t =  substl ctxt t in
-	       let new_v = Option.map (substl ctxt) v in
+	       observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
+			  str "old type := " ++ Printer.pr_lconstr t ++ fnl () ++
+			  str "new type := " ++ Printer.pr_lconstr new_t ++ fnl ()
+		       );
+               let open Context.Named.Declaration in
+	       (Environ.push_named (LocalAssum (id,new_t)) env,mkVar id::ctxt)
+	   | LocalDef (Name id, v, t) ->
+	       let new_t =  substl ctxt t in
+	       let new_v = substl ctxt v in
 	       observe (str "for variable " ++ Ppconstr.pr_id id ++  fnl () ++
 			  str "old type := " ++ Printer.pr_lconstr t ++ fnl () ++
 			  str "new type := " ++ Printer.pr_lconstr new_t ++ fnl () ++
-			  Option.fold_right (fun v _ -> str "old value := " ++ Printer.pr_lconstr v ++ fnl ()) v (mt ()) ++
-			  Option.fold_right (fun v _ -> str "new value := " ++ Printer.pr_lconstr v ++ fnl ()) new_v (mt ())
+			  str "old value := " ++ Printer.pr_lconstr v ++ fnl () ++
+			  str "new value := " ++ Printer.pr_lconstr new_v ++ fnl ()
 		       );
                let open Context.Named.Declaration in
-	       (Environ.push_named (of_tuple (id,new_v,new_t)) env,mkVar id::ctxt)
+	       (Environ.push_named (LocalDef (id,new_v,new_t)) env,mkVar id::ctxt)
       )
 	(Environ.rel_context new_env)
 	~init:(env,[])
