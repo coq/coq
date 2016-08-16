@@ -199,8 +199,20 @@ val clear_hyps_in_evi : env -> evar_map ref -> named_context_val -> types ->
 val clear_hyps2_in_evi : env -> evar_map ref -> named_context_val -> types -> types ->
   Id.Set.t -> named_context_val * types * types
 
+type csubst
+
+val empty_csubst : csubst
+val csubst_subst : csubst -> Constr.t -> Constr.t
+
+type ext_named_context =
+  csubst * (Id.t * Constr.constr) list *
+  Id.Set.t * Context.Named.t
+
+val push_rel_decl_to_named_context :
+  Context.Rel.Declaration.t -> ext_named_context -> ext_named_context
+
 val push_rel_context_to_named_context : Environ.env -> types ->
-  named_context_val * types * constr list * constr list * (identifier*constr) list
+  named_context_val * types * constr list * csubst * (identifier*constr) list
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 
