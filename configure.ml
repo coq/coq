@@ -809,7 +809,8 @@ let strip =
 (** * md5sum command *)
 
 let md5sum =
-  if arch = "Darwin" || arch = "FreeBSD" then "md5 -q" else "md5sum"
+  if List.mem arch ["Darwin"; "FreeBSD"; "OpenBSD"]
+  then "md5 -q" else "md5sum"
 
 
 (** * Documentation : do we have latex, hevea, ... *)
