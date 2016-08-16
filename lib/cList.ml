@@ -104,6 +104,7 @@ sig
   val cartesians_filter :
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
   val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
+  val factorize : 'a eq -> 'a list -> 'a list list
 
   module type MonoS = sig
     type elt
@@ -824,6 +825,21 @@ let rec factorize_left cmp = function
       let al,l' = partition (fun (a',_) -> cmp a a') l in
       (a,(b::List.map snd al)) :: factorize_left cmp l'
   | [] -> []
+
+let rec factorize eq l =
+  let rec insert elt1 = function
+    | [] -> [[elt1]]
+    | [] :: _ ->
+        assert false
+    | (elt2 :: tl2 as l2) :: tl3 ->
+        if eq elt1 elt2
+        then (elt1 :: elt2 :: tl2) :: tl3
+        else l2 :: insert elt1 tl3
+  in
+  match l with
+    | [] -> []
+    | hd :: tl ->
+        insert hd (factorize eq tl)
 
 module type MonoS = sig
   type elt
