@@ -432,11 +432,6 @@ let intern_assumption intern lvar env nal bk ty =
      let env, b = intern_generalized_binder intern_type lvar env (List.hd nal) b b' t ty in
      env, b
 
-let obj_string x =
-  if Obj.is_block (Obj.repr x) then
-    "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
-  else "int_val = " ^ string_of_int (Obj.magic x)
-
 let rec free_vars_of_pat il =
   function
   | CPatCstr (loc, c, l1, l2) ->
