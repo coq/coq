@@ -582,7 +582,7 @@ let parameters () =
   print "define donewline\n\n\nendef\n";
   print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr -d '\\r' | tr '\\n' '@'; })))\n";
   print "$(call includecmdwithout@,$(COQBIN)coqtop -config)\n\n";
-  print "TIMED?=\nTIMECMD?=\nSTDTIME=/usr/bin/time -f \"$* (user: %U mem: %M ko)\"\n";
+  print "TIMED?=\nTIMECMD?=\nSTDTIME?=/usr/bin/time -f \"$* (user: %U mem: %M ko)\"\n";
   print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n";
   print "vo_to_obj = $(addsuffix .o,\\\n";
   print "  $(filter-out Warning: Error:,\\\n";
