@@ -506,12 +506,12 @@ let loop () =
   while not !quit do
     try
       let xml_query = Xml_parser.parse xml_ic in
-(*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
+      (*      pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
       let r = eval_call xml_oc (slave_logger xml_oc Feedback.Notice) q in
       let () = pr_debug_answer q r in
-(*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
+      (*      pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
       print_xml xml_oc (Xmlprotocol.of_answer q r);
       flush out_ch
     with
