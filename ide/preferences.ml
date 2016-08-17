@@ -121,6 +121,18 @@ let inputenc_of_string s =
        else if s = "LOCALE" then Elocale
        else Emanual s)
 
+type line_ending = [ `DEFAULT | `WINDOWS | `UNIX ]
+
+let line_end_of_string = function
+| "unix" -> `UNIX
+| "windows" -> `WINDOWS
+| _ -> `DEFAULT
+
+let line_end_to_string = function
+| `UNIX -> "unix"
+| `WINDOWS -> "windows"
+| `DEFAULT -> "default"
+
 let use_default_doc_url = "(automatic)"
 
 module Repr =
@@ -380,6 +392,10 @@ let stop_before =
 
 let reset_on_tab_switch =
   new preference ~name:["reset_on_tab_switch"] ~init:false ~repr:Repr.(bool)
+
+let line_ending =
+  let repr = Repr.custom line_end_to_string line_end_of_string in
+  new preference ~name:["line_ending"] ~init:`DEFAULT ~repr
 
 let vertical_tabs =
   new preference ~name:["vertical_tabs"] ~init:false ~repr:Repr.(bool)
@@ -818,6 +834,15 @@ let configure ?(apply=(fun () -> ())) () =
       (string_of_inputenc encoding#get)
   in
 
+  let line_ending =
+    combo
+      "EOL character"
+      ~f:(fun s -> line_ending#set (line_end_of_string s))
+      ~new_allowed:false
+      ["unix"; "windows"; "default"]
+      (line_end_to_string line_ending#get)
+  in
+
   let source_style =
     combo "Highlighting style:"
       ~f:source_style#set ~new_allowed:false
@@ -973,7 +998,7 @@ let configure ?(apply=(fun () -> ())) () =
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;
 	      auto_save; auto_save_delay; (* auto_save_name*)
-	      encodings;
+	      encodings; line_ending;
 	     ]);
      Section("Project", Some (`STOCK "gtk-page-setup"),
 	     [project_file_name;read_project;

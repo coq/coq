@@ -248,6 +248,8 @@ define_evar_* mostly used internally in the unification engine.
   open Proofview.Notations
 
   Proofview.Goal.enter { enter = begin fun gl -> ... end }
+  
+- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)` --> `Tacinterp.Value.of_constr c`
 
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =

@@ -689,7 +689,7 @@ and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
   | BLetIn ->
       let c = detype (lax,false) avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
-      let s = Retyping.get_sort_family_of (snd env) sigma ty in
+      let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
       let c = if s != InProp then c else
           GCast (dl, c, CastConv (detype (lax,false) avoid env sigma ty)) in
       GLetIn (dl, na', c, r)

@@ -508,9 +508,9 @@ val normalize_evar_universe_context_variables : evar_universe_context ->
 val normalize_evar_universe_context : evar_universe_context -> 
   evar_universe_context
 
-val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe_level
-val new_univ_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe
-val new_sort_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * sorts
+val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe_level
+val new_univ_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe
+val new_sort_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * sorts
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 											   

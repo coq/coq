@@ -85,13 +85,25 @@ Tools
 
 Changes from V8.5pl2 to V8.5pl3
 ===============================
+
+Critical bugfix
+- #4876: Guard checker incompleteness when using primitive projections
+
+Other bugfixes
+
 - #4780: Induction with universe polymorphism on was creating ill-typed terms.
+- #4673: regression in setoid_rewrite, unfolding let-ins for type unification.
+- #4754: Regression in setoid_rewrite, allow postponed unification problems to remain.
+- #4769: Anomaly with universe polymorphic schemes defined inside sections.
+- #3886: Program: duplicate obligations of mutual fixpoints
 
 Changes from V8.5pl1 to V8.5pl2
 ===============================
 
 Critical bugfix
 - Checksums of .vo files dependencies were not correctly checked.
+- Unicode-to-ASCII translation was not injective, leading in a soundness bug in
+  the native compiler.
 
 Other bugfixes
 

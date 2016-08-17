@@ -68,6 +68,61 @@ open Inductiveops
 
 (************************************************************************)
 
+module ExtraEnv =
+struct
+
+type t = {
+  env : Environ.env;
+  extra : Evarutil.ext_named_context Lazy.t;
+  (** Delay the computation of the evar extended environment *)
+}
+
+let get_extra env =
+  let open Context.Named.Declaration in
+  let ids = List.map get_id (named_context env) in
+  let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
+  Context.Rel.fold_outside push_rel_decl_to_named_context
+    (Environ.rel_context env) ~init:(empty_csubst, [], avoid, named_context env)
+
+let make_env env = { env = env; extra = lazy (get_extra env) }
+let rel_context env = rel_context env.env
+
+let push_rel d env = {
+  env = push_rel d env.env;
+  extra = lazy (push_rel_decl_to_named_context d (Lazy.force env.extra));
+}
+
+let pop_rel_context n env = make_env (pop_rel_context n env.env)
+
+let push_rel_context ctx env = {
+  env = push_rel_context ctx env.env;
+  extra = lazy (List.fold_right push_rel_decl_to_named_context ctx (Lazy.force env.extra));
+}
+
+let lookup_named id env = lookup_named id env.env
+
+let e_new_evar env evdref ?src ?naming typ =
+  let subst2 subst vsubst c = csubst_subst subst (replace_vars vsubst c) in
+  let open Context.Named.Declaration in
+  let inst_vars = List.map (fun d -> mkVar (get_id d)) (named_context env.env) in
+  let inst_rels = List.rev (rel_list 0 (nb_rel env.env)) in
+  let (subst, vsubst, _, nc) = Lazy.force env.extra in
+  let typ' = subst2 subst vsubst typ in
+  let instance = inst_rels @ inst_vars in
+  let sign = val_of_named_context nc in
+  let sigma = Sigma.Unsafe.of_evar_map !evdref in
+  let Sigma (e, sigma, _) = new_evar_instance sign sigma typ' ?src ?naming instance in
+  evdref := Sigma.to_evar_map sigma;
+  e
+
+let push_rec_types (lna,typarray,_) env =
+  let ctxt = Array.map2_i (fun i na t -> Context.Rel.Declaration.LocalAssum (na, lift i t)) lna typarray in
+  Array.fold_left (fun e assum -> push_rel assum e) env ctxt
+
+end
+
+open ExtraEnv
+
 (* An auxiliary function for searching for fixpoint guard indexes *)
 
 exception Found of int array
@@ -302,9 +357,9 @@ let evar_type_fixpoint loc env evdref lna lar vdefj =
   let lt = Array.length vdefj in
     if Int.equal (Array.length lar) lt then
       for i = 0 to lt-1 do
-        if not (e_cumul env evdref (vdefj.(i)).uj_type
+        if not (e_cumul env.ExtraEnv.env evdref (vdefj.(i)).uj_type
 		  (lift lt lar.(i))) then
-          error_ill_typed_rec_body_loc loc env !evdref
+          error_ill_typed_rec_body_loc loc env.ExtraEnv.env !evdref
             i lna vdefj lar
       done
 
@@ -312,7 +367,7 @@ let evar_type_fixpoint loc env evdref lna lar vdefj =
 let inh_conv_coerce_to_tycon resolve_tc loc env evdref j = function
   | None -> j
   | Some t ->
-      evd_comb2 (Coercion.inh_conv_coerce_to resolve_tc loc env) evdref j t
+      evd_comb2 (Coercion.inh_conv_coerce_to resolve_tc loc env.ExtraEnv.env) evdref j t
 
 let check_instance loc subst = function
   | [] -> ()
@@ -361,7 +416,7 @@ let invert_ltac_bound_name lvar env id0 id =
 		       str " which is not bound in current context.")
 
 let protected_get_type_of env sigma c =
-  try Retyping.get_type_of ~lax:true env sigma c
+  try Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma c
   with Retyping.RetypeError _ ->
     errorlabstrm ""
       (str "Cannot reinterpret " ++ quote (print_constr c) ++
@@ -444,7 +499,7 @@ let pretype_global loc rigid env evd gr us =
 		   str " universe instances must be greater or equal to Set.");
 	 evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
   in
-    Evd.fresh_global ~loc ~rigid ?names:instance env evd gr
+    Evd.fresh_global ~loc ~rigid ?names:instance env.ExtraEnv.env evd gr
 
 let pretype_ref loc evdref env ref us =
   match ref with
@@ -459,7 +514,7 @@ let pretype_ref loc evdref env ref us =
   | ref ->
     let evd, c = pretype_global loc univ_flexible env !evdref ref us in
     let () = evdref := evd in
-    let ty = Typing.unsafe_type_of env evd c in
+    let ty = Typing.unsafe_type_of env.ExtraEnv.env evd c in
       make_judge c ty
 
 let judge_of_Type loc evd s =
@@ -477,7 +532,7 @@ let pretype_sort loc evdref = function
 let new_type_evar env evdref loc =
   let sigma = Sigma.Unsafe.of_evar_map !evdref in
   let Sigma ((e, _), sigma, _) =
-    Evarutil.new_type_evar env sigma
+    Evarutil.new_type_evar env.ExtraEnv.env sigma
       univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)
   in
   evdref := Sigma.to_evar_map sigma;
@@ -489,7 +544,7 @@ let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
 (* in environment [env], with existential variables [evdref] and *)
 (* the type constraint tycon *)
 
-let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var_map) t =
+let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdref (lvar : ltac_var_map) t =
   let inh_conv_coerce_to_tycon = inh_conv_coerce_to_tycon resolve_tc in
   let pretype_type = pretype_type k0 resolve_tc in
   let pretype = pretype k0 resolve_tc in
@@ -515,7 +570,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       let hyps = evar_filtered_context (Evd.find !evdref evk) in
       let args = pretype_instance k0 resolve_tc env evdref lvar loc hyps evk inst in
       let c = mkEvar (evk, args) in
-      let j = (Retyping.get_judgment_of env !evdref c) in
+      let j = (Retyping.get_judgment_of env.ExtraEnv.env !evdref c) in
 	inh_conv_coerce_to_tycon loc env evdref j tycon
 
   | GPatVar (loc,(someta,n)) ->
@@ -544,7 +599,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
         | None ->
           new_type_evar env evdref loc in
       let ist = lvar.ltac_genargs in
-      let (c, sigma) = Hook.get f_genarg_interp ty env !evdref ist arg in
+      let (c, sigma) = Hook.get f_genarg_interp ty env.ExtraEnv.env !evdref ist arg in
       let () = evdref := sigma in
       { uj_val = c; uj_type = ty }
 
@@ -578,7 +633,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
  	let fixi = match fixkind with
 	  | GFix (vn,i) -> i
 	  | GCoFix i -> i
-	in e_conv env evdref ftys.(fixi) t
+	in e_conv env.ExtraEnv.env evdref ftys.(fixi) t
       | None -> true
     in
       (* Note: bodies are not used by push_rec_types, so [||] is safe *)
@@ -617,12 +672,12 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	  let fixdecls = (names,ftys,fdefs) in
           let indexes =
             search_guard
-              loc env possible_indexes fixdecls
+              loc env.ExtraEnv.env possible_indexes fixdecls
           in
 	    make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	| GCoFix i ->
 	  let cofix = (i,(names,ftys,fdefs)) in
-            (try check_cofix env cofix
+            (try check_cofix env.ExtraEnv.env cofix
              with reraise ->
                let (e, info) = CErrors.push reraise in
                let info = Loc.add_loc info loc in
@@ -652,7 +707,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	    if Int.equal npars 0 then []
 	    else
 	      try
-	  	let IndType (indf, args) = find_rectype env !evdref ty in
+	  	let IndType (indf, args) = find_rectype env.ExtraEnv.env !evdref ty in
 	  	let ((ind',u'),pars) = dest_ind_family indf in
 	  	  if eq_ind ind ind' then pars
 	  	  else (* Let the usual code throw an error *) []
@@ -661,9 +716,9 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
     in
     let app_f = 
       match kind_of_term fj.uj_val with
-      | Const (p, u) when Environ.is_projection p env ->
+      | Const (p, u) when Environ.is_projection p env.ExtraEnv.env ->
 	let p = Projection.make p false in
-	let pb = Environ.lookup_projection p env in
+	let pb = Environ.lookup_projection p env.ExtraEnv.env in
 	let npars = pb.Declarations.proj_npars in
 	  fun n -> 
 	    if n == npars + 1 then fun _ v -> mkProj (p, v)
@@ -674,8 +729,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       | [] -> resj
       | c::rest ->
 	let argloc = loc_of_glob_constr c in
-	let resj = evd_comb1 (Coercion.inh_app_fun resolve_tc env) evdref resj in
-        let resty = whd_all env !evdref resj.uj_type in
+	let resj = evd_comb1 (Coercion.inh_app_fun resolve_tc env.ExtraEnv.env) evdref resj in
+        let resty = whd_all env.ExtraEnv.env !evdref resj.uj_type in
       	  match kind_of_term resty with
 	  | Prod (na,c1,c2) ->
 	    let tycon = Some c1 in
@@ -684,7 +739,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	      match candargs with
 	      | [] -> [], j_val hj
 	      | arg :: args -> 
-		if e_conv env evdref (j_val hj) arg then
+		if e_conv env.ExtraEnv.env evdref (j_val hj) arg then
 		  args, nf_evar !evdref (j_val hj)
 		else [], j_val hj
 	    in
@@ -695,7 +750,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	  | _ ->
 	    let hj = pretype empty_tycon env evdref lvar c in
 	      error_cant_apply_not_functional_loc
-		(Loc.merge floc argloc) env !evdref
+		(Loc.merge floc argloc) env.ExtraEnv.env !evdref
 	      	resj [hj]
     in
     let resj = apply_rec env 1 fj candargs args in
@@ -703,13 +758,13 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       match evar_kind_of_term !evdref resj.uj_val with
       | App (f,args) ->
         let f = whd_evar !evdref f in
-          if is_template_polymorphic env f then
+          if is_template_polymorphic env.ExtraEnv.env f then
 	    (* Special case for inductive type applications that must be 
 	       refreshed right away. *)
 	    let sigma = !evdref in
 	    let c = mkApp (f,Array.map (whd_evar sigma) args) in
-	    let c = evd_comb1 (Evarsolve.refresh_universes (Some true) env) evdref c in
-	    let t = Retyping.get_type_of env !evdref c in
+	    let c = evd_comb1 (Evarsolve.refresh_universes (Some true) env.ExtraEnv.env) evdref c in
+	    let t = Retyping.get_type_of env.ExtraEnv.env !evdref c in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
 	  else resj
       | _ -> resj 
@@ -722,11 +777,11 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	match tycon with
 	| None -> evd, tycon
 	| Some ty ->
-	  let evd, ty' = Coercion.inh_coerce_to_prod loc env evd ty in
+	  let evd, ty' = Coercion.inh_coerce_to_prod loc env.ExtraEnv.env evd ty in
 	    evd, Some ty')
       evdref tycon
     in
-    let (name',dom,rng) = evd_comb1 (split_tycon loc env) evdref tycon' in
+    let (name',dom,rng) = evd_comb1 (split_tycon loc env.ExtraEnv.env) evdref tycon' in
     let dom_valcon = valcon_of_tycon dom in
     let j = pretype_type dom_valcon env evdref lvar c1 in
     (* The name specified by ltac is used also to create bindings. So
@@ -735,7 +790,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
     let var = LocalAssum (name, j.utj_val) in
     let j' = pretype rng (push_rel var env) evdref lvar c2 in
     let name = ltac_interp_name lvar name in
-    let resj = judge_of_abstraction env (orelse_name name name') j j' in
+    let resj = judge_of_abstraction env.ExtraEnv.env (orelse_name name name') j j' in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
   | GProd(loc,name,bk,c1,c2)        ->
@@ -749,13 +804,13 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
           { j with utj_val = lift 1 j.utj_val }
       | Name _ ->
         let var = (name,j.utj_val) in
-        let env' = push_rel_assum var env in
+        let env' = ExtraEnv.make_env (push_rel_assum var env.ExtraEnv.env) in
           pretype_type empty_valcon env' evdref lvar c2
     in
     let name = ltac_interp_name lvar name in
     let resj =
       try
-        judge_of_product env name j j'
+        judge_of_product env.ExtraEnv.env name j j'
       with TypeError _ as e ->
         let (e, info) = CErrors.push e in
         let info = Loc.add_loc info loc in
@@ -771,7 +826,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       | _ -> pretype empty_tycon env evdref lvar c1
     in
     let t = evd_comb1 (Evarsolve.refresh_universes
-      ~onlyalg:true ~status:Evd.univ_flexible (Some false) env)
+      ~onlyalg:true ~status:Evd.univ_flexible (Some false) env.ExtraEnv.env)
       evdref j.uj_type in
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
@@ -786,12 +841,12 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
   | GLetTuple (loc,nal,(na,po),c,d) ->
     let cj = pretype empty_tycon env evdref lvar c in
     let (IndType (indf,realargs)) =
-      try find_rectype env !evdref cj.uj_type
+      try find_rectype env.ExtraEnv.env !evdref cj.uj_type
       with Not_found ->
 	let cloc = loc_of_glob_constr c in
-	  error_case_not_inductive_loc cloc env !evdref cj
+	  error_case_not_inductive_loc cloc env.ExtraEnv.env !evdref cj
     in
-    let cstrs = get_constructors env indf in
+    let cstrs = get_constructors env.ExtraEnv.env indf in
     if not (Int.equal (Array.length cstrs) 1) then
       user_err_loc (loc,"",str "Destructing let is only for inductive types" ++
 	str " with one constructor.");
@@ -800,7 +855,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       user_err_loc (loc,"", str "Destructing let on this type expects " ++ 
 	int cs.cs_nargs ++ str " variables.");
     let fsign, record = 
-      match get_projections env indf with
+      match get_projections env.ExtraEnv.env indf with
       | None ->
 	 List.map2 set_name (List.rev nal) cs.cs_args, false
       | Some ps ->
@@ -821,36 +876,36 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
         let nal = List.rev nal in
         let fsign = List.map2 set_name nal fsign in
 	let f = it_mkLambda_or_LetIn f fsign in
-	let ci = make_case_info env (fst ind) LetStyle in
+	let ci = make_case_info env.ExtraEnv.env (fst ind) LetStyle in
 	  mkCase (ci, p, cj.uj_val,[|f|]) 
       else it_mkLambda_or_LetIn f fsign
     in
     let env_f = push_rel_context fsign env in
       (* Make dependencies from arity signature impossible *)
     let arsgn =
-      let arsgn,_ = get_arity env indf in
+      let arsgn,_ = get_arity env.ExtraEnv.env indf in
 	if not !allow_anonymous_refs then
 	  List.map (set_name Anonymous) arsgn
 	else arsgn
     in
-      let psign = LocalAssum (na, build_dependent_inductive env indf) :: arsgn in
+      let psign = LocalAssum (na, build_dependent_inductive env.ExtraEnv.env indf) :: arsgn in
       let nar = List.length arsgn in
 	  (match po with
 	  | Some p ->
 	    let env_p = push_rel_context psign env in
 	    let pj = pretype_type empty_valcon env_p evdref lvar p in
 	    let ccl = nf_evar !evdref pj.utj_val in
-	    let psign = make_arity_signature env true indf in (* with names *)
+	    let psign = make_arity_signature env.ExtraEnv.env true indf in (* with names *)
 	    let p = it_mkLambda_or_LetIn ccl psign in
 	    let inst =
 	      (Array.to_list cs.cs_concl_realargs)
 	      @[build_dependent_constructor cs] in
 	    let lp = lift cs.cs_nargs p in
-	    let fty = hnf_lam_applist env !evdref lp inst in
+	    let fty = hnf_lam_applist env.ExtraEnv.env !evdref lp inst in
 	    let fj = pretype (mk_tycon fty) env_f evdref lvar d in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
-		Typing.check_allowed_sort env !evdref ind cj.uj_val p;
+		Typing.check_allowed_sort env.ExtraEnv.env !evdref ind cj.uj_val p;
 		obj ind p cj.uj_val fj.uj_val
 	    in
 	      { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
@@ -863,37 +918,37 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 	      if noccur_between 1 cs.cs_nargs ccl then
 		lift (- cs.cs_nargs) ccl
 	      else
-		error_cant_find_case_type_loc loc env !evdref
+		error_cant_find_case_type_loc loc env.ExtraEnv.env !evdref
 		  cj.uj_val in
 		 (* let ccl = refresh_universes ccl in *)
 	    let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
-		Typing.check_allowed_sort env !evdref ind cj.uj_val p;
+		Typing.check_allowed_sort env.ExtraEnv.env !evdref ind cj.uj_val p;
 		obj ind p cj.uj_val fj.uj_val
 	    in { uj_val = v; uj_type = ccl })
 
   | GIf (loc,c,(na,po),b1,b2) ->
     let cj = pretype empty_tycon env evdref lvar c in
     let (IndType (indf,realargs)) =
-      try find_rectype env !evdref cj.uj_type
+      try find_rectype env.ExtraEnv.env !evdref cj.uj_type
       with Not_found ->
 	let cloc = loc_of_glob_constr c in
-	  error_case_not_inductive_loc cloc env !evdref cj in
-    let cstrs = get_constructors env indf in
+	  error_case_not_inductive_loc cloc env.ExtraEnv.env !evdref cj in
+    let cstrs = get_constructors env.ExtraEnv.env indf in
       if not (Int.equal (Array.length cstrs) 2) then
         user_err_loc (loc,"",
 		      str "If is only for inductive types with two constructors.");
 
       let arsgn =
-	let arsgn,_ = get_arity env indf in
+	let arsgn,_ = get_arity env.ExtraEnv.env indf in
 	  if not !allow_anonymous_refs then
 	      (* Make dependencies from arity signature impossible *)
 	    List.map (set_name Anonymous) arsgn
 	  else arsgn
       in
       let nar = List.length arsgn in
-      let psign = LocalAssum (na, build_dependent_inductive env indf) :: arsgn in
+      let psign = LocalAssum (na, build_dependent_inductive env.ExtraEnv.env indf) :: arsgn in
       let pred,p = match po with
 	| Some p ->
 	  let env_p = push_rel_context psign env in
@@ -931,9 +986,9 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       let b2 = f cstrs.(1) b2 in
       let v =
 	let ind,_ = dest_ind_family indf in
-	let ci = make_case_info env (fst ind) IfStyle in
+	let ci = make_case_info env.ExtraEnv.env (fst ind) IfStyle in
 	let pred = nf_evar !evdref pred in
-	  Typing.check_allowed_sort env !evdref ind cj.uj_val pred;
+	  Typing.check_allowed_sort env.ExtraEnv.env !evdref ind cj.uj_val pred;
 	  mkCase (ci, pred, cj.uj_val, [|b1;b2|])
       in
       let cj = { uj_val = v; uj_type = p } in
@@ -941,20 +996,20 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 
   | GCases (loc,sty,po,tml,eqns) ->
     Cases.compile_cases loc sty
-      ((fun vtyc env evdref -> pretype vtyc env evdref lvar),evdref)
-      tycon env (* loc *) (po,tml,eqns)
+      ((fun vtyc env evdref -> pretype vtyc (make_env env) evdref lvar),evdref)
+      tycon env.ExtraEnv.env (* loc *) (po,tml,eqns)
 
   | GCast (loc,c,k) ->
     let cj =
       match k with
       | CastCoerce ->
 	let cj = pretype empty_tycon env evdref lvar c in
-	  evd_comb1 (Coercion.inh_coerce_to_base loc env) evdref cj
+	  evd_comb1 (Coercion.inh_coerce_to_base loc env.ExtraEnv.env) evdref cj
       | CastConv t | CastVM t | CastNative t ->
 	let k = (match k with CastVM _ -> VMcast | CastNative _ -> NATIVEcast | _ -> DEFAULTcast) in
 	let tj = pretype_type empty_valcon env evdref lvar t in
         let tval = evd_comb1 (Evarsolve.refresh_universes
-                             ~onlyalg:true ~status:Evd.univ_flexible (Some false) env)
+                             ~onlyalg:true ~status:Evd.univ_flexible (Some false) env.ExtraEnv.env)
                           evdref tj.utj_val in
 	let tval = nf_evar !evdref tval in
 	let cj, tval = match k with
@@ -962,22 +1017,22 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
  	    let cj = pretype empty_tycon env evdref lvar c in
 	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tval in
 	      if not (occur_existential cty || occur_existential tval) then
-		let (evd,b) = Reductionops.vm_infer_conv env !evdref cty tval in
+		let (evd,b) = Reductionops.vm_infer_conv env.ExtraEnv.env !evdref cty tval in
 		if b then (evdref := evd; cj, tval)
 		else
-		  error_actual_type_loc loc env !evdref cj tval 
-                      (ConversionFailed (env,cty,tval))
+		  error_actual_type_loc loc env.ExtraEnv.env !evdref cj tval 
+                      (ConversionFailed (env.ExtraEnv.env,cty,tval))
 	      else user_err_loc (loc,"",str "Cannot check cast with vm: " ++
 		str "unresolved arguments remain.")
 	  | NATIVEcast ->
  	    let cj = pretype empty_tycon env evdref lvar c in
 	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tval in
             begin
-	      let (evd,b) = Nativenorm.native_infer_conv env !evdref cty tval in
+	      let (evd,b) = Nativenorm.native_infer_conv env.ExtraEnv.env !evdref cty tval in
 	      if b then (evdref := evd; cj, tval)
 	      else
-                error_actual_type_loc loc env !evdref cj tval 
-                  (ConversionFailed (env,cty,tval))
+                error_actual_type_loc loc env.ExtraEnv.env !evdref cj tval 
+                  (ConversionFailed (env.ExtraEnv.env,cty,tval))
             end
 	  | _ -> 
  	    pretype (mk_tycon tval) env evdref lvar c, tval
@@ -998,11 +1053,11 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
       with Not_found ->
       try
         let (n,_,t') = lookup_rel_id id (rel_context env) in
-        if is_conv env !evdref t t' then mkRel n, update else raise Not_found
+        if is_conv env.ExtraEnv.env !evdref t t' then mkRel n, update else raise Not_found
       with Not_found ->
       try
         let t' = lookup_named id env |> get_type in
-        if is_conv env !evdref t t' then mkVar id, update else raise Not_found
+        if is_conv env.ExtraEnv.env !evdref t t' then mkVar id, update else raise Not_found
       with Not_found ->
         user_err_loc (loc,"",str "Cannot interpret " ++
           pr_existential_key !evdref evk ++
@@ -1013,17 +1068,17 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
   Array.map_of_list snd subst
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
-and pretype_type k0 resolve_tc valcon env evdref lvar = function
+and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
   | GHole (loc, knd, naming, None) ->
       (match valcon with
        | Some v ->
            let s =
 	     let sigma =  !evdref in
-	     let t = Retyping.get_type_of env sigma v in
-	       match kind_of_term (whd_all env sigma t) with
+	     let t = Retyping.get_type_of env.ExtraEnv.env sigma v in
+	       match kind_of_term (whd_all env.ExtraEnv.env sigma t) with
                | Sort s -> s
                | Evar ev when is_Type (existential_type sigma ev) ->
-		   evd_comb1 (define_evar_as_sort env) evdref ev
+		   evd_comb1 (define_evar_as_sort env.ExtraEnv.env) evdref ev
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type")
            in
 	     { utj_val = v;
@@ -1036,16 +1091,17 @@ and pretype_type k0 resolve_tc valcon env evdref lvar = function
   | c ->
       let j = pretype k0 resolve_tc empty_tycon env evdref lvar c in
       let loc = loc_of_glob_constr c in
-      let tj = evd_comb1 (Coercion.inh_coerce_to_sort loc env) evdref j in
+      let tj = evd_comb1 (Coercion.inh_coerce_to_sort loc env.ExtraEnv.env) evdref j in
 	match valcon with
 	| None -> tj
 	| Some v ->
-	    if e_cumul env evdref v tj.utj_val then tj
+	    if e_cumul env.ExtraEnv.env evdref v tj.utj_val then tj
 	    else
 	      error_unexpected_type_loc
-                (loc_of_glob_constr c) env !evdref tj.utj_val v
+                (loc_of_glob_constr c) env.ExtraEnv.env !evdref tj.utj_val v
 
 let ise_pretype_gen flags env sigma lvar kind c =
+  let env = make_env env in
   let evdref = ref sigma in
   let k0 = Context.Rel.length (rel_context env) in
   let c' = match kind with
@@ -1056,7 +1112,7 @@ let ise_pretype_gen flags env sigma lvar kind c =
     | IsType ->
 	(pretype_type k0 flags.use_typeclasses empty_valcon env evdref lvar c).utj_val 
   in
-  process_inference_flags flags env sigma (!evdref,c')
+  process_inference_flags flags env.ExtraEnv.env sigma (!evdref,c')
 
 let default_inference_flags fail = {
   use_typeclasses = true;
@@ -1088,19 +1144,21 @@ let on_judgment f j =
   {uj_val = c; uj_type = t}
 
 let understand_judgment env sigma c =
+  let env = make_env env in
   let evdref = ref sigma in
   let k0 = Context.Rel.length (rel_context env) in
   let j = pretype k0 true empty_tycon env evdref empty_lvar c in
   let j = on_judgment (fun c ->
-    let evd, c = process_inference_flags all_and_fail_flags env sigma (!evdref,c) in 
+    let evd, c = process_inference_flags all_and_fail_flags env.ExtraEnv.env sigma (!evdref,c) in 
       evdref := evd; c) j
   in j, Evd.evar_universe_context !evdref
 
 let understand_judgment_tcc env evdref c =
+  let env = make_env env in
   let k0 = Context.Rel.length (rel_context env) in
   let j = pretype k0 true empty_tycon env evdref empty_lvar c in
   on_judgment (fun c ->
-    let (evd,c) = process_inference_flags all_no_fail_flags env Evd.empty (!evdref,c) in
+    let (evd,c) = process_inference_flags all_no_fail_flags env.ExtraEnv.env Evd.empty (!evdref,c) in
     evdref := evd; c) j
 
 let ise_pretype_gen_ctx flags env sigma lvar kind c =
@@ -1149,3 +1207,9 @@ let type_uconstr ?(flags = constr_flags)
   let (sigma, c) = understand_ltac flags env sigma vars expected_type term in
   Sigma.Unsafe.of_pair (c, sigma)
   end }
+
+let pretype k0 resolve_tc typcon env evdref lvar t =
+  pretype k0 resolve_tc typcon (make_env env) evdref lvar t
+
+let pretype_type k0 resolve_tc valcon env evdref lvar t =
+  pretype_type k0 resolve_tc valcon (make_env env) evdref lvar t

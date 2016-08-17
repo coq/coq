@@ -52,19 +52,21 @@ let optimize_non_type_induction_scheme kind dep sort _ ind =
     let u = Univ.UContext.instance ctx in
     let ctxset = Univ.ContextSet.of_context ctx in
     let ectx = Evd.evar_universe_context_of ctxset in
-    let sigma, c = build_induction_scheme env (Evd.from_ctx ectx) (ind,u) dep sort in
+    let sigma = Evd.merge_universe_context sigma ectx in
+    let sigma, c = build_induction_scheme env sigma (ind,u) dep sort in
       (c, Evd.evar_universe_context sigma), Safe_typing.empty_private_constants
 
 let build_induction_scheme_in_type dep sort ind =
   let env = Global.env () in
+  let sigma = Evd.from_env env in
   let ctx = 
     let mib,mip = Inductive.lookup_mind_specif env ind in
       Declareops.inductive_context mib
   in
   let u = Univ.UContext.instance ctx in
   let ctxset = Univ.ContextSet.of_context ctx in
-  let ectx = Evd.evar_universe_context_of ctxset in
-  let sigma, c = build_induction_scheme env (Evd.from_ctx ectx) (ind,u) dep sort in
+  let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context_of ctxset) in
+  let sigma, c = build_induction_scheme env sigma (ind,u) dep sort in
     c, Evd.evar_universe_context sigma
  
 let rect_scheme_kind_from_type =

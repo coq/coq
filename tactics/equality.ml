@@ -1691,7 +1691,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
          && List.exists (fun y -> occur_var_in_decl env y dcl) deps
       then
         let id_dest = if !regular_subst_tactic then dest else MoveLast in
-        (dest,(if is_local_assum dcl then deps else id::deps), (id_dest,id)::allhyps)
+        (dest,id::deps,(id_dest,id)::allhyps)
       else
         (MoveBefore id,deps,allhyps))
       hyps

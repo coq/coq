@@ -54,7 +54,7 @@ let init_color () =
     Terminal.has_style Unix.stderr &&
     (* emacs compilation buffer does not support colors by default,
        its TERM variable is set to "dumb". *)
-    Unix.getenv "TERM" <> "dumb"
+    try Sys.getenv "TERM" <> "dumb" with Not_found -> false
   in
   if has_color then begin
     let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in

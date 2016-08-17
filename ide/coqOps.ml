@@ -339,8 +339,11 @@ object(self)
   method private show_goals_aux ?(move_insert=false) () =
     Coq.PrintOpt.set_printing_width proof#width;
     if move_insert then begin
-      buffer#place_cursor ~where:self#get_start_of_input;
-      script#recenter_insert;
+      let dest = self#get_start_of_input in
+      if (buffer#get_iter_at_mark `INSERT)#compare dest <= 0 then begin
+        buffer#place_cursor ~where:dest;
+        script#recenter_insert
+      end
     end;
     Coq.bind (Coq.goals ~logger:messages#push ()) (function
     | Fail x -> self#handle_failure_aux ~move_insert x

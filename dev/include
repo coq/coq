@@ -25,7 +25,7 @@
 #cd ".";;
 #use "base_include";;
 
-#install_printer  (* pp_stdcmds *) pppp;;
+#install_printer  (* pp_stdcmds *) pp;;
 
 #install_printer  (* pattern *) pppattern;;
 #install_printer  (* glob_constr *) ppglob_constr;;

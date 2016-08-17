@@ -1251,6 +1251,11 @@ let out_def = function
   | Some def -> def
   | None -> error "Program Fixpoint needs defined bodies."
 
+let collect_evars_of_term evd c ty =
+  let evars = Evar.Set.union (Evd.evars_of_term c) (Evd.evars_of_term ty) in
+  Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
+  evars (Evd.from_ctx (Evd.evar_universe_context evd))
+
 let do_program_recursive local p fixkind fixl ntns =
   let isfix = fixkind != Obligations.IsCoFixpoint in
   let (env, rec_sign, pl, evd), fix, info = 
@@ -1268,8 +1273,9 @@ let do_program_recursive local p fixkind fixl ntns =
     and typ =
       nf_evar evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign)
     in
+    let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ = 
-      Obligations.eterm_obligations env id evd
+      Obligations.eterm_obligations env id evm
 	(List.length rec_sign) def typ
     in (id, def, typ, imps, evars)
   in
