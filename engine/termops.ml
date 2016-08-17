@@ -983,26 +983,29 @@ let rec mem_named_context id ctxt =
   | [] -> false
 
 let compact_named_context_reverse sign =
-  let compact l decl =
-    match decl, l with
-    | NamedDecl.LocalAssum (i,t), [] ->
-       [NamedListDecl.LocalAssum ([i],t)]
-    | NamedDecl.LocalDef (i,c,t), [] ->
-       [NamedListDecl.LocalDef ([i],c,t)]
-    | NamedDecl.LocalAssum (i1,t1), NamedListDecl.LocalAssum (li,t2) :: q ->
-       if Constr.equal t1 t2
-       then NamedListDecl.LocalAssum (i1::li, t2) :: q
-       else NamedListDecl.LocalAssum ([i1],t1) :: NamedListDecl.LocalAssum (li,t2) :: q
-    | NamedDecl.LocalDef (i1,c1,t1), NamedListDecl.LocalDef (li,c2,t2) :: q ->
-       if Constr.equal c1 c2 && Constr.equal t1 t2
-       then NamedListDecl.LocalDef (i1::li, c2, t2) :: q
-       else NamedListDecl.LocalDef ([i1],c1,t1) :: NamedListDecl.LocalDef (li,c2,t2) :: q
-    | NamedDecl.LocalAssum (i,t), q ->
-       NamedListDecl.LocalAssum ([i],t) :: q
-    | NamedDecl.LocalDef (i,c,t), q ->
-       NamedListDecl.LocalDef ([i],c,t) :: q
+  let open NamedDecl in
+
+  let almost_equal d1 d2 =
+    match d1, d2 with
+    | LocalAssum (_,t1), LocalAssum (_,t2) ->
+        Constr.equal t1 t2
+    | LocalDef (_,c1,t1), LocalDef (_,c2,t2) ->
+        Constr.equal c1 c2 && Constr.equal t1 t2
+    | _ ->
+        false
   in
-  Context.Named.fold_inside compact ~init:[] sign
+
+  let compact_named_context = function
+    | [] ->
+        (* This cannot happen as long as [List.factorize] and [almost_equal] function are correct. *)
+        assert false
+    | LocalAssum (_,t) :: _ as sign ->
+        NamedListDecl.LocalAssum (List.map get_id sign, t)
+    | LocalDef (_,c,t) :: _ as sign ->
+        NamedListDecl.LocalDef (List.map get_id sign, c, t)
+  in
+
+  sign |> List.factorize almost_equal |> List.map compact_named_context
 
 let compact_named_context sign = List.rev (compact_named_context_reverse sign)
 

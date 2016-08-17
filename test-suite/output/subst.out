@@ -4,10 +4,9 @@
   Hy : y = 0
   Hz : z = 0
   H1 : 0 = 1
-  HA : True
+  HA, HB : True
   H2 : 0 = 2
   H3 : y = 3
-  HB : True
   H4 : z = 4
   ============================
   True
@@ -17,10 +16,9 @@
   Hx : x = 0
   Hz : z = 0
   H1 : x = 1
-  HA : True
+  HA, HB : True
   H2 : x = 2
   H3 : 0 = 3
-  HB : True
   H4 : z = 4
   ============================
   True
@@ -30,20 +28,18 @@
   Hx : x = 0
   Hy : y = 0
   H1 : x = 1
-  HA : True
+  HA, HB : True
   H2 : x = 2
   H3 : y = 3
-  HB : True
   H4 : 0 = 4
   ============================
   True
 1 subgoal
   
   H1 : 0 = 1
-  HA : True
+  HA, HB : True
   H2 : 0 = 2
   H3 : 0 = 3
-  HB : True
   H4 : 0 = 4
   ============================
   True
@@ -52,9 +48,8 @@
   y, z : nat
   Hy : y = 0
   Hz : z = 0
-  HA : True
+  HA, HB : True
   H3 : y = 3
-  HB : True
   H4 : z = 4
   H1 : 0 = 1
   H2 : 0 = 2
@@ -66,9 +61,8 @@
   Hx : x = 0
   Hz : z = 0
   H1 : x = 1
-  HA : True
+  HA, HB : True
   H2 : x = 2
-  HB : True
   H4 : z = 4
   H3 : 0 = 3
   ============================
@@ -79,10 +73,9 @@
   Hx : x = 0
   Hy : y = 0
   H1 : x = 1
-  HA : True
+  HA, HB : True
   H2 : x = 2
   H3 : y = 3
-  HB : True
   H4 : 0 = 4
   ============================
   True
