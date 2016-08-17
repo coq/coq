@@ -982,7 +982,7 @@ let rec mem_named_context id ctxt =
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
-let compact_named_context_reverse sign =
+let compact_named_context sign =
   let open NamedDecl in
 
   let almost_equal d1 d2 =
@@ -1000,14 +1000,12 @@ let compact_named_context_reverse sign =
         (* This cannot happen as long as [List.factorize] and [almost_equal] function are correct. *)
         assert false
     | LocalAssum (_,t) :: _ as sign ->
-        NamedListDecl.LocalAssum (List.map get_id sign, t)
+        NamedListDecl.LocalAssum (sign |> List.map get_id |> List.rev, t)
     | LocalDef (_,c,t) :: _ as sign ->
-        NamedListDecl.LocalDef (List.map get_id sign, c, t)
+        NamedListDecl.LocalDef (sign |> List.map get_id |> List.rev, c, t)
   in
 
-  sign |> List.factorize almost_equal |> List.map compact_named_context
-
-let compact_named_context sign = List.rev (compact_named_context_reverse sign)
+  sign |> List.factorize almost_equal |> List.map compact_named_context |> List.rev
 
 let clear_named_body id env =
   let open NamedDecl in
