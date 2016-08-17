@@ -80,6 +80,8 @@ sig
 
     (** Reduce all terms in a given declaration to a single value. *)
     val fold : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
+
+    val to_tuple : t -> Name.t * Constr.t option * Constr.t
   end
 
   (** Rel-context is represented as a list of declarations.
