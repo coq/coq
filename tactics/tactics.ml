@@ -1095,7 +1095,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
   let naming = NamingMustBe (dloc,targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
-    (Proofview.Unsafe.tclEVARS clenv.evd)
+    (Proofview.Unsafe.tclEVARS (clear_metas clenv.evd))
     (if sidecond_first then
        Tacticals.New.tclTHENFIRST
          (assert_before_then_gen with_clear naming new_hyp_typ tac) exact_tac
