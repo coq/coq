@@ -790,11 +790,11 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
              (h 0 (str "<<" ++ Termops.print_constr x ++
 		   str "|" ++ cut () ++ Cst_stack.pr cst_l ++
 		   str "|" ++ cut () ++ Stack.pr Termops.print_constr stack ++
-		   str ">>") ++ fnl ())
+		   str ">>"))
     in
     let fold () =
       let () = if !debug_RAKAM then
-	  let open Pp in Feedback.msg_notice (str "<><><><><>" ++ fnl ()) in
+	  let open Pp in Feedback.msg_notice (str "<><><><><>") in
       (s,cst_l)
     in
     match kind_of_term x with
