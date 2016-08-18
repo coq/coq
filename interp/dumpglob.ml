@@ -127,9 +127,10 @@ let type_of_global_ref gr =
     | Globnames.ConstructRef _ -> "constr"
 
 let remove_sections dir =
-  if Libnames.is_dirpath_prefix_of dir (Lib.cwd ()) then
+  let cwd = Lib.cwd_except_section () in
+  if Libnames.is_dirpath_prefix_of cwd dir then
     (* Not yet (fully) discharged *)
-    Libnames.pop_dirpath_n (Lib.sections_depth ()) (Lib.cwd ())
+    cwd
   else
     (* Theorem/Lemma outside its outer section of definition *)
     dir
