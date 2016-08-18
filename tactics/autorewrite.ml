@@ -65,7 +65,7 @@ let raw_find_base bas = String.Map.find bas !rewtab
 let find_base bas =
   try raw_find_base bas
   with Not_found ->
-    errorlabstrm "AutoRewrite"
+    user_err "AutoRewrite"
       (str "Rewriting base " ++ str bas ++ str " does not exist.")
 
 let find_rewrites bas =

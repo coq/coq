@@ -42,7 +42,7 @@ let functional_induction with_clean c princl pat =
 		let finfo = (* we first try to find out a graph on f *)
 		  try find_Function_infos c'
 		  with Not_found ->
-		    errorlabstrm "" (str "Cannot find induction information on "++
+		    user_err "" (str "Cannot find induction information on "++
 				       Printer.pr_lconstr (mkConst c') )
 		in
 		match Tacticals.elimination_sort_of_goal g with
@@ -70,7 +70,7 @@ let functional_induction with_clean c princl pat =
 		    (b,a)
 		    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
 		  with Not_found -> (* This one is neither defined ! *)
-		    errorlabstrm "" (str "Cannot find induction principle for "
+		    user_err "" (str "Cannot find induction principle for "
 				     ++Printer.pr_lconstr (mkConst c') )
 	      in
 	      (princ,NoBindings, Tacmach.pf_unsafe_type_of g' princ,g')
@@ -321,7 +321,7 @@ let error_error names e =
   in
   match e with
     | Building_graph e ->
-	errorlabstrm ""
+	user_err ""
 	  (str "Cannot define graph(s) for " ++
 	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
 	     e_explain e)

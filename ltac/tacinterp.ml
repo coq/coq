@@ -168,7 +168,7 @@ module Value = struct
     let pr_v = Pptactic.pr_value Pptactic.ltop v in
     let Val.Dyn (tag, _) = v in
     let tag = Val.pr tag in
-    errorlabstrm "" (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
+    user_err "" (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
       ++ str " while type " ++ Val.pr wit ++ str " was expected.")
 
   let unbox wit v ans = match ans with
@@ -1870,7 +1870,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
               let (sigma, c) = interp_constr ist env sigma c in
               Sigma.Unsafe.of_pair (c, sigma)
             with e when to_catch e (* Hack *) ->
-              errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
+              user_err "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
         end } in
         Tactics.change (Some op) c_interp (interp_clause ist env sigma cl)
       end }

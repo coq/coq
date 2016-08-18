@@ -95,7 +95,7 @@ let declare_scope scope =
     scope_map := String.Map.add scope empty_scope !scope_map
 
 let error_unknown_scope sc =
-  errorlabstrm "Notation"
+  user_err "Notation"
     (str "Scope " ++ str sc ++ str " is not declared.")
 
 let find_scope scope =
@@ -208,7 +208,7 @@ let remove_delimiters scope =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = None } in
   match sc.delimiters with
-    | None -> CErrors.errorlabstrm "" (str "No bound key for scope " ++ str scope ++ str ".")
+    | None -> CErrors.user_err "" (str "No bound key for scope " ++ str scope ++ str ".")
     | Some key ->
        scope_map := String.Map.add scope newsc !scope_map;
        try

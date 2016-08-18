@@ -1043,19 +1043,19 @@ let invfun qhyp f g =
 			 functional_inversion kn hid  f2 f_correct g
 		       with
 			 | Failure "" ->
-			     errorlabstrm "" (str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
+			     user_err "" (str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
 			 | Option.IsNone  ->
 			     if do_observe ()
 			     then
 			       error "Cannot use equivalence with graph for any side of the equality"
-			     else errorlabstrm "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+			     else user_err "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
 			 | Not_found ->
 			     if do_observe ()
 			     then
 			       error "No graph found for any side of equality"
-			     else errorlabstrm "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+			     else user_err "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
 		   end
-	       | _ -> errorlabstrm "" (Ppconstr.pr_id hid ++ str " must be an equality ")
+	       | _ -> user_err "" (Ppconstr.pr_id hid ++ str " must be an equality ")
 	  end)
 	  qhyp
           end

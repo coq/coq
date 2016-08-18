@@ -390,7 +390,7 @@ let ltac_interp_name { ltac_idents ; ltac_genargs } = function
       try Name (Id.Map.find id ltac_idents)
       with Not_found ->
         if Id.Map.mem id ltac_genargs then
-          errorlabstrm "" (str"Ltac variable"++spc()++ pr_id id ++
+          user_err "" (str"Ltac variable"++spc()++ pr_id id ++
                            spc()++str"is not bound to an identifier."++spc()++
                            str"It cannot be used in a binder.")
         else n
@@ -411,14 +411,14 @@ let invert_ltac_bound_name lvar env id0 id =
   let id' = Id.Map.find id lvar.ltac_idents in
   try mkRel (pi1 (lookup_rel_id id' (rel_context env)))
   with Not_found ->
-    errorlabstrm "" (str "Ltac variable " ++ pr_id id0 ++
+    user_err "" (str "Ltac variable " ++ pr_id id0 ++
 		       str " depends on pattern variable name " ++ pr_id id ++
 		       str " which is not bound in current context.")
 
 let protected_get_type_of env sigma c =
   try Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma c
   with Retyping.RetypeError _ ->
-    errorlabstrm ""
+    user_err ""
       (str "Cannot reinterpret " ++ quote (print_constr c) ++
        str " in the current environment.")
 

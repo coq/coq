@@ -365,7 +365,7 @@ let set_nosuchgoals_hook f = nosuchgoals_hook := f
 let _ = CErrors.register_handler begin function
   | NoSuchGoals n ->
     let suffix = !nosuchgoals_hook n in
-    CErrors.errorlabstrm ""
+    CErrors.user_err ""
       (str "No such " ++ str (String.plural n "goal") ++ str "." ++
        pr_non_empty_arg (fun x -> x) suffix)
       | _ -> raise CErrors.Unhandled
@@ -451,7 +451,7 @@ let _ = CErrors.register_handler begin function
         str"Incorrect number of goals" ++ spc() ++
         str"(expected "++int i++str(String.plural i " tactic") ++ str")."
       in
-      CErrors.errorlabstrm "" errmsg
+      CErrors.user_err "" errmsg
   | _ -> raise CErrors.Unhandled
 end
 
@@ -849,7 +849,7 @@ let tclPROGRESS t =
 
 exception Timeout
 let _ = CErrors.register_handler begin function
-  | Timeout -> CErrors.errorlabstrm "Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
+  | Timeout -> CErrors.user_err "Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
   | _ -> Pervasives.raise CErrors.Unhandled
 end
 

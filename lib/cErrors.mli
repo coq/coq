@@ -34,10 +34,13 @@ val is_anomaly : exn -> bool
     tricks with anomalies thanks to it. See rather [noncritical] below. *)
 
 exception UserError of string * std_ppcmds
-val error : string -> 'a
-val errorlabstrm : string -> std_ppcmds -> 'a
 
 val user_err     : ?loc:Loc.t -> string -> std_ppcmds -> 'a
+(** Main error raising primitive. [user_err ?loc c pp] signals an
+    error [pp] in component [c], with optional location [loc] *)
+
+val error : string -> 'a
+(** [error s] just calls [user_error "_" (str s)] *)
 
 exception AlreadyDeclared of std_ppcmds
 val alreadydeclared : std_ppcmds -> 'a

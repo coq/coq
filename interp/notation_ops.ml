@@ -377,7 +377,7 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
   let vars = Id.Map.filter filter nenv.ninterp_var_type in
   let check_recvar x =
     if Id.List.mem x found then
-      errorlabstrm "" (pr_id x ++
+      user_err "" (pr_id x ++
 	strbrk " should only be used in the recursive part of a pattern.") in
   let check (x, y) = check_recvar x; check_recvar y in
   let () = List.iter check foundrec in
@@ -396,7 +396,7 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
   in
   let check_pair s x y where =
     if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
-      errorlabstrm "" (strbrk "in the right-hand side, " ++ pr_id x ++
+      user_err "" (strbrk "in the right-hand side, " ++ pr_id x ++
 	str " and " ++ pr_id y ++ strbrk " should appear in " ++ str s ++
 	str " position as part of a recursive pattern.") in
   let check_type x typ =

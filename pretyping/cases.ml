@@ -503,7 +503,7 @@ let set_used_pattern eqn = eqn.used := true
 
 let extract_rhs pb =
   match pb.mat with
-    | [] -> errorlabstrm "build_leaf" (msg_may_need_inversion())
+    | [] -> user_err "build_leaf" (msg_may_need_inversion())
     | eqn::_ ->
 	set_used_pattern eqn;
         eqn.rhs

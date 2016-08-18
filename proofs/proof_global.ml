@@ -519,7 +519,7 @@ module Bullet = struct
 	(function
 	| FailedBullet (b,sugg) ->
 	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str" : " in
-	  CErrors.errorlabstrm "Focus" (prefix ++ suggest_on_error sugg)
+	  CErrors.user_err "Focus" (prefix ++ suggest_on_error sugg)
 	| _ -> raise CErrors.Unhandled)
 
 

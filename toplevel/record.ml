@@ -208,7 +208,7 @@ let warning_or_error coe indsp err =
 	  | _ ->
               (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
   in
-  if coe then errorlabstrm "structure" st;
+  if coe then user_err "structure" st;
   Flags.if_verbose Feedback.msg_info (hov 0 st)
 
 type field_status =
@@ -235,7 +235,7 @@ let subst_projection fid l c =
 	    | Projection t -> lift depth t
 	    | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
 	    | NoProjection Anonymous ->
-                errorlabstrm "" (str "Field " ++ pr_id fid ++
+                user_err "" (str "Field " ++ pr_id fid ++
                   str " depends on the " ++ pr_nth (k-depth-1) ++ str
                   " field which has no name.")
         else

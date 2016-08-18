@@ -110,7 +110,7 @@ let const_of_id id =
   in
   try Constrintern.locate_reference princ_ref
   with Not_found ->
-    CErrors.errorlabstrm "IndFun.const_of_id"
+    CErrors.user_err "IndFun.const_of_id"
       (str "cannot find " ++ Nameops.pr_id id)
 
 let def_of_const t =

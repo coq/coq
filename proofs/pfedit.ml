@@ -131,7 +131,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     | CList.IndexOutOfRange ->
         match gi with
 	| Vernacexpr.SelectNth i -> let msg = str "No such goal: " ++ int i ++ str "." in
-	                            CErrors.errorlabstrm "" msg
+	                            CErrors.user_err "" msg
         | _ -> assert false
 
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)

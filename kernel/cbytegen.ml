@@ -907,7 +907,7 @@ let compile fail_on_error ?universes:(universes=0) env c =
       Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
     Some (init_code,!fun_code, Array.of_list fv)
   with TooLargeInductive tname ->
-    let fn = if fail_on_error then CErrors.errorlabstrm "compile" else
+    let fn = if fail_on_error then CErrors.user_err "compile" else
 	       (fun x -> Feedback.msg_warning x) in
       (Pp.(fn
 	   (str "Cannot compile code for virtual machine as it uses inductive " ++

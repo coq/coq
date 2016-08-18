@@ -151,7 +151,7 @@ let reorder_context env sign ord =
       | top::ord' when mem_q top moved_hyps ->
           let ((d,h),mh) = find_q top moved_hyps in
           if occur_vars_in_decl env h d then
-            errorlabstrm "reorder_context"
+            user_err "reorder_context"
               (str "Cannot move declaration " ++ pr_id top ++ spc() ++
               str "before " ++
               pr_sequence pr_id
@@ -182,7 +182,7 @@ let check_decl_position env sign d =
   let needed = global_vars_set_of_decl env d in
   let deps = dependency_closure env (named_context_of_val sign) needed in
   if Id.List.mem x deps then
-    errorlabstrm "Logic.check_decl_position"
+    user_err "Logic.check_decl_position"
       (str "Cannot create self-referring hypothesis " ++ pr_id x);
   x::deps
 
@@ -252,7 +252,7 @@ let move_hyp toleft (left,declfrom,right) hto =
 	    if not (move_location_eq hto (MoveAfter hyp)) then
 	      (first, d::middle)
             else
-	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id (get_id declfrom) ++
+	      user_err "move_hyp" (str "Cannot move " ++ pr_id (get_id declfrom) ++
 	        Miscprint.pr_move_location pr_id hto ++
 	        str (if toleft then ": it occurs in " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")
@@ -287,7 +287,7 @@ let move_hyp toleft (left,declfrom,right) hto =
 variables only in Application and Case *)
 
 let error_unsupported_deep_meta c =
-  errorlabstrm "" (strbrk "Application of lemmas whose beta-iota normal " ++
+  user_err "" (strbrk "Application of lemmas whose beta-iota normal " ++
     strbrk "form contains metavariables deep inside the term is not " ++
     strbrk "supported; try \"refine\" instead.")
 
@@ -498,10 +498,10 @@ let convert_hyp check sign sigma d =
         let _,c,ct = to_tuple d' in
         let env = Global.env_of_context sign in
         if check && not (is_conv env sigma bt ct) then
-	  errorlabstrm "Logic.convert_hyp"
+	  user_err "Logic.convert_hyp"
             (str "Incorrect change of the type of " ++ pr_id id ++ str ".");
         if check && not (Option.equal (is_conv env sigma) b c) then
-	  errorlabstrm "Logic.convert_hyp"
+	  user_err "Logic.convert_hyp"
             (str "Incorrect change of the body of "++ pr_id id ++ str ".");
        if check then reorder := check_decl_position env sign d;
        d) in
@@ -534,7 +534,7 @@ let prim_refiner r sigma goal =
 	      t,cl,sigma
 	  else
             (if !check && mem_named_context id (named_context_of_val sign) then
-	      errorlabstrm "Logic.prim_refiner"
+	      user_err "Logic.prim_refiner"
                 (str "Variable " ++ pr_id id ++ str " is already declared.");
 	     push_named_context_val (LocalAssum (id,t)) sign,t,cl,sigma) in
         let (sg2,ev2,sigma) = 

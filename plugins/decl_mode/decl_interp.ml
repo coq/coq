@@ -328,7 +328,7 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
   let _ =
     let expected = mib.Declarations.mind_nparams - num_params in
       if not (Int.equal (List.length params) expected) then
-	errorlabstrm "suppose it is" 
+	user_err "suppose it is" 
 	  (str "Wrong number of extra arguments: " ++ 
 	     (if Int.equal expected 0 then str "none" else int expected) ++ spc () ++
 	     str "expected.") in
@@ -348,7 +348,7 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
       Thesis (Plain) -> Glob_term.GSort(Loc.ghost,GProp)
     | Thesis (For rec_occ) ->
 	if not (Id.List.mem rec_occ pat_vars) then
-	  errorlabstrm "suppose it is"
+	  user_err "suppose it is"
 	    (str "Variable " ++ Nameops.pr_id rec_occ ++
 	       str " does not occur in pattern.");
 	Glob_term.GSort(Loc.ghost,GProp)

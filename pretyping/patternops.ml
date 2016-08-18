@@ -204,7 +204,7 @@ let error_instantiate_pattern id l =
   | [_] -> "is" 
   | _ -> "are"
   in
-  errorlabstrm "" (str "Cannot substitute the term bound to " ++ pr_id id
+  user_err "" (str "Cannot substitute the term bound to " ++ pr_id id
     ++ strbrk " in pattern because the term refers to " ++ pr_enum pr_id l
     ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
 

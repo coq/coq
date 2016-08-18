@@ -632,7 +632,7 @@ let current_pure_db () =
   List.map snd (Hintdbmap.bindings (Hintdbmap.remove "v62" !searchtable))
 
 let error_no_such_hint_database x =
-  errorlabstrm "Hints" (str "No such Hint database: " ++ str x ++ str ".")
+  user_err "Hints" (str "No such Hint database: " ++ str x ++ str ".")
 
 (**************************************************************************)
 (*                       Definition of the summary                        *)
@@ -774,7 +774,7 @@ let make_resolves env sigma flags pri poly ?name cr =
     [make_exact_entry env sigma pri poly ?name; make_apply_entry env sigma flags pri poly ?name]
   in
   if List.is_empty ents then
-    errorlabstrm "Hint"
+    user_err "Hint"
       (pr_lconstr c ++ spc() ++
         (if pi1 flags then str"cannot be used as a hint."
 	else str "can be used as a hint only for eauto."));
@@ -817,7 +817,7 @@ let make_mode ref m =
   let n = List.length ctx in
   let m' = Array.of_list m in
     if not (n == Array.length m') then
-      errorlabstrm "Hint"
+      user_err "Hint"
 	(pr_global ref ++ str" has " ++ int n ++ 
 	   str" arguments while the mode declares " ++ int (Array.length m'))
     else m'

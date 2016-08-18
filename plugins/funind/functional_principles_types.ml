@@ -609,7 +609,7 @@ let build_scheme fas =
 	      try
 		Smartlocate.global_with_alias f
 	      with Not_found ->
-                errorlabstrm "FunInd.build_scheme"
+                user_err "FunInd.build_scheme"
                   (str "Cannot find " ++ Libnames.pr_reference f)
 	    in
 	    let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
@@ -643,7 +643,7 @@ let build_case_scheme fa =
     let (_,f,_) = fa in
     try fst (Universes.unsafe_constr_of_global (Smartlocate.global_with_alias f))
     with Not_found ->
-      errorlabstrm "FunInd.build_case_scheme"
+      user_err "FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_reference f) in
   let first_fun,u = destConst  funs in
   let funs_mp,funs_dp,_ = Names.repr_con first_fun in

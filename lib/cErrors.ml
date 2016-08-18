@@ -34,16 +34,16 @@ let is_anomaly = function
 | _ -> false
 
 exception UserError of string * std_ppcmds (* User errors *)
-let error string = raise (UserError("_", str string))
-let errorlabstrm l pps = raise (UserError(l,pps))
-
-exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
-let alreadydeclared pps = raise (AlreadyDeclared(pps))
 
 let todo s = prerr_string ("TODO: "^s^"\n")
 
 let user_err    ?loc s strm = Loc.raise ?loc (UserError (s,strm))
+let error            string = user_err "_" (str string)
+
 let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
+
+exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
+let alreadydeclared pps = raise (AlreadyDeclared(pps))
 
 exception Timeout
 exception Drop

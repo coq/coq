@@ -61,7 +61,7 @@ DECLARE PLUGIN "ssrmatching_plugin"
 
 type loc = Loc.t
 let dummy_loc = Loc.ghost
-let errorstrm = CErrors.errorlabstrm "ssrmatching"
+let errorstrm = CErrors.user_err "ssrmatching"
 let loc_error loc msg = CErrors.user_err ~loc msg (str msg)
 let ppnl = Feedback.msg_info
 

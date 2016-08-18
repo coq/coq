@@ -2,11 +2,15 @@
 = CHANGES BETWEEN COQ V8.6 AND COQ V8.7 =
 =========================================
 
+* ML API *
+
 ** Error handling **
 
-All error functions now take an optional parameter `?loc:Loc.t`. For
-functions that used to carry a suffix `_loc`, such suffix has been
-dropped.
+- All error functions now take an optional parameter `?loc:Loc.t`. For
+  functions that used to carry a suffix `_loc`, such suffix has been
+  dropped.
+
+- `errorlabstrm` has been removed in favor of `user_err`.
 
 =========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =

@@ -748,7 +748,7 @@ let print_ltac id =
     ++ spc() ++ Pptactic.pr_glob_tactic (Global.env ()) t) ++ redefined
  with
   Not_found ->
-   errorlabstrm "print_ltac"
+   user_err "print_ltac"
     (pr_qualid id ++ spc() ++ str "is not a user defined tactic.")
 
 (** Registering *)

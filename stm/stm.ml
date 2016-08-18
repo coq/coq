@@ -1038,7 +1038,7 @@ end = struct (* {{{ *)
       | _ -> VtUnknown, VtNow
     with
     | Not_found ->
-       CErrors.errorlabstrm "undo_vernac_classifier"
+       CErrors.user_err "undo_vernac_classifier"
         (str "Cannot undo")
 
 end (* }}} *)
@@ -1106,7 +1106,7 @@ let proof_block_delimiters = ref []
 
 let register_proof_block_delimiter name static dynamic =
   if List.mem_assoc name !proof_block_delimiters then
-    CErrors.errorlabstrm "STM" (str "Duplicate block delimiter " ++ str name);
+    CErrors.user_err "STM" (str "Duplicate block delimiter " ++ str name);
   proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
 
 let mk_doc_node id = function
@@ -1141,7 +1141,7 @@ let detect_proof_block id name =
           VCS.create_proof_block decl name
       end
     with Not_found ->
-      CErrors.errorlabstrm "STM"
+      CErrors.user_err "STM"
         (str "Unknown proof block delimiter " ++ str name)
   )
 (****************************** THE SCHEDULER *********************************)
@@ -1706,7 +1706,7 @@ end = struct (* {{{ *)
          List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0))
                       Evd.(evar_context g))
        then
-         CErrors.errorlabstrm "STM" (strbrk("the par: goal selector supports ground "^
+         CErrors.user_err "STM" (strbrk("the par: goal selector supports ground "^
            "goals only"))
        else begin
         let (i, ast) = r_ast in
@@ -1719,7 +1719,7 @@ end = struct (* {{{ *)
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               RespBuiltSubProof (t, Evd.evar_universe_context sigma)
-            else CErrors.errorlabstrm "STM" (str"The solution is not ground")
+            else CErrors.user_err "STM" (str"The solution is not ground")
        end) ()
     with e when CErrors.noncritical e -> RespError (CErrors.print e)
 
@@ -2056,7 +2056,7 @@ let known_state ?(redefine_qed=false) ~cache id =
            | _ -> assert false
         end
       with Not_found ->
-          CErrors.errorlabstrm "STM"
+          CErrors.user_err "STM"
             (str "Unknown proof block delimiter " ++ str name)
   in
 
@@ -2405,7 +2405,7 @@ let handle_failure (e, info) vcs tty =
 let snapshot_vio ldir long_f_dot_vo =
   finish ();
   if List.length (VCS.branches ()) > 1 then
-    CErrors.errorlabstrm "stm" (str"Cannot dump a vio with open proofs");
+    CErrors.user_err "stm" (str"Cannot dump a vio with open proofs");
   Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_vo
     (Global.opaque_tables ())
 

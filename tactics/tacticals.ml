@@ -643,7 +643,7 @@ module New = struct
 	    | Var id -> string_of_id id
 	    | _ -> "\b"
 	  in
-	  errorlabstrm "Tacticals.general_elim_then_using"
+	  user_err "Tacticals.general_elim_then_using"
             (str "The elimination combinator " ++ str name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in

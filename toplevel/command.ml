@@ -1312,7 +1312,7 @@ let do_program_fixpoint local poly l =
 	  match n with
 	  | Some n -> mkIdentC (snd n)
 	  | None ->
-	      errorlabstrm "do_program_fixpoint"
+	      user_err "do_program_fixpoint"
 		(str "Recursive argument required for well-founded fixpoints")
 	in build_wellfounded (id, pl, n, bl, typ, out_def def) poly r recarg ntn
 	     
@@ -1326,7 +1326,7 @@ let do_program_fixpoint local poly l =
 	  do_program_recursive local poly fixkind fixl ntns
 
     | _, _ ->
-	errorlabstrm "do_program_fixpoint"
+	user_err "do_program_fixpoint"
 	  (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
 let check_safe () =

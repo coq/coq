@@ -300,7 +300,7 @@ let dirpath_of_string_list s =
   let id =
     try Nametab.full_name_module qid
     with Not_found ->
-      CErrors.errorlabstrm "Search.interface_search"
+      CErrors.user_err "Search.interface_search"
         (str "Module " ++ str path ++ str " not found.")
   in
   id

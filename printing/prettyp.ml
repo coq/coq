@@ -736,7 +736,7 @@ let print_any_name = function
     let open Context.Named.Declaration in
     str |> Global.lookup_named |> set_id str |> print_named_decl
   with Not_found ->
-    errorlabstrm
+    user_err
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_name = function
@@ -831,7 +831,7 @@ let index_of_class cl =
   try
     fst (class_info cl)
   with Not_found ->
-    errorlabstrm "index_of_class"
+    user_err "index_of_class"
       (pr_class cl ++ spc() ++ str "not a defined class.")
 
 let print_path_between cls clt =
@@ -841,7 +841,7 @@ let print_path_between cls clt =
     try
       lookup_path_between_class (i,j)
     with Not_found ->
-      errorlabstrm "index_cl_of_id"
+      user_err "index_cl_of_id"
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt
 	 ++ str ".")
   in

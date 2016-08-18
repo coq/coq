@@ -1508,7 +1508,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	Evar.Set.fold 
 	  (fun ev acc -> 
 	   if not (Evd.is_defined acc ev) then 
-	     errorlabstrm "rewrite"
+	     user_err "rewrite"
 			  (str "Unsolved constraint remaining: " ++ spc () ++
 			   Evd.pr_evar_info (Evd.find acc ev))
 	   else Evd.remove acc ev) 
@@ -1647,7 +1647,7 @@ let cl_rewrite_clause_strat progress strat clause =
    (fun gl -> 
     try Proofview.V82.of_tactic (cl_rewrite_clause_newtac ~progress strat clause) gl
     with RewriteFailure e ->
-	 errorlabstrm "" (str"setoid rewrite failed: " ++ e)
+	 user_err "" (str"setoid rewrite failed: " ++ e)
        | Refiner.FailError (n, pp) -> 
 	  tclFAIL n (str"setoid rewrite failed: " ++ Lazy.force pp) gl))
 

@@ -630,7 +630,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let (ind,_) =
 	  try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	  with Not_found ->
-	    errorlabstrm "" (str "Cannot find the inductive associated to " ++
+	    user_err "" (str "Cannot find the inductive associated to " ++
 			       Printer.pr_glob_constr b ++ str " in " ++
 			       Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	in
@@ -662,7 +662,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	  let (ind,_) =
 	    try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	    with Not_found ->
-	      errorlabstrm "" (str "Cannot find the inductive associated to " ++
+	      user_err "" (str "Cannot find the inductive associated to " ++
 				 Printer.pr_glob_constr b ++ str " in " ++
 				 Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	  in

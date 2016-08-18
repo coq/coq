@@ -366,7 +366,7 @@ let check_hidden_implicit_parameters id impls =
     | (Inductive indparams,_,_,_) -> Id.List.mem id indparams
     | _ -> false) impls
   then
-    errorlabstrm "" (strbrk "A parameter of an inductive type " ++
+    user_err "" (strbrk "A parameter of an inductive type " ++
     pr_id id ++ strbrk " is not allowed to be used as a bound variable in the type of its constructor.")
 
 let push_name_env ?(global_level=false) ntnvars implargs env =
