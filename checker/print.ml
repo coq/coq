@@ -10,7 +10,9 @@ open Format
 open Cic
 open Names
 
-let print_instance i = Feedback.msg_notice (Univ.Instance.pr i)
+let chk_pp = Pp.pp_with Format.std_formatter
+
+let print_instance i = chk_pp (Univ.Instance.pr i)
 
 let print_pure_constr csr =
   let rec term_display c = match  c with
@@ -108,7 +110,7 @@ let print_pure_constr csr =
   and sort_display = function
     | Prop(Pos) -> print_string "Set"
     | Prop(Null) -> print_string "Prop"
-    | Type u -> print_string "Type("; Feedback.msg_notice (Univ.pr_uni u); print_string ")"
+    | Type u -> print_string "Type("; chk_pp (Univ.pr_uni u); print_string ")"
 
   and name_display = function
     | Name id -> print_string (Id.to_string id)
