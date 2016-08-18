@@ -155,30 +155,6 @@ let restore_translator_coqdoc (ch,cl,cs,coqdocstate) =
   CLexer.restore_com_state cs;
   CLexer.restore_location_table coqdocstate
 
-(* For coqtop -time, we display the position in the file,
-   and a glimpse of the executed command *)
-
-let display_cmd_header loc com =
-  let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
-  let noblank s =
-    for i = 0 to String.length s - 1 do
-      match s.[i] with
-	| ' ' | '\n' | '\t' | '\r' -> s.[i] <- '~'
-	| _ -> ()
-    done;
-    s
-  in
-  let (start,stop) = Loc.unloc loc in
-  let safe_pr_vernac x =
-    try Ppvernac.pr_vernac x
-    with e -> str (Printexc.to_string e) in
-  let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
-  in
-  Feedback.msg_notice
-    (str "Chars " ++ int start ++ str " - " ++ int stop ++
-     str " [" ++ str cmd ++ str "] ")
-
-
 let rec vernac_com checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
@@ -208,7 +184,6 @@ let rec vernac_com checknav (loc,com) =
     try
       checknav loc com;
       if do_beautify () then pr_new_syntax loc (Some com);
-      if !Flags.time then display_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
       let a = CLexer.com_state () in
       interp com;

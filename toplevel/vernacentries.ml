@@ -51,6 +51,30 @@ let scope_class_of_qualid qid =
   Notation.scope_class_of_class (cl_of_qualid qid)
 
 (*******************)
+(* "Time" command  *)
+
+(* For coqtop -time, we display the position in the file,
+   and a glimpse of the executed command *)
+
+let pp_cmd_header loc com =
+  let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
+  let noblank s =
+    for i = 0 to String.length s - 1 do
+      match s.[i] with
+	| ' ' | '\n' | '\t' | '\r' -> s.[i] <- '~'
+	| _ -> ()
+    done;
+    s
+  in
+  let (start,stop) = Loc.unloc loc in
+  let safe_pr_vernac x =
+    try Ppvernac.pr_vernac x
+    with e -> str (Printexc.to_string e) in
+  let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
+  in str "Chars " ++ int start ++ str " - " ++ int stop ++
+     str " [" ++ str cmd ++ str "] "
+
+(*******************)
 (* "Show" commands *)
 
 let show_proof () =
@@ -2043,8 +2067,8 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         aux ?locality ?polymorphism isprogcmd v
     | VernacRedirect (s, (_,v)) ->
          Feedback.with_output_to_file s (aux false) v
-    | VernacTime (_,v) ->
-        System.with_time !Flags.time
+    | VernacTime (loc,v) ->
+        System.with_time ~hdr:(pp_cmd_header loc v) !Flags.time
           (aux ?locality ?polymorphism isprogcmd) v;
     | VernacLoad (_,fname) -> vernac_load (aux false) fname
     | c -> 
