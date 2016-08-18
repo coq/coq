@@ -1440,17 +1440,8 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
   fun ({ state = () } as input) ->
     let unify env evars t =
       let (sigma, cstrs) = evars in
-      let ans =
-        try Some (refresh_hypinfo env sigma c)
-        with e when Class_tactics.catchable e -> None
-      in
-      match ans with
-      | None -> None
-      | Some (sigma, rew) ->
-        let rew = unify_eqn rew l2r flags env (sigma, cstrs) None t in
-        match rew with
-        | None -> None
-        | Some rew -> Some rew
+      let (sigma, rew) = refresh_hypinfo env sigma c in
+      unify_eqn rew l2r flags env (sigma, cstrs) None t
     in
     let app = apply_rule unify occs in
     let strat = 
