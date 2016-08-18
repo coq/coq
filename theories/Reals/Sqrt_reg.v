@@ -339,7 +339,7 @@ Proof.
   rewrite <- H1; rewrite sqrt_0; unfold Rminus; rewrite Ropp_0;
     rewrite Rplus_0_r; rewrite <- H1 in H5; unfold Rminus in H5;
       rewrite Ropp_0 in H5; rewrite Rplus_0_r in H5.
-  destruct (Rcase_abs x0) as [Hlt|Hgt]_eqn:Heqs.
+  destruct (Rcase_abs x0) as [Hlt|Hgt] eqn:Heqs.
   unfold sqrt. rewrite Heqs.
   rewrite Rabs_R0; apply H2.
   rewrite Rabs_right.
