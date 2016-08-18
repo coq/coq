@@ -49,11 +49,11 @@ Infix "=~=" := pequiv (at level 70, no associativity) : equiv_scope.
 
 (** Shortcuts to make proof search easier. *)
 
-Program Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv.
+Program Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv | 1.
 
-Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv.
+Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv | 1.
 
-Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv.
+Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv | 1.
 
   Next Obligation.
   Proof. intros A R sa x y z Hxy Hyz.
@@ -123,7 +123,7 @@ Section Respecting.
 
 End Respecting.
 
-(** The default equivalence on function spaces, with higher-priority than [eq]. *)
+(** The default equivalence on function spaces, with higher priority than [eq]. *)
 
 Instance pointwise_reflexive {A} `(reflb : Reflexive B eqB) :
   Reflexive (pointwise_relation A eqB) | 9.
