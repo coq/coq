@@ -9,6 +9,7 @@
 
 Require Import Coq.Program.Utils.
 Require Import Coq.Program.Equality.
+Require Export ProofIrrelevance.
 
 Local Open Scope program_scope.
 
