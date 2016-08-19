@@ -610,7 +610,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   in
   match evd with
   | None ->
-    tclFAIL 0 (str"Terms do not have convertible types.")
+    tclFAIL 0 (str"Terms do not have convertible types")
   | Some evd ->
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
