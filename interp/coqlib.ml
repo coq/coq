@@ -86,7 +86,7 @@ let check_required_library d =
      (Loc.ghost,make_qualid (DirPath.make (List.rev prefix)) m)
 *)
 (* or failing ...*)
-      user_err "Coqlib.check_required_library"
+      user_err ~hdr:"Coqlib.check_required_library"
         (str "Library " ++ pr_dirpath dir ++ str " has to be required first.")
 
 (************************************************************************)

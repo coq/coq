@@ -340,7 +340,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else user_err "AutoIndDecl.do_replace_lb"
+            else user_err ~hdr:"AutoIndDecl.do_replace_lb"
                    (str "Var " ++ pr_id s ++ str " seems unknown.")
       )
     in mkVar (find 1)
@@ -398,7 +398,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else user_err "AutoIndDecl.do_replace_bl"
+            else user_err ~hdr:"AutoIndDecl.do_replace_bl"
                    (str "Var " ++ pr_id s ++ str " seems unknown.")
       )
     in mkVar (find 1)
@@ -506,7 +506,7 @@ let eqI ind l =
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
   and e, eff = 
     try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
-    with Not_found -> user_err "AutoIndDecl.eqI"
+    with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
       (str "The boolean equality on " ++ pr_mind (fst ind) ++ str " is needed.");
   in (if Array.equal eq_constr eA [||] then e else mkApp(e,eA)), eff
 
@@ -633,7 +633,7 @@ let side_effect_of_mode = function
 let make_bl_scheme mode mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
-    user_err ""
+    user_err 
       (str "Automatic building of boolean->Leibniz lemmas not supported");
   let ind = (mind,0) in
   let nparams = mib.mind_nparams in
@@ -756,7 +756,7 @@ let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 let make_lb_scheme mode mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
-    user_err ""
+    user_err 
       (str "Automatic building of Leibniz->boolean lemmas not supported");
   let ind = (mind,0) in
   let nparams = mib.mind_nparams in

@@ -71,7 +71,7 @@ let error_level_assoc p current expected =
     | Extend.LeftA -> str "left"
     | Extend.RightA -> str "right"
     | Extend.NonA -> str "non" in
-  user_err ""
+  user_err 
     (str "Level " ++ int p ++ str " is already declared " ++
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative.")

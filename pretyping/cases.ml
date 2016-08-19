@@ -503,7 +503,7 @@ let set_used_pattern eqn = eqn.used := true
 
 let extract_rhs pb =
   match pb.mat with
-    | [] -> user_err "build_leaf" (msg_may_need_inversion())
+    | [] -> user_err ~hdr:"build_leaf" (msg_may_need_inversion())
     | eqn::_ ->
 	set_used_pattern eqn;
         eqn.rhs
@@ -1832,7 +1832,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 		       | None -> [LocalAssum (na, lift n typ)]
 		       | Some b -> [LocalDef (na, lift n b, lift n typ)])
 	    | Some (loc,_,_) ->
- 	    user_err ~loc ""
+ 	    user_err ~loc 
                 (str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = if dolift then lift_inductive_family n indf else indf in
@@ -1843,7 +1843,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 	    match t with
 	      | Some (loc,ind',realnal) ->
 		  if not (eq_ind ind ind') then
-		    user_err ~loc "" (str "Wrong inductive type.");
+		    user_err ~loc  (str "Wrong inductive type.");
 		  if not (Int.equal nrealargs_ctxt (List.length realnal)) then
 		      anomaly (Pp.str "Ill-formed 'in' clause in cases");
 		  List.rev realnal

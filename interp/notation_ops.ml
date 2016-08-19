@@ -233,7 +233,7 @@ let split_at_recursive_part c =
 let subtract_loc loc1 loc2 = Loc.make_loc (fst (Loc.unloc loc1),fst (Loc.unloc loc2)-1)
 
 let check_is_hole id = function GHole _ -> () | t ->
-  user_err ~loc:(loc_of_glob_constr t) ""
+  user_err ~loc:(loc_of_glob_constr t)
    (strbrk "In recursive notation with binders, " ++ pr_id id ++
     strbrk " is expected to come without type.")
 
@@ -283,7 +283,7 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	let loc1 = loc_of_glob_constr iterator in
 	let loc2 = loc_of_glob_constr (Option.get !terminator) in
 	(* Here, we would need a loc made of several parts ... *)
-	user_err ~loc:(subtract_loc loc1 loc2) ""
+	user_err ~loc:(subtract_loc loc1 loc2)
           (str "Both ends of the recursive pattern are the same.")
     | Some (x,y,Some lassoc) ->
         let newfound,x,y,lassoc =
@@ -324,7 +324,7 @@ let notation_constr_and_vars_of_glob_constr a =
     | GApp (_,GVar (loc,f),[c]) when Id.equal f ldots_var ->
 	(* Fall on the second part of the recursive pattern w/o having
 	   found the first part *)
-	user_err ~loc ""
+	user_err ~loc 
 	(str "Cannot find where the recursive pattern starts.")
     | c ->
 	aux' c
@@ -377,7 +377,7 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
   let vars = Id.Map.filter filter nenv.ninterp_var_type in
   let check_recvar x =
     if Id.List.mem x found then
-      user_err "" (pr_id x ++
+      user_err  (pr_id x ++
 	strbrk " should only be used in the recursive part of a pattern.") in
   let check (x, y) = check_recvar x; check_recvar y in
   let () = List.iter check foundrec in
@@ -396,7 +396,7 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
   in
   let check_pair s x y where =
     if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
-      user_err "" (strbrk "in the right-hand side, " ++ pr_id x ++
+      user_err  (strbrk "in the right-hand side, " ++ pr_id x ++
 	str " and " ++ pr_id y ++ strbrk " should appear in " ++ str s ++
 	str " position as part of a recursive pattern.") in
   let check_type x typ =

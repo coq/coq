@@ -76,7 +76,7 @@ let make_inv_predicate env evd indf realargs id status concl =
 	    (hyps_arity,concl)
       | Dep dflt_concl ->
 	  if not (occur_var env id concl) then
-	    user_err "make_inv_predicate"
+	    user_err ~hdr:"make_inv_predicate"
               (str "Current goal does not depend on " ++ pr_id id ++ str".");
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have
@@ -440,7 +440,7 @@ let raw_inversion inv_kind id status names =
       try pf_apply Tacred.reduce_to_atomic_ind gl (pf_unsafe_type_of gl c)
       with UserError _ ->
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
-        CErrors.user_err "" msg
+        CErrors.user_err  msg
     in
     let IndType (indf,realargs) = find_rectype env sigma t in
     let evdref = ref sigma in

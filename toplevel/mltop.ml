@@ -124,13 +124,13 @@ let ml_load s =
         | (UserError _ | Failure _ | Not_found as u) -> Exninfo.iraise (u, snd e)
         | exc ->
             let msg = report_on_load_obj_error exc in
-            user_err "Mltop.load_object" (str"Cannot link ml-object " ++
+            user_err ~hdr:"Mltop.load_object" (str"Cannot link ml-object " ++
                   str s ++ str" to Coq code (" ++ msg ++ str ")."))
     | WithoutTop ->
         try
           Dynlink.loadfile s; s
 	with Dynlink.Error a ->
-          user_err "Mltop.load_object"
+          user_err ~hdr:"Mltop.load_object"
             (strbrk "while loading " ++ str s ++
              strbrk ": " ++ str (Dynlink.error_message a))
 
@@ -151,7 +151,7 @@ let dir_ml_use s =
 	 if Dynlink.is_native then " Loading ML code works only in bytecode."
 	 else ""
        in
-      user_err "Mltop.dir_ml_use" (str "Could not load ML code." ++ str moreinfo)
+      user_err ~hdr:"Mltop.dir_ml_use" (str "Could not load ML code." ++ str moreinfo)
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
@@ -221,7 +221,7 @@ let get_ml_object_suffix name =
 let file_of_name name =
   let suffix = get_ml_object_suffix name in
   let fail s =
-    user_err "Mltop.load_object"
+    user_err ~hdr:"Mltop.load_object"
       (str"File not found on loadpath : " ++ str s ++ str"\n" ++
        str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy)) in
   if not (Filename.is_relative name) then
@@ -355,7 +355,7 @@ let trigger_ml_object verb cache reinit ?path name =
     add_loaded_module name (known_module_path name);
     if cache then perform_cache_obj name
   end else if not has_dynlink then
-    user_err "Mltop.trigger_ml_object"
+    user_err ~hdr:"Mltop.trigger_ml_object"
       (str "Dynamic link not supported (module " ++ str name ++ str ")")
   else begin
     let file = file_of_name (Option.default name path) in

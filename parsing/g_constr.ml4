@@ -56,7 +56,7 @@ let mk_fixb (id,bl,ann,body,(loc,tyc)) =
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
   let _ = Option.map (fun (aloc,_) ->
     CErrors.user_err ~loc:aloc
-      "Constr:mk_cofixb"
+      ~hdr:"Constr:mk_cofixb"
       (Pp.str"Annotation forbidden in cofix expression.")) (fst ann) in
   let ty = match tyc with
       Some ty -> ty
@@ -381,12 +381,12 @@ GEXTEND Gram
         (match p with
 	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, None, lp)
 	  | CPatCstr (_, r, None, l2) -> CErrors.user_err
-              ~loc:(cases_pattern_expr_loc p) "compound_pattern"
+              ~loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
               (Pp.str "Nested applications not supported.")
 	  | CPatCstr (_, r, l1, l2) -> CPatCstr (!@loc, r, l1 , l2@lp)
 	  | CPatNotation (_, n, s, l) -> CPatNotation (!@loc, n , s, l@lp)
           | _ -> CErrors.user_err
-              ~loc:(cases_pattern_expr_loc p) "compound_pattern"
+              ~loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
               (Pp.str "Such pattern cannot have arguments."))
       |"@"; r = Prim.reference; lp = LIST0 NEXT ->
         CPatCstr (!@loc, r, Some lp, []) ]

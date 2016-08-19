@@ -381,7 +381,7 @@ let err_unmapped_library loc ?from qid =
     str " and prefix " ++ pr_dirpath from ++ str "."
   in
   user_err ~loc
-    "locate_library"
+    ~hdr:"locate_library"
     (strbrk "Cannot find a physical path bound to logical path matching suffix " ++
        pr_dirpath dir ++ prefix)
 
@@ -391,7 +391,7 @@ let err_notfound_library loc ?from qid =
   | Some from ->
     str " with prefix " ++ pr_dirpath from ++ str "."
   in
-  user_err ~loc "locate_library"
+  user_err ~loc ~hdr:"locate_library"
      (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
 
 let print_located_library r =
@@ -483,7 +483,7 @@ let vernac_start_proof locality p kind l lettop =
 	| None -> ()) l;
   if not(refining ()) then
     if lettop then
-      user_err "Vernacentries.StartProof"
+      user_err ~hdr:"Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
   start_proof_and_print (local, p, Proof kind) l no_hook
 
@@ -604,14 +604,14 @@ let vernac_combined_scheme lid l =
 
 let vernac_universe loc poly l =
   if poly && not (Lib.sections_are_opened ()) then
-    user_err ~loc "vernac_universe"
+    user_err ~loc ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
   do_universe poly l
 
 let vernac_constraint loc poly l =
   if poly && not (Lib.sections_are_opened ()) then
-    user_err ~loc "vernac_constraint"
+    user_err ~loc ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
   do_constraint poly l
@@ -855,7 +855,7 @@ let vernac_set_used_variables e =
   let vars = Environ.named_context env in
   List.iter (fun id -> 
     if not (List.exists (Id.equal id % get_id) vars) then
-      user_err "vernac_set_used_variables"
+      user_err ~hdr:"vernac_set_used_variables"
         (str "Unknown variable: " ++ pr_id id))
     l;
   let _, to_clear = set_used_variables l in
@@ -974,9 +974,9 @@ let vernac_declare_arguments locality r l nargs flags =
     | [], Anonymous::ld, (Some _)::ls when extra_scope_flag -> check li ld ls
     | [], _::_, (Some _)::ls when extra_scope_flag ->
        error "Extra notation scopes can be set on anonymous arguments only"
-    | [], x::_, _ -> user_err "vernac_declare_arguments"
+    | [], x::_, _ -> user_err ~hdr:"vernac_declare_arguments"
                        (str "Extra argument " ++ pr_name x ++ str ".")
-    | l, [], _ -> user_err "vernac_declare_arguments"
+    | l, [], _ -> user_err ~hdr:"vernac_declare_arguments"
                     (str "The following arguments are not declared: " ++
                        prlist_with_sep pr_comma pr_name l ++ str ".")
     | _::li, _::ld, _::ls -> check li ld ls 
@@ -1019,7 +1019,7 @@ let vernac_declare_arguments locality r l nargs flags =
       let sr', impl = List.fold_map (fun b -> function
         | (Anonymous, _,_, true, max), Name id -> assert false
         | (Name x, _,_, true, _), Anonymous ->
-            user_err "vernac_declare_arguments"
+            user_err ~hdr:"vernac_declare_arguments"
               (str "Argument " ++ pr_id x ++ str " cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
            set_renamed iid id;
@@ -1033,7 +1033,7 @@ let vernac_declare_arguments locality r l nargs flags =
       some_renaming_specified l in
   if some_renaming_specified then
     if not (List.mem `Rename flags) then
-      user_err "vernac_declare_arguments"
+      user_err ~hdr:"vernac_declare_arguments"
         (str "To rename arguments the \"rename\" flag must be specified." ++
            match !renamed_arg with
            | None -> mt ()
@@ -1077,7 +1077,7 @@ let vernac_declare_arguments locality r l nargs flags =
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
          (make_section_locality locality) c (rargs, nargs, flags)
-    | _ -> user_err "" (strbrk "Modifiers of the behavior of the simpl tactic are relevant for constants only.")
+    | _ -> user_err  (strbrk "Modifiers of the behavior of the simpl tactic are relevant for constants only.")
   end;
   if not (some_renaming_specified ||
           some_implicits_specified ||
@@ -1498,7 +1498,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
       | Some n,AN (Ident (_loc,id)) ->  (* goal number given, catch if wong *)
 	 (try get_nth_goal n,id
 	  with
-	    Failure _ -> user_err "print_about_hyp_globs"
+	    Failure _ -> user_err ~hdr:"print_about_hyp_globs"
                            (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
     let hyps = pf_hyps gl in
@@ -1574,7 +1574,7 @@ let global_module r =
   let (loc,qid) = qualid_of_reference r in
   try Nametab.full_name_module qid
   with Not_found ->
-    user_err ~loc "global_module"
+    user_err ~loc ~hdr:"global_module"
      (str "Module/section " ++ pr_qualid qid ++ str " not found.")
 
 let interp_search_restriction = function
@@ -1597,7 +1597,7 @@ let interp_search_about_item env =
 	    (fun _ -> true) s sc in
 	GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
-	user_err "interp_search_about_item"
+	user_err ~hdr:"interp_search_about_item"
           (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component")
 
 let vernac_search s gopt r =
@@ -1877,12 +1877,12 @@ let interp ?proof ~loc locality poly c =
   | VernacComments l -> if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
-  | VernacAbort id -> CErrors.user_err "" (str "Abort cannot be used through the Load command")
-  | VernacAbortAll -> CErrors.user_err "" (str "AbortAll cannot be used through the Load command")
-  | VernacRestart -> CErrors.user_err "" (str "Restart cannot be used through the Load command")
-  | VernacUndo _ -> CErrors.user_err "" (str "Undo cannot be used through the Load command")
-  | VernacUndoTo _ -> CErrors.user_err "" (str "UndoTo cannot be used through the Load command")
-  | VernacBacktrack _ -> CErrors.user_err "" (str "Backtrack cannot be used through the Load command")
+  | VernacAbort id -> CErrors.user_err  (str "Abort cannot be used through the Load command")
+  | VernacAbortAll -> CErrors.user_err  (str "AbortAll cannot be used through the Load command")
+  | VernacRestart -> CErrors.user_err  (str "Restart cannot be used through the Load command")
+  | VernacUndo _ -> CErrors.user_err  (str "Undo cannot be used through the Load command")
+  | VernacUndoTo _ -> CErrors.user_err  (str "UndoTo cannot be used through the Load command")
+  | VernacBacktrack _ -> CErrors.user_err  (str "Backtrack cannot be used through the Load command")
   
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t,None)] false
@@ -2014,7 +2014,7 @@ let with_fail b f =
       let (e, _) = CErrors.push e in
       match e with
       | HasNotFailed ->
-          user_err "Fail" (str "The command has not failed!")
+          user_err ~hdr:"Fail" (str "The command has not failed!")
       | HasFailed msg ->
           if is_verbose () || !test_mode || !ide_slave then Feedback.msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)

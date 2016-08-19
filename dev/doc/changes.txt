@@ -12,6 +12,8 @@
 
 - `errorlabstrm` has been removed in favor of `user_err`.
 
+- The header parameter to `user_err` has been made optional.
+
 =========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================

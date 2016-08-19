@@ -33,7 +33,7 @@ open Locus
 let dloc = Loc.ghost
 
 let error_tactic_expected ?loc =
-  user_err ?loc "" (str "Tactic expected.")
+  user_err ?loc  (str "Tactic expected.")
 
 (** Generic arguments *)
 
@@ -461,7 +461,7 @@ let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
 let extract_let_names lrc =
   let fold accu ((loc, name), _) =
     if Id.Set.mem name accu then user_err ~loc
-      "glob_tactic" (str "This variable is bound several times.")
+      ~hdr:"glob_tactic" (str "This variable is bound several times.")
     else Id.Set.add name accu
   in
   List.fold_left fold Id.Set.empty lrc
@@ -748,7 +748,7 @@ let print_ltac id =
     ++ spc() ++ Pptactic.pr_glob_tactic (Global.env ()) t) ++ redefined
  with
   Not_found ->
-   user_err "print_ltac"
+   user_err ~hdr:"print_ltac"
     (pr_qualid id ++ spc() ++ str "is not a user defined tactic.")
 
 (** Registering *)

@@ -75,7 +75,7 @@ let classify_segment seg =
     | (_,ClosedModule _) :: stk -> clean acc stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
-      user_err "Lib.classify_segment"
+      user_err ~hdr:"Lib.classify_segment"
         (str "there are still opened " ++ str (module_kind ty) ++ str "s")
     | (_,FrozenState _) :: stk -> clean acc stk
   in
@@ -267,7 +267,7 @@ let start_mod is_type export id mp fs =
     else Nametab.exists_module dir
   in
   if exists then
-    user_err "open_module" (pr_id id ++ str " already exists");
+    user_err ~hdr:"open_module" (pr_id id ++ str " already exists");
   add_entry (make_oname id) (OpenedModule (is_type,export,prefix,fs));
   path_prefix := prefix;
   prefix
@@ -277,7 +277,7 @@ let start_modtype = start_mod true None
 
 let error_still_opened string oname =
   let id = basename (fst oname) in
-  user_err ""
+  user_err 
     (str "The " ++ str string ++ str " " ++ pr_id id ++ str " is still opened.")
 
 let end_mod is_type =
@@ -322,7 +322,7 @@ let end_compilation_checks dir =
     try match snd (find_entry_p is_opening_node) with
       | OpenedSection _ -> error "There are some open sections."
       | OpenedModule (ty,_,_,_) ->
-	user_err "Lib.end_compilation_checks"
+	user_err ~hdr:"Lib.end_compilation_checks"
           (str "There are some open " ++ str (module_kind ty) ++ str "s.")
       | _ -> assert false
     with Not_found -> ()
@@ -374,7 +374,7 @@ let find_opening_node id =
     let oname,entry = find_entry_p is_opening_node in
     let id' = basename (fst oname) in
     if not (Names.Id.equal id id') then
-      user_err "Lib.find_opening_node"
+      user_err ~hdr:"Lib.find_opening_node"
         (str "Last block to end has name " ++ pr_id id' ++ str ".");
     entry
   with Not_found -> error "There is nothing to end."
@@ -525,7 +525,7 @@ let open_section id =
   let dir = add_dirpath_suffix olddir id in
   let prefix = dir, (mp, add_dirpath_suffix oldsec id) in
   if Nametab.exists_section dir then
-    user_err "open_section" (pr_id id ++ str " already exists.");
+    user_err ~hdr:"open_section" (pr_id id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:`No in
   add_entry (make_oname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)

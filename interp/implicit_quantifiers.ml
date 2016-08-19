@@ -27,11 +27,11 @@ let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
 
 let declare_generalizable_ident table (loc,id) =
   if not (Id.equal id (root_of_id id)) then
-    user_err ~loc "declare_generalizable_ident"
+    user_err ~loc ~hdr:"declare_generalizable_ident"
     ((pr_id id ++ str
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
   if Id.Pred.mem id table then
-    user_err ~loc "declare_generalizable_ident"
+    user_err ~loc ~hdr:"declare_generalizable_ident"
 		((pr_id id++str" is already declared as a generalizable identifier"))
   else Id.Pred.add id table
 
@@ -78,7 +78,7 @@ let is_freevar ids env x =
 (* Auxiliary functions for the inference of implicitly quantified variables. *)
 
 let ungeneralizable loc id =
-  user_err ~loc "Generalization"
+  user_err ~loc ~hdr:"Generalization"
 	       (str "Unbound and ungeneralizable variable " ++ pr_id id)
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
@@ -203,7 +203,7 @@ let combine_params avoid fn applied needed =
             | Anonymous -> false
             in
 	    if not (List.exists is_id needed) then
-	      user_err ~loc "" (str "Wrong argument name: " ++ Nameops.pr_id id);
+	      user_err ~loc  (str "Wrong argument name: " ++ Nameops.pr_id id);
 	    true
 	| _ -> false) applied
   in
@@ -237,7 +237,7 @@ let combine_params avoid fn applied needed =
 	    aux (t' :: ids) avoid' app need
 
       | (x,_) :: _, [] ->
-	  user_err ~loc:(Constrexpr_ops.constr_loc x) "" (str "Typeclass does not expect more arguments")
+	  user_err ~loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
 let combine_params_freevar =

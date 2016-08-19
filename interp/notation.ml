@@ -95,7 +95,7 @@ let declare_scope scope =
     scope_map := String.Map.add scope empty_scope !scope_map
 
 let error_unknown_scope sc =
-  user_err "Notation"
+  user_err ~hdr:"Notation"
     (str "Scope " ++ str sc ++ str " is not declared.")
 
 let find_scope scope =
@@ -208,7 +208,7 @@ let remove_delimiters scope =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = None } in
   match sc.delimiters with
-    | None -> CErrors.user_err "" (str "No bound key for scope " ++ str scope ++ str ".")
+    | None -> CErrors.user_err  (str "No bound key for scope " ++ str scope ++ str ".")
     | Some key ->
        scope_map := String.Map.add scope newsc !scope_map;
        try
@@ -220,7 +220,7 @@ let remove_delimiters scope =
 let find_delimiters_scope loc key =
   try String.Map.find key !delimiters_map
   with Not_found ->
-    user_err ~loc "find_delimiters"
+    user_err ~loc ~hdr:"find_delimiters"
       (str "Unknown scope delimiting key " ++ str key ++ str ".")
 
 (* Uninterpretation tables *)
@@ -337,7 +337,7 @@ let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
 let check_required_module loc sc (sp,d) =
   try let _ = Nametab.global_of_path sp in ()
   with Not_found ->
-    user_err ~loc "prim_token_interpreter"
+    user_err ~loc ~hdr:"prim_token_interpreter"
     (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++ str (List.last d) ++ str ".")
 
 (* Look if some notation or numeral printer in [scope] can be used in
@@ -458,7 +458,7 @@ let interp_prim_token_gen g loc p local_scopes =
   let p_as_ntn = try notation_of_prim_token p with Not_found -> "" in
   try find_interpretation p_as_ntn (find_prim_token g loc p) scopes
   with Not_found ->
-    user_err ~loc "interp_prim_token"
+    user_err ~loc ~hdr:"interp_prim_token"
     ((match p with
       | Numeral n -> str "No interpretation for numeral " ++ str (to_string n)
       | String s -> str "No interpretation for string " ++ qs s) ++ str ".")
@@ -483,7 +483,7 @@ let interp_notation loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
   try find_interpretation ntn (find_notation ntn) scopes
   with Not_found ->
-    user_err ~loc ""
+    user_err ~loc 
     (str "Unknown interpretation for notation \"" ++ str ntn ++ str "\".")
 
 let uninterp_notations c =
@@ -890,10 +890,10 @@ let global_reference_of_notation test (ntn,(sc,c,_)) =
   | _ -> None
 
 let error_ambiguous_notation loc _ntn =
-  user_err ~loc "" (str "Ambiguous notation.")
+  user_err ~loc  (str "Ambiguous notation.")
 
 let error_notation_not_reference loc ntn =
-  user_err ~loc ""
+  user_err ~loc 
    (str "Unable to interpret " ++ quote (str ntn) ++
     str " as a reference.")
 
@@ -1017,7 +1017,7 @@ let add_notation_extra_printing_rule ntn k v =
       let p, pp, gr = String.Map.find ntn !notation_rules in
       String.Map.add ntn (p, (k,v) :: pp, gr) !notation_rules
   with Not_found ->
-    user_err "add_notation_extra_printing_rule"
+    user_err ~hdr:"add_notation_extra_printing_rule"
       (str "No such Notation.")
 
 (**********************************************************************)

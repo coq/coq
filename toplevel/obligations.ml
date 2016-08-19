@@ -258,7 +258,7 @@ let safe_init_constant md name () =
   Coqlib.gen_constant "Obligations" md name
 let hide_obligation = safe_init_constant tactics_module "obligation"
 
-let pperror cmd = CErrors.user_err "Program" cmd
+let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
 let error s = pperror (str s)
 
 let reduce c =
@@ -398,7 +398,7 @@ let rec prod_app t n =
     | Prod (_,_,b) -> subst1 n b
     | LetIn (_, b, t, b') -> prod_app (subst1 b b') n
     | _ ->
-	user_err "prod_app"
+	user_err ~hdr:"prod_app"
 	  (str"Needed a product, but didn't find one" ++ fnl ())
 
 
@@ -444,7 +444,7 @@ let from_prg : program_info ProgMap.t ref =
 let close sec =
   if not (ProgMap.is_empty !from_prg) then
     let keys = map_keys !from_prg in
-      user_err "Program" 
+      user_err ~hdr:"Program" 
 	(str "Unsolved obligations when closing " ++ str sec ++ str":" ++ spc () ++
 	   prlist_with_sep spc (fun x -> Nameops.pr_id x) keys ++
 	   (str (if Int.equal (List.length keys) 1 then " has " else " have ") ++
@@ -718,7 +718,7 @@ let get_prog name =
                 let progs = Id.Set.elements (ProgMap.domain prg_infos) in
                 let prog = List.hd progs in
                 let progs = prlist_with_sep pr_comma Nameops.pr_id progs in
-                user_err ""
+                user_err 
                   (str "More than one program with unsolved obligations: " ++ progs
                   ++ str "; use the \"of\" clause to specify, as in \"Obligation 1 of " ++ Nameops.pr_id prog ++ str "\""))
 
@@ -985,7 +985,7 @@ and solve_obligation_by_tac prg obls i tac =
           let (e, _) = CErrors.push e in
           match e with
 	  | Refiner.FailError (_, s) ->
-	      user_err ~loc:(fst obl.obl_location) "solve_obligation" (Lazy.force s)
+	      user_err ~loc:(fst obl.obl_location) ~hdr:"solve_obligation" (Lazy.force s)
           | e -> None (* FIXME really ? *)
 
 and solve_prg_obligations prg ?oblset tac =

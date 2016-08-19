@@ -33,11 +33,13 @@ val is_anomaly : exn -> bool
     This is mostly provided for compatibility. Please avoid doing specific
     tricks with anomalies thanks to it. See rather [noncritical] below. *)
 
-exception UserError of string * std_ppcmds
+exception UserError of string option * std_ppcmds
+(** Main error signaling exception. It carries a header plus a pretty printing
+    doc *)
 
-val user_err     : ?loc:Loc.t -> string -> std_ppcmds -> 'a
-(** Main error raising primitive. [user_err ?loc c pp] signals an
-    error [pp] in component [c], with optional location [loc] *)
+val user_err : ?loc:Loc.t -> ?hdr:string -> std_ppcmds -> 'a
+(** Main error raising primitive. [user_err ?loc ?hdr pp] signals an
+    error [pp] with optional header and location [hdr] [loc] *)
 
 val error : string -> 'a
 (** [error s] just calls [user_error "_" (str s)] *)

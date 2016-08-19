@@ -160,7 +160,7 @@ let search_guard loc env possible_indexes fixdefs =
 	    with TypeError _ -> ())
 	 (List.combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
-	 user_err ~loc "search_guard" (Pp.str errmsg)
+	 user_err ~loc ~hdr:"search_guard" (Pp.str errmsg)
      with Found indexes -> indexes)
 
 (* To force universe name declaration before use *)
@@ -211,7 +211,7 @@ let interp_universe_level_name evd (loc,s) =
 	with Not_found -> 
 	  if not (is_strict_universe_declarations ()) then
   	    new_univ_level_variable ~loc ~name:s univ_rigid evd
-	  else user_err ~loc "interp_universe_level_name"
+	  else user_err ~loc ~hdr:"interp_universe_level_name"
 			     (Pp.(str "Undeclared universe: " ++ str s))
 
 let interp_universe ?loc evd = function
@@ -373,9 +373,9 @@ let check_instance loc subst = function
   | [] -> ()
   | (id,_) :: _ ->
       if List.mem_assoc id subst then
-        user_err ~loc "" (pr_id id ++ str "appears more than once.")
+        user_err ~loc  (pr_id id ++ str "appears more than once.")
       else
-        user_err ~loc "" (str "No such variable in the signature of the existential variable: " ++ pr_id id ++ str ".")
+        user_err ~loc  (str "No such variable in the signature of the existential variable: " ++ pr_id id ++ str ".")
 
 (* used to enforce a name in Lambda when the type constraints itself
    is named, hence possibly dependent *)
@@ -390,7 +390,7 @@ let ltac_interp_name { ltac_idents ; ltac_genargs } = function
       try Name (Id.Map.find id ltac_idents)
       with Not_found ->
         if Id.Map.mem id ltac_genargs then
-          user_err "" (str"Ltac variable"++spc()++ pr_id id ++
+          user_err  (str"Ltac variable"++spc()++ pr_id id ++
                            spc()++str"is not bound to an identifier."++spc()++
                            str"It cannot be used in a binder.")
         else n
@@ -411,14 +411,14 @@ let invert_ltac_bound_name lvar env id0 id =
   let id' = Id.Map.find id lvar.ltac_idents in
   try mkRel (pi1 (lookup_rel_id id' (rel_context env)))
   with Not_found ->
-    user_err "" (str "Ltac variable " ++ pr_id id0 ++
+    user_err  (str "Ltac variable " ++ pr_id id0 ++
 		       str " depends on pattern variable name " ++ pr_id id ++
 		       str " which is not bound in current context.")
 
 let protected_get_type_of env sigma c =
   try Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma c
   with Retyping.RetypeError _ ->
-    user_err ""
+    user_err 
       (str "Cannot reinterpret " ++ quote (print_constr c) ++
        str " in the current environment.")
 
@@ -454,7 +454,7 @@ let pretype_id pretype k0 loc env evdref lvar id =
 	(* and build a nice error message *)
       if Id.Map.mem id lvar.ltac_genargs then begin
         let Geninterp.Val.Dyn (typ, _) = Id.Map.find id lvar.ltac_genargs in
-	user_err ~loc ""
+	user_err ~loc 
          (str "Variable " ++ pr_id id ++ str " should be bound to a term but is \
           bound to a " ++ Geninterp.Val.pr typ ++ str ".")
       end;
@@ -486,7 +486,7 @@ let pretype_global loc rigid env evd gr us =
        let arr = Univ.Instance.to_array (Univ.UContext.instance ctx) in
        let len = Array.length arr in
        if len != List.length l then
-	 user_err ~loc "pretype"
+	 user_err ~loc ~hdr:"pretype"
 		       (str "Universe instance should have length " ++ int len)
        else
 	 let evd, l' = List.fold_left (fun (evd, univs) l -> 
@@ -494,7 +494,7 @@ let pretype_global loc rigid env evd gr us =
 	      (evd, l :: univs)) (evd, []) l
 	 in
 	 if List.exists (fun l -> Univ.Level.is_prop l) l' then
-	   user_err ~loc "pretype"
+	   user_err ~loc ~hdr:"pretype"
 		 (str "Universe instances cannot contain Prop, polymorphic" ++
 		   str " universe instances must be greater or equal to Set.");
 	 evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
@@ -566,7 +566,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let evk =
         try Evd.evar_key id !evdref
         with Not_found ->
-          user_err ~loc "" (str "Unknown existential variable.") in
+          user_err ~loc  (str "Unknown existential variable.") in
       let hyps = evar_filtered_context (Evd.find !evdref evk) in
       let args = pretype_instance k0 resolve_tc env evdref lvar loc hyps evk inst in
       let c = mkEvar (evk, args) in
@@ -848,11 +848,11 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     in
     let cstrs = get_constructors env.ExtraEnv.env indf in
     if not (Int.equal (Array.length cstrs) 1) then
-      user_err ~loc "" (str "Destructing let is only for inductive types" ++
+      user_err ~loc  (str "Destructing let is only for inductive types" ++
 	str " with one constructor.");
     let cs = cstrs.(0) in
     if not (Int.equal (List.length nal) cs.cs_nargs) then
-      user_err ~loc:loc "" (str "Destructing let on this type expects " ++ 
+      user_err ~loc:loc (str "Destructing let on this type expects " ++ 
 	int cs.cs_nargs ++ str " variables.");
     let fsign, record = 
       match get_projections env.ExtraEnv.env indf with
@@ -937,7 +937,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  error_case_not_inductive ~loc:cloc env.ExtraEnv.env !evdref cj in
     let cstrs = get_constructors env.ExtraEnv.env indf in
       if not (Int.equal (Array.length cstrs) 2) then
-        user_err ~loc ""
+        user_err ~loc 
 		      (str "If is only for inductive types with two constructors.");
 
       let arsgn =
@@ -1022,7 +1022,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 		else
 		  error_actual_type ~loc env.ExtraEnv.env !evdref cj tval 
                       (ConversionFailed (env.ExtraEnv.env,cty,tval))
-	      else user_err ~loc "" (str "Cannot check cast with vm: " ++
+	      else user_err ~loc  (str "Cannot check cast with vm: " ++
 		str "unresolved arguments remain.")
 	  | NATIVEcast ->
  	    let cj = pretype empty_tycon env evdref lvar c in
@@ -1059,7 +1059,7 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
         let t' = lookup_named id env |> get_type in
         if is_conv env.ExtraEnv.env !evdref t t' then mkVar id, update else raise Not_found
       with Not_found ->
-        user_err ~loc "" (str "Cannot interpret " ++
+        user_err ~loc  (str "Cannot interpret " ++
           pr_existential_key !evdref evk ++
           str " in current context: no binding for " ++ pr_id id ++ str ".") in
     ((id,c)::subst, update) in

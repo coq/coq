@@ -97,8 +97,8 @@ let prolog_tac l n =
   in
   let l = List.map map l in
   try (prolog l n gl)
-  with UserError ("Refiner.tclFIRST",_) ->
-    user_err "Prolog.prolog" (str "Prolog failed.")
+  with UserError (Some "Refiner.tclFIRST",_) ->
+    user_err ~hdr:"Prolog.prolog" (str "Prolog failed.")
   end
 
 open Auto
@@ -431,7 +431,7 @@ let cons a l = a :: l
 let autounfolds db occs cls gl =
   let unfolds = List.concat (List.map (fun dbname -> 
     let db = try searchtable_map dbname 
-      with Not_found -> user_err "autounfold" (str "Unknown database " ++ str dbname)
+      with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
     in
     let (ids, csts) = Hint_db.unfolds db in
     let hyps = pf_ids_of_hyps gl in
@@ -498,7 +498,7 @@ let autounfold_one db cl =
   let st =
     List.fold_left (fun (i,c) dbname -> 
       let db = try searchtable_map dbname 
-	with Not_found -> user_err "autounfold" (str "Unknown database " ++ str dbname)
+	with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
       in
       let (ids, csts) = Hint_db.unfolds db in
 	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db

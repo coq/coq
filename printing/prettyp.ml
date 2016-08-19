@@ -700,7 +700,7 @@ let read_sec_context r =
   let dir =
     try Nametab.locate_section qid
     with Not_found ->
-      user_err ~loc "read_sec_context" (str "Unknown section.") in
+      user_err ~loc ~hdr:"read_sec_context" (str "Unknown section.") in
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
         if DirPath.equal dir dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
@@ -737,7 +737,7 @@ let print_any_name = function
     str |> Global.lookup_named |> set_id str |> print_named_decl
   with Not_found ->
     user_err
-      "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
+      ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_name = function
   | ByNotation (loc,ntn,sc) ->
@@ -831,7 +831,7 @@ let index_of_class cl =
   try
     fst (class_info cl)
   with Not_found ->
-    user_err "index_of_class"
+    user_err ~hdr:"index_of_class"
       (pr_class cl ++ spc() ++ str "not a defined class.")
 
 let print_path_between cls clt =
@@ -841,7 +841,7 @@ let print_path_between cls clt =
     try
       lookup_path_between_class (i,j)
     with Not_found ->
-      user_err "index_cl_of_id"
+      user_err ~hdr:"index_cl_of_id"
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt
 	 ++ str ".")
   in

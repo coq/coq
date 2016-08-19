@@ -65,7 +65,7 @@ let raw_find_base bas = String.Map.find bas !rewtab
 let find_base bas =
   try raw_find_base bas
   with Not_found ->
-    user_err "AutoRewrite"
+    user_err ~hdr:"AutoRewrite"
       (str "Rewriting base " ++ str bas ++ str " does not exist.")
 
 let find_rewrites bas =
@@ -294,7 +294,7 @@ let find_applied_relation metas loc env sigma c left2right =
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
     | None ->
-	user_err ~loc "decompose_applied_relation"
+	user_err ~loc ~hdr:"decompose_applied_relation"
 		    (str"The type" ++ spc () ++ Printer.pr_constr_env env sigma ctype ++
 		       spc () ++ str"of this term does not end with an applied relation.")
 

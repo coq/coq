@@ -630,7 +630,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let (ind,_) =
 	  try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	  with Not_found ->
-	    user_err "" (str "Cannot find the inductive associated to " ++
+	    user_err  (str "Cannot find the inductive associated to " ++
 			       Printer.pr_glob_constr b ++ str " in " ++
 			       Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	in
@@ -662,7 +662,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	  let (ind,_) =
 	    try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	    with Not_found ->
-	      user_err "" (str "Cannot find the inductive associated to " ++
+	      user_err  (str "Cannot find the inductive associated to " ++
 				 Printer.pr_glob_constr b ++ str " in " ++
 				 Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	  in
@@ -1198,7 +1198,7 @@ let rec compute_cst_params relnames params = function
   | GSort _ -> params
   | GHole _ -> params
   | GIf _ | GRec _ | GCast _ ->
-      raise (UserError("compute_cst_params", str "Not handled case"))
+      raise (UserError(Some "compute_cst_params", str "Not handled case"))
 and compute_cst_params_from_app acc (params,rtl) =
   match params,rtl with
     | _::_,[] -> assert false (* the rel has at least nargs + 1 arguments ! *)

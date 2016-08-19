@@ -96,7 +96,7 @@ let is_undo cmd = match cmd with
 (** Check whether a command is forbidden by CoqIDE *)
 
 let coqide_cmd_checks (loc,ast) =
-  let user_error s = CErrors.user_err ~loc "CoqIde" (str s) in
+  let user_error s = CErrors.user_err ~loc ~hdr:"CoqIde" (str s) in
   if is_debug ast then
     user_error "Debug mode not available within CoqIDE";
   if is_known_option ast then
@@ -300,7 +300,7 @@ let dirpath_of_string_list s =
   let id =
     try Nametab.full_name_module qid
     with Not_found ->
-      CErrors.user_err "Search.interface_search"
+      CErrors.user_err ~hdr:"Search.interface_search"
         (str "Module " ++ str path ++ str " not found.")
   in
   id

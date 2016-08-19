@@ -203,7 +203,7 @@ let discard (loc,id) =
   discard_gen id;
   if Int.equal (List.length !pstates) n then
     CErrors.user_err ~loc
-      "Pfedit.delete_proof" (str"No such proof" ++ msg_proofs ())
+      ~hdr:"Pfedit.delete_proof" (str"No such proof" ++ msg_proofs ())
 
 let discard_current () =
   if List.is_empty !pstates then raise NoCurrentProof else pstates := List.tl !pstates
@@ -408,7 +408,7 @@ let return_proof ?(allow_partial=false) () =
   let evd =
     let error s =
       let prf = str " (in proof " ++ Id.print pid ++ str ")" in
-      raise (CErrors.UserError("last tactic before Qed",s ++ prf))
+      raise (CErrors.UserError(Some "last tactic before Qed",s ++ prf))
     in
     try Proof.return proof with
     | Proof.UnfinishedProof ->
@@ -519,7 +519,7 @@ module Bullet = struct
 	(function
 	| FailedBullet (b,sugg) ->
 	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str" : " in
-	  CErrors.user_err "Focus" (prefix ++ suggest_on_error sugg)
+	  CErrors.user_err ~hdr:"Focus" (prefix ++ suggest_on_error sugg)
 	| _ -> raise CErrors.Unhandled)
 
 

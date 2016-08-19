@@ -238,7 +238,7 @@ let rec find_pattern nt xl = function
   | _, Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side.")
   | _, Terminal s :: _ | Terminal s :: _, _ ->
-      user_err "Metasyntax.find_pattern"
+      user_err ~hdr:"Metasyntax.find_pattern"
         (str "The token \"" ++ str s ++ str "\" occurs on one side of \"..\" but not on the other side.")
   | _, [] ->
       error msg_expected_form_of_recursive_notation
@@ -300,7 +300,7 @@ let rec get_notation_vars = function
       let vars = get_notation_vars sl in
       if Id.equal id ldots_var then vars else
 	if Id.List.mem id vars then
-	  user_err "Metasyntax.get_notation_vars"
+	  user_err ~hdr:"Metasyntax.get_notation_vars"
             (str "Variable " ++ pr_id id ++ str " occurs more than once.")
 	else
           id::vars
@@ -314,7 +314,7 @@ let analyze_notation_tokens l =
   recvars, List.subtract Id.equal vars (List.map snd recvars), l
 
 let error_not_same_scope x y =
-  user_err "Metasyntax.error_not_name_scope"
+  user_err ~hdr:"Metasyntax.error_not_name_scope"
     (str "Variables " ++ pr_id x ++ str " and " ++ pr_id y ++ str " must be in the same scope.")
 
 (**********************************************************************)
@@ -390,7 +390,7 @@ let check_open_binder isopen sl m =
   | _ -> assert false
   in
   if isopen && not (List.is_empty sl) then
-    user_err "" (str "as " ++ pr_id m ++
+    user_err  (str "as " ++ pr_id m ++
       str " is a non-closed binder, no such \"" ++
       prlist_with_sep spc pr_token sl
       ++ strbrk "\" is allowed to occur.")
@@ -661,7 +661,7 @@ let pr_level ntn (from,args) =
   prlist_with_sep pr_comma (pr_arg_level from) args
 
 let error_incompatible_level ntn oldprec prec =
-  user_err ""
+  user_err 
     (str "Notation " ++ str ntn ++ str " is already defined" ++ spc() ++
     pr_level ntn oldprec ++
     spc() ++ str "while it is now required to be" ++ spc() ++
@@ -731,7 +731,7 @@ let interp_modifiers modl =
     | SetEntryType (s,typ) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
-	  user_err "Metasyntax.interp_modifiers"
+	  user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
 	interp assoc level ((id,typ)::etyps) format extra l
     | SetItemLevel ([],n) :: l ->
@@ -739,7 +739,7 @@ let interp_modifiers modl =
     | SetItemLevel (s::idl,n) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
-	  user_err "Metasyntax.interp_modifiers"
+	  user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
 	let typ = ETConstr (n,()) in
 	interp assoc level ((id,typ)::etyps) format extra (SetItemLevel (idl,n)::l)
@@ -770,7 +770,7 @@ let check_infix_modifiers modifiers =
 let check_useless_entry_types recvars mainvars etyps =
   let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
   match List.filter (fun (x,etyp) -> not (List.mem x vars)) etyps with
-  | (x,_)::_ -> user_err "Metasyntax.check_useless_entry_types"
+  | (x,_)::_ -> user_err ~hdr:"Metasyntax.check_useless_entry_types"
                   (pr_id x ++ str " is unbound in the notation.")
   | _ -> ()
 
@@ -813,7 +813,7 @@ let join_auxiliary_recursive_types recvars etyps =
     | None, Some ytyp -> (x,ytyp)::typs
     | Some xtyp, Some ytyp when Pervasives.(=) xtyp ytyp -> typs (* FIXME *)
     | Some xtyp, Some ytyp ->
-	user_err ""
+	user_err 
 	  (strbrk "In " ++ pr_id x ++ str " .. " ++ pr_id y ++
 	   strbrk ", both ends have incompatible types."))
     recvars etyps

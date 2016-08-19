@@ -168,7 +168,7 @@ module Value = struct
     let pr_v = Pptactic.pr_value Pptactic.ltop v in
     let Val.Dyn (tag, _) = v in
     let tag = Val.pr tag in
-    user_err "" (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
+    user_err  (str "Type error: value " ++ pr_v ++ str " is a " ++ tag
       ++ str " while type " ++ Val.pr wit ++ str " was expected.")
 
   let unbox wit v ans = match ans with
@@ -315,7 +315,7 @@ let append_trace trace v =
 (* Dynamically check that an argument is a tactic *)
 let coerce_to_tactic loc id v =
   let v = Value.normalize v in
-  let fail () = user_err ~loc ""
+  let fail () = user_err ~loc 
     (str "Variable " ++ pr_id id ++ str " should be bound to a tactic.")
   in
   let v = Value.normalize v in
@@ -371,7 +371,7 @@ let debugging_exception_step ist signal_anomaly e pp =
     pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ explain_exc e)
 
 let error_ltac_variable loc id env v s =
-   user_err ~loc "" (str "Ltac variable " ++ pr_id id ++
+   user_err ~loc  (str "Ltac variable " ++ pr_id id ++
    strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
    strbrk "which cannot be coerced to " ++ str s ++ str".")
 
@@ -404,7 +404,7 @@ let interp_intro_pattern_naming_var loc ist env sigma id =
 let interp_int ist locid =
   try try_interp_ltac_var coerce_to_int ist None locid
   with Not_found ->
-    user_err ~loc:(fst locid) "interp_int"
+    user_err ~loc:(fst locid) ~hdr:"interp_int"
      (str "Unbound variable "  ++ pr_id (snd locid) ++ str".")
 
 let interp_int_or_var ist = function
@@ -795,7 +795,7 @@ let interp_may_eval f ist env sigma = function
 	!evdref , c
       with
 	| Not_found ->
-	    user_err ~loc "interp_may_eval"
+	    user_err ~loc ~hdr:"interp_may_eval"
 	    (str "Unbound context identifier" ++ pr_id s ++ str"."))
   | ConstrTypeOf c ->
       let (sigma,c_interp) = f ist env sigma c in
@@ -1032,7 +1032,7 @@ let interp_destruction_arg ist gl arg =
       }
   | keep,ElimOnAnonHyp n as x -> x
   | keep,ElimOnIdent (loc,id) ->
-      let error () = user_err ~loc ""
+      let error () = user_err ~loc 
        (strbrk "Cannot coerce " ++ pr_id id ++
         strbrk " neither to a quantified hypothesis nor to a term.")
       in
@@ -1043,7 +1043,7 @@ let interp_destruction_arg ist gl arg =
           (keep, ElimOnConstr { delayed = begin fun env sigma ->
           try Sigma.here (constr_of_id env id', NoBindings) sigma
           with Not_found ->
-            user_err ~loc  "interp_destruction_arg" (
+            user_err ~loc  ~hdr:"interp_destruction_arg" (
             pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared nor a quantified hypothesis.")
           end })
       in
@@ -1111,7 +1111,7 @@ let read_pattern lfun ist env sigma = function
 (* Reads the hypotheses of a Match Context rule *)
 let cons_and_check_name id l =
   if Id.List.mem id l then
-    user_err "read_match_goal_hyps" (
+    user_err ~hdr:"read_match_goal_hyps" (
       str "Hypothesis pattern-matching variable " ++ pr_id id ++
       str " used twice in the same pattern.")
   else id::l
@@ -1870,7 +1870,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
               let (sigma, c) = interp_constr ist env sigma c in
               Sigma.Unsafe.of_pair (c, sigma)
             with e when to_catch e (* Hack *) ->
-              user_err "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
+              user_err  (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
         end } in
         Tactics.change (Some op) c_interp (interp_clause ist env sigma cl)
       end }

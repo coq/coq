@@ -54,7 +54,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
       env sigma ltac_var (Pretyping.OfType evi.evar_concl) rawc
     with e when CErrors.noncritical e ->
       let loc = Glob_ops.loc_of_glob_constr rawc in
-      user_err ~loc ""
+      user_err ~loc 
                 (str "Instance is not well-typed in the environment of " ++
                  pr_existential_key sigma evk ++ str ".")
   in

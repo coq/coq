@@ -453,7 +453,7 @@ let global r =
   try match locate_extended qid with
     | TrueGlobal ref -> ref
     | SynDef _ ->
-        user_err ~loc "global"
+        user_err ~loc ~hdr:"global"
           (str "Unexpected reference to a notation: " ++
            pr_qualid qid)
   with Not_found ->
@@ -532,7 +532,7 @@ let global_inductive r =
   match global r with
   | IndRef ind -> ind
   | ref ->
-      user_err ~loc:(loc_of_reference r) "global_inductive"
+      user_err ~loc:(loc_of_reference r) ~hdr:"global_inductive"
         (pr_reference r ++ spc () ++ str "is not an inductive type")
 
 

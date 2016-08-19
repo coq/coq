@@ -30,7 +30,7 @@ let add_syntax_constant kn c onlyparse =
 
 let load_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
   if Nametab.exists_cci sp then
-    user_err "cache_syntax_constant"
+    user_err ~hdr:"cache_syntax_constant"
       (pr_id (basename sp) ++ str " already exists");
   add_syntax_constant kn pat onlyparse;
   Nametab.push_syndef (Nametab.Until i) sp kn

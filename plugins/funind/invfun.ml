@@ -998,7 +998,7 @@ let invfun qhyp f  =
   let f =
     match f with
       | ConstRef f -> f
-      | _ -> raise (CErrors.UserError("",str "Not a function"))
+      | _ -> raise (CErrors.UserError(None,str "Not a function"))
   in
   try
     let finfos = find_Function_infos f in
@@ -1043,19 +1043,19 @@ let invfun qhyp f g =
 			 functional_inversion kn hid  f2 f_correct g
 		       with
 			 | Failure "" ->
-			     user_err "" (str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
+			     user_err  (str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
 			 | Option.IsNone  ->
 			     if do_observe ()
 			     then
 			       error "Cannot use equivalence with graph for any side of the equality"
-			     else user_err "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+			     else user_err  (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
 			 | Not_found ->
 			     if do_observe ()
 			     then
 			       error "No graph found for any side of equality"
-			     else user_err "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+			     else user_err  (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
 		   end
-	       | _ -> user_err "" (Ppconstr.pr_id hid ++ str " must be an equality ")
+	       | _ -> user_err  (Ppconstr.pr_id hid ++ str " must be an equality ")
 	  end)
 	  qhyp
           end
