@@ -293,20 +293,20 @@ let fmt_time_difference (startreal,ustart,sstart) (stopreal,ustop,sstop) =
   real (round (sstop -. sstart)) ++ str "s" ++
   str ")"
 
-let with_time time f x =
+let with_time ?(hdr = mt()) time f x =
   let tstart = get_time() in
   let msg = if time then "" else "Finished transaction in " in
   try
     let y = f x in
     let tend = get_time() in
     let msg2 = if time then "" else " (successful)" in
-    Feedback.msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
+    Feedback.msg_info (hdr ++ str msg ++ fmt_time_difference tstart tend ++ str msg2);
     y
   with e ->
     let tend = get_time() in
     let msg = if time then "" else "Finished failing transaction in " in
     let msg2 = if time then "" else " (failure)" in
-    Feedback.msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
+    Feedback.msg_info (hdr ++ str msg ++ fmt_time_difference tstart tend ++ str msg2);
     raise e
 
 let process_id () =
