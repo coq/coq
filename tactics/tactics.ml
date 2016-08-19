@@ -4865,8 +4865,13 @@ let abstract_subproof id gk tac =
   in
   let cd = Entries.DefinitionEntry const in
   let decl = (cd, IsProof Lemma) in
-  (** ppedrot: seems legit to have abstracted subproofs as local*)
-  let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl in
+  let cst () =
+    (** do not compute the implicit arguments, it may be costly *)
+    let () = Impargs.make_implicit_args false in
+    (** ppedrot: seems legit to have abstracted subproofs as local*)
+    Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
+  in
+  let cst = Impargs.with_implicits cst () in
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
   let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
   let evd = Evd.set_universe_context evd ectx in
