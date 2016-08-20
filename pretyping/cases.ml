@@ -1999,21 +1999,6 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
  * Each matched term is independently considered dependent or not.
  *)
 
-exception LocalOccur
-
-let noccur_with_meta sigma n m term =
-  let rec occur_rec n c = match EConstr.kind sigma c with
-    | Rel p -> if n<=p && p<n+m then raise LocalOccur
-    | App(f,cl) ->
-        (match EConstr.kind sigma f with
-           | Cast (c,_,_) when isMeta sigma c -> ()
-           | Meta _ -> ()
-           | _ -> EConstr.iter_with_binders sigma succ occur_rec n c)
-    | Evar (_, _) -> ()
-    | _ -> EConstr.iter_with_binders sigma succ occur_rec n c
-  in
-  try (occur_rec n term; true) with LocalOccur -> false
-
 let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
   let refresh_tycon sigma t =
     (** If we put the typing constraint in the term, it has to be
@@ -2025,30 +2010,34 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
   let preds =
     match pred, tycon with
     (* No return clause *)
-    | None, Some t when not (noccur_with_meta sigma 0 max_int t) ->
-	(* If the tycon is not closed w.r.t real variables, we try *)
-        (* two different strategies *)
-        (* First strategy: we build an "inversion" predicate *)
+    | None, Some t ->
+        let sigma,t = refresh_tycon sigma t in
+        (* First strategy: we build an "inversion" predicate, also replacing the *)
+        (* dependencies with existential variables *)
         let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
         (* Optional second strategy: we abstract the tycon wrt to the dependencies *)
         let p2 =
           prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign t in
+        (* Third strategy: we take the type constraint as it is; of course we could *)
+        (* need something inbetween, abstracting some but not all of the dependencies *)
+        (* the "inversion" strategy deals with that but unification may not be *)
+        (* powerful enough so strategy 2 and 3 helps; moreover, inverting does not *)
+        (* work (yet) when a constructor has a type not precise enough for the inversion *)
+        (* see log message for details *)
+        let pred3 = lift (List.length (List.flatten arsign)) t in
         (match p2 with
-         | Some (sigma2,pred2,arsign) -> [sigma1, pred1, arsign; sigma2, pred2, arsign]
-         | None -> [sigma1, pred1, arsign])
-    | None, _ ->
-	(* No dependent type constraint, or no constraints at all: *)
-	(* we use two strategies *)
-        let sigma,t = match tycon with
-	| Some t -> refresh_tycon sigma t
-	| None -> 
-          let (sigma, (t, _)) =
-            new_type_evar !!env sigma univ_flexible_alg ~src:(Loc.tag ?loc @@ Evar_kinds.CasesType false) in
-	    sigma, t
-	in
+         | Some (sigma2,pred2,arsign) when not (EConstr.eq_constr sigma pred2 pred3) ->
+             [sigma1, pred1, arsign; sigma2, pred2, arsign; sigma, pred3, arsign]
+         | _ ->
+             [sigma1, pred1, arsign; sigma, pred3, arsign])
+    | None, None ->
+        (* No type constraint: we use two strategies *)
+        (* we first create a generic evar type constraint *)
+        let src = (loc, Evar_kinds.CasesType false) in
+        let sigma, (t, _) = new_type_evar !!env sigma univ_flexible_alg ~src in
         (* First strategy: we build an "inversion" predicate *)
-	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
-        (* Second strategy: we use the evar or tycon as a non dependent pred *)
+        let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
+        (* Second strategy: we use the evar as a non dependent pred *)
         let pred2 = lift (List.length (List.flatten arsign)) t in
         [sigma1, pred1, arsign; sigma, pred2, arsign]
     (* Some type annotation *)

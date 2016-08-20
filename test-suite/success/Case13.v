@@ -87,3 +87,17 @@ Check fun (x : E) => match x with c => e c end.
 Inductive C' : bool -> Set := c' : C' true.
 Inductive E' (b : bool) : Set := e' :> C' b -> E' b.
 Check fun (x : E' true) => match x with c' => e' true c' end.
+
+(* Check use of the no-dependency strategy when a type constraint is
+   given (and when the "inversion-and-dependencies-as-evars" strategy
+   is not strong enough because of a constructor with a type whose
+   pattern structure is not refined enough for it to be captured by
+   the inversion predicate) *)
+
+Inductive K : bool -> bool -> Type := F : K true true | G x : K x x.
+
+Check fun z P Q (y:K true z) (H1 H2:P y) (f:forall y, P y -> Q y z) =>
+        match y with
+        | F  => f y H1
+        | G _ => f y H2
+        end : Q y z.
