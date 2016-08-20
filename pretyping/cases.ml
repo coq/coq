@@ -2008,10 +2008,17 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
                       !!env sigma t
   in
   let preds =
-    match pred, tycon with
+    match pred with
     (* No return clause *)
-    | None, Some t ->
-        let sigma,t = refresh_tycon sigma t in
+    | None ->
+        let sigma,t =
+          match tycon with
+          | Some t -> refresh_tycon sigma t
+          | None ->
+             (* No type constraint: we first create a generic evar type constraint *)
+             let src = (loc, Evar_kinds.CasesType false) in
+             let sigma, (t, _) = new_type_evar !!env sigma univ_flexible_alg ~src in
+             sigma, t in
         (* First strategy: we build an "inversion" predicate, also replacing the *)
         (* dependencies with existential variables *)
         let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
@@ -2030,18 +2037,8 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
              [sigma1, pred1, arsign; sigma2, pred2, arsign; sigma, pred3, arsign]
          | _ ->
              [sigma1, pred1, arsign; sigma, pred3, arsign])
-    | None, None ->
-        (* No type constraint: we use two strategies *)
-        (* we first create a generic evar type constraint *)
-        let src = (loc, Evar_kinds.CasesType false) in
-        let sigma, (t, _) = new_type_evar !!env sigma univ_flexible_alg ~src in
-        (* First strategy: we build an "inversion" predicate *)
-        let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
-        (* Second strategy: we use the evar as a non dependent pred *)
-        let pred2 = lift (List.length (List.flatten arsign)) t in
-        [sigma1, pred1, arsign; sigma, pred2, arsign]
     (* Some type annotation *)
-    | Some rtntyp, _ ->
+    | Some rtntyp ->
       (* We extract the signature of the arity *)
       let building_arsign,envar = List.fold_right_map (push_rel_context sigma) arsign env in
       let sigma, newt = new_sort_variable univ_flexible_alg sigma in

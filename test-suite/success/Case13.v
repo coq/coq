@@ -101,3 +101,15 @@ Check fun z P Q (y:K true z) (H1 H2:P y) (f:forall y, P y -> Q y z) =>
         | F  => f y H1
         | G _ => f y H2
         end : Q y z.
+
+(* Check use of the maximal-dependency-in-variable strategy even when
+   no explicit type constraint is given (and when the
+   "inversion-and-dependencies-as-evars" strategy is not strong enough
+   because of a constructor with a type whose pattern structure is not
+   refined enough for it to be captured by the inversion predicate) *)
+
+Check fun z P Q (y:K true z) (H1 H2:P y) (f:forall y z, P y -> Q y z) =>
+        match y with
+        | F  => f y true H1
+        | G b => f y b H2
+        end.
