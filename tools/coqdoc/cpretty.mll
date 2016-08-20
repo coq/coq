@@ -675,7 +675,7 @@ and doc_bol = parse
         in
           match check_start_list line with
           | Neither -> backtrack_past_newline lexbuf; doc None lexbuf
-          | List n -> Output.paragraph ();
+          | List n -> if lines > 0 then Output.paragraph ();
                       Output.item 1; doc (Some [n]) lexbuf
           | Rule -> Output.rule (); doc None lexbuf
       }
@@ -736,24 +736,7 @@ and doc_list_bol indents = parse
         in
         let (n_spaces,_) = count_spaces buf in
         match find_level indents n_spaces with
-        | InLevel _ ->
-            Output.paragraph ();
-            backtrack_past_newline lexbuf;
-            doc_list_bol indents lexbuf
-        | StartLevel n ->
-            if n = 1 then
-              begin
-                Output.stop_item ();
-                backtrack_past_newline lexbuf;
-                doc_bol lexbuf
-              end
-            else
-              begin
-                Output.paragraph ();
-                backtrack_past_newline lexbuf;
-                doc_list_bol indents lexbuf
-              end
-        | Before -> 
+        | StartLevel 1 | Before ->
         (* Here we were at the beginning of a line, and it was blank.
            The next line started before any list items.  So: insert
            a paragraph for the empty line, rewind to whatever's just
@@ -763,6 +746,10 @@ and doc_list_bol indents = parse
             Output.paragraph ();
             backtrack_past_newline lexbuf;
             doc_bol lexbuf
+        | StartLevel _ | InLevel _ ->
+            Output.paragraph ();
+            backtrack_past_newline lexbuf;
+            doc_list_bol indents lexbuf
 
       }
   | space* _
@@ -771,10 +758,7 @@ and doc_list_bol indents = parse
         | Before -> Output.stop_item (); backtrack lexbuf;
                     doc_bol lexbuf
         | StartLevel n ->
-            (if n = 1 then
-               Output.stop_item ()
-             else
-               Output.reach_item_level (n-1));
+            Output.reach_item_level (n-1);
             backtrack lexbuf;
             doc (Some (take (n-1) indents)) lexbuf
         | InLevel (n,_) ->
