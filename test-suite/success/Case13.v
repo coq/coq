@@ -113,3 +113,15 @@ Check fun z P Q (y:K true z) (H1 H2:P y) (f:forall y z, P y -> Q y z) =>
         | F  => f y true H1
         | G b => f y b H2
         end.
+
+(* Check use of the maximal-dependency-in-variable strategy for "Var"
+   variables *)
+
+Goal forall z P Q (y:K true z) (H1 H2:P y) (f:forall y z, P y -> Q y z), Q y z.
+intros z P Q y H1 H2 f.
+Show.
+refine (match y with
+        | F  => f y true H1
+        | G b => f y b H2
+        end).
+Qed.
