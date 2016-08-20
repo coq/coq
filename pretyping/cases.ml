@@ -1941,16 +1941,28 @@ let inh_conv_coerce_to_tycon ?loc env sigma j tycon =
 
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)
 
+let add_subst sigma c len (rel_subst,var_subst) =
+  match EConstr.kind sigma c with
+  | Rel n -> (n,len) :: rel_subst, var_subst
+  | Var id -> rel_subst, (id,len) :: var_subst
+  | _ -> assert false
+
+let dependent_rel_or_var sigma tm c =
+  match EConstr.kind sigma tm with
+  | Rel n -> not (noccurn sigma n c)
+  | Var id -> Termops.local_occur_var sigma id c
+  | _ -> assert false
+
 let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
   let nar = List.fold_left (fun n sign -> Context.Rel.nhyps sign + n) 0 arsign in
-  let subst, len =
+  let (rel_subst,var_subst), len =
     List.fold_right2 (fun (tm, tmtype) sign (subst, len) ->
       let signlen = List.length sign in
 	match EConstr.kind sigma tm with
-          | Rel n when Int.equal signlen 1 && not (noccurn sigma n c)
+          | Rel _ | Var _ when Int.equal signlen 1 && dependent_rel_or_var sigma tm c
             (* The term to match is not of a dependent type itself *) ->
-	      ((n, len) :: subst, len - signlen)
-	  | Rel n when signlen > 1 (* The term is of a dependent type,
+              (add_subst sigma tm len subst, len - signlen)
+          | Rel _ | Var _ when signlen > 1 (* The term is of a dependent type,
 				      maybe some variable in its type appears in the tycon. *) ->
 	      (match tmtype with
 		  NotInd _ -> (subst, len - signlen)
@@ -1959,28 +1971,36 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 		      List.fold_left
 			(fun (subst, len) arg ->
 			  match EConstr.kind sigma arg with
-                          | Rel n when not (noccurn sigma n c) ->
-			      ((n, len) :: subst, pred len)
+                          | Rel _ | Var _ when dependent_rel_or_var sigma arg c ->
+                              (add_subst sigma arg len subst, pred len)
 			  | _ -> (subst, pred len))
 			(subst, len) realargs
 		    in
 		    let subst =
-                      if not (noccurn sigma n c) && List.for_all (isRel sigma) realargs
-		      then (n, len) :: subst else subst
+                      if dependent_rel_or_var sigma tm c && List.for_all (fun c -> isRel sigma c || isVar sigma c) realargs
+                      then add_subst sigma tm len subst else subst
 		    in (subst, pred len))
 	  | _ -> (subst, len - signlen))
-      (List.rev tomatchs) arsign ([], nar)
+      (List.rev tomatchs) arsign (([],[]), nar)
   in
   let rec predicate lift c =
     match EConstr.kind sigma c with
       | Rel n when n > lift ->
 	  (try
 	      (* Make the predicate dependent on the matched variable *)
-	      let idx = Int.List.assoc (n - lift) subst in
+              let idx = Int.List.assoc (n - lift) rel_subst in
 		mkRel (idx + lift)
 	    with Not_found ->
-	      (* A variable that is not matched, lift over the arsign. *)
+              (* A variable that is not matched, lift over the arsign *)
 	      mkRel (n + nar))
+      | Var id ->
+          (try
+              (* Make the predicate dependent on the matched variable *)
+              let idx = Id.List.assoc id var_subst in
+                mkRel (idx + lift)
+            with Not_found ->
+              (* A variable that is not matched *)
+              c)
       | _ ->
 	  EConstr.map_with_binders sigma succ predicate lift c
   in
