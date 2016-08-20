@@ -1930,9 +1930,19 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 
 let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
   let preds =
-    match pred, tycon with
+    match pred with
     (* No return clause *)
-    | None, Some t ->
+    | None ->
+        let sigma,t =
+          match tycon with
+          | Some t -> sigma, t
+          | None ->
+             (* No type constraint: we first create a generic evar type constraint *)
+             let src = (loc, Evar_kinds.CasesType false) in
+             let sigma = Sigma.Unsafe.of_evar_map sigma in
+             let Sigma ((t, _), sigma, _) = new_type_evar env sigma univ_flexible_alg ~src in
+             let sigma = Sigma.to_evar_map sigma in
+             sigma, t in
         (* First strategy: we build an "inversion" predicate, also replacing the *)
         (* dependencies with existential variables *)
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
@@ -1951,20 +1961,8 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
              [sigma1, pred1; sigma2, pred2; sigma, pred3]
 	 | _ ->
              [sigma1, pred1; sigma, pred3])
-    | None, None ->
-        (* No type constraint: we use two strategies *)
-        (* we first create a generic evar type constraint *)
-        let src = (loc, Evar_kinds.CasesType false) in
-        let sigma = Sigma.Unsafe.of_evar_map sigma in
-        let Sigma ((t, _), sigma, _) = new_type_evar env sigma univ_flexible_alg ~src in
-        let sigma = Sigma.to_evar_map sigma in
-        (* First strategy: we build an "inversion" predicate *)
-	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
-	(* Second strategy: we use the evar as a non dependent pred *)
-        let pred2 = lift (List.length (List.flatten arsign)) t in
-	[sigma1, pred1; sigma, pred2]
     (* Some type annotation *)
-    | Some rtntyp, _ ->
+    | Some rtntyp ->
       (* We extract the signature of the arity *)
       let envar = List.fold_right push_rel_context arsign env in
       let sigma, newt = new_sort_variable univ_flexible_alg sigma in
