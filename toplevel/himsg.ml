@@ -307,6 +307,7 @@ let rec explain_unification_error env sigma p1 p2 = function
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let t = Evarutil.nf_evar sigma t in
         let u = Evarutil.nf_evar sigma u in
+        let env = make_all_name_different env in
         (strbrk "cannot satisfy constraint " ++ pr_lconstr_env env sigma t ++
         str " == " ++ pr_lconstr_env env sigma u)
         :: aux t u e

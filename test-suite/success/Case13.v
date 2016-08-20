@@ -55,6 +55,14 @@ Check (fun x : I' 0 => match x with
                        | _ => 0
                        end).
 
+(* This one could eventually be solved, the "Fail" is just to ensure *)
+(* that it does not fail with an anomaly, as it did at some time *)
+Fail Check (fun x : I' 0 => match x return _ x with
+                       | C2' _ _ => 0
+                       | niln => 0
+                       | _ => 0
+                       end).
+
 (* Check insertion of coercions around matched subterm *)
 
 Parameter A:Set.
