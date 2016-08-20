@@ -4871,7 +4871,7 @@ let abstract_subproof id gk tac =
     (** ppedrot: seems legit to have abstracted subproofs as local*)
     Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
   in
-  let cst = Impargs.with_implicits cst () in
+  let cst = Impargs.with_implicit_protection cst () in
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
   let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
   let evd = Evd.set_universe_context evd ectx in

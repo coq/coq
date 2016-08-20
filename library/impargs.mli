@@ -29,7 +29,7 @@ val is_reversible_pattern_implicit_args : unit -> bool
 val is_contextual_implicit_args : unit -> bool
 val is_maximal_implicit_args : unit -> bool
 
-val with_implicits : ('a -> 'b) -> 'a -> 'b
+val with_implicit_protection : ('a -> 'b) -> 'a -> 'b
 
 (** {6 ... } *)
 (** An [implicits_list] is a list of positions telling which arguments

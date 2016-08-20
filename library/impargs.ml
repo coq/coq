@@ -68,7 +68,7 @@ let is_reversible_pattern_implicit_args () = !implicit_args.reversible_pattern
 let is_contextual_implicit_args () = !implicit_args.contextual
 let is_maximal_implicit_args () = !implicit_args.maximal
 
-let with_implicits f x =
+let with_implicit_protection f x =
   let oflags = !implicit_args in
   try
     let rslt = f x in
