@@ -66,6 +66,7 @@ type named_vals = (Id.t * lazy_val) list
 type named_context_val = {
   env_named_ctx : Context.Named.t;
   env_named_val : named_vals;
+  env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
 }
 
 type env = {
@@ -84,6 +85,7 @@ type env = {
 let empty_named_context_val = {
   env_named_ctx = [];
   env_named_val = [];
+  env_named_map = Id.Map.empty;
 }
 
 let empty_env = {
@@ -130,9 +132,11 @@ let env_of_rel n env =
 (* Named context *)
 
 let push_named_context_val_val d rval ctxt =
+  assert (not (Id.Map.mem (get_id d) ctxt.env_named_map));
   {
     env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
     env_named_val = (get_id d, rval) :: ctxt.env_named_val;
+    env_named_map = Id.Map.add (get_id d) (d, rval) ctxt.env_named_map;
   }
 
 let push_named_context_val d ctxt =
@@ -141,7 +145,8 @@ let push_named_context_val d ctxt =
 let match_named_context_val c = match c.env_named_ctx, c.env_named_val with
 | [], [] -> None
 | decl :: ctx, (_, v) :: vls ->
-  let cval = { env_named_ctx = ctx; env_named_val = vls } in
+  let map = Id.Map.remove (get_id decl) c.env_named_map in
+  let cval = { env_named_ctx = ctx; env_named_val = vls; env_named_map = map } in
   Some (decl, v, cval)
 | _ -> assert false
 
@@ -161,7 +166,7 @@ let push_named d env =
   }
 
 let lookup_named_val id env =
-  snd(List.find (fun (id',_) -> Id.equal id id') env.env_named_context.env_named_val)
+  snd(Id.Map.find id env.env_named_context.env_named_map)
 
 (* Warning all the names should be different *)
 let env_of_named id env = env

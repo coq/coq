@@ -122,8 +122,8 @@ let val_of_named_context ctxt =
   List.fold_right push_named_context_val ctxt empty_named_context_val
 
 
-let lookup_named id env = Context.Named.lookup id env.env_named_context.env_named_ctx
-let lookup_named_val id ctxt = Context.Named.lookup id ctxt.env_named_ctx
+let lookup_named id env = fst (Id.Map.find id env.env_named_context.env_named_map)
+let lookup_named_val id ctxt = fst (Id.Map.find id ctxt.env_named_map)
 
 let eq_named_context_val c1 c2 =
    c1 == c2 || Context.Named.equal (named_context_of_val c1) (named_context_of_val c2)

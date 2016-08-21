@@ -45,6 +45,7 @@ type named_vals = (Id.t * lazy_val) list
 type named_context_val = private {
   env_named_ctx : Context.Named.t;
   env_named_val : named_vals;
+  env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
 }
 
 type env = {
