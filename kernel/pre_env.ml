@@ -63,10 +63,14 @@ let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
 
 type named_vals = (Id.t * lazy_val) list
 
+type named_context_val = {
+  env_named_ctx : Context.Named.t;
+  env_named_val : named_vals;
+}
+
 type env = {
   env_globals       : globals;
-  env_named_context : Context.Named.t;
-  env_named_vals    : named_vals;
+  env_named_context : named_context_val;
   env_rel_context   : Context.Rel.t;
   env_rel_val       : lazy_val list;
   env_nb_rel        : int;
@@ -77,9 +81,10 @@ type env = {
   indirect_pterms : Opaqueproof.opaquetab;
 }
 
-type named_context_val = Context.Named.t * named_vals
-
-let empty_named_context_val = [],[]
+let empty_named_context_val = {
+  env_named_ctx = [];
+  env_named_val = [];
+}
 
 let empty_env = {
   env_globals = {
@@ -87,8 +92,7 @@ let empty_env = {
     env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
-  env_named_context = Context.Named.empty;
-  env_named_vals = [];
+  env_named_context = empty_named_context_val;
   env_rel_context = Context.Rel.empty;
   env_rel_val = [];
   env_nb_rel = 0;
@@ -125,17 +129,27 @@ let env_of_rel n env =
 
 (* Named context *)
 
-let push_named_context_val d (ctxt,vals) =
-  let rval = ref VKnone in
-    Context.Named.add d ctxt, (get_id d,rval)::vals
+let push_named_context_val_val d rval ctxt =
+  {
+    env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
+    env_named_val = (get_id d, rval) :: ctxt.env_named_val;
+  }
+
+let push_named_context_val d ctxt =
+  push_named_context_val_val d (ref VKnone) ctxt
+
+let match_named_context_val c = match c.env_named_ctx, c.env_named_val with
+| [], [] -> None
+| decl :: ctx, (_, v) :: vls ->
+  let cval = { env_named_ctx = ctx; env_named_val = vls } in
+  Some (decl, v, cval)
+| _ -> assert false
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
   assert (env.env_rel_context = []); *)
-  let rval = ref VKnone in
   { env_globals = env.env_globals;
-    env_named_context = Context.Named.add d env.env_named_context;
-    env_named_vals = (get_id d, rval) :: env.env_named_vals;
+    env_named_context = push_named_context_val d env.env_named_context;
     env_rel_context = env.env_rel_context;
     env_rel_val = env.env_rel_val;
     env_nb_rel = env.env_nb_rel;
@@ -147,7 +161,7 @@ let push_named d env =
   }
 
 let lookup_named_val id env =
-  snd(List.find (fun (id',_) -> Id.equal id id') env.env_named_vals)
+  snd(List.find (fun (id',_) -> Id.equal id id') env.env_named_context.env_named_val)
 
 (* Warning all the names should be different *)
 let env_of_named id env = env
