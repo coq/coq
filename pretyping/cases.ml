@@ -1871,7 +1871,7 @@ let inh_conv_coerce_to_tycon loc env evdref j tycon =
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)
 
 let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
-  let nar = List.fold_left (fun n sign -> List.length sign + n) 0 arsign in
+  let nar = List.fold_left (fun n sign -> Context.Rel.nhyps sign + n) 0 arsign in
   let subst, len =
     List.fold_right2 (fun (tm, tmtype) sign (subst, len) ->
       let signlen = List.length sign in

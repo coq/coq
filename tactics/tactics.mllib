@@ -12,7 +12,6 @@ Equality
 Contradiction
 Inv
 Leminv
-Taccoerce
 Hints
 Auto
 Eauto

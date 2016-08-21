@@ -13,6 +13,7 @@ Bugfixes
 - #4592, #4932: notations sharing recursive patterns or sharing
   binders made more robust.
 - #4780: Induction with universe polymorphism on was creating ill-typed terms.
+- #3070: fixing "subst" in the presence of a chain of dependencies.
 
 Specification language
 
@@ -625,6 +626,9 @@ Tactics
 - Behavior of introduction patterns -> and <- made more uniform
   (hypothesis is cleared, rewrite in hypotheses and conclusion and
   erasing the variable when rewriting a variable).
+- New experimental option "Set Standard Proposition Elimination Names"
+  so that case analysis or induction on schemes in Type containing
+  propositions now produces "H"-based names.
 - Tactics from plugins are now active only when the corresponding module
   is imported (source of incompatibilities, solvable by adding an "Import";
   in the particular case of Omega, use "Require Import OmegaTactic").
@@ -1163,9 +1167,6 @@ Other tactics
   clears (resp. reverts) H and all the hypotheses that depend on H.
 - Ltac's pattern-matching now supports matching metavariables that
   depend on variables bound upwards in the pattern.
-- New experimental option "Set Standard Proposition Elimination Names"
-  so that case analysis or induction on schemes in Type containing
-  propositions now produces "H"-based names.
 
 Tactic definitions
 

@@ -1270,7 +1270,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
   let naming = NamingMustBe (dloc,targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
-    (Proofview.Unsafe.tclEVARS clenv.evd)
+    (Proofview.Unsafe.tclEVARS (clear_metas clenv.evd))
     (if sidecond_first then
        Tacticals.New.tclTHENFIRST
          (assert_before_then_gen with_clear naming new_hyp_typ tac) exact_tac
@@ -4865,8 +4865,13 @@ let abstract_subproof id gk tac =
   in
   let cd = Entries.DefinitionEntry const in
   let decl = (cd, IsProof Lemma) in
-  (** ppedrot: seems legit to have abstracted subproofs as local*)
-  let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl in
+  let cst () =
+    (** do not compute the implicit arguments, it may be costly *)
+    let () = Impargs.make_implicit_args false in
+    (** ppedrot: seems legit to have abstracted subproofs as local*)
+    Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
+  in
+  let cst = Impargs.with_implicit_protection cst () in
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
   let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
   let evd = Evd.set_universe_context evd ectx in

@@ -139,7 +139,7 @@ let string_of_call ck =
   let s =
   string_of_ppcmds
     (match ck with
-       | Tacexpr.LtacNotationCall s -> Names.KerName.print s
+       | Tacexpr.LtacNotationCall s -> Pptactic.pr_alias_key s
        | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
        | Tacexpr.LtacVarCall (id, t) -> Nameops.pr_id id
        | Tacexpr.LtacAtomCall te ->

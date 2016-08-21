@@ -1078,12 +1078,10 @@ let sort_fields ~complete loc fields completer =
   match fields with
     | [] -> None
     | (first_field_ref, first_field_value):: other_fields ->
-        let env_error_msg = "Environment corruption for records." in
-        let first_field_glob_ref =
-          try global_reference_of_reference first_field_ref
-          with Not_found -> anomaly (Pp.str env_error_msg) in
-        let record =
-          try Recordops.find_projection first_field_glob_ref
+        let (first_field_glob_ref, record) =
+          try
+            let gr = global_reference_of_reference first_field_ref in
+            (gr, Recordops.find_projection gr)
           with Not_found ->
             user_err_loc (loc_of_reference first_field_ref, "intern",
                           pr_reference first_field_ref ++ str": Not a projection")
@@ -1094,7 +1092,8 @@ let sort_fields ~complete loc fields completer =
         let base_constructor =
           let global_record_id = ConstructRef record.Recordops.s_CONST in
           try Qualid (loc, shortest_qualid_of_global Id.Set.empty global_record_id)
-          with Not_found -> anomaly (Pp.str env_error_msg) in
+          with Not_found ->
+            anomaly (str "Environment corruption for records") in
         let (end_index,    (* one past the last field index *)
              first_field_index,  (* index of the first field of the record *)
              proj_list)    (* list of projections *)
