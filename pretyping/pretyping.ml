@@ -804,8 +804,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         let j = pretype_type empty_valcon env evdref lvar c2 in
           { j with utj_val = lift 1 j.utj_val }
       | Name _ ->
-        let var = (name,j.utj_val) in
-        let env' = ExtraEnv.make_env (push_rel_assum var env.ExtraEnv.env) in
+        let var = LocalAssum (name, j.utj_val) in
+        let env' = push_rel var env in
           pretype_type empty_valcon env' evdref lvar c2
     in
     let name = ltac_interp_name lvar name in
