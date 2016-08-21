@@ -2280,6 +2280,15 @@ hypothesis.
 
 \end{Variants}
 
+\optindex{Structural Injection}
+
+It is possible to ensure that \texttt{injection {\term}} erases the
+original hypothesis and leaves the generated equalities in the context
+rather than putting them as antecedents of the current goal, as if
+giving \texttt{injection {\term} as} (with an empty list of names). To
+obtain this behavior, the option {\tt Set Structural Injection} must
+be activated. This option is off by default.
+
 \subsection{\tt inversion \ident}
 \tacindex{inversion}
 
