@@ -403,9 +403,10 @@ let ltac_interp_name_env k0 lvar env =
   (* tail is the part of the env enriched by pretyping *)
   let n = Context.Rel.length (rel_context env) - k0 in
   let ctxt,_ = List.chop n (rel_context env) in
-  let env = pop_rel_context n env in
-  let ctxt = List.map (Context.Rel.Declaration.map_name (ltac_interp_name lvar)) ctxt in
-  push_rel_context ctxt env
+  let open Context.Rel.Declaration in
+  let ctxt' = List.smartmap (map_name (ltac_interp_name lvar)) ctxt in
+  if List.equal (fun d1 d2 -> Name.equal (get_name d1) (get_name d2)) ctxt ctxt' then env
+  else push_rel_context ctxt' (pop_rel_context n env)
 
 let invert_ltac_bound_name lvar env id0 id =
   let id' = Id.Map.find id lvar.ltac_idents in
