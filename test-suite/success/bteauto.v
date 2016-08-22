@@ -46,6 +46,25 @@ Module Backtracking.
   Qed.
   
   Unset Typeclasses Debug.
+
+  Module Leivant.
+    Axiom A : Type.
+    Existing Class A.
+    Axioms a b c d e: A.
+    
+    Ltac get_value H := eval cbv delta [H] in H.
+    
+    Goal True.
+      Fail refine (let H := _ : A in _); let v := get_value H in idtac v; fail.
+    Admitted.
+
+    Goal exists x:A, x=a.
+      unshelve evar (t : A). all:cycle 1.
+      refine (@ex_intro _ _ t _).
+      all:cycle 1.
+      all:(typeclasses eauto + reflexivity).
+    Qed.      
+  End Leivant.
 End Backtracking.
 
 
