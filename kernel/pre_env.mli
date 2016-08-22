@@ -80,6 +80,9 @@ val push_named_context_val_val  :
     Context.Named.Declaration.t -> lazy_val -> named_context_val -> named_context_val
 val match_named_context_val  :
   named_context_val -> (Context.Named.Declaration.t * lazy_val * named_context_val) option
+val map_named_val :
+   (constr -> constr) -> named_context_val -> named_context_val
+
 val push_named       : Context.Named.Declaration.t -> env -> env
 val lookup_named_val : Id.t -> env -> lazy_val
 val env_of_named     : Id.t -> env -> env

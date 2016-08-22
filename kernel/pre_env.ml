@@ -132,7 +132,7 @@ let env_of_rel n env =
 (* Named context *)
 
 let push_named_context_val_val d rval ctxt =
-  assert (not (Id.Map.mem (get_id d) ctxt.env_named_map));
+(*   assert (not (Id.Map.mem (get_id d) ctxt.env_named_map)); *)
   {
     env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
     env_named_val = (get_id d, rval) :: ctxt.env_named_val;
@@ -149,6 +149,19 @@ let match_named_context_val c = match c.env_named_ctx, c.env_named_val with
   let cval = { env_named_ctx = ctx; env_named_val = vls; env_named_map = map } in
   Some (decl, v, cval)
 | _ -> assert false
+
+let map_named_val f ctxt =
+  let open Context.Named.Declaration in
+  let fold accu d =
+    let d' = map_constr f d in
+    let accu =
+      if d == d' then accu
+      else Id.Map.modify (get_id d) (fun _ (_, v) -> (d', v)) accu
+    in
+    (accu, d')
+  in
+  let map, ctx = List.fold_map fold ctxt.env_named_map ctxt.env_named_ctx in
+  { ctxt with env_named_ctx = ctx; env_named_map = map }
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);

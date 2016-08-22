@@ -105,12 +105,7 @@ let named_vals_of_val c = c.env_named_val
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
    *** /!\ ***   [f t] should be convertible with t *)
-let rec map_named_val f ctx = match match_named_context_val ctx with
-| None -> empty_named_context_val
-| Some (d, v, ctx) ->
-  let d = Context.Named.Declaration.map_constr f d in
-  let ctx = map_named_val f ctx in
-  push_named_context_val_val d v ctx
+let map_named_val = map_named_val
 
 let empty_named_context = Context.Named.empty
 
