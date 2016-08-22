@@ -68,34 +68,91 @@ struct
         Int.Map.update h m s
     with Not_found -> s
 
-  let union s1 s2 =
-    let fu _ m1 m2 = match m1, m2 with
-    | None, None -> None
-    | (Some _ as m), None | None, (Some _ as m) -> m
-    | Some m1, Some m2 -> Some (Set.union m1 m2)
+  let height s = Int.Map.height s
+
+  let is_smaller s1 s2 = height s1 <= height s2 + 3
+
+  (** Assumes s1 << s2 *)
+  let fast_union s1 s2 =
+    let fold h s accu =
+      try Int.Map.modify h (fun _ s' -> Set.fold Set.add s s') accu
+      with Not_found -> Int.Map.add h s accu
     in
-    Int.Map.merge fu s1 s2
+    Int.Map.fold fold s1 s2
+
+  let union s1 s2 =
+    if is_smaller s1 s2 then fast_union s1 s2
+    else if is_smaller s2 s1 then fast_union s2 s1
+    else
+      let fu _ m1 m2 = match m1, m2 with
+      | None, None -> None
+      | (Some _ as m), None | None, (Some _ as m) -> m
+      | Some m1, Some m2 -> Some (Set.union m1 m2)
+      in
+      Int.Map.merge fu s1 s2
+
+  (** Assumes s1 << s2 *)
+  let fast_inter s1 s2 =
+    let fold h s accu =
+      try
+        let s' = Int.Map.find h s2 in
+        let si = Set.filter (fun e -> Set.mem e s') s in
+        if Set.is_empty si then accu
+        else Int.Map.add h si accu
+     with Not_found -> accu
+    in
+    Int.Map.fold fold s1 Int.Map.empty
 
   let inter s1 s2 =
-    let fu _ m1 m2 = match m1, m2 with
-    | None, None -> None
-    | Some _, None | None, Some _ -> None
-    | Some m1, Some m2 ->
-      let m = Set.inter m1 m2 in
-      if Set.is_empty m then None else Some m
+    if is_smaller s1 s2 then fast_inter s1 s2
+    else if is_smaller s2 s1 then fast_inter s2 s1
+    else
+      let fu _ m1 m2 = match m1, m2 with
+      | None, None -> None
+      | Some _, None | None, Some _ -> None
+      | Some m1, Some m2 ->
+        let m = Set.inter m1 m2 in
+        if Set.is_empty m then None else Some m
+      in
+      Int.Map.merge fu s1 s2
+
+  (** Assumes s1 << s2 *)
+  let fast_diff_l s1 s2 =
+    let fold h s accu =
+      try
+        let s' = Int.Map.find h s2 in
+        let si = Set.filter (fun e -> not (Set.mem e s')) s in
+        if Set.is_empty si then accu
+        else Int.Map.add h si accu
+     with Not_found -> Int.Map.add h s accu
     in
-    Int.Map.merge fu s1 s2
+    Int.Map.fold fold s1 Int.Map.empty
+
+  (** Assumes s2 << s1 *)
+  let fast_diff_r s1 s2 =
+    let fold h s accu =
+      try
+        let s' = Int.Map.find h accu in
+        let si = Set.filter (fun e -> not (Set.mem e s)) s' in
+        if Set.is_empty si then Int.Map.remove h accu
+        else Int.Map.update h si accu
+     with Not_found -> accu
+    in
+    Int.Map.fold fold s2 s1
 
   let diff s1 s2 =
-    let fu _ m1 m2 = match m1, m2 with
-    | None, None -> None
-    | (Some _ as m), None -> m
-    | None, Some _ -> None
-    | Some m1, Some m2 ->
-      let m = Set.diff m1 m2 in
-      if Set.is_empty m then None else Some m
-    in
-    Int.Map.merge fu s1 s2
+    if is_smaller s1 s2 then fast_diff_l s1 s2
+    else if is_smaller s2 s2 then fast_diff_r s1 s2
+    else
+      let fu _ m1 m2 = match m1, m2 with
+      | None, None -> None
+      | (Some _ as m), None -> m
+      | None, Some _ -> None
+      | Some m1, Some m2 ->
+        let m = Set.diff m1 m2 in
+        if Set.is_empty m then None else Some m
+      in
+      Int.Map.merge fu s1 s2
 
   let compare s1 s2 = Int.Map.compare Set.compare s1 s2
 
@@ -323,6 +380,8 @@ struct
   let smartmapi f s =
     let fs m = Map.smartmapi f m in
     Int.Map.smartmap fs s
+
+  let height s = Int.Map.height s
 
   module Unsafe =
   struct
