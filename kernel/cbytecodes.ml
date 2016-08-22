@@ -142,11 +142,29 @@ type fv = fv_elem array
 exception NotClosed
 
 
+module Fv_elem =
+struct
+type t = fv_elem
+
+let compare e1 e2 = match e1, e2 with
+| FVnamed id1, FVnamed id2 -> Id.compare id1 id2
+| FVnamed _, _ -> -1
+| FVrel _, FVnamed _ -> 1
+| FVrel r1, FVrel r2 -> Int.compare r1 r2
+| FVrel _, FVuniv_var _ -> -1
+| FVuniv_var i1, FVuniv_var i2 -> Int.compare i1 i2
+| FVuniv_var i1, _ -> 1
+
+end
+
+module FvMap = Map.Make(Fv_elem)
+
 (*spiwack: both type have been moved from Cbytegen because I needed then
   for the retroknowledge *)
 type vm_env = {
     size : int;              (* longueur de la liste [n] *)
-    fv_rev : fv_elem list    (* [fvn; ... ;fv1] *)
+    fv_rev : fv_elem list;   (* [fvn; ... ;fv1] *)
+    fv_fwd : int FvMap.t;    (* reverse mapping *)
   }
 
 
