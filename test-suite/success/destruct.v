@@ -437,3 +437,12 @@ intro H.
 destruct (H (fun x => True)).
 match goal with |- True => idtac end.
 Abort.
+
+(* Basic support for unification on the indices of the inductive type *)
+
+Goal forall x y , (forall y, x < S y) -> x = S y -> x = S y.
+intros.
+destruct H.
+- exact H0.
+-
+Show.

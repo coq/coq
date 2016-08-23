@@ -3242,8 +3242,33 @@ let expand_projections env sigma c =
   in
   aux env c
 			       
-	   
-(* Marche pas... faut prendre en compte l'occurrence précise... *)
+(* [atomize_param_of_ind_then hyp0] selects hypotheses of the goal
+   which match the instance of a second-order problem.
+
+   Typically, we have an induction over [hyp0 : I args] and there is
+   an associated second-order pattern-matching [?P args hyp0]. We
+   select the occurrences of [args] and [hyp0] in the hypotheses and
+   the goal, and replace them by a variable name.
+
+   There are different levels of complexity:
+   - If all of [args] and [hyp0] are distinct variables (and distinct
+     from the parameters of the inductive type), there is a more
+     general solution which abstract all occurrences;
+   - If all of [args] and [hyp0] are variables but with redundancies
+     (including redundancy with one of the parameter), there are
+     different solutions and it is unclear the heuristic used makes a
+     lot of sense (to be investigated further);
+   - Otherwise, we empirically use syntactic pattern-matching
+     ([make_abstraction]) and bind the term to a new variable using
+     [letin_tac].
+
+   I (i.e. HH) don't consider it as very well thought. Adding a [let]
+   is not satisfactory even if it has the advantage of separating the
+   subterm selection phase and the phase for abstracting
+   hypotheses. The unification heuristic is argument-based while it
+   could consider all arguments as a whole (as in
+   [Unification.second_order_matching]).
+ *)
 
 let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   Proofview.Goal.enter begin fun gl ->
@@ -3257,7 +3282,6 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   let env' = push_rel_context prods env in
   let params = List.firstn nparams argl in
   let params' = List.map (expand_projections env' sigma) params in
-  (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i args args' avoid =
     if Int.equal i nparams then
       let t = applist (hd, params@args) in
@@ -3292,12 +3316,37 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             let id = match EConstr.kind sigma c with
             | Var id -> id
             | _ ->
-            let type_of = Tacmach.New.pf_unsafe_type_of gl in
-            id_of_name_using_hdchar env sigma (type_of c) Anonymous in
+                let type_of = Tacmach.New.pf_unsafe_type_of gl in
+                id_of_name_using_hdchar env sigma (type_of c) Anonymous in
+            Proofview.Goal.enter begin fun gl ->
+            let env = Proofview.Goal.env gl in
+            let sigma = Proofview.Goal.sigma gl in
+            let ccl = Proofview.Goal.concl gl in
             let x = fresh_id_in_env avoid id env in
-	    Tacticals.New.tclTHEN
-	      (letin_tac None (Name x) c None allHypsAndConcl)
-	      (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid))
+            let check _ = true in
+            let pending = Evd.empty in
+            (* We ask to find all occurrences of [c] in all hypotheses *)
+            (* including [hyp0] itself so that it can be regeneralized *)
+            let hyps = List.map (fun decl -> let id = get_id decl in
+              [(AllOccurrences,id),InHyp]) (named_context env) in
+            let cls = { onhyps=Some (List.flatten hyps); concl_occs=AllOccurrences } in
+            let abs = AbstractPattern (false,check,Name x,(pending,c),cls,false) in
+            let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+            match res with
+            | None ->
+              (* pattern not found *)
+              atomize_one (i-1) (c::args) (c::args') (Id.Set.add x avoid)
+            | Some (sigma', c) ->
+              (* pattern found *)
+              let env = reset_with_named_context sign env in
+              Tacticals.New.tclTHENLIST [
+                Proofview.Unsafe.tclEVARS sigma';
+                Refine.refine ~typecheck:false begin fun sigma ->
+                  mkletin_goal env sigma None true (id,lastlhyp,ccl,c) None end;
+                atomize_one (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid)
+              ]
+            end
+
   in
   atomize_one (List.length argl) [] [] Id.Set.empty
   end
@@ -4278,12 +4327,26 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
+let check_pending_new_evars_resolved newevars =
+  Proofview.tclEVARMAP >>= function sigma ->
+  match List.map_filter (Proofview.Unsafe.advance sigma) newevars with
+  | [] -> Proofview.tclUNIT ()
+  | l ->
+    let l = CList.map (fun g -> Evd.dependent_evar_ident g sigma) l in
+    let l = CList.map (fun id -> Names.Name id) l in
+    Proofview.tclENV     >>= function env ->
+    Proofview.tclZERO (RefinerError (env, sigma, UnresolvedBindings l))
+
+let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps newevars =
   Proofview.Goal.enter begin fun gl ->
   let elim_info = find_induction_type isrec elim hyp0 gl in
   atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
-    apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
-      (fun elim -> induction_tac with_evars [] [hyp0] elim))
+    Proofview.tclTHEN
+      (if with_evars then Proofview.tclUNIT ()
+       else check_pending_new_evars_resolved newevars)
+      (apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info)
+         indvars names
+         (fun elim -> induction_tac with_evars [] [hyp0] elim)))
   end
 
 let msg_not_right_number_induction_arguments scheme =
@@ -4414,13 +4477,6 @@ let check_enough_applied env sigma elim =
           (* Last argument is supposed to be the induction argument *)
           check_expected_type env sigma elimc elimt
 
-let guard_no_unifiable = Proofview.guard_no_unifiable >>= function
-  | None -> Proofview.tclUNIT ()
-  | Some l ->
-    Proofview.tclENV     >>= function env ->
-    Proofview.tclEVARMAP >>= function sigma ->
-    Proofview.tclZERO (RefinerError (env, sigma, UnresolvedBindings l))
-
 let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
   Proofview.Goal.enter begin fun gl ->
@@ -4440,26 +4496,26 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
          resolution etc. on the term given by the user *)
       let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
       let (sigma, c0) = finish_evar_resolution ~flags env sigma (pending,c0) in
+      let open Proofview.Notations in
       let tac =
       (if isrec then
           (* Historically, induction has side conditions last *)
-          Tacticals.New.tclTHENFIRST
+          Tacticals.New.tclBINDFIRST
        else
           (* and destruct has side conditions first *)
-          Tacticals.New.tclTHENLAST)
-      (Tacticals.New.tclTHENLIST [
-        Refine.refine ~typecheck:false begin fun sigma ->
+          Tacticals.New.tclBINDLAST)
+      (Refine.refine ~typecheck:false begin fun sigma ->
           let b = not with_evars && with_eq != None in
           let (sigma, c) = use_bindings env sigma elim b (c0,lbind) t0 in
           let t = Retyping.get_type_of env sigma c in
           mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
-        end;
-        if with_evars then Proofview.shelve_unifiable else guard_no_unifiable;
-        if is_arg_pure_hyp
-        then Proofview.tclEVARMAP >>= fun sigma -> Tacticals.New.tclTRY (clear [destVar sigma c0])
-        else Proofview.tclUNIT ();
-        if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()
-      ])
+        end <*>
+        Proofview.shelve_unifiable_informative >>= fun newevars ->
+        (if is_arg_pure_hyp
+        then (Proofview.tclEVARMAP >>= fun sigma -> Tacticals.New.tclTRY (clear [destVar sigma c0]))
+        else Proofview.tclUNIT ()) <*>
+        (if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()) <*>
+        (Proofview.tclUNIT newevars))
       (tac inhyps)
       in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
@@ -4475,7 +4531,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
         Refine.refine ~typecheck:false begin fun sigma ->
           mkletin_goal env sigma with_eq true (id,lastlhyp,ccl,c) None
         end;
-        (tac inhyps)
+        (tac inhyps [])
       ]
       in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma') tac
@@ -4513,7 +4569,7 @@ let induction_gen clear_flag isrec with_evars elim
     Tacticals.New.tclTHEN
       (clear_unselected_context id inhyps cls)
       (induction_with_atomization_of_ind_arg
-         isrec with_evars elim names id inhyps)
+         isrec with_evars elim names id inhyps [])
   else
   (* Otherwise, we look for the pattern, possibly adding missing arguments and
      declaring the induction argument as a new local variable *)
