@@ -101,7 +101,7 @@ let verbose_phrase verbch loc =
 	let s = String.create len in
         seek_in ch (fst loc);
         really_input ch s 0 len;
-        Feedback.msg_notice (str s ++ fnl ())
+        Feedback.msg_notice (str s)
     | None -> ()
 
 exception End_of_input
