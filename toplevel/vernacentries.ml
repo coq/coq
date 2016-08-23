@@ -1064,7 +1064,7 @@ let vernac_declare_arguments locality r l nargs flags =
     vernac_declare_implicits locality r []
   else if some_implicits_specified || List.mem `ClearImplicits flags then
     vernac_declare_implicits locality r implicits;
-  if nargs >= 0 && nargs < List.fold_left max 0 rargs then
+  if nargs >= 0 && nargs <= List.fold_left max ~-1 rargs then
     error "The \"/\" option must be placed after the last \"!\".";
   let no_flags = List.is_empty flags in
   let rec narrow = function
