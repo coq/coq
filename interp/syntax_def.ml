@@ -43,7 +43,7 @@ let is_alias_of_already_visible_name sp = function
       false
 
 let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
-  if not (is_alias_of_already_visible_name sp pat) then begin
+  if not (Int.equal i 1 && is_alias_of_already_visible_name sp pat) then begin
     Nametab.push_syndef (Nametab.Exactly i) sp kn;
     match onlyparse with
     | None ->
