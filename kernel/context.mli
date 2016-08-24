@@ -195,8 +195,13 @@ sig
     val to_tuple : t -> Id.t * Constr.t option * Constr.t
     val of_tuple : Id.t * Constr.t option * Constr.t -> t
 
-    (** Convert [Rel.Declaration.t] value to the corresponding [Named.Declaration.t] value. *)
+    (** Convert [Rel.Declaration.t] value to the corresponding [Named.Declaration.t] value.
+        The function provided as the first parameter determines how to translate "names" to "ids". *)
     val of_rel : (Name.t -> Id.t) -> Rel.Declaration.t -> t
+
+    (** Convert [Named.Declaration.t] value to the corresponding [Rel.Declaration.t] value. *)
+    (* TODO: Move this function to [Rel.Declaration] module and rename it to [of_named]. *)
+    val to_rel : t -> Rel.Declaration.t
   end
 
   (** Rel-context is represented as a list of declarations.

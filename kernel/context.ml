@@ -346,6 +346,12 @@ struct
           LocalAssum (f na, t)
       | Rel.Declaration.LocalDef (na,v,t) ->
           LocalDef (f na, v, t)
+            
+    let to_rel = function
+      | LocalAssum (id,t) ->
+          Rel.Declaration.LocalAssum (Name id, t)
+      | LocalDef (id,v,t) ->
+          Rel.Declaration.LocalDef (Name id,v,t)
   end
 
   (** Named-context is represented as a list of declarations.
@@ -399,7 +405,7 @@ struct
       | _ -> None
     in
     List.map_filter filter
-  end
+end
 
 module NamedList =
   struct
