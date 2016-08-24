@@ -515,14 +515,11 @@ let subst_implicits (subst,(req,l)) =
   (ImplLocal,List.smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
-  let map (id, impl, _, _) = match impl with
-  | Implicit -> Some (id, Manual, (true, true))
+  let map (decl, impl) = match impl with
+  | Implicit -> Some (Context.Named.Declaration.get_id decl, Manual, (true, true))
   | _ -> None
   in
-  let is_set (_, _, b, _) = match b with
-  | None -> true
-  | Some _ -> false
-  in
+  let is_set = Context.Named.Declaration.is_local_assum % fst in
   List.rev_map map (List.filter is_set ctx)
 
 let adjust_side_condition p = function

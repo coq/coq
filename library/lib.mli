@@ -162,8 +162,7 @@ val xml_open_section : (Names.Id.t -> unit) Hook.t
 val xml_close_section : (Names.Id.t -> unit) Hook.t
 
 (** {6 Section management for discharge } *)
-type variable_info = Names.Id.t * Decl_kinds.binding_kind *
-    Term.constr option * Term.types
+type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 type variable_context = variable_info list 
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 

@@ -82,6 +82,9 @@ struct
   type t = Anonymous     (** anonymous identifier *)
 	 | Name of Id.t  (** non-anonymous identifier *)
 
+  let mk_name id =
+    Name id
+
   let is_anonymous = function
     | Anonymous -> true
     | Name _ -> false

@@ -197,12 +197,10 @@ let subst_class (subst,cl) =
 let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
-    ( fun (n,_,b,t) (ctx', subst) ->
-        let decl = match b with
-                   | None -> LocalAssum (Name n, substn_vars 1 subst t)
-		   | Some b -> LocalDef (Name n, substn_vars 1 subst b, substn_vars 1 subst t)
-	in
-	(decl :: ctx', n :: subst)
+    ( fun (decl,_) (ctx', subst) ->
+        let open Context.Named.Declaration in
+        let decl' = decl |> map_constr (substn_vars 1 subst) |> to_rel in
+	(decl' :: ctx', Context.Named.Declaration.get_id decl :: subst)
     ) ctx ([], []) in
   let discharge_rel_context subst n rel =
     let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in

@@ -388,7 +388,7 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type variable_info = Names.Id.t * Decl_kinds.binding_kind * Term.constr option * Term.types
+type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 
 type variable_context = variable_info list
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
@@ -431,9 +431,8 @@ let extract_hyps (secs,ohyps) =
   let open Context.Named.Declaration in
   let rec aux = function
     | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (get_id decl) ->
-      let (id',b,t) = to_tuple decl in
       let l, r = aux (idl,hyps) in 
-	(id',impl,b,t) :: l, if poly then Univ.ContextSet.union r ctx else r
+      (decl,impl) :: l, if poly then Univ.ContextSet.union r ctx else r
     | (Variable (_,_,poly,ctx)::idl,hyps) ->
         let l, r = aux (idl,hyps) in
           l, if poly then Univ.ContextSet.union r ctx else r
@@ -443,17 +442,12 @@ let extract_hyps (secs,ohyps) =
     | [], _ -> [],Univ.ContextSet.empty
   in aux (secs,ohyps)
 
-let instance_from_variable_context sign =
-  let rec inst_rec = function
-    | (id,b,None,_) :: sign -> id :: inst_rec sign
-    | _ :: sign -> inst_rec sign
-    | [] -> [] in
-  Array.of_list (inst_rec sign)
+let instance_from_variable_context =
+  let open Context.Named.Declaration in
+  Array.of_list % List.map get_id % List.filter is_local_assum % List.map fst
 
-let named_of_variable_context ctx = let open Context.Named.Declaration in
-                                    List.map (function id,_,None,t -> LocalAssum (id,t)
-                                                     | id,_,Some b,t -> LocalDef (id,b,t))
-                                             ctx
+let named_of_variable_context =
+  List.map fst
   
 let add_section_replacement f g poly hyps =
   match !sectab with
