@@ -7,6 +7,10 @@ We renamed the following functions:
   Context.Rel.Declaration.fold   -> Context.Rel.Declaration.fold_constr
   Context.Named.Declaration.fold -> Context.Named.Declaration.fold_constr
 
+We removed the following functions:
+
+  Termops.compact_named_context_reverse
+
 The following type aliases where removed
 
   Context.section_context    ... it was just an alias for "Context.Named.t" which is still available
