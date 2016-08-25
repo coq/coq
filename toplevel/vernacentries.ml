@@ -137,7 +137,7 @@ let make_cases s =
 	     let rec rename avoid = function
 	       | [] -> []
 	       | (n,_)::l ->
-		   let n' = Namegen.next_name_away_in_cases_pattern ([],mkMeta 0) n avoid in
+		   let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n avoid in
 		   Id.to_string n' :: rename (n'::avoid) l in
 	     let al' = rename [] al in
 	     (Id.to_string consname :: al') :: l)
@@ -1065,7 +1065,7 @@ let vernac_declare_arguments locality r l nargs flags =
     vernac_declare_implicits locality r []
   else if some_implicits_specified || List.mem `ClearImplicits flags then
     vernac_declare_implicits locality r implicits;
-  if nargs >= 0 && nargs < List.fold_left max 0 rargs then
+  if nargs >= 0 && nargs <= List.fold_left max ~-1 rargs then
     error "The \"/\" option must be placed after the last \"!\".";
   let no_flags = List.is_empty flags in
   let rec narrow = function

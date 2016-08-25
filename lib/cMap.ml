@@ -34,6 +34,7 @@ sig
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val smartmap : ('a -> 'a) -> 'a t -> 'a t
   val smartmapi : (key -> 'a -> 'a) -> 'a t -> 'a t
+  val height : 'a t -> int
   module Unsafe :
   sig
     val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
@@ -57,6 +58,7 @@ sig
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val smartmap : ('a -> 'a) -> 'a map -> 'a map
   val smartmapi : (M.t -> 'a -> 'a) -> 'a map -> 'a map
+  val height : 'a map -> int
   module Unsafe :
   sig
     val map : (M.t -> 'a -> M.t * 'b) -> 'a map -> 'b map
@@ -167,6 +169,10 @@ struct
     let v' = f k v in
     if l == l' && r == r' && v == v' then s
     else map_inj (MNode (l', k, v', r', h))
+
+  let height s = match map_prj s with
+  | MEmpty -> 0
+  | MNode (_, _, _, _, h) -> h
 
   module Unsafe =
   struct

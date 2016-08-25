@@ -285,7 +285,9 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   let fold obj _ accu = match obj with
   | VarRef id ->
     let decl = Global.lookup_named id in
-    if is_local_assum decl then ContextObjectMap.add (Variable id) t accu
+    if is_local_assum decl then
+      let t = Context.Named.Declaration.get_type decl in
+      ContextObjectMap.add (Variable id) t accu
     else accu
   | ConstRef kn ->
       let cb = lookup_constant kn in

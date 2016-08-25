@@ -101,7 +101,7 @@ let verbose_phrase verbch loc =
 	let s = String.create len in
         seek_in ch (fst loc);
         really_input ch s 0 len;
-        Feedback.msg_notice (str s ++ fnl ())
+        Feedback.msg_notice (str s)
     | None -> ()
 
 exception End_of_input
@@ -158,7 +158,7 @@ let restore_translator_coqdoc (ch,cl,cs,coqdocstate) =
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
 
-let display_cmd_header loc com =
+let pp_cmd_header loc com =
   let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
   let noblank s =
     for i = 0 to String.length s - 1 do
@@ -173,11 +173,15 @@ let display_cmd_header loc com =
     try Ppvernac.pr_vernac x
     with e -> str (Printexc.to_string e) in
   let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
-  in
-  Feedback.msg_notice
-    (str "Chars " ++ int start ++ str " - " ++ int stop ++
-     str " [" ++ str cmd ++ str "] ")
+  in str "Chars " ++ int start ++ str " - " ++ int stop ++
+     str " [" ++ str cmd ++ str "] "
 
+(* This is a special case where we assume we are in console batch mode
+   and take control of the console.
+ *)
+let print_cmd_header loc com =
+  Pp.pp_with !Pp_control.std_ft (pp_cmd_header loc com);
+  Format.pp_print_flush !Pp_control.std_ft ()
 
 let rec vernac_com checknav (loc,com) =
   let interp = function
@@ -208,7 +212,8 @@ let rec vernac_com checknav (loc,com) =
     try
       checknav loc com;
       if do_beautify () then pr_new_syntax loc (Some com);
-      if !Flags.time then display_cmd_header loc com;
+      (* XXX: This is not 100% correct if called from an IDE context *)
+      if !Flags.time then print_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
       let a = CLexer.com_state () in
       interp com;

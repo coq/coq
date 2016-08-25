@@ -404,9 +404,10 @@ let ltac_interp_name_env k0 lvar env =
   (* tail is the part of the env enriched by pretyping *)
   let n = Context.Rel.length (rel_context env) - k0 in
   let ctxt,_ = List.chop n (rel_context env) in
-  let env = pop_rel_context n env in
-  let ctxt = List.map (Context.Rel.Declaration.map_name (ltac_interp_name lvar)) ctxt in
-  push_rel_context ctxt env
+  let open Context.Rel.Declaration in
+  let ctxt' = List.smartmap (map_name (ltac_interp_name lvar)) ctxt in
+  if List.equal (fun d1 d2 -> Name.equal (get_name d1) (get_name d2)) ctxt ctxt' then env
+  else push_rel_context ctxt' (pop_rel_context n env)
 
 let invert_ltac_bound_name lvar env id0 id =
   let id' = Id.Map.find id lvar.ltac_idents in
@@ -804,8 +805,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         let j = pretype_type empty_valcon env evdref lvar c2 in
           { j with utj_val = lift 1 j.utj_val }
       | Name _ ->
-        let var = (name,j.utj_val) in
-        let env' = ExtraEnv.make_env (push_rel_assum var env.ExtraEnv.env) in
+        let var = LocalAssum (name, j.utj_val) in
+        let env' = push_rel var env in
           pretype_type empty_valcon env' evdref lvar c2
     in
     let name = ltac_interp_name lvar name in

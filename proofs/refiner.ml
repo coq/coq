@@ -222,7 +222,7 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
   Feedback.msg_notice
     (str (emacs_str "<infoH>")
       ++  (hov 0 (str s))
-      ++  (str (emacs_str "</infoH>")) ++ fnl());
+      ++  (str (emacs_str "</infoH>")));
   tclIDTAC goal;;
 
 
