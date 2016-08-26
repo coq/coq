@@ -336,7 +336,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
     | Name id' when id_ord id id' = 0 -> None
     | Name id' -> Some id'
   in
-  let (na, c, t) = RelDecl.to_tuple decl in
+  let na = RelDecl.get_name decl in
   let id =
     (* ppedrot: we want to infer nicer names for the refine tactic, but
         keeping at the same time backward compatibility in other code
@@ -347,7 +347,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
     else
       (** id_of_name_using_hdchar only depends on the rel context which is empty
           here *)
-      next_ident_away (id_of_name_using_hdchar empty_env t na) avoid
+      next_ident_away (id_of_name_using_hdchar empty_env (RelDecl.get_type decl) na) avoid
   in
   match extract_if_neq id na with
   | Some id0 when not (is_section_variable id0) ->
@@ -357,10 +357,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
           context. Unless [id] is a section variable. *)
       let subst = (fst subst, Int.Map.map (replace_vars [id0,mkVar id]) (snd subst)) in
       let vsubst = (id0,mkVar id)::vsubst in
-      let d = match c with
-        | None -> NamedDecl.LocalAssum (id0, subst2 subst vsubst t)
-        | Some c -> NamedDecl.LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
-      in
+      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> NamedDecl.map_constr (subst2 subst vsubst) in
       let nc = List.map (replace_var_named_declaration id0 id) nc in
       (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc)
   | _ ->
@@ -368,10 +365,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
           incorrect. We revert to a less robust behaviour where
           the new binder has name [id]. Which amounts to the same
           behaviour than when [id=id0]. *)
-      let d = match c with
-        | None -> NamedDecl.LocalAssum (id, subst2 subst vsubst t)
-        | Some c -> NamedDecl.LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
-      in
+      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> NamedDecl.map_constr (subst2 subst vsubst) in
       (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc)
 
 let push_rel_context_to_named_context env typ =
