@@ -982,7 +982,7 @@ let rec mem_named_context id ctxt =
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
-let compact_named_context_reverse sign =
+let compact_named_context sign =
   let compact l decl =
     match decl, l with
     | NamedDecl.LocalAssum (i,t), [] ->
@@ -1002,9 +1002,7 @@ let compact_named_context_reverse sign =
     | NamedDecl.LocalDef (i,c,t), q ->
        CompactedDecl.LocalDef ([i],c,t) :: q
   in
-  Context.Named.fold_inside compact ~init:[] sign
-
-let compact_named_context sign = List.rev (compact_named_context_reverse sign)
+  Context.Named.fold_inside compact ~init:[] sign |> List.rev
 
 let clear_named_body id env =
   let open NamedDecl in

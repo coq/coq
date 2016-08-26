@@ -9,6 +9,10 @@ We renamed the following functions:
   Printer.pr_var_list_decl       -> Printer.pr_compacted_decl
   Printer.pr_var_decl            -> Printer.pr_named_decl
 
+We removed the following functions:
+
+  Termops.Termops.compact_named_context_reverse
+
 We renamed the following modules:
 
   Context.ListNamed -> Context.Compacted
