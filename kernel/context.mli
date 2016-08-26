@@ -260,6 +260,7 @@ sig
       | LocalDef of Id.t list * Constr.t * Constr.t
 
     val map_constr : (Constr.t -> Constr.t) -> t -> t
+    val of_named_decl : Named.Declaration.t -> t
     val to_named_context : t -> Named.t
   end
 

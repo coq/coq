@@ -268,13 +268,7 @@ let pr_compacted_decl env sigma decl =
   hov 0 (pids ++ pbody ++ ptyp)
 
 let pr_named_decl env sigma decl =
-  let decl = match decl with
-    | NamedDecl.LocalAssum (id, t) ->
-       CompactedDecl.LocalAssum ([id], t)
-    | NamedDecl.LocalDef (id,c,t) ->
-       CompactedDecl.LocalDef ([id],c,t)
-  in
-  pr_compacted_decl env sigma decl
+  decl |> CompactedDecl.of_named_decl |> pr_compacted_decl env sigma
 
 let pr_rel_decl env sigma decl =
   let na = RelDecl.get_name decl in

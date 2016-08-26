@@ -429,6 +429,12 @@ module Compacted =
              let c' = f c in
              if c == c' && ty == ty' then decl else LocalDef (ids,c',ty')
 
+        let of_named_decl = function
+          | Named.Declaration.LocalAssum (id,t) ->
+              LocalAssum ([id],t)
+          | Named.Declaration.LocalDef (id,v,t) ->
+              LocalDef ([id],v,t)
+
         let to_named_context = function
           | LocalAssum (ids, t) ->
              List.map (fun id -> Named.Declaration.LocalAssum (id,t)) ids
