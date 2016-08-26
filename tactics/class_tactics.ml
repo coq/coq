@@ -1202,7 +1202,7 @@ module Search = struct
            Feedback.msg_debug
              (pr_depth info.search_depth ++ str": no match for " ++
                 Printer.pr_econstr_env (Goal.env gl) s concl ++
-                spc () ++ str ", " ++ int (List.length poss) ++
+                str ", " ++ int (List.length poss) ++
                 str" possibilities");
          match e with
          | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
