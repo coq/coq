@@ -15,6 +15,7 @@ open Printer
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
+module CompactedDecl = Context.Compacted.Declaration
 
 (** Ide_slave : an implementation of [Interface], i.e. mainly an interp
     function and a rewind function. This specialized loop is triggered
@@ -194,12 +195,12 @@ let process_goal sigma g =
     Richpp.richpp_of_pp (pr_goal_concl_style_env env sigma norm_constr)
   in
   let process_hyp d (env,l) =
-    let d = Context.NamedList.Declaration.map_constr (Reductionops.nf_evar sigma) d in
-    let d' = Context.NamedList.Declaration.to_named_context d in
+    let d = CompactedDecl.map_constr (Reductionops.nf_evar sigma) d in
+    let d' = CompactedDecl.to_named_context d in
       (List.fold_right Environ.push_named d' env,
-       (Richpp.richpp_of_pp (pr_var_list_decl env sigma d)) :: l) in
+       (Richpp.richpp_of_pp (pr_compacted_decl env sigma d)) :: l) in
   let (_env, hyps) =
-    Context.NamedList.fold process_hyp
+    Context.Compacted.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 

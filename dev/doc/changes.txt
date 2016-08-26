@@ -6,6 +6,11 @@ We renamed the following functions:
 
   Context.Rel.Declaration.fold   -> Context.Rel.Declaration.fold_constr
   Context.Named.Declaration.fold -> Context.Named.Declaration.fold_constr
+  Printer.pr_var_list_decl       -> Printer.pr_compacted_decl
+
+We renamed the following modules:
+
+  Context.ListNamed -> Context.Compacted
 
 The following type aliases where removed
 

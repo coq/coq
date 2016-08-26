@@ -24,7 +24,7 @@ open Declarations
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
-module NamedListDecl = Context.NamedList.Declaration
+module CompactedDecl = Context.Compacted.Declaration
 
 let emacs_str s =
   if !Flags.print_emacs then s else ""
@@ -252,11 +252,11 @@ let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
 (**********************************************************************)
 (* Contexts and declarations                                          *)
 
-let pr_var_list_decl env sigma decl =
+let pr_compacted_decl env sigma decl =
   let ids, pbody, typ = match decl with
-    | NamedListDecl.LocalAssum (ids, typ) ->
+    | CompactedDecl.LocalAssum (ids, typ) ->
        ids, mt (), typ
-    | NamedListDecl.LocalDef (ids,c,typ) ->
+    | CompactedDecl.LocalDef (ids,c,typ) ->
        (* Force evaluation *)
        let pb = pr_lconstr_env env sigma c in
        let pb = if isCast c then surround pb else pb in
@@ -270,11 +270,11 @@ let pr_var_list_decl env sigma decl =
 let pr_var_decl env sigma decl =
   let decl = match decl with
     | NamedDecl.LocalAssum (id, t) ->
-       NamedListDecl.LocalAssum ([id], t)
+       CompactedDecl.LocalAssum ([id], t)
     | NamedDecl.LocalDef (id,c,t) ->
-       NamedListDecl.LocalDef ([id],c,t)
+       CompactedDecl.LocalDef ([id],c,t)
   in
-  pr_var_list_decl env sigma decl
+  pr_compacted_decl env sigma decl
 
 let pr_rel_decl env sigma decl =
   let na = RelDecl.get_name decl in
@@ -316,9 +316,9 @@ let pr_rel_context_of env sigma =
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env sigma =
   let sign_env =
-    Context.NamedList.fold
+    Context.Compacted.fold
       (fun d pps ->
-         let pidt =  pr_var_list_decl env sigma d in
+         let pidt =  pr_compacted_decl env sigma d in
          (pps ++ fnl () ++ pidt))
       (Termops.compact_named_context (named_context env)) ~init:(mt ())
   in
@@ -343,12 +343,12 @@ let pr_context_limit n env sigma =
   else
     let k = lgsign-n in
     let _,sign_env =
-      Context.NamedList.fold
+      Context.Compacted.fold
         (fun d (i,pps) ->
            if i < k then
 	     (i+1, (pps ++str "."))
 	   else
-             let pidt = pr_var_list_decl env sigma d in
+             let pidt = pr_compacted_decl env sigma d in
 	     (i+1, (pps ++ fnl () ++
 		      str (emacs_str "") ++
 		      pidt)))

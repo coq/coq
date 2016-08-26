@@ -412,7 +412,7 @@ struct
     List.map_filter filter
 end
 
-module NamedList =
+module Compacted =
   struct
     module Declaration =
       struct

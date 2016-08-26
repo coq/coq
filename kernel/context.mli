@@ -251,7 +251,7 @@ sig
   val to_instance : t -> Constr.t list
 end
 
-module NamedList :
+module Compacted :
 sig
   module Declaration :
   sig

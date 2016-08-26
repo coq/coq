@@ -17,7 +17,7 @@ open Environ
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
-module NamedListDecl = Context.NamedList.Declaration
+module CompactedDecl = Context.Compacted.Declaration
 
 (* Sorts and sort family *)
 
@@ -986,21 +986,21 @@ let compact_named_context_reverse sign =
   let compact l decl =
     match decl, l with
     | NamedDecl.LocalAssum (i,t), [] ->
-       [NamedListDecl.LocalAssum ([i],t)]
+       [CompactedDecl.LocalAssum ([i],t)]
     | NamedDecl.LocalDef (i,c,t), [] ->
-       [NamedListDecl.LocalDef ([i],c,t)]
-    | NamedDecl.LocalAssum (i1,t1), NamedListDecl.LocalAssum (li,t2) :: q ->
+       [CompactedDecl.LocalDef ([i],c,t)]
+    | NamedDecl.LocalAssum (i1,t1), CompactedDecl.LocalAssum (li,t2) :: q ->
        if Constr.equal t1 t2
-       then NamedListDecl.LocalAssum (i1::li, t2) :: q
-       else NamedListDecl.LocalAssum ([i1],t1) :: NamedListDecl.LocalAssum (li,t2) :: q
-    | NamedDecl.LocalDef (i1,c1,t1), NamedListDecl.LocalDef (li,c2,t2) :: q ->
+       then CompactedDecl.LocalAssum (i1::li, t2) :: q
+       else CompactedDecl.LocalAssum ([i1],t1) :: CompactedDecl.LocalAssum (li,t2) :: q
+    | NamedDecl.LocalDef (i1,c1,t1), CompactedDecl.LocalDef (li,c2,t2) :: q ->
        if Constr.equal c1 c2 && Constr.equal t1 t2
-       then NamedListDecl.LocalDef (i1::li, c2, t2) :: q
-       else NamedListDecl.LocalDef ([i1],c1,t1) :: NamedListDecl.LocalDef (li,c2,t2) :: q
+       then CompactedDecl.LocalDef (i1::li, c2, t2) :: q
+       else CompactedDecl.LocalDef ([i1],c1,t1) :: CompactedDecl.LocalDef (li,c2,t2) :: q
     | NamedDecl.LocalAssum (i,t), q ->
-       NamedListDecl.LocalAssum ([i],t) :: q
+       CompactedDecl.LocalAssum ([i],t) :: q
     | NamedDecl.LocalDef (i,c,t), q ->
-       NamedListDecl.LocalDef ([i],c,t) :: q
+       CompactedDecl.LocalDef ([i],c,t) :: q
   in
   Context.Named.fold_inside compact ~init:[] sign
 
