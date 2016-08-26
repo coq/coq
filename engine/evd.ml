@@ -1403,7 +1403,7 @@ let print_env_short env =
     | RelDecl.LocalAssum (n,_) -> pr_name n
     | RelDecl.LocalDef (n,b,_) -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")"
   in
-  let pr_named_decl = pr_rel_decl % NamedDecl.to_rel in
+  let pr_named_decl = pr_rel_decl % NamedDecl.to_rel_decl in
   let nc = List.rev (named_context env) in
   let rc = List.rev (rel_context env) in
     str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++

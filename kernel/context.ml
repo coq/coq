@@ -346,13 +346,13 @@ struct
       | id, None, ty -> LocalAssum (id, ty)
       | id, Some v, ty -> LocalDef (id, v, ty)
 
-    let of_rel f = function
+    let of_rel_decl f = function
       | Rel.Declaration.LocalAssum (na,t) ->
           LocalAssum (f na, t)
       | Rel.Declaration.LocalDef (na,v,t) ->
           LocalDef (f na, v, t)
             
-    let to_rel = function
+    let to_rel_decl = function
       | LocalAssum (id,t) ->
           Rel.Declaration.LocalAssum (Name id, t)
       | LocalDef (id,v,t) ->

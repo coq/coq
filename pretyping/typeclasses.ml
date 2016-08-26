@@ -201,7 +201,7 @@ let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
     ( fun (decl,_) (ctx', subst) ->
-        let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel in
+        let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
 	(decl' :: ctx', NamedDecl.get_id decl :: subst)
     ) ctx ([], []) in
   let discharge_rel_context subst n rel =
