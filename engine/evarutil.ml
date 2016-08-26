@@ -164,13 +164,11 @@ let is_ground_term evd t =
   not (has_undefined_evars evd t)
 
 let is_ground_env evd env =
-  let open RelDecl in
   let is_ground_rel_decl = function
-    | LocalDef (_,b,_) -> is_ground_term evd b
+    | RelDecl.LocalDef (_,b,_) -> is_ground_term evd b
     | _ -> true in
-  let open NamedDecl in
   let is_ground_named_decl = function
-    | LocalDef (_,b,_) -> is_ground_term evd b
+    | NamedDecl.LocalDef (_,b,_) -> is_ground_term evd b
     | _ -> true in
   List.for_all is_ground_rel_decl (rel_context env) &&
   List.for_all is_ground_named_decl (named_context env)
@@ -327,7 +325,6 @@ let push_var id (n, s) =
   (succ n, s)
 
 let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
-  let open Context.Named.Declaration in
   let replace_var_named_declaration id0 id decl =
     let id' = NamedDecl.get_id decl in
     let id' = if Id.equal id0 id' then id else id' in
@@ -339,9 +336,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
     | Name id' when id_ord id id' = 0 -> None
     | Name id' -> Some id'
   in
-  let open Context.Rel.Declaration in
-  let (na, c, t) = to_tuple decl in
-  let open Context.Named.Declaration in
+  let (na, c, t) = RelDecl.to_tuple decl in
   let id =
     (* ppedrot: we want to infer nicer names for the refine tactic, but
         keeping at the same time backward compatibility in other code
@@ -363,8 +358,8 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
       let subst = (fst subst, Int.Map.map (replace_vars [id0,mkVar id]) (snd subst)) in
       let vsubst = (id0,mkVar id)::vsubst in
       let d = match c with
-        | None -> LocalAssum (id0, subst2 subst vsubst t)
-        | Some c -> LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
+        | None -> NamedDecl.LocalAssum (id0, subst2 subst vsubst t)
+        | Some c -> NamedDecl.LocalDef (id0, subst2 subst vsubst c, subst2 subst vsubst t)
       in
       let nc = List.map (replace_var_named_declaration id0 id) nc in
       (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc)
@@ -374,8 +369,8 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
           the new binder has name [id]. Which amounts to the same
           behaviour than when [id=id0]. *)
       let d = match c with
-        | None -> LocalAssum (id, subst2 subst vsubst t)
-        | Some c -> LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
+        | None -> NamedDecl.LocalAssum (id, subst2 subst vsubst t)
+        | Some c -> NamedDecl.LocalDef (id, subst2 subst vsubst c, subst2 subst vsubst t)
       in
       (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc)
 
