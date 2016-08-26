@@ -267,7 +267,7 @@ let pr_compacted_decl env sigma decl =
   let ptyp = (str" : " ++ pt) in
   hov 0 (pids ++ pbody ++ ptyp)
 
-let pr_var_decl env sigma decl =
+let pr_named_decl env sigma decl =
   let decl = match decl with
     | NamedDecl.LocalAssum (id, t) ->
        CompactedDecl.LocalAssum ([id], t)
@@ -298,13 +298,13 @@ let pr_rel_decl env sigma decl =
 
 (* Prints a signature, all declarations on the same line if possible *)
 let pr_named_context_of env sigma =
-  let make_decl_list env d pps = pr_var_decl env sigma d :: pps in
+  let make_decl_list env d pps = pr_named_decl env sigma d :: pps in
   let psl = List.rev (fold_named_context make_decl_list env ~init:[]) in
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
 let pr_named_context env sigma ne_context =
   hv 0 (Context.Named.fold_outside
-	  (fun d pps -> pps ++ ws 2 ++ pr_var_decl env sigma d)
+	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
