@@ -591,7 +591,7 @@ module Make
           | ShowTree -> keyword "Show Tree"
           | ShowProofNames -> keyword "Show Conjectures"
           | ShowIntros b -> keyword "Show " ++ (if b then keyword "Intros" else keyword "Intro")
-          | ShowMatch id -> keyword "Show Match " ++ pr_lident id
+          | ShowMatch id -> keyword "Show Match " ++ pr_reference id
           | ShowThesis -> keyword "Show Thesis"
         in
         return (pr_showable s)

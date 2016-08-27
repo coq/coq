@@ -120,9 +120,7 @@ let show_intro all =
     [Not_found] is raised if the given string isn't the qualid of
     a known inductive type. *)
 
-let make_cases s =
-  let qualified_name = Libnames.qualid_of_string s in
-  let glob_ref = Nametab.locate qualified_name in
+let make_cases_aux glob_ref =
   match glob_ref with
     | Globnames.IndRef i ->
 	let {Declarations.mind_nparams = np}
@@ -142,11 +140,16 @@ let make_cases s =
 	  carr tarr []
     | _ -> raise Not_found
 
+let make_cases s =
+  let qualified_name = Libnames.qualid_of_string s in
+  let glob_ref = Nametab.locate qualified_name in
+  make_cases_aux glob_ref
+
 (** Textual display of a generic "match" template *)
 
 let show_match id =
   let patterns =
-    try make_cases (Id.to_string (snd id))
+    try make_cases_aux (Nametab.global id)
     with Not_found -> error "Unknown inductive type."
   in
   let pr_branch l =
