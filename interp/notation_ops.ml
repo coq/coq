@@ -1128,13 +1128,15 @@ let match_notation_constr u c (metas,pat) =
   List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders') ->
     match typ with
     | NtnTypeConstr ->
-       ((Id.List.assoc x terms, scl)::terms',termlists',binders')
+      let term = try Id.List.assoc x terms with Not_found -> raise No_match in
+       ((term, scl)::terms',termlists',binders')
     | NtnTypeOnlyBinder ->
        ((find_binder x, scl)::terms',termlists',binders')
     | NtnTypeConstrList ->
        (terms',(Id.List.assoc x termlists,scl)::termlists',binders')
     | NtnTypeBinderList ->
-       (terms',termlists',(Id.List.assoc x binderlists,scl)::binders'))
+      let bl = try Id.List.assoc x binderlists with Not_found -> raise No_match in
+       (terms',termlists',(bl, scl)::binders'))
     metas ([],[],[])
 
 (* Matching cases pattern *)
