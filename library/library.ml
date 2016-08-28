@@ -468,16 +468,18 @@ let rec intern_library (needed, contents) (dir, f) from =
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  m.library_digests, intern_library_deps (needed, contents) dir m (Some f)
+  m.library_digests, intern_library_deps (needed, contents) dir m f
 
 and intern_library_deps libs dir m from =
   let needed, contents = Array.fold_left (intern_mandatory_library dir from) libs m.library_deps in
   (dir :: needed, DPMap.add dir m contents )
 
 and intern_mandatory_library caller from libs (dir,d) =
-  let digest, libs = intern_library libs (dir, None) from in
+  let digest, libs = intern_library libs (dir, None) (Some from) in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    errorlabstrm "" (str "Compiled library " ++ pr_dirpath caller ++ str ".vo makes inconsistent assumptions over library " ++ pr_dirpath dir);
+    errorlabstrm "" (str "Compiled library " ++ pr_dirpath caller ++
+    str " (in file " ++ str from ++ str ") makes inconsistent assumptions \
+    over library " ++ pr_dirpath dir);
   libs
 
 let rec_intern_library libs (dir, f) =
