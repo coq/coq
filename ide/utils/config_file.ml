@@ -44,9 +44,6 @@
 (* ******************************************************************************** *)
 (* This code is intended to be usable without any dependencies. *)
 
-(* pipeline style, see for instance Raw.of_channel. *)
-let (|>) x f  = f x
-
 (* as List.assoc, but applies f to the element matching [key] and returns the list
 where this element has been replaced by the result of f. *)
 let rec list_assoc_remove key f = function
