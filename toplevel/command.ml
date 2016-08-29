@@ -578,7 +578,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
       
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter is_local_assum ctx_params in
-  let params = List.map (fun decl -> out_name (RelDecl.get_name decl)) assums in
+  let params = List.map (out_name % RelDecl.get_name) assums in
 
   (* Interpret the arities *)
   let arities = List.map (interp_ind_arity env_params evdref) indl in
