@@ -785,7 +785,6 @@ object(self)
   method private handle_failure_aux
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
-    messages#clear;
     messages#push Feedback.Error msg;
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
