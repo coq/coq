@@ -452,13 +452,13 @@ let intern_from_file f =
 module DPMap = Map.Make(DirPath)
 
 let rec intern_library (needed, contents) (dir, f) from =
-  Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
   try (DPMap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
+  Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let f = match f with Some f -> f | None -> try_locate_absolute_library dir in
   let m = intern_from_file f in
