@@ -769,7 +769,7 @@ let case_eq_intros_rewrite x =
       let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
-		    introduction h;
+		    introduction h true;
 		    rewrite_except h]
     end
   ]

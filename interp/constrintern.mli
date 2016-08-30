@@ -174,6 +174,8 @@ val interp_context_evars :
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)
 
+val warn_private_name : ?loc:Loc.t -> Id.t -> unit
+                                  
 val locate_reference :  Libnames.qualid -> Globnames.global_reference
 val is_global : Id.t -> bool
 val construct_reference : ('c, 't) Context.Named.pt -> Id.t -> Globnames.global_reference

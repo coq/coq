@@ -120,11 +120,11 @@ let rec add_prods_sign env sigma t =
     | Prod (na,c1,b) ->
 	let id = id_of_name_using_hdchar env sigma t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (LocalAssum (id,c1)) env) sigma b'
+        add_prods_sign (push_named (LocalAssum (id,c1)) false env) sigma b'
     | LetIn (na,c1,t1,b) ->
 	let id = id_of_name_using_hdchar env sigma t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (LocalDef (id,c1,t1)) env) sigma b'
+        add_prods_sign (push_named (LocalDef (id,c1,t1)) false env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates whether the inversion lemma is dependent or not.
@@ -157,7 +157,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let ivars = global_vars env sigma i in
       let revargs,ownsign =
 	fold_named_context
-	  (fun env d (revargs,hyps) ->
+	  (fun env d _ (revargs,hyps) ->
             let d = map_named_decl EConstr.of_constr d in
              let id = NamedDecl.get_id d in
              if Id.List.mem id ivars then
@@ -171,7 +171,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_all env sigma pty in
-  let extenv = push_named (LocalAssum (p,npty)) env in
+  let extenv = push_named (LocalAssum (p,npty)) true env in
   extenv, goal
 
 (* [inversion_scheme sign I]
@@ -208,7 +208,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let global_named_context = Global.named_context_val () in
   let ownSign = ref begin
     fold_named_context
-      (fun env d sign ->
+      (fun env d _ sign ->
         let d = map_named_decl EConstr.of_constr d in
          if mem_named_context_val (NamedDecl.get_id d) global_named_context then sign
 	 else Context.Named.add d sign)

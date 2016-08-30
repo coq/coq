@@ -345,16 +345,16 @@ let build_constructors_of_type ind' argl =
 
 
 
-let raw_push_named (na,raw_value,raw_typ) env =
+let raw_push_named (na,raw_value,raw_typ) isprivate env =
   match na with
     | Anonymous -> env
     | Name id ->
         let typ,_ = Pretyping.understand env (Evd.from_env env) ~expected_type:Pretyping.IsType raw_typ in
         (match raw_value with
         | None ->
-           Environ.push_named (NamedDecl.LocalAssum (id,typ)) env
+           Environ.push_named (NamedDecl.LocalAssum (id,typ)) isprivate env
         | Some value ->
-           Environ.push_named (NamedDecl.LocalDef (id, value, typ)) env)
+           Environ.push_named (NamedDecl.LocalDef (id, value, typ)) isprivate env)
 
 
 let add_pat_variables pat typ env : Environ.env =
@@ -388,7 +388,7 @@ let add_pat_variables pat typ env : Environ.env =
 			  str "new type := " ++ Printer.pr_lconstr new_t ++ fnl ()
 		       );
                let open Context.Named.Declaration in
-	       (Environ.push_named (LocalAssum (id,new_t)) env,mkVar id::ctxt)
+	       (Environ.push_named (LocalAssum (id,new_t)) false env,mkVar id::ctxt)
 	   | LocalDef (Name id, v, t) ->
 	       let new_t =  substl ctxt t in
 	       let new_v = substl ctxt v in
@@ -399,7 +399,7 @@ let add_pat_variables pat typ env : Environ.env =
 			  str "new value := " ++ Printer.pr_lconstr new_v ++ fnl ()
 		       );
                let open Context.Named.Declaration in
-	       (Environ.push_named (LocalDef (id,new_v,new_t)) env,mkVar id::ctxt)
+	       (Environ.push_named (LocalDef (id,new_v,new_t)) false env,mkVar id::ctxt)
       )
 	(Environ.rel_context new_env)
 	~init:(env,[])
@@ -600,12 +600,12 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	   and combine the two result
 	*)
 	let t_res = build_entry_lc env funnames avoid t  in
-	let new_n =
+	let new_n,isprivate =
 	  match n with
-	    | Name _ -> n
-	    | Anonymous -> Name (Indfun_common.fresh_id [] "_x")
+	    | Name _ -> n,false
+	    | Anonymous -> Name (Indfun_common.fresh_id [] "_x"), true
 	in
-	let new_env = raw_push_named (new_n,None,t) env in
+	let new_env = raw_push_named (new_n,None,t) isprivate env in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_lam new_n) t_res b_res
     | GProd(n,_,t,b) ->
@@ -615,7 +615,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	   and combine the two result
 	*)
 	let t_res = build_entry_lc env funnames avoid t in
-	let new_env = raw_push_named (n,None,t) env in
+	let new_env = raw_push_named (n,None,t) false env in
 	let b_res = build_entry_lc new_env funnames avoid b in
         if List.length t_res.result = 1 && List.length b_res.result = 1
         then combine_results (combine_prod2 n) t_res b_res
@@ -634,7 +634,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	let new_env =
 	  match n with
 	      Anonymous -> env
-	    | Name id -> Environ.push_named (NamedDecl.LocalDef (id,v_as_constr,v_type)) env
+	    | Name id -> Environ.push_named (NamedDecl.LocalDef (id,v_as_constr,v_type)) false env
 	in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_letin n) v_res b_res
@@ -1325,7 +1325,7 @@ let do_build_inductive
        let t = EConstr.Unsafe.to_constr t in
        evd,
        Environ.push_named (LocalAssum (id,t))
-			 env
+			 true env
       )
       funnames
       (Array.of_list funconstants)
@@ -1367,7 +1367,7 @@ let do_build_inductive
     let rel_arities = Array.mapi rel_arity funsargs in
     Util.Array.fold_left2 (fun env rel_name rel_ar ->
 			     Environ.push_named (LocalAssum (rel_name,
-						             fst (with_full_print (Constrintern.interp_constr env evd) rel_ar))) env) env relnames rel_arities
+						             fst (with_full_print (Constrintern.interp_constr env evd) rel_ar))) true env) env relnames rel_arities
   in
   (* and of the real constructors*)
   let constr i res =

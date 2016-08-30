@@ -69,7 +69,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       0
       princ_type_info.predicates
   in
-  let env_with_params_and_predicates = List.fold_right Environ.push_named new_predicates env_with_params in
+  let env_with_params_and_predicates = List.fold_right (fun d -> Environ.push_named d true) new_predicates env_with_params in
   let rel_as_kn =
     fst (match princ_type_info.indref with
 	   | Some (Globnames.IndRef ind) -> ind

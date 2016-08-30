@@ -1609,7 +1609,7 @@ let rec head_of_constr sigma t =
 let head_of_constr h c =
   Proofview.tclEVARMAP >>= fun sigma ->
   let c = head_of_constr sigma c in
-  letin_tac None (Name h) c None Locusops.allHyps
+  letin_tac None (Name h) false c None Locusops.allHyps
 
 let not_evar c =
   Proofview.tclEVARMAP >>= fun sigma ->

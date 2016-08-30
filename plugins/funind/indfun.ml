@@ -161,7 +161,7 @@ let build_newrecursive
 	let _, (_, impls') = Constrintern.interp_context_evars env evdref bl in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity impls' in
         let open Context.Named.Declaration in
-        (Environ.push_named (LocalAssum (recname,arity)) env, Id.Map.add recname impl impls))
+        (Environ.push_named (LocalAssum (recname,arity)) false env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
     (* Declare local notations *)

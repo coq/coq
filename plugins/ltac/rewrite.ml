@@ -800,6 +800,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 	  (LocalDef (Id.of_string "do_subrelation",
 	             snd (app_poly_sort b env evars dosub [||]),
 	             snd (app_poly_nocheck env evars appsub [||])))
+          true
 	  env
     in
     let evars, morph = new_cstr_evar evars env' app in

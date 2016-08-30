@@ -1407,11 +1407,13 @@ sig
   val is_projection : Names.Constant.t -> env -> bool
   val lookup_projection : Names.Projection.t -> env -> Declarations.projection_body
   val named_context_of_val : named_context_val -> Context.Named.t
-  val push_named : Context.Named.Declaration.t -> env -> env
+  val push_named : Context.Named.Declaration.t -> bool -> env -> env
   val named_context : env -> Context.Named.t
   val named_context_val : env -> named_context_val
-  val push_named_context_val : Context.Named.Declaration.t -> named_context_val -> named_context_val
+  val named_context_private_ids : named_context_val -> Names.Id.Set.t
+  val push_named_context_val : Context.Named.Declaration.t -> Decl_kinds.private_flag -> named_context_val -> named_context_val
   val reset_with_named_context : named_context_val -> env -> env
+  val set_named_context_private : named_context_val -> Names.Id.Set.t -> named_context_val
   val rel_context : env -> Context.Rel.t
   val constant_value_in : env -> Names.Constant.t Univ.puniverses -> Constr.t
   val named_type : Names.Id.t -> env -> Constr.types
@@ -2706,7 +2708,7 @@ sig
   val compare_constr : Evd.evar_map -> (constr -> constr -> bool) -> constr -> constr -> bool
   val isApp : Evd.evar_map -> constr -> bool
   val it_mkProd_or_LetIn : constr -> rel_context -> constr
-  val push_named : named_declaration -> Environ.env -> Environ.env
+  val push_named : named_declaration -> bool -> Environ.env -> Environ.env
   val destCase : Evd.evar_map -> constr -> Constr.case_info * constr * constr * constr array
   val decompose_lam_assum : Evd.evar_map -> constr -> rel_context * constr
   val mkConst : Names.Constant.t -> constr
@@ -4335,6 +4337,7 @@ sig
   val interp_constr : Environ.env -> Evd.evar_map -> ?impls:internalization_env ->
                       Constrexpr.constr_expr -> Constr.t Evd.in_evar_universe_context
   val interp_open_constr : Environ.env -> Evd.evar_map -> Constrexpr.constr_expr -> Evd.evar_map * EConstr.constr
+  val warn_private_name : ?loc:Loc.t -> Names.Id.t -> unit
   val locate_reference :  Libnames.qualid -> Globnames.global_reference
   val interp_type : Environ.env -> Evd.evar_map -> ?impls:internalization_env ->
                     Constrexpr.constr_expr -> Term.types Evd.in_evar_universe_context
@@ -5214,10 +5217,10 @@ sig
                   Tactypes.intro_pattern option -> EConstr.constr -> unit Proofview.tactic
   val generalize_gen : (EConstr.constr Locus.with_occurrences * Names.Name.t) list -> unit Proofview.tactic
   val letin_tac : (bool * Tactypes.intro_pattern_naming) option ->
-                  Names.Name.t -> EConstr.constr -> EConstr.types option -> Locus.clause -> unit Proofview.tactic
+                  Names.Name.t -> Decl_kinds.private_flag -> EConstr.constr -> EConstr.types option -> Locus.clause -> unit Proofview.tactic
   val letin_pat_tac : Misctypes.evars_flag ->
                       (bool * Tactypes.intro_pattern_naming) option ->
-                      Names.Name.t ->
+                      Names.Name.t -> Decl_kinds.private_flag ->
                       Evd.evar_map * EConstr.constr ->
                       Locus.clause -> unit Proofview.tactic
   val induction_destruct : Misctypes.rec_flag -> Misctypes.evars_flag ->
@@ -5265,7 +5268,7 @@ sig
   val specialize_eqs : Names.Id.t -> unit Proofview.tactic
   val generalize : EConstr.constr list -> unit Proofview.tactic
   val simplest_case : EConstr.constr -> unit Proofview.tactic
-  val introduction : ?check:bool -> Names.Id.t -> unit Proofview.tactic
+  val introduction : ?check:bool -> Names.Id.t -> Decl_kinds.private_flag -> unit Proofview.tactic
   val convert_concl_no_check : EConstr.types -> Constr.cast_kind -> unit Proofview.tactic
   val reduct_in_concl : tactic_reduction * Constr.cast_kind -> unit Proofview.tactic
   val reduct_in_hyp : ?check:bool -> tactic_reduction -> Locus.hyp_location -> unit Proofview.tactic

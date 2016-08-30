@@ -54,7 +54,7 @@ let initialize_named_context_for_proof () =
     (fun d signv ->
       let id = NamedDecl.get_id d in
       let d = if variable_opacity id then NamedDecl.LocalAssum (id, NamedDecl.get_type d) else d in
-      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
+      Environ.push_named_context_val d false signv) sign Environ.empty_named_context_val
 
 let last_section_hyps dir =
   Context.Named.fold_outside

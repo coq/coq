@@ -1981,7 +1981,7 @@ let micromega_gen
      | None -> Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness")
      | Some (ids,ff',res') -> 
        let (arith_goal,props,vars,ff_arith) = make_goal_of_formula sigma dumpexpr ff' in
-       let intro (id,_) = Tactics.introduction id  in 
+       let intro (id,_) = Tactics.introduction id true in
 
        let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
        let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
@@ -2057,7 +2057,7 @@ let micromega_order_changer cert env ff  =
          ("__wit", cert, cert_typ)
         ]
         (Tacmach.New.pf_concl gl)));
-     (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
+     (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id true)) ids)*)
      ]
   end
 
@@ -2096,7 +2096,7 @@ let micromega_genr prover tac =
          let ff' = abstract_wrt_formula ff' ff  in
 
          let (arith_goal,props,vars,ff_arith) = make_goal_of_formula sigma (Lazy.force dump_rexpr)  ff' in
-         let intro (id,_) = Tactics.introduction id  in 
+         let intro (id,_) = Tactics.introduction id true in
 
        let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
        let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in

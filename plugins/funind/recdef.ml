@@ -1519,7 +1519,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let evd = ref (Evd.from_env env) in
   let function_type = interp_type_evars env evd type_of_f in
   let function_type = EConstr.Unsafe.to_constr function_type in
-  let env = push_named (Context.Named.Declaration.LocalAssum (function_name,function_type)) env in
+  let env = push_named (Context.Named.Declaration.LocalAssum (function_name,function_type)) false env in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
   let ty = interp_type_evars env evd ~impls:rec_impls eq in
   let ty = EConstr.Unsafe.to_constr ty in

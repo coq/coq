@@ -341,8 +341,11 @@ let extend_values_with_bindings (ln,lm) lfun =
 (***************************************************************************)
 (* Evaluation/interpretation *)
 
-let is_variable env id =
-  Id.List.mem id (ids_of_named_context (Environ.named_context env))
+let is_variable ?loc env id =
+  let b = Id.List.mem id (ids_of_named_context (Environ.named_context env)) in
+  if Id.Set.mem id (Environ.named_context_private_ids (Environ.named_context_val env)) then
+    Constrintern.warn_private_name ?loc id;
+  b
 
 (* Debug reference *)
 let debug = ref DebugOff
@@ -421,7 +424,7 @@ let interp_hyp ist env sigma (loc,id as locid) =
   try try_interp_ltac_var (coerce_to_hyp env sigma) ist (Some (env,sigma)) locid
   with Not_found ->
   (* Then look if bound in the proof context at calling time *)
-  if is_variable env id then id
+  if is_variable ?loc env id then id
   else Loc.raise ?loc (Logic.RefinerError (Logic.NoSuchHyp id))
 
 let interp_hyp_list_as_list ist env sigma (loc,id as x) =
@@ -1765,7 +1768,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let let_tac b na c cl eqpat =
             let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_tac with_eq na c None cl
+            Tactics.letin_tac with_eq na false c None cl
           in
           let na = interp_name ist env sigma na in
           Tacticals.New.tclWITHHOLES ev
@@ -1777,7 +1780,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let let_pat_tac b na c cl eqpat =
             let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_pat_tac ev with_eq na c cl
+            Tactics.letin_pat_tac ev with_eq na false c cl
           in
           let (sigma',c) = interp_pure_open_constr ist env sigma c in
           name_atomic ~env

@@ -44,7 +44,7 @@ let compact el ({ solution } as pv) =
   let apply_subst_einfo _ ei =
     Evd.({ ei with
        evar_concl =  nf0 ei.evar_concl;
-       evar_hyps = Environ.map_named_val nf0 ei.evar_hyps;
+       evar_hyps = Environ.map_named_val (map_constr nf0) ei.evar_hyps;
        evar_candidates = Option.map (List.map nf0) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
@@ -1004,7 +1004,6 @@ let goal_nf_evar sigma gl =
 let goal_extra evars gl =
   let evi = Evd.find evars gl in
   evi.Evd.evar_extra
-
 
 let catchable_exception = function
   | Logic_monad.Exception _ -> false

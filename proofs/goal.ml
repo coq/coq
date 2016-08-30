@@ -122,7 +122,7 @@ module V82 = struct
     let evi = Evd.find sigma gl in
     let hyps = evi.Evd.evar_hyps in
     let new_hyps =
-      List.fold_right Environ.push_named_context_val extra_hyps hyps in
+      List.fold_right (fun d -> Environ.push_named_context_val d true) extra_hyps hyps in
     let filter = evi.Evd.evar_filter in
     let new_filter = Evd.Filter.extend (List.length extra_hyps) filter in
     let new_evi =

@@ -82,18 +82,22 @@ val val_of_named_context : Context.Named.t -> named_context_val
 val empty_named_context_val : named_context_val
 val ids_of_named_context_val : named_context_val -> Id.Set.t
 
+type private_flag = Pre_env.private_flag
+
+val named_context_private_ids : named_context_val -> Id.Set.t
 
 (** [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
    *** /!\ ***   [f t] should be convertible with t *)
 val map_named_val :
-   (constr -> constr) -> named_context_val -> named_context_val
+   (Context.Named.Declaration.t -> Context.Named.Declaration.t) -> named_context_val -> named_context_val
 
-val push_named : Context.Named.Declaration.t -> env -> env
-val push_named_context : Context.Named.t -> env -> env
+val push_named : Context.Named.Declaration.t -> private_flag -> env -> env
+val push_named_context : (Context.Named.Declaration.t * private_flag) list -> env -> env
 val push_named_context_val  :
-    Context.Named.Declaration.t -> named_context_val -> named_context_val
+    Context.Named.Declaration.t -> private_flag -> named_context_val -> named_context_val
 
+val set_named_context_private : named_context_val -> Id.Set.t -> named_context_val
 
 
 (** Looks up in the context of local vars referred by names ([named_context]) 
@@ -108,7 +112,7 @@ val named_body : variable -> env -> constr option
 (** {6 Recurrence on [named_context]: older declarations processed first } *)
 
 val fold_named_context :
-  (env -> Context.Named.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
+  (env -> Context.Named.Declaration.t -> private_flag -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :

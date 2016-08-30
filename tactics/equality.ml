@@ -1004,7 +1004,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
   build_coq_True () >>= fun true_0 ->
   build_coq_False () >>= fun false_0 ->
   let e = next_ident_away eq_baseid (vars_of_env env) in
-  let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) env in
+  let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) true env in
   let discriminator =
     try
       Proofview.tclUNIT
@@ -1372,7 +1372,7 @@ let simplify_args env sigma t =
 
 let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   let e = next_ident_away eq_baseid (vars_of_env env) in
-  let e_env = push_named (LocalAssum (e,t)) env in
+  let e_env = push_named (LocalAssum (e,t)) true env in
   let evdref = ref sigma in
   let filter (cpath, t1', t2') =
     try

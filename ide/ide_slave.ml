@@ -189,7 +189,7 @@ let process_goal sigma g =
   in
   let process_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in
-      (List.fold_right Environ.push_named d' env,
+      (List.fold_right (fun d -> Environ.push_named d false) d' env,
        (pr_compacted_decl env sigma d) :: l) in
   let (_env, hyps) =
     Context.Compacted.fold process_hyp
@@ -233,7 +233,7 @@ let hints () =
     | g :: _ ->
       let env = Goal.V82.env sigma g in
       let hint_goal = concl_next_tac sigma g in
-      let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
+      let get_hint_hyp env d _ accu = hyp_next_tac sigma env d :: accu in
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
       Some (hint_hyps, hint_goal)
   with Proof_global.NoCurrentProof -> None

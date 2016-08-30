@@ -23,7 +23,7 @@ module RelDecl = Context.Rel.Declaration
 (** Defined identifier *)
 
 
-let settac id c = Tactics.letin_tac None (Name id) c None
+let settac id c = Tactics.letin_tac None (Name id) false c None
 let posetac id cl = Proofview.V82.of_tactic (settac id cl Locusops.nowhere)
 
 let ssrposetac ist (id, (_, t)) gl =

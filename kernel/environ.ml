@@ -35,6 +35,8 @@ type named_context_val = Pre_env.named_context_val
 
 type env = Pre_env.env
 
+type private_flag = Pre_env.private_flag
+
 let pre_env env = env
 let env_of_pre_env env = env
 let oracle env = env.env_conv_oracle
@@ -100,6 +102,9 @@ let fold_rel_context f env ~init =
 (* Named context *)
 
 let named_context_of_val c = c.env_named_ctx
+let named_context_private_ids c = c.env_named_private
+
+let set_named_context_private = set_named_context_private
 
 let ids_of_named_context_val c = Id.Map.domain c.env_named_map
 
@@ -111,11 +116,11 @@ let map_named_val = map_named_val
 let empty_named_context = Context.Named.empty
 
 let push_named = push_named
-let push_named_context = List.fold_right push_named
+let push_named_context = List.fold_right (fun (d,isprivate) -> push_named d isprivate)
 let push_named_context_val = push_named_context_val
 
 let val_of_named_context ctxt =
-  List.fold_right push_named_context_val ctxt empty_named_context_val
+  List.fold_right (fun d -> push_named_context_val d false) ctxt empty_named_context_val
 
 
 let lookup_named = lookup_named
@@ -158,10 +163,10 @@ let fold_named_context f env ~init =
   let rec fold_right env =
     match match_named_context_val env.env_named_context with
     | None -> init
-    | Some (d, v, rem) ->
+    | Some (d, v, isprivate, rem) ->
 	let env =
 	  reset_with_named_context rem env in
-	f env d (fold_right env)
+	f env d isprivate (fold_right env)
   in fold_right env
 
 let fold_named_context_reverse f ~init env =
@@ -491,12 +496,12 @@ exception Hyp_not_found
 let apply_to_hyp ctxt id f =
   let rec aux rtail ctxt =
     match match_named_context_val ctxt with
-    | Some (d, v, ctxt) ->
+    | Some (d, v, isprivate, ctxt) ->
 	if Id.equal (get_id d) id then
-          push_named_context_val_val (f ctxt.env_named_ctx d rtail) v ctxt
+          push_named_context_val_val (f ctxt.env_named_ctx d rtail) v isprivate ctxt
 	else
 	  let ctxt' = aux (d::rtail) ctxt in
-	  push_named_context_val_val d v ctxt'
+	  push_named_context_val_val d v isprivate ctxt'
     | None -> raise Hyp_not_found
   in aux [] ctxt
 
@@ -504,7 +509,7 @@ let apply_to_hyp ctxt id f =
 let remove_hyps ids check_context check_value ctxt =
   let rec remove_hyps ctxt = match match_named_context_val ctxt with
   | None -> empty_named_context_val, false
-  | Some (d, v, rctxt) ->
+  | Some (d, v, isprivate, rctxt) ->
     let (ans, seen) = remove_hyps rctxt in
     if Id.Set.mem (get_id d) ids then (ans, true)
     else if not seen then ctxt, false
@@ -514,7 +519,7 @@ let remove_hyps ids check_context check_value ctxt =
       let v' = check_value v in
       if d == d' && v == v' && rctxt == rctxt' then
         ctxt, true
-      else push_named_context_val_val d' v' rctxt', true
+      else push_named_context_val_val d' v' isprivate rctxt', true
   in
   fst (remove_hyps ctxt)
 

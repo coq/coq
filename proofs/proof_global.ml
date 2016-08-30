@@ -287,7 +287,7 @@ let set_used_variables l =
   let ctx_set =
     List.fold_right Id.Set.add (List.map NamedDecl.get_id ctx) Id.Set.empty in
   let vars_of = Environ.global_vars_set in
-  let aux env entry (ctx, all_safe, to_clear as orig) =
+  let aux env entry _ (ctx, all_safe, to_clear as orig) =
     match entry with
     | LocalAssum (x,_) ->
        if Id.Set.mem x all_safe then orig

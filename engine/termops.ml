@@ -452,7 +452,7 @@ let pr_rel_decl env decl =
 
 let print_named_context env =
   hv 0 (fold_named_context
-	  (fun env d pps ->
+	  (fun env d _ pps ->
 	    pps ++ ws 2 ++ pr_var_decl env d)
           env ~init:(mt ()))
 
@@ -464,7 +464,7 @@ let print_rel_context env =
 let print_env env =
   let sign_env =
     fold_named_context
-      (fun env d pps ->
+      (fun env d _ pps ->
          let pidt =  pr_var_decl env d in
 	 (pps ++ fnl () ++ pidt))
       env ~init:(mt ())
@@ -506,7 +506,7 @@ let push_named_rec_types (lna,typarray,_) env =
 	   | Anonymous -> anomaly (Pp.str "Fix declarations must be named."))
       lna typarray in
   Array.fold_left
-    (fun e assum -> push_named assum e) env ctxt
+    (fun e assum -> push_named assum false e) env ctxt
 
 let lookup_rel_id id sign =
   let open RelDecl in
@@ -1405,9 +1405,9 @@ let compact_named_context sign =
 
 let clear_named_body id env =
   let open NamedDecl in
-  let aux _ = function
-  | LocalDef (id',c,t) when Id.equal id id' -> push_named (LocalAssum (id,t))
-  | d -> push_named d in
+  let aux _ d isprivate = match d with
+  | LocalDef (id',c,t) when Id.equal id id' -> push_named (LocalAssum (id,t)) isprivate
+  | d -> push_named d isprivate in
   fold_named_context aux env ~init:(reset_context env)
 
 let global_vars_set env sigma constr =

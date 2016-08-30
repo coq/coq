@@ -36,7 +36,7 @@ let start_deriving f suchthat lemma =
         TCons ( env , sigma , f_type , (fun sigma ef ->
         let f_type = EConstr.Unsafe.to_constr f_type in
         let ef = EConstr.Unsafe.to_constr ef in
-        let env' = Environ.push_named (LocalDef (f, ef, f_type)) env in
+        let env' = Environ.push_named (LocalDef (f, ef, f_type)) false env in
         let evdref = ref sigma in
         let suchthat = Constrintern.interp_type_evars env' evdref suchthat in
         TCons ( env' , !evdref , suchthat , (fun sigma _ ->

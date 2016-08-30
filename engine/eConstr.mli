@@ -242,9 +242,10 @@ end
 val push_rel : rel_declaration -> env -> env
 val push_rel_context : rel_context -> env -> env
 
-val push_named : named_declaration -> env -> env
-val push_named_context : named_context -> env -> env
-val push_named_context_val  : named_declaration -> named_context_val -> named_context_val
+val push_named : named_declaration -> Decl_kinds.private_flag -> env -> env
+val push_named_context : (named_declaration * Decl_kinds.private_flag) list -> env -> env
+val push_named_context_val  : named_declaration -> Decl_kinds.private_flag ->
+  named_context_val -> named_context_val
 
 val rel_context : env -> rel_context
 val named_context : env -> named_context

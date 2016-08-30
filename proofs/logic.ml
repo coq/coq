@@ -248,14 +248,14 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
   let open EConstr in
   if toleft then
     let right =
-      List.fold_right push_named_context_val right empty_named_context_val in
-    List.fold_left (fun sign d -> push_named_context_val d sign)
+      List.fold_right (fun d -> push_named_context_val d false) right empty_named_context_val in
+    List.fold_left (fun sign d -> push_named_context_val d false sign)
       right (moverec [] [declfrom] left)
   else
     let right =
-      List.fold_right push_named_context_val
+      List.fold_right (fun d -> push_named_context_val d false)
 	(moverec [] [declfrom] right) empty_named_context_val in
-    List.fold_left (fun sign d -> push_named_context_val d sign)
+    List.fold_left (fun sign d -> push_named_context_val d false sign)
       right left
 
 let move_hyp_in_named_context sigma hfrom hto sign =

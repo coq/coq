@@ -734,6 +734,10 @@ let intern_notation intern env lvar loc ntn fullargs =
 (**********************************************************************)
 (* Discriminating between bound variables and global references       *)
 
+let warn_private_name =
+  CWarnings.create ~name:"generated-names" ~category:"ltac"
+    (fun id -> pr_id id ++ strbrk " is a mechanically generated name")
+
 let string_of_ty = function
   | Inductive _ -> "ind"
   | Recursive -> "def"
@@ -746,7 +750,7 @@ let gvar (loc, id) us = match us with
   user_err ?loc  (str "Variable " ++ pr_id id ++
     str " cannot have a universe instance")
 
-let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
+let intern_var genv (ltacvars,ntnvars) (namedctx,private_vars) loc id us =
   (* Is [id] an inductive type potentially with implicit *)
   try
     let ty,expl_impls,impls,argsc = Id.Map.find id genv.impls in
@@ -786,6 +790,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
 	DAst.make ?loc @@ GRef (ref, us), impls, scopes, []
       with e when CErrors.noncritical e ->
 	(* [id] a goal variable *)
+        if Id.Set.mem id private_vars then warn_private_name ?loc id;
 	gvar (loc,id) us, [], [], []
 
 let find_appl_head_data c =
@@ -901,7 +906,7 @@ let interp_reference vars r =
   let (r,_,_,_),_ =
     intern_applied_reference (fun _ -> error_not_enough_arguments ?loc:None)
       {ids = Id.Set.empty; unb = false ;
-       tmp_scope = None; scopes = []; impls = empty_internalization_env} []
+       tmp_scope = None; scopes = []; impls = empty_internalization_env} ([],Id.Set.empty)
       (vars, Id.Map.empty) None [] r
   in r
 
@@ -1599,8 +1604,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   let rec intern env = CAst.with_loc_val (fun ?loc -> function
     | CRef (ref,us) ->
 	let (c,imp,subscopes,l),_ =
-	  intern_applied_reference intern env (Environ.named_context globalenv)
-	    lvar us [] ref
+          let ctx = Environ.named_context_val globalenv in
+          let private_ids = Environ.named_context_private_ids ctx in
+	  intern_applied_reference intern env (Environ.named_context_of_val ctx,private_ids)
+	    lvar us [] ref 
 	in
 	  apply_impargs c env imp subscopes l loc
 
@@ -1705,7 +1712,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CAppExpl ((isproj,ref,us), args) ->
         let (f,_,args_scopes,_),args =
 	  let args = List.map (fun a -> (a,None)) args in
-	  intern_applied_reference intern env (Environ.named_context globalenv) 
+          let ctx = Environ.named_context_val globalenv in
+          let private_ids = Environ.named_context_private_ids ctx in
+	  intern_applied_reference intern env (Environ.named_context_of_val ctx,private_ids)
 	    lvar us args ref 
 	in
 	  (* Rem: GApp(_,f,[]) stands for @f *)
@@ -1722,8 +1731,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	let (c,impargs,args_scopes,l),args =
           match f.CAst.v with
             | CRef (ref,us) -> 
-	       intern_applied_reference intern env
-		 (Environ.named_context globalenv) lvar us args ref
+               let ctx = Environ.named_context_val globalenv in
+               let private_ids = Environ.named_context_private_ids ctx in
+	       intern_applied_reference intern env (Environ.named_context_of_val ctx,private_ids)
+                 lvar us args ref
             | CNotation (ntn,([],[],[])) ->
                 let c = intern_notation intern env ntnvars loc ntn ([],[],[]) in
                 let x, impl, scopes, l = find_appl_head_data c in

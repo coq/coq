@@ -243,7 +243,7 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
   let _,l = List.fold_left_map (fun (env,ienv) (is_coe,(idl,c)) ->
     let t,imps = interp_assumption evdref env ienv [] c in
     let env =
-      push_named_context (List.map (fun (_,id) -> LocalAssum (id,t)) idl) env in
+      push_named_context (List.map (fun (_,id) -> (LocalAssum (id,t),false)) idl) env in
     let ienv = List.fold_right (fun (_,id) ienv ->
       let impls = compute_internalization_data env Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
@@ -1095,8 +1095,8 @@ let interp_recursive isfix fixl notations =
 		 Typing.e_solve_evars env evdref app
 	     with e  when CErrors.noncritical e -> t
 	   in
-	     LocalAssum (id,fixprot) :: env'
-	 else LocalAssum (id,t) :: env')
+	     (LocalAssum (id,fixprot),false) :: env'
+	 else (LocalAssum (id,t),false) :: env')
       [] fixnames fixtypes
   in
   let env_rec = push_named_context rec_sign env in
@@ -1250,6 +1250,7 @@ let do_program_recursive local p fixkind fixl ntns =
   let evd = nf_evar_map_undefined evd in
   let collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
+    let rec_sign = List.map fst rec_sign in
     let def =
       EConstr.to_constr evd (Termops.it_mkNamedLambda_or_LetIn (EConstr.of_constr def) rec_sign)
     and typ =

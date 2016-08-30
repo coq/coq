@@ -85,15 +85,15 @@ let let_evar name typ =
     let sigma = ref sigma in
     let _ = Typing.e_sort_of env sigma typ in
     let sigma = !sigma in
-    let id = match name with
-    | Name.Anonymous ->
+    let id,isprivate = match name with
+    | Name.Anonymous -> 
       let id = Namegen.id_of_name_using_hdchar env sigma typ name in
-      Namegen.next_ident_away_in_goal id (Termops.vars_of_env env)
-    | Name.Name id -> id
+      Namegen.next_ident_away_in_goal id (Termops.vars_of_env env), true
+    | Name.Name id -> id, false
     in
     let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Tactics.letin_tac None (Name.Name id) evar None Locusops.nowhere)
+    (Tactics.letin_tac None (Name.Name id) isprivate evar None Locusops.nowhere)
   end
   
 let hget_evar n =
