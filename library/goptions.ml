@@ -304,18 +304,18 @@ let declare_stringopt_option =
 (* Setting values of options *)
 
 let set_option_value locality check_and_cast key v =
-  let (name, depr, (_,read,write,lwrite,gwrite)) =
-    try get_option key
-    with Not_found ->
-      errorlabstrm "Goptions.set_option_value"
-        (str "There is no option " ++ str (nickname key) ++ str ".")
-  in
-  let write = match locality with
-    | None -> write
-    | Some true -> lwrite
-    | Some false -> gwrite
-  in
-  write (check_and_cast v (read ()))
+  let opt = try Some (get_option key) with Not_found -> None in
+  match opt with
+  | None ->
+     msg_warning
+       (str "There is no option " ++ str (nickname key) ++ str ".")
+  | Some (name, depr, (_,read,write,lwrite,gwrite)) ->
+     let write = match locality with
+       | None -> write
+       | Some true -> lwrite
+       | Some false -> gwrite
+     in
+     write (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option."
 
@@ -345,13 +345,11 @@ let check_unset_value v = function
 let set_int_option_value_gen locality =
   set_option_value locality check_int_value
 let set_bool_option_value_gen locality key v =
-  try set_option_value locality check_bool_value key v
-  with UserError (_,s) -> msg_warning s
+  set_option_value locality check_bool_value key v
 let set_string_option_value_gen locality =
   set_option_value locality check_string_value
 let unset_option_value_gen locality key =
-  try set_option_value locality check_unset_value key ()
-  with UserError (_,s) -> msg_warning s
+  set_option_value locality check_unset_value key ()
 
 let set_int_option_value = set_int_option_value_gen None
 let set_bool_option_value = set_bool_option_value_gen None
