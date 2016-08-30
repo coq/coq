@@ -553,12 +553,20 @@ let in_require : require_obj -> obj =
 
 let (f_xml_require, xml_require) = Hook.make ~default:ignore ()
 
+let warn_require_in_module =
+  CWarnings.create ~name:"require-in-module" ~category:"deprecated"
+                   (fun () -> strbrk "Require inside a module is" ++
+                              strbrk " deprecated and strongly discouraged. " ++
+                              strbrk "You can Require a module at toplevel " ++
+                              strbrk "and optionally Import it inside another one.")
+
 let require_library_from_dirpath modrefl export =
   let needed, contents = List.fold_left rec_intern_library ([], DPMap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
     if Lib.is_module_or_modtype () then
       begin
+        warn_require_in_module ();
 	add_anonymous_leaf (in_require (needed,modrefl,None));
 	Option.iter (fun exp ->
 	  add_anonymous_leaf (in_import_library (modrefl,exp)))
