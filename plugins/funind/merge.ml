@@ -59,8 +59,8 @@ let understand = Pretyping.understand (Global.env()) Evd.empty
 let id_of_name = function
     Anonymous -> Id.of_string "H"
   | Name id   -> id;;
-let name_of_string = Name.mk_name % Id.of_string
-let string_of_name = Id.to_string % id_of_name
+let name_of_string = Id.of_string %> Name.mk_name
+let string_of_name = id_of_name %> Id.to_string
 
 (** [isVarf f x] returns [true] if term [x] is of the form [(Var f)]. *)
 let isVarf f x =

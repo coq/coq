@@ -89,7 +89,7 @@ struct
     | Anonymous -> true
     | Name _ -> false
 
-  let is_name = not % is_anonymous
+  let is_name = is_anonymous %> not
 
   let compare n1 n2 = match n1, n2 with
     | Anonymous, Anonymous -> 0

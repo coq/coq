@@ -103,7 +103,7 @@ let pf_const_value              = pf_reduce (fun env _ -> constant_value_in env)
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
-let pf_hnf_type_of gls          = pf_whd_all gls % pf_get_type_of gls
+let pf_hnf_type_of gls          = pf_get_type_of gls %> pf_whd_all gls
 
 let pf_is_matching              = pf_apply Constr_matching.is_matching_conv
 let pf_matches                  = pf_apply Constr_matching.matches_conv

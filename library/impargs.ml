@@ -520,7 +520,7 @@ let impls_of_context ctx =
   | Implicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
   | _ -> None
   in
-  List.rev_map map (List.filter (is_local_assum % fst) ctx)
+  List.rev_map map (List.filter (fst %> is_local_assum) ctx)
 
 let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)

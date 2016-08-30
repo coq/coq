@@ -100,7 +100,7 @@ let onNLastHypsId n tac = onHyps (nLastHypsId n) tac
 let onNLastHyps n tac   = onHyps (nLastHyps n) tac
 
 let afterHyp id gl =
-  fst (List.split_when (Id.equal id % NamedDecl.get_id) (pf_hyps gl))
+  fst (List.split_when (NamedDecl.get_id %> Id.equal id) (pf_hyps gl))
 
 (***************************************)
 (*           Clause Tacticals          *)
@@ -593,7 +593,7 @@ module New = struct
   let afterHyp id tac =
     Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let rem, _ = List.split_when (Id.equal id % NamedDecl.get_id) hyps in
+    let rem, _ = List.split_when (NamedDecl.get_id %> Id.equal id) hyps in
     tac rem
     end }
 

@@ -856,7 +856,7 @@ let vernac_set_used_variables e =
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
   List.iter (fun id -> 
-    if not (List.exists (Id.equal id % NamedDecl.get_id) vars) then
+    if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
       errorlabstrm "vernac_set_used_variables"
         (str "Unknown variable: " ++ pr_id id))
     l;

@@ -246,7 +246,7 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) 0
 
 let make_evar_instance_array info args =
-  evar_instance_array (isVarId % NamedDecl.get_id) info args
+  evar_instance_array (NamedDecl.get_id %> isVarId) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -684,7 +684,7 @@ let restrict evk filter ?candidates evd =
       evar_extra = Store.empty } in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = Array.map_of_list (mkVar % NamedDecl.get_id) ctxt in
+  let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
@@ -1403,7 +1403,7 @@ let print_env_short env =
     | RelDecl.LocalAssum (n,_) -> pr_name n
     | RelDecl.LocalDef (n,b,_) -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")"
   in
-  let pr_named_decl = pr_rel_decl % NamedDecl.to_rel_decl in
+  let pr_named_decl = NamedDecl.to_rel_decl %> pr_rel_decl in
   let nc = List.rev (named_context env) in
   let rc = List.rev (rel_context env) in
     str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++

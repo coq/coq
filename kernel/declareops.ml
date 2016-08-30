@@ -147,7 +147,7 @@ let subst_const_body sub cb =
     themselves. But would it really bring substantial gains ? *)
 
 let hcons_rel_decl =
-  RelDecl.map_type Term.hcons_types % RelDecl.map_value Term.hcons_constr % RelDecl.map_name Names.Name.hcons
+  RelDecl.map_name Names.Name.hcons %> RelDecl.map_value Term.hcons_constr %> RelDecl.map_type Term.hcons_types
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 

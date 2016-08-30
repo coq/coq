@@ -262,7 +262,7 @@ let record_aux env s_ty s_bo suggested_expr =
     String.concat " "
       (CList.map_filter (fun decl ->
           let id = NamedDecl.get_id decl in
-          if List.exists (Id.equal id % NamedDecl.get_id) in_ty then None
+          if List.exists (NamedDecl.get_id %> Id.equal id) in_ty then None
           else Some (Id.to_string id))
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" (v ^ ";" ^ suggested_expr)
@@ -285,7 +285,7 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
   let sort evn l =
     List.filter (fun decl ->
       let id = NamedDecl.get_id decl in
-      List.exists (Names.Id.equal id % NamedDecl.get_id) l)
+      List.exists (NamedDecl.get_id %> Names.Id.equal id) l)
     (named_context env) in
   (* We try to postpone the computation of used section variables *)
   let hyps, def =

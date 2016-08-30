@@ -78,7 +78,7 @@ module V82 = struct
     let evars = Sigma.to_evar_map evars in
     let evars = Evd.restore_future_goals evars prev_future_goals prev_principal_goal in
     let ctxt = Environ.named_context_of_val hyps in
-    let inst = Array.map_of_list (mkVar % NamedDecl.get_id) ctxt in
+    let inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
     let ev = Term.mkEvar (evk,inst) in
     (evk, ev, evars)
 

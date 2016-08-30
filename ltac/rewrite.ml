@@ -1540,7 +1540,7 @@ let assert_replacing id newt tac =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let ctx = Environ.named_context env in
-    let after, before = List.split_when (Id.equal id % NamedDecl.get_id) ctx in
+    let after, before = List.split_when (NamedDecl.get_id %> Id.equal id) ctx in
     let nc = match before with
     | [] -> assert false
     | d :: rem -> insert_dependent env (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem

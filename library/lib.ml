@@ -445,7 +445,7 @@ let extract_hyps (secs,ohyps) =
   in aux (secs,ohyps)
 
 let instance_from_variable_context =
-  Array.of_list % List.map NamedDecl.get_id % List.filter is_local_assum % List.map fst
+  List.map fst %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
 
 let named_of_variable_context =
   List.map fst

@@ -169,7 +169,7 @@ type 'a update =
 | NoUpdate
 
 open Context.Named.Declaration
-let inst_of_vars sign = Array.map_of_list (mkVar % get_id) sign
+let inst_of_vars sign = Array.map_of_list (get_id %> mkVar) sign
 
 let restrict_evar_key evd evk filter candidates =
   match filter, candidates with
