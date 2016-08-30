@@ -230,10 +230,8 @@ module Make(T : Task) = struct
     | (Die | TQueue.BeingDestroyed) ->
         giveback_exec_token (); kill proc; exit ()
     | Sys_error _ | Invalid_argument _ | End_of_file ->
-        giveback_exec_token ();
         T.on_task_cancellation_or_expiration_or_slave_death !last_task;
-        kill proc;
-        exit ()
+        giveback_exec_token (); kill proc; exit ()
   end
 
   module Pool = WorkerPool.Make(Model)
