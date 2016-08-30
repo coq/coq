@@ -1058,7 +1058,7 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
         if is_conv env.ExtraEnv.env !evdref t t' then mkRel n, update else raise Not_found
       with Not_found ->
       try
-        let t' = lookup_named id env |> NamedDecl.get_type in
+        let t' = env |> lookup_named id |> NamedDecl.get_type in
         if is_conv env.ExtraEnv.env !evdref t t' then mkVar id, update else raise Not_found
       with Not_found ->
         user_err_loc (loc,"",str "Cannot interpret " ++

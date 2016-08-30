@@ -148,7 +148,7 @@ let pr_explicit env sigma t1 t2 = pr_explicit_aux env sigma t1 t2 explicit_flags
 
 let pr_db env i =
   try
-    match lookup_rel i env |> get_name with
+    match env |> lookup_rel i |> get_name with
       | Name id -> pr_id id
       | Anonymous -> str "<>"
   with Not_found -> str "UNBOUND_REL_" ++ int i

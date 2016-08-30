@@ -824,7 +824,7 @@ let define_tac id args body gls =
 let cast_tac id_or_thesis typ gls =
   match id_or_thesis with
     | This id ->
-        Proofview.V82.of_tactic  (pf_get_hyp gls id |> NamedDecl.set_id id |> NamedDecl.set_type typ |> convert_hyp) gls
+        Proofview.V82.of_tactic  (id |> pf_get_hyp gls |> NamedDecl.set_id id |> NamedDecl.set_type typ |> convert_hyp) gls
     | Thesis (For _ ) ->
 	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->

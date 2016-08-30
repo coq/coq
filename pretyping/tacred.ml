@@ -62,7 +62,7 @@ let value_of_evaluable_ref env evref u =
     (try constant_value_in env (con,u)
     with NotEvaluableConst IsProj -> 
       raise (Invalid_argument "value_of_evaluable_ref"))
-  | EvalVarRef id -> lookup_named id env |> NamedDecl.get_value |> Option.get
+  | EvalVarRef id -> env |> lookup_named id |> NamedDecl.get_value |> Option.get
 
 let evaluable_of_global_reference env = function
   | ConstRef cst when is_evaluable_const env cst -> EvalConstRef cst
@@ -114,18 +114,18 @@ let unsafe_reference_opt_value env sigma eval =
     | Declarations.Def c -> Some (Mod_subst.force_constr c)
     | _ -> None)
   | EvalVar id ->
-      lookup_named id env |> NamedDecl.get_value
+      env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      lookup_rel n env |> RelDecl.map_value (lift n) |> RelDecl.get_value
+      env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 let reference_opt_value env sigma eval u = 
   match eval with
   | EvalConst cst -> constant_opt_value_in env (cst,u)
   | EvalVar id ->
-      lookup_named id env |> NamedDecl.get_value
+      env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      lookup_rel n env |> RelDecl.map_value (lift n) |> RelDecl.get_value
+      env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 exception NotEvaluable
@@ -539,9 +539,9 @@ let match_eval_ref_value env sigma constr =
   | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
     Some (constant_value_in env (sp, u))
   | Var id when is_evaluable env (EvalVarRef id) -> 
-     lookup_named id env |> NamedDecl.get_value
+     env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
-     lookup_rel n env |> RelDecl.map_value (lift n) |> RelDecl.get_value
+     env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
   | Evar ev -> Evd.existential_opt_value sigma ev
   | _ -> None
 

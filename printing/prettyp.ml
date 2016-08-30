@@ -763,7 +763,7 @@ let print_opaque_name qid =
 	let ty = Universes.unsafe_type_of_global gr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
-        lookup_named id env |> NamedDecl.set_id id |> print_named_decl
+        env |> lookup_named id |> NamedDecl.set_id id |> print_named_decl
 
 let print_about_any loc k =
   match k with

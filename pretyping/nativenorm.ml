@@ -124,7 +124,7 @@ let build_case_type dep p realargs c =
 
 (* TODO move this function *)
 let type_of_rel env n =
-  lookup_rel n env |> RelDecl.get_type |> lift n
+  env |> lookup_rel n |> RelDecl.get_type |> lift n
 
 let type_of_prop = mkSort type1_sort
 
@@ -135,7 +135,7 @@ let type_of_sort s =
 
 let type_of_var env id =
   let open Context.Named.Declaration in
-  try lookup_named id env |> get_type
+  try env |> lookup_named id |> get_type
   with Not_found ->
     anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound")
 

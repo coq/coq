@@ -59,7 +59,7 @@ let pf_get_hyp gls id =
     raise (RefinerError (NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
-  pf_get_hyp gls id |> NamedDecl.get_type
+  id |> pf_get_hyp gls |> NamedDecl.get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 

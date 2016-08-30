@@ -175,7 +175,7 @@ let is_flexible_reference env bound depth f =
         let cb = Environ.lookup_constant kn env in
 	(match cb.const_body with Def _ -> true | _ -> false)
     | Var id ->
-        Environ.lookup_named id env |> is_local_def
+        env |> Environ.lookup_named id |> is_local_def
     | Ind _ | Construct _ -> false
     |  _ -> true
 

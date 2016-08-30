@@ -67,7 +67,7 @@ let eval_flexible_term ts env evd c =
   | Var id ->
       (try
 	 if is_transparent_variable ts id then
-	   lookup_named id env |> NamedDecl.get_value
+	   env |> lookup_named id |> NamedDecl.get_value
 	 else None
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)

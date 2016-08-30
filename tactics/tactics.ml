@@ -2783,7 +2783,7 @@ let old_generalize_dep ?(with_let=false) c gl =
   let body =
     if with_let then
       match kind_of_term c with
-      | Var id -> Tacmach.pf_get_hyp gl id |> NamedDecl.get_value
+      | Var id -> id |> Tacmach.pf_get_hyp gl |> NamedDecl.get_value
       | _ -> None
     else None
   in
@@ -3561,7 +3561,7 @@ let linear vars args =
     with Seen -> false
 
 let is_defined_variable env id =
-  lookup_named id env |> is_local_def
+  env |> lookup_named id |> is_local_def
 
 let abstract_args gl generalize_vars dep id defined f args =
   let open Context.Rel.Declaration in

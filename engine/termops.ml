@@ -1002,7 +1002,7 @@ let compact_named_context sign =
     | NamedDecl.LocalDef (i,c,t), q ->
        CompactedDecl.LocalDef ([i],c,t) :: q
   in
-  Context.Named.fold_inside compact ~init:[] sign |> List.rev
+  sign |> Context.Named.fold_inside compact ~init:[] |> List.rev
 
 let clear_named_body id env =
   let open NamedDecl in
