@@ -2100,11 +2100,7 @@ let tauto_lia ff =
   * solvers
   *)
 
-let psatzl_Z =
- micromega_gen parse_zarith  Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
-  [ linear_Z ] 
-
-let psatzl_Q =
+let lra_Q =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
   [ linear_prover_Q ] 
 
@@ -2112,7 +2108,7 @@ let psatz_Q i  =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
   [ non_linear_prover_Q "real_nonlinear_prover" (Some i) ]
 
-let psatzl_R  =
+let lra_R  =
  micromega_genr [ linear_prover_R ]
 
 let psatz_R i  =
@@ -2136,21 +2132,21 @@ let sos_R  =
  micromega_genr  [ non_linear_prover_R "pure_sos" None ] 
 
 
-let xlia  =
-  try 
-    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
+let xlia  =  micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
       [ linear_Z ] 
-  with reraise -> (*Printexc.print_backtrace stdout ;*) raise reraise
 
 let xnlia  =
-  try 
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
       [ nlinear_Z ] 
-  with reraise -> (*Printexc.print_backtrace stdout ;*) raise reraise
 
 let nra  = 
  micromega_genr  [ nlinear_prover_R ] 
 
+let nqa  =
+ micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
+  [ nlinear_prover_R ]
+
+   
 
 (* Local Variables: *)
 (* coding: utf-8 *)

@@ -8,7 +8,7 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
+(*  Frédéric Besson (Irisa/Inria) 2006-2016                             *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -75,35 +75,39 @@ Ltac psatzl dom :=
   let tac := lazymatch dom with
   | Z => lia
   | Q =>
-    psatzl_Q ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try (abstract(intros __wit __varmap __ff ;
-        change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
-        apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
+    lra_Q ;
+      (abstract(intros __wit __varmap __ff ;
+                 change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
+                 apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
   | R =>
     unfold Rdiv in * ; 
-    psatzl_R ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try abstract((intros __wit __varmap __ff ;
-        change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
-        apply (RTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
-  | _ => fail "Unsupported domain"
+    lra_R ;
+    (abstract((intros __wit __varmap __ff ;
+               change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
+               apply (RTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true))))
+| _ => fail "Unsupported domain"
   end in tac.
 
 
 Ltac lra := 
   first [ psatzl R | psatzl Q ].
 
-Ltac nra := 
+Ltac nra_R := 
   unfold Rdiv in * ; 
   xnra ;     
   abstract 
     (intros __wit __varmap __ff ;
-     change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
-     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
-                                                                       
+      change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
+      apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
+
+Ltac nra_Q := 
+  xnqa ;
+  (abstract(intros __wit __varmap __ff ;
+             change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
+             apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true))).
+
+Ltac nra := 
+  first [ nra_R | nra_Q ].  
 
 
 (* Local Variables: *)

@@ -4,16 +4,19 @@
 
  
 \asection{Short description of the tactics}
-\tacindex{psatz}  \tacindex{lra} 
+\tacindex{psatz}  \tacindex{lra} \tacindex{lia}  \tacindex{nia} \tacindex{nra} 
 \label{sec:psatz-hurry}
 The {\tt Psatz} module ({\tt Require Import Psatz.}) gives access to
 several tactics for solving arithmetic goals over {\tt Z}, {\tt Q}, and
 {\tt R}:\footnote{Support for {\tt nat} and {\tt N} is obtained by
-  pre-processing the goal with the {\tt zify} tactic.}
+  pre-processing the goal with the {\tt zify} tactic.}.
+It also possible to get the tactics for integers by a {\tt Require Import Lia}, rationals {\tt Require Import Lqa} 
+and reals {\tt Require Import Lra}.
 \begin{itemize}
 \item {\tt lia} is a decision procedure for linear integer arithmetic (see Section~\ref{sec:lia});
 \item {\tt nia} is an incomplete proof procedure for integer non-linear arithmetic (see Section~\ref{sec:nia});
-\item {\tt lra} is a decision procedure for linear (real or rational) arithmetic goals (see Section~\ref{sec:lra});
+\item {\tt lra} is a decision procedure for linear (real or rational) arithmetic  (see Section~\ref{sec:lra});
+\item {\tt nra} is an incomplete proof procedure for non-linear (real or rational) arithmetic  (see Section~\ref{sec:nra});
 \item {\tt psatz D n} where {\tt D} is {\tt Z} or {\tt Q} or {\tt R}, and
   {\tt n} is an optional integer limiting the proof search depth is is an
   incomplete proof procedure for non-linear arithmetic. It is based on
@@ -114,36 +117,6 @@ The deductive power of {\tt lra} is the combined deductive power of {\tt ring\_s
 %
 There is also an overlap with the {\tt field} tactic {\emph e.g.}, {\tt x = 10 * x / 10} is solved by {\tt lra}.
 
-\asection{{\tt psatz}: a proof procedure for non-linear arithmetic}
-\label{sec:psatz}
-The {\tt psatz} tactic explores the $\mathit{Cone}$ by increasing degrees -- hence the depth parameter $n$.
-In theory, such a proof search is complete -- if the goal is provable the search eventually stops.
-Unfortunately, the external oracle is using numeric (approximate) optimization techniques that might miss a
-refutation. 
-
-To illustrate the working of the tactic, consider we wish to prove the following Coq goal.
-\begin{coq_eval}
-Require Import ZArith Psatz.
-Open Scope Z_scope.
-\end{coq_eval}
-\begin{coq_example*}
-Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
-\end{coq_example*}
-\begin{coq_eval}
-intro x; psatz Z 2.
-\end{coq_eval}
-Such a goal is solved by {\tt intro x; psatz Z 2}. The oracle returns the
-cone expression $2 \times (\mathbf{x-1}) + (\mathbf{x-1}) \times
-(\mathbf{x-1}) + \mathbf{-x^2}$ (polynomial hypotheses are printed in
-bold). By construction, this expression belongs to $\mathit{Cone}(\{-x^2,
-x -1\})$. Moreover, by running {\tt ring} we obtain $-1$. By
-Theorem~\ref{thm:psatz}, the goal is valid.
-%
-
-%% \paragraph{The {\tt sos} tactic} -- where {\tt sos} stands for \emph{sum of squares} -- tries to prove that a
-%% single polynomial $p$ is positive by expressing it as a sum of squares \emph{i.e.,} $\sum_{i\in S} p_i^2$.
-%% This amounts to searching for $p$ in the cone without generators \emph{i.e.}, $Cone(\{\})$.
-%
 
 \asection{{\tt lia}: a tactic for linear integer arithmetic}
 \tacindex{lia}
@@ -219,21 +192,60 @@ Our current oracle tries to find an expression $e$ with a small range $[c_1,c_2]
 We generate $c_2 - c_1$ subgoals which contexts are enriched with an equation $e = i$ for $i \in [c_1,c_2]$ and
 recursively search for a proof.
 
-\asection{{\tt nia}: a proof procedure for non-linear integer arithmetic}
-\tacindex{nia}
-\label{sec:nia}
-The {\tt nia} tactic is an {\emph experimental} proof procedure for non-linear  integer arithmetic.
+
+\asection{{\tt nra}: a proof procedure for non-linear arithmetic}
+\tacindex{nra}
+\label{sec:nra}
+The {\tt nra} tactic is an {\emph experimental} proof procedure for non-linear arithmetic.
 %
 The tactic performs a limited amount of non-linear reasoning before running the
-linear prover of {\tt lia}.
+linear prover of {\tt lra}.
 This pre-processing does the following:
 \begin{itemize}
 \item If the context contains an arithmetic expression of the form $e[x^2]$ where $x$ is a
   monomial, the context is enriched with $x^2\ge 0$;
 \item For all pairs of hypotheses $e_1\ge 0$, $e_2 \ge 0$, the context is enriched with $e_1 \times e_2 \ge 0$.
 \end{itemize}
-After pre-processing, the linear prover of {\tt lia} searches for a proof
+After this pre-processing, the linear prover of {\tt lra} searches for a proof
 by abstracting monomials by variables.
+
+\asection{{\tt nia}: a proof procedure for non-linear integer arithmetic}
+\tacindex{nia}
+\label{sec:nia}
+The {\tt nia} tactic is a proof procedure for non-linear  integer arithmetic.
+%
+It performs a pre-processing similar to {\tt nra}. The obtained goal is solved using the linear integer prover {\tt lia}.
+
+\asection{{\tt psatz}: a proof procedure for non-linear arithmetic}
+\label{sec:psatz}
+The {\tt psatz} tactic explores the $\mathit{Cone}$ by increasing degrees -- hence the depth parameter $n$.
+In theory, such a proof search is complete -- if the goal is provable the search eventually stops.
+Unfortunately, the external oracle is using numeric (approximate) optimization techniques that might miss a
+refutation. 
+
+To illustrate the working of the tactic, consider we wish to prove the following Coq goal.
+\begin{coq_eval}
+Require Import ZArith Psatz.
+Open Scope Z_scope.
+\end{coq_eval}
+\begin{coq_example*}
+Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
+\end{coq_example*}
+\begin{coq_eval}
+intro x; psatz Z 2.
+\end{coq_eval}
+Such a goal is solved by {\tt intro x; psatz Z 2}. The oracle returns the
+cone expression $2 \times (\mathbf{x-1}) + (\mathbf{x-1}) \times
+(\mathbf{x-1}) + \mathbf{-x^2}$ (polynomial hypotheses are printed in
+bold). By construction, this expression belongs to $\mathit{Cone}(\{-x^2,
+x -1\})$. Moreover, by running {\tt ring} we obtain $-1$. By
+Theorem~\ref{thm:psatz}, the goal is valid.
+%
+
+%% \paragraph{The {\tt sos} tactic} -- where {\tt sos} stands for \emph{sum of squares} -- tries to prove that a
+%% single polynomial $p$ is positive by expressing it as a sum of squares \emph{i.e.,} $\sum_{i\in S} p_i^2$.
+%% This amounts to searching for $p$ in the cone without generators \emph{i.e.}, $Cone(\{\})$.
+%
 
 
 
