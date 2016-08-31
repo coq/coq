@@ -72,3 +72,7 @@ Require Coq.Lists.List.
 Require Coq.Vectors.VectorDef.
 Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
 Notation " [ x ; .. ; y ] " := (VectorDef.cons _ x _ .. (VectorDef.cons _ y _ (nil _)) ..) : vector_scope.
+
+(** In 8.4, the statement of admitted lemmas did not depend on the section
+    variables. *)
+Unset Keep Admitted Variables.
