@@ -484,7 +484,7 @@ let jmeq_refl () =
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
-  tclMAP (fun x -> Proofview.V82.of_tactic (Tactics.Simple.intro x)) l
+  tclMAP (fun x -> Proofview.V82.of_tactic (Tactics.Simple.intro x true)) l
 
 let h_id = Id.of_string "h"
 let hrec_id = Id.of_string "hrec"

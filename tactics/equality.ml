@@ -1723,7 +1723,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
     ((if need_rewrite then
       [revert (List.map snd dephyps);
        general_rewrite dir AllOccurrences true dep_proof_ok (mkVar hyp);
-       (tclMAP (fun (dest,id) -> intro_move (Some id) dest) dephyps)]
+       (tclMAP (fun (dest,id) -> intro_move (Some (id,false)) dest) dephyps)]
       else
        [Proofview.tclUNIT ()]) @
      [tclTRY (clear [x; hyp])])

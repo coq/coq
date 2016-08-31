@@ -1676,7 +1676,7 @@ sig
     | IntroNaming of intro_pattern_naming_expr
     | IntroAction of 'constr intro_pattern_action_expr
   and intro_pattern_naming_expr =
-    | IntroIdentifier of Names.Id.t
+    | IntroIdentifier of Names.Id.t * Decl_kinds.private_flag
     | IntroFresh of Names.Id.t
     | IntroAnonymous
   and 'constr intro_pattern_action_expr =
@@ -5248,7 +5248,7 @@ sig
   val intros_symmetry : Locus.clause -> unit Proofview.tactic
   val split_with_bindings : Misctypes.evars_flag -> EConstr.constr Misctypes.bindings list -> unit Proofview.tactic
   val intros_until : Misctypes.quantified_hypothesis -> unit Proofview.tactic
-  val intro_move : Names.Id.t option -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
+  val intro_move : (Names.Id.t * Decl_kinds.private_flag) option -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
   val move_hyp : Names.Id.t -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
   val rename_hyp : (Names.Id.t * Names.Id.t) list -> unit Proofview.tactic
   val revert : Names.Id.t list -> unit Proofview.tactic
@@ -5295,10 +5295,10 @@ sig
   val red_in_concl : unit Proofview.tactic
   val change_in_concl   : (Locus.occurrences * Pattern.constr_pattern) option -> change_arg -> unit Proofview.tactic
   val eapply_with_bindings  : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
-  val assert_by  : Names.Name.t -> EConstr.types -> unit Proofview.tactic ->
+  val assert_by  : Names.Name.t -> Decl_kinds.private_flag -> EConstr.types -> unit Proofview.tactic ->
                    unit Proofview.tactic
   val intro_avoiding : Names.Id.Set.t -> unit Proofview.tactic
-  val pose_proof : Names.Name.t -> EConstr.constr -> unit Proofview.tactic
+  val pose_proof : Names.Name.t -> Decl_kinds.private_flag -> EConstr.constr -> unit Proofview.tactic
   val pattern_option :  (Locus.occurrences * EConstr.constr) list -> Locus.goal_location -> unit Proofview.tactic
   val compute_elim_sig : Evd.evar_map -> ?elimc:EConstr.constr Misctypes.with_bindings -> EConstr.types -> elim_scheme
   val try_intros_until :
@@ -5317,7 +5317,7 @@ sig
   end
   module Simple :
   sig
-    val intro : Names.Id.t -> unit Proofview.tactic
+    val intro : Names.Id.t -> Decl_kinds.private_flag -> unit Proofview.tactic
     val apply  : EConstr.constr -> unit Proofview.tactic
     val case : EConstr.constr -> unit Proofview.tactic
   end

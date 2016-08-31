@@ -694,7 +694,7 @@ let tag_var = tag Tag.variable
         lif
         )
 
-      | CHole (_,Misctypes.IntroIdentifier id,_) ->
+      | CHole (_,Misctypes.IntroIdentifier (id,_),_) ->
         return (str "?[" ++ pr_id id ++ str "]", latom)
       | CHole (_,Misctypes.IntroFresh id,_) ->
         return (str "?[?" ++ pr_id id ++ str "]", latom)

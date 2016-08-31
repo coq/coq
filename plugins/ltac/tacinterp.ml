@@ -321,9 +321,9 @@ let coerce_to_tactic loc id v =
     | _ -> fail ()
   else fail ()
 
-let intro_pattern_of_ident id = (Loc.tag @@ IntroNaming (IntroIdentifier id))
-let value_of_ident id =
-  in_gen (topwit wit_intro_pattern) (intro_pattern_of_ident id)
+let intro_pattern_of_ident isprivate id = (Loc.tag @@ IntroNaming (IntroIdentifier (id,isprivate)))
+let value_of_ident isprivate id =
+  in_gen (topwit wit_intro_pattern) (intro_pattern_of_ident isprivate id)
 
 let (+++) lfun1 lfun2 = Id.Map.fold Id.Map.add lfun1 lfun2
 
@@ -334,7 +334,7 @@ let extend_values_with_bindings (ln,lm) lfun =
   in
   (* For compatibility, bound variables are visible only if no other
      binding of the same name exists *)
-  let accu = Id.Map.map value_of_ident ln in
+  let accu = Id.Map.map (value_of_ident true) ln in
   let accu = lfun +++ accu in
   Id.Map.fold (fun id c accu -> Id.Map.add id (of_cub c) accu) lm accu
 
@@ -391,13 +391,13 @@ let interp_name ist env sigma = function
   | Anonymous -> Anonymous
   | Name id -> Name (interp_ident ist env sigma id)
 
-let interp_intro_pattern_var loc ist env sigma id =
+let interp_intro_pattern_var loc ist env sigma id isprivate =
   try try_interp_ltac_var (coerce_to_intro_pattern env sigma) ist (Some (env,sigma)) (loc,id)
-  with Not_found -> IntroNaming (IntroIdentifier id)
+  with Not_found -> IntroNaming (IntroIdentifier (id,isprivate))
 
-let interp_intro_pattern_naming_var loc ist env sigma id =
+let interp_intro_pattern_naming_var loc ist env sigma id isprivate =
   try try_interp_ltac_var (coerce_to_intro_pattern_naming env sigma) ist (Some (env,sigma)) (loc,id)
-  with Not_found -> IntroIdentifier id
+  with Not_found -> IntroIdentifier (id,isprivate)
 
 let interp_int ist locid =
   try try_interp_ltac_var coerce_to_int ist None locid
@@ -505,7 +505,7 @@ let extract_ltac_constr_values ist env =
 
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
 let rec intropattern_ids accu (loc,pat) = match pat with
-  | IntroNaming (IntroIdentifier id) -> Id.Set.add id accu
+  | IntroNaming (IntroIdentifier (id,_)) -> Id.Set.add id accu
   | IntroAction (IntroOrAndPattern (IntroAndPattern l)) ->
       List.fold_left intropattern_ids accu l
   | IntroAction (IntroOrAndPattern (IntroOrPattern ll)) ->
@@ -885,15 +885,15 @@ let rec interp_intro_pattern ist env sigma = function
   | loc, IntroAction pat ->
       let (sigma,pat) = interp_intro_pattern_action ist env sigma pat in
       sigma, (loc, IntroAction pat)
-  | loc, IntroNaming (IntroIdentifier id) ->
-      sigma, (loc, interp_intro_pattern_var loc ist env sigma id)
+  | loc, IntroNaming (IntroIdentifier (id,isprivate)) ->
+      sigma, (loc, interp_intro_pattern_var loc ist env sigma id isprivate)
   | loc, IntroNaming pat ->
       sigma, (loc, IntroNaming (interp_intro_pattern_naming loc ist env sigma pat))
   | loc, IntroForthcoming _  as x -> sigma, x
 
 and interp_intro_pattern_naming loc ist env sigma = function
   | IntroFresh id -> IntroFresh (interp_ident ist env sigma id)
-  | IntroIdentifier id -> interp_intro_pattern_naming_var loc ist env sigma id
+  | IntroIdentifier (id,isprivate) -> interp_intro_pattern_naming_var loc ist env sigma id isprivate
   | IntroAnonymous as x -> x
 
 and interp_intro_pattern_action ist env sigma = function
@@ -918,7 +918,7 @@ and interp_or_and_intro_pattern ist env sigma = function
       sigma, IntroOrPattern ll
 
 and interp_intro_pattern_list_as_list ist env sigma = function
-  | [loc,IntroNaming (IntroIdentifier id)] as l ->
+  | [loc,IntroNaming (IntroIdentifier (id,_))] as l ->
       (try sigma, coerce_to_intro_pattern_list ?loc env sigma (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ ->
          List.fold_left_map (interp_intro_pattern ist env) sigma l)
@@ -1031,7 +1031,7 @@ let interp_destruction_arg ist gl arg =
         if has_type v (topwit wit_intro_pattern) then
           let v = out_gen (topwit wit_intro_pattern) v in
           match v with
-          | _, IntroNaming (IntroIdentifier id) -> try_cast_id id
+          | _, IntroNaming (IntroIdentifier (id,_)) -> try_cast_id id
           | _ -> error ()
         else if has_type v (topwit wit_var) then
           let id = out_gen (topwit wit_var) v in
@@ -1337,7 +1337,7 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
   | TacFreshId l ->
       Ftactic.enter begin fun gl ->
         let id = interp_fresh_id ist (pf_env gl) (project gl) l in
-        Ftactic.return (in_gen (topwit wit_intro_pattern) (Loc.tag @@ IntroNaming (IntroIdentifier id)))
+        Ftactic.return (in_gen (topwit wit_intro_pattern) (Loc.tag @@ IntroNaming (IntroIdentifier (id,true))))
       end
   | TacPretype c ->
       Ftactic.enter begin fun gl ->

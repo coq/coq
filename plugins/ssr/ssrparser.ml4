@@ -508,7 +508,7 @@ let remove_loc = snd
 
 let ipat_of_intro_pattern p = Misctypes.(
   let rec ipat_of_intro_pattern = function
-    | IntroNaming (IntroIdentifier id) -> IPatId id
+    | IntroNaming (IntroIdentifier (id,_)) -> IPatId id
     | IntroAction IntroWildcard -> IPatAnon Drop
     | IntroAction (IntroOrAndPattern (IntroOrPattern iorpat)) ->
       IPatCase 
@@ -569,13 +569,13 @@ let intern_ipats ist = List.map (intern_ipat ist)
 let interp_intro_pattern = interp_wit wit_intro_pattern
 
 let interp_introid ist gl id = Misctypes.(
- try IntroNaming (IntroIdentifier (hyp_id (snd (interp_hyp ist gl (SsrHyp (Loc.tag id))))))
- with _ -> snd(snd (interp_intro_pattern ist gl (Loc.tag @@ IntroNaming (IntroIdentifier id))))
+ try IntroNaming (IntroIdentifier (hyp_id (snd (interp_hyp ist gl (SsrHyp (Loc.tag id)))),false))
+ with _ -> snd(snd (interp_intro_pattern ist gl (Loc.tag @@ IntroNaming (IntroIdentifier (id,false)))))
 )
 
 let rec add_intro_pattern_hyps (loc, ipat) hyps = Misctypes.(
   match ipat with
-  | IntroNaming (IntroIdentifier id) ->
+  | IntroNaming (IntroIdentifier (id,_)) ->
     if not_section_id id then SsrHyp (loc, id) :: hyps else
     hyp_err ?loc "Can't delete section hypothesis " id
   | IntroAction IntroWildcard -> hyps
@@ -611,7 +611,7 @@ let interp_ipat ist gl = Misctypes.(
   | IPatNewHidden l ->
       IPatNewHidden
         (List.map (function
-           | IntroNaming (IntroIdentifier id) -> id
+           | IntroNaming (IntroIdentifier (id,_)) -> id
            | _ -> assert false)
         (List.map (interp_introid ist gl) l))
   | ipat -> ipat in

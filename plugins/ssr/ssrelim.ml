@@ -413,7 +413,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 | Var id -> injectidl2rtac id (EConstr.mkVar id, NoBindings)
 | _ ->
   let id = injecteq_id in
-  let xhavetac id c = Proofview.V82.of_tactic (Tactics.pose_proof (Name id) c) in
+  let xhavetac id c = Proofview.V82.of_tactic (Tactics.pose_proof (Name id) false c) in
   Tacticals.tclTHENLIST [xhavetac id c; injectidl2rtac id (EConstr.mkVar id, NoBindings); Proofview.V82.of_tactic (Tactics.clear [id])]
 
 let is_injection_case c gl =

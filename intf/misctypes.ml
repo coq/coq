@@ -21,7 +21,7 @@ type 'constr intro_pattern_expr =
   | IntroNaming of intro_pattern_naming_expr
   | IntroAction of 'constr intro_pattern_action_expr
 and intro_pattern_naming_expr =
-  | IntroIdentifier of Id.t
+  | IntroIdentifier of Id.t * Decl_kinds.private_flag
   | IntroFresh of Id.t
   | IntroAnonymous
 and 'constr intro_pattern_action_expr =

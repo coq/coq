@@ -1032,7 +1032,7 @@ let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
 
 let intro_move_avoid idopt avoid hto = match idopt with
   | None -> intro_gen (NamingAvoid avoid) hto true false
-  | Some id -> intro_gen (NamingMustBe (Loc.tag id,false)) hto true false
+  | Some (id,isprivate) -> intro_gen (NamingMustBe (Loc.tag id,isprivate)) hto true false
 
 let intro_move idopt hto = intro_move_avoid idopt Id.Set.empty hto
 
@@ -1080,7 +1080,7 @@ let intro_replacing id =
 
 (* This version assumes that replacement is actually possible *)
 (* (ids given in the introduction order) *)
-(* We keep a sub-optimality in cleaing for compatibility with *)
+(* We keep a sub-optimality in cleaning for compatibility with *)
 (* the behavior of inversion *)
 let intros_possibly_replacing ids =
   let suboptimal = true in
@@ -1092,7 +1092,7 @@ let intros_possibly_replacing ids =
 	Tacticals.New.tclTRY (clear_for_replacing [id]))
 	 (if suboptimal then ids else List.rev ids))
       (Tacticals.New.tclMAP (fun (id,pos) ->
-        Tacticals.New.tclORELSE (intro_move (Some id) pos) (intro_using id))
+        Tacticals.New.tclORELSE (intro_move (Some (id,false)) pos) (intro_using id))
          posl)
   end
 
@@ -1103,7 +1103,7 @@ let intros_replacing ids =
     let posl = List.map (fun id -> (id, get_next_hyp_position id hyps)) ids in
     Tacticals.New.tclTHEN
       (clear_for_replacing ids)
-      (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
+      (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some (id,false)) pos) posl)
   end
 
 (* User-level introduction tactics *)
@@ -2394,13 +2394,13 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
   end 
 
 let prepare_naming ?loc = function
-  | IntroIdentifier id -> NamingMustBe (Loc.tag ?loc id, false)
+  | IntroIdentifier (id,isprivate) -> NamingMustBe (Loc.tag ?loc id,isprivate)
   | IntroAnonymous -> NamingAvoid Id.Set.empty
   | IntroFresh id -> NamingBasedOn (id, Id.Set.empty)
 
 let rec explicit_intro_names = function
 | (_, IntroForthcoming _) :: l -> explicit_intro_names l
-| (_, IntroNaming (IntroIdentifier id)) :: l -> Id.Set.add id (explicit_intro_names l)
+| (_, IntroNaming (IntroIdentifier (id,_))) :: l -> Id.Set.add id (explicit_intro_names l)
 | (_, IntroAction (IntroOrAndPattern l)) :: l' ->
     let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
     let fold accu l = Id.Set.union accu (explicit_intro_names (l@l')) in
@@ -2416,7 +2416,7 @@ let rec explicit_intro_names = function
 
 let rec check_name_unicity env ok seen = function
 | (_, IntroForthcoming _) :: l -> check_name_unicity env ok seen l
-| (loc, IntroNaming (IntroIdentifier id)) :: l ->
+| (loc, IntroNaming (IntroIdentifier (id,_))) :: l ->
    (try
       ignore (if List.mem_f Id.equal id ok then raise Not_found else lookup_named id env);
       user_err ?loc (pr_id id ++ str" is already used.")
@@ -2519,9 +2519,9 @@ let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
   (* Pi-introduction rule, used backwards *)
 and intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound n tac l =
   match pat with
-  | IntroIdentifier id ->
+  | IntroIdentifier (id,isprivate) ->
       check_thin_clash_then id thin avoid (fun thin ->
-        intro_then_gen (NamingMustBe ((loc,id),false)) destopt true false
+        intro_then_gen (NamingMustBe (Loc.tag ?loc id,isprivate)) destopt true false
           (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l))
   | IntroAnonymous ->
       intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
@@ -2545,7 +2545,7 @@ and intro_pattern_action ?loc with_evars b style pat thin destopt tac id =
       rewrite_hyp_then style with_evars thin l2r id (fun thin -> tac thin None [])
   | IntroApplyOn ((loc',f),(loc,pat)) ->
       let naming,tac_ipat =
-        prepare_intros ?loc with_evars (IntroIdentifier id) destopt pat in
+        prepare_intros ?loc with_evars (IntroIdentifier (id,true)) destopt pat in
       let doclear =
         if match naming with NamingMustBe ((_,id'),_) when Id.equal id id' -> true | _ -> false then
           Proofview.tclUNIT () (* apply_in_once do a replacement *)
@@ -2604,9 +2604,9 @@ let prepare_intros_opt with_evars dft destopt = function
   | None -> prepare_naming dft, (fun _id -> Proofview.tclUNIT ())
   | Some (loc,ipat) -> prepare_intros ?loc with_evars dft destopt ipat
 
-let ipat_of_name = function
+let ipat_of_name na isprivate = match na with
   | Anonymous -> None
-  | Name id -> Some (Loc.tag @@ IntroNaming (IntroIdentifier id))
+  | Name id -> Some (Loc.tag @@ IntroNaming (IntroIdentifier (id,isprivate)))
 
 let head_ident sigma c =
    let c = fst (decompose_app sigma (snd (decompose_lam_assum sigma c))) in
@@ -2631,8 +2631,11 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
     if with_evars then MoveLast (* evars would depend on the whole context *)
     else
       get_previous_hyp_position id (Proofview.Goal.hyps (Proofview.Goal.assume gl)) in
+  let isprivate =
+    let private_ids = named_context_private_ids (named_context_val (Proofview.Goal.env gl)) in
+    Id.Set.mem id private_ids in
   let naming,ipat_tac =
-    prepare_intros_opt with_evars (IntroIdentifier id) destopt ipat in
+    prepare_intros_opt with_evars (IntroIdentifier (id,isprivate)) destopt ipat in
   let lemmas_target, last_lemma_target =
     let last,first = List.sep_last lemmas in
     List.map (fun lem -> (NamingMustBe (Loc.tag id,false),lem)) first, (naming,last)
@@ -2688,7 +2691,7 @@ let letin_tac_gen with_eq (id,isprivate,depdecls,lastlhyp,ccl,c) ty =
           let heq,isprivateeq = match ido with
             | IntroAnonymous -> new_fresh_id (Id.Set.singleton id) (add_prefix "Heq" id) gl, true
             | IntroFresh heq_base -> new_fresh_id (Id.Set.singleton id) heq_base gl, true
-            | IntroIdentifier id -> id, false in
+            | IntroIdentifier (id,isprivate) -> id, isprivate in
           let eqdata = build_coq_eq_data () in
           let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
           let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
@@ -2741,10 +2744,10 @@ let mkletin_goal env sigma store with_eq dep (id,isprivate,lastlhyp,ccl,c) ty =
       let heq,isprivateeq = match ido with
       | IntroAnonymous -> fresh_id_in_env (Id.Set.singleton id) (add_prefix "Heq" id) env, true
       | IntroFresh heq_base -> fresh_id_in_env (Id.Set.singleton id) heq_base env, true
-      | IntroIdentifier id ->
+      | IntroIdentifier (id,isprivate) ->
           if List.mem id (ids_of_named_context (named_context env)) then
-            user_err ?loc  (pr_id id ++ str" is already used.");
-          id, false in
+            user_err ?loc (pr_id id ++ str" is already used.");
+          id, isprivate in
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
       let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
@@ -2813,9 +2816,9 @@ let forward b usetac ipat c =
         Tacticals.New.tclTHENS3PARTS
           (assert_as b None ipat c) [||] tac [|Tacticals.New.tclIDTAC|]
 
-let pose_proof na c = forward true None (ipat_of_name na) c
-let assert_by na t tac = forward true (Some (Some tac)) (ipat_of_name na) t
-let enough_by na t tac = forward false (Some (Some tac)) (ipat_of_name na) t
+let pose_proof na isprivate c = forward true None (ipat_of_name na isprivate) c
+let assert_by na isprivate t tac = forward true (Some (Some tac)) (ipat_of_name na isprivate) t
+let enough_by na isprivate t tac = forward false (Some (Some tac)) (ipat_of_name na isprivate) t
 
 (***************************)
 (*  Generalization tactics *)
@@ -3038,8 +3041,11 @@ let specialize (c,lbind) ipat =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
       (* Like assert (id:=id args) but with the concept of specialization *)
+       let isprivate =
+         let private_ids = named_context_private_ids (named_context_val (Proofview.Goal.env gl)) in
+         Id.Set.mem id private_ids in
       let naming,tac =
-        prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
+        prepare_intros_opt false (IntroIdentifier (id,isprivate)) MoveLast ipat in
       let repl = do_replace (Some id) naming in
       Tacticals.New.tclTHENFIRST
         (assert_before_then_gen repl naming typ tac)
@@ -3154,7 +3160,7 @@ let rec consume_pattern avoid na isdep gl = function
       ((loc,intropattern_of_name gl avoid na), names)
   | (loc,IntroNaming (IntroFresh id'))::names ->
       let avoid = Id.Set.union avoid (explicit_intro_names names) in
-      ((loc,IntroNaming (IntroIdentifier (new_fresh_id avoid id' gl))), names)
+      ((loc,IntroNaming (IntroIdentifier (new_fresh_id avoid id' gl,true))), names)
   | pat::names -> (pat,names)
 
 let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
@@ -3218,9 +3224,9 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         (IndArg,_,depind,hyprecname) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
         let (recpat,names) = match names with
-          | [loc,IntroNaming (IntroIdentifier id) as pat] ->
-             (*              let id' = next_ident_away (add_prefix "IH" id) avoid in*)
-	      (pat, [Loc.tag @@ IntroNaming (IntroFresh (add_prefix "IH" id))])
+          | [loc,IntroNaming (IntroIdentifier (id,_)) as pat] ->
+              let id' = next_ident_away (add_prefix "IH" id) avoid in
+	      (pat, [Loc.tag @@ IntroNaming (IntroIdentifier (id',true))])
           | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
         dest_intro_patterns with_evars avoid thin dest [recpat] (fun ids thin ->
@@ -5139,7 +5145,7 @@ let unify ?(state=full_transparent_state) x y =
 module Simple = struct
   (** Simplified version of some of the above tactics *)
 
-  let intro x = intro_move (Some x) MoveLast
+  let intro x isprivate = intro_move (Some (x,isprivate)) MoveLast
 
   let apply c =
     apply_with_bindings_gen false false [None,(Loc.tag (c,NoBindings))]

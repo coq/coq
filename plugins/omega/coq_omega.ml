@@ -1797,7 +1797,7 @@ let destructure_hyps =
               let hid = fresh_id Id.Set.empty (add_suffix i "_eqn") gl in
               let hty = mk_gen_eq typ (mkVar i) body in
               tclTHEN
-                (assert_by (Name hid) hty reflexivity)
+                (assert_by (Name hid) true hty reflexivity)
                 (loop (LocalAssum (hid, hty) :: lit))
            | _ -> loop lit
          with e when catchable_exception e -> loop lit

@@ -55,8 +55,8 @@ val find_intro_names : rel_context -> goal sigma -> Id.t list
 
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic
-val intro_move        : Id.t option -> Id.t move_location -> unit Proofview.tactic
-val intro_move_avoid  : Id.t option -> Id.Set.t -> Id.t move_location -> unit Proofview.tactic
+val intro_move        : (Id.t * Decl_kinds.private_flag) option -> Id.t move_location -> unit Proofview.tactic
+val intro_move_avoid  : (Id.t * Decl_kinds.private_flag) option -> Id.Set.t -> Id.t move_location -> unit Proofview.tactic
 
   (** [intro_avoiding idl] acts as intro but prevents the new Id.t
      to belong to [idl] *)
@@ -360,11 +360,11 @@ val assert_as     : (* true = before *) bool ->
 (** Implements the tactics assert, enough and pose proof; note that "by"
     applies on the first goal for both assert and enough *)
 
-val assert_by  : Name.t -> types -> unit Proofview.tactic ->
+val assert_by  : Name.t -> Decl_kinds.private_flag -> types -> unit Proofview.tactic ->
   unit Proofview.tactic
-val enough_by  : Name.t -> types -> unit Proofview.tactic ->
+val enough_by  : Name.t -> Decl_kinds.private_flag -> types -> unit Proofview.tactic ->
   unit Proofview.tactic
-val pose_proof : Name.t -> constr ->
+val pose_proof : Name.t -> Decl_kinds.private_flag -> constr ->
   unit Proofview.tactic
 
 (** Common entry point for user-level "assert", "enough" and "pose proof" *)
@@ -422,7 +422,7 @@ val declare_intro_decomp_eq :
 module Simple : sig
   (** Simplified version of some of the above tactics *)
 
-  val intro           : Id.t -> unit Proofview.tactic
+  val intro  : Id.t -> Decl_kinds.private_flag -> unit Proofview.tactic
   val apply  : constr -> unit Proofview.tactic
   val eapply : constr -> unit Proofview.tactic
   val elim   : constr -> unit Proofview.tactic

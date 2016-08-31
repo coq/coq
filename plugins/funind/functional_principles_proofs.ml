@@ -179,7 +179,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
   fun g ->
     let prov_id = pf_get_new_id hyp_id g in
     tclTHENS
-      ((* observe_tac msg *) Proofview.V82.of_tactic (assert_by (Name prov_id) t (Proofview.V82.tactic (tclCOMPLETE tac))))
+      ((* observe_tac msg *) Proofview.V82.of_tactic (assert_by (Name prov_id) true t (Proofview.V82.tactic (tclCOMPLETE tac))))
       [tclTHENLIST
       [
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
@@ -643,7 +643,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 	  let evm, _ = pf_apply Typing.type_of g c in
 	  tclTHENLIST[
             Refiner.tclEVARS evm;
-	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) c);
+	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) true c);
 	    thin [hid];
 	    Proofview.V82.of_tactic (rename_hyp [prov_hid,hid])
 	  ] g
@@ -1578,7 +1578,7 @@ let prove_principle_for_gen
       ((* observe_tac "prove_rec_arg_acc"  *)
 	 (tclCOMPLETE
 	    (tclTHEN
-	       (Proofview.V82.of_tactic (assert_by (Name wf_thm_id)
+	       (Proofview.V82.of_tactic (assert_by (Name wf_thm_id) true
 		  (mkApp (delayed_force well_founded,[|input_type;relation|]))
 		  (Proofview.V82.tactic (fun g -> (* observe_tac "prove wf" *) (tclCOMPLETE (wf_tac is_mes)) g))))
 	       (
@@ -1619,7 +1619,7 @@ let prove_principle_for_gen
       tclTHENLIST
 	[
 	  Proofview.V82.of_tactic (generalize [lemma]);
-	  Proofview.V82.of_tactic (Simple.intro hid);
+	  Proofview.V82.of_tactic (Simple.intro hid true);
 	  Proofview.V82.of_tactic (Elim.h_decompose_and (mkVar hid));
 	  (fun g ->
 	     let new_hyps = pf_ids_of_hyps g in
@@ -1643,7 +1643,7 @@ let prove_principle_for_gen
 	   (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
 	);
       (* observe_tac "" *) Proofview.V82.of_tactic (assert_by
-	 (Name acc_rec_arg_id)
+	 (Name acc_rec_arg_id) true
  	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
 	 (Proofview.V82.tactic prove_rec_arg_acc)
       );

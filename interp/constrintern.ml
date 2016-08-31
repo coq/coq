@@ -1830,7 +1830,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         | None ->
            let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
            (match naming with
-           | Misctypes.IntroIdentifier id -> Evar_kinds.NamedHole id
+           | Misctypes.IntroIdentifier (id,_) -> Evar_kinds.NamedHole id
            | _ -> Evar_kinds.QuestionMark (st,Anonymous))
         | Some k -> k
         in

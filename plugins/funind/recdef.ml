@@ -1140,7 +1140,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 	       ;
 		observe_tac (str "fix") (Proofview.V82.of_tactic (fix (Some hrec) (nargs+1)));
 		h_intros args_id;
-		Proofview.V82.of_tactic (Simple.intro wf_rec_arg);
+		Proofview.V82.of_tactic (Simple.intro wf_rec_arg true);
 		observe_tac (str "tac") (tac wf_rec_arg hrec wf_rec_arg acc_inv)
 	       ]
 	   ]
@@ -1329,7 +1329,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 	   observe_tclTHENLIST (str "")
 	     [
 	       Proofview.V82.of_tactic (generalize [lemma]);
-	       Proofview.V82.of_tactic (Simple.intro hid);
+	       Proofview.V82.of_tactic (Simple.intro hid true);
 	       (fun g ->
 		  let ids = pf_ids_of_hyps g in
 		  tclTHEN

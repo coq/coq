@@ -164,7 +164,7 @@ let intern_non_tactic_reference strict ist r =
   (* By convention, use IntroIdentifier for unbound ident, when not in a def *)
   match r with
   | Ident (loc,id) when not strict ->
-    let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroNaming (IntroIdentifier id)) in
+    let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroNaming (IntroIdentifier (id,false))) in
     TacGeneric ipat
   | _ ->
   (* Reference not found *)
@@ -227,8 +227,9 @@ let rec intern_intro_pattern lf ist = function
   | loc, IntroForthcoming _ as x -> x
 
 and intern_intro_pattern_naming lf ist = function
-  | IntroIdentifier id ->
-      IntroIdentifier (intern_ident lf ist id)
+  | IntroIdentifier (id,isprivate) ->
+      assert (not isprivate);
+      IntroIdentifier (intern_ident lf ist id,false)
   | IntroFresh id ->
       IntroFresh (intern_ident lf ist id)
   | IntroAnonymous as x -> x

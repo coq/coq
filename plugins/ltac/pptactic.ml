@@ -391,7 +391,7 @@ type 'a extra_genarg_printer =
   let pr_assumption prc prdc prlc ipat c = match ipat with
     (* Use this "optimisation" or use only the general case ?*)
     (* it seems that this "optimisation" is somehow more natural *)
-    | Some (_,IntroNaming (IntroIdentifier id)) ->
+    | Some (_,IntroNaming (IntroIdentifier (id,_))) ->
       spc() ++ surround (pr_id id ++ str " :" ++ spc() ++ prlc c)
     | ipat ->
       spc() ++ prc c ++ pr_as_ipat prdc ipat
