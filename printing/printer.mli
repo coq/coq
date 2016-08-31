@@ -124,8 +124,8 @@ val get_compact_context : unit -> bool
 val pr_context_unlimited   : env -> evar_map -> Pp.t
 val pr_ne_context_of       : Pp.t -> env -> evar_map -> Pp.t
 
-val pr_named_decl          : env -> evar_map -> Context.Named.Declaration.t -> Pp.t
-val pr_compacted_decl      : env -> evar_map -> Context.Compacted.Declaration.t -> Pp.t
+val pr_named_decl          : env -> evar_map -> Idset.t -> Context.Named.Declaration.t -> Pp.t
+val pr_compacted_decl      : env -> evar_map -> Idset.t -> Context.Compacted.Declaration.t -> Pp.t
 val pr_rel_decl            : env -> evar_map -> Context.Rel.Declaration.t -> Pp.t
 
 val pr_named_context       : env -> evar_map -> Context.Named.t -> Pp.t

@@ -130,10 +130,14 @@ let annotate phrase =
 
 (** Goal display *)
 
+let string_of_id_with_privacy env id =
+  let private_ids = Environ.named_context_private_ids (Environ.named_context_val env) in
+  if Names.Id.Set.mem id private_ids then "~" ^ Names.Id.to_string id else Names.Id.to_string id
+
 let hyp_next_tac sigma env decl =
   let id = NamedDecl.get_id decl in
   let ast = NamedDecl.get_type decl in
-  let id_s = Names.Id.to_string id in
+  let id_s = string_of_id_with_privacy env id in
   let type_s = string_of_ppcmds (pr_ltype_env env sigma ast) in
   [
     ("clear "^id_s),("clear "^id_s^".");
@@ -182,6 +186,7 @@ let concl_next_tac sigma concl =
 
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
+  let private_ids = Environ.named_context_private_ids (Environ.named_context_val env) in
   let min_env = Environ.reset_context env in
   let id = Goal.uid g in
   let ccl =
@@ -189,8 +194,10 @@ let process_goal sigma g =
   in
   let process_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in
-      (List.fold_right (fun d -> Environ.push_named d false) d' env,
-       (pr_compacted_decl env sigma d) :: l) in
+    let is_private d = Names.Id.Set.mem (Context.Named.Declaration.get_id d) private_ids in
+    let env = List.fold_right (fun d -> Environ.push_named d (is_private d)) d' env in
+    let private_ids = Environ.named_context_private_ids (Environ.named_context_val env) in
+    (env, (pr_compacted_decl env sigma private_ids d) :: l) in
   let (_env, hyps) =
     Context.Compacted.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in

@@ -310,7 +310,10 @@ let get_compact_context,set_compact_context =
   let compact_context = ref false in
   (fun () -> !compact_context),(fun b  -> compact_context := b)
 
-let pr_compacted_decl env sigma decl =
+let pr_id_with_privacy private_ids id =
+  if Id.Set.mem id private_ids then str "~" ++ pr_id id else pr_id id
+
+let pr_compacted_decl env sigma private_ids decl =
   let ids, pbody, typ = match decl with
     | CompactedDecl.LocalAssum (ids, typ) ->
        ids, mt (), typ
@@ -320,13 +323,13 @@ let pr_compacted_decl env sigma decl =
        let pb = if isCast c then surround pb else pb in
        ids, (str" := " ++ pb ++ cut ()), typ
   in
-  let pids = prlist_with_sep pr_comma pr_id ids in
+  let pids = prlist_with_sep pr_comma (pr_id_with_privacy private_ids) ids in
   let pt = pr_ltype_env env sigma typ in
   let ptyp = (str" : " ++ pt) in
   hov 0 (pids ++ pbody ++ ptyp)
 
-let pr_named_decl env sigma decl =
-  decl |> CompactedDecl.of_named_decl |> pr_compacted_decl env sigma
+let pr_named_decl env sigma private_ids decl =
+  decl |> CompactedDecl.of_named_decl |> pr_compacted_decl env sigma private_ids
 
 let pr_rel_decl env sigma decl =
   let na = RelDecl.get_name decl in
@@ -350,16 +353,18 @@ let pr_rel_decl env sigma decl =
 
 (* Prints a signature, all declarations on the same line if possible *)
 let pr_named_context_of env sigma =
-  let make_decl_list env d _ pps = pr_named_decl env sigma d :: pps in
+  let private_ids = named_context_private_ids (named_context_val env) in
+  let make_decl_list env d _ pps = pr_named_decl env sigma private_ids d :: pps in
   let psl = List.rev (fold_named_context make_decl_list env ~init:[]) in
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
-let pr_var_list_decl env sigma decl =
-  hov 0 (pr_compacted_decl env sigma decl)
+let pr_var_list_decl env sigma private_ids decl =
+  hov 0 (pr_compacted_decl env sigma private_ids decl)
 
 let pr_named_context env sigma ne_context =
+  let private_ids = named_context_private_ids (named_context_val env) in
   hv 0 (Context.Named.fold_outside
-	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
+	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma private_ids d)
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
@@ -371,10 +376,11 @@ let pr_rel_context_of env sigma =
 
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env sigma =
+  let private_ids = named_context_private_ids (named_context_val env) in
   let sign_env =
     Context.Compacted.fold
       (fun d pps ->
-         let pidt =  pr_compacted_decl env sigma d in
+         let pidt =  pr_compacted_decl env sigma private_ids d in
          (pps ++ fnl () ++ pidt))
       (Termops.compact_named_context (named_context env)) ~init:(mt ())
   in
@@ -402,30 +408,31 @@ let should_compact env sigma typ =
 (* If option Compact Contexts is set, we pack "simple" hypothesis in a
    hov box (with three sapaces as a separator), the global box being a
    v box *)
-let rec bld_sign_env env sigma ctxt pps =
+let rec bld_sign_env env sigma private_ids ctxt pps =
   match ctxt with
   | [] -> pps
   | CompactedDecl.LocalAssum (ids,typ)::ctxt' when should_compact env sigma typ ->
-    let pps',ctxt' = bld_sign_env_id env sigma ctxt (mt ()) true in
+    let pps',ctxt' = bld_sign_env_id env sigma private_ids ctxt (mt ()) true in
     (* putting simple hyps in a more horizontal flavor *)
-    bld_sign_env env sigma ctxt' (pps ++ brk (0,0) ++ hov 0 pps')
+    bld_sign_env env sigma private_ids ctxt' (pps ++ brk (0,0) ++ hov 0 pps')
   | d:: ctxt' ->
-    let pidt = pr_var_list_decl env sigma d in
+    let pidt = pr_var_list_decl env sigma private_ids d in
     let pps' = pps ++ brk (0,0) ++ pidt in
-    bld_sign_env env sigma ctxt' pps'
-and bld_sign_env_id env sigma ctxt pps is_start =
+    bld_sign_env env sigma private_ids ctxt' pps'
+and bld_sign_env_id env sigma private_ids ctxt pps is_start =
   match ctxt with
   | [] -> pps,ctxt
  | CompactedDecl.LocalAssum(ids,typ) as d :: ctxt' when should_compact env sigma typ ->
-    let pidt = pr_var_list_decl env sigma d in
+    let pidt = pr_var_list_decl env sigma private_ids d in
     let pps' = pps ++ (if not is_start then brk (3,0) else (mt ())) ++ pidt in
-    bld_sign_env_id env sigma ctxt' pps' false
+    bld_sign_env_id env sigma private_ids ctxt' pps' false
   | _ -> pps,ctxt
 
 
 (* compact printing an env (variables and de Bruijn). Separator: three
    spaces between simple hyps, and newline otherwise *)
 let pr_context_limit_compact ?n env sigma =
+  let private_ids = named_context_private_ids (named_context_val env) in
   let ctxt = Termops.compact_named_context (named_context env) in
   let lgth = List.length ctxt in
   let n_capped =
@@ -437,7 +444,7 @@ let pr_context_limit_compact ?n env sigma =
   (* a dot line hinting the number of hidden hyps. *)
   let hidden_dots = String.make (List.length ctxt_hidden) '.' in
   let sign_env = v 0 (str hidden_dots ++ (mt ())
-                 ++ bld_sign_env env sigma (List.rev ctxt_chopped) (mt ())) in
+                 ++ bld_sign_env env sigma private_ids (List.rev ctxt_chopped) (mt ())) in
   let db_env =
     fold_rel_context (fun env d pps -> pps ++ fnl () ++ pr_rel_decl env sigma d)
       env ~init:(mt ()) in
