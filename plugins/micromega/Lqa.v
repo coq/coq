@@ -19,18 +19,21 @@ Require Import VarMap.
 Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
+Ltac rchange := 
+  intros __wit __varmap __ff ;
+  change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
+  apply (QTautoChecker_sound __ff __wit).
+
+Ltac rchecker_no_abstract := rchange ; vm_compute ; reflexivity.
+Ltac rchecker_abstract   := abstract (rchange ; vm_cast_no_check (eq_refl true)).
+
+Ltac rchecker := (rchecker_abstract || rchecker_no_abstract).
+
 (** Here, lra stands for linear rational arithmetic *)
-Ltac lra := lra_Q ; 
-    (abstract(intros __wit __varmap __ff ;
-               change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
-               apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true))).
+Ltac lra := lra_Q ; rchecker.
 
 (** Here, nra stands for non-linear rational arithmetic *)
-Ltac nra :=
-  xnqa ;
-  (abstract(intros __wit __varmap __ff ;
-             change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
-             apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true))).
+Ltac nra := xnqa ; rchecker.
 
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
@@ -38,16 +41,12 @@ Ltac xpsatz dom d :=
     (sos_Q || psatz_Q d) ;
       (* If csdp is not installed, the previous step might not produce any
     progress: the rest of the tactical will then fail. Hence the 'try'. *)
-      try  (abstract(intros __wit __varmap __ff ;
-                      change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
-                      apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
+      try  rchecker
   | _ => fail "Unsupported domain"
   end in tac.
 
 Tactic Notation "psatz" constr(dom) int_or_var(n) := xpsatz dom n.
 Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:(-1).
-
-
 
 
 (* Local Variables: *)

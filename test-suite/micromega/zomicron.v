@@ -34,3 +34,12 @@ Proof.
  intros.
  lia.
 Qed.
+
+Lemma dummy_ex : exists (x:Z),  x = x.
+Proof.
+  eexists.
+  lia.
+  Unshelve.
+  exact Z0.
+Qed.
+  
