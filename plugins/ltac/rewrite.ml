@@ -1538,7 +1538,8 @@ let assert_replacing id newt tac =
     | [] -> assert false
     | d :: rem -> insert_dependent env sigma (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
     in
-    let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
+    let private_ids = named_context_private_ids (named_context_val env) in
+    let env' = Environ.reset_with_named_context (val_of_named_context nc private_ids) env in
     Refine.refine ~typecheck:true begin fun sigma ->
       let (sigma, ev) = Evarutil.new_evar env' sigma concl in
       let (sigma, ev') = Evarutil.new_evar env sigma newt in
@@ -1608,10 +1609,11 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     | None -> env
     | Some id ->
       (** Only consider variables not depending on [id] *)
-      let ctx = named_context env in
-      let filter decl = not (occur_var_in_decl env sigma id decl) in
-      let nctx = List.filter filter ctx in
-      Environ.reset_with_named_context (val_of_named_context nctx) env
+      fold_named_context
+        (fun _ decl isprivate env ->
+         let decl = EConstr.of_named_decl decl in
+         if occur_var_in_decl env sigma id decl then env else push_named decl isprivate env)
+        env ~init:(reset_context env)
     in
     try
       let res =

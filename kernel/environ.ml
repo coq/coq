@@ -119,8 +119,10 @@ let push_named = push_named
 let push_named_context = List.fold_right (fun (d,isprivate) -> push_named d isprivate)
 let push_named_context_val = push_named_context_val
 
-let val_of_named_context ctxt =
-  List.fold_right (fun d -> push_named_context_val d false) ctxt empty_named_context_val
+open Context.Named.Declaration
+
+let val_of_named_context ctxt ids =
+  List.fold_right (fun d -> push_named_context_val d (Id.Set.mem (get_id d) ids)) ctxt empty_named_context_val
 
 
 let lookup_named = lookup_named
@@ -130,8 +132,6 @@ let eq_named_context_val c1 c2 =
    c1 == c2 || Context.Named.equal Constr.equal (named_context_of_val c1) (named_context_of_val c2)
 
 (* A local const is evaluable if it is defined  *)
-
-open Context.Named.Declaration
 
 let named_type id env =
   get_type (lookup_named id env)

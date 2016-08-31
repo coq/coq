@@ -39,10 +39,10 @@ val convert_hyp     : ?check:bool -> named_declaration -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
 val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
 val mutual_fix      :
-  Id.t -> int -> (Id.t * int * constr) list -> int -> unit Proofview.tactic
-val fix             : Id.t option -> int -> unit Proofview.tactic
-val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> unit Proofview.tactic
-val cofix           : Id.t option -> unit Proofview.tactic
+  Id.t * Decl_kinds.private_flag -> int -> ((Id.t * Decl_kinds.private_flag) * int * constr) list -> int -> unit Proofview.tactic
+val fix             : (Id.t * Decl_kinds.private_flag) option -> int -> unit Proofview.tactic
+val mutual_cofix    : Id.t * Decl_kinds.private_flag -> ((Id.t * Decl_kinds.private_flag) * constr) list -> int -> unit Proofview.tactic
+val cofix           : (Id.t * Decl_kinds.private_flag) option -> unit Proofview.tactic
 
 val convert         : constr -> constr -> unit Proofview.tactic
 val convert_leq     : constr -> constr -> unit Proofview.tactic
@@ -178,7 +178,7 @@ val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 val specialize    : constr with_bindings -> intro_pattern option -> unit Proofview.tactic
 
 val move_hyp      : Id.t -> Id.t move_location -> unit Proofview.tactic
-val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
+val rename_hyp    : (Id.t * (Id.t * Decl_kinds.private_flag)) list -> unit Proofview.tactic
 
 val revert        : Id.t list -> unit Proofview.tactic
 

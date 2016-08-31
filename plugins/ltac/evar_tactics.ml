@@ -77,7 +77,7 @@ let instantiate_tac_by_name id c =
   instantiate_evar evk c sigma gl
   end
 
-let let_evar name typ =
+let let_evar (name,isprivate) typ =
   let src = (Loc.tag Evar_kinds.GoalEvar) in
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
@@ -89,7 +89,7 @@ let let_evar name typ =
     | Name.Anonymous -> 
       let id = Namegen.id_of_name_using_hdchar env sigma typ name in
       Namegen.next_ident_away_in_goal id (Termops.vars_of_env env), true
-    | Name.Name id -> id, false
+    | Name.Name id -> id, isprivate
     in
     let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)

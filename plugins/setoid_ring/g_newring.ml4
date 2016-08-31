@@ -24,7 +24,7 @@ DECLARE PLUGIN "newring_plugin"
 
 TACTIC EXTEND protect_fv
   [ "protect_fv" string(map) "in" ident(id) ] ->
-    [ protect_tac_in map id ]
+    [ protect_tac_in map (fst id) ]
 | [ "protect_fv" string(map) ] ->
     [ protect_tac map ]
 END

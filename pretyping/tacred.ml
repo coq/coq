@@ -384,7 +384,7 @@ let dummy = mkProp
 let vfx = Id.of_string "_expanded_fix_"
 let vfun = Id.of_string "_eliminator_function_"
 let venv = let open Context.Named.Declaration in
-           val_of_named_context [LocalAssum (vfx, dummy); LocalAssum (vfun, dummy)]
+           val_of_named_context [LocalAssum (vfx, dummy); LocalAssum (vfun, dummy)] Id.Set.empty
 
 (* Mark every occurrence of substituted vars (associated to a function)
    as a problem variable: an evar that can be instantiated either by

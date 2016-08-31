@@ -111,7 +111,8 @@ let nf_rel_context_evar sigma ctx =
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
   let rel' = nf_rel_context_evar sigma (EConstr.rel_context env) in
-    EConstr.push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)
+  let private_ids = named_context_private_ids (Environ.named_context_val env) in
+    EConstr.push_rel_context rel' (reset_with_named_context (val_of_named_context nc' private_ids) env)
 
 let nf_evar_info evc info = map_evar_info (nf_evar0 evc) info
 
@@ -356,10 +357,11 @@ let push_rel_context_to_named_context env sigma typ =
     (* move the rel context to a named context and extend the named instance *)
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
-    let (subst, vsubst, _, env) =
+    let private_ids = named_context_private_ids (named_context_val env) in
+    let (subst, vsubst, _, sign) =
       Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
         (rel_context env) ~init:(empty_csubst, [], avoid, named_context env) in
-    (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
+    (val_of_named_context sign private_ids, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
 (*------------------------------------*
  * Entry points to define new evars   *

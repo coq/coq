@@ -1197,7 +1197,7 @@ let () =
   Genprint.register_print0 wit_ref
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
   Genprint.register_print0 wit_ident
-    pr_id pr_id pr_id;
+    pr_id pr_id (fun (id,_) -> pr_id id);
   Genprint.register_print0 wit_var
     (pr_located pr_id) (pr_located pr_id) pr_id;
   Genprint.register_print0

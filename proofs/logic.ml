@@ -161,8 +161,7 @@ let reorder_context env sigma sign ord =
 let reorder_val_context env sigma sign ord =
   let open EConstr in
   val_of_named_context (reorder_context env sigma (named_context_of_val sign) ord)
-
-
+                       (named_context_private_ids sign)
 
 
 let check_decl_position env sigma sign d =

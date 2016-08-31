@@ -175,6 +175,10 @@ let is_incompatible_eq sigma t =
   if res then   observe (str "is_incompatible_eq " ++ Printer.pr_leconstr t);
   res
 
+let is_private g id =
+  let private_ids = Environ.named_context_private_ids (Environ.named_context_val (pf_env g)) in
+  Id.Set.mem id private_ids
+
 let change_hyp_with_using msg hyp_id t tac : tactic =
   fun g ->
     let prov_id = pf_get_new_id hyp_id g in
@@ -183,7 +187,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
       [tclTHENLIST
       [
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
-	(* observe_tac "change_hyp_with_using rename " *) (Proofview.V82.of_tactic (rename_hyp [prov_id,hyp_id]))
+	(* observe_tac "change_hyp_with_using rename " *) (Proofview.V82.of_tactic (rename_hyp [prov_id,(hyp_id,is_private g hyp_id)]))
       ]] g
 
 exception TOREMOVE
@@ -464,7 +468,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	    tclTHENLIST
 	      [
 (* 		observe_tac "hyp rec"  *)
-		  (change_hyp_with_using "rec_hyp_tac" hyp_id real_type_of_hyp prove_new_type_of_hyp);
+	  (change_hyp_with_using "rec_hyp_tac" hyp_id real_type_of_hyp prove_new_type_of_hyp);
 		scan_type context popped_t'
 	      ]
 	  end
@@ -645,7 +649,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
             Refiner.tclEVARS evm;
 	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) true c);
 	    thin [hid];
-	    Proofview.V82.of_tactic (rename_hyp [prov_hid,hid])
+	    Proofview.V82.of_tactic (rename_hyp [prov_hid,(hid,is_private g hid)])
 	  ] g
       )
       ( (*
@@ -1227,7 +1231,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	| _, this_fix_info::others_infos ->
 	    let other_fix_infos =
 	      List.map
-		(fun fi -> fi.name,fi.idx + 1 ,fi.types)
+		(fun fi -> (fi.name,true (*?*)),fi.idx + 1 ,fi.types)
 		(pre_info@others_infos)
 	    in
 	    if List.is_empty other_fix_infos
@@ -1235,9 +1239,9 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	      if this_fix_info.idx + 1 = 0
 	      then tclIDTAC (* Someone  tries to defined a principle on a fully parametric definition declared as a fixpoint (strange but ....) *)
 	      else
-		observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (Proofview.V82.of_tactic (fix (Some this_fix_info.name) (this_fix_info.idx +1)))
+		observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (Proofview.V82.of_tactic (fix (Some (this_fix_info.name,true (*?*))) (this_fix_info.idx +1)))
 	    else
-	      Proofview.V82.of_tactic (Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
+	      Proofview.V82.of_tactic (Tactics.mutual_fix (this_fix_info.name,true (*?*)) (this_fix_info.idx + 1)
 		other_fix_infos 0)
     in
     let first_tac : tactic = (* every operations until fix creations *)
@@ -1650,7 +1654,7 @@ let prove_principle_for_gen
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
 (* 			   str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
-      (* observe_tac "h_fix " *) (Proofview.V82.of_tactic (fix (Some fix_id) (List.length args_ids + 1)));
+      (* observe_tac "h_fix " *) (Proofview.V82.of_tactic (fix (Some (fix_id,true (*?*))) (List.length args_ids + 1)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_unsafe_type_of g (mkVar fix_id) )); tclIDTAC g); *)
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));

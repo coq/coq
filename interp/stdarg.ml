@@ -44,7 +44,7 @@ let wit_ident =
   make0 "ident"
 
 let wit_var =
-  make0 ~dyn:(val_tag (topwit wit_ident)) "var"
+  make0 "var"
 
 let wit_ref = make0 "ref"
 

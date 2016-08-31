@@ -78,7 +78,7 @@ val fold_rel_context :
 (** {5 Context of variables (section variables and goal assumptions) } *)
 
 val named_context_of_val : named_context_val -> Context.Named.t
-val val_of_named_context : Context.Named.t -> named_context_val
+val val_of_named_context : Context.Named.t -> Id.Set.t -> named_context_val
 val empty_named_context_val : named_context_val
 val ids_of_named_context_val : named_context_val -> Id.Set.t
 

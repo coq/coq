@@ -29,11 +29,11 @@ let make_cont (k : Val.t) (c : EConstr.t) =
   Tacinterp.eval_tactic_ist ist (TacArg (Loc.tag tac))
 
 TACTIC EXTEND quote
-  [ "quote" ident(f) ] -> [ quote f [] ]
-| [ "quote" ident(f) "[" ne_ident_list(lc) "]"] -> [ quote f lc ]
+  [ "quote" ident(f) ] -> [ quote (fst f) [] ]
+| [ "quote" ident(f) "[" ne_ident_list(lc) "]"] -> [ quote (fst f) (List.map fst lc) ]
 | [ "quote" ident(f) "in" constr(c) "using" tactic(k) ] ->
-  [ gen_quote (make_cont k) c f [] ]
+  [ gen_quote (make_cont k) c (fst f) [] ]
 | [ "quote" ident(f) "[" ne_ident_list(lc) "]"
     "in" constr(c) "using" tactic(k) ] ->
-  [ gen_quote (make_cont k) c f lc ]
+  [ gen_quote (make_cont k) c (fst f) (List.map fst lc) ]
 END

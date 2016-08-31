@@ -37,7 +37,8 @@ let typecheck_evar ev env sigma =
     (!evdref, Environ.push_named decl false env)
   in
   let (common, changed) = extract_prefix env info in
-  let env = Environ.reset_with_named_context (Environ.val_of_named_context common) env in
+  let private_ids = Environ.named_context_private_ids (Environ.named_context_val env) in
+  let env = Environ.reset_with_named_context (Environ.val_of_named_context common private_ids) env in
   let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
   (** Typecheck the conclusion *)
   let evdref = ref sigma in

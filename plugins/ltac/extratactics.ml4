@@ -462,13 +462,13 @@ open Evar_tactics
 (* TODO: add support for some test similar to g_constr.name_colon so that
    expressions like "evar (list A)" do not raise a syntax error *)
 TACTIC EXTEND evar
-  [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name.Name id) typ ]
-| [ "evar" constr(typ) ] -> [ let_evar Name.Anonymous typ ]
+  [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> [ let id,isprivate = id in let_evar (Name.Name id,isprivate) typ ]
+| [ "evar" constr(typ) ] -> [ let_evar (Name.Anonymous,true) typ ]
 END
 
 TACTIC EXTEND instantiate
   [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
-    [ Tacticals.New.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals ]
+    [ Tacticals.New.tclTHEN (instantiate_tac_by_name (fst id) c) Proofview.V82.nf_evar_goals ]
 | [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
     [ Tacticals.New.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals ]
 | [ "instantiate" ] -> [ Proofview.V82.nf_evar_goals ]
@@ -696,8 +696,8 @@ let hResolve_auto id c t =
   resolve_auto 1
 
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve id c occ t ]
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto id c t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve (fst id) c occ t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto (fst id) c t ]
 END
 
 (**
@@ -820,7 +820,7 @@ TACTIC EXTEND transparent_abstract
 | [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.nf_enter begin fun gl ->
       Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end ]
 | [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.nf_enter begin fun gl ->
-      Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end ]
+      Tactics.tclABSTRACT ~opaque:false (Some (fst id)) (Tacinterp.tactic_of_value ist t) end ]
 END
 
 (* ********************************************************************* *)

@@ -41,8 +41,10 @@ module V82 = struct
   (* same as [hyps], but ensures that existential variables are
      normalised. *)
   let nf_hyps evars gl =
-    let hyps = Environ.named_context_of_val (hyps evars gl) in
+    let ctxt = hyps evars gl in
+    let hyps = Environ.named_context_of_val ctxt in
     Environ.val_of_named_context (Evarutil.nf_named_context_evar evars hyps)
+                                 (Environ.named_context_private_ids ctxt)
 
   (* Access to ".evar_concl" *)
   let concl evars gl =

@@ -327,7 +327,7 @@ let move_hyp id dest =
 
 (* Renaming hypotheses *)
 let rename_hyp repl =
-  let fold accu (src, dst) = match accu with
+  let fold accu (src, (dst,isprivate)) = match accu with
   | None -> None
   | Some (srcs, dsts) ->
     if Id.Set.mem src srcs then None
@@ -363,16 +363,22 @@ let rename_hyp repl =
         with Not_found -> ()
       in
       (** All is well *)
-      let make_subst (src, dst) = (src, mkVar dst) in
+      let make_subst (src, (dst,_)) = (src, mkVar dst) in
       let subst = List.map make_subst repl in
       let subst c = Vars.replace_vars subst c in
       let map decl =
-        decl |> NamedDecl.map_id (fun id -> try List.assoc_f Id.equal id repl with Not_found -> id)
+        decl |> NamedDecl.map_id (fun id -> try fst (List.assoc_f Id.equal id repl) with Not_found -> id)
              |> NamedDecl.map_constr subst
       in
       let nhyps = List.map map hyps in
       let nconcl = subst concl in
-      let nctx = val_of_named_context nhyps in
+      let private_ids = Environ.named_context_private_ids (Environ.named_context_val (Proofview.Goal.env gl)) in
+      let update ids (src,(dst,isprivate)) =
+        (* Assuming vars in repl distinct *)
+        let ids = Id.Set.remove src ids in
+        if isprivate then Id.Set.add dst ids else ids in
+      let private_ids' = List.fold_left update private_ids repl in
+      let nctx = val_of_named_context nhyps private_ids' in
       let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
       Refine.refine ~typecheck:false begin fun sigma ->
         Evarutil.new_evar_instance nctx sigma nconcl ~principal:true ~store instance
@@ -577,7 +583,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   let all = firsts @ (f, n, concl) :: lasts in
   let rec mk_sign sign = function
   | [] -> sign
-  | (f, n, ar) :: oth ->
+  | ((f,isprivate), n, ar) :: oth ->
     let open Context.Named.Declaration in
     let (sp', u')  = check_mutind env sigma n ar in
     if not (eq_mind sp sp') then
@@ -585,12 +591,12 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
     if mem_named_context_val f sign then
       user_err ~hdr:"Logic.prim_refiner"
         (str "Name " ++ pr_id f ++ str " already used in the environment");
-    mk_sign (push_named_context_val (LocalAssum (f, ar)) false sign) oth
+    mk_sign (push_named_context_val (LocalAssum (f, ar)) isprivate sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
   Refine.refine ~typecheck:false begin fun sigma ->
     let (sigma, evs) = mk_holes nenv sigma (List.map pi3 all) in
-    let ids = List.map pi1 all in
+    let ids = List.map (fun ((id,_),_,_) -> id) all in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
     let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
     let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
@@ -606,7 +612,7 @@ let fix ido n = match ido with
     Proofview.Goal.enter begin fun gl ->
       let name = Proof_global.get_current_proof_name () in
       let id = new_fresh_id Id.Set.empty name gl in
-      mutual_fix id n [] 0
+      mutual_fix (id,true) n [] 0
     end
   | Some id ->
     mutual_fix id n [] 0
@@ -633,15 +639,16 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
   List.iter (fun (_, c) -> check_is_mutcoind env sigma c) all;
   let rec mk_sign sign = function
   | [] -> sign
-  | (f, ar) :: oth ->
+  | ((f,isprivate), ar) :: oth ->
     let open Context.Named.Declaration in
     if mem_named_context_val f sign then
       error "Name already used in the environment.";
-    mk_sign (push_named_context_val (LocalAssum (f, ar)) false sign) oth
+    mk_sign (push_named_context_val (LocalAssum (f, ar)) isprivate sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
   Refine.refine ~typecheck:false begin fun sigma ->
     let (ids, types) = List.split all in
+    let ids = List.map fst ids in
     let (sigma, evs) = mk_holes nenv sigma types in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
     let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
@@ -657,7 +664,7 @@ let cofix ido = match ido with
     Proofview.Goal.enter begin fun gl ->
       let name = Proof_global.get_current_proof_name () in
       let id = new_fresh_id Id.Set.empty name gl in
-      mutual_cofix id [] 0
+      mutual_cofix (id,true) [] 0
     end
   | Some id ->
       mutual_cofix id [] 0
@@ -2448,7 +2455,7 @@ let check_thin_clash_then id thin avoid tac =
     let newid = next_ident_away (add_suffix id "'") avoid in
     let thin =
       List.map (on_snd (fun id' -> if Id.equal id id' then newid else id')) thin in
-    Tacticals.New.tclTHEN (rename_hyp [id,newid]) (tac thin)
+    Tacticals.New.tclTHEN (rename_hyp [id,(newid,true)]) (tac thin)
   else
     tac thin
 
@@ -2887,7 +2894,7 @@ let generalize_dep ?(with_let=false) c =
   let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
   let tothin' =
     match EConstr.kind sigma c with
-      | Var id when mem_named_context_val id (val_of_named_context sign) && not (Id.List.mem id init_ids)
+      | Var id when (* Isn't it a detour? *) mem_named_context_val id (val_of_named_context sign Idset.empty) && not (Id.List.mem id init_ids)
 	  -> id::tothin
       | _ -> tothin
   in
@@ -3845,7 +3852,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
 	    if dep then
               Tacticals.New.tclTHENLIST [
                 tac;
-		 rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
+		 rename_hyp [(id, (oldid,true))]; Tacticals.New.tclDO n intro;
 		 generalize_dep ~with_let:true (mkVar oldid)]
             else Tacticals.New.tclTHENLIST [
                     tac;

@@ -384,12 +384,12 @@ let interp_ltac_var coerce ist env locid =
 
 let interp_ident ist env sigma id =
   try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) (Loc.tag id)
-  with Not_found -> id
+  with Not_found -> id, false
 
 (* Interprets an optional identifier, bound or fresh *)
 let interp_name ist env sigma = function
-  | Anonymous -> Anonymous
-  | Name id -> Name (interp_ident ist env sigma id)
+  | Anonymous -> Anonymous, true
+  | Name id -> let id,isprivate = interp_ident ist env sigma id in Name id, isprivate
 
 let interp_intro_pattern_var loc ist env sigma id isprivate =
   try try_interp_ltac_var (coerce_to_intro_pattern env sigma) ist (Some (env,sigma)) (loc,id)
@@ -564,7 +564,7 @@ let extract_ltac_constr_context ist env sigma =
     with CannotCoerceTo _ -> map
   in
   let add_ident id v map =
-    try Id.Map.add id (coerce_var_to_ident false env sigma v) map
+    try Id.Map.add id (fst (coerce_var_to_ident false env sigma v)) map
     with CannotCoerceTo _ -> map
   in
   let fold id v {idents;typed;untyped} =
@@ -738,7 +738,7 @@ let interp_constr_with_occurrences_and_name_as_list =
     (fun ist env sigma (occ_c,na) ->
       let (sigma,c_interp) = interp_constr_with_occurrences ist env sigma occ_c in
       sigma, (c_interp,
-       interp_name ist env sigma na))
+       fst (interp_name ist env sigma na)))
 
 let interp_red_expr ist env sigma = function
   | Unfold l -> sigma , Unfold (List.map (interp_unfold ist env sigma) l)
@@ -892,7 +892,7 @@ let rec interp_intro_pattern ist env sigma = function
   | loc, IntroForthcoming _  as x -> sigma, x
 
 and interp_intro_pattern_naming loc ist env sigma = function
-  | IntroFresh id -> IntroFresh (interp_ident ist env sigma id)
+  | IntroFresh id -> IntroFresh (fst (interp_ident ist env sigma id))
   | IntroIdentifier (id,isprivate) -> interp_intro_pattern_naming_var loc ist env sigma id isprivate
   | IntroAnonymous as x -> x
 
@@ -1035,6 +1035,9 @@ let interp_destruction_arg ist gl arg =
           | _ -> error ()
         else if has_type v (topwit wit_var) then
           let id = out_gen (topwit wit_var) v in
+          try_cast_id id
+        else if has_type v (topwit wit_ident) then
+          let id,_ = out_gen (topwit wit_ident) v in
           try_cast_id id
         else if has_type v (topwit wit_int) then
           keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
@@ -1201,7 +1204,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
          end
   | TacAbstract (tac,ido) ->
       Proofview.Goal.enter begin fun gl -> Tactics.tclABSTRACT
-        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist tac)
+        (Option.map (fun id -> fst (interp_ident ist (pf_env gl) (project gl) id)) ido) (interp_tactic ist tac)
       end
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
@@ -1765,22 +1768,22 @@ and interp_atomic ist tac : unit Proofview.tactic =
         (* We try to fully-typecheck the term *)
           let flags = open_constr_use_classes_flags () in
           let (sigma,c_interp) = interp_open_constr ~flags ist env sigma c in
-          let let_tac b na c cl eqpat =
+          let let_tac b na isprivate c cl eqpat =
             let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_tac with_eq na false c None cl
+            Tactics.letin_tac with_eq na isprivate c None cl
           in
-          let na = interp_name ist env sigma na in
+          let na,isprivate = interp_name ist env sigma na in
           Tacticals.New.tclWITHHOLES ev
           (name_atomic ~env
             (TacLetTac(ev,na,c_interp,clp,b,eqpat))
-            (let_tac b na c_interp clp eqpat)) sigma
+            (let_tac b na isprivate c_interp clp eqpat)) sigma
         else
         (* We try to keep the pattern structure as much as possible *)
-          let let_pat_tac b na c cl eqpat =
+          let let_pat_tac b (na,isprivate) c cl eqpat =
             let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_pat_tac ev with_eq na false c cl
+            Tactics.letin_pat_tac ev with_eq na isprivate c cl
           in
           let (sigma',c) = interp_pure_open_constr ist env sigma c in
           name_atomic ~env
@@ -2048,7 +2051,7 @@ let interp_destruction_arg' ist c = Ftactic.enter begin fun gl ->
 end
 
 let interp_pre_ident ist env sigma s =
-  s |> Id.of_string |> interp_ident ist env sigma |> Id.to_string
+  s |> Id.of_string |> interp_ident ist env sigma |> fst |> Id.to_string
 
 let () =
   register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));

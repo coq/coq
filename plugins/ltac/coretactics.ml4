@@ -207,11 +207,11 @@ END
 
 TACTIC EXTEND intro
 | [ "intro" ] -> [ Tactics.intro_move None MoveLast ]
-| [ "intro" ident(id) ] -> [ Tactics.intro_move (Some (id,false)) MoveLast ]
-| [ "intro" ident(id) "at" "top" ] -> [ Tactics.intro_move (Some (id,false)) MoveFirst ]
-| [ "intro" ident(id) "at" "bottom" ] -> [ Tactics.intro_move (Some (id,false)) MoveLast ]
-| [ "intro" ident(id) "after" hyp(h) ] -> [ Tactics.intro_move (Some (id,false)) (MoveAfter h) ]
-| [ "intro" ident(id) "before" hyp(h) ] -> [ Tactics.intro_move (Some (id,false)) (MoveBefore h) ]
+| [ "intro" ident(id) ] -> [ Tactics.intro_move (Some id) MoveLast ]
+| [ "intro" ident(id) "at" "top" ] -> [ Tactics.intro_move (Some id) MoveFirst ]
+| [ "intro" ident(id) "at" "bottom" ] -> [ Tactics.intro_move (Some id) MoveLast ]
+| [ "intro" ident(id) "after" hyp(h) ] -> [ Tactics.intro_move (Some id) (MoveAfter h) ]
+| [ "intro" ident(id) "before" hyp(h) ] -> [ Tactics.intro_move (Some id) (MoveBefore h) ]
 | [ "intro" "at" "top" ] -> [ Tactics.intro_move None MoveFirst ]
 | [ "intro" "at" "bottom" ] -> [ Tactics.intro_move None MoveLast ]
 | [ "intro" "after" hyp(h) ] -> [ Tactics.intro_move None (MoveAfter h) ]

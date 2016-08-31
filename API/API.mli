@@ -1418,8 +1418,11 @@ sig
   val constant_value_in : env -> Names.Constant.t Univ.puniverses -> Constr.t
   val named_type : Names.Id.t -> env -> Constr.types
   val constant_opt_value_in : env -> Names.Constant.t Univ.puniverses -> Constr.t option
+  val fold_named_context :
+    (env -> Context.Named.Declaration.t -> bool -> 'a -> 'a) -> env -> init:'a -> 'a
   val fold_named_context_reverse :
     ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
+  val reset_context : env -> env
   val evaluable_named  : Names.Id.t -> env -> bool
   val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
 end
@@ -2714,7 +2717,7 @@ sig
   val mkConst : Names.Constant.t -> constr
   val mkCase : Constr.case_info * constr * constr * constr array -> constr
   val named_context : Environ.env -> named_context
-  val val_of_named_context : named_context -> Environ.named_context_val
+  val val_of_named_context : named_context -> Names.Id.Set.t -> Environ.named_context_val
   val mkFix : (t, t) Constr.pfixpoint -> t
   val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
   val isMeta : Evd.evar_map -> t -> bool
@@ -4196,7 +4199,7 @@ sig
   val wit_string : string Genarg.uniform_genarg_type
   val wit_pre_ident : string Genarg.uniform_genarg_type
   val wit_global : (Libnames.reference, Globnames.global_reference Loc.located Misctypes.or_var, Globnames.global_reference) Genarg.genarg_type
-  val wit_ident : Names.Id.t Genarg.uniform_genarg_type
+  val wit_ident : (Names.Id.t, Names.Id.t, Names.Id.t * Decl_kinds.private_flag) Genarg.genarg_type
   val wit_integer : int Genarg.uniform_genarg_type
   val wit_sort_family : (Sorts.family, unit, unit) Genarg.genarg_type
   val wit_constr : (Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) Genarg.genarg_type
@@ -5211,8 +5214,8 @@ sig
     Misctypes.evars_flag -> Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings -> EConstr.constr Misctypes.with_bindings option -> unit Proofview.tactic
   val general_case_analysis : Misctypes.evars_flag -> Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings ->  unit Proofview.tactic
   val mutual_fix :
-    Names.Id.t -> int -> (Names.Id.t * int * EConstr.constr) list -> int -> unit Proofview.tactic
-  val mutual_cofix : Names.Id.t -> (Names.Id.t * EConstr.constr) list -> int -> unit Proofview.tactic
+    Names.Id.t * Decl_kinds.private_flag -> int -> ((Names.Id.t * Decl_kinds.private_flag) * int * EConstr.constr) list -> int -> unit Proofview.tactic
+  val mutual_cofix : Names.Id.t * Decl_kinds.private_flag -> ((Names.Id.t * Decl_kinds.private_flag) * EConstr.constr) list -> int -> unit Proofview.tactic
   val forward   : bool -> unit Proofview.tactic option option ->
                   Tactypes.intro_pattern option -> EConstr.constr -> unit Proofview.tactic
   val generalize_gen : (EConstr.constr Locus.with_occurrences * Names.Name.t) list -> unit Proofview.tactic
@@ -5250,12 +5253,12 @@ sig
   val intros_until : Misctypes.quantified_hypothesis -> unit Proofview.tactic
   val intro_move : (Names.Id.t * Decl_kinds.private_flag) option -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
   val move_hyp : Names.Id.t -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
-  val rename_hyp : (Names.Id.t * Names.Id.t) list -> unit Proofview.tactic
+  val rename_hyp : (Names.Id.t * (Names.Id.t * Decl_kinds.private_flag)) list -> unit Proofview.tactic
   val revert : Names.Id.t list -> unit Proofview.tactic
   val simple_induct : Misctypes.quantified_hypothesis -> unit Proofview.tactic
   val simple_destruct : Misctypes.quantified_hypothesis -> unit Proofview.tactic
-  val fix : Names.Id.t option -> int -> unit Proofview.tactic
-  val cofix : Names.Id.t option -> unit Proofview.tactic
+  val fix : (Names.Id.t * Decl_kinds.private_flag) option -> int -> unit Proofview.tactic
+  val cofix : (Names.Id.t * Decl_kinds.private_flag) option -> unit Proofview.tactic
   val keep : Names.Id.t list -> unit Proofview.tactic
   val clear : Names.Id.t list -> unit Proofview.tactic
   val clear_body : Names.Id.t list -> unit Proofview.tactic
@@ -5566,7 +5569,7 @@ sig
   val typeclasses_eauto : ?only_classes:bool -> ?st:Names.transparent_state -> ?strategy:search_strategy ->
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
-  val head_of_constr : Names.Id.t -> EConstr.constr -> unit Proofview.tactic
+  val head_of_constr : Names.Id.t * Decl_kinds.private_flag -> EConstr.constr -> unit Proofview.tactic
   val not_evar : EConstr.constr -> unit Proofview.tactic
   val is_ground : EConstr.constr -> unit Proofview.tactic
   val autoapply : EConstr.constr -> Hints.hint_db_name -> unit Proofview.tactic
