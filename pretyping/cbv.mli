@@ -17,5 +17,5 @@ open Environ
 (** Entry point for cbv normalization of a constr *)
 type cbv_infos
 
-val create_cbv_infos : RedFlags.reds -> env -> Evd.evar_map -> cbv_infos
+val create_cbv_infos : RedFlags.reds -> strong:bool -> env -> Evd.evar_map -> cbv_infos
 val cbv_norm         : cbv_infos -> constr -> constr

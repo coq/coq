@@ -1223,7 +1223,7 @@ let get_funs_constant mp =
       match body.Declarations.const_body with
       | Def body ->
         let body =
-          Tacred.cbv_norm_flags
+          Tacred.cbv_norm_flags ~strong:true
             (RedFlags.mkflags [RedFlags.fZETA])
             env
             (Evd.from_env env)

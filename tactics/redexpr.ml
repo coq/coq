@@ -254,7 +254,7 @@ let reduction_of_red_expr_val = function
       | Head, false -> whd_simpl
     in
      (contextualize am o,DEFAULTcast)
-  | Cbv (Norm, f) -> (e_red (cbv_norm_flags f),DEFAULTcast)
+  | Cbv (Norm, f) -> (e_red (cbv_norm_flags ~strong:true f),DEFAULTcast)
   | Cbv (Head, _) -> CErrors.user_err Pp.(str "cbv does not support head-only reduction.")
   | Cbn (w,f) ->
     let cbn = match w with Norm -> Cbn.norm_cbn | Head -> Cbn.whd_cbn in

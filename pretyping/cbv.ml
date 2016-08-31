@@ -166,7 +166,8 @@ type cbv_infos = {
   env : Environ.env;
   tab : (cbv_value, Empty.t) Declarations.constant_def KeyTable.t;
   reds : RedFlags.reds;
-  sigma : Evd.evar_map
+  sigma : Evd.evar_map;
+  strong : bool;
 }
 
 (* Change: zeta reduction cannot be avoided in CBV *)
@@ -689,6 +690,7 @@ and cbv_value_cache info ref =
 let rec apply_stack info t = function
   | TOP -> t
   | APP (args,st) ->
+    (* Note: should "theoretically" use a right-to-left version of map_of_list *)
       apply_stack info (mkApp(t,Array.map_of_list (cbv_norm_value info) args)) st
   | CASE (u,pms,ty,br,iv,ci,env,st) ->
     (* FIXME: Prevent this expansion by caching whether an inductive contains let-bindings *)
@@ -699,6 +701,7 @@ let rec apply_stack info t = function
     in
     let mk_br c n = Term.decompose_lambda_n_decls n c in
     let br = Array.map2 mk_br br ci.ci_cstr_ndecls in
+    let aux = if info.strong then cbv_norm_term info else apply_env in
     let map_ctx (nas, c) =
       let open Context.Rel.Declaration in
       let fold decl e = match decl with
@@ -710,10 +713,10 @@ let rec apply_stack info t = function
       in
       let env = List.fold_right fold nas env in
       let nas = Array.of_list (List.rev_map get_annot nas) in
-      (nas, cbv_norm_term info env c)
+      (nas, aux env c)
     in
       apply_stack info
-        (mkCase (ci, u, Array.map (cbv_norm_term info env) pms, (map_ctx ty,r), iv, t,
+        (mkCase (ci, u, Array.map (aux env) pms, (map_ctx ty,r), iv, t,
                     Array.map map_ctx br))
         st
   | PROJ (p, r, st) ->
@@ -725,7 +728,7 @@ and cbv_norm_term info env t =
   cbv_norm_value info (cbv_stack_term info TOP env t)
 
 (* reduction of a cbv_value to a constr *)
-and cbv_norm_value info = function (* reduction under binders *)
+and cbv_norm_value info = function
   | VAL (n,t) -> lift n t
   | STACK (0,v,stk) ->
       apply_stack info (cbv_norm_value info v) stk
@@ -737,14 +740,15 @@ and cbv_norm_value info = function (* reduction under binders *)
       let nctxt =
         List.map_i (fun i (x,ty) ->
           (x,cbv_norm_term info (subs_liftn i env) ty)) 0 ctxt in
-      Term.compose_lam (List.rev nctxt) (cbv_norm_term info (subs_liftn n env) b)
+      let aux = if info.strong then cbv_norm_term info else apply_env in
+      Term.compose_lam (List.rev nctxt) (aux (subs_liftn n env) b)
   | FIX ((lij,(names,lty,bds)),env,args) ->
+      let aux = if info.strong then cbv_norm_term info else apply_env in
       mkApp
         (mkFix (lij,
                 (names,
-                 Array.map (cbv_norm_term info env) lty,
-                 Array.map (cbv_norm_term info
-                              (subs_liftn (Array.length lty) env)) bds)),
+                 Array.map (aux env) lty,
+                 Array.map (aux (subs_liftn (Array.length lty) env)) bds)),
          Array.map (cbv_norm_value info) args)
   | COFIX ((j,(names,lty,bds)),env,args) ->
       mkApp
@@ -769,5 +773,5 @@ let cbv_norm infos constr =
   EConstr.of_constr (cbv_norm_term infos (subs_id 0) constr)
 
 (* constant bodies are normalized at the first expansion *)
-let create_cbv_infos reds env sigma =
-  { tab = KeyTable.create 91; reds; env; sigma }
+let create_cbv_infos reds ~strong env sigma =
+  { tab = KeyTable.create 91; reds; env; sigma; strong }
