@@ -1475,7 +1475,7 @@ let default_elim with_evars clear_flag (c,_ as cx) =
     begin function (e, info) -> match e with
       | IsNonrec ->
           (* For records, induction principles aren't there by default
-             anymore.  Instead, we do a case analysis instead. *)
+             anymore.  Instead, we do a case analysis. *)
           general_case_analysis with_evars clear_flag cx
       | e -> Proofview.tclZERO ~info e
     end
