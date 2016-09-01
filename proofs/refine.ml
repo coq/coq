@@ -91,7 +91,7 @@ let refine ?(unsafe = true) f = Proofview.Goal.enter { enter = begin fun gl ->
   (** Select the goals *)
   let comb = CList.map_filter (Proofview.Unsafe.advance sigma) (CList.rev evs) in
   let sigma = CList.fold_left Proofview.Unsafe.mark_as_goal sigma comb in
-  let trace () = Pp.(hov 2 (str"refine"++spc()++ Hook.get pr_constrv env sigma c)) in
+  let trace () = Pp.(hov 2 (str"simple refine"++spc()++ Hook.get pr_constrv env sigma c)) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT ()) >>= fun () ->
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   Proofview.Unsafe.tclSETGOALS comb

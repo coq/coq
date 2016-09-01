@@ -1880,7 +1880,7 @@ module Cache = PHashtable(struct
   let hash  = Hashtbl.hash
 end)
 
-let csdp_cache = "csdp.cache"
+let csdp_cache = ".csdp.cache"
 
 (**
   * Build the command to call csdpcert, and launch it. This in turn will call
@@ -2026,9 +2026,9 @@ module CacheQ = PHashtable(struct
   let hash  = Hashtbl.hash
 end)
 
-let memo_zlinear_prover = CacheZ.memo "lia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
-let memo_nlia = CacheZ.memo "nlia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
-let memo_nra = CacheQ.memo "nra.cache" (fun (o,s) -> lift_pexpr_prover (Certificate.nlinear_prover o) s)
+let memo_zlinear_prover = CacheZ.memo ".lia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
+let memo_nlia = CacheZ.memo ".nia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
+let memo_nra = CacheQ.memo ".nra.cache" (fun (o,s) -> lift_pexpr_prover (Certificate.nlinear_prover o) s)
 
 
  
@@ -2092,7 +2092,6 @@ let non_linear_prover_Z str o  = {
   pp_prf  = pp_proof_term;
   pp_f    =  fun o x -> pp_pol pp_z o (fst x)
 }
-
 
 let linear_Z =   {
   name    = "lia";
