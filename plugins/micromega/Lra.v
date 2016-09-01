@@ -8,63 +8,46 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2016                             *)
+(*  Frédéric Besson (Irisa/Inria)      2016                             *)
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZMicromega.
-Require Import QMicromega.
 Require Import RMicromega.
-Require Import QArith.
-Require Import ZArith.
+Require Import QMicromega.
 Require Import Rdefinitions.
 Require Import RingMicromega.
 Require Import VarMap.
 Require Coq.micromega.Tauto.
-Require Lia.
-Require Lra.
-Require Lqa.
-
 Declare ML Module "micromega_plugin".
 
-Ltac lia := Lia.lia.
+Ltac rchange := 
+  intros __wit __varmap __ff ;
+  change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
+  apply (RTautoChecker_sound __ff __wit).
 
-Ltac nia := Lia.nia.
+Ltac rchecker_no_abstract := rchange ; vm_compute ; reflexivity.
+Ltac rchecker_abstract   := abstract (rchange ; vm_cast_no_check (eq_refl true)).
 
+Ltac rchecker := rchecker_abstract || rchecker_no_abstract.
+
+(** Here, lra stands for linear real arithmetic *)
+Ltac lra := unfold Rdiv in * ;   lra_R ; rchecker.
+
+(** Here, nra stands for non-linear real arithmetic *)
+Ltac nra := unfold Rdiv in * ; xnra ; rchecker.
 
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
-  | Z =>
-    (sos_Z || psatz_Z d) ; Lia.zchecker
   | R =>
     (sos_R || psatz_R d) ;
     (* If csdp is not installed, the previous step might not produce any
     progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try Lra.rchecker
-  | Q => (sos_Q || psatz_Q d) ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try  Lqa.rchecker
+    try rchecker
   | _ => fail "Unsupported domain"
-  end in tac.
+ end in tac.
 
 Tactic Notation "psatz" constr(dom) int_or_var(n) := xpsatz dom n.
 Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:(-1).
-
-Ltac psatzl dom :=
-  let tac := lazymatch dom with
-  | Z => Lia.lia
-  | Q => Lqa.lra
-  | R => Lra.lra
-  | _ => fail "Unsupported domain"
-  end in tac.
-
-
-Ltac lra := 
-  first [ psatzl R | psatzl Q ].
-
-Ltac nra := 
-  first [ Lra.nra | Lqa.nra ].  
 
 
 (* Local Variables: *)

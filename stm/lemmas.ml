@@ -482,6 +482,18 @@ let start_proof_com kind thms hook =
 
 (* Saving a proof *)
 
+let keep_admitted_vars = ref true
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "keep section variables in admitted proofs";
+      optkey   = ["Keep"; "Admitted"; "Variables"];
+      optread  = (fun () -> !keep_admitted_vars);
+      optwrite = (fun b -> keep_admitted_vars := b) }
+
 let save_proof ?proof = function
   | Vernacexpr.Admitted ->
       let pe =
@@ -495,7 +507,8 @@ let save_proof ?proof = function
               error "Admitted requires an explicit statement";
             let typ = Option.get const_entry_type in
             let ctx = Evd.evar_context_universe_context (fst universes) in
-            Admitted(id, k, (const_entry_secctx, pi2 k, (typ, ctx), None), universes)
+            let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
+            Admitted(id, k, (sec_vars, pi2 k, (typ, ctx), None), universes)
         | None ->
             let pftree = Pfedit.get_pftreestate () in
             let id, k, typ = Pfedit.current_proof_statement () in
@@ -504,7 +517,8 @@ let save_proof ?proof = function
             let pproofs, _univs =
               Proof_global.return_proof ~allow_partial:true () in
             let sec_vars =
-              match  Pfedit.get_used_variables(), pproofs with
+              if not !keep_admitted_vars then None
+              else match  Pfedit.get_used_variables(), pproofs with
               | Some _ as x, _ -> x
               | None, (pproof, _) :: _ -> 
                   let env = Global.env () in

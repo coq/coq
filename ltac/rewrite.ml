@@ -1564,6 +1564,10 @@ let newfail n s =
 
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
+  (** For compatibility *)
+  let beta_red _ sigma c = Reductionops.nf_betaiota sigma c in
+  let beta = Tactics.reduct_in_concl (beta_red, DEFAULTcast) in
+  let beta_hyp id = Tactics.reduct_in_hyp beta_red (id, InHyp) in
   let treat sigma res = 
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")
@@ -1575,12 +1579,17 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
         let gls = List.rev (Evd.fold_undefined fold undef []) in
 	match clause, prf with
 	| Some id, Some p ->
-            let tac = Refine.refine ~unsafe:false { run = fun h -> Sigma (p, h, Sigma.refl) } <*> Proofview.Unsafe.tclNEWGOALS gls in
+            let tac = Tacticals.New.tclTHENLIST [
+              Refine.refine ~unsafe:false { run = fun h -> Sigma.here p h };
+              beta_hyp id;
+              Proofview.Unsafe.tclNEWGOALS gls;
+            ] in
             Proofview.Unsafe.tclEVARS undef <*>
 	    assert_replacing id newt tac
 	| Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_hyp_no_check (LocalAssum (id, newt))
+            convert_hyp_no_check (LocalAssum (id, newt)) <*>
+            beta_hyp id
 	| None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
             Proofview.Goal.enter { enter = begin fun gl ->
@@ -1594,12 +1603,6 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	| None, None ->
             Proofview.Unsafe.tclEVARS undef <*>
             convert_concl_no_check newt DEFAULTcast
-  in
-  let beta_red _ sigma c = Reductionops.nf_betaiota sigma c in
-  let beta = Tactics.reduct_in_concl (beta_red, DEFAULTcast) in
-  let opt_beta = match clause with
-  | None -> Proofview.tclUNIT ()
-  | Some id -> Tactics.reduct_in_hyp beta_red (id, InHyp)
   in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
@@ -1625,7 +1628,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
       treat sigma res <*>
       (** For compatibility *)
-      beta <*> opt_beta <*> Proofview.shelve_unifiable
+      beta <*> Proofview.shelve_unifiable
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
       raise (RewriteFailure (Himsg.explain_pretype_error env evd e))

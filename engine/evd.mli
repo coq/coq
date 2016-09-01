@@ -98,11 +98,12 @@ type evar_info = {
   (** Optional content of the evar. *)
   evar_filter : Filter.t;
   (** Boolean mask over {!evar_hyps}. Should have the same length.
-      TODO: document me more. *)
+      When filtered out, the corresponding variable is not allowed to occur
+      in the solution *)
   evar_source : Evar_kinds.t located;
   (** Information about the evar. *)
   evar_candidates : constr list option;
-  (** TODO: document this *)
+  (** List of possible solutions when known that it is a finite list *)
   evar_extra : Store.t
   (** Extra store, used for clever hacks. *)
 }

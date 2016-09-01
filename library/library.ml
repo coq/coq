@@ -452,13 +452,13 @@ let intern_from_file f =
 module DPMap = Map.Make(DirPath)
 
 let rec intern_library (needed, contents) (dir, f) from =
-  Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
   try (DPMap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
+  Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let f = match f with Some f -> f | None -> try_locate_absolute_library dir in
   let m = intern_from_file f in
@@ -468,16 +468,18 @@ let rec intern_library (needed, contents) (dir, f) from =
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  m.library_digests, intern_library_deps (needed, contents) dir m (Some f)
+  m.library_digests, intern_library_deps (needed, contents) dir m f
 
 and intern_library_deps libs dir m from =
   let needed, contents = Array.fold_left (intern_mandatory_library dir from) libs m.library_deps in
   (dir :: needed, DPMap.add dir m contents )
 
 and intern_mandatory_library caller from libs (dir,d) =
-  let digest, libs = intern_library libs (dir, None) from in
+  let digest, libs = intern_library libs (dir, None) (Some from) in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    errorlabstrm "" (str "Compiled library " ++ pr_dirpath caller ++ str ".vo makes inconsistent assumptions over library " ++ pr_dirpath dir);
+    errorlabstrm "" (str "Compiled library " ++ pr_dirpath caller ++
+    str " (in file " ++ str from ++ str ") makes inconsistent assumptions \
+    over library " ++ pr_dirpath dir);
   libs
 
 let rec_intern_library libs (dir, f) =
@@ -551,12 +553,20 @@ let in_require : require_obj -> obj =
 
 let (f_xml_require, xml_require) = Hook.make ~default:ignore ()
 
+let warn_require_in_module =
+  CWarnings.create ~name:"require-in-module" ~category:"deprecated"
+                   (fun () -> strbrk "Require inside a module is" ++
+                              strbrk " deprecated and strongly discouraged. " ++
+                              strbrk "You can Require a module at toplevel " ++
+                              strbrk "and optionally Import it inside another one.")
+
 let require_library_from_dirpath modrefl export =
   let needed, contents = List.fold_left rec_intern_library ([], DPMap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
     if Lib.is_module_or_modtype () then
       begin
+        warn_require_in_module ();
 	add_anonymous_leaf (in_require (needed,modrefl,None));
 	Option.iter (fun exp ->
 	  add_anonymous_leaf (in_import_library (modrefl,exp)))

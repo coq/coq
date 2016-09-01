@@ -37,6 +37,12 @@ TACTIC EXTEND NRA
 [ "xnra"  ] -> [  (Coq_micromega.nra)]
 END
 
+TACTIC EXTEND NQA
+[ "xnqa"  ] -> [  (Coq_micromega.nqa)]
+END
+
+
+  
 TACTIC EXTEND Sos_Z
 | [ "sos_Z" ] -> [ (Coq_micromega.sos_Z) ]
    END
@@ -50,11 +56,11 @@ TACTIC EXTEND Sos_R
 END
 
 TACTIC EXTEND LRA_Q
-[ "psatzl_Q"  ] -> [   (Coq_micromega.psatzl_Q) ]
+[ "lra_Q"  ] -> [   (Coq_micromega.lra_Q) ]
 END
 
 TACTIC EXTEND LRA_R
-[ "psatzl_R"  ] -> [   (Coq_micromega.psatzl_R) ]
+[ "lra_R"  ] -> [   (Coq_micromega.lra_R) ]
 END
 
 TACTIC EXTEND PsatzR

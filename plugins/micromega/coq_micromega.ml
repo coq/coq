@@ -1437,7 +1437,36 @@ let rcst_domain_spec  = lazy {
 
 open Proofview.Notations
 
- 
+(** Naive topological sort of constr according to the subterm-ordering *)
+
+(* An element is minimal x is minimal w.r.t y if 
+   x <= y or (x and y are incomparable) *)
+
+let is_min le x y =
+  if le x y then true
+  else    if le y x then false else true
+
+let is_minimal le l c = List.for_all (is_min le c) l
+    
+let find_rem p l =
+  let rec xfind_rem  acc l =
+    match l with
+    | [] -> (None, acc)
+    | x :: l -> if p x then (Some x, acc @ l)
+      else xfind_rem (x::acc) l in
+  xfind_rem [] l
+
+let find_minimal le l = find_rem (is_minimal le l) l
+  
+let rec mk_topo_order le l =
+  match find_minimal le l with
+  | (None , _) -> []
+  | (Some v,l') -> v ::  (mk_topo_order le l')
+
+    
+let topo_sort_constr l = mk_topo_order Termops.dependent l
+
+
 (**
   * Instanciate the current Coq goal with a Micromega formula, a varmap, and a
   * witness.
@@ -1464,7 +1493,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
       ]
       (Tacmach.pf_concl gl))
    ;
-   Tactics.generalize env ;
+      Tactics.generalize (topo_sort_constr env) ;
    Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
   ] 
   end }
@@ -1774,7 +1803,7 @@ let micromega_order_changer cert env ff  =
          ("__wit", cert, cert_typ)
         ]
         (Tacmach.pf_concl gl)));
-      Tactics.generalize env ;
+      Tactics.generalize (topo_sort_constr env) ;
       Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
      ]
   end }
@@ -1851,7 +1880,7 @@ module Cache = PHashtable(struct
   let hash  = Hashtbl.hash
 end)
 
-let csdp_cache = "csdp.cache"
+let csdp_cache = ".csdp.cache"
 
 (**
   * Build the command to call csdpcert, and launch it. This in turn will call
@@ -1997,9 +2026,9 @@ module CacheQ = PHashtable(struct
   let hash  = Hashtbl.hash
 end)
 
-let memo_zlinear_prover = CacheZ.memo "lia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
-let memo_nlia = CacheZ.memo "nlia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
-let memo_nra = CacheQ.memo "nra.cache" (fun (o,s) -> lift_pexpr_prover (Certificate.nlinear_prover o) s)
+let memo_zlinear_prover = CacheZ.memo ".lia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
+let memo_nlia = CacheZ.memo ".nia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
+let memo_nra = CacheQ.memo ".nra.cache" (fun (o,s) -> lift_pexpr_prover (Certificate.nlinear_prover o) s)
 
 
  
@@ -2064,7 +2093,6 @@ let non_linear_prover_Z str o  = {
   pp_f    =  fun o x -> pp_pol pp_z o (fst x)
 }
 
-
 let linear_Z =   {
   name    = "lia";
  get_option = get_lia_option;
@@ -2100,11 +2128,7 @@ let tauto_lia ff =
   * solvers
   *)
 
-let psatzl_Z =
- micromega_gen parse_zarith  Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
-  [ linear_Z ] 
-
-let psatzl_Q =
+let lra_Q =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
   [ linear_prover_Q ] 
 
@@ -2112,7 +2136,7 @@ let psatz_Q i  =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
   [ non_linear_prover_Q "real_nonlinear_prover" (Some i) ]
 
-let psatzl_R  =
+let lra_R  =
  micromega_genr [ linear_prover_R ]
 
 let psatz_R i  =
@@ -2136,21 +2160,21 @@ let sos_R  =
  micromega_genr  [ non_linear_prover_R "pure_sos" None ] 
 
 
-let xlia  =
-  try 
-    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
+let xlia  =  micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
       [ linear_Z ] 
-  with reraise -> (*Printexc.print_backtrace stdout ;*) raise reraise
 
 let xnlia  =
-  try 
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
       [ nlinear_Z ] 
-  with reraise -> (*Printexc.print_backtrace stdout ;*) raise reraise
 
 let nra  = 
  micromega_genr  [ nlinear_prover_R ] 
 
+let nqa  =
+ micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
+  [ nlinear_prover_R ]
+
+   
 
 (* Local Variables: *)
 (* coding: utf-8 *)

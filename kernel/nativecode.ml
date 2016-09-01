@@ -1929,13 +1929,15 @@ let compile_constant env sigma prefix ~interactive con cb =
           arg|])))::
             [Glet(gn, mkMLlam [|c_uid|] code)], Linked prefix
 
-let loaded_native_files = ref ([] : string list)
+module StringOrd = struct type t = string let compare = String.compare end
+module StringSet = Set.Make(StringOrd)
 
-let is_loaded_native_file s = String.List.mem s !loaded_native_files
+let loaded_native_files = ref StringSet.empty
+
+let is_loaded_native_file s = StringSet.mem s !loaded_native_files
 
 let register_native_file s =
-  if not (is_loaded_native_file s) then
-    loaded_native_files := s :: !loaded_native_files
+  loaded_native_files := StringSet.add s !loaded_native_files
 
 let is_code_loaded ~interactive name =
   match !name with

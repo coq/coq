@@ -1500,9 +1500,11 @@ let head_of_constr h c =
   let c = head_of_constr c in
   letin_tac None (Name h) c None Locusops.allHyps
 
-let not_evar c = match kind_of_term c with
-| Evar _ -> Tacticals.New.tclFAIL 0 (str"Evar")
-| _ -> Proofview.tclUNIT ()
+let not_evar c =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match Evarutil.kind_of_term_upto sigma c with
+  | Evar _ -> Tacticals.New.tclFAIL 0 (str"Evar")
+  | _ -> Proofview.tclUNIT ()
 
 let is_ground c gl =
   if Evarutil.is_ground_term (project gl) c then tclIDTAC gl

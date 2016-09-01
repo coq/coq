@@ -816,9 +816,11 @@ END
 
 TACTIC EXTEND is_evar
 | [ "is_evar" constr(x) ] ->
-    [ match kind_of_term x with
+    [ Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
+      match Evarutil.kind_of_term_upto sigma x with
         | Evar _ -> Proofview.tclUNIT ()
         | _ -> Tacticals.New.tclFAIL 0 (str "Not an evar")
+      end
     ]
 END
 

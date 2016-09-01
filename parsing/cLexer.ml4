@@ -103,6 +103,9 @@ open Error
 
 let current_file = ref ""
 
+let get_current_file () =
+  !current_file
+
 let set_current_file ~fname =
   current_file := fname
 

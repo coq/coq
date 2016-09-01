@@ -8,35 +8,45 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria)      2013-2016                        *)
+(*  Frédéric Besson (Irisa/Inria)      2016                             *)
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZMicromega.
-Require Import ZArith.
+Require Import QMicromega.
+Require Import QArith.
 Require Import RingMicromega.
 Require Import VarMap.
 Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
-
-Ltac preprocess :=
-  zify ; unfold Z.succ in * ; unfold Z.pred in *.
-
-Ltac zchange := 
+Ltac rchange := 
   intros __wit __varmap __ff ;
-  change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-  apply (ZTautoChecker_sound __ff __wit).
+  change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
+  apply (QTautoChecker_sound __ff __wit).
 
-Ltac zchecker_no_abstract := zchange ; vm_compute ; reflexivity.
+Ltac rchecker_no_abstract := rchange ; vm_compute ; reflexivity.
+Ltac rchecker_abstract   := abstract (rchange ; vm_cast_no_check (eq_refl true)).
 
-Ltac zchecker_abstract := abstract (zchange ; vm_cast_no_check (eq_refl true)).
+Ltac rchecker := (rchecker_abstract || rchecker_no_abstract).
 
-Ltac zchecker := zchecker_abstract || zchecker_no_abstract .
+(** Here, lra stands for linear rational arithmetic *)
+Ltac lra := lra_Q ; rchecker.
 
-Ltac lia := preprocess; xlia ; zchecker.
-               
-Ltac nia := preprocess; xnlia ; zchecker.
+(** Here, nra stands for non-linear rational arithmetic *)
+Ltac nra := xnqa ; rchecker.
+
+Ltac xpsatz dom d :=
+  let tac := lazymatch dom with
+  | Q =>
+    (sos_Q || psatz_Q d) ;
+      (* If csdp is not installed, the previous step might not produce any
+    progress: the rest of the tactical will then fail. Hence the 'try'. *)
+      try  rchecker
+  | _ => fail "Unsupported domain"
+  end in tac.
+
+Tactic Notation "psatz" constr(dom) int_or_var(n) := xpsatz dom n.
+Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:(-1).
 
 
 (* Local Variables: *)

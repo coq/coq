@@ -81,7 +81,6 @@ let open_file_twice_if verbosely longfname =
   let in_chan = open_utf8_file_in longfname in
   let verb_ch =
     if verbosely then Some (open_utf8_file_in longfname) else None in
-  CLexer.set_current_file longfname;
   let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
   (in_chan, longfname, (po, verb_ch))
 
@@ -190,6 +189,8 @@ let rec vernac_com checknav (loc,com) =
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
 	let st = save_translator_coqdoc () in
+        let old_lexer_file = CLexer.get_current_file () in
+        CLexer.set_current_file f;
 	if !Flags.beautify_file then
 	  begin
 	    chan_beautify := open_out (f^beautify_suffix);
@@ -199,9 +200,11 @@ let rec vernac_com checknav (loc,com) =
 	  try
             Flags.silently (read_vernac_file verbosely) f;
 	    restore_translator_coqdoc st;
+            CLexer.set_current_file old_lexer_file;
 	  with reraise ->
             let reraise = CErrors.push reraise in
 	    restore_translator_coqdoc st;
+            CLexer.set_current_file old_lexer_file;
 	    iraise reraise
 	end
 
@@ -271,12 +274,16 @@ let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
 let load_vernac verb file =
   chan_beautify :=
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
+    let old_lexer_file = CLexer.get_current_file () in
   try
+    CLexer.set_current_file file;
     Flags.silently (read_vernac_file verb) file;
     if !Flags.beautify_file then close_out !chan_beautify;
+    CLexer.set_current_file old_lexer_file;
   with any ->
     let (e, info) = CErrors.push any in
     if !Flags.beautify_file then close_out !chan_beautify;
+    CLexer.set_current_file old_lexer_file;
     iraise (disable_drop e, info)
 
 let warn_file_no_extension =

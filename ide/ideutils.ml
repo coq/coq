@@ -46,23 +46,37 @@ let xml_to_string xml =
   let () = iter (Richpp.repr xml) in
   Buffer.contents buf
 
-let translate s = s
+let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
+  (** FIXME: LablGTK2 does not export the C insert_with_tags function, so that
+      it has to reimplement its own helper function. Unluckily, it relies on
+      a slow algorithm, so that we have to have our own quicker version here.
+      Alas, it is still much slower than the native version... *)
+  if CList.is_empty tags then buf#insert ~iter:(buf#get_iter_at_mark mark) text
+  else
+    let it = buf#get_iter_at_mark mark in
+    let () = buf#move_mark rmark ~where:it in
+    let () = buf#insert ~iter:(buf#get_iter_at_mark mark) text in
+    let start = buf#get_iter_at_mark mark in
+    let stop = buf#get_iter_at_mark rmark in
+    let iter tag = buf#apply_tag tag start stop in
+    List.iter iter tags
 
-let insert_xml ?(tags = []) (buf : #GText.buffer_skel) msg =
+let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
   let open Xml_datatype in
   let tag name =
-    let name = translate name in
     match GtkText.TagTable.lookup buf#tag_table name with
     | None -> raise Not_found
     | Some tag -> new GText.tag tag
   in
+  let rmark = `MARK (buf#create_mark buf#start_iter) in
   let rec insert tags = function
-  | PCData s -> buf#insert ~tags:(List.rev tags) s
+  | PCData s -> insert_with_tags buf mark rmark tags s
   | Element (t, _, children) ->
     let tags = try tag t :: tags with Not_found -> tags in
     List.iter (fun xml -> insert tags xml) children
   in
-  insert tags (Richpp.repr msg)
+  let () = try insert tags (Richpp.repr msg) with _ -> () in
+  buf#delete_mark rmark
 
 let set_location = ref  (function s -> failwith "not ready")
 

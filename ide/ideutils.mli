@@ -54,7 +54,7 @@ val flash_info : ?delay:int -> string -> unit
 
 val xml_to_string : Richpp.richpp -> string
 
-val insert_xml : ?tags:GText.tag list ->
+val insert_xml : ?mark:GText.mark -> ?tags:GText.tag list ->
   #GText.buffer_skel -> Richpp.richpp -> unit
 
 val set_location : (string -> unit) ref

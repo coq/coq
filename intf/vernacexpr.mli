@@ -106,7 +106,7 @@ type showable =
   | ShowTree
   | ShowProofNames
   | ShowIntros of bool
-  | ShowMatch of lident
+  | ShowMatch of reference
   | ShowThesis
 
 type comment =

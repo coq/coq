@@ -164,7 +164,7 @@ noreal: unicode logic arith bool zarith qarith lists sets fsets \
 .PHONY: init theories-light noreal
 .PHONY: logic arith bool narith zarith qarith lists strings sets
 .PHONY: fsets relations wellfounded reals setoids sorting numbers
-.PHONY: msets mmaps compat
+.PHONY: msets mmaps compat parith classes program unicode structures vectors
 
 ################
 ### 4) plugins

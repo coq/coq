@@ -33,6 +33,7 @@ type obj = {
 }
 
 let preferences : obj Util.String.Map.t ref = ref Util.String.Map.empty
+let unknown_preferences : string list Util.String.Map.t ref = ref Util.String.Map.empty
 
 class type ['a] repr =
 object
@@ -617,19 +618,19 @@ let save_pref () =
   then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
   let () = try GtkData.AccelMap.save accel_file with _ -> () in
   let add = Util.String.Map.add in
-  let (++) x f = f x in
   let fold key obj accu = add key (obj.get ()) accu in
- 
-    (Util.String.Map.fold fold !preferences Util.String.Map.empty) ++
-    Config_lexer.print_file pref_file
+  let prefs = Util.String.Map.fold fold !preferences Util.String.Map.empty in
+  let prefs = Util.String.Map.fold Util.String.Map.add !unknown_preferences prefs in
+  Config_lexer.print_file pref_file prefs
 
 let load_pref () =
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
 
     let m = Config_lexer.load_file loaded_pref_file in
     let iter name v =
-      try (Util.String.Map.find name !preferences).set v
-      with _ -> ()
+      if Util.String.Map.mem name !preferences then
+        try (Util.String.Map.find name !preferences).set v with _ -> ()
+      else unknown_preferences := Util.String.Map.add name v !unknown_preferences
     in
     Util.String.Map.iter iter m
 

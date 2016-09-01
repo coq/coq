@@ -124,6 +124,14 @@ let rec cases_pattern_fold_map loc g e = function
       let e',patl' = List.fold_map (cases_pattern_fold_map loc g) e patl in
       e', PatCstr (loc,cstr,patl',na')
 
+let subst_binder_type_vars l = function
+  | Evar_kinds.BinderType (Name id) as e ->
+     let id =
+       try match Id.List.assoc id l with GVar(_,id') -> id' | _ -> id
+       with Not_found -> id in
+     Evar_kinds.BinderType (Name id)
+  | e -> e
+
 let rec subst_glob_vars l = function
   | GVar (_,id) as r -> (try Id.List.assoc id l with Not_found -> r)
   | GProd (loc,Name id,bk,t,c) ->
@@ -136,6 +144,7 @@ let rec subst_glob_vars l = function
 	try match Id.List.assoc id l with GVar(_,id') -> id' | _ -> id
 	with Not_found -> id in
       GLambda (loc,Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
+  | GHole (loc,x,naming,arg) -> GHole (loc,subst_binder_type_vars l x,naming,arg)
   | r -> map_glob_constr (subst_glob_vars l) r (* assume: id is not binding *)
 
 let ldots_var = Id.of_string ".."
@@ -1128,13 +1137,15 @@ let match_notation_constr u c (metas,pat) =
   List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders') ->
     match typ with
     | NtnTypeConstr ->
-       ((Id.List.assoc x terms, scl)::terms',termlists',binders')
+      let term = try Id.List.assoc x terms with Not_found -> raise No_match in
+       ((term, scl)::terms',termlists',binders')
     | NtnTypeOnlyBinder ->
        ((find_binder x, scl)::terms',termlists',binders')
     | NtnTypeConstrList ->
        (terms',(Id.List.assoc x termlists,scl)::termlists',binders')
     | NtnTypeBinderList ->
-       (terms',termlists',(Id.List.assoc x binderlists,scl)::binders'))
+      let bl = try Id.List.assoc x binderlists with Not_found -> raise No_match in
+       (terms',termlists',(bl, scl)::binders'))
     metas ([],[],[])
 
 (* Matching cases pattern *)

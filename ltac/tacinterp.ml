@@ -1813,13 +1813,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
 
   (* Conversion *)
   | TacReduce (r,cl) ->
-      (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<reduce>") begin
       Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
         let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
         Sigma.Unsafe.of_pair (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl), sigma)
       end }
-      end
   | TacChange (None,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<change>") begin
