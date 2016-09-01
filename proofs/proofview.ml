@@ -1105,7 +1105,7 @@ struct
     let comb = undefined sigma (CList.rev evs) in
     let sigma = CList.fold_left Unsafe.mark_as_goal_evm sigma comb in
     let open Proof in
-    InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"refine"++spc()++ Hook.get pr_constrv env sigma c)))) >>
+    InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"simple refine"++spc()++ Hook.get pr_constrv env sigma c)))) >>
     Pv.modify (fun ps -> { ps with solution = sigma; comb; })
   end
 
