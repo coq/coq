@@ -869,14 +869,17 @@ let reduction_clause redexp cl =
 	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
 
 let reduce redexp cl =
+  let trace () = Pp.(hov 2 (Pptactic.pr_atomic_tactic (Global.env()) (TacReduce (redexp,cl)))) in
+  Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter { enter = begin fun gl ->
-  let cl = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
-  let redexps = reduction_clause redexp cl in
+  let cl' = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
+  let redexps = reduction_clause redexp cl' in
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
   Tacticals.New.tclMAP (fun (where,redexp) ->
     e_reduct_option ~check
       (Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp) where) redexps
   end }
+  end
 
 (* Unfolding occurrences of a constant *)
 
