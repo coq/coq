@@ -235,6 +235,12 @@ let mkVar id = Var id
 
 let kind c = c
 
+(* The other way around. We treat specifically smart constructors *)
+let of_kind = function
+| App (f, a) -> mkApp (f, a)
+| Cast (c, knd, t) -> mkCast (c, knd, t)
+| k -> k
+
 (****************************************************************************)
 (*              Functions to recur through subterms                         *)
 (****************************************************************************)

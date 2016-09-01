@@ -71,6 +71,7 @@ let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
 let rawdebug = ref false
 let ppevar evk = pp (str (Evd.string_of_existential evk))
 let ppconstr x = pp (Termops.print_constr x)
+let ppeconstr x = pp (Termops.print_constr (EConstr.Unsafe.to_constr x))
 let ppconstr_expr x = pp (Ppconstr.pr_constr_expr x)
 let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr x)
 let ppterm = ppconstr

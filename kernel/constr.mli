@@ -223,6 +223,7 @@ type ('constr, 'types) kind_of_term =
    term *)
 
 val kind : constr -> (constr, types) kind_of_term
+val of_kind : (constr, types) kind_of_term -> constr
 
 (** [equal a b] is true if [a] equals [b] modulo alpha, casts,
    and application grouping *)
@@ -307,6 +308,15 @@ val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
 
 val compare_head_gen : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
   (Sorts.t -> Sorts.t -> bool) ->
+  (constr -> constr -> bool) ->
+  constr -> constr -> bool
+
+val compare_head_gen_leq_with :
+  (constr -> (constr,types) kind_of_term) ->
+  (constr -> (constr,types) kind_of_term) ->
+  (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
+  (Sorts.t -> Sorts.t -> bool) ->
+  (constr -> constr -> bool) ->
   (constr -> constr -> bool) ->
   constr -> constr -> bool
 

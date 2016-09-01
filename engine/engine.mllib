@@ -4,6 +4,7 @@ Universes
 UState
 Evd
 Sigma
+EConstr
 Termops
 Proofview_monad
 Evarutil
