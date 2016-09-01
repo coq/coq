@@ -1437,7 +1437,36 @@ let rcst_domain_spec  = lazy {
 
 open Proofview.Notations
 
- 
+(** Naive topological sort of constr according to the subterm-ordering *)
+
+(* An element is minimal x is minimal w.r.t y if 
+   x <= y or (x and y are incomparable) *)
+
+let is_min le x y =
+  if le x y then true
+  else    if le y x then false else true
+
+let is_minimal le l c = List.for_all (is_min le c) l
+    
+let find_rem p l =
+  let rec xfind_rem  acc l =
+    match l with
+    | [] -> (None, acc)
+    | x :: l -> if p x then (Some x, acc @ l)
+      else xfind_rem (x::acc) l in
+  xfind_rem [] l
+
+let find_minimal le l = find_rem (is_minimal le l) l
+  
+let rec mk_topo_order le l =
+  match find_minimal le l with
+  | (None , _) -> []
+  | (Some v,l') -> v ::  (mk_topo_order le l')
+
+    
+let topo_sort_constr l = mk_topo_order Termops.dependent l
+
+
 (**
   * Instanciate the current Coq goal with a Micromega formula, a varmap, and a
   * witness.
@@ -1464,7 +1493,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
       ]
       (Tacmach.pf_concl gl))
    ;
-   Tactics.generalize env ;
+      Tactics.generalize (topo_sort_constr env) ;
    Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
   ] 
   end }
@@ -1774,7 +1803,7 @@ let micromega_order_changer cert env ff  =
          ("__wit", cert, cert_typ)
         ]
         (Tacmach.pf_concl gl)));
-      Tactics.generalize env ;
+      Tactics.generalize (topo_sort_constr env) ;
       Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
      ]
   end }
