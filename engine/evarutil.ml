@@ -18,6 +18,10 @@ open Environ
 open Evd
 open Sigma.Notations
 
+let safe_evar_info sigma evk =
+  try Some (Evd.find sigma evk)
+  with Not_found -> None
+
 let safe_evar_value sigma ev =
   try Some (Evd.existential_value sigma ev)
   with NotInstantiatedEvar | Not_found -> None
@@ -66,12 +70,14 @@ let rec flush_and_check_evars sigma c =
 
 let rec whd_evar sigma c =
   match kind_of_term c with
-    | Evar ev ->
-        let (evk, args) = ev in
+    | Evar (evk, args) ->
+      begin match safe_evar_info sigma evk with
+      | Some ({ evar_body = Evar_defined c } as info) ->
         let args = Array.map (fun c -> whd_evar sigma c) args in
-        (match safe_evar_value sigma (evk, args) with
-            Some c -> whd_evar sigma c
-          | None -> c)
+        let c = instantiate_evar_array info c args in
+        whd_evar sigma c
+      | _ -> c
+      end
     | Sort (Type u) -> 
       let u' = Evd.normalize_universe sigma u in
 	if u' == u then c else mkSort (Sorts.sort_of_univ u')
