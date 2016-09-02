@@ -132,13 +132,13 @@ let grammar_delete e reinit (pos,rls) =
 let grammar_extend e reinit ext =
   let ext = of_coq_extend_statement ext in
   let undo () = grammar_delete e reinit ext in
-  let redo () = camlp4_verbose (maybe_uncurry (G.extend e)) ext in
+  let redo () = camlp4_verbosity false (maybe_uncurry (G.extend e)) ext in
   camlp4_state := ByEXTEND (undo, redo) :: !camlp4_state;
   redo ()
 
 let grammar_extend_sync e reinit ext =
   camlp4_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp4_state;
-  camlp4_verbose (maybe_uncurry (G.extend e)) (of_coq_extend_statement ext)
+  camlp4_verbosity false (maybe_uncurry (G.extend e)) (of_coq_extend_statement ext)
 
 (** The apparent parser of Coq; encapsulate G to keep track
     of the extensions. *)
