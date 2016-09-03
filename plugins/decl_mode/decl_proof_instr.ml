@@ -42,7 +42,7 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "strict mode";
+      optname  = "strict proofs";
       optkey   = ["Strict";"Proofs"];
       optread  = get_strictness;
       optwrite = set_strictness }
