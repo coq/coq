@@ -499,6 +499,10 @@ module Goal : sig
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
   val enter : ([ `LZ ], unit tactic) enter -> unit tactic
 
+  (** Like {!enter}, but assumes exactly one goal under focus, raising *)
+  (** an error otherwise. *)
+  val enter_one : ([ `LZ ], 'a tactic) enter -> 'a tactic
+
   type ('a, 'b) s_enter =
     { s_enter : 'r. ('a, 'r) t -> ('b, 'r) Sigma.sigma }
 

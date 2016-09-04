@@ -1058,6 +1058,19 @@ module Goal = struct
     end
     end
 
+  let enter_one f =
+    let open Proof in
+    Comb.get >>= function
+    | [goal] -> begin
+       Env.get >>= fun env ->
+       tclEVARMAP >>= fun sigma ->
+       try f.enter (gmake env sigma goal)
+       with e when catchable_exception e ->
+         let (e, info) = CErrors.push e in
+         tclZERO ~info e
+      end
+    | _ -> tclZERO (CErrors.errorlabstrm "" (str "More than one subgoal"))
+
   type ('a, 'b) s_enter =
     { s_enter : 'r. ('a, 'r) t -> ('b, 'r) Sigma.sigma }
 
