@@ -30,6 +30,9 @@ val refine : ?unsafe:bool -> Constr.t Sigma.run -> unit tactic
     tactic failures. If [unsafe] is [false] (default is [true]) [t] is
     type-checked beforehand. *)
 
+val refine_one : ?unsafe:bool -> ('a * Constr.t) Sigma.run -> 'a tactic
+(** A generalization of [refine] which assumes exactly one goal under focus *)
+
 (** {7 Helper functions} *)
 
 val with_type : Environ.env -> Evd.evar_map ->
