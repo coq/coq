@@ -51,7 +51,8 @@ let typecheck_proof c concl env sigma =
 let (pr_constrv,pr_constr) =
   Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
 
-let refine ?(unsafe = true) f = Proofview.Goal.enter { enter = begin fun gl ->
+let make_refine_enter ?(unsafe = true) f =
+  { enter = fun gl ->
   let gl = Proofview.Goal.assume gl in
   let sigma = Proofview.Goal.sigma gl in
   let sigma = Sigma.to_evar_map sigma in
@@ -62,7 +63,7 @@ let refine ?(unsafe = true) f = Proofview.Goal.enter { enter = begin fun gl ->
   let prev_future_goals = Evd.future_goals sigma in
   let prev_principal_goal = Evd.principal_future_goal sigma in
   (** Create the refinement term *)
-  let (c, sigma) = Sigma.run (Evd.reset_future_goals sigma) f in
+  let ((v,c), sigma) = Sigma.run (Evd.reset_future_goals sigma) f in
   let evs = Evd.future_goals sigma in
   let evkmain = Evd.principal_future_goal sigma in
   (** Check that the introduced evars are well-typed *)
@@ -92,10 +93,18 @@ let refine ?(unsafe = true) f = Proofview.Goal.enter { enter = begin fun gl ->
   let comb = CList.map_filter (Proofview.Unsafe.advance sigma) (CList.rev evs) in
   let sigma = CList.fold_left Proofview.Unsafe.mark_as_goal sigma comb in
   let trace () = Pp.(hov 2 (str"simple refine"++spc()++ Hook.get pr_constrv env sigma c)) in
-  Proofview.Trace.name_tactic trace (Proofview.tclUNIT ()) >>= fun () ->
-  Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-  Proofview.Unsafe.tclSETGOALS comb
-end }
+  Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->
+  Proofview.Unsafe.tclEVARS sigma <*>
+  Proofview.Unsafe.tclSETGOALS comb <*>
+  Proofview.tclUNIT v
+  }
+
+let refine_one ?(unsafe = true) f =
+  Proofview.Goal.enter_one (make_refine_enter ~unsafe f)
+
+let refine ?(unsafe = true) f =
+  let f = { run = fun sigma -> let Sigma (c,sigma,p) = f.run sigma in Sigma (((),c),sigma,p) } in
+  Proofview.Goal.enter (make_refine_enter ~unsafe f)
 
 (** Useful definitions *)
 
