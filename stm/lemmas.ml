@@ -249,10 +249,14 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
   | Some body ->
       let body = norm body in
       let k = Kindops.logical_kind_of_goal_kind kind in
-      let body_i = match kind_of_term body with
+      let rec body_i t = match kind_of_term t with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
         | CoFix (0,decls) -> mkCoFix (i,decls)
+        | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, body_i t2)
+        | Lambda(na,ty,t) -> mkLambda(na,ty,body_i t)
+        | App (t, args) -> mkApp (body_i t, args)
         | _ -> anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr body) in
+      let body_i = body_i body in
       match locality with
       | Discharge ->
           let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
