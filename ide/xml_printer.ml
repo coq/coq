@@ -17,65 +17,65 @@ type t = target
 let make x = x
 
 let buffer_pcdata tmp text =
-  let output = Buffer.add_string tmp in
-  let output' = Buffer.add_char tmp in
+  let puts = Buffer.add_string tmp in
+  let putc = Buffer.add_char tmp in
   let l = String.length text in
   for p = 0 to l-1 do
     match text.[p] with
-      | ' ' -> output "&nbsp;";
-      | '>' -> output "&gt;"
-      | '<' -> output "&lt;"
+      | ' ' -> puts "&nbsp;";
+      | '>' -> puts "&gt;"
+      | '<' -> puts "&lt;"
       | '&' ->
         if p < l - 1 && text.[p + 1] = '#' then
-          output' '&'
+          putc '&'
         else
-          output "&amp;"
-      | '\'' -> output "&apos;"
-      | '"' -> output "&quot;"
-      | c -> output' c
+          puts "&amp;"
+      | '\'' -> puts "&apos;"
+      | '"' -> puts "&quot;"
+      | c -> putc c
   done
 
 let buffer_attr tmp (n,v) =
-  let output = Buffer.add_string tmp in
-  let output' = Buffer.add_char tmp in
-  output' ' ';
-  output n;
-  output "=\"";
+  let puts = Buffer.add_string tmp in
+  let putc = Buffer.add_char tmp in
+  putc ' ';
+  puts n;
+  puts "=\"";
   let l = String.length v in
   for p = 0 to l - 1 do
     match v.[p] with
-      | '\\' -> output "\\\\"
-      | '"' -> output "\\\""
-      | '<' -> output "&lt;"
-      | '&' -> output "&amp;"
-      | c -> output' c
+      | '\\' -> puts "\\\\"
+      | '"' -> puts "\\\""
+      | '<' -> puts "&lt;"
+      | '&' -> puts "&amp;"
+      | c -> putc c
   done;
-  output' '"'
+  putc '"'
 
 let to_buffer tmp x =
   let pcdata = ref false in
-  let output = Buffer.add_string tmp in
-  let output' = Buffer.add_char tmp in
+  let puts = Buffer.add_string tmp in
+  let putc = Buffer.add_char tmp in
   let rec loop = function
     | Element (tag,alist,[]) ->
-      output' '<';
-      output tag;
+      putc '<';
+      puts tag;
       List.iter (buffer_attr tmp) alist;
-      output "/>";
+      puts "/>";
       pcdata := false;
     | Element (tag,alist,l) ->
-      output' '<';
-      output tag;
+      putc '<';
+      puts tag;
       List.iter (buffer_attr tmp) alist;
-      output' '>';
+      putc '>';
       pcdata := false;
       List.iter loop l;
-      output "</";
-      output tag;
-      output' '>';
+      puts "</";
+      puts tag;
+      putc '>';
       pcdata := false;
     | PCData text ->
-      if !pcdata then output' ' ';
+      if !pcdata then putc ' ';
       buffer_pcdata tmp text;
       pcdata := true;
   in
@@ -93,42 +93,42 @@ let to_string x =
 
 let to_string_fmt x =
   let tmp = Buffer.create 200 in
-  let output = Buffer.add_string tmp in
-  let output' = Buffer.add_char tmp in
+  let puts = Buffer.add_string tmp in
+  let putc = Buffer.add_char tmp in
   let rec loop ?(newl=false) tab = function
     | Element (tag, alist, []) ->
-      output tab;
-      output' '<';
-      output tag;
+      puts tab;
+      putc '<';
+      puts tag;
       List.iter (buffer_attr tmp) alist;
-      output "/>";
-      if newl then output' '\n';
+      puts "/>";
+      if newl then putc '\n';
     | Element (tag, alist, [PCData text]) ->
-      output tab;
-      output' '<';
-      output tag;
+      puts tab;
+      putc '<';
+      puts tag;
       List.iter (buffer_attr tmp) alist;
-      output ">";
+      puts ">";
       buffer_pcdata tmp text;
-      output "</";
-      output tag;
-      output' '>';
-      if newl then output' '\n';
+      puts "</";
+      puts tag;
+      putc '>';
+      if newl then putc '\n';
     | Element (tag, alist, l) ->
-      output tab;
-      output' '<';
-      output tag;
+      puts tab;
+      putc '<';
+      puts tag;
       List.iter (buffer_attr tmp) alist;
-      output ">\n";
+      puts ">\n";
       List.iter (loop ~newl:true (tab^"  ")) l;
-      output tab;
-      output "</";
-      output tag;
-      output' '>';
-      if newl then output' '\n';
+      puts tab;
+      puts "</";
+      puts tag;
+      putc '>';
+      if newl then putc '\n';
     | PCData text ->
       buffer_pcdata tmp text;
-      if newl then output' '\n';
+      if newl then putc '\n';
   in
   loop "" x;
   Buffer.contents tmp
