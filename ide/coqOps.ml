@@ -561,13 +561,19 @@ object(self)
       condition returns true; it is fed with the number of phrases read and the
       iters enclosing the current sentence. *)
   method private fill_command_queue until queue =
+    let topstack =
+      if Doc.focused document then fst (Doc.context document) else [] in
     let rec loop n iter =
       match Sentence.find buffer iter with
       | None -> ()
       | Some (start, stop) ->
         if until n start stop then begin
           ()
-        end else if stop#backward_char#has_tag Tags.Script.processed then begin
+        end else if
+          List.exists (fun (_, s) ->
+            start#equal (buffer#get_iter_at_mark s.start) &&
+            stop#equal (buffer#get_iter_at_mark s.stop)) topstack
+        then begin
           Queue.push (`Skip (start, stop)) queue;
           loop n stop
         end else begin
