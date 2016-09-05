@@ -499,7 +499,7 @@ let loop () =
   let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
   Feedback.set_logger (slave_logger xml_oc);
-  Feedback.set_feeder (slave_feeder xml_oc);
+  Feedback.add_feeder (slave_feeder xml_oc);
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
