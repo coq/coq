@@ -387,16 +387,19 @@ let push_rel_context_to_named_context env typ =
   (* compute the instances relative to the named context and rel_context *)
   let open Context.Named.Declaration in
   let ids = List.map get_id (named_context env) in
-  let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
   let inst_vars = List.map mkVar ids in
-  let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
-  (* move the rel context to a named context and extend the named instance *)
-  (* with vars of the rel context *)
-  (* We do keep the instances corresponding to local definition (see above) *)
-  let (subst, vsubst, _, env) =
-    Context.Rel.fold_outside push_rel_decl_to_named_context
-      (rel_context env) ~init:(empty_csubst, [], avoid, named_context env) in
-  (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
+  if List.is_empty (Environ.rel_context env) then
+    (named_context_val env, typ, inst_vars, empty_csubst, [])
+  else
+    let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
+    let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
+    (* move the rel context to a named context and extend the named instance *)
+    (* with vars of the rel context *)
+    (* We do keep the instances corresponding to local definition (see above) *)
+    let (subst, vsubst, _, env) =
+      Context.Rel.fold_outside push_rel_decl_to_named_context
+        (rel_context env) ~init:(empty_csubst, [], avoid, named_context env) in
+    (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
 (*------------------------------------*
  * Entry points to define new evars   *
