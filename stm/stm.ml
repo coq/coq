@@ -2089,13 +2089,13 @@ let known_state ?(redefine_qed=false) ~cache id =
   let inject_non_pstate (s,l) =
     Summary.unfreeze_summary s; Lib.unfreeze l; update_global_env ()
   in
-  let rec pure_cherry_pick_non_pstate id = Future.purify (fun id ->
+  let rec pure_cherry_pick_non_pstate safe_id id = Future.purify (fun id ->
     prerr_endline (fun () -> "cherry-pick non pstate " ^ Stateid.to_string id);
-    reach id;
+    reach ~safe_id id;
     cherry_pick_non_pstate ()) id
 
   (* traverses the dag backward from nodes being already calculated *)
-  and reach ?(redefine_qed=false) ?(cache=cache) id =
+  and reach ?safe_id ?(redefine_qed=false) ?(cache=cache) id =
     prerr_endline (fun () -> "reaching: " ^ Stateid.to_string id);
     if not redefine_qed && State.is_cached ~cache id then begin
       Hooks.(call state_computed id ~in_cache:true);
@@ -2240,13 +2240,13 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache, true
       | `Sideff (`Id origin) -> (fun () ->
             reach view.next;
-            inject_non_pstate (pure_cherry_pick_non_pstate origin);
+            inject_non_pstate (pure_cherry_pick_non_pstate view.next origin);
           ), cache, true
     in
     let cache_step =
       if !Flags.async_proofs_cache = Some Flags.Force then `Yes
       else cache_step in
-    State.define
+    State.define ?safe_id
       ~cache:cache_step ~redefine:redefine_qed ~feedback_processed step id;
     prerr_endline (fun () -> "reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
