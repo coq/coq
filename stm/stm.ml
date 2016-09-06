@@ -2471,12 +2471,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
             {x with verbose = true }
            with e when CErrors.noncritical e ->
              let e = CErrors.push e in
-             iraise (State.exn_on report_id e)); `Ok
+             iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (false,(report_id,route)), VtNow ->
           (try vernac_interp report_id ~route x
            with e ->
              let e = CErrors.push e in
-             iraise (State.exn_on report_id e)); `Ok
+             iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (true,(report_id,_)), w ->
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in
