@@ -365,8 +365,8 @@ let set_string_option_value = set_string_option_value_gen None
 
 let msg_option_value (name,v) =
   match v with
-    | BoolValue true  -> str "true"
-    | BoolValue false -> str "false"
+    | BoolValue true  -> str "on"
+    | BoolValue false -> str "off"
     | IntValue (Some n) -> int n
     | IntValue None   -> str "undefined"
     | StringValue s   -> str s
