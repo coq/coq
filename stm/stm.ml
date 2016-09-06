@@ -2358,7 +2358,7 @@ let merge_proof_branch ?valid ?id qast keep brname =
       let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
-      if keep <> VtDrop then VCS.propagate_sideff None;
+      VCS.propagate_sideff None;
       `Ok
   | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
       let ofp =
