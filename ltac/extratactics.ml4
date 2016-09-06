@@ -1050,6 +1050,36 @@ TACTIC EXTEND decompose
 | [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]
 END
 
+(** Stronger [progress] tactical: will fail if the goals before the
+    tactics can be found among the goals after the tactic. Evar
+    instantiation in any of the original goal is considered
+    progress. *)
+let strong_progress t =
+  let normalize lazy_goal =
+    lazy_goal >>= fun unnormalized_goal ->
+    Proofview.Goal.normalize unnormalized_goal
+  in
+  let normalized_goals =
+    Proofview.Goal.goals >>= fun lazy_goals ->
+    Proofview.Monad.List.map normalize lazy_goals
+  in
+  let subset l1 l2 =
+    List.for_all
+      (fun goal1 -> List.exists (fun goal2 -> Proofview.Goal.equal goal1 goal2) l2) l1
+  in
+  normalized_goals >>= fun initial_goals ->
+  t >>= fun result ->
+  normalized_goals >>= fun final_goals ->
+  if not (subset initial_goals final_goals) then Proofview.tclUNIT result
+  else Tacticals.New.tclZEROMSG Pp.(str"Every initial goal is still required.")
+
+
+
+TACTIC EXTEND strong_progress
+| [ "strong_progress" tactic(tac) ] ->
+    [ strong_progress (Tacinterp.tactic_of_value ist tac) ]
+END
+
 (** library/keys *)
 
 VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF

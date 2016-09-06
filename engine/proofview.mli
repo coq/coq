@@ -483,6 +483,13 @@ module Goal : sig
   val sigma : ('a, 'r) t -> 'r Sigma.t
   val extra : ('a, 'r) t -> Evd.Store.t
 
+  (** {equal} compares two goals extensionally ({i i.e.} compares the
+      (normalised) hypotheses and conclusions of the goals). The goals
+      need not be in the same [evar_map], however when evars are
+      compared it will be supposed that they have a coherent typing
+      context in both [evar_map]. *)
+  val equal : ([`NF], 'r) t -> ([`NF], 's) t -> bool
+
   (** Returns the goal's conclusion even if the goal is not
       normalised. *)
   val raw_concl : ('a, 'r) t -> Term.constr
