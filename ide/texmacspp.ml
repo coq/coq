@@ -742,7 +742,7 @@ let rec tmpp v loc =
   | VernacShow _ as x -> xmlTODO loc x
   | VernacCheckGuard as x -> xmlTODO loc x
   | VernacProof (tac,using) ->
-      let tac = Option.map (xmlRawTactic "closingtactic") tac in
+      let tac = None (** FIXME *) in
       let using = Option.map (xmlSectionSubsetDescr "using") using in
       xmlProof loc (Option.List.(cons tac (cons using [])))
   | VernacProofMode name -> xmlProofMode loc name

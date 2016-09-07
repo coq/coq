@@ -34,7 +34,7 @@ type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use 
 
 type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
 
-type goal_selector =
+type goal_selector = Vernacexpr.goal_selector =
   | SelectNth of int
   | SelectList of (int * int) list
   | SelectId of Id.t
@@ -401,3 +401,7 @@ type ltac_call_kind =
   | LtacConstrInterp of Glob_term.glob_constr * Pretyping.ltac_var_map
 
 type ltac_trace = (Loc.t * ltac_call_kind) list
+
+type tacdef_body =
+  | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
+  | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)

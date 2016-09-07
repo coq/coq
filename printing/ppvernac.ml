@@ -195,7 +195,7 @@ module Make
         | HintsExtern (n,c,tac) ->
           let pat = match c with None -> mt () | Some pat -> pr_pat pat in
           keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
-            spc() ++ pr_raw_tactic tac
+            spc() ++ pr_raw_generic (Global.env ()) tac
     in
     hov 2 (keyword "Hint "++ pph ++ opth)
 
@@ -1179,12 +1179,12 @@ module Make
         return (keyword "Proof " ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e)
       | VernacProof (Some te, None) ->
-        return (keyword "Proof with" ++ spc() ++ pr_raw_tactic te)
+        return (keyword "Proof with" ++ spc() ++ pr_raw_generic (Global.env ()) te)
       | VernacProof (Some te, Some e) ->
         return (
           keyword "Proof" ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e ++ spc() ++
-            keyword "with" ++ spc() ++pr_raw_tactic te
+            keyword "with" ++ spc() ++ pr_raw_generic (Global.env ()) te
         )
       | VernacProofMode s ->
         return (keyword "Proof Mode" ++ str s)

@@ -287,15 +287,15 @@ GEXTEND Gram
   (* Definitions for tactics *)
   tacdef_body:
     [ [ name = Constr.global; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
-          if redef then Vernacexpr.TacticRedefinition (name, TacFun (it, body))
+          if redef then Tacexpr.TacticRedefinition (name, TacFun (it, body))
           else
             let id = reference_to_id name in
-            Vernacexpr.TacticDefinition (id, TacFun (it, body))
+            Tacexpr.TacticDefinition (id, TacFun (it, body))
       | name = Constr.global; redef = ltac_def_kind; body = tactic_expr ->
-          if redef then Vernacexpr.TacticRedefinition (name, body)
+          if redef then Tacexpr.TacticRedefinition (name, body)
           else
             let id = reference_to_id name in
-            Vernacexpr.TacticDefinition (id, body)
+            Tacexpr.TacticDefinition (id, body)
     ] ]
   ;
   tactic:

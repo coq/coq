@@ -26,6 +26,8 @@ let hint_proof_using e = function
      | None -> None
      | Some s -> Some (Gram.entry_parse e (Gram.parsable (Stream.of_string s)))
 
+let in_tac tac = Genarg.in_gen (Genarg.rawwit Constrarg.wit_ltac) tac
+
 (* Proof commands *)
 GEXTEND Gram
   GLOBAL: command;
@@ -41,9 +43,9 @@ GEXTEND Gram
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
       | IDENT "Proof"; "with"; ta = tactic; 
         l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
-          VernacProof (Some ta,hint_proof_using G_vernac.section_subset_expr l)
+          VernacProof (Some (in_tac ta),hint_proof_using G_vernac.section_subset_expr l)
       | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
-        ta = OPT [ "with"; ta = tactic -> ta ] ->
+        ta = OPT [ "with"; ta = tactic -> in_tac ta ] ->
           VernacProof (ta,Some l)
       | IDENT "Proof"; c = lconstr -> VernacExactProof c
       | IDENT "Abort" -> VernacAbort None
@@ -127,7 +129,7 @@ GEXTEND Gram
       | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
       | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
           tac = tactic ->
-	  HintsExtern (n,c,tac) ] ]
+	  HintsExtern (n,c, in_tac tac) ] ]
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c

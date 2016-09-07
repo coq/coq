@@ -210,7 +210,7 @@ val run_hint : hint ->
 val repr_hint : hint -> (raw_hint * clausenv) hint_ast
 
 val extern_intern_tac :
-  (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
+  (patvar list -> Genarg.raw_generic_argument -> Tacexpr.glob_tactic_expr) Hook.t
 
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;

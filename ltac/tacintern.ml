@@ -796,11 +796,13 @@ let () =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ =
-  let f l =
+  (** FIXME: use generic internalization *)
+  let f l tac =
+    let tac = out_gen (rawwit Constrarg.wit_ltac) tac in
     let ltacvars =
       List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l
     in
     Flags.with_option strict_check
-    (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars })
+    (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars }) tac
   in
   Hook.set Hints.extern_intern_tac f

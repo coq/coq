@@ -425,7 +425,7 @@ let warn_unusable_identifier =
 let register_ltac local tacl =
   let map tactic_body =
     match tactic_body with
-    | TacticDefinition ((loc,id), body) ->
+    | Tacexpr.TacticDefinition ((loc,id), body) ->
         let kn = Lib.make_kn id in
         let id_pp = pr_id id in
         let () = if is_defined_tac kn then
@@ -441,7 +441,7 @@ let register_ltac local tacl =
         in
         let () = if is_shadowed then warn_unusable_identifier id in
         NewTac id, body
-    | TacticRedefinition (ident, body) ->
+    | Tacexpr.TacticRedefinition (ident, body) ->
         let loc = loc_of_reference ident in
         let kn =
           try Nametab.locate_tactic (snd (qualid_of_reference ident))
