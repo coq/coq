@@ -447,7 +447,6 @@ object(self)
       | Processed, Some (id,sentence) ->
           log "Processed" id;
           remove_flag sentence `PROCESSING;
-          remove_flag sentence `ERROR;
           self#mark_as_needed sentence
       | ProcessingIn _,  Some (id,sentence) ->
           log "ProcessingIn" id;
