@@ -10,8 +10,8 @@
 
 open Term
 open Clenv
-open Tacexpr
 open Unification
+open Misctypes
 
 (** Tactics *)
 val unify : ?flags:unify_flags -> constr -> unit Proofview.tactic

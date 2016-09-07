@@ -125,7 +125,7 @@ type glob_constr_and_expr = Glob_term.glob_constr * constr_expr option
 type open_constr_expr = unit * constr_expr
 type open_glob_constr = unit * glob_constr_and_expr
 
-type binding_bound_vars = Id.Set.t
+type binding_bound_vars = Constr_matching.binding_bound_vars
 type glob_constr_pattern_and_expr = binding_bound_vars * glob_constr_and_expr * constr_pattern
 
 type 'a delayed_open = 'a Pretyping.delayed_open =

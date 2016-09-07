@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Tacexpr
 open Vernacexpr
 open Notation
 open Constrexpr

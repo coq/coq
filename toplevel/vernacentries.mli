@@ -62,5 +62,5 @@ val with_fail : bool -> (unit -> unit) -> unit
 
 val command_focus : unit Proof.focus_kind
 
-val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Tacexpr.raw_red_expr ->
+val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
   Evd.evar_map * Redexpr.red_expr) Hook.t

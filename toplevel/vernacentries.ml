@@ -848,9 +848,7 @@ let vernac_set_end_tac tac =
   let tac = Genarg.out_gen (Genarg.rawwit Constrarg.wit_ltac) tac in
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
-  match tac with
-  | Tacexpr.TacId [] -> ()
-  | _ -> set_end_tac tac
+  set_end_tac tac
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
 let vernac_set_used_variables e =

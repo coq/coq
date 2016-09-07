@@ -11,7 +11,6 @@
 open Evd
 open Names
 open Term
-open Tacexpr
 open Glob_term
 open Nametab
 open Misctypes

@@ -13,7 +13,7 @@ open Misctypes
 
 (** Eliminations tactics. *)
 
-val introCaseAssumsThen : Tacexpr.evars_flag ->
+val introCaseAssumsThen : evars_flag ->
   (Tacexpr.intro_patterns -> branch_assumptions -> unit Proofview.tactic) ->
     branch_args -> unit Proofview.tactic
 

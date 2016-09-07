@@ -497,8 +497,6 @@ let inversion inv_kind status names id =
 let inv_gen thin status names =
   try_intros_until (inversion thin status names)
 
-open Tacexpr
-
 let inv k = inv_gen k NoDep
 
 let inv_tac id       = inv FullInversion None (NamedHyp id)

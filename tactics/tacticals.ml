@@ -479,10 +479,10 @@ module New = struct
 
   (* Select a subset of the goals *)
   let tclSELECT = function
-    | Tacexpr.SelectNth i -> Proofview.tclFOCUS i i
-    | Tacexpr.SelectList l -> Proofview.tclFOCUSLIST l
-    | Tacexpr.SelectId id -> Proofview.tclFOCUSID id
-    | Tacexpr.SelectAll -> fun tac -> tac
+    | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i
+    | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l
+    | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id
+    | Vernacexpr.SelectAll -> fun tac -> tac
 
   (* Check that holes in arguments have been resolved *)
 
@@ -533,7 +533,7 @@ module New = struct
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
-      let Sigma (x, sigma, _) = x.Tacexpr.delayed env sigma in
+      let Sigma (x, sigma, _) = x.Pretyping.delayed env sigma in
       tclWITHHOLES check (tac x) (Sigma.to_evar_map sigma)
     end }
 

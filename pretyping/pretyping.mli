@@ -58,6 +58,8 @@ type inference_flags = {
 type 'a delayed_open =
   { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
 
+type delayed_open_constr = constr delayed_open
+
 val default_inference_flags : bool -> inference_flags
 
 val no_classes_no_fail_inference_flags : inference_flags

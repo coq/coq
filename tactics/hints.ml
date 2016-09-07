@@ -24,7 +24,6 @@ open Evd
 open Termops
 open Inductiveops
 open Typing
-open Tacexpr
 open Decl_kinds
 open Pattern
 open Patternops
@@ -40,6 +39,8 @@ module NamedDecl = Context.Named.Declaration
 (****************************************)
 (* General functions                    *)
 (****************************************)
+
+type debug = Tacexpr.debug = Debug | Info | Off
 
 exception Bound
 
@@ -1093,7 +1094,7 @@ type hints_entry =
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
-      int * (patvar list * constr_pattern) option * glob_tactic_expr
+      int * (patvar list * constr_pattern) option * Tacexpr.glob_tactic_expr
 
 let default_prepare_hint_ident = Id.of_string "H"
 
@@ -1231,7 +1232,7 @@ let add_hint_lemmas env sigma eapply lems hint_db =
 let make_local_hint_db env sigma ts eapply lems =
   let map c =
     let sigma = Sigma.Unsafe.of_evar_map sigma in
-    let Sigma (c, sigma, _) = c.delayed env sigma in
+    let Sigma (c, sigma, _) = c.Pretyping.delayed env sigma in
     (Sigma.to_evar_map sigma, c)
   in
   let lems = List.map map lems in
