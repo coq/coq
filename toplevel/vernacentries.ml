@@ -844,8 +844,9 @@ let focus_command_cond = Proof.no_cond command_focus
 let vernac_solve_existential = instantiate_nth_evar_com
 
 let vernac_set_end_tac tac =
-  (** FIXME *)
-  let tac = Genarg.out_gen (Genarg.rawwit Constrarg.wit_ltac) tac in
+  let open Genintern in
+  let env = { genv = Global.env (); ltacvars = Id.Set.empty } in
+  let _, tac = Genintern.generic_intern env tac in
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
   set_end_tac tac

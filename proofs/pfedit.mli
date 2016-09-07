@@ -124,7 +124,7 @@ val get_all_proof_names : unit -> Id.t list
 (** [set_end_tac tac] applies tactic [tac] to all subgoal generate
     by [solve] *)
 
-val set_end_tac : Tacexpr.raw_tactic_expr -> unit
+val set_end_tac : Genarg.glob_generic_argument -> unit
 
 (** {6 ... } *)
 (** [set_used_variables l] declares that section variables [l] will be

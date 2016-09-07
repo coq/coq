@@ -1969,7 +1969,6 @@ let interp_tac_gen lfun avoid_ids debug t =
   end }
 
 let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
-let _ = Proof_global.set_interp_tac interp
 
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 (* [global] means that [t] should be internalized outside of goals. *)
