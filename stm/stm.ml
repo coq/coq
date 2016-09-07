@@ -1437,8 +1437,8 @@ end = struct (* {{{ *)
 
   let check_task_aux extra name l i =
     let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
-    msg_info(
-      str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
+    Flags.if_verbose msg_info
+      (str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
     VCS.restore document;
     let start =
       let rec aux cur =
@@ -2089,13 +2089,13 @@ let known_state ?(redefine_qed=false) ~cache id =
   let inject_non_pstate (s,l) =
     Summary.unfreeze_summary s; Lib.unfreeze l; update_global_env ()
   in
-  let rec pure_cherry_pick_non_pstate id = Future.purify (fun id ->
+  let rec pure_cherry_pick_non_pstate safe_id id = Future.purify (fun id ->
     prerr_endline (fun () -> "cherry-pick non pstate " ^ Stateid.to_string id);
-    reach id;
+    reach ~safe_id id;
     cherry_pick_non_pstate ()) id
 
   (* traverses the dag backward from nodes being already calculated *)
-  and reach ?(redefine_qed=false) ?(cache=cache) id =
+  and reach ?safe_id ?(redefine_qed=false) ?(cache=cache) id =
     prerr_endline (fun () -> "reaching: " ^ Stateid.to_string id);
     if not redefine_qed && State.is_cached ~cache id then begin
       Hooks.(call state_computed id ~in_cache:true);
@@ -2240,13 +2240,13 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache, true
       | `Sideff (`Id origin) -> (fun () ->
             reach view.next;
-            inject_non_pstate (pure_cherry_pick_non_pstate origin);
+            inject_non_pstate (pure_cherry_pick_non_pstate view.next origin);
           ), cache, true
     in
     let cache_step =
       if !Flags.async_proofs_cache = Some Flags.Force then `Yes
       else cache_step in
-    State.define
+    State.define ?safe_id
       ~cache:cache_step ~redefine:redefine_qed ~feedback_processed step id;
     prerr_endline (fun () -> "reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
@@ -2358,7 +2358,7 @@ let merge_proof_branch ?valid ?id qast keep brname =
       let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
-      if keep <> VtDrop then VCS.propagate_sideff None;
+      VCS.propagate_sideff None;
       `Ok
   | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
       let ofp =
@@ -2471,12 +2471,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
             {x with verbose = true }
            with e when CErrors.noncritical e ->
              let e = CErrors.push e in
-             iraise (State.exn_on report_id e)); `Ok
+             iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (false,(report_id,route)), VtNow ->
           (try vernac_interp report_id ~route x
            with e ->
              let e = CErrors.push e in
-             iraise (State.exn_on report_id e)); `Ok
+             iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (true,(report_id,_)), w ->
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in

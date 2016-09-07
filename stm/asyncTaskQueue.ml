@@ -299,10 +299,12 @@ module Make(T : Task) = struct
     Pool.worker_handshake (Option.get !slave_ic) (Option.get !slave_oc)
 
   let main_loop () =
+    (* We pass feedback to master *)
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback fb) []; flush oc in
-    Feedback.set_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
+    Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
     Feedback.set_logger Feedback.feedback_logger;
+    (* We ask master to allocate universe identifiers *)
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
       match unmarshal_more_data (Option.get !slave_ic) with

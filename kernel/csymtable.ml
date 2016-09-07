@@ -217,17 +217,9 @@ and eval_to_patch env (buff,pl,fv) =
   eval_tcode tc vm_env
 
 and val_of_constr env c =
-  let (_,fun_code,_ as ccfv) =
-    try match compile true env c with
-	| Some v -> v
-	| None -> assert false
-    with reraise ->
-      let reraise = CErrors.push reraise in
-      let () = print_string "can not compile \n" in
-      let () = Format.print_flush () in
-      iraise reraise
-  in
-  eval_to_patch env (to_memory ccfv)
+  match compile true env c with
+  | Some v -> eval_to_patch env (to_memory v)
+  | None -> assert false
 
 let set_transparent_const kn = () (* !?! *)
 let set_opaque_const kn = () (* !?! *)

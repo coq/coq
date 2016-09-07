@@ -125,8 +125,8 @@ let msg_error   ?loc x = !logger ?loc Error x
 let msg_debug   ?loc x = !logger ?loc Debug x
 
 (** Feeders *)
-let feeder = ref ignore
-let set_feeder f = feeder := f
+let feeders = ref []
+let add_feeder f = feeders := f :: !feeders
 
 let feedback_id    = ref (Edit 0)
 let feedback_route = ref default_route
@@ -135,11 +135,12 @@ let set_id_for_feedback ?(route=default_route) i =
   feedback_id := i; feedback_route := route
 
 let feedback ?id ?route what =
-  !feeder {
+  let m = {
      contents = what;
      route = Option.default !feedback_route route;
      id    = Option.default !feedback_id id;
-  }
+  } in
+  List.iter (fun f -> f m) !feeders
 
 let feedback_logger ?loc lvl msg =
   feedback ~route:!feedback_route ~id:!feedback_id

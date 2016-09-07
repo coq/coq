@@ -289,7 +289,7 @@ let constr_of_id env id =
 (* Some of the code further down depends on the fact that push_trace does not modify sigma (the evar map) *)
 let push_trace call ist = match TacStore.get ist.extra f_trace with
 | None -> Proofview.tclUNIT [call]
-| Some trace -> Proofview.tclLIFT (Proofview.NonLogical.make Profile_ltac.entered_call) <*> Proofview.tclUNIT (call :: trace)
+| Some trace -> Proofview.tclUNIT (call :: trace)
 
 let propagate_trace ist loc id v =
   let v = Value.normalize v in

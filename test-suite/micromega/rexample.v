@@ -11,6 +11,12 @@ Require Import Reals.
 
 Open Scope R_scope.
 
+
+Lemma cst_test : 5^5 = 5 * 5 * 5 *5 *5.
+Proof.
+  lra.
+Qed.
+
 Lemma yplus_minus : forall x y,
   0 = x + y -> 0 =  x -y -> 0 = x /\ 0 = y.
 Proof.
@@ -74,3 +80,4 @@ Qed.
 Lemma l1 : forall x y z : R, Rabs (x - z) <= Rabs (x - y) + Rabs (y - z).
 intros; split_Rabs; lra.
 Qed.
+

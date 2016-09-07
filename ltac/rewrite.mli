@@ -63,12 +63,12 @@ val map_strategy : ('a -> 'b) -> ('c -> 'd) ->
   ('a, 'c) strategy_ast -> ('b, 'd) strategy_ast
 
 (** Entry point for user-level "rewrite_strat" *)
-val cl_rewrite_clause_strat : strategy -> Id.t option -> tactic
+val cl_rewrite_clause_strat : strategy -> Id.t option -> unit Proofview.tactic
 
 (** Entry point for user-level "setoid_rewrite" *)
 val cl_rewrite_clause :
   interp_sign * (glob_constr_and_expr * glob_constr_and_expr bindings) ->
-  bool -> Locus.occurrences -> Id.t option -> tactic
+  bool -> Locus.occurrences -> Id.t option -> unit Proofview.tactic
 
 val is_applied_rewrite_relation :
   env -> evar_map -> Context.Rel.t -> constr -> types option
