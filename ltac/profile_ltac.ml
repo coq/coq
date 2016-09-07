@@ -147,7 +147,7 @@ let rec list_iter_is_last f = function
   | x :: xs -> f false x :: list_iter_is_last f xs
 
 let header =
-  str "                                   tactic  local  total   calls       max" ++
+  str " tactic                                   local  total   calls       max " ++
   fnl () ++
   str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
   fnl ()
