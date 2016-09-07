@@ -134,7 +134,7 @@ type hints_entry =
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
-      int * (patvar list * constr_pattern) option * Tacexpr.glob_tactic_expr
+      int * (patvar list * constr_pattern) option * Genarg.glob_generic_argument
 
 val searchtable_map : hint_db_name -> hint_db
 
@@ -201,7 +201,7 @@ val make_resolve_hyp :
 (** [make_extern pri pattern tactic_expr] *)
 
 val make_extern :
-  int -> constr_pattern option -> Tacexpr.glob_tactic_expr
+  int -> constr_pattern option -> Genarg.glob_generic_argument
       -> hint_entry
 
 val run_hint : hint ->
@@ -210,9 +210,6 @@ val run_hint : hint ->
 (** This function is for backward compatibility only, not to use in newly
     written code. *)
 val repr_hint : hint -> (raw_hint * clausenv) hint_ast
-
-val extern_intern_tac :
-  (patvar list -> Genarg.raw_generic_argument -> Tacexpr.glob_tactic_expr) Hook.t
 
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;
