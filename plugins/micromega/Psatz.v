@@ -35,16 +35,10 @@ Ltac nia := Lia.nia.
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
   | Z =>
-    (sos_Z || psatz_Z d) ; Lia.zchecker
+    (sos_Z Lia.zchecker) || (psatz_Z d  Lia.zchecker)
   | R =>
-    (sos_R || psatz_R d) ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try Lra.rchecker
-  | Q => (sos_Q || psatz_Q d) ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try  Lqa.rchecker
+    (sos_R Lra.rchecker) || (psatz_R d Lra.rchecker)
+  | Q => (sos_Q Lqa.rchecker) || (psatz_Q d Lqa.rchecker) 
   | _ => fail "Unsupported domain"
   end in tac.
 

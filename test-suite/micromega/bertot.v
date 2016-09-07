@@ -11,6 +11,8 @@ Require Import Psatz.
 
 Open Scope Z_scope.
 
+
+
 Goal (forall x y n,
   ( ~ x < n /\ x <= n /\ 2 * y = x*(x+1) -> 2 * y = n*(n+1))
   /\
