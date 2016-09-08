@@ -45,12 +45,12 @@ open System
    to build a dummy dynlink.cmxa, cf. dev/dynlink.ml. *)
 
 (* This path is where we look for .cmo *)
-let coq_mlpath_copy = ref ["."]
+let coq_mlpath_copy = ref [Sys.getcwd ()]
 let keep_copy_mlpath path =
   let cpath = CUnix.canonical_path_name path in
-  let filter path' = not (String.equal cpath (CUnix.canonical_path_name path'))
+  let filter path' = not (String.equal cpath path')
   in
-  coq_mlpath_copy := path :: List.filter filter !coq_mlpath_copy
+  coq_mlpath_copy := cpath :: List.filter filter !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
 type toplevel = {
