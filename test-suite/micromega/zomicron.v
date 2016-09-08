@@ -82,4 +82,11 @@ Proof.
   lia.
 Qed.
 
+(*  Bug 5073 *)
+Lemma opp_eq_0_iff a : -a = 0 <-> a = 0.
+Proof.
+  lia.
+Qed.
+
+
 
