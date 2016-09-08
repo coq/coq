@@ -127,10 +127,6 @@ let xmlProofMode loc name = xmlWithLoc loc "proofmode" ["name",name] []
 
 let xmlProof loc xml = xmlWithLoc loc "proof" [] xml
 
-let xmlRawTactic name rtac =
-  Element("rawtactic", ["name",name],
-    [PCData (Pp.string_of_ppcmds (Pptactic.pr_raw_tactic rtac))])
-
 let xmlSectionSubsetDescr name ssd =
   Element("sectionsubsetdescr",["name",name],
     [PCData (Proof_using.to_string ssd)])

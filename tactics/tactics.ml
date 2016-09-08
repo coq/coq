@@ -871,7 +871,11 @@ let reduction_clause redexp cl =
 	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
 
 let reduce redexp cl =
-  let trace () = Pp.(hov 2 (Pptactic.pr_atomic_tactic (Global.env()) (TacReduce (redexp,cl)))) in
+  let trace () =
+    let open Printer in
+    let pr = (pr_constr, pr_lconstr, pr_evaluable_reference, pr_constr_pattern) in
+    Pp.(hov 2 (Pputils.pr_red_expr pr str redexp))
+  in
   Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter { enter = begin fun gl ->
   let cl' = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
