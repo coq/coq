@@ -2100,22 +2100,27 @@ let micromega_genr prover tac =
        let tac_arith = Tacticals.New.tclTHENLIST [ intro_props ; intro_vars ; 
                                                     micromega_order_changer res' env' ff_arith ] in
 
+       let goal_props = List.rev (prop_env_of_formula ff') in 
+
+       let goal_vars = List.map (fun (_,i) -> List.nth env (i-1)) vars in 
+       
+       let arith_args = goal_props @ goal_vars in
+
        let kill_arith = 
-         Tacticals.New.tclTHEN
-           (Tactics.keep [])
-           ((*Tactics.tclABSTRACT  None*)
-             (Tacticals.New.tclTHEN tac_arith tac)) in 
+           Tacticals.New.tclTHEN
+             (Tactics.keep [])
+             ((*Tactics.tclABSTRACT  None*)
+                (Tacticals.New.tclTHEN tac_arith tac)) in 
 
-
-       Tacticals.New.tclTHEN
-         (Tactics.forward true (Some (Some kill_arith)) (ipat_of_name goal_name) arith_goal)
-        
-         (Tacticals.New.tclTHENLIST
-               [(Tactics.generalize (List.map Term.mkVar ids));
-                Tactics.unfold_constr coq_not_gl_ref;
-                (Tactics.apply (Term.applist (Term.mkVar goal_name,List.rev (prop_env_of_formula ff'))))
-               ]
-         )
+       Tacticals.New.tclTHENS
+         (Tactics.forward true (Some None) (ipat_of_name goal_name) arith_goal)
+         [
+           kill_arith;
+           (Tacticals.New.tclTHENLIST
+            [(Tactics.generalize (List.map Term.mkVar ids));
+             Tactics.exact_check (Term.applist (Term.mkVar goal_name, arith_args))
+            ] )
+         ]
 
     with
     | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
