@@ -47,8 +47,8 @@ let nat_of_int dloc n =
       mk_nat ref_O n
     end
   else
-      user_err_loc (dloc, "nat_of_int",
-        str "Cannot interpret a negative number as a number of type nat")
+      user_err ~hdr:"nat_of_int"
+       (str "Cannot interpret a negative number as a number of type nat")
 
 (************************************************************************)
 (* Printing via scopes *)

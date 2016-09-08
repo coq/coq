@@ -104,7 +104,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     let error bk (loc, name) = 
       match bk, name with
       | Default _, Anonymous ->
-        user_err_loc (loc, "record", str "Record parameters must be named")
+        user_err ~loc ~hdr:"record" (str "Record parameters must be named")
       | _ -> ()
     in
       List.iter 
@@ -129,7 +129,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
 	                  sred, true
 	       | None -> s, false
              else s, false)
-	 | _ -> user_err_loc (constr_loc t,"", str"Sort expected."))
+	 | _ -> user_err ~loc:(constr_loc t) (str"Sort expected."))
     | None -> 
       let uvarkind = Evd.univ_flexible_alg in
 	mkSort (Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars), true
@@ -210,7 +210,7 @@ let warning_or_error coe indsp err =
 	  | _ ->
               (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
   in
-  if coe then errorlabstrm "structure" st;
+  if coe then user_err ~hdr:"structure" st;
   Flags.if_verbose Feedback.msg_info (hov 0 st)
 
 type field_status =
@@ -237,7 +237,7 @@ let subst_projection fid l c =
 	    | Projection t -> lift depth t
 	    | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
 	    | NoProjection Anonymous ->
-                errorlabstrm "" (str "Field " ++ pr_id fid ++
+                user_err  (str "Field " ++ pr_id fid ++
                   str " depends on the " ++ pr_nth (k-depth-1) ++ str
                   " field which has no name.")
         else
@@ -541,8 +541,8 @@ let declare_existing_class g =
   match g with
   | ConstRef x -> add_constant_class x
   | IndRef x -> add_inductive_class x
-  | _ -> user_err_loc (Loc.dummy_loc, "declare_existing_class", 
-		      Pp.str"Unsupported class type, only constants and inductives are allowed")
+  | _ -> user_err ~hdr:"declare_existing_class"
+		      (Pp.str"Unsupported class type, only constants and inductives are allowed")
 
 open Vernacexpr
 

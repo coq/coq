@@ -1588,7 +1588,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     let ids = ids_of_named_context (named_context env) in
     if name == Anonymous then next_ident_away_in_goal x ids else
     if mem_named_context x (named_context env) then
-      errorlabstrm "Unification.make_abstraction_core"
+      user_err ~hdr:"Unification.make_abstraction_core"
         (str "The variable " ++ Nameops.pr_id x ++ str " is already declared.")
     else
       x
@@ -1602,7 +1602,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         if indirectly_dependent c d depdecls then
           (* Told explicitly not to abstract over [d], but it is dependent *)
           let id' = indirect_dependency d depdecls in
-          errorlabstrm "" (str "Cannot abstract over " ++ Nameops.pr_id id'
+          user_err  (str "Cannot abstract over " ++ Nameops.pr_id id'
             ++ str " without also abstracting or erasing " ++ Nameops.pr_id hyp
             ++ str ".")
         else

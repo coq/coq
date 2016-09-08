@@ -52,8 +52,8 @@ let interp_ascii_string dloc s =
       if Int.equal (String.length s) 3 && is_digit s.[0] && is_digit s.[1] && is_digit s.[2]
       then int_of_string s
       else
-	user_err_loc (dloc,"interp_ascii_string",
-	  str "Expects a single character or a three-digits ascii code.") in
+	user_err ~loc:dloc ~hdr:"interp_ascii_string"
+	 (str "Expects a single character or a three-digits ascii code.") in
   interp_ascii dloc p
 
 let uninterp_ascii r =

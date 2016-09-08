@@ -48,22 +48,22 @@ type pattern_matching_error =
 
 exception PatternMatchingError of env * evar_map * pattern_matching_error
 
-let raise_pattern_matching_error (loc,env,sigma,te) =
-  Loc.raise loc (PatternMatchingError(env,sigma,te))
+let raise_pattern_matching_error ?loc (env,sigma,te) =
+  Loc.raise ?loc (PatternMatchingError(env,sigma,te))
 
-let error_bad_pattern_loc loc env sigma cstr ind =
+let error_bad_pattern ?loc env sigma cstr ind =
+  raise_pattern_matching_error ?loc
+    (env, sigma, BadPattern (cstr,ind))
+
+let error_bad_constructor ?loc env cstr ind =
   raise_pattern_matching_error
-    (loc, env, sigma, BadPattern (cstr,ind))
+    (env, Evd.empty, BadConstructor (cstr,ind))
 
-let error_bad_constructor_loc loc env cstr ind =
-  raise_pattern_matching_error
-    (loc, env, Evd.empty, BadConstructor (cstr,ind))
+let error_wrong_numarg_constructor ?loc env c n =
+  raise_pattern_matching_error (env, Evd.empty, WrongNumargConstructor(c,n))
 
-let error_wrong_numarg_constructor_loc loc env c n =
-  raise_pattern_matching_error (loc, env, Evd.empty, WrongNumargConstructor(c,n))
-
-let error_wrong_numarg_inductive_loc loc env c n =
-  raise_pattern_matching_error (loc, env, Evd.empty, WrongNumargInductive(c,n))
+let error_wrong_numarg_inductive ?loc env c n =
+  raise_pattern_matching_error (env, Evd.empty, WrongNumargInductive(c,n))
 
 let rec list_try_compile f = function
   | [a] -> f a
@@ -482,32 +482,31 @@ let check_and_adjust_constructor env ind cstrs = function
 	    let args' = adjust_local_defs loc (args, List.rev ci.cs_args)
 	    in PatCstr (loc, cstr, args', alias)
 	  with NotAdjustable ->
-	    error_wrong_numarg_constructor_loc loc env cstr nb_args_constr
+	    error_wrong_numarg_constructor ~loc env cstr nb_args_constr
       else
 	(* Try to insert a coercion *)
 	try
 	  Coercion.inh_pattern_coerce_to loc env pat ind' ind
 	with Not_found ->
-	  error_bad_constructor_loc loc env cstr ind
+	  error_bad_constructor ~loc env cstr ind
 
 let check_all_variables env sigma typ mat =
   List.iter
     (fun eqn -> match current_pattern eqn with
        | PatVar (_,id) -> ()
        | PatCstr (loc,cstr_sp,_,_) ->
-	   error_bad_pattern_loc loc env sigma cstr_sp typ)
+	   error_bad_pattern ~loc env sigma cstr_sp typ)
     mat
 
 let check_unused_pattern env eqn =
   if not !(eqn.used) then
-    raise_pattern_matching_error
-      (eqn.eqn_loc, env, Evd.empty, UnusedClause eqn.patterns)
+    raise_pattern_matching_error ~loc:eqn.eqn_loc (env, Evd.empty, UnusedClause eqn.patterns)
 
 let set_used_pattern eqn = eqn.used := true
 
 let extract_rhs pb =
   match pb.mat with
-    | [] -> errorlabstrm "build_leaf" (msg_may_need_inversion())
+    | [] -> user_err ~hdr:"build_leaf" (msg_may_need_inversion())
     | eqn::_ ->
 	set_used_pattern eqn;
         eqn.rhs
@@ -1308,8 +1307,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   let submat = adjust_impossible_cases pb pred tomatch submat in
   let () = match submat with
   | [] ->
-    raise_pattern_matching_error
-      (Loc.ghost, pb.env, Evd.empty, NonExhaustive (complete_history history))
+    raise_pattern_matching_error (pb.env, Evd.empty, NonExhaustive (complete_history history))
   | _ -> ()
   in
 
@@ -1836,8 +1834,8 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 		       | None -> [LocalAssum (na, lift n typ)]
 		       | Some b -> [LocalDef (na, lift n b, lift n typ)])
 	    | Some (loc,_,_) ->
- 	    user_err_loc (loc,"",
-	    str"Unexpected type annotation for a term of non inductive type."))
+ 	    user_err ~loc 
+                (str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = if dolift then lift_inductive_family n indf else indf in
 	  let ((ind,u),_) = dest_ind_family indf' in
@@ -1847,7 +1845,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 	    match t with
 	      | Some (loc,ind',realnal) ->
 		  if not (eq_ind ind ind') then
-		    user_err_loc (loc,"",str "Wrong inductive type.");
+		    user_err ~loc  (str "Wrong inductive type.");
 		  if not (Int.equal nrealargs_ctxt (List.length realnal)) then
 		      anomaly (Pp.str "Ill-formed 'in' clause in cases");
 		  List.rev realnal
@@ -2038,11 +2036,11 @@ let constr_of_pat env evdref arsign pat avoid =
 	let cind = inductive_of_constructor cstr in
 	let IndType (indf, _) = 
 	  try find_rectype env ( !evdref) (lift (-(List.length realargs)) ty)
-	  with Not_found -> error_case_not_inductive env 
+	  with Not_found -> error_case_not_inductive env !evdref
 	    {uj_val = ty; uj_type = Typing.unsafe_type_of env !evdref ty}
 	in
 	let (ind,u), params = dest_ind_family indf in
-	if not (eq_ind ind cind) then error_bad_constructor_loc l env cstr ind;
+	if not (eq_ind ind cind) then error_bad_constructor ~loc:l env cstr ind;
 	let cstrs = get_constructors env indf in
 	let ci = cstrs.(i-1) in
 	let nb_args_constr = ci.cs_nargs in

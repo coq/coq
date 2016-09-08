@@ -68,8 +68,9 @@ let existing_instance glob g pri =
     match class_of_constr r with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc pri glob 
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
-      | None -> user_err_loc (loc_of_reference g, "declare_instance",
-			     Pp.str "Constant does not build instances of a declared type class.")
+      | None -> user_err ~loc:(loc_of_reference g)
+                         ~hdr:"declare_instance"
+                         (Pp.str "Constant does not build instances of a declared type class.")
 
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
@@ -170,7 +171,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	Name id ->
 	  let sp = Lib.make_path id in
 	    if Nametab.exists_cci sp then
-	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists.");
+	      user_err ~hdr:"new_instance" (Nameops.pr_id id ++ Pp.str " already exists.");
 	    id
       | Anonymous ->
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in

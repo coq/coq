@@ -386,8 +386,7 @@ let add_name_newly_undefined naming evk evi (evtoid, idtoev as names) =
   | Misctypes.IntroAnonymous -> None
   | Misctypes.IntroIdentifier id ->
     if Idmap.mem id idtoev then
-    user_err_loc
-      (Loc.ghost,"",str "Already an existential evar of name " ++ pr_id id);
+    user_err  (str "Already an existential evar of name " ++ pr_id id);
     Some id
   | Misctypes.IntroFresh id ->
     let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in

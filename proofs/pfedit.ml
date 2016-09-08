@@ -131,7 +131,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     | CList.IndexOutOfRange ->
         match gi with
 	| Vernacexpr.SelectNth i -> let msg = str "No such goal: " ++ int i ++ str "." in
-	                            CErrors.errorlabstrm "" msg
+	                            CErrors.user_err  msg
         | _ -> assert false
 
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)
@@ -228,7 +228,7 @@ let solve_by_implicit_tactic env sigma evk =
       when
 	Context.Named.equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->
-      let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError ("",Pp.str"Proof is not complete."))) []) in
+      let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError (None,Pp.str"Proof is not complete."))) []) in
       (try
         let c = Evarutil.nf_evars_universes sigma evi.evar_concl in
         if Evarutil.has_undefined_evars sigma c then raise Exit;

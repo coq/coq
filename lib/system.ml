@@ -132,7 +132,7 @@ let find_file_in_path ?(warn=true) paths filename =
       let root = Filename.dirname filename in
       root, filename
     else
-      CErrors.errorlabstrm "System.find_file_in_path"
+      CErrors.user_err ~hdr:"System.find_file_in_path"
 	(hov 0 (str "Can't find file" ++ spc () ++ str filename))
   else
     (* the name is considered to be the transcription as a relative
@@ -140,7 +140,7 @@ let find_file_in_path ?(warn=true) paths filename =
        to be locate respecting case *)
     try where_in_path ~warn paths filename
     with Not_found ->
-      CErrors.errorlabstrm "System.find_file_in_path"
+      CErrors.user_err ~hdr:"System.find_file_in_path"
 	(hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++
 		str "on loadpath"))
 
@@ -163,7 +163,7 @@ let is_in_system_path filename =
 let open_trapping_failure name =
   try open_out_bin name
   with e when CErrors.noncritical e ->
-    CErrors.errorlabstrm "System.open" (str "Can't open " ++ str name)
+    CErrors.user_err ~hdr:"System.open" (str "Can't open " ++ str name)
 
 let warn_cannot_remove_file =
   CWarnings.create ~name:"cannot-remove-file" ~category:"filesystem"
@@ -175,7 +175,7 @@ let try_remove filename =
     warn_cannot_remove_file filename
 
 let error_corrupted file s =
-  CErrors.errorlabstrm "System" (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
+  CErrors.user_err ~hdr:"System" (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
 
 let input_binary_int f ch =
   try input_binary_int ch
@@ -252,7 +252,7 @@ let extern_state magic filename val_0 =
       let () = try_remove filename in
       iraise reraise
   with Sys_error s ->
-    CErrors.errorlabstrm "System.extern_state" (str "System error: " ++ str s)
+    CErrors.user_err ~hdr:"System.extern_state" (str "System error: " ++ str s)
 
 let intern_state magic filename =
   try
@@ -261,12 +261,12 @@ let intern_state magic filename =
     close_in channel;
     v
   with Sys_error s ->
-    CErrors.errorlabstrm "System.intern_state" (str "System error: " ++ str s)
+    CErrors.user_err ~hdr:"System.intern_state" (str "System error: " ++ str s)
 
 let with_magic_number_check f a =
   try f a
   with Bad_magic_number {filename=fname;actual=actual;expected=expected} ->
-    CErrors.errorlabstrm "with_magic_number_check"
+    CErrors.user_err ~hdr:"with_magic_number_check"
     (str"File " ++ str fname ++ strbrk" has bad magic number " ++
     int actual ++ str" (expected " ++ int expected ++ str")." ++
     spc () ++

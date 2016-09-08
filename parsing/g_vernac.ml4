@@ -115,7 +115,7 @@ GEXTEND Gram
                     | Some (SelectNth g) -> c (Some g)
                     | None -> c None
                     | _ ->
-                        VernacError (UserError ("",str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
+                        VernacError (UserError (None,str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
                   end ] ]
   ;
   located_vernac:

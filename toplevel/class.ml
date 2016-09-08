@@ -98,7 +98,7 @@ let class_of_global = function
   | IndRef sp -> CL_IND sp
   | VarRef id -> CL_SECVAR id
   | ConstructRef _ as c ->
-      errorlabstrm "class_of_global"
+      user_err ~hdr:"class_of_global"
 	(str "Constructors, such as " ++ Printer.pr_global c ++
 	   str ", cannot be used as a class.")
 
@@ -177,7 +177,7 @@ let ident_key_of_class = function
 (* Identity coercion *)
 
 let error_not_transparent source =
-  errorlabstrm "build_id_coercion"
+  user_err ~hdr:"build_id_coercion"
     (pr_class source ++ str " must be a transparent constant.")
 
 let build_id_coercion idf_opt source poly =
@@ -208,7 +208,7 @@ let build_id_coercion idf_opt source poly =
       (Reductionops.is_conv_leq env sigma
 	(Typing.unsafe_type_of env sigma val_f) typ_f)
     then
-      errorlabstrm "" (strbrk
+      user_err  (strbrk
 	"Cannot be defined as coercion (maybe a bad number of arguments).")
   in
   let idf =
@@ -284,7 +284,7 @@ let add_new_coercion_core coef stre poly source target isid =
 let try_add_new_coercion_core ref ~local c d e f =
   try add_new_coercion_core ref (loc_of_bool local) c d e f
   with CoercionError e ->
-      errorlabstrm "try_add_new_coercion_core"
+      user_err ~hdr:"try_add_new_coercion_core"
         (explain_coercion_error ref e ++ str ".")
 
 let try_add_new_coercion ref ~local poly =

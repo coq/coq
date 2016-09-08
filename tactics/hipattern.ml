@@ -452,7 +452,7 @@ let find_this_eq_data_decompose gl eqn =
     try (*first_match (match_eq eqn) inversible_equalities*)
       find_eq_data eqn
     with PatternMatchingFailure ->
-      errorlabstrm "" (str "No primitive equality found.") in
+      user_err  (str "No primitive equality found.") in
   let eq_args =
     try extract_eq_args gl eq_args
     with PatternMatchingFailure ->

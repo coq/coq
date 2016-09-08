@@ -46,7 +46,7 @@ let locate_global_with_alias ?(head=false) (loc,qid) =
     if head then global_of_extended_global_head ref
     else global_of_extended_global ref
   with Not_found ->
-    user_err_loc (loc,"",pr_qualid qid ++
+    user_err ~loc  (pr_qualid qid ++
       str " is bound to a notation that does not denote a reference.")
 
 let global_inductive_with_alias r =
@@ -54,14 +54,14 @@ let global_inductive_with_alias r =
   try match locate_global_with_alias lqid with
   | IndRef ind -> ind
   | ref ->
-      user_err_loc (loc_of_reference r,"global_inductive",
-        pr_reference r ++ spc () ++ str "is not an inductive type.")
-  with Not_found -> Nametab.error_global_not_found_loc loc qid
+      user_err ~loc:(loc_of_reference r) ~hdr:"global_inductive"
+        (pr_reference r ++ spc () ++ str "is not an inductive type.")
+  with Not_found -> Nametab.error_global_not_found ~loc qid
 
 let global_with_alias ?head r =
   let (loc,qid as lqid) = qualid_of_reference r in
   try locate_global_with_alias ?head lqid
-  with Not_found -> Nametab.error_global_not_found_loc loc qid
+  with Not_found -> Nametab.error_global_not_found ~loc qid
 
 let smart_global ?head = function
   | AN r ->

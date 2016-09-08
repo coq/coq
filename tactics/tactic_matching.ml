@@ -105,7 +105,7 @@ let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
   (merged, Id.Map.merge merge lcm lm)
 
 let matching_error =
-  CErrors.UserError ("tactic matching" , Pp.str "No matching clauses for match.")
+  CErrors.UserError (Some "tactic matching" , Pp.str "No matching clauses for match.")
 
 let imatching_error = (matching_error, Exninfo.null)
 

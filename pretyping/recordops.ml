@@ -291,7 +291,7 @@ let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 (*s High-level declaration of a canonical structure *)
 
 let error_not_structure ref =
-  errorlabstrm "object_declare"
+  user_err ~hdr:"object_declare"
     (Nameops.pr_id (basename_of_global ref) ++ str" is not a structure object.")
 
 let check_and_decompose_canonical_structure ref =

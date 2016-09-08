@@ -59,8 +59,8 @@ let rec complete_conclusion a cs = function
   | CHole (loc, k, _, _) ->
       let (has_no_args,name,params) = a in
       if not has_no_args then
-	user_err_loc (loc,"",
-	  strbrk"Cannot infer the non constant arguments of the conclusion of "
+	user_err ~loc 
+	 (strbrk"Cannot infer the non constant arguments of the conclusion of "
 	  ++ pr_id cs ++ str ".");
       let args = List.map (fun id -> CRef(Ident(loc,id),None)) params in
       CAppExpl (loc,(None,Ident(loc,name),None),List.rev args)
@@ -332,7 +332,7 @@ let do_assumptions kind nl l = match l with
   | (Discharge, _, _) when Lib.sections_are_opened () ->
     let loc = fst id in
     let msg = Pp.str "Section variables cannot be polymorphic." in
-    user_err_loc (loc, "", msg)
+    user_err ~loc  msg
   | _ -> ()
   in
   do_assumptions_bound_univs coe kind nl id (Some pl) c
@@ -344,7 +344,7 @@ let do_assumptions kind nl l = match l with
       let loc = fst id in
       let msg =
 	Pp.str "Assumptions with bound universes can only be defined one at a time." in
-      user_err_loc (loc, "", msg)
+      user_err ~loc  msg
     in
     (coe, (List.map map idl, c))
   in
@@ -440,7 +440,7 @@ let interp_ind_arity env evdref ind =
   let t, impls = understand_tcc_evars env evdref ~expected_type:IsType c, imps in
   let pseudo_poly = check_anonymous_type c in
   let () = if not (Reduction.is_arity env t) then
-    user_err_loc (constr_loc ind.ind_arity, "", str "Not an arity")
+    user_err ~loc:(constr_loc ind.ind_arity) (str "Not an arity")
   in
     t, pseudo_poly, impls
 
@@ -555,7 +555,7 @@ let check_named (loc, na) = match na with
 | Name _ -> ()
 | Anonymous ->
   let msg = str "Parameters must be named." in
-  user_err_loc (loc, "", msg)
+  user_err ~loc  msg
 
 
 let check_param = function
@@ -956,9 +956,9 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let relty = Typing.unsafe_type_of env !evdref rel in
   let relargty =
     let error () =
-      user_err_loc (constr_loc r,
-		    "Command.build_wellfounded",
-		    Printer.pr_constr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
+      user_err ~loc:(constr_loc r)
+               ~hdr:"Command.build_wellfounded"
+		    (Printer.pr_constr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
     in
       try
 	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
@@ -1314,7 +1314,7 @@ let do_program_fixpoint local poly l =
 	  match n with
 	  | Some n -> mkIdentC (snd n)
 	  | None ->
-	      errorlabstrm "do_program_fixpoint"
+	      user_err ~hdr:"do_program_fixpoint"
 		(str "Recursive argument required for well-founded fixpoints")
 	in build_wellfounded (id, pl, n, bl, typ, out_def def) poly r recarg ntn
 	     
@@ -1328,7 +1328,7 @@ let do_program_fixpoint local poly l =
 	  do_program_recursive local poly fixkind fixl ntns
 
     | _, _ ->
-	errorlabstrm "do_program_fixpoint"
+	user_err ~hdr:"do_program_fixpoint"
 	  (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
 let check_safe () =

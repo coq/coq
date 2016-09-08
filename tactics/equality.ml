@@ -361,7 +361,7 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
 	      let _ = Global.lookup_constant c1' in
 		c1'
 	    with Not_found -> 
-	      errorlabstrm "Equality.find_elim"
+	      user_err ~hdr:"Equality.find_elim"
                 (str "Cannot find rewrite principle " ++ pr_label l' ++ str ".")
 	  end
 	| _ -> destConstRef pr1
@@ -890,7 +890,7 @@ let build_selector env sigma dirn c ind special default =
           on (c bool true) = (c bool false)
           CP : changed assert false in a more informative error
        *)
-      errorlabstrm "Equality.construct_discriminator"
+      user_err ~hdr:"Equality.construct_discriminator"
 	(str "Cannot discriminate on inductive constructors with \
 		 dependent types.") in
   let (indp,_) = dest_ind_family indf in
@@ -976,7 +976,7 @@ let apply_on_clause (f,t) clause =
   let argmv =
     (match kind_of_term (last_arg f_clause.templval.Evd.rebus) with
      | Meta mv -> mv
-     | _  -> errorlabstrm "" (str "Ill-formed clause applicator.")) in
+     | _  -> user_err  (str "Ill-formed clause applicator.")) in
   clenv_fchain ~with_univs:false argmv f_clause clause
 
 let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
@@ -1054,7 +1054,7 @@ let discrEverywhere with_evars =
      else (* <= 8.2 compat *)
        tryAllHypsAndConcl (discrSimpleClause with_evars))
 (*    (fun gls ->
-       errorlabstrm "DiscrEverywhere" (str"No discriminable equalities."))
+       user_err ~hdr:"DiscrEverywhere" (str"No discriminable equalities."))
 *)
 let discr_tac with_evars = function
   | None -> discrEverywhere with_evars
@@ -1727,7 +1727,7 @@ let subst_one_var dep_proof_ok x =
           let hyps = Proofview.Goal.hyps gl in
           let test hyp _ = is_eq_x gl x hyp in
           Context.Named.fold_outside test ~init:() hyps;
-          errorlabstrm "Subst"
+          user_err ~hdr:"Subst"
             (str "Cannot find any non-recursive equality over " ++ pr_id x ++
 	       str".")
         with FoundHyp res -> res in

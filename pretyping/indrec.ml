@@ -55,7 +55,7 @@ let is_private mib =
 
 let check_privacy_block mib =
   if is_private mib then
-    errorlabstrm ""(str"case analysis on a private inductive type")
+    user_err (str"case analysis on a private inductive type")
       
 (**********************************************************************)
 (* Building case analysis schemes *)
@@ -594,7 +594,7 @@ let lookup_eliminator ind_sp s =
   (* using short name (e.g. for "eq_rec") *)
   try Nametab.locate (qualid_of_ident id)
   with Not_found ->
-    errorlabstrm "default_elim"
+    user_err ~hdr:"default_elim"
       (strbrk "Cannot find the elimination combinator " ++
        pr_id id ++ strbrk ", the elimination of the inductive definition " ++
        pr_global_env Id.Set.empty (IndRef ind_sp) ++

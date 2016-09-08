@@ -21,6 +21,18 @@ The following type aliases where removed
 
   Context.section_context    ... it was just an alias for "Context.Named.t" which is still available
 
+* ML API *
+
+** Error handling **
+
+- All error functions now take an optional parameter `?loc:Loc.t`. For
+  functions that used to carry a suffix `_loc`, such suffix has been
+  dropped.
+
+- `errorlabstrm` has been removed in favor of `user_err`.
+
+- The header parameter to `user_err` has been made optional.
+
 =========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================

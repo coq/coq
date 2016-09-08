@@ -458,7 +458,7 @@ let cc_tactic depth additionnal_terms =
   end }
 
 let cc_fail gls =
-  errorlabstrm  "Congruence" (Pp.str "congruence failed.")
+  user_err ~hdr:"Congruence" (Pp.str "congruence failed.")
 
 let congruence_tac depth l =
   Tacticals.New.tclORELSE

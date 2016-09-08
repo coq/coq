@@ -154,17 +154,17 @@ let explain_internalization_error e =
   | BadPatternsNumber (n1,n2) -> explain_bad_patterns_number n1 n2
   in pp ++ str "."
 
-let error_bad_inductive_type loc =
-  user_err_loc (loc,"",str
+let error_bad_inductive_type ?loc =
+  user_err ?loc  (str
     "This should be an inductive type applied to patterns.")
 
-let error_parameter_not_implicit loc =
-  user_err_loc (loc,"", str
+let error_parameter_not_implicit ?loc =
+  user_err ?loc  (str
    "The parameters do not bind in patterns;" ++ spc () ++ str
     "they must be replaced by '_'.")
 
-let error_ldots_var loc =
-  user_err_loc (loc,"",str "Special token " ++ pr_id ldots_var ++
+let error_ldots_var ?loc =
+  user_err ?loc  (str "Special token " ++ pr_id ldots_var ++
     str " is for use in the Notation command.")
 
 (**********************************************************************)
@@ -262,15 +262,15 @@ let pr_scope_stack = function
   | l -> str "scope stack " ++
       str "[" ++ prlist_with_sep pr_comma str l ++ str "]"
 
-let error_inconsistent_scope loc id scopes1 scopes2 =
-  user_err_loc (loc,"set_var_scope",
-    pr_id id ++ str " is here used in " ++
+let error_inconsistent_scope ?loc id scopes1 scopes2 =
+  user_err ?loc ~hdr:"set_var_scope"
+   (pr_id id ++ str " is here used in " ++
     pr_scope_stack scopes2 ++ strbrk " while it was elsewhere used in " ++
     pr_scope_stack scopes1)
 
-let error_expect_binder_notation_type loc id =
-  user_err_loc (loc,"",
-    pr_id id ++
+let error_expect_binder_notation_type ?loc id =
+  user_err ?loc 
+   (pr_id id ++
     str " is expected to occur in binding position in the right-hand side.")
 
 let set_var_scope loc id istermvar env ntnvars =
@@ -284,12 +284,12 @@ let set_var_scope loc id istermvar env ntnvars =
       | Some (tmp, scope) ->
         let s1 = make_current_scope tmp scope in
         let s2 = make_current_scope env.tmp_scope env.scopes in
-        if not (List.equal String.equal s1 s2) then error_inconsistent_scope loc id s1 s2
+        if not (List.equal String.equal s1 s2) then error_inconsistent_scope ~loc id s1 s2
       end
     in
     match typ with
     | NtnInternTypeBinder ->
-	if istermvar then error_expect_binder_notation_type loc id
+	if istermvar then error_expect_binder_notation_type ~loc id
     | NtnInternTypeConstr ->
 	(* We need sometimes to parse idents at a constr level for
 	   factorization and we cannot enforce this constraint:
@@ -366,19 +366,19 @@ let check_hidden_implicit_parameters id impls =
     | (Inductive indparams,_,_,_) -> Id.List.mem id indparams
     | _ -> false) impls
   then
-    errorlabstrm "" (strbrk "A parameter of an inductive type " ++
+    user_err  (strbrk "A parameter of an inductive type " ++
     pr_id id ++ strbrk " is not allowed to be used as a bound variable in the type of its constructor.")
 
 let push_name_env ?(global_level=false) ntnvars implargs env =
   function
   | loc,Anonymous ->
       if global_level then
-	user_err_loc (loc,"", str "Anonymous variables not allowed");
+	user_err ~loc  (str "Anonymous variables not allowed");
       env
   | loc,Name id ->
       check_hidden_implicit_parameters id env.impls ;
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
-        then error_ldots_var loc;
+        then error_ldots_var ~loc;
       set_var_scope loc id false env ntnvars;
       if global_level then Dumpglob.dump_definition (loc,id) true "var"
       else Dumpglob.dump_binding loc id;
@@ -764,7 +764,7 @@ let string_of_ty = function
 let gvar (loc, id) us = match us with
 | None -> GVar (loc, id)
 | Some _ ->
-  user_err_loc (loc, "", str "Variable " ++ pr_id id ++
+  user_err ~loc  (str "Variable " ++ pr_id id ++
     str " cannot have a universe instance")
 
 let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
@@ -788,12 +788,12 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] the special variable for recursive notations *)
   else if Id.equal id ldots_var
   then if Id.Map.is_empty ntnvars
-    then error_ldots_var loc
+    then error_ldots_var ~loc
     else gvar (loc,id) us, [], [], []
   else if Id.Set.mem id ltacvars.ltac_bound then
     (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
-    user_err_loc (loc,"intern_var",
-      str "variable " ++ pr_id id ++ str " should be bound to a term.")
+    user_err ~loc ~hdr:"intern_var"
+     (str "variable " ++ pr_id id ++ str " should be bound to a term.")
   else
     (* Is [id] a goal or section variable *)
     let _ = Context.Named.lookup id namedctx in
@@ -825,7 +825,7 @@ let find_appl_head_data c =
   | x -> x,[],[],[]
 
 let error_not_enough_arguments loc =
-  user_err_loc (loc,"",str "Abbreviation is not applied enough.")
+  user_err ~loc  (str "Abbreviation is not applied enough.")
 
 let check_no_explicitation l =
   let is_unset (a, b) = match b with None -> false | Some _ -> true in
@@ -834,7 +834,7 @@ let check_no_explicitation l =
   | [] -> ()
   | (_, None) :: _ -> assert false
   | (_, Some (loc, _)) :: _ ->
-    user_err_loc (loc,"",str"Unexpected explicitation of the argument of an abbreviation.")
+    user_err ~loc  (str"Unexpected explicitation of the argument of an abbreviation.")
 
 let dump_extended_global loc = function
   | TrueGlobal ref -> (*feedback_global loc ref;*) Dumpglob.add_glob loc ref
@@ -847,7 +847,7 @@ let intern_reference ref =
   let qid = qualid_of_reference ref in
   let r =
     try intern_extended_global_of_qualid qid
-    with Not_found -> error_global_not_found_loc (fst qid) (snd qid)
+    with Not_found -> error_global_not_found ~loc:(fst qid) (snd qid)
   in
   Smartlocate.global_of_extended_global r
 
@@ -872,7 +872,7 @@ let intern_qualid loc qid intern env lvar us args =
       | Some _, GApp (loc, GRef (loc', ref, None), arg) ->
          GApp (loc, GRef (loc', ref, us), arg)
       | Some _, _ ->
-        user_err_loc (loc, "", str "Notation " ++ pr_qualid qid ++
+        user_err ~loc  (str "Notation " ++ pr_qualid qid ++
           str " cannot have a universe instance, its expanded head
                does not start with a reference")
       in
@@ -888,7 +888,7 @@ let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args = 
   | Qualid (loc, qid) ->
       let r,projapp,args2 =
 	try intern_qualid loc qid intern env ntnvars us args
-	with Not_found -> error_global_not_found_loc loc qid
+	with Not_found -> error_global_not_found ~loc qid
       in
       let x, imp, scopes, l = find_appl_head_data r in
 	(x,imp,scopes,l), args2
@@ -904,7 +904,7 @@ let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args = 
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar || env.unb then
 	  (gvar (loc,id) us, [], [], []), args
-	else error_global_not_found_loc loc qid
+	else error_global_not_found ~loc qid
 
 let interp_reference vars r =
   let (r,_,_,_),_ =
@@ -982,7 +982,7 @@ let check_number_of_pattern loc n l =
 
 let check_or_pat_variables loc ids idsl =
   if List.exists (fun ids' -> not (List.eq_set Id.equal ids ids')) idsl then
-    user_err_loc (loc, "", str
+    user_err ~loc  (str
     "The components of this disjunctive pattern must bind the same variables.")
 
 (** Use only when params were NOT asked to the user.
@@ -991,7 +991,7 @@ let check_constructor_length env loc cstr len_pl pl0 =
   let n = len_pl + List.length pl0 in
   if Int.equal n (Inductiveops.constructor_nallargs cstr) then false else
     (Int.equal n (Inductiveops.constructor_nalldecls cstr) ||
-      (error_wrong_numarg_constructor_loc loc env cstr
+      (error_wrong_numarg_constructor ~loc env cstr
          (Inductiveops.constructor_nrealargs cstr)))
 
 let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 =
@@ -1016,14 +1016,14 @@ let add_implicits_check_constructor_length env loc c len_pl1 pl2 =
   let nargs = Inductiveops.constructor_nallargs c in
   let nargs' = Inductiveops.constructor_nalldecls c in
   let impls_st = implicits_of_global (ConstructRef c) in
-  add_implicits_check_length (error_wrong_numarg_constructor_loc loc env c)
+  add_implicits_check_length (error_wrong_numarg_constructor ~loc env c)
     nargs nargs' impls_st len_pl1 pl2
 
 let add_implicits_check_ind_length env loc c len_pl1 pl2 =
   let nallargs = inductive_nallargs_env env c in
   let nalldecls = inductive_nalldecls_env env c in
   let impls_st = implicits_of_global (IndRef c) in
-  add_implicits_check_length (error_wrong_numarg_inductive_loc loc env c)
+  add_implicits_check_length (error_wrong_numarg_inductive ~loc env c)
     nallargs nalldecls impls_st len_pl1 pl2
 
 (** Do not raise NotEnoughArguments thanks to preconditions*)
@@ -1034,7 +1034,7 @@ let chop_params_pattern loc ind args with_letin =
   assert (nparams <= List.length args);
   let params,args = List.chop nparams args in
   List.iter (function PatVar(_,Anonymous) -> ()
-    | PatVar (loc',_) | PatCstr(loc',_,_,_) -> error_parameter_not_implicit loc') params;
+    | PatVar (loc',_) | PatCstr(loc',_,_,_) -> error_parameter_not_implicit ~loc:loc') params;
   args
 
 let find_constructor loc add_params ref =
@@ -1042,10 +1042,10 @@ let find_constructor loc add_params ref =
   | ConstructRef cstr -> cstr
   | IndRef _ ->
     let error = str "There is an inductive name deep in a \"in\" clause." in
-    user_err_loc (loc, "find_constructor", error)
+    user_err ~loc ~hdr:"find_constructor" error
   | ConstRef _ | VarRef _ ->
     let error = str "This reference is not a constructor." in
-    user_err_loc (loc, "find_constructor", error)
+    user_err ~loc ~hdr:"find_constructor" error
   in
   cstr, match add_params with
     | Some nb_args ->
@@ -1083,8 +1083,8 @@ let sort_fields ~complete loc fields completer =
             let gr = global_reference_of_reference first_field_ref in
             (gr, Recordops.find_projection gr)
           with Not_found ->
-            user_err_loc (loc_of_reference first_field_ref, "intern",
-                          pr_reference first_field_ref ++ str": Not a projection")
+            user_err ~loc:(loc_of_reference first_field_ref) ~hdr:"intern"
+                         (pr_reference first_field_ref ++ str": Not a projection")
         in
         (* the number of parameters *)
         let nparams = record.Recordops.s_EXPECTEDPARAM in
@@ -1113,7 +1113,7 @@ let sort_fields ~complete loc fields completer =
                            by a let-in in the record declaration
                            (its value is fixed from other fields). *)
                        if first_field && not regular && complete then
-                         user_err_loc (loc, "", str "No local fields allowed in a record construction.")
+                         user_err ~loc  (str "No local fields allowed in a record construction.")
                        else if first_field then
                          build_proj_list projs proj_kinds (idx+1) ~acc_first_idx:idx acc
                        else if not regular && complete then
@@ -1126,7 +1126,7 @@ let sort_fields ~complete loc fields completer =
               | None :: projs ->
                  if complete then
                    (* we don't want anonymous fields *)
-                   user_err_loc (loc, "", str "This record contains anonymous fields.")
+                   user_err ~loc  (str "This record contains anonymous fields.")
                  else
                    (* anonymous arguments don't appear in proj_kinds *)
                    build_proj_list projs proj_kinds (idx+1) ~acc_first_idx acc
@@ -1140,15 +1140,14 @@ let sort_fields ~complete loc fields completer =
             | (field_ref, field_value) :: fields ->
                let field_glob_ref = try global_reference_of_reference field_ref
                with Not_found ->
-                 user_err_loc (loc_of_reference field_ref, "intern",
-                               str "The field \"" ++ pr_reference field_ref ++ str "\" does not exist.") in
+                 user_err ~loc:(loc_of_reference field_ref) ~hdr:"intern"
+                               (str "The field \"" ++ pr_reference field_ref ++ str "\" does not exist.") in
                let remaining_projs, (field_index, _) =
                  let the_proj (idx, glob_ref) = eq_gr field_glob_ref glob_ref in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
-                   user_err_loc
-                     (loc, "",
-                      str "This record contains fields of different records.")
+                   user_err ~loc 
+                     (str "This record contains fields of different records.")
                in
                index_fields fields remaining_projs ((field_index, field_value) :: acc)
             | [] ->
@@ -1219,7 +1218,7 @@ let drop_notations_pattern looked_for =
       if top then looked_for g else
       match g with ConstructRef _ -> () | _ -> raise Not_found
     with Not_found ->
-      error_invalid_pattern_notation loc
+      error_invalid_pattern_notation ~loc
   in
   let test_kind top =
     if top then looked_for else function ConstructRef _ -> () | _ -> raise Not_found
@@ -1344,8 +1343,8 @@ let drop_notations_pattern looked_for =
 		 List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl @
 		 List.map (in_pat false scopes) args, [])
     | NList (x,y,iter,terminator,lassoc) ->
-      if not (List.is_empty args) then user_err_loc
-        (loc,"",strbrk "Application of arguments to a recursive notation not supported in patterns.");
+      if not (List.is_empty args) then user_err ~loc 
+        (strbrk "Application of arguments to a recursive notation not supported in patterns.");
       (try
          (* All elements of the list are in scopes (scopt,subscopes) *)
 	 let (l,(scopt,subscopes)) = Id.Map.find x substlist in
@@ -1360,7 +1359,7 @@ let drop_notations_pattern looked_for =
     | NHole _ ->
       let () = assert (List.is_empty args) in
       RCPatAtom (loc, None)
-    | t -> error_invalid_pattern_notation loc
+    | t -> error_invalid_pattern_notation ~loc
   in in_pat true
 
 let rec intern_pat genv aliases pat =
@@ -1412,11 +1411,11 @@ let intern_ind_pattern genv scopes pat =
   let no_not =
     try
       drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) scopes pat
-    with InternalizationError(loc,NotAConstructor _) -> error_bad_inductive_type loc
+    with InternalizationError(loc,NotAConstructor _) -> error_bad_inductive_type ~loc
   in
   match no_not with
     | RCPatCstr (loc, head, expl_pl, pl) ->
-      let c = (function IndRef ind -> ind | _ -> error_bad_inductive_type loc) head in
+      let c = (function IndRef ind -> ind | _ -> error_bad_inductive_type ~loc) head in
       let with_letin, pl2 = add_implicits_check_ind_length genv loc c
 	(List.length expl_pl) pl in
       let idslpl1 = List.rev_map (intern_pat genv empty_alias) expl_pl in
@@ -1424,8 +1423,8 @@ let intern_ind_pattern genv scopes pat =
       (with_letin,
        match product_of_cases_patterns [] (List.rev_append idslpl1 idslpl2) with
        | _,[_,pl] -> (c,chop_params_pattern loc c pl with_letin)
-       | _ -> error_bad_inductive_type loc)
-    | x -> error_bad_inductive_type (raw_cases_pattern_expr_loc x)
+       | _ -> error_bad_inductive_type ~loc)
+    | x -> error_bad_inductive_type ~loc:(raw_cases_pattern_expr_loc x)
 
 (**********************************************************************)
 (* Utilities for application                                          *)
@@ -1464,10 +1463,10 @@ let extract_explicit_arg imps args =
 	  let id = match pos with
 	  | ExplByName id ->
 	      if not (exists_implicit_name id imps) then
-		user_err_loc
-		  (loc,"",str "Wrong argument name: " ++ pr_id id ++ str ".");
+		user_err ~loc 
+		  (str "Wrong argument name: " ++ pr_id id ++ str ".");
 	      if Id.Map.mem id eargs then
-		user_err_loc (loc,"",str "Argument name " ++ pr_id id
+		user_err ~loc  (str "Argument name " ++ pr_id id
 		++ str " occurs more than once.");
 	      id
 	  | ExplByPos (p,_id) ->
@@ -1477,11 +1476,11 @@ let extract_explicit_arg imps args =
 		  if not (is_status_implicit imp) then failwith "imp";
 		  name_of_implicit imp
 		with Failure _ (* "nth" | "imp" *) ->
-		  user_err_loc
-		    (loc,"",str"Wrong argument position: " ++ int p ++ str ".")
+		  user_err ~loc 
+		    (str"Wrong argument position: " ++ int p ++ str ".")
 	      in
 	      if Id.Map.mem id eargs then
-		user_err_loc (loc,"",str"Argument at position " ++ int p ++
+		user_err ~loc  (str"Argument at position " ++ int p ++
 		  str " is mentioned more than once.");
 	      id in
 	  (Id.Map.add id (loc, a) eargs, rargs)
@@ -1532,7 +1531,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
                  (function
                   | BDRawDef a -> a
                   | BDPattern (loc,_,_,_,_) ->
-                      Loc.raise loc (Stream.Error "pattern with quote not allowed after fix")) rbl in
+                      Loc.raise ~loc (Stream.Error "pattern with quote not allowed after fix")) rbl in
 	       ((n, ro), bl, intern_type env' ty, env')) dl in
         let idl = Array.map2 (fun (_,_,_,_,bd) (a,b,c,env') ->
 	     let env'' = List.fold_left_i (fun i en name -> 
@@ -1636,7 +1635,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
        in
        begin
 	  match fields with
-	    | None -> user_err_loc (loc, "intern", str"No constructor inference.")
+	    | None -> user_err ~loc ~hdr:"intern" (str"No constructor inference.")
 	    | Some (n, constrname, args) ->
 		let pars = List.make n (CHole (loc, None, Misctypes.IntroAnonymous, None)) in
                 let app = CAppExpl (loc, (None, constrname,None), List.rev_append pars args) in
@@ -1859,7 +1858,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
       | (imp::impl', []) ->
 	  if not (Id.Map.is_empty eargs) then
 	    (let (id,(loc,_)) = Id.Map.choose eargs in
-	       user_err_loc (loc,"",str "Not enough non implicit \
+	       user_err ~loc  (str "Not enough non implicit \
 	    arguments to accept the argument bound to " ++
 		 pr_id id ++ str"."));
 	  []
@@ -1890,8 +1889,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
     intern env c
   with
       InternalizationError (loc,e) ->
-	user_err_loc (loc,"internalize",
-	  explain_internalization_error e)
+	user_err ~loc ~hdr:"internalize"
+	  (explain_internalization_error e)
 
 (**************************************************************************)
 (* Functions to translate constr_expr into glob_constr                    *)
@@ -1930,7 +1929,7 @@ let intern_pattern globalenv patt =
     intern_cases_pattern globalenv (None,[]) empty_alias patt
   with
       InternalizationError (loc,e) ->
-	user_err_loc (loc,"internalize",explain_internalization_error e)
+	user_err ~loc ~hdr:"internalize" (explain_internalization_error e)
 
 
 (*********************************************************************)
@@ -2041,13 +2040,13 @@ let intern_context global_level env impl_env binders =
                    (function
                     | BDRawDef a -> a
                     | BDPattern (loc,_,_,_,_) ->
-                        Loc.raise loc (Stream.Error "pattern with quote not allowed here")) bl in
+                        Loc.raise ~loc (Stream.Error "pattern with quote not allowed here")) bl in
 	       (env, bl))
 	    ({ids = extract_ids env; unb = false;
 	      tmp_scope = None; scopes = []; impls = impl_env}, []) binders in
   (lenv.impls, List.map snd bl)
   with InternalizationError (loc,e) ->
-    user_err_loc (loc,"internalize", explain_internalization_error e)
+    user_err ~loc ~hdr:"internalize" (explain_internalization_error e)
 
 let interp_rawcontext_evars env evdref k bl =
   let (env, par, _, impls) =

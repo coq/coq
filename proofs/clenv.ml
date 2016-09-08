@@ -155,7 +155,7 @@ let error_incompatible_inst clenv mv  =
   let na = meta_name clenv.evd mv in
   match na with
       Name id ->
-        errorlabstrm "clenv_assign"
+        user_err ~hdr:"clenv_assign"
           (str "An incompatible instantiation has already been found for " ++
            pr_id id)
     | _ ->
@@ -417,11 +417,11 @@ let qhyp_eq h1 h2 = match h1, h2 with
 let check_bindings bl =
   match List.duplicates qhyp_eq (List.map pi2 bl) with
     | NamedHyp s :: _ ->
-	errorlabstrm ""
+	user_err 
 	  (str "The variable " ++ pr_id s ++
 	   str " occurs more than once in binding list.");
     | AnonHyp n :: _ ->
-	errorlabstrm ""
+	user_err 
 	  (str "The position " ++ int n ++
 	   str " occurs more than once in binding list.")
     | [] -> ()
@@ -435,7 +435,7 @@ let explain_no_such_bound_variable evd id =
     if na != Anonymous then out_name na :: l else l
   in
   let mvl = List.fold_left fold [] (Evd.meta_list evd) in
-  errorlabstrm "Evd.meta_with_name"
+  user_err ~hdr:"Evd.meta_with_name"
     (str"No such bound variable " ++ pr_id id ++
      (if mvl == [] then str " (no bound variables at all in the expression)."
       else
@@ -460,7 +460,7 @@ let meta_with_name evd id =
     | ([n],_|_,[n]) ->
         n
     | _  ->
-        errorlabstrm "Evd.meta_with_name"
+        user_err ~hdr:"Evd.meta_with_name"
           (str "Binder name \"" ++ pr_id id ++
            strbrk "\" occurs more than once in clause.")
 
@@ -469,12 +469,12 @@ let meta_of_binder clause loc mvs = function
   | AnonHyp n ->
       try List.nth mvs (n-1)
       with (Failure _|Invalid_argument _) ->
-        errorlabstrm "" (str "No such binder.")
+        user_err  (str "No such binder.")
 
 let error_already_defined b =
   match b with
     | NamedHyp id ->
-        errorlabstrm ""
+        user_err 
           (str "Binder name \"" ++ pr_id id ++
            str"\" already defined with incompatible value.")
     | AnonHyp n ->
@@ -527,7 +527,7 @@ let clenv_constrain_last_binding c clenv =
   clenv_assign_binding clenv k c
 
 let error_not_right_number_missing_arguments n =
-  errorlabstrm ""
+  user_err 
     (strbrk "Not the right number of missing arguments (expected " ++
       int n ++ str ").")
 
@@ -641,7 +641,7 @@ let explain_no_such_bound_variable holes id =
   | [id] -> str "(possible name is: " ++ pr_id id ++ str ")."
   | _ -> str "(possible names are: " ++ pr_enum pr_id mvl ++ str ")."
   in
-  errorlabstrm "" (str "No such bound variable " ++ pr_id id ++ expl)
+  user_err  (str "No such bound variable " ++ pr_id id ++ expl)
 
 let evar_with_name holes id =
   let map h = match h.hole_name with
@@ -653,7 +653,7 @@ let evar_with_name holes id =
   | [] -> explain_no_such_bound_variable holes id
   | [h] -> h.hole_evar
   | _ ->
-    errorlabstrm ""
+    user_err 
       (str "Binder name \"" ++ pr_id id ++
         str "\" occurs more than once in clause.")
 
@@ -664,7 +664,7 @@ let evar_of_binder holes = function
     let h = List.nth holes (pred n) in
     h.hole_evar
   with e when CErrors.noncritical e ->
-    errorlabstrm "" (str "No such binder.")
+    user_err  (str "No such binder.")
 
 let define_with_type sigma env ev c =
   let t = Retyping.get_type_of env sigma ev in

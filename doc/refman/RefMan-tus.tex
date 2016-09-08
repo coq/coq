@@ -1012,7 +1012,7 @@ the different kinds of errors used in \Coq{} :
 
 \fun{val Std.error : string -> 'a}
     {For simple error messages}
-\fun{val Std.errorlabstrm : string -> std\_ppcmds -> 'a}
+\fun{val Std.user_err : ?loc:Loc.t -> string -> std\_ppcmds -> 'a}
     {See Section~\ref{PrettyPrinter} : this can be used if the user
       want to display a term or build a complex error message}
 

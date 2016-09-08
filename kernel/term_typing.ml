@@ -277,7 +277,7 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
     if not (Id.Set.subset inferred_set declared_set) then
       let l = Id.Set.elements (Idset.diff inferred_set declared_set) in
       let n = List.length l in
-      errorlabstrm "" (Pp.(str "The following section " ++
+      user_err  (Pp.(str "The following section " ++
         str (String.plural n "variable") ++
         str " " ++ str (String.conjugate_verb_to_be n) ++
         str " used but not declared:" ++

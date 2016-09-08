@@ -538,7 +538,7 @@ let inheritance_graph () =
 let coercion_of_reference r =
   let ref = Nametab.global r in
   if not (coercion_exists ref) then
-    errorlabstrm "try_add_coercion"
+    user_err ~hdr:"try_add_coercion"
       (Nametab.pr_global_env Id.Set.empty ref ++ str" is not a coercion.");
   ref
 

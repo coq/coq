@@ -33,7 +33,7 @@ let error_no_such_label_sub l l1 =
          Label.to_string l^" is missing in "^l1^".")
 
 let error_not_a_module_loc loc s =
-  user_err_loc (loc,"",str ("\""^Label.to_string s^"\" is not a module"))
+  user_err ~loc  (str ("\""^Label.to_string s^"\" is not a module"))
 
 let error_not_a_module s = error_not_a_module_loc Loc.ghost s
 

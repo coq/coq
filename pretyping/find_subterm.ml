@@ -37,7 +37,7 @@ let explain_occurrence_error = function
   | IncorrectInValueOccurrence id -> explain_incorrect_in_value_occurrence id
 
 let error_occurrences_error e =
-  errorlabstrm "" (explain_occurrence_error e)
+  user_err  (explain_occurrence_error e)
 
 let error_invalid_occurrence occ =
   error_occurrences_error (InvalidOccurrence occ)

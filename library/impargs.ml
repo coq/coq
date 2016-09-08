@@ -340,14 +340,14 @@ let check_correct_manual_implicits autoimps l =
   List.iter (function
     | ExplByName id,(b,fi,forced) ->
 	if not forced then
-	  errorlabstrm ""
+	  user_err 
             (str "Wrong or non-dependent implicit argument name: " ++ pr_id id ++ str ".")
     | ExplByPos (i,_id),_t ->
 	if i<1 || i>List.length autoimps then
-	  errorlabstrm ""
+	  user_err 
             (str "Bad implicit argument number: " ++ int i ++ str ".")
 	else
-	  errorlabstrm ""
+	  user_err 
 	    (str "Cannot set implicit argument number " ++ int i ++
 	      str ": it has no name.")) l
 
@@ -661,7 +661,7 @@ let check_inclusion l =
 
 let check_rigidity isrigid =
   if not isrigid then
-    errorlabstrm "" (strbrk "Multiple sequences of implicit arguments available only for references that cannot be applied to an arbitrarily large number of arguments.")
+    user_err  (strbrk "Multiple sequences of implicit arguments available only for references that cannot be applied to an arbitrarily large number of arguments.")
 
 let projection_implicits env p impls = 
   let pb = Environ.lookup_projection p env in

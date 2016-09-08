@@ -247,12 +247,12 @@ let locate_qualified_library qid =
 
 let error_unmapped_dir qid =
   let prefix = qid.dirpath in
-  errorlabstrm "load_absolute_library_from"
+  user_err ~hdr:"load_absolute_library_from"
     (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++
      str "no physical path bound to" ++ spc () ++ pr_dirlist prefix ++ fnl ())
 
 let error_lib_not_found qid =
-  errorlabstrm "load_absolute_library_from"
+  user_err ~hdr:"load_absolute_library_from"
     (str"Cannot find library " ++ pr_path qid ++ str" in loadpath")
 
 let try_locate_absolute_library dir =
@@ -313,18 +313,18 @@ let intern_from_file (dir, f) =
       let () = close_in ch in
       let ch = open_in_bin f in
       if not (String.equal (Digest.channel ch pos) checksum) then
-        errorlabstrm "intern_from_file" (str "Checksum mismatch");
+        user_err ~hdr:"intern_from_file" (str "Checksum mismatch");
       let () = close_in ch in
       if dir <> sd.md_name then
-        errorlabstrm "intern_from_file"
+        user_err ~hdr:"intern_from_file"
           (name_clash_message dir sd.md_name f);
       if tasks <> None || discharging <> None then
-        errorlabstrm "intern_from_file"
+        user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
        Feedback.msg_notice(str " (was a vio file) ");
       Option.iter (fun (_,_,b) -> if not b then
-        errorlabstrm "intern_from_file"
+        user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
       Validate.validate !Flags.debug Values.v_univopaques opaque_csts;

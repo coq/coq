@@ -61,7 +61,7 @@ let tclIDTAC_MESSAGE s gls =
   Feedback.msg_info (hov 0 s); tclIDTAC gls
 
 (* General failure tactic *)
-let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" (str s)
+let tclFAIL_s s gls = user_err ~hdr:"Refiner.tclFAIL_s" (str s)
 
 (* A special exception for levels for the Fail tactic *)
 exception FailError of int * std_ppcmds Lazy.t
@@ -83,7 +83,7 @@ let thens3parts_tac tacfi tac tacli (sigr,gs) =
   let nf = Array.length tacfi in
   let nl = Array.length tacli in
   let ng = List.length gs in
-  if ng<nf+nl then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
+  if ng<nf+nl then user_err ~hdr:"Refiner.thensn_tac" (str "Not enough subgoals.");
   let gll =
       (List.map_i (fun i ->
         apply_sig_tac sigr (if i<nf then tacfi.(i) else if i>=ng-nl then tacli.(nl-ng+i) else tac))
@@ -165,14 +165,14 @@ the goal unchanged *)
 let tclWEAK_PROGRESS tac ptree =
   let rslt = tac ptree in
   if Goal.V82.weak_progress rslt ptree then rslt
-  else errorlabstrm "Refiner.WEAK_PROGRESS" (str"Failed to progress.")
+  else user_err ~hdr:"Refiner.WEAK_PROGRESS" (str"Failed to progress.")
 
 (* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
 the goal unchanged *)
 let tclPROGRESS tac ptree =
   let rslt = tac ptree in
   if Goal.V82.progress rslt ptree then rslt
-  else errorlabstrm "Refiner.PROGRESS" (str"Failed to progress.")
+  else user_err ~hdr:"Refiner.PROGRESS" (str"Failed to progress.")
 
 (* Same as tclWEAK_PROGRESS but fails also if tactics generates several goals,
    one of them being identical to the original goal *)
@@ -183,7 +183,7 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
   let rslt = tac goal in
   let {it=gls;sigma=sigma} = rslt in
   if List.exists (same_goal goal sigma) gls
-  then errorlabstrm "Refiner.tclNOTSAMEGOAL"
+  then user_err ~hdr:"Refiner.tclNOTSAMEGOAL"
       (str"Tactic generated a subgoal identical to the original goal.")
   else rslt
 
@@ -317,7 +317,7 @@ let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
 
 let tclDO n t =
   let rec dorec k =
-    if k < 0 then errorlabstrm "Refiner.tclDO"
+    if k < 0 then user_err ~hdr:"Refiner.tclDO"
       (str"Wrong argument : Do needs a positive integer.");
     if Int.equal k 0 then tclIDTAC
     else if Int.equal k 1 then t else (tclTHEN t (dorec (k-1)))

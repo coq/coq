@@ -213,7 +213,9 @@ let report () = (str "." ++ spc () ++ str "Please report.")
 
 let guill s = str "\"" ++ str s ++ str "\""
 
-let where s =
+let where = function
+| None -> mt ()
+| Some s ->
   if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
 let rec explain_exn = function

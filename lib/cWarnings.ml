@@ -45,7 +45,7 @@ let create ~name ~category ?(default=Enabled) pp =
            | Disabled -> ()
            | AsError ->
               let loc = Option.default !current_loc loc in
-              CErrors.user_err_loc (loc,"_",pp x)
+              CErrors.user_err ~loc (pp x)
            | Enabled ->
               let msg =
                 pp x ++ spc () ++ str "[" ++ str name ++ str "," ++

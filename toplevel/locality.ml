@@ -18,7 +18,7 @@ let check_locality locality_flag =
   match locality_flag with
   | Some b ->
     let s = if b then "Local" else "Global" in
-    CErrors.errorlabstrm "Locality.check_locality"
+    CErrors.user_err ~hdr:"Locality.check_locality"
       (str "This command does not support the \"" ++ str s ++ str "\" prefix.")
   | None -> ()
 

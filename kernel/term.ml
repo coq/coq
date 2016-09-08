@@ -465,7 +465,7 @@ let rec to_lambda n prod =
     match kind_of_term prod with
       | Prod (na,ty,bd) -> mkLambda (na,ty,to_lambda (n-1) bd)
       | Cast (c,_,_) -> to_lambda n c
-      | _   -> errorlabstrm "to_lambda" (mt ())
+      | _   -> user_err ~hdr:"to_lambda" (mt ())
 
 let rec to_prod n lam =
   if Int.equal n 0 then
@@ -474,7 +474,7 @@ let rec to_prod n lam =
     match kind_of_term lam with
       | Lambda (na,ty,bd) -> mkProd (na,ty,to_prod (n-1) bd)
       | Cast (c,_,_) -> to_prod n c
-      | _   -> errorlabstrm "to_prod" (mt ())
+      | _   -> user_err ~hdr:"to_prod" (mt ())
 
 let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
 let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)

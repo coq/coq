@@ -185,7 +185,7 @@ let introduction ?(check=true) id =
     let store = Proofview.Goal.extra gl in
     let env = Proofview.Goal.env gl in
     let () = if check && mem_named_context id hyps then
-      errorlabstrm "Tactics.introduction"
+      user_err ~hdr:"Tactics.introduction"
         (str "Variable " ++ pr_id id ++ str " is already declared.")
     in
     let open Context.Named.Declaration in
@@ -258,7 +258,7 @@ let clear_dependency_msg env sigma id = function
       Printer.pr_existential env sigma ev ++ str"."
 
 let error_clear_dependency env sigma id err =
-  errorlabstrm "" (clear_dependency_msg env sigma id err)
+  user_err  (clear_dependency_msg env sigma id err)
 
 let replacing_dependency_msg env sigma id = function
   | Evarutil.OccurHypInSimpleClause None ->
@@ -272,7 +272,7 @@ let replacing_dependency_msg env sigma id = function
       Printer.pr_existential env sigma ev ++ str"."
 
 let error_replacing_dependency env sigma id err =
-  errorlabstrm "" (replacing_dependency_msg env sigma id err)
+  user_err  (replacing_dependency_msg env sigma id err)
 
 (* This tactic enables the user to remove hypotheses from the signature.
  * Some care is taken to prevent him from removing variables that are
@@ -352,7 +352,7 @@ let rename_hyp repl =
       let () =
         try
           let elt = Id.Set.choose (Id.Set.inter dst mods) in
-          CErrors.errorlabstrm "" (pr_id elt ++ str " is already used")
+          CErrors.user_err  (pr_id elt ++ str " is already used")
         with Not_found -> ()
       in
       (** All is well *)
@@ -425,7 +425,7 @@ let find_name mayrepl decl naming gl = match naming with
       let ids_of_hyps = Tacmach.New.pf_ids_of_hyps gl in
       let id' = next_ident_away id ids_of_hyps in
       if not mayrepl && not (Id.equal id' id) then
-        user_err_loc (loc,"",pr_id id ++ str" is already used.");
+        user_err ~loc  (pr_id id ++ str" is already used.");
       id
 
 (**************************************************************)
@@ -510,7 +510,7 @@ let mutual_fix f n rest j = Proofview.Goal.nf_enter { enter = begin fun gl ->
     if not (eq_mind sp sp') then
       error "Fixpoints should be on the same mutual inductive declaration.";
     if mem_named_context f (named_context_of_val sign) then
-      errorlabstrm "Logic.prim_refiner"
+      user_err ~hdr:"Logic.prim_refiner"
         (str "Name " ++ pr_id f ++ str " already used in the environment");
     mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
   in
@@ -601,7 +601,7 @@ let pf_reduce_decl redfun where decl gl =
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
-	errorlabstrm "" (pr_id id ++ str " has no value.");
+	user_err  (pr_id id ++ str " has no value.");
       LocalAssum (id,redfun' ty)
   | LocalDef (id,b,ty) ->
       let b' = if where != InHypTypeOnly then redfun' b else b in
@@ -702,7 +702,7 @@ let pf_e_reduce_decl redfun where decl gl =
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
-	errorlabstrm "" (pr_id id ++ str " has no value.");
+	user_err  (pr_id id ++ str " has no value.");
     let Sigma (ty', sigma, p) = redfun sigma ty in
     Sigma (LocalAssum (id, ty'), sigma, p)
   | LocalDef (id,b,ty) ->
@@ -742,7 +742,7 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigm
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
-	errorlabstrm "" (pr_id id ++ str " has no value.");
+	user_err  (pr_id id ++ str " has no value.");
     let Sigma (ty', sigma, p) = (redfun false).e_redfun env sigma ty in
     Sigma (LocalAssum (id, ty'), sigma, p)
   | LocalDef (id,b,ty) ->
@@ -780,12 +780,12 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
         isSort (whd_all env sigma t2)
       then (mayneedglobalcheck := true; sigma)
       else
-        errorlabstrm "convert-check-hyp" (str "Types are incompatible.")
+        user_err ~hdr:"convert-check-hyp" (str "Types are incompatible.")
     else sigma
   end
   else
     if not (isSort (whd_all env sigma t1)) then
-      errorlabstrm "convert-check-hyp" (str "Not a type.")
+      user_err ~hdr:"convert-check-hyp" (str "Not a type.")
     else sigma
 
 (* Now we introduce different instances of the previous tacticals *)
@@ -794,7 +794,7 @@ let change_and_check cv_pb mayneedglobalcheck deep t = { e_redfun = begin fun en
   let sigma = Sigma.to_evar_map sigma in
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
-  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
+  if not b then user_err ~hdr:"convert-check-hyp" (str "Not convertible.");
   Sigma.Unsafe.of_pair (t', sigma)
 end }
 
@@ -888,7 +888,7 @@ let reduce redexp cl =
 let unfold_constr = function
   | ConstRef sp -> unfold_in_concl [AllOccurrences,EvalConstRef sp]
   | VarRef id -> unfold_in_concl [AllOccurrences,EvalVarRef id]
-  | _ -> errorlabstrm "unfold_constr" (str "Cannot unfold a non-constant.")
+  | _ -> user_err ~hdr:"unfold_constr" (str "Cannot unfold a non-constant.")
 
 (*******************************************)
 (*         Introduction tactics            *)
@@ -1081,7 +1081,7 @@ let depth_of_quantified_hypothesis red h gl =
   match lookup_hypothesis_as_renamed_gen red h gl with
     | Some depth -> depth
     | None ->
-        errorlabstrm "lookup_quantified_hypothesis"
+        user_err ~hdr:"lookup_quantified_hypothesis"
           (str "No " ++ msg_quantified_hypothesis h ++
 	  strbrk " in current goal" ++
 	  (if red then strbrk " even after head-reduction" else mt ()) ++
@@ -1230,7 +1230,7 @@ let cut c =
 let error_uninstantiated_metas t clenv =
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
   let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta")
-  in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
+  in user_err  (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
 let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
@@ -1363,7 +1363,7 @@ let elimination_clause_scheme with_evars ?(with_classes=true) ?(flags=elim_flags
   let indmv =
     (match kind_of_term (nth_arg i elimclause.templval.rebus) with
        | Meta mv -> mv
-       | _  -> errorlabstrm "elimination_clause"
+       | _  -> user_err ~hdr:"elimination_clause"
              (str "The type of elimination clause is not well-formed."))
   in
   let elimclause' = clenv_fchain ~flags indmv elimclause indclause in
@@ -1528,7 +1528,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
     try match List.remove Int.equal indmv (clenv_independent elimclause) with
       | [a] -> a
       | _ -> failwith ""
-    with Failure _ -> errorlabstrm "elimination_clause"
+    with Failure _ -> user_err ~hdr:"elimination_clause"
           (str "The type of elimination clause is not well-formed.") in
   let elimclause'  = clenv_fchain ~flags indmv elimclause indclause in
   let hyp = mkVar id in
@@ -1537,7 +1537,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   let elimclause'' = clenv_fchain_in id ~flags hypmv elimclause' hypclause in
   let new_hyp_typ  = clenv_type elimclause'' in
   if Term.eq_constr hyp_typ new_hyp_typ then
-    errorlabstrm "general_rewrite_in"
+    user_err ~hdr:"general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
   clenv_refine_in with_evars id id sigma elimclause''
     (fun id -> Proofview.tclUNIT ())
@@ -2017,7 +2017,7 @@ let clear_body ids =
     let map = function
     | LocalAssum (id,t) as decl ->
       let () = if List.mem_f Id.equal id ids then
-        errorlabstrm "" (str "Hypothesis " ++ pr_id id ++ str " is not a local definition")
+        user_err  (str "Hypothesis " ++ pr_id id ++ str " is not a local definition")
       in
       decl
     | LocalDef (id,_,t) as decl ->
@@ -2147,7 +2147,7 @@ let check_number_of_constructors expctdnumopt i nconstr =
   if Int.equal i 0 then error "The constructors are numbered starting from 1.";
   begin match expctdnumopt with
     | Some n when not (Int.equal n nconstr) ->
-	errorlabstrm "Tactics.check_number_of_constructors"
+	user_err ~hdr:"Tactics.check_number_of_constructors"
           (str "Not an inductive goal with " ++ int n ++ str (String.plural n " constructor") ++ str ".")
     | _ -> ()
   end;
@@ -2236,7 +2236,7 @@ let error_unexpected_extra_pattern loc bound pat =
   | IntroNaming (IntroIdentifier _) ->
       "name", (String.plural nb " introduction pattern"), "no"
   | _ -> "introduction pattern", "", "none" in
-  user_err_loc (loc,"",str "Unexpected " ++ str s1 ++ str " (" ++
+  user_err ~loc  (str "Unexpected " ++ str s1 ++ str " (" ++
     (if Int.equal nb 0 then (str s3 ++ str s2) else
       (str "at most " ++ int nb ++ str s2)) ++ spc () ++
        str (if Int.equal nb 1 then "was" else "were") ++
@@ -2476,8 +2476,8 @@ and prepare_intros_loc loc with_evars dft destopt = function
           (fun _ l -> clear_wildcards l) in
       fun id ->
         intro_pattern_action loc with_evars true true ipat [] destopt tac id)
-  | IntroForthcoming _ -> user_err_loc
-      (loc,"",str "Introduction pattern for one hypothesis expected.")
+  | IntroForthcoming _ -> user_err ~loc 
+      (str "Introduction pattern for one hypothesis expected.")
 
 let intro_patterns_bound_to with_evars n destopt =
   intro_patterns_core with_evars true [] [] [] destopt
@@ -2643,7 +2643,7 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       | IntroFresh heq_base -> fresh_id_in_env [id] heq_base env
       | IntroIdentifier id ->
           if List.mem id (ids_of_named_context (named_context env)) then
-            user_err_loc (loc,"",pr_id id ++ str" is already used.");
+            user_err ~loc  (pr_id id ++ str" is already used.");
           id in
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
@@ -2725,7 +2725,7 @@ let enough_by na t tac = forward false (Some (Some tac)) (ipat_of_name na) t
 let generalized_name c t ids cl = function
   | Name id as na ->
       if Id.List.mem id ids then
-	errorlabstrm "" (pr_id id ++ str " is already used.");
+	user_err  (pr_id id ++ str " is already used.");
       na
   | Anonymous ->
       match kind_of_term c with
@@ -2885,7 +2885,7 @@ let specialize (c,lbind) ipat =
       let tstack = chk tstack in
       let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
       if occur_meta term then
-	errorlabstrm "" (str "Cannot infer an instance for " ++
+	user_err  (str "Cannot infer an instance for " ++
 
           pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
 	  str ".");
@@ -2930,7 +2930,7 @@ let unfold_body x =
   (** We normalize the given hypothesis immediately. *)
   let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
   let xval = match Context.Named.lookup x hyps with
-  | LocalAssum _ -> errorlabstrm "unfold_body"
+  | LocalAssum _ -> user_err ~hdr:"unfold_body"
     (pr_id x ++ str" is not a defined hypothesis.")
   | LocalDef (_,xval,_) -> xval
   in
@@ -3027,7 +3027,7 @@ let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
   Proofview.tclORELSE
     (dest_intro_patterns with_evars avoid thin dest pat tac)
     begin function (e, info) -> match e with
-      | UserError ("move_hyp",_) ->
+      | UserError (Some "move_hyp",_) ->
        (* May happen e.g. with "destruct x using s" with an hypothesis
           which is morally an induction hypothesis to be "MoveLast" if
           known as such but which is considered instead as a subterm of
@@ -3426,7 +3426,7 @@ let make_up_names n ind_opt cname =
 
 let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
-  errorlabstrm "Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
+  user_err ~hdr:"Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
 let glob = Universes.constr_of_global
 
@@ -4043,7 +4043,7 @@ let recolle_clenv i params args elimclause gl =
       (fun x ->
 	match kind_of_term x with
 	  | Meta mv -> mv
-	  | _  -> errorlabstrm "elimination_clause"
+	  | _  -> user_err ~hdr:"elimination_clause"
               (str "The type of the elimination clause is not well-formed."))
       arr in
   let k = match i with -1 -> Array.length lindmv - List.length args | _ -> i in
@@ -4188,7 +4188,7 @@ let clear_unselected_context id inhyps cls =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   if occur_var (Tacmach.New.pf_env gl) id (Tacmach.New.pf_concl gl) &&
     cls.concl_occs == NoOccurrences
-  then errorlabstrm ""
+  then user_err 
     (str "Conclusion must be mentioned: it depends on " ++ pr_id id
      ++ str ".");
   match cls.onhyps with
@@ -4387,7 +4387,7 @@ let induction_gen_l isrec with_evars elim names lc =
   let lc = List.map (function
     | (c,None) -> c
     | (c,Some(loc,eqname)) ->
-      user_err_loc (loc,"",str "Do not know what to do with " ++
+      user_err ~loc  (str "Do not know what to do with " ++
                          Miscprint.pr_intro_pattern_naming eqname)) lc in
   let rec atomize_list l =
     match l with

@@ -46,7 +46,7 @@ let clear ids { it = goal; sigma } =
   let (hyps, concl) =
     try Evarutil.clear_hyps_in_evi env evdref sign cl ids
     with Evarutil.ClearDependencyError (id, _) ->
-      errorlabstrm "" (str "Cannot clear " ++ pr_id id)
+      user_err  (str "Cannot clear " ++ pr_id id)
   in
   let sigma = !evdref in
   let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
@@ -1083,12 +1083,12 @@ let thesis_for obj typ per_info env=
   let cind,all_args=decompose_app typ in
   let ind,u = destInd cind in
   let _ = if not (eq_ind ind per_info.per_ind) then
-    errorlabstrm "thesis_for"
+    user_err ~hdr:"thesis_for"
       ((Printer.pr_constr_env env Evd.empty obj) ++ spc () ++
 	 str"cannot give an induction hypothesis (wrong inductive type).") in
   let params,args = List.chop per_info.per_nparams all_args in
   let _ = if not (List.for_all2 eq_constr params per_info.per_params) then
-    errorlabstrm "thesis_for"
+    user_err ~hdr:"thesis_for"
       ((Printer.pr_constr_env env Evd.empty obj) ++ spc () ++
 	 str "cannot give an induction hypothesis (wrong parameters).") in
   let hd2 = (applist ((lift (List.length rc) per_info.per_pred),args@[obj])) in

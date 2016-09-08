@@ -57,8 +57,8 @@ let pos_of_bignat dloc x =
   pos_of x
 
 let error_non_positive dloc =
-  user_err_loc (dloc, "interp_positive",
-    str "Only strictly positive numbers in type \"positive\".")
+  user_err ~loc:dloc ~hdr:"interp_positive"
+   (str "Only strictly positive numbers in type \"positive\".")
 
 let interp_positive dloc n =
   if is_strictly_pos n then pos_of_bignat dloc n
@@ -113,7 +113,7 @@ let n_of_binnat dloc pos_or_neg n =
     GRef (dloc, glob_N0, None)
 
 let error_negative dloc =
-  user_err_loc (dloc, "interp_N", str "No negative numbers in type \"N\".")
+  user_err ~loc:dloc ~hdr:"interp_N" (str "No negative numbers in type \"N\".")
 
 let n_of_int dloc n =
   if is_pos_or_zero n then n_of_binnat dloc true n
