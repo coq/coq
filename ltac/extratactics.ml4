@@ -983,7 +983,7 @@ let pr_cmp' _prc _prlc _prt = pr_cmp
 let pr_test_gen f (Test(c,x,y)) =
   Pp.(f x ++ pr_cmp c ++ f y)
 
-let pr_test = pr_test_gen (Pptactic.pr_or_var Pp.int)
+let pr_test = pr_test_gen (Pputils.pr_or_var Pp.int)
 
 let pr_test' _prc _prlc _prt = pr_test
 

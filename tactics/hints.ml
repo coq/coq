@@ -1276,7 +1276,7 @@ let pr_hint h = match h.obj with
           env
         with e when CErrors.noncritical e -> Global.env ()
       in
-      (str "(*external*) " ++ Pptactic.pr_glb_generic env tac)
+      (str "(*external*) " ++ Pputils.pr_glb_generic env tac)
 
 let pr_id_hint (id, v) =
   (pr_hint v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())
