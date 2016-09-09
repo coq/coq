@@ -56,14 +56,14 @@ let error_bad_pattern ?loc env sigma cstr ind =
     (env, sigma, BadPattern (cstr,ind))
 
 let error_bad_constructor ?loc env cstr ind =
-  raise_pattern_matching_error
+  raise_pattern_matching_error ?loc
     (env, Evd.empty, BadConstructor (cstr,ind))
 
 let error_wrong_numarg_constructor ?loc env c n =
-  raise_pattern_matching_error (env, Evd.empty, WrongNumargConstructor(c,n))
+  raise_pattern_matching_error ?loc (env, Evd.empty, WrongNumargConstructor(c,n))
 
 let error_wrong_numarg_inductive ?loc env c n =
-  raise_pattern_matching_error (env, Evd.empty, WrongNumargInductive(c,n))
+  raise_pattern_matching_error ?loc (env, Evd.empty, WrongNumargInductive(c,n))
 
 let rec list_try_compile f = function
   | [a] -> f a
