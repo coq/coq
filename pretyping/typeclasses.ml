@@ -501,7 +501,7 @@ let is_resolvable evi =
   Option.is_empty (Store.get evi.evar_extra resolvable)
 
 let mark_resolvability_undef b evi =
-  if is_resolvable evi = b then evi
+  if is_resolvable evi == (b : bool) then evi
   else
     let t = set_resolvable evi.evar_extra b in
     { evi with evar_extra = t }
