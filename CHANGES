@@ -55,6 +55,8 @@ Tactics
   "Structural Injection". In this case, hypotheses are also put in the
   context in the natural left-to-right order and the hypothesis on
   which injection applies is cleared.
+- Add a "strong_progress" tactical which will fail if the initial
+  goals are a subset of the final goals.
 
 Hints
 
