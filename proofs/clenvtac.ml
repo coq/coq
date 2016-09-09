@@ -59,6 +59,19 @@ let clenv_pose_dependent_evars with_evars clenv =
       (RefinerError (UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
   clenv_pose_metas_as_evars clenv dep_mvs
 
+(** Use our own fast path, more informative than from Typeclasses *)
+let check_tc evd =
+  let has_resolvable = ref false in
+  let check _ evi =
+    let res = Typeclasses.is_resolvable evi in
+    if res then
+      let () = has_resolvable := true in
+      Typeclasses.is_class_evar evd evi
+    else false
+  in
+  let has_typeclass = Evar.Map.exists check (Evd.undefined_map evd) in
+  (has_typeclass, !has_resolvable)
+
 let clenv_refine with_evars ?(with_classes=true) clenv =
   (** ppedrot: a Goal.enter here breaks things, because the tactic below may
       solve goals by side effects, while the compatibility layer keeps those
@@ -67,9 +80,16 @@ let clenv_refine with_evars ?(with_classes=true) clenv =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
   let evd' =
     if with_classes then
-      let evd' = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
-        ~fail:(not with_evars) clenv.env clenv.evd
-      in Typeclasses.mark_unresolvables ~filter:Typeclasses.all_goals evd'
+      let (has_typeclass, has_resolvable) = check_tc clenv.evd in
+      let evd' =
+        if has_typeclass then
+          Typeclasses.resolve_typeclasses ~fast_path:false ~filter:Typeclasses.all_evars
+          ~fail:(not with_evars) clenv.env clenv.evd
+        else clenv.evd
+      in
+      if has_resolvable then
+        Typeclasses.mark_unresolvables ~filter:Typeclasses.all_goals evd'
+      else evd'
     else clenv.evd
   in
   let clenv = { clenv with evd = evd' } in
