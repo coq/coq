@@ -13,7 +13,6 @@ open Misctypes
 open Tok
 
 open Pcoq
-open Pcoq.Tactic
 open Pcoq.Prim
 open Pcoq.Constr
 open Pcoq.Vernac_
@@ -26,11 +25,11 @@ let hint_proof_using e = function
      | None -> None
      | Some s -> Some (Gram.entry_parse e (Gram.parsable (Stream.of_string s)))
 
-let in_tac tac = Genarg.in_gen (Genarg.rawwit Constrarg.wit_ltac) tac
+let hint = Gram.entry_create "hint"
 
 (* Proof commands *)
 GEXTEND Gram
-  GLOBAL: command;
+  GLOBAL: hint command;
 
   opt_hintbases:
   [ [ -> []
@@ -41,12 +40,6 @@ GEXTEND Gram
       | IDENT "Proof" ->
           VernacProof (None,hint_proof_using G_vernac.section_subset_expr None)
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
-      | IDENT "Proof"; "with"; ta = tactic; 
-        l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
-          VernacProof (Some (in_tac ta),hint_proof_using G_vernac.section_subset_expr l)
-      | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
-        ta = OPT [ "with"; ta = tactic -> in_tac ta ] ->
-          VernacProof (ta,Some l)
       | IDENT "Proof"; c = lconstr -> VernacExactProof c
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
@@ -126,10 +119,7 @@ GEXTEND Gram
       | IDENT "Opaque"; lc = LIST1 global -> HintsTransparency (lc, false)
       | IDENT "Mode"; l = global; m = mode -> HintsMode (l, m)
       | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
-      | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
-      | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
-          tac = tactic ->
-	  HintsExtern (n,c, in_tac tac) ] ]
+      | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc ] ]
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c

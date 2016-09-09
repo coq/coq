@@ -19,6 +19,7 @@ open Genredexpr
 open Tok (* necessary for camlp4 *)
 
 open Pcoq
+open Pcoq.Vernac_
 open Pcoq.Prim
 open Pcoq.Tactic
 
@@ -32,6 +33,7 @@ let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
 let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
 let genarg_of_uconstr c = in_gen (rawwit Constrarg.wit_uconstr) c
+let in_tac tac = in_gen (rawwit Constrarg.wit_ltac) tac
 
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
@@ -72,13 +74,15 @@ let test_bracket_ident =
 
 (* Tactics grammar rules *)
 
+let hint = G_proofs.hint
+
 let warn_deprecated_appcontext =
   CWarnings.create ~name:"deprecated-appcontext" ~category:"deprecated"
          (fun () -> strbrk "appcontext is deprecated and will be removed " ++
                       strbrk "in a future version")
 
 GEXTEND Gram
-  GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
+  GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg command hint
           tactic_mode constr_may_eval constr_eval selector toplevel_selector;
 
   tactic_then_last:
@@ -326,6 +330,19 @@ GEXTEND Gram
   ;
   tactic_mode:
     [ [ g = OPT toplevel_selector; tac = G_vernac.subgoal_command -> tac g ] ]
+  ;
+  command:
+    [ [ IDENT "Proof"; "with"; ta = Pcoq.Tactic.tactic; 
+        l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
+          Vernacexpr.VernacProof (Some (in_tac ta), G_proofs.hint_proof_using G_vernac.section_subset_expr l)
+      | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
+        ta = OPT [ "with"; ta = Pcoq.Tactic.tactic -> in_tac ta ] ->
+          Vernacexpr.VernacProof (ta,Some l) ] ]
+  ;
+  hint:
+    [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
+        tac = Pcoq.Tactic.tactic ->
+          Vernacexpr.HintsExtern (n,c, in_tac tac) ] ]
   ;
   END
 
