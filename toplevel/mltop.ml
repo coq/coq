@@ -182,7 +182,9 @@ let warn_cannot_open_path =
   CWarnings.create ~name:"cannot-open-path" ~category:"filesystem"
       (fun unix_path -> str "Cannot open " ++ str unix_path)
 
-let add_rec_path ~unix_path ~coq_root ~implicit =
+type add_ml = AddNoML | AddTopML | AddRecML
+
+let add_rec_path add_ml ~unix_path ~coq_root ~implicit =
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
     let prefix = Names.DirPath.repr coq_root in
@@ -193,7 +195,10 @@ let add_rec_path ~unix_path ~coq_root ~implicit =
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
-    let () = add_ml_dir unix_path in
+    let () = match add_ml with
+      | AddNoML -> ()
+      | AddTopML -> add_ml_dir unix_path
+      | AddRecML -> List.iter (fun (lp,_) -> add_ml_dir lp) dirs in
     let add (path, dir) =
       Loadpath.add_load_path path ~implicit dir in
     let () = List.iter add dirs in
