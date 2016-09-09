@@ -45,7 +45,6 @@ let new_entry name =
   let e = Gram.entry_create name in
   e
 
-let selector = new_entry "vernac:selector"
 let toplevel_selector = new_entry "vernac:toplevel_selector"
 let tacdef_body = new_entry "tactic:tacdef_body"
 
@@ -79,7 +78,7 @@ let warn_deprecated_appcontext =
 
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
-          tactic_mode constr_may_eval constr_eval selector toplevel_selector;
+          tactic_mode constr_may_eval constr_eval toplevel_selector;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
@@ -316,13 +315,16 @@ GEXTEND Gram
         l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
           Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l ] ]
   ;
+  selector_body:
+  [ [ l = range_selector_or_nth -> l
+    | test_bracket_ident; "["; id = ident; "]" -> SelectId id ] ]
+  ;
   selector:
-    [ [ l = range_selector_or_nth; ":" -> l
-      | IDENT "all" ; ":" -> SelectAll ] ]
+    [ [ IDENT "only"; sel = selector_body; ":" -> sel ] ]
   ;
   toplevel_selector:
-    [ [ s = selector -> s
-      | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id ] ]
+    [ [ sel = selector_body; ":" -> sel
+    |   IDENT "all"; ":" -> SelectAll ] ]
   ;
   tactic_mode:
     [ [ g = OPT toplevel_selector; tac = G_vernac.subgoal_command -> tac g ] ]
