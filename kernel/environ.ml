@@ -100,7 +100,6 @@ let fold_rel_context f env ~init =
 (* Named context *)
 
 let named_context_of_val c = c.env_named_ctx
-let named_vals_of_val c = c.env_named_val
 
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.

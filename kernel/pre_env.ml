@@ -61,11 +61,8 @@ let force_lazy_val vk = match !vk with
 let dummy_lazy_val () = ref VKnone
 let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
 
-type named_vals = (Id.t * lazy_val) list
-
 type named_context_val = {
   env_named_ctx : Context.Named.t;
-  env_named_val : named_vals;
   env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
 }
 
@@ -84,7 +81,6 @@ type env = {
 
 let empty_named_context_val = {
   env_named_ctx = [];
-  env_named_val = [];
   env_named_map = Id.Map.empty;
 }
 
@@ -135,20 +131,19 @@ let push_named_context_val_val d rval ctxt =
 (*   assert (not (Id.Map.mem (get_id d) ctxt.env_named_map)); *)
   {
     env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
-    env_named_val = (get_id d, rval) :: ctxt.env_named_val;
     env_named_map = Id.Map.add (get_id d) (d, rval) ctxt.env_named_map;
   }
 
 let push_named_context_val d ctxt =
   push_named_context_val_val d (ref VKnone) ctxt
 
-let match_named_context_val c = match c.env_named_ctx, c.env_named_val with
-| [], [] -> None
-| decl :: ctx, (_, v) :: vls ->
+let match_named_context_val c = match c.env_named_ctx with
+| [] -> None
+| decl :: ctx ->
+  let (_, v) = Id.Map.find (get_id decl) c.env_named_map in
   let map = Id.Map.remove (get_id decl) c.env_named_map in
-  let cval = { env_named_ctx = ctx; env_named_val = vls; env_named_map = map } in
+  let cval = { env_named_ctx = ctx; env_named_map = map } in
   Some (decl, v, cval)
-| _ -> assert false
 
 let map_named_val f ctxt =
   let open Context.Named.Declaration in
@@ -161,7 +156,7 @@ let map_named_val f ctxt =
     (accu, d')
   in
   let map, ctx = List.fold_map fold ctxt.env_named_map ctxt.env_named_ctx in
-  { ctxt with env_named_ctx = ctx; env_named_map = map }
+  { env_named_ctx = ctx; env_named_map = map }
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
