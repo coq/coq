@@ -373,20 +373,25 @@ module Make
       in
       str "<" ++ name ++ str ">" ++ args
 
+  let rec pr_user_symbol = function
+  | Extend.Ulist1 tkn -> "ne_" ^ pr_user_symbol tkn ^ "_list"
+  | Extend.Ulist1sep (tkn, _) -> "ne_" ^ pr_user_symbol tkn ^ "_list"
+  | Extend.Ulist0 tkn -> pr_user_symbol tkn ^ "_list"
+  | Extend.Ulist0sep (tkn, _) -> pr_user_symbol tkn ^ "_list"
+  | Extend.Uopt tkn -> pr_user_symbol tkn ^ "_opt"
+  | Extend.Uentry tag ->
+    let ArgT.Any tag = tag in
+    ArgT.repr tag
+  | Extend.Uentryl (tkn, lvl) -> "tactic" ^ string_of_int lvl
+
   let pr_alias_key key =
     try
       let prods = (KNmap.find key !prnotation_tab).pptac_prods in
-      (* First printing strategy: only the head symbol *)
-      match prods with
-      | TacTerm s :: prods -> str s
-      | _ ->
-      (* Second printing strategy; if ever Tactic Notation is eventually *)
-      (* accepting notations not starting with an identifier *)
       let rec pr = function
-      | [] -> []
-      | TacTerm s :: prods -> s :: pr prods
-      | TacNonTerm (_,_,id) :: prods -> ".." :: pr prods in
-      str (String.concat " " (pr prods))
+      | TacTerm s -> primitive s
+      | TacNonTerm (_, symb, _) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
+      in
+      pr_sequence pr prods
     with Not_found ->
       KerName.print key
 
