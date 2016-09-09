@@ -173,6 +173,9 @@ let push_named d env =
     indirect_pterms = env.indirect_pterms;
   }
 
+let lookup_named id env =
+  fst (Id.Map.find id env.env_named_context.env_named_map)
+
 let lookup_named_val id env =
   snd(Id.Map.find id env.env_named_context.env_named_map)
 

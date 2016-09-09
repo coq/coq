@@ -116,7 +116,7 @@ let val_of_named_context ctxt =
   List.fold_right push_named_context_val ctxt empty_named_context_val
 
 
-let lookup_named id env = fst (Id.Map.find id env.env_named_context.env_named_map)
+let lookup_named = lookup_named
 let lookup_named_val id ctxt = fst (Id.Map.find id ctxt.env_named_map)
 
 let eq_named_context_val c1 c2 =

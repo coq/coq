@@ -975,11 +975,8 @@ let smash_rel_context sign =
 
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
-let rec mem_named_context id ctxt =
-  match ctxt with
-  | decl :: _ when Id.equal id (NamedDecl.get_id decl) -> true
-  | _ :: sign -> mem_named_context id sign
-  | [] -> false
+let mem_named_context_val id ctxt =
+  try Environ.lookup_named_val id ctxt; true with Not_found -> false
 
 let compact_named_context_reverse sign =
   let compact l decl =
