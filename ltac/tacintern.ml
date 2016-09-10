@@ -640,7 +640,7 @@ and intern_tactic_as_arg loc onlytac ist a =
   | TacCall _ | Reference _
   | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
-  | ConstrMayEval _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
+  | ConstrMayEval _ | TacFreshId _ | TacExactId _ | TacPretype _ | TacNumgoals as a ->
       if onlytac then error_tactic_expected loc else TacArg (loc,a)
 
 and intern_tactic_or_tacarg ist = intern_tactic false ist
@@ -660,6 +660,7 @@ and intern_tacarg strict onlytac ist = function
         intern_applied_tactic_reference ist f,
         List.map (intern_tacarg !strict_check false ist) l)
   | TacFreshId x -> TacFreshId (List.map (intern_string_or_var ist) x)
+  | TacExactId x -> let lf = ref Id.Set.empty in TacExactId (intern_ident lf ist x)
   | TacPretype c -> TacPretype (intern_constr ist c)
   | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (intern_tactic onlytac ist t)

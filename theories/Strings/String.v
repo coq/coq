@@ -13,6 +13,7 @@
 Require Import Arith.
 Require Import Ascii.
 Declare ML Module "string_syntax_plugin".
+Declare ML Module "string_ident_plugin".
 
 (** *** Definition of strings *)
 
