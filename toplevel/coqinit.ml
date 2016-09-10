@@ -89,7 +89,8 @@ let init_load_path () =
       Mltop.add_ml_dir (coqlib/"stm");
       Mltop.add_ml_dir (coqlib/"ide")
     end;
-    Mltop.add_ml_dir (coqlib/"toploop");
+    if System.exists_dir (coqlib/"toploop") then
+      Mltop.add_ml_dir (coqlib/"toploop");
     (* then standard library *)
     add_stdlib_path ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
     (* then plugins *)
