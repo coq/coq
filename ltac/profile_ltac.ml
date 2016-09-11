@@ -147,7 +147,7 @@ let rec list_iter_is_last f = function
   | x :: xs -> f false x :: list_iter_is_last f xs
 
 let header =
-  str "                                   tactic  local  total   calls       max" ++
+  str " tactic                                   local  total   calls       max " ++
   fnl () ++
   str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
   fnl ()
@@ -160,6 +160,7 @@ let rec print_node ~filter all_total indent prefix (s, e) =
     ++ padl 8 (string_of_int e.ncalls)
     ++ padl 10 (format_sec (e.max_total))
   ) ++
+  fnl () ++
   print_table ~filter all_total indent false e.children
 
 and print_table ~filter all_total indent first_level table =
@@ -179,7 +180,7 @@ and print_table ~filter all_total indent first_level table =
      let sep1 = if first_level then "─" else if is_last then " └─" else " ├─" in
      print_node ~filter all_total (indent ^ sep0) (indent ^ sep1)
     in
-    prlist_with_sep fnl (fun pr -> pr) (list_iter_is_last iter ls)
+    prlist (fun pr -> pr) (list_iter_is_last iter ls)
 
 let to_string ~filter node =
   let tree = node.children in
@@ -223,7 +224,6 @@ let to_string ~filter node =
     fnl () ++
     header ++
     print_table ~filter all_total "" true flat_tree ++
-    fnl () ++
     fnl () ++
     header ++
     print_table ~filter all_total "" true tree
