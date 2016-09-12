@@ -25,6 +25,9 @@ Global Set Nonrecursive Elimination Schemes.
 (** See bug 3545 *)
 Global Set Universal Lemma Under Conjunction.
 
+(** Feature introduced in 8.5, disabled by default and configurable since 8.6. *)
+Global Unset Refolding Reduction.
+
 (** In 8.4, [constructor (tac)] allowed backtracking across the use of [constructor]; it has been subsumed by [constructor; tac]. *)
 Ltac constructor_84_n n := constructor n.
 Ltac constructor_84_tac tac := once (constructor; tac).
