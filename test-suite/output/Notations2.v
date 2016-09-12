@@ -106,3 +106,8 @@ Check fun x (H:le x 0) => exist (le x) 0 H.
 
 Parameters (A : Set) (x y : A) (Q : A -> A -> Prop) (conj : Q x y).
 Check (exist (Q x) y conj).
+
+(* Check bug raised on coq-club on Sep 12, 2016 *)
+
+Notation "{ x , y , .. , v }" := (fun a => (or .. (or (a = x) (a = y)) .. (a = v))).
+Check ({1, 2}).

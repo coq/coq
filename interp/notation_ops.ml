@@ -577,7 +577,8 @@ let rec alpha_var id1 id2 = function
 
 let add_env alp (sigma,sigmalist,sigmabinders) var v =
   (* Check that no capture of binding variables occur *)
-  if List.exists (fun (id,_) ->occur_glob_constr id v) alp then raise No_match;
+  if not (Id.equal ldots_var var) &&
+     List.exists (fun (id,_) -> occur_glob_constr id v) alp then raise No_match;
   (* TODO: handle the case of multiple occs in different scopes *)
   ((var,v)::sigma,sigmalist,sigmabinders)
 
