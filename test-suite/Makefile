@@ -49,6 +49,9 @@ SINGLE_QUOTE="
 #" # double up on the quotes, in a comment, to appease the emacs syntax highlighter
 # wrap the arguments in parens, but only if they exist
 get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_args,$(1)), ($(call get_coq_prog_args,$(1)))))
+# get the command to use with this set of arguments; if there's -compile, use coqc, else use coqtop
+has_compile_flag = $(filter "-compile",$(call get_coq_prog_args,$(1)))
+get_command_based_on_flags = $(if $(call has_compile_flag,$(1)),$(coqc),$(command))
 
 
 bogomips:=
@@ -172,7 +175,7 @@ $(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
 	@echo "TEST      $<  $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...still active"; \
@@ -193,7 +196,7 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -226,7 +229,7 @@ $(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods -impredicative-set)"; \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" $(call get_coq_prog_args,"$<") $$opts 2>&1; R=$$?; times; \
+	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -256,7 +259,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -271,7 +274,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
-	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
+	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1 \
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
@@ -311,7 +314,7 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  true "extract effective user time"; \
-	  res=`$(command) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
+	  res=`$(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
 	  R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
@@ -341,7 +344,7 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	      echo $(log_success); \
 	      echo "    $<...still wished"; \
@@ -483,4 +486,3 @@ coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 	    echo "    $<...Error!"; \
 	  fi; \
 	} > "$@"
-
