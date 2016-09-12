@@ -21,3 +21,4 @@ Global Unset Regular Subst Tactic.
 Global Unset Structural Injection.
 Global Unset Shrink Abstract.
 Global Unset Shrink Obligations.
+Global Set Refolding Reduction.

@@ -479,8 +479,8 @@ let unfold_projection env p stk =
 let expand_key ts env sigma = function
   | Some (IsKey k) -> expand_table_key env k
   | Some (IsProj (p, c)) -> 
-    let red = Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma 
-				Cst_stack.empty (c, unfold_projection env p [])))
+    let red = Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma
+                               Cst_stack.empty (c, unfold_projection env p [])))
     in if Term.eq_constr (mkProj (p, c)) red then None else Some red
   | None -> None
 
@@ -572,7 +572,8 @@ let constr_cmp pb sigma flags t u =
     else sigma, b
     
 let do_reduce ts (env, nb) sigma c =
-  Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma Cst_stack.empty (c, Stack.empty)))
+  Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state
+		  ts env sigma Cst_stack.empty (c, Stack.empty)))
 
 let use_full_betaiota flags =
   flags.modulo_betaiota && Flags.version_strictly_greater Flags.V8_3
