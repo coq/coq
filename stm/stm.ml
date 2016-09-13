@@ -37,10 +37,12 @@ let state_computed, state_computed_hook = Hook.make
 let state_ready, state_ready_hook = Hook.make
  ~default:(fun state_id -> ()) ()
 
-let forward_feedback, forward_feedback_hook = Hook.make
- ~default:(function
+let forward_feedback, forward_feedback_hook = 
+  let m = Mutex.create () in
+  Hook.make ~default:(function
     | { id = id; route; contents } ->
-      feedback ~id:id ~route contents) ()
+        try Mutex.lock m; feedback ~id:id ~route contents; Mutex.unlock m
+        with e -> Mutex.unlock m; raise e) ()
 
 let parse_error, parse_error_hook = Hook.make
  ~default:(fun id loc msg ->
