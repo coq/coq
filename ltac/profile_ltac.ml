@@ -73,7 +73,7 @@ module Local = Summary.Local
 
 let stack = Local.ref ~name:"LtacProf-stack" [empty_treenode root]
 
-let reset_profile () =
+let reset_profile_tmp () =
   Local.(stack := [empty_treenode root]);
   encountered_multi_success_backtracking := false
 
@@ -295,7 +295,7 @@ let exit_tactic start_time c =
   | [] | [_] ->
     (* oops, our stack is invalid *)
     encounter_multi_success_backtracking ();
-    reset_profile ()
+    reset_profile_tmp ()
   | node :: (parent :: rest as full_stack) ->
     let name = string_of_call c in
     if not (String.equal name node.name) then
@@ -330,7 +330,7 @@ let exit_tactic start_time c =
     (* Calls are over, we reset the stack and send back data *)
     if rest == [] && get_profiling () then begin
       assert(String.equal root parent.name);
-      reset_profile ();
+      reset_profile_tmp ();
       feedback_results parent
     end
 
@@ -380,6 +380,10 @@ let _ =
           with Not_found -> empty_treenode root in
         data := SM.add s (merge_roots results other_results) !data
     | _ -> ()))
+
+let reset_profile () =
+  reset_profile_tmp ();
+  data := SM.empty
 
 (* ******************** *)
 
