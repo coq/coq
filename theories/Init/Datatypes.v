@@ -262,6 +262,11 @@ Inductive comparison : Set :=
   | Lt : comparison
   | Gt : comparison.
 
+Lemma comparison_eq_stable : forall c c' : comparison, ~~ c = c' -> c = c'.
+Proof.
+  destruct c, c'; intro H; reflexivity || destruct H; discriminate.
+Qed.
+
 Definition CompOpp (r:comparison) :=
   match r with
     | Eq => Eq
