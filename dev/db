@@ -51,6 +51,7 @@ install_printer Top_printers.prsubst
 install_printer Top_printers.prdelta
 install_printer Top_printers.ppfconstr
 install_printer Top_printers.ppgenarginfo
+install_printer Top_printers.ppgenargargt
 install_printer Top_printers.ppist
 install_printer Top_printers.ppconstrunderbindersidmap
 install_printer Top_printers.ppunbound_ltac_var_map
