@@ -125,6 +125,25 @@ Proof.
   [apply Hl | apply Hr]; assumption.
 Qed.
 
+Theorem imp_iff_compat_l : forall A B C : Prop,
+  (B <-> C) -> ((A -> B) <-> (A -> C)).
+Proof.
+  intros ? ? ? [Hl Hr]; split; intros H ?; [apply Hl | apply Hr]; apply H; assumption.
+Qed.
+
+Theorem imp_iff_compat_r : forall A B C : Prop,
+  (B <-> C) -> ((B -> A) <-> (C -> A)).
+Proof.
+  intros ? ? ? [Hl Hr]; split; intros H ?; [apply H, Hr | apply H, Hl]; assumption.
+Qed.
+
+Theorem not_iff_compat : forall A B : Prop,
+  (A <-> B) -> (~ A <-> ~B).
+Proof.
+  intros; apply imp_iff_compat_r; assumption.
+Qed.
+
+
 (** Some equivalences *)
 
 Theorem neg_false : forall A : Prop, ~ A <-> (A <-> False).
