@@ -227,18 +227,16 @@ let compile_file (v,f) =
     Vernac.compile v f
 
 let compile_files () =
-  match !compile_list with
-    | [] -> ()
-    | [vf] -> compile_file vf (* One compilation : no need to save init state *)
-    | l ->
-      let init_state = States.freeze ~marshallable:`No in
-      let coqdoc_init_state = CLexer.location_table () in
-      List.iter
-        (fun vf ->
-	  States.unfreeze init_state;
-	  CLexer.restore_location_table coqdoc_init_state;
-          compile_file vf)
-        (List.rev l)
+  if !compile_list == [] then ()
+  else
+    let init_state = States.freeze ~marshallable:`No in
+    let coqdoc_init_state = CLexer.location_table () in
+    Feedback.(add_feeder debug_feeder);
+    List.iter (fun vf ->
+        States.unfreeze init_state;
+        CLexer.restore_location_table coqdoc_init_state;
+        compile_file vf)
+      (List.rev !compile_list)
 
 (** Options for proof general *)
 
