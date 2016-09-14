@@ -511,3 +511,15 @@ let print_ltacs () =
     hov 2 (pr_qualid qid ++ prlist pr_ltac_fun_arg l)
   in
   Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)
+
+(** Grammar *)
+
+let () =
+  let open Metasyntax in
+  let entries = [
+    AnyEntry Pcoq.Tactic.tactic_expr;
+    AnyEntry Pcoq.Tactic.binder_tactic;
+    AnyEntry Pcoq.Tactic.simple_tactic;
+    AnyEntry Pcoq.Tactic.tactic_arg;
+  ] in
+  register_grammar "tactic" entries

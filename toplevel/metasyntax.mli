@@ -54,6 +54,10 @@ val add_syntactic_definition : Id.t -> Id.t list * constr_expr ->
 
 val pr_grammar : string -> Pp.std_ppcmds
 
+type any_entry = AnyEntry : 'a Pcoq.Gram.entry -> any_entry
+
+val register_grammar : string -> any_entry list -> unit
+
 val check_infix_modifiers : syntax_modifier list -> unit
 
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
