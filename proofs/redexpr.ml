@@ -44,7 +44,7 @@ let cbv_native env sigma c =
 
 let whd_cbn flags env sigma t =
   let (state,_) =
-    (whd_state_gen true flags env sigma (t,Reductionops.Stack.empty))
+    (whd_state_gen true true flags env sigma (t,Reductionops.Stack.empty))
   in Reductionops.Stack.zip ~refold:true state
 
 let strong_cbn flags =

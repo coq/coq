@@ -241,9 +241,8 @@ let coerce_to_evaluable_ref env v =
     | _, IntroNaming (IntroIdentifier id) when is_variable env id -> EvalVarRef id
     | _ -> fail ()
   else if has_type v (topwit wit_var) then
-    let id = out_gen (topwit wit_var) v in
-    if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
-    else fail ()
+    let ev = EvalVarRef (out_gen (topwit wit_var) v) in
+    if Tacred.is_evaluable env ev then ev else fail ()
   else if has_type v (topwit wit_ref) then
     let open Globnames in
     let r = out_gen (topwit wit_ref) v in

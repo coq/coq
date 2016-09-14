@@ -81,3 +81,8 @@ Lemma l1 : forall x y z : R, Rabs (x - z) <= Rabs (x - y) + Rabs (y - z).
 intros; split_Rabs; lra.
 Qed.
 
+(*  Bug 5073 *)
+Lemma opp_eq_0_iff a : -a = 0 <-> a = 0.
+Proof.
+  lra.
+Qed.

@@ -73,7 +73,7 @@ module Local = Summary.Local
 
 let stack = Local.ref ~name:"LtacProf-stack" [empty_treenode root]
 
-let reset_profile () =
+let reset_profile_tmp () =
   Local.(stack := [empty_treenode root]);
   encountered_multi_success_backtracking := false
 
@@ -147,7 +147,7 @@ let rec list_iter_is_last f = function
   | x :: xs -> f false x :: list_iter_is_last f xs
 
 let header =
-  str "                                   tactic  local  total   calls       max" ++
+  str " tactic                                   local  total   calls       max " ++
   fnl () ++
   str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
   fnl ()
@@ -160,6 +160,7 @@ let rec print_node ~filter all_total indent prefix (s, e) =
     ++ padl 8 (string_of_int e.ncalls)
     ++ padl 10 (format_sec (e.max_total))
   ) ++
+  fnl () ++
   print_table ~filter all_total indent false e.children
 
 and print_table ~filter all_total indent first_level table =
@@ -179,7 +180,7 @@ and print_table ~filter all_total indent first_level table =
      let sep1 = if first_level then "─" else if is_last then " └─" else " ├─" in
      print_node ~filter all_total (indent ^ sep0) (indent ^ sep1)
     in
-    prlist_with_sep fnl (fun pr -> pr) (list_iter_is_last iter ls)
+    prlist (fun pr -> pr) (list_iter_is_last iter ls)
 
 let to_string ~filter node =
   let tree = node.children in
@@ -223,7 +224,6 @@ let to_string ~filter node =
     fnl () ++
     header ++
     print_table ~filter all_total "" true flat_tree ++
-    fnl () ++
     fnl () ++
     header ++
     print_table ~filter all_total "" true tree
@@ -295,7 +295,7 @@ let exit_tactic start_time c =
   | [] | [_] ->
     (* oops, our stack is invalid *)
     encounter_multi_success_backtracking ();
-    reset_profile ()
+    reset_profile_tmp ()
   | node :: (parent :: rest as full_stack) ->
     let name = string_of_call c in
     if not (String.equal name node.name) then
@@ -330,7 +330,7 @@ let exit_tactic start_time c =
     (* Calls are over, we reset the stack and send back data *)
     if rest == [] && get_profiling () then begin
       assert(String.equal root parent.name);
-      reset_profile ();
+      reset_profile_tmp ();
       feedback_results parent
     end
 
@@ -380,6 +380,10 @@ let _ =
           with Not_found -> empty_treenode root in
         data := SM.add s (merge_roots results other_results) !data
     | _ -> ()))
+
+let reset_profile () =
+  reset_profile_tmp ();
+  data := SM.empty
 
 (* ******************** *)
 

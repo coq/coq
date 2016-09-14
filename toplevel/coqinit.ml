@@ -59,13 +59,12 @@ let load_rcfile() =
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let add_stdlib_path ~unix_path ~coq_root ~with_ml =
-  Mltop.add_rec_path ~unix_path ~coq_root ~implicit:(!Flags.load_init);
-  if with_ml then
-    Mltop.add_rec_ml_dir unix_path
+  let add_ml = if with_ml then Mltop.AddRecML else Mltop.AddNoML in
+  Mltop.add_rec_path add_ml ~unix_path ~coq_root ~implicit:(!Flags.load_init)
 
 let add_userlib_path ~unix_path =
-  Mltop.add_rec_path ~unix_path ~coq_root:Nameops.default_root_prefix ~implicit:false;
-  Mltop.add_rec_ml_dir unix_path
+  Mltop.add_rec_path Mltop.AddRecML ~unix_path
+    ~coq_root:Nameops.default_root_prefix ~implicit:false
 
 (* Options -I, -I-as, and -R of the command line *)
 let includes = ref []
@@ -90,7 +89,8 @@ let init_load_path () =
       Mltop.add_ml_dir (coqlib/"stm");
       Mltop.add_ml_dir (coqlib/"ide")
     end;
-    Mltop.add_ml_dir (coqlib/"toploop");
+    if System.exists_dir (coqlib/"toploop") then
+      Mltop.add_ml_dir (coqlib/"toploop");
     (* then standard library *)
     add_stdlib_path ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
     (* then plugins *)
@@ -108,7 +108,7 @@ let init_load_path () =
     (* additional loadpath, given with options -Q and -R *)
     List.iter
       (fun (unix_path, coq_root, implicit) ->
-        Mltop.add_rec_path ~unix_path ~coq_root ~implicit)
+        Mltop.add_rec_path Mltop.AddTopML ~unix_path ~coq_root ~implicit)
       (List.rev !includes);
     (* additional ml directories, given with option -I *)
     List.iter Mltop.add_ml_dir (List.rev !ml_includes)

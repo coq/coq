@@ -1581,11 +1581,10 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	| Some id, Some p ->
             let tac = tclTHENLIST [
               Refine.refine ~unsafe:false { run = fun h -> Sigma.here p h };
-              beta_hyp id;
               Proofview.Unsafe.tclNEWGOALS gls;
             ] in
             Proofview.Unsafe.tclEVARS undef <*>
-	    assert_replacing id newt tac
+	    tclTHENFIRST (assert_replacing id newt tac) (beta_hyp id)
 	| Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
             convert_hyp_no_check (LocalAssum (id, newt)) <*>

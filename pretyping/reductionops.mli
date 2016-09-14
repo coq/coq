@@ -28,6 +28,11 @@ module ReductionBehaviour : sig
   val print : Globnames.global_reference -> Pp.std_ppcmds
 end
 
+(** Option telling if reduction should use the refolding machinery of cbn
+   (off by default) *)
+val get_refolding_in_reduction : unit -> bool
+val set_refolding_in_reduction : bool -> unit
+
 (** {6 Machinery about a stack of unfolded constant }
 
     cst applied to params must convertible to term of the state applied to args
@@ -134,8 +139,8 @@ val stack_reduction_of_reduction :
 i*)
 val stacklam : (state -> 'a) -> constr list -> constr -> constr Stack.t -> 'a
 
-val whd_state_gen : ?csts:Cst_stack.t -> bool -> CClosure.RedFlags.reds ->
-  Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
+val whd_state_gen : ?csts:Cst_stack.t -> refold:bool -> tactic_mode:bool ->
+  CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
 
 val iterate_whd_gen : bool -> CClosure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> Term.constr -> Term.constr

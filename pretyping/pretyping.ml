@@ -349,21 +349,6 @@ let process_inference_flags flags env initial_sigma (sigma,c) =
 (* Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
 let allow_anonymous_refs = ref false
 
-(* Utilisé pour inférer le prédicat des Cases *)
-(* Semble exagérement fort *)
-(* Faudra préférer une unification entre les types de toutes les clauses *)
-(* et autoriser des ? à rester dans le résultat de l'unification *)
-
-let evar_type_fixpoint loc env evdref lna lar vdefj =
-  let lt = Array.length vdefj in
-    if Int.equal (Array.length lar) lt then
-      for i = 0 to lt-1 do
-        if not (e_cumul env.ExtraEnv.env evdref (vdefj.(i)).uj_type
-		  (lift lt lar.(i))) then
-          error_ill_typed_rec_body ~loc env.ExtraEnv.env !evdref
-            i lna vdefj lar
-      done
-
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon resolve_tc loc env evdref j = function
   | None -> j
@@ -653,7 +638,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
 	      uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
         ctxtv vdef in
-      evar_type_fixpoint loc env evdref names ftys vdefj;
+      Typing.check_type_fixpoint loc env.ExtraEnv.env evdref names ftys vdefj;
       let ftys = Array.map (nf_evar !evdref) ftys in
       let fdefs = Array.map (fun x -> nf_evar !evdref (j_val x)) vdefj in
       let fixj = match fixkind with

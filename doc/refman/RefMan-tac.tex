@@ -3293,6 +3293,16 @@ reduced to \texttt{S t}.
 
 \end{Variants}
 
+\begin{quote}
+\optindex{Refolding Reduction}
+{\tt Refolding Reduction}
+\end{quote}
+
+This option (off by default) controls the use of the refolding strategy
+of {\tt cbn} while doing reductions in unification, type inference and
+tactic applications. It can result in expensive unifications, as
+refolding currently uses a potentially exponential heuristic.
+
 \subsection{\tt unfold \qualid}
 \tacindex{unfold}
 \label{unfold}

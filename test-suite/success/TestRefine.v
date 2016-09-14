@@ -53,7 +53,7 @@ Abort.
 
 Lemma essai2 : forall x : nat, x = x.
 
-Fail refine (fix f (x : nat) : x = x := _).
+refine (fix f (x : nat) : x = x := _).
 
 Restart.
 

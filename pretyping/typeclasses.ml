@@ -501,7 +501,7 @@ let is_resolvable evi =
   Option.is_empty (Store.get evi.evar_extra resolvable)
 
 let mark_resolvability_undef b evi =
-  if is_resolvable evi = b then evi
+  if is_resolvable evi == (b : bool) then evi
   else
     let t = set_resolvable evi.evar_extra b in
     { evi with evar_extra = t }
@@ -548,7 +548,7 @@ let solve_all_instances env evd filter unique split fail =
 (* let solve_classeskey = Profile.declare_profile "solve_typeclasses" *)
 (* let solve_problem = Profile.profile5 solve_classeskey solve_problem *)
 
-let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
+let resolve_typeclasses ?(fast_path = true) ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(split=true) ?(fail=true) env evd =
-  if not (has_typeclasses filter evd) then evd
+  if fast_path && not (has_typeclasses filter evd) then evd
   else solve_all_instances env evd filter unique split fail

@@ -126,6 +126,16 @@ let e_judge_of_case env evdref ci pj cj lfj =
   { uj_val  = mkCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
     uj_type = rslty }
 
+let check_type_fixpoint loc env evdref lna lar vdefj =
+  let lt = Array.length vdefj in
+    if Int.equal (Array.length lar) lt then
+      for i = 0 to lt-1 do
+        if not (Evarconv.e_cumul env evdref (vdefj.(i)).uj_type
+		  (lift lt lar.(i))) then
+          Pretype_errors.error_ill_typed_rec_body ~loc env !evdref
+            i lna vdefj lar
+      done
+
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
   let pj = Retyping.get_judgment_of env sigma p in
@@ -263,7 +273,7 @@ and execute_recdef env evdref (names,lar,vdef) =
   let env1 = push_rec_types (names,lara,vdef) env in
   let vdefj = execute_array env1 evdref vdef in
   let vdefv = Array.map j_val vdefj in
-  let _ = type_fixpoint env1 names lara vdefj in
+  let _ = check_type_fixpoint Loc.ghost env1 evdref names lara vdefj in
   (names,lara,vdefv)
 
 and execute_array env evdref = Array.map (execute env evdref)
