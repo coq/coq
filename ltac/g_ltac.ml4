@@ -19,6 +19,7 @@ open Genredexpr
 open Tok (* necessary for camlp4 *)
 
 open Pcoq
+open Pcoq.Constr
 open Pcoq.Vernac_
 open Pcoq.Prim
 open Pcoq.Tactic
@@ -83,7 +84,8 @@ let warn_deprecated_appcontext =
 
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg command hint
-          tactic_mode constr_may_eval constr_eval selector toplevel_selector;
+          tactic_mode constr_may_eval constr_eval selector toplevel_selector
+          operconstr;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
@@ -343,6 +345,11 @@ GEXTEND Gram
     [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
         tac = Pcoq.Tactic.tactic ->
           Vernacexpr.HintsExtern (n,c, in_tac tac) ] ]
+  ;
+  operconstr: LEVEL "0"
+    [ [ IDENT "ltac"; ":"; "("; tac = Tactic.tactic_expr; ")" ->
+          let arg = Genarg.in_gen (Genarg.rawwit Constrarg.wit_tactic) tac in
+          CHole (!@loc, None, IntroAnonymous, Some arg) ] ]
   ;
   END
 
