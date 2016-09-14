@@ -314,7 +314,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
   if Reductionops.Stack.compare_shape sk1 sk2 then
     ise_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
-    
+
 let rec evar_conv_x ts env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
   let term2 = whd_head_evar evd term2 in
@@ -432,7 +432,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       else quick_fail i
     and delta i =
       switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
-	(whd_betaiota_deltazeta_for_iota_state (fst ts) env i cstsM (vM,skM))
+	     (whd_betaiota_deltazeta_for_iota_state
+  	        (fst ts) env i cstsM (vM,skM))
     in    
     let default i = ise_try i [f1; consume apprF apprM; delta]
     in
@@ -449,7 +450,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		try 
 		  let termM' = Retyping.expand_projection env evd p c [] in
 		  let apprM', cstsM' = 
-		    whd_betaiota_deltazeta_for_iota_state (fst ts) env evd cstsM (termM',skM)
+		    whd_betaiota_deltazeta_for_iota_state
+		      (fst ts) env evd cstsM (termM',skM)
 		  in
 		  let delta' i = 
 		    switch (evar_eqappr_x ts env i pbty) (apprF,cstsF) (apprM',cstsM') 

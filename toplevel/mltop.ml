@@ -45,12 +45,12 @@ open System
    to build a dummy dynlink.cmxa, cf. dev/dynlink.ml. *)
 
 (* This path is where we look for .cmo *)
-let coq_mlpath_copy = ref ["."]
+let coq_mlpath_copy = ref [Sys.getcwd ()]
 let keep_copy_mlpath path =
   let cpath = CUnix.canonical_path_name path in
-  let filter path' = not (String.equal cpath (CUnix.canonical_path_name path'))
+  let filter path' = not (String.equal cpath path')
   in
-  coq_mlpath_copy := path :: List.filter filter !coq_mlpath_copy
+  coq_mlpath_copy := cpath :: List.filter filter !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
 type toplevel = {
@@ -182,7 +182,9 @@ let warn_cannot_open_path =
   CWarnings.create ~name:"cannot-open-path" ~category:"filesystem"
       (fun unix_path -> str "Cannot open " ++ str unix_path)
 
-let add_rec_path ~unix_path ~coq_root ~implicit =
+type add_ml = AddNoML | AddTopML | AddRecML
+
+let add_rec_path add_ml ~unix_path ~coq_root ~implicit =
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
     let prefix = Names.DirPath.repr coq_root in
@@ -193,7 +195,10 @@ let add_rec_path ~unix_path ~coq_root ~implicit =
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
-    let () = add_ml_dir unix_path in
+    let () = match add_ml with
+      | AddNoML -> ()
+      | AddTopML -> add_ml_dir unix_path
+      | AddRecML -> List.iter (fun (lp,_) -> add_ml_dir lp) dirs in
     let add (path, dir) =
       Loadpath.add_load_path path ~implicit dir in
     let () = List.iter add dirs in

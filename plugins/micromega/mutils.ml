@@ -294,18 +294,6 @@ struct
   else  XO (index (n lsr 1))
 
 
- let idx n =
-  (*a.k.a path_of_int *)
-  (* returns the list of digits of n in reverse order with initial 1 removed *)
-  let rec digits_of_int n =
-   if Int.equal n 1 then []
-   else (Int.equal (n mod 2) 1)::(digits_of_int (n lsr 1))
-  in
-   List.fold_right
-    (fun b c -> (if b then XI c else XO c))
-    (List.rev (digits_of_int n))
-    (XH)
-
  let z x =
   match compare x 0 with
    | 0 -> Z0

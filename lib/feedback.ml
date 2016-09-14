@@ -128,6 +128,11 @@ let msg_debug   ?loc x = !logger ?loc Debug x
 let feeders = ref []
 let add_feeder f = feeders := f :: !feeders
 
+let debug_feeder = function
+  | { contents = Message (Debug, loc, pp) } ->
+       msg_debug ?loc (Pp.str (Richpp.raw_print pp))
+  | _ -> ()
+
 let feedback_id    = ref (Edit 0)
 let feedback_route = ref default_route
 

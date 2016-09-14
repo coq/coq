@@ -37,10 +37,12 @@ let state_computed, state_computed_hook = Hook.make
 let state_ready, state_ready_hook = Hook.make
  ~default:(fun state_id -> ()) ()
 
-let forward_feedback, forward_feedback_hook = Hook.make
- ~default:(function
+let forward_feedback, forward_feedback_hook = 
+  let m = Mutex.create () in
+  Hook.make ~default:(function
     | { id = id; route; contents } ->
-      feedback ~id:id ~route contents) ()
+        try Mutex.lock m; feedback ~id:id ~route contents; Mutex.unlock m
+        with e -> Mutex.unlock m; raise e) ()
 
 let parse_error, parse_error_hook = Hook.make
  ~default:(fun id loc msg ->
@@ -1437,8 +1439,8 @@ end = struct (* {{{ *)
 
   let check_task_aux extra name l i =
     let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
-    msg_info(
-      str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
+    Flags.if_verbose msg_info
+      (str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
     VCS.restore document;
     let start =
       let rec aux cur =

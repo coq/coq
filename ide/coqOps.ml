@@ -447,7 +447,6 @@ object(self)
       | Processed, Some (id,sentence) ->
           log "Processed" id;
           remove_flag sentence `PROCESSING;
-          remove_flag sentence `ERROR;
           self#mark_as_needed sentence
       | ProcessingIn _,  Some (id,sentence) ->
           log "ProcessingIn" id;
@@ -482,6 +481,8 @@ object(self)
           add_flag sentence (`WARNING (loc, msg));
           self#attach_tooltip sentence loc msg;
           self#position_warning_tag_at_sentence sentence loc
+      | Message((Info|Notice|Debug as lvl), _, msg), _ ->
+          messages#push lvl msg
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
           else to_process <- to_process + n

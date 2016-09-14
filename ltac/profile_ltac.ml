@@ -73,7 +73,7 @@ module Local = Summary.Local
 
 let stack = Local.ref ~name:"LtacProf-stack" [empty_treenode root]
 
-let reset_profile () =
+let reset_profile_tmp () =
   Local.(stack := [empty_treenode root]);
   encountered_multi_success_backtracking := false
 
@@ -147,7 +147,7 @@ let rec list_iter_is_last f = function
   | x :: xs -> f false x :: list_iter_is_last f xs
 
 let header =
-  str " tactic                                    local  total   calls       max" ++
+  str " tactic                                   local  total   calls       max " ++
   fnl () ++
   str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
   fnl ()
@@ -160,6 +160,7 @@ let rec print_node ~filter all_total indent prefix (s, e) =
     ++ padl 8 (string_of_int e.ncalls)
     ++ padl 10 (format_sec (e.max_total))
   ) ++
+  fnl () ++
   print_table ~filter all_total indent false e.children
 
 and print_table ~filter all_total indent first_level table =
@@ -169,7 +170,7 @@ and print_table ~filter all_total indent first_level table =
   let ls = M.fold fold table [] in
   match ls with
   | [s, n] when not first_level ->
-     print_node ~filter all_total indent (indent ^ "└") (s, n)
+     v 0 (print_node ~filter all_total indent (indent ^ "└") (s, n))
   | _ ->
     let ls =
       List.sort (fun (_, { total = s1 }) (_, { total = s2}) ->
@@ -179,11 +180,11 @@ and print_table ~filter all_total indent first_level table =
      let sep1 = if first_level then "─" else if is_last then " └─" else " ├─" in
      print_node ~filter all_total (indent ^ sep0) (indent ^ sep1)
     in
-    prlist_with_sep fnl (fun pr -> pr) (list_iter_is_last iter ls)
+    prlist (fun pr -> pr) (list_iter_is_last iter ls)
 
 let to_string ~filter node =
   let tree = node.children in
-  let all_total = node.total in
+  let all_total = M.fold (fun _ { total } a -> total +. a) node.children 0.0 in
   let flat_tree =
     let global = ref M.empty in
     let find_tactic tname l =
@@ -220,6 +221,7 @@ let to_string ~filter node =
   let msg =
     h 0 (str "total time: " ++ padl 11 (format_sec (all_total))) ++
     fnl () ++
+    fnl () ++
     header ++
     print_table ~filter all_total "" true flat_tree ++
     fnl () ++
@@ -231,10 +233,8 @@ let to_string ~filter node =
 (* ******************** profiling code ************************************** *)
 
 let get_child name node =
-  try node, M.find name node.children
-  with Not_found ->
-    let new_node = empty_treenode name in
-    { node with children = M.add name new_node node.children }, new_node
+  try M.find name node.children
+  with Not_found -> empty_treenode name
 
 let time () =
   let times = Unix.times () in
@@ -274,15 +274,20 @@ let rec merge_sub_tree name tree acc =
     M.add name t acc
   with Not_found -> M.add name tree acc
 
-let merge_roots t1 t2 =
+let merge_roots ?(disjoint=true) t1 t2 =
   assert(String.equal t1.name t2.name);
   { name = t1.name;
     ncalls = t1.ncalls + t2.ncalls;
-    local = t1.local +. t2.local;
-    total = t1.total +. t2.total;
-    max_total = max t1.max_total t2.max_total;
+    local = if disjoint then t1.local +. t2.local else t1.local;
+    total = if disjoint then t1.total +. t2.total else t1.total;
+    max_total = if disjoint then max t1.max_total t2.max_total else t1.max_total;
     children =
       M.fold merge_sub_tree t2.children t1.children }
+
+let rec find_in_stack what acc = function
+  | [] -> None
+  | { name } as x :: rest when String.equal name what -> Some(acc, x, rest)
+  | { name } as x :: rest -> find_in_stack what (x :: acc) rest
 
 let exit_tactic start_time c =
   let diff = time () -. start_time in
@@ -290,8 +295,8 @@ let exit_tactic start_time c =
   | [] | [_] ->
     (* oops, our stack is invalid *)
     encounter_multi_success_backtracking ();
-    reset_profile ()
-  | node :: (parent :: rest) ->
+    reset_profile_tmp ()
+  | node :: (parent :: rest as full_stack) ->
     let name = string_of_call c in
     if not (String.equal name node.name) then
       (* oops, our stack is invalid *)
@@ -302,22 +307,30 @@ let exit_tactic start_time c =
       ncalls = node.ncalls + 1;
       max_total = max node.max_total diff;
     } in
+    (* updating the stack *)
     let parent =
-      if String.equal parent.name node.name then
-        (* we coalesce the rec-call *)
-        merge_roots
-          { parent with children = M.remove node.name parent.children }
-          node
-      else
-        (* we graft the subtree *)
-        { parent with
+      match find_in_stack node.name [] full_stack with
+      | None ->
+         (* no rec-call, we graft the subtree *)
+         let parent = { parent with
            local = parent.local -. diff;
            children = M.add node.name node parent.children } in
-    Local.(stack := parent :: rest);
+         Local.(stack := parent :: rest);
+         parent
+      | Some(to_update, self, rest) ->
+         (* we coalesce the rec-call and update the lower stack *)
+         let self = merge_roots ~disjoint:false self node in
+         let updated_stack =
+           List.fold_left (fun s x ->
+             (try M.find x.name (List.hd s).children
+              with Not_found -> x) :: s) (self :: rest) to_update in
+         Local.(stack := updated_stack);
+         List.hd Local.(!stack)
+    in
     (* Calls are over, we reset the stack and send back data *)
     if rest == [] && get_profiling () then begin
       assert(String.equal root parent.name);
-      reset_profile ();
+      reset_profile_tmp ();
       feedback_results parent
     end
 
@@ -335,9 +348,10 @@ let do_profile s call_trace tac =
     match call_trace, Local.(!stack) with
       | (_, c) :: _, parent :: rest ->
         let name = string_of_call c in
-        let parent, node = get_child name parent in
+        let node = get_child name parent in
         Local.(stack := node :: parent :: rest);
         Some (time ())
+      | _ :: _, [] -> assert false
       | _ -> None
   else None)) >>= function
   | Some start_time ->
@@ -367,12 +381,18 @@ let _ =
         data := SM.add s (merge_roots results other_results) !data
     | _ -> ()))
 
+let reset_profile () =
+  reset_profile_tmp ();
+  data := SM.empty
+
 (* ******************** *)
 
 let print_results_filter ~filter =
   let valid id _ = Stm.state_of_id id <> `Expired in
   data := SM.filter valid !data;
-  let results = SM.fold (fun _ -> merge_roots) !data (empty_treenode root) in
+  let results =
+    SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in
+  let results = merge_roots results Local.(CList.last !stack) in
   Feedback.msg_notice (to_string ~filter results)
 ;;
 

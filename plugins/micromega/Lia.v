@@ -30,13 +30,13 @@ Ltac zchange :=
 
 Ltac zchecker_no_abstract := zchange ; vm_compute ; reflexivity.
 
-Ltac zchecker_abstract := abstract (zchange ; vm_cast_no_check (eq_refl true)).
+Ltac zchecker_abstract := zchange ; vm_cast_no_check (eq_refl true).
 
-Ltac zchecker := zchecker_abstract || zchecker_no_abstract .
+Ltac zchecker := zchecker_no_abstract.
 
-Ltac lia := preprocess; xlia ; zchecker.
+Ltac lia := preprocess; xlia zchecker.
                
-Ltac nia := preprocess; xnlia ; zchecker.
+Ltac nia := preprocess; xnlia zchecker.
 
 
 (* Local Variables: *)

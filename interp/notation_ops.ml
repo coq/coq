@@ -615,7 +615,8 @@ let add_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var v =
      notation, as in "Notation "'twice_upto' y" := (fun x => x + x + y)". Then
      we keep (z,x) in alp, and we have to check that what the [v] which is bound
      to [var] does not contain z *)
-  if List.exists (fun (id,_) ->occur_glob_constr id v) alp then raise No_match;
+  if not (Id.equal ldots_var var) &&
+     List.exists (fun (id,_) -> occur_glob_constr id v) alp then raise No_match;
   (* [alpmetas] is used when matching a pattern "fun x => ... x ... ?var ... x ..."
      with an actual term "fun z => ... z ..." when "x" is bound in the
      notation and the name "x" cannot be changed to "z", e.g. because

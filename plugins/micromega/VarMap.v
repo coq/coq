@@ -1,7 +1,7 @@
 (* -*- coding: utf-8 -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2015     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
@@ -26,6 +26,7 @@ Set Implicit Arguments.
  *)
 
 Section MakeVarMap.
+  
   Variable A : Type.
   Variable default : A.
 
@@ -46,5 +47,29 @@ Section MakeVarMap.
     end.
 
 
-End MakeVarMap.
+  Fixpoint singleton (x:positive) (v : A) : t :=
+    match x with
+    | xH => Leaf v
+    | xO p => Node (singleton p v) default Empty
+    | xI p => Node Empty default (singleton p v)
+    end.
+  
+  Fixpoint vm_add (x: positive) (v : A) (m : t) {struct m} : t :=
+    match m with
+    | Empty   => singleton x v
+    | Leaf vl =>
+      match x with
+      | xH => Leaf v
+      | xO p => Node (singleton p v) vl Empty
+      | xI p => Node Empty vl (singleton p v)
+      end
+    | Node l o r => 
+      match x with
+      | xH => Node l v r
+      | xI p => Node l o (vm_add p v r)
+      | xO p => Node (vm_add p v l) o r
+      end
+    end.
 
+  
+End MakeVarMap.  
