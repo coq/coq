@@ -14,7 +14,7 @@ open Stdarg
 open Constrarg
 open Pcoq.Prim
 open Pcoq.Constr
-open Pcoq.Tactic
+open Pltac
 open Tacexpr
 
 DECLARE PLUGIN "g_auto"

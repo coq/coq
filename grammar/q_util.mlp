@@ -70,8 +70,8 @@ let rec mlexpr_of_prod_entry_key f = function
   | Uentryl (e, l) ->
     (** Keep in sync with Pcoq! *)
     assert (e = "tactic");
-    if l = 5 then <:expr< Extend.Aentry (Pcoq.Tactic.binder_tactic) >>
-    else <:expr< Extend.Aentryl (Pcoq.Tactic.tactic_expr) $mlexpr_of_int l$ >>
+    if l = 5 then <:expr< Extend.Aentry (Pltac.binder_tactic) >>
+    else <:expr< Extend.Aentryl (Pltac.tactic_expr) $mlexpr_of_int l$ >>
 
 let rec type_of_user_symbol = function
 | Ulist1 s | Ulist1sep (s, _) | Ulist0 s | Ulist0sep (s, _) ->

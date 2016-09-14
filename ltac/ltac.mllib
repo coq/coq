@@ -1,3 +1,4 @@
+Pltac
 Taccoerce
 Tacsubst
 Tacenv
@@ -19,4 +20,5 @@ Rewrite
 G_rewrite
 Tauto
 G_eqdecide
+G_tactic
 G_ltac

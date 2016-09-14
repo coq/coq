@@ -19,7 +19,7 @@ open Vernacexpr
 open Tok (* necessary for camlp4 *)
 
 open Pcoq.Constr
-open Pcoq.Tactic
+open Pltac
 open Ppdecl_proof
 
 let pr_goal gs =

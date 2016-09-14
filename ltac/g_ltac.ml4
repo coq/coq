@@ -22,7 +22,7 @@ open Pcoq
 open Pcoq.Constr
 open Pcoq.Vernac_
 open Pcoq.Prim
-open Pcoq.Tactic
+open Pltac
 
 let fail_default_value = ArgArg 0
 
@@ -334,20 +334,20 @@ GEXTEND Gram
     [ [ g = OPT toplevel_selector; tac = G_vernac.subgoal_command -> tac g ] ]
   ;
   command:
-    [ [ IDENT "Proof"; "with"; ta = Pcoq.Tactic.tactic; 
+    [ [ IDENT "Proof"; "with"; ta = Pltac.tactic; 
         l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
           Vernacexpr.VernacProof (Some (in_tac ta), G_proofs.hint_proof_using G_vernac.section_subset_expr l)
       | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
-        ta = OPT [ "with"; ta = Pcoq.Tactic.tactic -> in_tac ta ] ->
+        ta = OPT [ "with"; ta = Pltac.tactic -> in_tac ta ] ->
           Vernacexpr.VernacProof (ta,Some l) ] ]
   ;
   hint:
     [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
-        tac = Pcoq.Tactic.tactic ->
+        tac = Pltac.tactic ->
           Vernacexpr.HintsExtern (n,c, in_tac tac) ] ]
   ;
   operconstr: LEVEL "0"
-    [ [ IDENT "ltac"; ":"; "("; tac = Tactic.tactic_expr; ")" ->
+    [ [ IDENT "ltac"; ":"; "("; tac = Pltac.tactic_expr; ")" ->
           let arg = Genarg.in_gen (Genarg.rawwit Constrarg.wit_tactic) tac in
           CHole (!@loc, None, IntroAnonymous, Some arg) ] ]
   ;

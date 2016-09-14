@@ -41,7 +41,7 @@ open Proofview.Notations
 open Tacinterp
 open Pretyping
 open Constr
-open Tactic
+open Pltac
 open Extraargs
 open Ppconstr
 open Printer

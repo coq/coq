@@ -17,7 +17,7 @@ open Newring
 open Stdarg
 open Constrarg
 open Pcoq.Constr
-open Pcoq.Tactic
+open Pltac
 
 DECLARE PLUGIN "newring_plugin"
 

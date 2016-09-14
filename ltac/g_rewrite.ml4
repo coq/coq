@@ -22,9 +22,10 @@ open Tacticals
 open Rewrite
 open Stdarg
 open Constrarg
+open Pcoq.Vernac_
 open Pcoq.Prim
 open Pcoq.Constr
-open Pcoq.Tactic
+open Pltac
 
 DECLARE PLUGIN "g_rewrite"
 

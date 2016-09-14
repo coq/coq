@@ -46,7 +46,7 @@ let with_tac f tac =
  *)
 
 module Gram = Pcoq.Gram
-module Tactic = Pcoq.Tactic
+module Tactic = Pltac
 
 open Pcoq
 
