@@ -213,7 +213,7 @@ end
 
 module GrammarMake (L:LexerSig) : GrammarSig = struct
   (* We need to refer to Coq's module Loc before it is hidden by include *)
-  let raise_coq_loc loc e = Loc.raise (to_coqloc loc) e
+  let raise_coq_loc loc e = Loc.raise ~loc:(to_coqloc loc) e
   include Camlp4.Struct.Grammar.Static.Make (L)
   type 'a entry = 'a Entry.t
   type action = Action.t
