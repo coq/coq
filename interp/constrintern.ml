@@ -660,23 +660,13 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
       let arg = match arg with
       | None -> None
       | Some arg ->
-        let open Tacexpr in
-        let open Genarg in
-        let wit = glbwit Constrarg.wit_tactic in
-        let body =
-          if has_type arg wit then out_gen wit arg
-          else assert false (** FIXME *)
-        in
-        let mk_env id (c, (tmp_scope, subscopes)) accu =
+        let mk_env (c, (tmp_scope, subscopes)) =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
           let gc = intern nenv c in
-          let c = ConstrMayEval (Genredexpr.ConstrTerm (gc, Some c)) in
-          ((loc, id), c) :: accu
+          (gc, Some c)
         in
-        let bindings = Id.Map.fold mk_env terms [] in
-        let tac = TacLetIn (false, bindings, body) in
-        let arg = in_gen wit tac in
-        Some arg
+        let bindings = Id.Map.map mk_env terms in
+        Some (Genintern.generic_substitute_notation bindings arg)
       in
       GHole (loc, knd, naming, arg)
     | NBinderList (x,y,iter,terminator) ->
