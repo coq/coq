@@ -18,6 +18,7 @@ open Constrexpr
 open Constrexpr_ops
 open Stdarg
 open Constrarg
+open Tacarg
 open Extraargs
 
 let (set_default_tactic, get_default_tactic, print_default_tactic) = 

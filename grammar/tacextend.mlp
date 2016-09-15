@@ -61,7 +61,7 @@ let rec mlexpr_of_symbol = function
   <:expr< Extend.Uentry (Genarg.ArgT.Any $arg$) >>
 | Uentryl (e, l) ->
   assert (e = "tactic");
-  let arg = get_argt <:expr< Constrarg.wit_tactic >> in
+  let arg = get_argt <:expr< Tacarg.wit_tactic >> in
   <:expr< Extend.Uentryl (Genarg.ArgT.Any $arg$) $mlexpr_of_int l$>>
 
 let make_prod_item = function

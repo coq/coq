@@ -32,6 +32,7 @@ open Genarg
 open Geninterp
 open Stdarg
 open Constrarg
+open Tacarg
 open Printer
 open Pretyping
 open Misctypes

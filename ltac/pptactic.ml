@@ -16,6 +16,7 @@ open Tacexpr
 open Genarg
 open Geninterp
 open Constrarg
+open Tacarg
 open Libnames
 open Ppextend
 open Misctypes
@@ -1305,7 +1306,7 @@ let () =
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_with_bindings pr_constr pr_lconstr (fst (run_delayed it)));
-  Genprint.register_print0 Constrarg.wit_destruction_arg
+  Genprint.register_print0 Tacarg.wit_destruction_arg
     (pr_destruction_arg pr_constr_expr pr_lconstr_expr)
     (pr_destruction_arg (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_destruction_arg pr_constr pr_lconstr (run_delayed_destruction_arg it));

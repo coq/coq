@@ -50,6 +50,7 @@ let tactic_eoi = eoi_entry tactic
 let () =
   let open Stdarg in
   let open Constrarg in
+  let open Tacarg in
   register_grammar wit_int_or_var (int_or_var);
   register_grammar wit_intro_pattern (simple_intropattern);
   register_grammar wit_quant_hyp (quantified_hypothesis);

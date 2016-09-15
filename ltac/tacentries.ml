@@ -56,9 +56,9 @@ let get_tacentry n m =
     && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
     && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
   in
-  if check_lvl n then EntryName (rawwit Constrarg.wit_tactic, Aself)
-  else if check_lvl (n + 1) then EntryName (rawwit Constrarg.wit_tactic, Anext)
-  else EntryName (rawwit Constrarg.wit_tactic, atactic n)
+  if check_lvl n then EntryName (rawwit Tacarg.wit_tactic, Aself)
+  else if check_lvl (n + 1) then EntryName (rawwit Tacarg.wit_tactic, Anext)
+  else EntryName (rawwit Tacarg.wit_tactic, atactic n)
 
 let get_separator = function
 | None -> error "Missing separator."
@@ -163,7 +163,7 @@ let add_tactic_entry (kn, ml, tg) state =
   let mkact loc l =
     let map arg =
       (** HACK to handle especially the tactic(...) entry *)
-      let wit = Genarg.rawwit Constrarg.wit_tactic in
+      let wit = Genarg.rawwit Tacarg.wit_tactic in
       if Genarg.has_type arg wit && not ml then
         Tacexp (Genarg.out_gen wit arg)
       else
@@ -218,7 +218,7 @@ let interp_prod_item = function
     | Some n ->
       (** FIXME: do better someday *)
       assert (String.equal s "tactic");
-      begin match Constrarg.wit_tactic with
+      begin match Tacarg.wit_tactic with
       | ExtraArg tag -> ArgT.Any tag
       | _ -> assert false
       end

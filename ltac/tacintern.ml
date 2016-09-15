@@ -24,6 +24,7 @@ open Termops
 open Tacexpr
 open Genarg
 open Constrarg
+open Tacarg
 open Misctypes
 open Locus
 

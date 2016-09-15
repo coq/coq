@@ -34,7 +34,7 @@ let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
 let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
 let genarg_of_uconstr c = in_gen (rawwit Constrarg.wit_uconstr) c
-let in_tac tac = in_gen (rawwit Constrarg.wit_ltac) tac
+let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
@@ -348,12 +348,13 @@ GEXTEND Gram
   ;
   operconstr: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.tactic_expr; ")" ->
-          let arg = Genarg.in_gen (Genarg.rawwit Constrarg.wit_tactic) tac in
+          let arg = Genarg.in_gen (Genarg.rawwit Tacarg.wit_tactic) tac in
           CHole (!@loc, None, IntroAnonymous, Some arg) ] ]
   ;
   END
 
 open Constrarg
+open Tacarg
 open Vernacexpr
 open Vernac_classifier
 open Goptions

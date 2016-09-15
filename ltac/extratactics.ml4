@@ -12,6 +12,7 @@ open Pp
 open Genarg
 open Stdarg
 open Constrarg
+open Tacarg
 open Extraargs
 open Pcoq.Prim
 open Pltac

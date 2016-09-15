@@ -14,6 +14,7 @@ open Tacexpr
 open Geninterp
 open Quote
 open Constrarg
+open Tacarg
 
 DECLARE PLUGIN "quote_plugin"
 

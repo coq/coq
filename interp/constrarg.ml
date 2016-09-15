@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Loc
-open Tacexpr
 open Misctypes
 open Genarg
 open Geninterp
@@ -27,13 +26,8 @@ let loc_of_or_by_notation f = function
 let wit_int_or_var =
   make0 ~dyn:(val_tag (topwit Stdarg.wit_int)) "int_or_var"
 
-let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type =
+let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, Tacexpr.glob_constr_and_expr intro_pattern_expr located, Tacexpr.intro_pattern) genarg_type =
   make0 "intropattern"
-
-let wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type =
-  make0 "tactic"
-
-let wit_ltac = make0 ~dyn:(val_tag (topwit Stdarg.wit_unit)) "ltac"
 
 let wit_ident =
   make0 "ident"
@@ -60,9 +54,6 @@ let wit_red_expr = make0 "redexpr"
 
 let wit_clause_dft_concl  =
   make0 "clause_dft_concl"
-
-let wit_destruction_arg =
-  make0 "destruction_arg"
 
 (** Aliases *)
 

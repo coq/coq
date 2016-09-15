@@ -20,6 +20,7 @@ open Pp
 open Pcoq
 open Genarg
 open Constrarg
+open Tacarg
 open Term
 open Vars
 open Topconstr
