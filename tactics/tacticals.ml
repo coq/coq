@@ -15,6 +15,7 @@ open Termops
 open Declarations
 open Tacmach
 open Clenv
+open Tactypes
 open Sigma.Notations
 
 module NamedDecl = Context.Named.Declaration
@@ -152,7 +153,7 @@ type branch_args = {
   nassums    : int;         (* number of assumptions/letin to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=assumption, false=let-in *)
-  branchnames : Tacexpr.intro_patterns}
+  branchnames : intro_patterns}
 
 type branch_assumptions = {
   ba        : branch_args;       (* the branch args *)
@@ -533,7 +534,7 @@ module New = struct
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
-      let Sigma (x, sigma, _) = x.Pretyping.delayed env sigma in
+      let Sigma (x, sigma, _) = x.delayed env sigma in
       tclWITHHOLES check (tac x) (Sigma.to_evar_map sigma)
     end }
 

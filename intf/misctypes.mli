@@ -117,3 +117,22 @@ type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
+
+type multi =
+  | Precisely of int
+  | UpTo of int
+  | RepeatStar
+  | RepeatPlus
+
+type 'a core_destruction_arg =
+  | ElimOnConstr of 'a
+  | ElimOnIdent of Id.t Loc.located
+  | ElimOnAnonHyp of int
+
+type 'a destruction_arg =
+  clear_flag * 'a core_destruction_arg
+
+type inversion_kind =
+  | SimpleInversion
+  | FullInversion
+  | FullInversionClear

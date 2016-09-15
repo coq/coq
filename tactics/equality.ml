@@ -26,7 +26,6 @@ open Retyping
 open Tacmach.New
 open Logic
 open Hipattern
-open Tacexpr
 open Tacticals.New
 open Tactics
 open Tacred

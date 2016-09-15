@@ -8,6 +8,7 @@
 
 open Loc
 open Misctypes
+open Tactypes
 open Genarg
 open Geninterp
 
@@ -26,7 +27,7 @@ let loc_of_or_by_notation f = function
 let wit_int_or_var =
   make0 ~dyn:(val_tag (topwit Stdarg.wit_int)) "int_or_var"
 
-let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, Tacexpr.glob_constr_and_expr intro_pattern_expr located, Tacexpr.intro_pattern) genarg_type =
+let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type =
   make0 "intropattern"
 
 let wit_ident =

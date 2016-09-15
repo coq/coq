@@ -15,6 +15,7 @@ open Globnames
 open Decl_kinds
 open Evd
 open Misctypes
+open Tactypes
 open Clenv
 open Pattern
 open Vernacexpr
@@ -25,7 +26,7 @@ exception Bound
 
 val decompose_app_bound : constr -> global_reference * constr array
 
-type debug = Tacexpr.debug = Debug | Info | Off
+type debug = Debug | Info | Off
 
 (** Pre-created hint databases *)
 
@@ -215,7 +216,7 @@ val repr_hint : hint -> (raw_hint * clausenv) hint_ast
    Useful to take the current goal hypotheses as hints;
    Boolean tells if lemmas with evars are allowed *)
 
-val make_local_hint_db : env -> evar_map -> ?ts:transparent_state -> bool -> Pretyping.delayed_open_constr list -> hint_db
+val make_local_hint_db : env -> evar_map -> ?ts:transparent_state -> bool -> delayed_open_constr list -> hint_db
 
 val make_db_list : hint_db_name list -> hint_db list
 

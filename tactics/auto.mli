@@ -14,6 +14,7 @@ open Clenv
 open Pattern
 open Decl_kinds
 open Hints
+open Tactypes
 
 val priority : ('a * full_hint) list -> ('a * full_hint) list
 
@@ -40,24 +41,24 @@ val conclPattern : constr -> constr_pattern option -> Genarg.glob_generic_argume
     "nocore" amongst the databases. *)
 
 val auto : ?debug:debug ->
-  int -> Pretyping.delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
+  int -> delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
 
 (** Auto with more delta. *)
 
 val new_auto : ?debug:debug ->
-  int -> Pretyping.delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
+  int -> delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
 
 (** auto with default search depth and with the hint database "core" *)
 val default_auto : unit Proofview.tactic
 
 (** auto with all hint databases except the "v62" compatibility database *)
 val full_auto : ?debug:debug ->
-  int -> Pretyping.delayed_open_constr list -> unit Proofview.tactic
+  int -> delayed_open_constr list -> unit Proofview.tactic
 
 (** auto with all hint databases except the "v62" compatibility database
    and doing delta *)
 val new_full_auto : ?debug:debug ->
-  int -> Pretyping.delayed_open_constr list -> unit Proofview.tactic
+  int -> delayed_open_constr list -> unit Proofview.tactic
 
 (** auto with default search depth and with all hint databases
    except the "v62" compatibility database *)
@@ -65,19 +66,19 @@ val default_full_auto : unit Proofview.tactic
 
 (** The generic form of auto (second arg [None] means all bases) *)
 val gen_auto : ?debug:debug ->
-  int option -> Pretyping.delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
+  int option -> delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
 (** The hidden version of auto *)
 val h_auto   : ?debug:debug ->
-  int option -> Pretyping.delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
+  int option -> delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
 (** Trivial *)
 
 val trivial : ?debug:debug ->
-  Pretyping.delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
+  delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
 val gen_trivial : ?debug:debug ->
-  Pretyping.delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
+  delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
 val full_trivial : ?debug:debug ->
-  Pretyping.delayed_open_constr list -> unit Proofview.tactic
+  delayed_open_constr list -> unit Proofview.tactic
 val h_trivial : ?debug:debug ->
-  Pretyping.delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
+  delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic

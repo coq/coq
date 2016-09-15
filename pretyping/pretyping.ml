@@ -43,6 +43,7 @@ open Glob_ops
 open Evarconv
 open Pattern
 open Misctypes
+open Tactypes
 open Sigma.Notations
 
 module NamedDecl = Context.Named.Declaration
@@ -59,9 +60,6 @@ type ltac_var_map = {
 }
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
-type 'a delayed_open =
-  { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
-type delayed_open_constr = constr delayed_open
 
 (************************************************************************)
 (* This concerns Cases *)

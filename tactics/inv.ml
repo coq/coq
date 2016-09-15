@@ -25,7 +25,6 @@ open Tactics
 open Elim
 open Equality
 open Misctypes
-open Tacexpr
 open Sigma.Notations
 open Proofview.Notations
 

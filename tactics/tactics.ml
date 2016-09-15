@@ -32,7 +32,6 @@ open Refiner
 open Tacticals
 open Hipattern
 open Coqlib
-open Tacexpr
 open Decl_kinds
 open Evarutil
 open Indrec
@@ -41,6 +40,7 @@ open Unification
 open Locus
 open Locusops
 open Misctypes
+open Tactypes
 open Proofview.Notations
 open Sigma.Notations
 open Context.Named.Declaration

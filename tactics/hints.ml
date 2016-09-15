@@ -20,6 +20,7 @@ open Namegen
 open Libnames
 open Smartlocate
 open Misctypes
+open Tactypes
 open Evd
 open Termops
 open Inductiveops
@@ -40,7 +41,7 @@ module NamedDecl = Context.Named.Declaration
 (* General functions                    *)
 (****************************************)
 
-type debug = Tacexpr.debug = Debug | Info | Off
+type debug = Debug | Info | Off
 
 exception Bound
 
@@ -1231,7 +1232,7 @@ let add_hint_lemmas env sigma eapply lems hint_db =
 let make_local_hint_db env sigma ts eapply lems =
   let map c =
     let sigma = Sigma.Unsafe.of_evar_map sigma in
-    let Sigma (c, sigma, _) = c.Pretyping.delayed env sigma in
+    let Sigma (c, sigma, _) = c.delayed env sigma in
     (Sigma.to_evar_map sigma, c)
   in
   let lems = List.map map lems in
