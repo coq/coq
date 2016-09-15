@@ -40,7 +40,7 @@ let with_delayed_uconstr ist c tac =
     fail_evar = false;
     expand_evars = true
   } in
-  let c = Pretyping.type_uconstr ~flags ist c in
+  let c = Tacinterp.type_uconstr ~flags ist c in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
 let replace_in_clause_maybe_by ist c1 c2 cl tac =
@@ -359,7 +359,7 @@ let refine_tac ist simple with_classes c =
     let flags =
       { constr_flags () with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
-    let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
+    let c = Tacinterp.type_uconstr ~flags ~expected_type ist c in
     let update = begin fun sigma ->
       c env sigma
     end in

@@ -1203,27 +1203,6 @@ let understand_ltac flags env sigma lvar kind c =
   let (sigma, c) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
 
-let constr_flags = {
-  use_typeclasses = true;
-  solve_unification_constraints = true;
-  use_hook = None;
-  fail_evar = true;
-  expand_evars = true }
-
-(* Fully evaluate an untyped constr *)
-let type_uconstr ?(flags = constr_flags)
-  ?(expected_type = WithoutTypeConstraint) ist c =
-  begin fun env sigma ->
-  let { closure; term } = c in
-  let vars = {
-    ltac_constrs = closure.typed;
-    ltac_uconstrs = closure.untyped;
-    ltac_idents = closure.idents;
-    ltac_genargs = Id.Map.empty;
-  } in
-  understand_ltac flags env sigma vars expected_type term
-  end
-
 let pretype k0 resolve_tc typcon env evdref lvar t =
   pretype k0 resolve_tc typcon (make_env env !evdref) evdref lvar t
 

@@ -4012,10 +4012,6 @@ sig
                         typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.t
   val understand_tcc : ?flags:inference_flags -> Environ.env -> Evd.evar_map ->
                        ?expected_type:typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
-  val type_uconstr :
-    ?flags:inference_flags ->
-    ?expected_type:typing_constraint ->
-    Geninterp.interp_sign -> Glob_term.closed_glob_constr -> EConstr.constr Tactypes.delayed_open
   val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
                    Environ.env -> Evd.evar_map -> Glob_term.glob_constr -> Constr.t Evd.in_evar_universe_context
   val check_evars : Environ.env -> Evd.evar_map -> Evd.evar_map -> EConstr.constr -> unit
