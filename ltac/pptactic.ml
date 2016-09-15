@@ -1329,16 +1329,17 @@ module Richpp = struct
 
   include Make (Ppconstr.Richpp) (struct
     open Ppannotation
+    open Genarg
     let do_not_tag _ x = x
     let tag e s = Pp.tag (Pp.Tag.inj e tag) s
     let tag_keyword                   = tag AKeyword
     let tag_primitive                 = tag AKeyword
     let tag_string                    = do_not_tag ()
-    let tag_glob_tactic_expr        e = tag (AGlobTacticExpr e)
-    let tag_glob_atomic_tactic_expr a = tag (AGlobAtomicTacticExpr a)
-    let tag_raw_tactic_expr         e = tag (ARawTacticExpr e)
-    let tag_raw_atomic_tactic_expr  a = tag (ARawAtomicTacticExpr a)
-    let tag_atomic_tactic_expr      a = tag (AAtomicTacticExpr a)
+    let tag_glob_tactic_expr        e = tag (AGlbGenArg (in_gen (glbwit wit_ltac) e))
+    let tag_glob_atomic_tactic_expr   = do_not_tag
+    let tag_raw_tactic_expr         e = tag (ARawGenArg (in_gen (rawwit wit_ltac) e))
+    let tag_raw_atomic_tactic_expr    = do_not_tag
+    let tag_atomic_tactic_expr        = do_not_tag
   end)
 
 end
