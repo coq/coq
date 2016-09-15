@@ -27,8 +27,6 @@ val search_guard :
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
-type pure_open_constr = evar_map * constr
-
 type inference_hook = env -> evar_map -> evar -> evar_map * constr
 
 type inference_flags = {
@@ -77,7 +75,7 @@ val understand_tcc_evars : ?flags:inference_flags -> env -> evar_map ref ->
 
 val understand_ltac : inference_flags ->
   env -> evar_map -> ltac_var_map ->
-  typing_constraint -> glob_constr -> pure_open_constr
+  typing_constraint -> glob_constr -> evar_map * EConstr.t
 
 (** Standard call to get a constr from a glob_constr, resolving
     implicit arguments and coercions, and compiling pattern-matching;

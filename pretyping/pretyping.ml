@@ -47,7 +47,6 @@ open Misctypes
 module NamedDecl = Context.Named.Declaration
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
-type pure_open_constr = evar_map * EConstr.constr
 
 (************************************************************************)
 (* This concerns Cases *)

@@ -4007,11 +4007,9 @@ sig
       expand_evars : bool
     }
 
-  type pure_open_constr = Evd.evar_map * EConstr.constr
-
   val understand_ltac : inference_flags ->
                         Environ.env -> Evd.evar_map -> Glob_term.ltac_var_map ->
-                        typing_constraint -> Glob_term.glob_constr -> pure_open_constr
+                        typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.t
   val understand_tcc : ?flags:inference_flags -> Environ.env -> Evd.evar_map ->
                        ?expected_type:typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
   val type_uconstr :
