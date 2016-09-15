@@ -45,9 +45,6 @@ val all_no_fail_flags : inference_flags
 
 val all_and_fail_flags : inference_flags
 
-(** Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
-val allow_anonymous_refs : bool ref
-  
 (** Generic calls to the interpreter from glob_constr to open_constr;
     by default, inference_flags tell to use type classes and
     heuristics (but no external tactic solver hooks), as well as to

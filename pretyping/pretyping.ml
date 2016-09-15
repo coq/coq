@@ -383,9 +383,6 @@ let adjust_evar_source evdref na c =
      end
   | _, _ -> c
 
-(* Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
-let allow_anonymous_refs = ref false
-
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon ?loc resolve_tc env evdref j = function
   | None -> j
@@ -916,9 +913,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       (* Make dependencies from arity signature impossible *)
     let arsgn =
       let arsgn,_ = get_arity env.ExtraEnv.env indf in
-	if not !allow_anonymous_refs then
-	  List.map (set_name Anonymous) arsgn
-	else arsgn
+      List.map (set_name Anonymous) arsgn
     in
       let indt = build_dependent_inductive env.ExtraEnv.env indf in
       let psign = LocalAssum (na, indt) :: arsgn in (* For locating names in [po] *)
@@ -979,10 +974,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 
       let arsgn =
 	let arsgn,_ = get_arity env.ExtraEnv.env indf in
-	  if not !allow_anonymous_refs then
-	      (* Make dependencies from arity signature impossible *)
-	    List.map (set_name Anonymous) arsgn
-	  else arsgn
+        (* Make dependencies from arity signature impossible *)
+        List.map (set_name Anonymous) arsgn
       in
       let nar = List.length arsgn in
       let indt = build_dependent_inductive env.ExtraEnv.env indf in
@@ -1016,13 +1009,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	let pi = beta_applist !evdref (pi, [EConstr.of_constr (build_dependent_constructor cs)]) in
         let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs.cs_args in
 	let csgn =
-	  if not !allow_anonymous_refs then
-	    List.map (set_name Anonymous) cs_args
-	  else
-	    List.map (map_name (function Name _ as n -> n
-				       | Anonymous -> Name Namegen.default_non_dependent_ident))
-		     cs_args
-	in
+          List.map (set_name Anonymous) cs_args
+        in
 	let env_c = push_rel_context !evdref csgn env in
 	let bj = pretype (mk_tycon pi) env_c evdref lvar b in
 	  it_mkLambda_or_LetIn bj.uj_val cs_args in
