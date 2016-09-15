@@ -4008,7 +4008,6 @@ sig
     }
 
   type pure_open_constr = Evd.evar_map * EConstr.constr
-  type glob_constr_ltac_closure = Glob_term.ltac_var_map * Glob_term.glob_constr
 
   val understand_ltac : inference_flags ->
                         Environ.env -> Evd.evar_map -> Glob_term.ltac_var_map ->
@@ -4387,8 +4386,10 @@ end
 
 module Evar_refiner :
 sig
+  type glob_constr_ltac_closure = Glob_term.ltac_var_map * Glob_term.glob_constr
+
   val w_refine : Evar.t * Evd.evar_info ->
-                 Pretyping.glob_constr_ltac_closure -> Evd.evar_map -> Evd.evar_map
+                 glob_constr_ltac_closure -> Evd.evar_map -> Evd.evar_map
 end
 
 

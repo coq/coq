@@ -27,7 +27,6 @@ val search_guard :
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
-type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
 
 type inference_hook = env -> evar_map -> evar -> evar_map * constr
