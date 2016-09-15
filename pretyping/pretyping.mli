@@ -84,15 +84,6 @@ val understand_ltac : inference_flags ->
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
   env -> evar_map -> glob_constr -> Constr.constr Evd.in_evar_universe_context
 
-(** Idem but returns the judgment of the understood term *)
-
-val understand_judgment : env -> evar_map -> 
-  glob_constr -> unsafe_judgment Evd.in_evar_universe_context
-
-(** Idem but do not fail on unresolved evars (type cl*)
-val understand_judgment_tcc : env -> evar_map ref ->
-  glob_constr -> unsafe_judgment
-
 val type_uconstr :
   ?flags:inference_flags ->
   ?expected_type:typing_constraint ->

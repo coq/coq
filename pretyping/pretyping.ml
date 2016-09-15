@@ -1177,29 +1177,6 @@ let no_classes_no_fail_inference_flags = {
 let all_and_fail_flags = default_inference_flags true
 let all_no_fail_flags = default_inference_flags false
 
-let on_judgment sigma f j =
-  let c = mkCast(j.uj_val,DEFAULTcast, j.uj_type) in
-  let (c,_,t) = destCast sigma (f c) in
-  {uj_val = c; uj_type = t}
-
-let understand_judgment env sigma c =
-  let env = make_env env sigma in
-  let evdref = ref sigma in
-  let k0 = Context.Rel.length (rel_context env) in
-  let j = pretype k0 true empty_tycon env evdref empty_lvar c in
-  let j = on_judgment sigma (fun c ->
-    let evd, c = process_inference_flags all_and_fail_flags env.ExtraEnv.env sigma (!evdref,c) in 
-      evdref := evd; c) j
-  in j, Evd.evar_universe_context !evdref
-
-let understand_judgment_tcc env evdref c =
-  let env = make_env env !evdref in
-  let k0 = Context.Rel.length (rel_context env) in
-  let j = pretype k0 true empty_tycon env evdref empty_lvar c in
-  on_judgment !evdref (fun c ->
-    let (evd,c) = process_inference_flags all_no_fail_flags env.ExtraEnv.env Evd.empty (!evdref,c) in
-    evdref := evd; c) j
-
 let ise_pretype_gen_ctx flags env sigma lvar kind c =
   let evd, c = ise_pretype_gen flags env sigma lvar kind c in
   let evd, f = Evarutil.nf_evars_and_universes evd in
