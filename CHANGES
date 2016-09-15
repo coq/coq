@@ -61,6 +61,10 @@ Tactics
   "Structural Injection". In this case, hypotheses are also put in the
   context in the natural left-to-right order and the hypothesis on
   which injection applies is cleared.
+- Tactic "contradiction" (hence "easy") now also solve goals with
+  hypotheses of the form "~True" or "t<>t" (possible source of
+  incompatibilities because of more successes in automation, but
+  generally a more intuitive strategy).
 
 Hints
 
