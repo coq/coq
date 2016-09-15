@@ -8,6 +8,7 @@ Tactic_debug
 Tacintern
 Tacentries
 Profile_ltac
+Tactic_matching
 Tacinterp
 Evar_tactics
 Tactic_option
