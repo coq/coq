@@ -1194,11 +1194,6 @@ let understand_tcc ?(flags=all_no_fail_flags) env sigma ?(expected_type=WithoutT
   let (sigma, c) = ise_pretype_gen flags env sigma empty_lvar expected_type c in
   (sigma, c)
 
-let understand_tcc_evars ?(flags=all_no_fail_flags) env evdref ?(expected_type=WithoutTypeConstraint) c =
-  let sigma, c = ise_pretype_gen flags env !evdref empty_lvar expected_type c in
-  evdref := sigma;
-  c
-
 let understand_ltac flags env sigma lvar kind c =
   let (sigma, c) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)

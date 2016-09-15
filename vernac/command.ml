@@ -393,8 +393,9 @@ let is_impredicative env u =
 
 let interp_ind_arity env evdref ind =
   let c = intern_gen IsType env ind.ind_arity in
-  let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
-  let t, impls = understand_tcc_evars env evdref ~expected_type:IsType c, imps in
+  let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
+  let (evd,t) = understand_tcc env !evdref ~expected_type:IsType c in
+  evdref := evd;
   let pseudo_poly = check_anonymous_type c in
   let () = if not (Reductionops.is_arity env !evdref t) then
     user_err ?loc:(constr_loc ind.ind_arity) (str "Not an arity")

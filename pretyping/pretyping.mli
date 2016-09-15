@@ -55,9 +55,6 @@ val all_and_fail_flags : inference_flags
 val understand_tcc : ?flags:inference_flags -> env -> evar_map ->
   ?expected_type:typing_constraint -> glob_constr -> evar_map * constr
 
-val understand_tcc_evars : ?flags:inference_flags -> env -> evar_map ref ->
-  ?expected_type:typing_constraint -> glob_constr -> constr
-
 (** More general entry point with evars from ltac *)
 
 (** Generic call to the interpreter from glob_constr to constr
