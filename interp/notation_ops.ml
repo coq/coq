@@ -125,7 +125,7 @@ let rec cases_pattern_fold_map loc g e = function
       e', PatCstr (loc,cstr,patl',na')
 
 let subst_binder_type_vars l = function
-  | Evar_kinds.BinderType (Name id) as e ->
+  | Evar_kinds.BinderType (Name id) ->
      let id =
        try match Id.List.assoc id l with GVar(_,id') -> id' | _ -> id
        with Not_found -> id in

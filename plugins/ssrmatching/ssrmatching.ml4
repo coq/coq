@@ -903,7 +903,7 @@ let pr_ssrpattern_roundp  _ _ _ = pr_pattern_roundp
 let wit_rpatternty = add_genarg "rpatternty" pr_pattern
 
 let glob_ssrterm gs = function
-  | k, (_, Some c) as x -> k, 
+  | k, (_, Some c) -> k,
       let x = Tacintern.intern_constr gs c in
       fst x, Some c
   | ct -> ct

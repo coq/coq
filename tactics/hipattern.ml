@@ -509,7 +509,7 @@ let coq_eqdec ~sum ~rev =
     let eqn = mkGAppRef coq_eq_ref (List.map mkGPatVar ["X1"; "X2"; "X3"]) in
     let args = [eqn; mkGAppRef coq_not_ref [eqn]] in
     let args = if rev then List.rev args else args in
-    mkPattern (mkGAppRef sum [eqn; mkGAppRef coq_not_ref [eqn]])
+    mkPattern (mkGAppRef sum args)
   )
 
 (** { ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 } *)

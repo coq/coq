@@ -802,7 +802,7 @@ module Make
       let pr_with_bindings_arg = pr_with_bindings_arg pr.pr_constr pr.pr_lconstr in
       let pr_red_expr = pr_red_expr (pr.pr_constr,pr.pr_lconstr,pr.pr_constant,pr.pr_pattern) in
 
-      let pr_constrarg c = spc () ++ pr.pr_constr c in
+      let _pr_constrarg c = spc () ++ pr.pr_constr c in
       let pr_lconstrarg c = spc () ++ pr.pr_lconstr c in
       let pr_intarg n = spc () ++ int n in
 
@@ -850,7 +850,7 @@ module Make
                   prlist pr_binder_fix bll ++ annot ++ str" :" ++
                   pr_lconstrarg ty ++ str")") in
       (*  spc() ++
-          hov 0 (pr_id id ++ pr_intarg n ++ str":" ++ pr_constrarg
+          hov 0 (pr_id id ++ pr_intarg n ++ str":" ++ _pr_constrarg
           c)
       *)
       let pr_cofix_tac (id,c) =

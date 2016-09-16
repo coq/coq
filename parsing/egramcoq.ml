@@ -449,7 +449,6 @@ let extend_constr state forpat ng =
     let isforpat = target_to_bool forpat in
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
     let (pos,p4assoc,name,reinit), state = find_position state isforpat assoc level in
-    let nb_decls = List.length needed_levels + 1 in
     let empty_rules = List.map (prepare_empty_levels isforpat) needed_levels in
     let empty = { constrs = []; constrlists = []; binders = [] } in
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
