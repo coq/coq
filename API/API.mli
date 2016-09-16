@@ -2945,6 +2945,7 @@ sig
   val tclONCE : 'a tactic -> 'a tactic
   val tclPROGRESS : 'a tactic -> 'a tactic
   val shelve_unifiable : unit tactic
+  val unshelve_goals : Evar.t list -> unit tactic
   val apply : Environ.env -> 'a tactic -> proofview -> 'a
                                                      * proofview
                                                      * (bool * Evd.evar list * Evd.evar list)
