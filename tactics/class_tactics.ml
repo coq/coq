@@ -969,10 +969,14 @@ module Search = struct
        let fgoals = Evd.future_goals evm in
        let pgoal = Evd.principal_future_goal evm in
        let _, pv = Proofview.init evm' [] in
-       let pv = Proofview.unshelve goals pv in
+       let inittac =
+         Proofview.tclTHEN (* Register in the shelf and unshelve *)
+           (Proofview.shelve_goals goals)
+           (Proofview.unshelve_goals goals)
+       in
        try
          let (), pv', (unsafe, shelved, gaveup), _ =
-           Proofview.apply env tac pv
+           Proofview.apply env (Proofview.tclTHEN inittac tac) pv
          in
          if Proofview.finished pv' then
            let evm' = Proofview.return pv' in

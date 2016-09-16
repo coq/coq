@@ -307,6 +307,9 @@ val tclINDEPENDENTL: 'a tactic -> 'a list tactic
 
 (** {7 Goal manipulation} *)
 
+(** Returns the current shelved goals *)
+val shelf : Goal.goal list tactic
+
 (** Shelves all the goals under focus. The goals are placed on the
     shelf for later use (or being solved by side-effects). *)
 val shelve : unit tactic
@@ -330,9 +333,17 @@ val shelve_unifiable : unit tactic
     goals are unifiable (see {!shelve_unifiable}) in the current focus. *)
 val guard_no_unifiable : Names.Name.t list option tactic
 
+exception NotASubsetOfTheShelf
+
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
-    goals of p *)
+    goals of [p].
+    @raise NotASubsetOfTheShelf if [l] refers to goals that are not actually
+    on the shelf. *)
 val unshelve : Evar.t list -> proofview -> proofview
+
+(** [unshelve_goals l] applies [unshelve] on the current proofview.
+    It can error with NotASubsetOfTheShelf. *)
+val unshelve_goals : Goal.goal list -> unit tactic
 
 (** [depends_on g1 g2 sigma] checks if g1 occurs in the type/ctx of g2 *)
 val depends_on : Evd.evar_map -> Evar.t -> Evar.t -> bool

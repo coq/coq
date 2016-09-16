@@ -5365,6 +5365,16 @@ Reset Initial.
 
 \end{Variants}
 
+\subsection[\tt unshelve\_goals]{\tt
+  Unshelve\comindex{unshelve\_goals $\ident_1$ \dots $\ident_n$}\label{unshelvegoals}}
+
+This tactic unshelves the named goals {\ident$_1$ \dots \ident$_n$}, in
+the given order, putting them at the beginning of the subgoal list.
+It fails if any of those names does not correspond to a shelved subgoal.
+
+\subsection[\tt unshelve\_goals]{\tt
+  Unshelve\comindex{unshelve\_goals $\ident_1$ \dots $\ident_n$}\label{unshelvegoals}}
+
 \subsection[\tt Unshelve]{\tt Unshelve\comindex{Unshelve}\label{unshelve}}
 
 This command moves all the goals on the shelf (see Section~\ref{shelve}) from the

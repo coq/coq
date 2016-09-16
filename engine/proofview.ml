@@ -636,6 +636,10 @@ let tclINDEPENDENTL tac =
 
 (** {7 Goal manipulation} *)
 
+let shelf =
+  let open Proof in
+  Shelf.get >>= fun shelf -> tclUNIT shelf
+
 (** Shelves all the goals under focus. *)
 let shelve =
   let open Proof in
@@ -731,13 +735,17 @@ let guard_no_unifiable =
       let l = CList.map (fun id -> Names.Name id) l in
       tclUNIT (Some l)
 
+exception NotASubsetOfTheShelf
+
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
     goals of p *)
 let unshelve l p =
-  let l = List.map with_empty_state l in
+  if not (List.subset l p.shelf) then raise NotASubsetOfTheShelf;
+  let shelf = List.filter (fun g -> not (List.mem_f Evar.equal g l)) p.shelf in
   (* advance the goals in case of clear *)
+  let l = List.map with_empty_state l in
   let l = undefined p.solution l in
-  { p with comb = p.comb@l }
+  { p with comb = p.comb@l; shelf }
 
 let mark_in_evm ~goal evd content =
   let info = Evd.find evd content in
@@ -759,6 +767,19 @@ let mark_in_evm ~goal evd content =
   | Some () -> info
   in
   Evd.add evd content info
+
+let unshelve_goals l =
+  let open Proof in
+  Solution.get >>= fun sigma ->
+  let f (sigma, goals) gl =
+    let sigma = mark_in_evm ~goal:true sigma gl in
+    (sigma, gl :: goals)
+  in
+  let sigma, goals = CList.fold_left f (sigma, []) l in
+  Solution.set sigma >>
+  Pv.get >>= fun pv ->
+  (try Pv.set (unshelve (CList.rev goals) pv)
+   with NotASubsetOfTheShelf -> tclZERO NotASubsetOfTheShelf)
 
 let with_shelf tac =
   let open Proof in
