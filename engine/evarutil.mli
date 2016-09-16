@@ -25,13 +25,13 @@ val new_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * EConstr.t
+  ?future_goal:bool -> ?principal:bool -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
   named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * evar
+  ?future_goal:bool -> ?principal:bool -> types -> evar_map * evar
 
 val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
 
@@ -40,18 +40,18 @@ val e_new_evar :
   env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> constr
+  ?future_goal:bool -> ?principal:bool -> types -> constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> ?future_goal:bool -> ?principal:bool -> rigid ->
   evar_map * (constr * sorts)
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> constr * sorts
+  ?naming:Misctypes.intro_pattern_naming_expr -> ?future_goal:bool -> ?principal:bool -> rigid -> constr * sorts
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
@@ -71,7 +71,7 @@ val new_evar_instance :
  named_context_val -> evar_map -> types -> 
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool ->
+  ?future_goal:bool -> ?principal:bool ->
   constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> 'a array -> (Id.t * 'a) list

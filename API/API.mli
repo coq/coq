@@ -2857,13 +2857,13 @@ sig
     Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
     ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
     ?naming:Misctypes.intro_pattern_naming_expr ->
-    ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
+    ?future_goal:bool -> ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
 
   val new_evar_instance :
     Environ.named_context_val -> Evd.evar_map -> EConstr.types ->
     ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t -> ?candidates:EConstr.constr list ->
     ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
-    ?principal:bool ->
+    ?future_goal:bool -> ?principal:bool ->
     EConstr.constr list -> Evd.evar_map * EConstr.constr
 
   val clear_hyps_in_evi : Environ.env -> Evd.evar_map ref -> Environ.named_context_val ->
@@ -2880,10 +2880,10 @@ sig
       Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
       ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
       ?naming:Misctypes.intro_pattern_naming_expr ->
-      ?principal:bool -> EConstr.types -> EConstr.constr
+      ?future_goal:bool -> ?principal:bool -> EConstr.types -> EConstr.constr
   val new_type_evar :
     Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
-    ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> Evd.rigid ->
+    ?naming:Misctypes.intro_pattern_naming_expr -> ?future_goal:bool -> ?principal:bool -> Evd.rigid ->
     Evd.evar_map * (EConstr.constr * Sorts.t)
   val nf_evars_universes : Evd.evar_map -> Constr.t -> Constr.t
   val safe_evar_value : Evd.evar_map -> Term.existential -> Constr.t option
