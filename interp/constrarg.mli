@@ -17,8 +17,8 @@ open Globnames
 open Genredexpr
 open Pattern
 open Constrexpr
-open Tacexpr
 open Misctypes
+open Tactypes
 open Genarg
 
 (** FIXME: nothing to do there. *)
@@ -60,19 +60,7 @@ val wit_red_expr :
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
   (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
 
-val wit_tactic : (raw_tactic_expr, glob_tactic_expr, Geninterp.Val.t) genarg_type
-
-(** [wit_ltac] is subtly different from [wit_tactic]: they only change for their
-    toplevel interpretation. The one of [wit_ltac] forces the tactic and
-    discards the result. *)
-val wit_ltac : (raw_tactic_expr, glob_tactic_expr, unit) genarg_type
-
 val wit_clause_dft_concl :  (Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) genarg_type
-
-val wit_destruction_arg :
-  (constr_expr with_bindings destruction_arg,
-   glob_constr_and_expr with_bindings destruction_arg,
-   delayed_open_constr_with_bindings destruction_arg) genarg_type
 
 (** Aliases for compatibility *)
 

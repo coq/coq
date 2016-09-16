@@ -6,17 +6,21 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Legacy components of the previous proof engine. *)
+(** Generic arguments based on Ltac. *)
 
-open Term
-open Clenv
-open Unification
-open Misctypes
+open Genarg
+open Geninterp
+open Tacexpr
 
-(** Tactics *)
-val unify : ?flags:unify_flags -> constr -> unit Proofview.tactic
-val clenv_refine : evars_flag -> ?with_classes:bool -> clausenv -> unit Proofview.tactic
-val res_pf : ?with_evars:evars_flag -> ?with_classes:bool -> ?flags:unify_flags -> clausenv -> unit Proofview.tactic
+let make0 ?dyn name =
+  let wit = Genarg.make0 name in
+  let () = Geninterp.register_val0 wit dyn in
+  wit
 
-val clenv_pose_dependent_evars : evars_flag -> clausenv -> clausenv
-val clenv_value_cast_meta : clausenv -> constr
+let wit_tactic : (raw_tactic_expr, glob_tactic_expr, Val.t) genarg_type =
+  make0 "tactic"
+
+let wit_ltac = make0 ~dyn:(val_tag (topwit Stdarg.wit_unit)) "ltac"
+
+let wit_destruction_arg =
+  make0 "destruction_arg"

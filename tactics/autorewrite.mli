@@ -9,7 +9,6 @@
 (** This files implements the autorewrite tactic. *)
 
 open Term
-open Tacexpr
 open Equality
 
 (** Rewriting rules before tactic interpretation *)

@@ -32,15 +32,13 @@ type advanced_flag = bool  (* true = advanced         false = basic *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
 
-type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
-
-type goal_selector =
+type goal_selector = Vernacexpr.goal_selector =
   | SelectNth of int
   | SelectList of (int * int) list
   | SelectId of Id.t
   | SelectAll
 
-type 'a core_destruction_arg =
+type 'a core_destruction_arg = 'a Misctypes.core_destruction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of Id.t located
   | ElimOnAnonHyp of int
@@ -48,7 +46,7 @@ type 'a core_destruction_arg =
 type 'a destruction_arg =
   clear_flag * 'a core_destruction_arg
 
-type inversion_kind =
+type inversion_kind = Misctypes.inversion_kind =
   | SimpleInversion
   | FullInversion
   | FullInversionClear
@@ -78,12 +76,6 @@ type ('constr,'dconstr,'id) induction_clause_list =
     * 'constr with_bindings option (* using ... *)
 
 type 'a with_bindings_arg = clear_flag * 'a with_bindings
-
-type multi =
-  | Precisely of int
-  | UpTo of int
-  | RepeatStar
-  | RepeatPlus
 
 (* Type of patterns *)
 type 'a match_pattern =
@@ -117,18 +109,15 @@ type ml_tactic_entry = {
 
 (** Composite types *)
 
-(** In globalize tactics, we need to keep the initial [constr_expr] to recompute
-   in the environment by the effective calls to Intro, Inversion, etc 
-   The [constr_expr] field is [None] in TacDef though *)
-type glob_constr_and_expr = Glob_term.glob_constr * constr_expr option
+type glob_constr_and_expr = Tactypes.glob_constr_and_expr
 
 type open_constr_expr = unit * constr_expr
 type open_glob_constr = unit * glob_constr_and_expr
 
-type binding_bound_vars = Id.Set.t
+type binding_bound_vars = Constr_matching.binding_bound_vars
 type glob_constr_pattern_and_expr = binding_bound_vars * glob_constr_and_expr * constr_pattern
 
-type 'a delayed_open = 'a Pretyping.delayed_open =
+type 'a delayed_open = 'a Tactypes.delayed_open =
   { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
 
 type delayed_open_constr_with_bindings = Term.constr with_bindings delayed_open
@@ -401,3 +390,7 @@ type ltac_call_kind =
   | LtacConstrInterp of Glob_term.glob_constr * Pretyping.ltac_var_map
 
 type ltac_trace = (Loc.t * ltac_call_kind) list
+
+type tacdef_body =
+  | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
+  | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)

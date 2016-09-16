@@ -20,7 +20,6 @@ open Genredexpr
 open Tactics
 open Tacticals
 open Clenv
-open Tacexpr
 open Locus
 open Proofview.Notations
 open Hints

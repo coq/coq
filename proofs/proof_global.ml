@@ -90,7 +90,7 @@ type closed_proof = proof_object * proof_terminator
 type pstate = {
   pid : Id.t;
   terminator : proof_terminator CEphemeron.key;
-  endline_tactic : Tacexpr.raw_tactic_expr option;
+  endline_tactic : Genarg.glob_generic_argument option;
   section_vars : Context.Named.t option;
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
@@ -148,9 +148,6 @@ let cur_pstate () =
 let give_me_the_proof () = (cur_pstate ()).proof
 let get_current_proof_name () = (cur_pstate ()).pid
 
-let interp_tac = ref (fun _ -> assert false)
-let set_interp_tac f = interp_tac := f
-
 let with_current_proof f =
   match !pstates with
   | [] -> raise NoCurrentProof
@@ -158,7 +155,13 @@ let with_current_proof f =
       let et =
         match p.endline_tactic with
         | None -> Proofview.tclUNIT ()
-        | Some tac -> !interp_tac tac in
+        | Some tac ->
+          let open Geninterp in
+          let ist = { lfun = Id.Map.empty; extra = TacStore.empty } in
+          let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
+          let tac = Geninterp.interp tag ist tac in
+          Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
+      in
       let (newpr,ret) = f et p.proof in
       let p = { p with proof = newpr } in
       pstates := p :: rest;

@@ -1,3 +1,6 @@
+Tacarg
+Pptactic
+Pltac
 Taccoerce
 Tacsubst
 Tacenv
@@ -5,6 +8,7 @@ Tactic_debug
 Tacintern
 Tacentries
 Profile_ltac
+Tactic_matching
 Tacinterp
 Evar_tactics
 Tactic_option
@@ -19,4 +23,5 @@ Rewrite
 G_rewrite
 Tauto
 G_eqdecide
+G_tactic
 G_ltac

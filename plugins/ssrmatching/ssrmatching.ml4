@@ -20,6 +20,7 @@ open Pp
 open Pcoq
 open Genarg
 open Constrarg
+open Tacarg
 open Term
 open Vars
 open Topconstr
@@ -41,7 +42,7 @@ open Proofview.Notations
 open Tacinterp
 open Pretyping
 open Constr
-open Tactic
+open Pltac
 open Extraargs
 open Ppconstr
 open Printer

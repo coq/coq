@@ -120,7 +120,7 @@ let lookup_at_as_comma =
 
 open Constr
 open Prim
-open Tactic
+open Pltac
 
 let mk_fix_tac (loc,id,bl,ann,ty) =
   let n =
@@ -216,6 +216,8 @@ let warn_deprecated_eqn_syntax =
          (fun arg -> strbrk (Printf.sprintf "Syntax \"_eqn:%s\" is deprecated. Please use \"eqn:%s\" instead." arg arg))
 
 (* Auxiliary grammar rules *)
+
+open Vernac_
 
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis

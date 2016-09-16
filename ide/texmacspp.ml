@@ -127,10 +127,6 @@ let xmlProofMode loc name = xmlWithLoc loc "proofmode" ["name",name] []
 
 let xmlProof loc xml = xmlWithLoc loc "proof" [] xml
 
-let xmlRawTactic name rtac =
-  Element("rawtactic", ["name",name],
-    [PCData (Pp.string_of_ppcmds (Pptactic.pr_raw_tactic rtac))])
-
 let xmlSectionSubsetDescr name ssd =
   Element("sectionsubsetdescr",["name",name],
     [PCData (Proof_using.to_string ssd)])
@@ -742,7 +738,7 @@ let rec tmpp v loc =
   | VernacShow _ as x -> xmlTODO loc x
   | VernacCheckGuard as x -> xmlTODO loc x
   | VernacProof (tac,using) ->
-      let tac = Option.map (xmlRawTactic "closingtactic") tac in
+      let tac = None (** FIXME *) in
       let using = Option.map (xmlSectionSubsetDescr "using") using in
       xmlProof loc (Option.List.(cons tac (cons using [])))
   | VernacProofMode name -> xmlProofMode loc name

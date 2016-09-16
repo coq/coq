@@ -20,7 +20,7 @@ open Tactics
 open Clenv
 open Auto
 open Genredexpr
-open Tacexpr
+open Tactypes
 open Locus
 open Locusops
 open Hints
@@ -203,7 +203,7 @@ type search_state = {
   dblist : hint_db list;
   localdb :  hint_db list;
   prev : prev_search_state;
-  local_lemmas : Tacexpr.delayed_open_constr list;
+  local_lemmas : delayed_open_constr list;
 }
 
 and prev_search_state = (* for info eauto *)

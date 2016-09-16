@@ -215,9 +215,6 @@ GEXTEND Gram
 	  CGeneralization (!@loc, Implicit, None, c)
       | "`("; c = operconstr LEVEL "200"; ")" ->
 	  CGeneralization (!@loc, Explicit, None, c)
-      | IDENT "ltac"; ":"; "("; tac = Tactic.tactic_expr; ")" ->
-          let arg = Genarg.in_gen (Genarg.rawwit Constrarg.wit_tactic) tac in
-          CHole (!@loc, None, IntroAnonymous, Some arg)
       ] ]
   ;
   record_declaration:

@@ -46,11 +46,29 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
 let entry_buf = Buffer.create 64
 
+type any_entry = AnyEntry : 'a Gram.entry -> any_entry
+
+let grammars : any_entry list String.Map.t ref = ref String.Map.empty
+
+let register_grammar name grams =
+  grammars := String.Map.add name grams !grammars
+
 let pr_entry e =
   let () = Buffer.clear entry_buf in
   let ft = Format.formatter_of_buffer entry_buf in
   let () = Gram.entry_print ft e in
   str (Buffer.contents entry_buf)
+
+let pr_registered_grammar name =
+  let gram = try Some (String.Map.find name !grammars) with Not_found -> None in
+  match gram with
+  | None -> error "Unknown or unprintable grammar entry."
+  | Some entries ->
+    let pr_one (AnyEntry e) =
+      str "Entry " ++ str (Gram.Entry.name e) ++ str " is" ++ fnl () ++
+      pr_entry e
+    in
+    prlist pr_one entries
 
 let pr_grammar = function
   | "constr" | "operconstr" | "binder_constr" ->
@@ -64,15 +82,6 @@ let pr_grammar = function
       pr_entry Pcoq.Constr.operconstr
   | "pattern" ->
       pr_entry Pcoq.Constr.pattern
-  | "tactic" ->
-      str "Entry tactic_expr is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.tactic_expr ++
-      str "Entry binder_tactic is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.binder_tactic ++
-      str "Entry simple_tactic is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.simple_tactic ++
-      str "Entry tactic_arg is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.tactic_arg
   | "vernac" ->
       str "Entry vernac is" ++ fnl () ++
       pr_entry Pcoq.Vernac_.vernac ++
@@ -84,7 +93,7 @@ let pr_grammar = function
       pr_entry Pcoq.Vernac_.gallina ++
       str "Entry gallina_ext is" ++ fnl () ++
       pr_entry Pcoq.Vernac_.gallina_ext
-  | _ -> error "Unknown or unprintable grammar entry."
+  | name -> pr_registered_grammar name
 
 (**********************************************************************)
 (* Parse a format (every terminal starting with a letter or a single

@@ -11,6 +11,7 @@ open Tacexpr
 open Mod_subst
 open Genarg
 open Constrarg
+open Tacarg
 open Misctypes
 open Globnames
 open Term

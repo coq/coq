@@ -25,7 +25,6 @@ open Tactics
 open Elim
 open Equality
 open Misctypes
-open Tacexpr
 open Sigma.Notations
 open Proofview.Notations
 
@@ -496,8 +495,6 @@ let inversion inv_kind status names id =
 
 let inv_gen thin status names =
   try_intros_until (inversion thin status names)
-
-open Tacexpr
 
 let inv k = inv_gen k NoDep
 

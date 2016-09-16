@@ -24,6 +24,7 @@ open Termops
 open Tacexpr
 open Genarg
 open Constrarg
+open Tacarg
 open Misctypes
 open Locus
 
@@ -775,13 +776,16 @@ let intern_ident' ist id =
   let lf = ref Id.Set.empty in
   (ist, intern_ident lf ist id)
 
+let intern_ltac ist tac =
+  Flags.with_option strict_check (fun () -> intern_pure_tactic ist tac) ()
+
 let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_ident intern_ident';
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
-  Genintern.register_intern0 wit_ltac (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_ltac (lift intern_ltac);
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
   Genintern.register_intern0 wit_constr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c));
@@ -792,15 +796,17 @@ let () =
   Genintern.register_intern0 wit_destruction_arg (lift intern_destruction_arg);
   ()
 
-(***************************************************************************)
-(* Backwarding recursive needs of tactic glob/interp/eval functions *)
+(** Substitution for notations containing tactic-in-terms *)
 
-let _ =
-  let f l =
-    let ltacvars =
-      List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l
-    in
-    Flags.with_option strict_check
-    (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars })
+let notation_subst bindings tac =
+  let fold id c accu =
+    let loc = Glob_ops.loc_of_glob_constr (fst c) in
+    let c = ConstrMayEval (ConstrTerm c) in
+    ((loc, id), c) :: accu
   in
-  Hook.set Hints.extern_intern_tac f
+  let bindings = Id.Map.fold fold bindings [] in
+  (** This is theoretically not correct due to potential variable capture, but
+      Ltac has no true variables so one cannot simply substitute *)
+  TacLetIn (false, bindings, tac)
+
+let () = Genintern.register_ntn_subst0 wit_tactic notation_subst

@@ -16,6 +16,7 @@ open Tacticals
 open Tacinterp
 open Libnames
 open Constrarg
+open Tacarg
 open Stdarg
 open Pcoq.Prim
 

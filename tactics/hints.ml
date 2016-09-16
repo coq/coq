@@ -20,11 +20,11 @@ open Namegen
 open Libnames
 open Smartlocate
 open Misctypes
+open Tactypes
 open Evd
 open Termops
 open Inductiveops
 open Typing
-open Tacexpr
 open Decl_kinds
 open Pattern
 open Patternops
@@ -40,6 +40,8 @@ module NamedDecl = Context.Named.Declaration
 (****************************************)
 (* General functions                    *)
 (****************************************)
+
+type debug = Debug | Info | Off
 
 exception Bound
 
@@ -803,7 +805,6 @@ let make_unfold eref =
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
-  let tacast = Genarg.in_gen (Genarg.glbwit Constrarg.wit_ltac) tacast in
   let hdconstr = Option.map try_head_pattern pat in
   (hdconstr,
    { pri = pri;
@@ -1081,8 +1082,6 @@ let add_trivials env sigma l local dbnames =
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let (forward_intern_tac, extern_intern_tac) = Hook.make ()
-
 type hnf = bool
 
 type hints_entry =
@@ -1093,7 +1092,7 @@ type hints_entry =
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
-      int * (patvar list * constr_pattern) option * glob_tactic_expr
+      int * (patvar list * constr_pattern) option * Genarg.glob_generic_argument
 
 let default_prepare_hint_ident = Id.of_string "H"
 
@@ -1183,7 +1182,9 @@ let interp_hints poly =
   | HintsExtern (pri, patcom, tacexp) ->
       let pat =	Option.map fp patcom in
       let l = match pat with None -> [] | Some (l, _) -> l in
-      let tacexp = Hook.get forward_intern_tac l tacexp in
+      let ltacvars = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
+      let env = Genintern.({ genv = env; ltacvars }) in
+      let _, tacexp = Genintern.generic_intern env tacexp in
       HintsExternEntry (pri, pat, tacexp)
 
 let add_hints local dbnames0 h =
@@ -1276,7 +1277,7 @@ let pr_hint h = match h.obj with
           env
         with e when CErrors.noncritical e -> Global.env ()
       in
-      (str "(*external*) " ++ Pptactic.pr_glb_generic env tac)
+      (str "(*external*) " ++ Pputils.pr_glb_generic env tac)
 
 let pr_id_hint (id, v) =
   (pr_hint v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())

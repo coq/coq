@@ -55,9 +55,6 @@ type inference_flags = {
   expand_evars : bool
 }
 
-type 'a delayed_open =
-  { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
-
 val default_inference_flags : bool -> inference_flags
 
 val no_classes_no_fail_inference_flags : inference_flags
@@ -120,7 +117,7 @@ val understand_judgment_tcc : env -> evar_map ref ->
 val type_uconstr :
   ?flags:inference_flags ->
   ?expected_type:typing_constraint ->
-  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr delayed_open
+  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr Tactypes.delayed_open
 
 (** Trying to solve remaining evars and remaining conversion problems
     possibly using type classes, heuristics, external tactic solver

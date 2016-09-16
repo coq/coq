@@ -25,9 +25,7 @@ module type Pp = sig
     ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
     ('c -> std_ppcmds) -> ('a,'b,'c) Genredexpr.may_eval -> std_ppcmds
 
-  val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
   val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
-  val pr_or_by_notation : ('a -> std_ppcmds) -> 'a or_by_notation -> std_ppcmds
 
   val pr_clauses :  bool option ->
     ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
