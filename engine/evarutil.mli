@@ -42,26 +42,26 @@ val new_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list -> ?store:Store.t ->
   ?naming:intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode ->
+  ?future_goal:bool -> ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list -> ?store:Store.t ->
   ?naming:intro_pattern_naming_expr ->
-  ?principal:bool ->
+  ?future_goal:bool -> ?principal:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
-
-val new_pure_evar_full : evar_map -> evar_info -> evar_map * Evar.t
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:intro_pattern_naming_expr ->
+  ?naming:intro_pattern_naming_expr -> ?future_goal:bool ->
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> rigid ->
   evar_map * (constr * Sorts.t)
+
+val new_pure_evar_full : evar_map -> evar_info -> evar_map * Evar.t
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 
@@ -79,7 +79,7 @@ val new_evar_instance :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?store:Store.t -> ?naming:intro_pattern_naming_expr ->
-  ?principal:bool ->
+  ?future_goal:bool -> ?principal:bool ->
  named_context_val -> evar_map -> types ->
   constr list -> evar_map * constr
 
@@ -288,13 +288,13 @@ val e_new_evar :
   env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
+  ?future_goal:bool -> ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
 [@@ocaml.deprecated "Use [Evarutil.new_evar]"]
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:intro_pattern_naming_expr ->
-  ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
+  ?future_goal:bool -> ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
 [@@ocaml.deprecated "Use [Evarutil.new_type_evar]"]
 
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr

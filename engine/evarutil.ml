@@ -432,7 +432,7 @@ let new_pure_evar_full evd evi =
   (evd, evk)
 
 let new_pure_evar ?(src=default_source) ?(filter = Filter.identity)  ?(abstract_arguments = Abstraction.identity)
-    ?candidates ?(store = Store.empty) ?naming ?(principal=false) sign evd typ =
+    ?candidates ?(store = Store.empty) ?naming ?(future_goal=true) ?(principal=false) sign evd typ =
   let default_naming = IntroAnonymous in
   let naming = Option.default default_naming naming in
   let name = match naming with
@@ -455,18 +455,20 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity)  ?(abstract_
   in
   let (evd, newevk) = Evd.new_evar evd ?name evi in
   let evd =
-    if principal then Evd.declare_principal_goal newevk evd
-    else Evd.declare_future_goal newevk evd
+    if future_goal then
+      if principal then Evd.declare_principal_goal newevk evd
+      else Evd.declare_future_goal newevk evd
+    else evd
   in
   (evd, newevk)
 
 let new_evar_instance ?src ?filter ?abstract_arguments ?candidates ?store ?naming
-    ?principal sign evd typ instance =
+    ?future_goal ?principal sign evd typ instance =
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
   let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?abstract_arguments ?candidates ?store ?naming
-                                    ?principal typ in
+                      ?future_goal ?principal typ in
   evd, mkEvar (newevk,Array.of_list instance)
 
 let new_evar_from_context ?src ?filter ?candidates ?store ?naming ?principal sign evd typ =
@@ -479,7 +481,7 @@ let new_evar_from_context ?src ?filter ?candidates ?store ?naming ?principal sig
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar ?src ?filter ?abstract_arguments ?candidates ?store ?naming ?principal ?hypnaming env evd typ =
+let new_evar ?src ?filter ?abstract_arguments ?candidates ?store ?naming ?future_goal ?principal ?hypnaming env evd typ =
   let sign,typ',instance,subst = push_rel_context_to_named_context ?hypnaming env evd typ in
   let map c = csubst_subst subst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
@@ -488,15 +490,15 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?store ?naming ?princi
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
   new_evar_instance sign evd typ' ?src ?filter ?abstract_arguments ?candidates ?store
-                    ?naming ?principal instance
+    ?naming ?future_goal ?principal instance
 
-let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
+let new_type_evar ?src ?filter ?naming ?future_goal ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
-  let (evd', e) = new_evar env evd' ?src ?filter ?naming ?principal ?hypnaming (EConstr.mkSort s) in
+  let (evd', e) = new_evar env evd' ?src ?filter ?naming ?future_goal ?principal ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
 
-let e_new_type_evar env evdref ?src ?filter ?naming ?principal ?hypnaming rigid =
-  let (evd, c) = new_type_evar env !evdref ?src ?filter ?naming ?principal ?hypnaming rigid in
+let e_new_type_evar env evdref ?src ?filter ?naming ?future_goal ?principal ?hypnaming rigid =
+  let (evd, c) = new_type_evar ?src ?filter ?naming ?future_goal ?principal ?hypnaming env !evdref rigid in
     evdref := evd;
     c
 
@@ -510,8 +512,10 @@ let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
     evdref := evd'; EConstr.mkSort s
 
   (* The same using side-effect *)
-let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?naming ?principal ?hypnaming ty =
-  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ?hypnaming ty in
+let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?naming
+               ?future_goal ?principal ?hypnaming ty =
+  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store
+                           ?naming ?future_goal ?principal ?hypnaming ty in
   evdref := evd';
   ev
 
