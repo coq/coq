@@ -407,7 +407,7 @@ let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
 let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
   ?(abstract_arguments = Abstraction.identity) ?candidates
-  ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
+  ?(naming = IntroAnonymous) ?typeclass_candidate ?(future_goal=true) ?(principal=false) sign evd typ =
   let name = match naming with
   | IntroAnonymous -> None
   | IntroIdentifier id -> Some id
@@ -434,15 +434,17 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
   let typeclass_candidate = if principal then Some false else typeclass_candidate in
   let (evd, newevk) = Evd.new_evar evd ?name ?typeclass_candidate evi in
   let evd =
-    if principal then Evd.declare_principal_goal newevk evd
-    else Evd.declare_future_goal newevk evd
+    if future_goal then
+      if principal then Evd.declare_principal_goal newevk evd
+      else Evd.declare_future_goal newevk evd
+    else evd
   in
   (evd, newevk)
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
-    ?principal ?hypnaming env evd typ =
+    ?future_goal ?principal ?hypnaming env evd typ =
   let sign,typ',instance,subst = push_rel_context_to_named_context ?hypnaming env evd typ in
   let map c = csubst_subst subst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
@@ -452,12 +454,13 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
     | Some filter -> Filter.filter_list filter instance in
   let identity = if Int.equal (Environ.nb_rel env) 0 then Some instance else None in
   let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?identity ?abstract_arguments ?candidates ?naming
-    ?typeclass_candidate ?principal in
+    ?typeclass_candidate ?future_goal ?principal in
   (evd, EConstr.mkEvar (evk, instance))
 
-let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
+let new_type_evar ?src ?filter ?naming ?future_goal ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
-  let (evd', e) = new_evar env evd' ?src ?filter ?naming ~typeclass_candidate:false ?principal ?hypnaming (EConstr.mkSort s) in
+  let (evd', e) = new_evar env evd' ?src ?filter ?naming ~typeclass_candidate:false
+    ?future_goal ?principal ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
 
 let new_Type ?(rigid=Evd.univ_flexible) evd =

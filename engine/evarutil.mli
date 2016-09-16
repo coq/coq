@@ -36,6 +36,7 @@ val new_evar :
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
   ?typeclass_candidate:bool ->
+  ?future_goal:bool ->
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> types -> evar_map * EConstr.t
 
@@ -54,6 +55,7 @@ val new_pure_evar :
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
   ?typeclass_candidate:bool ->
+  ?future_goal:bool ->
   ?principal:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
 
@@ -62,6 +64,7 @@ val new_pure_evar :
 val new_type_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:intro_pattern_naming_expr ->
+  ?future_goal:bool ->
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> rigid ->
   evar_map * (constr * Sorts.t)
