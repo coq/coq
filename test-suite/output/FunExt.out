@@ -1,6 +1,9 @@
 The command has indeed failed with message:
 Ltac call to "extensionality" failed.
-Tactic failure: Not a non-dependent hypothesis.
+Tactic failure: Not an extensional equality.
+The command has indeed failed with message:
+Ltac call to "extensionality" failed.
+Tactic failure: Not an extensional equality.
 The command has indeed failed with message:
 Ltac call to "extensionality" failed.
 Tactic failure: Not an extensional equality.
@@ -9,7 +12,7 @@ Ltac call to "extensionality" failed.
 Tactic failure: Not an extensional equality.
 The command has indeed failed with message:
 Ltac call to "extensionality" failed.
-Tactic failure: Not a non-dependent hypothesis.
+Tactic failure: Already an intensional equality.
 The command has indeed failed with message:
-Ltac call to "extensionality" failed.
-Tactic failure: Not an extensional equality.
+In nested Ltac calls to "extensionality" and "clearbody", last call failed.
+Error: Hypothesis e depends on the body of H'

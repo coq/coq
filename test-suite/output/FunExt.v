@@ -17,11 +17,9 @@ Fail extensionality in H.
 Fail extensionality in H''.
 Abort.
 
-(* Test rejection of dependent equality *)
+(* Test success on dependent equality *)
 Goal forall (p : forall x, S x = x + 1), p = p -> S = fun x => x + 1.
 intros p H.
-Fail extensionality in p.
-clear H.
 extensionality in p.
 assumption.
 Qed.
@@ -61,7 +59,7 @@ Section test2.
   Goal (fun b a c => f a b c) = (fun b a c => g a b c).
   Proof.
     extensionality in H.
-    match type of H with (fun b a c => f a b c) = (fun b' a' c' => g a' b' c') => idtac end.
+    match type of H with (fun b a => f a b) = (fun b' a' => g a' b') => idtac end.
     exact H.
   Qed.
 End test2.
@@ -123,7 +121,48 @@ Section test8.
   Goal True.
   Proof.
     extensionality in H.
-    match type of H with (fun (_ : True) a b c => f a b c) = (fun (_ : True) a' b' c' => g a' b' c') => idtac end.
+    match type of H with (fun (_ : True) => f) = (fun (_ : True) => g) => idtac end.
     constructor.
   Qed.
 End test8.
+
+Section test9.
+  Context A B C (D : forall a : A, C a -> Type) (f g : forall a : A, B -> forall c : C a, D a c)
+          (H : forall b a c, f a b c = g a b c).
+  Goal (fun b a c => f a b c) = (fun b a c => g a b c).
+  Proof.
+    pose H as H'.
+    extensionality in H.
+    extensionality in H'.
+    let T := type of H in let T' := type of H' in constr_eq T T'.
+    match type of H with (fun b a => f a b) = (fun b' a' => g a' b') => idtac end.
+    exact H'.
+  Qed.
+End test9.
+
+Section test10.
+  Context A B C (D : forall a : A, C a -> Type) (f g : forall a : A, B -> forall c : C a, D a c)
+          (H : f = g).
+  Goal True.
+  Proof.
+    Fail extensionality in H.
+    constructor.
+  Qed.
+End test10.
+
+Section test11.
+  Context A B C (D : forall a : A, C a -> Type) (f g : forall a : A, B -> forall c : C a, D a c)
+          (H : forall a b c, f a b c = f a b c).
+  Goal True.
+  Proof.
+    pose H as H'.
+    pose (eq_refl : H = H') as e.
+    extensionality in H.
+    Fail extensionality in H'.
+    clear e.
+    extensionality in H'.
+    let T := type of H in let T' := type of H' in constr_eq T T'.
+    lazymatch type of H with f = f => idtac end.
+    constructor.
+  Qed.
+End test11.
