@@ -12,7 +12,6 @@ open Misctypes
 open Class_tactics
 open Pltac
 open Stdarg
-open Constrarg
 open Tacarg
 
 DECLARE PLUGIN "g_class"

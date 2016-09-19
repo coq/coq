@@ -11,7 +11,6 @@
 open Pp
 open Genarg
 open Stdarg
-open Constrarg
 open Pcoq.Prim
 open Pcoq.Constr
 open Pltac

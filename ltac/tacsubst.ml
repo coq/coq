@@ -10,7 +10,7 @@ open Util
 open Tacexpr
 open Mod_subst
 open Genarg
-open Constrarg
+open Stdarg
 open Tacarg
 open Misctypes
 open Globnames

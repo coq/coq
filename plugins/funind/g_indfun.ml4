@@ -14,7 +14,7 @@ open Constrexpr
 open Indfun_common
 open Indfun
 open Genarg
-open Constrarg
+open Stdarg
 open Misctypes
 open Pcoq.Prim
 open Pcoq.Constr

@@ -15,7 +15,6 @@ open Printer
 open Newring_ast
 open Newring
 open Stdarg
-open Constrarg
 open Tacarg
 open Pcoq.Constr
 open Pltac

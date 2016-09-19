@@ -23,7 +23,7 @@ open Constrexpr
 open Termops
 open Tacexpr
 open Genarg
-open Constrarg
+open Stdarg
 open Tacarg
 open Misctypes
 open Locus

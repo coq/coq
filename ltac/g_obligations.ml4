@@ -17,7 +17,6 @@ open Libnames
 open Constrexpr
 open Constrexpr_ops
 open Stdarg
-open Constrarg
 open Tacarg
 open Extraargs
 

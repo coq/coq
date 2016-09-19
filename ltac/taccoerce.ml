@@ -13,7 +13,6 @@ open Pattern
 open Misctypes
 open Genarg
 open Stdarg
-open Constrarg
 open Geninterp
 
 exception CannotCoerceTo of string

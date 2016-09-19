@@ -10,7 +10,6 @@
 
 open Cctac
 open Stdarg
-open Constrarg
 
 DECLARE PLUGIN "cc_plugin"
 

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Constrarg
+open Stdarg
 
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 

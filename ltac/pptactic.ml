@@ -15,7 +15,7 @@ open Constrexpr
 open Tacexpr
 open Genarg
 open Geninterp
-open Constrarg
+open Stdarg
 open Tacarg
 open Libnames
 open Ppextend
@@ -1261,53 +1261,53 @@ let () =
   let pr_bool b = if b then str "true" else str "false" in
   let pr_unit _ = str "()" in
   let pr_string s = str "\"" ++ str s ++ str "\"" in
-  Genprint.register_print0 Constrarg.wit_int_or_var
+  Genprint.register_print0 wit_int_or_var
     (pr_or_var int) (pr_or_var int) int;
-  Genprint.register_print0 Constrarg.wit_ref
+  Genprint.register_print0 wit_ref
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
-  Genprint.register_print0 Constrarg.wit_ident
+  Genprint.register_print0 wit_ident
     pr_id pr_id pr_id;
-  Genprint.register_print0 Constrarg.wit_var
+  Genprint.register_print0 wit_var
     (pr_located pr_id) (pr_located pr_id) pr_id;
   Genprint.register_print0
-    Constrarg.wit_intro_pattern
+    wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)
     (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
     (Miscprint.pr_intro_pattern (fun c -> pr_constr (fst (run_delayed c))));
   Genprint.register_print0
-    Constrarg.wit_clause_dft_concl
+    wit_clause_dft_concl
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) (fun id -> pr_lident (Loc.ghost,id)))
   ;
   Genprint.register_print0
-    Constrarg.wit_constr
+    wit_constr
     Ppconstr.pr_constr_expr
     (fun (c, _) -> Printer.pr_glob_constr c)
     Printer.pr_constr
   ;
   Genprint.register_print0
-    Constrarg.wit_uconstr
+    wit_uconstr
     Ppconstr.pr_constr_expr
     (fun (c,_) -> Printer.pr_glob_constr c)
     Printer.pr_closed_glob
   ;
   Genprint.register_print0
-    Constrarg.wit_open_constr
+    wit_open_constr
     Ppconstr.pr_constr_expr
     (fun (c, _) -> Printer.pr_glob_constr c)
     Printer.pr_constr
   ;
-  Genprint.register_print0 Constrarg.wit_red_expr
+  Genprint.register_print0 wit_red_expr
     (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_reference, pr_constr_pattern_expr))
     (pr_red_expr (pr_and_constr_expr pr_glob_constr, pr_and_constr_expr pr_lglob_constr, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr))
     (pr_red_expr (pr_constr, pr_lconstr, pr_evaluable_reference, pr_constr_pattern));
-  Genprint.register_print0 Constrarg.wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
-  Genprint.register_print0 Constrarg.wit_bindings
+  Genprint.register_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
+  Genprint.register_print0 wit_bindings
     (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_bindings_no_with pr_constr pr_lconstr (fst (run_delayed it)));
-  Genprint.register_print0 Constrarg.wit_constr_with_bindings
+  Genprint.register_print0 wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_with_bindings pr_constr pr_lconstr (fst (run_delayed it)));

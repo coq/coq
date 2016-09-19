@@ -19,7 +19,7 @@ open Names
 open Pp
 open Pcoq
 open Genarg
-open Constrarg
+open Stdarg
 open Tacarg
 open Term
 open Vars

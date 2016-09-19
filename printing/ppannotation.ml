@@ -9,7 +9,6 @@
 open Ppextend
 open Constrexpr
 open Vernacexpr
-open Tacexpr
 open Genarg
 
 type t =

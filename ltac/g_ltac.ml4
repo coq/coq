@@ -32,8 +32,8 @@ let arg_of_expr = function
 
 let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
-let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
-let genarg_of_uconstr c = in_gen (rawwit Constrarg.wit_uconstr) c
+let genarg_of_ipattern pat = in_gen (rawwit Stdarg.wit_intro_pattern) pat
+let genarg_of_uconstr c = in_gen (rawwit Stdarg.wit_uconstr) c
 let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 
 let reference_to_id = function
@@ -353,7 +353,7 @@ GEXTEND Gram
   ;
   END
 
-open Constrarg
+open Stdarg
 open Tacarg
 open Vernacexpr
 open Vernac_classifier

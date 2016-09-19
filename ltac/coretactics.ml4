@@ -13,7 +13,7 @@ open Names
 open Locus
 open Misctypes
 open Genredexpr
-open Constrarg
+open Stdarg
 open Extraargs
 
 open Sigma.Notations

@@ -16,7 +16,7 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Constrarg
+open Stdarg
 open Tacarg
 
 DECLARE PLUGIN "micromega_plugin"

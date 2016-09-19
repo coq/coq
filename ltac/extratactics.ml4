@@ -11,7 +11,6 @@
 open Pp
 open Genarg
 open Stdarg
-open Constrarg
 open Tacarg
 open Extraargs
 open Pcoq.Prim
@@ -28,7 +27,6 @@ open Equality
 open Misctypes
 open Sigma.Notations
 open Proofview.Notations
-open Constrarg
 
 DECLARE PLUGIN "extratactics"
 

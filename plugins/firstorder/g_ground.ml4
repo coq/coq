@@ -15,9 +15,8 @@ open Goptions
 open Tacticals
 open Tacinterp
 open Libnames
-open Constrarg
-open Tacarg
 open Stdarg
+open Tacarg
 open Pcoq.Prim
 
 DECLARE PLUGIN "ground_plugin"

@@ -23,6 +23,8 @@ The following type aliases where removed
 
   Context.section_context    ... it was just an alias for "Context.Named.t" which is still available
 
+The module Constrarg was merged into Stdarg.
+
 ** Ltac API **
 
 Many Ltac specific API has been moved in its own ltac/ folder. Amongst other
