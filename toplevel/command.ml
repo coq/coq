@@ -140,21 +140,21 @@ let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd (Evd.empty,evd);
   ce
 
-let warn_local_let_definition =
-  CWarnings.create ~name:"local-let-definition" ~category:"scope"
-         (fun id ->
-          pr_id id ++ strbrk " is declared as a local definition")
+let warn_local_declaration =
+  CWarnings.create ~name:"local-declaration" ~category:"scope"
+         (fun (id,kind) ->
+          pr_id id ++ strbrk " is declared as a local " ++ str kind)
 
-let get_locality id = function
+let get_locality id ~kind = function
 | Discharge ->
   (** If a Let is defined outside a section, then we consider it as a local definition *)
-   warn_local_let_definition id;
+   warn_local_declaration (id,kind);
   true
 | Local -> true
 | Global -> false
 
 let declare_global_definition ident ce local k pl imps =
-  let local = get_locality ident local in
+  let local = get_locality ident ~kind:"definition" local in
   let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -238,7 +238,7 @@ match local with
   (r,Univ.Instance.empty,true)
 
 | Global | Local | Discharge ->
-  let local = get_locality ident local in
+  let local = get_locality ident ~kind:"axiom" local in
   let inl = match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
