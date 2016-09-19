@@ -1009,6 +1009,11 @@ module Goal = struct
 
   let raw_concl { concl=concl } = concl
 
+  let equal gl1 gl2 =
+    let eq_hyps = CList.equal Context.Named.Declaration.equal in
+    let eq_concl = Constr.equal in
+    eq_concl (concl gl1) (concl gl2) && eq_hyps (hyps gl1) (hyps gl2)
+
 
   let gmake_with info env sigma goal = 
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;

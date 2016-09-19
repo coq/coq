@@ -472,6 +472,17 @@ is raised.
 
 \ErrMsg \errindex{Failed to progress}
 
+\begin{Variants}
+  \item {\tt strong_progress} {\tacexpr}
+
+    It has the same behaviour as {\tt progress} {\tacexpr} except that
+    the criterion to assess progress is more stringent: a tactic $t$
+    is considered to have strongly progressed if the set of focused
+    goals before $t$ was applied is a subset of the focused goals
+    after $t$ is done.
+
+\end{Variants}
+
 \subsubsection[Backtracking branching]{Backtracking branching\tacindex{$+$}
 \index{Tacticals!or@{\tt $+$}}}
 
