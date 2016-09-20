@@ -391,7 +391,7 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
+type variable_info = Context.Named.Declaration.t * Decl_kinds.implicit_status
 
 type variable_context = variable_info list
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
@@ -399,7 +399,7 @@ type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
-  | Variable of (Names.Id.t * Decl_kinds.binding_kind *
+  | Variable of (Names.Id.t * Decl_kinds.implicit_status *
 		   Decl_kinds.polymorphic * Univ.universe_context_set)
   | Context of Univ.universe_context_set
 

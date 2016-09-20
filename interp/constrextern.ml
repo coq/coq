@@ -808,7 +808,7 @@ and factorize_prod scopes vars na bk aty c =
   let c = extern_typ scopes vars c in
   match na, c with
   | Name id, CProdN (loc,[nal,Default bk',ty],c)
-      when binding_kind_eq bk bk' && constr_expr_eq aty ty
+      when implicit_status_eq bk bk' && constr_expr_eq aty ty
       && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
       nal,c
   | _ ->
@@ -818,7 +818,7 @@ and factorize_lambda inctx scopes vars na bk aty c =
   let c = sub_extern inctx scopes vars c in
   match c with
   | CLambdaN (loc,[nal,Default bk',ty],c)
-      when binding_kind_eq bk bk' && constr_expr_eq aty ty
+      when implicit_status_eq bk bk' && constr_expr_eq aty ty
       && not (occur_name na ty) (* avoid na in ty escapes scope *) ->
       nal,c
   | _ ->

@@ -10,7 +10,10 @@
 
 type locality = Discharge | Local | Global
 
-type binding_kind = Explicit | Implicit
+type implicit_status = Explicit | Implicit
+
+type binding_kind = implicit_status
+(** @deprecated Alias type *)
 
 type polymorphic = bool
 

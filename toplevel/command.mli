@@ -55,7 +55,7 @@ val do_definition : Id.t -> definition_kind -> lident list option ->
 val declare_assumption : coercion_flag -> assumption_kind -> 
   types Univ.in_universe_context_set ->
   Universes.universe_binders -> Impargs.manual_implicits ->
-  binding_kind -> Vernacexpr.inline -> variable Loc.located ->
+  implicit_status -> Vernacexpr.inline -> variable Loc.located ->
   global_reference * Univ.Instance.t * bool
 
 val do_assumptions : assumption_kind ->

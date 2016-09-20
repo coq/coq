@@ -25,7 +25,7 @@ type section_variable_entry =
   | SectionLocalDef of Safe_typing.private_constants definition_entry
   | SectionLocalAssum of { type_context : types Univ.in_universe_context_set;
                            polymorphic : bool;
-                           binding_kind : binding_kind }
+                           implicit_status : implicit_status }
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 

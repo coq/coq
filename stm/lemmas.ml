@@ -241,7 +241,7 @@ let save_remaining_recthms { locality; polymorphic; object_kind }
           let k = IsAssumption Conjectural in
           let c = SectionLocalAssum { type_context = (t_i,ctx);
                                       polymorphic;
-                                      binding_kind = impl }
+                                      implicit_status = impl }
           in
           let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)

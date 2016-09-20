@@ -230,7 +230,7 @@ let declare_assumption is_coe assumption_kind (c,ctx) pl imps impl nl (_,ident) 
   | Discharge when Lib.sections_are_opened () ->
      let entry = SectionLocalAssum { type_context = (c,ctx);
                                      polymorphic;
-                                     binding_kind = impl }
+                                     implicit_status = impl }
      in
      let decl = (Lib.cwd(), entry, IsAssumption kind) in
      let _ = declare_variable ident decl in

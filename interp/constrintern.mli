@@ -75,7 +75,7 @@ type ltac_sign = {
 
 val empty_ltac_sign : ltac_sign
 
-type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
+type glob_binder = (Name.t * implicit_status * glob_constr option * glob_constr)
 
 (** {6 Internalization performs interpretation of global names and notations } *)
 

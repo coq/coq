@@ -46,7 +46,7 @@ type section_variable_entry =
   | SectionLocalDef of Safe_typing.private_constants definition_entry
   | SectionLocalAssum of { type_context : types Univ.in_universe_context_set;
                            polymorphic : bool;
-                           binding_kind : binding_kind }
+                           implicit_status : implicit_status }
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
@@ -59,9 +59,9 @@ let cache_variable ((sp,_),o) =
     alreadydeclared (pr_id id ++ str " already exists");
 
   let impl,opaque,polymorphic,ctx = match d with (* Fails if not well-typed *)
-    | SectionLocalAssum { type_context = (ty,ctx); polymorphic; binding_kind } ->
+    | SectionLocalAssum { type_context = (ty,ctx); polymorphic; implicit_status } ->
       let () = Global.push_named_assum ((id,ty,polymorphic),ctx) in
-	binding_kind, true, polymorphic, ctx
+	implicit_status, true, polymorphic, ctx
     | SectionLocalDef (de) ->
       let univs = Global.push_named_def (id,de) in
       Explicit, de.const_entry_opaque,
