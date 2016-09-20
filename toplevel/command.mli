@@ -32,7 +32,7 @@ val get_declare_definition_hook : unit -> (Safe_typing.private_constants definit
 (** {6 Definitions/Let} *)
 
 val interp_definition :
-  lident list option -> local_binder list -> polymorphic -> red_expr option -> constr_expr ->
+  lident list option -> local_binder list -> polymorphic:bool -> red_expr option -> constr_expr ->
   constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * 
       Universes.universe_binders * Impargs.manual_implicits
 
@@ -55,10 +55,10 @@ val do_definition : Id.t -> definition_kind -> lident list option ->
 val declare_assumption : coercion_flag -> assumption_kind -> 
   types Univ.in_universe_context_set ->
   Universes.universe_binders -> Impargs.manual_implicits ->
-  bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located ->
+  binding_kind -> Vernacexpr.inline -> variable Loc.located ->
   global_reference * Univ.Instance.t * bool
 
-val do_assumptions : locality * polymorphic * assumption_object_kind ->
+val do_assumptions : assumption_kind ->
   Vernacexpr.inline -> (plident list * constr_expr) with_coercion list -> bool
 
 (* val declare_assumptions : variable Loc.located list -> *)

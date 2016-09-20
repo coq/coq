@@ -31,7 +31,7 @@ val declare_instance_constant :
   ?hook:(Globnames.global_reference -> unit) ->
   Id.t -> (** name *)
   Id.t Loc.located list option ->
-  bool -> (* polymorphic *)
+  polymorphic:bool ->
   Evd.evar_map -> (* Universes *)
   Constr.t -> (** body *)
   Term.types -> (** type *)
@@ -41,7 +41,7 @@ val new_instance :
   ?abstract:bool -> (** Not abstract by default. *)
   ?global:bool -> (** Not global by default. *)
   ?refine:bool -> (** Allow refinement *)
-  Decl_kinds.polymorphic ->
+  polymorphic:bool ->
   local_binder list ->
   typeclass_constraint ->
   (bool * constr_expr) option ->

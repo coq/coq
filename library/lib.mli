@@ -176,11 +176,11 @@ val variable_section_segment_of_reference : Globnames.global_reference -> variab
 val section_instance : Globnames.global_reference -> Univ.universe_instance * Names.Id.t array
 val is_in_section : Globnames.global_reference -> bool
 
-val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.universe_context_set -> unit
+val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> polymorphic:bool -> Univ.universe_context_set -> unit
 val add_section_context : Univ.universe_context_set -> unit
-val add_section_constant : Decl_kinds.polymorphic ->
+val add_section_constant : polymorphic:bool ->
   Names.constant -> Context.Named.t -> unit
-val add_section_kn : Decl_kinds.polymorphic ->
+val add_section_kn : polymorphic:bool ->
   Names.mutual_inductive -> Context.Named.t -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 

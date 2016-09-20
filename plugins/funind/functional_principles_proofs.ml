@@ -996,7 +996,9 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
       Ensures by: obvious
       i*)
     (mk_equation_id f_id)
-    (Decl_kinds.Global, Flags.is_universe_polymorphism (), (Decl_kinds.Proof Decl_kinds.Theorem))
+    Decl_kinds.{ locality = Global;
+                 polymorphic = Flags.is_universe_polymorphism ();
+                 object_kind = Proof Theorem }
     evd
   lemma_type
   (Lemmas.mk_hook (fun _ _ -> ()));

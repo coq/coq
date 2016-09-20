@@ -1755,7 +1755,7 @@ let declare_an_instance n s args =
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
-  new_instance (Flags.is_universe_polymorphism ()) 
+  new_instance ~polymorphic:(Flags.is_universe_polymorphism ()) 
     binders instance (Some (true, CRecord (Loc.ghost,fields)))
     ~global ~generalize:false ~refine:false None
 
@@ -1828,7 +1828,7 @@ let proper_projection r ty =
     it_mkLambda_or_LetIn app ctx
 
 let declare_projection n instance_id r =
-  let poly = Global.is_polymorphic r in
+  let polymorphic = Global.is_polymorphic r in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma,c = Evd.fresh_global env sigma r in
@@ -1858,7 +1858,7 @@ let declare_projection n instance_id r =
   let typ = it_mkProd_or_LetIn typ ctx in
   let pl, ctx = Evd.universe_context sigma in
   let cst = 
-    Declare.definition_entry ~types:typ ~poly ~univs:ctx term
+    Declare.definition_entry ~types:typ ~polymorphic ~univs:ctx term
   in
     ignore(Declare.declare_constant n 
 	   (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
@@ -1942,8 +1942,9 @@ let add_morphism_infer glob m n =
 			poly (ConstRef cst));
 	declare_projection n instance_id (ConstRef cst)
     else
-      let kind = Decl_kinds.Global, poly, 
-	Decl_kinds.DefinitionBody Decl_kinds.Instance 
+      let kind = { locality = Decl_kinds.Global;
+                   polymorphic = poly;
+                   object_kind = Decl_kinds.DefinitionBody Decl_kinds.Instance }
       in
       let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
       let hook _ = function
@@ -1962,7 +1963,7 @@ let add_morphism_infer glob m n =
 
 let add_morphism glob binders m s n =
   init_setoid ();
-  let poly = Flags.is_universe_polymorphism () in
+  let polymorphic = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in
   let instance =
     (((Loc.ghost,Name instance_id),None), Explicit,
@@ -1971,7 +1972,7 @@ let add_morphism glob binders m s n =
 	     [cHole; s; m]))
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-    ignore(new_instance ~global:glob poly binders instance 
+    ignore(new_instance ~global:glob ~polymorphic binders instance 
 	     (Some (true, CRecord (Loc.ghost,[])))
 	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
 

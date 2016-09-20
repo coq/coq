@@ -426,7 +426,7 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class finite def poly ctx id idbuild paramimpls params arity 
+let declare_class finite def ~polymorphic ctx id idbuild paramimpls params arity 
     template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities sign =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -441,11 +441,11 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
       let class_body = it_mkLambda_or_LetIn field params in
       let class_type = it_mkProd_or_LetIn arity params in
       let class_entry = 
-	Declare.definition_entry ~types:class_type ~poly ~univs:ctx class_body in
+	Declare.definition_entry ~types:class_type ~polymorphic ~univs:ctx class_body in
       let cst = Declare.declare_constant (snd id)
 	(DefinitionEntry class_entry, IsDefinition Definition)
       in
-      let cstu = (cst, if poly then Univ.UContext.instance ctx else Univ.Instance.empty) in
+      let cstu = (cst, if polymorphic then Univ.UContext.instance ctx else Univ.Instance.empty) in
       let inst_type = appvectc (mkConstU cstu)
 			       (Termops.rel_vect 0 (List.length params)) in
       let proj_type =
@@ -453,8 +453,8 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
       let proj_body =
 	it_mkLambda_or_LetIn (mkLambda (Name binder_name, inst_type, mkRel 1)) params in
       let proj_entry =
-	Declare.definition_entry ~types:proj_type ~poly
-	    ~univs:(if poly then ctx else Univ.UContext.empty) proj_body
+	Declare.definition_entry ~types:proj_type ~polymorphic
+	    ~univs:(if polymorphic then ctx else Univ.UContext.empty) proj_body
       in
       let proj_cst = Declare.declare_constant proj_name
         (DefinitionEntry proj_entry, IsDefinition Definition)
@@ -469,7 +469,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
       in
       cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
-       let ind = declare_structure BiFinite poly ctx (snd id) idbuild paramimpls
+       let ind = declare_structure BiFinite polymorphic ctx (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
 	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
        in

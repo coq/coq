@@ -395,7 +395,9 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
       let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
       Command.do_definition
 	fname
-	(Decl_kinds.Global,(Flags.is_universe_polymorphism ()),Decl_kinds.Definition) pl
+        { locality = Decl_kinds.Global;
+          polymorphic = Flags.is_universe_polymorphism ();
+          object_kind = Decl_kinds.Definition } pl
 	bl None body (Some ret_type) (Lemmas.mk_hook (fun _ _ -> ()));
        let evd,rev_pconstants =
 	 List.fold_left

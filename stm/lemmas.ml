@@ -191,11 +191,12 @@ let look_for_possibly_mutual_statements = function
 
 (* Saving a goal *)
 
-let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
+let save ?export_seff id const cstrs pl do_guard
+         { locality; polymorphic; object_kind } hook =
   let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
   try
     let const = adjust_guardness_conditions const do_guard in
-    let k = Kindops.logical_kind_of_goal_kind kind in
+    let k = Kindops.logical_kind_of_goal_kind object_kind in
     let l,r = match locality with
       | Discharge when Lib.sections_are_opened () ->
           let c = SectionLocalDef const in
@@ -229,16 +230,20 @@ let compute_proof_name locality = function
   | None ->
       next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()), None
 
-let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,(_,imps))) =
+let save_remaining_recthms { locality; polymorphic; object_kind }
+                           norm ctx body opaq i ((id,pl),(t_i,(_,imps))) =
   let t_i = norm t_i in
   match body with
   | None ->
       (match locality with
       | Discharge ->
-          let impl = false in (* copy values from Vernacentries *)
+          let impl = Explicit in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
-          let c = SectionLocalAssum ((t_i,ctx),p,impl) in
-	  let _ = declare_variable id (Lib.cwd(),c,k) in
+          let c = SectionLocalAssum { type_context = (t_i,ctx);
+                                      polymorphic;
+                                      binding_kind = impl }
+          in
+          let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
           let k = IsAssumption Conjectural in
@@ -248,12 +253,12 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
           | Discharge -> assert false
           in
           let ctx = Univ.ContextSet.to_context ctx in
-          let decl = (ParameterEntry (None,p,(t_i,ctx),None), k) in
+          let decl = (ParameterEntry (None,polymorphic,(t_i,ctx),None), k) in
           let kn = declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
   | Some body ->
       let body = norm body in
-      let k = Kindops.logical_kind_of_goal_kind kind in
+      let k = Kindops.logical_kind_of_goal_kind object_kind in
       let rec body_i t = match kind_of_term t with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
         | CoFix (0,decls) -> mkCoFix (i,decls)
@@ -264,7 +269,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
       let body_i = body_i body in
       match locality with
       | Discharge ->
-          let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
+          let const = definition_entry ~types:t_i ~opaque:opaq ~polymorphic 
 	    ~univs:(Univ.ContextSet.to_context ctx) body_i in
 	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
@@ -277,7 +282,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
         | Discharge -> assert false
         in
         let const =
-	  Declare.definition_entry ~types:t_i ~poly:p ~univs:ctx ~opaque:opaq body_i
+	  Declare.definition_entry ~types:t_i ~polymorphic ~univs:ctx ~opaque:opaq body_i
 	in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)
@@ -303,7 +308,10 @@ let save_anonymous_with_strength ?export_seff proof kind save_ident =
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)
   save ?export_seff save_ident const cstrs pl do_guard
-      (Global, const.const_entry_polymorphic, Proof kind) hook
+       { locality = Global;
+         polymorphic = const.const_entry_polymorphic;
+         object_kind = Proof kind}
+       hook
 
 (* Admitted *)
 
@@ -314,9 +322,9 @@ let warn_let_as_axiom =
 
 let admit (id,k,e) pl hook () =
   let kn = declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
-  let () = match k with
-  | Global, _, _ -> ()
-  | Local, _, _ | Discharge, _, _ -> warn_let_as_axiom id
+  let () = match k.locality with
+  | Global -> ()
+  | Local | Discharge -> warn_let_as_axiom id
   in
   let () = assumption_message id in
   Option.iter (Universes.register_universe_binders (ConstRef kn)) pl;
@@ -463,7 +471,7 @@ let start_proof_com kind thms hook =
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
     evdref := solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref);
     let ids = List.map RelDecl.get_name ctx in
-      (compute_proof_name (pi1 kind) sopt,
+      (compute_proof_name kind.locality sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),
        guard)))
@@ -477,7 +485,7 @@ let start_proof_com kind thms hook =
     | Some l -> ignore (Evd.universe_context evd ?names:l)
   in
   let evd =
-    if pi2 kind then evd
+    if kind.polymorphic then evd
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
@@ -512,7 +520,7 @@ let save_proof ?proof = function
             let typ = Option.get const_entry_type in
             let ctx = Evd.evar_context_universe_context (fst universes) in
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
-            Admitted(id, k, (sec_vars, pi2 k, (typ, ctx), None), universes)
+            Admitted(id, k, (sec_vars, k.polymorphic, (typ, ctx), None), universes)
         | None ->
             let pftree = Pfedit.get_pftreestate () in
             let id, k, typ = Pfedit.current_proof_statement () in
@@ -533,7 +541,7 @@ let save_proof ?proof = function
 	    let names = Pfedit.get_universe_binders () in
             let evd = Evd.from_ctx universes in
             let binders, ctx = Evd.universe_context ?names evd in
-            Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None),
+            Admitted(id,k,(sec_vars, k.polymorphic, (typ, ctx), None),
 		     (universes, Some binders))
       in
       Proof_global.apply_terminator (Proof_global.get_terminator ()) pe

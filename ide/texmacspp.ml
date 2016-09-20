@@ -546,7 +546,8 @@ let rec tmpp v loc =
         | DefineBody (_, None  , ce, None) -> ce
         | DefineBody (_, Some _, ce, Some _) -> ce
         | DefineBody (_, None  , ce, Some _) -> ce in
-      let str_dk = Kindops.string_of_definition_kind (l, false, dk) in
+      let def_kind = { locality = l; polymorphic = false; object_kind = dk } in
+      let str_dk = Kindops.string_of_definition_kind def_kind in
       let str_id = Id.to_string id in
       (xmlDef str_dk str_id loc [pp_expr e])
   | VernacStartTheoremProof (tk, [ Some ((_,id),_), ([], statement, None) ], b) ->

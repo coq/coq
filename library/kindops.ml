@@ -24,9 +24,9 @@ let string_of_theorem_kind = function
   | Corollary -> "Corollary"
 
 let string_of_definition_kind def =
-  let (locality, poly, kind) = def in
+  let locality = def.locality in
   let error () = CErrors.anomaly (Pp.str "Internal definition kind") in
-  match kind with
+  match def.object_kind with
   | Definition ->
     begin match locality with
     | Discharge -> "Let"

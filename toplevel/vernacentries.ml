@@ -469,15 +469,22 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-	  start_proof_and_print (local,p,DefinitionBody k)
-	    [Some (lid,pl), (bl,t,None)] hook
+       let goal_kind = { locality = local;
+                         polymorphic = p;
+                         object_kind = DefinitionBody k }
+       in
+       start_proof_and_print goal_kind [Some (lid,pl), (bl,t,None)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
           | Some r ->
-	      let (evc,env)= get_current_context () in
- 		Some (snd (Hook.get f_interp_redexp env evc r)) in
-	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
+             let (evc,env)= get_current_context () in
+             Some (snd (Hook.get f_interp_redexp env evc r)) in
+        let def_kind = { locality = local;
+                         polymorphic = p;
+                         object_kind = k }
+        in
+        do_definition id def_kind pl bl red_option c typ_opt hook)
 
 let vernac_start_proof locality p kind l lettop =
   let local = enforce_locality_exp locality None in
@@ -490,7 +497,11 @@ let vernac_start_proof locality p kind l lettop =
     if lettop then
       user_err ~hdr:"Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
-  start_proof_and_print (local, p, Proof kind) l no_hook
+  let goal_kind = { locality = local;
+                    polymorphic = p;
+                    object_kind = Proof kind }
+  in
+  start_proof_and_print goal_kind l no_hook
 
 let qed_display_script = ref true
 
@@ -514,7 +525,10 @@ let vernac_exact_proof c =
 let vernac_assumption locality poly (local, kind) l nl =
   let local = enforce_locality_exp locality local in
   let global = local == Global in
-  let kind = local, poly, kind in
+  let kind = {locality = local;
+              polymorphic = poly;
+              object_kind = kind }
+  in
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
@@ -814,10 +828,10 @@ let vernac_identity_coercion locality poly local id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance abst locality poly sup inst props pri =
+let vernac_instance abst locality ~polymorphic sup inst props pri =
   let global = not (make_section_locality locality) in
   Dumpglob.dump_constraint inst false "inst";
-  ignore(Classes.new_instance ~abstract:abst ~global poly sup inst props pri)
+  ignore(Classes.new_instance ~abstract:abst ~global ~polymorphic sup inst props pri)
 
 let vernac_context poly l =
   if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom

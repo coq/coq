@@ -44,7 +44,9 @@ let if_xml f x = if !Flags.xml_export then f x else ()
 
 type section_variable_entry =
   | SectionLocalDef of Safe_typing.private_constants definition_entry
-  | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
+  | SectionLocalAssum of { type_context : types Univ.in_universe_context_set;
+                           polymorphic : bool;
+                           binding_kind : binding_kind }
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
@@ -56,19 +58,22 @@ let cache_variable ((sp,_),o) =
   if variable_exists id then
     alreadydeclared (pr_id id ++ str " already exists");
 
-  let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
-    | SectionLocalAssum ((ty,ctx),poly,impl) ->
-      let () = Global.push_named_assum ((id,ty,poly),ctx) in
-      let impl = if impl then Implicit else Explicit in
-	impl, true, poly, ctx
+  let impl,opaque,polymorphic,ctx = match d with (* Fails if not well-typed *)
+    | SectionLocalAssum { type_context = (ty,ctx); polymorphic; binding_kind } ->
+      let () = Global.push_named_assum ((id,ty,polymorphic),ctx) in
+	binding_kind, true, polymorphic, ctx
     | SectionLocalDef (de) ->
       let univs = Global.push_named_def (id,de) in
       Explicit, de.const_entry_opaque,
       de.const_entry_polymorphic, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
-  add_section_variable id impl poly ctx;
+  add_section_variable id impl ~polymorphic ctx;
   Dischargedhypsmap.set_discharged_hyps sp [];
-  add_variable_data id (p,opaq,ctx,poly,mk)
+  add_variable_data id { dir_path = p;
+                         opaque;
+                         universe_context_set = ctx;
+                         polymorphic;
+                         kind = mk }
 
 let discharge_variable (_,o) = match o with
   | Inr (id,_) ->
@@ -236,11 +241,11 @@ let declare_constant_common id cst =
   c
 
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
-    ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Safe_typing.empty_private_constants) body =
+    ?(polymorphic=false) ?(univs=Univ.UContext.empty) ?(eff=Safe_typing.empty_private_constants) body =
   { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
-    const_entry_polymorphic = poly;
+    const_entry_polymorphic = polymorphic;
     const_entry_universes = univs;
     const_entry_opaque = opaque;
     const_entry_feedback = None;
@@ -272,9 +277,9 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
 
 let declare_definition ?(internal=UserIndividualRequest)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
-  ?(poly=false) id ?types (body,ctx) =
+  ?(polymorphic=false) id ?types (body,ctx) =
   let cb =
-    definition_entry ?types ~poly ~univs:(Univ.ContextSet.to_context ctx) ~opaque body
+    definition_entry ?types ~polymorphic ~univs:(Univ.ContextSet.to_context ctx) ~opaque body
   in
     declare_constant ~internal ~local id
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
@@ -458,10 +463,10 @@ let input_universes : universe_decl -> Libobject.obj =
       discharge_function = (fun (_, (p, _ as x)) -> if p then None else Some x);
       classify_function = (fun a -> Keep a) }
 
-let do_universe poly l =
+let do_universe ~polymorphic l =
   let in_section = Lib.sections_are_opened () in
   let () =
-    if poly && not in_section then
+    if polymorphic && not in_section then
       user_err ~hdr:"Constraint"
                    (str"Cannot declare polymorphic universes outside sections")
   in
@@ -470,7 +475,7 @@ let do_universe poly l =
 	      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
 	      (id, lev)) l
   in
-    Lib.add_anonymous_leaf (input_universes (poly, l))
+    Lib.add_anonymous_leaf (input_universes (polymorphic, l))
 
 type constraint_decl = polymorphic * Univ.constraints
 
@@ -490,7 +495,7 @@ let input_constraints : constraint_decl -> Libobject.obj =
       discharge_function = discharge_constraints;
       classify_function = (fun a -> Keep a) }
 
-let do_constraint poly l =
+let do_constraint ~polymorphic l =
   let u_of_id =
     let names, _ = Universes.global_universe_names () in
     fun (loc, id) ->
@@ -500,12 +505,12 @@ let do_constraint poly l =
   in
   let in_section = Lib.sections_are_opened () in
   let () =
-    if poly && not in_section then
+    if polymorphic && not in_section then
       user_err ~hdr:"Constraint"
                     (str"Cannot declare polymorphic constraints outside sections")
   in
   let check_poly loc p loc' p' =
-    if poly then ()
+    if polymorphic then ()
     else if p || p' then
       let loc = if p then loc else loc' in
       user_err ~loc ~hdr:"Constraint"
@@ -519,4 +524,4 @@ let do_constraint poly l =
      Univ.Constraint.add (lu, d, ru) acc)
     Univ.Constraint.empty l
   in
-    Lib.add_anonymous_leaf (input_constraints (poly, constraints))
+    Lib.add_anonymous_leaf (input_constraints (polymorphic, constraints))
