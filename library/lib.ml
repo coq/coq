@@ -506,13 +506,6 @@ let section_instance = function
 let is_in_section ref =
   try ignore (section_instance ref); true with Not_found -> false
 
-let full_replacement_context () = List.map pi2 !sectab
-let full_section_segment_of_constant con =
-  List.map (fun (vars,_,(x,_)) -> fun hyps ->
-    named_of_variable_context
-      (try pi1 (Names.Cmap.find con x)
-       with Not_found -> fst (extract_hyps (vars, hyps)))) !sectab
-
 (*************)
 (* Sections. *)
 
@@ -613,15 +606,6 @@ let rec dp_of_mp = function
   |Names.MPbound _ -> library_dp ()
   |Names.MPdot (mp,_) -> dp_of_mp mp
 
-let rec split_mp = function
-  |Names.MPfile dp -> dp, Names.DirPath.empty
-  |Names.MPdot (prfx, lbl) ->
-    let mprec, dprec = split_mp prfx in
-    mprec, Libnames.add_dirpath_suffix dprec (Names.Label.to_id lbl)
-  |Names.MPbound mbid ->
-    let (_,id,dp) = Names.MBId.repr mbid in
-    library_dp (), Names.DirPath.make [id]
-
 let rec split_modpath = function
   |Names.MPfile dp -> dp, []
   |Names.MPbound mbid -> library_dp (), [Names.MBId.to_id mbid]
@@ -632,20 +616,6 @@ let rec split_modpath = function
 let library_part = function
   |VarRef id -> library_dp ()
   |ref -> dp_of_mp (mp_of_global ref)
-
-let remove_section_part ref =
-  let sp = Nametab.path_of_global ref in
-  let dir,_ = repr_path sp in
-  match ref with
-  | VarRef id ->
-      anomaly (Pp.str "remove_section_part not supported on local variables")
-  | _ ->
-      if is_dirpath_prefix_of dir (cwd ()) then
-        (* Not yet (fully) discharged *)
-        pop_dirpath_n (sections_depth ()) (cwd ())
-      else
-	(* Theorem/Lemma outside its outer section of definition *)
-	dir
 
 (************************)
 (* Discharging names *)
