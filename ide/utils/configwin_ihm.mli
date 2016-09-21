@@ -23,29 +23,44 @@
 (*                                                                               *)
 (*********************************************************************************)
 
-type parameter_kind = Configwin_types.parameter_kind
+open Configwin_types
 
-type configuration_structure =
-    Configwin_types.configuration_structure =
-    Section of string * GtkStock.id option * parameter_kind list
-  | Section_list of string * GtkStock.id option * configuration_structure list
+val string : ?editable: bool -> ?expand: bool -> ?help: string ->
+  ?f: (string -> unit) -> string -> string -> parameter_kind
+val bool : ?editable: bool -> ?help: string ->
+  ?f: (bool -> unit) -> string -> bool -> parameter_kind
+val strings : ?editable: bool -> ?help: string ->
+  ?f: (string list -> unit) ->
+    ?eq: (string -> string -> bool) ->
+      ?add: (unit -> string list) ->
+        string -> string list -> parameter_kind
+val list : ?editable: bool -> ?help: string ->
+  ?f: ('a list -> unit) ->
+    ?eq: ('a -> 'a -> bool) ->
+      ?edit: ('a -> 'a) ->
+        ?add: (unit -> 'a list) ->
+          ?titles: string list ->
+            ?color: ('a -> string option) ->
+              string ->
+                ('a -> string list) ->
+                  'a list ->
+                    parameter_kind
+val combo : ?editable: bool -> ?expand: bool -> ?help: string ->
+  ?f: (string -> unit) ->
+    ?new_allowed: bool -> ?blank_allowed: bool ->
+      string -> string list -> string -> parameter_kind
 
-type return_button =
-    Configwin_types.return_button =
-    Return_apply
-  | Return_ok
-  | Return_cancel
+val modifiers : ?editable: bool -> ?expand: bool -> ?help: string ->
+  ?allow:(Gdk.Tags.modifier list) ->
+  ?f: (Gdk.Tags.modifier list -> unit) ->
+    string -> Gdk.Tags.modifier list -> parameter_kind
+val custom : ?label: string -> GPack.box -> (unit -> unit) -> bool -> parameter_kind
 
-let string = Configwin_ihm.string
-let strings = Configwin_ihm.strings
-let list = Configwin_ihm.list
-let bool = Configwin_ihm.bool
-let combo = Configwin_ihm.combo
-let custom = Configwin_ihm.custom
-let modifiers = Configwin_ihm.modifiers
-
-let edit
-    ?(apply=(fun () -> ()))
-    title ?width ?height
-    conf_struct_list =
-  Configwin_ihm.edit ~with_apply: true ~apply title ?width ?height conf_struct_list
+val edit :
+  ?with_apply:bool ->
+  ?apply:(unit -> unit) ->
+  string ->
+  ?width:int ->
+  ?height:int ->
+  configuration_structure list ->
+  return_button
