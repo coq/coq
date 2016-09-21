@@ -434,7 +434,7 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   CNotation (loc, notation , env)
 | ForPattern -> fun notation loc env ->
   let invalid = List.exists (fun (_, b) -> not b) env.binders in
-  let () = if invalid then Topconstr.error_invalid_pattern_notation loc in
+  let () = if invalid then Topconstr.error_invalid_pattern_notation ~loc () in
   let env = (env.constrs, env.constrlists) in
   CPatNotation (loc, notation, env, [])
 

@@ -1208,7 +1208,7 @@ let drop_notations_pattern looked_for =
       if top then looked_for g else
       match g with ConstructRef _ -> () | _ -> raise Not_found
     with Not_found ->
-      error_invalid_pattern_notation ~loc
+      error_invalid_pattern_notation ~loc ()
   in
   let test_kind top =
     if top then looked_for else function ConstructRef _ -> () | _ -> raise Not_found
@@ -1349,7 +1349,7 @@ let drop_notations_pattern looked_for =
     | NHole _ ->
       let () = assert (List.is_empty args) in
       RCPatAtom (loc, None)
-    | t -> error_invalid_pattern_notation ~loc
+    | t -> error_invalid_pattern_notation ~loc ()
   in in_pat true
 
 let rec intern_pat genv aliases pat =

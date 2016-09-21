@@ -32,7 +32,7 @@ let _ = Goptions.declare_bool_option {
 (**********************************************************************)
 (* Miscellaneous *)
 
-let error_invalid_pattern_notation ?loc =
+let error_invalid_pattern_notation ?loc () =
   user_err ?loc  (str "Invalid notation for pattern.")
 
 (**********************************************************************)
