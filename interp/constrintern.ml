@@ -65,7 +65,7 @@ type var_internalization_data =
 type internalization_env =
     (var_internalization_data) Id.Map.t
 
-type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
+type glob_binder = (Name.t * implicit_status * glob_constr option * glob_constr)
 
 type ltac_sign = {
   ltac_vars : Id.Set.t;

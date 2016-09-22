@@ -106,7 +106,7 @@ let instance_hook k pri global imps ?hook cst =
   Typeclasses.declare_instance pri (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant k pri global imps ?hook id pl poly evm term termtype =
+let declare_instance_constant k pri global imps ?hook id pl ~polymorphic evm term termtype =
   let kind = IsDefinition Instance in
   let evm = 
     let levels = Univ.LSet.union (Universes.universes_of_constr termtype) 
@@ -115,7 +115,7 @@ let declare_instance_constant k pri global imps ?hook id pl poly evm term termty
   in
   let pl, uctx = Evd.universe_context ?names:pl evm in
   let entry = 
-    Declare.definition_entry ~types:termtype ~poly ~univs:uctx term
+    Declare.definition_entry ~types:termtype ~polymorphic ~univs:uctx term
   in
   let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
@@ -124,7 +124,7 @@ let declare_instance_constant k pri global imps ?hook id pl poly evm term termty
     instance_hook k pri global imps ?hook (ConstRef kn);
     id
 
-let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) poly ctx (instid, bk, cl) props
+let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) ~polymorphic ctx (instid, bk, cl) props
     ?(generalize=true)
     ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
@@ -197,7 +197,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	let pl, ctx = Evd.universe_context ?names:pl !evars in
 	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
 	  (ParameterEntry 
-            (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
+            (None,polymorphic,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in
 	  Universes.register_universe_binders (ConstRef cst) pl;
 	  instance_hook k pri global imps ?hook (ConstRef cst); id
@@ -294,9 +294,12 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
       let term = Option.map nf term in
 	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
 	  declare_instance_constant k pri global imps ?hook id pl
-            poly evm (Option.get term) termtype
+            ~polymorphic evm (Option.get term) termtype
 	else if Flags.is_program_mode () || refine || Option.is_empty term then begin
-	  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+            let kind = { locality = Decl_kinds.Global;
+                         polymorphic;
+                         object_kind = Decl_kinds.DefinitionBody Decl_kinds.Instance }
+            in
 	    if Flags.is_program_mode () then
 	      let hook vis gr _ =
 		let cst = match gr with ConstRef kn -> kn | _ -> assert false in
@@ -313,8 +316,12 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	      in
               let hook = Lemmas.mk_hook hook in
 	      let ctx = Evd.evar_universe_context evm in
-		ignore (Obligations.add_definition id ?term:constr
- 			?pl typ ctx ~kind:(Global,poly,Instance) ~hook obls);
+              let kind = { locality = Global;
+                           polymorphic;
+                           object_kind = Instance }
+              in
+                ignore (Obligations.add_definition id ?term:constr
+ 			?pl typ ctx ~kind ~hook obls);
 		id
 	    else
 	      (Flags.silently 
@@ -390,8 +397,11 @@ let context poly l =
       | ExplByPos (_, Some id') -> Id.equal id id'
       | _ -> false
       in
-      let impl = List.exists test impls in
-      let decl = (Discharge, poly, Definitional) in
+      let impl = if List.exists test impls then Implicit else Explicit in
+      let decl = { locality = Discharge;
+                   polymorphic = poly;
+                   object_kind = Definitional }
+      in
       let nstatus =
         pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
           Vernacexpr.NoInline (Loc.ghost, id))

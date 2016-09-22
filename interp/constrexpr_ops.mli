@@ -26,8 +26,8 @@ val constr_expr_eq : constr_expr -> constr_expr -> bool
 val local_binder_eq : local_binder -> local_binder -> bool
 (** Equality on [local_binder]. Same properties as [constr_expr_eq]. *)
 
-val binding_kind_eq : Decl_kinds.binding_kind -> Decl_kinds.binding_kind -> bool
-(** Equality on [binding_kind] *)
+val implicit_status_eq : Decl_kinds.implicit_status -> Decl_kinds.implicit_status -> bool
+(** Equality on [implicit_status] *)
 
 val binder_kind_eq : binder_kind -> binder_kind -> bool
 (** Equality on [binder_kind] *)

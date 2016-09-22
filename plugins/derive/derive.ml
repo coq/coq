@@ -22,7 +22,10 @@ let start_deriving f suchthat lemma =
 
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let kind = Decl_kinds.(Global,false,DefinitionBody Definition) in
+  let kind = Decl_kinds.{ locality = Global;
+                          polymorphic = false;
+                          object_kind = DefinitionBody Definition }
+  in
 
   (** create a sort variable for the type of [f] *)
   (* spiwack: I don't know what the rigidity flag does, picked the one

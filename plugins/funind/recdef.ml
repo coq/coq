@@ -1348,7 +1348,9 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
   in
   Lemmas.start_proof
     na
-    (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
+    { locality = Decl_kinds.Global;
+      polymorphic = false (* FIXME *);
+      object_kind = Decl_kinds.Proof Decl_kinds.Lemma }
     sigma gls_type
     (Lemmas.mk_hook hook);
   if Indfun_common.is_strict_tcc  ()
@@ -1394,8 +1396,12 @@ let com_terminate
     hook =
   let start_proof ctx (tac_start:tactic) (tac_end:tactic) =
     let (evmap, env) = Lemmas.get_current_context() in
+    let goal_kind = { locality = Global;
+                      polymorphic = false; (* FIXME *)
+                      object_kind = Proof Lemma }
+    in
     Lemmas.start_proof thm_name
-      (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
+      goal_kind ~sign:(Environ.named_context_val env)
       ctx (compute_terminate_type nb_args fonctional_ref) hook;
 
     ignore (by (Proofview.V82.tactic (observe_tac (str "starting_tac") tac_start)));
@@ -1445,7 +1451,11 @@ let (com_eqn : int -> Id.t ->
     let evmap = Evd.from_ctx (Evd.evar_universe_context evmap) in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    (Lemmas.start_proof eq_name (Global, false, Proof Lemma)
+    let goal_kind = { locality = Global;
+                      polymorphic = false;
+                      object_kind = Proof Lemma }
+    in
+    (Lemmas.start_proof eq_name goal_kind
        ~sign:(Environ.named_context_val env)
        evmap
        equation_lemma_type

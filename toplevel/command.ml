@@ -90,7 +90,7 @@ let warn_implicits_in_term =
           strbrk "Implicit arguments declaration relies on type." ++ spc () ++
             strbrk "The term declares more implicits than the type here.")
         
-let interp_definition pl bl p red_option c ctypopt =
+let interp_definition pl bl ~polymorphic red_option c ctypopt =
   let env = Global.env() in
   let ctx = Evd.make_evar_universe_context env pl in
   let evdref = ref (Evd.from_ctx ctx) in
@@ -109,7 +109,7 @@ let interp_definition pl bl p red_option c ctypopt =
 	let evd = Evd.restrict_universe_context !evdref vars in
 	let pl, uctx = Evd.universe_context ?names:pl evd in
  	imps1@(Impargs.lift_implicits nb_args imps2), pl,
-	  definition_entry ~univs:uctx ~poly:p body
+	  definition_entry ~univs:uctx ~polymorphic body
     | Some ctyp ->
 	let ty, impsty = interp_type_evars_impls ~impls env_bl evdref ctyp in
 	let subst = evd_comb0 Evd.nf_univ_variables evdref in
@@ -133,7 +133,7 @@ let interp_definition pl bl p red_option c ctypopt =
         let ctx = Evd.restrict_universe_context !evdref vars in
 	let pl, uctx = Evd.universe_context ?names:pl ctx in
 	imps1@(Impargs.lift_implicits nb_args impsty), pl,
-	  definition_entry ~types:typ ~poly:p 
+	  definition_entry ~types:typ ~polymorphic 
 	    ~univs:uctx body
   in
   red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, pl, imps
@@ -174,7 +174,8 @@ let warn_definition_not_visible =
           strbrk "Section definition " ++
             pr_id ident ++ strbrk " is not visible from current goals")
 
-let declare_definition ident (local, p, k) ce pl imps hook =
+let declare_definition ident def_kind ce pl imps hook =
+  let { locality = local; object_kind = k; _ } = def_kind in
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let () = !declare_definition_hook ce in
   let r = match local with
@@ -197,7 +198,7 @@ let _ = Obligations.declare_definition_ref :=
 
 let do_definition ident k pl bl red_option c ctypopt hook =
   let (ce, evd, pl', imps as def) =
-    interp_definition pl bl (pi2 k) red_option c ctypopt
+    interp_definition pl bl k.polymorphic red_option c ctypopt
   in
     if Flags.is_program_mode () then
       let env = Global.env () in
@@ -223,43 +224,48 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl (_,ident) =
-match local with
-| Discharge when Lib.sections_are_opened () ->
-  let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
-  let _ = declare_variable ident decl in
-  let () = assumption_message ident in
-  let () =
-    if is_verbose () && Pfedit.refining () then
-    Feedback.msg_info (str"Variable" ++ spc () ++ pr_id ident ++
-    strbrk " is not visible from current goals")
-  in
-  let r = VarRef ident in
-  let () = Typeclasses.declare_instance None true r in
-  let () = if is_coe then Class.try_add_new_coercion r ~local:true false in
-  (r,Univ.Instance.empty,true)
+let declare_assumption is_coe assumption_kind (c,ctx) pl imps impl nl (_,ident) =
+  let { locality = local; polymorphic; object_kind = kind } = assumption_kind in
+  match local with
+  | Discharge when Lib.sections_are_opened () ->
+     let entry = SectionLocalAssum { type_context = (c,ctx);
+                                     polymorphic;
+                                     implicit_status = impl }
+     in
+     let decl = (Lib.cwd(), entry, IsAssumption kind) in
+     let _ = declare_variable ident decl in
+     let () = assumption_message ident in
+     let () =
+       if is_verbose () && Pfedit.refining () then
+         Feedback.msg_info (str"Variable" ++ spc () ++ pr_id ident ++
+                              strbrk " is not visible from current goals")
+     in
+     let r = VarRef ident in
+     let () = Typeclasses.declare_instance None true r in
+     let () = if is_coe then Class.try_add_new_coercion r ~local:true false in
+     (r,Univ.Instance.empty,true)
 
-| Global | Local | Discharge ->
-  let local = get_locality ident local in
-  let inl = match nl with
-    | NoInline -> None
-    | DefaultInline -> Some (Flags.get_inline_level())
-    | InlineAt i -> Some i
-  in
-  let ctx = Univ.ContextSet.to_context ctx in
-  let decl = (ParameterEntry (None,p,(c,ctx),inl), IsAssumption kind) in
-  let kn = declare_constant ident ~local decl in
-  let gr = ConstRef kn in
-  let () = maybe_declare_manual_implicits false gr imps in
-  let () = Universes.register_universe_binders gr pl in
-  let () = assumption_message ident in
-  let () = Typeclasses.declare_instance None false gr in
-  let () = if is_coe then Class.try_add_new_coercion gr local p in
-  let inst = 
-    if p (* polymorphic *) then Univ.UContext.instance ctx 
-    else Univ.Instance.empty
-  in
-    (gr,inst,Lib.is_modtype_strict ())
+  | Global | Local | Discharge ->
+     let local = get_locality ident local in
+     let inl = match nl with
+       | NoInline -> None
+       | DefaultInline -> Some (Flags.get_inline_level())
+       | InlineAt i -> Some i
+     in
+     let ctx = Univ.ContextSet.to_context ctx in
+     let decl = (ParameterEntry (None,polymorphic,(c,ctx),inl), IsAssumption kind) in
+     let kn = declare_constant ident ~local decl in
+     let gr = ConstRef kn in
+     let () = maybe_declare_manual_implicits false gr imps in
+     let () = Universes.register_universe_binders gr pl in
+     let () = assumption_message ident in
+     let () = Typeclasses.declare_instance None false gr in
+     let () = if is_coe then Class.try_add_new_coercion gr ~local polymorphic in
+     let inst = 
+       if polymorphic then Univ.UContext.instance ctx 
+       else Univ.Instance.empty
+     in
+     (gr,inst,Lib.is_modtype_strict ())
 
 let interp_assumption evdref env impls bl c =
   let c = prod_constr_expr c bl in
@@ -278,12 +284,12 @@ let declare_assumptions idl is_coe k (c,ctx) pl imps impl_is_on nl =
   in
   List.rev refs, status
 
-let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
+let do_assumptions_unbound_univs kind nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
   let evdref = ref (Evd.from_env env) in
   let l = 
-    if poly then
+    if kind.polymorphic then
       (* Separate declarations so that A B : Type puts A and B in different levels. *)
       List.fold_right (fun (is_coe,(idl,c)) acc ->
         List.fold_right (fun id acc -> 
@@ -305,7 +311,7 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
   let l = List.map (on_pi2 (nf_evar evd)) l in
   snd (List.fold_left (fun (subst,status) ((is_coe,idl),t,(ctx,imps)) ->
     let t = replace_vars subst t in
-    let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) [] imps false nl in
+    let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) [] imps Explicit nl in
     let subst' = List.map2 
       (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u)))
       idl refs 
@@ -323,13 +329,13 @@ let do_assumptions_bound_univs coe kind nl id pl c =
   let evd = Evd.restrict_universe_context !evdref vars in
   let pl, uctx = Evd.universe_context ?names:pl evd in
   let uctx = Univ.ContextSet.of_context uctx in
-  let (_, _, st) = declare_assumption coe kind (ty, uctx) pl impls false nl id in
+  let (_, _, st) = declare_assumption coe kind (ty, uctx) pl impls Explicit nl id in
   st
 
 let do_assumptions kind nl l = match l with
 | [coe, ([id, Some pl], c)] ->
-  let () = match kind with
-  | (Discharge, _, _) when Lib.sections_are_opened () ->
+  let () = match kind.locality with
+  | Discharge when Lib.sections_are_opened () ->
     let loc = fst id in
     let msg = Pp.str "Section variables cannot be polymorphic." in
     user_err ~loc  msg
@@ -852,8 +858,11 @@ let interp_fix_body env_rec evdref impls (_,ctx) fix ccl =
 
 let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
-let declare_fix ?(opaque = false) (_,poly,_ as kind) pl ctx f ((def,_),eff) t imps =
-  let ce = definition_entry ~opaque ~types:t ~poly ~univs:ctx ~eff def in
+let declare_fix ?(opaque = false) kind pl ctx f ((def,_),eff) t imps =
+  let polymorphic = kind.polymorphic in
+  let ce =
+    definition_entry ~opaque ~types:t ~polymorphic ~univs:ctx ~eff def
+  in
   declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
 
 let _ = Obligations.declare_fix_ref :=
@@ -937,7 +946,7 @@ let rec telescope = function
 let nf_evar_context sigma ctx =
   List.map (map_constr (Evarutil.nf_evar sigma)) ctx
 
-let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
+let build_wellfounded (recname,pl,n,bl,arityc,body) polymorphic r measure notation =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
   let ctx = Evd.make_evar_universe_context env pl in
@@ -1048,7 +1057,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
 	let pl, univs = Evd.universe_context ?names:pl !evdref in
 	  (*FIXME poly? *)
-	let ce = definition_entry ~poly ~types:ty ~univs (Evarutil.nf_evar !evdref body) in
+	let ce = definition_entry ~polymorphic ~types:ty ~univs (Evarutil.nf_evar !evdref body) in
 	(** FIXME: include locality *)
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in
@@ -1170,7 +1179,11 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
       Option.map (List.map Proofview.V82.tactic) init_tac
     in
     let evd = Evd.from_ctx ctx in
-    Lemmas.start_proof_with_initialization (Global,poly,DefinitionBody Fixpoint)
+    let goal_kind = { locality = Global;
+                     polymorphic = poly;
+                     object_kind = DefinitionBody Fixpoint }
+    in
+    Lemmas.start_proof_with_initialization goal_kind
       evd (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
@@ -1186,7 +1199,11 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let evd = Evd.restrict_universe_context evd vars in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     let pl, ctx = Evd.universe_context ?names:pl evd in
-    ignore (List.map4 (declare_fix (local, poly, Fixpoint) pl ctx)
+    let def_kind = { locality = local;
+                     polymorphic = poly;
+                     object_kind = Fixpoint }
+    in
+    ignore (List.map4 (declare_fix def_kind pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
@@ -1207,7 +1224,11 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
       Option.map (List.map Proofview.V82.tactic) init_tac
     in
     let evd = Evd.from_ctx ctx in
-      Lemmas.start_proof_with_initialization (Global,poly, DefinitionBody CoFixpoint)
+    let goal_kind = { locality = local;
+                     polymorphic = poly;
+                     object_kind = DefinitionBody CoFixpoint }
+    in
+      Lemmas.start_proof_with_initialization goal_kind
       evd (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
@@ -1220,7 +1241,11 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
     let pl, ctx = Evd.universe_context ?names:pl evd in
-    ignore (List.map4 (declare_fix (local, poly, CoFixpoint) pl ctx) 
+    let def_kind = { locality = local;
+                     polymorphic = poly;
+                     object_kind = CoFixpoint }
+    in
+    ignore (List.map4 (declare_fix def_kind pl ctx) 
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames
@@ -1300,9 +1325,13 @@ let do_program_recursive local p fixkind fixl ntns =
         fixl
   end in
   let ctx = Evd.evar_universe_context evd in
-  let kind = match fixkind with
-  | Obligations.IsFixpoint _ -> (local, p, Fixpoint)
-  | Obligations.IsCoFixpoint -> (local, p, CoFixpoint)
+  let object_kind = match fixkind with
+    | Obligations.IsFixpoint _ -> Fixpoint
+    | Obligations.IsCoFixpoint -> CoFixpoint
+  in
+  let kind = { locality = local;
+               polymorphic = p;
+               object_kind }
   in
   Obligations.add_mutual_definitions defs ~kind ?pl ctx ntns fixkind
 

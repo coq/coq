@@ -180,7 +180,7 @@ let error_not_transparent source =
   user_err ~hdr:"build_id_coercion"
     (pr_class source ++ str " must be a transparent constant.")
 
-let build_id_coercion idf_opt source poly =
+let build_id_coercion idf_opt source ~polymorphic =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma, vs = match source with
@@ -221,7 +221,7 @@ let build_id_coercion idf_opt source poly =
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
-      (definition_entry ~types:typ_f ~poly ~univs:(snd (Evd.universe_context sigma))
+      (definition_entry ~types:typ_f ~polymorphic ~univs:(snd (Evd.universe_context sigma))
 	 ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
   in
   let decl = (constr_entry, IsDefinition IdentityCoercion) in
