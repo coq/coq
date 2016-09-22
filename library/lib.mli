@@ -162,7 +162,7 @@ val xml_open_section : (Names.Id.t -> unit) Hook.t
 val xml_close_section : (Names.Id.t -> unit) Hook.t
 
 (** {6 Section management for discharge } *)
-type variable_info = Context.Named.Declaration.t * Decl_kinds.implicit_status
+type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 type variable_context = variable_info list 
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 
@@ -176,11 +176,11 @@ val variable_section_segment_of_reference : Globnames.global_reference -> variab
 val section_instance : Globnames.global_reference -> Univ.universe_instance * Names.Id.t array
 val is_in_section : Globnames.global_reference -> bool
 
-val add_section_variable : Names.Id.t -> Decl_kinds.implicit_status -> polymorphic:bool -> Univ.universe_context_set -> unit
+val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.universe_context_set -> unit
 val add_section_context : Univ.universe_context_set -> unit
-val add_section_constant : polymorphic:bool ->
+val add_section_constant : Decl_kinds.polymorphic ->
   Names.constant -> Context.Named.t -> unit
-val add_section_kn : polymorphic:bool ->
+val add_section_kn : Decl_kinds.polymorphic ->
   Names.mutual_inductive -> Context.Named.t -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 

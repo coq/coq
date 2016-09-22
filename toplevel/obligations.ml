@@ -490,7 +490,7 @@ let declare_definition prg =
     Evd.universe_context ?names:prg.prg_pl (Evd.from_ctx prg.prg_ctx) in
   let ce =
     definition_entry ~fix_exn
-     ~opaque ~types:(nf typ) ~polymorphic:prg.prg_kind.polymorphic
+     ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
      ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
   in
   let () = progmap_remove prg in
@@ -542,6 +542,7 @@ let declare_mutual_definition l =
   let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = Array.of_list fixtypes, Array.of_list fixdefs in
   let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
+  let (local,poly,kind) = first.prg_kind in
   let fixnames = first.prg_deps in
   let opaque = first.prg_opaque in
   let kind = if fixkind != IsCoFixpoint then Fixpoint else CoFixpoint in
@@ -566,16 +567,14 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let ctx = Evd.evar_context_universe_context first.prg_ctx in
   let fix_exn = Stm.get_fix_exn () in
-  let def_kind = { first.prg_kind with object_kind = kind } in
-  let kns = List.map4 (!declare_fix_ref ~opaque def_kind ctx)
+  let kns = List.map4 (!declare_fix_ref ~opaque (local, poly, kind) ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter Metasyntax.add_notation_interpretation first.prg_notations;
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
-    Lemmas.call_hook fix_exn first.prg_hook first.prg_kind.locality gr
-                     first.prg_ctx;
+    Lemmas.call_hook fix_exn first.prg_hook local gr first.prg_ctx;
     List.iter progmap_remove l; kn
 
 let decompose_lam_prod c ty =
@@ -634,7 +633,7 @@ let declare_obligation prg obl body ty uctx =
   | _, Evar_kinds.Expand -> false, { obl with obl_body = Some (TermObl body) }
   | force, Evar_kinds.Define opaque ->
       let opaque = not force && opaque in
-      let poly = prg.prg_kind.polymorphic in
+      let poly = pi2 prg.prg_kind in
       let ctx, body, ty, args =
 	if get_shrink_obligations () && not poly then
 	  shrink_body body ty else [], body, ty, [||]
@@ -792,15 +791,9 @@ let dependencies obls n =
       obls;
     !res
 
-let goal_kind ~polymorphic =
-  { locality = Decl_kinds.Local;
-    polymorphic;
-    object_kind =  Decl_kinds.DefinitionBody Decl_kinds.Definition }
+let goal_kind poly = Decl_kinds.Local, poly, Decl_kinds.DefinitionBody Decl_kinds.Definition
 
-let goal_proof_kind ~polymorphic =
-  { locality = Decl_kinds.Local;
-    polymorphic;
-    object_kind = Decl_kinds.Proof Decl_kinds.Lemma }
+let goal_proof_kind poly = Decl_kinds.Local, poly, Decl_kinds.Proof Decl_kinds.Lemma
 
 let kind_of_obligation poly o =
   match o with
@@ -898,7 +891,7 @@ in
   let _ = obls.(num) <- obl in
   let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
   let ctx' =
-    if not prg.prg_kind.polymorphic then
+    if not (pi2 prg.prg_kind) (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
       let evd = Evd.from_env (Global.env ()) in
@@ -932,7 +925,7 @@ let rec solve_obligation prg num tac =
         ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) remaining));
   in
   let obl = subst_deps_obl obls obl in
-  let kind = kind_of_obligation prg.prg_kind.polymorphic (snd obl.obl_status) in
+  let kind = kind_of_obligation (pi2 prg.prg_kind) (snd obl.obl_status) in
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
@@ -976,13 +969,13 @@ and solve_obligation_by_tac prg obls i tac =
 	    let evd = Evd.update_sigma_env evd (Global.env ()) in
 	    let t, ty, ctx =
 	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac
-	        prg.prg_kind.polymorphic (Evd.evar_universe_context evd)
+	        (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
 	    in
 	    let uctx = Evd.evar_context_universe_context ctx in
 	    let prg = {prg with prg_ctx = ctx} in
 	    let def, obl' = declare_obligation prg obl t ty uctx in
 	      obls.(i) <- obl';
-	      if def && not (prg.prg_kind.polymorphic) then (
+	      if def && not (pi2 prg.prg_kind) then (
 	        (* Declare the term constraints with the first obligation only *)
 	        let evd = Evd.from_env (Global.env ()) in
 	        let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
@@ -1078,12 +1071,7 @@ let show_term n =
 	     Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
 
-let default_definition_kind =
-  { locality = Global;
-    polymorphic = false;
-    object_kind = Definition }
-
-let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=default_definition_kind) ?tactic
+let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
   let sign = Decls.initialize_named_context_for_proof () in
   let info = Id.print n ++ str " has type-checked" in
@@ -1102,7 +1090,7 @@ let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=default_definition_k
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 
-let add_mutual_definitions l ctx ?pl ?tactic ?(kind=default_definition_kind) ?(reduce=reduce)
+let add_mutual_definitions l ctx ?pl ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
     ?(hook=Lemmas.mk_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
   let sign = Decls.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in

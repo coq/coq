@@ -320,7 +320,7 @@ let constrain_variables init uctx =
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
   let { pid; section_vars; strength; proof; terminator; universe_binders } =
     cur_pstate () in
-  let poly = strength.Decl_kinds.polymorphic in
+  let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let initial_euctx = Proof.initial_euctx proof in
   let fpl, univs = Future.split2 fpl in
@@ -398,7 +398,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
 type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
 
 let return_proof ?(allow_partial=false) () =
- let { pid; proof; strength = { Decl_kinds.polymorphic }} = cur_pstate () in
+ let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
  if allow_partial then begin
   let proofs = Proof.partial_proof proof in
   let _,_,_,_, evd = Proof.proof proof in

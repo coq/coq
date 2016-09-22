@@ -288,9 +288,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   begin
     Lemmas.start_proof
       new_princ_name
-      Decl_kinds.{ locality = Decl_kinds.Global;
-                   polymorphic = Flags.is_universe_polymorphism ();
-                   object_kind = Decl_kinds.Proof Decl_kinds.Theorem }
+      (Decl_kinds.Global,Flags.is_universe_polymorphism (),(Decl_kinds.Proof Decl_kinds.Theorem))
       !evd
       new_principle_type
       hook
@@ -341,9 +339,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 	let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
 	let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' value) in
 	(* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-	let ce = Declare.definition_entry ~polymorphic:(Flags.is_universe_polymorphism ())
-                                          ~univs:(snd (Evd.universe_context evd')) value
-        in
+	let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs:(snd (Evd.universe_context evd')) value in
 	ignore(
 	  Declare.declare_constant
 	    name

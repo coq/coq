@@ -17,7 +17,7 @@ open Decl_kinds
 (***********************)
 (* For binders parsing *)
 
-let implicit_status_eq bk1 bk2 = match bk1, bk2 with
+let binding_kind_eq bk1 bk2 = match bk1, bk2 with
 | Explicit, Explicit -> true
 | Implicit, Implicit -> true
 | _ -> false
@@ -28,9 +28,9 @@ let abstraction_kind_eq ak1 ak2 = match ak1, ak2 with
 | _ -> false
 
 let binder_kind_eq b1 b2 = match b1, b2 with
-| Default bk1, Default bk2 -> implicit_status_eq bk1 bk2
+| Default bk1, Default bk2 -> binding_kind_eq bk1 bk2
 | Generalized (bk1, ck1, b1), Generalized (bk2, ck2, b2) ->
-  implicit_status_eq bk1 bk2 && implicit_status_eq ck1 ck2 &&
+  binding_kind_eq bk1 bk2 && binding_kind_eq ck1 ck2 &&
   (if b1 then b2 else not b2)
 | _ -> false
 
@@ -165,7 +165,7 @@ let rec constr_expr_eq e1 e2 =
   | CPrim(_,i1), CPrim(_,i2) ->
     prim_token_eq i1 i2
   | CGeneralization (_, bk1, ak1, e1), CGeneralization (_, bk2, ak2, e2) ->
-    implicit_status_eq bk1 bk2 &&
+    binding_kind_eq bk1 bk2 &&
     Option.equal abstraction_kind_eq ak1 ak2 &&
     constr_expr_eq e1 e2
   | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) ->

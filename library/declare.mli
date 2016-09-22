@@ -23,9 +23,7 @@ open Decl_kinds
 
 type section_variable_entry =
   | SectionLocalDef of Safe_typing.private_constants definition_entry
-  | SectionLocalAssum of { type_context : types Univ.in_universe_context_set;
-                           polymorphic : bool;
-                           implicit_status : implicit_status }
+  | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
@@ -44,7 +42,7 @@ type internal_flag =
 (* Defaut definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
-  ?polymorphic:bool -> ?univs:Univ.universe_context ->
+  ?poly:polymorphic -> ?univs:Univ.universe_context ->
   ?eff:Safe_typing.private_constants -> constr -> Safe_typing.private_constants definition_entry
 
 (** [declare_constant id cd] declares a global declaration
@@ -58,7 +56,7 @@ val declare_constant :
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
-  ?local:bool -> ?polymorphic:bool -> Id.t -> ?types:constr -> 
+  ?local:bool -> ?poly:polymorphic -> Id.t -> ?types:constr -> 
   constr Univ.in_universe_context_set -> constant
 
 (** Since transparent constants' side effects are globally declared, we
@@ -91,6 +89,5 @@ val exists_name : Id.t -> bool
 
 (** Global universe names and constraints *)
 
-val do_universe : polymorphic:bool -> Id.t Loc.located list -> unit
-val do_constraint : polymorphic:bool ->
-  (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit
+val do_universe : polymorphic -> Id.t Loc.located list -> unit
+val do_constraint : polymorphic -> (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit

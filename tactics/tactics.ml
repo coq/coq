@@ -4888,9 +4888,7 @@ let anon_id = Id.of_string "anonymous"
 
 let tclABSTRACT name_op tac =
   let open Proof_global in
-  let default_gk =
-    { locality = Global; polymorphic = false; object_kind = Proof Theorem }
-  in
+  let default_gk = (Global, false, Proof Theorem) in
   let s, gk = match name_op with
     | Some s ->
       (try let _, gk, _ = current_proof_statement () in s, gk

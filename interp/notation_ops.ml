@@ -29,10 +29,10 @@ let compare_glob_constr f add t1 t2 = match t1,t2 with
   | GVar (_,v1), GVar (_,v2) -> on_true_do (Id.equal v1 v2) add (Name v1)
   | GApp (_,f1,l1), GApp (_,f2,l2) -> f f1 f2 && List.for_all2eq f l1 l2
   | GLambda (_,na1,bk1,ty1,c1), GLambda (_,na2,bk2,ty2,c2)
-    when Name.equal na1 na2 && Constrexpr_ops.implicit_status_eq bk1 bk2 ->
+    when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
     on_true_do (f ty1 ty2 && f c1 c2) add na1
   | GProd (_,na1,bk1,ty1,c1), GProd (_,na2,bk2,ty2,c2)
-    when Name.equal na1 na2 && Constrexpr_ops.implicit_status_eq bk1 bk2 ->
+    when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
       on_true_do (f ty1 ty2 && f c1 c2) add na1
   | GHole _, GHole _ -> true
   | GSort (_,s1), GSort (_,s2) -> Miscops.glob_sort_eq s1 s2
@@ -772,18 +772,18 @@ let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) 
       | GHole _, _ -> v'
       | _, GHole _ -> v
       | _, _ -> if glob_constr_eq (alpha_rename (snd alp) v) v' then v else raise No_match in
-    let unify_implicit_status bk bk' = if bk == bk' then bk' else raise No_match in
+    let unify_binding_kind bk bk' = if bk == bk' then bk' else raise No_match in
     let unify_binder alp b b' =
       match b, b' with
       | (Inl na, bk, None, t), (Inl na', bk', None, t') (* assum *) ->
          let alp, na = unify_name alp na na' in
-         alp, (Inl na, unify_implicit_status bk bk', None, unify_term alp t t')
+         alp, (Inl na, unify_binding_kind bk bk', None, unify_term alp t t')
       | (Inl na, bk, Some c, t), (Inl na', bk', Some c', t') (* let *) ->
          let alp, na = unify_name alp na na' in
-         alp, (Inl na, unify_implicit_status bk bk', Some (unify_term alp c c'), unify_term alp t t')
+         alp, (Inl na, unify_binding_kind bk bk', Some (unify_term alp c c'), unify_term alp t t')
       | (Inr p, bk, None, t), (Inr p', bk', None, t') (* pattern *) ->
          let alp, p = unify_pat alp p p' in
-         alp, (Inr p, unify_implicit_status bk bk', None, unify_term alp t t')
+         alp, (Inr p, unify_binding_kind bk bk', None, unify_term alp t t')
       | _ -> raise No_match in
     let rec unify alp bl bl' =
     match bl, bl' with
@@ -1122,7 +1122,7 @@ let term_of_binder = function
   | Anonymous -> GHole (Loc.ghost,Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None)
 
 type glob_decl2 =
-    (name, cases_pattern) Util.union * Decl_kinds.implicit_status *
+    (name, cases_pattern) Util.union * Decl_kinds.binding_kind *
       glob_constr option * glob_constr
 
 let match_notation_constr u c (metas,pat) =

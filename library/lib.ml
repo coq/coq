@@ -391,7 +391,7 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type variable_info = Context.Named.Declaration.t * Decl_kinds.implicit_status
+type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 
 type variable_context = variable_info list
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
@@ -399,7 +399,7 @@ type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
-  | Variable of (Names.Id.t * Decl_kinds.implicit_status *
+  | Variable of (Names.Id.t * Decl_kinds.binding_kind *
 		   Decl_kinds.polymorphic * Univ.universe_context_set)
   | Context of Univ.universe_context_set
 
@@ -416,12 +416,12 @@ let check_same_poly p vars =
   if List.exists pred vars then
     error "Cannot mix universe polymorphic and monomorphic declarations in sections."
 
-let add_section_variable id impl ~polymorphic ctx =
+let add_section_variable id impl poly ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-       List.iter (fun tab -> check_same_poly polymorphic (pi1 tab)) !sectab;
-       sectab := (Variable (id,impl,polymorphic,ctx)::vars,repl,abs)::sl
+       List.iter (fun tab -> check_same_poly poly (pi1 tab)) !sectab;
+       sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
 
 let add_section_context ctx =
   match !sectab with
@@ -450,11 +450,11 @@ let instance_from_variable_context =
 let named_of_variable_context =
   List.map fst
   
-let add_section_replacement f g ~polymorphic hyps =
+let add_section_replacement f g poly hyps =
   match !sectab with
   | [] -> ()
   | (vars,exps,abs)::sl ->
-    let () = check_same_poly polymorphic vars in
+    let () = check_same_poly poly vars in
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let subst, ctx = Univ.abstract_universes true ctx in
@@ -462,13 +462,13 @@ let add_section_replacement f g ~polymorphic hyps =
     sectab := (vars,f (Univ.UContext.instance ctx,args) exps,
 	      g (sechyps,subst,ctx) abs)::sl
 
-let add_section_kn ~polymorphic kn =
+let add_section_kn poly kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
-    add_section_replacement f f ~polymorphic
+    add_section_replacement f f poly
 
-let add_section_constant ~polymorphic kn =
+let add_section_constant poly kn =
   let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
-    add_section_replacement f f ~polymorphic
+    add_section_replacement f f poly
 
 let replacement_context () = pi2 (List.hd !sectab)
 

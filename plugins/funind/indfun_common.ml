@@ -148,18 +148,17 @@ let get_locality = function
 | Local -> true
 | Global -> false
 
-let save with_clean id const goal_kind hook =
+let save with_clean id const (locality,_,kind) hook =
   let fix_exn = Future.fix_exn_of const.const_entry_body in
-  let locality = goal_kind.locality in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
-        let k = Kindops.logical_kind_of_goal_kind goal_kind.object_kind in
+        let k = Kindops.logical_kind_of_goal_kind kind in
 	let c = SectionLocalDef const in
 	let _ = declare_variable id (Lib.cwd(), c, k) in
 	(Local, VarRef id)
     | Discharge | Local | Global ->
         let local = get_locality locality in
-        let k = Kindops.logical_kind_of_goal_kind goal_kind.object_kind in
+        let k = Kindops.logical_kind_of_goal_kind kind in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
 	(locality, ConstRef kn)
   in

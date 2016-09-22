@@ -147,10 +147,7 @@ open Decl_kinds
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let default_goal_kind =
-  { locality = Global; polymorphic = false; object_kind = Proof Theorem }
-
-let build_constant_by_tactic id ctx sign ?(goal_kind = default_goal_kind) typ tac =
+let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
   let evd = Evd.from_ctx ctx in
   let terminator = Proof_global.make_terminator (fun _ -> ()) in
   start_proof id goal_kind evd sign typ terminator;
@@ -164,10 +161,10 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = default_goal_kind) typ ta
     delete_current_proof ();
     iraise reraise
 
-let build_by_tactic ?(side_eff=true) env ctx ?(polymorphic=false) typ tac =
+let build_by_tactic ?(side_eff=true) env ctx ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
-  let gk = { locality = Global; polymorphic; object_kind = Proof Theorem } in
+  let gk = Global, poly, Proof Theorem in
   let ce, status, univs = build_constant_by_tactic id ctx sign ~goal_kind:gk typ tac in
   let ce =
     if side_eff then Safe_typing.inline_private_constants_in_definition_entry env ce

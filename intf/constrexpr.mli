@@ -23,8 +23,8 @@ type explicitation =
   | ExplByName of Id.t
 
 type binder_kind =
-  | Default of implicit_status
-  | Generalized of implicit_status * implicit_status * bool
+  | Default of binding_kind
+  | Generalized of binding_kind * binding_kind * bool
       (** Inner binding, outer bindings, typeclass-specific flag
 	 for implicit generalization of superclasses *)
 
@@ -95,7 +95,7 @@ and constr_expr =
   | CSort of Loc.t * glob_sort
   | CCast of Loc.t * constr_expr * constr_expr cast_type
   | CNotation of Loc.t * notation * constr_notation_substitution
-  | CGeneralization of Loc.t * implicit_status * abstraction_kind option * constr_expr
+  | CGeneralization of Loc.t * binding_kind * abstraction_kind option * constr_expr
   | CPrim of Loc.t * prim_token
   | CDelimiters of Loc.t * string * constr_expr
 
@@ -132,7 +132,7 @@ and constr_notation_substitution =
     constr_expr list list * (** for recursive notations *)
     local_binder list list (** for binders subexpressions *)
 
-type typeclass_constraint = (Name.t located * Id.t located list option) * implicit_status * constr_expr
+type typeclass_constraint = (Name.t located * Id.t located list option) * binding_kind * constr_expr
 
 and typeclass_context = typeclass_constraint list
 

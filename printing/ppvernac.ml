@@ -695,8 +695,7 @@ module Make
       | VernacDefinition (d,id,b) -> (* A verifier... *)
         let pr_def_token (l,dk) =
           let l = match l with Some x -> x | None -> Decl_kinds.Global in
-          keyword (Kindops.string_of_definition_kind
-                     { locality = l; polymorphic = false; object_kind = dk })
+          keyword (Kindops.string_of_definition_kind (l,false,dk))
         in
         let pr_reduce = function
           | None -> mt()

@@ -40,8 +40,8 @@ type glob_constr =
   | GEvar of Loc.t * existential_name * (Id.t * glob_constr) list
   | GPatVar of Loc.t * (bool * patvar) (** Used for patterns only *)
   | GApp of Loc.t * glob_constr * glob_constr list
-  | GLambda of Loc.t * Name.t * implicit_status *  glob_constr * glob_constr
-  | GProd of Loc.t * Name.t * implicit_status * glob_constr * glob_constr
+  | GLambda of Loc.t * Name.t * binding_kind *  glob_constr * glob_constr
+  | GProd of Loc.t * Name.t * binding_kind * glob_constr * glob_constr
   | GLetIn of Loc.t * Name.t * glob_constr * glob_constr
   | GCases of Loc.t * case_style * glob_constr option * tomatch_tuples * cases_clauses
       (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
@@ -54,7 +54,7 @@ type glob_constr =
   | GHole of (Loc.t * Evar_kinds.t * intro_pattern_naming_expr * Genarg.glob_generic_argument option)
   | GCast of Loc.t * glob_constr * glob_constr cast_type
 
-and glob_decl = Name.t * implicit_status * glob_constr option * glob_constr
+and glob_decl = Name.t * binding_kind * glob_constr option * glob_constr
 
 and fix_recursion_order =
   | GStructRec
