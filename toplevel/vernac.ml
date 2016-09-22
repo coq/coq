@@ -345,7 +345,7 @@ let compile verbosely f =
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_vo)
         ~v_file:long_f_dot_v);
-      Dumpglob.start_dump_glob long_f_dot_v;
+      Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       if !Flags.xml_export then Hook.get f_xml_start_library ();
       let wall_clock1 = Unix.gettimeofday () in
