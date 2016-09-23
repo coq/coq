@@ -1599,14 +1599,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     let hyp = get_id d in
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
-        if indirectly_dependent c d depdecls then
-          (* Told explicitly not to abstract over [d], but it is dependent *)
-          let id' = indirect_dependency d depdecls in
-          errorlabstrm "" (str "Cannot abstract over " ++ Nameops.pr_id id'
-            ++ str " without also abstracting or erasing " ++ Nameops.pr_id hyp
-            ++ str ".")
-        else
-          (push_named_context_val d sign,depdecls)
+        (push_named_context_val d sign,depdecls)
     | AllOccurrences, InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
