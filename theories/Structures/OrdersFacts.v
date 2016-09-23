@@ -448,7 +448,7 @@ Lemma leb_compare x y :
  (x <=? y) = match compare x y with Gt => false | _ => true end.
 Proof.
 apply eq_true_iff_eq. rewrite leb_le, <- compare_le_iff.
-destruct compare; split; try easy. now destruct 1.
+now destruct compare.
 Qed.
 
 End BoolOrderFacts.

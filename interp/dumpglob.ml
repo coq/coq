@@ -45,10 +45,10 @@ let dump_string s =
   if dump () && !glob_output != Feedback then 
     Pervasives.output_string !glob_file s
 
-let start_dump_glob vfile =
+let start_dump_glob ~vfile ~vofile =
   match !glob_output with
   | MultFiles ->
-      open_glob_file (Filename.chop_extension vfile ^ ".glob");
+      open_glob_file (Filename.chop_extension vofile ^ ".glob");
       output_string !glob_file "DIGEST ";
       output_string !glob_file (Digest.to_hex (Digest.file vfile));
       output_char !glob_file '\n'

@@ -33,10 +33,10 @@ open Context.Rel.Declaration
 
 (** constr_expr -> glob_constr translation:
     - it adds holes for implicit arguments
-    - it remplaces notations by their value (scopes stuff are here)
+    - it replaces notations by their value (scopes stuff are here)
     - it recognizes global vars from local ones
-    - it prepares pattern maching problems (a pattern becomes a tree where nodes
-    are constructor/variable pairs and leafs are variables)
+    - it prepares pattern matching problems (a pattern becomes a tree
+      where nodes are constructor/variable pairs and leafs are variables)
 
     All that at once, fasten your seatbelt!
 *)

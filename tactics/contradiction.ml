@@ -43,6 +43,8 @@ let absurd c = absurd c
 
 (* Contradiction *)
 
+let use_negated_unit_or_eq_type () = Flags.version_strictly_greater Flags.V8_5
+
 (** [f] does not assume its argument to be [nf_evar]-ed. *)
 let filter_hyp f tac =
   let rec seek = function
@@ -68,6 +70,21 @@ let contradiction_context =
 	    simplest_elim (mkVar id)
 	  else match kind_of_term typ with
 	  | Prod (na,t,u) when is_empty_type u ->
+             let is_unit_or_eq =
+               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type t
+               else None in
+	     Tacticals.New.tclORELSE
+               (match is_unit_or_eq with
+               | Some _ ->
+                   let hd,args = decompose_app t in
+                   let (ind,_ as indu) = destInd hd in
+                   let nparams = Inductiveops.inductive_nparams_env env ind in
+                   let params = Util.List.firstn nparams args in
+                   let p = applist ((mkConstructUi (indu,1)), params) in
+                   (* Checking on the fly that it type-checks *)
+                   simplest_elim (mkApp (mkVar id,[|p|]))
+               | None ->
+                 Tacticals.New.tclZEROMSG (Pp.str"Not a negated unit type."))
 	      (Proofview.tclORELSE
                  (Proofview.Goal.enter { enter = begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
