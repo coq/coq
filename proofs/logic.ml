@@ -276,6 +276,11 @@ let move_hyp toleft (left,declfrom,right) hto =
     List.fold_left (fun sign d -> push_named_context_val d sign)
       right left
 
+let move_hyp_in_named_context hfrom hto sign =
+  let (left,right,declfrom,toleft) =
+    split_sign hfrom hto (named_context_of_val sign) in
+  move_hyp toleft (left,declfrom,right) hto
+
 (**********************************************************************)
 
 
@@ -549,12 +554,3 @@ let prim_refiner r sigma goal =
 	let sgl = List.rev sgl in
 	let sigma = Goal.V82.partial_solution sigma goal oterm in
 	  (sgl, sigma)
-
-    | Move (hfrom, hto) ->
-  	let (left,right,declfrom,toleft) =
-	  split_sign hfrom hto (named_context_of_val sign) in
-  	let hyps' =
-	  move_hyp toleft (left,declfrom,right) hto in
-	let (gl,ev,sigma) = mk_goal hyps' cl in
-	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
-  	  ([gl], sigma)
