@@ -146,33 +146,9 @@ let focus i j sp =
   let (new_comb, context) = focus_sublist i j sp.comb in
   ( { sp with comb = new_comb } , context )
 
-
-(** [advance sigma g] returns [Some g'] if [g'] is undefined and is
-    the current avatar of [g] (for instance [g] was changed by [clear]
-    into [g']). It returns [None] if [g] has been (partially)
-    solved. *)
-(* spiwack: [advance] is probably performance critical, and the good
-   behaviour of its definition may depend sensitively to the actual
-   definition of [Evd.find]. Currently, [Evd.find] starts looking for
-   a value in the heap of undefined variable, which is small. Hence in
-   the most common case, where [advance] is applied to an unsolved
-   goal ([advance] is used to figure if a side effect has modified the
-   goal) it terminates quickly. *)
-let rec advance sigma g =
-  let open Evd in
-  let evi = Evd.find sigma g in
-  match evi.evar_body with
-  | Evar_empty -> Some g
-  | Evar_defined v ->
-      if Option.default false (Store.get evi.evar_extra Evarutil.cleared) then
-        let (e,_) = Term.destEvar v in
-        advance sigma e
-      else
-        None
-
 (** [undefined defs l] is the list of goals in [l] which are still
     unsolved (after advancing cleared goals). *)
-let undefined defs l = CList.map_filter (advance defs) l
+let undefined defs l = CList.map_filter (Evarutil.advance defs) l
 
 (** Unfocuses a proofview with respect to a context. *)
 let unfocus c sp =
@@ -429,7 +405,7 @@ let iter_goal i =
   Comb.get >>= fun initial ->
   Proof.List.fold_left begin fun (subgoals as cur) goal ->
     Solution.get >>= fun step ->
-    match advance step goal with
+    match Evarutil.advance step goal with
     | None -> return cur
     | Some goal ->
         Comb.set [goal] >>
@@ -453,7 +429,7 @@ let fold_left2_goal i s l =
   in 
   Proof.List.fold_left2 err begin fun ((r,subgoals) as cur) goal a ->
     Solution.get >>= fun step ->
-    match advance step goal with
+    match Evarutil.advance step goal with
     | None -> return cur
     | Some goal ->
         Comb.set [goal] >>
@@ -497,7 +473,7 @@ let tclDISPATCHGEN0 join tacs =
         let open Proof in
         Pv.get >>= function
         | { comb=[goal] ; solution } ->
-            begin match advance solution goal with
+            begin match Evarutil.advance solution goal with
             | None -> tclUNIT (join [])
             | Some _ -> Proof.map (fun res -> join [res]) tac
             end
@@ -1012,7 +988,7 @@ module Goal = struct
     Pv.get >>= fun step ->
     let sigma = step.solution in
     let map goal =
-      match advance sigma goal with
+      match Evarutil.advance sigma goal with
       | None -> None (** ppedrot: Is this check really necessary? *)
       | Some goal ->
         let gl =
@@ -1026,7 +1002,7 @@ module Goal = struct
 
   let unsolved { self=self } =
     tclEVARMAP >>= fun sigma ->
-    tclUNIT (not (Option.is_empty (advance sigma self)))
+    tclUNIT (not (Option.is_empty (Evarutil.advance sigma self)))
 
   (* compatibility *)
   let goal { self=self } = self

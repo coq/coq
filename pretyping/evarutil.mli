@@ -123,6 +123,12 @@ val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
     its (partial) definition. *)
 val gather_dependent_evars : evar_map -> evar list -> (Evar.Set.t option) Evar.Map.t
 
+(** [advance sigma g] returns [Some g'] if [g'] is undefined and is
+    the current avatar of [g] (for instance [g] was changed by [clear]
+    into [g']). It returns [None] if [g] has been (partially)
+    solved. *)
+val advance : evar_map -> evar -> evar option
+
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
     This is roughly a combination of the previous functions and
