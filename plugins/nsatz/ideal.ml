@@ -402,29 +402,25 @@ let polconst d c =
   [(c,m)]
 
 let plusP p q =
-  let rec plusP p q =
-    match p with
-      [] -> q
-    |t::p' -> 
-	match q with
-	  [] -> p
-	|t'::q' ->
-            match compare_mon (snd t) (snd t') with
-              1 -> t::(plusP p' q)
-            |(-1) -> t'::(plusP p q')
-            |_ -> let c=P.plusP (fst t) (fst t') in
-              match P.equal c coef0 with
-                true -> (plusP p' q')
-              |false -> (c,(snd t))::(plusP p' q')
-  in plusP p q
+  let rec plusP p q accu = match p, q with
+  | [], [] -> List.rev accu
+  | [], _ -> List.rev_append accu q
+  | _, [] -> List.rev_append accu p
+  | t :: p', t' :: q' ->
+    let c = compare_mon (snd t) (snd t') in
+    if c > 0 then plusP p' q (t :: accu)
+    else if c < 0 then plusP p q' (t' :: accu)
+    else
+      let c = P.plusP (fst t) (fst t') in
+      if P.equal c coef0 then plusP p' q' accu
+      else plusP p' q' ((c, (snd t)) :: accu)
+  in
+  plusP p q []
 
 (* multiplication by (a,monomial) *)
 let mult_t_pol a m p =
-  let rec mult_t_pol p =
-    match p with
-      [] -> []
-    |(b,m')::p -> ((P.multP a b),(mult_mon m m'))::(mult_t_pol p)
-  in mult_t_pol p
+  let map (b, m') = (P.multP a b, mult_mon m m') in
+  CList.map map p
 
 let coef_of_int x = P.of_num (Num.Int x)
 
@@ -451,11 +447,11 @@ let emultP a p =
   in emultP p
 
 let multP p q =
-  let rec aux p =
+  let rec aux p accu =
     match p with
-      [] -> []
-    |(a,m)::p' -> plusP (mult_t_pol a m q) (aux p')
-  in aux p
+      [] -> accu
+    |(a,m)::p' -> aux p' (plusP (mult_t_pol a m q) accu)
+  in aux p []
 
 let puisP p n=
   match p with
