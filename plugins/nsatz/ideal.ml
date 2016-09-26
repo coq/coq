@@ -127,11 +127,11 @@ type polynom =
     num : int;
     sugar : int}
 
-let nvar m =  Array.length m - 1
+let nvar (m : mon) =  Array.length m - 1
 
-let deg m = m.(0)
+let deg (m : mon) = m.(0)
 
-let mult_mon m m' =
+let mult_mon (m : mon) (m' : mon) =
   let d = nvar m in
   let m'' = Array.make (d+1) 0 in
   for i=0 to d do
@@ -140,7 +140,7 @@ let mult_mon m m' =
   m''
 
 
-let compare_mon m m' =
+let compare_mon (m : mon) (m' : mon) =
   let d = nvar m in
   if !lexico
   then (
@@ -148,18 +148,18 @@ let compare_mon m m' =
     let res=ref 0 in
     let i=ref 1 in (* 1 si lexico pur 0 si degre*)
     while (!res=0) && (!i<=d) do
-      res:= (compare m.(!i) m'.(!i));
+      res:= (Int.compare m.(!i) m'.(!i));
       i:=!i+1;
     done;
     !res)
   else (
      (* degre lexicographique inverse *)
-    match compare m.(0) m'.(0) with
+    match Int.compare m.(0) m'.(0) with
     | 0 -> (* meme degre total *)
 	let res=ref 0 in
 	let i=ref d in
 	while (!res=0) && (!i>=1) do
-	  res:= - (compare m.(!i) m'.(!i));
+	  res:= - (Int.compare m.(!i) m'.(!i));
 	  i:=!i-1;
 	done;
 	!res
