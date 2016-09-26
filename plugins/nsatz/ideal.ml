@@ -457,13 +457,17 @@ let puisP p n=
   match p with
     [] -> []
   |_ ->
+    if n = 0 then
       let d = nvar (snd (List.hd p)) in
-      let rec puisP n =
-	match n with
-	  0 -> [coef1, Array.make (d+1) 0]
-	| 1 -> p
-	|_ -> multP p (puisP (n-1))
-      in puisP n
+      [coef1, Array.make (d+1) 0]
+    else
+      let rec puisP p n =
+        if n = 1 then p
+        else
+          let q = puisP p (n / 2) in
+          let q = multP q q in
+          if n mod 2 = 0 then q else multP p q
+      in puisP p n
 	
 let rec contentP p =
   match p with
