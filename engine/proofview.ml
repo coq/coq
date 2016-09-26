@@ -423,11 +423,11 @@ let tclFOCUSID id t =
 
 exception SizeMismatch of int*int
 let _ = CErrors.register_handler begin function
-  | SizeMismatch (i,_) ->
+  | SizeMismatch (i,j) ->
       let open Pp in
       let errmsg =
         str"Incorrect number of goals" ++ spc() ++
-        str"(expected "++int i++str(String.plural i " tactic") ++ str")."
+        str"(expected "++int i++str(String.plural i " tactic") ++ str", was given "++ int j++str")."
       in
       CErrors.user_err  errmsg
   | _ -> raise CErrors.Unhandled
