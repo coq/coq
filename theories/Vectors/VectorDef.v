@@ -30,7 +30,7 @@ Inductive t A : nat -> Type :=
   |nil : t A 0
   |cons : forall (h:A) (n:nat), t A n -> t A (S n).
 
-Local Notation " [ ] " := (nil _) (format "[ ]").
+Local Notation "[ ]" := (nil _) (format "[ ]").
 Local Notation "h :: t" := (cons _ h _ t) (at level 60, right associativity).
 
 Section SCHEMES.
@@ -294,11 +294,11 @@ End VECTORLIST.
 
 Module VectorNotations.
 Delimit Scope vector_scope with vector.
-Notation " [ ] " := [] (format "[ ]") : vector_scope.
+Notation "[ ]" := [] (format "[ ]") : vector_scope.
 Notation "h :: t" := (h :: t) (at level 60, right associativity)
   : vector_scope.
-Notation " [ x ] " := (x :: []) : vector_scope.
-Notation " [ x ; y ; .. ; z ] " := (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..)) : vector_scope
+Notation "[ x ]" := (x :: []) : vector_scope.
+Notation "[ x ; y ; .. ; z ]" := (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..)) : vector_scope
 .
 Notation "v [@ p ]" := (nth v p) (at level 1, format "v [@ p ]") : vector_scope.
 Open Scope vector_scope.
