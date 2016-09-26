@@ -130,7 +130,8 @@ let init_ocaml_path () =
         [ "grammar" ]; [ "ide" ]; [ "ltac" ]; ]
 
 let get_compat_version = function
-  | "8.6" -> Flags.Current
+  | "8.7" -> Flags.Current
+  | "8.6" -> Flags.V8_6
   | "8.5" -> Flags.V8_5
   | "8.4" -> Flags.V8_4
   | "8.3" -> Flags.V8_3
