@@ -112,17 +112,22 @@ type compat_version = V8_2 | V8_3 | V8_4 | V8_5 | Current
 
 let compat_version = ref Current
 
-let version_strictly_greater v = match !compat_version, v with
-| V8_2, (V8_2 | V8_3 | V8_4 | V8_5 | Current) -> false
-| V8_3, (V8_3 | V8_4 | V8_5 | Current) -> false
-| V8_4, (V8_4 | V8_5 | Current) -> false
-| V8_5, (V8_5 | Current) -> false
-| Current, Current -> false
-| V8_3, V8_2 -> true
-| V8_4, (V8_2 | V8_3) -> true
-| V8_5, (V8_2 | V8_3 | V8_4) -> true
-| Current, (V8_2 | V8_3 | V8_4 | V8_5) -> true
+let version_compare v1 v2 = match v1, v2 with
+| V8_2, V8_2 -> 0
+| V8_2, (V8_3 | V8_4 | V8_5 | Current) -> -1
+| V8_3, V8_2 -> 1
+| V8_3, V8_3 -> 0
+| V8_3, (V8_4 | V8_5 | Current) -> -1
+| V8_4, (V8_2 | V8_3) -> 1
+| V8_4, V8_4 -> 0
+| V8_4, (V8_5 | Current) -> -1
+| V8_5, (V8_2 | V8_3 | V8_4) -> 1
+| V8_5, V8_5 -> 0
+| V8_5, Current -> -1
+| Current, Current -> 0
+| Current, (V8_2 | V8_3 | V8_4 | V8_5) -> 1
 
+let version_strictly_greater v = version_compare !compat_version v > 0
 let version_less_or_equal v = not (version_strictly_greater v)
 
 let pr_version = function

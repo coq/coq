@@ -367,8 +367,8 @@ module Make
     | SetAssoc NonA -> keyword "no associativity"
     | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
     | SetOnlyPrinting -> keyword "only printing"
-    | SetOnlyParsing Flags.Current -> keyword "only parsing"
-    | SetOnlyParsing v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")
+    | SetOnlyParsing -> keyword "only parsing"
+    | SetCompatVersion v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")
     | SetFormat("text",s) -> keyword "format " ++ pr_located qs s
     | SetFormat(k,s) -> keyword "format " ++ qs k ++ spc() ++ pr_located qs s
 
@@ -1002,13 +1002,13 @@ module Make
         )
       | VernacHints (_, dbnames,h) ->
         return (pr_hints dbnames h pr_constr pr_constr_pattern_expr)
-      | VernacSyntacticDefinition (id,(ids,c),_,onlyparsing) ->
+      | VernacSyntacticDefinition (id,(ids,c),_,compat) ->
         return (
           hov 2
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
                prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
                pr_syntax_modifiers
-               (match onlyparsing with None -> [] | Some v -> [SetOnlyParsing v]))
+               (match compat with None -> [] | Some v -> [SetCompatVersion v]))
         )
       | VernacDeclareImplicits (q,[]) ->
         return (

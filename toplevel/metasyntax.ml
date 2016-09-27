@@ -673,7 +673,12 @@ type syntax_extension = {
   synext_notgram : notation_grammar;
   synext_unparsing : unparsing list;
   synext_extra : (string * string) list;
+  synext_compat : Flags.compat_version option;
 }
+
+let is_active_compat = function
+| None -> true
+| Some v -> 0 <= Flags.version_compare v !Flags.compat_version
 
 type syntax_extension_obj = locality_flag * syntax_extension list
 
@@ -685,13 +690,15 @@ let cache_one_syntax_extension se =
     let oldprec = Notation.level_of_notation ntn in
     if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec
   with Not_found ->
-    (* Reserve the notation level *)
-    Notation.declare_notation_level ntn prec;
-    (* Declare the parsing rule *)
-    if not onlyprint then Egramcoq.extend_constr_grammar prec se.synext_notgram;
-    (* Declare the notation rule *)
-    Notation.declare_notation_rule ntn
-      ~extra:se.synext_extra (se.synext_unparsing, fst prec) se.synext_notgram
+    if is_active_compat se.synext_compat then begin
+      (* Reserve the notation level *)
+      Notation.declare_notation_level ntn prec;
+      (* Declare the parsing rule *)
+      if not onlyprint then Egramcoq.extend_constr_grammar prec se.synext_notgram;
+      (* Declare the notation rule *)
+      Notation.declare_notation_rule ntn
+        ~extra:se.synext_extra (se.synext_unparsing, fst prec) se.synext_notgram
+    end
 
 let cache_syntax_extension (_, (_, sy)) =
   List.iter cache_one_syntax_extension sy
@@ -725,9 +732,10 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
 let interp_modifiers modl =
   let onlyparsing = ref false in
   let onlyprinting = ref false in
+  let compat = ref None in
   let rec interp assoc level etyps format extra = function
     | [] ->
-	(assoc,level,etyps,!onlyparsing,!onlyprinting,format,extra)
+	(assoc,level,etyps,!onlyparsing,!onlyprinting,!compat,format,extra)
     | SetEntryType (s,typ) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
@@ -749,11 +757,14 @@ let interp_modifiers modl =
     | SetAssoc a :: l ->
 	if not (Option.is_empty assoc) then error"An associativity is given more than once.";
 	interp (Some a) level etyps format extra l
-    | SetOnlyParsing _ :: l ->
+    | SetOnlyParsing :: l ->
 	onlyparsing := true;
 	interp assoc level etyps format extra l
     | SetOnlyPrinting :: l ->
 	onlyprinting := true;
+	interp assoc level etyps format extra l
+    | SetCompatVersion v :: l ->
+        compat := Some v;
 	interp assoc level etyps format extra l
     | SetFormat ("text",s) :: l ->
 	if not (Option.is_empty format) then error "A format is given more than once.";
@@ -763,7 +774,7 @@ let interp_modifiers modl =
   in interp None None [] None [] modl
 
 let check_infix_modifiers modifiers =
-  let (_, _, t, _, _, _, _) = interp_modifiers modifiers in
+  let (_, _, t, _, _, _, _, _) = interp_modifiers modifiers in
   if not (List.is_empty t) then
     error "Explicit entry level or type unexpected in infix notation."
 
@@ -775,19 +786,24 @@ let check_useless_entry_types recvars mainvars etyps =
   | _ -> ()
 
 let not_a_syntax_modifier = function
-| SetOnlyParsing _ -> true
+| SetOnlyParsing -> true
 | SetOnlyPrinting -> true
+| SetCompatVersion _ -> true
 | _ -> false
 
 let no_syntax_modifiers mods = List.for_all not_a_syntax_modifier mods
 
 let is_only_parsing mods =
-  let test = function SetOnlyParsing _ -> true | _ -> false in
+  let test = function SetOnlyParsing -> true | _ -> false in
   List.exists test mods
 
 let is_only_printing mods =
   let test = function SetOnlyPrinting -> true | _ -> false in
   List.exists test mods
+
+let get_compat_version mods =
+  let test = function SetCompatVersion v -> Some v | _ -> None in
+  try Some (List.find_map test mods) with Not_found -> None
 
 (* Compute precedences from modifiers (or find default ones) *)
 
@@ -966,7 +982,7 @@ let remove_curly_brackets l =
   in aux true l
 
 let compute_syntax_data df modifiers =
-  let (assoc,n,etyps,onlyparse,onlyprint,fmt,extra) = interp_modifiers modifiers in
+  let (assoc,n,etyps,onlyparse,onlyprint,compat,fmt,extra) = interp_modifiers modifiers in
   let assoc = match assoc with None -> (* default *) Some NonA | a -> a in
   let toks = split_notation_string df in
   let (recvars,mainvars,symbols) = analyze_notation_tokens toks in
@@ -992,12 +1008,12 @@ let compute_syntax_data df modifiers =
   let sy_data = (n,sy_typs,symbols',fmt) in
   let sy_fulldata = (i_typs,ntn_for_grammar,prec,need_squash,sy_data) in
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
-  let i_data = (onlyparse,onlyprint,recvars,mainvars,(ntn_for_interp,df')) in
+  let i_data = (onlyparse,onlyprint,compat,recvars,mainvars,(ntn_for_interp,df')) in
   (* Return relevant data for interpretation and for parsing/printing *)
   (msgs,i_data,i_typs,sy_fulldata,extra)
 
 let compute_pure_syntax_data df mods =
-  let (msgs,(onlyparse,onlyprint,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
+  let (msgs,(onlyparse,onlyprint,_,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
   let msgs =
     if onlyparse then
       (Feedback.msg_warning ?loc:None,
@@ -1014,6 +1030,7 @@ type notation_obj = {
   notobj_interp : interpretation;
   notobj_onlyparse : bool;
   notobj_onlyprint : bool;
+  notobj_compat : Flags.compat_version option;
   notobj_notation : notation * notation_location;
 }
 
@@ -1024,7 +1041,9 @@ let open_notation i (_, nobj) =
   let scope = nobj.notobj_scope in
   let (ntn, df) = nobj.notobj_notation in
   let pat = nobj.notobj_interp in
-  if Int.equal i 1 && not (Notation.exists_notation_in_scope scope ntn pat) then begin
+  let fresh = not (Notation.exists_notation_in_scope scope ntn pat) in
+  let active = is_active_compat nobj.notobj_compat in
+  if Int.equal i 1 && fresh && active then begin
     (* Declare the interpretation *)
     let onlyprint = nobj.notobj_onlyprint  in
     let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint in
@@ -1094,7 +1113,9 @@ let recover_syntax ntn =
       synext_notation = ntn;
       synext_notgram = pa_rule;
       synext_unparsing = pp_rule;
-      synext_extra = pp_extra_rules }
+      synext_extra = pp_extra_rules;
+      synext_compat = None;
+    }
   with Not_found ->
     raise NoSyntaxRule
 
@@ -1128,7 +1149,7 @@ let make_pp_rule (n,typs,symbols,fmt) =
   | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
   | Some fmt -> hunks_of_format (n, List.split typs) (symbols, parse_format fmt)
 
-let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) extra onlyprint =
+let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) extra onlyprint compat =
   let pa_rule = make_pa_rule i_typs sy_data ntn onlyprint in
   let pp_rule = make_pp_rule sy_data in
   let sy = {
@@ -1137,6 +1158,7 @@ let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) extra onlyprint =
     synext_notgram = pa_rule;
     synext_unparsing = pp_rule;
     synext_extra = extra;
+    synext_compat = compat;
   } in
   (* By construction, the rule for "{ _ }" is declared, but we need to
      redeclare it because the file where it is declared needs not be open
@@ -1153,9 +1175,9 @@ let to_map l =
 let add_notation_in_scope local df c mods scope =
   let (msgs,i_data,i_typs,sy_data,extra) = compute_syntax_data df mods in
   (* Prepare the interpretation *)
-  let (onlyparse, onlyprint, recvars,mainvars, df') = i_data in
+  let (onlyparse, onlyprint, compat, recvars,mainvars, df') = i_data in
   (* Prepare the parsing and printing rules *)
-  let sy_rules = make_syntax_rules sy_data extra onlyprint in
+  let sy_rules = make_syntax_rules sy_data extra onlyprint compat in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
   let nenv = {
     ninterp_var_type = to_map i_vars;
@@ -1173,6 +1195,7 @@ let add_notation_in_scope local df c mods scope =
     (** Order is important here! *)
     notobj_onlyparse = onlyparse;
     notobj_onlyprint = onlyprint;
+    notobj_compat = compat;
     notobj_notation = df';
   } in
   (* Ready to change the global state *)
@@ -1181,7 +1204,7 @@ let add_notation_in_scope local df c mods scope =
   Lib.add_anonymous_leaf (inNotation notation);
   df'
 
-let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse onlyprint =
+let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse onlyprint compat =
   let dfs = split_notation_string df in
   let (recvars,mainvars,symbs) = analyze_notation_tokens dfs in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
@@ -1212,6 +1235,7 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
     (** Order is important here! *)
     notobj_onlyparse = onlyparse;
     notobj_onlyprint = onlyprint;
+    notobj_compat = compat;
     notobj_notation = df';
   } in
   Lib.add_anonymous_leaf (inNotation notation);
@@ -1221,19 +1245,19 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
 
 let add_syntax_extension local ((loc,df),mods) =
   let msgs, sy_data, extra, onlyprint = compute_pure_syntax_data df mods in
-  let sy_rules = make_syntax_rules sy_data extra onlyprint in
+  let sy_rules = make_syntax_rules sy_data extra onlyprint None in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 
 (* Notations with only interpretation *)
 
 let add_notation_interpretation ((loc,df),c,sc) =
-  let df' = add_notation_interpretation_core false df c sc false false in
+  let df' = add_notation_interpretation_core false df c sc false false None in
   Dumpglob.dump_notation (loc,df') sc true
 
 let set_notation_for_interpretation impls ((_,df),c,sc) =
   (try ignore
-    (silently (fun () -> add_notation_interpretation_core false df ~impls c sc false false) ());
+    (silently (fun () -> add_notation_interpretation_core false df ~impls c sc false false None) ());
   with NoSyntaxRule ->
     error "Parsing rule for this notation has to be previously declared.");
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
@@ -1246,7 +1270,8 @@ let add_notation local c ((loc,df),modifiers) sc =
     (* No syntax data: try to rely on a previously declared rule *)
     let onlyparse = is_only_parsing modifiers in
     let onlyprint = is_only_printing modifiers in
-    try add_notation_interpretation_core local df c sc onlyparse onlyprint
+    let compat = get_compat_version modifiers in
+    try add_notation_interpretation_core local df c sc onlyparse onlyprint compat
     with NoSyntaxRule ->
       (* Try to determine a default syntax rule *)
       add_notation_in_scope local df c modifiers sc

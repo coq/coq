@@ -1115,10 +1115,9 @@ GEXTEND Gram
       | IDENT "right"; IDENT "associativity" -> SetAssoc RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc NonA
       | IDENT "only"; IDENT "printing" -> SetOnlyPrinting
-      | IDENT "only"; IDENT "parsing" ->
-        SetOnlyParsing Flags.Current
+      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
       | IDENT "compat"; s = STRING ->
-        SetOnlyParsing (Coqinit.get_compat_version s)
+        SetCompatVersion (Coqinit.get_compat_version s)
       | IDENT "format"; s1 = [s = STRING -> (!@loc,s)];
                         s2 = OPT [s = STRING -> (!@loc,s)] ->
           begin match s1, s2 with
