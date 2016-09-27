@@ -937,7 +937,6 @@ let emit_to_focus window sgn =
 let build_ui () =
   let w = GWindow.window
     ~wm_class:"CoqIde" ~wm_name:"CoqIde"
-    ~allow_grow:true ~allow_shrink:true
     ~width:window_width#get ~height:window_height#get
     ~title:"CoqIde" ()
   in
