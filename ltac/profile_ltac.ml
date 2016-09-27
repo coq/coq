@@ -166,7 +166,7 @@ let rec print_node ~filter all_total indent prefix (s, e) =
 and print_table ~filter all_total indent first_level table =
   let fold _ n l =
     let s, total = n.name, n.total in
-    if filter s then (s, n) :: l else l in
+    if filter s total then (s, n) :: l else l in
   let ls = M.fold fold table [] in
   match ls with
   | [s, n] when not first_level ->
@@ -182,7 +182,7 @@ and print_table ~filter all_total indent first_level table =
     in
     prlist (fun pr -> pr) (list_iter_is_last iter ls)
 
-let to_string ~filter node =
+let to_string ~filter ?(cutoff=0.0) node =
   let tree = node.children in
   let all_total = M.fold (fun _ { total } a -> total +. a) node.children 0.0 in
   let flat_tree =
@@ -218,6 +218,7 @@ let to_string ~filter node =
     !global
   in
   warn_encountered_multi_success_backtracking ();
+  let filter s n = filter s && n >= cutoff in
   let msg =
     h 0 (str "total time: " ++ padl 11 (format_sec (all_total))) ++
     fnl () ++
@@ -387,22 +388,24 @@ let reset_profile () =
 
 (* ******************** *)
 
-let print_results_filter ~filter =
+let print_results_filter ~cutoff ~filter =
   let valid id _ = Stm.state_of_id id <> `Expired in
   data := SM.filter valid !data;
   let results =
     SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in
   let results = merge_roots results Local.(CList.last !stack) in
-  Feedback.msg_notice (to_string ~filter results)
+  Feedback.msg_notice (to_string ~cutoff ~filter results)
 ;;
 
-let print_results () = print_results_filter ~filter:(fun _ -> true)
+let print_results ~cutoff =
+  print_results_filter ~cutoff ~filter:(fun _ -> true)
 
 let print_results_tactic tactic =
-  print_results_filter ~filter:(fun s ->
+  print_results_filter ~cutoff:0.0 ~filter:(fun s ->
     String.(equal tactic (sub (s ^ ".") 0 (min (1+length s) (length tactic)))))
 
-let do_print_results_at_close () = if get_profiling () then print_results ()
+let do_print_results_at_close () =
+  if get_profiling () then print_results ~cutoff:0.0
 
 let _ = Declaremods.append_end_library_hook do_print_results_at_close
 

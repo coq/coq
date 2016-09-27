@@ -123,15 +123,11 @@ let internal_cut_rev_no_check replace id t gl =
 let refine_no_check c gl =
   refiner (Refine c) gl
 
-let move_hyp_no_check id1 id2 gl =
-  refiner (Move (id1,id2)) gl
-
 (* Versions with consistency checks *)
 
 let internal_cut b d t = with_check (internal_cut_no_check b d t)
 let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)
-let move_hyp id id'  = with_check (move_hyp_no_check id id')
 
 (* Pretty-printers *)
 

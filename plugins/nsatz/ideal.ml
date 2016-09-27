@@ -127,11 +127,11 @@ type polynom =
     num : int;
     sugar : int}
 
-let nvar m =  Array.length m - 1
+let nvar (m : mon) =  Array.length m - 1
 
-let deg m = m.(0)
+let deg (m : mon) = m.(0)
 
-let mult_mon m m' =
+let mult_mon (m : mon) (m' : mon) =
   let d = nvar m in
   let m'' = Array.make (d+1) 0 in
   for i=0 to d do
@@ -140,7 +140,7 @@ let mult_mon m m' =
   m''
 
 
-let compare_mon m m' =
+let compare_mon (m : mon) (m' : mon) =
   let d = nvar m in
   if !lexico
   then (
@@ -148,18 +148,18 @@ let compare_mon m m' =
     let res=ref 0 in
     let i=ref 1 in (* 1 si lexico pur 0 si degre*)
     while (!res=0) && (!i<=d) do
-      res:= (compare m.(!i) m'.(!i));
+      res:= (Int.compare m.(!i) m'.(!i));
       i:=!i+1;
     done;
     !res)
   else (
      (* degre lexicographique inverse *)
-    match compare m.(0) m'.(0) with
+    match Int.compare m.(0) m'.(0) with
     | 0 -> (* meme degre total *)
 	let res=ref 0 in
 	let i=ref d in
 	while (!res=0) && (!i>=1) do
-	  res:= - (compare m.(!i) m'.(!i));
+	  res:= - (Int.compare m.(!i) m'.(!i));
 	  i:=!i-1;
 	done;
 	!res
@@ -402,29 +402,25 @@ let polconst d c =
   [(c,m)]
 
 let plusP p q =
-  let rec plusP p q =
-    match p with
-      [] -> q
-    |t::p' -> 
-	match q with
-	  [] -> p
-	|t'::q' ->
-            match compare_mon (snd t) (snd t') with
-              1 -> t::(plusP p' q)
-            |(-1) -> t'::(plusP p q')
-            |_ -> let c=P.plusP (fst t) (fst t') in
-              match P.equal c coef0 with
-                true -> (plusP p' q')
-              |false -> (c,(snd t))::(plusP p' q')
-  in plusP p q
+  let rec plusP p q accu = match p, q with
+  | [], [] -> List.rev accu
+  | [], _ -> List.rev_append accu q
+  | _, [] -> List.rev_append accu p
+  | t :: p', t' :: q' ->
+    let c = compare_mon (snd t) (snd t') in
+    if c > 0 then plusP p' q (t :: accu)
+    else if c < 0 then plusP p q' (t' :: accu)
+    else
+      let c = P.plusP (fst t) (fst t') in
+      if P.equal c coef0 then plusP p' q' accu
+      else plusP p' q' ((c, (snd t)) :: accu)
+  in
+  plusP p q []
 
 (* multiplication by (a,monomial) *)
 let mult_t_pol a m p =
-  let rec mult_t_pol p =
-    match p with
-      [] -> []
-    |(b,m')::p -> ((P.multP a b),(mult_mon m m'))::(mult_t_pol p)
-  in mult_t_pol p
+  let map (b, m') = (P.multP a b, mult_mon m m') in
+  CList.map map p
 
 let coef_of_int x = P.of_num (Num.Int x)
 
@@ -451,23 +447,27 @@ let emultP a p =
   in emultP p
 
 let multP p q =
-  let rec aux p =
+  let rec aux p accu =
     match p with
-      [] -> []
-    |(a,m)::p' -> plusP (mult_t_pol a m q) (aux p')
-  in aux p
+      [] -> accu
+    |(a,m)::p' -> aux p' (plusP (mult_t_pol a m q) accu)
+  in aux p []
 
 let puisP p n=
   match p with
     [] -> []
   |_ ->
+    if n = 0 then
       let d = nvar (snd (List.hd p)) in
-      let rec puisP n =
-	match n with
-	  0 -> [coef1, Array.make (d+1) 0]
-	| 1 -> p
-	|_ -> multP p (puisP (n-1))
-      in puisP n
+      [coef1, Array.make (d+1) 0]
+    else
+      let rec puisP p n =
+        if n = 1 then p
+        else
+          let q = puisP p (n / 2) in
+          let q = multP q q in
+          if n mod 2 = 0 then q else multP p q
+      in puisP p n
 	
 let rec contentP p =
   match p with

@@ -108,7 +108,7 @@ let init_load_path () =
     (* additional loadpath, given with options -Q and -R *)
     List.iter
       (fun (unix_path, coq_root, implicit) ->
-        Mltop.add_rec_path Mltop.AddTopML ~unix_path ~coq_root ~implicit)
+        Mltop.add_rec_path Mltop.AddNoML ~unix_path ~coq_root ~implicit)
       (List.rev !includes);
     (* additional ml directories, given with option -I *)
     List.iter Mltop.add_ml_dir (List.rev !ml_includes)

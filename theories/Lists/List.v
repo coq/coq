@@ -21,12 +21,12 @@ Set Implicit Arguments.
 
 Open Scope list_scope.
 
-(** Standard notations for lists. 
+(** Standard notations for lists.
 In a special module to avoid conflicts. *)
 Module ListNotations.
-Notation " [ ] " := nil (format "[ ]") : list_scope.
-Notation " [ x ] " := (cons x nil) : list_scope.
-Notation " [ x ; y ; .. ; z ] " :=  (cons x (cons y .. (cons z nil) ..)) : list_scope.
+Notation "[ ]" := nil (format "[ ]") : list_scope.
+Notation "[ x ]" := (cons x nil) : list_scope.
+Notation "[ x ; y ; .. ; z ]" :=  (cons x (cons y .. (cons z nil) ..)) : list_scope.
 End ListNotations.
 
 Import ListNotations.
@@ -195,7 +195,7 @@ Section Facts.
   Qed.
 
   Theorem app_nil_r : forall l:list A, l ++ [] = l.
-  Proof. 
+  Proof.
     induction l; simpl; f_equal; auto.
   Qed.
 

@@ -316,7 +316,18 @@ let apply_clear_request clear_flag dft c =
   else Tacticals.New.tclIDTAC
 
 (* Moving hypotheses *)
-let move_hyp id dest = Proofview.V82.tactic (Tacmach.move_hyp id dest)
+let move_hyp id dest =
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let ty = Proofview.Goal.raw_concl gl in
+    let store = Proofview.Goal.extra gl in
+    let sign = named_context_val env in
+    let sign' = move_hyp_in_named_context id dest sign in
+    let env = reset_with_named_context sign' env in
+    Refine.refine ~unsafe:true { run = begin fun sigma ->
+      Evarutil.new_evar env sigma ~principal:true ~store ty
+    end }
+  end }
 
 (* Renaming hypotheses *)
 let rename_hyp repl =
@@ -368,7 +379,7 @@ let rename_hyp repl =
       let nctx = Environ.val_of_named_context nhyps in
       let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
       Refine.refine ~unsafe:true { run = begin fun sigma ->
-        Evarutil.new_evar_instance nctx sigma nconcl ~store instance
+        Evarutil.new_evar_instance nctx sigma nconcl ~principal:true ~store instance
       end }
     end }
 

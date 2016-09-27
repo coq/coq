@@ -735,9 +735,6 @@ let pr_prim_rule = function
       str(if Termops.occur_meta c then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c
 
-  | Move (id1,id2) ->
-      (str"move "  ++ pr_id id1 ++ Miscprint.pr_move_location pr_id id2)
-
 (* Backwards compatibility *)
 
 let prterm = pr_lconstr

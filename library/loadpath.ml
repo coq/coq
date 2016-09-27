@@ -72,9 +72,6 @@ let add_load_path phys_path coq_path ~implicit =
     let replace =
       if DirPath.equal coq_path old_path then
         implicit <> old_implicit
-      else if DirPath.equal coq_path (Nameops.default_root_prefix)
-              && String.equal phys_path (CUnix.canonical_path_name Filename.current_dir_name) then
-        false (* This is the default "-I ." path, don't override the old path *)
       else
         let () =
           (* Do not warn when overriding the default "-I ." path *)
