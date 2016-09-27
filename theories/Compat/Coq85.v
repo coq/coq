@@ -12,6 +12,10 @@
     are likely needed to make them behave like Coq 8.5. *)
 Require Export Coq.Compat.Coq86.
 
+(** We use some deprecated options in this file, so we disable the
+    corresponding warning, to silence the build of this file. *)
+Local Set Warnings "-deprecated-option".
+
 (* In 8.5, "intros [|]", taken e.g. on a goal "A\/B->C", does not
    behave as "intros [H|H]" but leave instead hypotheses quantified in
    the goal, here producing subgoals A->C and B->C. *)
