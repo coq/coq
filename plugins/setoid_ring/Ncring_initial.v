@@ -78,7 +78,8 @@ Context {R:Type}`{Ring R}.
   | Z0 => 0
   | Zneg p => -(gen_phiPOS p)
   end.
- Notation "[ x ]" := (gen_phiZ x).
+ Local Notation "[ x ]" := (gen_phiZ x) : ZMORPHISM_scope.
+ Local Open Scope ZMORPHISM_scope.
 
  Definition get_signZ z :=
   match z with
@@ -168,7 +169,7 @@ Ltac rsimpl := simpl.
   intros x y; repeat rewrite same_genZ; generalize x y;clear x y.
   induction x;destruct y;simpl;norm.
   apply ARgen_phiPOS_add.
-  apply gen_phiZ1_add_pos_neg. 
+  apply gen_phiZ1_add_pos_neg.
    rewrite gen_phiZ1_add_pos_neg. rewrite ring_add_comm.
 reflexivity.
  rewrite ARgen_phiPOS_add. rewrite ring_opp_add. reflexivity.
