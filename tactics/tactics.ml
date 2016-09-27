@@ -377,7 +377,7 @@ let rename_hyp repl =
       let nctx = Environ.val_of_named_context nhyps in
       let instance = List.map (mkVar % get_id) hyps in
       Refine.refine ~unsafe:true { run = begin fun sigma ->
-        Evarutil.new_evar_instance nctx sigma nconcl ~store instance
+        Evarutil.new_evar_instance nctx sigma nconcl ~principal:true ~store instance
       end }
     end }
 
