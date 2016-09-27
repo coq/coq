@@ -238,7 +238,8 @@ Section ALMOST_RING.
  Variable req : R -> R -> Prop.
  Notation "0" := rO.  Notation "1" := rI.
  Infix "==" := req. Infix "+" := radd.  Infix "* " := rmul.
- Infix "-" := rsub. Notation "- x" := (ropp x).
+ Infix "-" := rsub : ALMOST_RING0. Notation "- x" := (ropp x) : ALMOST_RING0.
+ Local Open Scope ALMOST_RING0.
 
  (** Leibniz equality leads to a setoid theory and is extensional*)
  Lemma Eqsth : Equivalence (@eq R).
@@ -261,9 +262,10 @@ Section ALMOST_RING.
 
  (** Every semi ring can be seen as an almost ring, by taking :
         -x = x and x - y = x + y *)
- Definition SRopp (x:R) := x. Notation "- x" := (SRopp x).
+ Definition SRopp (x:R) := x. Notation "- x" := (SRopp x) : ALMOST_RING1.
+ Local Open Scope ALMOST_RING1.
 
- Definition SRsub x y := x + -y. Notation "x - y " := (SRsub x y).
+ Definition SRsub x y := x + -y. Notation "x - y " := (SRsub x y) : ALMOST_RING1.
 
  Lemma SRopp_ext : forall x y, x == y -> -x == -y.
  Proof. intros x y H; exact H. Qed.
