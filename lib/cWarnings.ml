@@ -21,7 +21,7 @@ let warnings : (string, t) Hashtbl.t = Hashtbl.create 97
 let categories : (string, string list) Hashtbl.t = Hashtbl.create 97
 
 let current_loc = ref Loc.ghost
-let flags = ref ""
+let flags = ref "default"
 
 let set_current_loc = (:=) current_loc
 
