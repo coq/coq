@@ -67,7 +67,9 @@ let pp_boxed_tuple f = function
     blocks is less that a line length. To avoid this awkward situation,
     we attach a big virtual size to [fnl] newlines. *)
 
-let fnl () = stras (1000000,"") ++ fnl ()
+(* EG: This looks quite suspicious... but beware of bugs *)
+(* let fnl () = stras (1000000,"") ++ fnl () *)
+let fnl () = fnl ()
 
 let fnl2 () = fnl () ++ fnl ()
 

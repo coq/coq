@@ -13,7 +13,6 @@ type std_ppcmds
 (** {6 Formatting commands} *)
 
 val str   : string -> std_ppcmds
-val stras : int * string -> std_ppcmds
 val brk   : int * int -> std_ppcmds
 val fnl   : unit -> std_ppcmds
 val pifb  : unit -> std_ppcmds

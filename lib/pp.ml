@@ -58,18 +58,14 @@ open Pp_control
  *)
 
 type block_type =
-  | Pp_hbox of int
-  | Pp_vbox of int
-  | Pp_hvbox of int
+  | Pp_hbox   of int
+  | Pp_vbox   of int
+  | Pp_hvbox  of int
   | Pp_hovbox of int
 
-type str_token =
-| Str_def of string
-| Str_len of string * int (** provided length *)
-
-type 'a ppcmd_token =
-  | Ppcmd_print of 'a
-  | Ppcmd_box of block_type * ('a ppcmd_token Glue.t)
+type ppcmd_token =
+  | Ppcmd_string of string
+  | Ppcmd_box of block_type * (ppcmd_token Glue.t)
   | Ppcmd_print_break of int * int
   | Ppcmd_white_space of int
   | Ppcmd_force_newline
@@ -81,11 +77,11 @@ type 'a ppcmd_token =
   | Ppcmd_close_tag
 
 type 'a ppdir_token =
-  | Ppdir_ppcmds of 'a ppcmd_token Glue.t
+  | Ppdir_ppcmds of ppcmd_token Glue.t
   | Ppdir_print_newline
   | Ppdir_print_flush
 
-type ppcmd = str_token ppcmd_token
+type ppcmd = ppcmd_token
 
 type std_ppcmds = ppcmd Glue.t
 
@@ -134,8 +130,7 @@ let utf8_length s =
   !cnt
 
 (* formatting commands *)
-let str s = Glue.atom(Ppcmd_print (Str_def s))
-let stras (i, s) = Glue.atom(Ppcmd_print (Str_len (s, i)))
+let str s = Glue.atom(Ppcmd_string s)
 let brk (a,b) = Glue.atom(Ppcmd_print_break (a,b))
 let fnl () = Glue.atom(Ppcmd_force_newline)
 let pifb () = Glue.atom(Ppcmd_print_if_broken)
@@ -236,14 +231,9 @@ let pp_dirs ?pp_tag ft =
     | Pp_hovbox n -> Format.pp_open_hovbox ft n
   in
   let rec pp_cmd = function
-    | Ppcmd_print tok         ->
-        begin match tok with
-        | Str_def s ->
-          let n = utf8_length s in
-          Format.pp_print_as ft n s
-        | Str_len (s, n) ->
-          Format.pp_print_as ft n s
-        end
+    | Ppcmd_string str         ->
+      let n = utf8_length str in
+      Format.pp_print_as ft n str
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
         pp_open_box bty ;
         if not (Format.over_max_boxes ()) then Glue.iter pp_cmd ss;
