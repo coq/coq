@@ -167,7 +167,8 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 val build_constant_by_tactic :
   Id.t -> Evd.evar_universe_context -> named_context_val -> ?goal_kind:goal_kind ->
   types -> unit Proofview.tactic -> 
-  Safe_typing.private_constants Entries.definition_entry * bool * Evd.evar_universe_context
+  Safe_typing.private_constants Entries.definition_entry * bool *
+    Evd.evar_universe_context
 
 val build_by_tactic : ?side_eff:bool -> env -> Evd.evar_universe_context -> ?poly:polymorphic ->
   types -> unit Proofview.tactic -> 
@@ -189,5 +190,4 @@ val declare_implicit_tactic : unit Proofview.tactic -> unit
 val clear_implicit_tactic : unit -> unit
 
 (* Raise Exit if cannot solve *)
-(* FIXME: interface: it may incur some new universes etc... *)
-val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> constr
+val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> Evd.evar_map * constr
