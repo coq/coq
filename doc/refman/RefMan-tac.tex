@@ -46,13 +46,13 @@ goal selector (see Section \ref{ltac:selector}).
 If no selector is specified, the default
 selector (see Section \ref{default-selector}) is used.
 
-\newcommand{\selector}{\nterm{selector}}
+\newcommand{\toplevelselector}{\nterm{toplevel\_selector}}
 \begin{tabular}{lcl}
-{\commandtac} & ::= & {\selector} {\tt :} {\tac} {\tt .}\\
+{\commandtac} & ::= & {\toplevelselector} {\tt :} {\tac} {\tt .}\\
  & $|$ & {\tac} {\tt .}
 \end{tabular}
-\subsection[\tt Set Default Goal Selector ``\selector''.]
-           {\tt Set Default Goal Selector ``\selector''.
+\subsection[\tt Set Default Goal Selector ``\toplevelselector''.]
+           {\tt Set Default Goal Selector ``\toplevelselector''.
             \optindex{Default Goal Selector}
             \label{default-selector}}
 After using this command, the default selector -- used when no selector

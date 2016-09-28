@@ -26,6 +26,7 @@ problems.
 \def\tacarg{\nterm{tacarg}}
 \def\cpattern{\nterm{cpattern}}
 \def\selector{\textrm{\textsl{selector}}}
+\def\toplevelselector{\textrm{\textsl{toplevel\_selector}}}
 
 The syntax of the tactic language is given Figures~\ref{ltac}
 and~\ref{ltac-aux}. See Chapter~\ref{BNF-syntax} for a description of
@@ -105,7 +106,7 @@ is understood as
 & | & {\tt exactly\_once} {\tacexprpref}\\
 & | & {\tt timeout} {\it (}{\naturalnumber} {\it |} {\ident}{\it )} {\tacexprpref}\\
 & | & {\tt time} \zeroone{\qstring} {\tacexprpref}\\
-& | & {\selector} {\tt :} {\tacexprpref}\\
+& | & {\tt only} {\selector} {\tt :} {\tacexprpref}\\
 & | & {\tacexprinf} \\
 \\
 {\tacexprinf} & ::= &
@@ -209,11 +210,14 @@ is understood as
 \\
 \selector & ::= &
         [{\ident}]\\
-& $|$ & {\tt all}\\
-& $|$ & {\tt par}\\
 & $|$ & {\integer}\\
 & $|$ & \nelist{{\it (}{\integer} {\it |} {\integer} {\tt -} {\integer}{\it )}}
-          {\tt ,}
+          {\tt ,}\\
+\\
+\toplevelselector & ::= &
+        \selector\\
+& $|$ & {\tt all}\\
+& $|$ & {\tt par}
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of the tactic language (continued)}
@@ -374,7 +378,12 @@ for $=1,...,n$. It fails if the number of focused goals is not exactly $n$.
 We can restrict the application of a tactic to a subset of
 the currently focused goals with:
 \begin{quote}
-{\selector} {\tt :} {\tacexpr}
+  {\toplevelselector} {\tt :} {\tacexpr}
+\end{quote}
+We can also use selectors as a tactical, which allows to use them nested in
+a tactic expression, by using the keyword {\tt only}:
+\begin{quote}
+  {\tt only} {\selector} {\tt :} {\tacexpr}
 \end{quote}
 When selecting several goals, the tactic {\tacexpr} is applied globally to
 all selected goals.
@@ -396,11 +405,12 @@ all selected goals.
     of goals described by the given ranges. You can write a single
     $n$ as a shortcut for $n$-$n$ when specifying multiple ranges.
 
-  \item {\tt all: } {\tacexpr}
+  \item {\tt all:} {\tacexpr}
 
     In this variant, {\tacexpr} is applied to all focused goals.
+    {\tt all:} can only be used at the toplevel of a tactic expression.
 
-  \item {\tt par: } {\tacexpr}
+  \item {\tt par:} {\tacexpr}
 
     In this variant, {\tacexpr} is applied to all focused goals
     in parallel.  The number of workers can be controlled via the
@@ -409,7 +419,7 @@ all selected goals.
     on goals containing no existential variables and {\tacexpr} must
     either solve the goal completely or do nothing (i.e. it cannot make
     some progress).
-    {\tt par: } can only be used at the top level of a tactic expression.
+    {\tt par:} can only be used at the toplevel of a tactic expression.
 
 \end{Variants}
 
