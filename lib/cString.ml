@@ -17,7 +17,6 @@ sig
   val explode : string -> string list
   val implode : string list -> string
   val strip : string -> string
-  val map : (char -> char) -> string -> string
   val drop_simple_quotes : string -> string
   val string_index_from : string -> int -> string -> int
   val string_contains : where:string -> what:string -> bool
@@ -77,12 +76,6 @@ let strip s =
   in
   let a = lstrip_rec 0 and b = rstrip_rec (n-1) in
   String.sub s a (b-a+1)
-
-let map f s =
-  let l = String.length s in
-  let r = String.create l in
-  for i = 0 to (l - 1) do r.[i] <- f (s.[i]) done;
-  r
 
 let drop_simple_quotes s =
   let n = String.length s in
