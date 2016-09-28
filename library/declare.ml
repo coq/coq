@@ -434,6 +434,23 @@ let assumption_message id =
 
 (** Global universe names, in a different summary *)
 
+type universe_context_decl = polymorphic * Univ.universe_context_set
+
+let cache_universe_context (p, ctx) =
+  Global.push_context_set p ctx;
+  if p then Lib.add_section_context ctx
+
+let input_universe_context : universe_context_decl -> Libobject.obj =
+  declare_object
+    { (default_object "Global universe context state") with
+      cache_function = (fun (na, pi) -> cache_universe_context pi);
+      load_function = (fun _ (_, pi) -> cache_universe_context pi);
+      discharge_function = (fun (_, (p, _ as x)) -> if p then None else Some x);
+      classify_function = (fun a -> Keep a) }
+
+let declare_universe_context poly ctx =
+  Lib.add_anonymous_leaf (input_universe_context (poly, ctx))
+
 (* Discharged or not *)
 type universe_decl = polymorphic * (Id.t * Univ.universe_level) list
 
@@ -446,9 +463,8 @@ let cache_universes (p, l) =
          Univ.ContextSet.add_universe lev ctx))
       (glob, Univ.ContextSet.empty) l
   in
-    Global.push_context_set p ctx;
-    if p then Lib.add_section_context ctx;
-    Universes.set_global_universe_names glob'
+  cache_universe_context (p, ctx);
+  Universes.set_global_universe_names glob'
 
 let input_universes : universe_decl -> Libobject.obj =
   declare_object
@@ -475,8 +491,10 @@ let do_universe poly l =
 type constraint_decl = polymorphic * Univ.constraints
 
 let cache_constraints (na, (p, c)) =
-  Global.add_constraints c;
-  if p then Lib.add_section_context (Univ.ContextSet.add_constraints c Univ.ContextSet.empty)
+  let ctx =
+    Univ.ContextSet.add_constraints c
+      Univ.ContextSet.empty (* No declared universes here, just constraints *)
+  in cache_universe_context (p,ctx)
 
 let discharge_constraints (_, (p, c as a)) =
   if p then None else Some a
