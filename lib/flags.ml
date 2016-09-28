@@ -122,7 +122,7 @@ let version_strictly_greater v = match !compat_version, v with
 | _ , V8_4 -> false
 | V8_4 , _ -> true
 | _ , V8_3 -> false
-| v8_3 , _ -> true
+| V8_3 , _ -> true
 | V8_2 , V8_2 -> false
 
 
