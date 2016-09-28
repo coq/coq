@@ -153,9 +153,6 @@ module Cst_stack = struct
   let empty = []
   let is_empty = CList.is_empty
 
-  let sanity x y =
-    assert(Term.eq_constr x y)
-
   let drop_useless = function
     | _ :: ((_,_,[])::_ as q) -> q
     | l -> l
@@ -164,9 +161,9 @@ module Cst_stack = struct
     let append2cst = function
       | (c,params,[]) -> (c, h::params, [])
       | (c,params,((i,t)::q)) when i = pred (Array.length t) ->
-	 let () = sanity h t.(i) in (c, params, q)
+	(c, params, q)
       | (c,params,(i,t)::q) ->
-	let () = sanity h t.(i) in (c, params, (succ i,t)::q)
+	(c, params, (succ i,t)::q)
     in
       drop_useless (List.map append2cst cst_l)
 
