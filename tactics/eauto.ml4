@@ -291,7 +291,8 @@ module SearchProblem = struct
       in
       let rec_tacs =
 	let l =
-	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
+          let concl = Reductionops.nf_evar (project g)(pf_concl g) in
+	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) concl)
 	in
 	List.map
 	  (fun (lgls, cost, pp) ->
