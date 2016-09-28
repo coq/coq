@@ -443,6 +443,10 @@ module New = struct
     | [a]   -> tac a (* so that returned failure is the one from last item *)
     | a::tl -> tclORELSE (tac a) (tclFIRST_PROGRESS_ON tac tl)
 
+  let rec tclANY tac = function
+    | [] -> tclZEROMSG (str "No applicable tactic.")
+    | arg :: l -> tclORD (tac arg) (fun () -> tclANY tac l)
+
   let rec tclDO n t =
     if n < 0 then
       tclZEROMSG (str"Wrong argument : Do needs a positive integer.")
