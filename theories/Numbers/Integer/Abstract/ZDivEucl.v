@@ -30,18 +30,23 @@ Require Import ZAxioms ZMulOrder ZSgnAbs NZDiv.
     We just ignore them here.
 *)
 
-Module Type EuclidSpec (Import A : ZAxiomsSig')(Import B : DivMod' A).
- Axiom mod_always_pos : forall a b, b ~= 0 -> 0 <= a mod b < abs b.
+Module Type EuclidSpec (Import A : ZAxiomsSig')(Import B : DivMod A).
+ Axiom mod_always_pos : forall a b, b ~= 0 -> 0 <= B.modulo a b < abs b.
 End EuclidSpec.
 
 Module Type ZEuclid (Z:ZAxiomsSig) := NZDiv.NZDiv Z <+ EuclidSpec Z.
-Module Type ZEuclid' (Z:ZAxiomsSig) := NZDiv.NZDiv' Z <+ EuclidSpec Z.
 
 Module ZEuclidProp
  (Import A : ZAxiomsSig')
  (Import B : ZMulOrderProp A)
  (Import C : ZSgnAbsProp A B)
- (Import D : ZEuclid' A).
+ (Import D : ZEuclid A).
+
+ (** We put notations in a scope, to avoid warnings about
+     redefinitions of notations *)
+ Infix "/" := D.div : euclid.
+ Infix "mod" := D.modulo : euclid.
+ Local Open Scope euclid.
 
  Module Import Private_NZDiv := Nop <+ NZDivProp A D B.
 
@@ -615,4 +620,3 @@ intros (c,Hc). rewrite Hc. now apply mod_mul.
 Qed.
 
 End ZEuclidProp.
-
