@@ -401,11 +401,11 @@ let print_results ~cutoff =
   print_results_filter ~cutoff ~filter:(fun _ -> true)
 
 let print_results_tactic tactic =
-  print_results_filter ~cutoff:0.0 ~filter:(fun s ->
+  print_results_filter ~cutoff:!Flags.profile_ltac_cutoff ~filter:(fun s ->
     String.(equal tactic (sub (s ^ ".") 0 (min (1+length s) (length tactic)))))
 
 let do_print_results_at_close () =
-  if get_profiling () then print_results ~cutoff:0.0
+  if get_profiling () then print_results ~cutoff:!Flags.profile_ltac_cutoff
 
 let _ = Declaremods.append_end_library_hook do_print_results_at_close
 

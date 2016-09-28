@@ -31,7 +31,7 @@ VERNAC COMMAND EXTEND ResetLtacProfiling CLASSIFIED AS SIDEFF
 END
 
 VERNAC COMMAND EXTEND ShowLtacProfile CLASSIFIED AS QUERY
-| [ "Show" "Ltac" "Profile" ] -> [ print_results ~cutoff:0.0 ]
+| [ "Show" "Ltac" "Profile" ] -> [ print_results ~cutoff:!Flags.profile_ltac_cutoff ]
 | [ "Show" "Ltac" "Profile" "CutOff" int(n) ] -> [ print_results ~cutoff:(float_of_int n) ]
 END
 

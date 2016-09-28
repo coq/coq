@@ -523,6 +523,7 @@ let parse_args arglist =
     |"-load-vernac-source-verbose"|"-lv" -> add_load_vernacular true (next ())
     |"-outputstate" -> set_outputstate (next ())
     |"-print-mod-uid" -> let s = String.concat " " (List.map get_native_name rem) in print_endline s; exit 0
+    |"-profile-ltac-cutoff" -> Flags.profile_ltac := true; Flags.profile_ltac_cutoff := get_float opt (next ())
     |"-require" -> add_require (next ())
     |"-top" -> set_toplevel_name (dirpath_of_string (next ()))
     |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())

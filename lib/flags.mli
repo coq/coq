@@ -149,6 +149,7 @@ val tactic_context_compat : bool ref
     context vs. appcontext) is set. *)
 
 val profile_ltac : bool ref
+val profile_ltac_cutoff : float ref
 
 (** Dump the bytecode after compilation (for debugging purposes) *)
 val dump_bytecode : bool ref
