@@ -111,10 +111,10 @@ let set_buffer_handlers
     let id = ref 0 in
     fun () -> incr id; !id in
   let running_action = ref None in
-  let cancel_signal reason =
+  let cancel_signal ?(stop_emit=true) reason =
     Minilib.log ("user_action cancelled: "^reason);
     action_was_cancelled := true;
-    GtkSignal.stop_emit () in
+    if stop_emit then GtkSignal.stop_emit () in
   let del_mark () =
     try buffer#delete_mark (`NAME "target")
     with GText.No_such_mark _ -> () in
@@ -127,7 +127,7 @@ let set_buffer_handlers
       fun () -> (* If Coq is busy due to the current action, we don't cancel *)
         match !running_action with
         | Some aid when aid = action -> ()
-        | _ -> cancel_signal "Coq busy" in
+        | _ -> cancel_signal ~stop_emit:false "Coq busy" in
     Coq.try_grab coqtop action fallback in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
   let get_stop () = buffer#get_iter_at_mark (`NAME "stop_of_input") in
