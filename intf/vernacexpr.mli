@@ -415,7 +415,7 @@ type vernac_expr =
   | VernacDeclareImplicits of reference or_by_notation *
       (explicitation * bool * bool) list list
   | VernacArguments of reference or_by_notation *
-      ((Name.t * bool * (Loc.t * string) option * bool * bool) list) list *
+      (vernac_argument_status list) list *
       int * [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
               `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
               `DefaultImplicits ] list
@@ -476,6 +476,13 @@ type vernac_expr =
 and tacdef_body =
   | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
   | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
+
+and vernac_argument_status = {
+  name : Name.t;
+  recarg_like : bool;
+  notation_scope : (Loc.t * string) option;
+  implicit_status : [ `Implicit | `MaximallyImplicit | `NotImplicit];
+}
 
 (* A vernac classifier has to tell if a command:
    vernac_when: has to be executed now (alters the parser) or later

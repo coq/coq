@@ -1,9 +1,20 @@
+File "/home/gares/COQ/coq/test-suite/output/Arguments_renaming.v", line 1, characters 0-36:
+Warning: Ignoring rename of x into y. Only implicit arguments can be renamed.
+[arguments-assert,vernacular]
 The command has indeed failed with message:
 Error: To rename arguments the "rename" flag must be specified.
 Argument A renamed to B.
-The command has indeed failed with message:
-Error: To rename arguments the "rename" flag must be specified.
-Argument A renamed to T.
+File "/home/gares/COQ/coq/test-suite/output/Arguments_renaming.v", line 2, characters 0-25:
+Warning: Ignoring rename of A into T. Only implicit arguments can be renamed.
+[arguments-assert,vernacular]
+File "/home/gares/COQ/coq/test-suite/output/Arguments_renaming.v", line 2, characters 0-25:
+Warning: This command is just asserting the number and names of arguments of
+identity. If this is what you want add ': assert' to silence the warning. If
+you want to clear implicit arguments add ': clear implicits'. If you want to
+clear notation scopes add ': clear scopes' [arguments-assert,vernacular]
+File "/home/gares/COQ/coq/test-suite/output/Arguments_renaming.v", line 4, characters 0-40:
+Warning: Ignoring rename of x into y. Only implicit arguments can be renamed.
+[arguments-assert,vernacular]
 @eq_refl
      : forall (B : Type) (y : B), y = y
 eq_refl
@@ -110,6 +121,9 @@ The command has indeed failed with message:
 Error: Argument z cannot be declared implicit.
 The command has indeed failed with message:
 Error: Extra argument y.
+File "/home/gares/COQ/coq/test-suite/output/Arguments_renaming.v", line 53, characters 0-26:
+Warning: Ignoring rename of x into s. Only implicit arguments can be renamed.
+[arguments-assert,vernacular]
 The command has indeed failed with message:
 Error: To rename arguments the "rename" flag must be specified.
 Argument A renamed to R.

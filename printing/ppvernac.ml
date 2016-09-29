@@ -1029,16 +1029,18 @@ module Make
               pr_smart_global q ++
               let pr_s = function None -> str"" | Some (_,s) -> str "%" ++ str s in
               let pr_if b x = if b then x else str "" in
-              let pr_br imp max x = match imp, max with
-                | true, false -> str "[" ++ x ++ str "]"
-                | true, true -> str "{" ++ x ++ str "}"
-                | _ -> x in
+              let pr_br imp x = match imp with
+                | `Implicit -> str "[" ++ x ++ str "]"
+                | `MaximallyImplicit -> str "{" ++ x ++ str "}"
+                | `NotImplicit -> x in
               let rec aux n l =
                 match n, l with
                   | 0, l -> spc () ++ str"/" ++ aux ~-1 l
                   | _, [] -> mt()
-                  | n, (id,k,s,imp,max) :: tl ->
-                    spc() ++ pr_br imp max (pr_if k (str"!") ++ pr_name id ++ pr_s s) ++
+                  | n, { name = id; recarg_like = k;
+                         notation_scope = s;
+                         implicit_status = imp } :: tl ->
+                    spc() ++ pr_br imp (pr_if k (str"!") ++ pr_name id ++ pr_s s) ++
                       aux (n-1) tl in
               prlist_with_sep (fun () -> str", ") (aux nargs) impl ++
                 (if not (List.is_empty mods) then str" : " else str"") ++

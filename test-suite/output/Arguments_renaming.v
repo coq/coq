@@ -1,5 +1,5 @@
 Fail Arguments eq_refl {B y}, [B] y.
-Fail Arguments identity T _ _.
+Arguments identity T _ _.
 Arguments eq_refl A x : assert.
 Arguments eq_refl {B y}, [B] y : rename.
 

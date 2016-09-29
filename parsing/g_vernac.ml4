@@ -653,23 +653,35 @@ GEXTEND Gram
       | IDENT "Arguments"; qid = smart_global; 
         impl = LIST1 [ l = LIST0
         [ item = argument_spec ->
-            let id, r, s = item in [`Id (id,r,s,false,false)]
+            let name, recarg_like, notation_scope = item in
+            [`Id { name=name; recarg_like=recarg_like;
+                   notation_scope=notation_scope;
+                   implicit_status = `NotImplicit}]
         | "/" -> [`Slash]
         | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
             let f x = match sc, x with
             | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,false,false)) items
+            List.map (fun (name,recarg_like,notation_scope) ->
+              `Id { name=name; recarg_like=recarg_like;
+                    notation_scope=f notation_scope;
+                    implicit_status = `NotImplicit}) items
         | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
             let f x = match sc, x with
             | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,true,false)) items
+            List.map (fun (name,recarg_like,notation_scope) ->
+              `Id { name=name; recarg_like=recarg_like;
+                    notation_scope=f notation_scope;
+                    implicit_status = `Implicit}) items
         | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
             let f x = match sc, x with
             | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,true,true)) items
+            List.map (fun (name,recarg_like,notation_scope) ->
+              `Id { name=name; recarg_like=recarg_like;
+                    notation_scope=f notation_scope;
+                    implicit_status = `MaximallyImplicit}) items
         ] -> l ] SEP ",";
         mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> l ] ->
          let mods = match mods with None -> [] | Some l -> List.flatten l in
