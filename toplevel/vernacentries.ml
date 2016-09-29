@@ -448,7 +448,27 @@ let vernac_notation locality local =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print k l hook = start_proof_com k l hook
+let start_proof_and_print k l hook =
+  let inference_hook =
+    if Flags.is_program_mode () then
+      let hook env sigma ev =
+        let tac = !Obligations.default_tactic in
+        let evi = Evd.find sigma ev in
+        let env = Evd.evar_filtered_env evi in
+        try
+          let concl = Evarutil.nf_evars_universes sigma evi.Evd.evar_concl in
+          if Evarutil.has_undefined_evars sigma concl then raise Exit;
+          let c, _, ctx =
+            Pfedit.build_by_tactic env (Evd.evar_universe_context sigma)
+                                   concl (Tacticals.New.tclCOMPLETE tac)
+          in Evd.set_universe_context sigma ctx, c
+        with Logic_monad.TacticFailure e when Logic.catchable_exception e ->
+          error "The statement obligations could not be resolved \
+                 automatically, write a statement definition first."
+      in Some hook
+    else None
+  in
+  start_proof_com ?inference_hook k l hook
 
 let no_hook = Lemmas.mk_hook (fun _ _ -> ())
 
