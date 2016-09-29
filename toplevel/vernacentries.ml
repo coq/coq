@@ -986,9 +986,9 @@ let vernac_declare_arguments locality r l nargs flags =
     | _::li, _::ld, _::ls -> check li ld ls 
     | _ -> assert false in
   let () = match l with
-  | [[]] -> ()
+  | [[]] when List.exists ((<>) `Assert) flags -> ()
   | _ ->
-    List.iter2 (fun l -> check inf_names l) (names :: rest) scopes
+    List.iter2 (check inf_names) (names :: rest) scopes
   in
   (* we take extra scopes apart, and we check they are consistent *)
   let l, scopes = 
