@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp_control
-
 (* The different kinds of blocks are:
    \begin{description}
    \item[hbox:] Horizontal block no line breaking;
@@ -178,10 +176,9 @@ let pp_with ?pp_tag ft =
     | Ppcmd_glue sl           -> List.iter pp_cmd sl
     | Ppcmd_string str        -> let n = utf8_length str in
                                  pp_print_as ft n str
-    | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
-        cpp_open_box bty ;
-        if not (Format.over_max_boxes ()) then pp_cmd ss;
-        Format.pp_close_box ft ()
+    | Ppcmd_box(bty,ss)       -> cpp_open_box bty ;
+                                 if not (over_max_boxes ()) then pp_cmd ss;
+                                 pp_close_box ft ()
     | Ppcmd_print_break(m,n)  -> pp_print_break ft m n
     | Ppcmd_force_newline     -> pp_force_newline ft ()
     | Ppcmd_comment coms      -> List.iter (pr_com ft) coms

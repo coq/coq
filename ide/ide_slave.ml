@@ -32,9 +32,6 @@ let init_signal_handler () =
   let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
   Sys.set_signal Sys.sigint (Sys.Signal_handle f)
 
-
-(** Redirection of standard output to a printable buffer *)
-
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let pr_error s = pr_with_pid s
@@ -174,13 +171,13 @@ let process_goal sigma g =
   let id = Goal.uid g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-    Richpp.richpp_of_pp (pr_goal_concl_style_env env sigma norm_constr)
+    pr_goal_concl_style_env env sigma norm_constr
   in
   let process_hyp d (env,l) =
     let d = CompactedDecl.map_constr (Reductionops.nf_evar sigma) d in
     let d' = CompactedDecl.to_named_context d in
       (List.fold_right Environ.push_named d' env,
-       (Richpp.richpp_of_pp (pr_compacted_decl env sigma d)) :: l) in
+       (pr_compacted_decl env sigma d) :: l) in
   let (_env, hyps) =
     Context.Compacted.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
@@ -340,13 +337,10 @@ let handle_exn (e, info) =
   let loc_of e = match Loc.get_loc e with
     | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
     | _ -> None in
-  let mk_msg () =
-    let msg = CErrors.print ~info e in
-    Richpp.richpp_of_pp msg
-  in
+  let mk_msg () = CErrors.print ~info e in
   match e with
-  | CErrors.Drop -> dummy, None, Richpp.richpp_of_string "Drop is not allowed by coqide!"
-  | CErrors.Quit -> dummy, None, Richpp.richpp_of_string "Quit is not allowed by coqide!"
+  | CErrors.Drop -> dummy, None, Pp.str "Drop is not allowed by coqide!"
+  | CErrors.Quit -> dummy, None, Pp.str "Quit is not allowed by coqide!"
   | e ->
       match Stateid.get info with
       | Some (valid, _) -> valid, loc_of info, mk_msg ()
@@ -446,7 +440,6 @@ let print_xml =
     try Xml_printer.print oc xml; Mutex.unlock m
     with e -> let e = CErrors.push e in Mutex.unlock m; iraise e
 
-
 let slave_feeder xml_oc msg =
   let xml = Xmlprotocol.of_feedback msg in
   print_xml xml_oc xml
@@ -467,7 +460,6 @@ let loop () =
   (* SEXP parser make *)
   let xml_ic        = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
-  Feedback.set_logger Feedback.feedback_logger;
   Feedback.add_feeder (slave_feeder xml_oc);
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
@@ -478,7 +470,7 @@ let loop () =
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r = eval_call q in
+      let r  = eval_call q in
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
       print_xml xml_oc (Xmlprotocol.of_answer q r);

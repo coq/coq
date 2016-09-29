@@ -28,9 +28,9 @@ class type message_view =
     inherit GObj.widget
     method connect : message_view_signals
     method clear : unit
-    method add : Richpp.richpp -> unit
+    method add : Pp.std_ppcmds -> unit
     method add_string : string -> unit
-    method set : Richpp.richpp -> unit
+    method set : Pp.std_ppcmds -> unit
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
@@ -79,21 +79,14 @@ let message_view () : message_view =
       | Feedback.Warning -> [Tags.Message.warning]
       | _ -> []
       in
-      let rec non_empty = function
-      | Xml_datatype.PCData "" -> false
-      | Xml_datatype.PCData _ -> true
-      | Xml_datatype.Element (_, _, children) -> List.exists non_empty children
-      in
-      if non_empty (Richpp.repr msg) then begin
-        let mark = `MARK mark in
-        Ideutils.insert_xml ~mark buffer ~tags msg;
-        buffer#insert ~iter:(buffer#get_iter_at_mark mark) "\n";
-        push#call (level, msg)
-      end
+      let mark = `MARK mark in
+      Ideutils.insert_xml ~mark buffer ~tags (Richpp.richpp_of_pp msg);
+      buffer#insert ~iter:(buffer#get_iter_at_mark mark) "\n";
+      push#call (level, msg)
 
     method add msg = self#push Feedback.Notice msg
 
-    method add_string s = self#add (Richpp.richpp_of_string s)
+    method add_string s = self#add (Pp.str s)
 
     method set msg = self#clear; self#add msg
 

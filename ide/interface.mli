@@ -12,15 +12,14 @@
 
 type raw = bool
 type verbose = bool
-type richpp = Richpp.richpp
 
 (** The type of coqtop goals *)
 type goal = {
   goal_id : string;
   (** Unique goal identifier *)
-  goal_hyp : richpp list;
+  goal_hyp : Pp.std_ppcmds list;
   (** List of hypotheses *)
-  goal_ccl : richpp;
+  goal_ccl : Pp.std_ppcmds;
   (** Goal conclusion *)
 }
 
@@ -119,7 +118,7 @@ type edit_id = Feedback.edit_id
    should probably retract to that point *)
 type 'a value =
   | Good of 'a
-  | Fail of (state_id * location * richpp)
+  | Fail of (state_id * location * Pp.std_ppcmds)
 
 type ('a, 'b) union = ('a, 'b) Util.union
 
@@ -203,7 +202,7 @@ type about_sty = unit
 type about_rty = coq_info
 
 type handle_exn_sty = Exninfo.iexn
-type handle_exn_rty = state_id * location * richpp
+type handle_exn_rty = state_id * location * Pp.std_ppcmds
 
 (* Retrocompatibility stuff *)
 type interp_sty = (raw * verbose) * string

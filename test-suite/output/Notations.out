@@ -41,29 +41,29 @@ fun x : nat => ifn x is succ n then n else 0
 -4
      : Z
 The command has indeed failed with message:
-Error: x should not be bound in a recursive pattern of the right-hand side.
+x should not be bound in a recursive pattern of the right-hand side.
 The command has indeed failed with message:
-Error: in the right-hand side, y and z should appear in
+in the right-hand side, y and z should appear in
 term position as part of a recursive pattern.
 The command has indeed failed with message:
 The reference w was not found in the current environment.
 The command has indeed failed with message:
-Error: in the right-hand side, y and z should appear in
+in the right-hand side, y and z should appear in
 term position as part of a recursive pattern.
 The command has indeed failed with message:
-Error: z is expected to occur in binding position in the right-hand side.
+z is expected to occur in binding position in the right-hand side.
 The command has indeed failed with message:
-Error: as y is a non-closed binder, no such "," is allowed to occur.
+as y is a non-closed binder, no such "," is allowed to occur.
 The command has indeed failed with message:
-Error: Cannot find where the recursive pattern starts.
+Cannot find where the recursive pattern starts.
 The command has indeed failed with message:
-Error: Cannot find where the recursive pattern starts.
+Cannot find where the recursive pattern starts.
 The command has indeed failed with message:
-Error: Cannot find where the recursive pattern starts.
+Cannot find where the recursive pattern starts.
 The command has indeed failed with message:
-Error: Cannot find where the recursive pattern starts.
+Cannot find where the recursive pattern starts.
 The command has indeed failed with message:
-Error: Both ends of the recursive pattern are the same.
+Both ends of the recursive pattern are the same.
 SUM (nat * nat) nat
      : Set
 FST (0; 1)

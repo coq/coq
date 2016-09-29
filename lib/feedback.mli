@@ -8,14 +8,13 @@
 
 open Xml_datatype
 
-(* Old plain messages (used to be in Pp) *)
+(* Legacy-style logging messages (used to be in Pp) *)
 type level =
   | Debug
   | Info
   | Notice
   | Warning
   | Error
-
 
 (** Coq "semantic" infos obtained during parsing/execution *)
 type edit_id = int
@@ -44,7 +43,7 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t * string * xml
   (* Generic messages *)
-  | Message of level * Loc.t option * Richpp.richpp
+  | Message of level * Loc.t option * Pp.std_ppcmds
 
 type feedback = {
   id       : edit_or_state_id;  (* The document part concerned *)
@@ -53,31 +52,11 @@ type feedback = {
 }
 
 (** {6 Feedback sent, even asynchronously, to the user interface} *)
-
-(** Moved here from pp.ml *)
-
 (* Morally the parser gets a string and an edit_id, and gives back an AST.
  * Feedbacks during the parsing phase are attached to this edit_id.
  * The interpreter assignes an exec_id to the ast, and feedbacks happening
  * during interpretation are attached to the exec_id.
  * Only one among state_id and edit_id can be provided. *)
-
-(** A [logger] takes a level plus a pretty printing doc and logs it *)
-type logger = ?loc:Loc.t -> level -> Pp.std_ppcmds -> unit
-
-(** [set_logger l] makes the [msg_*] to use [l] for logging *)
-val set_logger : logger -> unit
-
-(** [std_logger] standard logger to [stdout/stderr]  *)
-val std_logger : logger
-
-(** [init_color_output ()] Enable color in the std_logger *)
-val init_color_output : unit -> unit
-
-(** [feedback_logger] will produce feedback messages instead IO events *)
-val feedback_logger : logger
-val emacs_logger    : logger
-
 
 (** [add_feeder f] adds a feeder listiner [f], returning its id *)
 val add_feeder : (feedback -> unit) -> int
@@ -96,10 +75,6 @@ val feedback :
 
 (** [set_id_for_feedback route id] Set the defaults for feedback *)
 val set_id_for_feedback : ?route:route_id -> edit_or_state_id -> unit
-
-(** [with_output_to_file file f x] executes [f x] with logging
-    redirected to a file [file] *)
-val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
 
 (** {6 output functions}
 
@@ -128,7 +103,3 @@ val msg_error : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 
 val msg_debug : ?loc:Loc.t -> Pp.std_ppcmds -> unit
 (** For debugging purposes *)
-
-
-
-

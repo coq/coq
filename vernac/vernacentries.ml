@@ -1448,8 +1448,8 @@ let _ =
       optdepr  = false;
       optname  = "the printing depth";
       optkey   = ["Printing";"Depth"];
-      optread  = Pp_control.get_depth_boxes;
-      optwrite = Pp_control.set_depth_boxes }
+      optread  = Topfmt.get_depth_boxes;
+      optwrite = Topfmt.set_depth_boxes }
 
 let _ =
   declare_int_option
@@ -1457,8 +1457,8 @@ let _ =
       optdepr  = false;
       optname  = "the printing width";
       optkey   = ["Printing";"Width"];
-      optread  = Pp_control.get_margin;
-      optwrite = Pp_control.set_margin }
+      optread  = Topfmt.get_margin;
+      optwrite = Topfmt.set_margin }
 
 let _ =
   declare_bool_option
@@ -2193,7 +2193,7 @@ let with_fail b f =
            | e ->
               let e = CErrors.push e in
               raise (HasFailed (CErrors.iprint
-                (ExplainErr.process_vernac_interp_error ~allow_uncaught:false ~with_header:false e))))
+                (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e))))
         ()
     with e when CErrors.noncritical e ->
       let (e, _) = CErrors.push e in
@@ -2226,7 +2226,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
     | VernacRedirect (s, (_,v)) ->
-         Feedback.with_output_to_file s (aux false) v
+         Topfmt.with_output_to_file s (aux false) v
     | VernacTime (_,v) ->
         System.with_time !Flags.time
           (aux ?locality ?polymorphism isprogcmd) v;

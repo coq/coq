@@ -35,7 +35,7 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t * string * xml
   (* Generic messages *)
-  | Message of level * Loc.t option * Richpp.richpp
+  | Message of level * Loc.t option * Pp.std_ppcmds
 
 type feedback = {
   id : edit_or_state_id;
@@ -44,140 +44,6 @@ type feedback = {
 }
 
 let default_route = 0
-
-(** Feedback and logging *)
-open Pp
-open Pp_control
-
-type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
-
-let msgnl_with ?pp_tag fmt strm =
-  pp_with ?pp_tag fmt (strm ++ fnl ());
-  Format.pp_print_flush fmt ()
-
-(* XXX: This is really painful! *)
-module Emacs = struct
-
-  (* Special chars for emacs, to detect warnings inside goal output *)
-  let emacs_quote_start = String.make 1 (Char.chr 254)
-  let emacs_quote_end   = String.make 1 (Char.chr 255)
-
-  let emacs_quote_err g =
-    hov 0 (str emacs_quote_start ++ g ++ str emacs_quote_end)
-
-  let emacs_quote_info_start = "<infomsg>"
-  let emacs_quote_info_end = "</infomsg>"
-
-  let emacs_quote_info g =
-    hov 0 (str emacs_quote_info_start++ brk(0,0) ++ g ++ brk(0,0) ++ str emacs_quote_info_end)
-
-end
-
-open Emacs
-
-let  dbg_str = tag Ppstyle.debug_tag   (str "Debug:")   ++ spc ()
-let info_str = mt ()
-let warn_str = tag Ppstyle.warning_tag (str "Warning:") ++ spc ()
-let  err_str = tag Ppstyle.error_tag   (str "Error:"  ) ++ spc ()
-
-let make_body quoter info ?loc s =
-  let loc = Option.cata Pp.pr_loc (Pp.mt ()) loc in
-  quoter (hov 0 (loc ++ info ++ s))
-
-(* Generic logger *)
-let gen_logger dbg err ?pp_tag ?loc level msg = match level with
-  | Debug   -> msgnl_with ?pp_tag !std_ft (make_body dbg  dbg_str ?loc msg)
-  | Info    -> msgnl_with ?pp_tag !std_ft (make_body dbg info_str ?loc msg)
-  | Notice  -> msgnl_with ?pp_tag !std_ft msg
-  | Warning -> Flags.if_warn (fun () ->
-               msgnl_with ?pp_tag !err_ft (make_body err warn_str ?loc msg)) ()
-  | Error   -> msgnl_with ?pp_tag !err_ft (make_body err  err_str ?loc msg)
-
-(* We provide a generic clear_log_backend callback for backends
-   wanting to do clenaup after the print.
-*)
-let std_logger_tag     = ref None
-let std_logger_cleanup = ref (fun () -> ())
-
-let std_logger ?loc level msg =
-  gen_logger (fun x -> x) (fun x -> x) ?pp_tag:!std_logger_tag ?loc level msg;
-  !std_logger_cleanup ()
-
-(* Rules for emacs:
-   - Debug/info: emacs_quote_info
-   - Warning/Error: emacs_quote_err
-   - Notice: unquoted
-
-  Note the inconsistency.
- *)
-let emacs_logger = gen_logger emacs_quote_info emacs_quote_err ?pp_tag:None
-
-(** Color logging. Moved from pp_style, it may need some more refactoring  *)
-
-(** Not thread-safe. We should put a lock somewhere if we print from
-    different threads. Do we? *)
-let make_style_stack () =
-  (** Default tag is to reset everything *)
-  let empty = Terminal.make () in
-  let default_tag = Terminal.({
-      fg_color = Some `DEFAULT;
-      bg_color = Some `DEFAULT;
-      bold = Some false;
-      italic = Some false;
-      underline = Some false;
-      negative = Some false;
-    })
-  in
-  let style_stack = ref [] in
-  let peek () = match !style_stack with
-  | []      -> default_tag  (** Anomalous case, but for robustness *)
-  | st :: _ -> st
-  in
-  let push tag =
-    let style = match Ppstyle.get_style_format tag with
-      | None    -> empty
-      | Some st -> st
-    in
-    (** Use the merging of the latest tag and the one being currently pushed.
-    This may be useful if for instance the latest tag changes the background and
-    the current one the foreground, so that the two effects are additioned. *)
-    let style = Terminal.merge (peek ()) style in
-    style_stack := style :: !style_stack;
-    Terminal.eval style
-  in
-  let pop _ = match !style_stack with
-  | []       -> (** Something went wrong, we fallback *)
-                Terminal.eval default_tag
-  | _ :: rem -> style_stack := rem;
-                Terminal.eval (peek ())
-  in
-  let clear () = style_stack := [] in
-  push, pop, clear
-
-let init_color_output () =
-  let open Pp_control in
-  let push_tag, pop_tag, clear_tag = make_style_stack () in
-  std_logger_cleanup := clear_tag;
-  std_logger_tag     := Some Ppstyle.to_format;
-  let tag_handler = {
-    Format.mark_open_tag   = push_tag;
-    Format.mark_close_tag  = pop_tag;
-    Format.print_open_tag  = ignore;
-    Format.print_close_tag = ignore;
-  } in
-  Format.pp_set_mark_tags !std_ft true;
-  Format.pp_set_mark_tags !err_ft true;
-  Format.pp_set_formatter_tag_functions !std_ft tag_handler;
-  Format.pp_set_formatter_tag_functions !err_ft tag_handler
-
-let logger       = ref std_logger
-let set_logger l = logger := l
-
-let msg_info    ?loc x = !logger ?loc Info x
-let msg_notice  ?loc x = !logger ?loc Notice x
-let msg_warning ?loc x = !logger ?loc Warning x
-let msg_error   ?loc x = !logger ?loc Error x
-let msg_debug   ?loc x = !logger ?loc Debug x
 
 (** Feeders *)
 let feeders : (int, feedback -> unit) Hashtbl.t = Hashtbl.create 7
@@ -189,11 +55,6 @@ let add_feeder =
   !f_id
 
 let del_feeder fid = Hashtbl.remove feeders fid
-
-let debug_feeder = function
-  | { contents = Message (Debug, loc, pp) } ->
-       msg_debug ?loc (Pp.str (Richpp.raw_print pp))
-  | _ -> ()
 
 let feedback_id    = ref (Edit 0)
 let feedback_route = ref default_route
@@ -209,32 +70,16 @@ let feedback ?id ?route what =
   } in
   Hashtbl.iter (fun _ f -> f m) feeders
 
+(* Logging messages *)
 let feedback_logger ?loc lvl msg =
-  feedback ~route:!feedback_route ~id:!feedback_id
-    (Message (lvl, loc, Richpp.richpp_of_pp msg))
+  feedback ~route:!feedback_route ~id:!feedback_id (Message (lvl, loc, msg))
 
-(* Output to file *)
-let ft_logger old_logger ft ?loc level mesg =
-  let id x = x in
-  match level with
-  | Debug   -> msgnl_with ft (make_body id  dbg_str mesg)
-  | Info    -> msgnl_with ft (make_body id info_str mesg)
-  | Notice  -> msgnl_with ft mesg
-  | Warning -> old_logger ?loc level mesg
-  | Error   -> old_logger ?loc level mesg
+let msg_info    ?loc x = feedback_logger ?loc Info x
+let msg_notice  ?loc x = feedback_logger ?loc Notice x
+let msg_warning ?loc x = feedback_logger ?loc Warning x
+let msg_error   ?loc x = feedback_logger ?loc Error x
+let msg_debug   ?loc x = feedback_logger ?loc Debug x
 
-let with_output_to_file fname func input =
-  let old_logger = !logger in
-  let channel = open_out (String.concat "." [fname; "out"]) in
-  logger := ft_logger old_logger (Format.formatter_of_out_channel channel);
-  try
-    let output = func input in
-    logger := old_logger;
-    close_out channel;
-    output
-  with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
-    logger := old_logger;
-    close_out channel;
-    Exninfo.iraise reraise
-
+let debug_feeder = function
+  | { contents = Message (Debug, loc, pp) } -> msg_debug ?loc pp
+  | _ -> ()

@@ -1,5 +1,5 @@
 The command has indeed failed with message:
-Error: To rename arguments the "rename" flag must be specified.
+To rename arguments the "rename" flag must be specified.
 Argument A renamed to B.
 File "stdin", line 2, characters 0-25:
 Warning: This command is just asserting the names of arguments of identity.
@@ -103,15 +103,15 @@ Expands to: Constant Top.myplus
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 The command has indeed failed with message:
-Error: Argument lists should agree on the names they provide.
+Argument lists should agree on the names they provide.
 The command has indeed failed with message:
-Error: Sequences of implicit arguments must be of different lengths.
+Sequences of implicit arguments must be of different lengths.
 The command has indeed failed with message:
-Error: Some argument names are duplicated: F
+Some argument names are duplicated: F
 The command has indeed failed with message:
-Error: Argument z cannot be declared implicit.
+Argument z cannot be declared implicit.
 The command has indeed failed with message:
-Error: Extra arguments: y.
+Extra arguments: y.
 The command has indeed failed with message:
-Error: To rename arguments the "rename" flag must be specified.
+To rename arguments the "rename" flag must be specified.
 Argument A renamed to R.

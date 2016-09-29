@@ -45,15 +45,9 @@ let _ = CErrors.register_handler explain_exn_default
 
 (** Pre-explain a vernac interpretation error *)
 
-let wrap_vernac_error with_header (exn, info) strm =
-  if with_header then
-    let header = Pp.tag Ppstyle.error_tag (str "Error:") in
-    let e = EvaluatedError (hov 0 (header ++ spc () ++ strm), None) in
-    (e, info)
-  else
-    (EvaluatedError (strm, None), info)
+let wrap_vernac_error (exn, info) strm = (EvaluatedError (strm, None), info)
 
-let process_vernac_interp_error with_header exn = match fst exn with
+let process_vernac_interp_error exn = match fst exn with
   | Univ.UniverseInconsistency i ->
     let msg =
       if !Constrextern.print_universes then
@@ -61,40 +55,40 @@ let process_vernac_interp_error with_header exn = match fst exn with
 	  Univ.explain_universe_inconsistency Universes.pr_with_global_universes i
       else
 	mt() in
-    wrap_vernac_error with_header exn (str "Universe inconsistency" ++ msg ++ str ".")
+    wrap_vernac_error exn (str "Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) ->
-      wrap_vernac_error with_header exn (Himsg.explain_type_error ctx Evd.empty te)
+      wrap_vernac_error exn (Himsg.explain_type_error ctx Evd.empty te)
   | PretypeError(ctx,sigma,te) ->
-      wrap_vernac_error with_header exn (Himsg.explain_pretype_error ctx sigma te)
+      wrap_vernac_error exn (Himsg.explain_pretype_error ctx sigma te)
   | Typeclasses_errors.TypeClassError(env, te) ->
-      wrap_vernac_error with_header exn (Himsg.explain_typeclass_error env te)
+      wrap_vernac_error exn (Himsg.explain_typeclass_error env te)
   | InductiveError e ->
-      wrap_vernac_error with_header exn (Himsg.explain_inductive_error e)
+      wrap_vernac_error exn (Himsg.explain_inductive_error e)
   | Modops.ModuleTypingError e ->
-      wrap_vernac_error with_header exn (Himsg.explain_module_error e)
+      wrap_vernac_error exn (Himsg.explain_module_error e)
   | Modintern.ModuleInternalizationError e ->
-      wrap_vernac_error with_header exn (Himsg.explain_module_internalization_error e)
+      wrap_vernac_error exn (Himsg.explain_module_internalization_error e)
   | RecursionSchemeError e ->
-      wrap_vernac_error with_header exn (Himsg.explain_recursion_scheme_error e)
+      wrap_vernac_error exn (Himsg.explain_recursion_scheme_error e)
   | Cases.PatternMatchingError (env,sigma,e) ->
-      wrap_vernac_error with_header exn (Himsg.explain_pattern_matching_error env sigma e)
+      wrap_vernac_error exn (Himsg.explain_pattern_matching_error env sigma e)
   | Tacred.ReductionTacticError e ->
-      wrap_vernac_error with_header exn (Himsg.explain_reduction_tactic_error e)
+      wrap_vernac_error exn (Himsg.explain_reduction_tactic_error e)
   | Logic.RefinerError e ->
-      wrap_vernac_error with_header exn (Himsg.explain_refiner_error e)
+      wrap_vernac_error exn (Himsg.explain_refiner_error e)
   | Nametab.GlobalizationError q ->
-      wrap_vernac_error with_header exn
+      wrap_vernac_error exn
         (str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
 	 spc () ++ str "was not found" ++
 	 spc () ++ str "in the current" ++ spc () ++ str "environment.")
   | Refiner.FailError (i,s) ->
       let s = Lazy.force s in
-      wrap_vernac_error with_header exn
+      wrap_vernac_error exn
 	(str "Tactic failure" ++
          (if Pp.ismt s then s else str ": " ++ s) ++
          if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
-      wrap_vernac_error with_header exn (msg ++ str ".")
+      wrap_vernac_error exn (msg ++ str ".")
   | _ ->
       exn
 
@@ -108,9 +102,9 @@ let additional_error_info = ref []
 let register_additional_error_info f =
   additional_error_info := f :: !additional_error_info
 
-let process_vernac_interp_error ?(allow_uncaught=true) ?(with_header=true) (exc, info) =
+let process_vernac_interp_error ?(allow_uncaught=true) (exc, info) =
   let exc = strip_wrapping_exceptions exc in
-  let e = process_vernac_interp_error with_header (exc, info) in
+  let e = process_vernac_interp_error (exc, info) in
   let () =
     if not allow_uncaught && not (CErrors.handled (fst e)) then
       let (e, info) = e in

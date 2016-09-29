@@ -205,7 +205,7 @@ type handle = {
   proc : CoqTop.process;
   xml_oc : Xml_printer.t;
   mutable alive : bool;
-  mutable waiting_for : ccb option; (* last call + callback + log *)
+  mutable waiting_for : ccb option; (* last call + callback *)
 }
 
 (** Coqtop process status :

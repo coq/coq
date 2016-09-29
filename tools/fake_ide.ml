@@ -29,7 +29,7 @@ let error_xml s =
   exit 1
 
 let logger level content =
-  Printf.eprintf "%a\n%! " print_xml (Richpp.repr content)
+  Printf.eprintf "%a\n%! " print_xml Richpp.(content |> richpp_of_pp |> repr)
 
 let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   if print then prerr_endline (Xmlprotocol.pr_call call);
@@ -44,8 +44,8 @@ let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   let res = loop () in
   if print then prerr_endline (Xmlprotocol.pr_full_value call res);
   match res with
-  | Interface.Fail (_,_,s) when fail -> error_xml (Richpp.repr s)
-  | Interface.Fail (_,_,s) as x -> Printf.eprintf "%a\n%!" print_xml (Richpp.repr s); x
+  | Interface.Fail (_,_,s) when fail -> error_xml Richpp.(s |> richpp_of_pp |> repr)
+  | Interface.Fail (_,_,s) as x -> Printf.eprintf "%a\n%!" print_xml Richpp.(s |> richpp_of_pp |> repr); x
   | x -> x
 
 let eval_call c q = ignore(base_eval_call c q)
@@ -194,7 +194,7 @@ let print_document () =
 module GUILogic = struct
 
   let after_add = function
-    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s)
+    | Interface.Fail (_,_,s) -> error_xml Richpp.(repr (richpp_of_pp s))
     | Interface.Good (id, (Util.Inl (), _)) ->
         Document.assign_tip_id doc id
     | Interface.Good (id, (Util.Inr tip, _)) ->
@@ -206,7 +206,7 @@ module GUILogic = struct
   let at id id' _ = Stateid.equal id' id
   
   let after_edit_at (id,need_unfocus) = function
-    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s)
+    | Interface.Fail (_,_,s) -> error_xml Richpp.(repr (richpp_of_pp s))
     | Interface.Good (Util.Inl ()) ->
         if need_unfocus then Document.unfocus doc;
         ignore(Document.cut_at doc id);
@@ -329,7 +329,7 @@ let main =
   let finish () =
     match base_eval_call (Xmlprotocol.status true) coq with
     | Interface.Good _ -> exit 0
-    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s) in
+    | Interface.Fail (_,_,s) -> error_xml Richpp.(repr (richpp_of_pp s)) in
   (* The main loop *)
   init ();
   while true do

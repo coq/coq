@@ -8,6 +8,30 @@
 
 (** Coq document type. *)
 
+(** Pretty printing guidelines ******************************************)
+(*                                                                      *)
+(* std_ppcmds is the main pretty printing datatype in he Coq. Documents *)
+(* are composed laying out boxes, and users can add arbitrary metadata  *)
+(* that backends are free to interpret.                                 *)
+(*                                                                      *)
+(* The datatype is public to allow serialization or advanced uses,      *)
+(* regular users are _strongly_ encouraged to use the top-level         *)
+(* functions to manipulate the type.                                    *)
+(*                                                                      *)
+(* Box order and number is indeed an important factor. Users should try *)
+(* to create a proper amount of boxes. Also, the ++ operator provides   *)
+(* "efficient" concatenation, but directly using a list is preferred.   *)
+(*                                                                      *)
+(* That is to say, this:                                                *)
+(*                                                                      *)
+(* `hov [str "Term"; hov (pr_term t); str "is defined"]`                *)
+(*                                                                      *)
+(* is preferred to:                                                     *)
+(*                                                                      *)
+(* `hov (str "Term" ++ hov (pr_term t) ++ str "is defined")`            *)
+(*                                                                      *)
+(************************************************************************)
+
 (* XXX: Improve and add attributes *)
 type pp_tag = string list
 

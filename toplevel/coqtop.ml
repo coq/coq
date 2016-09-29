@@ -61,7 +61,7 @@ let init_color () =
     match colors with
     | None ->
       (** Default colors *)
-      Feedback.init_color_output ()
+      Topfmt.init_color_output ()
     | Some "" ->
       (** No color output *)
       ()
@@ -69,7 +69,7 @@ let init_color () =
       (** Overwrite all colors *)
       Ppstyle.clear_styles ();
       Ppstyle.parse_config s;
-      Feedback.init_color_output ()
+      Topfmt.init_color_output ()
   end
 
 let toploop_init = ref begin fun x ->
@@ -78,15 +78,27 @@ let toploop_init = ref begin fun x ->
   x
   end
 
-let toploop_run = ref (fun () ->
+(* Feedback received in the init stage, this is different as the STM
+   will not be generally be initialized, thus stateid, etc... may be
+   bogus. For now we just print to the console too *)
+let coqtop_init_feed = Coqloop.coqloop_feed
+
+(* Default toplevel loop *)
+let console_toploop_run () =
+  (* We initialize the console only if we run the toploop_run *)
+  let tl_feed = Feedback.add_feeder Coqloop.coqloop_feed in
   if Dumpglob.dump () then begin
     if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
   Coqloop.loop();
+  (* We remove the feeder but it could be ok not to do so *)
+  Feedback.del_feeder tl_feed;
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
-  Mltop.ocaml_toploop())
+  Mltop.ocaml_toploop()
+
+let toploop_run = ref console_toploop_run
 
 let output_context = ref false
 
@@ -228,7 +240,6 @@ let compile_files () =
   if !compile_list == [] then ()
   else
     let init_state = States.freeze ~marshallable:`No in
-    Feedback.(add_feeder debug_feeder);
     List.iter (fun vf ->
         States.unfreeze init_state;
         compile_file vf)
@@ -240,7 +251,6 @@ let set_emacs () =
   if not (Option.is_empty !toploop) then
     error "Flag -emacs is incompatible with a custom toplevel loop";
   Flags.print_emacs := true;
-  Feedback.(set_logger emacs_logger);
   Vernacentries.qed_display_script := false;
   color := `OFF
 
@@ -435,7 +445,7 @@ let get_native_name s =
     with the appropriate error code *)
 let fatal_error info anomaly =
   let msg = info ++ fnl () in
-  Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with msg;
+  Format.fprintf !Topfmt.err_ft "@[%a@]%!" (pp_with ?pp_tag:None) msg;
   exit (if anomaly then 129 else 1)
 
 let parse_args arglist =
@@ -609,6 +619,7 @@ let parse_args arglist =
 let init_toplevel arglist =
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
+  let init_feeder = Feedback.add_feeder coqtop_init_feed in
   Lib.init();
   begin
     try
@@ -663,7 +674,8 @@ let init_toplevel arglist =
       Feedback.msg_notice (with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
     Profile.print_profile ();
     exit 0
-  end
+  end;
+  Feedback.del_feeder init_feeder
 
 let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in

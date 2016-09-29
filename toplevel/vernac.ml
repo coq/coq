@@ -143,8 +143,8 @@ let pr_new_syntax_in_context loc chan_beautify ocom =
       | None -> mt() in
     let after = comment (CLexer.extract_comments (snd loc)) in
     if !beautify_file then
-      (Pp.pp_with !Pp_control.std_ft (hov 0 (before ++ com ++ after));
-       Format.pp_print_flush !Pp_control.std_ft ())
+      (Pp.pp_with !Topfmt.std_ft (hov 0 (before ++ com ++ after));
+       Format.pp_print_flush !Topfmt.std_ft ())
     else
       Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
     States.unfreeze fs;
@@ -179,9 +179,10 @@ let pp_cmd_header loc com =
 (* This is a special case where we assume we are in console batch mode
    and take control of the console.
  *)
+(* FIXME *)
 let print_cmd_header loc com =
-  Pp.pp_with ~pp_tag:Ppstyle.to_format !Pp_control.std_ft (pp_cmd_header loc com);
-  Format.pp_print_flush !Pp_control.std_ft ()
+  Pp.pp_with ~pp_tag:Ppstyle.to_format !Topfmt.std_ft (pp_cmd_header loc com);
+  Format.pp_print_flush !Topfmt.std_ft ()
 
 let rec interp_vernac po chan_beautify checknav (loc,com) =
   let interp = function
