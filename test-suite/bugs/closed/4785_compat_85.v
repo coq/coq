@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-emacs" "-compat" "8.5") -*- *)
 Require Coq.Lists.List Coq.Vectors.Vector.
 Require Coq.Compat.Coq85.
 
@@ -10,10 +11,10 @@ Delimit Scope vector_scope with vector.
 Check [ ]%vector : Vector.t _ _.
 Check []%vector : Vector.t _ _.
 Check [ ]%list : list _.
-Check []%list : list _.
+Fail Check []%list : list _.
 
 Goal True.
-  idtac; []. (* Check that vector notations don't break the [ | .. | ] syntax of Ltac *)
+  idtac; [ ]. (* Note that vector notations break the [ | .. | ] syntax of Ltac *)
 Abort.
 
 Inductive mylist A := mynil | mycons (x : A) (xs : mylist A).
