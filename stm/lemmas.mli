@@ -34,7 +34,7 @@ val start_proof_univs : Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_ma
   (Evd.evar_universe_context option -> unit declaration_hook) -> unit
 
 val start_proof_com :
-  Pretyping.inference_hook option ->
+  ?inference_hook:Pretyping.inference_hook ->
   goal_kind -> Vernacexpr.proof_expr list ->
   unit declaration_hook -> unit
 

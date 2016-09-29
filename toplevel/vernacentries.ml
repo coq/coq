@@ -449,7 +449,7 @@ let vernac_notation locality local =
 (* Gallina *)
 
 let start_proof_and_print k l hook =
-  let use_hook =
+  let inference_hook =
     if Flags.is_program_mode () then
       let hook env sigma ev =
         let tac = !Obligations.default_tactic in
@@ -468,7 +468,7 @@ let start_proof_and_print k l hook =
       in Some hook
     else None
   in
-  start_proof_com use_hook k l hook
+  start_proof_com ?inference_hook k l hook
 
 let no_hook = Lemmas.mk_hook (fun _ _ -> ())
 

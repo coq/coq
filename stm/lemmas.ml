@@ -449,7 +449,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
       start_proof_univs id ?pl kind ctx t ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
 
-let start_proof_com use_hook kind thms hook =
+let start_proof_com ?inference_hook kind thms hook =
   let env0 = Global.env () in
   let levels = Option.map snd (fst (List.hd thms)) in 
   let evdref = ref (match levels with
@@ -460,7 +460,7 @@ let start_proof_com use_hook kind thms hook =
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
     let flags = all_and_fail_flags in
-    let flags = { flags with use_hook } in
+    let flags = { flags with use_hook = inference_hook } in
     evdref := solve_remaining_evars flags env !evdref (Evd.empty,!evdref);
     let ids = List.map get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
