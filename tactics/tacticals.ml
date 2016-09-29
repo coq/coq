@@ -438,18 +438,18 @@ module New = struct
     | [] -> tclZEROMSG (str"No applicable tactic.")
     |  t::rest -> tclORELSE0 t (tclFIRST rest)
 
-  let rec tclFIRST_ON tac = function
-    | [] -> tclZEROMSG (str "No applicable tactic.")
-    | arg :: l -> tclORELSE0 (tac arg) (tclFIRST_ON tac l)
+  let rec tclFIRST_ON ?(msg = str "No applicable tactic.") tac = function
+    | [] -> tclZEROMSG msg
+    | arg :: l -> tclORELSE0 (tac arg) (tclFIRST_ON ~msg tac l)
 
   let rec tclFIRST_PROGRESS_ON tac = function
     | []    -> tclFAIL 0 (str "No applicable tactic")
     | [a]   -> tac a (* so that returned failure is the one from last item *)
     | a::tl -> tclORELSE (tac a) (tclFIRST_PROGRESS_ON tac tl)
 
-  let rec tclANY tac = function
-    | [] -> tclZEROMSG (str "No applicable tactic.")
-    | arg :: l -> tclORD (tac arg) (fun () -> tclANY tac l)
+  let rec tclANY ?(msg = str "No applicable tactic.") tac = function
+    | [] -> tclZEROMSG msg
+    | arg :: l -> tclORD (tac arg) (fun () -> tclANY ~msg tac l)
 
   let rec tclDO n t =
     if n < 0 then
