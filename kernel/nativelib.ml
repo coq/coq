@@ -35,7 +35,7 @@ let ( / ) = Filename.concat
 (* We have to delay evaluation of include_dirs because coqlib cannot be guessed
 until flags have been properly initialized *)
 let include_dirs () =
-  [Filename.temp_dir_name; coqlib () / "kernel"; coqlib () / "library"]
+  [Filename.get_temp_dir_name (); coqlib () / "kernel"; coqlib () / "library"]
 
 (* Pointer to the function linking an ML object into coq's toplevel *)
 let load_obj = ref (fun x -> () : string -> unit)
