@@ -52,9 +52,9 @@ dev/ocamldebug-coq
 plugins/micromega/csdpcert
 kernel/byterun/dllcoqrun.so
 coqdoc.sty
-csdp.cache
-test-suite/lia.cache
-test-suite/nra.cache
+.csdp.cache
+test-suite/.lia.cache
+test-suite/.nra.cache
 test-suite/trace
 test-suite/misc/universes/all_stdlib.v
 test-suite/misc/universes/universes.txt
@@ -68,7 +68,7 @@ doc/faq/axioms.eps_t
 doc/faq/axioms.pdf
 doc/faq/axioms.pdf_t
 doc/faq/axioms.png
-doc/refman/csdp.cache
+doc/refman/.csdp.cache
 doc/refman/trace
 doc/refman/Reference-Manual.pdf
 doc/refman/Reference-Manual.ps
@@ -135,7 +135,7 @@ kernel/copcodes.ml
 tools/tolink.ml
 theories/Numbers/Natural/BigN/NMake_gen.v
 ide/index_urls.txt
-lia.cache
+.lia.cache
 checker/names.ml
 checker/names.mli
 checker/esubst.ml
