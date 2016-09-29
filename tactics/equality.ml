@@ -1730,20 +1730,22 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let gl = Proofview.Goal.assume gl in
     let env = Proofview.Goal.env gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
-    let test (hyp,_,c) =
+    let select_equation_name (hyp,_,c) =
       try
         let lbeq,u,(_,x,y) = find_eq_data_decompose c in
         let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match kind_of_term x, kind_of_term y with
-        | Var z, _ | _, Var z when not (is_evaluable env (EvalVarRef z))  ->
+        | Var z, _  when not (is_evaluable env (EvalVarRef z)) ->
+            Some hyp
+        | _, Var z when not (is_evaluable env (EvalVarRef z)) ->
             Some hyp
         | _ ->
             None
       with Constr_matching.PatternMatchingFailure -> None
     in
     let hyps = Proofview.Goal.hyps gl in
-    List.rev (List.map_filter test hyps)
+    List.rev (List.map_filter select_equation_name hyps)
   in
 
   (* Second step: treat equations *)

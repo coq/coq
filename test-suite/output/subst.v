@@ -45,4 +45,15 @@ Show.
 trivial.
 Qed.
 
+(* A bug revealed by OCaml 4.03 warnings *)
+Goal forall y, let x:=0 in y=x -> y=y.
+intros * H;
+subst.
+Fail clear H. (* Was working *)
+Abort.
 
+Goal forall y, let x:=0 in y=x -> y=y.
+intros * H;
+subst.
+Fail clear H. (* Was failing before fix *)
+Abort.
