@@ -6,44 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module Glue : sig
-
-  (** The [Glue] module implements a container data structure with
-      efficient concatenation. *)
-
-  type 'a t
-
-  val atom : 'a -> 'a t
-  val glue : 'a t -> 'a t -> 'a t
-  val empty : 'a t
-  val is_empty : 'a t -> bool
-  val iter : ('a -> unit) -> 'a t -> unit
-
-end = struct
-
-  type 'a t = GEmpty | GLeaf of 'a | GNode of 'a t * 'a t
-
-  let atom x = GLeaf x
-
-  let glue x y =
-    match x, y with
-    | GEmpty, _ -> y
-    | _, GEmpty -> x
-    | _, _ -> GNode (x,y)
-
-  let empty = GEmpty
-
-  let is_empty x = x = GEmpty
-
-  let rec iter f = function
-    | GEmpty -> ()
-    | GLeaf x -> f x
-    | GNode (x,y) -> iter f x; iter f y
-
-end
-
-type pp_tag = string list
-
 open Pp_control
 
 (* The different kinds of blocks are:
@@ -63,35 +25,21 @@ type block_type =
   | Pp_hvbox  of int
   | Pp_hovbox of int
 
-type ppcmd_token =
+type pp_tag = string list
+
+type std_ppcmds =
+  | Ppcmd_empty
   | Ppcmd_string of string
-  | Ppcmd_box of block_type * (ppcmd_token Glue.t)
+  | Ppcmd_glue of std_ppcmds * std_ppcmds
+  | Ppcmd_box  of block_type * std_ppcmds
   | Ppcmd_print_break of int * int
   | Ppcmd_white_space of int
   | Ppcmd_force_newline
-  | Ppcmd_print_if_broken
   | Ppcmd_open_box of block_type
   | Ppcmd_close_box
   | Ppcmd_comment of string list
   | Ppcmd_open_tag of pp_tag
   | Ppcmd_close_tag
-
-type 'a ppdir_token =
-  | Ppdir_ppcmds of ppcmd_token Glue.t
-  | Ppdir_print_newline
-  | Ppdir_print_flush
-
-type ppcmd = ppcmd_token
-
-type std_ppcmds = ppcmd Glue.t
-
-type 'a ppdirs = 'a ppdir_token Glue.t
-
-let (++) = Glue.glue
-
-let app = Glue.glue
-
-let is_empty g = Glue.is_empty g
 
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)
@@ -129,22 +77,30 @@ let utf8_length s =
   done ;
   !cnt
 
+let app s1 s2 = match s1, s2 with
+  | Ppcmd_empty, s
+  | s, Ppcmd_empty -> s
+  | s1, s2         -> Ppcmd_glue(s1, s2)
+
+let (++) = app
+
 (* formatting commands *)
-let str s = Glue.atom(Ppcmd_string s)
-let brk (a,b) = Glue.atom(Ppcmd_print_break (a,b))
-let fnl () = Glue.atom(Ppcmd_force_newline)
-let pifb () = Glue.atom(Ppcmd_print_if_broken)
-let ws n = Glue.atom(Ppcmd_white_space n)
-let comment l = Glue.atom(Ppcmd_comment l)
+let str s     = Ppcmd_string s
+let brk (a,b) = Ppcmd_print_break (a,b)
+let fnl  ()   = Ppcmd_force_newline
+let ws n      = Ppcmd_white_space n
+let comment l = Ppcmd_comment l
 
 (* derived commands *)
-let mt () = Glue.empty
-let spc () = Glue.atom(Ppcmd_print_break (1,0))
-let cut () = Glue.atom(Ppcmd_print_break (0,0))
-let align () = Glue.atom(Ppcmd_print_break (0,0))
-let int n = str (string_of_int n)
-let real r = str (string_of_float r)
-let bool b = str (string_of_bool b)
+let mt    () = Ppcmd_empty
+let spc   () = Ppcmd_print_break (1,0)
+let cut   () = Ppcmd_print_break (0,0)
+let align () = Ppcmd_print_break (0,0)
+let int   n  = str (string_of_int n)
+let real  r  = str (string_of_float r)
+let bool  b  = str (string_of_bool b)
+
+(* XXX: To Remove *)
 let strbrk s =
   let rec aux p n =
     if n < String.length s then
@@ -153,7 +109,7 @@ let strbrk s =
         else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
       else aux p (n + 1)
     else if p = n then [] else [str (String.sub s p (n-p))]
-  in List.fold_left (++) Glue.empty (aux 0 0)
+  in List.fold_left (++) Ppcmd_empty (aux 0 0)
 
 let pr_loc_pos loc =
   if Loc.is_ghost loc then (str"<unknown>")
@@ -174,26 +130,25 @@ let pr_loc loc =
 	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
 	   str":" ++ fnl())
 
-let ismt = is_empty
+let ismt = function | Ppcmd_empty -> true | _ -> false
 
 (* boxing commands *)
-let h n s = Glue.atom(Ppcmd_box(Pp_hbox n,s))
-let v n s = Glue.atom(Ppcmd_box(Pp_vbox n,s))
-let hv n s = Glue.atom(Ppcmd_box(Pp_hvbox n,s))
-let hov n s = Glue.atom(Ppcmd_box(Pp_hovbox n,s))
+let h   n s = Ppcmd_box(Pp_hbox n,s)
+let v   n s = Ppcmd_box(Pp_vbox n,s)
+let hv  n s = Ppcmd_box(Pp_hvbox n,s)
+let hov n s = Ppcmd_box(Pp_hovbox n,s)
 
 (* Opening and closing of boxes *)
-let hb n = Glue.atom(Ppcmd_open_box(Pp_hbox n))
-let vb n = Glue.atom(Ppcmd_open_box(Pp_vbox n))
-let hvb n = Glue.atom(Ppcmd_open_box(Pp_hvbox n))
-let hovb n = Glue.atom(Ppcmd_open_box(Pp_hovbox n))
-let close () = Glue.atom(Ppcmd_close_box)
+let hb   n   = Ppcmd_open_box(Pp_hbox n)
+let vb   n   = Ppcmd_open_box(Pp_vbox n)
+let hvb  n   = Ppcmd_open_box(Pp_hvbox n)
+let hovb n   = Ppcmd_open_box(Pp_hovbox n)
+let close () = Ppcmd_close_box
 
 (* Opening and closed of tags *)
-let open_tag t = Glue.atom(Ppcmd_open_tag t)
-let close_tag () = Glue.atom(Ppcmd_close_tag)
+let open_tag  t  = Ppcmd_open_tag t
+let close_tag () = Ppcmd_close_tag
 let tag t s = open_tag t ++ s ++ close_tag ()
-let eval_ppcmds l = l
 
 (* In new syntax only double quote char is escaped by repeating it *)
 let escape_string s =
@@ -223,27 +178,27 @@ let rec pr_com ft s =
 type tag_handler = pp_tag -> Format.tag
 
 (* pretty printing functions *)
-let pp_dirs ?pp_tag ft =
-  let pp_open_box = function
+let pp_with ?pp_tag ft =
+  let cpp_open_box = function
     | Pp_hbox n   -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
     | Pp_hvbox n  -> Format.pp_open_hvbox ft n
     | Pp_hovbox n -> Format.pp_open_hovbox ft n
   in
-  let rec pp_cmd = function
-    | Ppcmd_string str         ->
-      let n = utf8_length str in
-      Format.pp_print_as ft n str
+  let rec pp_cmd = let open Format in function
+    | Ppcmd_empty             -> ()
+    | Ppcmd_glue(s1,s2)       -> pp_cmd s1; pp_cmd s2
+    | Ppcmd_string str        -> let n = utf8_length str in
+                                 pp_print_as ft n str
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
-        pp_open_box bty ;
-        if not (Format.over_max_boxes ()) then Glue.iter pp_cmd ss;
+        cpp_open_box bty ;
+        if not (Format.over_max_boxes ()) then pp_cmd ss;
         Format.pp_close_box ft ()
-    | Ppcmd_open_box bty      -> pp_open_box bty
-    | Ppcmd_close_box         -> Format.pp_close_box ft ()
-    | Ppcmd_white_space n     -> Format.pp_print_break ft n 0
-    | Ppcmd_print_break(m,n)  -> Format.pp_print_break ft m n
-    | Ppcmd_force_newline     -> Format.pp_force_newline ft ()
-    | Ppcmd_print_if_broken   -> Format.pp_print_if_newline ft ()
+    | Ppcmd_open_box bty      -> cpp_open_box bty
+    | Ppcmd_close_box         -> pp_close_box ft ()
+    | Ppcmd_white_space n     -> pp_print_break ft n 0
+    | Ppcmd_print_break(m,n)  -> pp_print_break ft m n
+    | Ppcmd_force_newline     -> pp_force_newline ft ()
     | Ppcmd_comment coms      -> List.iter (pr_com ft) coms
     | Ppcmd_open_tag tag ->
       begin match pp_tag with
@@ -256,34 +211,19 @@ let pp_dirs ?pp_tag ft =
       | Some _ -> Format.pp_close_tag ft ()
       end
   in
-  let pp_dir = function
-    | Ppdir_ppcmds cmdstream -> Glue.iter pp_cmd cmdstream
-    | Ppdir_print_newline    -> Format.pp_print_newline ft ()
-    | Ppdir_print_flush      -> Format.pp_print_flush ft ()
-  in
-  fun (dirstream : _ ppdirs) ->
-    try
-      Glue.iter pp_dir dirstream
-    with reraise ->
-      let reraise = Backtrace.add_backtrace reraise in
-      let () = Format.pp_print_flush ft () in
-      Exninfo.iraise reraise
-
-(* pretty printing functions WITHOUT FLUSH *)
-let pp_with ?pp_tag ft strm =
-  pp_dirs ?pp_tag ft (Glue.atom (Ppdir_ppcmds strm))
-
-(* pretty printing functions WITH FLUSH *)
-let msg_with ?pp_tag ft strm =
-  pp_dirs ?pp_tag ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))
+  try pp_cmd
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
+    let () = Format.pp_print_flush ft () in
+    Exninfo.iraise reraise
 
 (* If mixing some output and a goal display, please use msg_warning,
    so that interfaces (proofgeneral for example) can easily dispatch
    them to different windows. *)
 
 (** Output to a string formatter *)
-let string_of_ppcmds c =
-  Format.fprintf Format.str_formatter "@[%a@]" (msg_with ?pp_tag:None) c;
+let string_of_ppcmds ?pp_tag c =
+  Format.fprintf Format.str_formatter "@[%a@]" (pp_with ?pp_tag) c;
   Format.flush_str_formatter ()
 
 (* Copy paste from Util *)
@@ -310,7 +250,7 @@ let pr_nth n =
 
 (* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
 
-let prlist pr l = List.fold_left (fun x e -> x ++ pr e) Glue.empty l
+let prlist pr l = List.fold_left (fun x e -> x ++ pr e) Ppcmd_empty l
 
 (* unlike all other functions below, [prlist] works lazily.
    if a strict behavior is needed, use [prlist_strict] instead.

@@ -15,7 +15,6 @@ type std_ppcmds
 val str   : string -> std_ppcmds
 val brk   : int * int -> std_ppcmds
 val fnl   : unit -> std_ppcmds
-val pifb  : unit -> std_ppcmds
 val ws    : int -> std_ppcmds
 val mt    : unit -> std_ppcmds
 val ismt  : std_ppcmds -> bool
@@ -29,12 +28,6 @@ val app : std_ppcmds -> std_ppcmds -> std_ppcmds
 
 val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds
 (** Infix alias for [app]. *)
-
-val eval_ppcmds : std_ppcmds -> std_ppcmds
-(** Force computation. *)
-
-val is_empty : std_ppcmds -> bool
-(** Test emptyness. *)
 
 (** {6 Derived commands} *)
 
@@ -72,10 +65,6 @@ type pp_tag = string list
 val tag : pp_tag -> std_ppcmds -> std_ppcmds
 val open_tag : pp_tag -> std_ppcmds
 val close_tag : unit -> std_ppcmds
-
-(** {6 Utilities} *)
-
-val string_of_ppcmds : std_ppcmds -> string
 
 (** {6 Printing combinators} *)
 
@@ -145,13 +134,11 @@ val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 val pr_loc : Loc.t -> std_ppcmds
 
-(** {6 Low-level pretty-printing functions with and without flush} *)
+(** {6 Main renderers, to formatter and to string } *)
 
 (** FIXME: These ignore the logging settings and call [Format] directly *)
 type tag_handler = pp_tag -> Format.tag
 
-(** [msg_with ?pp_tag fmt pp] Print [pp] to [fmt] and flush [fmt]  *)
-val msg_with : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
-
-(** [msg_with ?pp_tag fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
-val pp_with  : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
+(** [msg_with fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
+val pp_with          : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
+val string_of_ppcmds : ?pp_tag:tag_handler -> std_ppcmds -> string

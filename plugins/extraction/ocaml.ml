@@ -66,7 +66,7 @@ let pp_header_comment = function
   | None -> mt ()
   | Some com -> pp_comment com ++ fnl2 ()
 
-let then_nl pp = if Pp.is_empty pp then mt () else pp ++ fnl ()
+let then_nl pp = if Pp.ismt pp then mt () else pp ++ fnl ()
 
 let pp_tdummy usf =
   if usf.tdummy || usf.tunknown then str "type __ = Obj.t" ++ fnl () else mt ()
@@ -618,7 +618,7 @@ and pp_module_type params = function
       push_visible mp params;
       let try_pp_specif l x =
         let px = pp_specif x in
-        if Pp.is_empty px then l else px::l
+        if Pp.ismt px then l else px::l
       in
       (* We cannot use fold_right here due to side effects in pp_specif *)
       let l = List.fold_left try_pp_specif [] sign in
@@ -696,7 +696,7 @@ and pp_module_expr params = function
       push_visible mp params;
       let try_pp_structure_elem l x =
         let px = pp_structure_elem x in
-        if Pp.is_empty px then l else px::l
+        if Pp.ismt px then l else px::l
       in
       (* We cannot use fold_right here due to side effects in pp_structure_elem *)
       let l = List.fold_left try_pp_structure_elem [] sel in
@@ -714,7 +714,7 @@ let rec prlist_sep_nonempty sep f = function
   | h::t ->
      let e = f h in
      let r = prlist_sep_nonempty sep f t in
-     if Pp.is_empty e then r
+     if Pp.ismt e then r
      else e ++ sep () ++ r
 
 let do_struct f s =

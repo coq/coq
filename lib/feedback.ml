@@ -51,7 +51,9 @@ open Pp_control
 
 type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
 
-let msgnl_with ?pp_tag fmt strm = msg_with ?pp_tag fmt (strm ++ fnl ())
+let msgnl_with ?pp_tag fmt strm =
+  pp_with ?pp_tag fmt (strm ++ fnl ());
+  Format.pp_print_flush fmt ()
 
 (* XXX: This is really painful! *)
 module Emacs = struct

@@ -143,7 +143,8 @@ let pr_new_syntax_in_context loc chan_beautify ocom =
       | None -> mt() in
     let after = comment (CLexer.extract_comments (snd loc)) in
     if !beautify_file then
-      Pp.msg_with !Pp_control.std_ft (hov 0 (before ++ com ++ after))
+      (Pp.pp_with !Pp_control.std_ft (hov 0 (before ++ com ++ after));
+       Format.pp_print_flush !Pp_control.std_ft ())
     else
       Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
     States.unfreeze fs;

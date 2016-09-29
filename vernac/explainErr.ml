@@ -91,7 +91,7 @@ let process_vernac_interp_error with_header exn = match fst exn with
       let s = Lazy.force s in
       wrap_vernac_error with_header exn
 	(str "Tactic failure" ++
-         (if Pp.is_empty s then s else str ": " ++ s) ++
+         (if Pp.ismt s then s else str ": " ++ s) ++
          if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
       wrap_vernac_error with_header exn (msg ++ str ".")

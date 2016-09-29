@@ -405,11 +405,11 @@ let rec printable_body dir =
 
 let print_expression' is_type env mp me =
   States.with_state_protection
-    (fun e -> eval_ppcmds (print_expression is_type env mp [] e)) me
+    (fun e -> print_expression is_type env mp [] e) me
 
 let print_signature' is_type env mp me =
   States.with_state_protection
-    (fun e -> eval_ppcmds (print_signature is_type env mp [] e)) me
+    (fun e -> print_signature is_type env mp [] e) me
 
 let unsafe_print_module env mp with_body mb =
   let name = print_modpath [] mp in

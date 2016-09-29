@@ -595,7 +595,7 @@ let parse_args arglist =
     parse ()
   with
     | UserError(_, s) as e ->
-      if is_empty s then exit 1
+      if ismt s then exit 1
       else fatal_error (CErrors.print e) false
     | any -> fatal_error (CErrors.print any) (CErrors.is_anomaly any)
 
