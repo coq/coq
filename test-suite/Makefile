@@ -304,12 +304,12 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \
-	    | sed -e 's/\s*[0-9]*\.[0-9][0-9]*\s*//g' \
+	    | sed -e 's/\s*[-+0-9]*\.[0-9][0-9]*\s*//g' \
 	          -e 's/\s*0\.\s*//g' \
 		  -e 's/\s*[-+]nan\s*//g' \
 		  -e 's/\s*[-+]inf\s*//g' \
 	    > $$tmpoutput; \
-	  sed -e 's/\s*[0-9]*\.[0-9][0-9]*\s*//g' \
+	  sed -e 's/\s*[-+0-9]*\.[0-9][0-9]*\s*//g' \
 		-e 's/\s*0\.\s*//g' \
 		-e 's/\s*[-+]nan\s*//g' \
 		-e 's/\s*[-+]inf\s*//g' \
