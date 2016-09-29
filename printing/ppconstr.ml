@@ -149,6 +149,12 @@ end) = struct
     | GType [] -> tag_type (str "Type")
     | GType u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
 
+  let pr_glob_level = function
+    | GProp -> tag_type (str "Prop")
+    | GSet -> tag_type (str "Set")
+    | GType None -> tag_type (str "Type")
+    | GType (Some (_, u)) -> tag_type (str u)
+
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
     let id = tag_ref (pr_id id) in

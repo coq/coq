@@ -838,7 +838,8 @@ module Make
         )
       | VernacConstraint v ->
         let pr_uconstraint (l, d, r) =
-          pr_lident l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++ pr_lident r
+          pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
+            pr_glob_level r
         in
         return (
           hov 2 (keyword "Constraint" ++ spc () ++

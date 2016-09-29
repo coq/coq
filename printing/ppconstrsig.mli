@@ -44,6 +44,7 @@ module type Pp = sig
   val pr_qualid : qualid -> std_ppcmds
   val pr_patvar : patvar -> std_ppcmds
 
+  val pr_glob_level : glob_level -> std_ppcmds
   val pr_glob_sort : glob_sort -> std_ppcmds
   val pr_guard_annot : (constr_expr -> std_ppcmds) ->
     local_binder list ->
