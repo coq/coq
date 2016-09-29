@@ -52,8 +52,7 @@ open Pp_control
 
 type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
 
-let msgnl_with fmt strm = msg_with fmt (strm ++ fnl ())
-let msgnl          strm = msgnl_with !std_ft strm
+let msgnl_with ?pp_tag fmt strm = msg_with ?pp_tag fmt (strm ++ fnl ())
 
 (* XXX: This is really painful! *)
 module Emacs = struct
@@ -75,45 +74,100 @@ end
 
 open Emacs
 
-let  dbg_str = str "Debug:"   ++ spc ()
+let  dbg_str = tag Ppstyle.debug_tag   (str "Debug:")   ++ spc ()
 let info_str = mt ()
-let warn_str = str "Warning:" ++ spc ()
-let  err_str = str "Error:"   ++ spc ()
+let warn_str = tag Ppstyle.warning_tag (str "Warning:") ++ spc ()
+let  err_str = tag Ppstyle.error_tag   (str "Error:"  ) ++ spc ()
 
 let make_body quoter info ?loc s =
   let loc = Option.cata Pp.pr_loc (Pp.mt ()) loc in
   quoter (hov 0 (loc ++ info ++ s))
 
 (* Generic logger *)
-let gen_logger dbg err ?loc level msg = match level with
-  | Debug   -> msgnl (make_body dbg  dbg_str ?loc msg)
-  | Info    -> msgnl (make_body dbg info_str ?loc msg)
-  (* XXX: What to do with loc here? *)
-  | Notice  -> msgnl msg
+let gen_logger dbg err ?pp_tag ?loc level msg = match level with
+  | Debug   -> msgnl_with ?pp_tag !std_ft (make_body dbg  dbg_str ?loc msg)
+  | Info    -> msgnl_with ?pp_tag !std_ft (make_body dbg info_str ?loc msg)
+  | Notice  -> msgnl_with ?pp_tag !std_ft msg
   | Warning -> Flags.if_warn (fun () ->
-               msgnl_with !err_ft (make_body err warn_str ?loc msg)) ()
-  | Error   -> msgnl_with !err_ft (make_body err  err_str ?loc msg)
+               msgnl_with ?pp_tag !err_ft (make_body err warn_str ?loc msg)) ()
+  | Error   -> msgnl_with ?pp_tag !err_ft (make_body err  err_str ?loc msg)
 
-(** Standard loggers *)
-let std_logger  = gen_logger (fun x -> x) (fun x -> x)
+(* We provide a generic clear_log_backend callback for backends
+   wanting to do clenaup after the print.
+*)
+let std_logger_tag     = ref None
+let std_logger_cleanup = ref (fun () -> ())
 
-(* Color logger *)
-let color_terminal_logger ?loc level strm =
-  let msg  = Ppstyle.color_msg in
-  match level with
-  | Debug   -> msg ?loc ~header:("Debug", Ppstyle.debug_tag) !std_ft strm
-  | Info    -> msg ?loc !std_ft strm
-  | Notice  -> msg ?loc !std_ft strm
-  | Warning -> Flags.if_warn (fun () ->
-               msg ?loc ~header:("Warning", Ppstyle.warning_tag) !err_ft strm) ()
-  | Error   -> msg ?loc ~header:("Error",   Ppstyle.error_tag)   !err_ft strm
+let std_logger ?loc level msg =
+  gen_logger (fun x -> x) (fun x -> x) ?pp_tag:!std_logger_tag ?loc level msg;
+  !std_logger_cleanup ()
 
 (* Rules for emacs:
    - Debug/info: emacs_quote_info
    - Warning/Error: emacs_quote_err
    - Notice: unquoted
+
+  Note the inconsistency.
  *)
-let emacs_logger = gen_logger emacs_quote_info emacs_quote_err
+let emacs_logger = gen_logger emacs_quote_info emacs_quote_err ?pp_tag:None
+
+(** Color logging. Moved from pp_style, it may need some more refactoring  *)
+
+(** Not thread-safe. We should put a lock somewhere if we print from
+    different threads. Do we? *)
+let make_style_stack () =
+  (** Default tag is to reset everything *)
+  let empty = Terminal.make () in
+  let default_tag = Terminal.({
+      fg_color = Some `DEFAULT;
+      bg_color = Some `DEFAULT;
+      bold = Some false;
+      italic = Some false;
+      underline = Some false;
+      negative = Some false;
+    })
+  in
+  let style_stack = ref [] in
+  let peek () = match !style_stack with
+  | []      -> default_tag  (** Anomalous case, but for robustness *)
+  | st :: _ -> st
+  in
+  let push tag =
+    let style = match Ppstyle.get_style_format tag with
+      | None    -> empty
+      | Some st -> st
+    in
+    (** Use the merging of the latest tag and the one being currently pushed.
+    This may be useful if for instance the latest tag changes the background and
+    the current one the foreground, so that the two effects are additioned. *)
+    let style = Terminal.merge (peek ()) style in
+    style_stack := style :: !style_stack;
+    Terminal.eval style
+  in
+  let pop _ = match !style_stack with
+  | []       -> (** Something went wrong, we fallback *)
+                Terminal.eval default_tag
+  | _ :: rem -> style_stack := rem;
+                Terminal.eval (peek ())
+  in
+  let clear () = style_stack := [] in
+  push, pop, clear
+
+let init_color_output () =
+  let open Pp_control in
+  let push_tag, pop_tag, clear_tag = make_style_stack () in
+  std_logger_cleanup := clear_tag;
+  std_logger_tag     := Some Ppstyle.to_format;
+  let tag_handler = {
+    Format.mark_open_tag   = push_tag;
+    Format.mark_close_tag  = pop_tag;
+    Format.print_open_tag  = ignore;
+    Format.print_close_tag = ignore;
+  } in
+  Format.pp_set_mark_tags !std_ft true;
+  Format.pp_set_mark_tags !err_ft true;
+  Format.pp_set_formatter_tag_functions !std_ft tag_handler;
+  Format.pp_set_formatter_tag_functions !err_ft tag_handler
 
 let logger       = ref std_logger
 let set_logger l = logger := l

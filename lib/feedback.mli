@@ -72,11 +72,8 @@ val set_logger : logger -> unit
 (** [std_logger] standard logger to [stdout/stderr]  *)
 val std_logger : logger
 
-val color_terminal_logger : logger
-(* This logger will apply the proper {!Pp_style} tags, and in
-   particular use the formatters {!Pp_control.std_ft} and
-   {!Pp_control.err_ft} to display those messages. Be careful this is
-   not compatible with the Emacs mode!  *)
+(** [init_color_output ()] Enable color in the std_logger *)
+val init_color_output : unit -> unit
 
 (** [feedback_logger] will produce feedback messages instead IO events *)
 val feedback_logger : logger

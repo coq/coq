@@ -27,6 +27,33 @@ open Pputils
 open Ppconstr
 open Printer
 
+module Tag =
+struct
+  let keyword =
+    let style = Terminal.make ~bold:true () in
+    Ppstyle.make ~style ["tactic"; "keyword"]
+
+  let primitive =
+    let style = Terminal.make ~fg_color:`LIGHT_GREEN () in
+    Ppstyle.make ~style ["tactic"; "primitive"]
+
+  let string =
+    let style = Terminal.make ~fg_color:`LIGHT_RED () in
+    Ppstyle.make ~style ["tactic"; "string"]
+
+end
+
+let tag t s = Pp.tag t s
+let do_not_tag _ x = x
+let tag_keyword                 = tag Tag.keyword
+let tag_primitive               = tag Tag.primitive
+let tag_string                  = tag Tag.string
+let tag_glob_tactic_expr        = do_not_tag
+let tag_glob_atomic_tactic_expr = do_not_tag
+let tag_raw_tactic_expr         = do_not_tag
+let tag_raw_atomic_tactic_expr  = do_not_tag
+let tag_atomic_tactic_expr      = do_not_tag
+
 let pr_global x = Nametab.pr_global_env Id.Set.empty x
 
 type 'a grammar_tactic_prod_item_expr =
@@ -63,30 +90,6 @@ type 'a extra_genarg_printer =
     (Term.constr -> std_ppcmds) ->
     (tolerability -> Val.t -> std_ppcmds) ->
     'a -> std_ppcmds
-
-module Make
-  (Ppconstr : Ppconstrsig.Pp)
-  (Taggers : sig
-      val tag_keyword
-        : std_ppcmds -> std_ppcmds
-      val tag_primitive
-        : std_ppcmds -> std_ppcmds
-      val tag_string
-        : std_ppcmds -> std_ppcmds
-      val tag_glob_tactic_expr
-        : glob_tactic_expr -> std_ppcmds -> std_ppcmds
-      val tag_glob_atomic_tactic_expr
-        : glob_atomic_tactic_expr -> std_ppcmds -> std_ppcmds
-      val tag_raw_tactic_expr
-        : raw_tactic_expr -> std_ppcmds -> std_ppcmds
-      val tag_raw_atomic_tactic_expr
-        : raw_atomic_tactic_expr -> std_ppcmds -> std_ppcmds
-      val tag_atomic_tactic_expr
-        : atomic_tactic_expr -> std_ppcmds -> std_ppcmds
-  end)
-= struct
-
-  open Taggers
 
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
@@ -1196,37 +1199,6 @@ module Make
 
   let pr_atomic_tactic env = pr_atomic_tactic_level env ltop
 
-end
-
-module Tag =
-struct
-  let keyword =
-    let style = Terminal.make ~bold:true () in
-    Ppstyle.make ~style ["tactic"; "keyword"]
-
-  let primitive =
-    let style = Terminal.make ~fg_color:`LIGHT_GREEN () in
-    Ppstyle.make ~style ["tactic"; "primitive"]
-
-  let string =
-    let style = Terminal.make ~fg_color:`LIGHT_RED () in
-    Ppstyle.make ~style ["tactic"; "string"]
-
-end
-
-include Make (Ppconstr) (struct
-    let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
-    let do_not_tag _ x = x
-    let tag_keyword                 = tag Tag.keyword
-    let tag_primitive               = tag Tag.primitive
-    let tag_string                  = tag Tag.string
-    let tag_glob_tactic_expr        = do_not_tag
-    let tag_glob_atomic_tactic_expr = do_not_tag
-    let tag_raw_tactic_expr         = do_not_tag
-    let tag_raw_atomic_tactic_expr  = do_not_tag
-    let tag_atomic_tactic_expr      = do_not_tag
-end)
-
 let declare_extra_genarg_pprule wit
   (f : 'a raw_extra_genarg_printer)
   (g : 'b glob_extra_genarg_printer)
@@ -1329,22 +1301,3 @@ let () =
   let pr_unit _ _ _ () = str "()" in
   let printer _ _ prtac = prtac (0, E) in
   declare_extra_genarg_pprule wit_ltac printer printer pr_unit
-
-module Richpp = struct
-
-  include Make (Ppconstr.Richpp) (struct
-    open Ppannotation
-    open Genarg
-    let do_not_tag _ x = x
-    let tag e s = Pp.tag (Pp.Tag.inj e tag) s
-    let tag_keyword                   = tag AKeyword
-    let tag_primitive                 = tag AKeyword
-    let tag_string                    = do_not_tag ()
-    let tag_glob_tactic_expr        e = tag (AGlbGenArg (in_gen (glbwit wit_ltac) e))
-    let tag_glob_atomic_tactic_expr   = do_not_tag
-    let tag_raw_tactic_expr         e = tag (ARawGenArg (in_gen (rawwit wit_ltac) e))
-    let tag_raw_atomic_tactic_expr    = do_not_tag
-    let tag_atomic_tactic_expr        = do_not_tag
-  end)
-
-end

@@ -309,7 +309,7 @@ let do_vernac () =
         let any = CErrors.push any in
         Format.set_formatter_out_channel stdout;
         let msg = print_toplevel_error any ++ fnl () in
-        pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
+        pp_with !Pp_control.std_ft msg;
         Format.pp_print_flush !Pp_control.std_ft ()
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
