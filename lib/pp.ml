@@ -30,7 +30,7 @@ type block_type =
 type std_ppcmds =
   | Ppcmd_empty
   | Ppcmd_string of string
-  | Ppcmd_glue of std_ppcmds * std_ppcmds
+  | Ppcmd_glue of std_ppcmds list
   | Ppcmd_box  of block_type * std_ppcmds
   | Ppcmd_print_break of int * int
   | Ppcmd_white_space of int
@@ -80,7 +80,7 @@ let utf8_length s =
 let app s1 s2 = match s1, s2 with
   | Ppcmd_empty, s
   | s, Ppcmd_empty -> s
-  | s1, s2         -> Ppcmd_glue(s1, s2)
+  | s1, s2         -> Ppcmd_glue [s1; s2]
 
 let (++) = app
 
@@ -109,7 +109,7 @@ let strbrk s =
         else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
       else aux p (n + 1)
     else if p = n then [] else [str (String.sub s p (n-p))]
-  in List.fold_left (++) Ppcmd_empty (aux 0 0)
+  in Ppcmd_glue (aux 0 0)
 
 let pr_loc_pos loc =
   if Loc.is_ghost loc then (str"<unknown>")
@@ -187,7 +187,7 @@ let pp_with ?pp_tag ft =
   in
   let rec pp_cmd = let open Format in function
     | Ppcmd_empty             -> ()
-    | Ppcmd_glue(s1,s2)       -> pp_cmd s1; pp_cmd s2
+    | Ppcmd_glue sl           -> List.iter pp_cmd sl
     | Ppcmd_string str        -> let n = utf8_length str in
                                  pp_print_as ft n str
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
@@ -250,7 +250,7 @@ let pr_nth n =
 
 (* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
 
-let prlist pr l = List.fold_left (fun x e -> x ++ pr e) Ppcmd_empty l
+let prlist pr l = Ppcmd_glue (List.map pr l)
 
 (* unlike all other functions below, [prlist] works lazily.
    if a strict behavior is needed, use [prlist_strict] instead.

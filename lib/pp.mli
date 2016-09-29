@@ -20,7 +20,7 @@ type block_type =
 type std_ppcmds =
   | Ppcmd_empty
   | Ppcmd_string of string
-  | Ppcmd_glue of std_ppcmds * std_ppcmds
+  | Ppcmd_glue of std_ppcmds list
   | Ppcmd_box  of block_type * std_ppcmds
   | Ppcmd_print_break of int * int
   | Ppcmd_white_space of int
