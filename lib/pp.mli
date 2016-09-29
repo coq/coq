@@ -6,9 +6,29 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Pretty-printers. *)
+(** Coq document type. *)
 
-type std_ppcmds
+(* XXX: Improve and add attributes *)
+type pp_tag = string list
+
+type block_type =
+  | Pp_hbox   of int
+  | Pp_vbox   of int
+  | Pp_hvbox  of int
+  | Pp_hovbox of int
+
+type std_ppcmds =
+  | Ppcmd_empty
+  | Ppcmd_string of string
+  | Ppcmd_glue of std_ppcmds * std_ppcmds
+  | Ppcmd_box  of block_type * std_ppcmds
+  | Ppcmd_print_break of int * int
+  | Ppcmd_white_space of int
+  | Ppcmd_force_newline
+  | Ppcmd_open_box of block_type
+  | Ppcmd_close_box
+  | Ppcmd_open_tag of pp_tag
+  | Ppcmd_close_tag
 
 (** {6 Formatting commands} *)
 
@@ -58,9 +78,6 @@ val hovb : int -> std_ppcmds
 val close : unit -> std_ppcmds
 
 (** {6 Opening and closing of tags} *)
-
-(* XXX: Improve and add attributes *)
-type pp_tag = string list
 
 val tag : pp_tag -> std_ppcmds -> std_ppcmds
 val open_tag : pp_tag -> std_ppcmds

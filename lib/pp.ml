@@ -19,13 +19,13 @@ open Pp_control
    \end{description}
  *)
 
+type pp_tag = string list
+
 type block_type =
   | Pp_hbox   of int
   | Pp_vbox   of int
   | Pp_hvbox  of int
   | Pp_hovbox of int
-
-type pp_tag = string list
 
 type std_ppcmds =
   | Ppcmd_empty
