@@ -2807,6 +2807,8 @@ let old_generalize_dep ?(with_let=false) c gl =
   in
   let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous)
     (cl',project gl) in
+  (** Check that the generalization is indeed well-typed *)
+  let (evd, _) = Typing.type_of env evd cl'' in
   let args = Context.Named.to_instance to_quantify_rev in
   tclTHENLIST
     [tclEVARS evd;
