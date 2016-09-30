@@ -280,7 +280,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
-	    | grep -v "^<W>" \
+	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$tmpoutput; \
 	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
