@@ -1289,7 +1289,7 @@ Prints a profile for all tactics that start with {\qstring}. Append a period (.)
 \begin{quote}
 {\tt Reset Ltac Profile}.
 \end{quote}
-Resets the profile, that is, deletes all accumulated information
+Resets the profile, that is, deletes all accumulated information.  Note that backtracking across a {\tt Reset Ltac Profile} will not restore the information.
 
 \begin{coq_eval}
 Reset Initial.
