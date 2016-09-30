@@ -2821,10 +2821,12 @@ let generalize_dep ?(with_let = false) c =
 
 (**  *)
 let generalize_gen_let lconstr = Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let newcl, evd =
     List.fold_right_i (Tacmach.New.of_old generalize_goal gl) 0 lconstr
       (Tacmach.New.pf_concl gl,Tacmach.New.project gl)
   in
+  let (evd, _) = Typing.type_of env evd newcl in
   let map ((_, c, b),_) = if Option.is_empty b then Some c else None in
   let tac = apply_type newcl (List.map_filter map lconstr) in
   Sigma.Unsafe.of_pair (tac, evd)
