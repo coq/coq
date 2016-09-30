@@ -198,7 +198,7 @@ and slot_for_fv env fv =
       let rv = Pre_env.lookup_rel_val i env in
       begin match force_lazy_val rv with
       | None ->
-	 env.env_rel_context |> Context.Rel.lookup i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
+        env |> Pre_env.lookup_rel i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
       | Some (v, _) -> v
       end
   | FVuniv_var idu ->

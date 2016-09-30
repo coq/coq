@@ -1830,7 +1830,7 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
   in
   let auxdefs = List.fold_right get_rel_val fv_rel auxdefs in
   let auxdefs = List.fold_right get_named_val fv_named auxdefs in
-  let lvl = Context.Rel.length env.env_rel_context in
+  let lvl = Context.Rel.length env.env_rel_context.env_rel_ctx in
   let fv_rel = List.map (fun (n,_) -> MLglobal (Grel (lvl-n))) fv_rel in
   let fv_named = List.map (fun (id,_) -> MLglobal (Gnamed id)) fv_named in
   let aux_name = fresh_lname Anonymous in
@@ -1838,8 +1838,8 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
 
 and compile_rel env sigma univ auxdefs n =
   let open Context.Rel.Declaration in
-  let decl = Context.Rel.lookup n env.env_rel_context in
-  let n = Context.Rel.length env.env_rel_context - n in
+  let decl = Pre_env.lookup_rel n env in
+  let n = List.length env.env_rel_context.env_rel_ctx - n in
   match decl with
   | LocalDef (_,t,_) ->
       let code = lambda_of_constr env sigma t in
