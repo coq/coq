@@ -127,7 +127,7 @@ let name_colon =
 let aliasvar = function CPatAlias (loc, _, id) -> Some (loc,Name id) | _ -> None
 
 GEXTEND Gram
-  GLOBAL: binder_constr lconstr constr operconstr sort global
+  GLOBAL: binder_constr lconstr constr operconstr universe_level sort global
   constr_pattern lconstr_pattern Constr.ident
   closed_binder open_binders binder binders binders_fixannot
   record_declaration typeclass_constraint pattern appl_arg;
@@ -298,10 +298,10 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   instance:
-    [ [ "@{"; l = LIST1 level; "}" -> Some l
+    [ [ "@{"; l = LIST1 universe_level; "}" -> Some l
       | -> None ] ]
   ;
-  level:
+  universe_level:
     [ [ "Set" -> GSet
       | "Prop" -> GProp
       | "Type" -> GType None

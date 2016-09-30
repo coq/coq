@@ -226,8 +226,8 @@ GEXTEND Gram
     [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
   ;
   univ_constraint:
-    [ [ l = identref; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
-	r = identref -> (l, ord, r) ] ]
+    [ [ l = universe_level; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
+	r = universe_level -> (l, ord, r) ] ]
   ;
   finite_token:
     [ [ "Inductive" -> (Inductive_kw,Finite)
