@@ -180,8 +180,15 @@ let msg_error   ?loc x = !logger ?loc Error x
 let msg_debug   ?loc x = !logger ?loc Debug x
 
 (** Feeders *)
-let feeders = ref []
-let add_feeder f = feeders := f :: !feeders
+let feeders : (int, feedback -> unit) Hashtbl.t = Hashtbl.create 7
+
+let add_feeder =
+  let f_id = ref 0 in fun f ->
+  incr f_id;
+  Hashtbl.add feeders !f_id f;
+  !f_id
+
+let del_feeder fid = Hashtbl.remove feeders fid
 
 let debug_feeder = function
   | { contents = Message (Debug, loc, pp) } ->
@@ -200,7 +207,7 @@ let feedback ?id ?route what =
      route = Option.default !feedback_route route;
      id    = Option.default !feedback_id id;
   } in
-  List.iter (fun f -> f m) !feeders
+  Hashtbl.iter (fun _ f -> f m) feeders
 
 let feedback_logger ?loc lvl msg =
   feedback ~route:!feedback_route ~id:!feedback_id

@@ -79,8 +79,11 @@ val feedback_logger : logger
 val emacs_logger    : logger
 
 
-(** [add_feeder] feeders observe the feedback *)
-val add_feeder : (feedback -> unit) -> unit
+(** [add_feeder f] adds a feeder listiner [f], returning its id *)
+val add_feeder : (feedback -> unit) -> int
+
+(** [del_feeder fid] removes the feeder with id [fid] *)
+val del_feeder : int -> unit
 
 (** Prints feedback messages of kind Message(Debug,_) using msg_debug *)
 val debug_feeder : feedback -> unit
