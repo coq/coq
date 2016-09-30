@@ -309,12 +309,15 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	          -e 's/\s*0\.\s*//g' \
 		  -e 's/\s*[-+]nan\s*//g' \
 		  -e 's/\s*[-+]inf\s*//g' \
+		  -e 's/^[^a-zA-Z]*//' \
+	    | sort \
 	    > $$tmpoutput; \
 	  sed -e 's/\s*[-+0-9]*\.[0-9][0-9]*\s*//g' \
 		-e 's/\s*0\.\s*//g' \
 		-e 's/\s*[-+]nan\s*//g' \
 		-e 's/\s*[-+]inf\s*//g' \
-	       $*.out > $$tmpexpected; \
+		-e 's/^[^a-zA-Z]*//' \
+	       $*.out | sort > $$tmpexpected; \
 	  diff -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
