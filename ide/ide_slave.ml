@@ -112,7 +112,7 @@ let annotate phrase =
     Vernac.parse_sentence (pa,None)
   in
   (* XXX: Width should be a parameter of annotate... *)
-  Richpp.richpp_of_pp (Ppvernac.pr_vernac ast)
+  Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast)
 
 (** Goal display *)
 

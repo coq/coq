@@ -549,18 +549,11 @@ struct
 
   let _ = reset ()
 
-  (** Integer option *)
-
-  let width = ["Printing"; "Width"]
-  let width_state = ref None
-  let set_printing_width w = width_state := Some w
-
   (** Transmitting options to coqtop *)
 
   let enforce h k =
     let mkopt o v acc = (o, Interface.BoolValue v) :: acc in
     let opts = Hashtbl.fold mkopt current_state [] in
-    let opts = (width, Interface.IntValue !width_state) :: opts in
     eval_call (Xmlprotocol.set_options opts) h
       (function
 	| Interface.Good () -> k ()

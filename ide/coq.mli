@@ -139,7 +139,6 @@ sig
   val bool_items : bool_descr list
 
   val set : t -> bool -> unit
-  val set_printing_width : int -> unit
 
   (** [enforce] transmits to coq the current option values.
       It is also called by [goals] and [evars] above. *)

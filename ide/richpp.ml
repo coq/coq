@@ -38,7 +38,7 @@ type 'a context = {
     marking functions. As those functions are called when actually writing to
     the device, the resulting tree is correct.
 *)
-let rich_pp annotate ppcmds =
+let rich_pp width annotate ppcmds =
 
   let context = {
     stack = Leaf;
@@ -113,12 +113,12 @@ let rich_pp annotate ppcmds =
   pp_set_formatter_tag_functions ft tag_functions;
   pp_set_mark_tags ft true;
 
-  (* Set formatter width. This is currently a hack and duplicate code
-     with Pp_control. Hopefully it will be fixed better in Coq 8.7 *)
-  let w = pp_get_margin str_formatter () in
-  let m = max (64 * w / 100) (w-30) in
-  pp_set_margin ft w;
+  (* Setting the formatter *)
+  pp_set_margin ft width;
+  let m = max (64 * width / 100) (width-30) in
   pp_set_max_indent ft m;
+  pp_set_max_boxes ft 50 ;
+  pp_set_ellipsis_text ft "...";
 
   (** The whole output must be a valid document. To that
       end, we nest the document inside <pp> tags. *)
@@ -172,7 +172,7 @@ let xml_of_rich_pp tag_of_annotation attributes_of_annotation xml =
 
 type richpp = xml
 
-let richpp_of_pp pp =
+let richpp_of_pp width pp =
   let annotate t = Some (Ppstyle.repr t)    in
   let rec drop = function
   | PCData s -> [PCData s]
@@ -182,5 +182,5 @@ let richpp_of_pp pp =
     | None -> cs
     | Some s -> [Element (String.concat "." s, [], cs)]
   in
-  let xml = rich_pp annotate pp in
+  let xml = rich_pp width annotate pp in
   Element ("_", [], drop xml)

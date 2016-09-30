@@ -21,6 +21,7 @@ class type message_view =
     method add : Pp.std_ppcmds -> unit
     method add_string : string -> unit
     method set : Pp.std_ppcmds -> unit
+    method refresh : bool -> unit
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer

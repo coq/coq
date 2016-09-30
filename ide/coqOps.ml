@@ -340,7 +340,6 @@ object(self)
     buffer#get_iter_at_mark `INSERT
 
   method private show_goals_aux ?(move_insert=false) () =
-    Coq.PrintOpt.set_printing_width proof#width;
     if move_insert then begin
       let dest = self#get_start_of_input in
       if (buffer#get_iter_at_mark `INSERT)#compare dest <= 0 then begin

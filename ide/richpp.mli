@@ -16,12 +16,15 @@ type 'annotation located = {
   endpos     : int
 }
 
-(** [rich_pp get_annotations ppcmds] returns the interpretation
+(* XXX: The width parameter should be moved to a `formatter_property`
+   record shared with Topfmt *)
+
+(** [rich_pp width get_annotations ppcmds] returns the interpretation
     of [ppcmds] as a semi-structured document
     that represents (located) annotations of this string.
     The [get_annotations] function is used to convert tags into the desired
-    annotation. *)
-val rich_pp :
+    annotation. [width] sets the printing witdh of the formatter. *)
+val rich_pp : int ->
   (Pp.pp_tag -> 'annotation option) -> Pp.std_ppcmds ->
   'annotation located Xml_datatype.gxml
 
@@ -46,5 +49,5 @@ type richpp = Xml_datatype.xml
 
 (** Type of text with style annotations *)
 
-val richpp_of_pp : Pp.std_ppcmds -> richpp
+val richpp_of_pp : int -> Pp.std_ppcmds -> richpp
 (** Extract style information from formatted text *)

@@ -103,11 +103,12 @@ object(self)
       let process =
 	Coq.bind (Coq.query (phrase,Stateid.dummy)) (function
           | Interface.Fail (_,l,str) ->
-            Ideutils.insert_xml result#buffer (Richpp.richpp_of_pp str);
+            let width = Ideutils.textview_width result in
+            Ideutils.insert_xml result#buffer (Richpp.richpp_of_pp width str);
             notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;
 	    Coq.return ()
           | Interface.Good res ->
-            result#buffer#insert res; 
+            result#buffer#insert res;
             notebook#set_page ~tab_label:(new_tab_lbl arg) frame#coerce;
 	    Coq.return ())
       in
