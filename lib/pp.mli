@@ -22,13 +22,12 @@ type std_ppcmds =
   | Ppcmd_string of string
   | Ppcmd_glue of std_ppcmds list
   | Ppcmd_box  of block_type * std_ppcmds
+  | Ppcmd_tag  of pp_tag * std_ppcmds
+  (* Are those redundant? *)
   | Ppcmd_print_break of int * int
   | Ppcmd_white_space of int
   | Ppcmd_force_newline
-  | Ppcmd_open_box of block_type
-  | Ppcmd_close_box
   | Ppcmd_comment of string list
-  | Ppcmd_tag of pp_tag * std_ppcmds
 
 (** {6 Formatting commands} *)
 
@@ -69,15 +68,7 @@ val v : int -> std_ppcmds -> std_ppcmds
 val hv : int -> std_ppcmds -> std_ppcmds
 val hov : int -> std_ppcmds -> std_ppcmds
 
-(** {6 Opening and closing of boxes} *)
-
-val hb : int -> std_ppcmds
-val vb : int -> std_ppcmds
-val hvb : int -> std_ppcmds
-val hovb : int -> std_ppcmds
-val close : unit -> std_ppcmds
-
-(** {6 Opening and closing of tags} *)
+(** {6 Tagging} *)
 
 val tag : pp_tag -> std_ppcmds -> std_ppcmds
 

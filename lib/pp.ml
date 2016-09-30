@@ -32,13 +32,12 @@ type std_ppcmds =
   | Ppcmd_string of string
   | Ppcmd_glue of std_ppcmds list
   | Ppcmd_box  of block_type * std_ppcmds
+  | Ppcmd_tag of pp_tag * std_ppcmds
+  (* Are those redundant? *)
   | Ppcmd_print_break of int * int
   | Ppcmd_white_space of int
   | Ppcmd_force_newline
-  | Ppcmd_open_box of block_type
-  | Ppcmd_close_box
   | Ppcmd_comment of string list
-  | Ppcmd_tag of pp_tag * std_ppcmds
 
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)
@@ -137,13 +136,6 @@ let v   n s = Ppcmd_box(Pp_vbox n,s)
 let hv  n s = Ppcmd_box(Pp_hvbox n,s)
 let hov n s = Ppcmd_box(Pp_hovbox n,s)
 
-(* Opening and closing of boxes *)
-let hb   n   = Ppcmd_open_box(Pp_hbox n)
-let vb   n   = Ppcmd_open_box(Pp_vbox n)
-let hvb  n   = Ppcmd_open_box(Pp_hvbox n)
-let hovb n   = Ppcmd_open_box(Pp_hovbox n)
-let close () = Ppcmd_close_box
-
 (* Opening and closed of tags *)
 let tag t s = Ppcmd_tag(t,s)
 
@@ -191,8 +183,6 @@ let pp_with ?pp_tag ft =
         cpp_open_box bty ;
         if not (Format.over_max_boxes ()) then pp_cmd ss;
         Format.pp_close_box ft ()
-    | Ppcmd_open_box bty      -> cpp_open_box bty
-    | Ppcmd_close_box         -> pp_close_box ft ()
     | Ppcmd_white_space n     -> pp_print_break ft n 0
     | Ppcmd_print_break(m,n)  -> pp_print_break ft m n
     | Ppcmd_force_newline     -> pp_force_newline ft ()
