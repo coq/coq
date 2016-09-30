@@ -25,7 +25,6 @@ type std_ppcmds =
   | Ppcmd_tag  of pp_tag * std_ppcmds
   (* Are those redundant? *)
   | Ppcmd_print_break of int * int
-  | Ppcmd_white_space of int
   | Ppcmd_force_newline
   | Ppcmd_comment of string list
 

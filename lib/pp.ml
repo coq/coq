@@ -35,7 +35,6 @@ type std_ppcmds =
   | Ppcmd_tag of pp_tag * std_ppcmds
   (* Are those redundant? *)
   | Ppcmd_print_break of int * int
-  | Ppcmd_white_space of int
   | Ppcmd_force_newline
   | Ppcmd_comment of string list
 
@@ -86,7 +85,7 @@ let (++) = app
 let str s     = Ppcmd_string s
 let brk (a,b) = Ppcmd_print_break (a,b)
 let fnl  ()   = Ppcmd_force_newline
-let ws n      = Ppcmd_white_space n
+let ws n      = Ppcmd_print_break (n,0)
 let comment l = Ppcmd_comment l
 
 (* derived commands *)
@@ -183,7 +182,6 @@ let pp_with ?pp_tag ft =
         cpp_open_box bty ;
         if not (Format.over_max_boxes ()) then pp_cmd ss;
         Format.pp_close_box ft ()
-    | Ppcmd_white_space n     -> pp_print_break ft n 0
     | Ppcmd_print_break(m,n)  -> pp_print_break ft m n
     | Ppcmd_force_newline     -> pp_force_newline ft ()
     | Ppcmd_comment coms      -> List.iter (pr_com ft) coms
