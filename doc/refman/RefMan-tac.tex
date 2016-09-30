@@ -2289,6 +2289,12 @@ giving \texttt{injection {\term} as} (with an empty list of names). To
 obtain this behavior, the option {\tt Set Structural Injection} must
 be activated. This option is off by default.
 
+By default, \texttt{injection} only creates new equalities between
+terms whose type is in sort \texttt{Type} or \texttt{Set}, thus
+implementing a special behavior for objects that are proofs
+of a statement in \texttt{Prop}.  This behavior can be turned off
+by setting the option \texttt{Set Keep Proof Equalities}.
+\optindex{Keep Proof Equalities}
 \subsection{\tt inversion \ident}
 \tacindex{inversion}
 
@@ -2307,6 +2313,14 @@ latter is first introduced in the local context using
 \Rem As inversion proofs may be large in size, we recommend the user to
 stock the lemmas whenever the same instance needs to be inverted
 several times. See Section~\ref{Derive-Inversion}.
+
+\Rem Part of the behavior of the \texttt{inversion} tactic is to generate
+equalities between expressions that appeared in the hypothesis that is
+being processed.  By default, no equalities are generated if they relate
+two proofs (i.e. equalities between terms whose type is in
+sort \texttt{Prop}).  This behavior can be turned off by using the option
+\texttt{Set Keep Proof Equalities.}
+\optindex{Keep Proof Equalities}
 
 \begin{Variants}
 \item \texttt{inversion \num}
