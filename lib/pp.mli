@@ -27,8 +27,8 @@ type std_ppcmds =
   | Ppcmd_force_newline
   | Ppcmd_open_box of block_type
   | Ppcmd_close_box
-  | Ppcmd_open_tag of pp_tag
-  | Ppcmd_close_tag
+  | Ppcmd_comment of string list
+  | Ppcmd_tag of pp_tag * std_ppcmds
 
 (** {6 Formatting commands} *)
 
@@ -80,8 +80,6 @@ val close : unit -> std_ppcmds
 (** {6 Opening and closing of tags} *)
 
 val tag : pp_tag -> std_ppcmds -> std_ppcmds
-val open_tag : pp_tag -> std_ppcmds
-val close_tag : unit -> std_ppcmds
 
 (** {6 Printing combinators} *)
 

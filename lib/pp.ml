@@ -38,8 +38,7 @@ type std_ppcmds =
   | Ppcmd_open_box of block_type
   | Ppcmd_close_box
   | Ppcmd_comment of string list
-  | Ppcmd_open_tag of pp_tag
-  | Ppcmd_close_tag
+  | Ppcmd_tag of pp_tag * std_ppcmds
 
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)
@@ -146,9 +145,7 @@ let hovb n   = Ppcmd_open_box(Pp_hovbox n)
 let close () = Ppcmd_close_box
 
 (* Opening and closed of tags *)
-let open_tag  t  = Ppcmd_open_tag t
-let close_tag () = Ppcmd_close_tag
-let tag t s = open_tag t ++ s ++ close_tag ()
+let tag t s = Ppcmd_tag(t,s)
 
 (* In new syntax only double quote char is escaped by repeating it *)
 let escape_string s =
@@ -200,16 +197,9 @@ let pp_with ?pp_tag ft =
     | Ppcmd_print_break(m,n)  -> pp_print_break ft m n
     | Ppcmd_force_newline     -> pp_force_newline ft ()
     | Ppcmd_comment coms      -> List.iter (pr_com ft) coms
-    | Ppcmd_open_tag tag ->
-      begin match pp_tag with
-      | None -> ()
-      | Some f -> Format.pp_open_tag ft (f tag)
-      end
-    | Ppcmd_close_tag ->
-      begin match pp_tag with
-      | None -> ()
-      | Some _ -> Format.pp_close_tag ft ()
-      end
+    | Ppcmd_tag(tag, s)       -> Option.iter (fun f -> pp_open_tag  ft (f tag)) pp_tag;
+                                 pp_cmd s;
+                                 Option.iter (fun _ -> pp_close_tag ft ()     ) pp_tag
   in
   try pp_cmd
   with reraise ->
