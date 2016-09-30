@@ -1012,7 +1012,9 @@ let vernac_declare_arguments locality r l nargs flags =
     | _::li, _::ld, _::ls -> check li ld ls 
     | _ -> assert false in
   let () = match l with
-  | [[]] when List.exists ((<>) `Assert) flags -> ()
+  | [[]] when List.exists ((<>) `Assert) flags ||
+              (* Arguments f /. used to be allowed by mistake *)
+              (Flags.version_less_or_equal Flags.V8_5 && nargs >= 0) -> ()
   | _ ->
     List.iter2 (check inf_names) (names :: rest) scopes
   in
