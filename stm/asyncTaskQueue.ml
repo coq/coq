@@ -229,10 +229,8 @@ module Make(T : Task) = struct
     | (Die | TQueue.BeingDestroyed) ->
         giveback_exec_token (); kill proc; exit ()
     | Sys_error _ | Invalid_argument _ | End_of_file ->
-        giveback_exec_token ();
         T.on_task_cancellation_or_expiration_or_slave_death !last_task;
-        kill proc;
-        exit ()
+        giveback_exec_token (); kill proc; exit ()
   end
 
   module Pool = WorkerPool.Make(Model)
@@ -300,11 +298,27 @@ module Make(T : Task) = struct
   let slave_handshake () =
     Pool.worker_handshake (Option.get !slave_ic) (Option.get !slave_oc)
 
+  let pp_pid pp = 
+    (* Breaking all abstraction barriers... very nice *)
+    let get_xml pp = match Richpp.repr pp with
+      | Xml_datatype.Element("_", [], xml) -> xml
+      | _ -> assert false in
+    Richpp.richpp_of_xml (Xml_datatype.Element("_", [],
+      get_xml (Richpp.richpp_of_pp Pp.(str (System.process_id ()^ " "))) @
+      get_xml pp))
+
+  let debug_with_pid = Feedback.(function
+    | { contents = Message(Debug, loc, pp) } as fb ->
+       { fb with contents = Message(Debug,loc,pp_pid pp) }
+    | x -> x)
+
   let main_loop () =
+    (* We pass feedback to master *)
     let slave_feeder oc fb =
-      Marshal.to_channel oc (RespFeedback fb) []; flush oc in
-    Feedback.set_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
+      Marshal.to_channel oc (RespFeedback (debug_with_pid fb)) []; flush oc in
+    Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
     Feedback.set_logger Feedback.feedback_logger;
+    (* We ask master to allocate universe identifiers *)
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
       match unmarshal_more_data (Option.get !slave_ic) with

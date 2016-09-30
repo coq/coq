@@ -68,11 +68,11 @@ val define : 'r evar -> Constr.t -> 'r t -> (unit, 'r) sigma
 
 (** Polymorphic universes *)
 
-val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool ->
+val new_univ_level_variable : ?loc:Loc.t -> ?name:string ->
   Evd.rigid -> 'r t -> (Univ.universe_level, 'r) sigma
-val new_univ_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool ->
+val new_univ_variable : ?loc:Loc.t -> ?name:string ->
   Evd.rigid -> 'r t -> (Univ.universe, 'r) sigma
-val new_sort_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool ->
+val new_sort_variable : ?loc:Loc.t -> ?name:string ->
   Evd.rigid -> 'r t -> (Sorts.t, 'r) sigma
 
 val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:Evd.rigid -> Environ.env ->

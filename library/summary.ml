@@ -186,4 +186,29 @@ let ref ?(freeze=fun _ r -> r) ~name x =
       init_function = (fun () -> r := x) };
   r
 
+module Local = struct
+
+type 'a local_ref = ('a CEphemeron.key * string) ref
+
+let (:=) r v = r := (CEphemeron.create v, snd !r)
+
+let (!) r =
+  let key, name = !r in
+  try CEphemeron.get key
+  with CEphemeron.InvalidKey ->
+    let _, { init_function } =
+      Int.Map.find (String.hash (mangle name)) !summaries in
+    init_function ();
+    CEphemeron.get (fst !r)
+
+let ref ?(freeze=fun x -> x) ~name init =
+  let r = Pervasives.ref (CEphemeron.create init, name) in
+  declare_summary name
+    { freeze_function = (fun _ -> freeze !r);
+      unfreeze_function = ((:=) r);
+      init_function = (fun () -> r := init) };
+  r
+
+end
+
 let dump = Dyn.dump

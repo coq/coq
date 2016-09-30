@@ -9,7 +9,8 @@
 open Declarations
 open Mod_subst
 open Util
-open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
 
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
@@ -94,7 +95,7 @@ let is_opaque cb = match cb.const_body with
 (** {7 Constant substitutions } *)
 
 let subst_rel_declaration sub =
-  map_constr (subst_mps sub)
+  RelDecl.map_constr (subst_mps sub)
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
@@ -146,7 +147,7 @@ let subst_const_body sub cb =
     themselves. But would it really bring substantial gains ? *)
 
 let hcons_rel_decl =
-  map_type Term.hcons_types % map_value Term.hcons_constr % map_name Names.Name.hcons
+  RelDecl.map_name Names.Name.hcons %> RelDecl.map_value Term.hcons_constr %> RelDecl.map_type Term.hcons_types
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 

@@ -18,6 +18,8 @@ open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 (* The instantiate tactic *)
 
 let instantiate_evar evk (ist,rawc) sigma =
@@ -48,7 +50,7 @@ let instantiate_tac n c ido =
 		    | _ -> error
 			"Please be more specific: in type or value?")
 	      | InHypTypeOnly ->
-		  evar_list (get_type decl)
+		  evar_list (NamedDecl.get_type decl)
 	      | InHypValueOnly ->
 		  (match decl with
 		    | LocalDef (_,body,_) -> evar_list body

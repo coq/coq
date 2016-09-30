@@ -32,9 +32,6 @@ sig
   val strip : string -> string
   (** Remove the surrounding blank characters from a string *)
 
-  val map : (char -> char) -> string -> string
-  (** Apply a function on a string character-wise. *)
-
   val drop_simple_quotes : string -> string
   (** Remove the eventual first surrounding simple quotes of a string. *)
 

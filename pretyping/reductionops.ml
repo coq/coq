@@ -26,6 +26,19 @@ exception Elimconst
     their parameters in its stack.
 *)
 
+let refolding_in_reduction = ref false
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname =
+    "Perform refolding of fixpoints/constants like cbn during reductions";
+  Goptions.optkey = ["Refolding";"Reduction"];
+  Goptions.optread = (fun () -> !refolding_in_reduction);
+  Goptions.optwrite = (fun a -> refolding_in_reduction:=a);
+}
+
+let get_refolding_in_reduction () = !refolding_in_reduction
+let set_refolding_in_reduction = (:=) refolding_in_reduction
+
 (** Machinery to custom the behavior of the reduction *)
 module ReductionBehaviour = struct
   open Globnames
@@ -623,16 +636,17 @@ let eta = CClosure.RedFlags.mkflags [CClosure.RedFlags.fETA]
 
 (* Beta Reduction tools *)
 
-let apply_subst recfun env cst_l t stack =
+let apply_subst recfun env refold cst_l t stack =
   let rec aux env cst_l t stack =
     match (Stack.decomp stack,kind_of_term t) with
     | Some (h,stacktl), Lambda (_,_,c) ->
-      aux (h::env) (Cst_stack.add_param h cst_l) c stacktl
+       let cst_l' = if refold then Cst_stack.add_param h cst_l else cst_l in
+       aux (h::env) cst_l' c stacktl
     | _ -> recfun cst_l (substl env t, stack)
   in aux env cst_l t stack
 
 let stacklam recfun env t stack =
-  apply_subst (fun _ -> recfun) env Cst_stack.empty t stack
+  apply_subst (fun _ -> recfun) env false Cst_stack.empty t stack
 
 let beta_applist (c,l) =
   stacklam Stack.zip [] c (Stack.append_app_list l Stack.empty)
@@ -697,11 +711,16 @@ let contract_cofix ?env ?reference (bodynum,(names,types,bodies as typedbodies))
   substl closure bodies.(bodynum)
 
 (** Similar to the "fix" case below *)
-let reduce_and_refold_cofix recfun env cst_l cofix sk =
-  let raw_answer = contract_cofix ~env ?reference:(Cst_stack.reference cst_l) cofix in
+let reduce_and_refold_cofix recfun env refold cst_l cofix sk =
+  let raw_answer =
+    let env = if refold then Some env else None in
+    contract_cofix ?env ?reference:(Cst_stack.reference cst_l) cofix in
   apply_subst
-    (fun x (t,sk') -> recfun x (Cst_stack.best_replace (mkCoFix cofix) cst_l t,sk'))
-    [] Cst_stack.empty raw_answer sk
+    (fun x (t,sk') ->
+      let t' =
+        if refold then Cst_stack.best_replace (mkCoFix cofix) cst_l t else t in
+      recfun x (t',sk'))
+    [] refold Cst_stack.empty raw_answer sk
 
 let reduce_mind_case mia =
   match kind_of_term mia.mconstr with
@@ -737,11 +756,18 @@ let contract_fix ?env ?reference ((recindices,bodynum),(names,types,bodies as ty
     replace the fixpoint by the best constant from [cst_l]
     Other rels are directly substituted by constants "magically found from the
     context" in contract_fix *)
-let reduce_and_refold_fix recfun env cst_l fix sk =
-  let raw_answer = contract_fix ~env ?reference:(Cst_stack.reference cst_l) fix in
+let reduce_and_refold_fix recfun env refold cst_l fix sk =
+  let raw_answer =
+    let env = if refold then None else Some env in
+    contract_fix ?env ?reference:(Cst_stack.reference cst_l) fix in
   apply_subst
-    (fun x (t,sk') -> recfun x (Cst_stack.best_replace (mkFix fix) cst_l t,sk'))
-    [] Cst_stack.empty raw_answer sk
+    (fun x (t,sk') ->
+      let t' =
+        if refold then
+          Cst_stack.best_replace (mkFix fix) cst_l t
+        else t
+      in recfun x (t',sk'))
+    [] refold Cst_stack.empty raw_answer sk
 
 let fix_recarg ((recindices,bodynum),_) stack =
   assert (0 <= bodynum && bodynum < Array.length recindices);
@@ -781,7 +807,7 @@ let equal_stacks (x, l) (y, l') =
     | None -> false
     | Some (lft1,lft2) -> f_equal (x, lft1) (y, lft2) 
 
-let rec whd_state_gen ?csts tactic_mode flags env sigma =
+let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
   let rec whrec cst_l (x, stack as s) =
     let () = if !debug_RAKAM then
@@ -790,11 +816,11 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
              (h 0 (str "<<" ++ Termops.print_constr x ++
 		   str "|" ++ cut () ++ Cst_stack.pr cst_l ++
 		   str "|" ++ cut () ++ Stack.pr Termops.print_constr stack ++
-		   str ">>") ++ fnl ())
+		   str ">>"))
     in
     let fold () =
       let () = if !debug_RAKAM then
-	  let open Pp in Feedback.msg_notice (str "<><><><><>" ++ fnl ()) in
+	  let open Pp in Feedback.msg_notice (str "<><><><><>") in
       (s,cst_l)
     in
     match kind_of_term x with
@@ -804,7 +830,8 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       | _ -> fold ())
     | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
-      | LocalDef (_,body,_) -> whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
+      | LocalDef (_,body,_) ->
+	whrec (if refold then Cst_stack.add_cst (mkVar id) cst_l else cst_l) (body, stack)
       | _ -> fold ())
     | Evar ev ->
       (match safe_evar_value sigma ev with
@@ -819,7 +846,8 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	| None -> fold ()
 	| Some body ->
 	   if not tactic_mode
-	   then whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, stack)
+	   then whrec (if refold then Cst_stack.add_cst (mkConstU const) cst_l else cst_l)
+		      (body, stack)
 	   else (* Looks for ReductionBehaviour *)
 	     match ReductionBehaviour.get (Globnames.ConstRef c) with
 	     | None -> whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, stack)
@@ -896,20 +924,20 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 				      Stack.append_app [|c|] bef,cst_l)::s'))
 
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
-      apply_subst whrec [b] cst_l c stack
+      apply_subst whrec [b] refold cst_l c stack
     | Cast (c,_,_) -> whrec cst_l (c, stack)
     | App (f,cl)  ->
       whrec
-	(Cst_stack.add_args cl cst_l)
+	(if refold then Cst_stack.add_args cl cst_l else cst_l)
 	(f, Stack.append_app cl stack)
     | Lambda (na,t,c) ->
       (match Stack.decomp stack with
       | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
-	apply_subst whrec [] cst_l x stack
+	apply_subst whrec [] refold cst_l x stack
       | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
 	let env' = push_rel (LocalAssum (na,t)) env in
-	let whrec' = whd_state_gen tactic_mode flags env' sigma in
-        (match kind_of_term (Stack.zip ~refold:true (fst (whrec' (c, Stack.empty)))) with
+	let whrec' = whd_state_gen ~refold ~tactic_mode flags env' sigma in
+        (match kind_of_term (Stack.zip ~refold (fst (whrec' (c, Stack.empty)))) with
         | App (f,cl) ->
 	  let napp = Array.length cl in
 	  if napp > 0 then
@@ -945,7 +973,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	|args, (Stack.Fix (f,s',cst_l)::s'') when use_fix ->
 	  let x' = Stack.zip(x,args) in
 	  let out_sk = s' @ (Stack.append_app [|x'|] s'') in
-	  reduce_and_refold_fix whrec env cst_l f out_sk
+	  reduce_and_refold_fix whrec env refold cst_l f out_sk
 	|args, (Stack.Cst (const,curr,remains,s',cst_l) :: s'') ->
 	  let x' = Stack.zip(x,args) in
 	  begin match remains with
@@ -955,7 +983,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	      (match constant_opt_value_in env const with
 	      | None -> fold ()
 	      | Some body ->
-		whrec (Cst_stack.add_cst (mkConstU const) cst_l)
+		whrec (if refold then Cst_stack.add_cst (mkConstU const) cst_l else cst_l)
 		  (body, s' @ (Stack.append_app [|x'|] s'')))
 	    | Stack.Cst_proj p ->
 	      let pb = lookup_projection p env in
@@ -981,7 +1009,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       if CClosure.RedFlags.red_set flags CClosure.RedFlags.fCOFIX then
 	match Stack.strip_app stack with
 	|args, ((Stack.Case _ |Stack.Proj _)::s') ->
-	  reduce_and_refold_cofix whrec env cst_l cofix stack
+	  reduce_and_refold_cofix whrec env refold cst_l cofix stack
 	|_ -> fold ()
       else fold ()
 
@@ -1073,7 +1101,7 @@ let local_whd_state_gen flags sigma =
   whrec
 
 let raw_whd_state_gen flags env =
-  let f sigma s = fst (whd_state_gen false flags env sigma s) in
+  let f sigma s = fst (whd_state_gen (get_refolding_in_reduction ()) false flags env sigma s) in
   f
 
 let stack_red_of_state_red f =
@@ -1083,7 +1111,7 @@ let stack_red_of_state_red f =
 (* Drops the Cst_stack *)
 let iterate_whd_gen refold flags env sigma s =
   let rec aux t =
-  let (hd,sk),_ = whd_state_gen refold flags env sigma (t,Stack.empty) in
+  let (hd,sk),_ = whd_state_gen refold false flags env sigma (t,Stack.empty) in
   let whd_sk = Stack.map aux sk in
   Stack.zip ~refold (hd,whd_sk)
   in aux s
@@ -1205,7 +1233,7 @@ let pb_equal = function
   | Reduction.CONV -> Reduction.CONV
 
 let report_anomaly _ =
-  let e = UserError ("", Pp.str "Conversion test raised an anomaly") in
+  let e = UserError (None, Pp.str "Conversion test raised an anomaly") in
   let e = CErrors.push e in
   iraise e
 
@@ -1468,19 +1496,21 @@ let is_sort env sigma t =
    of case/fix (heuristic used by evar_conv) *)
 
 let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
+  let refold = get_refolding_in_reduction () in
+  let tactic_mode = false in
   let rec whrec csts s =
-    let (t, stack as s),csts' = whd_state_gen ~csts false CClosure.betaiota env sigma s in
+    let (t, stack as s),csts' = whd_state_gen ~csts ~refold ~tactic_mode CClosure.betaiota env sigma s in
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
-	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
+	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
 	  (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
 	if reducible_mind_case t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
       |args, (Stack.Fix _ :: _ as stack') ->
-	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
+	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
 	  (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
 	if isConstruct t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
       |args, (Stack.Proj (n,m,p,_) :: stack'') ->
-	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
+	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
 	  (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
 	if isConstruct t_o then
 	  whrec Cst_stack.empty (Stack.nth stack_o (n+m), stack'')

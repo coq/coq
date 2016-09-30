@@ -14,6 +14,7 @@ open Clenv
 open Pattern
 open Decl_kinds
 open Hints
+open Tactypes
 
 val priority : ('a * full_hint) list -> ('a * full_hint) list
 
@@ -39,45 +40,45 @@ val conclPattern : constr -> constr_pattern option -> Genarg.glob_generic_argume
 (** The use of the "core" database can be de-activated by passing
     "nocore" amongst the databases. *)
 
-val auto : ?debug:Tacexpr.debug ->
-  int -> Tacexpr.delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
+val auto : ?debug:debug ->
+  int -> delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
 
 (** Auto with more delta. *)
 
-val new_auto : ?debug:Tacexpr.debug ->
-  int -> Tacexpr.delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
+val new_auto : ?debug:debug ->
+  int -> delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
 
 (** auto with default search depth and with the hint database "core" *)
 val default_auto : unit Proofview.tactic
 
 (** auto with all hint databases except the "v62" compatibility database *)
-val full_auto : ?debug:Tacexpr.debug ->
-  int -> Tacexpr.delayed_open_constr list -> unit Proofview.tactic
+val full_auto : ?debug:debug ->
+  int -> delayed_open_constr list -> unit Proofview.tactic
 
 (** auto with all hint databases except the "v62" compatibility database
    and doing delta *)
-val new_full_auto : ?debug:Tacexpr.debug ->
-  int -> Tacexpr.delayed_open_constr list -> unit Proofview.tactic
+val new_full_auto : ?debug:debug ->
+  int -> delayed_open_constr list -> unit Proofview.tactic
 
 (** auto with default search depth and with all hint databases
    except the "v62" compatibility database *)
 val default_full_auto : unit Proofview.tactic
 
 (** The generic form of auto (second arg [None] means all bases) *)
-val gen_auto : ?debug:Tacexpr.debug ->
-  int option -> Tacexpr.delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
+val gen_auto : ?debug:debug ->
+  int option -> delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
 (** The hidden version of auto *)
-val h_auto   : ?debug:Tacexpr.debug ->
-  int option -> Tacexpr.delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
+val h_auto   : ?debug:debug ->
+  int option -> delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
 (** Trivial *)
 
-val trivial : ?debug:Tacexpr.debug ->
-  Tacexpr.delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
-val gen_trivial : ?debug:Tacexpr.debug ->
-  Tacexpr.delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
-val full_trivial : ?debug:Tacexpr.debug ->
-  Tacexpr.delayed_open_constr list -> unit Proofview.tactic
-val h_trivial : ?debug:Tacexpr.debug ->
-  Tacexpr.delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
+val trivial : ?debug:debug ->
+  delayed_open_constr list -> hint_db_name list -> unit Proofview.tactic
+val gen_trivial : ?debug:debug ->
+  delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic
+val full_trivial : ?debug:debug ->
+  delayed_open_constr list -> unit Proofview.tactic
+val h_trivial : ?debug:debug ->
+  delayed_open_constr list -> hint_db_name list option -> unit Proofview.tactic

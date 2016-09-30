@@ -21,10 +21,10 @@ open Tacmach
 open Tacticals
 open Rewrite
 open Stdarg
-open Constrarg
+open Pcoq.Vernac_
 open Pcoq.Prim
 open Pcoq.Constr
-open Pcoq.Tactic
+open Pltac
 
 DECLARE PLUGIN "g_rewrite"
 
@@ -106,17 +106,11 @@ END
 let db_strat db = StratUnary (Topdown, StratHints (false, db))
 let cl_rewrite_clause_db db = cl_rewrite_clause_strat (strategy_of_ast (db_strat db))
 
-let cl_rewrite_clause_db = 
-  if Flags.profile then
-    let key = Profile.declare_profile "cl_rewrite_clause_db" in
-      Profile.profile3 key cl_rewrite_clause_db
-  else cl_rewrite_clause_db
-
 TACTIC EXTEND rewrite_strat
-| [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ Proofview.V82.tactic (cl_rewrite_clause_strat s (Some id)) ]
-| [ "rewrite_strat" rewstrategy(s) ] -> [ Proofview.V82.tactic (cl_rewrite_clause_strat s None) ]
-| [ "rewrite_db" preident(db) "in" hyp(id) ] -> [ Proofview.V82.tactic (cl_rewrite_clause_db db (Some id)) ]
-| [ "rewrite_db" preident(db) ] -> [ Proofview.V82.tactic (cl_rewrite_clause_db db None) ]
+| [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ cl_rewrite_clause_strat s (Some id) ]
+| [ "rewrite_strat" rewstrategy(s) ] -> [ cl_rewrite_clause_strat s None ]
+| [ "rewrite_db" preident(db) "in" hyp(id) ] -> [ cl_rewrite_clause_db db (Some id) ]
+| [ "rewrite_db" preident(db) ] -> [ cl_rewrite_clause_db db None ]
 END
 
 let clsubstitute o c =
@@ -125,7 +119,7 @@ let clsubstitute o c =
       (fun cl ->
         match cl with
           | Some id when is_tac id -> tclIDTAC
-          | _ -> cl_rewrite_clause c o AllOccurrences cl)
+          | _ -> Proofview.V82.of_tactic (cl_rewrite_clause c o AllOccurrences cl))
 
 TACTIC EXTEND substitute
 | [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> [ Proofview.V82.tactic (clsubstitute o c) ]
@@ -136,15 +130,15 @@ END
 
 TACTIC EXTEND setoid_rewrite
    [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) ]
-   -> [ Proofview.V82.tactic (cl_rewrite_clause c o AllOccurrences None) ]
+   -> [ cl_rewrite_clause c o AllOccurrences None ]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-      [ Proofview.V82.tactic (cl_rewrite_clause c o AllOccurrences (Some id))]
+      [ cl_rewrite_clause c o AllOccurrences (Some id) ]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
-      [ Proofview.V82.tactic (cl_rewrite_clause c o (occurrences_of occ) None)]
+      [ cl_rewrite_clause c o (occurrences_of occ) None ]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id)] ->
-      [ Proofview.V82.tactic (cl_rewrite_clause c o (occurrences_of occ) (Some id))]
+      [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ)] ->
-      [ Proofview.V82.tactic (cl_rewrite_clause c o (occurrences_of occ) (Some id))]
+      [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
 END
 
 VERNAC COMMAND EXTEND AddRelation CLASSIFIED AS SIDEFF

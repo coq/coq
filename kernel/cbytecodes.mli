@@ -139,11 +139,14 @@ type fv = fv_elem array
             closed terms. *)
 exception NotClosed
 
+module FvMap : Map.S with type key = fv_elem
+
 (*spiwack: both type have been moved from Cbytegen because I needed them
   for the retroknowledge *)
 type vm_env = {
     size : int;              (** length of the list [n] *)
-    fv_rev : fv_elem list    (** [fvn; ... ;fv1] *)
+    fv_rev : fv_elem list;   (** [fvn; ... ;fv1] *)
+    fv_fwd : int FvMap.t;    (** reverse mapping *)
   }
 
 

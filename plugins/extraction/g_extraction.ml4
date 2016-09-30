@@ -14,7 +14,6 @@ DECLARE PLUGIN "extraction_plugin"
 
 open Genarg
 open Stdarg
-open Constrarg
 open Pcoq.Prim
 open Pp
 open Names

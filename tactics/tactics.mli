@@ -15,10 +15,10 @@ open Evd
 open Clenv
 open Redexpr
 open Globnames
-open Tacexpr
 open Pattern
 open Unification
 open Misctypes
+open Tactypes
 open Locus
 
 (** Main tactics defined in ML. This file is huge and should probably be split

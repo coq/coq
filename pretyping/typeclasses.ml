@@ -17,6 +17,9 @@ open Util
 open Typeclasses_errors
 open Libobject
 open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let typeclasses_unique_solutions = ref false
@@ -181,7 +184,7 @@ let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
-  let do_subst_ctx = List.smartmap (map_constr do_subst) in
+  let do_subst_ctx = List.smartmap (RelDecl.map_constr do_subst) in
   let do_subst_context (grs,ctx) =
     List.smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
     do_subst_ctx ctx in
@@ -197,19 +200,16 @@ let subst_class (subst,cl) =
 let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
-    ( fun (n,_,b,t) (ctx', subst) ->
-        let decl = match b with
-                   | None -> LocalAssum (Name n, substn_vars 1 subst t)
-		   | Some b -> LocalDef (Name n, substn_vars 1 subst b, substn_vars 1 subst t)
-	in
-	(decl :: ctx', n :: subst)
+    ( fun (decl,_) (ctx', subst) ->
+        let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
+	(decl' :: ctx', NamedDecl.get_id decl :: subst)
     ) ctx ([], []) in
   let discharge_rel_context subst n rel =
     let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
     let ctx, _ =
       List.fold_right
 	(fun decl (ctx, k) ->
-	   map_constr (substn_vars k subst) decl :: ctx, succ k
+	   RelDecl.map_constr (substn_vars k subst) decl :: ctx, succ k
 	)
 	rel ([], n)
     in ctx
@@ -222,7 +222,7 @@ let discharge_class (_,cl) =
   let discharge_context ctx' subst (grs, ctx) =
     let grs' =
       let newgrs = List.map (fun decl ->
-			     match decl |> get_type |> class_of_constr with
+			     match decl |> RelDecl.get_type |> class_of_constr with
 			     | None -> None
 			     | Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
 			    ctx'
@@ -501,7 +501,7 @@ let is_resolvable evi =
   Option.is_empty (Store.get evi.evar_extra resolvable)
 
 let mark_resolvability_undef b evi =
-  if is_resolvable evi = b then evi
+  if is_resolvable evi == (b : bool) then evi
   else
     let t = set_resolvable evi.evar_extra b in
     { evi with evar_extra = t }
@@ -548,7 +548,7 @@ let solve_all_instances env evd filter unique split fail =
 (* let solve_classeskey = Profile.declare_profile "solve_typeclasses" *)
 (* let solve_problem = Profile.profile5 solve_classeskey solve_problem *)
 
-let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
+let resolve_typeclasses ?(fast_path = true) ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(split=true) ?(fail=true) env evd =
-  if not (has_typeclasses filter evd) then evd
+  if fast_path && not (has_typeclasses filter evd) then evd
   else solve_all_instances env evd filter unique split fail

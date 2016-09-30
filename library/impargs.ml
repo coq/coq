@@ -22,6 +22,9 @@ open Constrexpr
 open Termops
 open Namegen
 open Decl_kinds
+open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (*s Flags governing the computation of implicit arguments *)
 
@@ -68,10 +71,9 @@ let is_reversible_pattern_implicit_args () = !implicit_args.reversible_pattern
 let is_contextual_implicit_args () = !implicit_args.contextual
 let is_maximal_implicit_args () = !implicit_args.maximal
 
-let with_implicits flags f x =
+let with_implicit_protection f x =
   let oflags = !implicit_args in
   try
-    implicit_args := flags;
     let rslt = f x in
     implicit_args := oflags;
     rslt
@@ -165,7 +167,6 @@ let update pos rig (na,st) =
 
 (* modified is_rigid_reference with a truncated env *)
 let is_flexible_reference env bound depth f =
-  let open Context.Named.Declaration in
   match kind_of_term f with
     | Rel n when n >= bound+depth -> (* inductive type *) false
     | Rel n when n >= depth -> (* previous argument *) true
@@ -174,7 +175,7 @@ let is_flexible_reference env bound depth f =
         let cb = Environ.lookup_constant kn env in
 	(match cb.const_body with Def _ -> true | _ -> false)
     | Var id ->
-        Environ.lookup_named id env |> is_local_def
+        env |> Environ.lookup_named id |> is_local_def
     | Ind _ | Construct _ -> false
     |  _ -> true
 
@@ -339,14 +340,14 @@ let check_correct_manual_implicits autoimps l =
   List.iter (function
     | ExplByName id,(b,fi,forced) ->
 	if not forced then
-	  errorlabstrm ""
+	  user_err 
             (str "Wrong or non-dependent implicit argument name: " ++ pr_id id ++ str ".")
     | ExplByPos (i,_id),_t ->
 	if i<1 || i>List.length autoimps then
-	  errorlabstrm ""
+	  user_err 
             (str "Bad implicit argument number: " ++ int i ++ str ".")
 	else
-	  errorlabstrm ""
+	  user_err 
 	    (str "Cannot set implicit argument number " ++ int i ++
 	      str ": it has no name.")) l
 
@@ -450,8 +451,7 @@ let compute_all_mib_implicits flags manual kn =
 
 let compute_var_implicits flags manual id =
   let env = Global.env () in
-  let open Context.Named.Declaration in
-  compute_semi_auto_implicits env flags manual (get_type (lookup_named id env))
+  compute_semi_auto_implicits env flags manual (NamedDecl.get_type (lookup_named id env))
 
 (* Implicits of a global reference. *)
 
@@ -516,15 +516,11 @@ let subst_implicits (subst,(req,l)) =
   (ImplLocal,List.smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
-  let map (id, impl, _, _) = match impl with
-  | Implicit -> Some (id, Manual, (true, true))
+  let map (decl, impl) = match impl with
+  | Implicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
   | _ -> None
   in
-  let is_set (_, _, b, _) = match b with
-  | None -> true
-  | Some _ -> false
-  in
-  List.rev_map map (List.filter is_set ctx)
+  List.rev_map map (List.filter (fst %> is_local_assum) ctx)
 
 let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)
@@ -665,7 +661,7 @@ let check_inclusion l =
 
 let check_rigidity isrigid =
   if not isrigid then
-    errorlabstrm "" (strbrk "Multiple sequences of implicit arguments available only for references that cannot be applied to an arbitrarily large number of arguments.")
+    user_err  (strbrk "Multiple sequences of implicit arguments available only for references that cannot be applied to an arbitrarily large number of arguments.")
 
 let projection_implicits env p impls = 
   let pb = Environ.lookup_projection p env in

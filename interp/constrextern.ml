@@ -94,8 +94,8 @@ let is_record indsp =
 let encode_record r =
   let indsp = global_inductive r in
   if not (is_record indsp) then
-    user_err_loc (loc_of_reference r,"encode_record",
-    str "This type is not a structure type.");
+    user_err ~loc:(loc_of_reference r) ~hdr:"encode_record"
+      (str "This type is not a structure type.");
   indsp
 
 module PrintingRecordRecord =

@@ -17,7 +17,7 @@ open Libnames
 open Constrexpr
 open Constrexpr_ops
 open Stdarg
-open Constrarg
+open Tacarg
 open Extraargs
 
 let (set_default_tactic, get_default_tactic, print_default_tactic) = 
@@ -30,12 +30,23 @@ let () =
   end in
   Obligations.default_tactic := tac
 
+let with_tac f tac =
+  let env = { Genintern.genv = Global.env (); ltacvars = Names.Id.Set.empty } in
+  let tac = match tac with
+  | None -> None
+  | Some tac ->
+    let tac = Genarg.in_gen (Genarg.rawwit wit_ltac) tac in
+    let _, tac = Genintern.generic_intern env tac in
+    Some tac
+  in
+  f tac
+
 (* We define new entries for programs, with the use of this module
  * Subtac. These entries are named Subtac.<foo>
  *)
 
 module Gram = Pcoq.Gram
-module Tactic = Pcoq.Tactic
+module Tactic = Pltac
 
 open Pcoq
 
@@ -65,6 +76,9 @@ GEXTEND Gram
   END
 
 open Obligations
+
+let obligation obl tac = with_tac (fun t -> Obligations.obligation obl t) tac
+let next_obligation obl tac = with_tac (fun t -> Obligations.next_obligation obl t) tac
 
 let classify_obbl _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]), VtLater)
 

@@ -23,7 +23,9 @@ open Pp
 open CErrors
 open Util
 open Proofview.Notations
-open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 
 let reference dir s = lazy (Coqlib.gen_reference "CC" dir s)
 
@@ -155,7 +157,7 @@ let rec quantified_atom_of_constr env sigma nrels term =
 	  let patts=patterns_of_constr env sigma nrels atom in
 	      `Nrule patts
 	else 
-	  quantified_atom_of_constr (Environ.push_rel (LocalAssum (id,atom)) env) sigma (succ nrels) ff
+	  quantified_atom_of_constr (Environ.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma (succ nrels) ff
     | _ ->  
 	let patts=patterns_of_constr env sigma nrels term in
 	    `Rule patts
@@ -170,7 +172,7 @@ let litteral_of_constr env sigma term=
 	else
 	  begin
 	    try 
-	      quantified_atom_of_constr (Environ.push_rel (LocalAssum (id,atom)) env) sigma 1 ff
+	      quantified_atom_of_constr (Environ.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma 1 ff
 	    with Not_found ->
 	      `Other (decompose_term env sigma term)
 	  end
@@ -192,10 +194,10 @@ let make_prb gls depth additionnal_terms =
 	   ignore (add_term state t)) additionnal_terms;
     List.iter
       (fun decl ->
-         let (id,_,e) = Context.Named.Declaration.to_tuple decl in
+         let id = NamedDecl.get_id decl in
 	 begin
 	   let cid=mkVar id in
-	   match litteral_of_constr env sigma e with
+	   match litteral_of_constr env sigma (NamedDecl.get_type decl) with
 	       `Eq (t,a,b) -> add_equality state cid a b
 	     | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b
 	     | `Other ph ->
@@ -456,7 +458,7 @@ let cc_tactic depth additionnal_terms =
   end }
 
 let cc_fail gls =
-  errorlabstrm  "Congruence" (Pp.str "congruence failed.")
+  user_err ~hdr:"Congruence" (Pp.str "congruence failed.")
 
 let congruence_tac depth l =
   Tacticals.New.tclORELSE

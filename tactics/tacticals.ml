@@ -15,8 +15,10 @@ open Termops
 open Declarations
 open Tacmach
 open Clenv
+open Tactypes
 open Sigma.Notations
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (************************************************************************)
 (* Tacticals re-exported from the Refiner module                        *)
@@ -70,7 +72,7 @@ let nthDecl m gl =
   try List.nth (pf_hyps gl) (m-1)
   with Failure _ -> error "No such assumption."
 
-let nthHypId m gl = nthDecl m gl |> get_id
+let nthHypId m gl = nthDecl m gl |> NamedDecl.get_id
 let nthHyp m gl   = mkVar (nthHypId m gl)
 
 let lastDecl gl   = nthDecl 1 gl
@@ -81,7 +83,7 @@ let nLastDecls n gl =
   try List.firstn n (pf_hyps gl)
   with Failure _ -> error "Not enough hypotheses in the goal."
 
-let nLastHypsId n gl = List.map get_id (nLastDecls n gl)
+let nLastHypsId n gl = List.map NamedDecl.get_id (nLastDecls n gl)
 let nLastHyps n gl   = List.map mkVar (nLastHypsId n gl)
 
 let onNthDecl m tac gl  = tac (nthDecl m gl) gl
@@ -99,7 +101,7 @@ let onNLastHypsId n tac = onHyps (nLastHypsId n) tac
 let onNLastHyps n tac   = onHyps (nLastHyps n) tac
 
 let afterHyp id gl =
-  fst (List.split_when (Id.equal id % get_id) (pf_hyps gl))
+  fst (List.split_when (NamedDecl.get_id %> Id.equal id) (pf_hyps gl))
 
 (***************************************)
 (*           Clause Tacticals          *)
@@ -151,7 +153,7 @@ type branch_args = {
   nassums    : int;         (* number of assumptions/letin to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=assumption, false=let-in *)
-  branchnames : Tacexpr.intro_patterns}
+  branchnames : intro_patterns}
 
 type branch_assumptions = {
   ba        : branch_args;       (* the branch args *)
@@ -172,14 +174,14 @@ let check_or_and_pattern_size check_and loc names branchsigns =
   let n = Array.length branchsigns in
   let msg p1 p2 = strbrk "a conjunctive pattern made of " ++ int p1 ++ (if p1 == p2 then mt () else str " or " ++ int p2) ++ str " patterns" in
   let err1 p1 p2 =
-    user_err_loc (loc,"",str "Expects " ++ msg p1 p2 ++ str ".") in
+    user_err ~loc  (str "Expects " ++ msg p1 p2 ++ str ".") in
   let errn n =
-    user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n
+    user_err ~loc  (str "Expects a disjunctive pattern with " ++ int n
 	++ str " branches.") in
   let err1' p1 p2 =
-    user_err_loc (loc,"",strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
+    user_err ~loc  (strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
   let errforthcoming loc =
-    user_err_loc (loc,"",strbrk "Unexpected non atomic pattern.") in
+    user_err ~loc  (strbrk "Unexpected non atomic pattern.") in
   match names with
   | IntroAndPattern l ->
       if not (Int.equal n 1) then errn n;
@@ -311,7 +313,7 @@ module New = struct
     tclZERO (Refiner.FailError (lvl,lazy msg))
 
   let tclZEROMSG ?loc msg =
-    let err = UserError ("", msg) in
+    let err = UserError (None, msg) in
     let info = match loc with
     | None -> Exninfo.null
     | Some loc -> Loc.add_loc Exninfo.null loc
@@ -478,10 +480,10 @@ module New = struct
 
   (* Select a subset of the goals *)
   let tclSELECT = function
-    | Tacexpr.SelectNth i -> Proofview.tclFOCUS i i
-    | Tacexpr.SelectList l -> Proofview.tclFOCUSLIST l
-    | Tacexpr.SelectId id -> Proofview.tclFOCUSID id
-    | Tacexpr.SelectAll -> fun tac -> tac
+    | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i
+    | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l
+    | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id
+    | Vernacexpr.SelectAll -> fun tac -> tac
 
   (* Check that holes in arguments have been resolved *)
 
@@ -508,7 +510,7 @@ module New = struct
     | [] -> ()
     | (evk,evi) :: _ ->
       let (loc,_) = evi.Evd.evar_source in
-      Pretype_errors.error_unsolvable_implicit loc env sigma evk None
+      Pretype_errors.error_unsolvable_implicit ~loc env sigma evk None
 
   let tclWITHHOLES accept_unresolved_holes tac sigma =
     tclEVARMAP >>= fun sigma_initial ->
@@ -532,7 +534,7 @@ module New = struct
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
-      let Sigma (x, sigma, _) = x.Tacexpr.delayed env sigma in
+      let Sigma (x, sigma, _) = x.delayed env sigma in
       tclWITHHOLES check (tac x) (Sigma.to_evar_map sigma)
     end }
 
@@ -560,7 +562,7 @@ module New = struct
   let nthHypId m gl =
     (** We only use [id] *)
     let gl = Proofview.Goal.assume gl in
-    nthDecl m gl |> get_id
+    nthDecl m gl |> NamedDecl.get_id
   let nthHyp m gl = 
     mkVar (nthHypId m gl)
 
@@ -592,7 +594,7 @@ module New = struct
   let afterHyp id tac =
     Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let rem, _ = List.split_when (Id.equal id % get_id) hyps in
+    let rem, _ = List.split_when (NamedDecl.get_id %> Id.equal id) hyps in
     tac rem
     end }
 
@@ -643,7 +645,7 @@ module New = struct
 	    | Var id -> string_of_id id
 	    | _ -> "\b"
 	  in
-	  errorlabstrm "Tacticals.general_elim_then_using"
+	  user_err ~hdr:"Tacticals.general_elim_then_using"
             (str "The elimination combinator " ++ str name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in

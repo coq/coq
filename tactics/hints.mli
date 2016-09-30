@@ -15,6 +15,7 @@ open Globnames
 open Decl_kinds
 open Evd
 open Misctypes
+open Tactypes
 open Clenv
 open Pattern
 open Vernacexpr
@@ -24,6 +25,8 @@ open Vernacexpr
 exception Bound
 
 val decompose_app_bound : constr -> global_reference * constr array
+
+type debug = Debug | Info | Off
 
 (** Pre-created hint databases *)
 
@@ -132,7 +135,7 @@ type hints_entry =
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
-      int * (patvar list * constr_pattern) option * Tacexpr.glob_tactic_expr
+      int * (patvar list * constr_pattern) option * Genarg.glob_generic_argument
 
 val searchtable_map : hint_db_name -> hint_db
 
@@ -199,7 +202,7 @@ val make_resolve_hyp :
 (** [make_extern pri pattern tactic_expr] *)
 
 val make_extern :
-  int -> constr_pattern option -> Tacexpr.glob_tactic_expr
+  int -> constr_pattern option -> Genarg.glob_generic_argument
       -> hint_entry
 
 val run_hint : hint ->
@@ -209,14 +212,11 @@ val run_hint : hint ->
     written code. *)
 val repr_hint : hint -> (raw_hint * clausenv) hint_ast
 
-val extern_intern_tac :
-  (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
-
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;
    Boolean tells if lemmas with evars are allowed *)
 
-val make_local_hint_db : env -> evar_map -> ?ts:transparent_state -> bool -> Tacexpr.delayed_open_constr list -> hint_db
+val make_local_hint_db : env -> evar_map -> ?ts:transparent_state -> bool -> delayed_open_constr list -> hint_db
 
 val make_db_list : hint_db_name list -> hint_db list
 

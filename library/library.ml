@@ -131,7 +131,7 @@ let find_library dir =
 let try_find_library dir =
   try find_library dir
   with Not_found ->
-    errorlabstrm "Library.find_library"
+    user_err ~hdr:"Library.find_library"
       (str "Unknown library " ++ pr_dirpath dir)
 
 let register_library_filename dir f =
@@ -329,12 +329,12 @@ let locate_qualified_library ?root ?(warn = true) qid =
 
 let error_unmapped_dir qid =
   let prefix, _ = repr_qualid qid in
-  errorlabstrm "load_absolute_library_from"
+  user_err ~hdr:"load_absolute_library_from"
     (str "Cannot load " ++ pr_qualid qid ++ str ":" ++ spc () ++
      str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
 
 let error_lib_not_found qid =
-  errorlabstrm "load_absolute_library_from"
+  user_err ~hdr:"load_absolute_library_from"
     (str"Cannot find library " ++ pr_qualid qid ++ str" in loadpath")
 
 let try_locate_absolute_library dir =
@@ -378,7 +378,7 @@ let access_table what tables dp i =
       let t =
         try fetch_delayed f
         with Faulty f ->
-          errorlabstrm "Library.access_table"
+          user_err ~hdr:"Library.access_table"
             (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
              str ") is inaccessible or corrupted,\ncannot load some " ++
              str what ++ str " in it.\n")
@@ -452,32 +452,34 @@ let intern_from_file f =
 module DPMap = Map.Make(DirPath)
 
 let rec intern_library (needed, contents) (dir, f) from =
-  Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
   try (DPMap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
+  Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let f = match f with Some f -> f | None -> try_locate_absolute_library dir in
   let m = intern_from_file f in
   if not (DirPath.equal dir m.library_name) then
-    errorlabstrm "load_physical_library"
+    user_err ~hdr:"load_physical_library"
       (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  m.library_digests, intern_library_deps (needed, contents) dir m (Some f)
+  m.library_digests, intern_library_deps (needed, contents) dir m f
 
 and intern_library_deps libs dir m from =
   let needed, contents = Array.fold_left (intern_mandatory_library dir from) libs m.library_deps in
   (dir :: needed, DPMap.add dir m contents )
 
 and intern_mandatory_library caller from libs (dir,d) =
-  let digest, libs = intern_library libs (dir, None) from in
+  let digest, libs = intern_library libs (dir, None) (Some from) in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    errorlabstrm "" (str "Compiled library " ++ pr_dirpath caller ++ str ".vo makes inconsistent assumptions over library " ++ pr_dirpath dir);
+    user_err (str "Compiled library " ++ pr_dirpath caller ++
+    str " (in file " ++ str from ++ str ") makes inconsistent assumptions \
+    over library " ++ pr_dirpath dir);
   libs
 
 let rec_intern_library libs (dir, f) =
@@ -551,12 +553,20 @@ let in_require : require_obj -> obj =
 
 let (f_xml_require, xml_require) = Hook.make ~default:ignore ()
 
+let warn_require_in_module =
+  CWarnings.create ~name:"require-in-module" ~category:"deprecated"
+                   (fun () -> strbrk "Require inside a module is" ++
+                              strbrk " deprecated and strongly discouraged. " ++
+                              strbrk "You can Require a module at toplevel " ++
+                              strbrk "and optionally Import it inside another one.")
+
 let require_library_from_dirpath modrefl export =
   let needed, contents = List.fold_left rec_intern_library ([], DPMap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
     if Lib.is_module_or_modtype () then
       begin
+        warn_require_in_module ();
 	add_anonymous_leaf (in_require (needed,modrefl,None));
 	Option.iter (fun exp ->
 	  add_anonymous_leaf (in_import_library (modrefl,exp)))
@@ -572,8 +582,8 @@ let require_library_from_dirpath modrefl export =
 let safe_locate_module (loc,qid) =
   try Nametab.locate_module qid
   with Not_found ->
-    user_err_loc
-      (loc,"import_library", pr_qualid qid ++ str " is not a module")
+    user_err ~loc ~hdr:"import_library"
+      (pr_qualid qid ++ str " is not a module")
 
 let import_module export modl =
   (* Optimization: libraries in a raw in the list are imported
@@ -597,8 +607,8 @@ let import_module export modl =
             flush acc;
             try Declaremods.import_module export mp; aux [] l
             with Not_found ->
-              user_err_loc (loc,"import_library",
-                pr_qualid dir ++ str " is not a module"))
+              user_err ~loc ~hdr:"import_library"
+                (pr_qualid dir ++ str " is not a module"))
     | [] -> flush acc
   in aux [] modl
 
@@ -609,7 +619,7 @@ let check_coq_overwriting p id =
   let l = DirPath.repr p in
   let is_empty = match l with [] -> true | _ -> false in
   if not !Flags.boot && not is_empty && Id.equal (List.last l) coq_root then
-    errorlabstrm ""
+    user_err 
       (str "Cannot build module " ++ pr_dirpath p ++ str "." ++ pr_id id ++ str "." ++ spc () ++
       str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
 
@@ -622,7 +632,7 @@ let check_module_name s =
     (if c = '\'' then str "\"'\"" else (str "'" ++ str (String.make 1 c) ++ str "'")) ++
     strbrk " is not allowed in module names\n"
   in
-  let err c = errorlabstrm "" (msg c) in
+  let err c = user_err  (msg c) in
   match String.get s 0 with
     | 'a' .. 'z' | 'A' .. 'Z' ->
         for i = 1 to (String.length s)-1 do
@@ -658,10 +668,10 @@ let load_library_todo f =
   let tasks, _, _ = System.marshal_in_segment f ch in
   let (s5 : seg_proofs), _, _ = System.marshal_in_segment f ch in
   close_in ch;
-  if tasks = None then errorlabstrm "restart" (str"not a .vio file");
-  if s2 = None then errorlabstrm "restart" (str"not a .vio file");
-  if s3 = None then errorlabstrm "restart" (str"not a .vio file");
-  if pi3 (Option.get s2) then errorlabstrm "restart" (str"not a .vio file");
+  if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
+  if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
+  if s3 = None then user_err ~hdr:"restart" (str"not a .vio file");
+  if pi3 (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
   longf, s0, s1, Option.get s2, Option.get s3, Option.get tasks, s5
 
 (************************************************************************)
@@ -677,7 +687,7 @@ let current_deps () =
 let current_reexports () = !libraries_exports_list
 
 let error_recursively_dependent_library dir =
-  errorlabstrm ""
+  user_err 
     (strbrk "Unable to use logical name " ++ pr_dirpath dir ++
      strbrk " to save current library because" ++
      strbrk " it already depends on a library of this name.")
@@ -724,7 +734,7 @@ let save_library_to ?todo dir f otab =
       except Int.Set.empty in
   let is_done_or_todo i x = Future.is_val x || Int.Set.mem i except in
   Array.iteri (fun i x ->
-    if not(is_done_or_todo i x) then CErrors.errorlabstrm "library"
+    if not(is_done_or_todo i x) then CErrors.user_err ~hdr:"library"
       Pp.(str"Proof object "++int i++str" is not checked nor to be checked"))
     opaque_table;
   let sd = {

@@ -33,6 +33,9 @@ open Constrintern
 open Impargs
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 type 'a declaration_hook = Decl_kinds.locality -> Globnames.global_reference -> 'a
 let mk_hook hook = hook
 let call_hook fix_exn hook l c =
@@ -45,8 +48,7 @@ let call_hook fix_exn hook l c =
 
 let retrieve_first_recthm = function
   | VarRef id ->
-      let open Context.Named.Declaration in
-      (get_value (Global.lookup_named id),variable_opacity id)
+      (NamedDecl.get_value (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
       (Global.body_of_constant_body cb, is_opaque cb)
@@ -110,7 +112,7 @@ let find_mutually_recursive_statements thms =
         (Global.env()) hyps in
       let ind_hyps =
         List.flatten (List.map_i (fun i decl ->
-          let t = get_type decl in
+          let t = RelDecl.get_type decl in
           match kind_of_term t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
@@ -222,7 +224,7 @@ let compute_proof_name locality = function
       if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
 	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
       then
-        user_err_loc (loc,"",pr_id id ++ str " already exists.");
+        user_err ~loc  (pr_id id ++ str " already exists.");
       id, pl
   | None ->
       next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()), None
@@ -252,10 +254,14 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
   | Some body ->
       let body = norm body in
       let k = Kindops.logical_kind_of_goal_kind kind in
-      let body_i = match kind_of_term body with
+      let rec body_i t = match kind_of_term t with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
         | CoFix (0,decls) -> mkCoFix (i,decls)
+        | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, body_i t2)
+        | Lambda(na,ty,t) -> mkLambda(na,ty,body_i t)
+        | App (t, args) -> mkApp (body_i t, args)
         | _ -> anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr body) in
+      let body_i = body_i body in
       match locality with
       | Discharge ->
           let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
@@ -331,7 +337,7 @@ let get_proof proof do_guard hook opacity =
 let check_exist =
   List.iter (fun (loc,id) ->
     if not (Nametab.exists_cci (Lib.make_path id)) then
-        user_err_loc (loc,"",pr_id id ++ str " does not exist.")
+        user_err ~loc  (pr_id id ++ str " does not exist.")
   )
 
 let universe_proof_terminator compute_guard hook =
@@ -456,7 +462,7 @@ let start_proof_com kind thms hook =
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
     evdref := solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref);
-    let ids = List.map get_name ctx in
+    let ids = List.map RelDecl.get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),
@@ -480,6 +486,18 @@ let start_proof_com kind thms hook =
 
 (* Saving a proof *)
 
+let keep_admitted_vars = ref true
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "keep section variables in admitted proofs";
+      optkey   = ["Keep"; "Admitted"; "Variables"];
+      optread  = (fun () -> !keep_admitted_vars);
+      optwrite = (fun b -> keep_admitted_vars := b) }
+
 let save_proof ?proof = function
   | Vernacexpr.Admitted ->
       let pe =
@@ -493,7 +511,8 @@ let save_proof ?proof = function
               error "Admitted requires an explicit statement";
             let typ = Option.get const_entry_type in
             let ctx = Evd.evar_context_universe_context (fst universes) in
-            Admitted(id, k, (const_entry_secctx, pi2 k, (typ, ctx), None), universes)
+            let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
+            Admitted(id, k, (sec_vars, pi2 k, (typ, ctx), None), universes)
         | None ->
             let pftree = Pfedit.get_pftreestate () in
             let id, k, typ = Pfedit.current_proof_statement () in
@@ -502,7 +521,8 @@ let save_proof ?proof = function
             let pproofs, _univs =
               Proof_global.return_proof ~allow_partial:true () in
             let sec_vars =
-              match  Pfedit.get_used_variables(), pproofs with
+              if not !keep_admitted_vars then None
+              else match  Pfedit.get_used_variables(), pproofs with
               | Some _ as x, _ -> x
               | None, (pproof, _) :: _ -> 
                   let env = Global.env () in

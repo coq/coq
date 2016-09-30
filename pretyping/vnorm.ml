@@ -17,6 +17,9 @@ open Reduction
 open Vm
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 (*******************************************)
 (* Calcul de la forme normal d'un terme    *)
 (*******************************************)
@@ -46,7 +49,11 @@ let invert_tag cst tag reloc_tbl =
   with Find_at j -> (j+1)
              (* Argggg, ces constructeurs de ... qui commencent a 1*)
 
-let find_rectype_a env c = Inductiveops.find_mrectype_vect env Evd.empty c
+let find_rectype_a env c =
+  let (t, l) = decompose_appvect (whd_all env c) in
+  match kind_of_term t with
+  | Ind ind -> (ind, l)
+  | _ -> assert false
 
 (* Instantiate inductives and parameters in constructor type *)
 
@@ -203,12 +210,11 @@ and constr_type_of_idkey env (idkey : Vars.id_key) stk =
      in
      nf_univ_args ~nb_univs mk env stk
    | VarKey id ->
-      let open Context.Named.Declaration in
-      let ty = get_type (lookup_named id env) in
+      let ty = NamedDecl.get_type (lookup_named id env) in
       nf_stk env (mkVar id) ty stk
   | RelKey i ->
       let n = (nb_rel env - i) in
-      let ty = get_type (lookup_rel n env) in
+      let ty = RelDecl.get_type (lookup_rel n env) in
       nf_stk env (mkRel n) (lift n ty) stk
 
 and nf_stk ?from:(from=0) env c t stk  =

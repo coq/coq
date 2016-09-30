@@ -204,7 +204,7 @@ let error_instantiate_pattern id l =
   | [_] -> "is" 
   | _ -> "are"
   in
-  errorlabstrm "" (str "Cannot substitute the term bound to " ++ pr_id id
+  user_err  (str "Cannot substitute the term bound to " ++ pr_id id
     ++ strbrk " in pattern because the term refers to " ++ pr_enum pr_id l
     ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
 
@@ -315,7 +315,7 @@ let rec subst_pattern subst pat =
 let mkPLambda na b = PLambda(na,PMeta None,b)
 let rev_it_mkPLambda = List.fold_right mkPLambda
 
-let err loc pp = user_err_loc (loc,"pattern_of_glob_constr", pp)
+let err ?loc pp = user_err ?loc ~hdr:"pattern_of_glob_constr" pp
 
 let warn_cast_in_pattern =
   CWarnings.create ~name:"cast-in-pattern" ~category:"automation"
@@ -387,7 +387,7 @@ let rec pat_of_raw metas vars = function
           rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas nvars p))
         | (None | Some (GHole _)), _ -> PMeta None
 	| Some p, None ->
-            user_err_loc (loc,"",strbrk "Clause \"in\" expected in patterns over \"match\" expressions with an explicit \"return\" clause.")
+            user_err ~loc  (strbrk "Clause \"in\" expected in patterns over \"match\" expressions with an explicit \"return\" clause.")
       in
       let info =
 	{ cip_style = sty;
@@ -400,12 +400,12 @@ let rec pat_of_raw metas vars = function
 	 one non-trivial branch. These facts are used in [Constrextern]. *)
       PCase (info, pred, pat_of_raw metas vars c, brs)
 
-  | r -> err (loc_of_glob_constr r) (Pp.str "Non supported pattern.")
+  | r -> err ~loc:(loc_of_glob_constr r) (Pp.str "Non supported pattern.")
 
 and pats_of_glob_branches loc metas vars ind brs =
   let get_arg = function
     | PatVar(_,na) -> na
-    | PatCstr(loc,_,_,_) -> err loc (Pp.str "Non supported pattern.")
+    | PatCstr(loc,_,_,_) -> err ~loc (Pp.str "Non supported pattern.")
   in
   let rec get_pat indexes = function
     | [] -> false, []
@@ -414,10 +414,10 @@ and pats_of_glob_branches loc metas vars ind brs =
       let () = match ind with
       | Some sp when eq_ind sp indsp -> ()
       | _ ->
-        err loc (Pp.str "All constructors must be in the same inductive type.")
+        err ~loc (Pp.str "All constructors must be in the same inductive type.")
       in
       if Int.Set.mem (j-1) indexes then
-	err loc
+	err ~loc
           (str "No unique branch for " ++ int j ++ str"-th constructor.");
       let lna = List.map get_arg lv in
       let vars' = List.rev lna @ vars in
@@ -425,7 +425,7 @@ and pats_of_glob_branches loc metas vars ind brs =
       let ext,pats = get_pat (Int.Set.add (j-1) indexes) brs in
       let tags = List.map (fun _ -> false) lv (* approximation, w/o let-in *) in
       ext, ((j-1, tags, pat) :: pats)
-    | (loc,_,_,_) :: _ -> err loc (Pp.str "Non supported pattern.")
+    | (loc,_,_,_) :: _ -> err ~loc (Pp.str "Non supported pattern.")
   in
   get_pat Int.Set.empty brs
 

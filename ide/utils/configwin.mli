@@ -50,22 +50,6 @@ type return_button =
 	 button or the window manager but never clicked
 	 on the apply button.*)
 
-
-(** {2 The key option class (to use with the {!Config_file} library)} *)
-
-val string_to_key : string -> Gdk.Tags.modifier list * int
-
-val key_to_string : Gdk.Tags.modifier list * int -> string
-
-val key_cp_wrapper : (Gdk.Tags.modifier list * int) Config_file.wrappers
-
-class key_cp :
-  ?group:Config_file.group ->
-  string list ->
-  ?short_name:string ->
-  Gdk.Tags.modifier list * int ->
-  string -> [Gdk.Tags.modifier list * int] Config_file.cp_custom_type
-
 (** {2 Functions to create parameters} *)
 
 (** [string label value] creates a string parameter.
@@ -136,24 +120,6 @@ val list : ?editable: bool -> ?help: string ->
 		  'a list ->
 		    parameter_kind
 
-(** [color label value] creates a color parameter.
-   @param editable indicate if the value is editable (default is [true]).
-   @param expand indicate if the entry widget must expand or not (default is [true]).
-   @param help an optional help message.
-   @param f the function called to apply the value (default function does nothing).
-*)
-val color : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: (string -> unit) -> string -> string -> parameter_kind
-
-(** [font label value] creates a font parameter.
-   @param editable indicate if the value is editable (default is [true]).
-   @param expand indicate if the entry widget must expand or not (default is [true]).
-   @param help an optional help message.
-   @param f the function called to apply the value (default function does nothing).
-*)
-val font : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: (string -> unit) -> string -> string -> parameter_kind
-
 (** [combo label choices value] creates a combo parameter.
    @param editable indicate if the value is editable (default is [true]).
    @param expand indicate if the entry widget must expand or not (default is [true]).
@@ -168,69 +134,6 @@ val combo : ?editable: bool -> ?expand: bool -> ?help: string ->
   ?f: (string -> unit) ->
     ?new_allowed: bool -> ?blank_allowed: bool ->
       string -> string list -> string -> parameter_kind
-
-(** [text label value] creates a text parameter.
-   @param editable indicate if the value is editable (default is [true]).
-   @param expand indicate if the box for the text must expand or not (default is [true]).
-   @param help an optional help message.
-   @param f the function called to apply the value (default function does nothing).
-*)
-val text : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: (string -> unit) -> string -> string -> parameter_kind
-
-(** Same as {!Configwin.text} but html bindings are available
-   in the text widget. Use the [configwin_html_config] utility
-   to edit your bindings.
-*)
-val html : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: (string -> unit) -> string -> string -> parameter_kind
-
-(** [filename label value] creates a filename parameter.
-   @param editable indicate if the value is editable (default is [true]).
-   @param expand indicate if the entry widget must expand or not (default is [true]).
-   @param help an optional help message.
-   @param f the function called to apply the value (default function does nothing).
-*)
-val filename : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: (string -> unit) -> string -> string -> parameter_kind
-
-(** [filenames label value] creates a filename list parameter.
-   @param editable indicate if the value is editable (default is [true]).
-   @param help an optional help message.
-   @param f the function called to apply the value (default function does nothing).
-   @param eq the comparison function, used not to have doubles in list. Default
-   is [Pervasives.(=)]. If you want to allow doubles in the list, give a function
-   always returning false.
-*)
-val filenames : ?editable: bool -> ?help: string ->
-  ?f: (string list -> unit) ->
-    ?eq: (string -> string -> bool) ->
-      string -> string list -> parameter_kind
-
-(** [date label value] creates a date parameter.
-   @param editable indicate if the value is editable (default is [true]).
-   @param expand indicate if the entry widget must expand or not (default is [true]).
-   @param help an optional help message.
-   @param f the function called to apply the value (default function does nothing).
-   @param f_string the function used to display the date as a string. The parameter
-   is a tupe [(day,month,year)], where [month] is between [0] and [11]. The default
-   function creates the string [year/month/day].
-*)
-val date : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: ((int * int * int) -> unit) ->
-    ?f_string: ((int * int * int -> string)) ->
-      string -> (int * int * int) -> parameter_kind
-
-(** [hotkey label value] creates a hot key parameter.
-   A hot key is defined by a list of modifiers and a key code.
-   @param editable indicate if the value is editable (default is [true]).
-   @param expand indicate if the entry widget must expand or not (default is [true]).
-   @param help an optional help message.
-   @param f the function called to apply the value (default function does nothing).
-*)
-val hotkey : ?editable: bool -> ?expand: bool -> ?help: string ->
-  ?f: ((Gdk.Tags.modifier list * int) -> unit) ->
-    string -> (Gdk.Tags.modifier list * int) -> parameter_kind
 
 val modifiers : ?editable: bool -> ?expand: bool -> ?help: string ->
   ?allow:(Gdk.Tags.modifier list) ->
@@ -259,46 +162,3 @@ val edit :
   ?height:int ->
   configuration_structure list ->
   return_button
-
-(** This function takes a configuration structure and creates a window used
-   to get the various parameters from the user. It is the same window as edit but
-   there is no apply button.*)
-val get :
-  string ->
-  ?width:int ->
-  ?height:int ->
-  configuration_structure list ->
-  return_button
-
-(** This function takes a list of parameter specifications and
-   creates a window to configure the various parameters.
-   @param apply this function is called when the apply button is clicked, after
-   giving new values to parameters.*)
-val simple_edit :
-  ?apply: (unit -> unit) ->
-  string ->
-  ?width:int ->
-  ?height:int ->
-  parameter_kind list -> return_button
-
-(** This function takes a list of parameter specifications and
-   creates a window to configure the various parameters,
-   without Apply button.*)
-val simple_get :
-  string ->
-  ?width:int ->
-  ?height:int ->
-  parameter_kind list -> return_button
-
-(** Create a [GPack.box] with the list of given parameters,
-   Return the box and the function to call to apply new values to parameters.
-*)
-val box : parameter_kind list -> GData.tooltips -> GPack.box * (unit -> unit)
-
-(** Create a [GPack.box] with the list of given configuration structure list,
-   and the given list of buttons (defined by their label and callback).
-   Before calling the callback of a button, the [apply] function
-   of each parameter is called.
-*)
-val tabbed_box : configuration_structure list ->
-  (string * (unit -> unit)) list -> GData.tooltips -> GPack.box

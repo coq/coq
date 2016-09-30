@@ -22,6 +22,8 @@ open Constrintern
 open Constrexpr
 open Sigma.Notations
 open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
 (*i*)
 
 open Decl_kinds
@@ -66,8 +68,9 @@ let existing_instance glob g pri =
     match class_of_constr r with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc pri glob 
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
-      | None -> user_err_loc (loc_of_reference g, "declare_instance",
-			     Pp.str "Constant does not build instances of a declared type class.")
+      | None -> user_err ~loc:(loc_of_reference g)
+                         ~hdr:"declare_instance"
+                         (Pp.str "Constant does not build instances of a declared type class.")
 
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
@@ -77,13 +80,13 @@ let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 let type_ctx_instance evars env ctx inst subst =
   let rec aux (subst, instctx) l = function
     decl :: ctx ->
-      let t' = substl subst (get_type decl) in
+      let t' = substl subst (RelDecl.get_type decl) in
       let c', l =
 	match decl with
 	| LocalAssum _ -> interp_casted_constr_evars env evars (List.hd l) t', List.tl l
 	| LocalDef (_,b,_) -> substl subst b, l
       in
-      let d = get_name decl, Some c', t' in
+      let d = RelDecl.get_name decl, Some c', t' in
 	aux (c' :: subst, d :: instctx) l ctx
     | [] -> subst
   in aux (subst, []) inst (List.rev ctx)
@@ -156,7 +159,6 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     let cl, u = Typeclasses.typeclass_univ_instance k in
     let _, args = 
       List.fold_right (fun decl (args, args') ->
-        let open Context.Rel.Declaration in
 	match decl with
 	| LocalAssum _ -> (List.tl args, List.hd args :: args')
 	| LocalDef (_,b,_) -> (args, substl args' b :: args'))
@@ -169,7 +171,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	Name id ->
 	  let sp = Lib.make_path id in
 	    if Nametab.exists_cci sp then
-	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists.");
+	      user_err ~hdr:"new_instance" (Nameops.pr_id id ++ Pp.str " already exists.");
 	    id
       | Anonymous ->
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
@@ -229,7 +231,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 		(fun (props, rest) decl ->
 		  if is_local_assum decl then
 		    try
-		      let is_id (id', _) = match get_name decl, get_id id' with
+		      let is_id (id', _) = match RelDecl.get_name decl, get_id id' with
 			| Name id, (_, id') -> Id.equal id id'
 			| Anonymous, _ -> false
                       in
@@ -347,7 +349,7 @@ let named_of_rel_context l =
   let acc, ctx =
     List.fold_right
       (fun decl (subst, ctx) ->
-        let id = match get_name decl with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
+        let id = match RelDecl.get_name decl with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
 	let d = match decl with
 	  | LocalAssum (_,t) -> id, None, substl subst t
 	  | LocalDef (_,b,t) -> id, Some (substl subst b), substl subst t in

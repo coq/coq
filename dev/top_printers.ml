@@ -501,7 +501,7 @@ END
 
 open Pcoq
 open Genarg
-open Constrarg
+open Stdarg
 open Egramml
 
 let _ =

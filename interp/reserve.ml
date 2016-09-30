@@ -86,13 +86,13 @@ let in_reserved : Id.t * notation_constr -> obj =
 
 let declare_reserved_type_binding (loc,id) t =
   if not (Id.equal id (root_of_id id)) then
-    user_err_loc(loc,"declare_reserved_type",
-    (pr_id id ++ str
+    user_err ~loc ~hdr:"declare_reserved_type"
+      ((pr_id id ++ str
       " is not reservable: it must have no trailing digits, quote, or _"));
   begin try
     let _ = Id.Map.find id !reserve_table in
-    user_err_loc(loc,"declare_reserved_type",
-    (pr_id id++str" is already bound to a type"))
+    user_err ~loc ~hdr:"declare_reserved_type"
+    ((pr_id id++str" is already bound to a type"))
   with Not_found -> () end;
   add_anonymous_leaf (in_reserved (id,t))
 

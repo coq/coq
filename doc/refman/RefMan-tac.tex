@@ -1491,10 +1491,10 @@ the local context.
 \tacindex{contradiction}
 
 This tactic applies to any goal. The {\tt contradiction} tactic
-attempts to find in the current context (after all {\tt intros}) one
-hypothesis that is equivalent to {\tt False}. It permits to prune
-irrelevant cases. This tactic is a macro for the tactics sequence
-{\tt intros; elimtype False; assumption}.
+attempts to find in the current context (after all {\tt intros}) an
+hypothesis that is equivalent to an empty inductive type (e.g. {\tt
+  False}), to the negation of a singleton inductive type (e.g. {\tt
+  True} or {\tt x=x}), or two contradictory hypotheses.
 
 \begin{ErrMsgs}
 \item \errindex{No such assumption}
@@ -2279,6 +2279,15 @@ equalities. The original equality is erased if it corresponds to an
 hypothesis.
 
 \end{Variants}
+
+\optindex{Structural Injection}
+
+It is possible to ensure that \texttt{injection {\term}} erases the
+original hypothesis and leaves the generated equalities in the context
+rather than putting them as antecedents of the current goal, as if
+giving \texttt{injection {\term} as} (with an empty list of names). To
+obtain this behavior, the option {\tt Set Structural Injection} must
+be activated. This option is off by default.
 
 \subsection{\tt inversion \ident}
 \tacindex{inversion}
@@ -3283,6 +3292,16 @@ reduced to \texttt{S t}.
   {\qstring}).
 
 \end{Variants}
+
+\begin{quote}
+\optindex{Refolding Reduction}
+{\tt Refolding Reduction}
+\end{quote}
+
+This option (off by default) controls the use of the refolding strategy
+of {\tt cbn} while doing reductions in unification, type inference and
+tactic applications. It can result in expensive unifications, as
+refolding currently uses a potentially exponential heuristic.
 
 \subsection{\tt unfold \qualid}
 \tacindex{unfold}

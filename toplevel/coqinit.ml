@@ -59,13 +59,12 @@ let load_rcfile() =
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let add_stdlib_path ~unix_path ~coq_root ~with_ml =
-  Mltop.add_rec_path ~unix_path ~coq_root ~implicit:(!Flags.load_init);
-  if with_ml then
-    Mltop.add_rec_ml_dir unix_path
+  let add_ml = if with_ml then Mltop.AddRecML else Mltop.AddNoML in
+  Mltop.add_rec_path add_ml ~unix_path ~coq_root ~implicit:(!Flags.load_init)
 
 let add_userlib_path ~unix_path =
-  Mltop.add_rec_path ~unix_path ~coq_root:Nameops.default_root_prefix ~implicit:false;
-  Mltop.add_rec_ml_dir unix_path
+  Mltop.add_rec_path Mltop.AddRecML ~unix_path
+    ~coq_root:Nameops.default_root_prefix ~implicit:false
 
 (* Options -I, -I-as, and -R of the command line *)
 let includes = ref []
@@ -90,7 +89,8 @@ let init_load_path () =
       Mltop.add_ml_dir (coqlib/"stm");
       Mltop.add_ml_dir (coqlib/"ide")
     end;
-    Mltop.add_ml_dir (coqlib/"toploop");
+    if System.exists_dir (coqlib/"toploop") then
+      Mltop.add_ml_dir (coqlib/"toploop");
     (* then standard library *)
     add_stdlib_path ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
     (* then plugins *)
@@ -108,7 +108,7 @@ let init_load_path () =
     (* additional loadpath, given with options -Q and -R *)
     List.iter
       (fun (unix_path, coq_root, implicit) ->
-        Mltop.add_rec_path ~unix_path ~coq_root ~implicit)
+        Mltop.add_rec_path Mltop.AddNoML ~unix_path ~coq_root ~implicit)
       (List.rev !includes);
     (* additional ml directories, given with option -I *)
     List.iter Mltop.add_ml_dir (List.rev !ml_includes)
@@ -130,13 +130,14 @@ let init_ocaml_path () =
         [ "grammar" ]; [ "ide" ]; [ "ltac" ]; ]
 
 let get_compat_version = function
-  | "8.6" -> Flags.Current
+  | "8.7" -> Flags.Current
+  | "8.6" -> Flags.V8_6
   | "8.5" -> Flags.V8_5
   | "8.4" -> Flags.V8_4
   | "8.3" -> Flags.V8_3
   | "8.2" -> Flags.V8_2
   | ("8.1" | "8.0") as s ->
-    CErrors.errorlabstrm "get_compat_version"
+    CErrors.user_err ~hdr:"get_compat_version"
       (str "Compatibility with version " ++ str s ++ str " not supported.")
-  | s -> CErrors.errorlabstrm "get_compat_version"
+  | s -> CErrors.user_err ~hdr:"get_compat_version"
       (str "Unknown compatibility version \"" ++ str s ++ str "\".")

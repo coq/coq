@@ -68,9 +68,9 @@ let _ = CErrors.register_handler begin function
   | CannotUnfocusThisWay ->
     CErrors.error "This proof is focused, but cannot be unfocused this way"
   | NoSuchGoals (i,j) when Int.equal i j ->
-      CErrors.errorlabstrm "Focus" Pp.(str"No such goal (" ++ int i ++ str").")
+      CErrors.user_err ~hdr:"Focus" Pp.(str"No such goal (" ++ int i ++ str").")
   | NoSuchGoals (i,j) ->
-      CErrors.errorlabstrm "Focus" Pp.(
+      CErrors.user_err ~hdr:"Focus" Pp.(
         str"Not every goal in range ["++ int i ++ str","++int j++str"] exist."
       )
   | FullyUnfocused -> CErrors.error "The proof is not focused"

@@ -11,6 +11,8 @@ open Pp
 open Printer
 open Util
 
+module M = CString.Map
+
 (** [is_profiling] and the profiling info ([stack]) should be synchronized with
     the document; the rest of the ref cells are either local to individual
     tactic invocations, or global flags, and need not be synchronized, since no
@@ -20,10 +22,6 @@ let is_profiling = Flags.profile_ltac
 
 let set_profiling b = is_profiling := b
 let get_profiling () = !is_profiling
-
-let new_call = ref false
-let entered_call () = new_call := true
-let is_new_call () = let b = !new_call in new_call := false; b
 
 (** LtacProf cannot yet handle backtracking into multi-success tactics.
     To properly support this, we'd have to somehow recreate our location in the
@@ -35,7 +33,7 @@ let encountered_multi_success_backtracking = ref false
 let warn_profile_backtracking =
   CWarnings.create ~name:"profile-backtracking" ~category:"ltac"
     (fun () -> strbrk "Ltac Profiler cannot yet handle backtracking \
-            into multi-success tactics; profiling results may be wildly inaccurate.")
+       into multi-success tactics; profiling results may be wildly inaccurate.")
 
 let warn_encountered_multi_success_backtracking () =
   if !encountered_multi_success_backtracking then
@@ -48,164 +46,92 @@ let encounter_multi_success_backtracking () =
     warn_encountered_multi_success_backtracking ()
   end
 
-type entry = {
-  mutable total : float;
-  mutable local : float;
-  mutable ncalls : int;
-  mutable max_total : float
-}
 
-let empty_entry () = { total = 0.; local = 0.; ncalls = 0; max_total = 0. }
-
-let add_entry e add_total { total; local; ncalls; max_total } =
-  if add_total then e.total <- e.total +. total;
-  e.local <- e.local +. local;
-  e.ncalls <- e.ncalls + ncalls;
-  if add_total then e.max_total <- max e.max_total max_total
+(* *************** tree data structure for profiling ****************** *)
 
 type treenode = {
-  entry : entry;
-  children : (string, treenode) Hashtbl.t
+  name : M.key;
+  total : float;
+  local : float;
+  ncalls : int;
+  max_total : float;
+  children : treenode M.t
 }
 
-let empty_treenode n = { entry = empty_entry (); children = Hashtbl.create n }
+let empty_treenode name = {
+  name;
+  total = 0.0;
+  local = 0.0;
+  ncalls = 0;
+  max_total = 0.0;
+  children = M.empty;
+}
 
-(** Tobias Tebbi wrote some tricky code involving mutation. Rather than
-    rewriting it in a functional style, we simply freeze the state when we need
-    to by issuing a deep copy of the profiling data. *)
-(** TODO: rewrite me in purely functional style *)
-let deepcopy_entry { total; local; ncalls; max_total } =
-  { total; local; ncalls; max_total }
+let root = "root"
 
-let rec deepcopy_treenode { entry; children } =
-  let children' = Hashtbl.create (Hashtbl.length children) in
-  let iter key subtree = Hashtbl.add children' key (deepcopy_treenode subtree) in
-  let () = Hashtbl.iter iter children in
-  { entry = deepcopy_entry entry; children = children' }
+module Local = Summary.Local
 
-let stack =
-  let freeze _ = List.map deepcopy_treenode in
-  Summary.ref ~freeze [empty_treenode 20] ~name:"LtacProf-stack"
+let stack = Local.ref ~name:"LtacProf-stack" [empty_treenode root]
 
-let on_stack = Hashtbl.create 5
+let reset_profile_tmp () =
+  Local.(stack := [empty_treenode root]);
+  encountered_multi_success_backtracking := false
 
-let get_node c table =
-  try Hashtbl.find table c
-  with Not_found ->
-    let new_node = empty_treenode 5 in
-    Hashtbl.add table c new_node;
-    new_node
+(* ************** XML Serialization  ********************* *)
 
-let rec add_node node node' =
-  add_entry node.entry true node'.entry;
-  Hashtbl.iter
-    (fun s node' -> add_node (get_node s node.children) node')
-    node'.children
+let rec of_ltacprof_tactic (name, t) =
+  assert (String.equal name t.name);
+  let open Xml_datatype in
+  let total = string_of_float t.total in
+  let local = string_of_float t.local in
+  let ncalls = string_of_int t.ncalls in
+  let max_total = string_of_float t.max_total in
+  let children = List.map of_ltacprof_tactic (M.bindings t.children) in
+  Element ("ltacprof_tactic",
+    [ ("name", name); ("total",total); ("local",local);
+      ("ncalls",ncalls); ("max_total",max_total)],
+    children)
 
-let time () =
-  let times = Unix.times () in
-  times.Unix.tms_utime +. times.Unix.tms_stime
+let of_ltacprof_results t =
+  let open Xml_datatype in
+  assert(String.equal t.name root);
+  let children = List.map of_ltacprof_tactic (M.bindings t.children) in
+  Element ("ltacprof", [("total_time", string_of_float t.total)], children)
 
-(*
-let msgnl_with fmt strm = msg_with fmt (strm ++ fnl ())
-let msgnl          strm = msgnl_with !Pp_control.std_ft strm
+let rec to_ltacprof_tactic m xml =
+  let open Xml_datatype in
+  match xml with
+  | Element ("ltacprof_tactic",
+     [("name", name); ("total",total); ("local",local);
+      ("ncalls",ncalls); ("max_total",max_total)], xs) ->
+      let node = {
+         name;
+         total = float_of_string total;
+         local = float_of_string local;
+         ncalls = int_of_string ncalls;
+         max_total = float_of_string max_total;
+         children = List.fold_left to_ltacprof_tactic M.empty xs;
+       } in
+      M.add name node m
+  | _ -> CErrors.anomaly Pp.(str "Malformed ltacprof_tactic XML")
 
-let rec print_treenode indent (tn : treenode) =
-  msgnl (str (indent^"{ entry = {"));
-  Feedback.msg_notice (str (indent^"total = "));
-  msgnl (str (indent^(string_of_float (tn.entry.total))));
-  Feedback.msg_notice (str (indent^"local = "));
-  msgnl (str (indent^(string_of_float tn.entry.local)));
-  Feedback.msg_notice (str (indent^"ncalls = "));
-  msgnl (str (indent^(string_of_int tn.entry.ncalls)));
-  Feedback.msg_notice (str (indent^"max_total = "));
-  msgnl (str (indent^(string_of_float tn.entry.max_total)));
-  msgnl (str (indent^"}"));
-  msgnl (str (indent^"children = {"));
-  Hashtbl.iter
-    (fun s node ->
-      msgnl (str (indent^" "^s^" |-> "));
-      print_treenode (indent^"  ") node
-    )
-    tn.children;
-  msgnl (str (indent^"} }"))
+let to_ltacprof_results xml =
+  let open Xml_datatype in
+  match xml with
+  | Element ("ltacprof", [("total_time", t)], xs) ->
+     { name = root;
+       total = float_of_string t;
+       ncalls = 0;
+       max_total = 0.0;
+       local = 0.0;
+       children = List.fold_left to_ltacprof_tactic M.empty xs }
+  | _ -> CErrors.anomaly Pp.(str "Malformed ltacprof XML")
 
-let rec print_stack (st : treenode list) = match st with
-| [] -> msgnl (str "[]")
-| x :: xs -> print_treenode "" x; msgnl (str ("::")); print_stack xs
-*)
+let feedback_results results =
+  Feedback.(feedback 
+    (Custom (Loc.dummy_loc, "ltacprof_results", of_ltacprof_results results)))
 
-let string_of_call ck =
-  let s =
-  string_of_ppcmds
-    (match ck with
-       | Tacexpr.LtacNotationCall s -> Names.KerName.print s
-       | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
-       | Tacexpr.LtacVarCall (id, t) -> Nameops.pr_id id
-       | Tacexpr.LtacAtomCall te ->
-         (Pptactic.pr_glob_tactic (Global.env ())
-            (Tacexpr.TacAtom (Loc.ghost, te)))
-       | Tacexpr.LtacConstrInterp (c, _) ->
-         pr_glob_constr_env (Global.env ()) c
-       | Tacexpr.LtacMLCall te ->
-         (Pptactic.pr_glob_tactic (Global.env ())
-            te)
-    ) in
-  for i = 0 to String.length s - 1 do if s.[i] = '\n' then s.[i] <- ' ' done;
-  let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
-  CString.strip s
-
-let exit_tactic start_time add_total c = match !stack with
-| [] | [_] ->
-  (* oops, our stack is invalid *)
-  encounter_multi_success_backtracking ()
-| node :: (parent :: _ as stack') ->
-  stack := stack';
-  if add_total then Hashtbl.remove on_stack (string_of_call c);
-  let diff = time () -. start_time in
-  parent.entry.local <- parent.entry.local -. diff;
-  let node' = { total = diff; local = diff; ncalls = 1; max_total = diff } in
-  add_entry node.entry add_total node'
-
-let tclFINALLY tac (finally : unit Proofview.tactic) =
-  let open Proofview.Notations in
-  Proofview.tclIFCATCH
-    tac
-    (fun v -> finally <*> Proofview.tclUNIT v)
-    (fun (exn, info) -> finally <*> Proofview.tclZERO ~info exn)
-
-let do_profile s call_trace tac =
-  let open Proofview.Notations in
-  Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-  if !is_profiling && is_new_call () then
-    match call_trace with
-      | (_, c) :: _ ->
-        let s = string_of_call c in
-        let parent = List.hd !stack in
-        let node, add_total = try Hashtbl.find on_stack s, false
-                              with Not_found ->
-                                   let node = get_node s parent.children in
-                                   Hashtbl.add on_stack s node;
-                                   node, true
-        in
-        if not add_total && node = List.hd !stack then None else (
-          stack := node :: !stack;
-          let start_time = time () in
-          Some (start_time, add_total)
-        )
-      | [] -> None
-  else None)) >>= function
-  | Some (start_time, add_total) ->
-    tclFINALLY
-      tac
-      (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-        (match call_trace with
-        | (_, c) :: _ ->
-          exit_tactic start_time add_total c
-        | [] -> ()))))
-  | None -> tac
-
-
+(* ************** pretty printing ************************************* *)
 
 let format_sec x = (Printf.sprintf "%.3fs" x)
 let format_ratio x = (Printf.sprintf "%.1f%%" (100. *. x))
@@ -221,13 +147,12 @@ let rec list_iter_is_last f = function
   | x :: xs -> f false x :: list_iter_is_last f xs
 
 let header =
-  str " tactic                                    self  total   calls       max" ++
+  str " tactic                                   local  total   calls       max " ++
   fnl () ++
   str "────────────────────────────────────────┴──────┴──────┴───────┴─────────┘" ++
   fnl ()
 
-let rec print_node all_total indent prefix (s, n) =
-  let e = n.entry in
+let rec print_node ~filter all_total indent prefix (s, e) =
   h 0 (
     padr_with '-' 40 (prefix ^ s ^ " ")
     ++ padl 7 (format_ratio (e.local /. all_total))
@@ -236,125 +161,251 @@ let rec print_node all_total indent prefix (s, n) =
     ++ padl 10 (format_sec (e.max_total))
   ) ++
   fnl () ++
-  print_table all_total indent false n.children
+  print_table ~filter all_total indent false e.children
 
-and print_table all_total indent first_level table =
-  let fold s n l = if n.entry.total /. all_total < 0.02 then l else (s, n) :: l in
-  let ls = Hashtbl.fold fold table [] in
+and print_table ~filter all_total indent first_level table =
+  let fold _ n l =
+    let s, total = n.name, n.total in
+    if filter s total then (s, n) :: l else l in
+  let ls = M.fold fold table [] in
   match ls with
   | [s, n] when not first_level ->
-     print_node all_total indent (indent ^ "└") (s, n)
+     v 0 (print_node ~filter all_total indent (indent ^ "└") (s, n))
   | _ ->
-    let ls = List.sort (fun (_, n1) (_, n2) -> compare n2.entry.total n1.entry.total) ls in
+    let ls =
+      List.sort (fun (_, { total = s1 }) (_, { total = s2}) ->
+                   compare s2 s1) ls in
     let iter is_last =
-      let sep0 = if first_level then "" else if is_last then "  " else " │" in
-      let sep1 = if first_level then "─" else if is_last then " └─" else " ├─" in
-      print_node all_total (indent ^ sep0) (indent ^ sep1)
+     let sep0 = if first_level then "" else if is_last then "  " else " │" in
+     let sep1 = if first_level then "─" else if is_last then " └─" else " ├─" in
+     print_node ~filter all_total (indent ^ sep0) (indent ^ sep1)
     in
-    prlist_with_sep fnl (fun pr -> pr) (list_iter_is_last iter ls)
+    prlist (fun pr -> pr) (list_iter_is_last iter ls)
 
-let get_results_string () =
-  let tree = (List.hd !stack).children in
-  let all_total = -. (List.hd !stack).entry.local in
-  let global = Hashtbl.create 20 in
-  let rec cumulate table =
-    let iter s node =
-      let node' = get_node s global in
-      add_entry node'.entry true node.entry;
-      cumulate node.children
+let to_string ~filter ?(cutoff=0.0) node =
+  let tree = node.children in
+  let all_total = M.fold (fun _ { total } a -> total +. a) node.children 0.0 in
+  let flat_tree =
+    let global = ref M.empty in
+    let find_tactic tname l =
+      try M.find tname !global
+      with Not_found ->
+        let e = empty_treenode tname in
+        global := M.add tname e !global;
+        e in
+    let add_tactic tname stats = global := M.add tname stats !global in
+    let sum_stats add_total
+      { name; total = t1; local = l1; ncalls = n1; max_total = m1 }
+      {       total = t2; local = l2; ncalls = n2; max_total = m2 } = {
+          name;
+          total = if add_total then t1 +. t2 else t1;
+          local = l1 +. l2;
+          ncalls = n1 + n2;
+          max_total = if add_total then max m1 m2 else m1;
+          children = M.empty;
+      } in
+    let rec cumulate table =
+      let iter _ ({ name; children } as statistics) =
+        if filter name then begin
+          let stats' = find_tactic name global in
+          add_tactic name (sum_stats true stats' statistics);
+        end;
+        cumulate children
+      in
+      M.iter iter table
     in
-    Hashtbl.iter iter table
+    cumulate tree;
+    !global
   in
-  cumulate tree;
   warn_encountered_multi_success_backtracking ();
+  let filter s n = filter s && n >= cutoff in
   let msg =
     h 0 (str "total time: " ++ padl 11 (format_sec (all_total))) ++
     fnl () ++
-    header ++
-    print_table all_total "" true global ++
     fnl () ++
     header ++
-    print_table all_total "" true tree
+    print_table ~filter all_total "" true flat_tree ++
+    fnl () ++
+    header ++
+    print_table ~filter all_total "" true tree
   in
   msg
 
+(* ******************** profiling code ************************************** *)
 
-type ltacprof_entry = {total : float; self : float; num_calls : int; max_total : float}
-type ltacprof_tactic = {name: string; statistics : ltacprof_entry; tactics : ltacprof_tactic list}
-type ltacprof_results = {total_time : float; tactics : ltacprof_tactic list}
+let get_child name node =
+  try M.find name node.children
+  with Not_found -> empty_treenode name
 
-let to_ltacprof_entry (e: entry) : ltacprof_entry =
-  {total=e.total; self=e.local; num_calls=e.ncalls; max_total=e.max_total}
+let time () =
+  let times = Unix.times () in
+  times.Unix.tms_utime +. times.Unix.tms_stime
 
-let rec to_ltacprof_tactic (name: string) (t: treenode) : ltacprof_tactic =
-  { name = name; statistics = to_ltacprof_entry t.entry; tactics = to_ltacprof_treenode t.children }
-and to_ltacprof_treenode (table: (string, treenode) Hashtbl.t) : ltacprof_tactic list =
-  Hashtbl.fold (fun name' t' c -> to_ltacprof_tactic name' t'::c) table []
+let string_of_call ck =
+  let s =
+  string_of_ppcmds
+    (match ck with
+       | Tacexpr.LtacNotationCall s -> Pptactic.pr_alias_key s
+       | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
+       | Tacexpr.LtacVarCall (id, t) -> Nameops.pr_id id
+       | Tacexpr.LtacAtomCall te ->
+         (Pptactic.pr_glob_tactic (Global.env ())
+            (Tacexpr.TacAtom (Loc.ghost, te)))
+       | Tacexpr.LtacConstrInterp (c, _) ->
+         pr_glob_constr_env (Global.env ()) c
+       | Tacexpr.LtacMLCall te ->
+         (Pptactic.pr_glob_tactic (Global.env ())
+            te)
+    ) in
+  for i = 0 to String.length s - 1 do if s.[i] = '\n' then s.[i] <- ' ' done;
+  let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
+  CString.strip s
 
-let get_profiling_results() : ltacprof_results =
-  let tree = List.hd !stack in
-  { total_time = -. tree.entry.local; tactics = to_ltacprof_treenode tree.children }
+let rec merge_sub_tree name tree acc =
+  try
+    let t = M.find name acc in
+    let t = {
+      name;
+      total = t.total +. tree.total;
+      ncalls = t.ncalls + tree.ncalls;
+      local = t.local +. tree.local;
+      max_total = max t.max_total tree.max_total;
+      children = M.fold merge_sub_tree tree.children t.children;
+    } in
+    M.add name t acc
+  with Not_found -> M.add name tree acc
 
-let rec of_ltacprof_tactic t =
-  let open Xml_datatype in
-  let total = string_of_float t.statistics.total in
-  let self = string_of_float t.statistics.self in
-  let num_calls = string_of_int t.statistics.num_calls in
-  let max_total = string_of_float t.statistics.max_total in
-  let children = List.map of_ltacprof_tactic t.tactics in
-  Element ("ltacprof_tactic", [("name", t.name); ("total",total); ("self",self); ("num_calls",num_calls); ("max_total",max_total)], children)
+let merge_roots ?(disjoint=true) t1 t2 =
+  assert(String.equal t1.name t2.name);
+  { name = t1.name;
+    ncalls = t1.ncalls + t2.ncalls;
+    local = if disjoint then t1.local +. t2.local else t1.local;
+    total = if disjoint then t1.total +. t2.total else t1.total;
+    max_total = if disjoint then max t1.max_total t2.max_total else t1.max_total;
+    children =
+      M.fold merge_sub_tree t2.children t1.children }
 
-let rec of_ltacprof_results t =
-  let open Xml_datatype in
-  let children = List.map of_ltacprof_tactic t.tactics in
-  Element ("ltacprof", [("total_time", string_of_float t.total_time)], children)
+let rec find_in_stack what acc = function
+  | [] -> None
+  | { name } as x :: rest when String.equal name what -> Some(acc, x, rest)
+  | { name } as x :: rest -> find_in_stack what (x :: acc) rest
 
-
-let get_profile_xml() =
-  of_ltacprof_results (get_profiling_results())
-
-let print_results () =
-  Feedback.msg_notice (get_results_string());
-  Feedback.feedback (Feedback.Custom (Loc.dummy_loc, "ltacprof_results", get_profile_xml()))
-
-  (* FOR DEBUGGING *)
-  (* ;
-     msgnl (str"");
-     print_stack (!stack)
-  *)
-
-let print_results_tactic tactic =
-  let tree = (List.hd !stack).children in
-  let table_tactic = Hashtbl.create 20 in
-  let rec cumulate table =
-    let iter s node =
-      if String.sub (s ^ ".") 0 (min (1 + String.length s) (String.length tactic)) = tactic
-      then add_node (get_node s table_tactic) node
-      else cumulate node.children
+let exit_tactic start_time c =
+  let diff = time () -. start_time in
+  match Local.(!stack) with
+  | [] | [_] ->
+    (* oops, our stack is invalid *)
+    encounter_multi_success_backtracking ();
+    reset_profile_tmp ()
+  | node :: (parent :: rest as full_stack) ->
+    let name = string_of_call c in
+    if not (String.equal name node.name) then
+      (* oops, our stack is invalid *)
+      encounter_multi_success_backtracking ();
+    let node = { node with
+      total = node.total +. diff;
+      local = node.local +. diff;
+      ncalls = node.ncalls + 1;
+      max_total = max node.max_total diff;
+    } in
+    (* updating the stack *)
+    let parent =
+      match find_in_stack node.name [] full_stack with
+      | None ->
+         (* no rec-call, we graft the subtree *)
+         let parent = { parent with
+           local = parent.local -. diff;
+           children = M.add node.name node parent.children } in
+         Local.(stack := parent :: rest);
+         parent
+      | Some(to_update, self, rest) ->
+         (* we coalesce the rec-call and update the lower stack *)
+         let self = merge_roots ~disjoint:false self node in
+         let updated_stack =
+           List.fold_left (fun s x ->
+             (try M.find x.name (List.hd s).children
+              with Not_found -> x) :: s) (self :: rest) to_update in
+         Local.(stack := updated_stack);
+         List.hd Local.(!stack)
     in
-    Hashtbl.iter iter table
-  in
-  cumulate tree;
-  let all_total = -. (List.hd !stack).entry.local in
-  let tactic_total =
-    Hashtbl.fold
-      (fun _ node all_total -> node.entry.total +. all_total)
-      table_tactic 0. in
-  warn_encountered_multi_success_backtracking ();
-  let msg =
-    h 0 (str"total time:           " ++ padl 11 (format_sec (all_total))) ++
-    h 0 (str"time spent in tactic: " ++ padl 11 (format_sec (tactic_total))) ++
-    fnl () ++
-    header ++
-    print_table tactic_total "" true table_tactic
-  in
-  Feedback.msg_notice msg
+    (* Calls are over, we reset the stack and send back data *)
+    if rest == [] && get_profiling () then begin
+      assert(String.equal root parent.name);
+      reset_profile_tmp ();
+      feedback_results parent
+    end
+
+let tclFINALLY tac (finally : unit Proofview.tactic) =
+  let open Proofview.Notations in
+  Proofview.tclIFCATCH
+    tac
+    (fun v -> finally <*> Proofview.tclUNIT v)
+    (fun (exn, info) -> finally <*> Proofview.tclZERO ~info exn)
+
+let do_profile s call_trace tac =
+  let open Proofview.Notations in
+  Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+  if !is_profiling then
+    match call_trace, Local.(!stack) with
+      | (_, c) :: _, parent :: rest ->
+        let name = string_of_call c in
+        let node = get_child name parent in
+        Local.(stack := node :: parent :: rest);
+        Some (time ())
+      | _ :: _, [] -> assert false
+      | _ -> None
+  else None)) >>= function
+  | Some start_time ->
+    tclFINALLY
+      tac
+      (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+        (match call_trace with
+        | (_, c) :: _ -> exit_tactic start_time c
+        | [] -> ()))))
+  | None -> tac
+
+(* ************** Accumulation of data from workers ************************* *)
+
+let get_local_profiling_results () = List.hd Local.(!stack)
+
+module SM = Map.Make(Stateid.Self)
+
+let data = ref SM.empty
+
+let _ =
+  Feedback.(add_feeder (function
+    | { id = State s; contents = Custom (_, "ltacprof_results", xml) } ->
+        let results = to_ltacprof_results xml in
+        let other_results = (* Multi success can cause this *)
+          try SM.find s !data
+          with Not_found -> empty_treenode root in
+        data := SM.add s (merge_roots results other_results) !data
+    | _ -> ()))
 
 let reset_profile () =
-  stack := [empty_treenode 20];
-  encountered_multi_success_backtracking := false
+  reset_profile_tmp ();
+  data := SM.empty
 
-let do_print_results_at_close () = if get_profiling () then print_results ()
+(* ******************** *)
+
+let print_results_filter ~cutoff ~filter =
+  let valid id _ = Stm.state_of_id id <> `Expired in
+  data := SM.filter valid !data;
+  let results =
+    SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in
+  let results = merge_roots results Local.(CList.last !stack) in
+  Feedback.msg_notice (to_string ~cutoff ~filter results)
+;;
+
+let print_results ~cutoff =
+  print_results_filter ~cutoff ~filter:(fun _ -> true)
+
+let print_results_tactic tactic =
+  print_results_filter ~cutoff:0.0 ~filter:(fun s ->
+    String.(equal tactic (sub (s ^ ".") 0 (min (1+length s) (length tactic)))))
+
+let do_print_results_at_close () =
+  if get_profiling () then print_results ~cutoff:0.0
 
 let _ = Declaremods.append_end_library_hook do_print_results_at_close
 

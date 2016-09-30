@@ -20,11 +20,11 @@ open Namegen
 open Libnames
 open Smartlocate
 open Misctypes
+open Tactypes
 open Evd
 open Termops
 open Inductiveops
 open Typing
-open Tacexpr
 open Decl_kinds
 open Pattern
 open Patternops
@@ -34,11 +34,14 @@ open Tacred
 open Printer
 open Vernacexpr
 open Sigma.Notations
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (****************************************)
 (* General functions                    *)
 (****************************************)
+
+type debug = Debug | Info | Off
 
 exception Bound
 
@@ -632,7 +635,7 @@ let current_pure_db () =
   List.map snd (Hintdbmap.bindings (Hintdbmap.remove "v62" !searchtable))
 
 let error_no_such_hint_database x =
-  errorlabstrm "Hints" (str "No such Hint database: " ++ str x ++ str ".")
+  user_err ~hdr:"Hints" (str "No such Hint database: " ++ str x ++ str ".")
 
 (**************************************************************************)
 (*                       Definition of the summary                        *)
@@ -774,7 +777,7 @@ let make_resolves env sigma flags pri poly ?name cr =
     [make_exact_entry env sigma pri poly ?name; make_apply_entry env sigma flags pri poly ?name]
   in
   if List.is_empty ents then
-    errorlabstrm "Hint"
+    user_err ~hdr:"Hint"
       (pr_lconstr c ++ spc() ++
         (if pi1 flags then str"cannot be used as a hint."
 	else str "can be used as a hint only for eauto."));
@@ -782,11 +785,11 @@ let make_resolves env sigma flags pri poly ?name cr =
 
 (* used to add an hypothesis to the local hint database *)
 let make_resolve_hyp env sigma decl =
-  let hname = get_id decl in
+  let hname = NamedDecl.get_id decl in
   try
     [make_apply_entry env sigma (true, true, false) None false
        ~name:(PathHints [VarRef hname])
-       (mkVar hname, get_type decl, Univ.ContextSet.empty)]
+       (mkVar hname, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly (Pp.str "make_resolve_hyp")
@@ -802,7 +805,6 @@ let make_unfold eref =
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
-  let tacast = Genarg.in_gen (Genarg.glbwit Constrarg.wit_ltac) tacast in
   let hdconstr = Option.map try_head_pattern pat in
   (hdconstr,
    { pri = pri;
@@ -817,7 +819,7 @@ let make_mode ref m =
   let n = List.length ctx in
   let m' = Array.of_list m in
     if not (n == Array.length m') then
-      errorlabstrm "Hint"
+      user_err ~hdr:"Hint"
 	(pr_global ref ++ str" has " ++ int n ++ 
 	   str" arguments while the mode declares " ++ int (Array.length m'))
     else m'
@@ -1080,8 +1082,6 @@ let add_trivials env sigma l local dbnames =
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let (forward_intern_tac, extern_intern_tac) = Hook.make ()
-
 type hnf = bool
 
 type hints_entry =
@@ -1092,7 +1092,7 @@ type hints_entry =
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsModeEntry of global_reference * hint_mode list
   | HintsExternEntry of
-      int * (patvar list * constr_pattern) option * glob_tactic_expr
+      int * (patvar list * constr_pattern) option * Genarg.glob_generic_argument
 
 let default_prepare_hint_ident = Id.of_string "H"
 
@@ -1182,7 +1182,9 @@ let interp_hints poly =
   | HintsExtern (pri, patcom, tacexp) ->
       let pat =	Option.map fp patcom in
       let l = match pat with None -> [] | Some (l, _) -> l in
-      let tacexp = Hook.get forward_intern_tac l tacexp in
+      let ltacvars = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
+      let env = Genintern.({ genv = env; ltacvars }) in
+      let _, tacexp = Genintern.generic_intern env tacexp in
       HintsExternEntry (pri, pat, tacexp)
 
 let add_hints local dbnames0 h =
@@ -1275,7 +1277,7 @@ let pr_hint h = match h.obj with
           env
         with e when CErrors.noncritical e -> Global.env ()
       in
-      (str "(*external*) " ++ Pptactic.pr_glb_generic env tac)
+      (str "(*external*) " ++ Pputils.pr_glb_generic env tac)
 
 let pr_id_hint (id, v) =
   (pr_hint v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())
@@ -1411,6 +1413,6 @@ let run_hint tac k = match !warn_hint with
   else Proofview.tclBIND (k tac.obj) (fun x -> warn tac x)
 | `STRICT ->
   if is_imported tac then k tac.obj
-  else Proofview.tclZERO (UserError ("", (str "Tactic failure.")))
+  else Proofview.tclZERO (UserError (None, (str "Tactic failure.")))
 
 let repr_hint h = h.obj

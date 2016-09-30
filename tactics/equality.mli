@@ -11,10 +11,10 @@ open Names
 open Term
 open Evd
 open Environ
-open Tacexpr
 open Ind_tables
 open Locus
 open Misctypes
+open Tactypes
 (*i*)
 
 type dep_proof_flag = bool (* true = support rewriting dependent proofs *)

@@ -89,6 +89,6 @@ let import file clib univs digest =
 let unsafe_import file clib univs digest =
   let env = !genv in
   if !Flags.debug then check_imports Feedback.msg_warning clib.comp_name env clib.comp_deps
-  else check_imports (errorlabstrm"unsafe_import") clib.comp_name env clib.comp_deps;
+  else check_imports (user_err ~hdr:"unsafe_import") clib.comp_name env clib.comp_deps;
   check_engagement env clib.comp_enga;
   full_add_module clib.comp_name clib.comp_mod univs digest

@@ -11,9 +11,9 @@ open Names
 open Term
 open Tacmach
 open Proof_type
-open Tacexpr
 open Locus
 open Misctypes
+open Tactypes
 
 (** Tacticals i.e. functions from tactics to tactics. *)
 
@@ -221,7 +221,7 @@ module New : sig
   val tclCOMPLETE : 'a tactic -> 'a tactic
   val tclSOLVE : unit tactic list -> unit tactic
   val tclPROGRESS : unit tactic -> unit tactic
-  val tclSELECT : goal_selector -> 'a tactic -> 'a tactic
+  val tclSELECT : Vernacexpr.goal_selector -> 'a tactic -> 'a tactic
   val tclWITHHOLES : bool -> 'a tactic -> Evd.evar_map -> 'a tactic
   val tclDELAYEDWITHHOLES : bool -> 'a delayed_open -> ('a -> unit tactic) -> unit tactic
 

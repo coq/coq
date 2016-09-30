@@ -14,6 +14,18 @@ Lemma lem1 : forall x y : T, {x = y} + {x <> y}.
  decide equality.
 Qed.
 
+Lemma lem1' : forall x y : T, x = y \/ x <> y.
+ decide equality.
+Qed.
+
+Lemma lem1'' : forall x y : T, {x <> y} + {x = y}.
+ decide equality.
+Qed.
+
+Lemma lem1''' : forall x y : T, x <> y \/ x = y.
+ decide equality.
+Qed.
+
 Lemma lem2 : forall x y : T, {x = y} + {x <> y}.
 intros x y.
  decide equality.

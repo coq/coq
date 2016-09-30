@@ -101,7 +101,7 @@ val mark_resolvable : evar_info -> evar_info
 val is_class_evar : evar_map -> evar_info -> bool
 val is_class_type : evar_map -> types -> bool
 
-val resolve_typeclasses : ?filter:evar_filter -> ?unique:bool -> 
+val resolve_typeclasses : ?fast_path:bool -> ?filter:evar_filter -> ?unique:bool ->
   ?split:bool -> ?fail:bool -> env -> evar_map -> evar_map
 val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> types -> open_constr
 

@@ -147,7 +147,7 @@ Module Make (NN:NType) <: ZType.
  Proof.
  apply Bool.eq_iff_eq_true.
  rewrite Z.leb_le. unfold Z.le, leb. rewrite spec_compare.
- destruct Z.compare; split; try easy. now destruct 1.
+ now destruct Z.compare; split.
  Qed.
 
  Definition min n m := match compare n m with Gt => m | _ => n end.

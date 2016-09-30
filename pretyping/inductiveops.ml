@@ -355,7 +355,7 @@ let make_case_or_project env indf ci pred c branches =
        let mib, _ = Inductive.lookup_mind_specif env ind in
        if (* dependent *) not (noccurn 1 t) &&
           not (has_dependent_elim mib) then
-       errorlabstrm "make_case_or_project"
+       user_err ~hdr:"make_case_or_project"
 		    Pp.(str"Dependent case analysis not allowed" ++
 		     str" on inductive type " ++ Names.MutInd.print (fst ind))
      in

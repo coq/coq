@@ -22,6 +22,8 @@ open Declarations
 open Pre_env
 open Cbytegen
 
+module NamedDecl = Context.Named.Declaration
+module RelDecl = Context.Rel.Declaration
 
 external tcode_of_code : emitcodes -> int -> tcode = "coq_tcode_of_code"
 external eval_tcode : tcode -> values array -> values = "coq_eval_tcode"
@@ -189,18 +191,14 @@ and slot_for_fv env fv =
       let nv = Pre_env.lookup_named_val id env in
       begin match force_lazy_val nv with
       | None ->
-         let open Context.Named in
-         let open Declaration in
-	 env.env_named_context |> lookup id |> get_value |> fill_fv_cache nv id val_of_named idfun
+	 env.env_named_context |> Context.Named.lookup id |> NamedDecl.get_value |> fill_fv_cache nv id val_of_named idfun
       | Some (v, _) -> v
       end
   | FVrel i ->
       let rv = Pre_env.lookup_rel_val i env in
       begin match force_lazy_val rv with
       | None ->
-         let open Context.Rel in
-         let open Declaration in
-	 env.env_rel_context |> lookup i |> get_value |> fill_fv_cache rv i val_of_rel env_of_rel
+	 env.env_rel_context |> Context.Rel.lookup i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
       | Some (v, _) -> v
       end
   | FVuniv_var idu ->
@@ -219,17 +217,9 @@ and eval_to_patch env (buff,pl,fv) =
   eval_tcode tc vm_env
 
 and val_of_constr env c =
-  let (_,fun_code,_ as ccfv) =
-    try match compile true env c with
-	| Some v -> v
-	| None -> assert false
-    with reraise ->
-      let reraise = CErrors.push reraise in
-      let () = print_string "can not compile \n" in
-      let () = Format.print_flush () in
-      iraise reraise
-  in
-  eval_to_patch env (to_memory ccfv)
+  match compile true env c with
+  | Some v -> eval_to_patch env (to_memory v)
+  | None -> assert false
 
 let set_transparent_const kn = () (* !?! *)
 let set_opaque_const kn = () (* !?! *)

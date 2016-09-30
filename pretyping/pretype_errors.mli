@@ -64,35 +64,35 @@ exception PretypeError of env * Evd.evar_map * pretype_error
 val precatchable_exception : exn -> bool
 
 (** Raising errors *)
-val error_actual_type_loc :
-  Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr ->
+val error_actual_type :
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr ->
       unification_error -> 'b
 
-val error_cant_apply_not_functional_loc :
-  Loc.t -> env -> Evd.evar_map ->
+val error_cant_apply_not_functional :
+  ?loc:Loc.t -> env -> Evd.evar_map ->
       unsafe_judgment -> unsafe_judgment list -> 'b
 
-val error_cant_apply_bad_type_loc :
-  Loc.t -> env -> Evd.evar_map -> int * constr * constr ->
+val error_cant_apply_bad_type :
+  ?loc:Loc.t -> env -> Evd.evar_map -> int * constr * constr ->
       unsafe_judgment -> unsafe_judgment list -> 'b
 
-val error_case_not_inductive_loc :
-  Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
+val error_case_not_inductive :
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
 
-val error_ill_formed_branch_loc :
-  Loc.t -> env -> Evd.evar_map ->
+val error_ill_formed_branch :
+  ?loc:Loc.t -> env -> Evd.evar_map ->
       constr -> pconstructor -> constr -> constr -> 'b
 
-val error_number_branches_loc :
-  Loc.t -> env -> Evd.evar_map ->
+val error_number_branches :
+  ?loc:Loc.t -> env -> Evd.evar_map ->
       unsafe_judgment -> int -> 'b
 
-val error_ill_typed_rec_body_loc :
-  Loc.t -> env -> Evd.evar_map ->
+val error_ill_typed_rec_body :
+  ?loc:Loc.t -> env -> Evd.evar_map ->
       int -> Name.t array -> unsafe_judgment array -> types array -> 'b
 
-val error_not_a_type_loc :
-  Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
+val error_not_a_type :
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
 
 val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b
 
@@ -101,14 +101,11 @@ val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b
 val error_occur_check : env -> Evd.evar_map -> existential_key -> constr -> 'b
 
 val error_unsolvable_implicit :
-  Loc.t -> env -> Evd.evar_map -> existential_key ->
+  ?loc:Loc.t -> env -> Evd.evar_map -> existential_key ->
       Evd.unsolvability_explanation option -> 'b
 
-val error_cannot_unify_loc : Loc.t -> env -> Evd.evar_map ->
+val error_cannot_unify : ?loc:Loc.t -> env -> Evd.evar_map ->
   ?reason:unification_error -> constr * constr -> 'b
-
-val error_cannot_unify : env -> Evd.evar_map -> ?reason:unification_error ->
-  constr * constr -> 'b
 
 val error_cannot_unify_local : env -> Evd.evar_map -> constr * constr * constr -> 'b
 
@@ -126,20 +123,20 @@ val error_non_linear_unification : env -> Evd.evar_map ->
 
 (** {6 Ml Case errors } *)
 
-val error_cant_find_case_type_loc :
-  Loc.t -> env -> Evd.evar_map -> constr -> 'b
+val error_cant_find_case_type :
+  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> 'b
 
 (** {6 Pretyping errors } *)
 
-val error_unexpected_type_loc :
-  Loc.t -> env -> Evd.evar_map -> constr -> constr -> 'b
+val error_unexpected_type :
+  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> constr -> 'b
 
-val error_not_product_loc :
-  Loc.t -> env -> Evd.evar_map -> constr -> 'b
+val error_not_product :
+  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> 'b
 
 (** {6 Error in conversion from AST to glob_constr } *)
 
-val error_var_not_found_loc : Loc.t -> Id.t -> 'b
+val error_var_not_found : ?loc:Loc.t -> Id.t -> 'b
 
 (** {6 Typeclass errors } *)
 

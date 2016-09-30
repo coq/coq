@@ -93,7 +93,12 @@ open Pre_env
 
 type argument = ArgConstr of Constr.t | ArgUniv of Univ.Level.t
 
-let empty_fv = { size= 0;  fv_rev = [] }
+let empty_fv = { size= 0;  fv_rev = []; fv_fwd = FvMap.empty }
+let push_fv d e = {
+  size = e.size + 1;
+  fv_rev = d :: e.fv_rev;
+  fv_fwd = FvMap.add d e.size e.fv_fwd;
+}
 
 let fv r = !(r.in_env)
 
@@ -184,20 +189,15 @@ let push_local sz r =
     in_stack = (sz + 1) :: r.in_stack }
 
 (*i Compilation of variables *)
-let find_at f l =
-  let rec aux n = function
-    | [] -> raise Not_found
-    | hd :: tl -> if f hd then n else aux (n + 1) tl
-  in aux 1 l
+let find_at fv env = FvMap.find fv env.fv_fwd
 
 let pos_named id r =
   let env = !(r.in_env) in
   let cid = FVnamed id in
-  let f = function FVnamed id' -> Id.equal id id' | _ -> false in
-  try Kenvacc(r.offset + env.size - (find_at f env.fv_rev))
+  try Kenvacc(r.offset + find_at cid env)
   with Not_found ->
     let pos = env.size in
-    r.in_env := { size = pos+1; fv_rev =  cid:: env.fv_rev};
+    r.in_env := push_fv cid env;
     Kenvacc (r.offset + pos)
 
 let pos_rel i r sz =
@@ -212,11 +212,10 @@ let pos_rel i r sz =
       let i = i - r.nb_rec in
       let db = FVrel(i) in
       let env = !(r.in_env) in
-      let f = function FVrel j -> Int.equal i j | _ -> false in
-      try Kenvacc(r.offset + env.size - (find_at f env.fv_rev))
+      try Kenvacc(r.offset + find_at db env)
       with Not_found ->
 	let pos = env.size in
-	r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
+	r.in_env := push_fv db env;
 	Kenvacc(r.offset + pos)
 
 let pos_universe_var i r sz =
@@ -224,15 +223,11 @@ let pos_universe_var i r sz =
     Kacc (sz - r.nb_stack - (r.nb_uni_stack - i))
   else
     let env = !(r.in_env) in
-    let f = function
-      | FVuniv_var u -> Int.equal i u
-      | _ -> false
-    in
-    try Kenvacc (r.offset + env.size - (find_at f env.fv_rev))
+    let db = FVuniv_var i in
+    try Kenvacc (r.offset + find_at db env)
     with Not_found ->
       let pos = env.size in
-      let db = FVuniv_var i in
-      r.in_env := { size = pos + 1; fv_rev = db::env.fv_rev } ;
+      r.in_env := push_fv db env;
       Kenvacc(r.offset + pos)
 
 (*i  Examination of the continuation *)
@@ -907,7 +902,7 @@ let compile fail_on_error ?universes:(universes=0) env c =
       Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
     Some (init_code,!fun_code, Array.of_list fv)
   with TooLargeInductive tname ->
-    let fn = if fail_on_error then CErrors.errorlabstrm "compile" else
+    let fn = if fail_on_error then CErrors.user_err ?loc:None ~hdr:"compile" else
 	       (fun x -> Feedback.msg_warning x) in
       (Pp.(fn
 	   (str "Cannot compile code for virtual machine as it uses inductive " ++

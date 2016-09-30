@@ -13,7 +13,8 @@ open Coqlib
 open Reductionops
 open Misctypes
 open Proofview.Notations
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (* Absurd *)
 
@@ -42,11 +43,13 @@ let absurd c = absurd c
 
 (* Contradiction *)
 
+let use_negated_unit_or_eq_type () = Flags.version_strictly_greater Flags.V8_5
+
 (** [f] does not assume its argument to be [nf_evar]-ed. *)
 let filter_hyp f tac =
   let rec seek = function
     | [] -> Proofview.tclZERO Not_found
-    | d::rest when f (get_type d) -> tac (get_id d)
+    | d::rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
     | _::rest -> seek rest in
   Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
@@ -60,13 +63,28 @@ let contradiction_context =
     let rec seek_neg l = match l with
       | [] ->  Tacticals.New.tclZEROMSG (Pp.str"No such contradiction")
       | d :: rest ->
-          let id = get_id d in
-          let typ = nf_evar sigma (get_type d) in
+          let id = NamedDecl.get_id d in
+          let typ = nf_evar sigma (NamedDecl.get_type d) in
 	  let typ = whd_all env sigma typ in
 	  if is_empty_type typ then
 	    simplest_elim (mkVar id)
 	  else match kind_of_term typ with
 	  | Prod (na,t,u) when is_empty_type u ->
+             let is_unit_or_eq =
+               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type t
+               else None in
+	     Tacticals.New.tclORELSE
+               (match is_unit_or_eq with
+               | Some _ ->
+                   let hd,args = decompose_app t in
+                   let (ind,_ as indu) = destInd hd in
+                   let nparams = Inductiveops.inductive_nparams_env env ind in
+                   let params = Util.List.firstn nparams args in
+                   let p = applist ((mkConstructUi (indu,1)), params) in
+                   (* Checking on the fly that it type-checks *)
+                   simplest_elim (mkApp (mkVar id,[|p|]))
+               | None ->
+                 Tacticals.New.tclZEROMSG (Pp.str"Not a negated unit type."))
 	      (Proofview.tclORELSE
                  (Proofview.Goal.enter { enter = begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in

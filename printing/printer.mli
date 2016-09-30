@@ -108,8 +108,8 @@ val pr_pconstructor        : env -> pconstructor -> std_ppcmds
 val pr_context_unlimited   : env -> evar_map -> std_ppcmds
 val pr_ne_context_of       : std_ppcmds -> env -> evar_map -> std_ppcmds
 
-val pr_var_decl            : env -> evar_map -> Context.Named.Declaration.t -> std_ppcmds
-val pr_var_list_decl       : env -> evar_map -> Context.NamedList.Declaration.t -> std_ppcmds
+val pr_named_decl          : env -> evar_map -> Context.Named.Declaration.t -> std_ppcmds
+val pr_compacted_decl      : env -> evar_map -> Context.Compacted.Declaration.t -> std_ppcmds
 val pr_rel_decl            : env -> evar_map -> Context.Rel.Declaration.t -> std_ppcmds
 
 val pr_named_context       : env -> evar_map -> Context.Named.t -> std_ppcmds

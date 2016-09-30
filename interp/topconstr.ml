@@ -32,8 +32,8 @@ let _ = Goptions.declare_bool_option {
 (**********************************************************************)
 (* Miscellaneous *)
 
-let error_invalid_pattern_notation loc =
-  user_err_loc (loc,"",str "Invalid notation for pattern.")
+let error_invalid_pattern_notation ?loc () =
+  user_err ?loc  (str "Invalid notation for pattern.")
 
 (**********************************************************************)
 (* Functions on constr_expr *)
@@ -175,8 +175,8 @@ let split_at_annot bl na =
 	| LocalRawDef _ as x :: rest -> aux (x :: acc) rest
         | LocalPattern _ :: rest -> assert false
 	| [] ->
-            user_err_loc(loc,"",
-			 str "No parameter named " ++ Nameops.pr_id id ++ str".")
+            user_err ~loc 
+			 (str "No parameter named " ++ Nameops.pr_id id ++ str".")
       in aux [] bl
 
 (* Used in correctness and interface *)

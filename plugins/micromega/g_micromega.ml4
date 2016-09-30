@@ -16,54 +16,69 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Constrarg
+open Stdarg
+open Tacarg
 
 DECLARE PLUGIN "micromega_plugin"
 
+TACTIC EXTEND RED
+| [ "myred"  ] -> [ Tactics.red_in_concl ]
+END
+
+
+
 TACTIC EXTEND PsatzZ
-| [ "psatz_Z" int_or_var(i) ] -> [  (Coq_micromega.psatz_Z i) ]
-| [ "psatz_Z" ] -> [  (Coq_micromega.psatz_Z (-1)) ]
+| [ "psatz_Z" int_or_var(i) tactic(t) ] -> [  (Coq_micromega.psatz_Z i
+                                               (Tacinterp.tactic_of_value ist t))
+                                               ]
+| [ "psatz_Z" tactic(t)] -> [  (Coq_micromega.psatz_Z (-1)) (Tacinterp.tactic_of_value ist t) ]
 END
 
 TACTIC EXTEND Lia
-[ "xlia"  ] -> [   (Coq_micromega.xlia) ]
+[ "xlia" tactic(t) ] -> [   (Coq_micromega.xlia (Tacinterp.tactic_of_value ist t)) ]
 END
 
 TACTIC EXTEND Nia
-[ "xnlia"  ] -> [  (Coq_micromega.xnlia) ]
+[ "xnlia" tactic(t) ] -> [  (Coq_micromega.xnlia (Tacinterp.tactic_of_value ist t)) ]
 END
 
 TACTIC EXTEND NRA
-[ "xnra"  ] -> [  (Coq_micromega.nra)]
+[ "xnra" tactic(t) ] -> [  (Coq_micromega.nra (Tacinterp.tactic_of_value ist t))]
 END
 
+TACTIC EXTEND NQA
+[ "xnqa" tactic(t) ] -> [  (Coq_micromega.nqa (Tacinterp.tactic_of_value ist t))]
+END
+
+
+  
 TACTIC EXTEND Sos_Z
-| [ "sos_Z" ] -> [ (Coq_micromega.sos_Z) ]
+| [ "sos_Z" tactic(t) ] -> [ (Coq_micromega.sos_Z (Tacinterp.tactic_of_value ist t)) ]
    END
 
 TACTIC EXTEND Sos_Q
-| [ "sos_Q" ] -> [   (Coq_micromega.sos_Q) ]
+| [ "sos_Q" tactic(t) ] -> [   (Coq_micromega.sos_Q (Tacinterp.tactic_of_value ist t)) ]
    END
 
 TACTIC EXTEND Sos_R
-| [ "sos_R" ] -> [   (Coq_micromega.sos_R) ]
+| [ "sos_R" tactic(t) ] -> [   (Coq_micromega.sos_R (Tacinterp.tactic_of_value ist t)) ]
 END
 
 TACTIC EXTEND LRA_Q
-[ "psatzl_Q"  ] -> [   (Coq_micromega.psatzl_Q) ]
+[ "lra_Q"  tactic(t) ] -> [   (Coq_micromega.lra_Q (Tacinterp.tactic_of_value ist t)) ]
 END
 
 TACTIC EXTEND LRA_R
-[ "psatzl_R"  ] -> [   (Coq_micromega.psatzl_R) ]
+[ "lra_R" tactic(t) ] -> [   (Coq_micromega.lra_R (Tacinterp.tactic_of_value ist t)) ]
 END
 
 TACTIC EXTEND PsatzR
-| [ "psatz_R" int_or_var(i) ] -> [   (Coq_micromega.psatz_R i) ]
-| [ "psatz_R" ] -> [   (Coq_micromega.psatz_R (-1)) ]
+| [ "psatz_R" int_or_var(i) tactic(t) ] -> [   (Coq_micromega.psatz_R i (Tacinterp.tactic_of_value ist t)) ]
+| [ "psatz_R" tactic(t) ] -> [   (Coq_micromega.psatz_R (-1) (Tacinterp.tactic_of_value ist t)) ]
 END
 
 TACTIC EXTEND PsatzQ
-| [ "psatz_Q" int_or_var(i) ] -> [  (Coq_micromega.psatz_Q i) ]
-| [ "psatz_Q" ] -> [  (Coq_micromega.psatz_Q (-1)) ]
+| [ "psatz_Q" int_or_var(i) tactic(t) ] -> [  (Coq_micromega.psatz_Q i (Tacinterp.tactic_of_value ist t)) ]
+| [ "psatz_Q" tactic(t) ] -> [  (Coq_micromega.psatz_Q (-1) (Tacinterp.tactic_of_value ist t)) ]
 END
 

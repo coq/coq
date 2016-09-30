@@ -45,12 +45,12 @@ open System
    to build a dummy dynlink.cmxa, cf. dev/dynlink.ml. *)
 
 (* This path is where we look for .cmo *)
-let coq_mlpath_copy = ref ["."]
+let coq_mlpath_copy = ref [Sys.getcwd ()]
 let keep_copy_mlpath path =
   let cpath = CUnix.canonical_path_name path in
-  let filter path' = not (String.equal cpath (CUnix.canonical_path_name path'))
+  let filter path' = not (String.equal cpath path')
   in
-  coq_mlpath_copy := path :: List.filter filter !coq_mlpath_copy
+  coq_mlpath_copy := cpath :: List.filter filter !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
 type toplevel = {
@@ -124,13 +124,13 @@ let ml_load s =
         | (UserError _ | Failure _ | Not_found as u) -> Exninfo.iraise (u, snd e)
         | exc ->
             let msg = report_on_load_obj_error exc in
-            errorlabstrm "Mltop.load_object" (str"Cannot link ml-object " ++
+            user_err ~hdr:"Mltop.load_object" (str"Cannot link ml-object " ++
                   str s ++ str" to Coq code (" ++ msg ++ str ")."))
     | WithoutTop ->
         try
           Dynlink.loadfile s; s
 	with Dynlink.Error a ->
-          errorlabstrm "Mltop.load_object"
+          user_err ~hdr:"Mltop.load_object"
             (strbrk "while loading " ++ str s ++
              strbrk ": " ++ str (Dynlink.error_message a))
 
@@ -151,7 +151,7 @@ let dir_ml_use s =
 	 if Dynlink.is_native then " Loading ML code works only in bytecode."
 	 else ""
        in
-      errorlabstrm "Mltop.dir_ml_use" (str "Could not load ML code." ++ str moreinfo)
+      user_err ~hdr:"Mltop.dir_ml_use" (str "Could not load ML code." ++ str moreinfo)
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
@@ -182,7 +182,9 @@ let warn_cannot_open_path =
   CWarnings.create ~name:"cannot-open-path" ~category:"filesystem"
       (fun unix_path -> str "Cannot open " ++ str unix_path)
 
-let add_rec_path ~unix_path ~coq_root ~implicit =
+type add_ml = AddNoML | AddTopML | AddRecML
+
+let add_rec_path add_ml ~unix_path ~coq_root ~implicit =
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
     let prefix = Names.DirPath.repr coq_root in
@@ -193,7 +195,10 @@ let add_rec_path ~unix_path ~coq_root ~implicit =
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
-    let () = add_ml_dir unix_path in
+    let () = match add_ml with
+      | AddNoML -> ()
+      | AddTopML -> add_ml_dir unix_path
+      | AddRecML -> List.iter (fun (lp,_) -> add_ml_dir lp) dirs in
     let add (path, dir) =
       Loadpath.add_load_path path ~implicit dir in
     let () = List.iter add dirs in
@@ -221,7 +226,7 @@ let get_ml_object_suffix name =
 let file_of_name name =
   let suffix = get_ml_object_suffix name in
   let fail s =
-    errorlabstrm "Mltop.load_object"
+    user_err ~hdr:"Mltop.load_object"
       (str"File not found on loadpath : " ++ str s ++ str"\n" ++
        str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy)) in
   if not (Filename.is_relative name) then
@@ -355,7 +360,7 @@ let trigger_ml_object verb cache reinit ?path name =
     add_loaded_module name (known_module_path name);
     if cache then perform_cache_obj name
   end else if not has_dynlink then
-    errorlabstrm "Mltop.trigger_ml_object"
+    user_err ~hdr:"Mltop.trigger_ml_object"
       (str "Dynamic link not supported (module " ++ str name ++ str ")")
   else begin
     let file = file_of_name (Option.default name path) in

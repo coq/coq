@@ -36,44 +36,16 @@ type return_button =
   | Return_ok
   | Return_cancel
 
-let string_to_key = Configwin_types.string_to_key
-let key_to_string = Configwin_types.key_to_string
-let key_cp_wrapper = Configwin_types.key_cp_wrapper
-class key_cp = Configwin_types.key_cp
-
-
 let string = Configwin_ihm.string
-let text = Configwin_ihm.text
 let strings = Configwin_ihm.strings
 let list = Configwin_ihm.list
 let bool = Configwin_ihm.bool
-let filename = Configwin_ihm.filename
-let filenames = Configwin_ihm.filenames
-let color = Configwin_ihm.color
-let font = Configwin_ihm.font
 let combo = Configwin_ihm.combo
 let custom = Configwin_ihm.custom
-let date = Configwin_ihm.date
-let hotkey = Configwin_ihm.hotkey
 let modifiers = Configwin_ihm.modifiers
-let html = Configwin_ihm.html
 
 let edit
     ?(apply=(fun () -> ()))
     title ?width ?height
     conf_struct_list =
   Configwin_ihm.edit ~with_apply: true ~apply title ?width ?height conf_struct_list
-
-let get = Configwin_ihm.edit ~with_apply: false ~apply: (fun () -> ())
-
-let simple_edit
-    ?(apply=(fun () -> ()))
-    title ?width ?height
-    param_list = Configwin_ihm.simple_edit ~with_apply: true ~apply title ?width ?height param_list
-
-let simple_get = Configwin_ihm.simple_edit
-    ~with_apply: false ~apply: (fun () -> ())
-
-let box = Configwin_ihm.box
-
-let tabbed_box = Configwin_ihm.tabbed_box

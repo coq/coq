@@ -30,7 +30,7 @@ Inductive t A : nat -> Type :=
   |nil : t A 0
   |cons : forall (h:A) (n:nat), t A n -> t A (S n).
 
-Local Notation "[]" := (nil _).
+Local Notation "[ ]" := (nil _) (format "[ ]").
 Local Notation "h :: t" := (cons _ h _ t) (at level 60, right associativity).
 
 Section SCHEMES.
@@ -102,7 +102,7 @@ Definition const {A} (a:A) := nat_rect _ [] (fun n x => cons _ a n x).
 
 Computational behavior of this function should be the same as
 ocaml function. *)
-Definition nth {A} := 
+Definition nth {A} :=
 fix nth_fix {m} (v' : t A m) (p : Fin.t m) {struct v'} : A :=
 match p in Fin.t m' return t A m' -> A with
  |Fin.F1 => caseS (fun n v' => A) (fun h n t => h)
@@ -293,11 +293,12 @@ Eval cbv delta beta in fold_right (fun h H => Datatypes.cons h H) v Datatypes.ni
 End VECTORLIST.
 
 Module VectorNotations.
-Notation "[]" := [] : vector_scope.
+Delimit Scope vector_scope with vector.
+Notation "[ ]" := [] (format "[ ]") : vector_scope.
 Notation "h :: t" := (h :: t) (at level 60, right associativity)
   : vector_scope.
-Notation " [ x ] " := (x :: []) : vector_scope.
-Notation " [ x ; y ; .. ; z ] " := (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..)) : vector_scope
+Notation "[ x ]" := (x :: []) : vector_scope.
+Notation "[ x ; y ; .. ; z ]" := (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..)) : vector_scope
 .
 Notation "v [@ p ]" := (nth v p) (at level 1, format "v [@ p ]") : vector_scope.
 Open Scope vector_scope.

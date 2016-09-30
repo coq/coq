@@ -21,6 +21,8 @@ open Refiner
 open Sigma.Notations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 let re_sig it  gc = { it = it; sigma = gc; }
 
 (**************************************************************)
@@ -46,7 +48,7 @@ let pf_hyps_types gls  =
                    | LocalDef (id,_,x) -> id, x)
            sign
 
-let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> get_id
+let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> NamedDecl.get_id
 
 let pf_last_hyp gl = List.hd (pf_hyps gl)
 
@@ -57,7 +59,7 @@ let pf_get_hyp gls id =
     raise (RefinerError (NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
-  pf_get_hyp gls id |> get_type
+  id |> pf_get_hyp gls |> NamedDecl.get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
@@ -101,7 +103,7 @@ let pf_const_value              = pf_reduce (fun env _ -> constant_value_in env)
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
-let pf_hnf_type_of gls          = pf_whd_all gls % pf_get_type_of gls
+let pf_hnf_type_of gls          = pf_get_type_of gls %> pf_whd_all gls
 
 let pf_is_matching              = pf_apply Constr_matching.is_matching_conv
 let pf_matches                  = pf_apply Constr_matching.matches_conv
@@ -121,15 +123,11 @@ let internal_cut_rev_no_check replace id t gl =
 let refine_no_check c gl =
   refiner (Refine c) gl
 
-let move_hyp_no_check id1 id2 gl =
-  refiner (Move (id1,id2)) gl
-
 (* Versions with consistency checks *)
 
 let internal_cut b d t = with_check (internal_cut_no_check b d t)
 let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)
-let move_hyp id id'  = with_check (move_hyp_no_check id id')
 
 (* Pretty-printers *)
 
@@ -199,7 +197,7 @@ module New = struct
     sign
 
   let pf_get_hyp_typ id gl =
-    pf_get_hyp id gl |> get_type
+    pf_get_hyp id gl |> NamedDecl.get_type
 
   let pf_hyps_types gl =
     let env = Proofview.Goal.env gl in

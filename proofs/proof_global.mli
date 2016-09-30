@@ -134,17 +134,14 @@ val simple_with_current_proof :
   (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
 
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
-val set_endline_tactic : Tacexpr.raw_tactic_expr -> unit
-val set_interp_tac :
-  (Tacexpr.raw_tactic_expr -> unit Proofview.tactic)
-    -> unit
+val set_endline_tactic : Genarg.glob_generic_argument -> unit
 
 (** Sets the section variables assumed by the proof, returns its closure
  * (w.r.t. type dependencies and let-ins covered by it) + a list of
  * ids to be cleared *)
 val set_used_variables :
-  Names.Id.t list -> Context.section_context * (Loc.t * Names.Id.t) list
-val get_used_variables : unit -> Context.section_context option
+  Names.Id.t list -> Context.Named.t * (Loc.t * Names.Id.t) list
+val get_used_variables : unit -> Context.Named.t option
 
 val get_universe_binders : unit -> universe_binders option
 

@@ -13,6 +13,8 @@ open Names
 open Tacexpr
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 (** [t] is the type of matching successes. It ultimately contains a
     {!Tacexpr.glob_tactic_expr} representing the left-hand side of the
     corresponding matching rule, a matching substitution to be
@@ -103,7 +105,7 @@ let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
   (merged, Id.Map.merge merge lcm lm)
 
 let matching_error =
-  CErrors.UserError ("tactic matching" , Pp.str "No matching clauses for match.")
+  CErrors.UserError (Some "tactic matching" , Pp.str "No matching clauses for match.")
 
 let imatching_error = (matching_error, Exninfo.null)
 
@@ -280,9 +282,9 @@ module PatternMatching (E:StaticEnvironment) = struct
       the name of the matched hypothesis. *)
   let hyp_match_type hypname pat hyps =
     pick hyps >>= fun decl ->
-    let id = get_id decl in
+    let id = NamedDecl.get_id decl in
     let refresh = is_local_def decl in
-    pattern_match_term refresh pat (get_type decl) () <*>
+    pattern_match_term refresh pat (NamedDecl.get_type decl) () <*>
     put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
     return id
 
@@ -319,7 +321,7 @@ module PatternMatching (E:StaticEnvironment) = struct
         (* spiwack: alternatively it is possible to return the list
            with the matched hypothesis removed directly in
            [hyp_match]. *)
-        let select_matched_hyp decl = Id.equal (get_id decl) matched_hyp in
+        let select_matched_hyp decl = Id.equal (NamedDecl.get_id decl) matched_hyp in
         let hyps = CList.remove_first select_matched_hyp hyps in
         hyp_pattern_list_match pats hyps lhs
     | [] -> return lhs

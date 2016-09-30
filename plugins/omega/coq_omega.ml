@@ -30,6 +30,7 @@ open Misctypes
 open Proofview.Notations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
 
@@ -1697,8 +1698,8 @@ let destructure_hyps =
     let rec loop = function
       | [] -> (Tacticals.New.tclTHEN nat_inject coq_omega)
       | decl::lit ->
-          let (i,_,t) = to_tuple decl in
-	  begin try match destructurate_prop t with
+          let i = NamedDecl.get_id decl in
+	  begin try match destructurate_prop (NamedDecl.get_type decl) with
 	  | Kapp(False,[]) -> elim_id i
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
           | Kapp(Or,[t1;t2]) ->
@@ -1808,13 +1809,13 @@ let destructure_hyps =
 		    match destructurate_type (pf_nf typ) with
 		    | Kapp(Nat,_) ->
                         (Tacticals.New.tclTHEN
-			   (convert_hyp_no_check (set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
-                                                           decl))
+			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
+                                                                     decl))
 			   (loop lit))
 		    | Kapp(Z,_) ->
                         (Tacticals.New.tclTHEN
-			   (convert_hyp_no_check (set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
-                                                           decl))
+			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
+                                                                     decl))
 			   (loop lit))
 		    | _ -> loop lit
                   end

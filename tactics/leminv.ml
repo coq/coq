@@ -29,6 +29,8 @@ open Decl_kinds
 open Proofview.Notations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
      pr_lconstr_env env sigma constr ++
@@ -156,7 +158,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let revargs,ownsign =
 	fold_named_context
 	  (fun env d (revargs,hyps) ->
-             let id = get_id d in
+             let id = NamedDecl.get_id d in
              if Id.List.mem id ivars then
 	       ((mkVar id)::revargs, Context.Named.add d hyps)
 	     else
@@ -183,7 +185,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let ind =
     try find_rectype env sigma i
     with Not_found ->
-      errorlabstrm "inversion_scheme" (no_inductive_inconstr env sigma i)
+      user_err ~hdr:"inversion_scheme" (no_inductive_inconstr env sigma i)
   in
   let (invEnv,invGoal) =
     compute_first_inversion_scheme env sigma ind sort dep_option
@@ -193,7 +195,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
        (global_vars env invGoal)
        (ids_of_named_context (named_context invEnv)));
   (*
-    errorlabstrm "lemma_inversion"
+    user_err ~hdr:"lemma_inversion"
     (str"Computed inversion goal was not closed in initial signature.");
   *)
   let pf = Proof.start (Evd.from_ctx (evar_universe_context sigma)) [invEnv,invGoal] in
@@ -206,7 +208,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let ownSign = ref begin
     fold_named_context
       (fun env d sign ->
-         if mem_named_context (get_id d) global_named_context then sign
+         if mem_named_context (NamedDecl.get_id d) global_named_context then sign
 	 else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
   end in
@@ -247,8 +249,8 @@ let add_inversion_lemma_exn na com comsort bool tac =
   try
     add_inversion_lemma na env sigma c sort bool tac
   with
-    |   UserError ("Case analysis",s) -> (* Reference to Indrec *)
-	  errorlabstrm "Inv needs Nodep Prop Set" s
+    |   UserError (Some "Case analysis",s) -> (* Reference to Indrec *)
+	  user_err ~hdr:"Inv needs Nodep Prop Set" s
 
 (* ================================= *)
 (* Applying a given inversion lemma  *)
@@ -261,10 +263,10 @@ let lemInv id c gls =
     Proofview.V82.of_tactic (Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false) gls
   with
     | NoSuchBinding ->
-	errorlabstrm ""
+	user_err 
 	  (hov 0 (pr_constr c ++ spc () ++ str "does not refer to an inversion lemma."))
     | UserError (a,b) ->
-	 errorlabstrm "LemInv"
+	 user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
 	      pr_lconstr_env (Refiner.pf_env gls) (Refiner.project gls) c)
 

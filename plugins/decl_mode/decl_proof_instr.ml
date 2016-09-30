@@ -32,6 +32,9 @@ open Misctypes
 open Sigma.Notations
 open Context.Named.Declaration
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 (* Strictness option *)
 
 let clear ids { it = goal; sigma } =
@@ -43,7 +46,7 @@ let clear ids { it = goal; sigma } =
   let (hyps, concl) =
     try Evarutil.clear_hyps_in_evi env evdref sign cl ids
     with Evarutil.ClearDependencyError (id, _) ->
-      errorlabstrm "" (str "Cannot clear " ++ pr_id id)
+      user_err  (str "Cannot clear " ++ pr_id id)
   in
   let sigma = !evdref in
   let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
@@ -60,7 +63,7 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "strict mode";
+      optname  = "strict proofs";
       optkey   = ["Strict";"Proofs"];
       optread  = get_strictness;
       optwrite = set_strictness }
@@ -247,7 +250,7 @@ let close_previous_case pts =
 
 let filter_hyps f gls =
   let filter_aux id =
-    let id = get_id id in
+    let id = NamedDecl.get_id id in
     if f id then
       tclIDTAC
     else
@@ -357,8 +360,7 @@ let enstack_subsubgoals env se stack gls=
 		  let nlast=succ last in
 		  let (llast,holes,metas) =
 		    meta_aux nlast (mkMeta nlast :: lenv) q in
-                    let open Context.Rel.Declaration in
-		    (llast,holes,(nlast,special_nf gls (substl lenv (get_type decl)))::metas) in
+		    (llast,holes,(nlast,special_nf gls (substl lenv (RelDecl.get_type decl)))::metas) in
 	    let (nlast,holes,nmetas) =
 		meta_aux se.se_last_meta [] (List.rev rc) in
 	    let refiner = applist (appterm,List.rev holes) in
@@ -821,9 +823,8 @@ let define_tac id args body gls =
 
 let cast_tac id_or_thesis typ gls =
   match id_or_thesis with
-      This id ->
-	let body = pf_get_hyp gls id |> get_value in
-	  Proofview.V82.of_tactic (convert_hyp (of_tuple (id,body,typ))) gls
+    | This id ->
+        Proofview.V82.of_tactic  (id |> pf_get_hyp gls |> NamedDecl.set_id id |> NamedDecl.set_type typ |> convert_hyp) gls
     | Thesis (For _ ) ->
 	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->
@@ -1082,12 +1083,12 @@ let thesis_for obj typ per_info env=
   let cind,all_args=decompose_app typ in
   let ind,u = destInd cind in
   let _ = if not (eq_ind ind per_info.per_ind) then
-    errorlabstrm "thesis_for"
+    user_err ~hdr:"thesis_for"
       ((Printer.pr_constr_env env Evd.empty obj) ++ spc () ++
 	 str"cannot give an induction hypothesis (wrong inductive type).") in
   let params,args = List.chop per_info.per_nparams all_args in
   let _ = if not (List.for_all2 eq_constr params per_info.per_params) then
-    errorlabstrm "thesis_for"
+    user_err ~hdr:"thesis_for"
       ((Printer.pr_constr_env env Evd.empty obj) ++ spc () ++
 	 str "cannot give an induction hypothesis (wrong parameters).") in
   let hd2 = (applist ((lift (List.length rc) per_info.per_pred),args@[obj])) in

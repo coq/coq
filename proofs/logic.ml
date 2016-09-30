@@ -24,6 +24,8 @@ open Retyping
 open Misctypes
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 type refiner_error =
 
   (* Errors raised by the refiner *)
@@ -151,7 +153,7 @@ let reorder_context env sign ord =
       | top::ord' when mem_q top moved_hyps ->
           let ((d,h),mh) = find_q top moved_hyps in
           if occur_vars_in_decl env h d then
-            errorlabstrm "reorder_context"
+            user_err ~hdr:"reorder_context"
               (str "Cannot move declaration " ++ pr_id top ++ spc() ++
               str "before " ++
               pr_sequence pr_id
@@ -162,7 +164,7 @@ let reorder_context env sign ord =
           (match ctxt_head with
             | [] -> error_no_such_hypothesis (List.hd ord)
             | d :: ctxt ->
-                let x = get_id d in
+                let x = NamedDecl.get_id d in
                 if Id.Set.mem x expected then
                   step ord (Id.Set.remove x expected)
                     ctxt (push_item x d moved_hyps) ctxt_tail
@@ -178,11 +180,11 @@ let reorder_val_context env sign ord =
 
 
 let check_decl_position env sign d =
-  let x = get_id d in
+  let x = NamedDecl.get_id d in
   let needed = global_vars_set_of_decl env d in
   let deps = dependency_closure env (named_context_of_val sign) needed in
   if Id.List.mem x deps then
-    errorlabstrm "Logic.check_decl_position"
+    user_err ~hdr:"Logic.check_decl_position"
       (str "Cannot create self-referring hypothesis " ++ pr_id x);
   x::deps
 
@@ -204,8 +206,8 @@ let move_location_eq m1 m2 = match m1, m2 with
 let rec get_hyp_after h = function
   | [] -> error_no_such_hypothesis h
   | d :: right ->
-      if Id.equal (get_id d) h then
-	match right with d' ::_ -> MoveBefore (get_id d') | [] -> MoveFirst
+      if Id.equal (NamedDecl.get_id d) h then
+	match right with d' ::_ -> MoveBefore (NamedDecl.get_id d') | [] -> MoveFirst
       else
        get_hyp_after h right
 
@@ -213,7 +215,7 @@ let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
     | d :: right ->
-        let hyp,_,typ = to_tuple d in
+        let hyp = NamedDecl.get_id d in
       	if Id.equal hyp hfrom then
 	  (left,right,d, toleft || move_location_eq hto MoveLast)
       	else
@@ -235,24 +237,24 @@ let move_hyp toleft (left,declfrom,right) hto =
   let env = Global.env() in
   let test_dep d d2 =
     if toleft
-    then occur_var_in_decl env (get_id d2) d
-    else occur_var_in_decl env (get_id d) d2
+    then occur_var_in_decl env (NamedDecl.get_id d2) d
+    else occur_var_in_decl env (NamedDecl.get_id d) d2
   in
   let rec moverec first middle = function
     | [] ->
 	if match hto with MoveFirst | MoveLast -> false | _ -> true then
 	  error_no_such_hypothesis (hyp_of_move_location hto);
 	List.rev first @ List.rev middle
-    | d :: _ as right when move_location_eq hto (MoveBefore (get_id d)) ->
+    | d :: _ as right when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
 	List.rev first @ List.rev middle @ right
     | d :: right ->
-        let hyp = get_id d in
+        let hyp = NamedDecl.get_id d in
 	let (first',middle') =
       	  if List.exists (test_dep d) middle then
 	    if not (move_location_eq hto (MoveAfter hyp)) then
 	      (first, d::middle)
             else
-	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id (get_id declfrom) ++
+	      user_err ~hdr:"move_hyp" (str "Cannot move " ++ pr_id (NamedDecl.get_id declfrom) ++
 	        Miscprint.pr_move_location pr_id hto ++
 	        str (if toleft then ": it occurs in " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")
@@ -276,6 +278,11 @@ let move_hyp toleft (left,declfrom,right) hto =
     List.fold_left (fun sign d -> push_named_context_val d sign)
       right left
 
+let move_hyp_in_named_context hfrom hto sign =
+  let (left,right,declfrom,toleft) =
+    split_sign hfrom hto (named_context_of_val sign) in
+  move_hyp toleft (left,declfrom,right) hto
+
 (**********************************************************************)
 
 
@@ -287,7 +294,7 @@ let move_hyp toleft (left,declfrom,right) hto =
 variables only in Application and Case *)
 
 let error_unsupported_deep_meta c =
-  errorlabstrm "" (strbrk "Application of lemmas whose beta-iota normal " ++
+  user_err  (strbrk "Application of lemmas whose beta-iota normal " ++
     strbrk "form contains metavariables deep inside the term is not " ++
     strbrk "supported; try \"refine\" instead.")
 
@@ -295,9 +302,9 @@ let collect_meta_variables c =
   let rec collrec deep acc c = match kind_of_term c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
-    | (App _| Case _) -> fold_constr (collrec deep) acc c
+    | (App _| Case _) -> Term.fold_constr (collrec deep) acc c
     | Proj (_, c) -> collrec deep acc c
-    | _ -> fold_constr (collrec true) acc c
+    | _ -> Term.fold_constr (collrec true) acc c
   in
   List.rev (collrec false [] c)
 
@@ -489,19 +496,20 @@ and mk_casegoals sigma goal goalacc p c =
 
 
 let convert_hyp check sign sigma d =
-  let id,b,bt = to_tuple d in
+  let id = NamedDecl.get_id d in
+  let b = NamedDecl.get_value d in
   let env = Global.env() in
   let reorder = ref [] in
   let sign' =
     apply_to_hyp check sign id
       (fun _ d' _ ->
-        let _,c,ct = to_tuple d' in
+        let c = NamedDecl.get_value d' in
         let env = Global.env_of_context sign in
-        if check && not (is_conv env sigma bt ct) then
-	  errorlabstrm "Logic.convert_hyp"
+        if check && not (is_conv env sigma (NamedDecl.get_type d) (NamedDecl.get_type d')) then
+	  user_err ~hdr:"Logic.convert_hyp"
             (str "Incorrect change of the type of " ++ pr_id id ++ str ".");
         if check && not (Option.equal (is_conv env sigma) b c) then
-	  errorlabstrm "Logic.convert_hyp"
+	  user_err ~hdr:"Logic.convert_hyp"
             (str "Incorrect change of the body of "++ pr_id id ++ str ".");
        if check then reorder := check_decl_position env sign d;
        d) in
@@ -534,7 +542,7 @@ let prim_refiner r sigma goal =
 	      t,cl,sigma
 	  else
             (if !check && mem_named_context id (named_context_of_val sign) then
-	      errorlabstrm "Logic.prim_refiner"
+	      user_err ~hdr:"Logic.prim_refiner"
                 (str "Variable " ++ pr_id id ++ str " is already declared.");
 	     push_named_context_val (LocalAssum (id,t)) sign,t,cl,sigma) in
         let (sg2,ev2,sigma) = 
@@ -549,12 +557,3 @@ let prim_refiner r sigma goal =
 	let sgl = List.rev sgl in
 	let sigma = Goal.V82.partial_solution sigma goal oterm in
 	  (sgl, sigma)
-
-    | Move (hfrom, hto) ->
-  	let (left,right,declfrom,toleft) =
-	  split_sign hfrom hto (named_context_of_val sign) in
-  	let hyps' =
-	  move_hyp toleft (left,declfrom,right) hto in
-	let (gl,ev,sigma) = mk_goal hyps' cl in
-	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
-  	  ([gl], sigma)

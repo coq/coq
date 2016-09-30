@@ -34,7 +34,7 @@ exception Timeout
 exception TacticFailure of exn
 
 let _ = CErrors.register_handler begin function
-  | Timeout -> CErrors.errorlabstrm "Some timeout function" (Pp.str"Timeout!")
+  | Timeout -> CErrors.user_err ~hdr:"Some timeout function" (Pp.str"Timeout!")
   | Exception e -> CErrors.print e
   | TacticFailure e -> CErrors.print e
   | _ -> Pervasives.raise CErrors.Unhandled

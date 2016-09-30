@@ -83,8 +83,11 @@ val feedback_logger : logger
 val emacs_logger    : logger
 
 
-(** [set_feeder] A feeder processes the feedback, [ignore] by default *)
-val set_feeder : (feedback -> unit) -> unit
+(** [add_feeder] feeders observe the feedback *)
+val add_feeder : (feedback -> unit) -> unit
+
+(** Prints feedback messages of kind Message(Debug,_) using msg_debug *)
+val debug_feeder : feedback -> unit
 
 (** [feedback ?id ?route fb] produces feedback fb, with [route] and
     [id] set appropiatedly, if absent, it will use the defaults set by

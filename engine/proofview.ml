@@ -365,7 +365,7 @@ let set_nosuchgoals_hook f = nosuchgoals_hook := f
 let _ = CErrors.register_handler begin function
   | NoSuchGoals n ->
     let suffix = !nosuchgoals_hook n in
-    CErrors.errorlabstrm ""
+    CErrors.user_err 
       (str "No such " ++ str (String.plural n "goal") ++ str "." ++
        pr_non_empty_arg (fun x -> x) suffix)
       | _ -> raise CErrors.Unhandled
@@ -451,7 +451,7 @@ let _ = CErrors.register_handler begin function
         str"Incorrect number of goals" ++ spc() ++
         str"(expected "++int i++str(String.plural i " tactic") ++ str")."
       in
-      CErrors.errorlabstrm "" errmsg
+      CErrors.user_err  errmsg
   | _ -> raise CErrors.Unhandled
 end
 
@@ -845,11 +845,11 @@ let tclPROGRESS t =
   if not test then
     tclUNIT res
   else
-    tclZERO (CErrors.UserError ("Proofview.tclPROGRESS" , Pp.str"Failed to progress."))
+    tclZERO (CErrors.UserError (Some "Proofview.tclPROGRESS" , Pp.str"Failed to progress."))
 
 exception Timeout
 let _ = CErrors.register_handler begin function
-  | Timeout -> CErrors.errorlabstrm "Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
+  | Timeout -> CErrors.user_err ~hdr:"Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
   | _ -> Pervasives.raise CErrors.Unhandled
 end
 
@@ -1057,6 +1057,26 @@ module Goal = struct
         tclZERO ~info e
     end
     end
+
+  exception NotExactlyOneSubgoal
+  let _ = CErrors.register_handler begin function
+  | NotExactlyOneSubgoal ->
+      CErrors.user_err (Pp.str"Not exactly one subgoal.")
+  | _ -> raise CErrors.Unhandled
+  end
+
+  let enter_one f =
+    let open Proof in
+    Comb.get >>= function
+    | [goal] -> begin
+       Env.get >>= fun env ->
+       tclEVARMAP >>= fun sigma ->
+       try f.enter (gmake env sigma goal)
+       with e when catchable_exception e ->
+         let (e, info) = CErrors.push e in
+         tclZERO ~info e
+      end
+    | _ -> tclZERO NotExactlyOneSubgoal
 
   type ('a, 'b) s_enter =
     { s_enter : 'r. ('a, 'r) t -> ('b, 'r) Sigma.sigma }

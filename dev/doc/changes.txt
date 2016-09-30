@@ -1,4 +1,54 @@
 =========================================
+= CHANGES BETWEEN COQ V8.6 AND COQ V8.7 =
+=========================================
+
+* ML API *
+
+We renamed the following functions:
+
+  Context.Rel.Declaration.fold   -> Context.Rel.Declaration.fold_constr
+  Context.Named.Declaration.fold -> Context.Named.Declaration.fold_constr
+  Printer.pr_var_list_decl       -> Printer.pr_compacted_decl
+  Printer.pr_var_decl            -> Printer.pr_named_decl
+
+We removed the following functions:
+
+  Termops.Termops.compact_named_context_reverse
+
+We renamed the following modules:
+
+  Context.ListNamed -> Context.Compacted
+
+The following type aliases where removed
+
+  Context.section_context    ... it was just an alias for "Context.Named.t" which is still available
+
+The module Constrarg was merged into Stdarg.
+
+** Ltac API **
+
+Many Ltac specific API has been moved in its own ltac/ folder. Amongst other
+important things:
+
+- Pcoq.Tactic -> Pltac
+- Constrarg.wit_tactic -> Tacarg.wit_tactic
+- Constrarg.wit_ltac -> Tacarg.wit_ltac
+- API below ltac/ that accepted a *_tactic_expr now accept a *_generic_argument
+  instead
+- Some printing functions were moved from Pptactic to Pputils
+- A part of Tacexpr has been moved to Tactypes
+
+** Error handling **
+
+- All error functions now take an optional parameter `?loc:Loc.t`. For
+  functions that used to carry a suffix `_loc`, such suffix has been
+  dropped.
+
+- `errorlabstrm` has been removed in favor of `user_err`.
+
+- The header parameter to `user_err` has been made optional.
+
+=========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 
@@ -248,6 +298,8 @@ define_evar_* mostly used internally in the unification engine.
   open Proofview.Notations
 
   Proofview.Goal.enter { enter = begin fun gl -> ... end }
+  
+- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)` --> `Tacinterp.Value.of_constr c`
 
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =

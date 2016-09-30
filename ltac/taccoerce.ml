@@ -13,7 +13,6 @@ open Pattern
 open Misctypes
 open Genarg
 open Stdarg
-open Constrarg
 open Geninterp
 
 exception CannotCoerceTo of string
@@ -236,6 +235,7 @@ let coerce_to_closed_constr env v =
 let coerce_to_evaluable_ref env v =
   let fail () = raise (CannotCoerceTo "an evaluable reference") in
   let v = Value.normalize v in
+  let ev =
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
     | _, IntroNaming (IntroIdentifier id) when is_variable env id -> EvalVarRef id
@@ -252,12 +252,11 @@ let coerce_to_evaluable_ref env v =
     | ConstRef c -> EvalConstRef c
     | IndRef _ | ConstructRef _ -> fail ()
   else
-    let ev = match Value.to_constr v with
+    match Value.to_constr v with
     | Some c when isConst c -> EvalConstRef (Univ.out_punivs (destConst c))
     | Some c when isVar c -> EvalVarRef (destVar c)
     | _ -> fail ()
-    in
-    if Tacred.is_evaluable env ev then ev else fail ()
+  in if Tacred.is_evaluable env ev then ev else fail ()
 
 let coerce_to_constr_list env v =
   let v = Value.to_list v in

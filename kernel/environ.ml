@@ -416,7 +416,7 @@ let global_vars_set env constr =
 	  Id.Set.union (vars_of_global env c) acc
       | _ ->
 	  acc in
-    fold_constr filtrec acc c
+    Term.fold_constr filtrec acc c
   in
     filtrec Id.Set.empty constr
 

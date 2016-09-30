@@ -8,7 +8,6 @@
 
 open Loc
 open Names
-open Tacexpr
 open Misctypes
 open Constrexpr
 open Decl_kinds
@@ -27,7 +26,7 @@ type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
    to print a goal that is out of focus (or already solved) it doesn't
    make sense to apply a tactic to it. Hence it the types may look very
    similar, they do not seem to mean the same thing. *)
-type goal_selector = Tacexpr.goal_selector =
+type goal_selector =
   | SelectNth of int
   | SelectList of (int * int) list
   | SelectId of Id.t
@@ -106,7 +105,7 @@ type showable =
   | ShowTree
   | ShowProofNames
   | ShowIntros of bool
-  | ShowMatch of lident
+  | ShowMatch of reference
   | ShowThesis
 
 type comment =
@@ -130,7 +129,7 @@ type hints_expr =
   | HintsTransparency of reference list * bool
   | HintsMode of reference * hint_mode list
   | HintsConstructors of reference list
-  | HintsExtern of int * constr_expr option * raw_tactic_expr
+  | HintsExtern of int * constr_expr option * Genarg.raw_generic_argument
 
 type search_restriction =
   | SearchInside of reference list
@@ -171,7 +170,7 @@ type sort_expr = glob_sort
 
 type definition_expr =
   | ProveBody of local_binder list * constr_expr
-  | DefineBody of local_binder list * raw_red_expr option * constr_expr
+  | DefineBody of local_binder list * Genredexpr.raw_red_expr option * constr_expr
       * constr_expr option
 
 type fixpoint_expr =
@@ -432,9 +431,9 @@ type vernac_expr =
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list
   | VernacPrintOption of Goptions.option_name
-  | VernacCheckMayEval of raw_red_expr option * int option * constr_expr
+  | VernacCheckMayEval of Genredexpr.raw_red_expr option * int option * constr_expr
   | VernacGlobalCheck of constr_expr
-  | VernacDeclareReduction of string * raw_red_expr
+  | VernacDeclareReduction of string * Genredexpr.raw_red_expr
   | VernacPrint of printable
   | VernacSearch of searchable * int option * search_restriction
   | VernacLocate of locatable
@@ -460,7 +459,7 @@ type vernac_expr =
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard
-  | VernacProof of raw_tactic_expr option * section_subset_expr option
+  | VernacProof of Genarg.raw_generic_argument option * section_subset_expr option
   | VernacProofMode of string
   (* Toplevel control *)
   | VernacToplevelControl of exn
@@ -472,10 +471,6 @@ type vernac_expr =
   | VernacProgram of vernac_expr
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
-
-and tacdef_body =
-  | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)
-  | TacticRedefinition of reference * raw_tactic_expr       (* indicates that user employed '::=' in Ltac body *)
 
 (* A vernac classifier has to tell if a command:
    vernac_when: has to be executed now (alters the parser) or later

@@ -111,3 +111,8 @@ Check (exist (Q x) y conj).
 Notation "% i" := (fun i : nat => i) (at level 0, i ident).
 Check %i.
 Check %j.
+
+(* Check bug raised on coq-club on Sep 12, 2016 *)
+
+Notation "{ x , y , .. , v }" := (fun a => (or .. (or (a = x) (a = y)) .. (a = v))).
+Check ({1, 2}).

@@ -25,10 +25,10 @@ open Tactics
 open Elim
 open Equality
 open Misctypes
-open Tacexpr
 open Sigma.Notations
 open Proofview.Notations
-open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 let var_occurs_in_pf gl id =
   let env = Proofview.Goal.env gl in
@@ -76,7 +76,7 @@ let make_inv_predicate env evd indf realargs id status concl =
 	    (hyps_arity,concl)
       | Dep dflt_concl ->
 	  if not (occur_var env id concl) then
-	    errorlabstrm "make_inv_predicate"
+	    user_err ~hdr:"make_inv_predicate"
               (str "Current goal does not depend on " ++ pr_id id ++ str".");
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have
@@ -182,7 +182,7 @@ let dependent_hyps env id idlist gl =
     | [] -> []
     | d::l ->
 	(* Update the type of id1: it may have been subject to rewriting *)
-	let d = pf_get_hyp (get_id d) gl in
+	let d = pf_get_hyp (NamedDecl.get_id d) gl in
 	if occur_var_in_decl env id d
         then d :: dep_rec l
         else dep_rec l
@@ -192,7 +192,7 @@ let dependent_hyps env id idlist gl =
 let split_dep_and_nodep hyps gl =
   List.fold_right
     (fun d (l1,l2) ->
-       if var_occurs_in_pf gl (get_id d) then (d::l1,l2) else (l1,d::l2))
+       if var_occurs_in_pf gl (NamedDecl.get_id d) then (d::l1,l2) else (l1,d::l2))
     hyps ([],[])
 
 (* Computation of dids is late; must have been done in rewrite_equations*)
@@ -383,7 +383,7 @@ let rewrite_equations as_mode othin neqns names ba =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let first_eq = ref MoveLast in
-  let avoid = if as_mode then List.map get_id nodepids else [] in
+  let avoid = if as_mode then List.map NamedDecl.get_id nodepids else [] in
   match othin with
     | Some thin ->
         tclTHENLIST
@@ -399,10 +399,10 @@ let rewrite_equations as_mode othin neqns names ba =
 		   tclTRY (projectAndApply as_mode thin avoid id first_eq names depids)))))
 	       names;
 	     tclMAP (fun d -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
-               let idopt = if as_mode then Some (get_id d) else None in
+               let idopt = if as_mode then Some (NamedDecl.get_id d) else None in
 	       intro_move idopt (if thin then MoveLast else !first_eq))
 	       nodepids;
-	     (tclMAP (fun d -> tclTRY (clear [get_id d])) depids)]
+	     (tclMAP (fun d -> tclTRY (clear [NamedDecl.get_id d])) depids)]
     | None ->
         (* simple inversion *)
         if as_mode then
@@ -440,7 +440,7 @@ let raw_inversion inv_kind id status names =
       try pf_apply Tacred.reduce_to_atomic_ind gl (pf_unsafe_type_of gl c)
       with UserError _ ->
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
-        CErrors.errorlabstrm "" msg
+        CErrors.user_err  msg
     in
     let IndType (indf,realargs) = find_rectype env sigma t in
     let evdref = ref sigma in
@@ -495,8 +495,6 @@ let inversion inv_kind status names id =
 
 let inv_gen thin status names =
   try_intros_until (inversion thin status names)
-
-open Tacexpr
 
 let inv k = inv_gen k NoDep
 

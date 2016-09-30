@@ -22,6 +22,9 @@ open Entries
 open Typeops
 open Fast_typeops
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 let constrain_type env j poly subst = function
   | `None -> 
     if not poly then (* Old-style polymorphism *)
@@ -249,18 +252,17 @@ let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t
   | TemplateArity (ctx,_) ->
       Context.Rel.fold_outside
-        (Context.Rel.Declaration.fold
+        (RelDecl.fold_constr
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 
 let record_aux env s_ty s_bo suggested_expr =
-  let open Context.Named.Declaration in
   let in_ty = keep_hyps env s_ty in
   let v =
     String.concat " "
       (CList.map_filter (fun decl ->
-          let id = get_id decl in
-          if List.exists (Id.equal id % get_id) in_ty then None
+          let id = NamedDecl.get_id decl in
+          if List.exists (NamedDecl.get_id %> Id.equal id) in_ty then None
           else Some (Id.to_string id))
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" (v ^ ";" ^ suggested_expr)
@@ -269,26 +271,25 @@ let suggest_proof_using = ref (fun _ _ _ _ _ -> "")
 let set_suggest_proof_using f = suggest_proof_using := f
 
 let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) =
-  let open Context.Named.Declaration in
   let check declared inferred =
-    let mk_set l = List.fold_right Id.Set.add (List.map get_id l) Id.Set.empty in
+    let mk_set l = List.fold_right Id.Set.add (List.map NamedDecl.get_id l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
     if not (Id.Set.subset inferred_set declared_set) then
       let l = Id.Set.elements (Idset.diff inferred_set declared_set) in
       let n = List.length l in
-      errorlabstrm "" (Pp.(str "The following section " ++
+      user_err  (Pp.(str "The following section " ++
         str (String.plural n "variable") ++
         str " " ++ str (String.conjugate_verb_to_be n) ++
         str " used but not declared:" ++
         fnl () ++ pr_sequence Id.print (List.rev l) ++ str ".")) in
   let sort evn l =
     List.filter (fun decl ->
-      let id = get_id decl in
-      List.exists (Names.Id.equal id % get_id) l)
+      let id = NamedDecl.get_id decl in
+      List.exists (NamedDecl.get_id %> Names.Id.equal id) l)
     (named_context env) in
   (* We try to postpone the computation of used section variables *)
   let hyps, def =
-    let context_ids = List.map get_id (named_context env) in
+    let context_ids = List.map NamedDecl.get_id (named_context env) in
     match ctx with
     | None when not (List.is_empty context_ids) -> 
         (* No declared section vars, and non-empty section context:
@@ -482,8 +483,7 @@ let translate_local_def mb env id centry =
     | Undef _ -> ()
     | Def _ -> ()
     | OpaqueDef lc ->
-       let open Context.Named.Declaration in
-       let context_ids = List.map get_id (named_context env) in
+       let context_ids = List.map NamedDecl.get_id (named_context env) in
        let ids_typ = global_vars_set env typ in
        let ids_def = global_vars_set env
          (Opaqueproof.force_proof (opaque_tables env) lc) in

@@ -21,6 +21,8 @@ open Declarations
 open Environ
 open Univ
 
+module NamedDecl = Context.Named.Declaration
+
 (*s Cooking the constants. *)
 
 let pop_dirpath p = match DirPath.repr p with
@@ -152,7 +154,7 @@ type inline = bool
 type result =
   constant_def * constant_type * projection_body option * 
     bool * constant_universes * inline
-    * Context.section_context option
+    * Context.Named.t option
 
 let on_body ml hy f = function
   | Undef _ as x -> x
@@ -202,8 +204,7 @@ let cook_constant env { from = cb; info } =
   in
   let const_hyps =
     Context.Named.fold_outside (fun decl hyps ->
-      let open Context.Named.Declaration in
-      List.filter (fun decl' -> not (Id.equal (get_id decl) (get_id decl')))
+      List.filter (fun decl' -> not (Id.equal (NamedDecl.get_id decl) (NamedDecl.get_id decl')))
 		  hyps)
       hyps ~init:cb.const_hyps in
   let typ = match cb.const_type with

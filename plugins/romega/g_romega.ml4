@@ -12,7 +12,7 @@ DECLARE PLUGIN "romega_plugin"
 
 open Names
 open Refl_omega
-open Constrarg
+open Stdarg
 
 let eval_tactic name =
   let dp = DirPath.make (List.map Id.of_string ["PreOmega"; "omega"; "Coq"]) in

@@ -9,29 +9,23 @@
 open Ppextend
 open Constrexpr
 open Vernacexpr
-open Tacexpr
+open Genarg
 
 type t =
   | AKeyword
   | AUnparsing            of unparsing
   | AConstrExpr           of constr_expr
   | AVernac               of vernac_expr
-  | AGlobTacticExpr       of glob_tactic_expr
-  | AGlobAtomicTacticExpr of glob_atomic_tactic_expr
-  | ARawTacticExpr        of raw_tactic_expr
-  | ARawAtomicTacticExpr  of raw_atomic_tactic_expr
-  | AAtomicTacticExpr     of atomic_tactic_expr
+  | AGlbGenArg            of glob_generic_argument
+  | ARawGenArg            of raw_generic_argument
 
 let tag_of_annotation = function
   | AKeyword                -> "keyword"
   | AUnparsing _            -> "unparsing"
   | AConstrExpr _           -> "constr_expr"
   | AVernac _               -> "vernac_expr"
-  | AGlobTacticExpr _       -> "glob_tactic_expr"
-  | AGlobAtomicTacticExpr _ -> "glob_atomic_tactic_expr"
-  | ARawTacticExpr _        -> "raw_tactic_expr"
-  | ARawAtomicTacticExpr _  -> "raw_atomic_tactic_expr"
-  | AAtomicTacticExpr _     -> "atomic_tactic_expr"
+  | AGlbGenArg _            -> "glob_generic_argument"
+  | ARawGenArg _            -> "raw_generic_argument"
 
 let attributes_of_annotation a =
   []

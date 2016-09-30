@@ -20,6 +20,9 @@ open Inductive
 open Type_errors
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 let conv_leq l2r env x y = default_conv CUMUL ~l2r env x y
 
 let conv_leq_vecti env v1 v2 =
@@ -79,7 +82,7 @@ let judge_of_type u =
 
 let judge_of_relative env n =
   try
-    let typ = get_type (lookup_rel n env) in
+    let typ = RelDecl.get_type (lookup_rel n env) in
     { uj_val  = mkRel n;
       uj_type = lift n typ }
   with Not_found ->
@@ -102,7 +105,7 @@ let check_hyps_inclusion env c sign =
   Context.Named.fold_outside
     (fun d1 () ->
       let open Context.Named.Declaration in
-      let id = get_id d1 in
+      let id = NamedDecl.get_id d1 in
       try
         let d2 = lookup_named id env in
         conv env (get_type d2) (get_type d1);

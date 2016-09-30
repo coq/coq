@@ -27,6 +27,8 @@ open Goptions
 open Sigma.Notations
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (********** definition d'un record (structure) **************)
 
 (** Flag governing use of primitive projections. Disabled by default. *)
@@ -82,7 +84,7 @@ let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
     let univ = 
       if is_local_assum d then
-	let s = Retyping.get_sort_of env evars (get_type d) in
+	let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
 	  Univ.sup (univ_of_sort s) univ 
       else univ
     in (push_rel d env, univ)) 
@@ -102,7 +104,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     let error bk (loc, name) = 
       match bk, name with
       | Default _, Anonymous ->
-        user_err_loc (loc, "record", str "Record parameters must be named")
+        user_err ~loc ~hdr:"record" (str "Record parameters must be named")
       | _ -> ()
     in
       List.iter 
@@ -127,7 +129,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
 	                  sred, true
 	       | None -> s, false
              else s, false)
-	 | _ -> user_err_loc (constr_loc t,"", str"Sort expected."))
+	 | _ -> user_err ~loc:(constr_loc t) (str"Sort expected."))
     | None -> 
       let uvarkind = Evd.univ_flexible_alg in
 	mkSort (Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars), true
@@ -167,7 +169,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     Evd.universe_context ?names:pl evars, nf arity, template, imps, newps, impls, newfs
 
 let degenerate_decl decl =
-  let id = match get_name decl with
+  let id = match RelDecl.get_name decl with
     | Name id -> id
     | Anonymous -> anomaly (Pp.str "Unnamed record variable") in
   match decl with
@@ -208,7 +210,7 @@ let warning_or_error coe indsp err =
 	  | _ ->
               (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
   in
-  if coe then errorlabstrm "structure" st;
+  if coe then user_err ~hdr:"structure" st;
   Flags.if_verbose Feedback.msg_info (hov 0 st)
 
 type field_status =
@@ -235,7 +237,7 @@ let subst_projection fid l c =
 	    | Projection t -> lift depth t
 	    | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
 	    | NoProjection Anonymous ->
-                errorlabstrm "" (str "Field " ++ pr_id fid ++
+                user_err  (str "Field " ++ pr_id fid ++
                   str " depends on the " ++ pr_nth (k-depth-1) ++ str
                   " field which has no name.")
         else
@@ -288,8 +290,8 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
   let (_,_,kinds,sp_projs,_) =
     List.fold_left3
       (fun (nfi,i,kinds,sp_projs,subst) coe decl impls ->
-        let fi = get_name decl in
-        let ti = get_type decl in
+        let fi = RelDecl.get_name decl in
+        let ti = RelDecl.get_type decl in
 	let (sp_projs,i,subst) =
 	  match fi with
 	  | Anonymous ->
@@ -362,17 +364,17 @@ let structure_signature ctx =
       | [decl] ->
         let env = Environ.empty_named_context_val in
         let evm = Sigma.Unsafe.of_evar_map evm in
-        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (get_type decl) in
+        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (RelDecl.get_type decl) in
         let evm = Sigma.to_evar_map evm in
         evm
       | decl::tl ->
           let env = Environ.empty_named_context_val in
           let evm = Sigma.Unsafe.of_evar_map evm in
-          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (get_type decl) in
+          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (RelDecl.get_type decl) in
           let evm = Sigma.to_evar_map evm in
 	  let new_tl = Util.List.map_i
 	    (fun pos decl ->
-	       map_type (fun t -> Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) decl) 1 tl in
+	       RelDecl.map_type (fun t -> Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) decl) 1 tl in
 	  deps_to_evar evm new_tl in
   deps_to_evar Evd.empty (List.rev ctx)
 
@@ -422,7 +424,7 @@ let implicits_of_context ctx =
       | Name n -> Some n
       | Anonymous -> None
     in ExplByPos (i, explname), (true, true, true))
-    1 (List.rev (Anonymous :: (List.map get_name ctx)))
+    1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
 let declare_class finite def poly ctx id idbuild paramimpls params arity 
     template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities sign =
@@ -476,13 +478,13 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
 			      if b then Backward, pri else Forward, pri) coe)
 	  coers priorities
        in
-       let l = List.map3 (fun decl b y -> get_name decl, b, y)
+       let l = List.map3 (fun decl b y -> RelDecl.get_name decl, b, y)
          (List.rev fields) coers (Recordops.lookup_projections ind)
        in IndRef ind, l
   in
   let ctx_context =
     List.map (fun decl ->
-      match Typeclasses.class_of_constr (get_type decl) with
+      match Typeclasses.class_of_constr (RelDecl.get_type decl) with
       | Some (_, ((cl,_), _)) -> Some (cl.cl_impl, true)
       | None -> None)
       params, params
@@ -539,8 +541,8 @@ let declare_existing_class g =
   match g with
   | ConstRef x -> add_constant_class x
   | IndRef x -> add_inductive_class x
-  | _ -> user_err_loc (Loc.dummy_loc, "declare_existing_class", 
-		      Pp.str"Unsupported class type, only constants and inductives are allowed")
+  | _ -> user_err ~hdr:"declare_existing_class"
+		      (Pp.str"Unsupported class type, only constants and inductives are allowed")
 
 open Vernacexpr
 

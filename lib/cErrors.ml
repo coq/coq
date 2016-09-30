@@ -26,25 +26,24 @@ let _ =
 let make_anomaly ?label pp =
   Anomaly (label, pp)
 
-let anomaly ?loc ?label pp = match loc with
-  | None -> raise (Anomaly (label, pp))
-  | Some loc -> Loc.raise loc (Anomaly (label, pp))
+let anomaly ?loc ?label pp =
+  Loc.raise ?loc (Anomaly (label, pp))
 
 let is_anomaly = function
 | Anomaly _ -> true
 | _ -> false
 
-exception UserError of string * std_ppcmds (* User errors *)
-let error string = raise (UserError("_", str string))
-let errorlabstrm l pps = raise (UserError(l,pps))
-
-exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
-let alreadydeclared pps = raise (AlreadyDeclared(pps))
+exception UserError of string option * std_ppcmds (* User errors *)
 
 let todo s = prerr_string ("TODO: "^s^"\n")
 
-let user_err_loc (loc,s,strm) = Loc.raise loc (UserError (s,strm))
-let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
+let user_err ?loc ?hdr strm = Loc.raise ?loc (UserError (hdr, strm))
+let error            string = user_err (str string)
+
+let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
+
+exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
+let alreadydeclared pps = raise (AlreadyDeclared(pps))
 
 exception Timeout
 exception Drop
@@ -113,7 +112,7 @@ let iprint_no_report (e, info) =
 
 let _ = register_handler begin function
   | UserError(s, pps) ->
-    hov 0 (str "Error: " ++ where (Some s) ++ pps)
+    hov 0 (str "Error: " ++ where s ++ pps)
   | _ -> raise Unhandled
 end
 

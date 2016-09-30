@@ -17,6 +17,7 @@ open Environ
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
+module CompactedDecl = Context.Compacted.Declaration
 
 (* Sorts and sort family *)
 
@@ -981,18 +982,27 @@ let rec mem_named_context id ctxt =
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
-let compact_named_context_reverse sign =
+let compact_named_context sign =
   let compact l decl =
-    let (i1,c1,t1) = NamedDecl.to_tuple decl in
-    match l with
-    | [] -> [[i1],c1,t1]
-    | (l2,c2,t2)::q ->
-       if Option.equal Constr.equal c1 c2 && Constr.equal t1 t2
-       then (i1::l2,c2,t2)::q
-       else ([i1],c1,t1)::l
-  in Context.Named.fold_inside compact ~init:[] sign
-
-let compact_named_context sign = List.rev (compact_named_context_reverse sign)
+    match decl, l with
+    | NamedDecl.LocalAssum (i,t), [] ->
+       [CompactedDecl.LocalAssum ([i],t)]
+    | NamedDecl.LocalDef (i,c,t), [] ->
+       [CompactedDecl.LocalDef ([i],c,t)]
+    | NamedDecl.LocalAssum (i1,t1), CompactedDecl.LocalAssum (li,t2) :: q ->
+       if Constr.equal t1 t2
+       then CompactedDecl.LocalAssum (i1::li, t2) :: q
+       else CompactedDecl.LocalAssum ([i1],t1) :: CompactedDecl.LocalAssum (li,t2) :: q
+    | NamedDecl.LocalDef (i1,c1,t1), CompactedDecl.LocalDef (li,c2,t2) :: q ->
+       if Constr.equal c1 c2 && Constr.equal t1 t2
+       then CompactedDecl.LocalDef (i1::li, c2, t2) :: q
+       else CompactedDecl.LocalDef ([i1],c1,t1) :: CompactedDecl.LocalDef (li,c2,t2) :: q
+    | NamedDecl.LocalAssum (i,t), q ->
+       CompactedDecl.LocalAssum ([i],t) :: q
+    | NamedDecl.LocalDef (i,c,t), q ->
+       CompactedDecl.LocalDef ([i],c,t) :: q
+  in
+  sign |> Context.Named.fold_inside compact ~init:[] |> List.rev
 
 let clear_named_body id env =
   let open NamedDecl in

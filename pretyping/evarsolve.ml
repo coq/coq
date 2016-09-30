@@ -169,7 +169,7 @@ type 'a update =
 | NoUpdate
 
 open Context.Named.Declaration
-let inst_of_vars sign = Array.map_of_list (mkVar % get_id) sign
+let inst_of_vars sign = Array.map_of_list (get_id %> mkVar) sign
 
 let restrict_evar_key evd evk filter candidates =
   match filter, candidates with
@@ -632,13 +632,13 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
 	 ~status:univ_flexible (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd src t_in_env
           ty_t_in_sign sign filter inst_in_env in
-      let evd,b_in_sign = match d with
-      | LocalAssum _ -> evd,None
+      let evd,d' = match d with
+      | LocalAssum _ -> evd, Context.Named.Declaration.LocalAssum (id,t_in_sign)
       | LocalDef (_,b,_) ->
           let evd,b = define_evar_from_virtual_equation define_fun env evd src b
             t_in_sign sign filter inst_in_env in
-          evd,Some b in
-      (push_named_context_val (Context.Named.Declaration.of_tuple (id,b_in_sign,t_in_sign)) sign, Filter.extend 1 filter,
+          evd, Context.Named.Declaration.LocalDef (id,b,t_in_sign) in
+      (push_named_context_val d' sign, Filter.extend 1 filter,
        (mkRel 1)::(List.map (lift 1) inst_in_env),
        (mkRel 1)::(List.map (lift 1) inst_in_sign),
        push_rel d env,evd,id::avoid))

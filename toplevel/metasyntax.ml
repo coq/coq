@@ -46,11 +46,29 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
 let entry_buf = Buffer.create 64
 
+type any_entry = AnyEntry : 'a Gram.entry -> any_entry
+
+let grammars : any_entry list String.Map.t ref = ref String.Map.empty
+
+let register_grammar name grams =
+  grammars := String.Map.add name grams !grammars
+
 let pr_entry e =
   let () = Buffer.clear entry_buf in
   let ft = Format.formatter_of_buffer entry_buf in
   let () = Gram.entry_print ft e in
   str (Buffer.contents entry_buf)
+
+let pr_registered_grammar name =
+  let gram = try Some (String.Map.find name !grammars) with Not_found -> None in
+  match gram with
+  | None -> error "Unknown or unprintable grammar entry."
+  | Some entries ->
+    let pr_one (AnyEntry e) =
+      str "Entry " ++ str (Gram.Entry.name e) ++ str " is" ++ fnl () ++
+      pr_entry e
+    in
+    prlist pr_one entries
 
 let pr_grammar = function
   | "constr" | "operconstr" | "binder_constr" ->
@@ -64,15 +82,6 @@ let pr_grammar = function
       pr_entry Pcoq.Constr.operconstr
   | "pattern" ->
       pr_entry Pcoq.Constr.pattern
-  | "tactic" ->
-      str "Entry tactic_expr is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.tactic_expr ++
-      str "Entry binder_tactic is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.binder_tactic ++
-      str "Entry simple_tactic is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.simple_tactic ++
-      str "Entry tactic_arg is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.tactic_arg
   | "vernac" ->
       str "Entry vernac is" ++ fnl () ++
       pr_entry Pcoq.Vernac_.vernac ++
@@ -84,7 +93,7 @@ let pr_grammar = function
       pr_entry Pcoq.Vernac_.gallina ++
       str "Entry gallina_ext is" ++ fnl () ++
       pr_entry Pcoq.Vernac_.gallina_ext
-  | _ -> error "Unknown or unprintable grammar entry."
+  | name -> pr_registered_grammar name
 
 (**********************************************************************)
 (* Parse a format (every terminal starting with a letter or a single
@@ -238,7 +247,7 @@ let rec find_pattern nt xl = function
   | _, Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side.")
   | _, Terminal s :: _ | Terminal s :: _, _ ->
-      errorlabstrm "Metasyntax.find_pattern"
+      user_err ~hdr:"Metasyntax.find_pattern"
         (str "The token \"" ++ str s ++ str "\" occurs on one side of \"..\" but not on the other side.")
   | _, [] ->
       error msg_expected_form_of_recursive_notation
@@ -300,7 +309,7 @@ let rec get_notation_vars = function
       let vars = get_notation_vars sl in
       if Id.equal id ldots_var then vars else
 	if Id.List.mem id vars then
-	  errorlabstrm "Metasyntax.get_notation_vars"
+	  user_err ~hdr:"Metasyntax.get_notation_vars"
             (str "Variable " ++ pr_id id ++ str " occurs more than once.")
 	else
           id::vars
@@ -314,7 +323,7 @@ let analyze_notation_tokens l =
   recvars, List.subtract Id.equal vars (List.map snd recvars), l
 
 let error_not_same_scope x y =
-  errorlabstrm "Metasyntax.error_not_name_scope"
+  user_err ~hdr:"Metasyntax.error_not_name_scope"
     (str "Variables " ++ pr_id x ++ str " and " ++ pr_id y ++ str " must be in the same scope.")
 
 (**********************************************************************)
@@ -390,7 +399,7 @@ let check_open_binder isopen sl m =
   | _ -> assert false
   in
   if isopen && not (List.is_empty sl) then
-    errorlabstrm "" (str "as " ++ pr_id m ++
+    user_err  (str "as " ++ pr_id m ++
       str " is a non-closed binder, no such \"" ++
       prlist_with_sep spc pr_token sl
       ++ strbrk "\" is allowed to occur.")
@@ -661,7 +670,7 @@ let pr_level ntn (from,args) =
   prlist_with_sep pr_comma (pr_arg_level from) args
 
 let error_incompatible_level ntn oldprec prec =
-  errorlabstrm ""
+  user_err 
     (str "Notation " ++ str ntn ++ str " is already defined" ++ spc() ++
     pr_level ntn oldprec ++
     spc() ++ str "while it is now required to be" ++ spc() ++
@@ -731,7 +740,7 @@ let interp_modifiers modl =
     | SetEntryType (s,typ) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
-	  errorlabstrm "Metasyntax.interp_modifiers"
+	  user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
 	interp assoc level ((id,typ)::etyps) format extra l
     | SetItemLevel ([],n) :: l ->
@@ -739,7 +748,7 @@ let interp_modifiers modl =
     | SetItemLevel (s::idl,n) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
-	  errorlabstrm "Metasyntax.interp_modifiers"
+	  user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
 	let typ = ETConstr (n,()) in
 	interp assoc level ((id,typ)::etyps) format extra (SetItemLevel (idl,n)::l)
@@ -770,7 +779,7 @@ let check_infix_modifiers modifiers =
 let check_useless_entry_types recvars mainvars etyps =
   let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
   match List.filter (fun (x,etyp) -> not (List.mem x vars)) etyps with
-  | (x,_)::_ -> errorlabstrm "Metasyntax.check_useless_entry_types"
+  | (x,_)::_ -> user_err ~hdr:"Metasyntax.check_useless_entry_types"
                   (pr_id x ++ str " is unbound in the notation.")
   | _ -> ()
 
@@ -813,7 +822,7 @@ let join_auxiliary_recursive_types recvars etyps =
     | None, Some ytyp -> (x,ytyp)::typs
     | Some xtyp, Some ytyp when Pervasives.(=) xtyp ytyp -> typs (* FIXME *)
     | Some xtyp, Some ytyp ->
-	errorlabstrm ""
+	user_err 
 	  (strbrk "In " ++ pr_id x ++ str " .. " ++ pr_id y ++
 	   strbrk ", both ends have incompatible types."))
     recvars etyps

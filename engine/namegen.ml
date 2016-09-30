@@ -24,6 +24,8 @@ open Environ
 open Termops
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (**********************************************************************)
 (* Conventional names *)
 
@@ -191,18 +193,26 @@ let visible_ids (nenv, c) =
     let (gseen, vseen, ids) = !accu in
     let g = global_of_constr c in
     if not (Refset_env.mem g gseen) then
+      begin
+      try
       let gseen = Refset_env.add g gseen in
       let short = shortest_qualid_of_global Id.Set.empty g in
       let dir, id = repr_qualid short in
       let ids = if DirPath.is_empty dir then Id.Set.add id ids else ids in
       accu := (gseen, vseen, ids)
+      with Not_found when !Flags.in_debugger || !Flags.in_toplevel -> ()
+      end
   | Rel p ->
     let (gseen, vseen, ids) = !accu in
     if p > n && not (Int.Set.mem p vseen) then
       let vseen = Int.Set.add p vseen in
       let name =
         try Some (lookup_name_of_rel (p - n) nenv)
-        with Not_found -> None (* Unbound indice : may happen in debug *)
+        with Not_found ->
+          (* Unbound index: may happen in debug and actually also
+             while computing temporary implicit arguments of an
+             inductive type *)
+          None
       in
       let ids = match name with
       | Some (Name id) -> Id.Set.add id ids
@@ -287,10 +297,10 @@ let make_all_name_different env =
   let avoid = ref (ids_of_named_context (named_context env)) in
   process_rel_context
     (fun decl newenv ->
-       let na = named_hd newenv (get_type decl) (get_name decl) in
+       let na = named_hd newenv (RelDecl.get_type decl) (RelDecl.get_name decl) in
        let id = next_name_away na !avoid in
        avoid := id::!avoid;
-       push_rel (set_name (Name id) decl) newenv)
+       push_rel (RelDecl.set_name (Name id) decl) newenv)
     env
 
 (* 5- Looks for next fresh name outside a list; avoids also to use names that

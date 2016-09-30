@@ -98,11 +98,12 @@ type evar_info = {
   (** Optional content of the evar. *)
   evar_filter : Filter.t;
   (** Boolean mask over {!evar_hyps}. Should have the same length.
-      TODO: document me more. *)
+      When filtered out, the corresponding variable is not allowed to occur
+      in the solution *)
   evar_source : Evar_kinds.t located;
   (** Information about the evar. *)
   evar_candidates : constr list option;
-  (** TODO: document this *)
+  (** List of possible solutions when known that it is a finite list *)
   evar_extra : Store.t
   (** Extra store, used for clever hacks. *)
 }
@@ -508,9 +509,9 @@ val normalize_evar_universe_context_variables : evar_universe_context ->
 val normalize_evar_universe_context : evar_universe_context -> 
   evar_universe_context
 
-val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe_level
-val new_univ_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * Univ.universe
-val new_sort_variable : ?loc:Loc.t -> ?name:string -> ?predicative:bool -> rigid -> evar_map -> evar_map * sorts
+val new_univ_level_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe_level
+val new_univ_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe
+val new_sort_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * sorts
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 											   

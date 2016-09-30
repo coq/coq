@@ -124,6 +124,14 @@ let rec cases_pattern_fold_map loc g e = function
       let e',patl' = List.fold_map (cases_pattern_fold_map loc g) e patl in
       e', PatCstr (loc,cstr,patl',na')
 
+let subst_binder_type_vars l = function
+  | Evar_kinds.BinderType (Name id) ->
+     let id =
+       try match Id.List.assoc id l with GVar(_,id') -> id' | _ -> id
+       with Not_found -> id in
+     Evar_kinds.BinderType (Name id)
+  | e -> e
+
 let rec subst_glob_vars l = function
   | GVar (_,id) as r -> (try Id.List.assoc id l with Not_found -> r)
   | GProd (loc,Name id,bk,t,c) ->
@@ -136,6 +144,7 @@ let rec subst_glob_vars l = function
 	try match Id.List.assoc id l with GVar(_,id') -> id' | _ -> id
 	with Not_found -> id in
       GLambda (loc,Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
+  | GHole (loc,x,naming,arg) -> GHole (loc,subst_binder_type_vars l x,naming,arg)
   | r -> map_glob_constr (subst_glob_vars l) r (* assume: id is not binding *)
 
 let ldots_var = Id.of_string ".."
@@ -233,8 +242,8 @@ let split_at_recursive_part c =
 let subtract_loc loc1 loc2 = Loc.make_loc (fst (Loc.unloc loc1),fst (Loc.unloc loc2)-1)
 
 let check_is_hole id = function GHole _ -> () | t ->
-  user_err_loc (loc_of_glob_constr t,"",
-    strbrk "In recursive notation with binders, " ++ pr_id id ++
+  user_err ~loc:(loc_of_glob_constr t)
+   (strbrk "In recursive notation with binders, " ++ pr_id id ++
     strbrk " is expected to come without type.")
 
 let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
@@ -283,8 +292,8 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	let loc1 = loc_of_glob_constr iterator in
 	let loc2 = loc_of_glob_constr (Option.get !terminator) in
 	(* Here, we would need a loc made of several parts ... *)
-	user_err_loc (subtract_loc loc1 loc2,"",
-          str "Both ends of the recursive pattern are the same.")
+	user_err ~loc:(subtract_loc loc1 loc2)
+          (str "Both ends of the recursive pattern are the same.")
     | Some (x,y,Some lassoc) ->
         let newfound,x,y,lassoc =
           if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
@@ -324,8 +333,8 @@ let notation_constr_and_vars_of_glob_constr a =
     | GApp (_,GVar (loc,f),[c]) when Id.equal f ldots_var ->
 	(* Fall on the second part of the recursive pattern w/o having
 	   found the first part *)
-	user_err_loc (loc,"",
-	str "Cannot find where the recursive pattern starts.")
+	user_err ~loc 
+	(str "Cannot find where the recursive pattern starts.")
     | c ->
 	aux' c
   and aux' = function
@@ -377,7 +386,7 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
   let vars = Id.Map.filter filter nenv.ninterp_var_type in
   let check_recvar x =
     if Id.List.mem x found then
-      errorlabstrm "" (pr_id x ++
+      user_err  (pr_id x ++
 	strbrk " should only be used in the recursive part of a pattern.") in
   let check (x, y) = check_recvar x; check_recvar y in
   let () = List.iter check foundrec in
@@ -396,7 +405,7 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
   in
   let check_pair s x y where =
     if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
-      errorlabstrm "" (strbrk "in the right-hand side, " ++ pr_id x ++
+      user_err  (strbrk "in the right-hand side, " ++ pr_id x ++
 	str " and " ++ pr_id y ++ strbrk " should appear in " ++ str s ++
 	str " position as part of a recursive pattern.") in
   let check_type x typ =
@@ -606,7 +615,8 @@ let add_env (alp,alpmetas) (terms,onlybinders,termlists,binderlists) var v =
      notation, as in "Notation "'twice_upto' y" := (fun x => x + x + y)". Then
      we keep (z,x) in alp, and we have to check that what the [v] which is bound
      to [var] does not contain z *)
-  if List.exists (fun (id,_) ->occur_glob_constr id v) alp then raise No_match;
+  if not (Id.equal ldots_var var) &&
+     List.exists (fun (id,_) -> occur_glob_constr id v) alp then raise No_match;
   (* [alpmetas] is used when matching a pattern "fun x => ... x ... ?var ... x ..."
      with an actual term "fun z => ... z ..." when "x" is bound in the
      notation and the name "x" cannot be changed to "z", e.g. because
@@ -1128,13 +1138,15 @@ let match_notation_constr u c (metas,pat) =
   List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders') ->
     match typ with
     | NtnTypeConstr ->
-       ((Id.List.assoc x terms, scl)::terms',termlists',binders')
+      let term = try Id.List.assoc x terms with Not_found -> raise No_match in
+       ((term, scl)::terms',termlists',binders')
     | NtnTypeOnlyBinder ->
        ((find_binder x, scl)::terms',termlists',binders')
     | NtnTypeConstrList ->
        (terms',(Id.List.assoc x termlists,scl)::termlists',binders')
     | NtnTypeBinderList ->
-       (terms',termlists',(Id.List.assoc x binderlists,scl)::binders'))
+      let bl = try Id.List.assoc x binderlists with Not_found -> raise No_match in
+       (terms',termlists',(bl, scl)::binders'))
     metas ([],[],[])
 
 (* Matching cases pattern *)
@@ -1165,7 +1177,7 @@ let match_cases_pattern_list match_fun metas sigma rest x y iter termin lassoc =
   let l,(terms,onlybinders,termlists,binderlists as sigma) = aux sigma [] rest in
   (terms,onlybinders,(x,if lassoc then l else List.rev l)::termlists, binderlists)
 
-let rec match_cases_pattern metas (terms,x,termlists,y as sigma) a1 a2 =
+let rec match_cases_pattern metas (terms,(),termlists,() as sigma) a1 a2 =
  match (a1,a2) with
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
   | PatVar (_,Anonymous), NHole _ -> sigma,(0,[])

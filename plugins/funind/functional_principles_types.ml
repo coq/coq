@@ -14,6 +14,8 @@ open Functional_principles_proofs
 open Misctypes
 open Sigma.Notations
 
+module RelDecl = Context.Rel.Declaration
+
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
 
@@ -38,7 +40,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Name x ->
 	   let id = Namegen.next_ident_away x avoid in
 	   Hashtbl.add tbl id x;
-	   set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
+	   RelDecl.set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
 	| Anonymous -> anomaly (Pp.str "Anonymous property binder "))
   in
   let avoid = (Termops.ids_of_context env_with_params ) in
@@ -51,7 +53,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 (*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
   let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
-    let args,_ = decompose_prod (get_type decl) in
+    let args,_ = decompose_prod (RelDecl.get_type decl) in
     let real_args =
       if princ_type_info.indarg_in_concl
       then List.tl args
@@ -609,7 +611,7 @@ let build_scheme fas =
 	      try
 		Smartlocate.global_with_alias f
 	      with Not_found ->
-                errorlabstrm "FunInd.build_scheme"
+                user_err ~hdr:"FunInd.build_scheme"
                   (str "Cannot find " ++ Libnames.pr_reference f)
 	    in
 	    let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
@@ -643,7 +645,7 @@ let build_case_scheme fa =
     let (_,f,_) = fa in
     try fst (Universes.unsafe_constr_of_global (Smartlocate.global_with_alias f))
     with Not_found ->
-      errorlabstrm "FunInd.build_case_scheme"
+      user_err ~hdr:"FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_reference f) in
   let first_fun,u = destConst  funs in
   let funs_mp,funs_dp,_ = Names.repr_con first_fun in

@@ -43,8 +43,8 @@ let coincide s pat off =
   !break
 
 let atactic n =
-  if n = 5 then Aentry Tactic.binder_tactic
-  else Aentryl (Tactic.tactic_expr, n)
+  if n = 5 then Aentry Pltac.binder_tactic
+  else Aentryl (Pltac.tactic_expr, n)
 
 type entry_name = EntryName :
   'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) Extend.symbol -> entry_name
@@ -56,9 +56,9 @@ let get_tacentry n m =
     && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
     && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
   in
-  if check_lvl n then EntryName (rawwit Constrarg.wit_tactic, Aself)
-  else if check_lvl (n + 1) then EntryName (rawwit Constrarg.wit_tactic, Anext)
-  else EntryName (rawwit Constrarg.wit_tactic, atactic n)
+  if check_lvl n then EntryName (rawwit Tacarg.wit_tactic, Aself)
+  else if check_lvl (n + 1) then EntryName (rawwit Tacarg.wit_tactic, Anext)
+  else EntryName (rawwit Tacarg.wit_tactic, atactic n)
 
 let get_separator = function
 | None -> error "Missing separator."
@@ -108,11 +108,11 @@ let interp_entry_name interp symb =
 
 let get_tactic_entry n =
   if Int.equal n 0 then
-    Tactic.simple_tactic, None
+    Pltac.simple_tactic, None
   else if Int.equal n 5 then
-    Tactic.binder_tactic, None
+    Pltac.binder_tactic, None
   else if 1<=n && n<5 then
-    Tactic.tactic_expr, Some (Extend.Level (string_of_int n))
+    Pltac.tactic_expr, Some (Extend.Level (string_of_int n))
   else
     error ("Invalid Tactic Notation level: "^(string_of_int n)^".")
 
@@ -163,7 +163,7 @@ let add_tactic_entry (kn, ml, tg) state =
   let mkact loc l =
     let map arg =
       (** HACK to handle especially the tactic(...) entry *)
-      let wit = Genarg.rawwit Constrarg.wit_tactic in
+      let wit = Genarg.rawwit Tacarg.wit_tactic in
       if Genarg.has_type arg wit && not ml then
         Tacexp (Genarg.out_gen wit arg)
       else
@@ -218,7 +218,7 @@ let interp_prod_item = function
     | Some n ->
       (** FIXME: do better someday *)
       assert (String.equal s "tactic");
-      begin match Constrarg.wit_tactic with
+      begin match Tacarg.wit_tactic with
       | ExtraArg tag -> ArgT.Any tag
       | _ -> assert false
       end
@@ -405,7 +405,7 @@ let create_ltac_quotation name cast (e, l) =
   in
   let action _ v _ _ _ loc = cast (loc, v) in
   let gram = (level, assoc, [Rule (rule, action)]) in
-  Pcoq.grammar_extend Tactic.tactic_arg None (None, [gram])
+  Pcoq.grammar_extend Pltac.tactic_arg None (None, [gram])
 
 (** Command *)
 
@@ -425,29 +425,29 @@ let warn_unusable_identifier =
 let register_ltac local tacl =
   let map tactic_body =
     match tactic_body with
-    | TacticDefinition ((loc,id), body) ->
+    | Tacexpr.TacticDefinition ((loc,id), body) ->
         let kn = Lib.make_kn id in
         let id_pp = pr_id id in
         let () = if is_defined_tac kn then
-          CErrors.user_err_loc (loc, "",
-            str "There is already an Ltac named " ++ id_pp ++ str".")
+          CErrors.user_err ~loc 
+            (str "There is already an Ltac named " ++ id_pp ++ str".")
         in
         let is_shadowed =
           try
-            match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
+            match Pcoq.parse_string Pltac.tactic (Id.to_string id) with
             | Tacexpr.TacArg _ -> false
             | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
           with e when CErrors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
         in
         let () = if is_shadowed then warn_unusable_identifier id in
         NewTac id, body
-    | TacticRedefinition (ident, body) ->
+    | Tacexpr.TacticRedefinition (ident, body) ->
         let loc = loc_of_reference ident in
         let kn =
           try Nametab.locate_tactic (snd (qualid_of_reference ident))
           with Not_found ->
-            CErrors.user_err_loc (loc, "",
-                        str "There is no Ltac named " ++ pr_reference ident ++ str ".")
+            CErrors.user_err ~loc 
+                       (str "There is no Ltac named " ++ pr_reference ident ++ str ".")
         in
         UpdateTac kn, body
   in
@@ -511,3 +511,15 @@ let print_ltacs () =
     hov 2 (pr_qualid qid ++ prlist pr_ltac_fun_arg l)
   in
   Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)
+
+(** Grammar *)
+
+let () =
+  let open Metasyntax in
+  let entries = [
+    AnyEntry Pltac.tactic_expr;
+    AnyEntry Pltac.binder_tactic;
+    AnyEntry Pltac.simple_tactic;
+    AnyEntry Pltac.tactic_arg;
+  ] in
+  register_grammar "tactic" entries

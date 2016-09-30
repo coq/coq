@@ -39,3 +39,8 @@ val e_solve_evars : env -> evar_map ref -> constr -> constr
 (** (first constr is term to match, second is return predicate) *)
 val check_allowed_sort : env -> evar_map -> pinductive -> constr -> constr ->
   unit
+
+(** Raise an error message if bodies have types not unifiable with the
+    expected ones *)
+val check_type_fixpoint : Loc.t -> env -> evar_map ref ->
+  Names.Name.t array -> types array -> unsafe_judgment array -> unit

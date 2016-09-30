@@ -67,15 +67,15 @@ let isomorphic_to_tuple lc = Int.equal (Array.length lc) 1
 let encode_bool r =
   let (x,lc) = encode_inductive r in
   if not (has_two_constructors lc) then
-    user_err_loc (loc_of_reference r,"encode_if",
-      str "This type has not exactly two constructors.");
+    user_err ~loc:(loc_of_reference r) ~hdr:"encode_if"
+      (str "This type has not exactly two constructors.");
   x
 
 let encode_tuple r =
   let (x,lc) = encode_inductive r in
   if not (isomorphic_to_tuple lc) then
-    user_err_loc (loc_of_reference r,"encode_tuple",
-      str "This type cannot be seen as a tuple type.");
+    user_err ~loc:(loc_of_reference r) ~hdr:"encode_tuple"
+      (str "This type cannot be seen as a tuple type.");
   x
 
 module PrintingInductiveMake =
@@ -689,7 +689,7 @@ and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
   | BLetIn ->
       let c = detype (lax,false) avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
-      let s = Retyping.get_sort_family_of (snd env) sigma ty in
+      let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
       let c = if s != InProp then c else
           GCast (dl, c, CastConv (detype (lax,false) avoid env sigma ty)) in
       GLetIn (dl, na', c, r)

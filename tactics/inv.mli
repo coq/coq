@@ -9,7 +9,7 @@
 open Names
 open Term
 open Misctypes
-open Tacexpr
+open Tactypes
 
 type inversion_status = Dep of constr option | NoDep
 

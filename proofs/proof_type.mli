@@ -11,7 +11,6 @@
 open Evd
 open Names
 open Term
-open Tacexpr
 open Glob_term
 open Nametab
 open Misctypes
@@ -22,7 +21,6 @@ open Misctypes
 type prim_rule =
   | Cut of bool * bool * Id.t * types
   | Refine of constr
-  | Move of Id.t * Id.t move_location
 
 (** Nowadays, the only rules we'll consider are the primitive rules *)
 

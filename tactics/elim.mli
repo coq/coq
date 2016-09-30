@@ -10,11 +10,12 @@ open Names
 open Term
 open Tacticals
 open Misctypes
+open Tactypes
 
 (** Eliminations tactics. *)
 
-val introCaseAssumsThen : Tacexpr.evars_flag ->
-  (Tacexpr.intro_patterns -> branch_assumptions -> unit Proofview.tactic) ->
+val introCaseAssumsThen : evars_flag ->
+  (intro_patterns -> branch_assumptions -> unit Proofview.tactic) ->
     branch_args -> unit Proofview.tactic
 
 val h_decompose       : inductive list -> constr -> unit Proofview.tactic

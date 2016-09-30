@@ -1,4 +1,3 @@
-open Context.Rel.Declaration
 open CErrors
 open Util
 open Names
@@ -13,11 +12,13 @@ open Misctypes
 open Decl_kinds
 open Sigma.Notations
 
+module RelDecl = Context.Rel.Declaration
+
 let is_rec_info scheme_info =
   let test_branche min acc decl =
     acc || (
       let new_branche =
-	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum (get_type decl))) in
+	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum (RelDecl.get_type decl))) in
       let free_rels_in_br = Termops.free_rels new_branche in
       let max = min + scheme_info.Tactics.npredicates in
       Int.Set.exists (fun i -> i >= min && i< max) free_rels_in_br
@@ -42,7 +43,7 @@ let functional_induction with_clean c princl pat =
 		let finfo = (* we first try to find out a graph on f *)
 		  try find_Function_infos c'
 		  with Not_found ->
-		    errorlabstrm "" (str "Cannot find induction information on "++
+		    user_err  (str "Cannot find induction information on "++
 				       Printer.pr_lconstr (mkConst c') )
 		in
 		match Tacticals.elimination_sort_of_goal g with
@@ -70,11 +71,11 @@ let functional_induction with_clean c princl pat =
 		    (b,a)
 		    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
 		  with Not_found -> (* This one is neither defined ! *)
-		    errorlabstrm "" (str "Cannot find induction principle for "
+		    user_err  (str "Cannot find induction principle for "
 				     ++Printer.pr_lconstr (mkConst c') )
 	      in
 	      (princ,NoBindings, Tacmach.pf_unsafe_type_of g' princ,g')
-	   | _ -> raise (UserError("",str "functional induction must be used with a function" ))
+	   | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
 	 end
       | Some ((princ,binding)) ->
 	 princ,binding,Tacmach.pf_unsafe_type_of g princ,g
@@ -175,7 +176,7 @@ let build_newrecursive l =
        match body_opt with 
 	 | Some body -> 
 	     (fixna,bll,ar,body)
-	 | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given")
+	 | None -> user_err ~hdr:"Function" (str "Body of Function must be given")
     ) l
   in
   build_newrecursive l'
@@ -321,7 +322,7 @@ let error_error names e =
   in
   match e with
     | Building_graph e ->
-	errorlabstrm ""
+	user_err 
 	  (str "Cannot define graph(s) for " ++
 	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
 	     e_explain e)
@@ -391,7 +392,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
   match fixpoint_exprl with
     | [(((_,fname),pl),_,bl,ret_type,body),_] when not is_rec ->
-      let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
+      let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
       Command.do_definition
 	fname
 	(Decl_kinds.Global,(Flags.is_universe_polymorphism ()),Decl_kinds.Definition) pl
@@ -630,7 +631,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	      | _ -> assert false
 	  in 
 	  let fixpoint_exprl = [fixpoint_expr] in 
-	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
+	  let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
 	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in 
 	  let pre_hook pconstants =
@@ -656,7 +657,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	  let fixpoint_exprl = [fixpoint_expr] in 
 	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in
-	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
+	  let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
 	  let pre_hook pconstants =
 	    generate_principle
 	      (ref (Evd.from_env (Global.env ())))
@@ -834,9 +835,9 @@ let make_graph (f_ref:global_reference) =
       | ConstRef c ->
 	  begin try c,Global.lookup_constant c
 	  with Not_found ->
-	    raise (UserError ("",str "Cannot find " ++ Printer.pr_lconstr (mkConst c)) )
+	    raise (UserError (None,str "Cannot find " ++ Printer.pr_lconstr (mkConst c)) )
 	  end
-      | _ -> raise (UserError ("", str "Not a function reference") )
+      | _ -> raise (UserError (None, str "Not a function reference") )
   in
   (match Global.body_of_constant_body c_body with
      | None -> error "Cannot build a graph over an axiom !"

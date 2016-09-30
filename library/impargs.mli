@@ -29,8 +29,7 @@ val is_reversible_pattern_implicit_args : unit -> bool
 val is_contextual_implicit_args : unit -> bool
 val is_maximal_implicit_args : unit -> bool
 
-type implicits_flags
-val with_implicits : implicits_flags -> ('a -> 'b) -> 'a -> 'b
+val with_implicit_protection : ('a -> 'b) -> 'a -> 'b
 
 (** {6 ... } *)
 (** An [implicits_list] is a list of positions telling which arguments
@@ -135,15 +134,6 @@ val projection_implicits : env -> projection -> implicit_status list ->
 val select_impargs_size : int -> implicits_list list -> implicit_status list
 
 val select_stronger_impargs : implicits_list list -> implicit_status list
-
-type implicit_interactive_request
-
-type implicit_discharge_request =
-  | ImplLocal
-  | ImplConstant of constant * implicits_flags
-  | ImplMutualInductive of mutual_inductive * implicits_flags
-  | ImplInteractive of global_reference * implicits_flags *
-      implicit_interactive_request
 
 val explicitation_eq : Constrexpr.explicitation -> Constrexpr.explicitation -> bool
 (** Equality on [explicitation]. *)

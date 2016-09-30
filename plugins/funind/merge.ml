@@ -26,6 +26,8 @@ open Glob_termops
 open Decl_kinds
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (** {1 Utilities}  *)
 
 (** {2 Useful operations on constr and glob_constr} *)
@@ -57,8 +59,8 @@ let understand = Pretyping.understand (Global.env()) Evd.empty
 let id_of_name = function
     Anonymous -> Id.of_string "H"
   | Name id   -> id;;
-let name_of_string str = Name (Id.of_string str)
-let string_of_name nme = Id.to_string (id_of_name nme)
+let name_of_string = Id.of_string %> Name.mk_name
+let string_of_name = id_of_name %> Id.to_string
 
 (** [isVarf f x] returns [true] if term [x] is of the form [(Var f)]. *)
 let isVarf f x =
@@ -137,7 +139,7 @@ let showind (id:Id.t) =
   let mib1,ib1 = Inductive.lookup_mind_specif (Global.env()) (fst ind1) in
   List.iter (fun decl ->
     print_string (string_of_name (Context.Rel.Declaration.get_name decl) ^ ":");
-    prconstr (get_type decl); print_string "\n")
+    prconstr (RelDecl.get_type decl); print_string "\n")
     ib1.mind_arity_ctxt;
     Printf.printf "arity :"; prconstr (Inductiveops.type_of_inductive (Global.env ()) ind1);
   Array.iteri
@@ -460,12 +462,12 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
   let recprms2,otherprms2,args2,funresprms2 = bldprms (List.rev oib2.mind_arity_ctxt) mlnk2 in
   let _ = prstr "\notherprms1:\n" in
   let _ =
-    List.iter (fun decl -> prstr (string_of_name (get_name decl) ^ " : ");
-			   prconstr (get_type decl); prstr "\n")
+    List.iter (fun decl -> prstr (string_of_name (RelDecl.get_name decl) ^ " : ");
+			   prconstr (RelDecl.get_type decl); prstr "\n")
     otherprms1 in
   let _ = prstr "\notherprms2:\n" in
   let _ =
-    List.iter (fun decl -> prstr (string_of_name (get_name decl) ^ " : "); prconstr (get_type decl); prstr "\n")
+    List.iter (fun decl -> prstr (string_of_name (RelDecl.get_name decl) ^ " : "); prconstr (RelDecl.get_type decl); prstr "\n")
     otherprms2 in
   {
     ident=id;
@@ -827,7 +829,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
     List.fold_left
       (fun (acc,env) decl ->
         let nm = Context.Rel.Declaration.get_name decl in
-        let c = get_type decl in
+        let c = RelDecl.get_type decl in
         let typ = Constrextern.extern_constr false env Evd.empty c in
         let newenv = Environ.push_rel (LocalAssum (nm,c)) env in
         CProdN (Loc.ghost, [[(Loc.ghost,nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
@@ -901,7 +903,7 @@ let find_Function_infos_safe (id:Id.t): Indfun_common.function_info =
       locate_constant f_ref in
     try find_Function_infos (kn_of_id id)
     with Not_found ->
-      errorlabstrm "indfun" (Nameops.pr_id id ++ str " has no functional scheme")
+      user_err ~hdr:"indfun" (Nameops.pr_id id ++ str " has no functional scheme")
 
 (** [merge id1 id2 args1 args2 id] builds and declares a new inductive
     type called [id], representing the merged graphs of both graphs

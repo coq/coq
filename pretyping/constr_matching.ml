@@ -45,6 +45,7 @@ open Context.Rel.Declaration
 
  *)
 
+type binding_bound_vars = Id.Set.t
 type bound_ident_map = Id.t Id.Map.t
 
 exception PatternMatchingFailure

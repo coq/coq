@@ -11,6 +11,7 @@ val style_manager : GSourceView2.source_style_scheme_manager
 
 type project_behavior = Ignore_args | Append_args | Subst_args
 type inputenc = Elocale | Eutf8 | Emanual of string
+type line_ending = [ `DEFAULT | `WINDOWS | `UNIX ]
 
 type tag = {
   tag_fg_color : string option;
@@ -79,6 +80,7 @@ val window_height : int preference
 val auto_complete : bool preference
 val stop_before : bool preference
 val reset_on_tab_switch : bool preference
+val line_ending : line_ending preference
 val vertical_tabs : bool preference
 val opposite_tabs : bool preference
 val background_color : string preference

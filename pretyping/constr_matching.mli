@@ -13,6 +13,8 @@ open Term
 open Environ
 open Pattern
 
+type binding_bound_vars = Id.Set.t
+
 (** [PatternMatchingFailure] is the exception raised when pattern
   matching fails *)
 exception PatternMatchingFailure
@@ -41,7 +43,7 @@ val matches_head : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
    variables or metavariables have the same name, the metavariable,
    or else the rightmost bound variable, takes precedence *)
 val extended_matches :
-  env -> Evd.evar_map -> Tacexpr.binding_bound_vars * constr_pattern ->
+  env -> Evd.evar_map -> binding_bound_vars * constr_pattern ->
   constr -> bound_ident_map * extended_patvar_map
 
 (** [is_matching pat c] just tells if [c] matches against [pat] *)
@@ -75,7 +77,7 @@ val match_appsubterm : env -> Evd.evar_map -> constr_pattern -> constr -> matchi
 (** [match_subterm_gen] calls either [match_subterm] or [match_appsubterm] *)
 val match_subterm_gen : env -> Evd.evar_map ->
   bool (** true = with app context *) ->
-  Tacexpr.binding_bound_vars * constr_pattern -> constr ->
+  binding_bound_vars * constr_pattern -> constr ->
   matching_result IStream.t
 
 (** [is_matching_appsubterm pat c] tells if a subterm of [c] matches

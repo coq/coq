@@ -70,7 +70,7 @@ let disable_drop = function
   | Drop -> CErrors.error "Drop is forbidden."
   | e -> e
 
-let user_error loc s = CErrors.user_err_loc (loc,"_",str s)
+let user_error loc s = CErrors.user_err ~loc ~hdr:"_" (str s)
 
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.
@@ -81,7 +81,6 @@ let open_file_twice_if verbosely longfname =
   let in_chan = open_utf8_file_in longfname in
   let verb_ch =
     if verbosely then Some (open_utf8_file_in longfname) else None in
-  CLexer.set_current_file longfname;
   let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
   (in_chan, longfname, (po, verb_ch))
 
@@ -101,7 +100,7 @@ let verbose_phrase verbch loc =
 	let s = String.create len in
         seek_in ch (fst loc);
         really_input ch s 0 len;
-        Feedback.msg_notice (str s ++ fnl ())
+        Feedback.msg_notice (str s)
     | None -> ()
 
 exception End_of_input
@@ -158,7 +157,7 @@ let restore_translator_coqdoc (ch,cl,cs,coqdocstate) =
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
 
-let display_cmd_header loc com =
+let pp_cmd_header loc com =
   let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
   let noblank s =
     for i = 0 to String.length s - 1 do
@@ -173,11 +172,15 @@ let display_cmd_header loc com =
     try Ppvernac.pr_vernac x
     with e -> str (Printexc.to_string e) in
   let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
-  in
-  Feedback.msg_notice
-    (str "Chars " ++ int start ++ str " - " ++ int stop ++
-     str " [" ++ str cmd ++ str "] ")
+  in str "Chars " ++ int start ++ str " - " ++ int stop ++
+     str " [" ++ str cmd ++ str "] "
 
+(* This is a special case where we assume we are in console batch mode
+   and take control of the console.
+ *)
+let print_cmd_header loc com =
+  Pp.pp_with !Pp_control.std_ft (pp_cmd_header loc com);
+  Format.pp_print_flush !Pp_control.std_ft ()
 
 let rec vernac_com checknav (loc,com) =
   let interp = function
@@ -186,6 +189,8 @@ let rec vernac_com checknav (loc,com) =
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
 	let st = save_translator_coqdoc () in
+        let old_lexer_file = CLexer.get_current_file () in
+        CLexer.set_current_file f;
 	if !Flags.beautify_file then
 	  begin
 	    chan_beautify := open_out (f^beautify_suffix);
@@ -195,9 +200,11 @@ let rec vernac_com checknav (loc,com) =
 	  try
             Flags.silently (read_vernac_file verbosely) f;
 	    restore_translator_coqdoc st;
+            CLexer.set_current_file old_lexer_file;
 	  with reraise ->
             let reraise = CErrors.push reraise in
 	    restore_translator_coqdoc st;
+            CLexer.set_current_file old_lexer_file;
 	    iraise reraise
 	end
 
@@ -208,7 +215,8 @@ let rec vernac_com checknav (loc,com) =
     try
       checknav loc com;
       if do_beautify () then pr_new_syntax loc (Some com);
-      if !Flags.time then display_cmd_header loc com;
+      (* XXX: This is not 100% correct if called from an IDE context *)
+      if !Flags.time then print_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
       let a = CLexer.com_state () in
       interp com;
@@ -266,12 +274,16 @@ let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
 let load_vernac verb file =
   chan_beautify :=
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
+    let old_lexer_file = CLexer.get_current_file () in
   try
+    CLexer.set_current_file file;
     Flags.silently (read_vernac_file verb) file;
     if !Flags.beautify_file then close_out !chan_beautify;
+    CLexer.set_current_file old_lexer_file;
   with any ->
     let (e, info) = CErrors.push any in
     if !Flags.beautify_file then close_out !chan_beautify;
+    CLexer.set_current_file old_lexer_file;
     iraise (disable_drop e, info)
 
 let warn_file_no_extension =
@@ -333,7 +345,7 @@ let compile verbosely f =
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_vo)
         ~v_file:long_f_dot_v);
-      Dumpglob.start_dump_glob long_f_dot_v;
+      Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       if !Flags.xml_export then Hook.get f_xml_start_library ();
       let wall_clock1 = Unix.gettimeofday () in

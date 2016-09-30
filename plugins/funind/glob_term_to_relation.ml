@@ -12,6 +12,9 @@ open Util
 open Glob_termops
 open Misctypes
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 let observe strm =
   if do_observe ()
   then Feedback.msg_debug strm
@@ -333,19 +336,20 @@ let raw_push_named (na,raw_value,raw_typ) env =
   match na with
     | Anonymous -> env
     | Name id ->
-	let value = Option.map (fun x-> fst (Pretyping.understand env (Evd.from_env env) x)) raw_value in
-	let typ,ctx = Pretyping.understand env (Evd.from_env env) ~expected_type:Pretyping.IsType raw_typ in
-        let open Context.Named.Declaration in
-	Environ.push_named (of_tuple (id,value,typ)) env
+        let typ,_ = Pretyping.understand env (Evd.from_env env) ~expected_type:Pretyping.IsType raw_typ in
+        (match raw_value with
+        | None ->
+           Environ.push_named (NamedDecl.LocalAssum (id,typ)) env
+        | Some value ->
+           Environ.push_named (NamedDecl.LocalDef (id, value, typ)) env)
 
 
 let add_pat_variables pat typ env : Environ.env =
   let rec add_pat_variables env pat typ  : Environ.env =
-    let open Context.Rel.Declaration in
     observe (str "new rel env := " ++ Printer.pr_rel_context_of env (Evd.from_env env));
 
     match pat with
-      | PatVar(_,na) -> Environ.push_rel (LocalAssum (na,typ)) env
+      | PatVar(_,na) -> Environ.push_rel (RelDecl.LocalAssum (na,typ)) env
       | PatCstr(_,c,patl,na) ->
 	  let Inductiveops.IndType(indf,indargs) =
 	    try Inductiveops.find_rectype env (Evd.from_env env) typ
@@ -353,7 +357,7 @@ let add_pat_variables pat typ env : Environ.env =
 	  in
 	  let constructors = Inductiveops.get_constructors env indf in
 	  let constructor : Inductiveops.constructor_summary = List.find (fun cs -> eq_constructor c (fst cs.Inductiveops.cs_cstr)) (Array.to_list constructors) in
-	  let cs_args_types :types list = List.map get_type constructor.Inductiveops.cs_args in
+	  let cs_args_types :types list = List.map RelDecl.get_type constructor.Inductiveops.cs_args in
 	  List.fold_left2 add_pat_variables env patl (List.rev cs_args_types)
   in
   let new_env = add_pat_variables  env pat typ in
@@ -362,7 +366,6 @@ let add_pat_variables pat typ env : Environ.env =
       Context.Rel.fold_outside
 	(fun decl (env,ctxt) ->
          let open Context.Rel.Declaration in
-         (*let _,v,t = Context.Rel.Declaration.to_tuple decl in*)
 	 match decl with
 	   | LocalAssum (Anonymous,_) | LocalDef (Anonymous,_,_) -> assert false
 	   | LocalAssum (Name id, t) ->
@@ -411,8 +414,7 @@ let rec pattern_to_term_and_type env typ  = function
       in
       let constructors = Inductiveops.get_constructors env indf in
       let constructor  = List.find (fun cs -> eq_constructor (fst cs.Inductiveops.cs_cstr) constr) (Array.to_list constructors) in
-      let open Context.Rel.Declaration in
-      let cs_args_types :types list = List.map get_type constructor.Inductiveops.cs_args in
+      let cs_args_types :types list = List.map RelDecl.get_type constructor.Inductiveops.cs_args in
       let _,cstl = Inductiveops.dest_ind_family indf in
       let csta = Array.of_list cstl in
       let implicit_args =
@@ -611,10 +613,9 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let v_as_constr,ctx = Pretyping.understand env (Evd.from_env env) v in
 	let v_type = Typing.unsafe_type_of env (Evd.from_env env) v_as_constr in
 	let new_env =
-          let open Context.Named.Declaration in
 	  match n with
 	      Anonymous -> env
-	    | Name id -> Environ.push_named (of_tuple (id,Some v_as_constr,v_type)) env
+	    | Name id -> Environ.push_named (NamedDecl.LocalDef (id,v_as_constr,v_type)) env
 	in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_letin n) v_res b_res
@@ -630,7 +631,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let (ind,_) =
 	  try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	  with Not_found ->
-	    errorlabstrm "" (str "Cannot find the inductive associated to " ++
+	    user_err  (str "Cannot find the inductive associated to " ++
 			       Printer.pr_glob_constr b ++ str " in " ++
 			       Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	in
@@ -662,7 +663,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	  let (ind,_) =
 	    try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	    with Not_found ->
-	      errorlabstrm "" (str "Cannot find the inductive associated to " ++
+	      user_err  (str "Cannot find the inductive associated to " ++
 				 Printer.pr_glob_constr b ++ str " in " ++
 				 Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	  in
@@ -985,8 +986,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			      (fun acc var_as_constr arg ->
 				 if isRel var_as_constr
 				 then
-                                   let open Context.Rel.Declaration in
-				   let na = get_name (Environ.lookup_rel (destRel var_as_constr) env) in
+				   let na = RelDecl.get_name (Environ.lookup_rel (destRel var_as_constr) env) in
 				   match na with
 				     | Anonymous -> acc
 				     | Name id' ->
@@ -1198,7 +1198,7 @@ let rec compute_cst_params relnames params = function
   | GSort _ -> params
   | GHole _ -> params
   | GIf _ | GRec _ | GCast _ ->
-      raise (UserError("compute_cst_params", str "Not handled case"))
+      raise (UserError(Some "compute_cst_params", str "Not handled case"))
 and compute_cst_params_from_app acc (params,rtl) =
   match params,rtl with
     | _::_,[] -> assert false (* the rel has at least nargs + 1 arguments ! *)

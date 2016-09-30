@@ -10,9 +10,9 @@
 
 open Misctypes
 open Class_tactics
-open Pcoq.Tactic
+open Pltac
 open Stdarg
-open Constrarg
+open Tacarg
 
 DECLARE PLUGIN "g_class"
 
@@ -44,18 +44,10 @@ ARGUMENT EXTEND debug TYPED AS bool PRINTED BY pr_debug
 | [ ] -> [ false ]
 END
 
-let pr_depth _prc _prlc _prt = function
-    Some i -> Pp.int i
-  | None -> Pp.mt()
-
-ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
-  | [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
-END
-
 (* true = All transparent, false = Opaque if possible *)
 
 VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
- | [ "Typeclasses" "eauto" ":=" debug(d) depth(depth) ] -> [
+ | [ "Typeclasses" "eauto" ":=" debug(d) int_opt(depth) ] -> [
      set_typeclasses_debug d;
      set_typeclasses_depth depth
    ]
@@ -63,9 +55,9 @@ END
 
 (** Compatibility: typeclasses eauto has 8.5 and 8.6 modes *)
 TACTIC EXTEND typeclasses_eauto
- | [ "typeclasses" "eauto" depth(d) "with" ne_preident_list(l) ] ->
+ | [ "typeclasses" "eauto" int_or_var_opt(d) "with" ne_preident_list(l) ] ->
     [ typeclasses_eauto d l ]
- | [ "typeclasses" "eauto" depth(d) ] -> [
+ | [ "typeclasses" "eauto" int_or_var_opt(d) ] -> [
      typeclasses_eauto ~only_classes:true ~depth:d [Hints.typeclasses_db] ]
 END
 

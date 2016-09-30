@@ -14,11 +14,11 @@ open Constrexpr
 open Indfun_common
 open Indfun
 open Genarg
-open Constrarg
+open Stdarg
 open Misctypes
 open Pcoq.Prim
 open Pcoq.Constr
-open Pcoq.Tactic
+open Pltac
 
 DECLARE PLUGIN "recdef_plugin"
 
@@ -143,7 +143,7 @@ END
 
 module Gram = Pcoq.Gram
 module Vernac = Pcoq.Vernac_
-module Tactic = Pcoq.Tactic
+module Tactic = Pltac
 
 type function_rec_definition_loc_argtype = (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located
 

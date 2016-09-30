@@ -18,6 +18,9 @@ open Environ
 open Globnames
 open Context.Named.Declaration
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 (** Generic filters *)
 module Filter :
 sig
@@ -226,7 +229,7 @@ let evar_instance_array test_id info args =
     if i < len then
       let c = Array.unsafe_get args i in
       if test_id d c then instrec filter ctxt (succ i)
-      else (get_id d, c) :: instrec filter ctxt (succ i)
+      else (NamedDecl.get_id d, c) :: instrec filter ctxt (succ i)
     else instance_mismatch ()
   | _ -> instance_mismatch ()
   in
@@ -235,7 +238,7 @@ let evar_instance_array test_id info args =
      let map i d =
       if (i < len) then
         let c = Array.unsafe_get args i in
-        if test_id d c then None else Some (get_id d, c)
+        if test_id d c then None else Some (NamedDecl.get_id d, c)
       else instance_mismatch ()
     in
     List.map_filter_i map (evar_context info)
@@ -243,7 +246,7 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) 0
 
 let make_evar_instance_array info args =
-  evar_instance_array (isVarId % get_id) info args
+  evar_instance_array (NamedDecl.get_id %> isVarId) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -284,7 +287,7 @@ let metavars_of c =
   let rec collrec acc c =
     match kind_of_term c with
       | Meta mv -> Int.Set.add mv acc
-      | _         -> fold_constr collrec acc c
+      | _         -> Term.fold_constr collrec acc c
   in
   collrec Int.Set.empty c
 
@@ -383,8 +386,7 @@ let add_name_newly_undefined naming evk evi (evtoid, idtoev as names) =
   | Misctypes.IntroAnonymous -> None
   | Misctypes.IntroIdentifier id ->
     if Idmap.mem id idtoev then
-    user_err_loc
-      (Loc.ghost,"",str "Already an existential evar of name " ++ pr_id id);
+    user_err  (str "Already an existential evar of name " ++ pr_id id);
     Some id
   | Misctypes.IntroFresh id ->
     let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
@@ -681,7 +683,7 @@ let restrict evk filter ?candidates evd =
       evar_extra = Store.empty } in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = Array.map_of_list (mkVar % get_id) ctxt in
+  let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
@@ -731,23 +733,22 @@ let evar_list c =
   let rec evrec acc c =
     match kind_of_term c with
     | Evar (evk, _ as ev) -> ev :: acc
-    | _ -> fold_constr evrec acc c in
+    | _ -> Term.fold_constr evrec acc c in
   evrec [] c
 
 let evars_of_term c =
   let rec evrec acc c =
     match kind_of_term c with
     | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
-    | _ -> fold_constr evrec acc c
+    | _ -> Term.fold_constr evrec acc c
   in
   evrec Evar.Set.empty c
 
 let evars_of_named_context nc =
-  List.fold_right (fun decl s ->
-    Option.fold_left (fun s t ->
-      Evar.Set.union s (evars_of_term t))
-      (Evar.Set.union s (evars_of_term (get_type decl))) (get_value decl))
-    nc Evar.Set.empty
+  Context.Named.fold_outside
+    (NamedDecl.fold_constr (fun constr s -> Evar.Set.union s (evars_of_term constr)))
+    nc
+    ~init:Evar.Set.empty
 
 let evars_of_filtered_evar_info evi =
   Evar.Set.union (evars_of_term evi.evar_concl)
@@ -790,16 +791,16 @@ let merge_universe_subst evd subst =
 let with_context_set ?loc rigid d (a, ctx) =
   (merge_context_set ?loc rigid d ctx, a)
 
-let new_univ_level_variable ?loc ?name ?(predicative=true) rigid evd =
+let new_univ_level_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, u)
 
-let new_univ_variable ?loc ?name ?(predicative=true) rigid evd =
+let new_univ_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?loc ?name ?(predicative=true) rigid d =
-  let (d', u) = new_univ_variable ?loc rigid ?name ~predicative d in
+let new_sort_variable ?loc ?name rigid d =
+  let (d', u) = new_univ_variable ?loc rigid ?name d in
     (d', Type u)
 
 let add_global_univ d u =
@@ -1258,6 +1259,12 @@ let pr_instance_status (sc,typ) =
   | TypeProcessed -> str " [type is checked]"
   end
 
+let protect f x =
+  try f x
+  with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
+
+let print_constr a = protect print_constr a
+
 let pr_meta_map mmap =
   let pr_name = function
       Name id -> str"[" ++ pr_id id ++ str"]"
@@ -1277,11 +1284,10 @@ let pr_meta_map mmap =
   prlist pr_meta_binding (metamap_to_list mmap)
 
 let pr_decl (decl,ok) =
-  let id = get_id decl in
-  match get_value decl with
-  | None -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
-  | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
-      print_constr c ++ str (if ok then ")" else "}")
+  match decl with
+  | LocalAssum (id,_) -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
+  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
+                           print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_source = function
   | Evar_kinds.QuestionMark _ -> str "underscore"
@@ -1392,12 +1398,11 @@ let pr_evar_universe_context ctx =
        h 0 (Universes.pr_universe_opt_subst (UState.subst ctx)) ++ fnl())
 
 let print_env_short env =
-  let pr_body n = function
-  | None -> pr_name n
-  | Some b -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")" in
-  let pr_named_decl decl = pr_body (Name (get_id decl)) (get_value decl) in
-  let pr_rel_decl decl = let open Context.Rel.Declaration in
-                         pr_body (get_name decl) (get_value decl) in
+  let pr_rel_decl = function
+    | RelDecl.LocalAssum (n,_) -> pr_name n
+    | RelDecl.LocalDef (n,b,_) -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")"
+  in
+  let pr_named_decl = NamedDecl.to_rel_decl %> pr_rel_decl in
   let nc = List.rev (named_context env) in
   let rc = List.rev (rel_context env) in
     str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++

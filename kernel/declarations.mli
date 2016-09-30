@@ -78,7 +78,7 @@ type typing_flags = {
 (* some contraints are in constant_constraints, some other may be in
  * the OpaueDef *)
 type constant_body = {
-    const_hyps : Context.section_context; (** New: younger hyp at top *)
+    const_hyps : Context.Named.t; (** New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : Cemitcodes.to_patch_substituted option;
@@ -177,7 +177,7 @@ type mutual_inductive_body = {
 
     mind_ntypes : int;  (** Number of types in the block *)
 
-    mind_hyps : Context.section_context;  (** Section hypotheses on which the block depends *)
+    mind_hyps : Context.Named.t;  (** Section hypotheses on which the block depends *)
 
     mind_nparams : int;  (** Number of expected parameters including non-uniform ones (i.e. length of mind_params_ctxt w/o let-in) *)
 

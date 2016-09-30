@@ -166,13 +166,13 @@ let consistency_checks exists dir dirinfo =
     let globref =
       try Nametab.locate_dir (qualid_of_dirpath dir)
       with Not_found ->
-        errorlabstrm "consistency_checks"
+        user_err ~hdr:"consistency_checks"
           (pr_dirpath dir ++ str " should already exist!")
     in
     assert (eq_global_dir_reference globref dirinfo)
   else
     if Nametab.exists_dir dir then
-      errorlabstrm "consistency_checks"
+      user_err ~hdr:"consistency_checks"
         (pr_dirpath dir ++ str " already exists")
 
 let compute_visibility exists i =

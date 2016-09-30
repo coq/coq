@@ -24,7 +24,10 @@ open Globnames
 open Evd
 open Pretype_errors
 open Sigma.Notations
-open Context.Rel.Declaration
+open Context.Named.Declaration
+
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 
 type unify_fun = transparent_state ->
   env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
@@ -58,14 +61,13 @@ let eval_flexible_term ts env evd c =
       else None
   | Rel n ->
       (try match lookup_rel n env with
-           | LocalAssum _ -> None
-           | LocalDef (_,v,_) -> Some (lift n v)
+           | RelDecl.LocalAssum _ -> None
+           | RelDecl.LocalDef (_,v,_) -> Some (lift n v)
        with Not_found -> None)
   | Var id ->
       (try
 	 if is_transparent_variable ts id then
-           let open Context.Named.Declaration in
-	   lookup_named id env |> get_value
+	   env |> lookup_named id |> NamedDecl.get_value
 	 else None
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
@@ -314,7 +316,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
   if Reductionops.Stack.compare_shape sk1 sk2 then
     ise_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
-    
+
 let rec evar_conv_x ts env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
   let term2 = whd_head_evar evd term2 in
@@ -394,7 +396,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     assert (match sk with [] -> true | _ -> false);
     let (na,c1,c'1) = destLambda term in
     let c = nf_evar evd c1 in
-    let env' = push_rel (LocalAssum (na,c)) env in
+    let env' = push_rel (RelDecl.LocalAssum (na,c)) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
       (fst ts) env' evd Cst_stack.empty (c'1, Stack.empty) in
     let out2 = whd_nored_state evd
@@ -432,7 +434,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       else quick_fail i
     and delta i =
       switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
-	(whd_betaiota_deltazeta_for_iota_state (fst ts) env i cstsM (vM,skM))
+	     (whd_betaiota_deltazeta_for_iota_state
+  	        (fst ts) env i cstsM (vM,skM))
     in    
     let default i = ise_try i [f1; consume apprF apprM; delta]
     in
@@ -449,7 +452,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		try 
 		  let termM' = Retyping.expand_projection env evd p c [] in
 		  let apprM', cstsM' = 
-		    whd_betaiota_deltazeta_for_iota_state (fst ts) env evd cstsM (termM',skM)
+		    whd_betaiota_deltazeta_for_iota_state
+		      (fst ts) env evd cstsM (termM',skM)
 		  in
 		  let delta' i = 
 		    switch (evar_eqappr_x ts env i pbty) (apprF,cstsF) (apprM',cstsM') 
@@ -600,7 +604,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	       let b = nf_evar i b1 in
 	       let t = nf_evar i t1 in
                let na = Nameops.name_max na1 na2 in
-	       evar_conv_x ts (push_rel (LocalDef (na,b,t)) env) i pbty c'1 c'2);
+	       evar_conv_x ts (push_rel (RelDecl.LocalDef (na,b,t)) env) i pbty c'1 c'2);
 	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
 	and f2 i =
           let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1)
@@ -715,7 +719,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
            (fun i ->
 	     let c = nf_evar i c1 in
              let na = Nameops.name_max na1 na2 in
-	     evar_conv_x ts (push_rel (LocalAssum (na,c)) env) i CONV c'1 c'2)]
+	     evar_conv_x ts (push_rel (RelDecl.LocalAssum (na,c)) env) i CONV c'1 c'2)]
 
     | Flexible ev1, Rigid -> flex_rigid true ev1 appr1 appr2
     | Rigid, Flexible ev2 -> flex_rigid false ev2 appr2 appr1
@@ -774,7 +778,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                (fun i ->
  	         let c = nf_evar i c1 in
                  let na = Nameops.name_max n1 n2 in
-	         evar_conv_x ts (push_rel (LocalAssum (na,c)) env) i pbty c'1 c'2)]
+	         evar_conv_x ts (push_rel (RelDecl.LocalAssum (na,c)) env) i pbty c'1 c'2)]
 
 	| Rel x1, Rel x2 ->
 	    if Int.equal x1 x2 then
@@ -951,7 +955,6 @@ let choose_less_dependent_instance evk evd term args =
   | [] -> None
   | (id, _) :: _ -> Some (Evd.define evk (mkVar id) evd)
 
-open Context.Named.Declaration
 let apply_on_subterm env evdref f c t =
   let rec applyrec (env,(k,c) as acc) t =
     (* By using eq_constr, we make an approximation, for instance, we *)
@@ -982,14 +985,16 @@ let filter_possible_projections c ty ctxt args =
   List.map_i (fun i decl ->
     let () = assert (i < len) in
     let a = Array.unsafe_get args i in
-    (match decl with LocalAssum _ -> false | LocalDef (_,c,_) -> not (isRel c || isVar c)) ||
+    (match decl with
+     | NamedDecl.LocalAssum _ -> false
+     | NamedDecl.LocalDef (_,c,_) -> not (isRel c || isVar c)) ||
     a == c ||
     (* Here we make an approximation, for instance, we could also be *)
     (* interested in finding a term u convertible to c such that a occurs *)
     (* in u *)
     isRel a && Int.Set.mem (destRel a) fv1 ||
     isVar a && Id.Set.mem (destVar a) fv2 ||
-    Id.Set.mem (get_id decl) tyvars)
+    Id.Set.mem (NamedDecl.get_id decl) tyvars)
     0 ctxt
 
 let solve_evars = ref (fun _ -> failwith "solve_evars not installed")
@@ -1020,10 +1025,10 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   let env_evar = evar_filtered_env evi in
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
-  let instance = List.map mkVar (List.map get_id ctxt) in
+  let instance = List.map mkVar (List.map NamedDecl.get_id ctxt) in
 
   let rec make_subst = function
-  | decl'::ctxt', c::l, occs::occsl when isVarId (get_id decl') c ->
+  | decl'::ctxt', c::l, occs::occsl when isVarId (NamedDecl.get_id decl') c ->
       begin match occs with
       | Some _ ->
         error "Cannot force abstraction on identity instance."
@@ -1031,7 +1036,8 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         make_subst (ctxt',l,occsl)
       end
   | decl'::ctxt', c::l, occs::occsl ->
-      let (id,_,t) = to_tuple decl' in
+      let id = NamedDecl.get_id decl' in
+      let t = NamedDecl.get_type decl' in
       let evs = ref [] in
       let ty = Retyping.get_type_of env_rhs evd c in
       let filter' = filter_possible_projections c ty ctxt args in
@@ -1249,7 +1255,7 @@ let consider_remaining_unif_problems env
 	      aux evd pbs progress (pb :: stuck)
             end
         | UnifFailure (evd,reason) ->
-	    Pretype_errors.error_cannot_unify_loc (loc_of_conv_pb evd pb)
+	    Pretype_errors.error_cannot_unify ~loc:(loc_of_conv_pb evd pb)
               env evd ~reason (t1, t2))
     | _ -> 
 	if progress then aux evd stuck false []
@@ -1258,7 +1264,7 @@ let consider_remaining_unif_problems env
 	  | [] -> (* We're finished *) evd
 	  | (pbty,env,t1,t2 as pb) :: _ ->
 	      (* There remains stuck problems *)
-	      Pretype_errors.error_cannot_unify_loc (loc_of_conv_pb evd pb)
+	      Pretype_errors.error_cannot_unify ~loc:(loc_of_conv_pb evd pb)
                 env evd (t1, t2)
   in
   let (evd,pbs) = extract_all_conv_pbs evd in

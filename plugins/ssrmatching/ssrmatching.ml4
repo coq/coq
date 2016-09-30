@@ -19,7 +19,8 @@ open Names
 open Pp
 open Pcoq
 open Genarg
-open Constrarg
+open Stdarg
+open Tacarg
 open Term
 open Vars
 open Topconstr
@@ -41,7 +42,7 @@ open Proofview.Notations
 open Tacinterp
 open Pretyping
 open Constr
-open Tactic
+open Pltac
 open Extraargs
 open Ppconstr
 open Printer
@@ -61,8 +62,8 @@ DECLARE PLUGIN "ssrmatching_plugin"
 
 type loc = Loc.t
 let dummy_loc = Loc.ghost
-let errorstrm = CErrors.errorlabstrm "ssrmatching"
-let loc_error loc msg = CErrors.user_err_loc (loc, msg, str msg)
+let errorstrm = CErrors.user_err ~hdr:"ssrmatching"
+let loc_error loc msg = CErrors.user_err ~loc ~hdr:msg (str msg)
 let ppnl = Feedback.msg_info
 
 (* 0 cost pp function. Active only if env variable SSRDEBUG is set *)
@@ -903,7 +904,7 @@ let pr_ssrpattern_roundp  _ _ _ = pr_pattern_roundp
 let wit_rpatternty = add_genarg "rpatternty" pr_pattern
 
 let glob_ssrterm gs = function
-  | k, (_, Some c) as x -> k, 
+  | k, (_, Some c) -> k,
       let x = Tacintern.intern_constr gs c in
       fst x, Some c
   | ct -> ct

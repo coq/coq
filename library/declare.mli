@@ -34,14 +34,6 @@ val declare_variable : variable -> variable_declaration -> object_name
 
 type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
 
-(** [declare_constant id cd] declares a global declaration
-   (constant/parameter) with name [id] in the current section; it returns
-   the full path of the declaration 
-
-  internal specify if the constant has been created by the kernel or by the
-  user, and in the former case, if its errors should be silent
-   
-   *)
 type internal_flag =
   | UserAutomaticRequest
   | InternalTacticRequest
@@ -53,6 +45,12 @@ val definition_entry : ?fix_exn:Future.fix_exn ->
   ?poly:polymorphic -> ?univs:Univ.universe_context ->
   ?eff:Safe_typing.private_constants -> constr -> Safe_typing.private_constants definition_entry
 
+(** [declare_constant id cd] declares a global declaration
+   (constant/parameter) with name [id] in the current section; it returns
+   the full path of the declaration
+
+  internal specify if the constant has been created by the kernel or by the
+  user, and in the former case, if its errors should be silent *)
 val declare_constant :
  ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> constant
 

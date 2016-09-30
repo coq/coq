@@ -64,9 +64,6 @@ val next_ident_away_in_goal : Id.t -> Id.t list -> Id.t
    but tolerate overwriting section variables, as in goals *)
 val next_global_ident_away : Id.t -> Id.t list -> Id.t
 
-(** Avoid clashing with a constructor name already used in current module *)
-val next_name_away_in_cases_pattern : (Termops.names_context * constr) -> Name.t -> Id.t list -> Id.t
-
 (** Default is [default_non_dependent_ident] *)
 val next_name_away  : Name.t -> Id.t list -> Id.t
 

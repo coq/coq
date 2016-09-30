@@ -6,16 +6,22 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import Psatz.
+Require Import Lra.
 Require Import Reals.
 
 Open Scope R_scope.
+
+
+Lemma cst_test : 5^5 = 5 * 5 * 5 *5 *5.
+Proof.
+  lra.
+Qed.
 
 Lemma yplus_minus : forall x y,
   0 = x + y -> 0 =  x -y -> 0 = x /\ 0 = y.
 Proof.
   intros.
-  psatzl R.
+  lra.
 Qed.
 
 (* Other (simple) examples *)
@@ -23,13 +29,13 @@ Qed.
 Lemma binomial : forall x y, ((x+y)^2 = x^2 + 2 *x*y + y^2).
 Proof.
   intros.
-  psatzl R.
+  lra.
 Qed.
 
 
 Lemma hol_light19 : forall m n, 2 * m + n = (n + m) + m.
 Proof.
-  intros ; psatzl R.
+  intros ; lra.
 Qed.
 
 
@@ -57,7 +63,7 @@ Lemma vcgen_25 : forall
   (( 1 ) = (-2  ) * i + it).
 Proof.
   intros.
-  psatzl R.
+  lra.
 Qed.
 
 Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
@@ -72,5 +78,11 @@ Proof.
 Qed.
 
 Lemma l1 : forall x y z : R, Rabs (x - z) <= Rabs (x - y) + Rabs (y - z).
-intros; split_Rabs; psatzl R.
+intros; split_Rabs; lra.
+Qed.
+
+(*  Bug 5073 *)
+Lemma opp_eq_0_iff a : -a = 0 <-> a = 0.
+Proof.
+  lra.
 Qed.

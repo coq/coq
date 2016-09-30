@@ -61,7 +61,7 @@ type 'a const_entry_body = 'a proof_output Future.computation
 type 'a definition_entry = {
   const_entry_body   : 'a const_entry_body;
   (* List of section variables *)
-  const_entry_secctx : Context.section_context option;
+  const_entry_secctx : Context.Named.t option;
   (* State id on which the completion of type checking is reported *)
   const_entry_feedback : Stateid.t option;
   const_entry_type        : types option;
@@ -73,7 +73,7 @@ type 'a definition_entry = {
 type inline = int option (* inlining level, None for no inlining *)
 
 type parameter_entry = 
-    Context.section_context option * bool * types Univ.in_universe_context * inline 
+    Context.Named.t option * bool * types Univ.in_universe_context * inline 
 
 type projection_entry = {
   proj_entry_ind : mutual_inductive;

@@ -29,7 +29,9 @@ open Locus
 open Locusops
 open Find_subterm
 open Sigma.Notations
-open Context.Named.Declaration
+
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 
 let keyed_unification = ref (false)
 let _ = Goptions.declare_bool_option {
@@ -78,9 +80,8 @@ let occur_meta_evd sigma mv c =
 let abstract_scheme env evd c l lname_typ =
   List.fold_left2
     (fun (t,evd) (locc,a) decl ->
-       let open Context.Rel.Declaration in
-       let na = get_name decl in
-       let ta = get_type decl in
+       let na = RelDecl.get_name decl in
+       let ta = RelDecl.get_type decl in
        let na = match kind_of_term a with Var id -> Name id | _ -> na in
 (* [occur_meta ta] test removed for support of eelim/ecase but consequences
    are unclear...
@@ -479,8 +480,8 @@ let unfold_projection env p stk =
 let expand_key ts env sigma = function
   | Some (IsKey k) -> expand_table_key env k
   | Some (IsProj (p, c)) -> 
-    let red = Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma 
-				Cst_stack.empty (c, unfold_projection env p [])))
+    let red = Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma
+                               Cst_stack.empty (c, unfold_projection env p [])))
     in if Term.eq_constr (mkProj (p, c)) red then None else Some red
   | None -> None
 
@@ -572,7 +573,8 @@ let constr_cmp pb sigma flags t u =
     else sigma, b
     
 let do_reduce ts (env, nb) sigma c =
-  Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma Cst_stack.empty (c, Stack.empty)))
+  Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state
+		  ts env sigma Cst_stack.empty (c, Stack.empty)))
 
 let use_full_betaiota flags =
   flags.modulo_betaiota && Flags.version_strictly_greater Flags.V8_3
@@ -1080,8 +1082,9 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     if !debug_unification then Feedback.msg_debug (str "Leaving unification with success");
     a
   with e ->
+    let e = CErrors.push e in
     if !debug_unification then Feedback.msg_debug (str "Leaving unification with failure");
-    raise e
+    iraise e
 
 
 let unify_0 env sigma = unify_0_with_initial_metas (sigma,[],[]) true env
@@ -1472,10 +1475,10 @@ let indirectly_dependent c d decls =
        it is needed otherwise, as e.g. when abstracting over "2" in
        "forall H:0=2, H=H:>(0=1+1) -> 0=2." where there is now obvious
        way to see that the second hypothesis depends indirectly over 2 *)
-    List.exists (fun d' -> dependent_in_decl (mkVar (get_id d')) d) decls
+    List.exists (fun d' -> dependent_in_decl (mkVar (NamedDecl.get_id d')) d) decls
 
 let indirect_dependency d decls =
-  decls  |>  List.filter (fun d' -> dependent_in_decl (mkVar (get_id d')) d)  |>  List.hd  |>  get_id
+  decls  |>  List.filter (fun d' -> dependent_in_decl (mkVar (NamedDecl.get_id d')) d)  |>  List.hd  |>  NamedDecl.get_id
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
   let current_sigma = Sigma.to_evar_map current_sigma in
@@ -1586,7 +1589,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     let ids = ids_of_named_context (named_context env) in
     if name == Anonymous then next_ident_away_in_goal x ids else
     if mem_named_context x (named_context env) then
-      errorlabstrm "Unification.make_abstraction_core"
+      user_err ~hdr:"Unification.make_abstraction_core"
         (str "The variable " ++ Nameops.pr_id x ++ str " is already declared.")
     else
       x
@@ -1594,17 +1597,10 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = mkVar id in
   let compute_dependency _ d (sign,depdecls) =
-    let hyp = get_id d in
+    let hyp = NamedDecl.get_id d in
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
-        if indirectly_dependent c d depdecls then
-          (* Told explicitly not to abstract over [d], but it is dependent *)
-          let id' = indirect_dependency d depdecls in
-          errorlabstrm "" (str "Cannot abstract over " ++ Nameops.pr_id id'
-            ++ str " without also abstracting or erasing " ++ Nameops.pr_id hyp
-            ++ str ".")
-        else
-          (push_named_context_val d sign,depdecls)
+        (push_named_context_val d sign,depdecls)
     | AllOccurrences, InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
@@ -1631,7 +1627,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
           replace_term_occ_modulo occ test mkvarid concl
     in
     let lastlhyp =
-      if List.is_empty depdecls then None else Some (get_id (List.last depdecls)) in
+      if List.is_empty depdecls then None else Some (NamedDecl.get_id (List.last depdecls)) in
     let res = match out test with
     | None -> None
     | Some (sigma, c) -> Some (Sigma.Unsafe.of_pair (c, sigma))

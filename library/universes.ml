@@ -337,7 +337,7 @@ let existing_instance ctx inst =
     and a2 = Instance.to_array (UContext.instance ctx) in
     let len1 = Array.length a1 and len2 = Array.length a2 in 
       if not (len1 == len2) then
-	CErrors.errorlabstrm "Universes"
+	CErrors.user_err ~hdr:"Universes"
 	  (str "Polymorphic constant expected " ++ int len2 ++ 
 	     str" levels but was given " ++ int len1)
       else ()

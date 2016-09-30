@@ -188,7 +188,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
     with Exc_located (loc,e) ->
       let loc' = Loc.get_loc (Exninfo.info e) in
       let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
-      Loc.raise loc e
+      Loc.raise ~loc e
 
   let entry_print ft x = Entry.print ft x
   let srules' = Gramext.srules
@@ -213,7 +213,7 @@ end
 
 module GrammarMake (L:LexerSig) : GrammarSig = struct
   (* We need to refer to Coq's module Loc before it is hidden by include *)
-  let raise_coq_loc loc e = Loc.raise (to_coqloc loc) e
+  let raise_coq_loc loc e = Loc.raise ~loc:(to_coqloc loc) e
   include Camlp4.Struct.Grammar.Static.Make (L)
   type 'a entry = 'a Entry.t
   type action = Action.t

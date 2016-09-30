@@ -115,7 +115,7 @@ GEXTEND Gram
                     | Some (SelectNth g) -> c (Some g)
                     | None -> c None
                     | _ ->
-                        VernacError (UserError ("",str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
+                        VernacError (UserError (None,str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
                   end ] ]
   ;
   located_vernac:
@@ -260,7 +260,7 @@ GEXTEND Gram
         ProveBody (bl, t) ] ]
   ;
   reduce:
-    [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
+    [ [ IDENT "Eval"; r = red_expr; "in" -> Some r
       | -> None ] ]
   ;
   one_decl_notation:
@@ -867,7 +867,7 @@ GEXTEND Gram
 	  VernacRemoveOption ([table], v) ]] 
   ;
   query_command: (* TODO: rapprocher Eval et Check *)
-    [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = lconstr ->
+    [ [ IDENT "Eval"; r = red_expr; "in"; c = lconstr ->
           fun g -> VernacCheckMayEval (Some r, g, c)
       | IDENT "Compute"; c = lconstr ->
 	  fun g -> VernacCheckMayEval (Some (Genredexpr.CbvVm None), g, c)
@@ -1024,7 +1024,7 @@ GEXTEND Gram
 (* registration of a custom reduction *)
 
       | IDENT "Declare"; IDENT "Reduction"; s = IDENT; ":=";
-         r = Tactic.red_expr ->
+         r = red_expr ->
 	   VernacDeclareReduction (s,r)
 
  ] ];

@@ -138,10 +138,15 @@ struct
       | LocalDef (_,v,ty) -> f v; f ty
 
     (** Reduce all terms in a given declaration to a single value. *)
-    let fold f decl acc =
+    let fold_constr f decl acc =
       match decl with
       | LocalAssum (n,ty) -> f ty acc
       | LocalDef (n,v,ty) -> f ty (f v acc)
+
+    let to_tuple = function
+      | LocalAssum (na, ty) -> na, None, ty
+      | LocalDef (na, v, ty) -> na, Some v, ty
+
   end
 
   (** Rel-context is represented as a list of declarations.
@@ -328,7 +333,7 @@ struct
       | LocalDef (_, v, ty) -> f v; f ty
 
     (** Reduce all terms in a given declaration to a single value. *)
-    let fold f decl a =
+    let fold_constr f decl a =
       match decl with
       | LocalAssum (_, ty) -> f ty a
       | LocalDef (_, v, ty) -> a |> f v |> f ty
@@ -341,11 +346,17 @@ struct
       | id, None, ty -> LocalAssum (id, ty)
       | id, Some v, ty -> LocalDef (id, v, ty)
 
-    let of_rel f = function
+    let of_rel_decl f = function
       | Rel.Declaration.LocalAssum (na,t) ->
           LocalAssum (f na, t)
       | Rel.Declaration.LocalDef (na,v,t) ->
           LocalDef (f na, v, t)
+            
+    let to_rel_decl = function
+      | LocalAssum (id,t) ->
+          Rel.Declaration.LocalAssum (Name id, t)
+      | LocalDef (id,v,t) ->
+          Rel.Declaration.LocalDef (Name id,v,t)
   end
 
   (** Named-context is represented as a list of declarations.
@@ -399,23 +410,39 @@ struct
       | _ -> None
     in
     List.map_filter filter
-  end
+end
 
-module NamedList =
+module Compacted =
   struct
     module Declaration =
       struct
-        type t = Id.t list * Constr.t option * Constr.t
+        type t =
+          | LocalAssum of Id.t list * Constr.t
+          | LocalDef of Id.t list * Constr.t * Constr.t
 
-        let map_constr f (ids, copt, ty as decl) =
-          let copt' = Option.map f copt in
-          let ty' = f ty in
-          if copt == copt' && ty == ty' then decl else (ids, copt', ty')
+        let map_constr f = function
+          | LocalAssum (ids, ty) as decl ->
+             let ty' = f ty in
+             if ty == ty' then decl else LocalAssum (ids, ty')
+          | LocalDef (ids, c, ty) as decl ->
+             let ty' = f ty in
+             let c' = f c in
+             if c == c' && ty == ty' then decl else LocalDef (ids,c',ty')
+
+        let of_named_decl = function
+          | Named.Declaration.LocalAssum (id,t) ->
+              LocalAssum ([id],t)
+          | Named.Declaration.LocalDef (id,v,t) ->
+              LocalDef ([id],v,t)
+
+        let to_named_context = function
+          | LocalAssum (ids, t) ->
+             List.map (fun id -> Named.Declaration.LocalAssum (id,t)) ids
+          | LocalDef (ids, v, t) ->
+             List.map (fun id -> Named.Declaration.LocalDef (id,v,t)) ids
       end
 
     type t = Declaration.t list
 
     let fold f l ~init = List.fold_right f l init
   end
-
-type section_context = Named.t

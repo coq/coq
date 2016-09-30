@@ -23,7 +23,8 @@ open Constrexpr
 open Termops
 open Tacexpr
 open Genarg
-open Constrarg
+open Stdarg
+open Tacarg
 open Misctypes
 open Locus
 
@@ -32,11 +33,8 @@ open Locus
 
 let dloc = Loc.ghost
 
-let error_global_not_found_loc (loc,qid) =
-  error_global_not_found_loc loc qid
-
-let error_tactic_expected loc =
-  user_err_loc (loc,"",str "Tactic expected.")
+let error_tactic_expected ?loc =
+  user_err ?loc  (str "Tactic expected.")
 
 (** Generic arguments *)
 
@@ -85,7 +83,7 @@ let intern_hyp ist (loc,id as locid) =
   else if find_ident id ist then
     (dloc,id)
   else
-    Pretype_errors.error_var_not_found_loc loc id
+    Pretype_errors.error_var_not_found ~loc id
 
 let intern_or_var f ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
@@ -99,7 +97,7 @@ let intern_global_reference ist = function
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
       try ArgArg (loc,locate_global_with_alias lqid)
-      with Not_found -> error_global_not_found_loc lqid
+      with Not_found -> error_global_not_found (snd lqid)
 
 let intern_ltac_variable ist = function
   | Ident (loc,id) ->
@@ -143,7 +141,7 @@ let intern_isolated_tactic_reference strict ist r =
   try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
   with Not_found ->
   (* Reference not found *)
-  error_global_not_found_loc (qualid_of_reference r)
+  error_global_not_found (snd (qualid_of_reference r))
 
 (* Internalize an applied tactic reference *)
 
@@ -159,7 +157,7 @@ let intern_applied_tactic_reference ist r =
   try intern_applied_global_tactic_reference r
   with Not_found ->
   (* Reference not found *)
-  error_global_not_found_loc (qualid_of_reference r)
+  error_global_not_found (snd (qualid_of_reference r))
 
 (* Intern a reference parsed in a non-tactic entry *)
 
@@ -180,7 +178,7 @@ let intern_non_tactic_reference strict ist r =
     TacGeneric ipat
   | _ ->
   (* Reference not found *)
-  error_global_not_found_loc (qualid_of_reference r)
+  error_global_not_found (snd (qualid_of_reference r))
 
 let intern_message_token ist = function
   | (MsgString _ | MsgInt _ as x) -> x
@@ -291,7 +289,7 @@ let intern_evaluable_global_reference ist r =
   with Not_found ->
   match r with
   | Ident (loc,id) when not !strict_check -> EvalVarRef id
-  | _ -> error_global_not_found_loc lqid
+  | _ -> error_global_not_found (snd lqid)
 
 let intern_evaluable_reference_or_by_notation ist = function
   | AN r -> intern_evaluable_global_reference ist r
@@ -463,8 +461,8 @@ let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
 (* Utilities *)
 let extract_let_names lrc =
   let fold accu ((loc, name), _) =
-    if Id.Set.mem name accu then user_err_loc
-      (loc, "glob_tactic", str "This variable is bound several times.")
+    if Id.Set.mem name accu then user_err ~loc
+      ~hdr:"glob_tactic" (str "This variable is bound several times.")
     else Id.Set.add name accu
   in
   List.fold_left fold Id.Set.empty lrc
@@ -641,7 +639,7 @@ and intern_tactic_as_arg loc onlytac ist a =
   | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
   | ConstrMayEval _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
-      if onlytac then error_tactic_expected loc else TacArg (loc,a)
+      if onlytac then error_tactic_expected ~loc else TacArg (loc,a)
 
 and intern_tactic_or_tacarg ist = intern_tactic false ist
 
@@ -751,7 +749,7 @@ let print_ltac id =
     ++ spc() ++ Pptactic.pr_glob_tactic (Global.env ()) t) ++ redefined
  with
   Not_found ->
-   errorlabstrm "print_ltac"
+   user_err ~hdr:"print_ltac"
     (pr_qualid id ++ spc() ++ str "is not a user defined tactic.")
 
 (** Registering *)
@@ -778,13 +776,16 @@ let intern_ident' ist id =
   let lf = ref Id.Set.empty in
   (ist, intern_ident lf ist id)
 
+let intern_ltac ist tac =
+  Flags.with_option strict_check (fun () -> intern_pure_tactic ist tac) ()
+
 let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_ident intern_ident';
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
-  Genintern.register_intern0 wit_ltac (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_ltac (lift intern_ltac);
   Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
   Genintern.register_intern0 wit_constr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c));
@@ -795,15 +796,17 @@ let () =
   Genintern.register_intern0 wit_destruction_arg (lift intern_destruction_arg);
   ()
 
-(***************************************************************************)
-(* Backwarding recursive needs of tactic glob/interp/eval functions *)
+(** Substitution for notations containing tactic-in-terms *)
 
-let _ =
-  let f l =
-    let ltacvars =
-      List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l
-    in
-    Flags.with_option strict_check
-    (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars })
+let notation_subst bindings tac =
+  let fold id c accu =
+    let loc = Glob_ops.loc_of_glob_constr (fst c) in
+    let c = ConstrMayEval (ConstrTerm c) in
+    ((loc, id), c) :: accu
   in
-  Hook.set Hints.extern_intern_tac f
+  let bindings = Id.Map.fold fold bindings [] in
+  (** This is theoretically not correct due to potential variable capture, but
+      Ltac has no true variables so one cannot simply substitute *)
+  TacLetIn (false, bindings, tac)
+
+let () = Genintern.register_ntn_subst0 wit_tactic notation_subst

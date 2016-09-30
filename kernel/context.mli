@@ -79,7 +79,9 @@ sig
     val iter_constr : (Constr.t -> unit) -> t -> unit
 
     (** Reduce all terms in a given declaration to a single value. *)
-    val fold : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold_constr : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
+
+    val to_tuple : t -> Name.t * Constr.t option * Constr.t
   end
 
   (** Rel-context is represented as a list of declarations.
@@ -190,13 +192,18 @@ sig
     val iter_constr : (Constr.t -> unit) -> t -> unit
 
     (** Reduce all terms in a given declaration to a single value. *)
-    val fold : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold_constr : (Constr.t -> 'a -> 'a) -> t -> 'a -> 'a
 
     val to_tuple : t -> Id.t * Constr.t option * Constr.t
     val of_tuple : Id.t * Constr.t option * Constr.t -> t
 
-    (** Convert [Rel.Declaration.t] value to the corresponding [Named.Declaration.t] value. *)
-    val of_rel : (Name.t -> Id.t) -> Rel.Declaration.t -> t
+    (** Convert [Rel.Declaration.t] value to the corresponding [Named.Declaration.t] value.
+        The function provided as the first parameter determines how to translate "names" to "ids". *)
+    val of_rel_decl : (Name.t -> Id.t) -> Rel.Declaration.t -> t
+
+    (** Convert [Named.Declaration.t] value to the corresponding [Rel.Declaration.t] value. *)
+    (* TODO: Move this function to [Rel.Declaration] module and rename it to [of_named]. *)
+    val to_rel_decl : t -> Rel.Declaration.t
   end
 
   (** Rel-context is represented as a list of declarations.
@@ -244,17 +251,20 @@ sig
   val to_instance : t -> Constr.t list
 end
 
-module NamedList :
+module Compacted :
 sig
   module Declaration :
   sig
-    type t = Id.t list * Constr.t option * Constr.t
+    type t =
+      | LocalAssum of Id.t list * Constr.t
+      | LocalDef of Id.t list * Constr.t * Constr.t
+
     val map_constr : (Constr.t -> Constr.t) -> t -> t
+    val of_named_decl : Named.Declaration.t -> t
+    val to_named_context : t -> Named.t
   end
 
   type t = Declaration.t list
 
   val fold : (Declaration.t -> 'a -> 'a) -> t -> init:'a -> 'a
 end
-
-type section_context = Named.t

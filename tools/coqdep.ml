@@ -526,5 +526,5 @@ let _ =
   try
     coqdep ()
   with CErrors.UserError(s,p) ->
-    let pp = if s <> "_" then Pp.(str s ++ str ": " ++ p) else p in
+    let pp = (match s with | None -> p | Some s -> Pp.(str s ++ str ": " ++ p))  in
     Feedback.msg_error pp

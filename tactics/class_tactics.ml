@@ -32,6 +32,8 @@ open Misctypes
 open Proofview.Notations
 open Hints
 
+module NamedDecl = Context.Named.Declaration
+
 (** Hint database named "typeclass_instances", now created directly in Auto *)
 
 (** Options handling *)
@@ -523,9 +525,8 @@ let evars_to_goals p evm =
 
 (** Making local hints  *)
 let make_resolve_hyp env sigma st flags only_classes pri decl =
-  let open Context.Named.Declaration in
-  let id = get_id decl in
-  let cty = Evarutil.nf_evar sigma (get_type decl) in
+  let id = NamedDecl.get_id decl in
+  let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
   let rec iscl env ty =
     let ctx, ar = decompose_prod_assum ty in
       match kind_of_term (fst (decompose_app ar)) with
@@ -564,10 +565,9 @@ let make_hints g st only_classes sign =
     List.fold_left
       (fun hints hyp ->
         let consider =
-          let open Context.Named.Declaration in
-          try let t = Global.lookup_named (get_id hyp) |> get_type in
+          try let t = hyp |> NamedDecl.get_id |> Global.lookup_named |> NamedDecl.get_type in
               (* Section variable, reindex only if the type changed *)
-              not (Term.eq_constr t (get_type hyp))
+              not (Term.eq_constr t (NamedDecl.get_type hyp))
           with Not_found -> true
         in
         if consider then
@@ -1500,9 +1500,11 @@ let head_of_constr h c =
   let c = head_of_constr c in
   letin_tac None (Name h) c None Locusops.allHyps
 
-let not_evar c = match kind_of_term c with
-| Evar _ -> Tacticals.New.tclFAIL 0 (str"Evar")
-| _ -> Proofview.tclUNIT ()
+let not_evar c =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match Evarutil.kind_of_term_upto sigma c with
+  | Evar _ -> Tacticals.New.tclFAIL 0 (str"Evar")
+  | _ -> Proofview.tclUNIT ()
 
 let is_ground c gl =
   if Evarutil.is_ground_term (project gl) c then tclIDTAC gl

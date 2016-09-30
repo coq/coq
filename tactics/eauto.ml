@@ -20,7 +20,7 @@ open Tactics
 open Clenv
 open Auto
 open Genredexpr
-open Tacexpr
+open Tactypes
 open Locus
 open Locusops
 open Hints
@@ -29,9 +29,9 @@ open Proofview.Notations
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
-  let t2 = Tacmach.New.pf_concl gl in
+  let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
   if occur_existential t1 || occur_existential t2 then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
   else exact_check c
@@ -97,8 +97,8 @@ let prolog_tac l n =
   in
   let l = List.map map l in
   try (prolog l n gl)
-  with UserError ("Refiner.tclFIRST",_) ->
-    errorlabstrm "Prolog.prolog" (str "Prolog failed.")
+  with UserError (Some "Refiner.tclFIRST",_) ->
+    user_err ~hdr:"Prolog.prolog" (str "Prolog failed.")
   end
 
 open Auto
@@ -203,7 +203,7 @@ type search_state = {
   dblist : hint_db list;
   localdb :  hint_db list;
   prev : prev_search_state;
-  local_lemmas : Tacexpr.delayed_open_constr list;
+  local_lemmas : delayed_open_constr list;
 }
 
 and prev_search_state = (* for info eauto *)
@@ -431,7 +431,7 @@ let cons a l = a :: l
 let autounfolds db occs cls gl =
   let unfolds = List.concat (List.map (fun dbname -> 
     let db = try searchtable_map dbname 
-      with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname)
+      with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
     in
     let (ids, csts) = Hint_db.unfolds db in
     let hyps = pf_ids_of_hyps gl in
@@ -498,7 +498,7 @@ let autounfold_one db cl =
   let st =
     List.fold_left (fun (i,c) dbname -> 
       let db = try searchtable_map dbname 
-	with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname)
+	with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
       in
       let (ids, csts) = Hint_db.unfolds db in
 	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db

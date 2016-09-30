@@ -307,7 +307,7 @@ let check_not_nested forbidden e =
       | Rel _ -> ()
       | Var x ->
         if Id.List.mem x forbidden
-        then errorlabstrm "Recdef.check_not_nested"
+        then user_err ~hdr:"Recdef.check_not_nested"
                (str "check_not_nested: failure " ++ pr_id x)
       | Meta _ | Evar _ | Sort _ -> ()
       | Cast(e,_,t) -> check_not_nested e;check_not_nested t
@@ -327,7 +327,7 @@ let check_not_nested forbidden e =
   try 
     check_not_nested e 
   with UserError(_,p) -> 
-    errorlabstrm "_" (str "on expr : " ++ Printer.pr_lconstr e ++ str " " ++ p)
+    user_err ~hdr:"_" (str "on expr : " ++ Printer.pr_lconstr e ++ str " " ++ p)
 
 (* ['a info] contains the local information for traveling *)
 type 'a infos = 
@@ -377,7 +377,7 @@ type journey_info =
 let rec add_vars forbidden e = 
   match kind_of_term e with 
     | Var x -> x::forbidden 
-    | _ -> fold_constr add_vars forbidden e 
+    | _ -> Term.fold_constr add_vars forbidden e
 
 
 let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic = 
@@ -442,7 +442,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	  check_not_nested (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info
 	with e when CErrors.noncritical e ->
-	  errorlabstrm "Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
+	  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
       end
     | Lambda(n,t,b) -> 
       begin
@@ -450,7 +450,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	  check_not_nested (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info
 	with e when CErrors.noncritical e ->
-	  errorlabstrm "Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
+	  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
       end
     | Case(ci,t,a,l) -> 
       begin
@@ -478,7 +478,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	      jinfo.apP (f,args) expr_info continuation_tac in 
 	    travel_args jinfo
 	      expr_info.is_main_branch new_continuation_tac new_infos
-	  | Case _ ->  errorlabstrm "Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain an applied match (See Limitation in Section 2.3 of refman)")
+	  | Case _ ->  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain an applied match (See Limitation in Section 2.3 of refman)")
 	  | _ -> anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_lconstr expr_info.info)
       end
     | Cast(t,_,_) -> travel jinfo continuation_tac {expr_info with info=t}
@@ -723,8 +723,8 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
 	 (List.map_i (fun i e -> observe_tac (str "do treat case") (treat_case f_is_present to_thin_intro (next_step continuation_tac) ci.ci_cstr_ndecls.(i) e new_info)) 0 (Array.to_list l)
 	 ))
     with 
-      | UserError("Refiner.thensn_tac3",_) 
-      | UserError("Refiner.tclFAIL_s",_) ->
+      | UserError(Some "Refiner.thensn_tac3",_) 
+      | UserError(Some "Refiner.tclFAIL_s",_) ->
 	(observe_tac (str "is computable " ++ Printer.pr_lconstr new_info.info) (next_step continuation_tac {new_info with info = nf_betaiotazeta new_info.info} )
 	))
     g

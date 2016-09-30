@@ -43,6 +43,7 @@ let message_view () : message_view =
     ~tag_table:Tags.Message.table ()
   in
   let text_buffer = new GText.buffer buffer#as_buffer in
+  let mark = buffer#create_mark ~left_gravity:false buffer#start_iter in
   let box = GPack.vbox () in
   let scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(box#pack ~expand:true) () in
@@ -69,7 +70,8 @@ let message_view () : message_view =
       new message_view_signals_impl box#as_widget push
 
     method clear =
-      buffer#set_text ""
+      buffer#set_text "";
+      buffer#move_mark (`MARK mark) ~where:buffer#start_iter
 
     method push level msg =
       let tags = match level with
@@ -83,8 +85,9 @@ let message_view () : message_view =
       | Xml_datatype.Element (_, _, children) -> List.exists non_empty children
       in
       if non_empty (Richpp.repr msg) then begin
-        Ideutils.insert_xml buffer ~tags msg;
-        buffer#insert (*~tags*) "\n";
+        let mark = `MARK mark in
+        Ideutils.insert_xml ~mark buffer ~tags msg;
+        buffer#insert ~iter:(buffer#get_iter_at_mark mark) "\n";
         push#call (level, msg)
       end
 

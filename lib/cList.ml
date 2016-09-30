@@ -601,19 +601,35 @@ let filter2 f l1 l2 =
   filter2_loop f c1 c2 l1 l2;
   (c1.tail, c2.tail)
 
-let rec map_filter f = function
-  | [] -> []
-  | x::l ->
-      let l' = map_filter f l in
-      match f x with None -> l' | Some y -> y::l'
+let rec map_filter_loop f p = function
+  | [] -> ()
+  | x :: l ->
+    match f x with
+    | None -> map_filter_loop f p l
+    | Some y ->
+      let c = { head = y; tail = [] } in
+      p.tail <- cast c;
+      map_filter_loop f c l
 
-let map_filter_i f =
-  let rec aux i = function
-    | [] -> []
-    | x::l ->
-      let l' = aux (succ i) l in
-        match f i x with None -> l' | Some y -> y::l'
-  in aux 0
+let map_filter f l =
+  let c = { head = Obj.magic 0; tail = [] } in
+  map_filter_loop f c l;
+  c.tail
+
+let rec map_filter_i_loop f i p = function
+  | [] -> ()
+  | x :: l ->
+    match f i x with
+    | None -> map_filter_i_loop f (succ i) p l
+    | Some y ->
+      let c = { head = y; tail = [] } in
+      p.tail <- cast c;
+      map_filter_i_loop f (succ i) c l
+
+let map_filter_i f l =
+  let c = { head = Obj.magic 0; tail = [] } in
+  map_filter_i_loop f 0 c l;
+  c.tail
 
 let rec filter_with filter l = match filter, l with
 | [], [] -> []

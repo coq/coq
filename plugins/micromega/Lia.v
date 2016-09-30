@@ -8,7 +8,7 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria)      2013                             *)
+(*  Frédéric Besson (Irisa/Inria)      2013-2016                        *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -19,24 +19,24 @@ Require Import VarMap.
 Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
+
 Ltac preprocess :=
   zify ; unfold Z.succ in * ; unfold Z.pred in *.
 
-Ltac lia :=
-  preprocess;
-  xlia ;
-  abstract (
-      intros __wit __varmap __ff ;
-      change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)).
+Ltac zchange := 
+  intros __wit __varmap __ff ;
+  change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
+  apply (ZTautoChecker_sound __ff __wit).
 
-Ltac nia :=
-  preprocess;
-  xnlia ;
-  abstract (
-      intros __wit __varmap __ff ;
-      change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)).
+Ltac zchecker_no_abstract := zchange ; vm_compute ; reflexivity.
+
+Ltac zchecker_abstract := zchange ; vm_cast_no_check (eq_refl true).
+
+Ltac zchecker := zchecker_no_abstract.
+
+Ltac lia := preprocess; xlia zchecker.
+               
+Ltac nia := preprocess; xnlia zchecker.
 
 
 (* Local Variables: *)

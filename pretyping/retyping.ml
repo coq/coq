@@ -20,6 +20,9 @@ open Termops
 open Arguments_renaming
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 type retype_error =
   | NotASort
   | NotAnArity
@@ -78,8 +81,7 @@ let sort_of_atomic_type env sigma ft args =
   in concl_of_arity env 0 ft (Array.to_list args)
 
 let type_of_var env id =
-  let open Context.Named.Declaration in
-  try get_type (lookup_named id env)
+  try NamedDecl.get_type (lookup_named id env)
   with Not_found -> retype_error (BadVariable id)
 
 let decomp_sort env sigma t =
@@ -94,7 +96,7 @@ let retype ?(polyprop=true) sigma =
       (try strip_outer_cast (Evd.meta_ftype sigma n).Evd.rebus
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
-	let ty = get_type (lookup_rel n env) in
+	let ty = RelDecl.get_type (lookup_rel n env) in
         lift n ty
     | Var id -> type_of_var env id
     | Const cst -> rename_type_of_constant env cst
@@ -239,7 +241,7 @@ let sorts_of_context env evc ctxt =
   | [] -> env,[]
   | d :: ctxt ->
       let env,sorts = aux ctxt in
-      let s = get_sort_of env evc (get_type d) in
+      let s = get_sort_of env evc (RelDecl.get_type d) in
       (push_rel d env,s::sorts) in
   snd (aux ctxt)
 

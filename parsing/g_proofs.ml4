@@ -13,7 +13,6 @@ open Misctypes
 open Tok
 
 open Pcoq
-open Pcoq.Tactic
 open Pcoq.Prim
 open Pcoq.Constr
 open Pcoq.Vernac_
@@ -26,9 +25,11 @@ let hint_proof_using e = function
      | None -> None
      | Some s -> Some (Gram.entry_parse e (Gram.parsable (Stream.of_string s)))
 
+let hint = Gram.entry_create "hint"
+
 (* Proof commands *)
 GEXTEND Gram
-  GLOBAL: command;
+  GLOBAL: hint command;
 
   opt_hintbases:
   [ [ -> []
@@ -39,12 +40,6 @@ GEXTEND Gram
       | IDENT "Proof" ->
           VernacProof (None,hint_proof_using G_vernac.section_subset_expr None)
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
-      | IDENT "Proof"; "with"; ta = tactic; 
-        l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
-          VernacProof (Some ta,hint_proof_using G_vernac.section_subset_expr l)
-      | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
-        ta = OPT [ "with"; ta = tactic -> ta ] ->
-          VernacProof (ta,Some l)
       | IDENT "Proof"; c = lconstr -> VernacExactProof c
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
@@ -88,7 +83,7 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Proof" -> VernacShow ShowProof
       | IDENT "Show"; IDENT "Intro" -> VernacShow (ShowIntros false)
       | IDENT "Show"; IDENT "Intros" -> VernacShow (ShowIntros true)
-      | IDENT "Show"; IDENT "Match"; id = identref -> VernacShow (ShowMatch id)
+      | IDENT "Show"; IDENT "Match"; id = reference -> VernacShow (ShowMatch id)
       | IDENT "Show"; IDENT "Thesis" -> VernacShow ShowThesis
       | IDENT "Guarded" -> VernacCheckGuard
       (* Hints for Auto and EAuto *)
@@ -124,10 +119,7 @@ GEXTEND Gram
       | IDENT "Opaque"; lc = LIST1 global -> HintsTransparency (lc, false)
       | IDENT "Mode"; l = global; m = mode -> HintsMode (l, m)
       | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
-      | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
-      | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
-          tac = tactic ->
-	  HintsExtern (n,c,tac) ] ]
+      | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc ] ]
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c

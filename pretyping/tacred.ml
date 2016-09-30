@@ -25,6 +25,9 @@ open Patternops
 open Locus
 open Sigma.Notations
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 (* Errors *)
 
 type reduction_tactic_error =
@@ -38,7 +41,7 @@ exception Elimconst
 exception Redelimination
 
 let error_not_evaluable r =
-  errorlabstrm "error_not_evaluable"
+  user_err ~hdr:"error_not_evaluable"
     (str "Cannot coerce" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r ++
      spc () ++ str "to an evaluable reference.")
 
@@ -54,13 +57,12 @@ let is_evaluable env = function
   | EvalVarRef id -> is_evaluable_var env id
 
 let value_of_evaluable_ref env evref u =
-  let open Context.Named.Declaration in
   match evref with
   | EvalConstRef con -> 
     (try constant_value_in env (con,u)
     with NotEvaluableConst IsProj -> 
       raise (Invalid_argument "value_of_evaluable_ref"))
-  | EvalVarRef id -> lookup_named id env |> get_value |> Option.get
+  | EvalVarRef id -> env |> lookup_named id |> NamedDecl.get_value |> Option.get
 
 let evaluable_of_global_reference env = function
   | ConstRef cst when is_evaluable_const env cst -> EvalConstRef cst
@@ -112,22 +114,18 @@ let unsafe_reference_opt_value env sigma eval =
     | Declarations.Def c -> Some (Mod_subst.force_constr c)
     | _ -> None)
   | EvalVar id ->
-      let open Context.Named.Declaration in
-      lookup_named id env |> get_value
+      env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      let open Context.Rel.Declaration in
-      lookup_rel n env |> map_value (lift n) |> get_value
+      env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 let reference_opt_value env sigma eval u = 
   match eval with
   | EvalConst cst -> constant_opt_value_in env (cst,u)
   | EvalVar id ->
-      let open Context.Named.Declaration in
-      lookup_named id env |> get_value
+      env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      let open Context.Rel.Declaration in
-      lookup_rel n env |> map_value (lift n) |> get_value
+      env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
   | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 exception NotEvaluable
@@ -541,11 +539,9 @@ let match_eval_ref_value env sigma constr =
   | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
     Some (constant_value_in env (sp, u))
   | Var id when is_evaluable env (EvalVarRef id) -> 
-     let open Context.Named.Declaration in
-     lookup_named id env |> get_value
+     env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
-     let open Context.Rel.Declaration in
-     lookup_rel n env |> map_value (lift n) |> get_value
+     env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
   | Evar ev -> Evd.existential_opt_value sigma ev
   | _ -> None
 
@@ -993,7 +989,7 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
       incr pos;
       if ok then begin
         if Option.has_some nested then
-          errorlabstrm "" (str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (!pos-1) ++ str ".");
+          user_err  (str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (!pos-1) ++ str ".");
         (* Skip inner occurrences for stable counting of occurrences *)
         if locs != [] then
           ignore (traverse_below (Some (!pos-1)) envc t);
@@ -1159,13 +1155,13 @@ let pattern_occs loccs_trm = { e_redfun = begin fun env sigma c ->
 let check_privacy env ind =
   let spec = Inductive.lookup_mind_specif env (fst ind) in
   if Inductive.is_private spec then
-    errorlabstrm "" (str "case analysis on a private type.")
+    user_err  (str "case analysis on a private type.")
   else ind
 
 let check_not_primitive_record env ind =
   let spec = Inductive.lookup_mind_specif env (fst ind) in
     if Inductive.is_primitive_record spec then
-      errorlabstrm "" (str "case analysis on a primitive record type: " ++
+      user_err  (str "case analysis on a primitive record type: " ++
 		       str "use projections or let instead.")
     else ind
 
@@ -1182,14 +1178,14 @@ let reduce_to_ind_gen allow_product env sigma t =
 	  if allow_product then
 	    elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
 	  else
-	    errorlabstrm "" (str"Not an inductive definition.")
+	    user_err  (str"Not an inductive definition.")
       | _ ->
 	  (* Last chance: we allow to bypass the Opaque flag (as it
 	     was partially the case between V5.10 and V8.1 *)
 	  let t' = whd_all env sigma t in
 	  match kind_of_term (fst (decompose_app t')) with
 	    | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
-	    | _ -> errorlabstrm "" (str"Not an inductive product.")
+	    | _ -> user_err  (str"Not an inductive product.")
   in
   elimrec env t []
 
@@ -1239,7 +1235,7 @@ let one_step_reduce env sigma c =
   applist (redrec (c,[]))
 
 let error_cannot_recognize ref =
-  errorlabstrm ""
+  user_err 
     (str "Cannot recognize a statement based on " ++
      Nametab.pr_global_env Id.Set.empty ref ++ str".")
 

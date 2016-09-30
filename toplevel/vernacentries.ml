@@ -33,6 +33,8 @@ open Misctypes
 open Locality
 open Sigma.Notations
 
+module NamedDecl = Context.Named.Declaration
+
 (** TODO: make this function independent of Ltac *)
 let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
 
@@ -120,9 +122,7 @@ let show_intro all =
     [Not_found] is raised if the given string isn't the qualid of
     a known inductive type. *)
 
-let make_cases s =
-  let qualified_name = Libnames.qualid_of_string s in
-  let glob_ref = Nametab.locate qualified_name in
+let make_cases_aux glob_ref =
   match glob_ref with
     | Globnames.IndRef i ->
 	let {Declarations.mind_nparams = np}
@@ -135,18 +135,23 @@ let make_cases s =
 	     let rec rename avoid = function
 	       | [] -> []
 	       | (n,_)::l ->
-		   let n' = Namegen.next_name_away_in_cases_pattern ([],mkMeta 0) n avoid in
+		   let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n avoid in
 		   Id.to_string n' :: rename (n'::avoid) l in
 	     let al' = rename [] al in
 	     (Id.to_string consname :: al') :: l)
 	  carr tarr []
     | _ -> raise Not_found
 
+let make_cases s =
+  let qualified_name = Libnames.qualid_of_string s in
+  let glob_ref = Nametab.locate qualified_name in
+  make_cases_aux glob_ref
+
 (** Textual display of a generic "match" template *)
 
 let show_match id =
   let patterns =
-    try make_cases (Id.to_string (snd id))
+    try make_cases_aux (Nametab.global id)
     with Not_found -> error "Unknown inductive type."
   in
   let pr_branch l =
@@ -380,9 +385,9 @@ let err_unmapped_library loc ?from qid =
   | Some from ->
     str " and prefix " ++ pr_dirpath from ++ str "."
   in
-  user_err_loc
-    (loc,"locate_library",
-     strbrk "Cannot find a physical path bound to logical path matching suffix " ++
+  user_err ~loc
+    ~hdr:"locate_library"
+    (strbrk "Cannot find a physical path bound to logical path matching suffix " ++
        pr_dirpath dir ++ prefix)
 
 let err_notfound_library loc ?from qid =
@@ -391,9 +396,8 @@ let err_notfound_library loc ?from qid =
   | Some from ->
     str " with prefix " ++ pr_dirpath from ++ str "."
   in
-  user_err_loc
-    (loc,"locate_library",
-     strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
+  user_err ~loc ~hdr:"locate_library"
+     (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
 
 let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
@@ -404,13 +408,13 @@ let print_located_library r =
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
-    Dumpglob.add_glob (Constrarg.loc_of_or_by_notation loc_of_reference r) gr;
+    Dumpglob.add_glob (Stdarg.loc_of_or_by_notation loc_of_reference r) gr;
     gr
 
 let dump_global r =
   try
     let gr = Smartlocate.smart_global r in
-    Dumpglob.add_glob (Constrarg.loc_of_or_by_notation loc_of_reference r) gr
+    Dumpglob.add_glob (Stdarg.loc_of_or_by_notation loc_of_reference r) gr
   with e when CErrors.noncritical e -> ()
 (**********)
 (* Syntax *)
@@ -484,7 +488,7 @@ let vernac_start_proof locality p kind l lettop =
 	| None -> ()) l;
   if not(refining ()) then
     if lettop then
-      errorlabstrm "Vernacentries.StartProof"
+      user_err ~hdr:"Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
   start_proof_and_print (local, p, Proof kind) l no_hook
 
@@ -605,15 +609,15 @@ let vernac_combined_scheme lid l =
 
 let vernac_universe loc poly l =
   if poly && not (Lib.sections_are_opened ()) then
-    user_err_loc (loc, "vernac_universe",
-		  str"Polymorphic universes can only be declared inside sections, " ++
+    user_err ~loc ~hdr:"vernac_universe"
+		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
   do_universe poly l
 
 let vernac_constraint loc poly l =
   if poly && not (Lib.sections_are_opened ()) then
-    user_err_loc (loc, "vernac_constraint",
-		  str"Polymorphic universe constraints can only be declared"
+    user_err ~loc ~hdr:"vernac_constraint"
+		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
   do_constraint poly l
 
@@ -840,23 +844,23 @@ let focus_command_cond = Proof.no_cond command_focus
 let vernac_solve_existential = instantiate_nth_evar_com
 
 let vernac_set_end_tac tac =
+  let open Genintern in
+  let env = { genv = Global.env (); ltacvars = Id.Set.empty } in
+  let _, tac = Genintern.generic_intern env tac in
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
-  match tac with
-  | Tacexpr.TacId [] -> ()
-  | _ -> set_end_tac tac
+  set_end_tac tac
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
 let vernac_set_used_variables e =
-  let open Context.Named.Declaration in
   let env = Global.env () in
   let tys =
     List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
   List.iter (fun id -> 
-    if not (List.exists (Id.equal id % get_id) vars) then
-      errorlabstrm "vernac_set_used_variables"
+    if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
+      user_err ~hdr:"vernac_set_used_variables"
         (str "Unknown variable: " ++ pr_id id))
     l;
   let _, to_clear = set_used_variables l in
@@ -877,7 +881,7 @@ let expand filename =
 let vernac_add_loadpath implicit pdir ldiropt =
   let pdir = expand pdir in
   let alias = Option.default Nameops.default_root_prefix ldiropt in
-  Mltop.add_rec_path ~unix_path:pdir ~coq_root:alias ~implicit
+  Mltop.add_rec_path Mltop.AddTopML ~unix_path:pdir ~coq_root:alias ~implicit
 
 let vernac_remove_loadpath path =
   Loadpath.remove_load_path (expand path)
@@ -975,9 +979,9 @@ let vernac_declare_arguments locality r l nargs flags =
     | [], Anonymous::ld, (Some _)::ls when extra_scope_flag -> check li ld ls
     | [], _::_, (Some _)::ls when extra_scope_flag ->
        error "Extra notation scopes can be set on anonymous arguments only"
-    | [], x::_, _ -> errorlabstrm "vernac_declare_arguments"
+    | [], x::_, _ -> user_err ~hdr:"vernac_declare_arguments"
                        (str "Extra argument " ++ pr_name x ++ str ".")
-    | l, [], _ -> errorlabstrm "vernac_declare_arguments"
+    | l, [], _ -> user_err ~hdr:"vernac_declare_arguments"
                     (str "The following arguments are not declared: " ++
                        prlist_with_sep pr_comma pr_name l ++ str ".")
     | _::li, _::ld, _::ls -> check li ld ls 
@@ -1020,7 +1024,7 @@ let vernac_declare_arguments locality r l nargs flags =
       let sr', impl = List.fold_map (fun b -> function
         | (Anonymous, _,_, true, max), Name id -> assert false
         | (Name x, _,_, true, _), Anonymous ->
-            errorlabstrm "vernac_declare_arguments"
+            user_err ~hdr:"vernac_declare_arguments"
               (str "Argument " ++ pr_id x ++ str " cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
            set_renamed iid id;
@@ -1034,7 +1038,7 @@ let vernac_declare_arguments locality r l nargs flags =
       some_renaming_specified l in
   if some_renaming_specified then
     if not (List.mem `Rename flags) then
-      errorlabstrm "vernac_declare_arguments"
+      user_err ~hdr:"vernac_declare_arguments"
         (str "To rename arguments the \"rename\" flag must be specified." ++
            match !renamed_arg with
            | None -> mt ()
@@ -1064,7 +1068,7 @@ let vernac_declare_arguments locality r l nargs flags =
     vernac_declare_implicits locality r []
   else if some_implicits_specified || List.mem `ClearImplicits flags then
     vernac_declare_implicits locality r implicits;
-  if nargs >= 0 && nargs < List.fold_left max 0 rargs then
+  if nargs >= 0 && nargs <= List.fold_left max ~-1 rargs then
     error "The \"/\" option must be placed after the last \"!\".";
   let no_flags = List.is_empty flags in
   let rec narrow = function
@@ -1078,7 +1082,7 @@ let vernac_declare_arguments locality r l nargs flags =
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
          (make_section_locality locality) c (rargs, nargs, flags)
-    | _ -> errorlabstrm "" (strbrk "Modifiers of the behavior of the simpl tactic are relevant for constants only.")
+    | _ -> user_err  (strbrk "Modifiers of the behavior of the simpl tactic are relevant for constants only.")
   end;
   if not (some_renaming_specified ||
           some_implicits_specified ||
@@ -1499,7 +1503,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
       | Some n,AN (Ident (_loc,id)) ->  (* goal number given, catch if wong *)
 	 (try get_nth_goal n,id
 	  with
-	    Failure _ -> errorlabstrm "print_about_hyp_globs"
+	    Failure _ -> user_err ~hdr:"print_about_hyp_globs"
                            (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
     let hyps = pf_hyps gl in
@@ -1507,7 +1511,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    v 0 (pr_id id ++ str":" ++ pr_constr (get_type decl) ++ fnl() ++ fnl()
+    v 0 (pr_id id ++ str":" ++ pr_constr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found -> print_about ref_or_by_not
@@ -1575,8 +1579,8 @@ let global_module r =
   let (loc,qid) = qualid_of_reference r in
   try Nametab.full_name_module qid
   with Not_found ->
-    user_err_loc (loc, "global_module",
-      str "Module/section " ++ pr_qualid qid ++ str " not found.")
+    user_err ~loc ~hdr:"global_module"
+     (str "Module/section " ++ pr_qualid qid ++ str " not found.")
 
 let interp_search_restriction = function
   | SearchOutside l -> (List.map global_module l, true)
@@ -1598,7 +1602,7 @@ let interp_search_about_item env =
 	    (fun _ -> true) s sc in
 	GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
-	errorlabstrm "interp_search_about_item"
+	user_err ~hdr:"interp_search_about_item"
           (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component")
 
 let vernac_search s gopt r =
@@ -1878,12 +1882,12 @@ let interp ?proof ~loc locality poly c =
   | VernacComments l -> if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
-  | VernacAbort id -> CErrors.errorlabstrm "" (str "Abort cannot be used through the Load command")
-  | VernacAbortAll -> CErrors.errorlabstrm "" (str "AbortAll cannot be used through the Load command")
-  | VernacRestart -> CErrors.errorlabstrm "" (str "Restart cannot be used through the Load command")
-  | VernacUndo _ -> CErrors.errorlabstrm "" (str "Undo cannot be used through the Load command")
-  | VernacUndoTo _ -> CErrors.errorlabstrm "" (str "UndoTo cannot be used through the Load command")
-  | VernacBacktrack _ -> CErrors.errorlabstrm "" (str "Backtrack cannot be used through the Load command")
+  | VernacAbort id -> CErrors.user_err  (str "Abort cannot be used through the Load command")
+  | VernacAbortAll -> CErrors.user_err  (str "AbortAll cannot be used through the Load command")
+  | VernacRestart -> CErrors.user_err  (str "Restart cannot be used through the Load command")
+  | VernacUndo _ -> CErrors.user_err  (str "Undo cannot be used through the Load command")
+  | VernacUndoTo _ -> CErrors.user_err  (str "UndoTo cannot be used through the Load command")
+  | VernacBacktrack _ -> CErrors.user_err  (str "Backtrack cannot be used through the Load command")
   
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t,None)] false
@@ -2015,7 +2019,7 @@ let with_fail b f =
       let (e, _) = CErrors.push e in
       match e with
       | HasNotFailed ->
-          errorlabstrm "Fail" (str "The command has not failed!")
+          user_err ~hdr:"Fail" (str "The command has not failed!")
       | HasFailed msg ->
           if is_verbose () || !test_mode || !ide_slave then Feedback.msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)

@@ -55,9 +55,9 @@ let mk_fixb (id,bl,ann,body,(loc,tyc)) =
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
   let _ = Option.map (fun (aloc,_) ->
-    CErrors.user_err_loc
-      (aloc,"Constr:mk_cofixb",
-       Pp.str"Annotation forbidden in cofix expression.")) (fst ann) in
+    CErrors.user_err ~loc:aloc
+      ~hdr:"Constr:mk_cofixb"
+      (Pp.str"Annotation forbidden in cofix expression.")) (fst ann) in
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole (loc, None, IntroAnonymous, None) in
@@ -215,9 +215,6 @@ GEXTEND Gram
 	  CGeneralization (!@loc, Implicit, None, c)
       | "`("; c = operconstr LEVEL "200"; ")" ->
 	  CGeneralization (!@loc, Explicit, None, c)
-      | IDENT "ltac"; ":"; "("; tac = Tactic.tactic_expr; ")" ->
-          let arg = Genarg.in_gen (Genarg.rawwit Constrarg.wit_tactic) tac in
-          CHole (!@loc, None, IntroAnonymous, Some arg)
       ] ]
   ;
   record_declaration:
@@ -380,14 +377,14 @@ GEXTEND Gram
       [ p = pattern; lp = LIST1 NEXT ->
         (match p with
 	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, None, lp)
-	  | CPatCstr (_, r, None, l2) -> CErrors.user_err_loc
-              (cases_pattern_expr_loc p, "compound_pattern",
-               Pp.str "Nested applications not supported.")
+	  | CPatCstr (_, r, None, l2) -> CErrors.user_err
+              ~loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
+              (Pp.str "Nested applications not supported.")
 	  | CPatCstr (_, r, l1, l2) -> CPatCstr (!@loc, r, l1 , l2@lp)
 	  | CPatNotation (_, n, s, l) -> CPatNotation (!@loc, n , s, l@lp)
-          | _ -> CErrors.user_err_loc
-              (cases_pattern_expr_loc p, "compound_pattern",
-               Pp.str "Such pattern cannot have arguments."))
+          | _ -> CErrors.user_err
+              ~loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
+              (Pp.str "Such pattern cannot have arguments."))
       |"@"; r = Prim.reference; lp = LIST0 NEXT ->
         CPatCstr (!@loc, r, Some lp, []) ]
     | "1" LEFTA

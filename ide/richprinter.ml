@@ -2,7 +2,6 @@ open Richpp
 
 module RichppConstr = Ppconstr.Richpp
 module RichppVernac = Ppvernac.Richpp
-module RichppTactic = Pptactic.Richpp
 
 type rich_pp =
     Ppannotation.t Richpp.located Xml_datatype.gxml

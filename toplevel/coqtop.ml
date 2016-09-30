@@ -54,7 +54,7 @@ let init_color () =
     Terminal.has_style Unix.stderr &&
     (* emacs compilation buffer does not support colors by default,
        its TERM variable is set to "dumb". *)
-    Unix.getenv "TERM" <> "dumb"
+    try Sys.getenv "TERM" <> "dumb" with Not_found -> false
   in
   if has_color then begin
     let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
@@ -227,18 +227,16 @@ let compile_file (v,f) =
     Vernac.compile v f
 
 let compile_files () =
-  match !compile_list with
-    | [] -> ()
-    | [vf] -> compile_file vf (* One compilation : no need to save init state *)
-    | l ->
-      let init_state = States.freeze ~marshallable:`No in
-      let coqdoc_init_state = CLexer.location_table () in
-      List.iter
-        (fun vf ->
-	  States.unfreeze init_state;
-	  CLexer.restore_location_table coqdoc_init_state;
-          compile_file vf)
-        (List.rev l)
+  if !compile_list == [] then ()
+  else
+    let init_state = States.freeze ~marshallable:`No in
+    let coqdoc_init_state = CLexer.location_table () in
+    Feedback.(add_feeder debug_feeder);
+    List.iter (fun vf ->
+        States.unfreeze init_state;
+        CLexer.restore_location_table coqdoc_init_state;
+        compile_file vf)
+      (List.rev !compile_list)
 
 (** Options for proof general *)
 
@@ -382,7 +380,7 @@ let get_host_port opt s =
        Some (Spawned.Socket(host, int_of_string portr, int_of_string portw))
   | ["stdfds"] -> Some Spawned.AnonPipe
   | _ ->
-     prerr_endline ("Error: host:port or stdfds expected after option "^opt);
+     prerr_endline ("Error: host:portr:portw or stdfds expected after option "^opt);
      exit 1
 
 let get_error_resilience opt = function

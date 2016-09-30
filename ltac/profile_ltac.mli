@@ -8,15 +8,14 @@
 
 (** Ltac profiling primitives *)
 
-val do_profile : string -> ('a * Tacexpr.ltac_call_kind) list -> 'b Proofview.tactic -> 'b Proofview.tactic
+val do_profile :
+  string -> ('a * Tacexpr.ltac_call_kind) list ->
+    'b Proofview.tactic -> 'b Proofview.tactic
 
 val set_profiling : bool -> unit
 
-val get_profiling : unit -> bool
-
-val entered_call : unit -> unit
-
-val print_results : unit -> unit
+(* Cut off results < than specified cutoff *)
+val print_results : cutoff:float -> unit
 
 val print_results_tactic : string -> unit
 
@@ -30,24 +29,20 @@ val do_print_results_at_close : unit -> unit
  * statistics of the two invocations combined, and also combined over all
  * invocations of 'aaa'.
  * total:     time spent running this tactic and its subtactics (seconds)
- * self:      time spent running this tactic, minus its subtactics (seconds)
- * num_calls: the number of invocations of this tactic that have been made
+ * local:      time spent running this tactic, minus its subtactics (seconds)
+ * ncalls: the number of invocations of this tactic that have been made
  * max_total: the greatest running time of a single invocation (seconds)
  *)
-type ltacprof_entry = {total : float; self : float; num_calls : int; max_total : float}
-(* A profiling entry for a tactic and the tactics that it called
- * name:       name of the tactic
- * statistics: profiling data collected
- * tactics:    profiling results for each tactic that this tactic invoked;
- *             multiple invocations of the same sub-tactic are combined together.
- *)
-type ltacprof_tactic = {name: string; statistics : ltacprof_entry; tactics : ltacprof_tactic list}
-(* The full results of profiling
- * total_time: time spent running tactics (seconds)
- * tactics:    the tactics that have been invoked since profiling was started or reset
- *)
-type ltacprof_results = {total_time : float; tactics : ltacprof_tactic list}
+type treenode = {
+  name : CString.Map.key;
+  total : float;
+  local : float;
+  ncalls : int;
+  max_total : float;
+  children : treenode CString.Map.t
+}
 
-(* Returns the profiling results for the currently-focused state. *)
-val get_profiling_results : unit -> ltacprof_results
+(* Returns the profiling results known by the current process *)
+val get_local_profiling_results : unit -> treenode
+val feedback_results : treenode -> unit
 

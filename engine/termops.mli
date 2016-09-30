@@ -238,8 +238,7 @@ val fold_named_context_both_sides :
   ('a -> Context.Named.Declaration.t -> Context.Named.Declaration.t list -> 'a) ->
     Context.Named.t -> init:'a -> 'a
 val mem_named_context : Id.t -> Context.Named.t -> bool
-val compact_named_context : Context.Named.t -> Context.NamedList.t
-val compact_named_context_reverse : Context.Named.t -> Context.NamedList.t
+val compact_named_context : Context.Named.t -> Context.Compacted.t
 
 val clear_named_body : Id.t -> env -> env
 

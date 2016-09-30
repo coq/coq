@@ -92,7 +92,6 @@ val refine_no_check           : constr -> tactic
 val internal_cut     : bool -> Id.t -> types -> tactic
 val internal_cut_rev : bool -> Id.t -> types -> tactic
 val refine           : constr -> tactic
-val move_hyp         : Id.t -> Id.t move_location -> tactic
 
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : goal sigma -> Pp.std_ppcmds

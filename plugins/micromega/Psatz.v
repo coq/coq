@@ -8,7 +8,7 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
+(*  Frédéric Besson (Irisa/Inria) 2006-2016                             *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -21,50 +21,24 @@ Require Import Rdefinitions.
 Require Import RingMicromega.
 Require Import VarMap.
 Require Coq.micromega.Tauto.
+Require Lia.
+Require Lra.
+Require Lqa.
+
 Declare ML Module "micromega_plugin".
 
-Ltac preprocess := 
-    zify ; unfold Z.succ in * ; unfold Z.pred in *.
+Ltac lia := Lia.lia.
 
-Ltac lia :=
-  preprocess;
-  xlia ;
-  abstract (
-  intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)).
-
-Ltac nia :=
-  preprocess;
-  xnlia ;
-  abstract (
-  intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)).
+Ltac nia := Lia.nia.
 
 
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
   | Z =>
-    (sos_Z || psatz_Z d) ;
-      abstract(
-    intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-    apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true))
+    (sos_Z Lia.zchecker) || (psatz_Z d  Lia.zchecker)
   | R =>
-    (sos_R || psatz_R d) ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try (abstract(intros __wit __varmap __ff ;
-        change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
-        apply (RTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
-  | Q =>
-    (sos_Q || psatz_Q d) ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try  (abstract(intros __wit __varmap __ff ;
-        change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
-        apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
+    (sos_R Lra.rchecker) || (psatz_R d Lra.rchecker)
+  | Q => (sos_Q Lqa.rchecker) || (psatz_Q d Lqa.rchecker) 
   | _ => fail "Unsupported domain"
   end in tac.
 
@@ -73,22 +47,9 @@ Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:(-1).
 
 Ltac psatzl dom :=
   let tac := lazymatch dom with
-  | Z => lia
-  | Q =>
-    psatzl_Q ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try (abstract(intros __wit __varmap __ff ;
-        change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
-        apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
-  | R =>
-    unfold Rdiv in * ; 
-    psatzl_R ;
-    (* If csdp is not installed, the previous step might not produce any
-    progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try abstract((intros __wit __varmap __ff ;
-        change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
-        apply (RTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
+  | Z => Lia.lia
+  | Q => Lqa.lra
+  | R => Lra.lra
   | _ => fail "Unsupported domain"
   end in tac.
 
@@ -97,13 +58,7 @@ Ltac lra :=
   first [ psatzl R | psatzl Q ].
 
 Ltac nra := 
-  unfold Rdiv in * ; 
-  xnra ;     
-  abstract 
-    (intros __wit __varmap __ff ;
-     change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
-     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
-                                                                       
+  first [ Lra.nra | Lqa.nra ].  
 
 
 (* Local Variables: *)

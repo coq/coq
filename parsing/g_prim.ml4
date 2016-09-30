@@ -28,7 +28,7 @@ let my_int_of_string loc s =
     if n > 1024 * 2048 then raise Exit;
     n
   with Failure _ | Exit ->
-    CErrors.user_err_loc (loc,"",Pp.str "Cannot support a so large number.")
+    CErrors.user_err ~loc  (Pp.str "Cannot support a so large number.")
 
 GEXTEND Gram
   GLOBAL:
@@ -93,7 +93,7 @@ GEXTEND Gram
   ;
   ne_string:
     [ [ s = STRING ->
-        if s="" then CErrors.user_err_loc(!@loc, "", Pp.str"Empty string."); s
+        if s="" then CErrors.user_err ~loc:(!@loc) (Pp.str"Empty string."); s
     ] ]
   ;
   ne_lstring:

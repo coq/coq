@@ -65,7 +65,7 @@ let raw_find_base bas = String.Map.find bas !rewtab
 let find_base bas =
   try raw_find_base bas
   with Not_found ->
-    errorlabstrm "AutoRewrite"
+    user_err ~hdr:"AutoRewrite"
       (str "Rewriting base " ++ str bas ++ str " does not exist.")
 
 let find_rewrites bas =
@@ -83,7 +83,7 @@ let print_rewrite_hintdb bas =
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
 	       Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
 	       Option.cata (fun tac -> str " then use tactic " ++
-	       Pptactic.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
+	       Pputils.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))
 
 type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option
@@ -294,8 +294,8 @@ let find_applied_relation metas loc env sigma c left2right =
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
     | None ->
-	user_err_loc (loc, "decompose_applied_relation",
-		     str"The type" ++ spc () ++ Printer.pr_constr_env env sigma ctype ++
+	user_err ~loc ~hdr:"decompose_applied_relation"
+		    (str"The type" ++ spc () ++ Printer.pr_constr_env env sigma ctype ++
 		       spc () ++ str"of this term does not end with an applied relation.")
 
 (* To add rewriting rules to a base *)

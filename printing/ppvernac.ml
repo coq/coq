@@ -21,7 +21,6 @@ open Decl_kinds
 
 module Make
   (Ppconstr : Ppconstrsig.Pp)
-  (Pptactic : Pptacticsig.Pp)
   (Taggers  : sig
     val tag_keyword : std_ppcmds -> std_ppcmds
     val tag_vernac  : vernac_expr -> std_ppcmds -> std_ppcmds
@@ -30,7 +29,6 @@ module Make
 
   open Taggers
   open Ppconstr
-  open Pptactic
 
   let keyword s = tag_keyword (str s)
 
@@ -67,7 +65,7 @@ module Make
     | (loc,Name id) -> pr_lident (loc,id)
     | lna -> pr_located pr_name lna
 
-  let pr_smart_global = pr_or_by_notation pr_reference
+  let pr_smart_global = Pputils.pr_or_by_notation pr_reference
 
   let pr_ltac_ref = Libnames.pr_reference
 
@@ -81,7 +79,7 @@ module Make
     | VernacEndSubproof -> str""
     | _ -> str"."
 
-  let pr_gen t = pr_raw_generic (Global.env ()) t
+  let pr_gen t = Pputils.pr_raw_generic (Global.env ()) t
 
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
@@ -195,7 +193,7 @@ module Make
         | HintsExtern (n,c,tac) ->
           let pat = match c with None -> mt () | Some pat -> pr_pat pat in
           keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
-            spc() ++ pr_raw_tactic tac
+            spc() ++ Pputils.pr_raw_generic (Global.env ()) tac
     in
     hov 2 (keyword "Hint "++ pph ++ opth)
 
@@ -591,7 +589,7 @@ module Make
           | ShowTree -> keyword "Show Tree"
           | ShowProofNames -> keyword "Show Conjectures"
           | ShowIntros b -> keyword "Show " ++ (if b then keyword "Intros" else keyword "Intro")
-          | ShowMatch id -> keyword "Show Match " ++ pr_lident id
+          | ShowMatch id -> keyword "Show Match " ++ pr_reference id
           | ShowThesis -> keyword "Show Thesis"
         in
         return (pr_showable s)
@@ -703,7 +701,7 @@ module Make
           | None -> mt()
           | Some r ->
             keyword "Eval" ++ spc() ++
-              pr_red_expr (pr_constr, pr_lconstr, pr_smart_global, pr_constr) r ++
+              pr_red_expr (pr_constr, pr_lconstr, pr_smart_global, pr_constr) keyword r ++
               keyword " in" ++ spc()
         in
         let pr_def_body = function
@@ -1127,7 +1125,7 @@ module Make
         let pr_mayeval r c = match r with
           | Some r0 ->
             hov 2 (keyword "Eval" ++ spc() ++
-                     pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) r0 ++
+                     pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) keyword r0 ++
                      spc() ++ keyword "in" ++ spc () ++ pr_lconstr c)
           | None -> hov 2 (keyword "Check" ++ spc() ++ pr_lconstr c)
         in
@@ -1138,7 +1136,7 @@ module Make
       | VernacDeclareReduction (s,r) ->
         return (
           keyword "Declare Reduction" ++ spc () ++ str s ++ str " := " ++
-            pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) r
+            pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) keyword r
         )
       | VernacPrint p ->
         return (pr_printable p)
@@ -1179,12 +1177,12 @@ module Make
         return (keyword "Proof " ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e)
       | VernacProof (Some te, None) ->
-        return (keyword "Proof with" ++ spc() ++ pr_raw_tactic te)
+        return (keyword "Proof with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te)
       | VernacProof (Some te, Some e) ->
         return (
           keyword "Proof" ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e ++ spc() ++
-            keyword "with" ++ spc() ++pr_raw_tactic te
+            keyword "with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te
         )
       | VernacProofMode s ->
         return (keyword "Proof Mode" ++ str s)
@@ -1223,7 +1221,7 @@ module Make
 
 end
 
-include Make (Ppconstr) (Pptactic) (struct
+include Make (Ppconstr) (struct
   let do_not_tag _ x = x
   let tag_keyword = do_not_tag ()
   let tag_vernac  = do_not_tag
@@ -1233,7 +1231,6 @@ module Richpp = struct
 
   include Make
     (Ppconstr.Richpp)
-    (Pptactic.Richpp)
     (struct
       open Ppannotation
       let tag_keyword s = Pp.tag (Pp.Tag.inj AKeyword tag) s

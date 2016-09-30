@@ -23,6 +23,8 @@ open Misctypes
 open Termops
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (* Some pretty printing function for debugging purpose *)
 
 let pr_binding prc  =
@@ -137,7 +139,7 @@ let generate_type evd g_to_f f graph i =
   let fun_ctxt,res_type =
     match ctxt with
       | [] | [_] -> anomaly (Pp.str "Not a valid context")
-      | decl :: fun_ctxt -> fun_ctxt, get_type decl
+      | decl :: fun_ctxt -> fun_ctxt, RelDecl.get_type decl
   in
   let rec args_from_decl i accu = function
   | [] -> accu
@@ -148,7 +150,7 @@ let generate_type evd g_to_f f graph i =
     args_from_decl (succ i) (t :: accu) l
   in
   (*i We need to name the vars [res] and [fv] i*)
-  let filter = fun decl -> match get_name decl with
+  let filter = fun decl -> match RelDecl.get_name decl with
 			   | Name id -> Some id
 			   | Anonymous -> None
   in
@@ -269,7 +271,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	(fun decl ->
 	   List.map
 	     (fun id -> Loc.ghost, IntroNaming (IntroIdentifier id))
-	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum (get_type decl)))))
+	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum (RelDecl.get_type decl)))))
 	)
 	branches
     in
@@ -399,7 +401,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	     | hres::res::decl::ctxt ->
 		let res = Termops.it_mkLambda_or_LetIn
 			    (Termops.it_mkProd_or_LetIn concl [hres;res])
-			    (LocalAssum (get_name decl, get_type decl) :: ctxt)
+			    (LocalAssum (RelDecl.get_name decl, RelDecl.get_type decl) :: ctxt)
 		in
 		res
 	)
@@ -415,7 +417,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       let params_bindings,avoid =
 	List.fold_left2
 	  (fun (bindings,avoid) decl p ->
-	     let id = Namegen.next_ident_away (Nameops.out_name (get_name decl)) avoid in
+	     let id = Namegen.next_ident_away (Nameops.out_name (RelDecl.get_name decl)) avoid in
 	     p::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
@@ -425,7 +427,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       let lemmas_bindings =
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) decl p ->
-	     let id = Namegen.next_ident_away (Nameops.out_name (get_name decl)) avoid in
+	     let id = Namegen.next_ident_away (Nameops.out_name (RelDecl.get_name decl)) avoid in
 	     (nf_zeta p)::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
@@ -682,7 +684,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(fun decl ->
 	   List.map
 	     (fun id -> id)
-	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (get_type decl)))
+	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (RelDecl.get_type decl)))
 	)
 	branches
     in
@@ -998,7 +1000,7 @@ let invfun qhyp f  =
   let f =
     match f with
       | ConstRef f -> f
-      | _ -> raise (CErrors.UserError("",str "Not a function"))
+      | _ -> raise (CErrors.UserError(None,str "Not a function"))
   in
   try
     let finfos = find_Function_infos f in
@@ -1043,19 +1045,19 @@ let invfun qhyp f g =
 			 functional_inversion kn hid  f2 f_correct g
 		       with
 			 | Failure "" ->
-			     errorlabstrm "" (str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
+			     user_err  (str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
 			 | Option.IsNone  ->
 			     if do_observe ()
 			     then
 			       error "Cannot use equivalence with graph for any side of the equality"
-			     else errorlabstrm "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+			     else user_err  (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
 			 | Not_found ->
 			     if do_observe ()
 			     then
 			       error "No graph found for any side of equality"
-			     else errorlabstrm "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+			     else user_err  (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
 		   end
-	       | _ -> errorlabstrm "" (Ppconstr.pr_id hid ++ str " must be an equality ")
+	       | _ -> user_err  (Ppconstr.pr_id hid ++ str " must be an equality ")
 	  end)
 	  qhyp
           end

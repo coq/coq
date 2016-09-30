@@ -153,7 +153,6 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
   and coerce' env x y : (Term.constr -> Term.constr) option =
     let subco () = subset_coerce env evdref x y in
     let dest_prod c =
-      let open Context.Rel.Declaration in
       match Reductionops.splay_prod_n env ( !evdref) 1 c with
       | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na,t), c
       | _ -> raise NoSubtacCoercion
@@ -412,7 +411,7 @@ let inh_tosort_force loc env evd j =
     let j2 = on_judgment_type (whd_evar evd) j1 in
       (evd,type_judgment env j2)
   with Not_found | NoCoercion ->
-    error_not_a_type_loc loc env evd j
+    error_not_a_type ~loc env evd j
 
 let inh_coerce_to_sort loc env evd j =
   let typ = whd_all env evd j.uj_type in
@@ -506,16 +505,16 @@ let inh_conv_coerce_to_gen resolve_tc rigidonly loc env evd cj t =
 	else raise NoSubtacCoercion
       with
       | NoSubtacCoercion when not resolve_tc || not !use_typeclasses_for_conversion ->
-	  error_actual_type_loc loc env best_failed_evd cj t e
+	  error_actual_type ~loc env best_failed_evd cj t e
       | NoSubtacCoercion ->
 	let evd' = saturate_evd env evd in
       	  try
 	    if evd' == evd then 
-	      error_actual_type_loc loc env best_failed_evd cj t e
+	      error_actual_type ~loc env best_failed_evd cj t e
 	    else 
       	      inh_conv_coerce_to_fail loc env evd' rigidonly (Some cj.uj_val) cj.uj_type t
 	  with NoCoercionNoUnifier (_evd,_error) ->
-	    error_actual_type_loc loc env best_failed_evd cj t e
+	    error_actual_type ~loc env best_failed_evd cj t e
   in
   let val' = match val' with Some v -> v | None -> assert(false) in
     (evd',{ uj_val = val'; uj_type = t })

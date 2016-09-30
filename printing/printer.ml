@@ -22,6 +22,10 @@ open Constrextern
 open Ppconstr
 open Declarations
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+module CompactedDecl = Context.Compacted.Declaration
+
 let emacs_str s =
   if !Flags.print_emacs then s else ""
 let delayed_emacs_cmd s =
@@ -248,31 +252,30 @@ let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
 (**********************************************************************)
 (* Contexts and declarations                                          *)
 
-let pr_var_decl_skel pr_id env sigma (id,c,typ) =
-  let pbody = match c with
-    | None ->  (mt ())
-    | Some c ->
-	(* Force evaluation *)
-	let pb = pr_lconstr_env env sigma c in
-	let pb = if isCast c then surround pb else pb in
-	(str" := " ++ pb ++ cut () ) in
+let pr_compacted_decl env sigma decl =
+  let ids, pbody, typ = match decl with
+    | CompactedDecl.LocalAssum (ids, typ) ->
+       ids, mt (), typ
+    | CompactedDecl.LocalDef (ids,c,typ) ->
+       (* Force evaluation *)
+       let pb = pr_lconstr_env env sigma c in
+       let pb = if isCast c then surround pb else pb in
+       ids, (str" := " ++ pb ++ cut ()), typ
+  in
+  let pids = prlist_with_sep pr_comma pr_id ids in
   let pt = pr_ltype_env env sigma typ in
   let ptyp = (str" : " ++ pt) in
-  (pr_id id ++ hov 0 (pbody ++ ptyp))
+  hov 0 (pids ++ pbody ++ ptyp)
 
-let pr_var_decl env sigma d =
-  pr_var_decl_skel pr_id env sigma (Context.Named.Declaration.to_tuple d)
-
-let pr_var_list_decl env sigma (l,c,typ) =
-  hov 0 (pr_var_decl_skel (fun ids -> prlist_with_sep pr_comma pr_id ids) env sigma (l,c,typ))
+let pr_named_decl env sigma decl =
+  decl |> CompactedDecl.of_named_decl |> pr_compacted_decl env sigma
 
 let pr_rel_decl env sigma decl =
-  let open Context.Rel.Declaration in
-  let na = get_name decl in
-  let typ = get_type decl in
+  let na = RelDecl.get_name decl in
+  let typ = RelDecl.get_type decl in
   let pbody = match decl with
-    | LocalAssum _ -> mt ()
-    | LocalDef (_,c,_) ->
+    | RelDecl.LocalAssum _ -> mt ()
+    | RelDecl.LocalDef (_,c,_) ->
 	(* Force evaluation *)
 	let pb = pr_lconstr_env env sigma c in
 	let pb = if isCast c then surround pb else pb in
@@ -289,13 +292,13 @@ let pr_rel_decl env sigma decl =
 
 (* Prints a signature, all declarations on the same line if possible *)
 let pr_named_context_of env sigma =
-  let make_decl_list env d pps = pr_var_decl env sigma d :: pps in
+  let make_decl_list env d pps = pr_named_decl env sigma d :: pps in
   let psl = List.rev (fold_named_context make_decl_list env ~init:[]) in
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
 let pr_named_context env sigma ne_context =
   hv 0 (Context.Named.fold_outside
-	  (fun d pps -> pps ++ ws 2 ++ pr_var_decl env sigma d)
+	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
@@ -307,9 +310,9 @@ let pr_rel_context_of env sigma =
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env sigma =
   let sign_env =
-    Context.NamedList.fold
+    Context.Compacted.fold
       (fun d pps ->
-         let pidt =  pr_var_list_decl env sigma d in
+         let pidt =  pr_compacted_decl env sigma d in
          (pps ++ fnl () ++ pidt))
       (Termops.compact_named_context (named_context env)) ~init:(mt ())
   in
@@ -334,12 +337,12 @@ let pr_context_limit n env sigma =
   else
     let k = lgsign-n in
     let _,sign_env =
-      Context.NamedList.fold
+      Context.Compacted.fold
         (fun d (i,pps) ->
            if i < k then
 	     (i+1, (pps ++str "."))
 	   else
-             let pidt = pr_var_list_decl env sigma d in
+             let pidt = pr_compacted_decl env sigma d in
 	     (i+1, (pps ++ fnl () ++
 		      str (emacs_str "") ++
 		      pidt)))
@@ -417,8 +420,7 @@ let pr_evgl_sign sigma evi =
   | None -> [], []
   | Some f -> List.filter2 (fun b c -> not b) f (evar_context evi)
   in
-  let open Context.Named.Declaration in
-  let ids = List.rev_map get_id l in
+  let ids = List.rev_map NamedDecl.get_id l in
   let warn =
     if List.is_empty ids then mt () else
       (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
@@ -732,9 +734,6 @@ let pr_prim_rule = function
   | Refine c ->
       str(if Termops.occur_meta c then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c
-
-  | Move (id1,id2) ->
-      (str"move "  ++ pr_id id1 ++ Miscprint.pr_move_location pr_id id2)
 
 (* Backwards compatibility *)
 

@@ -13,7 +13,7 @@ open Tacexpr
 
 (** {5 Tactic Definitions} *)
 
-val register_ltac : locality_flag -> Vernacexpr.tacdef_body list -> unit
+val register_ltac : locality_flag -> Tacexpr.tacdef_body list -> unit
 (** Adds new Ltac definitions to the environment. *)
 
 (** {5 Tactic Notations} *)

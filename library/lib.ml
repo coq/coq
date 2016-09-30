@@ -13,6 +13,9 @@ open Libnames
 open Globnames
 open Nameops
 open Libobject
+open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
@@ -75,7 +78,7 @@ let classify_segment seg =
     | (_,ClosedModule _) :: stk -> clean acc stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
-      errorlabstrm "Lib.classify_segment"
+      user_err ~hdr:"Lib.classify_segment"
         (str "there are still opened " ++ str (module_kind ty) ++ str "s")
     | (_,FrozenState _) :: stk -> clean acc stk
   in
@@ -267,7 +270,7 @@ let start_mod is_type export id mp fs =
     else Nametab.exists_module dir
   in
   if exists then
-    errorlabstrm "open_module" (pr_id id ++ str " already exists");
+    user_err ~hdr:"open_module" (pr_id id ++ str " already exists");
   add_entry (make_oname id) (OpenedModule (is_type,export,prefix,fs));
   path_prefix := prefix;
   prefix
@@ -277,7 +280,7 @@ let start_modtype = start_mod true None
 
 let error_still_opened string oname =
   let id = basename (fst oname) in
-  errorlabstrm ""
+  user_err 
     (str "The " ++ str string ++ str " " ++ pr_id id ++ str " is still opened.")
 
 let end_mod is_type =
@@ -322,7 +325,7 @@ let end_compilation_checks dir =
     try match snd (find_entry_p is_opening_node) with
       | OpenedSection _ -> error "There are some open sections."
       | OpenedModule (ty,_,_,_) ->
-	errorlabstrm "Lib.end_compilation_checks"
+	user_err ~hdr:"Lib.end_compilation_checks"
           (str "There are some open " ++ str (module_kind ty) ++ str "s.")
       | _ -> assert false
     with Not_found -> ()
@@ -374,7 +377,7 @@ let find_opening_node id =
     let oname,entry = find_entry_p is_opening_node in
     let id' = basename (fst oname) in
     if not (Names.Id.equal id id') then
-      errorlabstrm "Lib.find_opening_node"
+      user_err ~hdr:"Lib.find_opening_node"
         (str "Last block to end has name " ++ pr_id id' ++ str ".");
     entry
   with Not_found -> error "There is nothing to end."
@@ -388,7 +391,7 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type variable_info = Names.Id.t * Decl_kinds.binding_kind * Term.constr option * Term.types
+type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 
 type variable_context = variable_info list
 type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
@@ -428,12 +431,10 @@ let add_section_context ctx =
        sectab := (Context ctx :: vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
-  let open Context.Named.Declaration in
   let rec aux = function
-    | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (get_id decl) ->
-      let (id',b,t) = to_tuple decl in
+    | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
-	(id',impl,b,t) :: l, if poly then Univ.ContextSet.union r ctx else r
+      (decl,impl) :: l, if poly then Univ.ContextSet.union r ctx else r
     | (Variable (_,_,poly,ctx)::idl,hyps) ->
         let l, r = aux (idl,hyps) in
           l, if poly then Univ.ContextSet.union r ctx else r
@@ -443,17 +444,11 @@ let extract_hyps (secs,ohyps) =
     | [], _ -> [],Univ.ContextSet.empty
   in aux (secs,ohyps)
 
-let instance_from_variable_context sign =
-  let rec inst_rec = function
-    | (id,b,None,_) :: sign -> id :: inst_rec sign
-    | _ :: sign -> inst_rec sign
-    | [] -> [] in
-  Array.of_list (inst_rec sign)
+let instance_from_variable_context =
+  List.map fst %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
 
-let named_of_variable_context ctx = let open Context.Named.Declaration in
-                                    List.map (function id,_,None,t -> LocalAssum (id,t)
-                                                     | id,_,Some b,t -> LocalDef (id,b,t))
-                                             ctx
+let named_of_variable_context =
+  List.map fst
   
 let add_section_replacement f g poly hyps =
   match !sectab with
@@ -506,13 +501,6 @@ let section_instance = function
 let is_in_section ref =
   try ignore (section_instance ref); true with Not_found -> false
 
-let full_replacement_context () = List.map pi2 !sectab
-let full_section_segment_of_constant con =
-  List.map (fun (vars,_,(x,_)) -> fun hyps ->
-    named_of_variable_context
-      (try pi1 (Names.Cmap.find con x)
-       with Not_found -> fst (extract_hyps (vars, hyps)))) !sectab
-
 (*************)
 (* Sections. *)
 
@@ -525,7 +513,7 @@ let open_section id =
   let dir = add_dirpath_suffix olddir id in
   let prefix = dir, (mp, add_dirpath_suffix oldsec id) in
   if Nametab.exists_section dir then
-    errorlabstrm "open_section" (pr_id id ++ str " already exists.");
+    user_err ~hdr:"open_section" (pr_id id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:`No in
   add_entry (make_oname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
@@ -613,15 +601,6 @@ let rec dp_of_mp = function
   |Names.MPbound _ -> library_dp ()
   |Names.MPdot (mp,_) -> dp_of_mp mp
 
-let rec split_mp = function
-  |Names.MPfile dp -> dp, Names.DirPath.empty
-  |Names.MPdot (prfx, lbl) ->
-    let mprec, dprec = split_mp prfx in
-    mprec, Libnames.add_dirpath_suffix dprec (Names.Label.to_id lbl)
-  |Names.MPbound mbid ->
-    let (_,id,dp) = Names.MBId.repr mbid in
-    library_dp (), Names.DirPath.make [id]
-
 let rec split_modpath = function
   |Names.MPfile dp -> dp, []
   |Names.MPbound mbid -> library_dp (), [Names.MBId.to_id mbid]
@@ -632,20 +611,6 @@ let rec split_modpath = function
 let library_part = function
   |VarRef id -> library_dp ()
   |ref -> dp_of_mp (mp_of_global ref)
-
-let remove_section_part ref =
-  let sp = Nametab.path_of_global ref in
-  let dir,_ = repr_path sp in
-  match ref with
-  | VarRef id ->
-      anomaly (Pp.str "remove_section_part not supported on local variables")
-  | _ ->
-      if is_dirpath_prefix_of dir (cwd ()) then
-        (* Not yet (fully) discharged *)
-        pop_dirpath_n (sections_depth ()) (cwd ())
-      else
-	(* Theorem/Lemma outside its outer section of definition *)
-	dir
 
 (************************)
 (* Discharging names *)

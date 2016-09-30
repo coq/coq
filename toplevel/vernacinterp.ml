@@ -22,7 +22,7 @@ let vinterp_add depr s f =
   try
     Hashtbl.add vernac_tab s (depr, f)
   with Failure _ ->
-    errorlabstrm "vinterp_add"
+    user_err ~hdr:"vinterp_add"
       (str"Cannot add the vernac command " ++ str (fst s) ++ str" twice.")
 
 let overwriting_vinterp_add s f =
@@ -37,7 +37,7 @@ let vinterp_map s =
   try
     Hashtbl.find vernac_tab s
   with Failure _ | Not_found ->
-    errorlabstrm "Vernac Interpreter"
+    user_err ~hdr:"Vernac Interpreter"
       (str"Cannot find vernac command " ++ str (fst s) ++ str".")
 
 let vinterp_init () = Hashtbl.clear vernac_tab

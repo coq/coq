@@ -21,18 +21,20 @@ open Libobject
 open Nameops
 open Misctypes
 open Context.Rel.Declaration
+
+module RelDecl = Context.Rel.Declaration
 (*i*)
 
 let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
 
 let declare_generalizable_ident table (loc,id) =
   if not (Id.equal id (root_of_id id)) then
-    user_err_loc(loc,"declare_generalizable_ident",
-    (pr_id id ++ str
+    user_err ~loc ~hdr:"declare_generalizable_ident"
+    ((pr_id id ++ str
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
   if Id.Pred.mem id table then
-    user_err_loc(loc,"declare_generalizable_ident",
-		(pr_id id++str" is already declared as a generalizable identifier"))
+    user_err ~loc ~hdr:"declare_generalizable_ident"
+		((pr_id id++str" is already declared as a generalizable identifier"))
   else Id.Pred.add id table
 
 let add_generalizable gen table =
@@ -78,8 +80,8 @@ let is_freevar ids env x =
 (* Auxiliary functions for the inference of implicitly quantified variables. *)
 
 let ungeneralizable loc id =
-  user_err_loc (loc, "Generalization", 
-	       str "Unbound and ungeneralizable variable " ++ pr_id id)
+  user_err ~loc ~hdr:"Generalization"
+	       (str "Unbound and ungeneralizable variable " ++ pr_id id)
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let found loc id bdvars l =
@@ -198,12 +200,12 @@ let combine_params avoid fn applied needed =
     List.partition
       (function
 	  (t, Some (loc, ExplByName id)) ->
-            let is_id (_, decl) = match get_name decl with
+            let is_id (_, decl) = match RelDecl.get_name decl with
             | Name id' -> Id.equal id id'
             | Anonymous -> false
             in
 	    if not (List.exists is_id needed) then
-	      user_err_loc (loc,"",str "Wrong argument name: " ++ Nameops.pr_id id);
+	      user_err ~loc  (str "Wrong argument name: " ++ Nameops.pr_id id);
 	    true
 	| _ -> false) applied
   in
@@ -237,12 +239,12 @@ let combine_params avoid fn applied needed =
 	    aux (t' :: ids) avoid' app need
 
       | (x,_) :: _, [] ->
-	  user_err_loc (Constrexpr_ops.constr_loc x,"",str "Typeclass does not expect more arguments")
+	  user_err ~loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
 let combine_params_freevar =
   fun avoid (_, decl) ->
-    let id' = next_name_away_from (get_name decl) avoid in
+    let id' = next_name_away_from (RelDecl.get_name decl) avoid in
       (CRef (Ident (Loc.ghost, id'),None), Id.Set.add id' avoid)
 
 let destClassApp cl =

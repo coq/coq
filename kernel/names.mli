@@ -82,6 +82,9 @@ sig
   type t = Anonymous     (** anonymous identifier *)
 	 | Name of Id.t  (** non-anonymous identifier *)
 
+  val mk_name : Id.t -> t
+  (** constructor *)
+
   val is_anonymous : t -> bool
   (** Return [true] iff a given name is [Anonymous]. *)
 

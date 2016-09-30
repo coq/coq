@@ -49,7 +49,7 @@ let locate_constant ref =
 
 let locate_with_msg msg f x =
   try f x
-  with Not_found -> raise (CErrors.UserError("", msg))
+  with Not_found -> raise (CErrors.UserError(None, msg))
 
 
 let filter_map filter f =
@@ -73,7 +73,7 @@ let chop_rlambda_n  =
 	  | Glob_term.GLambda(_,name,k,t,b) -> chop_lambda_n ((name,t,false)::acc) (n-1) b
 	  | Glob_term.GLetIn(_,name,v,b) -> chop_lambda_n ((name,v,true)::acc) (n-1) b
 	  | _ ->
-	      raise (CErrors.UserError("chop_rlambda_n",
+	      raise (CErrors.UserError(Some "chop_rlambda_n",
 				    str "chop_rlambda_n: Not enough Lambdas"))
   in
   chop_lambda_n []
@@ -85,7 +85,7 @@ let chop_rprod_n  =
       else
 	match rt with
 	  | Glob_term.GProd(_,name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
-	  | _ -> raise (CErrors.UserError("chop_rprod_n",str "chop_rprod_n: Not enough products"))
+	  | _ -> raise (CErrors.UserError(Some "chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in
   chop_prod_n []
 
@@ -110,7 +110,7 @@ let const_of_id id =
   in
   try Constrintern.locate_reference princ_ref
   with Not_found ->
-    CErrors.errorlabstrm "IndFun.const_of_id"
+    CErrors.user_err ~hdr:"IndFun.const_of_id"
       (str "cannot find " ++ Nameops.pr_id id)
 
 let def_of_const t =

@@ -19,6 +19,8 @@ open Declarations
 open Tacmach.New
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
    general disjunction, or a type with no constructors.
@@ -100,7 +102,7 @@ let match_with_one_constructor style onlybinary allow_rec t =
 	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
 	  if
 	    List.for_all
-	      (fun decl -> let c = get_type decl in
+	      (fun decl -> let c = RelDecl.get_type decl in
 	                   is_local_assum decl &&
 			   isRel c &&
                            Int.equal (destRel c) mib.mind_nparams) ctx
@@ -109,7 +111,7 @@ let match_with_one_constructor style onlybinary allow_rec t =
 	  else None
 	else
 	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
-	  let cargs = List.map get_type (prod_assum ctyp) in
+	  let cargs = List.map RelDecl.get_type (prod_assum ctyp) in
 	  if not (is_lax_conjunction style) || has_nodep_prod ctyp then
 	    (* Record or non strict conjunction *)
 	    Some (hdapp,List.rev cargs)
@@ -450,7 +452,7 @@ let find_this_eq_data_decompose gl eqn =
     try (*first_match (match_eq eqn) inversible_equalities*)
       find_eq_data eqn
     with PatternMatchingFailure ->
-      errorlabstrm "" (str "No primitive equality found.") in
+      user_err  (str "No primitive equality found.") in
   let eq_args =
     try extract_eq_args gl eq_args
     with PatternMatchingFailure ->
@@ -509,7 +511,7 @@ let coq_eqdec ~sum ~rev =
     let eqn = mkGAppRef coq_eq_ref (List.map mkGPatVar ["X1"; "X2"; "X3"]) in
     let args = [eqn; mkGAppRef coq_not_ref [eqn]] in
     let args = if rev then List.rev args else args in
-    mkPattern (mkGAppRef sum [eqn; mkGAppRef coq_not_ref [eqn]])
+    mkPattern (mkGAppRef sum args)
   )
 
 (** { ?X2 = ?X3 :> ?X1 } + { ~ ?X2 = ?X3 :> ?X1 } *)

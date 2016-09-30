@@ -16,10 +16,8 @@ open Globnames
 
 exception GlobalizationError of qualid
 
-let error_global_not_found_loc loc q =
-  Loc.raise loc (GlobalizationError q)
-
-let error_global_not_found q = raise (GlobalizationError q)
+let error_global_not_found ?loc q =
+  Loc.raise ?loc (GlobalizationError q)
 
 (* Kinds of global names *)
 
@@ -455,11 +453,11 @@ let global r =
   try match locate_extended qid with
     | TrueGlobal ref -> ref
     | SynDef _ ->
-        user_err_loc (loc,"global",
-          str "Unexpected reference to a notation: " ++
-          pr_qualid qid)
+        user_err ~loc ~hdr:"global"
+          (str "Unexpected reference to a notation: " ++
+           pr_qualid qid)
   with Not_found ->
-    error_global_not_found_loc loc qid
+    error_global_not_found ~loc qid
 
 (* Exists functions ********************************************************)
 
@@ -534,8 +532,8 @@ let global_inductive r =
   match global r with
   | IndRef ind -> ind
   | ref ->
-      user_err_loc (loc_of_reference r,"global_inductive",
-        pr_reference r ++ spc () ++ str "is not an inductive type")
+      user_err ~loc:(loc_of_reference r) ~hdr:"global_inductive"
+        (pr_reference r ++ spc () ++ str "is not an inductive type")
 
 
 (********************************************************************)

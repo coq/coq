@@ -87,9 +87,9 @@ val add_mutual_definitions :
   fixpoint_kind -> unit
 
 val obligation : int * Names.Id.t option * Constrexpr.constr_expr option ->
-  Tacexpr.raw_tactic_expr option -> unit
+  Genarg.glob_generic_argument option -> unit
 
-val next_obligation : Names.Id.t option -> Tacexpr.raw_tactic_expr option -> unit
+val next_obligation : Names.Id.t option -> Genarg.glob_generic_argument option -> unit
 
 val solve_obligations : Names.Id.t option -> unit Proofview.tactic option -> progress
 (* Number of remaining obligations to be solved for this program *)

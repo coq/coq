@@ -28,9 +28,9 @@ type pattern_matching_error =
 
 exception PatternMatchingError of env * evar_map * pattern_matching_error
 
-val error_wrong_numarg_constructor_loc : Loc.t -> env -> constructor -> int -> 'a
+val error_wrong_numarg_constructor : ?loc:Loc.t -> env -> constructor -> int -> 'a
 
-val error_wrong_numarg_inductive_loc : Loc.t -> env -> inductive -> int -> 'a
+val error_wrong_numarg_inductive   : ?loc:Loc.t -> env -> inductive -> int -> 'a
 
 val irrefutable : env -> cases_pattern -> bool
 

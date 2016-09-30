@@ -9,15 +9,17 @@
 open Pp
 open Genarg
 
-type ('raw, 'glb, 'top) printer = {
-  raw : 'raw -> std_ppcmds;
-  glb : 'glb -> std_ppcmds;
-  top : 'top -> std_ppcmds;
+type 'a printer = 'a -> std_ppcmds
+
+type ('raw, 'glb, 'top) genprinter = {
+  raw : 'raw printer;
+  glb : 'glb printer;
+  top : 'top printer;
 }
 
 module PrintObj =
 struct
-  type ('raw, 'glb, 'top) obj = ('raw, 'glb, 'top) printer
+  type ('raw, 'glb, 'top) obj = ('raw, 'glb, 'top) genprinter
   let name = "printer"
   let default wit = match wit with
   | ExtraArg tag ->

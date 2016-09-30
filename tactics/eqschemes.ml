@@ -60,6 +60,8 @@ open Indrec
 open Sigma.Notations
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
 let default_id_of_sort = function InProp | InSet -> hid | InType -> xid
@@ -600,9 +602,9 @@ let fix_r2l_forward_rew_scheme (c, ctx') =
   | hp :: p :: ind :: indargs ->
      let c' = 
       my_it_mkLambda_or_LetIn indargs
-        (mkLambda_or_LetIn (map_constr (liftn (-1) 1) p)
-	  (mkLambda_or_LetIn (map_constr (liftn (-1) 2) hp)
-	    (mkLambda_or_LetIn (map_constr (lift 2) ind)
+        (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 1) p)
+	  (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 2) hp)
+	    (mkLambda_or_LetIn (RelDecl.map_constr (lift 2) ind)
 	      (Reductionops.whd_beta Evd.empty
 		(applist (c,
 	          Context.Rel.to_extended_list 3 indargs @ [mkRel 1;mkRel 3;mkRel 2]))))))
@@ -741,7 +743,7 @@ let build_congr env (eq,refl,ctx) ind =
   if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported.";
   let env_with_arity = push_rel_context arityctxt env in
-  let ty = get_type (lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity) in
+  let ty = RelDecl.get_type (lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity) in
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
   if Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt) then

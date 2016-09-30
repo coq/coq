@@ -46,23 +46,37 @@ let xml_to_string xml =
   let () = iter (Richpp.repr xml) in
   Buffer.contents buf
 
-let translate s = s
+let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
+  (** FIXME: LablGTK2 does not export the C insert_with_tags function, so that
+      it has to reimplement its own helper function. Unluckily, it relies on
+      a slow algorithm, so that we have to have our own quicker version here.
+      Alas, it is still much slower than the native version... *)
+  if CList.is_empty tags then buf#insert ~iter:(buf#get_iter_at_mark mark) text
+  else
+    let it = buf#get_iter_at_mark mark in
+    let () = buf#move_mark rmark ~where:it in
+    let () = buf#insert ~iter:(buf#get_iter_at_mark mark) text in
+    let start = buf#get_iter_at_mark mark in
+    let stop = buf#get_iter_at_mark rmark in
+    let iter tag = buf#apply_tag tag start stop in
+    List.iter iter tags
 
-let insert_xml ?(tags = []) (buf : #GText.buffer_skel) msg =
+let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
   let open Xml_datatype in
   let tag name =
-    let name = translate name in
     match GtkText.TagTable.lookup buf#tag_table name with
     | None -> raise Not_found
     | Some tag -> new GText.tag tag
   in
+  let rmark = `MARK (buf#create_mark buf#start_iter) in
   let rec insert tags = function
-  | PCData s -> buf#insert ~tags:(List.rev tags) s
+  | PCData s -> insert_with_tags buf mark rmark tags s
   | Element (t, _, children) ->
     let tags = try tag t :: tags with Not_found -> tags in
     List.iter (fun xml -> insert tags xml) children
   in
-  insert tags (Richpp.repr msg)
+  let () = try insert tags (Richpp.repr msg) with _ -> () in
+  buf#delete_mark rmark
 
 let set_location = ref  (function s -> failwith "not ready")
 
@@ -112,6 +126,24 @@ let try_convert s =
     "(* Fatal error: wrong encoding in input. \
 Please choose a correct encoding in the preference panel.*)";;
 
+let export file_name s =
+  let oc = open_out_bin file_name in
+  let ending = line_ending#get in
+  let is_windows = ref false in
+  for i = 0 to String.length s - 1 do
+    match s.[i] with
+    | '\r' -> is_windows := true
+    | '\n' ->
+      begin match ending with
+      | `DEFAULT ->
+        if !is_windows then (output_char oc '\r'; output_char oc '\n')
+        else output_char oc '\n'
+      | `WINDOWS -> output_char oc '\r'; output_char oc '\n'
+      | `UNIX -> output_char oc '\n'
+      end
+    | c -> output_char oc c
+  done;
+  close_out oc
 
 let try_export file_name s =
   let s =
@@ -134,11 +166,7 @@ let try_export file_name s =
       Minilib.log ("Error ("^str^") in transcoding: falling back to UTF-8");
       s
   in
-  try
-    let oc = open_out file_name in
-    output_string oc s;
-    close_out oc;
-    true
+  try export file_name s; true
   with e -> Minilib.log (Printexc.to_string e);false
 
 type timer = { run : ms:int -> callback:(unit->bool) -> unit;

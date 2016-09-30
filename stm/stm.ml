@@ -37,10 +37,12 @@ let state_computed, state_computed_hook = Hook.make
 let state_ready, state_ready_hook = Hook.make
  ~default:(fun state_id -> ()) ()
 
-let forward_feedback, forward_feedback_hook = Hook.make
- ~default:(function
+let forward_feedback, forward_feedback_hook = 
+  let m = Mutex.create () in
+  Hook.make ~default:(function
     | { id = id; route; contents } ->
-      feedback ~id:id ~route contents) ()
+        try Mutex.lock m; feedback ~id:id ~route contents; Mutex.unlock m
+        with e -> Mutex.unlock m; raise e) ()
 
 let parse_error, parse_error_hook = Hook.make
  ~default:(fun id loc msg ->
@@ -1038,7 +1040,7 @@ end = struct (* {{{ *)
       | _ -> VtUnknown, VtNow
     with
     | Not_found ->
-       CErrors.errorlabstrm "undo_vernac_classifier"
+       CErrors.user_err ~hdr:"undo_vernac_classifier"
         (str "Cannot undo")
 
 end (* }}} *)
@@ -1106,7 +1108,7 @@ let proof_block_delimiters = ref []
 
 let register_proof_block_delimiter name static dynamic =
   if List.mem_assoc name !proof_block_delimiters then
-    CErrors.errorlabstrm "STM" (str "Duplicate block delimiter " ++ str name);
+    CErrors.user_err ~hdr:"STM" (str "Duplicate block delimiter " ++ str name);
   proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
 
 let mk_doc_node id = function
@@ -1141,7 +1143,7 @@ let detect_proof_block id name =
           VCS.create_proof_block decl name
       end
     with Not_found ->
-      CErrors.errorlabstrm "STM"
+      CErrors.user_err ~hdr:"STM"
         (str "Unknown proof block delimiter " ++ str name)
   )
 (****************************** THE SCHEDULER *********************************)
@@ -1437,8 +1439,8 @@ end = struct (* {{{ *)
 
   let check_task_aux extra name l i =
     let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
-    msg_info(
-      str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
+    Flags.if_verbose msg_info
+      (str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
     VCS.restore document;
     let start =
       let rec aux cur =
@@ -1706,7 +1708,7 @@ end = struct (* {{{ *)
          List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0))
                       Evd.(evar_context g))
        then
-         CErrors.errorlabstrm "STM" (strbrk("the par: goal selector supports ground "^
+         CErrors.user_err ~hdr:"STM" (strbrk("the par: goal selector supports ground "^
            "goals only"))
        else begin
         let (i, ast) = r_ast in
@@ -1719,7 +1721,7 @@ end = struct (* {{{ *)
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               RespBuiltSubProof (t, Evd.evar_universe_context sigma)
-            else CErrors.errorlabstrm "STM" (str"The solution is not ground")
+            else CErrors.user_err ~hdr:"STM" (str"The solution is not ground")
        end) ()
     with e when CErrors.noncritical e -> RespError (CErrors.print e)
 
@@ -2056,7 +2058,7 @@ let known_state ?(redefine_qed=false) ~cache id =
            | _ -> assert false
         end
       with Not_found ->
-          CErrors.errorlabstrm "STM"
+          CErrors.user_err ~hdr:"STM"
             (str "Unknown proof block delimiter " ++ str name)
   in
 
@@ -2089,13 +2091,13 @@ let known_state ?(redefine_qed=false) ~cache id =
   let inject_non_pstate (s,l) =
     Summary.unfreeze_summary s; Lib.unfreeze l; update_global_env ()
   in
-  let rec pure_cherry_pick_non_pstate id = Future.purify (fun id ->
+  let rec pure_cherry_pick_non_pstate safe_id id = Future.purify (fun id ->
     prerr_endline (fun () -> "cherry-pick non pstate " ^ Stateid.to_string id);
-    reach id;
+    reach ~safe_id id;
     cherry_pick_non_pstate ()) id
 
   (* traverses the dag backward from nodes being already calculated *)
-  and reach ?(redefine_qed=false) ?(cache=cache) id =
+  and reach ?safe_id ?(redefine_qed=false) ?(cache=cache) id =
     prerr_endline (fun () -> "reaching: " ^ Stateid.to_string id);
     if not redefine_qed && State.is_cached ~cache id then begin
       Hooks.(call state_computed id ~in_cache:true);
@@ -2240,13 +2242,13 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache, true
       | `Sideff (`Id origin) -> (fun () ->
             reach view.next;
-            inject_non_pstate (pure_cherry_pick_non_pstate origin);
+            inject_non_pstate (pure_cherry_pick_non_pstate view.next origin);
           ), cache, true
     in
     let cache_step =
       if !Flags.async_proofs_cache = Some Flags.Force then `Yes
       else cache_step in
-    State.define
+    State.define ?safe_id
       ~cache:cache_step ~redefine:redefine_qed ~feedback_processed step id;
     prerr_endline (fun () -> "reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
@@ -2358,7 +2360,7 @@ let merge_proof_branch ?valid ?id qast keep brname =
       let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
-      if keep <> VtDrop then VCS.propagate_sideff None;
+      VCS.propagate_sideff None;
       `Ok
   | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
       let ofp =
@@ -2405,7 +2407,7 @@ let handle_failure (e, info) vcs tty =
 let snapshot_vio ldir long_f_dot_vo =
   finish ();
   if List.length (VCS.branches ()) > 1 then
-    CErrors.errorlabstrm "stm" (str"Cannot dump a vio with open proofs");
+    CErrors.user_err ~hdr:"stm" (str"Cannot dump a vio with open proofs");
   Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_vo
     (Global.opaque_tables ())
 
@@ -2471,12 +2473,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
             {x with verbose = true }
            with e when CErrors.noncritical e ->
              let e = CErrors.push e in
-             iraise (State.exn_on report_id e)); `Ok
+             iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (false,(report_id,route)), VtNow ->
           (try vernac_interp report_id ~route x
            with e ->
              let e = CErrors.push e in
-             iraise (State.exn_on report_id e)); `Ok
+             iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (true,(report_id,_)), w ->
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in

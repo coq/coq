@@ -22,7 +22,11 @@ to OCaml code. *)
 
 (** Local names **)
 
+(* The first component is there for debugging purposes only *)
 type lname = { lname : name; luid : int }
+
+let eq_lname ln1 ln2 =
+  Int.equal ln1.luid ln2.luid
 
 let dummy_lname = { lname = Anonymous; luid = -1 }
 
@@ -81,6 +85,9 @@ let eq_gname gn1 gn2 =
   | Grel i1, Grel i2 -> Int.equal i1 i2
   | Gnamed id1, Gnamed id2 -> Id.equal id1 id2
   | _ -> false
+
+let dummy_gname =
+  Grel 0
 
 open Hashset.Combine
 
@@ -404,9 +411,13 @@ let opush_lnames n env lns =
 let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
   match t1, t2 with
   | MLlocal ln1, MLlocal ln2 ->
+     (try
       Int.equal (LNmap.find ln1 env1) (LNmap.find ln2 env2)
+     with Not_found ->
+      eq_lname ln1 ln2)
   | MLglobal gn1', MLglobal gn2' ->
       eq_gname gn1' gn2' || (eq_gname gn1 gn1' && eq_gname gn2 gn2')
+      || (eq_gname gn1 gn2' && eq_gname gn2 gn1')
   | MLprimitive prim1, MLprimitive prim2 -> eq_primitive prim1 prim2
   | MLlam (lns1, ml1), MLlam (lns2, ml2) ->
       Int.equal (Array.length lns1) (Array.length lns2) &&
@@ -719,6 +730,11 @@ let push_global_norm gn params body =
 let push_global_case gn params annot a accu bs =
   push_global gn (Gletcase (gn, params, annot, a, accu, bs))
 
+(* Compares [t1] and [t2] up to alpha-equivalence. [t1] and [t2] may contain
+   free variables. *)
+let eq_mllambda t1 t2 =
+  eq_mllambda dummy_gname dummy_gname 0 LNmap.empty LNmap.empty t1 t2
+
 (*s Compilation environment *)
 
 type env =
@@ -897,9 +913,7 @@ let rec insert cargs body rl =
      let params = rm_params fv params in
      rl:= Rcons(ref [(c,params)], fv, body, ref Rnil)
  | Rcons(l,fv,body',rl) ->
-    (** ppedrot: It seems we only want to factorize common branches. It should
-        not matter to do so with a subapproximation by (==). *)
-     if body == body' then
+     if eq_mllambda body body' then
        let (c,params) = cargs in
        let params = rm_params fv params in
        l := (c,params)::!l
@@ -1446,12 +1460,14 @@ let optimize gdef l =
 
 	end
     | MLif(t,b1,b2) ->
+       (* This optimization is critical: it applies to all fixpoints that start
+       by matching on their recursive argument *)
 	let t = optimize s t in
 	let b1 = optimize s b1 in
 	let b2 = optimize s b2 in
 	begin match t, b2 with
 	| MLapp(MLprimitive Is_accu,[| l1 |]), MLmatch(annot, l2, _, bs)
-	    when l1 == l2 -> MLmatch(annot, l1, b1, bs) (** approximation *)
+	    when eq_mllambda l1 l2 -> MLmatch(annot, l1, b1, bs)
         | _, _ -> MLif(t, b1, b2)
 	end
     | MLmatch(annot,a,accu,bs) ->
@@ -1832,10 +1848,9 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
   auxdefs, MLlet(aux_name, ml, mkMLapp (MLlocal aux_name) (Array.of_list (fv_rel@fv_named)))
 
 and compile_rel env sigma univ auxdefs n =
-  let open Context.Rel in
-  let n = length env.env_rel_context - n in
-  let open Declaration in
-  match lookup n env.env_rel_context with
+  let n = Context.Rel.length env.env_rel_context - n in
+  let open Context.Rel.Declaration in
+  match Context.Rel.lookup n env.env_rel_context with
   | LocalDef (_,t,_) ->
       let code = lambda_of_constr env sigma t in
       let auxdefs,code = compile_with_fv env sigma univ auxdefs None code in
@@ -1930,13 +1945,15 @@ let compile_constant env sigma prefix ~interactive con cb =
           arg|])))::
             [Glet(gn, mkMLlam [|c_uid|] code)], Linked prefix
 
-let loaded_native_files = ref ([] : string list)
+module StringOrd = struct type t = string let compare = String.compare end
+module StringSet = Set.Make(StringOrd)
 
-let is_loaded_native_file s = String.List.mem s !loaded_native_files
+let loaded_native_files = ref StringSet.empty
+
+let is_loaded_native_file s = StringSet.mem s !loaded_native_files
 
 let register_native_file s =
-  if not (is_loaded_native_file s) then
-    loaded_native_files := s :: !loaded_native_files
+  loaded_native_files := StringSet.add s !loaded_native_files
 
 let is_code_loaded ~interactive name =
   match !name with

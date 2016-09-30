@@ -8,7 +8,6 @@
 
 (** Tactics related to (dependent) equality and proof irrelevance. *)
 
-Require Export ProofIrrelevance.
 Require Export JMeq.
 
 Require Import Coq.Program.Tactics.
@@ -143,7 +142,7 @@ Ltac pi_eq_proof_hyp p :=
       | [ H : X = Y |- _ ] =>
         match p with
           | H => fail 2
-          | _ => rewrite (proof_irrelevance (X = Y) p H)
+          | _ => rewrite (UIP _ X Y p H)
         end
       | _ => fail " No hypothesis with same type "
     end
@@ -166,7 +165,7 @@ Hint Rewrite <- eq_rect_eq : refl_id.
    [coerce_* t eq_refl = t]. *)
 
 Lemma JMeq_eq_refl {A} (x : A) : JMeq_eq (@JMeq_refl _ x) = eq_refl.
-Proof. apply proof_irrelevance. Qed.
+Proof. apply UIP. Qed.
 
 Lemma UIP_refl_refl A (x : A) :
   Eqdep.EqdepTheory.UIP_refl A x eq_refl = eq_refl.

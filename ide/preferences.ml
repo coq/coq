@@ -33,6 +33,7 @@ type obj = {
 }
 
 let preferences : obj Util.String.Map.t ref = ref Util.String.Map.empty
+let unknown_preferences : string list Util.String.Map.t ref = ref Util.String.Map.empty
 
 class type ['a] repr =
 object
@@ -120,6 +121,18 @@ let inputenc_of_string s =
       (if s = "UTF-8" then Eutf8
        else if s = "LOCALE" then Elocale
        else Emanual s)
+
+type line_ending = [ `DEFAULT | `WINDOWS | `UNIX ]
+
+let line_end_of_string = function
+| "unix" -> `UNIX
+| "windows" -> `WINDOWS
+| _ -> `DEFAULT
+
+let line_end_to_string = function
+| `UNIX -> "unix"
+| `WINDOWS -> "windows"
+| `DEFAULT -> "default"
 
 let use_default_doc_url = "(automatic)"
 
@@ -381,6 +394,10 @@ let stop_before =
 let reset_on_tab_switch =
   new preference ~name:["reset_on_tab_switch"] ~init:false ~repr:Repr.(bool)
 
+let line_ending =
+  let repr = Repr.custom line_end_to_string line_end_of_string in
+  new preference ~name:["line_ending"] ~init:`DEFAULT ~repr
+
 let vertical_tabs =
   new preference ~name:["vertical_tabs"] ~init:false ~repr:Repr.(bool)
 
@@ -601,19 +618,19 @@ let save_pref () =
   then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
   let () = try GtkData.AccelMap.save accel_file with _ -> () in
   let add = Util.String.Map.add in
-  let (++) x f = f x in
   let fold key obj accu = add key (obj.get ()) accu in
- 
-    (Util.String.Map.fold fold !preferences Util.String.Map.empty) ++
-    Config_lexer.print_file pref_file
+  let prefs = Util.String.Map.fold fold !preferences Util.String.Map.empty in
+  let prefs = Util.String.Map.fold Util.String.Map.add !unknown_preferences prefs in
+  Config_lexer.print_file pref_file prefs
 
 let load_pref () =
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
 
     let m = Config_lexer.load_file loaded_pref_file in
     let iter name v =
-      try (Util.String.Map.find name !preferences).set v
-      with _ -> ()
+      if Util.String.Map.mem name !preferences then
+        try (Util.String.Map.find name !preferences).set v with _ -> ()
+      else unknown_preferences := Util.String.Map.add name v !unknown_preferences
     in
     Util.String.Map.iter iter m
 
@@ -818,6 +835,15 @@ let configure ?(apply=(fun () -> ())) () =
       (string_of_inputenc encoding#get)
   in
 
+  let line_ending =
+    combo
+      "EOL character"
+      ~f:(fun s -> line_ending#set (line_end_of_string s))
+      ~new_allowed:false
+      ["unix"; "windows"; "default"]
+      (line_end_to_string line_ending#get)
+  in
+
   let source_style =
     combo "Highlighting style:"
       ~f:source_style#set ~new_allowed:false
@@ -973,7 +999,7 @@ let configure ?(apply=(fun () -> ())) () =
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;
 	      auto_save; auto_save_delay; (* auto_save_name*)
-	      encodings;
+	      encodings; line_ending;
 	     ]);
      Section("Project", Some (`STOCK "gtk-page-setup"),
 	     [project_file_name;read_project;

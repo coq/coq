@@ -58,3 +58,5 @@ exist (Q x) y conj
      : nat -> nat
 % j
      : nat -> nat
+{1, 2}
+     : nat -> Prop

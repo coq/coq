@@ -39,6 +39,8 @@ open Sigma.Notations
 open Context.Rel.Declaration
 open Entries
 
+module RelDecl = Context.Rel.Declaration
+
 let do_universe poly l = Declare.do_universe poly l
 let do_constraint poly l = Declare.do_constraint poly l
 
@@ -57,8 +59,8 @@ let rec complete_conclusion a cs = function
   | CHole (loc, k, _, _) ->
       let (has_no_args,name,params) = a in
       if not has_no_args then
-	user_err_loc (loc,"",
-	  strbrk"Cannot infer the non constant arguments of the conclusion of "
+	user_err ~loc 
+	 (strbrk"Cannot infer the non constant arguments of the conclusion of "
 	  ++ pr_id cs ++ str ".");
       let args = List.map (fun id -> CRef(Ident(loc,id),None)) params in
       CAppExpl (loc,(None,Ident(loc,name),None),List.rev args)
@@ -140,21 +142,21 @@ let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd (Evd.empty,evd);
   ce
 
-let warn_local_let_definition =
-  CWarnings.create ~name:"local-let-definition" ~category:"scope"
-         (fun id ->
-          pr_id id ++ strbrk " is declared as a local definition")
+let warn_local_declaration =
+  CWarnings.create ~name:"local-declaration" ~category:"scope"
+         (fun (id,kind) ->
+          pr_id id ++ strbrk " is declared as a local " ++ str kind)
 
-let get_locality id = function
+let get_locality id ~kind = function
 | Discharge ->
   (** If a Let is defined outside a section, then we consider it as a local definition *)
-   warn_local_let_definition id;
+   warn_local_declaration (id,kind);
   true
 | Local -> true
 | Global -> false
 
 let declare_global_definition ident ce local k pl imps =
-  let local = get_locality ident local in
+  let local = get_locality ident ~kind:"definition" local in
   let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -238,7 +240,7 @@ match local with
   (r,Univ.Instance.empty,true)
 
 | Global | Local | Discharge ->
-  let local = get_locality ident local in
+  let local = get_locality ident ~kind:"axiom" local in
   let inl = match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
@@ -330,7 +332,7 @@ let do_assumptions kind nl l = match l with
   | (Discharge, _, _) when Lib.sections_are_opened () ->
     let loc = fst id in
     let msg = Pp.str "Section variables cannot be polymorphic." in
-    user_err_loc (loc, "", msg)
+    user_err ~loc  msg
   | _ -> ()
   in
   do_assumptions_bound_univs coe kind nl id (Some pl) c
@@ -342,7 +344,7 @@ let do_assumptions kind nl l = match l with
       let loc = fst id in
       let msg =
 	Pp.str "Assumptions with bound universes can only be defined one at a time." in
-      user_err_loc (loc, "", msg)
+      user_err ~loc  msg
     in
     (coe, (List.map map idl, c))
   in
@@ -438,7 +440,7 @@ let interp_ind_arity env evdref ind =
   let t, impls = understand_tcc_evars env evdref ~expected_type:IsType c, imps in
   let pseudo_poly = check_anonymous_type c in
   let () = if not (Reduction.is_arity env t) then
-    user_err_loc (constr_loc ind.ind_arity, "", str "Not an arity")
+    user_err ~loc:(constr_loc ind.ind_arity) (str "Not an arity")
   in
     t, pseudo_poly, impls
 
@@ -457,7 +459,7 @@ let sign_level env evd sign =
       | LocalDef _ -> lev, push_rel d env
       | LocalAssum _ ->
 	let s = destSort (Reduction.whd_all env 
-			    (nf_evar evd (Retyping.get_type_of env evd (get_type d))))
+			    (nf_evar evd (Retyping.get_type_of env evd (RelDecl.get_type d))))
 	in
 	let u = univ_of_sort s in
 	  (Univ.sup u lev, push_rel d env))
@@ -553,7 +555,7 @@ let check_named (loc, na) = match na with
 | Name _ -> ()
 | Anonymous ->
   let msg = str "Parameters must be named." in
-  user_err_loc (loc, "", msg)
+  user_err ~loc  msg
 
 
 let check_param = function
@@ -576,7 +578,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
       
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter is_local_assum ctx_params in
-  let params = List.map (fun decl -> out_name (get_name decl)) assums in
+  let params = List.map (RelDecl.get_name %> out_name) assums in
 
   (* Interpret the arities *)
   let arities = List.map (interp_ind_arity env_params evdref) indl in
@@ -909,8 +911,8 @@ let rec telescope = function
       let ty, tys, (k, constr) =
 	List.fold_left
 	  (fun (ty, tys, (k, constr)) decl ->
-            let t = get_type decl in
-            let pred = mkLambda (get_name decl, t, ty) in
+            let t = RelDecl.get_type decl in
+            let pred = mkLambda (RelDecl.get_name decl, t, ty) in
 	    let ty = Universes.constr_of_global (Lazy.force sigT).typ in
 	    let intro = Universes.constr_of_global (Lazy.force sigT).intro in
 	    let sigty = mkApp (ty, [|t; pred|]) in
@@ -920,7 +922,7 @@ let rec telescope = function
       in
       let (last, subst) = List.fold_right2
         (fun pred decl (prev, subst) ->
-          let t = get_type decl in
+          let t = RelDecl.get_type decl in
 	  let p1 = Universes.constr_of_global (Lazy.force sigT).proj1 in
 	  let p2 = Universes.constr_of_global (Lazy.force sigT).proj2 in
 	  let proj1 = applistc p1 [t; pred; prev] in
@@ -954,9 +956,9 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let relty = Typing.unsafe_type_of env !evdref rel in
   let relargty =
     let error () =
-      user_err_loc (constr_loc r,
-		    "Command.build_wellfounded",
-		    Printer.pr_constr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
+      user_err ~loc:(constr_loc r)
+               ~hdr:"Command.build_wellfounded"
+		    (Printer.pr_constr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
     in
       try
 	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
@@ -1133,7 +1135,7 @@ let interp_recursive isfix fixl notations =
   let evd, nf = nf_evars_and_universes evd in
   let fixdefs = List.map (Option.map nf) fixdefs in
   let fixtypes = List.map nf fixtypes in
-  let fixctxnames = List.map (fun (_,ctx) -> List.map get_name ctx) fixctxs in
+  let fixctxnames = List.map (fun (_,ctx) -> List.map RelDecl.get_name ctx) fixctxs in
 
   (* Build the fix declaration block *)
   (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
@@ -1251,6 +1253,11 @@ let out_def = function
   | Some def -> def
   | None -> error "Program Fixpoint needs defined bodies."
 
+let collect_evars_of_term evd c ty =
+  let evars = Evar.Set.union (Evd.evars_of_term c) (Evd.evars_of_term ty) in
+  Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
+  evars (Evd.from_ctx (Evd.evar_universe_context evd))
+
 let do_program_recursive local p fixkind fixl ntns =
   let isfix = fixkind != Obligations.IsCoFixpoint in
   let (env, rec_sign, pl, evd), fix, info = 
@@ -1268,8 +1275,9 @@ let do_program_recursive local p fixkind fixl ntns =
     and typ =
       nf_evar evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign)
     in
+    let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ = 
-      Obligations.eterm_obligations env id evd
+      Obligations.eterm_obligations env id evm
 	(List.length rec_sign) def typ
     in (id, def, typ, imps, evars)
   in
@@ -1306,7 +1314,7 @@ let do_program_fixpoint local poly l =
 	  match n with
 	  | Some n -> mkIdentC (snd n)
 	  | None ->
-	      errorlabstrm "do_program_fixpoint"
+	      user_err ~hdr:"do_program_fixpoint"
 		(str "Recursive argument required for well-founded fixpoints")
 	in build_wellfounded (id, pl, n, bl, typ, out_def def) poly r recarg ntn
 	     
@@ -1320,7 +1328,7 @@ let do_program_fixpoint local poly l =
 	  do_program_recursive local poly fixkind fixl ntns
 
     | _, _ ->
-	errorlabstrm "do_program_fixpoint"
+	user_err ~hdr:"do_program_fixpoint"
 	  (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
 let check_safe () =

@@ -46,4 +46,4 @@ val patntn_loc :
 
 (** For cases pattern parsing errors *)
 
-val error_invalid_pattern_notation : Loc.t -> 'a
+val error_invalid_pattern_notation : ?loc:Loc.t -> unit -> 'a

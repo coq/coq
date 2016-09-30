@@ -793,6 +793,22 @@ end
 
 let do_not_tag _ x = x
 
+let split_token tag s =
+  let len = String.length s in
+  let rec parse_string off i =
+    if Int.equal i len then
+      if Int.equal off i then mt () else tag (str (String.sub s off (i - off)))
+    else if s.[i] == ' ' then
+      if Int.equal off i then parse_space 1 (succ i)
+      else tag (str (String.sub s off (i - off))) ++ parse_space 1 (succ i)
+    else parse_string off (succ i)
+  and parse_space spc i =
+    if Int.equal i len then str (String.make spc ' ')
+    else if s.[i] == ' ' then parse_space (succ spc) (succ i)
+    else str (String.make spc ' ') ++ parse_string i (succ i)
+  in
+  parse_string 0 0
+
 (** Instantiating Make with tagging functions that only add style
     information. *)
 include Make (struct
@@ -801,7 +817,7 @@ include Make (struct
     let tag_evar        = tag Tag.evar
     let tag_type        = tag Tag.univ
     let tag_unparsing   = function
-    | UnpTerminal s -> tag Tag.notation
+    | UnpTerminal s -> fun _ -> split_token (fun pp -> tag Tag.notation pp) s
     | _ -> do_not_tag ()
     let tag_constr_expr = do_not_tag
     let tag_path = tag Tag.path

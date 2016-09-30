@@ -42,6 +42,17 @@ val declare_summary : string -> 'a summary_declaration -> unit
 
 val ref : ?freeze:(marshallable -> 'a -> 'a) -> name:string -> 'a -> 'a ref
 
+(* As [ref] but the value is local to a process, i.e. not sent to, say, proof
+ * workers.  It is useful to implement a local cache for example. *)
+module Local : sig
+
+  type 'a local_ref
+  val ref : ?freeze:('a -> 'a) -> name:string -> 'a -> 'a local_ref
+  val (:=) : 'a local_ref -> 'a -> unit
+  val (!) : 'a local_ref -> 'a
+
+end
+
 (** Special name for the summary of ML modules.  This summary entry is
     special because its unfreeze may load ML code and hence add summary
     entries.  Thus is has to be recognizable, and handled appropriately *)

@@ -62,6 +62,8 @@ open Names
 open Declarations
 open Context.Named.Declaration
 
+module NamedDecl = Context.Named.Declaration
+
 (** {6 Safe environments }
 
   Fields of [safe_environment] :
@@ -361,7 +363,7 @@ let check_required current_libs needed =
     cost too much. *)
 
 let safe_push_named d env =
-  let id = get_id d in
+  let id = NamedDecl.get_id d in
   let _ =
     try
       let _ = Environ.lookup_named id env in
@@ -816,7 +818,7 @@ let export ?except senv dir =
     try join_safe_environment ?except senv
     with e ->
       let e = CErrors.push e in
-      CErrors.errorlabstrm "export" (CErrors.iprint e)
+      CErrors.user_err ~hdr:"export" (CErrors.iprint e)
   in
   assert(senv.future_cst = []);
   let () = check_current_library dir senv in
@@ -852,7 +854,7 @@ let import lib cst vodigest senv =
   check_required senv.required lib.comp_deps;
   check_engagement senv.env lib.comp_enga;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
-    CErrors.errorlabstrm "Safe_typing.import"
+    CErrors.user_err ~hdr:"Safe_typing.import"
      (Pp.strbrk "Cannot load a library with the same name as the current one.");
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in

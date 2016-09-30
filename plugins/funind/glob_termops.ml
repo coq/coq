@@ -406,7 +406,7 @@ let is_free_in id =
 
     | GIf(_,cond,_,br1,br2) ->
 	is_free_in cond || is_free_in br1 || is_free_in br2
-    | GRec _ -> raise (UserError("",str "Not handled GRec"))
+    | GRec _ -> raise (UserError(None,str "Not handled GRec"))
     | GSort _ -> false
     | GHole _ -> false
     | GCast (_,b,(CastConv t|CastVM t|CastNative t)) -> is_free_in b || is_free_in t
@@ -502,7 +502,7 @@ let replace_var_by_term x_id term =
 	      replace_var_by_pattern lhs,
 	      replace_var_by_pattern rhs
 	     )
-      | GRec _ -> raise (UserError("",str "Not handled GRec"))
+      | GRec _ -> raise (UserError(None,str "Not handled GRec"))
       | GSort _ -> rt
       | GHole _ -> rt
       | GCast(loc,b,c) ->
@@ -655,7 +655,7 @@ let zeta_normalize =
 	      zeta_normalize_term lhs,
 	      zeta_normalize_term rhs
 	     )
-      | GRec _ -> raise (UserError("",str "Not handled GRec"))
+      | GRec _ -> raise (UserError(None,str "Not handled GRec"))
       | GSort _ -> rt
       | GHole _ -> rt
       | GCast(loc,b,c) ->

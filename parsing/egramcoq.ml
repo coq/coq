@@ -71,7 +71,7 @@ let error_level_assoc p current expected =
     | Extend.LeftA -> str "left"
     | Extend.RightA -> str "right"
     | Extend.NonA -> str "non" in
-  errorlabstrm ""
+  user_err 
     (str "Level " ++ int p ++ str " is already declared " ++
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative.")
@@ -434,7 +434,7 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   CNotation (loc, notation , env)
 | ForPattern -> fun notation loc env ->
   let invalid = List.exists (fun (_, b) -> not b) env.binders in
-  let () = if invalid then Topconstr.error_invalid_pattern_notation loc in
+  let () = if invalid then Topconstr.error_invalid_pattern_notation ~loc () in
   let env = (env.constrs, env.constrlists) in
   CPatNotation (loc, notation, env, [])
 
@@ -449,7 +449,6 @@ let extend_constr state forpat ng =
     let isforpat = target_to_bool forpat in
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
     let (pos,p4assoc,name,reinit), state = find_position state isforpat assoc level in
-    let nb_decls = List.length needed_levels + 1 in
     let empty_rules = List.map (prepare_empty_levels isforpat) needed_levels in
     let empty = { constrs = []; constrlists = []; binders = [] } in
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in

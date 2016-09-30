@@ -61,6 +61,9 @@ sig
   val smartmapi : (key -> 'a -> 'a) -> 'a t -> 'a t
   (** As [mapi] but tries to preserve sharing. *)
 
+  val height : 'a t -> int
+  (** An indication of the logarithmic size of a map *)
+
   module Unsafe :
   sig
     val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t

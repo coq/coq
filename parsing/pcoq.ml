@@ -132,13 +132,13 @@ let grammar_delete e reinit (pos,rls) =
 let grammar_extend e reinit ext =
   let ext = of_coq_extend_statement ext in
   let undo () = grammar_delete e reinit ext in
-  let redo () = camlp4_verbose (maybe_uncurry (G.extend e)) ext in
+  let redo () = camlp4_verbosity false (maybe_uncurry (G.extend e)) ext in
   camlp4_state := ByEXTEND (undo, redo) :: !camlp4_state;
   redo ()
 
 let grammar_extend_sync e reinit ext =
   camlp4_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp4_state;
-  camlp4_verbose (maybe_uncurry (G.extend e)) (of_coq_extend_statement ext)
+  camlp4_verbosity false (maybe_uncurry (G.extend e)) (of_coq_extend_statement ext)
 
 (** The apparent parser of Coq; encapsulate G to keep track
     of the extensions. *)
@@ -324,47 +324,6 @@ module Module =
     let module_type = Gram.entry_create "module_type"
   end
 
-module Tactic =
-  struct
-    (* Main entry for extensions *)
-    let simple_tactic = Gram.entry_create "tactic:simple_tactic"
-
-    (* Entries that can be referred via the string -> Gram.entry table *)
-    (* Typically for tactic user extensions *)
-    let open_constr =
-      make_gen_entry utactic "open_constr"
-    let constr_with_bindings =
-      make_gen_entry utactic "constr_with_bindings"
-    let bindings =
-      make_gen_entry utactic "bindings"
-    let hypident = Gram.entry_create "hypident"
-    let constr_may_eval = make_gen_entry utactic "constr_may_eval"
-    let constr_eval = make_gen_entry utactic "constr_eval"
-    let uconstr =
-      make_gen_entry utactic "uconstr"
-    let quantified_hypothesis =
-      make_gen_entry utactic "quantified_hypothesis"
-    let destruction_arg = make_gen_entry utactic "destruction_arg"
-    let int_or_var = make_gen_entry utactic "int_or_var"
-    let red_expr = make_gen_entry utactic "red_expr"
-    let simple_intropattern =
-      make_gen_entry utactic "simple_intropattern"
-    let clause_dft_concl = 
-      make_gen_entry utactic "clause"
-
-
-    (* Main entries for ltac *)
-    let tactic_arg = Gram.entry_create "tactic:tactic_arg"
-    let tactic_expr = make_gen_entry utactic "tactic_expr"
-    let binder_tactic = make_gen_entry utactic "binder_tactic"
-
-    let tactic = make_gen_entry utactic "tactic"
-
-    (* Main entry for quotations *)
-    let tactic_eoi = eoi_entry tactic
-
-  end
-
 module Vernac_ =
   struct
     let gec_vernac s = Gram.entry_create ("vernac:" ^ s)
@@ -377,6 +336,7 @@ module Vernac_ =
     let vernac = gec_vernac "Vernac.vernac"
     let vernac_eoi = eoi_entry vernac
     let rec_definition = gec_vernac "Vernac.rec_definition"
+    let red_expr = make_gen_entry utactic "red_expr"
     (* Main vernac entry *)
     let main_entry = Gram.entry_create "vernac"
     let noedit_mode = gec_vernac "noedit_command"
@@ -498,27 +458,12 @@ let with_grammar_rule_protection f x =
 
 let () =
   let open Stdarg in
-  let open Constrarg in
-(*   Grammar.register0 wit_unit; *)
-(*   Grammar.register0 wit_bool; *)
   Grammar.register0 wit_int (Prim.integer);
   Grammar.register0 wit_string (Prim.string);
   Grammar.register0 wit_pre_ident (Prim.preident);
-  Grammar.register0 wit_int_or_var (Tactic.int_or_var);
-  Grammar.register0 wit_intro_pattern (Tactic.simple_intropattern);
   Grammar.register0 wit_ident (Prim.ident);
   Grammar.register0 wit_var (Prim.var);
   Grammar.register0 wit_ref (Prim.reference);
-  Grammar.register0 wit_quant_hyp (Tactic.quantified_hypothesis);
   Grammar.register0 wit_constr (Constr.constr);
-  Grammar.register0 wit_uconstr (Tactic.uconstr);
-  Grammar.register0 wit_open_constr (Tactic.open_constr);
-  Grammar.register0 wit_constr_with_bindings (Tactic.constr_with_bindings);
-  Grammar.register0 wit_bindings (Tactic.bindings);
-(*   Grammar.register0 wit_hyp_location_flag; *)
-  Grammar.register0 wit_red_expr (Tactic.red_expr);
-  Grammar.register0 wit_tactic (Tactic.tactic);
-  Grammar.register0 wit_ltac (Tactic.tactic);
-  Grammar.register0 wit_clause_dft_concl (Tactic.clause_dft_concl);
-  Grammar.register0 wit_destruction_arg (Tactic.destruction_arg);
+  Grammar.register0 wit_red_expr (Vernac_.red_expr);
   ()

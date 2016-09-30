@@ -18,6 +18,8 @@ open Util
 open Pp
 open Names
 
+module NamedDecl = Context.Named.Declaration
+
 (*** Proof Modes ***)
 
 (* Type of proof modes :
@@ -88,8 +90,8 @@ type closed_proof = proof_object * proof_terminator
 type pstate = {
   pid : Id.t;
   terminator : proof_terminator CEphemeron.key;
-  endline_tactic : Tacexpr.raw_tactic_expr option;
-  section_vars : Context.section_context option;
+  endline_tactic : Genarg.glob_generic_argument option;
+  section_vars : Context.Named.t option;
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
   mode : proof_mode CEphemeron.key;
@@ -146,9 +148,6 @@ let cur_pstate () =
 let give_me_the_proof () = (cur_pstate ()).proof
 let get_current_proof_name () = (cur_pstate ()).pid
 
-let interp_tac = ref (fun _ -> assert false)
-let set_interp_tac f = interp_tac := f
-
 let with_current_proof f =
   match !pstates with
   | [] -> raise NoCurrentProof
@@ -156,7 +155,13 @@ let with_current_proof f =
       let et =
         match p.endline_tactic with
         | None -> Proofview.tclUNIT ()
-        | Some tac -> !interp_tac tac in
+        | Some tac ->
+          let open Geninterp in
+          let ist = { lfun = Id.Map.empty; extra = TacStore.empty } in
+          let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
+          let tac = Geninterp.interp tag ist tac in
+          Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
+      in
       let (newpr,ret) = f et p.proof in
       let p = { p with proof = newpr } in
       pstates := p :: rest;
@@ -202,8 +207,8 @@ let discard (loc,id) =
   let n = List.length !pstates in
   discard_gen id;
   if Int.equal (List.length !pstates) n then
-    CErrors.user_err_loc
-      (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs ())
+    CErrors.user_err ~loc
+      ~hdr:"Pfedit.delete_proof" (str"No such proof" ++ msg_proofs ())
 
 let discard_current () =
   if List.is_empty !pstates then raise NoCurrentProof else pstates := List.tl !pstates
@@ -276,7 +281,7 @@ let set_used_variables l =
   let ids = List.fold_right Id.Set.add l Id.Set.empty in
   let ctx = Environ.keep_hyps env ids in
   let ctx_set =
-    List.fold_right Id.Set.add (List.map get_id ctx) Id.Set.empty in
+    List.fold_right Id.Set.add (List.map NamedDecl.get_id ctx) Id.Set.empty in
   let vars_of = Environ.global_vars_set in
   let aux env entry (ctx, all_safe, to_clear as orig) =
     match entry with
@@ -408,7 +413,7 @@ let return_proof ?(allow_partial=false) () =
   let evd =
     let error s =
       let prf = str " (in proof " ++ Id.print pid ++ str ")" in
-      raise (CErrors.UserError("last tactic before Qed",s ++ prf))
+      raise (CErrors.UserError(Some "last tactic before Qed",s ++ prf))
     in
     try Proof.return proof with
     | Proof.UnfinishedProof ->
@@ -519,7 +524,7 @@ module Bullet = struct
 	(function
 	| FailedBullet (b,sugg) ->
 	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str" : " in
-	  CErrors.errorlabstrm "Focus" (prefix ++ suggest_on_error sugg)
+	  CErrors.user_err ~hdr:"Focus" (prefix ++ suggest_on_error sugg)
 	| _ -> raise CErrors.Unhandled)
 
 

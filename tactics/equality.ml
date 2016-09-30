@@ -26,7 +26,6 @@ open Retyping
 open Tacmach.New
 open Logic
 open Hipattern
-open Tacexpr
 open Tacticals.New
 open Tactics
 open Tacred
@@ -44,6 +43,8 @@ open Sigma.Notations
 open Proofview.Notations
 open Unification
 open Context.Named.Declaration
+
+module NamedDecl = Context.Named.Declaration
 
 (* Options *)
 
@@ -359,7 +360,7 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
 	      let _ = Global.lookup_constant c1' in
 		c1'
 	    with Not_found -> 
-	      errorlabstrm "Equality.find_elim"
+	      user_err ~hdr:"Equality.find_elim"
                 (str "Cannot find rewrite principle " ++ pr_label l' ++ str ".")
 	  end
 	| _ -> destConstRef pr1
@@ -629,7 +630,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   in
   match evd with
   | None ->
-    tclFAIL 0 (str"Terms do not have convertible types.")
+    tclFAIL 0 (str"Terms do not have convertible types")
   | Some evd ->
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
@@ -888,7 +889,7 @@ let build_selector env sigma dirn c ind special default =
           on (c bool true) = (c bool false)
           CP : changed assert false in a more informative error
        *)
-      errorlabstrm "Equality.construct_discriminator"
+      user_err ~hdr:"Equality.construct_discriminator"
 	(str "Cannot discriminate on inductive constructors with \
 		 dependent types.") in
   let (indp,_) = dest_ind_family indf in
@@ -974,7 +975,7 @@ let apply_on_clause (f,t) clause =
   let argmv =
     (match kind_of_term (last_arg f_clause.templval.Evd.rebus) with
      | Meta mv -> mv
-     | _  -> errorlabstrm "" (str "Ill-formed clause applicator.")) in
+     | _  -> user_err  (str "Ill-formed clause applicator.")) in
   clenv_fchain ~with_univs:false argmv f_clause clause
 
 let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
@@ -1052,7 +1053,7 @@ let discrEverywhere with_evars =
      else (* <= 8.2 compat *)
        tryAllHypsAndConcl (discrSimpleClause with_evars))
 (*    (fun gls ->
-       errorlabstrm "DiscrEverywhere" (str"No discriminable equalities."))
+       user_err ~hdr:"DiscrEverywhere" (str"No discriminable equalities."))
 *)
 let discr_tac with_evars = function
   | None -> discrEverywhere with_evars
@@ -1662,13 +1663,13 @@ exception FoundHyp of (Id.t * constr * bool)
 
 (* tests whether hyp [c] is [x = t] or [t = x], [x] not occurring in [t] *)
 let is_eq_x gl x d =
-  let id = get_id d in
+  let id = NamedDecl.get_id d in
   try
     let is_var id c = match kind_of_term c with
     | Var id' -> Id.equal id id'
     | _ -> false
     in
-    let c = pf_nf_evar gl (get_type d) in
+    let c = pf_nf_evar gl (NamedDecl.get_type d) in
     let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
     if (is_var x lhs) && not (local_occur_var x rhs) then raise (FoundHyp (id,rhs,true));
     if (is_var x rhs) && not (local_occur_var x lhs) then raise (FoundHyp (id,lhs,false))
@@ -1686,12 +1687,12 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   (* The set of hypotheses using x *)
   let dephyps =
     List.rev (pi3 (List.fold_right (fun dcl (dest,deps,allhyps) ->
-      let id = get_id dcl in
+      let id = NamedDecl.get_id dcl in
       if not (Id.equal id hyp)
          && List.exists (fun y -> occur_var_in_decl env y dcl) deps
       then
         let id_dest = if !regular_subst_tactic then dest else MoveLast in
-        (dest,(if is_local_assum dcl then deps else id::deps), (id_dest,id)::allhyps)
+        (dest,id::deps,(id_dest,id)::allhyps)
       else
         (MoveBefore id,deps,allhyps))
       hyps
@@ -1715,9 +1716,9 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
 let subst_one_var dep_proof_ok x =
   Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
-    let xval = pf_get_hyp x gl |> get_value in
+    let decl = pf_get_hyp x gl in
     (* If x has a body, simply replace x with body and clear x *)
-    if not (Option.is_empty xval) then tclTHEN (unfold_body x) (clear [x]) else
+    if is_local_def decl then tclTHEN (unfold_body x) (clear [x]) else
       (* Find a non-recursive definition for x *)
       let res =
         try
@@ -1725,7 +1726,7 @@ let subst_one_var dep_proof_ok x =
           let hyps = Proofview.Goal.hyps gl in
           let test hyp _ = is_eq_x gl x hyp in
           Context.Named.fold_outside test ~init:() hyps;
-          errorlabstrm "Subst"
+          user_err ~hdr:"Subst"
             (str "Cannot find any non-recursive equality over " ++ pr_id x ++
 	       str".")
         with FoundHyp res -> res in
@@ -1763,12 +1764,12 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let find_eq_data_decompose = find_eq_data_decompose gl in
     let test decl =
       try
-        let lbeq,u,(_,x,y) = find_eq_data_decompose (get_type decl) in
+        let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
         let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match kind_of_term x, kind_of_term y with
         | Var z, _ | _, Var z when not (is_evaluable env (EvalVarRef z))  ->
-            Some (get_id decl)
+            Some (NamedDecl.get_id decl)
         | _ ->
             None
       with Constr_matching.PatternMatchingFailure -> None
@@ -1782,7 +1783,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
-    let c = pf_get_hyp hyp gl |> get_type in
+    let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
     let _,_,(_,x,y) = find_eq_data_decompose c in
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
     if Term.eq_constr x y then Proofview.tclUNIT () else
@@ -1851,10 +1852,10 @@ let rewrite_assumption_cond cond_eq_term cl =
   let rec arec hyps gl = match hyps with
     | [] -> error "No such assumption."
     | hyp ::rest ->
-        let id = get_id hyp in
+        let id = NamedDecl.get_id hyp in
 	begin
 	  try
-            let dir = cond_eq_term (get_type hyp) gl in
+            let dir = cond_eq_term (NamedDecl.get_type hyp) gl in
 	    general_rewrite_clause dir false (mkVar id,NoBindings) cl
 	  with | Failure _ | UserError _ -> arec rest gl
 	end

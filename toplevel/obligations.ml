@@ -20,6 +20,8 @@ open Pp
 open CErrors
 open Util
 
+module NamedDecl = Context.Named.Declaration
+
 let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
 
@@ -34,7 +36,7 @@ let check_evars env evm =
      | Evar_kinds.QuestionMark _
      | Evar_kinds.ImplicitArg (_,_,false) -> ()
      | _ ->
-       Pretype_errors.error_unsolvable_implicit loc env evm key None)
+       Pretype_errors.error_unsolvable_implicit ~loc env evm key None)
   (Evd.undefined_map evm)
 
 type oblinfo =
@@ -51,7 +53,6 @@ type oblinfo =
   where n binders were passed through. *)
 
 let subst_evar_constr evs n idf t =
-  let open Context.Named.Declaration in
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
@@ -74,6 +75,7 @@ let subst_evar_constr evs n idf t =
 	in
 	let args =
 	  let rec aux hyps args acc =
+             let open Context.Named.Declaration in
 	     match hyps, args with
 		 (LocalAssum _ :: tlh), (c :: tla) ->
 		   aux tlh tla ((substrec (depth, fixrels) c) :: acc)
@@ -116,9 +118,9 @@ let etype_of_evar evs hyps concl =
   let open Context.Named.Declaration in
   let rec aux acc n = function
       decl :: tl ->
-	let t', s, trans = subst_evar_constr evs n mkVar (get_type decl) in
+	let t', s, trans = subst_evar_constr evs n mkVar (NamedDecl.get_type decl) in
 	let t'' = subst_vars acc 0 t' in
-	let rest, s', trans' = aux (get_id decl :: acc) (succ n) tl in
+	let rest, s', trans' = aux (NamedDecl.get_id decl :: acc) (succ n) tl in
 	let s' = Int.Set.union s s' in
 	let trans' = Id.Set.union trans trans' in
 	  (match decl with
@@ -258,7 +260,7 @@ let safe_init_constant md name () =
   Coqlib.gen_constant "Obligations" md name
 let hide_obligation = safe_init_constant tactics_module "obligation"
 
-let pperror cmd = CErrors.errorlabstrm "Program" cmd
+let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
 let error s = pperror (str s)
 
 let reduce c =
@@ -398,7 +400,7 @@ let rec prod_app t n =
     | Prod (_,_,b) -> subst1 n b
     | LetIn (_, b, t, b') -> prod_app (subst1 b b') n
     | _ ->
-	errorlabstrm "prod_app"
+	user_err ~hdr:"prod_app"
 	  (str"Needed a product, but didn't find one" ++ fnl ())
 
 
@@ -444,7 +446,7 @@ let from_prg : program_info ProgMap.t ref =
 let close sec =
   if not (ProgMap.is_empty !from_prg) then
     let keys = map_keys !from_prg in
-      errorlabstrm "Program" 
+      user_err ~hdr:"Program" 
 	(str "Unsolved obligations when closing " ++ str sec ++ str":" ++ spc () ++
 	   prlist_with_sep spc (fun x -> Nameops.pr_id x) keys ++
 	   (str (if Int.equal (List.length keys) 1 then " has " else " have ") ++
@@ -598,7 +600,6 @@ let decompose_lam_prod c ty =
   in aux Context.Rel.empty c ty
 
 let shrink_body c ty =
-  let open Context.Rel.Declaration in
   let ctx, b, ty =
     match ty with
     | None ->
@@ -613,6 +614,7 @@ let shrink_body c ty =
         if noccurn 1 b && Option.cata (noccurn 1) true ty then
 	  subst1 mkProp b, Option.map (subst1 mkProp) ty, succ i, args
 	else
+          let open Context.Rel.Declaration in
 	  let args = if is_local_assum decl then mkRel i :: args else args in
           mkLambda_or_LetIn decl b, Option.map (mkProd_or_LetIn decl) ty,
 	  succ i, args)
@@ -718,7 +720,7 @@ let get_prog name =
                 let progs = Id.Set.elements (ProgMap.domain prg_infos) in
                 let prog = List.hd progs in
                 let progs = prlist_with_sep pr_comma Nameops.pr_id progs in
-                errorlabstrm ""
+                user_err 
                   (str "More than one program with unsolved obligations: " ++ progs
                   ++ str "; use the \"of\" clause to specify, as in \"Obligation 1 of " ++ Nameops.pr_id prog ++ str "\""))
 
@@ -985,7 +987,7 @@ and solve_obligation_by_tac prg obls i tac =
           let (e, _) = CErrors.push e in
           match e with
 	  | Refiner.FailError (_, s) ->
-	      user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
+	      user_err ~loc:(fst obl.obl_location) ~hdr:"solve_obligation" (Lazy.force s)
           | e -> None (* FIXME really ? *)
 
 and solve_prg_obligations prg ?oblset tac =

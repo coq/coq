@@ -339,8 +339,11 @@ object(self)
   method private show_goals_aux ?(move_insert=false) () =
     Coq.PrintOpt.set_printing_width proof#width;
     if move_insert then begin
-      buffer#place_cursor ~where:self#get_start_of_input;
-      script#recenter_insert;
+      let dest = self#get_start_of_input in
+      if (buffer#get_iter_at_mark `INSERT)#compare dest <= 0 then begin
+        buffer#place_cursor ~where:dest;
+        script#recenter_insert
+      end
     end;
     Coq.bind (Coq.goals ~logger:messages#push ()) (function
     | Fail x -> self#handle_failure_aux ~move_insert x
@@ -444,7 +447,6 @@ object(self)
       | Processed, Some (id,sentence) ->
           log "Processed" id;
           remove_flag sentence `PROCESSING;
-          remove_flag sentence `ERROR;
           self#mark_as_needed sentence
       | ProcessingIn _,  Some (id,sentence) ->
           log "ProcessingIn" id;
@@ -479,6 +481,8 @@ object(self)
           add_flag sentence (`WARNING (loc, msg));
           self#attach_tooltip sentence loc msg;
           self#position_warning_tag_at_sentence sentence loc
+      | Message((Info|Notice|Debug as lvl), _, msg), _ ->
+          messages#push lvl msg
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
           else to_process <- to_process + n
@@ -558,13 +562,19 @@ object(self)
       condition returns true; it is fed with the number of phrases read and the
       iters enclosing the current sentence. *)
   method private fill_command_queue until queue =
+    let topstack =
+      if Doc.focused document then fst (Doc.context document) else [] in
     let rec loop n iter =
       match Sentence.find buffer iter with
       | None -> ()
       | Some (start, stop) ->
         if until n start stop then begin
           ()
-        end else if stop#backward_char#has_tag Tags.Script.processed then begin
+        end else if
+          List.exists (fun (_, s) ->
+            start#equal (buffer#get_iter_at_mark s.start) &&
+            stop#equal (buffer#get_iter_at_mark s.stop)) topstack
+        then begin
           Queue.push (`Skip (start, stop)) queue;
           loop n stop
         end else begin
@@ -782,7 +792,6 @@ object(self)
   method private handle_failure_aux
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
-    messages#clear;
     messages#push Feedback.Error msg;
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())

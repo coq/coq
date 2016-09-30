@@ -16,6 +16,8 @@ open Nameops
 open Termops
 open Pretype_errors
 
+module NamedDecl = Context.Named.Declaration
+
 (** Processing occurrences *)
 
 type occurrence_error =
@@ -35,7 +37,7 @@ let explain_occurrence_error = function
   | IncorrectInValueOccurrence id -> explain_incorrect_in_value_occurrence id
 
 let error_occurrences_error e =
-  errorlabstrm "" (explain_occurrence_error e)
+  user_err  (explain_occurrence_error e)
 
 let error_invalid_occurrence occ =
   error_occurrences_error (InvalidOccurrence occ)
@@ -61,7 +63,7 @@ let proceed_with_occurrences f occs x =
 
 let map_named_declaration_with_hyploc f hyploc acc decl =
   let open Context.Named.Declaration in
-  let f = f (Some (get_id decl, hyploc)) in
+  let f = f (Some (NamedDecl.get_id decl, hyploc)) in
   match decl,hyploc with
   | LocalAssum (id,_), InHypValueOnly ->
       error_occurrences_error (IncorrectInValueOccurrence id)

@@ -25,6 +25,8 @@ open Printer
 open Evd
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
+
 (* This simplifies the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)
 let contract env lc =
@@ -35,13 +37,10 @@ let contract env lc =
           l := (Vars.substl !l c') :: !l;
           env
       | _ ->
-          let t' = Vars.substl !l (get_type decl) in
-          let c' = Option.map (Vars.substl !l) (get_value decl) in
-          let na' = named_hd env t' (get_name decl) in
+          let t = Vars.substl !l (RelDecl.get_type decl) in
+          let decl = decl |> RelDecl.map_name (named_hd env t) |> RelDecl.map_value (Vars.substl !l) |> RelDecl.set_type t in
           l := (mkRel 1) :: List.map (Vars.lift 1) !l;
-          match c' with
-          | None -> push_rel (LocalAssum (na',t')) env
-          | Some c' -> push_rel (LocalDef (na',c',t')) env
+          push_rel decl env
   in
   let env = process_rel_context contract_context env in
   (env, List.map (Vars.substl !l) lc)
@@ -149,7 +148,7 @@ let pr_explicit env sigma t1 t2 = pr_explicit_aux env sigma t1 t2 explicit_flags
 
 let pr_db env i =
   try
-    match lookup_rel i env |> get_name with
+    match env |> lookup_rel i |> get_name with
       | Name id -> pr_id id
       | Anonymous -> str "<>"
   with Not_found -> str "UNBOUND_REL_" ++ int i
@@ -320,6 +319,7 @@ let explain_unification_error env sigma p1 p2 = function
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let t = Evarutil.nf_evar sigma t in
         let u = Evarutil.nf_evar sigma u in
+        let env = make_all_name_different env in
         (strbrk "cannot satisfy constraint " ++ pr_lconstr_env env sigma t ++
         str " == " ++ pr_lconstr_env env sigma u)
         :: aux t u e

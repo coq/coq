@@ -19,8 +19,10 @@ open Genredexpr
 open Tok (* necessary for camlp4 *)
 
 open Pcoq
+open Pcoq.Constr
+open Pcoq.Vernac_
 open Pcoq.Prim
-open Pcoq.Tactic
+open Pltac
 
 let fail_default_value = ArgArg 0
 
@@ -30,14 +32,15 @@ let arg_of_expr = function
 
 let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
-let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
-let genarg_of_uconstr c = in_gen (rawwit Constrarg.wit_uconstr) c
+let genarg_of_ipattern pat = in_gen (rawwit Stdarg.wit_intro_pattern) pat
+let genarg_of_uconstr c = in_gen (rawwit Stdarg.wit_uconstr) c
+let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
   | Libnames.Qualid (loc,_) ->
-      CErrors.user_err_loc (loc, "",
-        str "This expression should be a simple identifier.")
+      CErrors.user_err ~loc 
+       (str "This expression should be a simple identifier.")
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
 
@@ -72,14 +75,17 @@ let test_bracket_ident =
 
 (* Tactics grammar rules *)
 
+let hint = G_proofs.hint
+
 let warn_deprecated_appcontext =
   CWarnings.create ~name:"deprecated-appcontext" ~category:"deprecated"
          (fun () -> strbrk "appcontext is deprecated and will be removed " ++
                       strbrk "in a future version")
 
 GEXTEND Gram
-  GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
-          tactic_mode constr_may_eval constr_eval selector toplevel_selector;
+  GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg command hint
+          tactic_mode constr_may_eval constr_eval selector toplevel_selector
+          operconstr;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
@@ -287,15 +293,15 @@ GEXTEND Gram
   (* Definitions for tactics *)
   tacdef_body:
     [ [ name = Constr.global; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
-          if redef then Vernacexpr.TacticRedefinition (name, TacFun (it, body))
+          if redef then Tacexpr.TacticRedefinition (name, TacFun (it, body))
           else
             let id = reference_to_id name in
-            Vernacexpr.TacticDefinition (id, TacFun (it, body))
+            Tacexpr.TacticDefinition (id, TacFun (it, body))
       | name = Constr.global; redef = ltac_def_kind; body = tactic_expr ->
-          if redef then Vernacexpr.TacticRedefinition (name, body)
+          if redef then Tacexpr.TacticRedefinition (name, body)
           else
             let id = reference_to_id name in
-            Vernacexpr.TacticDefinition (id, body)
+            Tacexpr.TacticDefinition (id, body)
     ] ]
   ;
   tactic:
@@ -327,9 +333,28 @@ GEXTEND Gram
   tactic_mode:
     [ [ g = OPT toplevel_selector; tac = G_vernac.subgoal_command -> tac g ] ]
   ;
+  command:
+    [ [ IDENT "Proof"; "with"; ta = Pltac.tactic; 
+        l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
+          Vernacexpr.VernacProof (Some (in_tac ta), G_proofs.hint_proof_using G_vernac.section_subset_expr l)
+      | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
+        ta = OPT [ "with"; ta = Pltac.tactic -> in_tac ta ] ->
+          Vernacexpr.VernacProof (ta,Some l) ] ]
+  ;
+  hint:
+    [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
+        tac = Pltac.tactic ->
+          Vernacexpr.HintsExtern (n,c, in_tac tac) ] ]
+  ;
+  operconstr: LEVEL "0"
+    [ [ IDENT "ltac"; ":"; "("; tac = Pltac.tactic_expr; ")" ->
+          let arg = Genarg.in_gen (Genarg.rawwit Tacarg.wit_tactic) tac in
+          CHole (!@loc, None, IntroAnonymous, Some arg) ] ]
+  ;
   END
 
-open Constrarg
+open Stdarg
+open Tacarg
 open Vernacexpr
 open Vernac_classifier
 open Goptions

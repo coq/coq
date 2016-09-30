@@ -15,13 +15,15 @@ open Constrexpr
 open Tacexpr
 open Genarg
 open Geninterp
-open Constrarg
+open Stdarg
+open Tacarg
 open Libnames
 open Ppextend
 open Misctypes
 open Locus
 open Decl_kinds
 open Genredexpr
+open Pputils
 open Ppconstr
 open Printer
 
@@ -61,19 +63,6 @@ type 'a extra_genarg_printer =
     (Term.constr -> std_ppcmds) ->
     (tolerability -> Val.t -> std_ppcmds) ->
     'a -> std_ppcmds
-
-let genarg_pprule = ref String.Map.empty
-
-let declare_extra_genarg_pprule wit f g h =
-  let s = match wit with
-    | ExtraArg s -> ArgT.repr s
-    | _ -> error
-      "Can declare a pretty-printing rule only for extra argument types."
-  in
-  let f prc prlc prtac x = f prc prlc prtac (out_gen (rawwit wit) x) in
-  let g prc prlc prtac x = g prc prlc prtac (out_gen (glbwit wit) x) in
-  let h prc prlc prtac x = h prc prlc prtac (out_gen (topwit wit) x) in
-  genarg_pprule := String.Map.add s (f,g,h) !genarg_pprule
 
 module Make
   (Ppconstr : Ppconstrsig.Pp)
@@ -135,80 +124,8 @@ module Make
           end
         | _ -> default
 
-  let pr_with_occurrences pr (occs,c) =
-    match occs with
-      | AllOccurrences ->
-        pr c
-      | NoOccurrences ->
-        failwith "pr_with_occurrences: no occurrences"
-      | OnlyOccurrences nl ->
-        hov 1 (pr c ++ spc () ++ keyword "at" ++ spc () ++
-                 hov 0 (prlist_with_sep spc (pr_or_var int) nl))
-      | AllOccurrencesBut nl ->
-        hov 1 (pr c ++ spc () ++ keyword "at" ++ str" - " ++
-                 hov 0 (prlist_with_sep spc (pr_or_var int) nl))
-
-  exception ComplexRedFlag
-
-  let pr_short_red_flag pr r =
-    if not r.rBeta ||  not r.rMatch || not r.rFix || not r.rCofix || not r.rZeta then
-      raise ComplexRedFlag
-    else if List.is_empty r.rConst then
-      if r.rDelta then mt () else raise ComplexRedFlag
-    else (if r.rDelta then str "-" else mt ()) ++
-	   hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]")
-
-  let pr_red_flag pr r =
-    try pr_short_red_flag pr r
-    with complexRedFlags ->
-      (if r.rBeta then pr_arg str "beta" else mt ()) ++
-	(if r.rMatch && r.rFix && r.rCofix then pr_arg str "iota" else
-           (if r.rMatch then pr_arg str "match" else mt ()) ++
-           (if r.rFix then pr_arg str "fix" else mt ()) ++
-           (if r.rCofix then pr_arg str "cofix" else mt ())) ++
-        (if r.rZeta then pr_arg str "zeta" else mt ()) ++
-        (if List.is_empty r.rConst then
-	   if r.rDelta then pr_arg str "delta"
-	   else mt ()
-	 else
-	   pr_arg str "delta " ++ (if r.rDelta then str "-" else mt ()) ++
-	     hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]"))
-
-  let pr_union pr1 pr2 = function
-    | Inl a -> pr1 a
-    | Inr b -> pr2 b
-
-  let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
-    | Red false -> keyword "red"
-    | Hnf -> keyword "hnf"
-    | Simpl (f,o) -> keyword "simpl" ++ (pr_short_red_flag pr_ref f)
-		     ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
-    | Cbv f ->
-      if f.rBeta && f.rMatch && f.rFix && f.rCofix &&
-           f.rZeta && f.rDelta && List.is_empty f.rConst then
-        keyword "compute"
-      else
-        hov 1 (keyword "cbv" ++ pr_red_flag pr_ref f)
-    | Lazy f ->
-      hov 1 (keyword "lazy" ++ pr_red_flag pr_ref f)
-    | Cbn f ->
-      hov 1 (keyword "cbn" ++ pr_red_flag pr_ref f)
-    | Unfold l ->
-      hov 1 (keyword "unfold" ++ spc() ++
-               prlist_with_sep pr_comma (pr_with_occurrences pr_ref) l)
-    | Fold l -> hov 1 (keyword "fold" ++ prlist (pr_arg pr_constr) l)
-    | Pattern l ->
-      hov 1 (keyword "pattern" ++
-               pr_arg (prlist_with_sep pr_comma (pr_with_occurrences pr_constr)) l)
-
-    | Red true ->
-      error "Shouldn't be accessible from user."
-    | ExtraRedExpr s ->
-      str s
-    | CbvVm o ->
-      keyword "vm_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
-    | CbvNative o ->
-      keyword "native_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
+  let pr_with_occurrences pr c = pr_with_occurrences pr keyword c
+  let pr_red_expr pr c = pr_red_expr pr keyword c
 
   let pr_may_eval test prc prlc pr2 pr3 = function
     | ConstrEval (r,c) ->
@@ -231,10 +148,6 @@ module Make
     pr_may_eval (fun _ -> false) a
 
   let pr_arg pr x = spc () ++ pr x
-
-  let pr_or_var pr = function
-    | ArgArg x -> pr x
-    | ArgVar (_,s) -> pr_id s
 
   let pr_and_short_name pr (c,_) = pr c
 
@@ -300,52 +213,6 @@ module Make
 
   let with_evars ev s = if ev then "e" ^ s else s
 
-  let hov_if_not_empty n p = if Pp.ismt p then p else hov n p
-
-  let rec pr_raw_generic_rec prc prlc prtac prpat prref (GenArg (Rawwit wit, x)) =
-    match wit with
-      | ListArg wit ->
-        let map x = pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
-        let ans = pr_sequence map x in
-        hov_if_not_empty 0 ans
-      | OptArg wit ->
-        let ans = match x with
-          | None -> mt ()
-          | Some x -> pr_raw_generic_rec prc prlc prtac prpat prref (in_gen (rawwit wit) x)
-        in
-        hov_if_not_empty 0 ans
-      | PairArg (wit1, wit2) ->
-        let p, q = x in
-        let p = in_gen (rawwit wit1) p in
-        let q = in_gen (rawwit wit2) q in
-        hov_if_not_empty 0 (pr_sequence (pr_raw_generic_rec prc prlc prtac prpat prref) [p; q])
-      | ExtraArg s ->
-        try pi1 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (rawwit wit) x)
-        with Not_found -> Genprint.generic_raw_print (in_gen (rawwit wit) x)
-
-
-  let rec pr_glb_generic_rec prc prlc prtac prpat (GenArg (Glbwit wit, x)) =
-    match wit with
-      | ListArg wit ->
-        let map x = pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x) in
-        let ans = pr_sequence map x in
-        hov_if_not_empty 0 ans
-      | OptArg wit ->
-        let ans = match x with
-          | None -> mt ()
-          | Some x -> pr_glb_generic_rec prc prlc prtac prpat (in_gen (glbwit wit) x)
-        in
-        hov_if_not_empty 0 ans
-      | PairArg (wit1, wit2) ->
-        let p, q = x in
-        let p = in_gen (glbwit wit1) p in
-        let q = in_gen (glbwit wit2) q in
-        let ans = pr_sequence (pr_glb_generic_rec prc prlc prtac prpat) [p; q] in
-        hov_if_not_empty 0 ans
-      | ExtraArg s ->
-        try pi2 (String.Map.find (ArgT.repr s) !genarg_pprule) prc prlc prtac (in_gen (glbwit wit) x)
-        with Not_found -> Genprint.generic_glb_print (in_gen (glbwit wit) x)
-
   let rec tacarg_using_rule_token pr_gen = function
     | [] -> []
     | TacTerm s :: l -> keyword s :: tacarg_using_rule_token pr_gen l
@@ -373,20 +240,25 @@ module Make
       in
       str "<" ++ name ++ str ">" ++ args
 
+  let rec pr_user_symbol = function
+  | Extend.Ulist1 tkn -> "ne_" ^ pr_user_symbol tkn ^ "_list"
+  | Extend.Ulist1sep (tkn, _) -> "ne_" ^ pr_user_symbol tkn ^ "_list"
+  | Extend.Ulist0 tkn -> pr_user_symbol tkn ^ "_list"
+  | Extend.Ulist0sep (tkn, _) -> pr_user_symbol tkn ^ "_list"
+  | Extend.Uopt tkn -> pr_user_symbol tkn ^ "_opt"
+  | Extend.Uentry tag ->
+    let ArgT.Any tag = tag in
+    ArgT.repr tag
+  | Extend.Uentryl (tkn, lvl) -> "tactic" ^ string_of_int lvl
+
   let pr_alias_key key =
     try
       let prods = (KNmap.find key !prnotation_tab).pptac_prods in
-      (* First printing strategy: only the head symbol *)
-      match prods with
-      | TacTerm s :: prods -> str s
-      | _ ->
-      (* Second printing strategy; if ever Tactic Notation is eventually *)
-      (* accepting notations not starting with an identifier *)
       let rec pr = function
-      | [] -> []
-      | TacTerm s :: prods -> s :: pr prods
-      | TacNonTerm (_,_,id) :: prods -> ".." :: pr prods in
-      str (String.concat " " (pr prods))
+      | TacTerm s -> primitive s
+      | TacNonTerm (_, symb, _) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
+      in
+      pr_sequence pr prods
     with Not_found ->
       KerName.print key
 
@@ -797,7 +669,7 @@ module Make
       let pr_with_bindings_arg = pr_with_bindings_arg pr.pr_constr pr.pr_lconstr in
       let pr_red_expr = pr_red_expr (pr.pr_constr,pr.pr_lconstr,pr.pr_constant,pr.pr_pattern) in
 
-      let pr_constrarg c = spc () ++ pr.pr_constr c in
+      let _pr_constrarg c = spc () ++ pr.pr_constr c in
       let pr_lconstrarg c = spc () ++ pr.pr_lconstr c in
       let pr_intarg n = spc () ++ int n in
 
@@ -845,7 +717,7 @@ module Make
                   prlist pr_binder_fix bll ++ annot ++ str" :" ++
                   pr_lconstrarg ty ++ str")") in
       (*  spc() ++
-          hov 0 (pr_id id ++ pr_intarg n ++ str":" ++ pr_constrarg
+          hov 0 (pr_id id ++ pr_intarg n ++ str":" ++ _pr_constrarg
           c)
       *)
       let pr_cofix_tac (id,c) =
@@ -1227,7 +1099,7 @@ module Make
       pr_constant = pr_or_by_notation pr_reference;
       pr_reference = pr_reference;
       pr_name = pr_lident;
-      pr_generic = pr_raw_generic_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr pr_reference;
+      pr_generic = (fun arg -> Pputils.pr_raw_generic (Global.env ()) arg);
       pr_extend = pr_raw_extend_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
       pr_alias = pr_raw_alias pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
     } in
@@ -1257,9 +1129,7 @@ module Make
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
-        pr_generic = pr_glb_generic_rec
-          (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
-          prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
+        pr_generic = (fun arg -> Pputils.pr_glb_generic (Global.env ()) arg);
         pr_extend = pr_glob_extend_rec
           (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
           prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
@@ -1307,12 +1177,9 @@ module Make
     in
     prtac n t
 
-  let pr_raw_generic env = pr_raw_generic_rec
-    pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr pr_reference
+  let pr_raw_generic = Pputils.pr_raw_generic
 
-  let pr_glb_generic env = pr_glb_generic_rec
-    (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
-    (pr_glob_tactic_level env) (pr_pat_and_constr_expr (pr_glob_constr_env env))
+  let pr_glb_generic = Pputils.pr_glb_generic
 
   let pr_raw_extend env = pr_raw_extend_rec
     pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr
@@ -1360,6 +1227,26 @@ include Make (Ppconstr) (struct
     let tag_atomic_tactic_expr      = do_not_tag
 end)
 
+let declare_extra_genarg_pprule wit
+  (f : 'a raw_extra_genarg_printer)
+  (g : 'b glob_extra_genarg_printer)
+  (h : 'c extra_genarg_printer) =
+  let s = match wit with
+    | ExtraArg s -> ArgT.repr s
+    | _ -> error
+      "Can declare a pretty-printing rule only for extra argument types."
+  in
+  let f x = f pr_constr_expr pr_lconstr_expr pr_raw_tactic_level x in
+  let g x =
+    let env = Global.env () in
+    g (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env)) (pr_glob_tactic_level env) x
+  in
+  let h x =
+    let env = Global.env () in
+    h (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty) (fun _ _ -> str "<tactic>") x
+  in
+  Genprint.register_print0 wit f g h
+
 (** Registering *)
 
 let run_delayed c =
@@ -1374,57 +1261,57 @@ let () =
   let pr_bool b = if b then str "true" else str "false" in
   let pr_unit _ = str "()" in
   let pr_string s = str "\"" ++ str s ++ str "\"" in
-  Genprint.register_print0 Constrarg.wit_int_or_var
+  Genprint.register_print0 wit_int_or_var
     (pr_or_var int) (pr_or_var int) int;
-  Genprint.register_print0 Constrarg.wit_ref
+  Genprint.register_print0 wit_ref
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
-  Genprint.register_print0 Constrarg.wit_ident
+  Genprint.register_print0 wit_ident
     pr_id pr_id pr_id;
-  Genprint.register_print0 Constrarg.wit_var
+  Genprint.register_print0 wit_var
     (pr_located pr_id) (pr_located pr_id) pr_id;
   Genprint.register_print0
-    Constrarg.wit_intro_pattern
+    wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)
     (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
     (Miscprint.pr_intro_pattern (fun c -> pr_constr (fst (run_delayed c))));
   Genprint.register_print0
-    Constrarg.wit_clause_dft_concl
+    wit_clause_dft_concl
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) (fun id -> pr_lident (Loc.ghost,id)))
   ;
   Genprint.register_print0
-    Constrarg.wit_constr
+    wit_constr
     Ppconstr.pr_constr_expr
     (fun (c, _) -> Printer.pr_glob_constr c)
     Printer.pr_constr
   ;
   Genprint.register_print0
-    Constrarg.wit_uconstr
+    wit_uconstr
     Ppconstr.pr_constr_expr
     (fun (c,_) -> Printer.pr_glob_constr c)
     Printer.pr_closed_glob
   ;
   Genprint.register_print0
-    Constrarg.wit_open_constr
+    wit_open_constr
     Ppconstr.pr_constr_expr
     (fun (c, _) -> Printer.pr_glob_constr c)
     Printer.pr_constr
   ;
-  Genprint.register_print0 Constrarg.wit_red_expr
+  Genprint.register_print0 wit_red_expr
     (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_reference, pr_constr_pattern_expr))
-    (pr_red_expr (pr_and_constr_expr pr_glob_constr, pr_lglob_constr, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr))
+    (pr_red_expr (pr_and_constr_expr pr_glob_constr, pr_and_constr_expr pr_lglob_constr, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr))
     (pr_red_expr (pr_constr, pr_lconstr, pr_evaluable_reference, pr_constr_pattern));
-  Genprint.register_print0 Constrarg.wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
-  Genprint.register_print0 Constrarg.wit_bindings
+  Genprint.register_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
+  Genprint.register_print0 wit_bindings
     (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_bindings_no_with pr_constr pr_lconstr (fst (run_delayed it)));
-  Genprint.register_print0 Constrarg.wit_constr_with_bindings
+  Genprint.register_print0 wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_with_bindings pr_constr pr_lconstr (fst (run_delayed it)));
-  Genprint.register_print0 Constrarg.wit_destruction_arg
+  Genprint.register_print0 Tacarg.wit_destruction_arg
     (pr_destruction_arg pr_constr_expr pr_lconstr_expr)
     (pr_destruction_arg (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
     (fun it -> pr_destruction_arg pr_constr pr_lconstr (run_delayed_destruction_arg it));
@@ -1447,16 +1334,17 @@ module Richpp = struct
 
   include Make (Ppconstr.Richpp) (struct
     open Ppannotation
+    open Genarg
     let do_not_tag _ x = x
     let tag e s = Pp.tag (Pp.Tag.inj e tag) s
     let tag_keyword                   = tag AKeyword
     let tag_primitive                 = tag AKeyword
     let tag_string                    = do_not_tag ()
-    let tag_glob_tactic_expr        e = tag (AGlobTacticExpr e)
-    let tag_glob_atomic_tactic_expr a = tag (AGlobAtomicTacticExpr a)
-    let tag_raw_tactic_expr         e = tag (ARawTacticExpr e)
-    let tag_raw_atomic_tactic_expr  a = tag (ARawAtomicTacticExpr a)
-    let tag_atomic_tactic_expr      a = tag (AAtomicTacticExpr a)
+    let tag_glob_tactic_expr        e = tag (AGlbGenArg (in_gen (glbwit wit_ltac) e))
+    let tag_glob_atomic_tactic_expr   = do_not_tag
+    let tag_raw_tactic_expr         e = tag (ARawGenArg (in_gen (rawwit wit_ltac) e))
+    let tag_raw_atomic_tactic_expr    = do_not_tag
+    let tag_atomic_tactic_expr        = do_not_tag
   end)
 
 end
