@@ -980,7 +980,8 @@ let warn_arguments_assert =
             strbrk "If you want to clear notation scopes add ': clear scopes'")
          
 let warn_renaming_nonimplicit =
-  CWarnings.create ~name:"arguments-assert" ~category:"vernacular"
+  CWarnings.create ~name:"arguments-ignore-rename-nonimpl"
+                   ~category:"vernacular"
          (fun (oldn, newn) ->
           strbrk "Ignoring rename of "++pr_id oldn++str" into "++pr_id newn++
           strbrk ". Only implicit arguments can be renamed.")
