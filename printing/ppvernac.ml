@@ -1110,6 +1110,11 @@ module Make
         return (
           hov 2 (keyword "Set" ++ spc() ++ pr_set_option na v)
         )
+      | VernacSetAppendOption (na,v) ->
+        return (
+          hov 2 (keyword "Set" ++ spc() ++ pr_printoption na None ++
+                   spc() ++ keyword "Append" ++ spc() ++ str v)
+        )
       | VernacAddOption (na,l) ->
         return (
           hov 2 (keyword "Add" ++ spc() ++ pr_printoption na (Some l))

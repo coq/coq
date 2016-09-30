@@ -851,6 +851,8 @@ GEXTEND Gram
       (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_value ->
   	  VernacSetOption (table,v)
+      | "Set"; table = option_table; "Append"; v = STRING ->
+         VernacSetAppendOption (table,v)
       | "Set"; table = option_table ->
   	  VernacSetOption (table,BoolValue true)
       | IDENT "Unset"; table = option_table ->
