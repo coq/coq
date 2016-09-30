@@ -57,8 +57,7 @@ let print_context env =
       (fnl() ++ str"CONTEXT SUMMARY" ++ fnl() ++
       str"===============" ++ fnl() ++ fnl() ++
       str "* " ++ hov 0 (pr_engagement engt ++ fnl()) ++ fnl() ++
-      str "* " ++ hov 0 (pr_ax csts) ++
-       fnl()));
+      str "* " ++ hov 0 (pr_ax csts)));
   end
 
 let stats () =
