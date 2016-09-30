@@ -128,7 +128,7 @@ let to_ltacprof_results xml =
   | _ -> CErrors.anomaly Pp.(str "Malformed ltacprof XML")
 
 let feedback_results results =
-  Feedback.(feedback 
+  Feedback.(feedback
     (Custom (Loc.dummy_loc, "ltacprof_results", of_ltacprof_results results)))
 
 (* ************** pretty printing ************************************* *)
@@ -218,7 +218,7 @@ let to_string ~filter ?(cutoff=0.0) node =
     !global
   in
   warn_encountered_multi_success_backtracking ();
-  let filter s n = filter s && n >= cutoff in
+  let filter s n = filter s && (all_total <= 0.0 || n /. all_total >= cutoff /. 100.0) in
   let msg =
     h 0 (str "total time: " ++ padl 11 (format_sec (all_total))) ++
     fnl () ++
