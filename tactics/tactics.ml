@@ -1937,9 +1937,7 @@ let exact_check c =
 let cast_no_check cast c =
   Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
-    Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Sigma.here (Term.mkCast (c, cast, concl)) sigma
-    end }
+    exact_no_check (Term.mkCast (c, cast, concl))
   end }
 
 let vm_cast_no_check c = cast_no_check Term.VMcast c
@@ -1976,7 +1974,7 @@ let assumption =
     in
     if is_same_type then
       (Proofview.Unsafe.tclEVARS sigma) <*>
-	Refine.refine ~unsafe:true { run = fun h -> Sigma.here (mkVar (get_id decl)) h }
+	exact_no_check (mkVar (get_id decl))
     else arec gl only_eq rest
   in
   let assumption_tac = { enter = begin fun gl ->
