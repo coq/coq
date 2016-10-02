@@ -22,7 +22,14 @@ description principles
 - AC!     = functional relation reification
             (known as axiom of unique choice in topos theory,
              sometimes called principle of definite description in
-             the context of constructive type theory)
+             the context of constructive type theory, sometimes
+             called axiom of no choice)
+
+- AC_fun_repr       = functional choice of a representative in an equivalence class
+- AC_fun_setoid_gen = functional form of the general form of the (so-called
+                      extensional) axiom of choice over setoids
+- AC_fun_setoid     = functional form of the (so-called extensional) axiom of
+                      choice from setoids
 
 - GAC_rel = guarded relational form of the (non extensional) axiom of choice
 - GAC_fun = guarded functional form of the (non extensional) axiom of choice
@@ -45,6 +52,11 @@ description principles
              independence of premises)
 - Drinker = drinker's paradox (small form)
             (called Ex in Bell [[Bell]])
+- EM      = excluded-middle
+
+- Ext_pred_repr     = choice of a representative among extensional predicates
+- Ext_pred          = extensionality of predicates
+- Ext_fun_prop_repr = choice of a representative among extensional functions to Prop
 
 We let also
 
@@ -76,6 +88,10 @@ Table of contents
 
 8. Choice -> Dependent choice -> Countable choice
 
+9.1. AC_fun_ext = AC_fun + Ext_fun_repr + EM
+
+9.2. AC_fun_ext = AC_fun + Ext_prop_fun_repr + PI
+
 References:
 
 [[Bell]] John L. Bell, Choice principles in intuitionistic set theory,
@@ -84,8 +100,13 @@ unpublished.
 [[Bell93]] John L. Bell, Hilbert's Epsilon Operator in Intuitionistic
 Type Theories, Mathematical Logic Quarterly, volume 39, 1993.
 
+[[Carlström04]] Jesper Carlström, EM + Ext_ + AC_int is equivalent to
+AC_ext, Mathematical Logic Quaterly, vol 50(3), pp 236-240, 2004.
+
 [[Carlström05]] Jesper Carlström, Interpreting descriptions in
 intentional type theory, Journal of Symbolic Logic 70(2):488-514, 2005.
+
+[[Werner97]] Benjamin Werner, Sets in Types, Types in Sets, TACS, 1997.
 *)
 
 Set Implicit Arguments.
@@ -108,8 +129,6 @@ Variables A B :Type.
 
 Variable P:A->Prop.
 
-Variable R:A->B->Prop.
-
 (** ** Constructive choice and description *)
 
 (** AC_rel *)
@@ -120,6 +139,10 @@ Definition RelationalChoice_on :=
     (exists R' : A->B->Prop, subrelation R' R /\ forall x, exists! y, R' x y).
 
 (** AC_fun *)
+
+(* Note: This is called Type-Theoretic Description Axiom (TTDA) in
+   [[Werner97]] (using a non-standard meaning of "description"). This
+   is called intensional axiom of choice (AC_int) in [[Carlström04]] *)
 
 Definition FunctionalChoice_on :=
   forall R:A->B->Prop,
@@ -147,6 +170,55 @@ Definition FunctionalRelReification_on :=
   forall R:A->B->Prop,
     (forall x : A, exists! y : B, R x y) ->
     (exists f : A->B, forall x : A, R x (f x)).
+
+(** AC_fun_repr *)
+
+(* Note: This is called Type-Theoretic Choice Axiom (TTCA) in
+   [[Werner97]] (by reference to the extensional set-theoretic
+   formulation of choice); Note also a typo in its intended
+   formulation in [[Werner97]]. *)
+
+Require Import RelationClasses Logic.
+
+Definition RepresentativeFunctionalChoice_on :=
+  forall R:A->A->Prop,
+    (Equivalence R) ->
+    (exists f : A->A, forall x : A, (R x (f x)) /\ forall y, R x y -> f x = f y).
+
+(** AC_fun_ext *)
+
+Definition SetoidFunctionalChoice_on :=
+  forall R : A -> A -> Prop,
+  forall T : A -> B -> Prop,
+  Equivalence R ->
+  (forall x x' y, R x x' -> T x y -> T x' y) ->
+  (forall x, exists y, T x y) ->
+  exists f : A -> B, forall x : A, T x (f x) /\ (forall y : A, R x y -> f x = f y).
+
+(** AC_fun_ext_gen *)
+
+(* Note: This is called extensional axiom of choice (AC_ext) in
+   [[Carlström04]]. *)
+
+Definition GeneralizedSetoidFunctionalChoice_on :=
+  forall R : A -> A -> Prop,
+  forall S : B -> B -> Prop,
+  forall T : A -> B -> Prop,
+  Equivalence R ->
+  Equivalence S ->
+  (forall x x' y y', R x x' -> S y y' -> T x y -> T x' y') ->
+  (forall x, exists y, T x y) ->
+  exists f : A -> B,
+    forall x : A, T x (f x) /\ (forall y : A, R x y -> S (f x) (f y)).
+
+(** AC_fun_ext_simple *)
+
+Definition SimpleSetoidFunctionalChoice_on A B :=
+  forall R : A -> A -> Prop,
+  forall T : A -> B -> Prop,
+  Equivalence R ->
+  (forall x, exists y, forall x', R x x' -> T x' y) ->
+  exists f : A -> B, forall x : A, T x (f x) /\ (forall x' : A, R x x' -> f x = f x').
 
 (** ID_epsilon (constructive version of indefinite description;
     combined with proof-irrelevance, it may be connected to
@@ -234,6 +306,14 @@ Notation FunctionalChoiceOnInhabitedSet :=
   (forall A B : Type, inhabited B -> FunctionalChoice_on A B).
 Notation FunctionalRelReification :=
   (forall A B : Type, FunctionalRelReification_on A B).
+Notation RepresentativeFunctionalChoice :=
+  (forall A : Type, RepresentativeFunctionalChoice_on A).
+Notation SetoidFunctionalChoice :=
+  (forall A  B: Type, SetoidFunctionalChoice_on A B).
+Notation GeneralizedSetoidFunctionalChoice :=
+  (forall A B : Type, GeneralizedSetoidFunctionalChoice_on A B).
+Notation SimpleSetoidFunctionalChoice :=
+  (forall A B : Type, SimpleSetoidFunctionalChoice_on A B).
 
 Notation GuardedRelationalChoice :=
   (forall A B : Type, GuardedRelationalChoice_on A B).
@@ -270,6 +350,26 @@ Definition IndependenceOfGeneralPremises :=
 Definition SmallDrinker'sParadox :=
   forall (A:Type) (P:A -> Prop), inhabited A ->
     exists x, (exists x, P x) -> P x.
+
+Definition ExcludedMiddle :=
+  forall P:Prop, P \/ ~ P.
+
+(** Extensional schemes *)
+
+Local Notation ExtensionalPropositionRepresentative :=
+  (forall (A:Type),
+   exists h : Prop -> Prop,
+   forall P : Prop, (P <-> h P) /\ forall Q, (P <-> Q) -> h P = h Q).
+
+Local Notation ExtensionalPredicateRepresentative :=
+  (forall (A:Type),
+   exists h : (A->Prop) -> (A->Prop),
+   forall (P : A -> Prop), (forall x, P x <-> h P x) /\ forall Q, (forall x, P x <-> Q x) -> h P = h Q).
+
+Local Notation ExtensionalFunctionRepresentative :=
+  (forall (A B:Type),
+   exists h : (A->B) -> (A->B),
+   forall (f : A -> B), (forall x, f x = h f x) /\ forall g, (forall x, f x = g x) -> h f = h g).
 
 (**********************************************************************)
 (** * AC_rel + AC! = AC_fun
@@ -870,4 +970,323 @@ Proof.
   destruct HfS as (_,HR).
   rewrite Heq in HR.
   assumption.
+Qed.
+
+(**********************************************************************)
+(** * About the axiom of choice over setoids                          *)
+
+Require Import ClassicalFacts PropExtensionalityFacts.
+
+(**********************************************************************)
+(** ** Consequences of the choice of a representative in an equivalence class *)
+
+Theorem repr_fun_choice_imp_ext_prop_repr :
+  RepresentativeFunctionalChoice -> ExtensionalPropositionRepresentative.
+Proof.
+  intros ReprFunChoice A.
+  pose (R P Q := P <-> Q).
+  assert (Hequiv:Equivalence R) by (split; firstorder).
+  apply (ReprFunChoice _ R Hequiv).
+Qed.
+
+Theorem repr_fun_choice_imp_ext_pred_repr :
+  RepresentativeFunctionalChoice -> ExtensionalPredicateRepresentative.
+Proof.
+  intros ReprFunChoice A.
+  pose (R P Q := forall x : A, P x <-> Q x).
+  assert (Hequiv:Equivalence R) by (split; firstorder).
+  apply (ReprFunChoice _ R Hequiv).
+Qed.
+
+Theorem repr_fun_choice_imp_ext_function_repr :
+  RepresentativeFunctionalChoice -> ExtensionalFunctionRepresentative.
+Proof.
+  intros ReprFunChoice A B.
+  pose (R (f g : A -> B) := forall x : A, f x = g x).
+  assert (Hequiv:Equivalence R).
+  { split; try easy. firstorder using eq_trans. }
+  apply (ReprFunChoice _ R Hequiv).
+Qed.
+
+(** *** This is a variant of Diaconescu and Goodman-Myhill theorems *)
+
+Theorem repr_fun_choice_imp_excluded_middle :
+  RepresentativeFunctionalChoice -> ExcludedMiddle.
+Proof.
+  intros ReprFunChoice.
+  apply representative_boolean_partition_imp_excluded_middle, ReprFunChoice.
+Qed.
+
+Theorem repr_fun_choice_imp_relational_choice :
+  RepresentativeFunctionalChoice -> RelationalChoice.
+Proof.
+  intros ReprFunChoice A B T Hexists.
+  pose (D := (A*B)%type).
+  pose (R (z z':D) :=
+    let x := fst z in
+    let x' := fst z' in
+    let y := snd z in
+    let y' := snd z' in
+    x = x' /\ (T x y -> y = y' \/ T x y') /\ (T x y' -> y = y' \/ T x y)).
+  assert (Hequiv : Equivalence R).
+  { split.
+    - split. easy. firstorder.
+    - intros (x,y) (x',y') (H1,(H2,H2')). split. easy. simpl fst in *. simpl snd in *.
+      subst x'. split; intro H.
+      + destruct (H2' H); firstorder.
+      + destruct (H2 H); firstorder.
+    - intros (x,y) (x',y') (x'',y'') (H1,(H2,H2')) (H3,(H4,H4')).
+      simpl fst in *. simpl snd in *. subst x'' x'. split. easy. split; intro H.
+      + simpl fst in *. simpl snd in *. destruct (H2 H) as [<-|H0].
+        * destruct (H4 H); firstorder.
+        * destruct (H2' H0), (H4 H0); try subst y'; try subst y''; try firstorder.
+      + simpl fst in *. simpl snd in *. destruct (H4' H) as [<-|H0].
+        * destruct (H2' H); firstorder.
+        * destruct (H2' H0), (H4 H0); try subst y'; try subst y''; try firstorder. }
+  destruct (ReprFunChoice D R Hequiv) as (g,Hg).
+  set (T' x y := T x y /\ exists y', T x y' /\ g (x,y') = (x,y)).
+  exists T'. split.
+  - intros x y (H,_); easy.
+  - intro x. destruct (Hexists x) as (y,Hy).
+    exists (snd (g (x,y))).
+    destruct (Hg (x,y)) as ((Heq1,(H',H'')),Hgxyuniq); clear Hg.
+    destruct (H' Hy) as [Heq2|Hgy]; clear H'.
+    + split. split.
+      * rewrite <- Heq2. assumption.
+      * exists y. destruct (g (x,y)) as (x',y'). simpl in Heq1, Heq2. subst; easy.
+      * intros y' (Hy',(y'',(Hy'',Heq))).
+        rewrite (Hgxyuniq (x,y'')), Heq. easy. split. easy.
+        split; right; easy.
+    + split. split.
+      * assumption.
+      * exists y. destruct (g (x,y)) as (x',y'). simpl in Heq1. subst x'; easy.
+      * intros y' (Hy',(y'',(Hy'',Heq))).
+        rewrite (Hgxyuniq (x,y'')), Heq. easy. split. easy.
+        split; right; easy.
+Qed.
+
+(**********************************************************************)
+(** ** AC_fun_setoid = AC_fun_setoid_gen                              *)
+
+Theorem gen_setoid_fun_choice_imp_setoid_fun_choice  :
+   GeneralizedSetoidFunctionalChoice -> SetoidFunctionalChoice.
+Proof.
+  intros GenSetoidFunChoice A B R T Hequiv Hcompat Hex.
+  apply GenSetoidFunChoice; try easy.
+  apply eq_equivalence.
+  intros * H <-. firstorder.
+Qed.
+
+Theorem setoid_fun_choice_imp_gen_setoid_fun_choice :
+  SetoidFunctionalChoice -> GeneralizedSetoidFunctionalChoice.
+Proof.
+  intros SetoidFunChoice A B R S T HequivR HequivS Hcompat Hex.
+  destruct SetoidFunChoice with (R:=R) (T:=T) as (f,Hf); try easy.
+  { intros; apply (Hcompat x x' y y); try easy. }
+  exists f. intros x; specialize Hf with x as (Hf,Huniq). intuition. now erewrite Huniq.
+Qed.
+
+Theorem setoid_fun_choice_imp_simple_setoid_fun_choice  :
+   SetoidFunctionalChoice -> SimpleSetoidFunctionalChoice.
+Proof.
+  intros SetoidFunChoice A B R T Hequiv Hexists.
+  pose (T' x y := forall x', R x x' -> T x' y).
+  assert (Hcompat : forall (x x' : A) (y : B), R x x' -> T' x y -> T' x' y) by firstorder.
+  destruct (SetoidFunChoice A B R T' Hequiv Hcompat Hexists) as (f,Hf).
+  exists f. firstorder.
+Qed.
+
+Theorem simple_setoid_fun_choice_imp_setoid_fun_choice :
+  SimpleSetoidFunctionalChoice -> SetoidFunctionalChoice.
+Proof.
+  intros SimpleSetoidFunChoice A B R T Hequiv Hcompat Hexists.
+  destruct (SimpleSetoidFunChoice A B R T Hequiv) as (f,Hf); firstorder.
+Qed.
+
+(**********************************************************************)
+(** ** AC_fun_setoid = AC! + AC_fun_repr                              *)
+
+Theorem setoid_fun_choice_imp_fun_choice :
+  SetoidFunctionalChoice -> FunctionalChoice.
+Proof.
+  intros SetoidFunChoice A B T Hexists.
+  destruct SetoidFunChoice with (R:=@eq A) (T:=T) as (f,Hf).
+  - apply eq_equivalence.
+  - now intros * ->.
+  - assumption.
+  - exists f. firstorder.
+Qed.
+
+Corollary setoid_fun_choice_imp_functional_rel_reification :
+  SetoidFunctionalChoice -> FunctionalRelReification.
+Proof.
+  intro SetoidFunChoice.
+  intros A B; apply fun_choice_imp_functional_rel_reification.
+  now apply setoid_fun_choice_imp_fun_choice.
+Qed.
+
+Theorem setoid_fun_choice_imp_repr_fun_choice :
+  SetoidFunctionalChoice -> RepresentativeFunctionalChoice.
+Proof.
+  intros SetoidFunChoice A R Hequiv.
+  apply SetoidFunChoice; firstorder.
+Qed.
+
+Theorem functional_rel_reification_and_repr_fun_choice_imp_setoid_fun_choice :
+  FunctionalRelReification -> RepresentativeFunctionalChoice -> SetoidFunctionalChoice.
+Proof.
+  intros FunRelReify ReprFunChoice A B R T Hequiv Hcompat Hexists.
+  assert (FunChoice : FunctionalChoice).
+  { intros A' B'. apply functional_rel_reification_and_rel_choice_imp_fun_choice.
+    - apply FunRelReify.
+    - now apply repr_fun_choice_imp_relational_choice. }
+  destruct (FunChoice _ _ T Hexists) as (f,Hf).
+  destruct (ReprFunChoice A R Hequiv) as (g,Hg).
+  exists (fun a => f (g a)).
+  intro x. destruct (Hg x) as (Hgx,HRuniq).
+  split.
+  - eapply Hcompat. symmetry. apply Hgx. apply Hf.
+  - intros y Hxy. f_equal. auto.
+Qed.
+
+Theorem functional_rel_reification_and_repr_fun_choice_iff_setoid_fun_choice :
+  FunctionalRelReification /\ RepresentativeFunctionalChoice <-> SetoidFunctionalChoice.
+Proof.
+  split; intros.
+  - now apply functional_rel_reification_and_repr_fun_choice_imp_setoid_fun_choice.
+  - split.
+    + now apply setoid_fun_choice_imp_functional_rel_reification.
+    + now apply setoid_fun_choice_imp_repr_fun_choice.
+Qed.
+
+(** Note: What characterization to give of
+RepresentativeFunctionalChoice? A formulation of it as a functional
+relation would certainly be equivalent to the formulation of
+SetoidFunctionalChoice as a functional relation, but in their
+functional forms, SetoidFunctionalChoice seems strictly stronger *)
+
+(**********************************************************************)
+(** * AC_fun_setoid = AC_fun + Ext_fun_repr + EM                      *)
+
+Import EqNotations.
+
+(** ** This is the main theorem in [[Carlström04]] *)
+
+(** Note: all ingredients have a computational meaning when taken in
+  separation. However, to compute with the functional choice,
+  existential quantification has to be thought as a strong
+  existential, which is incompatible with the computational content of
+  excluded-middle *)
+
+Theorem fun_choice_and_ext_functions_repr_and_excluded_middle_imp_setoid_fun_choice :
+  FunctionalChoice -> ExtensionalFunctionRepresentative -> ExcludedMiddle -> RepresentativeFunctionalChoice.
+Proof.
+  intros FunChoice SetoidFunRepr EM A R (Hrefl,Hsym,Htrans).
+  assert (H:forall P:Prop, exists b, b = true <-> P).
+  { intros P. destruct (EM P).
+    - exists true; firstorder.
+    - exists false; easy. }
+  destruct (FunChoice _ _ _ H) as (c,Hc).
+  pose (class_of a y := c (R a y)).
+  pose (isclass f := exists x:A, f x = true).
+  pose (class := {f:A -> bool | isclass f}).
+  pose (contains (c:class) (a:A) := proj1_sig c a = true).
+  destruct (FunChoice class A contains) as (f,Hf).
+  - intros f. destruct (proj2_sig f) as (x,Hx).
+    exists x. easy.
+  - destruct (SetoidFunRepr A bool) as (h,Hh).
+    assert (Hisclass:forall a, isclass (h (class_of a))).
+    { intro a. exists a. destruct (Hh (class_of a)) as (Ha,Huniqa).
+      rewrite <- Ha. apply Hc. apply Hrefl. }
+   pose (f':= fun a => exist _ (h (class_of a)) (Hisclass a) : class).
+    exists (fun a => f (f' a)).
+    intros x. destruct (Hh (class_of x)) as (Hx,Huniqx). split.
+    + specialize Hf with (f' x). unfold contains in Hf. simpl in Hf. rewrite <- Hx in Hf. apply Hc. assumption.
+    + intros y Hxy.
+       f_equal.
+       assert (Heq1: h (class_of x) = h (class_of y)).
+       { apply Huniqx. intro z. unfold class_of.
+         destruct (c (R x z)) eqn:Hxz.
+         - symmetry. apply Hc. apply -> Hc in Hxz. firstorder.
+         - destruct (c (R y z)) eqn:Hyz.
+           + apply -> Hc in Hyz. rewrite <- Hxz. apply Hc. firstorder.
+           + easy. }
+       assert (Heq2:rew Heq1 in Hisclass x = Hisclass y).
+       { apply proof_irrelevance_cci, EM. }
+       unfold f'.
+       rewrite <- Heq2.
+       rewrite <- Heq1.
+       reflexivity.
+Qed.
+
+Theorem setoid_functional_choice_first_characterization :
+  FunctionalChoice /\ ExtensionalFunctionRepresentative /\ ExcludedMiddle <-> SetoidFunctionalChoice.
+Proof.
+  split.
+  - intros (FunChoice & SetoidFunRepr & EM).
+    apply functional_rel_reification_and_repr_fun_choice_imp_setoid_fun_choice.
+    + intros A B. apply fun_choice_imp_functional_rel_reification, FunChoice.
+    + now apply fun_choice_and_ext_functions_repr_and_excluded_middle_imp_setoid_fun_choice.
+  - intro SetoidFunChoice. repeat split.
+    + now apply setoid_fun_choice_imp_fun_choice.
+    + apply repr_fun_choice_imp_ext_function_repr.
+       now apply setoid_fun_choice_imp_repr_fun_choice.
+    + apply repr_fun_choice_imp_excluded_middle.
+       now apply setoid_fun_choice_imp_repr_fun_choice.
+Qed.
+
+(**********************************************************************)
+(** ** AC_fun_setoid = AC_fun + Ext_pred_repr + PI                    *)
+
+(** Note: all ingredients have a computational meaning when taken in
+  separation. However, to compute with the functional choice,
+  existential quantification has to be thought as a strong
+  existential, which is incompatible with proof-irrelevance which
+  requires existential quantification to be truncated *)
+
+Theorem fun_choice_and_ext_pred_ext_and_proof_irrel_imp_setoid_fun_choice :
+  FunctionalChoice -> ExtensionalPredicateRepresentative -> ProofIrrelevance -> RepresentativeFunctionalChoice.
+Proof.
+  intros FunChoice PredExtRepr PI A R (Hrefl,Hsym,Htrans).
+  pose (isclass P := exists x:A, P x).
+  pose (class := {P:A -> Prop | isclass P}).
+  pose (contains (c:class) (a:A) := proj1_sig c a).
+  pose (class_of a := R a).
+  destruct (FunChoice class A contains) as (f,Hf).
+  - intros c. apply proj2_sig.
+  - destruct (PredExtRepr A) as (h,Hh).
+    assert (Hisclass:forall a, isclass (h (class_of a))).
+    { intro a. exists a. destruct (Hh (class_of a)) as (Ha,Huniqa).
+      rewrite <- Ha; apply Hrefl. }
+    pose (f':= fun a => exist _ (h (class_of a)) (Hisclass a) : class).
+    exists (fun a => f (f' a)).
+    intros x. destruct (Hh (class_of x)) as (Hx,Huniqx). split.
+    + specialize Hf with (f' x). simpl in Hf. rewrite <- Hx in Hf. assumption.
+    + intros y Hxy.
+       f_equal.
+       assert (Heq1: h (class_of x) = h (class_of y)).
+       { apply Huniqx. intro z. unfold class_of. firstorder. }
+       assert (Heq2:rew Heq1 in Hisclass x = Hisclass y).
+       { apply PI. }
+       unfold f'.
+       rewrite <- Heq2.
+       rewrite <- Heq1.
+       reflexivity.
+Qed.
+
+Theorem setoid_functional_choice_second_characterization :
+  FunctionalChoice /\ ExtensionalPredicateRepresentative /\ ProofIrrelevance <-> SetoidFunctionalChoice.
+Proof.
+  split.
+  - intros (FunChoice & ExtPredRepr & PI).
+    apply functional_rel_reification_and_repr_fun_choice_imp_setoid_fun_choice.
+    + intros A B. now apply fun_choice_imp_functional_rel_reification.
+    + now apply fun_choice_and_ext_pred_ext_and_proof_irrel_imp_setoid_fun_choice.
+  - intro SetoidFunChoice. repeat split.
+    + now apply setoid_fun_choice_imp_fun_choice.
+    + apply repr_fun_choice_imp_ext_pred_repr.
+       now apply setoid_fun_choice_imp_repr_fun_choice.
+    + red. apply proof_irrelevance_cci.
+       apply repr_fun_choice_imp_excluded_middle.
+       now apply setoid_fun_choice_imp_repr_fun_choice.
 Qed.
