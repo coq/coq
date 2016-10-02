@@ -56,6 +56,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/Description.v
     theories/Logic/Epsilon.v
     theories/Logic/IndefiniteDescription.v
+    theories/Logic/PropExtensionality.v
     theories/Logic/PropExtensionalityFacts.v
     theories/Logic/FunctionalExtensionality.v
     theories/Logic/ExtensionalFunctionRepresentative.v
