@@ -16,7 +16,6 @@ type t =
   | INT of string
   | STRING of string
   | LEFTQMARK
-  | BULLET of string
   | EOI
 
 val equal : t -> t -> bool
