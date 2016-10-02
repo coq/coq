@@ -33,8 +33,6 @@ let _ = List.iter CLexer.add_keyword vernac_kw
 
 let query_command = Gram.entry_create "vernac:query_command"
 
-let subprf = Gram.entry_create "vernac:subprf"
-
 let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
 let thm_token = Gram.entry_create "vernac:thm_token"
 let def_body = Gram.entry_create "vernac:def_body"
@@ -45,13 +43,25 @@ let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
 let instance_name = Gram.entry_create "vernac:instance_name"
 let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
 
-let make_bullet s =
-  let n = String.length s in
-  match s.[0] with
-  | '-' -> Dash n
-  | '+' -> Plus n
-  | '*' -> Star n
-  | _ -> assert false
+let subprf = Gram.Entry.of_parser "vernac:subprf" (fun strm ->
+  match get_tok (Stream.peek strm) with
+  | Some (KEYWORD "{") -> Stream.junk strm; VernacSubproof None
+  | Some (KEYWORD "}") -> Stream.junk strm; VernacEndSubproof
+  | Some (KEYWORD k) ->
+    (match k.[0] with
+    | ('-'|'+'|'*') as c ->
+      let n = String.length k in
+      for i = 1 to n - 1 do
+        if k.[i] != c then raise Stream.Failure
+      done;
+      Stream.junk strm;
+      VernacBullet (match c with
+        | '-' -> Dash n
+        | '+' -> Plus n
+        | '*' -> Star n
+        | _ -> assert false)
+    | _ -> raise Stream.Failure)
+  | _ -> raise Stream.Failure)
 
 GEXTEND Gram
   GLOBAL: vernac gallina_ext noedit_mode subprf subgoal_command;
@@ -100,13 +110,6 @@ GEXTEND Gram
   ;
   noedit_mode:
     [ [ c = subgoal_command -> c None] ]
-  ;
-
-  subprf:
-  [ [ s = BULLET -> VernacBullet (make_bullet s)
-    | "{" -> VernacSubproof None
-    | "}" -> VernacEndSubproof
-    ] ]
   ;
 
   subgoal_command:
@@ -226,8 +229,8 @@ GEXTEND Gram
     [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
   ;
   univ_constraint:
-    [ [ l = identref; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
-	r = identref -> (l, ord, r) ] ]
+    [ [ l = universe_level; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
+	r = universe_level -> (l, ord, r) ] ]
   ;
   finite_token:
     [ [ "Inductive" -> (Inductive_kw,Finite)
@@ -653,23 +656,35 @@ GEXTEND Gram
       | IDENT "Arguments"; qid = smart_global; 
         impl = LIST1 [ l = LIST0
         [ item = argument_spec ->
-            let id, r, s = item in [`Id (id,r,s,false,false)]
+            let name, recarg_like, notation_scope = item in
+            [`Id { name=name; recarg_like=recarg_like;
+                   notation_scope=notation_scope;
+                   implicit_status = `NotImplicit}]
         | "/" -> [`Slash]
         | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
             let f x = match sc, x with
             | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,false,false)) items
+            List.map (fun (name,recarg_like,notation_scope) ->
+              `Id { name=name; recarg_like=recarg_like;
+                    notation_scope=f notation_scope;
+                    implicit_status = `NotImplicit}) items
         | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
             let f x = match sc, x with
             | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,true,false)) items
+            List.map (fun (name,recarg_like,notation_scope) ->
+              `Id { name=name; recarg_like=recarg_like;
+                    notation_scope=f notation_scope;
+                    implicit_status = `Implicit}) items
         | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
             let f x = match sc, x with
             | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,true,true)) items
+            List.map (fun (name,recarg_like,notation_scope) ->
+              `Id { name=name; recarg_like=recarg_like;
+                    notation_scope=f notation_scope;
+                    implicit_status = `MaximallyImplicit}) items
         ] -> l ] SEP ",";
         mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> l ] ->
          let mods = match mods with None -> [] | Some l -> List.flatten l in
@@ -1103,10 +1118,9 @@ GEXTEND Gram
       | IDENT "right"; IDENT "associativity" -> SetAssoc RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc NonA
       | IDENT "only"; IDENT "printing" -> SetOnlyPrinting
-      | IDENT "only"; IDENT "parsing" ->
-        SetOnlyParsing Flags.Current
+      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
       | IDENT "compat"; s = STRING ->
-        SetOnlyParsing (Coqinit.get_compat_version s)
+        SetCompatVersion (Coqinit.get_compat_version s)
       | IDENT "format"; s1 = [s = STRING -> (!@loc,s)];
                         s2 = OPT [s = STRING -> (!@loc,s)] ->
           begin match s1, s2 with

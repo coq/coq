@@ -1051,6 +1051,15 @@ let find_pattern_variable = function
   | Ident (loc,id) -> id
   | Qualid (loc,_) as x -> raise (InternalizationError(loc,NotAConstructor x))
 
+let check_duplicate loc fields =
+  let eq (ref1, _) (ref2, _) = eq_reference ref1 ref2 in
+  let dups = List.duplicates eq fields in
+  match dups with
+  | [] -> ()
+  | (r, _) :: _ ->
+    user_err ~loc (str "This record defines several times the field " ++
+      pr_reference r ++ str ".")
+
 (** [sort_fields ~complete loc fields completer] expects a list
     [fields] of field assignments [f = e1; g = e2; ...], where [f, g]
     are fields of a record and [e1] are "values" (either terms, when
@@ -1084,6 +1093,7 @@ let sort_fields ~complete loc fields completer =
           try Qualid (loc, shortest_qualid_of_global Id.Set.empty global_record_id)
           with Not_found ->
             anomaly (str "Environment corruption for records") in
+        let () = check_duplicate loc fields in
         let (end_index,    (* one past the last field index *)
              first_field_index,  (* index of the first field of the record *)
              proj_list)    (* list of projections *)

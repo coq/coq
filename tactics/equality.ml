@@ -1762,35 +1762,38 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let gl = Proofview.Goal.assume gl in
     let env = Proofview.Goal.env gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
-    let test decl =
+    let select_equation_name decl =
       try
         let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
         let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match kind_of_term x, kind_of_term y with
-        | Var z, _ | _, Var z when not (is_evaluable env (EvalVarRef z))  ->
+        | Var z, _  when not (is_evaluable env (EvalVarRef z)) ->
+            Some (NamedDecl.get_id decl)
+        | _, Var z when not (is_evaluable env (EvalVarRef z)) ->
             Some (NamedDecl.get_id decl)
         | _ ->
             None
       with Constr_matching.PatternMatchingFailure -> None
     in
     let hyps = Proofview.Goal.hyps gl in
-    List.rev (List.map_filter test hyps)
+    List.rev (List.map_filter select_equation_name hyps)
   in
 
   (* Second step: treat equations *)
   let process hyp =
     Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
+    let env = Proofview.Goal.env gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
     let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
     let _,_,(_,x,y) = find_eq_data_decompose c in
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
     if Term.eq_constr x y then Proofview.tclUNIT () else
       match kind_of_term x, kind_of_term y with
-      | Var x', _ when not (occur_term x y) ->
+      | Var x', _ when not (occur_term x y) && not (is_evaluable env (EvalVarRef x')) ->
           subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
-      | _, Var y' when not (occur_term y x) ->
+      | _, Var y' when not (occur_term y x) && not (is_evaluable env (EvalVarRef y')) ->
           subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
       | _ ->
           Proofview.tclUNIT ()

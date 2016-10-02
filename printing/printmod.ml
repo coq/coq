@@ -247,19 +247,24 @@ let get_typ_expr_alg mtb = match mtb.mod_type_alg with
   | _ -> raise Not_found
 
 let nametab_register_modparam mbid mtb =
+  let id = MBId.to_id mbid in
   match mtb.mod_type with
-  | MoreFunctor _ -> () (* functorial param : nothing to register *)
+  | MoreFunctor _ -> id (* functorial param : nothing to register *)
   | NoFunctor struc ->
     (* We first try to use the algebraic type expression if any,
        via a Declaremods function that converts back to module entries *)
     try
-      Declaremods.process_module_binding mbid (get_typ_expr_alg mtb)
+      let () = Declaremods.process_module_binding mbid (get_typ_expr_alg mtb) in
+      id
     with e when CErrors.noncritical e ->
       (* Otherwise, we try to play with the nametab ourselves *)
       let mp = MPbound mbid in
-      let dir = DirPath.make [MBId.to_id mbid] in
+      let check id = Nametab.exists_dir (DirPath.make [id]) in
+      let id = Namegen.next_ident_away_from id check in
+      let dir = DirPath.make [id] in
       nametab_register_dir mp;
-      List.iter (nametab_register_body mp dir) struc
+      List.iter (nametab_register_body mp dir) struc;
+      id
 
 let print_body is_impl env mp (l,body) =
   let name = pr_label l in
@@ -353,7 +358,7 @@ let print_mod_expr env mp locals = function
 let rec print_functor fty fatom is_type env mp locals = function
   |NoFunctor me -> fatom is_type env mp locals me
   |MoreFunctor (mbid,mtb1,me2) ->
-      nametab_register_modparam mbid mtb1;
+      let id = nametab_register_modparam mbid mtb1 in
       let mp1 = MPbound mbid in
       let pr_mtb1 = fty env mp1 locals mtb1 in
       let env' = Option.map (Modops.add_module_type mp1 mtb1) env in
@@ -361,7 +366,7 @@ let rec print_functor fty fatom is_type env mp locals = function
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2
         (keyword kwd ++ spc () ++
-	 str "(" ++ pr_id (MBId.to_id mbid) ++ str ":" ++ pr_mtb1 ++ str ")" ++
+	 str "(" ++ pr_id id ++ str ":" ++ pr_mtb1 ++ str ")" ++
 	 spc() ++ print_functor fty fatom is_type env' mp locals' me2)
 
 let rec print_expression x =

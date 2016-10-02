@@ -185,7 +185,8 @@ match sm with
       end
   | SetEntryType (s, _) -> ["entrytype", s]
   | SetOnlyPrinting -> ["onlyprinting", ""]
-  | SetOnlyParsing v -> ["compat", Flags.pr_version v]
+  | SetOnlyParsing -> ["onlyparsing", ""]
+  | SetCompatVersion v -> ["compat", Flags.pr_version v]
   | SetFormat (system, (loc, s)) ->
       let start, stop = unlock loc in
       ["format-"^system, s; "begin", start; "end", stop]

@@ -51,7 +51,7 @@ SINGLE_QUOTE="
 get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_args,$(1)), ($(call get_coq_prog_args,$(1)))))
 # get the command to use with this set of arguments; if there's -compile, use coqc, else use coqtop
 has_compile_flag = $(filter "-compile",$(call get_coq_prog_args,$(1)))
-has_profile_ltac_or_compile_flag = $(filter "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
+has_profile_ltac_or_compile_flag = $(filter "-profile-ltac-cutoff" "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
 get_command_based_on_flags = $(if $(call has_profile_ltac_or_compile_flag,$(1)),$(coqc),$(command))
 
 
@@ -281,6 +281,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \
+	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$tmpoutput; \
 	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
@@ -304,16 +305,19 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \
-	    | sed -e 's/\s*[0-9]*\.[0-9]\+\s*//g' \
+	    | sed -e 's/\s*[-+0-9]*\.[0-9][0-9]*\s*//g' \
 	          -e 's/\s*0\.\s*//g' \
 		  -e 's/\s*[-+]nan\s*//g' \
 		  -e 's/\s*[-+]inf\s*//g' \
+		  -e 's/^[^a-zA-Z]*//' \
+	    | sort \
 	    > $$tmpoutput; \
-	  sed -e 's/\s*[0-9]*\.[0-9]\+\s*//g' \
+	  sed -e 's/\s*[-+0-9]*\.[0-9][0-9]*\s*//g' \
 		-e 's/\s*0\.\s*//g' \
 		-e 's/\s*[-+]nan\s*//g' \
 		-e 's/\s*[-+]inf\s*//g' \
-       	       $*.out > $$tmpexpected; \
+		-e 's/^[^a-zA-Z]*//' \
+	       $*.out | sort > $$tmpexpected; \
 	  diff -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \

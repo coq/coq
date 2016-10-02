@@ -2177,7 +2177,10 @@ let known_state ?(redefine_qed=false) ~cache id =
                       Slaves.build_proof
                         ~loc ~drop_pt ~exn_info ~start ~stop ~name in
                     Future.replace ofp fp;
-                    qed.fproof <- Some (fp, cancel)
+                    qed.fproof <- Some (fp, cancel);
+                    (* We don't generate a new state, but we still need
+                     * to install the right one *)
+                    State.install_cached id
                 | { VCS.kind = `Proof _ }, Some _ -> assert false
                 | { VCS.kind = `Proof _ }, None ->
                     reach ~cache:`Shallow start;

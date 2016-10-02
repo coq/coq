@@ -434,6 +434,23 @@ let assumption_message id =
 
 (** Global universe names, in a different summary *)
 
+type universe_context_decl = polymorphic * Univ.universe_context_set
+
+let cache_universe_context (p, ctx) =
+  Global.push_context_set p ctx;
+  if p then Lib.add_section_context ctx
+
+let input_universe_context : universe_context_decl -> Libobject.obj =
+  declare_object
+    { (default_object "Global universe context state") with
+      cache_function = (fun (na, pi) -> cache_universe_context pi);
+      load_function = (fun _ (_, pi) -> cache_universe_context pi);
+      discharge_function = (fun (_, (p, _ as x)) -> if p then None else Some x);
+      classify_function = (fun a -> Keep a) }
+
+let declare_universe_context poly ctx =
+  Lib.add_anonymous_leaf (input_universe_context (poly, ctx))
+
 (* Discharged or not *)
 type universe_decl = polymorphic * (Id.t * Univ.universe_level) list
 
@@ -446,9 +463,8 @@ let cache_universes (p, l) =
          Univ.ContextSet.add_universe lev ctx))
       (glob, Univ.ContextSet.empty) l
   in
-    Global.push_context_set p ctx;
-    if p then Lib.add_section_context ctx;
-    Universes.set_global_universe_names glob'
+  cache_universe_context (p, ctx);
+  Universes.set_global_universe_names glob'
 
 let input_universes : universe_decl -> Libobject.obj =
   declare_object
@@ -475,8 +491,8 @@ let do_universe poly l =
 type constraint_decl = polymorphic * Univ.constraints
 
 let cache_constraints (na, (p, c)) =
-  Global.add_constraints c;
-  if p then Lib.add_section_context (Univ.ContextSet.add_constraints c Univ.ContextSet.empty)
+  let ctx = Univ.ContextSet.add_constraints c Univ.ContextSet.empty in
+  cache_universe_context (p,ctx)
 
 let discharge_constraints (_, (p, c as a)) =
   if p then None else Some a
@@ -491,12 +507,20 @@ let input_constraints : constraint_decl -> Libobject.obj =
       classify_function = (fun a -> Keep a) }
 
 let do_constraint poly l =
-  let u_of_id =
-    let names, _ = Universes.global_universe_names () in
-    fun (loc, id) ->
-    try Idmap.find id names
-    with Not_found ->
-      user_err ~loc ~hdr:"Constraint" (str "Undeclared universe " ++ pr_id id)
+  let open Misctypes in
+  let u_of_id x =
+    match x with
+    | GProp -> Loc.dummy_loc, (false, Univ.Level.prop)
+    | GSet -> Loc.dummy_loc, (false, Univ.Level.set)
+    | GType None ->
+       user_err ~hdr:"Constraint"
+                     (str "Cannot declare constraints on anonymous universes")
+    | GType (Some (loc, id)) ->
+       let id = Id.of_string id in
+       let names, _ = Universes.global_universe_names () in
+       try loc, Idmap.find id names
+       with Not_found ->
+         user_err ~loc ~hdr:"Constraint" (str "Undeclared universe " ++ pr_id id)
   in
   let in_section = Lib.sections_are_opened () in
   let () =
@@ -514,8 +538,8 @@ let do_constraint poly l =
                     ++ str "Polymorphic Constraint instead")
   in
   let constraints = List.fold_left (fun acc (l, d, r) ->
-     let p, lu = u_of_id l and p', ru = u_of_id r in
-     check_poly (fst l) p (fst r) p';
+     let ploc, (p, lu) = u_of_id l and rloc, (p', ru) = u_of_id r in
+     check_poly ploc p rloc p';
      Univ.Constraint.add (lu, d, ru) acc)
     Univ.Constraint.empty l
   in

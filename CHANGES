@@ -27,7 +27,10 @@ Specification language
 Tactics
 
 - Flag "Bracketing Last Introduction Pattern" is now on by default.
-- Flag "Regular Subst Tactic" is now on by default.
+- Flag "Regular Subst Tactic" is now on by default: it respects the
+  initial order of hypothesis, it contracts cycles, it unfolds no
+  local definitions (common source of incompatibilities, fixable by
+  "Unset Regular Subst Tactic").
 - New flag "Refolding Reduction", now disabled by default, which turns
   on refolding of constants/fixpoints (as in cbn) during the reductions
   done during type inference and tactic retyping. Can be extremely

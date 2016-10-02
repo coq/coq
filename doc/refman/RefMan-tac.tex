@@ -46,13 +46,13 @@ goal selector (see Section \ref{ltac:selector}).
 If no selector is specified, the default
 selector (see Section \ref{default-selector}) is used.
 
-\newcommand{\selector}{\nterm{selector}}
+\newcommand{\toplevelselector}{\nterm{toplevel\_selector}}
 \begin{tabular}{lcl}
-{\commandtac} & ::= & {\selector} {\tt :} {\tac} {\tt .}\\
+{\commandtac} & ::= & {\toplevelselector} {\tt :} {\tac} {\tt .}\\
  & $|$ & {\tac} {\tt .}
 \end{tabular}
-\subsection[\tt Set Default Goal Selector ``\selector''.]
-           {\tt Set Default Goal Selector ``\selector''.
+\subsection[\tt Set Default Goal Selector ``\toplevelselector''.]
+           {\tt Set Default Goal Selector ``\toplevelselector''.
             \optindex{Default Goal Selector}
             \label{default-selector}}
 After using this command, the default selector -- used when no selector
@@ -4356,22 +4356,23 @@ vernacular command and printed using {\nobreak {\tt Print Firstorder
 
    Tries to solve the goal with {\tac} when no logical rule may apply.
 
- \item {\tt firstorder with \ident$_1$ \dots\ \ident$_n$ }
-   \tacindex{firstorder with}
-
-   Adds lemmas \ident$_1$ \dots\ \ident$_n$ to the proof-search
-   environment.
-
  \item {\tt firstorder using {\qualid}$_1$ , \dots\ , {\qualid}$_n$ }
    \tacindex{firstorder using}
 
-   Adds lemmas in {\tt auto} hints bases {\qualid}$_1$ \dots\ {\qualid}$_n$
-   to the proof-search environment. If {\qualid}$_i$ refers to an inductive
-   type, it is the collection of its constructors which is added as hints.
+   Adds lemmas {\qualid}$_1$ \dots\ {\qualid}$_n$ to the proof-search
+   environment. If {\qualid}$_i$ refers to an inductive type, it is
+   the collection of its constructors which are added to the
+   proof-search environment.
 
-\item \texttt{firstorder using {\qualid}$_1$ , \dots\ , {\qualid}$_n$ with \ident$_1$ \dots\ \ident$_n$}
+ \item {\tt firstorder with \ident$_1$ \dots\ \ident$_n$ }
+   \tacindex{firstorder with}
 
-  This combines the effects of the {\tt using} and {\tt with} options.
+   Adds lemmas from {\tt auto} hint bases \ident$_1$ \dots\ \ident$_n$
+   to the proof-search environment.
+
+\item \texttt{firstorder {\tac} using {\qualid}$_1$ , \dots\ , {\qualid}$_n$ with \ident$_1$ \dots\ \ident$_n$}
+
+  This combines the effects of the different variants of \texttt{firstorder}.
 
 \end{Variants}
 

@@ -155,8 +155,9 @@ let full_name_of_reference ref =
   DirPath.to_string dir ^ "." ^ Id.to_string id
 
 (** Whether a reference is blacklisted *)
-let blacklist_filter ref env typ =
+let blacklist_filter_aux () =
   let l = SearchBlacklist.elements () in
+  fun ref env typ ->
   let name = full_name_of_reference ref in
   let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
   List.for_all is_not_bl l
@@ -182,11 +183,11 @@ let search_about_filter query gr env typ = match query with
 
 let search_pattern gopt pat mods =
   let ans = ref [] in
+  let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
-    let f_module = module_filter mods ref env typ in
-    let f_blacklist = blacklist_filter ref env typ in
-    let f_pattern () = pattern_filter pat ref env typ in
-    f_module && f_pattern () && f_blacklist
+    module_filter mods ref env typ &&
+    pattern_filter pat ref env typ &&
+    blacklist_filter ref env typ
   in
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
@@ -208,14 +209,12 @@ let search_rewrite gopt pat mods =
   let pat1 = rewrite_pat1 pat in
   let pat2 = rewrite_pat2 pat in
   let ans = ref [] in
+  let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
-    let f_module = module_filter mods ref env typ in
-    let f_blacklist = blacklist_filter ref env typ in
-    let f_pattern () =
-      pattern_filter pat1 ref env typ ||
-      pattern_filter pat2 ref env typ
-    in
-    f_module && f_pattern () && f_blacklist
+    module_filter mods ref env typ &&
+    (pattern_filter pat1 ref env typ ||
+       pattern_filter pat2 ref env typ) &&
+    blacklist_filter ref env typ
   in
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
@@ -227,11 +226,11 @@ let search_rewrite gopt pat mods =
 
 let search_by_head gopt pat mods =
   let ans = ref [] in
+  let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
-    let f_module = module_filter mods ref env typ in
-    let f_blacklist = blacklist_filter ref env typ in
-    let f_pattern () = head_filter pat ref env typ in
-    f_module && f_pattern () && f_blacklist
+    module_filter mods ref env typ &&
+    head_filter pat ref env typ &&
+    blacklist_filter ref env typ
   in
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
@@ -243,12 +242,13 @@ let search_by_head gopt pat mods =
 
 let search_about gopt items mods =
   let ans = ref [] in
+  let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
-    let f_module = module_filter mods ref env typ in
-    let f_about (b, i) = eqb b (search_about_filter i ref env typ) in
-    let f_blacklist = blacklist_filter ref env typ in
-    f_module && List.for_all f_about items && f_blacklist
+    module_filter mods ref env typ &&
+    List.for_all
+      (fun (b,i) -> eqb b (search_about_filter i ref env typ)) items &&
+    blacklist_filter ref env typ
   in
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
@@ -287,6 +287,7 @@ let interface_search =
   let (name, tpe, subtpe, mods, blacklist) =
     extract_flags [] [] [] [] false flags
   in
+  let blacklist_filter = blacklist_filter_aux () in
   let filter_function ref env constr =
     let id = Names.Id.to_string (Nametab.basename_of_global ref) in
     let path = Libnames.dirpath (Nametab.path_of_global ref) in
@@ -305,13 +306,11 @@ let interface_search =
     let match_module (mdl, flag) =
       toggle (Libnames.is_dirpath_prefix_of mdl path) flag
     in
-    let in_blacklist =
-      blacklist || (blacklist_filter ref env constr)
-    in
     List.for_all match_name name &&
     List.for_all match_type tpe &&
     List.for_all match_subtype subtpe &&
-    List.for_all match_module mods && in_blacklist
+    List.for_all match_module mods &&
+    (blacklist || blacklist_filter ref env constr)
   in
   let ans = ref [] in
   let print_function ref env constr =
@@ -342,3 +341,6 @@ let interface_search =
   in
   let () = generic_search glnum iter in
   !ans
+
+let blacklist_filter ref env typ =
+  blacklist_filter_aux () ref env typ

@@ -107,7 +107,7 @@ let parse_args () =
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
-      |"-o"
+      |"-o"|"-profile-ltac-cutoff" 
       as o) :: rem ->
 	begin
 	  match rem with

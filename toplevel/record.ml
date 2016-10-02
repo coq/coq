@@ -523,11 +523,9 @@ let add_inductive_class ind =
     | LocalDef _ -> None
     | LocalAssum (_, t) -> Some (lazy t)
     in
-    let args = List.map_filter map ctx in
-    let ty = Inductive.type_of_inductive_knowing_parameters
+    let ty = Inductive.type_of_inductive
       (push_rel_context ctx (Global.env ()))
       ((mind,oneind),inst)
-      (Array.of_list args)
     in
       { cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;

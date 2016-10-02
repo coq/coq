@@ -348,5 +348,7 @@ let rec loop () =
     | any ->
       Feedback.msg_error (str"Anomaly: main loop exited with exception: " ++
                 str (Printexc.to_string any) ++
-                fnl() ++ str"Please report.");
+                fnl() ++
+                str"Please report" ++
+                strbrk" at " ++ str Coq_config.wwwbugtracker ++ str ".");
       loop ()

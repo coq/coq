@@ -239,10 +239,12 @@ let interp_elimination_sort = function
   | GSet  -> InSet
   | GType _ -> InType
 
+type inference_hook = env -> evar_map -> evar -> evar_map * constr
+
 type inference_flags = {
   use_typeclasses : bool;
   use_unif_heuristics : bool;
-  use_hook : (env -> evar_map -> evar -> constr) option;
+  use_hook : inference_hook option;
   fail_evar : bool;
   expand_evars : bool
 }
@@ -272,7 +274,7 @@ let apply_inference_hook hook evdref pending =
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
       try
-        let c = hook sigma evk in
+        let sigma, c = hook sigma evk in
         Evd.define evk c sigma
       with Exit ->
         sigma

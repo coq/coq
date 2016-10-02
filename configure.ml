@@ -1043,6 +1043,7 @@ let write_configml f =
   pr "let with_geoproof = ref %B\n" !Prefs.geoproof;
   pr_s "browser" browser;
   pr_s "wwwcoq" !Prefs.coqwebsite;
+  pr_s "wwwbugtracker" (!Prefs.coqwebsite ^ "bugs/");
   pr_s "wwwrefman" (!Prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/refman/");
   pr_s "wwwstdlib" (!Prefs.coqwebsite ^ "distrib/" ^ coq_version ^ "/stdlib/");
   pr_s "localwwwrefman"  ("file:/" ^ docdir ^ "/html/refman");

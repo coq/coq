@@ -106,7 +106,7 @@ match goal with |- (f (g x1), h x2) = (f (g x1), h x2) => idtac end.
 Abort. 
 
 Definition volatile := fun x : nat => x.
-Arguments volatile /.
+Arguments volatile / _.
 
 Lemma foo : volatile = volatile.
 simpl.

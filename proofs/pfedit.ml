@@ -161,11 +161,12 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
     delete_current_proof ();
     iraise reraise
 
-let build_by_tactic ?(side_eff=true) env ctx ?(poly=false) typ tac =
+let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
   let gk = Global, poly, Proof Theorem in
-  let ce, status, univs = build_constant_by_tactic id ctx sign ~goal_kind:gk typ tac in
+  let ce, status, univs =
+    build_constant_by_tactic id sigma sign ~goal_kind:gk typ tac in
   let ce =
     if side_eff then Safe_typing.inline_private_constants_in_definition_entry env ce
     else { ce with
@@ -232,8 +233,9 @@ let solve_by_implicit_tactic env sigma evk =
       (try
         let c = Evarutil.nf_evars_universes sigma evi.evar_concl in
         if Evarutil.has_undefined_evars sigma c then raise Exit;
-        let (ans, _, _) = 
+        let (ans, _, ctx) =
 	  build_by_tactic env (Evd.evar_universe_context sigma) c tac in
-        ans
+        let sigma = Evd.set_universe_context sigma ctx in
+        sigma, ans
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit

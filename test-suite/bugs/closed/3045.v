@@ -12,7 +12,7 @@ Record SpecializedCategory (obj : Type) :=
     Compose : forall s d d', Morphism d d' -> Morphism s d -> Morphism s d'
   }.
 
-Arguments Compose {obj} [C s d d'] m1 m2 : rename.
+Arguments Compose {obj} [C s d d'] _ _ : rename.
 
 Inductive ReifiedMorphism : forall objC (C : SpecializedCategory objC), C -> C -> Type :=
 | ReifiedComposedMorphism : forall objC C s d d', ReifiedMorphism C d d' -> ReifiedMorphism C s d -> @ReifiedMorphism objC C s d'.
