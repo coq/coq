@@ -161,7 +161,7 @@ let try_declare_scheme what f internal names kn =
   let msg = match fst e with
     | ParameterWithoutEquality cst ->
 	alarm what internal
-	  (str "Boolean equality not found for parameter " ++ pr_con cst ++
+	  (str "Boolean equality not found for parameter " ++ Printer.pr_global cst ++
 	   str".")
     | InductiveWithProduct ->
 	alarm what internal

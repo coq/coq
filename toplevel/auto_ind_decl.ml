@@ -54,7 +54,7 @@ exception EqUnknown of string
 exception UndefinedCst of string
 exception InductiveWithProduct
 exception InductiveWithSort
-exception ParameterWithoutEquality of constant
+exception ParameterWithoutEquality of global_reference
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 
@@ -181,7 +181,13 @@ let build_beq_scheme mode kn =
 	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
 	match kind_of_term c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
-        | Var x -> mkVar (id_of_string ("eq_"^(string_of_id x))), Safe_typing.empty_private_constants
+        | Var x ->
+          let eid = id_of_string ("eq_"^(string_of_id x)) in
+          let () =
+            try ignore (Environ.lookup_named eid env)
+            with Not_found -> raise (ParameterWithoutEquality (VarRef x))
+          in
+          mkVar eid, Safe_typing.empty_private_constants
         | Cast (x,_,_) -> aux (applist (x,a))
         | App _ -> assert false
         | Ind ((kn',i as ind'),u) (*FIXME: universes *) -> 
@@ -209,7 +215,7 @@ let build_beq_scheme mode kn =
         | LetIn _ -> raise (EqUnknown "LetIn")
         | Const kn ->
 	    (match Environ.constant_opt_value_in env kn with
-	      | None -> raise (ParameterWithoutEquality (fst kn))
+	      | None -> raise (ParameterWithoutEquality (ConstRef (fst kn)))
 	      | Some c -> aux (applist (c,a)))
         | Proj _ -> raise (EqUnknown "Proj")
         | Construct _ -> raise (EqUnknown "Construct")
