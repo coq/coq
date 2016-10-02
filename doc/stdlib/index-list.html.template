@@ -46,6 +46,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/ClassicalDescription.v
     theories/Logic/ClassicalEpsilon.v
     theories/Logic/ClassicalUniqueChoice.v
+    theories/Logic/SetoidChoice.v
     theories/Logic/Berardi.v
     theories/Logic/Diaconescu.v
     theories/Logic/Hurkens.v
@@ -57,6 +58,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/IndefiniteDescription.v
     theories/Logic/PropExtensionalityFacts.v
     theories/Logic/FunctionalExtensionality.v
+    theories/Logic/ExtensionalFunctionRepresentative.v
     theories/Logic/ExtensionalityFacts.v
     theories/Logic/WeakFan.v
     theories/Logic/WKL.v
