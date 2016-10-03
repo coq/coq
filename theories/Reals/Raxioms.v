@@ -79,7 +79,7 @@ Hint Resolve Rmult_plus_distr_l: real v62.
 (*********************************************************)
 
 (**********)
-Axiom total_order_T : forall r1 r2:R, {r1 < r2} + {r1 = r2} + {r1 > r2}.
+Axiom total_order_T : forall r1 r2:R, (r1 < r2) + (r1 = r2) + (r1 > r2).
 
 (*********************************************************)
 (** **   Lower                                           *)

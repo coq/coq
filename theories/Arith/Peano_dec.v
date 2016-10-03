@@ -12,7 +12,7 @@ Local Open Scope nat_scope.
 
 Implicit Types m n x y : nat.
 
-Theorem O_or_S n : {m : nat | S m = n} + {0 = n}.
+Theorem O_or_S n : {m : nat | S m = n} + (0 = n).
 Proof.
   induction n.
   - now right.

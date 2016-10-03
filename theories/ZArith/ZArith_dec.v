@@ -15,7 +15,7 @@ Local Open Scope Z_scope.
 
 (* begin hide *)
 (* Trivial, to deprecate? *)
-Lemma Dcompare_inf : forall r:comparison, {r = Eq} + {r = Lt} + {r = Gt}.
+Lemma Dcompare_inf : forall r:comparison, (r = Eq) + (r = Lt) + (r = Gt).
 Proof.
   induction r; auto.
 Defined.
@@ -155,7 +155,7 @@ Proof.
   assumption.
 Defined.
 
-Lemma Z_dec : forall n m:Z, {n < m} + {n > m} + {n = m}.
+Lemma Z_dec : forall n m:Z, (n < m) + (n > m) + (n = m).
 Proof.
   intros x y.
   case (Z_lt_ge_dec x y).
@@ -179,7 +179,7 @@ Proof.
 Defined.
 
 
-Lemma Z_dec' : forall n m:Z, {n < m} + {m < n} + {n = m}.
+Lemma Z_dec' : forall n m:Z, (n < m) + (m < n) + (n = m).
 Proof.
   intros x y.
   case (Z.eq_dec x y); intro H;
