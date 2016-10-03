@@ -1203,7 +1203,10 @@ let contract_notation ntn =
   let rec aux ntn i =
     if i <= String.length ntn - 5 then
       let ntn' =
-        if String.is_sub "{ _ }" ntn i then
+        if String.is_sub "{ _ }" ntn i &&
+           (i = 0 || ntn.[i-1] = ' ') &&
+           (i = String.length ntn - 5 || ntn.[i+5] = ' ')
+        then
           String.sub ntn 0 i ^ "_" ^
           String.sub ntn (i+5) (String.length ntn -i-5)
         else ntn in
