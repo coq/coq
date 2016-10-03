@@ -56,14 +56,14 @@ let type_in_type env = not (typing_flags env).check_universes
 let deactivated_guard env = not (typing_flags env).check_guarded
 
 let universes env = env.env_stratification.env_universes
-let named_context env = env.env_named_context
-let named_context_val env = env.env_named_context,env.env_named_vals
+let named_context env = env.env_named_context.env_named_ctx
+let named_context_val env = env.env_named_context
 let rel_context env = env.env_rel_context
 let opaque_tables env = env.indirect_pterms
 let set_opaque_tables env indirect_pterms = { env with indirect_pterms }
 
 let empty_context env =
-  match env.env_rel_context, env.env_named_context with
+  match env.env_rel_context, env.env_named_context.env_named_ctx with
   | [], [] -> true
   | _ -> false
 
@@ -99,14 +99,12 @@ let fold_rel_context f env ~init =
 
 (* Named context *)
 
-let named_context_of_val = fst
-let named_vals_of_val = snd
+let named_context_of_val c = c.env_named_ctx
 
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
    *** /!\ ***   [f t] should be convertible with t *)
-let map_named_val f =
-  on_fst (Context.Named.map f)
+let map_named_val = map_named_val
 
 let empty_named_context = Context.Named.empty
 
@@ -118,8 +116,8 @@ let val_of_named_context ctxt =
   List.fold_right push_named_context_val ctxt empty_named_context_val
 
 
-let lookup_named id env = Context.Named.lookup id env.env_named_context
-let lookup_named_val id (ctxt,_) = Context.Named.lookup id ctxt
+let lookup_named = lookup_named
+let lookup_named_val id ctxt = fst (Id.Map.find id ctxt.env_named_map)
 
 let eq_named_context_val c1 c2 =
    c1 == c2 || Context.Named.equal (named_context_of_val c1) (named_context_of_val c2)
@@ -139,10 +137,9 @@ let evaluable_named id env =
   | Some _      -> true
   | _          -> false
 
-let reset_with_named_context (ctxt,ctxtv) env =
+let reset_with_named_context ctxt env =
   { env with
     env_named_context = ctxt;
-    env_named_vals = ctxtv;
     env_rel_context = Context.Rel.empty;
     env_rel_val = [];
     env_nb_rel = 0 }
@@ -157,11 +154,11 @@ let pop_rel_context n env =
 
 let fold_named_context f env ~init =
   let rec fold_right env =
-    match env.env_named_context with
-    | [] -> init
-    | d::ctxt ->
+    match match_named_context_val env.env_named_context with
+    | None -> init
+    | Some (d, v, rem) ->
 	let env =
-	  reset_with_named_context (ctxt,List.tl env.env_named_vals) env in
+	  reset_with_named_context rem env in
 	f env d (fold_right env)
   in fold_right env
 
@@ -493,66 +490,47 @@ let compile_constant_body = Cbytegen.compile_constant_body false
 
 exception Hyp_not_found
 
-let apply_to_hyp (ctxt,vals) id f =
-  let rec aux rtail ctxt vals =
-    match ctxt, vals with
-    | d::ctxt, v::vals ->
+let apply_to_hyp ctxt id f =
+  let rec aux rtail ctxt =
+    match match_named_context_val ctxt with
+    | Some (d, v, ctxt) ->
 	if Id.equal (get_id d) id then
-          (f ctxt d rtail)::ctxt, v::vals
+          push_named_context_val_val (f ctxt.env_named_ctx d rtail) v ctxt
 	else
-	  let ctxt',vals' = aux (d::rtail) ctxt vals in
-	  d::ctxt', v::vals'
-    | [],[] -> raise Hyp_not_found
-    | _, _ -> assert false
-  in aux [] ctxt vals
+	  let ctxt' = aux (d::rtail) ctxt in
+	  push_named_context_val_val d v ctxt'
+    | None -> raise Hyp_not_found
+  in aux [] ctxt
 
-let apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
-  let rec aux ctxt vals =
-    match ctxt,vals with
-    | d::ctxt, v::vals ->
+let apply_to_hyp_and_dependent_on ctxt id f g =
+  let rec aux sign =
+    match match_named_context_val sign with
+    | Some (d, v, sign) ->
 	if Id.equal (get_id d) id then
-	  let sign = ctxt,vals in
 	  push_named_context_val (f d sign) sign
 	else
-	  let (ctxt,vals as sign) = aux ctxt vals in
+	  let sign = aux sign in
 	  push_named_context_val (g d sign) sign
-    | [],[] -> raise Hyp_not_found
-    | _,_ -> assert false
-  in aux ctxt vals
-
-let insert_after_hyp (ctxt,vals) id d check =
-  let rec aux ctxt vals =
-    match  ctxt, vals with
-    | decl::ctxt', v::vals' ->
-	if Id.equal (get_id decl) id then begin
-	  check ctxt;
-	  push_named_context_val d (ctxt,vals)
-	end else
-	  let ctxt,vals = aux ctxt vals in
-	  d::ctxt, v::vals
-    | [],[] -> raise Hyp_not_found
-    | _, _ -> assert false
-  in aux ctxt vals
-
+    | None -> raise Hyp_not_found
+  in aux ctxt
 
 (* To be used in Logic.clear_hyps *)
-let remove_hyps ids check_context check_value (ctxt, vals) =
-  let rec remove_hyps ctxt vals = match ctxt, vals with
-  | [], [] -> ([], []), false
-  | d :: rctxt, (nid, v) :: rvals ->
-    let (ans, seen) = remove_hyps rctxt rvals in
+let remove_hyps ids check_context check_value ctxt =
+  let rec remove_hyps ctxt = match match_named_context_val ctxt with
+  | None -> empty_named_context_val, false
+  | Some (d, v, rctxt) ->
+    let (ans, seen) = remove_hyps rctxt in
     if Id.Set.mem (get_id d) ids then (ans, true)
-    else if not seen then (ctxt, vals), false
+    else if not seen then ctxt, false
     else
-      let (rctxt', rvals') = ans in
+      let rctxt' = ans in
       let d' = check_context d in
       let v' = check_value v in
-      if d == d' && v == v' && rctxt == rctxt' && rvals == rvals' then
-        (ctxt, vals), true
-      else (d' :: rctxt', (nid, v') :: rvals'), true
-  | _ -> assert false
+      if d == d' && v == v' && rctxt == rctxt' then
+        ctxt, true
+      else push_named_context_val_val d' v' rctxt', true
   in
-  fst (remove_hyps ctxt vals)
+  fst (remove_hyps ctxt)
 
 (*spiwack: the following functions assemble the pieces of the retroknowledge
    note that the "consistent" register function is available in the module

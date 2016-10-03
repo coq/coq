@@ -538,7 +538,7 @@ let prim_refiner r sigma goal =
 	      nexthyp,
 	      t,cl,sigma
 	  else
-            (if !check && mem_named_context id (named_context_of_val sign) then
+            (if !check && mem_named_context_val id sign then
 	      errorlabstrm "Logic.prim_refiner"
                 (str "Variable " ++ pr_id id ++ str " is already declared.");
 	     push_named_context_val (LocalAssum (id,t)) sign,t,cl,sigma) in

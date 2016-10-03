@@ -78,7 +78,6 @@ val fold_rel_context :
 (** {5 Context of variables (section variables and goal assumptions) } *)
 
 val named_context_of_val : named_context_val -> Context.Named.t
-val named_vals_of_val : named_context_val -> Pre_env.named_vals
 val val_of_named_context : Context.Named.t -> named_context_val
 val empty_named_context_val : named_context_val
 
@@ -272,10 +271,6 @@ val apply_to_hyp_and_dependent_on : named_context_val -> variable ->
   (Context.Named.Declaration.t -> named_context_val -> Context.Named.Declaration.t) ->
     (Context.Named.Declaration.t -> named_context_val -> Context.Named.Declaration.t) ->
       named_context_val
-
-val insert_after_hyp : named_context_val -> variable ->
-  Context.Named.Declaration.t ->
-    (Context.Named.t -> unit) -> named_context_val
 
 val remove_hyps : Id.Set.t -> (Context.Named.Declaration.t -> Context.Named.Declaration.t) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
 

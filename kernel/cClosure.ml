@@ -270,11 +270,9 @@ let info_env info = info.i_cache.i_env
 
 open Context.Named.Declaration
 
-let rec assoc_defined id = function
-| [] -> raise Not_found
-| LocalAssum _ :: ctxt -> assoc_defined id ctxt
-| LocalDef (id', c, _) :: ctxt ->
-  if Id.equal id id' then c else assoc_defined id ctxt
+let assoc_defined id env = match Environ.lookup_named id env with
+| LocalDef (_, c, _) -> c
+| _ -> raise Not_found
 
 let ref_value_cache ({i_cache = cache} as infos)  ref =
   try
@@ -291,7 +289,7 @@ let ref_value_cache ({i_cache = cache} as infos)  ref =
             | None -> raise Not_found
             | Some t -> lift n t
             end
-	| VarKey id -> assoc_defined id (named_context cache.i_env)
+	| VarKey id -> assoc_defined id cache.i_env
 	| ConstKey cst -> constant_value_in cache.i_env cst
     in
     let v = cache.i_repr infos body in

@@ -202,11 +202,11 @@ let inversion_scheme env sigma t sort dep_option inv_op =
       tclTHEN intro (onLastHypId inv_op)) pf)
   in
   let pfterm = List.hd (Proof.partial_proof pf) in
-  let global_named_context = Global.named_context () in
+  let global_named_context = Global.named_context_val () in
   let ownSign = ref begin
     fold_named_context
       (fun env d sign ->
-         if mem_named_context (get_id d) global_named_context then sign
+         if mem_named_context_val (get_id d) global_named_context then sign
 	 else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
   end in
