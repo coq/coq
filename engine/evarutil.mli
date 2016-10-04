@@ -30,11 +30,17 @@ val new_evar_from_context :
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> evar_map * EConstr.t
 
+type naming_mode =
+  | KeepUserNameAndRenameExistingButSectionNames
+  | KeepUserNameAndRenameExistingEvenSectionNames
+  | KeepExistingNames
+  | FailIfConflict
+
 val new_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * EConstr.t
+  ?principal:bool -> ?hypnaming:naming_mode -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
   named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
@@ -49,18 +55,20 @@ val e_new_evar :
   env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> constr
+  ?principal:bool -> ?hypnaming:naming_mode -> types -> constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid ->
+  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?principal:bool -> ?hypnaming:naming_mode -> rigid ->
   evar_map * (constr * Sorts.t)
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> constr * Sorts.t
+  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?principal:bool -> ?hypnaming:naming_mode -> rigid -> constr * Sorts.t
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
@@ -240,10 +248,11 @@ val csubst_subst : csubst -> constr -> constr
 type ext_named_context =
   csubst * Id.Set.t * named_context
 
-val push_rel_decl_to_named_context :
+val push_rel_decl_to_named_context : ?hypnaming:naming_mode ->
   evar_map -> rel_declaration -> ext_named_context -> ext_named_context
 
-val push_rel_context_to_named_context : Environ.env -> evar_map -> types ->
+val push_rel_context_to_named_context : ?hypnaming:naming_mode ->
+  Environ.env -> evar_map -> types ->
   named_context_val * types * constr list * csubst
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
