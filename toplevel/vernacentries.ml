@@ -1153,7 +1153,6 @@ let vernac_declare_arguments locality r l nargs flags =
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;
   ninterp_rec_vars = Id.Map.empty;
-  ninterp_only_parse = false;
 }
 
 let vernac_reserve bl =
@@ -1162,7 +1161,7 @@ let vernac_reserve bl =
     let sigma = Evd.from_env env in
     let t,ctx = Constrintern.interp_type env sigma c in
     let t = Detyping.detype false [] env (Evd.from_ctx ctx) t in
-    let t = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
+    let t,_ = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
 

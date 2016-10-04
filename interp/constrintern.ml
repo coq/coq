@@ -2013,14 +2013,14 @@ let interp_notation_constr ?(impls=empty_internalization_env) nenv a =
 						tmp_scope = None; scopes = []; impls = impls}
     false (empty_ltac_sign, vl) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
-  let a = notation_constr_of_glob_constr nenv c in
+  let a, reversible = notation_constr_of_glob_constr nenv c in
   (* Splits variables into those that are binding, bound, or both *)
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in
   let vars = Id.Map.map (fun (isonlybinding, sc, typ) ->
     (!isonlybinding, out_scope !sc, typ)) vl in
   (* Returns [a] and the ordered list of variables with their scopes *)
-  vars, a
+  vars, a, reversible
 
 (* Interpret binders and contexts  *)
 
