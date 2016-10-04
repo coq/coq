@@ -1456,6 +1456,9 @@ let vernac_set_option locality key = function
   | IntValue n -> set_int_option_value_gen locality key n
   | BoolValue b -> set_bool_option_value_gen locality key b
 
+let vernac_set_append_option locality key s =
+  set_string_option_append_value_gen locality key s
+
 let vernac_unset_option locality key =
   unset_option_value_gen locality key
 
@@ -1925,6 +1928,7 @@ let interp ?proof ~loc locality poly c =
   | VernacSetOpacity qidl -> vernac_set_opacity locality qidl
   | VernacSetStrategy l -> vernac_set_strategy locality l
   | VernacSetOption (key,v) -> vernac_set_option locality key v
+  | VernacSetAppendOption (key,v) -> vernac_set_append_option locality key v
   | VernacUnsetOption key -> vernac_unset_option locality key
   | VernacRemoveOption (key,v) -> vernac_remove_option key v
   | VernacAddOption (key,v) -> vernac_add_option key v
@@ -1997,7 +2001,7 @@ let check_vernac_supports_locality c l =
     | VernacArgumentsScope _ | VernacDeclareImplicits _ | VernacArguments _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _
-    | VernacSetOption _ | VernacUnsetOption _
+    | VernacSetOption _ | VernacSetAppendOption _ | VernacUnsetOption _
     | VernacDeclareReduction _
     | VernacExtend _ 
     | VernacInductive _) -> ()

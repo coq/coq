@@ -181,7 +181,7 @@ let rec classify_vernac e =
     | VernacReserve _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _
-    | VernacUnsetOption _ | VernacSetOption _
+    | VernacUnsetOption _ | VernacSetOption _ | VernacSetAppendOption _
     | VernacAddOption _ | VernacRemoveOption _
     | VernacMemOption _ | VernacPrintOption _
     | VernacGlobalCheck _
