@@ -305,7 +305,7 @@ let declare_string_option =
   declare_option
     (fun v -> StringValue v)
     (function StringValue v -> v | _ -> anomaly (Pp.str "async_option"))
-    (fun x y -> x^" "^y)
+    (fun x y -> x^","^y)
 let declare_stringopt_option =
   declare_option
     (fun v -> StringOptValue v)
