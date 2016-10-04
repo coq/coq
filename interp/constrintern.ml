@@ -1410,7 +1410,40 @@ let rec intern_pat genv aliases pat =
       check_or_pat_variables loc ids (List.tl idsl);
       (ids,List.flatten pl')
 
+(* [check_no_patcast p] raises an error if [p] contains a cast. This code is a
+   bit ad-hoc, and is due to current restrictions on casts in patterns. We
+   support them only in local binders and only at top level. In fact, they are
+   currently eliminated by the parser. The only reason why they are in the
+   [cases_pattern_expr] type is that the parser needs to factor the "(c : t)"
+   notation with user defined notations (such as the pair). In the long term, we
+   will try to support such casts everywhere, and use them to print the domains
+   of lambdas in the encoding of match in constr. We put this check here and not
+   in the parser because it would require to duplicate the levels of the
+   [pattern] rule. *)
+let rec check_no_patcast = function
+  | CPatCast (loc,_,_) ->
+     CErrors.user_err_loc (loc, "check_no_patcast",
+                           Pp.strbrk "Casts are not supported here.")
+  | CPatDelimiters(_,_,p)
+  | CPatAlias(_,p,_) -> check_no_patcast p
+  | CPatCstr(_,_,opl,pl) ->
+     Option.iter (List.iter check_no_patcast) opl;
+     List.iter check_no_patcast pl
+  | CPatOr(_,pl) ->
+     List.iter check_no_patcast pl
+  | CPatNotation(_,_,subst,pl) ->
+     check_no_patcast_subst subst;
+     List.iter check_no_patcast pl
+  | CPatRecord(_,prl) ->
+     List.iter (fun (_,p) -> check_no_patcast p) prl
+  | CPatAtom _ | CPatPrim _ -> ()
+
+and check_no_patcast_subst (pl,pll) =
+  List.iter check_no_patcast pl;
+  List.iter (List.iter check_no_patcast) pll
+
 let intern_cases_pattern genv scopes aliases pat =
+  check_no_patcast pat;
   intern_pat genv aliases
     (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) scopes pat)
 
@@ -1419,6 +1452,7 @@ let _ =
     fun scopes p -> intern_cases_pattern (Global.env ()) scopes empty_alias p
 
 let intern_ind_pattern genv scopes pat =
+  check_no_patcast pat;
   let no_not =
     try
       drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) scopes pat
