@@ -43,7 +43,11 @@ let typeclasses_modulo_eta = ref false
 let set_typeclasses_modulo_eta d = (:=) typeclasses_modulo_eta d
 let get_typeclasses_modulo_eta () = !typeclasses_modulo_eta
 
-let typeclasses_limit_intros = ref false
+(** When this flag is enabled, the resolution of type classes tries to avoid
+    useless introductions. This is no longer useful since we have eta, but is
+    here for compatibility purposes. Another compatibility issues is that the
+    cost (in terms of search depth) can differ. *)
+let typeclasses_limit_intros = ref true
 let set_typeclasses_limit_intros d = (:=) typeclasses_limit_intros d
 let get_typeclasses_limit_intros () = !typeclasses_limit_intros
 
@@ -55,31 +59,22 @@ let typeclasses_iterative_deepening = ref false
 let set_typeclasses_iterative_deepening d = (:=) typeclasses_iterative_deepening d
 let get_typeclasses_iterative_deepening () = !typeclasses_iterative_deepening
 
-let get_compat_version d =
-  match d with
-  | "8.5" -> Flags.V8_5
-  | _ -> Flags.Current
+(** [typeclasses_filtered_unif] governs the unification algorithm used by type
+    classes. If enabled, a new algorithm based on pattern filtering and refine
+    will be used. When disabled, the previous algorithm based on apply will be
+    used. *)
+let typeclasses_filtered_unification = ref false
+let set_typeclasses_filtered_unification d =
+  (:=) typeclasses_filtered_unification d
+let get_typeclasses_filtered_unification () =
+  !typeclasses_filtered_unification
 
-let typeclasses_unif_compat = ref Flags.V8_5
-let set_typeclasses_unif_compat d =
-  if d == Flags.Current then set_typeclasses_limit_intros false
-  else set_typeclasses_limit_intros true;
-  (:=) typeclasses_unif_compat d
-
-let get_typeclasses_unif_compat () = !typeclasses_unif_compat
-let set_typeclasses_unif_compat_string d =
-  set_typeclasses_unif_compat (get_compat_version d)
-let get_typeclasses_unif_compat_string () =
-  Flags.pr_version (get_typeclasses_unif_compat ())
-
-let typeclasses_compat = ref Flags.Current
-let set_typeclasses_compat d = (:=) typeclasses_compat d
-let get_typeclasses_compat () = !typeclasses_compat
-let set_typeclasses_compat_string d =
-  set_typeclasses_compat (get_compat_version d)
-
-let get_typeclasses_compat_string () =
-  Flags.pr_version (get_typeclasses_compat ())
+(** [typeclasses_legacy_resolution] falls back to the 8.5 resolution algorithm,
+    instead of the 8.6 one which uses the native backtracking facilities of the
+    proof engine. *)
+let typeclasses_legacy_resolution = ref false
+let set_typeclasses_legacy_resolution d = (:=) typeclasses_legacy_resolution d
+let get_typeclasses_legacy_resolution () = !typeclasses_legacy_resolution
 
 let set_typeclasses_debug d = (:=) typeclasses_debug (if d then 1 else 0)
 let get_typeclasses_debug () = if !typeclasses_debug > 0 then true else false
@@ -133,22 +128,22 @@ let _ =
       optwrite = set_typeclasses_iterative_deepening; }
 
 let _ =
-  declare_string_option
+  declare_bool_option
     { optsync  = true;
       optdepr  = false;
       optname  = "compat";
-      optkey   = ["Typeclasses";"Compatibility"];
-      optread  = get_typeclasses_compat_string;
-      optwrite = set_typeclasses_compat_string; }
+      optkey   = ["Typeclasses";"Legacy";"Resolution"];
+      optread  = get_typeclasses_legacy_resolution;
+      optwrite = set_typeclasses_legacy_resolution; }
 
 let _ =
-  declare_string_option
+  declare_bool_option
     { optsync  = true;
       optdepr  = false;
       optname  = "compat";
-      optkey   = ["Typeclasses";"Unification";"Compatibility"];
-      optread  = get_typeclasses_unif_compat_string;
-      optwrite = set_typeclasses_unif_compat_string; }
+      optkey   = ["Typeclasses";"Filtered";"Unification"];
+      optread  = get_typeclasses_filtered_unification;
+      optwrite = set_typeclasses_filtered_unification; }
 
 let set_typeclasses_debug =
   declare_bool_option
@@ -400,7 +395,7 @@ and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
     fun (flags, {pri = b; pat = p; poly = poly; code = t; name = name}) ->
       let tac = function
         | Res_pf (term,cl) ->
-           if get_typeclasses_unif_compat () = Flags.Current then
+           if get_typeclasses_filtered_unification () then
              let tac =
                with_prods nprods poly (term,cl)
                           ({ enter = fun gl clenv ->
@@ -410,13 +405,13 @@ and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
            else
              let tac =
                with_prods nprods poly (term,cl) (unify_resolve poly flags) in
-             if get_typeclasses_compat () = Flags.V8_5 then
+             if get_typeclasses_legacy_resolution () then
                Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
              else
                Proofview.tclBIND (Proofview.with_shelf tac)
                   (fun (gls, ()) -> shelve_dependencies gls)
         | ERes_pf (term,cl) ->
-           if get_typeclasses_unif_compat () = Flags.Current then
+           if get_typeclasses_filtered_unification () then
              let tac = (with_prods nprods poly (term,cl)
                   ({ enter = fun gl clenv ->
                              (matches_pattern concl p) <*>
@@ -425,7 +420,7 @@ and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
            else
              let tac =
                with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
-             if get_typeclasses_compat () = Flags.V8_5 then
+             if get_typeclasses_legacy_resolution () then
                Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
              else
                Proofview.tclBIND (Proofview.with_shelf tac)
@@ -445,7 +440,7 @@ and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
       let tac = if complete then Tacticals.New.tclCOMPLETE tac else tac in
       let pp =
         match p with
-        | Some pat when get_typeclasses_unif_compat () = Flags.Current ->
+        | Some pat when get_typeclasses_filtered_unification () ->
            str " with pattern " ++ Printer.pr_constr_pattern pat
         | _ -> mt ()
       in
@@ -1293,7 +1288,7 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
   in
   let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
-  if get_typeclasses_compat () = Flags.V8_5 then
+  if get_typeclasses_legacy_resolution () then
     Proofview.V82.tactic
     (fun gl ->
       try V85.eauto85 depth ~only_classes ~st dbs gl
@@ -1419,10 +1414,10 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
         let evd' =
-          if get_typeclasses_compat () = Flags.Current then
-            Search.typeclasses_resolve debug depth unique p evd
-          else
+          if get_typeclasses_legacy_resolution () then
             V85.resolve_all_evars_once debug depth unique p evd
+          else
+            Search.typeclasses_resolve debug depth unique p evd
         in
          if has_undefined p oevd evd' then raise Unresolved;
          docomp evd' comps
@@ -1467,12 +1462,13 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   let st = Hint_db.transparent_state hints in
   let depth = get_typeclasses_depth () in
   let gls' =
-    if get_typeclasses_compat () = Flags.Current then
+    if get_typeclasses_legacy_resolution () then
+      V85.eauto85 depth ~st [hints] gls
+    else
       try
         Proofview.V82.of_tactic
         (Search.eauto_tac ~st ~only_classes:true ~depth [hints] ~dep:true) gls
       with Refiner.FailError _ -> raise Not_found
-    else V85.eauto85 depth ~st [hints] gls
   in
   let evd = sig_sig gls' in
   let t' = let (ev, inst) = destEvar t in
