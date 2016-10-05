@@ -231,11 +231,16 @@ let add_leaves id objs =
   List.iter add_obj objs;
   oname
 
-let add_anonymous_leaf obj =
+let add_anonymous_leaf ?(cache_first = true) obj =
   let id = anonymous_id () in
   let oname = make_oname id in
-  cache_object (oname,obj);
-  add_entry oname (Leaf obj)
+  if cache_first then begin
+    cache_object (oname,obj);
+    add_entry oname (Leaf obj)
+  end else begin
+    add_entry oname (Leaf obj);
+    cache_object (oname,obj)
+  end
 
 let add_frozen_state () =
   add_anonymous_entry
