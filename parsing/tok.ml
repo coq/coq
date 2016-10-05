@@ -55,7 +55,7 @@ let to_string = function
   | INT s -> Format.sprintf "INT %s" s
   | STRING s -> Format.sprintf "STRING %S" s
   | LEFTQMARK -> "LEFTQMARK"
-  | BULLET s -> Format.sprintf "STRING %S" s
+  | BULLET s -> Format.sprintf "BULLET %S" s
   | EOI -> "EOI"
 
 let match_keyword kwd = function
