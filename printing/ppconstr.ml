@@ -370,13 +370,13 @@ end) = struct
     let n = begin_of_binders bl in
     match bl with
       | [LocalRawAssum (nal,k,t)] ->
-        pr_com_at n ++ kw() ++ pr_binder false pr_c (nal,k,t)
+        kw n ++ pr_binder false pr_c (nal,k,t)
       | (LocalRawAssum _ | LocalPattern _) :: _ as bdl ->
-        pr_com_at n ++ kw() ++ pr_undelimited_binders sep pr_c bdl
+        kw n ++ pr_undelimited_binders sep pr_c bdl
       | _ -> assert false
 
   let pr_binders_gen pr_c sep is_open =
-    if is_open then pr_delimited_binders mt sep pr_c
+    if is_open then pr_delimited_binders pr_com_at sep pr_c
     else pr_undelimited_binders sep pr_c
 
   let rec extract_prod_binders = function
@@ -525,9 +525,9 @@ end) = struct
     prlist_with_sep pr_semicolon
       (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr ltop c)) l
 
-  let pr_forall () = keyword "forall" ++ spc ()
+  let pr_forall n = keyword "forall" ++ pr_com_at n ++ spc ()
 
-  let pr_fun () = keyword "fun" ++ spc ()
+  let pr_fun n = keyword "fun" ++ pr_com_at n ++ spc ()
 
   let pr_fun_sep = spc () ++ str "=>"
 
