@@ -1580,6 +1580,8 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
  * ass.
  *)
 
+(* This criterion relies on the fact that we postpone only problems of the form:
+?x [?x1 ... ?xn] = t or the symmetric case. *)
 let status_changed lev (pbty,_,t1,t2) =
   (try Evar.Set.mem (head_evar t1) lev with NoHeadEvar -> false) ||
   (try Evar.Set.mem (head_evar t2) lev with NoHeadEvar -> false)
