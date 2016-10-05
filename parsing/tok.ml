@@ -18,6 +18,7 @@ type t =
   | INT of string
   | STRING of string
   | LEFTQMARK
+  | BULLET of string
   | EOI
 
 let equal t1 t2 = match t1, t2 with
@@ -29,6 +30,7 @@ let equal t1 t2 = match t1, t2 with
 | INT s1, INT s2 -> string_equal s1 s2
 | STRING s1, STRING s2 -> string_equal s1 s2
 | LEFTQMARK, LEFTQMARK -> true
+| BULLET s1, BULLET s2 -> string_equal s1 s2
 | EOI, EOI -> true
 | _ -> false
 
@@ -40,6 +42,7 @@ let extract_string = function
   | FIELD s -> s
   | INT s -> s
   | LEFTQMARK -> "?"
+  | BULLET s -> s
   | EOI -> ""
 
 let to_string = function
@@ -50,6 +53,7 @@ let to_string = function
   | INT s -> Format.sprintf "INT %s" s
   | STRING s -> Format.sprintf "STRING %S" s
   | LEFTQMARK -> "LEFTQMARK"
+  | BULLET s -> Format.sprintf "STRING %S" s
   | EOI -> "EOI"
 
 let match_keyword kwd = function
@@ -71,6 +75,7 @@ let of_pattern = function
   | "INT", s -> INT s
   | "STRING", s -> STRING s
   | "LEFTQMARK", _ -> LEFTQMARK
+  | "BULLET", s -> BULLET s
   | "EOI", _ -> EOI
   | _ -> failwith "Tok.of_pattern: not a constructor"
 
@@ -82,6 +87,7 @@ let to_pattern = function
   | INT s -> "INT", s
   | STRING s -> "STRING", s
   | LEFTQMARK -> "LEFTQMARK", ""
+  | BULLET s -> "BULLET", s
   | EOI -> "EOI", ""
 
 let match_pattern =
@@ -94,6 +100,7 @@ let match_pattern =
     | "INT", "" -> (function INT s -> s | _ -> err ())
     | "STRING", "" -> (function STRING s -> s | _ -> err ())
     | "LEFTQMARK", "" -> (function LEFTQMARK -> ""  | _ -> err ())
+    | "BULLET", "" ->  (function BULLET s -> s  | _ -> err ())
     | "EOI", "" -> (function EOI -> "" | _ -> err ())
     | pat ->
 	let tok = of_pattern pat in

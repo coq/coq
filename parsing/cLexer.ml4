@@ -479,6 +479,14 @@ let find_keyword loc id s =
   | None -> raise Not_found
   | Some c -> KEYWORD c
 
+let process_sequence loc bp c cs =
+  let rec aux n cs =
+    match Stream.peek cs with
+    | Some c' when c == c' -> Stream.junk cs; aux (n+1) cs
+    | _ -> BULLET (String.make n c), set_loc_pos loc bp (Stream.count cs)
+  in
+  aux 1 cs
+
 (* Must be a special token *)
 let process_chars loc bp c cs =
   let t = progress_from_byte loc None (-1) !token_tree cs c in
@@ -544,6 +552,12 @@ let rec next_token loc = parser bp
       | _ -> ()
       in
       (t, set_loc_pos loc bp ep)
+  | [< ' ('-'|'+'|'*' as c); s >] ->
+      let t,new_between_com =
+        if !between_com then process_sequence loc bp c s, true
+        else process_chars loc bp c s,false
+      in
+      comment_stop bp; between_com := new_between_com; t
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark loc bp s in
       comment_stop bp; (t, set_loc_pos loc ep bp)
