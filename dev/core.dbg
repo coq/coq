@@ -14,3 +14,5 @@ load_printer printing.cma
 load_printer tactics.cma
 load_printer stm.cma
 load_printer toplevel.cma
+load_printer highparsing.cma
+load_printer ltac.cma
