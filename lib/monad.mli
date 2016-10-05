@@ -66,6 +66,9 @@ module type ListS = sig
       its second argument in a tail position. *)
   val iter : ('a -> unit t) -> 'a list -> unit t
 
+  (** Like the regular {!CList.map_filter}. The monadic effects are threaded left*)
+  val map_filter : ('a -> 'b option t) -> 'a list -> 'b list t
+
 
   (** {6 Two-list iterators} *)
 
