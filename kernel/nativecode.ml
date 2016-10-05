@@ -1860,7 +1860,7 @@ and compile_rel env sigma univ auxdefs n =
 
 and compile_named env sigma univ auxdefs id =
   let open Context.Named.Declaration in
-  match Context.Named.lookup id env.env_named_context with
+  match lookup_named id env with
   | LocalDef (_,t,_) ->
       let code = lambda_of_constr env sigma t in
       let auxdefs,code = compile_with_fv env sigma univ auxdefs None code in

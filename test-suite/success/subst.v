@@ -23,3 +23,20 @@ subst.
 change (y = S (S y)) in H0.
 change (S y = y).
 Abort.
+
+(* A bug revealed by OCaml 4.03 warnings *)
+(* fixes in 4e3d464 and 89ec88f for v8.5, 4e3d4646 and 89ec88f1e for v8.6 *)
+Goal forall y, let x:=0 in y=x -> y=y.
+intros * H;
+(* This worked as expected *)
+subst.
+Fail clear H.
+Abort.
+
+Goal forall y, let x:=0 in x=y -> y=y.
+intros * H;
+(* Before the fix, this unfolded x instead of 
+   substituting y and erasing H *)
+subst.
+Fail clear H.
+Abort.

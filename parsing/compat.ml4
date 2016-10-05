@@ -259,6 +259,7 @@ IFDEF CAMLP5 THEN
     | Tok.INT s -> "INT", s
     | Tok.STRING s -> "STRING", s
     | Tok.LEFTQMARK -> "LEFTQMARK", ""
+    | Tok.BULLET s -> "BULLET", s
     | Tok.EOI -> "EOI", ""
     in
     Gramext.Stoken pattern

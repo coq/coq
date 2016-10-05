@@ -23,6 +23,11 @@ Global Unset Shrink Abstract.
 Global Unset Shrink Obligations.
 Global Set Refolding Reduction.
 
+(** The resolution algorithm for type classes has changed. *)
+Global Set Typeclasses Legacy Resolution.
+Global Set Typeclasses Limit Intros.
+Global Unset Typeclasses Filtered Unification.
+
 (** In Coq 8.5, [] meant Vector, and [ ] meant list.  Restore this
     behavior, to allow user-defined [] to not override vector
     notations.  See https://coq.inria.fr/bugs/show_bug.cgi?id=4785. *)

@@ -323,6 +323,7 @@ let compare_recursive_parts found f f' (iterator,subc) =
 
 let notation_constr_and_vars_of_glob_constr a =
   let found = ref ([],[],[]) in
+  let has_ltac = ref false in
   let rec aux c =
     let keepfound = !found in
     (* n^2 complexity but small and done only once per notation *)
@@ -368,7 +369,9 @@ let notation_constr_and_vars_of_glob_constr a =
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | GCast (_,c,k) -> NCast (aux c,Miscops.map_cast_type aux k)
   | GSort (_,s) -> NSort s
-  | GHole (_,w,naming,arg) -> NHole (w, naming, arg)
+  | GHole (_,w,naming,arg) ->
+     if arg != None then has_ltac := true;
+     NHole (w, naming, arg)
   | GRef (_,r,_) -> NRef r
   | GEvar _ | GPatVar _ ->
       error "Existential variables not allowed in notations."
@@ -376,9 +379,10 @@ let notation_constr_and_vars_of_glob_constr a =
   in
   let t = aux a in
   (* Side effect *)
-  t, !found
+  t, !found, !has_ltac
 
-let check_variables nenv (found,foundrec,foundrecbinding) =
+let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
+  let injective = ref true in
   let recvars = nenv.ninterp_rec_vars in
   let fold _ y accu = Id.Set.add y accu in
   let useless_vars = Id.Map.fold fold recvars Id.Set.empty in
@@ -401,7 +405,7 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
 	error
           (Id.to_string x ^
           " should not be bound in a recursive pattern of the right-hand side.")
-      else nenv.ninterp_only_parse <- true
+      else injective := false
   in
   let check_pair s x y where =
     if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
@@ -421,12 +425,13 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
 	  with Not_found -> check_bound x
 	end
     | NtnInternTypeIdent -> check_bound x in
-  Id.Map.iter check_type vars
+  Id.Map.iter check_type vars;
+  !injective
 
 let notation_constr_of_glob_constr nenv a =
-  let a, found = notation_constr_and_vars_of_glob_constr a in
-  let () = check_variables nenv found in
-  a
+  let a, found, has_ltac = notation_constr_and_vars_of_glob_constr a in
+  let injective = check_variables_and_reversibility nenv found in
+  a, not has_ltac && injective
 
 (**********************************************************************)
 (* Substitution of kernel names, avoiding a list of bound identifiers *)
@@ -436,7 +441,6 @@ let notation_constr_of_constr avoiding t =
   let nenv = {
     ninterp_var_type = Id.Map.empty;
     ninterp_rec_vars = Id.Map.empty;
-    ninterp_only_parse = false;
   } in
   notation_constr_of_glob_constr nenv t
 
@@ -454,7 +458,7 @@ let rec subst_notation_constr subst bound raw =
   | NRef ref ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then raw else
-	  notation_constr_of_constr bound t
+	  fst (notation_constr_of_constr bound t)
 
   | NVar _ -> raw
 

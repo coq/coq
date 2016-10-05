@@ -208,6 +208,10 @@ type 'a option_sig = {
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
 
+type option_locality = OptLocal | OptDefault | OptGlobal
+
+type option_mod = OptSet | OptAppend
+
 module OptionOrd =
 struct
   type t = option_name
@@ -238,49 +242,51 @@ let warn_deprecated_option =
          (fun key -> str "Option" ++ spc () ++ str (nickname key) ++
                        strbrk " is deprecated")
 
-let declare_option cast uncast
+let get_locality = function
+  | Some true -> OptLocal
+  | Some false -> OptGlobal
+  | None -> OptDefault
+
+let declare_option cast uncast append
   { optsync=sync; optdepr=depr; optname=name; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
-  (* spiwack: I use two spaces in the nicknames of "local" and "global" objects.
-      That way I shouldn't collide with [nickname key] for any [key]. As [key]-s are
-       lists of strings *without* spaces. *)
-  let (write,lwrite,gwrite) = if sync then
-    let ldecl_obj = (* "Local": doesn't survive section or modules. *)
-      declare_object {(default_object ("L  "^nickname key)) with
-		       cache_function = (fun (_,v) -> write v);
-		       classify_function = (fun _ -> Dispose)}
-    in
-    let decl_obj = (* default locality: survives sections but not modules. *)
-      declare_object {(default_object (nickname key)) with
-		       cache_function = (fun (_,v) -> write v);
-		       classify_function = (fun _ -> Dispose);
-		       discharge_function = (fun (_,v) -> Some v)}
-    in
-    let gdecl_obj = (* "Global": survives section and modules. *)
-      declare_object {(default_object ("G  "^nickname key)) with
-		       cache_function = (fun (_,v) -> write v);
-		       classify_function = (fun v -> Substitute v);
-		       subst_function = (fun (_,v) -> v);
-		       discharge_function = (fun (_,v) -> Some v);
-		       load_function = (fun _ (_,v) -> write v)}
-    in
-    let _ = Summary.declare_summary (nickname key)
-	     { Summary.freeze_function = (fun _ -> read ());
-	       Summary.unfreeze_function = write;
-	       Summary.init_function = (fun () -> write default) }
-    in
-    begin fun v -> add_anonymous_leaf (decl_obj v) end ,
-    begin fun v -> add_anonymous_leaf (ldecl_obj v) end ,
-    begin fun v -> add_anonymous_leaf (gdecl_obj v) end
-  else write,write,write
+  let change =
+    if sync then
+      let _ = Summary.declare_summary (nickname key)
+        { Summary.freeze_function = (fun _ -> read ());
+          Summary.unfreeze_function = write;
+          Summary.init_function = (fun () -> write default) } in
+      let cache_options (_,(l,m,v)) =
+        match m with
+        | OptSet -> write v
+        | OptAppend -> write (append (read ()) v) in
+      let load_options i o = cache_options o in
+      let subst_options (subst,obj) = obj in
+      let discharge_options (_,(l,_,_ as o)) =
+        match l with OptLocal -> None | _ -> Some o in
+      let classify_options (l,_,_ as o) =
+        match l with OptGlobal -> Substitute o | _ -> Dispose in
+      let options : option_locality * option_mod * _ -> obj =
+        declare_object
+          { (default_object (nickname key)) with
+            load_function = load_options;
+            cache_function = cache_options;
+            subst_function = subst_options;
+            discharge_function = discharge_options;
+            classify_function = classify_options } in
+      (fun l m v -> Lib.add_anonymous_leaf (options (l, m, v)))
+    else
+      (fun _ m v ->
+       match m with
+       | OptSet -> write v
+       | OptAppend -> write (append (read ()) v))
   in
   let warn () = if depr then warn_deprecated_option key in
   let cread () = cast (read ()) in
-  let cwrite v = warn (); write (uncast v) in
-  let clwrite v = warn (); lwrite (uncast v) in
-  let cgwrite v = warn (); gwrite (uncast v) in
-  value_tab := OptionMap.add key (name, depr, (sync,cread,cwrite,clwrite,cgwrite)) !value_tab;
+  let cwrite l v = warn (); change l OptSet (uncast v) in
+  let cappend l v = warn (); change l OptAppend (uncast v) in
+  value_tab := OptionMap.add key (name, depr, (sync,cread,cwrite,cappend)) !value_tab;
   write
 
 type 'a write_function = 'a -> unit
@@ -289,18 +295,22 @@ let declare_int_option =
   declare_option
     (fun v -> IntValue v)
     (function IntValue v -> v | _ -> anomaly (Pp.str "async_option"))
+    (fun _ _ -> anomaly (Pp.str "async_option"))
 let declare_bool_option =
   declare_option
     (fun v -> BoolValue v)
     (function BoolValue v -> v | _ -> anomaly (Pp.str "async_option"))
+    (fun _ _ -> anomaly (Pp.str "async_option"))
 let declare_string_option =
   declare_option
     (fun v -> StringValue v)
     (function StringValue v -> v | _ -> anomaly (Pp.str "async_option"))
+    (fun x y -> x^","^y)
 let declare_stringopt_option =
   declare_option
     (fun v -> StringOptValue v)
     (function StringOptValue v -> v | _ -> anomaly (Pp.str "async_option"))
+    (fun _ _ -> anomaly (Pp.str "async_option"))
 
 (* 3- User accessible commands *)
 
@@ -315,13 +325,8 @@ let set_option_value locality check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (_,read,write,lwrite,gwrite)) ->
-    let write = match locality with
-      | None -> write
-      | Some true -> lwrite
-      | Some false -> gwrite
-    in
-    write (check_and_cast v (read ()))
+  | Some (name, depr, (_,read,write,append)) ->
+    write (get_locality locality) (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option."
 
@@ -357,6 +362,13 @@ let set_string_option_value_gen locality =
 let unset_option_value_gen locality key =
   set_option_value locality check_unset_value key ()
 
+let set_string_option_append_value_gen locality key v =
+  let opt = try Some (get_option key) with Not_found -> None in
+  match opt with
+  | None -> warn_unknown_option key
+  | Some (name, depr, (_,read,write,append)) ->
+    append (get_locality locality) (check_string_value v (read ()))
+
 let set_int_option_value = set_int_option_value_gen None
 let set_bool_option_value = set_bool_option_value_gen None
 let set_string_option_value = set_string_option_value_gen None
@@ -375,7 +387,7 @@ let msg_option_value (name,v) =
 (*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
 
 let print_option_value key =
-  let (name, depr, (_,read,_,_,_)) = get_option key in
+  let (name, depr, (_,read,_,_)) = get_option key in
   let s = read () in
   match s with
     | BoolValue b ->
@@ -385,7 +397,7 @@ let print_option_value key =
 
 let get_tables () =
   let tables = !value_tab in
-  let fold key (name, depr, (sync,read,_,_,_)) accu =
+  let fold key (name, depr, (sync,read,_,_)) accu =
     let state = {
       opt_sync = sync;
       opt_name = name;
@@ -404,13 +416,13 @@ let print_tables () =
   in
   str "Synchronous options:" ++ fnl () ++
     OptionMap.fold
-      (fun key (name, depr, (sync,read,_,_,_)) p ->
+      (fun key (name, depr, (sync,read,_,_)) p ->
         if sync then p ++ print_option key name (read ()) depr
         else p)
       !value_tab (mt ()) ++
   str "Asynchronous options:" ++ fnl () ++
     OptionMap.fold
-      (fun key (name, depr, (sync,read,_,_,_)) p ->
+      (fun key (name, depr, (sync,read,_,_)) p ->
         if sync then p
         else p ++ print_option key name (read ()) depr)
       !value_tab (mt ()) ++

@@ -705,6 +705,7 @@ let rec tmpp v loc =
   | VernacSetStrategy _ as x -> xmlTODO loc x
   | VernacUnsetOption _ as x -> xmlTODO loc x
   | VernacSetOption _ as x -> xmlTODO loc x
+  | VernacSetAppendOption _ as x -> xmlTODO loc x
   | VernacAddOption _ as x -> xmlTODO loc x
   | VernacRemoveOption _ as x -> xmlTODO loc x
   | VernacMemOption _ as x -> xmlTODO loc x

@@ -2577,6 +2577,9 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
 	typing_function = typing_fun } in
 
     let j = compile pb in
+
+    (* We coerce to the tycon (if an elim predicate was provided) *)
+    let j = inh_conv_coerce_to_tycon loc env myevdref j tycon in
     evdref := !myevdref;
     j in
 
@@ -2587,6 +2590,4 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
   (* We check for unused patterns *)
   List.iter (check_unused_pattern env) matx;
 
-  (* We coerce to the tycon (if an elim predicate was provided) *)
-  inh_conv_coerce_to_tycon loc env evdref j tycon
-
+  j

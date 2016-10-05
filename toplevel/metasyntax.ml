@@ -899,12 +899,12 @@ let warn_non_reversible_notation =
          (fun () ->
           strbrk "This notation will not be used for printing as it is not reversible.")
 
-let is_not_printable onlyparse noninjective = function
+let is_not_printable onlyparse nonreversible = function
 | NVar _ ->
   if not onlyparse then warn_notation_bound_to_variable ();
   true
 | _ ->
-   if not onlyparse && noninjective then
+   if not onlyparse && nonreversible then
      (warn_non_reversible_notation (); true)
   else onlyparse
 
@@ -1102,7 +1102,10 @@ let contract_notation ntn =
   let rec aux ntn i =
     if i <= String.length ntn - 5 then
       let ntn' =
-        if String.is_sub "{ _ }" ntn i then
+        if String.is_sub "{ _ }" ntn i &&
+           (i = 0 || ntn.[i-1] = ' ') &&
+           (i = String.length ntn - 5 || ntn.[i+5] = ' ')
+        then
           String.sub ntn 0 i ^ "_" ^
           String.sub ntn (i+5) (String.length ntn -i-5)
         else ntn in
@@ -1191,12 +1194,11 @@ let add_notation_in_scope local df c mods scope =
   let nenv = {
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map recvars;
-    ninterp_only_parse = false;
   } in
-  let (acvars, ac) = interp_notation_constr nenv c in
+  let (acvars, ac, reversible) = interp_notation_constr nenv c in
   let interp = make_interpretation_vars recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let onlyparse = is_not_printable onlyparse nenv.ninterp_only_parse ac in
+  let onlyparse = is_not_printable onlyparse (not reversible) ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
@@ -1231,12 +1233,11 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
   let nenv = {
     ninterp_var_type = to_map i_vars;
     ninterp_rec_vars = to_map recvars;
-    ninterp_only_parse = false;
   } in
-  let (acvars, ac) = interp_notation_constr ~impls nenv c in
+  let (acvars, ac, reversible) = interp_notation_constr ~impls nenv c in
   let interp = make_interpretation_vars recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let onlyparse = is_not_printable onlyparse nenv.ninterp_only_parse ac in
+  let onlyparse = is_not_printable onlyparse (not reversible) ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
@@ -1373,10 +1374,9 @@ let add_syntactic_definition ident (vars,c) local onlyparse =
       let nenv = {
         ninterp_var_type = i_vars;
         ninterp_rec_vars = Id.Map.empty;
-        ninterp_only_parse = false;
       } in
-      let nvars, pat = interp_notation_constr nenv c in
-      let () = nonprintable := nenv.ninterp_only_parse in
+      let nvars, pat, reversible = interp_notation_constr nenv c in
+      let () = nonprintable := not reversible in
       let map id = let (_,sc,_) = Id.Map.find id nvars in (id, sc) in
       List.map map vars, pat
   in

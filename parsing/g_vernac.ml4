@@ -33,6 +33,8 @@ let _ = List.iter CLexer.add_keyword vernac_kw
 
 let query_command = Gram.entry_create "vernac:query_command"
 
+let subprf = Gram.entry_create "vernac:subprf"
+
 let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
 let thm_token = Gram.entry_create "vernac:thm_token"
 let def_body = Gram.entry_create "vernac:def_body"
@@ -43,25 +45,13 @@ let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
 let instance_name = Gram.entry_create "vernac:instance_name"
 let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
 
-let subprf = Gram.Entry.of_parser "vernac:subprf" (fun strm ->
-  match get_tok (Stream.peek strm) with
-  | Some (KEYWORD "{") -> Stream.junk strm; VernacSubproof None
-  | Some (KEYWORD "}") -> Stream.junk strm; VernacEndSubproof
-  | Some (KEYWORD k) ->
-    (match k.[0] with
-    | ('-'|'+'|'*') as c ->
-      let n = String.length k in
-      for i = 1 to n - 1 do
-        if k.[i] != c then raise Stream.Failure
-      done;
-      Stream.junk strm;
-      VernacBullet (match c with
-        | '-' -> Dash n
-        | '+' -> Plus n
-        | '*' -> Star n
-        | _ -> assert false)
-    | _ -> raise Stream.Failure)
-  | _ -> raise Stream.Failure)
+let make_bullet s =
+  let n = String.length s in
+  match s.[0] with
+  | '-' -> Dash n
+  | '+' -> Plus n
+  | '*' -> Star n
+  | _ -> assert false
 
 GEXTEND Gram
   GLOBAL: vernac gallina_ext noedit_mode subprf subgoal_command;
@@ -110,6 +100,13 @@ GEXTEND Gram
   ;
   noedit_mode:
     [ [ c = subgoal_command -> c None] ]
+  ;
+
+  subprf:
+  [ [ s = BULLET -> VernacBullet (make_bullet s)
+    | "{" -> VernacSubproof None
+    | "}" -> VernacEndSubproof
+    ] ]
   ;
 
   subgoal_command:
@@ -854,6 +851,8 @@ GEXTEND Gram
       (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_value ->
   	  VernacSetOption (table,v)
+      | "Set"; table = option_table; "Append"; v = STRING ->
+         VernacSetAppendOption (table,v)
       | "Set"; table = option_table ->
   	  VernacSetOption (table,BoolValue true)
       | IDENT "Unset"; table = option_table ->

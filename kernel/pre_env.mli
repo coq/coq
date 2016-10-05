@@ -40,12 +40,14 @@ val force_lazy_val : lazy_val -> (values * Id.Set.t) option
 val dummy_lazy_val : unit -> lazy_val
 val build_lazy_val : lazy_val -> (values * Id.Set.t) -> unit
 
-type named_vals = (Id.t * lazy_val) list
+type named_context_val = private {
+  env_named_ctx : Context.Named.t;
+  env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
+}
 
 type env = {
     env_globals       : globals;
-    env_named_context : Context.Named.t;
-    env_named_vals    : named_vals;
+    env_named_context : named_context_val;
     env_rel_context   : Context.Rel.t;
     env_rel_val       : lazy_val list;
     env_nb_rel        : int;
@@ -55,8 +57,6 @@ type env = {
     retroknowledge : Retroknowledge.retroknowledge;
     indirect_pterms : Opaqueproof.opaquetab;
 }
-
-type named_context_val = Context.Named.t * named_vals
 
 val empty_named_context_val : named_context_val
 
@@ -73,7 +73,15 @@ val env_of_rel     : int -> env -> env
 
 val push_named_context_val  :
     Context.Named.Declaration.t -> named_context_val -> named_context_val
+val push_named_context_val_val  :
+    Context.Named.Declaration.t -> lazy_val -> named_context_val -> named_context_val
+val match_named_context_val  :
+  named_context_val -> (Context.Named.Declaration.t * lazy_val * named_context_val) option
+val map_named_val :
+   (constr -> constr) -> named_context_val -> named_context_val
+
 val push_named       : Context.Named.Declaration.t -> env -> env
+val lookup_named     : Id.t -> env -> Context.Named.Declaration.t
 val lookup_named_val : Id.t -> env -> lazy_val
 val env_of_named     : Id.t -> env -> env
 

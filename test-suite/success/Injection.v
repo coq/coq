@@ -135,6 +135,21 @@ intros * [= H].
 exact H.
 Abort.
 
+(* Test the Keep Proof Equalities option. *)
+Set Keep Proof Equalities.
+Unset Structural Injection.
+
+Inductive pbool : Prop := Pbool1 | Pbool2.
+
+Inductive pbool_shell : Set := Pbsc : pbool -> pbool_shell.
+
+Goal Pbsc Pbool1 = Pbsc Pbool2 -> True.
+injection 1.
+match goal with
+ |- Pbool1 = Pbool2 -> True => idtac | |- True => fail
+end.
+Abort.
+
 (* Injection does not project at positions in Prop... allow it?
 
 Inductive t (A:Prop) : Set := c : A -> t A.

@@ -1154,7 +1154,6 @@ let vernac_declare_arguments locality r l nargs flags =
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;
   ninterp_rec_vars = Id.Map.empty;
-  ninterp_only_parse = false;
 }
 
 let vernac_reserve bl =
@@ -1163,7 +1162,7 @@ let vernac_reserve bl =
     let sigma = Evd.from_env env in
     let t,ctx = Constrintern.interp_type env sigma c in
     let t = Detyping.detype false [] env (Evd.from_ctx ctx) t in
-    let t = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
+    let t,_ = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
 
@@ -1456,6 +1455,9 @@ let vernac_set_option locality key = function
   | StringOptValue None -> unset_option_value_gen locality key
   | IntValue n -> set_int_option_value_gen locality key n
   | BoolValue b -> set_bool_option_value_gen locality key b
+
+let vernac_set_append_option locality key s =
+  set_string_option_append_value_gen locality key s
 
 let vernac_unset_option locality key =
   unset_option_value_gen locality key
@@ -1926,6 +1928,7 @@ let interp ?proof ~loc locality poly c =
   | VernacSetOpacity qidl -> vernac_set_opacity locality qidl
   | VernacSetStrategy l -> vernac_set_strategy locality l
   | VernacSetOption (key,v) -> vernac_set_option locality key v
+  | VernacSetAppendOption (key,v) -> vernac_set_append_option locality key v
   | VernacUnsetOption key -> vernac_unset_option locality key
   | VernacRemoveOption (key,v) -> vernac_remove_option key v
   | VernacAddOption (key,v) -> vernac_add_option key v
@@ -1998,7 +2001,7 @@ let check_vernac_supports_locality c l =
     | VernacArgumentsScope _ | VernacDeclareImplicits _ | VernacArguments _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _
-    | VernacSetOption _ | VernacUnsetOption _
+    | VernacSetOption _ | VernacSetAppendOption _ | VernacUnsetOption _
     | VernacDeclareReduction _
     | VernacExtend _ 
     | VernacInductive _) -> ()

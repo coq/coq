@@ -69,6 +69,9 @@ Tactics
   hypotheses of the form "~True" or "t<>t" (possible source of
   incompatibilities because of more successes in automation, but
   generally a more intuitive strategy).
+- Option "Injection On Proofs" was renamed "Keep Proof Equalities". When
+  enabled, injection and inversion do not drop equalities between objects
+  in Prop. Still disabled by default.
 
 Hints
 

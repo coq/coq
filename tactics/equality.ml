@@ -702,16 +702,16 @@ let replace_in_clause_maybe_by c1 c2 cl tac_opt =
 exception DiscrFound of
   (constructor * int) list * constructor * constructor
 
-let injection_on_proofs = ref false
+let keep_proof_equalities_for_injection = ref false
 
 let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
       optname  = "injection on prop arguments";
-      optkey   = ["Injection";"On";"Proofs"];
-      optread  = (fun () -> !injection_on_proofs) ;
-      optwrite = (fun b -> injection_on_proofs := b) }
+      optkey   = ["Keep";"Proof";"Equalities"];
+      optread  = (fun () -> !keep_proof_equalities_for_injection) ;
+      optwrite = (fun b -> keep_proof_equalities_for_injection := b) }
 
 
 let find_positions env sigma t1 t2 =
@@ -756,7 +756,7 @@ let find_positions env sigma t1 t2 =
 	    project env sorts posn t1_0 t2_0
   in
   try
-    let sorts = if !injection_on_proofs then [InSet;InType;InProp]
+    let sorts = if !keep_proof_equalities_for_injection then [InSet;InType;InProp]
 		else [InSet;InType]
     in
     Inr (findrec sorts [] t1 t2)
@@ -1390,7 +1390,10 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   | Inl _ ->
      tclZEROMSG (strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal.")
   | Inr [] ->
-     let suggestion = if !injection_on_proofs then "" else " You can try to use option Set Injection On Proofs." in
+     let suggestion =
+         if !keep_proof_equalities_for_injection then
+            "" else
+            " You can try to use option Set Keep Proof Equalities." in
      tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
   | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
      tclZEROMSG (str"Nothing to inject.")
