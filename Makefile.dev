@@ -121,10 +121,9 @@ pretyping: pretyping/pretyping.cma
 highparsing: parsing/highparsing.cma
 stm: stm/stm.cma
 toplevel: toplevel/toplevel.cma
-ltac: ltac/ltac.cma
 
 .PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
-.PHONY: engine highparsing stm toplevel ltac
+.PHONY: engine highparsing stm toplevel
 
 ######################
 ### 3) theories files
@@ -183,6 +182,7 @@ RTAUTOVO:=$(filter plugins/rtauto/%, $(PLUGINSVO))
 EXTRACTIONVO:=$(filter plugins/extraction/%, $(PLUGINSVO))
 CCVO:=
 DERIVEVO:=$(filter plugins/derive/%, $(PLUGINSVO))
+LTACVO:=$(filter plugins/ltac/%, $(PLUGINSVO))
 
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
@@ -194,9 +194,10 @@ funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
 rtauto: $(RTAUTOVO) $(RTAUTOCMO)
 btauto: $(BTAUTOVO) $(BTAUTOCMO)
+ltac: $(LTACVO) $(LTACCMO)
 
 .PHONY: omega micromega setoid_ring nsatz extraction
-.PHONY: fourier funind cc rtauto btauto
+.PHONY: fourier funind cc rtauto btauto ltac
 
 #################################
 ### Misc other development rules
