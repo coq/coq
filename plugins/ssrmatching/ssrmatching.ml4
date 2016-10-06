@@ -15,6 +15,7 @@ let frozen_lexer = CLexer.freeze () ;;
 (*i camlp4use: "pa_extend.cmo" i*)
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+open Ltac_plugin
 open Names
 open Pp
 open Pcoq

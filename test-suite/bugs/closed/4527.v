@@ -5,6 +5,7 @@ then from 269 lines to 255 lines *)
 (* coqc version 8.5 (January 2016) compiled on Jan 23 2016 16:15:22 with OCaml 
 4.01.0
    coqtop version 8.5 (January 2016) *)
+Declare ML Module "ltac_plugin".
 Inductive False := .
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
