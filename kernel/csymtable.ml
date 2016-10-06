@@ -191,7 +191,7 @@ and slot_for_fv env fv =
       | None ->
          let open Context.Named in
          let open Declaration in
-	 env.env_named_context.env_named_ctx |> lookup id |> get_value |> fill_fv_cache nv id val_of_named idfun
+	 env |> Pre_env.lookup_named id |> get_value |> fill_fv_cache nv id val_of_named idfun
       | Some (v, _) -> v
       end
   | FVrel i ->
