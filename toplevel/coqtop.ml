@@ -332,7 +332,6 @@ let error_missing_arg s =
 let filter_opts = ref false
 let exitcode () = if !filter_opts then 2 else 0
 
-let verb_compat_ntn = ref false
 let no_compat_ntn = ref false
 
 let print_where = ref false
@@ -576,7 +575,6 @@ let parse_args arglist =
     |"-unicode" -> add_require "Utf8_core"
     |"-v"|"--version" -> Usage.version (exitcode ())
     |"--print-version" -> Usage.machine_readable_version (exitcode ())
-    |"-verbose-compat-notations" -> verb_compat_ntn := true
     |"-where" -> print_where := true
     |"-xml" -> Flags.xml_export := true
 
@@ -637,9 +635,6 @@ let init_toplevel arglist =
       inputstate ();
       Mltop.init_known_plugins ();
       engage ();
-      (* Be careful to set these variables after the inputstate *)
-      Syntax_def.set_verbose_compat_notations !verb_compat_ntn;
-(*       Syntax_def.set_compat_notations (not !no_compat_ntn); FIXME *)
       if (not !batch_mode || List.is_empty !compile_list)
          && Global.env_is_initial ()
       then Option.iter Declaremods.start_library !toplevel_name;
