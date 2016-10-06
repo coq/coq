@@ -1361,7 +1361,9 @@ let w_merge env with_types flags (evd,metas,evars) =
     in w_merge_rec evd [] [] eqns
   in
   let res =  (* merge constraints *)
-    w_merge_rec evd (order_metas metas) (List.rev evars) []
+    w_merge_rec evd (order_metas metas)
+                (* Assign evars in the order of assignments during unification *)
+                (List.rev evars) []
   in
     if with_types then check_types res
     else res
