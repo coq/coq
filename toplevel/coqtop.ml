@@ -332,8 +332,6 @@ let error_missing_arg s =
 let filter_opts = ref false
 let exitcode () = if !filter_opts then 2 else 0
 
-let no_compat_ntn = ref false
-
 let print_where = ref false
 let print_config = ref false
 let print_tags = ref false
@@ -557,7 +555,6 @@ let parse_args arglist =
     |"-just-parsing" -> Vernac.just_parsing := true
     |"-m"|"--memory" -> memory_stat := true
     |"-noinit"|"-nois" -> load_init := false
-    |"-no-compat-notations" -> no_compat_ntn := true
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
     |"-native-compiler" ->
       if Coq_config.no_native_compiler then
