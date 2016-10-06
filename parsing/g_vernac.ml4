@@ -850,9 +850,15 @@ GEXTEND Gram
 
       (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_value ->
-  	  VernacSetOption (table,v)
-      | "Set"; table = option_table; "Append"; v = STRING ->
-         VernacSetAppendOption (table,v)
+        begin match v with
+        | StringValue s ->
+          let (last, prefix) = List.sep_last table in
+          if String.equal last "Append" && not (List.is_empty prefix) then
+            VernacSetAppendOption (prefix, s)
+          else
+            VernacSetOption (table, v)
+        | _ -> VernacSetOption (table, v)
+        end
       | "Set"; table = option_table ->
   	  VernacSetOption (table,BoolValue true)
       | IDENT "Unset"; table = option_table ->
