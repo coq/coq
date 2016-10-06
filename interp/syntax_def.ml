@@ -93,8 +93,8 @@ let pr_compat_warning (kn, def, v) =
   pr_syndef kn ++ pp_def ++ since
 
 let warn_compatibility_notation =
-  CWarnings.create ~name:"compatibility-notation"
-                   ~category:"deprecated" pr_compat_warning
+  CWarnings.(create ~name:"compatibility-notation"
+                    ~category:"deprecated" ~default:Disabled pr_compat_warning)
 
 let verbose_compat kn def = function
   | Some v when Flags.version_strictly_greater v ->
