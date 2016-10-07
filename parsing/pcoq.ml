@@ -350,6 +350,7 @@ module Tactic =
     let red_expr = make_gen_entry utactic "red_expr"
     let simple_intropattern =
       make_gen_entry utactic "simple_intropattern"
+    let in_clause = make_gen_entry utactic "in_clause"
     let clause_dft_concl = 
       make_gen_entry utactic "clause"
 

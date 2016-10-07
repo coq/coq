@@ -220,7 +220,7 @@ let warn_deprecated_eqn_syntax =
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
   bindings red_expr int_or_var open_constr uconstr
-  simple_intropattern clause_dft_concl hypident destruction_arg;
+  simple_intropattern in_clause clause_dft_concl hypident destruction_arg;
 
   int_or_var:
     [ [ n = integer  -> ArgArg n

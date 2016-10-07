@@ -260,6 +260,20 @@ END
 
 let pr_by_arg_tac prtac opt_c = pr_by_arg_tac () () prtac opt_c
 
+let pr_in_clause _ _ _ cl = Pptactic.pr_in_clause Ppconstr.pr_lident cl
+let pr_in_top_clause _ _ _ cl = Pptactic.pr_in_clause Id.print cl
+let in_clause' = Pcoq.Tactic.in_clause
+
+ARGUMENT EXTEND in_clause
+  TYPED AS clause_dft_concl
+  PRINTED BY pr_in_top_clause
+  RAW_TYPED AS clause_dft_concl
+  RAW_PRINTED BY pr_in_clause
+  GLOB_TYPED AS clause_dft_concl
+  GLOB_PRINTED BY pr_in_clause
+| [ in_clause'(cl) ] -> [ cl ]
+END
+
 (* spiwack: the print functions are incomplete, but I don't know what they are
 	used for *)
 let pr_r_nat_field natf =
