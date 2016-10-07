@@ -16,7 +16,7 @@
 Require Import List.
 Require Setoid.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (* Refl of '->' '/\': basic properties *)
 

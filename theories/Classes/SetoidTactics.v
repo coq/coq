@@ -21,8 +21,8 @@ Generalizable Variables A R.
 
 Export ProperNotations.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** Default relation on a given support. Can be used by tactics
    to find a sensible default relation on any carrier. Users can

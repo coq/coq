@@ -74,7 +74,7 @@
 *)
 
 
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 (* begin show *)
 
@@ -631,7 +631,7 @@ End NoRetractFromTypeToProp.
 
 Module TypeNeqSmallType.
 
-Unset Universe Polymorphism.
+Local Unset Universe Polymorphism.
 
 Section Paradox.
 

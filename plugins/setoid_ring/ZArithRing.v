@@ -12,7 +12,7 @@ Require Import Zpow_def.
 
 Import InitialRing.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Ltac Zcst t :=
   match isZcst t with

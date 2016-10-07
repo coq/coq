@@ -21,7 +21,7 @@ Require Import Coq.Program.Tactics.
 
 Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 
-Set Universe Polymorphism.
+Local Set Universe Polymorphism.
 
 Definition crelation (A : Type) := A -> A -> Type.
 
@@ -215,7 +215,7 @@ Hint Extern 4 (subrelation (flip _) _) =>
 
 Hint Resolve irreflexivity : ord.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 (** A HintDb for crelations. *)
 
@@ -306,7 +306,7 @@ Section Binary.
   
   (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
   
-  Set Automatic Introduction.
+  Local Set Automatic Introduction.
   
   Global Instance relation_equivalence_equivalence :
     Equivalence relation_equivalence.

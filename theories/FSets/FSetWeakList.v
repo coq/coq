@@ -12,8 +12,8 @@
     interface [FSetInterface.WS] using lists without redundancy. *)
 
 Require Import FSetInterface.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** This is just a compatibility layer, the real implementation
     is now in [MSetWeakList] *)

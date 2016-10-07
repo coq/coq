@@ -12,8 +12,8 @@
     interface [MSetWeakInterface.S] using lists without redundancy. *)
 
 Require Import MSetInterface.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** * Functions over lists
 

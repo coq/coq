@@ -19,7 +19,7 @@ Require Import Setoid.
 Require Export Ncring.
 Require Export Ncring_polynom.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (* An object to return when an expression is not recognized as a constant *)
 Definition NotConstant := false.

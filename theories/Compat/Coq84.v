@@ -82,4 +82,4 @@ Notation "[ x ; .. ; y ]" := (VectorDef.cons _ x _ .. (VectorDef.cons _ y _ (nil
 
 (** In 8.4, the statement of admitted lemmas did not depend on the section
     variables. *)
-Unset Keep Admitted Variables.
+Local Unset Keep Admitted Variables.

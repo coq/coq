@@ -13,7 +13,7 @@
 (************************************************************************)
 
 Require Import BinInt List.
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope positive_scope.
 
 Section S.

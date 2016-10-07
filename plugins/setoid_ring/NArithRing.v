@@ -10,7 +10,7 @@ Require Export Ring.
 Require Import BinPos BinNat.
 Import InitialRing.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Ltac Ncst t :=
   match isNcst t with

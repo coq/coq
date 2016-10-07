@@ -33,8 +33,8 @@
 
 Require Import MSetInterface MSetGenTree BinInt Int.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 (* for nicer extraction, we create inductive principles
    only when needed *)
 Local Unset Elimination Schemes.

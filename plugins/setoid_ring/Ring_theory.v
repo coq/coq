@@ -8,7 +8,7 @@
 
 Require Import Setoid Morphisms BinPos BinNat.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Module RingSyntax.
 Reserved Notation "x ?=! y" (at level 70, no associativity).

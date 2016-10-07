@@ -23,7 +23,7 @@ Require Import Omega Relations Multiset SetoidList.
     that [List.Permutation] and [permutation] are equivalent in this context.
 *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Local Notation "[ ]" := nil.
 Local Notation "[ a ; .. ; b ]" := (a :: .. (b :: []) ..).

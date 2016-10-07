@@ -24,7 +24,7 @@ Include Coq.Init.Nat.
 
 (** When including property functors, inline t eq zero one two lt le succ *)
 
-Set Inline Level 50.
+Local Set Inline Level 50.
 
 (** All operations are well-defined (trivial here since eq is Leibniz) *)
 

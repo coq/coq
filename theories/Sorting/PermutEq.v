@@ -8,7 +8,7 @@
 
 Require Import Relations Setoid SetoidList List Multiset PermutSetoid Permutation Omega.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** This file is similar to [PermutSetoid], except that the equality used here
     is Coq usual one instead of a setoid equality. In particular, we can then

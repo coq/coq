@@ -9,8 +9,8 @@
 (** * Compatibility functors between FSetInterface and MSetInterface. *)
 
 Require Import FSetInterface FSetFacts MSetInterface MSetFacts.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** * From new Weak Sets to old ones *)
 

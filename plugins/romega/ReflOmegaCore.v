@@ -1287,7 +1287,7 @@ Qed.
 
 (* Extraire une hypothèse de la liste *)
 Definition nth_hyps (n : nat) (l : hyps) := nth n l TrueTerm.
-Unset Printing Notations.
+Local Unset Printing Notations.
 Theorem nth_valid :
  forall (ep : list Prop) (e : list int) (i : nat) (l : hyps),
  interp_hyps ep e l -> interp_proposition ep e (nth_hyps i l).

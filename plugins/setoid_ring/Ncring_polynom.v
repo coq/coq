@@ -8,7 +8,7 @@
 
 (*  A <X1,...,Xn>: non commutative polynomials on a commutative ring A *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Require Import Setoid.
 Require Import BinList.
 Require Import BinPos.

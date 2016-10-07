@@ -9,7 +9,7 @@
 (** This module defines type constructors for types in [Type]
     ([Datatypes.v] and [Logic.v] defined them for types in [Set]) *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Require Import Datatypes.
 Require Export Logic.

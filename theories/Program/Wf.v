@@ -71,7 +71,7 @@ End Well_founded.
 
 Extraction Inline Fix_F_sub Fix_sub.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** Reasoning about well-founded fixpoints on measures. *)
 

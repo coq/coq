@@ -10,7 +10,7 @@
 
 Require Import Permut Setoid.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Section multiset_defs.
 
@@ -185,7 +185,7 @@ i*)
 
 End multiset_defs.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 Hint Unfold meq multiplicity: v62 datatypes.
 Hint Resolve munion_empty_right munion_comm munion_ass meq_left meq_right

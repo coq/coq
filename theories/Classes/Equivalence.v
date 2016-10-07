@@ -20,8 +20,8 @@ Require Import Relation_Definitions.
 Require Export Coq.Classes.RelationClasses.
 Require Import Coq.Classes.Morphisms.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Generalizable Variables A R eqA B S eqB.
 Local Obligation Tactic := try solve [simpl_relation].

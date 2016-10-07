@@ -10,7 +10,7 @@
 
 Require Export Setoid Morphisms Morphisms_Prop.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (* The following tactic uses solve_proper to solve the goals
 relating to well-definedness that are produced by applying induction.

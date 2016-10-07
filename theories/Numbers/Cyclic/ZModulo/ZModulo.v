@@ -13,7 +13,7 @@
   the efficient arbitrary precision numbers, it provides a simple
   implementation of CyclicAxioms, hence ensuring its coherence. *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Require Import Bool.
 Require Import ZArith.

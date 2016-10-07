@@ -12,7 +12,7 @@
  *              91405 Orsay, France *)
 
 Require Import OrderedType Orders.
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** * Some alternative (but equivalent) presentations for an Ordered Type
    inferface. *)

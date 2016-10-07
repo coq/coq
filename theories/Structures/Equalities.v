@@ -9,8 +9,8 @@
 Require Export RelationClasses.
 Require Import Bool Morphisms Setoid.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** Structure with nothing inside.
     Used to force a module type T into a module via Nop <+ T. (HACK!) *)

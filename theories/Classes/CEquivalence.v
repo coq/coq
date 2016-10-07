@@ -20,8 +20,8 @@ Require Import Relation_Definitions.
 Require Export Coq.Classes.CRelationClasses.
 Require Import Coq.Classes.CMorphisms.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Generalizable Variables A R eqA B S eqB.
 Local Obligation Tactic := try solve [simpl_crelation].

@@ -34,7 +34,7 @@ Table of contents:
 (************************************************************************)
 (** * Streicher's K and injectivity of dependent pair hold on decidable types *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
 
 Section EqdepDec.
@@ -194,7 +194,7 @@ Theorem UIP_dec :
     forall (x y:A) (p1 p2:x = y), p1 = p2.
 Proof (fun A eq_dec => eq_dep_eq__UIP A (eq_dep_eq_dec eq_dec)).
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 (************************************************************************)
 (** ** Definition of the functor that builds properties of dependent equalities on decidable sets in Type *)

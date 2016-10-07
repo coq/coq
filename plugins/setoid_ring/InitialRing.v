@@ -14,7 +14,7 @@ Require Import Ring_theory.
 Require Import Ring_polynom.
 Import List.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
 
 Import RingSyntax.

@@ -12,8 +12,8 @@
     interface [FSetInterface.S] using strictly ordered list. *)
 
 Require Export FSetInterface.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** This is just a compatibility layer, the real implementation
     is now in [MSetList] *)

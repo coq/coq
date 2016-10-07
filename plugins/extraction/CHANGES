@@ -210,14 +210,14 @@ http://www.lri.fr/~letouzey/extraction
 
 * Syntax changes, see Documentation for more details: 
 
-Set/Unset Extraction Optimize. 
+Local Set/Unset Extraction Optimize. 
 
 Default is Set. This control all optimizations made on the ML terms 
 (mostly reduction of dummy beta/iota redexes, but also simplications on 
 Cases, etc). Put this option to Unset if you what a ML term as close as 
 possible to the Coq term.
 
-Set/Unset Extraction AutoInline. 
+Local Set/Unset Extraction AutoInline. 
 
 Default in Set, so by default, the extraction mechanism feels free to 
 inline the bodies of some defined constants, according to some heuristics 

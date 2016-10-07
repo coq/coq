@@ -9,8 +9,8 @@
 Require Import Permutation SetoidList.
 (* Set Universe Polymorphism. *)
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** Permutations of list modulo a setoid equality. *)
 

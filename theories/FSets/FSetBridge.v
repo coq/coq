@@ -12,9 +12,9 @@
     to/from non-dependent set signature. *)
 
 Require Export FSetInterface.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Set Firstorder Depth 2.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
+Local Set Firstorder Depth 2.
 
 (** * From non-dependent signature [S] to dependent signature [Sdep]. *)
 

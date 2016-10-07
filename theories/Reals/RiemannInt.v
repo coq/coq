@@ -15,7 +15,7 @@ Require Import RiemannInt_SF.
 Require Import Max.
 Local Open Scope R_scope.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (********************************************)
 (**           Riemann's Integral            *)

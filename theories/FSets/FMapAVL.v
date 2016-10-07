@@ -18,8 +18,8 @@
 
 Require Import FMapInterface FMapList ZArith Int.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 (** Notations and helper lemma about pairs *)
 

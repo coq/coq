@@ -13,7 +13,7 @@
 
 Require Import Bool.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Section defs.
 
@@ -210,4 +210,4 @@ i*)
 
 End defs.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.

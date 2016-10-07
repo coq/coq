@@ -8,7 +8,7 @@
 
 Require Import BinPos.
 Require Export List.
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope positive_scope.
 
 Section MakeBinList.

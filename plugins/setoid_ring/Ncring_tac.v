@@ -19,7 +19,7 @@ Require Import Ncring_polynom.
 Require Import Ncring_initial.
 
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Class nth (R:Type) (t:R) (l:list R) (i:nat).
 
@@ -125,7 +125,7 @@ Definition list_reifyl (R:Type) lexpr lvar lterm
  {_:reifylist (Rr:= Rr) lexpr lvar lterm}
  `{closed (T:=R) lvar}  := (lvar,lexpr).
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 Ltac lterm_goal g :=
   match g with

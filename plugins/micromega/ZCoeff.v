@@ -16,7 +16,7 @@ Require Import Setoid.
 
 Import OrderedRingSyntax.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Section InitialMorphism.
 

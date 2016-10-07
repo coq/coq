@@ -12,7 +12,7 @@
     f injective <-> f bijective <-> f surjective. *)
 
 Require Import List Compare_dec EqNat Decidable ListDec. Require Fin.
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** General definitions *)
 

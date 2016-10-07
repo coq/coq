@@ -12,8 +12,8 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Generalizable Variables A.
 

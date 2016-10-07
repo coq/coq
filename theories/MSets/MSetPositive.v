@@ -18,7 +18,7 @@
 
 Require Import Bool BinPos Orders OrdersEx MSetInterface.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Local Open Scope lazy_bool_scope.
 Local Open Scope positive_scope.
 Local Unset Elimination Schemes.

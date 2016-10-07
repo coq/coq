@@ -7,7 +7,7 @@
 (***********************************************************************)
 
 Require Import Setoid Morphisms Basics Equalities Orders.
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** * The order tactic *)
 

@@ -10,7 +10,7 @@
    I have modified the code to use binary trees -- logarithmic access.  *)
 
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Require Import Setoid Morphisms Env BinPos BinNat BinInt.
 Require Export Ring_theory.
 

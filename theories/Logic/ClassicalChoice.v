@@ -24,7 +24,7 @@ Require Export ClassicalUniqueChoice.
 Require Export RelationalChoice.
 Require Import ChoiceFacts.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Definition subset (U:Type) (P Q:U->Prop) : Prop := forall x, P x -> Q x.
 

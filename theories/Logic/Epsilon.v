@@ -11,7 +11,7 @@
 
 Require Import ChoiceFacts.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** Hilbert's epsilon: operator and specification in one statement *)
 

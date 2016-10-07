@@ -9,7 +9,7 @@
 Require Setoid.
 Require Import PeanoNat Le Gt Minus Bool Lt.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
 
 (******************************************************************)

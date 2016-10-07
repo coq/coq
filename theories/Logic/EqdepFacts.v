@@ -166,7 +166,7 @@ Qed.
 
 (** Dependent equality is equivalent to a dependent pair of equalities *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Lemma eq_sigT_sig_eq : forall X P (x1 x2:X) H1 H2, existT P x1 H1 = existT P x2 H2 <->
                                                    {H:x1=x2 | rew H in H1 = H2}.
@@ -221,7 +221,7 @@ Proof.
   reflexivity.
 Defined.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 (** Exported hints *)
 

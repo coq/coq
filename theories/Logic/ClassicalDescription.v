@@ -14,7 +14,7 @@
     computable functions. It conflicts with the impredicativity of
     [Set] *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Require Export Classical.   (* Axiomatize classical reasoning *)
 Require Export Description. (* Axiomatize constructive form of Church's iota *)
@@ -79,7 +79,7 @@ Qed.
 
 (** Compatibility lemmas *)
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 Definition dependent_description := dependent_unique_choice.
 Definition description := unique_choice.

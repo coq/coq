@@ -26,7 +26,7 @@ Record prod (A B : Type) := pair { fst : A ; snd : B }.
 Notation "x * y" := (prod x y) : type_scope.
 Module Export Specif.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Record sig {A} (P : A -> Type) := exist { proj1_sig : A ; proj2_sig : P proj1_sig }.
 Arguments proj1_sig {A P} _ / .

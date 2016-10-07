@@ -8,7 +8,7 @@
 
 Require Import Equalities Bool SetoidList RelationPairs.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 (** * Keys and datas used in the future MMaps *)
 

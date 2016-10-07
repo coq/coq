@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Require Export Notations.
 

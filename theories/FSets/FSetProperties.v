@@ -16,8 +16,8 @@
 
 Require Export FSetInterface.
 Require Import DecidableTypeEx FSetFacts FSetDecide.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Hint Unfold transpose compat_op Proper respectful.
 Hint Extern 1 (Equivalence _) => constructor; congruence.

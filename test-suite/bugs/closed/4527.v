@@ -20,7 +20,7 @@ Inductive True : Type :=
   I : True.
 Module Export Datatypes.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Notation nat := Coq.Init.Datatypes.nat.
 Notation S := Coq.Init.Datatypes.S.
 
@@ -33,7 +33,7 @@ Open Scope nat_scope.
 End Datatypes.
 Module Export Specif.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Record sig {A} (P : A -> Type) := exist { proj1_sig : A ; proj2_sig : P 
 proj1_sig }.

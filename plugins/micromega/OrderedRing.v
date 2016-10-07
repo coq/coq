@@ -13,7 +13,7 @@ Require Import Ring.
 
 (** Generic properties of ordered rings on a setoid equality *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Module Import OrderedRingSyntax.
 Export RingSyntax.

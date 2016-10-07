@@ -15,8 +15,8 @@
 
 Require Import Bool DecidableType DecidableTypeEx OrderedType Morphisms.
 Require Export FMapInterface.
-Set Implicit Arguments.
-Unset Strict Implicit.
+Local Set Implicit Arguments.
+Local Unset Strict Implicit.
 
 Hint Extern 1 (Equivalence _) => constructor; congruence.
 

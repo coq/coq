@@ -1,4 +1,4 @@
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 Require Import Setoid.
 Require Import BinPos.
 Require Import Ring_polynom.

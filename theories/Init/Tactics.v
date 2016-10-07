@@ -195,7 +195,7 @@ Ltac now_show c := change c.
 
 (** Support for rewriting decidability statements *)
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Lemma decide_left : forall (C:Prop) (decide:{C}+{~C}),
   C -> forall P:{C}+{~C}->Prop, (forall H:C, P (left _ H)) -> P decide.

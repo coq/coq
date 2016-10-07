@@ -215,7 +215,7 @@ Arguments Antisymmetric A eqA {_} _.
 
 Hint Resolve irreflexivity : ord.
 
-Unset Implicit Arguments.
+Local Unset Implicit Arguments.
 
 (** A HintDb for relations. *)
 
@@ -434,7 +434,7 @@ Section Binary.
   
   (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
   
-  Set Automatic Introduction.
+  Local Set Automatic Introduction.
   
   Global Instance relation_equivalence_equivalence :
     Equivalence relation_equivalence.

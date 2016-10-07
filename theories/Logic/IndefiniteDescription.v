@@ -14,7 +14,7 @@
 
 Require Import ChoiceFacts.
 
-Set Implicit Arguments.
+Local Set Implicit Arguments.
 
 Axiom constructive_indefinite_description :
   forall (A : Type) (P : A->Prop),
