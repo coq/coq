@@ -11,7 +11,7 @@
 (** Read a vernac command on the specified input (parse only).
    Raises [End_of_file] if EOF (or Ctrl-D) is reached. *)
 
-val parse_sentence : Pcoq.Gram.parsable * in_channel option ->
+val parse_sentence : Pcoq.Gram.coq_parsable * in_channel option ->
  Loc.t * Vernacexpr.vernac_expr
 
 (** Reads and executes vernac commands from a stream.
@@ -21,7 +21,7 @@ exception End_of_input
 
 val just_parsing : bool ref
 
-val eval_expr : Loc.t * Vernacexpr.vernac_expr -> unit
+val eval_expr : Pcoq.Gram.coq_parsable * in_channel option -> Loc.t * Vernacexpr.vernac_expr -> unit
 
 (** Set XML hooks *)
 val xml_start_library : (unit -> unit) Hook.t

@@ -124,7 +124,7 @@ let set_formatter_translator() =
   Format.set_formatter_output_functions out (fun () -> flush ch);
   Format.set_max_boxes max_int
 
-let pr_new_syntax loc ocom =
+let pr_new_syntax_in_context loc ocom =
   let loc = Loc.unloc loc in
   if !beautify_file then set_formatter_translator();
   let fs = States.freeze ~marshallable:`No in
@@ -138,20 +138,20 @@ let pr_new_syntax loc ocom =
   States.unfreeze fs;
   Format.set_formatter_out_channel stdout
 
+let pr_new_syntax (po,_) loc ocom =
+  (* Reinstall the context of parsing which includes the bindings of comments to locations *)
+  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context loc) ocom
+
 let save_translator_coqdoc () =
   (* translator state *)
   let ch = !chan_beautify in
-  let cl = !Pp.comments in
-  let cs = CLexer.com_state() in
   (* end translator state *)
   let coqdocstate = CLexer.location_table () in
-  ch,cl,cs,coqdocstate
+  ch,coqdocstate
 
-let restore_translator_coqdoc (ch,cl,cs,coqdocstate) =
+let restore_translator_coqdoc (ch,coqdocstate) =
   if !Flags.beautify_file then close_out !chan_beautify;
   chan_beautify := ch;
-  Pp.comments := cl;
-  CLexer.restore_com_state cs;
   CLexer.restore_location_table coqdocstate
 
 (* For coqtop -time, we display the position in the file,
@@ -182,7 +182,7 @@ let print_cmd_header loc com =
   Pp.pp_with !Pp_control.std_ft (pp_cmd_header loc com);
   Format.pp_print_flush !Pp_control.std_ft ()
 
-let rec vernac_com checknav (loc,com) =
+let rec vernac_com input checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
@@ -194,7 +194,6 @@ let rec vernac_com checknav (loc,com) =
 	if !Flags.beautify_file then
 	  begin
 	    chan_beautify := open_out (f^beautify_suffix);
-	    Pp.comments := []
           end;
 	begin
 	  try
@@ -214,13 +213,11 @@ let rec vernac_com checknav (loc,com) =
   in
     try
       checknav loc com;
-      if do_beautify () then pr_new_syntax loc (Some com);
+      if do_beautify () then pr_new_syntax input loc (Some com);
       (* XXX: This is not 100% correct if called from an IDE context *)
       if !Flags.time then print_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
-      let a = CLexer.com_state () in
-      interp com;
-      CLexer.restore_com_state a
+      interp com
     with reraise ->
       let (reraise, info) = CErrors.push reraise in
       Format.set_formatter_out_channel stdout;
@@ -240,7 +237,7 @@ and read_vernac_file verbosely s =
     while true do
       let loc_ast = parse_sentence input in
       CWarnings.set_current_loc (fst loc_ast);
-      vernac_com checknav loc_ast;
+      vernac_com input checknav loc_ast;
     done
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
@@ -249,7 +246,7 @@ and read_vernac_file verbosely s =
     match e with
       | End_of_input ->
           if do_beautify () then
-            pr_new_syntax (Loc.make_loc (max_int,max_int)) None
+            pr_new_syntax input (Loc.make_loc (max_int,max_int)) None
       | reraise ->
 	 iraise (disable_drop e, info)
 
@@ -264,7 +261,7 @@ let checknav loc ast =
   if is_deep_navigation_vernac ast then
     user_error loc "Navigation commands forbidden in nested commands"
 
-let eval_expr loc_ast = vernac_com checknav loc_ast
+let eval_expr input loc_ast = vernac_com input checknav loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()

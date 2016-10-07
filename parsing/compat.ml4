@@ -138,12 +138,21 @@ module type LexerSig = sig
     exception E of t
     val to_string : t -> string
   end
+  type comments_state
+  val default_comments_state : comments_state
+  val comments_state : unit -> comments_state
+  val restore_comments_state : comments_state -> unit
 end
 
 ELSE
 
-module type LexerSig =
-  Camlp4.Sig.Lexer with module Loc = CompatLoc and type Token.t = Tok.t
+module type LexerSig = sig
+  include Camlp4.Sig.Lexer with module Loc = CompatLoc and type Token.t = Tok.t
+  type comments_state
+  val default_comments_state : comments_state
+  val comments_state : unit -> comments_state
+  val restore_comments_state : comments_state -> unit
+end
 
 END
 
@@ -162,10 +171,13 @@ module type GrammarSig = sig
       string option * Gramext.g_assoc option * production_rule list
   type extend_statment =
       Gramext.position option * single_extend_statment list
+  type coq_parsable
+  val parsable : char Stream.t -> coq_parsable
   val action : 'a -> action
   val entry_create : string -> 'a entry
-  val entry_parse : 'a entry -> parsable -> 'a
+  val entry_parse : 'a entry -> coq_parsable -> 'a
   val entry_print : Format.formatter -> 'a entry -> unit
+  val with_parsable : coq_parsable -> ('a -> 'b) -> 'a -> 'b
   val srules' : production_rule list -> symbol
   val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
 end
@@ -181,14 +193,33 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
       string option * Gramext.g_assoc option * production_rule list
   type extend_statment =
       Gramext.position option * single_extend_statment list
+  type coq_parsable = parsable * L.comments_state ref
+  let parsable c =
+    let state = ref L.default_comments_state in (parsable c, state)
   let action = Gramext.action
   let entry_create = Entry.create
-  let entry_parse e p =
-    try Entry.parse e p
+  let entry_parse e (p,state) =
+    L.restore_comments_state !state;
+    try
+      let c = Entry.parse e p in
+      state := L.comments_state ();
+      L.restore_comments_state L.default_comments_state;
+      c
     with Exc_located (loc,e) ->
+      L.restore_comments_state L.default_comments_state;
       let loc' = Loc.get_loc (Exninfo.info e) in
       let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
       Loc.raise loc e
+  let with_parsable (p,state) f x =
+    L.restore_comments_state !state;
+    try
+      let a = f x in
+      state := L.comments_state ();
+      L.restore_comments_state L.default_comments_state;
+      a
+    with e ->
+      L.restore_comments_state L.default_comments_state;
+      raise e
 
   let entry_print ft x = Entry.print ft x
   let srules' = Gramext.srules
@@ -202,12 +233,13 @@ module type GrammarSig = sig
     with module Loc = CompatLoc and type Token.t = Tok.t
   type 'a entry = 'a Entry.t
   type action = Action.t
-  type parsable
-  val parsable : char Stream.t -> parsable
+  type coq_parsable
+  val parsable : char Stream.t -> coq_parsable
   val action : 'a -> action
   val entry_create : string -> 'a entry
-  val entry_parse : 'a entry -> parsable -> 'a
+  val entry_parse : 'a entry -> coq_parsable -> 'a
   val entry_print : Format.formatter -> 'a entry -> unit
+  val with_parsable : coq_parsable -> ('a -> 'b) -> 'a -> 'b
   val srules' : production_rule list -> symbol
 end
 
@@ -217,13 +249,31 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   include Camlp4.Struct.Grammar.Static.Make (L)
   type 'a entry = 'a Entry.t
   type action = Action.t
-  type parsable = char Stream.t
-  let parsable s = s
+  type comments_state = int option * string * bool * ((int * int) * string) list
+  type coq_parsable = char Stream.t * L.comments_state ref
+  let parsable s = let state = ref L.default_comments_state in (s, state)
   let action = Action.mk
   let entry_create = Entry.mk
-  let entry_parse e s =
-    try parse e (*FIXME*)CompatLoc.ghost s
-    with Exc_located (loc,e) -> raise_coq_loc loc e
+  let entry_parse e (s,state) =
+    L.restore_comments_state !state;
+    try
+      let c = parse e (*FIXME*)CompatLoc.ghost s in
+      state := L.comments_state ();
+      L.restore_comments_state L.default_comments_state;
+      c
+    with Exc_located (loc,e) ->
+      L.restore_comments_state L.default_comments_state;
+      raise_coq_loc loc e
+  let with_parsable (p,state) f x =
+    L.restore_comments_state !state;
+    try
+      let a = f x in
+      state := L.comments_state ();
+      L.restore_comments_state L.default_comments_state;
+      a
+    with e ->
+      L.restore_comments_state L.default_comments_state;
+      raise e
   let entry_print ft x = Entry.print ft x
   let srules' = srules (entry_create "dummy")
 end

@@ -340,34 +340,35 @@ let comm_loc bp = match !comment_begin with
 | None -> comment_begin := Some bp
 | _ -> ()
 
-let current = Buffer.create 8192
-let between_com = ref true
+let current_comment = Buffer.create 8192
+let between_commands = ref true
 
-type com_state = int option * string * bool
-let restore_com_state (o,s,b) =
+type comments_state = int option * string * bool * ((int * int) * string) list
+let restore_comments_state (o,s,b,c) =
   comment_begin := o;
-  Buffer.clear current; Buffer.add_string current s;
-  between_com := b
-let dflt_com = (None,"",true)
-let com_state () =
-  let s = (!comment_begin, Buffer.contents current, !between_com) in
-  restore_com_state dflt_com; s
+  Buffer.clear current_comment; Buffer.add_string current_comment s;
+  between_commands := b;
+  Pp.comments := c
+let default_comments_state = (None,"",true,[])
+let comments_state () =
+  let s = (!comment_begin, Buffer.contents current_comment, !between_commands, !Pp.comments) in
+  restore_comments_state default_comments_state; s
 
-let real_push_char c = Buffer.add_char current c
+let real_push_char c = Buffer.add_char current_comment c
 
 (* Add a char if it is between two commands, if it is a newline or
    if the last char is not a space itself. *)
 let push_char c =
   if
-    !between_com || List.mem c ['\n';'\r'] ||
+    !between_commands || List.mem c ['\n';'\r'] ||
     (List.mem c [' ';'\t']&&
-     (Int.equal (Buffer.length current) 0 ||
-      not (let s = Buffer.contents current in
+     (Int.equal (Buffer.length current_comment) 0 ||
+      not (let s = Buffer.contents current_comment in
            List.mem s.[String.length s - 1] [' ';'\t';'\n';'\r'])))
   then
     real_push_char c
 
-let push_string s = Buffer.add_string current s
+let push_string s = Buffer.add_string current_comment s
 
 let null_comment s =
   let rec null i =
@@ -375,12 +376,12 @@ let null_comment s =
   null (String.length s - 1)
 
 let comment_stop ep =
-  let current_s = Buffer.contents current in
-  if !Flags.xml_export && Buffer.length current > 0 &&
-    (!between_com || not(null_comment current_s)) then
+  let current_s = Buffer.contents current_comment in
+  if !Flags.xml_export && Buffer.length current_comment > 0 &&
+    (!between_commands || not(null_comment current_s)) then
       Hook.get f_xml_output_comment current_s;
-  (if Flags.do_beautify() && Buffer.length current > 0 &&
-    (!between_com || not(null_comment current_s)) then
+  (if Flags.do_beautify() && Buffer.length current_comment > 0 &&
+    (!between_commands || not(null_comment current_s)) then
     let bp = match !comment_begin with
         Some bp -> bp
       | None ->
@@ -390,9 +391,9 @@ let comment_stop ep =
              ++ int ep);
           ep-1 in
     Pp.comments := ((bp,ep),current_s) :: !Pp.comments);
-  Buffer.clear current;
+  Buffer.clear current_comment;
   comment_begin := None;
-  between_com := false
+  between_commands := false
 
 (* Does not unescape!!! *)
 let rec comm_string loc bp = parser
@@ -548,16 +549,16 @@ let rec next_token loc = parser bp
       | KEYWORD ("." | "...") ->
         if not (blank_or_eof s) then
 	  err (set_loc_pos loc bp (ep+1)) Undefined_token;
-	between_com := true;
+	between_commands := true;
       | _ -> ()
       in
       (t, set_loc_pos loc bp ep)
   | [< ' ('-'|'+'|'*' as c); s >] ->
-      let t,new_between_com =
-        if !between_com then process_sequence loc bp c s, true
+      let t,new_between_commands =
+        if !between_commands then process_sequence loc bp c s, true
         else process_chars loc bp c s,false
       in
-      comment_stop bp; between_com := new_between_com; t
+      comment_stop bp; between_commands := new_between_commands; t
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark loc bp s in
       comment_stop bp; (t, set_loc_pos loc ep bp)
@@ -590,9 +591,9 @@ let rec next_token loc = parser bp
             (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
         | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart), _) ->
             let t = process_chars loc bp (Stream.next s) s in
-            let new_between_com = match t with
-              (KEYWORD ("{"|"}"),_) -> !between_com | _ -> false in
-            comment_stop bp; between_com := new_between_com; t
+            let new_between_commands = match t with
+              (KEYWORD ("{"|"}"),_) -> !between_commands | _ -> false in
+            comment_stop bp; between_commands := new_between_commands; t
         | EmptyStream ->
             comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
 

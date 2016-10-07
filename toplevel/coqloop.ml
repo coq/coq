@@ -23,7 +23,7 @@ type input_buffer = {
   mutable str : string; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
-  mutable tokens : Gram.parsable; (* stream of tokens *)
+  mutable tokens : Gram.coq_parsable; (* stream of tokens *)
   mutable start : int } (* stream count of the first char of the buffer *)
 
 (* Double the size of the buffer. *)
@@ -274,10 +274,12 @@ let rec discard_to_dot () =
     | End_of_input -> raise End_of_input
     | e when CErrors.noncritical e -> ()
 
-let read_sentence () =
+let read_eval_sentence () =
   try
-    let (loc, _ as r) = Vernac.parse_sentence (top_buffer.tokens, None) in
-    CWarnings.set_current_loc loc; r
+    let input = (top_buffer.tokens, None) in
+    let (loc, _ as r) = Vernac.parse_sentence input in
+    CWarnings.set_current_loc loc;
+    Vernac.eval_expr input r
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
@@ -298,7 +300,7 @@ let do_vernac () =
   if !print_emacs then top_stderr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
-    Vernac.eval_expr (read_sentence ())
+    read_eval_sentence ()
   with
     | End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit

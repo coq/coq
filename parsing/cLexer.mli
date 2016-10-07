@@ -34,10 +34,6 @@ type frozen_t
 val freeze : unit -> frozen_t
 val unfreeze : frozen_t -> unit
 
-type com_state
-val com_state: unit -> com_state
-val restore_com_state: com_state -> unit
-
 val xml_output_comment : (string -> unit) Hook.t
 
 val terminal : string -> Tok.t
