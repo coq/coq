@@ -575,18 +575,18 @@ let vernac_inductive poly lo finite indl =
   | [ (_ , _ , _ ,Variant, RecordDecl _),_ ] ->
       CErrors.error "The Variant keyword cannot be used to define a record type. Use Record instead."
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
-      vernac_record (match b with Class true -> Class false | _ -> b)
+      vernac_record (match b with Class _ -> Class false | _ -> b)
        poly finite id bl c oc fs
-  | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
+  | [ ( id , bl , c , Class _, Constructors [l]), [] ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
 	let coe' = if coe then Some true else None in
   	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
       in vernac_record (Class true) poly finite id bl c None [f]
-  | [ ( id , bl , c , Class true, _), _ ] ->
-      CErrors.error "Definitional classes must have a single method"
-  | [ ( id , bl , c , Class false, Constructors _), _ ] ->
+  | [ ( _ , _, _, Class _, Constructors _), [] ] ->
       CErrors.error "Inductive classes not supported"
+  | [ ( id , bl , c , Class _, _), _ :: _ ] ->
+      CErrors.error "where clause not supported for classes"
   | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] ->
       CErrors.error "where clause not supported for (co)inductive records"
   | _ -> let unpack = function
