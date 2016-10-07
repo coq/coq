@@ -48,7 +48,11 @@ let inj_with_occurrences e = (AllOccurrences,e)
 
 let dloc = Loc.ghost
 
-let typ_of env sigma c = Retyping.get_type_of env (Sigma.to_evar_map sigma) c
+let typ_of env sigma c =
+  let open Retyping in
+  try get_type_of ~lax:true env (Sigma.to_evar_map sigma) c
+  with RetypeError e ->
+    user_err_loc (Loc.ghost, "", print_retype_error e)
 
 open Goptions
 
