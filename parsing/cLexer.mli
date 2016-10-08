@@ -36,6 +36,10 @@ val unfreeze : frozen_t -> unit
 
 val xml_output_comment : (string -> unit) Hook.t
 
+(* Retrieve the comments lexed at a given location of the stream
+   currently being processeed *)
+val extract_comments : int -> string list
+
 val terminal : string -> Tok.t
 
 (** The lexer of Coq: *)

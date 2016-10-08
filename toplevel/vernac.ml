@@ -128,11 +128,14 @@ let pr_new_syntax_in_context loc ocom =
   let loc = Loc.unloc loc in
   if !beautify_file then set_formatter_translator();
   let fs = States.freeze ~marshallable:`No in
+  (* Side-effect: order matters *)
+  let before = comment (CLexer.extract_comments (fst loc)) in
   let com = match ocom with
     | Some com -> Ppvernac.pr_vernac com
     | None -> mt() in
+  let after = comment (CLexer.extract_comments (snd loc)) in
   if !beautify_file then
-    Pp.msg_with !Pp_control.std_ft (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
+    Pp.msg_with !Pp_control.std_ft (hov 0 (before ++ com ++ after))
   else
     Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
   States.unfreeze fs;

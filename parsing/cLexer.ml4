@@ -340,18 +340,29 @@ let comm_loc bp = match !comment_begin with
 | None -> comment_begin := Some bp
 | _ -> ()
 
+let comments = ref []
 let current_comment = Buffer.create 8192
 let between_commands = ref true
+
+let rec split_comments comacc acc pos = function
+    [] -> comments := List.rev acc; comacc
+  | ((b,e),c as com)::coms ->
+      (* Take all comments that terminates before pos, or begin exactly
+         at pos (used to print comments attached after an expression) *)
+      if e<=pos || pos=b then split_comments (c::comacc) acc pos coms
+      else split_comments comacc (com::acc) pos coms
+
+let extract_comments pos = split_comments [] [] pos !comments
 
 type comments_state = int option * string * bool * ((int * int) * string) list
 let restore_comments_state (o,s,b,c) =
   comment_begin := o;
   Buffer.clear current_comment; Buffer.add_string current_comment s;
   between_commands := b;
-  Pp.comments := c
+  comments := c
 let default_comments_state = (None,"",true,[])
 let comments_state () =
-  let s = (!comment_begin, Buffer.contents current_comment, !between_commands, !Pp.comments) in
+  let s = (!comment_begin, Buffer.contents current_comment, !between_commands, !comments) in
   restore_comments_state default_comments_state; s
 
 let real_push_char c = Buffer.add_char current_comment c
@@ -390,7 +401,7 @@ let comment_stop ep =
              ++ str current_s ++str"' ending at  "
              ++ int ep);
           ep-1 in
-    Pp.comments := ((bp,ep),current_s) :: !Pp.comments);
+    comments := ((bp,ep),current_s) :: !comments);
   Buffer.clear current_comment;
   comment_begin := None;
   between_commands := false

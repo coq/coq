@@ -77,17 +77,6 @@ open Pp_control
    \end{description}
  *)
 
-let comments = ref []
-
-let rec split_com comacc acc pos = function
-    [] -> comments := List.rev acc; comacc
-  | ((b,e),c as com)::coms ->
-      (* Take all comments that terminates before pos, or begin exactly
-         at pos (used to print comments attached after an expression) *)
-      if e<=pos || pos=b then split_com (c::comacc) acc pos coms
-      else  split_com comacc (com::acc) pos coms
-
-
 type block_type =
   | Pp_hbox of int
   | Pp_vbox of int
@@ -111,7 +100,7 @@ type 'a ppcmd_token =
   | Ppcmd_open_box of block_type
   | Ppcmd_close_box
   | Ppcmd_close_tbox
-  | Ppcmd_comment of int
+  | Ppcmd_comment of string list
   | Ppcmd_open_tag of Tag.t
   | Ppcmd_close_tag
 
@@ -177,7 +166,7 @@ let tab () = Glue.atom(Ppcmd_set_tab)
 let fnl () = Glue.atom(Ppcmd_force_newline)
 let pifb () = Glue.atom(Ppcmd_print_if_broken)
 let ws n = Glue.atom(Ppcmd_white_space n)
-let comment n = Glue.atom(Ppcmd_comment n)
+let comment l = Glue.atom(Ppcmd_comment l)
 
 (* derived commands *)
 let mt () = Glue.empty
@@ -321,8 +310,7 @@ let pp_dirs ?pp_tag ft =
         com_brk ft; Format.pp_force_newline ft ()
     | Ppcmd_print_if_broken   ->
         com_if ft (Lazy.from_fun(fun()->Format.pp_print_if_newline ft ()))
-    | Ppcmd_comment i         ->
-        let coms = split_com [] [] i !comments in
+    | Ppcmd_comment coms      ->
 (*        Format.pp_open_hvbox ft 0;*)
         List.iter (pr_com ft) coms(*;
         Format.pp_close_box ft ()*)

@@ -23,8 +23,7 @@ val ws    : int -> std_ppcmds
 val mt    : unit -> std_ppcmds
 val ismt  : std_ppcmds -> bool
 
-val comment  : int -> std_ppcmds
-val comments : ((int * int) * string) list ref
+val comment  : string list -> std_ppcmds
 
 (** {6 Manipulation commands} *)
 
