@@ -14,6 +14,9 @@ Bugfixes
   binders made more robust.
 - #4780: Induction with universe polymorphism on was creating ill-typed terms.
 - #3070: fixing "subst" in the presence of a chain of dependencies.
+- When used as an argument of an ltac function, "auto" without "with"
+  nor "using" clause now correctly uses only the core hint database by
+  default.
 
 Specification language
 
