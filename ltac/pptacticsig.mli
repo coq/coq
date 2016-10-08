@@ -27,6 +27,9 @@ module type Pp = sig
 
   val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
 
+  val pr_in_clause :
+    ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
+
   val pr_clauses :  bool option ->
     ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
 

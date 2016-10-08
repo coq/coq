@@ -478,6 +478,8 @@ let prgenarginfo arg =
 
 let ppgenarginfo arg = pp (prgenarginfo arg)
 
+let ppgenargargt arg = pp (str (Genarg.ArgT.repr arg))
+
 let ppist ist =
   let pr id arg = prgenarginfo arg in
   pp (pridmap pr ist.Geninterp.lfun)

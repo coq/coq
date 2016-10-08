@@ -450,13 +450,13 @@ module Make
     | None -> mt()
 
   let pr_hyp_location pr_id = function
-    | occs, InHyp -> spc () ++ pr_with_occurrences pr_id occs
+    | occs, InHyp -> pr_with_occurrences pr_id occs
     | occs, InHypTypeOnly ->
-      spc () ++ pr_with_occurrences (fun id ->
+      pr_with_occurrences (fun id ->
         str "(" ++ keyword "type of" ++ spc () ++ pr_id id ++ str ")"
       ) occs
     | occs, InHypValueOnly ->
-      spc () ++ pr_with_occurrences (fun id ->
+      pr_with_occurrences (fun id ->
         str "(" ++ keyword "value of" ++ spc () ++ pr_id id ++ str ")"
       ) occs
 
@@ -469,6 +469,17 @@ module Make
   let pr_in_hyp_as prc pr_id = function
     | None -> mt ()
     | Some (id,ipat) -> pr_in (spc () ++ pr_id id) ++ pr_as_ipat prc ipat
+
+  let pr_in_clause pr_id = function
+    | { onhyps=None; concl_occs=NoOccurrences } ->
+      (str "* |-")
+    | { onhyps=None; concl_occs=occs } ->
+      (pr_with_occurrences (fun () -> str "*") (occs,()))
+    | { onhyps=Some l; concl_occs=NoOccurrences } ->
+      prlist_with_sep (fun () -> str ", ") (pr_hyp_location pr_id) l
+    | { onhyps=Some l; concl_occs=occs } ->
+      let pr_occs = pr_with_occurrences (fun () -> str" |- *") (occs,()) in
+      (prlist_with_sep (fun () -> str", ") (pr_hyp_location pr_id) l ++ pr_occs)
 
   let pr_clauses default_is_concl pr_id = function
     | { onhyps=Some []; concl_occs=occs }
@@ -486,7 +497,7 @@ module Make
         | _ -> pr_with_occurrences (fun () -> str" |- *") (occs,())
       in
       pr_in
-        (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l ++ pr_occs)
+        (prlist_with_sep (fun () -> str", ") (pr_hyp_location pr_id) l ++ pr_occs)
 
   let pr_orient b = if b then mt () else str "<- "
 

@@ -71,3 +71,8 @@ val pr_by_arg_tac :
 
 val retroknowledge_field : Retroknowledge.field Pcoq.Gram.entry
 val wit_retroknowledge_field : (Retroknowledge.field, unit, unit) Genarg.genarg_type
+
+val wit_in_clause :
+  (Id.t Loc.located Locus.clause_expr,
+  Id.t Loc.located Locus.clause_expr,
+  Id.t Locus.clause_expr) Genarg.genarg_type

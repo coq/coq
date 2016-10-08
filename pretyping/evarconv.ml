@@ -45,12 +45,7 @@ let _ = Goptions.declare_bool_option {
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in
     if is_transparent_constant ts cst then
-      let c' = Some (mkProj (Projection.make cst true, c)) in
-	match ReductionBehaviour.get (Globnames.ConstRef cst) with
-	| None -> c'
-	| Some (recargs, nargs, flags) ->
-	  if (List.mem `ReductionNeverUnfold flags) then None
-	  else c'
+      Some (mkProj (Projection.make cst true, c))
     else None
       
 let eval_flexible_term ts env evd c =
