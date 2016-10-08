@@ -43,11 +43,14 @@ type hints_path_atom =
   (* For forward hints, their names is the list of projections *)
   | PathAny
 
+type hint_db_name = string
+
 type 'a with_metadata = private {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
   name  : hints_path_atom; (** A potential name to refer to the hint *) 
+  db    : hint_db_name option;
   code  : 'a; (** the tactic to apply when the concl matches pat *)
 }
 
@@ -77,7 +80,7 @@ val pp_hint_mode : hint_mode -> Pp.std_ppcmds
 module Hint_db :
   sig
     type t
-    val empty : transparent_state -> bool -> t
+    val empty : ?name:hint_db_name -> transparent_state -> bool -> t
     val find : global_reference -> t -> search_entry
     val map_none : t -> full_hint list
 
@@ -112,8 +115,6 @@ module Hint_db :
 
     val unfolds : t -> Id.Set.t * Cset.t
   end
-
-type hint_db_name = string
 
 type hint_db = Hint_db.t
 

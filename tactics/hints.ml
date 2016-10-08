@@ -108,6 +108,7 @@ type 'a with_metadata = {
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
   name  : hints_path_atom; (* A potential name to refer to the hint *) 
+  db : string option; (** The database from which the hint comes *)
   code : 'a;     (* the tactic to apply when the concl matches pat *)
 }
 
@@ -410,7 +411,35 @@ let rec subst_hints_path subst hp =
       if p' == p && q' == q then hp else PathOr (p', q')
   | _ -> hp
 
-module Hint_db = struct
+type hint_db_name = string
+
+module Hint_db :
+sig
+type t
+val empty : ?name:hint_db_name -> transparent_state -> bool -> t
+val find : global_reference -> t -> search_entry
+val map_none : t -> full_hint list
+val map_all : global_reference -> t -> full_hint list
+val map_existential : (global_reference * constr array) -> constr -> t -> full_hint list
+val map_eauto : (global_reference * constr array) -> constr -> t -> full_hint list
+val map_auto : (global_reference * constr array) -> constr -> t -> full_hint list
+val add_one : env -> evar_map -> hint_entry -> t -> t
+val add_list : env -> evar_map -> hint_entry list -> t -> t
+val remove_one : global_reference -> t -> t
+val remove_list : global_reference list -> t -> t
+val iter : (global_reference option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
+val use_dn : t -> bool
+val transparent_state : t -> transparent_state
+val set_transparent_state : t -> transparent_state -> t
+val add_cut : hints_path -> t -> t
+val add_mode : global_reference -> hint_mode array -> t -> t
+val cut : t -> hints_path
+val unfolds : t -> Id.Set.t * Cset.t
+val fold : (global_reference option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
+  t -> 'a -> 'a
+
+end =
+struct
 
   type t = {
     hintdb_state : Names.transparent_state;
@@ -421,20 +450,22 @@ module Hint_db = struct
     hintdb_map : search_entry Constr_map.t;
     (* A list of unindexed entries starting with an unfoldable constant
        or with no associated pattern. *)
-    hintdb_nopat : (global_reference option * stored_data) list
+    hintdb_nopat : (global_reference option * stored_data) list;
+    hintdb_name : string option;
   }
 
   let next_hint_id db =
     let h = db.hintdb_max_id in
     { db with hintdb_max_id = succ db.hintdb_max_id }, h
 
-  let empty st use_dn = { hintdb_state = st;
+  let empty ?name st use_dn = { hintdb_state = st;
 			  hintdb_cut = PathEmpty;
 			  hintdb_unfolds = (Id.Set.empty, Cset.empty);
 			  hintdb_max_id = 0;
 			  use_dn = use_dn;
 			  hintdb_map = Constr_map.empty;
-			  hintdb_nopat = [] }
+			  hintdb_nopat = [];
+			  hintdb_name = name; }
 
   let find key db =
     try Constr_map.find key db.hintdb_map
@@ -502,7 +533,7 @@ module Hint_db = struct
     | _ -> false
 
   let addkv gr id v db =
-    let idv = id, v in
+    let idv = id, { v with db = db.hintdb_name } in
     let k = match gr with
       | Some gr -> if db.use_dn && is_transparent_gr db.hintdb_state gr &&
 	  is_unfold v.code.obj then None else Some gr
@@ -606,8 +637,6 @@ type hint_db = Hint_db.t
 
 type hint_db_table = hint_db Hintdbmap.t ref
 
-type hint_db_name = string
-
 (** Initially created hint databases, for typeclasses and rewrite *)
 
 let typeclasses_db = "typeclass_instances"
@@ -684,6 +713,7 @@ let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
 	    poly = poly;
 	    pat = Some pat;
 	    name = name;
+            db = None;
 	    code = with_uid (Give_exact (c, cty, ctx)); })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c, cty, ctx) =
@@ -704,6 +734,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	    poly = poly;
             pat = Some pat;
 	    name = name;
+            db = None;
             code = with_uid (Res_pf(c,cty,ctx)); })
 	else begin
 	  if not eapply then failwith "make_apply_entry";
@@ -715,6 +746,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	     poly = poly;
              pat = Some pat;
 	     name = name;
+             db = None;
              code = with_uid (ERes_pf(c,cty,ctx)); })
         end
     | _ -> failwith "make_apply_entry"
@@ -799,6 +831,7 @@ let make_unfold eref =
      poly = false;
      pat = None;
      name = PathHints [g];
+     db = None;
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
@@ -809,6 +842,7 @@ let make_extern pri pat tacast =
      poly = false;
      pat = pat;
      name = PathAny;
+     db = None;
      code = with_uid (Extern tacast) })  
 
 let make_mode ref m = 
@@ -832,6 +866,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
 	      poly = poly;
               pat = Some (Patternops.pattern_of_constr env ce.evd (clenv_type ce));
 	      name = name;
+              db = None;
               code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx)) })
 
 
@@ -845,7 +880,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
 
 let get_db dbname =
   try searchtable_map dbname
-  with Not_found -> Hint_db.empty empty_transparent_state false
+  with Not_found -> Hint_db.empty ~name:dbname empty_transparent_state false
 
 let add_hint dbname hintlist =
   let check (_, h) =
@@ -905,7 +940,7 @@ type hint_obj = {
 let load_autohint _ (kn, h) =
   let name = h.hint_name in
   match h.hint_action with
-  | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty st b)
+  | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty ~name st b)
   | AddTransparency (grs, b) -> add_transparency name grs b
   | AddHints hints -> add_hint name hints
   | RemoveHints grs -> remove_hint name grs
