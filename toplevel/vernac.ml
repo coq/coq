@@ -132,7 +132,7 @@ let pr_new_syntax loc ocom =
     | Some com -> Ppvernac.pr_vernac com
     | None -> mt() in
   if !beautify_file then
-    Feedback.msg_notice (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
+    Pp.msg_with !Pp_control.std_ft (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
   else
     Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
   States.unfreeze fs;
