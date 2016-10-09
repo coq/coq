@@ -109,9 +109,13 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
     set_id_for_feedback ?route (Feedback.State id);
     Aux_file.record_in_aux_set_at loc;
     prerr_endline (fun () -> "interpreting " ^ string_of_ppcmds(pr_vernac expr));
-    try Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr))
+    let a = Lexer.com_state () in
+    try
+      Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr));
+      Lexer.restore_com_state a
     with e ->
       let e = Errors.push e in
+      Lexer.restore_com_state a;
       iraise Hooks.(call_process_error_once e)
   end
 
