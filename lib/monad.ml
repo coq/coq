@@ -64,6 +64,9 @@ module type ListS = sig
       its second argument in a tail position. *)
   val iter : ('a -> unit t) -> 'a list -> unit t
 
+  (** Like the regular {!CList.map_filter}. The monadic effects are threaded left*)
+  val map_filter : ('a -> 'b option t) -> 'a list -> 'b list t
+
 
   (** {6 Two-list iterators} *)
 
@@ -138,6 +141,14 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
       | a::b::l -> f a >> f b >> iter f l
 
 
+    let rec map_filter f = function
+      | [] -> return []
+      | a::l ->
+        f a >>= function
+        | None -> map_filter f l
+        | Some b ->
+          map_filter f l >>= fun filtered ->
+          return (b::filtered)
 
     let rec fold_left2 r f x l1 l2 =
       match l1,l2 with

@@ -518,6 +518,10 @@ module Goal : sig
       FIXME: encapsulate the level in an existential type. *)
   val goals : ([ `LZ ], 'r) t tactic list tactic
 
+  (** [unsolved g] is [true] if [g] is still unsolved in the current
+      proof state. *)
+  val unsolved : ('n,'r) t -> bool tactic
+
   (** Compatibility: avoid if possible *)
   val goal : ([ `NF ], 'r) t -> Evar.t
 
