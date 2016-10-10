@@ -243,28 +243,31 @@ val choose_canonical : universe_set -> (Level.t -> bool) (* flexibles *) -> univ
     
 val compute_lbound : (constraint_type * Univ.universe) list -> universe option
 
+type lowermap = constraint_type Univ.LMap.t
+
 val instantiate_with_lbound : 
   Univ.LMap.key ->
   Univ.universe ->
+  lowermap ->
   bool ->
   bool ->
   Univ.LSet.t * Univ.universe option Univ.LMap.t *
     Univ.LSet.t *
-    (bool * bool * Univ.universe) Univ.LMap.t * Univ.constraints ->
+    (bool * bool * Univ.universe * lowermap) Univ.LMap.t * Univ.constraints ->
   (Univ.LSet.t * Univ.universe option Univ.LMap.t *
     Univ.LSet.t *
-     (bool * bool * Univ.universe) Univ.LMap.t * Univ.constraints) *
-    (bool * bool * Univ.universe)
+     (bool * bool * Univ.universe * lowermap) Univ.LMap.t * Univ.constraints) *
+    (bool * bool * Univ.universe * lowermap)
 
 val minimize_univ_variables : 
            Univ.LSet.t ->
            Univ.universe option Univ.LMap.t ->
            Univ.LSet.t ->
-  constraints_map -> constraints_map ->
+           constraints_map -> constraints_map ->
            Univ.constraints ->
            Univ.LSet.t * Univ.universe option Univ.LMap.t *
 	     Univ.LSet.t *
-           (bool * bool * Univ.universe) Univ.LMap.t * Univ.constraints
+           (bool * bool * Univ.universe * lowermap) Univ.LMap.t * Univ.constraints
 
 (** {6 Support for old-style sort-polymorphism } *)
 
