@@ -274,12 +274,10 @@ let rec discard_to_dot () =
     | End_of_input -> raise End_of_input
     | e when CErrors.noncritical e -> ()
 
-let read_eval_sentence () =
+let read_sentence input =
   try
-    let input = (top_buffer.tokens, None) in
     let (loc, _ as r) = Vernac.parse_sentence input in
-    CWarnings.set_current_loc loc;
-    Vernac.eval_expr input r
+    CWarnings.set_current_loc loc; r
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
@@ -300,7 +298,8 @@ let do_vernac () =
   if !print_emacs then top_stderr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
-    read_eval_sentence ()
+    let input = (top_buffer.tokens, None) in
+    Vernac.eval_expr input (read_sentence input)
   with
     | End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
