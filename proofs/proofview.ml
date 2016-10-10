@@ -1016,6 +1016,10 @@ module Goal = struct
     in
     tclUNIT (CList.map_filter map step.comb)
 
+  let unsolved { self=self } =
+    tclEVARMAP >>= fun sigma ->
+    tclUNIT (not (Option.is_empty (advance sigma self)))
+
   (* compatibility *)
   let goal { self=self } = self
 

@@ -466,6 +466,10 @@ module Goal : sig
   (** Recover the list of current goals under focus, without evar-normalization *)
   val goals : [ `LZ ] t tactic list tactic
 
+  (** [unsolved g] is [true] if [g] is still unsolved in the current
+      proof state. *)
+  val unsolved : 'a t -> bool tactic
+
   (** Compatibility: avoid if possible *)
   val goal : [ `NF ] t -> Evar.t
 
