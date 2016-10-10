@@ -6,6 +6,8 @@
 
  *************************************************************************)
 
+open API
+
 let module_refl_name = "ReflOmegaCore"
 let module_refl_path = ["Coq"; "romega"; module_refl_name]
 

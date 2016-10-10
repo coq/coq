@@ -8,6 +8,8 @@
 
 (** Ltac parsing entries *)
 
+open API
+open Grammar_API
 open Loc
 open Names
 open Pcoq

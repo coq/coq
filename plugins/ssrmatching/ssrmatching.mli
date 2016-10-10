@@ -1,6 +1,8 @@
 (* (c) Copyright 2006-2015 Microsoft Corporation and Inria.                  *)
 (* Distributed under the terms of CeCILL-B.                                  *)
 
+open API
+open Grammar_API
 open Genarg
 open Tacexpr
 open Environ

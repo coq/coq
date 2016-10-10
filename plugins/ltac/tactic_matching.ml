@@ -9,6 +9,7 @@
 (** This file extends Matching with the main logic for Ltac's
     (lazy)match and (lazy)match goal. *)
 
+open API
 open Names
 open Tacexpr
 open Context.Named.Declaration

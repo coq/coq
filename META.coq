@@ -291,3 +291,16 @@ package "ltac" (
   archive(native)  = "ltac_plugin.cmx"
 
 )
+
+package "API" (
+
+  description = "Coq API"
+  version     = "8.7"
+
+  requires    = "coq.toplevel"
+  directory   = "API"
+
+  archive(byte)    = "API.cma"
+  archive(native)  = "API.cmxa"
+
+)

@@ -36,6 +36,8 @@ S vernac
 B vernac
 S plugins/ltac
 B plugins/ltac
+S API
+B API
 
 S tools
 B tools

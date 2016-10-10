@@ -173,6 +173,7 @@ dev/myinclude
 
 user-contrib
 .*.sw*
+.#*
 test-suite/.lia.cache
 test-suite/.nra.cache
 

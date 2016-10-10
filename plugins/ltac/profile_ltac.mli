@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open API
+
 (** Ltac profiling primitives *)
 
 val do_profile :

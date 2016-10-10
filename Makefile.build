@@ -128,7 +128,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 COQOPTS=$(COQ_XML) $(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
 
-LOCALINCLUDES=$(addprefix -I , $(SRCDIRS) )
+LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -136,7 +136,7 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=-thread $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=-thread $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
-DEPFLAGS= $(LOCALINCLUDES) -I ide -I ide/utils
+DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$<),, -I ide -I ide/utils)
 
 # On MacOS, the binaries are signed, except our private ones
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
@@ -625,7 +625,7 @@ OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
 coqlib: theories plugins
 
 theories: $(THEORIESVO)
-plugins: $(PLUGINSVO)
+plugins: $(PLUGINSVO) $(PLUGINSCMO)
 
 .PHONY: coqlib theories plugins
 

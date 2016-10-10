@@ -1,3 +1,4 @@
+open API
 open Names
 
 val prove_princ_for_struct :

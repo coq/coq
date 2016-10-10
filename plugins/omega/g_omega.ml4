@@ -15,6 +15,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+open API
+
 DECLARE PLUGIN "omega_plugin"
 
 open Ltac_plugin

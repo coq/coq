@@ -5,7 +5,7 @@
 TOPDIR=.
 BASEDIR=
 
-SOURCEDIRS=lib kernel library pretyping parsing proofs tactics toplevel
+SOURCEDIRS=lib kernel library pretyping parsing proofs tactics toplevel API
 
 default:	usage noargument
 

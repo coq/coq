@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open API
+open Grammar_API
 open Pattern
 open Pp
 open Genredexpr
@@ -14,7 +16,6 @@ open Tacred
 open CErrors
 open Util
 open Names
-open Nameops
 open Libnames
 open Globnames
 open Nametab

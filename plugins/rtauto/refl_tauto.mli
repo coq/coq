@@ -7,6 +7,8 @@
 (************************************************************************)
 (* raises Not_found if no proof is found *)
 
+open API
+
 type atom_env=
     {mutable next:int;
      mutable env:(Term.constr*int) list}

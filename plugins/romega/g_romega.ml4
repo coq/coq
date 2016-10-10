@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+open API
+
 DECLARE PLUGIN "romega_plugin"
 
 open Ltac_plugin

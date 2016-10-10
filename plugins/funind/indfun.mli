@@ -1,3 +1,4 @@
+open API
 open Misctypes
 
 val warn_cannot_define_graph : ?loc:Loc.t -> Pp.std_ppcmds * Pp.std_ppcmds -> unit

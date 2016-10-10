@@ -14,6 +14,7 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+open API
 open Eqdecide
 open Names
 

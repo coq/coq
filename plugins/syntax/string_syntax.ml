@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
+open API
 open Globnames
 open Ascii_syntax_plugin.Ascii_syntax
 open Glob_term

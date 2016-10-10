@@ -8,6 +8,7 @@
 
 (** Generic arguments based on Ltac. *)
 
+open API
 open Genarg
 open Geninterp
 open Tacexpr

@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open API
+
 module Search = Explore.Make(Proof_search)
 
 open Ltac_plugin
