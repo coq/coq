@@ -284,7 +284,7 @@ Definition SmallDrinker'sParadox :=
    relational formulation) without known inconsistency with classical logic,
    though functional relation reification conflicts with classical logic *)
 
-Lemma description_rel_choice_imp_funct_choice :
+Lemma functional_rel_reification_and_rel_choice_imp_fun_choice :
   forall A B : Type,
     FunctionalRelReification_on A B -> RelationalChoice_on A B -> FunctionalChoice_on A B.
 Proof.
@@ -298,7 +298,10 @@ Proof.
   apply HR'R; assumption.
 Qed.
 
-Lemma funct_choice_imp_rel_choice :
+Notation description_rel_choice_imp_funct_choice :=
+  functional_rel_reification_and_rel_choice_imp_fun_choice (compat "8.6").
+
+Lemma fun_choice_imp_rel_choice :
   forall A B : Type, FunctionalChoice_on A B -> RelationalChoice_on A B.
 Proof.
   intros A B FunCh R H.
@@ -311,7 +314,9 @@ Proof.
     trivial.
 Qed.
 
-Lemma funct_choice_imp_description :
+Notation funct_choice_imp_rel_choice := fun_choice_imp_rel_choice (compat "8.6").
+
+Lemma fun_choice_imp_functional_rel_reification :
   forall A B : Type, FunctionalChoice_on A B -> FunctionalRelReification_on A B.
 Proof.
   intros A B FunCh R H.
@@ -324,17 +329,21 @@ Proof.
   exists f; exact H0.
 Qed.
 
-Corollary FunChoice_Equiv_RelChoice_and_ParamDefinDescr :
+Notation funct_choice_imp_description := fun_choice_imp_functional_rel_reification (compat "8.6").
+
+Corollary fun_choice_iff_rel_choice_and_functional_rel_reification :
   forall A B : Type, FunctionalChoice_on A B <->
     RelationalChoice_on A B /\ FunctionalRelReification_on A B.
 Proof.
   intros A B. split.
   intro H; split;
-    [ exact (funct_choice_imp_rel_choice H)
-      | exact (funct_choice_imp_description H) ].
-  intros [H H0]; exact (description_rel_choice_imp_funct_choice H0 H).
+    [ exact (fun_choice_imp_rel_choice H)
+      | exact (fun_choice_imp_functional_rel_reification H) ].
+  intros [H H0]; exact (functional_rel_reification_and_rel_choice_imp_fun_choice H0 H).
 Qed.
 
+Notation FunChoice_Equiv_RelChoice_and_ParamDefinDescr :=
+ fun_choice_iff_rel_choice_and_functional_rel_reification (compat "8.6").
 (**********************************************************************)
 (** * Connection between the guarded, non guarded and omniscient choices *)
 
