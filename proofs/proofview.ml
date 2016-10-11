@@ -642,6 +642,18 @@ let unshelve l p =
   let l = undefined p.solution l in
   { p with comb = p.comb@l }
 
+let mark_in_evm ~goal evd content =
+  let info = Evd.find evd content in
+  let info =
+    if goal then
+      { info with Evd.evar_source = match info.Evd.evar_source with
+            | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
+            | loc,_ -> loc,Evar_kinds.GoalEvar }
+    else info
+  in
+  let info = Typeclasses.mark_unresolvable info in
+  Evd.add evd content info
+
 let with_shelf tac =
   let open Proof in
   Pv.get >>= fun pv ->
@@ -654,8 +666,11 @@ let with_shelf tac =
   let fgoals = Evd.future_goals solution in
   let pgoal = Evd.principal_future_goal solution in
   let sigma = Evd.restore_future_goals sigma fgoals pgoal in
-  Pv.set { npv with shelf; solution = sigma } >>
-  tclUNIT (CList.rev_append gls' gls, ans)
+  (* Ensure we mark and return only unsolved goals *)
+  let gls' = undefined sigma (CList.rev_append gls' gls) in
+  let sigma = CList.fold_left (mark_in_evm ~goal:false) sigma gls' in
+  let npv = { npv with shelf; solution = sigma } in
+  Pv.set npv >> tclUNIT (gls', ans)
 
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
     interval [[0,m-1]].*)
@@ -893,18 +908,11 @@ module Unsafe = struct
   let reset_future_goals p =
     { p with solution = Evd.reset_future_goals p.solution }
 
-  let mark_as_goal_evm evd content =
-    let info = Evd.find evd content in
-    let info =
-      { info with Evd.evar_source = match info.Evd.evar_source with
-      | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
-      | loc,_ -> loc,Evar_kinds.GoalEvar }
-    in
-    let info = Typeclasses.mark_unresolvable info in
-    Evd.add evd content info
-
   let mark_as_goal p gl =
-    { p with solution = mark_as_goal_evm p.solution gl }
+    { p with solution = mark_in_evm ~goal:true p.solution gl }
+
+  let mark_as_unresolvable p gl =
+    { p with solution = mark_in_evm ~goal:false p.solution gl }
 
 end
 
@@ -1107,7 +1115,7 @@ struct
     let sigma = Evd.restore_future_goals sigma prev_future_goals prev_principal_goal in
     (** Select the goals *)
     let comb = undefined sigma (CList.rev evs) in
-    let sigma = CList.fold_left Unsafe.mark_as_goal_evm sigma comb in
+    let sigma = CList.fold_left (mark_in_evm ~goal:true) sigma comb in
     let open Proof in
     InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"simple refine"++spc()++ Hook.get pr_constrv env sigma c)))) >>
     Pv.modify (fun ps -> { ps with solution = sigma; comb; })

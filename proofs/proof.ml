@@ -343,12 +343,19 @@ let run_tactic env tac pr =
      they to be marked as unresolvable. *)
   let undef l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let retrieved = undef (List.rev (Evd.future_goals sigma)) in
-  let shelf = (undef pr.shelf)@retrieved@(undef to_shelve) in
+  let to_shelve = undef to_shelve in
+  let shelf = (undef pr.shelf)@retrieved@to_shelve in
   let proofview =
     List.fold_left
       Proofview.Unsafe.mark_as_goal
       tacticced_proofview
       retrieved
+  in
+  let proofview =
+    List.fold_left
+      Proofview.Unsafe.mark_as_unresolvable
+      proofview
+      to_shelve
   in
   let given_up = pr.given_up@give_up in
   let proofview = Proofview.Unsafe.reset_future_goals proofview in

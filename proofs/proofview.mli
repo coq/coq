@@ -303,8 +303,9 @@ val guard_no_unifiable : unit tactic
     goals of p *)
 val unshelve : Goal.goal list -> proofview -> proofview
 
-(** [with_shelf tac] executes [tac] and returns its result together with the set
-    of goals shelved by [tac]. The current shelf is unchanged. *)
+(** [with_shelf tac] executes [tac] and returns its result together with
+    the set of goals shelved by [tac]. The current shelf is unchanged
+    and the returned list contains only unsolved goals. *)
 val with_shelf : 'a tactic -> (Goal.goal list * 'a) tactic
 
 (** If [n] is positive, [cycle n] puts the [n] first goal last. If [n]
@@ -407,6 +408,9 @@ module Unsafe : sig
   (** Give an evar the status of a goal (changes its source location
       and makes it unresolvable for type classes. *)
   val mark_as_goal : proofview -> Evar.t -> proofview
+
+  (** Make an evar unresolvable for type classes. *)
+  val mark_as_unresolvable : proofview -> Evar.t -> proofview
 end
 
 (** {7 Notations} *)
