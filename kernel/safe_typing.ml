@@ -222,13 +222,6 @@ let inline_private_constants_in_constr = Term_typing.inline_side_effects
 let inline_private_constants_in_definition_entry = Term_typing.inline_entry_side_effects
 let side_effects_of_private_constants x = Term_typing.uniq_seff (List.rev x)
 
-let constant_entry_of_private_constant = function
-  | { Entries.eff = Entries.SEsubproof (kn, cb, eff_env) } ->
-      [ kn, Term_typing.constant_entry_of_side_effect cb eff_env ]
-  | { Entries.eff = Entries.SEscheme (l,_) } ->
-      List.map (fun (_,kn,cb,eff_env) ->
-        kn, Term_typing.constant_entry_of_side_effect cb eff_env) l
-
 let private_con_of_con env c =
   let cbo = Environ.lookup_constant c env.env in
   { Entries.from_env = CEphemeron.create env.revstruct;

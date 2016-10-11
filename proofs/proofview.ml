@@ -1071,6 +1071,23 @@ struct
   let (pr_constrv,pr_constr) =
     Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
 
+  (* Get the side-effect's constant declarations to update the monad's
+   * environmnent *)
+  let add_if_undefined kn cb env =
+    try ignore(Environ.lookup_constant kn env); env
+    with Not_found -> Environ.add_constant kn cb env
+
+  (* Add the side effects to the monad's environment, if not already done. *)
+  let add_side_effect env = function
+    | { Entries.eff = Entries.SEsubproof (kn, cb, eff_env) } ->
+      add_if_undefined kn cb env
+    | { Entries.eff = Entries.SEscheme (l,_) } ->
+      List.fold_left (fun env (_,kn,cb,eff_env) ->
+          add_if_undefined kn cb env) env l
+
+  let add_side_effects env effects =
+    List.fold_left (fun env eff -> add_side_effect env eff) env effects
+
   let refine ?(unsafe = true) f = Goal.enter begin fun gl ->
     let sigma = Goal.sigma gl in
     let env = Goal.env gl in
@@ -1083,6 +1100,10 @@ struct
     let (sigma, c) = f (Evd.reset_future_goals sigma) in
     let evs = Evd.future_goals sigma in
     let evkmain = Evd.principal_future_goal sigma in
+    (** Redo the effects in sigma in the monad's env *)
+    let privates_csts = Evd.eval_side_effects sigma in
+    let sideff = Safe_typing.side_effects_of_private_constants privates_csts in
+    let env = add_side_effects env sideff in
     (** Check that the introduced evars are well-typed *)
     let fold accu ev = typecheck_evar ev env accu in
     let sigma = if unsafe then sigma else CList.fold_left fold sigma evs in
@@ -1109,8 +1130,11 @@ struct
     let comb = undefined sigma (CList.rev evs) in
     let sigma = CList.fold_left Unsafe.mark_as_goal_evm sigma comb in
     let open Proof in
-    InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"simple refine"++spc()++ Hook.get pr_constrv env sigma c)))) >>
-    Pv.modify (fun ps -> { ps with solution = sigma; comb; })
+    InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"simple refine"++spc()++
+                                                 Hook.get pr_constrv env sigma c)))) >>
+      (** We reset the logical environment extended with the effects. *)
+      Env.set (Environ.reset_context env) >>
+      Pv.modify (fun ps -> { ps with solution = sigma; comb; })
   end
 
   (** Useful definitions *)

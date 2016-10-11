@@ -97,7 +97,12 @@ type module_entry =
   | MExpr of
       module_params_entry * module_struct_entry * module_struct_entry option
 
-type seff_env = [ `Nothing | `Opaque of Constr.t * Univ.universe_context_set ]
+
+type seff_env =
+  [ `Nothing
+  (* The proof term and its universes.
+     Same as the constant_body's but not in an ephemeron *)
+  | `Opaque of Constr.t * Univ.universe_context_set ]
 
 type side_eff =
   | SEsubproof of constant * Declarations.constant_body * seff_env
