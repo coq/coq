@@ -10,6 +10,10 @@
 
 (** Locations *)
 
+let file_loc_of_file = function
+| None -> ""
+| Some f -> f
+
 IFDEF CAMLP5 THEN
 
 module CompatLoc = struct
@@ -29,7 +33,7 @@ let to_coqloc loc =
     Loc.line_nb_last = Ploc.line_nb_last loc;
     Loc.bol_pos_last = Ploc.bol_pos_last loc; }
 
-let make_loc fname line_nb bol_pos bp ep = Ploc.make_loc fname line_nb bol_pos (bp, ep) ""
+let make_loc fname line_nb bol_pos bp ep = Ploc.make_loc (file_loc_of_file fname) line_nb bol_pos (bp, ep) ""
 
 (* Update a loc without allocating an intermediate pair *)
 let set_loc_pos loc bp ep =
@@ -80,7 +84,7 @@ let to_coqloc loc =
     Loc.bol_pos_last = CompatLoc.stop_bol loc; }
 
 let make_loc fname line_nb bol_pos start stop =
-  CompatLoc.of_tuple (fname, line_nb, bol_pos, start, line_nb, bol_pos, stop, false)
+  CompatLoc.of_tuple (file_loc_of_file fname, line_nb, bol_pos, start, line_nb, bol_pos, stop, false)
 
 open CompatLoc
 
@@ -97,7 +101,7 @@ let bump_loc_line_last loc bol_pos =
 	    stop_line loc + 1, bol_pos, stop_off loc, is_ghost loc)
 
 let set_loc_file loc fname =
-  of_tuple (fname, start_line loc, start_bol loc, start_off loc,
+  of_tuple (file_loc_of_file fname, start_line loc, start_bol loc, start_off loc,
 	    stop_line loc, stop_bol loc, stop_off loc, is_ghost loc)
 
 let after loc =
@@ -138,20 +142,22 @@ module type LexerSig = sig
     exception E of t
     val to_string : t -> string
   end
-  type comments_state
-  val default_comments_state : comments_state
-  val comments_state : unit -> comments_state
-  val restore_comments_state : comments_state -> unit
+  type lexer_state
+  val init_lexer_state : string option -> lexer_state
+  val set_lexer_state : lexer_state -> unit
+  val release_lexer_state : unit -> lexer_state
+  val drop_lexer_state : unit -> unit
 end
 
 ELSE
 
 module type LexerSig = sig
   include Camlp4.Sig.Lexer with module Loc = CompatLoc and type Token.t = Tok.t
-  type comments_state
-  val default_comments_state : comments_state
-  val comments_state : unit -> comments_state
-  val restore_comments_state : comments_state -> unit
+  type lexer_state
+  val init_lexer_state : string option -> lexer_state
+  val set_lexer_state : lexer_state -> unit
+  val release_lexer_state : unit -> lexer_state
+  val drop_lexer_state : unit -> unit
 end
 
 END
@@ -172,7 +178,7 @@ module type GrammarSig = sig
   type extend_statment =
       Gramext.position option * single_extend_statment list
   type coq_parsable
-  val parsable : char Stream.t -> coq_parsable
+  val parsable : ?file:string -> char Stream.t -> coq_parsable
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
@@ -193,32 +199,34 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
       string option * Gramext.g_assoc option * production_rule list
   type extend_statment =
       Gramext.position option * single_extend_statment list
-  type coq_parsable = parsable * L.comments_state ref
-  let parsable c =
-    let state = ref L.default_comments_state in (parsable c, state)
+  type coq_parsable = parsable * L.lexer_state ref
+  let parsable ?file c =
+    let state = ref (L.init_lexer_state file) in
+    L.set_lexer_state !state;
+    let a = parsable c in
+    state := L.release_lexer_state ();
+    (a,state)
   let action = Gramext.action
   let entry_create = Entry.create
   let entry_parse e (p,state) =
-    L.restore_comments_state !state;
+    L.set_lexer_state !state;
     try
       let c = Entry.parse e p in
-      state := L.comments_state ();
-      L.restore_comments_state L.default_comments_state;
+      state := L.release_lexer_state ();
       c
     with Exc_located (loc,e) ->
-      L.restore_comments_state L.default_comments_state;
+      L.drop_lexer_state ();
       let loc' = Loc.get_loc (Exninfo.info e) in
       let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
       Loc.raise loc e
   let with_parsable (p,state) f x =
-    L.restore_comments_state !state;
+    L.set_lexer_state !state;
     try
       let a = f x in
-      state := L.comments_state ();
-      L.restore_comments_state L.default_comments_state;
+      state := L.release_lexer_state ();
       a
     with e ->
-      L.restore_comments_state L.default_comments_state;
+      L.drop_lexer_state ();
       raise e
 
   let entry_print ft x = Entry.print ft x
@@ -234,7 +242,7 @@ module type GrammarSig = sig
   type 'a entry = 'a Entry.t
   type action = Action.t
   type coq_parsable
-  val parsable : char Stream.t -> coq_parsable
+  val parsable : ?file:string -> char Stream.t -> coq_parsable
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
@@ -249,31 +257,28 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   include Camlp4.Struct.Grammar.Static.Make (L)
   type 'a entry = 'a Entry.t
   type action = Action.t
-  type comments_state = int option * string * bool * ((int * int) * string) list
-  type coq_parsable = char Stream.t * L.comments_state ref
-  let parsable s = let state = ref L.default_comments_state in (s, state)
+  type coq_parsable = char Stream.t * L.lexer_state ref
+  let parsable ?file s = let state = ref (L.init_lexer_state file) in (s, state)
   let action = Action.mk
   let entry_create = Entry.mk
   let entry_parse e (s,state) =
-    L.restore_comments_state !state;
+    L.set_lexer_state !state;
     try
       let c = parse e (*FIXME*)CompatLoc.ghost s in
-      state := L.comments_state ();
-      L.restore_comments_state L.default_comments_state;
+      state := L.release_lexer_state ();
       c
     with Exc_located (loc,e) ->
-      L.restore_comments_state L.default_comments_state;
-      raise_coq_loc loc e
+      L.drop_lexer_state ();
+      raise_coq_loc loc e;;
   let with_parsable (p,state) f x =
-    L.restore_comments_state !state;
+    L.set_lexer_state !state;
     try
       let a = f x in
-      state := L.comments_state ();
-      L.restore_comments_state L.default_comments_state;
+      state := L.release_lexer_state ();
       a
     with e ->
-      L.restore_comments_state L.default_comments_state;
-      Pervasives.raise e
+      L.drop_lexer_state ();
+      Pervasives.raise e;;
   let entry_print ft x = Entry.print ft x
   let srules' = srules (entry_create "dummy")
 end

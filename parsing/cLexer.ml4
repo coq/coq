@@ -101,14 +101,6 @@ module Error = struct
 end
 open Error
 
-let current_file = ref ""
-
-let get_current_file () =
-  !current_file
-
-let set_current_file ~fname =
-  current_file := fname
-
 let err loc str = Loc.raise (Compat.to_coqloc loc) (Error.E str)
 
 let bad_token str = raise (Error.E (Bad_token str))
@@ -334,6 +326,9 @@ let rec string loc ~comm_level bp len = parser
 (* Hook for exporting comment into xml theory files *)
 let (f_xml_output_comment, xml_output_comment) = Hook.make ~default:ignore ()
 
+(* To associate locations to a file name *)
+let current_file = ref None
+
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
 let comm_loc bp = match !comment_begin with
@@ -354,16 +349,20 @@ let rec split_comments comacc acc pos = function
 
 let extract_comments pos = split_comments [] [] pos !comments
 
-type comments_state = int option * string * bool * ((int * int) * string) list
-let restore_comments_state (o,s,b,c) =
+(* The state of the lexer visible from outside *)
+type lexer_state = int option * string * bool * ((int * int) * string) list * string option
+
+let init_lexer_state f = (None,"",true,[],f)
+let set_lexer_state (o,s,b,c,f) =
   comment_begin := o;
   Buffer.clear current_comment; Buffer.add_string current_comment s;
   between_commands := b;
-  comments := c
-let default_comments_state = (None,"",true,[])
-let comments_state () =
-  let s = (!comment_begin, Buffer.contents current_comment, !between_commands, !comments) in
-  restore_comments_state default_comments_state; s
+  comments := c;
+  current_file := f
+let release_lexer_state () =
+  (!comment_begin, Buffer.contents current_comment, !between_commands, !comments, !current_file)
+let drop_lexer_state () =
+    set_lexer_state (init_lexer_state None)
 
 let real_push_char c = Buffer.add_char current_comment c
 
