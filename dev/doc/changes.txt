@@ -2,6 +2,11 @@
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 
+** Parsing **
+
+Pcoq.parsable now takes an extra optional filename argument so as to
+bind locations to a file name when relevant.
+
 ** Files **
 
 To avoid clashes with OCaml's compiler libs, the following files were renamed:

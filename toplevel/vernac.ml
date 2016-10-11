@@ -81,7 +81,7 @@ let open_file_twice_if verbosely longfname =
   let in_chan = open_utf8_file_in longfname in
   let verb_ch =
     if verbosely then Some (open_utf8_file_in longfname) else None in
-  let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
+  let po = Pcoq.Gram.parsable ~file:longfname (Stream.of_channel in_chan) in
   (in_chan, longfname, (po, verb_ch))
 
 let close_input in_chan (_,verb) =
@@ -145,13 +145,6 @@ let pr_new_syntax (po,_) loc ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
   Pcoq.Gram.with_parsable po (pr_new_syntax_in_context loc) ocom
 
-let save_translator () =
-  !chan_beautify
-
-let restore_translator ch =
-  if !Flags.beautify_file then close_out !chan_beautify;
-  chan_beautify := ch
-
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
 
@@ -186,22 +179,17 @@ let rec vernac_com input checknav (loc,com) =
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-	let st = save_translator () in
-        let old_lexer_file = CLexer.get_current_file () in
-        CLexer.set_current_file f;
-	if !Flags.beautify_file then
-	  begin
-	    chan_beautify := open_out (f^beautify_suffix);
-          end;
+	let ch = !chan_beautify in
+	if !Flags.beautify_file then chan_beautify := open_out (f^beautify_suffix);
 	begin
 	  try
             Flags.silently (read_vernac_file verbosely) f;
-	    restore_translator st;
-            CLexer.set_current_file old_lexer_file;
+            if !Flags.beautify_file then close_out !chan_beautify;
+            chan_beautify := ch;
 	  with reraise ->
             let reraise = CErrors.push reraise in
-	    restore_translator st;
-            CLexer.set_current_file old_lexer_file;
+            if !Flags.beautify_file then close_out !chan_beautify;
+            chan_beautify := ch;
 	    iraise reraise
 	end
 
@@ -269,16 +257,12 @@ let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
 let load_vernac verb file =
   chan_beautify :=
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
-    let old_lexer_file = CLexer.get_current_file () in
   try
-    CLexer.set_current_file file;
     Flags.silently (read_vernac_file verb) file;
     if !Flags.beautify_file then close_out !chan_beautify;
-    CLexer.set_current_file old_lexer_file;
   with any ->
     let (e, info) = CErrors.push any in
     if !Flags.beautify_file then close_out !chan_beautify;
-    CLexer.set_current_file old_lexer_file;
     iraise (disable_drop e, info)
 
 let warn_file_no_extension =
