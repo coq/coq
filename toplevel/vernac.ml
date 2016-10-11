@@ -178,16 +178,7 @@ let rec vernac_com po chan_beautify checknav (loc,com) =
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-	let chan_beautify = if !Flags.beautify_file then open_out (f^beautify_suffix) else chan_beautify in
-	begin
-	  try
-            Flags.silently (read_vernac_file verbosely chan_beautify) f;
-            if !Flags.beautify_file then close_out chan_beautify;
-	  with reraise ->
-            let reraise = CErrors.push reraise in
-            if !Flags.beautify_file then close_out chan_beautify;
-	    iraise reraise
-	end
+        load_vernac verbosely f
 
     | v when !just_parsing -> ()
 
@@ -232,6 +223,18 @@ and read_vernac_file verbosely chan_beautify s =
       | reraise ->
 	 iraise (disable_drop e, info)
 
+(* Load a vernac file. CErrors are annotated with file and location *)
+and load_vernac verbosely file =
+  let chan_beautify =
+    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout in
+  try
+    Flags.silently (read_vernac_file verbosely chan_beautify) file;
+    if !Flags.beautify_file then close_out chan_beautify;
+  with any ->
+    let (e, info) = CErrors.push any in
+    if !Flags.beautify_file then close_out chan_beautify;
+    iraise (disable_drop e, info)
+
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
    It executes one vernacular command. By default the command is
    considered as non-state-preserving, in which case we add it to the
@@ -248,18 +251,6 @@ let eval_expr po loc_ast = vernac_com po stdout checknav loc_ast
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
 let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
-
-(* Load a vernac file. CErrors are annotated with file and location *)
-let load_vernac verb file =
-  let chan_beautify =
-    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout in
-  try
-    Flags.silently (read_vernac_file verb chan_beautify) file;
-    if !Flags.beautify_file then close_out chan_beautify;
-  with any ->
-    let (e, info) = CErrors.push any in
-    if !Flags.beautify_file then close_out chan_beautify;
-    iraise (disable_drop e, info)
 
 let warn_file_no_extension =
   CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
