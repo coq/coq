@@ -21,6 +21,7 @@ Goal True.
   unshelve opose (@vect_sigT_eqdec _ _ _ _) as H.
   all:cycle 2.
   eapply existT. (*BUG: Why does this do typeclass resolution in the evar?*)
+  Focus 5.
 Abort.
 
 Goal True.
@@ -28,4 +29,5 @@ Goal True.
   Unshelve.
   all:cycle 3.
   eapply existT. (*This does no typeclass resultion, which is correct.*)
+  Focus 5.
 Abort.
