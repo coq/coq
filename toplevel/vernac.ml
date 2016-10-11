@@ -185,7 +185,7 @@ let print_cmd_header loc com =
   Pp.pp_with !Pp_control.std_ft (pp_cmd_header loc com);
   Format.pp_print_flush !Pp_control.std_ft ()
 
-let rec vernac_com po chan_beautify checknav (loc,com) =
+let rec interp_vernac po chan_beautify checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
@@ -210,15 +210,18 @@ let rec vernac_com po chan_beautify checknav (loc,com) =
       if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
       else iraise (reraise, info)
 
-and read_vernac_file verbosely chan_beautify s =
-  let (in_chan, fname, input) = open_file_twice_if verbosely s in
+(* Load a vernac file. CErrors are annotated with file and location *)
+and load_vernac verbosely file =
+  let chan_beautify =
+    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout in
+  let (in_chan, fname, input) = open_file_twice_if verbosely file in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
-      let loc_ast = parse_sentence input in
+      let loc_ast = Flags.silently parse_sentence input in
       CWarnings.set_current_loc (fst loc_ast);
-      vernac_com (fst input) chan_beautify checknav_simple loc_ast;
+      Flags.silently (interp_vernac (fst input) chan_beautify checknav_simple) loc_ast;
     done
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
@@ -226,21 +229,11 @@ and read_vernac_file verbosely chan_beautify s =
     match e with
       | End_of_input ->
           if do_beautify () then
-            pr_new_syntax (fst input) chan_beautify (Loc.make_loc (max_int,max_int)) None
+            pr_new_syntax (fst input) chan_beautify (Loc.make_loc (max_int,max_int)) None;
+          if !Flags.beautify_file then close_out chan_beautify;
       | reraise ->
+         if !Flags.beautify_file then close_out chan_beautify;
 	 iraise (disable_drop e, info)
-
-(* Load a vernac file. CErrors are annotated with file and location *)
-and load_vernac verbosely file =
-  let chan_beautify =
-    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout in
-  try
-    Flags.silently (read_vernac_file verbosely chan_beautify) file;
-    if !Flags.beautify_file then close_out chan_beautify;
-  with any ->
-    let (e, info) = CErrors.push any in
-    if !Flags.beautify_file then close_out chan_beautify;
-    iraise (disable_drop e, info)
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
    It executes one vernacular command. By default the command is
@@ -249,7 +242,7 @@ and load_vernac verbosely file =
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
 
-let eval_expr po loc_ast = vernac_com po stdout checknav_deep loc_ast
+let process_expr po loc_ast = interp_vernac po stdout checknav_deep loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
