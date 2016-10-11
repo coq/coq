@@ -230,11 +230,9 @@ let compile_files () =
   if !compile_list == [] then ()
   else
     let init_state = States.freeze ~marshallable:`No in
-    let coqdoc_init_state = CLexer.location_table () in
     Feedback.(add_feeder debug_feeder);
     List.iter (fun vf ->
         States.unfreeze init_state;
-        CLexer.restore_location_table coqdoc_init_state;
         compile_file vf)
       (List.rev !compile_list)
 
