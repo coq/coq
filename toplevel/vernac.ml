@@ -18,6 +18,8 @@ open Vernacexpr
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
+let user_error loc s = CErrors.user_err_loc (loc,"_",str s)
+
 (* Navigation commands are allowed in a coqtop session but not in a .v file *)
 
 let rec is_navigation_vernac = function
@@ -41,6 +43,14 @@ and is_deep_navigation_vernac = function
 let is_reset = function
   | VernacResetInitial | VernacResetName _ -> true
   | _ -> false
+
+let checknav_simple loc cmd =
+  if is_navigation_vernac cmd && not (is_reset cmd) then
+    user_error loc "Navigation commands forbidden in files."
+
+let checknav_deep loc ast =
+  if is_deep_navigation_vernac ast then
+    user_error loc "Navigation commands forbidden in nested commands."
 
 (* When doing Load on a file, two behaviors are possible:
 
@@ -69,8 +79,6 @@ let _ =
 let disable_drop = function
   | Drop -> CErrors.error "Drop is forbidden."
   | e -> e
-
-let user_error loc s = CErrors.user_err_loc (loc,"_",str s)
 
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.
@@ -203,10 +211,6 @@ let rec vernac_com po chan_beautify checknav (loc,com) =
       else iraise (reraise, info)
 
 and read_vernac_file verbosely chan_beautify s =
-  let checknav loc cmd =
-    if is_navigation_vernac cmd && not (is_reset cmd) then
-	user_error loc "Navigation commands forbidden in files"
-  in
   let (in_chan, fname, input) = open_file_twice_if verbosely s in
   try
     (* we go out of the following infinite loop when a End_of_input is
@@ -214,7 +218,7 @@ and read_vernac_file verbosely chan_beautify s =
     while true do
       let loc_ast = parse_sentence input in
       CWarnings.set_current_loc (fst loc_ast);
-      vernac_com (fst input) chan_beautify checknav loc_ast;
+      vernac_com (fst input) chan_beautify checknav_simple loc_ast;
     done
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
@@ -245,11 +249,7 @@ and load_vernac verbosely file =
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
 
-let checknav loc ast =
-  if is_deep_navigation_vernac ast then
-    user_error loc "Navigation commands forbidden in nested commands"
-
-let eval_expr po loc_ast = vernac_com po stdout checknav loc_ast
+let eval_expr po loc_ast = vernac_com po stdout checknav_deep loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
