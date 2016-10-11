@@ -299,7 +299,7 @@ let do_vernac () =
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.eval_expr input (read_sentence input)
+    Vernac.eval_expr top_buffer.tokens (read_sentence input)
   with
     | End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
