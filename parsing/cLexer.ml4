@@ -626,12 +626,6 @@ let loct_func loct i =
 
 let loct_add loct i loc = Hashtbl.add loct i loc
 
-let current_location_table = ref (loct_create ())
-
-type location_table = (int, Compat.CompatLoc.t) Hashtbl.t
-let location_table () = !current_location_table
-let restore_location_table t = current_location_table := t
-
 (** {6 The lexer of Coq} *)
 
 (** Note: removing a token.
@@ -669,7 +663,6 @@ let func cs =
 	 cur_loc := Compat.after loc;
          loct_add loct i loc; Some tok)
   in
-  current_location_table := loct;
   (ts, loct_func loct)
 
 let lexer = {
@@ -706,7 +699,6 @@ end
 let mk () =
   let loct = loct_create () in
   let cur_loc = ref (Compat.make_loc !current_file 1 0 0 0) in
-  current_location_table := loct; 
   let rec self init_loc (* FIXME *) =
     parser i
        [< (tok, loc) = next_token !cur_loc; s >] ->

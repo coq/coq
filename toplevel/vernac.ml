@@ -145,17 +145,12 @@ let pr_new_syntax (po,_) loc ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
   Pcoq.Gram.with_parsable po (pr_new_syntax_in_context loc) ocom
 
-let save_translator_coqdoc () =
-  (* translator state *)
-  let ch = !chan_beautify in
-  (* end translator state *)
-  let coqdocstate = CLexer.location_table () in
-  ch,coqdocstate
+let save_translator () =
+  !chan_beautify
 
-let restore_translator_coqdoc (ch,coqdocstate) =
+let restore_translator ch =
   if !Flags.beautify_file then close_out !chan_beautify;
-  chan_beautify := ch;
-  CLexer.restore_location_table coqdocstate
+  chan_beautify := ch
 
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
@@ -191,7 +186,7 @@ let rec vernac_com input checknav (loc,com) =
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-	let st = save_translator_coqdoc () in
+	let st = save_translator () in
         let old_lexer_file = CLexer.get_current_file () in
         CLexer.set_current_file f;
 	if !Flags.beautify_file then
@@ -201,11 +196,11 @@ let rec vernac_com input checknav (loc,com) =
 	begin
 	  try
             Flags.silently (read_vernac_file verbosely) f;
-	    restore_translator_coqdoc st;
+	    restore_translator st;
             CLexer.set_current_file old_lexer_file;
 	  with reraise ->
             let reraise = CErrors.push reraise in
-	    restore_translator_coqdoc st;
+	    restore_translator st;
             CLexer.set_current_file old_lexer_file;
 	    iraise reraise
 	end
