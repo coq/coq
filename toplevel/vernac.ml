@@ -118,15 +118,14 @@ let just_parsing = ref false
 let chan_beautify = ref stdout
 let beautify_suffix = ".beautified"
 
-let set_formatter_translator() =
-  let ch = !chan_beautify in
+let set_formatter_translator ch =
   let out s b e = output ch s b e in
   Format.set_formatter_output_functions out (fun () -> flush ch);
   Format.set_max_boxes max_int
 
-let pr_new_syntax_in_context loc ocom =
+let pr_new_syntax_in_context loc chan_beautify ocom =
   let loc = Loc.unloc loc in
-  if !beautify_file then set_formatter_translator();
+  if !beautify_file then set_formatter_translator chan_beautify;
   let fs = States.freeze ~marshallable:`No in
   (* Side-effect: order matters *)
   let before = comment (CLexer.extract_comments (fst loc)) in
@@ -141,9 +140,9 @@ let pr_new_syntax_in_context loc ocom =
   States.unfreeze fs;
   Format.set_formatter_out_channel stdout
 
-let pr_new_syntax po loc ocom =
+let pr_new_syntax po loc chan_beautify ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
-  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context loc) ocom
+  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context chan_beautify loc) ocom
 
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
@@ -173,23 +172,20 @@ let print_cmd_header loc com =
   Pp.pp_with !Pp_control.std_ft (pp_cmd_header loc com);
   Format.pp_print_flush !Pp_control.std_ft ()
 
-let rec vernac_com po checknav (loc,com) =
+let rec vernac_com po chan_beautify checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-	let ch = !chan_beautify in
-	if !Flags.beautify_file then chan_beautify := open_out (f^beautify_suffix);
+	let chan_beautify = if !Flags.beautify_file then open_out (f^beautify_suffix) else chan_beautify in
 	begin
 	  try
-            Flags.silently (read_vernac_file verbosely) f;
-            if !Flags.beautify_file then close_out !chan_beautify;
-            chan_beautify := ch;
+            Flags.silently (read_vernac_file verbosely chan_beautify) f;
+            if !Flags.beautify_file then close_out chan_beautify;
 	  with reraise ->
             let reraise = CErrors.push reraise in
-            if !Flags.beautify_file then close_out !chan_beautify;
-            chan_beautify := ch;
+            if !Flags.beautify_file then close_out chan_beautify;
 	    iraise reraise
 	end
 
@@ -199,7 +195,7 @@ let rec vernac_com po checknav (loc,com) =
   in
     try
       checknav loc com;
-      if do_beautify () then pr_new_syntax po loc (Some com);
+      if do_beautify () then pr_new_syntax po chan_beautify loc (Some com);
       (* XXX: This is not 100% correct if called from an IDE context *)
       if !Flags.time then print_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
@@ -211,7 +207,7 @@ let rec vernac_com po checknav (loc,com) =
       if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
       else iraise (reraise, info)
 
-and read_vernac_file verbosely s =
+and read_vernac_file verbosely chan_beautify s =
   let checknav loc cmd =
     if is_navigation_vernac cmd && not (is_reset cmd) then
 	user_error loc "Navigation commands forbidden in files"
@@ -223,7 +219,7 @@ and read_vernac_file verbosely s =
     while true do
       let loc_ast = parse_sentence input in
       CWarnings.set_current_loc (fst loc_ast);
-      vernac_com (fst input) checknav loc_ast;
+      vernac_com (fst input) chan_beautify checknav loc_ast;
     done
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
@@ -232,7 +228,7 @@ and read_vernac_file verbosely s =
     match e with
       | End_of_input ->
           if do_beautify () then
-            pr_new_syntax (fst input) (Loc.make_loc (max_int,max_int)) None
+            pr_new_syntax (fst input) chan_beautify (Loc.make_loc (max_int,max_int)) None
       | reraise ->
 	 iraise (disable_drop e, info)
 
@@ -247,7 +243,7 @@ let checknav loc ast =
   if is_deep_navigation_vernac ast then
     user_error loc "Navigation commands forbidden in nested commands"
 
-let eval_expr po loc_ast = vernac_com po checknav loc_ast
+let eval_expr po loc_ast = vernac_com po stdout checknav loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
@@ -255,14 +251,14 @@ let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
 
 (* Load a vernac file. CErrors are annotated with file and location *)
 let load_vernac verb file =
-  chan_beautify :=
-    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
+  let chan_beautify =
+    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout in
   try
-    Flags.silently (read_vernac_file verb) file;
-    if !Flags.beautify_file then close_out !chan_beautify;
+    Flags.silently (read_vernac_file verb chan_beautify) file;
+    if !Flags.beautify_file then close_out chan_beautify;
   with any ->
     let (e, info) = CErrors.push any in
-    if !Flags.beautify_file then close_out !chan_beautify;
+    if !Flags.beautify_file then close_out chan_beautify;
     iraise (disable_drop e, info)
 
 let warn_file_no_extension =
