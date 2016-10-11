@@ -141,7 +141,7 @@ let pr_new_syntax_in_context loc ocom =
   States.unfreeze fs;
   Format.set_formatter_out_channel stdout
 
-let pr_new_syntax (po,_) loc ocom =
+let pr_new_syntax po loc ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
   Pcoq.Gram.with_parsable po (pr_new_syntax_in_context loc) ocom
 
@@ -173,7 +173,7 @@ let print_cmd_header loc com =
   Pp.pp_with !Pp_control.std_ft (pp_cmd_header loc com);
   Format.pp_print_flush !Pp_control.std_ft ()
 
-let rec vernac_com input checknav (loc,com) =
+let rec vernac_com po checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
@@ -199,7 +199,7 @@ let rec vernac_com input checknav (loc,com) =
   in
     try
       checknav loc com;
-      if do_beautify () then pr_new_syntax input loc (Some com);
+      if do_beautify () then pr_new_syntax po loc (Some com);
       (* XXX: This is not 100% correct if called from an IDE context *)
       if !Flags.time then print_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
@@ -223,7 +223,7 @@ and read_vernac_file verbosely s =
     while true do
       let loc_ast = parse_sentence input in
       CWarnings.set_current_loc (fst loc_ast);
-      vernac_com input checknav loc_ast;
+      vernac_com (fst input) checknav loc_ast;
     done
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
@@ -232,7 +232,7 @@ and read_vernac_file verbosely s =
     match e with
       | End_of_input ->
           if do_beautify () then
-            pr_new_syntax input (Loc.make_loc (max_int,max_int)) None
+            pr_new_syntax (fst input) (Loc.make_loc (max_int,max_int)) None
       | reraise ->
 	 iraise (disable_drop e, info)
 
@@ -247,7 +247,7 @@ let checknav loc ast =
   if is_deep_navigation_vernac ast then
     user_error loc "Navigation commands forbidden in nested commands"
 
-let eval_expr input loc_ast = vernac_com input checknav loc_ast
+let eval_expr po loc_ast = vernac_com po checknav loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
