@@ -127,18 +127,23 @@ let pr_new_syntax_in_context loc chan_beautify ocom =
   let loc = Loc.unloc loc in
   if !beautify_file then set_formatter_translator chan_beautify;
   let fs = States.freeze ~marshallable:`No in
-  (* Side-effect: order matters *)
-  let before = comment (CLexer.extract_comments (fst loc)) in
-  let com = match ocom with
-    | Some com -> Ppvernac.pr_vernac com
-    | None -> mt() in
-  let after = comment (CLexer.extract_comments (snd loc)) in
-  if !beautify_file then
-    Pp.msg_with !Pp_control.std_ft (hov 0 (before ++ com ++ after))
-  else
-    Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
-  States.unfreeze fs;
-  Format.set_formatter_out_channel stdout
+  (* The content of this is not supposed to fail, but if ever *)
+  try
+    (* Side-effect: order matters *)
+    let before = comment (CLexer.extract_comments (fst loc)) in
+    let com = match ocom with
+      | Some com -> Ppvernac.pr_vernac com
+      | None -> mt() in
+    let after = comment (CLexer.extract_comments (snd loc)) in
+    if !beautify_file then
+      Pp.msg_with !Pp_control.std_ft (hov 0 (before ++ com ++ after))
+    else
+      Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
+    States.unfreeze fs;
+    Format.set_formatter_out_channel stdout
+  with any ->
+    States.unfreeze fs;
+    Format.set_formatter_out_channel stdout
 
 let pr_new_syntax po loc chan_beautify ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
@@ -193,7 +198,6 @@ let rec vernac_com po chan_beautify checknav (loc,com) =
       interp com
     with reraise ->
       let (reraise, info) = CErrors.push reraise in
-      Format.set_formatter_out_channel stdout;
       let loc' = Option.default Loc.ghost (Loc.get_loc info) in
       if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
       else iraise (reraise, info)
@@ -214,7 +218,6 @@ and read_vernac_file verbosely chan_beautify s =
     done
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
-    Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
