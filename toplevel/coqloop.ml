@@ -34,7 +34,7 @@ let resize_buffer ibuf =
   ibuf.str <- nstr
 
 (* Delete all irrelevant lines of the input buffer. Keep the last line
-   in the buffer (useful when there are several commands on the same line. *)
+   in the buffer (useful when there are several commands on the same line). *)
 
 let resynch_buffer ibuf =
   match ibuf.bols with
@@ -299,7 +299,7 @@ let do_vernac () =
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.eval_expr top_buffer.tokens (read_sentence input)
+    Vernac.process_expr top_buffer.tokens (read_sentence input)
   with
     | End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
