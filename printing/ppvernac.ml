@@ -263,7 +263,7 @@ module Make
 
   let pr_decl_notation prc ((loc,ntn),c,scopt) =
     fnl () ++ keyword "where " ++ qs ntn ++ str " := "
-    ++ Flags.without_option Flags.beautify_file prc c ++
+    ++ Flags.without_option Flags.beautify prc c ++
       pr_opt (fun sc -> str ": " ++ str sc) scopt
 
   let pr_binders_arg =
@@ -383,7 +383,7 @@ module Make
     | Some pl -> str"@{" ++ prlist_with_sep spc pr_lident pl ++ str"}"
 
   let pr_rec_definition ((((loc,id),pl),ro,bl,type_,def),ntn) =
-    let pr_pure_lconstr c = Flags.without_option Flags.beautify_file pr_lconstr c in
+    let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
     let annot = pr_guard_annot pr_lconstr_expr bl ro in
     pr_id id ++ pr_univs pl ++ pr_binders_arg bl ++ annot
     ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
@@ -678,7 +678,7 @@ module Make
       | VernacNotation (_,c,((_,s),l),opt) ->
         return (
           hov 2 (keyword "Notation" ++ spc() ++ qs s ++
-                   str " :=" ++ Flags.without_option Flags.beautify_file pr_constrarg c ++ pr_syntax_modifiers l ++
+                   str " :=" ++ Flags.without_option Flags.beautify pr_constrarg c ++ pr_syntax_modifiers l ++
                    (match opt with
                      | None -> mt()
                      | Some sc -> str" :" ++ spc() ++ str sc))
@@ -760,7 +760,7 @@ module Make
         let pr_constructor (coe,(id,c)) =
           hov 2 (pr_lident id ++ str" " ++
                    (if coe then str":>" else str":") ++
-                   Flags.without_option Flags.beautify_file pr_spc_lconstr c)
+                   Flags.without_option Flags.beautify pr_spc_lconstr c)
         in
         let pr_constructor_list b l = match l with
           | Constructors [] -> mt()

@@ -481,7 +481,7 @@ let explicitize loc inctx impl (cf,f) args =
           (!print_implicits && !print_implicits_explicit_args) ||
           (is_needed_for_correct_partial_application tail imp) ||
 	  (!print_implicits_defensive &&
-	   (not (is_inferable_implicit inctx n imp) || !Flags.beautify_file) &&
+	   (not (is_inferable_implicit inctx n imp) || !Flags.beautify) &&
 	   is_significant_implicit (Lazy.force a))
 	in
         if visible then
