@@ -63,8 +63,17 @@ let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (fun c -> c
 let subst_strategy s str = str
 
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"
-let pr_raw_strategy _ _ _ (s : raw_strategy) = Pp.str "<strategy>"
-let pr_glob_strategy _ _ _ (s : glob_strategy) = Pp.str "<strategy>"
+let pr_raw_strategy prc prlc _ (s : raw_strategy) =
+  let prr = Pptactic.pr_red_expr (prc, prlc, Pptactic.pr_or_by_notation Libnames.pr_reference, prc) in
+  Rewrite.pr_strategy prc prr s
+let pr_glob_strategy prc prlc _ (s : glob_strategy) =
+  let prr = Pptactic.pr_red_expr
+    (Ppconstr.pr_constr_expr,
+    Ppconstr.pr_lconstr_expr,
+    Pptactic.pr_or_by_notation Libnames.pr_reference,
+    Ppconstr.pr_constr_expr)
+  in
+  Rewrite.pr_strategy prc prr s
 
 ARGUMENT EXTEND rewstrategy
     PRINTED BY pr_strategy

@@ -62,6 +62,9 @@ val strategy_of_ast : (glob_constr_and_expr, raw_red_expr) strategy_ast -> strat
 val map_strategy : ('a -> 'b) -> ('c -> 'd) ->
   ('a, 'c) strategy_ast -> ('b, 'd) strategy_ast
 
+val pr_strategy : ('a -> Pp.std_ppcmds) -> ('b -> Pp.std_ppcmds) ->
+  ('a, 'b) strategy_ast -> Pp.std_ppcmds
+
 (** Entry point for user-level "rewrite_strat" *)
 val cl_rewrite_clause_strat : strategy -> Id.t option -> unit Proofview.tactic
 

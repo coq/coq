@@ -1700,6 +1700,40 @@ let rec map_strategy (f : 'a -> 'a2) (g : 'b -> 'b2) : ('a,'b) strategy_ast -> (
   | StratEval r -> StratEval (g r)
   | StratFold c -> StratFold (f c)
 
+let pr_ustrategy = function
+| Subterms -> str "subterms"
+| Subterm -> str "subterm"
+| Innermost -> str "innermost"
+| Outermost -> str "outermost"
+| Bottomup -> str "bottomup"
+| Topdown -> str "topdown"
+| Progress -> str "progress"
+| Try -> str "try"
+| Any -> str "any"
+| Repeat -> str "repeat"
+
+let paren p = str "(" ++ p ++ str ")"
+
+let rec pr_strategy prc prr = function
+| StratId -> str "id"
+| StratFail -> str "fail"
+| StratRefl -> str "refl"
+| StratUnary (s, str) ->
+  pr_ustrategy s ++ spc () ++ paren (pr_strategy prc prr str)
+| StratBinary (Choice, str1, str2) ->
+  str "choice" ++ spc () ++ paren (pr_strategy prc prr str1) ++ spc () ++
+    paren (pr_strategy prc prr str2)
+| StratBinary (Compose, str1, str2) ->
+  pr_strategy prc prr str1 ++ str ";" ++ spc () ++ pr_strategy prc prr str2
+| StratConstr (c, true) -> prc c
+| StratConstr (c, false) -> str "<-" ++ spc () ++ prc c
+| StratTerms cl -> str "terms" ++ spc () ++ pr_sequence prc cl
+| StratHints (old, id) ->
+  let cmd = if old then "old_hints" else "hints" in
+  str cmd ++ spc () ++ str id
+| StratEval r -> str "eval" ++ spc () ++ prr r
+| StratFold c -> str "fold" ++ spc () ++ prc c
+
 let rec strategy_of_ast = function
   | StratId -> Strategies.id
   | StratFail -> Strategies.fail
