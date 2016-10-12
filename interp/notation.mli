@@ -203,6 +203,9 @@ val find_notation_extra_printing_rules : notation -> extra_unparsing_rules
 val find_notation_parsing_rules : notation -> notation_grammar
 val add_notation_extra_printing_rule : notation -> string -> string -> unit
 
+(** Returns notations with defined parsing/printing rules *)
+val get_defined_notations : unit -> notation list
+
 (** Rem: printing rules for primitive token are canonical *)
 
 val with_notation_protection : ('a -> 'b) -> 'a -> 'b
