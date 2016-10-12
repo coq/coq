@@ -929,6 +929,8 @@ module Unsafe = struct
       { step with comb = step.comb @ gls }
     end
 
+  let tclSETENV = Env.set
+
   let tclGETGOALS = Comb.get
 
   let tclSETGOALS = Comb.set
@@ -1128,6 +1130,10 @@ module Goal = struct
         Some gl
     in
     tclUNIT (CList.map_filter map step.comb)
+
+  let unsolved { self=self } =
+    tclEVARMAP >>= fun sigma ->
+    tclUNIT (not (Option.is_empty (advance sigma self)))
 
   (* compatibility *)
   let goal { self=self } = self

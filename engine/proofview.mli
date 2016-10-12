@@ -409,6 +409,9 @@ module Unsafe : sig
   (** Like {!tclEVARS} but also checks whether goals have been solved. *)
   val tclEVARSADVANCE : Evd.evar_map -> unit tactic
 
+  (** Set the global environment of the tactic *)
+  val tclSETENV : Environ.env -> unit tactic
+
   (** [tclNEWGOALS gls] adds the goals [gls] to the ones currently
       being proved, appending them to the list of focused goals. If a
       goal is already solved, it is not added. *)
@@ -517,6 +520,10 @@ module Goal : sig
   (** Recover the list of current goals under focus, without evar-normalization.
       FIXME: encapsulate the level in an existential type. *)
   val goals : ([ `LZ ], 'r) t tactic list tactic
+
+  (** [unsolved g] is [true] if [g] is still unsolved in the current
+      proof state. *)
+  val unsolved : ('a, 'r) t -> bool tactic
 
   (** Compatibility: avoid if possible *)
   val goal : ([ `NF ], 'r) t -> Evar.t
