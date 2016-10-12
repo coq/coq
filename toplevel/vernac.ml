@@ -122,7 +122,6 @@ let parse_sentence = Flags.with_option Flags.we_are_parsing
 (* vernac parses the given stream, executes interpfun on the syntax tree it
  * parses, and is verbose on "primitives" commands if verbosely is true *)
 
-let just_parsing = ref false
 let chan_beautify = ref stdout
 let beautify_suffix = ".beautified"
 
@@ -192,8 +191,6 @@ let rec interp_vernac po chan_beautify checknav (loc,com) =
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
         load_vernac verbosely f
-
-    | v when !just_parsing -> ()
 
     | v -> Stm.interp (Flags.is_verbose()) (loc,v)
   in
