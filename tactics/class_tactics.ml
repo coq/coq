@@ -280,11 +280,11 @@ let clenv_of_prods poly nprods (c, clenv) gl =
     let ty = Retyping.get_type_of (Proofview.Goal.env gl)
                                   (Sigma.to_evar_map (Proofview.Goal.sigma gl)) c in
     let diff = nb_prod ty - nprods in
-      if Pervasives.(>=) diff 0 then
-        (* Was Some clenv... *)
-        Some (Some diff,
-              Tacmach.New.of_old (fun gls -> mk_clenv_from_n gls (Some diff) (c,ty)) gl)
-      else None
+    if Pervasives.(>=) diff 0 then
+      (* Was Some clenv... *)
+      Some (Some diff,
+            Tacmach.New.of_old (fun gls -> mk_clenv_from_n gls (Some diff) (c,ty)) gl)
+    else None
 
 let with_prods nprods poly (c, clenv) f =
   if get_typeclasses_limit_intros () then
@@ -339,7 +339,7 @@ let shelve_dependencies gls =
    shelve_goals gls)
 
 (** Hack to properly solve dependent evars that are typeclasses *)
-let rec e_trivial_fail_db only_classes db_list local_db =
+let rec e_trivial_fail_db only_classes db_list local_db secvars =
   let open Tacticals.New in
   let open Tacmach.New in
   let trivial_fail =
@@ -350,13 +350,13 @@ let rec e_trivial_fail_db only_classes db_list local_db =
     let d = pf_last_hyp gl in
     let hintl = make_resolve_hyp env sigma d in
     let hints = Hint_db.add_list env sigma hintl local_db in
-      e_trivial_fail_db only_classes db_list hints
+      e_trivial_fail_db only_classes db_list hints secvars
       end }
   in
   let trivial_resolve =
     Proofview.Goal.nf_enter { enter =
     begin fun gl ->
-    let tacs = e_trivial_resolve db_list local_db only_classes
+    let tacs = e_trivial_resolve db_list local_db secvars only_classes
                                  (project gl) (pf_concl gl) in
       tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
     end}
@@ -367,7 +367,7 @@ let rec e_trivial_fail_db only_classes db_list local_db =
   in
   tclFIRST (List.map tclCOMPLETE tacl)
 
-and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
+and e_my_find_search db_list local_db secvars hdc complete only_classes sigma concl =
   let open Proofview.Notations in
   let prods, concl = decompose_prod_assum concl in
   let nprods = List.length prods in
@@ -384,15 +384,15 @@ and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
       (fun db ->
         let tacs =
           if Hint_db.use_dn db then (* Using dnet *)
-            Hint_db.map_eauto hdc concl db
-          else Hint_db.map_existential hdc concl db
+            Hint_db.map_eauto secvars hdc concl db
+          else Hint_db.map_existential secvars hdc concl db
         in
         let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
           List.map (fun x -> (flags, x)) tacs)
       (local_db::db_list)
   in
   let tac_of_hint =
-    fun (flags, {pri = b; pat = p; poly = poly; code = t; name = name}) ->
+    fun (flags, {pri = b; pat = p; poly = poly; code = t; secvars; name = name}) ->
       let tac = function
         | Res_pf (term,cl) ->
            if get_typeclasses_filtered_unification () then
@@ -429,7 +429,7 @@ and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
       | Res_pf_THEN_trivial_fail (term,cl) ->
          let fst = with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
          let snd = if complete then Tacticals.New.tclIDTAC
-                   else e_trivial_fail_db only_classes db_list local_db in
+                   else e_trivial_fail_db only_classes db_list local_db secvars in
          Tacticals.New.tclTHEN fst snd
       | Unfold_nth c ->
          let tac = Proofview.V82.of_tactic (unfold_in_concl [AllOccurrences,c]) in
@@ -449,15 +449,15 @@ and e_my_find_search db_list local_db hdc complete only_classes sigma concl =
         | _ -> (tac, b, false, name, lazy (pr_hint t ++ pp))
   in List.map tac_of_hint hintl
 
-and e_trivial_resolve db_list local_db only_classes sigma concl =
+and e_trivial_resolve db_list local_db secvars only_classes sigma concl =
   try
-    e_my_find_search db_list local_db
+    e_my_find_search db_list local_db secvars
      (decompose_app_bound concl) true only_classes sigma concl
   with Bound | Not_found -> []
 
-let e_possible_resolve db_list local_db only_classes sigma concl =
+let e_possible_resolve db_list local_db secvars only_classes sigma concl =
   try
-    e_my_find_search db_list local_db
+    e_my_find_search db_list local_db secvars
       (decompose_app_bound concl) false only_classes sigma concl
   with Bound | Not_found -> []
 
@@ -673,7 +673,8 @@ module V85 = struct
     let env = Goal.V82.env s gl in
     let concl = Goal.V82.concl s gl in
     let tacgl = {it = gl; sigma = s;} in
-    let poss = e_possible_resolve hints info.hints info.only_classes s concl in
+    let secvars = secvars_of_hyps (Environ.named_context_of_val (Goal.V82.hyps s gl)) in
+    let poss = e_possible_resolve hints info.hints secvars info.only_classes s concl in
     let unique = is_unique env concl in
     let rec aux i foundone = function
       | (tac, _, extern, name, pp) :: tl ->
@@ -1004,8 +1005,9 @@ module Search = struct
            Printer.pr_constr_env (Goal.env gl) s concl ++
            (if backtrack then str" with backtracking"
             else str" without backtracking"));
+    let secvars = compute_secvars gl in
     let poss =
-      e_possible_resolve hints info.search_hints info.search_only_classes s concl in
+      e_possible_resolve hints info.search_hints secvars info.search_only_classes s concl in
     (* If no goal depends on the solution of this one or the
        instances are irrelevant/assumed to be unique, then
        we don't need to backtrack, as long as no evar appears in the goal
