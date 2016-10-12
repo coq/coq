@@ -685,6 +685,21 @@ let unshelve l p =
   let l = undefined p.solution l in
   { p with comb = p.comb@l }
 
+let mark_in_evm ~goal evd content =
+  let info = Evd.find evd content in
+  let info =
+    if goal then
+      { info with Evd.evar_source = match info.Evd.evar_source with
+            | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
+            | loc,_ -> loc,Evar_kinds.GoalEvar }
+    else info
+  in
+  let info = match Evd.Store.get info.Evd.evar_extra typeclass_resolvable with
+  | None -> { info with Evd.evar_extra = Evd.Store.set info.Evd.evar_extra typeclass_resolvable () }
+  | Some () -> info
+  in
+  Evd.add evd content info
+
 let with_shelf tac =
   let open Proof in
   Pv.get >>= fun pv ->
@@ -697,8 +712,11 @@ let with_shelf tac =
   let fgoals = Evd.future_goals solution in
   let pgoal = Evd.principal_future_goal solution in
   let sigma = Evd.restore_future_goals sigma fgoals pgoal in
-  Pv.set { npv with shelf; solution = sigma } >>
-  tclUNIT (CList.rev_append gls' gls, ans)
+  (* Ensure we mark and return only unsolved goals *)
+  let gls' = undefined sigma (CList.rev_append gls' gls) in
+  let sigma = CList.fold_left (mark_in_evm ~goal:false) sigma gls' in
+  let npv = { npv with shelf; solution = sigma } in
+  Pv.set npv >> tclUNIT (gls', ans)
 
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
     interval [[0,m-1]].*)
@@ -945,19 +963,12 @@ module Unsafe = struct
     { p with solution = Evd.reset_future_goals p.solution }
 
   let mark_as_goal evd content =
-    let info = Evd.find evd content in
-    let info =
-      { info with Evd.evar_source = match info.Evd.evar_source with
-      | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
-      | loc,_ -> loc,Evar_kinds.GoalEvar }
-    in
-    let info = match Evd.Store.get info.Evd.evar_extra typeclass_resolvable with
-    | None -> { info with Evd.evar_extra = Evd.Store.set info.Evd.evar_extra typeclass_resolvable () }
-    | Some () -> info
-    in
-    Evd.add evd content info
+    mark_in_evm ~goal:true evd content
 
   let advance = advance
+
+  let mark_as_unresolvable p gl =
+    { p with solution = mark_in_evm ~goal:false p.solution gl }
 
   let typeclass_resolvable = typeclass_resolvable
 

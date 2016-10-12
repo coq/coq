@@ -326,8 +326,9 @@ val unshelve : Goal.goal list -> proofview -> proofview
 (** [depends_on g1 g2 sigma] checks if g1 occurs in the type/ctx of g2 *)
 val depends_on : Evd.evar_map -> Goal.goal -> Goal.goal -> bool
 
-(** [with_shelf tac] executes [tac] and returns its result together with the set
-    of goals shelved by [tac]. The current shelf is unchanged. *)
+(** [with_shelf tac] executes [tac] and returns its result together with
+    the set of goals shelved by [tac]. The current shelf is unchanged
+    and the returned list contains only unsolved goals. *)
 val with_shelf : 'a tactic -> (Goal.goal list * 'a) tactic
 
 (** If [n] is positive, [cycle n] puts the [n] first goal last. If [n]
@@ -433,6 +434,9 @@ module Unsafe : sig
   (** Give an evar the status of a goal (changes its source location
       and makes it unresolvable for type classes. *)
   val mark_as_goal : Evd.evar_map -> Evar.t -> Evd.evar_map
+
+  (** Make an evar unresolvable for type classes. *)
+  val mark_as_unresolvable : proofview -> Evar.t -> proofview
 
   (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
       the current avatar of [g] (for instance [g] was changed by [clear]

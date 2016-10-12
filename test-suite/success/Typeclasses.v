@@ -5,7 +5,7 @@ Record Equ (A : Type) (R : A -> A -> Prop).
 Definition equiv {A} R (e : Equ A R) := R.
 Record Refl (A : Type) (R : A -> A -> Prop).
 Axiom equ_refl : forall A R (e : Equ A R), Refl _ (@equiv A R e).
-Hint Extern 0 (Refl _ _) => unshelve class_apply @equ_refl; [|shelve|] : foo.
+Hint Extern 0 (Refl _ _) => unshelve class_apply @equ_refl; [shelve|] : foo.
 
 Variable R : nat -> nat -> Prop.
 Lemma bas : Equ nat R.

@@ -357,17 +357,8 @@ the above form:
         | _ => idtac
       end.
 
-    (** [if t then t1 else t2] executes [t] and, if it does not
-        fail, then [t1] will be applied to all subgoals
-        produced.  If [t] fails, then [t2] is executed. *)
-    Tactic Notation
-      "if" tactic(t)
-      "then" tactic(t1)
-      "else" tactic(t2) :=
-      first [ t; first [ t1 | fail 2 ] | t2 ].
-
     Ltac abstract_term t :=
-      if (is_var t) then fail "no need to abstract a variable"
+      tryif (is_var t) then fail "no need to abstract a variable"
       else (let x := fresh "x" in set (x := t) in *; try clearbody x).
 
     Ltac abstract_elements :=
@@ -478,11 +469,11 @@ the above form:
       repeat (
         match goal with
         | H : context [ @Logic.eq ?T ?x ?y ] |- _ =>
-          if (change T with E.t in H) then fail
-          else if (change T with t in H) then fail
+          tryif (change T with E.t in H) then fail
+          else tryif (change T with t in H) then fail
           else clear H
         | H : ?P |- _ =>
-          if prop (FSet_Prop P) holds by
+          tryif prop (FSet_Prop P) holds by
             (auto 100 with FSet_Prop)
           then fail
           else clear H
@@ -747,7 +738,7 @@ the above form:
     | H: (In ?x ?r) -> False |- (E.eq ?y ?x) -> False =>
       contradict H; fsetdec_body
     | H: ?P -> False |- ?Q -> False =>
-      if prop (FSet_elt_Prop P) holds by
+      tryif prop (FSet_elt_Prop P) holds by
         (auto 100 with FSet_Prop)
       then (contradict H; fsetdec_body)
       else fsetdec_body
