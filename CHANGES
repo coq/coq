@@ -1,5 +1,14 @@
-Changes beyond V8.5
+Changes beyong V8.6
 ===================
+
+Tactics
+
+- New tactic "extensionality in H" which applies (possibly dependent)
+  functional extensionality in H supposed to be a quantified equality
+  until giving a bare equality.
+
+Changes from V8.5 to V8.6beta1
+==============================
 
 Bugfixes
 
