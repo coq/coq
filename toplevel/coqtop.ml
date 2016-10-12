@@ -170,7 +170,7 @@ let load_vernacular () =
   List.iter
     (fun (s,b) ->
       let s = Loadpath.locate_file s in
-      if Flags.do_beautify () then
+      if !Flags.beautify then
 	with_option beautify_file (Vernac.load_vernac b) s
       else
 	Vernac.load_vernac b s)
@@ -221,7 +221,7 @@ let add_compile verbose s =
   compile_list := (verbose,s) :: !compile_list
 
 let compile_file (v,f) =
-  if Flags.do_beautify () then
+  if !Flags.beautify then
     with_option beautify_file (Vernac.compile v) f
   else
     Vernac.compile v f
@@ -538,7 +538,7 @@ let parse_args arglist =
         Flags.async_proofs_never_reopen_branch := true;
     |"-batch" -> set_batch_mode ()
     |"-test-mode" -> test_mode := true
-    |"-beautify" -> make_beautify true
+    |"-beautify" -> beautify := true
     |"-boot" -> boot := true; no_load_rc ()
     |"-bt" -> Backtrace.record_backtrace true
     |"-color" -> set_color (next ())
