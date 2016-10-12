@@ -25,11 +25,13 @@ description principles
              the context of constructive type theory, sometimes
              called axiom of no choice)
 
-- AC_fun_repr       = functional choice of a representative in an equivalence class
-- AC_fun_setoid_gen = functional form of the general form of the (so-called
-                      extensional) axiom of choice over setoids
-- AC_fun_setoid     = functional form of the (so-called extensional) axiom of
-                      choice from setoids
+- AC_fun_repr          = functional choice of a representative in an equivalence class
+- AC_fun_setoid_gen    = functional form of the general form of the (so-called
+                          extensional) axiom of choice over setoids
+- AC_fun_setoid        = functional form of the (so-called extensional) axiom of
+                         choice from setoids
+- AC_fun_setoid_simple = functional form of the (so-called extensional) axiom of
+                         choice from setoids on locally compatible relations
 
 - GAC_rel = guarded relational form of the (non extensional) axiom of choice
 - GAC_fun = guarded functional form of the (non extensional) axiom of choice
@@ -183,9 +185,9 @@ Require Import RelationClasses Logic.
 Definition RepresentativeFunctionalChoice_on :=
   forall R:A->A->Prop,
     (Equivalence R) ->
-    (exists f : A->A, forall x : A, (R x (f x)) /\ forall y, R x y -> f x = f y).
+    (exists f : A->A, forall x : A, (R x (f x)) /\ forall x', R x x' -> f x = f x').
 
-(** AC_fun_ext *)
+(** AC_fun_setoid *)
 
 Definition SetoidFunctionalChoice_on :=
   forall R : A -> A -> Prop,
@@ -193,9 +195,9 @@ Definition SetoidFunctionalChoice_on :=
   Equivalence R ->
   (forall x x' y, R x x' -> T x y -> T x' y) ->
   (forall x, exists y, T x y) ->
-  exists f : A -> B, forall x : A, T x (f x) /\ (forall y : A, R x y -> f x = f y).
+  exists f : A -> B, forall x : A, T x (f x) /\ (forall x' : A, R x x' -> f x = f x').
 
-(** AC_fun_ext_gen *)
+(** AC_fun_setoid_gen *)
 
 (* Note: This is called extensional axiom of choice (AC_ext) in
    [[Carlström04]]. *)
@@ -209,9 +211,9 @@ Definition GeneralizedSetoidFunctionalChoice_on :=
   (forall x x' y y', R x x' -> S y y' -> T x y -> T x' y') ->
   (forall x, exists y, T x y) ->
   exists f : A -> B,
-    forall x : A, T x (f x) /\ (forall y : A, R x y -> S (f x) (f y)).
+    forall x : A, T x (f x) /\ (forall x' : A, R x x' -> S (f x) (f x')).
 
-(** AC_fun_ext_simple *)
+(** AC_fun_setoid_simple *)
 
 Definition SimpleSetoidFunctionalChoice_on A B :=
   forall R : A -> A -> Prop,
@@ -1066,50 +1068,62 @@ Proof.
 Qed.
 
 (**********************************************************************)
-(** ** AC_fun_setoid = AC_fun_setoid_gen                              *)
+(** ** AC_fun_setoid = AC_fun_setoid_gen = AC_fun_setoid_simple       *)
 
 Theorem gen_setoid_fun_choice_imp_setoid_fun_choice  :
-   GeneralizedSetoidFunctionalChoice -> SetoidFunctionalChoice.
+  forall A B, GeneralizedSetoidFunctionalChoice_on A B -> SetoidFunctionalChoice_on A B.
 Proof.
-  intros GenSetoidFunChoice A B R T Hequiv Hcompat Hex.
+  intros A B GenSetoidFunChoice R T Hequiv Hcompat Hex.
   apply GenSetoidFunChoice; try easy.
   apply eq_equivalence.
   intros * H <-. firstorder.
 Qed.
 
 Theorem setoid_fun_choice_imp_gen_setoid_fun_choice :
-  SetoidFunctionalChoice -> GeneralizedSetoidFunctionalChoice.
+  forall A B, SetoidFunctionalChoice_on A B -> GeneralizedSetoidFunctionalChoice_on A B.
 Proof.
-  intros SetoidFunChoice A B R S T HequivR HequivS Hcompat Hex.
+  intros A B SetoidFunChoice R S T HequivR HequivS Hcompat Hex.
   destruct SetoidFunChoice with (R:=R) (T:=T) as (f,Hf); try easy.
   { intros; apply (Hcompat x x' y y); try easy. }
   exists f. intros x; specialize Hf with x as (Hf,Huniq). intuition. now erewrite Huniq.
 Qed.
 
-Theorem setoid_fun_choice_imp_simple_setoid_fun_choice  :
-   SetoidFunctionalChoice -> SimpleSetoidFunctionalChoice.
+Corollary setoid_fun_choice_iff_gen_setoid_fun_choice :
+  forall A B, SetoidFunctionalChoice_on A B <-> GeneralizedSetoidFunctionalChoice_on A B.
 Proof.
-  intros SetoidFunChoice A B R T Hequiv Hexists.
+  split; auto using gen_setoid_fun_choice_imp_setoid_fun_choice, setoid_fun_choice_imp_gen_setoid_fun_choice.
+Qed.
+
+Theorem setoid_fun_choice_imp_simple_setoid_fun_choice  :
+   forall A B, SetoidFunctionalChoice_on A B -> SimpleSetoidFunctionalChoice_on A B.
+Proof.
+  intros A B SetoidFunChoice R T Hequiv Hexists.
   pose (T' x y := forall x', R x x' -> T x' y).
   assert (Hcompat : forall (x x' : A) (y : B), R x x' -> T' x y -> T' x' y) by firstorder.
-  destruct (SetoidFunChoice A B R T' Hequiv Hcompat Hexists) as (f,Hf).
+  destruct (SetoidFunChoice R T' Hequiv Hcompat Hexists) as (f,Hf).
   exists f. firstorder.
 Qed.
 
 Theorem simple_setoid_fun_choice_imp_setoid_fun_choice :
-  SimpleSetoidFunctionalChoice -> SetoidFunctionalChoice.
+  forall A B, SimpleSetoidFunctionalChoice_on A B -> SetoidFunctionalChoice_on A B.
 Proof.
-  intros SimpleSetoidFunChoice A B R T Hequiv Hcompat Hexists.
-  destruct (SimpleSetoidFunChoice A B R T Hequiv) as (f,Hf); firstorder.
+  intros A B SimpleSetoidFunChoice R T Hequiv Hcompat Hexists.
+  destruct (SimpleSetoidFunChoice R T Hequiv) as (f,Hf); firstorder.
+Qed.
+
+Corollary setoid_fun_choice_iff_simple_setoid_fun_choice :
+  forall A B, SetoidFunctionalChoice_on A B <-> SimpleSetoidFunctionalChoice_on A B.
+Proof.
+  split; auto using simple_setoid_fun_choice_imp_setoid_fun_choice, setoid_fun_choice_imp_simple_setoid_fun_choice.
 Qed.
 
 (**********************************************************************)
 (** ** AC_fun_setoid = AC! + AC_fun_repr                              *)
 
 Theorem setoid_fun_choice_imp_fun_choice :
-  SetoidFunctionalChoice -> FunctionalChoice.
+  forall A B, SetoidFunctionalChoice_on A B -> FunctionalChoice_on A B.
 Proof.
-  intros SetoidFunChoice A B T Hexists.
+  intros A B SetoidFunChoice T Hexists.
   destruct SetoidFunChoice with (R:=@eq A) (T:=T) as (f,Hf).
   - apply eq_equivalence.
   - now intros * ->.
@@ -1118,15 +1132,15 @@ Proof.
 Qed.
 
 Corollary setoid_fun_choice_imp_functional_rel_reification :
-  SetoidFunctionalChoice -> FunctionalRelReification.
+  forall A B, SetoidFunctionalChoice_on A B -> FunctionalRelReification_on A B.
 Proof.
-  intro SetoidFunChoice.
-  intros A B; apply fun_choice_imp_functional_rel_reification.
+  intros A B SetoidFunChoice.
+  apply fun_choice_imp_functional_rel_reification.
   now apply setoid_fun_choice_imp_fun_choice.
 Qed.
 
 Theorem setoid_fun_choice_imp_repr_fun_choice :
-  SetoidFunctionalChoice -> RepresentativeFunctionalChoice.
+  SetoidFunctionalChoice -> RepresentativeFunctionalChoice .
 Proof.
   intros SetoidFunChoice A R Hequiv.
   apply SetoidFunChoice; firstorder.
@@ -1155,7 +1169,7 @@ Proof.
   split; intros.
   - now apply functional_rel_reification_and_repr_fun_choice_imp_setoid_fun_choice.
   - split.
-    + now apply setoid_fun_choice_imp_functional_rel_reification.
+    + now intros A B; apply setoid_fun_choice_imp_functional_rel_reification.
     + now apply setoid_fun_choice_imp_repr_fun_choice.
 Qed.
 
@@ -1228,7 +1242,7 @@ Proof.
     + intros A B. apply fun_choice_imp_functional_rel_reification, FunChoice.
     + now apply fun_choice_and_ext_functions_repr_and_excluded_middle_imp_setoid_fun_choice.
   - intro SetoidFunChoice. repeat split.
-    + now apply setoid_fun_choice_imp_fun_choice.
+    + now intros A B; apply setoid_fun_choice_imp_fun_choice.
     + apply repr_fun_choice_imp_ext_function_repr.
        now apply setoid_fun_choice_imp_repr_fun_choice.
     + apply repr_fun_choice_imp_excluded_middle.
@@ -1283,7 +1297,7 @@ Proof.
     + intros A B. now apply fun_choice_imp_functional_rel_reification.
     + now apply fun_choice_and_ext_pred_ext_and_proof_irrel_imp_setoid_fun_choice.
   - intro SetoidFunChoice. repeat split.
-    + now apply setoid_fun_choice_imp_fun_choice.
+    + now intros A B; apply setoid_fun_choice_imp_fun_choice.
     + apply repr_fun_choice_imp_ext_pred_repr.
        now apply setoid_fun_choice_imp_repr_fun_choice.
     + red. apply proof_irrelevance_cci.
