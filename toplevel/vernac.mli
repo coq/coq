@@ -14,12 +14,9 @@
 val parse_sentence : Pcoq.Gram.coq_parsable * in_channel option ->
  Loc.t * Vernacexpr.vernac_expr
 
-(** Reads and executes vernac commands from a stream.
-   The boolean [just_parsing] disables interpretation of commands. *)
+(** Reads and executes vernac commands from a stream. *)
 
 exception End_of_input
-
-val just_parsing : bool ref
 
 val process_expr : Pcoq.Gram.coq_parsable -> Loc.t * Vernacexpr.vernac_expr -> unit
 
