@@ -374,7 +374,7 @@ and my_find_search_delta db_list local_db hdc concl =
 	  in List.map (fun x -> (Some flags,x)) l)
       	(local_db::db_list)
 
-and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) =
+and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=dbname})) =
   let tactic = function
     | Res_pf (c,cl) -> unify_resolve_gen poly flags (c,cl)
     | ERes_pf _ -> Proofview.V82.tactic (fun gl -> error "eres_pf")
@@ -393,7 +393,14 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) 
     | Extern tacast -> 
       conclPattern concl p tacast
   in
-  tclLOG dbg (fun () -> pr_hint t) (run_hint t tactic)
+  let pr_hint () =
+    let origin = match dbname with
+    | None -> mt ()
+    | Some n -> str " (in " ++ str n ++ str ")"
+    in
+    pr_hint t ++ origin
+  in
+  tclLOG dbg pr_hint (run_hint t tactic)
 
 and trivial_resolve dbg mod_delta db_list local_db cl =
   try

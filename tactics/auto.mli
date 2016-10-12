@@ -16,8 +16,6 @@ open Decl_kinds
 open Hints
 open Tactypes
 
-val priority : ('a * full_hint) list -> ('a * full_hint) list
-
 val default_search_depth : int ref
 
 val auto_flags_of_state : transparent_state -> Unification.unify_flags

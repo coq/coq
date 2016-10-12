@@ -430,7 +430,7 @@ let dll = if os_type_win32 then ".dll" else ".so"
 
 let vcs =
   let git_dir = try Sys.getenv "GIT_DIR" with Not_found -> ".git" in
-  if dir_exists git_dir then "git"
+  if Sys.file_exists git_dir then "git"
   else if Sys.file_exists ".svn/entries" then "svn"
   else if dir_exists "{arch}" then "gnuarch"
   else "none"

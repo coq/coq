@@ -29,13 +29,28 @@ let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
   | Uniform x ->
     (** We dispatch the uniform result on each goal under focus, as we know
         that the [m] argument was actually dependent. *)
-    Proofview.Goal.goals >>= fun l ->
-    let ans = List.map (fun _ -> x) l in
+    Proofview.Goal.goals >>= fun goals ->
+    let ans = List.map (fun g -> (g,x)) goals in
     Proofview.tclUNIT ans
-  | Depends l -> Proofview.tclUNIT l
+  | Depends l ->
+    Proofview.Goal.goals >>= fun goals ->
+    Proofview.tclUNIT (List.combine goals l)
+  in
+  (* After the tactic has run, some goals which were previously
+     produced may have been solved by side effects. The values
+     attached to such goals must be discarded, otherwise the list of
+     result would not have the same length as the list of focused
+     goals, which is an invariant of the [Ftactic] module. It is the
+     reason why a goal is attached to each result above. *)
+  let filter (g,x) =
+    g >>= fun g ->
+    Proofview.Goal.unsolved g >>= function
+    | true -> Proofview.tclUNIT (Some x)
+    | false -> Proofview.tclUNIT None
   in
   Proofview.tclDISPATCHL (List.map f l) >>= fun l ->
-  Proofview.tclUNIT (Depends (List.concat l))
+  Proofview.Monad.List.map_filter filter (List.concat l) >>= fun filtered ->
+  Proofview.tclUNIT (Depends filtered)
 
 let goals = Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l)
 let set_sigma r =

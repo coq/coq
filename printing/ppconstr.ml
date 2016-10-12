@@ -129,7 +129,7 @@ end) = struct
     str "`" ++ str hd ++ c ++ str tl
 
   let pr_com_at n =
-    if Flags.do_beautify() && not (Int.equal n 0) then comment n
+    if Flags.do_beautify() && not (Int.equal n 0) then comment (CLexer.extract_comments n)
     else mt()
 
   let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
