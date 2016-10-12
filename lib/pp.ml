@@ -344,8 +344,8 @@ let pp_with ?pp_tag ft strm =
   pp_dirs ?pp_tag ft (Glue.atom (Ppdir_ppcmds strm))
 
 (* pretty printing functions WITH FLUSH *)
-let msg_with ft strm =
-  pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))
+let msg_with ?pp_tag ft strm =
+  pp_dirs ?pp_tag ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))
 
 (* If mixing some output and a goal display, please use msg_warning,
    so that interfaces (proofgeneral for example) can easily dispatch
@@ -353,7 +353,7 @@ let msg_with ft strm =
 
 (** Output to a string formatter *)
 let string_of_ppcmds c =
-  Format.fprintf Format.str_formatter "@[%a@]" msg_with c;
+  Format.fprintf Format.str_formatter "@[%a@]" (msg_with ?pp_tag:None) c;
   Format.flush_str_formatter ()
 
 (* Copy paste from Util *)
