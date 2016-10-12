@@ -199,7 +199,7 @@ let rec interp_vernac po chan_beautify checknav (loc,com) =
   in
     try
       checknav loc com;
-      if do_beautify () then pr_new_syntax po chan_beautify loc (Some com);
+      if !beautify then pr_new_syntax po chan_beautify loc (Some com);
       (* XXX: This is not 100% correct if called from an IDE context *)
       if !Flags.time then print_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
@@ -228,7 +228,7 @@ and load_vernac verbosely file =
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
-          if do_beautify () then
+          if !beautify then
             pr_new_syntax (fst input) chan_beautify (Loc.make_loc (max_int,max_int)) None;
           if !Flags.beautify_file then close_out chan_beautify;
       | reraise ->

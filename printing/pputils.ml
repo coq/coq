@@ -9,7 +9,7 @@
 open Pp
 
 let pr_located pr (loc, x) =
-  if Flags.do_beautify () && loc <> Loc.ghost then
+  if !Flags.beautify && loc <> Loc.ghost then
     let (b, e) = Loc.unloc loc in
     (* Side-effect: order matters *)
     let before = Pp.comment (CLexer.extract_comments b) in

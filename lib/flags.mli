@@ -70,8 +70,6 @@ val version_less_or_equal : compat_version -> bool
 val pr_version : compat_version -> string
 
 val beautify : bool ref
-val make_beautify : bool -> unit
-val do_beautify : unit -> bool
 val beautify_file : bool ref
 
 val make_silent : bool -> unit

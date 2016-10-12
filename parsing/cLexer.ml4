@@ -390,7 +390,7 @@ let comment_stop ep =
   if !Flags.xml_export && Buffer.length current_comment > 0 &&
     (!between_commands || not(null_comment current_s)) then
       Hook.get f_xml_output_comment current_s;
-  (if Flags.do_beautify() && Buffer.length current_comment > 0 &&
+  (if !Flags.beautify && Buffer.length current_comment > 0 &&
     (!between_commands || not(null_comment current_s)) then
     let bp = match !comment_begin with
         Some bp -> bp
@@ -437,7 +437,7 @@ let rec comment loc bp = parser bp2
       let loc =
 	(* In beautify mode, the lexing differs between strings in comments and
 	   regular strings (e.g. escaping). It seems wrong. *)
-	if Flags.do_beautify() then (push_string"\""; comm_string loc bp2 s)
+	if !Flags.beautify then (push_string"\""; comm_string loc bp2 s)
 	else fst (string loc ~comm_level:(Some 0) bp2 0 s)
       in
       comment loc bp s

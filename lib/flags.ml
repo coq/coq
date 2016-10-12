@@ -139,8 +139,6 @@ let pr_version = function
 
 (* Translate *)
 let beautify = ref false
-let make_beautify f = beautify := f
-let do_beautify () = !beautify
 let beautify_file = ref false
 
 (* Silent / Verbose *)
