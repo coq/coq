@@ -273,7 +273,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
       a
     with e ->
       L.restore_comments_state L.default_comments_state;
-      raise e
+      Pervasives.raise e
   let entry_print ft x = Entry.print ft x
   let srules' = srules (entry_create "dummy")
 end
