@@ -30,11 +30,13 @@ type bound_ident_map = Id.t Id.Map.t
    assignment of metavariables; it raises [PatternMatchingFailure] if
    not matchable; bindings are given in increasing order based on the
    numbers given in the pattern *)
-val matches : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
+val matches : env -> Evd.evar_map -> constr_pattern -> constr ->
+              Evd.evar_map * patvar_map
 
 (** [matches_head pat c] does the same as [matches pat c] but accepts
     [pat] to match an applicative prefix of [c] *)
-val matches_head : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
+val matches_head : env -> Evd.evar_map -> constr_pattern -> constr ->
+                   Evd.evar_map * patvar_map
 
 (** [extended_matches pat c] also returns the names of bound variables
    in [c] that matches the bound variables in [pat]; if several bound
@@ -42,7 +44,7 @@ val matches_head : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
    or else the rightmost bound variable, takes precedence *)
 val extended_matches :
   env -> Evd.evar_map -> Tacexpr.binding_bound_vars * constr_pattern ->
-  constr -> bound_ident_map * extended_patvar_map
+  constr -> Evd.evar_map * (bound_ident_map * extended_patvar_map)
 
 (** [is_matching pat c] just tells if [c] matches against [pat] *)
 val is_matching : env -> Evd.evar_map -> constr_pattern -> constr -> bool
@@ -55,12 +57,14 @@ val is_matching_head : env -> Evd.evar_map -> constr_pattern -> constr -> bool
    [(env,sigma)] when constants in pattern are concerned; it raises
    [PatternMatchingFailure] if not matchable; bindings are given in
    increasing order based on the numbers given in the pattern *)
-val matches_conv : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
+val matches_conv : env -> Evd.evar_map -> constr_pattern -> constr ->
+                   Evd.evar_map * patvar_map
 
 (** The type of subterm matching results: a substitution + a context
    (whose hole is denoted here with [special_meta]) *)
 type matching_result =
     { m_sub : bound_ident_map * patvar_map;
+      m_evarmap : Evd.evar_map;
       m_ctx : constr }
 
 (** [match_subterm n pat c] returns the substitution and the context

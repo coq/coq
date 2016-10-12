@@ -1436,6 +1436,11 @@ let initial_select_evars filter =
     Typeclasses.is_class_evar evd evi
 
 let resolve_typeclass_evars debug depth unique env evd filter split fail =
+  (* This looks a bit fishy. Why do we consider the whole set of pending
+  unification problems, and yet keep going if we fail to solve them?
+  [consider_remaining_unif_problems] without the try-with or [reconsider_conv_pbs]
+  would be more natural.
+  *)
   let evd =
     try Evarconv.consider_remaining_unif_problems
       ~ts:(Typeclasses.classes_transparent_state ()) env evd

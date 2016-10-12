@@ -984,7 +984,7 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
     if nowhere_except_in && (!pos > maxocc) then (* Shortcut *) t
     else
     try
-      let subst =
+      let (_sigma,subst) = (* FIXME *)
         if byhead then matches_head env sigma c t 
 	else Constr_matching.matches env sigma c t in
       let ok =

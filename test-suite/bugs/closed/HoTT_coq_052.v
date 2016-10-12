@@ -1,5 +1,5 @@
 Goal Type = Type.
-  Fail match goal with |- ?x = ?x => idtac end.
+  match goal with |- ?x = ?x => idtac end.
 Abort.
 
 Goal Prop.
