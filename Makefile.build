@@ -597,7 +597,7 @@ plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLLEX  $<'
 	$(HIDE)$(OCAMLLEX) -o $@ "$*.mll"
 
-%.ml: %.ml4 | $(CAMLP4DEPS)
+%.ml: %.ml4 $(CAMLP4DEPS)
 	$(SHOW)'CAMLP4O   $<'
 	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) \
 	  $(CAMLP4DEPS) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
