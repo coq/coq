@@ -8,9 +8,7 @@
 
 (** Unicode utilities *)
 
-type status = Letter | IdentPart | Symbol
-
-exception Unsupported
+type status = Letter | IdentPart | Symbol | Unknown
 
 (* The following table stores classes of Unicode characters that
    are used by the lexer. There are 3 different classes so 2 bits are
@@ -29,6 +27,7 @@ let mask i = function
   | Letter    -> 1 lsl ((i land 7) lsl 1) (* 01 *)
   | IdentPart -> 2 lsl ((i land 7) lsl 1) (* 10 *)
   | Symbol    -> 3 lsl ((i land 7) lsl 1) (* 11 *)
+  | Unknown   -> 0 lsl ((i land 7) lsl 1) (* 00 *)
 
 (* Helper to reset 2 bits in a word. *)
 let reset_mask i =
@@ -55,7 +54,7 @@ let lookup x =
     if      v = 1 then Letter
     else if v = 2 then IdentPart
     else if v = 3 then Symbol
-    else raise Unsupported
+    else Unknown
 
 (* [classify] discriminates between 3 different kinds of
    symbols based on the standard unicode classification (extracted from
@@ -215,7 +214,6 @@ let ident_refutation s =
         |x -> x
   with
   | End_of_input -> Some (true,"The empty string is not an identifier.")
-  | Unsupported -> Some (true,s^": unsupported character in utf8 sequence.")
   | Invalid_argument _ -> Some (true,s^": invalid utf8 sequence.")
 
 let lowercase_unicode =
