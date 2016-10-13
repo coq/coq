@@ -1925,7 +1925,10 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
  * type and 1 assumption for each term not _syntactically_ in an
  * inductive type.
 
- * Each matched term is independently considered dependent or not.
+ * Each matched terms are independently considered dependent or not.
+
+ * A type constraint but no annotation case: we try to specialize the
+ * tycon to make the predicate if it is not closed.
  *)
 
 let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
@@ -1935,14 +1938,14 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
     | None, Some t when not (noccur_with_meta 0 max_int t) ->
 	(* If the tycon is not closed w.r.t real variables, we try *)
         (* two different strategies *)
-	(* First strategy: we build an "inversion" predicate *)
-	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
-	(* Optional second strategy: we abstract the tycon wrt to the dependencies *)
-        let p2 =
+	(* First strategy: we abstract the tycon wrt to the dependencies *)
+        let p1 =
           prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign t in
-	(match p2 with
-	 | Some (sigma2,pred2) -> [sigma1, pred1; sigma2, pred2]
-	 | None -> [sigma1, pred1])
+	(* Second strategy: we build an "inversion" predicate *)
+	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
+	(match p1 with
+	 | Some (sigma1,pred1) -> [sigma1, pred1; sigma2, pred2]
+	 | None -> [sigma2, pred2])
     | None, _ ->
 	(* No dependent type constraint, or no constraints at all: *)
 	(* we use two strategies *)
@@ -1957,7 +1960,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
 	in
         (* First strategy: we build an "inversion" predicate *)
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
-	(* Second strategy: we use the evar or tycon as a non dependent pred *)
+	(* Second strategy: we directly use the evar as a non dependent pred *)
         let pred2 = lift (List.length (List.flatten arsign)) t in
 	[sigma1, pred1; sigma, pred2]
     (* Some type annotation *)
