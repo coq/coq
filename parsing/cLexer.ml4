@@ -112,11 +112,6 @@ type token_kind =
   | AsciiChar
   | EmptyStream
 
-let error_unsupported_unicode_character loc n unicode cs =
-  let bp = Stream.count cs in
-  let loc = set_loc_pos loc bp (bp+n) in
-  err loc (UnsupportedUnicode unicode)
-
 let error_utf8 loc cs =
   let bp = Stream.count cs in
   Stream.junk cs; (* consume the char to avoid read it and fail again *)
@@ -166,14 +161,12 @@ let lookup_utf8_tail loc c cs =
           (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
       | _ -> error_utf8 loc cs
     in
-    try Unicode.classify unicode, n
-    with Unicode.Unsupported ->
-      njunk n cs; error_unsupported_unicode_character loc n unicode cs
+    Utf8Token (Unicode.classify unicode, n)
 
 let lookup_utf8 loc cs =
   match Stream.peek cs with
     | Some ('\x00'..'\x7F') -> AsciiChar
-    | Some ('\x80'..'\xFF' as c) -> Utf8Token (lookup_utf8_tail loc c cs)
+    | Some ('\x80'..'\xFF' as c) -> lookup_utf8_tail loc c cs
     | None -> EmptyStream
 
 let unlocated f x = f x
@@ -190,17 +183,6 @@ let check_keyword str =
         | EmptyStream -> ()
   in
   loop_symb (Stream.of_string str)
-
-let warn_unparsable_keyword =
-  CWarnings.create ~name:"unparsable-keyword" ~category:"parsing"
-         (fun (s,unicode) ->
-          strbrk (Printf.sprintf "Token '%s' contains unicode character 0x%x \
-                                  which will not be parsable." s unicode))
-            
-let check_keyword_to_add s =
-  try check_keyword s
-  with Error.E (UnsupportedUnicode unicode) ->
-    warn_unparsable_keyword (s,unicode)
 
 let check_ident str =
   let rec loop_id intail = parser
@@ -232,7 +214,7 @@ let is_keyword s =
 let add_keyword str =
   if not (is_keyword str) then
     begin
-      check_keyword_to_add str;
+      check_keyword str;
       token_tree := ttree_add !token_tree str
     end
 
@@ -599,7 +581,7 @@ let rec next_token loc = parser bp
             let ep = Stream.count s in
             comment_stop bp;
             (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
-        | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart), _) ->
+        | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart | Unicode.Unknown), _) ->
             let t = process_chars loc bp (Stream.next s) s in
             let new_between_commands = match t with
               (KEYWORD ("{"|"}"),_) -> !between_commands | _ -> false in

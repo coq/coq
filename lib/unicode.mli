@@ -8,22 +8,16 @@
 
 (** Unicode utilities *)
 
-type status = Letter | IdentPart | Symbol
+type status = Letter | IdentPart | Symbol | Unknown
 
-(** This exception is raised when UTF-8 the input string contains unsupported UTF-8 characters. *)
-exception Unsupported
-
-(** Classify a unicode char into 3 classes.
-    @raise Unsupported if the input string contains unsupported UTF-8 characters. *)
+(** Classify a unicode char into 3 classes or unknown. *)
 val classify : int -> status
 
 (** Return [None] if a given string can be used as a (Coq) identifier.
-    Return [Some (b,s)] otherwise, where [s] is an explanation and [b] is severity.
-    @raise Unsupported if the input string contains unsupported UTF-8 characters. *)
+    Return [Some (b,s)] otherwise, where [s] is an explanation and [b] is severity. *)
 val ident_refutation : string -> (bool * string) option
 
 (** First char of a string, converted to lowercase
-    @raise Unsupported if the input string contains unsupported UTF-8 characters.
     @raise Assert_failure if the input string is empty. *)
 val lowercase_first_char : string -> string
 
