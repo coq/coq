@@ -97,19 +97,19 @@ let position_problem l2r = function
   | CONV -> None
   | CUMUL -> Some l2r
 
-let occur_rigidly ev evd t = 
+let occur_rigidly (evk,_ as ev) evd t =
   let rec aux t =
     match kind_of_term (whd_evar evd t) with
     | App (f, c) -> if aux f then Array.exists aux c else false
     | Construct _ | Ind _ | Sort _ | Meta _ | Fix _ | CoFix _ -> true
     | Proj (p, c) -> not (aux c)
-    | Evar (ev',_) -> if Evar.equal ev ev' then raise Occur else false
+    | Evar (evk',_) -> if Evar.equal evk evk' then raise Occur else false
     | Cast (p, _, _) -> aux p
     | Lambda _ | LetIn _ -> false
     | Const _ -> false
     | Prod (_, b, t) -> ignore(aux b || aux t); true
     | Rel _ | Var _ -> false
-    | Case _ -> false
+    | Case (_,_,c,_) -> if eq_constr (mkEvar ev) c then raise Occur else false
   in try ignore(aux t); false with Occur -> true
 
 (* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose 
@@ -478,7 +478,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	      ise_try evd 
 	        [eta;(* Postpone the use of an heuristic *)
 		 (fun i -> 
-		   if not (occur_rigidly (fst ev) i tR) then
+		   if not (occur_rigidly ev i tR) then
                      let i,tF =
                        if isRel tR || isVar tR then
                          (* Optimization so as to generate candidates *)
