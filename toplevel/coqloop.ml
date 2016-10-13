@@ -13,7 +13,7 @@ open Flags
 open Vernac
 open Pcoq
 
-let top_stderr x = msg_with !Pp_control.err_ft x
+let top_stderr x = msg_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft x
 
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
