@@ -389,7 +389,7 @@ let comment_stop ep =
 
 (* Does not unescape!!! *)
 let rec comm_string loc bp = parser
-  | [< ''"' >] ep -> push_string "\""; loc
+  | [< ''"' >] -> push_string "\""; loc
   | [< ''\\'; loc =
            (parser [< ' ('"' | '\\' as c) >] ->
               let () = match c with
@@ -492,20 +492,19 @@ let process_chars loc bp c cs =
 	let loc = set_loc_pos loc bp ep' in
         err loc Undefined_token
 
-let token_of_special c s = match c with
-  | '.' -> FIELD s
-  | _ -> assert false
+(* Parse what follows a dot *)
 
-(* Parse what follows a dot / a dollar *)
-
-let parse_after_special loc c bp =
+let parse_after_dot loc c bp =
   parser
-  | [< ' ('a'..'z' | 'A'..'Z' | '_' as d); len = ident_tail loc (store 0 d) >] ->
-      token_of_special c (get_buff len)
+  | [< ' ('a'..'z' | 'A'..'Z' | '_' as d); len = ident_tail loc (store 0 d); s >] ->
+      let field = get_buff len in
+      (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
   | [< s >] ->
       match lookup_utf8 loc s with
       | Utf8Token (Unicode.Letter, n) ->
-          token_of_special c (get_buff (ident_tail loc (nstore n 0 s) s))
+          let len = ident_tail loc (nstore n 0 s) s in
+          let field = get_buff len in
+          (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
       | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars loc bp c s)
 
 (* Parse what follows a question mark *)
@@ -533,7 +532,7 @@ let rec next_token loc = parser bp
       comm_loc bp; push_char c; next_token (bump_loc_line loc ep) s
   | [< '' ' | '\t' | '\r' as c; s >] ->
       comm_loc bp; push_char c; next_token loc s
-  | [< ''.' as c; t = parse_after_special loc c bp; s >] ep ->
+  | [< ''.' as c; t = parse_after_dot loc c bp; s >] ep ->
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
          for instance ".(", or followed by a blank or eof. *)

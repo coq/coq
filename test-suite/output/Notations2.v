@@ -116,3 +116,32 @@ Check %j.
 
 Notation "{ x , y , .. , v }" := (fun a => (or .. (or (a = x) (a = y)) .. (a = v))).
 Check ({1, 2}).
+
+(**********************************************************************)
+(* Check notations of the form ".a", ".a≡", "a≡"                      *)
+(* Only "a#", "a≡" and ".≡" were working properly for parsing. The    *)
+(* other ones were working only for printing.                         *)
+
+Notation "a#" := nat.
+Check nat.
+Check a#.
+
+Notation "a≡" := nat.
+Check nat.
+Check a≡.
+
+Notation ".≡" := nat.
+Check nat.
+Check .≡.
+
+Notation ".a#" := nat.
+Check nat.
+Check .a#.
+
+Notation ".a≡" := nat.
+Check nat.
+Check .a≡.
+
+Notation ".α" := nat.
+Check nat.
+Check .α.
