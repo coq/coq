@@ -252,6 +252,12 @@ let get_buff len = String.sub !buff 0 len
 
 (* The classical lexer: idents, numbers, quoted strings, comments *)
 
+let warn_unrecognized_unicode =
+  CWarnings.create ~name:"unrecognized-unicode" ~category:"parsing"
+         (fun (u,id) ->
+          strbrk (Printf.sprintf "Not considering unicode character \"%s\" of unknown \
+                                  lexical status as part of identifier \"%s\"." u id))
+
 let rec ident_tail loc len = parser
   | [< ' ('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_' as c); s >] ->
       ident_tail loc (store len c) s
@@ -259,6 +265,10 @@ let rec ident_tail loc len = parser
       match lookup_utf8 loc s with
       | Utf8Token ((Unicode.IdentPart | Unicode.Letter), n) ->
           ident_tail loc (nstore n len s) s
+      | Utf8Token (Unicode.Unknown, n) ->
+          let id = get_buff len in
+          let u = String.concat "" (List.map (String.make 1) (Stream.npeek n s)) in
+          warn_unrecognized_unicode ~loc:!@loc (u,id); len
       | _ -> len
 
 let rec number len = parser
