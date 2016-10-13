@@ -2,7 +2,8 @@ File "stdin", line 1, characters 0-36:
 Warning: Ignoring rename of x into y. Only implicit arguments can be renamed.
 [arguments-ignore-rename-nonimpl,vernacular]
 The command has indeed failed with message:
-Error: To rename arguments the "rename" flag must be specified.
+Error:
+To rename arguments the "rename" flag must be specified.
 Argument A renamed to B.
 File "stdin", line 2, characters 0-25:
 Warning: Ignoring rename of A into T. Only implicit arguments can be renamed.
@@ -125,5 +126,6 @@ File "stdin", line 53, characters 0-26:
 Warning: Ignoring rename of x into s. Only implicit arguments can be renamed.
 [arguments-ignore-rename-nonimpl,vernacular]
 The command has indeed failed with message:
-Error: To rename arguments the "rename" flag must be specified.
+Error:
+To rename arguments the "rename" flag must be specified.
 Argument A renamed to R.

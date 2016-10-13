@@ -16,6 +16,16 @@ let push = Backtrace.add_backtrace
 
 exception Anomaly of string option * std_ppcmds (* System errors *)
 
+(* XXX: To move to common tagging functions in Pp, blocked on tag
+ * system cleanup as we cannot define generic error tags now.
+ *
+ * Anyways, tagging should not happen here, but in the specific
+ * listener to the msg_* stuff.
+ *)
+let tag_err_str s = tag Ppstyle.(Tag.inj error_tag tag) (str s) ++ spc ()
+let err_str       = tag_err_str "Error:"
+let ann_str       = tag_err_str "Anomaly:"
+
 let _ =
   let pr = function
   | Anomaly (s, pp) -> Some ("\"Anomaly: " ^ string_of_ppcmds pp ^ "\"")
@@ -93,7 +103,7 @@ let print_backtrace e = match Backtrace.get_backtrace e with
 
 let print_anomaly askreport e =
   if askreport then
-    hov 0 (str "Anomaly: " ++ raw_anomaly e ++ spc () ++
+    hov 0 (ann_str ++ raw_anomaly e ++ spc () ++
            strbrk "Please report at " ++ str Coq_config.wwwbugtracker ++
            str ".")
   else
@@ -115,7 +125,7 @@ let iprint_no_report (e, info) =
 
 let _ = register_handler begin function
   | UserError(s, pps) ->
-    hov 0 (str "Error: " ++ where (Some s) ++ pps)
+    hov 0 (err_str ++ where (Some s) ++ pps)
   | _ -> raise Unhandled
 end
 
