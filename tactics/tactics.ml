@@ -83,7 +83,7 @@ let _ =
 
 let apply_solve_class_goals = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optsync = true; Goptions.optdepr = true;
   Goptions.optname =
     "Perform typeclass resolution on apply-generated subgoals.";
   Goptions.optkey = ["Typeclass";"Resolution";"After";"Apply"];
