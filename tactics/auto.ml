@@ -259,7 +259,7 @@ and erase_subtree depth = function
   | (d,_) :: l -> if Int.equal d depth then l else erase_subtree depth l
 
 let pr_info_atom (d,pp) =
-  str (String.make d ' ') ++ pp () ++ str "."
+  str (String.make (d-1) ' ') ++ pp () ++ str "."
 
 let pr_info_trace = function
   | (Info,_,{contents=(d,Some pp)::l}) ->
