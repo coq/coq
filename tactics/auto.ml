@@ -272,7 +272,7 @@ let tclTRY_dbg d tac =
   let (level, _, _) = d in
   let delay f = Proofview.tclUNIT () >>= fun () -> f () in
   let tac = match level with
-  | Debug | Off -> tac
+  | Debug | Off -> delay (fun () -> msg_debug (pr_dbg_header d); tac)
   | Info -> delay (fun () -> msg_debug (pr_dbg_header d); tac) >>= fun () -> msg_debug (pr_info_trace d); Proofview.tclUNIT ()
   in
   let after = match level with
