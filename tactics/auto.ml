@@ -269,10 +269,10 @@ let pr_info_nop = function
 
 let pr_dbg_header = function
   | (Off,_,_) -> mt ()
-  | (Debug,0,_) -> str "(* debug trivial : *)"
-  | (Debug,_,_) -> str "(* debug auto : *)"
-  | (Info,0,_) -> str "(* info trivial : *)"
-  | (Info,_,_) -> str "(* info auto : *)"
+  | (Debug,0,_) -> str "(* debug trivial: *)"
+  | (Debug,_,_) -> str "(* debug auto: *)"
+  | (Info,0,_) -> str "(* info trivial: *)"
+  | (Info,_,_) -> str "(* info auto: *)"
 
 let tclTRY_dbg d tac =
   let (level, _, _) = d in
