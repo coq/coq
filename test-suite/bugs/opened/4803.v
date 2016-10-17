@@ -25,10 +25,24 @@ Check [ _ ]%list : list _.
 Check [ _ ]%vector : Vector.t _ _.
 Check [ _ ; _ ]%list : list _.
 Check [ _ ; _ ]%vector : Vector.t _ _.
-Fail Check [ _ ; _ ]%mylist : mylist _. (* ideally, this should work, but that requires removing notations from the parser; it should be added to Compat/Coq84.v *)
+Check [ _ ; _ ]%mylist : mylist _.
 Check [ _ ; _ ; _ ]%list : list _.
 Check [ _ ; _ ; _ ]%vector : Vector.t _ _.
-Fail Check [ _ ; _ ; _ ]%mylist : mylist _. (* ideally, this should work, but that requires removing notations from the parser *)
+Check [ _ ; _ ; _ ]%mylist : mylist _.
 Check [ _ ; _ ; _ ; _ ]%list : list _.
 Check [ _ ; _ ; _ ; _ ]%vector : Vector.t _ _.
-Fail Check [ _ ; _ ; _ ; _ ]%mylist : mylist _. (* ideally, this should work, but that requires removing notations from the parser *)
+Check [ _ ; _ ; _ ; _ ]%mylist : mylist _.
+
+(** Now check that we can add and then remove notations from the parser *)
+(* We should be able to stick some vernacular here to remove [] from the parser *)
+Fail Remove Notation "[]".
+Goal True.
+  (* This should not be a syntax error; before moving this file to closed, uncomment this line. *)
+  (* idtac; []. *)
+  constructor.
+Qed.
+
+Check { _ : _ & _ }.
+Reserved Infix "&" (at level 0).
+Fail Remove Infix "&".
+(* Check { _ : _ & _ }. *)
