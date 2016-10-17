@@ -27,21 +27,3 @@ Global Set Refolding Reduction.
 Global Set Typeclasses Legacy Resolution.
 Global Set Typeclasses Limit Intros.
 Global Unset Typeclasses Filtered Unification.
-
-(** In Coq 8.5, [] meant Vector, and [ ] meant list.  Restore this
-    behavior, to allow user-defined [] to not override vector
-    notations.  See https://coq.inria.fr/bugs/show_bug.cgi?id=4785. *)
-
-Require Coq.Lists.List.
-Require Coq.Vectors.VectorDef.
-Module Export Coq.
-Module Export Vectors.
-Module VectorDef.
-Export Coq.Vectors.VectorDef.
-Module VectorNotations.
-Export Coq.Vectors.VectorDef.VectorNotations.
-Notation "[]" := (VectorDef.nil _) : vector_scope.
-End VectorNotations.
-End VectorDef.
-End Vectors.
-End Coq.
