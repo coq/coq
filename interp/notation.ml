@@ -1012,6 +1012,9 @@ let find_notation_parsing_rules ntn =
   try pi3 (String.Map.find ntn !notation_rules)
   with Not_found -> anomaly (str "No parsing rule found for " ++ str ntn)
 
+let get_defined_notations () =
+  String.Set.elements @@ String.Map.domain !notation_rules
+
 let add_notation_extra_printing_rule ntn k v =
   try
     notation_rules :=

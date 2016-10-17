@@ -502,18 +502,6 @@ let apply_to_hyp ctxt id f =
     | None -> raise Hyp_not_found
   in aux [] ctxt
 
-let apply_to_hyp_and_dependent_on ctxt id f g =
-  let rec aux sign =
-    match match_named_context_val sign with
-    | Some (d, v, sign) ->
-	if Id.equal (get_id d) id then
-	  push_named_context_val (f d sign) sign
-	else
-	  let sign = aux sign in
-	  push_named_context_val (g d sign) sign
-    | None -> raise Hyp_not_found
-  in aux ctxt
-
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value ctxt =
   let rec remove_hyps ctxt = match match_named_context_val ctxt with

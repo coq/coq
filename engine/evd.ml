@@ -1410,6 +1410,7 @@ let print_env_short env =
 
 let pr_evar_constraints pbs =
   let pr_evconstr (pbty, env, t1, t2) =
+    let env = Namegen.make_all_name_different env in
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
       print_constr_env env t1 ++ spc () ++
       str (match pbty with

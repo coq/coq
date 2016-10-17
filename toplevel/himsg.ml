@@ -515,7 +515,8 @@ let explain_cant_find_case_type env sigma c =
   let c = Evarutil.nf_evar sigma c in
   let env = make_all_name_different env in
   let pe = pr_lconstr_env env sigma c in
-  str "Cannot infer type of pattern-matching on" ++ ws 1 ++ pe ++ str "."
+  str "Cannot infer the return type of pattern-matching on" ++ ws 1 ++
+    pe ++ str "."
 
 let explain_occur_check env sigma ev rhs =
   let rhs = Evarutil.nf_evar sigma rhs in

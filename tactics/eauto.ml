@@ -351,8 +351,8 @@ let pr_info_nop = function
 
 let pr_dbg_header = function
   | Off -> ()
-  | Debug -> Feedback.msg_debug (str "(* debug eauto : *)")
-  | Info  -> Feedback.msg_debug (str "(* info eauto : *)")
+  | Debug -> Feedback.msg_debug (str "(* debug eauto: *)")
+  | Info  -> Feedback.msg_debug (str "(* info eauto: *)")
 
 let pr_info dbg s =
   if dbg != Info then ()

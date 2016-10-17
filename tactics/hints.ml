@@ -1299,11 +1299,11 @@ let make_db_list dbnames =
 let pr_hint_elt (c, _, _) = pr_constr c
 
 let pr_hint h = match h.obj with
-  | Res_pf (c, _) -> (str"apply " ++ pr_hint_elt c)
-  | ERes_pf (c, _) -> (str"eapply " ++ pr_hint_elt c)
+  | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt c)
+  | ERes_pf (c, _) -> (str"simple eapply " ++ pr_hint_elt c)
   | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt c)
   | Res_pf_THEN_trivial_fail (c, _) ->
-      (str"apply " ++ pr_hint_elt c ++ str" ; trivial")
+      (str"simple apply " ++ pr_hint_elt c ++ str" ; trivial")
   | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac ->
       let env =
