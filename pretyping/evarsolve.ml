@@ -600,7 +600,13 @@ let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_si
  * substitution u1..uq.
  *)
 
+exception MorePreciseOccurCheckNeeeded
+
 let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
+  if Evd.is_defined evd evk1 then
+      (* Some circularity somewhere (see e.g. #3209) *)
+      raise MorePreciseOccurCheckNeeeded;
+  let (evk1,args1) = destEvar (whd_evar evd (mkEvar (evk1,args1))) in
   let evi1 = Evd.find_undefined evd evk1 in
   let env1,rel_sign = env_rel_context_chop k env in
   let sign1 = evar_hyps evi1 in
@@ -1542,6 +1548,8 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
         postpone_non_unique_projection env evd pbty ev sols rhs
     | NotEnoughInformationEvarEvar t ->
         add_conv_oriented_pb (pbty,env,mkEvar ev,t) evd
+    | MorePreciseOccurCheckNeeeded ->
+        add_conv_oriented_pb (pbty,env,mkEvar ev,rhs) evd
     | NotInvertibleUsingOurAlgorithm _ | MetaOccurInBodyInternal as e ->
         raise e
     | OccurCheckIn (evd,rhs) ->
