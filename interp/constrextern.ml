@@ -147,17 +147,8 @@ let extern_evar loc n l = CEvar (loc,n,l)
     For instance, in the debugger the tables of global references
     may be inaccurate *)
 
-let safe_shortest_qualid_of_global vars r =
-  try shortest_qualid_of_global vars r
-  with Not_found ->
-    match r with
-    | VarRef v -> make_qualid DirPath.empty v
-    | ConstRef c -> make_qualid DirPath.empty Names.(Label.to_id (con_label c))
-    | IndRef (i,_) | ConstructRef ((i,_),_) ->
-        make_qualid DirPath.empty Names.(Label.to_id (mind_label i))
-
 let default_extern_reference loc vars r =
-  Qualid (loc,safe_shortest_qualid_of_global vars r)
+  Qualid (loc,shortest_qualid_of_global vars r)
 
 let my_extern_reference = ref default_extern_reference
 
