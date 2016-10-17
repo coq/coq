@@ -260,31 +260,25 @@ let pr_info_atom (d,pp) =
 
 let pr_info_trace = function
   | (Info,_,{contents=(d,Some pp)::l}) ->
-      prlist_with_sep fnl pr_info_atom (cleanup_info_trace d [(d,pp)] l)
-  | _ -> mt ()
+      Feedback.msg_debug (prlist_with_sep fnl pr_info_atom (cleanup_info_trace d [(d,pp)] l))
+  | _ -> ()
 
 let pr_info_nop = function
-  | (Info,_,_) -> str "idtac."
-  | _ -> mt ()
+  | (Info,_,_) -> Feedback.msg_debug (str "idtac.")
+  | _ -> ()
 
 let pr_dbg_header = function
-  | (Off,_,_) -> mt ()
-  | (Debug,0,_) -> str "(* debug trivial: *)"
-  | (Debug,_,_) -> str "(* debug auto: *)"
-  | (Info,0,_) -> str "(* info trivial: *)"
-  | (Info,_,_) -> str "(* info auto: *)"
+  | (Off,_,_) -> ()
+  | (Debug,0,_) -> Feedback.msg_debug (str "(* debug trivial: *)")
+  | (Debug,_,_) -> Feedback.msg_debug (str "(* debug auto: *)")
+  | (Info,0,_) -> Feedback.msg_debug (str "(* info trivial: *)")
+  | (Info,_,_) -> Feedback.msg_debug (str "(* info auto: *)")
 
 let tclTRY_dbg d tac =
-  let (level, _, _) = d in
   let delay f = Proofview.tclUNIT () >>= fun () -> f () in
-  let tac = match level with
-  | Off -> tac
-  | Debug | Info -> delay (fun () -> Feedback.msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d); tac)
-  in
-  let after = match level with
-  | Info -> delay (fun () -> Feedback.msg_debug (pr_info_nop d); Proofview.tclUNIT ())
-  | Off | Debug -> Proofview.tclUNIT ()
-  in
+  let tac = delay (fun () -> pr_dbg_header d; tac) >>=
+              fun () -> pr_info_trace d; Proofview.tclUNIT () in
+  let after = delay (fun () -> pr_info_nop d; Proofview.tclUNIT ()) in
   Tacticals.New.tclORELSE0 tac after
 
 (**************************************************************************)
