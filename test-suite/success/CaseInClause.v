@@ -24,3 +24,6 @@ Theorem foo : forall (n m : nat) (pf : n = m),
 (* Check redundant clause is removed *)
 Inductive I : nat * nat -> Type := C : I (0,0).
 Check fun x : I (1,1) => match x in I (y,z) return y = z with C => eq_refl end.
+
+(* An example of non-local inference of the type of an impossible case *)
+Check (fun y n (x:Vector.t nat (S n)) => match x with a::_ => a | _ => y end) 2.
