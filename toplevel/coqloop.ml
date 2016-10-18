@@ -34,7 +34,7 @@ let resize_buffer ibuf =
   ibuf.str <- nstr
 
 (* Delete all irrelevant lines of the input buffer. Keep the last line
-   in the buffer (useful when there are several commands on the same line. *)
+   in the buffer (useful when there are several commands on the same line). *)
 
 let resynch_buffer ibuf =
   match ibuf.bols with
@@ -299,7 +299,7 @@ let do_vernac () =
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.eval_expr input (read_sentence input)
+    Vernac.process_expr top_buffer.tokens (read_sentence input)
   with
     | End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
@@ -308,7 +308,6 @@ let do_vernac () =
         else Feedback.msg_error (str"There is no ML toplevel.")
     | any ->
         let any = CErrors.push any in
-        Format.set_formatter_out_channel stdout;
         let msg = print_toplevel_error any ++ fnl () in
         pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
         Format.pp_print_flush !Pp_control.std_ft ()

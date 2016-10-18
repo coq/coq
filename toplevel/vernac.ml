@@ -18,6 +18,8 @@ open Vernacexpr
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
+let user_error loc s = CErrors.user_err ~loc (str s)
+
 (* Navigation commands are allowed in a coqtop session but not in a .v file *)
 
 let rec is_navigation_vernac = function
@@ -41,6 +43,14 @@ and is_deep_navigation_vernac = function
 let is_reset = function
   | VernacResetInitial | VernacResetName _ -> true
   | _ -> false
+
+let checknav_simple loc cmd =
+  if is_navigation_vernac cmd && not (is_reset cmd) then
+    user_error loc "Navigation commands forbidden in files."
+
+let checknav_deep loc ast =
+  if is_deep_navigation_vernac ast then
+    user_error loc "Navigation commands forbidden in nested commands."
 
 (* When doing Load on a file, two behaviors are possible:
 
@@ -70,8 +80,6 @@ let disable_drop = function
   | Drop -> CErrors.error "Drop is forbidden."
   | e -> e
 
-let user_error loc s = CErrors.user_err ~loc ~hdr:"_" (str s)
-
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.
    Note: we could use only one thanks to seek_in, but seeking on and on in
@@ -81,7 +89,7 @@ let open_file_twice_if verbosely longfname =
   let in_chan = open_utf8_file_in longfname in
   let verb_ch =
     if verbosely then Some (open_utf8_file_in longfname) else None in
-  let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
+  let po = Pcoq.Gram.parsable ~file:longfname (Stream.of_channel in_chan) in
   (in_chan, longfname, (po, verb_ch))
 
 let close_input in_chan (_,verb) =
@@ -114,48 +122,39 @@ let parse_sentence = Flags.with_option Flags.we_are_parsing
 (* vernac parses the given stream, executes interpfun on the syntax tree it
  * parses, and is verbose on "primitives" commands if verbosely is true *)
 
-let just_parsing = ref false
 let chan_beautify = ref stdout
 let beautify_suffix = ".beautified"
 
-let set_formatter_translator() =
-  let ch = !chan_beautify in
+let set_formatter_translator ch =
   let out s b e = output ch s b e in
   Format.set_formatter_output_functions out (fun () -> flush ch);
   Format.set_max_boxes max_int
 
-let pr_new_syntax_in_context loc ocom =
+let pr_new_syntax_in_context loc chan_beautify ocom =
   let loc = Loc.unloc loc in
-  if !beautify_file then set_formatter_translator();
+  if !beautify_file then set_formatter_translator chan_beautify;
   let fs = States.freeze ~marshallable:`No in
-  (* Side-effect: order matters *)
-  let before = comment (CLexer.extract_comments (fst loc)) in
-  let com = match ocom with
-    | Some com -> Ppvernac.pr_vernac com
-    | None -> mt() in
-  let after = comment (CLexer.extract_comments (snd loc)) in
-  if !beautify_file then
-    Pp.msg_with !Pp_control.std_ft (hov 0 (before ++ com ++ after))
-  else
-    Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
-  States.unfreeze fs;
-  Format.set_formatter_out_channel stdout
+  (* The content of this is not supposed to fail, but if ever *)
+  try
+    (* Side-effect: order matters *)
+    let before = comment (CLexer.extract_comments (fst loc)) in
+    let com = match ocom with
+      | Some com -> Ppvernac.pr_vernac com
+      | None -> mt() in
+    let after = comment (CLexer.extract_comments (snd loc)) in
+    if !beautify_file then
+      Pp.msg_with !Pp_control.std_ft (hov 0 (before ++ com ++ after))
+    else
+      Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
+    States.unfreeze fs;
+    Format.set_formatter_out_channel stdout
+  with any ->
+    States.unfreeze fs;
+    Format.set_formatter_out_channel stdout
 
-let pr_new_syntax (po,_) loc ocom =
+let pr_new_syntax po loc chan_beautify ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
-  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context loc) ocom
-
-let save_translator_coqdoc () =
-  (* translator state *)
-  let ch = !chan_beautify in
-  (* end translator state *)
-  let coqdocstate = CLexer.location_table () in
-  ch,coqdocstate
-
-let restore_translator_coqdoc (ch,coqdocstate) =
-  if !Flags.beautify_file then close_out !chan_beautify;
-  chan_beautify := ch;
-  CLexer.restore_location_table coqdocstate
+  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context chan_beautify loc) ocom
 
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
@@ -185,72 +184,52 @@ let print_cmd_header loc com =
   Pp.pp_with !Pp_control.std_ft (pp_cmd_header loc com);
   Format.pp_print_flush !Pp_control.std_ft ()
 
-let rec vernac_com input checknav (loc,com) =
+let rec interp_vernac po chan_beautify checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
         let fname = CUnix.make_suffix fname ".v" in
         let f = Loadpath.locate_file fname in
-	let st = save_translator_coqdoc () in
-        let old_lexer_file = CLexer.get_current_file () in
-        CLexer.set_current_file f;
-	if !Flags.beautify_file then
-	  begin
-	    chan_beautify := open_out (f^beautify_suffix);
-          end;
-	begin
-	  try
-            Flags.silently (read_vernac_file verbosely) f;
-	    restore_translator_coqdoc st;
-            CLexer.set_current_file old_lexer_file;
-	  with reraise ->
-            let reraise = CErrors.push reraise in
-	    restore_translator_coqdoc st;
-            CLexer.set_current_file old_lexer_file;
-	    iraise reraise
-	end
-
-    | v when !just_parsing -> ()
+        load_vernac verbosely f
 
     | v -> Stm.interp (Flags.is_verbose()) (loc,v)
   in
     try
       checknav loc com;
-      if do_beautify () then pr_new_syntax input loc (Some com);
+      if !beautify then pr_new_syntax po chan_beautify loc (Some com);
       (* XXX: This is not 100% correct if called from an IDE context *)
       if !Flags.time then print_cmd_header loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
       interp com
     with reraise ->
       let (reraise, info) = CErrors.push reraise in
-      Format.set_formatter_out_channel stdout;
       let loc' = Option.default Loc.ghost (Loc.get_loc info) in
       if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
       else iraise (reraise, info)
 
-and read_vernac_file verbosely s =
-  let checknav loc cmd =
-    if is_navigation_vernac cmd && not (is_reset cmd) then
-	user_error loc "Navigation commands forbidden in files"
-  in
-  let (in_chan, fname, input) = open_file_twice_if verbosely s in
+(* Load a vernac file. CErrors are annotated with file and location *)
+and load_vernac verbosely file =
+  let chan_beautify =
+    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout in
+  let (in_chan, fname, input) = open_file_twice_if verbosely file in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
-      let loc_ast = parse_sentence input in
+      let loc_ast = Flags.silently parse_sentence input in
       CWarnings.set_current_loc (fst loc_ast);
-      vernac_com input checknav loc_ast;
+      Flags.silently (interp_vernac (fst input) chan_beautify checknav_simple) loc_ast;
     done
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
-    Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
-          if do_beautify () then
-            pr_new_syntax input (Loc.make_loc (max_int,max_int)) None
+          if !beautify then
+            pr_new_syntax (fst input) chan_beautify (Loc.make_loc (max_int,max_int)) None;
+          if !Flags.beautify_file then close_out chan_beautify;
       | reraise ->
+         if !Flags.beautify_file then close_out chan_beautify;
 	 iraise (disable_drop e, info)
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
@@ -260,31 +239,11 @@ and read_vernac_file verbosely s =
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
 
-let checknav loc ast =
-  if is_deep_navigation_vernac ast then
-    user_error loc "Navigation commands forbidden in nested commands"
-
-let eval_expr input loc_ast = vernac_com input checknav loc_ast
+let process_expr po loc_ast = interp_vernac po stdout checknav_deep loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
 let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
-
-(* Load a vernac file. CErrors are annotated with file and location *)
-let load_vernac verb file =
-  chan_beautify :=
-    if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
-    let old_lexer_file = CLexer.get_current_file () in
-  try
-    CLexer.set_current_file file;
-    Flags.silently (read_vernac_file verb) file;
-    if !Flags.beautify_file then close_out !chan_beautify;
-    CLexer.set_current_file old_lexer_file;
-  with any ->
-    let (e, info) = CErrors.push any in
-    if !Flags.beautify_file then close_out !chan_beautify;
-    CLexer.set_current_file old_lexer_file;
-    iraise (disable_drop e, info)
 
 let warn_file_no_extension =
   CWarnings.create ~name:"file-no-extension" ~category:"filesystem"

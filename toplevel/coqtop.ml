@@ -168,7 +168,7 @@ let load_vernacular () =
   List.iter
     (fun (s,b) ->
       let s = Loadpath.locate_file s in
-      if Flags.do_beautify () then
+      if !Flags.beautify then
 	with_option beautify_file (Vernac.load_vernac b) s
       else
 	Vernac.load_vernac b s)
@@ -219,7 +219,7 @@ let add_compile verbose s =
   compile_list := (verbose,s) :: !compile_list
 
 let compile_file (v,f) =
-  if Flags.do_beautify () then
+  if !Flags.beautify then
     with_option beautify_file (Vernac.compile v) f
   else
     Vernac.compile v f
@@ -228,11 +228,9 @@ let compile_files () =
   if !compile_list == [] then ()
   else
     let init_state = States.freeze ~marshallable:`No in
-    let coqdoc_init_state = CLexer.location_table () in
     Feedback.(add_feeder debug_feeder);
     List.iter (fun vf ->
         States.unfreeze init_state;
-        CLexer.restore_location_table coqdoc_init_state;
         compile_file vf)
       (List.rev !compile_list)
 
@@ -538,7 +536,7 @@ let parse_args arglist =
         Flags.async_proofs_never_reopen_branch := true;
     |"-batch" -> set_batch_mode ()
     |"-test-mode" -> test_mode := true
-    |"-beautify" -> make_beautify true
+    |"-beautify" -> beautify := true
     |"-boot" -> boot := true; no_load_rc ()
     |"-bt" -> Backtrace.record_backtrace true
     |"-color" -> set_color (next ())
@@ -550,7 +548,7 @@ let parse_args arglist =
     |"-ideslave" -> set_ideslave ()
     |"-impredicative-set" -> set_impredicative_set ()
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
-    |"-just-parsing" -> Vernac.just_parsing := true
+    |"-just-parsing" -> warning "-just-parsing option has been removed in 8.6"
     |"-m"|"--memory" -> memory_stat := true
     |"-noinit"|"-nois" -> load_init := false
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true

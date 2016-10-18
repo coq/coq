@@ -101,14 +101,6 @@ module Error = struct
 end
 open Error
 
-let current_file = ref ""
-
-let get_current_file () =
-  !current_file
-
-let set_current_file ~fname =
-  current_file := fname
-
 let err loc str = Loc.raise ~loc:(Compat.to_coqloc loc) (Error.E str)
 
 let bad_token str = raise (Error.E (Bad_token str))
@@ -119,11 +111,6 @@ type token_kind =
   | Utf8Token of (Unicode.status * int)
   | AsciiChar
   | EmptyStream
-
-let error_unsupported_unicode_character loc n unicode cs =
-  let bp = Stream.count cs in
-  let loc = set_loc_pos loc bp (bp+n) in
-  err loc (UnsupportedUnicode unicode)
 
 let error_utf8 loc cs =
   let bp = Stream.count cs in
@@ -174,14 +161,12 @@ let lookup_utf8_tail loc c cs =
           (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
       | _ -> error_utf8 loc cs
     in
-    try Unicode.classify unicode, n
-    with Unicode.Unsupported ->
-      njunk n cs; error_unsupported_unicode_character loc n unicode cs
+    Utf8Token (Unicode.classify unicode, n)
 
 let lookup_utf8 loc cs =
   match Stream.peek cs with
     | Some ('\x00'..'\x7F') -> AsciiChar
-    | Some ('\x80'..'\xFF' as c) -> Utf8Token (lookup_utf8_tail loc c cs)
+    | Some ('\x80'..'\xFF' as c) -> lookup_utf8_tail loc c cs
     | None -> EmptyStream
 
 let unlocated f x = f x
@@ -198,17 +183,6 @@ let check_keyword str =
         | EmptyStream -> ()
   in
   loop_symb (Stream.of_string str)
-
-let warn_unparsable_keyword =
-  CWarnings.create ~name:"unparsable-keyword" ~category:"parsing"
-         (fun (s,unicode) ->
-          strbrk (Printf.sprintf "Token '%s' contains unicode character 0x%x \
-                                  which will not be parsable." s unicode))
-            
-let check_keyword_to_add s =
-  try check_keyword s
-  with Error.E (UnsupportedUnicode unicode) ->
-    warn_unparsable_keyword (s,unicode)
 
 let check_ident str =
   let rec loop_id intail = parser
@@ -240,7 +214,7 @@ let is_keyword s =
 let add_keyword str =
   if not (is_keyword str) then
     begin
-      check_keyword_to_add str;
+      check_keyword str;
       token_tree := ttree_add !token_tree str
     end
 
@@ -270,6 +244,12 @@ let get_buff len = String.sub !buff 0 len
 
 (* The classical lexer: idents, numbers, quoted strings, comments *)
 
+let warn_unrecognized_unicode =
+  CWarnings.create ~name:"unrecognized-unicode" ~category:"parsing"
+         (fun (u,id) ->
+          strbrk (Printf.sprintf "Not considering unicode character \"%s\" of unknown \
+                                  lexical status as part of identifier \"%s\"." u id))
+
 let rec ident_tail loc len = parser
   | [< ' ('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_' as c); s >] ->
       ident_tail loc (store len c) s
@@ -277,6 +257,10 @@ let rec ident_tail loc len = parser
       match lookup_utf8 loc s with
       | Utf8Token ((Unicode.IdentPart | Unicode.Letter), n) ->
           ident_tail loc (nstore n len s) s
+      | Utf8Token (Unicode.Unknown, n) ->
+          let id = get_buff len in
+          let u = String.concat "" (List.map (String.make 1) (Stream.npeek n s)) in
+          warn_unrecognized_unicode ~loc:!@loc (u,id); len
       | _ -> len
 
 let rec number len = parser
@@ -334,6 +318,9 @@ let rec string loc ~comm_level bp len = parser
 (* Hook for exporting comment into xml theory files *)
 let (f_xml_output_comment, xml_output_comment) = Hook.make ~default:ignore ()
 
+(* To associate locations to a file name *)
+let current_file = ref None
+
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
 let comm_loc bp = match !comment_begin with
@@ -354,16 +341,20 @@ let rec split_comments comacc acc pos = function
 
 let extract_comments pos = split_comments [] [] pos !comments
 
-type comments_state = int option * string * bool * ((int * int) * string) list
-let restore_comments_state (o,s,b,c) =
+(* The state of the lexer visible from outside *)
+type lexer_state = int option * string * bool * ((int * int) * string) list * string option
+
+let init_lexer_state f = (None,"",true,[],f)
+let set_lexer_state (o,s,b,c,f) =
   comment_begin := o;
   Buffer.clear current_comment; Buffer.add_string current_comment s;
   between_commands := b;
-  comments := c
-let default_comments_state = (None,"",true,[])
-let comments_state () =
-  let s = (!comment_begin, Buffer.contents current_comment, !between_commands, !comments) in
-  restore_comments_state default_comments_state; s
+  comments := c;
+  current_file := f
+let release_lexer_state () =
+  (!comment_begin, Buffer.contents current_comment, !between_commands, !comments, !current_file)
+let drop_lexer_state () =
+    set_lexer_state (init_lexer_state None)
 
 let real_push_char c = Buffer.add_char current_comment c
 
@@ -391,7 +382,7 @@ let comment_stop ep =
   if !Flags.xml_export && Buffer.length current_comment > 0 &&
     (!between_commands || not(null_comment current_s)) then
       Hook.get f_xml_output_comment current_s;
-  (if Flags.do_beautify() && Buffer.length current_comment > 0 &&
+  (if !Flags.beautify && Buffer.length current_comment > 0 &&
     (!between_commands || not(null_comment current_s)) then
     let bp = match !comment_begin with
         Some bp -> bp
@@ -408,7 +399,7 @@ let comment_stop ep =
 
 (* Does not unescape!!! *)
 let rec comm_string loc bp = parser
-  | [< ''"' >] ep -> push_string "\""; loc
+  | [< ''"' >] -> push_string "\""; loc
   | [< ''\\'; loc =
            (parser [< ' ('"' | '\\' as c) >] ->
               let () = match c with
@@ -438,7 +429,7 @@ let rec comment loc bp = parser bp2
       let loc =
 	(* In beautify mode, the lexing differs between strings in comments and
 	   regular strings (e.g. escaping). It seems wrong. *)
-	if Flags.do_beautify() then (push_string"\""; comm_string loc bp2 s)
+	if !Flags.beautify then (push_string"\""; comm_string loc bp2 s)
 	else fst (string loc ~comm_level:(Some 0) bp2 0 s)
       in
       comment loc bp s
@@ -511,20 +502,19 @@ let process_chars loc bp c cs =
 	let loc = set_loc_pos loc bp ep' in
         err loc Undefined_token
 
-let token_of_special c s = match c with
-  | '.' -> FIELD s
-  | _ -> assert false
+(* Parse what follows a dot *)
 
-(* Parse what follows a dot / a dollar *)
-
-let parse_after_special loc c bp =
+let parse_after_dot loc c bp =
   parser
-  | [< ' ('a'..'z' | 'A'..'Z' | '_' as d); len = ident_tail loc (store 0 d) >] ->
-      token_of_special c (get_buff len)
+  | [< ' ('a'..'z' | 'A'..'Z' | '_' as d); len = ident_tail loc (store 0 d); s >] ->
+      let field = get_buff len in
+      (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
   | [< s >] ->
       match lookup_utf8 loc s with
       | Utf8Token (Unicode.Letter, n) ->
-          token_of_special c (get_buff (ident_tail loc (nstore n 0 s) s))
+          let len = ident_tail loc (nstore n 0 s) s in
+          let field = get_buff len in
+          (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
       | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars loc bp c s)
 
 (* Parse what follows a question mark *)
@@ -552,7 +542,7 @@ let rec next_token loc = parser bp
       comm_loc bp; push_char c; next_token (bump_loc_line loc ep) s
   | [< '' ' | '\t' | '\r' as c; s >] ->
       comm_loc bp; push_char c; next_token loc s
-  | [< ''.' as c; t = parse_after_special loc c bp; s >] ep ->
+  | [< ''.' as c; t = parse_after_dot loc c bp; s >] ep ->
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
          for instance ".(", or followed by a blank or eof. *)
@@ -600,7 +590,7 @@ let rec next_token loc = parser bp
             let ep = Stream.count s in
             comment_stop bp;
             (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
-        | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart), _) ->
+        | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart | Unicode.Unknown), _) ->
             let t = process_chars loc bp (Stream.next s) s in
             let new_between_commands = match t with
               (KEYWORD ("{"|"}"),_) -> !between_commands | _ -> false in
@@ -625,12 +615,6 @@ let loct_func loct i =
   try Hashtbl.find loct i with Not_found -> locerr ()
 
 let loct_add loct i loc = Hashtbl.add loct i loc
-
-let current_location_table = ref (loct_create ())
-
-type location_table = (int, Compat.CompatLoc.t) Hashtbl.t
-let location_table () = !current_location_table
-let restore_location_table t = current_location_table := t
 
 (** {6 The lexer of Coq} *)
 
@@ -669,7 +653,6 @@ let func cs =
 	 cur_loc := Compat.after loc;
          loct_add loct i loc; Some tok)
   in
-  current_location_table := loct;
   (ts, loct_func loct)
 
 let lexer = {
@@ -706,7 +689,6 @@ end
 let mk () =
   let loct = loct_create () in
   let cur_loc = ref (Compat.make_loc !current_file 1 0 0 0) in
-  current_location_table := loct; 
   let rec self init_loc (* FIXME *) =
     parser i
        [< (tok, loc) = next_token !cur_loc; s >] ->
