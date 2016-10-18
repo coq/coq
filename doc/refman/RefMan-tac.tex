@@ -3472,7 +3472,7 @@ hints of the database named {\tt core}.
   Uses the hint databases $\ident_1$ \dots\ $\ident_n$ in addition to
   the database {\tt core}. See Section~\ref{Hints-databases} for the
   list of pre-defined databases and the way to create or extend a
-  database.  This option can be combined with the previous one.
+  database.
 
 \item {\tt auto with *}
 
@@ -3486,15 +3486,17 @@ hints of the database named {\tt core}.
   $lemma_i$ is an inductive type, it is the collection of its
   constructors which is added as hints.
 
-\item \texttt{auto using} \nterm{lemma}$_1$ {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$ with \ident$_1$ {\ldots} \ident$_n$
-
-  This combines the effects of the {\tt using} and {\tt with} options.
-
 \item {\tt info\_auto}
 
   Behaves like {\tt auto} but shows the tactics it uses to solve the goal.
   This variant is very useful for getting a better understanding of automation,
   or to know what lemmas/assumptions were used.
+
+\item {\tt \zeroone{info\_}auto \zeroone{\num}} \zeroone{{\tt using} \nterm{lemma}$_1$
+  {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
+  \ident$_1$ {\ldots} \ident$_n$}
+
+  This is the most general form, combining the various options.
 
 \item {\tt trivial}\tacindex{trivial}
 
@@ -3505,6 +3507,14 @@ hints of the database named {\tt core}.
 \item \texttt{trivial with \ident$_1$ \dots\ \ident$_n$}
 
 \item \texttt{trivial with *}
+
+\item \texttt{trivial using} \nterm{lemma}$_1$ {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$
+
+\item {\tt info\_trivial}
+
+\item {\tt \zeroone{info\_}trivial} \zeroone{{\tt using} \nterm{lemma}$_1$
+  {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
+  \ident$_1$ {\ldots} \ident$_n$}
 
 \end{Variants}
 
@@ -3536,6 +3546,16 @@ Abort.
 \end{coq_eval}
 
 Note that {\tt ex\_intro} should be declared as a hint.
+
+\begin{Variants}
+
+\item {\tt \zeroone{info\_}eauto \zeroone{\num}} \zeroone{{\tt using} \nterm{lemma}$_1$
+  {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
+  \ident$_1$ {\ldots} \ident$_n$}
+
+  The various options for eauto are the same as for auto.
+
+\end{Variants}
 
 \SeeAlso Section~\ref{Hints-databases}
 
