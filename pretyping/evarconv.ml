@@ -1147,7 +1147,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       let f env evd pbty x y = is_fconv ~reds:ts pbty env evd x y in
       Success (solve_refl ~can_drop:true f env evd
                  (position_problem true pbty) evk1 args1 args2)
-  | Evar ev1, Evar ev2 ->
+  | Evar ev1, Evar ev2 when app_empty ->
       Success (solve_evar_evar ~force:true
         (evar_define (evar_conv_x ts) ~choose:true) (evar_conv_x ts) env evd
         (position_problem true pbty) ev1 ev2)
