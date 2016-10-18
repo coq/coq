@@ -3490,6 +3490,12 @@ hints of the database named {\tt core}.
 
   This combines the effects of the {\tt using} and {\tt with} options.
 
+\item {\tt info\_auto}
+
+  Behaves like {\tt auto} but shows the tactics it uses to solve the goal.
+  This variant is very useful for getting a better understanding of automation,
+  or to know what lemmas/assumptions were used.
+
 \item {\tt trivial}\tacindex{trivial}
 
   This tactic is a restriction of {\tt auto} that is not recursive and
