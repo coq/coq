@@ -69,7 +69,7 @@ let root_of_id id =
 
 (* Rem: semantics is a bit different, if an ident starts with toto00 then
   after successive renamings it comes to toto09, then it goes on with toto10 *)
-let lift_subscript id =
+let increment_subscript id =
   let id = Id.to_string id in
   let len = String.length id in
   let rec add carrypos =

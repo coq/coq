@@ -10,6 +10,7 @@ We renamed the following functions:
   Context.Named.Declaration.fold -> Context.Named.Declaration.fold_constr
   Printer.pr_var_list_decl       -> Printer.pr_compacted_decl
   Printer.pr_var_decl            -> Printer.pr_named_decl
+  Nameops.lift_subscript         -> Nameops.increment_subscript
 
 We removed the following functions:
 

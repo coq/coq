@@ -21,9 +21,9 @@ val root_of_id : Id.t -> Id.t (** remove trailing digits, ' and _ *)
 val add_suffix : Id.t -> string -> Id.t
 val add_prefix : string -> Id.t -> Id.t
 
-val has_subscript    : Id.t -> bool
-val lift_subscript   : Id.t -> Id.t
-val forget_subscript : Id.t -> Id.t
+val has_subscript       : Id.t -> bool
+val increment_subscript : Id.t -> Id.t
+val forget_subscript    : Id.t -> Id.t
 
 val out_name : Name.t -> Id.t
 (** [out_name] associates [id] to [Name id]. Raises [Failure "Nameops.out_name"]

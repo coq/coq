@@ -170,7 +170,7 @@ let it_mkLambda_or_LetIn_name env b hyps =
 (* Looks for next "good" name by lifting subscript *)
 
 let next_ident_away_from id bad =
-  let rec name_rec id = if bad id then name_rec (lift_subscript id) else id in
+  let rec name_rec id = if bad id then name_rec (increment_subscript id) else id in
   name_rec id
 
 (* Restart subscript from x0 if name starts with xN, or x00 if name
