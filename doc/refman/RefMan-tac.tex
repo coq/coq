@@ -3513,8 +3513,8 @@ intact. \texttt{auto} and \texttt{trivial} never fail.
 
 This tactic generalizes {\tt auto}. While {\tt auto} does not try
 resolution hints which would leave existential variables in the goal,
-{\tt eauto} does try them (informally speaking, it uses {\tt eapply}
-where {\tt auto} uses {\tt apply}).
+{\tt eauto} does try them (informally speaking, it uses
+{\tt simple eapply} where {\tt auto} uses {\tt simple apply}).
 As a consequence, {\tt eauto} can solve such a goal:
 
 \begin{coq_eval}
@@ -3529,8 +3529,7 @@ eauto.
 Abort.
 \end{coq_eval}
 
-Note that {\tt ex\_intro} should be declared as an
-hint.
+Note that {\tt ex\_intro} should be declared as a hint.
 
 \SeeAlso Section~\ref{Hints-databases}
 
