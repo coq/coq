@@ -89,3 +89,20 @@ Fail Definition gadt_id T (x: gadt T) : gadt T :=
   match x with
   | gadtNat n => gadtNat n
   end.
+
+(* A variant of #5142 (see Satrajit Roy's example on coq-club (Oct 17, 2016)) *)
+
+Inductive type:Set:=Nat.
+Inductive tbinop:type->type->type->Set:= TPlus : tbinop Nat Nat Nat.
+Inductive texp:type->Set:=
+ |TNConst:nat->texp Nat
+ |TBinop:forall t1 t2 t, tbinop t1 t2 t->texp t1->texp t2->texp t.
+Definition typeDenote(t:type):Set:= match t with Nat => nat end.
+
+(* We expect a failure on TBinop *)
+Fail Fixpoint texpDenote t (e:texp t):typeDenote t:=
+  match e with
+  | TNConst n => n
+  | TBinop t1 t2 _ b e1 e2 => O
+  end.
+
