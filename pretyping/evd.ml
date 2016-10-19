@@ -840,6 +840,7 @@ let set_universe_context evd uctx' =
   { evd with universes = uctx' }
 
 let add_conv_pb ?(tail=false) pb d =
+  (** MS: we have duplicates here, why? *)
   if tail then {d with conv_pbs = d.conv_pbs @ [pb]}
   else {d with conv_pbs = pb::d.conv_pbs}
 
@@ -1888,6 +1889,16 @@ let print_env_short env =
 
 let pr_evar_constraints pbs =
   let pr_evconstr (pbty, env, t1, t2) =
+    let env =
+      (** We currently allow evar instances to refer to anonymous de
+          Bruijn indices, so we protect the error printing code in this
+          case by giving names to every de Bruijn variable in the
+          rel_context of the conversion problem. MS: we should rather
+          stop depending on anonymous variables, they can be used to
+          indicate independency. Also, this depends on a strategy for
+          naming/renaming. *)
+      Namegen.make_all_name_different env
+    in
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
       print_constr_env env t1 ++ spc () ++
       str (match pbty with
