@@ -43,7 +43,7 @@ type structured_constant =
 type reloc_table = (tag * int) array
 
 type annot_switch =
-   {ci : case_info; rtbl : reloc_table; tailcall : bool}
+   {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
 
 module Label =
   struct
@@ -87,6 +87,7 @@ type instruction =
   | Ksequence of bytecodes * bytecodes
   | Kproj of int * Constant.t  (* index of the projected argument,
                                            name of projection *)
+  | Kensurestackcapacity of int
 (* spiwack: instructions concerning integers *)
   | Kbranch of Label.t                  (* jump to label *)
   | Kaddint31                           (* adds the int31 in the accu
@@ -248,6 +249,8 @@ let rec pp_instr i =
   | Kbranch lbl -> str "branch " ++ pp_lbl lbl
 
   | Kproj(n,p) -> str "proj " ++ int n ++ str " " ++ Constant.print p
+
+  | Kensurestackcapacity size -> str "growstack " ++ int size
 
   | Kaddint31 -> str "addint31"
   | Kaddcint31 -> str "addcint31"

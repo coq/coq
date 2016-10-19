@@ -130,6 +130,7 @@ value init_coq_vm(value unit) /* ML */
   return Val_unit;;
 }
 
+/* [required_space] is a size in words */
 void realloc_coq_stack(asize_t required_space)
 {
   asize_t size;
