@@ -741,7 +741,7 @@ let pr_constraints printenv env sigma evars cstrs =
       let evs =
         prlist
         (fun (ev, evi) -> fnl () ++ pr_existential_key sigma ev ++
-            str " : " ++ pr_lconstr_env env' sigma evi.evar_concl) l
+            str " : " ++ pr_lconstr_env env' sigma evi.evar_concl ++ fnl ()) l
       in
       h 0 (pe ++ evs ++ pr_evar_constraints cstrs)
     else
