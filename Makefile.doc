@@ -61,7 +61,7 @@ endif
 	(cd `dirname $<`; $(DVIPS) -q -o `basename $@` `basename $<`)
 
 %.png: %.fig
-	$(FIG2DEV) -m 2 -L png $< $@
+	$(FIG2DEV) -L png -m 2 $< $@
 
 %.pdf: %.fig
 	$(FIG2DEV) -L pdftex $< $@
