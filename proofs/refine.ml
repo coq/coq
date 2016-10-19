@@ -149,3 +149,14 @@ let refine_casted ?unsafe f = Proofview.Goal.enter { enter = begin fun gl ->
   } in
   refine ?unsafe f
 end }
+
+(** {7 solve_constraints}
+
+  Ensure no remaining unification problems are left. Run at every "." by default. *)
+
+let solve_constraints =
+  let open Proofview in
+  tclENV >>= fun env -> tclEVARMAP >>= fun sigma ->
+   try let sigma = Evarconv.consider_remaining_unif_problems env sigma in
+       Unsafe.tclEVARSADVANCE sigma
+   with e -> tclZERO e

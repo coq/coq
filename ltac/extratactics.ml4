@@ -370,6 +370,11 @@ TACTIC EXTEND simple_refine
 | [ "simple" "refine" uconstr(c) ] -> [ refine_tac ist true c ]
 END
 
+(* Solve unification constraints using heuristics or fail if any remain *)
+TACTIC EXTEND solve_constraints
+[ "solve_constraints" ] -> [ Refine.solve_constraints ]
+END
+
 (**********************************************************************)
 (* Inversion lemmas (Leminv)                                          *)
 

@@ -43,3 +43,8 @@ val with_type : Environ.env -> Evd.evar_map ->
 val refine_casted : ?unsafe:bool -> Constr.t Sigma.run -> unit tactic
 (** Like {!refine} except the refined term is coerced to the conclusion of the
     current goal. *)
+
+(** {7 Unification constraint handling} *)
+
+val solve_constraints : unit tactic
+(** Solve any remaining unification problems, applying heuristics. *)

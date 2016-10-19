@@ -373,7 +373,6 @@ val mark_as_unsafe : unit tactic
     with given up goals cannot be closed. *)
 val give_up : unit tactic
 
-
 (** {7 Control primitives} *)
 
 (** [tclPROGRESS t] checks the state of the proof after [t]. It it is
