@@ -350,6 +350,8 @@ val mark_as_unsafe : unit tactic
     with given up goals cannot be closed. *)
 val give_up : unit tactic
 
+(** Solve any remaining unification problems, applying heuristics. *)
+val solve_constraints : unit tactic
 
 (** {7 Control primitives} *)
 

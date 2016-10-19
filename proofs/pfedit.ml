@@ -120,6 +120,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | Vernacexpr.SelectAllParallel ->
           Errors.anomaly(str"SelectAllParallel not handled by Stm")
     in
+    let tac = Proofview.tclTHEN tac Proofview.solve_constraints in
     let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
     let () =
       match info_lvl with

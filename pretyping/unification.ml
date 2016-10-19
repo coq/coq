@@ -1271,7 +1271,6 @@ let w_merge env with_types flags (evd,metas,evars) =
 	      if is_mimick_head flags.modulo_delta f then
 		let evd' =
 		  mimick_undefined_evar evd flags f (Array.length cl) evk in
-		(* let evd' = Evarconv.consider_remaining_unif_problems env evd' in *)
 		  w_merge_rec evd' metas evars eqns
 	      else
 		let evd' = 
@@ -1365,8 +1364,7 @@ let w_merge env with_types flags (evd,metas,evars) =
                 (* Assign evars in the order of assignments during unification *)
                 (List.rev evars) []
   in
-    if with_types then check_types res
-    else res
+  if with_types then check_types res else res
 
 let w_unify_meta_types env ?(flags=default_unify_flags ()) evd =
   let metas,evd = retract_coercible_metas evd in
@@ -1424,7 +1422,7 @@ let w_typed_unify_array env evd flags f1 l1 f2 l2 =
   let subst = Array.fold_left2 fold_subst subst l1 l2 in
   let evd = w_merge env true flags.merge_unify_flags subst in
   try_resolve_typeclasses env evd flags.resolve_evars
-    (mkApp(f1,l1)) (mkApp(f2,l2))
+                          (mkApp(f1,l1)) (mkApp(f2,l2))
 
 (* takes a substitution s, an open term op and a closed term cl
    try to find a subterm of cl which matches op, if op is just a Meta
@@ -1846,21 +1844,14 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
     error_wrong_abstraction_type env evd'
       (Evd.meta_name evd p) pred typp predtyp;
   w_merge env false flags.merge_unify_flags
-    (evd',[p,pred,(Conv,TypeProcessed)],[])
-
-  (* let evd',metas,evars =  *)
-  (*   try unify_0 env evd' CUMUL flags predtyp typp  *)
-  (*   with NotConvertible -> *)
-  (*     error_wrong_abstraction_type env evd *)
-  (*       (Evd.meta_name evd p) pred typp predtyp *)
-  (* in *)
-  (*   w_merge env false flags (evd',(p,pred,(Conv,TypeProcessed))::metas,evars) *)
+          (evd',[p,pred,(Conv,TypeProcessed)],[])
 
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
   let typp = Typing.meta_type evd p in
   let evd, pred = abstract_list_all_with_dependencies env evd typp typ oplist in
   w_merge env false flags.merge_unify_flags
-    (evd,[p,pred,(Conv,TypeProcessed)],[])
+          (evd,[p,pred,(Conv,TypeProcessed)],[])
+
 
 let secondOrderAbstractionAlgo dep =
   if dep then secondOrderDependentAbstraction else secondOrderAbstraction
