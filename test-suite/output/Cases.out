@@ -56,3 +56,6 @@ match H with
      else fun _ : P false => Logic.I) x
 end
      : B -> True
+The command has indeed failed with message:
+Non exhaustive pattern-matching: no clause found for pattern 
+gadtTy _ _

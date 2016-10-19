@@ -62,13 +62,14 @@ let error_wrong_numarg_constructor_loc loc env c n =
 let error_wrong_numarg_inductive_loc loc env c n =
   raise_pattern_matching_error (loc, env, Evd.empty, WrongNumargInductive(c,n))
 
-let rec list_try_compile f = function
-  | [a] -> f a
-  | [] -> anomaly (str "try_find_f")
+let list_try_compile f l =
+  let rec aux errors = function
+  | [] -> if errors = [] then anomaly (str "try_find_f") else raise (List.last errors)
   | h::t ->
       try f h
-      with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _ ->
-	    list_try_compile f t
+      with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _ as e ->
+	    aux (e::errors) t in
+  aux [] l
 
 let force_name =
   let nx = Name default_dependent_ident in function Anonymous -> nx | na -> na

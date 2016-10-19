@@ -77,3 +77,15 @@ destruct b as [|] ; exact Logic.I.
 Defined.
 
 Print f.
+
+(* Was enhancement request #5142 (error message reported on the most
+   general return clause heuristic) *)
+
+Inductive gadt : Type -> Type :=
+| gadtNat : nat -> gadt nat
+| gadtTy : forall T, T -> gadt T.
+
+Fail Definition gadt_id T (x: gadt T) : gadt T :=
+  match x with
+  | gadtNat n => gadtNat n
+  end.
