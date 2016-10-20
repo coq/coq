@@ -232,43 +232,6 @@ val refresh_constraints : UGraph.t -> universe_context_set -> universe_context_s
 
 val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
 
-(* For tracing *)
-
-type constraints_map = (Univ.constraint_type * Univ.LMap.key) list Univ.LMap.t
-
-val pr_constraints_map : constraints_map -> Pp.std_ppcmds
-
-val choose_canonical : universe_set -> (Level.t -> bool) (* flexibles *) -> universe_set -> universe_set -> 
-  universe_level * (universe_set * universe_set * universe_set)
-    
-val compute_lbound : (constraint_type * Univ.universe) list -> universe option
-
-type lowermap = constraint_type Univ.LMap.t
-
-val instantiate_with_lbound : 
-  Univ.LMap.key ->
-  Univ.universe ->
-  lowermap ->
-  bool ->
-  bool ->
-  Univ.LSet.t * Univ.universe option Univ.LMap.t *
-    Univ.LSet.t *
-    (bool * bool * Univ.universe * lowermap) Univ.LMap.t * Univ.constraints ->
-  (Univ.LSet.t * Univ.universe option Univ.LMap.t *
-    Univ.LSet.t *
-     (bool * bool * Univ.universe * lowermap) Univ.LMap.t * Univ.constraints) *
-    (bool * bool * Univ.universe * lowermap)
-
-val minimize_univ_variables : 
-           Univ.LSet.t ->
-           Univ.universe option Univ.LMap.t ->
-           Univ.LSet.t ->
-           constraints_map -> constraints_map ->
-           Univ.constraints ->
-           Univ.LSet.t * Univ.universe option Univ.LMap.t *
-	     Univ.LSet.t *
-           (bool * bool * Univ.universe * lowermap) Univ.LMap.t * Univ.constraints
-
 (** {6 Support for old-style sort-polymorphism } *)
 
 val solve_constraints_system : universe option array -> universe array -> universe array ->

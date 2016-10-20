@@ -704,11 +704,13 @@ let pr_universe_opt_subst = Univ.LMap.pr pr_universe_body
 
 let compare_constraint_type d d' =
   match d, d' with
-  | Eq, Eq | Le, Le | Lt, Lt -> 0
+  | Eq, Eq -> 0
   | Eq, _ -> -1
-  | Le, Eq -> 1
-  | Le, Lt -> -1
-  | Lt, (Eq | Le) -> 1
+  | _, Eq -> 1
+  | Le, Le -> 0
+  | Le, _ -> -1
+  | _, Le -> 1
+  | Lt, Lt -> 0
 
 type lowermap = constraint_type LMap.t
 
@@ -800,36 +802,42 @@ let minimize_univ_variables ctx us algs left right cstrs =
   in
   let rec instance (ctx', us, algs, insts, cstrs as acc) u =
     let acc, left, lower =
-      try let l = LMap.find u left in
-	  let acc, left, newlow, lower =
-            List.fold_left
-	      (fun (acc, left', newlow, lower') (d, l) ->
-	        let acc', (enf,alg,l',lower) = aux acc l in
-	        let l' =
-		  if enf then Universe.make l
-		  else l'
-	        in acc', (d, l') :: left',
-                   lower_add l d newlow, lower_union lower lower')
-	      (acc, [], LMap.empty, LMap.empty) l
-          in
-          let not_lower (d,l) =
-            Univ.Universe.exists
-              (fun (l,i) ->
-                let d =
-                  if i == 0 then d
-                  else match d with
-                       | Le -> Lt
-                       | d -> d
-                in
-                try let d' = LMap.find l lower in
-                    (* If d is stronger than the already implied lower
-                     * constraints we must keep it *)
-                    compare_constraint_type d d' > 0
-                with Not_found ->
-                  (** No constraint existing on l *) true) l
-          in
-          let left = List.uniquize (List.filter not_lower left) in
-          (acc, left, LMap.union newlow lower)
+      try
+        let l = LMap.find u left in
+	let acc, left, newlow, lower =
+          List.fold_left
+	  (fun (acc, left', newlow, lower') (d, l) ->
+	   let acc', (enf,alg,l',lower) = aux acc l in
+	   let l' =
+	     if enf then Universe.make l
+	     else l'
+	   in acc', (d, l') :: left',
+              lower_add l d newlow, lower_union lower lower')
+	  (acc, [], LMap.empty, LMap.empty) l
+        in
+        let not_lower (d,l) =
+        (* We're checking if (d,l) is already implied by the lower
+	  constraints on some level u. If it represents l < u (d is Lt
+	  or d is Le and i > 0, the i < 0 case is impossible due to
+	  invariants of Univ), and the lower constraints only have l <=
+	  u then it is not implied. *)
+          Univ.Universe.exists
+          (fun (l,i) ->
+             let d =
+               if i == 0 then d
+               else match d with
+                    | Le -> Lt
+                    | d -> d
+             in
+             try let d' = LMap.find l lower in
+                 (* If d is stronger than the already implied lower
+                  * constraints we must keep it. *)
+                 compare_constraint_type d d' > 0
+             with Not_found ->
+               (** No constraint existing on l *) true) l
+        in
+        let left = List.uniquize (List.filter not_lower left) in
+        (acc, left, LMap.union newlow lower)
       with Not_found -> acc, [], LMap.empty
     and right =
       try Some (LMap.find u right)
