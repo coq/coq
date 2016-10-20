@@ -69,6 +69,15 @@ let ttree_remove ttree str =
   in
   remove ttree 0
 
+let ttree_elements ttree =
+  let rec elts tt accu =
+    let accu = match tt.node with
+    | None -> accu
+    | Some s -> CString.Set.add s accu
+    in
+    CharMap.fold (fun _ tt accu -> elts tt accu) tt.branch accu
+  in
+  elts ttree CString.Set.empty
 
 (* Errors occurring while lexing (explained as "Lexer error: ...") *)
 
@@ -220,6 +229,8 @@ let add_keyword str =
 
 let remove_keyword str =
   token_tree := ttree_remove !token_tree str
+
+let keywords () = ttree_elements !token_tree
 
 (* Freeze and unfreeze the state of the lexer *)
 type frozen_t = ttree
