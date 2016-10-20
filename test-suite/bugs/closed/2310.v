@@ -14,4 +14,4 @@ Definition replace a (y:Nest (prod a a)) : a = a -> Nest a.
    (P:=\a.Nest (prod a a) and P:=\_.Nest (prod a a)) and refine should either
    leave P as subgoal or choose itself one solution *)
 
-intros. refine (Cons (cast H _ y)).
+  intros. Fail refine (Cons (cast H _ y)).

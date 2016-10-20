@@ -36,12 +36,8 @@ Proof.
   solve [ unshelve (subst; eapply interpf_SmartVarVar; eassumption) ] || fail 
 "too early".
   Undo.
-  (** Implicitely at the dot. The first fails because unshelve adds a goal, and solve hence fails. The second has an ambiant unification problem that is solved after solve *)
+  (** Implicitely at the dot. The first fails because unshelve adds a goal, and solve hence fails. The second has an ambient unification problem that is solved after solve *)
   Fail solve [ unshelve (eapply interpf_SmartVarVar; subst; eassumption) ].
   solve [eapply interpf_SmartVarVar; subst; eassumption].
-  Undo.
-  Unset Eager Tactic Unification.
-  (* User control of when constraints are solved *)
-  solve [ unshelve (eapply interpf_SmartVarVar; subst; eassumption); solve_constraints ].
 Qed.
 
