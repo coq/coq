@@ -424,7 +424,16 @@ let pr_evgl_sign sigma evi =
       (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
   let pc = pr_lconstr_env env sigma evi.evar_concl in
-  hov 0 (str"[" ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" ++ spc () ++ warn)
+  let candidates =
+    match evi.evar_body, evi.evar_candidates with
+    | Evar_empty, Some l ->
+       spc () ++ str "= {" ++
+         prlist_with_sep (fun () -> str "|") (pr_lconstr_env env sigma) l ++ str "}"
+    | _ ->
+       mt ()
+  in
+  hov 0 (str"[" ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" ++
+           candidates ++ spc () ++ warn)
 
 (* Print an existential variable *)
 
@@ -471,7 +480,7 @@ let default_pr_subgoal n sigma =
 
 let pr_internal_existential_key ev = str (string_of_existential ev)
 
-let print_evar_constraints gl sigma cstrs =
+let print_evar_constraints gl sigma =
   let pr_env =
     match gl with
     | None -> fun e' -> pr_context_of e' sigma
@@ -487,6 +496,14 @@ let print_evar_constraints gl sigma cstrs =
   let pr_evconstr (pbty,env,t1,t2) =
     let t1 = Evarutil.nf_evar sigma t1
     and t2 = Evarutil.nf_evar sigma t2 in
+    let env =
+      (** We currently allow evar instances to refer to anonymous de Bruijn
+          indices, so we protect the error printing code in this case by giving
+          names to every de Bruijn variable in the rel_context of the conversion
+          problem. MS: we should rather stop depending on anonymous variables, they
+          can be used to indicate independency. Also, this depends on a strategy for 
+          naming/renaming *)
+      Namegen.make_all_name_different env in
     str" " ++
       hov 2 (pr_env env ++ pr_lconstr_env env sigma t1 ++ spc () ++
              str (match pbty with
@@ -494,7 +511,23 @@ let print_evar_constraints gl sigma cstrs =
                   | Reduction.CUMUL -> "<=") ++
              spc () ++ pr_lconstr_env env sigma t2)
   in
-  prlist_with_sep fnl pr_evconstr cstrs
+  let pr_candidate ev evi (candidates,acc) =
+    if Option.has_some evi.evar_candidates then
+      (succ candidates, acc ++ pr_evar sigma (ev,evi) ++ fnl ())
+    else (candidates, acc)
+  in
+  let constraints =
+    let _, cstrs = Evd.extract_all_conv_pbs sigma in
+    if List.is_empty cstrs then mt ()
+    else fnl () ++ str (String.plural (List.length cstrs) "unification constraint")
+         ++ str":" ++ fnl () ++ hov 0 (prlist_with_sep fnl pr_evconstr cstrs)
+  in
+  let candidates, ppcandidates = Evd.fold_undefined pr_candidate sigma (0,mt ()) in
+  constraints ++
+    if candidates > 0 then
+      fnl () ++ str (String.plural candidates "existential") ++
+        str" with candidates:" ++ fnl () ++ hov 0 ppcandidates
+    else mt ()
 
 let should_print_dependent_evars = ref true
 
@@ -509,12 +542,7 @@ let _ =
       optwrite = (fun v -> should_print_dependent_evars := v) }
 
 let print_dependent_evars gl sigma seeds =
-  let constraints =
-    let _, cstrs = Evd.extract_all_conv_pbs sigma in
-    if List.is_empty cstrs then mt ()
-    else fnl () ++ str (String.plural (List.length cstrs) "unification constraint")
-         ++ str":" ++ fnl () ++ hov 0 (print_evar_constraints gl sigma cstrs)
-  in
+  let constraints = print_evar_constraints gl sigma in
   let evars () =
     if !should_print_dependent_evars then
       let evars = Evarutil.gather_dependent_evars sigma seeds in
