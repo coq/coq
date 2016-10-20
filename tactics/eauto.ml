@@ -423,10 +423,6 @@ let make_depth = function
   | None -> !default_search_depth
   | Some d -> d
 
-let make_dimension n = function
-  | None -> (true,make_depth n)
-  | Some d -> (false,d)
-
 let cons a l = a :: l
 
 let autounfolds db occs cls gl =

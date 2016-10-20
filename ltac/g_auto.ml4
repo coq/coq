@@ -98,38 +98,33 @@ TACTIC EXTEND prolog
     [ Eauto.prolog_tac (eval_uconstrs ist l) n ]
 END
 
-let make_depth n = snd (Eauto.make_dimension n None)
-
 TACTIC EXTEND eauto
-| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Eauto.gen_eauto (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+| [ "eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+    [ Eauto.gen_eauto (true, Eauto.make_depth n) (eval_uconstrs ist lems) db ]
 END
 
 TACTIC EXTEND new_eauto
 | [ "new" "auto" int_or_var_opt(n) auto_using(lems)
     hintbases(db) ] ->
     [ match db with
-      | None -> Auto.new_full_auto (make_depth n) (eval_uconstrs ist lems)
-      | Some l -> Auto.new_auto (make_depth n) (eval_uconstrs ist lems) l ]
+      | None -> Auto.new_full_auto (Eauto.make_depth n) (eval_uconstrs ist lems)
+      | Some l -> Auto.new_auto (Eauto.make_depth n) (eval_uconstrs ist lems) l ]
 END
 
 TACTIC EXTEND debug_eauto
-| [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Eauto.gen_eauto ~debug:Debug (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+| [ "debug" "eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+    [ Eauto.gen_eauto ~debug:Debug (true, Eauto.make_depth n) (eval_uconstrs ist lems) db ]
 END
 
 TACTIC EXTEND info_eauto
-| [ "info_eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Eauto.gen_eauto ~debug:Info (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+| [ "info_eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+    [ Eauto.gen_eauto ~debug:Info (true, Eauto.make_depth n) (eval_uconstrs ist lems) db ]
 END
 
 TACTIC EXTEND dfs_eauto
 | [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
       hintbases(db) ] ->
-    [ Eauto.gen_eauto (Eauto.make_dimension p None) (eval_uconstrs ist lems) db ]
+    [ Eauto.gen_eauto (true, Eauto.make_depth p) (eval_uconstrs ist lems) db ]
 END
 
 TACTIC EXTEND autounfold

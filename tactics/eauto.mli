@@ -30,4 +30,4 @@ val autounfold : hint_db_name list -> Locus.clause -> unit Proofview.tactic
 val autounfold_tac : hint_db_name list option -> Locus.clause -> unit Proofview.tactic
 val autounfold_one : hint_db_name list -> Locus.hyp_location option -> unit Proofview.tactic
 
-val make_dimension : int option -> int option -> bool * int
+val make_depth : int option -> int
