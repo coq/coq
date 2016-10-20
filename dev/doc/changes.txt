@@ -14,7 +14,8 @@ We renamed the following functions:
 
 We removed the following functions:
 
-  Termops.Termops.compact_named_context_reverse
+  Termops.compact_named_context_reverse ... practical substitute is Termops.compact_named_context
+  Namegen.to_avoid                      ... equivalent substitute is Names.Id.List.mem
 
 We renamed the following modules:
 
