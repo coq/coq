@@ -415,13 +415,9 @@ let full_eauto ?(debug=Off) n lems gl =
   let db_list = List.map searchtable_map (String.Set.elements dbnames) in
   tclTRY (e_search_auto debug n lems db_list) gl
 
-let gen_eauto ?(debug=Off) np lems = function
-  | None -> Proofview.V82.tactic (full_eauto ~debug np lems)
-  | Some l -> Proofview.V82.tactic (eauto ~debug np lems l)
-
-let make_depth = function
-  | None -> !default_search_depth
-  | Some d -> d
+let gen_eauto ?(debug=Off) ?(dfs=true) ?(depth=(!default_search_depth)) lems = function
+  | None -> Proofview.V82.tactic (full_eauto ~debug (dfs, depth) lems)
+  | Some l -> Proofview.V82.tactic (eauto ~debug (dfs, depth) lems l)
 
 let cons a l = a :: l
 
