@@ -941,7 +941,7 @@ module Unsafe = struct
   let mark_as_goal evd content =
     mark_in_evm ~goal:true evd content
 
-  let advance = advance
+  let advance = Evarutil.advance
 
   let mark_as_unresolvable p gl =
     { p with solution = mark_in_evm ~goal:false p.solution gl }
