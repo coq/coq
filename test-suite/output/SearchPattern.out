@@ -40,7 +40,6 @@ Nat.land: nat -> nat -> nat
 Nat.lor: nat -> nat -> nat
 Nat.ldiff: nat -> nat -> nat
 Nat.lxor: nat -> nat -> nat
-
 S: nat -> nat
 Nat.succ: nat -> nat
 Nat.pred: nat -> nat
@@ -74,7 +73,6 @@ le_n: forall n : nat, n <= n
 pair: forall A B : Type, A -> B -> A * B
 conj: forall A B : Prop, A -> B -> A /\ B
 Nat.divmod: nat -> nat -> nat -> nat -> nat * nat
-
 h: n <> newdef n
 h: n <> newdef n
 h: P n
