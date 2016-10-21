@@ -678,6 +678,28 @@ let gather_dependent_evars evm l =
 
 (* /spiwack *)
 
+(** [advance sigma g] returns [Some g'] if [g'] is undefined and is
+    the current avatar of [g] (for instance [g] was changed by [clear]
+    into [g']). It returns [None] if [g] has been (partially)
+    solved. *)
+(* spiwack: [advance] is probably performance critical, and the good
+   behaviour of its definition may depend sensitively to the actual
+   definition of [Evd.find]. Currently, [Evd.find] starts looking for
+   a value in the heap of undefined variable, which is small. Hence in
+   the most common case, where [advance] is applied to an unsolved
+   goal ([advance] is used to figure if a side effect has modified the
+   goal) it terminates quickly. *)
+let rec advance sigma evk =
+  let evi = Evd.find sigma evk in
+  match evi.evar_body with
+  | Evar_empty -> Some evk
+  | Evar_defined v ->
+      if Option.default false (Store.get evi.evar_extra cleared) then
+        let (evk,_) = Term.destEvar v in
+        advance sigma evk
+      else
+        None
+
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
     This is roughly a combination of the previous functions and

@@ -226,7 +226,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.v prerequisite
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods -impredicative-set)"; \
@@ -257,7 +257,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v prerequisite
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
@@ -271,7 +271,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out
+$(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out prerequisite
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
@@ -330,7 +330,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	  rm $$tmpexpected; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v prerequisite
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
@@ -348,7 +348,7 @@ $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
 # the .v file with exactly two digits after the dot. The reference for
 # time is a 6120 bogomips cpu.
 ifneq (,$(bogomips))
-$(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v prerequisite
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
@@ -379,7 +379,7 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v
 endif
 
 # Ideal-features tests
-$(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v prerequisite
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
