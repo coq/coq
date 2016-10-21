@@ -514,8 +514,6 @@ let delta_auto =
 
 let auto ?(debug=Off) n = delta_auto debug false n
 
-let new_auto ?(debug=Off) n = delta_auto debug true n
-
 let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) mod_delta n lems =
@@ -530,7 +528,6 @@ let delta_full_auto ?(debug=Off) mod_delta n lems =
   end }
 
 let full_auto ?(debug=Off) n = delta_full_auto ~debug false n
-let new_full_auto ?(debug=Off) n = delta_full_auto ~debug true n
 
 let default_full_auto = full_auto !default_search_depth []
 

@@ -103,14 +103,6 @@ TACTIC EXTEND eauto
     [ Eauto.gen_eauto (true, Eauto.make_depth n) (eval_uconstrs ist lems) db ]
 END
 
-TACTIC EXTEND new_eauto
-| [ "new" "auto" int_or_var_opt(n) auto_using(lems)
-    hintbases(db) ] ->
-    [ match db with
-      | None -> Auto.new_full_auto (Eauto.make_depth n) (eval_uconstrs ist lems)
-      | Some l -> Auto.new_auto (Eauto.make_depth n) (eval_uconstrs ist lems) l ]
-END
-
 TACTIC EXTEND debug_eauto
 | [ "debug" "eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
     [ Eauto.gen_eauto ~debug:Debug (true, Eauto.make_depth n) (eval_uconstrs ist lems) db ]
@@ -119,12 +111,6 @@ END
 TACTIC EXTEND info_eauto
 | [ "info_eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
     [ Eauto.gen_eauto ~debug:Info (true, Eauto.make_depth n) (eval_uconstrs ist lems) db ]
-END
-
-TACTIC EXTEND dfs_eauto
-| [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
-      hintbases(db) ] ->
-    [ Eauto.gen_eauto (true, Eauto.make_depth p) (eval_uconstrs ist lems) db ]
 END
 
 TACTIC EXTEND autounfold
