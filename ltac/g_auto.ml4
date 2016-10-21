@@ -16,6 +16,7 @@ open Pcoq.Prim
 open Pcoq.Constr
 open Pcoq.Tactic
 open Tacexpr
+open Util
 
 DECLARE PLUGIN "g_auto"
 
@@ -111,6 +112,31 @@ END
 TACTIC EXTEND info_eauto
 | [ "info_eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
     [ Eauto.gen_eauto ~debug:Info ?depth:n (eval_uconstrs ist lems) db ]
+END
+
+(** Typeclasses eauto based tactics *)
+
+let typeclasses_eauto depth dbnames =
+  let db_list =
+    match dbnames with
+    | None -> Hints.current_pure_db ()
+    | Some dbnames -> Hints.make_db_list dbnames
+  in
+  let depth =
+    match depth with
+    | None -> !Auto.default_search_depth
+    | Some d -> d
+  in
+  Tacticals.New.tclTRY
+    (Class_tactics.Search.eauto_tac
+       ~only_classes:false
+       ~depth:(Some depth)
+       ~dep:true
+       db_list)
+
+TACTIC EXTEND dfs_eauto
+| [ "dfs" "eauto" int_or_var_opt(depth) hintbases(db) ] ->
+   [ typeclasses_eauto depth db ]
 END
 
 TACTIC EXTEND autounfold
