@@ -290,7 +290,7 @@ let apply_inference_hook hook evdref pending =
 
 let apply_heuristics env evdref fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
-  try evdref := consider_remaining_unif_problems
+  try evdref := solve_unif_constraints_with_heuristics
 	~ts:(Typeclasses.classes_transparent_state ()) env !evdref
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in if fail_evar then iraise e

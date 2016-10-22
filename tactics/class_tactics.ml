@@ -1437,7 +1437,7 @@ let initial_select_evars filter =
 
 let resolve_typeclass_evars debug depth unique env evd filter split fail =
   let evd =
-    try Evarconv.consider_remaining_unif_problems
+    try Evarconv.solve_unif_constraints_with_heuristics
       ~ts:(Typeclasses.classes_transparent_state ()) env evd
     with e when CErrors.noncritical e -> evd
   in

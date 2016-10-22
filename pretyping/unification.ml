@@ -1220,7 +1220,7 @@ let is_mimick_head ts f =
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j') = inh_conv_coerce_rigid_to true Loc.ghost env evd j tycon in
-  let evd' = Evarconv.consider_remaining_unif_problems env evd' in
+  let evd' = Evarconv.solve_unif_constraints_with_heuristics env evd' in
   let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
     (evd',j'.uj_val)
 
@@ -1272,8 +1272,8 @@ let solve_simple_evar_eqn ts env evd ev rhs =
   | Success evd ->
      if Flags.version_less_or_equal Flags.V8_5 then
        (* We used to force solving unrelated problems at arbitrary times *)
-       Evarconv.consider_remaining_unif_problems env evd
-     else (* solve_simple_eqn calls reconsider_conv_pbs itself *)
+       Evarconv.solve_unif_constraints_with_heuristics env evd
+     else (* solve_simple_eqn calls reconsider_unif_constraints itself *)
        evd
 
 (* [w_merge env sigma b metas evars] merges common instances in metas

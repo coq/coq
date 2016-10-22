@@ -1129,7 +1129,7 @@ let interp_recursive isfix fixl notations =
       () in
 
   (* Instantiate evars and check all are resolved *)
-  let evd = consider_remaining_unif_problems env_rec !evdref in
+  let evd = solve_unif_constraints_with_heuristics env_rec !evdref in
   let evd, nf = nf_evars_and_universes evd in
   let fixdefs = List.map (Option.map nf) fixdefs in
   let fixtypes = List.map nf fixtypes in
