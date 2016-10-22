@@ -1,2 +1,3 @@
 The command has indeed failed with message:
 Error: Ltac variable y depends on pattern variable name z which is not bound in current context.
+Hx
