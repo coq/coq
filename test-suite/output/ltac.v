@@ -43,3 +43,8 @@ Goal True -> False.
 Fail h I.
 intro H.
 Fail h H.
+
+(* Check printing of the "var" argument "Hx" *)
+Ltac m H := idtac H; exact H.
+Goal True.
+let a:=constr:(let Hx := 0 in ltac:(m Hx)) in idtac.

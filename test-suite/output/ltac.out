@@ -26,3 +26,4 @@ The command has indeed failed with message:
 In nested Ltac calls to "h" and "injection (destruction_arg)", last call
 failed.
 Error: No primitive equality found.
+Hx
